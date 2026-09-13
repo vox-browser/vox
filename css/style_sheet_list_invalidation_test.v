@@ -19,6 +19,16 @@ fn clear_style_sheet_list_invalidation_flags(nodes ...&dom.Node) {
 	}
 }
 
+fn set_style_sheet_list_invalidation_animation_name(mut element dom.Element, name string) {
+	mut computed := computed_properties_with_initial_values()
+	value := parse_css_value_logic(.animation_name, name) or {
+		panic('could not parse animation-name ${name}')
+	}
+	computed.set_property(.animation_name, dom_style_value_from_value_logic(value), .no, .no)
+	mut abstract_element := dom.AbstractElement.new(element, none)
+	abstract_element.set_computed_properties(computed_properties_to_dom(computed))
+}
+
 fn test_style_sheet_list_add_and_remove_target_document_elements() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut document_node := unsafe { &dom.Node(document) }
@@ -141,6 +151,70 @@ fn test_font_face_sheet_add_and_remove_do_not_force_broad_invalidation() {
 	list.remove_sheet(font_face_sheet)
 	assert !document.needs_full_style_update()
 	assert !root.needs_style_update()
+}
+
+fn test_keyframes_sheet_add_and_remove_target_animation_name_users() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut document_node := unsafe { &dom.Node(document) }
+	mut root := style_sheet_list_invalidation_element(document, 'html')
+	mut target := style_sheet_list_invalidation_element(document, 'div')
+	mut bystander := style_sheet_list_invalidation_element(document, 'div')
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(target.as_node()) or { panic(err) }
+	root_node.append_child(bystander.as_node()) or { panic(err) }
+	set_style_sheet_list_invalidation_animation_name(mut target, 'fade')
+	set_style_sheet_list_invalidation_animation_name(mut bystander, 'other')
+
+	mut list := StyleSheetList.create(document_node)
+	keyframes_sheet := parse_css_stylesheet_with_parser('@keyframes fade { from { opacity: 0 } }', none)
+	assert !stylesheet_requires_broad_add_or_remove_invalidation(keyframes_sheet)
+
+	clear_style_sheet_list_invalidation_flags(document_node, root.as_node(), target.as_node(), bystander.as_node())
+	document.set_needs_full_style_update(false)
+	list.add_sheet(keyframes_sheet)
+	assert target.needs_style_update()
+	assert !bystander.needs_style_update()
+	assert !document.needs_full_style_update()
+
+	clear_style_sheet_list_invalidation_flags(document_node, root.as_node(), target.as_node(), bystander.as_node())
+	document.set_needs_full_style_update(false)
+	list.remove_sheet(keyframes_sheet)
+	assert target.needs_style_update()
+	assert !bystander.needs_style_update()
+	assert !document.needs_full_style_update()
+}
+
+fn test_shadow_keyframes_sheet_add_reaches_animation_name_on_host() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut document_node := unsafe { &dom.Node(document) }
+	mut root := style_sheet_list_invalidation_element(document, 'html')
+	mut host := style_sheet_list_invalidation_element(document, 'x-host')
+	mut bystander := style_sheet_list_invalidation_element(document, 'div')
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(host.as_node()) or { panic(err) }
+	root_node.append_child(bystander.as_node()) or { panic(err) }
+	shadow_root := host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic(err) }
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	mut style := style_sheet_list_invalidation_element(document, 'style')
+	shadow_node.append_child(style.as_node()) or { panic(err) }
+	set_style_sheet_list_invalidation_animation_name(mut host, 'fade')
+
+	mut name_sheet := parse_css_stylesheet_with_parser(':host { animation-name: fade }', none)
+	name_sheet.set_owner_node(style)
+	name_sheet.add_owning_document_or_shadow_root(shadow_node)
+	mut scope := css_style_scope_for_shadow_root(shadow_root)
+	scope.author_style_sheets << name_sheet
+	mut list := StyleSheetList.create(shadow_node)
+	keyframes_sheet := parse_css_stylesheet_with_parser('@keyframes fade { from { opacity: 0 } }', none)
+	clear_style_sheet_list_invalidation_flags(document_node, root.as_node(), host.as_node(), bystander.as_node(), shadow_node, style.as_node())
+	document.set_needs_full_style_update(false)
+
+	list.add_sheet(keyframes_sheet)
+	assert host.needs_style_update()
+	assert !bystander.needs_style_update()
+	assert !document.needs_full_style_update()
 }
 
 fn test_broad_shadow_sheet_invalidation_distinguishes_host_subtree_and_sibling_reach() {

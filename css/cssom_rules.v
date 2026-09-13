@@ -2614,7 +2614,9 @@ fn rule_requires_broad_add_or_remove_invalidation(rule &CSSRule) bool {
 	// @font-face declares a resource whose effect on computed style is deferred until the font
 	// actually loads. CSSFontLoaded handles that invalidation, so adding or removing the rule itself
 	// does not require a whole-subtree style update.
-	return rule.type_ in [.property, .font_feature_values, .counter_style, .keyframes, .layer_block,
+	// @keyframes only affects elements that reference its animation name; the sheet add/remove paths
+	// apply targeted invalidation for those elements after processing ordinary style rules.
+	return rule.type_ in [.property, .font_feature_values, .counter_style, .layer_block,
 		.layer_statement]
 }
 
@@ -2693,6 +2695,7 @@ fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
 		}
 	}
 	invalidate_root_for_style_sheet_change(list.document_or_shadow_root, invalidation_result, .style_sheet_list_add_sheet, requires_broad_invalidation)
+	invalidate_root_for_keyframes_rules_in_sheet(list.document_or_shadow_root, sheet)
 }
 
 fn (mut list StyleSheetList) remove_sheet(sheet &CSSStyleSheet) {
@@ -2739,6 +2742,7 @@ fn (mut list StyleSheetList) remove_sheet(sheet &CSSStyleSheet) {
 		}
 	}
 	invalidate_root_for_style_sheet_change(list.document_or_shadow_root, invalidation_result, .style_sheet_list_remove_sheet, requires_broad_invalidation)
+	invalidate_root_for_keyframes_rules_in_sheet(list.document_or_shadow_root, sheet)
 }
 
 pub enum RuleContext {

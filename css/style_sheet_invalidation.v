@@ -562,6 +562,28 @@ fn invalidate_elements_affected_by_inserted_keyframes_rule(root &dom.Node, anima
 	})
 }
 
+fn invalidate_root_for_keyframes_rules_in_sheet(root &dom.Node, sheet &CSSStyleSheet) {
+	// Shadow-scoped keyframes can affect the host or its light DOM when another active rule in the
+	// same scope assigns animation-name through :host or ::slotted(...). Mirror the per-rule fan-out.
+	mut include_host := false
+	mut include_light_dom_under_shadow_host := false
+	if shadow_root := root.as_shadow_root() {
+		effects := determine_shadow_root_style_sheet_effects(shadow_root)
+		include_host = effects.may_match_shadow_host
+		include_light_dom_under_shadow_host = effects.may_match_light_dom_under_shadow_host
+	}
+
+	sheet.for_each_effective_rule(.preorder, fn [root, include_host, include_light_dom_under_shadow_host] (rule &CSSRule) {
+		if rule.type_ != .keyframes {
+			return
+		}
+		animation_name := rule.keyframes_name()
+		for_each_tree_affected_by_shadow_root_style_sheet_change(root, include_host, include_light_dom_under_shadow_host, fn [animation_name] (affected_root &dom.Node) {
+			invalidate_elements_affected_by_inserted_keyframes_rule(affected_root, animation_name)
+		})
+	})
+}
+
 fn style_sheet_selector_may_affect_assigned_nodes_via_slot_inheritance(selector Selector, slots []&dom.Element, style_sheet &CSSStyleSheet, shadow_root &dom.ShadowRoot) bool {
 	shadow_node := unsafe { &dom.Node(shadow_root) }
 	for slot in slots {
