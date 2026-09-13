@@ -145,6 +145,11 @@ fn navigable_backing_store_shrink_callback(target voidptr) {
 	model.resize_backing_stores_if_needed(false)
 }
 
+fn navigable_backing_store_allocation_callback(target voidptr, front_id int, back_id int) {
+	page_ := unsafe { &dom.Page(target) }
+	page_.client_page_did_allocate_backing_stores(front_id, back_id)
+}
+
 fn same_navigable_model(a &NavigableModel, b &NavigableModel) bool {
 	return voidptr(a) == voidptr(b)
 }
@@ -1525,14 +1530,19 @@ fn (mut model NavigableModel) resize_backing_stores_if_needed(resizing bool) boo
 	}
 	front_id := int(manager.front_bitmap_id)
 	back_id := int(manager.back_bitmap_id)
-	if page_ := model.page() {
-		page_.client_page_did_allocate_backing_stores(front_id, back_id)
+	mut allocation := ?RenderingBackingStoreAllocation(none)
+	if model.is_top_level_traversable() {
+		if page_ := model.page() {
+			allocation = RenderingBackingStoreAllocation{
+				target: voidptr(page_)
+				callback: navigable_backing_store_allocation_callback
+			}
+		}
 	}
-	model.rendering_thread_.update_backing_stores(&RenderingSurface{
-		id: front_id
-	}, &RenderingSurface{
-		id: back_id
-	}, front_id, back_id)
+	model.rendering_thread_.update_backing_stores(RenderingSize{
+		width: device_viewport.width
+		height: device_viewport.height
+	}, front_id, back_id, allocation)
 	return true
 }
 

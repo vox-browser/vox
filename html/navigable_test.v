@@ -351,6 +351,9 @@ fn test_navigable_viewport_resize_grows_then_shrinks_device_backing_stores() {
 	window := WindowModel.create_top_level(document, none, 'backing-store')!
 	mut model := unsafe { &NavigableModel(window.navigable_model()) }
 	document.set_viewport_rect(dom.Rect{0, 0, 320, 200})
+	mut renderer := model.rendering_thread()
+	renderer.set_player(fn (_ &RenderingDisplayList, _ RenderingScrollStateSnapshot, _ &RenderingSurface) {})
+	renderer.start()!
 
 	model.set_viewport_size(css.CSSPixelSize.from_values(640, 480))
 	mut manager := model.backing_store_manager()
@@ -360,6 +363,8 @@ fn test_navigable_viewport_resize_grows_then_shrinks_device_backing_stores() {
 	assert manager.resize_timer_is_active()
 	assert manager.resize_timer_interval() == 3000
 	assert model.rendering_thread().pending_command_count() == 1
+	assert page_model.client().events.filter(it.name == 'allocate-backing-stores').len == 0
+	renderer.process()
 	assert page_model.client().events.last().name == 'allocate-backing-stores'
 	assert page_model.client().events.last().text == '1:2'
 
@@ -368,14 +373,16 @@ fn test_navigable_viewport_resize_grows_then_shrinks_device_backing_stores() {
 	assert manager.allocated_size == painting.IntSize{1280, 960}
 	assert manager.front_bitmap_id == 3
 	assert manager.back_bitmap_id == 4
-	assert model.rendering_thread().pending_command_count() == 2
+	assert model.rendering_thread().pending_command_count() == 1
+	assert page_model.client().events.last().text == '1:2'
+	renderer.process()
 	assert page_model.client().events.last().text == '3:4'
 
 	// An unchanged viewport is the source's early-return path: it neither grows
 	// the stores nor restarts a timer that has already fired.
 	model.set_viewport_size(css.CSSPixelSize.from_values(640, 480))
 	assert !manager.resize_timer_is_active()
-	assert model.rendering_thread().pending_command_count() == 2
+	assert model.rendering_thread().pending_command_count() == 0
 }
 
 fn test_navigable_fetch_redirect_policy_and_url_history_algorithms() {

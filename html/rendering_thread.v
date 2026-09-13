@@ -15,10 +15,17 @@ pub:
 	height int
 }
 
+pub struct RenderingSize {
+pub:
+	width  int
+	height int
+}
+
 @[heap]
 pub struct RenderingSurface {
 pub:
-	id int
+	id   int
+	size RenderingSize
 pub mut:
 	last_display_list_id int = -1
 mut:
@@ -86,10 +93,10 @@ struct UpdateDisplayListCommand {
 }
 
 struct UpdateBackingStoresCommand {
-	front           ?&RenderingSurface
-	back            ?&RenderingSurface
+	size            RenderingSize
 	front_bitmap_id int
 	back_bitmap_id  int
+	allocation      ?RenderingBackingStoreAllocation
 }
 
 struct ScreenshotCommand {
@@ -98,6 +105,14 @@ struct ScreenshotCommand {
 }
 
 type RenderingCommand = ScreenshotCommand | UpdateBackingStoresCommand | UpdateDisplayListCommand
+
+pub type RenderingBackingStoreAllocationCallback = fn (voidptr, int, int)
+
+pub struct RenderingBackingStoreAllocation {
+pub:
+	target   voidptr
+	callback RenderingBackingStoreAllocationCallback @[required]
+}
 
 struct BackingStoreState {
 mut:
@@ -174,12 +189,12 @@ pub fn (mut renderer RenderingThread) update_display_list(display_list &Renderin
 	})
 }
 
-pub fn (mut renderer RenderingThread) update_backing_stores(front ?&RenderingSurface, back ?&RenderingSurface, front_id int, back_id int) {
+pub fn (mut renderer RenderingThread) update_backing_stores(size RenderingSize, front_id int, back_id int, allocation ?RenderingBackingStoreAllocation) {
 	renderer.command_queue_ << RenderingCommand(UpdateBackingStoresCommand{
-		front:           front
-		back:            back
+		size: size
 		front_bitmap_id: front_id
-		back_bitmap_id:  back_id
+		back_bitmap_id: back_id
+		allocation: allocation
 	})
 }
 
@@ -208,11 +223,22 @@ pub fn (mut renderer RenderingThread) process() {
 				renderer.cached_scroll_state_ = command.scroll_state
 			}
 			UpdateBackingStoresCommand {
+				front := &RenderingSurface{
+					id: command.front_bitmap_id
+					size: command.size
+				}
+				back := &RenderingSurface{
+					id: command.back_bitmap_id
+					size: command.size
+				}
 				renderer.backing_stores_ = BackingStoreState{
-					front:           command.front
-					back:            command.back
+					front: front
+					back: back
 					front_bitmap_id: command.front_bitmap_id
-					back_bitmap_id:  command.back_bitmap_id
+					back_bitmap_id: command.back_bitmap_id
+				}
+				if allocation := command.allocation {
+					allocation.callback(allocation.target, command.front_bitmap_id, command.back_bitmap_id)
 				}
 			}
 			ScreenshotCommand {
