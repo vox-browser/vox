@@ -43,6 +43,7 @@ fn test_audio_param_clamps_visible_value_and_fixed_rate() {
 
 fn test_scheduled_source_enforces_one_shot_lifecycle() {
 	mut context := new_audio_context(1, 44100, true) or { panic(err) }
+	context.base.control_messages.drain()
 	mut node := AudioNode{
 		id: 1
 		context_id: 1
@@ -58,6 +59,17 @@ fn test_scheduled_source_enforces_one_shot_lifecycle() {
 		return
 	}
 	assert false
+}
+
+fn test_audio_context_queues_its_destination_render_node_first() {
+	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
+	messages := context.base.control_messages.drain()
+	assert messages.len == 1
+	assert messages[0].kind == .add_node
+	render_node := messages[0].render_node or { panic('missing destination render node') }
+	assert render_node.node_id() == context.base.destination.id
+	assert render_node.channel_count() == 2
+	assert render_node.channel_count_mode() == .explicit
 }
 
 fn test_audio_node_queues_render_graph_creation_and_configuration() {

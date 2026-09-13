@@ -129,6 +129,7 @@ fn make_base_context(id u64, sample_rate f32, destination_channels u32,
 	destination.set_channel_count(destination_channels)!
 	destination.channel_count_mode = .explicit
 	graph.control_messages_ = control_messages
+	destination.queue_render_node_creation(DestinationRenderNode.create(1, int(destination_channels), int(render_quantum_size)).render_node())
 	destination_node := AudioDestinationNode{
 		AudioNode: destination
 		offline: offline
