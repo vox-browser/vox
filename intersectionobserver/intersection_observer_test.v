@@ -222,6 +222,19 @@ fn test_document_update_intersection_observations_uses_layout_geometry_and_thres
 	document.needs_full_layout_tree_update = true
 	document.update_layout(.debugging)
 	assert target.el_layout_node() != none
+	assert document.layout_is_up_to_date()
+
+	// Internal IntersectionObserver geometry reads use the retained layout
+	// directly and must not flush a newly dirtied document per target.
+	target.set_attribute_value('style', 'position: absolute; left: 11px; top: 20px; width: 100px; height: 50px')
+	mut dirty_target_node := target.as_node()
+	dirty_target_node.set_needs_layout_tree_update(true, .style_change)
+	assert !document.layout_is_up_to_date()
+	stale_rect := target.bounding_client_rect_assuming_layout_clean()
+	assert stale_rect.x == 10
+	assert !document.layout_is_up_to_date()
+	document.update_layout(.debugging)
+	assert target.bounding_client_rect_assuming_layout_clean().x == 11
 
 	mut observer := IntersectionObserver.construct(record_delivered_entries, IntersectionObserverInit{
 		relevant_document: document

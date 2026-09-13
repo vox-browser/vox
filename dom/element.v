@@ -3092,11 +3092,7 @@ pub fn (e &Element) serializes_as_void() bool {
 
 // --- Bounding rects ---
 
-// https://drafts.csswg.org/cssom-view/#dom-element-getboundingclientrect
-pub fn (e &Element) get_bounding_client_rect() Rect {
-	// 1. Let list be the result of invoking getClientRects() on element.
-	list := e.get_client_rects()
-
+fn bounding_rect_from_client_rects(list []CSSPixelRect_) Rect {
 	// 2. If the list is empty return a DOMRect object whose x, y, width and height members are zero.
 	if list.len == 0 {
 		return Rect{}
@@ -3152,9 +3148,13 @@ pub fn (e &Element) get_bounding_client_rect() Rect {
 	}
 }
 
-pub fn (e &Element) get_client_rects() []CSSPixelRect_ {
-	mut document := unsafe { &Document(e.document()) }
-	document.update_layout(.element_get_client_rects)
+// https://drafts.csswg.org/cssom-view/#dom-element-getboundingclientrect
+pub fn (e &Element) get_bounding_client_rect() Rect {
+	// 1. Let list be the result of invoking getClientRects() on element.
+	return bounding_rect_from_client_rects(e.get_client_rects())
+}
+
+fn compute_client_rects_assuming_layout_clean(e &Element) []CSSPixelRect_ {
 	layout := e.as_node().layout_node() or { return [] }
 	if !layout.has_geometry_ {
 		return []
@@ -3167,6 +3167,21 @@ pub fn (e &Element) get_client_rects() []CSSPixelRect_ {
 			height_: layout.border_box_.height
 		},
 	]
+}
+
+pub fn (e &Element) get_client_rects() []CSSPixelRect_ {
+	mut document := unsafe { &Document(e.document()) }
+	document.update_layout(.element_get_client_rects)
+	document.update_paint_and_hit_testing_properties_if_needed()
+	return compute_client_rects_assuming_layout_clean(e)
+}
+
+pub fn (e &Element) client_rects_assuming_layout_clean() []CSSPixelRect_ {
+	return compute_client_rects_assuming_layout_clean(e)
+}
+
+pub fn (e &Element) bounding_client_rect_assuming_layout_clean() Rect {
+	return bounding_rect_from_client_rects(e.client_rects_assuming_layout_clean())
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-element-getboundingclientrect

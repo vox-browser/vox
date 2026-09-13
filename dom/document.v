@@ -8719,6 +8719,7 @@ pub fn (mut d Document) run_the_update_intersection_observations_steps(time f64)
 	// 1-2. Copy the observer list so callbacks/GC finalizers cannot mutate the
 	// registry while this rendering update walks it.
 	observer_list := d.intersection_observers.clone()
+	d.update_paint_and_hit_testing_properties_if_needed()
 	for observer in observer_list {
 		if observer.root_bounds == unsafe { nil } || observer.root_node == unsafe { nil } || observer.thresholds == unsafe { nil } {
 			continue
@@ -8743,8 +8744,8 @@ pub fn (mut d Document) run_the_update_intersection_observations_steps(time f64)
 			same_document := voidptr(target.document()) == voidptr(root_node.document())
 			inside_element_root := !root_is_element || target.as_node().is_descendant_of(root_node)
 			if target_has_layout && (is_implicit_root || same_document) && inside_element_root {
-				target_rect = target.get_bounding_client_rect()
-				intersection = compute_intersection(target, observer, none, root_bounds)
+				target_rect = target.bounding_client_rect_assuming_layout_clean()
+				intersection = compute_intersection(target, target_rect, observer, none, root_bounds)
 				target_area := target_rect.width * target_rect.height
 				intersection_area := intersection.width * intersection.height
 				intersection_geometry_intersects := edge_adjacent_intersects(target_rect,

@@ -4,8 +4,8 @@
 module dom
 
 // https://www.w3.org/TR/intersection-observer/#compute-the-intersection
-pub fn compute_intersection(target &Element, observer &IntersectionObserver, _ ?&PaintableBox, root_bounds Rect) Rect {
-	mut intersection := target.get_bounding_client_rect()
+pub fn compute_intersection(target &Element, target_rect Rect, observer &IntersectionObserver, _ ?&PaintableBox, root_bounds Rect) Rect {
+	mut intersection := target_rect
 	root_node := if observer.root_node != unsafe { nil } {
 		observer.root_node(observer.target)
 	} else {
@@ -45,7 +45,7 @@ pub fn compute_intersection(target &Element, observer &IntersectionObserver, _ ?
 				has_content_clip := computed.overflow_x() != .visible
 					|| computed.overflow_y() != .visible
 				if has_content_clip {
-					border_rect := element.get_bounding_client_rect()
+					border_rect := element.bounding_client_rect_assuming_layout_clean()
 					layout_node := element.as_node().layout_node()
 					mut clip_rect := if layout := layout_node {
 						Rect{

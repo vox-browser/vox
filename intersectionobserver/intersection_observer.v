@@ -254,7 +254,7 @@ fn dom_observer_root_bounds(target voidptr) dom.Rect {
 		root_document = document
 		has_layout_box = unsafe { &dom.Node(document) }.layout_node() != none
 	} else if element := root.element {
-		rect := element.get_bounding_client_rect()
+		rect := element.bounding_client_rect_assuming_layout_clean()
 		base = geometry.DOMRectInit{rect.x, rect.y, rect.width, rect.height}
 		root_document = element.document()
 		has_layout_box = element.el_layout_node() != none
