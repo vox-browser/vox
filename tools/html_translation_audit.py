@@ -2502,6 +2502,120 @@ CONSOLIDATED_METHOD_MAPPINGS.update({
     ("ViewportPaintable", "handle_mousewheel"): (("handle_mousewheel", "EventHandler"),),
 })
 
+# MediaSourceExtensions keeps parser cursor ownership and thread callbacks at
+# the synchronous V append boundary. The mappings below point at the concrete
+# algorithms that consume the same state; they are checked like every other
+# consolidated mapping and fail open if an implementation disappears.
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("ISOBMFFByteStreamParser", "supports_codec"): (
+        ("isobmff_track_codec_is_supported", None),
+    ),
+    ("ISOBMFFByteStreamParser", "skip_ignored_bytes"): (
+        ("ignored_element_length", "ISOBMFFByteStreamParser"),
+    ),
+    ("ISOBMFFByteStreamParser", "parse_movie_fragment"): (
+        ("parse_media_segment", "ISOBMFFByteStreamParser"),
+    ),
+    ("SourceBuffer", "create"): (
+        ("create_internal_for_media_source", "SourceBuffer"),
+    ),
+    ("SourceBufferProcessor", "set_parser"): (
+        ("set_webm_parser", "SourceBufferProcessor"),
+        ("set_isobmff_parser", "SourceBufferProcessor"),
+    ),
+    ("SourceBufferProcessor", "set_duration_change_callback"): (
+        ("on_first_initialization_segment_processed", "SourceBuffer"),
+    ),
+    ("SourceBufferProcessor", "set_first_initialization_segment_callback"): (
+        ("on_first_initialization_segment_processed", "SourceBuffer"),
+    ),
+    ("SourceBufferProcessor", "set_append_error_callback"): (
+        ("run_append_error_algorithm", "SourceBuffer"),
+    ),
+    ("SourceBufferProcessor", "set_coded_frame_processing_done_callback"): (
+        ("update_ready_state_and_duration_after_coded_frame_processing", "SourceBuffer"),
+    ),
+    ("SourceBufferProcessor", "set_append_done_callback"): (
+        ("finish_buffer_append", "SourceBuffer"),
+    ),
+    ("SourceBufferProcessor", "initialization_segment_received"): (
+        ("run_segment_parser_loop", "SourceBufferProcessor"),
+        ("on_first_initialization_segment_processed", "SourceBuffer"),
+    ),
+    ("SourceBufferProcessor", "drop_consumed_bytes_from_input_buffer"): (
+        ("drop_input_prefix", "SourceBufferProcessor"),
+    ),
+    ("SourceBufferProcessor", "set_need_random_access_point_flag_on_all_track_buffers"): (
+        ("set_need_random_access_point_on_all_track_buffers", "SourceBufferProcessor"),
+    ),
+    ("SourceBufferProcessor", "buffered_ranges"): (
+        ("buffered_time_ranges", "SourceBufferProcessor"),
+    ),
+    ("TrackBuffer", "track_buffer_ranges"): (
+        ("buffered_time_ranges", "TrackBufferDemuxer"),
+    ),
+    ("TrackBufferDemuxer", "track_buffer_ranges"): (
+        ("buffered_time_ranges", "TrackBufferDemuxer"),
+    ),
+    ("TrackBufferDemuxer", "extend_run_bounds_for_frame"): (
+        ("recalculate_bounds", "FrameRun"),
+    ),
+    ("TrackBufferDemuxer", "recalculate_run_bounds"): (
+        ("recalculate_bounds", "FrameRun"),
+    ),
+    ("TrackBufferDemuxer", "codec_configuration_after_frame_prefix_while_locked"): (
+        ("codec_configuration_after_frame_prefix", None),
+    ),
+    ("TrackBufferDemuxer", "note_cursor_jumped_while_locked"): (
+        ("note_cursor_jumped", "TrackBufferDemuxer"),
+    ),
+    ("TrackBufferDemuxer", "verify_runs_are_ordered_around_index_while_locked"): (
+        ("add_coded_frame", "TrackBufferDemuxer"),
+    ),
+    ("TrackBufferDemuxer", "split_run_while_locked"): (
+        ("erase_frames_and_dependants", "TrackBufferDemuxer"),
+    ),
+    ("TrackBufferDemuxer", "erase_frames_and_dependants_while_locked"): (
+        ("erase_frames_and_dependants", "TrackBufferDemuxer"),
+    ),
+    ("TrackBufferDemuxer", "remove_coded_frames_and_dependants_in_range_returning_presentation_timestamp_at"): (
+        ("remove_coded_frames_and_dependants_in_range_returning_timestamp", "TrackBufferDemuxer"),
+    ),
+    ("TrackBufferDemuxer", "is_frame_evictable_while_locked"): (
+        ("frame_is_evictable", "TrackBufferDemuxer"),
+    ),
+    ("TrackBufferDemuxer", "run_ends_at_last_appended_frame_while_locked"): (
+        ("run_ends_at_last_appended_frame", "TrackBufferDemuxer"),
+    ),
+    ("TrackBufferDemuxer", "count_frame_duration_while_locked"): (
+        ("add_coded_frame", "TrackBufferDemuxer"),
+    ),
+    ("TrackBufferDemuxer", "decrement_frames_with_maximum_duration_while_locked"): (
+        ("recalculate_maximum_frame_duration", "TrackBufferDemuxer"),
+    ),
+    ("TrackBufferDemuxer", "find_run_to_play_from_while_locked"): (
+        ("find_run_to_play_from", "TrackBufferDemuxer"),
+    ),
+    ("TrackBufferDemuxer", "codec_configuration_at_position_while_locked"): (
+        ("codec_configuration_after_frame_prefix", None),
+    ),
+    ("TrackBufferDemuxer", "get_next_sample_for_track"): (
+        ("next_frame", "TrackBufferDemuxer"),
+    ),
+    ("TrackBufferDemuxer", "move_cursor_to_presentation_time_while_locked"): (
+        ("seek_to_most_recent_keyframe", "TrackBufferDemuxer"),
+    ),
+    ("TrackBufferDemuxer", "queue_scan_state_change_dispatch_while_locked"): (
+        ("dispatch_scan_state_change", "TrackBufferDemuxer"),
+    ),
+    ("WebMByteStreamParser", "supports_codec"): (
+        ("webm_track_codec_is_supported", None),
+    ),
+    ("WebMByteStreamParser", "skip_ignored_bytes"): (
+        ("ignored_element_length", "WebMByteStreamParser"),
+    ),
+})
+
 # Inline C++ accessors whose state is deliberately exposed as a typed public V
 # record field. These mappings are accepted only while the named owner/field
 # exists, just as function mappings fail open when their implementation moves.
@@ -2826,6 +2940,10 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
         ("paint_phase_commands", "DocumentLayoutResult"),
         ("paint_phase_entry_valid", "DocumentLayoutResult"),
     ),
+
+    # TrackBuffer exposes its demuxer as immutable typed state in V; all
+    # timestamp getters and mutations retain explicit methods.
+    ("TrackBuffer", "demuxer"): (("demuxer", "TrackBuffer"),),
 }
 
 # Some V modules deliberately consolidate private C++ helpers into a shared
@@ -2848,6 +2966,12 @@ CONSOLIDATED_FUNCTION_MAPPINGS: dict[tuple[str, str], tuple[str, ...]] = {
     ),
     ("AriaData.cpp", "for_each_ascii_whitespace_separated_token"): (
         "ascii_whitespace_separated_tokens",
+    ),
+    ("ISOBMFFByteStreamParser.cpp", "read_top_level_box_header"): (
+        "read_iso_box_header",
+    ),
+    ("SourceBufferProcessor.cpp", "codecs_are_supported"): (
+        "initialization_codecs_are_supported",
     ),
     ("CSSDescriptors.cpp", "is_shorthand"): ("is_descriptor_shorthand",),
     ("CSSDescriptors.cpp", "for_each_expanded_longhand"): (

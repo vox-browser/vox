@@ -142,6 +142,26 @@ class ConsolidatedFunctionTests(unittest.TestCase):
             (("utf16_string_from_gl_string", None),),
         )
 
+    def test_media_source_threaded_helpers_map_to_synchronous_v_boundaries(self) -> None:
+        self.assertEqual(
+            audit.CONSOLIDATED_METHOD_MAPPINGS[
+                ("SourceBufferProcessor", "set_append_error_callback")
+            ],
+            (("run_append_error_algorithm", "SourceBuffer"),),
+        )
+        self.assertEqual(
+            audit.CONSOLIDATED_METHOD_MAPPINGS[
+                ("TrackBufferDemuxer", "get_next_sample_for_track")
+            ],
+            (("next_frame", "TrackBufferDemuxer"),),
+        )
+        self.assertEqual(
+            audit.CONSOLIDATED_FUNCTION_MAPPINGS[
+                ("ISOBMFFByteStreamParser.cpp", "read_top_level_box_header")
+            ],
+            ("read_iso_box_header",),
+        )
+
     def test_nested_length_context_methods_map_to_the_v_context_type(self) -> None:
         for method_name in (
             "set_did_resolve_viewport_relative_length",
