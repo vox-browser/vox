@@ -143,6 +143,8 @@ pub enum MediaProviderKind {
 	media_source
 }
 
+pub type MediaSourceDetachHook = fn (voidptr, voidptr)
+
 // HTML and MediaSourceExtensions mutually depend on one another upstream. V
 // packages cannot form import cycles, so the MediaSource attachment operation
 // crosses this small typed callback boundary while Blob remains fully typed.
@@ -241,6 +243,8 @@ mut:
 	resource_selection_pending_ bool
 	resource_fetch_started_     bool
 	assigned_media_provider_    ?MediaProviderObject
+	attached_media_source_      voidptr
+	media_source_detach_        ?MediaSourceDetachHook
 }
 
 pub fn HTMLMediaElement.create(element ?&dom.HTMLElement, base_url dom.URL) &HTMLMediaElement {
@@ -385,9 +389,22 @@ fn (mut element HTMLMediaElement) finish_delaying_load_event() {
 	}
 }
 
-pub fn (mut element HTMLMediaElement) media_source_attachment_did_open() {
+pub fn (mut element HTMLMediaElement) media_source_attachment_did_open(source_handle voidptr, detach MediaSourceDetachHook) {
+	element.attached_media_source_ = source_handle
+	element.media_source_detach_ = detach
 	element.finish_delaying_load_event()
 	element.set_up_playback_manager()
+}
+
+fn (mut element HTMLMediaElement) detach_attached_media_source() {
+	if element.attached_media_source_ == unsafe { nil } {
+		return
+	}
+	if detach := element.media_source_detach_ {
+		detach(element.attached_media_source_, voidptr(element))
+	}
+	element.attached_media_source_ = unsafe { nil }
+	element.media_source_detach_ = none
 }
 
 pub fn (mut element HTMLMediaElement) media_source_set_duration(duration f64) {
@@ -654,6 +671,10 @@ pub fn (mut element HTMLMediaElement) load_element() ! {
 	}
 	if element.network_state_ != .empty {
 		element.fire_event('emptied')
+		// A MediaSource can be attached through srcObject or a blob URL. Track
+		// the actual attachment so either form is detached before media state
+		// and playback-manager state are reset.
+		element.detach_attached_media_source()
 		if !element.paused_ {
 			element.set_paused(true)
 			promises := element.take_pending_play_promises()

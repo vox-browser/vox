@@ -86,6 +86,45 @@ fn test_media_source_can_be_assigned_to_media_element_src_object() {
 	assert second_media.error()?.message == 'MediaSource is not closed'
 }
 
+fn test_media_source_detaches_and_removes_source_buffers_when_media_is_reset() {
+	mut source := MediaSource.create()
+	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	media.set_src_object(source.as_media_provider())!
+	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
+	mut active_buffers := source.active_source_buffers()
+	active_buffers.append(buffer)
+
+	close := &EventObservation{}
+	source_remove := &EventObservation{}
+	active_remove := &EventObservation{}
+	abort := &EventObservation{}
+	update_end := &EventObservation{}
+	source.set_onsourceclose(observer_callback(close))
+	source.source_buffers().set_onremovesourcebuffer(observer_callback(source_remove))
+	source.active_source_buffers().set_onremovesourcebuffer(observer_callback(active_remove))
+	buffer.set_onabort(observer_callback(abort))
+	buffer.set_onupdateend(observer_callback(update_end))
+	buffer.processor_.append_to_input_buffer([u8(1), 2, 3])
+	buffer.processor_.set_updating(true)
+
+	media.set_src_object(none)!
+
+	assert source.ready_state() == .closed
+	assert math.is_nan(source.duration())
+	assert source.media_element_assigned_to() == none
+	assert source.source_buffers().length() == 0
+	assert source.active_source_buffers().length() == 0
+	assert !buffer.updating()
+	assert close.count == 1
+	assert source_remove.count == 1
+	assert active_remove.count == 1
+	assert abort.count == 1
+	assert update_end.count == 1
+	buffer.append_buffer([u8(4)]) or {
+		assert err.msg() == 'InvalidStateError: SourceBuffer has been removed'
+	}
+}
+
 fn test_media_source_blob_url_loads_as_a_local_resource() {
 	mut document := dom.Document.create(dom.URL{'https://example.test/page'})
 	mut navigable := &dom.Navigable{
@@ -114,6 +153,11 @@ fn test_media_source_blob_url_loads_as_a_local_resource() {
 	assert media.current_src() == blob_url
 	assert source.ready_state() == .open
 	assert source.media_element_assigned_to()? == media
+
+	media.set_source(none)
+	media.load()!
+	assert source.ready_state() == .closed
+	assert source.media_element_assigned_to() == none
 }
 
 fn test_media_source_add_source_buffer_and_indexed_source_buffer_list() {

@@ -212,6 +212,40 @@ pub fn (mut source MediaSource) unassign_from_media_element() {
 	source.media_element_assigned_to_ = none
 }
 
+// https://w3c.github.io/media-source/#mediasource-detach
+pub fn (mut source MediaSource) detach_from_media_element() {
+	source.ready_state_ = .closed
+	source.duration_ = math.nan()
+	for index in 0 .. source.source_buffers_.length() {
+		if mut buffer := source.source_buffers_.item(index) {
+			buffer.abort_if_updating()
+		}
+	}
+	mut active_buffers := source.active_source_buffers_
+	active_buffers.remove_all_buffers()
+	source.queue_a_media_source_task(fn [active_buffers] () {
+		active_buffers.dispatch_event(dom.Event.create('removesourcebuffer', dom.EventInit{}))
+	})
+	mut source_buffers := source.source_buffers_
+	source_buffers.remove_all_buffers()
+	source.queue_a_media_source_task(fn [source_buffers] () {
+		source_buffers.dispatch_event(dom.Event.create('removesourcebuffer', dom.EventInit{}))
+	})
+	source.queue_a_media_source_task(fn [source] () {
+		source.dispatch_event(dom.Event.create('sourceclose', dom.EventInit{}))
+	})
+	source.media_element_assigned_to_ = none
+}
+
+fn detach_media_source_provider(source_handle voidptr, media_element_handle voidptr) {
+	mut source := unsafe { &MediaSource(source_handle) }
+	assigned := source.media_element_assigned_to_ or { return }
+	if voidptr(assigned) != media_element_handle {
+		return
+	}
+	source.detach_from_media_element()
+}
+
 fn attach_media_source_provider(source_handle voidptr, media_element_handle voidptr) ! {
 	mut source := unsafe { &MediaSource(source_handle) }
 	if !source.ready_state_is_closed() {
@@ -219,7 +253,7 @@ fn attach_media_source_provider(source_handle voidptr, media_element_handle void
 	}
 	mut media_element := unsafe { &html.HTMLMediaElement(media_element_handle) }
 	source.has_ever_been_attached_ = true
-	media_element.media_source_attachment_did_open()
+	media_element.media_source_attachment_did_open(source_handle, detach_media_source_provider)
 	source.media_element_assigned_to_ = media_element
 	source.set_ready_state_to_open_and_fire_sourceopen_event()
 }

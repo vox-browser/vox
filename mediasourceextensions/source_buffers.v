@@ -42,6 +42,7 @@ mut:
 	video_tracks_ &html.VideoTrackList = unsafe { nil }
 	text_tracks_  &html.TextTrackList = unsafe { nil }
 	range_removal_running_ bool
+	append_generation_     u64
 }
 
 // SourceBuffer has no exposed constructor, but MediaSource implementations
@@ -225,8 +226,28 @@ pub fn (mut buffer SourceBuffer) append_buffer(data []u8) ! {
 	media_source.queue_a_media_source_task(fn [buffer] () {
 		buffer.dispatch_event(dom.Event.create('updatestart', dom.EventInit{}))
 	})
-	media_source.queue_a_media_source_task(fn [mut buffer] () {
-		buffer.run_buffer_append_algorithm()
+	append_generation := buffer.append_generation_
+	media_source.queue_a_media_source_task(fn [mut buffer, append_generation] () {
+		buffer.run_buffer_append_algorithm(append_generation)
+	})
+}
+
+fn (mut buffer SourceBuffer) abort_buffer_append_algorithm() {
+	buffer.append_generation_++
+}
+
+pub fn (mut buffer SourceBuffer) abort_if_updating() {
+	if !buffer.updating() {
+		return
+	}
+	buffer.abort_buffer_append_algorithm()
+	buffer.processor_.set_updating(false)
+	media_source := buffer.media_source_ or { return }
+	media_source.queue_a_media_source_task(fn [buffer] () {
+		buffer.dispatch_event(dom.Event.create('abort', dom.EventInit{}))
+	})
+	media_source.queue_a_media_source_task(fn [buffer] () {
+		buffer.dispatch_event(dom.Event.create('updateend', dom.EventInit{}))
 	})
 }
 
@@ -245,6 +266,7 @@ pub fn (mut buffer SourceBuffer) abort() ! {
 		return error('InvalidStateError: SourceBuffer is removing a range')
 	}
 	if buffer.updating() {
+		buffer.abort_buffer_append_algorithm()
 		buffer.processor_.set_updating(false)
 		media_source.queue_a_media_source_task(fn [buffer] () {
 			buffer.dispatch_event(dom.Event.create('abort', dom.EventInit{}))
@@ -320,7 +342,10 @@ fn (mut buffer SourceBuffer) run_range_removal(start f64, end f64) {
 	})
 }
 
-fn (mut buffer SourceBuffer) run_buffer_append_algorithm() {
+fn (mut buffer SourceBuffer) run_buffer_append_algorithm(append_generation u64) {
+	if append_generation != buffer.append_generation_ {
+		return
+	}
 	result := buffer.processor_.run_segment_parser_loop()
 	if !result.succeeded {
 		buffer.run_append_error_algorithm()
@@ -504,6 +529,10 @@ pub fn SourceBufferList.create_internal() &SourceBufferList {
 pub fn (mut list SourceBufferList) append(buffer &SourceBuffer) {
 	list.buffers_ << buffer
 	list.dispatch_event(dom.Event.create('addsourcebuffer', dom.EventInit{}))
+}
+
+pub fn (mut list SourceBufferList) remove_all_buffers() {
+	list.buffers_.clear()
 }
 
 pub fn (list &SourceBufferList) length() u32 {
