@@ -2084,6 +2084,7 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 		rule_root := scoped_rule_to_run.shadow_root
 		if container_rule := rule_to_run.container_rule {
 			if !container_rule.container_rule_contains_size_feature()
+				&& !container_rule.container_rule_contains_style_feature()
 				&& !container_rule.container_rule_matches(abstract_element) {
 				continue
 			}
@@ -2164,9 +2165,16 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 		style_scope_store_has_result_cache_boundary(style_computer, context.has_result_cache)
 		if did_match {
 			if container_rule := rule_to_run.container_rule {
-				if container_rule.container_rule_contains_size_feature() {
+				contains_size_feature := container_rule.container_rule_contains_size_feature()
+				contains_style_feature := container_rule.container_rule_contains_style_feature()
+				if contains_size_feature || contains_style_feature {
 					mut subject := unsafe { &dom.Element(abstract_element.element()) }
-					subject.set_style_depends_on_size_container_query()
+					if contains_size_feature {
+						subject.set_style_depends_on_size_container_query()
+					}
+					if contains_style_feature {
+						subject.set_style_depends_on_style_container_query()
+					}
 					if !container_rule.container_rule_matches(abstract_element) {
 						continue
 					}

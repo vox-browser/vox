@@ -234,6 +234,23 @@ pub fn (rule &CSSRule) container_rule_contains_size_feature() bool {
 	return false
 }
 
+pub fn (rule &CSSRule) container_rule_contains_style_feature() bool {
+	if rule.type_ != .container_rule {
+		return false
+	}
+	for condition in rule.container_conditions {
+		if query := condition.container_query {
+			if query.contains_style_feature() {
+				return true
+			}
+		}
+	}
+	if parent := rule.parent_container_rule() {
+		return parent.container_rule_contains_style_feature()
+	}
+	return false
+}
+
 pub fn (query &ContainerQuery) matches() bool {
 	return query.matches_
 }

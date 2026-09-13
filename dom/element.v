@@ -1498,6 +1498,7 @@ pub mut:
 	style_uses_if_css_function                                                      bool
 	style_uses_inherit_css_function                                                 bool
 	style_depends_on_size_container_query_                                          bool
+	style_depends_on_style_container_query_                                         bool
 	is_size_query_container_                                                        bool
 	child_style_uses_tree_counting_function                                         bool
 	affected_by_has_pseudo_class_in_subject_position                                bool
@@ -2458,6 +2459,7 @@ pub fn (mut e Element) reset_style_dependency_flags() {
 	e.style_uses_if_css_function = false
 	e.style_uses_inherit_css_function = false
 	e.style_depends_on_size_container_query_ = false
+	e.style_depends_on_style_container_query_ = false
 }
 
 pub fn (mut e Element) set_style_uses_attr_css_function() {
@@ -2482,6 +2484,40 @@ pub fn (e &Element) style_depends_on_size_container_query() bool {
 
 pub fn (mut e Element) set_style_depends_on_size_container_query() {
 	e.style_depends_on_size_container_query_ = true
+}
+
+pub fn (e &Element) style_depends_on_style_container_query() bool {
+	return e.style_depends_on_style_container_query_
+}
+
+pub fn (mut e Element) set_style_depends_on_style_container_query() {
+	e.style_depends_on_style_container_query_ = true
+}
+
+pub fn (mut e Element) invalidate_descendant_styles_depending_on_style_container_query() {
+	e.as_node().for_each_shadow_including_descendant(fn (node &Node) TraversalDecision {
+		if element := node.as_element() {
+			if element.style_depends_on_style_container_query() {
+				mut mutable_element := unsafe { &Element(element) }
+				mutable_element.set_needs_style_update(true)
+			}
+		}
+		return .@continue
+	})
+}
+
+pub fn (mut e Element) refresh_inherited_custom_property_data() bool {
+	mut parent_data := ?&CSSCustomPropertyData_(none)
+	if parent := e.element_to_inherit_style_from(none) {
+		if data := parent.custom_property_data(none) {
+			parent_data = data.inheritable(e.document())
+		}
+	}
+	if e.custom_property_data_ == parent_data {
+		return false
+	}
+	e.custom_property_data_ = parent_data
+	return true
 }
 
 pub fn (e &Element) is_size_query_container() bool {

@@ -927,6 +927,8 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 	} else {
 		required_invalidation_after_style_change_full()
 	}
+	element_style_changed := !invalidation.is_none()
+	element_custom_properties_changed := unsafe { *did_change_custom_properties }
 	abstract_element.set_computed_properties(computed_properties_to_dom(computed))
 	new_non_animated_display_is_none := computed_display_is_none_ignoring_animations(computed)
 	if old_non_animated_display_is_none != new_non_animated_display_is_none {
@@ -977,6 +979,10 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 			pseudo_abstract.set_computed_properties(none)
 		}
 		mutable_computer.pop_ancestor(abstract_element.element())
+	}
+
+	if old_style != none && (element_style_changed || element_custom_properties_changed) {
+		element.invalidate_descendant_styles_depending_on_style_container_query()
 	}
 
 	if !invalidation.is_none() && !invalidation.needs_layout_tree_rebuild() {
@@ -1052,6 +1058,10 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 	s.compute_property_values(mut computed, *abstract_element)
 	for property_id, old_value in values_affected_by_inherited_style {
 		invalidation = required_invalidation_after_style_change_or(invalidation, compute_property_invalidation(property_id, old_value, computed.property(property_id, .no)))
+	}
+	if !invalidation.is_none() {
+		mut element := unsafe { &dom.Element(abstract_element.element()) }
+		element.invalidate_descendant_styles_depending_on_style_container_query()
 	}
 	if invalidation.is_none() {
 		document.record_element_inherited_style_noop_recomputation()
@@ -1349,9 +1359,18 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 		if should_recompute {
 			mut abstract_element := dom.AbstractElement.new(element, none)
 			node_invalidation, _ = style_computer.recompute_style_with_invalidation(mut abstract_element, &did_change_custom_properties)
-		} else if needs_inherited_style_update {
-			mut abstract_element := dom.AbstractElement.new(element, none)
-			node_invalidation = style_computer.recompute_inherited_style_with_invalidation(mut abstract_element)
+		} else {
+			if needs_inherited_style_update {
+				mut abstract_element := dom.AbstractElement.new(element, none)
+				node_invalidation = style_computer.recompute_inherited_style_with_invalidation(mut abstract_element)
+			}
+			if recompute_elements_depending_on_custom_properties {
+				mut mutable_element := unsafe { &dom.Element(element) }
+				if mutable_element.refresh_inherited_custom_property_data() {
+					did_change_custom_properties = true
+					mutable_element.invalidate_descendant_styles_depending_on_style_container_query()
+				}
+			}
 		}
 		if dom_computed := element.el_computed_properties() {
 			if computed := computed_properties_from_dom(dom_computed) {

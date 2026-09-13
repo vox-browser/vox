@@ -294,6 +294,47 @@ fn test_style_container_features_evaluate_selected_ancestor_style() {
 		none) == .false_
 }
 
+fn test_style_container_query_dependents_recompute_when_container_style_changes() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{
+		active_document_: document
+	})
+	mut container := document.create_element_ns('http://www.w3.org/1999/xhtml', 'main') or {
+		panic('${err}')
+	}
+	container.set_attribute_value('style', '--theme: dark')
+	mut intermediate := document.create_element_ns('http://www.w3.org/1999/xhtml', 'section') or {
+		panic('${err}')
+	}
+	mut target := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
+	target.set_attribute_value('class', 'target')
+	mut unrelated := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
+	unrelated.set_attribute_value('class', 'unrelated')
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(container.as_node()) or { panic('${err}') }
+	mut container_node := container.as_node()
+	container_node.append_child(intermediate.as_node()) or { panic('${err}') }
+	container_node.append_child(unrelated.as_node()) or { panic('${err}') }
+	mut intermediate_node := intermediate.as_node()
+	intermediate_node.append_child(target.as_node()) or { panic('${err}') }
+	add_document_author_style_sheet(document, '.target { color: blue } @container style(--theme: dark) { .target { color: red } }')
+
+	document.needs_full_style_update = true
+	document.update_style()
+	assert computed_value_for(target, .color) or { '' } == 'rgb(255, 0, 0)'
+	assert target.style_depends_on_style_container_query()
+	assert !unrelated.style_depends_on_style_container_query()
+
+	container.set_attribute_value('style', '--theme: light')
+	document.update_style()
+	assert computed_value_for(target, .color) or { '' } == 'rgb(0, 0, 255)'
+	assert target.style_depends_on_style_container_query()
+}
+
 fn test_size_container_features_select_eligible_ancestors_and_evaluate_geometry() {
 	_, container, subject := size_query_test_tree('container-type: size; font-size: 16px', 320,
 		180, true)

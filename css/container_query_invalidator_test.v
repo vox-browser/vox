@@ -72,3 +72,32 @@ fn test_size_container_invalidation_walks_shadow_and_assigned_flat_tree_children
 	assert light_assigned.needs_style_update()
 	assert !light_unassigned.needs_style_update()
 }
+
+fn test_style_container_invalidation_marks_only_dependent_shadow_including_descendants() {
+	document := dom.Document.create(dom.url_about_blank())
+	mut container := container_query_test_element(document, 'div')
+	mut dependent := container_query_test_element(document, 'span')
+	unrelated := container_query_test_element(document, 'b')
+	mut light_child := container_query_test_element(document, 'i')
+	mut container_node := container.as_node()
+	container_node.append_child(dependent.as_node())!
+	container_node.append_child(unrelated.as_node())!
+	container_node.append_child(light_child.as_node())!
+	container.attach_a_shadow_root(.open, false, false, false, .named)!
+	shadow_root := container.shadow_root() or { panic('missing shadow root') }
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	mut shadow_dependent := container_query_test_element(document, 'em')
+	shadow_node.append_child(shadow_dependent.as_node())!
+
+	clear_container_query_test_style_flags(container, dependent, unrelated, light_child,
+		shadow_dependent)
+	dependent.set_style_depends_on_style_container_query()
+	light_child.set_style_depends_on_style_container_query()
+	shadow_dependent.set_style_depends_on_style_container_query()
+	container.invalidate_descendant_styles_depending_on_style_container_query()
+
+	assert dependent.needs_style_update()
+	assert light_child.needs_style_update()
+	assert shadow_dependent.needs_style_update()
+	assert !unrelated.needs_style_update()
+}
