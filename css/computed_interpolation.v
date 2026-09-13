@@ -13052,6 +13052,11 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 		}
 	}
 	if tag_name in ['tr', 'thead', 'tbody', 'tfoot'] {
+		if align := element.get_attribute('align') {
+			if value := table_child_element_align_value(align) {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .text_align, value)
+			}
+		}
 		if height := element.get_attribute('height') {
 			if value := html_dimension_presentational_hint(height, .height, false) {
 				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .height, value)
@@ -13108,14 +13113,8 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 	}
 	if tag_name in ['td', 'th'] {
 		if align := element.get_attribute('align') {
-			keyword := match align.to_lower() {
-				'center', 'middle' { Keyword.libweb_center }
-				'left' { Keyword.libweb_left }
-				'right' { Keyword.libweb_right }
-				else { Keyword.invalid }
-			}
-			if keyword != .invalid {
-				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .text_align, StyleValue(KeywordStyleValue.create(keyword)))
+			if value := table_child_element_align_value(align) {
+				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .text_align, value)
 			}
 		}
 		if nowrap := element.get_attribute('nowrap') {
@@ -13166,6 +13165,20 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 		apply_dimension_attribute(mut cascaded_properties, dimension_source, 'width', .width, properties_to_cascade)
 		apply_dimension_attribute(mut cascaded_properties, dimension_source, 'height', .height, properties_to_cascade)
 	}
+}
+
+// https://html.spec.whatwg.org/multipage/rendering.html#tables-2
+fn table_child_element_align_value(value string) ?StyleValue {
+	keyword := match value.to_lower() {
+		'center', 'middle' { Keyword.libweb_center }
+		'left' { Keyword.libweb_left }
+		'right' { Keyword.libweb_right }
+		'justify' { Keyword.justify }
+		else {
+			return none
+		}
+	}
+	return StyleValue(KeywordStyleValue.create(keyword))
 }
 
 pub fn html_div_element_is_presentational_hint(_ &dom.HTMLDivElement, name string) bool {
@@ -13233,7 +13246,7 @@ pub fn html_table_col_element_apply_presentational_hints(element &dom.HTMLTableC
 }
 
 pub fn html_table_row_element_is_presentational_hint(_ &dom.HTMLTableRowElement, name string) bool {
-	return name in ['bgcolor', 'background', 'height', 'valign']
+	return name in ['align', 'bgcolor', 'background', 'height', 'valign']
 }
 
 pub fn html_table_row_element_apply_presentational_hints(element &dom.HTMLTableRowElement, mut properties CascadedProperties) {
@@ -13241,7 +13254,7 @@ pub fn html_table_row_element_apply_presentational_hints(element &dom.HTMLTableR
 }
 
 pub fn html_table_section_element_is_presentational_hint(_ &dom.HTMLTableSectionElement, name string) bool {
-	return name in ['background', 'bgcolor', 'height']
+	return name in ['align', 'background', 'bgcolor', 'height']
 }
 
 pub fn html_table_section_element_apply_presentational_hints(element &dom.HTMLTableSectionElement, mut properties CascadedProperties) {

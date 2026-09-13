@@ -481,6 +481,45 @@ fn test_recompute_style_for_subtree_inherits_down_levels() {
 	assert leaf_color.css_text == root_color.css_text
 }
 
+fn test_table_section_and_row_align_hints_are_inherited_by_cells() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut section := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'tbody') or {
+		panic('${err}')
+	}
+	section.set_attribute_value('align', 'right')
+	mut inherited_row := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'tr') or {
+		panic('${err}')
+	}
+	mut inherited_cell := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'td') or {
+		panic('${err}')
+	}
+	mut overriding_row := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'tr') or {
+		panic('${err}')
+	}
+	overriding_row.set_attribute_value('align', 'middle')
+	mut overriding_cell := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'td') or {
+		panic('${err}')
+	}
+	mut section_node := section.as_node()
+	mut inherited_row_node := inherited_row.as_node()
+	mut overriding_row_node := overriding_row.as_node()
+	inherited_row_node.append_child(inherited_cell.as_node()) or { panic('${err}') }
+	overriding_row_node.append_child(overriding_cell.as_node()) or { panic('${err}') }
+	section_node.append_child(inherited_row.as_node()) or { panic('${err}') }
+	section_node.append_child(overriding_row.as_node()) or { panic('${err}') }
+
+	mut style_computer := StyleComputer.new(doc)
+	recompute_style_for_subtree(mut style_computer, section_node)
+	inherited := computed_properties_from_dom(dom.AbstractElement.new(inherited_cell, none).computed_properties() or {
+		panic('inherited cell not styled')
+	}) or { panic('inherited cell handle missing') }
+	overridden := computed_properties_from_dom(dom.AbstractElement.new(overriding_cell, none).computed_properties() or {
+		panic('overriding cell not styled')
+	}) or { panic('overriding cell handle missing') }
+	assert inherited.text_align() == .libweb_right
+	assert overridden.text_align() == .libweb_center
+}
+
 // DOM::Document.update_style() runs the CSS style pass over the whole tree through the installed hook:
 // after a single update_style() call, every element is styled and inherited color reaches a descendant.
 fn test_document_update_style_runs_css_pass_via_hook() {
@@ -814,11 +853,37 @@ fn test_concrete_html_element_presentational_hint_entry_points() {
 	}
 	row_element.set_attribute_value('background', 'tile.png')
 	row_element.set_attribute_value('height', '12')
+	row_element.set_attribute_value('align', 'middle')
 	row := unsafe { &dom.HTMLTableRowElement(row_element) }
+	assert html_table_row_element_is_presentational_hint(row, 'align')
 	mut row_properties := CascadedProperties.new()
 	html_table_row_element_apply_presentational_hints(row, mut row_properties)
 	assert row_properties.property(.background_image)?.css_text.contains('tile.png')
 	assert row_properties.property(.height)?.css_text == '12px'
+	assert row_properties.property(.text_align)?.css_text == '-libweb-center'
+
+	mut section_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'tbody') or {
+		panic(err)
+	}
+	section_element.set_attribute_value('align', 'justify')
+	section := unsafe { &dom.HTMLTableSectionElement(section_element) }
+	assert html_table_section_element_is_presentational_hint(section, 'align')
+	mut section_properties := CascadedProperties.new()
+	html_table_section_element_apply_presentational_hints(section, mut section_properties)
+	assert section_properties.property(.text_align)?.css_text == 'justify'
+
+	mut cell_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'td') or {
+		panic(err)
+	}
+	cell := unsafe { &dom.HTMLTableCellElement(cell_element) }
+	cell_element.set_attribute_value('align', 'justify')
+	mut cell_properties := CascadedProperties.new()
+	html_table_cell_element_apply_presentational_hints(cell, mut cell_properties)
+	assert cell_properties.property(.text_align)?.css_text == 'justify'
+	cell_element.set_attribute_value('align', 'start')
+	mut invalid_cell_properties := CascadedProperties.new()
+	html_table_cell_element_apply_presentational_hints(cell, mut invalid_cell_properties)
+	assert invalid_cell_properties.property(.text_align) == none
 
 	assert html_div_element_is_presentational_hint(unsafe { &dom.HTMLDivElement(hr_element) }, 'align')
 	assert html_paragraph_element_is_presentational_hint(unsafe {
@@ -829,7 +894,7 @@ fn test_concrete_html_element_presentational_hint_entry_points() {
 	}, 'width')
 	assert html_table_section_element_is_presentational_hint(unsafe {
 		&dom.HTMLTableSectionElement(hr_element)
-	}, 'background')
+	}, 'align')
 	assert html_heading_element_is_presentational_hint(unsafe {
 		&dom.HTMLHeadingElement(hr_element)
 	}, 'align')
