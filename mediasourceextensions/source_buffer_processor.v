@@ -283,6 +283,9 @@ pub fn (mut processor SourceBufferProcessor) run_segment_parser_loop() Processor
 
 // https://w3c.github.io/media-source/#sourcebuffer-reset-parser-state
 pub fn (mut processor SourceBufferProcessor) reset_parser_state() {
+	if processor.parser_ != unsafe { nil } {
+		processor.parser_.reset_parser_state()
+	}
 	processor.unset_all_track_buffer_timestamps()
 	processor.set_need_random_access_point_on_all_track_buffers(true)
 	if processor.mode_ == .sequence {

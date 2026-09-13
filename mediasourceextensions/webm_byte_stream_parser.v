@@ -461,3 +461,10 @@ pub fn (parser &WebMByteStreamParser) duration() ?f64 {
 pub fn (parser &WebMByteStreamParser) tracks() []WebMTrackInfo {
 	return parser.tracks_.values()
 }
+
+pub fn (mut parser WebMByteStreamParser) reset_parser_state() {
+	// Ladybird clears its retained partial media-segment reader here. This
+	// parser reparses the retained input prefix on each call, so it has no
+	// equivalent per-segment cursor to clear; initialization state is kept.
+	_ = parser
+}

@@ -315,6 +315,24 @@ fn test_source_buffer_abort_resets_parser_and_queues_abort_events_when_updating(
 	buffer.abort() or { assert err.msg() == 'InvalidStateError: MediaSource is not open' }
 }
 
+fn test_source_buffer_abort_discards_a_partial_media_segment_before_the_next_append() {
+	mut source := MediaSource.create()
+	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	media.set_src_object(source.as_media_provider())!
+	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
+	buffer.append_buffer(minimal_webm_initialization_segment())!
+
+	media_segment := minimal_webm_media_segment()
+	buffer.append_buffer(media_segment[..media_segment.len / 2])!
+	assert buffer.input_buffer_length() == media_segment.len / 2
+	buffer.abort()!
+	assert buffer.input_buffer_length() == 0
+
+	buffer.append_buffer(media_segment)!
+	track_buffer := buffer.processor_.track_buffers()[1] or { panic('missing track buffer') }
+	assert track_buffer.demuxer.coded_frame_count() == 1
+}
+
 fn test_buffered_change_event_preserves_base_init_and_identity() {
 	mut added := &html.TimeRanges{}
 	added.add_range(1, 2)
