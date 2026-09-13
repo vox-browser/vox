@@ -573,7 +573,10 @@ fn (mut context SVGFormattingContext) layout_text_path_element(graphics_box &Nod
 		point_size: f32(computed.resolved_font_size_px())
 		weight: int(computed.font_weight())
 	}
-	path := svg_place_text_along_path(shape_path, svg_direct_text_contents(element), font)
+	measure := svg_first_contour_measure(shape_path)
+	path_length := if measured := measure { measured.length } else { 0.0 }
+	start_offset := svg_element_model(element).start_offset_for_path_length(path_length)
+	path := svg_place_text_along_path(shape_path, svg_direct_text_contents(element), font, start_offset)
 	local_bounds := svg_path_bounds(path) or { svg.Rect{} }
 	stroke_width := visible_svg_stroke_width(graphics_box, context.viewport_size)
 	set_used_values_rect(mut graphics_state, inflate_svg_rect(quantize_svg_rect(local_bounds), stroke_width))
@@ -655,9 +658,10 @@ fn (measure SVGFirstContourMeasure) position_and_tangent(distance f64) ?SVGPathP
 // Gfx::Path::place_text_along(): place each unshaped SkFont glyph at the
 // current path distance, rotate it to the tangent, reject a glyph whose
 // midpoint falls beyond the first contour, then advance by its SkFont width.
-fn svg_place_text_along_path(shape_path svg.Path, text string, font &platform.Font) svg.Path {
+fn svg_place_text_along_path(shape_path svg.Path, text string, font &platform.Font,
+	start_offset f64) svg.Path {
 	measure := svg_first_contour_measure(shape_path) or { return svg.Path{} }
-	mut accumulated_distance := 0.0
+	mut accumulated_distance := start_offset
 	mut instructions := []svg.PathInstruction{}
 	for character in text.runes() {
 		advance, glyph_index := font.glyph_advance_and_index(u32(character))

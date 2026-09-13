@@ -145,6 +145,26 @@ fn test_text_content_utf16_length_and_geometry_reference() {
 	assert resolve_geometry_reference('#not-shape', document) == none
 }
 
+fn test_text_path_start_offset_and_reflected_length() {
+	mut text_path := Element{
+		tag: 'textPath'
+		attributes: {
+			'startOffset': '25%'
+		}
+	}
+	assert text_path.start_offset_for_path_length(240) == 60
+	animated := text_path.start_offset()
+	assert animated.base_val().value_in_specified_units() == 25
+	assert animated.base_val().unit_type() == svg_lengthtype_percentage
+	assert animated.anim_val().read_only
+
+	mut base := animated.base_val()
+	base.set_value_as_string('12')!
+	assert text_path.attributes['startOffset'] == '12'
+	assert text_path.start_offset_for_path_length(240) == 12
+	assert new_element('textPath').start_offset_for_path_length(240) == 0
+}
+
 fn test_affine_transform_maps_rotated_rect_from_all_four_corners() {
 	transform := AffineTransform{}.translated(20, 10).multiply(Transform{
 		kind: .rotate

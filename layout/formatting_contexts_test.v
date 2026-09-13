@@ -3,6 +3,7 @@ module layout
 import html
 import platform
 import svg
+import math
 
 fn layout_node_with_id(root &Node, id string) ?&Node {
 	if dom_node := root.dom_node() {
@@ -2575,19 +2576,40 @@ fn test_svg_text_path_places_rotated_glyph_outlines_on_first_contour() {
 		family: 'sans-serif'
 		point_size: 20
 	}
-	horizontal := svg_place_text_along_path(svg.parse_path_data('M 10 40 L 150 40'), 'OO', font)
+	horizontal := svg_place_text_along_path(svg.parse_path_data('M 10 40 L 150 40'), 'OO', font, 0)
 	horizontal_bounds := svg_path_bounds(horizontal) or { panic('missing horizontal text path') }
 	assert horizontal.instructions.any(it.type_ == .quadratic_bezier_curve)
 	assert horizontal_bounds.width > horizontal_bounds.height
 
-	vertical := svg_place_text_along_path(svg.parse_path_data('M 30 10 L 30 150'), 'OO', font)
+	vertical := svg_place_text_along_path(svg.parse_path_data('M 30 10 L 30 150'), 'OO', font, 0)
 	vertical_bounds := svg_path_bounds(vertical) or { panic('missing vertical text path') }
 	assert vertical_bounds.height > vertical_bounds.width
 
 	// SkPathMeasure measures its first contour only. A later long contour must
 	// not rescue a glyph whose midpoint does not fit on the first one.
-	short_first := svg_place_text_along_path(svg.parse_path_data('M 0 0 L 1 0 M 20 20 L 200 20'), 'O', font)
+	short_first := svg_place_text_along_path(svg.parse_path_data('M 0 0 L 1 0 M 20 20 L 200 20'), 'O', font, 0)
 	assert short_first.instructions.len == 0
+}
+
+fn test_svg_text_path_start_offset_resolves_against_first_contour_length() {
+	font := &platform.Font{
+		family: 'sans-serif'
+		point_size: 20
+	}
+	shape := svg.parse_path_data('M 50 50 L 250 50')
+	without_offset := svg_place_text_along_path(shape, 'O', font, 0)
+	with_offset := svg_place_text_along_path(shape, 'O', font, 100)
+	without_bounds := svg_path_bounds(without_offset) or { panic('missing text path') }
+	with_bounds := svg_path_bounds(with_offset) or { panic('missing offset text path') }
+	assert math.abs((with_bounds.x - without_bounds.x) - 100) < 0.01
+
+	document := html.parse_document('<!doctype html><style>body { margin:0 }</style><svg width="300" height="100"><defs><path id="guide" d="M 50 50 L 250 50"/></defs><text><textPath id="label" href="#guide" startOffset="50%" font-size="20">O</textPath></text></svg>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	label := used_for_id(result, 'label')
+	laid_out := svg_path_bounds(label.computed_svg_path() or { panic('textPath has no path') }) or {
+		panic('textPath has no bounds')
+	}
+	assert math.abs(laid_out.x - with_bounds.x) < 0.01
 }
 
 fn test_svg_text_path_dom_node_retains_only_the_placed_glyph_geometry() {

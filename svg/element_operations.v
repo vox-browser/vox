@@ -555,6 +555,19 @@ pub fn (element &Element) path_or_shape(document map[string]Element) ?Element {
 	return resolve_geometry_reference(element.href(), document)
 }
 
+// https://svgwg.org/svg2-draft/text.html#TextPathElementStartOffsetAttribute
+pub fn (element &Element) start_offset_for_path_length(path_length f64) f64 {
+	value := parse_number_percentage(element.attributes['startOffset'] or { '' }) or {
+		return 0
+	}
+	return value.resolve_relative_to(path_length)
+}
+
+// https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__startOffset
+pub fn (element &Element) start_offset() AnimatedLength {
+	return AnimatedLength.create(SvgLength.create_reflected_attribute(*element, 'startOffset', .horizontal, SvgLengthValue.number(0), false))
+}
+
 pub fn (element &Element) is_svg_a_element() bool {
 	return element.tag == 'a'
 }
