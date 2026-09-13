@@ -1,5 +1,6 @@
 module internals
 
+import animations
 import dom
 import gamepad
 
@@ -105,6 +106,12 @@ fn test_dom_helpers_dumps_hit_testing_and_timeline() {
 	mutable_timeline.set_time(none)
 	assert timeline.current_time() == none
 	assert timeline.duration() == none
+	assert !timeline.can_sample_current_time_at_timestamp()
+	mutable_timeline.set_time_for_observation(81.5)
+	assert timeline.can_sample_current_time_at_timestamp()
+	assert timeline.current_time_at_timestamp(123)?.value == 81.5
+	assert timeline.current_time_for_observation()?.value == 81.5
+	assert timeline.convert_a_timeline_time_to_an_origin_relative_time(animations.TimeValue.milliseconds(4)) == none
 	event := dom.Event.new('activation')
 	target := dom.EventTarget.new()
 	assert api.dispatch_user_activated_event(target, event)!
