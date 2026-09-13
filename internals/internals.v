@@ -71,6 +71,65 @@ pub fn (mut api Internals) set_test_timeout(milliseconds f64) {
 	api.platform.test_timeout_ms = milliseconds
 }
 
+pub fn (mut api Internals) force_incompatible_visual_context_tree_rebuild() {
+	api.platform.visual_context_force_rebuilds++
+}
+
+pub fn (api &Internals) accumulated_visual_context_incremental_update_count() u64 {
+	return api.platform.visual_context_incremental_update_count
+}
+
+pub fn (api &Internals) visual_context_pending_dirty_box_count() u64 {
+	return api.platform.visual_context_pending_dirty_box_count
+}
+
+pub fn (api &Internals) layout_tree_pre_order_label_violation_count() u64 {
+	return api.platform.layout_tree_pre_order_label_violation_count
+}
+
+pub fn (api &Internals) layout_tree_pre_order_relabel_count() u64 {
+	return api.platform.layout_tree_pre_order_relabel_count
+}
+
+pub fn (api &Internals) visual_context_tree_node_count() u64 {
+	return api.platform.visual_context_tree_node_count
+}
+
+pub fn (api &Internals) visual_context_tree_dead_node_count() u64 {
+	return api.platform.visual_context_tree_dead_node_count
+}
+
+pub fn (api &Internals) visual_context_tree_structural_epoch() u64 {
+	return api.platform.visual_context_tree_structural_epoch
+}
+
+pub fn (api &Internals) visual_context_tree_node_capacity() u64 {
+	return api.platform.visual_context_tree_node_capacity
+}
+
+pub fn (api &Internals) visual_context_node_indices(element &dom.Element) VisualContextNodeIndices {
+	return api.platform.visual_context_node_indices_[element.as_node().unique_id().value()] or {
+		VisualContextNodeIndices{}
+	}
+}
+
+pub fn (mut api Internals) set_force_dark_enabled(enabled bool) {
+	api.platform.force_dark_enabled = enabled
+}
+
+pub fn (mut api Internals) set_show_line_box_borders(enabled bool) {
+	api.platform.show_line_box_borders = enabled
+}
+
+pub fn (mut api Internals) set_force_dark_thresholds(foreground i32, background i32) {
+	api.platform.force_dark_foreground = foreground
+	api.platform.force_dark_background = background
+}
+
+pub fn (mut api Internals) send_mismatched_visual_context_tree_update_to_compositor() {
+	api.platform.mismatched_visual_context_updates++
+}
+
 fn json_escape(value string) string {
 	return value.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
 }
@@ -432,6 +491,64 @@ pub fn (api &Internals) headless() bool {
 	return api.platform.headless_
 }
 
+pub fn (api &Internals) partial_layout_count() u64 {
+	return api.platform.partial_layout_count_
+}
+
+pub fn (api &Internals) full_layout_count() u64 {
+	return api.platform.full_layout_count_
+}
+
+pub fn (api &Internals) layout_run_cache_hit_count() u64 {
+	return api.platform.layout_run_cache_hit_count_
+}
+
+pub fn (api &Internals) table_cell_measurement_cache_miss_count() u64 {
+	return api.platform.table_cell_measurement_cache_miss_count_
+}
+
+pub fn (api &Internals) intrinsic_measurement_count() u64 {
+	return api.platform.intrinsic_measurement_count_
+}
+
+pub fn (api &Internals) accumulated_visual_context_tree_build_count() u64 {
+	return api.platform.accumulated_visual_context_tree_build_count_
+}
+
+pub fn (mut api Internals) begin_display_list_trace() {
+	api.platform.display_list_trace = ''
+	api.platform.display_list_trace_active = true
+}
+
+pub fn (mut api Internals) take_display_list_trace() string {
+	api.platform.display_list_trace_active = false
+	trace := api.platform.display_list_trace
+	api.platform.display_list_trace = ''
+	return trace
+}
+
+pub fn (api &Internals) recorded_display_list_blocks_wheel_event_at(_ f64, _ f64) bool {
+	return api.platform.recorded_display_list_blocks_wheel
+}
+
+pub fn (mut api Internals) record_display_list_for_testing(paint_overlay bool, cold bool) {
+	api.platform.record_display_list_requests++
+	api.platform.last_record_display_list_paint_overlay = paint_overlay
+	api.platform.last_record_display_list_cold = cold
+}
+
+pub fn (api &Internals) needs_repaint() bool {
+	return api.platform.needs_repaint_
+}
+
+pub fn (api &Internals) needs_display_list_record() bool {
+	return api.platform.needs_display_list_record_
+}
+
+pub fn (api &Internals) screen_wake_lock_active() bool {
+	return api.platform.screen_wake_lock_active_
+}
+
 pub fn (api &Internals) dump_display_list() string {
 	return api.platform.display_list_dump
 }
@@ -446,6 +563,10 @@ pub fn (api &Internals) dump_paintable_tree(node ?&dom.Node) string {
 
 pub fn (api &Internals) dump_stacking_context_tree() string {
 	return api.platform.stacking_context_dump
+}
+
+pub fn (api &Internals) stacking_context_structure_verification_report() string {
+	return api.platform.stacking_context_verification_report
 }
 
 pub fn (api &Internals) dump_gc_graph() string {

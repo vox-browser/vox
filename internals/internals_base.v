@@ -44,6 +44,15 @@ pub:
 	index_in_node int
 }
 
+pub struct VisualContextNodeIndices {
+pub:
+	spatial                           []u32
+	clips                             []u32
+	effects                           []u32
+	needs_compositor_effects_layer    bool
+	needs_compositor_background_frame bool
+}
+
 @[heap]
 pub struct PlatformState {
 pub mut:
@@ -72,6 +81,37 @@ pub mut:
 	associated_document       ?&dom.Document
 	sdl_input_event_pumps     int
 	garbage_collections       int
+	force_dark_enabled        bool
+	show_line_box_borders     bool
+	force_dark_foreground     i32
+	force_dark_background     i32
+	visual_context_force_rebuilds               u64
+	visual_context_incremental_update_count     u64
+	visual_context_pending_dirty_box_count      u64
+	layout_tree_pre_order_label_violation_count u64
+	layout_tree_pre_order_relabel_count         u64
+	visual_context_tree_node_count              u64
+	visual_context_tree_dead_node_count         u64
+	visual_context_tree_structural_epoch        u64
+	visual_context_tree_node_capacity           u64
+	visual_context_node_indices_                map[i64]VisualContextNodeIndices
+	mismatched_visual_context_updates           u64
+	partial_layout_count_                       u64
+	full_layout_count_                          u64
+	layout_run_cache_hit_count_                 u64
+	table_cell_measurement_cache_miss_count_    u64
+	intrinsic_measurement_count_                u64
+	accumulated_visual_context_tree_build_count_ u64
+	display_list_trace_active                   bool
+	display_list_trace                          string
+	recorded_display_list_blocks_wheel          bool
+	record_display_list_requests                u64
+	last_record_display_list_paint_overlay      bool
+	last_record_display_list_cold               bool
+	needs_repaint_                              bool
+	needs_display_list_record_                  bool
+	screen_wake_lock_active_                    bool
+	stacking_context_verification_report        string
 }
 
 @[heap]

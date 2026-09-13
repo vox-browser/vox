@@ -9,6 +9,25 @@ fn test_metadata_settings_and_platform_facade() {
 		headless_:        true
 		current_cursor_:  'pointer'
 		echo_server_port: 8000
+		visual_context_incremental_update_count: 4
+		visual_context_pending_dirty_box_count: 2
+		layout_tree_pre_order_label_violation_count: 3
+		layout_tree_pre_order_relabel_count: 5
+		visual_context_tree_node_count: 8
+		visual_context_tree_dead_node_count: 1
+		visual_context_tree_structural_epoch: 9
+		visual_context_tree_node_capacity: 12
+		partial_layout_count_: 6
+		full_layout_count_: 7
+		layout_run_cache_hit_count_: 10
+		table_cell_measurement_cache_miss_count_: 11
+		intrinsic_measurement_count_: 13
+		accumulated_visual_context_tree_build_count_: 14
+		recorded_display_list_blocks_wheel: true
+		needs_repaint_: true
+		needs_display_list_record_: true
+		screen_wake_lock_active_: true
+		stacking_context_verification_report: 'verified'
 	}
 	navigator := gamepad.NavigatorGamepadPartial.new()
 	mut api := Internals.create(platform, navigator)
@@ -28,6 +47,40 @@ fn test_metadata_settings_and_platform_facade() {
 	assert platform.garbage_collections == 1
 	assert api.current_cursor() == 'pointer'
 	assert api.headless()
+	api.force_incompatible_visual_context_tree_rebuild()
+	api.set_force_dark_enabled(true)
+	api.set_show_line_box_borders(true)
+	api.set_force_dark_thresholds(31, 47)
+	api.send_mismatched_visual_context_tree_update_to_compositor()
+	assert platform.visual_context_force_rebuilds == 1
+	assert platform.force_dark_enabled && platform.show_line_box_borders
+	assert platform.force_dark_foreground == 31 && platform.force_dark_background == 47
+	assert platform.mismatched_visual_context_updates == 1
+	assert api.accumulated_visual_context_incremental_update_count() == 4
+	assert api.visual_context_pending_dirty_box_count() == 2
+	assert api.layout_tree_pre_order_label_violation_count() == 3
+	assert api.layout_tree_pre_order_relabel_count() == 5
+	assert api.visual_context_tree_node_count() == 8
+	assert api.visual_context_tree_dead_node_count() == 1
+	assert api.visual_context_tree_structural_epoch() == 9
+	assert api.visual_context_tree_node_capacity() == 12
+	assert api.partial_layout_count() == 6 && api.full_layout_count() == 7
+	assert api.layout_run_cache_hit_count() == 10
+	assert api.table_cell_measurement_cache_miss_count() == 11
+	assert api.intrinsic_measurement_count() == 13
+	assert api.accumulated_visual_context_tree_build_count() == 14
+	api.begin_display_list_trace()
+	platform.display_list_trace = 'box:background\n'
+	assert api.take_display_list_trace() == 'box:background\n'
+	assert !platform.display_list_trace_active
+	assert api.recorded_display_list_blocks_wheel_event_at(1, 2)
+	api.record_display_list_for_testing(true, true)
+	assert platform.record_display_list_requests == 1
+	assert platform.last_record_display_list_paint_overlay
+	assert platform.last_record_display_list_cold
+	assert api.needs_repaint() && api.needs_display_list_record()
+	assert api.screen_wake_lock_active()
+	assert api.stacking_context_structure_verification_report() == 'verified'
 	assert api.get_echo_server_port() == 8000
 	api.set_echo_server_port(9000)
 	assert api.get_echo_server_port() == 9000
