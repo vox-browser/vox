@@ -2405,6 +2405,13 @@ fn compatibility_hit_test_chrome(box &BlockBox, x f64, y f64,
 		return none
 	}
 	overlay := box.overlay or { return none }
+	has_resizer := overlay.has_resizer
+	can_scroll_horizontally := overlay.scrollbar_width != .none_
+		&& overlay.can_scroll_horizontally
+	can_scroll_vertically := overlay.scrollbar_width != .none_ && overlay.can_scroll_vertically
+	if !has_resizer && !can_scroll_horizontally && !can_scroll_vertically {
+		return none
+	}
 	position := if uses_lines_hit_test {
 		painting.Point{x, y}
 	} else {
@@ -2414,7 +2421,7 @@ fn compatibility_hit_test_chrome(box &BlockBox, x f64, y f64,
 		return none
 	}
 	identity := u64(box.node_id)
-	if box.compatibility_resizer_contains(position, overlay, metrics) {
+	if has_resizer && box.compatibility_resizer_contains(position, overlay, metrics) {
 		return compatibility_hit_test_result_for_chrome(box, 'resize-handle:${identity}')
 	}
 	if overlay.scrollbar_width == .none_ {
@@ -2422,9 +2429,9 @@ fn compatibility_hit_test_chrome(box &BlockBox, x f64, y f64,
 	}
 	for direction in [painting.ScrollDirection.horizontal, .vertical] {
 		can_scroll := if direction == .horizontal {
-			overlay.can_scroll_horizontally
+			can_scroll_horizontally
 		} else {
-			overlay.can_scroll_vertically
+			can_scroll_vertically
 		}
 		if !can_scroll {
 			continue
