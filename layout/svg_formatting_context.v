@@ -716,45 +716,37 @@ fn (mut context SVGFormattingContext) layout_image_element(image_box &Node) {
 	} else {
 		source = element.get_attribute_value('xlink:href').trim_space()
 	}
-	intrinsic := image_intrinsic_size_for_source(image_box.document(), source) or {
+	intrinsic_result := image_intrinsic_size_for_source(image_box.document(), source)
+	intrinsic := intrinsic_result or {
 		css.SizeWithAspectRatio{}
 	}
-	mut width := ?f64(none)
-	mut height := ?f64(none)
-	if element.has_attribute('width') {
-		width = resolve_svg_attribute_length(element, 'width', context.viewport_size.width(), CSSPixels.new(0)).to_double()
+	computed := image_box.computed_values()
+	specified_width := computed.length_percentage_to_px(.width, context.viewport_size.width().to_double())
+	specified_height := computed.length_percentage_to_px(.height, context.viewport_size.height().to_double())
+	mut default_size := CSSPixelSize{}
+	if intrinsic_result != none {
+		default_size = CSSPixelSize.from_values(300, 150)
 	}
-	if element.has_attribute('height') {
-		height = resolve_svg_attribute_length(element, 'height', context.viewport_size.height(), CSSPixels.new(0)).to_double()
-	}
-	// SVGImageElement::bounding_box() derives a missing author dimension from
-	// the decoded image ratio before falling back to each intrinsic dimension.
-	if width_value := width {
-		if height == none {
-			if ratio := intrinsic.aspect_ratio {
-				height = width_value / ratio.to_double()
-			}
+	sizing := if width := specified_width {
+		if height := specified_height {
+			css.run_default_sizing_algorithm(CSSPixels.nearest_value_for(width), CSSPixels.nearest_value_for(height), intrinsic, default_size)
+		} else {
+			css.run_default_sizing_algorithm(CSSPixels.nearest_value_for(width), none, intrinsic, default_size)
 		}
-	} else if height_value := height {
-		if ratio := intrinsic.aspect_ratio {
-			width = height_value * ratio.to_double()
-		}
-	}
-	if width == none {
-		if intrinsic_width := intrinsic.width {
-			width = intrinsic_width.to_double()
-		}
-	}
-	if height == none {
-		if intrinsic_height := intrinsic.height {
-			height = intrinsic_height.to_double()
-		}
+	} else if height := specified_height {
+		css.run_default_sizing_algorithm(none, CSSPixels.nearest_value_for(height), intrinsic, default_size)
+	} else {
+		css.run_default_sizing_algorithm(none, none, intrinsic, default_size)
 	}
 	rect := svg.Rect{
-		x: resolve_svg_attribute_length(element, 'x', context.viewport_size.width(), CSSPixels.new(0)).to_double()
-		y: resolve_svg_attribute_length(element, 'y', context.viewport_size.height(), CSSPixels.new(0)).to_double()
-		width: width or { 0.0 }
-		height: height or { 0.0 }
+		x: computed.length_percentage_to_px(.x, context.viewport_size.width().to_double()) or {
+			0.0
+		}
+		y: computed.length_percentage_to_px(.y, context.viewport_size.height().to_double()) or {
+			0.0
+		}
+		width: sizing.width().to_double()
+		height: sizing.height().to_double()
 	}
 	set_used_values_rect(mut image_state, rect)
 	image_state.set_has_definite_width(true)

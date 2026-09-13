@@ -2770,6 +2770,28 @@ fn test_svg_ellipse_uses_computed_geometry_and_auto_radii() {
 	assert paired.content_height().to_double() == 50
 }
 
+fn test_svg_image_uses_computed_geometry_and_default_sizing() {
+	viewbox_image := 'data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%20200%20100%22%3E%3C%2Fsvg%3E'
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#styled { x:20px; y:15px; width:80px; height:40px }
+	</style><svg width="400" height="200">
+		<image id="styled" x="1" y="2" width="3" height="4" href="https://example.test/image.png"/>
+		<image id="default" y="50" href="${viewbox_image}"/>
+	</svg>')
+	result := run_document_layout(document, 400, 200) or { panic('layout failed') }
+	styled := used_for_id(result, 'styled')
+	assert styled.offset.x().to_double() == 20
+	assert styled.offset.y().to_double() == 15
+	assert styled.content_width().to_double() == 80
+	assert styled.content_height().to_double() == 40
+	default_image := used_for_id(result, 'default')
+	assert default_image.offset.x().to_double() == 0
+	assert default_image.offset.y().to_double() == 50
+	assert default_image.content_width().to_double() == 300
+	assert default_image.content_height().to_double() == 150
+}
+
 fn test_relative_positioning_does_not_move_following_flow_content() {
 	document := html.parse_document('<!doctype html><style>
 		#one { position:relative; top:20px; left:5px; height:10px }
