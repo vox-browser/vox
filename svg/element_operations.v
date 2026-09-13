@@ -212,17 +212,23 @@ pub fn (element &Element) stroke_opacity() ?f64 {
 }
 
 pub fn (element &Element) stroke_width() ?f64 {
-	return element.number_attribute('stroke-width', 1)
+	value := parse_number_percentage(element.attributes['stroke-width'] or { '1' }) or { return none }
+	return element.resolve_relative_to_viewport_size(value)
 }
 
 pub fn (element &Element) stroke_dashoffset() ?f64 {
-	return element.number_attribute('stroke-dashoffset', 0)
+	value := parse_number_percentage(element.attributes['stroke-dashoffset'] or { '0' }) or {
+		return none
+	}
+	return element.resolve_relative_to_viewport_size(value)
 }
 
 pub fn (element &Element) stroke_dasharray() []f32 {
-	mut dasharray := (parse_number_sequence(element.attributes['stroke-dasharray'] or { '' }) or {
-		[]f64{}
-	}).map(f32(it))
+	mut dasharray := []f32{}
+	for item in (element.attributes['stroke-dasharray'] or { '' }).replace(',', ' ').fields() {
+		value := parse_number_percentage(item) or { return [] }
+		dasharray << f32(element.resolve_relative_to_viewport_size(value))
+	}
 	if dasharray.len % 2 == 1 {
 		original_length := dasharray.len
 		for index in 0 .. original_length {
@@ -332,8 +338,13 @@ pub fn (element &Element) try_resolve_url_to(url string, document map[string]Ele
 	return element.resolve_url_to_element(url, document)
 }
 
-pub fn (_ &Element) resolve_relative_to_viewport_size(value NumberPercentage, viewport f64) f64 {
-	return value.resolve_relative_to(viewport)
+pub fn (element &Element) viewport_percentage_basis() f64 {
+	viewport := element.viewport_size_for_percentage_resolution()
+	return (viewport.width + viewport.height) * 0.5
+}
+
+pub fn (element &Element) resolve_relative_to_viewport_size(value NumberPercentage) f64 {
+	return value.resolve_relative_to(element.viewport_percentage_basis())
 }
 
 pub fn (element &Element) get_total_length() f64 {

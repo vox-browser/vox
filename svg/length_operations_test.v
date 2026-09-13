@@ -127,6 +127,19 @@ fn test_svg_viewport_size_is_shared_by_geometry_and_reflected_lengths() {
 	assert_svg_length_close(directionless.resolved_value()!, math.sqrt((300.0 * 300.0 + 120.0 * 120.0) / 2.0) / 2.0)
 }
 
+fn test_svg_stroke_percentages_use_the_scaled_viewport_basis() {
+	mut element := new_element('path')
+	element.attributes['_viewport_width'] = '300'
+	element.attributes['_viewport_height'] = '100'
+	element.attributes['stroke-width'] = '10%'
+	element.attributes['stroke-dasharray'] = '5%, 2'
+	element.attributes['stroke-dashoffset'] = '25%'
+	assert element.viewport_percentage_basis() == 200
+	assert element.stroke_width() or { -1 } == 20
+	assert element.stroke_dasharray() == [f32(10), 2]
+	assert element.stroke_dashoffset() or { -1 } == 50
+}
+
 fn test_animated_svg_length_retains_reflection_source_and_context() {
 	mut element := new_element('rect')
 	element.attributes['height'] = '50%'

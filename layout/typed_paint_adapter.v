@@ -1771,23 +1771,52 @@ fn svg_paint_viewport_size(node &Node, state &LayoutState) painting.Size {
 	mut current := ?&Node(node)
 	for {
 		candidate := current or { break }
-		if candidate.is_svg_svg_box() {
-			if element := svg_element_for_layout_node(candidate) {
+		if element := svg_element_for_layout_node(candidate) {
+			if candidate.is_svg_svg_box() || element.local_name() == 'symbol' {
 				if view_box := svg.parse_viewbox(element.get_attribute_value('viewBox')) {
 					if view_box.width >= 0 && view_box.height >= 0 {
 						return painting.Size{view_box.width, view_box.height}
 					}
 				}
-			}
-			if styled := candidate.as_node_with_style() {
-				if used := state.try_get(styled) {
-					return painting.Size{used.content_width().to_double(), used.content_height().to_double()}
+				if styled := candidate.as_node_with_style() {
+					if used := state.try_get(styled) {
+						return painting.Size{used.content_width().to_double(), used.content_height().to_double()}
+					}
 				}
 			}
 		}
 		current = candidate.parent()
 	}
 	return painting.Size{}
+}
+
+fn viewport_percentage_basis(node &Node, state &LayoutState) f64 {
+	viewport := svg_paint_viewport_size(node, state)
+	return (viewport.width + viewport.height) * 0.5
+}
+
+fn resolved_svg_stroke_dasharray(computed &css.ComputedProperties, percentage_basis f64) []f64 {
+	mut dasharray := []f64{}
+	context := computed.length_resolution_context()
+	reference := css.CSSPixels.nearest_value_for(percentage_basis)
+	for item in computed.stroke_dasharray() {
+		value := if item.is_length_percentage {
+			item.length_percentage.to_px(context, reference).to_double()
+		} else {
+			item.number
+		}
+		if value < 0 {
+			return []
+		}
+		dasharray << value
+	}
+	if dasharray.all(it == 0) {
+		return []
+	}
+	if dasharray.len % 2 == 1 {
+		dasharray << dasharray.clone()
+	}
+	return dasharray
 }
 
 fn painting_clip_path_bounds(path painting.ClipPathVisualData) ?painting.Rect {
@@ -2772,8 +2801,7 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 				}
 			}
 		} else if svg_path := used.computed_svg_path() {
-			diagonal := math.sqrt(used.content_width().to_double() * used.content_width().to_double() + used.content_height().to_double() * used.content_height().to_double())
-			stroke_width := computed.length_percentage_to_px(.stroke_width, diagonal) or { 1.0 }
+			stroke_width := computed.length_percentage_to_px(.stroke_width, viewport_percentage_basis(node, state)) or { 1.0 }
 			position := paint_cumulative_offset(node, state, used)
 			page_delta_x := position.x().to_double() - used.offset.x().to_double()
 			page_delta_y := position.y().to_double() - used.offset.y().to_double()
@@ -3174,12 +3202,11 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 				svg_stroke_color = stroke_color.serialize()
 			}
 		}
-		diagonal := math.sqrt(used.content_width().to_double() * used.content_width().to_double() + used.content_height().to_double() * used.content_height().to_double())
-		svg_stroke_width = computed.length_percentage_to_px(.stroke_width, diagonal) or { 1.0 }
+		percentage_basis := viewport_percentage_basis(node, state)
+		svg_stroke_width = computed.length_percentage_to_px(.stroke_width, percentage_basis) or { 1.0 }
+		svg_stroke_dasharray = resolved_svg_stroke_dasharray(computed, percentage_basis)
+		svg_stroke_dashoffset = computed.stroke_dashoffset().to_px(computed.length_resolution_context(), css.CSSPixels.nearest_value_for(percentage_basis)).to_double()
 		if svg_element := paint_element {
-			element_model := svg_element_model(svg_element)
-			svg_stroke_dasharray = element_model.stroke_dasharray().map(f64(it))
-			svg_stroke_dashoffset = element_model.stroke_dashoffset() or { 0.0 }
 			svg_non_scaling_stroke = svg_element.get_attribute_value('vector-effect').trim_space().to_lower() == 'non-scaling-stroke'
 		}
 		svg_stroke_first = svg_mask_stroke_precedes_fill(computed.paint_order())
