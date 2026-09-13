@@ -16,6 +16,8 @@ pub fn ManagedMediaSource.create() &ManagedMediaSource {
 	return &ManagedMediaSource{
 		MediaSource: MediaSource{
 			EventTarget: dom.EventTarget{}
+			source_buffers_: SourceBufferList.create_internal()
+			active_source_buffers_: SourceBufferList.create_internal()
 		}
 	}
 }

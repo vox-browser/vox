@@ -581,6 +581,18 @@ fn test_all_source_buffer_handlers_and_managed_handlers() {
 	assert managed_source.onsourceopen() == none
 }
 
+fn test_managed_media_source_initializes_its_base_source_buffer_lists() {
+	mut source := ManagedMediaSource.create()
+	assert source.source_buffers().length() == 0
+	assert source.active_source_buffers().length() == 0
+
+	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	media.set_src_object(source.as_media_provider())!
+	buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
+	assert source.source_buffers().length() == 1
+	assert source.source_buffers().item(0)? == buffer
+}
+
 fn test_media_source_handle_is_opaque_and_transferable() {
 	handle := MediaSourceHandle.create_internal()
 	assert handle.is_transferable()
