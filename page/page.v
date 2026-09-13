@@ -133,6 +133,11 @@ struct ScreenshotTask {
 	node_id ?dom.UniqueNodeID
 }
 
+struct PendingGeolocationRequest {
+	callback GeolocationPositionCallback @[required]
+	type_    GeolocationRequestType
+}
+
 @[heap]
 pub struct Page {
 	dom.Page
@@ -170,6 +175,9 @@ mut:
 	pending_non_blocking_target_                 string
 	next_clipboard_request_id                    u64
 	pending_clipboard_requests                   map[u64]bool
+	pending_geolocation_requests                 map[u64]PendingGeolocationRequest
+	next_geolocation_request_id                  u64
+	active_geolocation_request_id                ?u64
 	canvas_elements_                             []u64
 	media_context_element_                       ?u64
 	context_menu_request_                        ?ContextMenuRequest
