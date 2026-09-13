@@ -625,6 +625,25 @@ pub fn (api &Internals) is_known_hsts_host(domain string) !bool {
 	return internals_resource_loader().is_known_hsts_host(domain)
 }
 
+pub fn (api &Internals) message_port_pending_outgoing_message_count(port &html.MessagePort) u64 {
+	return u64(port.pending_outgoing_message_count())
+}
+
+pub fn (api &Internals) html_collection_cache_generation(collection &dom.HTMLCollection) u64 {
+	return collection.cache_generation_for_testing()
+}
+
+pub fn (api &Internals) fail_next_message_port_transfer(port &html.MessagePort) {
+	mut mutable_port := unsafe { &html.MessagePort(port) }
+	mutable_port.fail_next_transfer_for_testing()
+}
+
+pub fn (api &Internals) message_ports_are_directly_entangled(first &html.MessagePort, second &html.MessagePort) bool {
+	first_remote := first.entangled_port() or { return false }
+	second_remote := second.entangled_port() or { return false }
+	return voidptr(first_remote) == voidptr(second) && voidptr(second_remote) == voidptr(first)
+}
+
 fn internals_default_role(element &dom.Element) ?aria.Role {
 	if !element.is_html_element() {
 		return none

@@ -174,6 +174,8 @@ mut:
 	detached_            bool
 	enabled_             bool
 	pending_messages_    []SerializedTransferRecord
+	pending_outgoing_messages_ []SerializedTransferRecord
+	fail_next_transfer_for_testing_ bool
 	worker_event_target_ ?&dom.EventTarget
 }
 
@@ -209,6 +211,14 @@ pub fn (port &MessagePort) entangled_port() ?&MessagePort {
 	return port.remote_port_
 }
 
+pub fn (port &MessagePort) pending_outgoing_message_count() usize {
+	return usize(port.pending_outgoing_messages_.len)
+}
+
+pub fn (mut port MessagePort) fail_next_transfer_for_testing() {
+	port.fail_next_transfer_for_testing_ = true
+}
+
 pub fn (mut port MessagePort) set_worker_event_target(target &dom.EventTarget) {
 	port.worker_event_target_ = target
 }
@@ -242,6 +252,13 @@ pub fn (mut port MessagePort) entangle_with(remote_port &MessagePort) {
 pub fn (mut port MessagePort) transfer_steps() !SerializedTransferItem {
 	if port.detached_ {
 		return error('DataCloneError: MessagePort is detached')
+	}
+	// The native transport can fail while encoding its remote handle. V's
+	// in-process transport has no fallible handle, so exercise that exact
+	// pre-commit failure point when requested by Internals.
+	if port.fail_next_transfer_for_testing_ {
+		port.fail_next_transfer_for_testing_ = false
+		return error('DataCloneError: Forced MessagePort transfer failure')
 	}
 	port.has_been_shipped_ = true
 	port.detached_ = true

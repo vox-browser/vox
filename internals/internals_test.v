@@ -195,6 +195,33 @@ fn test_hsts_controls_use_resource_loader_policy_storage() {
 	assert !api.is_known_hsts_host('header-hsts.test')!
 }
 
+fn test_message_port_and_collection_diagnostics_use_live_objects() {
+	mut platform := &PlatformState{}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	mut api := Internals.create(platform, navigator)
+	mut channel := html.MessageChannel.construct_impl()!
+	port1 := channel.port1()
+	port2 := channel.port2()
+	assert api.message_ports_are_directly_entangled(port1, port2)
+	assert api.message_port_pending_outgoing_message_count(port1) == 0
+	api.fail_next_message_port_transfer(port1)
+	mut mutable_port := unsafe { &html.MessagePort(port1) }
+	mutable_port.transfer_steps() or {
+		assert err.msg().contains('Forced MessagePort transfer failure')
+		assert api.message_ports_are_directly_entangled(port1, port2)
+	}
+
+	mut document := dom.Document.create_for_fragment_parsing()
+	mut root := document.create_element('main')!
+	document.append_child(root)
+	collection := document.get_elements_by_tag_name('*')
+	initial_generation := api.html_collection_cache_generation(collection)
+	assert initial_generation > 0
+	root.append_child(document.create_element('span')!)
+	assert collection.length() == 2
+	assert api.html_collection_cache_generation(collection) == initial_generation + 1
+}
+
 fn test_input_methods_record_exact_actions() {
 	mut platform := &PlatformState{
 		browser_zoom: 2

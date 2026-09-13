@@ -571,7 +571,12 @@ pub fn (c &HTMLCollection) update_cache_if_needed() {
 	mut mutable_collection := unsafe { &HTMLCollection(c) }
 	mutable_collection.cached_elements = elements
 	mutable_collection.cached_dom_tree_version = current_dom_tree_version
+	mutable_collection.cache_generation++
 	mutable_collection.cache_initialized = true
+}
+
+pub fn (c &HTMLCollection) cache_generation_for_testing() u64 {
+	return c.cache_generation
 }
 
 pub fn (c &HTMLCollection) collect_matching_elements() []&Element {

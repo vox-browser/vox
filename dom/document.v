@@ -2294,6 +2294,7 @@ pub mut:
 	sort                    fn (&Element, &Element) bool = never_sort_elements
 	cached_elements         []&Element
 	cached_dom_tree_version u64
+	cache_generation        u64
 	cache_initialized       bool
 }
 
