@@ -9,15 +9,56 @@ import svg
 // and the used margin/border/padding/inset. The persistent Box holds no geometry; a formatting context
 // reads/writes UsedValues in a LayoutState and commits them to paintables at the end.
 //
-// Border-collapse, paintable materialization, and relative-position resolution
-// are translated in the sections below as their dependent painting types become
-// available in the V port.
+// Rare SVG, grid, table, and static-position state is allocated only on first
+// use so the per-node common case remains compact.
 
 // https://www.w3.org/TR/css-sizing-3/#available — a size can be constrained to min-/max-content.
 pub enum SizeConstraint {
 	none
 	min_content
 	max_content
+}
+
+@[heap]
+struct UsedValuesRareData {
+mut:
+	static_position_rect_         ?StaticPositionRect
+	relative_inset_basis_width_   ?CSSPixels
+	relative_inset_basis_height_  ?CSSPixels
+	abspos_containing_block_rect_ ?css.CSSPixelRect
+	used_grid_template_columns    []CSSPixels
+	used_grid_template_rows       []CSSPixels
+	used_grid_column_line_names   [][]string
+	used_grid_row_line_names      [][]string
+	computed_svg_path_            ?svg.Path
+	has_computed_svg_transforms   bool
+	svg_viewbox_transform_        svg.AffineTransform
+	svg_transform_                svg.AffineTransform
+	svg_viewport_transform_       ?svg.AffineTransform
+	svg_rendering_disabled_       bool
+	override_borders_data_        ?painting.BordersDataWithElementKind
+	table_cell_coordinates_       ?painting.TableCellCoordinates
+}
+
+fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
+	return &UsedValuesRareData{
+		static_position_rect_: rare.static_position_rect_
+		relative_inset_basis_width_: rare.relative_inset_basis_width_
+		relative_inset_basis_height_: rare.relative_inset_basis_height_
+		abspos_containing_block_rect_: rare.abspos_containing_block_rect_
+		used_grid_template_columns: rare.used_grid_template_columns.clone()
+		used_grid_template_rows: rare.used_grid_template_rows.clone()
+		used_grid_column_line_names: rare.used_grid_column_line_names.clone()
+		used_grid_row_line_names: rare.used_grid_row_line_names.clone()
+		computed_svg_path_: rare.computed_svg_path_
+		has_computed_svg_transforms: rare.has_computed_svg_transforms
+		svg_viewbox_transform_: rare.svg_viewbox_transform_
+		svg_transform_: rare.svg_transform_
+		svg_viewport_transform_: rare.svg_viewport_transform_
+		svg_rendering_disabled_: rare.svg_rendering_disabled_
+		override_borders_data_: rare.override_borders_data_
+		table_cell_coordinates_: rare.table_cell_coordinates_
+	}
 }
 
 @[heap]
@@ -34,48 +75,41 @@ pub mut:
 	// Offset from the top-left of the containing block's content area to this box's content area.
 	offset css.CSSPixelPoint
 	// Used values of the box-model edges.
-	margin_left    CSSPixels
-	margin_right   CSSPixels
-	margin_top     CSSPixels
-	margin_bottom  CSSPixels
-	border_left    CSSPixels
-	border_right   CSSPixels
-	border_top     CSSPixels
-	border_bottom  CSSPixels
-	padding_left   CSSPixels
-	padding_right  CSSPixels
-	padding_top    CSSPixels
-	padding_bottom CSSPixels
-	inset_left     CSSPixels
-	inset_right    CSSPixels
-	inset_top      CSSPixels
-	inset_bottom   CSSPixels
-	// Flex/Grid call FormattingContext::compute_inset() with the resolved
-	// item's containing-area size. Preserve that explicit percentage basis for
-	// the final relative-inset pass instead of substituting the parent box.
-	relative_inset_basis_width_  ?CSSPixels
-	relative_inset_basis_height_ ?CSSPixels
+	margin_left                  CSSPixels
+	margin_right                 CSSPixels
+	margin_top                   CSSPixels
+	margin_bottom                CSSPixels
+	border_left                  CSSPixels
+	border_right                 CSSPixels
+	border_top                   CSSPixels
+	border_bottom                CSSPixels
+	padding_left                 CSSPixels
+	padding_right                CSSPixels
+	padding_top                  CSSPixels
+	padding_bottom               CSSPixels
+	inset_left                   CSSPixels
+	inset_right                  CSSPixels
+	inset_top                    CSSPixels
+	inset_bottom                 CSSPixels
 	line_boxes                   []LineBox
 	containing_line_box_fragment ?LineBoxFragmentCoordinate
-	static_position_rect_        ?StaticPositionRect
-	// getComputedStyle() reports the *used* track sizes for
-	// grid-template-columns/rows, so the grid formatting context records them
-	// here and LayoutState::commit() hands them to the layout node.
-	used_grid_template_columns    []CSSPixels
-	used_grid_template_rows       []CSSPixels
-	used_grid_column_line_names   [][]string
-	used_grid_row_line_names      [][]string
-	abspos_containing_block_rect_ ?css.CSSPixelRect
-	computed_svg_path_            ?svg.Path
-	has_computed_svg_transforms_  bool
-	svg_viewbox_transform_        svg.AffineTransform
-	svg_transform_                svg.AffineTransform
-	svg_viewport_transform_       ?svg.AffineTransform
-	svg_rendering_disabled_       bool
-	override_borders_data_        ?painting.BordersDataWithElementKind
-	table_cell_coordinates_       ?painting.TableCellCoordinates
-	scrollable_overflow_rect_     ?css.CSSPixelRect
-	has_scrollable_overflow_      bool
+	scrollable_overflow_rect_    ?css.CSSPixelRect
+	has_scrollable_overflow_     bool
+mut:
+	rare_ ?&UsedValuesRareData
+}
+
+fn (mut u UsedValues) ensure_rare_data() &UsedValuesRareData {
+	if rare := u.rare_ {
+		return rare
+	}
+	rare := &UsedValuesRareData{}
+	u.rare_ = rare
+	return rare
+}
+
+pub fn (u &UsedValues) has_rare_data() bool {
+	return u.rare_ != none
 }
 
 pub fn (u &UsedValues) node() &NodeWithStyle {
@@ -87,39 +121,85 @@ pub fn (u &UsedValues) containing_block_used_values() ?&UsedValues {
 }
 
 pub fn (u &UsedValues) use_collapsing_borders_model() bool {
-	return u.override_borders_data_ != none
+	rare := u.rare_ or { return false }
+	return rare.override_borders_data_ != none
 }
 
 pub fn (u &UsedValues) override_borders_data() ?painting.BordersDataWithElementKind {
-	return u.override_borders_data_
+	rare := u.rare_ or { return none }
+	return rare.override_borders_data_
 }
 
 pub fn (mut u UsedValues) set_override_borders_data(override_borders_data painting.BordersDataWithElementKind) {
-	u.override_borders_data_ = override_borders_data
+	mut rare := u.ensure_rare_data()
+	rare.override_borders_data_ = override_borders_data
 }
 
 pub fn (u &UsedValues) table_cell_coordinates() ?painting.TableCellCoordinates {
-	return u.table_cell_coordinates_
+	rare := u.rare_ or { return none }
+	return rare.table_cell_coordinates_
 }
 
 pub fn (mut u UsedValues) set_table_cell_coordinates(table_cell_coordinates painting.TableCellCoordinates) {
-	u.table_cell_coordinates_ = table_cell_coordinates
+	mut rare := u.ensure_rare_data()
+	rare.table_cell_coordinates_ = table_cell_coordinates
 }
 
 pub fn (mut u UsedValues) set_grid_template_columns(columns []CSSPixels) {
-	u.used_grid_template_columns = columns.clone()
+	mut rare := u.ensure_rare_data()
+	rare.used_grid_template_columns = columns.clone()
 }
 
 pub fn (u &UsedValues) grid_template_columns() []CSSPixels {
-	return u.used_grid_template_columns
+	rare := u.rare_ or { return []CSSPixels{} }
+	return rare.used_grid_template_columns
 }
 
+// getComputedStyle() reports the used grid-template sizes and explicit line
+// names, so the grid formatting context retains them in rare layout state.
 pub fn (mut u UsedValues) set_grid_template_rows(rows []CSSPixels) {
-	u.used_grid_template_rows = rows.clone()
+	mut rare := u.ensure_rare_data()
+	rare.used_grid_template_rows = rows.clone()
 }
 
 pub fn (u &UsedValues) grid_template_rows() []CSSPixels {
-	return u.used_grid_template_rows
+	rare := u.rare_ or { return []CSSPixels{} }
+	return rare.used_grid_template_rows
+}
+
+pub fn (mut u UsedValues) set_grid_line_names(columns [][]string, rows [][]string) {
+	mut rare := u.ensure_rare_data()
+	rare.used_grid_column_line_names = columns.clone()
+	rare.used_grid_row_line_names = rows.clone()
+}
+
+pub fn (u &UsedValues) grid_column_line_names() [][]string {
+	rare := u.rare_ or { return [][]string{} }
+	return rare.used_grid_column_line_names
+}
+
+pub fn (u &UsedValues) grid_row_line_names() [][]string {
+	rare := u.rare_ or { return [][]string{} }
+	return rare.used_grid_row_line_names
+}
+
+// Flex/Grid call FormattingContext::compute_inset() with the resolved item's
+// containing-area size. Preserve that explicit percentage basis instead of
+// substituting the parent box.
+pub fn (mut u UsedValues) set_relative_inset_basis(width CSSPixels, height CSSPixels) {
+	mut rare := u.ensure_rare_data()
+	rare.relative_inset_basis_width_ = width
+	rare.relative_inset_basis_height_ = height
+}
+
+pub fn (u &UsedValues) relative_inset_basis_width() ?CSSPixels {
+	rare := u.rare_ or { return none }
+	return rare.relative_inset_basis_width_
+}
+
+pub fn (u &UsedValues) relative_inset_basis_height() ?CSSPixels {
+	rare := u.rare_ or { return none }
+	return rare.relative_inset_basis_height_
 }
 
 pub fn (u &UsedValues) scrollable_overflow_rect() ?css.CSSPixelRect {
@@ -387,19 +467,23 @@ pub fn (u &UsedValues) cumulative_offset() css.CSSPixelPoint {
 }
 
 pub fn (mut u UsedValues) set_static_position_rect(position StaticPositionRect) {
-	u.static_position_rect_ = position
+	mut rare := u.ensure_rare_data()
+	rare.static_position_rect_ = position
 }
 
 pub fn (mut u UsedValues) set_abspos_containing_block_rect(rect css.CSSPixelRect) {
-	u.abspos_containing_block_rect_ = rect
+	mut rare := u.ensure_rare_data()
+	rare.abspos_containing_block_rect_ = rect
 }
 
 pub fn (u &UsedValues) abspos_containing_block_rect() ?css.CSSPixelRect {
-	return u.abspos_containing_block_rect_
+	rare := u.rare_ or { return none }
+	return rare.abspos_containing_block_rect_
 }
 
 pub fn (u &UsedValues) static_position() css.CSSPixelPoint {
-	position := u.static_position_rect_ or { return css.CSSPixelPoint{} }
+	rare := u.rare_ or { return css.CSSPixelPoint{} }
+	position := rare.static_position_rect_ or { return css.CSSPixelPoint{} }
 	return position.aligned_position_for_box_with_size(css.CSSPixelSize.new(u.margin_box_width(), u.margin_box_height()))
 }
 
@@ -407,45 +491,55 @@ pub fn (u &UsedValues) static_position() css.CSSPixelPoint {
 // SVGFormattingContext. Painting consumes the same state instead of reparsing
 // geometry independently.
 pub fn (mut u UsedValues) set_computed_svg_path(path svg.Path) {
-	u.computed_svg_path_ = path
+	mut rare := u.ensure_rare_data()
+	rare.computed_svg_path_ = path
 }
 
 pub fn (u &UsedValues) computed_svg_path() ?svg.Path {
-	return u.computed_svg_path_
+	rare := u.rare_ or { return none }
+	return rare.computed_svg_path_
 }
 
 pub fn (mut u UsedValues) set_computed_svg_transforms(viewbox_transform svg.AffineTransform, svg_transform svg.AffineTransform) {
-	u.has_computed_svg_transforms_ = true
-	u.svg_viewbox_transform_ = viewbox_transform
-	u.svg_transform_ = svg_transform
+	mut rare := u.ensure_rare_data()
+	rare.has_computed_svg_transforms = true
+	rare.svg_viewbox_transform_ = viewbox_transform
+	rare.svg_transform_ = svg_transform
 }
 
 pub fn (u &UsedValues) has_computed_svg_transforms() bool {
-	return u.has_computed_svg_transforms_
+	rare := u.rare_ or { return false }
+	return rare.has_computed_svg_transforms
 }
 
 pub fn (u &UsedValues) svg_viewbox_transform() svg.AffineTransform {
-	return u.svg_viewbox_transform_
+	rare := u.rare_ or { return svg.AffineTransform{} }
+	return rare.svg_viewbox_transform_
 }
 
 pub fn (u &UsedValues) svg_transform() svg.AffineTransform {
-	return u.svg_transform_
+	rare := u.rare_ or { return svg.AffineTransform{} }
+	return rare.svg_transform_
 }
 
 pub fn (mut u UsedValues) set_svg_viewport_transform(transform svg.AffineTransform) {
-	u.svg_viewport_transform_ = transform
+	mut rare := u.ensure_rare_data()
+	rare.svg_viewport_transform_ = transform
 }
 
 pub fn (u &UsedValues) svg_viewport_transform() ?svg.AffineTransform {
-	return u.svg_viewport_transform_
+	rare := u.rare_ or { return none }
+	return rare.svg_viewport_transform_
 }
 
 pub fn (mut u UsedValues) set_svg_rendering_disabled(disabled bool) {
-	u.svg_rendering_disabled_ = disabled
+	mut rare := u.ensure_rare_data()
+	rare.svg_rendering_disabled_ = disabled
 }
 
 pub fn (u &UsedValues) svg_rendering_disabled() bool {
-	return u.svg_rendering_disabled_
+	rare := u.rare_ or { return false }
+	return rare.svg_rendering_disabled_
 }
 
 // --- Margin box (margin + border + padding + content) ---
@@ -672,19 +766,10 @@ pub fn (mut state LayoutState) populate_node_from(mut source LayoutState, node &
 	values.inset_top = source_values.inset_top
 	values.inset_bottom = source_values.inset_bottom
 	values.line_boxes = source_values.line_boxes.clone()
-	values.used_grid_template_columns = source_values.used_grid_template_columns.clone()
-	values.used_grid_template_rows = source_values.used_grid_template_rows.clone()
-	values.used_grid_column_line_names = source_values.used_grid_column_line_names.clone()
-	values.used_grid_row_line_names = source_values.used_grid_row_line_names.clone()
 	values.containing_line_box_fragment = source_values.containing_line_box_fragment
-	values.static_position_rect_ = source_values.static_position_rect_
-	values.abspos_containing_block_rect_ = source_values.abspos_containing_block_rect_
-	values.computed_svg_path_ = source_values.computed_svg_path_
-	values.has_computed_svg_transforms_ = source_values.has_computed_svg_transforms_
-	values.svg_viewbox_transform_ = source_values.svg_viewbox_transform_
-	values.svg_transform_ = source_values.svg_transform_
-	values.svg_viewport_transform_ = source_values.svg_viewport_transform_
-	values.svg_rendering_disabled_ = source_values.svg_rendering_disabled_
+	if source_rare := source_values.rare_ {
+		values.rare_ = source_rare.clone()
+	}
 	values.containing_block_used_values_ = none
 	return values
 }

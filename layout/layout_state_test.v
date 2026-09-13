@@ -5,6 +5,16 @@ import css
 import painting
 
 // LayoutState stores per-box UsedValues; UsedValues computes the box-model boxes from content + edges.
+fn test_used_values_keeps_rare_state_out_of_the_common_allocation() {
+	assert sizeof(UsedValues) <= 320
+	values := UsedValues{}
+	assert !values.has_rare_data()
+	assert values.grid_template_columns().len == 0
+	assert values.computed_svg_path() == none
+	assert values.table_cell_coordinates() == none
+	assert values.static_position() == css.CSSPixelPoint{}
+}
+
 fn test_layout_state_used_values() {
 	doc := dom.Document.create(dom.url_about_blank())
 	style := css.ComputedProperties.new()
@@ -151,8 +161,10 @@ fn test_used_values_static_position_uses_margin_box_size() {
 	box := NodeWithStyle.new(doc, none, style)
 	mut state := LayoutState.new()
 	mut values := state.get_mutable(box)
+	assert !values.has_rare_data()
 	values.set_content_width(CSSPixels.nearest_value_for(20))
 	values.set_content_height(CSSPixels.nearest_value_for(10))
+	assert !values.has_rare_data()
 	values.margin_left = CSSPixels.nearest_value_for(5)
 	values.margin_right = CSSPixels.nearest_value_for(5)
 	values.set_static_position_rect(StaticPositionRect{
@@ -160,6 +172,7 @@ fn test_used_values_static_position_uses_margin_box_size() {
 		horizontal_alignment: .center
 		vertical_alignment:   .end
 	})
+	assert values.has_rare_data()
 	position := values.static_position()
 	assert position.x().to_double() == 45
 	assert position.y().to_double() == 90
@@ -228,6 +241,7 @@ fn test_layout_state_populate_node_from_copies_values_without_ancestor_chain() {
 	root_values.set_content_height(CSSPixels.new(123))
 	root_values.margin_left = CSSPixels.new(7)
 	root_values.line_boxes << LineBox.new(.ltr, .horizontal_tb)
+	root_values.set_grid_template_columns([CSSPixels.new(50)])
 
 	mut subtree := LayoutState.new_for_subtree(unsafe { &NodeWithStyle(child) })
 	copied := subtree.populate_node_from(mut source, unsafe { &NodeWithStyle(root) })
@@ -235,7 +249,12 @@ fn test_layout_state_populate_node_from_copies_values_without_ancestor_chain() {
 	assert copied.content_height().to_double() == 123
 	assert copied.margin_left.to_double() == 7
 	assert copied.line_boxes.len == 1
+	assert copied.grid_template_columns()[0].to_double() == 50
 	assert copied.containing_block_used_values() == none
+	mut mutable_copied := unsafe { &UsedValues(copied) }
+	mutable_copied.set_grid_template_columns([CSSPixels.new(80)])
+	assert root_values.grid_template_columns()[0].to_double() == 50
+	assert mutable_copied.grid_template_columns()[0].to_double() == 80
 
 	mut child_values := subtree.get_mutable(unsafe { &NodeWithStyle(child) })
 	containing := child_values.containing_block_used_values() or {

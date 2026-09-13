@@ -3213,13 +3213,13 @@ fn test_grid_containers_record_their_used_track_sizes() {
 	</style><div id="grid"><i></i><i></i></div>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	grid := used_for_id(result, 'grid')
-	assert grid.used_grid_template_columns.len == 2
-	assert grid.used_grid_template_columns[0].to_double() == 100
-	assert grid.used_grid_template_columns[1].to_double() == 200
-	assert grid.used_grid_template_rows.len == 1
-	assert grid.used_grid_template_rows[0].to_double() == 20
+	assert grid.grid_template_columns().len == 2
+	assert grid.grid_template_columns()[0].to_double() == 100
+	assert grid.grid_template_columns()[1].to_double() == 200
+	assert grid.grid_template_rows().len == 1
+	assert grid.grid_template_rows()[0].to_double() == 20
 	// Only the explicit names are kept; grid-template-areas' implicit
 	// `<area>-start`/`-end` names are not part of the resolved value.
-	assert grid.used_grid_column_line_names == [['a'], ['b'], ['c']]
-	assert grid.used_grid_row_line_names == [['r1'], ['r2']]
+	assert grid.grid_column_line_names() == [['a'], ['b'], ['c']]
+	assert grid.grid_row_line_names() == [['r1'], ['r2']]
 }

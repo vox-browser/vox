@@ -160,16 +160,17 @@ fn compute_relative_inset_for_node(node &NodeWithStyle, mut used_values UsedValu
 	if node.computed_values().position() != .relative {
 		return
 	}
-	width_basis := used_values.relative_inset_basis_width_ or {
+	width_basis := used_values.relative_inset_basis_width() or {
 		containing_block_used_values.content_width()
 	}
 
-	height_basis := used_values.relative_inset_basis_height_ or {
+	height_basis_override := used_values.relative_inset_basis_height()
+	height_basis := height_basis_override or {
 		containing_block_used_values.content_height()
 	}
 
 	left, right := resolve_relative_inset_axis(node, .left, .right, width_basis, false)
-	top, bottom := resolve_relative_inset_axis(node, .top, .bottom, height_basis, used_values.relative_inset_basis_height_ == none
+	top, bottom := resolve_relative_inset_axis(node, .top, .bottom, height_basis, height_basis_override == none
 		&& !containing_block_used_values.has_definite_height())
 	used_values.inset_left = left
 	used_values.inset_right = right

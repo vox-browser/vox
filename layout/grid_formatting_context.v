@@ -2273,8 +2273,7 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 	// Only *explicit* line names are serialized, so recompute the line map
 	// without the `<area>-start`/`-end` names that grid-template-areas adds.
 	empty_areas := css.GridTemplateAreas{}
-	container_state.used_grid_column_line_names = grid_lines_for_definition(container, template_columns, container_width, column_gap, true, empty_areas, true)
-	container_state.used_grid_row_line_names = grid_lines_for_definition(container, template_rows, row_basis, row_gap, container_state.has_definite_height(), empty_areas, false)
+	container_state.set_grid_line_names(grid_lines_for_definition(container, template_columns, container_width, column_gap, true, empty_areas, true), grid_lines_for_definition(container, template_rows, row_basis, row_gap, container_state.has_definite_height(), empty_areas, false))
 
 	for placement in placements {
 		styled := placement.item.as_node_with_style() or { continue }
@@ -2298,8 +2297,7 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 		} else {
 			CSSPixels.new(0)
 		})
-		item_state.relative_inset_basis_width_ = grid_area_width
-		item_state.relative_inset_basis_height_ = grid_area_height
+		item_state.set_relative_inset_basis(grid_area_width, grid_area_height)
 		inline_alignment := grid_inline_alignment(container, placement.item)
 		left_margin_auto := property_is_auto(placement.item.computed_values(), .margin_left)
 		right_margin_auto := property_is_auto(placement.item.computed_values(), .margin_right)
