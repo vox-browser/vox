@@ -6,8 +6,8 @@
 module webaudio
 
 pub const max_number_of_channels = u32(32)
-pub const min_sample_rate = f32(8_000)
-pub const max_sample_rate = f32(192_000)
+pub const min_sample_rate = f32(3_000)
+pub const max_sample_rate = f32(768_000)
 pub const render_quantum_size = u32(128)
 
 pub enum AudioContextState {

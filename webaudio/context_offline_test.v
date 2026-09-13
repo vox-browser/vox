@@ -1,5 +1,20 @@
 module webaudio
 
+fn test_audio_context_supports_the_full_nominal_sample_rate_range() {
+	low := new_audio_context(1, 3_000, true) or { panic(err) }
+	high := new_audio_context(2, 768_000, true) or { panic(err) }
+	assert low.base.sample_rate == 3_000
+	assert high.base.sample_rate == 768_000
+	new_audio_context(3, 2_999, true) or {
+		assert err.msg().contains('allowed range')
+		new_audio_context(4, 768_001, true) or {
+			assert err.msg().contains('allowed range')
+			return
+		}
+	}
+	assert false
+}
+
 fn test_realtime_context_state_transitions_and_destination_constraints() {
 	mut context := new_audio_context(1, none, true) or { panic(err) }
 	assert context.base.sample_rate == 44100
