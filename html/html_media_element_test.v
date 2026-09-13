@@ -59,11 +59,15 @@ fn media_test_buffered_ranges() []MediaBufferedRange {
 fn media_test_current_video_frame() ?&MediaVideoFrame {
 	return &MediaVideoFrame{
 		timestamp: 1.25
-		bitmap: &dom.ImmutableBitmap_{
-			width: 2
-			height: 1
-			pitch: 8
-			data: [u8(1), 2, 3, 255, 4, 5, 6, 255]
+		width: 2
+		height: 1
+		yuv_data: MediaVideoYUVData{
+			y_plane: [u8(16), 235]
+			u_plane: [u8(128)]
+			v_plane: [u8(128)]
+			y_stride: 2
+			u_stride: 1
+			v_stride: 1
 		}
 	}
 }
@@ -100,6 +104,7 @@ fn test_media_element_publishes_the_current_queued_video_frame() {
 	frame := media.ensure_external_content_source().frame() or { panic('frame was not published') }
 	assert frame.width == 2
 	assert frame.height == 1
+	assert frame.data == [u8(0), 0, 0, 255, 255, 255, 255, 255]
 	assert video.natural_media_size()? == VideoDimensions{2, 1}
 }
 
