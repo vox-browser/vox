@@ -84,6 +84,11 @@ pub fn (mut demuxer TrackBufferDemuxer) add_coded_frame(frame DemuxedCodedFrame)
 }
 
 pub fn (mut demuxer TrackBufferDemuxer) remove_coded_frames_and_dependants_in_range(start f64, end f64) {
+	_ = demuxer.remove_coded_frames_and_dependants_in_range_returning_timestamp(start,
+		end, none)
+}
+
+pub fn (mut demuxer TrackBufferDemuxer) remove_coded_frames_and_dependants_in_range_returning_timestamp(start f64, end f64, last_decode_timestamp ?f64) ?f64 {
 	mut remove_start := 0
 	for remove_start < demuxer.coded_frames_.len
 		&& demuxer.coded_frames_[remove_start].timestamp < start {
@@ -95,13 +100,19 @@ pub fn (mut demuxer TrackBufferDemuxer) remove_coded_frames_and_dependants_in_ra
 		remove_end++
 	}
 	if remove_end <= remove_start {
-		return
+		return none
 	}
 	for remove_end < demuxer.coded_frames_.len && !demuxer.coded_frames_[remove_end].is_keyframe {
 		remove_end++
 	}
+	mut removed_last_decode_timestamp := ?f64(none)
 	for frame in demuxer.coded_frames_[remove_start..remove_end] {
 		demuxer.total_bytes_ -= frame.data.len
+		if last_decode := last_decode_timestamp {
+			if frame.timestamp == last_decode {
+				removed_last_decode_timestamp = frame.timestamp
+			}
+		}
 		if last_appended := demuxer.last_appended_timestamp_ {
 			if frame.timestamp == last_appended {
 				demuxer.last_appended_timestamp_ = none
@@ -117,8 +128,9 @@ pub fn (mut demuxer TrackBufferDemuxer) remove_coded_frames_and_dependants_in_ra
 			&& !demuxer.coded_frames_[demuxer.read_position_].is_keyframe {
 			demuxer.read_position_--
 		}
-		demuxer.last_returned_timestamp_ = none
+			demuxer.last_returned_timestamp_ = none
 	}
+	return removed_last_decode_timestamp
 }
 
 pub fn (demuxer &TrackBufferDemuxer) total_bytes() int {

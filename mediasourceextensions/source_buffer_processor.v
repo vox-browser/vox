@@ -339,6 +339,27 @@ fn (mut processor SourceBufferProcessor) run_coded_frame_processing(frames []Dem
 	}
 }
 
+// https://w3c.github.io/media-source/#dfn-coded-frame-removal
+pub fn (mut processor SourceBufferProcessor) run_coded_frame_removal(start f64, end f64) {
+	for _, mut track_buffer in processor.track_buffers_ {
+		mut demuxer := track_buffer.demuxer
+		removed_timestamp := demuxer.remove_coded_frames_and_dependants_in_range_returning_timestamp(start,
+			end, track_buffer.last_decode_timestamp_)
+		if presentation_timestamp := removed_timestamp {
+			if processor.mode_ == .segments {
+				processor.group_end_timestamp_ = presentation_timestamp
+			} else {
+				processor.group_start_timestamp_ = processor.group_end_timestamp_
+			}
+			processor.unset_all_track_buffer_timestamps()
+			processor.set_need_random_access_point_on_all_track_buffers(true)
+		}
+	}
+	if processor.total_buffered_bytes() < processor.capacity_in_bytes() {
+		processor.buffer_full_flag_ = false
+	}
+}
+
 // https://w3c.github.io/media-source/#sourcebuffer-coded-frame-eviction
 pub fn (mut processor SourceBufferProcessor) run_coded_frame_eviction(new_data_size int, current_time f64) {
 	if processor.track_buffers_.len == 0 {

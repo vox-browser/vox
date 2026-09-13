@@ -41,6 +41,7 @@ mut:
 	audio_tracks_ &html.AudioTrackList = unsafe { nil }
 	video_tracks_ &html.VideoTrackList = unsafe { nil }
 	text_tracks_  &html.TextTrackList = unsafe { nil }
+	range_removal_running_ bool
 }
 
 // SourceBuffer has no exposed constructor, but MediaSource implementations
@@ -240,6 +241,9 @@ pub fn (mut buffer SourceBuffer) abort() ! {
 	if media_source.ready_state() != .open {
 		return error('InvalidStateError: MediaSource is not open')
 	}
+	if buffer.range_removal_running_ {
+		return error('InvalidStateError: SourceBuffer is removing a range')
+	}
 	if buffer.updating() {
 		buffer.processor_.set_updating(false)
 		media_source.queue_a_media_source_task(fn [buffer] () {
@@ -250,6 +254,70 @@ pub fn (mut buffer SourceBuffer) abort() ! {
 		})
 	}
 	buffer.processor_.reset_parser_state()
+}
+
+// https://w3c.github.io/media-source/#dom-sourcebuffer-remove
+pub fn (mut buffer SourceBuffer) remove(start f64, end f64) ! {
+	mut media_source := buffer.media_source_ or {
+		return error('InvalidStateError: SourceBuffer has no MediaSource')
+	}
+	if !media_source.source_buffers().contains(buffer) {
+		return error('InvalidStateError: SourceBuffer has been removed')
+	}
+	if buffer.updating() {
+		return error('InvalidStateError: SourceBuffer is updating')
+	}
+	duration := media_source.duration()
+	if math.is_nan(duration) {
+		return error('TypeError: MediaSource duration is NaN')
+	}
+	if start < 0 || start > duration {
+		return error('TypeError: Removal range start is outside of the duration')
+	}
+	if end <= start || math.is_nan(end) {
+		return error('TypeError: Removal range end does not follow its start')
+	}
+	if media_source.ready_state() == .ended {
+		media_source.set_ready_state_to_open_and_fire_sourceopen_event()
+	}
+	buffer.run_range_removal(start, end)
+}
+
+// https://w3c.github.io/media-source/#sourcebuffer-range-removal
+fn (mut buffer SourceBuffer) run_range_removal(start f64, end f64) {
+	buffer.range_removal_running_ = true
+	buffer.processor_.set_updating(true)
+	media_source := buffer.media_source_ or {
+		buffer.range_removal_running_ = false
+		buffer.processor_.set_updating(false)
+		return
+	}
+	media_source.queue_a_media_source_task(fn [buffer] () {
+		buffer.dispatch_event(dom.Event.create('updatestart', dom.EventInit{}))
+	})
+	media_source.queue_a_media_source_task(fn [mut buffer, start, end] () {
+		media_source := buffer.media_source_ or {
+			buffer.range_removal_running_ = false
+			buffer.processor_.set_updating(false)
+			return
+		}
+		if !media_source.source_buffers().contains(buffer) {
+			buffer.range_removal_running_ = false
+			return
+		}
+		buffer.processor_.run_coded_frame_removal(start, end)
+		if mut media_element := media_source.media_element_assigned_to() {
+			media_element.update_ready_state()
+		}
+		buffer.range_removal_running_ = false
+		buffer.processor_.set_updating(false)
+		media_source.queue_a_media_source_task(fn [buffer] () {
+			buffer.dispatch_event(dom.Event.create('update', dom.EventInit{}))
+		})
+		media_source.queue_a_media_source_task(fn [buffer] () {
+			buffer.dispatch_event(dom.Event.create('updateend', dom.EventInit{}))
+		})
+	})
 }
 
 fn (mut buffer SourceBuffer) run_buffer_append_algorithm() {
