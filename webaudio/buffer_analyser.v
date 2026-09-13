@@ -147,6 +147,14 @@ pub mut:
 	min_decibels            f64
 	smoothing_time_constant f64
 	previous_block          []f32
+mut:
+	time_domain_ring_          &MediaStreamAudioRing
+	render_node_               &AnalyserRenderNode
+	history_                   []f32
+	history_write_index_       int
+	history_valid_frames_      int
+	cached_frequency_data_     []f32
+	frequency_data_cache_time_ ?f64
 }
 
 pub fn (mut context BaseAudioContext) create_analyser(options AnalyserOptions) !AnalyserNode {
@@ -157,11 +165,15 @@ pub fn (mut context BaseAudioContext) create_analyser(options AnalyserOptions) !
 		return error('IndexSizeError: smoothingTimeConstant not between 0 and 1')
 	}
 	node := context.allocate_node(.analyser, 1, 1, options.node, 2, .max, .speakers)!
+	mut time_domain_ring := new_media_stream_audio_ring(32768, 1)
 	mut analyser := AnalyserNode{
 		node: node
 		max_decibels: options.max_decibels
 		min_decibels: options.min_decibels
 		smoothing_time_constant: options.smoothing_time_constant
+		time_domain_ring_: time_domain_ring
+		render_node_: AnalyserRenderNode.create(node.id, int(render_quantum_size), time_domain_ring)
+		history_: []f32{len: 32768}
 	}
 	analyser.set_fft_size(options.fft_size)!
 	return analyser
@@ -192,7 +204,8 @@ pub fn (mut analyser AnalyserNode) set_fft_size(size u32) ! {
 		return error('IndexSizeError: fftSize is not a power of 2 between 32 and 32768')
 	}
 	analyser.fft_size = size
-	analyser.previous_block = []f32{len: int(size)}
+	analyser.previous_block = []f32{len: int(size / 2)}
+	analyser.frequency_data_cache_time_ = none
 }
 
 pub fn (mut analyser AnalyserNode) set_min_decibels(value f64) ! {
@@ -216,9 +229,34 @@ pub fn (mut analyser AnalyserNode) set_smoothing_time_constant(value f64) ! {
 	analyser.smoothing_time_constant = value
 }
 
-pub fn (analyser AnalyserNode) current_time_domain_data() []f32 {
-	// Current upstream has no render graph signal plumbing and returns silence.
-	return []f32{len: int(analyser.fft_size)}
+pub fn (analyser &AnalyserNode) render_node() &AnalyserRenderNode {
+	return analyser.render_node_
+}
+
+pub fn (mut analyser AnalyserNode) drain_time_domain_ring() {
+	mut ring := unsafe { &MediaStreamAudioRing(analyser.time_domain_ring_) }
+	for {
+		chunk := ring.pop_frames(1024)
+		if chunk.len == 0 {
+			break
+		}
+		for sample in chunk {
+			analyser.history_[analyser.history_write_index_] = sample
+			analyser.history_write_index_ = (analyser.history_write_index_ + 1) % analyser.history_.len
+		}
+		analyser.history_valid_frames_ = min_int(analyser.history_.len, analyser.history_valid_frames_ + chunk.len)
+	}
+}
+
+pub fn (mut analyser AnalyserNode) current_time_domain_data() []f32 {
+	analyser.drain_time_domain_ring()
+	mut result := []f32{len: int(analyser.fft_size)}
+	frames_available := min_int(int(analyser.fft_size), analyser.history_valid_frames_)
+	for frame in 0 .. frames_available {
+		history_index := (analyser.history_write_index_ + analyser.history_.len - frames_available + frame) % analyser.history_.len
+		result[int(analyser.fft_size) - frames_available + frame] = analyser.history_[history_index]
+	}
+	return result
 }
 
 pub fn (analyser AnalyserNode) apply_blackman_window(input []f32) []f32 {
@@ -231,11 +269,20 @@ pub fn (analyser AnalyserNode) apply_blackman_window(input []f32) []f32 {
 }
 
 pub fn (mut analyser AnalyserNode) current_frequency_data() []f32 {
+	current_time := analyser.node.graph.current_time
+	if cache_time := analyser.frequency_data_cache_time_ {
+		if cache_time == current_time {
+			return analyser.cached_frequency_data_.clone()
+		}
+	}
 	current_time_domain_data := analyser.current_time_domain_data()
 	blackman_windowed_input := analyser.apply_a_blackman_window(current_time_domain_data)
 	frequency_domain_data := apply_a_fourier_transform(blackman_windowed_input)
 	smoothed_data := analyser.smoothing_over_time(frequency_domain_data)
-	return analyser.conversion_to_d_b(smoothed_data)
+	result := analyser.conversion_to_d_b(smoothed_data)
+	analyser.cached_frequency_data_ = result.clone()
+	analyser.frequency_data_cache_time_ = current_time
+	return result
 }
 
 pub fn (mut analyser AnalyserNode) get_float_frequency_data(mut output []f32) {
@@ -272,7 +319,7 @@ pub fn (mut analyser AnalyserNode) get_byte_frequency_data(mut output []u8) {
 	}
 }
 
-pub fn (analyser AnalyserNode) get_float_time_domain_data(mut output []f32) {
+pub fn (mut analyser AnalyserNode) get_float_time_domain_data(mut output []f32) {
 	data := analyser.current_time_domain_data()
 	count := if output.len < int(analyser.fft_size) {
 		output.len
@@ -284,7 +331,7 @@ pub fn (analyser AnalyserNode) get_float_time_domain_data(mut output []f32) {
 	}
 }
 
-pub fn (analyser AnalyserNode) get_byte_time_domain_data(mut output []u8) {
+pub fn (mut analyser AnalyserNode) get_byte_time_domain_data(mut output []u8) {
 	data := analyser.current_time_domain_data()
 	count := if output.len < int(analyser.fft_size) { output.len } else { int(analyser.fft_size) }
 	for index in 0 .. count {

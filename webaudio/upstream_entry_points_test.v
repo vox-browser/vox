@@ -64,8 +64,8 @@ fn test_upstream_concrete_node_and_analyser_entry_points() {
 	assert analyser.smoothing_time_constant() == 0.8
 	windowed := analyser.apply_a_blackman_window([]f32{len: 32, init: 1})
 	assert windowed.len == 32
-	assert apply_a_fourier_transform(windowed) == []f32{len: 32}
-	assert analyser.smoothing_over_time(windowed).len == 32
+	assert apply_a_fourier_transform(windowed).len == 16
+	assert analyser.smoothing_over_time(apply_a_fourier_transform(windowed)).len == 16
 	assert analyser.conversion_to_d_b([f32(1)])[0] == 0
 	assert analyser.number_of_inputs() == 1
 	assert analyser.number_of_outputs() == 1

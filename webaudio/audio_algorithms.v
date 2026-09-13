@@ -162,7 +162,7 @@ pub fn BaseAudioContext.buffer_verify_audio_options_inside_nominal_range(number_
 	verify_audio_options(number_of_channels, length, sample_rate)!
 }
 
-pub fn (mut context BaseAudioContext) queue_a_media_element_task(task fn()) {
+pub fn (mut context BaseAudioContext) queue_a_media_element_task(task fn ()) {
 	context.media_element_tasks++
 	task()
 }
@@ -296,14 +296,69 @@ pub fn (analyser AnalyserNode) apply_a_blackman_window(input []f32) []f32 {
 }
 
 pub fn apply_a_fourier_transform(input []f32) []f32 {
-	return []f32{len: input.len}
+	if input.len == 0 {
+		return []f32{}
+	}
+	mut real := input.clone()
+	mut imaginary := []f32{len: input.len}
+	mut j := 0
+	for i := 1; i < input.len; i++ {
+		mut bit := input.len >> 1
+		for j & bit != 0 {
+			j ^= bit
+			bit >>= 1
+		}
+		j ^= bit
+		if i < j {
+			real[i], real[j] = real[j], real[i]
+			imaginary[i], imaginary[j] = imaginary[j], imaginary[i]
+		}
+	}
+	mut length := 2
+	for length <= input.len {
+		half := length >> 1
+		angle := -2.0 * math.pi / f64(length)
+		root_real := math.cos(angle)
+		root_imaginary := math.sin(angle)
+		for start := 0; start < input.len; start += length {
+			mut weight_real := 1.0
+			mut weight_imaginary := 0.0
+			for offset in 0 .. half {
+				upper_real := real[start + offset]
+				upper_imaginary := imaginary[start + offset]
+				lower_real := real[start + offset + half] * f32(weight_real) - imaginary[start + offset + half] * f32(weight_imaginary)
+				lower_imaginary := real[start + offset + half] * f32(weight_imaginary) + imaginary[start + offset + half] * f32(weight_real)
+				real[start + offset] = upper_real + lower_real
+				imaginary[start + offset] = upper_imaginary + lower_imaginary
+				real[start + offset + half] = upper_real - lower_real
+				imaginary[start + offset + half] = upper_imaginary - lower_imaginary
+				next_weight_real := weight_real * root_real - weight_imaginary * root_imaginary
+				weight_imaginary = weight_real * root_imaginary + weight_imaginary * root_real
+				weight_real = next_weight_real
+			}
+		}
+		length <<= 1
+	}
+	mut magnitudes := []f32{len: input.len / 2}
+	inverse_length := f32(1.0 / f64(input.len))
+	for index in 0 .. magnitudes.len {
+		magnitudes[index] = f32(math.sqrt(f64(real[index] * real[index] + imaginary[index] * imaginary[index]))) * inverse_length
+	}
+	return magnitudes
 }
 
 pub fn (mut analyser AnalyserNode) smoothing_over_time(current_block []f32) []f32 {
-	transformed := apply_a_fourier_transform(current_block)
-	mut result := []f32{cap: int(analyser.fft_size)}
-	for index in 0 .. int(analyser.fft_size) {
-		result << f32(analyser.smoothing_time_constant) * analyser.previous_block[index] + (1 - f32(analyser.smoothing_time_constant)) * f32(math.abs(f64(transformed[index])))
+	if analyser.previous_block.len != current_block.len {
+		analyser.previous_block = []f32{len: current_block.len}
+	}
+	mut result := []f32{len: current_block.len}
+	tau := f32(analyser.smoothing_time_constant)
+	for index in 0 .. current_block.len {
+		mut smoothed := tau * analyser.previous_block[index] + (1 - tau) * f32(math.abs(f64(current_block[index])))
+		if math.is_nan(smoothed) || math.is_inf(smoothed, 0) {
+			smoothed = 0
+		}
+		result[index] = smoothed
 	}
 	analyser.previous_block = result.clone()
 	return result
@@ -312,7 +367,7 @@ pub fn (mut analyser AnalyserNode) smoothing_over_time(current_block []f32) []f3
 pub fn (analyser AnalyserNode) conversion_to_d_b(input []f32) []f32 {
 	mut result := []f32{cap: input.len}
 	for value in input {
-		result << f32(20 * math.log(f64(value)))
+		result << if value > 0 { f32(20 * math.log10(f64(value))) } else { f32(math.inf(-1)) }
 	}
 	return result
 }
