@@ -578,6 +578,7 @@ pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin 
 					specificity: selector.specificity()
 					cascade_origin: cascade_origin
 					scope_rule: rule.parent_scope_rule()
+					container_rule: rule.parent_container_rule()
 				}
 
 				qualified_layer_name := matching_rule.qualified_layer_name()
@@ -2067,6 +2068,11 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 		// `:host(...) .descendant` selectors).
 		rule_to_run := scoped_rule_to_run.rule
 		rule_root := scoped_rule_to_run.shadow_root
+		if container_rule := rule_to_run.container_rule {
+			if !container_rule.container_rule_matches(abstract_element) {
+				continue
+			}
+		}
 		mut shadow_host_to_use := shadow_host
 		if abstract_element.element().is_shadow_host() && !style_scope_optional_shadow_root_equal(rule_root, abstract_element.element().shadow_root()) {
 			if root := rule_root {

@@ -558,9 +558,11 @@ pub struct CSSRule {
 pub mut:
 	type_ CSSRuleType
 
-	parent_rule        ?&CSSRule
-	parent_style_sheet ?&CSSStyleSheet
-	cached_layer_name  ?string
+	parent_rule                       ?&CSSRule
+	parent_style_sheet                ?&CSSStyleSheet
+	cached_layer_name                 ?string
+	cached_parent_container_rule      ?&CSSRule
+	parent_container_rule_cache_valid bool
 
 	rules ?&CSSRuleList
 
@@ -858,6 +860,8 @@ pub fn (rule &CSSRule) dump(indent_levels int) string {
 
 pub fn (mut rule CSSRule) clear_caches() {
 	rule.cached_layer_name = none
+	rule.cached_parent_container_rule = none
+	rule.parent_container_rule_cache_valid = false
 	if rule.type_ == .style {
 		rule.cached_absolutized_selectors = none
 	}
@@ -1138,10 +1142,6 @@ pub fn (mut rule CSSRule) delete_rule(index u32) ! {
 }
 
 pub fn (rule &CSSRule) for_each_effective_rule(order TraversalOrder, callback fn (&CSSRule)) {
-	if rule.type_ == .container_rule {
-		rule.for_each_globally_effective_container_child(order, callback)
-		return
-	}
 	if rule.type_ in [.media, .supports] && !rule.condition_matches() {
 		return
 	}

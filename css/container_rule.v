@@ -95,6 +95,81 @@ pub fn (query &ContainerQuery) evaluate(element dom.AbstractElement, container_n
 	return .unknown
 }
 
+fn has_ancestor_container_with_name(element dom.AbstractElement, container_name string) bool {
+	mut candidate := element.element().as_node().flat_tree_parent_element()
+	for candidate != none {
+		container := candidate or { break }
+		if container_name_matches(container, container_name) {
+			return true
+		}
+		candidate = container.as_node().flat_tree_parent_element()
+	}
+	return false
+}
+
+fn (rule &CSSRule) container_conditions_match(element dom.AbstractElement) bool {
+	for condition in rule.container_conditions {
+		if query := condition.container_query {
+			if query.evaluate(element, condition.container_name) == .true_ {
+				return true
+			}
+			continue
+		}
+		if name := condition.container_name {
+			if has_ancestor_container_with_name(element, name) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+fn (rule &CSSRule) parent_container_rule() ?&CSSRule {
+	if rule.parent_container_rule_cache_valid {
+		return rule.cached_parent_container_rule
+	}
+
+	mut result := ?&CSSRule(none)
+	mut current_parent := rule.parent_rule
+	mut current_style_sheet := rule.parent_style_sheet
+	for {
+		for current_parent != none {
+			parent := current_parent or { break }
+			if parent.type_ == .container_rule {
+				result = parent
+				break
+			}
+			current_parent = parent.parent_rule
+		}
+		if result != none {
+			break
+		}
+		style_sheet := current_style_sheet or { break }
+		owner_rule := style_sheet.owner_rule or { break }
+		if owner_rule.type_ == .container_rule {
+			result = owner_rule
+			break
+		}
+		current_parent = owner_rule.parent_rule
+		current_style_sheet = owner_rule.parent_style_sheet
+	}
+
+	mut mutable_rule := unsafe { &CSSRule(rule) }
+	mutable_rule.cached_parent_container_rule = result
+	mutable_rule.parent_container_rule_cache_valid = true
+	return result
+}
+
+pub fn (rule &CSSRule) container_rule_matches(element dom.AbstractElement) bool {
+	if rule.type_ != .container_rule || !rule.container_conditions_match(element) {
+		return false
+	}
+	if parent := rule.parent_container_rule() {
+		return parent.container_rule_matches(element)
+	}
+	return true
+}
+
 pub fn (query &ContainerQuery) matches() bool {
 	return query.matches_
 }
@@ -200,23 +275,4 @@ fn (rule &CSSRule) serialized_container_rule() string {
 	}
 	builder.write_u8(`}`)
 	return builder.str()
-}
-
-fn (rule &CSSRule) for_each_globally_effective_container_child(order TraversalOrder, callback fn (&CSSRule)) {
-	rules := rule.rules or { return }
-	for child in rules.rules {
-		if child.type_ !in [.counter_style, .font_face, .font_feature_values, .function_rule,
-			.keyframes, .layer_block, .layer_statement, .margin, .page, .property] {
-			continue
-		}
-		if order == .preorder {
-			callback(child)
-		}
-		if child.type_ in css_grouping_rule_types {
-			child.for_each_effective_rule(order, callback)
-		}
-		if order == .postorder {
-			callback(child)
-		}
-	}
 }

@@ -88,7 +88,7 @@ fn test_multiple_container_conditions_hide_legacy_singular_accessors() {
 	assert rule.container_query() == ''
 }
 
-fn test_container_rule_only_exposes_globally_effective_children() {
+fn test_container_rule_exposes_all_children_for_element_dependent_matching() {
 	style_rule := CSSRule.create(.style)
 	keyframes_rule := CSSRule.create(.keyframes)
 	rule := CSSRule.create_container([], CSSRuleList.create([style_rule, keyframes_rule]))
@@ -96,7 +96,46 @@ fn test_container_rule_only_exposes_globally_effective_children() {
 	rule.for_each_effective_rule(.preorder, fn [mut collector] (child &CSSRule) {
 		collector.types << child.type_
 	})
-	assert collector.types == [CSSRuleType.keyframes]
+	assert collector.types == [CSSRuleType.style, .keyframes]
+}
+
+fn test_nested_name_only_container_rules_filter_matching_styles() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut outer := document.create_element_ns('http://www.w3.org/1999/xhtml', 'section') or {
+		panic('${err}')
+	}
+	outer.set_attribute_value('style', 'container-name: outer')
+	mut inner := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	inner.set_attribute_value('style', 'container-name: card')
+	mut target := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
+	target.set_attribute_value('class', 'target')
+	mut outsider := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
+	outsider.set_attribute_value('class', 'target')
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(outer.as_node()) or { panic('${err}') }
+	mut outer_node := outer.as_node()
+	outer_node.append_child(inner.as_node()) or { panic('${err}') }
+	outer_node.append_child(outsider.as_node()) or { panic('${err}') }
+	mut inner_node := inner.as_node()
+	inner_node.append_child(target.as_node()) or { panic('${err}') }
+	add_document_author_style_sheet(document, '.target { color: blue } @container outer { @container card { .target { color: red } } }')
+
+	computer := StyleComputer.new(document)
+	outer_style := computer.compute_style(dom.AbstractElement.new(outer, none))
+	outer.set_computed_properties(none, computed_properties_to_dom(outer_style))
+	inner_style := computer.compute_style(dom.AbstractElement.new(inner, none))
+	inner.set_computed_properties(none, computed_properties_to_dom(inner_style))
+	target_style := computer.compute_style(dom.AbstractElement.new(target, none))
+	outsider_style := computer.compute_style(dom.AbstractElement.new(outsider, none))
+
+	assert (target_style.property(.color, .no) or { panic('target color missing') }).css_text == 'rgb(255, 0, 0)'
+	assert (outsider_style.property(.color, .no) or { panic('outsider color missing') }).css_text == 'rgb(0, 0, 255)'
 }
 
 fn test_container_rule_parser_preserves_names_and_general_enclosed_queries() {

@@ -9827,6 +9827,7 @@ pub mut:
 	slotted                      bool
 	contains_part_pseudo_element bool
 	scope_rule                   ?&CSSRule
+	container_rule               ?&CSSRule
 }
 
 // The rule cache owns MatchingRule entries independently of the style scope
