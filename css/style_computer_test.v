@@ -1619,6 +1619,56 @@ fn test_ua_default_stylesheet_applies_display() {
 	assert computed_value_for(span, display) or { panic('no span display') } == 'inline'
 }
 
+fn test_table_heading_alignment_uses_immediate_parents_computed_value() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{})
+	mut root := document.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic(err)
+	}
+	mut body := document.create_element_ns('http://www.w3.org/1999/xhtml', 'body') or {
+		panic(err)
+	}
+	mut start_table := document.create_element_ns('http://www.w3.org/1999/xhtml', 'table') or {
+		panic(err)
+	}
+	start_table.set_attribute_value('style', 'text-align: start')
+	mut start_row := document.create_element_ns('http://www.w3.org/1999/xhtml', 'tr') or {
+		panic(err)
+	}
+	start_heading := document.create_element_ns('http://www.w3.org/1999/xhtml', 'th') or {
+		panic(err)
+	}
+	mut end_table := document.create_element_ns('http://www.w3.org/1999/xhtml', 'table') or {
+		panic(err)
+	}
+	end_table.set_attribute_value('style', 'text-align: end')
+	mut end_row := document.create_element_ns('http://www.w3.org/1999/xhtml', 'tr') or {
+		panic(err)
+	}
+	end_heading := document.create_element_ns('http://www.w3.org/1999/xhtml', 'th') or {
+		panic(err)
+	}
+
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(body.as_node()) or { panic(err) }
+	mut body_node := body.as_node()
+	body_node.append_child(start_table.as_node()) or { panic(err) }
+	body_node.append_child(end_table.as_node()) or { panic(err) }
+	mut start_table_node := start_table.as_node()
+	start_table_node.append_child(start_row.as_node()) or { panic(err) }
+	mut start_row_node := start_row.as_node()
+	start_row_node.append_child(start_heading.as_node()) or { panic(err) }
+	mut end_table_node := end_table.as_node()
+	end_table_node.append_child(end_row.as_node()) or { panic(err) }
+	mut end_row_node := end_row.as_node()
+	end_row_node.append_child(end_heading.as_node()) or { panic(err) }
+
+	assert computed_value_for(start_heading, .text_align) or { '' } == 'center'
+	assert computed_value_for(end_heading, .text_align) or { '' } == 'end'
+}
+
 // The real StyleComputer matches an author stylesheet attached to the document (author cascade origin):
 // a `.card { color: navy }` rule applies to a matching element and inherits to its child, distinct from
 // an unmatched element's initial color.

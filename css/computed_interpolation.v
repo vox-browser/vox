@@ -10239,20 +10239,22 @@ fn compute_text_align(mut properties ComputedProperties, abstract_element dom.Ab
 	}
 
 	if text_align_keyword == .libweb_inherit_or_center && abstract_element.element().local_name() == 'th' {
-		mut maybe_parent := abstract_element.element_to_inherit_style_from()
-		for {
-			parent := maybe_parent or { break }
-			dom_computed := parent.computed_properties() or { break }
-			parent_computed := computed_properties_from_dom(dom_computed) or { break }
-			dom_cascaded := parent.cascaded_properties() or { break }
-			parent_cascaded := cascaded_properties_from_dom(dom_cascaded) or { break }
-			if parent_cascaded.property(.text_align) != none {
-				parent_value := parent_computed.property(.text_align, .no) or { break }
-				properties.set_property(.text_align, parent_value, .yes, .no)
-				break
+		if parent := abstract_element.element_to_inherit_style_from() {
+			if dom_computed := parent.computed_properties() {
+				if parent_computed := computed_properties_from_dom(dom_computed) {
+					if parent_value := parent_computed.property(.text_align, .no) {
+						parent_keyword := computed_interpolation_style_value_keyword(parent_value) or {
+							Keyword.start
+						}
+						if parent_keyword != .start {
+							properties.set_property(.text_align, parent_value, .yes, .no)
+							return
+						}
+					}
+				}
 			}
-			maybe_parent = parent.element_to_inherit_style_from()
 		}
+		properties.set_property(.text_align, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.center))), .no, .no)
 	}
 }
 
