@@ -130,6 +130,22 @@ fn test_middle_button_teardown_skips_repaint_when_layout_is_stale() {
 	assert current.repaint_request_count() == 2
 }
 
+fn test_middle_button_scroll_handler_includes_the_hit_node_before_its_ancestors() {
+	direct := InputTarget{
+		id: 'direct'
+		has_scrollable_box: true
+	}
+	ancestor := InputTarget{
+		id: 'ancestor'
+		has_scrollable_box: true
+	}
+	assert MiddleButtonScrollHandler.find_scrollable_ancestor([direct, ancestor])?.id == 'direct'
+	assert MiddleButtonScrollHandler.find_scrollable_ancestor([InputTarget{id: 'leaf'}, ancestor])?.id == 'ancestor'
+	assert MiddleButtonScrollHandler.find_scrollable_ancestor([InputTarget{id: 'leaf'}]) == none
+	handler := MiddleButtonScrollHandler.create(direct, PixelPoint{x: 7, y: 9})
+	assert handler.origin() == PixelPoint{x: 7, y: 9}
+}
+
 fn test_page_autoscroll_setting_controls_middle_button_activation() {
 	mut model := Page.create(1)!
 	target := InputTarget{ id: 'scroller', has_scrollable_box: true }

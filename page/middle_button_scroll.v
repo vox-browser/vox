@@ -14,8 +14,8 @@ const middle_button_scroll_interval_seconds = 0.016
 pub struct MiddleButtonScrollHandler {
 pub:
 	container InputTarget
-	origin    PixelPoint
 mut:
+	origin_                 PixelPoint
 	mouse_position_         PixelPoint
 	fractional_delta_       PixelPoint
 	moved_beyond_dead_zone_ bool
@@ -28,12 +28,16 @@ mut:
 pub fn MiddleButtonScrollHandler.create(container InputTarget, origin PixelPoint) &MiddleButtonScrollHandler {
 	return &MiddleButtonScrollHandler{
 		container: container
-		origin: origin
+		origin_: origin
 		mouse_position_: origin
 		layout_is_up_to_date_: container.layout_is_up_to_date
 		has_document_paintable_: container.has_document_paintable
 		repaint_request_count_: if container.has_document_paintable { 1 } else { 0 }
 	}
+}
+
+pub fn (handler &MiddleButtonScrollHandler) origin() PixelPoint {
+	return handler.origin_
 }
 
 pub fn (mut handler MiddleButtonScrollHandler) set_document_layout_state(layout_is_up_to_date bool, has_paintable bool) {
@@ -62,6 +66,10 @@ pub fn (handler &MiddleButtonScrollHandler) repaint_request_count() int {
 }
 
 pub fn find_middle_button_scrollable_ancestor(targets []InputTarget) ?InputTarget {
+	return MiddleButtonScrollHandler.find_scrollable_ancestor(targets)
+}
+
+pub fn MiddleButtonScrollHandler.find_scrollable_ancestor(targets []InputTarget) ?InputTarget {
 	for target in targets {
 		if target.has_scrollable_box {
 			return target
@@ -79,8 +87,8 @@ pub fn (handler &MiddleButtonScrollHandler) mouse_has_moved_beyond_dead_zone() b
 }
 
 pub fn (mut handler MiddleButtonScrollHandler) perform_tick() ?ScrollTick {
-	distance_x := handler.mouse_position_.x - handler.origin.x
-	distance_y := handler.mouse_position_.y - handler.origin.y
+	distance_x := handler.mouse_position_.x - handler.origin_.x
+	distance_y := handler.mouse_position_.y - handler.origin_.y
 	if math.hypot(distance_x, distance_y) < middle_button_dead_zone_radius {
 		return none
 	}
