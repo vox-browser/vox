@@ -925,6 +925,18 @@ fn test_svg_elements_create_their_concrete_layout_node_types_without_html_wrappe
 	assert tree_builder_node_with_id(svg_root, 'definition') == none
 }
 
+fn test_svg_switch_creates_a_graphics_box_for_only_its_first_svg_child() {
+	document := html.parse_document('<!doctype html><svg><switch id="chooser">ignored text<rect id="selected" width="10" height="10"/><circle id="bypassed" r="5"/></switch></svg>')
+	root := build_layout_tree(document) or { panic('no layout tree') }
+	chooser := tree_builder_node_with_id(root, 'chooser') or { panic('no switch box') }
+	assert chooser.is_svg_graphics_box()
+	assert chooser.child_count() == 1
+	assert tree_builder_node_with_id(chooser, 'selected') != none
+	assert tree_builder_node_with_id(chooser, 'bypassed') == none
+	bypassed := document.get_element_by_id('bypassed') or { panic('no bypassed DOM element') }
+	assert bypassed.as_node().unsafe_layout_node() == none
+}
+
 fn test_document_layout_caches_only_paintable_boxes_with_auto_content_visibility() {
 	document := html.parse_document('<!doctype html><style>#near, #far { content-visibility: auto } #gone { content-visibility: auto; display: none }</style><div id="near"></div><div id="ordinary"></div><div id="far"></div><div id="gone"></div>')
 	_ = run_document_layout(document, 800, 600) or { panic('layout failed') }

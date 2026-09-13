@@ -98,6 +98,10 @@ pub fn (n &Node) is_svg_g_element() bool {
 	return n.is_svg_element_with_any_local_name(['g'])
 }
 
+pub fn (n &Node) is_svg_switch_element() bool {
+	return n.is_svg_element_with_any_local_name(['switch'])
+}
+
 pub fn (n &Node) is_svg_foreign_object_element() bool {
 	return n.is_svg_element_with_any_local_name(['foreignObject'])
 }

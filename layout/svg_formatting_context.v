@@ -854,7 +854,7 @@ fn svg_element_for_layout_node(node &Node) ?&dom.Element {
 }
 
 fn is_svg_container_element(element &dom.Element) bool {
-	return element.local_name() in ['a', 'use', 'symbol', 'g', 'mask']
+	return element.local_name() in ['a', 'use', 'symbol', 'g', 'mask', 'switch']
 }
 
 fn resolve_svg_attribute_length(element &dom.Element, name string, reference CSSPixels, fallback CSSPixels) CSSPixels {

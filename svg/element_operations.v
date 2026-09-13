@@ -567,6 +567,10 @@ pub fn (element &Element) is_svg_g_element() bool {
 	return element.tag == 'g'
 }
 
+pub fn (element &Element) is_svg_switch_element() bool {
+	return element.tag == 'switch'
+}
+
 pub fn (element &Element) is_svg_mask_element() bool {
 	return element.tag == 'mask'
 }
@@ -593,8 +597,8 @@ pub fn (element &Element) is_svg_view_element() bool {
 
 pub fn (element &Element) is_svg_graphics_element() bool {
 	return element.tag in ['a', 'circle', 'clipPath', 'defs', 'ellipse', 'foreignObject', 'g', 'image',
-		'line', 'mask', 'path', 'polygon', 'polyline', 'rect', 'svg', 'symbol', 'text', 'textPath',
-		'tspan', 'use', 'view']
+		'line', 'mask', 'path', 'polygon', 'polyline', 'rect', 'svg', 'switch', 'symbol', 'text',
+		'textPath', 'tspan', 'use', 'view']
 }
 
 pub fn (element &Element) as_element() Element {

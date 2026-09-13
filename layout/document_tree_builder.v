@@ -809,7 +809,30 @@ fn layout_tree_children_for_element(element &dom.Element) []&dom.Node {
 			return assigned.clone()
 		}
 	}
-	return element.as_node().children_as_vector()
+	children := element.as_node().children_as_vector()
+	if !element.as_node().is_svg_switch_element() {
+		return children
+	}
+
+	// SVG <switch> processes only the first direct SVG element child. The
+	// requiredExtensions/systemLanguage predicates are upstream FIXMEs too; for
+	// now every SVG child satisfies the same provisional condition.
+	mut selected_child := ?&dom.Node(none)
+	for child in children {
+		if selected_child == none && child.is_svg_element() {
+			selected_child = child
+			continue
+		}
+		// A previous layout may have selected this child. Detach its whole stale
+		// subtree when the selected child changes between tree rebuilds.
+		child.for_each_shadow_including_inclusive_descendant(fn (node &dom.Node) dom.TraversalDecision {
+			return clear_stale_layout_and_paint_node(node, none)
+		})
+	}
+	if selected := selected_child {
+		return [selected]
+	}
+	return []&dom.Node{}
 }
 
 fn build_details_internal_layout_children(document &dom.Document, element &dom.Element, host_computed &css.ComputedProperties, style_computer &css.StyleComputer, mut builder_state TreeBuilderState) []&Node {
@@ -2176,7 +2199,7 @@ fn create_layout_node_for_svg_element(document &dom.Document, element &dom.Eleme
 	if tag_name in ['circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect'] {
 		return unsafe { &Node(SVGGeometryBox.new(document, element, computed)) }
 	}
-	if tag_name in ['g', 'a', 'use'] {
+	if tag_name in ['g', 'a', 'use', 'switch'] {
 		return unsafe { &Node(SVGGraphicsBox.new(document, element, computed)) }
 	}
 	if tag_name == 'image' {

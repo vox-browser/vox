@@ -28,6 +28,10 @@ fn test_upstream_attribute_parser_consumes_one_path_production_at_a_time() {
 }
 
 fn test_upstream_element_geometry_paint_and_filter_reflection() {
+	switch_element := new_element('switch')
+	assert switch_element.is_svg_switch_element()
+	assert switch_element.is_svg_graphics_element()
+
 	mut rect := new_element('rect')
 	rect.attributes['x'] = '10'
 	rect.attributes['y'] = '20'
