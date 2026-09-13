@@ -540,6 +540,8 @@ pub fn (mut handler EventHandler) clear_per_test_input_state() {
 	handler.last_known_mouse_screen_position_ = none
 	handler.last_known_mouse_buttons_ = 0
 	handler.last_known_mouse_modifiers_ = 0
+	handler.last_known_mouse_target_ = none
+	handler.last_wheel_event_ = none
 }
 
 pub fn (_ &EventHandler) word_segmenter() string {

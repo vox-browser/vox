@@ -75,6 +75,8 @@ mut:
 	last_known_mouse_screen_position_    ?PixelPoint
 	last_known_mouse_buttons_            u32
 	last_known_mouse_modifiers_          u32
+	last_known_mouse_target_             ?InputTarget
+	last_wheel_event_                    ?WheelEventData
 }
 
 pub fn (mut handler EventHandler) set_document_state(active bool, has_paint_root bool) {
@@ -134,6 +136,7 @@ pub fn (mut handler EventHandler) handle_mousedown(target ?InputTarget, click_co
 		return .dropped
 	}
 	value := target or { return .dropped }
+	handler.last_known_mouse_target_ = value
 	// Upstream records the press target before pointer-event dispatch. A
 	// cancelled pointerdown therefore still has a corresponding pointerup/click
 	// target, even though compatibility mouse events and default actions are
@@ -328,13 +331,15 @@ pub fn (mut handler EventHandler) handle_mousewheel(target ?InputTarget) EventRe
 		return .dropped
 	}
 	value := target or { return .dropped }
-	handler.log('wheel', value)
-	return if value.cancel_mouse {
+	handler.last_known_mouse_target_ = value
+	dispatch_result := handler.dispatch_wheel_event(value, PixelPoint{}, PixelPoint{}, 0, 0,
+		0, 0, 0, true)
+	return if dispatch_result == .cancelled {
 		.cancelled
 	} else if value.has_scrollable_box {
 		.handled
 	} else {
-		.dropped
+		.accepted
 	}
 }
 
