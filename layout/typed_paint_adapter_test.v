@@ -2200,6 +2200,51 @@ fn test_svg_linear_gradient_paints_retain_linked_resource_algorithms() {
 	assert serialized.contains('paint-order="stroke fill"')
 }
 
+fn test_svg_paint_servers_resolve_inside_use_shadow_trees() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 }</style><svg width="100" height="100"><use id="host" width="100" height="100"/></svg>')
+	mut host := document.get_element_by_id('host') or { panic('missing use host') }
+	shadow_root := host.shadow_root() or { panic('missing use shadow root') }
+	mut symbol := document.create_element_ns('http://www.w3.org/2000/svg', 'symbol') or {
+		panic('${err}')
+	}
+	mut gradient := document.create_element_ns('http://www.w3.org/2000/svg', 'linearGradient') or {
+		panic('${err}')
+	}
+	gradient.set_attribute_value('id', 'shadow paint')
+	mut red := document.create_element_ns('http://www.w3.org/2000/svg', 'stop') or {
+		panic('${err}')
+	}
+	red.set_attribute_value('stop-color', 'red')
+	mut blue := document.create_element_ns('http://www.w3.org/2000/svg', 'stop') or {
+		panic('${err}')
+	}
+	blue.set_attribute_value('offset', '1')
+	blue.set_attribute_value('stop-color', 'blue')
+	mut gradient_node := gradient.as_node()
+	gradient_node.append_child(red.as_node()) or { panic('${err}') }
+	gradient_node.append_child(blue.as_node()) or { panic('${err}') }
+	mut rect := document.create_element_ns('http://www.w3.org/2000/svg', 'rect') or {
+		panic('${err}')
+	}
+	rect.set_attribute_value('width', '100')
+	rect.set_attribute_value('height', '100')
+	rect.set_attribute_value('fill', 'url(#shadow%20paint)')
+	mut symbol_node := symbol.as_node()
+	symbol_node.append_child(gradient.as_node()) or { panic('${err}') }
+	symbol_node.append_child(rect.as_node()) or { panic('${err}') }
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	shadow_node.append_child(symbol.as_node()) or { panic('${err}') }
+
+	root := layout_document_typed_in_viewport(document, 100, 100)
+	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
+	assert paths.len == 1
+	paint := paths[0].fill_linear_gradient or { panic('missing shadow-tree gradient') }
+	assert paint.gradient.color_stops.map(it.color) == [
+		painting.Color{255, 0, 0, 255},
+		painting.Color{0, 0, 255, 255},
+	]
+}
+
 fn test_svg_paint_resource_mutation_invalidates_the_retained_display_list() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 }</style><svg width="100" height="100"><defs><linearGradient id="paint"><stop id="stop" stop-color="red"/><stop offset="1" stop-color="blue"/></linearGradient></defs><rect id="painted" width="100" height="100" fill="url(#paint)"/></svg>')
 	root := layout_document_typed_in_viewport(document, 100, 100)

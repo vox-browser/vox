@@ -893,7 +893,9 @@ fn resolved_svg_filter(element &dom.Element, reference string) ?painting.GfxFilt
 	if reference.len < 2 || reference[0] != `#` {
 		return none
 	}
-	filter_element := element.document().get_element_by_id(reference[1..]) or { return none }
+	filter_element := resolve_svg_fragment_identifier_to_element(element.as_node(), reference[1..]) or {
+		return none
+	}
 	if !filter_element.is_svg_element() || filter_element.local_name() != 'filter' {
 		return none
 	}
@@ -1568,6 +1570,17 @@ fn svg_paint_fragment(reference string) ?string {
 	return reference[fragment_offset + 1..]
 }
 
+fn resolve_svg_fragment_identifier_to_element(node &dom.Node, fragment string) ?&dom.Element {
+	decoded_fragment := svg.decode_fragment_identifier(fragment)
+	if element := node.document().get_element_by_id(decoded_fragment) {
+		return element
+	}
+	if shadow_root := node.containing_shadow_root() {
+		return unsafe { &dom.ParentNode(shadow_root) }.get_element_by_id(decoded_fragment)
+	}
+	return none
+}
+
 fn svg_gradient_link_fragment(document &dom.Document, reference string) ?string {
 	if reference == '' {
 		return none
@@ -1874,7 +1887,7 @@ fn resolve_svg_linear_gradient_paint_style(node &Node, state &LayoutState,
 	fragment := svg_paint_fragment(paint.as_url().url()) or {
 		return none
 	}
-	element := dom_node.document().get_element_by_id(fragment) or { return none }
+	element := resolve_svg_fragment_identifier_to_element(dom_node, fragment) or { return none }
 	if !element.is_svg_element() || element.local_name() != 'linearGradient' {
 		return none
 	}
@@ -1934,7 +1947,7 @@ fn resolve_svg_radial_gradient_paint_style(node &Node, state &LayoutState,
 	}
 	dom_node := node.dom_node() or { return none }
 	fragment := svg_paint_fragment(paint.as_url().url()) or { return none }
-	element := dom_node.document().get_element_by_id(fragment) or { return none }
+	element := resolve_svg_fragment_identifier_to_element(dom_node, fragment) or { return none }
 	if !element.is_svg_element() || element.local_name() != 'radialGradient' {
 		return none
 	}
@@ -2124,7 +2137,7 @@ fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVG
 	}
 	dom_node := node.dom_node() or { return none }
 	fragment := svg_paint_fragment(paint.as_url().url()) or { return none }
-	element := dom_node.document().get_element_by_id(fragment) or { return none }
+	element := resolve_svg_fragment_identifier_to_element(dom_node, fragment) or { return none }
 	if !element.is_svg_element() || element.local_name() != 'pattern' {
 		return none
 	}
