@@ -54,6 +54,14 @@ pub:
 	default_duration f64
 }
 
+fn webm_track_codec_is_supported(track WebMTrackInfo) bool {
+	return match track.codec_id {
+		'V_VP8', 'V_VP9', 'V_AV1' { track.type_ == .video }
+		'A_VORBIS', 'A_OPUS' { track.type_ == .audio }
+		else { track.type_ == .text }
+	}
+}
+
 pub struct DemuxedCodedFrame {
 pub:
 	track_number u64

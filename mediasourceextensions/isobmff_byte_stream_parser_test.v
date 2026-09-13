@@ -28,7 +28,7 @@ fn iso_test_full_box(type_ string, version u8, flags u32, payload []u8) []u8 {
 	return iso_test_box(type_, full_payload)
 }
 
-fn minimal_isobmff_initialization_segment() []u8 {
+fn minimal_isobmff_initialization_segment_with_sample_entry(sample_entry []u8, track_id u32) []u8 {
 	mut file_type_payload := 'isom'.bytes()
 	file_type_payload << iso_test_u32(0)
 	file_type := iso_test_box('ftyp', file_type_payload)
@@ -39,7 +39,7 @@ fn minimal_isobmff_initialization_segment() []u8 {
 	movie_header := iso_test_full_box('mvhd', 0, 0, movie_header_payload)
 
 	mut track_header_payload := []u8{len: 8}
-	track_header_payload << iso_test_u32(1)
+	track_header_payload << iso_test_u32(track_id)
 	track_header := iso_test_full_box('tkhd', 0, 0, track_header_payload)
 
 	mut media_header_payload := []u8{len: 8}
@@ -54,7 +54,6 @@ fn minimal_isobmff_initialization_segment() []u8 {
 	handler_payload << 'VideoHandler\x00'.bytes()
 	handler := iso_test_full_box('hdlr', 0, 0, handler_payload)
 
-	sample_entry := iso_test_box('av01', []u8{})
 	mut sample_description_payload := iso_test_u32(1)
 	sample_description_payload << sample_entry
 	sample_description := iso_test_full_box('stsd', 0, 0, sample_description_payload)
@@ -80,7 +79,7 @@ fn minimal_isobmff_initialization_segment() []u8 {
 	track_payload << media
 	track := iso_test_box('trak', track_payload)
 
-	mut track_extends_payload := iso_test_u32(1)
+	mut track_extends_payload := iso_test_u32(track_id)
 	track_extends_payload << iso_test_u32(1)
 	track_extends_payload << iso_test_u32(0)
 	track_extends_payload << iso_test_u32(0)
@@ -95,6 +94,11 @@ fn minimal_isobmff_initialization_segment() []u8 {
 	mut result := file_type.clone()
 	result << movie
 	return result
+}
+
+fn minimal_isobmff_initialization_segment() []u8 {
+	return minimal_isobmff_initialization_segment_with_sample_entry(iso_test_box('av01',
+		[]u8{}), 1)
 }
 
 fn minimal_isobmff_media_segment() []u8 {
@@ -171,4 +175,47 @@ fn test_isobmff_ignores_complete_top_level_boxes_but_retains_split_ones() {
 		0
 	} == 0
 	assert parser.ignored_element_length(event_message)! == event_message.len
+}
+
+fn test_isobmff_rejects_an_unknown_initialization_segment_codec() {
+	initialization := minimal_isobmff_initialization_segment_with_sample_entry(iso_test_box('zzzz',
+		[]u8{}), 1)
+	mut source := MediaSource.create()
+	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	media.set_src_object(source.as_media_provider())!
+	mut buffer := source.add_source_buffer('video/mp4; codecs="av01.0.00M.08"')!
+	buffer.append_buffer(initialization)!
+
+	assert !buffer.updating()
+	assert source.ready_state() == .ended
+	assert buffer.video_tracks().length() == 0
+}
+
+fn test_isobmff_rejects_a_configuration_box_for_another_codec() {
+	mut sample_entry_payload := []u8{len: 78}
+	sample_entry_payload << iso_test_box('avcC', [u8(1)])
+	initialization := minimal_isobmff_initialization_segment_with_sample_entry(iso_test_box('av01',
+		sample_entry_payload), 1)
+	mut source := MediaSource.create()
+	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	media.set_src_object(source.as_media_provider())!
+	mut buffer := source.add_source_buffer('video/mp4; codecs="av01.0.00M.08"')!
+	buffer.append_buffer(initialization)!
+
+	assert !buffer.updating()
+	assert source.ready_state() == .ended
+}
+
+fn test_isobmff_rejects_a_repeated_initialization_segment_with_different_tracks() {
+	mut source := MediaSource.create()
+	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	media.set_src_object(source.as_media_provider())!
+	mut buffer := source.add_source_buffer('video/mp4; codecs="av01.0.00M.08"')!
+	buffer.append_buffer(minimal_isobmff_initialization_segment())!
+
+	buffer.append_buffer(minimal_isobmff_initialization_segment_with_sample_entry(iso_test_box('av01',
+		[]u8{}), 2))!
+
+	assert !buffer.updating()
+	assert source.ready_state() == .ended
 }

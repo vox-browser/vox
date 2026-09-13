@@ -61,6 +61,13 @@ fn (mut parser ByteStreamParser) parse_media_segment(bytes []u8) !WebMMediaSegme
 	}
 }
 
+fn (parser &ByteStreamParser) supports_track_codec(track WebMTrackInfo) bool {
+	return match parser.kind {
+		.webm { webm_track_codec_is_supported(track) }
+		.isobmff { isobmff_track_codec_is_supported(track) }
+	}
+}
+
 fn (mut parser ByteStreamParser) reset_parser_state() {
 	match parser.kind {
 		.webm { parser.webm_.reset_parser_state() }

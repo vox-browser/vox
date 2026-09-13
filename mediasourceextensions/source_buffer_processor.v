@@ -196,6 +196,28 @@ fn completed_processor_append(first_initialization bool, processed_frames bool, 
 	}
 }
 
+fn (processor &SourceBufferProcessor) initialization_codecs_are_supported(tracks []WebMTrackInfo) bool {
+	for track in tracks {
+		if !processor.parser_.supports_track_codec(track) {
+			return false
+		}
+	}
+	return true
+}
+
+fn (processor &SourceBufferProcessor) repeated_initialization_tracks_match(tracks []WebMTrackInfo) bool {
+	if tracks.len != processor.track_buffers_.len {
+		return false
+	}
+	for track in tracks {
+		track_buffer := processor.track_buffers_[track.number] or { return false }
+		if track_buffer.demuxer.track.type_ != track.type_ {
+			return false
+		}
+	}
+	return true
+}
+
 // https://w3c.github.io/media-source/#sourcebuffer-segment-parser-loop
 pub fn (mut processor SourceBufferProcessor) run_segment_parser_loop() ProcessorAppendResult {
 	if processor.parser_ == unsafe { nil } {
@@ -246,6 +268,9 @@ pub fn (mut processor SourceBufferProcessor) run_segment_parser_loop() Processor
 			if result.tracks.len == 0 {
 				return ProcessorAppendResult{}
 			}
+			if !processor.initialization_codecs_are_supported(result.tracks) {
+				return ProcessorAppendResult{}
+			}
 			parsed_duration = result.duration
 			if !processor.first_initialization_segment_received_ {
 				for track in result.tracks {
@@ -255,6 +280,9 @@ pub fn (mut processor SourceBufferProcessor) run_segment_parser_loop() Processor
 				processor.first_initialization_segment_received_ = true
 				first_initialization = true
 			} else {
+				if !processor.repeated_initialization_tracks_match(result.tracks) {
+					return ProcessorAppendResult{}
+				}
 				processor.set_need_random_access_point_on_all_track_buffers(true)
 			}
 			processor.pending_initialization_segment_for_change_type_ = false

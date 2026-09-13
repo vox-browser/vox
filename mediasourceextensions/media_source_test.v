@@ -342,6 +342,27 @@ fn test_webm_initialization_and_media_segments_create_tracks_and_coded_frames() 
 	assert update.count == 3
 }
 
+fn test_webm_rejects_an_unsupported_initialization_segment_codec() {
+	mut source := MediaSource.create()
+	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	media.set_src_object(source.as_media_provider())!
+	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
+	append_error := &EventObservation{}
+	buffer.set_onerror(observer_callback(append_error))
+	mut initialization := minimal_webm_initialization_segment()
+	codec_offset := initialization.bytestr().index('V_VP9') or { panic('missing test codec') }
+	replacement := 'V_VP7'.bytes()
+	for index, byte in replacement {
+		initialization[codec_offset + index] = byte
+	}
+
+	buffer.append_buffer(initialization)!
+
+	assert append_error.count == 1
+	assert source.ready_state() == .ended
+	assert buffer.video_tracks().length() == 0
+}
+
 fn test_source_buffer_abort_resets_parser_and_queues_abort_events_when_updating() {
 	mut source := MediaSource.create()
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})

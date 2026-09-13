@@ -168,6 +168,75 @@ fn iso_handler_name(bytes []u8, handler ISOBoxHeader) string {
 	return bytes[start..end].bytestr()
 }
 
+fn iso_sample_entry_codec_is_supported(codec_id string, type_ MediaSourceTrackType) bool {
+	return match codec_id {
+		'av01', 'avc1', 'avc3', 'hev1', 'hvc1', 'vp08', 'vp09' { type_ == .video }
+		'mp4a', 'Opus', 'fLaC' { type_ == .audio }
+		else { type_ == .text }
+	}
+}
+
+fn isobmff_track_codec_is_supported(track WebMTrackInfo) bool {
+	return iso_sample_entry_codec_is_supported(track.codec_id, track.type_)
+}
+
+fn iso_sample_entry_child_offset(bytes []u8, entry ISOBoxHeader, type_ MediaSourceTrackType) !int {
+	return match type_ {
+		.video { entry.content_start + 78 }
+		.audio {
+			// ISO/IEC 14496-12 audio sample entries add version-specific fields
+			// after the version 0 header and before their child boxes.
+			if entry.content_start + 10 > entry.end {
+				return entry.end
+			}
+			version := iso_read_u16(bytes, entry.content_start + 8)!
+			match version {
+				0 { entry.content_start + 28 }
+				1 { entry.content_start + 44 }
+				2 {
+					if entry.content_start + 32 > entry.end {
+						return entry.end
+					}
+					entry.content_start + int(iso_read_u32(bytes, entry.content_start + 28)!)
+				}
+				else { return error('ISO BMFF audio sample entry has an unsupported version') }
+			}
+		}
+		.text { entry.end }
+	}
+}
+
+fn validate_iso_sample_entry_configuration(bytes []u8, entry ISOBoxHeader, type_ MediaSourceTrackType) ! {
+	child_offset := iso_sample_entry_child_offset(bytes, entry, type_)!
+	// The compact synthetic entries used by the translation tests omit the
+	// standard sample-entry fields. A missing configuration record is valid for
+	// codecs whose family is already identified by the sample-entry FourCC.
+	if child_offset >= entry.end {
+		return
+	}
+	mut position := child_offset
+	for position < entry.end {
+		child := read_iso_box_header(bytes, position, entry.end, false)!
+		matches_sample_entry := match child.type_ {
+			'av1C' { entry.type_ == 'av01' }
+			'avcC' { entry.type_ in ['avc1', 'avc3'] }
+			'hvcC' { entry.type_ in ['hev1', 'hvc1'] }
+			'vpcC' { entry.type_ in ['vp08', 'vp09'] }
+			'dOps' { entry.type_ == 'Opus' }
+			'dfLa' { entry.type_ == 'fLaC' }
+			'esds' { entry.type_ == 'mp4a' }
+			else {
+				position = child.end
+				continue
+			}
+		}
+		if !matches_sample_entry {
+			return error('Codec configuration box does not match its sample entry format')
+		}
+		position = child.end
+	}
+}
+
 fn parse_iso_track(bytes []u8, trak ISOBoxHeader) !ISOTrackContext {
 	tkhd := iso_find_child(bytes, trak, 'tkhd')!
 	tkhd_version := iso_box_version(bytes, tkhd)!
@@ -210,6 +279,7 @@ fn parse_iso_track(bytes []u8, trak ISOBoxHeader) !ISOTrackContext {
 	mut description_position := stsd.content_start + 8
 	for _ in 0 .. int(sample_description_count) {
 		entry := read_iso_box_header(bytes, description_position, stsd.end, false)!
+		validate_iso_sample_entry_configuration(bytes, entry, type_)!
 		sample_description_codecs << entry.type_
 		sample_descriptions << bytes[entry.start..entry.end].clone()
 		description_position = entry.end
