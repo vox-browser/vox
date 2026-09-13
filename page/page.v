@@ -190,6 +190,11 @@ fn page_did_allocate_backing_stores_callback(target voidptr, front_id int, back_
 	model.client_.page_did_allocate_backing_stores(i32(front_id), front_store, i32(back_id), back_store)
 }
 
+fn page_request_frame_callback(target voidptr) {
+	mut model := unsafe { &Page(target) }
+	model.client_.request_frame()
+}
+
 pub fn Page.create(device_scale f64) !&Page {
 	if device_scale <= 0 || math.is_nan(device_scale) || math.is_inf(device_scale, 0) {
 		return error('device pixel scale must be finite and positive')
@@ -205,6 +210,7 @@ pub fn Page.create(device_scale f64) !&Page {
 		device_pixel_scale_callback: page_device_pixel_scale_callback
 		did_allocate_backing_stores_callback: page_did_allocate_backing_stores_callback
 		preferred_color_scheme_callback: page_preferred_color_scheme_callback
+		request_frame_callback: page_request_frame_callback
 	}
 	return model
 }

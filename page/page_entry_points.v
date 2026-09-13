@@ -237,6 +237,9 @@ pub fn (p &Page) for_each_media_element(callback fn (u64, MediaElementState)) {
 
 pub fn (mut p Page) update_all_media_element_video_sinks() {
 	p.client_events << ClientEvent{ name: 'update-media-video-sinks', text: p.media_elements.len.str() }
+	if p.media_elements.len > 0 {
+		p.client_.request_frame()
+	}
 }
 
 pub fn (mut p Page) register_canvas_element(id u64) {

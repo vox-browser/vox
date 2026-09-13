@@ -29,6 +29,7 @@ pub mut:
 	palette_is_dark_        bool
 	zoom_level_             f64 = 1
 	screen_rect_            PixelRect
+	request_frame_hook_     ?fn ()
 }
 
 pub fn PageClient.create() &PageClient { return &PageClient{} }
@@ -42,6 +43,17 @@ pub fn (client &PageClient) screen_rect() PixelRect { return client.screen_rect_
 
 fn (mut client PageClient) record(name string, text string) {
 	client.events << ClientEvent{name: name, text: text}
+}
+
+pub fn (mut client PageClient) set_request_frame_hook(hook ?fn ()) {
+	client.request_frame_hook_ = hook
+}
+
+pub fn (mut client PageClient) request_frame() {
+	client.record('request-frame', '')
+	if hook := client.request_frame_hook_ {
+		hook()
+	}
 }
 
 pub fn (_ PageClient) is_url_suitable_for_same_process_navigation(_ string, _ string) bool { return true }

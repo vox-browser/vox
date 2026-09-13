@@ -320,6 +320,19 @@ fn test_top_level_traversable_registry_creation_and_deactivation() {
 	traversable.destroy_top_level_traversable()
 }
 
+fn test_queue_screenshot_task_marks_the_traversable_for_repaint() {
+	mut traversable := TraversableNavigable.create_a_fresh_top_level_traversable(dom.URL{
+		value: 'https://example.test/screenshot'
+	}, EmptyDocumentResource{})!
+	host := traversable.host_navigable_ or { panic('missing host navigable') }
+	mut model := NavigableModel.create(host, none)!
+	model.record_display_list_and_scroll_state(dom.PaintConfig{})
+	assert !model.needs_repaint()
+
+	traversable.queue_screenshot_task(none)
+	assert model.needs_repaint()
+}
+
 fn test_top_level_traversable_status_follows_the_host_parent() {
 	mut traversable := TraversableNavigable.create_a_new_top_level_traversable('')!
 	assert traversable.is_top_level_traversable()

@@ -2870,6 +2870,8 @@ pub fn (mut n Node) set_needs_layout_tree_update(value bool, reason SetNeedsLayo
 		}
 	}
 	if n.needs_layout_tree_update {
+		mut document := unsafe { &Document(n.document()) }
+		document.mark_needs_repaint(false)
 		for ancestor := n.flat_tree_parent(); ancestor != none;  {
 			mut current := unsafe { &Node(ancestor or { break }) }
 			if current.child_needs_layout_tree_update {
@@ -2942,6 +2944,7 @@ pub fn (mut n Node) set_needs_style_update(value bool) {
 		if doc != unsafe { nil } {
 			mut mutable_document := unsafe { &Document(doc) }
 			mutable_document.record_style_invalidation()
+			mutable_document.mark_needs_repaint(false)
 		}
 		for ancestor := n.parent_or_shadow_host(); ancestor != none;  {
 			mut current := unsafe { &Node(ancestor or { break }) }
@@ -3847,6 +3850,8 @@ pub fn (mut n Node) set_needs_repaint(should_invalidate_display_list InvalidateD
 pub fn (mut n Node) set_needs_layout_update(reason SetNeedsLayoutReason) {
 	if mut node := n.unsafe_layout_node() {
 		node.set_needs_layout_update(reason)
+		mut document := unsafe { &Document(n.document()) }
+		document.mark_needs_repaint(false)
 	}
 }
 

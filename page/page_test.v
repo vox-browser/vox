@@ -58,6 +58,51 @@ fn test_dom_document_notifications_reach_the_translated_page_client() {
 	assert model.client().events.last().text == 'Translated title'
 }
 
+fn test_document_work_requests_frames_on_demand() {
+	mut model := Page.create(1.0)!
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	document.set_page(unsafe { &dom.Page(model) })
+	mut client := model.client()
+	client.events.clear()
+
+	document.update_readiness(.interactive)
+	assert client.events.last().name == 'request-frame'
+	client.events.clear()
+
+	document.set_needs_animated_style_update()
+	assert client.events.map(it.name) == ['request-frame']
+	// Repeated animation invalidation is coalesced until the update is consumed.
+	document.set_needs_animated_style_update()
+	assert client.events.map(it.name) == ['request-frame']
+	client.events.clear()
+
+	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic(err)
+	}
+	mut element_node := element.as_node()
+	element_node.set_needs_style_update(true)
+	assert client.events.last().name == 'request-frame'
+	assert document.needs_repaint
+	client.events.clear()
+	document.needs_repaint = false
+	element_node.set_needs_layout_tree_update(true, .node_insert_before)
+	assert client.events.last().name == 'request-frame'
+	assert document.needs_repaint
+	client.events.clear()
+
+	document.add_render_blocking_element(element)
+	document.remove_render_blocking_element(element)
+	assert client.events.last().name == 'request-frame'
+	client.events.clear()
+	document.append_pending_fullscreen_change(.change, element)
+	assert client.events.last().name == 'request-frame'
+	client.events.clear()
+	document.set_rendering_suppression_for_view_transitions(true)
+	assert client.events.len == 0
+	document.set_rendering_suppression_for_view_transitions(false)
+	assert client.events.last().name == 'request-frame'
+}
+
 fn test_media_registry_and_find_in_page_wrap_rules() {
 	mut p := Page.create(1)!
 	p.set_top_level_traversable('top')!
@@ -80,6 +125,8 @@ fn test_media_registry_and_find_in_page_wrap_rules() {
 	assert p.selected_match or { FindMatch{} }.document_id == 'main'
 
 	p.register_media_element(10, MediaElementState{ playing: true })
+	p.update_all_media_element_video_sinks()
+	assert p.client().events.last().name == 'request-frame'
 	assert p.request_media_context_menu(10)
 	assert p.toggle_media_property('play')
 	assert !p.media_elements[10].playing

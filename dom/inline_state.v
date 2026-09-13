@@ -500,7 +500,13 @@ pub fn (d &Document) document_rendering_suppression_for_view_transitions() bool 
 }
 
 pub fn (mut d Document) set_rendering_suppression_for_view_transitions(value bool) {
+	if d.rendering_suppression_for_view_transitions == value {
+		return
+	}
 	d.rendering_suppression_for_view_transitions = value
+	if !value {
+		d.request_frame()
+	}
 }
 
 pub fn (d &Document) document_dynamic_view_transition_style_sheet() ?&CSSStyleSheet {

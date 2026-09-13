@@ -1100,6 +1100,15 @@ pub fn (mut traversable TraversableNavigable) set_screenshot_hook(hook ?Traversa
 
 pub fn (mut traversable TraversableNavigable) queue_screenshot_task(node_id ?u64) {
 	traversable.screenshot_tasks_ << node_id
+	if host := traversable.host_navigable_ {
+		if model := navigable_model_for_host(host) {
+			mut mutable_model := unsafe { &NavigableModel(model) }
+			mutable_model.set_needs_repaint()
+		}
+	}
+	if document := traversable.active_document() {
+		document.request_frame()
+	}
 }
 
 pub fn (mut traversable TraversableNavigable) process_screenshot_requests() {

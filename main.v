@@ -203,6 +203,10 @@ fn C.native_end_backdrop_filter_layer(opacity f32)
 
 fn C.native_end_clip()
 
+fn request_browser_frame() {
+	C.native_wake_browser()
+}
+
 const initial_width = 1024
 const initial_height = 768
 const toolbar_height = 88.0
@@ -4813,6 +4817,8 @@ fn main() {
 	}
 	defer_remote_navigation := markup == '' && !options.headless_smoke && !options.headless_layout_tree
 	page_model := page.Page.create(1.0) or { panic(err) }
+	mut page_client := page_model.client()
+	page_client.set_request_frame_hook(request_browser_frame)
 	main_checkpoint = debug_timing_checkpoint('startup_page_model', main_checkpoint)
 	mut app := &BrowserApp{
 		markup: markup

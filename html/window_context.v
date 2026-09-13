@@ -1714,7 +1714,9 @@ pub fn (window &WindowModel) toolbar() &BarProp {
 }
 
 pub fn (mut window WindowModel) request_animation_frame(callback AnimationFrameCallback) u32 {
-	return window.animation_driver_.add(callback)
+	handle := window.animation_driver_.add(callback)
+	window.document_.request_frame()
+	return handle
 }
 
 pub fn (mut window WindowModel) cancel_animation_frame(handle u32) {

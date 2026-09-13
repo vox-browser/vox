@@ -2568,6 +2568,7 @@ pub:
 	device_pixel_scale_callback          fn (voidptr) f64 = unsafe { nil }
 	did_allocate_backing_stores_callback fn (voidptr, int, int) = unsafe { nil }
 	preferred_color_scheme_callback      fn (voidptr) string = unsafe { nil }
+	request_frame_callback               fn (voidptr) = unsafe { nil }
 mut:
 	last_changed_title_ string
 	title_change_count_ int
@@ -3651,14 +3652,27 @@ pub fn (mut d Document) run_unloading_cleanup_steps() {
 	}
 }
 
-pub fn (mut d Document) set_needs_repaint() {
+fn (mut d Document) mark_needs_repaint(invalidate_display_list bool) {
 	// Document::set_needs_repaint() defaults to InvalidateDisplayList::Yes
 	// upstream. It does not call PaintableBox::set_needs_repaint(), so retained
 	// phase caches survive and only the assembled display list is discarded.
-	d.invalidate_display_list()
+	if invalidate_display_list {
+		d.invalidate_display_list()
+	}
 	d.needs_repaint = true
 	if paintable := d.unsafe_paintable() {
 		paintable.document_set_needs_repaint()
+	}
+	d.request_frame()
+}
+
+pub fn (mut d Document) set_needs_repaint() {
+	d.mark_needs_repaint(true)
+}
+
+pub fn (d &Document) request_frame() {
+	if d.page_ != unsafe { nil } {
+		d.page_.client_request_frame()
 	}
 }
 
@@ -5069,6 +5083,9 @@ pub fn (mut d Document) update_readiness(readiness_value DocumentReadyState) {
 		return
 	}
 	d.readiness = readiness_value
+	if readiness_value != .loading {
+		d.request_frame()
+	}
 
 	// Update timing info based on new readiness state
 	now := current_high_resolution_time(relevant_global_object_for_doc(d))
@@ -7714,7 +7731,11 @@ pub fn (mut d Document) set_needs_full_layout_tree_update(b bool) {
 }
 
 pub fn (mut d Document) set_needs_animated_style_update() {
+	if d.needs_animated_style_update {
+		return
+	}
 	d.needs_animated_style_update = true
+	d.mark_needs_repaint(false)
 }
 
 pub fn (mut d Document) set_needs_to_refresh_scroll_state(b bool) {
@@ -9971,6 +9992,7 @@ pub fn (mut d Document) append_pending_fullscreen_change(type_ PendingFullscreen
 		type_: type_
 		element: element
 	}
+	d.request_frame()
 }
 
 // https://fullscreen.spec.whatwg.org/#fullscreen-element
@@ -10110,6 +10132,9 @@ pub fn (mut d Document) add_render_blocking_element(element &Element) {
 
 pub fn (mut d Document) remove_render_blocking_element(element &Element) {
 	d.render_blocking_elements = d.render_blocking_elements.filter(it != element)
+	if d.render_blocking_elements.len == 0 {
+		d.request_frame()
+	}
 }
 
 // --- CSS import rules ---
@@ -10119,6 +10144,9 @@ pub fn (mut d Document) add_pending_css_import_rule(rule &CSSImportRule) {
 
 pub fn (mut d Document) remove_pending_css_import_rule(rule &CSSImportRule) {
 	d.pending_css_import_rules = d.pending_css_import_rules.filter(it != rule)
+	if d.pending_css_import_rules.len == 0 {
+		d.request_frame()
+	}
 }
 
 // --- Registered properties ---
@@ -11962,6 +11990,12 @@ pub fn (p &Page) preferred_color_scheme() string {
 pub fn (p &Page) client_page_did_allocate_backing_stores(front_id int, back_id int) {
 	if p.target != unsafe { nil } && p.did_allocate_backing_stores_callback != unsafe { nil } {
 		p.did_allocate_backing_stores_callback(p.target, front_id, back_id)
+	}
+}
+
+pub fn (p &Page) client_request_frame() {
+	if p.target != unsafe { nil } && p.request_frame_callback != unsafe { nil } {
+		p.request_frame_callback(p.target)
 	}
 }
 
