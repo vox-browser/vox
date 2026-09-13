@@ -1928,6 +1928,9 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 	}
 
 	mut rules_to_run := []ScopedMatchingRule{}
+	subject_node := abstract_element.element().as_node()
+	subject_is_reslotted_slot := subject_node.is_html_slot_element()
+		&& subject_node.root().is_shadow_root()
 	if rule_cache := scope.rule_cache_for_cascade_origin(cascade_origin, qualified_layer_name) {
 		for bucket in rule_cache.matching_rule_buckets(abstract_element) {
 			style_scope_add_rules_to_run(style_computer, abstract_element, bucket, scope_rule_root, shadow_root, element_shadow_root, mut rules_to_run)
@@ -1950,7 +1953,9 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 		}
 	}
 
-	style_scope_add_slotted_rules_for_available_scopes(style_computer, abstract_element, cascade_origin, qualified_layer_name, scope, shadow_root, element_shadow_root, mut rules_to_run)
+	if !subject_is_reslotted_slot {
+		style_scope_add_slotted_rules_for_available_scopes(style_computer, abstract_element, cascade_origin, qualified_layer_name, scope, shadow_root, element_shadow_root, mut rules_to_run)
+	}
 	style_scope_add_part_rules_for_available_scopes(style_computer, abstract_element, cascade_origin, qualified_layer_name, scope, shadow_root, element_shadow_root, mut rules_to_run)
 
 	mut matching_rules := []ScopedMatchingRule{}
@@ -1999,7 +2004,8 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 
 		mut did_match := false
 		if selector.is_slotted() {
-			if abstract_element.element().as_node().assigned_slot_internal() == none {
+			if abstract_element.element().as_node().assigned_slot_internal() == none
+				|| subject_is_reslotted_slot {
 				style_scope_merge_attempted_pseudo_class_matches(mut attempted_pseudo_class_matches, context)
 				continue
 			}
