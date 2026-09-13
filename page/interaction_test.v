@@ -322,6 +322,24 @@ fn test_event_handler_drops_input_during_drag_and_orders_pointer_mouse_click() {
 	assert handler.event_log.map(it.name) == ['keydown', 'keypress', 'beforeinput', 'input']
 }
 
+fn test_input_target_resolves_only_committed_layout_slots() {
+	layout_node := &dom.LayoutNode{}
+	target := InputTarget{
+		id: 'hit'
+		committed_layout_node: layout_node
+	}
+	assert voidptr(target.layout_node()?) == voidptr(layout_node)
+	assert InputTarget{
+		committed_layout_node: layout_node
+		layout_is_up_to_date: false
+	}.layout_node() == none
+	assert InputTarget{
+		committed_layout_node: layout_node
+		has_document_paintable: false
+	}.layout_node() == none
+	assert InputTarget{}.layout_node() == none
+}
+
 fn test_event_handler_pointer_cancellation_and_mouseup_cleanup_match_upstream() {
 	mut handler := EventHandler{}
 	cancelled_pointer := InputTarget{

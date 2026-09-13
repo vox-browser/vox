@@ -32,6 +32,17 @@ pub:
 	has_scrollable_box     bool
 	layout_is_up_to_date   bool = true
 	has_document_paintable bool = true
+	committed_layout_node  &dom.LayoutNode = unsafe { nil }
+}
+
+// Resolve the target's layout node only while the hit-test arena that produced
+// it is still the document's committed paint tree.
+pub fn (target &InputTarget) layout_node() ?&dom.LayoutNode {
+	if !target.layout_is_up_to_date || !target.has_document_paintable
+		|| target.committed_layout_node == unsafe { nil } {
+		return none
+	}
+	return target.committed_layout_node
 }
 
 pub struct InputDispatch {
