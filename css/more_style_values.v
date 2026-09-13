@@ -1164,6 +1164,13 @@ pub fn (style_value DisplayStyleValue) properties_equal(other DisplayStyleValue)
 	return style_value.display_ == other.display_
 }
 
+pub fn (style_value DisplayStyleValue) reify(associated_property string) CSSStyleValue {
+	if keyword := style_value.display_.to_keyword() {
+		return CSSStyleValue.from_keyword(CSSKeywordValue.create(string_from_keyword(keyword)))
+	}
+	return CSSStyleValue.create(associated_property, StyleValue(style_value))
+}
+
 // --- EasingStyleValue ---
 pub struct EasingLinearStop {
 pub mut:

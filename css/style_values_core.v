@@ -4506,6 +4506,9 @@ pub fn (style_value StyleValue) reify(associated_property string) CSSStyleValue 
 	if style_value is IntegerStyleValue {
 		return style_value.reify(associated_property)
 	}
+	if style_value is DisplayStyleValue {
+		return style_value.reify(associated_property)
+	}
 	if style_value is StyleValueList {
 		return style_value.reify(associated_property)
 	}

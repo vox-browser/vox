@@ -115,53 +115,13 @@ pub fn Display.from_box(box DisplayBox) Display {
 }
 
 pub fn (d Display) to_string() string {
+	if keyword := d.to_keyword() {
+		return string_from_keyword(keyword)
+	}
+	assert d.type_ == .outside_and_inside
+
 	match d.type_ {
 		.outside_and_inside {
-			// NOTE: Following the precedence rules of "most backwards-compatible, then shortest",
-			//       serialization of equivalent display values uses the "Short display" column.
-			if d == Display.from_short(.block) {
-				return 'block'
-			}
-			if d == Display.from_short(.flow_root) {
-				return 'flow-root'
-			}
-			if d == Display.from_short(.inline_) {
-				return 'inline'
-			}
-			if d == Display.from_short(.inline_block) {
-				return 'inline-block'
-			}
-			if d == Display.from_short(.run_in) {
-				return 'run-in'
-			}
-			if d == Display.from_short(.list_item) {
-				return 'list-item'
-			}
-			if d == Display.from_short(.flex) {
-				return 'flex'
-			}
-			if d == Display.from_short(.inline_flex) {
-				return 'inline-flex'
-			}
-			if d == Display.from_short(.grid) {
-				return 'grid'
-			}
-			if d == Display.from_short(.inline_grid) {
-				return 'inline-grid'
-			}
-			if d == Display.from_short(.ruby) {
-				return 'ruby'
-			}
-			if d == Display.from_short(.table) {
-				return 'table'
-			}
-			if d == Display.from_short(.inline_table) {
-				return 'inline-table'
-			}
-			if d == Display.from_short(.math) {
-				return 'math'
-			}
-
 			mut parts := []string{}
 			if !(d.outside_ == .block && d.inside_ == .flow_root) {
 				parts << display_outside_to_string(d.outside_)
@@ -241,6 +201,64 @@ pub fn Display.from_short(short_ DisplayShort) Display {
 			//       mention what the outside value for `display: math` should be but other browsers
 			//       use `inline` so let's go with that.
 			Display.from_outside_inside(.inline_, .math)
+		}
+	}
+}
+
+pub fn (d Display) to_keyword() ?Keyword {
+	match d.type_ {
+		.box {
+			return keyword_from_string(display_box_to_string(d.box_))
+		}
+		.internal {
+			return keyword_from_string(display_internal_to_string(d.internal_))
+		}
+		.outside_and_inside {
+			// Following the "most backwards-compatible, then shortest" precedence,
+			// equivalent pairs reify through their short display keyword.
+			if d == Display.from_short(.block) {
+				return .block
+			}
+			if d == Display.from_short(.flow_root) {
+				return .flow_root
+			}
+			if d == Display.from_short(.inline_) {
+				return .inline_
+			}
+			if d == Display.from_short(.inline_block) {
+				return .inline_block
+			}
+			if d == Display.from_short(.run_in) {
+				return .run_in
+			}
+			if d == Display.from_short(.list_item) {
+				return .list_item
+			}
+			if d == Display.from_short(.flex) {
+				return .flex
+			}
+			if d == Display.from_short(.inline_flex) {
+				return .inline_flex
+			}
+			if d == Display.from_short(.grid) {
+				return .grid
+			}
+			if d == Display.from_short(.inline_grid) {
+				return .inline_grid
+			}
+			if d == Display.from_short(.ruby) {
+				return .ruby
+			}
+			if d == Display.from_short(.table) {
+				return .table
+			}
+			if d == Display.from_short(.inline_table) {
+				return .inline_table
+			}
+			if d == Display.from_short(.math) {
+				return .math
+			}
+			return none
 		}
 	}
 }
