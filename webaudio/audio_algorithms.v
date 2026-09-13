@@ -247,6 +247,11 @@ pub fn (mut context BaseAudioContext) next_node_id() u64 {
 }
 
 pub fn AudioContext.construct_impl(id u64, options AudioContextOptions, fully_active bool) !AudioContext {
+	return AudioContext.create_for_constructor(id, options, fully_active)
+}
+
+pub fn AudioContext.create_for_constructor(id u64, options AudioContextOptions,
+	fully_active bool) !AudioContext {
 	return new_audio_context_with_options(id, options, fully_active)
 }
 
@@ -431,6 +436,11 @@ pub fn GainNode.create(mut context BaseAudioContext, options GainOptions) !GainN
 }
 
 pub fn GainNode.construct_impl(mut context BaseAudioContext, options GainOptions) !GainNode {
+	return GainNode.create_for_constructor(mut context, options)
+}
+
+pub fn GainNode.create_for_constructor(mut context BaseAudioContext,
+	options GainOptions) !GainNode {
 	return context.construct_gain(options)
 }
 
@@ -453,6 +463,11 @@ pub fn ConstantSourceNode.create(mut context BaseAudioContext,
 
 pub fn ConstantSourceNode.construct_impl(mut context BaseAudioContext,
 	options ConstantSourceOptions) !ConstantSourceNode {
+	return ConstantSourceNode.create_for_constructor(mut context, options)
+}
+
+pub fn ConstantSourceNode.create_for_constructor(mut context BaseAudioContext,
+	options ConstantSourceOptions) !ConstantSourceNode {
 	return context.construct_constant_source(options)
 }
 
@@ -473,6 +488,12 @@ pub fn DelayNode.create(mut context BaseAudioContext, options DelayOptions) !Del
 }
 
 pub fn DelayNode.construct_impl(mut context BaseAudioContext, options DelayOptions) !DelayNode {
+	return DelayNode.create_for_constructor(mut context, options)
+}
+
+pub fn DelayNode.create_for_constructor(mut context BaseAudioContext,
+	options DelayOptions) !DelayNode {
+	DelayNode.validate_options(options)!
 	return context.construct_delay(options)
 }
 
@@ -494,6 +515,11 @@ pub fn DynamicsCompressorNode.create(mut context BaseAudioContext,
 }
 
 pub fn DynamicsCompressorNode.construct_impl(mut context BaseAudioContext,
+	options DynamicsCompressorOptions) !DynamicsCompressorNode {
+	return DynamicsCompressorNode.create_for_constructor(mut context, options)
+}
+
+pub fn DynamicsCompressorNode.create_for_constructor(mut context BaseAudioContext,
 	options DynamicsCompressorOptions) !DynamicsCompressorNode {
 	return context.create_dynamics_compressor(options)
 }
@@ -536,6 +562,11 @@ pub fn BiquadFilterNode.create(mut context BaseAudioContext,
 }
 
 pub fn BiquadFilterNode.construct_impl(mut context BaseAudioContext,
+	options BiquadFilterOptions) !BiquadFilterNode {
+	return BiquadFilterNode.create_for_constructor(mut context, options)
+}
+
+pub fn BiquadFilterNode.create_for_constructor(mut context BaseAudioContext,
 	options BiquadFilterOptions) !BiquadFilterNode {
 	return context.create_biquad_filter(options)
 }
@@ -587,6 +618,12 @@ pub fn ChannelMergerNode.create(mut context BaseAudioContext,
 
 pub fn ChannelMergerNode.construct_impl(mut context BaseAudioContext,
 	options ChannelMergerOptions) !ChannelMergerNode {
+	return ChannelMergerNode.create_for_constructor(mut context, options)
+}
+
+pub fn ChannelMergerNode.create_for_constructor(mut context BaseAudioContext,
+	options ChannelMergerOptions) !ChannelMergerNode {
+	ChannelMergerNode.validate_options(options)!
 	return context.create_channel_merger(options.number_of_inputs, options.node)
 }
 
@@ -605,6 +642,12 @@ pub fn ChannelSplitterNode.create(mut context BaseAudioContext,
 
 pub fn ChannelSplitterNode.construct_impl(mut context BaseAudioContext,
 	options ChannelSplitterOptions) !ChannelSplitterNode {
+	return ChannelSplitterNode.create_for_constructor(mut context, options)
+}
+
+pub fn ChannelSplitterNode.create_for_constructor(mut context BaseAudioContext,
+	options ChannelSplitterOptions) !ChannelSplitterNode {
+	ChannelSplitterNode.validate_options(options)!
 	return context.create_channel_splitter(options.number_of_outputs, options.node)
 }
 
@@ -622,6 +665,11 @@ pub fn StereoPannerNode.create(mut context BaseAudioContext,
 }
 
 pub fn StereoPannerNode.construct_impl(mut context BaseAudioContext,
+	options StereoPannerOptions) !StereoPannerNode {
+	return StereoPannerNode.create_for_constructor(mut context, options)
+}
+
+pub fn StereoPannerNode.create_for_constructor(mut context BaseAudioContext,
 	options StereoPannerOptions) !StereoPannerNode {
 	return context.create_stereo_panner(options.pan, options.node)
 }
@@ -645,6 +693,12 @@ pub fn OscillatorNode.create(mut context BaseAudioContext,
 
 pub fn OscillatorNode.construct_impl(mut context BaseAudioContext,
 	options OscillatorOptions) !OscillatorNode {
+	return OscillatorNode.create_for_constructor(mut context, options)
+}
+
+pub fn OscillatorNode.create_for_constructor(mut context BaseAudioContext,
+	options OscillatorOptions) !OscillatorNode {
+	OscillatorNode.validate_options(options)!
 	return context.create_oscillator(options)
 }
 
@@ -679,6 +733,11 @@ pub fn AudioBufferSourceNode.create(mut context BaseAudioContext,
 }
 
 pub fn AudioBufferSourceNode.construct_impl(mut context BaseAudioContext,
+	options AudioBufferSourceOptions) !AudioBufferSourceNode {
+	return AudioBufferSourceNode.create_for_constructor(mut context, options)
+}
+
+pub fn AudioBufferSourceNode.create_for_constructor(mut context BaseAudioContext,
 	options AudioBufferSourceOptions) !AudioBufferSourceNode {
 	return context.create_buffer_source(options)
 }
@@ -738,6 +797,7 @@ pub fn ScriptProcessorNode.create(mut context BaseAudioContext, buffer_size i32,
 	if buffer_size == 0 {
 		return error('IndexSizeError: Unsupported buffer size')
 	}
+	ScriptProcessorNode.validate_options(buffer_size, input_channels, output_channels)!
 	return context.create_script_processor(buffer_size, input_channels, output_channels)
 }
 
@@ -817,6 +877,11 @@ pub fn MediaElementAudioSourceNode.create(mut context AudioContext,
 
 pub fn MediaElementAudioSourceNode.construct_impl(mut context AudioContext,
 	media_element_id string) !MediaElementAudioSourceNode {
+	return MediaElementAudioSourceNode.create_for_constructor(mut context, media_element_id)
+}
+
+pub fn MediaElementAudioSourceNode.create_for_constructor(mut context AudioContext,
+	media_element_id string) !MediaElementAudioSourceNode {
 	return context.create_media_element_source(media_element_id)
 }
 
@@ -839,6 +904,12 @@ pub fn PannerNode.create(mut context BaseAudioContext, options PannerOptions) !P
 
 pub fn PannerNode.construct_impl(mut context BaseAudioContext,
 	options PannerOptions) !PannerNode {
+	return PannerNode.create_for_constructor(mut context, options)
+}
+
+pub fn PannerNode.create_for_constructor(mut context BaseAudioContext,
+	options PannerOptions) !PannerNode {
+	PannerNode.validate_options(options)!
 	return context.create_panner(options)
 }
 
@@ -929,6 +1000,11 @@ pub fn (node PannerNode) cone_outer_gain() f64 {
 // OfflineAudioContext and its completion event.
 pub fn OfflineAudioContext.construct_impl(id u64,
 	options OfflineAudioContextOptions) !OfflineAudioContext {
+	return OfflineAudioContext.create_for_constructor(id, options)
+}
+
+pub fn OfflineAudioContext.create_for_constructor(id u64,
+	options OfflineAudioContextOptions) !OfflineAudioContext {
 	return new_offline_audio_context_with_options(id, options)
 }
 
@@ -954,6 +1030,11 @@ pub fn (mut context OfflineAudioContext) set_oncomplete(value bool) {
 }
 
 pub fn OfflineAudioCompletionEvent.construct_impl(event_type string,
+	rendered_buffer ?AudioBuffer) OfflineAudioCompletionEvent {
+	return OfflineAudioCompletionEvent.create(event_type, rendered_buffer)
+}
+
+pub fn OfflineAudioCompletionEvent.create(event_type string,
 	rendered_buffer ?AudioBuffer) OfflineAudioCompletionEvent {
 	return OfflineAudioCompletionEvent{
 		event_type: event_type

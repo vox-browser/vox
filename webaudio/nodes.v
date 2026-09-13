@@ -113,9 +113,11 @@ pub:
 }
 
 pub fn (mut context BaseAudioContext) create_delay(max_delay_time f64, delay_time f64, options AudioNodeOptions) !DelayNode {
-	if max_delay_time <= 0 || max_delay_time >= 180 || math.is_nan(max_delay_time) {
-		return error('NotSupportedError: Max delay time must be between 0 and 180 seconds exclusive')
-	}
+	DelayNode.validate_options(DelayOptions{
+		max_delay_time: max_delay_time
+		delay_time: delay_time
+		node: options
+	})!
 	node := context.allocate_node(.delay, 1, 1, options, 2, .max, .speakers)!
 	delay_parameter := context.allocate_param(f32(delay_time), 0, f32(max_delay_time), .a_rate, false)
 	node.queue_render_node_creation(DelayRenderNode.create(node.id, int(render_quantum_size), delay_parameter.render_param(), max_delay_time).render_node())
@@ -128,6 +130,13 @@ pub fn (mut context BaseAudioContext) create_delay(max_delay_time f64, delay_tim
 
 pub fn (mut context BaseAudioContext) construct_delay(options DelayOptions) !DelayNode {
 	return context.create_delay(options.max_delay_time, options.delay_time, options.node)
+}
+
+pub fn DelayNode.validate_options(options DelayOptions) ! {
+	if options.max_delay_time <= 0 || options.max_delay_time >= 180
+		|| math.is_nan(options.max_delay_time) {
+		return error('NotSupportedError: Max delay time must be between 0 and 180 seconds exclusive')
+	}
 }
 
 pub struct DynamicsCompressorOptions {
@@ -269,9 +278,10 @@ pub:
 }
 
 pub fn (mut context BaseAudioContext) create_channel_merger(number_of_inputs u32, options AudioNodeOptions) !ChannelMergerNode {
-	if number_of_inputs < 1 || number_of_inputs > max_number_of_channels {
-		return error('IndexSizeError: Invalid number of inputs')
-	}
+	ChannelMergerNode.validate_options(ChannelMergerOptions{
+		number_of_inputs: number_of_inputs
+		node: options
+	})!
 	node := context.allocate_node(.channel_merger, number_of_inputs, 1, options, 1, .explicit, .speakers)!
 	mut merger := ChannelMergerNode{
 		node: node
@@ -281,6 +291,12 @@ pub fn (mut context BaseAudioContext) create_channel_merger(number_of_inputs u32
 	if mode := options.channel_count_mode { merger.set_channel_count_mode(mode)! }
 	node.queue_render_node_creation(ChannelMergerRenderNode.create(node.id, int(render_quantum_size), int(number_of_inputs)).render_node())
 	return merger
+}
+
+pub fn ChannelMergerNode.validate_options(options ChannelMergerOptions) ! {
+	if options.number_of_inputs < 1 || options.number_of_inputs > max_number_of_channels {
+		return error('IndexSizeError: Invalid number of inputs')
+	}
 }
 
 pub fn (mut merger ChannelMergerNode) set_channel_count(count u32) ! {
@@ -306,9 +322,10 @@ pub:
 }
 
 pub fn (mut context BaseAudioContext) create_channel_splitter(number_of_outputs u32, options AudioNodeOptions) !ChannelSplitterNode {
-	if number_of_outputs < 1 || number_of_outputs > max_number_of_channels {
-		return error('IndexSizeError: Invalid number of outputs')
-	}
+	ChannelSplitterNode.validate_options(ChannelSplitterOptions{
+		number_of_outputs: number_of_outputs
+		node: options
+	})!
 	node := context.allocate_node(.channel_splitter, 1, number_of_outputs, options, number_of_outputs, .explicit, .discrete)!
 	mut splitter := ChannelSplitterNode{
 		node: node
@@ -321,6 +338,12 @@ pub fn (mut context BaseAudioContext) create_channel_splitter(number_of_outputs 
 	}
 	node.queue_render_node_creation(ChannelSplitterRenderNode.create(node.id, int(render_quantum_size), int(number_of_outputs)).render_node())
 	return splitter
+}
+
+pub fn ChannelSplitterNode.validate_options(options ChannelSplitterOptions) ! {
+	if options.number_of_outputs < 1 || options.number_of_outputs > max_number_of_channels {
+		return error('IndexSizeError: Invalid number of outputs')
+	}
 }
 
 pub fn (mut splitter ChannelSplitterNode) set_channel_count(count u32) ! {
@@ -444,9 +467,7 @@ pub mut:
 }
 
 pub fn (mut context BaseAudioContext) create_oscillator(options OscillatorOptions) !OscillatorNode {
-	if options.type_ == .custom && options.periodic_wave == none {
-		return error("InvalidStateError: Oscillator type 'custom' requires PeriodicWave")
-	}
+	OscillatorNode.validate_options(options)!
 	node := context.allocate_node(.oscillator, 0, 1, options.node, 2, .max, .speakers)!
 	frequency := context.allocate_param(options.frequency, -context.nyquist_frequency(), context.nyquist_frequency(), .a_rate, false)
 	detune := context.allocate_param(options.detune, -detune_limit(), detune_limit(), .a_rate, false)
@@ -460,6 +481,12 @@ pub fn (mut context BaseAudioContext) create_oscillator(options OscillatorOption
 	}
 	oscillator.queue_waveform_update()
 	return oscillator
+}
+
+pub fn OscillatorNode.validate_options(options OscillatorOptions) ! {
+	if options.type_ == .custom && options.periodic_wave == none {
+		return error("InvalidStateError: Oscillator type 'custom' requires PeriodicWave")
+	}
 }
 
 pub fn (oscillator OscillatorNode) queue_waveform_update() {
@@ -606,16 +633,8 @@ pub:
 }
 
 pub fn (mut context BaseAudioContext) create_script_processor(buffer_size i32, input_channels u32, output_channels u32) !ScriptProcessorNode {
-	if input_channels == 0 && output_channels == 0 {
-		return error('IndexSizeError: Input and output channels cannot both be zero')
-	}
-	if input_channels > max_number_of_channels || output_channels > max_number_of_channels {
-		return error('NotSupportedError: Invalid number of channels')
-	}
 	actual_buffer_size := if buffer_size == 0 { 1024 } else { buffer_size }
-	if actual_buffer_size !in [256, 512, 1024, 2048, 4096, 8192, 16384] {
-		return error('IndexSizeError: Unsupported buffer size')
-	}
+	ScriptProcessorNode.validate_options(actual_buffer_size, input_channels, output_channels)!
 	// ScriptProcessorNode overrides channelCount and permits zero input channels
 	// when it has outputs, so construction must bypass AudioNode's generic
 	// non-zero channel-count setter.
@@ -639,6 +658,26 @@ pub fn (mut context BaseAudioContext) create_script_processor(buffer_size i32, i
 	}
 }
 
+pub fn ScriptProcessorNode.validate_options(buffer_size i32, input_channels u32,
+	output_channels u32) ! {
+	if input_channels == 0 && output_channels == 0 {
+		return error('IndexSizeError: Input and output channels cannot both be zero')
+	}
+	if input_channels > max_number_of_channels {
+		return error('NotSupportedError: Invalid number of input channels')
+	}
+	if output_channels > max_number_of_channels {
+		return error('NotSupportedError: Invalid number of output channels')
+	}
+	if buffer_size !in [256, 512, 1024, 2048, 4096, 8192, 16384] {
+		return error('IndexSizeError: Unsupported buffer size')
+	}
+}
+
+pub fn (mut processor ScriptProcessorNode) set_buffer_size_without_validation(size i32) {
+	processor.buffer_size = size
+}
+
 pub fn (_ ScriptProcessorNode) set_channel_count(_ u32) ! {
 	return error('InvalidStateError: Cannot modify ScriptProcessorNode channel count')
 }
@@ -654,5 +693,5 @@ pub fn (mut processor ScriptProcessorNode) set_buffer_size(size i32) ! {
 	if size !in [256, 512, 1024, 2048, 4096, 8192, 16384] {
 		return error('IndexSizeError: Unsupported buffer size')
 	}
-	processor.buffer_size = size
+	processor.set_buffer_size_without_validation(size)
 }

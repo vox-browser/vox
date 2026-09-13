@@ -46,18 +46,7 @@ pub mut:
 }
 
 pub fn (mut context BaseAudioContext) create_panner(options PannerOptions) !PannerNode {
-	if options.ref_distance < 0 {
-		return error('RangeError: refDistance cannot be negative')
-	}
-	if options.rolloff_factor < 0 {
-		return error('RangeError: rolloffFactor cannot be negative')
-	}
-	if options.max_distance <= 0 {
-		return error('RangeError: maxDistance must be positive')
-	}
-	if options.cone_outer_gain < 0 || options.cone_outer_gain > 1 {
-		return error('InvalidStateError: coneOuterGain must be in [0, 1]')
-	}
+	PannerNode.validate_options(options)!
 	node := context.allocate_node(.panner, 1, 1, options.node, 2, .clamped_max, .speakers)!
 	mut panner := PannerNode{
 		node:             node
@@ -105,6 +94,21 @@ pub fn (mut context BaseAudioContext) create_panner(options PannerOptions) !Pann
 		}).render_node())
 	panner.queue_panner_parameters_update()
 	return panner
+}
+
+pub fn PannerNode.validate_options(options PannerOptions) ! {
+	if options.ref_distance < 0 {
+		return error('RangeError: refDistance cannot be negative')
+	}
+	if options.rolloff_factor < 0 {
+		return error('RangeError: rolloffFactor cannot be negative')
+	}
+	if options.max_distance <= 0 {
+		return error('RangeError: maxDistance must be positive')
+	}
+	if options.cone_outer_gain < 0 || options.cone_outer_gain > 1 {
+		return error('InvalidStateError: coneOuterGain must be in [0, 1]')
+	}
 }
 
 pub fn (panner PannerNode) queue_panner_parameters_update() {

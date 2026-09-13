@@ -30,6 +30,66 @@ fn test_delay_rejects_nan_max_delay_time() {
 	assert false
 }
 
+fn test_constructor_validators_run_before_allocating_nodes() {
+	mut context := new_audio_context(7, none, true) or { panic(err) }
+	initial_id := context.base.next_id
+	mut rejected := false
+	ChannelMergerNode.create_for_constructor(mut context.base, ChannelMergerOptions{
+		number_of_inputs: 0
+	}) or {
+		assert err.msg().contains('Invalid number of inputs')
+		rejected = true
+	}
+	assert rejected
+	assert context.base.next_id == initial_id
+	rejected = false
+	ChannelSplitterNode.create_for_constructor(mut context.base, ChannelSplitterOptions{
+		number_of_outputs: 33
+	}) or {
+		assert err.msg().contains('Invalid number of outputs')
+		rejected = true
+	}
+	assert rejected
+	assert context.base.next_id == initial_id
+	rejected = false
+	DelayNode.create_for_constructor(mut context.base, DelayOptions{ max_delay_time: 0 }) or {
+		assert err.msg().contains('between 0 and 180')
+		rejected = true
+	}
+	assert rejected
+	assert context.base.next_id == initial_id
+	rejected = false
+	OscillatorNode.create_for_constructor(mut context.base, OscillatorOptions{
+		type_: .custom
+	}) or {
+		assert err.msg().contains('requires PeriodicWave')
+		rejected = true
+	}
+	assert rejected
+	assert context.base.next_id == initial_id
+	rejected = false
+	PannerNode.create_for_constructor(mut context.base, PannerOptions{ max_distance: 0 }) or {
+		assert err.msg().contains('must be positive')
+		rejected = true
+	}
+	assert rejected
+	assert context.base.next_id == initial_id
+}
+
+fn test_script_processor_validator_reports_each_invalid_dimension() {
+	ScriptProcessorNode.validate_options(256, 0, 0) or {
+		assert err.msg().contains('both be zero')
+		ScriptProcessorNode.validate_options(256, 33, 1) or {
+			assert err.msg().contains('input channels')
+			ScriptProcessorNode.validate_options(256, 1, 33) or {
+				assert err.msg().contains('output channels')
+				return
+			}
+		}
+	}
+	assert false
+}
+
 fn test_processor_and_compressor_restricted_mutators() {
 	mut context := new_audio_context(1, 44100, true) or { panic(err) }
 	automatic := context.base.create_script_processor(0, 2, 2) or { panic(err) }
