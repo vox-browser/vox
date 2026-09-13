@@ -9,16 +9,41 @@ import dom
 
 pub enum InputActionKind {
 	key_down
+	key_up
 	mouse_down
 	mouse_up
 	mouse_move
+	mouse_leave
 	wheel
 	pinch
 	paste
+	paste_from_clipboard
 	commit_text
+	set_marked_text
+	commit_input_method_text
+	unmark_text
 	drag_start
 	drag_move
 	drop
+}
+
+pub enum WheelDeltaPrecision {
+	coarse
+	precise
+}
+
+pub enum ScrollGesturePhase {
+	none_
+	ongoing
+	momentum
+	ended
+}
+
+pub struct ClipboardFile {
+pub:
+	name      string
+	mime_type string
+	data      string
 }
 
 pub struct InputAction {
@@ -36,6 +61,10 @@ pub:
 	code_point  u32
 	text        string
 	mime_type   string
+	precise     bool
+	gesture     ScrollGesturePhase
+	replacement_start  i32
+	replacement_length i32
 }
 
 pub struct HitTestResult {
@@ -112,6 +141,10 @@ pub mut:
 	needs_display_list_record_                  bool
 	screen_wake_lock_active_                    bool
 	stacking_context_verification_report        string
+	selected_text_for_clipboard_                 string
+	clipboard_file                              ?ClipboardFile
+	current_caret_rect_                         ?dom.Rect
+	loaded_urls                                 []string
 }
 
 @[heap]

@@ -106,30 +106,57 @@ fn test_metadata_settings_and_platform_facade() {
 }
 
 fn test_input_methods_record_exact_actions() {
-	mut platform := &PlatformState{}
+	mut platform := &PlatformState{
+		browser_zoom: 2
+		selected_text_for_clipboard_: 'selected'
+		current_caret_rect_: dom.Rect{1, 2, 3, 4}
+	}
 	navigator := gamepad.NavigatorGamepadPartial.new()
 	mut api := Internals.create(platform, navigator)
 	mut document := dom.Document.create_for_fragment_parsing()
 	target := document.create_element('input')!
 	api.send_text(target, 'A' + rune(0xe004).str(), mod_ctrl)
-	api.send_key(target, 'Escape', mod_alt)
+	api.send_key(target, 'Escape', mod_alt, 1)
+	api.send_key(target, 'Repeat', mod_none, 2)
 	api.paste(target, 'hello')
+	api.paste_from_clipboard()
 	api.commit_text()
 	api.click(1, 2, 2, button_right, mod_shift)
 	api.click_and_hold(3, 4, 1, button_left, 0)
 	api.mouse_move(5, 6, mod_super)
-	api.wheel(7, 8, -2, 3)
-	api.pinch(9, 10, 1.5)
+	api.mouse_leave()
+	api.wheel(7, 8, -2, 3, true, .momentum)
+	api.pinch(9, 10, 1.5, mod_alt)
+	api.set_marked_text_from_input_method('preedit')
+	api.commit_text_from_input_method('done', -2, 1)
+	api.unmark_text_from_input_method()
 	api.simulate_drag_start(1, 1, 'text/plain', 'x')
 	api.simulate_drag_move(2, 2)
 	api.simulate_drop(3, 3)
+	assert platform.input_actions[0].kind == .key_down
 	assert platform.input_actions[0].key == 'A'
-	assert platform.input_actions[1].key == 'Tab'
-	assert platform.input_actions[1].modifiers == mod_ctrl
-	assert platform.input_actions[4].kind == .commit_text
-	assert platform.input_actions[5].kind == .mouse_down
-	assert platform.input_actions[6].kind == .mouse_up
+	assert platform.input_actions[1].kind == .key_up
+	assert platform.input_actions[2].key == 'Tab'
+	assert platform.input_actions[2].modifiers == mod_ctrl
+	assert platform.input_actions.filter(it.kind == .key_down && it.key == 'Repeat').len == 2
+	assert platform.input_actions.filter(it.kind == .key_up && it.key == 'Repeat').len == 1
+	assert platform.input_actions.any(it.kind == .paste_from_clipboard)
+	assert platform.input_actions.any(it.kind == .mouse_leave)
+	wheel_action := platform.input_actions.filter(it.kind == .wheel)[0]
+	assert wheel_action.precise && wheel_action.gesture == .momentum
+	assert platform.input_actions.any(it.kind == .set_marked_text && it.text == 'preedit')
+	assert platform.input_actions.any(it.kind == .commit_input_method_text && it.replacement_start == -2
+		&& it.replacement_length == 1)
+	assert platform.input_actions.any(it.kind == .unmark_text)
 	assert platform.input_actions.last().kind == .drop
+	assert api.selected_text_for_clipboard() == 'selected'
+	api.set_clipboard_file('note.txt', 'text/plain', 'hello')
+	assert platform.clipboard_file?.name == 'note.txt'
+	assert api.current_caret_rect()? == dom.Rect{1, 2, 3, 4}
+	api.reset_zoom()
+	assert platform.browser_zoom == 1
+	api.load_url('https://example.test/next')!
+	assert platform.loaded_urls == ['https://example.test/next']
 	api.mouse_down(0, 0, 1, 99, 0)
 	assert platform.input_actions.last().button == button_left
 	assert api.button_from_unsigned_short(button_middle) == button_middle

@@ -20,6 +20,14 @@ pub const button_left = u16(0)
 pub const button_middle = u16(1)
 pub const button_right = u16(2)
 
+pub fn wheel_delta_precision_from(precise bool) WheelDeltaPrecision {
+	return if precise { .precise } else { .coarse }
+}
+
+pub fn scroll_gesture_phase_from(phase ScrollGesturePhase) ScrollGesturePhase {
+	return phase
+}
+
 pub struct ReferenceLink {
 pub:
 	relation string
@@ -219,9 +227,21 @@ pub fn (mut api Internals) send_text(target &dom.Element, value string, modifier
 				modifiers: modifiers | data.modifiers
 				code_point: data.code_point
 			}
+			api.platform.input_actions << InputAction{
+				kind: .key_up
+				key: data.key
+				modifiers: modifiers | data.modifiers
+				code_point: data.code_point
+			}
 		} else {
 			api.platform.input_actions << InputAction{
 				kind: .key_down
+				key: character.str()
+				modifiers: modifiers
+				code_point: code_point
+			}
+			api.platform.input_actions << InputAction{
+				kind: .key_up
 				key: character.str()
 				modifiers: modifiers
 				code_point: code_point
@@ -230,10 +250,20 @@ pub fn (mut api Internals) send_text(target &dom.Element, value string, modifier
 	}
 }
 
-pub fn (mut api Internals) send_key(target &dom.Element, key_name string, modifiers u16) {
+pub fn (mut api Internals) send_key(target &dom.Element, key_name string, modifiers u16, repeat_count u32) {
+	if repeat_count == 0 {
+		return
+	}
 	html.HTMLOrSVGElement.create(target).focus()
+	for _ in 0 .. repeat_count {
+		api.platform.input_actions << InputAction{
+			kind: .key_down
+			key: key_name
+			modifiers: modifiers
+		}
+	}
 	api.platform.input_actions << InputAction{
-		kind: .key_down
+		kind: .key_up
 		key: key_name
 		modifiers: modifiers
 	}
@@ -245,6 +275,10 @@ pub fn (mut api Internals) paste(target &dom.Element, text string) {
 		kind: .paste
 		text: text
 	}
+}
+
+pub fn (mut api Internals) paste_from_clipboard() {
+	api.platform.input_actions << InputAction{ kind: .paste_from_clipboard }
 }
 
 pub fn (mut api Internals) commit_text() {
@@ -292,6 +326,10 @@ pub fn (mut api Internals) mouse_move(x f64, y f64, modifiers u16) {
 	}
 }
 
+pub fn (mut api Internals) mouse_leave() {
+	api.platform.input_actions << InputAction{ kind: .mouse_leave }
+}
+
 pub fn (mut api Internals) click(x f64, y f64, click_count u16, button u16, modifiers u16) {
 	api.mouse_down(x, y, click_count, button, modifiers)
 	api.mouse_up(x, y, button, modifiers)
@@ -301,23 +339,59 @@ pub fn (mut api Internals) click_and_hold(x f64, y f64, click_count u16, button 
 	api.mouse_down(x, y, click_count, button, modifiers)
 }
 
-pub fn (mut api Internals) wheel(x f64, y f64, delta_x f64, delta_y f64) {
+pub fn (mut api Internals) wheel(x f64, y f64, delta_x f64, delta_y f64, precise bool, phase ScrollGesturePhase) {
 	api.platform.input_actions << InputAction{
 		kind: .wheel
 		x: x
 		y: y
 		delta_x: delta_x
 		delta_y: delta_y
+		precise: wheel_delta_precision_from(precise) == .precise
+		gesture: scroll_gesture_phase_from(phase)
 	}
 }
 
-pub fn (mut api Internals) pinch(x f64, y f64, scale f64) {
+pub fn (mut api Internals) pinch(x f64, y f64, scale f64, modifiers u16) {
 	api.platform.input_actions << InputAction{
 		kind: .pinch
 		x: x
 		y: y
 		scale: scale
+		modifiers: modifiers
 	}
+}
+
+pub fn (mut api Internals) reset_zoom() {
+	api.platform.browser_zoom = 1
+}
+
+pub fn (api &Internals) selected_text_for_clipboard() string {
+	return api.platform.selected_text_for_clipboard_
+}
+
+pub fn (mut api Internals) set_clipboard_file(name string, mime_type string, data string) {
+	api.platform.clipboard_file = ClipboardFile{name, mime_type, data}
+}
+
+pub fn (mut api Internals) set_marked_text_from_input_method(text string) {
+	api.platform.input_actions << InputAction{ kind: .set_marked_text, text: text }
+}
+
+pub fn (mut api Internals) commit_text_from_input_method(text string, replacement_start i32, replacement_length i32) {
+	api.platform.input_actions << InputAction{
+		kind: .commit_input_method_text
+		text: text
+		replacement_start: replacement_start
+		replacement_length: replacement_length
+	}
+}
+
+pub fn (mut api Internals) unmark_text_from_input_method() {
+	api.platform.input_actions << InputAction{ kind: .unmark_text }
+}
+
+pub fn (api &Internals) current_caret_rect() ?dom.Rect {
+	return api.platform.current_caret_rect_
 }
 
 pub fn (api &Internals) current_cursor() string {
@@ -346,6 +420,13 @@ fn parse_absolute_url(url string) ?dom.URL {
 pub fn (mut api Internals) spoof_current_url(url string) ! {
 	parsed := parse_absolute_url(url) or { return error('invalid absolute URL') }
 	api.platform.current_url = parsed.serialize()
+}
+
+pub fn (mut api Internals) load_url(url string) ! {
+	parsed := parse_absolute_url(url) or { return error('Invalid URL') }
+	serialized := parsed.serialize()
+	api.platform.loaded_urls << serialized
+	api.platform.current_url = serialized
 }
 
 pub fn (api &Internals) create_internal_animation_timeline() &InternalAnimationTimeline {
