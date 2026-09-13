@@ -1,5 +1,7 @@
 module webaudio
 
+import encoding.base64
+
 fn test_audio_context_supports_the_full_nominal_sample_rate_range() {
 	low := new_audio_context(1, 3_000, true) or { panic(err) }
 	high := new_audio_context(2, 768_000, true) or { panic(err) }
@@ -89,11 +91,27 @@ fn test_listener_decode_and_media_element_boundaries() {
 	mut context := new_audio_context(1, 44100, true) or { panic(err) }
 	context.base.listener.set_position(1, 2, 3) or { panic(err) }
 	assert context.base.listener.position_z.value() == 3
-	decoded := context.base.decode_audio_data([u8(1), 2], true)
+	decoded := context.base.decode_audio_data(pcm16_stereo_wave_fixture(), true)
 	assert decoded.promise.state == .fulfilled
-	assert (decoded.buffer or { panic('missing') }).number_of_channels() == 2
+	buffer := decoded.buffer or { panic('missing') }
+	assert buffer.number_of_channels() == 2
+	assert buffer.sample_rate == 44_100
+	assert buffer.length == 11
+	assert buffer.channels[0][0] == 0
+	assert buffer.channels[0].last() == -1
+	assert buffer.channels[1][0] == f32(32767.0 / 32768.0)
+	assert buffer.channels[1].last() == 0.5
+	assert context.base.media_element_tasks == 1
+	failed := context.base.decode_audio_data([u8(1), 2], true)
+	assert failed.promise.state == .rejected
+	assert failed.promise.message.contains('EncodingError')
+	assert context.base.media_element_tasks == 2
 	source := context.create_media_element_source('media') or { panic(err) }
 	assert source.node.number_of_inputs == 0
+}
+
+fn pcm16_stereo_wave_fixture() []u8 {
+	return base64.decode('UklGRiwAAABXQVZFZm10IBAAAAABAAIAQB8AAAB9AAAEABAAZGF0YQgAAAAAAP9/AIAAQA==')
 }
 
 fn test_offline_rendering_is_single_use_and_dispatches_completion() {

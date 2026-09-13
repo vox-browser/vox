@@ -87,7 +87,7 @@ if [ -f "$skia_root/lib/libavformat.dylib" ] && [ -f "$skia_root/include/libavfo
     extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_FFMPEG -I$skia_root/include"
     # Adding the vcpkg include root also selects that ICU's versioned C API
     # declarations in the LibUnicode bridges, so link its matching runtime.
-    extra_ldflags="$extra_ldflags -L$skia_root/lib -lavformat -lavcodec -lswscale -lavutil -lyuv -licuuc -Wl,-rpath,$skia_root/lib"
+    extra_ldflags="$extra_ldflags -L$skia_root/lib -lavformat -lavcodec -lswscale -lswresample -lavutil -lyuv -licuuc -Wl,-rpath,$skia_root/lib"
 fi
 
 # This V checkout currently selects both the C and native `time.zoneinfo`

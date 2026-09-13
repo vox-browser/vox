@@ -372,9 +372,11 @@ pub fn (mut context BaseAudioContext) create_buffer(number_of_channels u32, leng
 	return new_audio_buffer(number_of_channels, length, sample_rate)
 }
 
-// Upstream's decoder is still a host/thread boundary and currently produces a
-// 2-channel, one-frame buffer after its placeholder decode operation.
-pub fn (mut context BaseAudioContext) decode_audio_data(_ []u8, fully_active bool) DecodeResult {
+// The native browser decodes through FFmpeg and resamples to the context rate;
+// portable builds retain an in-process WAVE decoder for the same typed result.
+// Promise and callback settlement is synchronous in this deterministic host.
+pub fn (mut context BaseAudioContext) decode_audio_data(audio_data []u8,
+	fully_active bool) DecodeResult {
 	if !fully_active {
 		return DecodeResult{
 			promise: AudioPromise{
@@ -383,14 +385,26 @@ pub fn (mut context BaseAudioContext) decode_audio_data(_ []u8, fully_active boo
 			}
 		}
 	}
-	buffer := new_audio_buffer(2, 1, 44_100) or {
+	decoded := decode_audio_bytes(audio_data, context.sample_rate) or {
+		context.media_element_tasks++
 		return DecodeResult{
 			promise: AudioPromise{
 				state: .rejected
-				message: err.msg()
+				message: 'EncodingError: Unable to decode audio data'
 			}
 		}
 	}
+	mut buffer := new_audio_buffer(u32(decoded.channels.len), u32(decoded.channels[0].len), decoded.sample_rate) or {
+		context.media_element_tasks++
+		return DecodeResult{
+			promise: AudioPromise{
+				state: .rejected
+				message: 'EncodingError: Unable to decode audio data'
+			}
+		}
+	}
+	buffer.channels = decoded.channels
+	context.media_element_tasks++
 	return DecodeResult{
 		promise: AudioPromise{
 			state: .fulfilled
