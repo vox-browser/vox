@@ -41,6 +41,30 @@ mut:
 	id            u64
 }
 
+// Upstream retains the most recently selected interval in this structure. The
+// V renderer is single-threaded and computes it by value, avoiding mutable
+// state on the render-thread view while preserving the same interval rules.
+struct AudioParamParameterizationCache {
+	event_index    ?int
+	minimum_time   ?f64
+	maximum_time   ?f64
+	starting_value f32
+}
+
+fn (cache AudioParamParameterizationCache) contains(time f64) bool {
+	if minimum_time := cache.minimum_time {
+		if time < minimum_time {
+			return false
+		}
+	}
+	if maximum_time := cache.maximum_time {
+		if time >= maximum_time {
+			return false
+		}
+	}
+	return true
+}
+
 @[heap]
 pub struct AudioParamTimeline {
 	default_value_ f32
@@ -158,11 +182,17 @@ fn (timeline &AudioParamTimeline) event_value_at_time(event_index int, time f64)
 	return value
 }
 
-fn (timeline &AudioParamTimeline) value_at_time_with_selection(selection_time f64,
-	evaluation_time f64) f32 {
-	event_index := timeline.first_event_index_after(selection_time)
+fn (timeline &AudioParamTimeline) parameterization_cache_for_time(time f64) AudioParamParameterizationCache {
+	event_index := timeline.first_event_index_after(time)
 	if event_index == 0 {
-		return timeline.default_value_
+		return AudioParamParameterizationCache{
+			maximum_time: if timeline.automation_events_.len == 0 {
+				none
+			} else {
+				timeline.automation_events_[0].time
+			}
+			starting_value: timeline.default_value_
+		}
 	}
 
 	// A following ramp owns the interval before its endpoint. A ramp following
@@ -189,26 +219,55 @@ fn (timeline &AudioParamTimeline) value_at_time_with_selection(selection_time f6
 			}
 			starting_value = timeline.event_value_at_time(event_index - 1, minimum_time)
 		}
-		if selection_time >= minimum_time && minimum_time < ramp.time {
-			return evaluate_audio_param_event(ramp, evaluation_time, starting_value, minimum_time)
+		if time >= minimum_time && minimum_time < ramp.time {
+			return AudioParamParameterizationCache{
+				event_index: event_index
+				minimum_time: minimum_time
+				maximum_time: ramp.time
+				starting_value: starting_value
+			}
 		}
 	}
 
 	selected_index := event_index - 1
 	selected := timeline.automation_events_[selected_index]
-	starting_value := timeline.event_value_at_time(selected_index, selected.time)
-	return evaluate_audio_param_event(selected, evaluation_time, starting_value, selected.time)
+	mut maximum_time := ?f64(none)
+	if event_index < timeline.automation_events_.len {
+		next_event := timeline.automation_events_[event_index]
+		maximum_time = next_event.time
+		if next_event.kind in [.linear_ramp, .exponential_ramp] {
+			if ramp_start := next_event.ramp_start {
+				if ramp_start.set_target_event_id == selected.id {
+					maximum_time = ramp_start.time
+				}
+			}
+		}
+	}
+	return AudioParamParameterizationCache{
+		event_index: selected_index
+		minimum_time: selected.time
+		maximum_time: maximum_time
+		starting_value: timeline.event_value_at_time(selected_index, selected.time)
+	}
+}
+
+fn (timeline &AudioParamTimeline) value_at_time_locked(selection_time f64, time f64) f32 {
+	cache := timeline.parameterization_cache_for_time(selection_time)
+	event_index := cache.event_index or { return cache.starting_value }
+	minimum_time := cache.minimum_time or { return cache.starting_value }
+	event := timeline.automation_events_[event_index]
+	return evaluate_audio_param_event(event, time, cache.starting_value, minimum_time)
 }
 
 pub fn (timeline &AudioParamTimeline) value_at_time(time f64) f32 {
-	return timeline.value_at_time_with_selection(time, time)
+	return timeline.value_at_time_locked(time, time)
 }
 
 pub fn (timeline &AudioParamTimeline) sample(start_time f64, sample_period f64,
 	mut output []f32) {
 	for frame in 0 .. output.len {
 		frame_time := start_time + f64(frame) * sample_period
-		output[frame] = timeline.value_at_time_with_selection(frame_time + sample_period / 2, frame_time)
+		output[frame] = timeline.value_at_time_locked(frame_time + sample_period / 2, frame_time)
 	}
 }
 
@@ -333,7 +392,7 @@ pub fn (mut timeline AudioParamTimeline) cancel_scheduled_values(cancel_time f64
 }
 
 pub fn (mut timeline AudioParamTimeline) cancel_and_hold_at_time(cancel_time f64) {
-	value_to_hold := timeline.value_at_time_with_selection(cancel_time, cancel_time)
+	value_to_hold := timeline.value_at_time_locked(cancel_time, cancel_time)
 	mut event_index := timeline.first_event_index_after(cancel_time)
 	mut rewrote_ramp := false
 	if event_index < timeline.automation_events_.len

@@ -93,6 +93,31 @@ fn test_audio_param_timeline_samples_using_half_frame_selection() {
 	assert output == [f32(7), 7]
 }
 
+fn test_audio_param_parameterization_cache_uses_half_open_intervals() {
+	cache := AudioParamParameterizationCache{
+		event_index: 2
+		minimum_time: 1.5
+		maximum_time: 3.5
+		starting_value: 4
+	}
+	assert !cache.contains(1.499)
+	assert cache.contains(1.5)
+	assert cache.contains(3.499)
+	assert !cache.contains(3.5)
+
+	mut timeline := AudioParamTimeline.create(0)
+	assert timeline.set_value_at_time(2, 1) == .success
+	assert timeline.linear_ramp_to_value_at_time(10, 5, 0, 0) == .success
+	before := timeline.parameterization_cache_for_time(0.5)
+	assert before.event_index == none
+	assert before.maximum_time or { 0 } == 1.0
+	ramp := timeline.parameterization_cache_for_time(3)
+	assert ramp.event_index or { -1 } == 1
+	assert ramp.minimum_time or { 0 } == 1.0
+	assert ramp.maximum_time or { 0 } == 5.0
+	assert ramp.starting_value == 2
+}
+
 fn test_audio_param_validates_and_clamps_automation_times() {
 	mut context := new_audio_context(1, 44_100, true) or { panic(err) }
 	mut gain := GainNode.create(mut context.base, GainOptions{}) or { panic(err) }
