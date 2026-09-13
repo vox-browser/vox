@@ -84,8 +84,8 @@
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
-implementation units have audited V mappings. As of 2026-09-12, the module
-translations contain 337,972 implementation V LOC and 65,818 test V LOC.
+implementation units have audited V mappings. As of 2026-09-14, the module
+translations contain 338,250 implementation V LOC and 65,955 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -97,7 +97,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Clipboard | 973 | Compositor | 2,403 |
 | Compression | 424 | ContentSecurityPolicy | 2,738 |
 | CookieStore | 859 | CredentialManagement | 418 |
-| Crypto (`webcrypto/`) | 4,472 | DOM | 35,649 |
+| Crypto (`webcrypto/`) | 4,472 | DOM | 35,672 |
 | DOMURL | 754 | Editing | 3,294 |
 | Encoding | 705 | EncryptedMediaExtensions | 572 |
 | EntriesAPI | 44 | EventTiming | 153 |
@@ -107,7 +107,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Geometry | 2,062 | HTML | 56,437 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 854 |
-| IntersectionObserver | 569 | Layout | 40,601 |
+| IntersectionObserver | 569 | Layout | 40,823 |
 | Loader | 1,921 | MathML | 411 |
 | MediaCapabilitiesAPI | 676 | MediaCapture | 1,205 |
 | MediaSourceExtensions | 357 | MimeSniff | 1,108 |
@@ -118,7 +118,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | ReferrerPolicy | 239 | RequestIdleCallback | 59 |
 | ResizeObserver | 420 | ResourceTiming | 338 |
 | SRI | 156 | SVG | 5,107 |
-| SecureContexts | 59 | Selection | 565 |
+| SecureContexts | 59 | Selection | 598 |
 | Serial | 243 | ServiceWorker | 1,562 |
 | Speech | 624 | StorageAPI | 444 |
 | Streams | 6,290 | TrustedTypes | 756 |
@@ -131,7 +131,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **337,972** |  |  |
+| **Total** | **338,250** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;

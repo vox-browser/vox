@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb`
 
 Translation workspace: `~/code/vox2`
-Audited: 2026-09-12
+Audited: 2026-09-14
 
 ## Upstream delta since the V snapshot
 
@@ -49,11 +49,11 @@ of 20. Exact comparisons remain exact. All 24 new cases pass this bounded
 workflow. The complete refresh run also covers the three default smoke cases
 and five modified SVG cases: all 32 invocations pass (31 distinct fixtures).
 
-The current base-to-head semantic delta audit reports 5,848 unmatched changed
+The current base-to-head semantic delta audit reports 4,615 unmatched changed
 C++ spellings. That is a structural review queue rather than a count of missing behaviors: active V
 implementations often consolidate C++ class hierarchies and overloads under a
 single typed path. Empty/default-return implementations are checked separately,
-and the refreshed current-tree audit has 18 candidates awaiting body review.
+and the refreshed current-tree audit has 21 candidates awaiting body review.
 
 The earlier inventory mapped every upstream implementation filename to V code,
 but filename and symbol-name coverage did not establish behavioral parity. A
@@ -100,7 +100,7 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
-| `DOM` | 59 | 34,859 | 35,649 | 2,154 | Complete |
+| `DOM` | 59 | 34,859 | 35,672 | 2,154 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
 | `Editing` | 26 | 12,720 | 3,294 | 741 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
@@ -114,13 +114,13 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
 | `Geolocation` | 4 | 643 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 56,437 | 12,209 | Complete |
+| `HTML` | 286 | 83,853 | 56,437 | 12,269 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 40,601 | 15,060 | Present |
+| `Layout` | 9 | 4,001 | 40,823 | 15,108 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -142,7 +142,7 @@ from the current-module totals.
 | `SRI` | 1 | 198 | 156 | 100 | Complete |
 | `SVG` | 82 | 9,020 | 5,107 | 1,069 | Complete |
 | `SecureContexts` | 1 | 76 | 59 | 13 | Complete |
-| `Selection` | 3 | 1,470 | 565 | 96 | Complete |
+| `Selection` | 3 | 1,470 | 598 | 125 | Complete |
 | `Serial` | 2 | 366 | 243 | 35 | Complete |
 | `ServiceWorker` | 11 | 2,608 | 1,562 | 513 | Complete |
 | `Speech` | 11 | 421 | 624 | 111 | Complete |
@@ -167,7 +167,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **337,972** | **65,818** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **338,250** | **65,955** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -180,31 +180,27 @@ upstream modules: 76
 upstream .cpp files: 1193
 upstream implementations: 21401
 quarantined name-only coverage shims: 0 files / 0 functions
-explicit semantic-divergence markers: 9
-reviewed upstream-equivalent trivial implementations: 529
-suspicious empty/default-return implementations: 18
-  candidate-name-match: 12726
-  unmatched: 5895
+explicit semantic-divergence markers: 10
+reviewed upstream-equivalent trivial implementations: 534
+suspicious empty/default-return implementations: 21
+  candidate-name-match: 13844
+  unmatched: 4615
   language-constructor-or-destructor: 1383
-  gc-or-binding-runtime: 628
-  consolidated-name-match: 388
+  gc-or-binding-runtime: 655
+  consolidated-name-match: 488
   namespace-template-specialization: 177
   language-operator: 124
   language-template-trait: 63
-  value-record-field-match: 17
+  value-record-field-match: 52
 
 largest unmatched modules:
 
-  1853 CSS
-  1356 HTML
-   705 DOM
-   440 Painting
-   338 WebAudio
-   319 Layout
+  1716 CSS
+  1261 HTML
+   642 DOM
+   438 Painting
+   316 Layout
    242 Editing
-   173 MediaSourceExtensions
-   172 Page
-   149 Internals
 
 $ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 788 passed, 301 failed, 1089 total

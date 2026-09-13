@@ -9,6 +9,7 @@ translation code, tests, and translation notes live in `~/code/vox2`.
 | `GraphemeEdgeTracker.h`, `.cpp` | `dom/grapheme_edge_tracker.v` |
 | `Namespace.h`, `.cpp` | `namespace_/namespace_.v` |
 | `PixelUnits.h`, `.cpp` | `css/css.v`, `css/pixel_units.v` (including IPC component order) |
+| `VisualLines.h`, `.cpp` | `dom/visual_lines.v`; committed line/caret projection in `layout/dom_layout_bridge.v`; selection and text-control consumers in `dom/selection.v` and `html/form_associated_element.v` |
 | `TreeNode.h` | `dom/node.v`, `layout/tree_node.v` |
 | `InvalidateDisplayList.h` | `dom/node.v` (`InvalidateDisplayList`) |
 | `TraversalDecision.h` | `dom/document.v` (`TraversalDecision`) |
@@ -23,3 +24,8 @@ dumps are recursive.
 The C++ `TreeNode<T>` helpers templated on a subtype are represented by
 predicate-based `*_matching` helpers, matching the V layout tree's explicit
 type-discriminant design.
+
+`VisualLines.cpp`'s Rust layout-arena queries map to a retained projection of
+V's committed `LineBox` state. It preserves per-text-node visual ranges,
+hanging-whitespace boundaries, fragmentless preserved-newline lines, owner/line
+identity across adjacent text nodes, and grapheme-level inline caret stops.
