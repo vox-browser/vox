@@ -2,10 +2,84 @@
 module svg
 
 import dom
+import math
 
 pub type ImageFetchDecodeHook = fn (string) !&DecodedImageData
 
 pub type DecodedImageUpdateHook = fn (u64)
+
+pub struct SVGImagePaintRequest {
+pub:
+	destination       Rect
+	accumulated_scale ViewportSize = ViewportSize{ width: 1, height: 1 }
+	color_scheme      string = 'auto'
+}
+
+pub struct SVGImagePaint {
+pub:
+	display_list_commands []string
+	css_size              ViewportSize
+	raster_scale          f64 = 1
+	list_width            int
+	list_height           int
+}
+
+pub struct RenderKey {
+pub:
+	css_size     ViewportSize
+	raster_scale f64 = 1
+	color_scheme string = 'auto'
+}
+
+pub struct RenderKeyTraits {}
+
+pub fn (_ RenderKeyTraits) hash(key RenderKey) u64 {
+	mut value := u64(14695981039346656037)
+	for component in [math.f64_bits(key.css_size.width), math.f64_bits(key.css_size.height),
+		math.f64_bits(key.raster_scale)] {
+		value = (value ^ component) * u64(1099511628211)
+	}
+	for byte in key.color_scheme.bytes() {
+		value = (value ^ u64(byte)) * u64(1099511628211)
+	}
+	return value
+}
+
+pub fn (_ RenderKeyTraits) equals(a RenderKey, b RenderKey) bool {
+	return a == b
+}
+
+struct CachedSVGDisplayList {
+	commands             []string
+	referenced_resources []string
+}
+
+fn render_key_string(key RenderKey) string {
+	return '${math.f64_bits(key.css_size.width)}:${math.f64_bits(key.css_size.height)}:${math.f64_bits(key.raster_scale)}:${key.color_scheme}'
+}
+
+pub fn surface_external_memory_size(width int, height int) usize {
+	if width <= 0 || height <= 0 {
+		return 0
+	}
+	maximum := usize(-1)
+	if usize(width) > maximum / usize(height) {
+		return maximum
+	}
+	pixel_count := usize(width) * usize(height)
+	if pixel_count > maximum / 4 {
+		return maximum
+	}
+	return pixel_count * 4
+}
+
+pub fn copy_referenced_resources_to(mut destination map[string]bool, source map[string]bool, referenced_resources []string) {
+	for resource in referenced_resources {
+		if source[resource] {
+			destination[resource] = true
+		}
+	}
+}
 
 __global (
 	svg_next_vector_content_identity u64
@@ -166,6 +240,12 @@ pub:
 mut:
 	vector_content_identity_             u64
 	cached_rendered_frames               map[string]&dom.DecodedImageFrame_
+	cached_rendered_surfaces_            map[string][]u8
+	cached_display_lists_                map[string]CachedSVGDisplayList
+	referenced_resource_ids_             []string
+	paint_cache_source_resource_ids_     []string
+	page_client_                         ?&SVGPageClient
+	color_scheme_                        string = 'auto'
 	is_recording_display_list_           bool
 	has_pending_client_notification_     bool
 	notification_hook_                   ?DecodedImageUpdateHook
@@ -233,7 +313,7 @@ pub fn (mut image DecodedImageData) frame(_ int, width int, height int) ?&dom.De
 		width: width
 		height: height
 		pitch: width * 4
-		data: image.surface_bytes.clone()
+		data: image.render_to_surface_sized(width, height)
 	})
 	image.cached_rendered_frames[key] = frame
 	return frame
@@ -257,6 +337,13 @@ pub fn (image &DecodedImageData) external_memory_size() usize {
 		}
 		size += frame_size
 	}
+	for _, surface in image.cached_rendered_surfaces_ {
+		surface_size := usize(surface.len)
+		if usize(-1) - size < surface_size {
+			return usize(-1)
+		}
+		size += surface_size
+	}
 	return size
 }
 
@@ -275,6 +362,9 @@ pub fn (mut image DecodedImageData) end_recording_display_list() {
 pub fn (mut image DecodedImageData) invalidate_cached_rendering() {
 	image.vector_content_identity_ = DecodedImageData.next_vector_content_identity()
 	image.cached_rendered_frames.clear()
+	image.cached_rendered_surfaces_.clear()
+	image.cached_display_lists_.clear()
+	image.prune_cached_display_list_resources()
 }
 
 pub fn (mut image DecodedImageData) did_request_frame() {
@@ -310,4 +400,17 @@ pub fn (image &DecodedImageData) has_pending_client_notification() bool {
 
 pub fn (image &DecodedImageData) delivered_client_notification_count() u64 {
 	return image.delivered_client_notification_count_
+}
+
+pub fn (mut image DecodedImageData) set_display_list_resource_ids(referenced []string, paint_cache_sources []string) {
+	image.referenced_resource_ids_ = referenced.clone()
+	image.paint_cache_source_resource_ids_ = paint_cache_sources.clone()
+}
+
+pub fn (image &DecodedImageData) cached_display_list_count() int {
+	return image.cached_display_lists_.len
+}
+
+pub fn (image &DecodedImageData) color_scheme() string {
+	return image.color_scheme_
 }

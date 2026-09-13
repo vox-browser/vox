@@ -324,8 +324,130 @@ pub fn (image &DecodedImageData) render_to_surface() []u8 {
 	return image.surface()
 }
 
+pub fn (mut image DecodedImageData) render_to_surface_sized(width int, height int) []u8 {
+	if width <= 0 || height <= 0 || image.surface_bytes.len == 0 {
+		return []u8{}
+	}
+	key := '${width}x${height}'
+	if surface := image.cached_rendered_surfaces_[key] {
+		return surface.clone()
+	}
+	if image.cached_rendered_surfaces_.len > 10 {
+		for cached_key, _ in image.cached_rendered_surfaces_ {
+			image.cached_rendered_surfaces_.delete(cached_key)
+			break
+		}
+	}
+	surface := image.surface_bytes.clone()
+	image.cached_rendered_surfaces_[key] = surface
+	return surface.clone()
+}
+
 pub fn (image &DecodedImageData) record_display_list() []string {
 	return image.display_list_commands.clone()
+}
+
+pub fn (mut image DecodedImageData) prune_cached_display_list_resources() {
+	if client := image.page_client_ {
+		mut mutable_client := client
+		mutable_client.prune_cached_display_list_resources()
+	}
+}
+
+pub fn (image &DecodedImageData) append_cached_display_list_resources(mut retained_resources map[string]bool) {
+	for _, cached in image.cached_display_lists_ {
+		for resource in cached.referenced_resources {
+			retained_resources[resource] = true
+		}
+	}
+}
+
+pub fn (image &DecodedImageData) append_paint_command_cache_source_resources(mut retained_resources map[string]bool) {
+	for resource in image.paint_cache_source_resource_ids_ {
+		retained_resources[resource] = true
+	}
+}
+
+pub fn (mut image DecodedImageData) record_display_list_at_scale(css_size ViewportSize, raster_scale f64, color_scheme string) []string {
+	key := RenderKey{
+		css_size: css_size
+		raster_scale: raster_scale
+		color_scheme: color_scheme
+	}
+	cache_key := render_key_string(key)
+	if cached := image.cached_display_lists_[cache_key] {
+		return cached.commands.clone()
+	}
+	if image.cached_display_lists_.len > 10 {
+		for stale_key, _ in image.cached_display_lists_ {
+			image.cached_display_lists_.delete(stale_key)
+			break
+		}
+		image.prune_cached_display_list_resources()
+	}
+	if image.color_scheme_ != color_scheme {
+		image.color_scheme_ = color_scheme
+		image.cached_rendered_frames.clear()
+		image.cached_rendered_surfaces_.clear()
+	}
+	if client := image.page_client_ {
+		mut mutable_client := client
+		mutable_client.begin_recording_display_list()
+	}
+	image.begin_recording_display_list()
+	commands := image.display_list_commands.clone()
+	image.cached_display_lists_[cache_key] = CachedSVGDisplayList{
+		commands: commands
+		referenced_resources: image.referenced_resource_ids_.clone()
+	}
+	image.end_recording_display_list()
+	if client := image.page_client_ {
+		mut mutable_client := client
+		mutable_client.end_recording_display_list()
+	}
+	image.prune_cached_display_list_resources()
+	return commands.clone()
+}
+
+fn svg_raster_dimension(local_size f64, scale f64) int {
+	effective_scale := if scale > 0 { scale } else { 1.0 }
+	value := int(math.round(local_size * effective_scale))
+	return if value < 1 { 1 } else if value > 16384 { 16384 } else { value }
+}
+
+pub fn (mut image DecodedImageData) image_paint(request SVGImagePaintRequest) ?SVGImagePaint {
+	if request.destination.width <= 0 || request.destination.height <= 0 {
+		return none
+	}
+	raster_width := svg_raster_dimension(request.destination.width, request.accumulated_scale.width)
+	raster_height := svg_raster_dimension(request.destination.height, request.accumulated_scale.height)
+	if image.has_active_view_box() {
+		css_size := ViewportSize{ width: raster_width, height: raster_height }
+		return SVGImagePaint{
+			display_list_commands: image.record_display_list_at_scale(css_size, 1, request.color_scheme)
+			css_size: css_size
+			list_width: raster_width
+			list_height: raster_height
+		}
+	}
+	css_width := svg_raster_dimension(request.destination.width, 1)
+	css_height := svg_raster_dimension(request.destination.height, 1)
+	css_size := ViewportSize{ width: css_width, height: css_height }
+	mut raster_scale := math.max(request.accumulated_scale.width, request.accumulated_scale.height)
+	if raster_scale <= 0 {
+		raster_scale = 1
+	}
+	maximum_scale := 16384.0 / math.max(css_size.width, css_size.height)
+	raster_scale = math.min(raster_scale, maximum_scale)
+	list_width := svg_raster_dimension(css_size.width, raster_scale)
+	list_height := svg_raster_dimension(css_size.height, raster_scale)
+	return SVGImagePaint{
+		display_list_commands: image.record_display_list_at_scale(css_size, raster_scale, request.color_scheme)
+		css_size: css_size
+		raster_scale: raster_scale
+		list_width: list_width
+		list_height: list_height
+	}
 }
 
 pub fn (image &DecodedImageData) paint() []u8 {
@@ -352,6 +474,8 @@ mut:
 	display_list_recording_count_    usize
 	has_pending_resource_prune_      bool
 	completed_resource_prune_count_  u64
+	retained_display_list_resources_ map[string]bool
+	display_list_resource_storage_   map[string]bool
 	next_cross_process_id_           u64 = 1
 }
 
@@ -423,6 +547,10 @@ pub fn (client &SVGPageClient) page() u64 {
 	return client.id_
 }
 
+pub fn (client &SVGPageClient) window() u64 {
+	return client.id_
+}
+
 pub fn (_ &SVGPageClient) input_event_queue() []u64 {
 	panic('SVGPageClient::input_event_queue VERIFY_NOT_REACHED')
 }
@@ -445,6 +573,7 @@ pub fn (mut client SVGPageClient) allocate_navigable_id() u64 {
 
 pub fn (mut client SVGPageClient) register_svg_image_data(mut image DecodedImageData) {
 	image.ensure_vector_content_identity()
+	image.page_client_ = client
 	for registered in client.registered_svg_image_data_ {
 		if registered == &image {
 			return
@@ -502,6 +631,14 @@ pub fn (mut client SVGPageClient) prune_cached_display_list_resources() {
 }
 
 pub fn (mut client SVGPageClient) prune_cached_display_list_resources_now() {
+	mut retained_resources := map[string]bool{}
+	for registered in client.registered_svg_image_data_ {
+		registered.append_cached_display_list_resources(mut retained_resources)
+		registered.append_paint_command_cache_source_resources(mut retained_resources)
+	}
+	client.retained_display_list_resources_.clear()
+	copy_referenced_resources_to(mut client.retained_display_list_resources_, client.display_list_resource_storage_,
+		retained_resources.keys())
 	client.completed_resource_prune_count_++
 }
 
@@ -517,6 +654,19 @@ pub fn (mut client SVGPageClient) end_recording_display_list() {
 
 pub fn (client &SVGPageClient) completed_resource_prune_count() u64 {
 	return client.completed_resource_prune_count_
+}
+
+pub fn (mut client SVGPageClient) set_display_list_resource_storage(resources []string) {
+	client.display_list_resource_storage_.clear()
+	for resource in resources {
+		client.display_list_resource_storage_[resource] = true
+	}
+}
+
+pub fn (client &SVGPageClient) retained_display_list_resources() []string {
+	mut resources := client.retained_display_list_resources_.keys()
+	resources.sort()
+	return resources
 }
 
 pub fn (_ &SvgViewport) current_scale() f64 {

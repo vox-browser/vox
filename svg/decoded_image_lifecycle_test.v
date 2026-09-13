@@ -15,7 +15,8 @@ fn test_decoded_svg_image_caches_frames_and_invalidates_identity() {
 	first := image.current_frame(20, 10) or { panic('missing frame') }
 	second := image.default_frame(20, 10) or { panic('missing default frame') }
 	assert first == second
-	assert image.external_memory_size() == 8
+	// Upstream retains both the replay surface and its immutable decoded frame.
+	assert image.external_memory_size() == 12
 
 	image.did_request_frame()
 	assert image.vector_content_identity() != initial_identity
@@ -79,4 +80,68 @@ fn test_svg_page_client_defers_resource_pruning_while_recording() {
 	assert client.completed_resource_prune_count() == 0
 	client.end_recording_display_list()
 	assert client.completed_resource_prune_count() == 1
+}
+
+fn test_decoded_svg_image_paint_selects_viewbox_and_css_scaled_recordings() {
+	mut viewbox_image := DecodedImageData{
+		viewbox: ViewBox{ width: 20, height: 10 }
+		display_list_commands: ['draw-vector-content']
+		vector_content_identity_: DecodedImageData.next_vector_content_identity()
+	}
+	viewbox_paint := viewbox_image.image_paint(SVGImagePaintRequest{
+		destination: Rect{ width: 20, height: 10 }
+		accumulated_scale: ViewportSize{ width: 2, height: 3 }
+		color_scheme: 'dark'
+	}) or { panic('missing viewBox paint') }
+	assert viewbox_paint.css_size == ViewportSize{ width: 40, height: 30 }
+	assert viewbox_paint.raster_scale == 1
+	assert viewbox_paint.list_width == 40
+	assert viewbox_paint.list_height == 30
+	assert viewbox_image.color_scheme() == 'dark'
+	assert viewbox_image.cached_display_list_count() == 1
+
+	mut viewport_image := DecodedImageData{
+		display_list_commands: ['draw-viewport-content']
+		vector_content_identity_: DecodedImageData.next_vector_content_identity()
+	}
+	viewport_paint := viewport_image.image_paint(SVGImagePaintRequest{
+		destination: Rect{ width: 20, height: 10 }
+		accumulated_scale: ViewportSize{ width: 2, height: 3 }
+	}) or { panic('missing viewport paint') }
+	assert viewport_paint.css_size == ViewportSize{ width: 20, height: 10 }
+	assert viewport_paint.raster_scale == 3
+	assert viewport_paint.list_width == 60
+	assert viewport_paint.list_height == 30
+	assert viewport_image.cached_display_list_count() == 1
+	_ = viewport_image.image_paint(SVGImagePaintRequest{
+		destination: Rect{ width: 20, height: 10 }
+		accumulated_scale: ViewportSize{ width: 2, height: 3 }
+	}) or { panic('missing cached viewport paint') }
+	assert viewport_image.cached_display_list_count() == 1
+}
+
+fn test_decoded_svg_image_prunes_only_unreferenced_display_list_resources() {
+	mut image := DecodedImageData{
+		display_list_commands: ['paint']
+		vector_content_identity_: DecodedImageData.next_vector_content_identity()
+	}
+	image.set_display_list_resource_ids(['bitmap', 'gradient'], ['glyph'])
+	mut client := SVGPageClient.create(12, true)
+	client.set_display_list_resource_storage(['bitmap', 'gradient', 'glyph', 'stale'])
+	client.register_svg_image_data(mut image)
+	_ = image.record_display_list_at_scale(ViewportSize{ width: 10, height: 10 }, 2,
+		'light')
+	assert client.retained_display_list_resources() == ['bitmap', 'glyph', 'gradient']
+
+	image.invalidate_cached_rendering()
+	assert client.retained_display_list_resources() == ['glyph']
+	assert surface_external_memory_size(20, 10) == 800
+	assert surface_external_memory_size(0, 10) == 0
+	traits := RenderKeyTraits{}
+	key := RenderKey{ css_size: ViewportSize{ width: 10, height: 10 }, raster_scale: 2 }
+	assert traits.equals(key, key)
+	assert traits.hash(key) != traits.hash(RenderKey{
+		css_size: ViewportSize{ width: 10, height: 10 }
+		raster_scale: 3
+	})
 }
