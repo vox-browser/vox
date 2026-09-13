@@ -102,12 +102,14 @@ pub:
 pub mut:
 	graph           &AudioGraphState
 	timeline        &AudioParamTimeline
+	render_param_   &RenderAudioParam
 	current_value   f32
 	automation_rate AutomationRate
 }
 
 pub fn new_audio_param(id u64, context_id u64, graph &AudioGraphState, default_value f32,
 	min_value f32, max_value f32, rate AutomationRate, fixed bool) AudioParam {
+	timeline := AudioParamTimeline.create(default_value)
 	return AudioParam{
 		id: id
 		context_id: context_id
@@ -118,7 +120,8 @@ pub fn new_audio_param(id u64, context_id u64, graph &AudioGraphState, default_v
 		automation_rate: rate
 		fixed_rate: fixed
 		graph: graph
-		timeline: AudioParamTimeline.create(default_value)
+		timeline: timeline
+		render_param_: RenderAudioParam.create(timeline, min_value, max_value, rate)
 	}
 }
 
@@ -147,6 +150,7 @@ pub fn (mut parameter AudioParam) set_automation_rate(rate AutomationRate) ! {
 		return error('InvalidStateError: Automation rate cannot be changed')
 	}
 	parameter.automation_rate = rate
+	parameter.render_param_.set_automation_rate(rate)
 }
 
 pub fn (parameter AudioParam) automation_rate() AutomationRate {
@@ -173,6 +177,10 @@ pub fn (parameter AudioParam) intrinsic_value_at_time(time f64) f32 {
 
 pub fn (parameter AudioParam) timeline() &AudioParamTimeline {
 	return parameter.timeline
+}
+
+pub fn (parameter AudioParam) render_param() &RenderAudioParam {
+	return parameter.render_param_
 }
 
 pub fn (mut parameter AudioParam) set_value_at_time(value f32, start_time f64) !&AudioParam {
@@ -505,15 +513,27 @@ pub fn (node AudioNode) stop(when f64) ! {
 }
 
 pub enum ControlMessageKind {
+	add_node
+	remove_node
+	replace_connections
+	set_channel_config
+	node_message
 	start_source
 	stop_source
 }
 
 pub struct ControlMessage {
 pub:
-	kind    ControlMessageKind
-	node_id u64
-	when    f64
+	kind                   ControlMessageKind
+	node_id                u64
+	when                   f64
+	render_node            ?&RenderNode
+	node_connections       []OutgoingNodeConnection
+	param_connections      []OutgoingParamConnection
+	channel_count          int
+	channel_count_mode     ChannelCountMode
+	channel_interpretation ChannelInterpretation
+	node_message           ?NodeMessage
 }
 
 pub struct ControlMessageQueue {
