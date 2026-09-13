@@ -207,8 +207,36 @@ pub fn (mut context BaseAudioContext) create_biquad_filter(options BiquadFilterO
 	}
 }
 
-// Current upstream is a visible no-op.
-pub fn (_ BiquadFilterNode) get_frequency_response(_ []f32, _ []f32, _ []f32) {}
+pub fn (node BiquadFilterNode) get_frequency_response(frequency_hz []f32,
+	mut magnitude_response []f32, mut phase_response []f32) ! {
+	if magnitude_response.len != frequency_hz.len || phase_response.len != frequency_hz.len {
+		return error('InvalidAccessError: Arrays must have the same length')
+	}
+	current_time := node.node.graph.current_time
+	nyquist_frequency := node.node.graph.sample_rate / 2.0
+	frequency := node.frequency.intrinsic_value_at_time(current_time)
+	detune := node.detune.intrinsic_value_at_time(current_time)
+	computed_frequency := f64(frequency) * math.exp2(f64(detune) / 1200.0)
+	normalized_frequency := if computed_frequency < 0 {
+		0.0
+	} else if computed_frequency > f64(nyquist_frequency) {
+		1.0
+	} else {
+		computed_frequency / f64(nyquist_frequency)
+	}
+	coefficients := compute_biquad_coefficients(node.type_, normalized_frequency, f64(node.q.intrinsic_value_at_time(current_time)), f64(node.gain.intrinsic_value_at_time(current_time)))
+	for index, response_frequency in frequency_hz {
+		if math.is_nan(response_frequency) || response_frequency < 0
+			|| response_frequency > nyquist_frequency {
+			magnitude_response[index] = f32(math.nan())
+			phase_response[index] = f32(math.nan())
+			continue
+		}
+		magnitude, phase := biquad_frequency_response(coefficients, f64(response_frequency / nyquist_frequency))
+		magnitude_response[index] = magnitude
+		phase_response[index] = phase
+	}
+}
 
 pub struct ChannelMergerNode {
 pub mut:
