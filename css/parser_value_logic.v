@@ -1058,6 +1058,12 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.contain {
 			return parser.parse_contain_value(mut tokens)
 		}
+		.container {
+			return parser.parse_container_value(mut tokens)
+		}
+		.container_name {
+			return parser.parse_container_name_value(mut tokens)
+		}
 		.container_type {
 			return parser.parse_container_type_value(mut tokens)
 		}
@@ -8707,6 +8713,63 @@ fn (mut parser Parser) parse_contain_value(mut tokens ComponentValueStream) ?Sty
 
 	tokens = transaction
 	return StyleValue(StyleValueList.create(containment_values, .space, .yes))
+}
+
+// https://drafts.csswg.org/css-conditional-5/#propdef-container-name
+fn (mut parser Parser) parse_container_name_value(mut tokens ComponentValueStream) ?StyleValue {
+	if value := parse_property_keyword_value(mut tokens, ['none']) {
+		return value
+	}
+
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	mut names := []StyleValue{}
+	for transaction.has_more_tokens() {
+		if next := transaction.peek() {
+			if next.is_delim(u32(`/`)) {
+				break
+			}
+		}
+		name := parser.parse_custom_ident_value(mut transaction, ['none', 'and', 'not', 'or']) or { break }
+		names << StyleValue(name)
+		transaction.consume_whitespace()
+	}
+	if names.len == 0 {
+		return none
+	}
+
+	tokens = transaction
+	if names.len == 1 {
+		return names[0]
+	}
+	return StyleValue(StyleValueList.create(names, .space, .no))
+}
+
+// https://drafts.csswg.org/css-conditional-5/#propdef-container
+fn (mut parser Parser) parse_container_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	name := parser.parse_container_name_value(mut transaction) or { return none }
+	transaction.consume_whitespace()
+
+	mut type_ := StyleValue(KeywordStyleValue.create(.normal))
+	if transaction.has_more_tokens() {
+		solidus := transaction.consume() or { return none }
+		if !solidus.is_delim(u32(`/`)) {
+			return none
+		}
+		transaction.consume_whitespace()
+		type_ = parser.parse_container_type_value(mut transaction) or { return none }
+	}
+
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		return none
+	}
+	tokens = transaction
+	return StyleValue(ShorthandStyleValue.create(.container, [.container_name, .container_type], [
+		name,
+		type_,
+	]))
 }
 
 fn (mut parser Parser) parse_container_type_value(mut tokens ComponentValueStream) ?StyleValue {

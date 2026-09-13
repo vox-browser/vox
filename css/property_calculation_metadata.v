@@ -529,6 +529,12 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		'contain' {
 			PropertyID.contain
 		}
+		'container' {
+			PropertyID.container
+		}
+		'container-name' {
+			PropertyID.container_name
+		}
 		'container-type' {
 			PropertyID.container_type
 		}
@@ -1460,6 +1466,8 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.column_width { 'column-width' }
 		.columns { 'columns' }
 		.contain { 'contain' }
+		.container { 'container' }
+		.container_name { 'container-name' }
 		.container_type { 'container-type' }
 		.content { 'content' }
 		.content_visibility { 'content-visibility' }
@@ -1879,6 +1887,8 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 		.column_width { 'auto' }
 		.columns { 'auto auto / auto' }
 		.contain { 'none' }
+		.container { 'none' }
+		.container_name { 'none' }
 		.container_type { 'normal' }
 		.content { 'normal' }
 		.content_visibility { 'visible' }
@@ -2160,7 +2170,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.align_content, .align_items, .align_self, .anchor_name, .anchor_scope, .appearance, .background_attachment, .background_blend_mode, .background_image, .background_repeat, .border_block_end_style, .border_block_start_style, .border_bottom_style, .border_collapse, .border_image_repeat, .border_image_source, .border_inline_end_style, .border_inline_start_style, .border_left_style, .border_right_style, .border_top_style, .box_sizing, .caption_side, .clear, .clip_rule, .color_interpolation, .color_scheme, .column_span, .content, .cursor, .dominant_baseline, .empty_cells, .fill_rule, .flex_direction, .flex_wrap, .float_, .font_family, .font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing, .font_variant_alternates, .font_variant_caps, .font_variant_east_asian, .font_variant_emoji, .font_variant_ligatures, .font_variant_numeric, .font_variant_position, .grid_auto_flow, .grid_column_end, .grid_column_start, .grid_row_end, .grid_row_start, .grid_template_areas, .image_rendering, .isolation, .justify_content, .justify_items, .justify_self, .list_style_image, .list_style_position, .list_style_type, .mask_clip, .mask_composite, .mask_image, .mask_mode, .mask_origin, .mask_repeat, .mask_type, .mix_blend_mode, .object_fit, .overflow_block, .overflow_inline, .overflow_wrap, .overflow_x, .overflow_y, .paint_order, .pointer_events, .position, .position_anchor, .position_area, .position_try_fallbacks, .position_try_order, .position_visibility, .quotes, .scrollbar_gutter, .shape_rendering, .stroke_linecap, .stroke_linejoin, .table_layout, .text_align, .text_anchor, .text_decoration_line, .text_decoration_style, .text_justify, .text_overflow, .text_rendering, .text_transform, .text_underline_position, .text_wrap_mode, .text_wrap_style, .touch_action, .transform_box, .transform_style, .user_select, .view_transition_name, .white_space_collapse, .white_space_trim, .word_break {
 			AnimationType.discrete
 		}
-		.animation_composition, .animation_delay, .animation_direction, .animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline, .animation_timing_function, .contain, .container_type, .direction, .math_depth, .math_shift, .math_style, .resize, .scroll_behavior, .scroll_timeline_axis, .scroll_timeline_name, .timeline_scope, .transition_behavior, .transition_delay, .transition_duration, .transition_property, .transition_timing_function, .unicode_bidi, .view_timeline_axis, .view_timeline_inset, .view_timeline_name, .will_change, .writing_mode {
+		.animation_composition, .animation_delay, .animation_direction, .animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline, .animation_timing_function, .contain, .container_name, .container_type, .direction, .math_depth, .math_shift, .math_style, .resize, .scroll_behavior, .scroll_timeline_axis, .scroll_timeline_name, .timeline_scope, .transition_behavior, .transition_delay, .transition_duration, .transition_property, .transition_timing_function, .unicode_bidi, .view_timeline_axis, .view_timeline_inset, .view_timeline_name, .will_change, .writing_mode {
 			AnimationType.none_
 		}
 		.backdrop_filter, .box_shadow, .content_visibility, .display, .filter, .font_style, .font_variation_settings, .grid_template_columns, .grid_template_rows, .rotate, .scale, .stroke_dasharray, .text_shadow, .transform, .translate, .visibility {
@@ -2187,7 +2197,7 @@ pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 		.animation, .animation_composition, .animation_delay, .animation_direction, .animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline, .animation_timing_function, .background, .background_attachment, .background_blend_mode, .background_clip, .background_image, .background_origin, .background_position, .background_position_x, .background_position_y, .background_repeat, .background_size, .mask, .mask_clip, .mask_composite, .mask_image, .mask_mode, .mask_origin, .mask_position, .mask_repeat, .mask_size, .scroll_timeline, .scroll_timeline_axis, .scroll_timeline_name, .transition, .transition_behavior, .transition_delay, .transition_duration, .transition_property, .transition_timing_function, .view_timeline, .view_timeline_axis, .view_timeline_inset, .view_timeline_name {
 			PropertyMultiplicity.coordinating_list
 		}
-		.backdrop_filter, .box_shadow, .counter_increment, .counter_reset, .counter_set, .filter, .font_family, .font_feature_settings, .font_variation_settings, .quotes, .will_change {
+		.backdrop_filter, .box_shadow, .container_name, .counter_increment, .counter_reset, .counter_set, .filter, .font_family, .font_feature_settings, .font_variation_settings, .quotes, .will_change {
 			PropertyMultiplicity.list
 		}
 		else { .single }
@@ -2196,6 +2206,7 @@ pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 
 pub fn property_affects_layout(property_id PropertyID) bool {
 	return match property_id {
+		.container { true }
 		.align_content, .align_items, .align_self, .all, .anchor_name, .appearance, .aspect_ratio, .block_size, .border, .border_block, .border_block_end, .border_block_end_style, .border_block_end_width, .border_block_start, .border_block_start_style, .border_block_start_width, .border_block_style, .border_block_width, .border_bottom, .border_bottom_style, .border_bottom_width, .border_collapse, .border_image, .border_inline, .border_inline_end, .border_inline_end_style, .border_inline_end_width, .border_inline_start, .border_inline_start_style, .border_inline_start_width, .border_inline_style, .border_inline_width, .border_left, .border_left_style, .border_left_width, .border_right, .border_right_style, .border_right_width, .border_spacing, .border_style, .border_top, .border_top_style, .border_top_width, .border_width, .bottom, .box_sizing, .caption_side, .clear, .column_count, .column_gap, .column_height, .column_span, .column_width, .columns, .contain, .container_type, .content, .content_visibility, .corner_block_end_shape, .corner_block_start_shape, .corner_bottom_left_shape, .corner_bottom_right_shape, .corner_bottom_shape, .corner_end_end_shape, .corner_end_start_shape, .corner_inline_end_shape, .corner_inline_start_shape, .corner_left_shape, .corner_right_shape, .corner_shape, .corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape, .corner_top_shape, .counter_increment, .counter_reset, .counter_set, .cx, .cy, .direction, .display, .dominant_baseline, .empty_cells, .flex, .flex_basis, .flex_direction, .flex_flow, .flex_grow, .flex_shrink, .flex_wrap, .float_, .font, .font_family, .font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing, .font_size, .font_style, .font_variant, .font_variant_alternates, .font_variant_caps, .font_variant_east_asian, .font_variant_emoji, .font_variant_ligatures, .font_variant_numeric, .font_variant_position, .font_variation_settings, .font_weight, .font_width, .gap, .grid, .grid_area, .grid_auto_columns, .grid_auto_flow, .grid_auto_rows, .grid_column, .grid_column_end, .grid_column_start, .grid_row, .grid_row_end, .grid_row_start, .grid_template, .grid_template_areas, .grid_template_columns, .grid_template_rows, .height, .inline_size, .inset, .inset_block, .inset_block_end, .inset_block_start, .inset_inline, .inset_inline_end, .inset_inline_start, .isolation, .justify_content, .justify_items, .justify_self, .left, .letter_spacing, .line_height, .list_style, .list_style_image, .list_style_position, .list_style_type, .margin, .margin_block, .margin_block_end, .margin_block_start, .margin_bottom, .margin_inline, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top, .math_depth, .math_shift, .math_style, .max_block_size, .max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size, .min_width, .order, .orphans, .overflow, .overflow_block, .overflow_clip_margin, .overflow_clip_margin_block, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top, .overflow_inline, .overflow_wrap, .overflow_x, .overflow_y, .padding, .padding_block, .padding_block_end, .padding_block_start, .padding_bottom, .padding_inline, .padding_inline_end, .padding_inline_start, .padding_left, .padding_right, .padding_top, .paint_order, .perspective, .place_content, .place_items, .place_self, .position, .position_anchor, .position_area, .position_try_fallbacks, .position_try_order, .position_visibility, .quotes, .r, .right, .row_gap, .rx, .ry, .shape_margin, .shape_outside, .shape_rendering, .tab_size, .table_layout, .text_align, .text_anchor, .text_indent, .text_justify, .text_transform, .text_underline_offset, .text_underline_position, .text_wrap, .text_wrap_mode, .text_wrap_style, .top, .transform_style, .unicode_bidi, .vertical_align, .visibility, .white_space, .white_space_collapse, .white_space_trim, .widows, .width, .word_break, .word_spacing, .writing_mode, .x, .y { true }
 		else { false }
 	}
@@ -2361,6 +2372,9 @@ pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool 
 		.clip_path {
 			value_type in [.basic_shape, .url]
 		}
+		.container_name {
+			value_type == .custom_ident
+		}
 		.color_scheme, .grid_area, .grid_column, .grid_column_end, .grid_column_start, .grid_row, .grid_row_end, .grid_row_start, .transition_property, .view_transition_name, .will_change {
 			value_type == .custom_ident
 		}
@@ -2447,6 +2461,9 @@ fn property_custom_ident_blacklist(property_id PropertyID) []string {
 		}
 		.color_scheme {
 			['normal', 'light', 'dark', 'only']
+		}
+		.container_name {
+			['none', 'and', 'not', 'or']
 		}
 		.grid_area, .grid_column, .grid_column_end, .grid_column_start, .grid_row, .grid_row_end, .grid_row_start {
 			['auto', 'span']
@@ -2571,6 +2588,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		}
 		.contain {
 			lowercase_value in ['none', 'strict', 'content', 'size', 'inline-size', 'layout', 'style', 'paint']
+		}
+		.container_name {
+			lowercase_value in ['none']
 		}
 		.container_type {
 			lowercase_value in ['normal', 'size', 'inline-size', 'scroll-state']

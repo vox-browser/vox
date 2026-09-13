@@ -2806,6 +2806,9 @@ fn (style_value ShorthandStyleValue) serialize_border_family(mode SerializationM
 }
 
 pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) string {
+	if s := style_value.serialize_container(mode) {
+		return s
+	}
 	if border_serialization := style_value.serialize_border_family(mode) {
 		return border_serialization
 	}
@@ -2903,6 +2906,19 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 		return serialized[0]
 	}
 	return builder.str()
+}
+
+fn (style_value ShorthandStyleValue) serialize_container(mode SerializationMode) ?string {
+	if style_value.shorthand_ != .container {
+		return none
+	}
+	name := style_value.longhand(.container_name) or { return none }
+	type_ := style_value.longhand(.container_type) or { return none }
+	mut serialized := name.serialize(mode)
+	if type_.serialize(mode) != computed_interpolation_property_initial_value(.container_type).css_text {
+		serialized += ' / ${type_.serialize(mode)}'
+	}
+	return serialized
 }
 
 // The rule here seems to be, only print what's different from the default value,

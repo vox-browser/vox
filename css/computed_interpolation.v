@@ -1624,6 +1624,7 @@ pub mut:
 	computed_values_translate_                     ?TransformationData
 	computed_values_quotes_                        QuotesData
 	computed_values_dominant_baseline_             ?BaselineMetric
+	computed_values_container_name_                []string
 	computed_values_container_type_                ContainerType
 	computed_values_view_transition_name_          ?string
 	computed_values_touch_action_                  TouchActionData
@@ -1848,6 +1849,24 @@ pub fn (c &ComputedProperties) for_each_property(callback fn (PropertyID, &dom.S
 pub fn (c &ComputedProperties) anchor_names() []string {
 	value := c.property(.anchor_name, .yes) or { return []string{} }
 	parsed := style_value_logic_from_dom(.anchor_name, value) or { return []string{} }
+	if parsed is CustomIdentStyleValue {
+		return [parsed.custom_ident()]
+	}
+	if parsed is StyleValueList {
+		mut names := []string{cap: parsed.size()}
+		for item in parsed.values() {
+			if item is CustomIdentStyleValue {
+				names << item.custom_ident()
+			}
+		}
+		return names
+	}
+	return []string{}
+}
+
+pub fn (c &ComputedProperties) container_name() []string {
+	value := c.property(.container_name, .yes) or { return []string{} }
+	parsed := style_value_logic_from_dom(.container_name, value) or { return []string{} }
 	if parsed is CustomIdentStyleValue {
 		return [parsed.custom_ident()]
 	}

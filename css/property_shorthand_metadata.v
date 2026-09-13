@@ -27,7 +27,8 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.border_top_right_radius, .border_top_style, .border_top_width, .bottom, .box_shadow,
 				.box_sizing, .caption_side, .caret_color, .clear, .clip, .clip_path, .clip_rule,
 				.color, .color_interpolation, .color_scheme, .column_count, .column_gap,
-				.column_height, .column_span, .column_width, .contain, .container_type, .content,
+				.column_height, .column_span, .column_width, .contain, .container_name,
+				.container_type, .content,
 				.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
 				.corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape,
 				.corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape,
@@ -161,6 +162,9 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 		}
 		.columns {
 			[.column_width, .column_count, .column_height]
+		}
+		.container {
+			[.container_name, .container_type]
 		}
 		.corner_block_end_shape {
 			[.corner_end_start_shape, .corner_end_end_shape]
@@ -333,7 +337,8 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.border_top_right_radius, .border_top_style, .border_top_width, .bottom, .box_shadow,
 				.box_sizing, .caption_side, .caret_color, .clear, .clip, .clip_path, .clip_rule,
 				.color, .color_interpolation, .color_scheme, .column_count, .column_gap,
-				.column_height, .column_span, .column_width, .contain, .container_type, .content,
+				.column_height, .column_span, .column_width, .contain, .container_name,
+				.container_type, .content,
 				.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
 				.corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape,
 				.corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape,
@@ -474,6 +479,9 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 		}
 		.columns {
 			[.column_width, .column_count, .column_height]
+		}
+		.container {
+			[.container_name, .container_type]
 		}
 		.corner_block_end_shape {
 			[.corner_end_start_shape, .corner_end_end_shape]
@@ -1358,7 +1366,10 @@ pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 			[.all]
 		}
 		.container_type {
-			[.all]
+			[.all, .container]
+		}
+		.container_name {
+			[.all, .container]
 		}
 		.justify_self {
 			[.all, .place_self]

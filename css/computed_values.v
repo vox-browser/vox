@@ -585,6 +585,7 @@ pub fn resolve_computed_values(style &ComputedProperties) &ComputedValues {
 	values.set_translate(style.translate())
 	values.set_quotes(style.quotes())
 	values.set_dominant_baseline(style.dominant_baseline())
+	values.set_container_name(style.container_name())
 	values.set_container_type(style.container_type())
 	values.set_view_transition_name(style.view_transition_name())
 	values.set_touch_action(style.touch_action())
@@ -1381,6 +1382,10 @@ pub fn (values &ComputedValues) quotes() QuotesData {
 
 pub fn (values &ComputedValues) dominant_baseline() ?BaselineMetric {
 	return values.computed_values_dominant_baseline_
+}
+
+pub fn (values &ComputedValues) container_name() []string {
+	return values.computed_values_container_name_
 }
 
 pub fn (values &ComputedValues) container_type() ContainerType {
@@ -2226,6 +2231,10 @@ pub fn (mut values MutableComputedValues) set_quotes(value QuotesData) {
 
 pub fn (mut values MutableComputedValues) set_dominant_baseline(value ?BaselineMetric) {
 	values.computed_values_dominant_baseline_ = value
+}
+
+pub fn (mut values MutableComputedValues) set_container_name(value []string) {
+	values.computed_values_container_name_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_container_type(value ContainerType) {

@@ -399,6 +399,7 @@ pub enum PropertyID {
 	content
 	font_variant_alternates
 	text_decoration_skip_ink
+	container_name
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow
 	gap
@@ -471,6 +472,7 @@ pub enum PropertyID {
 	font
 	background
 	mask
+	container
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {
