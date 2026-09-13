@@ -1,5 +1,7 @@
 module webaudio
 
+import math
+
 @[heap]
 struct GraphParamObservation {
 mut:
@@ -165,5 +167,27 @@ fn test_delay_factory_messages_render_through_the_context_destination() {
 	})
 	output := graph.destination() or { panic('missing destination') }
 	assert output.output(0).channel(0) == []f32{len: int(render_quantum_size), init: 0.5}
+	assert output.output(0).channel(1) == []f32{len: int(render_quantum_size), init: 0.5}
+}
+
+fn test_stereo_panner_factory_messages_render_through_the_context_destination() {
+	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
+	mut source := context.base.create_constant_source(0.5, AudioNodeOptions{}) or { panic(err) }
+	mut panner := context.base.create_stereo_panner(1, AudioNodeOptions{}) or { panic(err) }
+	mut destination := context.base.destination.AudioNode
+	connect_nodes(mut source.node, mut panner.node, 0, 0) or { panic(err) }
+	connect_nodes(mut panner.node, mut destination, 0, 0) or { panic(err) }
+	start_scheduled_source(mut context.base, mut source.node, 0) or { panic(err) }
+	mut graph := RenderGraph.create()
+	graph.apply_control_messages(context.base.control_messages.drain())
+	graph.set_destination(destination.id)
+	graph.render_quantum(RenderContext{
+		sample_rate: 48_000
+		quantum_size: int(render_quantum_size)
+	})
+	output := graph.destination() or { panic('missing destination') }
+	for sample in output.output(0).channel(0) {
+		assert math.abs(sample) < 0.00001
+	}
 	assert output.output(0).channel(1) == []f32{len: int(render_quantum_size), init: 0.5}
 }

@@ -332,9 +332,11 @@ pub mut:
 
 pub fn (mut context BaseAudioContext) create_stereo_panner(pan f32, options AudioNodeOptions) !StereoPannerNode {
 	node := context.allocate_node(.stereo_panner, 1, 1, options, 2, .clamped_max, .speakers)!
+	pan_parameter := context.allocate_param(pan, -1, 1, .a_rate, false)
+	node.queue_render_node_creation(StereoPannerRenderNode.create(node.id, int(render_quantum_size), pan_parameter.render_param()).render_node())
 	mut panner := StereoPannerNode{
 		node: node
-		pan: context.allocate_param(pan, -1, 1, .a_rate, false)
+		pan: pan_parameter
 	}
 	if count := options.channel_count { panner.set_channel_count(count)! }
 	if mode := options.channel_count_mode { panner.set_channel_count_mode(mode)! }
@@ -346,6 +348,7 @@ pub fn (mut panner StereoPannerNode) set_channel_count_mode(mode ChannelCountMod
 		return error("NotSupportedError: StereoPannerNode does not support 'max'")
 	}
 	panner.node.channel_count_mode = mode
+	panner.node.queue_channel_config_update()
 }
 
 pub fn (mut panner StereoPannerNode) set_channel_count(count u32) ! {
