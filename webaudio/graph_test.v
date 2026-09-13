@@ -1,5 +1,11 @@
 module webaudio
 
+@[heap]
+struct GraphParamObservation {
+mut:
+	count int
+}
+
 fn test_audio_node_connections_are_unique_validated_and_disconnectable() {
 	mut first_context := new_audio_context(1, 44100, true) or { panic(err) }
 	mut source := first_context.base.create_gain(1, AudioNodeOptions{}) or { panic(err) }
@@ -105,4 +111,20 @@ fn test_audio_node_queues_render_graph_connection_snapshots() {
 	disconnect_message := context.base.control_messages.drain()[0]
 	assert disconnect_message.node_connections.len == 0
 	assert disconnect_message.param_connections.len == 0
+}
+
+fn test_gain_factory_queues_a_parameterized_render_node() {
+	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
+	context.base.control_messages.drain()
+	gain := context.base.create_gain(0.25, AudioNodeOptions{}) or { panic(err) }
+	messages := context.base.control_messages.drain()
+	add_message := messages.filter(it.kind == .add_node)[0]
+	render_node := add_message.render_node or { panic('missing gain render node') }
+	assert render_node.node_id() == gain.node.id
+	mut parameter_count := &GraphParamObservation{}
+	mut mutable_render_node := unsafe { &RenderNode(render_node) }
+	mutable_render_node.for_each_param(fn [mut parameter_count] (_ mut RenderAudioParam) {
+		parameter_count.count++
+	})
+	assert parameter_count.count == 1
 }

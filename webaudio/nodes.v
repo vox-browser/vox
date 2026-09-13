@@ -62,9 +62,11 @@ pub mut:
 
 pub fn (mut context BaseAudioContext) create_gain(value f32, options AudioNodeOptions) !GainNode {
 	node := context.allocate_node(.gain, 1, 1, options, 2, .max, .speakers)!
+	gain := context.allocate_param(value, float_lowest, float_highest, .a_rate, false)
+	node.queue_render_node_creation(GainRenderNode.create(node.id, int(render_quantum_size), gain.render_param()).render_node())
 	return GainNode{
 		node: node
-		gain: context.allocate_param(value, float_lowest, float_highest, .a_rate, false)
+		gain: gain
 	}
 }
 
