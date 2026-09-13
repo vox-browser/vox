@@ -422,6 +422,45 @@ pub fn (api &Internals) parser_non_append_insertions() u64 {
 	return html.parser_non_append_insertions()
 }
 
+pub fn (api &Internals) media_element_is_fetching(element &html.HTMLMediaElement) bool {
+	return element.is_fetching()
+}
+
+pub fn (api &Internals) media_element_is_playing_audio(element &html.HTMLMediaElement) bool {
+	return element.is_playing_audio()
+}
+
+pub fn (api &Internals) media_element_video_sink_is_ticking(element &html.HTMLMediaElement) bool {
+	return element.video_sink_is_ticking()
+}
+
+pub fn (api &Internals) set_media_element_ready_state(element &html.HTMLMediaElement, ready_state u16) {
+	if ready_state > u16(html.MediaReadyState.have_enough_data) {
+		return
+	}
+	mut mutable_element := unsafe { &html.HTMLMediaElement(element) }
+	state := unsafe { html.MediaReadyState(ready_state) }
+	mutable_element.set_ready_state(state)
+}
+
+pub fn (api &Internals) set_media_element_paused(element &html.HTMLMediaElement, paused bool) {
+	mut mutable_element := unsafe { &html.HTMLMediaElement(element) }
+	mutable_element.set_paused(paused)
+}
+
+pub fn (api &Internals) set_media_element_seeking(element &html.HTMLMediaElement, seeking bool) {
+	mut mutable_element := unsafe { &html.HTMLMediaElement(element) }
+	mutable_element.set_seeking(seeking)
+}
+
+pub fn (mut api Internals) set_page_muted(muted bool) {
+	api.platform.page_muted = muted
+	for element in api.platform.page_media_elements {
+		mut mutable_element := unsafe { &html.HTMLMediaElement(element) }
+		mutable_element.set_page_muted(muted)
+	}
+}
+
 pub fn (api &Internals) hit_test(_ f64, _ f64) ?HitTestObject {
 	result := api.platform.hit_test_result or { return none }
 	return HitTestObject{

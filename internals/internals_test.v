@@ -221,6 +221,33 @@ fn test_session_history_dumps_and_embedder_operations() {
 	assert api.dump_session_history() == '(no navigable)'
 }
 
+fn test_media_element_state_controls_use_live_media_model() {
+	mut platform := &PlatformState{}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	mut api := Internals.create(platform, navigator)
+	media := html.HTMLMediaElement.create(none, dom.URL{'https://media.test/'})
+	platform.page_media_elements << media
+	mut mutable_media := unsafe { &html.HTMLMediaElement(media) }
+	mutable_media.process_media_data(.ongoing)
+	assert api.media_element_is_fetching(media)
+	mutable_media.on_audio_track_added(html.MediaTrackMetadata{ identifier: 1 })
+	api.set_media_element_ready_state(media, u16(html.MediaReadyState.have_future_data))
+	assert media.ready_state() == .have_future_data
+	api.set_media_element_ready_state(media, 99)
+	assert media.ready_state() == .have_future_data
+	api.set_media_element_paused(media, false)
+	assert !media.paused()
+	assert api.media_element_is_playing_audio(media)
+	api.set_media_element_seeking(media, true)
+	assert media.seeking()
+	assert api.media_element_video_sink_is_ticking(media)
+	api.set_page_muted(true)
+	assert platform.page_muted
+	assert !api.media_element_is_playing_audio(media)
+	mutable_media.process_media_data(.complete)
+	assert !api.media_element_is_fetching(media)
+}
+
 fn test_content_and_site_compatibility_controls_update_runtime_services() {
 	mut platform := &PlatformState{}
 	navigator := gamepad.NavigatorGamepadPartial.new()

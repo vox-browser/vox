@@ -6,6 +6,7 @@
 module internals
 
 import dom
+import html
 
 pub enum InputActionKind {
 	key_down
@@ -182,6 +183,8 @@ pub mut:
 	site_isolation_process_tree                string
 	remote_frame_process_crashes               u64
 	session_history_traversal_queue_flushes    u64
+	page_muted                                 bool
+	page_media_elements                       []&html.HTMLMediaElement
 }
 
 @[heap]

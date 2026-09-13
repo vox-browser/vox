@@ -245,6 +245,7 @@ mut:
 	assigned_media_provider_    ?MediaProviderObject
 	attached_media_source_      voidptr
 	media_source_detach_        ?MediaSourceDetachHook
+	video_sink_is_ticking_      bool = true
 }
 
 pub fn HTMLMediaElement.create(element ?&dom.HTMLElement, base_url dom.URL) &HTMLMediaElement {
@@ -496,6 +497,19 @@ pub fn (element &HTMLMediaElement) seeking() bool {
 
 pub fn (element &HTMLMediaElement) paused() bool {
 	return element.paused_
+}
+
+pub fn (element &HTMLMediaElement) is_fetching() bool {
+	return element.network_state_ == .loading
+}
+
+pub fn (element &HTMLMediaElement) is_playing_audio() bool {
+	return !element.paused_ && element.audio_tracks_.has_enabled_track()
+		&& element.effective_media_volume() > 0
+}
+
+pub fn (element &HTMLMediaElement) video_sink_is_ticking() bool {
+	return element.video_sink_is_ticking_
 }
 
 pub fn (element &HTMLMediaElement) show_poster() bool {
