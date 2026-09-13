@@ -265,3 +265,50 @@ fn test_oscillator_factory_waveform_message_renders_through_the_context_destinat
 	assert math.abs(actual[2]) < 0.00001
 	assert math.abs(actual[3] + 1) < 0.00001
 }
+
+fn test_buffer_source_factory_start_message_renders_acquired_contents() {
+	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
+	mut buffer := context.base.create_buffer(1, 4, 48_000) or { panic(err) }
+	buffer.copy_to_channel([f32(1), 2, 3, 4], 0, 0) or { panic(err) }
+	mut source := context.base.create_buffer_source(AudioBufferSourceOptions{
+		buffer: buffer
+	}) or { panic(err) }
+	mut destination := context.base.destination.AudioNode
+	connect_nodes(mut source.node, mut destination, 0, 0) or { panic(err) }
+	source.start(0, 0, none) or { panic(err) }
+	mut graph := RenderGraph.create()
+	graph.apply_control_messages(context.base.control_messages.drain())
+	graph.set_destination(destination.id)
+	graph.render_quantum(RenderContext{
+		sample_rate: 48_000
+		quantum_size: int(render_quantum_size)
+	})
+	output := graph.destination() or { panic('missing destination') }
+	assert output.output(0).channel(0)[..4] == [f32(1), 2, 3, 4]
+	assert output.output(0).channel(1)[..4] == [f32(1), 2, 3, 4]
+	assert output.output(0).channel(0)[4..] == []f32{len: int(render_quantum_size) - 4}
+}
+
+fn test_buffer_source_setters_queue_live_parameter_and_buffer_updates() {
+	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
+	mut source := context.base.create_buffer_source(AudioBufferSourceOptions{}) or { panic(err) }
+	context.base.control_messages.drain()
+	source.set_loop(true)
+	source.set_loop_start(0.25)
+	source.set_loop_end(0.75)
+	messages := context.base.control_messages.drain()
+	assert messages.len == 3
+	last_parameters := messages[2].node_message or { panic('missing buffer parameters') }
+	assert last_parameters.loop_
+	assert last_parameters.loop_start == 0.25
+	assert last_parameters.loop_end == 0.75
+	source.start(0, 0, none) or { panic(err) }
+	context.base.control_messages.drain()
+	buffer := context.base.create_buffer(1, 4, 48_000) or { panic(err) }
+	source.set_buffer(buffer) or { panic(err) }
+	update := context.base.control_messages.drain()[0].node_message or {
+		panic('missing live buffer update')
+	}
+	assert update.update_buffer
+	assert update.buffer != none
+}

@@ -654,6 +654,7 @@ pub fn (source AudioBufferSourceNode) buffer() ?AudioBuffer {
 
 pub fn (mut source AudioBufferSourceNode) set_loop(value bool) {
 	source.loop_ = value
+	source.queue_parameters_update(none, false)
 }
 
 pub fn (source AudioBufferSourceNode) loop() bool {
@@ -662,6 +663,7 @@ pub fn (source AudioBufferSourceNode) loop() bool {
 
 pub fn (mut source AudioBufferSourceNode) set_loop_start(value f64) {
 	source.loop_start = value
+	source.queue_parameters_update(none, false)
 }
 
 pub fn (source AudioBufferSourceNode) loop_start() f64 {
@@ -670,6 +672,7 @@ pub fn (source AudioBufferSourceNode) loop_start() f64 {
 
 pub fn (mut source AudioBufferSourceNode) set_loop_end(value f64) {
 	source.loop_end = value
+	source.queue_parameters_update(none, false)
 }
 
 pub fn (source AudioBufferSourceNode) loop_end() f64 {

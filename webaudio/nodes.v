@@ -515,16 +515,45 @@ pub mut:
 }
 
 pub fn (mut context BaseAudioContext) create_buffer_source(options AudioBufferSourceOptions) !AudioBufferSourceNode {
-	node := context.allocate_node(.buffer_source, 0, 1, options.node, 2, .max, .speakers)!
-	return AudioBufferSourceNode{
+	node := context.allocate_node(.buffer_source, 0, 1, AudioNodeOptions{}, 2, .max, .speakers)!
+	playback_rate := context.allocate_param(options.playback_rate, float_lowest, float_highest, .k_rate, true)
+	detune := context.allocate_param(options.detune, float_lowest, float_highest, .k_rate, true)
+	node.queue_render_node_creation(AudioBufferSourceRenderNode.create(node.id, int(render_quantum_size), playback_rate.render_param(), detune.render_param()).render_node())
+	mut source := AudioBufferSourceNode{
 		node: node
 		buffer: options.buffer
-		playback_rate: context.allocate_param(options.playback_rate, float_lowest, float_highest, .k_rate, true)
-		detune: context.allocate_param(options.detune, float_lowest, float_highest, .k_rate, true)
+		playback_rate: playback_rate
+		detune: detune
 		loop_: options.loop_
 		loop_start: options.loop_start
 		loop_end: options.loop_end
 	}
+	source.queue_parameters_update(none, false)
+	return source
+}
+
+pub fn (source AudioBufferSourceNode) queue_parameters_update(buffer ?&AudioBufferContents,
+	update_buffer bool) {
+	source.node.enqueue_control_message(ControlMessage{
+		kind: .node_message
+		node_message: NodeMessage{
+			node_id: source.node.id
+			kind: .set_buffer_source_parameters
+			loop_: source.loop_
+			loop_start: source.loop_start
+			loop_end: source.loop_end
+			buffer: buffer
+			update_buffer: update_buffer
+		}
+	})
+}
+
+fn (mut source AudioBufferSourceNode) acquire_buffer_contents() ?&AudioBufferContents {
+	buffer := source.buffer or { return none }
+	mut mutable_buffer := buffer
+	contents := mutable_buffer.acquire_contents()
+	source.buffer = mutable_buffer
+	return contents
 }
 
 pub fn (mut source AudioBufferSourceNode) set_buffer(buffer ?AudioBuffer) ! {
@@ -535,6 +564,9 @@ pub fn (mut source AudioBufferSourceNode) set_buffer(buffer ?AudioBuffer) ! {
 		source.buffer_set = true
 	}
 	source.buffer = buffer
+	if source.node.source_started {
+		source.queue_parameters_update(source.acquire_buffer_contents(), true)
+	}
 }
 
 pub fn (mut source AudioBufferSourceNode) start(when ?f64, offset ?f64, duration ?f64) ! {
@@ -547,6 +579,17 @@ pub fn (mut source AudioBufferSourceNode) start(when ?f64, offset ?f64, duration
 		}
 	}
 	source.node.source_started = true
+	source.node.enqueue_control_message(ControlMessage{
+		kind: .node_message
+		node_message: NodeMessage{
+			node_id: source.node.id
+			kind: .start_buffer_source
+			when: when or { 0 }
+			offset: offset or { 0 }
+			duration: duration
+			buffer: source.acquire_buffer_contents()
+		}
+	})
 }
 
 pub struct ScriptProcessorNode {
