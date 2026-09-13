@@ -90,9 +90,12 @@ fn test_scheduled_source_tracks_playing_lifetime_and_dispatches_ended_once() {
 fn test_audio_context_queues_its_destination_render_node_first() {
 	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
 	messages := context.base.control_messages.drain()
-	assert messages.len == 1
-	assert messages[0].kind == .add_node
-	render_node := messages[0].render_node or { panic('missing destination render node') }
+	// initialize_audio_node_options queues the destination's explicit channel
+	// configuration before create() queues its renderer node, as upstream does.
+	assert messages.len == 2
+	assert messages[0].kind == .set_channel_config
+	assert messages[1].kind == .add_node
+	render_node := messages[1].render_node or { panic('missing destination render node') }
 	assert render_node.node_id() == context.base.destination.id
 	assert render_node.channel_count() == 2
 	assert render_node.channel_count_mode() == .explicit
