@@ -6201,26 +6201,27 @@ fn (mut parser Parser) parse_paint_value(mut tokens ComponentValueStream) ?Style
 	mut transaction := tokens.clone()
 	url := parse_url_function(mut transaction) or { return none }
 	transaction.consume_whitespace()
+	mut values := [StyleValue(URLStyleValue.create(url))]
 
 	if transaction.has_more_tokens() {
-		// A <color> fallback is retained.
 		mut color_attempt := transaction.clone()
 		if color := parser.parse_color_value(mut color_attempt) {
 			tokens = color_attempt
-			return StyleValue(URLStyleValue.create_with_paint_fallback(url, color))
+			values << color
+			return StyleValue(StyleValueList.create(values, .space, .no))
 		}
 		// A `none` fallback is valid but ignored.
 		mut none_attempt := transaction.clone()
 		if _ := parse_property_keyword_value(mut none_attempt, ['none']) {
 			tokens = none_attempt
-			return StyleValue(URLStyleValue.create(url))
+			return StyleValue(StyleValueList.create(values, .space, .no))
 		}
 		// Any other trailing token is an invalid fallback.
 		return none
 	}
 
 	tokens = transaction
-	return StyleValue(URLStyleValue.create(url))
+	return StyleValue(StyleValueList.create(values, .space, .no))
 }
 
 // Parse the `<color> | none` alternatives shared by <paint>. Returns none when there is

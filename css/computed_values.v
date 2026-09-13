@@ -276,12 +276,13 @@ fn computed_values_svg_paint(style &ComputedProperties, property_id PropertyID, 
 		color := parsed.to_color(context) or { return none }
 		return SVGPaint.from_color(color)
 	}
-	if url := parsed.as_url() {
-		fallback_color := if fallback := url.paint_fallback() {
-			fallback.to_color(context)
-		} else {
-			none
+	if parsed is StyleValueList {
+		values := parsed.values()
+		if values.len == 0 {
+			return none
 		}
+		url := values[0].as_url() or { return none }
+		fallback_color := if values.len > 1 { values[1].to_color(context) } else { none }
 		return SVGPaint.from_url(url.url(), fallback_color)
 	}
 	return none
