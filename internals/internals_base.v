@@ -171,6 +171,17 @@ pub mut:
 	site_compatibility_source                  string
 	experimental_interfaces_exposed            bool
 	autoplay_policy                            string = 'block-audio'
+	accessibility_tree_dump                    string
+	ui_process_session_history                 string
+	session_history_navigable_id               string
+	captured_session_history                   string
+	capture_session_history_snapshot_result    bool = true
+	restore_session_history_snapshot_result    bool = true
+	register_session_store_tab_result          bool = true
+	session_store_tab_state                    string
+	site_isolation_process_tree                string
+	remote_frame_process_crashes               u64
+	session_history_traversal_queue_flushes    u64
 }
 
 @[heap]

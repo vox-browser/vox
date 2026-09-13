@@ -187,6 +187,39 @@ fn test_runtime_gc_paint_wrapper_and_activity_diagnostics() {
 	assert document_request.base_url == 'https://xhr-document.test/path'
 }
 
+fn test_session_history_dumps_and_embedder_operations() {
+	history := '{"entries":[{"step":8,"url":"https://example.test/first.html"},{"step":9,"url":"https://example.test/second.html?q=1#target"}],"usedSteps":[{"step":8,"current":false},{"step":9,"current":true}]}'
+	mut platform := &PlatformState{
+		accessibility_tree_dump: '{"role":"document"}'
+		ui_process_session_history: history
+		session_store_tab_state: '{"index":1}'
+		site_isolation_process_tree: 'root\n  child\n'
+	}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	mut api := Internals.create(platform, navigator)
+	assert api.dump_accessibility_tree() == '{"role":"document"}'
+	assert api.dump_session_history() == '  step 0 first.html\n  step 1 second.html?q=1#target (current)\n'
+	assert api.dump_ui_process_session_history() == history
+	assert api.dump_ui_process_session_history_without_update() == history
+	assert api.capture_session_history_snapshot()
+	platform.ui_process_session_history = '{"entries":[],"usedSteps":[]}'
+	assert api.restore_captured_session_history_snapshot()
+	assert platform.ui_process_session_history == history
+	assert api.register_session_store_tab()
+	assert api.dump_session_store_tab_state() == '{"index":1}'
+	assert api.dump_site_isolation_process_tree() == 'root\n  child\n'
+	api.crash_remote_frame_processes()
+	assert platform.remote_frame_process_crashes == 1
+	promise := api.flush_session_history_traversal_queue()
+	assert promise.state() == .fulfilled
+	assert platform.session_history_traversal_queue_flushes == 1
+
+	platform.ui_process_session_history = 'invalid'
+	assert api.dump_session_history() == '(invalid UI process session history)'
+	platform.ui_process_session_history = ''
+	assert api.dump_session_history() == '(no navigable)'
+}
+
 fn test_content_and_site_compatibility_controls_update_runtime_services() {
 	mut platform := &PlatformState{}
 	navigator := gamepad.NavigatorGamepadPartial.new()

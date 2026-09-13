@@ -236,6 +236,188 @@ pub fn (api &Internals) create_xml_http_request_for_document(document &dom.Docum
 	return xhr.XMLHttpRequest.construct(.window, document.url_string())
 }
 
+pub fn dump_string_to_utf16(value string) string {
+	// V strings retain the UTF-8 scalar sequence; WebIDL performs the UTF-16
+	// conversion when the value crosses the binding boundary.
+	return value
+}
+
+pub fn (api &Internals) dump_accessibility_tree() string {
+	return dump_string_to_utf16(api.platform.accessibility_tree_dump)
+}
+
+fn session_history_json_int(object map[string]json2.Any, name string) ?int {
+	value := object[name] or { return none }
+	return match value {
+		int { value }
+		i64 { int(value) }
+		i32 { int(value) }
+		u64 { int(value) }
+		u32 { int(value) }
+		f64 { int(value) }
+		f32 { int(value) }
+		else { none }
+	}
+}
+
+fn session_history_json_array(object map[string]json2.Any, name string) ?[]json2.Any {
+	value := object[name] or { return none }
+	if value is []json2.Any {
+		return value
+	}
+	return none
+}
+
+fn find_session_history_entries(entries []json2.Any, navigable_id string) ?[]json2.Any {
+	for value in entries {
+		if value !is map[string]json2.Any {
+			continue
+		}
+		entry := value as map[string]json2.Any
+		nested_histories := session_history_json_array(entry, 'nestedHistories') or { continue }
+		for nested_value in nested_histories {
+			if nested_value !is map[string]json2.Any {
+				continue
+			}
+			nested := nested_value as map[string]json2.Any
+			nested_entries := session_history_json_array(nested, 'entries') or { continue }
+			if id_value := nested['id'] {
+				if id_value is string && id_value == navigable_id {
+					return nested_entries
+				}
+			}
+			if result := find_session_history_entries(nested_entries, navigable_id) {
+				return result
+			}
+		}
+	}
+	return none
+}
+
+pub fn (api &Internals) dump_session_history() string {
+	if api.platform.ui_process_session_history == '' {
+		return '(no navigable)'
+	}
+	parsed := json2.decode[json2.Any](api.platform.ui_process_session_history) or {
+		return '(invalid UI process session history)'
+	}
+	if parsed !is map[string]json2.Any {
+		return '(invalid UI process session history)'
+	}
+	history := parsed as map[string]json2.Any
+	top_level_entries := session_history_json_array(history, 'entries') or {
+		return '(invalid UI process session history)'
+	}
+	used_steps := session_history_json_array(history, 'usedSteps') or {
+		return '(invalid UI process session history)'
+	}
+	mut current_step := ?int(none)
+	for value in used_steps {
+		if value is map[string]json2.Any {
+			step := value as map[string]json2.Any
+			current_value := step['current'] or { continue }
+			if current_value is bool && current_value {
+				current_step = session_history_json_int(step, 'step')
+				break
+			}
+		}
+	}
+	entries := if api.platform.session_history_navigable_id == '' {
+		top_level_entries
+	} else {
+		find_session_history_entries(top_level_entries, api.platform.session_history_navigable_id) or {
+			return '(no canonical session history entries)'
+		}
+	}
+	mut minimum_step := ?int(none)
+	for value in entries {
+		if value is map[string]json2.Any {
+			if step := session_history_json_int(value as map[string]json2.Any, 'step') {
+				if minimum := minimum_step {
+					if step < minimum {
+						minimum_step = step
+					}
+				} else {
+					minimum_step = step
+				}
+			}
+		}
+	}
+	mut lines := []string{}
+	for value in entries {
+		if value !is map[string]json2.Any {
+			continue
+		}
+		entry := value as map[string]json2.Any
+		step := session_history_json_int(entry, 'step') or { continue }
+		url_value := entry['url'] or { continue }
+		if url_value !is string {
+			continue
+		}
+		serialized_url := url_value as string
+		url := parse_absolute_url(serialized_url) or { continue }
+		mut display := url.basename()
+		if query := url.query() {
+			display += '?${query}'
+		}
+		if fragment := url.fragment() {
+			display += '#${fragment}'
+		}
+		relative_step := if minimum := minimum_step { '${step - minimum}' } else { 'pending' }
+		current_suffix := if current := current_step {
+			if current == step { ' (current)' } else { '' }
+		} else {
+			''
+		}
+		lines << '  step ${relative_step} ${display}${current_suffix}\n'
+	}
+	return dump_string_to_utf16(lines.join(''))
+}
+
+pub fn (api &Internals) dump_ui_process_session_history() string {
+	return dump_string_to_utf16(api.platform.ui_process_session_history)
+}
+
+pub fn (api &Internals) dump_ui_process_session_history_without_update() string {
+	return dump_string_to_utf16(api.platform.ui_process_session_history)
+}
+
+pub fn (mut api Internals) capture_session_history_snapshot() bool {
+	if api.platform.capture_session_history_snapshot_result {
+		api.platform.captured_session_history = api.platform.ui_process_session_history
+	}
+	return api.platform.capture_session_history_snapshot_result
+}
+
+pub fn (mut api Internals) restore_captured_session_history_snapshot() bool {
+	if api.platform.restore_session_history_snapshot_result
+		&& api.platform.captured_session_history != '' {
+		api.platform.ui_process_session_history = api.platform.captured_session_history
+	}
+	return api.platform.restore_session_history_snapshot_result
+}
+
+pub fn (api &Internals) register_session_store_tab() bool {
+	return api.platform.register_session_store_tab_result
+}
+
+pub fn (api &Internals) dump_session_store_tab_state() string {
+	return dump_string_to_utf16(api.platform.session_store_tab_state)
+}
+
+pub fn (api &Internals) dump_site_isolation_process_tree() string {
+	return dump_string_to_utf16(api.platform.site_isolation_process_tree)
+}
+
+pub fn (mut api Internals) crash_remote_frame_processes() {
+	api.platform.remote_frame_process_crashes++
+}
+
+pub fn (mut api Internals) flush_session_history_traversal_queue() &dom.Promise {
+	api.platform.session_history_traversal_queue_flushes++
+	return dom.Promise.resolved(dom.js_undefined())
+}
+
 pub fn (api &Internals) hit_test(_ f64, _ f64) ?HitTestObject {
 	result := api.platform.hit_test_result or { return none }
 	return HitTestObject{
