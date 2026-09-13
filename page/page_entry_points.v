@@ -454,4 +454,5 @@ pub fn (p &Page) listen_for_dom_mutations() bool {
 
 pub fn (mut p Page) set_listen_for_dom_mutations(value bool) {
 	p.listen_for_dom_mutations_ = value
+	p.client_.set_listen_for_dom_mutations(value)
 }

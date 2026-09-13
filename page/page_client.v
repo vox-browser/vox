@@ -74,6 +74,13 @@ pub mut:
 	primary_paste_request_count_       u64
 	paste_action_completion_count_     u64
 	primary_selection_                 string
+	worker_exceptions_                 []WorkerException
+	javascript_sources_                []JavaScriptSource
+	broadcast_channel_messages_        []string
+	worker_agents_                     map[u64]WorkerAgentState
+	next_worker_agent_id_              u64 = 1
+	listen_for_dom_mutations_          bool
+	pending_dom_mutations_             []ClientEvent
 }
 
 pub fn PageClient.create() &PageClient { return &PageClient{} }
@@ -197,7 +204,12 @@ pub fn (mut client PageClient) page_did_receive_network_response_headers(request
 pub fn (mut client PageClient) page_did_receive_network_response_body(request_id u64, data []u8) { client.record('network-response-body', '${request_id}:${data.len}') }
 pub fn (mut client PageClient) page_did_finish_network_request(request_id u64, body_size u64, timing string, network_error ?string) { client.record('finish-network-request', '${request_id}:${body_size}:${timing}:${network_error or { '' }}') }
 pub fn (_ PageClient) request_worker_agent(_ string) WorkerAgentResponse { return WorkerAgentResponse{} }
-pub fn (mut client PageClient) page_did_mutate_dom(type_ string, target string, added []string, removed []string, previous ?string, next ?string, attribute ?string) { client.record('mutate-dom', '${type_}:${target}:${added.len}:${removed.len}:${previous or { '' }}:${next or { '' }}:${attribute or { '' }}') }
+pub fn (mut client PageClient) page_did_mutate_dom(type_ string, target string, added []string, removed []string, previous ?string, next ?string, attribute ?string) {
+	client.pending_dom_mutations_ << ClientEvent{
+		name: 'mutate-dom'
+		text: '${type_}:${target}:${added.len}:${removed.len}:${previous or { '' }}:${next or { '' }}:${attribute or { '' }}'
+	}
+}
 pub fn (mut client PageClient) page_did_paint(rect PixelRect, bitmap_id i32) { client.record('paint', '${rect.x},${rect.y},${rect.width},${rect.height}:${bitmap_id}') }
 pub fn (mut client PageClient) page_did_take_screenshot(data []u8) {
 	client.screenshots << data.clone()
