@@ -64,11 +64,19 @@ pub struct NoProtocols {}
 
 pub type Protocols = NoProtocols | []string | string
 
+pub type WebSocketEstablishConnectionHook = fn (string, []string) !
+
 @[heap]
 pub struct WebSocketGlobalScope {
 pub:
 	api_base_url string
 	origin       string
+mut:
+	establish_connection_hook ?WebSocketEstablishConnectionHook
+}
+
+pub fn (mut scope WebSocketGlobalScope) set_establish_connection_hook(hook WebSocketEstablishConnectionHook) {
+	scope.establish_connection_hook = hook
 }
 
 pub fn WebSocketGlobalScope.create(api_base_url string, origin string) &WebSocketGlobalScope {
@@ -169,7 +177,13 @@ fn normalize_websocket_url(input string, base_url string) !string {
 
 // Models the deferred establish_web_socket_connection callback.
 pub fn (mut socket WebSocket) establish() {
-	socket.establish_web_socket_connection() or { return }
+	socket.establish_web_socket_connection() or {
+		// The translated backend can fail before producing a live connection.
+		// Surface that startup failure through the events required by the JS API.
+		socket.on_error()
+		socket.on_close(1006, '', false)
+		return
+	}
 }
 
 // Network creation is the explicit host boundary in the V translation. Once
@@ -178,6 +192,9 @@ pub fn (mut socket WebSocket) establish() {
 pub fn (mut socket WebSocket) establish_web_socket_connection() ! {
 	if socket.connection_created {
 		return
+	}
+	if hook := socket.relevant_global_scope().establish_connection_hook {
+		hook(socket.url_, socket.protocols)!
 	}
 	socket.connection_created = true
 	socket.state = .connecting

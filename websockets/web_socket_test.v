@@ -3,6 +3,10 @@ module websockets
 import fileapi
 import webidl
 
+fn fail_websocket_startup(_ string, _ []string) ! {
+	return error('backend rejected connection')
+}
+
 fn test_constructor_url_protocol_normalization_and_validation() {
 	socket := WebSocket.construct_impl('https://example.test/chat', '', Protocols([
 		'chat',
@@ -133,4 +137,20 @@ fn test_constructor_factories_retain_relevant_global_and_registration() {
 	assert socket.is_registered_with_global()
 	socket.finalize()
 	assert !socket.is_registered_with_global()
+}
+
+fn test_deferred_establish_surfaces_startup_failure_as_error_and_abnormal_close() {
+	mut global_scope := WebSocketGlobalScope.create('https://example.test/', 'https://example.test')
+	global_scope.set_establish_connection_hook(fail_websocket_startup)
+	mut socket := WebSocket.create(global_scope, 'wss://example.test/socket', NoProtocols{})!
+
+	socket.establish()
+	assert socket.state == .closed
+	assert socket.events.len == 2
+	assert socket.events[0].kind == .error
+	assert socket.events[1].kind == .close
+	assert socket.events[1].code == 1006
+	assert socket.events[1].reason == ''
+	assert !socket.events[1].was_clean
+	assert !socket.connection_created
 }
