@@ -119,3 +119,39 @@ fn test_non_style_rules_force_broad_add_remove_but_inactive_sheets_do_not() {
 	assert !document.needs_full_style_update()
 	assert !root.needs_style_update()
 }
+
+fn test_broad_shadow_sheet_invalidation_distinguishes_host_subtree_and_sibling_reach() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut document_node := unsafe { &dom.Node(document) }
+	mut root := style_sheet_list_invalidation_element(document, 'html')
+	mut host := style_sheet_list_invalidation_element(document, 'div')
+	mut child := style_sheet_list_invalidation_element(document, 'span')
+	mut sibling := style_sheet_list_invalidation_element(document, 'div')
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(host.as_node()) or { panic(err) }
+	root_node.append_child(sibling.as_node()) or { panic(err) }
+	mut host_node := host.as_node()
+	host_node.append_child(child.as_node()) or { panic(err) }
+	shadow_root := host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic(err) }
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	mut list := StyleSheetList.create(shadow_node)
+
+	contained_sheet := parse_css_stylesheet_with_parser('@keyframes contained { from { opacity: 1 } } :host * { color: blue }', none)
+	clear_style_sheet_list_invalidation_flags(document_node, root.as_node(), host.as_node(), child.as_node(), sibling.as_node(), shadow_node)
+	document.set_needs_full_style_update(false)
+	document.reset_style_invalidation_counters()
+	list.add_sheet(contained_sheet)
+	assert host.as_node().entire_subtree_needs_style_update()
+	assert !document.needs_full_style_update()
+	assert document.style_invalidation_counters().full_style_invalidations == 0
+
+	list.remove_sheet(contained_sheet)
+	clear_style_sheet_list_invalidation_flags(document_node, root.as_node(), host.as_node(), child.as_node(), sibling.as_node(), shadow_node)
+	document.set_needs_full_style_update(false)
+	document.reset_style_invalidation_counters()
+	sibling_sheet := parse_css_stylesheet_with_parser('@keyframes sibling { from { opacity: 1 } } :host + * { color: red }', none)
+	list.add_sheet(sibling_sheet)
+	assert document.needs_full_style_update()
+	assert document.style_invalidation_counters().full_style_invalidations > 0
+}

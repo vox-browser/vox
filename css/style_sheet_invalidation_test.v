@@ -511,14 +511,34 @@ fn test_insert_rule_targets_matching_elements_inside_shadow_root() {
 }
 
 fn test_shadow_host_escape_selector_classification() {
+	assert !selector_text_may_match_light_dom_under_shadow_host(':host')
+	assert !selector_text_may_match_light_dom_under_shadow_host(':host(.active)')
+	assert !selector_text_may_match_light_dom_under_shadow_host(':is(:host)')
+	assert !selector_text_may_match_light_dom_under_shadow_host(':where(:host)')
 	assert selector_text_may_match_light_dom_under_shadow_host('::slotted(.item)')
 	assert selector_text_may_match_light_dom_under_shadow_host(':host > .item')
 	assert selector_text_may_match_light_dom_under_shadow_host(':host + .item')
 	assert selector_text_may_match_light_dom_under_shadow_host(':host ~ .item')
-	assert !selector_text_may_match_light_dom_under_shadow_host(':host')
-	assert !selector_text_may_match_light_dom_under_shadow_host(':host(.active)')
+	assert selector_text_may_match_light_dom_under_shadow_host(':is(:host) > *')
+	assert selector_text_may_match_light_dom_under_shadow_host(':where(:host) .item')
+	assert selector_text_may_match_light_dom_under_shadow_host(':is(.foo, :host) + .item')
 	assert !selector_text_may_match_light_dom_under_shadow_host('.item')
 	assert !selector_text_may_match_light_dom_under_shadow_host('not[')
+}
+
+fn test_shadow_host_outside_escape_selector_classification() {
+	for selector in [':host', ':host(.active)', ':host > *', ':host *', '::slotted(.item)',
+		':is(:host)', ':where(:host)', ':is(:host) > *', ':where(:host) *', ':is(:host > .item)',
+		':where(:host .item)', ':host:has(+ .item)', ':has(:host) + .item', ':not(:host) + .item',
+		':nth-child(1 of :host) + .item'] {
+		assert !selector_text_may_match_light_dom_outside_shadow_host(selector)
+	}
+	for selector in [':host + .item', ':host ~ .item', ':host + :has(*)', ':is(:host) + .item',
+		':where(:host) ~ .item', ':is(:host) + :has(*)', ':is(.foo, :host) + .item',
+		':where(.foo, :host(.active)) + .item', ':is(:where(:host)) + .item', ':is(:host + .item)',
+		':where(:host ~ .item)', ':is(:host + .item) > .child', ':is(.foo, :where(:host + .item))'] {
+		assert selector_text_may_match_light_dom_outside_shadow_host(selector)
+	}
 }
 
 fn test_insert_keyframes_rule_targets_only_animation_name_users() {
@@ -638,6 +658,7 @@ fn test_shadow_root_style_sheet_effects_include_hosts_light_dom_and_slots() {
 	effects := determine_shadow_root_style_sheet_effects(shadow_root)
 	assert effects.may_match_shadow_host
 	assert effects.may_match_light_dom_under_shadow_host
+	assert !effects.may_match_light_dom_outside_shadow_host
 	assert effects.may_affect_assigned_nodes_via_slots
 }
 

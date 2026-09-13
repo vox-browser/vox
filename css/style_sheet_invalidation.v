@@ -21,11 +21,12 @@ struct StyleSheetTrailingUniversalInvalidationRule {
 
 struct StyleSheetInvalidationSet {
 mut:
-	invalidation_set                      InvalidationSet
-	may_match_shadow_host                 bool
-	may_match_light_dom_under_shadow_host bool
-	pseudo_element_rules                  []StyleSheetPseudoElementInvalidationRule
-	trailing_universal_rules              []StyleSheetTrailingUniversalInvalidationRule
+	invalidation_set                        InvalidationSet
+	may_match_shadow_host                   bool
+	may_match_light_dom_under_shadow_host   bool
+	may_match_light_dom_outside_shadow_host bool
+	pseudo_element_rules                    []StyleSheetPseudoElementInvalidationRule
+	trailing_universal_rules                []StyleSheetTrailingUniversalInvalidationRule
 }
 
 struct StyleSheetAnchorInvalidationRule {
@@ -36,9 +37,16 @@ struct StyleSheetAnchorInvalidationRule {
 
 struct ShadowRootStylesheetEffects {
 mut:
-	may_match_shadow_host                 bool
-	may_match_light_dom_under_shadow_host bool
-	may_affect_assigned_nodes_via_slots   bool
+	may_match_shadow_host                   bool
+	may_match_light_dom_under_shadow_host   bool
+	may_match_light_dom_outside_shadow_host bool
+	may_affect_assigned_nodes_via_slots     bool
+}
+
+fn (effects ShadowRootStylesheetEffects) all_set() bool {
+	return effects.may_match_shadow_host && effects.may_match_light_dom_under_shadow_host
+		&& effects.may_match_light_dom_outside_shadow_host
+		&& effects.may_affect_assigned_nodes_via_slots
 }
 
 fn selector_may_match_light_dom_under_shadow_host(selector Selector) bool {
@@ -57,6 +65,100 @@ pub fn selector_text_may_match_light_dom_under_shadow_host(selector_text string)
 		return false
 	}
 	return selector_may_match_light_dom_under_shadow_host(selectors.selectors[0])
+}
+
+fn pseudo_class_has_positive_selector_list_arguments(pseudo_class PseudoClass) bool {
+	return pseudo_class in [.is_, .where]
+}
+
+fn simple_selector_may_match_shadow_host(simple_selector SimpleSelector) bool {
+	if simple_selector.type_ != .pseudo_class {
+		return false
+	}
+	pseudo_class := simple_selector.pseudo_class
+	if pseudo_class.type_ == .host {
+		return true
+	}
+	if !pseudo_class_has_positive_selector_list_arguments(pseudo_class.type_) {
+		return false
+	}
+	for selector in pseudo_class.argument_selector_list.selectors {
+		if selector_may_match_shadow_host(selector) {
+			return true
+		}
+	}
+	return false
+}
+
+fn selector_may_match_shadow_host(selector Selector) bool {
+	for compound_selector in selector.compound_selectors() {
+		for simple_selector in compound_selector.simple_selectors {
+			if simple_selector_may_match_shadow_host(simple_selector) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+fn compound_selector_may_match_shadow_host(compound_selector CompoundSelector) bool {
+	for simple_selector in compound_selector.simple_selectors {
+		if simple_selector_may_match_shadow_host(simple_selector) {
+			return true
+		}
+	}
+	return false
+}
+
+fn simple_selector_may_match_light_dom_outside_shadow_host(simple_selector SimpleSelector) bool {
+	if simple_selector.type_ != .pseudo_class {
+		return false
+	}
+	pseudo_class := simple_selector.pseudo_class
+	if !pseudo_class_has_positive_selector_list_arguments(pseudo_class.type_) {
+		return false
+	}
+	for selector in pseudo_class.argument_selector_list.selectors {
+		if selector_may_match_light_dom_outside_shadow_host(selector) {
+			return true
+		}
+	}
+	return false
+}
+
+fn compound_selector_may_match_light_dom_outside_shadow_host(compound_selector CompoundSelector) bool {
+	for simple_selector in compound_selector.simple_selectors {
+		if simple_selector_may_match_light_dom_outside_shadow_host(simple_selector) {
+			return true
+		}
+	}
+	return false
+}
+
+fn selector_may_match_light_dom_outside_shadow_host(selector Selector) bool {
+	compound_selectors := selector.compound_selectors()
+	for i, compound_selector in compound_selectors {
+		if compound_selector_may_match_light_dom_outside_shadow_host(compound_selector) {
+			return true
+		}
+		if !compound_selector_may_match_shadow_host(compound_selector) {
+			continue
+		}
+		for j := i + 1; j < compound_selectors.len; j++ {
+			if compound_selectors[j].combinator in [.next_sibling, .subsequent_sibling] {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+pub fn selector_text_may_match_light_dom_outside_shadow_host(selector_text string) bool {
+	selectors := parse_selector_with_parser(selector_text, map[string]bool{}) or { return false }
+	if selectors.selectors.len != 1 {
+		return false
+	}
+	return selector_may_match_light_dom_outside_shadow_host(selectors.selectors[0])
 }
 
 fn style_sheet_compound_is_universal_only(compound CompoundSelector) bool {
@@ -116,6 +218,8 @@ fn extend_style_sheet_invalidation_set_with_style_rule(mut result StyleSheetInva
 	for selector in mutable_rule.absolutized_selectors().selectors {
 		result.may_match_light_dom_under_shadow_host = result.may_match_light_dom_under_shadow_host
 			|| selector_may_match_light_dom_under_shadow_host(selector)
+		result.may_match_light_dom_outside_shadow_host = result.may_match_light_dom_outside_shadow_host
+			|| selector_may_match_light_dom_outside_shadow_host(selector)
 		result.may_match_shadow_host = result.may_match_shadow_host
 			|| selector.contains_pseudo_class(.host)
 		compounds := selector.compound_selectors()
@@ -310,13 +414,12 @@ fn invalidate_root_for_style_sheet_change(root &dom.Node, result &StyleSheetInva
 			})
 			invalidate_assigned_elements_for_dirty_style_sheet_slots(shadow_root)
 			if host := shadow_root.host() {
-				if result.may_match_light_dom_under_shadow_host
-					&& !result.may_match_shadow_host {
-					mut host_node := host.as_node()
-					host_node.invalidate_style(reason)
-				} else if result.may_match_light_dom_under_shadow_host {
+				if result.may_match_light_dom_outside_shadow_host {
 					mut host_root := unsafe { &dom.Node(host.as_node().root()) }
 					host_root.invalidate_style(reason)
+				} else if result.may_match_light_dom_under_shadow_host {
+					mut host_node := host.as_node()
+					host_node.invalidate_style(reason)
 				} else if result.may_match_shadow_host {
 					mut host_node := host.as_node()
 					host_node.invalidate_style(reason)
@@ -337,10 +440,10 @@ fn invalidate_root_for_style_sheet_change(root &dom.Node, result &StyleSheetInva
 	if value := shadow_root {
 		invalidate_assigned_elements_for_dirty_style_sheet_slots(value)
 		if host := value.host() {
-			if result.may_match_light_dom_under_shadow_host && !result.may_match_shadow_host {
-				invalidate_elements_matching_style_sheet_invalidation(host.as_node(), result, host, value)
-			} else if result.may_match_light_dom_under_shadow_host {
+			if result.may_match_light_dom_outside_shadow_host {
 				invalidate_elements_matching_style_sheet_invalidation(host.as_node().root(), result, host, value)
+			} else if result.may_match_light_dom_under_shadow_host {
+				invalidate_elements_matching_style_sheet_invalidation(host.as_node(), result, host, value)
 			} else if result.may_match_shadow_host {
 				mut host_or_shadow_tree_needs_update := host.includes_properties_from_invalidation_set(invalidation_set_to_dom(result.invalidation_set))
 				for rule in result.pseudo_element_rules {
@@ -504,9 +607,7 @@ fn determine_shadow_root_style_sheet_effects_for_sheet(style_sheet &CSSStyleShee
 	style_sheet.for_each_effective_style_producing_rule(fn [effects_ptr, slots, style_sheet, shadow_root] (rule &CSSRule) {
 		unsafe {
 			mut current_effects := *effects_ptr
-			if current_effects.may_match_shadow_host
-				&& current_effects.may_match_light_dom_under_shadow_host
-				&& current_effects.may_affect_assigned_nodes_via_slots {
+			if current_effects.all_set() {
 				return
 			}
 			if rule.type_ != .style {
@@ -518,12 +619,12 @@ fn determine_shadow_root_style_sheet_effects_for_sheet(style_sheet &CSSStyleShee
 					|| selector.contains_pseudo_class(.host)
 				current_effects.may_match_light_dom_under_shadow_host = current_effects.may_match_light_dom_under_shadow_host
 					|| selector_may_match_light_dom_under_shadow_host(selector)
+				current_effects.may_match_light_dom_outside_shadow_host = current_effects.may_match_light_dom_outside_shadow_host
+					|| selector_may_match_light_dom_outside_shadow_host(selector)
 				if !current_effects.may_affect_assigned_nodes_via_slots && slots.len > 0 {
 					current_effects.may_affect_assigned_nodes_via_slots = style_sheet_selector_may_affect_assigned_nodes_via_slot_inheritance(selector, slots, style_sheet, shadow_root)
 				}
-				if current_effects.may_match_shadow_host
-					&& current_effects.may_match_light_dom_under_shadow_host
-					&& current_effects.may_affect_assigned_nodes_via_slots {
+				if current_effects.all_set() {
 					break
 				}
 			}
@@ -545,6 +646,8 @@ fn determine_shadow_root_style_sheet_effects(shadow_root &dom.ShadowRoot) Shadow
 				|| sheet_effects.may_match_shadow_host
 			current_effects.may_match_light_dom_under_shadow_host = current_effects.may_match_light_dom_under_shadow_host
 				|| sheet_effects.may_match_light_dom_under_shadow_host
+			current_effects.may_match_light_dom_outside_shadow_host = current_effects.may_match_light_dom_outside_shadow_host
+				|| sheet_effects.may_match_light_dom_outside_shadow_host
 			current_effects.may_affect_assigned_nodes_via_slots = current_effects.may_affect_assigned_nodes_via_slots
 				|| sheet_effects.may_affect_assigned_nodes_via_slots
 			*effects_ptr = current_effects
@@ -566,10 +669,11 @@ fn determine_shadow_root_style_sheet_effects_for_style_sheet(style_sheet &CSSSty
 			|| sheet_effects.may_match_shadow_host
 		effects.may_match_light_dom_under_shadow_host = effects.may_match_light_dom_under_shadow_host
 			|| sheet_effects.may_match_light_dom_under_shadow_host
+		effects.may_match_light_dom_outside_shadow_host = effects.may_match_light_dom_outside_shadow_host
+			|| sheet_effects.may_match_light_dom_outside_shadow_host
 		effects.may_affect_assigned_nodes_via_slots = effects.may_affect_assigned_nodes_via_slots
 			|| sheet_effects.may_affect_assigned_nodes_via_slots
-		if effects.may_match_shadow_host && effects.may_match_light_dom_under_shadow_host
-			&& effects.may_affect_assigned_nodes_via_slots {
+		if effects.all_set() {
 			break
 		}
 	}

@@ -2171,12 +2171,12 @@ pub enum ShouldInvalidateRuleCache {
 }
 
 fn apply_style_sheet_shadow_root_effects(host &dom.Element, shadow_root &dom.ShadowRoot, effects ShadowRootStylesheetEffects, reason dom.StyleInvalidationReason) bool {
-	if effects.may_match_light_dom_under_shadow_host && !effects.may_match_shadow_host {
-		mut host_node := host.as_node()
-		host_node.invalidate_style(reason)
-	} else if effects.may_match_light_dom_under_shadow_host {
+	if effects.may_match_light_dom_outside_shadow_host {
 		mut host_root := unsafe { &dom.Node(host.as_node().root()) }
 		host_root.invalidate_style(reason)
+	} else if effects.may_match_light_dom_under_shadow_host {
+		mut host_node := host.as_node()
+		host_node.invalidate_style(reason)
 	} else if effects.may_affect_assigned_nodes_via_slots {
 		mut host_node := host.as_node()
 		host_node.invalidate_style(reason)
@@ -2685,6 +2685,8 @@ fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
 				|| effects.may_match_shadow_host
 			invalidation_result.may_match_light_dom_under_shadow_host = invalidation_result.may_match_light_dom_under_shadow_host
 				|| effects.may_match_light_dom_under_shadow_host
+			invalidation_result.may_match_light_dom_outside_shadow_host = invalidation_result.may_match_light_dom_outside_shadow_host
+				|| effects.may_match_light_dom_outside_shadow_host
 		}
 	}
 	invalidate_root_for_style_sheet_change(list.document_or_shadow_root, invalidation_result, .style_sheet_list_add_sheet, requires_broad_invalidation)
@@ -2729,6 +2731,8 @@ fn (mut list StyleSheetList) remove_sheet(sheet &CSSStyleSheet) {
 				|| effects.may_match_shadow_host
 			invalidation_result.may_match_light_dom_under_shadow_host = invalidation_result.may_match_light_dom_under_shadow_host
 				|| effects.may_match_light_dom_under_shadow_host
+			invalidation_result.may_match_light_dom_outside_shadow_host = invalidation_result.may_match_light_dom_outside_shadow_host
+				|| effects.may_match_light_dom_outside_shadow_host
 		}
 	}
 	invalidate_root_for_style_sheet_change(list.document_or_shadow_root, invalidation_result, .style_sheet_list_remove_sheet, requires_broad_invalidation)
