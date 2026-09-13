@@ -1051,6 +1051,13 @@ pub fn (selector Selector) pseudo_element() ?PseudoElementSelector {
 	return selector_pseudo_element_uncached(selector.compound_selectors())
 }
 
+// The target pseudo-element is the rightmost pseudo-element selected by this
+// selector. Keep the upstream name at rule-filtering call sites while the
+// existing pseudo_element() accessor remains available to older V callers.
+pub fn (selector Selector) target_pseudo_element() ?PseudoElementSelector {
+	return selector.pseudo_element()
+}
+
 fn selector_pseudo_element_uncached(compound_selectors []CompoundSelector) ?PseudoElementSelector {
 	if compound_selectors.len == 0 {
 		return none

@@ -1748,11 +1748,20 @@ fn style_scope_add_rule_to_run(style_computer &StyleComputer, abstract_element d
 
 fn style_scope_add_rules_to_run(style_computer &StyleComputer, abstract_element dom.AbstractElement, rules []&MatchingRule, rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []ScopedMatchingRule) {
 	element_namespace_uri := abstract_element.element().namespace_uri()
-	if style_scope_pseudo_element_from_abstract_element(abstract_element) != none {
+	if queried_pseudo_element := style_scope_pseudo_element_from_abstract_element(abstract_element) {
 		for rule in rules {
-			if rule.contains_pseudo_element && style_scope_filter_namespace_rule(element_namespace_uri, rule) {
-				style_scope_add_rule_to_run(style_computer, abstract_element, rule, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+			// Only selectors targeting the queried pseudo-element can match. This avoids
+			// evaluating ordinary selectors and selectors for a different pseudo-element.
+			// FIXME: Once exportparts can forward pseudo-elements as parts, a bare
+			// ::part(name) rule may need to match a different pseudo-element type.
+			target_pseudo_element := rule.selector.target_pseudo_element() or { continue }
+			if target_pseudo_element.type_ != queried_pseudo_element {
+				continue
 			}
+			if !style_scope_filter_namespace_rule(element_namespace_uri, rule) {
+				continue
+			}
+			style_scope_add_rule_to_run(style_computer, abstract_element, rule, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
 		}
 	} else {
 		for rule in rules {
