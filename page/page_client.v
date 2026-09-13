@@ -57,6 +57,14 @@ pub mut:
 	storage_usage_                     map[string]u64
 	storage_changes_                   []StorageChange
 	indexed_database_updates_          []IndexedDatabaseUpdate
+	session_history_entries_           map[string]SessionHistoryEntryState
+	system_visibility_state_           string = 'hidden'
+	ui_process_session_history_        string = '{}'
+	captured_session_history_snapshot_ ?string
+	session_store_tab_registered_      bool
+	session_store_tab_state_           string = '{}'
+	history_operation_requests_        []HistoryOperationRequest
+	child_navigable_unload_requests_   []u64
 }
 
 pub fn PageClient.create() &PageClient { return &PageClient{} }
