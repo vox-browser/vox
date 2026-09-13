@@ -434,6 +434,7 @@ fn compatibility_corner_radii(radii BoxRadii) painting.CornerRadii {
 }
 
 fn assign_compatibility_visual_contexts(mut box BlockBox, visual_parent ?&BlockBox, boxes_by_layout map[u64]&BlockBox, mut tree painting.AccumulatedVisualContextTree) {
+	box.fixed_background_visual_context = none
 	mut inherited_state := 0
 	mut fixed_to_viewport := false
 	if box.layout_handle != unsafe { nil } {
@@ -493,6 +494,59 @@ fn assign_compatibility_visual_contexts(mut box BlockBox, visual_parent ?&BlockB
 		own_state = tree.append(svg_clip, own_state)
 	}
 	box.accumulated_visual_context_index = own_state
+
+	if box.background_images.any(it.attachment == 'fixed') {
+		// CSS Transforms makes fixed backgrounds on transformed non-root boxes
+		// behave as scroll backgrounds. Inspect the typed layout ancestors so SVG
+		// transforms do not accidentally change the CSS rule.
+		mut is_root_element := box.is_viewport_scroller
+		mut has_transform_ancestor := false
+		if box.layout_handle != unsafe { nil } {
+			layout_node := unsafe { &Node(box.layout_handle) }
+			is_root_element = layout_node.is_root_element()
+			if !is_root_element {
+				mut current := ?&Node(layout_node)
+				for current != none {
+					node := current or { break }
+					if node.is_viewport() {
+						break
+					}
+					if node.has_css_transform() {
+						has_transform_ancestor = true
+						break
+					}
+					current = node.parent()
+				}
+			}
+		} else if !is_root_element {
+			mut context_index := own_state
+			for context_index > 0 {
+				context_node := tree.node_at(context_index)
+				if context_node.data is painting.TransformVisualData {
+					has_transform_ancestor = true
+					break
+				}
+				context_index = context_node.parent_index
+			}
+		}
+
+		if !has_transform_ancestor {
+			// Negate every scroll frame in the accumulated ancestor chain. The
+			// resulting context is evaluated against the live scroll snapshot.
+			mut fixed_context := own_state
+			mut context_index := own_state
+			for context_index > 0 {
+				context_node := tree.node_at(context_index)
+				if context_node.data is painting.ScrollVisualData {
+					fixed_context = tree.append(painting.ScrollCompensationVisualData{
+						scroll_frame_index: context_node.data.scroll_frame_index
+					}, fixed_context)
+				}
+				context_index = context_node.parent_index
+			}
+			box.fixed_background_visual_context = fixed_context
+		}
+	}
 
 	mut descendants_state := own_state
 	if clip := box.overflow_clip {
@@ -977,6 +1031,28 @@ fn collect_box_and_anonymous_descendants(box &BlockBox, mut targets map[u64]bool
 	}
 }
 
+// StackingContext::paint_node() deliberately skips its retained phase cache
+// for a box with a fixed background context. Context indices and the initial
+// containing-block positioning area can change independently of that box's
+// own repaint bit when an ancestor transform changes.
+fn viewport_invalidate_fixed_background_paint_caches(mut result DocumentLayoutResult) {
+	if !result.paint_phase_cache_valid || result.paint_phase_entry_valid.len != result.paint_order.len {
+		return
+	}
+	for index, entry in result.paint_order {
+		if !entry.box.background_images.any(it.attachment == 'fixed')
+			|| !result.paint_phase_entry_valid[index] {
+			continue
+		}
+		for phase in 0 .. compatibility_paint_phase_count {
+			bucket := index * compatibility_paint_phase_count + phase
+			result.paint_phase_command_count -= result.paint_phase_commands[bucket].len
+			result.paint_phase_commands[bucket].clear()
+		}
+		result.paint_phase_entry_valid[index] = false
+	}
+}
+
 fn viewport_invalidate_box_paint_cache(mut result DocumentLayoutResult, box &BlockBox) {
 	if !result.paint_phase_cache_valid || result.paint_phase_entry_valid.len != result.paint_order.len {
 		return
@@ -1458,8 +1534,7 @@ fn lower_visual_layers(commands []PaintCommand) []PaintCommand {
 	return result
 }
 
-fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintStep, phase_commands [][]PaintCommand, command_count int, tree painting.AccumulatedVisualContextTree, snapshot painting.ScrollStateSnapshot,
-	viewport_scroll_offset painting.Point) []PaintCommand {
+fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintStep, phase_commands [][]PaintCommand, command_count int, tree painting.AccumulatedVisualContextTree, snapshot painting.ScrollStateSnapshot) []PaintCommand {
 	mut commands := []PaintCommand{cap: command_count}
 	// A box contributes several paint phases, and many descendants inherit the
 	// same accumulated context. Resolve each retained context once per replay,
@@ -1470,21 +1545,22 @@ fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintSt
 		if step.entry_index < 0 {
 			continue
 		}
-		context_index := if step.phase == .foreground && step.box.paintable_with_lines {
+		default_context_index := if step.phase == .foreground && step.box.paintable_with_lines {
 			step.box.accumulated_visual_context_for_descendants_idx
 		} else {
 			step.box.accumulated_visual_context_index
 		}
-		context := if cached_context := flattened_contexts[context_index] {
-			cached_context
-		} else {
-			flattened := flatten_compatibility_visual_context(tree, context_index, snapshot)
-			flattened_contexts[context_index] = flattened
-			flattened
-		}
 		bucket := step.entry_index * compatibility_paint_phase_count + int(step.phase)
 		for cached_command in phase_commands[bucket] {
 			mut command := cached_command
+			context_index := command.visual_context_index or { default_context_index }
+			context := if cached_context := flattened_contexts[context_index] {
+				cached_context
+			} else {
+				flattened := flatten_compatibility_visual_context(tree, context_index, snapshot)
+				flattened_contexts[context_index] = flattened
+				flattened
+			}
 			command.transform = context.transform
 			command.fixed_to_viewport = step.box.fixed_to_viewport
 			if recording_clip := command.recording_clip {
@@ -1521,7 +1597,7 @@ fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintSt
 			command.visual_layer_list = context.layer_list
 			command.group_opacity = context.group_opacity
 			apply_live_scrollbar_offset(mut command, step.box)
-			apply_live_background_offsets(mut command, step.box, viewport_scroll_offset)
+			apply_live_background_offsets(mut command, step.box)
 			commands << command
 		}
 	}
@@ -1535,6 +1611,7 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	}
 	viewport_build_stacking_context_tree(target)
 	viewport_sync_cursor_paint_cache(mut result)
+	viewport_invalidate_fixed_background_paint_caches(mut result)
 	if !result.paint_phase_cache_valid {
 		result.paint_phase_commands, result.paint_phase_command_count = result.paint_tree.build_paint_phase_command_cache(result.paint_order)
 		result.paint_phase_entry_valid = []bool{len: result.paint_order.len, init: true}
@@ -1543,8 +1620,7 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 		result.paint_phase_command_count += result.paint_tree.refresh_paint_phase_command_cache(result.paint_order, mut result.paint_phase_commands, mut result.paint_phase_entry_valid)
 	}
 	snapshot := result.scroll_state_snapshot
-	viewport_scroll_offset := snapshot.device_offset_for_index(result.paint_tree.own_scroll_frame_index).scale(-1)
-	result.display_list_commands = lower_visual_layers(replay_cached_paint_commands_with_visual_context(result.paint_steps, result.paint_phase_commands, result.paint_phase_command_count, result.visual_context_tree, snapshot, viewport_scroll_offset))
+	result.display_list_commands = lower_visual_layers(replay_cached_paint_commands_with_visual_context(result.paint_steps, result.paint_phase_commands, result.paint_phase_command_count, result.visual_context_tree, snapshot))
 	result.display_list_commands << result.paint_tree.paint_inspector_overlay(result.document, result.visual_context_tree, snapshot)
 	result.display_list = &dom.DisplayList{
 		concrete_handle: target

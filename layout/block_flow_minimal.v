@@ -520,6 +520,7 @@ mut:
 	sticky_scroll_frame_index                      int
 	accumulated_visual_context_index               int
 	accumulated_visual_context_for_descendants_idx int
+	fixed_background_visual_context                ?int
 	fixed_to_viewport                              bool
 	// PaintableBox retains one Scrollbar object per axis. Their hover/grab state
 	// survives display-list rebuilds and selects thin versus gutter geometry.
@@ -1509,9 +1510,10 @@ pub mut:
 	image_resolution_context css.LengthResolutionContext
 	image_scroll_offset_x    f64
 	image_scroll_offset_y    f64
-	image_viewport_offset_x  f64
-	image_viewport_offset_y  f64
 	background_blend_mode    painting.BlendMode
+	// BackgroundPainting temporarily switches only fixed layers to the visual
+	// context which compensates every ancestor scroll frame.
+	visual_context_index ?int
 	// ImagePaintable's retained, typed replaced-content geometry. Background
 	// images leave this empty and continue through BackgroundPainting.
 	image_paintable ?painting.ImagePaintable
@@ -1757,14 +1759,23 @@ fn background_image_layer_blend_mode(layer BackgroundImageLayer) painting.BlendM
 
 fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip LayoutRect,
 	clip_radii BoxRadii, opacity f64, radius f64, points []f64,
-	background_scroll_offset painting.Point, image_rendering css.ImageRendering) ?PaintCommand {
+	background_scroll_offset painting.Point, image_rendering css.ImageRendering,
+	fixed_background_visual_context ?int, initial_containing_block LayoutRect) ?PaintCommand {
 	blend_mode := background_image_layer_blend_mode(layer)
+	mut positioning_area := origin
+	mut visual_context_index := ?int(none)
+	if layer.attachment == 'fixed' {
+		if fixed_context := fixed_background_visual_context {
+			positioning_area = initial_containing_block
+			visual_context_index = fixed_context
+		}
+	}
 	if source := layer.gradient_source {
 		computed_layer := layer.computed_layer or { return none }
 		resolved_layer := painting.resolve_background_layer_without_intrinsic(painting.BackgroundLayerWithoutIntrinsicResolutionInput{
 			layer: computed_layer
 			image_id: source.serialize(.normal)
-			background_positioning_area: painting.Rect{origin.x, origin.y, origin.width, origin.height}
+			background_positioning_area: painting.Rect{positioning_area.x, positioning_area.y, positioning_area.width, positioning_area.height}
 			resolution_context: layer.resolution_context
 		}) or { return none }
 		gradient := resolve_background_gradient(source, resolved_layer.image_rect.width, resolved_layer.image_rect.height, layer.resolution_context, layer.gradient_context) or {
@@ -1772,10 +1783,10 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 		}
 		return PaintCommand{
 			kind: 'fill_gradient'
-			x: origin.x
-			y: origin.y
-			width: origin.width
-			height: origin.height
+			x: positioning_area.x
+			y: positioning_area.y
+			width: positioning_area.width
+			height: positioning_area.height
 			opacity: opacity
 			radius: radius
 			points: points
@@ -1792,6 +1803,7 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 			image_scroll_offset_x: background_scroll_offset.x
 			image_scroll_offset_y: background_scroll_offset.y
 			background_blend_mode: blend_mode
+			visual_context_index: visual_context_index
 		}
 	}
 	if layer.url == '' {
@@ -1799,10 +1811,10 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 	}
 	return PaintCommand{
 		kind: 'draw_background_image'
-		x: origin.x
-		y: origin.y
-		width: origin.width
-		height: origin.height
+		x: positioning_area.x
+		y: positioning_area.y
+		width: positioning_area.width
+		height: positioning_area.height
 		opacity: opacity
 		radius: radius
 		points: points
@@ -1827,6 +1839,7 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 		image_scroll_offset_x: background_scroll_offset.x
 		image_scroll_offset_y: background_scroll_offset.y
 		background_blend_mode: blend_mode
+		visual_context_index: visual_context_index
 	}
 }
 
@@ -2658,7 +2671,12 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 					0.0
 				} else {
 					radius
-				}, if box.paints_canvas_background { []f64{} } else { rounded_points }, background_scroll_offset, box.replaced_image_rendering) {
+				}, if box.paints_canvas_background { []f64{} } else { rounded_points }, background_scroll_offset, box.replaced_image_rendering, box.fixed_background_visual_context, LayoutRect{
+					x: 0
+					y: 0
+					width: b.viewport_width
+					height: b.viewport_height
+				}) {
 					commands << command
 				}
 			}
@@ -3192,13 +3210,6 @@ fn (b &BlockBox) refresh_paint_phase_command_cache(entries []PaintOrderEntry, mu
 // construction so repaints do not regenerate or redistribute box commands.
 fn replay_cached_paint_commands(steps []CompatibilityPaintStep, phase_commands [][]PaintCommand, command_count int) []PaintCommand {
 	mut commands := []PaintCommand{cap: command_count}
-	mut viewport_scroll_offset := painting.Point{}
-	if steps.len > 0 {
-		root := steps[0].box
-		if overlay := root.overlay {
-			viewport_scroll_offset = root.current_scroll_offset(overlay)
-		}
-	}
 	for step in steps {
 		if step.entry_index < 0 {
 			continue
@@ -3207,15 +3218,14 @@ fn replay_cached_paint_commands(steps []CompatibilityPaintStep, phase_commands [
 		for cached_command in phase_commands[bucket] {
 			mut command := cached_command
 			apply_live_scrollbar_offset(mut command, step.box)
-			apply_live_background_offsets(mut command, step.box, viewport_scroll_offset)
+			apply_live_background_offsets(mut command, step.box)
 			commands << command
 		}
 	}
 	return commands
 }
 
-fn apply_live_background_offsets(mut command PaintCommand, box &BlockBox,
-	viewport_scroll_offset painting.Point) {
+fn apply_live_background_offsets(mut command PaintCommand, box &BlockBox) {
 	if command.kind != 'draw_background_image'
 		&& !(command.kind == 'fill_gradient' && command.gradient_background_layer) {
 		return
@@ -3225,8 +3235,6 @@ fn apply_live_background_offsets(mut command PaintCommand, box &BlockBox,
 		command.image_scroll_offset_x = current.x
 		command.image_scroll_offset_y = current.y
 	}
-	command.image_viewport_offset_x = viewport_scroll_offset.x
-	command.image_viewport_offset_y = viewport_scroll_offset.y
 }
 
 fn apply_live_scrollbar_offset(mut command PaintCommand, box &BlockBox) {
@@ -3931,7 +3939,7 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 			layer := first.background_images[layer_index]
 			origin := inline_background_box_rect(decorating_fragment, layer.origin, border_rect)
 			clip := inline_background_box_rect(decorating_fragment, layer.clip, border_rect)
-			if command := background_layer_command(layer, origin, clip, fragment_radii, opacity, radius, []f64{}, painting.Point{}, .auto_) {
+			if command := background_layer_command(layer, origin, clip, fragment_radii, opacity, radius, []f64{}, painting.Point{}, .auto_, none, LayoutRect{}) {
 				commands << command
 			}
 		}
@@ -4778,7 +4786,7 @@ pub fn resolved_background_gradient_tiles(command PaintCommand) []painting.Rect 
 		background_positioning_area: painting.Rect{command.x, command.y, command.width, command.height}
 		resolution_context: command.image_resolution_context
 	}) or { return []painting.Rect{} }
-	return painting.background_tiles_limited(resolved, painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, painting.Point{command.image_viewport_offset_x, command.image_viewport_offset_y}, painting.Rect{command.image_clip_x, command.image_clip_y, command.image_clip_width, command.image_clip_height}, 4096)
+	return painting.background_tiles_limited(resolved, painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, painting.Rect{command.image_clip_x, command.image_clip_y, command.image_clip_width, command.image_clip_height}, 4096)
 }
 
 fn css_gradient_svg_stops(gradient LinearGradient, resolved_stops []GradientStop) []GradientStop {

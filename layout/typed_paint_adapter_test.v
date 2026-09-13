@@ -610,6 +610,95 @@ fn test_typed_background_images_keep_gradient_url_layer_order_and_geometry() {
 	assert svg.contains('<clipPath id="gradient-clip')
 }
 
+fn test_fixed_background_layers_compensate_nested_scroll_frames_independently() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#scroller { width: 100px; height: 50px; overflow: auto }
+		#target {
+			width: 100px; height: 160px;
+			background-image: linear-gradient(red, red), linear-gradient(blue, blue);
+			background-size: 20px 20px;
+			background-repeat: no-repeat;
+			background-attachment: fixed, scroll;
+		}
+	</style><body><div id="scroller"><div id="target"></div></div></body>')
+	root := layout_document_typed_in_viewport(document, 320, 100)
+	target_element := document.get_element_by_id('target') or { panic('missing target') }
+	target := root.find_box(i64(target_element.as_node().unique_id())) or {
+		panic('missing target box')
+	}
+	fixed_context := target.fixed_background_visual_context or {
+		panic('missing fixed-background visual context')
+	}
+	result := document_layout_result(document) or { panic('missing layout result') }
+	mut compensation_count := 0
+	mut context_index := fixed_context
+	for context_index > 0 {
+		context_node := result.visual_context_tree.node_at(context_index)
+		if context_node.data is painting.ScrollCompensationVisualData {
+			compensation_count++
+		}
+		context_index = context_node.parent_index
+	}
+	// The target is below both the mandatory viewport frame and #scroller.
+	assert compensation_count == 2
+
+	scroller := document.get_element_by_id('scroller') or { panic('missing scroller') }
+	mut scroller_paintable := scroller.paintable_box() or { panic('missing scroller paintable') }
+	assert scroller_paintable.set_scroll_offset(dom.CSSPixelPoint_{ y_: 25 })
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	gradients := display_list_commands(display_list).filter(it.kind == 'fill_gradient'
+		&& it.gradient_background_layer)
+	assert gradients.len == 2
+	// Layers paint back-to-front. The scroll layer keeps the live scroll
+	// transform; only the fixed layer switches to the compensating context and
+	// uses the initial containing block as its positioning area.
+	assert gradients[0].width == 100
+	assert gradients[0].height == 160
+	assert gradients[0].transform[5] == -25
+	assert gradients[1].width == 320
+	assert gradients[1].height == 100
+	assert gradients[1].transform[5] == 0
+
+	retained_command_count := result.paint_phase_command_count
+	assert scroller_paintable.set_scroll_offset(dom.CSSPixelPoint_{ y_: 35 })
+	replayed := mutable_document.record_display_list() or { panic('missing replayed display list') }
+	replayed_gradients := display_list_commands(replayed).filter(it.kind == 'fill_gradient'
+		&& it.gradient_background_layer)
+	assert replayed_gradients[0].transform[5] == -35
+	assert replayed_gradients[1].transform[5] == 0
+	assert result.paint_phase_command_count == retained_command_count
+}
+
+fn test_fixed_background_inside_transform_behaves_as_scroll() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#outer { width: 100px; transform: translateX(10px); transform-origin: 0 0 }
+		#target {
+			width: 100px; height: 60px;
+			background-image: linear-gradient(red, blue);
+			background-size: 20px 20px;
+			background-repeat: no-repeat;
+			background-attachment: fixed;
+		}
+	</style><body><div id="outer"><div id="target"></div></div></body>')
+	root := layout_document_typed_in_viewport(document, 320, 100)
+	target_element := document.get_element_by_id('target') or { panic('missing target') }
+	target := root.find_box(i64(target_element.as_node().unique_id())) or {
+		panic('missing target box')
+	}
+	assert target.fixed_background_visual_context == none
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	gradients := display_list_commands(display_list).filter(it.kind == 'fill_gradient'
+		&& it.gradient_background_layer)
+	assert gradients.len == 1
+	assert gradients[0].width == 100
+	assert gradients[0].height == 60
+	assert gradients[0].transform[4] == 10
+}
+
 fn test_typed_background_image_set_selects_candidate_for_device_pixel_ratio() {
 	document := html.parse_document('<!doctype html><style>
 		html, body { margin: 0 }

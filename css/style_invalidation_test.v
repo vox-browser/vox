@@ -40,6 +40,11 @@ fn test_style_invalidation_tracks_independent_work() {
 	assert visual_context.invalidates_hit_test_display_list()
 }
 
+fn test_background_attachment_rebuilds_accumulated_visual_contexts() {
+	assert property_rebuilds_accumulated_visual_contexts(.background_attachment)
+	assert !property_rebuilds_accumulated_visual_contexts(.background_color)
+}
+
 fn test_style_invalidation_tracks_inherited_groups_and_flags() {
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
 	invalidation.mark_inherited_style_group_changed(2)

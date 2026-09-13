@@ -3609,7 +3609,7 @@ fn test_url_background_image_layers_reach_display_list_with_box_metadata() {
 	assert svg.contains('<clipPath id="imageclip0"><path d="M')
 }
 
-fn test_background_attachment_offsets_are_refreshed_during_retained_replay() {
+fn test_local_background_attachment_offset_is_refreshed_during_retained_replay() {
 	box := &BlockBox{
 		overlay: CompatibilityOverlayData{
 			scroll_offset_x: 7
@@ -3617,20 +3617,16 @@ fn test_background_attachment_offsets_are_refreshed_during_retained_replay() {
 		}
 	}
 	mut command := PaintCommand{ kind: 'draw_background_image' }
-	apply_live_background_offsets(mut command, box, painting.Point{11, 13})
+	apply_live_background_offsets(mut command, box)
 	assert command.image_scroll_offset_x == 7
 	assert command.image_scroll_offset_y == 9
-	assert command.image_viewport_offset_x == 11
-	assert command.image_viewport_offset_y == 13
 	mut gradient_command := PaintCommand{
 		kind: 'fill_gradient'
 		gradient_background_layer: true
 	}
-	apply_live_background_offsets(mut gradient_command, box, painting.Point{11, 13})
+	apply_live_background_offsets(mut gradient_command, box)
 	assert gradient_command.image_scroll_offset_x == 7
 	assert gradient_command.image_scroll_offset_y == 9
-	assert gradient_command.image_viewport_offset_x == 11
-	assert gradient_command.image_viewport_offset_y == 13
 }
 
 fn text_clip_test_box(text string) BlockBox {

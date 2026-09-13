@@ -394,7 +394,7 @@ fn test_background_table_control_and_replaced_content_algorithms() {
 		repeat_x: .repeat
 		repeat_y: .repeat
 	}
-	tiles := background_tiles(layer, Point{}, Point{}, Rect{0, 0, 45, 45})
+	tiles := background_tiles(layer, Point{}, Rect{0, 0, 45, 45})
 	assert tiles.len == 9
 	assert tiles[0] == Rect{0, 0, 20, 20}
 	strong := ConflictingBorder{
@@ -755,7 +755,7 @@ fn test_background_tiles_matches_cpp_space_and_attachment_geometry() {
 		repeat_x: .space
 		repeat_y: .no_repeat
 	}
-	space_tiles := background_tiles(space_layer, Point{}, Point{}, Rect{0, 0, 100, 20})
+	space_tiles := background_tiles(space_layer, Point{}, Rect{0, 0, 100, 20})
 	assert space_tiles == [Rect{0, 0, 30, 20}, Rect{35, 0, 30, 20}, Rect{70, 0, 30, 20}]
 
 	local_layer := ResolvedBackgroundLayer{
@@ -763,16 +763,16 @@ fn test_background_tiles_matches_cpp_space_and_attachment_geometry() {
 		attachment: .local
 		repeat_x: .no_repeat
 	}
-	local_tiles := background_tiles(local_layer, Point{7, 3}, Point{}, Rect{-10, -10, 100, 100})
+	local_tiles := background_tiles(local_layer, Point{7, 3}, Rect{-10, -10, 100, 100})
 	assert local_tiles == [Rect{-7, -3, 30, 20}]
 	fixed_layer := ResolvedBackgroundLayer{
 		...space_layer
 		attachment: .fixed
 		repeat_x: .no_repeat
 	}
-	fixed_tiles := background_tiles(fixed_layer, Point{}, Point{40, 50}, Rect{0, 0, 100, 100})
-	assert fixed_tiles == [Rect{40, 50, 30, 20}]
-	limited := background_tiles_limited(space_layer, Point{}, Point{}, Rect{0, 0, 100, 20}, 2)
+	fixed_tiles := background_tiles(fixed_layer, Point{}, Rect{0, 0, 100, 100})
+	assert fixed_tiles == [Rect{0, 0, 30, 20}]
+	limited := background_tiles_limited(space_layer, Point{}, Rect{0, 0, 100, 20}, 2)
 	assert limited == [Rect{0, 0, 30, 20}, Rect{35, 0, 30, 20}]
 	repeat_layer := ResolvedBackgroundLayer{
 		...space_layer
@@ -780,11 +780,11 @@ fn test_background_tiles_matches_cpp_space_and_attachment_geometry() {
 		image_rect: Rect{0, 0, 33.328125, 20}
 		repeat_x: .repeat
 	}
-	plan := background_tile_plan(repeat_layer, Point{}, Point{}, Rect{0, 0, 100, 20})
+	plan := background_tile_plan(repeat_layer, Point{}, Rect{0, 0, 100, 20})
 	assert plan.can_use_repeated_bitmap()
 	assert plan.first_tile == Rect{-15.671875, 0, 33.328125, 20}
 	assert plan.x_step == 33.328125
-	assert !background_tile_plan(space_layer, Point{}, Point{}, Rect{0, 0, 100, 20}).can_use_repeated_bitmap()
+	assert !background_tile_plan(space_layer, Point{}, Rect{0, 0, 100, 20}).can_use_repeated_bitmap()
 
 	// The source computes horizontal `space` with doubles but vertical `space`
 	// with floats. Large valid CSS coordinates make that quirk observable.
@@ -794,7 +794,7 @@ fn test_background_tiles_matches_cpp_space_and_attachment_geometry() {
 		image_rect: Rect{0, 0, 300_000.015625, 300_000.015625}
 		repeat_y: .space
 	}
-	large_plan := background_tile_plan(large_space_layer, Point{}, Point{}, large_space_layer.background_positioning_area)
+	large_plan := background_tile_plan(large_space_layer, Point{}, large_space_layer.background_positioning_area)
 	assert large_plan.x_step == 350_000
 	assert large_plan.y_step == 350_000.015625
 }

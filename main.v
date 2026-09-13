@@ -4070,7 +4070,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				}
 			}
 			layer := resolved_layer or { return }
-			plan := painting.background_tile_plan(layer, painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, painting.Point{command.image_viewport_offset_x, command.image_viewport_offset_y}, clip)
+			plan := painting.background_tile_plan(layer, painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, clip)
 			mut used_native_repeated_bitmap := false
 			$if macos {
 				if app.ctx.native_rendering {

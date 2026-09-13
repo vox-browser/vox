@@ -327,21 +327,17 @@ fn first_visible_background_tile_position(start css.CSSPixels, step css.CSSPixel
 }
 
 pub fn background_tile_plan(layer ResolvedBackgroundLayer, scroll_offset Point,
-	viewport_offset Point, clip Rect) BackgroundTilePlan {
+	clip Rect) BackgroundTilePlan {
 	mut area_x := css.CSSPixels.nearest_value_for(layer.background_positioning_area.x)
 	mut area_y := css.CSSPixels.nearest_value_for(layer.background_positioning_area.y)
 	area_width := css.CSSPixels.nearest_value_for(layer.background_positioning_area.width)
 	area_height := css.CSSPixels.nearest_value_for(layer.background_positioning_area.height)
 	match layer.attachment {
-		.fixed {
-			area_x = css.CSSPixels.nearest_value_for(viewport_offset.x)
-			area_y = css.CSSPixels.nearest_value_for(viewport_offset.y)
-		}
 		.local {
 			area_x = area_x.minus(css.CSSPixels.nearest_value_for(scroll_offset.x))
 			area_y = area_y.minus(css.CSSPixels.nearest_value_for(scroll_offset.y))
 		}
-		.scroll {}
+		.fixed, .scroll {}
 	}
 	image_width := css.CSSPixels.nearest_value_for(layer.image_rect.width)
 	image_height := css.CSSPixels.nearest_value_for(layer.image_rect.height)
@@ -364,17 +360,16 @@ pub fn background_tile_plan(layer ResolvedBackgroundLayer, scroll_offset Point,
 
 // background_tiles resolves attachment, position and repetition into concrete
 // destination rectangles. Clipping remains a display-list operation.
-pub fn background_tiles(layer ResolvedBackgroundLayer, scroll_offset Point,
-	viewport_offset Point, clip Rect) []Rect {
-	return background_tiles_limited(layer, scroll_offset, viewport_offset, clip, 0)
+pub fn background_tiles(layer ResolvedBackgroundLayer, scroll_offset Point, clip Rect) []Rect {
+	return background_tiles_limited(layer, scroll_offset, clip, 0)
 }
 
 // The display-list player normally uses a dedicated repeated-bitmap command.
 // Compatibility renderers can bound their materialized tile list while still
 // sharing the exact positioning and stepping algorithm; zero means unlimited.
 pub fn background_tiles_limited(layer ResolvedBackgroundLayer, scroll_offset Point,
-	viewport_offset Point, clip Rect, maximum_tiles int) []Rect {
-	plan := background_tile_plan(layer, scroll_offset, viewport_offset, clip)
+	clip Rect, maximum_tiles int) []Rect {
+	plan := background_tile_plan(layer, scroll_offset, clip)
 	return background_tiles_from_plan_limited(plan, clip, maximum_tiles)
 }
 
