@@ -9,6 +9,7 @@ module html
 
 import dom
 import painting
+import platform
 
 pub struct BitmapRect {
 pub:
@@ -55,9 +56,9 @@ mut:
 
 pub fn BitmapDecodedImageData.create(frames []BitmapDecodedImageFrame, loop_count usize, animated bool) &BitmapDecodedImageData {
 	return &BitmapDecodedImageData{
-		frames_:     frames.clone()
+		frames_: frames.clone()
 		loop_count_: loop_count
-		animated_:   animated
+		animated_: animated
 	}
 }
 
@@ -115,7 +116,7 @@ pub fn (data &BitmapDecodedImageData) intrinsic_aspect_ratio() ?f64 {
 pub fn (data &BitmapDecodedImageData) frame_rect(frame_index usize) ?BitmapRect {
 	frame := data.frame(frame_index) or { return none }
 	return BitmapRect{
-		width:  frame.width()
+		width: frame.width()
 		height: frame.height()
 	}
 }
@@ -128,9 +129,9 @@ pub fn (data &BitmapDecodedImageData) paint(mut recorder painting.DisplayListRec
 	frame := data.frame(frame_index) or { return false }
 	return recorder.draw_scaled_decoded_image_frame(painting.DrawScaledDecodedImageFrame{
 		destination: destination
-		clip_rect:   clip_rect
-		frame:       frame
-		scaling:     scaling_mode
+		clip_rect: clip_rect
+		frame: frame
+		scaling: scaling_mode
 	})
 }
 
@@ -147,6 +148,19 @@ mut:
 pub type AnimationFrameRequestCallback = fn (i64, u32, u32)
 
 pub type AnimationStopCallback = fn (i64)
+
+pub type DecodedImageClientUpdateCallback = fn ()
+
+pub struct AnimatedImageDebugState {
+pub:
+	timer_active    bool
+	session_id      i64
+	frame_index     u32
+	frame_count     u32
+	loops_completed u32
+	loop_count      u32
+	client_count    usize
+}
 
 @[heap]
 pub struct AnimatedDecodedImageData {
@@ -168,10 +182,15 @@ mut:
 	highest_requested_frame    u32
 	request_frames             ?AnimationFrameRequestCallback
 	stop_animation_decode      ?AnimationStopCallback
+	animation_timer            &platform.Timer = unsafe { nil }
+	clients                    map[u64]DecodedImageClientUpdateCallback
+	loops_completed_           u32
+	document_                  ?&dom.Document
+	document_observer          ?&dom.DocumentObserver
 }
 
 __global (
-	html_animated_image_sessions map[i64]&AnimatedDecodedImageData
+	html_animated_image_sessions                    map[i64]&AnimatedDecodedImageData
 	html_animated_frame_delivery_callback_installed bool
 )
 
@@ -187,25 +206,32 @@ pub fn AnimatedDecodedImageData.install_frame_delivery_callback() {
 }
 
 pub fn AnimatedDecodedImageData.create(session_id i64, frame_count u32, loop_count u32, width int, height int, color_space dom.DecodedImageColorSpace, durations []u32, initial_bitmaps []&dom.Bitmap_, request_frames ?AnimationFrameRequestCallback, stop_animation_decode ?AnimationStopCallback) &AnimatedDecodedImageData {
+	mut timer := platform.Timer.create_repeating(0, fn () {})
 	mut data := &AnimatedDecodedImageData{
-		session_id:            session_id
-		frame_count_:          frame_count
-		loop_count_:           loop_count
-		width_:                width
-		height_:               height
-		color_space_:          color_space
-		durations_:            durations.clone()
-		buffer_slots:          []AnimatedBitmapSlot{len: animated_decoded_image_buffer_pool_size}
-		request_frames:        request_frames
+		session_id: session_id
+		frame_count_: frame_count
+		loop_count_: loop_count
+		width_: width
+		height_: height
+		color_space_: color_space
+		durations_: durations.clone()
+		buffer_slots: []AnimatedBitmapSlot{len: animated_decoded_image_buffer_pool_size}
+		request_frames: request_frames
 		stop_animation_decode: stop_animation_decode
+		animation_timer: timer
+		clients: map[u64]DecodedImageClientUpdateCallback{}
+	}
+	timer.on_timeout = fn [data] () {
+		mut mutable_data := unsafe { &AnimatedDecodedImageData(data) }
+		mutable_data.advance_animation()
 	}
 	for index, bitmap in initial_bitmaps {
 		slot_index := index % animated_decoded_image_buffer_pool_size
 		data.write_generation++
 		data.buffer_slots[slot_index] = AnimatedBitmapSlot{
 			frame_index: u32(index)
-			frame:       dom.DecodedImageFrame_.create_with_color_space(bitmap, color_space)
-			generation:  data.write_generation
+			frame: dom.DecodedImageFrame_.create_with_color_space(bitmap, color_space)
+			generation: data.write_generation
 		}
 	}
 	data.highest_requested_frame = u32(initial_bitmaps.len)
@@ -218,10 +244,166 @@ pub fn AnimatedDecodedImageData.create(session_id i64, frame_count u32, loop_cou
 }
 
 pub fn (mut data AnimatedDecodedImageData) finalize() {
+	data.animation_timer.stop()
+	if mut observer := data.document_observer {
+		observer.finalize()
+	}
 	html_animated_image_sessions.delete(data.session_id)
 	if stop := data.stop_animation_decode {
 		stop(data.session_id)
 	}
+}
+
+pub fn (data &AnimatedDecodedImageData) debug_state() AnimatedImageDebugState {
+	return AnimatedImageDebugState{
+		timer_active: data.animation_timer.is_active()
+		session_id: data.session_id
+		frame_index: data.current_frame_index
+		frame_count: data.frame_count_
+		loops_completed: data.loops_completed_
+		loop_count: data.loop_count_
+		client_count: usize(data.clients.len)
+	}
+}
+
+pub fn decoded_image_animation_state(data DecodedImageData) ?AnimatedImageDebugState {
+	if data is AnimatedDecodedImageData {
+		return data.debug_state()
+	}
+	return none
+}
+
+pub fn (data &AnimatedDecodedImageData) register_client(client_id u64, callback DecodedImageClientUpdateCallback) {
+	mut mutable_data := unsafe { &AnimatedDecodedImageData(data) }
+	was_empty := mutable_data.clients.len == 0
+	mutable_data.clients[client_id] = callback
+	if was_empty {
+		mutable_data.start_animation_if_needed()
+	}
+}
+
+pub fn (data &AnimatedDecodedImageData) unregister_client(client_id u64) {
+	mut mutable_data := unsafe { &AnimatedDecodedImageData(data) }
+	mutable_data.clients.delete(client_id)
+}
+
+pub fn decoded_image_data_register_client(data DecodedImageData, client_id u64, callback DecodedImageClientUpdateCallback) {
+	if data is AnimatedDecodedImageData {
+		data.register_client(client_id, callback)
+	}
+}
+
+pub fn decoded_image_data_unregister_client(data DecodedImageData, client_id u64) {
+	if data is AnimatedDecodedImageData {
+		data.unregister_client(client_id)
+	}
+}
+
+pub fn decoded_image_data_restart_animation(data DecodedImageData) {
+	if data is AnimatedDecodedImageData {
+		mut mutable_data := unsafe { &AnimatedDecodedImageData(data) }
+		mutable_data.restart_animation()
+	}
+}
+
+pub fn decoded_image_data_current_frame_index(data DecodedImageData) usize {
+	if data is AnimatedDecodedImageData {
+		return usize(data.current_frame_index)
+	}
+	return 0
+}
+
+pub fn decoded_image_data_advance_animation(data DecodedImageData) bool {
+	if data is AnimatedDecodedImageData {
+		mut mutable_data := unsafe { &AnimatedDecodedImageData(data) }
+		mutable_data.advance_animation()
+		return true
+	}
+	return false
+}
+
+pub fn (data &AnimatedDecodedImageData) observe_document(document &dom.Document) {
+	mut mutable_data := unsafe { &AnimatedDecodedImageData(data) }
+	if mutable_data.document_ != none {
+		return
+	}
+	mut document_pointer := unsafe { &dom.Document(document) }
+	mut observer := dom.DocumentObserver.create(mut document_pointer)
+	observer.set_document_became_inactive(fn [data] () {
+		mut mutable_data := unsafe { &AnimatedDecodedImageData(data) }
+		mutable_data.stop_animation()
+	})
+	observer.set_document_became_active(fn [data] () {
+		mut mutable_data := unsafe { &AnimatedDecodedImageData(data) }
+		mutable_data.restart_animation()
+	})
+	observer.set_document_visibility_state_observer(fn [data] (state dom.VisibilityState) {
+		mut mutable_data := unsafe { &AnimatedDecodedImageData(data) }
+		if state == .hidden {
+			mutable_data.stop_animation()
+		} else {
+			mutable_data.restart_animation()
+		}
+	})
+	mutable_data.document_ = document
+	mutable_data.document_observer = observer
+}
+
+fn (data &AnimatedDecodedImageData) may_animate() bool {
+	if document := data.document_ {
+		return document.is_fully_active() && !document.hidden()
+	}
+	return true
+}
+
+fn (mut data AnimatedDecodedImageData) start_animation_if_needed() {
+	if data.clients.len == 0 || !data.may_animate() || data.frame_count_ <= 1 {
+		return
+	}
+	data.animation_timer.start_with_interval(data.frame_duration(0))
+}
+
+fn (mut data AnimatedDecodedImageData) stop_animation() {
+	data.animation_timer.stop()
+}
+
+pub fn (mut data AnimatedDecodedImageData) restart_animation() {
+	data.stop_animation()
+	data.current_frame_index = 0
+	data.loops_completed_ = 0
+	data.maybe_request_more_frames(data.current_frame_index)
+	data.notify_clients_did_update()
+	data.start_animation_if_needed()
+}
+
+fn (data &AnimatedDecodedImageData) animation_has_completed() bool {
+	return data.loop_count_ > 0 && data.loops_completed_ == data.loop_count_
+}
+
+fn (data &AnimatedDecodedImageData) notify_clients_did_update() {
+	for _, callback in data.clients {
+		callback()
+	}
+}
+
+pub fn (mut data AnimatedDecodedImageData) advance_animation() {
+	if data.frame_count_ <= 1 || data.animation_has_completed() {
+		data.stop_animation()
+		return
+	}
+	data.current_frame_index = (data.current_frame_index + 1) % data.frame_count_
+	data.maybe_request_more_frames(data.current_frame_index)
+	current_duration := data.frame_duration(data.current_frame_index)
+	if current_duration != data.animation_timer.interval() {
+		data.animation_timer.restart_with_interval(current_duration)
+	}
+	if data.current_frame_index == data.frame_count_ - 1 {
+		data.loops_completed_++
+		if data.animation_has_completed() {
+			data.stop_animation()
+		}
+	}
+	data.notify_clients_did_update()
 }
 
 fn (data &AnimatedDecodedImageData) find_slot_index(frame_index u32) ?int {
@@ -304,7 +486,7 @@ pub fn (data &AnimatedDecodedImageData) intrinsic_aspect_ratio() ?f64 {
 
 pub fn (data &AnimatedDecodedImageData) frame_rect(_ usize) ?BitmapRect {
 	return BitmapRect{
-		width:  data.width_
+		width: data.width_
 		height: data.height_
 	}
 }
@@ -313,9 +495,9 @@ pub fn (data &AnimatedDecodedImageData) paint(mut recorder painting.DisplayListR
 	frame := data.frame(frame_index) or { return false }
 	return recorder.draw_scaled_decoded_image_frame(painting.DrawScaledDecodedImageFrame{
 		destination: destination
-		clip_rect:   clip_rect
-		frame:       frame
-		scaling:     scaling_mode
+		clip_rect: clip_rect
+		frame: frame
+		scaling: scaling_mode
 	})
 }
 
@@ -333,8 +515,8 @@ pub fn (mut data AnimatedDecodedImageData) receive_frames(bitmaps []&dom.Bitmap_
 		data.write_generation++
 		data.buffer_slots[slot_index] = AnimatedBitmapSlot{
 			frame_index: frame_index
-			frame:       dom.DecodedImageFrame_.create_with_color_space(bitmap, data.color_space_)
-			generation:  data.write_generation
+			frame: dom.DecodedImageFrame_.create_with_color_space(bitmap, data.color_space_)
+			generation: data.write_generation
 		}
 	}
 }

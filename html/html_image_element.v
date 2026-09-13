@@ -61,6 +61,14 @@ fn (mut dispatcher BatchingDispatcher) process() {
 	}
 }
 
+fn html_image_decoded_data_did_update(target voidptr) {
+	mut image := unsafe { &HTMLImageElementModel(target) }
+	if element := image.element_ {
+		mut node := unsafe { &dom.Node(image_dom_element(element).as_node()) }
+		node.set_needs_layout_update(.html_image_element_update_the_image_data)
+	}
+}
+
 @[heap]
 pub struct HTMLImageElementModel {
 mut:
@@ -100,6 +108,22 @@ pub fn HTMLImageElementModel.create(document &dom.Document, base_url dom.URL) &H
 		base_url_: base_url
 		event_target_: dom.EventTarget.new()
 		current_request_: ImageRequest.create(document)
+	}
+}
+
+fn (mut image HTMLImageElementModel) replace_decoded_data(data ?SharedResourceImageData) {
+	if previous := image.decoded_data_ {
+		decoded_image_data_unregister_client(previous.data, u64(voidptr(&image)))
+	}
+	image.decoded_data_ = data
+	if current := data {
+		if current.data is AnimatedDecodedImageData {
+			current.data.observe_document(image.document_)
+		}
+		image_pointer := voidptr(&image)
+		decoded_image_data_register_client(current.data, u64(image_pointer), fn [image_pointer] () {
+			html_image_decoded_data_did_update(image_pointer)
+		})
 	}
 }
 
@@ -343,7 +367,7 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 		image.pending_request_ = none
 		image.current_request_.set_state(.broken)
 		image.current_request_.set_current_url('')
-		image.decoded_data_ = none
+		image.replace_decoded_data(none)
 		if (image.src_ != none || image.srcset_ != none) && (!maybe_omit_events || previous_url != '') {
 			image.fire_event('error')
 		}
@@ -387,7 +411,7 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 		request.set_state(.broken)
 		image.pending_request_ = none
 		image.current_request_ = request
-		image.decoded_data_ = none
+		image.replace_decoded_data(none)
 		image.stop_delaying_document_load_event()
 		if !maybe_omit_events || previous_url != url.serialize() {
 			image.fire_event('error')
@@ -401,7 +425,7 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 	request.set_state(.completely_available)
 	image.pending_request_ = none
 	image.current_request_ = request
-	image.decoded_data_ = data
+	image.replace_decoded_data(data)
 	image.current_frame_index_ = 0
 	image.loops_completed_ = 0
 	image.animation_stopped_ = false
@@ -438,7 +462,8 @@ pub fn (image &HTMLImageElementModel) decoded_image_data() ?DecodedImageData {
 
 pub fn (image &HTMLImageElementModel) current_image_frame() ?&dom.DecodedImageFrame_ {
 	data := image.decoded_data_ or { return none }
-	return data.data.frame(image.current_frame_index_)
+	frame_index := decoded_image_data_current_frame_index(data.data)
+	return data.data.frame(if frame_index == 0 { image.current_frame_index_ } else { frame_index })
 }
 
 pub fn (image &HTMLImageElementModel) natural_width() u32 {
@@ -533,6 +558,9 @@ pub fn (image &HTMLImageElementModel) decode() &dom.Promise {
 }
 
 pub fn (mut image HTMLImageElementModel) restart_the_animation() {
+	if data := image.decoded_data_ {
+		decoded_image_data_restart_animation(data.data)
+	}
 	image.current_frame_index_ = 0
 	image.loops_completed_ = 0
 	image.animation_stopped_ = false
@@ -543,6 +571,9 @@ pub fn (mut image HTMLImageElementModel) animate() {
 		return
 	}
 	data := image.decoded_data_ or { return }
+	if decoded_image_data_advance_animation(data.data) {
+		return
+	}
 	frame_count := data.data.frame_count()
 	if frame_count <= 1 {
 		return
@@ -558,6 +589,11 @@ pub fn (mut image HTMLImageElementModel) animate() {
 }
 
 pub fn (image &HTMLImageElementModel) current_frame_index() usize {
+	if data := image.decoded_data_ {
+		if state := decoded_image_animation_state(data.data) {
+			return usize(state.frame_index)
+		}
+	}
 	return image.current_frame_index_
 }
 
@@ -647,7 +683,8 @@ pub fn (image &HTMLImageElementModel) intrinsic_aspect_ratio() ?f64 {
 
 pub fn (image &HTMLImageElementModel) current_image_frame_sized(_ int, _ int) ?&dom.DecodedImageFrame_ {
 	data := image.current_request_.image_data() or { return none }
-	return data.data.frame(image.current_frame_index_)
+	frame_index := decoded_image_data_current_frame_index(data.data)
+	return data.data.frame(if frame_index == 0 { image.current_frame_index_ } else { frame_index })
 }
 
 // https://html.spec.whatwg.org/multipage/images.html#upgrade-the-pending-request-to-the-current-request
@@ -655,7 +692,7 @@ pub fn (mut image HTMLImageElementModel) upgrade_pending_request_to_current_requ
 	pending := image.pending_request_ or { return }
 	image.current_request_ = pending
 	image.pending_request_ = none
-	image.decoded_data_ = pending.image_data()
+	image.replace_decoded_data(pending.image_data())
 }
 
 pub fn (mut image HTMLImageElementModel) handle_failed_fetch() {
@@ -682,7 +719,7 @@ fn (mut image HTMLImageElementModel) image_request_finished(image_request &Image
 		} else {
 			image.current_request_ = image_request
 		}
-		image.decoded_data_ = data
+		image.replace_decoded_data(data)
 		image.current_frame_index_ = 0
 		image.loops_completed_ = 0
 		image.animation_stopped_ = false
