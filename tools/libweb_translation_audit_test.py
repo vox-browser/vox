@@ -98,6 +98,23 @@ fn (_ &WebGLContextProxyBase) default_renderbuffer() u32 { return 0 }
         self.assertEqual(suspicious, [])
         self.assertEqual(len(verified), 4)
 
+    def test_webaudio_default_factories_and_endpoint_arities_are_reviewed(self) -> None:
+        expected = {
+            ("webaudio/audio_param_map.v", "AudioParamMap", "create"),
+            (
+                "webaudio/media_stream_audio_destination.v",
+                "MediaStreamAudioDestinationNode",
+                "number_of_outputs",
+            ),
+            (
+                "webaudio/media_stream_audio_source.v",
+                "MediaStreamAudioSourceNode",
+                "number_of_inputs",
+            ),
+            ("webaudio/render_graph.v", "RenderGraph", "create"),
+        }
+        self.assertTrue(expected.issubset(audit.VERIFIED_TRIVIAL_IMPLEMENTATIONS))
+
 
 class VFunctionInventoryTests(unittest.TestCase):
     def test_generic_receiver_owner_drops_type_parameters(self) -> None:

@@ -74,6 +74,21 @@ VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = froze
         ("animations/animation_effect.v", "AnimationEffect", "target"),
         # Permissions::create is exactly an allocator-only factory upstream.
         ("permissionsapi/permissions.v", "Permissions", "create"),
+        # WebAudio's map factory and render graph constructor only allocate
+        # default state upstream. The media stream endpoint arities are exact
+        # constant overrides from their current headers.
+        ("webaudio/audio_param_map.v", "AudioParamMap", "create"),
+        (
+            "webaudio/media_stream_audio_destination.v",
+            "MediaStreamAudioDestinationNode",
+            "number_of_outputs",
+        ),
+        (
+            "webaudio/media_stream_audio_source.v",
+            "MediaStreamAudioSourceNode",
+            "number_of_inputs",
+        ),
+        ("webaudio/render_graph.v", "RenderGraph", "create"),
         # VTTRegion's field defaults are the complete upstream factory body.
         ("webvtt/vtt_region.v", "VTTRegion", "create"),
         # The remote proxy never owns a local GL context or default targets;
