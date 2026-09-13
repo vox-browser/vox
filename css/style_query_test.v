@@ -64,8 +64,12 @@ fn test_style_features_parse_serialize_and_collect_requirements() {
 
 	ordinary_property := parsed_style_query('color: red')
 	assert ordinary_property.to_string() == 'color: red'
+	important := parsed_style_query('--theme: dark !important')
+	assert important.to_string() == '--theme: dark'
+	nested_comparison := parsed_style_query('--theme: token(1 > 0)')
+	assert nested_comparison.to_string() == '--theme: token(1 > 0)'
 
-	for invalid in ['unknown-property', '--theme: dark !important', '10px', ''] {
+	for invalid in ['unknown-property', '--theme: 1 < 2 > 3', '10px', ''] {
 		mut parser := Parser.from_css_text(invalid)
 		mut tokens := SupportsTokenStream.from_values(parser.component_values)
 		assert parser.parse_style_query(mut tokens, .false_) == none, invalid

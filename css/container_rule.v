@@ -276,13 +276,11 @@ fn next_style_query_token_is_comparison(tokens SupportsTokenStream) bool {
 	return parse_media_feature_comparison(mut transaction) != none
 }
 
-fn style_query_values_contain_comparison(values []ComponentValue) bool {
-	mut tokens := SupportsTokenStream.from_values(values)
-	for tokens.has_next_token() {
-		if next_style_query_token_is_comparison(tokens) {
+fn style_query_values_contain_comparison_delimiter(values []ComponentValue) bool {
+	for value in values {
+		if value.is(.delim) && value.token().delim() in [`<`, `>`, `=`] {
 			return true
 		}
-		tokens.discard_a_token()
 	}
 	return false
 }
@@ -379,11 +377,10 @@ fn (mut parser Parser) parse_style_feature(mut tokens SupportsTokenStream) ?&Boo
 					&& declaration.value[declaration.value.len - 1].is(.whitespace) {
 					declaration.value.delete(declaration.value.len - 1)
 				}
-				if declaration.important == .yes
-					|| !is_valid_optional_declaration_value(declaration.value) {
+				if !is_valid_optional_declaration_value(declaration.value) {
 					return none
 				}
-				if style_query_values_contain_comparison(declaration.value) {
+				if style_query_values_contain_comparison_delimiter(declaration.value) {
 					return none
 				}
 				transaction.index = transaction.values.len
