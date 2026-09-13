@@ -77,6 +77,14 @@ mut:
 	last_known_mouse_modifiers_          u32
 	last_known_mouse_target_             ?InputTarget
 	last_wheel_event_                    ?WheelEventData
+	client_                              ?&PageClient
+	selected_text_                       string
+	selected_html_                       string
+	pasted_text_                         string
+	pasted_html_                         ?string
+	clipboard_event_cancellations_       map[string]bool
+	clipboard_event_items_               map[string][]ClipboardDataItem
+	system_clipboard_items_              []ClipboardDataItem
 }
 
 pub fn (mut handler EventHandler) set_document_state(active bool, has_paint_root bool) {
@@ -367,12 +375,8 @@ pub fn (mut handler EventHandler) handle_keydown(key int, code_point u32, modifi
 	}
 	if focused := target {
 		if focused.is_editable {
-			if key == 8 {
-				handler.log('beforeinput:deleteContentBackward', focused)
-				return .handled
-			}
-			if key == 46 {
-				handler.log('beforeinput:deleteContentForward', focused)
+			if input_type := input_type_for_delete_key(key) {
+				handler.log('beforeinput:${input_type}', focused)
 				return .handled
 			}
 			if key in [13, 35, 36, 37, 38, 39, 40] {
@@ -413,14 +417,5 @@ pub fn (mut handler EventHandler) handle_keyup(repeat bool, cancelled bool) Even
 }
 
 pub fn (mut handler EventHandler) handle_paste(text string) EventResult {
-	if !handler.active_document || text == '' {
-		return .dropped
-	}
-	target := handler.focused_target() or { return .dropped }
-	if !target.is_editable {
-		return .dropped
-	}
-	handler.log('beforeinput:insertFromPaste', target)
-	handler.log('input:insertFromPaste', target)
-	return .handled
+	return handler.insert_pasted_content(text, none)
 }

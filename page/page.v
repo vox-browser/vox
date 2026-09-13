@@ -286,6 +286,7 @@ pub fn Page.create(device_scale f64) !&Page {
 		device_scale: device_scale
 	}
 	model.client_.history_executor_ = model.history_executor_
+	model.event_handler.client_ = model.client_
 	model.Page = dom.Page{
 		target: voidptr(model)
 		did_create_document_callback: page_did_create_document_callback

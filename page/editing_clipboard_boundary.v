@@ -9,6 +9,28 @@ pub struct ClipboardItem {
 pub:
 	value              string
 	presentation_style string
+	representations    []ClipboardRepresentation
+}
+
+pub struct ClipboardRepresentation {
+pub:
+	mime_type string
+	data      []u8
+}
+
+pub fn (mut client PageClient) page_did_insert_clipboard_representations(representations []ClipboardRepresentation, presentation_style string) {
+	mut owned := []ClipboardRepresentation{cap: representations.len}
+	for representation in representations {
+		owned << ClipboardRepresentation{
+			mime_type: representation.mime_type
+			data: representation.data.clone()
+		}
+	}
+	client.clipboard_items_ << ClipboardItem{
+		presentation_style: presentation_style
+		representations: owned
+	}
+	client.record('insert-clipboard-item', '${presentation_style}:${owned.len}')
 }
 
 pub fn (mut client PageClient) page_did_update_editing_history_state(can_undo bool, can_redo bool) {
