@@ -573,10 +573,22 @@ fn (mut context SVGFormattingContext) layout_text_path_element(graphics_box &Nod
 		point_size: f32(computed.resolved_font_size_px())
 		weight: int(computed.font_weight())
 	}
+	text := svg_direct_text_contents(element)
 	measure := svg_first_contour_measure(shape_path)
 	path_length := if measured := measure { measured.length } else { 0.0 }
-	start_offset := svg_element_model(element).start_offset_for_path_length(path_length)
-	path := svg_place_text_along_path(shape_path, svg_direct_text_contents(element), font, start_offset)
+	mut start_offset := svg_element_model(element).start_offset_for_path_length(path_length)
+	// FIXME: Match upstream's pending writing-mode and text-direction handling.
+	run := platform.shape_text(0, 0, text, font, .context_dependent)
+	match computed.text_anchor() {
+		.middle {
+			start_offset -= f64(run.width()) / 2
+		}
+		.end_ {
+			start_offset -= f64(run.width())
+		}
+		else {}
+	}
+	path := svg_place_text_along_path(shape_path, text, font, start_offset)
 	local_bounds := svg_path_bounds(path) or { svg.Rect{} }
 	stroke_width := visible_svg_stroke_width(graphics_box, context.viewport_size)
 	set_used_values_rect(mut graphics_state, inflate_svg_rect(quantize_svg_rect(local_bounds), stroke_width))

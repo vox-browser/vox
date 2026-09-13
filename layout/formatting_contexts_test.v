@@ -2612,6 +2612,33 @@ fn test_svg_text_path_start_offset_resolves_against_first_contour_length() {
 	assert math.abs(laid_out.x - with_bounds.x) < 0.01
 }
 
+fn test_svg_text_path_text_anchor_adjusts_the_start_offset() {
+	start_document := html.parse_document('<!doctype html><style>body { margin:0 }</style><svg width="320" height="120"><defs><path id="guide" d="M 20 60 L 300 60"/></defs><text><textPath id="label" href="#guide" startOffset="50%" font-size="20">OO</textPath></text></svg>')
+	middle_document := html.parse_document('<!doctype html><style>body { margin:0 }</style><svg width="320" height="120"><defs><path id="guide" d="M 20 60 L 300 60"/></defs><text text-anchor="middle"><textPath id="label" href="#guide" startOffset="50%" font-size="20">OO</textPath></text></svg>')
+	end_document := html.parse_document('<!doctype html><style>body { margin:0 }</style><svg width="320" height="120"><defs><path id="guide" d="M 20 60 L 300 60"/></defs><text><textPath id="label" href="#guide" startOffset="50%" text-anchor="end" font-size="20">OO</textPath></text></svg>')
+	start_result := run_document_layout(start_document, 800, 600) or { panic('start layout failed') }
+	middle_result := run_document_layout(middle_document, 800, 600) or {
+		panic('middle layout failed')
+	}
+	end_result := run_document_layout(end_document, 800, 600) or { panic('end layout failed') }
+	start_bounds := svg_path_bounds(used_for_id(start_result, 'label').computed_svg_path() or {
+		panic('start textPath has no path')
+	}) or { panic('start textPath has no bounds') }
+	middle_bounds := svg_path_bounds(used_for_id(middle_result, 'label').computed_svg_path() or {
+		panic('middle textPath has no path')
+	}) or { panic('middle textPath has no bounds') }
+	end_bounds := svg_path_bounds(used_for_id(end_result, 'label').computed_svg_path() or {
+		panic('end textPath has no path')
+	}) or { panic('end textPath has no bounds') }
+	font := &platform.Font{
+		family: 'sans-serif'
+		point_size: 20
+	}
+	run_width := f64(platform.shape_text(0, 0, 'OO', font, .context_dependent).width())
+	assert math.abs((start_bounds.x - middle_bounds.x) - run_width / 2) < 0.01
+	assert math.abs((start_bounds.x - end_bounds.x) - run_width) < 0.01
+}
+
 fn test_svg_text_path_dom_node_retains_only_the_placed_glyph_geometry() {
 	document := html.parse_document('<!doctype html><style>body { margin:0 }</style><svg width="200" height="100"><defs><path id="guide" d="M 10 50 L 180 50"/></defs><text fill="red"><textPath id="label" href="#guide" font-size="24">OO</textPath></text></svg>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
