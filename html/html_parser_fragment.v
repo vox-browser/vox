@@ -3,6 +3,8 @@ module html
 import dom
 import editing
 import encoding
+import fetch
+import mimesniff
 
 fn dom_html_fragment_parse_callback(target voidptr, context_element &dom.Element, markup string, allow_declarative_shadow_roots dom.AllowDeclarativeShadowRoots, scripting_mode dom.ParserScriptingMode) ![]&dom.Node {
 	_ = target
@@ -106,9 +108,18 @@ fn dom_encoding_sniff_callback(_ voidptr, _ &dom.Document, data []u8, transport_
 	return run_html_encoding_sniffing_algorithm(data, transport_encoding)
 }
 
-fn dom_loaded_html_parse_callback(_ voidptr, document &dom.Document, data []u8, transport_encoding ?string, _ dom.URL) ! {
-	mut parser := HTMLParser.create_with_uncertain_encoding(document, data, transport_encoding)!
-	parser.run()
+fn dom_loaded_html_parse_callback(_ voidptr, document &dom.Document, data []u8, transport_encoding ?string, url dom.URL) ! {
+	mime_type := mimesniff.MimeType.parse(if charset := transport_encoding {
+		'text/html;charset=${charset}'
+	} else {
+		'text/html'
+	}) or { return err }
+	body := fetch.Body.from_bytes(data, .bytes)
+	mut parser := IncrementalDocumentParser.create(document, body, url, mime_type)
+	parser.start()
+	if parser.error_ != '' {
+		return error(parser.error_)
+	}
 }
 
 fn dom_loaded_text_parse_callback(_ voidptr, document &dom.Document, data []u8, transport_encoding ?string, _ dom.URL) !string {
