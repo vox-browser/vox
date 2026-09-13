@@ -574,6 +574,32 @@ pub fn (parser &WebMByteStreamParser) tracks() []WebMTrackInfo {
 	return parser.tracks_.values()
 }
 
+pub fn (parser &WebMByteStreamParser) codec_id_for_track(track_number u64) string {
+	track := parser.tracks_[track_number] or { return '' }
+	return track.codec_id
+}
+
+pub fn (parser &WebMByteStreamParser) codec_initialization_data_for_track(track_number u64) []u8 {
+	track := parser.tracks_[track_number] or { return [] }
+	return track.codec_private.clone()
+}
+
+fn (parser &WebMByteStreamParser) tracks_for_type(type_ MediaSourceTrackType) []WebMTrackInfo {
+	return parser.tracks().filter(it.type_ == type_)
+}
+
+pub fn (parser &WebMByteStreamParser) video_tracks() []WebMTrackInfo {
+	return parser.tracks_for_type(.video)
+}
+
+pub fn (parser &WebMByteStreamParser) audio_tracks() []WebMTrackInfo {
+	return parser.tracks_for_type(.audio)
+}
+
+pub fn (parser &WebMByteStreamParser) text_tracks() []WebMTrackInfo {
+	return parser.tracks_for_type(.text)
+}
+
 pub fn (mut parser WebMByteStreamParser) reset_parser_state() {
 	// Ladybird clears its retained partial media-segment reader here. This
 	// parser reparses the retained input prefix on each call, so it has no

@@ -721,3 +721,19 @@ pub fn (mut parser ISOBMFFByteStreamParser) reset_parser_state() {
 pub fn (parser &ISOBMFFByteStreamParser) duration() ?f64 {
 	return parser.duration_
 }
+
+fn (parser &ISOBMFFByteStreamParser) tracks_for_type(type_ MediaSourceTrackType) []WebMTrackInfo {
+	return parser.track_contexts.values().map(it.track).filter(it.type_ == type_)
+}
+
+pub fn (parser &ISOBMFFByteStreamParser) video_tracks() []WebMTrackInfo {
+	return parser.tracks_for_type(.video)
+}
+
+pub fn (parser &ISOBMFFByteStreamParser) audio_tracks() []WebMTrackInfo {
+	return parser.tracks_for_type(.audio)
+}
+
+pub fn (parser &ISOBMFFByteStreamParser) text_tracks() []WebMTrackInfo {
+	return parser.tracks_for_type(.text)
+}

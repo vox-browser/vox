@@ -378,6 +378,14 @@ fn test_webm_initialization_and_media_segments_create_tracks_and_coded_frames() 
 	buffer.set_onerror(observer_callback(append_error))
 
 	initialization := minimal_webm_initialization_segment()
+	mut parser := WebMByteStreamParser.create()
+	parser.parse_initialization_segment(initialization)!
+	assert parser.codec_id_for_track(1) == 'V_VP9'
+	assert parser.codec_initialization_data_for_track(1) == []
+	assert parser.codec_id_for_track(99) == ''
+	assert parser.video_tracks().len == 1
+	assert parser.audio_tracks().len == 0
+	assert parser.text_tracks().len == 0
 	buffer.append_buffer(initialization[..initialization.len / 2])!
 	assert buffer.input_buffer_length() == initialization.len / 2
 	assert buffer.video_tracks().length() == 0
