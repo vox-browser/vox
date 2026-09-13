@@ -262,12 +262,22 @@ pub fn (pipe &AudioWorkletPipe) config() AudioWorkletPipeConfig {
 	return pipe.config_
 }
 
+// The C++ pipe returns an arena address for these counters. V owns typed slot
+// arrays instead, so the equivalent helpers return the masked array index.
+fn (pipe &AudioWorkletPipe) input_slot(counter u64) int {
+	return int(counter & pipe.ring_index_mask_)
+}
+
+fn (pipe &AudioWorkletPipe) output_slot(counter u64) int {
+	return int(counter & pipe.ring_index_mask_)
+}
+
 pub fn (mut pipe AudioWorkletPipe) try_push_input(fill AudioWorkletInputFillCallback) bool {
 	if pipe.input_tail_ - pipe.input_head_ == u64(pipe.config_.ring_capacity) {
 		pipe.dropped_input_count_++
 		return false
 	}
-	index := int(pipe.input_tail_ & pipe.ring_index_mask_)
+	index := pipe.input_slot(pipe.input_tail_)
 	pipe.input_slots_[index].had_gap_ = false
 	fill(mut pipe.input_slots_[index])
 	pipe.input_tail_++
@@ -278,7 +288,7 @@ pub fn (mut pipe AudioWorkletPipe) try_pop_input(read AudioWorkletInputReadCallb
 	if pipe.input_head_ == pipe.input_tail_ {
 		return false
 	}
-	slot := pipe.input_slots_[int(pipe.input_head_ & pipe.ring_index_mask_)]
+	slot := pipe.input_slots_[pipe.input_slot(pipe.input_head_)]
 	read(slot)
 	pipe.input_head_++
 	return true
@@ -288,7 +298,7 @@ pub fn (mut pipe AudioWorkletPipe) try_push_output(fill AudioWorkletOutputFillCa
 	if pipe.output_tail_ - pipe.output_head_ == u64(pipe.config_.ring_capacity) {
 		return false
 	}
-	index := int(pipe.output_tail_ & pipe.ring_index_mask_)
+	index := pipe.output_slot(pipe.output_tail_)
 	pipe.output_slots_[index].processor_active_ = false
 	fill(mut pipe.output_slots_[index])
 	pipe.output_tail_++
@@ -300,7 +310,7 @@ pub fn (mut pipe AudioWorkletPipe) try_pop_output(read AudioWorkletOutputReadCal
 		pipe.underrun_count_++
 		return false
 	}
-	slot := pipe.output_slots_[int(pipe.output_head_ & pipe.ring_index_mask_)]
+	slot := pipe.output_slots_[pipe.output_slot(pipe.output_head_)]
 	read(slot)
 	pipe.output_head_++
 	return true

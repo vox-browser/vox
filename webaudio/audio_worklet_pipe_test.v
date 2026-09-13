@@ -22,6 +22,11 @@ mut:
 	calls int
 }
 
+struct AudioWorkletPipeFrameObservation {
+mut:
+	frames []u64
+}
+
 fn audio_worklet_pipe_config() AudioWorkletPipeConfig {
 	return AudioWorkletPipeConfig{
 		quantum_size: 4
@@ -101,6 +106,33 @@ fn test_audio_worklet_pipe_moves_output_slots_and_counts_underruns() {
 	assert observed.start_frame == 256
 	assert !observed.processor_active
 	assert observed.channel == [f32(5), 6, 7, 8]
+}
+
+fn test_audio_worklet_pipe_masks_wrapped_slot_counters() {
+	mut pipe := AudioWorkletPipe.create(audio_worklet_pipe_config()) or { panic(err) }
+	assert pipe.input_slot(0) == 0
+	assert pipe.input_slot(1) == 1
+	assert pipe.input_slot(2) == 0
+	assert pipe.output_slot(3) == 1
+
+	assert pipe.try_push_input(fn (mut slot AudioWorkletInputSlot) {
+		slot.set_start_frame(1)
+	})
+	assert pipe.try_pop_input(fn (_ AudioWorkletInputSlot) {})
+	assert pipe.try_push_input(fn (mut slot AudioWorkletInputSlot) {
+		slot.set_start_frame(2)
+	})
+	assert pipe.try_push_input(fn (mut slot AudioWorkletInputSlot) {
+		slot.set_start_frame(3)
+	})
+	mut observed := &AudioWorkletPipeFrameObservation{}
+	assert pipe.try_pop_input(fn [mut observed] (slot AudioWorkletInputSlot) {
+		observed.frames << slot.start_frame()
+	})
+	assert pipe.try_pop_input(fn [mut observed] (slot AudioWorkletInputSlot) {
+		observed.frames << slot.start_frame()
+	})
+	assert observed.frames == [u64(2), 3]
 }
 
 fn test_audio_worklet_pipe_primes_and_discards_output_lookahead() {
