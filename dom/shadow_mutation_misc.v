@@ -1351,6 +1351,7 @@ fn (mut invalidator StyleInvalidator) apply_sibling_invalidation(mut element Ele
 
 fn (mut invalidator StyleInvalidator) perform_pending_style_invalidations(mut node Node, invalidate_entire_subtree bool) {
 	mut invalidate_subtree := invalidate_entire_subtree || node.entire_subtree_needs_style_update()
+	element := node.as_element()
 	if invalidate_subtree {
 		node.set_needs_style_update_internal(true)
 		if node.has_child_nodes() {
@@ -1364,17 +1365,17 @@ fn (mut invalidator StyleInvalidator) perform_pending_style_invalidations(mut no
 			invalidator.active_descendant_invalidations << pending
 		}
 
-		if element := node.as_element() {
+		if current_element := element {
 			mut invalidation_index := 0
 			for invalidation_index < invalidator.active_descendant_invalidations.len {
 				pending := invalidator.active_descendant_invalidations[invalidation_index]
 				invalidation_index++
-				if !element_matches_invalidation_rule(element, pending.rule.match_set,
+				if !element_matches_invalidation_rule(current_element, pending.rule.match_set,
 					pending.rule.match_any) {
 					continue
 				}
 				if payload := pending.rule.payload {
-					mut mutable_element := unsafe { &Element(element) }
+					mut mutable_element := unsafe { &Element(current_element) }
 					invalidate_subtree = invalidator.apply_invalidation_plan(mut mutable_element,
 						pending.reason, payload, invalidate_subtree)
 					if invalidate_subtree {
@@ -1391,13 +1392,18 @@ fn (mut invalidator StyleInvalidator) perform_pending_style_invalidations(mut no
 		}
 	}
 
+	if current_element := element {
+		mut mutable_element := unsafe { &Element(current_element) }
+		mutable_element.clear_removed_attributes_for_style_invalidation()
+	}
+
 	for child in node.children {
 		mut child_node := unsafe { &Node(child) }
 		invalidator.perform_pending_style_invalidations(mut child_node, invalidate_subtree)
 	}
 
-	if element := node.as_element() {
-		if shadow_root := element.shadow_root() {
+	if shadow_element := node.as_element() {
+		if shadow_root := shadow_element.shadow_root() {
 			mut shadow_node := unsafe { &Node(shadow_root) }
 			invalidator.perform_pending_style_invalidations(mut shadow_node, invalidate_subtree)
 			if invalidate_subtree || shadow_node.needs_style_update()

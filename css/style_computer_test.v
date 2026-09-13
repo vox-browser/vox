@@ -1061,6 +1061,39 @@ fn test_attribute_mutation_uses_css_invalidation_plan_for_descendant() {
 	assert computed_value_for(target, .color) or { '' } == 'rgb(255, 0, 0)'
 }
 
+fn test_removed_attribute_still_matches_pending_descendant_invalidation() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
+	mut html := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut parent := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	mut target := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
+	parent.set_attribute_value('data-theme', '')
+	target.set_attribute_value('class', 'target')
+
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html.as_node()) or { panic('append html failed: ${err}') }
+	mut html_node := html.as_node()
+	html_node.append_child(parent.as_node()) or { panic('append parent failed: ${err}') }
+	mut parent_node := parent.as_node()
+	parent_node.append_child(target.as_node()) or { panic('append target failed: ${err}') }
+
+	add_document_author_style_sheet(doc, '.target { color: blue; } [data-theme] .target { color: red; }')
+	css_style_computer_for(doc)
+	doc.needs_full_style_update = true
+	doc.update_style()
+	assert computed_value_for(target, .color) or { '' } == 'rgb(255, 0, 0)'
+
+	parent.remove_attribute('data-theme')
+	assert doc.element_needs_style_update(target)
+	doc.update_style()
+	assert computed_value_for(target, .color) or { '' } == 'rgb(0, 0, 255)'
+	assert parent.removed_attributes_for_style_invalidation.len == 0
+}
+
 fn test_computed_style_records_attempted_pseudo_class_matches() {
 	mut doc := dom.Document.create(dom.url_about_blank())
 	doc.set_browsing_context(&dom.BrowsingContext{})

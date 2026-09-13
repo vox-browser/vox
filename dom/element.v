@@ -1413,6 +1413,7 @@ pub mut:
 
 	registered_intersection_observers []voidptr
 	computed_style_map_cache_         ?&StylePropertyMapReadOnly_
+	removed_attributes_for_style_invalidation []string
 
 	scroll_offset_ CSSPixelPoint_
 
@@ -4708,7 +4709,10 @@ pub fn (e &Element) includes_properties_from_invalidation_set(set StyleInvalidat
 			.id { e.id() or { '' } == property.name }
 			.class { e.has_class(property.name) }
 			.tag_name { e.local_name() == property.name }
-			.attribute { e.has_attribute(property.name) }
+			.attribute {
+				e.has_attribute(property.name)
+					|| property.name in e.removed_attributes_for_style_invalidation
+			}
 			.pseudo_class { e.matches_invalidation_pseudo_class(property.pseudo_class_name) }
 			.invalidate_self, .invalidate_whole_subtree { true }
 		}
@@ -5411,12 +5415,15 @@ fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string
 			'required' { ['required', 'optional'] }
 			else { []string{} }
 		}
-		for pseudo_class_name in pseudo_classes {
+	for pseudo_class_name in pseudo_classes {
 			changed_properties << InvalidationProperty{
 				type_: .pseudo_class
 				pseudo_class_name: pseudo_class_name
 			}
 		}
+	}
+	if new_value == none && attribute_name !in e.removed_attributes_for_style_invalidation {
+		e.removed_attributes_for_style_invalidation << attribute_name
 	}
 	changed_properties << InvalidationProperty{
 		type_: .attribute
@@ -5427,6 +5434,10 @@ fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string
 	options.invalidate_self = true
 	node.invalidate_style_with_properties(.element_attribute_change, changed_properties, options)
 	e.invalidate_hosted_shadow_tree_after_attribute_change(style_computer)
+}
+
+pub fn (mut e Element) clear_removed_attributes_for_style_invalidation() {
+	e.removed_attributes_for_style_invalidation.clear()
 }
 
 fn (mut e Element) invalidate_hosted_shadow_tree_after_attribute_change(style_computer &StyleComputer) {
