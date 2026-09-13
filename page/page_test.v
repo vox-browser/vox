@@ -3,6 +3,26 @@ module page
 import compositor
 import dom
 
+struct PageScreenshotHarness {
+mut:
+	repaint_count int
+	render_count  int
+	configs       []dom.PaintConfig
+	bytes         []u8
+}
+
+fn page_screenshot_set_needs_repaint(target voidptr) {
+	mut harness := unsafe { &PageScreenshotHarness(target) }
+	harness.repaint_count++
+}
+
+fn page_screenshot_render(target voidptr, config dom.PaintConfig, _ ?dom.UniqueNodeID) []u8 {
+	mut harness := unsafe { &PageScreenshotHarness(target) }
+	harness.render_count++
+	harness.configs << config
+	return harness.bytes.clone()
+}
+
 fn test_page_identity_geometry_dialogs_and_clipboard_correlation() {
 	mut p := Page.create(2)!
 	p.set_top_level_traversable('top')!
@@ -278,6 +298,49 @@ fn test_page_beforeunload_check_tracks_attached_window_listeners() {
 		replacement_rejected = true
 	}
 	assert replacement_rejected
+}
+
+fn test_page_screenshot_queue_renders_valid_targets_and_reports_failures() {
+	mut p := Page.create(1)!
+	mut document := dom.Document.create_for_fragment_parsing()
+	root_layout := &dom.LayoutNode{}
+	document.set_layout_viewport(&dom.LayoutViewport{
+		root_node: root_layout
+	})
+	mut target := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div')!
+	target_layout := &dom.LayoutNode{
+		paintables_: [&dom.Paintable{}]
+		border_box_: dom.Rect{4, 5, 60, 30}
+	}
+	mut target_node := target.as_node()
+	target_node.set_layout_node(target_layout)
+
+	mut harness := &PageScreenshotHarness{
+		bytes: [u8(1), 2, 3, 4]
+	}
+	mut navigable := &dom.Navigable{
+		html_model_handle_: voidptr(harness)
+		set_needs_repaint_callback_: page_screenshot_set_needs_repaint
+		render_screenshot_callback_: page_screenshot_render
+	}
+	navigable.set_active_document(document)
+	p.set_local_root_navigable(navigable)!
+	mut client := p.client()
+	client.events.clear()
+
+	p.queue_screenshot_task(target.as_node().unique_id())
+	p.queue_screenshot_task(dom.UniqueNodeID(0))
+	p.queue_screenshot_task(none)
+	assert harness.repaint_count == 3
+	assert client.events.filter(it.name == 'request-frame').len == 3
+
+	p.process_screenshot_requests()
+	assert harness.render_count == 2
+	assert harness.configs[0].canvas_fill_rect == dom.Rect{4, 5, 60, 30}
+	assert harness.configs[1].paint_overlay
+	assert client.screenshots == [[u8(1), 2, 3, 4], []u8{}, [u8(1), 2, 3, 4]]
+	p.process_screenshot_requests()
+	assert harness.render_count == 2
 }
 
 fn test_find_navigation_resets_on_document_url_change_but_not_fragment_change() {

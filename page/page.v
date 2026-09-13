@@ -129,6 +129,10 @@ struct PendingFullscreenOperation {
 	promise          &FullscreenPromise
 }
 
+struct ScreenshotTask {
+	node_id ?dom.UniqueNodeID
+}
+
 @[heap]
 pub struct Page {
 	dom.Page
@@ -187,6 +191,7 @@ mut:
 	processing_fullscreen_                       bool
 	pending_fullscreen_operations_               []PendingFullscreenOperation
 	fullscreen_elements_                         map[string]string
+	screenshot_tasks_                            []ScreenshotTask
 }
 
 fn page_did_create_document_callback(target voidptr, document &dom.Document) {
@@ -389,6 +394,67 @@ pub fn (p &Page) has_local_root_navigable() bool {
 
 pub fn (p &Page) local_root_navigable() &dom.Navigable {
 	return p.local_root_navigable_ or { panic('Page has no local root navigable') }
+}
+
+pub fn (mut p Page) queue_screenshot_task(node_id ?dom.UniqueNodeID) {
+	p.screenshot_tasks_ << ScreenshotTask{
+		node_id: node_id
+	}
+	if root := p.local_root_navigable_ {
+		root.set_needs_repaint()
+	}
+	p.client_.request_frame()
+}
+
+pub fn (mut p Page) process_screenshot_requests() {
+	for p.screenshot_tasks_.len > 0 {
+		task := p.screenshot_tasks_[0]
+		p.screenshot_tasks_.delete(0)
+		root := p.local_root_navigable_ or {
+			p.client_.page_did_take_screenshot([])
+			continue
+		}
+		if node_id := task.node_id {
+			node := dom.Node.from_unique_id(node_id) or {
+				p.client_.page_did_take_screenshot([])
+				continue
+			}
+			mut document := unsafe { &dom.Document(node.document()) }
+			document.update_layout(.process_screenshot)
+			layout_node := node.layout_node() or {
+				p.client_.page_did_take_screenshot([])
+				continue
+			}
+			if layout_node.paintables().len == 0 {
+				p.client_.page_did_take_screenshot([])
+				continue
+			}
+			bytes := root.render_screenshot(dom.PaintConfig{
+				canvas_fill_rect: layout_node.border_box_
+			}, node_id)
+			p.client_.page_did_take_screenshot(bytes)
+			continue
+		}
+		document := root.active_document() or {
+			p.client_.page_did_take_screenshot([])
+			continue
+		}
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.update_layout(.process_screenshot)
+		layout_viewport := document.layout_node() or {
+			p.client_.page_did_take_screenshot([])
+			continue
+		}
+		if layout_viewport.root_layout_node() == none {
+			p.client_.page_did_take_screenshot([])
+			continue
+		}
+		bytes := root.render_screenshot(dom.PaintConfig{
+			paint_overlay: true
+			canvas_fill_rect: document.viewport_rect()
+		}, none)
+		p.client_.page_did_take_screenshot(bytes)
+	}
 }
 
 pub fn (p &Page) top_level_traversable_is_initialized() bool {

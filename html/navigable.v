@@ -207,6 +207,19 @@ fn navigable_model_active_document_changed(target voidptr, document ?&dom.Docume
 	}
 }
 
+fn navigable_model_set_needs_repaint(target voidptr) {
+	mut model := unsafe { &NavigableModel(target) }
+	model.set_needs_repaint()
+}
+
+fn navigable_model_render_screenshot(target voidptr, config dom.PaintConfig, _ ?dom.UniqueNodeID) []u8 {
+	mut model := unsafe { &NavigableModel(target) }
+	model.render_screenshot(config)
+	// Native painting owns the shareable bitmap. The model callback records the
+	// render and leaves transport bytes empty when no native surface is attached.
+	return []
+}
+
 fn (model &NavigableModel) system_visibility_state() dom.VisibilityState {
 	if context := model.context_ {
 		if traversable := context.top_level_traversable() {
@@ -226,6 +239,8 @@ fn connect_navigable_model_to_host(model &NavigableModel) {
 	host.perform_scroll_callback_ = navigable_model_perform_viewport_scroll
 	host.is_focused_callback_ = navigable_model_is_focused
 	host.active_document_changed_ = navigable_model_active_document_changed
+	host.set_needs_repaint_callback_ = navigable_model_set_needs_repaint
+	host.render_screenshot_callback_ = navigable_model_render_screenshot
 }
 
 // Binds the DOM identity created by Document/Window to the translated HTML

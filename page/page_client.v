@@ -25,6 +25,7 @@ pub:
 pub struct PageClient {
 pub mut:
 	events                  []ClientEvent
+	screenshots             [][]u8
 	preferred_color_scheme_ string = 'auto'
 	preferred_contrast_     string = 'auto'
 	preferred_motion_       string = 'auto'
@@ -154,6 +155,9 @@ pub fn (mut client PageClient) page_did_finish_network_request(request_id u64, b
 pub fn (_ PageClient) request_worker_agent(_ string) WorkerAgentResponse { return WorkerAgentResponse{} }
 pub fn (mut client PageClient) page_did_mutate_dom(type_ string, target string, added []string, removed []string, previous ?string, next ?string, attribute ?string) { client.record('mutate-dom', '${type_}:${target}:${added.len}:${removed.len}:${previous or { '' }}:${next or { '' }}:${attribute or { '' }}') }
 pub fn (mut client PageClient) page_did_paint(rect PixelRect, bitmap_id i32) { client.record('paint', '${rect.x},${rect.y},${rect.width},${rect.height}:${bitmap_id}') }
-pub fn (mut client PageClient) page_did_take_screenshot(data []u8) { client.record('take-screenshot', data.len.str()) }
+pub fn (mut client PageClient) page_did_take_screenshot(data []u8) {
+	client.screenshots << data.clone()
+	client.record('take-screenshot', data.len.str())
+}
 pub fn (mut client PageClient) received_message_from_web_ui(name string, data string) { client.record(name, data) }
 pub fn (_ PageClient) is_svg_page_client() bool { return false }

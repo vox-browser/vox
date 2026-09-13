@@ -2094,6 +2094,10 @@ pub type NavigableIsFocusedCallback = fn (voidptr) bool
 
 pub type NavigableActiveDocumentChangedCallback = fn (voidptr, ?&Document)
 
+pub type NavigableSetNeedsRepaintCallback = fn (voidptr)
+
+pub type NavigableRenderScreenshotCallback = fn (voidptr, PaintConfig, ?UniqueNodeID) []u8
+
 @[heap]
 pub struct Navigable {
 pub mut:
@@ -2109,6 +2113,8 @@ pub mut:
 	perform_scroll_callback_    NavigablePerformScrollCallback = unsafe { nil }
 	is_focused_callback_        NavigableIsFocusedCallback = unsafe { nil }
 	active_document_changed_    NavigableActiveDocumentChangedCallback = unsafe { nil }
+	set_needs_repaint_callback_ NavigableSetNeedsRepaintCallback = unsafe { nil }
+	render_screenshot_callback_ NavigableRenderScreenshotCallback = unsafe { nil }
 }
 
 pub fn (n &Navigable) perform_scroll_of_viewport_scrolling_box(position CSSPixelPoint_) {
@@ -2183,7 +2189,11 @@ pub:
 	compare_animations         DocumentCompareAnimationsCallback = unsafe { nil }
 }
 
-pub struct PaintConfig {}
+pub struct PaintConfig {
+pub:
+	paint_overlay    bool
+	canvas_fill_rect Rect
+}
 
 @[heap]
 pub struct Selection {
@@ -3061,6 +3071,19 @@ pub fn (n &Node) active_window_proxy() ?&WindowProxy {
 
 pub fn (n &Navigable) active_document() ?&Document {
 	return n.active_document_
+}
+
+pub fn (n &Navigable) set_needs_repaint() {
+	if n.html_model_handle_ != unsafe { nil } && n.set_needs_repaint_callback_ != unsafe { nil } {
+		n.set_needs_repaint_callback_(n.html_model_handle_)
+	}
+}
+
+pub fn (n &Navigable) render_screenshot(config PaintConfig, node_id ?UniqueNodeID) []u8 {
+	if n.html_model_handle_ != unsafe { nil } && n.render_screenshot_callback_ != unsafe { nil } {
+		return n.render_screenshot_callback_(n.html_model_handle_, config, node_id)
+	}
+	return []
 }
 
 pub fn (n &Navigable) active_document_id() ?UniqueNodeID {
