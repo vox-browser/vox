@@ -1,12 +1,21 @@
 module fetch
 
 import mimesniff
+import streams
 
 fn ignore_body_chunk(_ []u8) {}
 
 fn ignore_body_end() {}
 
 fn ignore_body_error(_ string) {}
+
+@[heap]
+struct IncrementalReadRecorder {
+mut:
+	chunks []string
+	ended  bool
+	error_ string
+}
 
 fn test_extract_body_types_and_keepalive_stream_rejection() {
 	string_body := extract_body(BodyInit{ kind: .string_, text: 'hello' }, false)!
@@ -51,6 +60,32 @@ fn test_body_source_replacement_and_incremental_read_cancellation() {
 	cancel_incremental_read(mut reader)
 	assert streaming_body.disturbed()
 	assert streaming_body.stream().state() == .closed
+}
+
+fn test_incremental_read_waits_for_future_stream_chunks() {
+	mut body := Body.streaming()
+	mut recorder := &IncrementalReadRecorder{}
+	mut reader := body.incrementally_read(fn [mut recorder] (chunk []u8) {
+		recorder.chunks << chunk.bytestr()
+	}, fn [mut recorder] () {
+		recorder.ended = true
+	}, fn [mut recorder] (reason string) {
+		recorder.error_ = reason
+	})
+	assert recorder.chunks.len == 0
+	assert !recorder.ended
+	assert recorder.error_ == ''
+
+	mut stream := body.stream()
+	stream.enqueue(streams.bytes_value('first'.bytes()))!
+	stream.enqueue(streams.bytes_value('second'.bytes()))!
+	assert recorder.chunks == ['first', 'second']
+	assert !recorder.ended
+
+	stream.close()
+	assert recorder.ended
+	assert recorder.error_ == ''
+	reader.release_lock()!
 }
 
 fn test_multipart_form_data_parser() {

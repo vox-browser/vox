@@ -257,6 +257,10 @@ pub:
 	done  bool
 }
 
+pub type ReadPromiseFulfilledCallback = fn (ReadResult)
+
+pub type ReadPromiseRejectedCallback = fn (string)
+
 @[heap]
 pub struct ReadPromise {
 pub mut:
@@ -265,6 +269,9 @@ pub mut:
 	reason_       string
 	realm_        StreamRealm
 	result_realm_ ?StreamRealm
+mut:
+	fulfilled_callback_ ?ReadPromiseFulfilledCallback
+	rejected_callback_  ?ReadPromiseRejectedCallback
 }
 
 pub fn ReadPromise.pending() &ReadPromise {
@@ -327,12 +334,32 @@ pub fn (promise &ReadPromise) result_realm() ?StreamRealm {
 	return promise.result_realm_
 }
 
+pub fn (mut promise ReadPromise) upon_settlement(fulfilled ReadPromiseFulfilledCallback, rejected ReadPromiseRejectedCallback) {
+	match promise.state_ {
+		.pending {
+			promise.fulfilled_callback_ = fulfilled
+			promise.rejected_callback_ = rejected
+		}
+		.fulfilled {
+			fulfilled(promise.result_)
+		}
+		.rejected {
+			rejected(promise.reason_)
+		}
+	}
+}
+
 fn (mut promise ReadPromise) resolve(value Value, done bool) {
 	if promise.state_ == .pending {
 		promise.state_ = .fulfilled
 		promise.result_ = ReadResult{
 			value: value
 			done: done
+		}
+		if callback := promise.fulfilled_callback_ {
+			promise.fulfilled_callback_ = none
+			promise.rejected_callback_ = none
+			callback(promise.result_)
 		}
 	}
 }
@@ -341,6 +368,11 @@ fn (mut promise ReadPromise) reject(reason string) {
 	if promise.state_ == .pending {
 		promise.state_ = .rejected
 		promise.reason_ = reason
+		if callback := promise.rejected_callback_ {
+			promise.fulfilled_callback_ = none
+			promise.rejected_callback_ = none
+			callback(reason)
+		}
 	}
 }
 

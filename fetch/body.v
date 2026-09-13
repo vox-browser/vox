@@ -170,8 +170,8 @@ pub fn (mut body Body) fully_read() ![]u8 {
 
 pub fn (mut body Body) incrementally_read(process_chunk BodyChunkCallback, process_end BodyEndCallback, process_error BodyErrorCallback) &streams.ReadableStreamDefaultReader {
 	mut stream := body.stream_
-	mut reader := stream.get_default_reader() or { panic(err) }
-	body.incrementally_read_loop(mut reader, process_chunk, process_end, process_error)
+	reader := stream.get_default_reader() or { panic(err) }
+	body.incrementally_read_loop(reader, process_chunk, process_end, process_error)
 	return reader
 }
 
@@ -179,28 +179,36 @@ pub fn cancel_incremental_read(mut reader streams.ReadableStreamDefaultReader) {
 	reader.cancel(streams.undefined_value())
 }
 
-pub fn (mut body Body) incrementally_read_loop(mut reader streams.ReadableStreamDefaultReader, process_chunk BodyChunkCallback, process_end BodyEndCallback, process_error BodyErrorCallback) {
-	for {
-		read := reader.read()
-		if read.state() == .pending {
-			process_error('TypeError: Body stream did not synchronously produce a chunk')
-			return
-		}
-		if read.state() == .rejected {
-			process_error(read.reason())
-			return
-		}
-		result := read.result()
-		if result.done {
-			process_end()
-			return
-		}
-		if result.value.kind != .bytes {
-			process_error('TypeError: Body stream produced a non-byte chunk')
-			return
-		}
-		process_chunk(result.value.bytes_.clone())
+pub fn (mut body Body) incrementally_read_loop(reader &streams.ReadableStreamDefaultReader, process_chunk BodyChunkCallback, process_end BodyEndCallback, process_error BodyErrorCallback) {
+	mut mutable_reader := unsafe { &streams.ReadableStreamDefaultReader(reader) }
+	read := mutable_reader.read()
+	if read.state() == .pending {
+		mut mutable_read := unsafe { &streams.ReadPromise(read) }
+		mutable_read.upon_settlement(fn [mut body, reader, process_chunk, process_end, process_error] (result streams.ReadResult) {
+			body.process_incremental_read_result(reader, result, process_chunk, process_end, process_error)
+		}, fn [process_error] (reason string) {
+			process_error(reason)
+		})
+		return
 	}
+	if read.state() == .rejected {
+		process_error(read.reason())
+		return
+	}
+	body.process_incremental_read_result(reader, read.result(), process_chunk, process_end, process_error)
+}
+
+fn (mut body Body) process_incremental_read_result(reader &streams.ReadableStreamDefaultReader, result streams.ReadResult, process_chunk BodyChunkCallback, process_end BodyEndCallback, process_error BodyErrorCallback) {
+	if result.done {
+		process_end()
+		return
+	}
+	if result.value.kind != .bytes {
+		process_error('TypeError: Body stream produced a non-byte chunk')
+		return
+	}
+	process_chunk(result.value.bytes_.clone())
+	body.incrementally_read_loop(reader, process_chunk, process_end, process_error)
 }
 
 pub struct BodyWithType {
