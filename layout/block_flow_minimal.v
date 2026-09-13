@@ -83,6 +83,7 @@ pub:
 	attachment         string
 	computed_layer     ?css.BackgroundLayerData
 	resolution_context css.LengthResolutionContext
+	color_scheme       css.PreferredColorScheme = .auto_
 }
 
 // The state consumed by Painting::PaintableBox::paint(PaintPhase::Overlay).
@@ -1490,27 +1491,28 @@ pub mut:
 	fill_opacity           f64 = 1.0
 	stroke_opacity         f64 = 1.0
 	// `draw_background_image` payload. Intrinsic dimensions are resolved by the image renderer.
-	image_url                string
-	background_svg_document  ?&dom.Document
-	image_intrinsic_width    f64
-	image_intrinsic_height   f64
-	image_repeat_x           string
-	image_repeat_y           string
-	image_size               string
-	image_position_x         string
-	image_position_y         string
-	image_rendering          css.ImageRendering
-	image_clip_x             f64
-	image_clip_y             f64
-	image_clip_width         f64
-	image_clip_height        f64
-	image_clip_radii         BoxRadii
-	image_attachment         string
-	image_computed_layer     ?css.BackgroundLayerData
-	image_resolution_context css.LengthResolutionContext
-	image_scroll_offset_x    f64
-	image_scroll_offset_y    f64
-	background_blend_mode    painting.BlendMode
+	image_url                   string
+	background_svg_document     ?&dom.Document
+	background_svg_color_scheme css.PreferredColorScheme = .auto_
+	image_intrinsic_width       f64
+	image_intrinsic_height      f64
+	image_repeat_x              string
+	image_repeat_y              string
+	image_size                  string
+	image_position_x            string
+	image_position_y            string
+	image_rendering             css.ImageRendering
+	image_clip_x                f64
+	image_clip_y                f64
+	image_clip_width            f64
+	image_clip_height           f64
+	image_clip_radii            BoxRadii
+	image_attachment            string
+	image_computed_layer        ?css.BackgroundLayerData
+	image_resolution_context    css.LengthResolutionContext
+	image_scroll_offset_x       f64
+	image_scroll_offset_y       f64
+	background_blend_mode       painting.BlendMode
 	// BackgroundPainting temporarily switches only fixed layers to the visual
 	// context which compensates every ancestor scroll frame.
 	visual_context_index ?int
@@ -1820,6 +1822,7 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 		points: points
 		image_url: layer.url
 		background_svg_document: layer.svg_document
+		background_svg_color_scheme: layer.color_scheme
 		image_intrinsic_width: layer.intrinsic_width
 		image_intrinsic_height: layer.intrinsic_height
 		image_repeat_x: layer.repeat_x
@@ -8620,6 +8623,7 @@ fn parse_background_image_layers(element &dom.Element, author_rules []&css.CSSRu
 			origin: coordinated_background_value(element, .background_origin, index, 'padding-box', author_rules)
 			clip: coordinated_background_value(element, .background_clip, index, 'border-box', author_rules)
 			attachment: coordinated_background_value(element, .background_attachment, index, 'scroll', author_rules)
+			color_scheme: css.preferred_color_scheme_from_string(element.document().preferred_color_scheme())
 		}
 	}
 	return layers

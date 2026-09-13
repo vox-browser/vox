@@ -4342,7 +4342,8 @@ pub mut:
 	// SVGDecodedImageData owns an isolated XML document whose root SVG uses
 	// the decoded image destination as its viewport instead of its intrinsic
 	// width/height presentation attributes.
-	is_svg_image_document_ bool
+	is_svg_image_document_  bool
+	svg_image_color_scheme_ ?string
 	// Standalone documents use 800x600 until a browser host supplies its content viewport.
 	viewport_rect_ Rect = Rect{0, 0, 800, 600}
 
@@ -5571,10 +5572,27 @@ pub fn (mut d Document) set_page(page &Page) {
 }
 
 pub fn (d &Document) preferred_color_scheme() string {
+	if scheme := d.svg_image_color_scheme_ {
+		return scheme
+	}
 	if d.page_ == unsafe { nil } {
 		return 'auto'
 	}
 	return d.page_.preferred_color_scheme()
+}
+
+pub fn (d &Document) svg_image_color_scheme() ?string {
+	return d.svg_image_color_scheme_
+}
+
+pub fn (mut d Document) set_svg_image_color_scheme(color_scheme string) {
+	if existing := d.svg_image_color_scheme_ {
+		if existing == color_scheme {
+			return
+		}
+	}
+	d.svg_image_color_scheme_ = color_scheme
+	d.needs_full_style_update = true
 }
 
 pub fn (d &Document) device_pixels_per_css_pixel() f64 {

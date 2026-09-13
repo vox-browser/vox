@@ -1518,7 +1518,12 @@ fn query_media_feature(feature_name string, document ?&dom.Document) ?MediaFeatu
 			media_feature_ident_value('scroll')
 		}
 		'prefers-color-scheme' {
-			media_feature_ident_value('light')
+			preferred := if doc := document {
+				doc.preferred_color_scheme().to_lower()
+			} else {
+				'auto'
+			}
+			media_feature_ident_value(if preferred == 'dark' { 'dark' } else { 'light' })
 		}
 		'prefers-contrast', 'prefers-reduced-data', 'prefers-reduced-motion', 'prefers-reduced-transparency' {
 			media_feature_ident_value('no-preference')

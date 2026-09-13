@@ -725,6 +725,20 @@ fn test_svg_background_image_retains_its_isolated_document_for_nested_painting()
 	assert backgrounds[0].image_size.starts_with('10px')
 }
 
+fn test_svg_background_image_uses_the_embedding_elements_color_scheme() {
+	source := 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2010%2010%22%3E%3Cpath%20d%3D%22M0%200H10V10H0Z%22%2F%3E%3C%2Fsvg%3E'
+	document := html.parse_document('<!doctype html><style>html,body{margin:0}#target{width:10px;height:10px;color-scheme:dark;background-image:url("${source}")}</style><div id="target"></div>')
+	root := layout_document_typed_in_viewport(document, 40, 40)
+	backgrounds := root.paint_commands().filter(it.kind == 'draw_background_image')
+	assert backgrounds.len == 1
+	assert backgrounds[0].background_svg_color_scheme == .dark
+	isolated_document := backgrounds[0].background_svg_document or {
+		panic('missing isolated SVG document')
+	}
+	assert isolated_document.svg_image_color_scheme()? == 'dark'
+	assert isolated_document.preferred_color_scheme() == 'dark'
+}
+
 fn test_typed_background_clip_text_reaches_the_group_mask() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { width: 180px; height: 50px; color: transparent; font-size: 24px; background-color: red; background-image: linear-gradient(90deg, yellow, blue); background-clip: text }</style><body><div id="target">Clipped words</div></body>')
 	root := layout_document_typed_in_viewport(document, 240, 100)

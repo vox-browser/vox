@@ -367,6 +367,7 @@ fn svg_image_document_for_source(document &dom.Document, source string) ?&dom.Do
 	svg_document.set_content_type('image/svg+xml')
 	svg_document.set_document_type(.xml)
 	svg_document.set_is_svg_image_document(true)
+	svg_document.set_svg_image_color_scheme(document.preferred_color_scheme())
 	html.parse_xml_document_source(svg_document, image_source.source) or { return none }
 	return svg_document
 }

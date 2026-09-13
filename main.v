@@ -4114,6 +4114,8 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			}
 			for tile in tiles {
 				if svg_document := command.background_svg_document {
+					mut mutable_svg_document := unsafe { &dom.Document(svg_document) }
+					mutable_svg_document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(command.background_svg_color_scheme))
 					converter := painting.new_device_pixel_converter(1.0) or { return }
 					rounded_destination := converter.rounded_device_rect(tile)
 					destination := painting.IntRect{
@@ -4132,7 +4134,6 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					}
 					if nested_layout := layout.run_document_layout(svg_document, f64(destination.width), f64(destination.height)) {
 						_ = nested_layout
-						mut mutable_svg_document := unsafe { &dom.Document(svg_document) }
 						if nested_display_list := mutable_svg_document.record_display_list() {
 							for nested_command in layout.display_list_commands(nested_display_list) {
 								transformed := layout.paint_command_for_nested_viewport(nested_command, command.transform, painting.IntPoint{destination.x, destination.y}, command.opacity)

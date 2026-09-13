@@ -1400,6 +1400,11 @@ fn computed_background_image_layers(element &dom.Element, computed &css.Computed
 			continue
 		}
 		svg_document := svg_image_document_for_source(element.document(), resolved_url)
+		color_scheme := color_context.color_scheme or { css.PreferredColorScheme.auto_ }
+		if isolated_document := svg_document {
+			mut mutable_document := unsafe { &dom.Document(isolated_document) }
+			mutable_document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(color_scheme))
+		}
 		intrinsic_width, intrinsic_height := background_svg_intrinsic_dimensions(element.document(), resolved_url, svg_document != none)
 		repeat_x, repeat_y := parsed_background_repeat(computed_coordinated_background_value(computed, .background_repeat, index, 'repeat'))
 		layers << BackgroundImageLayer{
@@ -1419,6 +1424,7 @@ fn computed_background_image_layers(element &dom.Element, computed &css.Computed
 			attachment: computed_coordinated_background_value(computed, .background_attachment, index, 'scroll')
 			computed_layer: computed_layer
 			resolution_context: computed.length_resolution_context()
+			color_scheme: color_scheme
 		}
 	}
 	return layers
@@ -3236,6 +3242,8 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		// platform image decoder. It records the isolated SVG document at the
 		// replaced element's concrete size and nests that display list here.
 		if svg_document := image_box.svg_image_document() {
+			mut mutable_svg_document := unsafe { &dom.Document(svg_document) }
+			mutable_svg_document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(computed.color_scheme()))
 			nested_viewport_document = svg_document
 			natural_size := image_box.natural_size()
 			default_size := css.CSSPixelSize.new(used.content_width(), used.content_height())
