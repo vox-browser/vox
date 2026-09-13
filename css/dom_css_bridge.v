@@ -360,6 +360,16 @@ fn style_scope_subtree_may_affect_has_callback(target voidptr, node &dom.Node) b
 	return subtree_has_feature_used_in_has_selector(node, data)
 }
 
+fn style_scope_pending_has_invalidation_covers_child_list_callback(target voidptr, node &dom.Node) bool {
+	scope := unsafe { &StyleScope(target) }
+	return scope.pending_has_invalidation_covers_all_child_list_mutation_features(node)
+}
+
+fn style_scope_has_featureless_sensitive_has_selectors_callback(target voidptr) bool {
+	scope := unsafe { &StyleScope(target) }
+	return scope.has_featureless_sensitive_has_selectors()
+}
+
 fn style_scope_record_has_mutation_callback(target voidptr, node &dom.Node, mutation_root &dom.Node, includes_descendants bool) {
 	mut scope := unsafe { &StyleScope(target) }
 	scope.record_pending_has_invalidation_mutation_features(node, mutation_root, includes_descendants)
@@ -369,6 +379,11 @@ fn style_scope_record_has_mutation_properties_callback(target voidptr, node &dom
 	mut scope := unsafe { &StyleScope(target) }
 	css_properties := properties.map(invalidation_property_from_dom(it))
 	scope.record_pending_has_invalidation_mutation_properties(node, css_properties)
+}
+
+fn style_scope_record_conservative_has_invalidation_callback(target voidptr, node &dom.Node, may_affect_sibling_relationships bool) {
+	mut scope := unsafe { &StyleScope(target) }
+	scope.record_conservative_pending_has_invalidation(node, may_affect_sibling_relationships)
 }
 
 fn style_scope_schedule_has_invalidation_callback(target voidptr, node &dom.Node) {
@@ -1124,8 +1139,11 @@ fn css_style_scope_from_dom(mut dom_scope dom.StyleScope, node &dom.Node) &Style
 	dom_scope.may_have_has_selectors_callback = style_scope_may_have_has_selectors_callback
 	dom_scope.may_have_sibling_has_callback = style_scope_may_have_sibling_has_selectors_callback
 	dom_scope.subtree_may_affect_has_callback = style_scope_subtree_may_affect_has_callback
+	dom_scope.pending_has_covers_child_list = style_scope_pending_has_invalidation_covers_child_list_callback
+	dom_scope.has_featureless_sensitive_callback = style_scope_has_featureless_sensitive_has_selectors_callback
 	dom_scope.record_has_mutation_callback = style_scope_record_has_mutation_callback
 	dom_scope.record_has_properties_callback = style_scope_record_has_mutation_properties_callback
+	dom_scope.record_conservative_has_callback = style_scope_record_conservative_has_invalidation_callback
 	dom_scope.schedule_has_invalidation_callback = style_scope_schedule_has_invalidation_callback
 	return scope
 }

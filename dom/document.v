@@ -1625,9 +1625,15 @@ pub type StyleScopeMayHaveSiblingHasSelectorsCallback = fn (voidptr) bool
 
 pub type StyleScopeSubtreeMayAffectHasCallback = fn (voidptr, &Node) bool
 
+pub type StyleScopePendingHasInvalidationCoversChildListCallback = fn (voidptr, &Node) bool
+
+pub type StyleScopeHasFeaturelessSensitiveHasSelectorsCallback = fn (voidptr) bool
+
 pub type StyleScopeRecordHasMutationCallback = fn (voidptr, &Node, &Node, bool)
 
 pub type StyleScopeRecordHasMutationPropertiesCallback = fn (voidptr, &Node, []InvalidationProperty)
+
+pub type StyleScopeRecordConservativeHasInvalidationCallback = fn (voidptr, &Node, bool)
 
 pub type StyleScopeScheduleHasInvalidationCallback = fn (voidptr, &Node)
 
@@ -1859,8 +1865,11 @@ pub mut:
 	may_have_has_selectors_callback    StyleScopeMayHaveHasSelectorsCallback = unsafe { nil }
 	may_have_sibling_has_callback      StyleScopeMayHaveSiblingHasSelectorsCallback = unsafe { nil }
 	subtree_may_affect_has_callback    StyleScopeSubtreeMayAffectHasCallback = unsafe { nil }
+	pending_has_covers_child_list      StyleScopePendingHasInvalidationCoversChildListCallback = unsafe { nil }
+	has_featureless_sensitive_callback StyleScopeHasFeaturelessSensitiveHasSelectorsCallback = unsafe { nil }
 	record_has_mutation_callback       StyleScopeRecordHasMutationCallback = unsafe { nil }
 	record_has_properties_callback     StyleScopeRecordHasMutationPropertiesCallback = unsafe { nil }
+	record_conservative_has_callback   StyleScopeRecordConservativeHasInvalidationCallback = unsafe { nil }
 	schedule_has_invalidation_callback StyleScopeScheduleHasInvalidationCallback = unsafe { nil }
 }
 

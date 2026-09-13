@@ -1098,6 +1098,57 @@ fn (mut scope StyleScope) record_pending_has_invalidation_features(node &dom.Nod
 	}
 }
 
+pub fn (mut scope StyleScope) record_conservative_pending_has_invalidation(node &dom.Node, may_affect_sibling_relationships bool) {
+	mut features := PendingHasInvalidationMutationFeatures.new()
+	features.is_conservative = true
+	features.may_affect_sibling_relationships = may_affect_sibling_relationships
+	features.may_affect_pseudo_classes = true
+	scope.record_pending_has_invalidation_features(node, features)
+}
+
+fn (scope &StyleScope) pending_has_invalidation_covers_all_child_list_mutation_features(parent &dom.Node) bool {
+	mutation_features := scope.pending_has_invalidation_features[parent.unique_id().value()] or {
+		return false
+	}
+	if mutation_features.is_conservative {
+		return true
+	}
+	data := scope.style_invalidation_data or { return false }
+	if !mutation_features.may_affect_sibling_relationships {
+		return false
+	}
+	for tag_name, _ in data.tag_names_used_in_has_selectors {
+		if !mutation_features.tag_names[tag_name] {
+			return false
+		}
+	}
+	for id, _ in data.ids_used_in_has_selectors {
+		if !mutation_features.ids[id] {
+			return false
+		}
+	}
+	for class_name, _ in data.class_names_used_in_has_selectors {
+		if !mutation_features.class_names[class_name] {
+			return false
+		}
+	}
+	for attribute_name, _ in data.attribute_names_used_in_has_selectors {
+		if !mutation_features.attribute_names[attribute_name] {
+			return false
+		}
+	}
+	if data.pseudo_classes_used_in_has_selectors.len > 0
+		&& !mutation_features.may_affect_pseudo_classes {
+		return false
+	}
+	return true
+}
+
+fn (scope &StyleScope) has_featureless_sensitive_has_selectors() bool {
+	data := scope.style_invalidation_data or { return false }
+	return data.has_selectors_sensitive_to_featureless_subtree_changes
+}
+
 pub fn (mut scope StyleScope) record_pending_has_invalidation_mutation_features(node &dom.Node, mutation_root &dom.Node, includes_descendants bool) {
 	features := collect_pending_has_invalidation_mutation_features(mutation_root, includes_descendants)
 	scope.record_pending_has_invalidation_features(node, features)

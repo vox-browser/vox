@@ -110,6 +110,44 @@ fn test_pending_has_invalidations_deduplicate_by_node_without_changing_order() {
 	assert root_features.is_conservative
 }
 
+fn test_pending_has_invalidation_coalesces_complete_child_list_features() {
+	mut scope := build_scope_invalidation_cache('
+		.other:has(*) { color: green }
+		.class-case:has(.target-class) { color: red }
+		.id-case:has(#target-id) { color: red }
+		.attribute-case:has([data-target]) { color: red }
+		.tag-case:has(target-tag) { color: red }
+	')
+	document := scope.node or { panic('missing scope document') }
+	mut parent := document.document().create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic(err) }
+	assert scope.has_featureless_sensitive_has_selectors()
+	assert !scope.pending_has_invalidation_covers_all_child_list_mutation_features(parent.as_node())
+
+	scope.record_conservative_pending_has_invalidation(parent.as_node(), true)
+	assert scope.pending_has_invalidation_covers_all_child_list_mutation_features(parent.as_node())
+
+	mut precise_scope := build_scope_invalidation_cache('
+		.class-case:has(.target-class) { color: red }
+		.id-case:has(#target-id) { color: red }
+		.attribute-case:has([data-target]) { color: red }
+		.tag-case:has(target-tag) { color: red }
+		.pseudo-case:has(:checked) { color: red }
+	')
+	mut features := PendingHasInvalidationMutationFeatures.new()
+	features.may_affect_sibling_relationships = true
+	features.may_affect_pseudo_classes = true
+	features.class_names['target-class'] = true
+	features.ids['target-id'] = true
+	features.attribute_names['data-target'] = true
+	features.tag_names['target-tag'] = true
+	precise_scope.record_pending_has_invalidation_features(parent.as_node(), features)
+	assert precise_scope.pending_has_invalidation_covers_all_child_list_mutation_features(parent.as_node())
+	features.class_names.delete('target-class')
+	mut incomplete_scope := build_scope_invalidation_cache('.case:has(.target-class) { color: red }')
+	incomplete_scope.record_pending_has_invalidation_features(parent.as_node(), features)
+	assert !incomplete_scope.pending_has_invalidation_covers_all_child_list_mutation_features(parent.as_node())
+}
+
 fn test_pending_has_mutation_features_track_pseudo_classes_and_sibling_relationships() {
 	document := dom.Document.create(dom.url_about_blank())
 	element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {

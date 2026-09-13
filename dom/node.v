@@ -1327,6 +1327,18 @@ fn schedule_has_walk_for_parent(mutated_node &Node, style_scope &StyleScope, par
 	is_child_list_mutation := reason == .node_remove || reason == .node_insert_before
 	has_sibling_combinator_has_selectors := is_child_list_mutation
 		&& style_scope.may_have_has_selectors_with_relative_selector_that_has_sibling_combinator()
+	if is_child_list_mutation
+		&& style_scope.pending_has_invalidation_covers_all_child_list_mutation_features(parent) {
+		return
+	}
+	if is_child_list_mutation && style_scope.has_featureless_sensitive_has_selectors() {
+		mut mutable_style_scope := unsafe { &StyleScope(style_scope) }
+		mutable_style_scope.record_conservative_pending_has_invalidation(parent, true)
+		if has_sibling_combinator_has_selectors {
+			invalidate_children_affected_by_has_sibling_combinators(parent)
+		}
+		return
+	}
 
 	// Sibling-combinator :has() selectors are sensitive to featureless insertions/removals because a plain node can
 	// still change adjacency and following-sibling relationships.
@@ -1338,12 +1350,15 @@ fn schedule_has_walk_for_parent(mutated_node &Node, style_scope &StyleScope, par
 	}
 
 	mut mutable_style_scope := unsafe { &StyleScope(style_scope) }
-	mutable_style_scope.record_pending_has_invalidation_mutation_features(parent, mutated_node,
-		true)
+	mutable_style_scope.record_pending_has_invalidation_mutation_features(parent, mutated_node, true)
 	mutable_style_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(parent)
 	if !has_sibling_combinator_has_selectors {
 		return
 	}
+	invalidate_children_affected_by_has_sibling_combinators(parent)
+}
+
+fn invalidate_children_affected_by_has_sibling_combinators(parent &Node) {
 	for child in parent.children {
 		if element := child.as_element() {
 			if element.affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator {
@@ -4824,6 +4839,20 @@ pub fn (ss &StyleScope) subtree_may_affect_has_selectors(node &Node) bool {
 	return true
 }
 
+pub fn (ss &StyleScope) pending_has_invalidation_covers_all_child_list_mutation_features(node &Node) bool {
+	if ss.pending_has_covers_child_list != unsafe { nil } && ss.css_handle != unsafe { nil } {
+		return ss.pending_has_covers_child_list(ss.css_handle, node)
+	}
+	return false
+}
+
+pub fn (ss &StyleScope) has_featureless_sensitive_has_selectors() bool {
+	if ss.has_featureless_sensitive_callback != unsafe { nil } && ss.css_handle != unsafe { nil } {
+		return ss.has_featureless_sensitive_callback(ss.css_handle)
+	}
+	return false
+}
+
 pub fn (mut ss StyleScope) record_pending_has_invalidation_mutation_features(node &Node, mutation_root &Node, includes_descendants bool) {
 	if ss.record_has_mutation_callback != unsafe { nil } && ss.css_handle != unsafe { nil } {
 		ss.record_has_mutation_callback(ss.css_handle, node, mutation_root, includes_descendants)
@@ -4833,6 +4862,12 @@ pub fn (mut ss StyleScope) record_pending_has_invalidation_mutation_features(nod
 pub fn (mut ss StyleScope) record_pending_has_invalidation_mutation_properties(node &Node, properties []InvalidationProperty) {
 	if ss.record_has_properties_callback != unsafe { nil } && ss.css_handle != unsafe { nil } {
 		ss.record_has_properties_callback(ss.css_handle, node, properties)
+	}
+}
+
+pub fn (mut ss StyleScope) record_conservative_pending_has_invalidation(node &Node, may_affect_sibling_relationships bool) {
+	if ss.record_conservative_has_callback != unsafe { nil } && ss.css_handle != unsafe { nil } {
+		ss.record_conservative_has_callback(ss.css_handle, node, may_affect_sibling_relationships)
 	}
 }
 

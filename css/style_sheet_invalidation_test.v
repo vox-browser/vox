@@ -175,6 +175,20 @@ fn test_featureless_has_argument_keeps_structural_invalidation_conservative() {
 	mut subject_node := subject.as_node()
 	subject_node.append_child(child.as_node()) or { panic(err) }
 	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len == 1
+	features := scope.pending_has_invalidation_features[subject.as_node().unique_id().value()] or {
+		panic('missing conservative child-list invalidation')
+	}
+	assert features.is_conservative
+	assert features.may_affect_sibling_relationships
+	assert features.may_affect_pseudo_classes
+
+	mut second_child := style_sheet_invalidation_test_element(document, 'target-tag')
+	subject_node.append_child(second_child.as_node()) or { panic(err) }
+	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len == 1
+	coalesced_features := scope.pending_has_invalidation_features[subject.as_node().unique_id().value()] or {
+		panic('missing coalesced child-list invalidation')
+	}
+	assert coalesced_features == features
 }
 
 fn test_has_descendant_fanout_ignores_rules_for_other_anchors() {
