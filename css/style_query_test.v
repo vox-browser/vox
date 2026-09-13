@@ -173,3 +173,22 @@ fn test_style_features_compare_calculated_registered_values() {
 	assert evaluate_parsed_style_query(parsed_style_query('--length: 30px'), target) == .true_
 	assert evaluate_parsed_style_query(parsed_style_query('--length: calc(10px + 20px)'), target) == .true_
 }
+
+fn test_style_features_compare_attr_tainted_registered_values() {
+	mut document, _, mut target := style_query_test_tree('.target {
+		--length: attr(data-length type(<length>));
+		color: if(style(--length: 30px): red; else: blue);
+	}')
+	target.set_attribute_value('data-length', '30px')
+	register_property_for_document(mut document, PropertyDefinition{
+		name:          '--length'
+		syntax:        '<length>'
+		inherits:      false
+		initial_value: '0px'
+	}) or { panic('${err}') }
+	document.needs_full_style_update = true
+	document.update_style()
+
+	assert evaluate_parsed_style_query(parsed_style_query('--length: 30px'), target) == .true_
+	assert computed_value_for(target, .color) or { '' } == 'rgb(255, 0, 0)'
+}
