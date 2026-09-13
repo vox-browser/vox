@@ -243,6 +243,31 @@ fn test_page_compositor_host_and_wheel_listener_generation() {
 	assert host.call_log().contains('invalidate_wheel_event_listener_state:73:2')
 }
 
+fn test_page_beforeunload_check_tracks_attached_window_listeners() {
+	mut p := Page.create(1)!
+	mut document := dom.Document.create_for_fragment_parsing()
+	mut window := &dom.Window{}
+	document.set_window(window)
+	document.set_page(unsafe { &dom.Page(p) })
+	assert p.needs_beforeunload_check()
+
+	p.set_top_level_traversable('root')!
+	assert !p.needs_beforeunload_check()
+	assert p.client().events.last().name == 'change-needs-beforeunload-check'
+	assert p.client().events.last().text == 'false'
+
+	callback := &dom.CallbackType{
+		handle_event: fn (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			return dom.js_undefined()
+		}
+	}
+	mut event_target := unsafe { &dom.EventTarget(window) }
+	event_target.set_event_handler_attribute('beforeunload', callback)
+	p.update_needs_beforeunload_check()
+	assert p.needs_beforeunload_check()
+	assert p.client().events.last().text == 'true'
+}
+
 fn test_find_navigation_resets_on_document_url_change_but_not_fragment_change() {
 	mut p := Page.create(1)!
 	p.set_top_level_traversable('top')!

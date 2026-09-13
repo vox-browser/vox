@@ -146,6 +146,7 @@ pub fn (mut client PageClient) page_did_insert_clipboard_entry(value string, pre
 pub fn (mut client PageClient) page_did_request_clipboard_entries(request_id u64) { client.record('request-clipboard-entries', request_id.str()) }
 pub fn (mut client PageClient) page_did_change_audio_play_state(value string) { client.record('change-audio-play-state', value) }
 pub fn (mut client PageClient) page_did_change_screen_wake_lock_state(state ScreenWakeLockState) { client.record('change-screen-wake-lock-state', state.str()) }
+pub fn (mut client PageClient) page_did_change_needs_beforeunload_check(needs_check bool) { client.record('change-needs-beforeunload-check', needs_check.str()) }
 pub fn (mut client PageClient) page_did_start_network_request(request_id u64, url string, method string, headers []string, body []u8, initiator ?string) { client.record('start-network-request', '${request_id}:${method}:${url}:${headers.len}:${body.len}:${initiator or { '' }}') }
 pub fn (mut client PageClient) page_did_receive_network_response_headers(request_id u64, status u32, reason ?string, headers []string) { client.record('network-response-headers', '${request_id}:${status}:${reason or { '' }}:${headers.len}') }
 pub fn (mut client PageClient) page_did_receive_network_response_body(request_id u64, data []u8) { client.record('network-response-body', '${request_id}:${data.len}') }

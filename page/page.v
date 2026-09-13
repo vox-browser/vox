@@ -175,6 +175,7 @@ mut:
 	preferred_color_scheme_override_for_testing_ ?string
 	attached_documents_                          []&dom.Document
 	wheel_event_listener_state_generation_       u64
+	needs_beforeunload_check_                    bool = true
 	compositor_context_                          ?&compositor.CompositorContextHandle
 	last_find_query_                             ?FindInPageQuery
 	last_find_url_                               string
@@ -313,6 +314,7 @@ fn (mut p Page) register_attached_document(document &dom.Document) {
 		}
 	}
 	p.attached_documents_ << document
+	p.update_needs_beforeunload_check()
 }
 
 pub fn (mut p Page) set_top_level_traversable(id string) ! {
@@ -323,6 +325,30 @@ pub fn (mut p Page) set_top_level_traversable(id string) ! {
 		return error('top-level traversable must have an identity')
 	}
 	p.top_level_traversable_ = id
+	p.update_needs_beforeunload_check()
+}
+
+pub fn (p &Page) needs_beforeunload_check() bool {
+	return p.needs_beforeunload_check_
+}
+
+pub fn (mut p Page) update_needs_beforeunload_check() {
+	mut needs_check := true
+	if p.top_level_traversable_is_initialized() && p.attached_documents_.len > 0 {
+		needs_check = false
+		for document in p.attached_documents_ {
+			window := document.get_window() or { continue }
+			if unsafe { &dom.EventTarget(window) }.has_event_listener('beforeunload') {
+				needs_check = true
+				break
+			}
+		}
+	}
+	if p.needs_beforeunload_check_ == needs_check {
+		return
+	}
+	p.needs_beforeunload_check_ = needs_check
+	p.client_.page_did_change_needs_beforeunload_check(needs_check)
 }
 
 pub fn (p &Page) top_level_traversable_is_initialized() bool {
