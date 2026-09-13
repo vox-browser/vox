@@ -72,8 +72,8 @@ fn test_grapheme_edge_tracker_resolves_nearest_edge() {
 fn test_line_navigation_preserves_grapheme_column() {
 	text := 'ab👩🏼‍❤️‍👨🏻\nx👩🏼‍❤️‍👨🏻z'
 	first_line_offset := find_line_end(text, 0)
-	next := compute_cursor_position_on_next_line(text, first_line_offset) or { -1 }
+	next := compute_cursor_position_on_next_logical_line(text, first_line_offset) or { -1 }
 	assert next == utf16_code_unit_length('ab👩🏼‍❤️‍👨🏻\nx👩🏼‍❤️‍👨🏻z')
-	previous := compute_cursor_position_on_previous_line(text, next) or { -1 }
+	previous := compute_cursor_position_on_previous_logical_line(text, next) or { -1 }
 	assert previous == first_line_offset
 }

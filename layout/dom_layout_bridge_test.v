@@ -55,6 +55,54 @@ fn test_dom_layout_bridge() {
 	assert !div.not_rendered()
 }
 
+fn test_dom_layout_bridge_retains_visual_lines_for_caret_navigation() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		p { margin: 0; width: 48px; font: 16px/20px SerenityMono; white-space: pre-wrap }
+	</style><body><p id="wrapped">four four</p><p id="preserved">a\n\nb</p></body>')
+	_ := run_document_layout(document, 160, 120) or { panic('layout failed') }
+
+	wrapped_element := document.get_element_by_id('wrapped') or { panic('missing wrapped text') }
+	wrapped_node := wrapped_element.as_node().first_child() or { panic('missing wrapped node') }
+	assert wrapped_node.is_text()
+	wrapped_text := unsafe { &dom.Text(wrapped_node) }
+	wrapped_lines := dom.collect_visual_lines(wrapped_text)
+	assert wrapped_lines.len == 2
+	assert wrapped_lines[0].start_offset == 0
+	assert wrapped_lines[0].end_offset == 4
+	assert wrapped_lines[0].end_offset_with_trailing_whitespace == 5
+	assert wrapped_lines[1].start_offset == 5
+	assert wrapped_lines[1].end_offset == 9
+	assert wrapped_lines[0].caret_stops.len >= 5
+	assert wrapped_lines[1].caret_stops.len >= 5
+	assert wrapped_lines[0].owner_paintable == wrapped_lines[1].owner_paintable
+
+	first_line_position := dom.compute_cursor_position_on_previous_line(wrapped_text, 7,
+		.downstream) or { panic('missing previous visual line') }
+	assert first_line_position.offset < 5
+	next_character := dom.compute_cursor_position_on_next_character(wrapped_text, 5,
+		.upstream) or { panic('missing soft-wrap character step') }
+	assert next_character == dom.CursorLinePosition{offset: 5, affinity: .downstream}
+
+	preserved_element := document.get_element_by_id('preserved') or {
+		panic('missing preserved text')
+	}
+	preserved_node := preserved_element.as_node().first_child() or {
+		panic('missing preserved node')
+	}
+	assert preserved_node.is_text()
+	preserved_text := unsafe { &dom.Text(preserved_node) }
+	preserved_lines := dom.collect_visual_lines(preserved_text)
+	assert preserved_lines.len == 3
+	assert preserved_lines[0].start_offset == 0
+	assert preserved_lines[0].end_offset == 1
+	assert !preserved_lines[1].has_fragments
+	assert preserved_lines[1].start_offset == 2
+	assert preserved_lines[1].end_offset == 2
+	assert preserved_lines[2].start_offset == 3
+	assert preserved_lines[2].end_offset == 4
+}
+
 fn test_document_update_layout_runs_registered_layout_engine() {
 	mut doc := dom.Document.create(dom.url_about_blank())
 	doc.set_browsing_context(&dom.BrowsingContext{})

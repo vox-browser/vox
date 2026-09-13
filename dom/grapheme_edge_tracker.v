@@ -423,7 +423,7 @@ fn translate_grapheme_position(target_line string, target_width int) int {
 	return tracker.resolve()
 }
 
-pub fn compute_cursor_position_on_next_line(text string, current_offset int) ?int {
+pub fn compute_cursor_position_on_next_logical_line(text string, current_offset int) ?int {
 	units := utf16_code_units_from_string(text)
 	current_line_end := find_line_end(text, current_offset)
 	if current_line_end >= units.len {
@@ -438,7 +438,7 @@ pub fn compute_cursor_position_on_next_line(text string, current_offset int) ?in
 		translate_grapheme_position(target, grapheme_count_before_offset(source, utf16_code_unit_length(source)))
 }
 
-pub fn compute_cursor_position_on_previous_line(text string, current_offset int) ?int {
+pub fn compute_cursor_position_on_previous_logical_line(text string, current_offset int) ?int {
 	units := utf16_code_units_from_string(text)
 	current_line_start := find_line_start(text, current_offset)
 	if current_line_start == 0 {

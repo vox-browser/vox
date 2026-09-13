@@ -79,6 +79,35 @@ fn test_selection_nullable_collapse_and_foreign_extend_ordering() {
 
 fn test_selection_modify_moves_by_line() {
 	document, text := selection_test_document_with_text('one\ntwo')
+	mut text_node := text.as_node()
+	text_node.set_layout_node(&LayoutNode{
+		is_text_node_: true
+		visual_lines_: [
+			VisualLine{
+				start_offset: 0
+				end_offset: 3
+				end_offset_with_trailing_whitespace: 3
+				has_fragments: true
+				caret_stops: [
+					VisualCaretStop{offset: 0, inline_coordinate: 0},
+					VisualCaretStop{offset: 1, inline_coordinate: 10},
+					VisualCaretStop{offset: 3, inline_coordinate: 30},
+				]
+			},
+			VisualLine{
+				start_offset: 4
+				end_offset: 7
+				end_offset_with_trailing_whitespace: 7
+				has_fragments: true
+				line_index: 1
+				caret_stops: [
+					VisualCaretStop{offset: 4, inline_coordinate: 0},
+					VisualCaretStop{offset: 5, inline_coordinate: 10},
+					VisualCaretStop{offset: 7, inline_coordinate: 30},
+				]
+			},
+		]
+	})
 	mut selection := Selection.create(document)
 	selection.collapse(text.as_node(), 1) or { panic(err) }
 	selection.modify('move', 'forward', 'line') or { panic(err) }

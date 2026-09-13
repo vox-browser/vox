@@ -66,6 +66,66 @@ fn test_form_associated_text_control_selection_and_utf16_ranges() {
 	assert text.relevant_value() == 'ABC'
 }
 
+fn test_form_associated_text_control_preserves_visual_line_affinity() {
+	mut document := dom.Document.create_for_fragment_parsing()
+	input := document.create_element_ns(form_associated_html_namespace, 'input')!
+	mut control := FormAssociatedElement.create(input)
+	mut text := FormAssociatedTextControlElement.create(control, 'abcd efgh')
+	text_node := dom.Text.new(document, 'abcd efgh')
+	mut node := text_node.as_node()
+	node.set_layout_node(&dom.LayoutNode{
+		is_text_node_: true
+		visual_lines_: [
+			dom.VisualLine{
+				start_offset: 0
+				end_offset: 4
+				end_offset_with_trailing_whitespace: 5
+				has_fragments: true
+				caret_stops: [
+					dom.VisualCaretStop{offset: 0, inline_coordinate: 0},
+					dom.VisualCaretStop{offset: 2, inline_coordinate: 20},
+					dom.VisualCaretStop{offset: 4, inline_coordinate: 40},
+					dom.VisualCaretStop{offset: 5, inline_coordinate: 48},
+				]
+			},
+			dom.VisualLine{
+				start_offset: 5
+				end_offset: 9
+				end_offset_with_trailing_whitespace: 9
+				has_fragments: true
+				line_index: 1
+				caret_stops: [
+					dom.VisualCaretStop{offset: 5, inline_coordinate: 0},
+					dom.VisualCaretStop{offset: 7, inline_coordinate: 20},
+					dom.VisualCaretStop{offset: 9, inline_coordinate: 40},
+				]
+			},
+		]
+	})
+	text.text_node_ = text_node
+	text.selection_start_ = 5
+	text.selection_end_ = 5
+	text.selection_end_affinity_ = .upstream
+
+	text.increment_cursor_position_offset(.yes)
+	assert text.selection_end_ == 5
+	assert text.selection_end_affinity_ == .downstream
+	text.decrement_cursor_position_offset(.yes)
+	assert text.selection_end_ == 5
+	assert text.selection_end_affinity_ == .upstream
+
+	text.selection_start_ = 2
+	text.selection_end_ = 2
+	text.selection_end_affinity_ = .downstream
+	text.increment_cursor_position_to_next_line(.yes)
+	assert text.selection_end_ == 7
+	assert text.selection_end_affinity_ == .downstream
+	text.move_cursor_to_start_of_current_line(.yes)
+	assert text.selection_end_ == 5
+	text.move_cursor_to_end_of_current_line(.yes)
+	assert text.selection_end_ == 9
+}
+
 fn test_document_id_notifications_reset_registered_form_owner() {
 	mut document := dom.Document.create_for_fragment_parsing()
 	mut root := document.create_element_ns(form_associated_html_namespace, 'html')!

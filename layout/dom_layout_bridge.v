@@ -20,6 +20,225 @@ pub fn attach_layout_nodes_with_state(root_box &Node, state &LayoutState) &dom.L
 	return attach_layout_node_recursive(root_box, none, state, mut placeholders)
 }
 
+struct VisualLineProjection {
+mut:
+	start_offset                        int
+	end_offset                          int
+	end_offset_with_trailing_whitespace int
+	has_fragments                       bool
+	owner_paintable                     u32
+	line_index                          u32
+	caret_stops                         []dom.VisualCaretStop
+	physical_line_index                 int
+	has_forced_break                    bool
+	trailing_whitespace_width           f64
+}
+
+fn append_visual_caret_stop(mut stops []dom.VisualCaretStop, offset int,
+	inline_coordinate f64) {
+	for stop in stops {
+		if stop.offset == offset {
+			return
+		}
+	}
+	stops << dom.VisualCaretStop{
+		offset: offset
+		inline_coordinate: inline_coordinate
+	}
+}
+
+// Preserve the same grapheme-level cursor stops used by text hit testing. A
+// shaped glyph may cover several UTF-16 code units (for example a ligature),
+// so its advance is divided only at extended grapheme boundaries.
+fn append_fragment_visual_caret_stops(fragment LineBoxFragment,
+	mut stops []dom.VisualCaretStop) {
+	fragment_start := fragment.start()
+	fragment_length := fragment.length_in_code_units()
+	inline_start := fragment.inline_offset().to_double()
+	append_visual_caret_stop(mut stops, fragment_start, inline_start)
+	if fragment_length <= 0 {
+		return
+	}
+	text := fragment.text() or { '' }
+	boundaries := text_grapheme_boundaries(text)
+	if run := fragment.glyph_run() {
+		mut cluster_start := 0
+		mut width_before_cluster := f64(0)
+		for glyph in run.glyphs() {
+			if glyph.advance == 0 {
+				continue
+			}
+			cluster_end := if cluster_start + glyph.length_in_code_units < fragment_length {
+				cluster_start + glyph.length_in_code_units
+			} else {
+				fragment_length
+			}
+			if cluster_end <= cluster_start {
+				continue
+			}
+			for boundary in boundaries {
+				if boundary <= cluster_start || boundary > cluster_end {
+					continue
+				}
+				progress := f64(boundary - cluster_start) / f64(cluster_end - cluster_start)
+				append_visual_caret_stop(mut stops, fragment_start + boundary, inline_start +
+					width_before_cluster + f64(glyph.advance) * progress)
+			}
+			width_before_cluster += f64(glyph.advance)
+			cluster_start = cluster_end
+			if cluster_start >= fragment_length {
+				break
+			}
+		}
+	} else {
+		for boundary in boundaries {
+			if boundary <= 0 || boundary > fragment_length {
+				continue
+			}
+			progress := f64(boundary) / f64(fragment_length)
+			append_visual_caret_stop(mut stops, fragment_start + boundary, inline_start +
+				fragment.inline_length().to_double() * progress)
+		}
+	}
+	append_visual_caret_stop(mut stops, fragment_start + fragment_length,
+		inline_start + fragment.inline_length().to_double())
+}
+
+fn visual_caret_coordinate_at(stops []dom.VisualCaretStop, offset int) ?f64 {
+	for stop in stops {
+		if stop.offset == offset {
+			return stop.inline_coordinate
+		}
+	}
+	return none
+}
+
+// Layout::RustFFI exposes this projection to VisualLines.cpp upstream. The V
+// layout engine keeps the equivalent committed LineBox data, so materialize a
+// cycle-safe copy on the DOM layout placeholder while that state is current.
+fn collect_dom_visual_lines(box &Node, state &LayoutState) []dom.VisualLine {
+	text_node := box.as_text_node() or { return []dom.VisualLine{} }
+	containing_block := box.containing_block() or { return []dom.VisualLine{} }
+	containing_node := unsafe { &Node(containing_block) }
+	containing_styled := containing_node.as_node_with_style() or {
+		return []dom.VisualLine{}
+	}
+	used := state.try_get(containing_styled) or { return []dom.VisualLine{} }
+	text_length := if source_node := box.dom_node() {
+		source_node.length()
+	} else {
+		utf16_code_units_for_line_box(text_node.text_for_rendering()).len
+	}
+	mut projections := []VisualLineProjection{}
+	mut can_own_following_empty_line := false
+	mut empty_line_offset := 0
+	for physical_line_index, line in used.line_boxes {
+		mut matching_fragments := []LineBoxFragment{}
+		for fragment in line.fragments_ {
+			if !fragment.is_fully_truncated()
+				&& layout_nodes_same(fragment.layout_node(), box) {
+				matching_fragments << fragment
+			}
+		}
+		if matching_fragments.len == 0 {
+			// A preserved newline has no text fragment. Retain its empty line
+			// when the preceding line belonged to this Text node; consecutive
+			// newlines repeat this branch one UTF-16 unit at a time.
+			if can_own_following_empty_line && line.fragments_.len == 0
+				&& empty_line_offset < text_length {
+				empty_line_offset++
+				projections << VisualLineProjection{
+					start_offset: empty_line_offset
+					end_offset: empty_line_offset
+					end_offset_with_trailing_whitespace: empty_line_offset
+					owner_paintable: containing_styled.layout_index()
+					line_index: u32(physical_line_index)
+					physical_line_index: physical_line_index
+					has_forced_break: line.has_forced_break_
+				}
+				can_own_following_empty_line = line.has_forced_break_
+				continue
+			}
+			can_own_following_empty_line = false
+			continue
+		}
+
+		mut start_offset := matching_fragments[0].start()
+		mut end_offset := matching_fragments[0].start() +
+			matching_fragments[0].length_in_code_units()
+		mut trailing_whitespace_width := f64(0)
+		mut caret_stops := []dom.VisualCaretStop{}
+		for fragment in matching_fragments {
+			if fragment.start() < start_offset {
+				start_offset = fragment.start()
+			}
+			fragment_end := fragment.start() + fragment.length_in_code_units()
+			if fragment_end > end_offset {
+				end_offset = fragment_end
+				trailing_whitespace_width = 0
+			}
+			append_fragment_visual_caret_stops(fragment, mut caret_stops)
+			if fragment_end == end_offset && fragment.has_trailing_whitespace() {
+				if run := fragment.glyph_run() {
+					trailing_whitespace_width = f64(run.glyph_width(u16(` `)))
+				}
+			}
+		}
+		caret_stops.sort(a.offset < b.offset)
+		projections << VisualLineProjection{
+			start_offset: start_offset
+			end_offset: end_offset
+			end_offset_with_trailing_whitespace: end_offset
+			has_fragments: true
+			owner_paintable: containing_styled.layout_index()
+			line_index: u32(physical_line_index)
+			caret_stops: caret_stops
+			physical_line_index: physical_line_index
+			has_forced_break: line.has_forced_break_
+			trailing_whitespace_width: trailing_whitespace_width
+		}
+		empty_line_offset = end_offset
+		can_own_following_empty_line = line.has_forced_break_ && end_offset < text_length
+	}
+
+	for index := 0; index < projections.len; index++ {
+		if !projections[index].has_fragments || projections[index].has_forced_break {
+			continue
+		}
+		mut trailing_end := projections[index].end_offset
+		if index + 1 < projections.len
+			&& projections[index + 1].physical_line_index == projections[index].physical_line_index + 1
+			&& projections[index + 1].start_offset >= projections[index].end_offset {
+			trailing_end = projections[index + 1].start_offset
+		} else if projections[index].trailing_whitespace_width > 0
+			&& projections[index].end_offset < text_length {
+			trailing_end = projections[index].end_offset + 1
+		}
+		projections[index].end_offset_with_trailing_whitespace = trailing_end
+		if trailing_end > projections[index].end_offset {
+			coordinate := visual_caret_coordinate_at(projections[index].caret_stops,
+				projections[index].end_offset) or { continue }
+			append_visual_caret_stop(mut projections[index].caret_stops, trailing_end,
+				coordinate + projections[index].trailing_whitespace_width)
+			projections[index].caret_stops.sort(a.offset < b.offset)
+		}
+	}
+
+	mut result := []dom.VisualLine{cap: projections.len}
+	for projection in projections {
+		result << dom.VisualLine{
+			start_offset: projection.start_offset
+			end_offset: projection.end_offset
+			end_offset_with_trailing_whitespace: projection.end_offset_with_trailing_whitespace
+			has_fragments: projection.has_fragments
+			owner_paintable: projection.owner_paintable
+			line_index: projection.line_index
+			caret_stops: projection.caret_stops
+		}
+	}
+	return result
+}
+
 fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState, mut placeholders map[u64]&dom.LayoutNode) &dom.LayoutNode {
 	mut visibility := dom.CSSVisibility_.visible
 	mut content_visibility := dom.CSSContentVisibility_.visible
@@ -80,6 +299,9 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		}
 	}
 	if layout_state := state {
+		if box.is_text_node() {
+			placeholder.visual_lines_ = collect_dom_visual_lines(box, layout_state)
+		}
 		if box.is_inline_node() {
 			if metrics := layout_debug_inline_metrics(box, layout_state) {
 				placeholder.has_geometry_ = true

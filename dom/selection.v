@@ -178,6 +178,9 @@ pub fn (navigator &CaretNavigator) inline_coordinate(location CaretLocation) ?f6
 	_ = navigator
 	if location.node.is_text() {
 		text := unsafe { &Text(location.node) }
+		if coordinate := cursor_inline_coordinate(text, location.offset, location.affinity) {
+			return coordinate
+		}
 		line_start := find_line_start(text.data(), location.offset)
 		return f64(location.offset - line_start)
 	}
@@ -217,6 +220,18 @@ fn (navigator &CaretNavigator) move_to_adjacent_caret_host(location CaretLocatio
 	}
 	if candidate.is_text() {
 		text := unsafe { &Text(candidate) }
+		position := if direction == .forward {
+			cursor_position_at_visual_start(text)
+		} else {
+			cursor_position_at_visual_end(text)
+		}
+		if destination := position {
+			return CaretLocation{
+				node: candidate
+				offset: destination.offset
+				affinity: destination.affinity
+			}
+		}
 		return CaretLocation{
 			node: candidate
 			offset: if direction == .forward { 0 } else { text.length() }
@@ -452,38 +467,50 @@ pub fn (navigator &CaretNavigator) move(location CaretLocation, alteration Selec
 	}
 	if granularity == .line_boundary && location.node.is_text() {
 		text := unsafe { &Text(location.node) }
+		position := if direction == .forward {
+			find_visual_line_end(text, location.offset, location.affinity)
+		} else {
+			CursorLinePosition{
+				offset: find_visual_line_start(text, location.offset, location.affinity)
+			}
+		}
 		return CaretLocation{
 			node: location.node
-			offset: if direction == .forward {
-				find_line_end(text.data(), location.offset)
-			} else {
-				find_line_start(text.data(), location.offset)
-			}
+			offset: position.offset
+			affinity: position.affinity
 		}
 	}
 	if granularity == .line && location.node.is_text() {
 		text := unsafe { &Text(location.node) }
-		offset := if direction == .forward {
-			compute_cursor_position_on_next_line(text.data(), location.offset)
+		position := if direction == .forward {
+			compute_cursor_position_on_next_line(text, location.offset, location.affinity)
 		} else {
-			compute_cursor_position_on_previous_line(text.data(), location.offset)
+			compute_cursor_position_on_previous_line(text, location.offset, location.affinity)
 		}
-		if destination := offset {
-			if destination != location.offset {
-				return CaretLocation{ node: location.node, offset: destination }
+		if destination := position {
+			if destination.offset != location.offset || destination.affinity != location.affinity {
+				return CaretLocation{
+					node: location.node
+					offset: destination.offset
+					affinity: destination.affinity
+				}
 			}
 		}
 		return navigator.move_to_adjacent_caret_host(location, direction)
 	}
 	if granularity == .character && location.node.is_text() {
 		text := unsafe { &Text(location.node) }
-		offset := if direction == .forward {
-			text.grapheme_segmenter().next_boundary(location.offset)
+		position := if direction == .forward {
+			compute_cursor_position_on_next_character(text, location.offset, location.affinity)
 		} else {
-			text.grapheme_segmenter().previous_boundary(location.offset)
+			compute_cursor_position_on_previous_character(text, location.offset, location.affinity)
 		}
-		if destination := offset {
-			return CaretLocation{ node: location.node, offset: destination }
+		if destination := position {
+			return CaretLocation{
+				node: location.node
+				offset: destination.offset
+				affinity: destination.affinity
+			}
 		}
 	}
 	adjacent := navigator.move_to_adjacent_caret_host(location, direction) or { return none }
@@ -496,13 +523,19 @@ pub fn (navigator &CaretNavigator) move(location CaretLocation, alteration Selec
 			boundary_visual_lines_share_line(adjacent_text, origin_text)
 		}
 		if shares_line {
-			offset := if direction == .forward {
-				adjacent_text.grapheme_segmenter().next_boundary(adjacent.offset)
+			position := if direction == .forward {
+				compute_cursor_position_on_next_character(adjacent_text, adjacent.offset,
+					adjacent.affinity)
 			} else {
-				adjacent_text.grapheme_segmenter().previous_boundary(adjacent.offset)
+				compute_cursor_position_on_previous_character(adjacent_text, adjacent.offset,
+					adjacent.affinity)
 			}
-			if destination := offset {
-				return CaretLocation{ node: adjacent.node, offset: destination }
+			if destination := position {
+				return CaretLocation{
+					node: adjacent.node
+					offset: destination.offset
+					affinity: destination.affinity
+				}
 			}
 		}
 	}

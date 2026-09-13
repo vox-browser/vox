@@ -1298,6 +1298,26 @@ pub type LayoutApplyStyleCallback = fn (voidptr, voidptr)
 
 pub type LayoutSetNeedsLayoutUpdateCallback = fn (voidptr, bool)
 
+pub struct VisualCaretStop {
+pub:
+	offset            int
+	inline_coordinate f64
+}
+
+// A retained projection of one rendered line for a DOM Text node. Layout
+// fills this at commit time so caret navigation does not dereference a stale
+// layout tree through the DOM/module boundary.
+pub struct VisualLine {
+pub:
+	start_offset                        int
+	end_offset                          int
+	end_offset_with_trailing_whitespace int
+	has_fragments                       bool
+	owner_paintable                     u32
+	line_index                          u32
+	caret_stops                         []VisualCaretStop
+}
+
 @[heap]
 pub struct LayoutNode {
 pub mut:
@@ -1325,6 +1345,7 @@ pub mut:
 	needs_layout_update_                            bool
 	rendered_text_                                  string
 	rendered_text_chunks_                           []string
+	visual_lines_                                   []VisualLine
 	paintables_                                     []&Paintable
 	border_box_                                     Rect
 	content_width_                                  f64
@@ -4052,6 +4073,7 @@ pub enum InvalidateLayoutTreeReason {
 pub enum UpdateLayoutReason {
 	auto_scroll_selection
 	child_document_style_update
+	cursor_line_navigation
 	debugging
 	document_element_from_point
 	document_elements_from_point
@@ -11125,6 +11147,7 @@ pub fn update_layout_reason_to_string(reason UpdateLayoutReason) string {
 	return match reason {
 		.auto_scroll_selection { 'AutoScrollSelection' }
 		.child_document_style_update { 'ChildDocumentStyleUpdate' }
+		.cursor_line_navigation { 'CursorLineNavigation' }
 		.debugging { 'Debugging' }
 		.document_element_from_point { 'DocumentElementFromPoint' }
 		.document_elements_from_point { 'DocumentElementsFromPoint' }

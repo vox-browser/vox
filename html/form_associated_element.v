@@ -561,6 +561,7 @@ pub mut:
 	dirty_value_flag                    bool
 	selection_start_                    u32
 	selection_end_                      u32
+	selection_end_affinity_             dom.TextAffinity = .downstream
 	selection_direction_                SelectionDirection
 	has_scheduled_selectionchange_event bool
 	text_node_                          ?&dom.Text
@@ -793,6 +794,7 @@ pub fn (mut text FormAssociatedTextControlElement) set_the_selection_range(start
 	was_modified := text.selection_start_ != new_selection_start || text.selection_end_ != actual_end || text.selection_direction_ != direction
 	text.selection_start_ = new_selection_start
 	text.selection_end_ = actual_end
+	text.selection_end_affinity_ = .downstream
 	text.selection_direction_ = direction
 	if was_modified {
 		if source == .dom || text.selection_start_ != text.selection_end_ {
@@ -885,8 +887,16 @@ fn (mut text FormAssociatedTextControlElement) did_edit_text_node(input_type str
 }
 
 pub fn (mut text FormAssociatedTextControlElement) collapse_selection_to_offset(position usize) {
-	text.selection_start_ = u32(position)
-	text.selection_end_ = u32(position)
+	text.move_selection_end_to(position, .downstream, .yes)
+}
+
+fn (mut text FormAssociatedTextControlElement) move_selection_end_to(offset usize,
+	affinity dom.TextAffinity, collapse dom.CollapseSelection) {
+	if collapse == .yes {
+		text.selection_start_ = u32(offset)
+	}
+	text.selection_end_ = u32(offset)
+	text.selection_end_affinity_ = affinity
 }
 
 pub fn (text &FormAssociatedTextControlElement) scroll_cursor_into_view() {
@@ -928,25 +938,27 @@ pub fn (mut text FormAssociatedTextControlElement) selection_was_changed(source 
 	}
 }
 
-pub fn (mut text FormAssociatedTextControlElement) set_selection_anchor(anchor_node &dom.Node, anchor_offset usize) {
+pub fn (mut text FormAssociatedTextControlElement) set_selection_anchor(anchor_node &dom.Node,
+	anchor_offset usize, affinity dom.TextAffinity) {
 	mut manager := text.control.element.document().editing_host_manager()
 	manager.set_selection_anchor(anchor_node, int(anchor_offset))
 	text_node := text.text_node_ or { return }
 	if voidptr(anchor_node) != voidptr(text_node.as_node()) {
 		return
 	}
-	text.collapse_selection_to_offset(anchor_offset)
+	text.move_selection_end_to(anchor_offset, affinity, .yes)
 	text.selection_was_changed(.ui)
 }
 
-pub fn (mut text FormAssociatedTextControlElement) set_selection_focus(focus_node &dom.Node, focus_offset usize) {
+pub fn (mut text FormAssociatedTextControlElement) set_selection_focus(focus_node &dom.Node,
+	focus_offset usize, affinity dom.TextAffinity) {
 	mut manager := text.control.element.document().editing_host_manager()
 	manager.set_selection_focus(focus_node, int(focus_offset))
 	text_node := text.text_node_ or { return }
 	if voidptr(focus_node) != voidptr(text_node.as_node()) {
 		return
 	}
-	text.selection_end_ = u32(focus_offset)
+	text.move_selection_end_to(focus_offset, affinity, .no)
 	text.selection_was_changed(.ui)
 }
 
@@ -954,22 +966,30 @@ pub fn (mut text FormAssociatedTextControlElement) move_cursor_to_start(collapse
 	if text.text_node_ == none {
 		return
 	}
-	if collapse == .yes {
-		text.collapse_selection_to_offset(0)
-	} else {
-		text.selection_end_ = 0
-	}
+	text.move_selection_end_to(0, .downstream, collapse)
 	text.selection_was_changed(.ui)
 }
 
 pub fn (mut text FormAssociatedTextControlElement) move_cursor_to_end(collapse dom.CollapseSelection) {
 	text_node := text.text_node_ or { return }
 	end := usize(text_node.length())
-	if collapse == .yes {
-		text.collapse_selection_to_offset(end)
-	} else {
-		text.selection_end_ = u32(end)
-	}
+	text.move_selection_end_to(end, .downstream, collapse)
+	text.selection_was_changed(.ui)
+}
+
+pub fn (mut text FormAssociatedTextControlElement) move_cursor_to_start_of_current_line(collapse dom.CollapseSelection) {
+	text_node := text.text_node_ or { return }
+	new_offset := dom.find_visual_line_start(text_node, int(text.selection_end_),
+		text.selection_end_affinity_)
+	text.move_selection_end_to(usize(new_offset), .downstream, collapse)
+	text.selection_was_changed(.ui)
+}
+
+pub fn (mut text FormAssociatedTextControlElement) move_cursor_to_end_of_current_line(collapse dom.CollapseSelection) {
+	text_node := text.text_node_ or { return }
+	new_position := dom.find_visual_line_end(text_node, int(text.selection_end_),
+		text.selection_end_affinity_)
+	text.move_selection_end_to(usize(new_position.offset), new_position.affinity, collapse)
 	text.selection_was_changed(.ui)
 }
 
@@ -982,12 +1002,9 @@ pub fn (mut text FormAssociatedTextControlElement) increment_cursor_position_off
 			text.selection_end_
 		}
 		text.collapse_selection_to_offset(usize(end))
-	} else if offset := text_node.grapheme_segmenter().next_boundary(int(text.selection_end_)) {
-		if collapse == .yes {
-			text.collapse_selection_to_offset(usize(offset))
-		} else {
-			text.selection_end_ = u32(offset)
-		}
+	} else if position := dom.compute_cursor_position_on_next_character(text_node,
+		int(text.selection_end_), text.selection_end_affinity_) {
+		text.move_selection_end_to(usize(position.offset), position.affinity, collapse)
 	}
 	text.selection_was_changed(.ui)
 }
@@ -1001,12 +1018,9 @@ pub fn (mut text FormAssociatedTextControlElement) decrement_cursor_position_off
 			text.selection_end_
 		}
 		text.collapse_selection_to_offset(usize(start))
-	} else if offset := text_node.grapheme_segmenter().previous_boundary(int(text.selection_end_)) {
-		if collapse == .yes {
-			text.collapse_selection_to_offset(usize(offset))
-		} else {
-			text.selection_end_ = u32(offset)
-		}
+	} else if position := dom.compute_cursor_position_on_previous_character(text_node,
+		int(text.selection_end_), text.selection_end_affinity_) {
+		text.move_selection_end_to(usize(position.offset), position.affinity, collapse)
 	}
 	text.selection_was_changed(.ui)
 }
@@ -1017,11 +1031,7 @@ pub fn (mut text FormAssociatedTextControlElement) increment_cursor_position_to_
 		offset := text_node.word_segmenter().next_boundary(int(text.selection_end_)) or { break }
 		units := form_string_to_utf16(text_node.data())
 		word := form_utf16_to_string(units[int(text.selection_end_)..offset])
-		if collapse == .yes {
-			text.collapse_selection_to_offset(usize(offset))
-		} else {
-			text.selection_end_ = u32(offset)
-		}
+		text.move_selection_end_to(usize(offset), .downstream, collapse)
 		if !dom.segmenter_should_continue_beyond_word(word) {
 			break
 		}
@@ -1035,11 +1045,7 @@ pub fn (mut text FormAssociatedTextControlElement) decrement_cursor_position_to_
 		offset := text_node.word_segmenter().previous_boundary(int(text.selection_end_)) or { break }
 		units := form_string_to_utf16(text_node.data())
 		word := form_utf16_to_string(units[offset..int(text.selection_end_)])
-		if collapse == .yes {
-			text.collapse_selection_to_offset(usize(offset))
-		} else {
-			text.selection_end_ = u32(offset)
-		}
+		text.move_selection_end_to(usize(offset), .downstream, collapse)
 		if !dom.segmenter_should_continue_beyond_word(word) {
 			break
 		}
@@ -1049,27 +1055,21 @@ pub fn (mut text FormAssociatedTextControlElement) decrement_cursor_position_to_
 
 pub fn (mut text FormAssociatedTextControlElement) increment_cursor_position_to_next_line(collapse dom.CollapseSelection) {
 	text_node := text.text_node_ or { return }
-	offset := dom.compute_cursor_position_on_next_line(text_node.data(), int(text.selection_end_)) or {
+	position := dom.compute_cursor_position_on_next_line(text_node, int(text.selection_end_),
+		text.selection_end_affinity_) or {
 		return
 	}
-	if collapse == .yes {
-		text.collapse_selection_to_offset(usize(offset))
-	} else {
-		text.selection_end_ = u32(offset)
-	}
+	text.move_selection_end_to(usize(position.offset), position.affinity, collapse)
 	text.selection_was_changed(.ui)
 }
 
 pub fn (mut text FormAssociatedTextControlElement) decrement_cursor_position_to_previous_line(collapse dom.CollapseSelection) {
 	text_node := text.text_node_ or { return }
-	offset := dom.compute_cursor_position_on_previous_line(text_node.data(), int(text.selection_end_)) or {
+	position := dom.compute_cursor_position_on_previous_line(text_node, int(text.selection_end_),
+		text.selection_end_affinity_) or {
 		return
 	}
-	if collapse == .yes {
-		text.collapse_selection_to_offset(usize(offset))
-	} else {
-		text.selection_end_ = u32(offset)
-	}
+	text.move_selection_end_to(usize(position.offset), position.affinity, collapse)
 	text.selection_was_changed(.ui)
 }
 
