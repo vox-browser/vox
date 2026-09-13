@@ -5709,6 +5709,14 @@ pub fn (value CSSKeywordValue) create_an_internal_representation(property Proper
 
 	//     Return the value.
 	if keyword := keyword_from_string(value.value_) {
+		if !is_css_wide_keyword_string(value.value_) {
+			if property_id := property.id() {
+				// Non-CSS-wide `display` keywords always use DisplayStyleValue internally.
+				if property_id == .display {
+					return StyleValue(DisplayStyleValue.create(Display.from_keyword(keyword)))
+				}
+			}
+		}
 		return StyleValue(KeywordStyleValue.create(keyword))
 	}
 	return StyleValue(CustomIdentStyleValue.create(value.value_))

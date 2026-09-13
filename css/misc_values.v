@@ -205,6 +205,13 @@ pub fn Display.from_short(short_ DisplayShort) Display {
 	}
 }
 
+pub fn Display.from_keyword(keyword Keyword) Display {
+	keyword_text := string_from_keyword(keyword)
+	return display_from_single_keyword_string(keyword_text) or {
+		panic('Keyword ${keyword_text} is not a display value')
+	}
+}
+
 pub fn (d Display) to_keyword() ?Keyword {
 	match d.type_ {
 		.box {

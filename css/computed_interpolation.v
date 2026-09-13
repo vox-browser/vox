@@ -2581,17 +2581,16 @@ pub fn (c &ComputedProperties) clip() Clip {
 }
 
 pub fn (c &ComputedProperties) display() Display {
-	// ComputedProperties::display() (ComputedProperties.cpp:1296): return the Display property's value.
-	// The port stores it as an opaque dom.StyleValue, so re-type it and extract the Display; fall back to
-	// inline (as upstream does when the value isn't a DisplayStyleValue).
+	// The Display property is always represented by DisplayStyleValue. Empty
+	// hand-built ComputedProperties used by low-level tests retain the initial fallback.
 	value := c.property(.display, .yes) or { return Display.from_short(.inline_) }
 	typed := style_value_logic_from_dom(.display, value) or {
-		return Display.from_short(.inline_)
+		panic('Computed display value is not a typed StyleValue')
 	}
 	if typed is DisplayStyleValue {
 		return typed.display()
 	}
-	return Display.from_short(.inline_)
+	panic('Computed display value is not a DisplayStyleValue')
 }
 
 pub fn (c &ComputedProperties) float_() Float {
