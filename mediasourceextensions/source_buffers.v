@@ -77,6 +77,11 @@ pub fn SourceBuffer.create_internal_for_media_source(media_source &MediaSource) 
 	}
 }
 
+pub fn (buffer &SourceBuffer) relevant_global_impl() ?&dom.EventTarget {
+	media_source := buffer.media_source_ or { return none }
+	return media_source.relevant_global_impl()
+}
+
 pub fn (mut buffer SourceBuffer) set_content_type(type_ string) ! {
 	mime_type := mimesniff.MimeType.parse(type_) or { return error('Invalid media MIME type') }
 	buffer.content_type_ = type_
@@ -534,13 +539,23 @@ pub fn (buffer &ManagedSourceBuffer) onbufferedchange() ?&dom.CallbackType {
 pub struct SourceBufferList {
 	dom.EventTarget
 mut:
-	buffers_ []&SourceBuffer
+	buffers_      []&SourceBuffer
+	media_source_ ?&MediaSource
 }
 
 pub fn SourceBufferList.create_internal() &SourceBufferList {
 	return &SourceBufferList{
 		EventTarget: dom.EventTarget{}
 	}
+}
+
+fn (mut list SourceBufferList) set_media_source(media_source &MediaSource) {
+	list.media_source_ = media_source
+}
+
+pub fn (list &SourceBufferList) relevant_global_impl() ?&dom.EventTarget {
+	media_source := list.media_source_ or { return none }
+	return media_source.relevant_global_impl()
 }
 
 pub fn (mut list SourceBufferList) append(buffer &SourceBuffer) {

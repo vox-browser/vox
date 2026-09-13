@@ -637,3 +637,20 @@ fn test_media_source_attachment_state_and_associated_events() {
 	assert event.type_ == 'sourceopen'
 	assert event.is_trusted()
 }
+
+fn test_media_source_relevant_global_is_shared_by_owned_objects() {
+	global_object := &dom.EventTarget{}
+	mut source := MediaSource.create_for_constructor(global_object)
+	assert source.relevant_global_impl() == global_object
+	assert source.relevant_global_object() == global_object
+	assert source.source_buffers().relevant_global_impl()? == global_object
+	assert source.active_source_buffers().relevant_global_impl()? == global_object
+
+	buffer := SourceBuffer.create_internal_for_media_source(source)
+	assert buffer.relevant_global_impl()? == global_object
+	assert SourceBuffer.create_internal().relevant_global_impl() == none
+
+	managed_source := ManagedMediaSource.create_for_constructor(global_object)
+	assert managed_source.relevant_global_impl() == global_object
+	assert managed_source.source_buffers().relevant_global_impl()? == global_object
+}

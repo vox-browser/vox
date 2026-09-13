@@ -63,20 +63,40 @@ mut:
 	media_element_assigned_to_ ?&html.HTMLMediaElement
 	source_buffers_            &SourceBufferList = unsafe { nil }
 	active_source_buffers_     &SourceBufferList = unsafe { nil }
+	relevant_global_object_    ?&dom.EventTarget
 	duration_                  f64 = math.nan()
 	next_track_id_             i64 = 1
 }
 
 pub fn MediaSource.create() &MediaSource {
-	return &MediaSource{
+	mut source := &MediaSource{
 		EventTarget: dom.EventTarget{}
 		source_buffers_: SourceBufferList.create_internal()
 		active_source_buffers_: SourceBufferList.create_internal()
 	}
+	mut source_buffers := source.source_buffers_
+	source_buffers.set_media_source(source)
+	mut active_source_buffers := source.active_source_buffers_
+	active_source_buffers.set_media_source(source)
+	return source
 }
 
 pub fn MediaSource.construct_impl() !&MediaSource {
 	return MediaSource.create()
+}
+
+pub fn MediaSource.create_for_constructor(relevant_global_object &dom.EventTarget) &MediaSource {
+	mut source := MediaSource.create()
+	source.relevant_global_object_ = relevant_global_object
+	return source
+}
+
+pub fn (source &MediaSource) relevant_global_impl() &dom.EventTarget {
+	return source.relevant_global_object_ or { &source.EventTarget }
+}
+
+pub fn (source &MediaSource) relevant_global_object() &dom.EventTarget {
+	return source.relevant_global_impl()
 }
 
 pub fn (source &MediaSource) ready_state() ReadyState {

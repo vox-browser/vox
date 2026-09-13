@@ -13,17 +13,28 @@ pub struct ManagedMediaSource {
 }
 
 pub fn ManagedMediaSource.create() &ManagedMediaSource {
-	return &ManagedMediaSource{
+	mut source := &ManagedMediaSource{
 		MediaSource: MediaSource{
 			EventTarget: dom.EventTarget{}
 			source_buffers_: SourceBufferList.create_internal()
 			active_source_buffers_: SourceBufferList.create_internal()
 		}
 	}
+	mut source_buffers := source.source_buffers_
+	source_buffers.set_media_source(&source.MediaSource)
+	mut active_source_buffers := source.active_source_buffers_
+	active_source_buffers.set_media_source(&source.MediaSource)
+	return source
 }
 
 pub fn ManagedMediaSource.construct_impl() !&ManagedMediaSource {
 	return ManagedMediaSource.create()
+}
+
+pub fn ManagedMediaSource.create_for_constructor(relevant_global_object &dom.EventTarget) &ManagedMediaSource {
+	mut source := ManagedMediaSource.create()
+	source.relevant_global_object_ = relevant_global_object
+	return source
 }
 
 pub fn (source &ManagedMediaSource) set_onstartstreaming(handler ?&dom.CallbackType) {
