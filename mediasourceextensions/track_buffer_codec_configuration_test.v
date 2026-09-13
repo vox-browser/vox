@@ -60,3 +60,31 @@ fn test_track_buffer_seek_supplies_the_configuration_active_at_the_target() {
 	assert frame.timestamp == 5
 	assert frame.new_codec_configuration? == [u8(2)]
 }
+
+fn test_track_buffer_cursor_follows_a_split_tail_past_an_overlapping_run() {
+	mut demuxer := codec_configuration_test_demuxer()
+	demuxer.add_coded_frame(DemuxedCodedFrame{
+		...codec_configuration_test_frame(0, [u8(1)])
+		decode_timestamp: 0
+	})
+	demuxer.add_coded_frame(DemuxedCodedFrame{
+		...codec_configuration_test_frame(10, [u8(2)])
+		decode_timestamp: 1
+	})
+	demuxer.add_coded_frame(DemuxedCodedFrame{
+		...codec_configuration_test_frame(11, none)
+		decode_timestamp: 2
+	})
+	// This separate run sorts between the head and tail after removing the
+	// frame at 10 seconds.
+	demuxer.add_coded_frame(DemuxedCodedFrame{
+		...codec_configuration_test_frame(5, [u8(3)])
+		decode_timestamp: 0
+	})
+	assert demuxer.next_frame()!.timestamp == 0
+
+	demuxer.remove_coded_frames_and_dependants_in_range(10, 11)
+	frame := demuxer.next_frame()!
+	assert frame.timestamp == 11
+	assert frame.new_codec_configuration? == [u8(2)]
+}

@@ -272,6 +272,7 @@ fn (mut demuxer TrackBufferDemuxer) erase_frames_and_dependants(run_index int, f
 			demuxer.current_frame_ -= count
 		} else if demuxer.current_frame_ >= first_frame {
 			demuxer.current_frame_ = first_frame
+			demuxer.note_cursor_jumped()
 		}
 	}
 	if run.frames.len == 0 {
@@ -300,6 +301,12 @@ fn (mut demuxer TrackBufferDemuxer) erase_frames_and_dependants(run_index int, f
 			insertion_index++
 		}
 		demuxer.runs_.insert(insertion_index, tail)
+		if demuxer.current_run_ == run_index && demuxer.current_frame_ >= first_frame {
+			demuxer.current_run_ = insertion_index
+			demuxer.current_frame_ -= first_frame
+		} else if demuxer.current_run_ >= insertion_index {
+			demuxer.current_run_++
+		}
 	} else {
 		if first_frame == 0 && run.frames[0].new_codec_configuration == none {
 			if configuration := configuration_before_remaining {
@@ -468,6 +475,12 @@ fn codec_configuration_after_frame_prefix(run FrameRun, frame_count int) ?[]u8 {
 		}
 	}
 	return none
+}
+
+fn (mut demuxer TrackBufferDemuxer) note_cursor_jumped() {
+	if !demuxer.needs_reanchoring_ {
+		demuxer.cursor_jumped_ = true
+	}
 }
 
 fn (mut demuxer TrackBufferDemuxer) recalculate_maximum_frame_duration() {
