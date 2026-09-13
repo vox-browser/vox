@@ -151,6 +151,8 @@ fn test_isobmff_initialization_and_media_segments_create_tracks_and_frames() {
 	track_buffer := buffer.processor_.track_buffers()[1] or { panic('missing MP4 track buffer') }
 	frames := track_buffer.demuxer.coded_frames()
 	assert frames.len == 1
+	assert frames[0].codec_id == 'av01'
+	assert frames[0].new_codec_configuration? == iso_test_box('av01', []u8{})
 	assert frames[0].timestamp == 0
 	assert frames[0].duration == 1
 	assert frames[0].is_keyframe

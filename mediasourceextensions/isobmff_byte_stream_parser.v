@@ -23,6 +23,8 @@ struct ISOTrackContext {
 	default_duration          u32
 	default_size              u32
 	default_flags             u32
+	sample_description_codecs []string
+	sample_descriptions       [][]u8
 }
 
 struct ISOSample {
@@ -203,8 +205,16 @@ fn parse_iso_track(bytes []u8, trak ISOBoxHeader) !ISOTrackContext {
 	if sample_description_count == 0 {
 		return error('ISO BMFF track has no sample descriptions')
 	}
-	first_entry := read_iso_box_header(bytes, stsd.content_start + 8, stsd.end, false)!
-	codec_id := first_entry.type_
+	mut sample_description_codecs := []string{cap: int(sample_description_count)}
+	mut sample_descriptions := [][]u8{cap: int(sample_description_count)}
+	mut description_position := stsd.content_start + 8
+	for _ in 0 .. int(sample_description_count) {
+		entry := read_iso_box_header(bytes, description_position, stsd.end, false)!
+		sample_description_codecs << entry.type_
+		sample_descriptions << bytes[entry.start..entry.end].clone()
+		description_position = entry.end
+	}
+	codec_id := sample_description_codecs[0]
 
 	for child in iso_child_boxes(bytes, stbl)! {
 		mut entry_count := u32(0)
@@ -229,12 +239,14 @@ fn parse_iso_track(bytes []u8, trak ISOBoxHeader) !ISOTrackContext {
 			number: track_id
 			type_: type_
 			codec_id: codec_id
-			codec_private: bytes[first_entry.start..first_entry.end].clone()
+			codec_private: sample_descriptions[0].clone()
 			language: language
 			label: iso_handler_name(bytes, handler)
 		}
 		timescale: timescale
 		sample_description_count: sample_description_count
+		sample_description_codecs: sample_description_codecs
+		sample_descriptions: sample_descriptions
 	}
 }
 
@@ -243,6 +255,7 @@ pub struct ISOBMFFByteStreamParser {
 mut:
 	duration_      ?f64
 	track_contexts map[u32]ISOTrackContext
+	active_sample_descriptions map[u32]u32
 }
 
 pub fn ISOBMFFByteStreamParser.create() &ISOBMFFByteStreamParser {
@@ -342,6 +355,7 @@ pub fn (mut parser ISOBMFFByteStreamParser) parse_initialization_segment(bytes [
 	}
 	parser.duration_ = duration
 	parser.track_contexts = contexts.clone()
+	parser.active_sample_descriptions.clear()
 	return WebMInitializationSegmentResult{
 		consumed: movie.end
 		duration: duration
@@ -569,13 +583,28 @@ pub fn (mut parser ISOBMFFByteStreamParser) parse_media_segment(bytes []u8) !Web
 
 	mut frames := []DemuxedCodedFrame{cap: samples.len}
 	for sample in samples {
+		context := parser.track_contexts[sample.track_id] or {
+			return error('Unknown ISO BMFF sample track ${sample.track_id}')
+		}
+		description_offset := int(sample.sample_description_index - 1)
+		mut configuration := ?[]u8(none)
+		if active := parser.active_sample_descriptions[sample.track_id] {
+			if active != sample.sample_description_index {
+				configuration = context.sample_descriptions[description_offset].clone()
+			}
+		} else {
+			configuration = context.sample_descriptions[description_offset].clone()
+		}
+		parser.active_sample_descriptions[sample.track_id] = sample.sample_description_index
 		frames << DemuxedCodedFrame{
 			track_number: sample.track_id
+			codec_id: context.sample_description_codecs[description_offset]
 			timestamp: sample.presentation_timestamp
 			decode_timestamp: sample.decode_timestamp
 			duration: sample.duration
 			is_keyframe: sample.is_keyframe
 			data: bytes[sample.data_position..sample.data_position + sample.data_size].clone()
+			new_codec_configuration: configuration
 		}
 	}
 	return WebMMediaSegmentResult{

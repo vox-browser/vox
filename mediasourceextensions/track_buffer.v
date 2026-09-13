@@ -55,6 +55,9 @@ mut:
 	reached_end_of_stream_          bool
 	aborted_                        bool
 	last_appended_decode_timestamp_ ?f64
+	last_appended_codec_configuration_ ?[]u8
+	last_delivered_codec_configuration_ ?[]u8
+	cursor_jumped_                  bool
 	maximum_frame_duration_         f64
 	total_bytes_                    int
 }
@@ -88,7 +91,11 @@ pub fn (demuxer &TrackBufferDemuxer) coded_frames() []DemuxedCodedFrame {
 	return frames
 }
 
-pub fn (mut demuxer TrackBufferDemuxer) add_coded_frame(frame DemuxedCodedFrame) {
+pub fn (mut demuxer TrackBufferDemuxer) add_coded_frame(input_frame DemuxedCodedFrame) {
+	mut frame := input_frame
+	if configuration := frame.new_codec_configuration {
+		demuxer.last_appended_codec_configuration_ = configuration.clone()
+	}
 	// Coded-frame processing replaces an existing frame at the same
 	// presentation timestamp. Keep the run representation free of duplicate
 	// presentation samples while preserving decode order for every other frame.
@@ -134,6 +141,11 @@ pub fn (mut demuxer TrackBufferDemuxer) add_coded_frame(frame DemuxedCodedFrame)
 		demuxer.runs_[run_to_continue].recalculate_bounds()
 		return
 	}
+	if frame.new_codec_configuration == none {
+		if configuration := demuxer.last_appended_codec_configuration_ {
+			frame.new_codec_configuration = configuration.clone()
+		}
+	}
 	mut run := FrameRun{
 		frames: [frame]
 	}
@@ -167,6 +179,11 @@ fn (mut demuxer TrackBufferDemuxer) erase_frames_and_dependants(run_index int, f
 	for frame in run.frames[first_frame..first_frame + count] {
 		bytes += frame.data.len
 	}
+	mut configuration_before_remaining := ?[]u8(none)
+	if first_frame + count < run.frames.len {
+		configuration_before_remaining = codec_configuration_after_frame_prefix(run,
+			first_frame + count)
+	}
 	demuxer.total_bytes_ -= bytes
 	run.frames.delete_many(first_frame, count)
 	if demuxer.current_run_ == run_index {
@@ -187,6 +204,11 @@ fn (mut demuxer TrackBufferDemuxer) erase_frames_and_dependants(run_index int, f
 		mut tail := FrameRun{
 			frames: run.frames[first_frame..].clone()
 		}
+		if tail.frames[0].new_codec_configuration == none {
+			if configuration := configuration_before_remaining {
+				tail.frames[0].new_codec_configuration = configuration.clone()
+			}
+		}
 		run.frames = run.frames[..first_frame].clone()
 		run.recalculate_bounds()
 		tail.recalculate_bounds()
@@ -198,6 +220,11 @@ fn (mut demuxer TrackBufferDemuxer) erase_frames_and_dependants(run_index int, f
 		}
 		demuxer.runs_.insert(insertion_index, tail)
 	} else {
+		if first_frame == 0 && run.frames[0].new_codec_configuration == none {
+			if configuration := configuration_before_remaining {
+				run.frames[0].new_codec_configuration = configuration.clone()
+			}
+		}
 		run.recalculate_bounds()
 		demuxer.runs_[run_index] = run
 	}
@@ -347,6 +374,17 @@ fn (demuxer &TrackBufferDemuxer) maximum_time_range_gap() f64 {
 	return demuxer.maximum_frame_duration_ * 2
 }
 
+fn codec_configuration_after_frame_prefix(run FrameRun, frame_count int) ?[]u8 {
+	mut index := frame_count
+	for index > 0 {
+		index--
+		if configuration := run.frames[index].new_codec_configuration {
+			return configuration.clone()
+		}
+	}
+	return none
+}
+
 fn (mut demuxer TrackBufferDemuxer) recalculate_maximum_frame_duration() {
 	demuxer.maximum_frame_duration_ = 0
 	for run in demuxer.runs_ {
@@ -398,6 +436,7 @@ pub fn (mut demuxer TrackBufferDemuxer) seek_to_most_recent_keyframe(timestamp f
 	demuxer.current_frame_ = keyframe_index
 	demuxer.cursor_presentation_timestamp_ = run.frames[keyframe_index].timestamp
 	demuxer.needs_reanchoring_ = false
+	demuxer.cursor_jumped_ = true
 }
 
 pub fn (mut demuxer TrackBufferDemuxer) next_frame() !DemuxedCodedFrame {
@@ -423,6 +462,7 @@ pub fn (mut demuxer TrackBufferDemuxer) next_frame() !DemuxedCodedFrame {
 		}
 		demuxer.current_run_++
 		demuxer.current_frame_ = 0
+		demuxer.cursor_jumped_ = true
 	}
 	if demuxer.current_run_ >= demuxer.runs_.len
 		|| demuxer.current_frame_ >= demuxer.runs_[demuxer.current_run_].frames.len {
@@ -431,7 +471,28 @@ pub fn (mut demuxer TrackBufferDemuxer) next_frame() !DemuxedCodedFrame {
 		}
 		return error('NeedMoreData')
 	}
-	frame := demuxer.runs_[demuxer.current_run_].frames[demuxer.current_frame_]
+	mut frame := demuxer.runs_[demuxer.current_run_].frames[demuxer.current_frame_]
+	if demuxer.cursor_jumped_ {
+		configuration := codec_configuration_after_frame_prefix(demuxer.runs_[demuxer.current_run_],
+			demuxer.current_frame_ + 1)
+		mut configuration_is_new := false
+		if value := configuration {
+			if delivered := demuxer.last_delivered_codec_configuration_ {
+				configuration_is_new = value != delivered
+			} else {
+				configuration_is_new = true
+			}
+			if configuration_is_new {
+				frame.new_codec_configuration = value.clone()
+				demuxer.last_delivered_codec_configuration_ = value.clone()
+			} else {
+				frame.new_codec_configuration = none
+			}
+		}
+		demuxer.cursor_jumped_ = false
+	} else if configuration := frame.new_codec_configuration {
+		demuxer.last_delivered_codec_configuration_ = configuration.clone()
+	}
 	demuxer.current_frame_++
 	demuxer.cursor_presentation_timestamp_ = frame.timestamp
 	return frame

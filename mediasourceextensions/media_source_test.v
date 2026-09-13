@@ -326,6 +326,9 @@ fn test_webm_initialization_and_media_segments_create_tracks_and_coded_frames() 
 	track_buffer := buffer.processor_.track_buffers()[1] or { panic('missing track buffer') }
 	assert track_buffer.demuxer.coded_frame_count() == 1
 	frame := track_buffer.demuxer.coded_frames()[0]
+	assert frame.codec_id == 'V_VP9'
+	assert frame.new_codec_configuration != none
+	assert frame.new_codec_configuration? == []
 	assert frame.is_keyframe
 	assert frame.data == [u8(1), 2]
 	assert frame.timestamp == 0

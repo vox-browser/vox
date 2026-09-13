@@ -60,6 +60,8 @@ pub:
 	is_keyframe  bool
 	data         []u8
 pub mut:
+	codec_id               string
+	new_codec_configuration ?[]u8
 	timestamp        f64
 	decode_timestamp ?f64
 	duration         f64
@@ -264,6 +266,7 @@ mut:
 	timestamp_scale u64 = 1_000_000
 	duration_       ?f64
 	tracks_         map[u64]WebMTrackInfo
+	active_codec_configurations map[u64][]u8
 }
 
 pub fn WebMByteStreamParser.create() &WebMByteStreamParser {
@@ -360,11 +363,23 @@ pub fn (mut parser WebMByteStreamParser) parse_initialization_segment(bytes []u8
 		none
 	}
 	parser.tracks_ = tracks.clone()
+	parser.active_codec_configurations.clear()
 	return WebMInitializationSegmentResult{
 		consumed: position
 		duration: parser.duration_
 		tracks: tracks.values()
 	}
+}
+
+fn (mut parser WebMByteStreamParser) configure_frame(mut frame DemuxedCodedFrame, track WebMTrackInfo) {
+	frame.codec_id = track.codec_id
+	if active := parser.active_codec_configurations[track.number] {
+		if active == track.codec_private {
+			return
+		}
+	}
+	frame.new_codec_configuration = track.codec_private.clone()
+	parser.active_codec_configurations[track.number] = track.codec_private.clone()
 }
 
 fn parse_webm_block(bytes []u8, element EBMLElementHeader, cluster_timecode i64, timestamp_scale u64, duration f64, keyframe bool) !DemuxedCodedFrame {
@@ -413,7 +428,8 @@ pub fn (mut parser WebMByteStreamParser) parse_media_segment(bytes []u8) !WebMMe
 			probe_track, _ := read_ebml_size(bytes, element.data_start)!
 			track_number := probe_track or { return error('Invalid WebM block track') }
 			track := parser.tracks_[track_number] or { return error('Unknown WebM block track') }
-			frame := parse_webm_block(bytes, element, cluster_timecode, parser.timestamp_scale, track.default_duration, false)!
+			mut frame := parse_webm_block(bytes, element, cluster_timecode, parser.timestamp_scale, track.default_duration, false)!
+			parser.configure_frame(mut frame, track)
 			if frame.timestamp < last_timestamp {
 				return error('WebM block timestamps are not increasing')
 			}
@@ -438,7 +454,11 @@ pub fn (mut parser WebMByteStreamParser) parse_media_segment(bytes []u8) !WebMMe
 				group_position = child.data_end
 			}
 			block_element := block or { return error('WebM BlockGroup has no Block') }
-			frame := parse_webm_block(bytes, block_element, cluster_timecode, parser.timestamp_scale, duration, !has_reference)!
+			track_number, _ := read_ebml_size(bytes, block_element.data_start)!
+			number := track_number or { return error('Invalid WebM block track') }
+			track := parser.tracks_[number] or { return error('Unknown WebM block track') }
+			mut frame := parse_webm_block(bytes, block_element, cluster_timecode, parser.timestamp_scale, duration, !has_reference)!
+			parser.configure_frame(mut frame, track)
 			if frame.timestamp < last_timestamp {
 				return error('WebM block timestamps are not increasing')
 			}
