@@ -190,6 +190,19 @@ class ConsolidatedFunctionTests(unittest.TestCase):
             (("svg_image_color_scheme", "Document"),),
         )
 
+    def test_svg_specialized_element_identity_hooks_map_to_tagged_elements(self) -> None:
+        for owner, method_name in (
+            ("SVGClipPathElement", "is_svg_clip_path_element"),
+            ("SVGGradientElement", "is_svg_gradient_element"),
+            ("SVGImageElement", "is_svg_image_element"),
+            ("SVGPatternElement", "is_svg_pattern_element"),
+            ("SVGSwitchElement", "is_svg_switch_element"),
+        ):
+            self.assertEqual(
+                audit.CONSOLIDATED_METHOD_MAPPINGS[(owner, method_name)],
+                ((method_name, "Element"),),
+            )
+
     def test_svg_presentation_attribute_cache_maps_to_live_cascade_collection(self) -> None:
         for method_name in ("apply_presentational_hints", "presentation_attribute_style"):
             self.assertEqual(

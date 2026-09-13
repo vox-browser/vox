@@ -332,6 +332,23 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     # overrides are dispatched together at the style-computation boundary.
     ("SVGElement", "adjust_computed_style"): (("adjust_element_computed_style", None),),
     ("SVGSymbolElement", "adjust_computed_style"): (("adjust_element_computed_style", None),),
+    # The tagged portable SVG Element record implements the specialized
+    # subclass identity hooks by inspecting its local tag name.
+    ("SVGClipPathElement", "is_svg_clip_path_element"): (
+        ("is_svg_clip_path_element", "Element"),
+    ),
+    ("SVGGradientElement", "is_svg_gradient_element"): (
+        ("is_svg_gradient_element", "Element"),
+    ),
+    ("SVGImageElement", "is_svg_image_element"): (
+        ("is_svg_image_element", "Element"),
+    ),
+    ("SVGPatternElement", "is_svg_pattern_element"): (
+        ("is_svg_pattern_element", "Element"),
+    ),
+    ("SVGSwitchElement", "is_svg_switch_element"): (
+        ("is_svg_switch_element", "Element"),
+    ),
     # Primitive calculated-value resolution receives Layout's already-derived
     # length context explicitly in V, avoiding a CSS -> Layout module cycle.
     ("Angle", "resolve_calculated"): (("resolve_calculated_with_context", "Angle"),),
