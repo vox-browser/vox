@@ -1880,6 +1880,7 @@ pub mut:
 	record_has_properties_callback     StyleScopeRecordHasMutationPropertiesCallback = unsafe { nil }
 	record_conservative_has_callback   StyleScopeRecordConservativeHasInvalidationCallback = unsafe { nil }
 	schedule_has_invalidation_callback StyleScopeScheduleHasInvalidationCallback = unsafe { nil }
+	invalidate_user_style_callback      fn (voidptr) = unsafe { nil }
 }
 
 pub struct StyleValue {
@@ -2602,6 +2603,7 @@ pub:
 	device_pixel_scale_callback          fn (voidptr) f64 = unsafe { nil }
 	did_allocate_backing_stores_callback fn (voidptr, int, int) = unsafe { nil }
 	preferred_color_scheme_callback      fn (voidptr) string = unsafe { nil }
+	user_style_callback                  fn (voidptr) ?string = unsafe { nil }
 	request_frame_callback               fn (voidptr) = unsafe { nil }
 mut:
 	last_changed_title_ string
@@ -5622,6 +5624,10 @@ pub fn (mut d Document) set_browsing_context(bc &BrowsingContext) {
 // C++: Page& Document::page()
 pub fn (d &Document) page() &Page {
 	return d.page_
+}
+
+pub fn (d &Document) has_page() bool {
+	return d.page_ != unsafe { nil }
 }
 
 pub fn (d &Document) get_page() &Page {
@@ -12193,6 +12199,13 @@ pub fn (p &Page) preferred_color_scheme() string {
 		return p.preferred_color_scheme_callback(p.target)
 	}
 	return 'auto'
+}
+
+pub fn (p &Page) user_style() ?string {
+	if p.target != unsafe { nil } && p.user_style_callback != unsafe { nil } {
+		return p.user_style_callback(p.target)
+	}
+	return none
 }
 
 pub fn (p &Page) client_page_did_allocate_backing_stores(front_id int, back_id int) {

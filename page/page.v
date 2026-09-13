@@ -6,6 +6,7 @@
 module page
 
 import dom
+import loader
 import math
 
 pub enum PendingDialog {
@@ -77,11 +78,12 @@ pub:
 
 pub struct MediaElementState {
 pub mut:
-	playing    bool
-	muted      bool
-	looping    bool
-	controls   bool
-	fullscreen bool
+	playing               bool
+	muted                 bool
+	looping                bool
+	controls               bool
+	fullscreen             bool
+	page_mute_change_count u64
 }
 
 pub enum ContextMenuRequestKind {
@@ -136,50 +138,55 @@ pub mut:
 	media_elements map[u64]MediaElementState
 	selected_match ?FindMatch
 mut:
-	client_                        &PageClient = &PageClient{}
-	device_scale                   f64 = 1
-	top_level_traversable_         string
-	focused_navigable_             string
-	current_url_                   string
-	history_delta_                 int
-	is_scripting_enabled_          bool = true
-	should_block_pop_ups_          bool = true
-	enable_autoscroll_             bool = true
-	is_webdriver_active_           bool
-	is_hovering_link_              bool
-	is_in_tooltip_area_            bool
-	current_cursor_                string = 'arrow'
-	window_position_               PixelPoint
-	window_size_                   PixelSize
-	window_rect_observer_          ?fn (PixelRect)
-	pending_dialog_                PendingDialog
-	pending_dialog_text_           ?string
-	pending_dialog_default_        string
-	pending_dialog_response_       ?string
-	on_pending_dialog_closed_      ?fn ()
-	pending_non_blocking_dialog_   PendingNonBlockingDialog
-	pending_non_blocking_target_   string
-	next_clipboard_request_id      u64
-	pending_clipboard_requests     map[u64]bool
-	canvas_elements_               []u64
-	media_context_element_         ?u64
-	context_menu_request_          ?ContextMenuRequest
-	active_screen_wake_lock_count_ usize
-	mute_state_                    MuteState
-	user_style_                    ?string
-	last_find_query_               ?FindInPageQuery
-	last_find_url_                 string
-	find_match_index_              usize
-	listen_for_dom_mutations_      bool
-	viewport_fullscreen_           bool
-	fullscreen_ipc_sent_           bool
-	processing_fullscreen_         bool
-	pending_fullscreen_operations_ []PendingFullscreenOperation
-	fullscreen_elements_           map[string]string
+	client_                                      &PageClient = &PageClient{}
+	device_scale                                 f64 = 1
+	top_level_traversable_                       string
+	focused_navigable_                           string
+	current_url_                                 string
+	history_delta_                               int
+	is_scripting_enabled_                        bool = true
+	should_block_pop_ups_                        bool = true
+	enable_autoscroll_                           bool = true
+	enable_primary_paste_                        bool = true
+	async_scrolling_enabled_                     bool
+	is_webdriver_active_                         bool
+	is_hovering_link_                            bool
+	is_in_tooltip_area_                          bool
+	current_cursor_                              string = 'arrow'
+	window_position_                             PixelPoint
+	window_size_                                 PixelSize
+	window_rect_observer_                        ?fn (PixelRect)
+	pending_dialog_                              PendingDialog
+	pending_dialog_text_                         ?string
+	pending_dialog_default_                      string
+	pending_dialog_response_                     ?string
+	on_pending_dialog_closed_                    ?fn ()
+	pending_non_blocking_dialog_                 PendingNonBlockingDialog
+	pending_non_blocking_target_                 string
+	next_clipboard_request_id                    u64
+	pending_clipboard_requests                   map[u64]bool
+	canvas_elements_                             []u64
+	media_context_element_                       ?u64
+	context_menu_request_                        ?ContextMenuRequest
+	active_screen_wake_lock_count_               usize
+	mute_state_                                  MuteState
+	user_style_                                  ?string
+	preferred_color_scheme_override_for_testing_ ?string
+	attached_documents_                          []&dom.Document
+	last_find_query_                             ?FindInPageQuery
+	last_find_url_                               string
+	find_match_index_                            usize
+	listen_for_dom_mutations_                    bool
+	viewport_fullscreen_                         bool
+	fullscreen_ipc_sent_                         bool
+	processing_fullscreen_                       bool
+	pending_fullscreen_operations_               []PendingFullscreenOperation
+	fullscreen_elements_                         map[string]string
 }
 
 fn page_did_create_document_callback(target voidptr, document &dom.Document) {
 	mut model := unsafe { &Page(target) }
+	model.register_attached_document(document)
 	model.client_.page_did_create_new_document(document.url_string())
 }
 
@@ -201,6 +208,11 @@ fn page_device_pixel_scale_callback(target voidptr) f64 {
 fn page_preferred_color_scheme_callback(target voidptr) string {
 	model := unsafe { &Page(target) }
 	return model.preferred_color_scheme()
+}
+
+fn page_user_style_callback(target voidptr) ?string {
+	model := unsafe { &Page(target) }
+	return model.user_style()
 }
 
 fn page_did_allocate_backing_stores_callback(target voidptr, front_id int, back_id int) {
@@ -230,6 +242,7 @@ pub fn Page.create(device_scale f64) !&Page {
 		device_pixel_scale_callback: page_device_pixel_scale_callback
 		did_allocate_backing_stores_callback: page_did_allocate_backing_stores_callback
 		preferred_color_scheme_callback: page_preferred_color_scheme_callback
+		user_style_callback: page_user_style_callback
 		request_frame_callback: page_request_frame_callback
 	}
 	return model
@@ -241,6 +254,31 @@ pub fn (p &Page) enable_autoscroll() bool {
 
 pub fn (mut p Page) set_enable_autoscroll(value bool) {
 	p.enable_autoscroll_ = value
+}
+
+pub fn (p &Page) enable_primary_paste() bool {
+	return p.enable_primary_paste_
+}
+
+pub fn (mut p Page) set_enable_primary_paste(value bool) {
+	p.enable_primary_paste_ = value
+}
+
+pub fn (p &Page) async_scrolling_enabled() bool {
+	return p.async_scrolling_enabled_
+}
+
+pub fn (mut p Page) set_async_scrolling_enabled(value bool) {
+	p.async_scrolling_enabled_ = value
+}
+
+fn (mut p Page) register_attached_document(document &dom.Document) {
+	for attached in p.attached_documents_ {
+		if voidptr(attached) == voidptr(document) {
+			return
+		}
+	}
+	p.attached_documents_ << document
 }
 
 pub fn (mut p Page) set_top_level_traversable(id string) ! {
@@ -530,7 +568,18 @@ pub fn (mut p Page) toggle_media_property(property string) bool {
 }
 
 pub fn (mut p Page) toggle_page_mute_state() {
-	p.mute_state_ = if p.mute_state_ == .muted { .unmuted } else { .muted }
+	p.set_page_mute_state(if p.mute_state_ == .muted { .unmuted } else { .muted })
+}
+
+pub fn (mut p Page) set_page_mute_state(mute_state MuteState) {
+	if p.mute_state_ == mute_state {
+		return
+	}
+	p.mute_state_ = mute_state
+	for id, mut state in p.media_elements {
+		state.page_mute_change_count++
+		p.media_elements[id] = state
+	}
 }
 
 pub fn (p &Page) page_mute_state() MuteState {
@@ -538,9 +587,43 @@ pub fn (p &Page) page_mute_state() MuteState {
 }
 
 pub fn (mut p Page) set_user_style(source string) {
-	p.user_style_ = source
+	p.user_style_ = if source == '' { none } else { source }
+	p.invalidate_user_style()
+}
+
+pub fn (mut p Page) set_content_blocking_enabled(enabled bool) {
+	mut blocker := loader.ContentBlocker.the()
+	if blocker.filtering_enabled() == enabled {
+		return
+	}
+	has_cosmetic_rules := blocker.has_cosmetic_rules()
+	blocker.set_filtering_enabled(enabled)
+	if has_cosmetic_rules {
+		p.invalidate_user_style()
+	}
+}
+
+pub fn (mut p Page) invalidate_user_style() {
+	for document in p.attached_documents_ {
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.style_scope().invalidate_user_style_sheet()
+		mutable_document.bump_style_environment_version()
+		mutable_document.set_needs_full_style_update(true)
+	}
 	p.client_events << ClientEvent{
 		name: 'invalidate-style'
+	}
+}
+
+pub fn (mut p Page) invalidate_style_for_preference_change() {
+	for document in p.attached_documents_ {
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.bump_style_environment_version()
+		mutable_document.set_needs_media_query_evaluation()
+		mutable_document.set_needs_full_style_update(true)
+	}
+	p.client_events << ClientEvent{
+		name: 'invalidate-preference-style'
 	}
 }
 

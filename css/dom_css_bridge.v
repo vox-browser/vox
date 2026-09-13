@@ -382,6 +382,11 @@ fn style_scope_schedule_has_invalidation_callback(target voidptr, node &dom.Node
 	scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(node)
 }
 
+fn style_scope_invalidate_user_style_callback(target voidptr) {
+	mut scope := unsafe { &StyleScope(target) }
+	scope.invalidate_user_style_sheet()
+}
+
 fn document_theme_color_parse_callback(target voidptr, value string) ?string {
 	_ = target
 	color := parse_color_string(value) or { return none }
@@ -1138,6 +1143,7 @@ fn css_style_scope_from_dom(mut dom_scope dom.StyleScope, node &dom.Node) &Style
 	dom_scope.record_has_properties_callback = style_scope_record_has_mutation_properties_callback
 	dom_scope.record_conservative_has_callback = style_scope_record_conservative_has_invalidation_callback
 	dom_scope.schedule_has_invalidation_callback = style_scope_schedule_has_invalidation_callback
+	dom_scope.invalidate_user_style_callback = style_scope_invalidate_user_style_callback
 	return scope
 }
 

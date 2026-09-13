@@ -1468,6 +1468,31 @@ fn test_document_user_stylesheet_participates_in_user_cascade() {
 	assert (computed.property(.color, .no) or { panic('user color missing') }).css_text == 'rgb(0, 128, 0)'
 }
 
+fn page_user_style_for_test(_ voidptr) ?string {
+	return '.target { color: green !important; }'
+}
+
+fn test_page_user_stylesheet_crosses_dom_bridge_and_can_be_invalidated() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_page(&dom.Page{
+		target: voidptr(doc)
+		user_style_callback: page_user_style_for_test
+	})
+	add_document_author_style_sheet(doc, '.target { color: red !important; }')
+	mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	element.set_attribute_value('class', 'target')
+	computed := StyleComputer.new(doc).compute_style(dom.AbstractElement.new(element, none))
+	assert (computed.property(.color, .no) or { panic('page user color missing') }).css_text == 'rgb(0, 128, 0)'
+
+	scope := css_style_scope_for_document(doc)
+	assert scope.user_style_sheet != none
+	doc.style_scope().invalidate_user_style_sheet()
+	assert scope.user_style_sheet == none
+	assert !scope.has_valid_rule_cache()
+}
+
 fn interpolate_test_property(element &dom.Element, property_id PropertyID, from_text string, to_text string, delta f64) string {
 	from_value := parse_css_value_logic(property_id, from_text) or {
 		panic('could not parse ${property_id}: ${from_text}')

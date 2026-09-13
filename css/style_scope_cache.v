@@ -472,12 +472,25 @@ pub fn (mut scope StyleScope) invalidate_rule_cache() {
 	scope.has_size_container_queries = false
 }
 
+pub fn (mut scope StyleScope) invalidate_user_style_sheet() {
+	scope.user_style_sheet = none
+	scope.invalidate_rule_cache()
+}
+
 pub fn (mut scope StyleScope) build_user_style_sheet_if_needed() {
 	if scope.user_style_sheet != none {
 		return
 	}
-	if user_style_source := scope.user_style_source {
-		scope.user_style_sheet = parse_css_stylesheet_with_parser(user_style_source, none)
+	mut user_style_source := scope.user_style_source
+	if user_style_source == none {
+		if document := scope.document() {
+			if document.has_page() {
+				user_style_source = document.page().user_style()
+			}
+		}
+	}
+	if source := user_style_source {
+		scope.user_style_sheet = parse_css_stylesheet_with_parser(source, none)
 	}
 }
 

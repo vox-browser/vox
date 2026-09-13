@@ -30,11 +30,18 @@ pub fn (p &Page) web_exposed_available_screen_area() PixelRect {
 }
 
 pub fn (p &Page) preferred_color_scheme() string {
+	if override := p.preferred_color_scheme_override_for_testing_ {
+		return override
+	}
 	preferred_scheme := p.client_.preferred_color_scheme()
 	if preferred_scheme == 'auto' {
 		return if p.client_.palette_is_dark() { 'dark' } else { 'light' }
 	}
 	return preferred_scheme
+}
+
+pub fn (mut p Page) set_preferred_color_scheme_override_for_testing(color_scheme ?string) {
+	p.preferred_color_scheme_override_for_testing_ = color_scheme
 }
 
 pub fn (p &Page) preferred_contrast() string {

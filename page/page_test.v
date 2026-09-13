@@ -180,6 +180,42 @@ fn test_media_registry_and_find_in_page_wrap_rules() {
 	assert p.media_elements[10].controls
 	p.toggle_page_mute_state()
 	assert p.page_mute_state() == .muted
+	assert p.media_elements[10].page_mute_change_count == 1
+	p.set_page_mute_state(.muted)
+	assert p.media_elements[10].page_mute_change_count == 1
+}
+
+fn test_page_runtime_preferences_and_user_style_invalidation() {
+	mut p := Page.create(1)!
+	mut client := p.client()
+	client.preferred_color_scheme_ = 'light'
+	assert p.preferred_color_scheme() == 'light'
+	p.set_preferred_color_scheme_override_for_testing('dark')
+	assert p.preferred_color_scheme() == 'dark'
+	p.set_preferred_color_scheme_override_for_testing(none)
+	assert p.preferred_color_scheme() == 'light'
+
+	assert p.enable_primary_paste()
+	p.set_enable_primary_paste(false)
+	assert !p.enable_primary_paste()
+	assert !p.async_scrolling_enabled()
+	p.set_async_scrolling_enabled(true)
+	assert p.async_scrolling_enabled()
+
+	mut document := dom.Document.create_for_fragment_parsing()
+	document.set_page(unsafe { &dom.Page(p) })
+	initial_environment := document.style_environment_version()
+	p.set_user_style('body { color: green; }')
+	assert document.style_environment_version() == initial_environment + 1
+	assert document.needs_full_style_update()
+	assert document.page().user_style()? == 'body { color: green; }'
+	p.set_user_style('')
+	assert p.user_style() == none
+
+	document.set_needs_full_style_update(false)
+	p.invalidate_style_for_preference_change()
+	assert document.style_environment_version() == initial_environment + 3
+	assert document.needs_full_style_update()
 }
 
 fn test_find_navigation_resets_on_document_url_change_but_not_fragment_change() {

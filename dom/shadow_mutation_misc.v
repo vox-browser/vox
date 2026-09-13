@@ -4469,6 +4469,13 @@ pub fn (d &Document) style_scope() &StyleScope {
 	return &d.style_scope_
 }
 
+pub fn (scope &StyleScope) invalidate_user_style_sheet() {
+	if scope.css_handle == unsafe { nil } || scope.invalidate_user_style_callback == unsafe { nil } {
+		return
+	}
+	scope.invalidate_user_style_callback(scope.css_handle)
+}
+
 pub fn pseudo_element_name(pseudo PseudoElement) string {
 	return match pseudo {
 		.after { 'after' }
