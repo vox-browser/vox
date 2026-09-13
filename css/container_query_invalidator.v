@@ -40,11 +40,13 @@ pub fn invalidate_descendant_styles_depending_on_size_container_query(query_cont
 		return
 	}
 
+	mut document := unsafe { &dom.Document(query_container.document()) }
 	mut stack := []&dom.Node{}
 	append_flat_tree_children(query_container.as_node(), mut stack)
 	for stack.len > 0 {
 		node := stack.pop()
 		if element := node.as_element() {
+			document.record_size_query_container_scan_visit()
 			if element.style_depends_on_size_container_query() {
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.set_needs_style_update(true)

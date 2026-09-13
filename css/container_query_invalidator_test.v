@@ -35,12 +35,14 @@ fn test_size_container_invalidation_marks_only_dependent_dom_descendants() {
 	invalidate_descendant_styles_depending_on_size_container_query(container)
 	assert !dependent.needs_style_update()
 	assert !nested.needs_style_update()
+	assert document.style_invalidation_counters().size_query_container_scan_visits == 0
 
 	container.set_is_size_query_container()
 	invalidate_descendant_styles_depending_on_size_container_query(container)
 	assert dependent.needs_style_update()
 	assert nested.needs_style_update()
 	assert !unrelated.needs_style_update()
+	assert document.style_invalidation_counters().size_query_container_scan_visits == 3
 }
 
 fn test_size_container_invalidation_walks_shadow_and_assigned_flat_tree_children() {
@@ -71,6 +73,7 @@ fn test_size_container_invalidation_walks_shadow_and_assigned_flat_tree_children
 	assert shadow_dependent.needs_style_update()
 	assert light_assigned.needs_style_update()
 	assert !light_unassigned.needs_style_update()
+	assert document.style_invalidation_counters().size_query_container_scan_visits == 3
 }
 
 fn test_style_container_invalidation_marks_only_dependent_shadow_including_descendants() {
