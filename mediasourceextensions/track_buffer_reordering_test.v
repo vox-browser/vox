@@ -63,6 +63,20 @@ fn test_track_buffer_seek_prioritizes_the_earlier_overlapping_run() {
 	assert demuxer.next_frame()!.timestamp == 0
 }
 
+fn test_track_buffer_selects_fast_seek_targets_from_keyframes() {
+	mut demuxer := reordered_test_demuxer()
+	demuxer.add_coded_frame(reordered_test_frame(0, 0, 1, true))
+	demuxer.add_coded_frame(reordered_test_frame(1, 1, 1, false))
+	demuxer.add_coded_frame(reordered_test_frame(4, 4, 1, true))
+	demuxer.add_coded_frame(reordered_test_frame(5, 5, 1, false))
+	demuxer.add_coded_frame(reordered_test_frame(8, 8, 1, true))
+
+	assert demuxer.select_fast_seek_target_for_track(6, .fast_before) == 4
+	assert demuxer.select_fast_seek_target_for_track(6, .fast_after) == 8
+	assert demuxer.select_fast_seek_target_for_track(-1, .fast_before) == -1
+	assert demuxer.select_fast_seek_target_for_track(10, .fast_after) == 10
+}
+
 fn test_coded_frame_processing_uses_decode_timestamps_for_discontinuities() {
 	mut processor := SourceBufferProcessor.create()
 	mut track_buffer := TrackBuffer.create(WebMTrackInfo{

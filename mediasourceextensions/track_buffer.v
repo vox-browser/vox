@@ -17,6 +17,11 @@ pub:
 	decode_timestamp f64
 }
 
+pub enum TrackBufferSeekMode {
+	fast_before
+	fast_after
+}
+
 struct FrameRun {
 mut:
 	frames             []DemuxedCodedFrame
@@ -419,6 +424,37 @@ fn (demuxer &TrackBufferDemuxer) find_run_to_play_from(timestamp f64) ?int {
 		return demuxer.runs_.len - 1
 	}
 	return none
+}
+
+pub fn (demuxer &TrackBufferDemuxer) select_fast_seek_target_for_track(target f64, mode TrackBufferSeekMode) f64 {
+	mut best_timestamp := ?f64(none)
+	for run in demuxer.runs_ {
+		for frame in run.frames {
+			if !frame.is_keyframe {
+				continue
+			}
+			if mode == .fast_before {
+				if frame.timestamp <= target {
+					if best := best_timestamp {
+						if frame.timestamp > best {
+							best_timestamp = frame.timestamp
+						}
+					} else {
+						best_timestamp = frame.timestamp
+					}
+				}
+			} else if frame.timestamp >= target {
+				if best := best_timestamp {
+					if frame.timestamp < best {
+						best_timestamp = frame.timestamp
+					}
+				} else {
+					best_timestamp = frame.timestamp
+				}
+			}
+		}
+	}
+	return best_timestamp or { target }
 }
 
 pub fn (mut demuxer TrackBufferDemuxer) seek_to_most_recent_keyframe(timestamp f64) ! {
