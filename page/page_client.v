@@ -65,6 +65,8 @@ pub mut:
 	session_store_tab_state_           string = '{}'
 	history_operation_requests_        []HistoryOperationRequest
 	child_navigable_unload_requests_   []u64
+	child_frames_                      map[u64]ChildFrameState
+	navigation_population_failures_    []NavigationPopulationFailure
 }
 
 pub fn PageClient.create() &PageClient { return &PageClient{} }
