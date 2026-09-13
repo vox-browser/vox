@@ -108,6 +108,10 @@ RUNTIME_ONLY_FREE_FUNCTIONS = {
     # The standalone parser has no process-global internal JS realm; its
     # parsing document and URL context are carried by ParsingParams instead.
     ("Parser/Helpers.cpp", "internal_css_realm"),
+    # Ladybird's C++ SVG entry points construct a borrowed string descriptor
+    # solely for the Rust parser ABI. V parses its native strings directly.
+    ("AttributeParsing.cpp", "ffi_svg_input"),
+    ("Path.cpp", "ffi_svg_input"),
     # AudioBuffer channel views are native V slices. C++ needs weak JS caches
     # to preserve SameObject per realm and detach ArrayBuffers on acquisition;
     # V preserves the playback snapshot directly in AudioBufferContents.

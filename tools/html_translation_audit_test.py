@@ -223,6 +223,16 @@ class ConsolidatedFunctionTests(unittest.TestCase):
         ):
             self.assertIn((owner, method_name), audit.BINDING_RUNTIME_METHODS)
 
+    def test_svg_rust_input_adapters_are_runtime_only(self) -> None:
+        self.assertIn(
+            ("AttributeParsing.cpp", "ffi_svg_input"),
+            audit.RUNTIME_ONLY_FREE_FUNCTIONS,
+        )
+        self.assertIn(
+            ("Path.cpp", "ffi_svg_input"),
+            audit.RUNTIME_ONLY_FREE_FUNCTIONS,
+        )
+
     def test_svg_presentation_attribute_cache_maps_to_live_cascade_collection(self) -> None:
         for method_name in ("apply_presentational_hints", "presentation_attribute_style"):
             self.assertEqual(
