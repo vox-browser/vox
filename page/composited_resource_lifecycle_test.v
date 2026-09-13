@@ -44,6 +44,7 @@ fn test_page_media_lifecycle_is_document_scoped_and_tracks_video_sinks() {
 
 fn test_page_canvas_preparation_updates_generations_and_flushes_the_stream() {
 	mut model := Page.create(1.0)!
+	assert model.canvas_element_state(99) == none
 	mut client := model.client()
 	client.compositor_supported_ = true
 	model.ensure_compositor_host()

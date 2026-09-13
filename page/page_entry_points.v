@@ -309,7 +309,8 @@ pub fn (p &Page) for_each_canvas_element(callback fn (u64)) {
 }
 
 pub fn (p &Page) canvas_element_state(id u64) ?CanvasElementState {
-	return p.canvas_elements_[id]
+	state := p.canvas_elements_[id] or { return none }
+	return state
 }
 
 pub fn (mut p Page) present_all_canvas_element_surfaces() {
