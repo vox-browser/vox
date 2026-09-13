@@ -156,6 +156,44 @@ fn test_navigable_initialization_hierarchy_and_target_choice() {
 	assert blank_choice.window_type == .new_with_no_opener
 }
 
+fn test_line_box_border_debug_setting_is_inherited_and_propagated() {
+	_, parent_window, parent_model := navigable_test_top_level('https://example.test/', 'top')!
+	mut mutable_parent := unsafe { &NavigableModel(parent_model) }
+	mutable_parent.set_should_show_line_box_borders(true)
+
+	mut child_document := dom.Document.create(dom.URL{'https://example.test/frame'})
+	child_document.set_origin(child_document.url.origin())
+	child_context := BrowsingContextModel.create(child_document, parent_window.browsing_context(),
+		'frame')
+	child_window := WindowModel.create(child_document, child_context)!
+	child_model := child_window.navigable_model()
+	assert child_model.should_show_line_box_borders_
+	mut mutable_child := unsafe { &NavigableModel(child_model) }
+	mutable_child.set_has_session_history_entry_and_ready_for_navigation()
+
+	mut grandchild_document := dom.Document.create(dom.URL{'https://example.test/nested-frame'})
+	grandchild_document.set_origin(grandchild_document.url.origin())
+	grandchild_context := BrowsingContextModel.create(grandchild_document,
+		child_window.browsing_context(), 'nested-frame')
+	grandchild_window := WindowModel.create(grandchild_document, grandchild_context)!
+	grandchild_model := grandchild_window.navigable_model()
+	assert grandchild_model.should_show_line_box_borders_
+	mut mutable_grandchild := unsafe { &NavigableModel(grandchild_model) }
+	mutable_grandchild.set_has_session_history_entry_and_ready_for_navigation()
+
+	mutable_parent.needs_repaint_ = false
+	mutable_child.needs_repaint_ = false
+	mutable_grandchild.needs_repaint_ = false
+	mutable_parent.set_should_show_line_box_borders(false)
+
+	assert !parent_model.should_show_line_box_borders_
+	assert !child_model.should_show_line_box_borders_
+	assert !grandchild_model.should_show_line_box_borders_
+	assert parent_model.needs_repaint()
+	assert child_model.needs_repaint()
+	assert grandchild_model.needs_repaint()
+}
+
 fn test_nested_navigable_uses_the_top_level_traversable_visibility_state() {
 	_, parent_window, _ := navigable_test_top_level('https://example.test/', 'top')!
 	mut traversable := TraversableNavigable.create_a_new_top_level_traversable('')!

@@ -342,6 +342,9 @@ pub fn (mut model NavigableModel) initialize_navigable(document_state &DocumentS
 	model.active_session_history_entry_ = entry
 	model.session_history_entries_ = [entry]
 	model.parent_ = parent
+	if parent_model := parent {
+		model.should_show_line_box_borders_ = parent_model.should_show_line_box_borders_
+	}
 	model.has_session_history_entry_and_ready_ = parent == none
 	mut host := unsafe { &dom.Navigable(model.host_) }
 	host.set_active_document(document)
@@ -1889,4 +1892,9 @@ pub fn (model &NavigableModel) pending_set_browser_zoom_request() bool {
 
 pub fn (mut model NavigableModel) set_should_show_line_box_borders(value bool) {
 	model.should_show_line_box_borders_ = value
+	model.set_needs_repaint()
+	for child in model.child_navigables() {
+		mut mutable_child := unsafe { &NavigableModel(child) }
+		mutable_child.set_should_show_line_box_borders(value)
+	}
 }
