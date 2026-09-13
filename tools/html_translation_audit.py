@@ -78,6 +78,15 @@ BINDING_RUNTIME_METHODS = {
     ("Parser", "realm"),
     ("Screen", "window"),
     ("Client", "image_style_value_finalize"),
+    # Rust's generated SVG bindings read these C++ offsetof constants while
+    # tracing wrapper fields. V's native records expose the typed fields
+    # directly and have no ABI offset bridge.
+    ("SVGAnimatedLength", "base_val_offset"),
+    ("SVGAnimatedLength", "anim_val_offset"),
+    ("SVGAnimatedLengthList", "base_val_offset"),
+    ("SVGAnimatedNumberList", "base_val_offset"),
+    ("SVGAnimatedTransformList", "base_val_offset"),
+    ("SVGAnimatedTransformList", "anim_val_offset"),
 
     # WebAudio keeps its typed graph independent of the JS realm and DOM event
     # wrappers. These accessors and dispatch bridges exist only to recover the
@@ -348,6 +357,14 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     ),
     ("SVGSwitchElement", "is_svg_switch_element"): (
         ("is_svg_switch_element", "Element"),
+    ),
+    # Both the SVGElement cache owner and filter-primitive mixin use the same
+    # live reflected-length factory on V's tagged Element record.
+    ("SVGElement", "svg_animated_length_for_attribute"): (
+        ("svg_animated_length_for_attribute", "Element"),
+    ),
+    ("SVGFilterPrimitiveStandardAttributes", "svg_animated_length_for_attribute"): (
+        ("svg_animated_length_for_attribute", "Element"),
     ),
     # Primitive calculated-value resolution receives Layout's already-derived
     # length context explicitly in V, avoiding a CSS -> Layout module cycle.

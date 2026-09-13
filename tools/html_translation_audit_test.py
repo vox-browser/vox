@@ -203,6 +203,26 @@ class ConsolidatedFunctionTests(unittest.TestCase):
                 ((method_name, "Element"),),
             )
 
+    def test_svg_reflected_length_factories_share_the_tagged_element_method(self) -> None:
+        for owner in ("SVGElement", "SVGFilterPrimitiveStandardAttributes"):
+            self.assertEqual(
+                audit.CONSOLIDATED_METHOD_MAPPINGS[
+                    (owner, "svg_animated_length_for_attribute")
+                ],
+                (("svg_animated_length_for_attribute", "Element"),),
+            )
+
+    def test_svg_animated_value_offsets_are_binding_runtime_only(self) -> None:
+        for owner, method_name in (
+            ("SVGAnimatedLength", "base_val_offset"),
+            ("SVGAnimatedLength", "anim_val_offset"),
+            ("SVGAnimatedLengthList", "base_val_offset"),
+            ("SVGAnimatedNumberList", "base_val_offset"),
+            ("SVGAnimatedTransformList", "base_val_offset"),
+            ("SVGAnimatedTransformList", "anim_val_offset"),
+        ):
+            self.assertIn((owner, method_name), audit.BINDING_RUNTIME_METHODS)
+
     def test_svg_presentation_attribute_cache_maps_to_live_cascade_collection(self) -> None:
         for method_name in ("apply_presentational_hints", "presentation_attribute_style"):
             self.assertEqual(
