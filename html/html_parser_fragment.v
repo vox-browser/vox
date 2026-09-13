@@ -44,6 +44,11 @@ fn dom_html_parser_script_nesting_level_callback(target voidptr) usize {
 	return parser.current_script_nesting_level()
 }
 
+fn dom_html_parser_is_script_created_callback(target voidptr) bool {
+	parser := unsafe { &HTMLParser(target) }
+	return parser.is_script_created()
+}
+
 fn dom_html_parser_insertion_point_is_defined_callback(target voidptr) bool {
 	parser := unsafe { &HTMLParser(target) }
 	return parser.tokenizer.is_insertion_point_defined()
@@ -81,6 +86,7 @@ fn make_dom_html_parser_handle(parser &HTMLParser) &dom.HTMLParser {
 		feed_callback: dom_html_parser_feed_callback
 		run_callback: dom_html_parser_run_callback
 		script_nesting_level_callback: dom_html_parser_script_nesting_level_callback
+		is_script_created_callback: dom_html_parser_is_script_created_callback
 		insertion_point_is_defined_callback: dom_html_parser_insertion_point_is_defined_callback
 		update_insertion_point_callback: dom_html_parser_update_insertion_point_callback
 		insert_input_callback: dom_html_parser_insert_input_callback
@@ -109,7 +115,7 @@ fn dom_loaded_text_parse_callback(_ voidptr, document &dom.Document, data []u8, 
 	encoding_name := run_html_encoding_sniffing_algorithm(data, transport_encoding)
 	decoder := encoding.TextDecoder.construct(encoding_name, encoding.TextDecoderOptions{})!
 	decoded_input := decoder.decode(data, encoding.TextDecodeOptions{})!
-	mut parser := HTMLParser.create_for_scripting(document)
+	mut parser := HTMLParser.create_with_open_input_stream(document)
 	mut tokenizer := parser.tokenizer()
 	tokenizer.update_insertion_point()
 	tokenizer.insert_input_at_insertion_point('<pre>\n')

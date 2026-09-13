@@ -1945,6 +1945,7 @@ pub:
 	feed_callback                       HTMLParserFeedCallback = unsafe { nil }
 	run_callback                        HTMLParserRunCallback = unsafe { nil }
 	script_nesting_level_callback       HTMLParserNestingLevelCallback = unsafe { nil }
+	is_script_created_callback          HTMLParserBoolCallback = unsafe { nil }
 	insertion_point_is_defined_callback HTMLParserBoolCallback = unsafe { nil }
 	update_insertion_point_callback     HTMLParserVoidCallback = unsafe { nil }
 	insert_input_callback               HTMLParserFeedCallback = unsafe { nil }
@@ -3127,6 +3128,13 @@ pub fn (p &HTMLParser) script_nesting_level() usize {
 		return 0
 	}
 	return p.script_nesting_level_callback(p.target)
+}
+
+pub fn (p &HTMLParser) is_script_created() bool {
+	if p.is_script_created_callback == unsafe { nil } {
+		return false
+	}
+	return p.is_script_created_callback(p.target)
 }
 
 pub fn (p &HTMLParser) is_insertion_point_defined() bool {
@@ -7104,7 +7112,7 @@ pub fn (mut d Document) close() ! {
 		return error('InvalidStateError: throw-on-dynamic-markup-insertion-counter > 0')
 	}
 	// 3. If no script-created parser, return.
-	if d.parser == unsafe { nil } {
+	if d.parser == unsafe { nil } || !d.parser.is_script_created() {
 		return
 	}
 

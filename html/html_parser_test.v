@@ -502,6 +502,24 @@ fn test_document_open_write_writeln_and_close_use_live_html_parser() {
 	assert tree_repr(html_el.as_node()) == 'html(head(title("Written")),body(main("one + two"),"\n"))'
 }
 
+fn test_document_close_only_closes_script_created_parsers() {
+	mut network_document := dom.Document.create(dom.url_about_blank())
+	mut network_parser := HTMLParser.create_with_open_input_stream(network_document)
+	assert !network_parser.is_script_created()
+	assert !network_parser.tokenizer.is_input_stream_closed()
+	network_document.close() or { panic(err) }
+	assert !network_parser.tokenizer.is_input_stream_closed()
+	assert !network_parser.tokenizer.is_eof_inserted()
+
+	mut script_document := dom.Document.create(dom.url_about_blank())
+	mut script_parser := HTMLParser.create_for_scripting(script_document)
+	assert script_parser.is_script_created()
+	assert !script_parser.tokenizer.is_input_stream_closed()
+	script_document.close() or { panic(err) }
+	assert script_parser.tokenizer.is_input_stream_closed()
+	assert script_parser.tokenizer.is_eof_inserted()
+}
+
 fn test_declarative_shadow_roots_respect_parser_permission() {
 	disallowed_document := dom.Document.create(dom.url_about_blank())
 	parse_html_from_a_string(disallowed_document, '<div id="host"><template shadowrootmode="open"><span>shadow</span></template></div>')

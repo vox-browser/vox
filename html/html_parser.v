@@ -90,6 +90,7 @@ pub mut:
 	frameset_ok                        bool = true
 	parsing_fragment                   bool
 	scripting_mode                     dom.ParserScriptingMode
+	script_created                     bool
 	next_line_feed_can_be_ignored      bool
 	foster_parenting                   bool
 	stop_parsing                       bool
@@ -124,6 +125,11 @@ pub fn HTMLParser.create(document &dom.Document, input string) &HTMLParser {
 }
 
 pub fn HTMLParser.create_with_scripting_mode(document &dom.Document, input string, scripting_mode dom.ParserScriptingMode) &HTMLParser {
+	return HTMLParser.create_with_tokenizer(document, HTMLTokenizer.new(input), scripting_mode)
+}
+
+fn HTMLParser.create_with_tokenizer(document &dom.Document, tokenizer HTMLTokenizer,
+	scripting_mode dom.ParserScriptingMode) &HTMLParser {
 	mut doc := document
 	doc.set_document_type(.html)
 	realm := &ScriptingRealm{
@@ -132,7 +138,7 @@ pub fn HTMLParser.create_with_scripting_mode(document &dom.Document, input strin
 	mut parser := &HTMLParser{
 		document_: document
 		realm_: realm
-		tokenizer: HTMLTokenizer.new(input)
+		tokenizer: tokenizer
 		scripting_mode: scripting_mode
 	}
 	parser.tokenizer.set_parser(parser)
@@ -163,6 +169,10 @@ pub fn (p &HTMLParser) stopped() bool {
 	return p.stop_parsing
 }
 
+pub fn (p &HTMLParser) is_script_created() bool {
+	return p.script_created
+}
+
 pub fn (p &HTMLParser) paused() bool {
 	return p.parser_pause_flag
 }
@@ -180,7 +190,18 @@ pub fn (p &HTMLParser) realm() &ScriptingRealm {
 // HTMLParser::create_for_scripting(). Input is supplied later through the
 // tokenizer's insertion point by Document.write().
 pub fn HTMLParser.create_for_scripting(document &dom.Document) &HTMLParser {
-	return HTMLParser.create(document, '')
+	mut parser := HTMLParser.create_with_open_input_stream(document)
+	parser.script_created = true
+	return parser
+}
+
+pub fn HTMLParser.create_with_open_input_stream(document &dom.Document) &HTMLParser {
+	mode := if unsafe { &dom.Node(document) }.is_scripting_enabled() {
+		dom.ParserScriptingMode.normal
+	} else {
+		dom.ParserScriptingMode.disabled
+	}
+	return HTMLParser.create_with_tokenizer(document, HTMLTokenizer.create(), mode)
 }
 
 // HTMLParser::create_with_uncertain_encoding().
