@@ -235,6 +235,26 @@ fn extend_style_sheet_invalidation_set_with_style_rule(mut result StyleSheetInva
 			result.invalidation_set.include_all_from(rightmost_set)
 			continue
 		}
+		// A bare structural-position pseudo can target boundary children. This runs only when the
+		// rightmost set has no ordinary feature, so `.item:first-child` keeps targeting `.item` rather
+		// than every first child in the tree.
+		mut rightmost_has_structural_position_pseudo := false
+		for simple in rightmost.simple_selectors {
+			if simple.type_ == .pseudo_class
+				&& simple.pseudo_class.type_ in [.first_child, .last_child, .only_child] {
+				rightmost_has_structural_position_pseudo = true
+				break
+			}
+		}
+		if rightmost_has_structural_position_pseudo {
+			for simple in rightmost.simple_selectors {
+				if simple.type_ == .pseudo_class
+					&& simple.pseudo_class.type_ in [.first_child, .last_child, .only_child] {
+					result.invalidation_set.set_needs_invalidate_pseudo_class(css_pseudo_class_from_selector_pseudo_class(simple.pseudo_class.type_))
+				}
+			}
+			continue
+		}
 		if style_sheet_compound_is_pseudo_element_only(rightmost) {
 			if anchor := try_build_style_sheet_anchor_for_leading_compounds(compounds, mut throwaway_data, style_rule.parent_style_sheet) {
 				result.pseudo_element_rules << StyleSheetPseudoElementInvalidationRule{

@@ -8835,6 +8835,9 @@ pub enum CSSPseudoClass {
 	target
 	host
 	root
+	first_child
+	last_child
+	only_child
 	other
 }
 
@@ -8870,6 +8873,9 @@ pub fn pseudo_class_name(pseudo_class CSSPseudoClass) string {
 		.target { 'target' }
 		.host { 'host' }
 		.root { 'root' }
+		.first_child { 'first-child' }
+		.last_child { 'last-child' }
+		.only_child { 'only-child' }
 		.other { 'other' }
 	}
 }
@@ -8906,6 +8912,9 @@ fn pseudo_class_from_name(name string) CSSPseudoClass {
 		'target' { .target }
 		'host' { .host }
 		'root' { .root }
+		'first-child' { .first_child }
+		'last-child' { .last_child }
+		'only-child' { .only_child }
 		else { .other }
 	}
 }
@@ -9315,6 +9324,9 @@ fn css_pseudo_class_from_selector_pseudo_class(pseudo_class PseudoClass) CSSPseu
 		.target { .target }
 		.host { .host }
 		.root { .root }
+		.first_child { .first_child }
+		.last_child { .last_child }
+		.only_child { .only_child }
 		// Boundary: the local invalidation property enum only contains pseudo
 		// classes that StyleInvalidationData.cpp uses for invalidation tracking.
 		else { .other }

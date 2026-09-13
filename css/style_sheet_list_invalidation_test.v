@@ -223,6 +223,34 @@ fn test_root_and_hover_sheet_add_target_current_pseudo_matches() {
 	assert !document.needs_full_style_update()
 }
 
+fn test_first_child_only_sheet_add_targets_boundary_elements() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut document_node := unsafe { &dom.Node(document) }
+	mut root := style_sheet_list_invalidation_element(document, 'html')
+	mut first := style_sheet_list_invalidation_element(document, 'div')
+	mut middle := style_sheet_list_invalidation_element(document, 'div')
+	mut last := style_sheet_list_invalidation_element(document, 'div')
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(first.as_node()) or { panic(err) }
+	root_node.append_child(middle.as_node()) or { panic(err) }
+	root_node.append_child(last.as_node()) or { panic(err) }
+	mut list := StyleSheetList.create(document_node)
+	first_child_sheet := parse_css_stylesheet_with_parser(':first-child { color: red }', none)
+	result := build_invalidation_set_for_stylesheet(first_child_sheet)
+	assert !result.invalidation_set.needs_invalidate_whole_subtree()
+	assert result.invalidation_set.properties().any(it.pseudo_class == .first_child)
+
+	clear_style_sheet_list_invalidation_flags(document_node, root.as_node(), first.as_node(), middle.as_node(), last.as_node())
+	document.set_needs_full_style_update(false)
+	list.add_sheet(first_child_sheet)
+	assert root.needs_style_update()
+	assert first.needs_style_update()
+	assert !middle.needs_style_update()
+	assert !last.needs_style_update()
+	assert !document.needs_full_style_update()
+}
+
 fn test_shadow_keyframes_sheet_add_reaches_animation_name_on_host() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut document_node := unsafe { &dom.Node(document) }

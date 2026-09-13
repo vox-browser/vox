@@ -80,3 +80,32 @@ fn test_targetable_pseudo_class_invalidation_matches_current_document_state() {
 	assert active.includes_properties_from_invalidation_set(pseudo_class_invalidation_set(.active))
 	assert target.includes_properties_from_invalidation_set(pseudo_class_invalidation_set(.target))
 }
+
+fn test_structural_position_invalidation_matches_element_sibling_boundaries() {
+	document := dom.Document.create(dom.url_about_blank())
+	mut parent := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic(err) }
+	mut first := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic(err) }
+	mut middle := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic(err) }
+	mut last := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic(err) }
+	mut only_parent := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic(err) }
+	mut only := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or { panic(err) }
+	mut parent_node := parent.as_node()
+	parent_node.append_child(first.as_node()) or { panic(err) }
+	parent_node.append_child(middle.as_node()) or { panic(err) }
+	parent_node.append_child(last.as_node()) or { panic(err) }
+	mut only_parent_node := only_parent.as_node()
+	only_parent_node.append_child(only.as_node()) or { panic(err) }
+
+	first_set := pseudo_class_invalidation_set(.first_child)
+	assert first.includes_properties_from_invalidation_set(first_set)
+	assert !middle.includes_properties_from_invalidation_set(first_set)
+	assert !last.includes_properties_from_invalidation_set(first_set)
+	last_set := pseudo_class_invalidation_set(.last_child)
+	assert !first.includes_properties_from_invalidation_set(last_set)
+	assert !middle.includes_properties_from_invalidation_set(last_set)
+	assert last.includes_properties_from_invalidation_set(last_set)
+	only_set := pseudo_class_invalidation_set(.only_child)
+	assert only.includes_properties_from_invalidation_set(only_set)
+	assert !first.includes_properties_from_invalidation_set(only_set)
+	assert !last.includes_properties_from_invalidation_set(only_set)
+}

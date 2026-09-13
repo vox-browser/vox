@@ -4828,6 +4828,12 @@ fn (e &Element) matches_invalidation_pseudo_class(name string) bool {
 		}
 		'active' { e.is_being_activated() }
 		'target' { e.document().target_element() or { return false } == e }
+		'first-child' { e.as_node().previous_element_sibling() == none }
+		'last-child' { e.as_node().next_element_sibling() == none }
+		'only-child' {
+			e.as_node().previous_element_sibling() == none
+				&& e.as_node().next_element_sibling() == none
+		}
 		else { false }
 	}
 }
