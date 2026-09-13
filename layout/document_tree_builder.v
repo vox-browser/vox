@@ -608,7 +608,7 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 
 	// `display: none` produces no box (and neither do its descendants).
 	if computed.display().is_none() {
-		element.as_node().for_each_in_inclusive_subtree(fn (node &dom.Node) dom.TraversalDecision {
+		element.as_node().for_each_shadow_including_inclusive_descendant(fn (node &dom.Node) dom.TraversalDecision {
 			return clear_stale_layout_and_paint_node(node, none)
 		})
 		return none

@@ -977,6 +977,38 @@ fn test_content_visibility_hidden_clears_stale_descendant_layout_and_paint_nodes
 	assert shadow_child.as_node().paintable() == none
 }
 
+fn test_display_none_clears_stale_shadow_descendant_layout_and_paint_nodes() {
+	document := html.parse_document('<!doctype html><div id="host"></div>')
+	mut host := document.get_element_by_id('host') or { panic('missing shadow host') }
+	host.attach_a_shadow_root(.open, false, false, false, .named) or { panic(err) }
+	mut shadow_root := unsafe { &dom.Node(host.shadow_root() or { panic('missing shadow root') }) }
+	mut shadow_child := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic(err)
+	}
+	shadow_text := document.create_text_node('text')
+	mut shadow_child_node := shadow_child.as_node()
+	shadow_child_node.append_child(shadow_text.as_node()) or { panic(err) }
+	shadow_root.append_child(shadow_child.as_node()) or { panic(err) }
+
+	_ = run_document_layout(document, 800, 600) or { panic('initial layout failed') }
+	assert host.as_node().layout_node() != none
+	assert shadow_child.as_node().layout_node() != none
+	assert shadow_child.as_node().paintable() != none
+	assert shadow_text.as_node().layout_node() != none
+
+	host.set_attribute_value('style', 'display: none')
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_needs_full_layout_tree_update(true)
+	_ = run_document_layout(document, 800, 600) or { panic('updated layout failed') }
+
+	assert host.as_node().layout_node() == none
+	assert host.as_node().paintable() == none
+	assert shadow_child.as_node().layout_node() == none
+	assert shadow_child.as_node().paintable() == none
+	assert shadow_text.as_node().layout_node() == none
+	assert shadow_text.as_node().paintable() == none
+}
+
 fn test_content_visibility_hidden_slot_clears_stale_assigned_layout_and_paint_nodes() {
 	document := html.parse_document('<!doctype html><div id="host"><div id="assigned"><span id="nested">text</span></div></div>')
 	mut host := document.get_element_by_id('host') or { panic('missing shadow host') }
