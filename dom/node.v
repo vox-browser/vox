@@ -1344,6 +1344,105 @@ fn schedule_has_walk_for_parent(mutated_node &Node, style_scope &StyleScope, par
 	}
 }
 
+fn invalidate_structurally_affected_siblings(node &Node, reason StyleInvalidationReason) {
+	if reason == .node_insert_before || reason == .node_remove {
+		if parent := node.parent() {
+			if parent.has_child_affected_by_backward_structural_changes() {
+				for sibling := node.previous_sibling(); sibling != none;  {
+					current := sibling or { break }
+					mut mutable_document := unsafe { &Document(node.document()) }
+					mutable_document.record_previous_sibling_invalidation_walk_visit()
+					if element := current.as_element() {
+						if element.affected_by_backward_structural_changes() {
+							mut mutable_current := unsafe { &Node(current) }
+							mutable_current.set_entire_subtree_needs_style_update(true)
+						}
+					}
+					sibling = current.previous_sibling()
+				}
+			}
+		}
+	}
+
+	mut current_sibling_distance := 1
+	for sibling := node.next_sibling(); sibling != none;  {
+		current := sibling or { break }
+		if element := current.as_element() {
+			mut needs_to_invalidate := false
+			if reason == .node_insert_before || reason == .node_remove {
+				needs_to_invalidate = element.affected_by_indirect_sibling_combinator
+					|| element.affected_by_first_child_pseudo_class
+					|| element.affected_by_forward_positional_pseudo_class
+					|| (element.affected_by_direct_sibling_combinator
+					&& current_sibling_distance <= element.sibling_invalidation_distance)
+			} else if element.affected_by_indirect_sibling_combinator
+				|| element.affected_by_forward_positional_pseudo_class {
+				needs_to_invalidate = true
+			} else if element.affected_by_direct_sibling_combinator
+				&& current_sibling_distance <= element.sibling_invalidation_distance {
+				needs_to_invalidate = true
+			}
+			if needs_to_invalidate {
+				mut mutable_current := unsafe { &Node(current) }
+				mutable_current.set_entire_subtree_needs_style_update(true)
+			}
+			current_sibling_distance++
+		}
+		sibling = current.next_sibling()
+	}
+}
+
+fn mark_ancestors_as_having_child_needing_style_update(node &Node) {
+	for ancestor := node.parent_or_shadow_host(); ancestor != none;  {
+		mut current := unsafe { &Node(ancestor or { break }) }
+		current.set_child_needs_style_update(true)
+		ancestor = current.parent_or_shadow_host()
+	}
+}
+
+fn element_is_affected_by_same_parent_move(element &Element) bool {
+	return element.affected_by_forward_structural_changes()
+		|| element.affected_by_backward_structural_changes()
+		|| element.affected_by_has_pseudo_class_in_subject_position
+		|| element.affected_by_has_pseudo_class_in_non_subject_position
+		|| element.affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator
+}
+
+fn invalidate_style_after_same_parent_move(node &Node, reason StyleInvalidationReason) {
+	document := node.document()
+	if document.needs_full_style_update() {
+		return
+	}
+
+	if parent := node.parent_or_shadow_host() {
+		parent.for_each_style_scope_which_may_observe_the_node(fn [node, parent, reason] (scope &StyleScope) {
+			schedule_has_walk_for_parent(node, scope, parent, reason)
+		})
+	}
+
+	for ancestor := node.parent_or_shadow_host(); ancestor != none;  {
+		current := ancestor or { break }
+		if current.entire_subtree_needs_style_update() {
+			return
+		}
+		ancestor = current.parent_or_shadow_host()
+	}
+
+	mut mutable_node := unsafe { &Node(node) }
+	if element := node.as_element() {
+		if element.affected_by_structural_pseudo_class_in_non_subject_position
+			|| element.affected_by_sibling_combinator_in_non_subject_position {
+			mutable_node.set_entire_subtree_needs_style_update(true)
+		} else if element_is_affected_by_same_parent_move(element) {
+			mutable_node.set_needs_style_update(true)
+		}
+	} else if !node.is_character_data() {
+		mutable_node.set_needs_style_update(true)
+	}
+	invalidate_structurally_affected_siblings(node, reason)
+	mark_ancestors_as_having_child_needing_style_update(node)
+}
+
 pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 	doc := n.document()
 	if doc == unsafe { nil } {
@@ -1389,49 +1488,8 @@ pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 	// - subsequent siblings that depend on previous siblings or sibling combinators
 	// FIXME: This is a lot of invalidation and we should implement more sophisticated invalidation to do less work!
 	n.set_entire_subtree_needs_style_update(true)
-	if reason == .node_insert_before || reason == .node_remove {
-		if parent := n.parent() {
-			if parent.has_child_affected_by_backward_structural_changes() {
-				for sibling := n.previous_sibling(); sibling != none;  {
-					current := sibling or { break }
-					mut mutable_document := unsafe { &Document(doc) }
-					mutable_document.record_previous_sibling_invalidation_walk_visit()
-					if element := current.as_element() {
-						if element.affected_by_backward_structural_changes() {
-							mut mutable_current := unsafe { &Node(current) }
-							mutable_current.set_entire_subtree_needs_style_update(true)
-						}
-					}
-					sibling = current.previous_sibling()
-				}
-			}
-		}
-	}
-	mut current_sibling_distance := 1
-	for sibling := n.next_sibling(); sibling != none;  {
-		current := sibling or { break }
-		if element := current.as_element() {
-			mut needs_to_invalidate := false
-			if reason == .node_insert_before || reason == .node_remove {
-				needs_to_invalidate = element.affected_by_indirect_sibling_combinator || element.affected_by_first_child_pseudo_class || element.affected_by_forward_positional_pseudo_class || (element.affected_by_direct_sibling_combinator && current_sibling_distance <= element.sibling_invalidation_distance)
-			} else if element.affected_by_indirect_sibling_combinator || element.affected_by_forward_positional_pseudo_class {
-				needs_to_invalidate = true
-			} else if element.affected_by_direct_sibling_combinator && current_sibling_distance <= element.sibling_invalidation_distance {
-				needs_to_invalidate = true
-			}
-			if needs_to_invalidate {
-				mut mutable_current := unsafe { &Node(current) }
-				mutable_current.set_entire_subtree_needs_style_update(true)
-			}
-			current_sibling_distance++
-		}
-		sibling = current.next_sibling()
-	}
-	for ancestor := n.parent_or_shadow_host(); ancestor != none;  {
-		mut current := unsafe { &Node(ancestor or { break }) }
-		current.child_needs_style_update_ = true
-		ancestor = current.parent_or_shadow_host()
-	}
+	invalidate_structurally_affected_siblings(unsafe { &Node(n) }, reason)
+	mark_ancestors_as_having_child_needing_style_update(unsafe { &Node(n) })
 }
 
 pub fn (node &Node) style_scope() &StyleScope {
@@ -2387,6 +2445,7 @@ pub fn (mut n Node) move_node(mut new_parent Node, child ?&Node) ! {
 		}
 	}
 	old_parent := n.parent() or { return }
+	is_same_parent_move := old_parent == new_parent
 	n.live_range_pre_remove()
 	doc := n.document()
 	if doc != unsafe { nil } {
@@ -2399,7 +2458,11 @@ pub fn (mut n Node) move_node(mut new_parent Node, child ?&Node) ! {
 	old_next_sibling := n.next_sibling() or { unsafe { nil } }
 	if old_parent.is_connected() {
 		// Since the tree structure is about to change, we need to invalidate both style and layout.
-		n.invalidate_style(.node_remove)
+		if is_same_parent_move {
+			invalidate_style_after_same_parent_move(unsafe { &Node(n) }, .node_remove)
+		} else {
+			n.invalidate_style(.node_remove)
+		}
 		if n.unsafe_layout_node() != none {
 			mut mutable_old_parent_for_layout := unsafe { &Node(old_parent) }
 			mutable_old_parent_for_layout.set_needs_layout_tree_update(true, .node_remove)
@@ -2441,7 +2504,11 @@ pub fn (mut n Node) move_node(mut new_parent Node, child ?&Node) ! {
 	register_slot_descendants_with_shadow_root(&n)
 	signal_slot_change_if_empty_slot(&new_parent, new_parent.root())
 	assign_slottables_for_a_tree(n.root())
-	n.invalidate_style(.node_insert_before)
+	if is_same_parent_move {
+		invalidate_style_after_same_parent_move(unsafe { &Node(n) }, .node_insert_before)
+	} else {
+		n.invalidate_style(.node_insert_before)
+	}
 	if n.is_connected() {
 		new_parent.set_needs_layout_tree_update(true, .node_insert_before)
 	}

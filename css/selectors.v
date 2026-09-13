@@ -1552,6 +1552,13 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 			if context.collect_per_element_selector_involvement_metadata {
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.affected_by_direct_sibling_combinator = true
+				if subject := context.subject {
+					if element != subject {
+						mutable_element.set_affected_by_sibling_combinator_in_non_subject_position()
+					}
+				} else {
+					mutable_element.set_affected_by_sibling_combinator_in_non_subject_position()
+				}
 				distance := selector.sibling_invalidation_distance()
 				if distance > mutable_element.sibling_invalidation_distance {
 					mutable_element.sibling_invalidation_distance = distance
@@ -1569,6 +1576,13 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 			if context.collect_per_element_selector_involvement_metadata {
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.affected_by_indirect_sibling_combinator = true
+				if subject := context.subject {
+					if element != subject {
+						mutable_element.set_affected_by_sibling_combinator_in_non_subject_position()
+					}
+				} else {
+					mutable_element.set_affected_by_sibling_combinator_in_non_subject_position()
+				}
 			}
 			if component_list_index == 0 {
 				return false
@@ -1724,6 +1738,15 @@ fn matches_simple(component SimpleSelector, element &dom.Element, shadow_host ?&
 
 fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, shadow_host ?&dom.Element, mut context MatchContext, scope ?&dom.ParentNode, selector_kind SelectorKind) bool {
 	context.attempted_pseudo_class_matches.set(pseudo_class.type_, true)
+	note_structural_pseudo_class_match_attempt := fn [context] (target &dom.Element) {
+		if subject := context.subject {
+			if target == subject {
+				return
+			}
+		}
+		mut mutable_target := unsafe { &dom.Element(target) }
+		mutable_target.set_affected_by_structural_pseudo_class_in_non_subject_position()
+	}
 	match pseudo_class.type_ {
 		.invalid {
 			return false
@@ -1763,6 +1786,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 			if context.collect_per_element_selector_involvement_metadata {
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.affected_by_first_child_pseudo_class = true
+				note_structural_pseudo_class_match_attempt(element)
 			}
 			return previous_element_sibling(element) == none
 		}
@@ -1770,6 +1794,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 			if context.collect_per_element_selector_involvement_metadata {
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.set_affected_by_last_child_pseudo_class(true)
+				note_structural_pseudo_class_match_attempt(element)
 			}
 			return next_element_sibling(element) == none
 		}
@@ -1778,6 +1803,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.affected_by_first_child_pseudo_class = true
 				mutable_element.set_affected_by_last_child_pseudo_class(true)
+				note_structural_pseudo_class_match_attempt(element)
 			}
 			return previous_element_sibling(element) == none && next_element_sibling(element) == none
 		}
@@ -1814,6 +1840,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 			if context.collect_per_element_selector_involvement_metadata {
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.affected_by_forward_positional_pseudo_class = true
+				note_structural_pseudo_class_match_attempt(element)
 			}
 			return previous_sibling_with_same_type(element) == none
 		}
@@ -1821,6 +1848,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 			if context.collect_per_element_selector_involvement_metadata {
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.set_affected_by_backward_positional_pseudo_class(true)
+				note_structural_pseudo_class_match_attempt(element)
 			}
 			return next_sibling_with_same_type(element) == none
 		}
@@ -1829,6 +1857,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.affected_by_forward_positional_pseudo_class = true
 				mutable_element.set_affected_by_backward_positional_pseudo_class(true)
+				note_structural_pseudo_class_match_attempt(element)
 			}
 			return previous_sibling_with_same_type(element) == none && next_sibling_with_same_type(element) == none
 		}
@@ -1907,6 +1936,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 					}
 					else {}
 				}
+				note_structural_pseudo_class_match_attempt(element)
 			}
 
 			// https://drafts.csswg.org/selectors-4/#child-index

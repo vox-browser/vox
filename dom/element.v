@@ -1441,6 +1441,8 @@ pub mut:
 	affected_by_last_child_pseudo_class                                             bool
 	affected_by_forward_positional_pseudo_class                                     bool
 	affected_by_backward_positional_pseudo_class                                    bool
+	affected_by_structural_pseudo_class_in_non_subject_position                     bool
+	affected_by_sibling_combinator_in_non_subject_position                          bool
 	affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator bool
 	fullscreen_flag                                                                 bool
 

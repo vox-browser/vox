@@ -141,6 +141,14 @@ pub fn (mut e Element) set_affected_by_backward_positional_pseudo_class(value bo
 	}
 }
 
+pub fn (mut e Element) set_affected_by_structural_pseudo_class_in_non_subject_position() {
+	e.affected_by_structural_pseudo_class_in_non_subject_position = true
+}
+
+pub fn (mut e Element) set_affected_by_sibling_combinator_in_non_subject_position() {
+	e.affected_by_sibling_combinator_in_non_subject_position = true
+}
+
 pub fn (e &Element) element_sibling_invalidation_distance() int {
 	return e.sibling_invalidation_distance
 }
