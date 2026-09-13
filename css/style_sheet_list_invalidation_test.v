@@ -120,6 +120,29 @@ fn test_non_style_rules_force_broad_add_remove_but_inactive_sheets_do_not() {
 	assert !root.needs_style_update()
 }
 
+fn test_font_face_sheet_add_and_remove_do_not_force_broad_invalidation() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut document_node := unsafe { &dom.Node(document) }
+	mut root := style_sheet_list_invalidation_element(document, 'html')
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut list := StyleSheetList.create(document_node)
+	font_face_sheet := parse_css_stylesheet_with_parser('@font-face { font-family: Test; src: local(Test); }', none)
+	assert font_face_sheet.css_rules().length() == 1
+	assert !stylesheet_requires_broad_add_or_remove_invalidation(font_face_sheet)
+
+	clear_style_sheet_list_invalidation_flags(document_node, root.as_node())
+	document.set_needs_full_style_update(false)
+	list.add_sheet(font_face_sheet)
+	assert !document.needs_full_style_update()
+	assert !root.needs_style_update()
+
+	clear_style_sheet_list_invalidation_flags(document_node, root.as_node())
+	document.set_needs_full_style_update(false)
+	list.remove_sheet(font_face_sheet)
+	assert !document.needs_full_style_update()
+	assert !root.needs_style_update()
+}
+
 fn test_broad_shadow_sheet_invalidation_distinguishes_host_subtree_and_sibling_reach() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut document_node := unsafe { &dom.Node(document) }

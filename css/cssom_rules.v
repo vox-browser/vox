@@ -2611,8 +2611,11 @@ fn build_invalidation_set_for_stylesheet(sheet &CSSStyleSheet) StyleSheetInvalid
 }
 
 fn rule_requires_broad_add_or_remove_invalidation(rule &CSSRule) bool {
-	return rule.type_ in [.property, .font_face, .font_feature_values, .counter_style, .keyframes,
-		.layer_block, .layer_statement]
+	// @font-face declares a resource whose effect on computed style is deferred until the font
+	// actually loads. CSSFontLoaded handles that invalidation, so adding or removing the rule itself
+	// does not require a whole-subtree style update.
+	return rule.type_ in [.property, .font_feature_values, .counter_style, .keyframes, .layer_block,
+		.layer_statement]
 }
 
 fn stylesheet_requires_broad_add_or_remove_invalidation(sheet &CSSStyleSheet) bool {
