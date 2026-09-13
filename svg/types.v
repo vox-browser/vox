@@ -577,7 +577,7 @@ pub struct AnimatedRect {
 pub mut:
 	base_value Rect
 	anim_value Rect
-	nulled     bool
+	nulled     bool = true
 }
 
 pub fn (rect AnimatedRect) base() ?Rect {

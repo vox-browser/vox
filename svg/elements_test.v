@@ -135,6 +135,10 @@ fn test_mask_and_text_helpers() {
 
 fn test_fit_to_viewbox_viewport_and_text_positioning() {
 	mut fit := FitToViewBox{}
+	assert fit.view_box_for_bindings().base_val() == none
+	fit.bindings_rect.nulled = false
+	fit.initialize_fit_to_view_box()
+	assert fit.view_box_for_bindings().base_val() == none
 	fit.update_attribute('viewBox', '0 0 640 480')
 	assert fit.viewbox or { ViewBox{} }.width == 640
 	assert !(fit.bindings_rect.nulled)

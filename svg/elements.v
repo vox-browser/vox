@@ -353,6 +353,10 @@ pub mut:
 	bindings_rect         AnimatedRect
 }
 
+pub fn (mut fit FitToViewBox) initialize_fit_to_view_box() {
+	fit.bindings_rect = AnimatedRect.create(none)
+}
+
 pub fn (mut fit FitToViewBox) update_attribute(name string, value ?string) {
 	if name.to_lower() == 'viewbox' {
 		text := value or {
