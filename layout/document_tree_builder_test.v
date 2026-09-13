@@ -976,3 +976,36 @@ fn test_content_visibility_hidden_clears_stale_descendant_layout_and_paint_nodes
 	assert shadow_child.as_node().layout_node() == none
 	assert shadow_child.as_node().paintable() == none
 }
+
+fn test_content_visibility_hidden_slot_clears_stale_assigned_layout_and_paint_nodes() {
+	document := html.parse_document('<!doctype html><div id="host"><div id="assigned"><span id="nested">text</span></div></div>')
+	mut host := document.get_element_by_id('host') or { panic('missing shadow host') }
+	host.attach_a_shadow_root(.open, false, false, false, .named) or { panic(err) }
+	mut shadow_root := unsafe { &dom.Node(host.shadow_root() or { panic('missing shadow root') }) }
+	mut slot_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'slot') or {
+		panic(err)
+	}
+	shadow_root.append_child(slot_element.as_node()) or { panic(err) }
+	slot := unsafe { &dom.HTMLSlotElement(slot_element) }
+	assert slot.assigned_nodes_internal().len == 1
+
+	_ = run_document_layout(document, 800, 600) or { panic('initial layout failed') }
+	assigned := document.get_element_by_id('assigned') or { panic('missing assigned element') }
+	nested := document.get_element_by_id('nested') or { panic('missing nested element') }
+	text := nested.as_node().first_child() or { panic('missing text node') }
+	assert assigned.as_node().layout_node() != none
+	assert assigned.as_node().paintable() != none
+	assert nested.as_node().layout_node() != none
+	assert nested.as_node().paintable() != none
+	assert text.layout_node() != none
+
+	slot_element.set_attribute_value('style', 'content-visibility: hidden')
+	_ = run_document_layout(document, 800, 600) or { panic('updated layout failed') }
+
+	assert assigned.as_node().layout_node() == none
+	assert assigned.as_node().paintable() == none
+	assert nested.as_node().layout_node() == none
+	assert nested.as_node().paintable() == none
+	assert text.layout_node() == none
+	assert text.paintable() == none
+}
