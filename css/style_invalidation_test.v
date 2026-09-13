@@ -1,5 +1,7 @@
 module css
 
+import dom
+
 fn test_style_invalidation_levels_imply_less_severe_work() {
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
 	assert invalidation.is_none()
@@ -43,6 +45,18 @@ fn test_style_invalidation_tracks_independent_work() {
 fn test_background_attachment_rebuilds_accumulated_visual_contexts() {
 	assert property_rebuilds_accumulated_visual_contexts(.background_attachment)
 	assert !property_rebuilds_accumulated_visual_contexts(.background_color)
+}
+
+fn test_container_properties_recompute_descendant_styles() {
+	old_value := &dom.StyleValue{css_text: 'old'}
+	new_value := &dom.StyleValue{css_text: 'new'}
+	name_invalidation := compute_property_invalidation(.container_name, old_value, new_value)
+	assert name_invalidation.recompute_descendant_styles
+
+	old_type := &dom.StyleValue{css_text: 'normal'}
+	new_type := &dom.StyleValue{css_text: 'size'}
+	type_invalidation := compute_property_invalidation(.container_type, old_type, new_type)
+	assert type_invalidation.recompute_descendant_styles
 }
 
 fn test_style_invalidation_tracks_inherited_groups_and_flags() {

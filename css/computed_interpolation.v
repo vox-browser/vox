@@ -8702,6 +8702,10 @@ pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.Sty
 		return invalidation
 	}
 
+	if property_id in [.container_name, .container_type] {
+		invalidation.recompute_descendant_styles = true
+	}
+
 	// OPTIMIZATION: Special handling for CSS `visibility`:
 	if property_id == .visibility {
 		// We don't need to relayout if the visibility changes from visible to hidden or vice versa. Only collapse requires relayout.

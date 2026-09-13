@@ -835,11 +835,13 @@ pub mut:
 	repaint                             bool
 	rebuild_stacking_context_tree       bool
 	rebuild_accumulated_visual_contexts bool
+	recompute_descendant_styles         bool
 }
 
 pub fn (r RequiredInvalidationAfterStyleChange) is_none() bool {
 	return !r.relayout && !r.rebuild_layout_tree && !r.repaint
 		&& !r.rebuild_stacking_context_tree && !r.rebuild_accumulated_visual_contexts
+		&& !r.recompute_descendant_styles
 }
 
 fn required_invalidation_full() RequiredInvalidationAfterStyleChange {

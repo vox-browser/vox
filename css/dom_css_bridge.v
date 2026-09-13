@@ -949,6 +949,7 @@ fn required_style_invalidation_to_dom(invalidation RequiredInvalidationAfterStyl
 		repaint: invalidation.needs_repaint()
 		rebuild_stacking_context_tree: invalidation.needs_stacking_context_tree_rebuild()
 		rebuild_accumulated_visual_contexts: invalidation.accumulated_visual_contexts() == .rebuild
+		recompute_descendant_styles: invalidation.recompute_descendant_styles
 	}
 }
 
@@ -979,6 +980,7 @@ fn document_style_update_callback(target voidptr) dom.RequiredInvalidationAfterS
 		repaint: invalidation.needs_repaint()
 		rebuild_stacking_context_tree: invalidation.needs_stacking_context_tree_rebuild()
 		rebuild_accumulated_visual_contexts: invalidation.accumulated_visual_contexts() == .rebuild
+		recompute_descendant_styles: invalidation.recompute_descendant_styles
 	}
 }
 

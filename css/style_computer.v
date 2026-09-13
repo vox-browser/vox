@@ -1327,7 +1327,7 @@ pub fn recompute_style_for_subtree(mut style_computer StyleComputer, node &dom.N
 	mutable_node.set_entire_subtree_needs_style_update(false)
 }
 
-fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, needs_inherited_style_update bool, recompute_elements_depending_on_custom_properties bool, parent_display_changed bool) RequiredInvalidationAfterStyleChange {
+fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, needs_inherited_style_update bool, recompute_elements_depending_on_custom_properties bool, parent_display_changed bool, ancestor_needs_descendant_style_recompute bool) RequiredInvalidationAfterStyleChange {
 	needs_full_style_update := node.document().needs_full_style_update()
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
 	element_opt := node.as_element()
@@ -1342,6 +1342,7 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 		needs_style_update_due_to_if_media := element.style_uses_if_css_function()
 		should_recompute := needs_full_style_update || node.needs_style_update()
 			|| parent_display_changed
+			|| ancestor_needs_descendant_style_recompute
 			|| (recompute_elements_depending_on_custom_properties
 				&& (element.style_uses_var_css_function() || element.style_uses_inherit_css_function()))
 			|| needs_style_update_due_to_if_media
@@ -1391,15 +1392,19 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 	}
 	children_need_inherited_style_update := !invalidation.is_none()
 	children_need_full_style_recompute := node_invalidation.needs_layout_tree_rebuild()
+	descendant_style_recompute_needed := ancestor_needs_descendant_style_recompute
+		|| node_invalidation.recompute_descendant_styles
 	if needs_full_style_update || node.child_needs_style_update()
 		|| children_need_inherited_style_update || recompute_custom_property_dependents
-		|| children_need_full_style_recompute {
+		|| children_need_full_style_recompute || descendant_style_recompute_needed {
 		if element := element_opt {
 			if shadow_root := element.shadow_root() {
 				shadow_node := unsafe { &dom.Node(shadow_root) }
 				if needs_full_style_update || shadow_node.needs_style_update()
-					|| shadow_node.child_needs_style_update() {
-					subtree_invalidation := update_style_recursively(mut style_computer, shadow_node, children_need_inherited_style_update, recompute_custom_property_dependents, children_need_full_style_recompute)
+					|| shadow_node.child_needs_style_update() || children_need_inherited_style_update
+					|| recompute_custom_property_dependents || children_need_full_style_recompute
+					|| descendant_style_recompute_needed {
+					subtree_invalidation := update_style_recursively(mut style_computer, shadow_node, children_need_inherited_style_update, recompute_custom_property_dependents, children_need_full_style_recompute, descendant_style_recompute_needed)
 					if !is_display_none {
 						invalidation = required_invalidation_after_style_change_or(invalidation, subtree_invalidation)
 					}
@@ -1412,8 +1417,9 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 			current := child or { break }
 			if needs_full_style_update || current.needs_style_update()
 				|| children_need_inherited_style_update || current.child_needs_style_update()
-				|| recompute_custom_property_dependents || children_need_full_style_recompute {
-				subtree_invalidation := update_style_recursively(mut style_computer, current, children_need_inherited_style_update, recompute_custom_property_dependents, children_need_full_style_recompute)
+				|| recompute_custom_property_dependents || children_need_full_style_recompute
+				|| descendant_style_recompute_needed {
+				subtree_invalidation := update_style_recursively(mut style_computer, current, children_need_inherited_style_update, recompute_custom_property_dependents, children_need_full_style_recompute, descendant_style_recompute_needed)
 				if !is_display_none {
 					invalidation = required_invalidation_after_style_change_or(invalidation, subtree_invalidation)
 				}
@@ -1455,7 +1461,8 @@ fn update_style_for_document_from_upstream(document &dom.Document) RequiredInval
 	style_computer.reset_has_result_cache()
 	style_computer.reset_ancestor_filter()
 	mutable_document.build_registered_properties_cache()
-	return update_style_recursively(mut style_computer, unsafe { &dom.Node(document) }, false, false, false)
+	return update_style_recursively(mut style_computer, unsafe { &dom.Node(document) }, false, false, false,
+		false)
 }
 
 // The computed value of `property_id` for `element`, serialized from the retained StyleComputer result.

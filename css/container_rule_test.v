@@ -138,6 +138,34 @@ fn test_nested_name_only_container_rules_filter_matching_styles() {
 	assert (outsider_style.property(.color, .no) or { panic('outsider color missing') }).css_text == 'rgb(0, 0, 255)'
 }
 
+fn test_container_name_change_recomputes_descendant_container_rules() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{
+		active_document_: document
+	})
+	mut container := document.create_element_ns('http://www.w3.org/1999/xhtml', 'main') or {
+		panic('${err}')
+	}
+	container.set_attribute_value('style', 'container-name: old')
+	mut target := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
+	target.set_attribute_value('class', 'target')
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(container.as_node()) or { panic('${err}') }
+	mut container_node := container.as_node()
+	container_node.append_child(target.as_node()) or { panic('${err}') }
+	add_document_author_style_sheet(document, '.target { color: blue } @container old { .target { color: red } }')
+
+	document.needs_full_style_update = true
+	document.update_style()
+	assert computed_value_for(target, .color) or { '' } == 'rgb(255, 0, 0)'
+
+	container.set_attribute_value('style', 'container-name: new')
+	document.update_style()
+	assert computed_value_for(target, .color) or { '' } == 'rgb(0, 0, 255)'
+}
+
 fn test_container_rule_parser_preserves_names_and_general_enclosed_queries() {
 	rules := parse_css_stylesheet_contents_with_parser('@container card not (width <= 500px), (height: 100px) { .item { color: red; } }', map[string]bool{})
 	assert rules.len == 1
