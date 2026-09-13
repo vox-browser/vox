@@ -385,6 +385,7 @@ pub fn (mut observer ResizeObserver) observe(target &ResizeTarget, options Resiz
 	observer.observation_targets_ << ResizeObservation.new(target, options.box)
 	observer.register_with_document_if_needed(target.element.document())
 	observer.update_activity_root()
+	target.element.document().request_frame()
 }
 
 pub fn (mut observer ResizeObserver) unobserve(target &ResizeTarget) {

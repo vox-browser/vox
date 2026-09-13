@@ -1,6 +1,7 @@
 module resizeobserver
 
 import dom
+import page
 
 __global resize_callback_invocations int
 
@@ -209,4 +210,22 @@ fn test_live_registry_and_callback_boundary() {
 	observer.finalize()
 	prune_live_resize_observers()
 	assert !live_resize_observers().any(voidptr(it) == voidptr(observer))
+}
+
+fn test_observe_requests_a_frame_for_the_initial_resize_update() {
+	mut page_model := page.Page.create(1.0)!
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_page(unsafe { &dom.Page(page_model) })
+	mut client := page_model.client()
+	client.events.clear()
+
+	target := ResizeTarget.new(document.create_element('div') or { panic(err) }, ResizeTargetMetrics{})
+	mut observer := ResizeObserver.create_for_constructor(document, no_op_resize_callback)
+	observer.observe(target, ResizeObserverOptions{})
+	assert client.events.map(it.name) == ['request-frame']
+
+	// Re-observing replaces the observation and schedules its new initial delivery.
+	observer.observe(target, ResizeObserverOptions{ box: .border_box })
+	assert client.events.map(it.name) == ['request-frame', 'request-frame']
+	observer.finalize()
 }
