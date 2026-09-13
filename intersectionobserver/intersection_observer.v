@@ -491,6 +491,9 @@ pub fn (mut observer IntersectionObserver) observe(target &dom.Element) {
 	observer.observation_targets_ << ObservationTarget{
 		target: target
 	}
+	if document := observer.document_ {
+		document.request_frame()
+	}
 }
 
 pub fn (mut observer IntersectionObserver) unobserve(target &dom.Element) {

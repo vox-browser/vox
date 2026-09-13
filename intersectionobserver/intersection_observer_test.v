@@ -6,6 +6,7 @@ import geometry
 import html
 import layout
 import math
+import page
 
 __global (
 	intersection_observer_callback_count  int
@@ -323,5 +324,25 @@ fn test_scroll_margin_expands_scrollable_root_and_callback_factories() {
 	assert intersection_observer_callback_count == 1
 	invoke_intersection_observer_callback(observer, [])
 	assert intersection_observer_callback_count == 2
+	observer.finalize()
+}
+
+fn test_observe_requests_a_frame_for_the_initial_intersection_update() {
+	mut page_model := page.Page.create(1.0)!
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_page(unsafe { &dom.Page(page_model) })
+	mut client := page_model.client()
+	client.events.clear()
+
+	mut target := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	mut observer := IntersectionObserver.create_for_constructor(discard_entries, IntersectionObserverInit{}, document)!
+	observer.observe(target)
+	assert client.events.map(it.name) == ['request-frame']
+
+	// Observing the same target again is a no-op and must not schedule another frame.
+	observer.observe(target)
+	assert client.events.map(it.name) == ['request-frame']
 	observer.finalize()
 }
