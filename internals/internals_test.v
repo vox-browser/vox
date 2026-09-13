@@ -8,6 +8,7 @@ import dom
 import gamepad
 import html
 import loader
+import page
 import painting
 import xhr
 
@@ -746,6 +747,26 @@ fn test_hit_test_result_uses_the_document_viewport_paintable() {
 	assert fixture.y == 24.25
 	assert fixture.type_ == .exact
 	assert fixture.call_count == 1
+}
+
+fn test_take_context_menu_request_preserves_kind_and_target() {
+	mut page_model := page.Page.create(1.0)!
+	mut document := dom.Document.create_for_fragment_parsing()
+	document.set_page(unsafe { &dom.Page(page_model) })
+	target := document.create_element_ns('http://www.w3.org/1999/xhtml', 'img')!
+	page_model.record_context_menu_request(page.ContextMenuRequest{
+		kind: .image
+		target: target.as_node()
+	})
+	mut platform := &PlatformState{
+		associated_document: document
+	}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	api := Internals.create(platform, navigator)
+	request := api.take_context_menu_request() or { panic('missing context-menu request') }
+	assert request.kind == 'image'
+	assert voidptr(request.target) == voidptr(target.as_node())
+	assert api.take_context_menu_request() == none
 }
 
 fn test_computed_accessibility_values_and_form_clear_algorithm() {

@@ -13,6 +13,7 @@ import dom
 import gamepad
 import html
 import loader
+import page
 import painting
 import xhr
 import x.json2
@@ -58,6 +59,12 @@ pub struct HitTestObject {
 pub:
 	node          ?&dom.Node
 	index_in_node int
+}
+
+pub struct ContextMenuRequestObject {
+pub:
+	kind   string
+	target &dom.Node = unsafe { nil }
 }
 
 @[heap]
@@ -696,6 +703,29 @@ pub fn (api &Internals) hit_test(x f64, y f64) ?HitTestObject {
 
 pub fn (api &Internals) hit_test_result(x f64, y f64) ?HitTestObject {
 	return api.hit_test(x, y)
+}
+
+fn context_menu_kind_to_string(kind page.ContextMenuRequestKind) string {
+	return match kind {
+		.page { 'page' }
+		.image { 'image' }
+		.link { 'link' }
+		.media { 'media' }
+	}
+}
+
+pub fn (api &Internals) take_context_menu_request() ?ContextMenuRequestObject {
+	document := api.platform.associated_document or { return none }
+	dom_page := document.page()
+	if dom_page == unsafe { nil } || dom_page.target == unsafe { nil } {
+		return none
+	}
+	mut page_model := unsafe { &page.Page(dom_page.target) }
+	request := page_model.take_context_menu_request() or { return none }
+	return ContextMenuRequestObject{
+		kind: context_menu_kind_to_string(request.kind)
+		target: request.target
+	}
 }
 
 struct WebDriverKeyData {

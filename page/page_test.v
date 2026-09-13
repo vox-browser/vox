@@ -58,6 +58,30 @@ fn test_dom_document_notifications_reach_the_translated_page_client() {
 	assert model.client().events.last().text == 'Translated title'
 }
 
+fn test_context_menu_request_is_replaced_and_taken_once() {
+	mut model := Page.create(1.0)!
+	mut document := dom.Document.create_for_fragment_parsing()
+	first := document.create_element_ns('http://www.w3.org/1999/xhtml', 'a')!
+	second := document.create_element_ns('http://www.w3.org/1999/xhtml', 'img')!
+	model.record_context_menu_request(ContextMenuRequest{
+		kind: .link
+		target: first.as_node()
+	})
+	model.record_context_menu_request(ContextMenuRequest{
+		kind: .image
+		target: second.as_node()
+	})
+	request := model.take_context_menu_request() or { panic('missing request') }
+	assert request.kind == .image
+	assert voidptr(request.target) == voidptr(second.as_node())
+	assert model.take_context_menu_request() == none
+	model.record_context_menu_request(ContextMenuRequest{
+		target: first.as_node()
+	})
+	model.clear_context_menu_request()
+	assert model.take_context_menu_request() == none
+}
+
 fn test_document_work_requests_frames_on_demand() {
 	mut model := Page.create(1.0)!
 	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })

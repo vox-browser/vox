@@ -79,6 +79,19 @@ pub mut:
 	fullscreen bool
 }
 
+pub enum ContextMenuRequestKind {
+	page
+	image
+	link
+	media
+}
+
+pub struct ContextMenuRequest {
+pub:
+	kind   ContextMenuRequestKind = .page
+	target &dom.Node = unsafe { nil }
+}
+
 pub enum FullscreenPromiseState {
 	pending
 	fulfilled
@@ -145,6 +158,7 @@ mut:
 	pending_clipboard_requests     map[u64]bool
 	canvas_elements_               []u64
 	media_context_element_         ?u64
+	context_menu_request_          ?ContextMenuRequest
 	mute_state_                    MuteState
 	user_style_                    ?string
 	last_find_query_               ?FindInPageQuery
@@ -458,6 +472,20 @@ pub fn (mut p Page) request_media_context_menu(id u64) bool {
 	}
 	p.media_context_element_ = id
 	return true
+}
+
+pub fn (mut p Page) record_context_menu_request(request ContextMenuRequest) {
+	p.context_menu_request_ = request
+}
+
+pub fn (mut p Page) clear_context_menu_request() {
+	p.context_menu_request_ = none
+}
+
+pub fn (mut p Page) take_context_menu_request() ?ContextMenuRequest {
+	request := p.context_menu_request_ or { return none }
+	p.context_menu_request_ = none
+	return request
 }
 
 pub fn (mut p Page) toggle_media_property(property string) bool {
