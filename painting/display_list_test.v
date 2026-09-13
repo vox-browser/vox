@@ -233,6 +233,33 @@ fn test_playback_switches_sibling_contexts_through_their_common_ancestor() {
 	assert actions[6].delta == IntPoint{3, 4}
 }
 
+fn test_playback_culling_does_not_tear_down_an_active_effect() {
+	mut tree := AccumulatedVisualContextTree.create()
+	effect := tree.append(EffectsVisualData{ opacity: 0.5 }, 0)
+	clip := tree.append(ClipVisualData{ rect: IntRect{0, 0, 100, 100} }, effect)
+	mut list := DisplayList{
+		visual_context_tree: tree
+	}
+	assert list.append(FillRect{IntRect{1, 1, 5, 5}, Color{ r: 1 }}, clip)
+	assert list.append(FillRect{IntRect{500, 500, 5, 5}, Color{ g: 1 }}, effect)
+	assert list.append(FillRect{IntRect{2, 2, 5, 5}, Color{ b: 1 }}, clip)
+	actions := list.playback_plan(ScrollStateSnapshot{}, IntRect{0, 0, 100, 100})
+	assert actions.map(it.kind) == ['ApplyEffects', 'ApplyClip', 'FillRect', 'RestoreContext',
+		'ApplyClip', 'FillRect', 'RestoreContext', 'RestoreContext']
+}
+
+fn test_playback_culls_before_applying_an_effect_above_the_leaf_context() {
+	mut tree := AccumulatedVisualContextTree.create()
+	effect := tree.append(EffectsVisualData{ opacity: 0.5 }, 0)
+	clip := tree.append(ClipVisualData{ rect: IntRect{0, 0, 100, 100} }, effect)
+	mut list := DisplayList{
+		visual_context_tree: tree
+	}
+	assert list.append(FillRect{IntRect{500, 500, 5, 5}, Color{ r: 1 }}, clip)
+	actions := list.playback_plan(ScrollStateSnapshot{}, IntRect{0, 0, 100, 100})
+	assert actions.len == 0
+}
+
 fn test_display_list_commands_own_upstream_bounds_and_diagnostics() {
 	glyphs := DrawGlyphRun{
 		rect: IntRect{10, 20, 30, 40}

@@ -1015,18 +1015,35 @@ fn (mut planner PlaybackPlanner) apply_context(index int) {
 	}
 }
 
-fn (mut planner PlaybackPlanner) apply_contexts_from_common_ancestor(common int, target int) {
+fn (mut planner PlaybackPlanner) apply_contexts_from_common_ancestor(common int, target int,
+	bounds ?IntRect) bool {
 	if target <= 0 || target == common {
-		return
+		return false
 	}
-	planner.apply_contexts_from_common_ancestor(common, planner.tree.node_at(target).parent_index)
+	if planner.apply_contexts_from_common_ancestor(common, planner.tree.node_at(target).parent_index, bounds) {
+		return true
+	}
+	node := planner.tree.node_at(target)
+	if node.data is EffectsVisualData {
+		if bound := bounds {
+			if bound.is_empty() || !bound.intersects(planner.clip) {
+				return true
+			}
+		}
+	}
 	planner.apply_context(target)
 	planner.applied_depth++
+	return false
 }
 
-fn (mut planner PlaybackPlanner) switch_to_context(target int) {
+enum ContextSwitchResult {
+	switched
+	culled_by_effect
+}
+
+fn (mut planner PlaybackPlanner) switch_to_context(target int, bounds ?IntRect) ContextSwitchResult {
 	if planner.applied_context == target {
-		return
+		return .switched
 	}
 	common := planner.tree.find_common_ancestor(planner.applied_context, target)
 	common_depth := if common > 0 { planner.tree.node_at(common).depth } else { 0 }
@@ -1039,8 +1056,11 @@ fn (mut planner PlaybackPlanner) switch_to_context(target int) {
 	// DisplayListPlayer::execute_impl() recursively visits the path from the
 	// common ancestor to the target. Do the same instead of allocating and
 	// reversing an ancestor vector for every display-list context switch.
-	planner.apply_contexts_from_common_ancestor(common, target)
+	if planner.apply_contexts_from_common_ancestor(common, target, bounds) {
+		return .culled_by_effect
+	}
 	planner.applied_context = target
+	return .switched
 }
 
 pub fn (list DisplayList) playback_plan(snapshot ScrollStateSnapshot, visible_clip IntRect) []PlaybackAction {
@@ -1051,16 +1071,9 @@ pub fn (list DisplayList) playback_plan(snapshot ScrollStateSnapshot, visible_cl
 	}
 	for item in list.commands {
 		bounds := command_bounding_rect(item.command)
-		if item.context_index > 0 && planner.applied_context != item.context_index
-			&& planner.tree.is_effect(item.context_index) {
-			if bound := bounds {
-				planner.switch_to_context(planner.tree.node_at(item.context_index).parent_index)
-				if bound.is_empty() || !bound.intersects(visible_clip) {
-					continue
-				}
-			}
+		if planner.switch_to_context(item.context_index, bounds) == .culled_by_effect {
+			continue
 		}
-		planner.switch_to_context(item.context_index)
 		if bound := bounds {
 			if bound.is_empty() || !bound.intersects(visible_clip) {
 				if command_is_clip(item.command) {

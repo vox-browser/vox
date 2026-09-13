@@ -194,7 +194,7 @@ fn test_visual_context_tree_ancestry_transform_clip_and_empty_propagation() {
 	assert tree.node_at(effect).parent_index == clip
 	assert !tree.has_empty_effective_clip(effect)
 	assert tree.find_common_ancestor(effect, sibling) == transform
-	assert tree.is_effect(effect)
+	assert tree.node_at(effect).data is EffectsVisualData
 	point := tree.transform_point_for_hit_test(effect, Point{30, 30}, ScrollStateSnapshot{}) or {
 		panic('expected hit')
 	}

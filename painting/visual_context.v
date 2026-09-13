@@ -461,13 +461,6 @@ pub fn (tree AccumulatedVisualContextTree) transform_rect_to_viewport(index int,
 	return rect
 }
 
-pub fn (tree AccumulatedVisualContextTree) is_effect(index int) bool {
-	if index <= 0 || index >= tree.nodes.len {
-		return false
-	}
-	return tree.nodes[index].data is EffectsVisualData
-}
-
 pub fn (tree AccumulatedVisualContextTree) dump(index int) string {
 	if index <= 0 || index >= tree.nodes.len {
 		return ''
