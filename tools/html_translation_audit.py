@@ -112,6 +112,10 @@ RUNTIME_ONLY_FREE_FUNCTIONS = {
     # solely for the Rust parser ABI. V parses its native strings directly.
     ("AttributeParsing.cpp", "ffi_svg_input"),
     ("Path.cpp", "ffi_svg_input"),
+    # SVGFilterElement builds this borrowed UTF-16 descriptor only to pass
+    # attribute values through the Rust filter-graph ABI. V lowers its native
+    # strings directly while constructing FilterGraph.
+    ("SVGFilterElement.cpp", "view_of"),
     # AudioBuffer channel views are native V slices. C++ needs weak JS caches
     # to preserve SameObject per realm and detach ArrayBuffers on acquisition;
     # V preserves the playback snapshot directly in AudioBufferContents.
@@ -414,6 +418,9 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     ("SVGPatternElement", "push_paint_server_description"): (
         ("resolve_svg_pattern_paint_style", None),
     ),
+    # C++ serializes each primitive into an opaque Rust sink. V's direct graph
+    # lowering returns the equivalent typed FilterGraph without an ABI sink.
+    ("SVGFilterElement", "push_primitives"): (("gfx_filter", "Element"),),
     # Primitive calculated-value resolution receives Layout's already-derived
     # length context explicitly in V, avoiding a CSS -> Layout module cycle.
     ("Angle", "resolve_calculated"): (("resolve_calculated_with_context", "Angle"),),
