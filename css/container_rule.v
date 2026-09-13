@@ -85,6 +85,10 @@ pub fn (query &ContainerQuery) evaluate(element dom.AbstractElement, container_n
 		container := candidate or { break }
 		if container_name_matches(container, container_name)
 			&& container_satisfies_requirements(container, query.feature_requirements) {
+			if query.contains_size_feature() {
+				mut mutable_container := unsafe { &dom.Element(container) }
+				mutable_container.set_is_size_query_container()
+			}
 			return query.condition.evaluate(BooleanExpressionEvaluationContext{
 				document: element.document()
 				query_container: container
@@ -170,6 +174,23 @@ pub fn (rule &CSSRule) container_rule_matches(element dom.AbstractElement) bool 
 	return true
 }
 
+pub fn (rule &CSSRule) container_rule_contains_size_feature() bool {
+	if rule.type_ != .container_rule {
+		return false
+	}
+	for condition in rule.container_conditions {
+		if query := condition.container_query {
+			if query.contains_size_feature() {
+				return true
+			}
+		}
+	}
+	if parent := rule.parent_container_rule() {
+		return parent.container_rule_contains_size_feature()
+	}
+	return false
+}
+
 pub fn (query &ContainerQuery) matches() bool {
 	return query.matches_
 }
@@ -183,12 +204,359 @@ fn (mut parser Parser) parse_container_query_condition(mut tokens SupportsTokenS
 }
 
 fn (mut parser Parser) parse_container_query_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
-	// Size, style, scroll-state, and anchored query features are translated by
-	// later upstream slices. Boolean parsing still preserves all of them as
-	// <general-enclosed> in this initial implementation.
-	_ = parser
-	_ = tokens
+	mut transaction := tokens
+	transaction.discard_whitespace()
+	first_token := transaction.next_token() or { return none }
+	if !(first_token.is_block() && first_token.block().is_paren()) {
+		return none
+	}
+	transaction.discard_a_token()
+
+	mut inner_tokens := SupportsTokenStream.from_values(first_token.block().value)
+	feature := parser.parse_size_feature(mut inner_tokens) or { return none }
+	inner_tokens.discard_whitespace()
+	if inner_tokens.has_next_token() {
+		return none
+	}
+
+	tokens = transaction
+	return feature
+}
+
+fn size_feature_is_known(name string) bool {
+	return name.to_lower() in [
+		'aspect-ratio',
+		'block-size',
+		'height',
+		'inline-size',
+		'orientation',
+		'width',
+	]
+}
+
+fn size_feature_type_is_range_name(name string) bool {
+	return name.to_lower() in [
+		'aspect-ratio',
+		'block-size',
+		'height',
+		'inline-size',
+		'width',
+	]
+}
+
+fn parse_size_feature_name(mut tokens SupportsTokenStream, allow_min_max_prefix bool) ?MediaFeatureName {
+	mut transaction := tokens
+	token := transaction.consume_a_token() or { return none }
+	if !token.is(.ident) {
+		return none
+	}
+
+	lower := token.token().ident().to_lower()
+	if size_feature_is_known(lower) {
+		tokens = transaction
+		return MediaFeatureName{
+			name: lower
+			prefix: .normal
+		}
+	}
+
+	if allow_min_max_prefix && (lower.starts_with('min-') || lower.starts_with('max-')) {
+		adjusted_name := lower[4..]
+		if size_feature_is_known(adjusted_name) && size_feature_type_is_range_name(adjusted_name) {
+			tokens = transaction
+			return MediaFeatureName{
+				name: adjusted_name
+				prefix: if lower.starts_with('min-') { MediaFeatureNamePrefix.min } else { MediaFeatureNamePrefix.max }
+			}
+		}
+	}
 	return none
+}
+
+fn parse_size_feature_value_with_parser(mut parser Parser, feature_name string, mut tokens SupportsTokenStream) ?MediaFeatureValueLocal {
+	media_feature_name := match feature_name {
+		'aspect-ratio' { 'aspect-ratio' }
+		'orientation' { 'orientation' }
+		else { 'width' }
+	}
+	return parse_media_feature_value_with_parser(mut parser, media_feature_name, mut tokens)
+}
+
+fn (mut parser Parser) parse_size_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
+	if feature := parse_size_feature_boolean(mut parser, mut tokens) {
+		return feature
+	}
+	if feature := parse_size_feature_plain(mut parser, mut tokens) {
+		return feature
+	}
+	if feature := parse_size_feature_range(mut parser, mut tokens) {
+		return feature
+	}
+	return none
+}
+
+fn parse_size_feature_boolean(mut parser Parser, mut tokens SupportsTokenStream) ?&BooleanExpression {
+	_ = parser
+	mut transaction := tokens
+	transaction.discard_whitespace()
+	name := parse_size_feature_name(mut transaction, false) or { return none }
+	transaction.discard_whitespace()
+	if transaction.has_next_token() {
+		return none
+	}
+	tokens = transaction
+	return BooleanExpression.create_size_feature('(${name.name})', name.name, .is_true,
+		none, none, none, none)
+}
+
+fn parse_size_feature_plain(mut parser Parser, mut tokens SupportsTokenStream) ?&BooleanExpression {
+	mut transaction := tokens
+	transaction.discard_whitespace()
+	name := parse_size_feature_name(mut transaction, true) or { return none }
+	transaction.discard_whitespace()
+	if !(transaction.consume_a_token() or { return none }).is(.colon) {
+		return none
+	}
+	transaction.discard_whitespace()
+	value := parse_size_feature_value_with_parser(mut parser, name.name, mut transaction) or {
+		return none
+	}
+	transaction.discard_whitespace()
+	if transaction.has_next_token() {
+		return none
+	}
+	tokens = transaction
+	match name.prefix {
+		.normal {
+			return BooleanExpression.create_size_feature('(${name.name}: ${value.text})',
+				name.name, .exact_value, value, none, none, none)
+		}
+		.min {
+			return BooleanExpression.create_size_feature('(min-${name.name}: ${value.text})',
+				name.name, .min_value, value, none, none, none)
+		}
+		.max {
+			return BooleanExpression.create_size_feature('(max-${name.name}: ${value.text})',
+				name.name, .max_value, value, none, none, none)
+		}
+	}
+}
+
+fn find_size_feature_name_after_comparison(tokens SupportsTokenStream) ?MediaFeatureName {
+	mut temp := tokens
+	for temp.has_next_token() {
+		if _ := parse_media_feature_comparison(mut temp) {
+			temp.discard_whitespace()
+			return parse_size_feature_name(mut temp, false)
+		}
+		temp.discard_a_token()
+		temp.discard_whitespace()
+	}
+	return none
+}
+
+fn parse_size_feature_range(mut parser Parser, mut tokens SupportsTokenStream) ?&BooleanExpression {
+	mut transaction := tokens
+	transaction.discard_whitespace()
+
+	if name := parse_size_feature_name(mut transaction, false) {
+		if !size_feature_type_is_range_name(name.name) {
+			return none
+		}
+		transaction.discard_whitespace()
+		if comparison := parse_media_feature_comparison(mut transaction) {
+			transaction.discard_whitespace()
+			if value := parse_size_feature_value_with_parser(mut parser, name.name, mut transaction) {
+				transaction.discard_whitespace()
+				if !transaction.has_next_token() && value.kind != .ident {
+					tokens = transaction
+					text := '(${name.name} ${media_feature_comparison_to_string(comparison)} ${value.text})'
+					return BooleanExpression.create_size_feature(text, name.name,
+						.half_range_query_left, value, comparison, none, none)
+				}
+			}
+		}
+	}
+
+	transaction = SupportsTokenStream{
+		values: tokens.values.clone()
+		index: tokens.index
+	}
+	transaction.discard_whitespace()
+	maybe_name := find_size_feature_name_after_comparison(transaction) or { return none }
+	if !size_feature_type_is_range_name(maybe_name.name) {
+		return none
+	}
+	left_value := parse_size_feature_value_with_parser(mut parser, maybe_name.name, mut transaction) or {
+		return none
+	}
+	transaction.discard_whitespace()
+	left_comparison := parse_media_feature_comparison(mut transaction) or { return none }
+	transaction.discard_whitespace()
+	name_token := transaction.consume_a_token() or { return none }
+	if !name_token.is(.ident)
+		|| !equals_ignoring_ascii_case(name_token.token().ident(), maybe_name.name) {
+		return none
+	}
+	transaction.discard_whitespace()
+
+	if !transaction.has_next_token() {
+		tokens = transaction
+		text := '(${left_value.text} ${media_feature_comparison_to_string(left_comparison)} ${maybe_name.name})'
+		return BooleanExpression.create_size_feature(text, maybe_name.name,
+			.half_range_query_right, left_value, left_comparison, none, none)
+	}
+
+	right_comparison := parse_media_feature_comparison(mut transaction) or { return none }
+	transaction.discard_whitespace()
+	right_value := parse_size_feature_value_with_parser(mut parser, maybe_name.name, mut transaction) or {
+		return none
+	}
+	transaction.discard_whitespace()
+	if transaction.has_next_token()
+		|| !media_feature_comparisons_match(left_comparison, right_comparison)
+		|| left_comparison == .equal || left_value.kind == .ident || right_value.kind == .ident {
+		return none
+	}
+
+	tokens = transaction
+	text := '(${left_value.text} ${media_feature_comparison_to_string(left_comparison)} ${maybe_name.name} ${media_feature_comparison_to_string(right_comparison)} ${right_value.text})'
+	return BooleanExpression.create_size_feature(text, maybe_name.name, .range, left_value,
+		left_comparison, right_comparison, right_value)
+}
+
+fn collect_size_feature_requirements(feature_name string, mut requirements ContainerQueryFeatureRequirements) {
+	match feature_name {
+		'aspect-ratio', 'orientation' {
+			requirements.requires_width_container = true
+			requirements.requires_height_container = true
+		}
+		'block-size' {
+			requirements.requires_block_size_container = true
+		}
+		'height' {
+			requirements.requires_height_container = true
+		}
+		'inline-size' {
+			requirements.requires_inline_size_container = true
+		}
+		'width' {
+			requirements.requires_width_container = true
+		}
+		else {
+			requirements.has_unknown_or_unsupported_feature = true
+		}
+	}
+}
+
+fn size_feature_value_for_query_container(feature_name string, container &dom.Element) ?MediaFeatureValueLocal {
+	layout_node := container.as_node().unsafe_layout_node() or { return none }
+	if !layout_node.has_geometry_ {
+		return none
+	}
+	dom_style := container.el_computed_properties() or { return none }
+	style := computed_properties_from_dom(dom_style) or { return none }
+	width := layout_node.content_width_
+	height := layout_node.content_height_
+	inline_axis_horizontal := style.writing_mode() == .horizontal_tb
+	return match feature_name {
+		'aspect-ratio' {
+			media_feature_ratio_value(if height != 0 { width / height } else { 0.0 })
+		}
+		'block-size' {
+			media_feature_length_value(if inline_axis_horizontal { height } else { width })
+		}
+		'height' {
+			media_feature_length_value(height)
+		}
+		'inline-size' {
+			media_feature_length_value(if inline_axis_horizontal { width } else { height })
+		}
+		'orientation' {
+			media_feature_ident_value(if height >= width { 'portrait' } else { 'landscape' })
+		}
+		'width' {
+			media_feature_length_value(width)
+		}
+		else {
+			none
+		}
+	}
+}
+
+fn compare_size_feature_values(left MediaFeatureValueLocal, comparison MediaFeatureComparison, right MediaFeatureValueLocal, context LengthResolutionContext) MatchResult {
+	if left.kind == .unknown || right.kind == .unknown {
+		return .unknown
+	}
+	if left.kind != right.kind {
+		return .false_
+	}
+	if left.kind == .ident {
+		if comparison == .equal {
+			return as_match_result(left.name == right.name)
+		}
+		return .false_
+	}
+	left_value := query_feature_numeric_value(left, context) or { return .false_ }
+	right_value := query_feature_numeric_value(right, context) or { return .false_ }
+	return match comparison {
+		.equal { as_match_result(left_value == right_value) }
+		.less_than { as_match_result(left_value < right_value) }
+		.less_than_or_equal { as_match_result(left_value <= right_value) }
+		.greater_than { as_match_result(left_value > right_value) }
+		.greater_than_or_equal { as_match_result(left_value >= right_value) }
+	}
+}
+
+fn evaluate_size_feature(feature_name string, kind MediaFeatureEvalKind, value ?MediaFeatureValueLocal, comparison ?MediaFeatureComparison, right_comparison ?MediaFeatureComparison, right_value ?MediaFeatureValueLocal, evaluation_context BooleanExpressionEvaluationContext) MatchResult {
+	container := evaluation_context.query_container or { return .unknown }
+	queried_value := size_feature_value_for_query_container(feature_name, container) or {
+		mut document := unsafe { &dom.Document(container.document()) }
+		if !document.layout_is_up_to_date() || document.is_running_update_layout() {
+			document.set_needs_container_query_evaluation_after_layout(container)
+		}
+		return .unknown
+	}
+	layout_node := container.as_node().unsafe_layout_node() or { return .unknown }
+	length_context := length_resolution_context_from_layout_node(layout_node) or {
+		LengthResolutionContext.for_document(container.document())
+	}
+	match kind {
+		.is_true {
+			return evaluate_media_feature_value_as_boolean(feature_name, queried_value,
+				evaluation_context.document)
+		}
+		.exact_value {
+			return compare_size_feature_values(queried_value, .equal,
+				value or { return .unknown }, length_context)
+		}
+		.min_value {
+			return compare_size_feature_values(queried_value, .greater_than_or_equal,
+				value or { return .unknown }, length_context)
+		}
+		.max_value {
+			return compare_size_feature_values(queried_value, .less_than_or_equal,
+				value or { return .unknown }, length_context)
+		}
+		.half_range_query_left {
+			return compare_size_feature_values(queried_value,
+				comparison or { return .unknown }, value or { return .unknown }, length_context)
+		}
+		.half_range_query_right {
+			return compare_size_feature_values(value or { return .unknown },
+				comparison or { return .unknown }, queried_value, length_context)
+		}
+		.range {
+			left_result := compare_size_feature_values(value or { return .unknown },
+				comparison or { return .unknown }, queried_value, length_context)
+			if left_result != .true_ {
+				return left_result
+			}
+			return compare_size_feature_values(queried_value,
+				right_comparison or { return .unknown }, right_value or { return .unknown },
+				length_context)
+		}
+	}
 }
 
 fn (mut parser Parser) parse_container_query(mut tokens SupportsTokenStream) ?&ContainerQuery {

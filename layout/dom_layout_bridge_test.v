@@ -194,6 +194,57 @@ fn test_document_layout_stabilizes_container_relative_lengths_after_geometry_com
 	assert !doc.needs_container_query_evaluation_after_layout(container)
 }
 
+fn test_document_layout_stabilizes_size_container_query_styles_after_geometry_commit() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
+	doc.set_viewport_rect(dom.Rect{0, 0, 800, 600})
+	mut html_element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
+	mut container := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	container.set_attribute_value('style', 'container-type: size; width: 400px; height: 100px')
+	child.set_attribute_value('class', 'target')
+	mut document_node := unsafe { &dom.Node(doc) }
+	document_node.append_child(html_element.as_node())!
+	mut html_node := html_element.as_node()
+	html_node.append_child(container.as_node())!
+	mut container_node := container.as_node()
+	container_node.append_child(child.as_node())!
+	css.add_document_author_style_sheet(doc, '.target { color: blue; width: 20px } @container (width >= 300px) { .target { color: red; width: 50px } }')
+
+	install_document_layout_hook(doc)
+	doc.set_cached_navigable(&dom.Navigable{
+		active_document_: doc
+	})
+	doc.needs_full_layout_tree_update = true
+	doc.update_style()
+	provisional_child := css.computed_properties_for_element(child) or {
+		panic('missing provisional child style')
+	}
+	assert (provisional_child.property(.color, .no) or {
+		panic('missing provisional color')
+	}).css_text == 'rgb(0, 0, 255)'
+	assert child.style_depends_on_size_container_query()
+	assert doc.needs_container_query_evaluation_after_layout(container)
+
+	doc.update_layout(.debugging)
+	child_computed := css.computed_properties_for_element(child) or {
+		panic('missing stabilized child style')
+	}
+	assert (child_computed.property(.color, .no) or {
+		panic('missing stabilized color')
+	}).css_text == 'rgb(255, 0, 0)'
+	assert child.client_width() == 50
+	assert child.style_depends_on_size_container_query()
+	assert container.is_size_query_container()
+	assert !doc.needs_container_query_evaluation_after_layout(container)
+}
+
 fn test_inline_geometry_skips_inline_block_descendant_fragments() {
 	document := html.parse_document('<!doctype html><style>
 		html, body { margin: 0 }

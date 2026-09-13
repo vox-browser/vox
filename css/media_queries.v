@@ -1625,8 +1625,11 @@ fn compare_media_feature_values(left MediaFeatureValueLocal, comparison MediaFea
 }
 
 fn media_feature_numeric_value(value MediaFeatureValueLocal, document ?&dom.Document) ?f64 {
+	return query_feature_numeric_value(value, media_feature_length_resolution_context(document))
+}
+
+fn query_feature_numeric_value(value MediaFeatureValueLocal, length_context LengthResolutionContext) ?f64 {
 	if typed_value := value.typed_value {
-		length_context := media_feature_length_resolution_context(document)
 		calculation_context := CalculationResolutionContext{
 			length_resolution_context: length_context
 		}

@@ -7,6 +7,42 @@ mut:
 	types []CSSRuleType
 }
 
+fn parsed_single_container_query(source string) &ContainerQuery {
+	rule := parse_css_rule_with_params(ParsingParams{}, '@container ${source} {}') or {
+		panic('container rule did not parse: ${source}')
+	}
+	assert rule.container_conditions.len == 1
+	return rule.container_conditions[0].container_query or {
+		panic('container query is missing: ${source}')
+	}
+}
+
+fn size_query_test_tree(container_style string, width f64, height f64, has_geometry bool) (&dom.Document, &dom.Element, &dom.Element) {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut container := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	container.set_attribute_value('style', container_style)
+	mut subject := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(container.as_node()) or { panic('${err}') }
+	mut container_node := container.as_node()
+	container_node.append_child(subject.as_node()) or { panic('${err}') }
+
+	computer := StyleComputer.new(document)
+	container_computed := computer.compute_style(dom.AbstractElement.new(container, none))
+	container.set_computed_properties(none, computed_properties_to_dom(container_computed))
+	container_node.set_layout_node(&dom.LayoutNode{
+		dom_node_: container.as_node()
+		has_geometry_: has_geometry
+		content_width_: width
+		content_height_: height
+	})
+	return document, container, subject
+}
+
 fn test_container_rule_cssom_condition_accessors_and_serialization() {
 	query := ContainerQuery.create(BooleanExpression.create_general_enclosed('(width > 10px)', .false_))
 	child := CSSRule.create(.keyframes)
@@ -196,6 +232,97 @@ fn test_unsupported_container_features_evaluate_to_unknown() {
 	query := rule.container_conditions[0].container_query or { panic('missing container query') }
 	assert query.condition.evaluate(BooleanExpressionEvaluationContext{}) == .unknown
 	assert query.feature_requirements.has_unknown_or_unsupported_feature
+}
+
+fn test_size_container_features_parse_serialize_and_collect_axis_requirements() {
+	width := parsed_single_container_query('(width >= 300px)')
+	assert width.to_string() == '(width >= 300px)'
+	assert width.feature_requirements.requires_width_container
+	assert !width.feature_requirements.requires_height_container
+	assert !width.feature_requirements.has_unknown_or_unsupported_feature
+
+	logical := parsed_single_container_query('(min-inline-size: 10em) and (max-block-size: 20px)')
+	assert logical.to_string() == '(min-inline-size: 10em) and (max-block-size: 20px)'
+	assert logical.feature_requirements.requires_inline_size_container
+	assert logical.feature_requirements.requires_block_size_container
+
+	ratio := parsed_single_container_query('(aspect-ratio: 16 / 9)')
+	assert ratio.to_string() == '(aspect-ratio: 16 / 9)'
+	assert ratio.feature_requirements.requires_width_container
+	assert ratio.feature_requirements.requires_height_container
+
+	orientation := parsed_single_container_query('(orientation: portrait)')
+	assert orientation.feature_requirements.requires_width_container
+	assert orientation.feature_requirements.requires_height_container
+
+	range := parsed_single_container_query('(100px < width <= 400px)')
+	assert range.to_string() == '(100px < width <= 400px)'
+}
+
+fn test_size_container_features_select_eligible_ancestors_and_evaluate_geometry() {
+	_, container, subject := size_query_test_tree('container-type: size; font-size: 16px', 320,
+		180, true)
+	abstract_subject := dom.AbstractElement.new(subject, none)
+	assert parsed_single_container_query('(width >= 300px) and (height < 200px)').evaluate(abstract_subject,
+		none) == .true_
+	assert parsed_single_container_query('(100px < width <= 320px)').evaluate(abstract_subject,
+		none) == .true_
+	assert parsed_single_container_query('(aspect-ratio: 16 / 9)').evaluate(abstract_subject,
+		none) == .true_
+	assert parsed_single_container_query('(orientation: landscape)').evaluate(abstract_subject,
+		none) == .true_
+	assert parsed_single_container_query('(orientation: portrait)').evaluate(abstract_subject,
+		none) == .false_
+	assert parsed_single_container_query('(width: calc(10em + 160px))').evaluate(abstract_subject,
+		none) == .true_
+	assert container.is_size_query_container()
+
+	_, vertical_container, vertical_subject := size_query_test_tree('container-type: inline-size; writing-mode: vertical-rl',
+		320, 180, true)
+	vertical_abstract := dom.AbstractElement.new(vertical_subject, none)
+	assert parsed_single_container_query('(inline-size: 180px)').evaluate(vertical_abstract,
+		none) == .true_
+	assert parsed_single_container_query('(height: 180px)').evaluate(vertical_abstract,
+		none) == .true_
+	assert parsed_single_container_query('(width: 320px)').evaluate(vertical_abstract,
+		none) == .unknown
+	assert voidptr(vertical_container) != voidptr(container)
+}
+
+fn test_size_container_query_without_geometry_queues_post_layout_evaluation() {
+	document, container, subject := size_query_test_tree('container-type: size', 320, 180,
+		false)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_browsing_context(&dom.BrowsingContext{
+		active_document_: document
+	})
+	mutable_document.is_running_update_layout_ = true
+	query := parsed_single_container_query('(width: 320px)')
+	assert query.evaluate(dom.AbstractElement.new(subject, none), none) == .unknown
+	assert document.needs_container_query_evaluation_after_layout(container)
+}
+
+fn test_matching_size_container_rule_marks_dependency_after_selector_matches() {
+	_, container, subject_ref := size_query_test_tree('container-type: size', 320, 180, true)
+	mut subject := unsafe { &dom.Element(subject_ref) }
+	subject.set_attribute_value('class', 'target')
+	add_document_author_style_sheet(subject.document(), '.target { color: blue } @container (width >= 300px) { .target { color: red } }')
+	assert css_style_scope_for(dom.AbstractElement.new(subject, none)).have_size_container_queries()
+
+	computer := StyleComputer.new(subject.document())
+	style := computer.compute_style(dom.AbstractElement.new(subject, none))
+	assert (style.property(.color, .no) or { panic('target color missing') }).css_text == 'rgb(255, 0, 0)'
+	assert subject.style_depends_on_size_container_query()
+	assert container.is_size_query_container()
+
+	mut outsider := subject.document().create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
+	outsider.set_attribute_value('class', 'other')
+	mut container_node := container.as_node()
+	container_node.append_child(outsider.as_node()) or { panic('${err}') }
+	_ = computer.compute_style(dom.AbstractElement.new(outsider, none))
+	assert !outsider.style_depends_on_size_container_query()
 }
 
 fn test_container_rule_parser_accepts_name_only_and_query_only_conditions() {

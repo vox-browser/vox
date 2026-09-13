@@ -1241,7 +1241,11 @@ pub fn (properties &CSSStyleProperties) get_direct_property(property PropertyNam
 		property_id := property.id() or { return none }
 		needs_layout := generated_property_needs_layout_for_getcomputedstyle(property_id)
 		needs_layout_node := generated_property_needs_layout_node_for_resolved_value(property_id) || property_is_logical_alias(property_id) || property_is_shorthand(property_id)
-		if needs_layout || needs_layout_node {
+		scope := css_style_scope_for(owner)
+		needs_container_query_layout := scope.have_size_container_queries()
+			&& element.style_depends_on_size_container_query()
+			&& !document.layout_is_up_to_date()
+		if needs_layout || needs_layout_node || needs_container_query_layout {
 			document.update_layout(.resolved_css_style_declaration_property)
 		} else if document.element_needs_style_update(element) {
 			document.update_style()

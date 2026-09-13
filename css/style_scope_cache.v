@@ -394,9 +394,11 @@ fn (mut scope StyleScope) adopt_style_cache(cache &StyleCache) {
 	scope.author_rule_cache = cache.author_rule_cache
 	scope.user_rule_cache = cache.user_rule_cache
 	scope.user_agent_rule_cache = cache.user_agent_rule_cache
+	scope.has_size_container_queries = cache.has_size_container_queries
 }
 
 pub fn (mut scope StyleScope) populate_new_rule_cache() &StyleCache {
+	scope.has_size_container_queries = false
 	scope.author_rule_cache = RuleCaches.new()
 	scope.user_rule_cache = RuleCaches.new()
 	scope.user_agent_rule_cache = RuleCaches.new()
@@ -427,6 +429,7 @@ pub fn (mut scope StyleScope) populate_new_rule_cache() &StyleCache {
 		author_rule_cache: scope.author_rule_cache or { RuleCaches.new() }
 		user_rule_cache: scope.user_rule_cache or { RuleCaches.new() }
 		user_agent_rule_cache: scope.user_agent_rule_cache or { RuleCaches.new() }
+		has_size_container_queries: scope.has_size_container_queries
 	}
 	scope.rule_cache = cache
 	return cache
@@ -466,6 +469,7 @@ pub fn (mut scope StyleScope) invalidate_rule_cache() {
 
 	scope.pseudo_class_rule_cache = map[PseudoClass]&RuleCache{}
 	scope.style_invalidation_data = none
+	scope.has_size_container_queries = false
 }
 
 pub fn (mut scope StyleScope) build_user_style_sheet_if_needed() {
@@ -556,6 +560,11 @@ pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin 
 		mut rule_caches := scope.rule_caches_for_origin_mut(cascade_origin) or { continue }
 		mut rule_index := usize(0)
 		sheet.for_each_effective_style_producing_rule(fn [mut scope, mut rule_caches, sheet, cascade_origin, mut mutable_insights, mut rule_index, style_sheet_index] (rule &CSSRule) {
+			if container_rule := rule.parent_container_rule() {
+				if container_rule.container_rule_contains_size_feature() {
+					scope.has_size_container_queries = true
+				}
+			}
 			absolutized_selectors := style_scope_absolutized_selectors_for_rule(rule)
 			if style_invalidation_data := scope.style_invalidation_data {
 				mut mutable_invalidation_data := unsafe { &StyleInvalidationData(style_invalidation_data) }
@@ -641,6 +650,11 @@ pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin 
 		})
 		style_sheet_index++
 	}
+}
+
+pub fn (scope &StyleScope) have_size_container_queries() bool {
+	scope.build_rule_cache_if_needed()
+	return scope.has_size_container_queries
 }
 
 fn style_scope_collect_boundary_selector_dependencies(scope_rule &CSSRule, mut invalidation_data StyleInvalidationData, mut insights SelectorInsights) {
@@ -2069,7 +2083,8 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 		rule_to_run := scoped_rule_to_run.rule
 		rule_root := scoped_rule_to_run.shadow_root
 		if container_rule := rule_to_run.container_rule {
-			if !container_rule.container_rule_matches(abstract_element) {
+			if !container_rule.container_rule_contains_size_feature()
+				&& !container_rule.container_rule_matches(abstract_element) {
 				continue
 			}
 		}
@@ -2148,6 +2163,15 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 		style_scope_merge_attempted_pseudo_class_matches(mut attempted_pseudo_class_matches, context)
 		style_scope_store_has_result_cache_boundary(style_computer, context.has_result_cache)
 		if did_match {
+			if container_rule := rule_to_run.container_rule {
+				if container_rule.container_rule_contains_size_feature() {
+					mut subject := unsafe { &dom.Element(abstract_element.element()) }
+					subject.set_style_depends_on_size_container_query()
+					if !container_rule.container_rule_matches(abstract_element) {
+						continue
+					}
+				}
+			}
 			matching_rules << ScopedMatchingRule{
 				rule: rule_to_run
 				shadow_root: style_scope_mut_shadow_root_option(rule_root)

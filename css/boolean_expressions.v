@@ -119,6 +119,7 @@ pub mut:
 	text                           string
 	matches                        MatchResult = .unknown
 	children                       []&BooleanExpression
+	size_feature_name              string
 	media_feature_name             string
 	media_feature_kind             MediaFeatureEvalKind
 	media_feature_value            ?MediaFeatureValueLocal
@@ -142,6 +143,19 @@ fn BooleanExpression.create_media_feature(serialized_contents string, feature_na
 		matches:                        evaluate_media_feature(feature_name, kind, value,
 			comparison, right_comparison, right_value, none)
 		media_feature_name:             feature_name
+		media_feature_kind:             kind
+		media_feature_value:            value
+		media_feature_comparison:       comparison
+		media_feature_right_comparison: right_comparison
+		media_feature_right_value:      right_value
+	}
+}
+
+fn BooleanExpression.create_size_feature(serialized_contents string, feature_name string, kind MediaFeatureEvalKind, value ?MediaFeatureValueLocal, comparison ?MediaFeatureComparison, right_comparison ?MediaFeatureComparison, right_value ?MediaFeatureValueLocal) &BooleanExpression {
+	return &BooleanExpression{
+		kind:                           .general_enclosed
+		text:                           serialized_contents
+		size_feature_name:              feature_name
 		media_feature_kind:             kind
 		media_feature_value:            value
 		media_feature_comparison:       comparison
@@ -249,6 +263,12 @@ pub fn (expression &BooleanExpression) evaluate(context BooleanExpressionEvaluat
 	match expression.kind {
 		.general_enclosed, .constant, .supports_declaration, .supports_selector,
 		.supports_font_tech, .supports_font_format, .supports_env, .supports_at_rule {
+			if expression.kind == .general_enclosed && expression.size_feature_name.len > 0 {
+				return evaluate_size_feature(expression.size_feature_name,
+					expression.media_feature_kind, expression.media_feature_value,
+					expression.media_feature_comparison, expression.media_feature_right_comparison,
+					expression.media_feature_right_value, context)
+			}
 			if expression.kind == .general_enclosed && expression.media_feature_name.len > 0 {
 				return evaluate_media_feature(expression.media_feature_name,
 					expression.media_feature_kind, expression.media_feature_value,
@@ -315,7 +335,11 @@ pub fn (expression &BooleanExpression) evaluate(context BooleanExpressionEvaluat
 pub fn (expression &BooleanExpression) collect_container_query_feature_requirements(mut requirements ContainerQueryFeatureRequirements) {
 	match expression.kind {
 		.general_enclosed {
-			requirements.has_unknown_or_unsupported_feature = true
+			if expression.size_feature_name.len > 0 {
+				collect_size_feature_requirements(expression.size_feature_name, mut requirements)
+			} else {
+				requirements.has_unknown_or_unsupported_feature = true
+			}
 		}
 		.not, .in_parens, .and, .or {
 			for child in expression.children {

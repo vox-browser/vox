@@ -9907,6 +9907,7 @@ pub mut:
 	registered_counter_styles           map[string]CounterStyle
 	needs_counter_style_cache_update    bool = true
 	is_doing_counter_style_cache_update bool
+	has_size_container_queries          bool
 }
 
 // A complete set of selector and cascade caches that can be shared by style
@@ -9921,6 +9922,7 @@ pub mut:
 	author_rule_cache              &RuleCaches = unsafe { nil }
 	user_rule_cache                &RuleCaches = unsafe { nil }
 	user_agent_rule_cache          &RuleCaches = unsafe { nil }
+	has_size_container_queries     bool
 }
 
 pub struct LogicalAliasMappingContext {
