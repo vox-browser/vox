@@ -139,6 +139,7 @@ mut:
 	last_emitted_start_tag_name ?string
 
 	explicit_eof_inserted bool
+	input_stream_closed   bool
 	has_emitted_eof       bool
 
 	queued_tokens []HTMLToken
@@ -157,11 +158,19 @@ mut:
 
 pub fn HTMLTokenizer.new(input string) HTMLTokenizer {
 	mut t := HTMLTokenizer{
-		source:        input
+		source: input
 		decoded_input: input.runes()
+		input_stream_closed: true
 	}
 	t.source_positions << Position{0, 0}
 	return t
+}
+
+// The empty constructor leaves the input stream open for incremental parsing.
+pub fn HTMLTokenizer.create() HTMLTokenizer {
+	mut tokenizer := HTMLTokenizer{}
+	tokenizer.source_positions << Position{0, 0}
+	return tokenizer
 }
 
 pub fn (mut tokenizer HTMLTokenizer) set_parser(parser &HTMLParser) {
@@ -499,18 +508,29 @@ fn (t &HTMLTokenizer) is_insertion_point_reached() bool {
 }
 
 fn (t &HTMLTokenizer) should_pause_before_next_input_character(stop StopAtInsertionPoint) bool {
-	if stop != .yes {
+	if stop == .yes {
+		if insertion_point := t.insertion_point {
+			if t.current_offset >= insertion_point {
+				return true
+			}
+			// Newline normalization needs one character of lookahead to distinguish
+			// CRLF from a standalone CR. A later document.write() may provide that LF.
+			if t.current_offset < t.decoded_input.len
+				&& t.decoded_input[t.current_offset] == `\r`
+				&& t.current_offset + 1 == insertion_point {
+				return true
+			}
+		}
+	}
+	if t.input_stream_closed {
 		return false
 	}
-	insertion_point := t.insertion_point or { return false }
-	if t.current_offset >= insertion_point {
+	if t.current_offset >= t.decoded_input.len {
 		return true
 	}
-	// Newline normalization needs one character of lookahead to distinguish
-	// CRLF from a standalone CR. A later document.write() may provide that LF.
-	return t.current_offset < t.decoded_input.len
-		&& t.decoded_input[t.current_offset] == `\r`
-		&& t.current_offset + 1 == insertion_point
+	// A network chunk can also end between the CR and LF of a CRLF pair.
+	return t.decoded_input[t.current_offset] == `\r`
+		&& t.current_offset + 1 >= t.decoded_input.len
 }
 
 pub fn (t &HTMLTokenizer) is_blocked() bool {
@@ -532,10 +552,22 @@ pub fn (mut t HTMLTokenizer) abort() {
 // Append input to the tokenizer's decoded input stream. This is used by the
 // DOM/html module bridge; document.write() uses the insertion-point operation
 // below so its ordering remains spec-accurate.
-pub fn (mut t HTMLTokenizer) feed(input string) {
+pub fn (mut t HTMLTokenizer) append_to_input_stream(input string) {
 	t.source += input
 	t.decoded_input << input.runes()
 	t.has_emitted_eof = false
+}
+
+pub fn (mut t HTMLTokenizer) feed(input string) {
+	t.append_to_input_stream(input)
+}
+
+pub fn (mut t HTMLTokenizer) close_input_stream() {
+	t.input_stream_closed = true
+}
+
+pub fn (t &HTMLTokenizer) is_input_stream_closed() bool {
+	return t.input_stream_closed
 }
 
 // HTMLTokenizer::update_insertion_point().
@@ -581,6 +613,7 @@ pub fn (mut t HTMLTokenizer) insert_input_at_insertion_point(input string) {
 }
 
 pub fn (mut t HTMLTokenizer) insert_eof() {
+	t.close_input_stream()
 	t.explicit_eof_inserted = true
 }
 

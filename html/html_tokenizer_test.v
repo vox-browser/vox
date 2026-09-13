@@ -62,6 +62,38 @@ fn test_tokenizer_waits_for_crlf_split_across_document_writes() {
 	assert tokenizer.next_token_impl(.yes) == none
 }
 
+fn test_tokenizer_waits_for_open_stream_input_and_split_crlf() {
+	mut tokenizer := HTMLTokenizer.create()
+	assert !tokenizer.is_input_stream_closed()
+	assert tokenizer.next_token() == none
+
+	tokenizer.append_to_input_stream('A\r')
+	first := tokenizer.next_token() or { panic('missing first streamed character') }
+	assert first.is_character() && first.code_point == `A`
+	assert tokenizer.next_token() == none
+	assert tokenizer.current_offset == 1
+
+	tokenizer.append_to_input_stream('\nB')
+	line_feed := tokenizer.next_token() or { panic('missing streamed line feed') }
+	assert line_feed.is_character() && line_feed.code_point == `\n`
+	last := tokenizer.next_token() or { panic('missing last streamed character') }
+	assert last.is_character() && last.code_point == `B`
+	assert tokenizer.next_token() == none
+
+	tokenizer.close_input_stream()
+	assert tokenizer.is_input_stream_closed()
+	eof := tokenizer.next_token() or { panic('missing streamed EOF') }
+	assert eof.type_ == .end_of_file
+}
+
+fn test_insert_eof_closes_the_tokenizer_input_stream() {
+	mut tokenizer := HTMLTokenizer.create()
+	tokenizer.insert_eof()
+	assert tokenizer.is_input_stream_closed()
+	assert tokenizer.is_eof_inserted()
+	assert tokenizer.next_token()?.type_ == .end_of_file
+}
+
 // Runtime tests for the HTML tokenizer, translated from Tests/LibWeb/TestHTMLTokenizer.cpp.
 // (The file-based `regression` test case is omitted: it depends on an external fixture and a hash
 // tied to HTMLToken::to_string()'s exact format.)
