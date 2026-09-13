@@ -20,6 +20,8 @@ const block_group_id = u64(0xa0)
 const block_id = u64(0xa1)
 const block_duration_id = u64(0x9b)
 const reference_block_id = u64(0xfb)
+const cues_id = u64(0x1c53bb6b)
+const chapters_id = u64(0x1043a770)
 const timestamp_scale_id = u64(0x2ad7b1)
 const duration_id = u64(0x4489)
 const track_number_id = u64(0xd7)
@@ -275,6 +277,7 @@ mut:
 	duration_       ?f64
 	tracks_         map[u64]WebMTrackInfo
 	active_codec_configurations map[u64][]u8
+	cluster_has_been_read bool
 }
 
 pub fn WebMByteStreamParser.create() &WebMByteStreamParser {
@@ -293,6 +296,9 @@ pub fn (parser &WebMByteStreamParser) sniff_segment_type(bytes []u8) SegmentType
 pub fn (parser &WebMByteStreamParser) ignored_element_length(bytes []u8) !int {
 	header := read_ebml_element_header(bytes, 0)!
 	if header.id in [ebml_header_id, cluster_id] {
+		return 0
+	}
+	if parser.cluster_has_been_read && header.id !in [cues_id, chapters_id] {
 		return 0
 	}
 	require_complete_element(bytes, header)!
@@ -372,6 +378,7 @@ pub fn (mut parser WebMByteStreamParser) parse_initialization_segment(bytes []u8
 	}
 	parser.tracks_ = tracks.clone()
 	parser.active_codec_configurations.clear()
+	parser.cluster_has_been_read = false
 	return WebMInitializationSegmentResult{
 		consumed: position
 		duration: parser.duration_
@@ -425,6 +432,7 @@ pub fn (mut parser WebMByteStreamParser) parse_media_segment(bytes []u8) !WebMMe
 		return error('WebM Cluster must begin with a Timecode')
 	}
 	cluster_timecode := i64(read_ebml_uint(bytes, timecode_element)!)
+	parser.cluster_has_been_read = true
 	position = timecode_element.data_end
 	mut frames := []DemuxedCodedFrame{}
 	mut seen_tracks := map[u64]bool{}

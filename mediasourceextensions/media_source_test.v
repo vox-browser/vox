@@ -515,6 +515,22 @@ fn test_source_buffer_ignores_webm_elements_after_a_repeated_initialization_segm
 	assert track_buffer.demuxer.coded_frame_count() == 1
 }
 
+fn test_webm_parser_only_ignores_cues_and_chapters_after_a_cluster() {
+	mut parser := WebMByteStreamParser.create()
+	parser.parse_initialization_segment(minimal_webm_initialization_segment())!
+	parser.parse_media_segment(minimal_webm_media_segment())!
+
+	tags := ebml_test_element([u8(0x12), 0x54, 0xc3, 0x67], []u8{})
+	cues := ebml_test_element([u8(0x1c), 0x53, 0xbb, 0x6b], []u8{})
+	chapters := ebml_test_element([u8(0x10), 0x43, 0xa7, 0x70], []u8{})
+	assert parser.ignored_element_length(tags)! == 0
+	assert parser.ignored_element_length(cues)! == cues.len
+	assert parser.ignored_element_length(chapters)! == chapters.len
+
+	parser.parse_initialization_segment(minimal_webm_initialization_segment())!
+	assert parser.ignored_element_length(tags)! == tags.len
+}
+
 fn test_buffered_change_event_preserves_base_init_and_identity() {
 	mut added := &html.TimeRanges{}
 	added.add_range(1, 2)
