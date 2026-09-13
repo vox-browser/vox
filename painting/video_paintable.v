@@ -29,9 +29,10 @@ pub:
 }
 
 // Direct translation of VideoPaintable::paint()'s foreground representation
-// switch. The media element owns frame selection and external-source updates.
+// switch. Video frames remain in their source until display-list playback.
 pub fn (paintable VideoPaintable) paint(representation VideoRepresentation, bitmap_id string,
-	bitmap_size ?IntSize, converter DevicePixelConverter) ?VideoPaintResult {
+	bitmap_size ?IntSize, video_frame_source ?&VideoFrameSource,
+	converter DevicePixelConverter) ?VideoPaintResult {
 	video_rect := converter.rounded_device_rect(paintable.video_rect)
 	if video_rect.is_empty() {
 		return none
@@ -40,11 +41,17 @@ pub fn (paintable VideoPaintable) paint(representation VideoRepresentation, bitm
 	clip_radii.shrink(paintable.border_widths.top, paintable.border_widths.right, paintable.border_widths.bottom, paintable.border_widths.left)
 	content := match representation {
 		.video_frame, .first_video_frame {
-			source_size := bitmap_size or { paintable.natural_media_size or { return none } }
+			source := video_frame_source or { return none }
+			current_frame := source.current_frame()
+			source_size := if frame := current_frame {
+				IntSize{int(frame.width), int(frame.height)}
+			} else {
+				paintable.natural_media_size or { return none }
+			}
 			destination := get_replaced_box_painting_area(paintable.video_rect, Size{f64(source_size.width), f64(source_size.height)}, paintable.object_fit, paintable.object_position, paintable.resolution_context, converter) or { return none }
-			DisplayListCommand(DrawExternalContent{
+			DisplayListCommand(DrawVideoFrameSource{
 				destination: destination
-				source_id: bitmap_id
+				source: source
 				scaling: to_gfx_scaling_mode(paintable.image_rendering, source_size, IntSize{destination.width, destination.height})
 			})
 		}

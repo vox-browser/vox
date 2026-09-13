@@ -9,6 +9,7 @@ module html
 
 import dom
 import math
+import painting
 
 pub enum VideoRepresentation {
 	video_frame
@@ -33,7 +34,7 @@ mut:
 	base_url_                   dom.URL
 	poster_                     ?string
 	poster_frame_               ?&dom.ImmutableBitmap_
-	current_frame_              ?&dom.ImmutableBitmap_
+	current_frame_              ?&painting.MediaVideoFrame
 	intrinsic_video_dimensions_ ?VideoDimensions
 	natural_dimensions_         ?VideoDimensions
 	poster_fetch_hook           ?PosterFrameFetchHook
@@ -157,14 +158,22 @@ pub fn (video &HTMLVideoElementModel) video_height() u32 {
 }
 
 pub fn (mut video HTMLVideoElementModel) set_current_frame(frame ?&dom.ImmutableBitmap_) {
+	video.set_current_video_frame(if bitmap := frame {
+		?&painting.MediaVideoFrame(painting.MediaVideoFrame.from_bitmap(bitmap))
+	} else {
+		?&painting.MediaVideoFrame(none)
+	})
+}
+
+pub fn (mut video HTMLVideoElementModel) set_current_video_frame(frame ?&painting.MediaVideoFrame) {
 	video.current_frame_ = frame
 	mut media := video.media
-	mut source := media.ensure_external_content_source()
+	mut source := media.ensure_video_frame_source()
 	source.update(frame)
 	if current_frame := frame {
 		video.set_intrinsic_video_dimensions(VideoDimensions{
-			width: u32(current_frame.width)
-			height: u32(current_frame.height)
+			width: current_frame.width
+			height: current_frame.height
 		})
 	}
 }
@@ -238,10 +247,15 @@ pub fn (video &HTMLVideoElementModel) bitmap() ?&dom.ImmutableBitmap_ {
 	return match video.current_representation() {
 		.poster_frame { video.poster_frame_ }
 		.video_frame, .first_video_frame {
-			if source := video.media.external_content_source_ {
-				source.frame()
+			frame := if source := video.media.video_frame_source_ {
+				source.current_frame()
 			} else {
 				video.current_frame_
+			}
+			if current_frame := frame {
+				current_frame.to_immutable_bitmap() or { none }
+			} else {
+				?&dom.ImmutableBitmap_(none)
 			}
 		}
 		.transparent_black { ?&dom.ImmutableBitmap_(none) }

@@ -2426,32 +2426,32 @@ fn test_video_uses_the_paintable_representation_switch() {
 	assert commands.any(it.video_representation == .poster_frame)
 	assert commands.any(it.video_representation == .transparent_black)
 	frame_command := commands.filter(it.video_representation == .video_frame)[0]
-	frame_bitmap := frame_command.video_bitmap or { panic('missing current video frame') }
-	frame_result := (frame_command.video_paintable or { panic('missing VideoPaintable') }).paint(frame_command.video_representation, 'video', painting.IntSize{frame_bitmap.width, frame_bitmap.height}, painting.new_device_pixel_converter(1) or { panic(err) }) or {
+	assert frame_command.video_bitmap == none
+	frame_source := frame_command.video_frame_source or { panic('missing video frame source') }
+	frame_result := (frame_command.video_paintable or { panic('missing VideoPaintable') }).paint(frame_command.video_representation, 'video', none, frame_source, painting.new_device_pixel_converter(1) or { panic(err) }) or {
 		panic('missing video frame paint result')
 	}
-	assert frame_result.content is painting.DrawExternalContent
-	assert (frame_result.content as painting.DrawExternalContent).scaling == .nearest_neighbor
+	assert frame_result.content is painting.DrawVideoFrameSource
+	assert (frame_result.content as painting.DrawVideoFrameSource).scaling == .nearest_neighbor
 	assert frame_result.clip_radii.top_left == painting.CornerRadius{8, 8}
-	frame_source := frame_command.video_external_source or { panic('missing external source') }
 	frame_model.set_current_frame(&dom.ImmutableBitmap_{
 		width: 40
 		height: 20
 		pitch: 160
 		data: []u8{len: 40 * 20 * 4}
 	})
-	assert frame_source.frame()?.width == 40
+	assert frame_source.current_frame()?.width == 40
 
 	poster_command := commands.filter(it.video_representation == .poster_frame)[0]
 	poster_bitmap := poster_command.video_bitmap or { panic('missing poster frame') }
-	poster_result := (poster_command.video_paintable or { panic('missing poster VideoPaintable') }).paint(poster_command.video_representation, 'poster', painting.IntSize{poster_bitmap.width, poster_bitmap.height}, painting.new_device_pixel_converter(1) or { panic(err) }) or {
+	poster_result := (poster_command.video_paintable or { panic('missing poster VideoPaintable') }).paint(poster_command.video_representation, 'poster', painting.IntSize{poster_bitmap.width, poster_bitmap.height}, none, painting.new_device_pixel_converter(1) or { panic(err) }) or {
 		panic('missing poster paint result')
 	}
 	assert poster_result.content is painting.DrawScaledBitmap
 
 	blank_command := commands.filter(it.video_representation == .transparent_black)[0]
 	assert blank_command.video_bitmap == none
-	blank_result := (blank_command.video_paintable or { panic('missing blank VideoPaintable') }).paint(blank_command.video_representation, '', none, painting.new_device_pixel_converter(1) or { panic(err) }) or {
+	blank_result := (blank_command.video_paintable or { panic('missing blank VideoPaintable') }).paint(blank_command.video_representation, '', none, none, painting.new_device_pixel_converter(1) or { panic(err) }) or {
 		panic('missing transparent paint result')
 	}
 	assert blank_result.content is painting.FillRect

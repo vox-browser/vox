@@ -3023,7 +3023,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	mut canvas_bitmap := ?&dom.ImmutableBitmap_(none)
 	mut canvas_paintable := ?painting.CanvasPaintable(none)
 	mut video_bitmap := ?&dom.ImmutableBitmap_(none)
-	mut video_external_source := ?&html.MediaExternalContentSource(none)
+	mut video_frame_source := ?&painting.VideoFrameSource(none)
 	mut video_representation := painting.VideoRepresentation.transparent_black
 	mut video_paintable := ?painting.VideoPaintable(none)
 	mut nested_viewport_document := ?&dom.Document(none)
@@ -3389,9 +3389,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 			match video_representation {
 				.video_frame, .first_video_frame {
 					mut media := model.media
-					source := media.ensure_external_content_source()
-					video_external_source = source
-					video_bitmap = source.frame()
+					video_frame_source = media.ensure_video_frame_source()
 				}
 				.poster_frame {
 					video_bitmap = model.poster_frame()
@@ -3603,7 +3601,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		canvas_bitmap: canvas_bitmap
 		canvas_paintable: canvas_paintable
 		video_bitmap: video_bitmap
-		video_external_source: video_external_source
+		video_frame_source: video_frame_source
 		video_representation: video_representation
 		video_paintable: video_paintable
 		nested_viewport_document: nested_viewport_document

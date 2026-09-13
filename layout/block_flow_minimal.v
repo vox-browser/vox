@@ -399,7 +399,7 @@ pub mut:
 	canvas_bitmap             ?&dom.ImmutableBitmap_
 	canvas_paintable          ?painting.CanvasPaintable
 	video_bitmap              ?&dom.ImmutableBitmap_
-	video_external_source     ?&html.MediaExternalContentSource
+	video_frame_source        ?&painting.VideoFrameSource
 	video_representation      painting.VideoRepresentation
 	video_paintable           ?painting.VideoPaintable
 	nested_viewport_document  ?&dom.Document
@@ -1520,10 +1520,10 @@ pub mut:
 	canvas_paintable ?painting.CanvasPaintable
 	// VideoPaintable retains the representation switch separately from the
 	// optional poster/current-frame bitmap.
-	video_bitmap          ?&dom.ImmutableBitmap_
-	video_external_source ?&html.MediaExternalContentSource
-	video_representation  painting.VideoRepresentation
-	video_paintable       ?painting.VideoPaintable
+	video_bitmap         ?&dom.ImmutableBitmap_
+	video_frame_source   ?&painting.VideoFrameSource
+	video_representation painting.VideoRepresentation
+	video_paintable      ?painting.VideoPaintable
 	// NavigableContainerViewportPaintable retains the hosted document's
 	// display list as a nested command stream rather than rasterizing it.
 	nested_viewport_commands  []PaintCommand
@@ -2760,7 +2760,7 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 				height: box.height
 				opacity: opacity
 				video_bitmap: box.video_bitmap
-				video_external_source: box.video_external_source
+				video_frame_source: box.video_frame_source
 				video_representation: box.video_representation
 				video_paintable: video_paintable
 			}

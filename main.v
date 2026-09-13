@@ -3925,19 +3925,27 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 		'draw_video' {
 			paintable := command.video_paintable or { return }
 			mut video_bitmap := command.video_bitmap
-			if source := command.video_external_source {
-				video_bitmap = source.frame()
+			if source := command.video_frame_source {
+				if frame := source.current_frame() {
+					if bitmap := frame.to_immutable_bitmap() {
+						video_bitmap = bitmap
+					} else {
+						video_bitmap = none
+					}
+				} else {
+					video_bitmap = none
+				}
 			}
 			mut bitmap_size := ?painting.IntSize(none)
 			if bitmap := video_bitmap {
 				bitmap_size = painting.IntSize{bitmap.width, bitmap.height}
 			}
 			converter := painting.new_device_pixel_converter(1.0) or { return }
-			result := paintable.paint(command.video_representation, 'video', bitmap_size, converter) or { return }
+			result := paintable.paint(command.video_representation, 'video', bitmap_size, command.video_frame_source, converter) or { return }
 			mut destination := painting.IntRect{}
 			mut scaling := painting.ScalingMode.none_
 			match result.content {
-				painting.DrawExternalContent {
+				painting.DrawVideoFrameSource {
 					destination = result.content.destination
 					scaling = result.content.scaling
 				}

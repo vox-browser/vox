@@ -10,6 +10,7 @@ module html
 import dom
 import fileapi
 import math
+import painting
 
 pub enum MediaSeekMode {
 	accurate
@@ -73,138 +74,7 @@ pub type MediaPlaybackSeekHook = fn(f64, MediaPlaybackSeekMode)
 
 pub type MediaPlaybackCurrentTimeHook = fn() f64
 
-@[heap]
-pub struct MediaVideoFrame {
-pub:
-	timestamp   f64
-	duration    f64
-	width       u32
-	height      u32
-	bit_depth   u8 = 8
-	color_space MediaVideoColorSpace = .bt709
-	yuv_data    MediaVideoYUVData
-}
-
-pub enum MediaVideoColorSpace {
-	bt601
-	bt709
-}
-
-pub enum MediaVideoSubsampling {
-	yuv420
-	yuv422
-	yuv444
-	monochrome
-}
-
-pub struct MediaVideoYUVData {
-pub:
-	y_plane     []u8
-	u_plane     []u8
-	v_plane     []u8
-	y_stride    int
-	u_stride    int
-	v_stride    int
-	subsampling MediaVideoSubsampling = .yuv420
-	full_range  bool
-}
-
-fn media_video_clamp_channel(value int) u8 {
-	if value < 0 {
-		return 0
-	}
-	if value > 255 {
-		return 255
-	}
-	return u8(value)
-}
-
-pub fn (frame &MediaVideoFrame) to_immutable_bitmap() !&dom.ImmutableBitmap_ {
-	if frame.width == 0 || frame.height == 0 {
-		return error('video frame has empty dimensions')
-	}
-	if frame.bit_depth != 8 {
-		return error('unsupported video frame bit depth ${frame.bit_depth}')
-	}
-	width := int(frame.width)
-	height := int(frame.height)
-	y_stride := if frame.yuv_data.y_stride > 0 { frame.yuv_data.y_stride } else { width }
-	chroma_width := if frame.yuv_data.subsampling in [.yuv420, .yuv422] {
-		(width + 1) / 2
-	} else {
-		width
-	}
-	u_stride := if frame.yuv_data.u_stride > 0 { frame.yuv_data.u_stride } else { chroma_width }
-	v_stride := if frame.yuv_data.v_stride > 0 { frame.yuv_data.v_stride } else { chroma_width }
-	if frame.yuv_data.y_plane.len < y_stride * height {
-		return error('video frame luma plane is truncated')
-	}
-	chroma_height := if frame.yuv_data.subsampling == .yuv420 {
-		(height + 1) / 2
-	} else {
-		height
-	}
-	if frame.yuv_data.subsampling != .monochrome
-		&& (frame.yuv_data.u_plane.len < u_stride * chroma_height
-			|| frame.yuv_data.v_plane.len < v_stride * chroma_height) {
-		return error('video frame chroma plane is truncated')
-	}
-
-	mut pixels := []u8{len: width * height * 4}
-	for y in 0 .. height {
-		for x in 0 .. width {
-			y_value := int(frame.yuv_data.y_plane[y * y_stride + x])
-			chroma_x := if frame.yuv_data.subsampling in [.yuv420, .yuv422] { x / 2 } else { x }
-			chroma_y := if frame.yuv_data.subsampling == .yuv420 { y / 2 } else { y }
-			u_value := if frame.yuv_data.subsampling == .monochrome {
-				128
-			} else {
-				int(frame.yuv_data.u_plane[chroma_y * u_stride + chroma_x])
-			}
-			v_value := if frame.yuv_data.subsampling == .monochrome {
-				128
-			} else {
-				int(frame.yuv_data.v_plane[chroma_y * v_stride + chroma_x])
-			}
-			d := u_value - 128
-			e := v_value - 128
-			mut red := 0
-			mut green := 0
-			mut blue := 0
-			if frame.yuv_data.full_range {
-				red_v_coefficient := if frame.color_space == .bt601 { 359 } else { 403 }
-				green_u_coefficient := if frame.color_space == .bt601 { 88 } else { 48 }
-				green_v_coefficient := if frame.color_space == .bt601 { 183 } else { 120 }
-				blue_u_coefficient := if frame.color_space == .bt601 { 454 } else { 475 }
-				red = y_value + (red_v_coefficient * e + 128) / 256
-				green = y_value - (green_u_coefficient * d + green_v_coefficient * e + 128) / 256
-				blue = y_value + (blue_u_coefficient * d + 128) / 256
-			} else {
-				c := if y_value > 16 { y_value - 16 } else { 0 }
-				red_v_coefficient := if frame.color_space == .bt601 { 409 } else { 459 }
-				green_u_coefficient := if frame.color_space == .bt601 { 100 } else { 55 }
-				green_v_coefficient := if frame.color_space == .bt601 { 208 } else { 136 }
-				blue_u_coefficient := if frame.color_space == .bt601 { 516 } else { 541 }
-				red = (298 * c + red_v_coefficient * e + 128) / 256
-				green = (298 * c - green_u_coefficient * d - green_v_coefficient * e + 128) / 256
-				blue = (298 * c + blue_u_coefficient * d + 128) / 256
-			}
-			offset := (y * width + x) * 4
-			pixels[offset] = media_video_clamp_channel(red)
-			pixels[offset + 1] = media_video_clamp_channel(green)
-			pixels[offset + 2] = media_video_clamp_channel(blue)
-			pixels[offset + 3] = 255
-		}
-	}
-	return &dom.ImmutableBitmap_{
-		width: width
-		height: height
-		pitch: width * 4
-		data: pixels
-	}
-}
-
-pub type MediaPlaybackCurrentFrameHook = fn () ?&MediaVideoFrame
+pub type MediaPlaybackCurrentFrameHook = fn () ?&painting.MediaVideoFrame
 
 pub struct MediaBufferedRange {
 pub:
@@ -228,24 +98,6 @@ pub:
 	current_time        ?MediaPlaybackCurrentTimeHook
 	current_video_frame ?MediaPlaybackCurrentFrameHook
 	buffered_ranges     ?MediaPlaybackBufferedRangesHook
-}
-
-@[heap]
-pub struct MediaExternalContentSource {
-mut:
-	frame_ ?&dom.ImmutableBitmap_
-}
-
-pub fn (source &MediaExternalContentSource) frame() ?&dom.ImmutableBitmap_ {
-	return source.frame_
-}
-
-pub fn (mut source MediaExternalContentSource) update(frame ?&dom.ImmutableBitmap_) {
-	source.frame_ = frame
-}
-
-pub fn (mut source MediaExternalContentSource) clear() {
-	source.frame_ = none
 }
 
 pub struct MediaResourceResponse {
@@ -358,7 +210,7 @@ mut:
 	playback_has_future_data_   bool
 	selected_video_track_       ?&VideoTrack
 	video_element_model_        ?&HTMLVideoElementModel
-	external_content_source_    ?&MediaExternalContentSource
+	video_frame_source_         ?&painting.VideoFrameSource
 	accepts_byte_ranges_        bool
 	last_fetch_offset_          u64
 	loop_was_specified_at_end_  bool
@@ -1520,8 +1372,8 @@ pub fn (mut element HTMLMediaElement) set_audio_track_enabled(track &AudioTrack,
 }
 
 pub fn (mut element HTMLMediaElement) set_selected_video_track(track ?&VideoTrack) {
-	if source := element.external_content_source_ {
-		mut mutable_source := unsafe { &MediaExternalContentSource(source) }
+	if source := element.video_frame_source_ {
+		mut mutable_source := unsafe { &painting.VideoFrameSource(source) }
 		mutable_source.clear()
 	}
 	element.selected_video_track_ = track
@@ -1542,12 +1394,12 @@ pub fn (mut element HTMLMediaElement) set_selected_video_track(track ?&VideoTrac
 	}
 }
 
-pub fn (mut element HTMLMediaElement) ensure_external_content_source() &MediaExternalContentSource {
-	if source := element.external_content_source_ {
+pub fn (mut element HTMLMediaElement) ensure_video_frame_source() &painting.VideoFrameSource {
+	if source := element.video_frame_source_ {
 		return source
 	}
-	source := &MediaExternalContentSource{}
-	element.external_content_source_ = source
+	source := painting.VideoFrameSource.create()
+	element.video_frame_source_ = source
 	return source
 }
 
@@ -1558,16 +1410,17 @@ pub fn (mut element HTMLMediaElement) update_video_frame_and_timeline() {
 	if frame_hook := element.playback_hooks_.current_video_frame {
 		frame := frame_hook()
 		if current_frame := frame {
-			if bitmap := current_frame.to_immutable_bitmap() {
-				mut source := element.ensure_external_content_source()
-				source.update(bitmap)
-			}
+			mut source := element.ensure_video_frame_source()
+			source.update(current_frame)
 			if mut video := element.video_element_model_ {
 				video.set_intrinsic_video_dimensions(VideoDimensions{
 					width: current_frame.width
 					height: current_frame.height
 				})
 			}
+		} else if source := element.video_frame_source_ {
+			mut mutable_source := unsafe { &painting.VideoFrameSource(source) }
+			mutable_source.clear()
 		}
 	}
 	if element.seeking_ {

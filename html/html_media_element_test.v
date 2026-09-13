@@ -3,6 +3,7 @@ module html
 
 import dom
 import math
+import painting
 
 __global media_test_seek_modes = []MediaPlaybackSeekMode{}
 __global media_test_audio_track_enabled = false
@@ -56,12 +57,12 @@ fn media_test_buffered_ranges() []MediaBufferedRange {
 	return [MediaBufferedRange{ start: 1, end: 7 }, MediaBufferedRange{ start: 9, end: 12 }]
 }
 
-fn media_test_current_video_frame() ?&MediaVideoFrame {
-	return &MediaVideoFrame{
+fn media_test_current_video_frame() ?&painting.MediaVideoFrame {
+	return &painting.MediaVideoFrame{
 		timestamp: 1.25
 		width: 2
 		height: 1
-		yuv_data: MediaVideoYUVData{
+		yuv_data: painting.MediaVideoYUVData{
 			y_plane: [u8(16), 235]
 			u_plane: [u8(128)]
 			v_plane: [u8(128)]
@@ -101,10 +102,11 @@ fn test_media_element_publishes_the_current_queued_video_frame() {
 	media.set_up_playback_manager()
 	media.update_video_frame_and_timeline()
 
-	frame := media.ensure_external_content_source().frame() or { panic('frame was not published') }
+	frame := media.ensure_video_frame_source().current_frame() or { panic('frame was not published') }
 	assert frame.width == 2
 	assert frame.height == 1
-	assert frame.data == [u8(0), 0, 0, 255, 255, 255, 255, 255]
+	bitmap := frame.to_immutable_bitmap() or { panic(err) }
+	assert bitmap.data == [u8(0), 0, 0, 255, 255, 255, 255, 255]
 	assert video.natural_media_size()? == VideoDimensions{2, 1}
 }
 

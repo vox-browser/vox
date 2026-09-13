@@ -559,8 +559,13 @@ fn test_canvas_paintable_presents_external_content_with_source_geometry() {
 	assert paintable.paint('empty', IntSize{}, converter) == none
 }
 
-fn test_video_paintable_switches_between_external_poster_and_transparent_content() {
+fn test_video_paintable_switches_between_video_source_poster_and_transparent_content() {
 	converter := new_device_pixel_converter(1) or { panic(err) }
+	mut source := VideoFrameSource.create()
+	source.update(&MediaVideoFrame{
+		width: 200
+		height: 100
+	})
 	paintable := VideoPaintable{
 		video_rect: Rect{5, 7, 100, 50}
 		border_radii: BorderRadiiData{
@@ -573,27 +578,28 @@ fn test_video_paintable_switches_between_external_poster_and_transparent_content
 		image_rendering: .auto_
 		natural_media_size: IntSize{200, 100}
 	}
-	external := paintable.paint(.video_frame, 'video', none, converter) or {
-		panic('expected external video paint')
+	video_frame := paintable.paint(.video_frame, 'video', none, source, converter) or {
+		panic('expected video frame paint')
 	}
-	assert external.content is DrawExternalContent
-	external_content := external.content as DrawExternalContent
-	assert external_content.destination == IntRect{5, 7, 100, 50}
-	assert external_content.scaling == .bilinear_mipmap
-	assert external.clip_radii.top_left == CornerRadius{10, 10}
+	assert video_frame.content is DrawVideoFrameSource
+	video_content := video_frame.content as DrawVideoFrameSource
+	assert video_content.destination == IntRect{5, 7, 100, 50}
+	assert video_content.scaling == .bilinear_mipmap
+	assert video_content.source == source
+	assert video_frame.clip_radii.top_left == CornerRadius{10, 10}
 	contained := VideoPaintable{
 		video_rect: Rect{0, 0, 100, 100}
 		object_fit: .contain
 		natural_media_size: IntSize{200, 100}
-	}.paint(.video_frame, 'video', none, converter) or {
+	}.paint(.video_frame, 'video', none, source, converter) or {
 		panic('expected naturally sized video paint')
 	}
-	assert (contained.content as DrawExternalContent).destination == IntRect{0, 25, 100, 50}
+	assert (contained.content as DrawVideoFrameSource).destination == IntRect{0, 25, 100, 50}
 	assert VideoPaintable{
 		video_rect: Rect{0, 0, 100, 100}
-	}.paint(.video_frame, 'video', none, converter) == none
+	}.paint(.video_frame, 'video', none, none, converter) == none
 
-	poster := paintable.paint(.poster_frame, 'poster', IntSize{200, 100}, converter) or {
+	poster := paintable.paint(.poster_frame, 'poster', IntSize{200, 100}, none, converter) or {
 		panic('expected poster paint')
 	}
 	assert poster.content is DrawScaledBitmap
@@ -602,12 +608,12 @@ fn test_video_paintable_switches_between_external_poster_and_transparent_content
 	assert poster_content.clip_rect == poster_content.destination
 	assert poster_content.scaling == .bilinear_mipmap
 
-	transparent_result := paintable.paint(.transparent_black, '', none, converter) or {
+	transparent_result := paintable.paint(.transparent_black, '', none, none, converter) or {
 		panic('expected transparent video paint')
 	}
 	assert transparent_result.content is FillRect
 	assert (transparent_result.content as FillRect).color == transparent
-	assert paintable.paint(.poster_frame, '', none, converter) == none
+	assert paintable.paint(.poster_frame, '', none, none, converter) == none
 }
 
 fn test_navigable_container_viewport_paintable_clips_and_places_nested_display_list() {

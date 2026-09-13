@@ -309,6 +309,37 @@ fn test_external_content_source_replaces_and_clears_bitmap() {
 	assert source.bitmap_id == none
 }
 
+fn test_video_frame_source_command_retains_the_live_source() {
+	mut source := VideoFrameSource.create()
+	first := &MediaVideoFrame{
+		width: 2
+		height: 1
+	}
+	source.update(first)
+	command := DrawVideoFrameSource{
+		destination: IntRect{1, 2, 30, 40}
+		source: source
+		scaling: .bilinear
+	}
+	assert command_name(command) == 'DrawVideoFrameSource'
+	assert command_bounding_rect(command) or { panic('expected bounds') } == command.destination
+	assert command_dump(command) == ' dst_rect=${command.destination}'
+	assert command.source.current_frame() or { panic('missing frame') } == first
+
+	second := &MediaVideoFrame{
+		width: 4
+		height: 3
+	}
+	source.update(second)
+	assert command.source.current_frame() or { panic('missing replacement frame') } == second
+
+	mut recorder := new_display_list_recorder(new_accumulated_visual_context_tree())
+	assert recorder.draw_video_frame_source(command)
+	assert !recorder.draw_video_frame_source(DrawVideoFrameSource{
+		source: source
+	})
+}
+
 fn test_recorder_command_guards_rounded_fallback_and_masks() {
 	mut recorder := new_display_list_recorder(new_accumulated_visual_context_tree())
 	assert !recorder.fill_path(FillPath{})

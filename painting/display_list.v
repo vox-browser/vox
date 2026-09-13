@@ -85,6 +85,13 @@ pub:
 	scaling     ScalingMode
 }
 
+pub struct DrawVideoFrameSource {
+pub:
+	destination IntRect
+	source      &VideoFrameSource = unsafe { nil }
+	scaling     ScalingMode
+}
+
 pub struct Save {}
 
 pub struct SaveLayer {}
@@ -322,6 +329,14 @@ pub fn (command DrawExternalContent) dump() string {
 	return ' dst_rect=${command.destination}'
 }
 
+pub fn (command DrawVideoFrameSource) bounding_rect() IntRect {
+	return command.destination
+}
+
+pub fn (command DrawVideoFrameSource) dump() string {
+	return ' dst_rect=${command.destination}'
+}
+
 pub fn (_ Save) dump() string {
 	return ''
 }
@@ -485,6 +500,7 @@ pub type DisplayListCommand = AddClipRect
 	| DrawRect
 	| DrawRepeatedBitmap
 	| DrawScaledBitmap
+	| DrawVideoFrameSource
 	| FillEllipse
 	| FillPath
 	| FillRect
@@ -516,6 +532,7 @@ pub fn command_name(command DisplayListCommand) string {
 		DrawRect { 'DrawRect' }
 		DrawRepeatedBitmap { 'DrawRepeatedImmutableBitmap' }
 		DrawScaledBitmap { 'DrawScaledImmutableBitmap' }
+		DrawVideoFrameSource { 'DrawVideoFrameSource' }
 		FillEllipse { 'FillEllipse' }
 		FillPath { 'FillPath' }
 		FillRect { 'FillRect' }
@@ -549,6 +566,7 @@ pub fn command_dump(command DisplayListCommand) string {
 		DrawRect { command.dump() }
 		DrawRepeatedBitmap { command.dump() }
 		DrawScaledBitmap { command.dump() }
+		DrawVideoFrameSource { command.dump() }
 		FillEllipse { command.dump() }
 		FillPath { command.dump() }
 		FillRect { command.dump() }
@@ -599,6 +617,9 @@ pub fn command_bounding_rect(command DisplayListCommand) ?IntRect {
 			command.bounding_rect()
 		}
 		DrawScaledBitmap {
+			command.bounding_rect()
+		}
+		DrawVideoFrameSource {
 			command.bounding_rect()
 		}
 		FillEllipse {
@@ -827,6 +848,10 @@ pub fn (mut recorder DisplayListRecorder) draw_rect(command DrawRect) bool {
 }
 
 pub fn (mut recorder DisplayListRecorder) draw_external_content(command DrawExternalContent) bool {
+	return if command.destination.is_empty() { false } else { recorder.append(command) }
+}
+
+pub fn (mut recorder DisplayListRecorder) draw_video_frame_source(command DrawVideoFrameSource) bool {
 	return if command.destination.is_empty() { false } else { recorder.append(command) }
 }
 
