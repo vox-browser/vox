@@ -370,6 +370,27 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     ("SVGFilterPrimitiveStandardAttributes", "svg_animated_length_for_attribute"): (
         ("svg_animated_length_for_attribute", "Element"),
     ),
+    # The C++ layout FFI pushes gradient/pattern records incrementally. V's
+    # paint adapter resolves the same inherited resource state directly into
+    # renderer-independent paint-style records.
+    ("SVGGradientElement", "push_color_stops"): (
+        ("svg_gradient_stops", None),
+    ),
+    ("SVGGradientElement", "base_paint_server_description"): (
+        ("svg_gradient_units", None),
+        ("svg_gradient_spread", None),
+        ("svg_gradient_transform", None),
+        ("svg_gradient_color_space", None),
+    ),
+    ("SVGLinearGradientElement", "push_paint_server_description"): (
+        ("resolve_svg_linear_gradient_paint_style", None),
+    ),
+    ("SVGRadialGradientElement", "push_paint_server_description"): (
+        ("resolve_svg_radial_gradient_paint_style", None),
+    ),
+    ("SVGPatternElement", "push_paint_server_description"): (
+        ("resolve_svg_pattern_paint_style", None),
+    ),
     # Primitive calculated-value resolution receives Layout's already-derived
     # length context explicitly in V, avoiding a CSS -> Layout module cycle.
     ("Angle", "resolve_calculated"): (("resolve_calculated_with_context", "Angle"),),

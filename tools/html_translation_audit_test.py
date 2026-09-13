@@ -212,6 +212,34 @@ class ConsolidatedFunctionTests(unittest.TestCase):
                 (("svg_animated_length_for_attribute", "Element"),),
             )
 
+    def test_svg_paint_server_pushes_map_to_typed_paint_resolution(self) -> None:
+        self.assertEqual(
+            audit.CONSOLIDATED_METHOD_MAPPINGS[("SVGGradientElement", "push_color_stops")],
+            (("svg_gradient_stops", None),),
+        )
+        self.assertEqual(
+            audit.CONSOLIDATED_METHOD_MAPPINGS[
+                ("SVGGradientElement", "base_paint_server_description")
+            ],
+            (
+                ("svg_gradient_units", None),
+                ("svg_gradient_spread", None),
+                ("svg_gradient_transform", None),
+                ("svg_gradient_color_space", None),
+            ),
+        )
+        for owner, target in (
+            ("SVGLinearGradientElement", "resolve_svg_linear_gradient_paint_style"),
+            ("SVGRadialGradientElement", "resolve_svg_radial_gradient_paint_style"),
+            ("SVGPatternElement", "resolve_svg_pattern_paint_style"),
+        ):
+            self.assertEqual(
+                audit.CONSOLIDATED_METHOD_MAPPINGS[
+                    (owner, "push_paint_server_description")
+                ],
+                ((target, None),),
+            )
+
     def test_svg_animated_value_offsets_are_binding_runtime_only(self) -> None:
         for owner, method_name in (
             ("SVGAnimatedLength", "base_val_offset"),
