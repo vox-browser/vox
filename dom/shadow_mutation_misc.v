@@ -3775,9 +3775,7 @@ pub fn load_document(navigation_params &NavigationParams, sniff_bytes ReadonlyBy
 	// -> "application/pdf"
 	// -> "text/pdf"
 	if type_.essence() in ['application/pdf', 'text/pdf'] {
-		// FIXME: If the user agent's PDF viewer supported is true, return the result of creating a document for inline
-		//        content that doesn't have a DOM given navigationParams's navigable, navigationParams's id,
-		//        navigationParams's navigation timing type, and navigationParams's user involvement.
+		return load_pdf_document(navigation_params) or { return none }
 	}
 
 	// FIXME: 3. If, given type, the new resource is to be handled by displaying some sort of inline content, e.g., a

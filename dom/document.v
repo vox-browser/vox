@@ -313,6 +313,10 @@ pub fn origin_create_opaque_file() Origin {
 	return origin_from_liburl(liburl.Origin.create_opaque(.file))
 }
 
+pub fn origin_from_tuple(scheme string, host string, port ?u16) Origin {
+	return origin_from_liburl(liburl.Origin.tuple(scheme, liburl.Host.from_string(host), port, none))
+}
+
 fn origin_from_liburl(record liburl.Origin) Origin {
 	return Origin{
 		value: if record.is_opaque() { 'opaque' } else { record.serialize() }

@@ -59,3 +59,58 @@ fn test_document_loader_uses_translated_mime_sniffing() {
 	assert document.content_type == 'image/png'
 	assert document.get_elements_by_tag_name('img').length() == 1
 }
+
+struct PDFEventObservation {
+mut:
+	count    int
+	response ?&dom.InlinePDFResponse
+}
+
+fn test_document_loader_uses_bundled_pdf_viewer_and_delivers_response() {
+	associated := parse_document('<!doctype html>')
+	body := '%PDF-1.4\n% translated fixture'.bytes()
+	params := loading_navigation_params(associated, 'application/pdf', body)
+	mut document := dom.load_document(params, body) or { panic('PDF load failed') }
+
+	assert document.document_type() == .html
+	assert document.content_type == 'text/html'
+	assert document.url_string() == 'https://example.test/resource'
+	assert document.origin().serialize() == 'resource://'
+	assert document.has_deferred_parser_start()
+	assert document.document_element() == none
+
+	document.set_ready_to_run_scripts()
+	assert !document.has_deferred_parser_start()
+	assert document.title() == 'PDF.js viewer'
+	assert document.get_element_by_id('outerContainer') != none
+	assert document.get_element_by_id('printContainer') != none
+
+	mut observation := &PDFEventObservation{}
+	observation_pointer := voidptr(observation)
+	listener := dom.IDLEventListener.create(&dom.CallbackType{
+		handle_event: fn [observation_pointer] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			mut observation := unsafe { &PDFEventObservation(observation_pointer) }
+			custom_event := unsafe { &dom.CustomEvent(event) }
+			observation.count++
+			observation.response = dom.inline_pdf_response_from_js_value(custom_event.detail())
+			return dom.js_undefined()
+		}
+	})
+	unsafe { &dom.EventTarget(&document.ParentNode.Node) }.add_event_listener_without_options('ladybirdpdf', listener)
+	document.dispatch_event_simple('ladybirdviewerready', false)
+
+	assert observation.count == 1
+	response := observation.response or { panic('missing inline PDF response detail') }
+	assert response.url.serialize() == 'https://example.test/resource'
+	assert response.mime_type == 'application/pdf'
+	assert response.body == body
+}
+
+fn test_document_loader_accepts_legacy_text_pdf_type() {
+	associated := parse_document('<!doctype html>')
+	body := '%PDF-1.4\n'.bytes()
+	params := loading_navigation_params(associated, 'text/pdf', body)
+	document := dom.load_document(params, body) or { panic('text/pdf load failed') }
+	assert document.content_type == 'text/html'
+	assert document.has_deferred_parser_start()
+}
