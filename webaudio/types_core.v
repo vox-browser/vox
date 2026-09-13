@@ -76,6 +76,7 @@ pub enum NodeKind {
 	media_element_source
 	media_stream_source
 	media_stream_destination
+	audio_worklet
 	oscillator
 	panner
 	script_processor

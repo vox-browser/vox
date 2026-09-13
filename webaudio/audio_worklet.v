@@ -24,6 +24,7 @@ pub:
 	number_of_outputs    u32 = 1
 	output_channel_count []u32
 	parameter_data       map[string]f64
+	processor_options    map[string]string
 }
 
 pub type AudioWorkletProcessCallback = fn (inputs [][][]f32, mut outputs [][][]f32, parameters map[string][]f32) !bool
@@ -115,6 +116,7 @@ mut:
 	processor_definition_names_          []string
 	processor_definitions_               map[string]AudioWorkletProcessorDefinition
 	pending_processor_construction_data_ ?PendingProcessorConstructionData
+	processor_slots_                     map[u64]&AudioWorkletProcessorSlot
 	current_frame_                       u64
 	current_time_                        f64
 	shut_down_                           bool
@@ -219,6 +221,12 @@ pub fn (mut scope AudioWorkletGlobalScope) set_current_frame_and_time(current_fr
 }
 
 pub fn (mut scope AudioWorkletGlobalScope) shutdown_all_slots() {
+	for _, slot in scope.processor_slots_ {
+		mut pipe := unsafe { &AudioWorkletPipe(slot.pipe) }
+		pipe.clear_pump_callback()
+		pipe.request_shutdown()
+	}
+	scope.processor_slots_.clear()
 	scope.pending_processor_construction_data_ = none
 	scope.shut_down_ = true
 }
