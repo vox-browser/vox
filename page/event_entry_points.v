@@ -449,13 +449,8 @@ pub fn (_ &EventHandler) target_node_for_mouse_position(document &dom.Document,
 	mutable_document.update_paint_and_hit_testing_properties_if_needed()
 	paintable := document.paintable() or { return none }
 	hit := paintable.hit_test(position.x, position.y, .exact) or { return none }
-	if hit.node != unsafe { nil } {
-		return hit.node
-	}
-	if hit.element != unsafe { nil } {
-		return hit.element.as_node()
-	}
-	return none
+	target := Target.from_hit_test_result(hit) or { return none }
+	return target.dom_node
 }
 
 pub fn (handler &EventHandler) has_committed_root_box(document &dom.Document) bool {

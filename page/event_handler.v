@@ -45,6 +45,37 @@ pub fn (target &InputTarget) layout_node() ?&dom.LayoutNode {
 	return target.committed_layout_node
 }
 
+// A DOM/painting hit retained across event dispatch. The source Target stores
+// an arena slot; V's DOM bridge exposes the corresponding committed layout
+// placeholder directly on the hit node.
+pub struct Target {
+pub:
+	hit_node     &dom.Node = unsafe { nil }
+	dom_node     &dom.Node = unsafe { nil }
+	is_committed bool = true
+}
+
+pub fn Target.from_hit_test_result(hit dom.HitTestResult) ?Target {
+	node := if hit.node != unsafe { nil } {
+		hit.node
+	} else if hit.element != unsafe { nil } {
+		hit.element.as_node()
+	} else {
+		return none
+	}
+	return Target{
+		hit_node: node
+		dom_node: node
+	}
+}
+
+pub fn (target &Target) layout_node() ?&dom.LayoutNode {
+	if !target.is_committed || target.hit_node == unsafe { nil } {
+		return none
+	}
+	return target.hit_node.layout_node()
+}
+
 pub struct InputDispatch {
 pub:
 	name          string

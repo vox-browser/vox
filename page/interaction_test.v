@@ -340,6 +340,24 @@ fn test_input_target_resolves_only_committed_layout_slots() {
 	assert InputTarget{}.layout_node() == none
 }
 
+fn test_dom_hit_target_resolves_the_live_committed_layout_node() {
+	mut document := dom.Document.create_for_fragment_parsing()
+	text := document.create_text_node('hit')
+	layout_node := &dom.LayoutNode{}
+	mut text_node := text.as_node()
+	text_node.set_layout_node(layout_node)
+	target := Target.from_hit_test_result(dom.HitTestResult{node: text.as_node()}) or {
+		panic('missing DOM hit target')
+	}
+	assert voidptr(target.dom_node) == voidptr(text.as_node())
+	assert voidptr(target.layout_node()?) == voidptr(layout_node)
+	assert Target{
+		hit_node: text.as_node()
+		dom_node: text.as_node()
+		is_committed: false
+	}.layout_node() == none
+}
+
 fn test_event_handler_pointer_cancellation_and_mouseup_cleanup_match_upstream() {
 	mut handler := EventHandler{}
 	cancelled_pointer := InputTarget{
