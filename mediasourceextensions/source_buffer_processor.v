@@ -6,6 +6,10 @@
 // owns the observable DOM-facing state transitions.
 module mediasourceextensions
 
+const audio_track_byte_capacity = 12 * 1024 * 1024
+const video_track_byte_capacity = 150 * 1024 * 1024
+const text_track_byte_capacity = 1 * 1024 * 1024
+
 pub enum AppendState {
 	waiting_for_segment
 	parsing_init_segment
@@ -88,6 +92,26 @@ pub fn (mut processor SourceBufferProcessor) set_pending_initialization_segment_
 
 pub fn (processor &SourceBufferProcessor) is_buffer_full() bool {
 	return processor.buffer_full_flag_
+}
+
+pub fn (processor &SourceBufferProcessor) total_buffered_bytes() int {
+	mut total := 0
+	for _, track_buffer in processor.track_buffers_ {
+		total += track_buffer.demuxer.total_bytes()
+	}
+	return total
+}
+
+pub fn (processor &SourceBufferProcessor) capacity_in_bytes() int {
+	mut total := 0
+	for _, track_buffer in processor.track_buffers_ {
+		total += match track_buffer.demuxer.track.type_ {
+			.audio { audio_track_byte_capacity }
+			.video { video_track_byte_capacity }
+			.text { text_track_byte_capacity }
+		}
+	}
+	return total
 }
 
 pub fn (mut processor SourceBufferProcessor) append_to_input_buffer(bytes []u8) {
@@ -306,8 +330,71 @@ fn (mut processor SourceBufferProcessor) run_coded_frame_processing(frames []Dem
 }
 
 // https://w3c.github.io/media-source/#sourcebuffer-coded-frame-eviction
-pub fn (_ &SourceBufferProcessor) run_coded_frame_eviction() {
-	// Eviction remains pending until a platform buffer quota is imposed.
+pub fn (mut processor SourceBufferProcessor) run_coded_frame_eviction(new_data_size int, current_time f64) {
+	if processor.track_buffers_.len == 0 {
+		return
+	}
+	current_capacity := processor.capacity_in_bytes()
+	projected_bytes := processor.total_buffered_bytes() + new_data_size
+	processor.buffer_full_flag_ = projected_bytes > current_capacity
+	if !processor.buffer_full_flag_ {
+		return
+	}
+
+	bytes_to_evict := projected_bytes - current_capacity
+	mut bytes_evicted := 0
+	for bytes_evicted < bytes_to_evict {
+		mut oldest_track_id := ?u64(none)
+		mut oldest_timestamp := f64(0)
+		for track_id, track_buffer in processor.track_buffers_ {
+			candidate := track_buffer.demuxer.earliest_evictable_frame_timestamp(current_time) or {
+				continue
+			}
+			if oldest_track_id == none || candidate < oldest_timestamp {
+				oldest_track_id = track_id
+				oldest_timestamp = candidate
+			}
+		}
+		track_id := oldest_track_id or { break }
+		mut track_buffer := processor.track_buffers_[track_id] or { break }
+		mut demuxer := track_buffer.demuxer
+		bytes_evicted += demuxer.take_earliest_frame_and_dependants()
+	}
+
+	for bytes_evicted < bytes_to_evict {
+		mut latest_track_id := ?u64(none)
+		mut latest_timestamp := f64(0)
+		for track_id, track_buffer in processor.track_buffers_ {
+			candidate := track_buffer.demuxer.latest_evictable_frame_timestamp(current_time) or {
+				continue
+			}
+			if latest_track_id == none || candidate > latest_timestamp {
+				latest_track_id = track_id
+				latest_timestamp = candidate
+			}
+		}
+		track_id := latest_track_id or { break }
+		mut track_buffer := processor.track_buffers_[track_id] or { break }
+		last_decode_timestamp := track_buffer.last_decode_timestamp_
+		mut demuxer := track_buffer.demuxer
+		removed_frame := demuxer.take_latest_frame()
+		bytes_evicted += removed_frame.byte_size
+		if last_decode := last_decode_timestamp {
+			if removed_frame.decode_timestamp == last_decode {
+				if processor.mode_ == .segments {
+					processor.group_end_timestamp_ = latest_timestamp
+				} else {
+					processor.group_start_timestamp_ = processor.group_end_timestamp_
+				}
+				processor.unset_all_track_buffer_timestamps()
+				processor.set_need_random_access_point_on_all_track_buffers(true)
+			}
+		}
+	}
+
+	if processor.total_buffered_bytes() + new_data_size < current_capacity {
+		processor.buffer_full_flag_ = false
+	}
 }
 
 fn (mut processor SourceBufferProcessor) unset_all_track_buffer_timestamps() {

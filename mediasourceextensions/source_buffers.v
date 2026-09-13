@@ -162,7 +162,7 @@ pub fn (buffer &SourceBuffer) input_buffer_length() int {
 }
 
 // https://w3c.github.io/media-source/#sourcebuffer-prepare-append
-fn (mut buffer SourceBuffer) prepare_append() ! {
+fn (mut buffer SourceBuffer) prepare_append(new_data_size int) ! {
 	mut media_source := buffer.media_source_ or {
 		return error('InvalidStateError: Unsupported in workers')
 	}
@@ -181,7 +181,7 @@ fn (mut buffer SourceBuffer) prepare_append() ! {
 	if media_source.ready_state() == .ended {
 		media_source.set_ready_state_to_open_and_fire_sourceopen_event()
 	}
-	buffer.processor_.run_coded_frame_eviction()
+	buffer.processor_.run_coded_frame_eviction(new_data_size, media_element.current_time())
 	if buffer.processor_.is_buffer_full() {
 		return error('QuotaExceededError: Buffer is full')
 	}
@@ -189,7 +189,7 @@ fn (mut buffer SourceBuffer) prepare_append() ! {
 
 // https://w3c.github.io/media-source/#dom-sourcebuffer-appendbuffer
 pub fn (mut buffer SourceBuffer) append_buffer(data []u8) ! {
-	buffer.prepare_append()!
+	buffer.prepare_append(data.len)!
 	buffer.processor_.append_to_input_buffer(data)
 	buffer.processor_.set_updating(true)
 	media_source := buffer.media_source_ or {
