@@ -7,11 +7,13 @@ module internals
 
 import aria
 import bindings
+import compositor
 import css
 import dom
 import gamepad
 import html
 import loader
+import painting
 import xhr
 import x.json2
 
@@ -1432,31 +1434,184 @@ pub fn (api &Internals) canvas_color_scheme() string {
 
 pub fn (api &Internals) image_animation_state_for_url(url string) !html.AnimatedImageDebugState {
 	document := api.platform.associated_document or {
-		return error('URL does not have an associated document: \'${url}\'')
+		return error("URL does not have an associated document: '${url}'")
 	}
 	parsed_url := document.encoding_parse_url(url) or {
-		return error('Invalid URL: \'${url}\'')
+		return error("Invalid URL: '${url}'")
 	}
 
 	if request := html.shared_resource_request_for_document_and_url(document, parsed_url) {
 		image_data := request.image_data() or {
-			return error('URL\'s shared resource request does not have any associated image data: \'${url}\'')
+			return error("URL's shared resource request does not have any associated image data: '${url}'")
 		}
 		state := html.decoded_image_animation_state(image_data.data) or {
-			return error('URL\'s associated image is not an animated bitmap: \'${url}\'')
+			return error("URL's associated image is not an animated bitmap: '${url}'")
 		}
 		return state
 	}
 
 	requests := document.shared_resource_requests()
 	request := requests[parsed_url.to_string()] or {
-		return error('URL does not have any associated shared resource requests: \'${url}\'')
+		return error("URL does not have any associated shared resource requests: '${url}'")
 	}
 	image_data := request.image_data() or {
-		return error('URL\'s shared resource request does not have any associated image data: \'${url}\'')
+		return error("URL's shared resource request does not have any associated image data: '${url}'")
 	}
 	if image_data.data is html.AnimatedDecodedImageData {
 		return image_data.data.debug_state()
 	}
-	return error('URL\'s associated image is not an animated bitmap: \'${url}\'')
+	return error("URL's associated image is not an animated bitmap: '${url}'")
+}
+
+pub struct AsyncScrollingStateSnapshot {
+pub:
+	state               compositor.AsyncScrollingState
+	display_list        &compositor.CompositorDisplayList
+	visual_context_tree &compositor.VisualContextTree
+	scroll_state        compositor.CompositorScrollStateSnapshot
+}
+
+fn capture_async_scrolling_state(platform &PlatformState) ?AsyncScrollingStateSnapshot {
+	document := platform.associated_document or { return none }
+	mut mutable_document := unsafe { &dom.Document(document) }
+	_ = mutable_document.record_display_list()
+	display_list := platform.async_scrolling_display_list or { return none }
+	visual_context_tree := platform.async_scrolling_visual_context_tree or { return none }
+	return AsyncScrollingStateSnapshot{
+		state: compositor.async_scrolling_state_from_display_list(*display_list)
+		display_list: display_list
+		visual_context_tree: visual_context_tree
+		scroll_state: platform.async_scrolling_scroll_state_snapshot
+	}
+}
+
+pub fn (api &Internals) async_scrolling_state() compositor.AsyncScrollingState {
+	snapshot := capture_async_scrolling_state(api.platform) or {
+		return compositor.AsyncScrollingState{}
+	}
+	return snapshot.state
+}
+
+pub fn (api &Internals) async_scrolling_state_blocks_wheel_event_at(x f64, y f64) bool {
+	snapshot := capture_async_scrolling_state(api.platform) or { return false }
+	return compositor.blocks_wheel_event_at_position(snapshot.state, snapshot.display_list, snapshot.visual_context_tree, snapshot.scroll_state, painting.Point{x, y})
+}
+
+pub fn (api &Internals) async_scrolling_state_wheel_routing_admission() string {
+	snapshot := capture_async_scrolling_state(api.platform) or {
+		return compositor.wheel_routing_admission_to_utf16_view(.no_async_scrolling_state)
+	}
+	return compositor.wheel_routing_admission_to_utf16_view(compositor.wheel_routing_admission_for(snapshot.state))
+}
+
+fn internals_snap_container_handling(precise bool, phase ScrollGesturePhase) compositor.SnapContainerHandling {
+	precision := if precise {
+		compositor.WheelDeltaPrecision.precise
+	} else {
+		compositor.WheelDeltaPrecision.discrete
+	}
+	compositor_phase := match phase {
+		.none_ { compositor.ScrollGesturePhase.none }
+		.ongoing { compositor.ScrollGesturePhase.changed }
+		.momentum { compositor.ScrollGesturePhase.momentum }
+		.ended { compositor.ScrollGesturePhase.ended }
+	}
+	return compositor.snap_container_handling_for(precision, compositor_phase)
+}
+
+fn wheel_scroll_admission_at(platform &PlatformState, x f64, y f64, delta_x f64, delta_y f64, precise bool, force_stale_wheel_event_regions bool) compositor.WheelScrollAdmission {
+	snapshot := capture_async_scrolling_state(platform) or {
+		return .no_scrollable_target
+	}
+	return compositor.admit_wheel_scroll(snapshot.state, snapshot.display_list, snapshot.visual_context_tree, snapshot.scroll_state, painting.Point{x, y}, painting.Point{delta_x, delta_y}, internals_snap_container_handling(precise, .none_), snapshot.state.has_blocking_wheel_event_listeners && !force_stale_wheel_event_regions)
+}
+
+pub fn (api &Internals) async_scrolling_state_can_wheel_scroll_at(x f64, y f64, delta_x f64, delta_y f64, precise bool, force_stale_wheel_event_regions bool) bool {
+	return wheel_scroll_admission_at(api.platform, x, y, delta_x, delta_y, precise, force_stale_wheel_event_regions) == .accepted
+}
+
+fn wheel_scroll_admission_to_string(admission compositor.WheelScrollAdmission) string {
+	return match admission {
+		.accepted { 'accepted' }
+		.no_scrollable_target { 'no-scrollable-target' }
+		.blocked_by_main_thread_region { 'blocked-by-main-thread-region' }
+		.stale_blocking_wheel_event_regions { 'stale-blocking-wheel-event-regions' }
+		.blocked_by_wheel_event_region { 'blocked-by-wheel-event-region' }
+	}
+}
+
+pub fn (api &Internals) async_scrolling_state_wheel_scroll_admission_at(x f64, y f64, delta_x f64, delta_y f64, precise bool, force_stale_wheel_event_regions bool) string {
+	return wheel_scroll_admission_to_string(wheel_scroll_admission_at(api.platform, x, y, delta_x, delta_y, precise, force_stale_wheel_event_regions))
+}
+
+pub fn (api &Internals) async_scrolling_state_wheel_target_at(x f64, y f64, delta_x f64, delta_y f64, precise bool, phase ScrollGesturePhase) string {
+	snapshot := capture_async_scrolling_state(api.platform) or { return 'none' }
+	mut scroll_tree := compositor.AsyncScrollTree{}
+	scroll_tree.set_state(snapshot.state)
+	scroll_tree.rebuild_wheel_hit_test_targets(snapshot.display_list, snapshot.visual_context_tree, snapshot.scroll_state)
+	target := scroll_tree.hit_test_scroll_node_for_wheel(*snapshot.visual_context_tree, painting.Point{x, y}, painting.Point{delta_x, delta_y}, internals_snap_container_handling(precise, phase))
+	if target.blocked_by_main_thread_region {
+		return 'main-thread'
+	}
+	if target.blocked_by_wheel_event_region {
+		return 'none'
+	}
+	node_id := target.node_id or { return 'none' }
+	return if scroll_tree.scroll_node_is_viewport(node_id) { 'viewport' } else { 'non-viewport' }
+}
+
+pub struct AsyncScrollNodeObject {
+pub:
+	document_id              u64
+	scroll_node_index        int
+	parent_document_id       u64
+	parent_scroll_node_index int
+	is_viewport              bool
+}
+
+pub struct AsyncScrollingStateObject {
+pub:
+	scroll_node_count                                 usize
+	scroll_nodes                                      []AsyncScrollNodeObject
+	has_blocking_wheel_event_listeners                bool
+	blocking_wheel_event_region_count                 usize
+	main_thread_wheel_event_region_count              usize
+	wheel_event_listener_state_generation             u64
+	blocking_wheel_event_regions_are_current          bool
+	has_blocking_wheel_event_region_covering_viewport bool
+}
+
+fn async_scrolling_state_to_object(state compositor.AsyncScrollingState) AsyncScrollingStateObject {
+	mut scroll_nodes := []AsyncScrollNodeObject{cap: state.scroll_nodes.len}
+	for node in state.scroll_nodes {
+		parent := node.parent_node_id or { compositor.AsyncScrollNodeId{} }
+		scroll_nodes << AsyncScrollNodeObject{
+			document_id: node.node_id.document_id
+			scroll_node_index: node.node_id.scroll_node_index
+			parent_document_id: parent.document_id
+			parent_scroll_node_index: parent.scroll_node_index
+			is_viewport: node.is_viewport
+		}
+	}
+	return AsyncScrollingStateObject{
+		scroll_node_count: usize(state.scroll_nodes.len)
+		scroll_nodes: scroll_nodes
+		has_blocking_wheel_event_listeners: state.has_blocking_wheel_event_listeners
+		blocking_wheel_event_region_count: usize(state.blocking_wheel_event_regions.len)
+		main_thread_wheel_event_region_count: usize(state.main_thread_wheel_event_regions.len)
+		wheel_event_listener_state_generation: state.wheel_event_listener_state_generation
+		blocking_wheel_event_regions_are_current: state.has_blocking_wheel_event_listeners
+		has_blocking_wheel_event_region_covering_viewport: state.has_blocking_wheel_event_region_covering_viewport
+	}
+}
+
+pub fn (api &Internals) async_scrolling_state_object() AsyncScrollingStateObject {
+	return async_scrolling_state_to_object(api.async_scrolling_state())
+}
+
+pub fn (api &Internals) recorded_async_scrolling_state_object() AsyncScrollingStateObject {
+	display_list := api.platform.recorded_async_scrolling_display_list or {
+		return async_scrolling_state_to_object(compositor.AsyncScrollingState{})
+	}
+	return async_scrolling_state_to_object(compositor.async_scrolling_state_from_display_list(*display_list))
 }

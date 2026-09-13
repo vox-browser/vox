@@ -2,17 +2,19 @@ module internals
 
 import animations
 import bindings
+import compositor
 import css
 import dom
 import gamepad
 import html
 import loader
+import painting
 import xhr
 
 fn test_metadata_settings_and_platform_facade() {
 	mut platform := &PlatformState{
-		headless_:        true
-		current_cursor_:  'pointer'
+		headless_: true
+		current_cursor_: 'pointer'
 		echo_server_port: 8000
 		visual_context_incremental_update_count: 4
 		visual_context_pending_dirty_box_count: 2
@@ -38,7 +40,7 @@ fn test_metadata_settings_and_platform_facade() {
 	mut api := Internals.create(platform, navigator)
 	api.load_reference_test_metadata(DocumentMetadata{
 		references: [ReferenceLink{'match', 'a.html'}, ReferenceLink{'mismatch', 'b.html'}]
-		fuzzy:      [FuzzyMetadata{'a.html', '0-1;0-2'}]
+		fuzzy: [FuzzyMetadata{'a.html', '0-1;0-2'}]
 	})
 	assert platform.ref_metadata_json.contains('match_references')
 	assert platform.ref_metadata_json.contains('a.html')
@@ -162,8 +164,7 @@ fn test_runtime_gc_paint_wrapper_and_activity_diagnostics() {
 		assert false
 	}
 
-	face := css.FontFaceObject.construct_impl('InternalsFace',
-		css.FontFaceSource.from_string('local(InternalsFace)'), css.FontFaceDescriptors{})
+	face := css.FontFaceObject.construct_impl('InternalsFace', css.FontFaceSource.from_string('local(InternalsFace)'), css.FontFaceDescriptors{})
 	api.set_font_display_time(face, 250)
 	assert face.font_display_time_for_testing()? == 250
 
@@ -302,8 +303,12 @@ fn test_layout_and_style_engine_diagnostics_use_live_identities() {
 		layout_tree_build_stats_: LayoutTreeBuildStats{3, 2, 1}
 		incremental_layout_tree_dump: 'incremental'
 		full_rebuild_layout_tree_dump: 'full'
-		style_ffi_counters_: { 'parse': u64(4) }
-		style_engine_counters_: { 'match': u64(7) }
+		style_ffi_counters_: {
+			'parse': u64(4)
+		}
+		style_engine_counters_: {
+			'match': u64(7)
+		}
 		style_engine_transaction_reactions_: StyleEngineTransactionReactions{
 			whole_document: false
 			elements: ['main', 'span']
@@ -392,8 +397,10 @@ fn test_image_animation_state_for_url_uses_shared_decoded_data() {
 	url := document.encoding_parse_url('/animated.png') or { panic('failed to parse URL') }
 	mut request := html.SharedResourceRequest.get_or_create(document, url)
 	bitmap := &dom.Bitmap_{ width: 2, height: 1 }
-	mut data := html.AnimatedDecodedImageData.create(91, 2, 4, 2, 1, .srgb, [u32(10), 20], [bitmap,
-		bitmap], none, none)
+	mut data := html.AnimatedDecodedImageData.create(91, 2, 4, 2, 1, .srgb, [u32(10), 20], [
+		bitmap,
+		bitmap,
+	], none, none)
 	data.register_client(3, fn () {})
 	request.handle_successful_resource_load(data)
 
@@ -420,6 +427,73 @@ fn test_image_animation_state_for_url_uses_shared_decoded_data() {
 	data.finalize()
 }
 
+fn test_async_scrolling_diagnostics_use_compositor_admission_logic() {
+	mut document := dom.Document.create_for_fragment_parsing()
+	context := compositor.ContextRef{1}
+	list := &compositor.CompositorDisplayList{
+		metadata: compositor.AsyncScrollingMetadata{
+			viewport_rect: painting.IntRect{0, 0, 100, 100}
+			wheel_event_listener_state_generation: 8
+			has_blocking_wheel_event_listeners: true
+		}
+		commands: [compositor.CompositorDisplayListCommand(compositor.CompositorScrollNodeCommand{
+			context: context
+			document_id: 10
+			scroll_node_index: 1
+			scrollable_node_id: 20
+			scrollport_rect: painting.IntRect{0, 0, 100, 100}
+			max_scroll_offset: painting.Point{0, 100}
+			is_viewport: true
+			can_be_wheel_scrolled_vertically: true
+		}), compositor.CompositorDisplayListCommand(compositor.CompositorWheelHitTestTargetCommand{
+			context: context
+			document_id: 10
+			target_scroll_node_index: 1
+			rect: painting.Rect{0, 0, 100, 100}
+		}), compositor.CompositorDisplayListCommand(compositor.CompositorMainThreadWheelEventRegionCommand{
+			context: context
+			rect: painting.Rect{0, 0, 20, 20}
+		}), compositor.CompositorDisplayListCommand(compositor.CompositorBlockingWheelEventRegionCommand{
+			context: context
+			rect: painting.Rect{30, 0, 20, 20}
+		})]
+		structural_epoch: 7
+	}
+	tree := &compositor.VisualContextTree{
+		structural_epoch: 7
+		valid_contexts: {
+			1: true
+		}
+	}
+	mut platform := &PlatformState{
+		associated_document: document
+		async_scrolling_display_list: list
+		async_scrolling_visual_context_tree: tree
+		async_scrolling_scroll_state_snapshot: compositor.CompositorScrollStateSnapshot{
+			device_offsets: [painting.Point{}, painting.Point{}]
+		}
+		recorded_async_scrolling_display_list: list
+	}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	api := Internals.create(platform, navigator)
+
+	assert api.async_scrolling_state().scroll_nodes.len == 1
+	assert api.async_scrolling_state_wheel_routing_admission() == 'accepted'
+	assert api.async_scrolling_state_blocks_wheel_event_at(35, 5)
+	assert api.async_scrolling_state_wheel_target_at(5, 5, 0, 10, true, .ongoing) == 'main-thread'
+	assert api.async_scrolling_state_wheel_target_at(60, 5, 0, 10, true, .ongoing) == 'viewport'
+	assert api.async_scrolling_state_can_wheel_scroll_at(60, 5, 0, 10, true, false)
+	assert api.async_scrolling_state_wheel_scroll_admission_at(35, 5, 0, 10, true, false) == 'blocked-by-wheel-event-region'
+	assert api.async_scrolling_state_wheel_scroll_admission_at(60, 5, 0, 10, true, true) == 'stale-blocking-wheel-event-regions'
+	object := api.async_scrolling_state_object()
+	assert object.scroll_node_count == 1
+	assert object.scroll_nodes[0].is_viewport
+	assert object.blocking_wheel_event_region_count == 1
+	assert object.main_thread_wheel_event_region_count == 1
+	assert object.wheel_event_listener_state_generation == 8
+	assert api.recorded_async_scrolling_state_object().scroll_node_count == 1
+}
+
 fn test_content_and_site_compatibility_controls_update_runtime_services() {
 	mut platform := &PlatformState{}
 	navigator := gamepad.NavigatorGamepadPartial.new()
@@ -442,8 +516,7 @@ fn test_content_and_site_compatibility_controls_update_runtime_services() {
 	resource_loader := loader.ResourceLoader.the()
 	url := dom.URL{'https://example.test/page'}
 	assert !resource_loader.user_agent_for_url(url).contains('Ladybird/')
-	assert resource_loader.site_compatibility_exposes_experimental_interface(url,
-		'PressureObserver')
+	assert resource_loader.site_compatibility_exposes_experimental_interface(url, 'PressureObserver')
 	assert platform.site_compatibility_source == compatibility
 	if _ := api.set_site_compatibility_data('{broken') {
 		assert false
@@ -578,10 +651,10 @@ fn test_input_methods_record_exact_actions() {
 
 fn test_dom_helpers_dumps_hit_testing_and_timeline() {
 	mut platform := &PlatformState{
-		display_list_dump:     'display'
+		display_list_dump: 'display'
 		stacking_context_dump: 'stack'
-		gc_graph_dump:         'graph'
-		hit_test_result:       HitTestResult{
+		gc_graph_dump: 'graph'
+		hit_test_result: HitTestResult{
 			index_in_node: 3
 		}
 	}
