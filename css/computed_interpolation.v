@@ -5864,6 +5864,40 @@ pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from
 				}
 				return interpolate_discrete(from, to, delta, allow_discrete)
 			}
+			// https://drafts.csswg.org/css-display-4/#display-animation
+			if property_id == .display {
+				// In general, display animates discretely. Between `none` and any
+				// other display value, however, progress values in (0, 1) map to
+				// the non-none value so the element remains rendered.
+				// FIXME: Keep the element inert while its display value would compute
+				// to none when ignoring the animations and transitions origins.
+				from_value := style_value_logic_from_dom(.display, from) or {
+					return interpolate_discrete(from, to, delta, allow_discrete)
+				}
+				to_value := style_value_logic_from_dom(.display, to) or {
+					return interpolate_discrete(from, to, delta, allow_discrete)
+				}
+				if from_value is DisplayStyleValue && to_value is DisplayStyleValue {
+					from_display := from_value.display()
+					to_display := to_value.display()
+					if from_display == to_display {
+						return unsafe { from }
+					}
+					from_is_none := from_display.is_none()
+					to_is_none := to_display.is_none()
+					if from_is_none || to_is_none {
+						non_none_value := if from_is_none { to } else { from }
+						if delta <= 0 {
+							return unsafe { from }
+						}
+						if delta >= 1 {
+							return unsafe { to }
+						}
+						return unsafe { non_none_value }
+					}
+				}
+				return interpolate_discrete(from, to, delta, allow_discrete)
+			}
 			return interpolate_discrete(from, to, delta, allow_discrete)
 		}
 		.discrete {

@@ -1,5 +1,7 @@
 module css
 
+import dom
+
 fn test_short_math_display_is_inline_and_uses_short_serialization() {
 	display := Display.from_short(.math)
 
@@ -72,4 +74,38 @@ fn test_display_none_from_typed_om_survives_computed_style_storage() {
 	computed.set_property(.display, stored[0].value, .no, .no)
 
 	assert computed.display().is_none()
+}
+
+fn interpolate_test_display(element &dom.Element, from string, to string, delta f64, allow_discrete AllowDiscrete) ?string {
+	from_value := parse_css_value_logic(.display, from) or { return none }
+	to_value := parse_css_value_logic(.display, to) or { return none }
+	interpolated := interpolate_property(element, .display, dom_style_value_from_value_logic(from_value), dom_style_value_from_value_logic(to_value), delta, allow_discrete) or { return none }
+	return interpolated.css_text
+}
+
+fn test_display_interpolation_keeps_non_none_value_inside_interval() {
+	document := dom.Document.create(dom.url_about_blank())
+	element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+
+	assert interpolate_test_display(element, 'none', 'block', -0.1, .no)? == 'none'
+	assert interpolate_test_display(element, 'none', 'block', 0, .no)? == 'none'
+	assert interpolate_test_display(element, 'none', 'block', 0.25, .no)? == 'block'
+	assert interpolate_test_display(element, 'none', 'block', 1, .no)? == 'block'
+	assert interpolate_test_display(element, 'block', 'none', 0, .no)? == 'block'
+	assert interpolate_test_display(element, 'block', 'none', 0.75, .no)? == 'block'
+	assert interpolate_test_display(element, 'block', 'none', 1, .no)? == 'none'
+}
+
+fn test_display_interpolation_remains_discrete_without_none() {
+	document := dom.Document.create(dom.url_about_blank())
+	element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+
+	assert interpolate_test_display(element, 'block', 'flex', 0.25, .no) == none
+	assert interpolate_test_display(element, 'block', 'flex', 0.25, .yes)? == 'block'
+	assert interpolate_test_display(element, 'block', 'flex', 0.75, .yes)? == 'flex'
+	assert interpolate_test_display(element, 'block', 'block', 0.75, .no)? == 'block'
 }
