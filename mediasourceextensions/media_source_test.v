@@ -123,6 +123,9 @@ fn test_media_source_detaches_and_removes_source_buffers_when_media_is_reset() {
 	buffer.append_buffer([u8(4)]) or {
 		assert err.msg() == 'InvalidStateError: SourceBuffer has been removed'
 	}
+	buffer.buffered() or {
+		assert err.msg() == 'InvalidStateError: SourceBuffer has been removed'
+	}
 }
 
 fn test_media_source_blob_url_loads_as_a_local_resource() {
@@ -325,7 +328,7 @@ fn test_webm_initialization_and_media_segments_create_tracks_and_coded_frames() 
 	assert frame.data == [u8(1), 2]
 	assert frame.timestamp == 0
 	assert frame.duration > 0.033 && frame.duration < 0.034
-	buffered := buffer.buffered()
+	buffered := buffer.buffered()!
 	assert buffered.length() == 1
 	assert buffered.start(0)! == 0
 	assert buffered.end(0)! > 0.033 && buffered.end(0)! < 0.034

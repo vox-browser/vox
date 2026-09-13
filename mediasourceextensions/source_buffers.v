@@ -177,7 +177,13 @@ pub fn (buffer &SourceBuffer) updating() bool {
 }
 
 // https://w3c.github.io/media-source/#dom-sourcebuffer-buffered
-pub fn (buffer &SourceBuffer) buffered() &html.TimeRanges {
+pub fn (buffer &SourceBuffer) buffered() !&html.TimeRanges {
+	media_source := buffer.media_source_ or {
+		return error('InvalidStateError: SourceBuffer has no MediaSource')
+	}
+	if !media_source.source_buffers().contains(buffer) {
+		return error('InvalidStateError: SourceBuffer has been removed')
+	}
 	mut ranges := &html.TimeRanges{}
 	for range_ in buffer.processor_.buffered_time_ranges() {
 		ranges.add_range(range_.start, range_.end)
