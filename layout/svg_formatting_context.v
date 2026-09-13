@@ -946,6 +946,27 @@ fn svg_geometry_element_model(graphics_box &Node, element &dom.Element, viewport
 			model.attributes['r'] = '${computed.length_percentage_to_px(.r, diagonal) or { 0.0 }}'
 			return model
 		}
+		'ellipse' {
+			rx_is_auto := computed.rx().is_auto()
+			ry_is_auto := computed.ry().is_auto()
+			mut rx := computed.length_percentage_to_px(.rx, viewport_size.width().to_double()) or {
+				0.0
+			}
+			mut ry := computed.length_percentage_to_px(.ry, viewport_size.height().to_double()) or {
+				0.0
+			}
+			if rx_is_auto {
+				rx = ry
+			}
+			if ry_is_auto {
+				ry = rx
+			}
+			model.attributes['cx'] = '${computed.length_percentage_to_px(.cx, viewport_size.width().to_double()) or { 0.0 }}'
+			model.attributes['cy'] = '${computed.length_percentage_to_px(.cy, viewport_size.height().to_double()) or { 0.0 }}'
+			model.attributes['rx'] = '${rx}'
+			model.attributes['ry'] = '${ry}'
+			return model
+		}
 		'rect' {
 			width := computed.length_percentage_to_px(.width, viewport_size.width().to_double()) or {
 				0.0

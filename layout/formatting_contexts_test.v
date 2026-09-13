@@ -2745,6 +2745,31 @@ fn test_svg_rect_uses_computed_geometry_and_used_corner_radii() {
 	assert (used_for_id(result, 'hidden').computed_svg_path() or { svg.Path{} }).instructions.len == 0
 }
 
+fn test_svg_ellipse_uses_computed_geometry_and_auto_radii() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#styled { cx:25%; cy:50%; rx:auto; ry:10% }
+		#paired { cx:100px; cy:50px; rx:25%; ry:25% }
+	</style><svg width="200" height="100">
+		<ellipse id="styled" cx="1" cy="2" rx="3" ry="4"/>
+		<ellipse id="paired"/>
+	</svg>')
+	result := run_document_layout(document, 200, 100) or { panic('layout failed') }
+	styled := used_for_id(result, 'styled')
+	assert styled.offset.x().to_double() == 40
+	assert styled.offset.y().to_double() == 40
+	assert styled.content_width().to_double() == 20
+	assert styled.content_height().to_double() == 20
+	styled_path := styled.computed_svg_path() or { panic('styled ellipse path missing') }
+	assert styled_path.instructions[0].data == [60.0, 50.0]
+	assert styled_path.instructions[1].data[..2] == [10.0, 10.0]
+	paired := used_for_id(result, 'paired')
+	assert paired.offset.x().to_double() == 50
+	assert paired.offset.y().to_double() == 25
+	assert paired.content_width().to_double() == 100
+	assert paired.content_height().to_double() == 50
+}
+
 fn test_relative_positioning_does_not_move_following_flow_content() {
 	document := html.parse_document('<!doctype html><style>
 		#one { position:relative; top:20px; left:5px; height:10px }
