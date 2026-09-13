@@ -130,6 +130,18 @@ pub fn (mut intrinsics Intrinsics) create_web_constructor(metadata InterfaceObje
 	return constructor
 }
 
+// Install an interface prototype only when the object does not already carry
+// one. Generated interface initializers use this boundary so custom prototype
+// chains survive repeated initialization.
+pub fn set_prototype_for_interface_on(realm &html.ScriptingRealm, interface_name string, mut object PlatformObject) {
+	if object.prototype() != none {
+		return
+	}
+	mut intrinsics := host_defined_intrinsics(realm)
+	prototype := intrinsics.ensure_web_prototype(interface_name)
+	object.set_prototype(prototype.object)
+}
+
 // https://webidl.spec.whatwg.org/#internally-create-a-new-object-implementing-the-interface
 pub fn set_prototype_from_new_target(target_realm &html.ScriptingRealm, prototype ?&PlatformObject, interface_name string, mut object PlatformObject) {
 	mut target_intrinsics := host_defined_intrinsics(target_realm)

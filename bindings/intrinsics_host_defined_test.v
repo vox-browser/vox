@@ -59,3 +59,25 @@ fn test_principal_and_internal_host_defined_keep_realm_state() {
 	assert principal_host_defined_environment_settings_object(internal_realm) == settings
 	assert principal_host_defined_page(internal_realm) == page
 }
+
+fn test_set_prototype_for_interface_only_initializes_missing_prototype() {
+	mut realm := &html.ScriptingRealm{}
+	intrinsics := Intrinsics.create(realm)
+	world := WrapperWorld.create(.main)
+	host_defined := HostDefined.create(intrinsics, world, realm, .yes)
+	install_host_defined(mut realm, host_defined)
+
+	mut object := PlatformObject.create(realm)
+	set_prototype_for_interface_on(realm, 'HTMLElement', mut object)
+	installed := object.prototype() or { panic('missing installed prototype') }
+
+	custom := PlatformObject.create(realm)
+	object.set_prototype(custom)
+	set_prototype_for_interface_on(realm, 'HTMLDivElement', mut object)
+	assert voidptr(object.prototype()?) == voidptr(custom)
+	assert voidptr(installed) != voidptr(custom)
+}
+
+fn test_attribute_values_preserve_unicode_during_utf16_conversion() {
+	assert attribute_value_to_utf16('Ladybird 世界 🦉') == 'Ladybird 世界 🦉'
+}
