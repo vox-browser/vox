@@ -593,6 +593,13 @@ pub fn (mut api Internals) set_content_blocking_enabled(enabled bool) {
 	}
 }
 
+pub fn (mut api Internals) set_autoplay_policy(policy string) {
+	parsed := html.autoplay_policy_from_string(policy) or { return }
+	mut settings := html.AutoplaySettings.the()
+	settings.set_policy(parsed, [])
+	api.platform.autoplay_policy = policy
+}
+
 fn internals_default_role(element &dom.Element) ?aria.Role {
 	if !element.is_html_element() {
 		return none

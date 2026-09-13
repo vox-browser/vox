@@ -166,6 +166,7 @@ pub mut:
 	user_style_invalidations                   u64
 	site_compatibility_source                  string
 	experimental_interfaces_exposed            bool
+	autoplay_policy                            string = 'block-audio'
 }
 
 @[heap]

@@ -159,11 +159,17 @@ fn test_content_and_site_compatibility_controls_update_runtime_services() {
 	api.set_experimental_interfaces_exposed(true)
 	assert html.expose_experimental_interfaces()
 	assert platform.experimental_interfaces_exposed
+	api.set_autoplay_policy('block-audio-and-video')
+	assert html.AutoplaySettings.the().policy() == .block_audio_and_video
+	assert platform.autoplay_policy == 'block-audio-and-video'
+	api.set_autoplay_policy('invalid')
+	assert platform.autoplay_policy == 'block-audio-and-video'
 
 	// Restore process-global test services for any later cases in this binary.
 	api.set_content_blockers('')!
 	api.set_content_blocking_enabled(true)
 	api.set_experimental_interfaces_exposed(false)
+	api.set_autoplay_policy('block-audio')
 }
 
 fn test_input_methods_record_exact_actions() {
