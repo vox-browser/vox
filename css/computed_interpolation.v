@@ -12449,15 +12449,19 @@ pub fn (s &StyleComputer) compute_cascaded_values(abstract_element dom.AbstractE
 	// Normal user declarations
 	s.cascade_declarations(mut cascaded_properties, abstract_element, matching_rule_set.user_rules, .user, .no, none, logical_alias_mapping_context, properties_to_cascade)
 
-	// Element::apply_presentational_hints(). These occupy the author origin
-	// before author rules, so a stylesheet or inline declaration correctly wins.
+	// Element::apply_presentational_hints(). These occupy their own origin
+	// between user and author rules and travel through the ordinary property
+	// cascade so substitution and invalid-at-computed-value-time handling are
+	// shared with declarations.
 	if abstract_element.pseudo_element() == none {
 		if abstract_element.element().is_html_element() {
-			apply_html_presentational_hints(mut cascaded_properties, abstract_element.element(), properties_to_cascade)
-			cascaded_properties.resolve_unresolved_properties(&abstract_element)
+			mut hints := []StyleProperty{}
+			collect_html_presentational_hints(mut hints, abstract_element.element(), properties_to_cascade)
+			apply_property_list_to_cascade(mut cascaded_properties, abstract_element, hints, .author_presentational_hint, .no, none, unsafe { nil }, none, logical_alias_mapping_context, properties_to_cascade)
 		} else if abstract_element.element().is_svg_element() {
-			apply_svg_presentational_hints(mut cascaded_properties, abstract_element.element(), properties_to_cascade)
-			cascaded_properties.resolve_unresolved_properties(&abstract_element)
+			mut hints := []StyleProperty{}
+			collect_svg_presentational_hints(mut hints, abstract_element.element(), properties_to_cascade)
+			apply_property_list_to_cascade(mut cascaded_properties, abstract_element, hints, .author_presentational_hint, .no, none, unsafe { nil }, none, logical_alias_mapping_context, properties_to_cascade)
 		}
 	}
 
@@ -12481,11 +12485,14 @@ pub fn (s &StyleComputer) compute_cascaded_values(abstract_element dom.AbstractE
 	return cascaded_properties
 }
 
-fn set_html_presentational_hint(mut cascaded_properties CascadedProperties, properties_to_cascade ComputedInterpolationPropertyIDs, property_id PropertyID, value StyleValue) {
+fn set_html_presentational_hint(mut properties []StyleProperty, properties_to_cascade ComputedInterpolationPropertyIDs, property_id PropertyID, value StyleValue) {
 	if properties_to_cascade.len > 0 && property_id !in properties_to_cascade {
 		return
 	}
-	cascaded_properties.set_property_from_presentational_hint(property_id, dom_style_value_from_value_logic(value))
+	properties << StyleProperty{
+		property_id: property_id
+		value: dom_style_value_from_value_logic(value)
+	}
 }
 
 fn html_dimension_presentational_hint(source string, property_id PropertyID, reject_zero bool) ?StyleValue {
@@ -12528,10 +12535,10 @@ fn html_dimension_presentational_hint(source string, property_id PropertyID, rej
 	return StyleValue(LengthStyleValue.create(Length.make_px(CSSPixels.nearest_value_for(f64(value)).to_double())))
 }
 
-fn apply_dimension_attribute(mut cascaded_properties CascadedProperties, element &dom.Element, attribute_name string, property_id PropertyID, properties_to_cascade ComputedInterpolationPropertyIDs) {
+fn collect_dimension_attribute(mut properties []StyleProperty, element &dom.Element, attribute_name string, property_id PropertyID, properties_to_cascade ComputedInterpolationPropertyIDs) {
 	attribute := element.get_attribute(attribute_name) or { return }
 	parsed_value := html_dimension_presentational_hint(attribute, property_id, false) or { return }
-	set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, property_id, parsed_value)
+	set_html_presentational_hint(mut properties, properties_to_cascade, property_id, parsed_value)
 }
 
 // https://html.spec.whatwg.org/multipage/rendering.html#rules-for-parsing-a-legacy-font-size
@@ -12661,24 +12668,24 @@ fn html_body_margin_source(element &dom.Element, first_attribute string, second_
 	return container.get_attribute(container_attribute)
 }
 
-fn set_html_table_border_hints(mut cascaded_properties CascadedProperties, properties_to_cascade ComputedInterpolationPropertyIDs, style_keyword string, width string, color string) {
+fn set_html_table_border_hints(mut properties []StyleProperty, properties_to_cascade ComputedInterpolationPropertyIDs, style_keyword string, width string, color string) {
 	for side in ['top', 'right', 'bottom', 'left'] {
 		style_property := property_id_from_string('border-${side}-style') or { continue }
 		width_property := property_id_from_string('border-${side}-width') or { continue }
 		color_property := property_id_from_string('border-${side}-color') or { continue }
 		if value := parse_css_value_logic(style_property, style_keyword) {
-			set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, style_property, value)
+			set_html_presentational_hint(mut properties, properties_to_cascade, style_property, value)
 		}
 		if value := parse_css_value_logic(width_property, width) {
-			set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, width_property, value)
+			set_html_presentational_hint(mut properties, properties_to_cascade, width_property, value)
 		}
 		if value := parse_css_value_logic(color_property, color) {
-			set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, color_property, value)
+			set_html_presentational_hint(mut properties, properties_to_cascade, color_property, value)
 		}
 	}
 }
 
-fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, element &dom.Element, properties_to_cascade ComputedInterpolationPropertyIDs) {
+fn collect_html_presentational_hints(mut cascaded_properties []StyleProperty, element &dom.Element, properties_to_cascade ComputedInterpolationPropertyIDs) {
 	tag_name := element.local_name().to_lower()
 	if tag_name == 'body' {
 		if background_color := element.get_attribute('bgcolor') {
@@ -13162,8 +13169,8 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 				dimension_source = source
 			}
 		}
-		apply_dimension_attribute(mut cascaded_properties, dimension_source, 'width', .width, properties_to_cascade)
-		apply_dimension_attribute(mut cascaded_properties, dimension_source, 'height', .height, properties_to_cascade)
+		collect_dimension_attribute(mut cascaded_properties, dimension_source, 'width', .width, properties_to_cascade)
+		collect_dimension_attribute(mut cascaded_properties, dimension_source, 'height', .height, properties_to_cascade)
 	}
 }
 
@@ -13181,12 +13188,18 @@ fn table_child_element_align_value(value string) ?StyleValue {
 	return StyleValue(KeywordStyleValue.create(keyword))
 }
 
+fn apply_html_presentational_hints_to_cascade(mut properties CascadedProperties, element &dom.Element) {
+	mut hints := []StyleProperty{}
+	collect_html_presentational_hints(mut hints, element, ComputedInterpolationPropertyIDs{})
+	apply_property_list_to_cascade(mut properties, dom.AbstractElement.new(element, none), hints, .author_presentational_hint, .no, none, unsafe { nil }, none, none, [])
+}
+
 pub fn html_div_element_is_presentational_hint(_ &dom.HTMLDivElement, name string) bool {
 	return name == 'align'
 }
 
 pub fn html_div_element_apply_presentational_hints(element &dom.HTMLDivElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn html_hr_element_is_presentational_hint(_ &dom.HTMLHRElement, name string) bool {
@@ -13194,7 +13207,7 @@ pub fn html_hr_element_is_presentational_hint(_ &dom.HTMLHRElement, name string)
 }
 
 pub fn html_hr_element_apply_presentational_hints(element &dom.HTMLHRElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn htmlhr_element_is_presentational_hint(element &dom.HTMLHRElement, name string) bool {
@@ -13210,7 +13223,7 @@ pub fn html_marquee_element_is_presentational_hint(_ &dom.HTMLMarqueeElement, na
 }
 
 pub fn html_marquee_element_apply_presentational_hints(element &dom.HTMLMarqueeElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn html_paragraph_element_is_presentational_hint(_ &dom.HTMLParagraphElement, name string) bool {
@@ -13218,7 +13231,7 @@ pub fn html_paragraph_element_is_presentational_hint(_ &dom.HTMLParagraphElement
 }
 
 pub fn html_paragraph_element_apply_presentational_hints(element &dom.HTMLParagraphElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn html_pre_element_is_presentational_hint(_ &dom.HTMLPreElement, name string) bool {
@@ -13226,7 +13239,7 @@ pub fn html_pre_element_is_presentational_hint(_ &dom.HTMLPreElement, name strin
 }
 
 pub fn html_pre_element_apply_presentational_hints(element &dom.HTMLPreElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn html_table_caption_element_is_presentational_hint(_ &dom.HTMLTableCaptionElement, name string) bool {
@@ -13234,7 +13247,7 @@ pub fn html_table_caption_element_is_presentational_hint(_ &dom.HTMLTableCaption
 }
 
 pub fn html_table_caption_element_apply_presentational_hints(element &dom.HTMLTableCaptionElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn html_table_col_element_is_presentational_hint(_ &dom.HTMLTableColElement, name string) bool {
@@ -13242,7 +13255,7 @@ pub fn html_table_col_element_is_presentational_hint(_ &dom.HTMLTableColElement,
 }
 
 pub fn html_table_col_element_apply_presentational_hints(element &dom.HTMLTableColElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn html_table_row_element_is_presentational_hint(_ &dom.HTMLTableRowElement, name string) bool {
@@ -13250,7 +13263,7 @@ pub fn html_table_row_element_is_presentational_hint(_ &dom.HTMLTableRowElement,
 }
 
 pub fn html_table_row_element_apply_presentational_hints(element &dom.HTMLTableRowElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn html_table_section_element_is_presentational_hint(_ &dom.HTMLTableSectionElement, name string) bool {
@@ -13258,7 +13271,7 @@ pub fn html_table_section_element_is_presentational_hint(_ &dom.HTMLTableSection
 }
 
 pub fn html_table_section_element_apply_presentational_hints(element &dom.HTMLTableSectionElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn html_ulist_element_is_presentational_hint(_ &dom.HTMLUListElement, name string) bool {
@@ -13266,7 +13279,7 @@ pub fn html_ulist_element_is_presentational_hint(_ &dom.HTMLUListElement, name s
 }
 
 pub fn html_ulist_element_apply_presentational_hints(element &dom.HTMLUListElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn htmlu_list_element_is_presentational_hint(element &dom.HTMLUListElement, name string) bool {
@@ -13282,7 +13295,7 @@ pub fn html_heading_element_is_presentational_hint(_ &dom.HTMLHeadingElement, na
 }
 
 pub fn html_heading_element_apply_presentational_hints(element &dom.HTMLHeadingElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn html_table_cell_element_is_presentational_hint(_ &dom.HTMLTableCellElement, name string) bool {
@@ -13290,7 +13303,7 @@ pub fn html_table_cell_element_is_presentational_hint(_ &dom.HTMLTableCellElemen
 }
 
 pub fn html_table_cell_element_apply_presentational_hints(element &dom.HTMLTableCellElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn html_body_element_is_presentational_hint(_ &dom.HTMLBodyElement, name string) bool {
@@ -13299,7 +13312,7 @@ pub fn html_body_element_is_presentational_hint(_ &dom.HTMLBodyElement, name str
 }
 
 pub fn html_body_element_apply_presentational_hints(element &dom.HTMLBodyElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn html_li_element_is_presentational_hint(_ &dom.HTMLLIElement, name string) bool {
@@ -13307,7 +13320,7 @@ pub fn html_li_element_is_presentational_hint(_ &dom.HTMLLIElement, name string)
 }
 
 pub fn html_li_element_apply_presentational_hints(element &dom.HTMLLIElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn htmlli_element_is_presentational_hint(element &dom.HTMLLIElement, name string) bool {
@@ -13323,7 +13336,7 @@ pub fn htmlol_list_element_is_presentational_hint(_ &dom.HTMLOListElement, name 
 }
 
 pub fn htmlol_list_element_apply_presentational_hints(element &dom.HTMLOListElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn htmlo_list_element_is_presentational_hint(element &dom.HTMLOListElement, name string) bool {
@@ -13339,7 +13352,7 @@ pub fn htmlbr_element_is_presentational_hint(_ &dom.HTMLBRElement, name string) 
 }
 
 pub fn htmlbr_element_apply_presentational_hints(element &dom.HTMLBRElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn html_br_element_is_presentational_hint(element &dom.HTMLBRElement, name string) bool {
@@ -13355,7 +13368,7 @@ pub fn html_embed_element_is_presentational_hint(_ &dom.HTMLEmbedElement, name s
 }
 
 pub fn html_embed_element_apply_presentational_hints(element &dom.HTMLEmbedElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn html_iframe_element_is_presentational_hint(_ &dom.HTMLIFrameElement, name string) bool {
@@ -13363,7 +13376,7 @@ pub fn html_iframe_element_is_presentational_hint(_ &dom.HTMLIFrameElement, name
 }
 
 pub fn html_iframe_element_apply_presentational_hints(element &dom.HTMLIFrameElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn html_canvas_element_is_presentational_hint(_ &dom.HTMLCanvasElement, name string) bool {
@@ -13371,7 +13384,7 @@ pub fn html_canvas_element_is_presentational_hint(_ &dom.HTMLCanvasElement, name
 }
 
 pub fn html_canvas_element_apply_presentational_hints(element &dom.HTMLCanvasElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn html_image_element_is_presentational_hint(_ &dom.HTMLImageElement, name string) bool {
@@ -13379,7 +13392,7 @@ pub fn html_image_element_is_presentational_hint(_ &dom.HTMLImageElement, name s
 }
 
 pub fn html_image_element_apply_presentational_hints(element &dom.HTMLImageElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn html_object_element_is_presentational_hint(_ &dom.HTMLObjectElement, name string) bool {
@@ -13387,7 +13400,7 @@ pub fn html_object_element_is_presentational_hint(_ &dom.HTMLObjectElement, name
 }
 
 pub fn html_object_element_apply_presentational_hints(element &dom.HTMLObjectElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn htmli_frame_element_is_presentational_hint(element &dom.HTMLIFrameElement, name string) bool {
@@ -13403,7 +13416,7 @@ pub fn html_font_element_is_presentational_hint(_ &dom.HTMLFontElement, name str
 }
 
 pub fn html_font_element_apply_presentational_hints(element &dom.HTMLFontElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
 pub fn html_table_element_is_presentational_hint(_ &dom.HTMLTableElement, name string) bool {
@@ -13412,10 +13425,10 @@ pub fn html_table_element_is_presentational_hint(_ &dom.HTMLTableElement, name s
 }
 
 pub fn html_table_element_apply_presentational_hints(element &dom.HTMLTableElement, mut properties CascadedProperties) {
-	apply_html_presentational_hints(mut properties, unsafe { &dom.Element(element) }, ComputedInterpolationPropertyIDs{})
+	apply_html_presentational_hints_to_cascade(mut properties, unsafe { &dom.Element(element) })
 }
 
-fn apply_svg_presentational_hints(mut cascaded_properties CascadedProperties, element &dom.Element, properties_to_cascade ComputedInterpolationPropertyIDs) {
+fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom.Element, properties_to_cascade ComputedInterpolationPropertyIDs) {
 	tag_name := element.local_name()
 	geometry_only := {
 		'cx': ['circle', 'ellipse']
@@ -13458,7 +13471,10 @@ fn apply_svg_presentational_hints(mut cascaded_properties CascadedProperties, el
 			continue
 		}
 		value := parse_svg_presentation_attribute_value(element.document(), property_id, element.get_attribute_value(attribute_name)) or { continue }
-		cascaded_properties.set_property_from_presentational_hint(property_id, dom_style_value_from_value_logic(value))
+		properties << StyleProperty{
+			property_id: property_id
+			value: dom_style_value_from_value_logic(value)
+		}
 	}
 }
 

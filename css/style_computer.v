@@ -649,9 +649,20 @@ fn resolve_cascade_declaration_value(abstract_element dom.AbstractElement, prope
 	if typed is UnresolvedStyleValue {
 		mut resolved := resolve_unresolved_style_value_for_property(abstract_element, property_id, typed)
 		resolved.base_url = value.base_url
+		if opaque_is_guaranteed_invalid(resolved) {
+			return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.unset)))
+		}
 		return resolved
 	}
+	if typed is GuaranteedInvalidStyleValue {
+		return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.unset)))
+	}
 	return unsafe { value }
+}
+
+fn opaque_is_guaranteed_invalid(value &dom.StyleValue) bool {
+	typed := typed_style_value_logic_from_dom(value) or { return false }
+	return typed is GuaranteedInvalidStyleValue
 }
 
 fn opaque_is_unresolved(value &dom.StyleValue) bool {
@@ -671,7 +682,7 @@ fn opaque_is_pending_substitution(value &dom.StyleValue) bool {
 // in the cascade. Keeping this independent of CSSStyleProperties lets HTML,
 // SVG, and MathML presentational hints use the same cascade pipeline.
 // Unresolved var()/env() values are resolved before shorthand expansion by
-// resolve_cascade_declaration_value(); CascadedProperties performs the final custom-property pass.
+// resolve_cascade_declaration_value(), including invalid-at-computed-value-time fallback.
 fn apply_property_list_to_cascade(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, properties []StyleProperty, cascade_origin CascadeOrigin, important Important, layer_name ?string, source voidptr, source_shadow_root ?&dom.ShadowRoot, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade []PropertyID) {
 	pseudo_element := abstract_element.pseudo_element()
 	// CSSStyleProperties retains an unresolved shorthand and pending-substitution

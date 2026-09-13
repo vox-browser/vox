@@ -129,6 +129,32 @@ fn test_apply_arbitrary_property_list_to_cascade() {
 	assert cascaded.property_source(.color) == unsafe { nil }
 }
 
+fn test_author_revert_also_removes_presentational_hint_origin() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	abstract_element := dom.AbstractElement.new(element, none)
+	mut cascaded := CascadedProperties.new()
+
+	hint := StyleProperty{
+		property_id: .color
+		value: dom_style_value_from_value_logic(parse_css_value_logic(.color, 'red') or {
+			panic('presentational hint did not parse')
+		})
+	}
+	apply_property_list_to_cascade(mut cascaded, abstract_element, [hint], .author_presentational_hint, .no, none, unsafe { nil }, none, none, [])
+	revert := StyleProperty{
+		property_id: .color
+		value: dom_style_value_from_value_logic(parse_css_value_logic(.color, 'revert') or {
+			panic('revert did not parse')
+		})
+	}
+	apply_property_list_to_cascade(mut cascaded, abstract_element, [revert], .author, .no, none, unsafe { nil }, none, none, [])
+
+	assert cascaded.property(.color) == none
+}
+
 fn test_cascaded_properties_cache_retains_unresolved_shorthand_ids() {
 	mut cascaded := CascadedProperties.new()
 	unresolved := dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create(parse_component_values_for_value_logic('var(--spacing)'))))
@@ -1703,6 +1729,20 @@ fn test_svg_presentation_attributes_participate_at_the_correct_cascade_position(
 		panic('overridden fill is not a color')
 	}
 	assert overridden_color.serialize() == 'rgb(0 0 255)'
+}
+
+fn test_svg_presentational_hint_with_undefined_var_uses_initial_value() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut stop := doc.create_element_ns('http://www.w3.org/2000/svg', 'stop') or {
+		panic('${err}')
+	}
+	stop.set_attribute_value('stop-color', 'var(--undefined)')
+
+	computer := StyleComputer.new(doc)
+	computed := computer.compute_style(dom.AbstractElement.new(stop, none))
+	values := resolve_computed_values_for_document(computed, doc)
+
+	assert values.stop_color() == InitialValues.stop_color()
 }
 
 fn test_dir_pseudo_class_ua_direction_and_inheritance() {

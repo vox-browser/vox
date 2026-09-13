@@ -186,6 +186,7 @@ pub enum CascadeOrigin {
 	user_agent
 	user
 	author
+	author_presentational_hint
 	transition
 	animation
 }
@@ -234,7 +235,12 @@ pub fn (mut c CascadedProperties) revert_property(property_id PropertyID, import
 	mut entries := c.properties_[property_id] or { return }
 	mut filtered := []CascadedPropertiesEntry{}
 	for entry in entries {
-		if entry.property.property_id == property_id && entry.property.important == important && cascade_origin == entry.origin {
+		// Presentational hints cascade independently, but `revert` at the
+		// author origin also rolls them back as part of the author origin.
+		origin_matches := cascade_origin == entry.origin
+			|| (cascade_origin == .author && entry.origin == .author_presentational_hint)
+		if entry.property.property_id == property_id && entry.property.important == important
+			&& origin_matches {
 			continue
 		}
 		filtered << entry
@@ -265,21 +271,6 @@ pub fn (mut c CascadedProperties) revert_layer_property(property_id PropertyID, 
 		return
 	}
 	c.properties_[property_id] = filtered
-}
-
-pub fn (mut c CascadedProperties) resolve_unresolved_properties(abstract_element &dom.AbstractElement) {
-	for property_id, mut entries in c.properties_ {
-		for index, mut entry in entries {
-			parsed_value := style_value_logic_from_dom(property_id, entry.property.value) or {
-				continue
-			}
-			if parsed_value is UnresolvedStyleValue {
-				entry.property.value = resolve_unresolved_style_value_for_property(*abstract_element, property_id, parsed_value)
-				entries[index] = entry
-			}
-		}
-		c.properties_[property_id] = entries
-	}
 }
 
 // https://drafts.csswg.org/css-values-5/#property-replacement
@@ -365,39 +356,6 @@ pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &do
 		source_shadow_root: source_shadow_root
 	}
 	c.properties_[property_id] = entries
-}
-
-pub fn (mut c CascadedProperties) set_property_from_presentational_hint(property_id PropertyID, value &dom.StyleValue) {
-	cascaded_properties_for_each_property_expanding_shorthands(property_id, value, fn [mut c] (longhand_property_id PropertyID, longhand_value &dom.StyleValue) {
-		c.contained_properties_cache_[cascaded_property_index(longhand_property_id)] = 1
-		mut entries := c.properties_[longhand_property_id] or { []CascadedPropertiesEntry{} }
-		entries << CascadedPropertiesEntry{
-			property: StyleProperty{
-				important: .no
-				property_id: longhand_property_id
-				value: unsafe { longhand_value }
-			}
-			origin: .author
-			layer_name: none
-			source: unsafe { nil }
-		}
-		c.properties_[longhand_property_id] = entries
-	})
-}
-
-fn cascaded_properties_for_each_property_expanding_shorthands(property_id PropertyID, value &dom.StyleValue, set_longhand_property fn(PropertyID, &dom.StyleValue)) {
-	// Presentational hints enter the cascade through serialized DOM values, just
-	// like declarations. Reify them before expansion so shorthand presentation
-	// attributes such as SVG `mask` contribute their longhands.
-	if property_is_shorthand(property_id) {
-		if typed_value := style_value_logic_from_dom(property_id, value) {
-			for_each_typed_property_expanding_shorthands(property_id, typed_value, fn [set_longhand_property] (longhand_id PropertyID, longhand_value StyleValue) {
-				set_longhand_property(longhand_id, dom_style_value_from_value_logic(longhand_value))
-			})
-			return
-		}
-	}
-	set_longhand_property(property_id, value)
 }
 
 fn for_each_typed_property_expanding_shorthands(property_id PropertyID, value StyleValue, set_longhand_property fn(PropertyID, StyleValue)) {
