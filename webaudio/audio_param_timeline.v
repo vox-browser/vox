@@ -44,14 +44,14 @@ mut:
 // Upstream retains the most recently selected interval in this structure. The
 // V renderer is single-threaded and computes it by value, avoiding mutable
 // state on the render-thread view while preserving the same interval rules.
-struct AudioParamParameterizationCache {
+struct ParameterizationCache {
 	event_index    ?int
 	minimum_time   ?f64
 	maximum_time   ?f64
 	starting_value f32
 }
 
-fn (cache AudioParamParameterizationCache) contains(time f64) bool {
+fn (cache ParameterizationCache) contains(time f64) bool {
 	if minimum_time := cache.minimum_time {
 		if time < minimum_time {
 			return false
@@ -182,10 +182,10 @@ fn (timeline &AudioParamTimeline) event_value_at_time(event_index int, time f64)
 	return value
 }
 
-fn (timeline &AudioParamTimeline) parameterization_cache_for_time(time f64) AudioParamParameterizationCache {
+fn (timeline &AudioParamTimeline) parameterization_cache_for_time(time f64) ParameterizationCache {
 	event_index := timeline.first_event_index_after(time)
 	if event_index == 0 {
-		return AudioParamParameterizationCache{
+		return ParameterizationCache{
 			maximum_time: if timeline.automation_events_.len == 0 {
 				none
 			} else {
@@ -220,7 +220,7 @@ fn (timeline &AudioParamTimeline) parameterization_cache_for_time(time f64) Audi
 			starting_value = timeline.event_value_at_time(event_index - 1, minimum_time)
 		}
 		if time >= minimum_time && minimum_time < ramp.time {
-			return AudioParamParameterizationCache{
+			return ParameterizationCache{
 				event_index: event_index
 				minimum_time: minimum_time
 				maximum_time: ramp.time
@@ -243,7 +243,7 @@ fn (timeline &AudioParamTimeline) parameterization_cache_for_time(time f64) Audi
 			}
 		}
 	}
-	return AudioParamParameterizationCache{
+	return ParameterizationCache{
 		event_index: selected_index
 		minimum_time: selected.time
 		maximum_time: maximum_time

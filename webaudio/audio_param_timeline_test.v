@@ -94,7 +94,7 @@ fn test_audio_param_timeline_samples_using_half_frame_selection() {
 }
 
 fn test_audio_param_parameterization_cache_uses_half_open_intervals() {
-	cache := AudioParamParameterizationCache{
+	cache := ParameterizationCache{
 		event_index: 2
 		minimum_time: 1.5
 		maximum_time: 3.5
