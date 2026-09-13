@@ -185,6 +185,7 @@ pub mut:
 	session_history_traversal_queue_flushes    u64
 	page_muted                                 bool
 	page_media_elements                       []&html.HTMLMediaElement
+	geolocation_emulated_position             html.EmulatedPositionData
 }
 
 @[heap]

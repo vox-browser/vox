@@ -246,6 +246,10 @@ fn test_media_element_state_controls_use_live_media_model() {
 	assert !api.media_element_is_playing_audio(media)
 	mutable_media.process_media_data(.complete)
 	assert !api.media_element_is_fetching(media)
+	api.set_geolocation_emulated_position(51.5, -0.12, 4.25)
+	assert platform.geolocation_emulated_position.latitude == 51.5
+	assert platform.geolocation_emulated_position.longitude == -0.12
+	assert platform.geolocation_emulated_position.accuracy == 4.25
 }
 
 fn test_content_and_site_compatibility_controls_update_runtime_services() {

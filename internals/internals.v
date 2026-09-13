@@ -461,6 +461,14 @@ pub fn (mut api Internals) set_page_muted(muted bool) {
 	}
 }
 
+pub fn (mut api Internals) set_geolocation_emulated_position(latitude f64, longitude f64, accuracy f64) {
+	api.platform.geolocation_emulated_position = html.EmulatedPositionData{
+		latitude: latitude
+		longitude: longitude
+		accuracy: accuracy
+	}
+}
+
 pub fn (api &Internals) hit_test(_ f64, _ f64) ?HitTestObject {
 	result := api.platform.hit_test_result or { return none }
 	return HitTestObject{
