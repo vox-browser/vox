@@ -24,17 +24,30 @@ pub:
 @[heap]
 pub struct PageClient {
 pub mut:
-	events                  []ClientEvent
-	screenshots             [][]u8
-	preferred_color_scheme_ string = 'auto'
-	preferred_contrast_     string = 'auto'
-	preferred_motion_       string = 'auto'
-	palette_is_dark_        bool
-	zoom_level_             f64 = 1
-	screen_rect_            PixelRect
-	request_frame_hook_     ?fn ()
-	compositor_supported_   bool
-	compositor_host_        ?&compositor.CompositorHost
+	events                              []ClientEvent
+	screenshots                         [][]u8
+	id_                                 u64 = 1
+	connection_open_                    bool = true
+	has_focus_                          bool = true
+	active_devtools_client_             bool
+	preferred_color_scheme_             string = 'auto'
+	preferred_contrast_                 string = 'auto'
+	preferred_motion_                   string = 'auto'
+	palette_is_dark_                    bool
+	zoom_level_                         f64 = 1
+	screen_rect_                        PixelRect
+	request_frame_hook_                 ?fn ()
+	compositor_supported_               bool
+	compositor_host_                    ?&compositor.CompositorHost
+	maximum_frames_per_second_        f64 = 60
+	next_cross_process_id_             u64 = 1
+	pending_root_navigable_id_         ?u64
+	manual_rendering_opportunities_    bool
+	rendering_update_requested_        bool
+	rendering_opportunity_granted_     bool = true
+	rendering_opportunity_for_update_  bool
+	last_rendering_frame_time_ns_      i64
+	last_rendering_frame_interval_ms_  f64
 }
 
 pub fn PageClient.create() &PageClient { return &PageClient{} }
@@ -69,6 +82,7 @@ pub fn (mut client PageClient) set_request_frame_hook(hook ?fn ()) {
 }
 
 pub fn (mut client PageClient) request_frame() {
+	client.rendering_update_requested_ = true
 	client.record('request-frame', '')
 	if hook := client.request_frame_hook_ {
 		hook()
