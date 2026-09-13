@@ -232,6 +232,7 @@ CONSOLIDATED_OWNER_ALIASES: dict[str, tuple[str, ...]] = {
     # Element representation in the standalone port.
     "AttributeParser": ("Scanner",),
     "SVGLength": ("SvgLength",),
+    "SVGLengthValue": ("SvgLengthValue",),
     "SVGNumber": ("SvgNumber",),
     "SVGLengthList": ("LengthList",),
     "SVGNumberList": ("NumberList",),
@@ -379,6 +380,16 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     ),
     ("SVGPathPaintable", "paint"): (("flat_paint_commands", "BlockBox"),),
     ("SVGPathPaintable", "dom_node"): (("dom_node", "Node"),),
+    # SVG's portable scalar record cannot import CSS without a module cycle.
+    # Layout owns the direct CSS-to-SVG conversion. Its serializer reads the
+    # same typed length/percentage state directly instead of constructing
+    # temporary CSS value wrappers for to_length()/to_percentage().
+    ("SVGLengthValue", "from_style_value"): (
+        ("svg_length_value_from_style_value", None),
+    ),
+    ("SVGLengthValue", "to_utf16_string"): (("to_string", "SvgLengthValue"),),
+    ("SVGLengthValue", "to_length"): (("to_string", "SvgLengthValue"),),
+    ("SVGLengthValue", "to_percentage"): (("to_string", "SvgLengthValue"),),
     ("Paintable", "paint_inspector_overlay"): (
         ("paint_inspector_overlay", "BlockBox"),
     ),
@@ -2659,6 +2670,8 @@ CONSOLIDATED_METHOD_MAPPINGS.update({
 CONSOLIDATED_FIELD_MAPPINGS: dict[
     tuple[str, str], tuple[tuple[str, str], ...]
 ] = {
+    ("SVGLengthValue", "kind"): (("kind", "SvgLengthValue"),),
+    ("SVGLengthValue", "value"): (("value", "SvgLengthValue"),),
     # WebAudio's C++ offset helpers expose GC member locations to generated
     # bindings. V's typed records access those members directly; requiring the
     # concrete field keeps this disposition tied to real translated state.

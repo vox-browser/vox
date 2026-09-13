@@ -109,6 +109,18 @@ pub struct LaterState {
 
 
 class ConsolidatedOwnerTests(unittest.TestCase):
+    def test_svg_length_value_uses_the_portable_scalar_owner(self) -> None:
+        functions = {
+            ("number", "SvgLengthValue"),
+            ("length", "SvgLengthValue"),
+            ("percentage", "SvgLengthValue"),
+        }
+
+        self.assertEqual(
+            audit.candidate_names("number", "SVGLengthValue", functions),
+            ("number",),
+        )
+
     def test_filtered_response_methods_use_unified_response_owner(self) -> None:
         functions = {
             ("navigation_timing_allow_values_list", "Response"),
@@ -152,6 +164,24 @@ class ConsolidatedOwnerTests(unittest.TestCase):
 
 
 class ConsolidatedFunctionTests(unittest.TestCase):
+    def test_svg_length_value_maps_css_conversion_and_direct_serialization(self) -> None:
+        self.assertEqual(
+            audit.CONSOLIDATED_METHOD_MAPPINGS[
+                ("SVGLengthValue", "from_style_value")
+            ],
+            (("svg_length_value_from_style_value", None),),
+        )
+        self.assertEqual(
+            audit.CONSOLIDATED_METHOD_MAPPINGS[
+                ("SVGLengthValue", "to_utf16_string")
+            ],
+            (("to_string", "SvgLengthValue"),),
+        )
+        self.assertEqual(
+            audit.CONSOLIDATED_FIELD_MAPPINGS[("SVGLengthValue", "kind")],
+            (("kind", "SvgLengthValue"),),
+        )
+
     def test_animation_overlay_adapter_maps_to_the_css_update_callback(self) -> None:
         self.assertEqual(
             audit.CONSOLIDATED_FUNCTION_MAPPINGS[
