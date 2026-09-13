@@ -82,6 +82,28 @@ fn test_context_menu_request_is_replaced_and_taken_once() {
 	assert model.take_context_menu_request() == none
 }
 
+fn test_screen_wake_lock_notifies_only_on_active_state_transitions() {
+	mut model := Page.create(1.0)!
+	model.acquire_screen_wake_lock()
+	model.acquire_screen_wake_lock()
+	assert model.is_screen_wake_lock_active()
+	assert model.client().events.map(it.name) == ['change-screen-wake-lock-state']
+	assert model.client().events.last().text == 'acquired'
+	model.release_screen_wake_lock()
+	assert model.client().events.len == 1
+	model.release_screen_wake_lock()
+	assert !model.is_screen_wake_lock_active()
+	assert model.client().events.last().text == 'released'
+
+	mut handle := ScreenWakeLockHandle.create(mut model)
+	assert handle.is_active()
+	assert model.is_screen_wake_lock_active()
+	handle.release()
+	handle.release()
+	assert !handle.is_active()
+	assert !model.is_screen_wake_lock_active()
+}
+
 fn test_document_work_requests_frames_on_demand() {
 	mut model := Page.create(1.0)!
 	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })

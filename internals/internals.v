@@ -1396,6 +1396,13 @@ pub fn (api &Internals) needs_display_list_record() bool {
 }
 
 pub fn (api &Internals) screen_wake_lock_active() bool {
+	if document := api.platform.associated_document {
+		dom_page := document.page()
+		if dom_page != unsafe { nil } && dom_page.target != unsafe { nil } {
+			page_model := unsafe { &page.Page(dom_page.target) }
+			return page_model.is_screen_wake_lock_active()
+		}
+	}
 	return api.platform.screen_wake_lock_active_
 }
 

@@ -27,6 +27,11 @@ pub enum MuteState {
 	muted
 }
 
+pub enum ScreenWakeLockState {
+	released
+	acquired
+}
+
 pub enum CaseSensitivity {
 	case_sensitive
 	case_insensitive
@@ -159,6 +164,7 @@ mut:
 	canvas_elements_               []u64
 	media_context_element_         ?u64
 	context_menu_request_          ?ContextMenuRequest
+	active_screen_wake_lock_count_ usize
 	mute_state_                    MuteState
 	user_style_                    ?string
 	last_find_query_               ?FindInPageQuery
@@ -472,6 +478,26 @@ pub fn (mut p Page) request_media_context_menu(id u64) bool {
 	}
 	p.media_context_element_ = id
 	return true
+}
+
+pub fn (mut p Page) acquire_screen_wake_lock() {
+	was_inactive := p.active_screen_wake_lock_count_ == 0
+	p.active_screen_wake_lock_count_++
+	if was_inactive {
+		p.client_.page_did_change_screen_wake_lock_state(.acquired)
+	}
+}
+
+pub fn (mut p Page) release_screen_wake_lock() {
+	assert p.active_screen_wake_lock_count_ > 0
+	p.active_screen_wake_lock_count_--
+	if p.active_screen_wake_lock_count_ == 0 {
+		p.client_.page_did_change_screen_wake_lock_state(.released)
+	}
+}
+
+pub fn (p &Page) is_screen_wake_lock_active() bool {
+	return p.active_screen_wake_lock_count_ > 0
 }
 
 pub fn (mut p Page) record_context_menu_request(request ContextMenuRequest) {

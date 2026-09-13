@@ -771,6 +771,22 @@ fn test_take_context_menu_request_preserves_kind_and_target() {
 	assert api.take_context_menu_request() == none
 }
 
+fn test_screen_wake_lock_state_uses_the_associated_page() {
+	mut page_model := page.Page.create(1.0)!
+	mut document := dom.Document.create_for_fragment_parsing()
+	document.set_page(unsafe { &dom.Page(page_model) })
+	mut platform := &PlatformState{
+		associated_document: document
+	}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	api := Internals.create(platform, navigator)
+	assert !api.screen_wake_lock_active()
+	page_model.acquire_screen_wake_lock()
+	assert api.screen_wake_lock_active()
+	page_model.release_screen_wake_lock()
+	assert !api.screen_wake_lock_active()
+}
+
 fn test_computed_accessibility_values_and_form_clear_algorithm() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'button')!
