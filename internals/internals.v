@@ -1120,6 +1120,10 @@ pub fn (api &Internals) get_shadow_root(element &dom.Element) ?&dom.ShadowRoot {
 	return element.shadow_root()
 }
 
+pub fn (api &Internals) has_shadow_root(element &dom.Element) bool {
+	return element.shadow_root() != none
+}
+
 pub fn (mut api Internals) handle_sdl_input_events() {
 	api.platform.sdl_input_event_pumps++
 }

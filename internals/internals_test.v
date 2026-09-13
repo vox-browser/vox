@@ -337,7 +337,7 @@ fn test_message_port_and_collection_diagnostics_use_live_objects() {
 	}
 
 	mut document := dom.Document.create_for_fragment_parsing()
-	mut root := document.create_element('main')!
+	mut root := document.create_element_ns('http://www.w3.org/1999/xhtml', 'main')!
 	document.append_child(root)
 	collection := document.get_elements_by_tag_name('*')
 	initial_generation := api.html_collection_cache_generation(collection)
@@ -345,6 +345,10 @@ fn test_message_port_and_collection_diagnostics_use_live_objects() {
 	root.append_child(document.create_element('span')!)
 	assert collection.length() == 2
 	assert api.html_collection_cache_generation(collection) == initial_generation + 1
+	assert !api.has_shadow_root(root)
+	shadow_root := root.attach_shadow(dom.ShadowRootInit{ mode: .open })!
+	assert api.has_shadow_root(root)
+	assert api.get_shadow_root(root)? == shadow_root
 }
 
 fn test_input_methods_record_exact_actions() {
