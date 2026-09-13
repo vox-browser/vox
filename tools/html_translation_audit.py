@@ -87,6 +87,9 @@ BINDING_RUNTIME_METHODS = {
     ("SVGAnimatedNumberList", "base_val_offset"),
     ("SVGAnimatedTransformList", "base_val_offset"),
     ("SVGAnimatedTransformList", "anim_val_offset"),
+    # Upstream retains an empty virtual initialization hook on foreignObject.
+    # V's tagged DOM element needs no subclass allocation step for it.
+    ("SVGForeignObjectElement", "initialize_element"),
 
     # WebAudio keeps its typed graph independent of the JS realm and DOM event
     # wrappers. These accessors and dispatch bridges exist only to recover the
@@ -441,6 +444,42 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     ),
     ("SVGUseElement", "svg_element_changed_before_document_complete"): (
         ("refresh_svg_use_shadow_trees", "Document"),
+    ),
+    # The fit-to-viewBox subclasses all delegate their initialization to the
+    # same translated value owner. V value defaults also keep the reflected
+    # AnimatedRect nulled before a valid viewBox is parsed.
+    ("SVGPatternElement", "initialize_element"): (
+        ("initialize_fit_to_view_box", "FitToViewBox"),
+    ),
+    ("SVGSVGElement", "initialize_element"): (
+        ("initialize_fit_to_view_box", "FitToViewBox"),
+    ),
+    ("SVGSymbolElement", "initialize_element"): (
+        ("initialize_fit_to_view_box", "FitToViewBox"),
+    ),
+    ("SVGViewElement", "initialize_element"): (
+        ("initialize_fit_to_view_box", "FitToViewBox"),
+    ),
+    # The V transform model combines the base element transform with subclass
+    # additions; the base SVGGraphicsElement contribution is the identity.
+    ("SVGGraphicsElement", "additional_element_transform"): (
+        ("element_transform", None),
+    ),
+    # SVG root natural sizing parses absolute width/height lengths through the
+    # shared unit-aware helper and ignores percentages/auto like upstream.
+    ("SVGSVGElement", "width_attribute_length"): (("svg_absolute_length", None),),
+    ("SVGSVGElement", "height_attribute_length"): (("svg_absolute_length", None),),
+    # Tagged SVG elements select their concrete layout node at the tree-builder
+    # boundary. The image provider reads the same retained DOM layout bridge;
+    # decoded content updates invalidate that node through its standard hook.
+    ("SVGSwitchElement", "create_layout_node"): (
+        ("create_layout_node_for_svg_element", None),
+    ),
+    ("SVGImageElement", "image_provider_layout_node"): (
+        ("unsafe_layout_node", "Node"),
+    ),
+    ("SVGImageElement", "decoded_image_data_did_update"): (
+        ("set_needs_layout_update", "Node"),
     ),
     # Primitive calculated-value resolution receives Layout's already-derived
     # length context explicitly in V, avoiding a CSS -> Layout module cycle.
