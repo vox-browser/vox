@@ -5,6 +5,7 @@
 // ClientEvent values so the browser/embedder boundary is deterministic.
 module page
 
+import compositor
 import dom
 import loader
 import math
@@ -173,6 +174,8 @@ mut:
 	user_style_                                  ?string
 	preferred_color_scheme_override_for_testing_ ?string
 	attached_documents_                          []&dom.Document
+	wheel_event_listener_state_generation_       u64
+	compositor_context_                          ?&compositor.CompositorContextHandle
 	last_find_query_                             ?FindInPageQuery
 	last_find_url_                               string
 	find_match_index_                            usize
@@ -270,6 +273,37 @@ pub fn (p &Page) async_scrolling_enabled() bool {
 
 pub fn (mut p Page) set_async_scrolling_enabled(value bool) {
 	p.async_scrolling_enabled_ = value
+}
+
+pub fn (p &Page) wheel_event_listener_state_generation() u64 {
+	return p.wheel_event_listener_state_generation_
+}
+
+pub fn (p &Page) has_compositor_host() bool {
+	return p.client_.compositor_host() != none
+}
+
+pub fn (mut p Page) ensure_compositor_host() {
+	p.client_.ensure_compositor_host()
+}
+
+pub fn (p &Page) compositor_host() &compositor.CompositorHost {
+	return p.client_.compositor_host() or { panic('Page has no compositor host') }
+}
+
+pub fn (mut p Page) set_compositor_context(context ?&compositor.CompositorContextHandle) {
+	p.compositor_context_ = context
+}
+
+pub fn (mut p Page) invalidate_compositor_wheel_event_listener_state() {
+	p.wheel_event_listener_state_generation_++
+	if !p.async_scrolling_enabled_ || !p.top_level_traversable_is_initialized() {
+		return
+	}
+	if context := p.compositor_context_ {
+		mut mutable_context := context
+		mutable_context.invalidate_wheel_event_listener_state(p.wheel_event_listener_state_generation_)
+	}
 }
 
 fn (mut p Page) register_attached_document(document &dom.Document) {

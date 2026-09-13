@@ -1,5 +1,6 @@
 module page
 
+import compositor
 import dom
 
 fn test_page_identity_geometry_dialogs_and_clipboard_correlation() {
@@ -216,6 +217,30 @@ fn test_page_runtime_preferences_and_user_style_invalidation() {
 	p.invalidate_style_for_preference_change()
 	assert document.style_environment_version() == initial_environment + 3
 	assert document.needs_full_style_update()
+}
+
+fn test_page_compositor_host_and_wheel_listener_generation() {
+	mut p := Page.create(1)!
+	p.ensure_compositor_host()
+	assert !p.has_compositor_host()
+
+	mut client := p.client()
+	client.compositor_supported_ = true
+	p.ensure_compositor_host()
+	assert p.has_compositor_host()
+	mut host := p.compositor_host()
+	context := host.create_context(compositor.CompositorContextId(73))!
+	p.set_compositor_context(context)
+
+	p.invalidate_compositor_wheel_event_listener_state()
+	assert p.wheel_event_listener_state_generation() == 1
+	assert !host.call_log().contains('invalidate_wheel_event_listener_state:73:1')
+
+	p.set_top_level_traversable('root')!
+	p.set_async_scrolling_enabled(true)
+	p.invalidate_compositor_wheel_event_listener_state()
+	assert p.wheel_event_listener_state_generation() == 2
+	assert host.call_log().contains('invalidate_wheel_event_listener_state:73:2')
 }
 
 fn test_find_navigation_resets_on_document_url_change_but_not_fragment_change() {

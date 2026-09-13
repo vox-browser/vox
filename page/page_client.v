@@ -6,6 +6,8 @@
 // tests without inventing IPC transport.
 module page
 
+import compositor
+
 pub struct NewWebViewResult {
 pub:
 	page_id       string
@@ -30,6 +32,8 @@ pub mut:
 	zoom_level_             f64 = 1
 	screen_rect_            PixelRect
 	request_frame_hook_     ?fn ()
+	compositor_supported_   bool
+	compositor_host_        ?&compositor.CompositorHost
 }
 
 pub fn PageClient.create() &PageClient { return &PageClient{} }
@@ -40,6 +44,20 @@ pub fn (client &PageClient) preferred_contrast() string { return client.preferre
 pub fn (client &PageClient) preferred_motion() string { return client.preferred_motion_ }
 pub fn (client &PageClient) zoom_level() f64 { return client.zoom_level_ }
 pub fn (client &PageClient) screen_rect() PixelRect { return client.screen_rect_ }
+
+pub fn (client &PageClient) supports_compositor() bool { return client.compositor_supported_ }
+
+pub fn (mut client PageClient) ensure_compositor_host() {
+	if !client.supports_compositor() || client.compositor_host_ != none {
+		return
+	}
+	client.compositor_host_ = compositor.new_compositor_host()
+	client.record('ensure-compositor-host', '')
+}
+
+pub fn (client &PageClient) compositor_host() ?&compositor.CompositorHost {
+	return client.compositor_host_
+}
 
 fn (mut client PageClient) record(name string, text string) {
 	client.events << ClientEvent{name: name, text: text}
