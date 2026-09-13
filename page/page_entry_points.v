@@ -280,17 +280,25 @@ pub fn (mut p Page) update_all_media_element_video_sinks() {
 }
 
 pub fn (mut p Page) register_canvas_element(id u64) {
-	if id !in p.canvas_elements_ { p.canvas_elements_ << id }
+	if id !in p.canvas_elements_ { p.canvas_elements_[id] = CanvasElementState{} }
+}
+
+pub fn (mut p Page) register_canvas_element_with_state(id u64, state CanvasElementState) {
+	p.canvas_elements_[id] = state
 }
 
 pub fn (mut p Page) unregister_canvas_element(id u64) {
-	p.canvas_elements_ = p.canvas_elements_.filter(it != id)
+	p.canvas_elements_.delete(id)
 }
 
 pub fn (p &Page) for_each_canvas_element(callback fn (u64)) {
-	for id in p.canvas_elements_ {
+	for id, _ in p.canvas_elements_ {
 		callback(id)
 	}
+}
+
+pub fn (p &Page) canvas_element_state(id u64) ?CanvasElementState {
+	return p.canvas_elements_[id]
 }
 
 pub fn (mut p Page) present_all_canvas_element_surfaces() {

@@ -79,12 +79,42 @@ pub:
 
 pub struct MediaElementState {
 pub mut:
-	playing               bool
-	muted                 bool
-	looping                bool
-	controls               bool
-	fullscreen             bool
-	page_mute_change_count u64
+	playing                      bool
+	muted                        bool
+	looping                      bool
+	controls                     bool
+	fullscreen                   bool
+	document_id                  dom.UniqueNodeID
+	playing_audio                bool
+	is_video                     bool
+	has_video_sink               bool
+	video_sink_attached          bool
+	video_sink_is_ticking        bool = true
+	video_sink_sync_count        u64
+	video_sink_restore_count     u64
+	video_sink_detach_count      u64
+	video_paint_facts_push_count u64
+	page_mute_change_count       u64
+}
+
+pub enum CanvasContextKind {
+	none
+	canvas_2d
+	webgl
+}
+
+pub struct CanvasElementState {
+pub mut:
+	context_kind                 CanvasContextKind
+	dirty                        bool
+	content_generation           u64
+	prepare_call_count           u64
+	context_prepare_count        u64
+	paint_facts_push_count       u64
+	backing_storage_loss_count   u64
+	webgl_restore_count          u64
+	webgl_connection_loss_count u64
+	webgl_context_lost           bool
 }
 
 pub enum ContextMenuRequestKind {
@@ -178,7 +208,7 @@ mut:
 	pending_geolocation_requests                 map[u64]PendingGeolocationRequest
 	next_geolocation_request_id                  u64
 	active_geolocation_request_id                ?u64
-	canvas_elements_                             []u64
+	canvas_elements_                             map[u64]CanvasElementState
 	media_context_element_                       ?u64
 	context_menu_request_                        ?ContextMenuRequest
 	active_screen_wake_lock_count_               usize
