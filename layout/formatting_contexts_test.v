@@ -3170,6 +3170,39 @@ fn test_absolutely_positioned_boxes_record_their_solved_insets() {
 	assert static_position.inset_bottom.to_double() == 90
 }
 
+fn test_split_inline_containing_blocks_include_block_descendants_and_valid_inline_triggers() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		.frame { margin:100px; width:400px; padding:10px }
+		.reset { margin:0; padding:0; border:0 }
+		.abs { position:absolute; inset:0; display:block }
+	</style>
+	<div class="frame"><span style="display:inline; position:relative"><span
+		id="relative" class="abs"></span><div class="reset" style="height:50px"></div></span></div>
+	<div class="frame" style="position:relative; height:100px"><span
+		style="display:inline; transform:scale(1)"><span id="transform" class="abs"></span><div
+		class="reset" style="height:30px"></div></span></div>
+	<div class="frame"><span style="display:inline; filter:blur(0)"><span
+		id="filter" class="abs"></span><div class="reset" style="height:30px"></div></span></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+
+	// The empty relative inline gets its dimensions from the split-out block child.
+	relative := used_for_id(result, 'relative')
+	assert relative.content_width().to_double() == 400
+	assert relative.content_height().to_double() == 50
+
+	// Transform does not apply to a non-atomic inline, so its abspos descendant
+	// falls through to the frame's padding box.
+	transformed := used_for_id(result, 'transform')
+	assert transformed.content_width().to_double() == 420
+	assert transformed.content_height().to_double() == 120
+
+	// Filter does establish an inline containing block.
+	filtered := used_for_id(result, 'filter')
+	assert filtered.content_width().to_double() == 400
+	assert filtered.content_height().to_double() == 30
+}
+
 // "For grid-template-columns and grid-template-rows the resolved value is the
 // used value", so the grid formatting context records the final track base sizes
 // and the explicit line names between them.

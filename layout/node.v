@@ -838,7 +838,14 @@ fn (mut n Node) recompute_inline_abspos_containing_block() {
 		}
 		if inline := find_inline_layout_node_for_dom(root, candidate) {
 			inline_node := unsafe { &Node(inline) }
-			if inline_node.computed_values_establish_absolute_positioning_containing_block() {
+			computed := inline_node.computed_values()
+			will_change := computed.will_change()
+			inline_establishes_cb := inline_node.is_positioned()
+				|| will_change.has_property(.position) || computed.filter().has_filters()
+				|| will_change.has_property(.filter)
+				|| computed.backdrop_filter().has_filters()
+				|| will_change.has_property(.backdrop_filter)
+			if inline_establishes_cb {
 				n.inline_containing_block_ = inline
 				return
 			}

@@ -5,6 +5,7 @@
 module layout
 
 import css
+import dom
 
 fn anchor_style_value_for_inset(computed &css.ComputedValues, property_id css.PropertyID) ?css.AnchorStyleValue {
 	value := unsafe { &css.ComputedProperties(computed) }.typed_property_value(property_id) or {
@@ -133,67 +134,113 @@ fn resolve_anchor_for_inset(state &LayoutState, box &Node, containing_box &Node,
 	return resolve_layout_size(box, css.Size.from_style_value(fallback), containing_extent)
 }
 
-// FormattingContext::compute_inline_containing_block_rect(). The returned
-// padding-box rectangle is expressed in the coordinate system of the Box that
-// the rest of layout stores as the abspos containing block.
-fn compute_inline_containing_block_rect(mut state LayoutState, inline_node &InlineNode, abspos_containing_block &Box) ?css.CSSPixelRect {
-	inline_as_node := unsafe { &Node(inline_node) }
-	mut block_container := ?&Node(none)
-	mut ancestor := inline_as_node.parent()
-	for ancestor != none {
-		candidate := ancestor or { break }
-		if candidate.is_block_container() || candidate.display().is_flex_inside()
-			|| candidate.display().is_grid_inside() {
-			block_container = candidate
-			break
-		}
-		ancestor = candidate.parent()
+struct InlineContainingBlockRectAccumulator {
+mut:
+	has_value bool
+	rect      css.CSSPixelRect
+}
+
+fn (mut accumulator InlineContainingBlockRectAccumulator) include(rect css.CSSPixelRect) {
+	if !accumulator.has_value {
+		accumulator.has_value = true
+		accumulator.rect = rect
+		return
 	}
-	container := block_container or { return none }
-	container_styled := container.as_node_with_style() or { return none }
-	container_state := state.try_get(container_styled) or { return none }
-	mut bounding_rect := ?css.CSSPixelRect(none)
-	for line_box in container_state.line_boxes {
-		for fragment in line_box.fragments_ {
-			mut belongs_to_inline := false
-			mut fragment_ancestor := ?&Node(fragment.layout_node())
-			for fragment_ancestor != none {
-				candidate := fragment_ancestor or { break }
-				if candidate == inline_as_node {
-					belongs_to_inline = true
-					break
+	left := css_pixels_min(accumulator.rect.left(), rect.left())
+	top := css_pixels_min(accumulator.rect.top(), rect.top())
+	right := css_pixels_max(accumulator.rect.right(), rect.right())
+	bottom := css_pixels_max(accumulator.rect.bottom(), rect.bottom())
+	accumulator.rect = css.CSSPixelRect{
+		x: left
+		y: top
+		width: right.minus(left)
+		height: bottom.minus(top)
+	}
+}
+
+fn collect_inline_containing_block_rect(state &LayoutState, node &Node, inline_dom_node &dom.Node, offset css.CSSPixelPoint, mut accumulator InlineContainingBlockRectAccumulator) {
+	if styled := node.as_node_with_style() {
+		if used := state.try_get(styled) {
+			for line_box in used.line_boxes {
+				for fragment in line_box.fragments_ {
+					if fragment_dom := fragment.layout_node().dom_node() {
+						if inline_dom_node.is_inclusive_ancestor_of(fragment_dom) {
+							fragment_offset := fragment.offset().plus(offset)
+							fragment_rect := css.CSSPixelRect{
+								x: fragment_offset.x()
+								y: fragment_offset.y()
+								width: fragment.width()
+								height: fragment.height()
+							}
+							accumulator.include(fragment_rect)
+						}
+					}
 				}
-				if candidate == container {
-					break
-				}
-				fragment_ancestor = candidate.parent()
 			}
-			if !belongs_to_inline {
+		}
+	}
+
+	for child in node.children() {
+		if child.is_absolutely_positioned() || child.is_floating() {
+			continue
+		}
+		mut child_offset := offset
+		mut child_used := ?&UsedValues(none)
+		if child_styled := child.as_node_with_style() {
+			if used := state.try_get(child_styled) {
+				child_used = used
+				child_offset = child_offset.plus(used.offset)
+			}
+		}
+		if child.is_box() && !child.is_anonymous() {
+			child_dom := child.dom_node() or { continue }
+			if !inline_dom_node.is_inclusive_ancestor_of(child_dom) {
 				continue
 			}
-			fragment_rect := css.CSSPixelRect{
-				x:      fragment.offset().x()
-				y:      fragment.offset().y()
-				width:  fragment.width()
-				height: fragment.height()
-			}
-			if existing := bounding_rect {
-				left := css_pixels_min(existing.left(), fragment_rect.left())
-				top := css_pixels_min(existing.top(), fragment_rect.top())
-				right := css_pixels_max(existing.right(), fragment_rect.right())
-				bottom := css_pixels_max(existing.bottom(), fragment_rect.bottom())
-				bounding_rect = css.CSSPixelRect{
-					x:      left
-					y:      top
-					width:  right.minus(left)
-					height: bottom.minus(top)
+			if used := child_used {
+				border_box_origin := child_offset.minus(css.CSSPixelPoint.new(used.border_left.plus(used.padding_left), used.border_top.plus(used.padding_top)))
+				border_rect := css.CSSPixelRect{
+					x: border_box_origin.x()
+					y: border_box_origin.y()
+					width: used.border_box_width()
+					height: used.border_box_height()
 				}
-			} else {
-				bounding_rect = fragment_rect
+				accumulator.include(border_rect)
 			}
 		}
+		collect_inline_containing_block_rect(state, child, inline_dom_node, child_offset, mut accumulator)
 	}
-	mut rect := bounding_rect or { return none }
+}
+
+// FormattingContext::compute_inline_containing_block_rect(). The returned
+// padding-box rectangle is expressed in the coordinate system of the Box that
+// the rest of layout stores as the abspos containing block. Split inline boxes
+// are collected from every continuation below their real block container.
+fn compute_inline_containing_block_rect(mut state LayoutState, inline_node &InlineNode, abspos_containing_block &Box) ?css.CSSPixelRect {
+	inline_as_node := unsafe { &Node(inline_node) }
+	inline_dom_node := inline_as_node.dom_node() or { return none }
+	outer_block := inline_as_node.non_anonymous_containing_block() or { return none }
+	abspos_node := unsafe { &Node(abspos_containing_block) }
+	mut outer_offset := css.CSSPixelPoint{}
+	mut ancestor := ?&Node(unsafe { &Node(outer_block) })
+	for ancestor != none {
+		current := ancestor or { break }
+		if current == abspos_node {
+			break
+		}
+		if styled := current.as_node_with_style() {
+			if used := state.try_get(styled) {
+				outer_offset = outer_offset.plus(used.offset)
+			}
+		}
+		ancestor = current.parent()
+	}
+	mut accumulator := InlineContainingBlockRectAccumulator{}
+	collect_inline_containing_block_rect(&state, unsafe { &Node(outer_block) }, inline_dom_node, outer_offset, mut accumulator)
+	if !accumulator.has_value {
+		return none
+	}
+	mut rect := accumulator.rect
 	if inline_styled := inline_as_node.as_node_with_style() {
 		if inline_state := state.try_get(inline_styled) {
 			rect.x = rect.x.minus(inline_state.padding_left)
@@ -203,23 +250,6 @@ fn compute_inline_containing_block_rect(mut state LayoutState, inline_node &Inli
 				rect.height.plus(inline_state.padding_top).plus(inline_state.padding_bottom)
 		}
 	}
-	mut offset := CSSPixelPoint.new(CSSPixels.new(0), CSSPixels.new(0))
-	mut current := ?&Node(container)
-	abspos_node := unsafe { &Node(abspos_containing_block) }
-	for current != none {
-		candidate := current or { break }
-		if candidate == abspos_node {
-			break
-		}
-		if styled := candidate.as_node_with_style() {
-			if used := state.try_get(styled) {
-				offset = offset.plus(used.offset)
-			}
-		}
-		current = candidate.parent()
-	}
-	rect.x = rect.x.plus(offset.x())
-	rect.y = rect.y.plus(offset.y())
 	return rect
 }
 
