@@ -2696,6 +2696,27 @@ fn test_svg_computed_geometry_properties_override_presentation_attributes_where_
 	assert foreign.content_height().to_double() == 12
 }
 
+fn test_svg_path_d_uses_the_css_cascade_and_presentation_attribute_syntax() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#styled { d:path("M 5 6 L 45 6") }
+		#none { d:none }
+	</style><svg width="100" height="50">
+		<path id="styled" d="M 0 0 L 10 0"/>
+		<path id="attribute" d="M 1 2 L 11 12"/>
+		<path id="none" d="M 0 0 L 10 0"/>
+	</svg>')
+	result := run_document_layout(document, 100, 50) or { panic('layout failed') }
+	styled := used_for_id(result, 'styled').computed_svg_path() or { panic('styled path missing') }
+	assert styled.serialize() == 'M 5 6 L 45 6'
+	attribute := used_for_id(result, 'attribute').computed_svg_path() or {
+		panic('attribute path missing')
+	}
+	assert attribute.serialize() == 'M 1 2 L 11 12'
+	none_path := used_for_id(result, 'none').computed_svg_path() or { svg.Path{} }
+	assert none_path.instructions.len == 0
+}
+
 fn test_relative_positioning_does_not_move_following_flow_content() {
 	document := html.parse_document('<!doctype html><style>
 		#one { position:relative; top:20px; left:5px; height:10px }

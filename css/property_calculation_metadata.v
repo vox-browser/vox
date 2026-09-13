@@ -613,6 +613,9 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		'cy' {
 			PropertyID.cy
 		}
+		'd' {
+			PropertyID.d
+		}
 		'direction' {
 			PropertyID.direction
 		}
@@ -1494,6 +1497,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.cursor { 'cursor' }
 		.cx { 'cx' }
 		.cy { 'cy' }
+		.d { 'd' }
 		.direction { 'direction' }
 		.display { 'display' }
 		.dominant_baseline { 'dominant-baseline' }
@@ -1915,6 +1919,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 		.cursor { 'auto' }
 		.cx { '0' }
 		.cy { '0' }
+		.d { 'none' }
 		.direction { 'ltr' }
 		.display { 'inline' }
 		.dominant_baseline { 'auto' }
@@ -2180,6 +2185,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 			AnimationType.repeatable_list
 		}
 		.text_decoration_skip_ink { AnimationType.discrete }
+		.d { AnimationType.by_computed_value }
 		else { .none_ }
 	}
 }
@@ -2187,6 +2193,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
 		.text_decoration_skip_ink { true }
+		.d { true }
 		.webkit_text_fill_color, .accent_color, .align_content, .align_items, .align_self, .all, .anchor_name, .anchor_scope, .appearance, .aspect_ratio, .backdrop_filter, .background, .background_attachment, .background_blend_mode, .background_clip, .background_color, .background_image, .background_origin, .background_position, .background_position_x, .background_position_y, .background_repeat, .background_size, .block_size, .border, .border_block, .border_block_color, .border_block_end, .border_block_end_color, .border_block_end_style, .border_block_end_width, .border_block_start, .border_block_start_color, .border_block_start_style, .border_block_start_width, .border_block_style, .border_block_width, .border_bottom, .border_bottom_color, .border_bottom_left_radius, .border_bottom_right_radius, .border_bottom_style, .border_bottom_width, .border_collapse, .border_color, .border_end_end_radius, .border_end_start_radius, .border_image, .border_image_outset, .border_image_repeat, .border_image_slice, .border_image_source, .border_image_width, .border_inline, .border_inline_color, .border_inline_end, .border_inline_end_color, .border_inline_end_style, .border_inline_end_width, .border_inline_start, .border_inline_start_color, .border_inline_start_style, .border_inline_start_width, .border_inline_style, .border_inline_width, .border_left, .border_left_color, .border_left_style, .border_left_width, .border_radius, .border_right, .border_right_color, .border_right_style, .border_right_width, .border_spacing, .border_start_end_radius, .border_start_start_radius, .border_style, .border_top, .border_top_color, .border_top_left_radius, .border_top_right_radius, .border_top_style, .border_top_width, .border_width, .bottom, .box_shadow, .box_sizing, .caption_side, .caret_color, .clear, .clip, .clip_path, .clip_rule, .color, .color_interpolation, .color_scheme, .column_count, .column_gap, .column_height, .column_span, .column_width, .columns, .content, .content_visibility, .corner_block_end_shape, .corner_block_start_shape, .corner_bottom_left_shape, .corner_bottom_right_shape, .corner_bottom_shape, .corner_end_end_shape, .corner_end_start_shape, .corner_inline_end_shape, .corner_inline_start_shape, .corner_left_shape, .corner_right_shape, .corner_shape, .corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape, .corner_top_shape, .counter_increment, .counter_reset, .counter_set, .cursor, .cx, .cy, .display, .dominant_baseline, .empty_cells, .fill, .fill_opacity, .fill_rule, .filter, .flex, .flex_basis, .flex_direction, .flex_flow, .flex_grow, .flex_shrink, .flex_wrap, .float_, .flood_color, .flood_opacity, .font, .font_family, .font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing, .font_size, .font_style, .font_variant, .font_variant_alternates, .font_variant_caps, .font_variant_east_asian, .font_variant_emoji, .font_variant_ligatures, .font_variant_numeric, .font_variant_position, .font_variation_settings, .font_weight, .font_width, .gap, .grid, .grid_area, .grid_auto_columns, .grid_auto_flow, .grid_auto_rows, .grid_column, .grid_column_end, .grid_column_start, .grid_row, .grid_row_end, .grid_row_start, .grid_template, .grid_template_areas, .grid_template_columns, .grid_template_rows, .height, .image_rendering, .inline_size, .inset, .inset_block, .inset_block_end, .inset_block_start, .inset_inline, .inset_inline_end, .inset_inline_start, .isolation, .justify_content, .justify_items, .justify_self, .left, .letter_spacing, .line_height, .list_style, .list_style_image, .list_style_position, .list_style_type, .margin, .margin_block, .margin_block_end, .margin_block_start, .margin_bottom, .margin_inline, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top, .mask, .mask_clip, .mask_composite, .mask_image, .mask_mode, .mask_origin, .mask_position, .mask_repeat, .mask_size, .mask_type, .max_block_size, .max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size, .min_width, .mix_blend_mode, .object_fit, .object_position, .opacity, .order, .orphans, .outline, .outline_color, .outline_offset, .outline_style, .outline_width, .overflow, .overflow_block, .overflow_clip_margin, .overflow_clip_margin_block, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top, .overflow_inline, .overflow_wrap, .overflow_x, .overflow_y, .padding, .padding_block, .padding_block_end, .padding_block_start, .padding_bottom, .padding_inline, .padding_inline_end, .padding_inline_start, .padding_left, .padding_right, .padding_top, .paint_order, .perspective, .perspective_origin, .place_content, .place_items, .place_self, .pointer_events, .position, .position_anchor, .position_area, .position_try_fallbacks, .position_try_order, .position_visibility, .quotes, .r, .right, .rotate, .row_gap, .rx, .ry, .scale, .scrollbar_color, .scrollbar_gutter, .scrollbar_width, .shape_image_threshold, .shape_margin, .shape_outside, .shape_rendering, .stop_color, .stop_opacity, .stroke, .stroke_dasharray, .stroke_dashoffset, .stroke_linecap, .stroke_linejoin, .stroke_miterlimit, .stroke_opacity, .stroke_width, .tab_size, .table_layout, .text_align, .text_anchor, .text_decoration, .text_decoration_color, .text_decoration_line, .text_decoration_style, .text_decoration_thickness, .text_indent, .text_justify, .text_overflow, .text_rendering, .text_shadow, .text_transform, .text_underline_offset, .text_underline_position, .text_wrap, .text_wrap_mode, .text_wrap_style, .top, .touch_action, .transform, .transform_box, .transform_origin, .transform_style, .translate, .user_select, .vertical_align, .view_transition_name, .visibility, .white_space, .white_space_collapse, .white_space_trim, .widows, .width, .word_break, .word_spacing, .x, .y, .z_index { true }
 		else { false }
 	}

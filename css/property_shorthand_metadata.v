@@ -32,7 +32,7 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
 				.corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape,
 				.corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape,
-				.counter_increment, .counter_reset, .counter_set, .cursor, .cx, .cy, .display,
+				.counter_increment, .counter_reset, .counter_set, .cursor, .cx, .cy, .d, .display,
 				.dominant_baseline, .empty_cells, .fill, .fill_opacity, .fill_rule, .filter,
 				.flex_basis, .flex_direction, .flex_grow, .flex_shrink, .flex_wrap, .float_,
 				.flood_color, .flood_opacity, .font_family, .font_feature_settings, .font_kerning,
@@ -342,7 +342,7 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
 				.corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape,
 				.corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape,
-				.counter_increment, .counter_reset, .counter_set, .cursor, .cx, .cy, .display,
+				.counter_increment, .counter_reset, .counter_set, .cursor, .cx, .cy, .d, .display,
 				.dominant_baseline, .empty_cells, .fill, .fill_opacity, .fill_rule, .filter,
 				.flex_basis, .flex_direction, .flex_grow, .flex_shrink, .flex_wrap, .float_,
 				.flood_color, .flood_opacity, .font_family, .font_feature_settings, .font_kerning,
@@ -633,6 +633,9 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 
 pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.d {
+			[.all]
+		}
 		.grid_column_start {
 			[.all, .grid_area, .grid_column]
 		}

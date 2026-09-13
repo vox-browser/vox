@@ -918,12 +918,26 @@ fn visible_svg_stroke_width(graphics_box &Node, viewport_size CSSPixelSize) f64 
 	return computed.length_percentage_to_px(.stroke_width, scaled_viewport_size) or { 1.0 }
 }
 
-// Most SVG shapes in current LibWeb still build geometry from their parsed
-// DOM attributes. SVGCircleElement is the exception: its geometry properties
-// are taken from ComputedValues, so author CSS and presentation attributes
-// participate. Mirror that exact boundary here.
+// Materialize geometry properties that current LibWeb obtains from computed
+// values. Author CSS therefore overrides their presentation attributes.
 fn svg_geometry_element_model(graphics_box &Node, element &dom.Element, viewport_size CSSPixelSize) svg.Element {
 	mut model := svg_element_model(element)
+	if element.local_name() == 'path' {
+		computed := graphics_box.computed_values()
+		value := computed.typed_property_value(.d) or {
+			model.attributes.delete('d')
+			return model
+		}
+		if value is css.BasicShapeStyleValue {
+			shape := value.basic_shape()
+			if shape is css.BasicShapePath {
+				model.attributes['d'] = shape.path_instructions
+				return model
+			}
+		}
+		model.attributes.delete('d')
+		return model
+	}
 	if element.local_name() != 'circle' {
 		return model
 	}

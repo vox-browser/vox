@@ -1196,6 +1196,18 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.color_interpolation {
 			return parser.parse_color_interpolation_value(mut tokens)
 		}
+		.d {
+			mut keyword_attempt := tokens.clone()
+			if value := parse_property_keyword_value(mut keyword_attempt, ['none']) {
+				tokens = keyword_attempt
+				return value
+			}
+			value := parser.parse_basic_shape_value(mut tokens) or { return none }
+			if value is BasicShapeStyleValue && value.basic_shape() is BasicShapePath {
+				return value
+			}
+			return none
+		}
 		.direction {
 			return parser.parse_direction_value(mut tokens)
 		}

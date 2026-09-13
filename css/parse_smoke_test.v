@@ -759,6 +759,17 @@ fn test_parse_as_type_covers_the_upstream_value_type_switch() {
 	assert parsed_type('"toolong"', .opentype_tag) == none
 }
 
+fn test_svg_d_property_accepts_none_and_path_only() {
+	assert property_id_from_string('d')? == .d
+	assert property_initial_value_string(.d) == 'none'
+	assert parse_css_value_logic(.d, 'none')?.serialize(.normal) == 'none'
+	path := parse_css_value_logic(.d, 'path("M0 0L3 4")')?
+	assert path is BasicShapeStyleValue
+	assert path.serialize(.normal) == 'path(nonzero, "M 0 0 L 3 4")'
+	assert parse_css_value_logic(.d, 'circle(10px)') == none
+	assert parse_css_value_logic(.d, 'M0 0L3 4') == none
+}
+
 fn test_parser_helpers_preserve_source_and_decode_css_bytes() {
 	sheet := parse_css_stylesheet(ParsingParams{}, 'a { color: red; }', none, none)
 	assert sheet.source_text()? == 'a { color: red; }'

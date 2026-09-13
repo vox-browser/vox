@@ -13565,6 +13565,7 @@ fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom
 	geometry_only := {
 		'cx': ['circle', 'ellipse']
 		'cy': ['circle', 'ellipse']
+		'd':  ['path']
 		'r':  ['circle']
 		'rx': ['ellipse', 'rect']
 		'ry': ['ellipse', 'rect']
@@ -13578,7 +13579,7 @@ fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom
 		} else if lower_name == 'font-stretch' {
 			property_name = 'font-width'
 		}
-		if lower_name in ['cx', 'cy', 'r', 'rx', 'ry'] {
+		if lower_name in ['cx', 'cy', 'd', 'r', 'rx', 'ry'] {
 			if tag_name !in geometry_only[lower_name] {
 				continue
 			}
@@ -13602,7 +13603,15 @@ fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom
 		if properties_to_cascade.len > 0 && property_id !in properties_to_cascade {
 			continue
 		}
-		value := parse_svg_presentation_attribute_value(element.document(), property_id, element.get_attribute_value(attribute_name)) or { continue }
+		attribute_value := element.get_attribute_value(attribute_name)
+		value_source := if property_id == .d {
+			'path(${serialize_a_string(attribute_value)})'
+		} else {
+			attribute_value
+		}
+		value := parse_svg_presentation_attribute_value(element.document(), property_id, value_source) or {
+			continue
+		}
 		properties << StyleProperty{
 			property_id: property_id
 			value: dom_style_value_from_value_logic(value)
