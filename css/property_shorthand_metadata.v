@@ -75,7 +75,7 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.text_underline_position, .text_wrap_mode, .text_wrap_style, .timeline_scope, .top,
 				.touch_action, .transform, .transform_box, .transform_origin, .transform_style,
 				.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-				.transition_timing_function, .translate, .user_select, .vertical_align,
+				.transition_timing_function, .translate, .user_select, .vector_effect, .vertical_align,
 				.view_timeline_axis, .view_timeline_inset, .view_timeline_name, .view_transition_name,
 				.visibility, .white_space_collapse, .white_space_trim, .widows, .width, .will_change,
 				.word_break, .word_spacing, .writing_mode, .x, .y, .z_index]
@@ -385,7 +385,7 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.text_underline_position, .text_wrap_mode, .text_wrap_style, .timeline_scope, .top,
 				.touch_action, .transform, .transform_box, .transform_origin, .transform_style,
 				.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-				.transition_timing_function, .translate, .user_select, .vertical_align,
+				.transition_timing_function, .translate, .user_select, .vector_effect, .vertical_align,
 				.view_timeline_axis, .view_timeline_inset, .view_timeline_name, .view_transition_name,
 				.visibility, .white_space_collapse, .white_space_trim, .widows, .width, .will_change,
 				.word_break, .word_spacing, .writing_mode, .x, .y, .z_index]
@@ -633,6 +633,9 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 
 pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.vector_effect {
+			[.all]
+		}
 		.d {
 			[.all]
 		}

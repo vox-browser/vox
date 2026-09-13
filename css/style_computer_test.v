@@ -1797,18 +1797,23 @@ fn test_svg_presentation_attributes_participate_at_the_correct_cascade_position(
 	assert attribute_style_with_stroke.length_percentage_to_px(.stroke_width, 100) or { -1 } == 2
 	assert attribute_style_with_stroke.length_percentage_to_px(.x, 100) or { -1 } == 12
 	assert attribute_style_with_stroke.length_percentage_to_px(.width, 100) or { -1 } == 25
+	from_attribute.set_attribute_value('vector-effect', 'non-scaling-stroke')
+	attribute_style_with_vector_effect := computer.compute_style(dom.AbstractElement.new(from_attribute, none))
+	assert attribute_style_with_vector_effect.vector_effect() == .non_scaling_stroke
 
 	mut overridden := doc.create_element_ns('http://www.w3.org/2000/svg', 'rect') or {
 		panic('${err}')
 	}
 	overridden.set_attribute_value('fill', 'red')
-	overridden.set_attribute_value('style', 'fill: blue')
+	overridden.set_attribute_value('vector-effect', 'non-scaling-stroke')
+	overridden.set_attribute_value('style', 'fill: blue; vector-effect: none')
 	overridden_style := computer.compute_style(dom.AbstractElement.new(overridden, none))
 	overridden_fill := overridden_style.property(.fill, .yes) or { panic('no overridden fill') }
 	overridden_color := parse_color_string(overridden_fill.css_text) or {
 		panic('overridden fill is not a color')
 	}
 	assert overridden_color.serialize() == 'rgb(0 0 255)'
+	assert overridden_style.vector_effect() == .none_
 }
 
 fn test_svg_transform_presentation_attributes_use_the_svg_transform_grammar() {

@@ -770,6 +770,14 @@ fn test_svg_d_property_accepts_none_and_path_only() {
 	assert parse_css_value_logic(.d, 'M0 0L3 4') == none
 }
 
+fn test_vector_effect_property_accepts_only_supported_keywords() {
+	assert property_id_from_string('vector-effect')? == .vector_effect
+	assert property_initial_value_string(.vector_effect) == 'none'
+	assert parse_css_value_logic(.vector_effect, 'none')?.serialize(.normal) == 'none'
+	assert parse_css_value_logic(.vector_effect, 'non-scaling-stroke')?.serialize(.normal) == 'non-scaling-stroke'
+	assert parse_css_value_logic(.vector_effect, 'non-scaling-size') == none
+}
+
 fn test_parser_helpers_preserve_source_and_decode_css_bytes() {
 	sheet := parse_css_stylesheet(ParsingParams{}, 'a { color: red; }', none, none)
 	assert sheet.source_text()? == 'a { color: red; }'

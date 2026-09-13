@@ -14,10 +14,10 @@ pub fn attribute_style_properties() []string {
 		'mask-type', 'opacity', 'overflow', 'paint-order', 'pointer-events', 'r', 'rx', 'ry',
 		'shape-rendering', 'stop-color', 'stop-opacity', 'stroke', 'stroke-dasharray',
 		'stroke-dashoffset', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit',
-		'stroke-opacity', 'stroke-width', 'text-anchor', 'text-decoration', 'text-rendering',
-		'text-overflow', 'transform', 'gradientTransform', 'patternTransform', 'transform-origin',
-		'unicode-bidi', 'visibility', 'white-space', 'width', 'word-spacing', 'writing-mode', 'x',
-		'y']
+		'stroke-opacity', 'stroke-width', 'vector-effect', 'text-anchor', 'text-decoration',
+		'text-rendering', 'text-overflow', 'transform', 'gradientTransform', 'patternTransform',
+		'transform-origin', 'unicode-bidi', 'visibility', 'white-space', 'width', 'word-spacing',
+		'writing-mode', 'x', 'y']
 }
 
 pub fn normalized_diagonal_length(width f64, height f64) f64 {

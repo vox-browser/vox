@@ -115,6 +115,8 @@ fn test_generated_shorthand_relationship_metadata_matches_upstream_order() {
 		.grid_column]
 	assert PropertyID.direction !in generated_expanded_longhands_for_shorthand(.all)
 	assert PropertyID.unicode_bidi !in generated_expanded_longhands_for_shorthand(.all)
+	assert PropertyID.vector_effect in generated_expanded_longhands_for_shorthand(.all)
+	assert generated_shorthands_for_longhand(.vector_effect) == [PropertyID.all]
 }
 
 fn test_computed_font_size_and_line_height_use_parent_metrics() {

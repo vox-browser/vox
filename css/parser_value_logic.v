@@ -1715,6 +1715,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.user_select {
 			return parser.parse_user_select_value(mut tokens)
 		}
+		.vector_effect {
+			return parse_property_keyword_value(mut tokens, ['none', 'non-scaling-stroke'])
+		}
 		.view_timeline_inset {
 			return parser.parse_view_timeline_inset_list_value(mut tokens)
 		}

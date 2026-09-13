@@ -1712,6 +1712,7 @@ pub enum Keyword {
 	no_referrer_when_downgrade
 	no_repeat
 	none_
+	non_scaling_stroke
 	nonzero
 	normal
 	not_allowed
@@ -2592,6 +2593,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.no_referrer_when_downgrade { 'no-referrer-when-downgrade' }
 		.no_repeat { 'no-repeat' }
 		.none_ { 'none' }
+		.non_scaling_stroke { 'non-scaling-stroke' }
 		.nonzero { 'nonzero' }
 		.normal { 'normal' }
 		.not_allowed { 'not-allowed' }
@@ -3454,6 +3456,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'no-referrer-when-downgrade' { Keyword.no_referrer_when_downgrade }
 		'no-repeat' { Keyword.no_repeat }
 		'none' { Keyword.none_ }
+		'non-scaling-stroke' { Keyword.non_scaling_stroke }
 		'nonzero' { Keyword.nonzero }
 		'normal' { Keyword.normal }
 		'not-allowed' { Keyword.not_allowed }

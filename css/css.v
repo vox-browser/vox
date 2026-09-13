@@ -401,6 +401,7 @@ pub enum PropertyID {
 	text_decoration_skip_ink
 	container_name
 	d
+	vector_effect
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow
 	gap

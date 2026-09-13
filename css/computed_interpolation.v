@@ -972,6 +972,11 @@ pub enum ShapeRendering {
 	geometric_precision
 }
 
+pub enum VectorEffect {
+	none_
+	non_scaling_stroke
+}
+
 pub enum PaintOrder {
 	fill
 	stroke
@@ -5200,6 +5205,15 @@ pub fn (c &ComputedProperties) shape_rendering() ShapeRendering {
 		.crispedges { ShapeRendering.crisp_edges }
 		.geometricprecision { ShapeRendering.geometric_precision }
 		else { ShapeRendering.auto_ }
+	}
+}
+
+pub fn (c &ComputedProperties) vector_effect() VectorEffect {
+	value := c.property(.vector_effect, .yes) or { return .none_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .none_ }
+	return match keyword {
+		.non_scaling_stroke { VectorEffect.non_scaling_stroke }
+		else { VectorEffect.none_ }
 	}
 }
 
@@ -13599,9 +13613,10 @@ fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom
 			'mask', 'mask-type', 'opacity', 'overflow', 'paint-order', 'pointer-events',
 			'shape-rendering', 'stop-color', 'stop-opacity', 'stroke', 'stroke-dasharray',
 			'stroke-dashoffset', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit',
-			'stroke-opacity', 'stroke-width', 'text-anchor', 'text-decoration', 'text-rendering',
-			'text-overflow', 'transform', 'gradienttransform', 'patterntransform', 'transform-origin',
-			'unicode-bidi', 'visibility', 'white-space', 'word-spacing', 'writing-mode'] {
+			'stroke-opacity', 'stroke-width', 'vector-effect', 'text-anchor', 'text-decoration',
+			'text-rendering', 'text-overflow', 'transform', 'gradienttransform', 'patterntransform',
+			'transform-origin', 'unicode-bidi', 'visibility', 'white-space', 'word-spacing',
+			'writing-mode'] {
 			continue
 		}
 		property_id := property_id_from_string(property_name) or { continue }

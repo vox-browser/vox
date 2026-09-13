@@ -3206,9 +3206,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		svg_stroke_width = computed.length_percentage_to_px(.stroke_width, percentage_basis) or { 1.0 }
 		svg_stroke_dasharray = resolved_svg_stroke_dasharray(computed, percentage_basis)
 		svg_stroke_dashoffset = computed.stroke_dashoffset().to_px(computed.length_resolution_context(), css.CSSPixels.nearest_value_for(percentage_basis)).to_double()
-		if svg_element := paint_element {
-			svg_non_scaling_stroke = svg_element.get_attribute_value('vector-effect').trim_space().to_lower() == 'non-scaling-stroke'
-		}
+		svg_non_scaling_stroke = computed.vector_effect() == .non_scaling_stroke
 		svg_stroke_first = svg_mask_stroke_precedes_fill(computed.paint_order())
 		svg_stroke_linecap = match computed.stroke_linecap() {
 			.butt { 0 }
