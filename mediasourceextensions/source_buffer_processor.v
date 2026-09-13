@@ -322,7 +322,14 @@ fn (mut processor SourceBufferProcessor) run_coded_frame_processing(frames []Dem
 		}
 		frame_end := frame.timestamp + frame.duration
 		mut demuxer := track_buffer.demuxer
-		demuxer.remove_coded_frames_and_dependants_in_range(frame.timestamp, frame_end)
+		if highest_end_timestamp := track_buffer.highest_end_timestamp_ {
+			if highest_end_timestamp <= frame.timestamp {
+				demuxer.remove_coded_frames_and_dependants_in_range(highest_end_timestamp,
+					frame_end)
+			}
+		} else {
+			demuxer.remove_coded_frames_and_dependants_in_range(frame.timestamp, frame_end)
+		}
 		demuxer.add_coded_frame(frame)
 		track_buffer.last_decode_timestamp_ = frame.timestamp
 		track_buffer.last_frame_duration_ = frame.duration
