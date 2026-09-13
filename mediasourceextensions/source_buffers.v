@@ -79,6 +79,32 @@ pub fn (buffer &SourceBuffer) mode() AppendMode {
 	return buffer.processor_.mode()
 }
 
+pub fn (buffer &SourceBuffer) timestamp_offset() f64 {
+	return buffer.processor_.timestamp_offset()
+}
+
+pub fn (mut buffer SourceBuffer) set_timestamp_offset(value f64) ! {
+	mut media_source := buffer.media_source_ or {
+		return error('InvalidStateError: SourceBuffer has no MediaSource')
+	}
+	if !media_source.source_buffers().contains(buffer) {
+		return error('InvalidStateError: SourceBuffer has been removed')
+	}
+	if buffer.updating() {
+		return error('InvalidStateError: SourceBuffer is updating')
+	}
+	if media_source.ready_state() == .ended {
+		media_source.set_ready_state_to_open_and_fire_sourceopen_event()
+	}
+	if buffer.processor_.is_parsing_media_segment() {
+		return error('InvalidStateError: Cannot set timestampOffset while parsing a media segment')
+	}
+	if buffer.processor_.mode() == .sequence {
+		buffer.processor_.set_group_start_timestamp(value)
+	}
+	buffer.processor_.set_timestamp_offset(value)
+}
+
 pub fn (mut buffer SourceBuffer) set_mode(mode AppendMode) ! {
 	mut media_source := buffer.media_source_ or {
 		return error('InvalidStateError: SourceBuffer has no MediaSource')

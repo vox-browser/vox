@@ -38,6 +38,7 @@ mut:
 	generate_timestamps_flag_                       bool
 	group_start_timestamp_                          ?f64
 	group_end_timestamp_                            f64
+	timestamp_offset_                               f64
 	first_initialization_segment_received_          bool
 	pending_initialization_segment_for_change_type_ bool
 }
@@ -80,6 +81,14 @@ pub fn (mut processor SourceBufferProcessor) set_generate_timestamps_flag(value 
 
 pub fn (processor &SourceBufferProcessor) group_end_timestamp() f64 {
 	return processor.group_end_timestamp_
+}
+
+pub fn (processor &SourceBufferProcessor) timestamp_offset() f64 {
+	return processor.timestamp_offset_
+}
+
+pub fn (mut processor SourceBufferProcessor) set_timestamp_offset(value f64) {
+	processor.timestamp_offset_ = value
 }
 
 pub fn (mut processor SourceBufferProcessor) set_group_start_timestamp(value ?f64) {
@@ -286,6 +295,7 @@ pub fn (mut processor SourceBufferProcessor) reset_parser_state() {
 fn (mut processor SourceBufferProcessor) run_coded_frame_processing(frames []DemuxedCodedFrame) {
 	for input_frame in frames {
 		mut frame := input_frame
+		frame.timestamp += processor.timestamp_offset_
 		mut track_buffer := processor.track_buffers_[frame.track_number] or { continue }
 		if last := track_buffer.last_decode_timestamp_ {
 			last_duration := track_buffer.last_frame_duration_ or { f64(0) }

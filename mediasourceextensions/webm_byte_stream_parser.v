@@ -57,11 +57,11 @@ pub:
 pub struct DemuxedCodedFrame {
 pub:
 	track_number u64
-	timestamp    f64
 	is_keyframe  bool
 	data         []u8
 pub mut:
-	duration f64
+	timestamp f64
+	duration  f64
 }
 
 pub struct WebMInitializationSegmentResult {
