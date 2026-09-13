@@ -1,5 +1,6 @@
 module css
 
+import dom
 import strings
 
 // https://drafts.csswg.org/css-conditional-5/#container-rule
@@ -27,6 +28,71 @@ pub fn (query &ContainerQuery) contains_size_feature() bool {
 
 pub fn (query &ContainerQuery) contains_style_feature() bool {
 	return query.feature_requirements.contains_style_feature()
+}
+
+fn container_satisfies_requirements(element &dom.Element, requirements ContainerQueryFeatureRequirements) bool {
+	dom_style := element.el_computed_properties() or { return false }
+	style := computed_properties_from_dom(dom_style) or { return false }
+	container_type := style.container_type()
+	inline_axis_horizontal := style.writing_mode() == .horizontal_tb
+
+	if requirements.requires_width_container {
+		if inline_axis_horizontal {
+			if !(container_type.is_size_container || container_type.is_inline_size_container) {
+				return false
+			}
+		} else if !container_type.is_size_container {
+			return false
+		}
+	}
+	if requirements.requires_height_container {
+		if inline_axis_horizontal {
+			if !container_type.is_size_container {
+				return false
+			}
+		} else if !(container_type.is_size_container || container_type.is_inline_size_container) {
+			return false
+		}
+	}
+	if requirements.requires_inline_size_container
+		&& !(container_type.is_size_container || container_type.is_inline_size_container) {
+		return false
+	}
+	if requirements.requires_block_size_container && !container_type.is_size_container {
+		return false
+	}
+	if requirements.requires_scroll_state_container && !container_type.is_scroll_state_container {
+		return false
+	}
+	return true
+}
+
+pub fn container_name_matches(element &dom.Element, container_name ?string) bool {
+	name := container_name or { return true }
+	dom_style := element.el_computed_properties() or { return false }
+	style := computed_properties_from_dom(dom_style) or { return false }
+	return name in style.container_name()
+}
+
+// https://drafts.csswg.org/css-conditional-5/#container-rule
+pub fn (query &ContainerQuery) evaluate(element dom.AbstractElement, container_name ?string) MatchResult {
+	if query.feature_requirements.has_unknown_or_unsupported_feature {
+		return .unknown
+	}
+
+	mut candidate := element.element().as_node().flat_tree_parent_element()
+	for candidate != none {
+		container := candidate or { break }
+		if container_name_matches(container, container_name)
+			&& container_satisfies_requirements(container, query.feature_requirements) {
+			return query.condition.evaluate(BooleanExpressionEvaluationContext{
+				document: element.document()
+				query_container: container
+			})
+		}
+		candidate = container.as_node().flat_tree_parent_element()
+	}
+	return .unknown
 }
 
 pub fn (query &ContainerQuery) matches() bool {

@@ -1,5 +1,7 @@
 module css
 
+import dom
+
 struct ContainerRuleVisitCollector {
 mut:
 	types []CSSRuleType
@@ -37,6 +39,43 @@ fn test_container_query_collects_unknown_feature_requirements_recursively() {
 
 	known_constant := ContainerQuery.create(BooleanExpression.create_constant(.true_))
 	assert !known_constant.feature_requirements.has_unknown_or_unsupported_feature
+}
+
+fn test_container_query_selects_a_named_flat_tree_ancestor() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut outer := document.create_element_ns('http://www.w3.org/1999/xhtml', 'section') or {
+		panic('${err}')
+	}
+	outer.set_attribute_value('style', 'container-name: outer')
+	mut inner := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	inner.set_attribute_value('style', 'container-name: card')
+	mut subject := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(outer.as_node()) or { panic('${err}') }
+	mut outer_node := outer.as_node()
+	outer_node.append_child(inner.as_node()) or { panic('${err}') }
+	mut inner_node := inner.as_node()
+	inner_node.append_child(subject.as_node()) or { panic('${err}') }
+
+	computer := StyleComputer.new(document)
+	outer_style := computer.compute_style(dom.AbstractElement.new(outer, none))
+	outer.set_computed_properties(none, computed_properties_to_dom(outer_style))
+	inner_style := computer.compute_style(dom.AbstractElement.new(inner, none))
+	inner.set_computed_properties(none, computed_properties_to_dom(inner_style))
+
+	query := ContainerQuery.create(BooleanExpression.create_constant(.true_))
+	abstract_subject := dom.AbstractElement.new(subject, none)
+	assert query.evaluate(abstract_subject, none) == .true_
+	assert query.evaluate(abstract_subject, 'card') == .true_
+	assert query.evaluate(abstract_subject, 'outer') == .true_
+	assert query.evaluate(abstract_subject, 'missing') == .unknown
+
+	unknown := ContainerQuery.create(BooleanExpression.create_general_enclosed('(future)', .false_))
+	assert unknown.evaluate(abstract_subject, none) == .unknown
 }
 
 fn test_multiple_container_conditions_hide_legacy_singular_accessors() {
