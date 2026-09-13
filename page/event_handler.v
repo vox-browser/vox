@@ -58,6 +58,7 @@ mut:
 	mousedown_visual_viewport_position_  ?PixelPoint
 	mousedown_click_count                int
 	mousedown_target_is_drag_candidate_  bool
+	mousedown_preserved_selection_       bool
 	prevent_mouse_event                  bool
 	previous_screen                      ?PixelPoint
 	focused_target_                      string
@@ -71,6 +72,7 @@ mut:
 	selection_anchor                     PixelPoint
 	selection_extent                     PixelPoint
 	input_selection_range_               ?SelectionRange
+	selection_boundary_                  ?dom.BoundaryPoint
 	last_known_mouse_visual_position_    ?PixelPoint
 	last_known_mouse_screen_position_    ?PixelPoint
 	last_known_mouse_buttons_            u32
@@ -85,6 +87,7 @@ mut:
 	clipboard_event_cancellations_       map[string]bool
 	clipboard_event_items_               map[string][]ClipboardDataItem
 	system_clipboard_items_              []ClipboardDataItem
+	primary_paste_enabled_               bool = true
 }
 
 pub fn (mut handler EventHandler) set_document_state(active bool, has_paint_root bool) {

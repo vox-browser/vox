@@ -319,6 +319,7 @@ pub fn (p &Page) enable_primary_paste() bool {
 
 pub fn (mut p Page) set_enable_primary_paste(value bool) {
 	p.enable_primary_paste_ = value
+	p.event_handler.primary_paste_enabled_ = value
 }
 
 pub fn (p &Page) async_scrolling_enabled() bool {

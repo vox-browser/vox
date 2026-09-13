@@ -10,6 +10,7 @@ import dom
 pub struct CaretPosition {
 pub:
 	boundary               dom.BoundaryPoint
+	secondary_boundary     ?dom.BoundaryPoint
 	layout_node            &dom.LayoutNode = unsafe { nil }
 	user_select_used_value css.UserSelect = .auto_
 }
