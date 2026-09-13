@@ -208,7 +208,7 @@ fn test_style_ranges_parse_serialize_and_collect_requirements() {
 		range.collect_container_query_feature_requirements(mut requirements)
 		assert requirements.requires_style_container
 		assert !requirements.has_unknown_or_unsupported_feature
-		assert range.evaluate(BooleanExpressionEvaluationContext{}) == .false_
+		assert range.evaluate(BooleanExpressionEvaluationContext{}) == .unknown
 	}
 
 	for invalid in [
@@ -222,4 +222,104 @@ fn test_style_ranges_parse_serialize_and_collect_requirements() {
 		mut tokens := SupportsTokenStream.from_values(parser.component_values)
 		assert parser.parse_style_query(mut tokens, .false_) == none, invalid
 	}
+}
+
+fn test_style_ranges_evaluate_numeric_values_and_custom_properties() {
+	mut document, _, mut target := style_query_test_tree('.target {
+		font-size: 16px;
+		--x: 5;
+		--y: 3;
+		--length: 11px;
+		--angle: 1deg;
+		--time: 1s;
+		--resolution: 96dpi;
+		--registered-length: calc(1em + 14px);
+		--attr-length: attr(data-length type(<length>));
+		color: if(style(--attr-length >= 30px): red; else: blue);
+		width: if(style(calc(var(--x) + 1) >= var(--y)): 10px; else: 20px);
+	}')
+	target.set_attribute_value('data-length', '30px')
+	register_property_for_document(mut document, PropertyDefinition{
+		name:          '--registered-length'
+		syntax:        '<length>'
+		inherits:      false
+		initial_value: '0px'
+	}) or { panic('${err}') }
+	register_property_for_document(mut document, PropertyDefinition{
+		name:          '--attr-length'
+		syntax:        '<length>'
+		inherits:      false
+		initial_value: '0px'
+	}) or { panic('${err}') }
+	document.needs_full_style_update = true
+	document.update_style()
+
+	for query in [
+		'5 > 3',
+		'0 = 0',
+		'0 = 0px',
+		'0 < 3px',
+		'5.5 > 3.3',
+		'10em > 3px',
+		'3turn > 3deg',
+		'3% >= 3%',
+		'3s > 3ms',
+		'3khz > 30hz',
+		'3dppx > 96dpi',
+		'--x <= 5',
+		'--x >= --y',
+		'--length > 3px',
+		'--angle < 1turn',
+		'--time <= 1000ms',
+		'3dppx > --resolution',
+		'--x >= calc(3 + 2)',
+		'--registered-length >= 30px',
+		'--attr-length >= 30px',
+		'10px <= 10px < 11px',
+		'3 < --x <= 5',
+	] {
+		assert evaluate_parsed_style_query(parsed_style_query(query), target) == .true_, query
+	}
+
+	for query in [
+		'0 = 0%',
+		'5 > 3 !invalid',
+		'5 !invalid > 3',
+		'3px > 3',
+		'3em > 3deg',
+		'1px >= 1%',
+		'--length > 3',
+		'--x + 1 >= --y',
+		'--x >= --y + 1',
+		'--x >= --y > --x',
+	] {
+		assert evaluate_parsed_style_query(parsed_style_query(query), target) == .false_, query
+	}
+
+	mut did_evaluate_attr_tainted_style_query := false
+	assert parsed_style_query('--attr-length >= 30px').evaluate(BooleanExpressionEvaluationContext{
+		document:                              document
+		style_query_element:                   dom.AbstractElement.new(target, none)
+		did_evaluate_attr_tainted_style_query: &did_evaluate_attr_tainted_style_query
+	}) == .true_
+	assert did_evaluate_attr_tainted_style_query
+	assert computed_value_for(target, .color) or { '' } == 'rgb(255, 0, 0)'
+	assert computed_value_for(target, .width) or { '' } == '10px'
+}
+
+fn test_style_range_cycle_marks_existing_property_context_cyclic() {
+	_, _, target := style_query_test_tree('.target { --x: 5; }')
+	mut guarded_contexts := GuardedSubstitutionContexts{}
+	mut outer_context := SubstitutionContext{
+		dependency_type: .property
+		first:           '--x'
+	}
+	guarded_contexts.guard(mut outer_context)
+	result := parsed_style_query('--x > 3').evaluate(BooleanExpressionEvaluationContext{
+		document:            target.document()
+		style_query_element: dom.AbstractElement.new(target, none)
+		guarded_contexts:    &guarded_contexts
+	})
+	assert result == .false_
+	assert guarded_contexts.is_marked_cyclic(outer_context)
 }

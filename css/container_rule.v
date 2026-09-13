@@ -23,6 +23,21 @@ fn StyleRangeValue.from_value(value []ComponentValue) StyleRangeValue {
 	}
 }
 
+enum StyleRangeNumericType {
+	number
+	length
+	percentage
+	angle
+	time
+	frequency
+	resolution
+}
+
+struct StyleRangeComparableValue {
+	type_ StyleRangeNumericType
+	value f64
+}
+
 fn (value StyleRangeValue) to_string() string {
 	if value.is_property {
 		return (value.property or { return '' }).name()
@@ -527,6 +542,192 @@ fn style_query_values_are_equal(left StyleValue, right StyleValue, computation_c
 		return comparable_left.equals(comparable_right)
 	}
 	return left_absolutized.equals(right_absolutized)
+}
+
+fn comparable_style_range_value(value StyleValue, computation_context ComputationContext) ?StyleRangeComparableValue {
+	mut comparable := value.absolutized(computation_context)
+	if comparable is CalculatedStyleValue {
+		calculation_resolution_context := CalculationResolutionContext.from_computation_context(computation_context,
+			none)
+		comparable = comparable.resolve_as_style_value(calculation_resolution_context) or {
+			return none
+		}
+	}
+
+	return match comparable {
+		IntegerStyleValue {
+			StyleRangeComparableValue{
+				type_: .number
+				value: f64(comparable.integer())
+			}
+		}
+		NumberStyleValue {
+			StyleRangeComparableValue{
+				type_: .number
+				value: comparable.number()
+			}
+		}
+		LengthStyleValue {
+			if !comparable.length().is_absolute() {
+				return none
+			}
+			StyleRangeComparableValue{
+				type_: .length
+				value: comparable.length().absolute_length_to_px_without_rounding()
+			}
+		}
+		PercentageStyleValue {
+			StyleRangeComparableValue{
+				type_: .percentage
+				value: comparable.percentage().value()
+			}
+		}
+		AngleStyleValue {
+			StyleRangeComparableValue{
+				type_: .angle
+				value: comparable.angle().to_degrees()
+			}
+		}
+		TimeStyleValue {
+			StyleRangeComparableValue{
+				type_: .time
+				value: comparable.time().to_seconds()
+			}
+		}
+		FrequencyStyleValue {
+			StyleRangeComparableValue{
+				type_: .frequency
+				value: comparable.frequency().to_hertz()
+			}
+		}
+		ResolutionStyleValue {
+			StyleRangeComparableValue{
+				type_: .resolution
+				value: comparable.resolution().to_dots_per_pixel()
+			}
+		}
+		else {
+			return none
+		}
+	}
+}
+
+fn style_range_numeric_type_is_dimension(type_ StyleRangeNumericType) bool {
+	return type_ !in [.number, .percentage]
+}
+
+fn style_range_types_can_compare(left StyleRangeComparableValue, right StyleRangeComparableValue) bool {
+	if left.type_ == right.type_ {
+		return true
+	}
+	left_is_unitless_zero := left.type_ == .number && left.value == 0
+	right_is_unitless_zero := right.type_ == .number && right.value == 0
+	return (left_is_unitless_zero && style_range_numeric_type_is_dimension(right.type_))
+		|| (right_is_unitless_zero && style_range_numeric_type_is_dimension(left.type_))
+}
+
+fn compare_style_range_values(left StyleRangeComparableValue, comparison MediaFeatureComparison, right StyleRangeComparableValue) bool {
+	if !style_range_types_can_compare(left, right) {
+		return false
+	}
+	return match comparison {
+		.equal { left.value == right.value }
+		.less_than { left.value < right.value }
+		.less_than_or_equal { left.value <= right.value }
+		.greater_than { left.value > right.value }
+		.greater_than_or_equal { left.value >= right.value }
+	}
+}
+
+fn parse_style_range_literal_value(tokens []ComponentValue) ?StyleValue {
+	if contains_guaranteed_invalid_value(tokens) {
+		return none
+	}
+	serialized_tokens := serialize_a_series_of_component_values(tokens)
+	for value_type in [ValueType.number, .length, .percentage, .angle, .time, .frequency,
+		.resolution] {
+		mut parser := Parser.from_css_text(serialized_tokens)
+		if value := parser.parse_entirely_as_type(value_type) {
+			return value
+		}
+	}
+	return none
+}
+
+fn record_style_range_attr_taint(tokens []ComponentValue, context BooleanExpressionEvaluationContext) {
+	if !contains_attr_tainted_value(tokens) {
+		return
+	}
+	if context.did_evaluate_attr_tainted_style_query != none {
+		taint_flag := context.did_evaluate_attr_tainted_style_query or { return }
+		unsafe {
+			*taint_flag = true
+		}
+	}
+}
+
+fn evaluate_style_range_value(range_value StyleRangeValue, element dom.AbstractElement, document &dom.Document, computation_context ComputationContext, context BooleanExpressionEvaluationContext, mut guarded_contexts GuardedSubstitutionContexts) ?StyleRangeComparableValue {
+	if range_value.is_property {
+		property := range_value.property or { return none }
+		if !property.is_custom_property() {
+			return none
+		}
+		property_name := property.name()
+		if guarded_contexts.mark_existing_as_cyclic(SubstitutionContext{
+			dependency_type: .property
+			first:           property_name
+		}) {
+			return none
+		}
+
+		computed_dom_value := compute_value_of_custom_property_with_guarded_contexts(element,
+			property_name, mut guarded_contexts)
+		computed_tokens := style_query_typed_value(computed_dom_value).tokenize()
+		record_style_range_attr_taint(computed_tokens, context)
+		registration := document.get_registered_custom_property(property_name)
+		mut comparable_value := style_query_comparable_custom_property_value(computed_dom_value,
+			registration, computation_context)
+		if comparable_value is GuaranteedInvalidStyleValue {
+			return none
+		}
+		if registration == none || comparable_value is UnresolvedStyleValue {
+			comparable_value = parse_style_range_literal_value(computed_tokens) or { return none }
+		}
+		return comparable_style_range_value(comparable_value, computation_context)
+	}
+
+	record_style_range_attr_taint(range_value.value, context)
+	parsed_value := parse_style_range_literal_value(range_value.value) or { return none }
+	return comparable_style_range_value(parsed_value, computation_context)
+}
+
+fn evaluate_style_range_with_guarded_contexts(range &BooleanExpression, context BooleanExpressionEvaluationContext, mut guarded_contexts GuardedSubstitutionContexts) MatchResult {
+	element := context.style_query_element or { return .unknown }
+	document := context.document or { element.document() }
+	computation_context := style_query_computation_context(element)
+
+	left := evaluate_style_range_value(range.style_range_left, element, document,
+		computation_context, context, mut guarded_contexts) or { return .false_ }
+	middle := evaluate_style_range_value(range.style_range_middle, element, document,
+		computation_context, context, mut guarded_contexts) or { return .false_ }
+	if !compare_style_range_values(left, range.style_range_left_comparison, middle) {
+		return .false_
+	}
+	if !range.style_range_has_right {
+		return .true_
+	}
+	right := evaluate_style_range_value(range.style_range_right, element, document,
+		computation_context, context, mut guarded_contexts) or { return .false_ }
+	return as_match_result(compare_style_range_values(middle,
+		range.style_range_right_comparison, right))
+}
+
+fn evaluate_style_range(range &BooleanExpression, context BooleanExpressionEvaluationContext) MatchResult {
+	if mut guarded_contexts := context.guarded_contexts {
+		return evaluate_style_range_with_guarded_contexts(range, context, mut guarded_contexts)
+	}
+	mut guarded_contexts := GuardedSubstitutionContexts{}
+	return evaluate_style_range_with_guarded_contexts(range, context, mut guarded_contexts)
 }
 
 fn evaluate_style_feature_with_guarded_contexts(property PropertyNameAndID, has_value bool, query_value []ComponentValue, context BooleanExpressionEvaluationContext, mut guarded_contexts GuardedSubstitutionContexts) MatchResult {

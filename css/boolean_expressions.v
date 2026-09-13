@@ -319,8 +319,7 @@ pub fn (expression &BooleanExpression) evaluate(context BooleanExpressionEvaluat
 		.general_enclosed, .constant, .supports_declaration, .supports_selector,
 		.supports_font_tech, .supports_font_format, .supports_env, .supports_at_rule {
 			if expression.style_feature_is_range {
-				// Parsed separately from evaluation so each translation slice remains testable.
-				return .false_
+				return evaluate_style_range(expression, context)
 			}
 			if property := expression.style_feature_property {
 				return evaluate_style_feature(property, expression.style_feature_has_value,

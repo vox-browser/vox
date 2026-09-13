@@ -1953,6 +1953,16 @@ pub fn (mut parser Parser) parse_as_type(type_ ValueType) ?StyleValue {
 	return parser.parse_value(type_, mut tokens)
 }
 
+pub fn (mut parser Parser) parse_entirely_as_type(type_ ValueType) ?StyleValue {
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	value := parser.parse_value(type_, mut tokens) or { return none }
+	tokens.consume_whitespace()
+	if tokens.has_more_tokens() {
+		return none
+	}
+	return value
+}
+
 fn (mut stream ComponentValueStream) consume_remaining_component_values() []ComponentValue {
 	remaining_values := stream.values[stream.index..].clone()
 	stream.index = stream.values.len
