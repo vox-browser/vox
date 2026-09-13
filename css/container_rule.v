@@ -3,6 +3,33 @@ module css
 import dom
 import strings
 
+pub struct StyleRangeValue {
+pub:
+	is_property bool
+	property    ?PropertyNameAndID
+	value       []ComponentValue
+}
+
+fn StyleRangeValue.from_property(property PropertyNameAndID) StyleRangeValue {
+	return StyleRangeValue{
+		is_property: true
+		property:    property
+	}
+}
+
+fn StyleRangeValue.from_value(value []ComponentValue) StyleRangeValue {
+	return StyleRangeValue{
+		value: value
+	}
+}
+
+fn (value StyleRangeValue) to_string() string {
+	if value.is_property {
+		return (value.property or { return '' }).name()
+	}
+	return serialize_a_series_of_component_values(value.value)
+}
+
 // https://drafts.csswg.org/css-conditional-5/#container-rule
 @[heap]
 pub struct ContainerQuery {
@@ -207,9 +234,98 @@ fn (mut parser Parser) parse_style_query(mut tokens SupportsTokenStream, result_
 	return parser.parse_boolean_expression(mut tokens, result_for_general_enclosed, .style_feature)
 }
 
+fn next_style_query_token_is_comparison(tokens SupportsTokenStream) bool {
+	mut transaction := SupportsTokenStream{
+		values:              tokens.values.clone()
+		index:               tokens.index
+		declared_namespaces: tokens.declared_namespaces.clone()
+	}
+	return parse_media_feature_comparison(mut transaction) != none
+}
+
+fn style_query_values_contain_comparison(values []ComponentValue) bool {
+	mut tokens := SupportsTokenStream.from_values(values)
+	for tokens.has_next_token() {
+		if next_style_query_token_is_comparison(tokens) {
+			return true
+		}
+		tokens.discard_a_token()
+	}
+	return false
+}
+
+fn parse_style_range_value(values []ComponentValue) ?StyleRangeValue {
+	mut start := 0
+	for start < values.len && values[start].is(.whitespace) {
+		start++
+	}
+	mut end := values.len
+	for end > start && values[end - 1].is(.whitespace) {
+		end--
+	}
+	if start == end {
+		return none
+	}
+	trimmed := values[start..end].clone()
+	if trimmed.len == 1 && trimmed[0].is(.ident)
+		&& is_a_custom_property_name_string(trimmed[0].token().ident()) {
+		property := PropertyNameAndID.from_name(trimmed[0].token().ident()) or { return none }
+		return StyleRangeValue.from_property(property)
+	}
+	return StyleRangeValue.from_value(trimmed)
+}
+
+fn parse_style_range_value_until_comparison(mut tokens SupportsTokenStream) ?StyleRangeValue {
+	start := tokens.index
+	for tokens.has_next_token() {
+		if next_style_query_token_is_comparison(tokens) {
+			break
+		}
+		tokens.discard_a_token()
+	}
+	return parse_style_range_value(tokens.values[start..tokens.index])
+}
+
+fn parse_style_range(mut tokens SupportsTokenStream) ?&BooleanExpression {
+	mut transaction := SupportsTokenStream{
+		values:              tokens.values.clone()
+		index:               tokens.index
+		declared_namespaces: tokens.declared_namespaces.clone()
+	}
+	transaction.discard_whitespace()
+	left := parse_style_range_value_until_comparison(mut transaction) or { return none }
+	left_comparison := parse_media_feature_comparison(mut transaction) or { return none }
+	middle := parse_style_range_value_until_comparison(mut transaction) or { return none }
+	transaction.discard_whitespace()
+	if !transaction.has_next_token() {
+		tokens = transaction
+		return BooleanExpression.create_style_range(left, left_comparison, middle, none,
+			none)
+	}
+
+	right_comparison := parse_media_feature_comparison(mut transaction) or { return none }
+	right := parse_style_range_value_until_comparison(mut transaction) or { return none }
+	transaction.discard_whitespace()
+	if transaction.has_next_token()
+		|| !media_feature_comparisons_match(left_comparison, right_comparison)
+		|| left_comparison == .equal {
+		return none
+	}
+	tokens = transaction
+	return BooleanExpression.create_style_range(left, left_comparison, middle,
+		right_comparison, right)
+}
+
 // https://drafts.csswg.org/css-conditional-5/#typedef-style-feature
 fn (mut parser Parser) parse_style_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
 	_ = parser
+
+	// <style-range> = <style-range-value> <mf-comparison> <style-range-value>
+	//               | <style-range-value> <mf-lt> <style-range-value> <mf-lt> <style-range-value>
+	//               | <style-range-value> <mf-gt> <style-range-value> <mf-gt> <style-range-value>
+	if range := parse_style_range(mut tokens) {
+		return range
+	}
 
 	// <style-feature-plain> = <style-feature-name> : <style-feature-value>
 	mut transaction := tokens
@@ -232,6 +348,9 @@ fn (mut parser Parser) parse_style_feature(mut tokens SupportsTokenStream) ?&Boo
 				}
 				if declaration.important == .yes
 					|| !is_valid_optional_declaration_value(declaration.value) {
+					return none
+				}
+				if style_query_values_contain_comparison(declaration.value) {
 					return none
 				}
 				transaction.index = transaction.values.len

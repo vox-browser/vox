@@ -192,3 +192,34 @@ fn test_style_features_compare_attr_tainted_registered_values() {
 	assert evaluate_parsed_style_query(parsed_style_query('--length: 30px'), target) == .true_
 	assert computed_value_for(target, .color) or { '' } == 'rgb(255, 0, 0)'
 }
+
+fn test_style_ranges_parse_serialize_and_collect_requirements() {
+	for source in [
+		'5 > 3',
+		'0 = 0px',
+		'--length >= calc(1em + 2px)',
+		'3 < --number <= 5',
+		'10px <= calc(10em + 20em) < 400px',
+	] {
+		range := parsed_style_query(source)
+		assert range.to_string() == source
+		assert range.style_feature_is_range
+		mut requirements := ContainerQueryFeatureRequirements{}
+		range.collect_container_query_feature_requirements(mut requirements)
+		assert requirements.requires_style_container
+		assert !requirements.has_unknown_or_unsupported_feature
+		assert range.evaluate(BooleanExpressionEvaluationContext{}) == .false_
+	}
+
+	for invalid in [
+		'1 < 2 > 3',
+		'1 = 2 = 3',
+		'--value: 1 < 2 > 3',
+		'> 3',
+		'3 <',
+	] {
+		mut parser := Parser.from_css_text(invalid)
+		mut tokens := SupportsTokenStream.from_values(parser.component_values)
+		assert parser.parse_style_query(mut tokens, .false_) == none, invalid
+	}
+}

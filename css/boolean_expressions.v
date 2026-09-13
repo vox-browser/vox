@@ -132,6 +132,13 @@ pub mut:
 	style_feature_property         ?PropertyNameAndID
 	style_feature_has_value        bool
 	style_feature_value            []ComponentValue
+	style_feature_is_range         bool
+	style_range_left               StyleRangeValue
+	style_range_left_comparison    MediaFeatureComparison
+	style_range_middle             StyleRangeValue
+	style_range_has_right          bool
+	style_range_right_comparison   MediaFeatureComparison
+	style_range_right              StyleRangeValue
 }
 
 pub fn BooleanExpression.create_general_enclosed(serialized_contents string, matches MatchResult) &BooleanExpression {
@@ -184,6 +191,31 @@ fn BooleanExpression.create_style_feature(property PropertyNameAndID, value ?[]C
 		kind:                   .general_enclosed
 		text:                   property.name()
 		style_feature_property: property
+	}
+}
+
+fn BooleanExpression.create_style_range(left StyleRangeValue, left_comparison MediaFeatureComparison, middle StyleRangeValue, right_comparison ?MediaFeatureComparison, right ?StyleRangeValue) &BooleanExpression {
+	if comparison := right_comparison {
+		right_value := right or { StyleRangeValue{} }
+		return &BooleanExpression{
+			kind:                         .general_enclosed
+			text:                         '${left.to_string()} ${media_feature_comparison_to_string(left_comparison)} ${middle.to_string()} ${media_feature_comparison_to_string(comparison)} ${right_value.to_string()}'
+			style_feature_is_range:       true
+			style_range_left:             left
+			style_range_left_comparison:  left_comparison
+			style_range_middle:           middle
+			style_range_has_right:        true
+			style_range_right_comparison: comparison
+			style_range_right:            right_value
+		}
+	}
+	return &BooleanExpression{
+		kind:                        .general_enclosed
+		text:                        '${left.to_string()} ${media_feature_comparison_to_string(left_comparison)} ${middle.to_string()}'
+		style_feature_is_range:      true
+		style_range_left:            left
+		style_range_left_comparison: left_comparison
+		style_range_middle:          middle
 	}
 }
 
@@ -286,6 +318,10 @@ pub fn (expression &BooleanExpression) evaluate(context BooleanExpressionEvaluat
 	match expression.kind {
 		.general_enclosed, .constant, .supports_declaration, .supports_selector,
 		.supports_font_tech, .supports_font_format, .supports_env, .supports_at_rule {
+			if expression.style_feature_is_range {
+				// Parsed separately from evaluation so each translation slice remains testable.
+				return .false_
+			}
 			if property := expression.style_feature_property {
 				return evaluate_style_feature(property, expression.style_feature_has_value,
 					expression.style_feature_value, context)
@@ -362,7 +398,9 @@ pub fn (expression &BooleanExpression) evaluate(context BooleanExpressionEvaluat
 pub fn (expression &BooleanExpression) collect_container_query_feature_requirements(mut requirements ContainerQueryFeatureRequirements) {
 	match expression.kind {
 		.general_enclosed {
-			if _ := expression.style_feature_property {
+			if expression.style_feature_is_range {
+				requirements.requires_style_container = true
+			} else if _ := expression.style_feature_property {
 				requirements.requires_style_container = true
 			} else if expression.size_feature_name.len > 0 {
 				collect_size_feature_requirements(expression.size_feature_name, mut requirements)
