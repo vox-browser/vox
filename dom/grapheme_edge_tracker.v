@@ -91,17 +91,239 @@ fn segmenter_word_boundaries(text string) []int {
 	return boundaries
 }
 
-fn segmenter_line_boundaries(text string) []int {
-	mut boundaries := [0]
-	mut code_units := 0
-	for grapheme in text.graphemes() {
-		code_units += utf16_code_unit_length(grapheme)
-		if grapheme == '\n' {
-			boundaries << code_units
+enum ASCIILineBreakClass {
+	al
+	ba
+	bk
+	cl
+	cp
+	cr
+	ex
+	hy
+	is_
+	lf
+	nu
+	op
+	po
+	pr
+	qu
+	sp
+	sy
+}
+
+fn segmenter_can_use_ascii_line_fast_path(text string) bool {
+	for byte in text.bytes() {
+		if !(byte >= 0x20 && byte <= 0x7e) && byte !in [u8(`\t`), `\n`, `\v`, `\f`, `\r`] {
+			return false
 		}
 	}
-	if boundaries.last() != code_units {
-		boundaries << code_units
+	return true
+}
+
+fn classify_ascii_line_byte(byte u8) ASCIILineBreakClass {
+	return match byte {
+		`\t`, `|` { .ba }
+		`\n` { .lf }
+		`\v`, `\f` { .bk }
+		`\r` { .cr }
+		` ` { .sp }
+		`!`, `?` { .ex }
+		`"`, `'` { .qu }
+		`$`, `+`, `\\` { .pr }
+		`%` { .po }
+		`(`, `[`, `{` { .op }
+		`)`, `]` { .cp }
+		`,`, `.`, `:`, `;` { .is_ }
+		`-` { .hy }
+		`/` { .sy }
+		`}` { .cl }
+		else {
+			if byte >= `0` && byte <= `9` {
+				.nu
+			} else {
+				.al
+			}
+		}
+	}
+}
+
+fn mark_ascii_numeric_expression_interiors(text []u8) []bool {
+	mut interiors := []bool{len: text.len + 1}
+	mut i := 0
+	for i < text.len {
+		if classify_ascii_line_byte(text[i]) != .nu {
+			i++
+			continue
+		}
+		mut start := i
+		if start > 0 && classify_ascii_line_byte(text[start - 1]) == .is_ {
+			start--
+		}
+		if start > 0 && classify_ascii_line_byte(text[start - 1]) in [.op, .hy] {
+			start--
+		}
+		if start > 0 && classify_ascii_line_byte(text[start - 1]) in [.pr, .po] {
+			start--
+		}
+
+		mut end := i + 1
+		for end < text.len && classify_ascii_line_byte(text[end]) in [.nu, .sy, .is_] {
+			end++
+		}
+		if end < text.len && classify_ascii_line_byte(text[end]) in [.cl, .cp] {
+			end++
+		}
+		if end < text.len && classify_ascii_line_byte(text[end]) in [.pr, .po] {
+			end++
+		}
+		for position := start + 1; position < end; position++ {
+			interiors[position] = true
+		}
+		i = end
+	}
+	return interiors
+}
+
+fn ascii_line_boundaries(text string) []int {
+	bytes := text.bytes()
+	mut is_boundary := []bool{len: bytes.len + 1}
+	is_boundary[0] = true
+	if bytes.len == 0 {
+		return [0]
+	}
+	is_boundary[bytes.len] = true
+	interior_of_numeric_expression := mark_ascii_numeric_expression_interiors(bytes)
+	mut in_op_space_run := false
+	for i := 1; i < bytes.len; i++ {
+		previous_class := classify_ascii_line_byte(bytes[i - 1])
+		current_class := classify_ascii_line_byte(bytes[i])
+
+		if previous_class == .cr && current_class == .lf {
+			continue
+		}
+		if previous_class in [.bk, .cr, .lf] {
+			is_boundary[i] = true
+			in_op_space_run = false
+			continue
+		}
+		if current_class in [.bk, .cr, .lf] {
+			continue
+		}
+		if previous_class == .op {
+			in_op_space_run = true
+		}
+		if current_class == .sp {
+			continue
+		}
+		if in_op_space_run {
+			in_op_space_run = false
+			continue
+		}
+		if current_class in [.cl, .cp, .ex, .sy] {
+			continue
+		}
+		if current_class == .is_ {
+			if previous_class != .sp {
+				continue
+			}
+			next_forces_break := i + 1 < bytes.len
+				&& classify_ascii_line_byte(bytes[i + 1]) == .nu
+			if !next_forces_break {
+				continue
+			}
+			is_boundary[i] = true
+			continue
+		}
+		if previous_class == .sp {
+			is_boundary[i] = true
+			continue
+		}
+		if current_class == .qu || previous_class == .qu {
+			continue
+		}
+		if previous_class == .hy && current_class == .al {
+			mut hyphen_starts_line := i == 1
+			if !hyphen_starts_line && i >= 2 {
+				hyphen_starts_line = classify_ascii_line_byte(bytes[i - 2]) in [.sp, .bk, .cr, .lf]
+			}
+			if hyphen_starts_line {
+				continue
+			}
+		}
+		if current_class in [.ba, .hy] {
+			continue
+		}
+		if (previous_class == .al && current_class == .nu)
+			|| (previous_class == .nu && current_class == .al) {
+			continue
+		}
+		if (previous_class in [.pr, .po] && current_class == .al)
+			|| (previous_class == .al && current_class in [.pr, .po]) {
+			continue
+		}
+		if interior_of_numeric_expression[i] {
+			continue
+		}
+		if previous_class == .al && current_class == .al {
+			continue
+		}
+		if previous_class == .is_ && current_class == .al {
+			continue
+		}
+		if current_class == .op && previous_class in [.al, .nu] {
+			continue
+		}
+		if previous_class == .cp && current_class in [.al, .nu] {
+			continue
+		}
+		is_boundary[i] = true
+	}
+
+	mut boundaries := []int{cap: bytes.len + 1}
+	for index, boundary in is_boundary {
+		if boundary {
+			boundaries << index
+		}
+	}
+	return boundaries
+}
+
+fn segmenter_code_point_at_utf16(units []u16, index int) u32 {
+	first := units[index]
+	if first >= 0xd800 && first <= 0xdbff && index + 1 < units.len {
+		second := units[index + 1]
+		if second >= 0xdc00 && second <= 0xdfff {
+			return 0x10000 + ((u32(first) - 0xd800) << 10) + (u32(second) - 0xdc00)
+		}
+	}
+	return u32(first)
+}
+
+fn segmenter_is_cjk_code_point(code_point u32) bool {
+	return (code_point >= 0x2e80 && code_point <= 0x9fff)
+		|| (code_point >= 0xac00 && code_point <= 0xd7af)
+		|| (code_point >= 0xf900 && code_point <= 0xfaff)
+}
+
+fn segmenter_line_boundaries(text string) []int {
+	units := utf16_code_units_from_string(text)
+	mut boundaries := [0]
+	mut index := 0
+	for index < units.len {
+		code_point := segmenter_code_point_at_utf16(units, index)
+		step := if code_point > 0xffff { 2 } else { 1 }
+		next := index + step
+		if code_point in [u32(0x09), 0x0a, 0x0b, 0x0c, 0x0d, 0x20, u32(`-`), 0x200b] {
+			boundaries << next
+		}
+		if next < units.len && segmenter_is_cjk_code_point(code_point)
+			&& segmenter_is_cjk_code_point(segmenter_code_point_at_utf16(units, next)) {
+			boundaries << next
+		}
+		index = next
+	}
+	if boundaries.last() != units.len {
+		boundaries << units.len
 	}
 	return boundaries
 }
@@ -110,7 +332,13 @@ pub fn (segmenter &Segmenter) boundaries() []int {
 	return match segmenter.granularity {
 		.grapheme { segmenter_grapheme_boundaries(segmenter.segmented_text) }
 		.word { segmenter_word_boundaries(segmenter.segmented_text) }
-		.line { segmenter_line_boundaries(segmenter.segmented_text) }
+		.line {
+			if segmenter.ascii_line_fast_path {
+				ascii_line_boundaries(segmenter.segmented_text)
+			} else {
+				segmenter_line_boundaries(segmenter.segmented_text)
+			}
+		}
 	}
 }
 

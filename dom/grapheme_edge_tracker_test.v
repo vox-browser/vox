@@ -14,6 +14,49 @@ fn test_segmenter_uses_utf16_grapheme_boundaries() {
 	assert segmenter.previous_boundary(boundaries[2]) or { -1 } == 1
 }
 
+fn test_ascii_line_segmenter_uses_uax14_boundaries() {
+	assert (Segmenter.try_create_for_ascii_line('ab cd') or { panic('ASCII fast path') }).boundaries() == [
+		0,
+		3,
+		5,
+	]
+	assert (Segmenter.try_create_for_ascii_line('ab  cd') or { panic('ASCII fast path') }).boundaries() == [
+		0,
+		4,
+		6,
+	]
+	assert (Segmenter.try_create_for_ascii_line('ab\r\ncd') or { panic('ASCII fast path') }).boundaries() == [
+		0,
+		4,
+		6,
+	]
+	assert (Segmenter.try_create_for_ascii_line('word-break') or { panic('ASCII fast path') }).boundaries() == [
+		0,
+		5,
+		10,
+	]
+	assert (Segmenter.try_create_for_ascii_line('\$100') or { panic('ASCII fast path') }).boundaries() == [
+		0,
+		4,
+	]
+	assert Segmenter.try_create_for_ascii_line('\x1b') == none
+	assert Segmenter.try_create_for_ascii_line('你好') == none
+}
+
+fn test_character_data_repicks_line_segmenter_after_mutation() {
+	document := Document.create(url_about_blank())
+	mut text := document.create_text_node('ab cd')
+	first := text.line_segmenter()
+	assert first.is_ascii_line_fast_path()
+	assert first.boundaries() == [0, 3, 5]
+
+	text.replace_data(0, text.length(), '你好') or { panic(err) }
+	second := text.line_segmenter()
+	assert voidptr(second) != voidptr(first)
+	assert !second.is_ascii_line_fast_path()
+	assert second.boundaries() == [0, 1, 2]
+}
+
 fn test_grapheme_edge_tracker_resolves_nearest_edge() {
 	mut tracker := GraphemeEdgeTracker.new(1.4)
 	assert tracker.update(1, 1) == .@continue

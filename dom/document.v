@@ -2793,8 +2793,9 @@ pub struct DOMRectReadOnly {}
 @[heap]
 pub struct Segmenter {
 pub mut:
-	segmented_text string
-	granularity    SegmenterGranularity = .grapheme
+	segmented_text       string
+	granularity          SegmenterGranularity = .grapheme
+	ascii_line_fast_path bool
 }
 
 pub enum SegmenterGranularity {
@@ -2807,11 +2808,30 @@ pub fn (s &Segmenter) clone() &Segmenter {
 	return &Segmenter{
 		segmented_text: s.segmented_text
 		granularity: s.granularity
+		ascii_line_fast_path: s.ascii_line_fast_path
 	}
 }
 
 pub fn (mut s Segmenter) set_segmented_text(text string) {
+	if s.ascii_line_fast_path {
+		assert segmenter_can_use_ascii_line_fast_path(text)
+	}
 	s.segmented_text = text
+}
+
+pub fn Segmenter.try_create_for_ascii_line(text string) ?&Segmenter {
+	if !segmenter_can_use_ascii_line_fast_path(text) {
+		return none
+	}
+	return &Segmenter{
+		segmented_text: text
+		granularity: .line
+		ascii_line_fast_path: true
+	}
+}
+
+pub fn (s &Segmenter) is_ascii_line_fast_path() bool {
+	return s.ascii_line_fast_path
 }
 
 @[heap]

@@ -146,6 +146,22 @@ fn test_ascii_grapheme_boundaries_keep_crlf_together() {
 	assert text_grapheme_boundaries('a\r\nb') == [0, 1, 3, 4]
 }
 
+fn test_text_node_repicks_ascii_line_segmenter_for_rendered_text() {
+	document := dom.Document.create(dom.url_about_blank())
+	style := chunk_test_style(document, 'display:block; text-wrap-mode:wrap')
+	mut text_node := make_chunk_test_text_node(document, 'ab cd', style)
+	first := text_node.line_segmenter()
+	assert first.is_ascii_line_fast_path()
+	assert first.boundaries() == [0, 3, 5]
+
+	text_node.source_text_ = '你好'
+	text_node.invalidate_text_for_rendering()
+	second := text_node.line_segmenter()
+	assert voidptr(second) != voidptr(first)
+	assert !second.is_ascii_line_fast_path()
+	assert second.boundaries() == [0, 1, 2]
+}
+
 fn test_common_latin_punctuation_uses_code_point_boundaries() {
 	assert text_grapheme_boundaries('a –’b') == [0, 1, 2, 3, 4, 5]
 	assert text_grapheme_boundaries('áb') == [0, 2, 3]

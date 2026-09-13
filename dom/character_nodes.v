@@ -338,9 +338,9 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 	if c.grapheme_segmenter_ != unsafe { nil } {
 		c.grapheme_segmenter_.set_segmented_text(c.data_)
 	}
-	if c.line_segmenter_ != unsafe { nil } {
-		c.line_segmenter_.set_segmented_text(c.data_)
-	}
+	// The cached segmenter may be the ASCII-only fast path. Re-pick an
+	// implementation lazily against the replacement data.
+	c.line_segmenter_ = unsafe { nil }
 	if c.word_segmenter_ != unsafe { nil } {
 		c.word_segmenter_.set_segmented_text(c.data_)
 	}
@@ -450,9 +450,13 @@ pub fn (c &CharacterData) grapheme_segmenter() &Segmenter {
 pub fn (c &CharacterData) line_segmenter() &Segmenter {
 	mut mutable_character_data := unsafe { &CharacterData(c) }
 	if mutable_character_data.line_segmenter_ == unsafe { nil } {
-		mut document := unsafe { &Document(c.as_node().document()) }
-		mutable_character_data.line_segmenter_ = document.line_segmenter().clone()
-		mutable_character_data.line_segmenter_.set_segmented_text(c.data_)
+		if ascii_segmenter := Segmenter.try_create_for_ascii_line(c.data_) {
+			mutable_character_data.line_segmenter_ = ascii_segmenter
+		} else {
+			mut document := unsafe { &Document(c.as_node().document()) }
+			mutable_character_data.line_segmenter_ = document.line_segmenter().clone()
+			mutable_character_data.line_segmenter_.set_segmented_text(c.data_)
+		}
 	}
 	return mutable_character_data.line_segmenter_
 }

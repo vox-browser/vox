@@ -1749,6 +1749,7 @@ pub mut:
 	text_for_rendering_           string
 	text_for_rendering_valid_     bool
 	font_for_rendering_           ?&platform.Font
+	line_segmenter_               &dom.Segmenter = unsafe { nil }
 	is_empty_editable_            bool
 	cached_inline_chunks_         ?[]TextNodeChunk
 	cached_utf16_code_units_      ?[]u16
@@ -1763,6 +1764,21 @@ pub fn (n &TextNode) font_for_rendering() &platform.Font {
 	font := n.Node.first_available_font()
 	mutable_node.font_for_rendering_ = font
 	return font
+}
+
+pub fn (n &TextNode) line_segmenter() &dom.Segmenter {
+	mut mutable_node := unsafe { &TextNode(n) }
+	if mutable_node.line_segmenter_ == unsafe { nil } {
+		text := n.text_for_rendering()
+		if ascii_segmenter := dom.Segmenter.try_create_for_ascii_line(text) {
+			mutable_node.line_segmenter_ = ascii_segmenter
+		} else {
+			mut document := unsafe { &dom.Document(n.Node.document()) }
+			mutable_node.line_segmenter_ = document.line_segmenter().clone()
+			mutable_node.line_segmenter_.set_segmented_text(text)
+		}
+	}
+	return mutable_node.line_segmenter_
 }
 
 pub fn TextNode.new(document &dom.Document, dom_text_node &dom.Node, source_text string) &TextNode {
@@ -1804,6 +1820,7 @@ pub fn (mut n TextNode) invalidate_text_for_rendering() {
 	n.cached_inline_chunks_ = none
 	n.cached_utf16_code_units_ = none
 	n.cached_intrinsic_text_shapes_.clear()
+	n.line_segmenter_ = unsafe { nil }
 }
 
 fn (mut n TextNode) compute_text_for_rendering() {

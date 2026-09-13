@@ -83,7 +83,7 @@ pub fn TextNodeChunkIterator.new(text_node &TextNode, should_wrap_lines bool, sh
 		view: view
 		code_units: code_units
 		grapheme_boundaries: text_grapheme_boundaries(view)
-		line_boundaries: text_line_boundaries_from_code_units(code_units)
+		line_boundaries: text_line_boundaries_from_segmenter(text_node.line_segmenter(), code_units.len)
 		word_break: text_node.Node.computed_values().word_break()
 		font: text_node.font_for_rendering()
 		font_cascade_list: font_cascade
@@ -389,8 +389,21 @@ fn text_grapheme_boundaries(text string) []int {
 }
 
 fn text_line_boundaries(text string) []bool {
+	if ascii_segmenter := dom.Segmenter.try_create_for_ascii_line(text) {
+		return text_line_boundaries_from_segmenter(ascii_segmenter, text.len)
+	}
 	units := utf16_code_units_for_line_box(text)
 	return text_line_boundaries_from_code_units(units)
+}
+
+fn text_line_boundaries_from_segmenter(segmenter &dom.Segmenter, length int) []bool {
+	mut boundaries := []bool{len: length + 1}
+	for boundary in segmenter.boundaries() {
+		if boundary >= 0 && boundary <= length {
+			boundaries[boundary] = true
+		}
+	}
+	return boundaries
 }
 
 fn text_line_boundaries_from_code_units(units []u16) []bool {
