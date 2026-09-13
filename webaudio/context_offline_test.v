@@ -22,6 +22,33 @@ fn test_realtime_context_state_transitions_and_destination_constraints() {
 	assert false
 }
 
+fn test_realtime_context_renderer_drives_current_time_and_output_timestamp() {
+	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
+	mut source := context.base.create_constant_source(0.5, AudioNodeOptions{}) or { panic(err) }
+	mut destination := context.base.destination.AudioNode
+	connect_nodes(mut source.node, mut destination, 0, 0) or { panic(err) }
+	start_scheduled_source(mut context.base, mut source.node, 0) or { panic(err) }
+	mut output := []f32{len: 20}
+	assert context.fill_output_buffer(mut output) == []f32{len: 20, init: 0.5}
+	assert context.current_time() == 128.0 / 48_000.0
+	timestamp := context.get_output_timestamp()
+	assert timestamp.context_time == 10.0 / 48_000.0
+	assert timestamp.performance_time > 0
+	assert context.suspend().state == .fulfilled
+	assert context.fill_output_buffer(mut output).len == 0
+	assert context.resume().state == .fulfilled
+	assert context.fill_output_buffer(mut output).len == 20
+}
+
+fn test_realtime_context_stops_renderer_when_document_becomes_inactive() {
+	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
+	context.document_became_inactive()
+	assert !context.fully_active
+	renderer := context.renderer or { panic('missing realtime renderer') }
+	assert renderer.is_shutting_down()
+	assert context.resume().state == .rejected
+}
+
 fn test_listener_decode_and_media_element_boundaries() {
 	mut context := new_audio_context(1, 44100, true) or { panic(err) }
 	context.base.listener.set_position(1, 2, 3) or { panic(err) }

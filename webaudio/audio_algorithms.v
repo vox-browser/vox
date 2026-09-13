@@ -228,8 +228,14 @@ pub fn (context AudioContext) get_output_timestamp() AudioTimestamp {
 	return context.output_timestamp()
 }
 
-pub fn (context AudioContext) start_rendering_audio_graph() bool {
-	return context.allowed_to_start
+pub fn (mut context AudioContext) start_rendering_audio_graph() bool {
+	if !context.allowed_to_start {
+		return false
+	}
+	if mut renderer := context.renderer {
+		renderer.resume()
+	}
+	return true
 }
 
 pub fn (context AudioContext) base_latency() f64 {

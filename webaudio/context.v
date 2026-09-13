@@ -5,6 +5,8 @@
 // MediaElementAudioSourceNode.
 module webaudio
 
+import time
+
 pub enum AudioContextLatencyCategory {
 	balanced
 	interactive
@@ -194,6 +196,7 @@ pub mut:
 	allowed_to_start  bool = true
 	suspended_by_user bool
 	fully_active      bool = true
+	renderer          ?&RealtimeAudioRenderer
 }
 
 pub fn new_audio_context(id u64, sample_rate ?f32, fully_active bool) !AudioContext {
@@ -208,10 +211,16 @@ pub fn new_audio_context(id u64, sample_rate ?f32, fully_active bool) !AudioCont
 	// suspended state to running. This deterministic model observes that task as
 	// completed before returning the context.
 	base.onstatechange_count = 1
-	return AudioContext{
+	mut renderer := RealtimeAudioRenderer.create(base.control_messages, base.destination.id, rate,
+		int(render_quantum_size))
+	renderer.start_rendering_with_null_output()
+	mut context := AudioContext{
 		base: base
 		fully_active: fully_active
+		renderer: renderer
 	}
+	context.set_renderer_callbacks()
+	return context
 }
 
 pub fn new_audio_context_with_options(id u64, options AudioContextOptions, fully_active bool) !AudioContext {
@@ -223,9 +232,15 @@ pub fn (_ BaseAudioContext) destination_max_channel_count() u32 {
 	return 2
 }
 
-// getOutputTimestamp() is currently stubbed upstream.
-pub fn (_ AudioContext) output_timestamp() AudioTimestamp {
-	return AudioTimestamp{}
+pub fn (context AudioContext) output_timestamp() AudioTimestamp {
+	renderer := context.renderer or { return AudioTimestamp{} }
+	if renderer.frames_rendered() == 0 {
+		return AudioTimestamp{}
+	}
+	return AudioTimestamp{
+		context_time: renderer.output_time_played()
+		performance_time: f64(time.now().unix_nano()) / 1.0e6
+	}
 }
 
 pub struct AudioTimestamp {
@@ -251,6 +266,10 @@ pub fn (mut context AudioContext) resume() AudioPromise {
 	context.suspended_by_user = true
 	context.base.state = .running
 	context.base.rendering_state = .running
+	context.set_renderer_callbacks()
+	if mut renderer := context.renderer {
+		renderer.resume()
+	}
 	return AudioPromise{
 		state: .fulfilled
 	}
@@ -272,6 +291,10 @@ pub fn (mut context AudioContext) suspend() AudioPromise {
 	context.suspended_by_user = true
 	context.base.state = .suspended
 	context.base.rendering_state = .suspended
+	if mut renderer := context.renderer {
+		renderer.suspend()
+		renderer.clear_callbacks()
+	}
 	return AudioPromise{
 		state: .fulfilled
 	}
@@ -291,11 +314,47 @@ pub fn (mut context AudioContext) close() AudioPromise {
 		}
 	}
 	context.base.shutdown_audio_worklet()
+	if mut renderer := context.renderer {
+		renderer.stop()
+		renderer.clear_callbacks()
+	}
 	context.base.rendering_state = .suspended
 	context.base.state = .closed
 	context.base.onstatechange_count++
 	return AudioPromise{
 		state: .fulfilled
+	}
+}
+
+pub fn (context AudioContext) current_time() f64 {
+	renderer := context.renderer or { return context.base.current_time() }
+	return f64(renderer.frames_rendered()) / f64(context.base.sample_rate)
+}
+
+pub fn (mut context AudioContext) set_renderer_callbacks() {
+	if mut renderer := context.renderer {
+		renderer.set_on_sources_ended(fn (_ []u64) {})
+	}
+}
+
+// This is the V host boundary corresponding to the playback stream's data
+// request callback. The native frontend supplies an interleaved device buffer.
+pub fn (mut context AudioContext) fill_output_buffer(mut buffer []f32) []f32 {
+	if context.base.state != .running {
+		return []f32{}
+	}
+	mut renderer := context.renderer or { return []f32{} }
+	result := renderer.fill_output_buffer(mut buffer)
+	context.base.set_current_time(context.current_time())
+	return result
+}
+
+pub fn (mut context AudioContext) document_became_inactive() {
+	context.fully_active = false
+	context.base.shutdown_audio_worklet()
+	if mut renderer := context.renderer {
+		renderer.stop()
+		renderer.clear_callbacks()
 	}
 }
 
