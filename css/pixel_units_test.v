@@ -67,3 +67,12 @@ fn test_device_pixel_ipc_component_order_round_trips() {
 	assert decoded.size().width().value() == 30
 	assert decoded.size().height().value() == 40
 }
+
+fn test_css_pixel_point_ipc_uses_raw_fixed_point_components() {
+	point := CSSPixelPoint.new(CSSPixels.from_raw(123), CSSPixels.from_raw(-456))
+	components := encode_css_pixel_point(point)
+	assert components == [123, -456]
+	decoded := decode_css_pixel_point(components) or { panic(err) }
+	assert decoded.x().raw_value() == 123
+	assert decoded.y().raw_value() == -456
+}

@@ -1,5 +1,7 @@
 module css
 
+import math
+
 // Translation of Tests/LibWeb/TestCSSPixels.cpp. V does not overload arithmetic
 // operators, so the corresponding named methods are used below.
 
@@ -68,9 +70,28 @@ fn test_css_pixels_nearest_value_for() {
 	assert CSSPixels.nearest_value_for(0.0) == CSSPixels.new(0)
 }
 
+fn test_css_pixels_float_conversion() {
+	value := 620.0 * 0.333333
+	assert CSSPixels.nearest_value_for(value) == CSSPixels.from_raw(13227)
+	assert CSSPixels.floored_value_for(value) == CSSPixels.from_raw(13226)
+	assert CSSPixels.truncated_value_for(value) == CSSPixels.from_raw(13226)
+
+	assert CSSPixels.floored_value_for(-value) == CSSPixels.from_raw(-13227)
+	assert CSSPixels.truncated_value_for(-value) == CSSPixels.from_raw(-13226)
+
+	assert CSSPixels.truncated_value_for(math.inf(1)) == CSSPixels.max()
+	assert CSSPixels.truncated_value_for(math.inf(-1)) == CSSPixels.min()
+}
+
 fn test_css_pixels_saturating_arithmetic() {
 	assert CSSPixels.max().plus(CSSPixels.new(1)) == CSSPixels.max()
 	assert CSSPixels.min().minus(CSSPixels.new(1)) == CSSPixels.min()
+}
+
+fn test_css_pixels_saturated_abs() {
+	assert CSSPixels.min().abs() == CSSPixels.max()
+	assert CSSPixels.from_raw(-5).abs() == CSSPixels.from_raw(5)
+	assert CSSPixels.from_raw(5).abs() == CSSPixels.from_raw(5)
 }
 
 fn test_css_pixels_floor_ceil_round() {

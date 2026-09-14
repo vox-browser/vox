@@ -331,7 +331,9 @@ pub fn (rect DevicePixelRect) size() DevicePixelSize {
 
 // PixelUnits.cpp plugs these scalar components into LibIPC's generic encoder.
 // The V port has no IPC module yet, so these helpers expose the same wire order
-// without coupling pixel units to a particular byte encoding.
+// without coupling pixel units to a particular byte encoding. DevicePixels uses
+// LibIPC's generic distinct-numeric codec upstream, while CSSPixelPoint keeps an
+// explicit raw fixed-point representation on the wire.
 pub fn encode_device_pixels(value DevicePixels) []int {
 	return [value.value()]
 }
@@ -341,6 +343,17 @@ pub fn decode_device_pixels(components []int) !DevicePixels {
 		return error('DevicePixels requires one IPC component')
 	}
 	return DevicePixels.new(components[0])
+}
+
+pub fn encode_css_pixel_point(value CSSPixelPoint) []int {
+	return [value.x().raw_value(), value.y().raw_value()]
+}
+
+pub fn decode_css_pixel_point(components []int) !CSSPixelPoint {
+	if components.len != 2 {
+		return error('CSSPixelPoint requires two IPC components')
+	}
+	return CSSPixelPoint.new(CSSPixels.from_raw(components[0]), CSSPixels.from_raw(components[1]))
 }
 
 pub fn encode_device_pixel_point(value DevicePixelPoint) []int {

@@ -1852,6 +1852,13 @@ pub fn CSSPixels.floored_value_for(value f64) CSSPixels {
 	return CSSPixels.from_raw(css_pixels_clamp_f64_to_raw(math.floor(value * f64(css_pixels_fixed_point_denominator))))
 }
 
+pub fn CSSPixels.truncated_value_for(value f64) CSSPixels {
+	if math.is_nan(value) {
+		return CSSPixels{}
+	}
+	return CSSPixels.from_raw(css_pixels_clamp_f64_to_raw(math.trunc(value * f64(css_pixels_fixed_point_denominator))))
+}
+
 pub fn CSSPixels.min() CSSPixels {
 	return CSSPixels.from_raw(css_pixels_raw_min)
 }
