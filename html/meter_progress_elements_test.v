@@ -1,5 +1,6 @@
 module html
 
+import css
 import dom
 
 fn meter_test_first_element_with_local_name(node &dom.Node, local_name string) ?&dom.Element {
@@ -39,6 +40,12 @@ fn test_progress_element_value_max_and_position() {
 	html_progress_element_inserted(progress)
 	assert progress.progress_value_element_ != none
 	assert progress.progress_value_element_?.get_attribute_value('style').contains('0')
+	progress_value := progress.progress_value_element_?
+	progress_bar := progress_value.as_node().parent_element() or { panic('missing progress bar') }
+	assert progress_bar.associated_shadow_host_pseudo_element()? == int(css.PseudoElement.slider_track)
+	assert progress_value.associated_shadow_host_pseudo_element()? == int(css.PseudoElement.slider_fill)
+	assert progress_element.element_reference_pseudo_element(int(css.PseudoElement.slider_track))? == progress_bar
+	assert progress_element.element_reference_pseudo_element(int(css.PseudoElement.slider_fill))? == progress_value
 	set_html_progress_element_value(progress, 5)
 	assert progress.progress_value_element_?.get_attribute_value('style').contains('50')
 }
@@ -63,6 +70,12 @@ fn test_meter_element_numeric_algorithms() {
 	html_meter_element_inserted(meter)
 	assert meter.meter_value_element_ != none
 	assert meter.meter_value_element_?.get_attribute_value('style').contains('0')
+	meter_value := meter.meter_value_element_?
+	meter_bar := meter_value.as_node().parent_element() or { panic('missing meter bar') }
+	assert meter_bar.associated_shadow_host_pseudo_element()? == int(css.PseudoElement.slider_track)
+	assert meter_value.associated_shadow_host_pseudo_element()? == int(css.PseudoElement.slider_fill)
+	assert meter_element.element_reference_pseudo_element(int(css.PseudoElement.slider_track))? == meter_bar
+	assert meter_element.element_reference_pseudo_element(int(css.PseudoElement.slider_fill))? == meter_value
 	set_html_meter_element_value(meter, 15)
 	assert meter.meter_value_element_?.get_attribute_value('style').contains('50')
 }

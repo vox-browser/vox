@@ -10,6 +10,7 @@
 module html
 
 import aria
+import css
 import dom
 import math
 import regex
@@ -880,6 +881,8 @@ pub fn (mut model HTMLInputElementModel) create_text_input_shadow_tree() {
 	}
 	mut shadow_node := unsafe { &dom.Node(shadow) }
 	append_input_shadow_child(mut shadow_node, container.as_node())
+	mut mutable_placeholder := unsafe { &dom.Element(placeholder) }
+	mutable_placeholder.set_associated_shadow_host_pseudo_element(int(css.PseudoElement.placeholder))
 	model.inner_text_element_ = inner
 	model.text_node_ = text
 	model.text_control.text_node_ = text
@@ -918,6 +921,8 @@ pub fn (mut model HTMLInputElementModel) create_file_input_shadow_tree() {
 	label.set_attribute_value('style', 'padding-left: 4px;')
 	mut shadow_node := unsafe { &dom.Node(shadow) }
 	append_input_shadow_child(mut shadow_node, button.as_node())
+	mut mutable_button := unsafe { &dom.Element(button) }
+	mutable_button.set_associated_shadow_host_pseudo_element(int(css.PseudoElement.file_selector_button))
 	append_input_shadow_child(mut shadow_node, label.as_node())
 	model.file_button_ = button
 	model.file_label_ = label
@@ -1095,6 +1100,12 @@ pub fn (mut model HTMLInputElementModel) create_range_input_shadow_tree() {
 	append_input_shadow_child(mut track_node, thumb.as_node())
 	mut shadow_node := unsafe { &dom.Node(shadow) }
 	append_input_shadow_child(mut shadow_node, track.as_node())
+	mut mutable_track := unsafe { &dom.Element(track) }
+	mutable_track.set_associated_shadow_host_pseudo_element(int(css.PseudoElement.slider_track))
+	mut mutable_progress := unsafe { &dom.Element(progress) }
+	mutable_progress.set_associated_shadow_host_pseudo_element(int(css.PseudoElement.slider_fill))
+	mut mutable_thumb := unsafe { &dom.Element(thumb) }
+	mutable_thumb.set_associated_shadow_host_pseudo_element(int(css.PseudoElement.slider_thumb))
 	model.slider_progress_element_ = progress
 	model.slider_thumb_ = thumb
 	model.update_slider_shadow_tree_elements()

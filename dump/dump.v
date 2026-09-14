@@ -39,6 +39,13 @@ fn dump_dom_node_into(mut builder strings.Builder, node &dom.Node, indent int) {
 			builder.write_string(' ${name}=${element.get_attribute(name) or { '' }}')
 		}
 		builder.write_string('>\n')
+		if raw_pseudo_element := element.associated_shadow_host_pseudo_element() {
+			if raw_pseudo_element >= 0 && raw_pseudo_element < int(dom.PseudoElement.known_pseudo_element_count) {
+				dump_indent(mut builder, indent + 1)
+				pseudo_element := unsafe { dom.PseudoElement(raw_pseudo_element) }
+				builder.write_string('(pseudo-element: ${dom.pseudo_element_name(pseudo_element)})\n')
+			}
+		}
 	} else if node.is_text() {
 		text := unsafe { &dom.Text(node) }
 		builder.write_string('"${text.data()}"\n')

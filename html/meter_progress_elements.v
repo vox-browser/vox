@@ -5,6 +5,7 @@
 // Translation of HTMLProgressElement.cpp and HTMLMeterElement.cpp.
 module html
 
+import css
 import dom
 
 fn clamp_html_number(value f64, minimum f64, maximum f64) f64 {
@@ -99,12 +100,12 @@ pub fn html_progress_element_create_shadow_tree_if_needed(element &dom.HTMLProgr
 	shadow := dom_element.attach_a_user_agent_shadow_root(.named)
 	mut progress_bar := dom.create_element(dom_element.document(), 'div', ns_html, none, none, false) or { return }
 	mut progress_value := dom.create_element(dom_element.document(), 'div', ns_html, none, none, false) or { return }
-	progress_bar.set_attribute_value('data-ladybird-pseudo', 'slider-track')
-	progress_value.set_attribute_value('data-ladybird-pseudo', 'slider-fill')
 	mut progress_bar_node := progress_bar.as_node()
 	progress_bar_node.append_child(progress_value.as_node()) or { return }
 	mut shadow_node := unsafe { &dom.Node(shadow) }
 	shadow_node.append_child(progress_bar.as_node()) or { return }
+	progress_bar.set_associated_shadow_host_pseudo_element(int(css.PseudoElement.slider_track))
+	progress_value.set_associated_shadow_host_pseudo_element(int(css.PseudoElement.slider_fill))
 	mut mutable_element := unsafe { &dom.HTMLProgressElement(element) }
 	mutable_element.progress_value_element_ = progress_value
 	html_progress_element_update_progress_value_element(element)
@@ -274,12 +275,12 @@ pub fn html_meter_element_create_shadow_tree_if_needed(element &dom.HTMLMeterEle
 	shadow := dom_element.attach_a_user_agent_shadow_root(.named)
 	mut meter_bar := dom.create_element(dom_element.document(), 'div', ns_html, none, none, false) or { return }
 	mut meter_value := dom.create_element(dom_element.document(), 'div', ns_html, none, none, false) or { return }
-	meter_bar.set_attribute_value('data-ladybird-pseudo', 'slider-track')
-	meter_value.set_attribute_value('data-ladybird-pseudo', 'slider-fill')
 	mut meter_bar_node := meter_bar.as_node()
 	meter_bar_node.append_child(meter_value.as_node()) or { return }
 	mut shadow_node := unsafe { &dom.Node(shadow) }
 	shadow_node.append_child(meter_bar.as_node()) or { return }
+	meter_bar.set_associated_shadow_host_pseudo_element(int(css.PseudoElement.slider_track))
+	meter_value.set_associated_shadow_host_pseudo_element(int(css.PseudoElement.slider_fill))
 	mut mutable_element := unsafe { &dom.HTMLMeterElement(element) }
 	mutable_element.meter_value_element_ = meter_value
 	html_meter_element_update_meter_value_element(element)

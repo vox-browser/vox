@@ -12483,7 +12483,7 @@ pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElemen
 
 	// Special path for elements representing a pseudo-element in an element's
 	// internal user-agent shadow tree.
-	if raw_pseudo_element := abstract_element.element().use_pseudo_element_value() {
+	if raw_pseudo_element := abstract_element.element().associated_shadow_host_pseudo_element() {
 		if raw_pseudo_element >= 0 && raw_pseudo_element < int(PseudoElement.known_pseudo_element_count) {
 			element := abstract_element.element()
 			root := element.as_node().root()

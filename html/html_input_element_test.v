@@ -1,5 +1,6 @@
 module html
 
+import css
 import dom
 import math
 
@@ -270,6 +271,30 @@ fn test_input_value_modes_attributes_and_shadow_tree() {
 
 	mut range := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[2]) })
 	assert range.slider_progress_element_?.get_attribute_value('style').contains('25')
+}
+
+fn test_input_shadow_controls_register_host_pseudo_elements() {
+	elements := input_test_elements('<input placeholder="hint"><input type="file"><input type="range">')
+	text := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[0]) })
+	placeholder := text.placeholder_element_ or { panic('missing placeholder') }
+	assert placeholder.associated_shadow_host_pseudo_element()? == int(css.PseudoElement.placeholder)
+	assert elements[0].element_reference_pseudo_element(int(css.PseudoElement.placeholder))? == placeholder
+
+	file := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[1]) })
+	button := file.file_button_ or { panic('missing file button') }
+	assert button.associated_shadow_host_pseudo_element()? == int(css.PseudoElement.file_selector_button)
+	assert elements[1].element_reference_pseudo_element(int(css.PseudoElement.file_selector_button))? == button
+
+	range := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[2]) })
+	progress := range.slider_progress_element_ or { panic('missing slider progress') }
+	thumb := range.slider_thumb_ or { panic('missing slider thumb') }
+	track := progress.as_node().parent_element() or { panic('missing slider track') }
+	assert track.associated_shadow_host_pseudo_element()? == int(css.PseudoElement.slider_track)
+	assert progress.associated_shadow_host_pseudo_element()? == int(css.PseudoElement.slider_fill)
+	assert thumb.associated_shadow_host_pseudo_element()? == int(css.PseudoElement.slider_thumb)
+	assert elements[2].element_reference_pseudo_element(int(css.PseudoElement.slider_track))? == track
+	assert elements[2].element_reference_pseudo_element(int(css.PseudoElement.slider_fill))? == progress
+	assert elements[2].element_reference_pseudo_element(int(css.PseudoElement.slider_thumb))? == thumb
 }
 
 fn test_input_validation_picker_and_legacy_activation() {

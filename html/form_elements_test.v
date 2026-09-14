@@ -165,7 +165,8 @@ fn test_textarea_shadow_selection_lifecycle_editing_and_clone_algorithms() {
 	text_node := textarea.text_node_ or { panic('textarea text node') }
 	assert text_node.max_length()? == 3
 	placeholder := textarea.placeholder_element_ or { panic('placeholder element') }
-	assert placeholder.use_pseudo_element_value()? == int(css.PseudoElement.placeholder)
+	assert placeholder.associated_shadow_host_pseudo_element()? == int(css.PseudoElement.placeholder)
+	assert element.element_reference_pseudo_element(int(css.PseudoElement.placeholder))? == placeholder
 	assert placeholder.get_attribute_value('style').contains('display:inline')
 
 	textarea.set_relevant_value('abcd')!

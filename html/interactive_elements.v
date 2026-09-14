@@ -595,7 +595,6 @@ pub fn html_details_element_create_shadow_tree_if_needed(details &dom.HTMLDetail
 	document := element.document()
 	mut summary_slot_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'slot')!
 	mut descendants_slot_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'slot')!
-	descendants_slot_element.set_use_pseudo_element(int(css.PseudoElement.details_content))
 	mut style_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'style')!
 	style_text := document.create_text_node('\n        :host summary {\n            display: list-item;\n            counter-increment: list-item 0;\n            list-style: disclosure-closed inside;\n        }\n        :host([open]) summary {\n            list-style-type: disclosure-open;\n        }\n    ')
 	mut style_node := unsafe { &dom.Node(style_element) }
@@ -603,6 +602,7 @@ pub fn html_details_element_create_shadow_tree_if_needed(details &dom.HTMLDetail
 	mut shadow_node := unsafe { &dom.Node(shadow_root) }
 	shadow_node.append_child(summary_slot_element.as_node())!
 	shadow_node.append_child(descendants_slot_element.as_node())!
+	descendants_slot_element.set_associated_shadow_host_pseudo_element(int(css.PseudoElement.details_content))
 	shadow_node.append_child(style_element.as_node())!
 	mut mutable_details := unsafe { &dom.HTMLDetailsElement(details) }
 	mutable_details.summary_slot_ = unsafe { &dom.HTMLSlotElement(summary_slot_element) }

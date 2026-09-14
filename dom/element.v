@@ -1462,7 +1462,8 @@ pub mut:
 
 	pseudo_element_data map[int]&PseudoElement_
 
-	use_pseudo_element ?int
+	associated_shadow_host_pseudo_element_ ?int
+	element_reference_pseudo_elements_      map[int]&Element
 
 	classes []string
 	parts   []string
@@ -1537,14 +1538,27 @@ pub mut:
 	doc_ ?&Document
 }
 
-// Internal UA shadow-tree children can request the style of a pseudo-element.
-// The integer bridge avoids a dom -> css module dependency.
-pub fn (mut e Element) set_use_pseudo_element(pseudo_element int) {
-	e.use_pseudo_element = pseudo_element
+// Associate an internal UA shadow-tree element with an element-reference pseudo-element
+// exposed by its host. The integer bridge avoids a dom -> css module dependency.
+pub fn (mut e Element) set_associated_shadow_host_pseudo_element(pseudo_element int) {
+	root := e.as_node().root()
+	shadow_root := root.as_shadow_root() or {
+		panic('associated shadow-host pseudo-element requires a shadow-tree element')
+	}
+	host := shadow_root.host() or {
+		panic('associated shadow-host pseudo-element requires a shadow host')
+	}
+	mut mutable_host := unsafe { &Element(host) }
+	mutable_host.element_reference_pseudo_elements_[pseudo_element] = &e
+	e.associated_shadow_host_pseudo_element_ = pseudo_element
 }
 
-pub fn (e &Element) use_pseudo_element_value() ?int {
-	return e.use_pseudo_element
+pub fn (e &Element) associated_shadow_host_pseudo_element() ?int {
+	return e.associated_shadow_host_pseudo_element_
+}
+
+pub fn (e &Element) element_reference_pseudo_element(pseudo_element int) ?&Element {
+	return e.element_reference_pseudo_elements_[pseudo_element] or { return none }
 }
 
 pub struct StylePropertyMap_ {

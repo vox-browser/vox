@@ -184,8 +184,8 @@ pub fn (mut model HTMLTextAreaElementModel) create_shadow_tree_if_needed() {
 	inner_text_node.append_child(text_node.as_node()) or { return }
 
 	mut placeholder_element := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
-	placeholder_element.set_use_pseudo_element(int(css.PseudoElement.placeholder))
 	container_node.append_child(placeholder_element.as_node()) or { return }
+	placeholder_element.set_associated_shadow_host_pseudo_element(int(css.PseudoElement.placeholder))
 
 	mut placeholder_text_node := dom.Text.new(element.document(), element.get_attribute_value('placeholder'))
 	mut placeholder_node := placeholder_element.as_node()

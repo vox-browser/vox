@@ -15,6 +15,18 @@ fn test_dump_dom_tree() {
 	assert output.contains('  "hello"')
 }
 
+fn test_dump_dom_tree_labels_shadow_host_pseudo_elements() {
+	document := dom.Document.create(dom.url_about_blank())
+	mut host := document.create_element('textarea') or { panic(err) }
+	shadow_root := host.attach_a_user_agent_shadow_root(.named)
+	mut placeholder := document.create_element('div') or { panic(err) }
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	shadow_node.append_child(placeholder.as_node()) or { panic(err) }
+	placeholder.set_associated_shadow_host_pseudo_element(int(css.PseudoElement.placeholder))
+	output := dom_tree(host.as_node())
+	assert output.contains('    (pseudo-element: placeholder)\n')
+}
+
 fn test_dump_layout_tree() {
 	document := dom.Document.create(dom.url_about_blank())
 	root := layout.Node.new(document, none)

@@ -214,7 +214,8 @@ fn test_details_literal_shadow_tree_slots_style_and_toggle_task_coalescing() {
 	assert summary_slot.assigned_nodes_internal().len == 1
 	assert summary_slot.assigned_nodes_internal()[0].as_element()?.local_name() == 'summary'
 	assert unsafe { &dom.Element(descendants_slot) }.get_attribute_value('style').contains('content-visibility: hidden')
-	assert unsafe { &dom.Element(descendants_slot) }.use_pseudo_element_value()? == int(css.PseudoElement.details_content)
+	assert unsafe { &dom.Element(descendants_slot) }.associated_shadow_host_pseudo_element()? == int(css.PseudoElement.details_content)
+	assert element.element_reference_pseudo_element(int(css.PseudoElement.details_content))? == unsafe { &dom.Element(descendants_slot) }
 
 	callback := &dom.CallbackType{
 		handle_event: record_details_toggle

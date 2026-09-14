@@ -457,10 +457,10 @@ fn test_internal_shadow_tree_element_uses_host_pseudo_element_style() {
 	mut internal := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 		panic('${err}')
 	}
-	internal.set_use_pseudo_element(int(PseudoElement.placeholder))
-	internal.set_attribute_value('style', 'color: blue')
 	mut shadow_node := unsafe { &dom.Node(shadow_root) }
 	shadow_node.append_child(internal.as_node()) or { panic('${err}') }
+	internal.set_associated_shadow_host_pseudo_element(int(PseudoElement.placeholder))
+	internal.set_attribute_value('style', 'color: blue')
 	add_document_author_style_sheet(doc, 'textarea::placeholder { color: red; opacity: .5; }')
 
 	computed := StyleComputer.new(doc).compute_style(dom.AbstractElement.new(internal, none))
