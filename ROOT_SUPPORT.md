@@ -5,7 +5,7 @@ translation code, tests, and translation notes live in `~/code/vox2`.
 
 | Upstream root file | V translation |
 | --- | --- |
-| `Dump.h`, `Dump.cpp` | `dump/dump.v` (including canonical serialized selectors and associated shadow-host pseudo-element labels) |
+| `Dump.h`, `Dump.cpp` | `dump/dump.v` (including Navigation API entry scroll state, canonical serialized selectors, and associated shadow-host pseudo-element labels) |
 | `GraphemeEdgeTracker.h`, `.cpp` | `dom/grapheme_edge_tracker.v` (`find_line_start`/`find_line_end`; the removed adjacent-line tracker is superseded by `dom/visual_lines.v`) |
 | `Namespace.h`, `.cpp` | `namespace_/namespace_.v` |
 | `PixelUnits.h`, `.cpp` | `css/css.v`, `css/pixel_units.v` (including nearest/floor/truncate conversion, saturated negation/absolute value, and raw `CSSPixelPoint` IPC component order) |
