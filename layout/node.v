@@ -516,6 +516,26 @@ pub fn (n &Node) has_size_containment() bool {
 	return computed.contain().size_containment || computed.container_type().is_size_container
 }
 
+// https://drafts.csswg.org/css-sizing-4/#intrinsic-size-override
+// These are physical dimensions even when the box uses a vertical writing
+// mode; logical contain-intrinsic declarations have already been mapped by
+// the cascade.
+pub fn (n &Node) explicit_intrinsic_inner_width() ?CSSPixels {
+	value := n.computed_values().contain_intrinsic_width()
+	if !value.has_length {
+		return none
+	}
+	return value.length
+}
+
+pub fn (n &Node) explicit_intrinsic_inner_height() ?CSSPixels {
+	value := n.computed_values().contain_intrinsic_height()
+	if !value.has_length {
+		return none
+	}
+	return value.length
+}
+
 pub fn (n &Node) has_inline_size_containment() bool {
 	display := n.display()
 	if display.is_table_inside() || display.is_internal_table() {
@@ -1417,9 +1437,10 @@ pub fn (n &Box) has_auto_content_box_size() bool {
 
 pub fn (n &Box) auto_content_box_size() css.SizeWithAspectRatio {
 	if unsafe { &Node(n) }.has_size_containment() {
+		node := unsafe { &Node(n) }
 		return css.SizeWithAspectRatio{
-			width: CSSPixels.new(0)
-			height: CSSPixels.new(0)
+			width: node.explicit_intrinsic_inner_width() or { CSSPixels.new(0) }
+			height: node.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }
 		}
 	}
 	if n.has_auto_content_box_size_ {

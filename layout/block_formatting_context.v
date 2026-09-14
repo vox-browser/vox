@@ -269,6 +269,9 @@ fn margins_collapse_through(box &NodeWithStyle, state &LayoutState) bool {
 // parent's content height.
 fn (mut bfc BlockFormattingContext) compute_auto_height_for_block_level_element(mut state LayoutState, box &NodeWithStyle) CSSPixels {
 	box_node := unsafe { &Node(box) }
+	if box_node.has_size_containment() {
+		return box_node.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }
+	}
 	box_state := state.get(box)
 	children := box_node.children()
 	mut marker_line_height := CSSPixels.new(0)
@@ -644,6 +647,10 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 		if registered {
 			bfc.margin_state.unregister_block_container_y_position_update()
 		}
+	}
+	if definite_content_height == none && box_as_node.has_size_containment() {
+		intrinsic_height := box_as_node.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }
+		content_height_from_children = intrinsic_height.to_double()
 	}
 
 	// A table formatting context computes the final table grid height itself.

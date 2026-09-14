@@ -372,6 +372,20 @@ fn layout_inside_independent_formatting_context(mut state LayoutState, box &Node
 // flex/grid containers: they compute their intrinsic size without performing
 // the final normal-layout pass over their items.
 fn layout_inside_independent_formatting_context_with_mode(mut state LayoutState, box &Node, mut box_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
+	mut result := layout_inside_independent_formatting_context_without_containment_override(mut state,
+		box, mut box_state, layout_mode, available_space)
+	if box.has_size_containment() {
+		// Every formatting context reports the sizes produced by its contents
+		// through this result. Replace both physical axes at that shared boundary.
+		result = FormattingContextResult{
+			automatic_content_width: box.explicit_intrinsic_inner_width() or { CSSPixels.new(0) }
+			automatic_content_height: box.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }
+		}
+	}
+	return result
+}
+
+fn layout_inside_independent_formatting_context_without_containment_override(mut state LayoutState, box &Node, mut box_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
 	if box.is_svg_svg_box() {
 		return run_root_svg_formatting_context(mut state, box, mut box_state, available_space)
 	}

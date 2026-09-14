@@ -3511,3 +3511,46 @@ fn test_grid_containers_record_their_used_track_sizes() {
 	assert grid.grid_column_line_names() == [['a'], ['b'], ['c']]
 	assert grid.grid_row_line_names() == [['r1'], ['r2']]
 }
+
+// CSS Sizing 4 explicit intrinsic inner sizes replace the automatic size of a
+// size-contained box. contain-intrinsic-width/height are physical axes, even
+// when either the box or its containing block has a vertical writing mode.
+fn test_size_containment_uses_explicit_intrinsic_inner_sizes() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		div { width:200px; line-height:16px }
+		#size_only { contain:size }
+		#strict_only { contain:strict }
+		#shorthand { contain:size; contain-intrinsic-size:111px 222px }
+		#longhand { contain:size; contain-intrinsic-height:222px }
+		#auto_length { content-visibility:auto; contain-intrinsic-height:auto 32px; contain:strict }
+		#none { contain:size; contain-intrinsic-height:none }
+		#not_contained { contain-intrinsic-height:222px }
+		.inline { display:inline-block; width:auto; contain:size; contain-intrinsic-size:111px 222px }
+		#vertical_inline_block { writing-mode:vertical-rl }
+	</style>
+	<div id="size_only">x</div>
+	<div id="strict_only">x</div>
+	<div id="shorthand">x</div>
+	<div id="longhand">x</div>
+	<div id="auto_length">a file row</div>
+	<div id="none">x</div>
+	<div id="not_contained">x</div>
+	<div id="horizontal_inline_block" class="inline">x</div>
+	<div id="vertical_inline_block" class="inline">x</div>
+	<div style="writing-mode:vertical-rl; width:auto; height:300px"><div id="in_vertical_inline_block" class="inline">x</div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+
+	assert used_for_id(result, 'size_only').content_height().to_double() == 0
+	assert used_for_id(result, 'strict_only').content_height().to_double() == 0
+	assert used_for_id(result, 'shorthand').content_height().to_double() == 222
+	assert used_for_id(result, 'longhand').content_height().to_double() == 222
+	assert used_for_id(result, 'auto_length').content_height().to_double() == 32
+	assert used_for_id(result, 'none').content_height().to_double() == 0
+	assert used_for_id(result, 'not_contained').content_height().to_double() == 16
+	for id in ['horizontal_inline_block', 'vertical_inline_block', 'in_vertical_inline_block'] {
+		used := used_for_id(result, id)
+		assert used.content_width().to_double() == 111, id
+		assert used.content_height().to_double() == 222, id
+	}
+}
