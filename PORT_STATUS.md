@@ -102,6 +102,12 @@ CSS scroll margins now implement all physical and logical longhands plus the
 four-side, block-axis, and inline-axis shorthands. Signed lengths and calculated
 lengths compute through the normal logical-property mapping, and scroll-into-view
 expands the target border box by the resolved physical margins.
+CSS scroll padding now implements all physical and logical longhands plus the
+four-side, block-axis, and inline-axis shorthands. Non-negative lengths,
+percentages, `auto`, and calculated values compute through the normal logical-
+property mapping. Scroll-into-view resolves percentages against the corresponding
+scrollport dimension and applies the root scrolling element's padding to viewport
+alignment.
 
 The earlier inventory mapped every upstream implementation filename to V code,
 but filename and symbol-name coverage did not establish behavioral parity. A
@@ -140,7 +146,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
 | `Animations` | 10 | 5,187 | 3,972 | 1,041 | Complete |
 | `Bindings` | 11 | 2,501 | 2,675 | 918 | Complete |
-| `CSS` | 215 | 47,722 | 103,253 | 8,334 | Present |
+| `CSS` | 215 | 47,722 | 103,474 | 8,446 | Present |
 | `Clipboard` | 4 | 1,009 | 973 | 343 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 424 | 138 | Complete |
@@ -148,7 +154,7 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
-| `DOM` | 59 | 34,859 | 35,760 | 2,175 | Complete |
+| `DOM` | 59 | 34,859 | 35,778 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
 | `Editing` | 26 | 12,720 | 3,294 | 741 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
@@ -215,7 +221,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **340,468** | **67,170** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **340,707** | **67,306** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
