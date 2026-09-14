@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import html
 
 struct LineClampTestResult {
 	lines           []LineBox
@@ -54,7 +55,9 @@ fn test_standard_line_clamp_adds_the_selected_block_ellipsis() {
 	assert automatic.height.to_double() == 48
 	assert automatic.lines.last().fragments_.last().is_block_ellipsis()
 	assert automatic.lines.last().fragments_.last().text()? == '…'
-	assert automatic.lines.last().fragments_.last().length_in_code_units() == 0
+	assert automatic.lines.last().fragments_.last().length_in_code_units() == 1
+	assert automatic.lines.last().fragments_.last().start() == 6
+	assert layout_nodes_same(automatic.lines.last().fragments_[0].layout_node(), automatic.lines.last().fragments_.last().layout_node())
 
 	without := run_line_clamp_test(document, 'display:block; line-clamp:2 no-ellipsis; font:20px/24px monospace', AvailableSize.make_indefinite())
 	assert without.lines.len == 2
@@ -137,4 +140,42 @@ fn test_line_clamp_does_not_create_a_clamp_point_without_future_content() {
 	assert result.lines.len == 3
 	assert !result.has_clamp_point
 	assert !result.lines.last().fragments_.last().is_block_ellipsis()
+}
+
+fn test_block_ellipsis_uses_the_same_paint_run_as_literal_text() {
+	style := '<style>html,body{margin:0}div{width:12ch;font:20px/24px monospace}</style>'
+	clamped_document := html.parse_document('${style}<div style="line-clamp:2">first<br>second<br>hidden</div>')
+	clamped_root := layout_document_typed_in_viewport(clamped_document, 300, 200)
+	clamped_commands := clamped_root.paint_commands().filter(it.kind == 'draw_text'
+		&& it.text.contains('…'))
+	assert clamped_commands.len == 1
+	assert clamped_commands[0].text == 'second…'
+	assert clamped_commands[0].glyph_run == none
+
+	literal_document := html.parse_document('${style}<div>first<br>second…</div>')
+	literal_root := layout_document_typed_in_viewport(literal_document, 300, 200)
+	literal_commands := literal_root.paint_commands().filter(it.kind == 'draw_text'
+		&& it.text.contains('…'))
+	assert literal_commands.len == 1
+	assert literal_commands[0].text == clamped_commands[0].text
+	assert literal_commands[0].glyph_run == none
+
+	custom_document := html.parse_document('${style}<div style="line-clamp:2 &quot;++&quot;">first<br>second<br>hidden</div>')
+	custom_root := layout_document_typed_in_viewport(custom_document, 300, 200)
+	custom_commands := custom_root.paint_commands().filter(it.kind == 'draw_text'
+		&& it.text.contains('++'))
+	assert custom_commands.len == 1
+	custom_run := custom_commands[0].glyph_run or { panic('missing custom ellipsis run') }
+
+	literal_custom_document := html.parse_document('${style}<div>first<br>second++</div>')
+	literal_custom_root := layout_document_typed_in_viewport(literal_custom_document, 300, 200)
+	literal_custom_commands := literal_custom_root.paint_commands().filter(it.kind == 'draw_text'
+		&& it.text.contains('++'))
+	assert literal_custom_commands.len == 1
+	literal_custom_run := literal_custom_commands[0].glyph_run or {
+		panic('missing literal custom ellipsis run')
+	}
+	assert custom_commands[0].text == literal_custom_commands[0].text
+	assert custom_run.glyph_indices() == literal_custom_run.glyph_indices()
+	assert custom_run.glyph_positions() == literal_custom_run.glyph_positions()
 }

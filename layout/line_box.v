@@ -63,12 +63,13 @@ pub fn LineBoxFragment.new(layout_node &Node, start int, length_in_code_units in
 	return fragment
 }
 
-pub fn LineBoxFragment.new_block_ellipsis(style_source &Node, text string, inline_offset CSSPixels, block_offset CSSPixels, inline_length CSSPixels, block_length CSSPixels, baseline CSSPixels, direction css.Direction, writing_mode css.WritingMode, glyph_run &platform.GlyphRun) LineBoxFragment {
+pub fn LineBoxFragment.new_block_ellipsis(layout_node &Node, style_source &Node, text string, start int, inline_offset CSSPixels, block_offset CSSPixels, inline_length CSSPixels, block_length CSSPixels, baseline CSSPixels, direction css.Direction, writing_mode css.WritingMode, glyph_run ?&platform.GlyphRun) LineBoxFragment {
 	return LineBoxFragment{
-		layout_node_: style_source
+		layout_node_: layout_node
 		style_source_: style_source
 		block_ellipsis_text_: text
-		length_in_code_units_: 0
+		start_: start
+		length_in_code_units_: utf16_code_units_for_line_box(text).len
 		inline_offset_: inline_offset
 		block_offset_: block_offset
 		inline_length_: inline_length

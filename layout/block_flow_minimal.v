@@ -3257,6 +3257,32 @@ fn text_fragments_share_run(first TextFragment, next TextFragment) bool {
 	return first.shape_as_run && next.shape_as_run && first.text_run_id != 0 && first.text_run_id == next.text_run_id && first.inline_node_id == next.inline_node_id && first.color == next.color && first.font_size == next.font_size && first.bold == next.bold && first.italic == next.italic && first.mono == next.mono && first.decoration == next.decoration && first.decoration_color == next.decoration_color && first.decoration_color_set == next.decoration_color_set && first.decoration_style == next.decoration_style && first.decoration_thickness == next.decoration_thickness && first.preserves_spaces == next.preserves_spaces && first.rtl == next.rtl
 }
 
+fn combined_text_fragment_glyph_run(fragments []TextFragment, run_left f64) ?&platform.GlyphRun {
+	if fragments.len == 0 {
+		return none
+	}
+	first_run := fragments[0].paintable_fragment.glyph_run or { return none }
+	first_font := first_run.font()
+	first_baseline := fragments[0].y + fragments[0].baseline
+	mut glyphs := []platform.Glyph{}
+	for fragment in fragments {
+		run := fragment.paintable_fragment.glyph_run or { return none }
+		font := run.font()
+		if run.face() != first_run.face() || font.family != first_font.family
+			|| font.source_path != first_font.source_path || font.point_size != first_font.point_size
+			|| font.weight != first_font.weight
+			|| fragment.paintable_fragment.orientation != fragments[0].paintable_fragment.orientation {
+			return none
+		}
+		for source_glyph in run.glyphs() {
+			mut glyph := source_glyph
+			glyph.position.translate_by(f32(fragment.x - run_left), f32(fragment.y + fragment.baseline - first_baseline))
+			glyphs << glyph
+		}
+	}
+	return platform.GlyphRun.new_with_face(first_font, first_run.text_type(), glyphs, first_run.face())
+}
+
 // Compatibility layout can still supply word fragments for one naturally-spaced DOM text node;
 // coalesce those into one paint command. The typed adapter already supplies the committed C++-shaped
 // LineBoxFragment intact, so it takes the single-fragment path without rebuilding the string.
@@ -3318,9 +3344,10 @@ fn unselected_text_fragment_commands(fragments []TextFragment, opacity f64) []Pa
 			rtl: first.rtl
 			opacity: opacity
 		}
-		// Typed layout transports one committed LineBoxFragment per entry. A
-		// compatibility run assembled from several word fragments has no single
-		// retained glyph run and keeps the raw-string fallback above.
+		// Typed layout transports one committed LineBoxFragment per entry. Join
+		// compatible retained runs without reshaping so a synthetic block ellipsis
+		// can keep the boundary text node's paint-run identity. Mixed-font groups
+		// keep the raw-string fallback above.
 		if j == i + 1 {
 			if glyph_run := first.paintable_fragment.glyph_run {
 				mut retained_run := unsafe { &platform.GlyphRun(glyph_run) }
@@ -3330,6 +3357,11 @@ fn unselected_text_fragment_commands(fragments []TextFragment, opacity f64) []Pa
 				text_command.glyph_translation_y = first.y + first.baseline
 				text_command.glyph_orientation = first.paintable_fragment.orientation
 			}
+		} else if combined_run := combined_text_fragment_glyph_run(fragments[i..j], run_left) {
+			text_command.glyph_run = combined_run
+			text_command.glyph_translation_x = run_left
+			text_command.glyph_translation_y = first.y + first.baseline
+			text_command.glyph_orientation = first.paintable_fragment.orientation
 		}
 		commands << text_command
 		for k := i; k < j; k++ {

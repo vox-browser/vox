@@ -443,6 +443,36 @@ fn truncate_line_for_block_ellipsis(mut state LayoutState, mut line LineBox,
 	return retained
 }
 
+fn block_ellipsis_font(style_source &Node, ellipsis string) &platform.Font {
+	units := utf16_code_units_for_line_box(ellipsis)
+	if units.len == 0 {
+		return style_source.first_available_font()
+	}
+	code_point := code_point_at_utf16(units, 0)
+	mut cascade := unsafe { &css.FontCascadeList(style_source.font_list()) }
+	cascade.trigger_pending_loads_for_code_point(code_point)
+	for entry in cascade.fonts {
+		mut covers_code_point := entry.unicode_ranges.len == 0
+		for range_ in entry.unicode_ranges {
+			if range_.start <= code_point && code_point <= range_.end {
+				covers_code_point = true
+				break
+			}
+		}
+		if !covers_code_point {
+			continue
+		}
+		font := text_node_chunk_platform_font(entry.font)
+		if font.contains_glyph(code_point) {
+			return font
+		}
+	}
+	if last_resort := cascade.last_resort_font {
+		return text_node_chunk_platform_font(last_resort)
+	}
+	return style_source.first_available_font()
+}
+
 fn apply_block_ellipsis(containing_block &BlockContainer, mut used UsedValues,
 	mut state LayoutState) {
 	if used.line_boxes.len == 0 {
@@ -462,9 +492,16 @@ fn apply_block_ellipsis(containing_block &BlockContainer, mut used UsedValues,
 	line.inline_length_before_block_ellipsis_ = line.inline_length()
 	line.trim_trailing_whitespace()
 	style_source := unsafe { &Node(containing_block) }
-	font := style_source.first_available_font()
+	font := block_ellipsis_font(style_source, ellipsis)
 	letter_spacing := resolved_text_spacing_for_node(style_source, .letter_spacing)
 	run := platform.shape_text(0, f32(letter_spacing.to_double()), ellipsis, font, .common)
+	units := utf16_code_units_for_line_box(ellipsis)
+	first_code_point := if units.len > 0 { code_point_at_utf16(units, 0) } else { u32(0) }
+	retained_run := if first_code_point != 0 && font.contains_glyph(first_code_point) {
+		?&platform.GlyphRun(run)
+	} else {
+		?&platform.GlyphRun(none)
+	}
 	ellipsis_width := CSSPixels.nearest_value_for(f64(run.width()))
 	available_width := if line.original_available_width().is_definite() {
 		line.original_available_width().to_px_or_zero()
@@ -527,7 +564,25 @@ fn apply_block_ellipsis(containing_block &BlockContainer, mut used UsedValues,
 			ellipsis_offset = CSSPixels.new(0)
 		}
 	}
-	line.fragments_ << LineBoxFragment.new_block_ellipsis(style_source, ellipsis, ellipsis_offset, block_offset, ellipsis_width, block_length, baseline, line.direction_, line.writing_mode_, run)
+	mut ellipsis_layout_node := style_source.first_child() or { style_source }
+	mut ellipsis_start := 0
+	if line.fragments_.len > 0 {
+		mut boundary_index := 0
+		for index := line.fragments_.len - 1; index >= 0; index-- {
+			boundary_index = index
+			if !line.fragments_[index].is_fully_truncated() {
+				break
+			}
+		}
+		boundary := line.fragments_[boundary_index]
+		ellipsis_layout_node = boundary.layout_node_
+		ellipsis_start = if boundary.is_fully_truncated() {
+			boundary.start_
+		} else {
+			boundary.start_ + boundary.length_in_code_units_
+		}
+	}
+	line.fragments_ << LineBoxFragment.new_block_ellipsis(ellipsis_layout_node, style_source, ellipsis, ellipsis_start, ellipsis_offset, block_offset, ellipsis_width, block_length, baseline, line.direction_, line.writing_mode_, retained_run)
 	line.inline_length_ = retained.plus(ellipsis_width)
 }
 
