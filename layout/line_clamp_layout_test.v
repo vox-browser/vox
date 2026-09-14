@@ -1,0 +1,140 @@
+module layout
+
+import css
+import dom
+
+struct LineClampTestResult {
+	lines           []LineBox
+	height          CSSPixels
+	has_clamp_point bool
+}
+
+fn line_clamp_test_style(document &dom.Document, declarations string) &css.ComputedProperties {
+	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	element.set_attribute_value('style', declarations)
+	return css.css_style_computer_for(document).compute_style(dom.AbstractElement.new(element, none))
+}
+
+fn run_line_clamp_test(document &dom.Document, declarations string,
+	available_height AvailableSize) LineClampTestResult {
+	style := line_clamp_test_style(document, declarations)
+	break_style := line_clamp_test_style(document, 'display:inline; font:20px/24px monospace')
+	mut container := BlockContainer.new(document, none, style)
+	container.set_children_are_inline(true)
+	for index, text in ['first', 'second', 'hidden'] {
+		dom_text := document.create_text_node(text)
+		text_node := TextNode.new(document, dom_text.as_node(), text)
+		container.append_child(unsafe { &Node(text_node) })
+		if index < 2 {
+			mut break_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'br') or { panic('${err}') }
+			break_node := BreakNode.new(document, break_element.as_node(), break_style)
+			container.append_child(unsafe { &Node(break_node) })
+		}
+	}
+	assign_layout_indexes(unsafe { &Node(container) })
+	mut state := LayoutState.new()
+	styled := unsafe { &Node(container) }.as_node_with_style() or { panic('style') }
+	mut used := state.get_mutable(styled)
+	used.set_content_width(CSSPixels.new(240))
+	result := run_inline_formatting_context(mut state, container, mut used, .normal, AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(240)), available_height))
+	return LineClampTestResult{
+		lines: used.line_boxes.clone()
+		height: result.automatic_content_height
+		has_clamp_point: used.has_line_clamp_point()
+	}
+}
+
+fn test_standard_line_clamp_adds_the_selected_block_ellipsis() {
+	document := dom.Document.create(dom.url_about_blank())
+	automatic := run_line_clamp_test(document, 'display:block; line-clamp:2; font:20px/24px monospace', AvailableSize.make_indefinite())
+	assert automatic.has_clamp_point
+	assert automatic.lines.len == 2
+	assert automatic.height.to_double() == 48
+	assert automatic.lines.last().fragments_.last().is_block_ellipsis()
+	assert automatic.lines.last().fragments_.last().text()? == '…'
+	assert automatic.lines.last().fragments_.last().length_in_code_units() == 0
+
+	without := run_line_clamp_test(document, 'display:block; line-clamp:2 no-ellipsis; font:20px/24px monospace', AvailableSize.make_indefinite())
+	assert without.lines.len == 2
+	assert !without.lines.last().fragments_.last().is_block_ellipsis()
+
+	custom := run_line_clamp_test(document, 'display:block; line-clamp:2 "++"; font:20px/24px monospace', AvailableSize.make_indefinite())
+	assert custom.lines.len == 2
+	assert custom.lines.last().fragments_.last().is_block_ellipsis()
+	assert custom.lines.last().fragments_.last().text()? == '++'
+}
+
+fn test_line_clamp_auto_uses_the_definite_block_size() {
+	document := dom.Document.create(dom.url_about_blank())
+	result := run_line_clamp_test(document, 'display:block; line-clamp:auto; font:20px/24px monospace', AvailableSize.make_definite(CSSPixels.new(48)))
+	assert result.has_clamp_point
+	assert result.lines.len == 2
+	assert result.lines.last().fragments_.last().text()? == '…'
+}
+
+fn test_webkit_line_clamp_only_activates_for_a_vertical_legacy_box() {
+	document := dom.Document.create(dom.url_about_blank())
+	vertical := run_line_clamp_test(document, 'display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; font:20px/24px monospace', AvailableSize.make_indefinite())
+	assert vertical.lines.len == 2
+	assert vertical.has_clamp_point
+
+	horizontal := run_line_clamp_test(document, 'display:-webkit-box; -webkit-box-orient:horizontal; -webkit-line-clamp:2; font:20px/24px monospace', AvailableSize.make_indefinite())
+	assert horizontal.lines.len == 3
+	assert !horizontal.has_clamp_point
+}
+
+fn test_continue_collapse_and_discard_establish_independent_formatting_contexts() {
+	document := dom.Document.create(dom.url_about_blank())
+	for value in ['collapse', 'discard'] {
+		style := line_clamp_test_style(document, 'display:block; continue:${value}')
+		box := BlockContainer.new(document, none, style)
+		styled := unsafe { &Node(box) }.as_node_with_style() or { panic('style') }
+		assert creates_block_formatting_context(styled), value
+	}
+}
+
+fn test_line_clamp_counts_descendant_in_flow_line_boxes_across_block_children() {
+	document := dom.Document.create(dom.url_about_blank())
+	root_style := line_clamp_test_style(document, 'display:block; line-clamp:2 "!"; font:20px/24px monospace')
+	mut root := BlockContainer.new(document, none, root_style)
+	root.set_children_are_inline(false)
+	mut children := []&BlockContainer{}
+	for text in ['first', 'second', 'hidden'] {
+		child_style := line_clamp_test_style(document, 'display:block; block-ellipsis:"!"; font:20px/24px monospace')
+		mut child := BlockContainer.new(document, none, child_style)
+		child.set_children_are_inline(true)
+		dom_text := document.create_text_node(text)
+		text_node := TextNode.new(document, dom_text.as_node(), text)
+		child.append_child(unsafe { &Node(text_node) })
+		root.append_child(unsafe { &Node(child) })
+		children << child
+	}
+	assign_layout_indexes(unsafe { &Node(root) })
+	mut state := LayoutState.new()
+	root_styled := unsafe { &Node(root) }.as_node_with_style() or { panic('root style') }
+	layout_block_flow(mut state, root_styled, 240, none)
+	root_used := state.get(root_styled)
+	assert root_used.has_line_clamp_point()
+	assert root_used.content_height().to_double() == 48
+	second_styled := unsafe { &Node(children[1]) }.as_node_with_style() or {
+		panic('second style')
+	}
+	second_used := state.get(second_styled)
+	assert second_used.line_boxes.len == 1
+	assert second_used.line_boxes[0].fragments_.last().is_block_ellipsis()
+	assert second_used.line_boxes[0].fragments_.last().text()? == '!'
+	hidden_styled := unsafe { &Node(children[2]) }.as_node_with_style() or {
+		panic('hidden style')
+	}
+	assert state.get(hidden_styled).is_invisible_for_line_clamp()
+}
+
+fn test_line_clamp_does_not_create_a_clamp_point_without_future_content() {
+	document := dom.Document.create(dom.url_about_blank())
+	result := run_line_clamp_test(document, 'display:block; line-clamp:3; font:20px/24px monospace', AvailableSize.make_indefinite())
+	assert result.lines.len == 3
+	assert !result.has_clamp_point
+	assert !result.lines.last().fragments_.last().is_block_ellipsis()
+}

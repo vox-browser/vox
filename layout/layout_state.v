@@ -39,6 +39,8 @@ mut:
 	svg_rendering_disabled_       bool
 	override_borders_data_        ?painting.BordersDataWithElementKind
 	table_cell_coordinates_       ?painting.TableCellCoordinates
+	has_line_clamp_point_         bool
+	is_invisible_for_line_clamp_  bool
 }
 
 fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
@@ -60,6 +62,8 @@ fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
 		svg_rendering_disabled_: rare.svg_rendering_disabled_
 		override_borders_data_: rare.override_borders_data_
 		table_cell_coordinates_: rare.table_cell_coordinates_
+		has_line_clamp_point_: rare.has_line_clamp_point_
+		is_invisible_for_line_clamp_: rare.is_invisible_for_line_clamp_
 	}
 }
 
@@ -112,6 +116,26 @@ fn (mut u UsedValues) ensure_rare_data() &UsedValuesRareData {
 
 pub fn (u &UsedValues) has_rare_data() bool {
 	return u.rare_ != none
+}
+
+pub fn (u &UsedValues) has_line_clamp_point() bool {
+	rare := u.rare_ or { return false }
+	return rare.has_line_clamp_point_
+}
+
+pub fn (mut u UsedValues) set_has_line_clamp_point(value bool) {
+	mut rare := u.ensure_rare_data()
+	rare.has_line_clamp_point_ = value
+}
+
+pub fn (u &UsedValues) is_invisible_for_line_clamp() bool {
+	rare := u.rare_ or { return false }
+	return rare.is_invisible_for_line_clamp_
+}
+
+pub fn (mut u UsedValues) set_invisible_for_line_clamp(value bool) {
+	mut rare := u.ensure_rare_data()
+	rare.is_invisible_for_line_clamp_ = value
 }
 
 pub fn (u &UsedValues) node() &NodeWithStyle {

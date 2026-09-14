@@ -92,6 +92,9 @@ fn measure_scrollable_overflow(mut state LayoutState, box &Node, contained_boxes
 	if box.is_block_container() {
 		for line_box in used.line_boxes {
 			for fragment in line_box.fragments() {
+				if fragment.is_fully_truncated() {
+					continue
+				}
 				if fragment_inline_paintable_target(fragment.layout_node()) != none {
 					continue
 				}
@@ -113,6 +116,13 @@ fn measure_scrollable_overflow(mut state LayoutState, box &Node, contained_boxes
 		for child in contained {
 			if child.is_fixed_position() {
 				continue
+			}
+			if child_styled := child.as_node_with_style() {
+				if child_used := state.try_get(child_styled) {
+					if child_used.is_invisible_for_line_clamp() {
+						continue
+					}
+				}
 			}
 			child_rect := overflow_box_border_rect(child, state) or { continue }
 			wholly_in_unreachable_horizontal_axis := if overflow_directions.horizontal_axis_is_positive {
@@ -211,7 +221,7 @@ fn physical_overflow_directions(box &Node) PhysicalOverflowDirections {
 		inline_is_reverse
 	}
 	if box.display().is_flex_inside() {
-		direction := computed.flex_direction()
+		direction := computed.effective_flex_direction()
 		main_is_horizontal := if direction in [.row, .row_reverse] {
 			inline_is_horizontal
 		} else {

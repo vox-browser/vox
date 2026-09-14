@@ -298,7 +298,8 @@ pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_b
 			} else {
 				AvailableSize.make_indefinite()
 			}
-			inline_result := run_inline_formatting_context(mut state, block_container, mut used_values, .normal, AvailableSpace.new(AvailableSize.make_definite(css_px(content_width)), available_height))
+			mut inline_context := BlockFormattingContext.for_root(box_as_node, .normal)
+			inline_result := inline_context.run_inline_formatting_context_with_floats(mut state, block_container, mut used_values, .normal, AvailableSpace.new(AvailableSize.make_definite(css_px(content_width)), available_height))
 			_ = inline_result
 			content_height_from_children = if used_values.line_boxes.len > 0 {
 				used_values.line_boxes.last().bottom().to_double()
@@ -312,7 +313,7 @@ pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_b
 		// Block formatting context: lay out the block children, collapsing adjacent-sibling and parent-child
 		// vertical margins (CSS 2.1 §8.3.1). `box` is treated as the BFC root, whose own margins (per §8.3.1)
 		// do not collapse with its children — that is handled per-child inside the context.
-		mut block_formatting_context := BlockFormattingContext{}
+		mut block_formatting_context := BlockFormattingContext.for_root(box_as_node, .normal)
 		content_height_from_children = block_formatting_context.layout_block_level_children(mut state, box, content_width, definite_content_height)
 	}
 
@@ -372,8 +373,7 @@ fn layout_inside_independent_formatting_context(mut state LayoutState, box &Node
 // flex/grid containers: they compute their intrinsic size without performing
 // the final normal-layout pass over their items.
 fn layout_inside_independent_formatting_context_with_mode(mut state LayoutState, box &Node, mut box_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
-	mut result := layout_inside_independent_formatting_context_without_containment_override(mut state,
-		box, mut box_state, layout_mode, available_space)
+	mut result := layout_inside_independent_formatting_context_without_containment_override(mut state, box, mut box_state, layout_mode, available_space)
 	if box.has_size_containment() {
 		// Every formatting context reports the sizes produced by its contents
 		// through this result. Replace both physical axes at that shared boundary.
@@ -411,9 +411,7 @@ fn layout_inside_independent_formatting_context_without_containment_override(mut
 	}
 	if box_has_inline_content(box) {
 		if block_container := box.as_block_container() {
-			mut inline_block_context := BlockFormattingContext{
-				layout_mode: layout_mode
-			}
+			mut inline_block_context := BlockFormattingContext.for_root(box, layout_mode)
 			inline_result := inline_block_context.run_inline_formatting_context_with_floats(mut state, block_container, mut box_state, layout_mode, available_space)
 			mut automatic_height := if box_state.line_boxes.len > 0 {
 				box_state.line_boxes.last().bottom()
@@ -431,9 +429,7 @@ fn layout_inside_independent_formatting_context_without_containment_override(mut
 		}
 	}
 	styled := box.as_node_with_style() or { return FormattingContextResult{} }
-	mut child_context := BlockFormattingContext{
-		layout_mode: layout_mode
-	}
+	mut child_context := BlockFormattingContext.for_root(box, layout_mode)
 	child_context.layout_block_level_children(mut state, styled, box_state.content_width().to_double(), if box_state.has_definite_height()
 		&& available_space.height.is_definite() {
 		available_space.height.to_px_or_zero().to_double()
@@ -454,6 +450,9 @@ fn layout_inside_independent_formatting_context_without_containment_override(mut
 		}
 		child_styled := child.as_node_with_style() or { continue }
 		child_state := state.get(child_styled)
+		if child_state.is_invisible_for_line_clamp() {
+			continue
+		}
 		child_bottom :=
 			child_state.offset.y().plus(child_state.content_height()).plus(child_state.margin_box_bottom())
 		height = css_pixels_max(height, child_bottom)
@@ -520,6 +519,6 @@ pub fn layout_viewport(mut state LayoutState, viewport &Viewport, viewport_width
 		}
 	}
 
-	mut block_formatting_context := BlockFormattingContext{}
+	mut block_formatting_context := BlockFormattingContext.for_root(unsafe { &Node(viewport) }, .normal)
 	block_formatting_context.layout_block_level_children(mut state, viewport_node_with_style, viewport_width, viewport_height)
 }

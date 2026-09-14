@@ -109,6 +109,9 @@ fn creates_block_formatting_context(box &NodeWithStyle) bool {
 		|| node.has_paint_containment() {
 		return true
 	}
+	if computed.continue_value() in [.collapse, .discard] {
+		return true
+	}
 	// https://drafts.csswg.org/css-conditional-5/#valdef-container-type-size
 	// Size and inline-size containers establish an independent formatting context.
 	container_type := computed.container_type()
@@ -285,6 +288,11 @@ fn (mut bfc BlockFormattingContext) compute_auto_height_for_block_level_element(
 			continue
 		}
 		child_styled := child.as_node_with_style() or { continue }
+		if child_state := state.try_get(child_styled) {
+			if child_state.is_invisible_for_line_clamp() {
+				continue
+			}
+		}
 		if margins_collapse_through(child_styled, state) {
 			continue
 		}
@@ -324,6 +332,11 @@ fn (bfc &BlockFormattingContext) assign_collapsed_margin_to_last_child(mut state
 			continue
 		}
 		child_styled := child.as_node_with_style() or { continue }
+		if child_state := state.try_get(child_styled) {
+			if child_state.is_invisible_for_line_clamp() {
+				continue
+			}
+		}
 		if margins_collapse_through(child_styled, state) {
 			continue
 		}
@@ -406,6 +419,12 @@ fn (mut bfc BlockFormattingContext) layout_block_level_children(mut state Layout
 			}
 			continue
 		}
+		invisible_for_line_clamp := bfc.line_clamp_reached()
+		saved_y_offset_for_line_clamp := bfc.y_offset_of_current_block_container
+		saved_margin_state_for_line_clamp := bfc.margin_state
+		if invisible_for_line_clamp {
+			bfc.laying_out_invisible_clamped_content = true
+		}
 		if child_node.is_floating() {
 			margin_top := if bfc.margin_state.has_block_container_waiting_for_final_y_position() {
 				0.0
@@ -417,6 +436,11 @@ fn (mut bfc BlockFormattingContext) layout_block_level_children(mut state Layout
 			} else {
 				?CSSPixels(none)
 			}, css_px(bfc.y_offset_of_current_block_container + margin_top), none)
+			if invisible_for_line_clamp {
+				bfc.laying_out_invisible_clamped_content = false
+				bfc.y_offset_of_current_block_container = saved_y_offset_for_line_clamp
+				bfc.margin_state = saved_margin_state_for_line_clamp
+			}
 			// Floats are out of flow and do not contribute to an ordinary
 			// block container's auto height. A BFC root expands for all floating
 			// descendants when its formatting-context result is finalized below.
@@ -424,6 +448,12 @@ fn (mut bfc BlockFormattingContext) layout_block_level_children(mut state Layout
 		}
 		child := child_node.as_node_with_style() or { continue }
 		child_bottom := bfc.layout_block_level_box(mut state, child, block_container, content_width, cb_height_for_children)
+		if invisible_for_line_clamp {
+			bfc.laying_out_invisible_clamped_content = false
+			bfc.y_offset_of_current_block_container = saved_y_offset_for_line_clamp
+			bfc.margin_state = saved_margin_state_for_line_clamp
+			continue
+		}
 		if child_bottom > bottom_of_lowest_margin_box {
 			bottom_of_lowest_margin_box = child_bottom
 		}
@@ -441,6 +471,9 @@ fn (mut bfc BlockFormattingContext) layout_block_level_children(mut state Layout
 fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState, box &NodeWithStyle, block_container &NodeWithStyle, containing_block_width f64, containing_block_height ?f64) f64 {
 	computed := box.computed_values()
 	mut box_state := state.get_mutable(box)
+	if bfc.laying_out_invisible_clamped_content {
+		box_state.set_invisible_for_line_clamp(true)
+	}
 	resolve_box_model_edges(computed, mut box_state, containing_block_width)
 
 	// Fold this box's top margin into the collapsible state, then reposition any waiting block container.
@@ -800,12 +833,37 @@ fn (mut m BlockMarginState) set_box_last_in_flow_child_margin_bottom_collapsed(v
 // is what lets margins collapse across nesting levels.
 struct BlockFormattingContext {
 mut:
-	margin_state                        BlockMarginState
-	y_offset_of_current_block_container f64
-	floating_boxes                      []FloatingBoxRecord
-	left_floats                         FloatSideState
-	right_floats                        FloatSideState
-	layout_mode                         LayoutMode
+	margin_state                         BlockMarginState
+	y_offset_of_current_block_container  f64
+	floating_boxes                       []FloatingBoxRecord
+	left_floats                          FloatSideState
+	right_floats                         FloatSideState
+	layout_mode                          LayoutMode
+	root                                 ?&Node
+	is_line_clamp_container              bool
+	max_lines                            ?int
+	line_clamp_line_count                int
+	line_clamp_reached_                  bool
+	laying_out_invisible_clamped_content bool
+}
+
+fn BlockFormattingContext.for_root(root &Node, layout_mode LayoutMode) BlockFormattingContext {
+	computed := root.computed_values()
+	active := line_clamp_is_active(computed)
+	return BlockFormattingContext{
+		layout_mode: layout_mode
+		root: root
+		is_line_clamp_container: active
+		max_lines: if active { computed.max_lines() } else { none }
+	}
+}
+
+fn (bfc &BlockFormattingContext) has_line_clamp() bool {
+	return bfc.is_line_clamp_container && bfc.layout_mode != .intrinsic_sizing
+}
+
+fn (bfc &BlockFormattingContext) line_clamp_reached() bool {
+	return bfc.has_line_clamp() && bfc.line_clamp_reached_
 }
 
 struct FloatSideState {
@@ -968,6 +1026,9 @@ fn (bfc &BlockFormattingContext) place_box_avoiding_float_intrusions(mut box_sta
 fn (mut bfc BlockFormattingContext) layout_floating_box(mut state LayoutState, box &Node, block_container &NodeWithStyle, container_width CSSPixels, container_height ?CSSPixels, start_y CSSPixels, line_builder ?&LineBuilder) CSSPixels {
 	styled := box.as_node_with_style() or { return CSSPixels.new(0) }
 	mut initial_state := state.get_mutable(styled)
+	if bfc.laying_out_invisible_clamped_content {
+		initial_state.set_invisible_for_line_clamp(true)
+	}
 	mut container_state := state.get_mutable(block_container)
 	initial_state.set_containing_block_used_values(container_state)
 	resolve_box_model_edges(styled.computed_values(), mut initial_state, container_width.to_double())

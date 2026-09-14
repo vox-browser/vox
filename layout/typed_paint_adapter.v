@@ -39,6 +39,9 @@ fn paint_local_offset(node &Node, state &LayoutState, used &UsedValues) css.CSSP
 fn is_fully_truncated_inline_fragment(node &Node, state &LayoutState) bool {
 	styled := node.as_node_with_style() or { return false }
 	used := state.try_get(styled) or { return false }
+	if used.is_invisible_for_line_clamp() {
+		return true
+	}
 	coordinate := used.containing_line_box_fragment or { return false }
 	containing_block := node.containing_block() or { return false }
 	containing_styled := unsafe { &NodeWithStyle(containing_block) }
@@ -3780,8 +3783,8 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 				continue
 			}
 			text := fragment.text() or { continue }
-			computed := fragment.layout_node_.computed_values()
-			font_metrics := fragment.layout_node_.first_available_font().pixel_metrics()
+			computed := fragment.style_source().computed_values()
+			font_metrics := fragment.style_source().first_available_font().pixel_metrics()
 			mut color := css.Color{0, 0, 0, 255}
 			mut background := css.Color{0, 0, 0, 0}
 			mut background_images := []BackgroundImageLayer{}
@@ -3826,37 +3829,39 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 			// non-atomic InlineNode ancestor. Only that inline paintable owns box
 			// decorations; text left in the block paintable must not repaint the
 			// block's background, borders, radii, or box shadow.
-			if inline_owner := inline_paint_owner(fragment.layout_node_) {
-				owner_computed := inline_owner.computed_values()
-				background = computed_paint_color(owner_computed, .background_color, color_context, background)
-				if owner := painted_owner_element(inline_owner) {
-					mut owner_color_context := color_resolution_context_for_typed_node(inline_owner, owner_computed.color())
-					owner_color_context.current_color = owner_computed.color()
-					background_images = computed_background_image_layers(owner, owner_computed, owner_color_context)
-					inline_node_id = i64(owner.as_node().unique_id())
-				}
-				border_colors = computed_border_colors(owner_computed)
-				border_color = border_colors.top
-				border_styles = computed_border_styles(owner_computed)
-				radii = paintable_box_border_radii_data(owner_computed, fragment.width(), fragment.height())
-				radius = radii.top_left.x
-				if outline := paintable_box_outline_data(owner_computed) {
-					outline_width = outline.top.width
-					outline_style = outline.top.line_style
-					outline_color = css.Color{outline.top.color.r, outline.top.color.g, outline.top.color.b, outline.top.color.a}
-				}
-				outline_offset_value := owner_computed.typed_property_value(.outline_offset) or {
-					css.StyleValue(css.LengthStyleValue.create(css.Length.make_px(0)))
-				}
-				outline_offset = owner_computed.resolve_length_percentage_value_px(outline_offset_value, 0) or { 0.0 }
-				inline_shadows = computed_box_shadows(owner_computed)
-				if inline_shadows.len > 0 {
-					inline_shadow = inline_shadows[0]
-				}
-				if inline_styled := inline_owner.as_node_with_style() {
-					if inline_used := state.try_get(inline_styled) {
-						border = BoxEdges{inline_used.border_top.to_double(), inline_used.border_right.to_double(), inline_used.border_bottom.to_double(), inline_used.border_left.to_double()}
-						padding = BoxEdges{inline_used.padding_top.to_double(), inline_used.padding_right.to_double(), inline_used.padding_bottom.to_double(), inline_used.padding_left.to_double()}
+			if !fragment.is_block_ellipsis() {
+				if inline_owner := inline_paint_owner(fragment.layout_node_) {
+					owner_computed := inline_owner.computed_values()
+					background = computed_paint_color(owner_computed, .background_color, color_context, background)
+					if owner := painted_owner_element(inline_owner) {
+						mut owner_color_context := color_resolution_context_for_typed_node(inline_owner, owner_computed.color())
+						owner_color_context.current_color = owner_computed.color()
+						background_images = computed_background_image_layers(owner, owner_computed, owner_color_context)
+						inline_node_id = i64(owner.as_node().unique_id())
+					}
+					border_colors = computed_border_colors(owner_computed)
+					border_color = border_colors.top
+					border_styles = computed_border_styles(owner_computed)
+					radii = paintable_box_border_radii_data(owner_computed, fragment.width(), fragment.height())
+					radius = radii.top_left.x
+					if outline := paintable_box_outline_data(owner_computed) {
+						outline_width = outline.top.width
+						outline_style = outline.top.line_style
+						outline_color = css.Color{outline.top.color.r, outline.top.color.g, outline.top.color.b, outline.top.color.a}
+					}
+					outline_offset_value := owner_computed.typed_property_value(.outline_offset) or {
+						css.StyleValue(css.LengthStyleValue.create(css.Length.make_px(0)))
+					}
+					outline_offset = owner_computed.resolve_length_percentage_value_px(outline_offset_value, 0) or { 0.0 }
+					inline_shadows = computed_box_shadows(owner_computed)
+					if inline_shadows.len > 0 {
+						inline_shadow = inline_shadows[0]
+					}
+					if inline_styled := inline_owner.as_node_with_style() {
+						if inline_used := state.try_get(inline_styled) {
+							border = BoxEdges{inline_used.border_top.to_double(), inline_used.border_right.to_double(), inline_used.border_bottom.to_double(), inline_used.border_left.to_double()}
+							padding = BoxEdges{inline_used.padding_top.to_double(), inline_used.padding_right.to_double(), inline_used.padding_bottom.to_double(), inline_used.padding_left.to_double()}
+						}
 					}
 				}
 			}

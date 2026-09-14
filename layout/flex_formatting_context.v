@@ -63,7 +63,7 @@ fn css_clamp(value CSSPixels, minimum CSSPixels, maximum CSSPixels) CSSPixels {
 // meaning of `row` and `row-reverse` swaps, so there it is plain `row` that counts as
 // reversed and `row-reverse` that does not.
 fn flex_direction_is_reverse(container &Node) bool {
-	direction := container.computed_values().flex_direction()
+	direction := container.computed_values().effective_flex_direction()
 	if container.computed_values().direction() == .rtl {
 		return direction == .column_reverse || direction == .row
 	}
@@ -964,7 +964,7 @@ fn flex_line_placement(align css.AlignContent, cross_size_of_flex_container CSSP
 
 fn flex_formatting_cross_axis_is_reversed(container &Node) bool {
 	computed := container.computed_values()
-	is_row_layout := computed.flex_direction() in [.row, .row_reverse]
+	is_row_layout := computed.effective_flex_direction() in [.row, .row_reverse]
 	mut reverse := if is_row_layout {
 		layout_block_axis_is_reverse(computed.writing_mode())
 	} else {
@@ -1215,7 +1215,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 			}
 		}
 	}
-	direction := container.computed_values().flex_direction()
+	direction := container.computed_values().effective_flex_direction()
 	if direction in [.column, .column_reverse] {
 		result := run_column_flex_formatting_context(mut state, container, mut container_state, layout_mode, available_space)
 		if layout_mode == .intrinsic_sizing {
@@ -1669,10 +1669,10 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 	for index in 0 .. items.len {
 		indexes << index
 	}
-	if container.computed_values().flex_direction() == .column_reverse {
+	if container.computed_values().effective_flex_direction() == .column_reverse {
 		indexes.reverse_in_place()
 	}
-	main_reversed := container.computed_values().flex_direction() == .column_reverse
+	main_reversed := container.computed_values().effective_flex_direction() == .column_reverse
 	mut cursor := flex_physical_leading_offset(container, container.computed_values().justify_content(), main_free_space, leading, distributed_gap, items.len, false, main_reversed, absorbed_main_space)
 	max_baseline := flex_line_max_baseline(state, container, line)
 	for visual_index, item_index in indexes {
@@ -1716,7 +1716,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 			cursor = cursor.plus(row_gap).plus(distributed_gap)
 		}
 	}
-	set_flex_abspos_static_positions(mut state, container, container_state, container.computed_values().flex_direction())
+	set_flex_abspos_static_positions(mut state, container, container_state, container.computed_values().effective_flex_direction())
 	return FormattingContextResult{
 		automatic_content_width: container_width
 		automatic_content_height: if container_height != none { main_size } else { total_main }
@@ -1835,7 +1835,7 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 		line_indexes.reverse_in_place()
 	}
 
-	main_reversed := container.computed_values().flex_direction() == .column_reverse
+	main_reversed := container.computed_values().effective_flex_direction() == .column_reverse
 	for visual_line_index, line_index in line_indexes {
 		current_line := lines[line_index]
 		cross_size := line_cross_sizes[line_index]
@@ -1945,7 +1945,7 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 		}
 		_ = visual_line_index
 	}
-	set_flex_abspos_static_positions(mut state, container, container_state, container.computed_values().flex_direction())
+	set_flex_abspos_static_positions(mut state, container, container_state, container.computed_values().effective_flex_direction())
 	return FormattingContextResult{
 		automatic_content_width: if layout_mode == .intrinsic_sizing {
 			total_cross_size

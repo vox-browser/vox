@@ -81,8 +81,7 @@ fn append_fragment_visual_caret_stops(fragment LineBoxFragment,
 					continue
 				}
 				progress := f64(boundary - cluster_start) / f64(cluster_end - cluster_start)
-				append_visual_caret_stop(mut stops, fragment_start + boundary, inline_start +
-					width_before_cluster + f64(glyph.advance) * progress)
+				append_visual_caret_stop(mut stops, fragment_start + boundary, inline_start + width_before_cluster + f64(glyph.advance) * progress)
 			}
 			width_before_cluster += f64(glyph.advance)
 			cluster_start = cluster_end
@@ -96,12 +95,10 @@ fn append_fragment_visual_caret_stops(fragment LineBoxFragment,
 				continue
 			}
 			progress := f64(boundary) / f64(fragment_length)
-			append_visual_caret_stop(mut stops, fragment_start + boundary, inline_start +
-				fragment.inline_length().to_double() * progress)
+			append_visual_caret_stop(mut stops, fragment_start + boundary, inline_start + fragment.inline_length().to_double() * progress)
 		}
 	}
-	append_visual_caret_stop(mut stops, fragment_start + fragment_length,
-		inline_start + fragment.inline_length().to_double())
+	append_visual_caret_stop(mut stops, fragment_start + fragment_length, inline_start + fragment.inline_length().to_double())
 }
 
 fn visual_caret_coordinate_at(stops []dom.VisualCaretStop, offset int) ?f64 {
@@ -135,7 +132,7 @@ fn collect_dom_visual_lines(box &Node, state &LayoutState) []dom.VisualLine {
 	for physical_line_index, line in used.line_boxes {
 		mut matching_fragments := []LineBoxFragment{}
 		for fragment in line.fragments_ {
-			if !fragment.is_fully_truncated()
+			if !fragment.is_fully_truncated() && !fragment.is_block_ellipsis()
 				&& layout_nodes_same(fragment.layout_node(), box) {
 				matching_fragments << fragment
 			}
@@ -164,8 +161,7 @@ fn collect_dom_visual_lines(box &Node, state &LayoutState) []dom.VisualLine {
 		}
 
 		mut start_offset := matching_fragments[0].start()
-		mut end_offset := matching_fragments[0].start() +
-			matching_fragments[0].length_in_code_units()
+		mut end_offset := matching_fragments[0].start() + matching_fragments[0].length_in_code_units()
 		mut trailing_whitespace_width := f64(0)
 		mut caret_stops := []dom.VisualCaretStop{}
 		for fragment in matching_fragments {
@@ -216,10 +212,8 @@ fn collect_dom_visual_lines(box &Node, state &LayoutState) []dom.VisualLine {
 		}
 		projections[index].end_offset_with_trailing_whitespace = trailing_end
 		if trailing_end > projections[index].end_offset {
-			coordinate := visual_caret_coordinate_at(projections[index].caret_stops,
-				projections[index].end_offset) or { continue }
-			append_visual_caret_stop(mut projections[index].caret_stops, trailing_end,
-				coordinate + projections[index].trailing_whitespace_width)
+			coordinate := visual_caret_coordinate_at(projections[index].caret_stops, projections[index].end_offset) or { continue }
+			append_visual_caret_stop(mut projections[index].caret_stops, trailing_end, coordinate + projections[index].trailing_whitespace_width)
 			projections[index].caret_stops.sort(a.offset < b.offset)
 		}
 	}

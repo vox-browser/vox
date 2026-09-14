@@ -178,6 +178,23 @@ pub fn (mut builder LineBuilder) break_if_needed(next_item_width CSSPixels) bool
 	return false
 }
 
+pub fn (mut builder LineBuilder) note_soft_wrap_opportunity() {
+	context := builder.parent_block_context or { return }
+	if !context.has_line_clamp() {
+		return
+	}
+	if builder.containing_block_used_values.line_boxes.len == 0 {
+		return
+	}
+	mut line := builder.ensure_last_line_box()
+	for index := line.fragments_.len - 1; index >= 0; index-- {
+		if !line.fragments_[index].is_justifiable_whitespace() {
+			line.fragments_[index].set_has_soft_wrap_opportunity_after(true)
+			return
+		}
+	}
+}
+
 fn (mut builder LineBuilder) should_break(next_item_width CSSPixels) bool {
 	if builder.available_width_for_current_line.is_max_content()
 		|| builder.available_width_for_current_line.is_indefinite() {
@@ -365,9 +382,10 @@ pub fn (mut builder LineBuilder) update_last_line() {
 }
 
 pub fn (mut builder LineBuilder) remove_last_line_if_empty() {
-	line_boxes := builder.containing_block_used_values.line_boxes
-	if line_boxes.len > 0 && line_boxes.last().is_empty() {
-		builder.containing_block_used_values.line_boxes.delete(line_boxes.len - 1)
+	for builder.containing_block_used_values.line_boxes.len > 0
+		&& builder.containing_block_used_values.line_boxes.last().is_empty() {
+		last_index := builder.containing_block_used_values.line_boxes.len - 1
+		builder.containing_block_used_values.line_boxes.delete(last_index)
 		builder.last_line_needs_update = false
 	}
 }
@@ -509,8 +527,7 @@ fn font_baseline_for_line_height(font_metrics platform.FontPixelMetrics, line_he
 }
 
 fn normal_line_height_for_font_metrics(font_metrics platform.FontPixelMetrics) CSSPixels {
-	return CSSPixels.new(int(math.round_to_even(f64(font_metrics.ascent))) +
-		int(math.round_to_even(f64(font_metrics.descent))))
+	return CSSPixels.new(int(math.round_to_even(f64(font_metrics.ascent))) + int(math.round_to_even(f64(font_metrics.descent))))
 }
 
 fn css_pixels_min(a CSSPixels, b CSSPixels) CSSPixels {

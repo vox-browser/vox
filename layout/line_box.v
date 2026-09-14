@@ -16,28 +16,33 @@ pub mut:
 
 pub struct LineBoxFragment {
 pub:
-	layout_node_ &Node = unsafe { nil }
-	glyph_run_   ?&platform.GlyphRun
+	layout_node_         &Node = unsafe { nil }
+	style_source_        &Node = unsafe { nil }
+	glyph_run_           ?&platform.GlyphRun
+	block_ellipsis_text_ ?string
+	is_block_ellipsis_   bool
 pub mut:
-	start_                   int
-	length_in_code_units_    int
-	inline_offset_           CSSPixels
-	block_offset_            CSSPixels
-	inline_length_           CSSPixels
-	block_length_            CSSPixels
-	border_box_top_          CSSPixels
-	baseline_                CSSPixels
-	direction_               css.Direction = .ltr
-	writing_mode_            css.WritingMode = .horizontal_tb
-	insert_position_         f32
-	current_insert_direction css.Direction = .ltr
-	has_trailing_whitespace_ bool
-	is_fully_truncated_      bool
+	start_                           int
+	length_in_code_units_            int
+	inline_offset_                   CSSPixels
+	block_offset_                    CSSPixels
+	inline_length_                   CSSPixels
+	block_length_                    CSSPixels
+	border_box_top_                  CSSPixels
+	baseline_                        CSSPixels
+	direction_                       css.Direction = .ltr
+	writing_mode_                    css.WritingMode = .horizontal_tb
+	insert_position_                 f32
+	current_insert_direction         css.Direction = .ltr
+	has_trailing_whitespace_         bool
+	has_soft_wrap_opportunity_after_ bool
+	is_fully_truncated_              bool
 }
 
 pub fn LineBoxFragment.new(layout_node &Node, start int, length_in_code_units int, inline_offset CSSPixels, block_offset CSSPixels, inline_length CSSPixels, block_length CSSPixels, border_box_top CSSPixels, direction css.Direction, writing_mode css.WritingMode, glyph_run ?&platform.GlyphRun) LineBoxFragment {
 	mut fragment := LineBoxFragment{
 		layout_node_: layout_node
+		style_source_: layout_node
 		start_: start
 		length_in_code_units_: length_in_code_units
 		inline_offset_: inline_offset
@@ -58,8 +63,31 @@ pub fn LineBoxFragment.new(layout_node &Node, start int, length_in_code_units in
 	return fragment
 }
 
+pub fn LineBoxFragment.new_block_ellipsis(style_source &Node, text string, inline_offset CSSPixels, block_offset CSSPixels, inline_length CSSPixels, block_length CSSPixels, baseline CSSPixels, direction css.Direction, writing_mode css.WritingMode, glyph_run &platform.GlyphRun) LineBoxFragment {
+	return LineBoxFragment{
+		layout_node_: style_source
+		style_source_: style_source
+		block_ellipsis_text_: text
+		length_in_code_units_: 0
+		inline_offset_: inline_offset
+		block_offset_: block_offset
+		inline_length_: inline_length
+		block_length_: block_length
+		baseline_: baseline
+		direction_: direction
+		writing_mode_: writing_mode
+		glyph_run_: glyph_run
+		current_insert_direction: direction
+		is_block_ellipsis_: true
+	}
+}
+
 pub fn (fragment &LineBoxFragment) layout_node() &Node {
 	return fragment.layout_node_
+}
+
+pub fn (fragment &LineBoxFragment) style_source() &Node {
+	return fragment.style_source_
 }
 
 pub fn (fragment &LineBoxFragment) start() int {
@@ -137,6 +165,9 @@ pub fn (fragment &LineBoxFragment) border_box_top() CSSPixels {
 }
 
 pub fn (fragment &LineBoxFragment) text() ?string {
+	if text := fragment.block_ellipsis_text_ {
+		return text
+	}
 	text_node := fragment.layout_node_.as_text_node() or { return none }
 	value := text_node.text_for_rendering()
 	if value.is_ascii() {
@@ -146,6 +177,10 @@ pub fn (fragment &LineBoxFragment) text() ?string {
 		return utf16_substring_from_code_units_for_line_box(units, fragment.start_, fragment.length_in_code_units_)
 	}
 	return utf16_substring_for_line_box(value, fragment.start_, fragment.length_in_code_units_)
+}
+
+pub fn (fragment &LineBoxFragment) is_block_ellipsis() bool {
+	return fragment.is_block_ellipsis_
 }
 
 fn (fragment &LineBoxFragment) code_unit_at(relative_index int) ?u16 {
@@ -207,6 +242,14 @@ pub fn (fragment &LineBoxFragment) has_trailing_whitespace() bool {
 
 pub fn (mut fragment LineBoxFragment) set_has_trailing_whitespace(value bool) {
 	fragment.has_trailing_whitespace_ = value
+}
+
+pub fn (fragment &LineBoxFragment) has_soft_wrap_opportunity_after() bool {
+	return fragment.has_soft_wrap_opportunity_after_
+}
+
+pub fn (mut fragment LineBoxFragment) set_has_soft_wrap_opportunity_after(value bool) {
+	fragment.has_soft_wrap_opportunity_after_ = value
 }
 
 pub fn (fragment &LineBoxFragment) is_fully_truncated() bool {
@@ -308,16 +351,17 @@ fn (mut fragment LineBoxFragment) append_glyph_run_rtl(glyph_run &platform.Glyph
 
 pub struct LineBox {
 pub mut:
-	fragments_                []LineBoxFragment
-	inline_length_            CSSPixels
-	block_length_             CSSPixels
-	bottom_                   CSSPixels
-	baseline_                 CSSPixels
-	direction_                css.Direction = .ltr
-	writing_mode_             css.WritingMode = .horizontal_tb
-	original_available_width_ AvailableSize = AvailableSize.make_indefinite()
-	has_break_                bool
-	has_forced_break_         bool
+	fragments_                           []LineBoxFragment
+	inline_length_                       CSSPixels
+	inline_length_before_block_ellipsis_ ?CSSPixels
+	block_length_                        CSSPixels
+	bottom_                              CSSPixels
+	baseline_                            CSSPixels
+	direction_                           css.Direction = .ltr
+	writing_mode_                        css.WritingMode = .horizontal_tb
+	original_available_width_            AvailableSize = AvailableSize.make_indefinite()
+	has_break_                           bool
+	has_forced_break_                    bool
 }
 
 pub fn LineBox.new(direction css.Direction, writing_mode css.WritingMode) LineBox {
@@ -366,7 +410,8 @@ pub fn (mut line LineBox) add_fragment(layout_node &Node, start int, length int,
 	if run := glyph_run {
 		if !text_align_is_justify && line.fragments_.len > 0 {
 			mut last := &line.fragments_[line.fragments_.len - 1]
-			if layout_nodes_same(last.layout_node_, layout_node)
+			if !last.has_soft_wrap_opportunity_after()
+				&& layout_nodes_same(last.layout_node_, layout_node)
 				&& last.start_ + last.length_in_code_units_ == start {
 				if last_run := last.glyph_run_ {
 					// The temporary V font model can select the bundled emoji
