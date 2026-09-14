@@ -55,6 +55,10 @@ implementations often consolidate C++ class hierarchies and overloads under a
 single typed path. Empty/default-return implementations are checked separately,
 and the refreshed current-tree audit has 21 candidates awaiting body review.
 
+The current Layout refresh also follows shadow hosts while locating a positioned
+inline containing block. Absolutely positioned shadow-tree descendants therefore
+use their inline host instead of falling back to the viewport.
+
 The earlier inventory mapped every upstream implementation filename to V code,
 but filename and symbol-name coverage did not establish behavioral parity. A
 semantic re-audit found name-only `upstream_*entry_points.v` coverage-shim
@@ -120,7 +124,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 40,914 | 15,193 | Present |
+| `Layout` | 9 | 4,001 | 40,914 | 15,224 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -167,7 +171,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **338,389** | **66,207** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **338,389** | **66,238** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
