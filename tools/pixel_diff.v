@@ -10,8 +10,13 @@ fn absolute_byte_difference(a u8, b u8) u8 {
 }
 
 fn main() {
-	if os.args.len != 4 && os.args.len != 6 && os.args.len != 8 {
-		eprintln('usage: pixel_diff EXPECTED.png ACTUAL.png DIFF.png [MAX_CHANNEL_ERROR MAX_DIFFERENT_PIXELS [SPARSE_MAX_CHANNEL_ERROR SPARSE_OUTLIER_PIXELS]]')
+	if os.args.len != 4 && os.args.len != 5 && os.args.len != 6 && os.args.len != 8 {
+		eprintln('usage: pixel_diff EXPECTED.png ACTUAL.png DIFF.png [mismatch | MAX_CHANNEL_ERROR MAX_DIFFERENT_PIXELS [SPARSE_MAX_CHANNEL_ERROR SPARSE_OUTLIER_PIXELS]]')
+		exit(2)
+	}
+	is_mismatch := os.args.len == 5 && os.args[4] == 'mismatch'
+	if os.args.len == 5 && !is_mismatch {
+		eprintln('invalid comparison relation: ${os.args[4]}')
 		exit(2)
 	}
 	expected_path := os.args[1]
@@ -125,6 +130,14 @@ fn main() {
 	println('mean_absolute_error: ${mean_absolute_error:.4f}')
 	println('rmse: ${rmse:.4f}')
 	println('diff: ${diff_path}')
+	if is_mismatch {
+		if different_pixels == 0 {
+			eprintln('FAIL: mismatch reference rendered identically')
+			exit(1)
+		}
+		println('PASS: mismatch reference differs by ${different_pixels} pixels')
+		return
+	}
 	if os.args.len == 6 || os.args.len == 8 {
 		allowed_maximum_error := strconv.atoi(os.args[4]) or {
 			eprintln('invalid maximum channel error: ${os.args[4]}')
@@ -172,7 +185,7 @@ fn main() {
 			&& outlier_pixels <= sparse_outlier_pixels
 			&& different_pixels <= allowed_different_pixels + sparse_outlier_pixels
 		if (int(maximum_error) > allowed_maximum_error
-				|| different_pixels > allowed_different_pixels) && !sparse_variance_ok {
+			|| different_pixels > allowed_different_pixels) && !sparse_variance_ok {
 			eprintln('FAIL: allowed maximum_channel_error=${allowed_maximum_error}, different_pixels=${allowed_different_pixels}')
 			if os.args.len == 8 {
 				eprintln('FAIL: sparse allowance maximum_channel_error=${sparse_maximum_error}, outlier_pixels=${sparse_outlier_pixels}; observed outlier_pixels=${outlier_pixels}')

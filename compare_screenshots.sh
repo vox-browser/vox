@@ -47,14 +47,19 @@ for requested in "$@"; do
         exit 1
 	fi
 	name=$(basename "$input_path" .html)
+	reference_relation=match
 	if [ "$test_kind" = reftest ]; then
-		match_href=$(sed -n 's/.*<link[^>]*rel="match"[^>]*href="\([^"]*\)"[^>]*>.*/\1/p' "$input_path" | head -n 1)
-		if [ -z "$match_href" ]; then
-			echo "Upstream reftest match link not found: $input_path" >&2
+		reference_href=$(sed -n 's/.*<link[^>]*rel="match"[^>]*href="\([^"]*\)"[^>]*>.*/\1/p' "$input_path" | head -n 1)
+		if [ -z "$reference_href" ]; then
+			reference_relation=mismatch
+			reference_href=$(sed -n 's/.*<link[^>]*rel="mismatch"[^>]*href="\([^"]*\)"[^>]*>.*/\1/p' "$input_path" | head -n 1)
+		fi
+		if [ -z "$reference_href" ]; then
+			echo "Upstream reftest match or mismatch link not found: $input_path" >&2
 			exit 1
 		fi
-		match_dir=$(CDPATH= cd -- "$(dirname -- "$input_path")/$(dirname -- "$match_href")" && pwd)
-		expected_source="$match_dir/$(basename -- "$match_href")"
+		reference_dir=$(CDPATH= cd -- "$(dirname -- "$input_path")/$(dirname -- "$reference_href")" && pwd)
+		expected_source="$reference_dir/$(basename -- "$reference_href")"
 		if [ ! -f "$expected_source" ]; then
 			echo "Upstream reftest reference not found: $expected_source" >&2
 			exit 1
@@ -129,10 +134,16 @@ for requested in "$@"; do
         sparse_outlier_pixels=${LADYBIRD_V_MACOS_SPARSE_OUTLIER_PIXELS:-$platform_sparse_outlier_pixels}
         sparse_args="$sparse_max_difference $sparse_outlier_pixels"
     fi
-    # Intentional word splitting expands the optional pair into two arguments.
-    # shellcheck disable=SC2086
-    if ! "$v_compiler" run "$repo_dir/tools/pixel_diff.v" "$expected_path" "$actual_path" "$diff_path" "$max_difference" "$max_different_pixels" $sparse_args; then
-        comparison_status=1
+    if [ "$reference_relation" = mismatch ]; then
+        if ! "$v_compiler" run "$repo_dir/tools/pixel_diff.v" "$expected_path" "$actual_path" "$diff_path" mismatch; then
+            comparison_status=1
+        fi
+    else
+        # Intentional word splitting expands the optional pair into two arguments.
+        # shellcheck disable=SC2086
+        if ! "$v_compiler" run "$repo_dir/tools/pixel_diff.v" "$expected_path" "$actual_path" "$diff_path" "$max_difference" "$max_different_pixels" $sparse_args; then
+            comparison_status=1
+        fi
     fi
 done
 
