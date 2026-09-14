@@ -504,6 +504,39 @@ pub fn (mut model NavigableModel) set_active_session_history_entry(entry ?&Sessi
 	model.active_session_history_entry_ = entry
 }
 
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#save-persisted-state
+pub fn (mut model NavigableModel) save_persisted_state_to_active_session_history_entry() {
+	mut entry := model.active_session_history_entry_ or { return }
+	position := model.viewport_scroll_offset()
+	entry.set_scroll_position_data(SessionHistoryEntryScrollPositionData{
+		viewport_scroll_position: dom.CSSPixelPoint_{
+			x_: position.x().to_double()
+			y_: position.y().to_double()
+		}
+	})
+}
+
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#restore-scroll-position-data
+pub fn (mut model NavigableModel) restore_scroll_position_data(entry &SessionHistoryEntry) {
+	position := entry.scroll_position_data.viewport_scroll_position or { return }
+	model.perform_scroll_of_viewport_scrolling_box(css.CSSPixelPoint.from_values(position.x(),
+		position.y()))
+	model.clamp_viewport_scroll_offset()
+}
+
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#restore-persisted-user-state
+pub fn (mut model NavigableModel) restore_persisted_state_from_session_history_entry(entry &SessionHistoryEntry) {
+	if entry.scroll_restoration_mode != .auto {
+		return
+	}
+	if window := model.active_window() {
+		if window.navigation().suppress_scroll_restoration_during_ongoing_navigation() {
+			return
+		}
+	}
+	model.restore_scroll_position_data(entry)
+}
+
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#getting-session-history-entries
 pub fn (model &NavigableModel) get_session_history_entries() []&SessionHistoryEntry {
 	return model.session_history_entries_.clone()
@@ -530,6 +563,11 @@ pub fn (model &NavigableModel) get_the_target_history_entry(target_step int) ?&S
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#activate-history-entry
 pub fn (mut model NavigableModel) activate_history_entry(entry ?&SessionHistoryEntry, new_document &dom.Document) {
 	value := entry or { return }
+	if previous := model.active_session_history_entry_ {
+		if voidptr(previous) != voidptr(value) {
+			model.save_persisted_state_to_active_session_history_entry()
+		}
+	}
 	model.active_session_history_entry_ = value
 	model.set_active_document(new_document)
 	mut document := unsafe { &dom.Document(new_document) }
@@ -549,6 +587,7 @@ pub fn (mut model NavigableModel) activate_history_entry(entry ?&SessionHistoryE
 	if mut context := model.context_ {
 		context.set_active_document(new_document)
 	}
+	model.restore_persisted_state_from_session_history_entry(value)
 	if model.ongoing_navigation_.kind == .empty {
 		notify_navigation_complete(model.host_)
 	}
@@ -1357,11 +1396,13 @@ pub fn perform_url_and_history_update_steps(document &dom.Document, new_url dom.
 	active_entry := model.active_session_history_entry() or {
 		return error('InvalidStateError: navigable has no active history entry')
 	}
+	model.save_persisted_state_to_active_session_history_entry()
 	new_entry := &SessionHistoryEntry{
 		url: new_url
 		classic_history_api_state: serialized_data or { active_entry.classic_history_api_state }
 		document_state: active_entry.document_state
 		scroll_restoration_mode: active_entry.scroll_restoration_mode
+		scroll_position_data: active_entry.scroll_position_data
 	}
 	history_handling := if document.get_is_initial_about_blank() {
 		HistoryHandlingBehavior.replace
@@ -1407,6 +1448,7 @@ fn (mut model NavigableModel) navigate_to_a_fragment(url dom.URL, history_handli
 		model.set_ongoing_navigation(NavigableOngoingNavigation{})
 		return
 	}
+	model.save_persisted_state_to_active_session_history_entry()
 	mut entry := current.clone()
 	entry.url = url
 	if state := entry.document_state {
@@ -1622,6 +1664,9 @@ pub fn (mut model NavigableModel) set_viewport_size(size css.CSSPixelSize) {
 
 pub fn (mut model NavigableModel) clamp_viewport_scroll_offset() {
 	document := model.active_document() or { return }
+	if !document.layout_is_up_to_date() || document.layout_node() == none {
+		return
+	}
 	viewport := document.viewport_rect()
 	mut maximum_x := 0.0
 	mut maximum_y := 0.0

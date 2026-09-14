@@ -506,6 +506,38 @@ fn test_navigable_fetch_redirect_policy_and_url_history_algorithms() {
 	assert srcdoc_params.response.header_list.get('Content-Type')? == 'text/html'
 }
 
+fn test_session_history_saves_and_restores_viewport_scroll_position() {
+	mut document, _, model_pointer := navigable_test_top_level('https://example.test/start', 'top')!
+	mut model := unsafe { &NavigableModel(model_pointer) }
+	outgoing := model.active_session_history_entry() or { panic('missing outgoing entry') }
+	document.set_viewport_rect(dom.Rect{12, 18, 320, 200})
+	automatic := &SessionHistoryEntry{
+		url: document.url
+		document_state: outgoing.document_state
+		scroll_position_data: SessionHistoryEntryScrollPositionData{
+			viewport_scroll_position: dom.CSSPixelPoint_{ x_: 44, y_: 55 }
+		}
+	}
+	model.activate_history_entry(automatic, document)
+	saved := outgoing.scroll_position_data().viewport_scroll_position or {
+		panic('outgoing viewport position was not saved')
+	}
+	assert saved.x() == 12
+	assert saved.y() == 18
+	assert model.viewport_scroll_offset().to_double_pair() == [44.0, 55.0]!
+
+	manual := &SessionHistoryEntry{
+		url: document.url
+		document_state: outgoing.document_state
+		scroll_restoration_mode: .manual
+		scroll_position_data: SessionHistoryEntryScrollPositionData{
+			viewport_scroll_position: dom.CSSPixelPoint_{ x_: 70, y_: 80 }
+		}
+	}
+	model.activate_history_entry(manual, document)
+	assert model.viewport_scroll_offset().to_double_pair() == [44.0, 55.0]!
+}
+
 fn test_navigation_does_not_install_response_after_navigable_destruction() {
 	mut original_document, _, model_pointer := navigable_test_top_level('https://example.test/start', 'top')!
 	mut model := unsafe { &NavigableModel(model_pointer) }

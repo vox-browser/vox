@@ -260,6 +260,13 @@ pub enum ScrollRestorationMode {
 	manual
 }
 
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#she-scroll-position
+pub struct SessionHistoryEntryScrollPositionData {
+pub mut:
+	// FIXME: Track all restorable scrollable regions. Currently only the viewport is persisted.
+	viewport_scroll_position ?dom.CSSPixelPoint_
+}
+
 @[heap]
 pub struct SessionHistoryEntry {
 pub mut:
@@ -271,6 +278,7 @@ pub mut:
 	navigation_api_key               string = rand.uuid_v4()
 	navigation_api_id                string = rand.uuid_v4()
 	scroll_restoration_mode          ScrollRestorationMode = .auto
+	scroll_position_data             SessionHistoryEntryScrollPositionData
 	policy_container                 ?&PolicyContainer
 	browsing_context_name            ?string
 	original_source_browsing_context voidptr
@@ -294,6 +302,9 @@ pub fn (entry &SessionHistoryEntry) clone() &SessionHistoryEntry {
 		navigation_api_key: entry.navigation_api_key
 		navigation_api_id: entry.navigation_api_id
 		scroll_restoration_mode: entry.scroll_restoration_mode
+		scroll_position_data: SessionHistoryEntryScrollPositionData{
+			viewport_scroll_position: entry.scroll_position_data.viewport_scroll_position
+		}
 		policy_container: entry.policy_container
 		browsing_context_name: entry.browsing_context_name
 		original_source_browsing_context: entry.original_source_browsing_context
@@ -362,6 +373,14 @@ pub fn (entry &SessionHistoryEntry) scroll_restoration_mode() ScrollRestorationM
 
 pub fn (mut entry SessionHistoryEntry) set_scroll_restoration_mode(value ScrollRestorationMode) {
 	entry.scroll_restoration_mode = value
+}
+
+pub fn (entry &SessionHistoryEntry) scroll_position_data() SessionHistoryEntryScrollPositionData {
+	return entry.scroll_position_data
+}
+
+pub fn (mut entry SessionHistoryEntry) set_scroll_position_data(value SessionHistoryEntryScrollPositionData) {
+	entry.scroll_position_data = value
 }
 
 pub fn (entry &SessionHistoryEntry) policy_container() ?&PolicyContainer {

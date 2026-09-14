@@ -77,7 +77,7 @@ pub mut:
 	navigation_api_key        string
 	navigation_api_id         string
 	scroll_restoration_mode   ScrollRestorationMode = .auto
-	viewport_scroll_position  ?dom.CSSPixelPoint_
+	scroll_position_data      SessionHistoryEntryScrollPositionData
 }
 
 pub struct NavigationPopulationRequest {

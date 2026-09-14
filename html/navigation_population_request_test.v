@@ -44,6 +44,7 @@ fn test_create_navigation_population_request_preserves_detached_navigation_state
 	assert request.history_entry.classic_history_api_state.data == [u8(1), 2]
 	assert request.history_entry.navigation_api_state.data == [u8(3), 4]
 	assert request.history_entry.navigation_api_key == 'key'
+	assert request.history_entry.scroll_position_data.viewport_scroll_position == none
 	state := request.history_entry.document_state
 	assert state.id == 91
 	assert state.origin == none

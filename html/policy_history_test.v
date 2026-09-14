@@ -83,6 +83,9 @@ fn test_document_state_and_session_history_entry_clone() {
 		}
 		document_state: state
 		step:           3
+		scroll_position_data: SessionHistoryEntryScrollPositionData{
+			viewport_scroll_position: dom.CSSPixelPoint_{ x_: 7, y_: 11 }
+		}
 	}
 	state.nested_histories << NestedHistory{
 		id:      'child'
@@ -95,6 +98,8 @@ fn test_document_state_and_session_history_entry_clone() {
 	assert cloned.document()? == document
 	assert cloned.navigation_api_key == entry.navigation_api_key
 	assert cloned.navigation_api_id == entry.navigation_api_id
+	assert cloned.scroll_position_data.viewport_scroll_position?.x() == 7
+	assert cloned.scroll_position_data.viewport_scroll_position?.y() == 11
 	assert cloned.navigation_api_key.len == 36
 	assert cloned.classic_history_api_state.data == [
 		u8(StructuredSerializeValueTag.null_primitive),
