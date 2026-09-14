@@ -1842,11 +1842,22 @@ pub fn (c &ComputedProperties) clone_for_button_flex_wrapper() &ComputedProperti
 	return clone
 }
 
-// TreeBuilder.cpp currently transfers overflow to the anonymous fieldset
-// content box. The remaining properties listed by the HTML rendering spec are
-// deliberately not transferred upstream yet.
+// A fieldset keeps its special block layout so the rendered legend can be
+// positioned independently. Flex layout and alignment apply to this anonymous
+// content wrapper instead.
 pub fn (mut c ComputedProperties) take_properties_for_fieldset_content_box() &ComputedProperties {
-	mut content := c.clone_for_anonymous_with_display(Display.from_short(.flow_root))
+	display := if c.display().is_flex_inside() {
+		Display.from_outside_inside(.block, .flex)
+	} else {
+		Display.from_short(.flow_root)
+	}
+	mut content := c.clone_for_anonymous_with_display(display)
+	for property_id in [PropertyID.flex_direction, .flex_wrap, .align_content, .align_items,
+		.justify_content, .justify_items, .row_gap, .column_gap] {
+		if value := c.property(property_id, .no) {
+			content.set_property_without_modifying_flags(property_id, value)
+		}
+	}
 	for property_id in [PropertyID.overflow_x, .overflow_y] {
 		if value := c.property(property_id, .no) {
 			content.set_property_without_modifying_flags(property_id, value)

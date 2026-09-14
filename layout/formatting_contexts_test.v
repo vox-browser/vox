@@ -3450,6 +3450,47 @@ fn test_inline_containing_block_lookup_crosses_shadow_roots() {
 	assert voidptr(containing_dom_node) == voidptr(host.as_node())
 }
 
+fn test_flex_fieldsets_apply_layout_to_the_anonymous_content_box() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		fieldset { display:flex; flex-wrap:wrap; gap:10px; width:200px; margin:0; padding:0; border:0 }
+		legend { width:30px; height:20px; padding:0 }
+		.item { display:flex; flex:none; width:80px; height:30px }
+	</style>
+	<fieldset id="with"><legend></legend><div id="with-one" class="item"></div><div id="with-two" class="item"></div><div id="with-three" class="item"></div></fieldset>
+	<fieldset id="without"><div id="without-one" class="item"></div><div id="without-two" class="item"></div><div id="without-three" class="item"></div></fieldset>
+	<fieldset id="column" style="flex-direction:column; align-items:flex-end"><legend></legend><div id="column-one" class="item"></div><div id="column-two" class="item"></div></fieldset>
+	<fieldset id="inline" style="display:inline-flex; justify-content:flex-end"><legend></legend><div id="inline-one" class="item"></div><div id="inline-two" class="item"></div></fieldset>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+
+	with_fieldset := layout_node_with_id(result.root, 'with') or { panic('missing fieldset') }
+	assert with_fieldset.child_count() == 2
+	with_wrapper := with_fieldset.children()[1]
+	assert with_wrapper.is_anonymous()
+	assert with_wrapper.display().is_flex_inside()
+	assert used_for_id(result, 'with-one').offset.x().to_double() == 0
+	assert used_for_id(result, 'with-two').offset.x().to_double() == 90
+	assert used_for_id(result, 'with-three').offset.y().to_double() == 40
+
+	without_fieldset := layout_node_with_id(result.root, 'without') or { panic('missing fieldset') }
+	assert without_fieldset.child_count() == 1
+	without_wrapper := without_fieldset.children()[0]
+	assert without_wrapper.is_anonymous()
+	assert without_wrapper.display().is_flex_inside()
+	assert used_for_id(result, 'without-two').offset.x().to_double() == 90
+	assert used_for_id(result, 'without-three').offset.y().to_double() == 40
+
+	column_wrapper := (layout_node_with_id(result.root, 'column') or { panic('missing fieldset') }).children()[1]
+	assert column_wrapper.display().is_flex_inside()
+	assert used_for_id(result, 'column-one').offset.x().to_double() == 120
+	assert used_for_id(result, 'column-two').offset.y().to_double() == 40
+
+	inline_wrapper := (layout_node_with_id(result.root, 'inline') or { panic('missing fieldset') }).children()[1]
+	assert inline_wrapper.display().is_flex_inside()
+	assert used_for_id(result, 'inline-one').offset.x().to_double() == 30
+	assert used_for_id(result, 'inline-two').offset.x().to_double() == 120
+}
+
 // "For grid-template-columns and grid-template-rows the resolved value is the
 // used value", so the grid formatting context records the final track base sizes
 // and the explicit line names between them.

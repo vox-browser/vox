@@ -1785,28 +1785,38 @@ fn fixup_button_layout_tree(mut node Node, document &dom.Document) {
 }
 
 fn fixup_fieldset_content_box(mut node Node, document &dom.Document) {
-	fieldset := unsafe { &FieldSetBox(node) }
 	if !node.is_fieldset_box() {
 		return
 	}
-	legend := fieldset.rendered_legend() or { return }
+	fieldset := unsafe { &FieldSetBox(node) }
+	legend := fieldset.rendered_legend()
 	mut fieldset_style := node.as_node_with_style() or { return }
 	mut fieldset_computed := unsafe { &css.ComputedProperties(fieldset_style.computed_values_) }
+	if legend == none && !fieldset_computed.display().is_flex_inside() {
+		return
+	}
 	content_style := fieldset_computed.take_properties_for_fieldset_content_box()
 	fieldset_style.computed_values_ = css.resolve_computed_values_for_document(fieldset_computed, document)
 	mut wrapper := unsafe { &Node(BlockContainer.new(document, none, content_style)) }
 	wrapper.anonymous_ = true
 	mut non_legend_children := []&Node{}
 	for child in node.children_.clone() {
-		if !layout_nodes_same(child, unsafe { &Node(legend) }) {
-			non_legend_children << child
+		if rendered_legend := legend {
+			if layout_nodes_same(child, unsafe { &Node(rendered_legend) }) {
+				continue
+			}
 		}
+		non_legend_children << child
 	}
 	for child in non_legend_children {
 		wrapper.append_child(child)
 	}
 	wrapper.set_children_are_inline(non_legend_children.len > 0 && non_legend_children.all(it.is_inline()))
-	node.replace_children([unsafe { &Node(legend) }, wrapper])
+	if rendered_legend := legend {
+		node.replace_children([unsafe { &Node(rendered_legend) }, wrapper])
+	} else {
+		node.replace_children([wrapper])
+	}
 	node.set_children_are_inline(false)
 }
 
