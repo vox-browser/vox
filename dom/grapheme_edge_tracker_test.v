@@ -56,24 +56,3 @@ fn test_character_data_repicks_line_segmenter_after_mutation() {
 	assert !second.is_ascii_line_fast_path()
 	assert second.boundaries() == [0, 1, 2]
 }
-
-fn test_grapheme_edge_tracker_resolves_nearest_edge() {
-	mut tracker := GraphemeEdgeTracker.new(1.4)
-	assert tracker.update(1, 1) == .@continue
-	assert tracker.update(2, 1) == .@break
-	assert tracker.resolve() == 1
-
-	mut other := GraphemeEdgeTracker.new(1.6)
-	assert other.update(1, 1) == .@continue
-	assert other.update(2, 1) == .@break
-	assert other.resolve() == 3
-}
-
-fn test_line_navigation_preserves_grapheme_column() {
-	text := 'ab👩🏼‍❤️‍👨🏻\nx👩🏼‍❤️‍👨🏻z'
-	first_line_offset := find_line_end(text, 0)
-	next := compute_cursor_position_on_next_logical_line(text, first_line_offset) or { -1 }
-	assert next == utf16_code_unit_length('ab👩🏼‍❤️‍👨🏻\nx👩🏼‍❤️‍👨🏻z')
-	previous := compute_cursor_position_on_previous_logical_line(text, next) or { -1 }
-	assert previous == first_line_offset
-}

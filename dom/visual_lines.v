@@ -140,8 +140,8 @@ fn offset_in_visual_line_closest_to_inline_coordinate(line VisualLine,
 	mut best_distance := math.abs(line.caret_stops[0].inline_coordinate - coordinate)
 	for stop in line.caret_stops[1..] {
 		distance := math.abs(stop.inline_coordinate - coordinate)
-		// Match GraphemeEdgeTracker: an exact midpoint resolves to the later
-		// edge, so equal distances replace the earlier candidate.
+		// An exact midpoint resolves to the later edge, so equal distances
+		// replace the earlier candidate.
 		if distance <= best_distance {
 			best_distance = distance
 			result = stop.offset
