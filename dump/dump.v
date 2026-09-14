@@ -132,46 +132,15 @@ pub fn print_layout_tree(node &layout.Node, show_cascaded_properties bool) {
 	println(layout_tree(node, show_cascaded_properties))
 }
 
-fn combinator_description(combinator css.Combinator) string {
-	return match combinator {
-		.no_combinator { 'None' }
-		.immediate_child { 'ImmediateChild' }
-		.descendant { 'Descendant' }
-		.next_sibling { 'AdjacentSibling' }
-		.subsequent_sibling { 'GeneralSibling' }
-		.column { 'Column' }
-	}
-}
-
-fn simple_selector_description(type_ css.SimpleSelectorType) string {
-	return match type_ {
-		.universal { 'Universal' }
-		.id { 'Id' }
-		.class { 'Class' }
-		.tag_name { 'TagName' }
-		.attribute { 'Attribute' }
-		.pseudo_class { 'PseudoClassSelector' }
-		.pseudo_element { 'PseudoElement' }
-		.nesting { 'Nesting' }
-		.invalid { 'INVALID' }
-	}
+pub fn serialized_selector(serialized string, indent_levels int) string {
+	mut builder := strings.new_builder(128)
+	dump_indent(mut builder, indent_levels)
+	builder.write_string('CSS::Selector: ${serialized}\n')
+	return builder.str()
 }
 
 pub fn selector(selector css.Selector, indent_levels int) string {
-	mut builder := strings.new_builder(128)
-	dump_indent(mut builder, indent_levels)
-	builder.write_string('CSS::Selector:\n')
-	for compound in selector.compound_selectors() {
-		dump_indent(mut builder, indent_levels + 1)
-		builder.write_string('{${combinator_description(compound.combinator)}} ')
-		mut parts := []string{}
-		for simple in compound.simple_selectors {
-			parts << '${simple_selector_description(simple.type_)}:${simple.serialize()}'
-		}
-		builder.write_string(parts.join(', '))
-		builder.write_u8(`\n`)
-	}
-	return builder.str()
+	return serialized_selector(selector.serialize(), indent_levels)
 }
 
 pub fn print_selector(selector_value css.Selector) {

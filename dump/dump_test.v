@@ -54,7 +54,8 @@ fn test_dump_css_objects() {
 	}, properties, rule_list)
 	sheet_value := css.CSSStyleSheet.create(css.CSSRuleList.create([rule_value]),
 		css.MediaList.create_empty(), none)
-	assert selector(selector_value, 0).contains('ImmediateChild')
+	assert selector(selector_value, 0) == 'CSS::Selector: div > .item\n'
+	assert serialized_selector(':host > slot', 2) == '    CSS::Selector: :host > slot\n'
 	assert style_properties(properties, 0).contains("color: 'red' !important")
 	assert rule(rule_value, 0).contains('CSSStyleRule')
 	assert sheet(sheet_value, 0).contains('1 rule(s)')
