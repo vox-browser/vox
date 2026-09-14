@@ -972,10 +972,10 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.animation_play_state {
 			return parser.parse_animation_play_state_value(mut tokens)
 		}
-		.border_block_end_width, .border_block_start_width, .border_bottom_width, .border_inline_end_width, .border_inline_start_width, .border_left_width, .border_right_width, .border_top_width, .outline_width {
+		.border_block_end_width, .border_block_start_width, .border_bottom_width, .border_inline_end_width, .border_inline_start_width, .border_left_width, .border_right_width, .border_top_width, .column_rule_width, .outline_width {
 			return parser.parse_border_or_outline_width_value(property_id, mut tokens)
 		}
-		.border_block_end_style, .border_block_start_style, .border_bottom_style, .border_inline_end_style, .border_inline_start_style, .border_left_style, .border_right_style, .border_top_style {
+		.border_block_end_style, .border_block_start_style, .border_bottom_style, .border_inline_end_style, .border_inline_start_style, .border_left_style, .border_right_style, .border_top_style, .column_rule_style {
 			return parser.parse_line_style_value(mut tokens)
 		}
 		.border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius, .border_end_start_radius, .border_start_end_radius, .border_start_start_radius, .border_top_left_radius, .border_top_right_radius {
@@ -1059,7 +1059,7 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.position_visibility {
 			return parser.parse_position_visibility_value(mut tokens)
 		}
-		.background_color, .border_block_end_color, .border_block_start_color, .border_bottom_color, .border_inline_end_color, .border_inline_start_color, .border_left_color, .border_right_color, .border_top_color, .color, .flood_color, .outline_color, .stop_color, .webkit_text_fill_color {
+		.background_color, .border_block_end_color, .border_block_start_color, .border_bottom_color, .border_inline_end_color, .border_inline_start_color, .border_left_color, .border_right_color, .border_top_color, .color, .column_rule_color, .flood_color, .outline_color, .stop_color, .webkit_text_fill_color {
 			return parser.parse_color_value(mut tokens)
 		}
 		.color_scheme {
@@ -1433,6 +1433,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		}
 		.outline {
 			return parser.parse_outline_shorthand(mut tokens)
+		}
+		.column_rule {
+			return parser.parse_column_rule_shorthand(mut tokens)
 		}
 		.list_style {
 			return parser.parse_list_style_value(mut tokens)
@@ -5125,6 +5128,16 @@ fn (mut parser Parser) parse_outline_shorthand(mut tokens ComponentValueStream) 
 		PropertyID.outline_color,
 		PropertyID.outline_style,
 		PropertyID.outline_width,
+	])
+}
+
+// https://drafts.csswg.org/css-multicol/#propdef-column-rule
+// <'column-rule-width'> || <'column-rule-style'> || <'column-rule-color'>
+fn (mut parser Parser) parse_column_rule_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_double_bar_shorthand(mut tokens, .column_rule, [
+		PropertyID.column_rule_width,
+		PropertyID.column_rule_style,
+		PropertyID.column_rule_color,
 	])
 }
 

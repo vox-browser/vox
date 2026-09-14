@@ -405,6 +405,9 @@ pub enum PropertyID {
 	contain_intrinsic_height
 	contain_intrinsic_inline_size
 	contain_intrinsic_width
+	column_rule_color
+	column_rule_style
+	column_rule_width
 	vector_effect
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow
@@ -414,6 +417,7 @@ pub enum PropertyID {
 	place_self
 	flex_flow
 	columns
+	column_rule
 	text_wrap
 	margin
 	padding

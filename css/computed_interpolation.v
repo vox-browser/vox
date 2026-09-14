@@ -1653,6 +1653,9 @@ pub mut:
 	computed_values_column_count_                  ?int
 	computed_values_column_width_                  Size
 	computed_values_column_height_                 Size
+	computed_values_column_rule_color_             Color = Color{0, 0, 0, 255}
+	computed_values_column_rule_style_             LineStyle
+	computed_values_column_rule_width_             CSSPixels
 	computed_values_outline_width_                 CSSPixels
 	computed_values_transition_delay_              Time
 	computed_values_webkit_text_fill_color_        Color = Color{0, 0, 0, 255}
@@ -11279,7 +11282,7 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 			}
 			repeat_style_value_list_to_n_elements(absolutized_value, (typed_background_image as StyleValueList).size())
 		}
-		.border_block_end_width, .border_block_start_width, .border_bottom_width, .border_inline_end_width, .border_inline_start_width, .border_left_width, .border_right_width, .border_top_width, .outline_width {
+		.border_block_end_width, .border_block_start_width, .border_bottom_width, .border_inline_end_width, .border_inline_start_width, .border_left_width, .border_right_width, .border_top_width, .column_rule_width, .outline_width {
 			StyleComputer.compute_border_or_outline_width(absolutized_value, device_pixels_per_css_pixel, computation_context)
 		}
 		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape {

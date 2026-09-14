@@ -92,6 +92,14 @@ pub fn InitialValues.column_height() Size {
 	return Size.make_auto()
 }
 
+pub fn InitialValues.column_rule_color() Color {
+	return Color{0, 0, 0, 255}
+}
+
+pub fn InitialValues.column_rule_width() CSSPixels {
+	return CSSPixels.new(3)
+}
+
 pub fn InitialValues.row_gap() GapValue {
 	return GapValue.normal()
 }
@@ -411,6 +419,8 @@ pub fn resolve_computed_values_for_document(style &ComputedProperties, document 
 	mutable_values.set_stop_color(color_from_computed_value(style.color_or_fallback(.stop_color, context, ComputedColor.black())))
 	mutable_values.set_flood_color(color_from_computed_value(style.color_or_fallback(.flood_color, context, ComputedColor.black())))
 	mutable_values.set_outline_color(color_from_computed_value(style.color_or_fallback(.outline_color, context, ComputedColor.black())))
+	mutable_values.set_column_rule_color(color_from_computed_value(style.color_or_fallback(.column_rule_color,
+		context, ComputedColor.rgba(color.r, color.g, color.b, color.a))))
 	mutable_values.computed_values_fill_ = none
 	mutable_values.computed_values_stroke_ = none
 	if fill := computed_values_svg_paint(style, .fill, context) {
@@ -608,6 +618,12 @@ pub fn resolve_computed_values(style &ComputedProperties) &ComputedValues {
 	values.set_column_count(computed_values_column_count(style))
 	values.set_column_width(style.size_value(.column_width))
 	values.set_column_height(style.size_value(.column_height))
+	values.set_column_rule_style(style.line_style(.column_rule_style))
+	mut column_rule_width := style.length(.column_rule_width).absolute_length_to_px()
+	if column_rule_width.raw_value() < 0 {
+		column_rule_width = CSSPixels.new(0)
+	}
+	values.set_column_rule_width(column_rule_width)
 	mut outline_width := style.length(.outline_width).absolute_length_to_px()
 	if outline_width.raw_value() < 0 {
 		outline_width = CSSPixels.new(0)
@@ -1459,6 +1475,18 @@ pub fn (values &ComputedValues) column_height() Size {
 	return values.computed_values_column_height_
 }
 
+pub fn (values &ComputedValues) column_rule_color() Color {
+	return values.computed_values_column_rule_color_
+}
+
+pub fn (values &ComputedValues) column_rule_style() LineStyle {
+	return values.computed_values_column_rule_style_
+}
+
+pub fn (values &ComputedValues) column_rule_width() CSSPixels {
+	return values.computed_values_column_rule_width_
+}
+
 pub fn (values &ComputedValues) outline_width() CSSPixels {
 	return values.computed_values_outline_width_
 }
@@ -2306,6 +2334,18 @@ pub fn (mut values MutableComputedValues) set_column_width(value Size) {
 
 pub fn (mut values MutableComputedValues) set_column_height(value Size) {
 	values.computed_values_column_height_ = value
+}
+
+pub fn (mut values MutableComputedValues) set_column_rule_color(value Color) {
+	values.computed_values_column_rule_color_ = value
+}
+
+pub fn (mut values MutableComputedValues) set_column_rule_style(value LineStyle) {
+	values.computed_values_column_rule_style_ = value
+}
+
+pub fn (mut values MutableComputedValues) set_column_rule_width(value CSSPixels) {
+	values.computed_values_column_rule_width_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_outline_width(value CSSPixels) {

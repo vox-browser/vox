@@ -26,8 +26,9 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.border_start_start_radius, .border_top_color, .border_top_left_radius,
 				.border_top_right_radius, .border_top_style, .border_top_width, .bottom, .box_shadow,
 				.box_sizing, .caption_side, .caret_color, .clear, .clip, .clip_path, .clip_rule,
-				.color, .color_interpolation, .color_scheme, .column_count, .column_gap,
-				.column_height, .column_span, .column_width, .contain,
+		.color, .color_interpolation, .color_scheme, .column_count, .column_gap,
+				.column_height, .column_rule_color, .column_rule_style, .column_rule_width,
+				.column_span, .column_width, .contain,
 				.contain_intrinsic_block_size, .contain_intrinsic_height,
 				.contain_intrinsic_inline_size, .contain_intrinsic_width, .container_name,
 				.container_type, .content,
@@ -164,6 +165,9 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 		}
 		.columns {
 			[.column_width, .column_count, .column_height]
+		}
+		.column_rule {
+			[.column_rule_width, .column_rule_style, .column_rule_color]
 		}
 		.contain_intrinsic_size {
 			[.contain_intrinsic_width, .contain_intrinsic_height]
@@ -341,8 +345,9 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.border_start_start_radius, .border_top_color, .border_top_left_radius,
 				.border_top_right_radius, .border_top_style, .border_top_width, .bottom, .box_shadow,
 				.box_sizing, .caption_side, .caret_color, .clear, .clip, .clip_path, .clip_rule,
-				.color, .color_interpolation, .color_scheme, .column_count, .column_gap,
-				.column_height, .column_span, .column_width, .contain,
+		.color, .color_interpolation, .color_scheme, .column_count, .column_gap,
+				.column_height, .column_rule_color, .column_rule_style, .column_rule_width,
+				.column_span, .column_width, .contain,
 				.contain_intrinsic_block_size, .contain_intrinsic_height,
 				.contain_intrinsic_inline_size, .contain_intrinsic_width, .container_name,
 				.container_type, .content,
@@ -486,6 +491,9 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 		}
 		.columns {
 			[.column_width, .column_count, .column_height]
+		}
+		.column_rule {
+			[.column_rule_width, .column_rule_style, .column_rule_color]
 		}
 		.contain_intrinsic_size {
 			[.contain_intrinsic_width, .contain_intrinsic_height]
@@ -643,6 +651,9 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 
 pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.column_rule_color, .column_rule_style, .column_rule_width {
+			[.all, .column_rule]
+		}
 		.contain_intrinsic_block_size, .contain_intrinsic_inline_size {
 			[.all]
 		}
@@ -1645,7 +1656,7 @@ pub fn generated_property_needs_layout_for_getcomputedstyle(property_id Property
 
 pub fn generated_property_needs_layout_node_for_resolved_value(property_id PropertyID) bool {
 	return match property_id {
-		.webkit_text_fill_color, .animation_duration, .backdrop_filter, .background_color, .border_block_end_color, .border_block_end_width, .border_block_start_color, .border_block_start_width, .border_bottom_color, .border_bottom_width, .border_inline_end_color, .border_inline_end_width, .border_inline_start_color, .border_inline_start_width, .border_left_color, .border_left_width, .border_right_color, .border_right_width, .border_top_color, .border_top_width, .box_shadow, .caret_color, .color, .contain, .filter, .font_weight, .font_width, .letter_spacing, .line_height, .math_depth, .outline_color, .text_decoration_color, .text_shadow, .transform, .z_index {
+		.webkit_text_fill_color, .animation_duration, .backdrop_filter, .background_color, .border_block_end_color, .border_block_end_width, .border_block_start_color, .border_block_start_width, .border_bottom_color, .border_bottom_width, .border_inline_end_color, .border_inline_end_width, .border_inline_start_color, .border_inline_start_width, .border_left_color, .border_left_width, .border_right_color, .border_right_width, .border_top_color, .border_top_width, .box_shadow, .caret_color, .color, .column_rule_color, .contain, .filter, .font_weight, .font_width, .letter_spacing, .line_height, .math_depth, .outline_color, .text_decoration_color, .text_shadow, .transform, .z_index {
 			true
 		}
 		else { false }
