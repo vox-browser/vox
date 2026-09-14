@@ -823,7 +823,7 @@ fn (mut n Node) recompute_inline_abspos_containing_block() {
 	mut dom_ancestor := if generator := n.pseudo_element_generator_ {
 		?&dom.Element(generator)
 	} else if dom_node := n.dom_node_ {
-		dom_node.parent_element()
+		dom_node.parent_or_shadow_host_element()
 	} else {
 		?&dom.Element(none)
 	}
@@ -850,7 +850,7 @@ fn (mut n Node) recompute_inline_abspos_containing_block() {
 				return
 			}
 		}
-		dom_ancestor = candidate.as_node().parent_element()
+		dom_ancestor = candidate.as_node().parent_or_shadow_host_element()
 	}
 }
 

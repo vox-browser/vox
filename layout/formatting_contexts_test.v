@@ -1,5 +1,6 @@
 module layout
 
+import dom
 import html
 import platform
 import svg
@@ -3417,6 +3418,36 @@ fn test_split_inline_containing_blocks_include_block_descendants_and_valid_inlin
 	filtered := used_for_id(result, 'filter')
 	assert filtered.content_width().to_double() == 400
 	assert filtered.content_height().to_double() == 30
+}
+
+fn test_inline_containing_block_lookup_crosses_shadow_roots() {
+	document := html.parse_document('<!doctype html><style>
+		positioned-inline { position:relative }
+	</style><div style="height:100px"></div><positioned-inline id="host">inline containing block</positioned-inline>')
+	mut host := document.get_element_by_id('host') or { panic('missing host') }
+	shadow_root := host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic(err) }
+	mut absolutely_positioned := document.create_element_ns('http://www.w3.org/1999/xhtml',
+		'div') or { panic(err) }
+	absolutely_positioned.set_attribute_value('id', 'absolutely-positioned')
+	absolutely_positioned.set_attribute_value('style', 'position:absolute; inset:0')
+	mut slot := document.create_element_ns('http://www.w3.org/1999/xhtml', 'slot') or {
+		panic(err)
+	}
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	shadow_node.append_child(absolutely_positioned.as_node()) or { panic(err) }
+	shadow_node.append_child(slot.as_node()) or { panic(err) }
+
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	abspos_node := layout_node_with_id(result.root, 'absolutely-positioned') or {
+		panic('missing absolutely positioned shadow child')
+	}
+	inline_containing_block := abspos_node.inline_containing_block_if_applicable() or {
+		panic('shadow child did not find its inline containing block')
+	}
+	containing_dom_node := unsafe { &Node(inline_containing_block) }.dom_node() or {
+		panic('inline containing block has no DOM node')
+	}
+	assert voidptr(containing_dom_node) == voidptr(host.as_node())
 }
 
 // "For grid-template-columns and grid-template-rows the resolved value is the
