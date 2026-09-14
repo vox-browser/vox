@@ -73,6 +73,9 @@ contexts, including inline blocks in vertical writing modes.
 The multi-column rule longhands and shorthand now parse in any component order,
 compute rule widths independently of the rule style, resolve `currentcolor`, and
 round-trip through CSS declaration serialization.
+The fragmentation break-before, break-after, and break-inside properties now
+accept their complete CSS Break keyword grammars and retain typed computed
+values for future pagination and multicolumn layout consumers.
 
 The earlier inventory mapped every upstream implementation filename to V code,
 but filename and symbol-name coverage did not establish behavioral parity. A
@@ -111,7 +114,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
 | `Animations` | 10 | 5,187 | 3,972 | 1,041 | Complete |
 | `Bindings` | 11 | 2,501 | 2,675 | 918 | Complete |
-| `CSS` | 215 | 47,722 | 102,215 | 7,933 | Present |
+| `CSS` | 215 | 47,722 | 102,367 | 7,995 | Present |
 | `Clipboard` | 4 | 1,009 | 973 | 343 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 424 | 138 | Complete |
@@ -186,7 +189,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **338,823** | **66,567** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **338,975** | **66,629** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
