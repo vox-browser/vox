@@ -184,7 +184,7 @@ fn build_layout_tree_from_computed_styles(document &dom.Document, mut style_comp
 		counter_sets: map[string]css.CountersSet{}
 	}
 	if root_element_box := build_layout_box_for_element(document, root_element, style_computer, mut builder_state) {
-		propagate_overflow_to_viewport(root_element_box, mut viewport)
+		propagate_root_styles_to_viewport(root_element_box, mut viewport)
 		viewport.append_child(root_element_box)
 	}
 	timing_checkpoint = layout_timing_checkpoint('    build_boxes', timing_checkpoint)
@@ -238,35 +238,54 @@ fn materialize_audio_controls_shadow_trees(document &dom.Document) {
 	}
 }
 
-// CSS Overflow 3 viewport propagation. This runs after the element layout
-// nodes exist and before formatting-context selection, matching
-// DOM::Document::update_layout(): the source element's used overflow becomes
+// Principal writing mode, scrollbar width, and CSS Overflow 3 viewport
+// propagation. This runs after the element layout nodes exist and before
+// formatting-context selection. The source element's used overflow becomes
 // visible, so propagating body overflow does not spuriously create a BFC.
-fn propagate_overflow_to_viewport(root &Node, mut viewport Node) {
+fn propagate_root_styles_to_viewport(root &Node, mut viewport Node) {
 	root_styled := root.as_node_with_style() or { return }
-	if !root_styled.computed_values().contain().is_empty() {
-		return
-	}
-	mut origin := root_styled
+	root_values := root_styled.computed_values()
 	root_dom := root.dom_node() or { return }
 	root_element := root_dom.as_element() or { return }
-	if root_element.is_html_element() && root_element.local_name() == 'html' && root_styled.computed_values().overflow_x() == .visible && root_styled.computed_values().overflow_y() == .visible {
-		for child in root.children() {
-			child_dom := child.dom_node() or { continue }
-			child_element := child_dom.as_element() or { continue }
-			if !child_element.is_html_element() || child_element.local_name() != 'body' {
-				continue
-			}
-			child_styled := child.as_node_with_style() or { break }
-			if !child_styled.computed_values().contain().is_empty() {
-				return
-			}
-			origin = child_styled
-			break
-		}
-	}
 	viewport_styled := viewport.as_node_with_style() or { return }
 	mut viewport_computed := unsafe { &css.ComputedProperties(viewport_styled.computed_values()) }
+	mut root_computed := unsafe { &css.ComputedProperties(root_values) }
+
+	// The root element's scrollbar width always applies to the viewport.
+	if value := root_values.property(.scrollbar_width, .no) {
+		viewport_computed.set_property_without_modifying_flags(.scrollbar_width, value)
+	}
+
+	body := direct_body_layout_node(root)
+	mut body_styled := ?&NodeWithStyle(none)
+	if body_node := body {
+		body_styled = body_node.as_node_with_style()
+	}
+	body_values := if styled := body_styled { styled.computed_values() } else { root_values }
+	body_is_rendered := if styled := body_styled { !styled.display().is_none() } else { false }
+	body_propagation_is_disabled := !root_values.contain().is_empty()
+		|| (body_styled != none && !body_values.contain().is_empty())
+	root_is_html := root_element.is_html_element() && root_element.local_name() == 'html'
+
+	// HTML takes its principal writing mode and direction from the first rendered
+	// body child unless containment disables that special case.
+	writing_mode_origin := if root_is_html && body_is_rendered && !body_propagation_is_disabled {
+		body_values
+	} else {
+		root_values
+	}
+	for property_id in [css.PropertyID.writing_mode, .direction] {
+		if value := writing_mode_origin.property(property_id, .no) {
+			root_computed.set_property_without_modifying_flags(property_id, value)
+			viewport_computed.set_property_without_modifying_flags(property_id, value)
+		}
+	}
+
+	mut origin := root_styled
+	if root_is_html && body_is_rendered && !body_propagation_is_disabled
+		&& root_values.overflow_x() == .visible && root_values.overflow_y() == .visible {
+		origin = body_styled or { root_styled }
+	}
 	mut origin_computed := unsafe { &css.ComputedProperties(origin.computed_values()) }
 	for property_id in [css.PropertyID.overflow_x, .overflow_y] {
 		overflow := if property_id == .overflow_x {
@@ -287,7 +306,10 @@ fn propagate_overflow_to_viewport(root &Node, mut viewport Node) {
 		})
 	}
 	_ = css.resolve_computed_values_for_document(viewport_computed, root.document_)
-	_ = css.resolve_computed_values_for_document(origin_computed, root.document_)
+	_ = css.resolve_computed_values_for_document(root_computed, root.document_)
+	if voidptr(origin_computed) != voidptr(root_computed) {
+		_ = css.resolve_computed_values_for_document(origin_computed, root.document_)
+	}
 }
 
 // The result of laying out a document: the root layout box and the LayoutState holding every box's geometry.

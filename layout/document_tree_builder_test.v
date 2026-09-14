@@ -883,6 +883,44 @@ fn test_fieldset_moves_non_legend_content_into_flow_root_wrapper() {
 	assert fieldset_used.content_height().to_double() >= 48
 }
 
+fn test_root_styles_propagate_to_the_viewport() {
+	document := html.parse_document('<!doctype html><style>
+		html { scrollbar-width:thin; overflow:visible }
+		body { writing-mode:vertical-rl; direction:rtl; overflow:scroll }
+	</style><body id="body"></body>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	viewport := result.root.as_node_with_style() or { panic('viewport has no style') }
+	html_node := result.root.first_child() or { panic('missing html layout node') }
+	html_style := html_node.as_node_with_style() or { panic('html has no style') }
+	body_node := tree_builder_node_with_id(result.root, 'body') or { panic('missing body') }
+	body_style := body_node.as_node_with_style() or { panic('body has no style') }
+
+	assert viewport.computed_values().scrollbar_width() == .thin
+	assert viewport.computed_values().writing_mode() == .vertical_rl
+	assert viewport.computed_values().direction() == .rtl
+	assert viewport.computed_values().overflow_x() == .scroll
+	assert viewport.computed_values().overflow_y() == .scroll
+	assert html_style.computed_values().writing_mode() == .vertical_rl
+	assert html_style.computed_values().direction() == .rtl
+	assert body_style.computed_values().overflow_x() == .visible
+	assert body_style.computed_values().overflow_y() == .visible
+
+	contained_document := html.parse_document('<!doctype html><style>
+		html { overflow:hidden; writing-mode:horizontal-tb; direction:ltr }
+		body { contain:layout; overflow:scroll; writing-mode:vertical-rl; direction:rtl }
+	</style><body></body>')
+	contained_result := run_document_layout(contained_document, 800, 600) or {
+		panic('contained layout failed')
+	}
+	contained_viewport := contained_result.root.as_node_with_style() or {
+		panic('viewport has no style')
+	}
+	assert contained_viewport.computed_values().writing_mode() == .horizontal_tb
+	assert contained_viewport.computed_values().direction() == .ltr
+	assert contained_viewport.computed_values().overflow_x() == .hidden
+	assert contained_viewport.computed_values().overflow_y() == .hidden
+}
+
 fn test_block_inside_inline_creates_before_and_after_inline_continuations() {
 	document := html.parse_document('<!doctype html><div id="outer">before<span id="inline">one<div id="block" style="height:20px">block</div>two</span>after</div>')
 	root := build_layout_tree(document) or { panic('no layout tree') }
