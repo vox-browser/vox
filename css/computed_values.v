@@ -539,6 +539,9 @@ pub fn resolve_computed_values(style &ComputedProperties) &ComputedValues {
 	values.set_grid_row_end(style.grid_row_end())
 	values.set_grid_row_start(style.grid_row_start())
 	values.set_column_span(style.column_span())
+	values.set_break_after(style.break_between(.break_after))
+	values.set_break_before(style.break_between(.break_before))
+	values.set_break_inside(style.break_inside())
 	values.set_empty_cells(style.empty_cells())
 	values.set_object_fit(style.object_fit())
 	values.set_object_position(style.object_position())
@@ -1149,6 +1152,18 @@ pub fn (values &ComputedValues) grid_row_start() GridTrackPlacement {
 
 pub fn (values &ComputedValues) column_span() ColumnSpan {
 	return values.computed_values_column_span_
+}
+
+pub fn (values &ComputedValues) break_after() BreakBetween {
+	return values.computed_values_break_after_
+}
+
+pub fn (values &ComputedValues) break_before() BreakBetween {
+	return values.computed_values_break_before_
+}
+
+pub fn (values &ComputedValues) break_inside() BreakInside {
+	return values.computed_values_break_inside_
 }
 
 pub fn (values &ComputedValues) empty_cells() EmptyCells {
@@ -2010,6 +2025,18 @@ pub fn (mut values MutableComputedValues) set_grid_row_start(value GridTrackPlac
 
 pub fn (mut values MutableComputedValues) set_column_span(value ColumnSpan) {
 	values.computed_values_column_span_ = value
+}
+
+pub fn (mut values MutableComputedValues) set_break_after(value BreakBetween) {
+	values.computed_values_break_after_ = value
+}
+
+pub fn (mut values MutableComputedValues) set_break_before(value BreakBetween) {
+	values.computed_values_break_before_ = value
+}
+
+pub fn (mut values MutableComputedValues) set_break_inside(value BreakInside) {
+	values.computed_values_break_inside_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_empty_cells(value EmptyCells) {

@@ -408,6 +408,9 @@ pub enum PropertyID {
 	column_rule_color
 	column_rule_style
 	column_rule_width
+	break_after
+	break_before
+	break_inside
 	vector_effect
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow

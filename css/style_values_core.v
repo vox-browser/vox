@@ -1301,6 +1301,14 @@ pub enum Keyword {
 	armenian
 	auto
 	auto_add
+	avoid
+	avoid_column
+	avoid_page
+	avoid_region
+	page
+	recto
+	region
+	verso
 	avar2
 	b4
 	b5
@@ -2182,6 +2190,14 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.armenian { 'armenian' }
 		.auto { 'auto' }
 		.auto_add { 'auto-add' }
+		.avoid { 'avoid' }
+		.avoid_column { 'avoid-column' }
+		.avoid_page { 'avoid-page' }
+		.avoid_region { 'avoid-region' }
+		.page { 'page' }
+		.recto { 'recto' }
+		.region { 'region' }
+		.verso { 'verso' }
 		.avar2 { 'avar2' }
 		.b4 { 'b4' }
 		.b5 { 'b5' }
@@ -3045,6 +3061,14 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'armenian' { Keyword.armenian }
 		'auto' { Keyword.auto }
 		'auto-add' { Keyword.auto_add }
+		'avoid' { Keyword.avoid }
+		'avoid-column' { Keyword.avoid_column }
+		'avoid-page' { Keyword.avoid_page }
+		'avoid-region' { Keyword.avoid_region }
+		'page' { Keyword.page }
+		'recto' { Keyword.recto }
+		'region' { Keyword.region }
+		'verso' { Keyword.verso }
 		'avar2' { Keyword.avar2 }
 		'b4' { Keyword.b4 }
 		'b5' { Keyword.b5 }

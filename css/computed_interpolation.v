@@ -210,6 +210,29 @@ pub enum ColumnSpan {
 	all
 }
 
+pub enum BreakBetween {
+	auto
+	avoid
+	avoid_page
+	page
+	left
+	right
+	recto
+	verso
+	avoid_column
+	column
+	avoid_region
+	region
+}
+
+pub enum BreakInside {
+	auto
+	avoid
+	avoid_page
+	avoid_column
+	avoid_region
+}
+
 pub enum ContentDataType {
 	normal
 	none_
@@ -1575,6 +1598,9 @@ pub mut:
 	computed_values_grid_row_end_                  GridTrackPlacement
 	computed_values_grid_row_start_                GridTrackPlacement
 	computed_values_column_span_                   ColumnSpan
+	computed_values_break_after_                   BreakBetween
+	computed_values_break_before_                  BreakBetween
+	computed_values_break_inside_                  BreakInside
 	computed_values_empty_cells_                   EmptyCells
 	computed_values_object_fit_                    ObjectFit
 	computed_values_object_position_               Position
@@ -2731,6 +2757,42 @@ pub fn (c &ComputedProperties) column_span() ColumnSpan {
 		.none_ { ColumnSpan.none_ }
 		.all { ColumnSpan.all }
 		else { ColumnSpan.none_ }
+	}
+}
+
+pub fn (c &ComputedProperties) break_between(property_id PropertyID) BreakBetween {
+	if property_id !in [.break_after, .break_before] {
+		return .auto
+	}
+	value := c.property(property_id, .yes) or { return .auto }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .auto }
+	return match keyword {
+		.auto { BreakBetween.auto }
+		.avoid { BreakBetween.avoid }
+		.avoid_page { BreakBetween.avoid_page }
+		.page { BreakBetween.page }
+		.left { BreakBetween.left }
+		.right { BreakBetween.right }
+		.recto { BreakBetween.recto }
+		.verso { BreakBetween.verso }
+		.avoid_column { BreakBetween.avoid_column }
+		.column { BreakBetween.column }
+		.avoid_region { BreakBetween.avoid_region }
+		.region { BreakBetween.region }
+		else { BreakBetween.auto }
+	}
+}
+
+pub fn (c &ComputedProperties) break_inside() BreakInside {
+	value := c.property(.break_inside, .yes) or { return .auto }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .auto }
+	return match keyword {
+		.auto { BreakInside.auto }
+		.avoid { BreakInside.avoid }
+		.avoid_page { BreakInside.avoid_page }
+		.avoid_column { BreakInside.avoid_column }
+		.avoid_region { BreakInside.avoid_region }
+		else { BreakInside.auto }
 	}
 }
 

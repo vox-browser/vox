@@ -25,7 +25,8 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.border_right_style, .border_right_width, .border_spacing, .border_start_end_radius,
 				.border_start_start_radius, .border_top_color, .border_top_left_radius,
 				.border_top_right_radius, .border_top_style, .border_top_width, .bottom, .box_shadow,
-				.box_sizing, .caption_side, .caret_color, .clear, .clip, .clip_path, .clip_rule,
+				.box_sizing, .break_after, .break_before, .break_inside, .caption_side, .caret_color,
+				.clear, .clip, .clip_path, .clip_rule,
 		.color, .color_interpolation, .color_scheme, .column_count, .column_gap,
 				.column_height, .column_rule_color, .column_rule_style, .column_rule_width,
 				.column_span, .column_width, .contain,
@@ -344,7 +345,8 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.border_right_style, .border_right_width, .border_spacing, .border_start_end_radius,
 				.border_start_start_radius, .border_top_color, .border_top_left_radius,
 				.border_top_right_radius, .border_top_style, .border_top_width, .bottom, .box_shadow,
-				.box_sizing, .caption_side, .caret_color, .clear, .clip, .clip_path, .clip_rule,
+				.box_sizing, .break_after, .break_before, .break_inside, .caption_side, .caret_color,
+				.clear, .clip, .clip_path, .clip_rule,
 		.color, .color_interpolation, .color_scheme, .column_count, .column_gap,
 				.column_height, .column_rule_color, .column_rule_style, .column_rule_width,
 				.column_span, .column_width, .contain,
@@ -651,6 +653,9 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 
 pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.break_after, .break_before, .break_inside {
+			[.all]
+		}
 		.column_rule_color, .column_rule_style, .column_rule_width {
 			[.all, .column_rule]
 		}

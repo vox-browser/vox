@@ -1011,6 +1011,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.border_collapse {
 			return parser.parse_border_collapse_value(mut tokens)
 		}
+		.break_after, .break_before, .break_inside {
+			return parse_property_keyword_value_from_metadata(property_id, mut tokens)
+		}
 		.box_sizing {
 			return parser.parse_box_sizing_value(mut tokens)
 		}
