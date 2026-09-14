@@ -8,6 +8,7 @@ module dump
 
 import css
 import dom
+import html
 import layout
 import namespace_
 import strings
@@ -74,6 +75,33 @@ pub fn dom_tree(node &dom.Node) string {
 
 pub fn print_dom_tree(node &dom.Node) {
 	println(dom_tree(node))
+}
+
+fn dump_session_history_entry_into(mut builder strings.Builder, entry &html.SessionHistoryEntry) {
+	step := match entry.step() {
+		int { entry.step() as int }
+		html.SessionHistoryEntryPending {
+			panic('cannot dump a pending session history entry')
+		}
+	}
+	builder.write_string('step=(${step}) url=(${entry.url().serialize()})')
+	if position := entry.scroll_position_data().viewport_scroll_position {
+		builder.write_string(' viewport-scroll=(${position.x()}, ${position.y()})')
+	}
+	builder.write_u8(`\n`)
+}
+
+pub fn navigation_tree(navigable &html.NavigableModel) string {
+	window := navigable.active_window() or { return '' }
+	mut builder := strings.new_builder(128)
+	for entry in window.navigation().entries() {
+		dump_session_history_entry_into(mut builder, entry.session_history_entry())
+	}
+	return builder.str()
+}
+
+pub fn print_navigation_tree(navigable &html.NavigableModel) {
+	print(navigation_tree(navigable))
 }
 
 fn layout_node_kind(node &layout.Node) string {

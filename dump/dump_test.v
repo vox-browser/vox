@@ -2,6 +2,7 @@ module dump
 
 import css
 import dom
+import html
 import layout
 
 fn test_dump_dom_tree() {
@@ -25,6 +26,25 @@ fn test_dump_dom_tree_labels_shadow_host_pseudo_elements() {
 	placeholder.set_associated_shadow_host_pseudo_element(int(css.PseudoElement.placeholder))
 	output := dom_tree(host.as_node())
 	assert output.contains('    (pseudo-element: placeholder)\n')
+}
+
+fn test_dump_navigation_tree_uses_navigation_entries_and_scroll_positions() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/page' })
+	document.set_origin(document.url.origin())
+	document.populate_with_html_head_and_body() or { panic(err) }
+	window := html.WindowModel.create_top_level(document, none, 'top') or { panic(err) }
+	navigable := html.NavigableModel.navigable_with_active_document(document) or {
+		panic('missing navigable')
+	}
+	mut entry := navigable.active_session_history_entry() or { panic('missing history entry') }
+	entry.set_step(7)
+	entry.set_scroll_position_data(html.SessionHistoryEntryScrollPositionData{
+		viewport_scroll_position: dom.CSSPixelPoint_{ x_: 12.5, y_: 9.25 }
+	})
+	mut navigation := unsafe { &html.Navigation(window.navigation()) }
+	navigation.set_entries_and_events_disabled_override(false)
+	navigation.initialize_the_navigation_api_entries_for_a_new_document([entry], entry)
+	assert navigation_tree(navigable) == 'step=(7) url=(https://example.test/page) viewport-scroll=(12.5, 9.25)\n'
 }
 
 fn test_dump_layout_tree() {
