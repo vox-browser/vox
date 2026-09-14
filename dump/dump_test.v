@@ -48,14 +48,17 @@ fn test_dump_navigation_tree_uses_navigation_entries_and_scroll_positions() {
 }
 
 fn test_dump_layout_tree() {
-	document := dom.Document.create(dom.url_about_blank())
-	root := layout.Node.new(document, none)
-	child := layout.Node.new(document, none)
-	mut mutable_root := unsafe { &layout.Node(root) }
-	mutable_root.append_child(child)
-	output := layout_tree(root, false)
-	assert output.count('(anonymous)') == 2
-	assert output.contains('\n  Node')
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.populate_with_html_head_and_body() or { panic(err) }
+	body := document.body() or { panic('missing body') }
+	mut child := document.create_element('div') or { panic(err) }
+	child.set_attribute_value('id', 'target')
+	mut body_node := unsafe { &dom.Node(body) }
+	body_node.append_child(child.as_node()) or { panic(err) }
+	result := layout.run_document_layout(document, 320, 200) or { panic('layout failed') }
+	output := layout_tree(result.root)
+	assert output.starts_with('Viewport <#document> at [0,0]')
+	assert output.contains('BlockContainer <div#target>')
 }
 
 fn test_dump_css_objects() {

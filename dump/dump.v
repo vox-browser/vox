@@ -104,60 +104,13 @@ pub fn print_navigation_tree(navigable &html.NavigableModel) {
 	print(navigation_tree(navigable))
 }
 
-fn layout_node_kind(node &layout.Node) string {
-	if node.is_viewport_ {
-		return 'Viewport'
-	}
-	if node.is_text_node_ {
-		return 'TextNode'
-	}
-	if node.is_block_container_ {
-		return 'BlockContainer'
-	}
-	if node.is_box_ {
-		return 'Box'
-	}
-	return 'Node'
+pub fn layout_tree(node &layout.Node) string {
+	result := layout.document_layout_result(node.document()) or { return '' }
+	return layout.dump_typed_layout_tree(node, result.state)
 }
 
-fn dump_layout_node_into(mut builder strings.Builder, node &layout.Node, show_cascaded_properties bool, indent int) {
-	dump_indent(mut builder, indent)
-	mut description := '(anonymous)'
-	if dom_node := node.dom_node() {
-		description = dom_node.debug_description()
-	}
-	mut flags := []string{}
-	if node.children_are_inline() {
-		flags << 'children-inline'
-	}
-	if node.is_flex_item() {
-		flags << 'flex-item'
-	}
-	if node.is_grid_item() {
-		flags << 'grid-item'
-	}
-	if node.needs_layout_update() {
-		flags << 'needs-layout'
-	}
-	flag_text := if flags.len == 0 { '' } else { ' [${flags.join(', ')}]' }
-	builder.write_string('${layout_node_kind(node)} ${description}${flag_text}\n')
-	if show_cascaded_properties && node.has_style() {
-		dump_indent(mut builder, indent + 1)
-		builder.write_string('(computed style attached)\n')
-	}
-	for child in node.children() {
-		dump_layout_node_into(mut builder, child, show_cascaded_properties, indent + 1)
-	}
-}
-
-pub fn layout_tree(node &layout.Node, show_cascaded_properties bool) string {
-	mut builder := strings.new_builder(256)
-	dump_layout_node_into(mut builder, node, show_cascaded_properties, 0)
-	return builder.str()
-}
-
-pub fn print_layout_tree(node &layout.Node, show_cascaded_properties bool) {
-	println(layout_tree(node, show_cascaded_properties))
+pub fn print_layout_tree(node &layout.Node) {
+	println(layout_tree(node))
 }
 
 pub fn serialized_selector(serialized string, indent_levels int) string {
@@ -229,14 +182,4 @@ pub fn sheet(sheet_value &css.CSSStyleSheet, indent_levels int) string {
 
 pub fn print_sheet(sheet_value &css.CSSStyleSheet) {
 	println(sheet(sheet_value, 0))
-}
-
-// Painting::Paintable is currently represented by a leaf object in the V DOM
-// port. This dump covers all state available until its child/layout links land.
-pub fn paintable(paintable_value &dom.Paintable, indent_levels int) string {
-	mut builder := strings.new_builder(64)
-	dump_indent(mut builder, indent_levels)
-	kind := if paintable_value.is_paintable_box() { 'PaintableBox' } else { 'Paintable' }
-	builder.write_string('${kind} needs-repaint=${paintable_value.needs_repaint}\n')
-	return builder.str()
 }
