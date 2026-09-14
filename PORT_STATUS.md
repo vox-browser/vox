@@ -58,6 +58,9 @@ and the refreshed current-tree audit has 21 candidates awaiting body review.
 The current Layout refresh also follows shadow hosts while locating a positioned
 inline containing block. Absolutely positioned shadow-tree descendants therefore
 use their inline host instead of falling back to the viewport.
+Flex and inline-flex fieldsets retain their special legend layout while applying
+flex direction, wrapping, alignment, and gaps to the anonymous content box. The
+wrapper is also created for flex fieldsets without a rendered legend.
 
 The earlier inventory mapped every upstream implementation filename to V code,
 but filename and symbol-name coverage did not establish behavioral parity. A
@@ -96,7 +99,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
 | `Animations` | 10 | 5,187 | 3,972 | 1,041 | Complete |
 | `Bindings` | 11 | 2,501 | 2,675 | 918 | Complete |
-| `CSS` | 215 | 47,722 | 101,883 | 7,726 | Present |
+| `CSS` | 215 | 47,722 | 101,898 | 7,726 | Present |
 | `Clipboard` | 4 | 1,009 | 973 | 343 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 424 | 138 | Complete |
@@ -124,7 +127,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 40,914 | 15,224 | Present |
+| `Layout` | 9 | 4,001 | 40,925 | 15,265 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -171,7 +174,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **338,389** | **66,238** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **338,415** | **66,279** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
