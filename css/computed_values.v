@@ -574,6 +574,7 @@ pub fn resolve_computed_values(style &ComputedProperties) &ComputedValues {
 	values.set_border_spacing_horizontal(style.border_spacing_horizontal())
 	values.set_border_spacing_vertical(style.border_spacing_vertical())
 	values.set_color_interpolation(style.color_interpolation())
+	values.set_color_interpolation_filters(style.color_interpolation_filters())
 	values.set_clip(style.clip())
 	values.set_cursor(style.cursor())
 	values.set_background_color_clip(style.background_color_clip())
@@ -1310,6 +1311,10 @@ pub fn (values &ComputedValues) color_interpolation() ColorInterpolation {
 	return values.computed_values_color_interpolation_
 }
 
+pub fn (values &ComputedValues) color_interpolation_filters() ColorInterpolation {
+	return values.computed_values_color_interpolation_filters_
+}
+
 pub fn (values &ComputedValues) clip() Clip {
 	return values.computed_values_clip_
 }
@@ -1683,6 +1688,7 @@ pub fn (mut values MutableComputedValues) inherit_from(other &ComputedValues) {
 	values.computed_values_border_spacing_horizontal_ = other.computed_values_border_spacing_horizontal_
 	values.computed_values_border_spacing_vertical_ = other.computed_values_border_spacing_vertical_
 	values.computed_values_color_interpolation_ = other.computed_values_color_interpolation_
+	values.computed_values_color_interpolation_filters_ = other.computed_values_color_interpolation_filters_
 	values.computed_values_cursor_ = other.computed_values_cursor_
 	values.computed_values_tab_size_ = other.computed_values_tab_size_
 	values.computed_values_text_indent_ = other.computed_values_text_indent_
@@ -2205,6 +2211,10 @@ pub fn (mut values MutableComputedValues) set_border_spacing_vertical(value Leng
 
 pub fn (mut values MutableComputedValues) set_color_interpolation(value ColorInterpolation) {
 	values.computed_values_color_interpolation_ = value
+}
+
+pub fn (mut values MutableComputedValues) set_color_interpolation_filters(value ColorInterpolation) {
+	values.computed_values_color_interpolation_filters_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_clip(value Clip) {

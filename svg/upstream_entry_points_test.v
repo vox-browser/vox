@@ -67,9 +67,8 @@ fn test_upstream_element_geometry_paint_and_filter_reflection() {
 	mut filter := new_element('filter')
 	filter.children << blur
 	graph := filter.gfx_filter()
-	assert graph.nodes.len == 1
-	assert graph.nodes[0].kind == 'blur'
-	assert graph.nodes[0].parameters['radius_y'] == 4
+	assert graph.nodes.map(it.kind) == ['color-space-conversion', 'blur', 'color-space-conversion']
+	assert graph.nodes[1].parameters['radius_y'] == 4
 }
 
 fn test_upstream_gradient_pattern_and_component_transfer_slots() {

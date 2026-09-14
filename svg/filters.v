@@ -211,12 +211,18 @@ pub fn (region FilterRegion) resolve(target Rect) Rect {
 
 pub struct FilterPrimitive {
 pub:
-	kind       string
-	in1        string
-	in2        string
-	result     string
-	parameters map[string]string
-	children   []FilterPrimitive
+	kind        string
+	in1         string
+	in2         string
+	result      string
+	parameters  map[string]string
+	children    []FilterPrimitive
+	color_space InterpolationColorSpace = .linear_rgb
+}
+
+pub enum InterpolationColorSpace {
+	srgb
+	linear_rgb
 }
 
 pub fn (primitive FilterPrimitive) normalized_parameters() map[string]f64 {
@@ -285,8 +291,13 @@ pub:
 struct FilterGraphBuilder {
 mut:
 	nodes []FilterNode
-	named map[string]int
-	root  ?int
+	named map[string]FilterResult
+	root  ?FilterResult
+}
+
+struct FilterResult {
+	id          int
+	color_space InterpolationColorSpace
 }
 
 fn (mut builder FilterGraphBuilder) append_node(kind string, inputs []int, parameters map[string]f64, string_parameters map[string]string, color u32, matrix []f64, color_tables []FilterColorTable) int {
@@ -312,23 +323,48 @@ fn luminance_to_alpha_matrix() []f64 {
 	return [f64(0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.2126, 0.7152, 0.0722, 0, 0]
 }
 
-fn (mut builder FilterGraphBuilder) resolve_input(name string) int {
+fn (mut builder FilterGraphBuilder) resolve_input(name string) FilterResult {
 	if name == 'SourceGraphic' {
-		return -1
+		return FilterResult{-1, .srgb}
 	}
 	if name == 'SourceAlpha' {
-		return builder.append_node('color-matrix', [-1], map[string]f64{}, map[string]string{}, 0, source_alpha_matrix(), [])
+		return FilterResult{
+			id: builder.append_node('color-matrix', [-1], map[string]f64{}, map[string]string{}, 0, source_alpha_matrix(), [])
+			color_space: .srgb
+		}
 	}
-	if id := builder.named[name] {
-		return id
+	if result := builder.named[name] {
+		return result
 	}
-	return builder.root or { -1 }
+	return builder.root or { FilterResult{-1, .srgb} }
 }
 
-fn (mut builder FilterGraphBuilder) finish_primitive(primitive FilterPrimitive, id int) {
-	builder.root = id
+fn (mut builder FilterGraphBuilder) resolve_input_in_color_space(name string, destination InterpolationColorSpace) int {
+	return builder.convert_to_color_space(builder.resolve_input(name), destination)
+}
+
+fn (mut builder FilterGraphBuilder) convert_to_color_space(input FilterResult, destination InterpolationColorSpace) int {
+	if input.color_space == destination {
+		return input.id
+	}
+	return builder.append_node('color-space-conversion', [input.id], map[string]f64{}, {
+		'source':      interpolation_color_space_name(input.color_space)
+		'destination': interpolation_color_space_name(destination)
+	}, 0, [], [])
+}
+
+fn interpolation_color_space_name(color_space InterpolationColorSpace) string {
+	return match color_space {
+		.srgb { 'srgb' }
+		.linear_rgb { 'linear-rgb' }
+	}
+}
+
+fn (mut builder FilterGraphBuilder) finish_primitive(primitive FilterPrimitive, id int, color_space InterpolationColorSpace) {
+	result := FilterResult{id, color_space}
+	builder.root = result
 	if primitive.result.len > 0 {
-		builder.named[primitive.result] = id
+		builder.named[primitive.result] = result
 	}
 }
 
@@ -381,6 +417,7 @@ fn graph_channel_selector(value string) string {
 }
 
 fn (mut builder FilterGraphBuilder) process(primitive FilterPrimitive) {
+	operating_space := primitive.color_space
 	match primitive.kind {
 		'feFlood' {
 			id := builder.append_node('flood', [], {
@@ -388,18 +425,18 @@ fn (mut builder FilterGraphBuilder) process(primitive FilterPrimitive) {
 			}, map[string]string{}, parse_svg_color(primitive.parameters['flood-color'] or {
 				'black'
 			}) or { u32(0xff000000) }, [], [])
-			builder.finish_primitive(primitive, id)
+			builder.finish_primitive(primitive, id, .srgb)
 		}
 		'feBlend' {
-			foreground := builder.resolve_input(primitive.in1)
-			background := builder.resolve_input(primitive.in2)
+			foreground := builder.resolve_input_in_color_space(primitive.in1, operating_space)
+			background := builder.resolve_input_in_color_space(primitive.in2, operating_space)
 			id := builder.append_node('blend', [background, foreground], map[string]f64{}, {
 				'mode': normalized_blend_mode(primitive.parameters['mode'] or { 'normal' })
 			}, 0, [], [])
-			builder.finish_primitive(primitive, id)
+			builder.finish_primitive(primitive, id, operating_space)
 		}
 		'feComponentTransfer' {
-			input := builder.resolve_input(primitive.in1)
+			input := builder.resolve_input_in_color_space(primitive.in1, operating_space)
 			mut last_by_channel := map[string]ComponentTransfer{}
 			for child in primitive.children {
 				channel := component_transfer_channel(child.kind)
@@ -417,11 +454,11 @@ fn (mut builder FilterGraphBuilder) process(primitive FilterPrimitive) {
 				}
 			}
 			id := builder.append_node('color-table', [input], map[string]f64{}, map[string]string{}, 0, [], tables)
-			builder.finish_primitive(primitive, id)
+			builder.finish_primitive(primitive, id, operating_space)
 		}
 		'feComposite' {
-			foreground := builder.resolve_input(primitive.in1)
-			background := builder.resolve_input(primitive.in2)
+			foreground := builder.resolve_input_in_color_space(primitive.in1, operating_space)
+			background := builder.resolve_input_in_color_space(primitive.in2, operating_space)
 			operator_ := composite_operator(primitive.parameters['operator'] or { '' })
 			if operator_ == .arithmetic {
 				id := builder.append_node('arithmetic', [background, foreground], {
@@ -430,7 +467,7 @@ fn (mut builder FilterGraphBuilder) process(primitive FilterPrimitive) {
 					'k3': filter_parameter(primitive.parameters, 'k3', 0)
 					'k4': filter_parameter(primitive.parameters, 'k4', 0)
 				}, map[string]string{}, 0, [], [])
-				builder.finish_primitive(primitive, id)
+				builder.finish_primitive(primitive, id, operating_space)
 			} else {
 				mode := match operator_ {
 					.in_ { 'source-in' }
@@ -443,43 +480,43 @@ fn (mut builder FilterGraphBuilder) process(primitive FilterPrimitive) {
 				id := builder.append_node('blend', [background, foreground], map[string]f64{}, {
 					'mode': mode
 				}, 0, [], [])
-				builder.finish_primitive(primitive, id)
+				builder.finish_primitive(primitive, id, operating_space)
 			}
 		}
 		'feGaussianBlur' {
-			input := builder.resolve_input(primitive.in1)
+			input := builder.resolve_input_in_color_space(primitive.in1, operating_space)
 			pair := number_optional_number(primitive.parameters['stdDeviation'] or { '' }, 0)
 			id := builder.append_node('blur', [input], {
 				'radius_x': pair.x
 				'radius_y': pair.y
 			}, map[string]string{}, 0, [], [])
-			builder.finish_primitive(primitive, id)
+			builder.finish_primitive(primitive, id, operating_space)
 		}
 		'feColorMatrix' {
-			input := builder.resolve_input(primitive.in1)
+			input := builder.resolve_input_in_color_space(primitive.in1, operating_space)
 			type_ := (primitive.parameters['type'] or { '' }).to_lower()
 			values_text := primitive.parameters['values'] or { '' }
 			if type_ == '' || type_ == 'matrix' {
 				values := parse_number_sequence(values_text) or { []f64{} }
 				if values.len == 20 {
 					id := builder.append_node('color-matrix', [input], map[string]f64{}, map[string]string{}, 0, values, [])
-					builder.finish_primitive(primitive, id)
+					builder.finish_primitive(primitive, id, operating_space)
 				} else if input != -1 {
-					builder.finish_primitive(primitive, input)
+					builder.finish_primitive(primitive, input, operating_space)
 				}
 			} else if type_ == 'saturate' {
 				id := builder.append_node('saturate', [input], {
 					'amount': filter_parameter(primitive.parameters, 'values', 1)
 				}, map[string]string{}, 0, [], [])
-				builder.finish_primitive(primitive, id)
+				builder.finish_primitive(primitive, id, operating_space)
 			} else if type_ == 'huerotate' {
 				id := builder.append_node('hue-rotate', [input], {
 					'angle_degrees': filter_parameter(primitive.parameters, 'values', 0)
 				}, map[string]string{}, 0, [], [])
-				builder.finish_primitive(primitive, id)
+				builder.finish_primitive(primitive, id, operating_space)
 			} else if type_ == 'luminancetoalpha' {
 				id := builder.append_node('color-matrix', [input], map[string]f64{}, map[string]string{}, 0, luminance_to_alpha_matrix(), [])
-				builder.finish_primitive(primitive, id)
+				builder.finish_primitive(primitive, id, operating_space)
 			}
 		}
 		'feImage' {
@@ -490,14 +527,14 @@ fn (mut builder FilterGraphBuilder) process(primitive FilterPrimitive) {
 			mut inputs := []int{}
 			for child in primitive.children {
 				if child.kind == 'feMergeNode' {
-					inputs << builder.resolve_input(child.in1)
+					inputs << builder.resolve_input_in_color_space(child.in1, operating_space)
 				}
 			}
 			id := builder.append_node('merge', inputs, map[string]f64{}, map[string]string{}, 0, [], [])
-			builder.finish_primitive(primitive, id)
+			builder.finish_primitive(primitive, id, operating_space)
 		}
 		'feMorphology' {
-			input := builder.resolve_input(primitive.in1)
+			input := builder.resolve_input_in_color_space(primitive.in1, operating_space)
 			pair := number_optional_number(primitive.parameters['radius'] or { '' }, 0)
 			id := builder.append_node(if morphology_operator(primitive.parameters['operator'] or {
 				'erode'
@@ -509,18 +546,18 @@ fn (mut builder FilterGraphBuilder) process(primitive FilterPrimitive) {
 				'radius_x': pair.x
 				'radius_y': pair.y
 			}, map[string]string{}, 0, [], [])
-			builder.finish_primitive(primitive, id)
+			builder.finish_primitive(primitive, id, operating_space)
 		}
 		'feOffset' {
 			input := builder.resolve_input(primitive.in1)
-			id := builder.append_node('offset', [input], {
+			id := builder.append_node('offset', [input.id], {
 				'dx': filter_parameter(primitive.parameters, 'dx', 0)
 				'dy': filter_parameter(primitive.parameters, 'dy', 0)
 			}, map[string]string{}, 0, [], [])
-			builder.finish_primitive(primitive, id)
+			builder.finish_primitive(primitive, id, input.color_space)
 		}
 		'feDropShadow' {
-			input := builder.resolve_input(primitive.in1)
+			input := builder.resolve_input_in_color_space(primitive.in1, operating_space)
 			alpha := builder.append_node('color-matrix', [input], map[string]f64{}, map[string]string{}, 0, source_alpha_matrix(), [])
 			pair := number_optional_number(primitive.parameters['stdDeviation'] or { '' }, 2)
 			blurred := builder.append_node('blur', [alpha], {
@@ -536,11 +573,12 @@ fn (mut builder FilterGraphBuilder) process(primitive FilterPrimitive) {
 			}, map[string]string{}, parse_svg_color(primitive.parameters['flood-color'] or {
 				'black'
 			}) or { u32(0xff000000) }, [], [])
-			colored := builder.append_node('blend', [offset, flood], map[string]f64{}, {
+			flood_in_operating_space := builder.convert_to_color_space(FilterResult{flood, .srgb}, operating_space)
+			colored := builder.append_node('blend', [offset, flood_in_operating_space], map[string]f64{}, {
 				'mode': 'source-in'
 			}, 0, [], [])
 			merged := builder.append_node('merge', [colored, input], map[string]f64{}, map[string]string{}, 0, [], [])
-			builder.finish_primitive(primitive, merged)
+			builder.finish_primitive(primitive, merged, operating_space)
 		}
 		'feTurbulence' {
 			pair := number_optional_number(primitive.parameters['baseFrequency'] or { '' }, 0)
@@ -565,12 +603,12 @@ fn (mut builder FilterGraphBuilder) process(primitive FilterPrimitive) {
 					'no-stitch'
 				}
 			}, 0, [], [])
-			builder.finish_primitive(primitive, id)
+			builder.finish_primitive(primitive, id, operating_space)
 		}
 		'feDisplacementMap' {
 			color := builder.resolve_input(primitive.in1)
-			displacement := builder.resolve_input(primitive.in2)
-			id := builder.append_node('displacement-map', [color, displacement], {
+			displacement := builder.resolve_input_in_color_space(primitive.in2, operating_space)
+			id := builder.append_node('displacement-map', [color.id, displacement], {
 				'scale': filter_parameter(primitive.parameters, 'scale', 0)
 			}, {
 				'x_channel': graph_channel_selector(primitive.parameters['xChannelSelector'] or {
@@ -580,7 +618,7 @@ fn (mut builder FilterGraphBuilder) process(primitive FilterPrimitive) {
 					'A'
 				})
 			}, 0, [], [])
-			builder.finish_primitive(primitive, id)
+			builder.finish_primitive(primitive, id, color.color_space)
 		}
 		else {}
 	}
@@ -593,14 +631,22 @@ fn (mut builder FilterGraphBuilder) process(primitive FilterPrimitive) {
 pub fn build_filter_graph(primitives []FilterPrimitive) FilterGraph {
 	mut builder := FilterGraphBuilder{
 		nodes: []FilterNode{cap: primitives.len}
-		named: map[string]int{}
+		named: map[string]FilterResult{}
 	}
 	for primitive in primitives {
 		builder.process(primitive)
 	}
+	mut root_id := ?int(none)
+	if root := builder.root {
+		root_id = builder.convert_to_color_space(root, .srgb)
+	}
+	mut named_nodes := map[string]int{}
+	for name, result in builder.named {
+		named_nodes[name] = result.id
+	}
 	return FilterGraph{
 		nodes: builder.nodes
-		root_id: builder.root
-		named_nodes: builder.named
+		root_id: root_id
+		named_nodes: named_nodes
 	}
 }

@@ -241,6 +241,17 @@ fn svg_element_model(element &dom.Element) svg.Element {
 			attributes['flood-opacity'] = '${computed.flood_opacity()}'
 		}
 	}
+	// SVGFilterElement::gfx_filter() reads this inherited property from each
+	// primitive's computed style. Preserve it in the standalone SVG graph model.
+	if properties := css.computed_properties_for_element(element) {
+		computed := css.resolve_computed_values_for_document(properties, element.document())
+		attributes['color-interpolation-filters'] = match computed.color_interpolation_filters() {
+			.auto_ { 'auto' }
+			.srgb { 'sRGB' }
+			.srgb_linear { 'linearRGB' }
+			.oklab { 'linearRGB' }
+		}
+	}
 	mut children := []svg.Element{}
 	mut direct_text := ''
 	for child in element.as_node().children_as_vector() {

@@ -1227,7 +1227,7 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.clip_rule {
 			return parser.parse_fill_rule_value(mut tokens)
 		}
-		.color_interpolation {
+		.color_interpolation, .color_interpolation_filters {
 			return parser.parse_color_interpolation_value(mut tokens)
 		}
 		.d {
@@ -8336,11 +8336,9 @@ fn (mut parser Parser) parse_scroll_behavior_value(mut tokens ComponentValueStre
 // https://drafts.csswg.org/css-scroll-snap-1/#scroll-snap-align
 fn (mut parser Parser) parse_scroll_snap_align_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	first := parse_keyword_from_set_for_value_logic(mut tokens, ['none', 'start', 'end',
-		'center']) or { return none }
+	first := parse_keyword_from_set_for_value_logic(mut tokens, ['none', 'start', 'end', 'center']) or { return none }
 	mut transaction := tokens.clone()
-	second := parse_keyword_from_set_for_value_logic(mut transaction, ['none', 'start', 'end',
-		'center']) or { return first }
+	second := parse_keyword_from_set_for_value_logic(mut transaction, ['none', 'start', 'end', 'center']) or { return first }
 	tokens = transaction
 	return StyleValue(StyleValueList.create([first, second], .space, .yes))
 }
@@ -8360,8 +8358,7 @@ fn (mut parser Parser) parse_scroll_snap_type_value(mut tokens ComponentValueStr
 		tokens = none_transaction
 		return none_value
 	}
-	axis := parse_keyword_from_set_for_value_logic(mut tokens, ['x', 'y', 'block', 'inline',
-		'both']) or { return none }
+	axis := parse_keyword_from_set_for_value_logic(mut tokens, ['x', 'y', 'block', 'inline', 'both']) or { return none }
 	mut strictness_transaction := tokens.clone()
 	strictness := parse_keyword_from_set_for_value_logic(mut strictness_transaction, ['mandatory',
 		'proximity']) or { return axis }

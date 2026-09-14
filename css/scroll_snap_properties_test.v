@@ -8,7 +8,7 @@ fn scroll_snap_serialization(property_id PropertyID, text string) ?string {
 }
 
 fn test_scroll_snap_property_metadata() {
-	assert number_of_longhand_properties == 352
+	assert number_of_longhand_properties == 353
 	assert last_longhand_property_id() == .vector_effect
 	assert property_id_from_string('scroll-snap-align')? == .scroll_snap_align
 	assert property_id_from_string('SCROLL-SNAP-STOP')? == .scroll_snap_stop

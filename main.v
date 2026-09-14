@@ -2978,6 +2978,7 @@ fn native_svg_filter_kind(kind string) int {
 		'offset' { 11 }
 		'turbulence' { 12 }
 		'displacement-map' { 13 }
+		'color-space-conversion' { 14 }
 		else { -1 }
 	}
 }
@@ -3045,6 +3046,15 @@ fn native_svg_filter_parameters(node painting.GfxFilterNode) [4]f32 {
 			})]!
 		}
 		'displacement-map' { [f32(node.parameters['scale'] or { 0.0 }), 0, 0, 0]! }
+		'color-space-conversion' {
+			destination := node.string_parameters['destination'] or { 'srgb' }
+			conversion_direction := if destination == 'linear-rgb' {
+				f32(1)
+			} else {
+				f32(0)
+			}
+			[conversion_direction, 0, 0, 0]!
+		}
 		else { [f32(0), 0, 0, 0]! }
 	}
 }
@@ -3061,7 +3071,11 @@ fn add_native_svg_filter_graph(filter painting.GfxFilter, transform [6]f64, page
 			continue
 		}
 		parameters := native_svg_filter_parameters(node)
-		mode := native_svg_blend_mode(node.string_parameters['mode'] or { '' })
+		mode := if node.kind == 'turbulence' {
+			if node.string_parameters['type'] or { 'turbulence' } == 'fractal-noise' { 1 } else { 0 }
+		} else {
+			native_svg_blend_mode(node.string_parameters['mode'] or { '' })
+		}
 		x_channel := native_svg_channel(node.string_parameters['x_channel'] or { 'A' })
 		y_channel := native_svg_channel(node.string_parameters['y_channel'] or { 'A' })
 		C.native_add_svg_filter_node(node.id, kind, parameters[0], parameters[1], parameters[2], parameters[3], gg.rgba(node.color.r, node.color.g, node.color.b, node.color.a), mode, x_channel, y_channel)

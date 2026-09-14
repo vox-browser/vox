@@ -1,5 +1,21 @@
 module svg
 
+fn build_srgb_filter_graph(primitives []FilterPrimitive) FilterGraph {
+	mut normalized := []FilterPrimitive{cap: primitives.len}
+	for primitive in primitives {
+		normalized << FilterPrimitive{
+			kind: primitive.kind
+			in1: primitive.in1
+			in2: primitive.in2
+			result: primitive.result
+			parameters: primitive.parameters.clone()
+			children: primitive.children.clone()
+			color_space: .srgb
+		}
+	}
+	return build_filter_graph(normalized)
+}
+
 fn test_gradient_stop_normalization_and_inheritance() {
 	stops := normalized_stops([Stop{ offset: 0.7 }, Stop{ offset: 0.2 }, Stop{ offset: 2 }])
 	assert stops.map(it.offset) == [0.7, 0.7, 1.0]
@@ -179,7 +195,7 @@ fn test_filter_region_resolution() {
 }
 
 fn test_filter_graph_sequential_and_named_inputs() {
-	graph := build_filter_graph([
+	graph := build_srgb_filter_graph([
 		FilterPrimitive{ kind: 'feFlood', result: 'paint' },
 		FilterPrimitive{ kind: 'feGaussianBlur', in1: 'SourceAlpha', result: 'blur' },
 		FilterPrimitive{ kind: 'feBlend', in1: 'paint', in2: 'blur' },
@@ -196,7 +212,7 @@ fn test_filter_graph_sequential_and_named_inputs() {
 }
 
 fn test_filter_graph_expands_drop_shadow_like_svg_filter_element() {
-	graph := build_filter_graph([
+	graph := build_srgb_filter_graph([
 		FilterPrimitive{
 			kind: 'feDropShadow'
 			in1: 'SourceGraphic'
@@ -229,7 +245,7 @@ fn test_filter_graph_expands_drop_shadow_like_svg_filter_element() {
 
 fn test_filter_graph_retains_color_matrix_component_tables_and_merge_inputs() {
 	matrix_values := '1 0 0 0 0, 0 1 0 0 0, 0 0 1 0 0, 0 0 0 1 0'
-	graph := build_filter_graph([
+	graph := build_srgb_filter_graph([
 		FilterPrimitive{
 			kind: 'feColorMatrix'
 			result: 'matrix'
@@ -290,7 +306,7 @@ fn test_filter_graph_retains_color_matrix_component_tables_and_merge_inputs() {
 }
 
 fn test_filter_graph_retains_composite_and_displacement_parameters() {
-	graph := build_filter_graph([
+	graph := build_srgb_filter_graph([
 		FilterPrimitive{ kind: 'feFlood', result: 'paint' },
 		FilterPrimitive{
 			kind: 'feComposite'
@@ -334,7 +350,7 @@ fn test_filter_graph_retains_composite_and_displacement_parameters() {
 }
 
 fn test_filter_graph_retains_color_matrix_variants_morphology_and_turbulence() {
-	graph := build_filter_graph([
+	graph := build_srgb_filter_graph([
 		FilterPrimitive{ kind: 'feFlood', result: 'source' },
 		FilterPrimitive{
 			kind: 'feColorMatrix'
@@ -417,7 +433,7 @@ fn test_filter_graph_retains_color_matrix_variants_morphology_and_turbulence() {
 }
 
 fn test_filter_graph_non_arithmetic_composite_uses_libgfx_blend_mapping() {
-	graph := build_filter_graph([
+	graph := build_srgb_filter_graph([
 		FilterPrimitive{ kind: 'feFlood', result: 'first' },
 		FilterPrimitive{ kind: 'feFlood', result: 'second' },
 		FilterPrimitive{
@@ -432,6 +448,108 @@ fn test_filter_graph_non_arithmetic_composite_uses_libgfx_blend_mapping() {
 	assert graph.nodes[2].kind == 'blend'
 	assert graph.nodes[2].input_ids == [1, 0]
 	assert graph.nodes[2].string_parameters['mode'] == 'source-atop'
+}
+
+fn test_filter_graph_converts_default_linear_primitive_inputs_and_final_output() {
+	graph := build_filter_graph([
+		FilterPrimitive{
+			kind: 'feColorMatrix'
+			parameters: {
+				'type':   'matrix'
+				'values': '1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0'
+			}
+		},
+	])
+	assert graph.nodes.map(it.kind) == ['color-space-conversion', 'color-matrix',
+		'color-space-conversion']
+	assert graph.nodes[0].input_ids == [-1]
+	assert graph.nodes[0].string_parameters == {
+		'source':      'srgb'
+		'destination': 'linear-rgb'
+	}
+	assert graph.nodes[1].input_ids == [0]
+	assert graph.nodes[2].input_ids == [1]
+	assert graph.nodes[2].string_parameters == {
+		'source':      'linear-rgb'
+		'destination': 'srgb'
+	}
+	assert graph.root_id? == 2
+}
+
+fn test_filter_graph_srgb_mode_avoids_redundant_conversions() {
+	graph := build_filter_graph([
+		FilterPrimitive{
+			kind: 'feGaussianBlur'
+			color_space: .srgb
+			parameters: {
+				'stdDeviation': '2'
+			}
+		},
+	])
+	assert graph.nodes.map(it.kind) == ['blur']
+	assert graph.nodes[0].input_ids == [-1]
+	assert graph.root_id? == 0
+}
+
+fn test_filter_graph_preserves_offset_and_displacement_color_inputs() {
+	graph := build_filter_graph([
+		FilterPrimitive{ kind: 'feFlood', result: 'paint' },
+		FilterPrimitive{ kind: 'feGaussianBlur', in1: 'paint', result: 'linear-blur' },
+		FilterPrimitive{
+			kind: 'feOffset'
+			in1: 'linear-blur'
+			color_space: .srgb
+			result: 'offset'
+		},
+		FilterPrimitive{
+			kind: 'feDisplacementMap'
+			in1: 'paint'
+			in2: 'offset'
+			color_space: .srgb
+		},
+	])
+	assert graph.nodes.map(it.kind) == ['flood', 'color-space-conversion', 'blur', 'offset',
+		'color-space-conversion', 'displacement-map']
+	assert graph.nodes[3].input_ids == [2]
+	assert graph.nodes[4].input_ids == [3]
+	assert graph.nodes[4].string_parameters['destination'] == 'srgb'
+	assert graph.nodes[5].input_ids == [0, 4]
+	assert graph.root_id? == 5
+}
+
+fn test_filter_element_color_interpolation_filters_inherits_and_overrides() {
+	filter := Element{
+		tag: 'filter'
+		attributes: {
+			'color-interpolation-filters': 'sRGB'
+		}
+		children: [Element{
+			tag: 'feGaussianBlur'
+			attributes: {
+				'stdDeviation': '2'
+			}
+		}]
+	}
+	assert filter.gfx_filter().nodes.map(it.kind) == ['blur']
+
+	overridden_filter := Element{
+		tag: 'filter'
+		attributes: {
+			'color-interpolation-filters': 'sRGB'
+		}
+		children: [Element{
+			tag: 'feGaussianBlur'
+			attributes: {
+				'color-interpolation-filters': 'linearRGB'
+				'stdDeviation':                '2'
+			}
+		}]
+	}
+	assert overridden_filter.gfx_filter().nodes.map(it.kind) == [
+		'color-space-conversion',
+		'blur',
+		'color-space-conversion',
+	]
 }
 
 fn test_image_use_script_and_decoded_resource_lifecycle() {

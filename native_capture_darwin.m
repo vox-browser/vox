@@ -2433,8 +2433,9 @@ static CIImage *native_apply_svg_arithmetic(CIImage *background,
 		kernel = [CIColorKernel kernelWithString:
 			@"kernel vec4 svgArithmetic(__sample background, __sample foreground, "
 			 "float k1, float k2, float k3, float k4) { "
-			 "return clamp(k1 * foreground * background + k2 * foreground + "
-			 "k3 * background + vec4(k4), 0.0, 1.0); }"];
+			 "vec4 result = clamp(k1 * foreground * background + k2 * foreground + "
+			 "k3 * background + vec4(k4), 0.0, 1.0); "
+			 "return vec4(min(result.rgb, vec3(result.a)), result.a); }"];
 	});
 	if (kernel == nil) {
 		return foreground;
@@ -2564,17 +2565,16 @@ static CIImage *native_apply_svg_color_table(CIImage *input,
 	}
 	CIImage *lookup = [CIImage imageWithBitmapData:table_data bytesPerRow:256 * 4
 		size:CGSizeMake(256, 4) format:kCIFormatRGBA8 colorSpace:nil];
-	CIImage *linear = [input imageByApplyingFilter:@"CISRGBToneCurveToLinear"];
 	CGRect lookup_extent = lookup.extent;
-	CIImage *mapped = [kernel applyWithExtent:linear.extent
+	CIImage *mapped = [kernel applyWithExtent:input.extent
 		roiCallback:^CGRect(int input_index, CGRect destination) {
 			return input_index == 0 ? destination : lookup_extent;
 		}
-		arguments:@[ linear, lookup ]];
+		arguments:@[ input, lookup ]];
 	if (mapped == nil) {
 		return input;
 	}
-	return [mapped imageByApplyingFilter:@"CILinearToSRGBToneCurve"];
+	return mapped;
 }
 
 static CIVector *native_svg_channel_selector(int channel) {
@@ -2614,6 +2614,153 @@ static CIImage *native_apply_svg_displacement(CIImage *color,
 		arguments:@[ color, displacement, @(scale),
 			native_svg_channel_selector(node->x_channel),
 			native_svg_channel_selector(node->y_channel) ]] ?: color;
+}
+
+typedef struct {
+	uint8_t permutation[256];
+	double gradient[4][256][2];
+} NativeSVGTurbulenceData;
+
+static int native_svg_turbulence_random(int *seed) {
+	static int const amplitude = 16807;
+	static int const quotient = 127773;
+	static int const remainder = 2836;
+	int64_t result = (int64_t)amplitude * (*seed % quotient)
+		- (int64_t)remainder * (*seed / quotient);
+	if (result <= 0) {
+		result += 2147483647;
+	}
+	*seed = (int)result;
+	return *seed;
+}
+
+static void native_svg_initialize_turbulence(NativeSVGTurbulenceData *data,
+	double seed_value) {
+	static int const random_maximum = 2147483647;
+	int seed;
+	if (!isfinite(seed_value) || seed_value >= random_maximum - 1) {
+		seed = random_maximum - 1;
+	} else if (seed_value <= INT32_MIN) {
+		seed = INT32_MIN;
+	} else {
+		seed = (int)trunc(seed_value);
+	}
+	if (seed <= 0) {
+		seed = -(seed % (random_maximum - 1)) + 1;
+	}
+	uint16_t noise[4][256][2];
+	for (int channel = 0; channel < 4; ++channel) {
+		for (int index = 0; index < 256; ++index) {
+			data->permutation[index] = (uint8_t)index;
+			noise[channel][index][0] = (uint16_t)(native_svg_turbulence_random(&seed) % 512);
+			noise[channel][index][1] = (uint16_t)(native_svg_turbulence_random(&seed) % 512);
+		}
+	}
+	for (int index = 255; index > 0; --index) {
+		uint8_t value = data->permutation[index];
+		int replacement = native_svg_turbulence_random(&seed) % 256;
+		data->permutation[index] = data->permutation[replacement];
+		data->permutation[replacement] = value;
+	}
+	for (int channel = 0; channel < 4; ++channel) {
+		for (int index = 0; index < 256; ++index) {
+			int selected = data->permutation[index];
+			float x = ((float)noise[channel][selected][0] - 256.0f) / 256.0f;
+			float y = ((float)noise[channel][selected][1] - 256.0f) / 256.0f;
+			float length = hypotf(x, y);
+			if (length == 0.0) {
+				x = 1.0f;
+				y = 0.0f;
+				length = 1.0f;
+			}
+			uint16_t encoded_x = (uint16_t)lrintf((x / length + 1.0f) * 32767.5f);
+			uint16_t encoded_y = (uint16_t)lrintf((y / length + 1.0f) * 32767.5f);
+			data->gradient[channel][index][0] = (double)encoded_x / 32767.5 - 1.0;
+			data->gradient[channel][index][1] = (double)encoded_y / 32767.5 - 1.0;
+		}
+	}
+}
+
+static double native_svg_turbulence_lerp(double first, double second,
+	double progress) {
+	return first + progress * (second - first);
+}
+
+static double native_svg_turbulence_noise(NativeSVGTurbulenceData const *data,
+	int channel, double x, double y) {
+	double floor_x = floor(x);
+	double floor_y = floor(y);
+	double fraction_x = x - floor_x;
+	double fraction_y = y - floor_y;
+	int x0 = ((int)floor_x) & 255;
+	int x1 = (x0 + 1) & 255;
+	int y0 = ((int)floor_y) & 255;
+	int y1 = (y0 + 1) & 255;
+	int b00 = (data->permutation[x0] + y0) & 255;
+	int b10 = (data->permutation[x1] + y0) & 255;
+	int b01 = (data->permutation[x0] + y1) & 255;
+	int b11 = (data->permutation[x1] + y1) & 255;
+	double smooth_x = fraction_x * fraction_x * (3.0 - 2.0 * fraction_x);
+	double smooth_y = fraction_y * fraction_y * (3.0 - 2.0 * fraction_y);
+	double a = native_svg_turbulence_lerp(
+		data->gradient[channel][b00][0] * fraction_x
+			+ data->gradient[channel][b00][1] * fraction_y,
+		data->gradient[channel][b10][0] * (fraction_x - 1.0)
+			+ data->gradient[channel][b10][1] * fraction_y, smooth_x);
+	double b = native_svg_turbulence_lerp(
+		data->gradient[channel][b01][0] * fraction_x
+			+ data->gradient[channel][b01][1] * (fraction_y - 1.0),
+		data->gradient[channel][b11][0] * (fraction_x - 1.0)
+			+ data->gradient[channel][b11][1] * (fraction_y - 1.0), smooth_x);
+	return native_svg_turbulence_lerp(a, b, smooth_y);
+}
+
+static CIImage *native_apply_svg_turbulence(CGRect extent,
+	NativeSVGFilterNode const *node, CGFloat scale) {
+	size_t width = (size_t)MAX(1.0, ceil(extent.size.width));
+	size_t height = (size_t)MAX(1.0, ceil(extent.size.height));
+	NSMutableData *bitmap = [NSMutableData dataWithLength:width * height * 4];
+	uint8_t *pixels = bitmap.mutableBytes;
+	NativeSVGTurbulenceData data;
+	native_svg_initialize_turbulence(&data, node->fourth);
+	int octave_count = MAX(0, MIN(255, (int)node->third));
+	double coordinate_scale = scale > 0.0 ? scale : 1.0;
+	for (size_t pixel_y = 0; pixel_y < height; ++pixel_y) {
+		for (size_t pixel_x = 0; pixel_x < width; ++pixel_x) {
+			double coordinate_x = (extent.origin.x + (double)pixel_x + 0.5)
+				/ coordinate_scale * node->first;
+			double coordinate_y = (extent.origin.y + (double)pixel_y + 0.5)
+				/ coordinate_scale * node->second;
+			double color[4] = { 0, 0, 0, 0 };
+			double ratio = 1.0;
+			for (int octave = 0; octave < octave_count; ++octave) {
+				for (int channel = 0; channel < 4; ++channel) {
+					double noise = native_svg_turbulence_noise(&data, channel,
+						coordinate_x, coordinate_y);
+					color[channel] += (node->mode == 1 ? noise : fabs(noise)) * ratio;
+				}
+				coordinate_x *= 2.0;
+				coordinate_y *= 2.0;
+				ratio *= 0.5;
+			}
+			if (node->mode == 1) {
+				for (int channel = 0; channel < 4; ++channel) {
+					color[channel] = color[channel] * 0.5 + 0.5;
+				}
+			}
+			double alpha = MIN(1.0, MAX(0.0, color[3]));
+			size_t offset = (pixel_y * width + pixel_x) * 4;
+			for (int channel = 0; channel < 3; ++channel) {
+				double component = MIN(1.0, MAX(0.0, color[channel])) * alpha;
+				pixels[offset + channel] = (uint8_t)lrint(component * 255.0);
+			}
+			pixels[offset + 3] = (uint8_t)lrint(alpha * 255.0);
+		}
+	}
+	CIImage *image = [CIImage imageWithBitmapData:bitmap bytesPerRow:width * 4
+		size:CGSizeMake(width, height) format:kCIFormatRGBA8 colorSpace:nil];
+	return [image imageByApplyingTransform:CGAffineTransformMakeTranslation(
+		extent.origin.x, extent.origin.y)];
 }
 
 static CIImage *native_apply_svg_filter_graph(NativeCSSFilterLayer const *layer,
@@ -2778,8 +2925,8 @@ static CIImage *native_apply_svg_filter_graph(NativeCSSFilterLayer const *layer,
 					node->first * layer->scale, -node->second * layer->scale);
 			}
 			break;
-		case 12: // turbulence requires Skia's shader implementation
-			outputs[index] = first;
+		case 12: // turbulence/fractalNoise
+			outputs[index] = native_apply_svg_turbulence(source_extent, node, layer->scale);
 			output_extents[index] = native_svg_infinite_extent();
 			break;
 		case 13: { // displacement-map
@@ -2797,6 +2944,11 @@ static CIImage *native_apply_svg_filter_graph(NativeCSSFilterLayer const *layer,
 			}
 			break;
 		}
+		case 14: // interpolation color-space conversion
+			outputs[index] = [first imageByApplyingFilter:node->first != 0.0f
+				? @"CISRGBToneCurveToLinear" : @"CILinearToSRGBToneCurve"];
+			output_extents[index] = first_extent;
+			break;
 		default:
 			outputs[index] = first;
 			output_extents[index] = first_extent;

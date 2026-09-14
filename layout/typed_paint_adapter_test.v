@@ -337,7 +337,7 @@ fn test_backdrop_filter_samples_outside_own_css_filter_layer() {
 }
 
 fn test_same_document_svg_backdrop_filter_retains_the_translated_graph() {
-	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { width: 80px; height: 40px; backdrop-filter: url(#soft) }</style><body><svg width="0" height="0"><defs><filter id="soft"><feGaussianBlur in="SourceGraphic" stdDeviation="2 3"/></filter></defs></svg><div id="target"></div></body>')
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { width: 80px; height: 40px; backdrop-filter: url(#soft) }</style><body><svg width="0" height="0"><defs><filter id="soft" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceGraphic" stdDeviation="2 3"/></filter></defs></svg><div id="target"></div></body>')
 	_ = layout_document_typed_in_viewport(document, 160, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
 	commands := display_list_commands(mutable_document.record_display_list() or {
@@ -361,7 +361,7 @@ fn test_same_document_svg_backdrop_filter_retains_the_translated_graph() {
 }
 
 fn test_same_document_svg_filter_url_retains_the_translated_graph() {
-	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #filtered { width: 80px; height: 40px; background: red; filter: contrast(150%) url(#soft) } feFlood { flood-color: rgb(12 34 56); flood-opacity: .25 }</style><body><svg width="0" height="0"><defs><filter id="soft"><feGaussianBlur in="SourceGraphic" stdDeviation="2 3" result="blurred"/><feOffset in="blurred" dx="4" dy="5" result="shifted"/><feFlood result="paint"/><feBlend in="shifted" in2="paint" mode="multiply"/></filter></defs></svg><div id="filtered"></div></body>')
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #filtered { width: 80px; height: 40px; background: red; filter: contrast(150%) url(#soft) } feFlood { flood-color: rgb(12 34 56); flood-opacity: .25 }</style><body><svg width="0" height="0"><defs><filter id="soft" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceGraphic" stdDeviation="2 3" result="blurred"/><feOffset in="blurred" dx="4" dy="5" result="shifted"/><feFlood result="paint"/><feBlend in="shifted" in2="paint" mode="multiply"/></filter></defs></svg><div id="filtered"></div></body>')
 	_ = layout_document_typed_in_viewport(document, 160, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
 	display_list := mutable_document.record_display_list() or { panic('missing display list') }
@@ -384,6 +384,26 @@ fn test_same_document_svg_filter_url_retains_the_translated_graph() {
 	assert filter.nodes[3].kind == 'blend'
 	assert filter.nodes[3].input_ids == [2, 1]
 	assert filter.nodes[3].string_parameters['mode'] == 'multiply'
+}
+
+fn test_same_document_svg_filter_uses_computed_interpolation_color_space() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #filtered { width: 80px; height: 40px; background: rgb(128 0 0); filter: url(#matrix) } feColorMatrix { color-interpolation-filters: linearRGB }</style><body><svg width="0" height="0"><defs><filter id="matrix" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0"/></filter></defs></svg><div id="filtered"></div></body>')
+	_ = layout_document_typed_in_viewport(document, 160, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	filter_commands := display_list_commands(display_list).filter(it.kind == 'begin_css_filter_layer')
+	assert filter_commands.len == 1
+	filter := filter_commands[0].visual_layer.filter or { panic('missing retained filter') }
+	assert filter.nodes.map(it.kind) == ['color-space-conversion', 'color-matrix',
+		'color-space-conversion']
+	assert filter.nodes[0].input_ids == [-1]
+	assert filter.nodes[0].string_parameters['source'] == 'srgb'
+	assert filter.nodes[0].string_parameters['destination'] == 'linear-rgb'
+	assert filter.nodes[1].input_ids == [0]
+	assert filter.nodes[2].input_ids == [1]
+	assert filter.nodes[2].string_parameters['source'] == 'linear-rgb'
+	assert filter.nodes[2].string_parameters['destination'] == 'srgb'
+	assert filter.root_id? == 2
 }
 
 fn test_svg_filter_content_generation_records_the_cpp_transparent_bounds_trigger() {

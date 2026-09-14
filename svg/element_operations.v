@@ -520,21 +520,36 @@ pub fn (element &Element) primitive_units() Units {
 	return parse_units(element.attributes['primitiveUnits'] or { '' }) or { Units.user_space_on_use }
 }
 
-fn filter_primitive_from_element(element Element) FilterPrimitive {
+fn filter_interpolation_color_space(value string, inherited InterpolationColorSpace) InterpolationColorSpace {
+	return match value.to_lower() {
+		'linearrgb' { .linear_rgb }
+		'auto', 'srgb' { .srgb }
+		else { inherited }
+	}
+}
+
+fn filter_primitive_from_element(element Element, inherited_color_space InterpolationColorSpace) FilterPrimitive {
+	color_space := filter_interpolation_color_space(element.attributes['color-interpolation-filters'] or {
+		''
+	}, inherited_color_space)
 	return FilterPrimitive{
 		kind: element.tag
 		in1: element.in1()
 		in2: element.in2()
 		result: element.attributes['result'] or { '' }
 		parameters: element.attributes.clone()
-		children: element.children.map(filter_primitive_from_element(it))
+		children: element.children.map(filter_primitive_from_element(it, color_space))
+		color_space: color_space
 	}
 }
 
 pub fn (element &Element) gfx_filter() FilterGraph {
+	color_space := filter_interpolation_color_space(element.attributes['color-interpolation-filters'] or {
+		''
+	}, .linear_rgb)
 	mut primitives := []FilterPrimitive{}
 	for child in element.children {
-		primitives << filter_primitive_from_element(child)
+		primitives << filter_primitive_from_element(child, color_space)
 	}
 	return build_filter_graph(primitives)
 }
