@@ -180,28 +180,52 @@ pub fn (n &Node) previous_in_pre_order() ?&Node {
 }
 
 pub fn (n &Node) is_following(other &Node) bool {
-	mut previous := n.previous_in_pre_order()
-	for {
-		candidate := previous or { return false }
-		if layout_nodes_same(candidate, other) {
-			return true
-		}
-		previous = candidate.previous_in_pre_order()
-	}
-	return false
+	return other.is_before(n)
 }
 
 pub fn (n &Node) is_before(other &Node) bool {
 	if layout_nodes_same(n, other) {
 		return false
 	}
+	// Compare the ancestor chains instead of scanning the preorder distance
+	// between the nodes. Tree depth bounds this work even for distant nodes.
+	mut my_chain := []&Node{cap: 32}
 	mut current := ?&Node(n)
 	for {
-		candidate := current or { return false }
-		if layout_nodes_same(candidate, other) {
+		candidate := current or { break }
+		my_chain << candidate
+		current = candidate.parent()
+	}
+	mut other_chain := []&Node{cap: 32}
+	current = other
+	for {
+		candidate := current or { break }
+		other_chain << candidate
+		current = candidate.parent()
+	}
+	if !layout_nodes_same(my_chain.last(), other_chain.last()) {
+		return false
+	}
+	mut my_depth := my_chain.len
+	mut other_depth := other_chain.len
+	for my_depth > 0 && other_depth > 0
+		&& layout_nodes_same(my_chain[my_depth - 1], other_chain[other_depth - 1]) {
+		my_depth--
+		other_depth--
+	}
+	if my_depth == 0 {
+		return true
+	}
+	if other_depth == 0 {
+		return false
+	}
+	mut sibling := my_chain[my_depth - 1].next_sibling()
+	for {
+		candidate := sibling or { return false }
+		if layout_nodes_same(candidate, other_chain[other_depth - 1]) {
 			return true
 		}
-		current = candidate.next_in_pre_order(none)
+		sibling = candidate.next_sibling()
 	}
 	return false
 }
@@ -334,6 +358,17 @@ pub fn (n &Node) for_each_inclusive_ancestor(callback fn (&Node) bool) {
 	for {
 		candidate := ancestor or { return }
 		if !callback(candidate) {
+			return
+		}
+		ancestor = candidate.parent()
+	}
+}
+
+pub fn (n &Node) for_each_inclusive_ancestor_matching(predicate fn (&Node) bool, callback fn (&Node) bool) {
+	mut ancestor := ?&Node(n)
+	for {
+		candidate := ancestor or { return }
+		if predicate(candidate) && !callback(candidate) {
 			return
 		}
 		ancestor = candidate.parent()

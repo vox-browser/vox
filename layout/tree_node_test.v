@@ -46,6 +46,36 @@ fn test_tree_node_mutation_and_tree_order() {
 	assert replacement.index() == 1
 }
 
+fn test_tree_node_order_uses_ancestor_chains() {
+	document := dom.Document.create(dom.URL{'about:blank'})
+	mut root := Node.new(document, none)
+	first := Node.new(document, none)
+	second := Node.new(document, none)
+	first_child := Node.new(document, none)
+	second_child := Node.new(document, none)
+	root.append_child(first)
+	root.append_child(second)
+	mut mutable_first := unsafe { &Node(first) }
+	mutable_first.append_child(first_child)
+	mut mutable_second := unsafe { &Node(second) }
+	mutable_second.append_child(second_child)
+
+	assert root.is_before(first_child)
+	assert !first_child.is_before(root)
+	assert first_child.is_before(second)
+	assert first_child.is_before(second_child)
+	assert second_child.is_following(first_child)
+	assert !second_child.is_before(first_child)
+	assert !first_child.is_before(first_child)
+
+	mut other_root := Node.new(document, none)
+	disconnected_child := Node.new(document, none)
+	other_root.append_child(disconnected_child)
+	assert !first_child.is_before(disconnected_child)
+	assert !disconnected_child.is_before(first_child)
+	assert !first_child.is_following(disconnected_child)
+}
+
 fn test_tree_node_skip_children_traversal() {
 	document := dom.Document.create(dom.URL{'about:blank'})
 	mut root := Node.new(document, none)
@@ -98,4 +128,24 @@ fn test_tree_node_predicate_helpers_replace_cpp_type_templates() {
 	assert layout_nodes_same(grandchild.first_ancestor_matching(is_box) or {
 		panic('missing ancestor')
 	}, first)
+	mut matching_ancestors := []&Node{}
+	matching_ancestors_ptr := &matching_ancestors
+	grandchild.for_each_inclusive_ancestor_matching(is_box, fn [matching_ancestors_ptr] (node &Node) bool {
+		tree_test_ptr_push(matching_ancestors_ptr, node)
+		return true
+	})
+	assert matching_ancestors.len == 1
+	assert layout_nodes_same(matching_ancestors[0], first)
+
+	mut visited_before_break := 0
+	visited_before_break_ptr := &visited_before_break
+	grandchild.for_each_inclusive_ancestor_matching(fn (_ &Node) bool {
+		return true
+	}, fn [visited_before_break_ptr] (_ &Node) bool {
+		unsafe {
+			*visited_before_break_ptr += 1
+		}
+		return false
+	})
+	assert visited_before_break == 1
 }
