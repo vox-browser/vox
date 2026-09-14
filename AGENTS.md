@@ -70,12 +70,14 @@
   ./compare_screenshots.sh inline-node ordered-list
   ```
 
-  With no arguments the current smoke set is `inline-node`, `ordered-list`, and
-  `text-decorations`. A case name resolves against upstream
-  `Tests/LibWeb/Screenshot/{input,expected}`; an input HTML path is also accepted.
-  The command prints differing-pixel, maximum-channel-error, MAE, and RMSE metrics
-  and writes `*.actual.png` plus an amplified `*.diff.png` heatmap under
-  `Build/comparisons/`.
+  With no arguments the current smoke set is `inline-node`, `ordered-list`,
+  `text-decorations`, and `line-clamp-properties`. A case name first resolves
+  against upstream `Tests/LibWeb/Screenshot/{input,expected}`, then against
+  `Tests/LibWeb/Ref/input`. For a reftest, the command follows its
+  `<link rel="match">` and captures both pages through the V browser. An input
+  HTML path is also accepted. The command prints differing-pixel,
+  maximum-channel-error, MAE, and RMSE metrics and writes `*.actual.png` plus an
+  amplified `*.diff.png` heatmap under `Build/comparisons/`.
 - Override the defaults with `LADYBIRD_SOURCE_DIR`, `V_BIN`, and
   `SCREENSHOT_OUTPUT_DIR`. The capture workflow is macOS-specific because it uses
   the Cocoa view snapshot helper and `sips`; the PNG diff tool itself is portable and
@@ -85,7 +87,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-14, the module
-translations contain 340,135 implementation V LOC and 66,998 test V LOC.
+translations contain 340,223 implementation V LOC and 67,039 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -107,7 +109,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Geometry | 2,062 | HTML | 56,513 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 854 |
-| IntersectionObserver | 569 | Layout | 41,496 |
+| IntersectionObserver | 569 | Layout | 41,584 |
 | Loader | 1,921 | MathML | 411 |
 | MediaCapabilitiesAPI | 676 | MediaCapture | 1,205 |
 | MediaSourceExtensions | 357 | MimeSniff | 1,108 |
@@ -131,7 +133,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **340,135** |  |  |
+| **Total** | **340,223** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;

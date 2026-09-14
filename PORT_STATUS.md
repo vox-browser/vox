@@ -94,6 +94,10 @@ placement; scrollable overflow, DOM visual-line projection, and the typed paint
 adapter exclude clamped fragments. The legacy horizontal WebKit-box path uses
 its effective row flex direction. The upstream `line-clamp-properties` input
 and reference render with an exact zero-pixel difference in the native V app.
+Synthetic ellipses retain Ladybird's boundary text-node ownership and UTF-16
+offsets. The paint bridge joins compatible retained glyph runs without
+reshaping, while unsupported glyphs take the same native fallback path as
+literal mixed-font text.
 
 The earlier inventory mapped every upstream implementation filename to V code,
 but filename and symbol-name coverage did not establish behavioral parity. A
@@ -160,7 +164,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 41,496 | 15,486 | Present |
+| `Layout` | 9 | 4,001 | 41,584 | 15,527 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -207,7 +211,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **340,135** | **66,998** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **340,223** | **67,039** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
