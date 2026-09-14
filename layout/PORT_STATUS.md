@@ -818,8 +818,9 @@ without traversing the entire retained tree on every frame.
 The remaining integration gap is replacing the compatibility
 `BlockBox`/`PaintCommand` transport with Painting's typed paintables and
 display-list recorder, including interactive scrollbar enlargement/snapshot
-replay. The remaining SVG-filter backend work is native `feTurbulence` and
-decoded-bitmap `feImage` graph execution.
+replay. The remaining SVG-filter backend work is decoded-bitmap `feImage` graph
+execution; native `feTurbulence` and interpolation-color-space conversion now
+flow through the retained graph.
 
 ## Verification
 

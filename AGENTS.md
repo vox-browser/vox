@@ -74,8 +74,8 @@
   `text-decorations`, and `line-clamp-properties`. A case name first resolves
   against upstream `Tests/LibWeb/Screenshot/{input,expected}`, then against
   `Tests/LibWeb/Ref/input`. For a reftest, the command follows its
-  `<link rel="match">` and captures both pages through the V browser. An input
-  HTML path is also accepted. The command prints differing-pixel,
+  `<link rel="match">` or `<link rel="mismatch">` and captures both pages through
+  the V browser. An input HTML path is also accepted. The command prints differing-pixel,
   maximum-channel-error, MAE, and RMSE metrics and writes `*.actual.png` plus an
   amplified `*.diff.png` heatmap under `Build/comparisons/`.
 - Override the defaults with `LADYBIRD_SOURCE_DIR`, `V_BIN`, and
@@ -87,7 +87,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-14, the module
-translations contain 340,912 implementation V LOC and 67,420 test V LOC.
+translations contain 341,011 implementation V LOC and 67,613 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -95,7 +95,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Module | Implementation V LOC | Module | Implementation V LOC |
 | --- | ---: | --- | ---: |
 | ARIA | 2,535 | Animations | 3,972 |
-| Bindings | 2,675 | CSS | 103,679 |
+| Bindings | 2,675 | CSS | 103,707 |
 | Clipboard | 973 | Compositor | 2,403 |
 | Compression | 424 | ContentSecurityPolicy | 2,738 |
 | CookieStore | 859 | CredentialManagement | 418 |
@@ -109,7 +109,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Geometry | 2,062 | HTML | 56,513 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 854 |
-| IntersectionObserver | 569 | Layout | 41,584 |
+| IntersectionObserver | 569 | Layout | 41,595 |
 | Loader | 1,921 | MathML | 411 |
 | MediaCapabilitiesAPI | 676 | MediaCapture | 1,205 |
 | MediaSourceExtensions | 357 | MimeSniff | 1,108 |
@@ -119,7 +119,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | PermissionsAPI | 239 | Platform | 1,750 |
 | ReferrerPolicy | 239 | RequestIdleCallback | 59 |
 | ResizeObserver | 420 | ResourceTiming | 338 |
-| SRI | 156 | SVG | 5,107 |
+| SRI | 156 | SVG | 5,167 |
 | SecureContexts | 59 | Selection | 598 |
 | Serial | 243 | ServiceWorker | 1,562 |
 | Speech | 624 | StorageAPI | 444 |
@@ -133,7 +133,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **340,912** |  |  |
+| **Total** | **341,011** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;

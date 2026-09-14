@@ -113,6 +113,16 @@ parse and retain typed computed values. Alignment pairs use shortest-value
 serialization, scroll-snap-type normalizes its default `proximity` strictness,
 and the computed layer exposes physical axis, alignment, stop, and strictness
 enums for scrolling and painting consumers.
+SVG filters now compute and inherit `color-interpolation-filters`, track the
+operating color space of each graph result, insert only the required sRGB and
+linear-light conversions, and preserve the special color-space behavior of
+flood, image, offset, displacement-map, turbulence, and final filter output.
+The native filter bridge applies those conversions, runs component-transfer
+tables directly in the selected space, clamps arithmetic output to
+premultiplied alpha, and renders turbulence instead of treating it as a no-op.
+Ladybird's new color-matrix reftest is an exact zero-pixel match; its displacement
+and turbulence mismatch references both differ. The comparison driver now
+follows both `rel="match"` and `rel="mismatch"` references.
 
 The earlier inventory mapped every upstream implementation filename to V code,
 but filename and symbol-name coverage did not establish behavioral parity. A
@@ -151,7 +161,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
 | `Animations` | 10 | 5,187 | 3,972 | 1,041 | Complete |
 | `Bindings` | 11 | 2,501 | 2,675 | 918 | Complete |
-| `CSS` | 215 | 47,722 | 103,679 | 8,560 | Present |
+| `CSS` | 215 | 47,722 | 103,707 | 8,616 | Present |
 | `Clipboard` | 4 | 1,009 | 973 | 343 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 424 | 138 | Complete |
@@ -179,7 +189,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 41,584 | 15,527 | Present |
+| `Layout` | 9 | 4,001 | 41,595 | 15,547 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -199,7 +209,7 @@ from the current-module totals.
 | `ResizeObserver` | 4 | 424 | 420 | 152 | Complete |
 | `ResourceTiming` | 1 | 357 | 338 | 84 | Complete |
 | `SRI` | 1 | 198 | 156 | 100 | Complete |
-| `SVG` | 82 | 9,020 | 5,107 | 1,069 | Complete |
+| `SVG` | 82 | 9,020 | 5,167 | 1,186 | Complete |
 | `SecureContexts` | 1 | 76 | 59 | 13 | Complete |
 | `Selection` | 3 | 1,470 | 598 | 125 | Complete |
 | `Serial` | 2 | 366 | 243 | 35 | Complete |
@@ -226,7 +236,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **340,912** | **67,420** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **341,011** | **67,613** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -727,7 +737,8 @@ blend/composite mode (including arithmetic and plus-darker), anisotropic blur
 and morphology, color matrix/saturate/hue, component-transfer tables, merge,
 offset, and channel-selecting displacement while propagating logical graph
 extents instead of allocating or flooding the full canvas. Native turbulence
-generation and decoded-bitmap `feImage` graph inputs remain outstanding. Its
+generation and filter color-space conversions now execute through that graph;
+decoded-bitmap `feImage` graph inputs remain outstanding. Its
 table phase consumes the translated collapsed and separate border collector,
 including conflict winners, cell snapping, empty-cell suppression, and exact
 rounded-cell repainting. Ordinary block and inline borders now retain their

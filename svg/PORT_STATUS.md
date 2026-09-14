@@ -87,10 +87,12 @@ operations, retains computed flood style and the resolved graph region, and
 records C++'s transparent target-bounds trigger for source-independent output.
 The native backend executes flood, blend/composite/arithmetic, anisotropic blur
 and morphology, matrix/saturate/hue, component-transfer tables, merge, offset,
-and channel-selecting displacement with propagated graph extents. Native
-`feTurbulence` generation and decoded-bitmap `feImage` graph inputs are the
-remaining raster-boundary omissions; their portable SVG state remains
-translated here.
+channel-selecting displacement, and turbulence with propagated graph extents.
+Filter results retain their sRGB or linear-light operating space and insert
+explicit conversions at primitive inputs and final output as required by
+`color-interpolation-filters`. Decoded-bitmap `feImage` graph inputs are the
+remaining raster-boundary omission; their portable SVG state remains translated
+here.
 
 ## Boundary
 
