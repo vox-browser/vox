@@ -64,6 +64,9 @@ wrapper is also created for flex fieldsets without a rendered legend.
 Viewport propagation now copies the root scrollbar width and the containment-
 aware principal writing mode and direction, while selecting and neutralizing
 the correct root/body overflow origin.
+The contain-intrinsic physical and logical longhands now parse and compute
+non-negative lengths, preserve the optional `auto` state, and expand and
+serialize the two-axis shorthand with the current upstream grammar.
 
 The earlier inventory mapped every upstream implementation filename to V code,
 but filename and symbol-name coverage did not establish behavioral parity. A
@@ -102,7 +105,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
 | `Animations` | 10 | 5,187 | 3,972 | 1,041 | Complete |
 | `Bindings` | 11 | 2,501 | 2,675 | 918 | Complete |
-| `CSS` | 215 | 47,722 | 101,898 | 7,726 | Present |
+| `CSS` | 215 | 47,722 | 102,118 | 7,827 | Present |
 | `Clipboard` | 4 | 1,009 | 973 | 343 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 424 | 138 | Complete |
@@ -177,7 +180,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **338,462** | **66,317** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **338,682** | **66,418** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
