@@ -918,6 +918,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.page_break_after, .page_break_before, .page_break_inside {
 			return parser.parse_page_break_legacy_shorthand(property_id, mut tokens)
 		}
+		.line_clamp, .webkit_line_clamp {
+			return parser.parse_line_clamp_shorthand(property_id, mut tokens)
+		}
 		.contain_intrinsic_size {
 			return parser.parse_contain_intrinsic_size_shorthand(mut tokens)
 		}
@@ -1014,8 +1017,14 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.border_collapse {
 			return parser.parse_border_collapse_value(mut tokens)
 		}
-		.box_decoration_break, .break_after, .break_before, .break_inside, .column_fill {
+		.box_decoration_break, .break_after, .break_before, .break_inside, .column_fill, .continue_, .webkit_box_orient {
 			return parse_property_keyword_value_from_metadata(property_id, mut tokens)
+		}
+		.block_ellipsis {
+			return parser.parse_block_ellipsis_value(mut tokens)
+		}
+		.max_lines {
+			return parser.parse_max_lines_value(mut tokens)
 		}
 		.box_sizing {
 			return parser.parse_box_sizing_value(mut tokens)
@@ -1792,7 +1801,9 @@ fn (mut parser Parser) parse_page_break_legacy_shorthand(property_id PropertyID,
 		.page_break_after { PropertyID.break_after }
 		.page_break_before { PropertyID.break_before }
 		.page_break_inside { PropertyID.break_inside }
-		else { return none }
+		else {
+			return none
+		}
 	}
 	ident := to_ascii_lowercase(component.token().ident())
 	keyword := match ident {
@@ -1816,10 +1827,131 @@ fn (mut parser Parser) parse_page_break_legacy_shorthand(property_id PropertyID,
 			}
 			Keyword.right
 		}
-		else { return none }
+		else {
+			return none
+		}
 	}
 	return StyleValue(ShorthandStyleValue.create(property_id, [longhand], [
 		StyleValue(KeywordStyleValue.create(keyword)),
+	]))
+}
+
+fn (mut parser Parser) parse_block_ellipsis_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut keyword_attempt := tokens.clone()
+	if value := parse_property_keyword_value_from_metadata(.block_ellipsis, mut keyword_attempt) {
+		tokens = keyword_attempt
+		return value
+	}
+	if value := parser.parse_string_value(mut tokens) {
+		return StyleValue(value)
+	}
+	return none
+}
+
+fn (mut parser Parser) parse_max_lines_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut none_attempt := tokens.clone()
+	if value := parse_property_keyword_value(mut none_attempt, ['none']) {
+		tokens = none_attempt
+		return value
+	}
+	mut integer_attempt := tokens.clone()
+	value := parser.parse_integer_value(mut integer_attempt) or { return none }
+	if value is IntegerStyleValue && value.integer() >= 1 {
+		tokens = integer_attempt
+		return value
+	}
+	return none
+}
+
+// https://drafts.csswg.org/css-overflow-4/#line-clamp
+// none | [ <integer [1,inf]> || <'block-ellipsis'> ] -webkit-legacy?
+fn (mut parser Parser) parse_line_clamp_shorthand(property_id PropertyID, mut tokens ComponentValueStream) ?StyleValue {
+	if property_id !in [.line_clamp, .webkit_line_clamp] {
+		return none
+	}
+	mut none_attempt := tokens.clone()
+	if _ := parse_property_keyword_value(mut none_attempt, ['none']) {
+		tokens = none_attempt
+		return StyleValue(ShorthandStyleValue.create(property_id, [
+			PropertyID.max_lines,
+			.block_ellipsis,
+			.continue_,
+		], [
+			parser.longhand_initial_typed_value(.max_lines) or { return none },
+			parser.longhand_initial_typed_value(.block_ellipsis) or { return none },
+			parser.longhand_initial_typed_value(.continue_) or { return none },
+		]))
+	}
+
+	if property_id == .webkit_line_clamp {
+		value := parser.parse_max_lines_value(mut tokens) or { return none }
+		if value.to_keyword() == .none_ {
+			return none
+		}
+		return StyleValue(ShorthandStyleValue.create(property_id, [
+			PropertyID.max_lines,
+			.block_ellipsis,
+			.continue_,
+		], [
+			value,
+			StyleValue(KeywordStyleValue.create(.auto)),
+			StyleValue(KeywordStyleValue.create(.webkit_legacy)),
+		]))
+	}
+
+	mut transaction := tokens.clone()
+	mut max_lines := ?StyleValue(none)
+	mut block_ellipsis := ?StyleValue(none)
+	mut use_webkit_legacy := false
+	mut component_count := 0
+	for {
+		transaction.consume_whitespace()
+		peek := transaction.peek() or { break }
+		if peek.is(.ident)
+			&& equals_ignoring_ascii_case(peek.token().ident(), '-webkit-legacy') {
+			transaction.consume()
+			transaction.consume_whitespace()
+			if component_count == 0 || transaction.has_more_tokens() {
+				return none
+			}
+			use_webkit_legacy = true
+			break
+		}
+		if max_lines == none {
+			mut attempt := transaction.clone()
+			if value := parser.parse_max_lines_value(mut attempt) {
+				if value.to_keyword() != .none_ {
+					max_lines = value
+					transaction = attempt
+					component_count++
+					continue
+				}
+			}
+		}
+		if block_ellipsis == none {
+			mut attempt := transaction.clone()
+			if value := parser.parse_block_ellipsis_value(mut attempt) {
+				block_ellipsis = value
+				transaction = attempt
+				component_count++
+				continue
+			}
+		}
+		return none
+	}
+	if component_count == 0 {
+		return none
+	}
+	tokens = transaction
+	return StyleValue(ShorthandStyleValue.create(property_id, [PropertyID.max_lines, .block_ellipsis,
+		.continue_], [
+		max_lines or { parser.longhand_initial_typed_value(.max_lines) or { return none } },
+		block_ellipsis or { StyleValue(KeywordStyleValue.create(.auto)) },
+		StyleValue(KeywordStyleValue.create(if use_webkit_legacy {
+			Keyword.webkit_legacy
+		} else {
+			Keyword.collapse
+		})),
 	]))
 }
 

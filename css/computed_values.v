@@ -419,8 +419,7 @@ pub fn resolve_computed_values_for_document(style &ComputedProperties, document 
 	mutable_values.set_stop_color(color_from_computed_value(style.color_or_fallback(.stop_color, context, ComputedColor.black())))
 	mutable_values.set_flood_color(color_from_computed_value(style.color_or_fallback(.flood_color, context, ComputedColor.black())))
 	mutable_values.set_outline_color(color_from_computed_value(style.color_or_fallback(.outline_color, context, ComputedColor.black())))
-	mutable_values.set_column_rule_color(color_from_computed_value(style.color_or_fallback(.column_rule_color,
-		context, ComputedColor.rgba(color.r, color.g, color.b, color.a))))
+	mutable_values.set_column_rule_color(color_from_computed_value(style.color_or_fallback(.column_rule_color, context, ComputedColor.rgba(color.r, color.g, color.b, color.a))))
 	mutable_values.computed_values_fill_ = none
 	mutable_values.computed_values_stroke_ = none
 	if fill := computed_values_svg_paint(style, .fill, context) {
@@ -544,6 +543,10 @@ pub fn resolve_computed_values(style &ComputedProperties) &ComputedValues {
 	values.set_break_inside(style.break_inside())
 	values.set_box_decoration_break(style.box_decoration_break())
 	values.set_column_fill(style.column_fill())
+	values.set_block_ellipsis(style.block_ellipsis())
+	values.set_continue_value(style.continue_value())
+	values.set_max_lines(style.max_lines())
+	values.set_webkit_box_orient(style.webkit_box_orient())
 	values.set_empty_cells(style.empty_cells())
 	values.set_object_fit(style.object_fit())
 	values.set_object_position(style.object_position())
@@ -1174,6 +1177,29 @@ pub fn (values &ComputedValues) box_decoration_break() BoxDecorationBreak {
 
 pub fn (values &ComputedValues) column_fill() ColumnFill {
 	return values.computed_values_column_fill_
+}
+
+pub fn (values &ComputedValues) block_ellipsis() BlockEllipsis {
+	return values.computed_values_block_ellipsis_
+}
+
+pub fn (values &ComputedValues) continue_value() ContinueValue {
+	return values.computed_values_continue_
+}
+
+pub fn (values &ComputedValues) max_lines() ?int {
+	return values.computed_values_max_lines_
+}
+
+pub fn (values &ComputedValues) webkit_box_orient() WebkitBoxOrient {
+	return values.computed_values_webkit_box_orient_
+}
+
+pub fn (values &ComputedValues) effective_flex_direction() FlexDirection {
+	if values.display_before_box_type_transformation().is_webkit_box_inside() {
+		return if values.webkit_box_orient() == .vertical { .column } else { .row }
+	}
+	return values.flex_direction()
 }
 
 pub fn (values &ComputedValues) empty_cells() EmptyCells {
@@ -2055,6 +2081,22 @@ pub fn (mut values MutableComputedValues) set_box_decoration_break(value BoxDeco
 
 pub fn (mut values MutableComputedValues) set_column_fill(value ColumnFill) {
 	values.computed_values_column_fill_ = value
+}
+
+pub fn (mut values MutableComputedValues) set_block_ellipsis(value BlockEllipsis) {
+	values.computed_values_block_ellipsis_ = value
+}
+
+pub fn (mut values MutableComputedValues) set_continue_value(value ContinueValue) {
+	values.computed_values_continue_ = value
+}
+
+pub fn (mut values MutableComputedValues) set_max_lines(value ?int) {
+	values.computed_values_max_lines_ = value
+}
+
+pub fn (mut values MutableComputedValues) set_webkit_box_orient(value WebkitBoxOrient) {
+	values.computed_values_webkit_box_orient_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_empty_cells(value EmptyCells) {

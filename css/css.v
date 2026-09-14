@@ -67,7 +67,11 @@ pub enum SpecialContext {
 	translate_z_argument
 }
 
-pub type ValueParsingContext = DescriptorContext | FunctionContext | PropertyID | SpecialContext | SyntaxParsingContext
+pub type ValueParsingContext = DescriptorContext
+	| FunctionContext
+	| PropertyID
+	| SpecialContext
+	| SyntaxParsingContext
 
 pub struct ParsingParams {
 pub:
@@ -413,6 +417,10 @@ pub enum PropertyID {
 	break_inside
 	box_decoration_break
 	column_fill
+	block_ellipsis
+	continue_
+	max_lines
+	webkit_box_orient
 	vector_effect
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow
@@ -491,6 +499,8 @@ pub enum PropertyID {
 	page_break_after
 	page_break_before
 	page_break_inside
+	line_clamp
+	webkit_line_clamp
 	container
 }
 
@@ -3271,8 +3281,7 @@ pub fn (lp LengthPercentage) resolved(context LengthResolutionContext, reference
 			value
 		}
 		Percentage {
-			Length.make_css_px(CSSPixels.truncated_value_for(reference_value.to_double() *
-				value.as_fraction()))
+			Length.make_css_px(CSSPixels.truncated_value_for(reference_value.to_double() * value.as_fraction()))
 		}
 		CalculatedStyleValue {
 			Length.resolve_calculated_with_px(value, context, reference_value)

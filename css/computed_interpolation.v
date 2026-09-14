@@ -244,6 +244,34 @@ pub enum ColumnFill {
 	balance_all
 }
 
+pub enum BlockEllipsisType {
+	no_ellipsis
+	auto_
+	string
+}
+
+pub struct BlockEllipsis {
+pub:
+	type_ BlockEllipsisType
+	text_ string
+}
+
+pub fn (value BlockEllipsis) text() string {
+	return value.text_
+}
+
+pub enum ContinueValue {
+	auto_
+	discard
+	collapse
+	webkit_legacy
+}
+
+pub enum WebkitBoxOrient {
+	horizontal
+	vertical
+}
+
 pub enum ContentDataType {
 	normal
 	none_
@@ -1342,9 +1370,9 @@ __global computed_interpolation_computation_order_cache = []PropertyID{}
 // for every property of every styled element.
 __global computed_interpolation_initial_value_cache = []&dom.StyleValue{}
 __global (
-	computed_interpolation_initial_values_complete        bool
-	computed_interpolation_default_work_cache            = []u8{}
-	computed_interpolation_default_computed_value_cache   = []&dom.StyleValue{}
+	computed_interpolation_initial_values_complete      bool
+	computed_interpolation_default_work_cache           = []u8{}
+	computed_interpolation_default_computed_value_cache = []&dom.StyleValue{}
 )
 
 fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.StyleValue {
@@ -1493,30 +1521,30 @@ pub enum WithAnimationsApplied {
 @[heap]
 pub struct ComputedProperties {
 pub mut:
-	property_values_                        []&dom.StyleValue
-	property_important_                     [computed_property_flag_byte_count]u8
-	property_inherited_                     [computed_property_flag_byte_count]u8
-	animated_property_inherited_            [computed_property_flag_byte_count]u8
-	animated_property_result_of_transition_ [computed_property_flag_byte_count]u8
-	animated_property_values_               map[PropertyID]&dom.StyleValue
-	display_before_box_type_transformation_ Display = Display.new()
-	cached_computed_font_list_              ?&FontCascadeList
-	cached_first_available_computed_font_   ?&PlatformFont
-	line_height_                            ?CSSPixels
-	attempted_pseudo_class_matches_         PseudoClassBitmap
-	inheritance_dependent_specified_values_ map[PropertyID]&dom.StyleValue
-	raw_cascaded_font_size_                 ?&dom.StyleValue
-	depends_on_viewport_metrics_            bool
+	property_values_                         []&dom.StyleValue
+	property_important_                      [computed_property_flag_byte_count]u8
+	property_inherited_                      [computed_property_flag_byte_count]u8
+	animated_property_inherited_             [computed_property_flag_byte_count]u8
+	animated_property_result_of_transition_  [computed_property_flag_byte_count]u8
+	animated_property_values_                map[PropertyID]&dom.StyleValue
+	display_before_box_type_transformation_  Display = Display.new()
+	cached_computed_font_list_               ?&FontCascadeList
+	cached_first_available_computed_font_    ?&PlatformFont
+	line_height_                             ?CSSPixels
+	attempted_pseudo_class_matches_          PseudoClassBitmap
+	inheritance_dependent_specified_values_  map[PropertyID]&dom.StyleValue
+	raw_cascaded_font_size_                  ?&dom.StyleValue
+	depends_on_viewport_metrics_             bool
 	font_metrics_depend_on_viewport_metrics_ bool
 	// Lengths whose computed value remains viewport- or root-font-relative
 	// need the same style-computation context when Layout resolves their used
 	// value. LibWeb carries that context through the layout node; retaining it
 	// here avoids silently turning vw/vh/rem into zero at the V boundary.
-	viewport_rect_       CSSPixelRect
-	root_font_size_px_   f64 = 16.0
-	root_line_height_px_ f64 = 19.2
+	viewport_rect_                                CSSPixelRect
+	root_font_size_px_                            f64 = 16.0
+	root_line_height_px_                          f64 = 19.2
 	root_font_metrics_depend_on_viewport_metrics_ bool
-	subject_element_ ?&dom.Element
+	subject_element_                              ?&dom.Element
 
 	// Layout::NodeWithStyle resolves these values once in apply_style(). Keeping
 	// the translated ComputedValues slots on the retained object avoids decoding
@@ -1614,6 +1642,10 @@ pub mut:
 	computed_values_break_inside_                  BreakInside
 	computed_values_box_decoration_break_          BoxDecorationBreak
 	computed_values_column_fill_                   ColumnFill
+	computed_values_block_ellipsis_                BlockEllipsis
+	computed_values_continue_                      ContinueValue
+	computed_values_max_lines_                     ?int
+	computed_values_webkit_box_orient_             WebkitBoxOrient
 	computed_values_empty_cells_                   EmptyCells
 	computed_values_object_fit_                    ObjectFit
 	computed_values_object_position_               Position
@@ -1727,7 +1759,6 @@ pub:
 }
 
 __global css_computed_values_total_instances u64
-
 __global css_longhand_wrappers_minted u64
 
 pub fn longhand_wrappers_minted() u64 {
@@ -1768,10 +1799,7 @@ fn computed_properties_with_initial_values() &ComputedProperties {
 	// pointer template once and clone its dense array for each computed style.
 	if !computed_interpolation_initial_values_complete {
 		computed_interpolation_default_work_cache = []u8{len: number_of_longhand_properties}
-		computed_interpolation_default_computed_value_cache = []&dom.StyleValue{
-			len: number_of_longhand_properties,
-			init: unsafe { nil }
-		}
+		computed_interpolation_default_computed_value_cache = []&dom.StyleValue{len: number_of_longhand_properties, init: unsafe { nil }}
 		for property_id in computed_interpolation_longhand_property_ids() {
 			computed_interpolation_property_initial_value(property_id)
 			index := int(property_id) - int(first_longhand_property_id())
@@ -2112,7 +2140,7 @@ pub fn (c &ComputedProperties) property(property_id PropertyID, return_animated_
 	// Important properties override animated but not transitioned properties.
 	if return_animated_value == .yes
 		&& (!c.is_property_important(property_id)
-		|| c.is_animated_property_result_of_transition(property_id)) {
+			|| c.is_animated_property_result_of_transition(property_id)) {
 		if animated_value := c.animated_property_values_[property_id] {
 			return animated_value
 		}
@@ -2823,6 +2851,57 @@ pub fn (c &ComputedProperties) column_fill() ColumnFill {
 		.balance_all { ColumnFill.balance_all }
 		else { ColumnFill.balance }
 	}
+}
+
+pub fn (c &ComputedProperties) block_ellipsis() BlockEllipsis {
+	value := c.property(.block_ellipsis, .yes) or {
+		return BlockEllipsis{
+			type_: .no_ellipsis
+		}
+	}
+	parsed := style_value_logic_from_dom(.block_ellipsis, value) or {
+		return BlockEllipsis{
+			type_: .no_ellipsis
+		}
+	}
+	if parsed is StringStyleValue {
+		return BlockEllipsis{
+			type_: .string
+			text_: parsed.string_value()
+		}
+	}
+	if parsed.to_keyword() == .auto {
+		return BlockEllipsis{
+			type_: .auto_
+		}
+	}
+	return BlockEllipsis{
+		type_: .no_ellipsis
+	}
+}
+
+pub fn (c &ComputedProperties) continue_value() ContinueValue {
+	value := c.property(.continue_, .yes) or { return .auto_ }
+	return match computed_interpolation_style_value_keyword(value) or { Keyword.auto } {
+		.discard { ContinueValue.discard }
+		.collapse { ContinueValue.collapse }
+		.webkit_legacy { ContinueValue.webkit_legacy }
+		else { ContinueValue.auto_ }
+	}
+}
+
+pub fn (c &ComputedProperties) max_lines() ?int {
+	value := c.property(.max_lines, .yes) or { return none }
+	if integer := computed_interpolation_integer_from_dom_style_value(value) {
+		return int(integer)
+	}
+	return none
+}
+
+pub fn (c &ComputedProperties) webkit_box_orient() WebkitBoxOrient {
+	value := c.property(.webkit_box_orient, .yes) or { return .horizontal }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .horizontal }
+	return if keyword == .vertical { .vertical } else { .horizontal }
 }
 
 pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, initial_quote_nesting_level u32, registered_counter_styles map[string]CounterStyle) ContentDataAndQuoteNestingLevel {
@@ -3835,7 +3914,9 @@ pub fn (c &ComputedProperties) font_variant_alternates() ?FontVariantAlternates 
 			names_value := entry.value()
 			names := match names_value {
 				StyleValueList { names_value }
-				else { continue }
+				else {
+					continue
+				}
 			}
 			for name in names.values() {
 				result.font_feature_value_entries << FontFeatureValueKey{
@@ -6047,8 +6128,7 @@ pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from
 				if from_value !is StyleValueList || to_value !is StyleValueList {
 					return interpolate_discrete(from, to, delta, allow_discrete)
 				}
-				if result := interpolate_repeatable_list(element, calculation_context, from,
-					to, delta, allow_discrete) {
+				if result := interpolate_repeatable_list(element, calculation_context, from, to, delta, allow_discrete) {
 					return result
 				}
 				return interpolate_discrete(from, to, delta, allow_discrete)
@@ -6557,8 +6637,7 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		color_resolution_context := calculation_context.color_resolution or {
 			ColorResolutionContext{}
 		}
-		if interpolated := interpolate_style_values_color(from, to, delta, none,
-			color_resolution_context) {
+		if interpolated := interpolate_style_values_color(from, to, delta, none, color_resolution_context) {
 			return interpolated
 		}
 		return StyleValue(ColorStyleValue.create_from_color(Color.black(), .modern, none))
@@ -7772,10 +7851,8 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 				transparent := StyleValue(ColorStyleValue.create(Color.rgba(0, 0, 0, 0)))
 				from_color_value := from.color or { transparent }
 				to_color_value := to.color or { transparent }
-				interpolated_color_value := interpolate_style_values_color(from_color_value,
-					to_color_value, delta, none, color_context) or {
-					StyleValue(ColorStyleValue.create_from_color(Color.black(), .modern,
-						none))
+				interpolated_color_value := interpolate_style_values_color(from_color_value, to_color_value, delta, none, color_context) or {
+					StyleValue(ColorStyleValue.create_from_color(Color.black(), .modern, none))
 				}
 				FilterStyleValue(FilterOperationDropShadow{
 					offset_x: x
@@ -7861,14 +7938,11 @@ pub fn interpolate_box_shadow(element &dom.Element, calculation_context Interpol
 			return none
 		}
 
-		interpolated_color_value := interpolate_style_values_color(from_shadow.color(),
-			to_shadow.color(), delta, none, color_context) or {
+		interpolated_color_value := interpolate_style_values_color(from_shadow.color(), to_shadow.color(), delta, none, color_context) or {
 			StyleValue(ColorStyleValue.create_from_color(Color.black(), .modern, none))
 		}
 		placement := if delta >= 0.5 { to_shadow.placement() } else { from_shadow.placement() }
-		result << StyleValue(ShadowStyleValue.create(from_shadow.shadow_type(),
-			interpolated_color_value, offset_x, offset_y, blur_radius, spread_distance,
-			placement))
+		result << StyleValue(ShadowStyleValue.create(from_shadow.shadow_type(), interpolated_color_value, offset_x, offset_y, blur_radius, spread_distance, placement))
 	}
 
 	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(result, .comma, .yes)))
@@ -9690,8 +9764,7 @@ fn collect_properties_used_in_has(selector InvalidationSimpleSelector, mut style
 				for child_selector in selector.nested_selectors {
 					for group in selector_groups_for_invalidation(child_selector) {
 						for simple_selector in group.simple_selectors {
-							collect_properties_used_in_has(simple_selector, mut style_invalidation_data,
-								in_has)
+							collect_properties_used_in_has(simple_selector, mut style_invalidation_data, in_has)
 						}
 					}
 				}
@@ -9708,9 +9781,9 @@ fn simple_selector_is_featureless_subtree_sensitive(selector InvalidationSimpleS
 	if selector.type_ != .pseudo_class {
 		return false
 	}
-	if selector.name in ['not', 'empty', 'first-child', 'last-child', 'only-child',
-		'first-of-type', 'last-of-type', 'only-of-type', 'nth-child', 'nth-last-child',
-		'nth-of-type', 'nth-last-of-type'] {
+	if selector.name in ['not', 'empty', 'first-child', 'last-child', 'only-child', 'first-of-type',
+		'last-of-type', 'only-of-type', 'nth-child', 'nth-last-child', 'nth-of-type',
+		'nth-last-of-type'] {
 		return true
 	}
 	if selector.pseudo_class in [.is_, .where] {
@@ -9844,10 +9917,7 @@ fn build_invalidation_sets_for_simple_selector_impl(selector InvalidationSimpleS
 				for child_selector in selector.nested_selectors {
 					for group in selector_groups_for_invalidation(child_selector) {
 						for simple_selector in group.simple_selectors {
-							build_invalidation_sets_for_simple_selector_impl(simple_selector,
-								mut invalidation_set, exclude_properties_nested_in_not_pseudo_class,
-								mut style_invalidation_data, inside_nth_child_selector,
-								root_invalidation_plan)
+							build_invalidation_sets_for_simple_selector_impl(simple_selector, mut invalidation_set, exclude_properties_nested_in_not_pseudo_class, mut style_invalidation_data, inside_nth_child_selector, root_invalidation_plan)
 						}
 					}
 				}
@@ -10104,7 +10174,7 @@ pub mut:
 	user_style_sheet                                            ?&CSSStyleSheet
 	user_style_source                                           ?string
 	pending_nodes_for_style_invalidation_due_to_presence_of_has []&dom.Node
-	pending_has_invalidation_features                            map[i64]&PendingHasInvalidationMutationFeatures
+	pending_has_invalidation_features                           map[i64]&PendingHasInvalidationMutationFeatures
 	node                                                        ?&dom.Node
 	// CSS-owned sheets for a shadow-root scope. Document sheets keep their
 	// existing document holder for compatibility with the HTML bridge.
@@ -10153,23 +10223,23 @@ pub mut:
 @[heap]
 pub struct StyleComputer {
 pub mut:
-	document_                              &dom.Document = unsafe { nil }
-	default_font_metrics                   LengthFontMetrics = LengthFontMetrics.default()
-	root_element_font_metrics              LengthFontMetrics = LengthFontMetrics.default()
+	document_                                            &dom.Document = unsafe { nil }
+	default_font_metrics                                 LengthFontMetrics = LengthFontMetrics.default()
+	root_element_font_metrics                            LengthFontMetrics = LengthFontMetrics.default()
 	root_element_font_metrics_depend_on_viewport_metrics bool
-	cached_font_computation_context        ?ComputationContext
-	cached_line_height_computation_context ?ComputationContext
-	cached_generic_computation_context     ?ComputationContext
-	viewport_rect_                         CSSPixelRect
-	ancestor_filter_                       CountingBloomFilter = CountingBloomFilter.new()
-	has_result_cache_                      map[string]HasMatchResult
-	css_animation_storage_                 &CSSAnimationStorage = unsafe { nil }
-	css_transition_storage_                &CSSTransitionStorage = unsafe { nil }
-	document_timeline_                     &AnimationTimeline = unsafe { nil }
-	font_computer_                         &FontComputer = unsafe { nil }
-	font_face_set_                         &FontFaceSet = unsafe { nil }
-	animation_time_ms_                     f64
-	transition_generation_                 int
+	cached_font_computation_context                      ?ComputationContext
+	cached_line_height_computation_context               ?ComputationContext
+	cached_generic_computation_context                   ?ComputationContext
+	viewport_rect_                                       CSSPixelRect
+	ancestor_filter_                                     CountingBloomFilter = CountingBloomFilter.new()
+	has_result_cache_                                    map[string]HasMatchResult
+	css_animation_storage_                               &CSSAnimationStorage = unsafe { nil }
+	css_transition_storage_                              &CSSTransitionStorage = unsafe { nil }
+	document_timeline_                                   &AnimationTimeline = unsafe { nil }
+	font_computer_                                       &FontComputer = unsafe { nil }
+	font_face_set_                                       &FontFaceSet = unsafe { nil }
+	animation_time_ms_                                   f64
+	transition_generation_                               int
 }
 
 pub fn StyleComputer.new(document &dom.Document) &StyleComputer {
@@ -10582,8 +10652,7 @@ fn (s &StyleComputer) compute_keyframe_values(abstract_element dom.AbstractEleme
 
 	mut result := map[PropertyID]&dom.StyleValue{}
 	for property_id, value in specified_values {
-		mut computation_context := s.get_computation_context_for_property(property_id,
-			computed_properties, abstract_element)
+		mut computation_context := s.get_computation_context_for_property(property_id, computed_properties, abstract_element)
 		computation_context.reset_viewport_metric_dependency_tracking()
 		computed_value := StyleComputer.compute_value_of_property(property_id, value, fn [specified_values, computed_properties] (id PropertyID) &dom.StyleValue {
 			return specified_values[id] or {
@@ -10710,8 +10779,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	properties.root_font_metrics_depend_on_viewport_metrics_ = s.root_element_font_metrics_depend_on_viewport_metrics
 	properties.subject_element_ = abstract_element.element()
 	mut recascaded_font_size_depends_on_viewport_metrics := false
-	recascaded_font_size := s.recascade_font_size_if_needed(abstract_element, mut cascaded_properties,
-		&recascaded_font_size_depends_on_viewport_metrics)
+	recascaded_font_size := s.recascade_font_size_if_needed(abstract_element, mut cascaded_properties, &recascaded_font_size_depends_on_viewport_metrics)
 	if font_size := recascaded_font_size {
 		properties.set_property(.font_size, font_size, .no, .no)
 		if recascaded_font_size_depends_on_viewport_metrics {
@@ -10827,8 +10895,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		if depends_on_inherited_info {
 			properties.add_inheritance_dependent_specified_value(property_id, style_value)
 		}
-		mut computation_context := s.get_computation_context_for_property(property_id,
-			properties, abstract_element)
+		mut computation_context := s.get_computation_context_for_property(property_id, properties, abstract_element)
 		computation_context.reset_viewport_metric_dependency_tracking()
 		computed_value := if requires_computation {
 			StyleComputer.compute_value_of_property(property_id, style_value, fn [properties] (id PropertyID) &dom.StyleValue {
@@ -11184,8 +11251,7 @@ pub fn (s &StyleComputer) compute_property_values(mut computed_properties Comput
 		specified_value := computed_properties.property(property_id, .no) or {
 			computed_interpolation_property_initial_value(property_id)
 		}
-		mut computation_context := s.get_computation_context_for_property(property_id,
-			computed_properties, abstract_element)
+		mut computation_context := s.get_computation_context_for_property(property_id, computed_properties, abstract_element)
 		computation_context.reset_viewport_metric_dependency_tracking()
 		computed_value := StyleComputer.compute_value_of_property(property_id, specified_value, fn [computed_properties] (id PropertyID) &dom.StyleValue {
 			return computed_properties.property(id, .no) or {
@@ -13994,8 +14060,22 @@ pub fn (s &StyleComputer) transform_box_type_if_needed(mut computed_properties C
 	// Some layout effects require blockification or inlinification of the box type,
 	// which sets the box's computed outer display type to block or inline (respectively).
 	// (This has no effect on display types that generate no box at all, such as none or contents.)
-	display := computed_properties.display()
-	computed_properties.set_display_before_box_type_transformation(display)
+	display_before_transformation := computed_properties.display()
+	computed_properties.set_display_before_box_type_transformation(display_before_transformation)
+	mut display := display_before_transformation
+	// https://drafts.csswg.org/css-overflow-4/#webkit-line-clamp
+	// A vertical legacy box with active clamping computes to a flow-root while
+	// retaining its authored display for compatibility-sensitive layout.
+	if computed_properties.webkit_box_orient() == .vertical
+		&& computed_properties.continue_value() != .auto_
+		&& display.is_webkit_box_inside() {
+		display = if display.is_inline_outside() {
+			Display.from_short(.inline_block)
+		} else {
+			Display.from_short(.flow_root)
+		}
+		computed_properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(display))))
+	}
 	if display.is_none() || (display.is_contents() && !abstract_element.element().is_document_element()) {
 		return
 	}

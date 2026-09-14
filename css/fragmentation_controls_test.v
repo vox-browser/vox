@@ -15,9 +15,11 @@ fn test_fragmentation_control_metadata_and_parsing() {
 	assert property_initial_value_string(.column_fill) == 'balance'
 	assert property_affects_layout(.box_decoration_break)
 	assert property_affects_layout(.column_fill)
-	assert generated_shorthands_for_longhand(.box_decoration_break) == [PropertyID.all]
+	assert generated_shorthands_for_longhand(.box_decoration_break) == [
+		PropertyID.all,
+	]
 	assert PropertyID.column_fill in generated_expanded_longhands_for_shorthand(.all)
-	assert number_of_longhand_properties == 329
+	assert number_of_longhand_properties == 333
 
 	assert fragmentation_control_serialization(.box_decoration_break, 'slice')? == 'slice'
 	assert fragmentation_control_serialization(.box_decoration_break, 'clone')? == 'clone'

@@ -1261,6 +1261,9 @@ pub enum Keyword {
 	libweb_palette_window
 	libweb_palette_window_text
 	libweb_right
+	webkit_box
+	webkit_inline_box
+	webkit_legacy
 	a3
 	a4
 	a5
@@ -1715,6 +1718,7 @@ pub enum Keyword {
 	no_contextual
 	no_discretionary_ligatures
 	no_drop
+	no_ellipsis
 	no_historical_ligatures
 	no_open_quote
 	no_overflow
@@ -2153,6 +2157,9 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.libweb_palette_window { '-libweb-palette-window' }
 		.libweb_palette_window_text { '-libweb-palette-window-text' }
 		.libweb_right { '-libweb-right' }
+		.webkit_box { '-webkit-box' }
+		.webkit_inline_box { '-webkit-inline-box' }
+		.webkit_legacy { '-webkit-legacy' }
 		.a3 { 'a3' }
 		.a4 { 'a4' }
 		.a5 { 'a5' }
@@ -2607,6 +2614,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.no_contextual { 'no-contextual' }
 		.no_discretionary_ligatures { 'no-discretionary-ligatures' }
 		.no_drop { 'no-drop' }
+		.no_ellipsis { 'no-ellipsis' }
 		.no_historical_ligatures { 'no-historical-ligatures' }
 		.no_open_quote { 'no-open-quote' }
 		.no_overflow { 'no-overflow' }
@@ -3027,6 +3035,9 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'-libweb-palette-window' { Keyword.libweb_palette_window }
 		'-libweb-palette-window-text' { Keyword.libweb_palette_window_text }
 		'-libweb-right' { Keyword.libweb_right }
+		'-webkit-box' { Keyword.webkit_box }
+		'-webkit-inline-box' { Keyword.webkit_inline_box }
+		'-webkit-legacy' { Keyword.webkit_legacy }
 		'a3' { Keyword.a3 }
 		'a4' { Keyword.a4 }
 		'a5' { Keyword.a5 }
@@ -3481,6 +3492,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'no-contextual' { Keyword.no_contextual }
 		'no-discretionary-ligatures' { Keyword.no_discretionary_ligatures }
 		'no-drop' { Keyword.no_drop }
+		'no-ellipsis' { Keyword.no_ellipsis }
 		'no-historical-ligatures' { Keyword.no_historical_ligatures }
 		'no-open-quote' { Keyword.no_open_quote }
 		'no-overflow' { Keyword.no_overflow }
@@ -4696,7 +4708,9 @@ pub fn (style_value DimensionStyleValue) unit_name() string {
 
 pub fn (style_value DimensionStyleValue) tokenize() []ComponentValue {
 	if style_value is PercentageStyleValue {
-		return [ComponentValue.from_token(Token.create_percentage(Number.with_type(.number, style_value.raw_value()), ''))]
+		return [
+			ComponentValue.from_token(Token.create_percentage(Number.with_type(.number, style_value.raw_value()), '')),
+		]
 	}
 	return [
 		ComponentValue.from_token(Token.create_dimension_from_double(style_value.raw_value(), style_value.unit_name(), '')),

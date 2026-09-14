@@ -35,7 +35,7 @@ fn test_column_rule_property_metadata() {
 	assert !property_affects_layout(.column_rule)
 	assert !property_affects_layout(.column_rule_width)
 	assert generated_property_needs_layout_node_for_resolved_value(.column_rule_color)
-	assert number_of_longhand_properties == 329
+	assert number_of_longhand_properties == 333
 	assert last_longhand_property_id() == .vector_effect
 }
 
@@ -43,8 +43,8 @@ fn test_column_rule_longhand_parsing() {
 	for value in ['currentcolor', 'red', 'rgb(1 2 3)'] {
 		assert column_rule_serialization(.column_rule_color, value) != none, value
 	}
-	for value in ['none', 'hidden', 'dotted', 'dashed', 'solid', 'double', 'groove',
-		'ridge', 'inset', 'outset'] {
+	for value in ['none', 'hidden', 'dotted', 'dashed', 'solid', 'double', 'groove', 'ridge', 'inset',
+		'outset'] {
 		assert column_rule_serialization(.column_rule_style, value)? == value, value
 	}
 	assert column_rule_serialization(.column_rule_width, 'thin')? == 'thin'

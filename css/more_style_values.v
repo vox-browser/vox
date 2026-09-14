@@ -2809,6 +2809,9 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 	if s := style_value.serialize_page_break_legacy_shorthand(mode) {
 		return s
 	}
+	if s := style_value.serialize_line_clamp(mode) {
+		return s
+	}
 	if s := style_value.serialize_container(mode) {
 		return s
 	}
@@ -2926,6 +2929,48 @@ fn (style_value ShorthandStyleValue) serialize_page_break_legacy_shorthand(mode 
 		return 'avoid'
 	}
 	return ''
+}
+
+fn (style_value ShorthandStyleValue) serialize_line_clamp(mode SerializationMode) ?string {
+	if style_value.shorthand_ !in [.line_clamp, .webkit_line_clamp] {
+		return none
+	}
+	max_lines := style_value.longhand(.max_lines) or { return '' }
+	block_ellipsis := style_value.longhand(.block_ellipsis) or { return '' }
+	continue_value := style_value.longhand(.continue_) or { return '' }
+	max_lines_text := max_lines.serialize(mode)
+	block_ellipsis_text := block_ellipsis.serialize(mode)
+	continue_text := continue_value.serialize(mode)
+	max_lines_is_none := max_lines_text == 'none'
+	block_ellipsis_is_auto := block_ellipsis_text == 'auto'
+
+	if style_value.shorthand_ == .webkit_line_clamp {
+		if max_lines_is_none && block_ellipsis_text == 'no-ellipsis' && continue_text == 'auto' {
+			return 'none'
+		}
+		if !max_lines_is_none && block_ellipsis_is_auto && continue_text == '-webkit-legacy' {
+			return max_lines_text
+		}
+		return ''
+	}
+
+	if max_lines_is_none && block_ellipsis_text == 'no-ellipsis' && continue_text == 'auto' {
+		return 'none'
+	}
+	if continue_text !in ['collapse', '-webkit-legacy'] {
+		return ''
+	}
+	mut parts := []string{}
+	if !max_lines_is_none {
+		parts << max_lines_text
+	}
+	if !block_ellipsis_is_auto || max_lines_is_none {
+		parts << block_ellipsis_text
+	}
+	if continue_text == '-webkit-legacy' {
+		parts << continue_text
+	}
+	return parts.join(' ')
 }
 
 fn (style_value ShorthandStyleValue) serialize_container(mode SerializationMode) ?string {

@@ -19,6 +19,7 @@ pub enum DisplayInside {
 	grid
 	ruby
 	math
+	webkit_box
 }
 
 pub enum DisplayInternal {
@@ -223,6 +224,13 @@ pub fn (d Display) to_keyword() ?Keyword {
 		.outside_and_inside {
 			// Following the "most backwards-compatible, then shortest" precedence,
 			// equivalent pairs reify through their short display keyword.
+			if d.is_webkit_box_inside() {
+				return if d.is_inline_outside() {
+					Keyword.webkit_inline_box
+				} else {
+					Keyword.webkit_box
+				}
+			}
 			if d == Display.from_short(.block) {
 				return .block
 			}
@@ -384,7 +392,11 @@ pub fn (d Display) is_table_inside() bool {
 }
 
 pub fn (d Display) is_flex_inside() bool {
-	return d.is_outside_and_inside() && d.inside() == .flex
+	return d.is_outside_and_inside() && d.inside() in [.flex, .webkit_box]
+}
+
+pub fn (d Display) is_webkit_box_inside() bool {
+	return d.is_outside_and_inside() && d.inside() == .webkit_box
 }
 
 pub fn (d Display) is_grid_inside() bool {
@@ -416,6 +428,7 @@ pub fn display_inside_to_string(value DisplayInside) string {
 		.grid { 'grid' }
 		.ruby { 'ruby' }
 		.math { 'math' }
+		.webkit_box { '-webkit-box' }
 	}
 }
 
@@ -505,6 +518,7 @@ pub fn display_from_single_keyword_string(value string) ?Display {
 			.grid { Display.from_short(.grid) }
 			.ruby { Display.from_short(.ruby) }
 			.math { Display.from_short(.math) }
+			.webkit_box { Display.from_outside_inside(.block, .webkit_box) }
 		}
 	}
 	if internal := display_internal_from_keyword_string(value) {
@@ -517,6 +531,8 @@ pub fn display_from_single_keyword_string(value string) ?Display {
 		return Display.from_short(.none_)
 	}
 	return match value {
+		'-webkit-box' { Display.from_outside_inside(.block, .webkit_box) }
+		'-webkit-inline-box' { Display.from_outside_inside(.inline_, .webkit_box) }
 		'inline-block' { Display.from_short(.inline_block) }
 		'inline-table' { Display.from_short(.inline_table) }
 		'inline-flex' { Display.from_short(.inline_flex) }
