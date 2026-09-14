@@ -1189,6 +1189,39 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		'scroll-behavior' {
 			PropertyID.scroll_behavior
 		}
+		'scroll-margin' {
+			PropertyID.scroll_margin
+		}
+		'scroll-margin-block' {
+			PropertyID.scroll_margin_block
+		}
+		'scroll-margin-block-end' {
+			PropertyID.scroll_margin_block_end
+		}
+		'scroll-margin-block-start' {
+			PropertyID.scroll_margin_block_start
+		}
+		'scroll-margin-bottom' {
+			PropertyID.scroll_margin_bottom
+		}
+		'scroll-margin-inline' {
+			PropertyID.scroll_margin_inline
+		}
+		'scroll-margin-inline-end' {
+			PropertyID.scroll_margin_inline_end
+		}
+		'scroll-margin-inline-start' {
+			PropertyID.scroll_margin_inline_start
+		}
+		'scroll-margin-left' {
+			PropertyID.scroll_margin_left
+		}
+		'scroll-margin-right' {
+			PropertyID.scroll_margin_right
+		}
+		'scroll-margin-top' {
+			PropertyID.scroll_margin_top
+		}
 		'scroll-timeline' {
 			PropertyID.scroll_timeline
 		}
@@ -1761,6 +1794,17 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.ry { 'ry' }
 		.scale { 'scale' }
 		.scroll_behavior { 'scroll-behavior' }
+		.scroll_margin { 'scroll-margin' }
+		.scroll_margin_block { 'scroll-margin-block' }
+		.scroll_margin_block_end { 'scroll-margin-block-end' }
+		.scroll_margin_block_start { 'scroll-margin-block-start' }
+		.scroll_margin_bottom { 'scroll-margin-bottom' }
+		.scroll_margin_inline { 'scroll-margin-inline' }
+		.scroll_margin_inline_end { 'scroll-margin-inline-end' }
+		.scroll_margin_inline_start { 'scroll-margin-inline-start' }
+		.scroll_margin_left { 'scroll-margin-left' }
+		.scroll_margin_right { 'scroll-margin-right' }
+		.scroll_margin_top { 'scroll-margin-top' }
 		.scroll_timeline { 'scroll-timeline' }
 		.scroll_timeline_axis { 'scroll-timeline-axis' }
 		.scroll_timeline_name { 'scroll-timeline-name' }
@@ -2214,6 +2258,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 		.ry { 'auto' }
 		.scale { 'none' }
 		.scroll_behavior { 'auto' }
+		.scroll_margin, .scroll_margin_block, .scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top { '0' }
 		.scroll_timeline { 'none block' }
 		.scroll_timeline_axis { 'block' }
 		.scroll_timeline_name { 'none' }
@@ -2296,6 +2341,9 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
+		.scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top {
+			AnimationType.by_computed_value
+		}
 		.block_ellipsis, .continue_, .webkit_box_orient { AnimationType.discrete }
 		.max_lines { AnimationType.by_computed_value }
 		.box_decoration_break, .column_fill { AnimationType.discrete }
@@ -2328,6 +2376,9 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.scroll_margin, .scroll_margin_block, .scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top {
+			true
+		}
 		.block_ellipsis, .continue_, .line_clamp, .max_lines, .webkit_box_orient, .webkit_line_clamp {
 			true
 		}
@@ -2361,6 +2412,9 @@ pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 
 pub fn property_affects_layout(property_id PropertyID) bool {
 	return match property_id {
+		.scroll_margin, .scroll_margin_block, .scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top {
+			true
+		}
 		.block_ellipsis, .continue_, .line_clamp, .max_lines, .webkit_box_orient, .webkit_line_clamp {
 			true
 		}
@@ -2406,6 +2460,9 @@ pub fn property_requires_computation_with_initial_value(property_id PropertyID) 
 
 pub fn property_requires_computation_with_cascaded_value(property_id PropertyID) bool {
 	return match property_id {
+		.scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top {
+			true
+		}
 		.max_lines { true }
 		.contain_intrinsic_block_size, .contain_intrinsic_height, .contain_intrinsic_inline_size, .contain_intrinsic_width {
 			true
@@ -2420,7 +2477,7 @@ pub fn property_requires_computation_with_cascaded_value(property_id PropertyID)
 fn property_is_positional_value_list_shorthand(property_id PropertyID) bool {
 	return match property_id {
 		.contain_intrinsic_size { true }
-		.border_block_color, .border_block_style, .border_block_width, .border_color, .border_inline_color, .border_inline_style, .border_inline_width, .border_style, .border_width, .corner_block_end_shape, .corner_block_start_shape, .corner_bottom_shape, .corner_inline_end_shape, .corner_inline_start_shape, .corner_left_shape, .corner_right_shape, .corner_shape, .corner_top_shape, .gap, .inset, .inset_block, .inset_inline, .margin, .margin_block, .margin_inline, .overflow, .padding, .padding_block, .padding_inline {
+		.border_block_color, .border_block_style, .border_block_width, .border_color, .border_inline_color, .border_inline_style, .border_inline_width, .border_style, .border_width, .corner_block_end_shape, .corner_block_start_shape, .corner_bottom_shape, .corner_inline_end_shape, .corner_inline_start_shape, .corner_left_shape, .corner_right_shape, .corner_shape, .corner_top_shape, .gap, .inset, .inset_block, .inset_inline, .margin, .margin_block, .margin_inline, .overflow, .padding, .padding_block, .padding_inline, .scroll_margin, .scroll_margin_block, .scroll_margin_inline {
 			true
 		}
 		else { false }
@@ -2495,6 +2552,9 @@ pub fn property_resolves_percentages_relative_to(property_id PropertyID) ?ValueT
 
 pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool {
 	return match property_id {
+		.scroll_margin, .scroll_margin_block, .scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top {
+			value_type == .length
+		}
 		.block_ellipsis {
 			value_type == .string
 		}
@@ -3251,7 +3311,7 @@ pub fn property_accepted_type_ranges(property_id PropertyID) map[ValueType]Accep
 				max: math.max_f32
 			}
 		}
-		.outline_offset {
+		.outline_offset, .scroll_margin, .scroll_margin_block, .scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top {
 			ranges[.length] = AcceptedTypeRange{
 				min: -math.max_f32
 				max: math.max_f32
@@ -3297,6 +3357,9 @@ pub fn property_accepts_integer(property_id PropertyID, value i64) bool {
 
 pub fn property_accepts_length(property_id PropertyID, value Length) bool {
 	return match property_id {
+		.scroll_margin, .scroll_margin_block, .scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top {
+			true
+		}
 		.background_position_x, .background_position_y, .bottom, .cx, .cy, .inset, .inset_block, .inset_block_end, .inset_block_start, .inset_inline, .inset_inline_end, .inset_inline_start, .left, .letter_spacing, .margin, .margin_block, .margin_block_end, .margin_block_start, .margin_bottom, .margin_inline, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top, .outline_offset, .right, .text_decoration_thickness, .text_indent, .text_underline_offset, .top, .transform_origin, .translate, .vertical_align, .word_spacing, .x, .y {
 			true
 		}

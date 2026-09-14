@@ -843,6 +843,7 @@ pub fn css_style_computer_for(document &dom.Document) &StyleComputer {
 	dom_style_computer := mutable_document.style_computer
 	if dom_style_computer != unsafe { nil } && dom_style_computer.css_handle != unsafe { nil } {
 		install_document_background_style_hook(document)
+		install_document_scroll_style_hook(document)
 		return unsafe { &StyleComputer(dom_style_computer.css_handle) }
 	}
 	style_computer := StyleComputer.new(document)
@@ -871,6 +872,7 @@ pub fn css_style_computer_for(document &dom.Document) &StyleComputer {
 		media_matches: document_theme_color_media_matches_callback
 	})
 	install_document_background_style_hook(document)
+	install_document_scroll_style_hook(document)
 	install_document_style_hook(document)
 	return style_computer
 }
@@ -920,6 +922,28 @@ fn install_document_background_style_hook(document &dom.Document) {
 		background_color:           document_background_color_callback
 		background_layers:          document_background_layers_callback
 		background_image_rendering: document_background_image_rendering_callback
+	})
+}
+
+fn document_scroll_margin_callback(_ voidptr, element &dom.Element) dom.ScrollMarginData {
+	computed := computed_properties_for_element(element) or { return dom.ScrollMarginData{} }
+	layout_node := element.as_node().layout_node() or { return dom.ScrollMarginData{} }
+	margin := computed.length_box(.scroll_margin_left, .scroll_margin_top, .scroll_margin_right,
+		.scroll_margin_bottom, LengthPercentageOrAuto.from_length(Length.make_px(0)))
+	context := LengthResolutionContext.for_layout_node(layout_node)
+	return dom.ScrollMarginData{
+		top: margin.top().to_px_or_zero(context, CSSPixels.new(0)).to_double()
+		right: margin.right().to_px_or_zero(context, CSSPixels.new(0)).to_double()
+		bottom: margin.bottom().to_px_or_zero(context, CSSPixels.new(0)).to_double()
+		left: margin.left().to_px_or_zero(context, CSSPixels.new(0)).to_double()
+	}
+}
+
+fn install_document_scroll_style_hook(document &dom.Document) {
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_scroll_style_hook(dom.DocumentScrollStyleHook{
+		target:        voidptr(document)
+		scroll_margin: document_scroll_margin_callback
 	})
 }
 

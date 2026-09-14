@@ -10,7 +10,14 @@ pub fn determine_the_scroll_into_view_position(target &Element, block ScrollLogi
 		return CSSPixelPoint_{}
 	}
 
-	target_rect := target.get_bounding_client_rect()
+	mut target_rect := target.get_bounding_client_rect()
+	// AD-HOC: CSSOM View illustrates scroll-margin affecting this box but does
+	// not yet place the adjustment in the numbered algorithm.
+	scroll_margin := target.document().scroll_margin_for_element(target)
+	target_rect.x -= scroll_margin.left
+	target_rect.y -= scroll_margin.top
+	target_rect.width += scroll_margin.left + scroll_margin.right
+	target_rect.height += scroll_margin.top + scroll_margin.bottom
 	scrolling_rect := scrolling_box.document().viewport_rect()
 	element_edge_a := target_rect.y
 	element_edge_b := target_rect.y + target_rect.height

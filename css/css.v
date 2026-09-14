@@ -421,6 +421,14 @@ pub enum PropertyID {
 	continue_
 	max_lines
 	webkit_box_orient
+	scroll_margin_block_end
+	scroll_margin_block_start
+	scroll_margin_bottom
+	scroll_margin_inline_end
+	scroll_margin_inline_start
+	scroll_margin_left
+	scroll_margin_right
+	scroll_margin_top
 	vector_effect
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow
@@ -482,6 +490,9 @@ pub enum PropertyID {
 	overflow_clip_margin
 	overflow_clip_margin_block
 	overflow_clip_margin_inline
+	scroll_margin
+	scroll_margin_block
+	scroll_margin_inline
 	all
 	border_radius
 	transition

@@ -2,6 +2,15 @@ module dom
 
 import strings
 
+fn fixed_scroll_margin_for_test(_ voidptr, _ &Element) ScrollMarginData {
+	return ScrollMarginData{
+		top: 5
+		right: 4
+		bottom: 15
+		left: 3
+	}
+}
+
 fn test_upstream_node_type_predicates_preserve_dynamic_interface_identity() {
 	document := Document.create(url_about_blank())
 	anchor := document.create_element_ns(namespace_html_uri, 'a') or { panic(err) }
@@ -223,6 +232,18 @@ fn test_scroll_into_view_uses_committed_paintable_overflow() {
 	assert promise.state() == .fulfilled
 	assert window.scroll_x() == 0
 	assert window.scroll_y() == 230
+
+	document.set_scroll_style_hook(DocumentScrollStyleHook{
+		scroll_margin: fixed_scroll_margin_for_test
+	})
+	margin_position := determine_the_scroll_into_view_position(target, .end_, .nearest, document_node)
+	assert margin_position.x() == 0
+	assert margin_position.y() == 135
+	start_position := determine_the_scroll_into_view_position(target, .start, .start, document_node)
+	assert start_position.x() == 7
+	assert start_position.y() == 195
+	target.scroll_into_view()
+	assert window.scroll_y() == 225
 }
 
 fn test_element_scroll_routes_viewport_branches_and_resolves_promises() {

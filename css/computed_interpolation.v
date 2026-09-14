@@ -11486,7 +11486,7 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 		.line_height {
 			StyleComputer.compute_line_height(absolutized_value, computation_context.length_resolution_context.font_metrics.font_size)
 		}
-		.object_position, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top, .perspective, .perspective_origin {
+		.object_position, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top, .perspective, .perspective_origin, .scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top {
 			StyleComputer.compute_absolutized_value(property_id, absolutized_value, computation_context)
 		}
 		.outline_offset {

@@ -1874,6 +1874,25 @@ pub:
 	background_image_rendering DocumentBackgroundImageRenderingCallback = unsafe { nil }
 }
 
+// The CSS module owns the typed scroll-margin values. DOM consumes their used
+// pixel values while running the CSSOM View scroll-into-view algorithm through
+// this cycle-breaking hook.
+pub struct ScrollMarginData {
+pub:
+	top    f64
+	right  f64
+	bottom f64
+	left   f64
+}
+
+pub type DocumentScrollMarginCallback = fn (voidptr, &Element) ScrollMarginData
+
+pub struct DocumentScrollStyleHook {
+pub:
+	target        voidptr = unsafe { nil }
+	scroll_margin DocumentScrollMarginCallback = unsafe { nil }
+}
+
 pub struct CSSSelector {
 pub mut:
 	text string
@@ -4428,6 +4447,7 @@ pub mut:
 	style_sheets_                       &StyleSheetList = unsafe { nil }
 	style_update_hook_                  ?DocumentStyleUpdateHook
 	background_style_hook_              ?DocumentBackgroundStyleHook
+	scroll_style_hook_                  ?DocumentScrollStyleHook
 	css_animation_timeline_update_hook_ ?DocumentCSSAnimationTimelineUpdateHook
 	css_animation_event_hook_           ?DocumentCSSAnimationEventHook
 	animations_hook_                    ?DocumentAnimationsHook
@@ -5993,6 +6013,18 @@ pub fn (mut d Document) set_style_update_hook(hook DocumentStyleUpdateHook) {
 
 pub fn (mut d Document) set_background_style_hook(hook DocumentBackgroundStyleHook) {
 	d.background_style_hook_ = hook
+}
+
+pub fn (mut d Document) set_scroll_style_hook(hook DocumentScrollStyleHook) {
+	d.scroll_style_hook_ = hook
+}
+
+pub fn (d &Document) scroll_margin_for_element(element &Element) ScrollMarginData {
+	hook := d.scroll_style_hook_ or { return ScrollMarginData{} }
+	if hook.scroll_margin == unsafe { nil } {
+		return ScrollMarginData{}
+	}
+	return hook.scroll_margin(hook.target, element)
 }
 
 pub fn (mut d Document) set_css_animation_timeline_update_hook(hook DocumentCSSAnimationTimelineUpdateHook) {
