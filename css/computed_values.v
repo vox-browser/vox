@@ -908,25 +908,8 @@ pub fn (values &ComputedValues) length_percentage_to_px(property_id PropertyID, 
 		}
 	}
 	resolved := length_percentage or { return none }
-	if resolved.is_percentage() {
-		basis := CSSPixels.nearest_value_for(percentage_basis_px)
-		numerator := CSSPixels.nearest_value_for(resolved.percentage().value() * basis.to_double())
-		return numerator.divided_by(CSSPixels.new(100)).to_css_pixels().to_double()
-	}
-	if resolved.is_length() {
-		length := resolved.length()
-		if length.is_absolute() {
-			return length.absolute_length_to_px().to_double()
-		}
-		if length.is_viewport_relative() {
-			return length.viewport_relative_length_to_px(values.viewport_rect_).to_double()
-		}
-		if length.is_container_relative() {
-			return length.to_px(ComputedProperties(*values).length_resolution_context()).to_double()
-		}
-	}
 	context := ComputedProperties(*values).length_resolution_context()
-	return resolved.resolved(context, CSSPixels.nearest_value_for(percentage_basis_px)).to_px(context).to_double()
+	return resolved.to_px(context, CSSPixels.nearest_value_for(percentage_basis_px)).to_double()
 }
 
 pub fn (values &ComputedValues) length_box(left_id PropertyID, top_id PropertyID, right_id PropertyID, bottom_id PropertyID, default_value LengthPercentageOrAuto) LengthBox {

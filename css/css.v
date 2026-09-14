@@ -3240,10 +3240,9 @@ pub fn (lp LengthPercentage) calculated() CalculatedStyleValue {
 
 pub fn (lp LengthPercentage) to_px(context LengthResolutionContext, reference_value CSSPixels) CSSPixels {
 	value := lp.value_
-	if value is Length {
-		if value.is_absolute() {
-			return value.absolute_length_to_px()
-		}
+	if value is CalculatedStyleValue {
+		resolved := Length.resolve_calculated_with_px(value, context, reference_value)
+		return CSSPixels.truncated_value_for(resolved.to_px_without_rounding(context))
 	}
 	return lp.resolved(context, reference_value).to_px(context)
 }
@@ -3255,11 +3254,8 @@ pub fn (lp LengthPercentage) resolved(context LengthResolutionContext, reference
 			value
 		}
 		Percentage {
-			// PercentageOr<Length>::resolved first converts percentage *
-			// reference_value to CSSPixels, then divides that fixed-point
-			// value by the integer 100 through CSSPixelFraction.
-			numerator := CSSPixels.nearest_value_for(value.value() * reference_value.to_double())
-			Length.make_css_px(numerator.divided_by(CSSPixels.new(100)).to_css_pixels())
+			Length.make_css_px(CSSPixels.truncated_value_for(reference_value.to_double() *
+				value.as_fraction()))
 		}
 		CalculatedStyleValue {
 			Length.resolve_calculated_with_px(value, context, reference_value)
@@ -3850,7 +3846,7 @@ pub fn (s Size) is_length_percentage() bool {
 
 pub fn (s Size) to_px(context LengthResolutionContext, reference_value CSSPixels) CSSPixels {
 	if length_percentage := s.length_percentage_ {
-		return length_percentage.resolved(context, reference_value).to_px(context)
+		return length_percentage.to_px(context, reference_value)
 	}
 	return CSSPixels{}
 }

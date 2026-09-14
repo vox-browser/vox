@@ -259,13 +259,13 @@ pub fn (edge_rect EdgeRect) resolved_for_layout_node(layout_node &dom.LayoutNode
 
 pub fn (size Size) to_px_for_layout_node(layout_node &dom.LayoutNode, reference_value CSSPixels) CSSPixels {
 	// Direct translation of Size::to_px(Layout::Node const&, CSSPixels): no
-	// length percentage means zero; otherwise resolve against the reference and
-	// convert the resulting Length through the layout-node slow path.
+	// length percentage means zero; otherwise use the same fixed-point used-value
+	// truncation as the context-based Size::to_px path.
 	length_percentage := size.length_percentage_ or { return CSSPixels{} }
 	context := length_resolution_context_from_layout_node(layout_node) or {
 		LengthResolutionContext.default()
 	}
-	return length_percentage.resolved(context, reference_value).to_px_slow_case_for_layout_node(layout_node)
+	return length_percentage.to_px(context, reference_value)
 }
 
 // Ratio::operator== compares the numeric ratio value rather than the raw
