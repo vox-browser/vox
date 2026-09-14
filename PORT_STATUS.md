@@ -49,7 +49,7 @@ of 20. Exact comparisons remain exact. All 24 new cases pass this bounded
 workflow. The complete refresh run also covers the three default smoke cases
 and five modified SVG cases: all 32 invocations pass (31 distinct fixtures).
 
-The current base-to-head semantic delta audit reports 4,615 unmatched changed
+The current base-to-head semantic delta audit reports 4,612 unmatched changed
 C++ spellings. That is a structural review queue rather than a count of missing behaviors: active V
 implementations often consolidate C++ class hierarchies and overloads under a
 single typed path. Empty/default-return implementations are checked separately,
@@ -92,7 +92,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
 | `Animations` | 10 | 5,187 | 3,972 | 1,041 | Complete |
 | `Bindings` | 11 | 2,501 | 2,675 | 918 | Complete |
-| `CSS` | 215 | 47,722 | 101,960 | 7,637 | Present |
+| `CSS` | 215 | 47,722 | 101,960 | 7,661 | Present |
 | `Clipboard` | 4 | 1,009 | 973 | 343 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 424 | 138 | Complete |
@@ -100,7 +100,7 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
-| `DOM` | 59 | 34,859 | 35,672 | 2,154 | Complete |
+| `DOM` | 59 | 34,859 | 35,707 | 2,154 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
 | `Editing` | 26 | 12,720 | 3,294 | 741 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
@@ -120,7 +120,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 40,823 | 15,108 | Present |
+| `Layout` | 9 | 4,001 | 40,867 | 15,122 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -167,7 +167,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **338,250** | **65,955** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **338,329** | **65,993** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -183,8 +183,8 @@ quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 10
 reviewed upstream-equivalent trivial implementations: 534
 suspicious empty/default-return implementations: 21
-  candidate-name-match: 13844
-  unmatched: 4615
+  candidate-name-match: 13847
+  unmatched: 4612
   language-constructor-or-destructor: 1383
   gc-or-binding-runtime: 655
   consolidated-name-match: 488
@@ -197,7 +197,7 @@ largest unmatched modules:
 
   1716 CSS
   1261 HTML
-   642 DOM
+   639 DOM
    438 Painting
    316 Layout
    242 Editing
