@@ -86,6 +86,14 @@ The standard and legacy line-clamp shorthands now expand and serialize their
 max-lines, block-ellipsis, and continue longhands with the upstream grammars.
 Legacy vertical WebKit boxes retain their authored display while computing to
 an independent flow-root or inline-block when clamping is active.
+Layout now establishes those line-clamp containers, counts descendant in-flow
+line boxes across block children, suppresses later in-flow content, and paints
+automatic, omitted, custom, and inherited block ellipses. Ellipsis placement
+uses retained soft-wrap boundaries with glyph-boundary fallback and bidi-aware
+placement; scrollable overflow, DOM visual-line projection, and the typed paint
+adapter exclude clamped fragments. The legacy horizontal WebKit-box path uses
+its effective row flex direction. The upstream `line-clamp-properties` input
+and reference render with an exact zero-pixel difference in the native V app.
 
 The earlier inventory mapped every upstream implementation filename to V code,
 but filename and symbol-name coverage did not establish behavioral parity. A
@@ -152,7 +160,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 41,016 | 15,346 | Present |
+| `Layout` | 9 | 4,001 | 41,496 | 15,486 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -199,7 +207,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **339,655** | **66,858** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **340,135** | **66,998** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 

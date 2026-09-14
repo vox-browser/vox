@@ -50,6 +50,16 @@ class-shaped hooks. The four remaining implementations are the base insertion
 and label hooks, list-style image provisioning, and contextual space-font
 selection.
 
+The line-clamp refresh translates the new line-clamp-container state shared by
+block and inline formatting. It counts descendant in-flow line boxes, retains
+the clamp point on the root used values, lays later boxes out as non-painting
+content, and appends automatic, custom, or inherited block ellipses. Soft-wrap
+displacement, glyph-boundary fallback, RTL placement, effective legacy WebKit
+flex direction, scrollable-overflow exclusion, and DOM/paint projection are
+covered by focused tests. The complete Layout unit-test directory passes, and
+the upstream `line-clamp-properties` reftest is an exact zero-pixel match in the
+native V browser.
+
 ## Translated coverage
 
 The translated path includes the complete layout-node hierarchy and tree
@@ -820,7 +830,7 @@ $ /Users/alex/code/v/v -enable-globals test .
 Summary for all V _test.v files: 394 passed, 394 total.
 
 $ /Users/alex/code/v/v -enable-globals test layout
-Summary for all V _test.v files: 19 passed, 19 total.
+Summary for all V _test.v files: 22 passed, 22 total.
 
 $ /Users/alex/code/v/v -enable-globals test css
 Summary for all V _test.v files: 26 passed, 26 total.
