@@ -939,11 +939,32 @@ fn document_scroll_margin_callback(_ voidptr, element &dom.Element) dom.ScrollMa
 	}
 }
 
+fn document_scroll_padding_callback(_ voidptr, scrolling_box &dom.Node) dom.ScrollMarginData {
+	element := if scrolling_box.is_document() {
+		scrolling_box.document().scrolling_element() or { return dom.ScrollMarginData{} }
+	} else {
+		scrolling_box.as_element() or { return dom.ScrollMarginData{} }
+	}
+	computed := computed_properties_for_element(element) or { return dom.ScrollMarginData{} }
+	padding := computed.length_box(.scroll_padding_left, .scroll_padding_top, .scroll_padding_right,
+		.scroll_padding_bottom, LengthPercentageOrAuto.make_auto())
+	abstract_element := dom.AbstractElement.new(element, none)
+	context := LengthResolutionContext.for_element(&abstract_element)
+	viewport := scrolling_box.document().viewport_rect()
+	return dom.ScrollMarginData{
+		top: padding.top().to_px_or_zero(context, CSSPixels.nearest_value_for(viewport.height)).to_double()
+		right: padding.right().to_px_or_zero(context, CSSPixels.nearest_value_for(viewport.width)).to_double()
+		bottom: padding.bottom().to_px_or_zero(context, CSSPixels.nearest_value_for(viewport.height)).to_double()
+		left: padding.left().to_px_or_zero(context, CSSPixels.nearest_value_for(viewport.width)).to_double()
+	}
+}
+
 fn install_document_scroll_style_hook(document &dom.Document) {
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_scroll_style_hook(dom.DocumentScrollStyleHook{
-		target:        voidptr(document)
-		scroll_margin: document_scroll_margin_callback
+		target:         voidptr(document)
+		scroll_margin:  document_scroll_margin_callback
+		scroll_padding: document_scroll_padding_callback
 	})
 }
 

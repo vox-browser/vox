@@ -429,6 +429,14 @@ pub enum PropertyID {
 	scroll_margin_left
 	scroll_margin_right
 	scroll_margin_top
+	scroll_padding_block_end
+	scroll_padding_block_start
+	scroll_padding_bottom
+	scroll_padding_inline_end
+	scroll_padding_inline_start
+	scroll_padding_left
+	scroll_padding_right
+	scroll_padding_top
 	vector_effect
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow
@@ -493,6 +501,9 @@ pub enum PropertyID {
 	scroll_margin
 	scroll_margin_block
 	scroll_margin_inline
+	scroll_padding
+	scroll_padding_block
+	scroll_padding_inline
 	all
 	border_radius
 	transition

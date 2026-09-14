@@ -1886,11 +1886,13 @@ pub:
 }
 
 pub type DocumentScrollMarginCallback = fn (voidptr, &Element) ScrollMarginData
+pub type DocumentScrollPaddingCallback = fn (voidptr, &Node) ScrollMarginData
 
 pub struct DocumentScrollStyleHook {
 pub:
-	target        voidptr = unsafe { nil }
-	scroll_margin DocumentScrollMarginCallback = unsafe { nil }
+	target         voidptr = unsafe { nil }
+	scroll_margin  DocumentScrollMarginCallback = unsafe { nil }
+	scroll_padding DocumentScrollPaddingCallback = unsafe { nil }
 }
 
 pub struct CSSSelector {
@@ -6025,6 +6027,14 @@ pub fn (d &Document) scroll_margin_for_element(element &Element) ScrollMarginDat
 		return ScrollMarginData{}
 	}
 	return hook.scroll_margin(hook.target, element)
+}
+
+pub fn (d &Document) scroll_padding_for_scrolling_box(scrolling_box &Node) ScrollMarginData {
+	hook := d.scroll_style_hook_ or { return ScrollMarginData{} }
+	if hook.scroll_padding == unsafe { nil } {
+		return ScrollMarginData{}
+	}
+	return hook.scroll_padding(hook.target, scrolling_box)
 }
 
 pub fn (mut d Document) set_css_animation_timeline_update_hook(hook DocumentCSSAnimationTimelineUpdateHook) {

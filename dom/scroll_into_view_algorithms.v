@@ -18,6 +18,14 @@ pub fn determine_the_scroll_into_view_position(target &Element, block ScrollLogi
 	target_rect.y -= scroll_margin.top
 	target_rect.width += scroll_margin.left + scroll_margin.right
 	target_rect.height += scroll_margin.top + scroll_margin.bottom
+	// scroll-padding shrinks the scrolling box's snapport. With the viewport
+	// origin normalized to zero here, expanding the target by the corresponding
+	// edges produces the same alignment geometry.
+	scroll_padding := scrolling_box.document().scroll_padding_for_scrolling_box(scrolling_box)
+	target_rect.x -= scroll_padding.left
+	target_rect.y -= scroll_padding.top
+	target_rect.width += scroll_padding.left + scroll_padding.right
+	target_rect.height += scroll_padding.top + scroll_padding.bottom
 	scrolling_rect := scrolling_box.document().viewport_rect()
 	element_edge_a := target_rect.y
 	element_edge_b := target_rect.y + target_rect.height

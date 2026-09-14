@@ -1014,6 +1014,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top {
 			return parser.parse_length_value(mut tokens)
 		}
+		.scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
+			return parser.parse_auto_or_nonnegative_length_percentage_value(mut tokens)
+		}
 		.border_spacing {
 			return parser.parse_border_spacing_value(mut tokens)
 		}
@@ -1391,6 +1394,15 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		}
 		.scroll_margin_inline {
 			return parser.parse_scroll_margin_inline_shorthand(mut tokens)
+		}
+		.scroll_padding {
+			return parser.parse_scroll_padding_shorthand(mut tokens)
+		}
+		.scroll_padding_block {
+			return parser.parse_scroll_padding_block_shorthand(mut tokens)
+		}
+		.scroll_padding_inline {
+			return parser.parse_scroll_padding_inline_shorthand(mut tokens)
 		}
 		.inset_block {
 			return parser.parse_inset_block_shorthand(mut tokens)
@@ -3671,6 +3683,7 @@ enum BoxSideKind {
 	margin
 	padding
 	scroll_margin
+	scroll_padding
 	inset
 	border_color
 	border_style
@@ -3683,6 +3696,7 @@ fn (mut parser Parser) parse_box_side_value(mut tokens ComponentValueStream, kin
 		.margin { parser.parse_margin_value(mut tokens) }
 		.padding { parser.parse_padding_value(mut tokens) }
 		.scroll_margin { parser.parse_length_value(mut tokens) }
+		.scroll_padding { parser.parse_auto_or_nonnegative_length_percentage_value(mut tokens) }
 		.inset { parser.parse_inset_value(mut tokens) }
 		.border_color { parser.parse_color_value(mut tokens) }
 		.border_style { parser.parse_line_style_value(mut tokens) }
@@ -3789,6 +3803,29 @@ fn (mut parser Parser) parse_scroll_margin_inline_shorthand(mut tokens Component
 		PropertyID.scroll_margin_inline_start,
 		PropertyID.scroll_margin_inline_end,
 	], .scroll_margin)
+}
+
+fn (mut parser Parser) parse_scroll_padding_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_4_shorthand(mut tokens, .scroll_padding, [
+		PropertyID.scroll_padding_top,
+		PropertyID.scroll_padding_right,
+		PropertyID.scroll_padding_bottom,
+		PropertyID.scroll_padding_left,
+	], .scroll_padding)
+}
+
+fn (mut parser Parser) parse_scroll_padding_block_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .scroll_padding_block, [
+		PropertyID.scroll_padding_block_start,
+		PropertyID.scroll_padding_block_end,
+	], .scroll_padding)
+}
+
+fn (mut parser Parser) parse_scroll_padding_inline_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	return parser.parse_box_2_shorthand(mut tokens, .scroll_padding_inline, [
+		PropertyID.scroll_padding_inline_start,
+		PropertyID.scroll_padding_inline_end,
+	], .scroll_padding)
 }
 
 fn (mut parser Parser) parse_inset_block_shorthand(mut tokens ComponentValueStream) ?StyleValue {

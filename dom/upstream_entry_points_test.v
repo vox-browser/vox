@@ -11,6 +11,15 @@ fn fixed_scroll_margin_for_test(_ voidptr, _ &Element) ScrollMarginData {
 	}
 }
 
+fn fixed_scroll_padding_for_test(_ voidptr, _ &Node) ScrollMarginData {
+	return ScrollMarginData{
+		top: 10
+		right: 8
+		bottom: 20
+		left: 6
+	}
+}
+
 fn test_upstream_node_type_predicates_preserve_dynamic_interface_identity() {
 	document := Document.create(url_about_blank())
 	anchor := document.create_element_ns(namespace_html_uri, 'a') or { panic(err) }
@@ -244,6 +253,21 @@ fn test_scroll_into_view_uses_committed_paintable_overflow() {
 	assert start_position.y() == 195
 	target.scroll_into_view()
 	assert window.scroll_y() == 225
+
+	document.set_scroll_style_hook(DocumentScrollStyleHook{
+		scroll_margin: fixed_scroll_margin_for_test
+		scroll_padding: fixed_scroll_padding_for_test
+	})
+	padded_position := determine_the_scroll_into_view_position(target, .end_, .nearest,
+		document_node)
+	assert padded_position.x() == 0
+	assert padded_position.y() == 155
+	padded_start_position := determine_the_scroll_into_view_position(target, .start, .start,
+		document_node)
+	assert padded_start_position.x() == 1
+	assert padded_start_position.y() == 185
+	target.scroll_into_view()
+	assert window.scroll_y() == 215
 }
 
 fn test_element_scroll_routes_viewport_branches_and_resolves_promises() {

@@ -44,6 +44,10 @@ fn property_is_logical_alias(property_id PropertyID) bool {
 		.scroll_margin_block_start,
 		.scroll_margin_inline_end,
 		.scroll_margin_inline_start,
+		.scroll_padding_block_end,
+		.scroll_padding_block_start,
+		.scroll_padding_inline_end,
+		.scroll_padding_inline_start,
 		.max_block_size,
 		.max_inline_size,
 		.min_block_size,
@@ -71,6 +75,7 @@ enum LogicalPropertyGroup {
 	inset
 	margin
 	scroll_margin
+	scroll_padding
 	max_size
 	min_size
 	overflow
@@ -111,6 +116,9 @@ fn logical_property_group_for_property(property_id PropertyID) ?LogicalPropertyG
 		}
 		.scroll_margin_top, .scroll_margin_right, .scroll_margin_bottom, .scroll_margin_left, .scroll_margin_block_start, .scroll_margin_block_end, .scroll_margin_inline_start, .scroll_margin_inline_end {
 			LogicalPropertyGroup.scroll_margin
+		}
+		.scroll_padding_top, .scroll_padding_right, .scroll_padding_bottom, .scroll_padding_left, .scroll_padding_block_start, .scroll_padding_block_end, .scroll_padding_inline_start, .scroll_padding_inline_end {
+			LogicalPropertyGroup.scroll_padding
 		}
 		.max_width, .max_height, .max_block_size, .max_inline_size {
 			LogicalPropertyGroup.max_size
@@ -296,6 +304,15 @@ fn map_scroll_margin(edge PhysicalEdge) PropertyID {
 	}
 }
 
+fn map_scroll_padding(edge PhysicalEdge) PropertyID {
+	return match edge {
+		.top { .scroll_padding_top }
+		.right { .scroll_padding_right }
+		.bottom { .scroll_padding_bottom }
+		.left { .scroll_padding_left }
+	}
+}
+
 fn map_padding(edge PhysicalEdge) PropertyID {
 	return match edge {
 		.top { .padding_top }
@@ -476,6 +493,18 @@ fn map_logical_alias_to_physical_property(property_id PropertyID, context Logica
 		}
 		.scroll_margin_inline_end {
 			map_scroll_margin(physical_edge_for_logical_edge(.inline_end, context))
+		}
+		.scroll_padding_block_start {
+			map_scroll_padding(physical_edge_for_logical_edge(.block_start, context))
+		}
+		.scroll_padding_block_end {
+			map_scroll_padding(physical_edge_for_logical_edge(.block_end, context))
+		}
+		.scroll_padding_inline_start {
+			map_scroll_padding(physical_edge_for_logical_edge(.inline_start, context))
+		}
+		.scroll_padding_inline_end {
+			map_scroll_padding(physical_edge_for_logical_edge(.inline_end, context))
 		}
 		.padding_block_start {
 			map_padding(physical_edge_for_logical_edge(.block_start, context))

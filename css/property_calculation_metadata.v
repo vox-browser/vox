@@ -1222,6 +1222,39 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		'scroll-margin-top' {
 			PropertyID.scroll_margin_top
 		}
+		'scroll-padding' {
+			PropertyID.scroll_padding
+		}
+		'scroll-padding-block' {
+			PropertyID.scroll_padding_block
+		}
+		'scroll-padding-block-end' {
+			PropertyID.scroll_padding_block_end
+		}
+		'scroll-padding-block-start' {
+			PropertyID.scroll_padding_block_start
+		}
+		'scroll-padding-bottom' {
+			PropertyID.scroll_padding_bottom
+		}
+		'scroll-padding-inline' {
+			PropertyID.scroll_padding_inline
+		}
+		'scroll-padding-inline-end' {
+			PropertyID.scroll_padding_inline_end
+		}
+		'scroll-padding-inline-start' {
+			PropertyID.scroll_padding_inline_start
+		}
+		'scroll-padding-left' {
+			PropertyID.scroll_padding_left
+		}
+		'scroll-padding-right' {
+			PropertyID.scroll_padding_right
+		}
+		'scroll-padding-top' {
+			PropertyID.scroll_padding_top
+		}
 		'scroll-timeline' {
 			PropertyID.scroll_timeline
 		}
@@ -1805,6 +1838,17 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.scroll_margin_left { 'scroll-margin-left' }
 		.scroll_margin_right { 'scroll-margin-right' }
 		.scroll_margin_top { 'scroll-margin-top' }
+		.scroll_padding { 'scroll-padding' }
+		.scroll_padding_block { 'scroll-padding-block' }
+		.scroll_padding_block_end { 'scroll-padding-block-end' }
+		.scroll_padding_block_start { 'scroll-padding-block-start' }
+		.scroll_padding_bottom { 'scroll-padding-bottom' }
+		.scroll_padding_inline { 'scroll-padding-inline' }
+		.scroll_padding_inline_end { 'scroll-padding-inline-end' }
+		.scroll_padding_inline_start { 'scroll-padding-inline-start' }
+		.scroll_padding_left { 'scroll-padding-left' }
+		.scroll_padding_right { 'scroll-padding-right' }
+		.scroll_padding_top { 'scroll-padding-top' }
 		.scroll_timeline { 'scroll-timeline' }
 		.scroll_timeline_axis { 'scroll-timeline-axis' }
 		.scroll_timeline_name { 'scroll-timeline-name' }
@@ -2259,6 +2303,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 		.scale { 'none' }
 		.scroll_behavior { 'auto' }
 		.scroll_margin, .scroll_margin_block, .scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top { '0' }
+		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top { 'auto' }
 		.scroll_timeline { 'none block' }
 		.scroll_timeline_axis { 'block' }
 		.scroll_timeline_name { 'none' }
@@ -2341,6 +2386,9 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
+		.scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
+			AnimationType.by_computed_value
+		}
 		.scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top {
 			AnimationType.by_computed_value
 		}
@@ -2376,6 +2424,9 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
+			true
+		}
 		.scroll_margin, .scroll_margin_block, .scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top {
 			true
 		}
@@ -2412,6 +2463,9 @@ pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 
 pub fn property_affects_layout(property_id PropertyID) bool {
 	return match property_id {
+		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
+			true
+		}
 		.scroll_margin, .scroll_margin_block, .scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top {
 			true
 		}
@@ -2460,6 +2514,9 @@ pub fn property_requires_computation_with_initial_value(property_id PropertyID) 
 
 pub fn property_requires_computation_with_cascaded_value(property_id PropertyID) bool {
 	return match property_id {
+		.scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
+			true
+		}
 		.scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top {
 			true
 		}
@@ -2477,7 +2534,7 @@ pub fn property_requires_computation_with_cascaded_value(property_id PropertyID)
 fn property_is_positional_value_list_shorthand(property_id PropertyID) bool {
 	return match property_id {
 		.contain_intrinsic_size { true }
-		.border_block_color, .border_block_style, .border_block_width, .border_color, .border_inline_color, .border_inline_style, .border_inline_width, .border_style, .border_width, .corner_block_end_shape, .corner_block_start_shape, .corner_bottom_shape, .corner_inline_end_shape, .corner_inline_start_shape, .corner_left_shape, .corner_right_shape, .corner_shape, .corner_top_shape, .gap, .inset, .inset_block, .inset_inline, .margin, .margin_block, .margin_inline, .overflow, .padding, .padding_block, .padding_inline, .scroll_margin, .scroll_margin_block, .scroll_margin_inline {
+		.border_block_color, .border_block_style, .border_block_width, .border_color, .border_inline_color, .border_inline_style, .border_inline_width, .border_style, .border_width, .corner_block_end_shape, .corner_block_start_shape, .corner_bottom_shape, .corner_inline_end_shape, .corner_inline_start_shape, .corner_left_shape, .corner_right_shape, .corner_shape, .corner_top_shape, .gap, .inset, .inset_block, .inset_inline, .margin, .margin_block, .margin_inline, .overflow, .padding, .padding_block, .padding_inline, .scroll_margin, .scroll_margin_block, .scroll_margin_inline, .scroll_padding, .scroll_padding_block, .scroll_padding_inline {
 			true
 		}
 		else { false }
@@ -2543,6 +2600,9 @@ pub fn resolve_legacy_value_alias(property_id PropertyID, keyword Keyword) ?Keyw
 
 pub fn property_resolves_percentages_relative_to(property_id PropertyID) ?ValueType {
 	return match property_id {
+		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
+			ValueType.length
+		}
 		.background_position, .background_position_x, .background_position_y, .background_size, .block_size, .border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius, .border_end_start_radius, .border_image_width, .border_radius, .border_start_end_radius, .border_start_start_radius, .border_top_left_radius, .border_top_right_radius, .bottom, .column_gap, .cx, .cy, .flex_basis, .font_size, .gap, .grid, .grid_auto_columns, .grid_auto_rows, .grid_template, .grid_template_columns, .grid_template_rows, .height, .inline_size, .inset, .inset_block, .inset_block_end, .inset_block_start, .inset_inline, .inset_inline_end, .inset_inline_start, .left, .letter_spacing, .line_height, .margin, .margin_block, .margin_block_end, .margin_block_start, .margin_bottom, .margin_inline, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top, .mask_position, .mask_size, .max_block_size, .max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size, .min_width, .object_position, .padding, .padding_block, .padding_block_end, .padding_block_start, .padding_bottom, .padding_inline, .padding_inline_end, .padding_inline_start, .padding_left, .padding_right, .padding_top, .perspective_origin, .r, .right, .row_gap, .rx, .ry, .shape_margin, .stroke_dasharray, .stroke_dashoffset, .stroke_width, .text_decoration_thickness, .text_indent, .text_underline_offset, .top, .transform, .transform_origin, .translate, .vertical_align, .view_timeline_inset, .width, .word_spacing, .x, .y {
 			ValueType.length
 		}
@@ -2552,6 +2612,9 @@ pub fn property_resolves_percentages_relative_to(property_id PropertyID) ?ValueT
 
 pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool {
 	return match property_id {
+		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
+			value_type in [.length, .percentage]
+		}
 		.scroll_margin, .scroll_margin_block, .scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top {
 			value_type == .length
 		}
@@ -2727,6 +2790,9 @@ fn property_custom_ident_blacklist(property_id PropertyID) []string {
 fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 	lowercase_value := to_ascii_lowercase(value)
 	return match property_id {
+		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
+			lowercase_value == 'auto'
+		}
 		.block_ellipsis {
 			lowercase_value in ['no-ellipsis', 'auto']
 		}
@@ -3317,6 +3383,16 @@ pub fn property_accepted_type_ranges(property_id PropertyID) map[ValueType]Accep
 				max: math.max_f32
 			}
 		}
+		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
+			ranges[.length] = AcceptedTypeRange{
+				min: 0
+				max: math.max_f32
+			}
+			ranges[.percentage] = AcceptedTypeRange{
+				min: 0
+				max: math.max_f32
+			}
+		}
 		else {}
 	}
 	return ranges
@@ -3357,6 +3433,9 @@ pub fn property_accepts_integer(property_id PropertyID, value i64) bool {
 
 pub fn property_accepts_length(property_id PropertyID, value Length) bool {
 	return match property_id {
+		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
+			value.raw_value() >= 0
+		}
 		.scroll_margin, .scroll_margin_block, .scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top {
 			true
 		}
@@ -3387,6 +3466,9 @@ pub fn property_accepts_number(property_id PropertyID, value f64) bool {
 
 pub fn property_accepts_percentage(property_id PropertyID, value Percentage) bool {
 	return match property_id {
+		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
+			value.value() >= 0
+		}
 		.background_position_x, .background_position_y, .bottom, .cx, .cy, .inset, .inset_block, .inset_block_end, .inset_block_start, .inset_inline, .inset_inline_end, .inset_inline_start, .left, .letter_spacing, .margin, .margin_block, .margin_block_end, .margin_block_start, .margin_bottom, .margin_inline, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top, .right, .text_decoration_thickness, .text_indent, .text_underline_offset, .top, .transform_origin, .translate, .vertical_align, .word_spacing, .x, .y {
 			true
 		}

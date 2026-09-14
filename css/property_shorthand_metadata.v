@@ -69,6 +69,9 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom,
 				.scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left,
 				.scroll_margin_right, .scroll_margin_top,
+				.scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom,
+				.scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left,
+				.scroll_padding_right, .scroll_padding_top,
 				.scroll_timeline_axis, .scroll_timeline_name, .scrollbar_color, .scrollbar_gutter,
 				.scrollbar_width, .shape_image_threshold, .shape_margin, .shape_outside,
 				.shape_rendering, .stop_color, .stop_opacity, .stroke, .stroke_dasharray,
@@ -303,6 +306,15 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 		.scroll_margin_inline {
 			[.scroll_margin_inline_start, .scroll_margin_inline_end]
 		}
+		.scroll_padding {
+			[.scroll_padding_top, .scroll_padding_right, .scroll_padding_bottom, .scroll_padding_left]
+		}
+		.scroll_padding_block {
+			[.scroll_padding_block_start, .scroll_padding_block_end]
+		}
+		.scroll_padding_inline {
+			[.scroll_padding_inline_start, .scroll_padding_inline_end]
+		}
 		.page_break_after {
 			[.break_after]
 		}
@@ -412,6 +424,9 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom,
 				.scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left,
 				.scroll_margin_right, .scroll_margin_top,
+				.scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom,
+				.scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left,
+				.scroll_padding_right, .scroll_padding_top,
 				.scroll_timeline_axis, .scroll_timeline_name, .scrollbar_color, .scrollbar_gutter,
 				.scrollbar_width, .shape_image_threshold, .shape_margin, .shape_outside,
 				.shape_rendering, .stop_color, .stop_opacity, .stroke, .stroke_dasharray,
@@ -655,6 +670,15 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 		.scroll_margin_inline {
 			[.scroll_margin_inline_start, .scroll_margin_inline_end]
 		}
+		.scroll_padding {
+			[.scroll_padding_top, .scroll_padding_right, .scroll_padding_bottom, .scroll_padding_left]
+		}
+		.scroll_padding_block {
+			[.scroll_padding_block_start, .scroll_padding_block_end]
+		}
+		.scroll_padding_inline {
+			[.scroll_padding_inline_start, .scroll_padding_inline_end]
+		}
 		.page_break_after {
 			[.break_after]
 		}
@@ -699,6 +723,15 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 
 pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.scroll_padding_top, .scroll_padding_right, .scroll_padding_bottom, .scroll_padding_left {
+			[.all, .scroll_padding]
+		}
+		.scroll_padding_block_start, .scroll_padding_block_end {
+			[.all, .scroll_padding_block]
+		}
+		.scroll_padding_inline_start, .scroll_padding_inline_end {
+			[.all, .scroll_padding_inline]
+		}
 		.scroll_margin_top, .scroll_margin_right, .scroll_margin_bottom, .scroll_margin_left {
 			[.all, .scroll_margin]
 		}
