@@ -896,6 +896,13 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 	defer {
 		parser.pop_temporary_value_parsing_context()
 	}
+	if property_id == .contain_intrinsic_size {
+		return parser.parse_contain_intrinsic_size_shorthand(mut tokens)
+	}
+	if property_id in [.contain_intrinsic_block_size, .contain_intrinsic_height,
+		.contain_intrinsic_inline_size, .contain_intrinsic_width] {
+		return parser.parse_contain_intrinsic_size_value(mut tokens)
+	}
 	if property_is_positional_value_list_shorthand(property_id) {
 		return parser.parse_positional_value_list_shorthand(property_id, mut tokens)
 	}
@@ -908,6 +915,12 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 	// represented with the currently translated PropertyID enum. The generated
 	// property grammar tables are not available in this V port yet.
 	match property_id {
+		.contain_intrinsic_size {
+			return parser.parse_contain_intrinsic_size_shorthand(mut tokens)
+		}
+		.contain_intrinsic_block_size, .contain_intrinsic_height, .contain_intrinsic_inline_size, .contain_intrinsic_width {
+			return parser.parse_contain_intrinsic_size_value(mut tokens)
+		}
 		.accent_color, .caret_color {
 			return parser.parse_auto_or_color_value(mut tokens)
 		}
@@ -10990,6 +11003,75 @@ fn (mut parser Parser) parse_content_visibility_value(mut tokens ComponentValueS
 		}
 	}
 	return none
+}
+
+// https://drafts.csswg.org/css-sizing-4/#intrinsic-size-override
+// auto? [ none | <length [0,∞]> ]
+fn (mut parser Parser) parse_contain_intrinsic_size_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	mut has_auto := false
+	if component := transaction.peek() {
+		if component.is_ident('auto') {
+			transaction.consume()
+			has_auto = true
+		}
+	}
+	transaction.consume_whitespace()
+	mut size := ?StyleValue(none)
+	if component := transaction.peek() {
+		if component.is_ident('none') {
+			transaction.consume()
+			size = StyleValue(KeywordStyleValue.create(.none_))
+		}
+	}
+	if size == none {
+		mut length_transaction := transaction.clone()
+		length := parser.parse_length_value(mut length_transaction) or { return none }
+		if length is LengthStyleValue && length.raw_value() < 0 {
+			return none
+		}
+		if length is CalculatedStyleValue {
+			if raw_length := length.resolve_raw_length(CalculationResolutionContext{}) {
+				if raw_length < 0 || math.is_inf(raw_length, 0) {
+					return none
+				}
+			}
+		}
+		transaction = length_transaction
+		size = length
+	}
+	parsed_size := size or { return none }
+	tokens = transaction
+	if !has_auto {
+		return parsed_size
+	}
+	return StyleValue(StyleValueList.create([
+		StyleValue(KeywordStyleValue.create(.auto)),
+		parsed_size,
+	], .space, .no))
+}
+
+// https://drafts.csswg.org/css-sizing-4/#propdef-contain-intrinsic-size
+// A component can consume two tokens (`auto 10px`), so this cannot use the
+// generic positional shorthand splitter.
+fn (mut parser Parser) parse_contain_intrinsic_size_shorthand(mut tokens ComponentValueStream) ?StyleValue {
+	mut transaction := tokens.clone()
+	first := parser.parse_contain_intrinsic_size_value(mut transaction) or { return none }
+	transaction.consume_whitespace()
+	mut second := first
+	if transaction.has_more_tokens() {
+		second = parser.parse_contain_intrinsic_size_value(mut transaction) or { return none }
+	}
+	transaction.consume_whitespace()
+	if transaction.has_more_tokens() {
+		return none
+	}
+	tokens = transaction
+	return StyleValue(ShorthandStyleValue.create(.contain_intrinsic_size, [
+		PropertyID.contain_intrinsic_width,
+		PropertyID.contain_intrinsic_height,
+	], [first, second]))
 }
 
 fn (mut parser Parser) parse_integer_value(mut tokens ComponentValueStream) ?StyleValue {

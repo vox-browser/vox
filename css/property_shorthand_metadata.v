@@ -27,7 +27,9 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.border_top_right_radius, .border_top_style, .border_top_width, .bottom, .box_shadow,
 				.box_sizing, .caption_side, .caret_color, .clear, .clip, .clip_path, .clip_rule,
 				.color, .color_interpolation, .color_scheme, .column_count, .column_gap,
-				.column_height, .column_span, .column_width, .contain, .container_name,
+				.column_height, .column_span, .column_width, .contain,
+				.contain_intrinsic_block_size, .contain_intrinsic_height,
+				.contain_intrinsic_inline_size, .contain_intrinsic_width, .container_name,
 				.container_type, .content,
 				.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
 				.corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape,
@@ -162,6 +164,9 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 		}
 		.columns {
 			[.column_width, .column_count, .column_height]
+		}
+		.contain_intrinsic_size {
+			[.contain_intrinsic_width, .contain_intrinsic_height]
 		}
 		.container {
 			[.container_name, .container_type]
@@ -337,7 +342,9 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.border_top_right_radius, .border_top_style, .border_top_width, .bottom, .box_shadow,
 				.box_sizing, .caption_side, .caret_color, .clear, .clip, .clip_path, .clip_rule,
 				.color, .color_interpolation, .color_scheme, .column_count, .column_gap,
-				.column_height, .column_span, .column_width, .contain, .container_name,
+				.column_height, .column_span, .column_width, .contain,
+				.contain_intrinsic_block_size, .contain_intrinsic_height,
+				.contain_intrinsic_inline_size, .contain_intrinsic_width, .container_name,
 				.container_type, .content,
 				.content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape,
 				.corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape,
@@ -479,6 +486,9 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 		}
 		.columns {
 			[.column_width, .column_count, .column_height]
+		}
+		.contain_intrinsic_size {
+			[.contain_intrinsic_width, .contain_intrinsic_height]
 		}
 		.container {
 			[.container_name, .container_type]
@@ -633,6 +643,12 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 
 pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.contain_intrinsic_block_size, .contain_intrinsic_inline_size {
+			[.all]
+		}
+		.contain_intrinsic_width, .contain_intrinsic_height {
+			[.all, .contain_intrinsic_size]
+		}
 		.vector_effect {
 			[.all]
 		}

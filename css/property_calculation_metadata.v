@@ -529,6 +529,21 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		'contain' {
 			PropertyID.contain
 		}
+		'contain-intrinsic-block-size' {
+			PropertyID.contain_intrinsic_block_size
+		}
+		'contain-intrinsic-height' {
+			PropertyID.contain_intrinsic_height
+		}
+		'contain-intrinsic-inline-size' {
+			PropertyID.contain_intrinsic_inline_size
+		}
+		'contain-intrinsic-size' {
+			PropertyID.contain_intrinsic_size
+		}
+		'contain-intrinsic-width' {
+			PropertyID.contain_intrinsic_width
+		}
 		'container' {
 			PropertyID.container
 		}
@@ -1472,6 +1487,11 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.column_width { 'column-width' }
 		.columns { 'columns' }
 		.contain { 'contain' }
+		.contain_intrinsic_block_size { 'contain-intrinsic-block-size' }
+		.contain_intrinsic_height { 'contain-intrinsic-height' }
+		.contain_intrinsic_inline_size { 'contain-intrinsic-inline-size' }
+		.contain_intrinsic_size { 'contain-intrinsic-size' }
+		.contain_intrinsic_width { 'contain-intrinsic-width' }
 		.container { 'container' }
 		.container_name { 'container-name' }
 		.container_type { 'container-type' }
@@ -1895,6 +1915,11 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 		.column_width { 'auto' }
 		.columns { 'auto auto / auto' }
 		.contain { 'none' }
+		.contain_intrinsic_block_size { 'none' }
+		.contain_intrinsic_height { 'none' }
+		.contain_intrinsic_inline_size { 'none' }
+		.contain_intrinsic_size { 'none' }
+		.contain_intrinsic_width { 'none' }
 		.container { 'none' }
 		.container_name { 'none' }
 		.container_type { 'normal' }
@@ -2174,6 +2199,9 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
+		.contain_intrinsic_block_size, .contain_intrinsic_height, .contain_intrinsic_inline_size, .contain_intrinsic_width {
+			AnimationType.by_computed_value
+		}
 		.webkit_text_fill_color, .accent_color, .aspect_ratio, .background_color, .block_size, .border_block_end_color, .border_block_end_width, .border_block_start_color, .border_block_start_width, .border_bottom_color, .border_bottom_left_radius, .border_bottom_right_radius, .border_bottom_width, .border_end_end_radius, .border_end_start_radius, .border_image_outset, .border_image_slice, .border_image_width, .border_inline_end_color, .border_inline_end_width, .border_inline_start_color, .border_inline_start_width, .border_left_color, .border_left_width, .border_right_color, .border_right_width, .border_spacing, .border_start_end_radius, .border_start_start_radius, .border_top_color, .border_top_left_radius, .border_top_right_radius, .border_top_width, .bottom, .caret_color, .clip, .clip_path, .color, .column_count, .column_gap, .column_height, .column_width, .corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape, .counter_increment, .counter_reset, .counter_set, .cx, .cy, .fill, .fill_opacity, .flex_basis, .flex_grow, .flex_shrink, .flood_color, .flood_opacity, .font_size, .font_weight, .font_width, .grid_auto_columns, .grid_auto_rows, .height, .inline_size, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start, .left, .letter_spacing, .line_height, .margin_block_end, .margin_block_start, .margin_bottom, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top, .max_block_size, .max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size, .min_width, .opacity, .order, .orphans, .outline_color, .outline_offset, .outline_style, .outline_width, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top, .padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start, .padding_left, .padding_right, .padding_top, .perspective, .perspective_origin, .r, .right, .row_gap, .rx, .ry, .scrollbar_color, .scrollbar_width, .shape_image_threshold, .shape_margin, .shape_outside, .stop_color, .stop_opacity, .stroke, .stroke_dashoffset, .stroke_miterlimit, .stroke_opacity, .stroke_width, .tab_size, .text_decoration_color, .text_decoration_thickness, .text_indent, .text_underline_offset, .top, .transform_origin, .vertical_align, .widows, .width, .word_spacing, .x, .y, .z_index {
 			AnimationType.by_computed_value
 		}
@@ -2197,6 +2225,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.contain_intrinsic_block_size, .contain_intrinsic_height, .contain_intrinsic_inline_size, .contain_intrinsic_width { true }
 		.text_decoration_skip_ink { true }
 		.d { true }
 		.vector_effect { true }
@@ -2219,6 +2248,7 @@ pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 
 pub fn property_affects_layout(property_id PropertyID) bool {
 	return match property_id {
+		.contain_intrinsic_block_size, .contain_intrinsic_height, .contain_intrinsic_inline_size, .contain_intrinsic_size, .contain_intrinsic_width { true }
 		.container { true }
 		.align_content, .align_items, .align_self, .all, .anchor_name, .appearance, .aspect_ratio, .block_size, .border, .border_block, .border_block_end, .border_block_end_style, .border_block_end_width, .border_block_start, .border_block_start_style, .border_block_start_width, .border_block_style, .border_block_width, .border_bottom, .border_bottom_style, .border_bottom_width, .border_collapse, .border_image, .border_inline, .border_inline_end, .border_inline_end_style, .border_inline_end_width, .border_inline_start, .border_inline_start_style, .border_inline_start_width, .border_inline_style, .border_inline_width, .border_left, .border_left_style, .border_left_width, .border_right, .border_right_style, .border_right_width, .border_spacing, .border_style, .border_top, .border_top_style, .border_top_width, .border_width, .bottom, .box_sizing, .caption_side, .clear, .column_count, .column_gap, .column_height, .column_span, .column_width, .columns, .contain, .container_type, .content, .content_visibility, .corner_block_end_shape, .corner_block_start_shape, .corner_bottom_left_shape, .corner_bottom_right_shape, .corner_bottom_shape, .corner_end_end_shape, .corner_end_start_shape, .corner_inline_end_shape, .corner_inline_start_shape, .corner_left_shape, .corner_right_shape, .corner_shape, .corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape, .corner_top_shape, .counter_increment, .counter_reset, .counter_set, .cx, .cy, .direction, .display, .dominant_baseline, .empty_cells, .flex, .flex_basis, .flex_direction, .flex_flow, .flex_grow, .flex_shrink, .flex_wrap, .float_, .font, .font_family, .font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing, .font_size, .font_style, .font_variant, .font_variant_alternates, .font_variant_caps, .font_variant_east_asian, .font_variant_emoji, .font_variant_ligatures, .font_variant_numeric, .font_variant_position, .font_variation_settings, .font_weight, .font_width, .gap, .grid, .grid_area, .grid_auto_columns, .grid_auto_flow, .grid_auto_rows, .grid_column, .grid_column_end, .grid_column_start, .grid_row, .grid_row_end, .grid_row_start, .grid_template, .grid_template_areas, .grid_template_columns, .grid_template_rows, .height, .inline_size, .inset, .inset_block, .inset_block_end, .inset_block_start, .inset_inline, .inset_inline_end, .inset_inline_start, .isolation, .justify_content, .justify_items, .justify_self, .left, .letter_spacing, .line_height, .list_style, .list_style_image, .list_style_position, .list_style_type, .margin, .margin_block, .margin_block_end, .margin_block_start, .margin_bottom, .margin_inline, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top, .math_depth, .math_shift, .math_style, .max_block_size, .max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size, .min_width, .order, .orphans, .overflow, .overflow_block, .overflow_clip_margin, .overflow_clip_margin_block, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top, .overflow_inline, .overflow_wrap, .overflow_x, .overflow_y, .padding, .padding_block, .padding_block_end, .padding_block_start, .padding_bottom, .padding_inline, .padding_inline_end, .padding_inline_start, .padding_left, .padding_right, .padding_top, .paint_order, .perspective, .place_content, .place_items, .place_self, .position, .position_anchor, .position_area, .position_try_fallbacks, .position_try_order, .position_visibility, .quotes, .r, .right, .row_gap, .rx, .ry, .shape_margin, .shape_outside, .shape_rendering, .tab_size, .table_layout, .text_align, .text_anchor, .text_indent, .text_justify, .text_transform, .text_underline_offset, .text_underline_position, .text_wrap, .text_wrap_mode, .text_wrap_style, .top, .transform_style, .unicode_bidi, .vertical_align, .visibility, .white_space, .white_space_collapse, .white_space_trim, .widows, .width, .word_break, .word_spacing, .writing_mode, .x, .y { true }
 		else { false }
@@ -2248,6 +2278,7 @@ pub fn property_requires_computation_with_initial_value(property_id PropertyID) 
 
 pub fn property_requires_computation_with_cascaded_value(property_id PropertyID) bool {
 	return match property_id {
+		.contain_intrinsic_block_size, .contain_intrinsic_height, .contain_intrinsic_inline_size, .contain_intrinsic_width { true }
 		.webkit_text_fill_color, .accent_color, .animation_delay, .animation_duration, .animation_iteration_count, .animation_name, .animation_timeline, .animation_timing_function, .aspect_ratio, .backdrop_filter, .background_attachment, .background_blend_mode, .background_clip, .background_color, .background_image, .background_origin, .background_position_x, .background_position_y, .background_repeat, .background_size, .block_size, .border_block_end_color, .border_block_end_width, .border_block_start_color, .border_block_start_width, .border_bottom_color, .border_bottom_left_radius, .border_bottom_right_radius, .border_bottom_width, .border_end_end_radius, .border_end_start_radius, .border_image_outset, .border_image_slice, .border_image_source, .border_image_width, .border_inline_end_color, .border_inline_end_width, .border_inline_start_color, .border_inline_start_width, .border_left_color, .border_left_width, .border_right_color, .border_right_width, .border_spacing, .border_start_end_radius, .border_start_start_radius, .border_top_color, .border_top_left_radius, .border_top_right_radius, .border_top_width, .bottom, .box_shadow, .caret_color, .clip, .clip_path, .color, .column_count, .column_gap, .column_height, .column_width, .content, .corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape, .counter_increment, .counter_reset, .counter_set, .cursor, .cx, .cy, .fill, .fill_opacity, .filter, .flex_basis, .flex_grow, .flex_shrink, .flood_color, .flood_opacity, .font_feature_settings, .font_size, .font_style, .font_variation_settings, .font_weight, .font_width, .grid_auto_columns, .grid_auto_rows, .grid_template_columns, .grid_template_rows, .height, .inline_size, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start, .left, .letter_spacing, .line_height, .list_style_image, .margin_block_end, .margin_block_start, .margin_bottom, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top, .mask_image, .mask_position, .mask_size, .math_depth, .max_block_size, .max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size, .min_width, .object_position, .opacity, .order, .orphans, .outline_color, .outline_offset, .outline_width, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top, .padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start, .padding_left, .padding_right, .padding_top, .perspective, .perspective_origin, .position_area, .r, .right, .rotate, .row_gap, .rx, .ry, .scale, .scrollbar_color, .shape_image_threshold, .shape_margin, .shape_outside, .stop_color, .stop_opacity, .stroke, .stroke_dasharray, .stroke_dashoffset, .stroke_miterlimit, .stroke_opacity, .stroke_width, .tab_size, .text_decoration_color, .text_decoration_thickness, .text_indent, .text_shadow, .text_underline_offset, .top, .transform, .transform_origin, .transition_delay, .transition_duration, .transition_timing_function, .translate, .vertical_align, .view_timeline_inset, .widows, .width, .word_spacing, .x, .y, .z_index { true }
 		else { false }
 	}
@@ -2255,6 +2286,7 @@ pub fn property_requires_computation_with_cascaded_value(property_id PropertyID)
 
 fn property_is_positional_value_list_shorthand(property_id PropertyID) bool {
 	return match property_id {
+		.contain_intrinsic_size { true }
 		.border_block_color, .border_block_style, .border_block_width, .border_color, .border_inline_color, .border_inline_style, .border_inline_width, .border_style, .border_width, .corner_block_end_shape, .corner_block_start_shape, .corner_bottom_shape, .corner_inline_end_shape, .corner_inline_start_shape, .corner_left_shape, .corner_right_shape, .corner_shape, .corner_top_shape, .gap, .inset, .inset_block, .inset_inline, .margin, .margin_block, .margin_inline, .overflow, .padding, .padding_block, .padding_inline { true }
 		else { false }
 	}

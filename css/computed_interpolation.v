@@ -4313,6 +4313,57 @@ pub fn (c &ComputedProperties) contain() Containment {
 	return containment
 }
 
+fn computed_contain_intrinsic_length(value StyleValue, context CalculationResolutionContext) ?CSSPixels {
+	return match value {
+		LengthStyleValue { value.length().to_px(context.length_resolution_context) }
+		CalculatedStyleValue {
+			value.resolve_length(context)?.to_px(context.length_resolution_context)
+		}
+		else { none }
+	}
+}
+
+// https://drafts.csswg.org/css-sizing-4/#intrinsic-size-override
+pub fn (c &ComputedProperties) contain_intrinsic_size(property_id PropertyID) ComputedContainIntrinsicSize {
+	if property_id !in [.contain_intrinsic_width, .contain_intrinsic_height] {
+		return ComputedContainIntrinsicSize{}
+	}
+	value := c.property(property_id, .yes) or { return ComputedContainIntrinsicSize{} }
+	mut parsed := style_value_logic_from_dom(property_id, value) or {
+		return ComputedContainIntrinsicSize{}
+	}
+	mut has_auto := false
+	if parsed is StyleValueList {
+		items := parsed.values()
+		if items.len != 2 || items[0].to_keyword() != .auto {
+			return ComputedContainIntrinsicSize{}
+		}
+		has_auto = true
+		parsed = items[1]
+	}
+	if parsed.to_keyword() == .none_ {
+		return ComputedContainIntrinsicSize{
+			has_auto: has_auto
+		}
+	}
+	length := computed_contain_intrinsic_length(parsed, CalculationResolutionContext{
+		length_resolution_context: c.length_resolution_context()
+	}) or { return ComputedContainIntrinsicSize{} }
+	return ComputedContainIntrinsicSize{
+		has_auto: has_auto
+		has_length: true
+		length: length
+	}
+}
+
+pub fn (c &ComputedProperties) contain_intrinsic_width() ComputedContainIntrinsicSize {
+	return c.contain_intrinsic_size(.contain_intrinsic_width)
+}
+
+pub fn (c &ComputedProperties) contain_intrinsic_height() ComputedContainIntrinsicSize {
+	return c.contain_intrinsic_size(.contain_intrinsic_height)
+}
+
 pub fn (c &ComputedProperties) container_type() ContainerType {
 	value := c.property(.container_type, .yes) or { return ContainerType{} }
 	parsed_value := style_value_logic_from_dom(.container_type, value) or {

@@ -215,7 +215,7 @@ pub fn CascadedProperties.new() &CascadedProperties {
 		// shorthand entries. V groups longhands first for dense computed-value
 		// storage and puts shorthands afterwards; size this cache by the complete
 		// PropertyID range to preserve the CascadedProperties contract.
-		contained_properties_cache_: []u8{len: int(PropertyID.mask) + 1}
+		contained_properties_cache_: []u8{len: int(PropertyID.container) + 1}
 	}
 }
 

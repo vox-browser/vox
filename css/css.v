@@ -401,6 +401,10 @@ pub enum PropertyID {
 	text_decoration_skip_ink
 	container_name
 	d
+	contain_intrinsic_block_size
+	contain_intrinsic_height
+	contain_intrinsic_inline_size
+	contain_intrinsic_width
 	vector_effect
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow
@@ -474,6 +478,7 @@ pub enum PropertyID {
 	font
 	background
 	mask
+	contain_intrinsic_size
 	container
 }
 
@@ -3946,6 +3951,16 @@ pub struct AspectRatio {
 pub:
 	use_natural_aspect_ratio_if_available bool = true
 	preferred_ratio                       ?Ratio
+}
+
+// The computed value of contain-intrinsic-width/height. A false has_length
+// represents `none`; has_auto records the optional leading `auto` keyword for
+// future last-remembered-size support.
+pub struct ComputedContainIntrinsicSize {
+pub:
+	has_auto   bool
+	has_length bool
+	length     CSSPixels
 }
 
 pub fn (s SizeWithAspectRatio) has_width() bool {

@@ -9,6 +9,8 @@ import dom
 fn property_is_logical_alias(property_id PropertyID) bool {
 	return property_id in [
 		.block_size,
+		.contain_intrinsic_block_size,
+		.contain_intrinsic_inline_size,
 		.border_block_end_color,
 		.border_block_end_style,
 		.border_block_end_width,
@@ -60,6 +62,7 @@ enum LogicalPropertyGroup {
 	border_radius
 	border_style
 	border_width
+	contain_intrinsic_size
 	corner_shape
 	inset
 	margin
@@ -91,6 +94,9 @@ fn logical_property_group_for_property(property_id PropertyID) ?LogicalPropertyG
 		}
 		.corner_top_left_shape, .corner_top_right_shape, .corner_bottom_right_shape, .corner_bottom_left_shape, .corner_start_start_shape, .corner_start_end_shape, .corner_end_start_shape, .corner_end_end_shape {
 			LogicalPropertyGroup.corner_shape
+		}
+		.contain_intrinsic_width, .contain_intrinsic_height, .contain_intrinsic_block_size, .contain_intrinsic_inline_size {
+			LogicalPropertyGroup.contain_intrinsic_size
 		}
 		.top, .right, .bottom, .left, .inset_block_start, .inset_block_end, .inset_inline_start, .inset_inline_end {
 			LogicalPropertyGroup.inset
@@ -317,6 +323,20 @@ fn map_logical_alias_to_physical_property(property_id PropertyID, context Logica
 				PropertyID.height
 			} else {
 				PropertyID.width
+			}
+		}
+		.contain_intrinsic_block_size {
+			if context.writing_mode == .horizontal_tb {
+				PropertyID.contain_intrinsic_height
+			} else {
+				PropertyID.contain_intrinsic_width
+			}
+		}
+		.contain_intrinsic_inline_size {
+			if context.writing_mode == .horizontal_tb {
+				PropertyID.contain_intrinsic_width
+			} else {
+				PropertyID.contain_intrinsic_height
 			}
 		}
 		.inline_size {
