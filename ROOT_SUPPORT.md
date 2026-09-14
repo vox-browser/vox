@@ -16,10 +16,9 @@ translation code, tests, and translation notes live in `~/code/vox2`.
 | `TraversalOrder.h` | `css/cssom_rules.v` (`TraversalOrder`) |
 | `Forward.h` | No generated runtime unit: V resolves these types directly from their owning modules. |
 
-`Dump.cpp`'s paintable traversal is limited to the state present in the current
-V `dom.Paintable`. The port does not yet give paintables layout/child links, so
-`dump.paintable` emits the complete translated leaf state. Layout and DOM tree
-dumps are recursive.
+`Dump.cpp` delegates layout diagnostics to Painting upstream. The V dump facade
+likewise uses the retained typed layout serializer, while DOM tree dumps remain
+recursive. The superseded standalone paintable-tree dump API has been removed.
 
 The C++ `TreeNode<T>` helpers templated on a subtype are represented by
 predicate-based `*_matching` helpers, matching the V layout tree's explicit
