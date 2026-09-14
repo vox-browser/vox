@@ -233,6 +233,17 @@ pub enum BreakInside {
 	avoid_region
 }
 
+pub enum BoxDecorationBreak {
+	slice
+	clone
+}
+
+pub enum ColumnFill {
+	auto
+	balance
+	balance_all
+}
+
 pub enum ContentDataType {
 	normal
 	none_
@@ -1601,6 +1612,8 @@ pub mut:
 	computed_values_break_after_                   BreakBetween
 	computed_values_break_before_                  BreakBetween
 	computed_values_break_inside_                  BreakInside
+	computed_values_box_decoration_break_          BoxDecorationBreak
+	computed_values_column_fill_                   ColumnFill
 	computed_values_empty_cells_                   EmptyCells
 	computed_values_object_fit_                    ObjectFit
 	computed_values_object_position_               Position
@@ -2793,6 +2806,22 @@ pub fn (c &ComputedProperties) break_inside() BreakInside {
 		.avoid_column { BreakInside.avoid_column }
 		.avoid_region { BreakInside.avoid_region }
 		else { BreakInside.auto }
+	}
+}
+
+pub fn (c &ComputedProperties) box_decoration_break() BoxDecorationBreak {
+	value := c.property(.box_decoration_break, .yes) or { return .slice }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .slice }
+	return if keyword == .clone { .clone } else { .slice }
+}
+
+pub fn (c &ComputedProperties) column_fill() ColumnFill {
+	value := c.property(.column_fill, .yes) or { return .balance }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .balance }
+	return match keyword {
+		.auto { ColumnFill.auto }
+		.balance_all { ColumnFill.balance_all }
+		else { ColumnFill.balance }
 	}
 }
 

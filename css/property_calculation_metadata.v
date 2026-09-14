@@ -475,6 +475,9 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		'bottom' {
 			PropertyID.bottom
 		}
+		'box-decoration-break' {
+			PropertyID.box_decoration_break
+		}
 		'box-shadow' {
 			PropertyID.box_shadow
 		}
@@ -519,6 +522,9 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		}
 		'column-count' {
 			PropertyID.column_count
+		}
+		'column-fill' {
+			PropertyID.column_fill
 		}
 		'column-gap' {
 			PropertyID.column_gap
@@ -1490,6 +1496,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.border_top_width { 'border-top-width' }
 		.border_width { 'border-width' }
 		.bottom { 'bottom' }
+		.box_decoration_break { 'box-decoration-break' }
 		.box_shadow { 'box-shadow' }
 		.box_sizing { 'box-sizing' }
 		.break_after { 'break-after' }
@@ -1505,6 +1512,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.color_interpolation { 'color-interpolation' }
 		.color_scheme { 'color-scheme' }
 		.column_count { 'column-count' }
+		.column_fill { 'column-fill' }
 		.column_gap { 'column-gap' }
 		.column_height { 'column-height' }
 		.column_rule { 'column-rule' }
@@ -1925,6 +1933,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 		.border_top_width { 'medium' }
 		.border_width { 'medium' }
 		.bottom { 'auto' }
+		.box_decoration_break { 'slice' }
 		.box_shadow { 'none' }
 		.box_sizing { 'content-box' }
 		.break_after { 'auto' }
@@ -1940,6 +1949,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 		.color_interpolation { 'srgb' }
 		.color_scheme { 'normal' }
 		.column_count { 'auto' }
+		.column_fill { 'balance' }
 		.column_gap { 'normal' }
 		.column_height { 'auto' }
 		.column_rule { 'medium none currentColor' }
@@ -2234,6 +2244,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
+		.box_decoration_break, .column_fill { AnimationType.discrete }
 		.break_after, .break_before, .break_inside { AnimationType.discrete }
 		.column_rule_color, .column_rule_width { AnimationType.by_computed_value }
 		.column_rule_style { AnimationType.discrete }
@@ -2263,6 +2274,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.box_decoration_break, .column_fill { true }
 		.break_after, .break_before, .break_inside { true }
 		.column_rule, .column_rule_color, .column_rule_style, .column_rule_width { true }
 		.contain_intrinsic_block_size, .contain_intrinsic_height, .contain_intrinsic_inline_size, .contain_intrinsic_width { true }
@@ -2288,6 +2300,7 @@ pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 
 pub fn property_affects_layout(property_id PropertyID) bool {
 	return match property_id {
+		.box_decoration_break, .column_fill { true }
 		.break_after, .break_before, .break_inside { true }
 		.contain_intrinsic_block_size, .contain_intrinsic_height, .contain_intrinsic_inline_size, .contain_intrinsic_size, .contain_intrinsic_width { true }
 		.container { true }
@@ -2567,6 +2580,12 @@ fn property_custom_ident_blacklist(property_id PropertyID) []string {
 fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 	lowercase_value := to_ascii_lowercase(value)
 	return match property_id {
+		.box_decoration_break {
+			lowercase_value in ['slice', 'clone']
+		}
+		.column_fill {
+			lowercase_value in ['auto', 'balance', 'balance-all']
+		}
 		.break_after, .break_before {
 			lowercase_value in ['auto', 'avoid', 'avoid-page', 'page', 'left', 'right', 'recto',
 				'verso', 'avoid-column', 'column', 'avoid-region', 'region']

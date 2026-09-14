@@ -1011,7 +1011,7 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.border_collapse {
 			return parser.parse_border_collapse_value(mut tokens)
 		}
-		.break_after, .break_before, .break_inside {
+		.box_decoration_break, .break_after, .break_before, .break_inside, .column_fill {
 			return parse_property_keyword_value_from_metadata(property_id, mut tokens)
 		}
 		.box_sizing {

@@ -542,6 +542,8 @@ pub fn resolve_computed_values(style &ComputedProperties) &ComputedValues {
 	values.set_break_after(style.break_between(.break_after))
 	values.set_break_before(style.break_between(.break_before))
 	values.set_break_inside(style.break_inside())
+	values.set_box_decoration_break(style.box_decoration_break())
+	values.set_column_fill(style.column_fill())
 	values.set_empty_cells(style.empty_cells())
 	values.set_object_fit(style.object_fit())
 	values.set_object_position(style.object_position())
@@ -1164,6 +1166,14 @@ pub fn (values &ComputedValues) break_before() BreakBetween {
 
 pub fn (values &ComputedValues) break_inside() BreakInside {
 	return values.computed_values_break_inside_
+}
+
+pub fn (values &ComputedValues) box_decoration_break() BoxDecorationBreak {
+	return values.computed_values_box_decoration_break_
+}
+
+pub fn (values &ComputedValues) column_fill() ColumnFill {
+	return values.computed_values_column_fill_
 }
 
 pub fn (values &ComputedValues) empty_cells() EmptyCells {
@@ -2037,6 +2047,14 @@ pub fn (mut values MutableComputedValues) set_break_before(value BreakBetween) {
 
 pub fn (mut values MutableComputedValues) set_break_inside(value BreakInside) {
 	values.computed_values_break_inside_ = value
+}
+
+pub fn (mut values MutableComputedValues) set_box_decoration_break(value BoxDecorationBreak) {
+	values.computed_values_box_decoration_break_ = value
+}
+
+pub fn (mut values MutableComputedValues) set_column_fill(value ColumnFill) {
+	values.computed_values_column_fill_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_empty_cells(value EmptyCells) {

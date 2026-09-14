@@ -1305,9 +1305,12 @@ pub enum Keyword {
 	avoid_column
 	avoid_page
 	avoid_region
+	balance_all
+	clone
 	page
 	recto
 	region
+	slice
 	verso
 	avar2
 	b4
@@ -2194,9 +2197,12 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.avoid_column { 'avoid-column' }
 		.avoid_page { 'avoid-page' }
 		.avoid_region { 'avoid-region' }
+		.balance_all { 'balance-all' }
+		.clone { 'clone' }
 		.page { 'page' }
 		.recto { 'recto' }
 		.region { 'region' }
+		.slice { 'slice' }
 		.verso { 'verso' }
 		.avar2 { 'avar2' }
 		.b4 { 'b4' }
@@ -3065,9 +3071,12 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'avoid-column' { Keyword.avoid_column }
 		'avoid-page' { Keyword.avoid_page }
 		'avoid-region' { Keyword.avoid_region }
+		'balance-all' { Keyword.balance_all }
+		'clone' { Keyword.clone }
 		'page' { Keyword.page }
 		'recto' { Keyword.recto }
 		'region' { Keyword.region }
+		'slice' { Keyword.slice }
 		'verso' { Keyword.verso }
 		'avar2' { Keyword.avar2 }
 		'b4' { Keyword.b4 }

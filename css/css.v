@@ -411,6 +411,8 @@ pub enum PropertyID {
 	break_after
 	break_before
 	break_inside
+	box_decoration_break
+	column_fill
 	vector_effect
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow
