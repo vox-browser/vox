@@ -2303,6 +2303,20 @@ fn test_css_anchor_positioning_resolves_names_sides_and_fallbacks() {
 	assert chain.offset.y().to_double() == 33
 }
 
+fn test_css_anchor_positioning_skips_ineligible_later_named_elements() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#container { position:relative; width:300px; height:200px }
+		#eligible { anchor-name:--shared; position:absolute; left:40px; top:20px; width:30px; height:10px }
+		#ineligible { anchor-name:--shared; display:none }
+		#target { position:absolute; position-anchor:--shared; left:anchor(right, 7px); top:anchor(bottom, 9px); width:10px; height:10px }
+	</style><div id="container"><div id="eligible"></div><div id="ineligible"></div><div id="target"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	target := used_for_id(result, 'target')
+	assert target.offset.x().to_double() == 70
+	assert target.offset.y().to_double() == 30
+}
+
 fn test_css_anchor_positioning_resolves_logical_inside_and_percentage_sides() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }

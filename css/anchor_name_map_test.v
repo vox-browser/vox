@@ -7,6 +7,28 @@ fn recompute_anchor_name_style(style_computer &StyleComputer, element &dom.Eleme
 	style_computer.recompute_style(mut abstract_element)
 }
 
+fn reject_anchor_name_element(target voidptr, element &dom.Element) bool {
+	return voidptr(element) != target
+}
+
+fn test_anchor_name_map_falls_back_to_an_earlier_matching_element() {
+	mut document := dom.Document.create_for_fragment_parsing()
+	mut root := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div')!
+	first := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span')!
+	second := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span')!
+	root.append_child(first)
+	root.append_child(second)
+	mut names := dom.AnchorNameMap{}
+	assert !names.has_registered_names()
+	names.register_name('--target', first)
+	names.register_name('--target', second)
+	assert names.has_registered_names()
+	assert names.last_element_by_name_matching('--target', dom.AnchorNameMapFilter{
+		target: voidptr(second)
+		callback: reject_anchor_name_element
+	})? == first
+}
+
 fn test_anchor_name_registry_tracks_tree_order_restyle_removal_and_shadow_scopes() {
 	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
 	document.populate_with_html_head_and_body()!
@@ -19,10 +41,12 @@ fn test_anchor_name_registry_tracks_tree_order_restyle_removal_and_shadow_scopes
 	mut second := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div')!
 	second.set_attribute_value('style', 'anchor-name: --target')
 	body_node.append_child(second.as_node())!
+	assert !document.any_anchor_names_are_registered()
 
 	style_computer := StyleComputer.new(document)
 	recompute_anchor_name_style(style_computer, first)
 	recompute_anchor_name_style(style_computer, second)
+	assert document.any_anchor_names_are_registered()
 	assert document.element_by_anchor_name('--target', body_node)? == second
 
 	mut second_node := second.as_node()

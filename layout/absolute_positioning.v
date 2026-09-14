@@ -17,13 +17,57 @@ fn anchor_style_value_for_inset(computed &css.ComputedValues, property_id css.Pr
 	return none
 }
 
+struct AnchorElementLookupContext {
+	box              &Node = unsafe { nil }
+	containing_block &Box = unsafe { nil }
+	state            &LayoutState = unsafe { nil }
+}
+
+fn is_acceptable_anchor_element(target voidptr, candidate &dom.Element) bool {
+	if target == unsafe { nil } {
+		return false
+	}
+	context := unsafe { &AnchorElementLookupContext(target) }
+	dom_layout_node := candidate.as_node().unsafe_layout_node() or { return false }
+	if dom_layout_node.real_layout_handle() == unsafe { nil } {
+		return false
+	}
+	anchor_node := unsafe { &Node(dom_layout_node.real_layout_handle()) }
+	if layout_nodes_same(anchor_node, context.box) || anchor_node.as_box() == none {
+		return false
+	}
+	anchor_styled := anchor_node.as_node_with_style() or { return false }
+	if context.state.try_get(anchor_styled) == none {
+		return false
+	}
+	mut ancestor := anchor_node.containing_block()
+	for ancestor != none {
+		current := ancestor or { break }
+		if layout_nodes_same(unsafe { &Node(current) }, unsafe { &Node(context.containing_block) }) {
+			return true
+		}
+		ancestor = unsafe { &Node(current) }.containing_block()
+	}
+	return false
+}
+
 // https://drafts.csswg.org/css-anchor-position-1/#resolving-anchor
 fn resolve_anchor_rect(state &LayoutState, box &Node, containing_state &UsedValues, anchor css.AnchorStyleValue) ?css.CSSPixelRect {
 	styled := box.as_node_with_style() or { return none }
 	name := anchor.anchor_name() or { styled.computed_values().position_anchor() or { return none } }
 	dom_node := box.dom_node() or { return none }
 	element := dom_node.as_element() or { return none }
-	anchor_element := box.document().element_by_anchor_name(name, element.as_node()) or { return none }
+	containing_block := box.containing_block() or { return none }
+	lookup_context := AnchorElementLookupContext{
+		box: box
+		containing_block: containing_block
+		state: state
+	}
+	anchor_element := box.document().element_by_anchor_name(name, element.as_node(),
+		dom.AnchorNameMapFilter{
+			target: voidptr(&lookup_context)
+			callback: is_acceptable_anchor_element
+		}) or { return none }
 	dom_anchor_layout_node := anchor_element.as_node().unsafe_layout_node() or { return none }
 	if dom_anchor_layout_node.real_layout_handle() == unsafe { nil } {
 		return none
