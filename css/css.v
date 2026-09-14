@@ -437,6 +437,9 @@ pub enum PropertyID {
 	scroll_padding_left
 	scroll_padding_right
 	scroll_padding_top
+	scroll_snap_align
+	scroll_snap_stop
+	scroll_snap_type
 	vector_effect
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow

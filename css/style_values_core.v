@@ -1679,6 +1679,7 @@ pub enum Keyword {
 	math
 	math_auto
 	mathematical
+	mandatory
 	max_content
 	medium
 	meen
@@ -1803,6 +1804,7 @@ pub enum Keyword {
 	progress_bar
 	progressive
 	prophoto_rgb
+	proximity
 	proportional_nums
 	proportional_width
 	punjabi
@@ -2575,6 +2577,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.math { 'math' }
 		.math_auto { 'math-auto' }
 		.mathematical { 'mathematical' }
+		.mandatory { 'mandatory' }
 		.max_content { 'max-content' }
 		.medium { 'medium' }
 		.meen { 'meen' }
@@ -2699,6 +2702,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.progress_bar { 'progress-bar' }
 		.progressive { 'progressive' }
 		.prophoto_rgb { 'prophoto-rgb' }
+		.proximity { 'proximity' }
 		.proportional_nums { 'proportional-nums' }
 		.proportional_width { 'proportional-width' }
 		.punjabi { 'punjabi' }
@@ -3453,6 +3457,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'math' { Keyword.math }
 		'math-auto' { Keyword.math_auto }
 		'mathematical' { Keyword.mathematical }
+		'mandatory' { Keyword.mandatory }
 		'max-content' { Keyword.max_content }
 		'medium' { Keyword.medium }
 		'meen' { Keyword.meen }
@@ -3577,6 +3582,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'progress-bar' { Keyword.progress_bar }
 		'progressive' { Keyword.progressive }
 		'prophoto-rgb' { Keyword.prophoto_rgb }
+		'proximity' { Keyword.proximity }
 		'proportional-nums' { Keyword.proportional_nums }
 		'proportional-width' { Keyword.proportional_width }
 		'punjabi' { Keyword.punjabi }

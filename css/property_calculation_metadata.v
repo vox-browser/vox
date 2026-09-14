@@ -1255,6 +1255,15 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		'scroll-padding-top' {
 			PropertyID.scroll_padding_top
 		}
+		'scroll-snap-align' {
+			PropertyID.scroll_snap_align
+		}
+		'scroll-snap-stop' {
+			PropertyID.scroll_snap_stop
+		}
+		'scroll-snap-type' {
+			PropertyID.scroll_snap_type
+		}
 		'scroll-timeline' {
 			PropertyID.scroll_timeline
 		}
@@ -1849,6 +1858,9 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.scroll_padding_left { 'scroll-padding-left' }
 		.scroll_padding_right { 'scroll-padding-right' }
 		.scroll_padding_top { 'scroll-padding-top' }
+		.scroll_snap_align { 'scroll-snap-align' }
+		.scroll_snap_stop { 'scroll-snap-stop' }
+		.scroll_snap_type { 'scroll-snap-type' }
 		.scroll_timeline { 'scroll-timeline' }
 		.scroll_timeline_axis { 'scroll-timeline-axis' }
 		.scroll_timeline_name { 'scroll-timeline-name' }
@@ -2304,6 +2316,9 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 		.scroll_behavior { 'auto' }
 		.scroll_margin, .scroll_margin_block, .scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top { '0' }
 		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top { 'auto' }
+		.scroll_snap_align { 'none' }
+		.scroll_snap_stop { 'normal' }
+		.scroll_snap_type { 'none' }
 		.scroll_timeline { 'none block' }
 		.scroll_timeline_axis { 'block' }
 		.scroll_timeline_name { 'none' }
@@ -2386,6 +2401,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
+		.scroll_snap_align, .scroll_snap_stop, .scroll_snap_type { AnimationType.discrete }
 		.scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
 			AnimationType.by_computed_value
 		}
@@ -2424,6 +2440,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.scroll_snap_align, .scroll_snap_stop, .scroll_snap_type { true }
 		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
 			true
 		}
@@ -3115,6 +3132,15 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		}
 		.scroll_behavior {
 			lowercase_value in ['auto', 'smooth']
+		}
+		.scroll_snap_align {
+			lowercase_value in ['none', 'start', 'end', 'center']
+		}
+		.scroll_snap_stop {
+			lowercase_value in ['normal', 'always']
+		}
+		.scroll_snap_type {
+			lowercase_value in ['none', 'x', 'y', 'block', 'inline', 'both', 'mandatory', 'proximity']
 		}
 		.scroll_timeline_axis, .view_timeline_axis {
 			lowercase_value in ['block', 'inline', 'x', 'y']

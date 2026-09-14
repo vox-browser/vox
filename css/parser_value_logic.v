@@ -1662,6 +1662,15 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.scroll_behavior {
 			return parser.parse_scroll_behavior_value(mut tokens)
 		}
+		.scroll_snap_align {
+			return parser.parse_scroll_snap_align_value(mut tokens)
+		}
+		.scroll_snap_stop {
+			return parser.parse_scroll_snap_stop_value(mut tokens)
+		}
+		.scroll_snap_type {
+			return parser.parse_scroll_snap_type_value(mut tokens)
+		}
 		.stroke_linecap {
 			return parser.parse_stroke_linecap_value(mut tokens)
 		}
@@ -8322,6 +8331,47 @@ fn (mut parser Parser) parse_scrollbar_width_value(mut tokens ComponentValueStre
 fn (mut parser Parser) parse_scroll_behavior_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['auto', 'smooth'])
+}
+
+// https://drafts.csswg.org/css-scroll-snap-1/#scroll-snap-align
+fn (mut parser Parser) parse_scroll_snap_align_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	first := parse_keyword_from_set_for_value_logic(mut tokens, ['none', 'start', 'end',
+		'center']) or { return none }
+	mut transaction := tokens.clone()
+	second := parse_keyword_from_set_for_value_logic(mut transaction, ['none', 'start', 'end',
+		'center']) or { return first }
+	tokens = transaction
+	return StyleValue(StyleValueList.create([first, second], .space, .yes))
+}
+
+// https://drafts.csswg.org/css-scroll-snap-1/#scroll-snap-stop
+fn (mut parser Parser) parse_scroll_snap_stop_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['normal', 'always'])
+}
+
+// https://drafts.csswg.org/css-scroll-snap-1/#scroll-snap-type
+fn (mut parser Parser) parse_scroll_snap_type_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	// none | [ x | y | block | inline | both ] [ mandatory | proximity ]?
+	mut none_transaction := tokens.clone()
+	if none_value := parse_keyword_from_set_for_value_logic(mut none_transaction, ['none']) {
+		tokens = none_transaction
+		return none_value
+	}
+	axis := parse_keyword_from_set_for_value_logic(mut tokens, ['x', 'y', 'block', 'inline',
+		'both']) or { return none }
+	mut strictness_transaction := tokens.clone()
+	strictness := parse_keyword_from_set_for_value_logic(mut strictness_transaction, ['mandatory',
+		'proximity']) or { return axis }
+	tokens = strictness_transaction
+	// Proximity is the default strictness and is omitted from the shortest
+	// serialization, matching upstream's computed value representation.
+	if strictness.to_keyword() == .proximity {
+		return axis
+	}
+	return StyleValue(StyleValueList.create([axis, strictness], .space, .yes))
 }
 
 fn (mut parser Parser) parse_resize_value(mut tokens ComponentValueStream) ?StyleValue {

@@ -1131,6 +1131,44 @@ pub enum ScrollBehavior {
 	smooth
 }
 
+pub enum ScrollSnapAlign {
+	none_
+	start
+	end_
+	center
+}
+
+pub struct ScrollSnapAlignData {
+pub:
+	block_alignment  ScrollSnapAlign
+	inline_alignment ScrollSnapAlign
+}
+
+pub enum ScrollSnapStop {
+	normal
+	always
+}
+
+pub enum ScrollSnapAxis {
+	x
+	y
+	block
+	inline_
+	both
+}
+
+pub enum ScrollSnapStrictness {
+	none_
+	proximity
+	mandatory
+}
+
+pub struct ScrollSnapType {
+pub:
+	axis       ScrollSnapAxis = .both
+	strictness ScrollSnapStrictness
+}
+
 pub enum Resize {
 	none_
 	both
@@ -5892,6 +5930,80 @@ pub fn (c &ComputedProperties) scroll_behavior() ScrollBehavior {
 		.auto { ScrollBehavior.auto_ }
 		.smooth { ScrollBehavior.smooth }
 		else { ScrollBehavior.auto_ }
+	}
+}
+
+fn scroll_snap_align_from_keyword(keyword Keyword) ScrollSnapAlign {
+	return match keyword {
+		.start { .start }
+		.end_ { .end_ }
+		.center { .center }
+		else { .none_ }
+	}
+}
+
+pub fn (c &ComputedProperties) scroll_snap_align() ScrollSnapAlignData {
+	value := c.property(.scroll_snap_align, .yes) or { return ScrollSnapAlignData{} }
+	parsed := style_value_logic_from_dom(.scroll_snap_align, value) or {
+		return ScrollSnapAlignData{}
+	}
+	if parsed is StyleValueList {
+		values := parsed.values()
+		if values.len == 2 {
+			return ScrollSnapAlignData{
+				block_alignment: scroll_snap_align_from_keyword(values[0].to_keyword())
+				inline_alignment: scroll_snap_align_from_keyword(values[1].to_keyword())
+			}
+		}
+	}
+	alignment := scroll_snap_align_from_keyword(parsed.to_keyword())
+	return ScrollSnapAlignData{
+		block_alignment: alignment
+		inline_alignment: alignment
+	}
+}
+
+pub fn (c &ComputedProperties) scroll_snap_stop() ScrollSnapStop {
+	value := c.property(.scroll_snap_stop, .yes) or { return .normal }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .normal }
+	return match keyword {
+		.always { ScrollSnapStop.always }
+		else { ScrollSnapStop.normal }
+	}
+}
+
+fn scroll_snap_axis_from_keyword(keyword Keyword) ScrollSnapAxis {
+	return match keyword {
+		.x { .x }
+		.y { .y }
+		.block { .block }
+		.inline_ { .inline_ }
+		else { .both }
+	}
+}
+
+pub fn (c &ComputedProperties) scroll_snap_type() ScrollSnapType {
+	value := c.property(.scroll_snap_type, .yes) or { return ScrollSnapType{} }
+	parsed := style_value_logic_from_dom(.scroll_snap_type, value) or { return ScrollSnapType{} }
+	if parsed.to_keyword() == .none_ {
+		return ScrollSnapType{}
+	}
+	if parsed is StyleValueList {
+		values := parsed.values()
+		if values.len == 2 {
+			return ScrollSnapType{
+				axis: scroll_snap_axis_from_keyword(values[0].to_keyword())
+				strictness: if values[1].to_keyword() == .mandatory {
+					ScrollSnapStrictness.mandatory
+				} else {
+					ScrollSnapStrictness.proximity
+				}
+			}
+		}
+	}
+	return ScrollSnapType{
+		axis: scroll_snap_axis_from_keyword(parsed.to_keyword())
+		strictness: .proximity
 	}
 }
 
