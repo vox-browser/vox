@@ -21,8 +21,10 @@ likewise uses the retained typed layout serializer, while DOM tree dumps remain
 recursive. The superseded standalone paintable-tree dump API has been removed.
 
 The C++ `TreeNode<T>` helpers templated on a subtype are represented by
-predicate-based `*_matching` helpers, matching the V layout tree's explicit
-type-discriminant design.
+predicate-based `*_matching` helpers, including inclusive-ancestor iteration,
+matching the V layout tree's explicit type-discriminant design. Tree-order
+comparison walks depth-bounded ancestor chains and preserves the unordered
+result for nodes in disconnected trees.
 
 `VisualLines.cpp`'s Rust layout-arena queries map to a retained projection of
 V's committed `LineBox` state. It preserves per-text-node visual ranges,
