@@ -1093,6 +1093,15 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		'padding-top' {
 			PropertyID.padding_top
 		}
+		'page-break-after' {
+			PropertyID.page_break_after
+		}
+		'page-break-before' {
+			PropertyID.page_break_before
+		}
+		'page-break-inside' {
+			PropertyID.page_break_inside
+		}
 		'paint-order' {
 			PropertyID.paint_order
 		}
@@ -1702,6 +1711,9 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.padding_left { 'padding-left' }
 		.padding_right { 'padding-right' }
 		.padding_top { 'padding-top' }
+		.page_break_after { 'page-break-after' }
+		.page_break_before { 'page-break-before' }
+		.page_break_inside { 'page-break-inside' }
 		.paint_order { 'paint-order' }
 		.perspective { 'perspective' }
 		.perspective_origin { 'perspective-origin' }
@@ -2139,6 +2151,9 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 		.padding_left { '0' }
 		.padding_right { '0' }
 		.padding_top { '0' }
+		.page_break_after { 'auto' }
+		.page_break_before { 'auto' }
+		.page_break_inside { 'auto' }
 		.paint_order { 'normal' }
 		.perspective { 'none' }
 		.perspective_origin { '50% 50%' }

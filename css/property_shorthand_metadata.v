@@ -290,6 +290,15 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 		.padding_inline {
 			[.padding_inline_start, .padding_inline_end]
 		}
+		.page_break_after {
+			[.break_after]
+		}
+		.page_break_before {
+			[.break_before]
+		}
+		.page_break_inside {
+			[.break_inside]
+		}
 		.place_content {
 			[.align_content, .justify_content]
 		}
@@ -619,6 +628,15 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 		}
 		.padding_inline {
 			[.padding_inline_start, .padding_inline_end]
+		}
+		.page_break_after {
+			[.break_after]
+		}
+		.page_break_before {
+			[.break_before]
+		}
+		.page_break_inside {
+			[.break_inside]
 		}
 		.place_content {
 			[.align_content, .justify_content]
@@ -1653,6 +1671,12 @@ pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 		}
 		else { []PropertyID{} }
 	}
+}
+
+// Legacy shorthands keep their own parsing and serialization behavior, but are
+// deliberately absent from generated_shorthands_for_longhand().
+pub fn property_is_legacy_shorthand(property_id PropertyID) bool {
+	return property_id in [.page_break_after, .page_break_before, .page_break_inside]
 }
 
 pub fn generated_property_needs_layout_for_getcomputedstyle(property_id PropertyID) bool {

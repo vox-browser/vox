@@ -2806,6 +2806,9 @@ fn (style_value ShorthandStyleValue) serialize_border_family(mode SerializationM
 }
 
 pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) string {
+	if s := style_value.serialize_page_break_legacy_shorthand(mode) {
+		return s
+	}
 	if s := style_value.serialize_container(mode) {
 		return s
 	}
@@ -2906,6 +2909,23 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 		return serialized[0]
 	}
 	return builder.str()
+}
+
+fn (style_value ShorthandStyleValue) serialize_page_break_legacy_shorthand(mode SerializationMode) ?string {
+	if !property_is_legacy_shorthand(style_value.shorthand_) || style_value.values_.len != 1 {
+		return none
+	}
+	serialized := style_value.values_[0].serialize(mode)
+	if serialized in ['auto', 'avoid', 'left', 'right'] {
+		return serialized
+	}
+	if serialized == 'page' {
+		return 'always'
+	}
+	if style_value.shorthand_ == .page_break_inside && serialized == 'avoid-page' {
+		return 'avoid'
+	}
+	return ''
 }
 
 fn (style_value ShorthandStyleValue) serialize_container(mode SerializationMode) ?string {

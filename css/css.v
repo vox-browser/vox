@@ -488,6 +488,9 @@ pub enum PropertyID {
 	background
 	mask
 	contain_intrinsic_size
+	page_break_after
+	page_break_before
+	page_break_inside
 	container
 }
 

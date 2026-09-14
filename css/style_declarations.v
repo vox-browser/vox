@@ -600,7 +600,12 @@ fn css_style_properties_serialized(properties &CSSStyleProperties) string {
 		}
 
 		if !already_serialized[property.property_id] {
-			declarations << serialize_a_css_declaration(string_from_property_id(property.property_id), properties.serialize_a_css_value(property), property.important)
+			serialized_property_id := if property_is_legacy_shorthand(property.property_id) {
+				longhands_for_shorthand_local(property.property_id)[0]
+			} else {
+				property.property_id
+			}
+			declarations << serialize_a_css_declaration(string_from_property_id(serialized_property_id), properties.serialize_a_css_value(property), property.important)
 			cssom_mark_serialized(property.property_id, mut already_serialized)
 		}
 	}

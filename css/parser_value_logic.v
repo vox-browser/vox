@@ -915,6 +915,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 	// represented with the currently translated PropertyID enum. The generated
 	// property grammar tables are not available in this V port yet.
 	match property_id {
+		.page_break_after, .page_break_before, .page_break_inside {
+			return parser.parse_page_break_legacy_shorthand(property_id, mut tokens)
+		}
 		.contain_intrinsic_size {
 			return parser.parse_contain_intrinsic_size_shorthand(mut tokens)
 		}
@@ -1776,6 +1779,48 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 	}
 
 	return none
+}
+
+// https://drafts.csswg.org/css-break-3/#page-break-properties
+fn (mut parser Parser) parse_page_break_legacy_shorthand(property_id PropertyID, mut tokens ComponentValueStream) ?StyleValue {
+	tokens.consume_whitespace()
+	component := tokens.consume() or { return none }
+	if !component.is(.ident) {
+		return none
+	}
+	longhand := match property_id {
+		.page_break_after { PropertyID.break_after }
+		.page_break_before { PropertyID.break_before }
+		.page_break_inside { PropertyID.break_inside }
+		else { return none }
+	}
+	ident := to_ascii_lowercase(component.token().ident())
+	keyword := match ident {
+		'auto' { Keyword.auto }
+		'avoid' { Keyword.avoid }
+		'always' {
+			if longhand == .break_inside {
+				return none
+			}
+			Keyword.page
+		}
+		'left' {
+			if longhand == .break_inside {
+				return none
+			}
+			Keyword.left
+		}
+		'right' {
+			if longhand == .break_inside {
+				return none
+			}
+			Keyword.right
+		}
+		else { return none }
+	}
+	return StyleValue(ShorthandStyleValue.create(property_id, [longhand], [
+		StyleValue(KeywordStyleValue.create(keyword)),
+	]))
 }
 
 fn (mut parser Parser) parse_css_wide_keyword_value(mut tokens ComponentValueStream) ?StyleValue {
