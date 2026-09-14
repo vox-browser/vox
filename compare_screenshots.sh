@@ -19,32 +19,63 @@ if [ ! -x "$v_compiler" ]; then
 fi
 
 if [ "$#" -eq 0 ]; then
-    set -- inline-node ordered-list text-decorations
+	set -- inline-node ordered-list text-decorations line-clamp-properties
 fi
 
 mkdir -p "$output_dir"
 comparison_status=0
 
 for requested in "$@"; do
-    case "$requested" in
-        */*) input_path=$requested ;;
-        *) input_path="$upstream_dir/Tests/LibWeb/Screenshot/input/$requested.html" ;;
-    esac
+	test_kind=screenshot
+	case "$requested" in
+		*/*)
+			input_path=$requested
+			case "$input_path" in
+				*/Tests/LibWeb/Ref/input/*) test_kind=reftest ;;
+			esac
+			;;
+		*)
+			input_path="$upstream_dir/Tests/LibWeb/Screenshot/input/$requested.html"
+			if [ ! -f "$input_path" ]; then
+				input_path="$upstream_dir/Tests/LibWeb/Ref/input/$requested.html"
+				test_kind=reftest
+			fi
+			;;
+	esac
     if [ ! -f "$input_path" ]; then
         echo "Screenshot input not found: $input_path" >&2
         exit 1
-    fi
-    name=$(basename "$input_path" .html)
-    expected_path="$upstream_dir/Tests/LibWeb/Screenshot/expected/$name.png"
-    if [ ! -f "$expected_path" ]; then
-        echo "Upstream screenshot reference not found: $expected_path" >&2
-        exit 1
-    fi
+	fi
+	name=$(basename "$input_path" .html)
+	if [ "$test_kind" = reftest ]; then
+		match_href=$(sed -n 's/.*<link[^>]*rel="match"[^>]*href="\([^"]*\)"[^>]*>.*/\1/p' "$input_path" | head -n 1)
+		if [ -z "$match_href" ]; then
+			echo "Upstream reftest match link not found: $input_path" >&2
+			exit 1
+		fi
+		match_dir=$(CDPATH= cd -- "$(dirname -- "$input_path")/$(dirname -- "$match_href")" && pwd)
+		expected_source="$match_dir/$(basename -- "$match_href")"
+		if [ ! -f "$expected_source" ]; then
+			echo "Upstream reftest reference not found: $expected_source" >&2
+			exit 1
+		fi
+		width=${LADYBIRD_REFTEST_WIDTH:-800}
+		height=${LADYBIRD_REFTEST_HEIGHT:-600}
+		expected_path="$output_dir/$name.expected.png"
+		LADYBIRD_LAYOUT_TEST_FONT="$layout_test_font" \
+			"$repo_dir/capture_screenshot.sh" "$expected_source" "$expected_path" "$width" "$height"
+	else
+		expected_path="$upstream_dir/Tests/LibWeb/Screenshot/expected/$name.png"
+		if [ ! -f "$expected_path" ]; then
+			echo "Upstream screenshot reference not found: $expected_path" >&2
+			exit 1
+		fi
+		width=$(sips -g pixelWidth "$expected_path" | awk '/pixelWidth/{print $2}')
+		height=$(sips -g pixelHeight "$expected_path" | awk '/pixelHeight/{print $2}')
+	fi
 
-    actual_path="$output_dir/$name.actual.png"
-    diff_path="$output_dir/$name.diff.png"
-    width=$(sips -g pixelWidth "$expected_path" | awk '/pixelWidth/{print $2}')
-    height=$(sips -g pixelHeight "$expected_path" | awk '/pixelHeight/{print $2}')
+	actual_path="$output_dir/$name.actual.png"
+	diff_path="$output_dir/$name.diff.png"
 
     LADYBIRD_LAYOUT_TEST_FONT="$layout_test_font" \
         "$repo_dir/capture_screenshot.sh" "$input_path" "$actual_path" "$width" "$height"
