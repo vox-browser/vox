@@ -151,6 +151,9 @@ tracked inserted extent.
 Trailing interchange newlines now advance replacement carets into the retained
 destination suffix, preserve genuine empty terminal paragraphs, and materialize
 or enter the correct following list item at list boundaries.
+DOM insertion seams now canonicalize collapsible and protected spaces across
+inline wrappers, stop at atomic clipboard content, and leave preserved
+white-space runs untouched.
 
 The refreshed current-tree semantic inventory reports 4,536 unmatched C++
 spellings. That is a structural review queue rather than a count of missing behaviors: active V
@@ -283,7 +286,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
 | `Animations` | 10 | 5,187 | 3,972 | 1,041 | Complete |
 | `Bindings` | 11 | 2,501 | 2,675 | 918 | Complete |
-| `CSS` | 215 | 47,722 | 103,988 | 8,772 | Present |
+| `CSS` | 215 | 47,722 | 103,995 | 8,772 | Present |
 | `Clipboard` | 4 | 1,009 | 973 | 343 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 424 | 138 | Complete |
@@ -293,7 +296,7 @@ from the current-module totals.
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
 | `DOM` | 59 | 34,859 | 36,103 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
-| `Editing` | 26 | 12,720 | 6,421 | 797 | Complete |
+| `Editing` | 26 | 12,720 | 6,595 | 797 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
 | `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
@@ -305,7 +308,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
 | `Geolocation` | 4 | 643 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 56,528 | 13,524 | Complete |
+| `HTML` | 286 | 83,853 | 56,528 | 13,589 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
@@ -358,7 +361,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **346,414** | **69,558** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **346,595** | **69,623** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
