@@ -90,6 +90,10 @@ list, preserving their rendered paragraph boundaries for rich paste.
 Partial selections inside one text node now materialize computed color,
 background, font, and text-decoration differences from the editing host on a
 clipboard span, retaining formatting that range cloning alone cannot carry.
+Legacy single-`font` runs can now be removed or converted to inline color
+spans, including quirks-mode legacy color parsing and preservation of text-run
+seams. Rich clipboard serialization uses the rendered source color and keeps
+protected whitespace runs independently styled.
 
 The current base-to-head semantic delta audit reports 4,600 unmatched changed
 C++ spellings. That is a structural review queue rather than a count of missing behaviors: active V
@@ -232,7 +236,7 @@ from the current-module totals.
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
 | `DOM` | 59 | 34,859 | 36,098 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
-| `Editing` | 26 | 12,720 | 3,937 | 796 | Complete |
+| `Editing` | 26 | 12,720 | 4,055 | 796 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
 | `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
@@ -250,7 +254,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 43,042 | 15,964 | Present |
+| `Layout` | 9 | 4,001 | 43,042 | 15,988 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -297,7 +301,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **343,816** | **68,435** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **343,934** | **68,459** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
