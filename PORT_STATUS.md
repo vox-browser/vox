@@ -331,6 +331,15 @@ draining follow the current upstream parser. Focused streaming tests cover both
 the initial deferred-start path and the parser-blocking-script regression with
 a late Windows-1252 declaration.
 
+SVG and MathML computed display now follows CSS Display's unboxing rules.
+`display: contents` computes to `none` for an outermost SVG that participates
+in CSS box layout, for SVG elements outside the allowed container/text-child
+set, and for every MathML element. The allowed nested SVG elements continue to
+hoist their contents, and an SVG nested through `foreignObject` correctly
+starts a new outermost-SVG boundary. Focused tests mirror upstream's complete
+13-element SVG computed-display matrix and also cover MathML and the
+`foreignObject` position boundary.
+
 CSS backface visibility now parses, computes, inherits, serializes, and
 interpolates through the typed property pipeline. The transform implementation
 retains full 4x4 matrices, builds explicit and synthetic 3D planes, bounds
@@ -378,7 +387,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
 | `Animations` | 10 | 5,187 | 3,972 | 1,041 | Complete |
 | `Bindings` | 11 | 2,501 | 2,675 | 918 | Complete |
-| `CSS` | 215 | 47,722 | 103,995 | 8,772 | Present |
+| `CSS` | 215 | 47,722 | 104,025 | 8,850 | Present |
 | `Clipboard` | 4 | 1,009 | 973 | 343 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 424 | 138 | Complete |
@@ -453,7 +462,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **349,911** | **70,923** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **349,941** | **71,001** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 

@@ -92,18 +92,22 @@
   the Cocoa view snapshot helper and `sips`; the PNG diff tool itself is portable and
   can be run directly with `v run tools/pixel_diff.v EXPECTED ACTUAL DIFF`.
 
-## Latest translated parser behavior
+## Latest translated behavior
 
 - Incremental HTML parsing retains encoding-sensitive bytes while scripts are
   deferred or the tokenizer is paused on a parser-blocking script. Late meta
   charset declarations can replace the streaming decoder before those bytes
   are consumed, and retained input is drained before implied EOF.
+- SVG and MathML follow CSS Display unboxing rules: `display: contents`
+  computes to `none` for CSS-box SVG roots, non-hoisting SVG elements, and all
+  MathML elements. Nested SVG containers and text children keep `contents`,
+  with `foreignObject` resetting the outermost-SVG boundary.
 
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-19, the module
-translations contain 349,911 implementation V LOC and 70,923 test V LOC.
+translations contain 349,941 implementation V LOC and 71,001 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -111,7 +115,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Module | Implementation V LOC | Module | Implementation V LOC |
 | --- | ---: | --- | ---: |
 | ARIA | 2,535 | Animations | 3,972 |
-| Bindings | 2,675 | CSS | 103,995 |
+| Bindings | 2,675 | CSS | 104,025 |
 | Clipboard | 973 | Compositor | 2,403 |
 | Compression | 424 | ContentSecurityPolicy | 2,738 |
 | CookieStore | 859 | CredentialManagement | 418 |
@@ -149,7 +153,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **349,911** |  |  |
+| **Total** | **349,941** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
