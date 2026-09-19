@@ -219,7 +219,7 @@ boundary. Contenteditable constrains dragging to its active host, controls use
 their shadow text node, and anchor/focus updates retain hit-test affinity while
 keeping the control's selection model synchronized.
 
-The refreshed current-tree semantic inventory reports 4,536 unmatched C++
+The refreshed current-tree semantic inventory reports 4,375 unmatched C++
 spellings. That is a structural review queue rather than a count of missing behaviors: active V
 implementations often consolidate C++ class hierarchies and overloads under a
 single typed path. Empty/default-return implementations are checked separately,
@@ -445,10 +445,10 @@ upstream .cpp files: 1193
 upstream implementations: 21401
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 10
-reviewed upstream-equivalent trivial implementations: 556
+reviewed upstream-equivalent trivial implementations: 557
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 13921
-  unmatched: 4536
+  candidate-name-match: 14082
+  unmatched: 4375
   language-constructor-or-destructor: 1383
   gc-or-binding-runtime: 655
   consolidated-name-match: 490
@@ -461,10 +461,10 @@ largest unmatched modules:
 
   1704 CSS
   1249 HTML
-   628 DOM
+   618 DOM
    406 Painting
    316 Layout
-   233 Editing
+    82 Editing
 
 $ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 788 passed, 301 failed, 1089 total
