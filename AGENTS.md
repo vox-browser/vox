@@ -143,12 +143,16 @@
   stores invalidate at the mutation site, repeated consumers keep the existing
   snapshot, and `LIBWEB_VERIFY_SCROLL_STATE=1` force-derives skipped refreshes
   into a temporary snapshot to verify that the retained offsets are current.
+- Inline layout now finalizes conservative glyph-run ink bounds together with
+  retained replay data after merging, ellipsis, and line clamping. Painting
+  scales and positions those cached CSS-pixel bounds and keeps them distinct
+  from the fragment rectangle for display-list damage and culling.
 
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-20, the module
-translations contain 350,708 implementation V LOC and 71,522 test V LOC.
+translations contain 350,847 implementation V LOC and 71,565 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -170,14 +174,14 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Geometry | 2,062 | HTML | 57,064 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 854 |
-| IntersectionObserver | 569 | Layout | 43,323 |
+| IntersectionObserver | 569 | Layout | 43,335 |
 | Loader | 1,921 | MathML | 411 |
 | MediaCapabilitiesAPI | 676 | MediaCapture | 1,205 |
 | MediaSourceExtensions | 357 | MimeSniff | 1,108 |
 | MixedContent | 125 | NavigationTiming | 291 |
 | NotificationsAPI | 290 | Page | 2,953 |
-| Painting | 7,000 | PerformanceTimeline | 447 |
-| PermissionsAPI | 239 | Platform | 1,750 |
+| Painting | 7,009 | PerformanceTimeline | 447 |
+| PermissionsAPI | 239 | Platform | 1,868 |
 | ReferrerPolicy | 239 | RequestIdleCallback | 59 |
 | ResizeObserver | 420 | ResourceTiming | 338 |
 | SRI | 156 | SVG | 5,184 |
@@ -194,7 +198,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **350,708** |  |  |
+| **Total** | **350,847** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
