@@ -374,6 +374,27 @@ fn test_javascript_bridge_replays_post_paint_canvas_creation_and_resize() {
 	}
 }
 
+fn test_javascript_bridge_replays_created_canvas_glyph_runs() {
+	$if darwin {
+		document := html.parse_document('<!doctype html><body></body>')
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'about:blank', [
+			'const canvas=document.createElement("canvas");canvas.id="text-canvas";canvas.width=120;canvas.height=80;document.body.appendChild(canvas);const context=canvas.getContext("2d");context.fillRect(0,0,1,1);context.font="24px serif";context.save();context.translate(5,10);context.fillText("Text",0,30);context.restore();',
+		], runtime, mut messages)
+		assert messages == []
+		canvas_element := document.get_element_by_id('text-canvas') or { panic('missing canvas') }
+		canvas := unsafe { &dom.HTMLCanvasElement(canvas_element) }
+		bitmap := html.html_canvas_element_surface(canvas) or { panic('missing canvas bitmap') }
+		assert bitmap.width == 120
+		assert bitmap.height == 80
+		assert bitmap.data.any(it != 0)
+	}
+}
+
 fn test_browser_animation_frame_refreshes_paint_only_transforms() {
 	mut document := html.parse_document('<!doctype html><style>@keyframes flip{0%{transform:rotateY(60deg)}0.01%,100%{transform:rotateY(180deg)}}.flip{animation:10s linear infinite flip}#scene{width:100px;height:100px;transform:rotateY(60deg);transform-style:preserve-3d}#target{position:absolute;top:0;left:0;width:200px;height:200px;background:lightblue;transform:rotateY(180deg);backface-visibility:hidden}</style><div id="scene" class="flip"><div id="target"></div></div>')
 	mut app := BrowserApp{

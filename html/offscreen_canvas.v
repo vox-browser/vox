@@ -54,7 +54,10 @@ fn create_transparent_canvas_bitmap(width u32, height u32) !&dom.Bitmap_ {
 		height: int(height)
 		pitch: int(width) * 4
 		format: 0
-		alpha_type: 0
+		// The compact software renderer composites straight-alpha RGBA bytes.
+		// Native retained-glyph replay changes this to premultiplied when it
+		// installs a Skia-rendered canvas snapshot.
+		alpha_type: 1
 		data: []u8{len: int(byte_length)}
 	}
 }
@@ -637,10 +640,10 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) draw_image_internal(reque
 			source_offset := source_y * source.pitch + source_x * 4
 			destination_offset := destination_y * mutable_destination.pitch + destination_x * 4
 			color := dom.Color{
-					r: source_pixels[source_offset]
-					g: source_pixels[source_offset + 1]
-					b: source_pixels[source_offset + 2]
-					a: source_pixels[source_offset + 3]
+				r: source_pixels[source_offset]
+				g: source_pixels[source_offset + 1]
+				b: source_pixels[source_offset + 2]
+				a: source_pixels[source_offset + 3]
 			}
 			canvas_composite_pixel(mut mutable_destination.data, destination_offset, color, context.drawing_state.global_alpha, context.drawing_state.current_compositing_and_blending_operator)
 		}
@@ -649,10 +652,12 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) draw_image_internal(reque
 
 pub fn (context &OffscreenCanvasRenderingContext2D) measure_text(text string) &TextMetrics {
 	mut metrics := TextMetrics.create()
-	font_size := context.drawing_state.font_size_px
-	metrics.set_width(f64(canvas_approximate_glyph_count(text)) * font_size * 0.5)
-	metrics.set_font_bounding_box_ascent(font_size * 0.8)
-	metrics.set_font_bounding_box_descent(font_size * 0.2)
+	replaced := text.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').replace('\f', ' ')
+	run := canvas_text_run(context.drawing_state, replaced, 0)
+	font_metrics := run.font().pixel_metrics()
+	metrics.set_width(f64(run.width()))
+	metrics.set_font_bounding_box_ascent(f64(font_metrics.ascent))
+	metrics.set_font_bounding_box_descent(f64(font_metrics.descent))
 	return metrics
 }
 

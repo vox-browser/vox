@@ -426,6 +426,124 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
         static_cast<float>(region.width()), static_cast<float>(region.height()));
 }
 
+// Canvas command streams retain shaped glyph IDs all the way to the raster
+// backend. The compact V browser stores canvas pixels in unpremultiplied RGBA,
+// so wrap a premultiplied working copy in the same Skia text-blob renderer and
+// copy it back after each retained run.
+extern "C" int ladybird_v_skia_draw_canvas_glyph_run(
+    uint8_t* destination_pixels, int width, int height, int pitch,
+    int pixels_are_premultiplied,
+    char const* font_path, int face_index, uint16_t const* glyphs,
+    double const* packed_positions, int glyph_count, float font_size,
+    int font_weight, float baseline_x, float baseline_y, float transform_a,
+    float transform_b, float transform_c, float transform_d, float transform_e,
+    float transform_f, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha,
+    float gradient_x0, float gradient_y0, float gradient_x1, float gradient_y1,
+    float const* gradient_stops, int gradient_stop_count, float global_alpha,
+    int stroke, int use_outline, float stroke_width)
+{
+    auto* typeface = select_typeface(font_path, face_index, font_weight, 0);
+    if (!destination_pixels || !typeface || !glyphs || !packed_positions
+        || glyph_count <= 0 || width <= 0 || height <= 0 || pitch < width * 4)
+        return 0;
+
+    SkFont font(sk_ref_sp(typeface), std::max(font_size, 0.0f));
+    font.setSubpixel(true);
+    // Match Canvas2DCommandStream playback: canvas text preserves fractional
+    // baselines and uses unhinted outline geometry.
+    font.setHinting(SkFontHinting::kNone);
+    font.setForceAutoHinting(false);
+    font.setBaselineSnap(false);
+    SkTextBlobBuilder builder;
+    auto const& run = builder.allocRunPos(font, glyph_count);
+    for (int index = 0; index < glyph_count; ++index) {
+        run.glyphs[index] = glyphs[index];
+        run.pos[index * 2] = static_cast<SkScalar>(packed_positions[index * 2]);
+        run.pos[index * 2 + 1] = static_cast<SkScalar>(packed_positions[index * 2 + 1]);
+    }
+    auto blob = builder.make();
+    if (!blob)
+        return 0;
+
+    std::vector<uint8_t> premultiplied(static_cast<size_t>(pitch) * height);
+    for (int y = 0; y < height; ++y) {
+        auto const* source = destination_pixels + static_cast<size_t>(y) * pitch;
+        auto* destination = premultiplied.data() + static_cast<size_t>(y) * pitch;
+        for (int x = 0; x < width; ++x) {
+            auto offset = static_cast<size_t>(x) * 4;
+            auto source_alpha = source[offset + 3];
+            destination[offset] = pixels_are_premultiplied ? source[offset]
+                                                            : static_cast<uint8_t>((source[offset] * source_alpha + 127) / 255);
+            destination[offset + 1] = pixels_are_premultiplied ? source[offset + 1]
+                                                                : static_cast<uint8_t>((source[offset + 1] * source_alpha + 127) / 255);
+            destination[offset + 2] = pixels_are_premultiplied ? source[offset + 2]
+                                                                : static_cast<uint8_t>((source[offset + 2] * source_alpha + 127) / 255);
+            destination[offset + 3] = source_alpha;
+        }
+    }
+
+    auto image_info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::WrapPixels(image_info, premultiplied.data(),
+        static_cast<size_t>(pitch));
+    if (!surface)
+        return 0;
+
+    SkPaint paint;
+    paint.setAntiAlias(true);
+    paint.setAlphaf(std::clamp(global_alpha, 0.0f, 1.0f));
+    if (gradient_stops && gradient_stop_count > 0) {
+        std::vector<SkColor4f> colors;
+        std::vector<SkScalar> offsets;
+        colors.reserve(static_cast<size_t>(gradient_stop_count));
+        offsets.reserve(static_cast<size_t>(gradient_stop_count));
+        for (int index = 0; index < gradient_stop_count; ++index) {
+            auto const* stop = gradient_stops + index * 5;
+            offsets.push_back(stop[0]);
+            colors.push_back({ stop[1], stop[2], stop[3], stop[4] });
+        }
+        SkPoint points[] = { { gradient_x0, gradient_y0 }, { gradient_x1, gradient_y1 } };
+        paint.setShader(SkGradientShader::MakeLinear(points, colors.data(),
+            SkColorSpace::MakeSRGB(), offsets.data(), gradient_stop_count,
+            SkTileMode::kClamp));
+    } else {
+        paint.setColor(SkColorSetARGB(alpha, red, green, blue));
+    }
+    if (stroke) {
+        paint.setStyle(SkPaint::kStroke_Style);
+        paint.setStrokeWidth(std::max(stroke_width, 0.0f));
+    }
+
+    auto* canvas = surface->getCanvas();
+    // Canvas bitmap rows are handed to the Cocoa compositor in bottom-up view
+    // coordinates. Store the CSS y-down result reflected in the backing buffer;
+    // native_draw_image_part_in_context() performs the matching row reflection
+    // when the canvas is painted into the document.
+    canvas->setMatrix(SkMatrix::MakeAll(
+        transform_a, transform_c, transform_e,
+        -transform_b, -transform_d, static_cast<float>(height) - transform_f,
+        0.0f, 0.0f, 1.0f));
+    if (use_outline) {
+        SkPath outline;
+        for (int index = 0; index < glyph_count; ++index) {
+            SkPath glyph_path;
+            if (!font.getPath(glyphs[index], &glyph_path))
+                continue;
+            SkMatrix translation = SkMatrix::Translate(
+                baseline_x + static_cast<float>(packed_positions[index * 2]),
+                baseline_y + static_cast<float>(packed_positions[index * 2 + 1]));
+            outline.addPath(glyph_path, translation);
+        }
+        canvas->drawPath(outline, paint);
+    } else {
+        canvas->drawTextBlob(blob, baseline_x, baseline_y, paint);
+    }
+
+    std::memcpy(destination_pixels, premultiplied.data(),
+        static_cast<size_t>(pitch) * height);
+    return 1;
+}
+
 extern "C" int ladybird_v_skia_draw_line(CGContextRef destination,
     float from_x, float from_y, float to_x, float to_y, float thickness,
     int line_style, float canvas_width, float canvas_height, uint8_t red,
@@ -509,7 +627,8 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
     float clip_y, float clip_width, float clip_height, float transform_a,
     float transform_b, float transform_c, float transform_d, float transform_e,
     float transform_f, float page_x, float page_y, float scroll_y,
-    float canvas_width, float canvas_height, float opacity, int nearest_neighbor)
+    float canvas_width, float canvas_height, float opacity, int nearest_neighbor,
+    int premultiplied)
 {
     if (!destination || !source_pixels || image_width <= 0 || image_height <= 0
         || image_pitch < image_width * 4 || destination_width <= 0
@@ -535,7 +654,9 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         return 1;
 
     auto source_info = SkImageInfo::Make(image_width, image_height,
-        kRGBA_8888_SkColorType, kUnpremul_SkAlphaType, SkColorSpace::MakeSRGB());
+        kRGBA_8888_SkColorType,
+        premultiplied ? kPremul_SkAlphaType : kUnpremul_SkAlphaType,
+        SkColorSpace::MakeSRGB());
     SkPixmap source_pixmap(source_info, source_pixels,
         static_cast<size_t>(image_pitch));
     auto source_image = SkImages::RasterFromPixmapCopy(source_pixmap);

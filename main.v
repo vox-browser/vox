@@ -32,6 +32,7 @@ import sokol.sapp
 import stbi
 import sri
 import storageapi
+import strconv
 import time
 import url
 import webvtt
@@ -81,6 +82,8 @@ fn C.native_draw_document_text_srgb(x f32, y f32, text string, color gg.Color, s
 fn C.native_draw_document_text_shadow_srgb(x f32, y f32, text string, color gg.Color, size f32, bold int, italic int, monospace int, blur f32)
 
 fn C.native_draw_document_glyph_run_srgb(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, font_path string, face_index int, color gg.Color, blur f32, shadow_only int) int
+
+fn C.native_draw_canvas_glyph_run_rgba(pixels &u8, width int, height int, pitch int, pixels_are_premultiplied int, glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, font_path string, face_index int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, red u8, green u8, blue u8, alpha u8, gradient_x0 f32, gradient_y0 f32, gradient_x1 f32, gradient_y1 f32, gradient_stops &f32, gradient_stop_count int, global_alpha f32, stroke int, use_outline int, stroke_width f32) int
 
 fn C.native_begin_background_text_clip(canvas_width f32, canvas_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32)
 
@@ -1446,7 +1449,8 @@ fn javascript_program(state map[string]json2.Any, scripts []string) string {
 		'}',
 		'function __classList(s) { function tokens() { return String(s.className || "").trim().split(/\\s+/).filter(Boolean); } function sync(values) { __setAttribute(s,"class",values.join(" ")); } return { add: function () { const values=tokens(); for(const item of arguments){const token=String(item);if(token&&!values.includes(token))values.push(token);} sync(values); }, remove: function () { const removed=Array.prototype.map.call(arguments,String); sync(tokens().filter(function(token){return !removed.includes(token);})); }, contains: function (token) { return tokens().includes(String(token)); }, toggle: function (token, force) { token=String(token); const values=tokens(), present=values.includes(token), add=force===undefined?!present:!!force; if(add&&!present)values.push(token); if(!add&&present)values.splice(values.indexOf(token),1); sync(values); return add; } }; }',
 		'function __canvasDimension(s, name) { const fallback=name === "width" ? 300 : 150; if(s[name]===undefined||s[name]===null||String(s[name])==="")return fallback; const value=Number(s[name]); return Number.isFinite(value) && value >= 0 ? Math.trunc(value) : fallback; }',
-		'function __canvasFor(s) { const key=s.bridgeKey||s.id; let c=__canvases[key]; const width=__canvasDimension(s,"width"),height=__canvasDimension(s,"height"); if(!c)c=__canvases[key]={width:width,height:height,data:new Uint8ClampedArray(width*height*4),fillStyle:"#000000"};else if(c.width!==width||c.height!==height){c.width=width;c.height=height;c.data=new Uint8ClampedArray(width*height*4);c.fillStyle="#000000";} return c; }',
+		'function __canvasDefaultState(){return{fillStyle:"#000000",strokeStyle:"#000000",font:"10px sans-serif",lineWidth:1,globalAlpha:1,textAlign:"start",textBaseline:"alphabetic",direction:"inherit",transform:[1,0,0,1,0,0]};}',
+		'function __canvasFor(s) { const key=s.bridgeKey||s.id; let c=__canvases[key]; const width=__canvasDimension(s,"width"),height=__canvasDimension(s,"height"); if(!c){c=__canvases[key]={width:width,height:height,data:new Uint8ClampedArray(width*height*4),textOperations:[],stack:[]};Object.assign(c,__canvasDefaultState());}else if(c.width!==width||c.height!==height){c.width=width;c.height=height;c.data=new Uint8ClampedArray(width*height*4);c.textOperations=[];c.stack=[];Object.assign(c,__canvasDefaultState());} return c; }',
 		'function __decodeBase64(input) { const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"; const clean=String(input||"").replace(/[^A-Za-z0-9+/]/g,""); const output=new Uint8ClampedArray(Math.floor(clean.length*3/4)); let bits=0,value=0,index=0; for(const ch of clean){const digit=alphabet.indexOf(ch);if(digit<0)continue;value=(value<<6)|digit;bits+=6;if(bits>=8){bits-=8;output[index++]=(value>>bits)&255;}} return index===output.length?output:output.slice(0,index); }',
 		'function __videoFor(s) { if(s.__videoFrame)return s.__videoFrame; if(!s.videoPixels)return null; return s.__videoFrame={width:+s.videoWidth||0,height:+s.videoHeight||0,data:__decodeBase64(s.videoPixels)}; }',
 		'function __setElementSource(s,value) { __setAttribute(s,"src",value); if(s.tagName==="video"){const frame=__state.videoSources[s.src];if(frame){s.readyState=2;s.videoWidth=frame.width;s.videoHeight=frame.height;s.videoPixels=frame.pixels;s.__videoFrame=null;}} if(s.tagName==="img"){s.complete=true;const target=__element(s),event={type:"load",target:target};for(const listener of (__listeners[__listenerKey(s,"load")]||[]))listener.call(target,event);} }',
@@ -1454,7 +1458,10 @@ fn javascript_program(state map[string]json2.Any, scripts []string) string {
 		'function __canvasColor(value) { const names={black:[0,0,0,255],white:[255,255,255,255],red:[255,0,0,255],green:[0,128,0,255],blue:[0,0,255,255],transparent:[0,0,0,0]}; const text=String(value).trim().toLowerCase(); if(names[text])return names[text]; let match=/^#([0-9a-f]{6})\$/.exec(text);if(match)return[parseInt(match[1].slice(0,2),16),parseInt(match[1].slice(2,4),16),parseInt(match[1].slice(4,6),16),255];match=/^rgba?\\(\\s*(\\d+)\\s*[, ]\\s*(\\d+)\\s*[, ]\\s*(\\d+)(?:\\s*[,/]\\s*([0-9.]+))?\\s*\\)\$/.exec(text);return match?[+match[1],+match[2],+match[3],match[4]===undefined?255:Math.round(+match[4]*255)]:[0,0,0,255]; }',
 		'function __canvasFill(c,x,y,w,h,color) { const left=Math.max(0,Math.floor(Math.min(x,x+w))),top=Math.max(0,Math.floor(Math.min(y,y+h))),right=Math.min(c.width,Math.ceil(Math.max(x,x+w))),bottom=Math.min(c.height,Math.ceil(Math.max(y,y+h))); for(let yy=top;yy<bottom;++yy)for(let xx=left;xx<right;++xx){const i=(yy*c.width+xx)*4;c.data[i]=color[0];c.data[i+1]=color[1];c.data[i+2]=color[2];c.data[i+3]=color[3];} }',
 		'function __canvasDraw(destination,source,args) { const snapshot=source.data.slice(); let sx=0,sy=0,sw=source.width,sh=source.height,dx=+args[0],dy=+args[1],dw=sw,dh=sh; if(args.length===4){dw=+args[2];dh=+args[3];}else if(args.length>=8){sx=+args[0];sy=+args[1];sw=+args[2];sh=+args[3];dx=+args[4];dy=+args[5];dw=+args[6];dh=+args[7];} if(!sw||!sh||!dw||!dh)return; const left=Math.max(0,Math.floor(Math.min(dx,dx+dw))),top=Math.max(0,Math.floor(Math.min(dy,dy+dh))),right=Math.min(destination.width,Math.ceil(Math.max(dx,dx+dw))),bottom=Math.min(destination.height,Math.ceil(Math.max(dy,dy+dh))); for(let y=top;y<bottom;++y)for(let x=left;x<right;++x){const sourceX=Math.floor(sx+(x-dx)/dw*sw),sourceY=Math.floor(sy+(y-dy)/dh*sh);if(sourceX<0||sourceY<0||sourceX>=source.width||sourceY>=source.height)continue;const si=(sourceY*source.width+sourceX)*4,di=(y*destination.width+x)*4;destination.data[di]=snapshot[si];destination.data[di+1]=snapshot[si+1];destination.data[di+2]=snapshot[si+2];destination.data[di+3]=snapshot[si+3];} }',
-		'function __canvasContext(s) { const c=__canvasFor(s); if(c.context)return c.context; const target={fillRect:function(x,y,w,h){s.canvasVideoSource="";__canvasFill(c,+x,+y,+w,+h,__canvasColor(c.fillStyle));},clearRect:function(x,y,w,h){s.canvasVideoSource="";__canvasFill(c,+x,+y,+w,+h,[0,0,0,0]);},drawImage:function(source){if(!source||!source.__state)throw new TypeError("Unsupported CanvasImageSource");const sourceState=source.__state;const image=sourceState.tagName==="canvas"?__canvasFor(sourceState):sourceState.tagName==="video"?__videoFor(sourceState):null;if(!image)throw new TypeError("Unsupported CanvasImageSource");const args=Array.prototype.slice.call(arguments,1);__canvasDraw(c,image,args);s.canvasVideoSource=sourceState.tagName==="video"&&args.length===2&&+args[0]===0&&+args[1]===0&&c.width===image.width&&c.height===image.height?sourceState.id:"";}}; c.context=new Proxy(target,{get:function(o,p){return p==="fillStyle"?c.fillStyle:o[p];},set:function(o,p,v){if(p==="fillStyle"){c.fillStyle=String(v);return true;}o[p]=v;return true;}}); return c.context; }',
+		'function __canvasMultiply(a,b){return[a[0]*b[0]+a[2]*b[1],a[1]*b[0]+a[3]*b[1],a[0]*b[2]+a[2]*b[3],a[1]*b[2]+a[3]*b[3],a[0]*b[4]+a[2]*b[5]+a[4],a[1]*b[4]+a[3]*b[5]+a[5]];}',
+		'function __canvasStyleSnapshot(style){if(style&&style.__canvasGradient)return{kind:"linear-gradient",x0:style.x0,y0:style.y0,x1:style.x1,y1:style.y1,stops:style.stops.slice()};return{kind:"color",color:String(style)};}',
+		'function __canvasTextOperation(c,kind,text,x,y,maxWidth){const operation={kind:kind,text:String(text),x:+x,y:+y,font:c.font,lineWidth:c.lineWidth,globalAlpha:c.globalAlpha,textAlign:c.textAlign,textBaseline:c.textBaseline,direction:c.direction,transform:c.transform.slice(),style:__canvasStyleSnapshot(kind==="fillText"?c.fillStyle:c.strokeStyle)};if(maxWidth!==undefined)operation.maxWidth=+maxWidth;c.textOperations.push(operation);}',
+		'function __canvasContext(s) { const c=__canvasFor(s); if(c.context)return c.context; const target={fillRect:function(x,y,w,h){s.canvasVideoSource="";__canvasFill(c,+x,+y,+w,+h,__canvasColor(c.fillStyle));},clearRect:function(x,y,w,h){s.canvasVideoSource="";__canvasFill(c,+x,+y,+w,+h,[0,0,0,0]);},drawImage:function(source){if(!source||!source.__state)throw new TypeError("Unsupported CanvasImageSource");const sourceState=source.__state;const image=sourceState.tagName==="canvas"?__canvasFor(sourceState):sourceState.tagName==="video"?__videoFor(sourceState):null;if(!image)throw new TypeError("Unsupported CanvasImageSource");const args=Array.prototype.slice.call(arguments,1);__canvasDraw(c,image,args);s.canvasVideoSource=sourceState.tagName==="video"&&args.length===2&&+args[0]===0&&+args[1]===0&&c.width===image.width&&c.height===image.height?sourceState.id:"";},save:function(){c.stack.push({fillStyle:c.fillStyle,strokeStyle:c.strokeStyle,font:c.font,lineWidth:c.lineWidth,globalAlpha:c.globalAlpha,textAlign:c.textAlign,textBaseline:c.textBaseline,direction:c.direction,transform:c.transform.slice()});},restore:function(){const state=c.stack.pop();if(state)Object.assign(c,state);},translate:function(x,y){c.transform=__canvasMultiply(c.transform,[1,0,0,1,+x,+y]);},rotate:function(angle){const cosine=Math.cos(+angle),sine=Math.sin(+angle);c.transform=__canvasMultiply(c.transform,[cosine,sine,-sine,cosine,0,0]);},scale:function(x,y){c.transform=__canvasMultiply(c.transform,[+x,0,0,+y,0,0]);},fillText:function(text,x,y,maxWidth){__canvasTextOperation(c,"fillText",text,x,y,maxWidth);},strokeText:function(text,x,y,maxWidth){__canvasTextOperation(c,"strokeText",text,x,y,maxWidth);},createLinearGradient:function(x0,y0,x1,y1){return{__canvasGradient:true,x0:+x0,y0:+y0,x1:+x1,y1:+y1,stops:[],addColorStop:function(offset,color){offset=+offset;if(!Number.isFinite(offset)||offset<0||offset>1)throw new Error("IndexSizeError");this.stops.push({offset:offset,color:String(color)});}};}}; c.context=new Proxy(target,{get:function(o,p){return p in c?c[p]:o[p];},set:function(o,p,v){if(p==="fillStyle"||p==="strokeStyle"){c[p]=v&&v.__canvasGradient?v:String(v);return true;}if(p==="font"){c.font=String(v);return true;}if(p==="lineWidth"){const value=+v;if(Number.isFinite(value)&&value>0)c.lineWidth=value;return true;}if(p==="globalAlpha"){const value=+v;if(Number.isFinite(value)&&value>=0&&value<=1)c.globalAlpha=value;return true;}if(p==="textAlign"&&String(v) in {start:1,end:1,left:1,right:1,center:1}){c.textAlign=String(v);return true;}if(p==="textBaseline"&&String(v) in {top:1,hanging:1,middle:1,alphabetic:1,ideographic:1,bottom:1}){c.textBaseline=String(v);return true;}if(p==="direction"&&String(v) in {ltr:1,rtl:1,inherit:1}){c.direction=String(v);return true;}o[p]=v;return true;}}); return c.context; }',
 		'function __element(s) {',
 		'  if (!s.__object) {',
 		'    const o = { getAttribute: function (n) { n=__attributeName(s,n); return Object.prototype.hasOwnProperty.call(s.attributes,n)?s.attributes[n]:null; }, hasAttribute: function(n){return Object.prototype.hasOwnProperty.call(s.attributes,__attributeName(s,n));}, setAttribute: function (n, v) { n=__attributeName(s,n); if(n==="src")__setElementSource(s,v);else if(n==="data")__setElementData(s,v);else __setAttribute(s,n,v); }, removeAttribute:function(n){__removeAttribute(s,n);}, remove:function(){if(!s.removed){s.removed=true;__state.operations.push({op:"remove",target:s.bridgeKey});}}, addEventListener: function (n, f) { (__listeners[__listenerKey(s, n)] ||= []).push(f); if(s.tagName==="video"&&s.readyState>=2&&(n==="loadeddata"||n==="seeked"))f.call(this,{type:n,target:this}); if(s.tagName==="img"&&s.complete&&n==="load")f.call(this,{type:n,target:this}); }, append: function (child) { return this.appendChild(child); }, appendChild: function (child) { const c=child&&child.__state; if(!c)return child; if(s.tagName==="#document-fragment"){s.children.push(c);s.hasChildren=true;}else{__state.operations.push({op:"appendCreated",target:s.bridgeKey,child:c});s.hasChildren=true;} return child; }, insertBefore:function(child,reference){const c=child&&child.__state,r=reference&&reference.__state;if(c){__state.operations.push({op:"insertCreated",target:s.bridgeKey,child:c,reference:r?r.bridgeKey:"",referenceFirstChild:!!(reference&&reference.__firstChildOf===s.bridgeKey)});s.hasChildren=true;}return child;}, moveBefore:function(child,reference){const c=child&&child.__state,r=reference&&reference.__state;if(c)__state.operations.push({op:"moveBefore",target:s.bridgeKey,child:c.bridgeKey,reference:r?r.bridgeKey:""});}, animate:function(keyframes){const frames=Array.isArray(keyframes)?keyframes:[keyframes];const finalFrame=frames.length?frames[frames.length-1]:{};for(const name of Object.keys(finalFrame||{}))__setAttribute(s,__styleName(name),finalFrame[name]);return{finished:Promise.resolve()};}, decode:function(){return s.tagName==="img"?Promise.resolve():Promise.reject(new Error("InvalidStateError"));}, getContext: function(kind) { return s.tagName === "canvas" && String(kind).toLowerCase() === "2d" ? __canvasContext(s) : null; }, getStartDate:function(){return new Date(s.startDateValid?+s.startDate:NaN);}, play:function(){return Promise.resolve();} };',
@@ -1468,13 +1475,13 @@ fn javascript_program(state map[string]json2.Any, scripts []string) string {
 		'const __selection={addRange:function(range){if(range&&range.selected)__state.operations.push({op:"selectNodeContents",target:range.selected.target,firstChild:range.selected.firstChild});}};',
 		'const document = { getElementById: function (id) { const s=__elementStates().find(function(item){return item.id===String(id);}); return s ? __element(s) : null; }, getElementsByTagName: function(name) { const tag=String(name).toLowerCase(); return __elementStates().filter(function(s){return tag==="*"||s.tagName.toLowerCase()===tag;}).map(__element); }, querySelector: function (q) { const s=__elementStates().find(function(item){return __matches(item,q);});return s?__element(s):null; }, addEventListener: function (n, f) { (__listeners[__listenerKey(null, n)] ||= []).push(f); }, createElement: function (name) { return __createElement("http://www.w3.org/1999/xhtml",String(name).toLowerCase()); }, createElementNS:function(namespaceURI,name){return __createElement(namespaceURI,name);}, createDocumentFragment:function(){return __createElement("","#document-fragment");}, createTextNode: function(text) { return {__state:{tagName:"#text",textContent:String(text)}}; }, createRange:__range };',
 		'Object.defineProperty(document, "title", { get: function () { return __state.title; }, set: function (v) { __state.title = String(v); } });',
-		'document.documentElement={classList:{add:function(){},remove:function(){},contains:function(){return false;}}}; document.body = {appendChild:function(child){return child;}}; Object.defineProperties(document.body, { innerHTML: { get: function () { return __state.bodyHTML; }, set: function (v) { __state.bodyHTML = String(v); __state.bodyHTMLDirty = true; __state.bodyTextDirty = false; } }, textContent: { get: function () { return __state.bodyText; }, set: function (v) { __state.bodyText = String(v); __state.bodyHTML = ""; __state.bodyTextDirty = true; __state.bodyHTMLDirty = false; } } });',
+		'const __htmlState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="html";}),__bodyState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="body";});document.documentElement=__htmlState?__element(__htmlState):{classList:{add:function(){},remove:function(){},contains:function(){return false;}}};document.body=__bodyState?__element(__bodyState):{appendChild:function(child){return child;}};',
 		'const console = { log: function () { __state.logs.push(Array.prototype.map.call(arguments, String).join(" ")); }, warn: function () { this.log.apply(this, arguments); }, error: function () { this.log.apply(this, arguments); } };',
 		'const location = {}; Object.defineProperty(location, "href", { get: function () { return __state.location; }, set: function (v) { __state.navigate = String(v); } });',
 		'const window = globalThis; window.window = window; window.document = document; window.console = console; window.location = location; window.alert = function (v) { console.log(v); }; window.setTimeout = function (f) { if (typeof f === "function") f(); return 1; }; window.requestAnimationFrame = function(f){if(typeof f === "function")f(Date.now());return 1;}; window.addEventListener = document.addEventListener; window.getSelection=function(){return __selection;}; window.Image=function(){return document.createElement("img");}; window.HTMLMediaElement={HAVE_NOTHING:0,HAVE_METADATA:1,HAVE_CURRENT_DATA:2,HAVE_FUTURE_DATA:3,HAVE_ENOUGH_DATA:4}; window.internals={imageAnimationStateForURL:function(){return{timerActive:true,frameIndex:1};},signalTestIsDone:function(){},spoofCurrentURL:function(){}}; if(!Promise.withResolvers)Promise.withResolvers=function(){let resolve,reject;const promise=new Promise(function(a,b){resolve=a;reject=b;});return{promise:promise,resolve:resolve,reject:reject};};',
 		'for (const s of __elementStates()) { if(!s.id)continue; try { window[s.id] = document.getElementById(s.id); } catch (_) {} }',
 		'window.__ladybirdSnapshot = function () { return JSON.stringify(__state); };',
-		'window.__ladybirdFinalize = function () { for (const key of Object.keys(__canvases)) { const c=__canvases[key]; __state.elements[key].canvasPixels=Array.from(c.data); __state.elements[key].canvasWidth=c.width; __state.elements[key].canvasHeight=c.height; } return window.__ladybirdSnapshot(); };',
+		'window.__ladybirdFinalize = function () { for (const key of Object.keys(__canvases)) { const c=__canvases[key]; __state.elements[key].canvasPixels=Array.from(c.data); __state.elements[key].canvasWidth=c.width; __state.elements[key].canvasHeight=c.height; __state.elements[key].canvasTextOperations=c.textOperations; } return window.__ladybirdSnapshot(); };',
 		'window.__ladybirdClearLogs = function () { __state.logs = []; __state.bodyHTMLDirty = false; __state.bodyTextDirty = false; };',
 		'window.__ladybirdDispatch = function (name, id) { const s = String(id)===""?null:(__elementStates().find(function(item){return item.id===String(id);}) || null); const target = s ? __element(s) : document; const event = { type: name, target: target, defaultPrevented: false, preventDefault: function () { this.defaultPrevented = true; } }; for (const listener of (__listeners[__listenerKey(s, name)] || [])) { try { listener.call(target, event); } catch (e) { console.error(e); } } if (!s && typeof window["on" + name] === "function") { try { window["on" + name].call(window, event); } catch (e) { console.error(e); } } if (s && name === "click" && s.onclick) { try { Function("event", s.onclick).call(target, event); } catch (e) { console.error(e); } } __state.defaultPrevented = event.defaultPrevented; return window.__ladybirdSnapshot(); };',
 		'const __scripts = ${scripts_json}; for (const __source of __scripts) { try { (0, eval)(__source); } catch (e) { console.error(e && e.stack ? e.stack : e); } }',
@@ -1511,6 +1518,35 @@ fn json_int_property(object map[string]json2.Any, name string) ?int {
 	}
 }
 
+fn json_number(value json2.Any) ?f64 {
+	return match value {
+		int { f64(value) }
+		i64 { f64(value) }
+		i32 { f64(value) }
+		u64 { f64(value) }
+		u32 { f64(value) }
+		f64 { value }
+		f32 { f64(value) }
+		else { none }
+	}
+}
+
+fn json_number_property(object map[string]json2.Any, name string) ?f64 {
+	return json_number(object[name] or { return none })
+}
+
+fn json_number_array_property(object map[string]json2.Any, name string) []f64 {
+	value := object[name] or { return []f64{} }
+	if value !is []json2.Any {
+		return []f64{}
+	}
+	mut result := []f64{cap: (value as []json2.Any).len}
+	for item in value as []json2.Any {
+		result << (json_number(item) or { 0.0 })
+	}
+	return result
+}
+
 fn json_byte_array_property(object map[string]json2.Any, name string) []u8 {
 	value := object[name] or { return []u8{} }
 	if value !is []json2.Any {
@@ -1533,6 +1569,188 @@ fn json_byte_array_property(object map[string]json2.Any, name string) []u8 {
 	return result
 }
 
+fn canvas_css_font(value string) platform.Font {
+	trimmed := value.trim_space()
+	mut point_size := f32(10)
+	mut family := 'sans-serif'
+	mut weight := 400
+	if trimmed.to_lower().contains('bold') {
+		weight = 700
+	}
+	if pixel_end := trimmed.index('px') {
+		mut number_start := pixel_end
+		for number_start > 0 && trimmed[number_start - 1] in [`0`, `1`, `2`, `3`, `4`, `5`, `6`,
+			`7`, `8`, `9`, `.`, `+`, `-`] {
+			number_start--
+		}
+		if parsed := strconv.atof64(trimmed[number_start..pixel_end]) {
+			if parsed > 0 {
+				point_size = f32(parsed)
+			}
+		}
+		family_text := trimmed[pixel_end + 2..].trim_space()
+		if family_text != '' {
+			family = family_text.split(',')[0].trim_space().trim('"\'')
+		}
+	}
+	return platform.Font{
+		family: family
+		point_size: point_size
+		weight: weight
+	}
+}
+
+fn canvas_matrix_multiply(left []f64, right []f64) []f64 {
+	return [
+		left[0] * right[0] + left[2] * right[1],
+		left[1] * right[0] + left[3] * right[1],
+		left[0] * right[2] + left[2] * right[3],
+		left[1] * right[2] + left[3] * right[3],
+		left[0] * right[4] + left[2] * right[5] + left[4],
+		left[1] * right[4] + left[3] * right[5] + left[5],
+	]
+}
+
+fn canvas_text_transform(operation map[string]json2.Any, text_width f64,
+	font &platform.Font) []f64 {
+	mut transform := [f64(1), 0, 0, 1, 0, 0]
+	mut rendered_width := text_width
+	if max_width := json_number_property(operation, 'maxWidth') {
+		if max_width <= 0 {
+			return []f64{}
+		}
+		if rendered_width > max_width {
+			scale := max_width / rendered_width
+			transform = [scale, 0, 0, 1, 0, 0]
+			rendered_width = max_width
+		}
+	}
+	align := json_string_property(operation, 'textAlign') or { 'start' }
+	direction := json_string_property(operation, 'direction') or { 'inherit' }
+	mut alignment_offset := 0.0
+	if align == 'center' {
+		alignment_offset = -rendered_width / 2.0
+	} else if align == 'right' || (align == 'end' && direction != 'rtl')
+		|| (align == 'start' && direction == 'rtl') {
+		alignment_offset = -rendered_width
+	}
+	if alignment_offset != 0 {
+		transform = canvas_matrix_multiply([f64(1), 0, 0, 1, alignment_offset, 0], transform)
+	}
+	metrics := font.pixel_metrics()
+	baseline := json_string_property(operation, 'textBaseline') or { 'alphabetic' }
+	baseline_offset := match baseline {
+		'top' { f64(metrics.ascent) }
+		'hanging' { f64(metrics.ascent) * 0.8 }
+		'middle' { f64(metrics.ascent - metrics.descent) / 2.0 }
+		'ideographic', 'bottom' { -f64(metrics.descent) }
+		else { 0.0 }
+	}
+	if baseline_offset != 0 {
+		transform = canvas_matrix_multiply([f64(1), 0, 0, 1, 0, baseline_offset], transform)
+	}
+	return transform
+}
+
+fn replay_javascript_canvas_text(mut pixels []u8, width int, height int,
+	state map[string]json2.Any) bool {
+	$if macos {
+		operations_value := state['canvasTextOperations'] or { return false }
+		if operations_value !is []json2.Any || width <= 0 || height <= 0
+			|| pixels.len != width * height * 4 {
+			return false
+		}
+		mut pixels_are_premultiplied := false
+		for item in operations_value as []json2.Any {
+			if item !is map[string]json2.Any {
+				continue
+			}
+			operation := item as map[string]json2.Any
+			kind := json_string_property(operation, 'kind') or { continue }
+			text := (json_string_property(operation, 'text') or { '' }).replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').replace('\f', ' ')
+			if text == '' {
+				continue
+			}
+			x := json_number_property(operation, 'x') or { continue }
+			y := json_number_property(operation, 'y') or { continue }
+			font := canvas_css_font(json_string_property(operation, 'font') or {
+				'10px sans-serif'
+			})
+			direction := if (json_string_property(operation, 'direction') or { 'inherit' }) == 'rtl' {
+				platform.GlyphRunTextType.rtl
+			} else {
+				platform.GlyphRunTextType.ltr
+			}
+			run := platform.shape_text(0, 0, text, &font, direction)
+			glyphs := run.glyph_indices()
+			positions := run.glyph_positions()
+			if glyphs.len == 0 || positions.len != glyphs.len * 2 {
+				continue
+			}
+			text_transform := canvas_text_transform(operation, f64(run.width()), &font)
+			if text_transform.len != 6 {
+				continue
+			}
+			mut current_transform := json_number_array_property(operation, 'transform')
+			if current_transform.len != 6 {
+				current_transform = [f64(1), 0, 0, 1, 0, 0]
+			}
+			transform := canvas_matrix_multiply(current_transform, text_transform)
+			mut paint_color := css.Color{ a: 255 }
+			mut gradient_x0 := f32(0)
+			mut gradient_y0 := f32(0)
+			mut gradient_x1 := f32(0)
+			mut gradient_y1 := f32(0)
+			mut gradient_stops := [f32(0)]
+			mut gradient_stop_count := 0
+			if style_value := operation['style'] {
+				if style_value is map[string]json2.Any {
+					style := style_value as map[string]json2.Any
+					if (json_string_property(style, 'kind') or { 'color' }) == 'linear-gradient' {
+						gradient_x0 = f32(json_number_property(style, 'x0') or { 0 })
+						gradient_y0 = f32(json_number_property(style, 'y0') or { 0 })
+						gradient_x1 = f32(json_number_property(style, 'x1') or { 0 })
+						gradient_y1 = f32(json_number_property(style, 'y1') or { 0 })
+						if stops_value := style['stops'] {
+							if stops_value is []json2.Any {
+								gradient_stops.clear()
+								for stop_value in stops_value as []json2.Any {
+									if stop_value !is map[string]json2.Any {
+										continue
+									}
+									stop := stop_value as map[string]json2.Any
+									stop_color := css.parse_color_string(json_string_property(stop, 'color') or { 'black' }) or { continue }
+									gradient_stops << f32(json_number_property(stop, 'offset') or {
+										0
+									})
+									gradient_stops << f32(stop_color.r) / 255.0
+									gradient_stops << f32(stop_color.g) / 255.0
+									gradient_stops << f32(stop_color.b) / 255.0
+									gradient_stops << f32(stop_color.a) / 255.0
+									gradient_stop_count++
+								}
+							}
+						}
+					} else {
+						paint_color = css.parse_color_string(json_string_property(style, 'color') or {
+							'black'
+						}) or { css.Color{ a: 255 } }
+					}
+				}
+			}
+			font_path := font.font_path() or { '' }
+			did_draw := C.native_draw_canvas_glyph_run_rgba(pixels.data, width, height, width * 4, int(pixels_are_premultiplied), glyphs.data, positions.data, glyphs.len, font.point_size, font.weight, font_path, font.face_index(), f32(x), f32(y), f32(transform[0]), f32(transform[1]), f32(transform[2]), f32(transform[3]), f32(transform[4]), f32(transform[5]), paint_color.r, paint_color.g, paint_color.b, paint_color.a, gradient_x0, gradient_y0, gradient_x1, gradient_y1, gradient_stops.data, gradient_stop_count, f32(json_number_property(operation, 'globalAlpha') or { 1 }), if kind == 'strokeText' {
+				1
+			} else {
+				0
+			}, if kind == 'strokeText' || 'maxWidth' in operation { 1 } else { 0 }, f32(json_number_property(operation, 'lineWidth') or { 1 }))
+			pixels_are_premultiplied = pixels_are_premultiplied || did_draw != 0
+		}
+		return pixels_are_premultiplied
+	}
+	return false
+}
+
 fn apply_javascript_element_attribute(mut element dom.Element, name string, value ?string) {
 	old_value := element.get_attribute(name)
 	if value == old_value {
@@ -1545,8 +1763,7 @@ fn apply_javascript_element_attribute(mut element dom.Element, name string, valu
 	}
 	if element.local_name() == 'img' && name == 'src' {
 		image := unsafe { &dom.HTMLImageElement(&element) }
-		html.html_image_element_form_associated_element_attribute_changed(image, 'src', old_value,
-			value, none)
+		html.html_image_element_form_associated_element_attribute_changed(image, 'src', old_value, value, none)
 		mut node := unsafe { &dom.Node(&element) }
 		node.set_needs_layout_update(.html_image_element_update_the_image_data)
 		node.set_needs_repaint(.yes)
@@ -1610,6 +1827,52 @@ fn javascript_created_node(document &dom.Document, state map[string]json2.Any, m
 		element_by_bridge_key[bridge_key] = element
 	}
 	return element.as_node()
+}
+
+fn apply_javascript_canvas_state(document &dom.Document, mut element dom.Element,
+	element_state map[string]json2.Any) {
+	if element.local_name() != 'canvas' {
+		return
+	}
+	width := json_int_property(element_state, 'canvasWidth') or { return }
+	height := json_int_property(element_state, 'canvasHeight') or { return }
+	mut pixels := json_byte_array_property(element_state, 'canvasPixels')
+	// A full-size video draw is a snapshot of its decoded frame. Preserve that
+	// source directly across the lightweight JS bridge; serializing millions of
+	// byte-valued JSON numbers is both lossy and needlessly expensive.
+	if source_id := json_string_property(element_state, 'canvasVideoSource') {
+		if source_element := document.get_element_by_id(source_id) {
+			if source_element.local_name() == 'video' {
+				video := unsafe { &dom.HTMLVideoElement(source_element) }
+				model := html.html_video_element_model_for_dom_element(video)
+				if source_frame := model.current_decoded_image_frame() {
+					source_bitmap := source_frame.bitmap()
+					if source_bitmap.width == width && source_bitmap.height == height {
+						pixels = source_bitmap.data.clone()
+					}
+				}
+			}
+		}
+	}
+	if width < 0 || height < 0 || pixels.len != width * height * 4 {
+		return
+	}
+	pixels_are_premultiplied := replay_javascript_canvas_text(mut pixels, width, height,
+		element_state)
+	mut canvas := unsafe { &dom.HTMLCanvasElement(element) }
+	if html.html_canvas_element_width(canvas) != u32(width) {
+		html.html_canvas_element_set_width(mut canvas, u32(width)) or { return }
+	}
+	if html.html_canvas_element_height(canvas) != u32(height) {
+		html.html_canvas_element_set_height(mut canvas, u32(height)) or { return }
+	}
+	mut context := html.html_canvas_element_get_context(canvas, '2d', none) or { return }
+	bitmap := context.surface() or { return }
+	mut mutable_bitmap := unsafe { &dom.Bitmap_(bitmap) }
+	mutable_bitmap.data = pixels.clone()
+	mutable_bitmap.pitch = width * 4
+	mutable_bitmap.alpha_type = if pixels_are_premultiplied { u8(0) } else { u8(1) }
+	context.did_draw(html.CanvasFloatRect{0, 0, f64(width), f64(height)})
 }
 
 fn apply_javascript_state(document &dom.Document, encoded string, mut messages []string) ?string {
@@ -1709,45 +1972,7 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 					}
 				}
 				if element.local_name() == 'canvas' {
-					width := json_int_property(element_state, 'canvasWidth') or { continue }
-					height := json_int_property(element_state, 'canvasHeight') or { continue }
-					mut pixels := json_byte_array_property(element_state, 'canvasPixels')
-					// A full-size video draw is a snapshot of its decoded frame. Preserve
-					// that source directly across the lightweight JS bridge; serializing
-					// millions of byte-valued JSON numbers is both lossy in JavaScriptCore's
-					// compatibility path and needlessly expensive.
-					if source_id := json_string_property(element_state, 'canvasVideoSource') {
-						if source_element := document.get_element_by_id(source_id) {
-							if source_element.local_name() == 'video' {
-								video := unsafe { &dom.HTMLVideoElement(source_element) }
-								model := html.html_video_element_model_for_dom_element(video)
-								if source_frame := model.current_decoded_image_frame() {
-									source_bitmap := source_frame.bitmap()
-									if source_bitmap.width == width && source_bitmap.height == height {
-										pixels = source_bitmap.data.clone()
-									}
-								}
-							}
-						}
-					}
-					if width < 0 || height < 0 || pixels.len != width * height * 4 {
-						continue
-					}
-					mut canvas := unsafe { &dom.HTMLCanvasElement(element) }
-					if html.html_canvas_element_width(canvas) != u32(width) {
-						html.html_canvas_element_set_width(mut canvas, u32(width)) or { continue }
-					}
-					if html.html_canvas_element_height(canvas) != u32(height) {
-						html.html_canvas_element_set_height(mut canvas, u32(height)) or { continue }
-					}
-					mut context := html.html_canvas_element_get_context(canvas, '2d', none) or {
-						continue
-					}
-					bitmap := context.surface() or { continue }
-					mut mutable_bitmap := unsafe { &dom.Bitmap_(bitmap) }
-					mutable_bitmap.data = pixels.clone()
-					mutable_bitmap.pitch = width * 4
-					context.did_draw(html.CanvasFloatRect{0, 0, f64(width), f64(height)})
+					apply_javascript_canvas_state(document, mut element, element_state)
 				}
 			}
 		}
@@ -1816,6 +2041,22 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 					if mut selection := document.get_selection() {
 						selection.add_range(range)
 					}
+				}
+			}
+		}
+	}
+	// Created canvases only acquire their DOM node while replaying append/insert
+	// operations above. Apply all canvas snapshots once more after that pass so
+	// dynamically-created canvases receive their backing pixels as well.
+	if element_values := state['elements'] {
+		if element_values is map[string]json2.Any {
+			for bridge_key, item in element_values as map[string]json2.Any {
+				if item !is map[string]json2.Any {
+					continue
+				}
+				mut element := element_by_bridge_key[bridge_key] or { continue }
+				if element.local_name() == 'canvas' {
+					apply_javascript_canvas_state(document, mut element, item as map[string]json2.Any)
 				}
 			}
 		}
@@ -2745,8 +2986,7 @@ fn (mut app BrowserApp) draw_native_svg_pattern_path(path_data []f32, even_odd b
 					.begin_filter {
 						C.native_begin_svg_pattern_filter_layer(f32(tile.width), f32(tile.height))
 						if filter := operation.filter {
-							app.add_native_css_filter(filter, [f64(1), 0, 0, 1, 0, 0]!, 0,
-								0)
+							app.add_native_css_filter(filter, [f64(1), 0, 0, 1, 0, 0]!, 0, 0)
 						}
 					}
 					.begin_opacity {
@@ -4270,7 +4510,8 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					canvas_image := &gg.Image{
 						width: bitmap.width
 						height: bitmap.height
-						nr_channels: 4
+						// Five is a private native marker for premultiplied RGBA.
+						nr_channels: if bitmap.alpha_type == 0 { 5 } else { 4 }
 						ok: true
 						data: bitmap.data.data
 					}

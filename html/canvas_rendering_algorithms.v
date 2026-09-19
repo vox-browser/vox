@@ -10,6 +10,8 @@ module html
 import css
 import dom
 import math
+import platform
+import strconv
 import svg
 
 pub struct CanvasFloatRect {
@@ -33,22 +35,169 @@ fn resolved_letter_spacing(drawing_state DrawingState) f64 {
 	return drawing_state.letter_spacing_px
 }
 
-// Combining marks are shaped with their preceding base glyph and do not add a
-// separate advance. Keep the compact canvas metrics model Unicode-safe while
-// matching that part of the native text shaper's behavior.
-fn canvas_approximate_glyph_count(text string) int {
-	mut count := 0
-	for code_point in text.runes() {
-		if (code_point >= `\u0300` && code_point <= `\u036f`)
-			|| (code_point >= `\u1ab0` && code_point <= `\u1aff`)
-			|| (code_point >= `\u1dc0` && code_point <= `\u1dff`)
-			|| (code_point >= `\u20d0` && code_point <= `\u20ff`)
-			|| (code_point >= `\ufe20` && code_point <= `\ufe2f`) {
-			continue
+fn canvas_font_for_drawing_state(state DrawingState) &platform.Font {
+	font_text := state.font_string.trim_space()
+	mut family := 'sans-serif'
+	mut weight := 400
+	if font_text.to_lower().contains('bold') {
+		weight = 700
+	} else {
+		for field in font_text.fields() {
+			if numeric_weight := strconv.atoi(field) {
+				if numeric_weight >= 100 && numeric_weight <= 1000 {
+					weight = numeric_weight
+					break
+				}
+			}
 		}
-		count++
 	}
-	return count
+	if pixel_end := font_text.index('px') {
+		family_text := font_text[pixel_end + 2..].trim_space()
+		if family_text != '' {
+			family = family_text.split(',')[0].trim_space().trim('"\'')
+		}
+	}
+	return &platform.Font{
+		family: family
+		point_size: f32(state.font_size_px)
+		weight: weight
+	}
+}
+
+fn canvas_text_run(state DrawingState, text string, initial_x f32) &platform.GlyphRun {
+	font := canvas_font_for_drawing_state(state)
+	text_type := if state.direction == .rtl {
+		platform.GlyphRunTextType.rtl
+	} else {
+		platform.GlyphRunTextType.ltr
+	}
+	return platform.shape_text(initial_x, f32(resolved_letter_spacing(state)), text, font, text_type)
+}
+
+fn canvas_text_transform(state DrawingState, font &platform.Font, text_width f64,
+	max_width ?f64) CanvasAffineTransform {
+	mut transform := CanvasAffineTransform{}
+	mut rendered_width := text_width
+	if maximum := max_width {
+		if text_width > maximum {
+			horizontal_scale := maximum / text_width
+			transform = CanvasAffineTransform{ a: horizontal_scale, d: 1 }
+			rendered_width *= horizontal_scale
+		}
+	}
+	mut alignment_offset := 0.0
+	match state.text_align {
+		.center {
+			alignment_offset = -rendered_width / 2.0
+		}
+		.start {
+			if state.direction == .rtl {
+				alignment_offset = -rendered_width
+			}
+		}
+		.end {
+			if state.direction != .rtl {
+				alignment_offset = -rendered_width
+			}
+		}
+		.right {
+			alignment_offset = -rendered_width
+		}
+		else {}
+	}
+	if alignment_offset != 0 {
+		transform = canvas_transform_multiply(CanvasAffineTransform{ e: alignment_offset }, transform)
+	}
+	metrics := font.pixel_metrics()
+	baseline_offset := match state.text_baseline {
+		.top { f64(metrics.ascent) }
+		.hanging { f64(metrics.ascent) * 0.8 }
+		.middle { f64(metrics.ascent - metrics.descent) / 2.0 }
+		.ideographic, .bottom { -f64(metrics.descent) }
+		else { 0.0 }
+	}
+	if baseline_offset != 0 {
+		transform = canvas_transform_multiply(CanvasAffineTransform{ f: baseline_offset }, transform)
+	}
+	return transform
+}
+
+fn canvas_glyph_point(point platform.FontGlyphOutlinePoint, origin FloatPoint) FloatPoint {
+	return FloatPoint{
+		x: origin.x + f64(point.x)
+		y: origin.y - f64(point.y)
+	}
+}
+
+fn canvas_point_midpoint(first FloatPoint, second FloatPoint) FloatPoint {
+	return FloatPoint{
+		x: (first.x + second.x) / 2.0
+		y: (first.y + second.y) / 2.0
+	}
+}
+
+// Gfx::Path::glyph_run() expands TrueType quadratic contours for the outline
+// fallback used by stroke text, maxWidth, shadows, and fallback-font runs.
+fn append_canvas_glyph_contour(mut path CanvasGfxPath,
+	contour []platform.FontGlyphOutlinePoint, origin FloatPoint) {
+	if contour.len == 0 {
+		return
+	}
+	first := contour[0]
+	last := contour[contour.len - 1]
+	mut start := FloatPoint{}
+	mut first_index := 0
+	mut point_count := contour.len
+	if first.on_curve {
+		start = canvas_glyph_point(first, origin)
+		first_index = 1
+		point_count--
+	} else if last.on_curve {
+		start = canvas_glyph_point(last, origin)
+		point_count--
+	} else {
+		start = canvas_point_midpoint(canvas_glyph_point(last, origin), canvas_glyph_point(first, origin))
+	}
+	path.move_to(start)
+	mut control := ?FloatPoint(none)
+	for offset in 0 .. point_count {
+		point := contour[(first_index + offset) % contour.len]
+		mapped := canvas_glyph_point(point, origin)
+		if point.on_curve {
+			if previous_control := control {
+				path.quadratic_bezier_curve_to(previous_control, mapped)
+			} else {
+				path.line_to(mapped)
+			}
+			control = none
+		} else if previous_control := control {
+			implied := canvas_point_midpoint(previous_control, mapped)
+			path.quadratic_bezier_curve_to(previous_control, implied)
+			control = mapped
+		} else {
+			control = mapped
+		}
+	}
+	if final_control := control {
+		path.quadratic_bezier_curve_to(final_control, start)
+	}
+	path.close()
+}
+
+fn canvas_glyph_run_path(run &platform.GlyphRun, baseline_y f64) CanvasGfxPath {
+	mut path := CanvasGfxPath{}
+	font := run.font()
+	for glyph in run.glyphs() {
+		outline := font.glyph_outline(glyph.glyph_index) or { continue }
+		origin := FloatPoint{
+			x: f64(glyph.position.x)
+			y: baseline_y + f64(glyph.position.y)
+		}
+		for contour in outline.contours {
+			append_canvas_glyph_contour(mut path, contour, origin)
+		}
+	}
+	return path
 }
 
 // The compact bitmap renderer uses the binding enums as its native cap and join values.
@@ -615,8 +764,10 @@ pub fn (context &OffscreenCanvasRenderingContext2D) prepare_text(text string, ma
 		return PreparedCanvasText{}
 	}
 	replaced := text.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').replace('\f', ' ')
-	font_size := context.drawing_state.font_size_px
-	mut width := f64(canvas_approximate_glyph_count(replaced)) * font_size * 0.5
+	run := canvas_text_run(context.drawing_state, replaced, 0)
+	font := run.font()
+	font_size := f64(font.point_size)
+	mut width := f64(run.width())
 	if width > max_width {
 		width = max_width
 	}
@@ -635,10 +786,11 @@ pub fn (context &OffscreenCanvasRenderingContext2D) prepare_text(text string, ma
 		}
 		else {}
 	}
+	metrics := font.pixel_metrics()
 	return PreparedCanvasText{
 		text: replaced
 		physical_x: x
-		bounding_box: CanvasFloatRect{x, -font_size * 0.8, width, font_size}
+		bounding_box: CanvasFloatRect{x, -f64(metrics.ascent), width, f64(metrics.ascent + metrics.descent)}
 		font_size: font_size
 	}
 }
@@ -652,14 +804,15 @@ pub fn (context &OffscreenCanvasRenderingContext2D) font_cascade_list() string {
 }
 
 pub fn (context &OffscreenCanvasRenderingContext2D) text_path(text string, x f64, y f64, max_width ?f64) CanvasGfxPath {
-	prepared := context.prepare_text(text, max_width or { math.inf(1) })
-	mut path := CanvasGfxPath{}
-	path.move_to(FloatPoint{x + prepared.bounding_box.x, y + prepared.bounding_box.y})
-	path.line_to(FloatPoint{x + prepared.bounding_box.x + prepared.bounding_box.width, y + prepared.bounding_box.y})
-	path.line_to(FloatPoint{x + prepared.bounding_box.x + prepared.bounding_box.width, y + prepared.bounding_box.y + prepared.bounding_box.height})
-	path.line_to(FloatPoint{x + prepared.bounding_box.x, y + prepared.bounding_box.y + prepared.bounding_box.height})
-	path.close()
-	return path
+	if maximum := max_width {
+		if maximum <= 0 {
+			return CanvasGfxPath{}
+		}
+	}
+	replaced := text.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').replace('\f', ' ')
+	run := canvas_text_run(context.drawing_state, replaced, f32(x))
+	path := canvas_glyph_run_path(run, y)
+	return path.copy_transformed(canvas_text_transform(context.drawing_state, run.font(), f64(run.width()), max_width))
 }
 
 pub fn (mut context OffscreenCanvasRenderingContext2D) fill_text(text string, x f64, y f64, max_width ?f64) {

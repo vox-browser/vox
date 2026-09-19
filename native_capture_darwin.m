@@ -31,6 +31,17 @@ extern int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
 	float transform_d, float transform_e, float transform_f, float page_x,
 	float page_y, float scroll_y, float canvas_width, float canvas_height,
 	uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
+extern int ladybird_v_skia_draw_canvas_glyph_run(uint8_t *destination_pixels,
+	int width, int height, int pitch, int pixels_are_premultiplied,
+	const char *font_path, int face_index,
+	const uint16_t *glyphs, const double *packed_positions, int glyph_count,
+	float font_size, int font_weight, float baseline_x, float baseline_y,
+	float transform_a, float transform_b, float transform_c, float transform_d,
+	float transform_e, float transform_f, uint8_t red, uint8_t green,
+	uint8_t blue, uint8_t alpha, float gradient_x0, float gradient_y0,
+	float gradient_x1, float gradient_y1, const float *gradient_stops,
+	int gradient_stop_count, float global_alpha, int stroke, int use_outline,
+	float stroke_width);
 extern int ladybird_v_skia_draw_line(CGContextRef destination,
 	float from_x, float from_y, float to_x, float to_y, float thickness,
 	int line_style, float canvas_width, float canvas_height, uint8_t red,
@@ -97,7 +108,7 @@ extern int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
 	float clip_height, float transform_a, float transform_b, float transform_c,
 	float transform_d, float transform_e, float transform_f, float page_x,
 	float page_y, float scroll_y, float canvas_width, float canvas_height,
-	float opacity, int nearest_neighbor);
+	float opacity, int nearest_neighbor, int premultiplied);
 extern int ladybird_v_skia_draw_drop_shadow(CGContextRef destination,
 	CGImageRef source, float canvas_width, float canvas_height, float scale,
 	float offset_x, float offset_y, float standard_deviation, uint8_t red,
@@ -998,6 +1009,40 @@ int native_draw_document_glyph_run_srgb(const uint16_t *glyphs,
 		scroll_y, canvas_width, canvas_height, cg_color, blur, shadow_only);
 	CGColorRelease(cg_color);
 	return did_draw;
+}
+
+int native_draw_canvas_glyph_run_rgba(uint8_t *pixels, int width, int height,
+	int pitch, int pixels_are_premultiplied, const uint16_t *glyphs,
+	const double *positions, int glyph_count,
+	float font_size, int font_weight, string font_path_value, int face_index,
+	float baseline_x, float baseline_y, float transform_a, float transform_b,
+	float transform_c, float transform_d, float transform_e, float transform_f,
+	uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha,
+	float gradient_x0, float gradient_y0, float gradient_x1, float gradient_y1,
+	const float *gradient_stops, int gradient_stop_count, float global_alpha,
+	int stroke, int use_outline, float stroke_width) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	NSString *font_path = native_capture_string(font_path_value);
+	return ladybird_v_skia_draw_canvas_glyph_run(pixels, width, height, pitch,
+		pixels_are_premultiplied,
+		[font_path fileSystemRepresentation], face_index, glyphs, positions,
+		glyph_count, font_size, font_weight, baseline_x, baseline_y, transform_a,
+		transform_b, transform_c, transform_d, transform_e, transform_f, red,
+		green, blue, alpha, gradient_x0, gradient_y0, gradient_x1, gradient_y1,
+		gradient_stops, gradient_stop_count, global_alpha, stroke, use_outline,
+		stroke_width);
+#else
+	(void)pixels; (void)width; (void)height; (void)pitch;
+	(void)pixels_are_premultiplied; (void)glyphs;
+	(void)positions; (void)glyph_count; (void)font_size; (void)font_weight;
+	(void)font_path_value; (void)face_index; (void)baseline_x; (void)baseline_y;
+	(void)transform_a; (void)transform_b; (void)transform_c; (void)transform_d;
+	(void)transform_e; (void)transform_f; (void)red; (void)green; (void)blue;
+	(void)alpha; (void)gradient_x0; (void)gradient_y0; (void)gradient_x1;
+	(void)gradient_y1; (void)gradient_stops; (void)gradient_stop_count;
+	(void)global_alpha; (void)stroke; (void)use_outline; (void)stroke_width;
+	return 0;
+#endif
 }
 
 void native_draw_polygon_srgb(const float *points, int point_count, float canvas_height,
@@ -4228,7 +4273,7 @@ static int native_draw_cg_image_part_with_skia(CGContextRef destination,
 		source_width * scale_x, source_height * scale_y, clip_x, clip_y,
 		clip_width, clip_height, transform_a, transform_b, transform_c,
 		transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
-		canvas_width, canvas_height, opacity, nearest_neighbor);
+		canvas_width, canvas_height, opacity, nearest_neighbor, 0);
 	free(pixels);
 	return drawn;
 }
@@ -4249,7 +4294,7 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 		return;
 	}
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	if (image->path.len == 0 && image->nr_channels == 4) {
+	if (image->path.len == 0 && (image->nr_channels == 4 || image->nr_channels == 5)) {
 		size_t pitch = (size_t)image->width * 4;
 		size_t byte_count = (size_t)image->height <= SIZE_MAX / pitch
 		    ? pitch * (size_t)image->height
@@ -4271,7 +4316,8 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 			    source_y, source_width, source_height, clip_x, clip_y, clip_width,
 			    clip_height, transform_a, transform_b, transform_c, transform_d,
 			    transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
-			    canvas_height, opacity, nearest_neighbor);
+			    canvas_height, opacity, nearest_neighbor,
+			    image->nr_channels == 5);
 			free(flipped_pixels);
 			if (drawn)
 				return;
