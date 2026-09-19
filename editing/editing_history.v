@@ -469,6 +469,16 @@ fn editing_history_selection_changed_callback(target voidptr) {
 	history.selection_changed()
 }
 
+fn editing_history_can_undo_callback(target voidptr) bool {
+	mut history := unsafe { &EditingHistory(target) }
+	return history.can_undo()
+}
+
+fn editing_history_can_redo_callback(target voidptr) bool {
+	mut history := unsafe { &EditingHistory(target) }
+	return history.can_redo()
+}
+
 pub fn editing_history_if_exists(document &dom.Document) ?&EditingHistory {
 	hook := document.editing_history_hook() or { return none }
 	if hook.target == unsafe { nil } {
@@ -478,6 +488,9 @@ pub fn editing_history_if_exists(document &dom.Document) ?&EditingHistory {
 }
 
 pub fn install_editing_history(document &dom.Document) &EditingHistory {
+	// DOM cannot directly import Editing, so installing history also makes the
+	// undo/redo command entry point available on programmatically built documents.
+	install_dom_editing_bridge(document)
 	if history := editing_history_if_exists(document) {
 		return history
 	}
@@ -487,6 +500,8 @@ pub fn install_editing_history(document &dom.Document) &EditingHistory {
 		target: voidptr(history)
 		notify_dom_mutation: editing_history_notify_mutation_callback
 		selection_changed: editing_history_selection_changed_callback
+		can_undo: editing_history_can_undo_callback
+		can_redo: editing_history_can_redo_callback
 	})
 	return history
 }

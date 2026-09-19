@@ -13,9 +13,8 @@ fn history_input(value string) (&dom.Document, &HTMLInputElementModel, &editing.
 }
 
 fn test_text_control_history_undoes_and_redoes_utf16_insertion() {
-	document, model_pointer, history_pointer := history_input('A😀B')
+	mut document, model_pointer, _ := history_input('A😀B')
 	mut model := unsafe { &HTMLInputElementModel(model_pointer) }
-	mut history := unsafe { &editing.EditingHistory(history_pointer) }
 	model.text_control.set_selection_range(1, 3, 'forward')!
 	model.text_control.handle_insert(dom.input_type_insert_text, 'xy')!
 
@@ -23,14 +22,16 @@ fn test_text_control_history_undoes_and_redoes_utf16_insertion() {
 	assert model.text_node_?.data() == 'AxyB'
 	assert model.text_control.selection_start() == 3
 	assert model.text_control.selection_end() == 3
-	assert history.undo(document)
+	assert document.query_command_enabled('undo')!
+	assert document.exec_command('undo', false, '')!
 	assert model.value() == 'A😀B'
 	assert model.text_node_?.data() == 'A😀B'
 	assert model.text_control.selection_start() == 1
 	assert model.text_control.selection_end() == 3
 	assert model.text_control.selection_direction_state() == .forward
 
-	assert history.redo(document)
+	assert document.query_command_enabled('redo')!
+	assert document.exec_command('redo', false, '')!
 	assert model.value() == 'AxyB'
 	assert model.text_node_?.data() == 'AxyB'
 	assert model.text_control.selection_start() == 3

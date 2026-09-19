@@ -21,18 +21,19 @@ pub struct EditCommand {
 pub:
 	kind EditCommandKind
 mut:
-	node_            &dom.Node = unsafe { nil }
-	parent_          ?&dom.Node
-	reference_child_ ?&dom.Node
-	new_text_node_   ?&dom.Text
-	offset_          int
-	removed_data_    string
-	inserted_data_   string
-	local_name_      string
-	namespace_       ?string
-	old_value_       ?string
-	new_value_       ?string
-	text_control_    &dom.InputEventsTarget = unsafe { nil }
+	node_                               &dom.Node = unsafe { nil }
+	parent_                             ?&dom.Node
+	reference_child_                    ?&dom.Node
+	new_text_node_                      ?&dom.Text
+	offset_                             int
+	removed_data_                       string
+	inserted_data_                      string
+	local_name_                         string
+	namespace_                          ?string
+	old_value_                          ?string
+	new_value_                          ?string
+	text_control_                       &dom.InputEventsTarget = unsafe { nil }
+	lasting_removal_closes_coalescence_ bool
 }
 
 pub fn new_insert_node_command(node &dom.Node, parent &dom.Node, reference_child ?&dom.Node) &EditCommand {
@@ -50,6 +51,7 @@ pub fn new_remove_node_command(node &dom.Node) &EditCommand {
 		node_: node
 		parent_: node.parent()
 		reference_child_: node.next_sibling()
+		lasting_removal_closes_coalescence_: true
 	}
 }
 
@@ -305,7 +307,12 @@ pub fn (mut command EditCommand) reapply() bool {
 }
 
 pub fn (command &EditCommand) is_lasting_node_removal() bool {
-	return command.kind == .remove_node && command.node_.parent() == none
+	return command.kind == .remove_node && command.lasting_removal_closes_coalescence_
+		&& command.node_.parent() == none
+}
+
+pub fn (mut command EditCommand) keep_typing_coalescence_open() {
+	command.lasting_removal_closes_coalescence_ = false
 }
 
 pub fn (command &EditCommand) removed_data() string {
@@ -351,14 +358,28 @@ pub fn append_node(node &dom.Node, parent &dom.Node) ! {
 	insert_node_before(node, parent, none)
 }
 
-pub fn remove_node(node &dom.Node) {
+fn remove_node_with_coalescence_behavior(node &dom.Node, closes_coalescence bool) {
 	history := begin_editing_proxy_mutation(node)
 	defer {
 		end_editing_proxy_mutation(history)
 	}
 	mut command := new_remove_node_command(node)
+	if !closes_coalescence {
+		command.keep_typing_coalescence_open()
+	}
 	command.apply() or {}
 	record_edit_command(node, command)
+}
+
+pub fn remove_node(node &dom.Node) {
+	remove_node_with_coalescence_behavior(node, true)
+}
+
+// The typed DOM bridge currently realizes a model edit by replacing the host's
+// serialized children. Those removals are transport, not semantic removals
+// near the caret, so they must not terminate a typing unit.
+fn remove_node_for_host_replacement(node &dom.Node) {
+	remove_node_with_coalescence_behavior(node, false)
 }
 
 pub fn replace_data(node &dom.CharacterData, offset int, count int, data string) ! {

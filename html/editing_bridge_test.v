@@ -1,6 +1,7 @@
 module html
 
 import dom
+import editing
 
 fn test_document_exec_command_mutates_the_live_contenteditable_host() {
 	mut document := dom.Document.create(dom.url_about_blank())
@@ -8,6 +9,8 @@ fn test_document_exec_command_mutates_the_live_contenteditable_host() {
 	document.set_editable(true)
 	document.set_browsing_context(&dom.BrowsingContext{})
 	install_document_fragment_parsing_hook(document)
+	assert !document.query_command_enabled('undo')!
+	assert !document.query_command_enabled('redo')!
 
 	mut host := document.create_element('div') or { panic(err) }
 	host.set_attribute_for_bindings('contenteditable', 'true') or { panic(err) }
@@ -30,5 +33,23 @@ fn test_document_exec_command_mutates_the_live_contenteditable_host() {
 	assert document.exec_command('insertText', false, 'V')!
 	assert host.as_node().text_content()? == 'V'
 	assert host.inner_html()!.contains('V')
+	assert document.query_command_enabled('UNDO')!
+	assert !document.query_command_enabled('redo')!
+
+	assert document.exec_command('undo', false, '')!
+	assert host.as_node().text_content()? == 'hello'
+	assert host.inner_html()!.contains('<b>')
+	assert document.query_command_enabled('redo')!
+
+	assert document.exec_command('redo', false, '')!
+	assert host.as_node().text_content()? == 'V'
+	assert !document.query_command_enabled('redo')!
+	assert document.exec_command('insertText', false, 'X')!
+	assert document.exec_command('insertText', false, 'Y')!
+	assert host.as_node().text_content()? == 'VXY'
+	assert document.exec_command('undo', false, '')!
+	assert host.as_node().text_content()? == 'V'
+	history := editing.editing_history_if_exists(document) or { panic('missing editing history') }
+	assert history.unproxied_mutation_count() == 0
 	assert !document.exec_command('notACommand', false, '')!
 }

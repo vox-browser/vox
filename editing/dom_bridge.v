@@ -163,9 +163,36 @@ fn restore_dom_selection(document &dom.Document, host &dom.Node, model &EditingD
 	selection.set_base_and_extent(start.node, start.offset, end.node, end.offset) or {}
 }
 
+fn replace_editing_host_markup(host &dom.Element, markup string, mut history EditingHistory) bool {
+	// Fragment parsing performs mutations in detached staging nodes. Keep those
+	// outside the diagnostic path; only the proxy removals and insertions below
+	// belong to the undo step.
+	history.begin_proxy_mutation()
+	fragment := host.parse_fragment(markup) or {
+		history.end_proxy_mutation()
+		return false
+	}
+	history.end_proxy_mutation()
+	for child in host.as_node().children_as_vector() {
+		remove_node_for_host_replacement(child)
+	}
+	append_node(fragment.as_node(), host.as_node()) or { return false }
+	return true
+}
+
 fn dom_editing_exec_command(target voidptr, document &dom.Document, command string, value string) bool {
 	if target == unsafe { nil } {
 		return false
+	}
+	canonical_command := canonical_command_name(command) or { command }
+	if canonical_command == command_undo || canonical_command == command_redo {
+		history_pointer := editing_history_if_exists(document) or { return false }
+		mut history := unsafe { &EditingHistory(history_pointer) }
+		return if canonical_command == command_undo {
+			history.undo(document)
+		} else {
+			history.redo(document)
+		}
 	}
 	selection := document.get_selection() or { return false }
 	anchor := selection.anchor_node() or { return false }
@@ -191,16 +218,30 @@ fn dom_editing_exec_command(target voidptr, document &dom.Document, command stri
 		return false
 	}
 	mut model := unsafe { &EditingDocument(bridge.model_) }
-	model.set_selection(model_boundary_for_linear_offset(model, anchor_offset), model_boundary_for_linear_offset(model,
-		focus_offset)) or { return false }
+	model.set_selection(model_boundary_for_linear_offset(model, anchor_offset), model_boundary_for_linear_offset(model, focus_offset)) or { return false }
+	history_pointer := install_editing_history(document)
+	mut history := unsafe { &EditingHistory(history_pointer) }
+	category := match canonical_command {
+		command_insert_text, command_insert_line_break, command_insert_paragraph {
+			UndoStepCategory.insertion
+		}
+		command_delete { UndoStepCategory.backward_deletion }
+		command_forward_delete { UndoStepCategory.forward_deletion }
+		else { UndoStepCategory.other }
+	}
+	history.begin_recording(host, category)
+	defer {
+		history.end_recording()
+	}
 	result := model.exec_command(command, false, value) or { return false }
 	if !result {
 		return false
 	}
 	new_markup := model.serialize_html()
 	if new_markup != current_markup {
-		mut host_element := unsafe { &dom.Element(host_element_pointer) }
-		host_element.set_inner_html(new_markup) or { return false }
+		if !replace_editing_host_markup(host_element_pointer, new_markup, mut history) {
+			return false
+		}
 	}
 	bridge.last_markup_ = new_markup
 	restore_dom_selection(document, host, model)

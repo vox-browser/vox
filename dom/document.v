@@ -1856,6 +1856,8 @@ pub:
 
 pub type DocumentEditingHistoryCallback = fn (voidptr)
 
+pub type DocumentEditingHistoryAvailabilityCallback = fn (voidptr) bool
+
 // Editing owns the history objects; DOM reports raw mutations and selection
 // changes through this hook without introducing a DOM -> Editing import cycle.
 pub struct DocumentEditingHistoryHook {
@@ -1863,6 +1865,8 @@ pub:
 	target              voidptr
 	notify_dom_mutation DocumentEditingHistoryCallback = unsafe { nil }
 	selection_changed   DocumentEditingHistoryCallback = unsafe { nil }
+	can_undo            DocumentEditingHistoryAvailabilityCallback = unsafe { nil }
+	can_redo            DocumentEditingHistoryAvailabilityCallback = unsafe { nil }
 }
 
 // Opaque view of one CSS::BackgroundLayerData entry. CSS owns the typed
@@ -6282,6 +6286,22 @@ pub fn (d &Document) notify_editing_history_selection_changed() {
 	}
 }
 
+pub fn (d &Document) editing_history_can_undo() bool {
+	hook := d.editing_history_hook_ or { return false }
+	if hook.can_undo == unsafe { nil } {
+		return false
+	}
+	return hook.can_undo(hook.target)
+}
+
+pub fn (d &Document) editing_history_can_redo() bool {
+	hook := d.editing_history_hook_ or { return false }
+	if hook.can_redo == unsafe { nil } {
+		return false
+	}
+	return hook.can_redo(hook.target)
+}
+
 pub fn (d &Document) html_fragment_parsing_hook() ?DocumentHTMLFragmentParsingHook {
 	return d.html_fragment_parsing_hook_
 }
@@ -8913,11 +8933,18 @@ pub fn (d &Document) query_command_enabled(command string) !bool {
 	if !(d.query_command_supported(command)!) {
 		return false
 	}
-	// Simplified: miscellaneous commands are always enabled
-	if command in ['defaultParagraphSeparator', 'redo', 'styleWithCSS', 'undo', 'useCSS'] {
+	command_lower := command.to_lower()
+	if command_lower == 'undo' {
+		return d.editing_history_can_undo()
+	}
+	if command_lower == 'redo' {
+		return d.editing_history_can_redo()
+	}
+	// Simplified: the remaining miscellaneous commands are always enabled.
+	if command_lower in ['defaultparagraphseparator', 'stylewithcss', 'usecss'] {
 		return true
 	}
-	if command == 'selectAll' {
+	if command_lower == 'selectall' {
 		return d.selection_ != unsafe { nil }
 	}
 	return d.editable
@@ -8948,7 +8975,7 @@ pub fn (d &Document) query_command_supported(command string) !bool {
 		return error('InvalidStateError: queryCommandSupported is only supported on HTML documents')
 	}
 	// Return true if command is known/supported
-	return command in [
+	known_commands := [
 		'bold',
 		'italic',
 		'underline',
@@ -8989,6 +9016,7 @@ pub fn (d &Document) query_command_supported(command string) !bool {
 		'justifyLeft',
 		'justifyRight',
 	]
+	return known_commands.any(it.to_lower() == command.to_lower())
 }
 
 pub fn (d &Document) query_command_value(command string) !string {
