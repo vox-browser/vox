@@ -306,6 +306,16 @@ fn page_select_all_callback(target voidptr) EventResult {
 	return .handled
 }
 
+fn page_clipboard_insert_callback(target voidptr, plain_text string, html ?string) EventResult {
+	model := unsafe { &Page(target) }
+	root := model.local_root_navigable_ or { return .dropped }
+	document := root.active_document() or { return .dropped }
+	input_target := document.active_input_events_target(none) or { return .dropped }
+	input_target.handle_insert_from_clipboard(dom.input_type_insert_from_paste, plain_text,
+		html)
+	return .handled
+}
+
 pub fn Page.create(device_scale f64) !&Page {
 	if device_scale <= 0 || math.is_nan(device_scale) || math.is_inf(device_scale, 0) {
 		return error('device pixel scale must be finite and positive')
@@ -317,6 +327,7 @@ pub fn Page.create(device_scale f64) !&Page {
 	model.event_handler.client_ = model.client_
 	model.event_handler.set_history_action_callback(voidptr(model), page_history_action_callback)
 	model.event_handler.set_select_all_callback(voidptr(model), page_select_all_callback)
+	model.event_handler.set_clipboard_insert_callback(voidptr(model), page_clipboard_insert_callback)
 	model.Page = dom.Page{
 		target: voidptr(model)
 		did_create_document_callback: page_did_create_document_callback

@@ -3932,6 +3932,16 @@ fn editing_host_manager_handle_delete_callback(target voidptr, input_type string
 	manager.handle_delete(input_type)
 }
 
+fn editing_host_manager_handle_insert_callback(target voidptr, input_type string, value string) {
+	mut manager := unsafe { &EditingHostManager(target) }
+	manager.handle_insert(input_type, value)
+}
+
+fn editing_host_manager_handle_clipboard_insert_callback(target voidptr, input_type string, plain_text string, html ?string) {
+	mut manager := unsafe { &EditingHostManager(target) }
+	manager.handle_insert_from_clipboard(input_type, plain_text, html)
+}
+
 fn editing_host_manager_select_all_callback(target voidptr) {
 	mut manager := unsafe { &EditingHostManager(target) }
 	manager.select_all()
@@ -3943,6 +3953,8 @@ pub fn EditingHostManager.create(mut document Document) &EditingHostManager {
 	}
 	manager.InputEventsTarget = InputEventsTarget{
 		target: voidptr(manager)
+		handle_insert_callback: editing_host_manager_handle_insert_callback
+		handle_clipboard_insert_callback: editing_host_manager_handle_clipboard_insert_callback
 		handle_delete_callback: editing_host_manager_handle_delete_callback
 		select_all_callback: editing_host_manager_select_all_callback
 	}
@@ -3965,6 +3977,42 @@ pub fn (mut manager EditingHostManager) handle_insert(input_type string, value s
 	}
 	mut document := unsafe { &Document(manager.document_) }
 	document.exec_command_internal('insertText', false, value, input_type) or {}
+}
+
+pub fn (mut manager EditingHostManager) handle_insert_from_clipboard(input_type string, plain_text string, html ?string) {
+	if manager.document_ == unsafe { nil } {
+		return
+	}
+	mut document := unsafe { &Document(manager.document_) }
+	selection := document.get_selection() or {
+		manager.handle_insert(input_type, plain_text)
+		return
+	}
+	range := selection.range() or {
+		manager.handle_insert(input_type, plain_text)
+		return
+	}
+	markup := html or {
+		manager.handle_insert(input_type, plain_text)
+		return
+	}
+	if editing_host := range.start_container().editing_host() {
+		if element := editing_host.as_element() {
+			if element.is_html_element() && html_content_editable_state(element) == 'plaintext-only' {
+				manager.handle_insert(input_type, plain_text)
+				return
+			}
+		}
+	}
+	sanitized_html := document.sanitize_clipboard_html(range, markup) or {
+		manager.handle_insert(input_type, plain_text)
+		return
+	}
+	if sanitized_html == '' {
+		manager.handle_insert(input_type, plain_text)
+		return
+	}
+	document.exec_command_internal('insertHTML', false, sanitized_html, input_type) or {}
 }
 
 pub fn (mut manager EditingHostManager) select_all() {

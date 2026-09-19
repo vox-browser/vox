@@ -575,6 +575,11 @@ fn form_associated_text_control_cursor_position(target voidptr) ?&dom.Position {
 	return text.cursor_position()
 }
 
+fn form_associated_text_control_handle_insert(target voidptr, input_type string, value string) {
+	mut text := unsafe { &FormAssociatedTextControlElement(target) }
+	text.handle_insert(input_type, value) or {}
+}
+
 fn form_associated_text_control_handle_delete(target voidptr, input_type string) {
 	mut text := unsafe { &FormAssociatedTextControlElement(target) }
 	text.handle_delete(input_type) or {}
@@ -629,6 +634,7 @@ pub fn FormAssociatedTextControlElement.create(control &FormAssociatedElement, v
 	text.InputEventsTarget = dom.InputEventsTarget{
 		target: voidptr(text)
 		cursor_position_callback: form_associated_text_control_cursor_position
+		handle_insert_callback: form_associated_text_control_handle_insert
 		handle_delete_callback: form_associated_text_control_handle_delete
 		select_all_callback: form_associated_text_control_select_all
 		selection_callback: form_associated_text_control_selection

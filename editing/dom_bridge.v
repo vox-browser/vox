@@ -272,6 +272,10 @@ fn dom_editing_exec_command(target voidptr, document &dom.Document, command stri
 	return true
 }
 
+fn dom_editing_sanitize_clipboard_html(_ voidptr, range &dom.Range, html string) !string {
+	return sanitize_clipboard_html(range, html)
+}
+
 pub fn install_dom_editing_bridge(document &dom.Document) {
 	if document.editing_command_hook() != none {
 		return
@@ -279,7 +283,8 @@ pub fn install_dom_editing_bridge(document &dom.Document) {
 	bridge := &DOMEditingBridge{}
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_editing_command_hook(dom.DocumentEditingCommandHook{
-		target:       voidptr(bridge)
-		exec_command: dom_editing_exec_command
+		target:                  voidptr(bridge)
+		exec_command:            dom_editing_exec_command
+		sanitize_clipboard_html: dom_editing_sanitize_clipboard_html
 	})
 }

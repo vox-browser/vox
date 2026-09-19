@@ -2,6 +2,20 @@ module page
 
 import dom
 
+@[heap]
+struct ClipboardInsertObservation {
+mut:
+	plain_text string
+	html       ?string
+}
+
+fn observe_clipboard_insert(target voidptr, plain_text string, html ?string) EventResult {
+	mut observation := unsafe { &ClipboardInsertObservation(target) }
+	observation.plain_text = plain_text
+	observation.html = html
+	return .handled
+}
+
 fn clipboard_action_handler(client &PageClient) &EventHandler {
 	mut handler := &EventHandler{}
 	handler.set_page_client(client)
@@ -64,6 +78,8 @@ fn test_cancelled_copy_uses_script_populated_data_store() {
 fn test_paste_normalizes_newlines_prefers_html_and_always_completes() {
 	mut client := PageClient.create()
 	mut handler := clipboard_action_handler(client)
+	mut observation := &ClipboardInsertObservation{}
+	handler.set_clipboard_insert_callback(voidptr(observation), observe_clipboard_insert)
 	handler.set_system_clipboard_items([
 		ClipboardDataItem{ kind: .text, mime_type: 'text/plain', data: 'a\r\nb\rc'.bytes() },
 		ClipboardDataItem{ kind: .text, mime_type: 'text/html', data: '<b>a</b>'.bytes() },
@@ -72,6 +88,8 @@ fn test_paste_normalizes_newlines_prefers_html_and_always_completes() {
 	plain_text, html := handler.pasted_content()
 	assert plain_text == 'a\nb\nc'
 	assert html? == '<b>a</b>'
+	assert observation.plain_text == 'a\nb\nc'
+	assert observation.html? == '<b>a</b>'
 	assert client.paste_action_completion_count() == 1
 
 	handler.set_clipboard_event_cancelled('paste', true)

@@ -132,6 +132,8 @@ fn test_document_active_input_events_target_uses_focused_form_text_control() {
 	target.select_all()
 	assert textarea.text.selection_start() == 0
 	assert textarea.text.selection_end() == 8
+	target.handle_insert_from_clipboard(dom.input_type_insert_from_paste, 'V', '<b>ignored</b>')
+	assert textarea.value() == 'V'
 }
 
 fn test_document_cursor_position_and_blink_timer_use_form_text_control() {

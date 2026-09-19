@@ -16,6 +16,8 @@ pub type HistoryActionCallback = fn (voidptr, bool) EventResult
 
 pub type SelectAllCallback = fn (voidptr) EventResult
 
+pub type ClipboardInsertCallback = fn (voidptr, string, ?string) EventResult
+
 pub enum SelectionMode {
 	none
 	character
@@ -138,6 +140,8 @@ mut:
 	history_action_callback_             HistoryActionCallback = unsafe { nil }
 	select_all_target_                   voidptr = unsafe { nil }
 	select_all_callback_                 SelectAllCallback = unsafe { nil }
+	clipboard_insert_target_             voidptr = unsafe { nil }
+	clipboard_insert_callback_           ClipboardInsertCallback = unsafe { nil }
 }
 
 pub fn (mut handler EventHandler) set_history_action_callback(target voidptr, callback HistoryActionCallback) {
@@ -148,6 +152,20 @@ pub fn (mut handler EventHandler) set_history_action_callback(target voidptr, ca
 pub fn (mut handler EventHandler) set_select_all_callback(target voidptr, callback SelectAllCallback) {
 	handler.select_all_target_ = target
 	handler.select_all_callback_ = callback
+}
+
+pub fn (mut handler EventHandler) set_clipboard_insert_callback(target voidptr, callback ClipboardInsertCallback) {
+	handler.clipboard_insert_target_ = target
+	handler.clipboard_insert_callback_ = callback
+}
+
+fn (mut handler EventHandler) insert_clipboard_content(plain_text string, html ?string) EventResult {
+	if handler.clipboard_insert_target_ == unsafe { nil }
+		|| handler.clipboard_insert_callback_ == unsafe { nil } {
+		return .handled
+	}
+	return handler.clipboard_insert_callback_(handler.clipboard_insert_target_, plain_text,
+		html)
 }
 
 fn platform_control_modifier() u32 {

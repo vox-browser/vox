@@ -240,6 +240,10 @@ pub fn (mut handler EventHandler) insert_pasted_content(plain_text string, html 
 	}
 	handler.pasted_text_ = normalized_text
 	handler.pasted_html_ = html
+	insert_result := handler.insert_clipboard_content(normalized_text, html)
+	if insert_result != .handled {
+		return insert_result
+	}
 	handler.log('input:insertFromPaste', target)
 	return .handled
 }

@@ -1848,10 +1848,13 @@ pub:
 
 pub type DocumentEditingExecCommandCallback = fn (voidptr, &Document, string, string, string) bool
 
+pub type DocumentEditingSanitizeClipboardHTMLCallback = fn (voidptr, &Range, string) !string
+
 pub struct DocumentEditingCommandHook {
 pub:
-	target       voidptr
-	exec_command DocumentEditingExecCommandCallback = unsafe { nil }
+	target                  voidptr
+	exec_command            DocumentEditingExecCommandCallback = unsafe { nil }
+	sanitize_clipboard_html DocumentEditingSanitizeClipboardHTMLCallback = unsafe { nil }
 }
 
 pub type DocumentEditingHistoryCallback = fn (voidptr)
@@ -2620,6 +2623,10 @@ pub mut:
 
 pub type InputEventsTargetCursorPositionCallback = fn (voidptr) ?&Position
 
+pub type InputEventsTargetHandleInsertCallback = fn (voidptr, string, string)
+
+pub type InputEventsTargetHandleClipboardInsertCallback = fn (voidptr, string, string, ?string)
+
 pub type InputEventsTargetHandleDeleteCallback = fn (voidptr, string)
 
 pub type InputEventsTargetSelectAllCallback = fn (voidptr)
@@ -2650,6 +2657,8 @@ pub struct InputEventsTarget {
 pub:
 	target                   voidptr = unsafe { nil }
 	cursor_position_callback InputEventsTargetCursorPositionCallback = unsafe { nil }
+	handle_insert_callback   InputEventsTargetHandleInsertCallback = unsafe { nil }
+	handle_clipboard_insert_callback InputEventsTargetHandleClipboardInsertCallback = unsafe { nil }
 	handle_delete_callback   InputEventsTargetHandleDeleteCallback = unsafe { nil }
 	select_all_callback      InputEventsTargetSelectAllCallback = unsafe { nil }
 	selection_callback       InputEventsTargetSelectionCallback = unsafe { nil }
@@ -2663,6 +2672,21 @@ pub fn (target &InputEventsTarget) cursor_position() ?&Position {
 		return none
 	}
 	return target.cursor_position_callback(target.target)
+}
+
+pub fn (target &InputEventsTarget) handle_insert(input_type string, value string) {
+	if target.target == unsafe { nil } || target.handle_insert_callback == unsafe { nil } {
+		return
+	}
+	target.handle_insert_callback(target.target, input_type, value)
+}
+
+pub fn (target &InputEventsTarget) handle_insert_from_clipboard(input_type string, plain_text string, html ?string) {
+	if target.target != unsafe { nil } && target.handle_clipboard_insert_callback != unsafe { nil } {
+		target.handle_clipboard_insert_callback(target.target, input_type, plain_text, html)
+		return
+	}
+	target.handle_insert(input_type, plain_text)
 }
 
 pub fn (target &InputEventsTarget) handle_delete(input_type string) {
@@ -3944,6 +3968,16 @@ pub fn editing_exec_command(d &Document, command string, value string, user_inpu
 		return false
 	}
 	return hook.exec_command(hook.target, d, command, value, user_input_type)
+}
+
+pub fn (d &Document) sanitize_clipboard_html(range &Range, html string) !string {
+	hook := d.editing_command_hook_ or {
+		return error('clipboard HTML sanitizer is not installed')
+	}
+	if hook.target == unsafe { nil } || hook.sanitize_clipboard_html == unsafe { nil } {
+		return error('clipboard HTML sanitizer is not installed')
+	}
+	return hook.sanitize_clipboard_html(hook.target, range, html)
 }
 
 // XPath lives in its own package and imports DOM nodes, so Document reaches it
@@ -9008,6 +9042,7 @@ pub fn (d &Document) query_command_supported(command string) !bool {
 		'insertOrderedList',
 		'insertUnorderedList',
 		'insertHorizontalRule',
+		'insertHTML',
 		'insertImage',
 		'formatBlock',
 		'indent',
