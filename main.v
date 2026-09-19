@@ -2315,6 +2315,12 @@ fn mouse_cursor_for_resize_handle(cursor ?painting.ResizeCursor) sapp.MouseCurso
 	}
 }
 
+fn focus_compact_browser_navigable(document &dom.Document) {
+	navigable := document.navigable() or { return }
+	mut model := html.NavigableModel.create(navigable, none) or { return }
+	model.set_focused(true)
+}
+
 fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	if app.document == unsafe { nil } {
 		return
@@ -2342,6 +2348,10 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	}
 	app.root_box = layout.layout_document_typed_in_viewport(app.document, f64(viewport_width), f64(viewport_height))
 	layout_checkpoint = debug_timing_checkpoint('  layout_tree', layout_checkpoint)
+	// The compact native shell owns one visible top-level document. Layout
+	// creates its DOM navigable; attach the HTML model before display-list
+	// recording so focus-gated painting such as editable carets is visible.
+	focus_compact_browser_navigable(app.document)
 	mut mutable_document := unsafe { &dom.Document(app.document) }
 	if display_list := mutable_document.record_display_list() {
 		app.paint_commands = layout.display_list_commands(display_list)

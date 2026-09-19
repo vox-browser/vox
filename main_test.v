@@ -553,6 +553,24 @@ fn test_browser_animation_frame_refreshes_paint_only_transforms() {
 	assert app.paint_commands.any(it.color.contains('173') || it.color.to_lower().contains('add8e6')), app.paint_commands.map('${it.kind}:${it.color}').join(', ')
 }
 
+fn test_browser_relayout_focuses_its_top_level_navigable_before_painting() {
+	mut document := html.parse_document('<!doctype html><style>html,body,p{margin:0}p{caret-color:rgb(71 72 73)}</style><p id="editor" contenteditable>text</p>')
+	mut app := BrowserApp{
+		document: document
+	}
+	app.relayout(200, 232)
+	editor := document.get_element_by_id('editor') or { panic('missing editor') }
+	text_node := editor.as_node().first_child() or { panic('missing editor text') }
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_focused_area(editor.as_node())
+	mut selection := document.get_selection() or { panic('missing selection') }
+	selection.collapse(text_node, 1) or { panic(err) }
+	app.relayout(200, 232)
+	navigable := document.navigable() or { panic('missing document navigable') }
+	assert navigable.is_focused()
+	assert app.paint_commands.any(it.kind == 'fill_rect' && it.color == 'rgb(71 72 73)')
+}
+
 fn test_parse_launch_options_accepts_explicit_window_dimensions() {
 	options := parse_launch_options([
 		'--window-width=640',
