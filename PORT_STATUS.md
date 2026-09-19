@@ -124,6 +124,10 @@ Paragraph transfer now moves or unwraps source paragraph children at a mutation-
 tracked destination, applies explicit legacy-font style policy, removes the
 source wrapper, and optionally coalesces the destination text seam while
 returning the semantic moved range.
+Visible editing positions now retain distinct script-visible and canonical
+caret boundaries, delegate movement and extension canonicalization to the
+translated caret navigator, scan rendered text and paragraph breaks, and
+distinguish true block edges from carets beside atomic inline layout boxes.
 
 The refreshed current-tree semantic inventory reports 4,536 unmatched C++
 spellings. That is a structural review queue rather than a count of missing behaviors: active V
@@ -264,9 +268,9 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
-| `DOM` | 59 | 34,859 | 36,098 | 2,199 | Complete |
+| `DOM` | 59 | 34,859 | 36,103 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
-| `Editing` | 26 | 12,720 | 5,262 | 797 | Complete |
+| `Editing` | 26 | 12,720 | 5,540 | 797 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
 | `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
@@ -278,13 +282,13 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
 | `Geolocation` | 4 | 643 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 56,528 | 12,909 | Complete |
+| `HTML` | 286 | 83,853 | 56,528 | 13,029 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 43,042 | 15,988 | Present |
+| `Layout` | 9 | 4,001 | 43,043 | 15,988 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -331,7 +335,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **345,141** | **68,919** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **345,425** | **69,039** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
