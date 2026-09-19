@@ -5,6 +5,7 @@
 module editing
 
 import dom
+import css
 import strings
 
 struct ClipboardTextSerializer {
@@ -409,6 +410,47 @@ fn encode_empty_list_item_boundaries(document &dom.Document, mut fragment_node d
 	}
 }
 
+fn materialize_partial_text_style(range &dom.Range, document &dom.Document, mut fragment_node dom.Node) {
+	source := range.start_container()
+	if source != range.end_container() || !source.is_text()
+		|| (range.start_offset() == 0 && range.end_offset() == source.length()) {
+		return
+	}
+	selected_element := source.parent_element() or { return }
+	host := source.editing_host() or { return }
+	host_element := host.as_element() or { return }
+
+	properties := [
+		css.PropertyID.color,
+		.background_color,
+		.font_family,
+		.font_size,
+		.font_style,
+		.font_weight,
+		.text_decoration_line,
+	]
+	mut style := strings.new_builder(0)
+	for property_id in properties {
+		selected_value := css.computed_value_for(selected_element, property_id) or { continue }
+		host_value := css.computed_value_for(host_element, property_id) or { continue }
+		if selected_value == host_value {
+			continue
+		}
+		style.write_string('${css.string_from_property_id(property_id)}: ${selected_value};')
+	}
+	if style.len == 0 {
+		return
+	}
+
+	mut span := document.create_element('span') or { return }
+	span.set_attribute_value('style', style.str())
+	mut span_node := span.as_node()
+	for child in fragment_node.children_as_vector() {
+		span_node.append_child(child) or { return }
+	}
+	fragment_node.append_child(span.as_node()) or { return }
+}
+
 pub fn serialize_range_as_html_for_clipboard(range &dom.Range) string {
 	if range.collapsed() {
 		return ''
@@ -439,6 +481,7 @@ pub fn serialize_range_as_html_for_clipboard(range &dom.Range) string {
 	}
 	wrap_cloned_list_items(range, mut fragment_node)
 	encode_empty_list_item_boundaries(document, mut fragment_node)
+	materialize_partial_text_style(range, document, mut fragment_node)
 	protect_collapsible_whitespace_for_interchange(document, serialized_text)
 	return fragment_node.serialize_fragment(.no, .inner) or { '' }
 }

@@ -86,3 +86,15 @@ fn test_styled_clipboard_serializer_encodes_empty_list_item_boundaries() {
 
 	assert editing.serialize_range_as_html_for_clipboard(range) == '<ul id="selection"><li><br class="Apple-interchange-newline">content</li></ul><br class="Apple-interchange-newline">'
 }
+
+fn test_styled_clipboard_serializer_materializes_partial_text_style() {
+	document := html.parse_document('<!doctype html><body><div id="host" contenteditable><span id="selection" style="color:red;font-weight:700">abcdef</span></div></body>')
+	_ := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	selection := document.get_element_by_id('selection') or { panic('missing selection') }
+	text_node := selection.as_node().first_child() or { panic('missing text') }
+	mut range := document.create_range()
+	range.set_start(text_node, 1) or { panic(err) }
+	range.set_end(text_node, 4) or { panic(err) }
+
+	assert editing.serialize_range_as_html_for_clipboard(range) == '<span style="color: rgb(255, 0, 0);font-weight: 700;">bcd</span>'
+}
