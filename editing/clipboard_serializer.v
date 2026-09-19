@@ -350,6 +350,65 @@ fn wrap_cloned_list_items(range &dom.Range, mut fragment_node dom.Node) {
 	}
 }
 
+fn has_renderable_styled_markup_content(node &dom.Node) bool {
+	if node.is_text() {
+		return (node.text_content() or { '' }) != ''
+	}
+	if element := node.as_element() {
+		if element.is_void_element()
+			&& !(element.is_html_element() && element.local_name() == 'br') {
+			return true
+		}
+	}
+	for child in node.children_as_vector() {
+		if has_renderable_styled_markup_content(child) {
+			return true
+		}
+	}
+	return false
+}
+
+fn is_empty_or_clipped_styled_paragraph(node &dom.Node) bool {
+	return styled_markup_node_is_block(node) && !has_renderable_styled_markup_content(node)
+}
+
+fn create_interchange_newline(document &dom.Document) ?&dom.Node {
+	mut line_break := document.create_element('br') or { return none }
+	line_break.set_attribute_value('class', 'Apple-interchange-newline')
+	return line_break.as_node()
+}
+
+fn encode_empty_list_item_boundaries(document &dom.Document, mut fragment_node dom.Node) {
+	for list in fragment_node.children_as_vector() {
+		if !is_html_list_element(list) {
+			continue
+		}
+		first_item := list.first_child()
+		if first := first_item {
+			if following := first.next_sibling() {
+				if is_html_list_item_element(first) && is_html_list_item_element(following)
+					&& is_empty_or_clipped_styled_paragraph(first) {
+					marker := create_interchange_newline(document) or { continue }
+					mut following_node := unsafe { &dom.Node(following) }
+					following_node.insert_before(marker, following.first_child(), false)
+					mut first_node := unsafe { &dom.Node(first) }
+					first_node.remove(false)
+				}
+			}
+		}
+
+		last_item := list.last_child() or { continue }
+		if !is_html_list_item_element(last_item)
+			|| !is_empty_or_clipped_styled_paragraph(last_item) {
+			continue
+		}
+		marker := create_interchange_newline(document) or { continue }
+		fragment_node.insert_before(marker, list.next_sibling(), false)
+		mut last_node := unsafe { &dom.Node(last_item) }
+		last_node.remove(false)
+	}
+}
+
 pub fn serialize_range_as_html_for_clipboard(range &dom.Range) string {
 	if range.collapsed() {
 		return ''
@@ -379,6 +438,7 @@ pub fn serialize_range_as_html_for_clipboard(range &dom.Range) string {
 		}
 	}
 	wrap_cloned_list_items(range, mut fragment_node)
+	encode_empty_list_item_boundaries(document, mut fragment_node)
 	protect_collapsible_whitespace_for_interchange(document, serialized_text)
 	return fragment_node.serialize_fragment(.no, .inner) or { '' }
 }

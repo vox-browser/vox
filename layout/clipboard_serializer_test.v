@@ -76,3 +76,13 @@ fn test_styled_clipboard_serializer_restores_shared_list_wrapper() {
 
 	assert editing.serialize_range_as_html_for_clipboard(range) == '<ol id="selection" start="3"><li>third</li><li>fourth</li></ol>'
 }
+
+fn test_styled_clipboard_serializer_encodes_empty_list_item_boundaries() {
+	document := html.parse_document('<!doctype html><body><ul id="selection"><li><br></li><li>content</li><li><br></li></ul></body>')
+	_ := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	selection := document.get_element_by_id('selection') or { panic('missing selection') }
+	mut range := document.create_range()
+	range.select_node_contents(selection.as_node()) or { panic(err) }
+
+	assert editing.serialize_range_as_html_for_clipboard(range) == '<ul id="selection"><li><br class="Apple-interchange-newline">content</li></ul><br class="Apple-interchange-newline">'
+}
