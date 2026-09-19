@@ -490,6 +490,15 @@ pub mut:
 	has_scrollable_overflow bool
 	scrollable_overflow     ?LayoutRect
 	overflow_clip           ?CompatibilityOverflowClip
+	// CSS Scroll Snap metadata retained by the renderer transport. Snap
+	// destination selection runs after layout, when scroll operations arrive.
+	scroll_snap_align css.ScrollSnapAlignData
+	scroll_snap_stop  css.ScrollSnapStop
+	scroll_snap_type  css.ScrollSnapType
+	scroll_margin     BoxEdges
+	scroll_padding    BoxEdges
+	writing_mode      css.WritingMode
+	direction         css.Direction
 	// CSS2 `clip: rect(...)`, resolved from an absolute/fixed box's border box.
 	// Unlike overflow clipping, this belongs to the box's own visual context and
 	// therefore clips both the box and its descendants.

@@ -1895,6 +1895,14 @@ pub:
 	scroll_padding DocumentScrollPaddingCallback = unsafe { nil }
 }
 
+pub type DocumentViewportScrollSnapCallback = fn (voidptr, CSSPixelPoint_, ScrollSnapSelectionStrategy_) ScrollSnapDestination_
+
+pub struct DocumentViewportScrollSnapHook {
+pub:
+	target             voidptr = unsafe { nil }
+	adjust_destination DocumentViewportScrollSnapCallback = unsafe { nil }
+}
+
 pub struct CSSSelector {
 pub mut:
 	text string
@@ -4450,6 +4458,9 @@ pub mut:
 	style_update_hook_                  ?DocumentStyleUpdateHook
 	background_style_hook_              ?DocumentBackgroundStyleHook
 	scroll_style_hook_                  ?DocumentScrollStyleHook
+	viewport_scroll_snap_hook_          ?DocumentViewportScrollSnapHook
+	viewport_snapped_areas_x_           []ScrollSnapAreaReference_
+	viewport_snapped_areas_y_           []ScrollSnapAreaReference_
 	css_animation_timeline_update_hook_ ?DocumentCSSAnimationTimelineUpdateHook
 	css_animation_event_hook_           ?DocumentCSSAnimationEventHook
 	animations_hook_                    ?DocumentAnimationsHook
@@ -6019,6 +6030,40 @@ pub fn (mut d Document) set_background_style_hook(hook DocumentBackgroundStyleHo
 
 pub fn (mut d Document) set_scroll_style_hook(hook DocumentScrollStyleHook) {
 	d.scroll_style_hook_ = hook
+}
+
+pub fn (mut d Document) set_viewport_scroll_snap_hook(hook DocumentViewportScrollSnapHook) {
+	d.viewport_scroll_snap_hook_ = hook
+}
+
+pub fn (mut d Document) adjust_viewport_scroll_destination(destination CSSPixelPoint_,
+	strategy ScrollSnapSelectionStrategy_) ScrollSnapDestination_ {
+	hook := d.viewport_scroll_snap_hook_ or {
+		return ScrollSnapDestination_{ position: destination }
+	}
+	if hook.adjust_destination == unsafe { nil } {
+		return ScrollSnapDestination_{ position: destination }
+	}
+	result := hook.adjust_destination(hook.target, destination, strategy)
+	d.record_viewport_scroll_snap_destination(result)
+	return result
+}
+
+pub fn (d &Document) viewport_snapped_areas_x() []ScrollSnapAreaReference_ {
+	return d.viewport_snapped_areas_x_.clone()
+}
+
+pub fn (d &Document) viewport_snapped_areas_y() []ScrollSnapAreaReference_ {
+	return d.viewport_snapped_areas_y_.clone()
+}
+
+pub fn (mut d Document) record_viewport_scroll_snap_destination(result ScrollSnapDestination_) {
+	if result.evaluated_x {
+		d.viewport_snapped_areas_x_ = result.snapped_areas_x.clone()
+	}
+	if result.evaluated_y {
+		d.viewport_snapped_areas_y_ = result.snapped_areas_y.clone()
+	}
 }
 
 pub fn (d &Document) scroll_margin_for_element(element &Element) ScrollMarginData {

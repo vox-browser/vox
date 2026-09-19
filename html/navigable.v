@@ -1908,11 +1908,22 @@ pub fn (mut model NavigableModel) set_needs_repaint() {
 
 pub fn (mut model NavigableModel) scroll_viewport_by_delta(delta css.CSSPixelPoint) &dom.Promise {
 	current := model.viewport_scroll_offset()
-	return model.perform_a_scroll_of_the_viewport(current.plus(delta))
+	return model.perform_a_scroll_of_the_viewport_with_snap_strategy(current.plus(delta),
+		dom.ScrollSnapSelectionStrategy_{
+			type_: .end_position_and_direction
+			start_offset: dom.CSSPixelPoint_{ x_: current.x().to_double(), y_: current.y().to_double() }
+			displacement: dom.CSSPixelPoint_{ x_: delta.x().to_double(), y_: delta.y().to_double() }
+		})
 }
 
 // https://drafts.csswg.org/cssom-view/#viewport-perform-a-scroll
 pub fn (mut model NavigableModel) perform_a_scroll_of_the_viewport(position css.CSSPixelPoint) &dom.Promise {
+	return model.perform_a_scroll_of_the_viewport_with_snap_strategy(position,
+		dom.ScrollSnapSelectionStrategy_{})
+}
+
+fn (mut model NavigableModel) perform_a_scroll_of_the_viewport_with_snap_strategy(position css.CSSPixelPoint,
+	strategy dom.ScrollSnapSelectionStrategy_) &dom.Promise {
 	document := model.active_document() or {
 		return dom.Promise.resolved(dom.js_undefined())
 	}
@@ -1924,8 +1935,15 @@ pub fn (mut model NavigableModel) perform_a_scroll_of_the_viewport(position css.
 		maximum_x = math.max(0.0, f64(mutable_root.scroll_width()) - viewport.width)
 		maximum_y = math.max(0.0, f64(mutable_root.scroll_height()) - viewport.height)
 	}
-	new_position := css.CSSPixelPoint.from_values(math.max(0.0, math.min(position.x().to_double(), maximum_x)), math.max(0.0, math.min(position.y().to_double(), maximum_y)))
-	model.perform_scroll_of_viewport_scrolling_box(new_position)
+	clamped := dom.CSSPixelPoint_{
+		x_: math.max(0.0, math.min(position.x().to_double(), maximum_x))
+		y_: math.max(0.0, math.min(position.y().to_double(), maximum_y))
+	}
+	mut mutable_document := unsafe { &dom.Document(document) }
+	destination := mutable_document.adjust_viewport_scroll_destination(clamped, strategy)
+	model.perform_scroll_of_viewport_scrolling_box(css.CSSPixelPoint.from_values(
+		math.max(0.0, math.min(destination.position.x(), maximum_x)),
+		math.max(0.0, math.min(destination.position.y(), maximum_y))))
 	return dom.Promise.resolved(dom.js_undefined())
 }
 

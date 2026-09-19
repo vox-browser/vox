@@ -370,9 +370,19 @@ fn materialize_dom_paintables(box &Node, state &LayoutState, mut placeholder dom
 			layout_handle: voidptr(box)
 		}
 		if layout_debug_paintable_is_box(class_name) {
+			mut snapped_areas_x := []dom.ScrollSnapAreaReference_{}
+			mut snapped_areas_y := []dom.ScrollSnapAreaReference_{}
+			if dom_node := box.dom_node() {
+				if element := dom_node.as_element() {
+					snapped_areas_x = element.snapped_scroll_areas_x()
+					snapped_areas_y = element.snapped_scroll_areas_y()
+				}
+			}
 			mut paintable_box := &dom.PaintableBox{
 				layout_handle: voidptr(box)
 				dom_node_: box.dom_node() or { unsafe { nil } }
+				snapped_areas_x_: snapped_areas_x
+				snapped_areas_y_: snapped_areas_y
 			}
 			paintable_box.is_box = true
 			paintable_box.visible = placeholder.visibility_ == .visible

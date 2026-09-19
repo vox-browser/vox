@@ -755,6 +755,11 @@ pub fn (window &WindowModel) scroll_y() f64 {
 
 // https://drafts.csswg.org/cssom-view/#dom-window-scroll
 pub fn (mut window WindowModel) scroll(options ScrollToOptions) &dom.Promise {
+	return window.scroll_with_snap_strategy(options, none)
+}
+
+fn (mut window WindowModel) scroll_with_snap_strategy(options ScrollToOptions,
+	strategy ?dom.ScrollSnapSelectionStrategy_) &dom.Promise {
 	if window.associated_document().cached_navigable() == none {
 		return dom.Promise.resolved(dom.js_undefined())
 	}
@@ -771,6 +776,10 @@ pub fn (mut window WindowModel) scroll(options ScrollToOptions) &dom.Promise {
 	}
 	x = math.max(0.0, math.min(x, maximum_x))
 	y = math.max(0.0, math.min(y, maximum_y))
+	destination := document.adjust_viewport_scroll_destination(dom.CSSPixelPoint_{ x_: x, y_: y },
+		strategy or { dom.ScrollSnapSelectionStrategy_{} })
+	x = math.max(0.0, math.min(destination.position.x(), maximum_x))
+	y = math.max(0.0, math.min(destination.position.y(), maximum_y))
 	if x != viewport.x || y != viewport.y {
 		document.set_viewport_rect(dom.Rect{x, y, viewport.width, viewport.height})
 		document.inform_all_viewport_clients_about_the_current_viewport_rect()
@@ -787,10 +796,17 @@ pub fn (mut window WindowModel) scroll_xy(x f64, y f64) &dom.Promise {
 
 // https://drafts.csswg.org/cssom-view/#dom-window-scrollby
 pub fn (mut window WindowModel) scroll_by(options ScrollToOptions) &dom.Promise {
-	return window.scroll(ScrollToOptions{
+	delta_x := normalize_window_scroll_value(options.left or { 0 })
+	delta_y := normalize_window_scroll_value(options.top or { 0 })
+	start := dom.CSSPixelPoint_{ x_: window.scroll_x(), y_: window.scroll_y() }
+	return window.scroll_with_snap_strategy(ScrollToOptions{
 		behavior: options.behavior
-		left: normalize_window_scroll_value(options.left or { 0 }) + window.scroll_x()
-		top: normalize_window_scroll_value(options.top or { 0 }) + window.scroll_y()
+		left: delta_x + start.x()
+		top: delta_y + start.y()
+	}, dom.ScrollSnapSelectionStrategy_{
+		type_: .end_position_and_direction
+		start_offset: start
+		displacement: dom.CSSPixelPoint_{ x_: delta_x, y_: delta_y }
 	})
 }
 

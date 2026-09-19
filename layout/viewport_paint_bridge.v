@@ -34,11 +34,16 @@ fn install_document_painting_bridge(document &dom.Document, result &DocumentLayo
 	paintable.set_paintable_boxes_with_auto_content_visibility(collect_paintable_boxes_with_auto_content_visibility(result.root))
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_viewport_paintable(paintable)
+	mutable_document.set_viewport_scroll_snap_hook(dom.DocumentViewportScrollSnapHook{
+		target: target
+		adjust_destination: layout_viewport_adjust_scroll_destination
+	})
 	if viewport := document.layout_node() {
 		if root := viewport.root_layout_node() {
 			install_layout_paintable_repaint_callbacks(root, result)
 		}
 	}
+	resnap_document_scroll_containers(result)
 }
 
 // Paint-only style changes do not run Layout::LayoutState::commit upstream:
@@ -92,6 +97,7 @@ fn install_layout_paintable_repaint_callbacks(node &dom.LayoutNode, result &Docu
 		mutable_paintable.set_needs_repaint_callback = layout_paintable_set_needs_repaint
 		mutable_paintable.scroll_ancestor_to_offset_into_view_callback = layout_paintable_scroll_ancestor_to_offset_into_view
 		mutable_paintable.box_type_agnostic_position_callback = layout_paintable_box_type_agnostic_position
+		mutable_paintable.adjust_scroll_destination_callback = layout_paintable_adjust_scroll_destination
 	}
 	for child in node.children_ {
 		install_layout_paintable_repaint_callbacks(child, result)

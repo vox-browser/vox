@@ -1485,7 +1485,9 @@ pub mut:
 	svg_resource_box_referencing_elements_    []&Element
 	svg_paint_resource_referencing_elements_  []&Element
 
-	scroll_offset_ CSSPixelPoint_
+	scroll_offset_          CSSPixelPoint_
+	snapped_scroll_areas_x_ []ScrollSnapAreaReference_
+	snapped_scroll_areas_y_ []ScrollSnapAreaReference_
 
 	css_defined_animations_         map[int]map[string]&CSSAnimation_
 	has_css_defined_animations_flag bool
@@ -3655,6 +3657,11 @@ fn normalize_non_finite(v f64) f64 {
 
 // https://drafts.csswg.org/cssom-view/#dom-element-scroll
 pub fn (mut e Element) el_scroll(x_ f64, y_ f64) &Promise {
+	return e.el_scroll_with_snap_strategy(x_, y_, none)
+}
+
+fn (mut e Element) el_scroll_with_snap_strategy(x_ f64, y_ f64,
+	snap_strategy ?ScrollSnapSelectionStrategy_) &Promise {
 	x := normalize_non_finite(x_)
 	y := normalize_non_finite(y_)
 	doc := e.document()
@@ -3681,7 +3688,11 @@ pub fn (mut e Element) el_scroll(x_ f64, y_ f64) &Promise {
 		mut offset := pb.scroll_offset()
 		offset.set_x(x)
 		offset.set_y(y)
-		pb.set_scroll_offset(offset)
+		if strategy := snap_strategy {
+			pb.set_scroll_offset_with_snap_strategy(offset, strategy)
+		} else {
+			pb.set_scroll_offset(offset)
+		}
 	}
 	return Promise.resolved(js_undefined())
 }
@@ -3689,11 +3700,31 @@ pub fn (mut e Element) el_scroll(x_ f64, y_ f64) &Promise {
 pub fn (mut e Element) scroll_by(x_ f64, y_ f64) &Promise {
 	x := normalize_non_finite(x_)
 	y := normalize_non_finite(y_)
-	return e.el_scroll(e.scroll_left() + x, e.scroll_top() + y)
+	start := CSSPixelPoint_{ x_: e.scroll_left(), y_: e.scroll_top() }
+	return e.el_scroll_with_snap_strategy(start.x() + x, start.y() + y,
+		ScrollSnapSelectionStrategy_{
+			type_: .end_position_and_direction
+			start_offset: start
+			displacement: CSSPixelPoint_{ x_: x, y_: y }
+		})
 }
 
 pub fn (e &Element) el_scroll_offset() CSSPixelPoint_ {
 	return e.scroll_offset_
+}
+
+pub fn (e &Element) snapped_scroll_areas_x() []ScrollSnapAreaReference_ {
+	return e.snapped_scroll_areas_x_.clone()
+}
+
+pub fn (e &Element) snapped_scroll_areas_y() []ScrollSnapAreaReference_ {
+	return e.snapped_scroll_areas_y_.clone()
+}
+
+pub fn (mut e Element) set_snapped_scroll_areas(x []ScrollSnapAreaReference_,
+	y []ScrollSnapAreaReference_) {
+	e.snapped_scroll_areas_x_ = x.clone()
+	e.snapped_scroll_areas_y_ = y.clone()
 }
 
 pub fn (mut e Element) set_scroll_offset_internal(typ ?int, offset CSSPixelPoint_) {

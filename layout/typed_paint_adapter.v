@@ -386,6 +386,35 @@ fn compatibility_overlay_data(node &Node, computed &css.ComputedProperties, used
 	}
 }
 
+fn compatibility_scroll_snap_edges(computed &css.ComputedProperties, used &UsedValues,
+	padding bool) BoxEdges {
+	zero := css.LengthPercentageOrAuto.from_length(css.Length.make_px(0))
+	values := if padding {
+		computed.length_box(.scroll_padding_left, .scroll_padding_top, .scroll_padding_right,
+			.scroll_padding_bottom, css.LengthPercentageOrAuto.make_auto())
+	} else {
+		computed.length_box(.scroll_margin_left, .scroll_margin_top, .scroll_margin_right,
+			.scroll_margin_bottom, zero)
+	}
+	context := computed.length_resolution_context()
+	horizontal_reference := if padding {
+		css.CSSPixels.nearest_value_for(used.content_width().to_double() + used.padding_left.to_double() + used.padding_right.to_double())
+	} else {
+		css.CSSPixels.new(0)
+	}
+	vertical_reference := if padding {
+		css.CSSPixels.nearest_value_for(used.content_height().to_double() + used.padding_top.to_double() + used.padding_bottom.to_double())
+	} else {
+		css.CSSPixels.new(0)
+	}
+	return BoxEdges{
+		top: values.top().to_px_or_zero(context, vertical_reference).to_double()
+		right: values.right().to_px_or_zero(context, horizontal_reference).to_double()
+		bottom: values.bottom().to_px_or_zero(context, vertical_reference).to_double()
+		left: values.left().to_px_or_zero(context, horizontal_reference).to_double()
+	}
+}
+
 // Direct translation of PaintableBox::overflow_clip_edge_rect(). Geometry
 // remains in CSS pixels; the visual-context builder performs device rounding.
 fn paintable_box_overflow_clip_edge_rect(node &Node, computed &css.ComputedProperties, used &UsedValues, position css.CSSPixelPoint) LayoutRect {
@@ -3734,6 +3763,13 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		has_scrollable_overflow: used.has_scrollable_overflow() && !node.is_viewport()
 		scrollable_overflow: scrollable_overflow
 		overflow_clip: overflow_clip
+		scroll_snap_align: computed.scroll_snap_align()
+		scroll_snap_stop: computed.scroll_snap_stop()
+		scroll_snap_type: computed.scroll_snap_type()
+		scroll_margin: compatibility_scroll_snap_edges(computed, used, false)
+		scroll_padding: compatibility_scroll_snap_edges(computed, used, true)
+		writing_mode: computed.writing_mode()
+		direction: computed.direction()
 		css_clip: css_clip
 		clip_path: clip_path
 		svg_clip: svg_clip
