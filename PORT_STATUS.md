@@ -81,6 +81,9 @@ rebalances collapsible space/newline runs into ordinary-text and protected-space
 tokens. Rich clipboard serialization applies those tokens as span-wrapped
 non-breaking spaces while retaining verbatim text whose computed
 `white-space-collapse` mode is non-collapsing.
+When a cloned fragment contains only sibling list items, rich clipboard
+serialization now restores their shared `ol` or `ul` ancestor, including its
+authored attributes.
 
 The current base-to-head semantic delta audit reports 4,600 unmatched changed
 C++ spellings. That is a structural review queue rather than a count of missing behaviors: active V
@@ -223,7 +226,7 @@ from the current-module totals.
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
 | `DOM` | 59 | 34,859 | 36,098 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
-| `Editing` | 26 | 12,720 | 3,801 | 796 | Complete |
+| `Editing` | 26 | 12,720 | 3,834 | 796 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
 | `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
@@ -241,7 +244,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 43,042 | 15,932 | Present |
+| `Layout` | 9 | 4,001 | 43,042 | 15,942 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -288,7 +291,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **343,680** | **68,403** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **343,713** | **68,413** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
