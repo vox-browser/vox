@@ -160,7 +160,7 @@ fn test_document_update_layout_runs_registered_layout_engine() {
 	assert html.html_element_inner_text(html_child) == ' a b '
 	assert text.as_node().accessible_name(doc, .no)! == '  a   b  '
 	mut mutable_child_node := child.as_node()
-	mutable_child_node.set_needs_repaint(.yes)
+	mutable_child_node.set_needs_repaint(.paint_commands_and_hit_test_list)
 	assert child_layout.paintables()[0].needs_repaint
 
 	// A clean document returns at the same point as Document::update_layout()

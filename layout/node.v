@@ -1095,14 +1095,14 @@ fn image_style_value_layout_did_update(target voidptr) {
 fn (mut n NodeWithStyle) image_style_value_did_update() {
 	if dom_node := n.dom_node_ {
 		mut mutable_node := unsafe { &dom.Node(dom_node) }
-		mutable_node.set_needs_repaint(.yes)
+		mutable_node.set_needs_repaint(.paint_commands)
 	}
 	if !n.is_body_ || !n.body_background_is_propagated_to_root() {
 		return
 	}
 	html_element := n.document_.html_element() or { return }
 	mut html_node := html_element.as_node()
-	html_node.set_needs_repaint(.yes)
+	html_node.set_needs_repaint(.paint_commands)
 }
 
 fn (n &NodeWithStyle) body_background_is_propagated_to_root() bool {

@@ -1111,7 +1111,7 @@ pub fn (mut text FormAssociatedTextControlElement) selection_was_changed(source 
 	}
 	if text_node := text.text_node_ {
 		mut node := text_node.as_node()
-		node.set_needs_repaint(.yes)
+		node.set_needs_repaint(.paint_commands)
 		if text.selection_start_ == text.selection_end_ {
 			mut document := text.control.element.document()
 			document.reset_cursor_blink_cycle()

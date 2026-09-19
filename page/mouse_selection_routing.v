@@ -181,7 +181,7 @@ pub fn (mut handler EventHandler) finish_selection_from_preserved_mousedown(docu
 	if selection := document.get_selection() {
 		mut mutable_selection := unsafe { &dom.Selection(selection) }
 		mutable_selection.remove_all_ranges()
-		mutable_document.set_needs_repaint()
+		mutable_document.set_needs_repaint_with_invalidation(.paint_commands)
 	}
 }
 
@@ -320,7 +320,7 @@ fn set_context_selection(mut handler EventHandler, document &dom.Document, node 
 		mut mutable_selection := unsafe { &dom.Selection(selection) }
 		mutable_selection.set_base_and_extent(node, start, node, end) or { return }
 		mut mutable_document := unsafe { &dom.Document(document) }
-		mutable_document.set_needs_repaint()
+		mutable_document.set_needs_repaint_with_invalidation(.paint_commands)
 	}
 }
 

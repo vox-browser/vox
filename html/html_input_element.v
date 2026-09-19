@@ -379,7 +379,7 @@ pub fn (mut model HTMLInputElementModel) set_being_activated(activated bool) {
 	element.set_being_activated(activated)
 	if model.type_state_ in [.checkbox, .radio_button] {
 		mut node := element.as_node()
-		node.set_needs_repaint(.yes)
+		node.set_needs_repaint(.paint_commands)
 	}
 }
 
@@ -678,7 +678,7 @@ pub fn (mut model HTMLInputElementModel) set_checked(value bool) {
 	}
 	mut node := input_element(&model).as_node()
 	node.invalidate_style(.html_input_element_set_checked)
-	node.set_needs_repaint(.yes)
+	node.set_needs_repaint(.paint_commands)
 	model.update_validity()
 }
 

@@ -1213,12 +1213,16 @@ fn test_document_display_list_retains_one_stacking_plan_and_command_store() {
 	paint_steps_data := result.paint_steps.data
 	paint_phase_commands_data := result.paint_phase_commands.data
 	paintable := document.paintable_box() or { panic('missing viewport paintable') }
+	assert result.hit_test_display_list_is_valid
 
 	// Document::set_needs_repaint() invalidates the assembled display list, not
-	// the source-shaped stacking tree or any PaintableBox phase cache.
+	// the source-shaped stacking tree or any PaintableBox phase cache. Its
+	// default full mode does invalidate the independently retained hit-test plan.
 	mutable_document.set_needs_repaint()
 	assert mutable_document.cached_display_list() == none
+	assert !result.hit_test_display_list_is_valid
 	_ = mutable_document.record_display_list() or { panic('missing repainted display list') }
+	assert result.hit_test_display_list_is_valid
 	assert result.paint_order.data == paint_order_data
 	assert result.paint_steps.data == paint_steps_data
 	assert result.paint_phase_commands.data == paint_phase_commands_data
@@ -1262,14 +1266,25 @@ fn test_document_display_list_retains_one_stacking_plan_and_command_store() {
 	}
 	assert front_entry_index >= 0
 	assert containing_block_entry_index >= 0
-	front_paintable.set_needs_repaint(.yes)
+	front_paintable.set_needs_repaint(.paint_commands_and_hit_test_list)
 	assert mutable_document.cached_display_list() == none
+	assert !result.hit_test_display_list_is_valid
 	assert !result.paint_phase_entry_valid[front_entry_index]
 	assert !result.paint_phase_entry_valid[containing_block_entry_index]
 	assert result.paint_phase_entry_valid[root_entry_index]
 	_ = mutable_document.record_display_list() or { panic('missing child-invalidated display list') }
+	assert result.hit_test_display_list_is_valid
 	assert result.paint_phase_entry_valid.all(it)
 	assert result.paint_phase_commands.data == paint_phase_commands_data
+
+	// A paint-command-only repaint refreshes the target's phase cache while
+	// preserving the hit-test plan for input events before the next frame.
+	front_paintable.set_needs_repaint(.paint_commands)
+	assert mutable_document.cached_display_list() == none
+	assert result.hit_test_display_list_is_valid
+	assert !result.paint_phase_entry_valid[front_entry_index]
+	_ = mutable_document.record_display_list() or { panic('missing paint-only display list') }
+	assert result.hit_test_display_list_is_valid
 
 	// The explicit full-cache path discards every phase bucket. The following
 	// recording reconstructs them from the retained paintables.
@@ -1281,6 +1296,44 @@ fn test_document_display_list_retains_one_stacking_plan_and_command_store() {
 	_ = mutable_document.record_display_list() or { panic('missing uncached display list') }
 	assert result.paint_phase_cache_valid
 	assert result.paint_phase_commands.len == result.paint_order.len * compatibility_paint_phase_count
+}
+
+fn test_paint_only_style_change_keeps_hit_test_display_list() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#box { position: absolute; width: 100px; height: 100px; background: green }
+	</style><body><div id="box"></div></body>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	box := document.get_element_by_id('box') or { panic('missing box') }
+	mut mutable_document := unsafe { &dom.Document(document) }
+	_ = mutable_document.record_display_list() or { panic('missing initial display list') }
+	initial_hit := mutable_document.element_from_point(50, 50) or { panic('missing initial hit') }
+	assert initial_hit.as_node().unique_id() == box.as_node().unique_id()
+	mut result := document_layout_result(document) or { panic('missing layout result') }
+	assert result.hit_test_display_list_is_valid
+
+	mut mutable_box := unsafe { &dom.Element(box) }
+	mutable_box.set_attribute_value('style', 'background-color: blue')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	result = document_layout_result(document) or { panic('missing refreshed layout result') }
+	assert result.hit_test_display_list_is_valid
+	assert mutable_document.cached_display_list() == none
+	paint_only_hit := mutable_document.element_from_point(50, 50) or {
+		panic('missing paint-only hit')
+	}
+	assert paint_only_hit.as_node().unique_id() == box.as_node().unique_id()
+	assert result.hit_test_display_list_is_valid
+
+	_ = mutable_document.record_display_list() or { panic('missing refreshed display list') }
+	mutable_box.set_attribute_value('style', 'pointer-events: none')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	result = document_layout_result(document) or { panic('missing hit-test-invalidated result') }
+	assert !result.hit_test_display_list_is_valid
+	hit_test_change_hit := mutable_document.element_from_point(50, 50) or {
+		panic('missing fallback hit')
+	}
+	assert hit_test_change_hit.local_name() != 'div'
+	assert result.hit_test_display_list_is_valid
 }
 
 fn test_document_hit_testing_reuses_paint_order_and_maps_transforms_to_local_space() {

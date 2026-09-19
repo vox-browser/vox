@@ -224,8 +224,9 @@ pub enum RequireWellFormed {
 }
 
 pub enum InvalidateDisplayList {
-	yes
 	no
+	paint_commands
+	paint_commands_and_hit_test_list
 }
 
 pub enum MutationType {
@@ -323,7 +324,7 @@ pub fn (mut p Paintable) set_selection_state(state SelectionState) {
 	// Paintable::set_selection_state() invalidates the box itself, or the text
 	// paintable's containing block. The downstream callback retains the source
 	// Layout::Node and performs that same targeted cache invalidation.
-	p.set_needs_repaint(.yes)
+	p.set_needs_repaint(.paint_commands)
 }
 
 pub fn (p &Paintable) scroll_ancestor_to_offset_into_view(offset int) {
@@ -660,7 +661,7 @@ pub fn (mut e HTMLInputElement) set_indeterminate(value bool) {
 	e.indeterminate_ = value
 	mut node := unsafe { &Node(e) }
 	node.invalidate_style(.other)
-	node.set_needs_repaint(.yes)
+	node.set_needs_repaint(.paint_commands)
 }
 
 pub fn (e &HTMLInputElement) supports_a_picker() bool {
@@ -3068,7 +3069,7 @@ pub fn (mut n Node) set_needs_layout_tree_update(value bool, reason SetNeedsLayo
 	}
 	if n.needs_layout_tree_update {
 		mut document := unsafe { &Document(n.document()) }
-		document.mark_needs_repaint(false)
+		document.mark_needs_repaint(.no)
 		for ancestor := n.flat_tree_parent(); ancestor != none;  {
 			mut current := unsafe { &Node(ancestor or { break }) }
 			if current.child_needs_layout_tree_update {
@@ -3141,7 +3142,7 @@ pub fn (mut n Node) set_needs_style_update(value bool) {
 		if doc != unsafe { nil } {
 			mut mutable_document := unsafe { &Document(doc) }
 			mutable_document.record_style_invalidation()
-			mutable_document.mark_needs_repaint(false)
+			mutable_document.mark_needs_repaint(.no)
 		}
 		for ancestor := n.parent_or_shadow_host(); ancestor != none;  {
 			mut current := unsafe { &Node(ancestor or { break }) }
@@ -4052,7 +4053,7 @@ pub fn (mut n Node) set_needs_layout_update(reason SetNeedsLayoutReason) {
 	if mut node := n.unsafe_layout_node() {
 		node.set_needs_layout_update(reason)
 		mut document := unsafe { &Document(n.document()) }
-		document.mark_needs_repaint(false)
+		document.mark_needs_repaint(.no)
 	}
 }
 

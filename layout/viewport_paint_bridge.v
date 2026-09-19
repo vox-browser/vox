@@ -24,6 +24,7 @@ fn install_document_painting_bridge(document &dom.Document, result &DocumentLayo
 		set_needs_repaint_callback: viewport_set_needs_repaint
 		document_set_needs_repaint_callback: viewport_document_set_needs_repaint
 		invalidate_all_paint_caches_callback: viewport_invalidate_all_paint_caches
+		invalidate_hit_test_display_list_callback: viewport_invalidate_hit_test_display_list
 		record_display_list_callback: viewport_record_display_list
 		build_stacking_context_tree_callback: viewport_build_stacking_context_tree
 		stacking_context_callback: viewport_stacking_context
@@ -53,6 +54,7 @@ fn install_document_painting_bridge(document &dom.Document, result &DocumentLayo
 // needlessly rebuilding layout geometry.
 fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayoutResult,
 	viewport_width f64, viewport_height f64) {
+	had_valid_hit_test_display_list := result.hit_test_display_list_is_valid
 	result.paint_tree = renderer_box_from_document_layout_result(result, viewport_width, viewport_height)
 	result.display_list_commands.clear()
 	result.display_list = unsafe { nil }
@@ -61,6 +63,12 @@ fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayout
 	viewport_invalidate_stacking_context(voidptr(&result))
 	install_document_painting_bridge(document, &result)
 	viewport_assign_accumulated_visual_contexts(voidptr(&result))
+	// The compatibility hit-test plan holds paint-tree pointers. A paint-only
+	// style change keeps it logically valid, so remap it eagerly to the refreshed
+	// renderer snapshot instead of rebuilding it inside the next input event.
+	if had_valid_hit_test_display_list {
+		viewport_build_stacking_context_tree(voidptr(&result))
+	}
 }
 
 // Document::update_layout() builds this cache after committing paintables.
@@ -877,15 +885,17 @@ fn viewport_document_set_needs_repaint(target voidptr) {
 fn layout_paintable_set_needs_repaint(target voidptr, layout_handle voidptr, should_invalidate_display_list dom.InvalidateDisplayList) {
 	mut result := viewport_layout_result(target)
 	result.needs_repaint = true
-	if should_invalidate_display_list == .yes {
+	if should_invalidate_display_list != .no {
 		viewport_invalidate_layout_paint_cache(mut result, layout_handle)
 	}
-	// Paintable::set_needs_repaint() always forwards to Document. The enum only
-	// controls retained phase-command invalidation; even `No` must discard the
-	// assembled list so a new scroll snapshot is replayed.
+	// Scroll snapshots are lowered into this port's paint-command list, so `No`
+	// still discards that list while retaining the independent hit-test plan.
 	mut document := unsafe { &dom.Document(result.document) }
 	document.needs_repaint = true
 	document.invalidate_display_list()
+	if should_invalidate_display_list == .paint_commands_and_hit_test_list {
+		viewport_invalidate_hit_test_display_list(target)
+	}
 }
 
 fn compatibility_cursor_rect_for_layout_handle(box &BlockBox, layout_handle voidptr,
@@ -2046,6 +2056,7 @@ fn viewport_display_list_dump(target voidptr) string {
 fn viewport_build_stacking_context_tree(target voidptr) {
 	mut result := viewport_layout_result(target)
 	if result.stacking_context_tree_is_valid {
+		viewport_build_hit_test_display_list(target)
 		return
 	}
 	// The compatibility paint tree preserves the stacking-context flags and
@@ -2056,6 +2067,19 @@ fn viewport_build_stacking_context_tree(target voidptr) {
 		dump_callback: viewport_stacking_context_dump
 	}
 	result.paint_order, result.paint_steps = result.paint_tree.compatibility_paint_plan()
+	result.stacking_context_tree_is_valid = true
+	viewport_build_hit_test_display_list(target)
+}
+
+fn viewport_build_hit_test_display_list(target voidptr) {
+	mut result := viewport_layout_result(target)
+	if result.hit_test_display_list_is_valid {
+		return
+	}
+	if !result.stacking_context_tree_is_valid {
+		viewport_build_stacking_context_tree(target)
+		return
+	}
 	result.hit_test_steps = result.paint_tree.compatibility_hit_test_steps()
 	result.hit_test_order = []&BlockBox{cap: result.paint_order.len}
 	result.chrome_widget_boxes.clear()
@@ -2067,7 +2091,15 @@ fn viewport_build_stacking_context_tree(target voidptr) {
 			result.chrome_widget_boxes[u64(step.box.node_id)] = voidptr(step.box)
 		}
 	}
-	result.stacking_context_tree_is_valid = true
+	result.hit_test_display_list_is_valid = true
+}
+
+fn viewport_invalidate_hit_test_display_list(target voidptr) {
+	mut result := viewport_layout_result(target)
+	result.hit_test_steps.clear()
+	result.hit_test_order.clear()
+	result.chrome_widget_boxes.clear()
+	result.hit_test_display_list_is_valid = false
 }
 
 fn direct_child_stacking_contexts(box &BlockBox) []&BlockBox {
@@ -2130,9 +2162,7 @@ fn viewport_invalidate_stacking_context(target voidptr) {
 	result.stacking_context = unsafe { nil }
 	result.paint_order.clear()
 	result.paint_steps.clear()
-	result.hit_test_steps.clear()
-	result.hit_test_order.clear()
-	result.chrome_widget_boxes.clear()
+	viewport_invalidate_hit_test_display_list(target)
 	// The cache is indexed by the retained paint order. A rebuilt stacking tree
 	// may assign different indices even when individual box commands are stable.
 	result.paint_phase_commands.clear()
@@ -2144,7 +2174,7 @@ fn viewport_invalidate_stacking_context(target voidptr) {
 fn viewport_hit_test(target voidptr, x f64, y f64, type_ dom.HitTestType) ?dom.HitTestResult {
 	mut result := viewport_layout_result(target)
 	viewport_refresh_scroll_state(target)
-	viewport_build_stacking_context_tree(target)
+	viewport_build_hit_test_display_list(target)
 	snapshot := result.scroll_state_snapshot
 	metrics := painting.new_chrome_metrics(1.0) or { return none }
 	mut hit_test_state := CompatibilityHitTestState{}
@@ -2240,7 +2270,7 @@ fn compatibility_request_box_repaint(box &BlockBox) {
 	}
 	if node := dom.Node.from_unique_id(dom.UniqueNodeID(box.node_id)) {
 		if mut paintable := node.paintable_box() {
-			paintable.set_needs_repaint(.yes)
+			paintable.set_needs_repaint(.paint_commands)
 		}
 	}
 }
@@ -2812,7 +2842,7 @@ fn compatibility_hit_test_fragments(document &dom.Document, box &BlockBox, x f64
 fn viewport_hit_test_all(target voidptr, x f64, y f64) []&dom.Element {
 	mut result := viewport_layout_result(target)
 	viewport_refresh_scroll_state(target)
-	viewport_build_stacking_context_tree(target)
+	viewport_build_hit_test_display_list(target)
 	snapshot := result.scroll_state_snapshot
 	metrics := painting.new_chrome_metrics(1.0) or { return []&dom.Element{} }
 	mut elements := []&dom.Element{}

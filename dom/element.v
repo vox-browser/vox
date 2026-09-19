@@ -863,12 +863,13 @@ pub mut:
 	rebuild_stacking_context_tree       bool
 	rebuild_accumulated_visual_contexts bool
 	recompute_descendant_styles         bool
+	invalidates_hit_test_display_list   bool
 }
 
 pub fn (r RequiredInvalidationAfterStyleChange) is_none() bool {
 	return !r.relayout && !r.rebuild_layout_tree && !r.repaint
 		&& !r.rebuild_stacking_context_tree && !r.rebuild_accumulated_visual_contexts
-		&& !r.recompute_descendant_styles
+		&& !r.recompute_descendant_styles && !r.invalidates_hit_test_display_list
 }
 
 fn required_invalidation_full() RequiredInvalidationAfterStyleChange {
@@ -877,6 +878,7 @@ fn required_invalidation_full() RequiredInvalidationAfterStyleChange {
 		rebuild_layout_tree: true
 		repaint: true
 		rebuild_stacking_context_tree: true
+		invalidates_hit_test_display_list: true
 	}
 }
 
@@ -6011,7 +6013,7 @@ pub fn (mut e Element) removed_from_with_context(is_subtree_root NodeIsSubtreeRo
 			e.mark_svg_resource_box_referencing_elements_for_layout_tree_update()
 			if e.id() != none {
 				mut document := unsafe { &Document(e.document()) }
-				document.set_needs_repaint()
+				document.set_needs_repaint_with_invalidation(.paint_commands)
 			}
 		}
 	}
@@ -6520,7 +6522,7 @@ pub fn (mut e Element) register_svg_paint_resource_referencing_element(referenci
 fn (mut e Element) mark_svg_paint_resource_referencing_elements_for_repaint() {
 	for referencing_element in e.svg_paint_resource_referencing_elements_ {
 		mut node := unsafe { &Node(referencing_element.as_node()) }
-		node.set_needs_repaint(.yes)
+		node.set_needs_repaint(.paint_commands)
 	}
 }
 

@@ -1770,7 +1770,7 @@ fn apply_javascript_element_attribute(mut element dom.Element, name string, valu
 		html.html_image_element_form_associated_element_attribute_changed(image, 'src', old_value, value, none)
 		mut node := unsafe { &dom.Node(&element) }
 		node.set_needs_layout_update(.html_image_element_update_the_image_data)
-		node.set_needs_repaint(.yes)
+		node.set_needs_repaint(.paint_commands)
 	}
 	if element.local_name() == 'object' && name in ['data', 'type', 'classid'] {
 		object_element := unsafe { &dom.HTMLObjectElement(&element) }

@@ -9115,6 +9115,21 @@ fn property_requires_full_invalidation(property_id PropertyID) bool {
 	}
 }
 
+// Generated from Properties.json's `affects-hit-testing` metadata.
+pub fn property_affects_hit_testing(property_id PropertyID) bool {
+	return property_id in [
+		.border_bottom_left_radius,
+		.border_bottom_right_radius,
+		.border_top_left_radius,
+		.border_top_right_radius,
+		.fill,
+		.fill_rule,
+		.pointer_events,
+		.resize,
+		.visibility,
+	]
+}
+
 pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.StyleValue, new_value ?&dom.StyleValue) RequiredInvalidationAfterStyleChange {
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
 
@@ -9138,6 +9153,9 @@ pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.Sty
 
 	if property_id in [.container_name, .container_type] {
 		invalidation.recompute_descendant_styles = true
+	}
+	if property_affects_hit_testing(property_id) {
+		invalidation.affects_hit_testing = true
 	}
 
 	// OPTIMIZATION: Special handling for CSS `visibility`:

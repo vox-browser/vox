@@ -1048,6 +1048,14 @@ pub fn (mut element HTMLMediaElement) set_duration(duration f64) {
 	}
 	element.duration_ = duration
 	element.upon_has_ended_playback_possibly_changed()
+	element.request_paint_command_rebuild()
+}
+
+fn (element &HTMLMediaElement) request_paint_command_rebuild() {
+	if html_element := element.associated_element_ {
+		mut node := unsafe { &dom.Element(html_element) }.as_node()
+		node.set_needs_repaint(.paint_commands)
+	}
 }
 
 pub fn (mut element HTMLMediaElement) set_show_poster(show_poster bool) {
@@ -1058,6 +1066,7 @@ pub fn (mut element HTMLMediaElement) set_show_poster(show_poster bool) {
 	if mut video := element.video_element_model_ {
 		video.update_natural_dimensions()
 	}
+	element.request_paint_command_rebuild()
 }
 
 pub fn (mut element HTMLMediaElement) set_paused(paused bool) {
@@ -1068,6 +1077,7 @@ pub fn (mut element HTMLMediaElement) set_paused(paused bool) {
 	if mut video := element.video_element_model_ {
 		video.update_natural_dimensions()
 	}
+	element.request_paint_command_rebuild()
 	if paused {
 		if hook := element.playback_hooks_.pause {
 			hook()
@@ -1516,6 +1526,7 @@ pub fn (mut element HTMLMediaElement) on_audio_track_added(metadata MediaTrackMe
 		mutable_track.base.kind = if enable { 'main' } else { 'translation' }
 	}
 	element.fire_event('addtrack')
+	element.request_paint_command_rebuild()
 	return track
 }
 

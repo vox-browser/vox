@@ -1366,8 +1366,11 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 		}
 		mut document := unsafe { &dom.Document(target_element.document()) }
 		if invalidation.needs_repaint() {
-			mutable_target_node.set_needs_repaint(.yes)
-			document.invalidate_display_list()
+			mutable_target_node.set_needs_repaint(if invalidation.invalidates_hit_test_display_list() {
+				.paint_commands_and_hit_test_list
+			} else {
+				.paint_commands
+			})
 			if invalidation.accumulated_visual_contexts() == .rebuild {
 				document.set_needs_accumulated_visual_contexts_update(true)
 			}

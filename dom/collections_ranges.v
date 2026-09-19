@@ -2265,7 +2265,7 @@ pub fn (mut r Range) update_associated_selection() {
 	document.reset_cursor_blink_cycle()
 	if paintable := document.unsafe_paintable() {
 		paintable.recompute_selection_states(r)
-		paintable.set_needs_repaint()
+		paintable.set_needs_repaint_with_invalidation(.paint_commands)
 	}
 	// https://w3c.github.io/selection-api/#selectionchange-event
 	// When the selection is dissociated with its range, associated with a new range, or the associated range's boundary

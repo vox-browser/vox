@@ -97,11 +97,11 @@ pub fn (mut model HTMLTextAreaElementModel) set_selection_direction_binding(dire
 pub fn (mut model HTMLTextAreaElementModel) did_receive_focus() {
 	if text_node := model.text_node_ {
 		mut node := text_node.as_node()
-		node.set_needs_repaint(.yes)
+		node.set_needs_repaint(.paint_commands)
 	}
 	if placeholder_text_node := model.placeholder_text_node_ {
 		mut node := placeholder_text_node.as_node()
-		node.set_needs_repaint(.yes)
+		node.set_needs_repaint(.paint_commands)
 	}
 	if selection := textarea_element(&model).document().get_selection() {
 		mut mutable_selection := selection
@@ -112,11 +112,11 @@ pub fn (mut model HTMLTextAreaElementModel) did_receive_focus() {
 pub fn (mut model HTMLTextAreaElementModel) did_lose_focus() {
 	if text_node := model.text_node_ {
 		mut node := text_node.as_node()
-		node.set_needs_repaint(.yes)
+		node.set_needs_repaint(.paint_commands)
 	}
 	if placeholder_text_node := model.placeholder_text_node_ {
 		mut node := placeholder_text_node.as_node()
-		node.set_needs_repaint(.yes)
+		node.set_needs_repaint(.paint_commands)
 	}
 	model_pointer := voidptr(&model)
 	document := textarea_element(&model).document()

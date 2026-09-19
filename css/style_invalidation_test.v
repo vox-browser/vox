@@ -47,6 +47,27 @@ fn test_background_attachment_rebuilds_accumulated_visual_contexts() {
 	assert !property_rebuilds_accumulated_visual_contexts(.background_color)
 }
 
+fn test_hit_testing_property_metadata_matches_upstream() {
+	for property_id in [
+		PropertyID.border_bottom_left_radius,
+		.border_bottom_right_radius,
+		.border_top_left_radius,
+		.border_top_right_radius,
+		.fill,
+		.fill_rule,
+		.pointer_events,
+		.resize,
+		.visibility,
+	] {
+		assert property_affects_hit_testing(property_id)
+		invalidation := compute_property_invalidation(property_id,
+			&dom.StyleValue{ css_text: 'old' }, &dom.StyleValue{ css_text: 'new' })
+		assert invalidation.affects_hit_testing
+		assert invalidation.invalidates_hit_test_display_list()
+	}
+	assert !property_affects_hit_testing(.background_color)
+}
+
 fn test_container_properties_recompute_descendant_styles() {
 	old_value := &dom.StyleValue{css_text: 'old'}
 	new_value := &dom.StyleValue{css_text: 'new'}

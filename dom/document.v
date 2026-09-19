@@ -1421,6 +1421,7 @@ pub:
 	set_needs_repaint_callback                  ViewportPaintableVoidCallback = unsafe { nil }
 	document_set_needs_repaint_callback         ViewportPaintableVoidCallback = unsafe { nil }
 	invalidate_all_paint_caches_callback        ViewportPaintableVoidCallback = unsafe { nil }
+	invalidate_hit_test_display_list_callback   ViewportPaintableVoidCallback = unsafe { nil }
 	record_display_list_callback                ViewportPaintableRecordDisplayListCallback = unsafe { nil }
 	build_stacking_context_tree_callback        ViewportPaintableVoidCallback = unsafe { nil }
 	stacking_context_callback                   ViewportPaintableStackingContextCallback = unsafe { nil }
@@ -3676,7 +3677,14 @@ pub fn (vp &ViewportPaintable) recompute_selection_states(range &Range) {
 }
 
 pub fn (vp &ViewportPaintable) set_needs_repaint() {
+	vp.set_needs_repaint_with_invalidation(.paint_commands_and_hit_test_list)
+}
+
+pub fn (vp &ViewportPaintable) set_needs_repaint_with_invalidation(invalidation InvalidateDisplayList) {
 	if vp.target != unsafe { nil } && vp.set_needs_repaint_callback != unsafe { nil } {
+		if invalidation == .paint_commands_and_hit_test_list {
+			vp.invalidate_hit_test_display_list()
+		}
 		vp.set_needs_repaint_callback(vp.target)
 	}
 }
@@ -3693,6 +3701,13 @@ fn (vp &ViewportPaintable) document_set_needs_repaint() {
 pub fn (vp &ViewportPaintable) invalidate_all_paint_caches() {
 	if vp.target != unsafe { nil } && vp.invalidate_all_paint_caches_callback != unsafe { nil } {
 		vp.invalidate_all_paint_caches_callback(vp.target)
+	}
+}
+
+pub fn (vp &ViewportPaintable) invalidate_hit_test_display_list() {
+	if vp.target != unsafe { nil }
+		&& vp.invalidate_hit_test_display_list_callback != unsafe { nil } {
+		vp.invalidate_hit_test_display_list_callback(vp.target)
 	}
 }
 
@@ -4011,22 +4026,29 @@ pub fn (mut d Document) run_unloading_cleanup_steps() {
 	}
 }
 
-fn (mut d Document) mark_needs_repaint(invalidate_display_list bool) {
-	// Document::set_needs_repaint() defaults to InvalidateDisplayList::Yes
-	// upstream. It does not call PaintableBox::set_needs_repaint(), so retained
-	// phase caches survive and only the assembled display list is discarded.
-	if invalidate_display_list {
+fn (mut d Document) mark_needs_repaint(invalidation InvalidateDisplayList) {
+	// Document repaint requests do not invalidate PaintableBox phase caches.
+	// PaintCommands keeps the retained hit-test plan, while the full mode drops
+	// it as well. No is used by compositor-only changes.
+	if invalidation != .no {
 		d.invalidate_display_list()
 	}
 	d.needs_repaint = true
 	if paintable := d.unsafe_paintable() {
+		if invalidation == .paint_commands_and_hit_test_list {
+			paintable.invalidate_hit_test_display_list()
+		}
 		paintable.document_set_needs_repaint()
 	}
 	d.request_frame()
 }
 
 pub fn (mut d Document) set_needs_repaint() {
-	d.mark_needs_repaint(true)
+	d.mark_needs_repaint(.paint_commands_and_hit_test_list)
+}
+
+pub fn (mut d Document) set_needs_repaint_with_invalidation(invalidation InvalidateDisplayList) {
+	d.mark_needs_repaint(invalidation)
 }
 
 pub fn (d &Document) request_frame() {
@@ -5292,10 +5314,8 @@ pub fn (mut d Document) initialize() {
 		}
 		document.cursor_blink_state = !document.cursor_blink_state
 		mut mutable_node := unsafe { &Node(node) }
-		// Document.cpp calls Node::set_needs_repaint() with its default
-		// InvalidateDisplayList::Yes. The caret is part of the retained
-		// foreground list, so preserving that list would freeze the blink state.
-		mutable_node.set_needs_repaint(.yes)
+		// Cursor blink changes paint commands without changing caret geometry.
+		mutable_node.set_needs_repaint(.paint_commands)
 	})
 	d.cursor_blink_timer.start()
 	if d.page_ != unsafe { nil } {
@@ -6531,8 +6551,12 @@ pub fn (mut d Document) update_style() {
 		return
 	}
 	invalidation := hook.callback(hook.target)
-	if !invalidation.is_none() {
-		d.invalidate_display_list()
+	if invalidation.repaint {
+		d.set_needs_repaint_with_invalidation(if invalidation.invalidates_hit_test_display_list {
+			.paint_commands_and_hit_test_list
+		} else {
+			.paint_commands
+		})
 	}
 	if invalidation.rebuild_accumulated_visual_contexts {
 		d.needs_accumulated_visual_contexts_update = true
@@ -7307,7 +7331,7 @@ pub fn (mut d Document) set_focused_area(node ?&Node) {
 		}
 	}
 	d.reset_cursor_blink_cycle()
-	d.set_needs_repaint()
+	d.set_needs_repaint_with_invalidation(.paint_commands)
 	d.update_active_element()
 }
 
@@ -7332,7 +7356,7 @@ pub fn (mut d Document) set_active_element(element ?&Element) {
 		return
 	}
 	d.active_element_ = new_active_element
-	d.set_needs_repaint()
+	d.set_needs_repaint_with_invalidation(.paint_commands)
 }
 
 pub fn (d &Document) target_element() ?&Element {
@@ -7381,7 +7405,7 @@ pub fn (mut d Document) set_target_element(element ?&Element) {
 		d.invalidate_style_for_elements_affected_by_pseudo_class_change(.target, ancestor, new_node)
 	}
 	d.target_element_ = new_target
-	d.set_needs_repaint()
+	d.set_needs_repaint_with_invalidation(.paint_commands)
 }
 
 pub fn (d &Document) autofocus_candidates() []&Element {
@@ -8962,7 +8986,7 @@ pub fn (mut d Document) set_highlighted_node(node ?&Node, pseudo ?PseudoElement)
 	// The retained compatibility display list owns the inspector overlay outside
 	// individual phase caches, so invalidating its assembled list covers both
 	// the old and new highlighted paintables.
-	d.set_needs_repaint()
+	d.set_needs_repaint_with_invalidation(.paint_commands)
 }
 
 pub fn (d &Document) get_highlighted_node() ?&Node {
