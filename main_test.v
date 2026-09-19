@@ -50,6 +50,23 @@ fn test_javascript_bridge_runs_window_load_mutations() {
 	}
 }
 
+fn test_javascript_bridge_exposes_completed_images_and_delivers_late_load_listeners() {
+	$if darwin {
+		document := html.parse_document('<!doctype html><img id="preload" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="><div id="target"></div>')
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'about:blank', [
+			'if (preload.complete) target.classList.add("complete"); preload.addEventListener("load", () => target.classList.add("loaded"), { once: true });',
+		], runtime, mut messages)
+		assert messages == []
+		target := document.get_element_by_id('target') or { panic('missing target') }
+		assert target.get_attribute_value('class') == 'complete loaded'
+	}
+}
+
 fn test_browser_animation_frame_refreshes_paint_only_transforms() {
 	mut document := html.parse_document('<!doctype html><style>@keyframes flip{0%{transform:rotateY(60deg)}0.01%,100%{transform:rotateY(180deg)}}.flip{animation:10s linear infinite flip}#scene{width:100px;height:100px;transform:rotateY(60deg);transform-style:preserve-3d}#target{position:absolute;top:0;left:0;width:200px;height:200px;background:lightblue;transform:rotateY(180deg);backface-visibility:hidden}</style><div id="scene" class="flip"><div id="target"></div></div>')
 	mut app := BrowserApp{
