@@ -198,6 +198,10 @@ Contenteditable user edits now carry their UI input type through the live
 command bridge. Cut takes the backward-delete path, cut and paste remain
 standalone history units, and their trusted input events report
 `deleteByCut`/`insertFromPaste` with the corresponding nullable data.
+Select-all now follows the active input-events target before falling back to
+the document body. Focused text controls select their complete value,
+contenteditable hosts use rendered document-boundary navigation, and the Page
+keyboard path recognizes the platform Ctrl/Cmd+A shortcut.
 
 The refreshed current-tree semantic inventory reports 4,536 unmatched C++
 spellings. That is a structural review queue rather than a count of missing behaviors: active V
@@ -338,7 +342,7 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
-| `DOM` | 59 | 34,859 | 36,256 | 2,199 | Complete |
+| `DOM` | 59 | 34,859 | 36,270 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
 | `Editing` | 26 | 12,720 | 8,510 | 797 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
@@ -352,7 +356,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
 | `Geolocation` | 4 | 643 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 56,655 | 14,391 | Complete |
+| `HTML` | 286 | 83,853 | 56,664 | 14,402 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
@@ -368,7 +372,7 @@ from the current-module totals.
 | `MixedContent` | 1 | 127 | 125 | 105 | Complete |
 | `NavigationTiming` | 4 | 497 | 291 | 45 | Complete |
 | `NotificationsAPI` | 1 | 301 | 290 | 68 | Complete |
-| `Page` | 8 | 6,450 | 2,717 | 717 | Complete |
+| `Page` | 8 | 6,450 | 2,752 | 739 | Complete |
 | `Painting` | 22 | 8,227 | 6,968 | 2,180 | Present |
 | `PerformanceTimeline` | 5 | 476 | 447 | 130 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
@@ -380,7 +384,7 @@ from the current-module totals.
 | `SRI` | 1 | 198 | 156 | 100 | Complete |
 | `SVG` | 82 | 9,020 | 5,167 | 1,186 | Complete |
 | `SecureContexts` | 1 | 76 | 59 | 13 | Complete |
-| `Selection` | 3 | 1,470 | 648 | 149 | Complete |
+| `Selection` | 3 | 1,470 | 648 | 175 | Complete |
 | `Serial` | 2 | 366 | 243 | 35 | Complete |
 | `ServiceWorker` | 11 | 2,608 | 1,562 | 513 | Complete |
 | `Speech` | 11 | 421 | 624 | 111 | Complete |
@@ -405,7 +409,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **348,846** | **70,476** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **348,904** | **70,535** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
