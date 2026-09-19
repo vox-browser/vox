@@ -204,6 +204,42 @@ fn test_javascript_bridge_replays_svg_paint_server_mutations() {
 	}
 }
 
+fn test_javascript_bridge_removes_an_svg_pattern_referencer_before_image_load() {
+	$if darwin {
+		image_url := 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAD0lEQVR4nGNgaGBAIOI4ANA0CAF5jtVRAAAAAElFTkSuQmCC'
+		document := html.parse_document('<!doctype html><svg width="100" height="100"><defs><pattern id="tile" width="100" height="100" patternUnits="userSpaceOnUse"><image id="tile-image" width="100" height="100"/></pattern></defs><rect id="first" width="100" height="100" fill="url(#tile)"/><rect id="second" width="100" height="100" fill="url(#tile)"/></svg>')
+		layout.run_document_layout(document, 120, 120) or { panic('missing initial layout') }
+		second := document.get_element_by_id('second') or { panic('missing second referencer') }
+
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'about:blank', [
+			'second.remove(); console.log(document.getElementById("second") === null); document.getElementById("tile-image").setAttribute("href", ${json2.encode(image_url)});',
+		], runtime, mut messages)
+		assert messages == ['true']
+		assert second.as_node().parent() == none
+		image := document.get_element_by_id('tile-image') or { panic('missing pattern image') }
+		assert image.get_attribute_value('href') == image_url
+
+		updated := layout.run_document_layout(document, 120, 120) or {
+			panic('missing updated layout')
+		}
+		paths := updated.paint_tree.paint_commands().filter(it.kind == 'draw_svg_path')
+		assert paths.len == 1
+		pattern := paths[0].fill_pattern or { panic('missing surviving pattern fill') }
+		operations := (pattern.tile_display_list or {
+			panic('missing surviving pattern display list')
+		}).operations
+		images := operations.filter(it.kind == .image)
+		assert images.len == 1
+		assert images[0].transform.map_rect(images[0].image_rect) == painting.Rect{0, 0, 100, 100}
+		assert operations.any(it.kind == .image && it.image_url == image_url)
+	}
+}
+
 fn test_javascript_bridge_inserts_created_nodes_and_document_fragments_before_first_child() {
 	$if darwin {
 		document := html.parse_document('<!doctype html>
