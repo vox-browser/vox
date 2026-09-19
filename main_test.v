@@ -9,6 +9,7 @@ import os
 import page
 import painting
 import time
+import x.json2
 
 fn test_parse_launch_options_keeps_interactive_defaults() {
 	options := parse_launch_options(['https://example.com']) or { panic(err) }
@@ -64,6 +65,37 @@ fn test_javascript_bridge_exposes_completed_images_and_delivers_late_load_listen
 		assert messages == []
 		target := document.get_element_by_id('target') or { panic('missing target') }
 		assert target.get_attribute_value('class') == 'complete loaded'
+	}
+}
+
+fn test_javascript_bridge_applies_image_source_replacements_before_relayout() {
+	$if darwin {
+		red := "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 1 1'%3E%3Crect width='1' height='1' fill='red'/%3E%3C/svg%3E"
+		green := "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 1 1'%3E%3Crect width='1' height='1' fill='green'/%3E%3C/svg%3E"
+		document := html.parse_document('<!doctype html><style>body{margin:0}img{display:block}</style><img id="target" src="${red}">')
+		initial := layout.run_document_layout(document, 200, 150) or { panic('missing initial layout') }
+		initial_images := initial.paint_tree.paint_commands().filter(it.kind == 'paint_nested_display_list')
+		assert initial_images.len == 1
+
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'about:blank', [
+			'target.addEventListener("load", () => console.log("loaded")); target.src = ${json2.encode(green)};',
+		], runtime, mut messages)
+		// The compact host reports the already-complete old source when the
+		// listener is attached, then the synchronously decoded replacement.
+		assert messages == ['loaded', 'loaded']
+		target := document.get_element_by_id('target') or { panic('missing image') }
+		assert target.get_attribute_value('src') == green
+
+		updated := layout.run_document_layout(document, 200, 150) or { panic('missing updated layout') }
+		updated_images := updated.paint_tree.paint_commands().filter(it.kind == 'paint_nested_display_list')
+		assert updated_images.len == 1
+		assert updated_images[0].nested_viewport_commands.any(it.kind == 'draw_svg_path'
+			&& it.color == css.Color{0, 128, 0, 255}.serialize())
 	}
 }
 
