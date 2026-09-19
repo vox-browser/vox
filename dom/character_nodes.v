@@ -265,6 +265,9 @@ pub fn (c &CharacterData) substring_data(offset int, count int) !string {
 
 // https://dom.spec.whatwg.org/#concept-cd-replace
 pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count int, data string) ! {
+	if c.as_node().document() != unsafe { nil } {
+		c.as_node().document().notify_editing_history_dom_mutation()
+	}
 	// 1. Let length be node's length.
 	length := c.length_in_utf16_code_units()
 

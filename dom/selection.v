@@ -1066,6 +1066,7 @@ pub fn (mut selection Selection) set_range(range ?&Range) {
 		mut document := unsafe { &Document(selection.document_) }
 		document.reset_command_state_overrides()
 		document.reset_command_value_overrides()
+		document.notify_editing_history_selection_changed()
 	}
 }
 

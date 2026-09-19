@@ -2296,6 +2296,9 @@ fn unregister_slot_descendants_from_shadow_root_impl(node &Node, shadow_root &Sh
 
 // https://dom.spec.whatwg.org/#concept-node-insert
 pub fn (mut n Node) insert_before(node &Node, child ?&Node, suppress_observers bool) {
+	if n.document() != unsafe { nil } {
+		n.document().notify_editing_history_dom_mutation()
+	}
 	// 1. Let nodes be node's children, if node is a DocumentFragment node; otherwise << node >>.
 	mut nodes := []&Node{}
 	if node.is_document_fragment() {
@@ -2501,6 +2504,9 @@ pub fn (mut n Node) live_range_pre_remove() {
 pub fn (mut n Node) remove(suppress_observers bool) {
 	// 1. Let parent be node's parent.
 	parent := n.parent() or { return }
+	if n.document() != unsafe { nil } {
+		n.document().notify_editing_history_dom_mutation()
+	}
 	n.live_range_pre_remove()
 	doc := n.document()
 	if doc != unsafe { nil } {

@@ -161,6 +161,9 @@ pub fn (mut a Attr_) set_owner_element(element ?&Element) {
 }
 
 pub fn (a &Attr_) handle_attribute_changes(element &Element, old_value ?string, new_value ?string) {
+	if element.document() != unsafe { nil } {
+		element.document().notify_editing_history_dom_mutation()
+	}
 	mut element_node := unsafe { &Node(element) }
 	element_node.queue_mutation_record(.attributes, a.local_name_, a.namespace_uri_, old_value, []&Node{}, []&Node{}, unsafe { nil }, unsafe { nil })
 

@@ -1854,6 +1854,17 @@ pub:
 	exec_command DocumentEditingExecCommandCallback = unsafe { nil }
 }
 
+pub type DocumentEditingHistoryCallback = fn (voidptr)
+
+// Editing owns the history objects; DOM reports raw mutations and selection
+// changes through this hook without introducing a DOM -> Editing import cycle.
+pub struct DocumentEditingHistoryHook {
+pub:
+	target              voidptr
+	notify_dom_mutation DocumentEditingHistoryCallback = unsafe { nil }
+	selection_changed   DocumentEditingHistoryCallback = unsafe { nil }
+}
+
 // Opaque view of one CSS::BackgroundLayerData entry. CSS owns the typed
 // ComputedProperties object; retaining that address and the coordinated-layer
 // index avoids serializing the value through text at the DOM/CSS cycle boundary.
@@ -4717,6 +4728,7 @@ pub mut:
 	selector_query_hook_                       ?DocumentSelectorQueryHook
 	html_fragment_parsing_hook_                ?DocumentHTMLFragmentParsingHook
 	editing_command_hook_                      ?DocumentEditingCommandHook
+	editing_history_hook_                      ?DocumentEditingHistoryHook
 	form_control_selected_text_callback_       DocumentFormControlSelectedTextCallback = unsafe { nil }
 	form_control_input_events_target_callback_ DocumentFormControlInputEventsTargetCallback = unsafe { nil }
 	theme_color_hook_                          ?DocumentThemeColorHook
@@ -6193,6 +6205,28 @@ pub fn (mut d Document) set_editing_command_hook(hook DocumentEditingCommandHook
 
 pub fn (d &Document) editing_command_hook() ?DocumentEditingCommandHook {
 	return d.editing_command_hook_
+}
+
+pub fn (mut d Document) set_editing_history_hook(hook DocumentEditingHistoryHook) {
+	d.editing_history_hook_ = hook
+}
+
+pub fn (d &Document) editing_history_hook() ?DocumentEditingHistoryHook {
+	return d.editing_history_hook_
+}
+
+pub fn (d &Document) notify_editing_history_dom_mutation() {
+	hook := d.editing_history_hook_ or { return }
+	if hook.notify_dom_mutation != unsafe { nil } {
+		hook.notify_dom_mutation(hook.target)
+	}
+}
+
+pub fn (d &Document) notify_editing_history_selection_changed() {
+	hook := d.editing_history_hook_ or { return }
+	if hook.selection_changed != unsafe { nil } {
+		hook.selection_changed(hook.target)
+	}
 }
 
 pub fn (d &Document) html_fragment_parsing_hook() ?DocumentHTMLFragmentParsingHook {

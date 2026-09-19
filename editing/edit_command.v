@@ -314,14 +314,20 @@ pub fn insert_node_before(node &dom.Node, parent &dom.Node, child ?&dom.Node) {
 		}
 		return
 	}
+	history := begin_editing_proxy_mutation(parent)
+	defer {
+		end_editing_proxy_mutation(history)
+	}
 	if old_parent := node.parent() {
 		if !old_parent.is_document_fragment() {
 			mut remove_command := new_remove_node_command(node)
 			remove_command.apply() or { return }
+			record_edit_command(parent, remove_command)
 		}
 	}
 	mut command := new_insert_node_command(node, parent, child)
 	command.apply() or {}
+	record_edit_command(parent, command)
 }
 
 pub fn append_node(node &dom.Node, parent &dom.Node) ! {
@@ -330,8 +336,13 @@ pub fn append_node(node &dom.Node, parent &dom.Node) ! {
 }
 
 pub fn remove_node(node &dom.Node) {
+	history := begin_editing_proxy_mutation(node)
+	defer {
+		end_editing_proxy_mutation(history)
+	}
 	mut command := new_remove_node_command(node)
 	command.apply() or {}
+	record_edit_command(node, command)
 }
 
 pub fn replace_data(node &dom.CharacterData, offset int, count int, data string) ! {
@@ -343,8 +354,16 @@ pub fn replace_data(node &dom.CharacterData, offset int, count int, data string)
 	}
 	actual_count := if offset + count > length { length - offset } else { count }
 	removed_data := node.substring_data(offset, actual_count)!
+	is_no_op := removed_data == data
+	history := begin_editing_proxy_mutation(node.as_node())
+	defer {
+		end_editing_proxy_mutation(history)
+	}
 	mut command := new_replace_data_command(node, offset, removed_data, data)
 	command.apply()!
+	if !is_no_op {
+		record_edit_command(node.as_node(), command)
+	}
 }
 
 pub fn insert_data(node &dom.CharacterData, offset int, data string) ! {
@@ -356,29 +375,53 @@ pub fn delete_data(node &dom.CharacterData, offset int, count int) ! {
 }
 
 pub fn split_text(node &dom.Text, offset int) !&dom.Text {
+	history := begin_editing_proxy_mutation(node.as_node())
+	defer {
+		end_editing_proxy_mutation(history)
+	}
 	mut command := new_split_text_command(node, offset)
 	command.apply()!
+	record_edit_command(node.as_node(), command)
 	return command.split_text_result() or { return error('split-text command produced no node') }
 }
 
 pub fn set_attribute_value(element &dom.Element, local_name string, value string) {
+	history := begin_editing_proxy_mutation(element.as_node())
+	defer {
+		end_editing_proxy_mutation(history)
+	}
 	mut command := new_set_attribute_command(element, local_name, none, element.get_attribute(local_name), value)
 	command.apply() or {}
+	record_edit_command(element.as_node(), command)
 }
 
 pub fn remove_attribute(element &dom.Element, name string) {
 	old_value := element.get_attribute(name) or { return }
+	history := begin_editing_proxy_mutation(element.as_node())
+	defer {
+		end_editing_proxy_mutation(history)
+	}
 	mut command := new_set_attribute_command(element, name, none, old_value, none)
 	command.apply() or {}
+	record_edit_command(element.as_node(), command)
 }
 
 pub fn remove_attribute_ns(element &dom.Element, namespace_ ?string, name string) {
 	old_value := element.get_attribute_ns(namespace_, name) or { return }
+	history := begin_editing_proxy_mutation(element.as_node())
+	defer {
+		end_editing_proxy_mutation(history)
+	}
 	mut command := new_set_attribute_command(element, name, namespace_, old_value, none)
 	command.apply() or {}
+	record_edit_command(element.as_node(), command)
 }
 
 pub fn clone_node_for_editing(node &dom.Node, subtree bool) !&dom.Node {
+	history := begin_editing_proxy_mutation(node)
+	defer {
+		end_editing_proxy_mutation(history)
+	}
 	return node.clone_node(none, subtree, none)
 }
 
