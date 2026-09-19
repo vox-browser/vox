@@ -17,7 +17,15 @@ fn is_dom_block_node(node &dom.Node) bool {
 		return true
 	}
 	element := node.as_element() or { return false }
-	display := element.el_computed_properties() or { return true }
+	display := element.el_computed_properties() or {
+		if element.is_html_element() {
+			return element.local_name() !in ['a', 'abbr', 'b', 'bdi', 'bdo', 'big', 'blink',
+				'br', 'button', 'cite', 'code', 'dfn', 'em', 'font', 'i', 'img', 'input', 'kbd',
+				'label', 'mark', 'nobr', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'small', 'span',
+				'strike', 'strong', 'sub', 'sup', 'tt', 'u', 'var']
+		}
+		return true
+	}
 	resolved := display.display()
 	return !(resolved.is_inline_outside()
 		&& (resolved.is_flow_inside() || resolved.is_flow_root_inside()
