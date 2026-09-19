@@ -4,6 +4,7 @@ import css
 import dom
 import encoding.base64
 import html
+import os
 
 fn test_gif_decoder_rejects_a_truncated_lzw_stream() {
 	truncated := base64.decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7')
@@ -26,6 +27,21 @@ fn test_encoded_image_dimensions_reads_png_and_jpeg_metadata() {
 	assert jpeg_size.width == 640
 	assert jpeg_size.height == 480
 	assert encoded_image_dimensions([u8(0xff), 0xd8, 0xff, 0xc0, 0, 4]) == none
+}
+
+fn test_file_image_intrinsic_size_ignores_the_url_query() {
+	path := os.join_path(os.temp_dir(), 'vox2-generated-content-${os.getpid()}.png')
+	png := base64.decode('iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAD0lEQVR4nGNgaGBAIOI4ANA0CAF5jtVRAAAAAElFTkSuQmCC')
+	os.write_file(path, png.bytestr()) or { panic(err) }
+	defer {
+		os.rm(path) or {}
+	}
+	document := dom.Document.create(dom.URL{value: 'file://${path}'})
+	size := image_intrinsic_size_for_source(document, 'file://${path}?content-cache-key') or {
+		panic('query-bearing local image did not resolve')
+	}
+	assert size.width?.to_double() == 4
+	assert size.height?.to_double() == 4
 }
 
 fn test_image_box_recomputes_alt_text_natural_size_after_dom_update() {

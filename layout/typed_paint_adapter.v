@@ -3465,11 +3465,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 			}
 		} else if image_box.source() != '' {
 			source := image_box.source()
-			replaced_image_url = if styled_element := element {
-				styled_element.document().encoding_parse_and_serialize_url(source) or { source }
-			} else {
-				source
-			}
+			replaced_image_url = node.document().encoding_parse_and_serialize_url(source) or { source }
 			replaced_image_size = match computed.object_fit() {
 				.fill { '100% 100%' }
 				.contain { 'contain' }

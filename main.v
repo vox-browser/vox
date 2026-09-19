@@ -2817,6 +2817,14 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 	return app.ctx.create_image_from_byte_array(bytes)
 }
 
+fn browser_local_file_path(serialized_url string) ?string {
+	parsed := url.parse(serialized_url) or { return none }
+	if parsed.scheme != 'file' {
+		return none
+	}
+	return url.percent_decode(parsed.serialize_path()).bytestr()
+}
+
 fn (mut app BrowserApp) request_background_resource(image_url string) {
 	if image_url in app.resource_cache || image_url in app.background_resource_pending {
 		return
@@ -2855,7 +2863,7 @@ fn (mut app BrowserApp) background_image(image_url string) ?&gg.Image {
 		}
 	}
 	mut image := if image_url.starts_with('file://') {
-		path := url.percent_decode(image_url['file://'.len..]).bytestr()
+		path := browser_local_file_path(image_url) or { return none }
 		app.ctx.create_image(path) or { return none }
 	} else if !image_url.contains('://') && !image_url.starts_with('data:') && os.is_file(image_url) {
 		app.ctx.create_image(image_url) or { return none }
