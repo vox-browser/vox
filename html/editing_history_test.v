@@ -92,6 +92,28 @@ fn test_external_selection_change_ends_typing_coalescence() {
 	assert text.data() == 'a'
 }
 
+fn test_live_selection_range_mutation_ends_typing_coalescence() {
+	document, host, text, history_pointer := prepare_history_document('<!doctype html><body><div id="host" contenteditable>a</div></body>', 'host', 1)
+	mut history := unsafe { &editing.EditingHistory(history_pointer) }
+
+	history.begin_recording(host.as_node(), .insertion)
+	editing.insert_data(&text.CharacterData, 1, 'x') or { panic(err) }
+	collapse_history_selection(document, text, 2)
+	history.end_recording()
+	selection := document.get_selection() or { panic('missing selection') }
+	mut range_ := selection.range() or { panic('missing selection range') }
+	range_.set_start(text.as_node(), 1) or { panic(err) }
+	history.begin_recording(host.as_node(), .insertion)
+	editing.insert_data(&text.CharacterData, 2, 'y') or { panic(err) }
+	history.end_recording()
+
+	assert text.data() == 'axy'
+	assert history.undo(document)
+	assert text.data() == 'ax'
+	assert history.undo(document)
+	assert text.data() == 'a'
+}
+
 fn test_editing_history_rolls_back_partial_undo_after_script_mutation() {
 	document := parse_document('<!doctype html><body><div id="host" contenteditable><span id="first">A</span><span id="second">B</span></div></body>')
 	host := document.get_element_by_id('host') or { panic('missing host') }

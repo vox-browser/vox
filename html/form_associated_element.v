@@ -1007,6 +1007,7 @@ fn (mut text FormAssociatedTextControlElement) move_selection_end_to(offset usiz
 	}
 	text.selection_end_ = u32(offset)
 	text.selection_end_affinity_ = affinity
+	text.control.element.document().notify_editing_history_selection_changed()
 }
 
 pub fn (text &FormAssociatedTextControlElement) scroll_cursor_into_view() {

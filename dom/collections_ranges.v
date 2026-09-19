@@ -2272,6 +2272,9 @@ pub fn (mut r Range) update_associated_selection() {
 	// point is mutated either by the user or the content script, the user agent must schedule a selectionchange event
 	// on document.
 	document.set_scheduled_selectionchange_event(true)
+	// A live selection mutation outside the edit being recorded closes the
+	// current typing coalescence unit.
+	document.notify_editing_history_selection_changed()
 }
 
 // https://dom.spec.whatwg.org/#concept-range-root

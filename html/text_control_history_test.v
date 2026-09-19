@@ -68,3 +68,19 @@ fn test_text_control_paste_does_not_coalesce_with_typing() {
 	assert history.undo(document)
 	assert model.value() == 'a'
 }
+
+fn test_text_control_caret_movement_ends_typing_coalescence() {
+	document, model_pointer, history_pointer := history_input('a')
+	mut model := unsafe { &HTMLInputElementModel(model_pointer) }
+	mut history := unsafe { &editing.EditingHistory(history_pointer) }
+	model.text_control.set_selection_range(1, 1, 'none')!
+	model.text_control.handle_insert(dom.input_type_insert_text, 'x')!
+	model.text_control.move_cursor_to_start(.yes)
+	model.text_control.handle_insert(dom.input_type_insert_text, 'y')!
+
+	assert model.value() == 'yax'
+	assert history.undo(document)
+	assert model.value() == 'ax'
+	assert history.undo(document)
+	assert model.value() == 'a'
+}
