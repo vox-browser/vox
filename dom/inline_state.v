@@ -172,9 +172,21 @@ pub fn Element.create_layout_node_for_display_type(document &Document, display C
 pub fn (mut e Element) set_scroll_offset(pseudo_element_type ?PseudoElement, offset CSSPixelPoint_) {
 	if pseudo_element := pseudo_element_type {
 		if mut data := e.get_pseudo_element(int(pseudo_element)) {
+			if data.scroll_offset() != offset {
+				mut document := unsafe { &Document(e.document()) }
+				if document != unsafe { nil } {
+					document.invalidate_scroll_state()
+				}
+			}
 			data.set_scroll_offset(offset)
 		}
 		return
+	}
+	if e.scroll_offset_ != offset {
+		mut document := unsafe { &Document(e.document()) }
+		if document != unsafe { nil } {
+			document.invalidate_scroll_state()
+		}
 	}
 	e.scroll_offset_ = offset
 }

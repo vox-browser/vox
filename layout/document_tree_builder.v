@@ -323,7 +323,6 @@ pub mut:
 	display_list_commands             []PaintCommand
 	display_list                      &dom.DisplayList = unsafe { nil }
 	stacking_context                  &dom.StackingContext = unsafe { nil }
-	needs_to_refresh_scroll_state     bool = true
 	needs_accumulated_visual_contexts bool = true
 	needs_repaint                     bool = true
 	stacking_context_tree_is_valid    bool

@@ -1388,8 +1388,6 @@ pub mut:
 	relayout_callback SVGRelayoutCallback = unsafe { nil }
 }
 
-pub type ViewportPaintableBoolCallback = fn (voidptr, bool)
-
 pub type ViewportPaintableVoidCallback = fn (voidptr)
 
 pub type ViewportPaintableRangeCallback = fn (voidptr, &Range)
@@ -1413,7 +1411,8 @@ pub type DisplayListDumpCallback = fn (voidptr) string
 pub struct ViewportPaintable {
 pub:
 	target                                      voidptr = unsafe { nil }
-	set_needs_to_refresh_scroll_state_callback  ViewportPaintableBoolCallback = unsafe { nil }
+	document                                    &Document = unsafe { nil }
+	invalidate_scroll_state_callback            ViewportPaintableVoidCallback = unsafe { nil }
 	refresh_scroll_state_callback               ViewportPaintableVoidCallback = unsafe { nil }
 	assign_accumulated_visual_contexts_callback ViewportPaintableVoidCallback = unsafe { nil }
 	selection_callback                          ViewportPaintableSelectionCallback = unsafe { nil }
@@ -3631,9 +3630,9 @@ pub fn (ssl &StyleSheetList) get_sheets() []&CSSStyleSheet {
 }
 
 // ViewportPaintable methods
-pub fn (vp &ViewportPaintable) set_needs_to_refresh_scroll_state(b bool) {
-	if vp.target != unsafe { nil } && vp.set_needs_to_refresh_scroll_state_callback != unsafe { nil } {
-		vp.set_needs_to_refresh_scroll_state_callback(vp.target, b)
+pub fn (vp &ViewportPaintable) invalidate_scroll_state() {
+	if vp.target != unsafe { nil } && vp.invalidate_scroll_state_callback != unsafe { nil } {
+		vp.invalidate_scroll_state_callback(vp.target)
 	}
 }
 
@@ -3712,6 +3711,10 @@ pub fn (vp &ViewportPaintable) invalidate_hit_test_display_list() {
 }
 
 pub fn (vp &ViewportPaintable) record_display_list() ?&DisplayList {
+	if vp.document != unsafe { nil } {
+		mut document := unsafe { &Document(vp.document) }
+		document.update_paint_and_hit_testing_properties_if_needed()
+	}
 	if vp.target != unsafe { nil } && vp.record_display_list_callback != unsafe { nil } {
 		return vp.record_display_list_callback(vp.target)
 	}
@@ -3738,6 +3741,10 @@ pub fn (vp &ViewportPaintable) invalidate_stacking_context() {
 }
 
 pub fn (vp &ViewportPaintable) hit_test(x f64, y f64, type_ HitTestType) ?HitTestResult {
+	if vp.document != unsafe { nil } {
+		mut document := unsafe { &Document(vp.document) }
+		document.update_paint_and_hit_testing_properties_if_needed()
+	}
 	if vp.target != unsafe { nil } && vp.hit_test_callback != unsafe { nil } {
 		return vp.hit_test_callback(vp.target, x, y, type_)
 	}
@@ -3745,6 +3752,10 @@ pub fn (vp &ViewportPaintable) hit_test(x f64, y f64, type_ HitTestType) ?HitTes
 }
 
 pub fn (vp &ViewportPaintable) hit_test_all(x f64, y f64, mut results []&Element) {
+	if vp.document != unsafe { nil } {
+		mut document := unsafe { &Document(vp.document) }
+		document.update_paint_and_hit_testing_properties_if_needed()
+	}
 	if vp.target != unsafe { nil } && vp.hit_test_all_callback != unsafe { nil } {
 		results << vp.hit_test_all_callback(vp.target, x, y)
 	}
@@ -3917,7 +3928,7 @@ pub fn (mut d Document) set_viewport_rect(rect Rect) {
 	scroll_offset_changed := d.viewport_rect_.x != rect.x || d.viewport_rect_.y != rect.y
 	d.viewport_rect_ = rect
 	if scroll_offset_changed {
-		d.set_needs_to_refresh_scroll_state(true)
+		d.invalidate_scroll_state()
 		d.set_needs_repaint()
 	}
 }
@@ -6578,15 +6589,16 @@ pub fn (mut d Document) update_animated_style_if_needed() {
 }
 
 pub fn (mut d Document) update_paint_and_hit_testing_properties_if_needed() {
-	// Refresh scroll state on the paintable.
-	if paintable := d.unsafe_paintable() {
-		paintable.refresh_scroll_state()
-	}
 	if d.needs_accumulated_visual_contexts_update {
 		d.needs_accumulated_visual_contexts_update = false
 		if paintable := d.unsafe_paintable() {
 			paintable.assign_accumulated_visual_contexts()
 		}
+	}
+	// Scroll nodes are (re)created by the visual-context update above. Derive
+	// offsets and publish the snapshot only after that structure is settled.
+	if paintable := d.unsafe_paintable() {
+		paintable.refresh_scroll_state()
 	}
 }
 
@@ -8390,10 +8402,10 @@ pub fn (mut d Document) set_needs_animated_style_update() {
 	d.request_frame()
 }
 
-pub fn (mut d Document) set_needs_to_refresh_scroll_state(b bool) {
-	// Propagating scroll state invalidation.
+pub fn (mut d Document) invalidate_scroll_state() {
+	// Propagate scroll state invalidation to its retained painting owner.
 	if paintable := d.unsafe_paintable() {
-		paintable.set_needs_to_refresh_scroll_state(b)
+		paintable.invalidate_scroll_state()
 	}
 }
 

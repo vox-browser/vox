@@ -20,7 +20,13 @@ fn append_scroll_frame_index(indices_pointer &[]int, index int) {
 
 fn test_scroll_state_hierarchy_snapshot_and_clear() {
 	mut state := ScrollState{}
+	assert state.needs_refresh()
+	assert state.begin_refresh(false)
+	assert !state.needs_refresh()
+	assert !state.begin_refresh(false)
 	root := state.create_scroll_frame_for('root', 0)
+	assert state.needs_refresh()
+	assert state.begin_refresh(false)
 	sticky := state.create_sticky_frame_for('sticky', root)
 	child := state.create_scroll_frame_for('child', sticky)
 	mut root_frame := state.frame_at(root)
@@ -61,6 +67,12 @@ fn test_scroll_state_hierarchy_snapshot_and_clear() {
 	state.clear()
 	assert state.frames.len == 1
 	assert state.frames.cap == previous_capacity
+	assert state.needs_refresh()
+	assert state.begin_refresh(false)
+	assert !state.begin_refresh(false)
+	assert state.begin_refresh(true)
+	state.invalidate()
+	assert state.needs_refresh()
 }
 
 fn test_scrollbar_thumb_geometry_and_source_pointer_state_machine() {

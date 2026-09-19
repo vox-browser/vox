@@ -3304,11 +3304,13 @@ fn test_sticky_element_uses_live_scroll_frame_without_rebuilding_phase_commands(
 	})
 	assert scrolling_frame_indices.len == 2
 	assert sticky_frame_indices.len == 1
+	assert !result.scroll_state.needs_refresh()
 	retained_command_count := result.paint_phase_command_count
 
 	scroller := document.get_element_by_id('scroller') or { panic('missing scroller') }
 	mut scroller_paintable := scroller.paintable_box() or { panic('missing scroller paintable') }
 	assert scroller_paintable.set_scroll_offset(dom.CSSPixelPoint_{ y_: 40 })
+	assert result.scroll_state.needs_refresh()
 	scrolled_display_list := mutable_document.record_display_list() or {
 		panic('missing scrolled display list')
 	}
@@ -3319,6 +3321,7 @@ fn test_sticky_element_uses_live_scroll_frame_without_rebuilding_phase_commands(
 	// keeping the box whose layout y is 30 at the top of the scrollport.
 	assert scrolled_sticky_commands[0].transform[5] == -30
 	assert result.paint_phase_command_count == retained_command_count
+	assert !result.scroll_state.needs_refresh()
 
 	sticky := document.get_element_by_id('sticky') or { panic('missing sticky') }
 	snapshot_storage := result.scroll_state_snapshot.device_offsets.data
@@ -3330,6 +3333,17 @@ fn test_sticky_element_uses_live_scroll_frame_without_rebuilding_phase_commands(
 	second_hit := mutable_document.element_from_point(10, 5) or { panic('missing repeated sticky hit') }
 	assert second_hit.as_node().unique_id() == sticky.as_node().unique_id()
 	assert result.scroll_state_snapshot.device_offsets.data == snapshot_storage
+
+	// Element::set_scroll_offset() owns invalidation next to the stored value,
+	// including callers which do not go through PaintableBox.
+	mut mutable_scroller := unsafe { &dom.Element(scroller) }
+	mutable_scroller.set_scroll_offset(none, dom.CSSPixelPoint_{ y_: 45 })
+	assert result.scroll_state.needs_refresh()
+	mutable_document.update_paint_and_hit_testing_properties_if_needed()
+	assert !result.scroll_state.needs_refresh()
+	assert result.scroll_state_snapshot.device_offset_for_index(scrolling_frame_indices[1]) == painting.Point{0, -45}
+	mutable_scroller.set_scroll_offset(none, dom.CSSPixelPoint_{ y_: 45 })
+	assert !result.scroll_state.needs_refresh()
 }
 
 fn test_sticky_element_uses_the_viewport_scroll_frame() {

@@ -471,7 +471,6 @@ fn (mut p PaintableBox) commit_scroll_offset(offset CSSPixelPoint_) bool {
 		}
 		mut document := unsafe { &Document(p.dom_node_.document()) }
 		if document != unsafe { nil } {
-			document.set_needs_to_refresh_scroll_state(true)
 			mut already_pending := false
 			for pending in document.pending_scroll_events {
 				if pending.target == p.dom_node_ && pending.type_ == 'scroll' {

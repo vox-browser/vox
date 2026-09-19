@@ -70,6 +70,10 @@ pub struct ScrollState {
 pub mut:
 	// Index zero is the upstream sentinel and is never returned to callers.
 	frames []ScrollFrame = [ScrollFrame{}]
+mut:
+	// The retained visual-context scroll state owns its invalidation bit. A
+	// snapshot refresh consumes it; document paint state does not mirror it.
+	needs_refresh bool = true
 }
 
 pub fn (mut state ScrollState) create_scroll_frame_for(paintable_box string, parent int) int {
@@ -78,6 +82,7 @@ pub fn (mut state ScrollState) create_scroll_frame_for(paintable_box string, par
 		paintable_box_: paintable_box
 		parent_index_: parent
 	}
+	state.invalidate()
 	return index
 }
 
@@ -88,7 +93,26 @@ pub fn (mut state ScrollState) create_sticky_frame_for(paintable_box string, par
 		sticky_: true
 		parent_index_: parent
 	}
+	state.invalidate()
 	return index
+}
+
+pub fn (mut state ScrollState) invalidate() {
+	state.needs_refresh = true
+}
+
+// Returns whether the caller should re-read live offsets and publish a new
+// snapshot. `force` is used only by the verification path for skipped work.
+pub fn (mut state ScrollState) begin_refresh(force bool) bool {
+	if !force && !state.needs_refresh {
+		return false
+	}
+	state.needs_refresh = false
+	return true
+}
+
+pub fn (state &ScrollState) needs_refresh() bool {
+	return state.needs_refresh
 }
 
 pub fn (state &ScrollState) frame_at(index int) &ScrollFrame {
@@ -141,6 +165,7 @@ pub fn (mut state ScrollState) clear() {
 	// Match Vector::resize_and_keep_capacity(): rebuilding a paint tree should
 	// reuse the frame allocation from the previous tree.
 	state.frames.trim(1)
+	state.invalidate()
 }
 
 pub struct ScrollStateSnapshot {

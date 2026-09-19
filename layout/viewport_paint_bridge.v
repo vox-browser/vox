@@ -3,6 +3,7 @@ module layout
 import css
 import dom
 import math
+import os
 import page
 import painting
 import platform
@@ -16,7 +17,8 @@ fn install_document_painting_bridge(document &dom.Document, result &DocumentLayo
 	target := voidptr(result)
 	mut paintable := &dom.ViewportPaintable{
 		target: target
-		set_needs_to_refresh_scroll_state_callback: viewport_set_needs_to_refresh_scroll_state
+		document: document
+		invalidate_scroll_state_callback: viewport_invalidate_scroll_state
 		refresh_scroll_state_callback: viewport_refresh_scroll_state
 		assign_accumulated_visual_contexts_callback: viewport_assign_accumulated_visual_contexts
 		selection_callback: viewport_selection
@@ -59,7 +61,7 @@ fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayout
 	result.display_list_commands.clear()
 	result.display_list = unsafe { nil }
 	result.needs_repaint = true
-	result.needs_to_refresh_scroll_state = true
+	result.scroll_state.invalidate()
 	viewport_invalidate_stacking_context(voidptr(&result))
 	install_document_painting_bridge(document, &result)
 	viewport_assign_accumulated_visual_contexts(voidptr(&result))
@@ -116,17 +118,28 @@ fn viewport_layout_result(target voidptr) &DocumentLayoutResult {
 	return unsafe { &DocumentLayoutResult(target) }
 }
 
-fn viewport_set_needs_to_refresh_scroll_state(target voidptr, value bool) {
+fn viewport_invalidate_scroll_state(target voidptr) {
 	mut result := viewport_layout_result(target)
-	result.needs_to_refresh_scroll_state = value
+	result.scroll_state.invalidate()
 }
 
 fn viewport_refresh_scroll_state(target voidptr) {
 	mut result := viewport_layout_result(target)
-	if !result.needs_to_refresh_scroll_state {
+	if result.scroll_state.begin_refresh(false) {
+		result.scroll_state_snapshot = viewport_rederive_scroll_state(mut result)
 		return
 	}
-	result.needs_to_refresh_scroll_state = false
+	// LIBWEB_VERIFY_SCROLL_STATE: a skipped refresh must have been skippable.
+	// Re-derive through the same path and compare against the retained snapshot.
+	if os.getenv('LIBWEB_VERIFY_SCROLL_STATE') == '' {
+		return
+	}
+	assert result.scroll_state.begin_refresh(true)
+	rederived_snapshot := viewport_rederive_scroll_state(mut result)
+	assert rederived_snapshot.device_offsets == result.scroll_state_snapshot.device_offsets
+}
+
+fn viewport_rederive_scroll_state(mut result DocumentLayoutResult) painting.ScrollStateSnapshot {
 	// Sticky frames are refreshed before ordinary frames, in creation/tree
 	// order. A nested sticky can therefore consume its parent's current offset.
 	result.scroll_state.for_each_sticky_frame(fn [mut result] (index int, mut frame painting.ScrollFrame) {
@@ -190,7 +203,7 @@ fn viewport_refresh_scroll_state(target voidptr) {
 		live := compatibility_live_scroll_offset(result, &frame)
 		frame.set_own_offset(painting.Point{-live.x, -live.y})
 	})
-	result.scroll_state_snapshot = result.scroll_state.snapshot(1.0)
+	return result.scroll_state.snapshot(1.0)
 }
 
 fn compatibility_live_scroll_offset(result &DocumentLayoutResult, frame &painting.ScrollFrame) painting.Point {
@@ -775,8 +788,6 @@ fn viewport_assign_accumulated_visual_contexts(target voidptr) {
 	assign_compatibility_scroll_frames(mut result.paint_tree, boxes_by_layout, mut boxes_by_scroll_frame, mut result.scroll_state)
 	result.visual_context_tree = painting.new_accumulated_visual_context_tree()
 	assign_compatibility_visual_contexts(mut result.paint_tree, none, boxes_by_layout, mut result.visual_context_tree)
-	result.needs_to_refresh_scroll_state = true
-	viewport_refresh_scroll_state(target)
 	result.needs_accumulated_visual_contexts = false
 }
 
@@ -2173,7 +2184,6 @@ fn viewport_invalidate_stacking_context(target voidptr) {
 
 fn viewport_hit_test(target voidptr, x f64, y f64, type_ dom.HitTestType) ?dom.HitTestResult {
 	mut result := viewport_layout_result(target)
-	viewport_refresh_scroll_state(target)
 	viewport_build_hit_test_display_list(target)
 	snapshot := result.scroll_state_snapshot
 	metrics := painting.new_chrome_metrics(1.0) or { return none }
@@ -2533,7 +2543,8 @@ fn compatibility_dispatch_scrollbar_pointer_event(mut result DocumentLayoutResul
 pub fn (mut result DocumentLayoutResult) handle_scrollbar_pointer_event(id string,
 	event_type string, button int, x f64, y f64) painting.MouseAction {
 	target := compatibility_chrome_widget_target(id) or { return .none }
-	viewport_refresh_scroll_state(voidptr(result))
+	mut document := unsafe { &dom.Document(result.document) }
+	document.update_paint_and_hit_testing_properties_if_needed()
 	viewport_build_stacking_context_tree(voidptr(result))
 	box_pointer := result.chrome_widget_boxes[target.identity] or { return .none }
 	mut box := unsafe { &BlockBox(box_pointer) }
@@ -2841,7 +2852,6 @@ fn compatibility_hit_test_fragments(document &dom.Document, box &BlockBox, x f64
 
 fn viewport_hit_test_all(target voidptr, x f64, y f64) []&dom.Element {
 	mut result := viewport_layout_result(target)
-	viewport_refresh_scroll_state(target)
 	viewport_build_hit_test_display_list(target)
 	snapshot := result.scroll_state_snapshot
 	metrics := painting.new_chrome_metrics(1.0) or { return []&dom.Element{} }
