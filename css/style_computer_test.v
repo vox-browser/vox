@@ -763,8 +763,7 @@ fn test_shadow_media_rule_change_only_invalidates_its_style_scope_cache() {
 	root_node.append_child(second_host.as_node()) or { panic('${err}') }
 	first_shadow := first_host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic('${err}') }
 	second_shadow := second_host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic('${err}') }
-	add_shadow_root_author_style_sheet(first_shadow,
-		'@media (min-width: 600px) { span { color: red } }')
+	add_shadow_root_author_style_sheet(first_shadow, '@media (min-width: 600px) { span { color: red } }')
 	add_shadow_root_author_style_sheet(second_shadow, 'span { color: blue }')
 	_ := css_style_computer_for(document)
 	document.evaluate_media_rules()
@@ -1140,6 +1139,85 @@ fn test_embed_frame_iframe_and_canvas_adjust_display_contents_to_none() {
 		computed := computer.compute_style(dom.AbstractElement.new(element, none))
 		assert computed.display() == Display.from_short(.none_)
 	}
+}
+
+fn svg_display_contents_test_element(document &dom.Document, local_name string) &dom.Element {
+	mut element := document.create_element_ns('http://www.w3.org/2000/svg', local_name) or {
+		panic(err)
+	}
+	element.set_attribute_value('style', 'display: contents; position: relative')
+	return element
+}
+
+fn test_svg_and_mathml_adjust_display_contents_for_unboxing_rules() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut outer := svg_display_contents_test_element(document, 'svg')
+	mut inner := svg_display_contents_test_element(document, 'svg')
+	mut anchor := svg_display_contents_test_element(document, 'a')
+	mut group := svg_display_contents_test_element(document, 'g')
+	mut switch_element := svg_display_contents_test_element(document, 'switch')
+	mut text_element := svg_display_contents_test_element(document, 'text')
+	mut tspan := svg_display_contents_test_element(document, 'tspan')
+	mut text_path := svg_display_contents_test_element(document, 'textPath')
+	mut use_element := svg_display_contents_test_element(document, 'use')
+	mut defs := svg_display_contents_test_element(document, 'defs')
+	mut symbol := svg_display_contents_test_element(document, 'symbol')
+	mut foreign_object := svg_display_contents_test_element(document, 'foreignObject')
+	mut rect := svg_display_contents_test_element(document, 'rect')
+	mut foreign_svg := svg_display_contents_test_element(document, 'svg')
+
+	mut outer_node := outer.as_node()
+	outer_node.append_child(inner.as_node()) or { panic(err) }
+	mut inner_node := inner.as_node()
+	inner_node.append_child(anchor.as_node()) or { panic(err) }
+	mut anchor_node := anchor.as_node()
+	anchor_node.append_child(group.as_node()) or { panic(err) }
+	mut group_node := group.as_node()
+	group_node.append_child(switch_element.as_node()) or { panic(err) }
+	inner_node.append_child(text_element.as_node()) or { panic(err) }
+	mut text_node := text_element.as_node()
+	text_node.append_child(tspan.as_node()) or { panic(err) }
+	text_node.append_child(text_path.as_node()) or { panic(err) }
+	inner_node.append_child(use_element.as_node()) or { panic(err) }
+	inner_node.append_child(defs.as_node()) or { panic(err) }
+	mut defs_node := defs.as_node()
+	defs_node.append_child(symbol.as_node()) or { panic(err) }
+	inner_node.append_child(foreign_object.as_node()) or { panic(err) }
+	inner_node.append_child(rect.as_node()) or { panic(err) }
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(outer.as_node()) or { panic(err) }
+
+	computer := StyleComputer.new(document)
+	assert computer.compute_style(dom.AbstractElement.new(outer, none)).display() == Display.from_short(.none_)
+	assert computer.compute_style(dom.AbstractElement.new(inner, none)).display().is_contents()
+	assert computer.compute_style(dom.AbstractElement.new(anchor, none)).display().is_contents()
+	assert computer.compute_style(dom.AbstractElement.new(group, none)).display().is_contents()
+	assert computer.compute_style(dom.AbstractElement.new(switch_element, none)).display().is_contents()
+	assert computer.compute_style(dom.AbstractElement.new(text_element, none)).display() == Display.from_short(.none_)
+	assert computer.compute_style(dom.AbstractElement.new(tspan, none)).display().is_contents()
+	assert computer.compute_style(dom.AbstractElement.new(text_path, none)).display().is_contents()
+	assert computer.compute_style(dom.AbstractElement.new(use_element, none)).display().is_contents()
+	assert computer.compute_style(dom.AbstractElement.new(defs, none)).display() == Display.from_short(.none_)
+	assert computer.compute_style(dom.AbstractElement.new(symbol, none)).display() == Display.from_short(.none_)
+	assert computer.compute_style(dom.AbstractElement.new(foreign_object, none)).display() == Display.from_short(.none_)
+	assert computer.compute_style(dom.AbstractElement.new(rect, none)).display() == Display.from_short(.none_)
+	assert computer.compute_style(dom.AbstractElement.new(group, none)).position() == .static_
+	assert computer.compute_style(dom.AbstractElement.new(inner, none)).position() == .static_
+
+	// A nested SVG inside foreignObject establishes CSS box layout again, so it
+	// is outermost for SVG purposes even though another SVG is an ancestor.
+	mut foreign_object_node := foreign_object.as_node()
+	foreign_object_node.append_child(foreign_svg.as_node()) or { panic(err) }
+	foreign_style := computer.compute_style(dom.AbstractElement.new(foreign_svg, none))
+	assert foreign_style.display() == Display.from_short(.none_)
+	assert foreign_style.position() == .relative
+
+	mut mathml_row := document.create_element_ns('http://www.w3.org/1998/Math/MathML', 'mrow') or {
+		panic(err)
+	}
+	mathml_row.set_attribute_value('style', 'display: contents')
+	math_style := computer.compute_style(dom.AbstractElement.new(mathml_row, none))
+	assert math_style.display() == Display.from_short(.none_)
 }
 
 fn test_dimension_attributes_follow_style_computer_source_rules() {

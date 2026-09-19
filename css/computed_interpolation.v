@@ -11244,28 +11244,58 @@ pub fn html_element_adjust_computed_style(mut properties ComputedProperties, ele
 // DOM::Element::adjust_computed_style() overrides implemented by the element
 // classes. Keep this after the generic box-type transformations, matching
 // StyleComputer::compute_properties().
+fn is_outermost_svg_element_for_css_box_layout(element &dom.Element) bool {
+	if !element.is_svg_element() || element.local_name() != 'svg' {
+		return false
+	}
+	mut ancestor := element.as_node().parent_element()
+	for ancestor != none {
+		candidate := ancestor or { break }
+		if candidate.is_svg_element() && candidate.local_name() == 'foreignObject' {
+			break
+		}
+		if candidate.is_svg_element() && candidate.local_name() == 'svg' {
+			return false
+		}
+		ancestor = candidate.as_node().parent_element()
+	}
+	return true
+}
+
 fn adjust_element_computed_style(mut properties ComputedProperties, element &dom.Element) {
 	if element.is_svg_element() {
 		// SVGElement::adjust_computed_style(): only the outermost <svg>
 		// participates in CSS box positioning. Every other SVG element uses the
 		// SVG coordinate system and is forced to position: static.
-		mut is_outermost_svg := element.local_name() == 'svg'
-		if is_outermost_svg {
-			mut ancestor := element.as_node().parent_element()
-			for ancestor != none {
-				candidate := ancestor or { break }
-				if candidate.is_svg_element() && candidate.local_name() == 'svg' {
-					is_outermost_svg = false
-					break
-				}
-				ancestor = candidate.as_node().parent_element()
-			}
-		}
+		is_outermost_svg := is_outermost_svg_element_for_css_box_layout(element)
 		if !is_outermost_svg {
 			properties.set_property_without_modifying_flags(.position, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.static_))))
 		}
+		// https://drafts.csswg.org/css-display-3/#unbox-svg
+		// An SVG element with CSS box layout and non-container/renderable SVG
+		// elements cannot be unboxed. The listed nested container and text-child
+		// elements retain display:contents and hoist their rendered descendants.
+		// The document element's authored `contents` value has already been
+		// blockified by the generic root transformation at this point. Consult
+		// the retained pre-transformation value as well so SVG unboxing wins.
+		display_was_contents := properties.display().is_contents()
+			|| properties.display_before_box_type_transformation().is_contents()
+		if display_was_contents
+			&& (is_outermost_svg || element.local_name() !in ['a', 'g', 'svg', 'switch', 'textPath',
+				'tspan', 'use']) {
+			properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
+		}
 		if element.local_name() == 'symbol' && element.is_direct_child_of_svg_use_shadow_tree() {
 			properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.inline_)))))
+		}
+		return
+	}
+	// https://drafts.csswg.org/css-display-3/#unbox-mathml
+	namespace_ := element.namespace_uri() or { '' }
+	if namespace_ == 'http://www.w3.org/1998/Math/MathML' {
+		if properties.display().is_contents()
+			|| properties.display_before_box_type_transformation().is_contents() {
+			properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
 		}
 		return
 	}
