@@ -179,7 +179,8 @@ fn test_upstream_whitespace_autolink_and_value_algorithms() {
 fn test_move_node_preserves_logical_range_boundaries() {
 	mut document := new_document('abc')
 	document.set_selection(Boundary{0, 1}, Boundary{0, 3})!
-	move_node_preserving_ranges(mut document, EditingNode{0, 0}, EditingNode{0, none}, 3)
+	move_editing_node_preserving_ranges(mut document, EditingNode{0, 0}, EditingNode{0, none},
+		3)
 	assert document.plain_text() == 'bca'
 	assert document.selection == EditingRange{
 		start: Boundary{0, 0}

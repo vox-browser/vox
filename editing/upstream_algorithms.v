@@ -397,7 +397,7 @@ fn shift_boundary_for_item_insertion(boundary Boundary, block int, index int) Bo
 	return boundary
 }
 
-pub fn move_node_preserving_ranges(mut document EditingDocument, node EditingNode, new_parent EditingNode, new_index int) {
+pub fn move_editing_node_preserving_ranges(mut document EditingDocument, node EditingNode, new_parent EditingNode, new_index int) {
 	item_index := node.item_index or { return }
 	if !valid_node(document, node) || !is_block_node(document, new_parent) {
 		return
