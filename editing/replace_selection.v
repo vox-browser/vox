@@ -52,6 +52,8 @@ pub fn replace_selection_with_inline_fragment(document &dom.Document, range_poin
 	selection_pointer := document.get_selection() or { return error('document has no selection') }
 	mut selection := unsafe { &dom.Selection(selection_pointer) }
 	mut range_ := unsafe { &dom.Range(range_pointer) }
+	mut descendants := []&dom.Node{}
+	collect_dom_descendants(replacement_fragment.fragment().as_node(), mut descendants)
 	inserted_content.track_replacement_boundary(range_.start(), .inline_)
 	remove_collapsed_block_props_at_boundary(range_.start())
 
@@ -106,7 +108,11 @@ pub fn replace_selection_with_inline_fragment(document &dom.Document, range_poin
 		container.append_child(line_break.as_node())!
 	}
 	selection.collapse(caret.node, caret.offset)!
-	return caret
+	for descendant in descendants {
+		fix_disallowed_ancestors_of_dom_node(descendant)
+	}
+	current_range := selection.range() or { return caret }
+	return current_range.start()
 }
 
 pub fn replace_selection_with_block_fragment(document &dom.Document, range_pointer &dom.Range, destination_block &dom.Node, replacement_fragment &ReplacementFragment, mut inserted_content InsertedContent) !dom.BoundaryPoint {
