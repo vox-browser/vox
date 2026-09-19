@@ -64,8 +64,9 @@ axes, scroll margin and padding, oversized covering ranges, proximity and
 mandatory strictness, directional `scroll-snap-stop: always`, and cross-axis
 visibility. Snapped areas survive layout-tree replacement and are reselected
 after relayout, including viewport scrollers and focused or targeted-area
-preference. Momentum-fling displacement estimation follows the compositor's
-rounded geometric-decay calculation.
+preference. Containers without a previous selection also snap after initial
+layout. Momentum-fling displacement estimation follows the compositor's rounded
+geometric-decay calculation.
 Flex and inline-flex fieldsets retain their special legend layout while applying
 flex direction, wrapping, alignment, and gaps to the anonymous content box. The
 wrapper is also created for flex fieldsets without a rendered legend.
@@ -207,7 +208,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 42,997 | 15,799 | Present |
+| `Layout` | 9 | 4,001 | 42,997 | 15,819 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -254,7 +255,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **342,966** | **68,061** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **342,966** | **68,081** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
