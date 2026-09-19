@@ -104,6 +104,9 @@ VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = froze
         # These defaults and allocator-only factories contain the complete
         # translated state established by their current upstream counterparts.
         ("css/computed_values.v", "InitialValues", "position_anchor"),
+        # EditingHistory's private C++ constructor is explicitly defaulted; the V
+        # factory allocates the same field-default state.
+        ("editing/editing_history.v", "EditingHistory", "new"),
         ("gamepad/types.v", "GamepadButton", "create"),
         ("loader/content_filter.v", "ContentBlocker", "create"),
         (
