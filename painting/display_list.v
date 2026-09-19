@@ -46,14 +46,15 @@ pub enum LineJoin {
 
 pub struct DrawGlyphRun {
 pub:
-	glyph_run_id   string
-	glyph_run      ?&platform.GlyphRun
-	rect           IntRect
-	translation    Point
-	color          Color
-	orientation    Orientation
-	scale          f64 = 1.0
-	font_smoothing u8
+	glyph_run_id        string
+	glyph_run           ?&platform.GlyphRun
+	rect                IntRect
+	glyph_bounding_rect IntRect
+	translation         Point
+	color               Color
+	orientation         Orientation
+	scale               f64 = 1.0
+	font_smoothing      u8
 }
 
 pub struct FillRect {
@@ -290,16 +291,22 @@ pub:
 }
 
 pub fn (command DrawGlyphRun) bounding_rect() IntRect {
-	return IntRect{
-		x: int(math.round(f64(command.rect.x) + command.translation.x))
-		y: int(math.round(f64(command.rect.y) + command.translation.y))
-		width: command.rect.width
-		height: command.rect.height
-	}
+	return command.glyph_bounding_rect
 }
 
 pub fn (command DrawGlyphRun) dump() string {
-	return ' rect=${command.rect} translation=${command.translation} color=${command.color}'
+	return ' rect=${command.rect} glyph_bounding_rect=${command.glyph_bounding_rect} translation=${command.translation} color=${command.color}'
+}
+
+pub fn glyph_run_device_bounding_rect(glyph_run &platform.GlyphRun, baseline_start Point,
+	scale f64) IntRect {
+	bounds := glyph_run.bounding_box()
+	return IntRect{
+		x: int(math.round_to_even(f64(bounds.x) * scale + baseline_start.x))
+		y: int(math.round_to_even(f64(bounds.y) * scale + baseline_start.y))
+		width: int(math.round_to_even(f64(bounds.width) * scale))
+		height: int(math.round_to_even(f64(bounds.height) * scale))
+	}
 }
 
 pub fn (command FillRect) bounding_rect() IntRect {
@@ -901,6 +908,7 @@ pub fn (mut recorder DisplayListRecorder) draw_glyph_run(baseline_start Point,
 		glyph_run_id: u64(voidptr(glyph_run)).str()
 		glyph_run: glyph_run
 		rect: rect
+		glyph_bounding_rect: glyph_run_device_bounding_rect(glyph_run, baseline_start, scale)
 		translation: baseline_start
 		color: color
 		orientation: orientation

@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import platform
 
 fn inline_context_test_style(document &dom.Document, declarations string) &css.ComputedProperties {
 	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
@@ -87,6 +88,9 @@ fn test_text_overflow_ellipsis_uses_the_containing_block_style_for_nested_inline
 	glyph_run := used.line_boxes[0].fragments_[0].glyph_run() or { panic('glyph run') }
 	assert glyph_run.glyphs_.len > 1
 	assert glyph_run.glyphs_.last().code_point == u32(0x2026)
+	assert glyph_run.bounding_box() == platform.glyph_run_bounding_box(glyph_run.font(),
+		glyph_run.glyphs(), glyph_run.face())
+	assert glyph_run.glyph_positions().len == glyph_run.glyphs().len * 2
 }
 
 fn test_text_overflow_ellipsis_preserves_preceding_inline_fragments() {

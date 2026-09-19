@@ -79,6 +79,23 @@ pub:
 	y_max f32
 }
 
+// Gfx::Typeface::bounding_box_in_font_units(), scaled to this Font's CSS-pixel
+// size. Text-layout uses the face-wide box to build conservative run bounds
+// without querying every glyph while display lists are being recorded.
+pub fn (font &Font) typeface_bounds() ?FontGlyphBounds {
+	face := font_face(font)?
+	if face.units_per_em == 0 || face.x_max <= face.x_min || face.y_max <= face.y_min {
+		return none
+	}
+	scale := font.point_size / f32(face.units_per_em)
+	return FontGlyphBounds{
+		x_min: face.x_min * scale
+		x_max: face.x_max * scale
+		y_min: face.y_min * scale
+		y_max: face.y_max * scale
+	}
+}
+
 // A scaled TrueType outline point. Gfx::Path::text() asks Skia for these
 // contours and appends them to the SVG path; exposing the same data keeps SVG
 // text in the path pipeline instead of routing it through inline text paint.

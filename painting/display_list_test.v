@@ -155,7 +155,11 @@ fn test_recorder_source_shaped_entry_points_and_nesting_updates() {
 	glyph_run := platform.shape_text(0, 0, 'abc', font, .ltr)
 	assert !recorder.draw_glyph_run(Point{}, glyph_run, transparent, IntRect{0, 0, 20, 20}, 1, .horizontal, 0)
 	assert recorder.draw_glyph_run(Point{1, 2}, glyph_run, Color{ r: 1 }, IntRect{0, 0, 20, 20}, 1, .horizontal, 2)
-	assert (recorder.display_list.commands.last().command as DrawGlyphRun).font_smoothing == 2
+	recorded_glyphs := recorder.display_list.commands.last().command as DrawGlyphRun
+	assert recorded_glyphs.font_smoothing == 2
+	assert recorded_glyphs.rect == IntRect{0, 0, 20, 20}
+	assert recorded_glyphs.glyph_bounding_rect == glyph_run_device_bounding_rect(glyph_run, Point{1, 2}, 1)
+	assert recorded_glyphs.bounding_rect() == recorded_glyphs.glyph_bounding_rect
 	assert !recorder.draw_text(IntRect{}, 'abc', font, .center, Color{ r: 1 })
 	assert recorder.draw_text(IntRect{10, 20, 100, 30}, 'abc', font, .center, Color{ r: 1 })
 	drawn_text := recorder.display_list.commands.last().command as DrawGlyphRun
@@ -302,6 +306,7 @@ fn test_playback_culls_before_applying_an_effect_above_the_leaf_context() {
 fn test_display_list_commands_own_upstream_bounds_and_diagnostics() {
 	glyphs := DrawGlyphRun{
 		rect: IntRect{10, 20, 30, 40}
+		glyph_bounding_rect: IntRect{7, 18, 24, 21}
 		translation: Point{
 			x: 0.6
 			y: -0.6
@@ -313,7 +318,7 @@ fn test_display_list_commands_own_upstream_bounds_and_diagnostics() {
 			a: 4
 		}
 	}
-	assert glyphs.bounding_rect() == IntRect{11, 19, 30, 40}
+	assert glyphs.bounding_rect() == IntRect{7, 18, 24, 21}
 	assert command_bounding_rect(glyphs) or { panic('expected bounds') } == glyphs.bounding_rect()
 	assert command_dump(glyphs).starts_with(' rect=')
 	assert command_dump(glyphs).contains(' translation=')
@@ -341,8 +346,7 @@ fn test_external_content_source_replaces_and_clears_decoded_frame() {
 	mut source := ExternalContentSource{}
 	assert source.current_frame() == none
 	first := dom.DecodedImageFrame_.create(&dom.Bitmap_{ width: 1, height: 1 })
-	second := dom.DecodedImageFrame_.create_with_color_space(&dom.Bitmap_{ width: 2, height: 1 },
-		.display_p3)
+	second := dom.DecodedImageFrame_.create_with_color_space(&dom.Bitmap_{ width: 2, height: 1 }, .display_p3)
 	source.update(first)
 	assert source.current_frame() or { panic('expected frame') } == first
 	source.update(second)

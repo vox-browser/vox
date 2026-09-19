@@ -44,6 +44,17 @@ pub mut:
 	position             GlyphPosition
 	advance              f32
 	length_in_code_units int = 1
+	should_paint         bool = true
+}
+
+// Conservative painted bounds in CSS pixels, relative to a run's baseline
+// origin. This is the V counterpart of Layout's retained FloatRect.
+pub struct GlyphRunBounds {
+pub:
+	x      f32
+	y      f32
+	width  f32
+	height f32
 }
 
 @[heap]
@@ -57,7 +68,90 @@ pub mut:
 	space_width        f32
 	glyph_indices_     []u16
 	glyph_positions_   []f64
+	bounding_box_      GlyphRunBounds
 	replay_data_dirty_ bool
+}
+
+fn finite_glyph_coordinate(value f32) bool {
+	return !math.is_nan(value) && value != f32(math.inf(1)) && value != f32(math.inf(-1))
+}
+
+fn glyph_run_face_font(font &Font, face GlyphRunFace) &Font {
+	if face == .emoji {
+		if path := emoji_font_path() {
+			return &Font{
+				family: 'emoji'
+				point_size: font.point_size
+				weight: font.weight
+				source_path: path
+			}
+		}
+	}
+	return font
+}
+
+// LibGfx::glyph_run_bounding_box(). Glyph positions in this V boundary are
+// already baseline-relative, whereas LibGfx's DrawGlyph stores a top-relative
+// y and adds the font ascent before expanding the face bounds.
+pub fn glyph_run_bounding_box(font &Font, glyphs []Glyph, face GlyphRunFace) GlyphRunBounds {
+	mut min_x := f32(math.inf(1))
+	mut min_y := f32(math.inf(1))
+	mut max_x := f32(math.inf(-1))
+	mut max_y := f32(math.inf(-1))
+	mut has_painted_glyphs := false
+	for glyph in glyphs {
+		if !glyph.should_paint {
+			continue
+		}
+		origin_x := glyph.position.x
+		origin_y := glyph.position.y
+		if !finite_glyph_coordinate(origin_x) || !finite_glyph_coordinate(origin_y) {
+			return GlyphRunBounds{}
+		}
+		min_x = f32(math.min(min_x, origin_x))
+		min_y = f32(math.min(min_y, origin_y))
+		max_x = f32(math.max(max_x, origin_x))
+		max_y = f32(math.max(max_y, origin_y))
+		has_painted_glyphs = true
+	}
+	if !has_painted_glyphs {
+		return GlyphRunBounds{}
+	}
+
+	run_font := glyph_run_face_font(font, face)
+	if font_bounds := run_font.typeface_bounds() {
+		left := min_x + font_bounds.x_min
+		top := min_y - font_bounds.y_max
+		right := max_x + font_bounds.x_max
+		bottom := max_y - font_bounds.y_min
+		return GlyphRunBounds{left, top, right - left, bottom - top}
+	}
+
+	// Bitmap-only and synthetic fonts may not expose a face-wide box. Match
+	// LibGfx's fallback by uniting the painted glyph extents that are available.
+	mut left := f32(math.inf(1))
+	mut top := f32(math.inf(1))
+	mut right := f32(math.inf(-1))
+	mut bottom := f32(math.inf(-1))
+	mut has_extent := false
+	for glyph in glyphs {
+		if !glyph.should_paint {
+			continue
+		}
+		bounds := run_font.glyph_bounds(glyph.glyph_index)
+		if bounds.x_max <= bounds.x_min || bounds.y_max <= bounds.y_min {
+			continue
+		}
+		left = f32(math.min(left, glyph.position.x + bounds.x_min))
+		top = f32(math.min(top, glyph.position.y - bounds.y_max))
+		right = f32(math.max(right, glyph.position.x + bounds.x_max))
+		bottom = f32(math.max(bottom, glyph.position.y - bounds.y_min))
+		has_extent = true
+	}
+	if !has_extent {
+		return GlyphRunBounds{}
+	}
+	return GlyphRunBounds{left, top, right - left, bottom - top}
 }
 
 pub fn GlyphRun.new(font &Font, text_type GlyphRunTextType, glyphs []Glyph) &GlyphRun {
@@ -88,6 +182,7 @@ pub fn GlyphRun.new_with_face(font &Font, text_type GlyphRunTextType, glyphs []G
 		space_width: space_width
 		glyph_indices_: glyph_indices
 		glyph_positions_: glyph_positions
+		bounding_box_: glyph_run_bounding_box(font, glyphs, face)
 	}
 }
 
@@ -107,6 +202,10 @@ pub fn (run &GlyphRun) glyphs() []Glyph {
 	return run.glyphs_
 }
 
+pub fn (run &GlyphRun) bounding_box() GlyphRunBounds {
+	return run.bounding_box_
+}
+
 // Layout merges adjacent text chunks by mutating the destination GlyphRun.
 // Intrinsic sizing can nevertheless reuse the considerably more expensive
 // HarfBuzz result as long as every consumer gets independent mutable storage.
@@ -120,6 +219,7 @@ pub fn (run &GlyphRun) clone_for_layout() &GlyphRun {
 		space_width: run.space_width
 		glyph_indices_: run.glyph_indices_.clone()
 		glyph_positions_: run.glyph_positions_.clone()
+		bounding_box_: run.bounding_box_
 		replay_data_dirty_: run.replay_data_dirty_
 	}
 }
@@ -150,6 +250,7 @@ pub fn (mut run GlyphRun) refresh_replay_data() {
 		run.glyph_positions_ << f64(glyph.position.x)
 		run.glyph_positions_ << f64(glyph.position.y)
 	}
+	run.bounding_box_ = glyph_run_bounding_box(run.font_, run.glyphs_, run.face_)
 	run.replay_data_dirty_ = false
 }
 

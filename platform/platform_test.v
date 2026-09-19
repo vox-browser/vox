@@ -125,6 +125,41 @@ fn test_glyph_run_retains_packed_replay_data_and_slices_without_rebasing() {
 	assert slice.glyph_positions() == [f64(6.5), 0.75]
 }
 
+fn test_glyph_run_caches_conservative_bounds_with_final_replay_data() {
+	font := &Font{
+		family: 'sans-serif'
+		point_size: 16
+	}
+	mut run := shape_text(0, 0, 'abc', font, .ltr)
+	bounds := run.bounding_box()
+	assert bounds.width > 0
+	assert bounds.height > 0
+	face_bounds := font.typeface_bounds() or { panic('missing typeface bounds') }
+	for glyph in run.glyphs() {
+		assert bounds.x <= glyph.position.x + face_bounds.x_min
+		assert bounds.y <= glyph.position.y - face_bounds.y_max
+		assert bounds.x + bounds.width >= glyph.position.x + face_bounds.x_max
+		assert bounds.y + bounds.height >= glyph.position.y - face_bounds.y_min
+	}
+
+	// Line construction is allowed to merge and reposition this storage. The
+	// finalization refresh updates bounds alongside the packed replay arrays.
+	run.glyphs_[0].position.translate_by(-40, 3)
+	run.invalidate_replay_data()
+	run.refresh_replay_data()
+	refreshed := run.bounding_box()
+	assert refreshed.x == bounds.x - 40
+	assert refreshed.height == bounds.height + 3
+	assert run.glyph_positions()[0] == run.glyphs_[0].position.x
+
+	non_painting := GlyphRun.new(font, .ltr, [Glyph{
+		glyph_index: run.glyphs_[0].glyph_index
+		should_paint: false
+	}])
+	assert non_painting.bounding_box() == GlyphRunBounds{}
+	assert GlyphRun.new(font, .ltr, []).bounding_box() == GlyphRunBounds{}
+}
+
 fn test_glyph_run_layout_clone_has_independent_mutable_storage() {
 	font := &Font{
 		family: 'sans-serif'

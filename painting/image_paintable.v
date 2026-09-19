@@ -65,6 +65,7 @@ pub fn (paintable ImagePaintable) paint_alt_text(converter DevicePixelConverter)
 			glyph_run_id: u64(voidptr(glyph_run)).str()
 			glyph_run: glyph_run
 			rect: enclosing_rect
+			glyph_bounding_rect: glyph_run_device_bounding_rect(glyph_run, Point{baseline_x, baseline_y}, converter.device_pixels_per_css_pixel())
 			translation: Point{baseline_x, baseline_y}
 			color: paintable.alt_text_color
 			orientation: .horizontal

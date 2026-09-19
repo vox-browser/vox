@@ -219,6 +219,18 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 			apply_justification_to_line(containing_block.computed_values().text_justify(), mut containing_block_used_values.line_boxes[index], is_last_line)
 		}
 	}
+	// Rust InlineContent finalization publishes both the packed glyph replay
+	// data and conservative CSS-pixel bounds after ellipsis, clamping, merging,
+	// and justification have made their last changes to the line fragments.
+	for line_index in 0 .. containing_block_used_values.line_boxes.len {
+		mut line_box := &containing_block_used_values.line_boxes[line_index]
+		for fragment_index in 0 .. line_box.fragments_.len {
+			if run_pointer := line_box.fragments_[fragment_index].glyph_run() {
+				mut run := unsafe { &platform.GlyphRun(run_pointer) }
+				run.refresh_replay_data()
+			}
+		}
+	}
 	if layout_mode == .normal {
 		for box in absolute_boxes {
 			styled := unsafe { &Node(box) }.as_node_with_style() or { continue }
