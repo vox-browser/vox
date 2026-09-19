@@ -1579,8 +1579,15 @@ pub fn computed_value_for(element &dom.Element, property_id PropertyID) ?string 
 		document.update_style()
 	}
 
-	dom_computed := abstract_element.computed_properties() or { return none }
-	computed := computed_properties_from_dom(dom_computed) or { return none }
+	computed := if dom_computed := abstract_element.computed_properties() {
+		computed_properties_from_dom(dom_computed) or {
+			mut style_computer := css_style_computer_for(document)
+			style_computer.compute_style_with_seeded_ancestors(abstract_element)
+		}
+	} else {
+		mut style_computer := css_style_computer_for(document)
+		style_computer.compute_style_with_seeded_ancestors(abstract_element)
+	}
 	value := computed.property(property_id, .no) or { return none }
 	return value.css_text
 }
