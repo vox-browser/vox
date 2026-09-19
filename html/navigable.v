@@ -1767,6 +1767,16 @@ pub fn (mut model NavigableModel) paste(text string) {
 	}
 }
 
+pub fn (mut model NavigableModel) undo() {
+	document := model.active_document() or { return }
+	editing.perform_history_action(document, .undo)
+}
+
+pub fn (mut model NavigableModel) redo() {
+	document := model.active_document() or { return }
+	editing.perform_history_action(document, .redo)
+}
+
 pub fn (model &NavigableModel) last_pasted_text() string {
 	return model.last_pasted_text_
 }

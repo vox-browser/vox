@@ -7,6 +7,7 @@ module page
 
 import compositor
 import dom
+import editing
 import loader
 import math
 
@@ -278,6 +279,19 @@ fn page_request_frame_callback(target voidptr) {
 	model.client_.request_frame()
 }
 
+fn page_did_update_editing_history_callback(target voidptr, can_undo bool, can_redo bool) {
+	mut model := unsafe { &Page(target) }
+	model.client_.page_did_update_editing_history_state(can_undo, can_redo)
+}
+
+fn page_history_action_callback(target voidptr, redo bool) EventResult {
+	model := unsafe { &Page(target) }
+	root := model.local_root_navigable_ or { return .dropped }
+	document := root.active_document() or { return .dropped }
+	result := editing.perform_history_action(document, if redo { .redo } else { .undo })
+	return if result == .handled { .handled } else { .dropped }
+}
+
 pub fn Page.create(device_scale f64) !&Page {
 	if device_scale <= 0 || math.is_nan(device_scale) || math.is_inf(device_scale, 0) {
 		return error('device pixel scale must be finite and positive')
@@ -287,6 +301,7 @@ pub fn Page.create(device_scale f64) !&Page {
 	}
 	model.client_.history_executor_ = model.history_executor_
 	model.event_handler.client_ = model.client_
+	model.event_handler.set_history_action_callback(voidptr(model), page_history_action_callback)
 	model.Page = dom.Page{
 		target: voidptr(model)
 		did_create_document_callback: page_did_create_document_callback
@@ -294,6 +309,7 @@ pub fn Page.create(device_scale f64) !&Page {
 		did_change_title_callback: page_did_change_title_callback
 		device_pixel_scale_callback: page_device_pixel_scale_callback
 		did_allocate_backing_stores_callback: page_did_allocate_backing_stores_callback
+		did_update_editing_history_callback: page_did_update_editing_history_callback
 		preferred_color_scheme_callback: page_preferred_color_scheme_callback
 		user_style_callback: page_user_style_callback
 		request_frame_callback: page_request_frame_callback

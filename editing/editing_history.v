@@ -305,7 +305,7 @@ pub fn (mut history EditingHistory) end_recording() {
 		history.open_step_ = unsafe { nil }
 	}
 	history.undo_step_being_recorded_ = unsafe { nil }
-	history.notify_state_if_changed()
+	history.notify_state_if_changed(step.editing_host.document())
 }
 
 pub fn (mut history EditingHistory) begin_proxy_mutation() {
@@ -417,7 +417,7 @@ pub fn (mut history EditingHistory) undo(document &dom.Document) bool {
 	if performed {
 		history.redo_stack_ << step
 	}
-	history.notify_state_if_changed()
+	history.notify_state_if_changed(document)
 	dispatch_history_input_event(step.editing_host, 'historyUndo')
 	return true
 }
@@ -436,7 +436,7 @@ pub fn (mut history EditingHistory) redo(document &dom.Document) bool {
 	if performed {
 		history.undo_stack_ << step
 	}
-	history.notify_state_if_changed()
+	history.notify_state_if_changed(document)
 	dispatch_history_input_event(step.editing_host, 'historyRedo')
 	return true
 }
@@ -445,7 +445,7 @@ pub fn (mut history EditingHistory) set_state_change_callback(callback EditingHi
 	history.state_callback_ = callback
 }
 
-fn (mut history EditingHistory) notify_state_if_changed() {
+fn (mut history EditingHistory) notify_state_if_changed(document &dom.Document) {
 	new_can_undo := history.can_undo()
 	new_can_redo := history.can_redo()
 	if new_can_undo == history.last_notified_can_undo_
@@ -456,6 +456,9 @@ fn (mut history EditingHistory) notify_state_if_changed() {
 	history.last_notified_can_redo_ = new_can_redo
 	if history.state_callback_ != unsafe { nil } {
 		history.state_callback_(new_can_undo, new_can_redo)
+	}
+	if document.has_page() {
+		document.page().client_page_did_update_editing_history_state(new_can_undo, new_can_redo)
 	}
 }
 

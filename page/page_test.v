@@ -2,6 +2,7 @@ module page
 
 import compositor
 import dom
+import editing
 
 struct PageScreenshotHarness {
 mut:
@@ -96,6 +97,56 @@ fn test_dom_document_notifications_reach_the_translated_page_client() {
 	dom_page.client_page_did_change_title('Translated title')
 	assert model.client().events.last().name == 'change-title'
 	assert model.client().events.last().text == 'Translated title'
+}
+
+fn test_page_history_shortcuts_and_client_state_follow_editing_history() {
+	mut model := Page.create(1.0)!
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_document_type(.html)
+	document.set_editable(true)
+	document.set_browsing_context(&dom.BrowsingContext{
+		active_document_: document
+	})
+	mut window := &dom.Window{}
+	document.set_window(window)
+	mut host := document.create_element('div')!
+	host.set_attribute_for_bindings('contenteditable', 'true')!
+	text := document.create_text_node('abc')
+	mut host_node := host.as_node()
+	host_node.append_child(text.as_node())!
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(host.as_node())!
+	selection_pointer := document.get_selection() or { panic('missing selection') }
+	mut selection := unsafe { &dom.Selection(selection_pointer) }
+	selection.collapse(text.as_node(), 1)!
+
+	mut navigable := &dom.Navigable{
+		is_top_level_traversable_: true
+	}
+	navigable.set_active_document(document)
+	document.set_page(unsafe { &dom.Page(model) })
+	model.set_local_root_navigable(navigable)!
+
+	history_pointer := editing.install_editing_history(document)
+	mut history := unsafe { &editing.EditingHistory(history_pointer) }
+	history.begin_recording(host.as_node(), .insertion)
+	editing.insert_data(&text.CharacterData, 1, 'X')!
+	history.end_recording()
+	assert text.data() == 'aXbc'
+	can_undo, can_redo := model.client().editing_history_state()
+	assert can_undo
+	assert !can_redo
+
+	assert model.handle_keydown(int(`Z`), platform_control_modifier(), 0, false) == .handled
+	assert text.data() == 'abc'
+	can_undo_after_undo, can_redo_after_undo := model.client().editing_history_state()
+	assert !can_undo_after_undo
+	assert can_redo_after_undo
+	assert model.handle_keydown(int(`Z`), platform_control_modifier() | dom.modifier_shift, 0, false) == .handled
+	assert text.data() == 'aXbc'
+	can_undo_after_redo, can_redo_after_redo := model.client().editing_history_state()
+	assert can_undo_after_redo
+	assert !can_redo_after_redo
 }
 
 fn test_context_menu_request_is_replaced_and_taken_once() {

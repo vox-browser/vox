@@ -12,6 +12,8 @@ pub type ChromeWidgetPointerEventCallback = fn (voidptr, string, string, int, Pi
 
 pub type ChromeWidgetHoverCallback = fn (voidptr, string, bool)
 
+pub type HistoryActionCallback = fn (voidptr, bool) EventResult
+
 pub enum SelectionMode {
 	none
 	character
@@ -130,6 +132,29 @@ mut:
 	clipboard_event_items_               map[string][]ClipboardDataItem
 	system_clipboard_items_              []ClipboardDataItem
 	primary_paste_enabled_               bool = true
+	history_action_target_               voidptr = unsafe { nil }
+	history_action_callback_             HistoryActionCallback = unsafe { nil }
+}
+
+pub fn (mut handler EventHandler) set_history_action_callback(target voidptr, callback HistoryActionCallback) {
+	handler.history_action_target_ = target
+	handler.history_action_callback_ = callback
+}
+
+fn platform_control_modifier() u32 {
+	$if macos {
+		return dom.modifier_super
+	} $else {
+		return dom.modifier_ctrl
+	}
+}
+
+fn (mut handler EventHandler) perform_history_shortcut(redo bool) EventResult {
+	if handler.history_action_target_ == unsafe { nil }
+		|| handler.history_action_callback_ == unsafe { nil } {
+		return .handled
+	}
+	return handler.history_action_callback_(handler.history_action_target_, redo)
 }
 
 pub fn (mut handler EventHandler) set_document_state(active bool, has_paint_root bool) {
@@ -422,6 +447,20 @@ pub fn (mut handler EventHandler) handle_keydown(key int, code_point u32, modifi
 	if key == 27 && handler.middle_button_scroll_handler_ != none {
 		handler.clear_middle_button_scroll_handler()
 		return .handled
+	}
+	platform_control := platform_control_modifier()
+	if modifiers & platform_control != 0 && modifiers & dom.modifier_alt == 0 {
+		if key == int(`Z`) && modifiers & dom.modifier_shift == 0 {
+			return handler.perform_history_shortcut(false)
+		}
+		if key == int(`Z`) && modifiers & dom.modifier_shift != 0 {
+			return handler.perform_history_shortcut(true)
+		}
+		$if !macos {
+			if key == int(`Y`) && modifiers & dom.modifier_shift == 0 {
+				return handler.perform_history_shortcut(true)
+			}
+		}
 	}
 	if produces_character_value(key, code_point)
 		|| is_enter_key_or_interoperable_enter_key_combo(key, modifiers) {

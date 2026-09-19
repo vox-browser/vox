@@ -2736,6 +2736,7 @@ pub:
 	did_change_title_callback            fn (voidptr, string) = unsafe { nil }
 	device_pixel_scale_callback          fn (voidptr) f64 = unsafe { nil }
 	did_allocate_backing_stores_callback fn (voidptr, int, int) = unsafe { nil }
+	did_update_editing_history_callback  fn (voidptr, bool, bool) = unsafe { nil }
 	preferred_color_scheme_callback      fn (voidptr) string = unsafe { nil }
 	user_style_callback                  fn (voidptr) ?string = unsafe { nil }
 	request_frame_callback               fn (voidptr) = unsafe { nil }
@@ -12474,6 +12475,12 @@ pub fn (p &Page) user_style() ?string {
 pub fn (p &Page) client_page_did_allocate_backing_stores(front_id int, back_id int) {
 	if p.target != unsafe { nil } && p.did_allocate_backing_stores_callback != unsafe { nil } {
 		p.did_allocate_backing_stores_callback(p.target, front_id, back_id)
+	}
+}
+
+pub fn (p &Page) client_page_did_update_editing_history_state(can_undo bool, can_redo bool) {
+	if p.target != unsafe { nil } && p.did_update_editing_history_callback != unsafe { nil } {
+		p.did_update_editing_history_callback(p.target, can_undo, can_redo)
 	}
 }
 
