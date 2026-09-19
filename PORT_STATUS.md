@@ -65,6 +65,9 @@ Unicode default-ignorable controls remain in shaped glyph records for UTF-16
 bookkeeping but receive zero advance and are omitted from bounds, intercepts,
 and retained paint buffers. Non-painting fallback-font fragments no longer
 force raw-string replay, and the upstream input-placeholder reftest is exact.
+HarfBuzz font scaling now clamps in double precision before conversion to the
+library's 32-bit scale. Huge CSS font sizes no longer overflow during intrinsic
+text measurement, and saturated cache entries remain separated by point size.
 CSSOM `CaretPosition` and `Document.caretPositionFromPoint()` now consume the
 retained text-fragment hit-test offsets, expose a transformed one-pixel client
 rectangle, reject points outside the viewport, and retarget positions through
@@ -484,7 +487,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 43,380 | 16,319 | Present |
+| `Layout` | 9 | 4,001 | 43,380 | 16,325 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -498,7 +501,7 @@ from the current-module totals.
 | `Painting` | 22 | 8,227 | 7,009 | 2,198 | Present |
 | `PerformanceTimeline` | 5 | 476 | 447 | 130 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
-| `Platform` | 4 | 431 | 2,019 | 278 | Complete |
+| `Platform` | 4 | 431 | 2,036 | 291 | Complete |
 | `ReferrerPolicy` | 2 | 341 | 239 | 123 | Complete |
 | `RequestIdleCallback` | 1 | 52 | 59 | 18 | Complete |
 | `ResizeObserver` | 4 | 424 | 420 | 152 | Complete |
@@ -531,7 +534,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **351,043** | **71,668** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **351,060** | **71,687** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 

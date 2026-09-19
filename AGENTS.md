@@ -156,12 +156,16 @@
   bookkeeping but have zero advance and are excluded from bounds, intercepts,
   and retained paint buffers. Non-painting fallback-font fragments can still be
   coalesced with the surrounding retained text run.
+- HarfBuzz font scales clamp in double precision before conversion to its
+  32-bit API. Oversized CSS font sizes therefore survive intrinsic text
+  measurement, while cached fonts with equal saturated scales keep distinct
+  point-size state.
 
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-20, the module
-translations contain 351,043 implementation V LOC and 71,668 test V LOC.
+translations contain 351,060 implementation V LOC and 71,687 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -190,7 +194,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | MixedContent | 125 | NavigationTiming | 291 |
 | NotificationsAPI | 290 | Page | 2,953 |
 | Painting | 7,009 | PerformanceTimeline | 447 |
-| PermissionsAPI | 239 | Platform | 2,019 |
+| PermissionsAPI | 239 | Platform | 2,036 |
 | ReferrerPolicy | 239 | RequestIdleCallback | 59 |
 | ResizeObserver | 420 | ResourceTiming | 338 |
 | SRI | 156 | SVG | 5,184 |
@@ -207,7 +211,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **351,043** |  |  |
+| **Total** | **351,060** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
