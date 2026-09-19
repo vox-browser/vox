@@ -3733,11 +3733,9 @@ fn text_fragment_commands(fragments []TextFragment, opacity f64) []PaintCommand 
 	return selected_text_fragment_commands(fragments, opacity)
 }
 
-// PaintableWithLines::fragment_at_position(). Boundary offsets are inclusive,
-// so a caret at a fragment edge resolves to the first retained fragment just
-// as Vector::first_matching() does upstream.
-fn fragment_at_position(box &BlockBox, position &dom.Position) ?&TextFragment {
-	position_node := position.node() or { return none }
+// Boundary offsets are inclusive, so a caret at a fragment edge resolves to
+// the first retained fragment just as Vector::first_matching() does upstream.
+fn fragment_at_node_offset(box &BlockBox, position_node &dom.Node, offset int) ?&TextFragment {
 	for line_index in 0 .. box.lines.len {
 		for fragment_index in 0 .. box.lines[line_index].fragments.len {
 			fragment := unsafe { &box.lines[line_index].fragments[fragment_index] }
@@ -3748,9 +3746,46 @@ fn fragment_at_position(box &BlockBox, position &dom.Position) ?&TextFragment {
 			fragment_node := layout_node.dom_node() or { continue }
 			start := fragment.paintable_fragment.start_offset
 			end := start + fragment.paintable_fragment.length_in_code_units
-			if voidptr(fragment_node) == voidptr(position_node) && position.offset() >= start
-				&& position.offset() <= end {
+			if voidptr(fragment_node) == voidptr(position_node) && offset >= start
+				&& offset <= end {
 				return fragment
+			}
+		}
+	}
+	return none
+}
+
+// PaintableWithLines::fragment_at_position().
+fn fragment_at_position(box &BlockBox, position &dom.Position) ?&TextFragment {
+	position_node := position.node() or { return none }
+	return fragment_at_node_offset(box, position_node, position.offset())
+}
+
+struct TextChildBoundaryCaret {
+	fragment    &TextFragment = unsafe { nil }
+	text_offset int
+}
+
+// BoxViews.cpp::caret_rect_for_child_offset() first resolves a boundary beside
+// a text child through that child's retained fragment. Editors can keep the
+// selection on the parent after inserting text; its geometry must be identical
+// to the corresponding text-node offset.
+fn text_child_boundary_caret(box &BlockBox, parent &dom.Node,
+	offset int) ?TextChildBoundaryCaret {
+	if offset > 0 {
+		if previous_child := parent.child_at_index(offset - 1) {
+			if previous_child.is_text() {
+				text_offset := previous_child.length()
+				if fragment := fragment_at_node_offset(box, previous_child, text_offset) {
+					return TextChildBoundaryCaret{fragment, text_offset}
+				}
+			}
+		}
+	}
+	if next_child := parent.child_at_index(offset) {
+		if next_child.is_text() {
+			if fragment := fragment_at_node_offset(box, next_child, 0) {
+				return TextChildBoundaryCaret{fragment, 0}
 			}
 		}
 	}
@@ -3814,39 +3849,64 @@ fn paint_cursor(box &BlockBox, opacity f64) ?PaintCommand {
 		caret_color = fragment_layout_node.computed_values().caret_color()
 		fragment_rect := fragment.paintable_fragment.range_rect(.start_and_end, position.offset(), position.offset())
 		rect = LayoutRect{fragment_rect.x, fragment_rect.y, fragment_rect.width, fragment_rect.height}
-	} else {
-		position_node := position.node() or { return none }
-		mut caret_layout_node := layout_node
-		mut caret_x := box.x - box.padding.left
-		mut caret_y := box.y - box.padding.top
-		if voidptr(position_node) != voidptr(dom_node) {
-			// Empty inline elements have no text fragment or standalone BlockBox.
-			// Their Paintable retains the source layout node and resolves its
-			// position through the containing line paintable.
-			paintable := position_node.unsafe_paintable() or { return none }
-			if paintable.layout_handle == unsafe { nil } {
-				return none
-			}
-			position_layout_node := unsafe { &Node(paintable.layout_handle) }
-			if !position_layout_node.is_inline_node() {
-				return none
-			}
-			containing_block := position_layout_node.containing_block() or { return none }
-			if voidptr(containing_block) != voidptr(layout_node) {
-				return none
-			}
-			caret_layout_node = position_layout_node
-			caret_position := paintable.box_type_agnostic_position()
-			caret_x = caret_position.x()
-			caret_y = caret_position.y()
+	} else if position_node := position.node() {
+		if boundary := text_child_boundary_caret(box, position_node, position.offset()) {
+			fragment_layout_node := unsafe { &Node(boundary.fragment.layout_handle) }
+			caret_color = fragment_layout_node.computed_values().caret_color()
+			fragment_rect := boundary.fragment.paintable_fragment.range_rect(.start_and_end, boundary.text_offset, boundary.text_offset)
+			rect = LayoutRect{fragment_rect.x, fragment_rect.y, fragment_rect.width, fragment_rect.height}
+		} else {
+			return paint_empty_cursor(box, layout_node, dom_node, position_node, opacity)
 		}
-		caret_color = caret_layout_node.computed_values().caret_color()
-		rect = caret_rect_for_empty_line(caret_layout_node, caret_x, caret_y)
+	} else {
+		return none
 	}
 	if caret_color.a == 0 {
 		return none
 	}
 	rounded := rounded_text_span_rect(rect)
+	return PaintCommand{
+		kind: 'fill_rect'
+		x: rounded.x
+		y: rounded.y
+		width: rounded.width
+		height: rounded.height
+		color: caret_color.serialize()
+		opacity: opacity
+	}
+}
+
+fn paint_empty_cursor(box &BlockBox, layout_node &Node, dom_node &dom.Node,
+	position_node &dom.Node, opacity f64) ?PaintCommand {
+	mut caret_layout_node := layout_node
+	mut caret_x := box.x - box.padding.left
+	mut caret_y := box.y - box.padding.top
+	if voidptr(position_node) != voidptr(dom_node) {
+		// Empty inline elements have no text fragment or standalone BlockBox.
+		// Their Paintable retains the source layout node and resolves its
+		// position through the containing line paintable.
+		paintable := position_node.unsafe_paintable() or { return none }
+		if paintable.layout_handle == unsafe { nil } {
+			return none
+		}
+		position_layout_node := unsafe { &Node(paintable.layout_handle) }
+		if !position_layout_node.is_inline_node() {
+			return none
+		}
+		containing_block := position_layout_node.containing_block() or { return none }
+		if voidptr(containing_block) != voidptr(layout_node) {
+			return none
+		}
+		caret_layout_node = position_layout_node
+		caret_position := paintable.box_type_agnostic_position()
+		caret_x = caret_position.x()
+		caret_y = caret_position.y()
+	}
+	caret_color := caret_layout_node.computed_values().caret_color()
+	if caret_color.a == 0 {
+		return none
+	}
+	rounded := rounded_text_span_rect(caret_rect_for_empty_line(caret_layout_node, caret_x, caret_y))
 	return PaintCommand{
 		kind: 'fill_rect'
 		x: rounded.x

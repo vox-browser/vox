@@ -3775,6 +3775,55 @@ fn test_paintable_with_lines_sizes_empty_inline_caret_from_its_font() {
 	assert carets[0].height == expected.height
 }
 
+fn collapsed_caret_command(document &dom.Document, node &dom.Node, offset int,
+	color string) PaintCommand {
+	mut selection := document.get_selection() or { panic('missing selection') }
+	selection.collapse(node, offset) or { panic(err) }
+	mut mutable_document := unsafe { &dom.Document(document) }
+	commands := display_list_commands(mutable_document.record_display_list() or {
+		panic('missing caret display list')
+	})
+	carets := commands.filter(it.kind == 'fill_rect' && it.color == color)
+	assert carets.len == 1
+	return carets[0]
+}
+
+fn assert_text_child_boundary_caret_geometry(style string, first_text string,
+	second_text string) {
+	document := html.parse_document('<!doctype html><style>html,body{margin:0}#editor{font:20px/40px monospace;caret-color:rgb(61 62 63);${style}}</style><div id="editor" contenteditable></div>')
+	editor := document.get_element_by_id('editor') or { panic('missing editor') }
+	first := document.create_text_node(first_text)
+	second := document.create_text_node(second_text)
+	mut editor_node := unsafe { &dom.Node(editor) }
+	editor_node.append_child(first.as_node()) or { panic(err) }
+	editor_node.append_child(second.as_node()) or { panic(err) }
+	mut mutable_document := unsafe { &dom.Document(document) }
+	host := &dom.Navigable{ active_document_: document }
+	mut navigable := html.NavigableModel.create(host, none) or { panic(err) }
+	navigable.set_focused(true)
+	mutable_document.set_cached_navigable(host)
+	mutable_document.set_focused_area(editor.as_node())
+	_ = layout_document_typed_in_viewport(document, 240, 120)
+
+	before_parent := collapsed_caret_command(document, editor.as_node(), 0, 'rgb(61 62 63)')
+	before_text := collapsed_caret_command(document, first.as_node(), 0, 'rgb(61 62 63)')
+	assert LayoutRect{before_parent.x, before_parent.y, before_parent.width, before_parent.height} == LayoutRect{before_text.x, before_text.y, before_text.width, before_text.height}
+
+	between_parent := collapsed_caret_command(document, editor.as_node(), 1, 'rgb(61 62 63)')
+	between_text := collapsed_caret_command(document, first.as_node(), first.length(), 'rgb(61 62 63)')
+	assert LayoutRect{between_parent.x, between_parent.y, between_parent.width, between_parent.height} == LayoutRect{between_text.x, between_text.y, between_text.width, between_text.height}
+
+	after_parent := collapsed_caret_command(document, editor.as_node(), 2, 'rgb(61 62 63)')
+	after_text := collapsed_caret_command(document, second.as_node(), second.length(), 'rgb(61 62 63)')
+	assert LayoutRect{after_parent.x, after_parent.y, after_parent.width, after_parent.height} == LayoutRect{after_text.x, after_text.y, after_text.width, after_text.height}
+}
+
+fn test_paintable_with_lines_resolves_text_child_boundary_carets_from_fragments() {
+	assert_text_child_boundary_caret_geometry('', 'a', 'b')
+	assert_text_child_boundary_caret_geometry('direction:rtl', 'א', 'ב')
+	assert_text_child_boundary_caret_geometry('writing-mode:vertical-rl', 'a', 'b')
+}
+
 fn test_typed_collapsed_table_borders_retain_winners_and_paint_shared_edges_once() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } table { border-collapse: collapse } td { width: 30px; height: 20px; padding: 0; border: 2px solid rgb(200 0 0); background: rgb(250 250 0) } #right { border-left: 6px dashed rgb(0 0 200) }</style><body><table id="table"><tr><td id="left"></td><td id="right"></td></tr></table></body>')
 	root := layout_document_typed_in_viewport(document, 320, 200)
