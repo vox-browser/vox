@@ -185,7 +185,7 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 					}
 				}
 				glyph_run := item.glyph_run or { continue }
-				line_builder.append_text_chunk(text_node, item.offset_in_node, item.length_in_node, item.border_start.plus(item.padding_start), item.padding_end.plus(item.border_end), item.margin_start, item.margin_end, item.width, text_node.Node.computed_values().line_height(), glyph_run)
+				line_builder.append_text_chunk_with_trailing_whitespace(text_node, item.offset_in_node, item.length_in_node, item.border_start.plus(item.padding_start), item.padding_end.plus(item.border_end), item.margin_start, item.margin_end, item.width, text_node.Node.computed_values().line_height(), glyph_run, item.trailing_whitespace)
 			}
 		}
 	}
@@ -506,7 +506,8 @@ fn apply_block_ellipsis(containing_block &BlockContainer, mut used UsedValues,
 	style_source := unsafe { &Node(containing_block) }
 	font := block_ellipsis_font(style_source, ellipsis)
 	letter_spacing := resolved_text_spacing_for_node(style_source, .letter_spacing)
-	run := platform.shape_text(0, f32(letter_spacing.to_double()), ellipsis, font, .common)
+	word_spacing := resolved_text_spacing_for_node(style_source, .word_spacing)
+	run := platform.shape_text_with_spacing(0, f32(letter_spacing.to_double()), f32(word_spacing.to_double()), ellipsis, font, .common).glyph_run
 	units := utf16_code_units_for_line_box(ellipsis)
 	first_code_point := if units.len > 0 { code_point_at_utf16(units, 0) } else { u32(0) }
 	retained_run := if first_code_point != 0 && font.contains_glyph(first_code_point) {

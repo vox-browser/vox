@@ -165,8 +165,12 @@ pub fn (mut builder LineBuilder) append_box(box &Box, leading_size CSSPixels, tr
 }
 
 pub fn (mut builder LineBuilder) append_text_chunk(text_node &TextNode, offset_in_node int, length_in_node int, leading_size CSSPixels, trailing_size CSSPixels, leading_margin CSSPixels, trailing_margin CSSPixels, content_width CSSPixels, content_height CSSPixels, glyph_run &platform.GlyphRun) {
+	builder.append_text_chunk_with_trailing_whitespace(text_node, offset_in_node, length_in_node, leading_size, trailing_size, leading_margin, trailing_margin, content_width, content_height, glyph_run, TrailingWhitespace{})
+}
+
+pub fn (mut builder LineBuilder) append_text_chunk_with_trailing_whitespace(text_node &TextNode, offset_in_node int, length_in_node int, leading_size CSSPixels, trailing_size CSSPixels, leading_margin CSSPixels, trailing_margin CSSPixels, content_width CSSPixels, content_height CSSPixels, glyph_run &platform.GlyphRun, trailing_whitespace TrailingWhitespace) {
 	mut line_box := builder.ensure_last_line_box()
-	line_box.add_fragment(unsafe { &Node(text_node) }, offset_in_node, length_in_node, leading_size, trailing_size, leading_margin, trailing_margin, content_width, content_height, CSSPixels.new(0), CSSPixels.new(0), glyph_run)
+	line_box.add_fragment_with_trailing_whitespace(unsafe { &Node(text_node) }, offset_in_node, length_in_node, leading_size, trailing_size, leading_margin, trailing_margin, content_width, content_height, CSSPixels.new(0), CSSPixels.new(0), glyph_run, trailing_whitespace)
 	builder.max_height_on_current_line = css_pixels_max(builder.max_height_on_current_line, line_box.block_length())
 }
 

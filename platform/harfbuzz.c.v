@@ -411,7 +411,31 @@ fn utf16_code_units(text string) []u16 {
 
 // Literal Gfx::shape_text() HarfBuzz path. The caller retains the deterministic
 // TrueType fallback for standalone builds where the Layout test face is absent.
-fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, text string, font &Font, text_type GlyphRunTextType) ?&GlyphRun {
+fn code_point_at_utf16_offset(text string, utf16_units []u16, is_ascii bool, offset int) u32 {
+	if offset < 0 {
+		return 0
+	}
+	if is_ascii {
+		if offset >= text.len {
+			return 0
+		}
+		return u32(text[offset])
+	}
+	if offset >= utf16_units.len {
+		return 0
+	}
+	first := u32(utf16_units[offset])
+	if first !in u32(0xd800) .. u32(0xdc00) || offset + 1 >= utf16_units.len {
+		return first
+	}
+	second := u32(utf16_units[offset + 1])
+	if second !in u32(0xdc00) .. u32(0xe000) {
+		return first
+	}
+	return 0x10000 + ((first - 0xd800) << 10) + second - 0xdc00
+}
+
+fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32, text string, font &Font, text_type GlyphRunTextType) ?ShapedText {
 	mut face := unsafe { nil }
 	uses_emoji := text_uses_emoji_fallback(text)
 	if uses_emoji {
@@ -454,11 +478,18 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, text string, font
 	positions := C.hb_buffer_get_glyph_positions(buffer, &glyph_count)
 	mut glyphs := []Glyph{cap: int(glyph_count)}
 	mut point_x := initial_x
+	trailing_length := trailing_whitespace_length(text)
+	first_trailing_offset := text_length_in_code_units - trailing_length
+	mut trailing_advance := f32(0)
 	for index in 0 .. int(glyph_count) {
 		info := unsafe { infos[index] }
 		position := unsafe { positions[index] }
-		advance := f32(position.x_advance) / harfbuzz_text_shaping_resolution + letter_spacing
 		starting_offset := int(info.cluster)
+		code_point := code_point_at_utf16_offset(text, utf16_units, is_ascii, starting_offset)
+		mut advance := f32(position.x_advance) / harfbuzz_text_shaping_resolution + letter_spacing
+		if is_word_separator(code_point) {
+			advance += word_spacing
+		}
 		mut length_in_code_units := text_length_in_code_units - starting_offset
 		for following_index in index + 1 .. int(glyph_count) {
 			following_offset := int(unsafe { infos[following_index] }.cluster)
@@ -468,7 +499,7 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, text string, font
 			}
 		}
 		glyphs << Glyph{
-			code_point: info.codepoint
+			code_point: code_point
 			glyph_index: int(info.codepoint)
 			position: GlyphPosition{
 				x: point_x + f32(position.x_offset) / harfbuzz_text_shaping_resolution
@@ -477,12 +508,21 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, text string, font
 			advance: advance
 			length_in_code_units: length_in_code_units
 		}
+		if starting_offset >= first_trailing_offset {
+			trailing_advance += advance
+		}
 		point_x += advance
 	}
 	C.hb_buffer_destroy(buffer)
-	return GlyphRun.new_with_face(font, text_type, glyphs, if uses_emoji {
-		.emoji
-	} else {
-		.document
-	})
+	return ShapedText{
+		glyph_run: GlyphRun.new_with_face(font, text_type, glyphs, if uses_emoji {
+			.emoji
+		} else {
+			.document
+		})
+		trailing_whitespace: TrailingWhitespace{
+			length_in_code_units: trailing_length
+			advance: trailing_advance
+		}
+	}
 }

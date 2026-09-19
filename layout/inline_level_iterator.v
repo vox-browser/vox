@@ -25,6 +25,7 @@ pub:
 	is_collapsible_whitespace bool
 	is_all_whitespace         bool
 	can_break_before          bool
+	trailing_whitespace       TrailingWhitespace
 pub mut:
 	width         CSSPixels
 	padding_start CSSPixels
@@ -59,12 +60,14 @@ mut:
 }
 
 struct IntrinsicTextShapeCacheEntry {
-	initial_x      f32
-	letter_spacing f32
-	text           string
-	font           &platform.Font = unsafe { nil }
-	text_type      platform.GlyphRunTextType
-	glyph_run      &platform.GlyphRun = unsafe { nil }
+	initial_x           f32
+	letter_spacing      f32
+	word_spacing        f32
+	text                string
+	font                &platform.Font = unsafe { nil }
+	text_type           platform.GlyphRunTextType
+	glyph_run           &platform.GlyphRun = unsafe { nil }
+	trailing_whitespace platform.TrailingWhitespace
 }
 
 // InlineLevelIterator is pre-generated exactly like LibWeb's iterator: next()
@@ -343,7 +346,8 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 			shaped_text = string_from_utf16_code_units_for_line_box(units[tab_count..])
 			x = stop_distance
 		}
-		glyph_run := iterator.shape_text_for_layout(text_node, f32(x), f32(letter_spacing), shaped_text, chunk.font, text_type)
+		shaped := iterator.shape_text_for_layout(text_node, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
+		glyph_run := shaped.glyph_run
 		chunk_width := CSSPixels.nearest_value_for(f64(glyph_run.width()) + x)
 		is_empty_editable := chunk.length == 0 && text_node_is_inside_mutable_control(text_node)
 		is_generated_empty_string := is_empty_editable
@@ -359,6 +363,17 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 				&& !is_generated_empty_string
 			is_all_whitespace: chunk.is_all_whitespace
 			can_break_before: iterator.previous_chunk_can_break_after
+			trailing_whitespace: if chunk.is_all_whitespace {
+				TrailingWhitespace{
+					length_in_code_units: chunk.length
+					inline_size: chunk_width
+				}
+			} else {
+				TrailingWhitespace{
+					length_in_code_units: shaped.trailing_whitespace.length_in_code_units
+					inline_size: CSSPixels.nearest_value_for(shaped.trailing_whitespace.advance)
+				}
+			}
 		}
 		iterator.previous_chunk_can_break_after = chunk.can_break_after
 		iterator.add_extra_box_model_metrics_to_item(mut item, is_first_chunk, is_last_chunk)
@@ -418,28 +433,34 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 	return item
 }
 
-fn (iterator &InlineLevelIterator) shape_text_for_layout(text_node &TextNode, initial_x f32, letter_spacing f32, text string, font &platform.Font, text_type platform.GlyphRunTextType) &platform.GlyphRun {
+fn (iterator &InlineLevelIterator) shape_text_for_layout(text_node &TextNode, initial_x f32, letter_spacing f32, word_spacing f32, text string, font &platform.Font, text_type platform.GlyphRunTextType) platform.ShapedText {
 	for cached in text_node.cached_intrinsic_text_shapes_ {
 		if cached.initial_x == initial_x && cached.letter_spacing == letter_spacing
+			&& cached.word_spacing == word_spacing
 			&& cached.text == text && voidptr(cached.font) == voidptr(font)
 			&& cached.text_type == text_type {
-			return cached.glyph_run.clone_for_layout()
+			return platform.ShapedText{
+				glyph_run: cached.glyph_run.clone_for_layout()
+				trailing_whitespace: cached.trailing_whitespace
+			}
 		}
 	}
 
-	run := platform.shape_text(initial_x, letter_spacing, text, font, text_type)
+	shaped := platform.shape_text_with_spacing(initial_x, letter_spacing, word_spacing, text, font, text_type)
 	if iterator.layout_mode == .intrinsic_sizing {
 		mut mutable_text_node := unsafe { &TextNode(text_node) }
 		mutable_text_node.cached_intrinsic_text_shapes_ << IntrinsicTextShapeCacheEntry{
 			initial_x: initial_x
 			letter_spacing: letter_spacing
+			word_spacing: word_spacing
 			text: text
 			font: font
 			text_type: text_type
-			glyph_run: run.clone_for_layout()
+			glyph_run: shaped.glyph_run.clone_for_layout()
+			trailing_whitespace: shaped.trailing_whitespace
 		}
 	}
-	return run
+	return shaped
 }
 
 fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {

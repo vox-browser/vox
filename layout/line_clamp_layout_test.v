@@ -67,6 +67,12 @@ fn test_standard_line_clamp_adds_the_selected_block_ellipsis() {
 	assert custom.lines.len == 2
 	assert custom.lines.last().fragments_.last().is_block_ellipsis()
 	assert custom.lines.last().fragments_.last().text()? == '++'
+
+	unspaced_words := run_line_clamp_test(document, 'display:block; line-clamp:2 "x x"; font:20px/24px monospace', AvailableSize.make_indefinite())
+	spaced_words := run_line_clamp_test(document, 'display:block; line-clamp:2 "x x"; font:20px/24px monospace; word-spacing:6px', AvailableSize.make_indefinite())
+	unspaced_ellipsis := unspaced_words.lines.last().fragments_.last()
+	spaced_ellipsis := spaced_words.lines.last().fragments_.last()
+	assert spaced_ellipsis.inline_length().to_double() == unspaced_ellipsis.inline_length().to_double() + 6
 }
 
 fn test_line_clamp_auto_uses_the_definite_block_size() {

@@ -8,6 +8,14 @@ import css
 import platform
 import strings
 
+// The advance of trailing whitespace recorded during shaping. Keeping this
+// beside the fragment makes line-end trimming exact even after runs merge.
+pub struct TrailingWhitespace {
+pub:
+	length_in_code_units int
+	inline_size          CSSPixels
+}
+
 pub struct LineBoxFragmentCoordinate {
 pub mut:
 	line_box_index int
@@ -35,6 +43,7 @@ pub mut:
 	insert_position_                 f32
 	current_insert_direction         css.Direction = .ltr
 	has_trailing_whitespace_         bool
+	trailing_whitespace_             TrailingWhitespace
 	has_soft_wrap_opportunity_after_ bool
 	is_fully_truncated_              bool
 }
@@ -406,6 +415,10 @@ pub fn (line &LineBox) baseline() CSSPixels {
 }
 
 pub fn (mut line LineBox) add_fragment(layout_node &Node, start int, length int, leading_size CSSPixels, trailing_size CSSPixels, leading_margin CSSPixels, trailing_margin CSSPixels, content_width CSSPixels, content_height CSSPixels, border_box_top CSSPixels, border_box_bottom CSSPixels, glyph_run ?&platform.GlyphRun) {
+	line.add_fragment_with_trailing_whitespace(layout_node, start, length, leading_size, trailing_size, leading_margin, trailing_margin, content_width, content_height, border_box_top, border_box_bottom, glyph_run, TrailingWhitespace{})
+}
+
+pub fn (mut line LineBox) add_fragment_with_trailing_whitespace(layout_node &Node, start int, length int, leading_size CSSPixels, trailing_size CSSPixels, leading_margin CSSPixels, trailing_margin CSSPixels, content_width CSSPixels, content_height CSSPixels, border_box_top CSSPixels, border_box_bottom CSSPixels, glyph_run ?&platform.GlyphRun, trailing_whitespace TrailingWhitespace) {
 	text_align_is_justify := layout_node.computed_values().text_align() == .justify
 	mut did_merge := false
 	if run := glyph_run {
@@ -422,6 +435,14 @@ pub fn (mut line LineBox) add_fragment(layout_node &Node, start int, length int,
 						&& last_run.face() == run.face() {
 						last.length_in_code_units_ += length
 						last.append_glyph_run(run, content_width)
+						if trailing_whitespace.length_in_code_units == length {
+							last.trailing_whitespace_ = TrailingWhitespace{
+								length_in_code_units: last.trailing_whitespace_.length_in_code_units + trailing_whitespace.length_in_code_units
+								inline_size: last.trailing_whitespace_.inline_size.plus(trailing_whitespace.inline_size)
+							}
+						} else {
+							last.trailing_whitespace_ = trailing_whitespace
+						}
 						did_merge = true
 					}
 				}
@@ -430,7 +451,9 @@ pub fn (mut line LineBox) add_fragment(layout_node &Node, start int, length int,
 	}
 	if !did_merge {
 		inline_offset := line.inline_length_.plus(leading_margin).plus(leading_size)
-		line.fragments_ << LineBoxFragment.new(layout_node, start, length, inline_offset, CSSPixels.new(0), content_width, content_height, border_box_top, line.direction_, line.writing_mode_, glyph_run)
+		mut fragment := LineBoxFragment.new(layout_node, start, length, inline_offset, CSSPixels.new(0), content_width, content_height, border_box_top, line.direction_, line.writing_mode_, glyph_run)
+		fragment.trailing_whitespace_ = trailing_whitespace
+		line.fragments_ << fragment
 	}
 	line.inline_length_ =
 		line.inline_length_.plus(leading_margin).plus(leading_size).plus(content_width).plus(trailing_size).plus(trailing_margin)
@@ -490,27 +513,16 @@ fn (mut line LineBox) calculate_or_trim_trailing_whitespace(should_remove Remove
 		}
 		return whitespace_width
 	}
-	mut last_text_length := last_fragment.length_in_code_units_
-	for last_text_length > 0 {
-		last_text_length--
-		last_character := last_fragment.code_unit_at(last_text_length) or { break }
-		if !is_ascii_space_code_unit(last_character) {
-			break
-		}
-		mut last_character_width :=
-			CSSPixels.nearest_value_for(last_fragment.layout_node_.first_available_font().glyph_width(last_character))
-		if run := last_fragment.glyph_run_ {
-			last_character_width =
-				CSSPixels.nearest_value_for(run.font().glyph_width(last_character))
-		}
-		last_character_width = last_character_width.plus(resolved_text_spacing_for_node(last_fragment.layout_node_, .letter_spacing))
-		whitespace_width = whitespace_width.plus(last_character_width)
-		trailing_whitespace_width = trailing_whitespace_width.plus(last_character_width)
-		if should_remove == .yes {
-			last_fragment.length_in_code_units_--
-			last_fragment.inline_length_ = last_fragment.inline_length_.minus(last_character_width)
-			line.inline_length_ = line.inline_length_.minus(last_character_width)
-		}
+	// Subtract exactly the advance retained by shaping, including letter- and
+	// word-spacing and any shaping-specific adjustment.
+	fragment_trailing_whitespace := last_fragment.trailing_whitespace_
+	whitespace_width = whitespace_width.plus(fragment_trailing_whitespace.inline_size)
+	trailing_whitespace_width = trailing_whitespace_width.plus(fragment_trailing_whitespace.inline_size)
+	if should_remove == .yes {
+		last_fragment.length_in_code_units_ -= fragment_trailing_whitespace.length_in_code_units
+		last_fragment.inline_length_ = last_fragment.inline_length_.minus(fragment_trailing_whitespace.inline_size)
+		last_fragment.trailing_whitespace_ = TrailingWhitespace{}
+		line.inline_length_ = line.inline_length_.minus(fragment_trailing_whitespace.inline_size)
 	}
 	if should_remove == .yes
 		&& (trailing_whitespace_width.raw_value() > 0 || !last_fragment.has_trailing_whitespace_) {

@@ -19,16 +19,14 @@ fn make_inline_iterator(document &dom.Document, container &BlockContainer, width
 	mut container_values := state.get_mutable(container_style)
 	container_values.set_content_width(CSSPixels.nearest_value_for(width))
 	container_values.set_content_height(CSSPixels.new(100))
-	iterator := InlineLevelIterator.new(mut state, container, container_values, .normal, AvailableSpace.new(AvailableSize.make_definite(CSSPixels.nearest_value_for(width)),
-		AvailableSize.make_definite(CSSPixels.new(100))), none)
+	iterator := InlineLevelIterator.new(mut state, container, container_values, .normal, AvailableSpace.new(AvailableSize.make_definite(CSSPixels.nearest_value_for(width)), AvailableSize.make_definite(CSSPixels.new(100))), none)
 	_ = document
 	return state, iterator
 }
 
 fn test_inline_level_iterator_generates_text_and_collapsible_space_items() {
 	document := dom.Document.create(dom.url_about_blank())
-	style := inline_iterator_test_style(document, 'div',
-		'display:block; font:20px SerenitySans; white-space-collapse:collapse')
+	style := inline_iterator_test_style(document, 'div', 'display:block; font:20px SerenitySans; white-space-collapse:collapse')
 	mut container := BlockContainer.new(document, none, style)
 	container.set_children_are_inline(true)
 	dom_text := document.create_text_node('one   two')
@@ -47,11 +45,26 @@ fn test_inline_level_iterator_generates_text_and_collapsible_space_items() {
 	assert iterator.next() == none
 }
 
+fn test_inline_level_iterator_applies_word_spacing_and_retains_shaped_whitespace() {
+	document := dom.Document.create(dom.url_about_blank())
+	style := inline_iterator_test_style(document, 'div', 'display:block; font:20px SerenitySans; word-spacing:6px')
+	mut container := BlockContainer.new(document, none, style)
+	container.set_children_are_inline(true)
+	dom_text := document.create_text_node('a b')
+	text_node := TextNode.new(document, dom_text.as_node(), 'a b')
+	container.append_child(unsafe { &Node(text_node) })
+	_, mut iterator := make_inline_iterator(document, container, 300)
+	_ = iterator.next() or { panic('first word') }
+	space := iterator.next() or { panic('space') }
+	assert space.width.to_double() == 16
+	assert space.trailing_whitespace.length_in_code_units == 1
+	assert space.trailing_whitespace.inline_size.to_double() == 16
+}
+
 fn test_inline_level_iterator_carries_nested_inline_edges_to_text() {
 	document := dom.Document.create(dom.url_about_blank())
 	container_style := inline_iterator_test_style(document, 'div', 'display:block')
-	inline_style := inline_iterator_test_style(document, 'span',
-		'display:inline; margin-left:3px; border-left:2px solid; padding-left:4px; padding-right:5px')
+	inline_style := inline_iterator_test_style(document, 'span', 'display:inline; margin-left:3px; border-left:2px solid; padding-left:4px; padding-right:5px')
 	mut container := BlockContainer.new(document, none, container_style)
 	container.set_children_are_inline(true)
 	mut inline_node := InlineNode.new(document, none, inline_style)

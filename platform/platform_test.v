@@ -184,6 +184,26 @@ fn test_glyph_run_layout_clone_has_independent_mutable_storage() {
 	assert clone.width() == original.width()
 }
 
+fn test_shape_text_applies_word_spacing_and_records_trailing_whitespace() {
+	font := &Font{
+		family: 'sans-serif'
+		point_size: 16
+	}
+	for text in ['a b', 'a b', 'a\nb'] {
+		unspaced := shape_text_with_spacing(0, 0, 0, text, font, .ltr)
+		spaced := shape_text_with_spacing(0, 0, 6, text, font, .ltr)
+		assert spaced.glyph_run.width() == unspaced.glyph_run.width() + 6
+	}
+	unspaced_word := shape_text_with_spacing(0, 0, 0, 'ab', font, .ltr)
+	spaced_word := shape_text_with_spacing(0, 0, 6, 'ab', font, .ltr)
+	assert spaced_word.glyph_run.width() == unspaced_word.glyph_run.width()
+
+	shaped := shape_text_with_spacing(0, 1.25, 6, 'ab  ', font, .ltr)
+	assert shaped.trailing_whitespace.length_in_code_units == 2
+	glyphs := shaped.glyph_run.glyphs()
+	assert shaped.trailing_whitespace.advance == glyphs[glyphs.len - 2].advance + glyphs.last().advance
+}
+
 fn test_timer_state_and_single_shot_fire() {
 	mut timer := Timer.create_single_shot(10, no_op)
 	assert timer.interval() == 10

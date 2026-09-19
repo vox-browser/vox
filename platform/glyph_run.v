@@ -57,6 +57,21 @@ pub:
 	height f32
 }
 
+// The exact shaped advance of the ASCII whitespace at the end of a run.
+// Layout retains this so removing end-of-line whitespace is the inverse of
+// shaping, including kerning and text spacing.
+pub struct TrailingWhitespace {
+pub:
+	length_in_code_units int
+	advance              f32
+}
+
+pub struct ShapedText {
+pub:
+	glyph_run           &GlyphRun = unsafe { nil }
+	trailing_whitespace TrailingWhitespace
+}
+
 @[heap]
 pub struct GlyphRun {
 pub mut:
@@ -450,16 +465,59 @@ pub fn (run &GlyphRun) glyph_intercepts(scale f32, y_top f32, y_bottom f32) []f3
 	return intervals
 }
 
+fn is_word_separator(code_point u32) bool {
+	// Match the interoperable subset used by LibGfx. A collapsed line feed can
+	// remain in shaped input and behaves like a space there.
+	return code_point in [u32(0x0020), 0x00a0, 0x000a]
+}
+
+fn is_ascii_space_for_shaping(code_unit u16) bool {
+	return code_unit in [u16(0x09), 0x0a, 0x0b, 0x0c, 0x0d, 0x20]
+}
+
+fn utf16_units_for_shaping(text string) []u16 {
+	mut units := []u16{cap: text.len}
+	for character in text.runes() {
+		code_point := u32(character)
+		if code_point <= 0xffff {
+			units << u16(code_point)
+		} else {
+			value := code_point - 0x10000
+			units << u16(0xd800 + (value >> 10))
+			units << u16(0xdc00 + (value & 0x3ff))
+		}
+	}
+	return units
+}
+
+fn trailing_whitespace_length(text string) int {
+	units := utf16_units_for_shaping(text)
+	mut length := 0
+	for length < units.len && is_ascii_space_for_shaping(units[units.len - length - 1]) {
+		length++
+	}
+	return length
+}
+
 // Gfx::shape_text()'s layout-facing contract. Native HarfBuzz/CoreText
 // shaping belongs behind the platform font provider; this deterministic
-// fallback preserves glyph positions, UTF-16 lengths, letter spacing and run
+// fallback preserves glyph positions, UTF-16 lengths, text spacing and run
 // direction so Layout consumes the same shaped-run representation.
 pub fn shape_text(initial_x f32, letter_spacing f32, text string, font &Font, text_type GlyphRunTextType) &GlyphRun {
-	if run := shape_text_with_harfbuzz(initial_x, letter_spacing, text, font, text_type) {
-		return run
+	return shape_text_with_spacing(initial_x, letter_spacing, 0, text, font, text_type).glyph_run
+}
+
+pub fn shape_text_with_spacing(initial_x f32, letter_spacing f32, word_spacing f32, text string, font &Font, text_type GlyphRunTextType) ShapedText {
+	if shaped := shape_text_with_harfbuzz(initial_x, letter_spacing, word_spacing, text, font, text_type) {
+		return shaped
 	}
 	mut glyphs := []Glyph{}
 	mut x := initial_x
+	text_length_in_code_units := utf16_units_for_shaping(text).len
+	trailing_length := trailing_whitespace_length(text)
+	first_trailing_offset := text_length_in_code_units - trailing_length
+	mut trailing_advance := f32(0)
+	mut code_unit_offset := 0
 	font.reset_kerning()
 	for character in text.runes() {
 		code_point := u32(character)
@@ -469,7 +527,10 @@ pub fn shape_text(initial_x f32, letter_spacing f32, text string, font &Font, te
 		// before accumulating it, just as TextLayout.cpp does when dividing the
 		// integer hb_glyph_position_t fields by text_shaping_resolution.
 		x += f32(math.round(f64(font.kerning_for_glyph(glyph_index)) * 64.0) / 64.0)
-		advance := f32(math.round(f64(base_advance) * 64.0) / 64.0) + letter_spacing
+		mut advance := f32(math.round(f64(base_advance) * 64.0) / 64.0) + letter_spacing
+		if is_word_separator(code_point) {
+			advance += word_spacing
+		}
 		glyphs << Glyph{
 			code_point: code_point
 			glyph_index: glyph_index
@@ -479,7 +540,11 @@ pub fn shape_text(initial_x f32, letter_spacing f32, text string, font &Font, te
 			advance: advance
 			length_in_code_units: if code_point > 0xffff { 2 } else { 1 }
 		}
+		if code_unit_offset >= first_trailing_offset {
+			trailing_advance += advance
+		}
 		x += advance
+		code_unit_offset += if code_point > 0xffff { 2 } else { 1 }
 	}
 	if text_type == .rtl {
 		width := x - initial_x
@@ -492,5 +557,11 @@ pub fn shape_text(initial_x f32, letter_spacing f32, text string, font &Font, te
 	if math.abs(x) < f32(0.000001) {
 		x = 0
 	}
-	return GlyphRun.new(font, text_type, glyphs)
+	return ShapedText{
+		glyph_run: GlyphRun.new(font, text_type, glyphs)
+		trailing_whitespace: TrailingWhitespace{
+			length_in_code_units: trailing_length
+			advance: trailing_advance
+		}
+	}
 }
