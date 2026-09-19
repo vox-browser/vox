@@ -224,6 +224,14 @@ fn test_editing_host_input_target_selects_to_document_boundaries() {
 	mut manager := document.editing_host_manager()
 	manager.set_active_contenteditable_element(host.as_node())
 	input_target := unsafe { &InputEventsTarget(manager) }
+	assert input_target.mouse_selection_scope()? == host.as_node()
+	input_target.set_selection_anchor(second.as_node(), 1, .upstream)
+	assert selection.is_collapsed()
+	assert selection.focus_affinity() == .upstream
+	input_target.set_selection_focus(second.as_node(), 2, .downstream)
+	assert selection.anchor_offset() == 1
+	assert selection.focus_offset() == 2
+	assert selection.focus_affinity() == .downstream
 	input_target.select_all()
 	assert selection.anchor_node()? == first.as_node()
 	assert selection.anchor_offset() == 0

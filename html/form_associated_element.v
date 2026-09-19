@@ -614,6 +614,28 @@ fn form_associated_text_control_navigate(target voidptr, action dom.InputEventsT
 	}
 }
 
+fn form_associated_text_control_mouse_selection_scope(target voidptr) ?&dom.Node {
+	text := unsafe { &FormAssociatedTextControlElement(target) }
+	text_node := text.text_node_ or { return none }
+	return text_node.as_node()
+}
+
+fn form_associated_text_control_set_selection_anchor(target voidptr, node &dom.Node, offset int, affinity dom.TextAffinity) {
+	if offset < 0 {
+		return
+	}
+	mut text := unsafe { &FormAssociatedTextControlElement(target) }
+	text.set_selection_anchor(node, usize(offset), affinity)
+}
+
+fn form_associated_text_control_set_selection_focus(target voidptr, node &dom.Node, offset int, affinity dom.TextAffinity) {
+	if offset < 0 {
+		return
+	}
+	mut text := unsafe { &FormAssociatedTextControlElement(target) }
+	text.set_selection_focus(node, usize(offset), affinity)
+}
+
 fn form_associated_text_control_handle_delete(target voidptr, input_type string) {
 	mut text := unsafe { &FormAssociatedTextControlElement(target) }
 	text.handle_delete(input_type) or {}
@@ -671,6 +693,9 @@ pub fn FormAssociatedTextControlElement.create(control &FormAssociatedElement, v
 		handle_insert_callback: form_associated_text_control_handle_insert
 		handle_return_callback: form_associated_text_control_handle_return
 		navigate_callback: form_associated_text_control_navigate
+		mouse_selection_scope_callback: form_associated_text_control_mouse_selection_scope
+		set_selection_anchor_callback: form_associated_text_control_set_selection_anchor
+		set_selection_focus_callback: form_associated_text_control_set_selection_focus
 		handle_delete_callback: form_associated_text_control_handle_delete
 		select_all_callback: form_associated_text_control_select_all
 		selection_callback: form_associated_text_control_selection
@@ -1100,7 +1125,7 @@ pub fn (mut text FormAssociatedTextControlElement) selection_was_changed(source 
 pub fn (mut text FormAssociatedTextControlElement) set_selection_anchor(anchor_node &dom.Node,
 	anchor_offset usize, affinity dom.TextAffinity) {
 	mut manager := text.control.element.document().editing_host_manager()
-	manager.set_selection_anchor(anchor_node, int(anchor_offset))
+	manager.set_selection_anchor_with_affinity(anchor_node, int(anchor_offset), affinity)
 	text_node := text.text_node_ or { return }
 	if voidptr(anchor_node) != voidptr(text_node.as_node()) {
 		return
@@ -1112,7 +1137,7 @@ pub fn (mut text FormAssociatedTextControlElement) set_selection_anchor(anchor_n
 pub fn (mut text FormAssociatedTextControlElement) set_selection_focus(focus_node &dom.Node,
 	focus_offset usize, affinity dom.TextAffinity) {
 	mut manager := text.control.element.document().editing_host_manager()
-	manager.set_selection_focus(focus_node, int(focus_offset))
+	manager.set_selection_focus_with_affinity(focus_node, int(focus_offset), affinity)
 	text_node := text.text_node_ or { return }
 	if voidptr(focus_node) != voidptr(text_node.as_node()) {
 		return

@@ -168,7 +168,9 @@ pub fn (mut handler EventHandler) finish_selection_from_preserved_mousedown(docu
 	caret_position := caret_position_from_document_hit(document, position, .text_cursor) or {
 		return
 	}
-	if document.active_input_events_target(caret_position.boundary.node) != none {
+	if target := document.active_input_events_target(caret_position.boundary.node) {
+		target.set_selection_anchor(caret_position.boundary.node,
+			caret_position.boundary.offset, .downstream)
 		handler.selection_boundary_ = caret_position.boundary
 		handler.input_selection_range_ = SelectionRange{
 			start: caret_position.boundary.offset
@@ -253,9 +255,12 @@ pub fn (mut handler EventHandler) maybe_request_paste_for_middle_click(document 
 	} else if editing_host := hit_node.editing_host() {
 		mutable_document.set_focused_area(editing_host)
 	}
-	if document.active_input_events_target(hit_node) == none
-		&& !hit_node.is_editable_or_editing_host() {
+	target := document.active_input_events_target(hit_node)
+	if target == none && !hit_node.is_editable_or_editing_host() {
 		return false
+	}
+	if input_target := target {
+		input_target.set_selection_anchor(hit_node, caret_position.boundary.offset, .downstream)
 	}
 	handler.selection_boundary_ = caret_position.boundary
 	handler.input_selection_range_ = SelectionRange{
@@ -308,7 +313,10 @@ fn set_context_selection(mut handler EventHandler, document &dom.Document, node 
 		start: start
 		end: end
 	}
-	if selection := document.get_selection() {
+	if target := document.active_input_events_target(node) {
+		target.set_selection_anchor(node, start, .downstream)
+		target.set_selection_focus(node, end, .downstream)
+	} else if selection := document.get_selection() {
 		mut mutable_selection := unsafe { &dom.Selection(selection) }
 		mutable_selection.set_base_and_extent(node, start, node, end) or { return }
 		mut mutable_document := unsafe { &dom.Document(document) }

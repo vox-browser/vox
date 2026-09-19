@@ -139,6 +139,12 @@ fn test_document_active_input_events_target_uses_focused_form_text_control() {
 	assert textarea.text.selection_end() == 0
 	assert target.handle_return_key(dom.input_type_insert_line_break) == .handled
 	assert textarea.value() == '\nV'
+	text_node := textarea.text.text_node_ or { panic('missing textarea text node') }
+	assert target.mouse_selection_scope()? == text_node.as_node()
+	target.set_selection_anchor(text_node.as_node(), 0, .upstream)
+	target.set_selection_focus(text_node.as_node(), 1, .downstream)
+	assert textarea.text.selection_start() == 0
+	assert textarea.text.selection_end() == 1
 }
 
 fn test_document_cursor_position_and_blink_timer_use_form_text_control() {

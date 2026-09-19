@@ -2648,6 +2648,10 @@ pub enum InputEventsTargetNavigationAction {
 
 pub type InputEventsTargetNavigateCallback = fn (voidptr, InputEventsTargetNavigationAction, CollapseSelection)
 
+pub type InputEventsTargetMouseSelectionScopeCallback = fn (voidptr) ?&Node
+
+pub type InputEventsTargetSetSelectionBoundaryCallback = fn (voidptr, &Node, int, TextAffinity)
+
 pub type InputEventsTargetHandleDeleteCallback = fn (voidptr, string)
 
 pub type InputEventsTargetSelectAllCallback = fn (voidptr)
@@ -2682,6 +2686,9 @@ pub:
 	handle_clipboard_insert_callback InputEventsTargetHandleClipboardInsertCallback = unsafe { nil }
 	handle_return_callback   InputEventsTargetHandleReturnCallback = unsafe { nil }
 	navigate_callback        InputEventsTargetNavigateCallback = unsafe { nil }
+	mouse_selection_scope_callback InputEventsTargetMouseSelectionScopeCallback = unsafe { nil }
+	set_selection_anchor_callback InputEventsTargetSetSelectionBoundaryCallback = unsafe { nil }
+	set_selection_focus_callback InputEventsTargetSetSelectionBoundaryCallback = unsafe { nil }
 	handle_delete_callback   InputEventsTargetHandleDeleteCallback = unsafe { nil }
 	select_all_callback      InputEventsTargetSelectAllCallback = unsafe { nil }
 	selection_callback       InputEventsTargetSelectionCallback = unsafe { nil }
@@ -2724,6 +2731,27 @@ pub fn (target &InputEventsTarget) navigate(action InputEventsTargetNavigationAc
 		return
 	}
 	target.navigate_callback(target.target, action, collapse)
+}
+
+pub fn (target &InputEventsTarget) mouse_selection_scope() ?&Node {
+	if target.target == unsafe { nil } || target.mouse_selection_scope_callback == unsafe { nil } {
+		return none
+	}
+	return target.mouse_selection_scope_callback(target.target)
+}
+
+pub fn (target &InputEventsTarget) set_selection_anchor(node &Node, offset int, affinity TextAffinity) {
+	if target.target == unsafe { nil } || target.set_selection_anchor_callback == unsafe { nil } {
+		return
+	}
+	target.set_selection_anchor_callback(target.target, node, offset, affinity)
+}
+
+pub fn (target &InputEventsTarget) set_selection_focus(node &Node, offset int, affinity TextAffinity) {
+	if target.target == unsafe { nil } || target.set_selection_focus_callback == unsafe { nil } {
+		return
+	}
+	target.set_selection_focus_callback(target.target, node, offset, affinity)
 }
 
 pub fn (target &InputEventsTarget) move_cursor_to_start(collapse CollapseSelection) {

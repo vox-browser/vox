@@ -3967,6 +3967,24 @@ fn editing_host_manager_navigate_callback(target voidptr, action InputEventsTarg
 	}
 }
 
+fn editing_host_manager_mouse_selection_scope_callback(target voidptr) ?&Node {
+	manager := unsafe { &EditingHostManager(target) }
+	if manager.active_contenteditable_element_ == unsafe { nil } {
+		return none
+	}
+	return manager.active_contenteditable_element_
+}
+
+fn editing_host_manager_set_selection_anchor_callback(target voidptr, node &Node, offset int, affinity TextAffinity) {
+	mut manager := unsafe { &EditingHostManager(target) }
+	manager.set_selection_anchor_with_affinity(node, offset, affinity)
+}
+
+fn editing_host_manager_set_selection_focus_callback(target voidptr, node &Node, offset int, affinity TextAffinity) {
+	mut manager := unsafe { &EditingHostManager(target) }
+	manager.set_selection_focus_with_affinity(node, offset, affinity)
+}
+
 fn editing_host_manager_select_all_callback(target voidptr) {
 	mut manager := unsafe { &EditingHostManager(target) }
 	manager.select_all()
@@ -3982,6 +4000,9 @@ pub fn EditingHostManager.create(mut document Document) &EditingHostManager {
 		handle_clipboard_insert_callback: editing_host_manager_handle_clipboard_insert_callback
 		handle_return_callback: editing_host_manager_handle_return_callback
 		navigate_callback: editing_host_manager_navigate_callback
+		mouse_selection_scope_callback: editing_host_manager_mouse_selection_scope_callback
+		set_selection_anchor_callback: editing_host_manager_set_selection_anchor_callback
+		set_selection_focus_callback: editing_host_manager_set_selection_focus_callback
 		handle_delete_callback: editing_host_manager_handle_delete_callback
 		select_all_callback: editing_host_manager_select_all_callback
 	}
@@ -4053,16 +4074,25 @@ pub fn (mut manager EditingHostManager) select_all() {
 }
 
 pub fn (mut manager EditingHostManager) set_selection_anchor(anchor_node &Node, anchor_offset int) {
+	manager.set_selection_anchor_with_affinity(anchor_node, anchor_offset, .downstream)
+}
+
+pub fn (mut manager EditingHostManager) set_selection_anchor_with_affinity(anchor_node &Node, anchor_offset int, affinity TextAffinity) {
 	if manager.document_ == unsafe { nil } {
 		return
 	}
 	mut document := unsafe { &Document(manager.document_) }
 	mut selection := document.get_selection() or { return }
 	selection.collapse(anchor_node, anchor_offset) or { return }
+	selection.set_focus_affinity(affinity)
 	document.reset_cursor_blink_cycle()
 }
 
 pub fn (mut manager EditingHostManager) set_selection_focus(focus_node &Node, focus_offset int) {
+	manager.set_selection_focus_with_affinity(focus_node, focus_offset, .downstream)
+}
+
+pub fn (mut manager EditingHostManager) set_selection_focus_with_affinity(focus_node &Node, focus_offset int, affinity TextAffinity) {
 	if manager.document_ == unsafe { nil }
 		|| manager.active_contenteditable_element_ == unsafe { nil } {
 		return
@@ -4076,6 +4106,7 @@ pub fn (mut manager EditingHostManager) set_selection_focus(focus_node &Node, fo
 	selection.set_base_and_extent(anchor, selection.anchor_offset(), focus_node, focus_offset) or {
 		return
 	}
+	selection.set_focus_affinity(affinity)
 	document.reset_cursor_blink_cycle()
 }
 
