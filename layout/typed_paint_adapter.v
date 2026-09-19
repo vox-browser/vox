@@ -903,6 +903,7 @@ fn painting_filter_from_svg_graph(graph svg.FilterGraph) ?painting.GfxFilter {
 			input_ids: node.input_ids.clone()
 			parameters: node.parameters.clone()
 			string_parameters: node.string_parameters.clone()
+			image_url: node.image_url
 			color: painting.Color{
 				r: u8((node.color >> 16) & 0xff)
 				g: u8((node.color >> 8) & 0xff)
@@ -2134,7 +2135,23 @@ fn normalize_svg_pattern_operations(operations []painting.SVGMaskPaintOperation,
 	}, inverse_target)
 	mut normalized := []painting.SVGMaskPaintOperation{cap: operations.len}
 	for operation in operations {
-		if operation.kind == .path {
+		if operation.kind == .begin_filter {
+			filter := operation.filter or {
+				normalized << operation
+				continue
+			}
+			mut bounds := ?painting.Rect(none)
+			if filter_bounds := filter.bounds {
+				bounds = normalization.map_rect(filter_bounds)
+			}
+			normalized << painting.SVGMaskPaintOperation{
+				...operation
+				filter: painting.GfxFilter{
+					...filter
+					bounds: bounds
+				}
+			}
+		} else if operation.kind == .path {
 			normalized << painting.SVGMaskPaintOperation{
 				...operation
 				transform: multiply_painting_affine(normalization, operation.transform)
@@ -2244,7 +2261,8 @@ fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVG
 	target_used := state.try_get(target_styled) or { return none }
 	resource_transform := target_used.svg_transform().multiply(svg.element_transform(svg_element_model(content_element)))
 	mut collection := SVGMaskPaintCollection{}
-	collect_svg_mask_paint_operations(resource, state, resource_transform, true, false, mut collection)
+	collect_svg_mask_paint_operations(resource, state, resource_transform, true, false, true,
+		mut collection)
 	mut content_origin := painting.Point{}
 	if svg.parse_viewbox(content_element.get_attribute_value('viewBox')) == none {
 		seen.clear()
@@ -2602,6 +2620,12 @@ fn svg_mask_visual_cache_key(bounds painting.IntRect, mask_type painting.SVGMask
 	for operation in operations {
 		hash = svg_clip_hash_mix(hash, u64(operation.kind))
 		hash = svg_clip_hash_mix(hash, math.f64_bits(operation.opacity))
+		if operation.kind == .begin_filter {
+			if filter := operation.filter {
+				hash = svg_filter_visual_cache_key(hash, filter)
+			}
+			continue
+		}
 		if operation.kind == .image {
 			for byte in operation.image_url.bytes() {
 				hash = svg_clip_hash_mix(hash, u64(byte))
@@ -2667,6 +2691,71 @@ fn svg_mask_visual_cache_key(bounds painting.IntRect, mask_type painting.SVGMask
 			}
 			hash = svg_clip_hash_mix(hash, if segment.large_arc { u64(1) } else { u64(0) })
 			hash = svg_clip_hash_mix(hash, if segment.sweep { u64(1) } else { u64(0) })
+		}
+	}
+	return hash
+}
+
+fn svg_filter_visual_cache_key(seed u64, filter painting.GfxFilter) u64 {
+	mut hash := seed
+	if root_id := filter.root_id {
+		hash = svg_clip_hash_mix(hash, u64(root_id + 1))
+	}
+	if bounds := filter.bounds {
+		for value in [bounds.x, bounds.y, bounds.width, bounds.height] {
+			hash = svg_clip_hash_mix(hash, math.f64_bits(value))
+		}
+	}
+	for operation in filter.operations {
+		for byte in operation.kind.bytes() {
+			hash = svg_clip_hash_mix(hash, u64(byte))
+		}
+		for value in [operation.first, operation.second, operation.third] {
+			hash = svg_clip_hash_mix(hash, math.f64_bits(value))
+		}
+		hash = svg_clip_hash_mix(hash, svg_mask_color_key(operation.color))
+		hash = svg_clip_hash_mix(hash, u64(operation.color_operation))
+	}
+	for node in filter.nodes {
+		hash = svg_clip_hash_mix(hash, u64(node.id + 1))
+		for byte in node.kind.bytes() {
+			hash = svg_clip_hash_mix(hash, u64(byte))
+		}
+		for input_id in node.input_ids {
+			hash = svg_clip_hash_mix(hash, u64(input_id + 2))
+		}
+		mut parameter_names := node.parameters.keys()
+		parameter_names.sort()
+		for name in parameter_names {
+			for byte in name.bytes() {
+				hash = svg_clip_hash_mix(hash, u64(byte))
+			}
+			hash = svg_clip_hash_mix(hash, math.f64_bits(node.parameters[name]))
+		}
+		mut string_parameter_names := node.string_parameters.keys()
+		string_parameter_names.sort()
+		for name in string_parameter_names {
+			for byte in name.bytes() {
+				hash = svg_clip_hash_mix(hash, u64(byte))
+			}
+			for byte in node.string_parameters[name].bytes() {
+				hash = svg_clip_hash_mix(hash, u64(byte))
+			}
+		}
+		for byte in node.image_url.bytes() {
+			hash = svg_clip_hash_mix(hash, u64(byte))
+		}
+		hash = svg_clip_hash_mix(hash, svg_mask_color_key(node.color))
+		for value in node.matrix {
+			hash = svg_clip_hash_mix(hash, math.f64_bits(value))
+		}
+		for table in node.color_tables {
+			for byte in table.channel.bytes() {
+				hash = svg_clip_hash_mix(hash, u64(byte))
+			}
+			for value in table.values {
+				hash = svg_clip_hash_mix(hash, u64(value))
+			}
 		}
 	}
 	return hash
@@ -2831,7 +2920,7 @@ fn resolved_svg_image_url(element &dom.Element) string {
 
 fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 	resource_transform svg.AffineTransform, is_resource_root bool, object_bounding_box_units bool,
-	mut collection SVGMaskPaintCollection) {
+	retain_filters bool, mut collection SVGMaskPaintCollection) {
 	if !is_resource_root
 		&& (node.is_svg_mask_box() || node.is_svg_clip_box() || node.is_svg_pattern_box()) {
 		return
@@ -2842,6 +2931,30 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 	opacity := f64(computed.opacity())
 	if opacity <= 0 {
 		return
+	}
+	mut retained_filter := ?painting.GfxFilter(none)
+	if retain_filters {
+		if element := node.dom_node() {
+			if paint_element := element.as_element() {
+				position := paint_cumulative_offset(node, state, used)
+				bounds := painting.Rect{
+					x: position.x().to_double() - used.padding_left.to_double() - used.border_left.to_double()
+					y: position.y().to_double() - used.padding_top.to_double() - used.border_top.to_double()
+					width: used.border_box_width().to_double()
+					height: used.border_box_height().to_double()
+				}
+				color_context := color_resolution_context_for_typed_node(node, computed.color())
+				resolved := resolved_css_filter_for_element(computed, color_context, paint_element,
+					bounds)
+				retained_filter = resolved.to_gfx_filter(1)
+			}
+		}
+	}
+	if retained_filter != none {
+		collection.operations << painting.SVGMaskPaintOperation{
+			kind: .begin_filter
+			filter: retained_filter
+		}
 	}
 	wrap_opacity := opacity < 1
 	if wrap_opacity {
@@ -2977,12 +3090,18 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 	}
 	for child in node.children() {
 		if child.is_box() {
-			collect_svg_mask_paint_operations(child, state, resource_transform, false, object_bounding_box_units, mut collection)
+			collect_svg_mask_paint_operations(child, state, resource_transform, false,
+				object_bounding_box_units, retain_filters, mut collection)
 		}
 	}
 	if wrap_opacity {
 		collection.operations << painting.SVGMaskPaintOperation{
 			kind: .end_opacity
+		}
+	}
+	if retained_filter != none {
+		collection.operations << painting.SVGMaskPaintOperation{
+			kind: .end_filter
 		}
 	}
 }
@@ -3028,7 +3147,8 @@ fn svg_url_mask_for_box(node &Node, state &LayoutState,
 		svg.Units.user_space_on_use
 	} == .object_bounding_box
 	mut collection := SVGMaskPaintCollection{}
-	collect_svg_mask_paint_operations(mask_box, state, resource_transform, true, object_bounding_box_units, mut collection)
+	collect_svg_mask_paint_operations(mask_box, state, resource_transform, true,
+		object_bounding_box_units, false, mut collection)
 	target_bounds := svg_target_user_space_object_bounding_box(target_used)
 	viewport := svg_paint_viewport_size(node, state)
 	user_space_mask_area := resolve_svg_masking_area(mask_element, target_bounds, viewport)

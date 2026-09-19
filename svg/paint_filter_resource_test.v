@@ -517,6 +517,42 @@ fn test_filter_graph_preserves_offset_and_displacement_color_inputs() {
 	assert graph.root_id? == 5
 }
 
+fn test_filter_graph_retains_decoded_image_resource_and_previous_result_fallback() {
+	graph := build_filter_graph([
+		FilterPrimitive{
+			kind: 'feFlood'
+			result: 'before-image'
+			color_space: .srgb
+		},
+		FilterPrimitive{
+			kind: 'feImage'
+			result: 'picture'
+			parameters: {
+				'href': 'https://example.test/picture.png'
+			}
+			color_space: .linear_rgb
+		},
+		FilterPrimitive{
+			kind: 'feGaussianBlur'
+			in1: 'picture'
+			parameters: {
+				'stdDeviation': '2'
+			}
+			color_space: .linear_rgb
+		},
+	])
+	assert graph.nodes.map(it.kind) == ['flood', 'image', 'color-space-conversion', 'blur',
+		'color-space-conversion']
+	image := graph.nodes[1]
+	assert image.image_url == 'https://example.test/picture.png'
+	assert image.input_ids == [0]
+	assert graph.named_nodes['picture'] == 1
+	assert graph.nodes[2].input_ids == [1]
+	assert graph.nodes[2].string_parameters['source'] == 'srgb'
+	assert graph.nodes[2].string_parameters['destination'] == 'linear-rgb'
+	assert graph.root_id? == 4
+}
+
 fn test_filter_element_color_interpolation_filters_inherits_and_overrides() {
 	filter := Element{
 		tag: 'filter'

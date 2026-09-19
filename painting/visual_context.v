@@ -100,7 +100,9 @@ pub:
 }
 
 pub enum SVGMaskPaintOperationKind {
+	begin_filter
 	begin_opacity
+	end_filter
 	end_opacity
 	image
 	path
@@ -112,6 +114,7 @@ pub enum SVGMaskPaintOperationKind {
 pub struct SVGMaskPaintOperation {
 pub:
 	kind                   SVGMaskPaintOperationKind
+	filter                 ?GfxFilter
 	opacity                f64 = 1.0
 	image_url              string
 	image_rect             Rect

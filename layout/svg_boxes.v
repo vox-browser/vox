@@ -252,6 +252,14 @@ fn svg_element_model(element &dom.Element) svg.Element {
 			.oklab { 'linearRGB' }
 		}
 	}
+	// SVGFEImageElement hands the decoded frame to the filter builder. The V
+	// renderer owns decoded bitmap resources, so retain the equivalent absolute
+	// resource URL on the standalone graph model for replay-time lookup.
+	if element.local_name() == 'feImage' {
+		if image_url := element.document().encoding_parse_and_serialize_url(svg_image_href(element)) {
+			attributes['href'] = image_url
+		}
+	}
 	mut children := []svg.Element{}
 	mut direct_text := ''
 	for child in element.as_node().children_as_vector() {

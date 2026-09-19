@@ -4724,10 +4724,16 @@ fn retained_svg_pattern_definition(id string, style &painting.SVGPatternPaintSty
 	if display_list := style.tile_display_list {
 		for operation_index, operation in display_list.operations {
 			match operation.kind {
+				.begin_filter {
+					content << '<g>'
+				}
 				.begin_opacity {
 					content << '<g opacity="${fmt_px(operation.opacity)}">'
 				}
 				.end_opacity {
+					content << '</g>'
+				}
+				.end_filter {
 					content << '</g>'
 				}
 				.image {

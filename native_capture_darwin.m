@@ -1916,7 +1916,10 @@ typedef struct {
 	double matrix[20];
 	size_t matrix_count;
 	unsigned char *color_tables[4];
+	CGImageRef image;
 } NativeSVGFilterNode;
+
+static CGImageRef native_copy_cg_image(gg__Image *image);
 
 typedef struct {
 	CGContextRef context;
@@ -1935,6 +1938,7 @@ typedef struct {
 	int graph_root_id;
 	CGRect graph_bounds;
 	int has_graph_bounds;
+	int routes_pattern_paint;
 	int active;
 } NativeCSSFilterLayer;
 
@@ -2186,6 +2190,27 @@ void native_set_svg_filter_color_table(int id, int channel,
 	if (node->color_tables[channel] != NULL) {
 		memcpy(node->color_tables[channel], values, 256);
 	}
+}
+
+void native_set_svg_filter_node_image(int id, gg__Image *image) {
+	if (native_css_filter_overflow_depth > 0 || native_css_filter_stack_depth <= 0
+		|| image == NULL) {
+		return;
+	}
+	NativeCSSFilterLayer *layer =
+		&native_css_filter_stack[native_css_filter_stack_depth - 1];
+	if (id < 0 || (size_t)id >= layer->graph_node_count) {
+		return;
+	}
+	NativeSVGFilterNode *node = &layer->graph_nodes[id];
+	CGImageRef decoded = native_copy_cg_image(image);
+	if (decoded == NULL) {
+		return;
+	}
+	if (node->image != NULL) {
+		CGImageRelease(node->image);
+	}
+	node->image = decoded;
 }
 
 static CIImage *native_css_filter_color_matrix(CIImage *input,
@@ -2949,6 +2974,33 @@ static CIImage *native_apply_svg_filter_graph(NativeCSSFilterLayer const *layer,
 				? @"CISRGBToneCurveToLinear" : @"CILinearToSRGBToneCurve"];
 			output_extents[index] = first_extent;
 			break;
+		case 15: { // decoded image frame
+			if (node->image == NULL) {
+				// SVGFEImageElement is skipped while its resource is unavailable.
+				// The retained input is the graph result from before this primitive.
+				outputs[index] = first;
+				output_extents[index] = first_extent;
+				break;
+			}
+			CGRect destination = layer->has_graph_bounds
+				? layer->graph_bounds : source_extent;
+			CGFloat width = (CGFloat)CGImageGetWidth(node->image);
+			CGFloat height = (CGFloat)CGImageGetHeight(node->image);
+			if (width <= 0.0 || height <= 0.0 || CGRectIsEmpty(destination)) {
+				outputs[index] = first;
+				output_extents[index] = first_extent;
+				break;
+			}
+			CIImage *decoded = [CIImage imageWithCGImage:node->image];
+			CGAffineTransform fit = CGAffineTransformMake(
+				destination.size.width / width, 0, 0,
+				-destination.size.height / height, destination.origin.x,
+				destination.origin.y + destination.size.height);
+			outputs[index] = [[decoded imageByApplyingTransform:fit]
+				imageByCroppingToRect:destination];
+			output_extents[index] = native_svg_finite_extent(destination);
+			break;
+		}
 		default:
 			outputs[index] = first;
 			output_extents[index] = first_extent;
@@ -2978,6 +3030,9 @@ static void native_free_svg_filter_graph(NativeCSSFilterLayer *layer) {
 		free(node->inputs);
 		for (int channel = 0; channel < 4; ++channel) {
 			free(node->color_tables[channel]);
+		}
+		if (node->image != NULL) {
+			CGImageRelease(node->image);
 		}
 	}
 	free(layer->graph_nodes);
@@ -4386,10 +4441,98 @@ static int native_svg_pattern_stack_depth;
 static uint64_t native_svg_pattern_cache_clock;
 
 static CGContextRef native_svg_pattern_context(void) {
+	if (native_css_filter_stack_depth > 0) {
+		NativeCSSFilterLayer const *filter =
+			&native_css_filter_stack[native_css_filter_stack_depth - 1];
+		if (filter->routes_pattern_paint && filter->active) {
+			return filter->context;
+		}
+	}
 	if (native_svg_pattern_stack_depth <= 0) {
 		return NULL;
 	}
 	return native_svg_pattern_stack[native_svg_pattern_stack_depth - 1].context;
+}
+
+void native_begin_svg_pattern_filter_layer(float canvas_width,
+	float canvas_height) {
+	if (native_css_filter_stack_depth >= NATIVE_CSS_FILTER_MAX_DEPTH) {
+		native_css_filter_overflow_depth++;
+		return;
+	}
+	CGContextRef destination = native_svg_pattern_context();
+	NativeCSSFilterLayer layer = {
+		.destination = destination,
+		.canvas_width = canvas_width,
+		.canvas_height = canvas_height,
+		.scale = 1.0,
+		.routes_pattern_paint = 1,
+	};
+	if (destination != NULL && canvas_width > 0.0f && canvas_height > 0.0f) {
+		CGAffineTransform transform = CGContextGetCTM(destination);
+		CGFloat scale_x = hypot(transform.a, transform.b);
+		CGFloat scale_y = hypot(transform.c, transform.d);
+		layer.scale = MAX(MAX(scale_x, scale_y), 1.0);
+		size_t width = (size_t)MAX(1.0, ceil(canvas_width * layer.scale));
+		size_t height = (size_t)MAX(1.0, ceil(canvas_height * layer.scale));
+		CGColorSpaceRef color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+		layer.context = CGBitmapContextCreate(NULL, width, height, 8, width * 4,
+			color_space, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+		CGColorSpaceRelease(color_space);
+		if (layer.context != NULL) {
+			CGContextScaleCTM(layer.context, layer.scale, layer.scale);
+			CGContextSetShouldAntialias(layer.context, true);
+			CGContextSetInterpolationQuality(layer.context, kCGInterpolationHigh);
+			layer.active = 1;
+		}
+	}
+	native_css_filter_stack[native_css_filter_stack_depth++] = layer;
+}
+
+void native_end_svg_pattern_filter_layer(void) {
+	if (native_css_filter_overflow_depth > 0) {
+		native_css_filter_overflow_depth--;
+		return;
+	}
+	if (native_css_filter_stack_depth <= 0) {
+		return;
+	}
+	NativeCSSFilterLayer layer =
+		native_css_filter_stack[--native_css_filter_stack_depth];
+	if (!layer.routes_pattern_paint || !layer.active) {
+		if (layer.context != NULL) {
+			CGContextRelease(layer.context);
+		}
+		free(layer.operations);
+		native_free_svg_filter_graph(&layer);
+		return;
+	}
+	CGContextFlush(layer.context);
+	CGImageRef source_image = CGBitmapContextCreateImage(layer.context);
+	CGContextRelease(layer.context);
+	if (source_image == NULL) {
+		free(layer.operations);
+		native_free_svg_filter_graph(&layer);
+		return;
+	}
+	@autoreleasepool {
+		native_initialize_css_filter_renderer();
+		CIImage *output = native_apply_css_filter_layer(&layer, source_image);
+		CGRect source_rect = CGRectMake(0, 0, CGImageGetWidth(source_image),
+			CGImageGetHeight(source_image));
+		CGImageRef filtered_image = [native_css_filter_ci_context
+			createCGImage:output fromRect:source_rect format:kCIFormatRGBA8
+			colorSpace:native_css_filter_color_space];
+		if (filtered_image != NULL && layer.destination != NULL) {
+			CGContextDrawImage(layer.destination,
+				CGRectMake(0, 0, layer.canvas_width, layer.canvas_height),
+				filtered_image);
+			CGImageRelease(filtered_image);
+		}
+	}
+	CGImageRelease(source_image);
+	free(layer.operations);
+	native_free_svg_filter_graph(&layer);
 }
 
 void native_begin_svg_pattern_tile(unsigned long long input_key, float tile_width,

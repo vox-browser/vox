@@ -161,6 +161,10 @@ fn C.native_begin_svg_pattern_opacity(opacity f32)
 
 fn C.native_end_svg_pattern_opacity()
 
+fn C.native_begin_svg_pattern_filter_layer(canvas_width f32, canvas_height f32)
+
+fn C.native_end_svg_pattern_filter_layer()
+
 fn C.native_add_svg_pattern_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, canvas_height f32, fill_color gg.Color, has_fill int, stroke_color gg.Color, has_stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, stroke_first int)
 
 fn C.native_add_svg_pattern_linear_gradient_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, canvas_height f32, stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, start_x f32, start_y f32, end_x f32, end_y f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method int, linear_color_space int, stop_data &f32, stop_count int, opacity f32)
@@ -196,6 +200,8 @@ fn C.native_set_svg_filter_node_inputs(id int, inputs &int, count int)
 fn C.native_set_svg_filter_node_matrix(id int, matrix &f64, count int)
 
 fn C.native_set_svg_filter_color_table(id int, channel int, values &u8, count int)
+
+fn C.native_set_svg_filter_node_image(id int, image &gg.Image)
 
 fn C.native_end_css_filter_layer()
 
@@ -978,7 +984,9 @@ fn document_preload_resource_urls(document &dom.Document, base_url string) []str
 		// SVGImageElement performs the same image fetch as HTMLImageElement. Include
 		// both SVG 2 href and the legacy XLink spelling before layout/replay so mask
 		// caches are never populated from a temporarily unavailable remote image.
-		for image in css.query_selector_all(root, 'image') {
+		mut svg_images := css.query_selector_all(root, 'image')
+		svg_images << css.query_selector_all(root, 'feImage')
+		for image in svg_images {
 			mut source := ''
 			if image.has_attribute('href') {
 				source = image.get_attribute_value('href').trim_space()
@@ -2469,8 +2477,18 @@ fn (mut app BrowserApp) draw_native_svg_pattern_path(path_data []f32, even_odd b
 		if display_list := style.tile_display_list {
 			for operation in display_list.operations {
 				match operation.kind {
+					.begin_filter {
+						C.native_begin_svg_pattern_filter_layer(f32(tile.width), f32(tile.height))
+						if filter := operation.filter {
+							app.add_native_css_filter(filter, [f64(1), 0, 0, 1, 0, 0]!, 0,
+								0)
+						}
+					}
 					.begin_opacity {
 						C.native_begin_svg_pattern_opacity(f32(operation.opacity))
+					}
+					.end_filter {
+						C.native_end_svg_pattern_filter_layer()
 					}
 					.end_opacity {
 						C.native_end_svg_pattern_opacity()
@@ -3011,6 +3029,7 @@ fn native_svg_filter_kind(kind string) int {
 		'turbulence' { 12 }
 		'displacement-map' { 13 }
 		'color-space-conversion' { 14 }
+		'image' { 15 }
 		else { -1 }
 	}
 }
@@ -3091,7 +3110,7 @@ fn native_svg_filter_parameters(node painting.GfxFilterNode) [4]f32 {
 	}
 }
 
-fn add_native_svg_filter_graph(filter painting.GfxFilter, transform [6]f64, page_x f32,
+fn (mut app BrowserApp) add_native_svg_filter_graph(filter painting.GfxFilter, transform [6]f64, page_x f32,
 	page_y f32) {
 	root_id := filter.root_id or { return }
 	bounds := filter.bounds or { painting.Rect{} }
@@ -3124,10 +3143,15 @@ fn add_native_svg_filter_graph(filter painting.GfxFilter, transform [6]f64, page
 				}
 			}
 		}
+		if node.kind == 'image' && node.image_url.len > 0 {
+			if image := app.background_image(node.image_url) {
+				C.native_set_svg_filter_node_image(node.id, image)
+			}
+		}
 	}
 }
 
-fn add_native_css_filter(filter painting.GfxFilter, transform [6]f64, page_x f32,
+fn (mut app BrowserApp) add_native_css_filter(filter painting.GfxFilter, transform [6]f64, page_x f32,
 	page_y f32) {
 	for operation in filter.operations {
 		kind := match operation.kind {
@@ -3145,7 +3169,7 @@ fn add_native_css_filter(filter painting.GfxFilter, transform [6]f64, page_x f32
 			f32(operation.second)
 		}, f32(operation.third), gg.rgba(operation.color.r, operation.color.g, operation.color.b, operation.color.a))
 	}
-	add_native_svg_filter_graph(filter, transform, page_x, page_y)
+	app.add_native_svg_filter_graph(filter, transform, page_x, page_y)
 }
 
 fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x f32, page_y f32, window_height int) {
@@ -3284,7 +3308,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			if app.ctx.native_rendering {
 				C.native_begin_css_filter_layer(f32(app.ctx.width), f32(app.ctx.height))
 				if filter := command.visual_layer.filter {
-					add_native_css_filter(filter, command.transform, page_x, page_y)
+					app.add_native_css_filter(filter, command.transform, page_x, page_y)
 				}
 			}
 		}
@@ -3439,7 +3463,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				radii := command.corner_radii
 				C.native_begin_backdrop_filter_layer(f32(app.ctx.width), f32(app.ctx.height), f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(radii.top_left.x), f32(radii.top_left.y), f32(radii.top_right.x), f32(radii.top_right.y), f32(radii.bottom_right.x), f32(radii.bottom_right.y), f32(radii.bottom_left.x), f32(radii.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), int(command.backdrop_source_outside_filter))
 				if filter := command.backdrop_filter {
-					add_native_css_filter(filter, command.transform, page_x, page_y)
+					app.add_native_css_filter(filter, command.transform, page_x, page_y)
 				}
 				C.native_end_backdrop_filter_layer(f32(command.opacity))
 			}

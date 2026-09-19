@@ -406,6 +406,20 @@ fn test_same_document_svg_filter_uses_computed_interpolation_color_space() {
 	assert filter.root_id? == 2
 }
 
+fn test_same_document_svg_filter_retains_absolute_feimage_resource() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #filtered { width: 80px; height: 40px; filter: url(#picture) }</style><body><svg width="0" height="0"><defs><filter id="picture"><feImage href="data:image/png;base64,AAAA" result="decoded"/><feOffset in="decoded" dx="2"/></filter></defs></svg><div id="filtered"></div></body>')
+	_ = layout_document_typed_in_viewport(document, 160, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	filter_commands := display_list_commands(display_list).filter(it.kind == 'begin_css_filter_layer')
+	assert filter_commands.len == 1
+	filter := filter_commands[0].visual_layer.filter or { panic('missing retained filter') }
+	assert filter.nodes.map(it.kind) == ['image', 'offset']
+	assert filter.nodes[0].image_url == 'data:image/png;base64,AAAA'
+	assert filter.nodes[0].input_ids == [-1]
+	assert filter.nodes[1].input_ids == [0]
+}
+
 fn test_svg_filter_content_generation_records_the_cpp_transparent_bounds_trigger() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #filtered { width: 80px; height: 40px; filter: url(#paint) }</style><body><svg width="0" height="0"><defs><filter id="paint"><feFlood flood-color="green"/></filter></defs></svg><div id="filtered"></div></body>')
 	_ = layout_document_typed_in_viewport(document, 160, 120)
@@ -2476,6 +2490,28 @@ fn test_svg_pattern_paints_retain_linked_tile_display_list() {
 	assert serialized.contains('patternTransform="matrix(1 0 0 1 3 4)"')
 	assert serialized.contains('fill="url(#svg-paint')
 	assert serialized.contains('fill-opacity="0.600000')
+}
+
+fn test_svg_pattern_tile_retains_nested_decoded_image_filter() {
+	image_url := 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAD0lEQVR4nGNgaGBAIOI4ANA0CAF5jtVRAAAAAElFTkSuQmCC'
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="100" height="100"><defs><filter id="image-filter" x="0" y="0" width="100%" height="100%"><feImage href="${image_url}"/></filter><pattern id="tile" width="100" height="100" patternUnits="userSpaceOnUse"><rect width="100" height="100" fill="red" filter="url(#image-filter)"/></pattern></defs><rect width="100" height="100" fill="url(#tile)"/></svg>')
+	root := layout_document_typed_in_viewport(document, 100, 100)
+	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
+	assert paths.len == 1
+	pattern := paths[0].fill_pattern or { panic('missing retained pattern fill') }
+	operations := (pattern.tile_display_list or {
+		panic('missing pattern display list')
+	}).operations
+	assert operations.len == 3
+	assert operations[0].kind == .begin_filter
+	assert operations[1].kind == .path
+	assert operations[2].kind == .end_filter
+	filter := operations[0].filter or { panic('missing retained tile filter') }
+	assert filter.bounds or { painting.Rect{} } == painting.Rect{0, 0, 100, 100}
+	root_id := filter.root_id or { panic('missing retained filter root') }
+	assert filter.nodes[root_id].kind == 'image'
+	assert filter.nodes[root_id].image_url == image_url
+	assert pattern.cache_key != 0
 }
 
 fn test_svg_pattern_viewbox_overrides_object_bounding_box_content_units() {

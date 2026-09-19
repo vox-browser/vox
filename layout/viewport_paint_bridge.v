@@ -1460,13 +1460,16 @@ fn apply_compatibility_visual_context_chain(tree &painting.AccumulatedVisualCont
 					operation.transform.e,
 					operation.transform.f,
 				]!)
+				mut operation_kind := PaintMaskOperationKind.path
+				match operation.kind {
+					.begin_filter, .end_filter { continue }
+					.begin_opacity { operation_kind = .begin_opacity }
+					.end_opacity { operation_kind = .end_opacity }
+					.image { operation_kind = .image }
+					.path { operation_kind = .path }
+				}
 				operations << PaintMaskOperation{
-					kind: match operation.kind {
-						.begin_opacity { PaintMaskOperationKind.begin_opacity }
-						.end_opacity { PaintMaskOperationKind.end_opacity }
-						.image { PaintMaskOperationKind.image }
-						.path { PaintMaskOperationKind.path }
-					}
+					kind: operation_kind
 					opacity: operation.opacity
 					image_url: operation.image_url
 					image_rect: LayoutRect{

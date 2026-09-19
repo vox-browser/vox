@@ -130,6 +130,7 @@ pub:
 	input_ids         []int
 	parameters        map[string]f64
 	string_parameters map[string]string
+	image_url         string
 	color             Color
 	matrix            []f64
 	color_tables      []GfxFilterColorTable

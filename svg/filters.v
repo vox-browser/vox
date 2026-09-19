@@ -270,6 +270,7 @@ pub:
 	input_ids         []int
 	parameters        map[string]f64
 	string_parameters map[string]string
+	image_url         string
 	color             u32
 	matrix            []f64
 	color_tables      []FilterColorTable
@@ -300,7 +301,7 @@ struct FilterResult {
 	color_space InterpolationColorSpace
 }
 
-fn (mut builder FilterGraphBuilder) append_node(kind string, inputs []int, parameters map[string]f64, string_parameters map[string]string, color u32, matrix []f64, color_tables []FilterColorTable) int {
+fn (mut builder FilterGraphBuilder) append_node_with_image(kind string, inputs []int, parameters map[string]f64, string_parameters map[string]string, image_url string, color u32, matrix []f64, color_tables []FilterColorTable) int {
 	id := builder.nodes.len
 	builder.nodes << FilterNode{
 		id: id
@@ -308,11 +309,16 @@ fn (mut builder FilterGraphBuilder) append_node(kind string, inputs []int, param
 		input_ids: inputs
 		parameters: parameters
 		string_parameters: string_parameters
+		image_url: image_url
 		color: color
 		matrix: matrix
 		color_tables: color_tables
 	}
 	return id
+}
+
+fn (mut builder FilterGraphBuilder) append_node(kind string, inputs []int, parameters map[string]f64, string_parameters map[string]string, color u32, matrix []f64, color_tables []FilterColorTable) int {
+	return builder.append_node_with_image(kind, inputs, parameters, string_parameters, '', color, matrix, color_tables)
 }
 
 fn source_alpha_matrix() []f64 {
@@ -520,8 +526,19 @@ fn (mut builder FilterGraphBuilder) process(primitive FilterPrimitive) {
 			}
 		}
 		'feImage' {
-			// SVGFEImageElement.cpp skips the primitive until a decoded bitmap and
-			// content rectangle are both available; the renderer attaches those.
+			// The decoded frame itself is renderer-owned. Retain its resolved URL in
+			// the graph so replay can attach the current frame just as Ladybird's
+			// display-list resource storage does. The previous graph result is an
+			// explicit fallback for the not-yet-decoded case, where upstream skips
+			// this primitive without changing the last result.
+			image_url := primitive.parameters['href'] or {
+				primitive.parameters['xlink:href'] or { '' }
+			}
+			if image_url.len > 0 {
+				fallback := if root := builder.root { root.id } else { -1 }
+				id := builder.append_node_with_image('image', [fallback], map[string]f64{}, map[string]string{}, image_url, 0, [], [])
+				builder.finish_primitive(primitive, id, .srgb)
+			}
 		}
 		'feMerge' {
 			mut inputs := []int{}
