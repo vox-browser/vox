@@ -92,11 +92,18 @@
   the Cocoa view snapshot helper and `sips`; the PNG diff tool itself is portable and
   can be run directly with `v run tools/pixel_diff.v EXPECTED ACTUAL DIFF`.
 
+## Latest translated parser behavior
+
+- Incremental HTML parsing retains encoding-sensitive bytes while scripts are
+  deferred or the tokenizer is paused on a parser-blocking script. Late meta
+  charset declarations can replace the streaming decoder before those bytes
+  are consumed, and retained input is drained before implied EOF.
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-19, the module
-translations contain 349,599 implementation V LOC and 70,818 test V LOC.
+translations contain 349,911 implementation V LOC and 70,923 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -115,7 +122,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Fetch | 5,188 | FileAPI | 1,018 |
 | Fullscreen | 93 | GPC | 16 |
 | Gamepad | 760 | Geolocation | 416 |
-| Geometry | 2,062 | HTML | 56,731 |
+| Geometry | 2,062 | HTML | 57,043 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 854 |
 | IntersectionObserver | 569 | Layout | 43,180 |
@@ -142,7 +149,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **349,599** |  |  |
+| **Total** | **349,911** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
