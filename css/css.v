@@ -441,6 +441,7 @@ pub enum PropertyID {
 	scroll_snap_stop
 	scroll_snap_type
 	color_interpolation_filters
+	backface_visibility
 	vector_effect
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow

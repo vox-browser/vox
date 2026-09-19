@@ -8,7 +8,7 @@ fn scroll_padding_serialization(property_id PropertyID, text string) ?string {
 }
 
 fn test_scroll_padding_metadata_and_parsing() {
-	assert number_of_longhand_properties == 353
+	assert number_of_longhand_properties == 354
 	assert last_longhand_property_id() == .vector_effect
 	assert property_id_from_string('scroll-padding')? == .scroll_padding
 	assert property_id_from_string('SCROLL-PADDING-INLINE-END')? == .scroll_padding_inline_end
@@ -37,9 +37,9 @@ fn test_scroll_padding_metadata_and_parsing() {
 		.scroll_padding_inline,
 	]
 
-	for property_id in [PropertyID.scroll_padding_top, .scroll_padding_right,
-		.scroll_padding_bottom, .scroll_padding_left, .scroll_padding_block_start,
-		.scroll_padding_block_end, .scroll_padding_inline_start, .scroll_padding_inline_end] {
+	for property_id in [PropertyID.scroll_padding_top, .scroll_padding_right, .scroll_padding_bottom,
+		.scroll_padding_left, .scroll_padding_block_start, .scroll_padding_block_end,
+		.scroll_padding_inline_start, .scroll_padding_inline_end] {
 		assert scroll_padding_serialization(property_id, 'auto')? == 'auto'
 		assert scroll_padding_serialization(property_id, '0')? == '0px'
 		assert scroll_padding_serialization(property_id, '10px')? == '10px'

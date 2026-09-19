@@ -1020,6 +1020,7 @@ fn (mut planner PlaybackPlanner) apply_context(index int) {
 	kind := match node.data {
 		EffectsVisualData { 'ApplyEffects' }
 		PerspectiveVisualData { 'ApplyPerspective' }
+		BackfaceVisibilityVisualData { 'ApplyBackfaceVisibility' }
 		ScrollCompensationVisualData { 'ApplyScrollCompensation' }
 		ScrollVisualData { 'ApplyScroll' }
 		TransformVisualData { 'ApplyTransform' }
@@ -1105,6 +1106,9 @@ pub fn (list DisplayList) playback_plan(snapshot ScrollStateSnapshot, visible_cl
 	for item in list.commands {
 		bounds := command_bounding_rect(item.command)
 		if planner.switch_to_context(item.context_index, bounds) == .culled_by_effect {
+			continue
+		}
+		if list.visual_context_tree.context_is_backface_culled(item.context_index, snapshot) {
 			continue
 		}
 		if bound := bounds {

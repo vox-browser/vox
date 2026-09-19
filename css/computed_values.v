@@ -601,6 +601,7 @@ pub fn resolve_computed_values(style &ComputedProperties) &ComputedValues {
 	values.set_transform_box(style.transform_box())
 	values.set_transform_origin(style.transform_origin())
 	values.set_transform_style(style.transform_style())
+	values.set_backface_visibility(style.backface_visibility())
 	values.set_translate(style.translate())
 	values.set_quotes(style.quotes())
 	values.set_dominant_baseline(style.dominant_baseline())
@@ -1427,6 +1428,10 @@ pub fn (values &ComputedValues) transform_style() TransformStyle {
 	return values.computed_values_transform_style_
 }
 
+pub fn (values &ComputedValues) backface_visibility() BackfaceVisibility {
+	return values.computed_values_backface_visibility_
+}
+
 pub fn (values &ComputedValues) translate() ?TransformationData {
 	return values.computed_values_translate_
 }
@@ -1689,6 +1694,7 @@ pub fn (mut values MutableComputedValues) inherit_from(other &ComputedValues) {
 	values.computed_values_border_spacing_vertical_ = other.computed_values_border_spacing_vertical_
 	values.computed_values_color_interpolation_ = other.computed_values_color_interpolation_
 	values.computed_values_color_interpolation_filters_ = other.computed_values_color_interpolation_filters_
+	values.computed_values_backface_visibility_ = other.computed_values_backface_visibility_
 	values.computed_values_cursor_ = other.computed_values_cursor_
 	values.computed_values_tab_size_ = other.computed_values_tab_size_
 	values.computed_values_text_indent_ = other.computed_values_text_indent_
@@ -2327,6 +2333,10 @@ pub fn (mut values MutableComputedValues) set_transform_origin(value TransformOr
 
 pub fn (mut values MutableComputedValues) set_transform_style(value TransformStyle) {
 	values.computed_values_transform_style_ = value
+}
+
+pub fn (mut values MutableComputedValues) set_backface_visibility(value BackfaceVisibility) {
+	values.computed_values_backface_visibility_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_translate(value ?TransformationData) {

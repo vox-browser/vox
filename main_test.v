@@ -8,6 +8,7 @@ import layout
 import os
 import page
 import painting
+import time
 
 fn test_parse_launch_options_keeps_interactive_defaults() {
 	options := parse_launch_options(['https://example.com']) or { panic(err) }
@@ -29,6 +30,45 @@ fn test_javascript_bridge_exposes_media_start_date_as_a_date_object() {
 		], runtime, mut messages)
 		assert messages == ['true', 'true']
 	}
+}
+
+fn test_javascript_bridge_runs_window_load_mutations() {
+	$if darwin {
+		document := html.parse_document('<!doctype html><div id="target"></div>')
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'about:blank', [
+			'onload = () => requestAnimationFrame(() => { target.classList.add("ready"); target.style.marginLeft = "100px"; });',
+		], runtime, mut messages)
+		assert messages == []
+		element := document.get_element_by_id('target') or { panic('missing target') }
+		assert element.get_attribute_value('class') == 'ready'
+		assert element.get_attribute_value('style') == 'margin-left: 100px'
+	}
+}
+
+fn test_browser_animation_frame_refreshes_paint_only_transforms() {
+	mut document := html.parse_document('<!doctype html><style>@keyframes flip{0%{transform:rotateY(60deg)}0.01%,100%{transform:rotateY(180deg)}}.flip{animation:10s linear infinite flip}#scene{width:100px;height:100px;transform:rotateY(60deg);transform-style:preserve-3d}#target{position:absolute;top:0;left:0;width:200px;height:200px;background:lightblue;transform:rotateY(180deg);backface-visibility:hidden}</style><div id="scene" class="flip"><div id="target"></div></div>')
+	mut app := BrowserApp{
+		document: document
+		animation_epoch_ns: time.sys_mono_now() - 16_000_000
+	}
+	app.relayout(200, 232)
+	assert css.document_has_running_css_animations(document)
+	app.advance_document_animations(200, 120)
+	scene_element := document.get_element_by_id('scene') or { panic('missing scene') }
+	scene := app.root_box.find_box(i64(scene_element.as_node().unique_id())) or {
+		panic('missing scene paint box')
+	}
+	assert scene.own_paint_transform_4x4.m33 < -0.9
+	assert app.paint_commands.any(it.color.contains('173') || it.color.to_lower().contains('add8e6')), app.paint_commands.map('${it.kind}:${it.color}').join(', ')
+	// An unchanged sampled value reuses the retained paint snapshot rather than
+	// replacing it with an empty cache on every browser frame.
+	app.advance_document_animations(200, 120)
+	assert app.paint_commands.any(it.color.contains('173') || it.color.to_lower().contains('add8e6')), app.paint_commands.map('${it.kind}:${it.color}').join(', ')
 }
 
 fn test_parse_launch_options_accepts_explicit_window_dimensions() {

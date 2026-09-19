@@ -3134,6 +3134,8 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	mut stacking_context := node.establishes_stacking_context()
 	mut marker_shape := ''
 	mut paint_transform := [6]f64{}
+	mut paint_transform_4x4 := css.FloatMatrix4x4.identity()
+	mut uses_paint_transform_4x4 := false
 	mut clip_path := ?painting.ClipPathVisualData(none)
 	mut svg_clip := ?painting.SVGClipVisualData(none)
 	mut svg_mask := ?painting.SVGMaskVisualData(none)
@@ -3192,7 +3194,11 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 			&& styled_element.has_attribute('transform')
 		if !has_svg_transform_attribute && !computed_transform_is_none(computed) {
 			reference_box := paintable_box_transform_reference_box(node, computed, used, position, state)
-			paint_transform = resolved_computed_transform_matrix(computed, reference_box.x, reference_box.y, reference_box.width, reference_box.height)
+			paint_transform_4x4 = resolved_computed_transform_4x4_matrix(computed, reference_box.x, reference_box.y, reference_box.width, reference_box.height)
+			uses_paint_transform_4x4 = true
+			paint_transform = css.project_plane_to_affine_transform(paint_transform_4x4) or {
+				[f64(0), 0, 0, 0, 0, 0]!
+			}
 		}
 		clip_path = basic_shape_clip_path_for_box(node, computed, LayoutRect{
 			x: position.x().to_double() - used.padding_left.to_double() - used.border_left.to_double()
@@ -3734,6 +3740,8 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		svg_mask: svg_mask
 		sticky_position: node.is_sticky_position()
 		own_paint_transform: paint_transform
+		own_paint_transform_4x4: paint_transform_4x4
+		uses_own_paint_transform_4x4: uses_paint_transform_4x4
 		paint_transform: accumulated_paint_transform
 	}
 }

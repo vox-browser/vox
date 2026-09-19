@@ -295,6 +295,7 @@ mut:
 	screenshot_scroll_applied           bool
 	layout_tree_only                    bool
 	document_presented                  bool
+	animation_epoch_ns                  u64
 	initial_window_frame_presented      bool
 	refresh_not_before                  i64
 	snapshot_visible                    bool
@@ -1306,12 +1307,14 @@ fn javascript_program(state map[string]json2.Any, scripts []string) string {
 		'const __listeners = Object.create(null);',
 		'const __canvases = Object.create(null);',
 		'function __listenerKey(s, n) { return (s && (s.bridgeKey || s.id) ? (s.bridgeKey || s.id) : "document") + ":" + n; }',
+		'function __styleName(name) { return String(name).replace(/[A-Z]/g, function (character) { return "-" + character.toLowerCase(); }); }',
 		'function __styleProxy(s) {',
 		'  const values = Object.create(null);',
 		'  String(s.styleText || "").split(";").forEach(function (part) { const i = part.indexOf(":"); if (i > 0) values[part.slice(0, i).trim()] = part.slice(i + 1).trim(); });',
 		'  function sync() { s.styleText = Object.keys(values).map(function (k) { return k + ": " + values[k]; }).join("; "); }',
-		'  return new Proxy(values, { set: function (o, p, v) { o[p] = String(v); sync(); return true; }, get: function (o, p) { if (p === "cssText") return s.styleText; if (p === "setProperty") return function (name, value) { values[String(name)] = String(value); sync(); }; return o[p] || ""; } });',
+		'  return new Proxy(values, { set: function (o, p, v) { if (p === "cssText") { s.styleText = String(v); return true; } o[__styleName(p)] = String(v); sync(); return true; }, get: function (o, p) { if (p === "cssText") return s.styleText; if (p === "setProperty") return function (name, value) { values[__styleName(name)] = String(value); sync(); }; if (p === "removeProperty") return function (name) { name = __styleName(name); const old = values[name] || ""; delete values[name]; sync(); return old; }; return o[__styleName(p)] || ""; } });',
 		'}',
+		'function __classList(s) { function tokens() { return String(s.className || "").trim().split(/\\s+/).filter(Boolean); } function sync(values) { s.className = values.join(" "); } return { add: function () { const values=tokens(); for(const item of arguments){const token=String(item);if(token&&!values.includes(token))values.push(token);} sync(values); }, remove: function () { const removed=Array.prototype.map.call(arguments,String); sync(tokens().filter(function(token){return !removed.includes(token);})); }, contains: function (token) { return tokens().includes(String(token)); }, toggle: function (token, force) { token=String(token); const values=tokens(), present=values.includes(token), add=force===undefined?!present:!!force; if(add&&!present)values.push(token); if(!add&&present)values.splice(values.indexOf(token),1); sync(values); return add; } }; }',
 		'function __canvasDimension(s, name) { const fallback=name === "width" ? 300 : 150; if(s[name]===undefined||s[name]===null||String(s[name])==="")return fallback; const value=Number(s[name]); return Number.isFinite(value) && value >= 0 ? Math.trunc(value) : fallback; }',
 		'function __canvasFor(s) { let c=__canvases[s.id]; const width=__canvasDimension(s,"width"),height=__canvasDimension(s,"height"); if(!c||c.width!==width||c.height!==height)c=__canvases[s.id]={width:width,height:height,data:new Uint8ClampedArray(width*height*4),fillStyle:"#000000"}; return c; }',
 		'function __decodeBase64(input) { const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"; const clean=String(input||"").replace(/[^A-Za-z0-9+/]/g,""); const output=new Uint8ClampedArray(Math.floor(clean.length*3/4)); let bits=0,value=0,index=0; for(const ch of clean){const digit=alphabet.indexOf(ch);if(digit<0)continue;value=(value<<6)|digit;bits+=6;if(bits>=8){bits-=8;output[index++]=(value>>bits)&255;}} return index===output.length?output:output.slice(0,index); }',
@@ -1325,7 +1328,7 @@ fn javascript_program(state map[string]json2.Any, scripts []string) string {
 		'  if (!s.__object) {',
 		'    const o = { getAttribute: function (n) { if (n === "id") return s.id; if (n === "class") return s.className; if (n === "style") return s.styleText; return null; }, setAttribute: function (n, v) { if (n === "id") s.id = String(v); if (n === "class") s.className = String(v); if (n === "style") s.styleText = String(v); }, addEventListener: function (n, f) { (__listeners[__listenerKey(s, n)] ||= []).push(f); if(s.tagName==="video"&&s.readyState>=2&&(n==="loadeddata"||n==="seeked"))f.call(this,{type:n,target:this}); }, append: function (child) { return this.appendChild(child); }, appendChild: function (child) { const c=child&&child.__state; if(c)__state.operations.push({op:"appendCreated",target:s.id,child:{tagName:c.tagName,id:c.id,className:c.className,styleText:c.styleText,textContent:c.textContent}}); return child; }, getContext: function(kind) { return s.tagName === "canvas" && String(kind).toLowerCase() === "2d" ? __canvasContext(s) : null; }, getStartDate:function(){return new Date(s.startDateValid?+s.startDate:NaN);}, play:function(){return Promise.resolve();} };',
 		'    Object.defineProperties(o, { id: { get: function () { return s.id; } }, textContent: { get: function () { return s.textContent; }, set: function (v) { s.textContent = String(v); s.innerHTML = ""; } }, innerHTML: { get: function () { return s.innerHTML; }, set: function (v) { s.innerHTML = String(v); } }, className: { get: function () { return s.className; }, set: function (v) { s.className = String(v); } }, width:{get:function(){return __canvasDimension(s,"width");},set:function(v){s.width=String(Math.max(0,Math.trunc(+v||0)));}}, height:{get:function(){return __canvasDimension(s,"height");},set:function(v){s.height=String(Math.max(0,Math.trunc(+v||0)));}}, readyState:{get:function(){return +s.readyState||0;}}, videoWidth:{get:function(){return +s.videoWidth||0;}}, videoHeight:{get:function(){return +s.videoHeight||0;}}, currentTime:{get:function(){return +s.currentTime||0;},set:function(v){s.currentTime=+v||0;}}, src:{get:function(){return s.src||"";},set:function(v){__setVideoSource(s,v);}} });',
-		'    o.style = __styleProxy(s); Object.defineProperty(o,"__state",{value:s}); Object.defineProperty(s, "__object", { value: o, writable: true, configurable: true });',
+		'    o.style = __styleProxy(s); o.classList = __classList(s); Object.defineProperty(o,"__state",{value:s}); Object.defineProperty(s, "__object", { value: o, writable: true, configurable: true });',
 		'  } return s.__object;',
 		'}',
 		'const document = { getElementById: function (id) { const s = __state.elements[String(id)]; return s ? __element(s) : null; }, getElementsByTagName: function(name) { const tag=String(name).toLowerCase(); return Object.keys(__state.elements).map(function(id){return __state.elements[id];}).filter(function(s){return tag==="*"||s.tagName===tag;}).map(__element); }, querySelector: function (q) { return q && q[0] === "#" ? this.getElementById(q.slice(1)) : null; }, addEventListener: function (n, f) { (__listeners[__listenerKey(null, n)] ||= []).push(f); }, createElement: function (name) { return __element({ created:true,tagName:String(name).toLowerCase(),id:"",textContent:"",innerHTML:"",className:"",styleText:"",onclick:"" }); }, createTextNode: function(text) { return {__state:{tagName:"#text",textContent:String(text)}}; } };',
@@ -1338,7 +1341,7 @@ fn javascript_program(state map[string]json2.Any, scripts []string) string {
 		'window.__ladybirdSnapshot = function () { return JSON.stringify(__state); };',
 		'window.__ladybirdFinalize = function () { for (const id of Object.keys(__canvases)) { const c=__canvases[id]; __state.elements[id].canvasPixels=Array.from(c.data); __state.elements[id].canvasWidth=c.width; __state.elements[id].canvasHeight=c.height; } return window.__ladybirdSnapshot(); };',
 		'window.__ladybirdClearLogs = function () { __state.logs = []; __state.bodyHTMLDirty = false; __state.bodyTextDirty = false; };',
-		'window.__ladybirdDispatch = function (name, id) { const s = __state.elements[String(id)] || null; const target = s ? __element(s) : document; const event = { type: name, target: target, defaultPrevented: false, preventDefault: function () { this.defaultPrevented = true; } }; for (const listener of (__listeners[__listenerKey(s, name)] || [])) { try { listener.call(target, event); } catch (e) { console.error(e); } } if (s && name === "click" && s.onclick) { try { Function("event", s.onclick).call(target, event); } catch (e) { console.error(e); } } __state.defaultPrevented = event.defaultPrevented; return window.__ladybirdSnapshot(); };',
+		'window.__ladybirdDispatch = function (name, id) { const s = __state.elements[String(id)] || null; const target = s ? __element(s) : document; const event = { type: name, target: target, defaultPrevented: false, preventDefault: function () { this.defaultPrevented = true; } }; for (const listener of (__listeners[__listenerKey(s, name)] || [])) { try { listener.call(target, event); } catch (e) { console.error(e); } } if (!s && typeof window["on" + name] === "function") { try { window["on" + name].call(window, event); } catch (e) { console.error(e); } } if (s && name === "click" && s.onclick) { try { Function("event", s.onclick).call(target, event); } catch (e) { console.error(e); } } __state.defaultPrevented = event.defaultPrevented; return window.__ladybirdSnapshot(); };',
 		'const __scripts = ${scripts_json}; for (const __source of __scripts) { try { (0, eval)(__source); } catch (e) { console.error(e && e.stack ? e.stack : e); } }',
 		'for (const __name of ["DOMContentLoaded", "load"]) window.__ladybirdDispatch(__name, "");',
 		'return window.__ladybirdSnapshot();',
@@ -1782,6 +1785,21 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	app.status = '${app.load_status} · ${app.paint_commands.len} paints · ${int(root_rect.width)}×${int(root_rect.height)} CSS px'
 }
 
+fn (mut app BrowserApp) advance_document_animations(window_width int, content_viewport_height int) {
+	if app.document == unsafe { nil } || app.animation_epoch_ns == 0
+		|| !css.document_has_running_css_animations(app.document) {
+		return
+	}
+	now := time.sys_mono_now()
+	elapsed_ms := f64(now - app.animation_epoch_ns) / 1_000_000.0
+	mut document := unsafe { &dom.Document(app.document) }
+	document.update_animations_and_send_events(elapsed_ms)
+	app.relayout(window_width, content_viewport_height + app.chrome_height())
+	$if macos {
+		C.native_wake_browser_after(16)
+	}
+}
+
 fn (mut app BrowserApp) replace_load_status(status string) {
 	previous_status := app.load_status
 	app.load_status = status
@@ -1818,6 +1836,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	app.js_messages = []
 	mut checkpoint := time.sys_mono_now()
 	install_start := checkpoint
+	app.animation_epoch_ns = install_start
 	app.document = html.parse_document(loaded.markup)
 	app.document.set_page(unsafe { &dom.Page(app.page_model) })
 	checkpoint = debug_timing_checkpoint('parse_document', checkpoint)
@@ -4461,6 +4480,7 @@ fn (mut app BrowserApp) draw() {
 	if window.width > 0 && (window.width != app.viewport_width || content_viewport_height != app.viewport_height) {
 		app.relayout(window.width, window.height)
 	}
+	app.advance_document_animations(window.width, content_viewport_height)
 	if app.screenshot_path != '' && !app.screenshot_scroll_applied {
 		app.screenshot_scroll_applied = true
 		app.set_scroll_y(f64(app.screenshot_scroll_y), window.height)

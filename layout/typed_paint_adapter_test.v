@@ -988,6 +988,105 @@ fn test_individual_transforms_compose_before_transform_list_against_reference_bo
 	assert math.abs(matrix[5] - 5) < 0.000001
 }
 
+fn test_backface_visibility_builds_a_culled_3d_visual_context() {
+	document := html.parse_document('<!doctype html><style>html,body{margin:0}#scene{transform-style:preserve-3d}#target{width:100px;height:100px;background:red;transform:rotateY(180deg);backface-visibility:hidden}</style><body><div id="scene"><div id="target"></div></div></body>')
+	mut root := layout_document_typed_in_viewport(document, 200, 120)
+	mut boxes_by_layout := map[u64]&BlockBox{}
+	collect_compatibility_boxes(mut root, mut boxes_by_layout)
+	mut tree := painting.new_accumulated_visual_context_tree()
+	assign_compatibility_visual_contexts(mut root, none, boxes_by_layout, mut tree)
+	target_element := document.get_element_by_id('target') or { panic('missing target') }
+	target := root.find_box(i64(target_element.as_node().unique_id())) or {
+		panic('missing target paint box')
+	}
+	assert target.uses_own_paint_transform_4x4
+	assert math.abs(target.own_paint_transform_4x4.m33 + 1) < 0.000001
+	assert tree.context_is_backface_culled(target.accumulated_visual_context_index, painting.ScrollStateSnapshot{})
+	assert paintable_box_transform_point_to_local(&target, painting.Point{50, 50}, 1, tree, painting.ScrollStateSnapshot{}) == none
+}
+
+fn test_animated_transform_updates_backface_culling() {
+	mut document := html.parse_document('<!doctype html><style>html,body{margin:0}@keyframes flip{0%{transform:rotateY(60deg)}0.01%,100%{transform:rotateY(180deg)}}.flip{animation:10s linear infinite flip}#scene{width:100px;height:100px;transform:rotateY(60deg);transform-style:preserve-3d}#target{width:100px;height:100px;background:lightblue;transform:rotateY(180deg);backface-visibility:hidden}</style><div id="scene"><div id="target"></div></div>')
+	mut root := layout_document_typed_in_viewport(document, 200, 120)
+	assert !css.document_has_running_css_animations(document)
+	target_element := document.get_element_by_id('target') or { panic('missing target') }
+	mut scene_element := document.get_element_by_id('scene') or { panic('missing scene') }
+	mut target := root.find_box(i64(target_element.as_node().unique_id())) or {
+		panic('missing target paint box')
+	}
+	mut boxes_by_layout := map[u64]&BlockBox{}
+	collect_compatibility_boxes(mut root, mut boxes_by_layout)
+	mut tree := painting.new_accumulated_visual_context_tree()
+	assign_compatibility_visual_contexts(mut root, none, boxes_by_layout, mut tree)
+	assert tree.context_is_backface_culled(target.accumulated_visual_context_index, painting.ScrollStateSnapshot{})
+
+	scene_element.set_attribute_value('class', 'flip')
+	root = layout_document_typed_in_viewport(document, 200, 120)
+	assert css.document_has_running_css_animations(document)
+	document.update_animations_and_send_events(16)
+	root = layout_document_typed_in_viewport(document, 200, 120)
+	scene := root.find_box(i64(scene_element.as_node().unique_id())) or {
+		panic('missing animated scene paint box')
+	}
+	assert scene.own_paint_transform_4x4.m33 < -0.9
+	target = root.find_box(i64(target_element.as_node().unique_id())) or {
+		panic('missing updated target paint box')
+	}
+	boxes_by_layout = map[u64]&BlockBox{}
+	collect_compatibility_boxes(mut root, mut boxes_by_layout)
+	tree = painting.new_accumulated_visual_context_tree()
+	assign_compatibility_visual_contexts(mut root, none, boxes_by_layout, mut tree)
+	assert !tree.context_is_backface_culled(target.accumulated_visual_context_index, painting.ScrollStateSnapshot{})
+}
+
+fn test_hidden_backface_in_3d_context_establishes_descendant_containing_blocks() {
+	document := html.parse_document('<!doctype html><style>#scene{transform-style:preserve-3d}#target{backface-visibility:hidden}#fixed{position:fixed}</style><div id="scene"><div id="target"><div id="fixed"></div></div></div>')
+	result := run_document_layout(document, 200, 120) or { panic('layout failed') }
+	target := typed_paint_node_with_id(result.root, 'target') or { panic('missing target') }
+	fixed := typed_paint_node_with_id(result.root, 'fixed') or { panic('missing fixed') }
+	assert target.is_transformable()
+	assert target.participates_in_a_3d_rendering_context()
+	assert target.establishes_stacking_context()
+	containing_block := fixed.containing_block() or { panic('missing fixed containing block') }
+	assert voidptr(containing_block) == voidptr(target)
+}
+
+fn test_hidden_backface_ancestor_culls_only_its_own_3d_plane() {
+	document := html.parse_document('<!doctype html><style>html,body{margin:0}.scene{transform-style:preserve-3d;transform:rotateY(142deg)}.wrapper{width:100px;height:100px;transform-style:preserve-3d;backface-visibility:hidden;background:red}.card{width:100px;height:100px;background:green;transform:rotateY(-142deg);backface-visibility:hidden}</style><div class="scene"><div id="wrapper" class="wrapper"><div id="card" class="card"></div></div></div>')
+	mut root := layout_document_typed_in_viewport(document, 400, 400)
+	mut boxes_by_layout := map[u64]&BlockBox{}
+	collect_compatibility_boxes(mut root, mut boxes_by_layout)
+	mut tree := painting.new_accumulated_visual_context_tree()
+	assign_compatibility_visual_contexts(mut root, none, boxes_by_layout, mut tree)
+	wrapper_element := document.get_element_by_id('wrapper') or { panic('missing wrapper') }
+	card_element := document.get_element_by_id('card') or { panic('missing card') }
+	wrapper := root.find_box(i64(wrapper_element.as_node().unique_id())) or {
+		panic('missing wrapper paint box')
+	}
+	card := root.find_box(i64(card_element.as_node().unique_id())) or {
+		panic('missing card paint box')
+	}
+	assert tree.context_is_backface_culled(wrapper.accumulated_visual_context_index, painting.ScrollStateSnapshot{})
+	assert !tree.context_is_backface_culled(card.accumulated_visual_context_index, painting.ScrollStateSnapshot{})
+}
+
+fn test_hidden_backface_ancestor_keeps_descendant_3d_contexts() {
+	document := html.parse_document('<!doctype html><style>html,body{margin:0}.flipped{width:300px;height:300px;background:blue;transform:rotateY(180deg);backface-visibility:hidden}.context{transform-style:preserve-3d;width:200px;height:200px;background:green}.participant{width:100px;height:100px;background:orange;transform:translateZ(10px)}.lone-context{width:60px;height:60px;background:purple;transform-style:preserve-3d}</style><div id="flipped" class="flipped"><div id="context" class="context"><div id="participant" class="participant"></div></div><div id="lone-context" class="lone-context"></div></div>')
+	mut root := layout_document_typed_in_viewport(document, 400, 400)
+	mut boxes_by_layout := map[u64]&BlockBox{}
+	collect_compatibility_boxes(mut root, mut boxes_by_layout)
+	mut tree := painting.new_accumulated_visual_context_tree()
+	assign_compatibility_visual_contexts(mut root, none, boxes_by_layout, mut tree)
+	for id in ['flipped', 'context', 'participant', 'lone-context'] {
+		element := document.get_element_by_id(id) or { panic('missing ${id}') }
+		box := root.find_box(i64(element.as_node().unique_id())) or {
+			panic('missing ${id} paint box')
+		}
+		culled := tree.context_is_backface_culled(box.accumulated_visual_context_index, painting.ScrollStateSnapshot{})
+		assert culled == (id == 'flipped')
+	}
+}
+
 fn test_typed_paint_adapter_preserves_large_committed_text_fragment() {
 	text := ('word '.repeat(2048)).trim_space()
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #text { white-space: nowrap }</style><body><p id="text">${text}</p></body>')

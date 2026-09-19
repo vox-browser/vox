@@ -452,6 +452,7 @@ pub fn run_document_layout_for_tree_dump(document &dom.Document, viewport_width 
 fn run_document_layout_with_renderer_mode(document &dom.Document, viewport_width f64,
 	viewport_height f64, build_paint_tree bool) ?DocumentLayoutResult {
 	mut mutable_document := unsafe { &dom.Document(document) }
+	previous_layout_handle := mutable_document.layout_engine_handle()
 	old_viewport := mutable_document.viewport_rect()
 	viewport_changed := old_viewport.x != 0 || old_viewport.y != 0
 		|| old_viewport.width != viewport_width || old_viewport.height != viewport_height
@@ -484,7 +485,14 @@ fn run_document_layout_with_renderer_mode(document &dom.Document, viewport_width
 	css.begin_style_profile()
 	mutable_document.update_layout(.debugging)
 	css.end_style_profile()
-	result := document_layout_result(document) or { return none }
+	mut result := document_layout_result(document) or { return none }
+	// A transform/opacity/filter animation can invalidate only painting. The
+	// typed layout tree then remains current, but the compatibility renderer
+	// transport still has to observe the freshly applied computed values.
+	if build_paint_tree && previous_layout_handle != unsafe { nil }
+		&& mutable_document.layout_engine_handle() == previous_layout_handle && result.needs_repaint {
+		refresh_document_paint_tree(document, mut result, viewport_width, viewport_height)
+	}
 	return DocumentLayoutResult{
 		root: result.root
 		state: result.state

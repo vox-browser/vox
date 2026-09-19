@@ -508,6 +508,10 @@ pub mut:
 	// source order. `paint_transform` remains the old cumulative compatibility
 	// value for callers which construct BlockBox trees directly.
 	own_paint_transform [6]f64
+	// Full transform retained for 3D backface visibility. The affine field above
+	// remains the renderer's projection of the element's z=0 plane.
+	own_paint_transform_4x4      css.FloatMatrix4x4
+	uses_own_paint_transform_4x4 bool
 	// Cumulative CSS 2D transform in document coordinates. An all-zero value is the compact identity
 	// representation used by boxes which do not establish a transformed paint subtree.
 	paint_transform [6]f64
@@ -521,6 +525,7 @@ mut:
 	sticky_scroll_frame_index                      int
 	accumulated_visual_context_index               int
 	accumulated_visual_context_for_descendants_idx int
+	plane_root_for_descendants_idx                 int
 	fixed_background_visual_context                ?int
 	fixed_to_viewport                              bool
 	// PaintableBox retains one Scrollbar object per axis. Their hover/grab state
@@ -9884,6 +9889,18 @@ fn resolved_computed_transform_matrix(computed &css.ComputedProperties, border_l
 	origin_x := origin.x.to_px(context, css.CSSPixels.nearest_value_for(border_width)).to_double()
 	origin_y := origin.y.to_px(context, css.CSSPixels.nearest_value_for(border_height)).to_double()
 	return affine_around_origin(matrix, border_left + origin_x, border_top + origin_y)
+}
+
+fn resolved_computed_transform_4x4_matrix(computed &css.ComputedProperties, border_left f64,
+	border_top f64, border_width f64, border_height f64) css.FloatMatrix4x4 {
+	matrix := css.resolve_computed_transform_4x4_matrix(computed, border_width, border_height) or {
+		return css.FloatMatrix4x4.identity()
+	}
+	origin := computed.transform_origin()
+	context := computed.length_resolution_context()
+	origin_x := border_left + origin.x.to_px(context, css.CSSPixels.nearest_value_for(border_width)).to_double()
+	origin_y := border_top + origin.y.to_px(context, css.CSSPixels.nearest_value_for(border_height)).to_double()
+	return css.translation_matrix_4x4(origin_x, origin_y, 0).multiply(matrix).multiply(css.translation_matrix_4x4(-origin_x, -origin_y, 0))
 }
 
 // Whether a margin property's cascaded value is the keyword `auto`.

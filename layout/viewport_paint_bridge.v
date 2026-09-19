@@ -41,6 +41,23 @@ fn install_document_painting_bridge(document &dom.Document, result &DocumentLayo
 	}
 }
 
+// Paint-only style changes do not run Layout::LayoutState::commit upstream:
+// retained Paintable objects read the layout node's newly applied style when
+// paint properties are rebuilt. BlockBox is this port's renderer transport
+// snapshot, so refresh that snapshot from the retained typed tree without
+// needlessly rebuilding layout geometry.
+fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayoutResult,
+	viewport_width f64, viewport_height f64) {
+	result.paint_tree = renderer_box_from_document_layout_result(result, viewport_width, viewport_height)
+	result.display_list_commands.clear()
+	result.display_list = unsafe { nil }
+	result.needs_repaint = true
+	result.needs_to_refresh_scroll_state = true
+	viewport_invalidate_stacking_context(voidptr(&result))
+	install_document_painting_bridge(document, &result)
+	viewport_assign_accumulated_visual_contexts(voidptr(&result))
+}
+
 // Document::update_layout() builds this cache after committing paintables.
 // Keep the concrete PaintableBox wrappers at the DOM/Painting cycle boundary;
 // the HTML event loop can then perform proximity checks without walking the
@@ -433,33 +450,75 @@ fn compatibility_corner_radii(radii BoxRadii) painting.CornerRadii {
 	}
 }
 
+fn compatibility_perspective_visual_data(box &BlockBox,
+	computed &css.ComputedValues) ?painting.PerspectiveVisualData {
+	distance := computed.perspective() or { return none }
+	if distance.to_double() == 0 {
+		return none
+	}
+	border_box := box.border_box()
+	origin := computed.perspective_origin().resolved(computed.length_resolution_context(), css.CSSPixelRect.new(border_box.x, border_box.y, border_box.width, border_box.height))
+	perspective := css.FloatMatrix4x4.from_values(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -1.0 / distance.to_double(), 1)
+	matrix := css.translation_matrix_4x4(origin.x().to_double(), origin.y().to_double(), 0).multiply(perspective).multiply(css.translation_matrix_4x4(-origin.x().to_double(), -origin.y().to_double(), 0))
+	return painting.PerspectiveVisualData{
+		matrix_4x4: matrix
+		uses_matrix_4x4: true
+	}
+}
+
 fn assign_compatibility_visual_contexts(mut box BlockBox, visual_parent ?&BlockBox, boxes_by_layout map[u64]&BlockBox, mut tree painting.AccumulatedVisualContextTree) {
 	box.fixed_background_visual_context = none
 	mut inherited_state := 0
+	mut inherited_plane_root := 0
 	mut fixed_to_viewport := false
 	if box.layout_handle != unsafe { nil } {
 		node := unsafe { &Node(box.layout_handle) }
 		if node.is_fixed_position() {
-			inherited_state = 0
-			fixed_to_viewport = true
+			if containing_block := node.containing_block() {
+				containing_node := unsafe { &Node(containing_block) }
+				if !containing_node.is_viewport() {
+					if containing_box := boxes_by_layout[u64(voidptr(containing_block))] {
+						inherited_state = containing_box.accumulated_visual_context_for_descendants_idx
+						inherited_plane_root = containing_box.plane_root_for_descendants_idx
+						fixed_to_viewport = containing_box.fixed_to_viewport
+					}
+				} else {
+					fixed_to_viewport = true
+				}
+			} else {
+				fixed_to_viewport = true
+			}
 		} else if node.is_absolutely_positioned() {
 			if containing_block := node.containing_block() {
 				if containing_box := boxes_by_layout[u64(voidptr(containing_block))] {
 					inherited_state = containing_box.accumulated_visual_context_for_descendants_idx
+					inherited_plane_root = containing_box.plane_root_for_descendants_idx
 					fixed_to_viewport = containing_box.fixed_to_viewport
 				}
 			}
 		} else if parent := visual_parent {
 			inherited_state = parent.accumulated_visual_context_for_descendants_idx
+			inherited_plane_root = parent.plane_root_for_descendants_idx
 			fixed_to_viewport = parent.fixed_to_viewport
 		}
 	} else if parent := visual_parent {
 		inherited_state = parent.accumulated_visual_context_for_descendants_idx
+		inherited_plane_root = parent.plane_root_for_descendants_idx
 		fixed_to_viewport = parent.fixed_to_viewport
 	}
 	box.fixed_to_viewport = fixed_to_viewport
 
 	mut own_state := inherited_state
+	mut enters_3d_sorting_plane := false
+	mut needs_synthetic_3d_plane := false
+	if box.layout_handle != unsafe { nil } {
+		node := unsafe { &Node(box.layout_handle) }
+		enters_3d_sorting_plane = node.participates_in_a_3d_rendering_context()
+			|| node.establishes_or_extends_a_3d_rendering_context()
+		needs_synthetic_3d_plane = node.establishes_or_extends_a_3d_rendering_context()
+			&& !box.uses_own_paint_transform_4x4
+			&& affine_is_compact_identity(box.own_paint_transform)
+	}
 	if box.sticky_scroll_frame_index > 0 {
 		own_state = tree.append(painting.ScrollVisualData{
 			scroll_frame_index: box.sticky_scroll_frame_index
@@ -474,10 +533,35 @@ fn assign_compatibility_visual_contexts(mut box BlockBox, visual_parent ?&BlockB
 			filter: gfx_filter
 		}, own_state)
 	}
-	if !affine_is_compact_identity(box.own_paint_transform) {
+	if box.uses_own_paint_transform_4x4 || !affine_is_compact_identity(box.own_paint_transform) {
 		own_state = tree.append(painting.TransformVisualData{
 			matrix: compatibility_painting_affine(box.own_paint_transform)
+			matrix_4x4: box.own_paint_transform_4x4
+			uses_matrix_4x4: box.uses_own_paint_transform_4x4
+			resets_backface_culling: enters_3d_sorting_plane
 		}, own_state)
+	} else if needs_synthetic_3d_plane {
+		// Preserve-3d establishes a sorting plane even when the element has no
+		// transform. Keep that plane explicit so it can escape an ancestor's
+		// hidden back face, matching VisualContext::build_box_contexts().
+		own_state = tree.append(painting.TransformVisualData{
+			resets_backface_culling: true
+		}, own_state)
+	}
+	mut plane_root_for_descendants := own_state
+	if box.layout_handle != unsafe { nil } {
+		node := unsafe { &Node(box.layout_handle) }
+		computed := node.computed_values()
+		if computed.backface_visibility() == .hidden && node.is_transformable() {
+			own_state = tree.append(painting.BackfaceVisibilityVisualData{
+				plane_root_index: inherited_plane_root
+			}, own_state)
+		}
+		plane_root_for_descendants = if node.establishes_or_extends_a_3d_rendering_context() {
+			inherited_plane_root
+		} else {
+			own_state
+		}
 	}
 	if css_clip := box.css_clip {
 		own_state = tree.append(painting.ClipVisualData{
@@ -549,6 +633,12 @@ fn assign_compatibility_visual_contexts(mut box BlockBox, visual_parent ?&BlockB
 	}
 
 	mut descendants_state := own_state
+	if box.layout_handle != unsafe { nil } {
+		node := unsafe { &Node(box.layout_handle) }
+		if perspective := compatibility_perspective_visual_data(box, node.computed_values()) {
+			descendants_state = tree.append(perspective, descendants_state)
+		}
+	}
 	if clip := box.overflow_clip {
 		descendants_state = tree.append(painting.ClipVisualData{
 			rect: compatibility_rounded_int_rect(clip.rect)
@@ -562,6 +652,7 @@ fn assign_compatibility_visual_contexts(mut box BlockBox, visual_parent ?&BlockB
 		}, descendants_state)
 	}
 	box.accumulated_visual_context_for_descendants_idx = descendants_state
+	box.plane_root_for_descendants_idx = plane_root_for_descendants
 
 	for child_index := 0; child_index < box.children.len; child_index++ {
 		mut child := unsafe { &box.children[child_index] }
@@ -1085,14 +1176,17 @@ fn viewport_invalidate_all_paint_caches(target voidptr) {
 
 struct CompatibilityFlattenedVisualContext {
 mut:
-	transform     [6]f64 = [f64(1), 0, 0, 1, 0, 0]!
-	has_clip      bool
-	clip          LayoutRect
-	clips         []PaintClip
-	clip_list     &PaintClipList = unsafe { nil }
-	layers        []PaintVisualLayer
-	layer_list    &PaintVisualLayerList = unsafe { nil }
-	group_opacity f64 = 1.0
+	transform       [6]f64 = [f64(1), 0, 0, 1, 0, 0]!
+	matrix_4x4      css.FloatMatrix4x4
+	matrices_4x4    map[int]css.FloatMatrix4x4
+	backface_culled bool
+	has_clip        bool
+	clip            LayoutRect
+	clips           []PaintClip
+	clip_list       &PaintClipList = unsafe { nil }
+	layers          []PaintVisualLayer
+	layer_list      &PaintVisualLayerList = unsafe { nil }
+	group_opacity   f64 = 1.0
 }
 
 fn compatibility_affine_map_rect(matrix [6]f64, rect LayoutRect) LayoutRect {
@@ -1217,19 +1311,40 @@ fn apply_compatibility_visual_context_chain(tree &painting.AccumulatedVisualCont
 				node.data.matrix.d, node.data.matrix.e, node.data.matrix.f]!
 			around_origin := affine_around_origin(matrix, node.data.origin.x, node.data.origin.y)
 			flattened.transform = multiply_affine(flattened.transform, around_origin)
+			flattened.matrix_4x4 = flattened.matrix_4x4.multiply(node.data.matrix_including_origin_4x4())
+			if node.data.resets_backface_culling {
+				flattened.backface_culled = false
+			}
 		}
 		painting.PerspectiveVisualData {
 			matrix := [node.data.matrix.a, node.data.matrix.b, node.data.matrix.c,
 				node.data.matrix.d, node.data.matrix.e, node.data.matrix.f]!
 			flattened.transform = multiply_affine(flattened.transform, matrix)
+			resolved := if node.data.uses_matrix_4x4 {
+				node.data.matrix_4x4
+			} else {
+				css.FloatMatrix4x4.from_values(node.data.matrix.a, node.data.matrix.c, 0, node.data.matrix.e, node.data.matrix.b, node.data.matrix.d, 0, node.data.matrix.f, 0, 0, 1, 0, 0, 0, 0, 1)
+			}
+			flattened.matrix_4x4 = flattened.matrix_4x4.multiply(resolved)
+		}
+		painting.BackfaceVisibilityVisualData {
+			plane_root := flattened.matrices_4x4[node.data.plane_root_index] or {
+				css.FloatMatrix4x4.identity()
+			}
+			if !flattened.backface_culled
+				&& painting.should_cull_back_face(flattened.matrix_4x4, plane_root) {
+				flattened.backface_culled = true
+			}
 		}
 		painting.ScrollVisualData {
 			offset := snapshot.device_offset_for_index(node.data.scroll_frame_index)
 			flattened.transform = multiply_affine(flattened.transform, translated_affine(offset.x, offset.y))
+			flattened.matrix_4x4 = flattened.matrix_4x4.multiply(css.translation_matrix_4x4(offset.x, offset.y, 0))
 		}
 		painting.ScrollCompensationVisualData {
 			offset := snapshot.device_offset_for_index(node.data.scroll_frame_index)
 			flattened.transform = multiply_affine(flattened.transform, translated_affine(-offset.x, -offset.y))
+			flattened.matrix_4x4 = flattened.matrix_4x4.multiply(css.translation_matrix_4x4(-offset.x, -offset.y, 0))
 		}
 		painting.ClipVisualData {
 			local_clip := LayoutRect{
@@ -1426,6 +1541,7 @@ fn apply_compatibility_visual_context_chain(tree &painting.AccumulatedVisualCont
 			}
 		}
 	}
+	flattened.matrices_4x4[index] = flattened.matrix_4x4
 }
 
 // Flatten the translated AccumulatedVisualContext tree for the immediate-mode
@@ -1433,6 +1549,7 @@ fn apply_compatibility_visual_context_chain(tree &painting.AccumulatedVisualCont
 // affine and effective clip are copied onto a replayed command.
 fn flatten_compatibility_visual_context(tree painting.AccumulatedVisualContextTree, index int, snapshot painting.ScrollStateSnapshot) CompatibilityFlattenedVisualContext {
 	mut flattened := CompatibilityFlattenedVisualContext{}
+	flattened.matrices_4x4[0] = css.FloatMatrix4x4.identity()
 	apply_compatibility_visual_context_chain(&tree, index, snapshot, mut flattened)
 	if flattened.clips.len > 0 {
 		flattened.clip_list = &PaintClipList{
@@ -1560,6 +1677,9 @@ fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintSt
 				flattened := flatten_compatibility_visual_context(tree, context_index, snapshot)
 				flattened_contexts[context_index] = flattened
 				flattened
+			}
+			if context.backface_culled {
+				continue
 			}
 			command.transform = context.transform
 			command.fixed_to_viewport = step.box.fixed_to_viewport

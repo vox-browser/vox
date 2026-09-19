@@ -478,6 +478,43 @@ pub fn (n &Node) has_css_transform() bool {
 		|| computed.translate() != none || computed.scale() != none
 }
 
+// https://drafts.csswg.org/css-transforms-1/#transformable-element
+pub fn (n &Node) is_transformable() bool {
+	if n.is_svg_box() || n.is_svg_svg_box() || n.is_svg_foreign_object_box() {
+		return (n.is_svg_graphics_box() && !n.is_svg_mask_box()) || n.is_svg_svg_box()
+			|| n.is_svg_foreign_object_box()
+	}
+	dom_node := n.dom_node() or {
+		return n.is_generated_for_pseudo_element() && n.is_box()
+	}
+	if dom_node.as_element() == none || !n.is_box() {
+		return false
+	}
+	display := n.display()
+	if display.is_table_column() || display.is_table_column_group() {
+		return false
+	}
+	return !n.is_inline() || n.is_atomic_inline()
+}
+
+pub fn (n &Node) establishes_or_extends_a_3d_rendering_context() bool {
+	// FIXME: Use the used transform-style value after grouping properties flatten it.
+	return n.is_transformable() && n.computed_values().transform_style() == .preserve_3d
+}
+
+// https://drafts.csswg.org/css-transforms-2/#3d-rendering-contexts
+pub fn (n &Node) participates_in_a_3d_rendering_context() bool {
+	mut ancestor := n.parent()
+	for ancestor != none {
+		candidate := ancestor or { return false }
+		if !candidate.is_anonymous() {
+			return candidate.establishes_or_extends_a_3d_rendering_context()
+		}
+		ancestor = candidate.parent()
+	}
+	return false
+}
+
 // NodeWithStyle::is_scroll_container(). The viewport intentionally behaves as a scroll container
 // even though its computed overflow is visible.
 pub fn (n &Node) is_scroll_container() bool {
@@ -695,6 +732,11 @@ pub fn (n &Node) establishes_stacking_context() bool {
 	if computed.transform_style() == .preserve_3d || will_change.has_property(.transform_style) {
 		return true
 	}
+	if (computed.backface_visibility() == .hidden
+		|| will_change.has_property(.backface_visibility)) && n.is_transformable()
+		&& n.participates_in_a_3d_rendering_context() {
+		return true
+	}
 	return computed.opacity() < 1.0 || will_change.has_property(.opacity)
 }
 
@@ -734,6 +776,11 @@ pub fn (n &Node) computed_values_establish_absolute_positioning_containing_block
 	}
 	if computed.transform_style() == .preserve_3d
 		|| will_change.has_property(.transform_style) {
+		return true
+	}
+	if (computed.backface_visibility() == .hidden
+		|| will_change.has_property(.backface_visibility)) && n.is_transformable()
+		&& n.participates_in_a_3d_rendering_context() {
 		return true
 	}
 	return false
@@ -792,6 +839,11 @@ pub fn (n &Node) establishes_a_fixed_positioning_containing_block() bool {
 	}
 	if computed.transform_style() == .preserve_3d
 		|| will_change.has_property(.transform_style) {
+		return true
+	}
+	if (computed.backface_visibility() == .hidden
+		|| will_change.has_property(.backface_visibility)) && n.is_transformable()
+		&& n.participates_in_a_3d_rendering_context() {
 		return true
 	}
 	return false

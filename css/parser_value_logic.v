@@ -1749,6 +1749,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.transform_style {
 			return parser.parse_transform_style_value(mut tokens)
 		}
+		.backface_visibility {
+			return parser.parse_backface_visibility_value(mut tokens)
+		}
 		.transition_behavior {
 			return parser.parse_transition_behavior_value(mut tokens)
 		}
@@ -8118,6 +8121,11 @@ fn (mut parser Parser) parse_transform_style_value(mut tokens ComponentValueStre
 	return parse_property_keyword_value(mut tokens, ['flat', 'preserve-3d'])
 }
 
+fn (mut parser Parser) parse_backface_visibility_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['visible', 'hidden'])
+}
+
 fn (mut parser Parser) parse_unicode_bidi_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['bidi-override', 'embed', 'isolate',
@@ -8338,7 +8346,8 @@ fn (mut parser Parser) parse_scroll_snap_align_value(mut tokens ComponentValueSt
 	_ = parser
 	first := parse_keyword_from_set_for_value_logic(mut tokens, ['none', 'start', 'end', 'center']) or { return none }
 	mut transaction := tokens.clone()
-	second := parse_keyword_from_set_for_value_logic(mut transaction, ['none', 'start', 'end', 'center']) or { return first }
+	second := parse_keyword_from_set_for_value_logic(mut transaction, ['none', 'start', 'end',
+		'center']) or { return first }
 	tokens = transaction
 	return StyleValue(StyleValueList.create([first, second], .space, .yes))
 }
@@ -8354,14 +8363,18 @@ fn (mut parser Parser) parse_scroll_snap_type_value(mut tokens ComponentValueStr
 	_ = parser
 	// none | [ x | y | block | inline | both ] [ mandatory | proximity ]?
 	mut none_transaction := tokens.clone()
-	if none_value := parse_keyword_from_set_for_value_logic(mut none_transaction, ['none']) {
+	if none_value := parse_keyword_from_set_for_value_logic(mut none_transaction, [
+		'none',
+	]) {
 		tokens = none_transaction
 		return none_value
 	}
 	axis := parse_keyword_from_set_for_value_logic(mut tokens, ['x', 'y', 'block', 'inline', 'both']) or { return none }
 	mut strictness_transaction := tokens.clone()
-	strictness := parse_keyword_from_set_for_value_logic(mut strictness_transaction, ['mandatory',
-		'proximity']) or { return axis }
+	strictness := parse_keyword_from_set_for_value_logic(mut strictness_transaction, [
+		'mandatory',
+		'proximity',
+	]) or { return axis }
 	tokens = strictness_transaction
 	// Proximity is the default strictness and is omitted from the shortest
 	// serialization, matching upstream's computed value representation.

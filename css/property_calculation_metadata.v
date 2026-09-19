@@ -493,6 +493,9 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		'box-sizing' {
 			PropertyID.box_sizing
 		}
+		'backface-visibility' {
+			PropertyID.backface_visibility
+		}
 		'break-after' {
 			PropertyID.break_after
 		}
@@ -1607,6 +1610,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.box_decoration_break { 'box-decoration-break' }
 		.box_shadow { 'box-shadow' }
 		.box_sizing { 'box-sizing' }
+		.backface_visibility { 'backface-visibility' }
 		.break_after { 'break-after' }
 		.break_before { 'break-before' }
 		.break_inside { 'break-inside' }
@@ -2086,6 +2090,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 		.box_decoration_break { 'slice' }
 		.box_shadow { 'none' }
 		.box_sizing { 'content-box' }
+		.backface_visibility { 'visible' }
 		.break_after { 'auto' }
 		.break_before { 'auto' }
 		.break_inside { 'auto' }
@@ -2319,8 +2324,12 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 		.ry { 'auto' }
 		.scale { 'none' }
 		.scroll_behavior { 'auto' }
-		.scroll_margin, .scroll_margin_block, .scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top { '0' }
-		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top { 'auto' }
+		.scroll_margin, .scroll_margin_block, .scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top {
+			'0'
+		}
+		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
+			'auto'
+		}
 		.scroll_snap_align { 'none' }
 		.scroll_snap_stop { 'normal' }
 		.scroll_snap_type { 'none' }
@@ -2406,6 +2415,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
+		.backface_visibility { AnimationType.discrete }
 		.scroll_snap_align, .scroll_snap_stop, .scroll_snap_type { AnimationType.discrete }
 		.scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
 			AnimationType.by_computed_value
@@ -2445,6 +2455,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.backface_visibility { true }
 		.scroll_snap_align, .scroll_snap_stop, .scroll_snap_type { true }
 		.color_interpolation_filters { true }
 		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
@@ -2510,7 +2521,7 @@ pub fn property_affects_layout(property_id PropertyID) bool {
 
 pub fn property_affects_stacking_context(property_id PropertyID) bool {
 	return match property_id {
-		.all, .backdrop_filter, .clip_path, .contain, .container_type, .filter, .mask_image, .opacity, .rotate, .scale, .transform, .translate, .view_transition_name, .will_change, .z_index {
+		.all, .backdrop_filter, .backface_visibility, .clip_path, .contain, .container_type, .filter, .mask_image, .opacity, .rotate, .scale, .transform, .translate, .view_transition_name, .will_change, .z_index {
 			true
 		}
 		else { false }
@@ -2935,6 +2946,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		}
 		.box_sizing {
 			lowercase_value in ['border-box', 'content-box']
+		}
+		.backface_visibility {
+			lowercase_value in ['visible', 'hidden']
 		}
 		.caption_side {
 			lowercase_value in ['top', 'bottom']

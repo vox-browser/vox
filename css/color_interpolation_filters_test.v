@@ -8,7 +8,7 @@ fn color_interpolation_filters_serialization(text string) ?string {
 }
 
 fn test_color_interpolation_filters_metadata_and_parsing() {
-	assert number_of_longhand_properties == 353
+	assert number_of_longhand_properties == 354
 	assert last_longhand_property_id() == .vector_effect
 	assert property_id_from_string('color-interpolation-filters')? == .color_interpolation_filters
 	assert property_id_from_string('COLOR-INTERPOLATION-FILTERS')? == .color_interpolation_filters

@@ -27,13 +27,23 @@ pub fn (clip ClipVisualData) contains(point IntPoint) bool {
 
 pub struct TransformVisualData {
 pub:
-	origin Point
-	matrix Affine
+	origin                  Point
+	matrix                  Affine
+	matrix_4x4              css.FloatMatrix4x4
+	uses_matrix_4x4         bool
+	resets_backface_culling bool
 }
 
 pub struct PerspectiveVisualData {
 pub:
-	matrix Affine
+	matrix          Affine
+	matrix_4x4      css.FloatMatrix4x4
+	uses_matrix_4x4 bool
+}
+
+pub struct BackfaceVisibilityVisualData {
+pub:
+	plane_root_index int
 }
 
 pub enum ClipPathSegmentKind {
@@ -218,6 +228,7 @@ pub type VisualContextData = ClipPathVisualData
 	| ClipVisualData
 	| EffectsVisualData
 	| PerspectiveVisualData
+	| BackfaceVisibilityVisualData
 	| ScrollCompensationVisualData
 	| ScrollVisualData
 	| SVGClipVisualData
@@ -318,6 +329,83 @@ fn inverse_map_about_origin(point Point, matrix Affine, origin Point) ?Point {
 	return inverse.map_point(point.subtract(origin)).add(origin)
 }
 
+fn affine_matrix_4x4(matrix Affine) css.FloatMatrix4x4 {
+	return css.FloatMatrix4x4.from_values(matrix.a, matrix.c, 0, matrix.e, matrix.b, matrix.d, 0, matrix.f, 0, 0, 1, 0, 0, 0, 0, 1)
+}
+
+pub fn (transform TransformVisualData) matrix_including_origin_4x4() css.FloatMatrix4x4 {
+	matrix := if transform.uses_matrix_4x4 {
+		transform.matrix_4x4
+	} else {
+		affine_matrix_4x4(transform.matrix)
+	}
+	return css.translation_matrix_4x4(transform.origin.x, transform.origin.y, 0).multiply(matrix).multiply(css.translation_matrix_4x4(-transform.origin.x, -transform.origin.y, 0))
+}
+
+fn (perspective PerspectiveVisualData) resolved_matrix_4x4() css.FloatMatrix4x4 {
+	return if perspective.uses_matrix_4x4 {
+		perspective.matrix_4x4
+	} else {
+		affine_matrix_4x4(perspective.matrix)
+	}
+}
+
+pub fn should_cull_back_face(accumulated_matrix css.FloatMatrix4x4,
+	plane_root_matrix css.FloatMatrix4x4) bool {
+	inverse_plane_root := plane_root_matrix.inverse() or { return false }
+	return css.is_back_face_visible(inverse_plane_root.multiply(accumulated_matrix))
+}
+
+fn visual_context_local_matrix(node AccumulatedVisualContextNode,
+	snapshot ScrollStateSnapshot) css.FloatMatrix4x4 {
+	return match node.data {
+		TransformVisualData { node.data.matrix_including_origin_4x4() }
+		PerspectiveVisualData { node.data.resolved_matrix_4x4() }
+		ScrollVisualData {
+			offset := snapshot.device_offset_for_index(node.data.scroll_frame_index)
+			css.translation_matrix_4x4(offset.x, offset.y, 0)
+		}
+		ScrollCompensationVisualData {
+			offset := snapshot.device_offset_for_index(node.data.scroll_frame_index)
+			css.translation_matrix_4x4(-offset.x, -offset.y, 0)
+		}
+		else { css.FloatMatrix4x4.identity() }
+	}
+}
+
+pub fn (tree AccumulatedVisualContextTree) context_is_backface_culled(index int,
+	snapshot ScrollStateSnapshot) bool {
+	if index <= 0 || index >= tree.nodes.len {
+		return false
+	}
+	chain := tree.build_ancestor_chain(index)
+	mut accumulated := css.FloatMatrix4x4.identity()
+	mut matrices := map[int]css.FloatMatrix4x4{}
+	mut culled := false
+	matrices[0] = accumulated
+	for reverse_index := chain.len - 1; reverse_index >= 0; reverse_index-- {
+		node_index := chain[reverse_index]
+		node := tree.nodes[node_index]
+		accumulated = accumulated.multiply(visual_context_local_matrix(node, snapshot))
+		matrices[node_index] = accumulated
+		if node.data is TransformVisualData && node.data.resets_backface_culling {
+			// A transform plane participating in (or establishing) a 3D sorting
+			// context is independently culled. An ancestor's hidden back face
+			// therefore does not suppress this plane's content.
+			culled = false
+		}
+		if node.data is BackfaceVisibilityVisualData {
+			plane_root := matrices[node.data.plane_root_index] or {
+				css.FloatMatrix4x4.identity()
+			}
+			if !culled && should_cull_back_face(accumulated, plane_root) {
+				culled = true
+			}
+		}
+	}
+	return culled
+}
+
 // AccumulatedVisualContextTree::build_ancestor_chain() uses Vector<size_t, 8>
 // upstream. Keep the common eight-node chain on the stack as well: pointer
 // movement and hit testing call this for several candidate paintables, while a
@@ -353,6 +441,9 @@ fn (tree AccumulatedVisualContextTree) transform_point_for_hit_test_through_node
 			}
 			point
 		}
+		BackfaceVisibilityVisualData {
+			point
+		}
 
 		// URL-referenced SVG masks/clips are paint-time masks in
 		// StackingContext::paint, not accumulated geometric clips. Upstream hit
@@ -369,6 +460,9 @@ pub fn (tree AccumulatedVisualContextTree) transform_point_for_hit_test(index in
 		return screen_point
 	}
 	if index < 0 || index >= tree.nodes.len {
+		return none
+	}
+	if tree.context_is_backface_culled(index, snapshot) {
 		return none
 	}
 	mut point := screen_point
@@ -482,6 +576,9 @@ pub fn (tree AccumulatedVisualContextTree) dump(index int) string {
 	return match tree.nodes[index].data {
 		PerspectiveVisualData {
 			'perspective'
+		}
+		BackfaceVisibilityVisualData {
+			'backface-hidden plane_root=${tree.nodes[index].data.plane_root_index}'
 		}
 		ScrollVisualData {
 			'scroll_frame_id=${tree.nodes[index].data.scroll_frame_index}' + if tree.nodes[index].data.is_sticky {

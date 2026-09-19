@@ -134,6 +134,81 @@ pub fn (matrix FloatMatrix4x4) at(row int, column int) f64 {
 	}
 }
 
+pub fn (left FloatMatrix4x4) multiply(right FloatMatrix4x4) FloatMatrix4x4 {
+	mut values := []f64{len: 16}
+	for row in 0 .. 4 {
+		for column in 0 .. 4 {
+			mut value := 0.0
+			for index in 0 .. 4 {
+				value += left.at(row, index) * right.at(index, column)
+			}
+			values[row * 4 + column] = value
+		}
+	}
+	return FloatMatrix4x4.from_values(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12], values[13], values[14], values[15])
+}
+
+pub fn translation_matrix_4x4(x f64, y f64, z f64) FloatMatrix4x4 {
+	return FloatMatrix4x4.from_values(1, 0, 0, x, 0, 1, 0, y, 0, 0, 1, z, 0, 0, 0, 1)
+}
+
+fn determinant_3x3(values []f64) f64 {
+	first := values[0] * (values[4] * values[8] - values[5] * values[7])
+	second := values[1] * (values[3] * values[8] - values[5] * values[6])
+	third := values[2] * (values[3] * values[7] - values[4] * values[6])
+	return first - second + third
+}
+
+pub fn (matrix FloatMatrix4x4) first_minor(excluded_row int, excluded_column int) f64 {
+	mut values := []f64{cap: 9}
+	for row in 0 .. 4 {
+		if row == excluded_row {
+			continue
+		}
+		for column in 0 .. 4 {
+			if column != excluded_column {
+				values << matrix.at(row, column)
+			}
+		}
+	}
+	return determinant_3x3(values)
+}
+
+pub fn (matrix FloatMatrix4x4) determinant() f64 {
+	mut determinant := 0.0
+	for column in 0 .. 4 {
+		sign := if column % 2 == 0 { 1.0 } else { -1.0 }
+		determinant += sign * matrix.at(0, column) * matrix.first_minor(0, column)
+	}
+	return determinant
+}
+
+pub fn (matrix FloatMatrix4x4) inverse() ?FloatMatrix4x4 {
+	determinant := matrix.determinant()
+	if determinant == 0 {
+		return none
+	}
+	mut values := []f64{len: 16}
+	for row in 0 .. 4 {
+		for column in 0 .. 4 {
+			// The adjugate is the transpose of the cofactor matrix.
+			sign := if (row + column) % 2 == 0 { 1.0 } else { -1.0 }
+			values[row * 4 + column] = sign * matrix.first_minor(column, row) / determinant
+		}
+	}
+	return FloatMatrix4x4.from_values(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12], values[13], values[14], values[15])
+}
+
+// The transformed plane normal faces away from the viewer when the z component
+// of its inverse-transpose is negative. This matches Gfx::is_back_face_visible().
+pub fn is_back_face_visible(matrix FloatMatrix4x4) bool {
+	determinant := matrix.determinant()
+	if determinant == 0 {
+		return false
+	}
+	return matrix.first_minor(2, 2) / determinant < 0
+}
+
 pub fn rotation_matrix(axis FloatVector3, angle_radians f64) FloatMatrix4x4 {
 	normalized_axis := axis.normalized()
 	x := normalized_axis.x
@@ -530,28 +605,28 @@ pub fn (function TransformFunction) to_string() string {
 }
 
 pub fn transform_function_from_string(value string) ?TransformFunction {
-	return match value {
+	return match value.to_lower() {
 		'matrix' { TransformFunction.matrix }
 		'matrix3d' { TransformFunction.matrix3d }
 		'perspective' { TransformFunction.perspective }
 		'translate' { TransformFunction.translate }
 		'translate3d' { TransformFunction.translate3d }
-		'translateX' { TransformFunction.translate_x }
-		'translateY' { TransformFunction.translate_y }
-		'translateZ' { TransformFunction.translate_z }
+		'translatex' { TransformFunction.translate_x }
+		'translatey' { TransformFunction.translate_y }
+		'translatez' { TransformFunction.translate_z }
 		'scale' { TransformFunction.scale }
 		'scale3d' { TransformFunction.scale3d }
-		'scaleX' { TransformFunction.scale_x }
-		'scaleY' { TransformFunction.scale_y }
-		'scaleZ' { TransformFunction.scale_z }
+		'scalex' { TransformFunction.scale_x }
+		'scaley' { TransformFunction.scale_y }
+		'scalez' { TransformFunction.scale_z }
 		'rotate' { TransformFunction.rotate }
 		'rotate3d' { TransformFunction.rotate3d }
-		'rotateX' { TransformFunction.rotate_x }
-		'rotateY' { TransformFunction.rotate_y }
-		'rotateZ' { TransformFunction.rotate_z }
+		'rotatex' { TransformFunction.rotate_x }
+		'rotatey' { TransformFunction.rotate_y }
+		'rotatez' { TransformFunction.rotate_z }
 		'skew' { TransformFunction.skew }
-		'skewX' { TransformFunction.skew_x }
-		'skewY' { TransformFunction.skew_y }
+		'skewx' { TransformFunction.skew_x }
+		'skewy' { TransformFunction.skew_y }
 		else { none }
 	}
 }
@@ -2301,10 +2376,42 @@ pub fn resolve_transform_2d_matrix(element &dom.Element, text string, reference_
 	return resolve_transform_style_value_2d_matrix(parsed, reference_width, reference_height, length_context)
 }
 
+pub fn resolve_transform_4x4_matrix(element &dom.Element, text string, reference_width f64,
+	reference_height f64, author_rules []&CSSRule) ?FloatMatrix4x4 {
+	parsed := parse_css_value_logic(.transform, text) or { return none }
+	mut transformations := []TransformationStyleValue{}
+	if parsed is TransformationStyleValue {
+		transformations << parsed
+	} else if parsed is StyleValueList {
+		for item in parsed.values() {
+			if item !is TransformationStyleValue {
+				return none
+			}
+			transformations << (item as TransformationStyleValue)
+		}
+	} else {
+		return FloatMatrix4x4.identity()
+	}
+	mut length_context := LengthResolutionContext.for_document(element.document())
+	font_size := CSSPixels.nearest_value_for(computed_font_size_px(element, author_rules))
+	length_context.font_metrics = computed_interpolation_font_metrics_for_size(font_size)
+	root_size := CSSPixels.nearest_value_for(root_font_size_px(element, author_rules))
+	length_context.root_font_metrics = computed_interpolation_font_metrics_for_size(root_size)
+	return resolve_transformations_4x4_matrix(transformations, reference_width, reference_height, length_context)
+}
+
 // Paintable::compute_transform() consumes the already-computed typed value and
 // the layout node's length context. This avoids re-running the compatibility
 // cascade and re-parsing transform text from the typed layout adapter.
 pub fn resolve_computed_transform_2d_matrix(computed &ComputedProperties, reference_width f64, reference_height f64) ?[6]f64 {
+	matrix := resolve_computed_transform_4x4_matrix(computed, reference_width, reference_height) or {
+		return none
+	}
+	return extract_2d_affine_transform(matrix)
+}
+
+pub fn resolve_computed_transform_4x4_matrix(computed &ComputedProperties, reference_width f64,
+	reference_height f64) ?FloatMatrix4x4 {
 	// ViewportPaintable::compute_transform() composes the individual transform
 	// properties before the legacy transform list, in this exact order.
 	mut transformations := []TransformationStyleValue{}
@@ -2332,7 +2439,7 @@ pub fn resolve_computed_transform_2d_matrix(computed &ComputedProperties, refere
 			return none
 		}
 	}
-	return resolve_transformations_2d_matrix(transformations, reference_width, reference_height, computed.length_resolution_context())
+	return resolve_transformations_4x4_matrix(transformations, reference_width, reference_height, computed.length_resolution_context())
 }
 
 fn resolve_transform_style_value_2d_matrix(parsed StyleValue, reference_width f64, reference_height f64, length_context LengthResolutionContext) ?[6]f64 {
@@ -2354,6 +2461,33 @@ fn resolve_transform_style_value_2d_matrix(parsed StyleValue, reference_width f6
 }
 
 fn resolve_transformations_2d_matrix(transformations []TransformationStyleValue, reference_width f64, reference_height f64, length_context LengthResolutionContext) ?[6]f64 {
+	matrix := resolve_transformations_4x4_matrix(transformations, reference_width, reference_height, length_context) or { return none }
+	return extract_2d_affine_transform(matrix)
+}
+
+pub fn extract_2d_affine_transform(matrix FloatMatrix4x4) ?[6]f64 {
+	if matrix.m13 != 0 || matrix.m23 != 0 || matrix.m31 != 0 || matrix.m32 != 0
+		|| matrix.m33 != 1 || matrix.m34 != 0 || matrix.m43 != 0 || matrix.m44 != 1 {
+		return none
+	}
+	return [f64(matrix.m11), matrix.m21, matrix.m12, matrix.m22, matrix.m14, matrix.m24]!
+}
+
+// Project the element's local z=0 plane when the homogeneous divisor is
+// constant. This preserves rotateX/rotateY/translateZ in the compact 2D native
+// renderer; matrices with perspective remain in the 4x4 context for culling.
+pub fn project_plane_to_affine_transform(matrix FloatMatrix4x4) ?[6]f64 {
+	if matrix.m41 != 0 || matrix.m42 != 0 || matrix.m44 == 0 {
+		return none
+	}
+	scale := 1.0 / matrix.m44
+	return [f64(matrix.m11 * scale), matrix.m21 * scale, matrix.m12 * scale, matrix.m22 * scale,
+		matrix.m14 * scale, matrix.m24 * scale]!
+}
+
+fn resolve_transformations_4x4_matrix(transformations []TransformationStyleValue,
+	reference_width f64, reference_height f64,
+	length_context LengthResolutionContext) ?FloatMatrix4x4 {
 	paintable_box := TransformPaintableBox{
 		reference_box: TransformReferenceBox{
 			width: CSSPixels.nearest_value_for(reference_width)
@@ -2361,15 +2495,10 @@ fn resolve_transformations_2d_matrix(transformations []TransformationStyleValue,
 		}
 		length_resolution_context: length_context
 	}
-	mut result := [f64(1), 0, 0, 1, 0, 0]!
+	mut result := FloatMatrix4x4.identity()
 	for transformation in transformations {
 		matrix := transformation.to_matrix(paintable_box) or { return none }
-		if matrix.m13 != 0 || matrix.m23 != 0 || matrix.m31 != 0 || matrix.m32 != 0 || matrix.m33 != 1 || matrix.m34 != 0 || matrix.m43 != 0 || matrix.m44 != 1 {
-			return none
-		}
-		function_matrix := [f64(matrix.m11), matrix.m21, matrix.m12, matrix.m22, matrix.m14,
-			matrix.m24]!
-		result = multiply_affine_2d(result, function_matrix)
+		result = result.multiply(matrix)
 	}
 	return result
 }

@@ -24,41 +24,41 @@ import os
 fn computed_properties_to_dom(computed &ComputedProperties) &dom.CSSComputedProperties_ {
 	display := computed.display()
 	return &dom.CSSComputedProperties_{
-		display_:                        dom.CSSDisplay_{
-			is_none_:           display.is_none()
-			is_list_item_:      display.is_list_item()
-			is_contents_:       display.is_contents()
+		display_: dom.CSSDisplay_{
+			is_none_: display.is_none()
+			is_list_item_: display.is_list_item()
+			is_contents_: display.is_contents()
 			is_inline_outside_: display.is_inline_outside()
-			is_flow_inside_:    display.is_flow_inside()
+			is_flow_inside_: display.is_flow_inside()
 			is_flow_root_inside_: display.is_flow_root_inside()
-			is_flex_inside_:    display.is_flex_inside()
-			is_grid_inside_:    display.is_grid_inside()
-			is_table_inside_:   display.is_table_inside()
-			is_math_inside_:    display.is_math_inside()
-			is_ruby_inside_:    display.is_ruby_inside()
-			is_block_outside_:  display.is_block_outside()
-			is_table_caption_:  display.is_table_caption()
-			is_table_cell_:     display.is_table_cell()
-			is_table_row_:      display.is_table_row()
+			is_flex_inside_: display.is_flex_inside()
+			is_grid_inside_: display.is_grid_inside()
+			is_table_inside_: display.is_table_inside()
+			is_math_inside_: display.is_math_inside()
+			is_ruby_inside_: display.is_ruby_inside()
+			is_block_outside_: display.is_block_outside()
+			is_table_caption_: display.is_table_caption()
+			is_table_cell_: display.is_table_cell()
+			is_table_row_: display.is_table_row()
 			is_table_row_group_: display.is_table_row_group()
 			is_table_header_group_: display.is_table_header_group()
 			is_table_footer_group_: display.is_table_footer_group()
 			is_table_column_: display.is_table_column()
 			is_table_column_group_: display.is_table_column_group()
 		}
-		non_animated_display_is_none_:   computed_display_is_none_ignoring_animations(computed)
-		overflow_x_:                     overflow_to_dom(computed.overflow_x())
-		overflow_y_:                     overflow_to_dom(computed.overflow_y())
-		content_visibility_:             content_visibility_to_dom(computed.content_visibility())
-		opacity_:                        computed.opacity()
-		visibility_:                     visibility_to_dom(computed.visibility())
-		font_weight_:                    computed.font_weight()
-		math_depth_:                     computed.math_depth()
-		math_style_:                     math_style_to_dom(computed.math_style())
-		view_transition_name_:           computed.view_transition_name()
-		anchor_names_:                   computed.anchor_names()
+		non_animated_display_is_none_: computed_display_is_none_ignoring_animations(computed)
+		overflow_x_: overflow_to_dom(computed.overflow_x())
+		overflow_y_: overflow_to_dom(computed.overflow_y())
+		content_visibility_: content_visibility_to_dom(computed.content_visibility())
+		opacity_: computed.opacity()
+		visibility_: visibility_to_dom(computed.visibility())
+		font_weight_: computed.font_weight()
+		math_depth_: computed.math_depth()
+		math_style_: math_style_to_dom(computed.math_style())
+		view_transition_name_: computed.view_transition_name()
+		anchor_names_: computed.anchor_names()
 		attempted_pseudo_class_matches_: attempted_pseudo_class_matches_to_dom(computed)
-		css_handle:                      voidptr(computed)
+		css_handle: voidptr(computed)
 	}
 }
 
@@ -183,13 +183,15 @@ fn invalidation_property_from_dom(property dom.InvalidationProperty) Invalidatio
 		.id { InvalidationProperty.id(property.name) }
 		.tag_name { InvalidationProperty.tag_name(property.name) }
 		.attribute { InvalidationProperty.attribute(property.name) }
-		.pseudo_class { InvalidationProperty.pseudo_class(pseudo_class_from_name(property.pseudo_class_name)) }
+		.pseudo_class {
+			InvalidationProperty.pseudo_class(pseudo_class_from_name(property.pseudo_class_name))
+		}
 	}
 }
 
 fn invalidation_property_to_dom(property InvalidationProperty) dom.InvalidationProperty {
 	return dom.InvalidationProperty{
-		type_:             match property.type_ {
+		type_: match property.type_ {
 			.invalidate_self { dom.InvalidationPropertyType.invalidate_self }
 			.invalidate_whole_subtree { dom.InvalidationPropertyType.invalidate_whole_subtree }
 			.class { dom.InvalidationPropertyType.class }
@@ -198,7 +200,7 @@ fn invalidation_property_to_dom(property InvalidationProperty) dom.InvalidationP
 			.attribute { dom.InvalidationPropertyType.attribute }
 			.pseudo_class { dom.InvalidationPropertyType.pseudo_class }
 		}
-		name:              property.name()
+		name: property.name()
 		pseudo_class_name: if property.type_ == .pseudo_class {
 			pseudo_class_name(property.pseudo_class)
 		} else {
@@ -222,7 +224,7 @@ fn invalidation_plan_to_dom(plan &InvalidationPlan) dom.InvalidationPlan {
 		descendant_rules << dom.DescendantInvalidationRule{
 			match_set: invalidation_set_to_dom(rule.match_set)
 			match_any: rule.match_any
-			payload:   invalidation_plan_to_dom(rule.payload)
+			payload: invalidation_plan_to_dom(rule.payload)
 		}
 	}
 	mut sibling_rules := []dom.SiblingInvalidationRule{}
@@ -233,18 +235,18 @@ fn invalidation_plan_to_dom(plan &InvalidationPlan) dom.InvalidationPlan {
 		sibling_rules << dom.SiblingInvalidationRule{
 			match_set: invalidation_set_to_dom(rule.match_set)
 			match_any: rule.match_any
-			reach:     match rule.reach {
+			reach: match rule.reach {
 				.adjacent { dom.SiblingInvalidationReach.adjacent }
 				.subsequent { dom.SiblingInvalidationReach.subsequent }
 			}
-			payload:   invalidation_plan_to_dom(rule.payload)
+			payload: invalidation_plan_to_dom(rule.payload)
 		}
 	}
 	return dom.InvalidationPlan{
-		invalidate_self:          plan.invalidate_self
+		invalidate_self: plan.invalidate_self
 		invalidate_whole_subtree: plan.invalidate_whole_subtree
-		descendant_rules:         descendant_rules
-		sibling_rules:            sibling_rules
+		descendant_rules: descendant_rules
+		sibling_rules: sibling_rules
 	}
 }
 
@@ -254,8 +256,7 @@ fn style_computer_invalidation_property_used_in_has_callback(target voidptr, pro
 	}
 	style_computer := unsafe { &StyleComputer(target) }
 	scope := unsafe { &StyleScope(dom_scope.css_handle) }
-	return style_computer.invalidation_property_used_in_has_selector(invalidation_property_from_dom(property),
-		scope)
+	return style_computer.invalidation_property_used_in_has_selector(invalidation_property_from_dom(property), scope)
 }
 
 fn style_computer_invalidation_plan_callback(target voidptr, properties []dom.InvalidationProperty, dom_scope &dom.StyleScope) dom.InvalidationPlan {
@@ -265,8 +266,7 @@ fn style_computer_invalidation_plan_callback(target voidptr, properties []dom.In
 	style_computer := unsafe { &StyleComputer(target) }
 	scope := unsafe { &StyleScope(dom_scope.css_handle) }
 	css_properties := properties.map(invalidation_property_from_dom(it))
-	return invalidation_plan_to_dom(style_computer.invalidation_plan_for_properties(css_properties,
-		scope))
+	return invalidation_plan_to_dom(style_computer.invalidation_plan_for_properties(css_properties, scope))
 }
 
 fn style_scope_may_have_has_selectors_callback(target voidptr) bool {
@@ -287,7 +287,7 @@ fn style_scope_have_local_link_selectors_callback(target voidptr) bool {
 fn element_has_feature_used_in_has_selector(element &dom.Element, data &StyleInvalidationData) bool {
 	if data.tag_names_used_in_has_selectors[element.local_name()]
 		|| ((element.namespace_uri() or { '' }) != 'http://www.w3.org/1999/xhtml'
-		&& data.tag_names_used_in_has_selectors[element.lowercased_local_name()])
+			&& data.tag_names_used_in_has_selectors[element.lowercased_local_name()])
 		|| (element.id() or { '' }) in data.ids_used_in_has_selectors {
 		return true
 	}
@@ -302,14 +302,16 @@ fn element_has_feature_used_in_has_selector(element &dom.Element, data &StyleInv
 			name := attribute.local_name()
 			if data.attribute_names_used_in_has_selectors[name]
 				|| ((element.namespace_uri() or { '' }) != 'http://www.w3.org/1999/xhtml'
-				&& data.attribute_names_used_in_has_selectors[name.to_lower()]) {
+					&& data.attribute_names_used_in_has_selectors[name.to_lower()]) {
 				return true
 			}
 		}
 	}
 	for pseudo_class, _ in data.pseudo_classes_used_in_has_selectors {
 		set := dom.StyleInvalidationSet{
-			properties: [invalidation_property_to_dom(InvalidationProperty.pseudo_class(pseudo_class))]
+			properties: [
+				invalidation_property_to_dom(InvalidationProperty.pseudo_class(pseudo_class)),
+			]
 		}
 		if element.includes_properties_from_invalidation_set(set) {
 			return true
@@ -573,8 +575,7 @@ pub fn sync_document_style_elements(document &dom.Document) {
 			if 'stylesheet' !in relations {
 				continue
 			}
-			active, selected_title := document_style_sheet_is_active(element.get_attribute_value('title'),
-				'alternate' in relations, element.has_attribute('disabled'), preferred_title)
+			active, selected_title := document_style_sheet_is_active(element.get_attribute_value('title'), 'alternate' in relations, element.has_attribute('disabled'), preferred_title)
 			preferred_title = selected_title
 			if !active {
 				continue
@@ -583,9 +584,9 @@ pub fn sync_document_style_elements(document &dom.Document) {
 			css_text, resolved_url := read_local_stylesheet(href, base_url) or { continue }
 			style_sources << DocumentStyleSource{
 				cache_key: 'link:${resolved_url}:${css_text}'
-				css_text:  css_text
-				location:  resolved_url
-				media:     element.get_attribute_value('media')
+				css_text: css_text
+				location: resolved_url
+				media: element.get_attribute_value('media')
 			}
 		}
 	}
@@ -629,8 +630,7 @@ pub fn sync_document_style_elements(document &dom.Document) {
 		font_computer.unload_fonts_from_css_rules(old_sheet.css_rules().rules)
 	}
 	for new_sheet in parsed {
-		font_computer.load_fonts_from_css_rules(new_sheet.css_rules().rules,
-			style_computer.font_face_set_)
+		font_computer.load_fonts_from_css_rules(new_sheet.css_rules().rules, style_computer.font_face_set_)
 	}
 	unsafe {
 		holder.embedded_sources = sources.clone()
@@ -848,33 +848,60 @@ pub fn css_style_computer_for(document &dom.Document) &StyleComputer {
 	}
 	style_computer := StyleComputer.new(document)
 	mutable_document.set_css_animation_timeline_update_hook(dom.DocumentCSSAnimationTimelineUpdateHook{
-		target:   voidptr(style_computer)
+		target: voidptr(style_computer)
 		callback: style_computer_document_timeline_update_callback
 	})
 	mutable_document.set_css_animation_event_hook(dom.DocumentCSSAnimationEventHook{
-		target:   voidptr(style_computer)
+		target: voidptr(style_computer)
 		dispatch: style_computer_dispatch_css_animation_event
 	})
 	mutable_document.style_computer = &dom.StyleComputer{
-		css_handle:                                 voidptr(style_computer)
+		css_handle: voidptr(style_computer)
 		invalidation_property_used_in_has_callback: style_computer_invalidation_property_used_in_has_callback
-		invalidation_plan_callback:                 style_computer_invalidation_plan_callback
-		shadow_root_may_match_host_callback:        style_computer_shadow_root_may_match_host_callback
-		recompute_style_callback:                   style_computer_recompute_style_callback
-		recompute_inherited_style_callback:         style_computer_recompute_inherited_style_callback
-		update_animated_style_callback:             style_computer_update_animated_style_callback
+		invalidation_plan_callback: style_computer_invalidation_plan_callback
+		shadow_root_may_match_host_callback: style_computer_shadow_root_may_match_host_callback
+		recompute_style_callback: style_computer_recompute_style_callback
+		recompute_inherited_style_callback: style_computer_recompute_inherited_style_callback
+		update_animated_style_callback: style_computer_update_animated_style_callback
 		build_registered_properties_cache_callback: style_computer_build_registered_properties_cache_callback
-		build_counter_style_cache_callback:         style_computer_build_counter_style_cache_callback
+		build_counter_style_cache_callback: style_computer_build_counter_style_cache_callback
 	}
 	mutable_document.set_theme_color_hook(dom.DocumentThemeColorHook{
-		target:        voidptr(document)
-		parse_color:   document_theme_color_parse_callback
+		target: voidptr(document)
+		parse_color: document_theme_color_parse_callback
 		media_matches: document_theme_color_media_matches_callback
 	})
 	install_document_background_style_hook(document)
 	install_document_scroll_style_hook(document)
 	install_document_style_hook(document)
 	return style_computer
+}
+
+// Whether the browser host needs to schedule another rendering update for a
+// running CSS animation or transition owned by this document.
+pub fn document_has_running_css_animations(document &dom.Document) bool {
+	dom_style_computer := document.style_computer
+	if dom_style_computer == unsafe { nil } || dom_style_computer.css_handle == unsafe { nil } {
+		return false
+	}
+	style_computer := unsafe { &StyleComputer(dom_style_computer.css_handle) }
+	if style_computer.css_animation_storage_ != unsafe { nil } {
+		for entry in style_computer.css_animation_storage_.entries {
+			if entry.animation.play_state() == .running {
+				return true
+			}
+		}
+	}
+	if style_computer.css_transition_storage_ != unsafe { nil } {
+		for _, bucket in style_computer.css_transition_storage_.associated_transitions {
+			for entry in bucket.entries {
+				if entry.transition.play_state_ == .running {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 fn document_background_layers_callback(_ voidptr, element &dom.Element) ?[]dom.BackgroundLayerData {
@@ -884,7 +911,7 @@ fn document_background_layers_callback(_ voidptr, element &dom.Element) ?[]dom.B
 	for index, _ in layers {
 		result << dom.BackgroundLayerData{
 			computed_properties_handle: voidptr(computed)
-			layer_index:                index
+			layer_index: index
 		}
 	}
 	return result
@@ -918,9 +945,9 @@ fn document_background_image_rendering_callback(_ voidptr, element &dom.Element)
 fn install_document_background_style_hook(document &dom.Document) {
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_background_style_hook(dom.DocumentBackgroundStyleHook{
-		target:                     voidptr(document)
-		background_color:           document_background_color_callback
-		background_layers:          document_background_layers_callback
+		target: voidptr(document)
+		background_color: document_background_color_callback
+		background_layers: document_background_layers_callback
 		background_image_rendering: document_background_image_rendering_callback
 	})
 }
@@ -928,8 +955,7 @@ fn install_document_background_style_hook(document &dom.Document) {
 fn document_scroll_margin_callback(_ voidptr, element &dom.Element) dom.ScrollMarginData {
 	computed := computed_properties_for_element(element) or { return dom.ScrollMarginData{} }
 	layout_node := element.as_node().layout_node() or { return dom.ScrollMarginData{} }
-	margin := computed.length_box(.scroll_margin_left, .scroll_margin_top, .scroll_margin_right,
-		.scroll_margin_bottom, LengthPercentageOrAuto.from_length(Length.make_px(0)))
+	margin := computed.length_box(.scroll_margin_left, .scroll_margin_top, .scroll_margin_right, .scroll_margin_bottom, LengthPercentageOrAuto.from_length(Length.make_px(0)))
 	context := LengthResolutionContext.for_layout_node(layout_node)
 	return dom.ScrollMarginData{
 		top: margin.top().to_px_or_zero(context, CSSPixels.new(0)).to_double()
@@ -946,8 +972,7 @@ fn document_scroll_padding_callback(_ voidptr, scrolling_box &dom.Node) dom.Scro
 		scrolling_box.as_element() or { return dom.ScrollMarginData{} }
 	}
 	computed := computed_properties_for_element(element) or { return dom.ScrollMarginData{} }
-	padding := computed.length_box(.scroll_padding_left, .scroll_padding_top, .scroll_padding_right,
-		.scroll_padding_bottom, LengthPercentageOrAuto.make_auto())
+	padding := computed.length_box(.scroll_padding_left, .scroll_padding_top, .scroll_padding_right, .scroll_padding_bottom, LengthPercentageOrAuto.make_auto())
 	abstract_element := dom.AbstractElement.new(element, none)
 	context := LengthResolutionContext.for_element(&abstract_element)
 	viewport := scrolling_box.document().viewport_rect()
@@ -962,8 +987,8 @@ fn document_scroll_padding_callback(_ voidptr, scrolling_box &dom.Node) dom.Scro
 fn install_document_scroll_style_hook(document &dom.Document) {
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_scroll_style_hook(dom.DocumentScrollStyleHook{
-		target:         voidptr(document)
-		scroll_margin:  document_scroll_margin_callback
+		target: voidptr(document)
+		scroll_margin: document_scroll_margin_callback
 		scroll_padding: document_scroll_padding_callback
 	})
 }
@@ -1006,16 +1031,14 @@ fn style_computer_recompute_style_callback(target voidptr, element &dom.Element)
 	style_computer := unsafe { &StyleComputer(target) }
 	mut abstract_element := dom.AbstractElement.new(element, none)
 	mut did_change_custom_properties := false
-	invalidation, _ := style_computer.recompute_style_with_invalidation(mut abstract_element,
-		&did_change_custom_properties)
+	invalidation, _ := style_computer.recompute_style_with_invalidation(mut abstract_element, &did_change_custom_properties)
 	return required_style_invalidation_to_dom(invalidation)
 }
 
 fn style_computer_recompute_inherited_style_callback(target voidptr, element &dom.Element) dom.RequiredInvalidationAfterStyleChange {
 	style_computer := unsafe { &StyleComputer(target) }
 	mut abstract_element := dom.AbstractElement.new(element, none)
-	return required_style_invalidation_to_dom(style_computer.recompute_inherited_style_with_invalidation(mut
-		abstract_element))
+	return required_style_invalidation_to_dom(style_computer.recompute_inherited_style_with_invalidation(mut abstract_element))
 }
 
 // The DOM->CSS callback DOM::Document.update_style() invokes: run the CSS style pass (recompute_style_for_subtree)
@@ -1097,16 +1120,14 @@ fn invalidate_elements_affected_by_pseudo_class_recursively(document &dom.Docume
 		mutable_style_computer.push_ancestor(element)
 		element_for_pop = element
 		if element.affected_by_pseudo_class(pseudo_class)
-			&& pseudo_class_matches_different_rule_set_after_state_change(document,
-				pseudo_class, new_node, element, rules, style_computer) {
+			&& pseudo_class_matches_different_rule_set_after_state_change(document, pseudo_class, new_node, element, rules, style_computer) {
 			mut mutable_element := unsafe { &dom.Element(element) }
 			mutable_element.set_needs_style_update(true)
 		}
 	}
 
 	for child in node.children_as_vector() {
-		invalidate_elements_affected_by_pseudo_class_recursively(document, pseudo_class,
-			new_node, child, rules, style_computer)
+		invalidate_elements_affected_by_pseudo_class_recursively(document, pseudo_class, new_node, child, rules, style_computer)
 	}
 
 	if element := element_for_pop {
@@ -1140,8 +1161,7 @@ fn document_pseudo_class_invalidation_callback(target voidptr, pseudo_class dom.
 		ancestor = current.parent()
 	}
 
-	invalidate_elements_affected_by_pseudo_class_recursively(document, pseudo_class,
-		new_node, common_ancestor, rules, style_computer)
+	invalidate_elements_affected_by_pseudo_class_recursively(document, pseudo_class, new_node, common_ancestor, rules, style_computer)
 
 	ancestor = common_ancestor.parent()
 	for ancestor != none {
@@ -1160,12 +1180,12 @@ fn document_pseudo_class_invalidation_callback(target voidptr, pseudo_class dom.
 pub fn install_document_style_hook(document &dom.Document) {
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_style_update_hook(dom.DocumentStyleUpdateHook{
-		target:                      voidptr(document)
-		callback:                    document_style_update_callback
+		target: voidptr(document)
+		callback: document_style_update_callback
 		invalidate_for_pseudo_class: document_pseudo_class_invalidation_callback
-		invalidate_size_dependents:  document_size_query_invalidation_callback
-		evaluate_media_rules:        document_evaluate_media_rules_callback
-		get_style_sheet_source:      document_get_style_sheet_source_callback
+		invalidate_size_dependents: document_size_query_invalidation_callback
+		evaluate_media_rules: document_evaluate_media_rules_callback
+		get_style_sheet_source: document_get_style_sheet_source_callback
 	})
 }
 
