@@ -305,6 +305,12 @@ replay. The same filter boundaries are retained inside SVG pattern tiles, and
 the compact script bridge exposes completed images and late `load` listeners so
 visibility changes do not strand a cached pre-load tile. The three new
 `feImage` reference cases are exact zero-pixel matches.
+The same script bridge now round-trips the reflected `src` property and
+`setAttribute("src", ...)` for image elements into the live DOM. Synchronously
+decoded replacements enter the translated HTML image update boundary and
+explicitly invalidate layout plus retained paint input, so an intrinsic-size
+replacement with unchanged dimensions still repaints. The upstream
+`svg-image-source-switch-same-size` reference pair is pixel-identical.
 Ladybird's new color-matrix reftest is an exact zero-pixel match; its displacement
 and turbulence mismatch references both differ. The comparison driver now
 follows both `rel="match"` and `rel="mismatch"` references.

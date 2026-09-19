@@ -78,6 +78,10 @@
   the V browser. An input HTML path is also accepted. The command prints differing-pixel,
   maximum-channel-error, MAE, and RMSE metrics and writes `*.actual.png` plus an
   amplified `*.diff.png` heatmap under `Build/comparisons/`.
+- Keep `svg-image-source-switch-same-size` pixel-exact when changing the compact
+  script bridge or image invalidation. Script-visible `img.src` replacements
+  must reach the live DOM, refresh the image model, and invalidate both layout
+  and retained paint input even when the replacement has identical dimensions.
 - Override the defaults with `LADYBIRD_SOURCE_DIR`, `V_BIN`, and
   `SCREENSHOT_OUTPUT_DIR`. The capture workflow is macOS-specific because it uses
   the Cocoa view snapshot helper and `sips`; the PNG diff tool itself is portable and
