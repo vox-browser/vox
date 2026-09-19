@@ -86,8 +86,8 @@
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
-implementation units have audited V mappings. As of 2026-09-14, the module
-translations contain 341,011 implementation V LOC and 67,613 test V LOC.
+implementation units have audited V mappings. As of 2026-09-19, the module
+translations contain 341,527 implementation V LOC and 67,883 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -95,11 +95,11 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Module | Implementation V LOC | Module | Implementation V LOC |
 | --- | ---: | --- | ---: |
 | ARIA | 2,535 | Animations | 3,972 |
-| Bindings | 2,675 | CSS | 103,707 |
+| Bindings | 2,675 | CSS | 103,918 |
 | Clipboard | 973 | Compositor | 2,403 |
 | Compression | 424 | ContentSecurityPolicy | 2,738 |
 | CookieStore | 859 | CredentialManagement | 418 |
-| Crypto (`webcrypto/`) | 4,472 | DOM | 35,778 |
+| Crypto (`webcrypto/`) | 4,472 | DOM | 35,777 |
 | DOMURL | 754 | Editing | 3,294 |
 | Encoding | 705 | EncryptedMediaExtensions | 572 |
 | EntriesAPI | 44 | EventTiming | 153 |
@@ -109,13 +109,13 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Geometry | 2,062 | HTML | 56,513 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 854 |
-| IntersectionObserver | 569 | Layout | 41,595 |
+| IntersectionObserver | 569 | Layout | 41,800 |
 | Loader | 1,921 | MathML | 411 |
 | MediaCapabilitiesAPI | 676 | MediaCapture | 1,205 |
 | MediaSourceExtensions | 357 | MimeSniff | 1,108 |
 | MixedContent | 125 | NavigationTiming | 291 |
 | NotificationsAPI | 290 | Page | 2,662 |
-| Painting | 6,811 | PerformanceTimeline | 447 |
+| Painting | 6,912 | PerformanceTimeline | 447 |
 | PermissionsAPI | 239 | Platform | 1,750 |
 | ReferrerPolicy | 239 | RequestIdleCallback | 59 |
 | ResizeObserver | 420 | ResourceTiming | 338 |
@@ -133,7 +133,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **341,011** |  |  |
+| **Total** | **341,527** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;

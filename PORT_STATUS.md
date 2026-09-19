@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb`
 
 Translation workspace: `~/code/vox2`
-Audited: 2026-09-14
+Audited: 2026-09-19
 
 ## Upstream delta since the V snapshot
 
@@ -124,6 +124,16 @@ Ladybird's new color-matrix reftest is an exact zero-pixel match; its displaceme
 and turbulence mismatch references both differ. The comparison driver now
 follows both `rel="match"` and `rel="mismatch"` references.
 
+CSS backface visibility now parses, computes, inherits, serializes, and
+interpolates through the typed property pipeline. The transform implementation
+retains full 4x4 matrices, builds explicit and synthetic 3D planes, bounds
+backface tests at their plane roots, and resets ancestor culling when a
+descendant enters its own 3D sorting plane. Painting and hit testing share that
+culling decision. The browser animation loop refreshes retained paint-only
+transform state after load-handler and `requestAnimationFrame` mutations. The
+expanded backface comparison set passes 25/25 cases: 23 are exact and two stay
+within the comparison workflow's checked tolerances.
+
 The earlier inventory mapped every upstream implementation filename to V code,
 but filename and symbol-name coverage did not establish behavioral parity. A
 semantic re-audit found name-only `upstream_*entry_points.v` coverage-shim
@@ -148,7 +158,7 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The table below is the refreshed 2026-09-12 inventory. It covers 76 current
+The table below is the refreshed 2026-09-19 inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
 implementation units. Root-level LibWeb `.cpp` support units are mapped
@@ -161,7 +171,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
 | `Animations` | 10 | 5,187 | 3,972 | 1,041 | Complete |
 | `Bindings` | 11 | 2,501 | 2,675 | 918 | Complete |
-| `CSS` | 215 | 47,722 | 103,707 | 8,616 | Present |
+| `CSS` | 215 | 47,722 | 103,918 | 8,721 | Present |
 | `Clipboard` | 4 | 1,009 | 973 | 343 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 424 | 138 | Complete |
@@ -169,7 +179,7 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
-| `DOM` | 59 | 34,859 | 35,778 | 2,199 | Complete |
+| `DOM` | 59 | 34,859 | 35,777 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
 | `Editing` | 26 | 12,720 | 3,294 | 741 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
@@ -189,7 +199,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 41,595 | 15,547 | Present |
+| `Layout` | 9 | 4,001 | 41,800 | 15,646 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -200,7 +210,7 @@ from the current-module totals.
 | `NavigationTiming` | 4 | 497 | 291 | 45 | Complete |
 | `NotificationsAPI` | 1 | 301 | 290 | 68 | Complete |
 | `Page` | 8 | 6,450 | 2,662 | 666 | Complete |
-| `Painting` | 22 | 8,227 | 6,811 | 2,089 | Present |
+| `Painting` | 22 | 8,227 | 6,912 | 2,155 | Present |
 | `PerformanceTimeline` | 5 | 476 | 447 | 130 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
 | `Platform` | 4 | 431 | 1,750 | 200 | Complete |
@@ -236,7 +246,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **341,011** | **67,613** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **341,527** | **67,883** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
