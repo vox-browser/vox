@@ -354,6 +354,13 @@ a box return zero before that work, avoiding stale paint-property resolution
 for disconnected and non-rendered elements. Focused tests observe both the
 committed-box resolution path and the no-box early return.
 
+The inherited `-webkit-font-smoothing` property now accepts all four upstream
+keywords and propagates through ordinary glyph runs, text shadows, and
+`background-clip: text` masks. The macOS native renderer maps those modes to
+Skia and CoreGraphics font rasterization settings, including Blink-compatible
+non-dilated outlines for `antialiased`; direct screenshots verify that the
+rasterization mode changes pixels.
+
 CSS backface visibility now parses, computes, inherits, serializes, and
 interpolates through the typed property pipeline. The transform implementation
 retains full 4x4 matrices, builds explicit and synthetic 3D planes, bounds
@@ -401,7 +408,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
 | `Animations` | 10 | 5,187 | 3,972 | 1,041 | Complete |
 | `Bindings` | 11 | 2,501 | 2,675 | 918 | Complete |
-| `CSS` | 215 | 47,722 | 104,027 | 8,871 | Present |
+| `CSS` | 215 | 47,722 | 104,074 | 8,937 | Present |
 | `Clipboard` | 4 | 1,009 | 973 | 343 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 424 | 138 | Complete |
@@ -429,7 +436,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 43,180 | 16,048 | Present |
+| `Layout` | 9 | 4,001 | 43,188 | 16,090 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -440,7 +447,7 @@ from the current-module totals.
 | `NavigationTiming` | 4 | 497 | 291 | 45 | Complete |
 | `NotificationsAPI` | 1 | 301 | 290 | 68 | Complete |
 | `Page` | 8 | 6,450 | 2,953 | 858 | Complete |
-| `Painting` | 22 | 8,227 | 6,972 | 2,180 | Present |
+| `Painting` | 22 | 8,227 | 6,975 | 2,182 | Present |
 | `PerformanceTimeline` | 5 | 476 | 447 | 130 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
 | `Platform` | 4 | 431 | 1,750 | 200 | Complete |
@@ -476,7 +483,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **349,953** | **71,037** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **350,011** | **71,147** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 

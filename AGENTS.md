@@ -109,12 +109,15 @@
 - HTML image `x`/`y` geometry resolves accumulated paint state only after a
   committed layout box is found; disconnected or `display:none` images return
   zero without touching stale paint properties.
+- `-webkit-font-smoothing` parses and inherits through computed style, reaches
+  foreground text, text shadows, and `background-clip: text`, and selects the
+  corresponding macOS Skia/CoreGraphics rasterization mode.
 
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-19, the module
-translations contain 349,953 implementation V LOC and 71,037 test V LOC.
+translations contain 350,011 implementation V LOC and 71,147 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -122,7 +125,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Module | Implementation V LOC | Module | Implementation V LOC |
 | --- | ---: | --- | ---: |
 | ARIA | 2,535 | Animations | 3,972 |
-| Bindings | 2,675 | CSS | 104,027 |
+| Bindings | 2,675 | CSS | 104,074 |
 | Clipboard | 973 | Compositor | 2,403 |
 | Compression | 424 | ContentSecurityPolicy | 2,738 |
 | CookieStore | 859 | CredentialManagement | 418 |
@@ -136,13 +139,13 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Geometry | 2,062 | HTML | 57,053 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 854 |
-| IntersectionObserver | 569 | Layout | 43,180 |
+| IntersectionObserver | 569 | Layout | 43,188 |
 | Loader | 1,921 | MathML | 411 |
 | MediaCapabilitiesAPI | 676 | MediaCapture | 1,205 |
 | MediaSourceExtensions | 357 | MimeSniff | 1,108 |
 | MixedContent | 125 | NavigationTiming | 291 |
 | NotificationsAPI | 290 | Page | 2,953 |
-| Painting | 6,972 | PerformanceTimeline | 447 |
+| Painting | 6,975 | PerformanceTimeline | 447 |
 | PermissionsAPI | 239 | Platform | 1,750 |
 | ReferrerPolicy | 239 | RequestIdleCallback | 59 |
 | ResizeObserver | 420 | ResourceTiming | 338 |
@@ -160,7 +163,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **349,953** |  |  |
+| **Total** | **350,011** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
