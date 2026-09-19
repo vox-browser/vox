@@ -150,7 +150,6 @@ fn test_block_ellipsis_uses_the_same_paint_run_as_literal_text() {
 		&& it.text.contains('…'))
 	assert clamped_commands.len == 1
 	assert clamped_commands[0].text == 'second…'
-	assert clamped_commands[0].glyph_run == none
 
 	literal_document := html.parse_document('${style}<div>first<br>second…</div>')
 	literal_root := layout_document_typed_in_viewport(literal_document, 300, 200)
@@ -158,7 +157,15 @@ fn test_block_ellipsis_uses_the_same_paint_run_as_literal_text() {
 		&& it.text.contains('…'))
 	assert literal_commands.len == 1
 	assert literal_commands[0].text == clamped_commands[0].text
-	assert literal_commands[0].glyph_run == none
+	if clamped_run := clamped_commands[0].glyph_run {
+		literal_run := literal_commands[0].glyph_run or {
+			panic('literal ellipsis did not retain the clamped glyph-run representation')
+		}
+		assert clamped_run.glyph_indices() == literal_run.glyph_indices()
+		assert clamped_run.glyph_positions() == literal_run.glyph_positions()
+	} else {
+		assert literal_commands[0].glyph_run == none
+	}
 
 	custom_document := html.parse_document('${style}<div style="line-clamp:2 &quot;++&quot;">first<br>second<br>hidden</div>')
 	custom_root := layout_document_typed_in_viewport(custom_document, 300, 200)
