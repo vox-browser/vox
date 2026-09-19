@@ -90,9 +90,10 @@ and morphology, matrix/saturate/hue, component-transfer tables, merge, offset,
 channel-selecting displacement, and turbulence with propagated graph extents.
 Filter results retain their sRGB or linear-light operating space and insert
 explicit conversions at primitive inputs and final output as required by
-`color-interpolation-filters`. Decoded-bitmap `feImage` graph inputs are the
-remaining raster-boundary omission; their portable SVG state remains translated
-here.
+`color-interpolation-filters`. Decoded-bitmap `feImage` primitives retain their
+absolute resource URL and previous-result fallback in the graph; browser replay
+attaches the current decoded frame, including when the graph is nested in an SVG
+pattern tile.
 
 ## Boundary
 

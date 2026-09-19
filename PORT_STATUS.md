@@ -299,6 +299,12 @@ flood, image, offset, displacement-map, turbulence, and final filter output.
 The native filter bridge applies those conversions, runs component-transfer
 tables directly in the selected space, clamps arithmetic output to
 premultiplied alpha, and renders turbulence instead of treating it as a no-op.
+Decoded `feImage` resources now retain their absolute URL in the graph, preload
+through the browser image cache, and attach the decoded frame during native
+replay. The same filter boundaries are retained inside SVG pattern tiles, and
+the compact script bridge exposes completed images and late `load` listeners so
+visibility changes do not strand a cached pre-load tile. The three new
+`feImage` reference cases are exact zero-pixel matches.
 Ladybird's new color-matrix reftest is an exact zero-pixel match; its displacement
 and turbulence mismatch references both differ. The comparison driver now
 follows both `rel="match"` and `rel="mismatch"` references.
@@ -378,7 +384,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 43,043 | 15,988 | Present |
+| `Layout` | 9 | 4,001 | 43,180 | 16,024 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -389,7 +395,7 @@ from the current-module totals.
 | `NavigationTiming` | 4 | 497 | 291 | 45 | Complete |
 | `NotificationsAPI` | 1 | 301 | 290 | 68 | Complete |
 | `Page` | 8 | 6,450 | 2,953 | 858 | Complete |
-| `Painting` | 22 | 8,227 | 6,968 | 2,180 | Present |
+| `Painting` | 22 | 8,227 | 6,972 | 2,180 | Present |
 | `PerformanceTimeline` | 5 | 476 | 447 | 130 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
 | `Platform` | 4 | 431 | 1,750 | 200 | Complete |
@@ -398,7 +404,7 @@ from the current-module totals.
 | `ResizeObserver` | 4 | 424 | 420 | 152 | Complete |
 | `ResourceTiming` | 1 | 357 | 338 | 84 | Complete |
 | `SRI` | 1 | 198 | 156 | 100 | Complete |
-| `SVG` | 82 | 9,020 | 5,167 | 1,186 | Complete |
+| `SVG` | 82 | 9,020 | 5,184 | 1,222 | Complete |
 | `SecureContexts` | 1 | 76 | 59 | 13 | Complete |
 | `Selection` | 3 | 1,470 | 648 | 192 | Complete |
 | `Serial` | 2 | 366 | 243 | 35 | Complete |
@@ -425,7 +431,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **349,438** | **70,722** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **349,596** | **70,794** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -925,9 +931,11 @@ target-bounds display-list trigger. Core Image executes flood, every translated
 blend/composite mode (including arithmetic and plus-darker), anisotropic blur
 and morphology, color matrix/saturate/hue, component-transfer tables, merge,
 offset, and channel-selecting displacement while propagating logical graph
-extents instead of allocating or flooding the full canvas. Native turbulence
-generation and filter color-space conversions now execute through that graph;
-decoded-bitmap `feImage` graph inputs remain outstanding. Its
+extents instead of allocating or flooding the full canvas. Native turbulence,
+filter color-space conversions, and decoded-bitmap `feImage` graph inputs now
+execute through that graph. Decoded resources retain their graph URL and target
+bounds, while nested pattern display lists replay the same filter layer and
+bitmap frame. Its
 table phase consumes the translated collapsed and separate border collector,
 including conflict winners, cell snapping, empty-cell suppression, and exact
 rounded-cell repainting. Ordinary block and inline borders now retain their

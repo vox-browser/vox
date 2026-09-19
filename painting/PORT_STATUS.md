@@ -607,8 +607,9 @@ primitive state, resolved target bounds, and the transparent paint trigger for
 source-independent output. Native replay implements flood, blend,
 composite/arithmetic, anisotropic blur and morphology, matrix/saturate/hue,
 component-transfer tables, merge, offset, and channel-selecting displacement.
-Native turbulence generation and decoded-bitmap `feImage` graph inputs remain
-the specialized SVG-filter gaps.
+Native turbulence generation and decoded-bitmap `feImage` graph inputs now flow
+through the same retained SVG-filter graph, including nested pattern-tile
+filter layers.
 
 Header-only APIs are represented alongside their implementation families:
 `ChromeMetrics` and border/box data in `box_model.v`; `ChromeWidget`, resize,

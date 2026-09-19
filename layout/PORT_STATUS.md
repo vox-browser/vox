@@ -716,7 +716,8 @@ generate content from an empty source. Native replay covers flood,
 blend/composite/arithmetic, anisotropic blur and morphology, color transforms
 and component-transfer tables, merge, offset, and channel-selecting
 displacement. Turbulence rasterization and decoded-bitmap `feImage` graph inputs
-remain backend gaps.
+now reach native replay, including filter boundaries nested in retained SVG
+pattern tiles.
 Wheel events follow
 `EventHandler::handle_mousewheel()`:
 they walk the hit paintable's containing blocks, skip programmatic-only
@@ -818,9 +819,10 @@ without traversing the entire retained tree on every frame.
 The remaining integration gap is replacing the compatibility
 `BlockBox`/`PaintCommand` transport with Painting's typed paintables and
 display-list recorder, including interactive scrollbar enlargement/snapshot
-replay. The remaining SVG-filter backend work is decoded-bitmap `feImage` graph
-execution; native `feTurbulence` and interpolation-color-space conversion now
-flow through the retained graph.
+replay. Decoded-bitmap `feImage`, native `feTurbulence`, and
+interpolation-color-space conversion now flow through the retained graph.
+Pattern tile display lists also retain nested filter begin/end operations and
+normalized graph bounds.
 
 ## Verification
 

@@ -87,7 +87,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-19, the module
-translations contain 349,438 implementation V LOC and 70,722 test V LOC.
+translations contain 349,596 implementation V LOC and 70,794 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -109,17 +109,17 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Geometry | 2,062 | HTML | 56,731 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 854 |
-| IntersectionObserver | 569 | Layout | 43,043 |
+| IntersectionObserver | 569 | Layout | 43,180 |
 | Loader | 1,921 | MathML | 411 |
 | MediaCapabilitiesAPI | 676 | MediaCapture | 1,205 |
 | MediaSourceExtensions | 357 | MimeSniff | 1,108 |
 | MixedContent | 125 | NavigationTiming | 291 |
 | NotificationsAPI | 290 | Page | 2,953 |
-| Painting | 6,968 | PerformanceTimeline | 447 |
+| Painting | 6,972 | PerformanceTimeline | 447 |
 | PermissionsAPI | 239 | Platform | 1,750 |
 | ReferrerPolicy | 239 | RequestIdleCallback | 59 |
 | ResizeObserver | 420 | ResourceTiming | 338 |
-| SRI | 156 | SVG | 5,167 |
+| SRI | 156 | SVG | 5,184 |
 | SecureContexts | 59 | Selection | 648 |
 | Serial | 243 | ServiceWorker | 1,562 |
 | Speech | 624 | StorageAPI | 444 |
@@ -133,7 +133,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **349,438** |  |  |
+| **Total** | **349,596** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
