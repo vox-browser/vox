@@ -81,6 +81,10 @@ pub enum InsertionMode {
 	after_after_frameset
 }
 
+pub type HTMLParserChangeEncodingCallback = fn (string) bool
+
+pub type HTMLParserCallback = fn ()
+
 pub struct AdjustedInsertionLocation {
 pub:
 	parent                ?&dom.Node
@@ -119,6 +123,10 @@ pub mut:
 	script_execute_hook                ?ScriptElementExecuteHook
 	speculative_fetch_hook             ?SpeculativeFetchHook
 	active_speculative_html_parser     ?&SpeculativeHTMLParser
+	encoding_confidence                EncodingConfidence = .irrelevant
+	change_encoding_callback           ?HTMLParserChangeEncodingCallback
+	ready_for_more_input_callback      ?HTMLParserCallback
+	parsing_complete_callback          ?HTMLParserCallback
 
 	character_insertion_node    ?&dom.Text
 	character_insertion_builder []rune
@@ -209,31 +217,120 @@ pub fn HTMLParser.create_for_scripting(document &dom.Document) &HTMLParser {
 }
 
 pub fn HTMLParser.create_with_open_input_stream(document &dom.Document) &HTMLParser {
+	return HTMLParser.create_with_open_input_stream_and_confidence(document, .irrelevant)
+}
+
+pub fn HTMLParser.create_with_open_input_stream_and_confidence(document &dom.Document, confidence EncodingConfidence) &HTMLParser {
 	mode := if unsafe { &dom.Node(document) }.is_scripting_enabled() {
 		dom.ParserScriptingMode.normal
 	} else {
 		dom.ParserScriptingMode.disabled
 	}
-	return HTMLParser.create_with_tokenizer(document, HTMLTokenizer.create(), mode)
+	mut parser := HTMLParser.create_with_tokenizer(document, HTMLTokenizer.create(), mode)
+	parser.encoding_confidence = confidence
+	return parser
 }
 
 // HTMLParser::create_with_uncertain_encoding().
 pub fn HTMLParser.create_with_uncertain_encoding(document &dom.Document, input []u8, transport_encoding ?string) !&HTMLParser {
-	encoding_name := if document_encoding := document.get_encoding() {
-		document_encoding
+	result := if document_encoding := document.get_encoding() {
+		EncodingSniffingResult{
+			encoding: document_encoding
+			confidence: .certain
+		}
 	} else {
-		run_html_encoding_sniffing_algorithm(input, transport_encoding)
+		run_html_encoding_sniffing_algorithm_with_confidence(input, transport_encoding)
 	}
-	return HTMLParser.create_from_bytes(document, input, encoding_name)!
+	return HTMLParser.create_from_bytes_with_confidence(document, input, result.encoding, result.confidence)!
 }
 
 // Byte-input counterpart of HTMLParser::create(document, input, encoding).
 pub fn HTMLParser.create_from_bytes(document &dom.Document, input []u8, encoding_name string) !&HTMLParser {
+	return HTMLParser.create_from_bytes_with_confidence(document, input, encoding_name, .certain)!
+}
+
+fn HTMLParser.create_from_bytes_with_confidence(document &dom.Document, input []u8, encoding_name string, confidence EncodingConfidence) !&HTMLParser {
 	decoder := encoding.TextDecoder.construct(encoding_name, encoding.TextDecoderOptions{})!
 	decoded_input := decoder.decode(input, encoding.TextDecodeOptions{})!
 	mut mutable_document := unsafe { &dom.Document(document) }
-	mutable_document.set_encoding(encoding_name)
-	return HTMLParser.create(document, decoded_input)
+	standardized_encoding := encoding.get_an_encoding(encoding_name) or { encoding_name }
+	mutable_document.set_encoding(standardized_encoding)
+	mut parser := HTMLParser.create(document, decoded_input)
+	parser.encoding_confidence = confidence
+	return parser
+}
+
+pub fn (p &HTMLParser) get_encoding_confidence() EncodingConfidence {
+	return p.encoding_confidence
+}
+
+pub fn (mut p HTMLParser) set_change_encoding_callback(callback HTMLParserChangeEncodingCallback) {
+	p.change_encoding_callback = callback
+}
+
+pub fn (mut p HTMLParser) set_ready_for_more_input_callback(callback HTMLParserCallback) {
+	p.ready_for_more_input_callback = callback
+}
+
+pub fn (mut p HTMLParser) set_parsing_complete_callback(callback HTMLParserCallback) {
+	p.parsing_complete_callback = callback
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inhead
+fn (mut p HTMLParser) process_meta_element(element &dom.Element) {
+	if p.active_speculative_html_parser != none || p.encoding_confidence != .tentative {
+		return
+	}
+	if charset := element.get_attribute('charset') {
+		if standardized := standardized_html_encoding(charset) {
+			p.change_the_encoding(standardized)
+			return
+		}
+	}
+	if ascii_lowercase_string(element.get_attribute_value('http-equiv')) != 'content-type' {
+		return
+	}
+	content := element.get_attribute('content') or { return }
+	if standardized := extract_character_encoding_from_meta_element(content) {
+		p.change_the_encoding(standardized)
+	}
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#change-the-encoding
+fn (mut p HTMLParser) change_the_encoding(requested_encoding string) {
+	if p.encoding_confidence != .tentative {
+		return
+	}
+	current_encoding := p.document_.get_encoding() or {
+		p.encoding_confidence = .certain
+		return
+	}
+	current_standardized := encoding.get_an_encoding(current_encoding) or { current_encoding }
+	if current_standardized.to_lower() in ['utf-16be', 'utf-16le'] {
+		p.encoding_confidence = .certain
+		return
+	}
+
+	mut new_encoding := encoding.get_an_encoding(requested_encoding) or { requested_encoding }
+	if new_encoding.to_lower() in ['utf-16be', 'utf-16le'] {
+		new_encoding = 'UTF-8'
+	} else if new_encoding.to_lower() == 'x-user-defined' {
+		new_encoding = 'windows-1252'
+	}
+	if current_standardized.to_lower() == new_encoding.to_lower() {
+		p.encoding_confidence = .certain
+		return
+	}
+	if callback := p.change_encoding_callback {
+		if callback(new_encoding) {
+			mut document := unsafe { &dom.Document(p.document_) }
+			document.set_encoding(new_encoding)
+			p.encoding_confidence = .certain
+			return
+		}
+	}
+	// Restarting the navigation with the new encoding is not implemented.
+	p.encoding_confidence = .certain
 }
 
 pub fn (mut p HTMLParser) set_script_hooks(fetch ?ScriptElementFetchHook, execute ?ScriptElementExecuteHook) {
@@ -400,7 +497,18 @@ fn (mut p HTMLParser) run_with_stop_at_insertion_point(stop_at_insertion_point S
 	if stop_at_insertion_point == .no && reached_end_of_file && !p.the_end_started
 		&& (!p.tokenizer.is_insertion_point_defined() || p.tokenizer.is_eof_inserted()) {
 		p.the_end_started = true
+		p.invoke_parsing_complete_callback()
 		HTMLParser.the_end(p.document_, p)
+	}
+}
+
+fn (mut p HTMLParser) invoke_parsing_complete_callback() {
+	if !p.tokenizer.is_input_stream_closed() {
+		return
+	}
+	if callback := p.parsing_complete_callback {
+		p.parsing_complete_callback = none
+		callback()
 	}
 }
 
@@ -453,6 +561,11 @@ fn (mut p HTMLParser) resume_after_parser_blocking_script() {
 	p.parser_pause_flag = false
 	p.tokenizer.undefine_insertion_point()
 	p.run()
+	if !p.parser_pause_flag {
+		if callback := p.ready_for_more_input_callback {
+			callback()
+		}
+	}
 	if p.parser_pause_flag {
 		return
 	}

@@ -140,10 +140,17 @@ fn (mut p HTMLParser) handle_in_head(mut token HTMLToken) {
 		p.handle_in_body(mut token)
 		return
 	}
-	if token.is_start_tag() && token.tag_name in ['base', 'basefont', 'bgsound', 'link', 'meta'] {
+	if token.is_start_tag() && token.tag_name in ['base', 'basefont', 'bgsound', 'link'] {
 		p.insert_html_element(token)
 		p.stack_of_open_elements.pop()
 		token.acknowledge_self_closing_flag_if_set()
+		return
+	}
+	if token.is_start_tag() && token.tag_name == 'meta' {
+		element := p.insert_html_element(token)
+		p.stack_of_open_elements.pop()
+		token.acknowledge_self_closing_flag_if_set()
+		p.process_meta_element(element)
 		return
 	}
 	if token.is_start_tag() && token.tag_name == 'title' {

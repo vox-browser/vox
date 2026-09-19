@@ -5,8 +5,21 @@
 // Translation of Libraries/LibWeb/HTML/Parser/HTMLEncodingDetection.cpp.
 module html
 
+// https://html.spec.whatwg.org/multipage/parsing.html#concept-encoding-confidence
+pub enum EncodingConfidence {
+	tentative
+	certain
+	irrelevant
+}
+
+pub struct EncodingSniffingResult {
+pub:
+	encoding   string
+	confidence EncodingConfidence
+}
+
 fn standardized_html_encoding(label string) ?string {
-	encoding := ascii_lowercase_string(label.trim('	\n\x0c\r '))
+	encoding := ascii_lowercase_string(label.trim('\t\n\f\r '))
 	if encoding in ['unicode-1-1-utf-8', 'unicode11utf8', 'unicode20utf8', 'utf-8', 'utf8',
 		'x-unicode20utf8'] {
 		return 'UTF-8'
@@ -30,9 +43,9 @@ fn standardized_html_encoding(label string) ?string {
 		'iso88595', 'iso_8859-5', 'iso_8859-5:1988'] {
 		return 'ISO-8859-5'
 	}
-	if encoding in ['arabic', 'asmo-708', 'csiso88596e', 'csiso88596i', 'csisolatinarabic',
-		'ecma-114', 'iso-8859-6', 'iso-8859-6-e', 'iso-8859-6-i', 'iso-ir-127', 'iso8859-6',
-		'iso88596', 'iso_8859-6', 'iso_8859-6:1987'] {
+	if encoding in ['arabic', 'asmo-708', 'csiso88596e', 'csiso88596i', 'csisolatinarabic', 'ecma-114',
+		'iso-8859-6', 'iso-8859-6-e', 'iso-8859-6-i', 'iso-ir-127', 'iso8859-6', 'iso88596',
+		'iso_8859-6', 'iso_8859-6:1987'] {
 		return 'ISO-8859-6'
 	}
 	if encoding in ['csisolatingreek', 'ecma-118', 'elot_928', 'greek', 'greek8', 'iso-8859-7',
@@ -126,8 +139,8 @@ fn standardized_html_encoding(label string) ?string {
 	if encoding in ['csiso2022jp', 'iso-2022-jp'] {
 		return 'ISO-2022-JP'
 	}
-	if encoding in ['csshiftjis', 'ms932', 'ms_kanji', 'shift-jis', 'shift_jis', 'sjis',
-		'windows-31j', 'x-sjis'] {
+	if encoding in ['csshiftjis', 'ms932', 'ms_kanji', 'shift-jis', 'shift_jis', 'sjis', 'windows-31j',
+		'x-sjis'] {
 		return 'Shift_JIS'
 	}
 	if encoding in ['cseuckr', 'csksc56011987', 'euc-kr', 'iso-ir-149', 'korean', 'ks_c_5601-1987',
@@ -325,7 +338,7 @@ pub fn run_prescan_byte_stream_algorithm(input []u8) ?string {
 			&& html_encoding_ascii_lower_byte(input[position + 3]) == `t`
 			&& html_encoding_ascii_lower_byte(input[position + 4]) == `a`
 			&& (html_encoding_whitespace(input[position + 5])
-			|| input[position + 5] == `/`) {
+				|| input[position + 5] == `/`) {
 			position += 6
 			mut attribute_names := []string{}
 			mut got_pragma := false
@@ -371,7 +384,7 @@ pub fn run_prescan_byte_stream_algorithm(input []u8) ?string {
 			return encoding
 		} else if !prescan_should_abort(input, position + 2) && input[position] == `<`
 			&& ((input[position + 1] == `/` && prescan_ascii_alpha(input[position + 2]))
-			|| prescan_ascii_alpha(input[position + 1])) {
+				|| prescan_ascii_alpha(input[position + 1])) {
 			for !prescan_should_abort(input, position) && !html_encoding_whitespace(input[position])
 				&& input[position] != `>` {
 				position++
@@ -460,20 +473,40 @@ fn html_encoding_valid_utf8(data []u8) bool {
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding
-pub fn run_html_encoding_sniffing_algorithm(input []u8, transport_encoding ?string) string {
+pub fn run_html_encoding_sniffing_algorithm_with_confidence(input []u8, transport_encoding ?string) EncodingSniffingResult {
 	if bom := run_html_bom_sniff(input) {
-		return bom
+		return EncodingSniffingResult{
+			encoding: bom
+			confidence: .certain
+		}
 	}
 	if transport := transport_encoding {
 		if encoding := standardized_html_encoding(transport) {
-			return encoding
+			return EncodingSniffingResult{
+				encoding: encoding
+				confidence: .certain
+			}
 		}
 	}
 	if prescan := run_prescan_byte_stream_algorithm(input) {
-		return prescan
+		return EncodingSniffingResult{
+			encoding: prescan
+			confidence: .tentative
+		}
 	}
 	if !html_encoding_valid_utf8(input) {
-		return 'windows-1252'
+		return EncodingSniffingResult{
+			encoding: 'windows-1252'
+			confidence: .tentative
+		}
 	}
-	return 'UTF-8'
+	return EncodingSniffingResult{
+		encoding: 'UTF-8'
+		confidence: .tentative
+	}
+}
+
+// Compatibility wrapper for callers which only need the selected encoding.
+pub fn run_html_encoding_sniffing_algorithm(input []u8, transport_encoding ?string) string {
+	return run_html_encoding_sniffing_algorithm_with_confidence(input, transport_encoding).encoding
 }

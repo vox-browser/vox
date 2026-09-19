@@ -35,3 +35,21 @@ fn test_html_encoding_sniffing_precedence_and_fallback() {
 	assert run_html_encoding_sniffing_algorithm([u8(0x41), 0xff], none) == 'windows-1252'
 	assert run_html_encoding_sniffing_algorithm('valid UTF-8 ✓'.bytes(), none) == 'UTF-8'
 }
+
+fn test_html_encoding_sniffing_reports_confidence() {
+	bom := run_html_encoding_sniffing_algorithm_with_confidence([u8(0xef), 0xbb, 0xbf], none)
+	assert bom.encoding == 'UTF-8'
+	assert bom.confidence == .certain
+
+	transport := run_html_encoding_sniffing_algorithm_with_confidence('plain'.bytes(), 'windows-1251')
+	assert transport.encoding == 'windows-1251'
+	assert transport.confidence == .certain
+
+	meta := run_html_encoding_sniffing_algorithm_with_confidence('<meta charset=gbk>'.bytes(), none)
+	assert meta.encoding == 'GBK'
+	assert meta.confidence == .tentative
+
+	fallback := run_html_encoding_sniffing_algorithm_with_confidence('plain'.bytes(), none)
+	assert fallback.encoding == 'UTF-8'
+	assert fallback.confidence == .tentative
+}

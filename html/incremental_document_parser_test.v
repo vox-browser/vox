@@ -86,3 +86,90 @@ fn test_incremental_document_parser_defers_pumping_until_scripts_are_ready() {
 	assert document.title() == 'Deferred'
 	assert document.ready_state() == 'complete'
 }
+
+fn test_incremental_document_parser_holds_encoding_sensitive_bytes_for_late_meta_charset() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.update_readiness(.loading)
+	body := fetch.Body.streaming()
+	mime_type := mimesniff.MimeType.parse('text/html') or { panic(err) }
+	mut parser := IncrementalDocumentParser.create(document, body, dom.URL{
+		value: 'https://example.test/late-charset'
+	}, mime_type)
+	parser.start()
+
+	// Keep the declaration beyond the 1024-byte prescan limit, but deliver it as
+	// an ASCII prefix that can be decoded safely while script execution is held.
+	first := ('<!doctype html><head>${' '.repeat(1100)}<meta charset=windows-1252></head><body><p id="late">${' '.repeat(350)}').bytes()
+	mut mutable_body := body
+	enqueue_incremental_chunk(mut mutable_body, first)
+	mut second := [u8(0x80)]
+	second << '</p>'.bytes()
+	enqueue_incremental_chunk(mut mutable_body, second)
+	finish_incremental_body(mut mutable_body)
+
+	assert document.has_deferred_parser_start()
+	html_parser := parser.parser_ or { panic('incremental parser was not initialized') }
+	assert html_parser.get_encoding_confidence() == .tentative
+	assert parser.input_bytes_.len - parser.decoded_byte_count_ == second.len
+	document.set_ready_to_run_scripts()
+
+	assert document.get_encoding()? == 'windows-1252'
+	assert document.get_element_by_id('late')?.as_node().text_content()? == '${' '.repeat(350)}€'
+	assert document.ready_state() == 'complete'
+	assert parser.input_bytes_.len - parser.decoded_byte_count_ == 0
+	assert parser.error_ == ''
+}
+
+fn test_encoding_independent_prefix_stops_at_non_ascii_and_escape() {
+	assert encoding_independent_prefix_length('ascii'.bytes()) == 5
+	assert encoding_independent_prefix_length([u8(`a`), `b`, 0x80, `c`]) == 2
+	assert encoding_independent_prefix_length([u8(`a`), 0x1b, `c`]) == 1
+}
+
+fn incremental_blocked_script_execute(_ ScriptElementType, _ string, _ dom.URL) ! {}
+
+fn test_incremental_document_parser_releases_bytes_after_blocking_script() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.update_readiness(.loading)
+	document.set_ready_to_run_scripts()
+	mut blocking_style := document.create_element('style') or { panic(err) }
+	document.script_blocking_style_sheet_set << blocking_style
+	body := fetch.Body.streaming()
+	mime_type := mimesniff.MimeType.parse('text/html') or { panic(err) }
+	mut parser := IncrementalDocumentParser.create(document, body, dom.URL{
+		value: 'https://example.test/blocked-late-charset'
+	}, mime_type)
+	parser.start()
+
+	first := ('<!doctype html><head>${' '.repeat(1450)}<script>blocked()</script><meta charset=windows-1252></head><body><p id="late">').bytes()
+	mut mutable_body := body
+	mutable_body.append_sniff_bytes(first)
+	mut html_parser := parser.parser_ or { panic('incremental parser was not initialized') }
+	html_parser.scripting_mode = .normal
+	html_parser.set_script_hooks(none, incremental_blocked_script_execute)
+	mut stream := mutable_body.stream()
+	stream.enqueue(streams.bytes_value(first)) or { panic(err) }
+	assert html_parser.paused()
+
+	mut second := [u8(0x80)]
+	second << '</p>'.bytes()
+	enqueue_incremental_chunk(mut mutable_body, second)
+	finish_incremental_body(mut mutable_body)
+	assert parser.input_bytes_.len - parser.decoded_byte_count_ == second.len
+
+	document.script_blocking_style_sheet_set.clear()
+	document.schedule_html_parser_end_check()
+	mut event_loop := main_thread_event_loop()
+	for _ in 0 .. 8 {
+		if !html_parser.paused() {
+			break
+		}
+		event_loop.process()
+	}
+
+	assert !html_parser.paused()
+	assert document.get_encoding()? == 'windows-1252'
+	assert document.get_element_by_id('late')?.as_node().text_content()? == '€'
+	assert document.ready_state() == 'complete'
+	assert parser.input_bytes_.len - parser.decoded_byte_count_ == 0
+}
