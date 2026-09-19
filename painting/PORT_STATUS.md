@@ -635,6 +635,15 @@ paint styles in `svg_painting.v`.
 
 ## Verification
 
+CSS Scroll Snap is translated through the active Layout/Painting/DOM bridge.
+Candidate selection covers mandatory and proximity snapping, logical axes,
+oversized areas, directional always-stop barriers, cross-axis reconciliation,
+and remembered-area re-snapping for element and viewport scrollers. The
+compositor-side momentum-fling estimator preserves the upstream sample window,
+decay cutoff, geometric tail, and 1/64 CSS-pixel rounding. Focused tests cover
+these paths, and the combined DOM, HTML, Layout, and Painting run passes 197 of
+197 tests.
+
 ```text
 $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.

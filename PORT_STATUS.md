@@ -58,6 +58,14 @@ and the refreshed current-tree audit has 21 candidates awaiting body review.
 The current Layout refresh also follows shadow hosts while locating a positioned
 inline containing block. Absolutely positioned shadow-tree descendants therefore
 use their inline host instead of falling back to the viewport.
+CSS Scroll Snap now uses the translated candidate collection and selection
+algorithms for element and viewport scrollers. It resolves physical and logical
+axes, scroll margin and padding, oversized covering ranges, proximity and
+mandatory strictness, directional `scroll-snap-stop: always`, and cross-axis
+visibility. Snapped areas survive layout-tree replacement and are reselected
+after relayout, including viewport scrollers and focused or targeted-area
+preference. Momentum-fling displacement estimation follows the compositor's
+rounded geometric-decay calculation.
 Flex and inline-flex fieldsets retain their special legend layout while applying
 flex direction, wrapping, alignment, and gaps to the anonymous content box. The
 wrapper is also created for flex fieldsets without a rendered legend.
@@ -179,7 +187,7 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
-| `DOM` | 59 | 34,859 | 35,778 | 2,199 | Complete |
+| `DOM` | 59 | 34,859 | 35,929 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
 | `Editing` | 26 | 12,720 | 3,294 | 741 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
@@ -193,13 +201,13 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
 | `Geolocation` | 4 | 643 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 56,513 | 12,347 | Complete |
+| `HTML` | 286 | 83,853 | 56,547 | 12,347 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 41,800 | 15,653 | Present |
+| `Layout` | 9 | 4,001 | 42,997 | 15,799 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -210,7 +218,7 @@ from the current-module totals.
 | `NavigationTiming` | 4 | 497 | 291 | 45 | Complete |
 | `NotificationsAPI` | 1 | 301 | 290 | 68 | Complete |
 | `Page` | 8 | 6,450 | 2,662 | 666 | Complete |
-| `Painting` | 22 | 8,227 | 6,912 | 2,155 | Present |
+| `Painting` | 22 | 8,227 | 6,968 | 2,180 | Present |
 | `PerformanceTimeline` | 5 | 476 | 447 | 130 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
 | `Platform` | 4 | 431 | 1,750 | 200 | Complete |
@@ -246,7 +254,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **341,528** | **67,890** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **342,966** | **68,061** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
