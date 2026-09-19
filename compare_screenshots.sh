@@ -22,7 +22,7 @@ if [ "$#" -eq 0 ]; then
 	set -- inline-node ordered-list text-decorations line-clamp-properties canvas-text \
 		selection-focus-between-text-controls selection-insert-between-boundaries \
 		selection-moves-between-subtrees empty-caret-with-placeholder \
-		caret-after-first-character
+		caret-after-first-character default-ignorable-code-points-not-painted
 fi
 
 mkdir -p "$output_dir"
