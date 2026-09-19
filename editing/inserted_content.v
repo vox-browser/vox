@@ -1,0 +1,342 @@
+// Copyright (c) 2026-present, the Ladybird developers
+// SPDX-License-Identifier: BSD-2-Clause
+
+// Translation of Editing/InsertedContent.{h,cpp}.
+module editing
+
+import dom
+
+pub enum ReplacementTopology {
+	inline_
+	block
+}
+
+fn inserted_content_start_boundary_of(node &dom.Node) dom.BoundaryPoint {
+	if node.is_text() {
+		return dom.BoundaryPoint{
+			node: node
+			offset: 0
+		}
+	}
+	if first_child := node.first_child() {
+		return inserted_content_start_boundary_of(first_child)
+	}
+	return dom.BoundaryPoint{
+		node: node
+		offset: 0
+	}
+}
+
+pub fn end_boundary_of_node(node &dom.Node) dom.BoundaryPoint {
+	if node.is_text() {
+		return dom.BoundaryPoint{
+			node: node
+			offset: node.length()
+		}
+	}
+	if last_child := node.last_child() {
+		if element := last_child.as_element() {
+			if element.is_html_element() && element.local_name() == 'br' {
+				return dom.BoundaryPoint{
+					node: node
+					offset: last_child.index()
+				}
+			}
+		}
+		return end_boundary_of_node(last_child)
+	}
+	if element := node.as_element() {
+		if element.is_void_element()
+			&& !(element.is_html_element() && element.local_name() == 'br') {
+			if parent := node.parent() {
+				return dom.BoundaryPoint{
+					node: parent
+					offset: node.index() + 1
+				}
+			}
+		}
+	}
+	return dom.BoundaryPoint{
+		node: node
+		offset: 0
+	}
+}
+
+fn inserted_boundary_equals(left dom.BoundaryPoint, right dom.BoundaryPoint) bool {
+	return left.node == right.node && left.offset == right.offset
+}
+
+fn inserted_content_containing_block(node &dom.Node) ?&dom.Node {
+	mut current := ?&dom.Node(node)
+	for current != none {
+		candidate := current or { return none }
+		if styled_markup_node_is_block(candidate) || candidate.is_editing_host() {
+			return candidate
+		}
+		current = candidate.parent()
+	}
+	return none
+}
+
+fn preceding_text_character(boundary dom.BoundaryPoint) ?rune {
+	if boundary.node.is_text() && boundary.offset > 0 {
+		text := unsafe { &dom.Text(boundary.node) }
+		prefix := text.substring_data(0, boundary.offset) or { return none }
+		characters := prefix.runes()
+		if characters.len > 0 {
+			return characters[characters.len - 1]
+		}
+	}
+	mut current := boundary.node
+	mut offset := boundary.offset
+	for {
+		if offset > 0 {
+			mut candidate := current.child_at_index(offset - 1) or { return none }
+			for candidate.last_child() != none {
+				candidate = candidate.last_child() or { break }
+			}
+			if candidate.is_text() {
+				data := unsafe { &dom.Text(candidate) }.data()
+				characters := data.runes()
+				if characters.len > 0 {
+					return characters[characters.len - 1]
+				}
+			}
+			return none
+		}
+		parent := current.parent() or { return none }
+		offset = current.index()
+		current = parent
+	}
+	return none
+}
+
+@[heap]
+pub struct InsertedContent {
+mut:
+	nodes_                               &InsertedNodes
+	replacement_range_                   ?&MutationTrackedRange
+	insertion_range_                     ?&MutationTrackedRange
+	endpoints_                           ?&ReplacementEndpoints
+	replacement_topology_                ?ReplacementTopology
+	start_paragraph_was_integrated_       bool
+	insertion_was_inside_paragraph_       bool
+	insertion_was_after_whitespace_       bool
+	replacement_was_inside_inline_content_ bool
+	end_paragraph_was_integrated_         bool
+	normalize_end_text_seam_              bool
+}
+
+pub fn InsertedContent.new(nodes []&dom.Node) &InsertedContent {
+	return &InsertedContent{
+		nodes_: InsertedNodes.new(nodes)
+	}
+}
+
+pub fn (content &InsertedContent) is_empty() bool {
+	return content.nodes_.is_empty()
+}
+
+pub fn (content &InsertedContent) first_node() ?&dom.Node {
+	return content.nodes_.first_node()
+}
+
+pub fn (content &InsertedContent) nodes() []&dom.Node {
+	return content.nodes_.connected_nodes()
+}
+
+pub fn (content &InsertedContent) last_node() ?&dom.Node {
+	return content.nodes_.last_node()
+}
+
+pub fn (content &InsertedContent) text_nodes() []&dom.Text {
+	return content.nodes_.connected_text_nodes()
+}
+
+pub fn (content &InsertedContent) contains(candidate &dom.Text) bool {
+	return content.nodes_.contains(candidate)
+}
+
+pub fn (content &InsertedContent) start_boundary() ?dom.BoundaryPoint {
+	endpoints := content.endpoints_ or { return none }
+	return endpoints.start()
+}
+
+pub fn (content &InsertedContent) completion_start_boundary() ?dom.BoundaryPoint {
+	replacement_range := content.replacement_range_ or { return content.start_boundary() }
+	topology := content.replacement_topology_ or { return content.start_boundary() }
+	mut completion_begins_with_text := content.nodes_.leading_content_kind() == .text_node
+	if topology == .block {
+		completion_begins_with_text = content.start_paragraph_was_integrated_
+			&& content.nodes_.leading_content_kind() != .other
+	}
+	if completion_begins_with_text && content.replacement_was_inside_inline_content_ {
+		return replacement_range.range().start()
+	}
+	return content.start_boundary()
+}
+
+pub fn (content &InsertedContent) insertion_boundary() ?dom.BoundaryPoint {
+	insertion_range := content.insertion_range_ or { return none }
+	return insertion_range.range().start()
+}
+
+pub fn (content &InsertedContent) end_boundary_after_atomic_content() ?dom.BoundaryPoint {
+	last_atomic_node := content.nodes_.last_atomic_node() or { return none }
+	if last_atomic_node.parent() == none {
+		return none
+	}
+	return end_boundary_of_node(last_atomic_node)
+}
+
+pub fn (content &InsertedContent) end_boundary() ?dom.BoundaryPoint {
+	if atomic_boundary := content.end_boundary_after_atomic_content() {
+		return atomic_boundary
+	}
+	endpoints := content.endpoints_ or { return none }
+	boundary := endpoints.end()
+	if !boundary.node.is_text() && boundary.offset > 0 {
+		if preceding_child := boundary.node.child_at_index(boundary.offset - 1) {
+			return end_boundary_of_node(preceding_child)
+		}
+	}
+	return boundary
+}
+
+fn (mut content InsertedContent) track_insertion_boundary(boundary dom.BoundaryPoint) {
+	if content.insertion_range_ != none {
+		return
+	}
+	if block := inserted_content_containing_block(boundary.node) {
+		content.insertion_was_inside_paragraph_ = !inserted_boundary_equals(boundary,
+			inserted_content_start_boundary_of(block))
+			&& !inserted_boundary_equals(boundary, end_boundary_of_node(block))
+	}
+	if previous := preceding_text_character(boundary) {
+		content.insertion_was_after_whitespace_ = previous in [` `, `\t`, `\n`, `\v`, `\f`, `\r`, `\u00a0`]
+	}
+	range_ := dom.Range.create_from_boundary_points(boundary.node, boundary.offset, boundary.node,
+		boundary.offset)
+	content.insertion_range_ = MutationTrackedRange.new(range_)
+}
+
+pub fn (mut content InsertedContent) insert_before(mut parent dom.Node, reference_node ?&dom.Node) {
+	insertion_offset := if reference := reference_node { reference.index() } else { parent.child_count() }
+	content.track_insertion_boundary(dom.BoundaryPoint{
+		node: parent
+		offset: insertion_offset
+	})
+	for node in content.nodes_.connected_nodes() {
+		parent.insert_before(node, reference_node, false)
+	}
+}
+
+pub fn (mut content InsertedContent) insert_into_range(mut range_ dom.Range, fragment &dom.DocumentFragment) ! {
+	content.track_insertion_boundary(range_.start())
+	range_.insert_node(fragment.as_node())!
+}
+
+pub fn (mut content InsertedContent) track_replacement_boundary(boundary dom.BoundaryPoint, topology ReplacementTopology) {
+	if content.replacement_range_ != none || content.replacement_topology_ != none {
+		return
+	}
+	content.replacement_topology_ = topology
+	range_ := dom.Range.create_from_boundary_points(boundary.node, boundary.offset, boundary.node,
+		boundary.offset)
+	content.replacement_range_ = MutationTrackedRange.new(range_)
+	for ancestor := ?&dom.Node(boundary.node); ancestor != none;  {
+		current := ancestor or { break }
+		if styled_markup_node_is_block(current) {
+			break
+		}
+		if current.as_element() != none {
+			content.replacement_was_inside_inline_content_ = true
+			break
+		}
+		ancestor = current.parent()
+	}
+}
+
+pub fn (mut content InsertedContent) begin_tracking_content_boundaries() {
+	if content.endpoints_ != none {
+		return
+	}
+	first := content.nodes_.first_node() or { return }
+	last := content.nodes_.last_node() or { return }
+	content.endpoints_ = ReplacementEndpoints.new(inserted_content_start_boundary_of(first),
+		end_boundary_of_node(last))
+}
+
+pub fn (mut content InsertedContent) begin_completion(end dom.BoundaryPoint) {
+	mut endpoints := unsafe { &ReplacementEndpoints(content.endpoints_ or { return }) }
+	start := content.completion_start_boundary() or { return }
+	endpoints.set_start(start)
+	endpoints.set_end(end)
+}
+
+pub fn (mut content InsertedContent) did_replace_node(node &dom.Node, replacement &dom.Node) {
+	mut nodes := unsafe { &InsertedNodes(content.nodes_) }
+	nodes.did_replace_node(node, replacement)
+}
+
+pub fn (mut content InsertedContent) did_replace_node_range(node &dom.Node, first_replacement &dom.Node, last_replacement &dom.Node) {
+	mut nodes := unsafe { &InsertedNodes(content.nodes_) }
+	nodes.did_replace_node_range(node, first_replacement, last_replacement)
+}
+
+pub fn (mut content InsertedContent) did_move_start_paragraph(start dom.BoundaryPoint) {
+	mut endpoints := unsafe { &ReplacementEndpoints(content.endpoints_ or { return }) }
+	content.start_paragraph_was_integrated_ = true
+	endpoints.set_start(start)
+}
+
+pub fn (mut content InsertedContent) will_integrate_end_paragraph(paragraph &dom.Node) {
+	endpoints := content.endpoints_ or { return }
+	content.end_paragraph_was_integrated_ = true
+	if content.start_paragraph_was_integrated_
+		&& paragraph.is_inclusive_ancestor_of(endpoints.start().node) {
+		content.normalize_end_text_seam_ = true
+	}
+}
+
+pub fn (content &InsertedContent) replacement_topology() ?ReplacementTopology {
+	return content.replacement_topology_
+}
+
+pub fn (content &InsertedContent) insertion_was_inside_paragraph() bool {
+	return content.insertion_was_inside_paragraph_
+}
+
+pub fn (content &InsertedContent) insertion_was_after_whitespace() bool {
+	return content.insertion_was_after_whitespace_
+}
+
+pub fn (content &InsertedContent) end_paragraph_was_integrated() bool {
+	return content.end_paragraph_was_integrated_
+}
+
+pub fn (mut content InsertedContent) require_end_text_seam_normalization() {
+	content.normalize_end_text_seam_ = true
+}
+
+pub fn (content &InsertedContent) should_normalize_end_text_seam() bool {
+	return content.normalize_end_text_seam_
+}
+
+pub fn (mut content InsertedContent) release() {
+	if tracked := content.replacement_range_ {
+		mut mutable_tracked := unsafe { &MutationTrackedRange(tracked) }
+		mutable_tracked.release()
+		content.replacement_range_ = none
+	}
+	if tracked := content.insertion_range_ {
+		mut mutable_tracked := unsafe { &MutationTrackedRange(tracked) }
+		mutable_tracked.release()
+		content.insertion_range_ = none
+	}
+	if endpoints := content.endpoints_ {
+		mut mutable_endpoints := unsafe { &ReplacementEndpoints(endpoints) }
+		mutable_endpoints.release()
+		content.endpoints_ = none
+	}
+}
