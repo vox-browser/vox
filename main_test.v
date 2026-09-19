@@ -112,6 +112,26 @@ fn test_javascript_bridge_loads_object_images_after_data_property_changes() {
 	}
 }
 
+fn test_browser_installs_decoded_video_poster_frames() {
+	$if darwin {
+		mut document := html.parse_document('<!doctype html><style>video{display:block;width:100px;height:100px}</style><video id="target" poster="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="></video>')
+		document.set_url(dom.URL{ value: 'https://example.test/' })
+		install_video_poster_fetch_hooks(document)
+		element := document.get_element_by_id('target') or { panic('missing video') }
+		video_element := unsafe { &dom.HTMLVideoElement(element) }
+		model := html.html_video_element_model_for_dom_element(video_element)
+		assert model.current_representation() == .poster_frame
+		assert model.poster_frame()?.width == 1
+		assert model.poster_frame()?.height == 1
+
+		result := layout.run_document_layout(document, 100, 100) or { panic('missing layout') }
+		commands := result.paint_tree.paint_commands().filter(it.kind == 'draw_video')
+		assert commands.len == 1
+		assert commands[0].video_bitmap?.width == 1
+		assert commands[0].video_bitmap?.height == 1
+	}
+}
+
 fn test_javascript_bridge_applies_image_source_replacements_before_relayout() {
 	$if darwin {
 		red := "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 1 1'%3E%3Crect width='1' height='1' fill='red'/%3E%3C/svg%3E"

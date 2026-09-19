@@ -1218,6 +1218,22 @@ fn install_object_image_fetch_hooks(document &dom.Document) {
 	}
 }
 
+fn browser_fetch_video_poster(resource_url dom.URL) !&dom.Bitmap_ {
+	return browser_decode_raster_image_bytes(browser_image_resource_bytes(resource_url)!)
+}
+
+fn install_video_poster_fetch_hooks(document &dom.Document) {
+	root := unsafe { &dom.Node(document) }
+	for element in css.query_selector_all(root, 'video') {
+		video_element := unsafe { &dom.HTMLVideoElement(element) }
+		mut model := html.html_video_element_model_for_dom_element(video_element)
+		model.set_poster_fetch_hook(browser_fetch_video_poster)
+		if poster := element.get_attribute('poster') {
+			model.set_poster(poster)
+		}
+	}
+}
+
 // The native shell supplies decoded media frames through the same external
 // content source boundary used by upstream's video playback manager. This
 // keeps container/codec work out of layout while allowing VideoPaintable to
@@ -2088,6 +2104,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		app.document.set_url(document_url)
 	}
 	install_object_image_fetch_hooks(app.document)
+	install_video_poster_fetch_hooks(app.document)
 	preloaded_resources := preload_document_resources(app.document, loaded.url, app.resource_cache)
 	checkpoint = debug_timing_checkpoint('preload_resources', checkpoint)
 	for resource_url, resource in preloaded_resources {
