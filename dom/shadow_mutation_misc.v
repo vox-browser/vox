@@ -3954,12 +3954,11 @@ pub fn (mut manager EditingHostManager) visit_edges(mut visitor CellVisitor) {
 
 pub fn (mut manager EditingHostManager) handle_insert(input_type string, value string) {
 	// https://w3c.github.io/editing/docs/execCommand/#additional-requirements
-	_ = input_type
 	if manager.document_ == unsafe { nil } {
 		return
 	}
 	mut document := unsafe { &Document(manager.document_) }
-	document.exec_command('insertText', false, value) or {}
+	document.exec_command_internal('insertText', false, value, input_type) or {}
 }
 
 pub fn (mut manager EditingHostManager) select_all() {
@@ -4095,9 +4094,9 @@ pub fn (mut manager EditingHostManager) handle_delete(input_type string) {
 	if manager.document_ == unsafe { nil } {
 		return
 	}
-	command := if input_type == 'deleteContentBackward' { 'delete' } else { 'forwardDelete' }
+	command := if input_type == 'deleteContentForward' { 'forwardDelete' } else { 'delete' }
 	mut document := unsafe { &Document(manager.document_) }
-	document.exec_command(command, false, '') or {}
+	document.exec_command_internal(command, false, '', input_type) or {}
 }
 
 pub fn (mut manager EditingHostManager) handle_return_key(ui_input_type string) EventResult {

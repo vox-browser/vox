@@ -1846,7 +1846,7 @@ pub:
 	parse_xml_document          DocumentXMLDocumentParseCallback = unsafe { nil }
 }
 
-pub type DocumentEditingExecCommandCallback = fn (voidptr, &Document, string, string) bool
+pub type DocumentEditingExecCommandCallback = fn (voidptr, &Document, string, string, string) bool
 
 pub struct DocumentEditingCommandHook {
 pub:
@@ -3928,12 +3928,12 @@ pub fn (mut d Document) dispatch_event_simple(event_name string, bubbles bool) {
 	document_node.dispatch_event_simple(event_name, bubbles)
 }
 
-pub fn editing_exec_command(d &Document, command string, value string) bool {
+pub fn editing_exec_command(d &Document, command string, value string, user_input_type string) bool {
 	hook := d.editing_command_hook_ or { return false }
 	if hook.target == unsafe { nil } || hook.exec_command == unsafe { nil } {
 		return false
 	}
-	return hook.exec_command(hook.target, d, command, value)
+	return hook.exec_command(hook.target, d, command, value, user_input_type)
 }
 
 // XPath lives in its own package and imports DOM nodes, so Document reaches it
@@ -8901,6 +8901,10 @@ pub fn (d &Document) get_hovered_node() ?&Node {
 
 // --- Exec command (stubs) ---
 pub fn (mut d Document) exec_command(command string, show_ui bool, value string) !bool {
+	return d.exec_command_internal(command, show_ui, value, '')
+}
+
+pub fn (mut d Document) exec_command_internal(command string, show_ui bool, value string, user_input_type string) !bool {
 	// AD-HOC: Not supported on non-HTML documents
 	if !d.is_html_document() {
 		return error('InvalidStateError: execCommand is only supported on HTML documents')
@@ -8918,7 +8922,7 @@ pub fn (mut d Document) exec_command(command string, show_ui bool, value string)
 		return false
 	}
 	// 5. Take the action for command. Delegate to editing module.
-	command_result := editing_exec_command(d, command, value)
+	command_result := editing_exec_command(d, command, value, user_input_type)
 	// 6. If the previous step returned false, return false.
 	if !command_result {
 		return false

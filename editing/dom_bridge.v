@@ -180,7 +180,7 @@ fn replace_editing_host_markup(host &dom.Element, markup string, mut history Edi
 	return true
 }
 
-fn dom_editing_exec_command(target voidptr, document &dom.Document, command string, value string) bool {
+fn dom_editing_exec_command(target voidptr, document &dom.Document, command string, value string, user_input_type string) bool {
 	if target == unsafe { nil } {
 		return false
 	}
@@ -221,13 +221,19 @@ fn dom_editing_exec_command(target voidptr, document &dom.Document, command stri
 	model.set_selection(model_boundary_for_linear_offset(model, anchor_offset), model_boundary_for_linear_offset(model, focus_offset)) or { return false }
 	history_pointer := install_editing_history(document)
 	mut history := unsafe { &EditingHistory(history_pointer) }
-	category := match canonical_command {
-		command_insert_text, command_insert_line_break, command_insert_paragraph {
-			UndoStepCategory.insertion
+	is_cut_or_paste := user_input_type in [dom.input_type_delete_by_cut,
+		dom.input_type_insert_from_paste]
+	category := if is_cut_or_paste {
+		UndoStepCategory.other
+	} else {
+		match canonical_command {
+			command_insert_text, command_insert_line_break, command_insert_paragraph {
+				UndoStepCategory.insertion
+			}
+			command_delete { UndoStepCategory.backward_deletion }
+			command_forward_delete { UndoStepCategory.forward_deletion }
+			else { UndoStepCategory.other }
 		}
-		command_delete { UndoStepCategory.backward_deletion }
-		command_forward_delete { UndoStepCategory.forward_deletion }
-		else { UndoStepCategory.other }
 	}
 	history.begin_recording(host, category)
 	defer {
@@ -245,6 +251,24 @@ fn dom_editing_exec_command(target voidptr, document &dom.Document, command stri
 	}
 	bridge.last_markup_ = new_markup
 	restore_dom_selection(document, host, model)
+	history.end_recording()
+	if new_markup != current_markup || is_cut_or_paste {
+		definition := find_command_definition(canonical_command) or { return true }
+		input_type := if user_input_type == '' { definition.mapped_value } else { user_input_type }
+		input_data := if input_type in [dom.input_type_insert_text,
+			dom.input_type_insert_composition_text] {
+			?string(value)
+		} else {
+			none
+		}
+		event := dom.InputEvent.create_from_platform_event('input', dom.InputEventInit{
+			input_type: input_type
+			data: input_data
+		}, [], dom.current_event_timestamp())
+		event_target := unsafe { &dom.EventTarget(host) }
+		base_event := unsafe { &dom.Event(event) }
+		event_target.dispatch_event(base_event)
+	}
 	return true
 }
 

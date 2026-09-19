@@ -3,6 +3,42 @@ module html
 import dom
 import editing
 
+@[heap]
+struct LiveEditingInputObservation {
+mut:
+	input_types []string
+	data        []string
+}
+
+fn live_editing_input_callback(observation &LiveEditingInputObservation) &dom.CallbackType {
+	return &dom.CallbackType{
+		handle_event: fn [observation] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			input_event := unsafe { &dom.InputEvent(event) }
+			mut mutable_observation := unsafe { &LiveEditingInputObservation(observation) }
+			mutable_observation.input_types << input_event.input_type()
+			mutable_observation.data << (input_event.data() or { '<null>' })
+			return dom.js_undefined()
+		}
+	}
+}
+
+fn live_editing_document(text_value string) (&dom.Document, &dom.Element, &dom.Text, &dom.EditingHostManager) {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_document_type(.html)
+	document.set_editable(true)
+	document.set_browsing_context(&dom.BrowsingContext{})
+	install_document_fragment_parsing_hook(document)
+	mut host := document.create_element('div') or { panic(err) }
+	host.set_attribute_for_bindings('contenteditable', 'true') or { panic(err) }
+	text := document.create_text_node(text_value)
+	mut host_node := host.as_node()
+	host_node.append_child(text.as_node()) or { panic(err) }
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(host.as_node()) or { panic(err) }
+	manager := document.editing_host_manager()
+	return document, host, text, manager
+}
+
 fn test_document_exec_command_mutates_the_live_contenteditable_host() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	document.set_document_type(.html)
@@ -52,4 +88,54 @@ fn test_document_exec_command_mutates_the_live_contenteditable_host() {
 	history := editing.editing_history_if_exists(document) or { panic('missing editing history') }
 	assert history.unproxied_mutation_count() == 0
 	assert !document.exec_command('notACommand', false, '')!
+}
+
+fn test_contenteditable_paste_is_a_standalone_history_unit_with_user_input_type() {
+	document, host, text, manager_pointer := live_editing_document('a')
+	selection_pointer := document.get_selection() or { panic('missing selection') }
+	mut selection := unsafe { &dom.Selection(selection_pointer) }
+	selection.collapse(text.as_node(), 1) or { panic(err) }
+	mut observation := &LiveEditingInputObservation{}
+	listener := dom.IDLEventListener.create(live_editing_input_callback(observation))
+	unsafe { &dom.EventTarget(host.as_node()) }.add_event_listener_without_options('input', listener)
+	mut manager := unsafe { &dom.EditingHostManager(manager_pointer) }
+
+	manager.handle_insert(dom.input_type_insert_text, 'x')
+	manager.handle_insert(dom.input_type_insert_from_paste, 'y')
+	assert host.as_node().text_content()? == 'axy'
+	assert observation.input_types == [dom.input_type_insert_text, dom.input_type_insert_from_paste]
+	assert observation.data == ['x', '<null>']
+	history_pointer := editing.editing_history_if_exists(document) or {
+		panic('missing editing history')
+	}
+	mut history := unsafe { &editing.EditingHistory(history_pointer) }
+	assert history.undo(document)
+	assert host.as_node().text_content()? == 'ax'
+	assert history.undo(document)
+	assert host.as_node().text_content()? == 'a'
+}
+
+fn test_contenteditable_cut_uses_backward_delete_and_stays_separate_from_typing() {
+	document, host, text, manager_pointer := live_editing_document('abc')
+	selection_pointer := document.get_selection() or { panic('missing selection') }
+	mut selection := unsafe { &dom.Selection(selection_pointer) }
+	selection.set_base_and_extent(text.as_node(), 1, text.as_node(), 2) or { panic(err) }
+	mut observation := &LiveEditingInputObservation{}
+	listener := dom.IDLEventListener.create(live_editing_input_callback(observation))
+	unsafe { &dom.EventTarget(host.as_node()) }.add_event_listener_without_options('input', listener)
+	mut manager := unsafe { &dom.EditingHostManager(manager_pointer) }
+
+	manager.handle_delete(dom.input_type_delete_by_cut)
+	manager.handle_insert(dom.input_type_insert_text, 'X')
+	assert host.as_node().text_content()? == 'aXc'
+	assert observation.input_types == [dom.input_type_delete_by_cut, dom.input_type_insert_text]
+	assert observation.data == ['<null>', 'X']
+	history_pointer := editing.editing_history_if_exists(document) or {
+		panic('missing editing history')
+	}
+	mut history := unsafe { &editing.EditingHistory(history_pointer) }
+	assert history.undo(document)
+	assert host.as_node().text_content()? == 'ac'
+	assert history.undo(document)
+	assert host.as_node().text_content()? == 'abc'
 }
