@@ -361,6 +361,13 @@ Skia and CoreGraphics font rasterization settings, including Blink-compatible
 non-dilated outlines for `antialiased`; direct screenshots verify that the
 rasterization mode changes pixels.
 
+The browser script bridge now preserves explicit `Range` boundary points,
+replays `removeAllRanges()` and successive selection moves in order, moves
+existing nodes through `insertBefore()`, and applies CSSOM rule declaration
+changes before style computation. The three upstream live-selection reftests
+now match exactly, including insertion between unchanged boundaries and moving
+a highlight between subtrees after its `::selection` rule changes.
+
 CSS backface visibility now parses, computes, inherits, serializes, and
 interpolates through the typed property pipeline. The transform implementation
 retains full 4x4 matrices, builds explicit and synthetic 3D planes, bounds
@@ -530,6 +537,9 @@ Ladybird V smoke check passed
 $ ./compare_screenshots.sh <24-new-cases> inline-node ordered-list \
     text-decorations <5-modified-svg-cases>
 32 passed, 32 total (31 distinct fixtures)
+
+$ ./compare_screenshots.sh
+8 passed, 8 total (including 3 live-selection reftests)
 ```
 
 The 2026-09-08 default-body pass exhausted the suspicious-stub queue at that

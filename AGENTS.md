@@ -71,9 +71,12 @@
   ```
 
   With no arguments the current smoke set is `inline-node`, `ordered-list`,
-  `text-decorations`, and `line-clamp-properties`. A case name first resolves
-  against upstream `Tests/LibWeb/Screenshot/{input,expected}`, then against
-  `Tests/LibWeb/Ref/input`. For a reftest, the command follows its
+  `text-decorations`, `line-clamp-properties`, `canvas-text`, and the three
+  live-selection reftests (`selection-focus-between-text-controls`,
+  `selection-insert-between-boundaries`, and `selection-moves-between-subtrees`).
+  A case name first resolves against upstream
+  `Tests/LibWeb/Screenshot/{input,expected}`, then against `Tests/LibWeb/Ref/input`.
+  For a reftest, the command follows its
   `<link rel="match">` or `<link rel="mismatch">` and captures both pages through
   the V browser. An input HTML path is also accepted. The command prints differing-pixel,
   maximum-channel-error, MAE, and RMSE metrics and writes `*.actual.png` plus an
@@ -112,6 +115,9 @@
 - `-webkit-font-smoothing` parses and inherits through computed style, reaches
   foreground text, text shadows, and `background-clip: text`, and selects the
   corresponding macOS Skia/CoreGraphics rasterization mode.
+- Scripted boundary selections remain live when nodes are inserted between
+  them, selection moves are replayed in order, and CSSOM selection-style
+  mutations reach the final paint without retaining a stale highlight.
 
 ## Translated module inventory
 
