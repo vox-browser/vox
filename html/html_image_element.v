@@ -994,7 +994,13 @@ pub fn html_image_element_x(element &dom.HTMLImageElement) int {
 	mut document := unsafe { &dom.Document(dom_element.document()) }
 	document.update_layout_if_needed_for_node(dom_element.as_node(), .html_image_element_x)
 	layout_node := dom_element.as_node().layout_node() or { return 0 }
-	return if layout_node.has_geometry_ { int(layout_node.border_box_.x) } else { 0 }
+	if !layout_node.has_geometry_ {
+		return 0
+	}
+	// The accumulated visual context supplies scroll-frame state used by the
+	// coordinate calculation. Do not resolve it until a committed box exists.
+	document.update_paint_and_hit_testing_properties_if_needed()
+	return int(layout_node.border_box_.x)
 }
 
 pub fn html_image_element_y(element &dom.HTMLImageElement) int {
@@ -1002,7 +1008,11 @@ pub fn html_image_element_y(element &dom.HTMLImageElement) int {
 	mut document := unsafe { &dom.Document(dom_element.document()) }
 	document.update_layout_if_needed_for_node(dom_element.as_node(), .html_image_element_y)
 	layout_node := dom_element.as_node().layout_node() or { return 0 }
-	return if layout_node.has_geometry_ { int(layout_node.border_box_.y) } else { 0 }
+	if !layout_node.has_geometry_ {
+		return 0
+	}
+	document.update_paint_and_hit_testing_properties_if_needed()
+	return int(layout_node.border_box_.y)
 }
 
 pub fn html_image_element_complete(element &dom.HTMLImageElement) bool {

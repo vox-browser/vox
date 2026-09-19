@@ -133,14 +133,27 @@ fn test_image_model_coordinates_use_attached_element_layout_geometry() {
 	image := unsafe { &dom.HTMLImageElement(image_element) }
 	model := html_image_element_model_for_dom_element(image)
 	mut image_node := image_element.as_node()
-	image_node.set_layout_node(&dom.LayoutNode{
+	mut image_layout_node := &dom.LayoutNode{
 		dom_node_: image_node
 		has_geometry_: true
 		border_box_: dom.Rect{27, 43, 80, 40}
-	})
+	}
+	image_node.set_layout_node(image_layout_node)
 
+	document.needs_accumulated_visual_contexts_update = true
 	assert model.x() == 27
+	assert !document.needs_accumulated_visual_contexts_update
+	document.needs_accumulated_visual_contexts_update = true
 	assert model.y() == 43
+	assert !document.needs_accumulated_visual_contexts_update
+
+	// A layout node without committed geometry is not a box. Its coordinates
+	// are zero and querying them must not force paint-property resolution.
+	image_layout_node.has_geometry_ = false
+	document.needs_accumulated_visual_contexts_update = true
+	assert model.x() == 0
+	assert model.y() == 0
+	assert document.needs_accumulated_visual_contexts_update
 
 	synthetic_model := HTMLImageElementModel.create(document, document.base_url())
 	assert synthetic_model.x() == 0
