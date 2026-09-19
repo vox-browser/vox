@@ -75,6 +75,45 @@ fn has_mergeable_visible_children(node &dom.Node) bool {
 	return has_dom_visible_children(node)
 }
 
+fn can_merge_paragraph_contents(node &dom.Node) bool {
+	return is_dom_non_list_single_line_container(node)
+}
+
+fn remove_dom_extraneous_line_break_at_end(node &dom.Node) {
+	mut leaf := node
+	for leaf.last_child() != none {
+		leaf = leaf.last_child() or { break }
+	}
+	if !is_html_break(leaf) || !leaf.is_editable() {
+		return
+	}
+	parent := leaf.parent() or { return }
+	if node_has_html_name(parent, ['li']) && parent.child_count() == 1 {
+		return
+	}
+	previous := leaf.previous_sibling() or { return }
+	if !node_is_visible_for_paragraph_integration(previous) || is_html_break(previous)
+		|| is_dom_block_node(previous) || !is_dom_block_node(parent) {
+		return
+	}
+	mut mutable_leaf := unsafe { &dom.Node(leaf) }
+	mutable_leaf.remove(false)
+}
+
+fn restore_replacement_trailing_break(block &dom.Node, trailing_break &dom.Node) {
+	if last_child := block.last_child() {
+		if last_child == trailing_break {
+			return
+		}
+	}
+	if trailing_break.parent() != none {
+		move_node_preserving_ranges(trailing_break, block, block.child_count())
+	} else {
+		mut mutable_block := unsafe { &dom.Node(block) }
+		mutable_block.insert_before(trailing_break, none, false)
+	}
+}
+
 pub fn make_block_replacement_plan(insertion_boundary dom.BoundaryPoint, destination_block &dom.Node, inserted_content &InsertedContent) BlockReplacementPlan {
 	visible_insertion_position := VisiblePosition.create(destination_block.document(), insertion_boundary)
 	start_was_start_of_paragraph := visible_insertion_position.is_start_of_paragraph()
