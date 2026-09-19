@@ -154,6 +154,10 @@ or enter the correct following list item at list boundaries.
 DOM insertion seams now canonicalize collapsible and protected spaces across
 inline wrappers, stop at atomic clipboard content, and leave preserved
 white-space runs untouched.
+Collapsed inline selection replacement now inserts prepared fragments through a
+mutation-tracked range, splits destination formatting chains, removes redundant
+transport styles and empty block props, normalizes both whitespace/text seams,
+and collapses the live selection at the semantic inserted endpoint.
 
 The refreshed current-tree semantic inventory reports 4,536 unmatched C++
 spellings. That is a structural review queue rather than a count of missing behaviors: active V
@@ -296,7 +300,7 @@ from the current-module totals.
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
 | `DOM` | 59 | 34,859 | 36,103 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
-| `Editing` | 26 | 12,720 | 6,595 | 797 | Complete |
+| `Editing` | 26 | 12,720 | 6,732 | 797 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
 | `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
@@ -308,7 +312,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
 | `Geolocation` | 4 | 643 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 56,528 | 13,589 | Complete |
+| `HTML` | 286 | 83,853 | 56,528 | 13,652 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
@@ -361,7 +365,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **346,595** | **69,623** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **346,732** | **69,686** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
