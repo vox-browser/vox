@@ -133,12 +133,17 @@
   property guards include function identity, arguments substitute before arity
   rejection, and custom-property dependencies retain access to the function
   registry.
+- Paint-command-only style and UI changes retain the hit-test display list
+  across repaint. Border radii, SVG fill/fill-rule, pointer-events, resize, and
+  visibility carry the upstream hit-test-affecting metadata and still invalidate
+  it; focus, selection, media, image, inspector, and scrollbar paint changes do
+  not make the next input event rebuild the plan.
 
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-19, the module
-translations contain 350,559 implementation V LOC and 71,422 test V LOC.
+translations contain 350,651 implementation V LOC and 71,496 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -146,21 +151,21 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Module | Implementation V LOC | Module | Implementation V LOC |
 | --- | ---: | --- | ---: |
 | ARIA | 2,535 | Animations | 3,972 |
-| Bindings | 2,675 | CSS | 104,527 |
+| Bindings | 2,675 | CSS | 104,550 |
 | Clipboard | 973 | Compositor | 2,403 |
 | Compression | 424 | ContentSecurityPolicy | 2,738 |
 | CookieStore | 859 | CredentialManagement | 418 |
-| Crypto (`webcrypto/`) | 4,472 | DOM | 36,534 |
+| Crypto (`webcrypto/`) | 4,472 | DOM | 36,561 |
 | DOMURL | 754 | Editing | 8,515 |
 | Encoding | 705 | EncryptedMediaExtensions | 572 |
 | EntriesAPI | 44 | EventTiming | 153 |
 | Fetch | 5,188 | FileAPI | 1,018 |
 | Fullscreen | 93 | GPC | 16 |
 | Gamepad | 760 | Geolocation | 416 |
-| Geometry | 2,062 | HTML | 57,053 |
+| Geometry | 2,062 | HTML | 57,064 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 854 |
-| IntersectionObserver | 569 | Layout | 43,283 |
+| IntersectionObserver | 569 | Layout | 43,314 |
 | Loader | 1,921 | MathML | 411 |
 | MediaCapabilitiesAPI | 676 | MediaCapture | 1,205 |
 | MediaSourceExtensions | 357 | MimeSniff | 1,108 |
@@ -184,7 +189,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **350,559** |  |  |
+| **Total** | **350,651** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;

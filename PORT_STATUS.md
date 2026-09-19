@@ -442,7 +442,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
 | `Animations` | 10 | 5,187 | 3,972 | 1,041 | Complete |
 | `Bindings` | 11 | 2,501 | 2,675 | 918 | Complete |
-| `CSS` | 215 | 47,722 | 104,527 | 9,114 | Present |
+| `CSS` | 215 | 47,722 | 104,550 | 9,135 | Present |
 | `Clipboard` | 4 | 1,009 | 973 | 343 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 424 | 138 | Complete |
@@ -450,7 +450,7 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
-| `DOM` | 59 | 34,859 | 36,534 | 2,199 | Complete |
+| `DOM` | 59 | 34,859 | 36,561 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
 | `Editing` | 26 | 12,720 | 8,515 | 797 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
@@ -464,13 +464,13 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
 | `Geolocation` | 4 | 643 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 57,053 | 14,573 | Complete |
+| `HTML` | 286 | 83,853 | 57,064 | 14,573 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 43,283 | 16,188 | Present |
+| `Layout` | 9 | 4,001 | 43,314 | 16,241 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -517,7 +517,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **350,559** | **71,422** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **350,651** | **71,496** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -762,6 +762,12 @@ and stacking invalidation clear the whole store, matching the separate C++
 invalidation boundaries. Checkbox/radio buckets read live DOM checkedness and
 indeterminate state rather than a layout-time attribute snapshot; the translated
 `HTMLInputElement::set_checked()` invalidation refreshes the retained commands.
+The three-way display-list invalidation mode retains that hit-test plan for
+paint-command-only style, focus, selection, media, image, inspector, and
+scrollbar changes. The nine properties marked as affecting hit testing upstream
+still discard it, and the compatibility renderer eagerly remaps a logically
+retained plan when its paint-tree transport snapshot is refreshed so input
+dispatch never observes stale pointers or records paint commands synchronously.
 Its overlay phase uses Painting's translated scrollbar geometry and
 ports PaintableBox's scrollbar colors, mirroring, current-offset placement, and
 resize-gripper drawing. That geometry now also drives scrollbar and resize-handle
