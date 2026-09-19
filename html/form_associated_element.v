@@ -580,6 +580,40 @@ fn form_associated_text_control_handle_insert(target voidptr, input_type string,
 	text.handle_insert(input_type, value) or {}
 }
 
+fn form_associated_text_control_handle_return(target voidptr, input_type string) dom.EventResult {
+	mut text := unsafe { &FormAssociatedTextControlElement(target) }
+	element := text.control.element
+	if element.local_name() == 'textarea' {
+		mut model := html_text_area_element_model_for_dom_element(unsafe {
+			&dom.HTMLTextAreaElement(element)
+		})
+		model.handle_return_key(input_type) or { return .dropped }
+		return .handled
+	}
+	if element.local_name() == 'input' {
+		mut model := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+		model.handle_return_key(input_type) or { return .dropped }
+		return .handled
+	}
+	return .dropped
+}
+
+fn form_associated_text_control_navigate(target voidptr, action dom.InputEventsTargetNavigationAction, collapse dom.CollapseSelection) {
+	mut text := unsafe { &FormAssociatedTextControlElement(target) }
+	match action {
+		.start, .document_start, .previous_page { text.move_cursor_to_start(collapse) }
+		.end, .document_end, .next_page { text.move_cursor_to_end(collapse) }
+		.line_start { text.move_cursor_to_start_of_current_line(collapse) }
+		.line_end { text.move_cursor_to_end_of_current_line(collapse) }
+		.previous_character { text.decrement_cursor_position_offset(collapse) }
+		.next_character { text.increment_cursor_position_offset(collapse) }
+		.previous_word { text.decrement_cursor_position_to_previous_word(collapse) }
+		.next_word { text.increment_cursor_position_to_next_word(collapse) }
+		.previous_line { text.decrement_cursor_position_to_previous_line(collapse) }
+		.next_line { text.increment_cursor_position_to_next_line(collapse) }
+	}
+}
+
 fn form_associated_text_control_handle_delete(target voidptr, input_type string) {
 	mut text := unsafe { &FormAssociatedTextControlElement(target) }
 	text.handle_delete(input_type) or {}
@@ -635,6 +669,8 @@ pub fn FormAssociatedTextControlElement.create(control &FormAssociatedElement, v
 		target: voidptr(text)
 		cursor_position_callback: form_associated_text_control_cursor_position
 		handle_insert_callback: form_associated_text_control_handle_insert
+		handle_return_callback: form_associated_text_control_handle_return
+		navigate_callback: form_associated_text_control_navigate
 		handle_delete_callback: form_associated_text_control_handle_delete
 		select_all_callback: form_associated_text_control_select_all
 		selection_callback: form_associated_text_control_selection

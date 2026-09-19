@@ -2986,6 +2986,12 @@ fn html_content_editable_state(element &Element) string {
 	return 'inherit'
 }
 
+pub fn (n &Node) editing_host_is_plaintext_only() bool {
+	host := n.editing_host() or { return false }
+	element := host.as_element() or { return false }
+	return element.is_html_element() && html_content_editable_state(element) == 'plaintext-only'
+}
+
 pub fn (n &Node) is_editable_or_editing_host() bool {
 	return n.is_editable() || n.is_editing_host()
 }

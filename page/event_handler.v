@@ -18,6 +18,8 @@ pub type SelectAllCallback = fn (voidptr) EventResult
 
 pub type ClipboardInsertCallback = fn (voidptr, string, ?string) EventResult
 
+pub type EditingKeyActionCallback = fn (voidptr, int, u32, u32) bool
+
 pub enum SelectionMode {
 	none
 	character
@@ -142,6 +144,8 @@ mut:
 	select_all_callback_                 SelectAllCallback = unsafe { nil }
 	clipboard_insert_target_             voidptr = unsafe { nil }
 	clipboard_insert_callback_           ClipboardInsertCallback = unsafe { nil }
+	editing_key_action_target_           voidptr = unsafe { nil }
+	editing_key_action_callback_         EditingKeyActionCallback = unsafe { nil }
 }
 
 pub fn (mut handler EventHandler) set_history_action_callback(target voidptr, callback HistoryActionCallback) {
@@ -166,6 +170,20 @@ fn (mut handler EventHandler) insert_clipboard_content(plain_text string, html ?
 	}
 	return handler.clipboard_insert_callback_(handler.clipboard_insert_target_, plain_text,
 		html)
+}
+
+pub fn (mut handler EventHandler) set_editing_key_action_callback(target voidptr, callback EditingKeyActionCallback) {
+	handler.editing_key_action_target_ = target
+	handler.editing_key_action_callback_ = callback
+}
+
+fn (handler &EventHandler) perform_editing_key_action(key int, code_point u32, modifiers u32) bool {
+	if handler.editing_key_action_target_ == unsafe { nil }
+		|| handler.editing_key_action_callback_ == unsafe { nil } {
+		return false
+	}
+	return handler.editing_key_action_callback_(handler.editing_key_action_target_, key,
+		code_point, modifiers)
 }
 
 fn platform_control_modifier() u32 {
@@ -510,6 +528,23 @@ pub fn (mut handler EventHandler) handle_keydown(key int, code_point u32, modifi
 	}
 	if focused := target {
 		if focused.is_editable {
+			if handler.perform_editing_key_action(key, code_point, modifiers) {
+				if input_type := input_type_for_delete_key(key) {
+					handler.log('beforeinput:${input_type}', focused)
+				} else if key == 13 {
+					input_type := if modifiers & dom.modifier_shift != 0 {
+						dom.input_type_insert_line_break
+					} else {
+						dom.input_type_insert_paragraph
+					}
+					handler.log('beforeinput:${input_type}', focused)
+					handler.log('input:${input_type}', focused)
+				} else if !should_ignore_keydown_event(int(code_point), modifiers) {
+					handler.log('beforeinput', focused)
+					handler.log('input', focused)
+				}
+				return .handled
+			}
 			if input_type := input_type_for_delete_key(key) {
 				handler.log('beforeinput:${input_type}', focused)
 				return .handled

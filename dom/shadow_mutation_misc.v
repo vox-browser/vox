@@ -3942,6 +3942,31 @@ fn editing_host_manager_handle_clipboard_insert_callback(target voidptr, input_t
 	manager.handle_insert_from_clipboard(input_type, plain_text, html)
 }
 
+fn editing_host_manager_handle_return_callback(target voidptr, input_type string) EventResult {
+	mut manager := unsafe { &EditingHostManager(target) }
+	return manager.handle_return_key(input_type)
+}
+
+fn editing_host_manager_navigate_callback(target voidptr, action InputEventsTargetNavigationAction, collapse CollapseSelection) {
+	mut manager := unsafe { &EditingHostManager(target) }
+	match action {
+		.start { manager.move_cursor_to_start(collapse) }
+		.end { manager.move_cursor_to_end(collapse) }
+		.line_start { manager.move_cursor_to_start(collapse) }
+		.line_end { manager.move_cursor_to_end(collapse) }
+		.document_start { manager.move_cursor_to_start_of_document(collapse) }
+		.document_end { manager.move_cursor_to_end_of_document(collapse) }
+		.previous_page { manager.move_cursor_to_previous_page(collapse) }
+		.next_page { manager.move_cursor_to_next_page(collapse) }
+		.previous_character { manager.decrement_cursor_position_offset(collapse) }
+		.next_character { manager.increment_cursor_position_offset(collapse) }
+		.previous_word { manager.decrement_cursor_position_to_previous_word(collapse) }
+		.next_word { manager.increment_cursor_position_to_next_word(collapse) }
+		.previous_line { manager.decrement_cursor_position_to_previous_line(collapse) }
+		.next_line { manager.increment_cursor_position_to_next_line(collapse) }
+	}
+}
+
 fn editing_host_manager_select_all_callback(target voidptr) {
 	mut manager := unsafe { &EditingHostManager(target) }
 	manager.select_all()
@@ -3955,6 +3980,8 @@ pub fn EditingHostManager.create(mut document Document) &EditingHostManager {
 		target: voidptr(manager)
 		handle_insert_callback: editing_host_manager_handle_insert_callback
 		handle_clipboard_insert_callback: editing_host_manager_handle_clipboard_insert_callback
+		handle_return_callback: editing_host_manager_handle_return_callback
+		navigate_callback: editing_host_manager_navigate_callback
 		handle_delete_callback: editing_host_manager_handle_delete_callback
 		select_all_callback: editing_host_manager_select_all_callback
 	}
@@ -4069,38 +4096,39 @@ fn (manager &EditingHostManager) get_selection_for_navigation(collapse CollapseS
 }
 
 pub fn (mut manager EditingHostManager) move_cursor_to_start(collapse CollapseSelection) {
-	mut selection := manager.get_selection_for_navigation(collapse) or { return }
-	node := selection.focus_node() or { return }
-	if collapse == .yes {
-		selection.collapse(node, 0) or { return }
-		if manager.document_ != unsafe { nil } {
-			mut document := unsafe { &Document(manager.document_) }
-			document.reset_cursor_blink_cycle()
-		}
-	} else {
-		anchor := selection.anchor_node() or { return }
-		selection.set_base_and_extent(anchor, selection.anchor_offset(), node, 0) or { return }
-	}
-	selection.scroll_focus_into_view()
+	selection := manager.get_selection_for_navigation(collapse) or { return }
+	SelectionModifier.new(selection).modify(if collapse == .yes { .move } else { .extend },
+		.backward, .line_boundary)
 }
 
 pub fn (mut manager EditingHostManager) move_cursor_to_end(collapse CollapseSelection) {
-	mut selection := manager.get_selection_for_navigation(collapse) or { return }
-	node := selection.focus_node() or { return }
-	end_offset := node.length()
-	if collapse == .yes {
-		if manager.document_ != unsafe { nil } {
-			mut document := unsafe { &Document(manager.document_) }
-			document.reset_cursor_blink_cycle()
-		}
-		selection.collapse(node, end_offset) or { return }
-	} else {
-		anchor := selection.anchor_node() or { return }
-		selection.set_base_and_extent(anchor, selection.anchor_offset(), node, end_offset) or {
-			return
-		}
-	}
-	selection.scroll_focus_into_view()
+	selection := manager.get_selection_for_navigation(collapse) or { return }
+	SelectionModifier.new(selection).modify(if collapse == .yes { .move } else { .extend },
+		.forward, .line_boundary)
+}
+
+pub fn (mut manager EditingHostManager) move_cursor_to_start_of_document(collapse CollapseSelection) {
+	selection := manager.get_selection_for_navigation(collapse) or { return }
+	SelectionModifier.new(selection).modify(if collapse == .yes { .move } else { .extend },
+		.backward, .document_boundary)
+}
+
+pub fn (mut manager EditingHostManager) move_cursor_to_end_of_document(collapse CollapseSelection) {
+	selection := manager.get_selection_for_navigation(collapse) or { return }
+	SelectionModifier.new(selection).modify(if collapse == .yes { .move } else { .extend },
+		.forward, .document_boundary)
+}
+
+pub fn (mut manager EditingHostManager) move_cursor_to_previous_page(collapse CollapseSelection) {
+	selection := manager.get_selection_for_navigation(collapse) or { return }
+	SelectionModifier.new(selection).modify(if collapse == .yes { .move } else { .extend },
+		.backward, .page)
+}
+
+pub fn (mut manager EditingHostManager) move_cursor_to_next_page(collapse CollapseSelection) {
+	selection := manager.get_selection_for_navigation(collapse) or { return }
+	SelectionModifier.new(selection).modify(if collapse == .yes { .move } else { .extend },
+		.forward, .page)
 }
 
 pub fn (mut manager EditingHostManager) increment_cursor_position_offset(collapse CollapseSelection) {

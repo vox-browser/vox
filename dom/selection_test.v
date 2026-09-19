@@ -229,6 +229,15 @@ fn test_editing_host_input_target_selects_to_document_boundaries() {
 	assert selection.anchor_offset() == 0
 	assert selection.focus_node()? == second.as_node()
 	assert selection.focus_offset() == second.length()
+	input_target.move_cursor_to_start(.yes)
+	assert selection.focus_node()? == second.as_node()
+	assert selection.focus_offset() == 0
+	input_target.move_cursor_to_start_of_document(.yes)
+	assert selection.focus_node()? == first.as_node()
+	assert selection.focus_offset() == 0
+	input_target.move_cursor_to_end_of_document(.yes)
+	assert selection.focus_node()? == second.as_node()
+	assert selection.focus_offset() == second.length()
 }
 
 fn test_word_segment_kinds_and_line_boundaries() {

@@ -18,6 +18,22 @@ mut:
 	reset_count int
 }
 
+@[heap]
+struct PageEditingCommandObservation {
+mut:
+	command         string
+	value           string
+	user_input_type string
+}
+
+fn page_editing_command_observer(target voidptr, _ &dom.Document, command string, value string, user_input_type string) bool {
+	mut observation := unsafe { &PageEditingCommandObservation(target) }
+	observation.command = command
+	observation.value = value
+	observation.user_input_type = user_input_type
+	return true
+}
+
 fn page_input_bridge_reset(target voidptr) {
 	mut harness := unsafe { &PageInputBridgeHarness(target) }
 	harness.reset_count++
@@ -169,6 +185,68 @@ fn test_page_select_all_shortcut_selects_the_active_document_body() {
 	assert model.handle_keydown(int(`A`), platform_control_modifier(), 0, false) == .handled
 	selection := document.get_selection() or { panic('missing selection') }
 	assert selection.to_string() == 'Ladybird'
+}
+
+fn test_page_editing_keys_route_through_the_active_input_target() {
+	mut model := Page.create(1.0)!
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_document_type(.html)
+	document.set_editable(true)
+	document.set_browsing_context(&dom.BrowsingContext{
+		active_document_: document
+	})
+	mut host := document.create_element('div')!
+	host.set_attribute_for_bindings('contenteditable', 'true')!
+	text := document.create_text_node('abc')
+	mut text_node := text.as_node()
+	text_node.set_layout_node(&dom.LayoutNode{
+		is_text_node_: true
+		visual_lines_: [dom.VisualLine{
+			start_offset: 0
+			end_offset: 3
+			end_offset_with_trailing_whitespace: 3
+			has_fragments: true
+			owner_paintable: 1
+		}]
+	})
+	mut host_node := host.as_node()
+	host_node.append_child(text.as_node())!
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(host.as_node())!
+	document.set_focused_area(host.as_node())
+	mut manager := document.editing_host_manager()
+	manager.set_active_contenteditable_element(host.as_node())
+	selection_pointer := document.get_selection() or { panic('missing selection') }
+	mut selection := unsafe { &dom.Selection(selection_pointer) }
+	selection.collapse(text.as_node(), 1)!
+	mut observation := &PageEditingCommandObservation{}
+	document.set_editing_command_hook(dom.DocumentEditingCommandHook{
+		target: voidptr(observation)
+		exec_command: page_editing_command_observer
+	})
+	mut navigable := &dom.Navigable{
+		is_top_level_traversable_: true
+	}
+	navigable.set_active_document(document)
+	model.set_local_root_navigable(navigable)!
+	model.event_handler.focused_target_ = 'editor'
+	model.event_handler.focused_target_state = InputTarget{
+		id: 'editor'
+		is_editable: true
+	}
+
+	assert model.handle_keydown(39, 0, 0, false) == .handled
+	assert selection.focus_offset() == 2
+	assert model.handle_keydown(39, dom.modifier_shift, 0, false) == .handled
+	assert selection.anchor_offset() == 2
+	assert selection.focus_offset() == 3
+	assert model.handle_keydown(35, 0, 0, false) == .handled
+	assert selection.is_collapsed()
+	assert selection.focus_offset() == 0
+	assert model.handle_keydown(int(`A`), 0, u32(`a`), false) == .handled
+	assert observation.command == 'insertText'
+	assert observation.value == 'a'
+	assert observation.user_input_type == dom.input_type_insert_text
 }
 
 fn test_context_menu_request_is_replaced_and_taken_once() {

@@ -316,6 +316,121 @@ fn page_clipboard_insert_callback(target voidptr, plain_text string, html ?strin
 	return .handled
 }
 
+fn page_word_jump_modifier() u32 {
+	$if macos {
+		return dom.modifier_alt
+	} $else {
+		return dom.modifier_ctrl
+	}
+}
+
+fn page_editing_key_action_callback(target voidptr, original_key int, code_point u32, original_modifiers u32) bool {
+	model := unsafe { &Page(target) }
+	root := model.local_root_navigable_ or { return false }
+	document := root.active_document() or { return false }
+	input_target := document.active_input_events_target(none) or { return false }
+	mut key := original_key
+	mut modifiers := original_modifiers
+	collapse := if modifiers & dom.modifier_shift != 0 { dom.CollapseSelection.no } else { dom.CollapseSelection.yes }
+	$if macos {
+		if modifiers & dom.modifier_super != 0 {
+			if key == 37 {
+				key = 35
+				modifiers &= ~dom.modifier_super
+			} else if key == 39 {
+				key = 36
+				modifiers &= ~dom.modifier_super
+			} else if key == 38 {
+				input_target.move_cursor_to_start_of_document(collapse)
+				return true
+			} else if key == 40 {
+				input_target.move_cursor_to_end_of_document(collapse)
+				return true
+			}
+		}
+	}
+	if input_type := input_type_for_delete_key(key) {
+		input_target.handle_delete(input_type)
+		return true
+	}
+	if key == 37 || key == 39 {
+		if modifiers & page_word_jump_modifier() != 0 {
+			if key == 37 {
+				input_target.decrement_cursor_position_to_previous_word(collapse)
+			} else {
+				input_target.increment_cursor_position_to_next_word(collapse)
+			}
+		} else if key == 37 {
+			input_target.decrement_cursor_position_offset(collapse)
+		} else {
+			input_target.increment_cursor_position_offset(collapse)
+		}
+		return true
+	}
+	if key == 38 || key == 40 {
+		if key == 38 {
+			input_target.decrement_cursor_position_to_previous_line(collapse)
+		} else {
+			input_target.increment_cursor_position_to_next_line(collapse)
+		}
+		return true
+	}
+	if (key == 33 || key == 34) && modifiers & dom.modifier_shift != 0 {
+		if key == 33 {
+			input_target.move_cursor_to_previous_page(.no)
+		} else {
+			input_target.move_cursor_to_next_page(.no)
+		}
+		return true
+	}
+	if key == 35 || key == 36 {
+		focused_is_textarea := if focused := document.focused_area() {
+			if element := focused.as_element() { element.local_name() == 'textarea' } else { false }
+		} else {
+			false
+		}
+		plain_home_or_end := modifiers & ~(dom.modifier_shift | dom.modifier_keypad) == 0
+		action := if focused_is_textarea && plain_home_or_end {
+			if key == 35 { dom.InputEventsTargetNavigationAction.line_start } else { .line_end }
+		} else if key == 35 {
+			dom.InputEventsTargetNavigationAction.start
+		} else {
+			dom.InputEventsTargetNavigationAction.end
+		}
+		input_target.navigate(action, collapse)
+		return true
+	}
+	if key == 13 {
+		significant_modifiers := modifiers & ~dom.modifier_keypad
+		if significant_modifiers !in [u32(0), dom.modifier_shift] {
+			return false
+		}
+		mut input_type := if significant_modifiers == dom.modifier_shift {
+			dom.input_type_insert_line_break
+		} else {
+			dom.input_type_insert_paragraph
+		}
+		if input_target.text_control_selection() != none {
+			input_type = dom.input_type_insert_line_break
+		} else if selection := document.get_selection() {
+			if range := selection.range() {
+				if range.start_container().editing_host_is_plaintext_only() {
+					input_type = dom.input_type_insert_line_break
+				}
+			}
+		}
+		if input_target.handle_return_key(input_type) != .handled {
+			input_target.handle_insert(input_type, '\n')
+		}
+		return true
+	}
+	if !should_ignore_keydown_event(int(code_point), modifiers) {
+		input_target.handle_insert(dom.input_type_insert_text, rune(code_point).str())
+		return true
+	}
+	return false
+}
+
 pub fn Page.create(device_scale f64) !&Page {
 	if device_scale <= 0 || math.is_nan(device_scale) || math.is_inf(device_scale, 0) {
 		return error('device pixel scale must be finite and positive')
@@ -328,6 +443,7 @@ pub fn Page.create(device_scale f64) !&Page {
 	model.event_handler.set_history_action_callback(voidptr(model), page_history_action_callback)
 	model.event_handler.set_select_all_callback(voidptr(model), page_select_all_callback)
 	model.event_handler.set_clipboard_insert_callback(voidptr(model), page_clipboard_insert_callback)
+	model.event_handler.set_editing_key_action_callback(voidptr(model), page_editing_key_action_callback)
 	model.Page = dom.Page{
 		target: voidptr(model)
 		did_create_document_callback: page_did_create_document_callback

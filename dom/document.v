@@ -2627,6 +2627,27 @@ pub type InputEventsTargetHandleInsertCallback = fn (voidptr, string, string)
 
 pub type InputEventsTargetHandleClipboardInsertCallback = fn (voidptr, string, string, ?string)
 
+pub type InputEventsTargetHandleReturnCallback = fn (voidptr, string) EventResult
+
+pub enum InputEventsTargetNavigationAction {
+	start
+	end
+	line_start
+	line_end
+	document_start
+	document_end
+	previous_page
+	next_page
+	previous_character
+	next_character
+	previous_word
+	next_word
+	previous_line
+	next_line
+}
+
+pub type InputEventsTargetNavigateCallback = fn (voidptr, InputEventsTargetNavigationAction, CollapseSelection)
+
 pub type InputEventsTargetHandleDeleteCallback = fn (voidptr, string)
 
 pub type InputEventsTargetSelectAllCallback = fn (voidptr)
@@ -2659,6 +2680,8 @@ pub:
 	cursor_position_callback InputEventsTargetCursorPositionCallback = unsafe { nil }
 	handle_insert_callback   InputEventsTargetHandleInsertCallback = unsafe { nil }
 	handle_clipboard_insert_callback InputEventsTargetHandleClipboardInsertCallback = unsafe { nil }
+	handle_return_callback   InputEventsTargetHandleReturnCallback = unsafe { nil }
+	navigate_callback        InputEventsTargetNavigateCallback = unsafe { nil }
 	handle_delete_callback   InputEventsTargetHandleDeleteCallback = unsafe { nil }
 	select_all_callback      InputEventsTargetSelectAllCallback = unsafe { nil }
 	selection_callback       InputEventsTargetSelectionCallback = unsafe { nil }
@@ -2687,6 +2710,68 @@ pub fn (target &InputEventsTarget) handle_insert_from_clipboard(input_type strin
 		return
 	}
 	target.handle_insert(input_type, plain_text)
+}
+
+pub fn (target &InputEventsTarget) handle_return_key(input_type string) EventResult {
+	if target.target == unsafe { nil } || target.handle_return_callback == unsafe { nil } {
+		return .dropped
+	}
+	return target.handle_return_callback(target.target, input_type)
+}
+
+pub fn (target &InputEventsTarget) navigate(action InputEventsTargetNavigationAction, collapse CollapseSelection) {
+	if target.target == unsafe { nil } || target.navigate_callback == unsafe { nil } {
+		return
+	}
+	target.navigate_callback(target.target, action, collapse)
+}
+
+pub fn (target &InputEventsTarget) move_cursor_to_start(collapse CollapseSelection) {
+	target.navigate(.start, collapse)
+}
+
+pub fn (target &InputEventsTarget) move_cursor_to_end(collapse CollapseSelection) {
+	target.navigate(.end, collapse)
+}
+
+pub fn (target &InputEventsTarget) move_cursor_to_start_of_document(collapse CollapseSelection) {
+	target.navigate(.document_start, collapse)
+}
+
+pub fn (target &InputEventsTarget) move_cursor_to_end_of_document(collapse CollapseSelection) {
+	target.navigate(.document_end, collapse)
+}
+
+pub fn (target &InputEventsTarget) move_cursor_to_previous_page(collapse CollapseSelection) {
+	target.navigate(.previous_page, collapse)
+}
+
+pub fn (target &InputEventsTarget) move_cursor_to_next_page(collapse CollapseSelection) {
+	target.navigate(.next_page, collapse)
+}
+
+pub fn (target &InputEventsTarget) decrement_cursor_position_offset(collapse CollapseSelection) {
+	target.navigate(.previous_character, collapse)
+}
+
+pub fn (target &InputEventsTarget) increment_cursor_position_offset(collapse CollapseSelection) {
+	target.navigate(.next_character, collapse)
+}
+
+pub fn (target &InputEventsTarget) decrement_cursor_position_to_previous_word(collapse CollapseSelection) {
+	target.navigate(.previous_word, collapse)
+}
+
+pub fn (target &InputEventsTarget) increment_cursor_position_to_next_word(collapse CollapseSelection) {
+	target.navigate(.next_word, collapse)
+}
+
+pub fn (target &InputEventsTarget) decrement_cursor_position_to_previous_line(collapse CollapseSelection) {
+	target.navigate(.previous_line, collapse)
+}
+
+pub fn (target &InputEventsTarget) increment_cursor_position_to_next_line(collapse CollapseSelection) {
+	target.navigate(.next_line, collapse)
 }
 
 pub fn (target &InputEventsTarget) handle_delete(input_type string) {
