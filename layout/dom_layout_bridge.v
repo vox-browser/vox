@@ -261,6 +261,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		visibility_: visibility
 		content_visibility_: content_visibility
 		user_select_none_: user_select_none
+		white_space_collapse_is_not_collapse_: box.computed_values().white_space_collapse() != .collapse
 		layout_handle: voidptr(box)
 		apply_style_callback: apply_style_to_layout_node
 		set_needs_layout_update_callback: set_layout_node_needs_layout_update

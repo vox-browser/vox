@@ -1799,6 +1799,10 @@ pub fn (ln &LayoutNode) user_select_is_none() bool {
 	return ln.user_select_none_
 }
 
+pub fn (ln &LayoutNode) white_space_collapse_is_not_collapse() bool {
+	return ln.white_space_collapse_is_not_collapse_
+}
+
 pub fn (ln &LayoutNode) real_layout_handle() voidptr {
 	return ln.layout_handle
 }

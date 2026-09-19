@@ -1343,6 +1343,7 @@ pub mut:
 	visibility_                                     CSSVisibility_ = .visible
 	content_visibility_                             CSSContentVisibility_ = .visible
 	user_select_none_                               bool
+	white_space_collapse_is_not_collapse_           bool
 	needs_layout_update_                            bool
 	rendered_text_                                  string
 	rendered_text_chunks_                           []string

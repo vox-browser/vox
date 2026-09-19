@@ -172,6 +172,11 @@ enum StyledSelectionCoverage {
 	full
 }
 
+struct SerializedClipboardText {
+	source     &dom.Text
+	serialized &dom.Text
+}
+
 fn styled_markup_node_is_block(node &dom.Node) bool {
 	element := node.as_element() or { return false }
 	return is_prohibited_paragraph_child_name(element.local_name())
@@ -222,7 +227,7 @@ fn is_trailing_caret_placeholder(range &dom.Range, source &dom.Node) bool {
 		&& range.end_offset() == selected_branch.index() + 1
 }
 
-fn append_selected_styled_markup_node(range &dom.Range, source &dom.Node, mut destination_parent dom.Node, coverage StyledSelectionCoverage) bool {
+fn append_selected_styled_markup_node(range &dom.Range, source &dom.Node, mut destination_parent dom.Node, coverage StyledSelectionCoverage, mut serialized_text []SerializedClipboardText) bool {
 	if !should_serialize_styled_markup_node(source) {
 		return false
 	}
@@ -247,6 +252,12 @@ fn append_selected_styled_markup_node(range &dom.Range, source &dom.Node, mut de
 		}
 		selected_data := data.substring_data(start_offset, end_offset - start_offset) or { '' }
 		clone_data.set_data(selected_data)
+		if source.is_text() {
+			serialized_text << SerializedClipboardText{
+				source: unsafe { &dom.Text(source) }
+				serialized: unsafe { &dom.Text(clone) }
+			}
+		}
 		return selected_data != ''
 	}
 
@@ -262,7 +273,7 @@ fn append_selected_styled_markup_node(range &dom.Range, source &dom.Node, mut de
 			StyledSelectionCoverage.partial
 		}
 		emitted_content = append_selected_styled_markup_node(range, child, mut mutable_clone,
-			child_coverage) || emitted_content
+			child_coverage, mut serialized_text) || emitted_content
 	}
 
 	element := source.as_element()
@@ -280,6 +291,33 @@ fn append_selected_styled_markup_node(range &dom.Range, source &dom.Node, mut de
 	return emitted_content || is_atomic_content || styled_markup_node_is_block(source)
 }
 
+fn protect_collapsible_whitespace_for_interchange(document &dom.Document, serialized_text []SerializedClipboardText) {
+	for text in serialized_text {
+		layout_node := text.source.as_node().layout_node() or { continue }
+		if layout_node.white_space_collapse_is_not_collapse() {
+			continue
+		}
+		data := text.serialized.data()
+		if data == '' {
+			continue
+		}
+		mut parent := unsafe { &dom.Node(text.serialized.as_node().parent() or { continue }) }
+		for token in rebalance_whitespace_for_interchange(data) {
+			if token.type_ == .text {
+				parent.insert_before(document.create_text_node(token.text).as_node(), text.serialized.as_node(),
+					false)
+			} else {
+				span := document.create_element('span') or { continue }
+				mut span_node := span.as_node()
+				span_node.append_child(document.create_text_node('\u00a0').as_node()) or { continue }
+				parent.insert_before(span.as_node(), text.serialized.as_node(), false)
+			}
+		}
+		mut serialized_node := unsafe { &dom.Node(text.serialized.as_node()) }
+		serialized_node.remove(false)
+	}
+}
+
 pub fn serialize_range_as_html_for_clipboard(range &dom.Range) string {
 	if range.collapsed() {
 		return ''
@@ -289,9 +327,11 @@ pub fn serialize_range_as_html_for_clipboard(range &dom.Range) string {
 		.navigable_selected_text)
 	fragment := document.create_document_fragment()
 	mut fragment_node := fragment.as_node()
+	mut serialized_text := []SerializedClipboardText{}
 	common_ancestor := range.common_ancestor_container()
 	if common_ancestor.is_character_data() {
-		append_selected_styled_markup_node(range, common_ancestor, mut fragment_node, .partial)
+		append_selected_styled_markup_node(range, common_ancestor, mut fragment_node, .partial,
+			mut serialized_text)
 	} else {
 		for child in common_ancestor.children_as_vector() {
 			if !styled_markup_node_participates(range, child) {
@@ -302,8 +342,10 @@ pub fn serialize_range_as_html_for_clipboard(range &dom.Range) string {
 			} else {
 				StyledSelectionCoverage.partial
 			}
-			append_selected_styled_markup_node(range, child, mut fragment_node, coverage)
+			append_selected_styled_markup_node(range, child, mut fragment_node, coverage,
+				mut serialized_text)
 		}
 	}
+	protect_collapsible_whitespace_for_interchange(document, serialized_text)
 	return fragment_node.serialize_fragment(.no, .inner) or { '' }
 }
