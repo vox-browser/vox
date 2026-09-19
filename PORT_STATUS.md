@@ -94,12 +94,17 @@ Legacy single-`font` runs can now be removed or converted to inline color
 spans, including quirks-mode legacy color parsing and preservation of text-run
 seams. Rich clipboard serialization uses the rendered source color and keeps
 protected whitespace runs independently styled.
+Replacement fragments now consume rich-clipboard transport markup: they remove
+top-level formatting whitespace and trailing interchange markers, retain a
+leading marker as structural state, unwrap protected-space spans, prune empty
+inline staging wrappers, protect external edge whitespace, and classify text-
+only and block-containing fragments before insertion.
 
-The current base-to-head semantic delta audit reports 4,600 unmatched changed
-C++ spellings. That is a structural review queue rather than a count of missing behaviors: active V
+The refreshed current-tree semantic inventory reports 4,536 unmatched C++
+spellings. That is a structural review queue rather than a count of missing behaviors: active V
 implementations often consolidate C++ class hierarchies and overloads under a
 single typed path. Empty/default-return implementations are checked separately,
-and the refreshed current-tree audit has 21 candidates awaiting body review.
+and the refreshed audit has no suspicious trivial bodies awaiting review.
 
 The current Layout refresh also follows shadow hosts while locating a positioned
 inline containing block. Absolutely positioned shadow-tree descendants therefore
@@ -236,7 +241,7 @@ from the current-module totals.
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
 | `DOM` | 59 | 34,859 | 36,098 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
-| `Editing` | 26 | 12,720 | 4,055 | 796 | Complete |
+| `Editing` | 26 | 12,720 | 4,263 | 796 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
 | `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
@@ -248,7 +253,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
 | `Geolocation` | 4 | 643 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 56,528 | 12,450 | Complete |
+| `HTML` | 286 | 83,853 | 56,528 | 12,497 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
@@ -301,7 +306,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **343,934** | **68,459** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **344,142** | **68,506** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -315,13 +320,13 @@ upstream .cpp files: 1193
 upstream implementations: 21401
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 10
-reviewed upstream-equivalent trivial implementations: 534
-suspicious empty/default-return implementations: 21
-  candidate-name-match: 13859
-  unmatched: 4600
+reviewed upstream-equivalent trivial implementations: 556
+suspicious empty/default-return implementations: 0
+  candidate-name-match: 13921
+  unmatched: 4536
   language-constructor-or-destructor: 1383
   gc-or-binding-runtime: 655
-  consolidated-name-match: 488
+  consolidated-name-match: 490
   namespace-template-specialization: 177
   language-operator: 124
   language-template-trait: 63
@@ -329,12 +334,12 @@ suspicious empty/default-return implementations: 21
 
 largest unmatched modules:
 
-  1708 CSS
-  1259 HTML
-   637 DOM
-   438 Painting
+  1704 CSS
+  1249 HTML
+   628 DOM
+   406 Painting
    316 Layout
-   242 Editing
+   233 Editing
 
 $ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 788 passed, 301 failed, 1089 total
