@@ -59,23 +59,65 @@ fn word_segment_kind(segment string) WordSegmentKind {
 }
 
 fn text_node_has_rendered_text(text &Text) bool {
-	return text.data().len > 0
+	for line in collect_visual_lines(text) {
+		if line.has_fragments {
+			return true
+		}
+	}
+	return false
+}
+
+fn is_rendered_inline_content_before_break(node &Node) bool {
+	if node.is_text() {
+		return text_node_has_rendered_text(unsafe { &Text(node) })
+	}
+	layout_node := node.layout_node() or { return false }
+	return layout_node.is_atomic_inline()
 }
 
 fn is_empty_line_break(node &Node) bool {
 	element := node.as_element() or { return false }
-	return element.local_name() == 'br' && node.is_editable()
+	if element.local_name() != 'br' || !node.is_editable() {
+		return false
+	}
+	layout_node := node.layout_node() or { return false }
+	containing_block := layout_node.containing_block() or { return false }
+	containing_block_node := containing_block.dom_node() or { return false }
+	mut previous := node.previous_in_pre_order()
+	for previous != none {
+		candidate := previous or { break }
+		if candidate == containing_block_node {
+			break
+		}
+		if !containing_block_node.is_inclusive_ancestor_of(candidate) {
+			break
+		}
+		if candidate.is_html_br_element() {
+			return true
+		}
+		if is_rendered_inline_content_before_break(candidate) {
+			return false
+		}
+		previous = candidate.previous_in_pre_order()
+	}
+	return true
 }
 
 fn is_atomic_inline_caret_host(node &Node) bool {
-	element := node.as_element() or { return false }
-	return node.parent() != none && node.is_editable()
-		&& element.local_name() in ['img', 'input', 'textarea', 'select', 'canvas', 'iframe',
-		'video', 'audio', 'object', 'embed']
+	if node.is_html_br_element() {
+		return false
+	}
+	layout_node := node.layout_node() or { return false }
+	return node.parent() != none && node.is_editable() && layout_node.is_atomic_inline()
 }
 
 fn is_empty_line_host(node &Node) bool {
-	if node.as_element() == none || !node.is_editable_or_editing_host() {
+	element := node.as_element() or { return false }
+	if !node.is_editable() {
+		return false
+	}
+	layout_node := element.as_node().layout_node() or { return false }
+	if layout_node.display().is_inline_outside() {
 		return false
 	}
 	mut descendant := node.next_in_pre_order(node)
@@ -93,16 +135,24 @@ fn is_empty_line_host(node &Node) bool {
 }
 
 fn boundary_visual_lines_share_line(before &Text, after &Text) bool {
-	before_host := before.as_node().editing_host() or { return false }
-	after_host := after.as_node().editing_host() or { return false }
-	return selection_same_node(before_host, after_host) && !before.data().ends_with('\n')
-		&& !after.data().starts_with('\n')
+	before_lines := collect_visual_lines(before)
+	after_lines := collect_visual_lines(after)
+	if before_lines.len == 0 || !before_lines.last().has_fragments || after_lines.len == 0
+		|| !after_lines[0].has_fragments {
+		return false
+	}
+	return before_lines.last().owner_paintable == after_lines[0].owner_paintable
+		&& before_lines.last().line_index == after_lines[0].line_index
 }
 
 fn boundary_visual_lines_share_inline_context(before &Text, after &Text) bool {
-	before_host := before.as_node().editing_host() or { return false }
-	after_host := after.as_node().editing_host() or { return false }
-	return selection_same_node(before_host, after_host)
+	before_lines := collect_visual_lines(before)
+	after_lines := collect_visual_lines(after)
+	if before_lines.len == 0 || !before_lines.last().has_fragments || after_lines.len == 0
+		|| !after_lines[0].has_fragments {
+		return false
+	}
+	return before_lines.last().owner_paintable == after_lines[0].owner_paintable
 }
 
 fn canonical_location_at_outer_edge_of_inline_content(text &Text, block &Node, direction CaretNavigationDirection) CaretLocation {

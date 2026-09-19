@@ -17,17 +17,18 @@ enum VisibleScanDirection {
 	forward
 }
 
+@[heap]
 pub struct VisiblePosition {
 	document_        &dom.Document
 	boundary_        dom.CaretLocation
 	deep_equivalent_ dom.CaretLocation
 }
 
-pub fn VisiblePosition.create(document &dom.Document, boundary dom.BoundaryPoint) VisiblePosition {
+pub fn VisiblePosition.create(document &dom.Document, boundary dom.BoundaryPoint) &VisiblePosition {
 	return VisiblePosition.create_with_affinity(document, boundary, .downstream)
 }
 
-pub fn VisiblePosition.create_with_affinity(document &dom.Document, boundary dom.BoundaryPoint, affinity dom.TextAffinity) VisiblePosition {
+pub fn VisiblePosition.create_with_affinity(document &dom.Document, boundary dom.BoundaryPoint, affinity dom.TextAffinity) &VisiblePosition {
 	location := dom.CaretLocation{
 		node: boundary.node
 		offset: boundary.offset
@@ -35,7 +36,7 @@ pub fn VisiblePosition.create_with_affinity(document &dom.Document, boundary dom
 	}
 	navigator := dom.CaretNavigator.new(document)
 	canonical := navigator.canonical_location_for_editing(location)
-	return VisiblePosition{
+	return &VisiblePosition{
 		document_: document
 		boundary_: location
 		deep_equivalent_: navigator.upstream_equivalent_location(canonical)
@@ -60,19 +61,19 @@ pub fn (position &VisiblePosition) affinity() dom.TextAffinity {
 	return position.boundary_.affinity
 }
 
-pub fn (position &VisiblePosition) move(alteration dom.SelectionAlteration, direction dom.CaretNavigationDirection, granularity dom.SelectionGranularity, preferred_inline_coordinate ?f64) ?VisiblePosition {
+pub fn (position &VisiblePosition) move(alteration dom.SelectionAlteration, direction dom.CaretNavigationDirection, granularity dom.SelectionGranularity, preferred_inline_coordinate ?f64) ?&VisiblePosition {
 	navigator := dom.CaretNavigator.new(position.document_)
 	destination := navigator.move(position.boundary_, alteration, direction, granularity,
 		preferred_inline_coordinate) or { return none }
 	canonical := navigator.canonical_location_for_editing(destination)
-	return VisiblePosition{
+	return &VisiblePosition{
 		document_: position.document_
 		boundary_: destination
 		deep_equivalent_: navigator.upstream_equivalent_location(canonical)
 	}
 }
 
-fn adjacent_visible_position(document &dom.Document, deep_equivalent dom.CaretLocation, direction dom.CaretNavigationDirection) ?VisiblePosition {
+fn adjacent_visible_position(document &dom.Document, deep_equivalent dom.CaretLocation, direction dom.CaretNavigationDirection) ?&VisiblePosition {
 	navigator := dom.CaretNavigator.new(document)
 	destination := navigator.move(deep_equivalent, .move, direction, .character, none) or {
 		return none
@@ -83,11 +84,11 @@ fn adjacent_visible_position(document &dom.Document, deep_equivalent dom.CaretLo
 	}, destination.affinity)
 }
 
-pub fn (position &VisiblePosition) next() ?VisiblePosition {
+pub fn (position &VisiblePosition) next() ?&VisiblePosition {
 	return adjacent_visible_position(position.document_, position.deep_equivalent_, .forward)
 }
 
-pub fn (position &VisiblePosition) previous() ?VisiblePosition {
+pub fn (position &VisiblePosition) previous() ?&VisiblePosition {
 	return adjacent_visible_position(position.document_, position.deep_equivalent_, .backward)
 }
 

@@ -124,6 +124,25 @@ fn selection_test_editing_host() (&Document, &Element) {
 	return document, host
 }
 
+fn attach_selection_test_line(node &Node, owner u32) {
+	mut mutable_node := unsafe { &Node(node) }
+	mutable_node.set_layout_node(&LayoutNode{
+		is_text_node_: node.is_text()
+		is_atomic_inline_: !node.is_text()
+		visual_lines_: if node.is_text() {
+			[VisualLine{
+				start_offset: 0
+				end_offset: node.length()
+				end_offset_with_trailing_whitespace: node.length()
+				has_fragments: true
+				owner_paintable: owner
+			}]
+		} else {
+			[]VisualLine{}
+		}
+	})
+}
+
 fn test_caret_navigator_crosses_split_text_and_atomic_inline_content() {
 	document, host := selection_test_editing_host()
 	first := document.create_text_node('one')
@@ -133,6 +152,9 @@ fn test_caret_navigator_crosses_split_text_and_atomic_inline_content() {
 	host_node.append_child(first.as_node()) or { panic(err) }
 	host_node.append_child(image.as_node()) or { panic(err) }
 	host_node.append_child(second.as_node()) or { panic(err) }
+	attach_selection_test_line(first.as_node(), 1)
+	attach_selection_test_line(image.as_node(), 1)
+	attach_selection_test_line(second.as_node(), 1)
 	assert first.as_node().is_editable()
 	navigator := CaretNavigator.new(document)
 	after_image := navigator.move(CaretLocation{ node: first.as_node(), offset: 3 }, .move,
@@ -163,6 +185,8 @@ fn test_selection_modifier_applies_one_cross_node_mutation_and_select_all() {
 	mut host_node := host.as_node()
 	host_node.append_child(first.as_node()) or { panic(err) }
 	host_node.append_child(second.as_node()) or { panic(err) }
+	attach_selection_test_line(first.as_node(), 1)
+	attach_selection_test_line(second.as_node(), 1)
 	mut selection := Selection.create(document)
 	selection.collapse(first.as_node(), first.length()) or { panic(err) }
 	modifier := SelectionModifier.new(selection)
