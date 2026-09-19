@@ -369,10 +369,22 @@ pub fn (states &CustomStateSet) size() int {
 	return states.entries_.len
 }
 
+pub fn (states &CustomStateSet) set_size() int {
+	return states.size()
+}
+
 pub fn (states &CustomStateSet) values() []string {
 	mut values := states.entries_.keys()
 	values.sort()
 	return values
+}
+
+pub fn (states &CustomStateSet) states() []string {
+	return states.values()
+}
+
+pub fn (states &CustomStateSet) element() ?&Element {
+	return states.element_
 }
 
 pub fn (states &CustomStateSet) set_entries() map[string]bool {
@@ -403,6 +415,10 @@ pub fn (mut states CustomStateSet) add(state string) ! {
 	states.did_modify()
 }
 
+pub fn (mut states CustomStateSet) add_state(state string) {
+	states.add(state) or { return }
+}
+
 pub fn (mut states CustomStateSet) delete(state string) bool {
 	if !states.entries_[state] {
 		return false
@@ -412,12 +428,20 @@ pub fn (mut states CustomStateSet) delete(state string) bool {
 	return true
 }
 
+pub fn (mut states CustomStateSet) remove_state(state string) bool {
+	return states.delete(state)
+}
+
 pub fn (mut states CustomStateSet) clear() {
 	if states.entries_.len == 0 {
 		return
 	}
 	states.entries_.clear()
 	states.did_modify()
+}
+
+pub fn (mut states CustomStateSet) clear_states() {
+	states.clear()
 }
 
 @[heap]
@@ -4169,6 +4193,10 @@ pub fn (mut e Element) ensure_custom_state_set() &CustomStateSet {
 	new_cs := CustomStateSet.create(&e)
 	e.custom_state_set_ = new_cs
 	return new_cs
+}
+
+pub fn (e &Element) custom_state_set() ?&CustomStateSet {
+	return e.custom_state_set_
 }
 
 pub fn (e &Element) custom_element_definition() ?&CustomElementDefinition {

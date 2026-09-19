@@ -2095,8 +2095,9 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 		.state {
 			// https://html.spec.whatwg.org/multipage/semantics-other.html#selector-custom
 			// The :state(identifier) pseudo-class must match all custom elements whose states set's set entries contains identifier.
-			// FIXME: CustomStateSet storage is not exposed by the DOM port yet.
-			return false
+			ident := pseudo_class.ident or { return false }
+			states := element.custom_state_set() or { return false }
+			return states.has_state(ident.string_value)
 		}
 		.heading {
 			// https://html.spec.whatwg.org/multipage/semantics-other.html#selector-heading
