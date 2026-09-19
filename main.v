@@ -1471,8 +1471,8 @@ fn javascript_program(state map[string]json2.Any, scripts []string) string {
 		'}',
 		'let __createdElementCount=0; function __createElement(namespaceURI,name){const key="__created_"+(++__createdElementCount),s={created:true,bridgeKey:key,elementIndex:1000000000+__createdElementCount,namespaceURI:String(namespaceURI||"http://www.w3.org/1999/xhtml"),tagName:String(name),id:"",src:"",width:"",height:"",textContent:"",innerHTML:"",className:"",styleText:"",onclick:"",attributes:{},hasChildren:false,children:[],disabled:false,checked:false,indeterminate:false};__state.elements[key]=s;return __element(s);}',
 		'function __matches(s,q){q=String(q||"").trim();if(!q)return false;if(q[0]==="#")return s.id===q.slice(1);return s.tagName.toLowerCase()===q.toLowerCase();}',
-		'function __range(){return{selected:null,selectNodeContents:function(node){const s=node&&node.__state;if(s)this.selected={target:s.bridgeKey,firstChild:false};else if(node&&node.__firstChildOf)this.selected={target:node.__firstChildOf,firstChild:true};else throw new TypeError("Invalid range node");}};}',
-		'const __selection={addRange:function(range){if(range&&range.selected)__state.operations.push({op:"selectNodeContents",target:range.selected.target,firstChild:range.selected.firstChild});}};',
+		'function __range(){return{selected:null,selectNodeContents:function(node){const s=node&&node.__state;if(s)this.selected={target:s.bridgeKey,firstChild:false};else if(node&&node.__firstChildOf)this.selected={target:node.__firstChildOf,firstChild:true};else throw new TypeError("Invalid range node");},surroundContents:function(node){const s=node&&node.__state;if(!s)throw new TypeError("Invalid range parent");__state.operations.push({op:"surroundSelectedContents",target:s.bridgeKey});}};}',
+		'const __selection={range:null,addRange:function(range){if(range&&range.selected){this.range=range;__state.operations.push({op:"selectNodeContents",target:range.selected.target,firstChild:range.selected.firstChild});}},selectAllChildren:function(node){const range=__range();range.selectNodeContents(node);this.range=range;__state.operations.push({op:"selectAllChildren",target:range.selected.target});},getRangeAt:function(index){if(+index!==0||!this.range)throw new Error("IndexSizeError");return this.range;}};',
 		'const document = { getElementById: function (id) { const s=__elementStates().find(function(item){return item.id===String(id);}); return s ? __element(s) : null; }, getElementsByTagName: function(name) { const tag=String(name).toLowerCase(); return __elementStates().filter(function(s){return tag==="*"||s.tagName.toLowerCase()===tag;}).map(__element); }, querySelector: function (q) { const s=__elementStates().find(function(item){return __matches(item,q);});return s?__element(s):null; }, addEventListener: function (n, f) { (__listeners[__listenerKey(null, n)] ||= []).push(f); }, createElement: function (name) { return __createElement("http://www.w3.org/1999/xhtml",String(name).toLowerCase()); }, createElementNS:function(namespaceURI,name){return __createElement(namespaceURI,name);}, createDocumentFragment:function(){return __createElement("","#document-fragment");}, createTextNode: function(text) { return {__state:{tagName:"#text",textContent:String(text)}}; }, createRange:__range };',
 		'Object.defineProperty(document, "title", { get: function () { return __state.title; }, set: function (v) { __state.title = String(v); } });',
 		'const __htmlState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="html";}),__bodyState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="body";});document.documentElement=__htmlState?__element(__htmlState):{classList:{add:function(){},remove:function(){},contains:function(){return false;}}};document.body=__bodyState?__element(__bodyState):{appendChild:function(child){return child;}};',
@@ -2041,6 +2041,14 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 					if mut selection := document.get_selection() {
 						selection.add_range(range)
 					}
+				} else if kind == 'selectAllChildren' {
+					if mut selection := document.get_selection() {
+						selection.select_all_children(target.as_node()) or { continue }
+					}
+				} else if kind == 'surroundSelectedContents' {
+					surround_selection := document.get_selection() or { continue }
+					mut range := surround_selection.range() or { continue }
+					range.surround_contents(target.as_node()) or { continue }
 				}
 			}
 		}

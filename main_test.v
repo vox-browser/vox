@@ -276,6 +276,28 @@ fn test_javascript_bridge_selects_text_before_selection_restyle() {
 	}
 }
 
+fn test_javascript_bridge_replays_live_range_surround_contents() {
+	$if darwin {
+		document := html.parse_document('<!doctype html><title>test</title><style id="sheet">html::first-letter { font-size: initial }</style>FAIL')
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'about:blank', [
+			'const sel=getSelection(); sel.selectAllChildren(document.documentElement); const range=sel.getRangeAt(0); document.body.remove(); document.documentElement.appendChild(document.createTextNode("PASS")); document.documentElement.offsetTop; range.surroundContents(sheet);',
+		], runtime, mut messages)
+		assert messages == []
+		root := document.document_element() or { panic('missing document element') }
+		assert document.body() == none
+		pass_text := root.as_node().last_child() or { panic('missing appended PASS text') }
+		assert pass_text.text_content() or { '' } == 'PASS'
+		sheet := document.get_element_by_id('sheet') or { panic('missing surrounding style') }
+		sheet_parent := sheet.as_node().parent() or { panic('surrounding style is detached') }
+		assert voidptr(sheet_parent) == voidptr(root.as_node())
+	}
+}
+
 fn test_javascript_bridge_inserts_created_nodes_and_document_fragments_before_first_child() {
 	$if darwin {
 		document := html.parse_document('<!doctype html>

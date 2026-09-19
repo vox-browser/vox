@@ -14261,6 +14261,8 @@ pub fn (s &StyleComputer) transform_box_type_if_needed(mut computed_properties C
 	display_before_transformation := computed_properties.display()
 	computed_properties.set_display_before_box_type_transformation(display_before_transformation)
 	mut display := display_before_transformation
+	is_document_element := abstract_element.pseudo_element() == none
+		&& abstract_element.element().is_document_element()
 	// https://drafts.csswg.org/css-overflow-4/#webkit-line-clamp
 	// A vertical legacy box with active clamping computes to a flow-root while
 	// retaining its authored display for compatibility-sensitive layout.
@@ -14274,13 +14276,13 @@ pub fn (s &StyleComputer) transform_box_type_if_needed(mut computed_properties C
 		}
 		computed_properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(display))))
 	}
-	if display.is_none() || (display.is_contents() && !abstract_element.element().is_document_element()) {
+	if display.is_none() || (display.is_contents() && !is_document_element) {
 		return
 	}
 
 	// https://drafts.csswg.org/css-display/#root
 	// The root element's display type is always blockified, and its principal box always establishes an independent formatting context.
-	if abstract_element.element().is_document_element() && !display.is_block_outside() {
+	if is_document_element && !display.is_block_outside() {
 		computed_properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.block)))))
 		return
 	}

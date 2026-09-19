@@ -209,6 +209,27 @@ fn test_root_and_out_of_flow_elements_are_blockified() {
 	assert child_computed.float_() == .none_
 }
 
+fn test_document_element_pseudo_element_is_not_blockified_as_the_root() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	add_document_author_style_sheet(doc, 'html::first-letter { font-size: 2em; }')
+	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic(err)
+	}
+	root.set_attribute_value('style', 'font-size: 32px')
+	mut document_node := unsafe { &dom.Node(doc) }
+	document_node.append_child(root.as_node()) or { panic(err) }
+
+	s := StyleComputer.new(doc)
+	mut root_abstract := dom.AbstractElement.new(root, none)
+	root_computed := s.compute_style(root_abstract)
+	root_abstract.set_computed_properties(computed_properties_to_dom(root_computed))
+	first_letter := s.compute_pseudo_element_style_if_needed(dom.AbstractElement.new(root, .first_letter)) or { panic('html::first-letter style was not generated') }
+
+	assert first_letter.display_before_box_type_transformation() == Display.from_short(.inline_)
+	assert first_letter.display() == Display.from_short(.inline_)
+	assert first_letter.font_size().to_double() == 64
+}
+
 fn test_flex_container_blockifies_inline_child() {
 	doc := dom.Document.create(dom.url_about_blank())
 	mut parent := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
