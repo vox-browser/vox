@@ -166,3 +166,144 @@ pub fn serialize_range_as_plain_text_for_clipboard(range &dom.Range) string {
 	mut serializer := ClipboardTextSerializer.create(range)
 	return serializer.serialize()
 }
+
+enum StyledSelectionCoverage {
+	partial
+	full
+}
+
+fn styled_markup_node_is_block(node &dom.Node) bool {
+	element := node.as_element() or { return false }
+	return is_prohibited_paragraph_child_name(element.local_name())
+}
+
+fn should_serialize_styled_markup_node(node &dom.Node) bool {
+	if node.is_text() {
+		if node.layout_node() == none {
+			return false
+		}
+		return dom.collect_visual_lines(unsafe { &dom.Text(node) }).len > 0
+	}
+	if node.layout_node() != none {
+		return true
+	}
+	element := node.as_element() or { return false }
+	computed := element.el_computed_properties() or { return false }
+	return computed.display().is_contents()
+}
+
+fn styled_markup_node_participates(range &dom.Range, node &dom.Node) bool {
+	return range.contains_node(node) || node.is_inclusive_ancestor_of(range.start_container())
+		|| node.is_inclusive_ancestor_of(range.end_container())
+}
+
+fn is_trailing_caret_placeholder(range &dom.Range, source &dom.Node) bool {
+	element := source.as_element() or { return false }
+	if !element.is_html_element() || element.local_name() != 'br'
+		|| source.previous_sibling() == none {
+		return false
+	}
+	parent := source.parent() or { return false }
+	if source != (parent.last_child() or { return false }) {
+		return false
+	}
+	mut selected_branch := source
+	for {
+		branch_parent := selected_branch.parent() or { break }
+		if branch_parent == range.end_container() {
+			break
+		}
+		if selected_branch != (branch_parent.last_child() or { break }) {
+			break
+		}
+		selected_branch = branch_parent
+	}
+	return (selected_branch.parent() or { return false }) == range.end_container()
+		&& range.end_offset() == selected_branch.index() + 1
+}
+
+fn append_selected_styled_markup_node(range &dom.Range, source &dom.Node, mut destination_parent dom.Node, coverage StyledSelectionCoverage) bool {
+	if !should_serialize_styled_markup_node(source) {
+		return false
+	}
+
+	// A final br is the block's caret placeholder when the range ends directly
+	// after its containing branch, rather than selected inline content.
+	if is_trailing_caret_placeholder(range, source) {
+		return false
+	}
+
+	clone := source.clone_node(none, false, none) or { return false }
+	destination_parent.append_child(clone) or { return false }
+	fully_selected := coverage == .full
+	if source.is_character_data() {
+		data := source.character_data() or { return false }
+		mut clone_data := clone.character_data() or { return false }
+		mut start_offset := if source == range.start_container() { range.start_offset() } else { 0 }
+		mut end_offset := if source == range.end_container() { range.end_offset() } else { source.length() }
+		if fully_selected {
+			start_offset = 0
+			end_offset = source.length()
+		}
+		selected_data := data.substring_data(start_offset, end_offset - start_offset) or { '' }
+		clone_data.set_data(selected_data)
+		return selected_data != ''
+	}
+
+	mut emitted_content := false
+	mut mutable_clone := unsafe { &dom.Node(clone) }
+	for child in source.children_as_vector() {
+		if !fully_selected && !styled_markup_node_participates(range, child) {
+			continue
+		}
+		child_coverage := if fully_selected || range.contains_node(child) {
+			StyledSelectionCoverage.full
+		} else {
+			StyledSelectionCoverage.partial
+		}
+		emitted_content = append_selected_styled_markup_node(range, child, mut mutable_clone,
+			child_coverage) || emitted_content
+	}
+
+	element := source.as_element()
+	is_atomic_content := if source_element := element { source_element.is_void_element() } else { false }
+	is_unselected_trailing_wrapper := source.is_inclusive_ancestor_of(range.end_container())
+		&& !source.is_inclusive_ancestor_of(range.start_container())
+		&& range.end_container().is_character_data()
+		&& if source_element := element { source_element.local_name() == 'div' } else { false }
+	if coverage == .partial && element != none && !is_atomic_content && !emitted_content
+		&& (is_unselected_trailing_wrapper || !styled_markup_node_is_block(source)) {
+		mut mutable_clone_for_removal := unsafe { &dom.Node(clone) }
+		mutable_clone_for_removal.remove(false)
+		return false
+	}
+	return emitted_content || is_atomic_content || styled_markup_node_is_block(source)
+}
+
+pub fn serialize_range_as_html_for_clipboard(range &dom.Range) string {
+	if range.collapsed() {
+		return ''
+	}
+	mut document := unsafe { &dom.Document(range.start_container().document()) }
+	document.update_layout_if_needed_for_node(range.common_ancestor_container(),
+		.navigable_selected_text)
+	fragment := document.create_document_fragment()
+	mut fragment_node := fragment.as_node()
+	common_ancestor := range.common_ancestor_container()
+	if common_ancestor.is_character_data() {
+		append_selected_styled_markup_node(range, common_ancestor, mut fragment_node, .partial)
+	} else {
+		for child in common_ancestor.children_as_vector() {
+			if !styled_markup_node_participates(range, child) {
+				continue
+			}
+			coverage := if range.contains_node(child) {
+				StyledSelectionCoverage.full
+			} else {
+				StyledSelectionCoverage.partial
+			}
+			append_selected_styled_markup_node(range, child, mut fragment_node, coverage)
+		}
+	}
+	return fragment_node.serialize_fragment(.no, .inner) or { '' }
+}

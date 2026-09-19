@@ -1728,6 +1728,16 @@ pub fn (model &NavigableModel) selected_text() string {
 	return editing.serialize_range_as_plain_text_for_clipboard(range)
 }
 
+pub fn (model &NavigableModel) selected_html_for_clipboard() string {
+	document := model.active_document() or { return '' }
+	selection := document.get_selection() or { return '' }
+	if selection.try_form_control_selected_text_for_stringifier() != none {
+		return ''
+	}
+	range := selection.range() or { return '' }
+	return editing.serialize_range_as_html_for_clipboard(range)
+}
+
 pub fn (model &NavigableModel) cut_selected_text() string {
 	document := model.active_document() or { return '' }
 	target := document.active_input_events_target(none) or { return '' }

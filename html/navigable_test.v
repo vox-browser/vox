@@ -352,6 +352,7 @@ fn test_navigable_sandbox_viewport_selection_observers_and_rendering() {
 	body_node.append_child(visible_text_node)!
 	model.select_all()
 	assert model.selected_text() == 'selected value'
+	assert model.selected_html_for_clipboard() == 'selected value'
 	navigable_test_pastes = []
 	model.set_paste_hook(navigable_test_paste)
 	model.paste('clipboard')
