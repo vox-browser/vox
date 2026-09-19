@@ -16,18 +16,18 @@ fn test_html_tokenizer_exact_transition_and_emit_hooks() {
 fn test_old_insertion_points_survive_reentrant_input_insertion() {
 	mut tokenizer := HTMLTokenizer.new('abcdef')
 	tokenizer.insertion_point = 4
-	tokenizer.store_old_insertion_point()
+	tokenizer.store_insertion_point()
 	tokenizer.current_offset = 2
 	tokenizer.update_insertion_point()
-	tokenizer.store_old_insertion_point()
+	tokenizer.store_insertion_point()
 
 	tokenizer.insert_input_at_insertion_point('XY')
 	assert tokenizer.insertion_point? == 4
 	assert tokenizer.decoded_input.string() == 'abXYcdef'
 
-	tokenizer.restore_old_insertion_point()
+	tokenizer.restore_insertion_point()
 	assert tokenizer.insertion_point? == 4
-	tokenizer.restore_old_insertion_point()
+	tokenizer.restore_insertion_point()
 	assert tokenizer.insertion_point? == 6
 }
 

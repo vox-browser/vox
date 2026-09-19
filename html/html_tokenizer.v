@@ -579,18 +579,27 @@ pub fn (mut t HTMLTokenizer) update_insertion_point() {
 	t.insertion_point = t.current_offset
 }
 
-// HTMLTokenizer::undefine/store_old/restore_old_insertion_point().
+// HTMLTokenizer::undefine/store/restore_insertion_point().
 pub fn (mut t HTMLTokenizer) undefine_insertion_point() {
 	t.insertion_point = none
 }
 
-pub fn (mut t HTMLTokenizer) store_old_insertion_point() {
+pub fn (mut t HTMLTokenizer) store_insertion_point() {
 	t.old_insertion_points << t.insertion_point
 }
 
-pub fn (mut t HTMLTokenizer) restore_old_insertion_point() {
+pub fn (mut t HTMLTokenizer) restore_insertion_point() {
 	assert t.old_insertion_points.len > 0
 	t.insertion_point = t.old_insertion_points.pop()
+}
+
+// Compatibility names retained by upstream for the parser call sites.
+pub fn (mut t HTMLTokenizer) store_old_insertion_point() {
+	t.store_insertion_point()
+}
+
+pub fn (mut t HTMLTokenizer) restore_old_insertion_point() {
+	t.restore_insertion_point()
 }
 
 // HTMLTokenizer::insert_input_at_insertion_point(). The insertion point is a
