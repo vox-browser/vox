@@ -2123,6 +2123,46 @@ fn multiply_painting_affine(left painting.Affine, right painting.Affine) paintin
 	}
 }
 
+fn transform_svg_mask_paint_operations(operations []painting.SVGMaskPaintOperation,
+	transform painting.Affine) []painting.SVGMaskPaintOperation {
+	mut transformed := []painting.SVGMaskPaintOperation{cap: operations.len}
+	for operation in operations {
+		if operation.kind == .begin_filter {
+			filter := operation.filter or {
+				transformed << operation
+				continue
+			}
+			mut bounds := ?painting.Rect(none)
+			if filter_bounds := filter.bounds {
+				bounds = transform.map_rect(filter_bounds)
+			}
+			transformed << painting.SVGMaskPaintOperation{
+				...operation
+				filter: painting.GfxFilter{
+					...filter
+					bounds: bounds
+				}
+			}
+		} else if operation.kind == .path {
+			transformed << painting.SVGMaskPaintOperation{
+				...operation
+				transform: multiply_painting_affine(transform, operation.transform)
+			}
+		} else if operation.kind == .image {
+			transformed << painting.SVGMaskPaintOperation{
+				...operation
+				image_rect: transform.map_rect(operation.image_rect)
+				image_paintable: normalized_svg_operation_image_paintable(operation.image_paintable,
+					transform)
+				transform: multiply_painting_affine(transform, operation.transform)
+			}
+		} else {
+			transformed << operation
+		}
+	}
+	return transformed
+}
+
 fn normalize_svg_pattern_operations(operations []painting.SVGMaskPaintOperation,
 	inverse_target painting.Affine, content_origin painting.Point) []painting.SVGMaskPaintOperation {
 	// SVGPatternElement::to_gfx_paint_style() records the tile after translating
@@ -2133,41 +2173,7 @@ fn normalize_svg_pattern_operations(operations []painting.SVGMaskPaintOperation,
 		e: -content_origin.x
 		f: -content_origin.y
 	}, inverse_target)
-	mut normalized := []painting.SVGMaskPaintOperation{cap: operations.len}
-	for operation in operations {
-		if operation.kind == .begin_filter {
-			filter := operation.filter or {
-				normalized << operation
-				continue
-			}
-			mut bounds := ?painting.Rect(none)
-			if filter_bounds := filter.bounds {
-				bounds = normalization.map_rect(filter_bounds)
-			}
-			normalized << painting.SVGMaskPaintOperation{
-				...operation
-				filter: painting.GfxFilter{
-					...filter
-					bounds: bounds
-				}
-			}
-		} else if operation.kind == .path {
-			normalized << painting.SVGMaskPaintOperation{
-				...operation
-				transform: multiply_painting_affine(normalization, operation.transform)
-			}
-		} else if operation.kind == .image {
-			normalized << painting.SVGMaskPaintOperation{
-				...operation
-				image_rect: normalization.map_rect(operation.image_rect)
-				image_paintable: normalized_svg_operation_image_paintable(operation.image_paintable, normalization)
-				transform: multiply_painting_affine(normalization, operation.transform)
-			}
-		} else {
-			normalized << operation
-		}
-	}
-	return normalized
+	return transform_svg_mask_paint_operations(operations, normalization)
 }
 
 fn normalized_svg_operation_image_paintable(value ?painting.ImagePaintable,
@@ -2918,6 +2924,28 @@ fn resolved_svg_image_url(element &dom.Element) string {
 	return element.document().encoding_parse_and_serialize_url(source) or { source }
 }
 
+fn collect_svg_vector_image_paint_operations(element &dom.Element, image_url string,
+	image_rect painting.Rect, color_scheme css.PreferredColorScheme,
+	mut collection SVGMaskPaintCollection) bool {
+	svg_document := svg_image_document_for_source(element.document(), image_url) or { return false }
+	mut mutable_svg_document := unsafe { &dom.Document(svg_document) }
+	mutable_svg_document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(color_scheme))
+	nested_layout := run_document_layout(svg_document, image_rect.width, image_rect.height) or {
+		return false
+	}
+	mut nested_collection := SVGMaskPaintCollection{}
+	collect_svg_mask_paint_operations(nested_layout.root, nested_layout.state, svg.AffineTransform{},
+		true, false, true, mut nested_collection)
+	translation := painting.Affine{
+		e: image_rect.x
+		f: image_rect.y
+	}
+	for operation in transform_svg_mask_paint_operations(nested_collection.operations, translation) {
+		collection.operations << operation
+	}
+	return true
+}
+
 fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 	resource_transform svg.AffineTransform, is_resource_root bool, object_bounding_box_units bool,
 	retain_filters bool, mut collection SVGMaskPaintCollection) {
@@ -2977,20 +3005,23 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 						width: used.content_width().to_double()
 						height: used.content_height().to_double()
 					}
-					collection.operations << painting.SVGMaskPaintOperation{
-						kind: .image
-						image_url: image_url
-						image_rect: image_rect
-						image_position_x: object_position.offset_x.to_string()
-						image_position_y: object_position.offset_y.to_string()
-						image_rendering: computed.image_rendering()
-						image_paintable: painting.ImagePaintable{
+					if !collect_svg_vector_image_paint_operations(element, image_url, image_rect,
+						computed.color_scheme(), mut collection) {
+						collection.operations << painting.SVGMaskPaintOperation{
+							kind: .image
+							image_url: image_url
 							image_rect: image_rect
-							object_fit: .contain
-							object_position: object_position
-							resolution_context: computed.length_resolution_context()
+							image_position_x: object_position.offset_x.to_string()
+							image_position_y: object_position.offset_y.to_string()
 							image_rendering: computed.image_rendering()
-							is_svg_image: true
+							image_paintable: painting.ImagePaintable{
+								image_rect: image_rect
+								object_fit: .contain
+								object_position: object_position
+								resolution_context: computed.length_resolution_context()
+								image_rendering: computed.image_rendering()
+								is_svg_image: true
+							}
 						}
 					}
 				}

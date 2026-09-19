@@ -2538,6 +2538,24 @@ fn test_svg_pattern_tile_retains_nested_decoded_image_filter() {
 	assert pattern.cache_key != 0
 }
 
+fn test_svg_pattern_resolves_vector_image_after_recording() {
+	image_url := "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3Crect width='1' height='1' fill='green'/%3E%3C/svg%3E"
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="100" height="100"><defs><pattern id="tile" width="10" height="10" patternUnits="userSpaceOnUse"><image href="${image_url}" width="10" height="10"/></pattern></defs><rect width="100" height="100" fill="url(#tile)"/></svg>')
+	root := layout_document_typed_in_viewport(document, 100, 100)
+	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
+	assert paths.len == 1
+	pattern := paths[0].fill_pattern or { panic('missing retained pattern fill') }
+	operations := (pattern.tile_display_list or {
+		panic('missing vector-image pattern display list')
+	}).operations
+	assert operations.all(it.kind != .image)
+	vector_paths := operations.filter(it.kind == .path)
+	assert vector_paths.len == 1
+	assert vector_paths[0].fill_color == painting.Color{0, 128, 0, 255}
+	assert math.abs(vector_paths[0].transform.a - 10.0) < 0.001
+	assert math.abs(vector_paths[0].transform.d - 10.0) < 0.001
+}
+
 fn test_svg_pattern_viewbox_overrides_object_bounding_box_content_units() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="200" height="100"><defs><pattern id="scaled" patternUnits="userSpaceOnUse" patternContentUnits="objectBoundingBox" width="40" height="20" viewBox="0 0 10 10" preserveAspectRatio="none"><rect width="5" height="10" fill="red"/><rect x="5" width="5" height="10" fill="blue"/></pattern></defs><rect x="20" y="10" width="100" height="60" fill="url(#scaled)"/></svg>')
 	root := layout_document_typed_in_viewport(document, 220, 120)
