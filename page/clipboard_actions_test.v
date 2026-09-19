@@ -97,6 +97,29 @@ fn test_paste_normalizes_newlines_prefers_html_and_always_completes() {
 	assert client.paste_action_completion_count() == 2
 }
 
+fn test_platform_clipboard_shortcuts_run_copy_cut_and_paste_actions() {
+	mut client := PageClient.create()
+	mut handler := clipboard_action_handler(client)
+	handler.set_selected_clipboard_content('copy me', '<b>copy me</b>')
+	assert handler.handle_keydown(int(`C`), 0, platform_control_modifier(), false, false) == .handled
+	assert client.clipboard_items().len == 1
+	assert client.clipboard_items()[0].representations.map(it.mime_type) == ['text/html', 'text/plain']
+
+	handler.set_selected_clipboard_content('cut me', '')
+	assert handler.handle_keydown(int(`X`), 0, platform_control_modifier(), false, false) == .handled
+	assert handler.selected_text_ == ''
+	assert client.clipboard_items().len == 2
+
+	mut observation := &ClipboardInsertObservation{}
+	handler.set_clipboard_insert_callback(voidptr(observation), observe_clipboard_insert)
+	handler.set_system_clipboard_items([
+		ClipboardDataItem{ kind: .text, mime_type: 'text/plain', data: 'paste\rtext'.bytes() },
+	])
+	assert handler.handle_keydown(int(`V`), 0, platform_control_modifier(), false, false) == .handled
+	assert observation.plain_text == 'paste\ntext'
+	assert client.paste_action_completion_count() == 1
+}
+
 fn test_image_paste_creates_data_url_and_text_input_is_cancelable() {
 	mut client := PageClient.create()
 	mut handler := clipboard_action_handler(client)

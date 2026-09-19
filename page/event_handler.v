@@ -506,6 +506,15 @@ pub fn (mut handler EventHandler) handle_keydown(key int, code_point u32, modifi
 		if key == int(`A`) && modifiers & dom.modifier_shift == 0 {
 			return handler.perform_select_all_shortcut()
 		}
+		if key == int(`C`) && modifiers & dom.modifier_shift == 0 {
+			return handler.perform_copy_action()
+		}
+		if key == int(`X`) && modifiers & dom.modifier_shift == 0 {
+			return handler.perform_cut_action()
+		}
+		if key == int(`V`) && modifiers & dom.modifier_shift == 0 {
+			return handler.perform_paste_action()
+		}
 		if key == int(`Z`) && modifiers & dom.modifier_shift == 0 {
 			return handler.perform_history_shortcut(false)
 		}
