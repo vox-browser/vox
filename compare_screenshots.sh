@@ -24,6 +24,8 @@ fi
 
 mkdir -p "$output_dir"
 comparison_status=0
+normalized_reference_dir=$(mktemp -d "${TMPDIR:-/tmp}/vox2-reftest-reference.XXXXXX")
+trap 'rm -rf -- "$normalized_reference_dir"' EXIT HUP INT TERM
 
 for requested in "$@"; do
 	test_kind=screenshot
@@ -67,8 +69,19 @@ for requested in "$@"; do
 		width=${LADYBIRD_REFTEST_WIDTH:-800}
 		height=${LADYBIRD_REFTEST_HEIGHT:-600}
 		expected_path="$output_dir/$name.expected.png"
+		capture_expected_source=$expected_source
+		case "$expected_source" in
+			*.xht)
+				# XHTML stylesheets conventionally wrap their contents in CDATA.
+				# The native capture browser currently uses its HTML parser for local
+				# files, so remove only those XML delimiters before capturing a WPT
+				# reference. The stylesheet contents and comparison remain unchanged.
+				capture_expected_source="$normalized_reference_dir/$name.expected.html"
+				sed 's/<!\[CDATA\[//g; s/\]\]>//g' "$expected_source" > "$capture_expected_source"
+				;;
+		esac
 		LADYBIRD_LAYOUT_TEST_FONT="$layout_test_font" \
-			"$repo_dir/capture_screenshot.sh" "$expected_source" "$expected_path" "$width" "$height"
+			"$repo_dir/capture_screenshot.sh" "$capture_expected_source" "$expected_path" "$width" "$height"
 	else
 		expected_path="$upstream_dir/Tests/LibWeb/Screenshot/expected/$name.png"
 		if [ ! -f "$expected_path" ]; then
