@@ -3436,8 +3436,8 @@ CONSOLIDATED_FUNCTION_MAPPINGS: dict[tuple[str, str], tuple[str, ...]] = {
     ("DisplayListPlayerSkia.cpp", "gradient_paint_style_to_skia_paint"): (
         "expand_color_stops_for_painting",
     ),
-    ("PaintableBox.cpp", "set_paint_viewport_scrollbars"): (
-        "append_scrollbar_overlay_command",
+    ("BoxViews.cpp", "set_paint_viewport_scrollbars"): (
+        "set_paint_viewport_scrollbars",
     ),
     ("SVGPathPaintable.cpp", "to_gfx_winding_rule"): ("paint_commands",),
     ("StackingContext.cpp", "to_paint_phase"): ("compatibility_paint_plan",),

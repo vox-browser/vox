@@ -2,6 +2,7 @@ module layout
 
 import css
 import math
+import painting
 
 fn test_paint_text_run_is_joined_once_in_linear_order() {
 	fragment_count := 2048
@@ -243,6 +244,37 @@ fn test_scrollbar_overlay_paints_vertical_before_horizontal() {
 	assert horizontal.kind == 'fill_rounded_rect'
 	assert math.abs(horizontal.y - 72.0) < 0.001
 	assert math.abs(horizontal.height - 6.0) < 0.001
+}
+
+fn test_viewport_scrollbar_painting_can_be_disabled_without_hiding_element_scrollbars() {
+	overlay := CompatibilityOverlayData{
+		scrollable_overflow: LayoutRect{0, 0, 100, 300}
+		can_scroll_vertically: true
+		scrollbar_thumb_color: css.Color{64, 64, 64, 192}
+		scrollbar_track_color: css.Color{212, 208, 200, 192}
+	}
+	viewport := BlockBox{
+		width: 100
+		height: 100
+		background_color: css.Color{0, 0, 0, 0}
+		is_viewport_scroller: true
+		overlay: overlay
+	}
+	element := BlockBox{
+		width: 100
+		height: 100
+		background_color: css.Color{0, 0, 0, 0}
+		overlay: overlay
+	}
+
+	painting.set_paint_viewport_scrollbars(false)
+	assert !painting.should_paint_viewport_scrollbars()
+	assert viewport.paint_commands().len == 0
+	assert element.paint_commands().len == 2
+
+	painting.set_paint_viewport_scrollbars(true)
+	assert painting.should_paint_viewport_scrollbars()
+	assert viewport.paint_commands().len == 2
 }
 
 fn test_root_overlay_paints_after_positive_stacking_context() {
