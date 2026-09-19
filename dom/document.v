@@ -8048,6 +8048,7 @@ pub fn (mut d Document) set_needs_animated_style_update() {
 		return
 	}
 	d.needs_animated_style_update = true
+	d.request_frame()
 }
 
 pub fn (mut d Document) set_needs_to_refresh_scroll_state(b bool) {
