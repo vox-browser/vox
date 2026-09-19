@@ -67,6 +67,11 @@ Rich clipboard HTML is now parsed as an inert contextual fragment before use.
 The translated sanitizer removes active elements, event handlers, `srcdoc`,
 and JavaScript URL attributes while preserving ordinary markup, inline styles,
 and safe relative, network, and data URLs.
+Plain-text clipboard serialization now follows rendered structure: it omits
+hidden, unpainted, and `user-select:none` text; emits paragraph, explicit-break,
+table-cell, and table-row separators; includes rendered image alternative text;
+and slices text at UTF-16 range boundaries. Navigable copy and cut selection
+text use this shared serializer.
 
 The current base-to-head semantic delta audit reports 4,600 unmatched changed
 C++ spellings. That is a structural review queue rather than a count of missing behaviors: active V
@@ -207,9 +212,9 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
-| `DOM` | 59 | 34,859 | 36,088 | 2,199 | Complete |
+| `DOM` | 59 | 34,859 | 36,093 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
-| `Editing` | 26 | 12,720 | 3,359 | 741 | Complete |
+| `Editing` | 26 | 12,720 | 3,527 | 741 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
 | `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
@@ -221,13 +226,13 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
 | `Geolocation` | 4 | 643 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 56,553 | 12,442 | Complete |
+| `HTML` | 286 | 83,853 | 56,518 | 12,449 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 43,039 | 15,864 | Present |
+| `Layout` | 9 | 4,001 | 43,041 | 15,890 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -274,7 +279,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **343,250** | **68,272** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **343,390** | **68,305** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
