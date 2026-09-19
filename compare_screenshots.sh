@@ -21,7 +21,7 @@ fi
 if [ "$#" -eq 0 ]; then
 	set -- inline-node ordered-list text-decorations line-clamp-properties canvas-text \
 		selection-focus-between-text-controls selection-insert-between-boundaries \
-		selection-moves-between-subtrees
+		selection-moves-between-subtrees empty-caret-with-placeholder
 fi
 
 mkdir -p "$output_dir"
