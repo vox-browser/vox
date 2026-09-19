@@ -1059,7 +1059,10 @@ fn layout_paintable_box_type_agnostic_position(target voidptr,
 			return dom.CSSPixelPoint_{ x_: rect.x, y_: rect.y }
 		}
 	}
-	return dom.CSSPixelPoint_{}
+	// An empty inline has no fragment of its own. Its containing block's
+	// content origin is the only committed position until adjacent fragments
+	// supply a more specific inline coordinate.
+	return dom.CSSPixelPoint_{ x_: box.x, y_: box.y }
 }
 
 fn viewport_invalidate_layout_paint_cache(mut result DocumentLayoutResult, layout_handle voidptr) {

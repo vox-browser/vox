@@ -368,6 +368,29 @@ fn test_javascript_bridge_moves_selection_after_css_rule_mutation() {
 	}
 }
 
+fn test_javascript_bridge_collapses_selection_at_element_and_text_boundaries() {
+	$if darwin {
+		document := html.parse_document('<!doctype html><div id="editor" contenteditable><p id="target">text</p></div>')
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'about:blank', [
+			'editor.focus(); const selection=getSelection(); selection.collapse(target,0); selection.collapse(target.firstChild,2);',
+		], runtime, mut messages)
+		assert messages == []
+		assert voidptr(document.focused_area() or { panic('missing focused area') }) == voidptr((document.get_element_by_id('editor') or { panic('missing editor') }).as_node())
+		target := document.get_element_by_id('target') or { panic('missing target') }
+		text_node := target.as_node().first_child() or { panic('missing target text') }
+		selection := document.get_selection() or { panic('missing selection') }
+		range := selection.range() or { panic('missing collapsed range') }
+		assert range.collapsed()
+		assert voidptr(range.start_container()) == voidptr(text_node)
+		assert range.start_offset() == 2
+	}
+}
+
 fn test_javascript_bridge_replays_live_range_surround_contents() {
 	$if darwin {
 		document := html.parse_document('<!doctype html><title>test</title><style id="sheet">html::first-letter { font-size: initial }</style>FAIL')

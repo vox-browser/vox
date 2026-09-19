@@ -3695,10 +3695,10 @@ fn test_paintable_with_lines_translates_fragment_caret_and_rebuilds_its_phase_ca
 		|| it.color == 'rgb(21 22 23)'))
 }
 
-fn test_paintable_with_lines_paints_empty_editable_caret_at_padding_box() {
+fn test_paintable_with_lines_centers_empty_editable_caret_at_font_height() {
 	document := html.parse_document('<!doctype html><style>
 		html, body, p { margin: 0 }
-		p { padding: 3px 5px; min-height: 20px; line-height: 20px; caret-color: rgb(31 32 33) }
+		p { padding: 3px 5px; min-height: 40px; font: 20px/40px monospace; caret-color: rgb(31 32 33) }
 	</style><body><p id="target" contenteditable></p></body>')
 	mut mutable_document := unsafe { &dom.Document(document) }
 	host := &dom.Navigable{
@@ -3721,9 +3721,58 @@ fn test_paintable_with_lines_paints_empty_editable_caret_at_padding_box() {
 		panic('missing empty target paint box')
 	}
 	assert carets[0].x == target_box.x - target_box.padding.left
-	assert carets[0].y == target_box.y - target_box.padding.top
 	assert carets[0].width == 1
-	assert carets[0].height == 20
+	target_layout := unsafe { &Node(target_box.layout_handle) }
+	expected := rounded_text_span_rect(caret_rect_for_empty_line(target_layout, target_box.x - target_box.padding.left, target_box.y - target_box.padding.top))
+	assert carets[0].y == expected.y
+	assert carets[0].height == expected.height
+	assert carets[0].height < 40
+}
+
+fn test_paintable_with_lines_sizes_empty_paragraph_caret_from_its_font() {
+	document := html.parse_document('<!doctype html><style>html,body,p{margin:0}div{font:20px/40px monospace}p{caret-color:rgb(41 42 43)}</style><div contenteditable><p id="target"><br></p></div>')
+	mut mutable_document := unsafe { &dom.Document(document) }
+	host := &dom.Navigable{ active_document_: document }
+	mut navigable := html.NavigableModel.create(host, none) or { panic(err) }
+	navigable.set_focused(true)
+	mutable_document.set_cached_navigable(host)
+	root := layout_document_typed_in_viewport(document, 240, 100)
+	target := document.get_element_by_id('target') or { panic('missing target') }
+	mutable_document.set_focused_area(target.as_node())
+	mut selection := document.get_selection() or { panic('missing selection') }
+	selection.collapse(target.as_node(), 0) or { panic(err) }
+	commands := display_list_commands(mutable_document.record_display_list() or { panic('missing display list') })
+	carets := commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(41 42 43)')
+	assert carets.len == 1
+	target_box := root.find_box(i64(target.as_node().unique_id())) or { panic('missing target box') }
+	target_layout := unsafe { &Node(target_box.layout_handle) }
+	expected := rounded_text_span_rect(caret_rect_for_empty_line(target_layout, target_box.x - target_box.padding.left, target_box.y - target_box.padding.top))
+	assert carets[0].y == expected.y
+	assert carets[0].height == expected.height
+}
+
+fn test_paintable_with_lines_sizes_empty_inline_caret_from_its_font() {
+	document := html.parse_document('<!doctype html><style>html,body,div{margin:0}div{font:20px/40px monospace}span{caret-color:rgb(51 52 53)}</style><div contenteditable><span id="target"></span></div>')
+	mut mutable_document := unsafe { &dom.Document(document) }
+	host := &dom.Navigable{ active_document_: document }
+	mut navigable := html.NavigableModel.create(host, none) or { panic(err) }
+	navigable.set_focused(true)
+	mutable_document.set_cached_navigable(host)
+	_ = layout_document_typed_in_viewport(document, 240, 100)
+	target := document.get_element_by_id('target') or { panic('missing target') }
+	mutable_document.set_focused_area(target.as_node())
+	mut selection := document.get_selection() or { panic('missing selection') }
+	selection.collapse(target.as_node(), 0) or { panic(err) }
+	commands := display_list_commands(mutable_document.record_display_list() or { panic('missing display list') })
+	carets := commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(51 52 53)')
+	assert carets.len == 1
+	paintable := target.as_node().unsafe_paintable() or { panic('missing inline paintable') }
+	target_layout := unsafe { &Node(paintable.layout_handle) }
+	position := paintable.box_type_agnostic_position()
+	expected := rounded_text_span_rect(caret_rect_for_empty_line(target_layout, position.x(), position.y()))
+	assert carets[0].x == expected.x
+	assert carets[0].y == expected.y
+	assert carets[0].height == expected.height
 }
 
 fn test_typed_collapsed_table_borders_retain_winners_and_paint_shared_edges_once() {

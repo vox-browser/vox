@@ -3770,6 +3770,22 @@ fn active_text_control_is_mutable(document &dom.Document) bool {
 	return false
 }
 
+// BoxViews.cpp::caret_rect_for_empty_line(). Text-fragment carets use the
+// font's typographic height rather than the full line-height box; empty
+// elements must keep that height and center the caret in any extra leading.
+fn caret_rect_for_empty_line(node &Node, x f64, y f64) LayoutRect {
+	font_metrics := node.first_available_font().pixel_metrics()
+	line_height := node.computed_values().line_height().to_double()
+	typographic_height := CSSPixels.nearest_value_for(f64(font_metrics.ascent + font_metrics.descent)).to_double()
+	caret_height := math.min(line_height, typographic_height)
+	return LayoutRect{
+		x: x
+		y: y + (line_height - caret_height) / 2.0
+		width: 1
+		height: caret_height
+	}
+}
+
 // PaintableWithLines::paint_cursor(). The cursor is recorded after all text
 // spans in this foreground bucket and therefore participates in the same
 // targeted cache invalidation as upstream.
@@ -3800,16 +3816,32 @@ fn paint_cursor(box &BlockBox, opacity f64) ?PaintCommand {
 		rect = LayoutRect{fragment_rect.x, fragment_rect.y, fragment_rect.width, fragment_rect.height}
 	} else {
 		position_node := position.node() or { return none }
+		mut caret_layout_node := layout_node
+		mut caret_x := box.x - box.padding.left
+		mut caret_y := box.y - box.padding.top
 		if voidptr(position_node) != voidptr(dom_node) {
-			return none
+			// Empty inline elements have no text fragment or standalone BlockBox.
+			// Their Paintable retains the source layout node and resolves its
+			// position through the containing line paintable.
+			paintable := position_node.unsafe_paintable() or { return none }
+			if paintable.layout_handle == unsafe { nil } {
+				return none
+			}
+			position_layout_node := unsafe { &Node(paintable.layout_handle) }
+			if !position_layout_node.is_inline_node() {
+				return none
+			}
+			containing_block := position_layout_node.containing_block() or { return none }
+			if voidptr(containing_block) != voidptr(layout_node) {
+				return none
+			}
+			caret_layout_node = position_layout_node
+			caret_position := paintable.box_type_agnostic_position()
+			caret_x = caret_position.x()
+			caret_y = caret_position.y()
 		}
-		caret_color = layout_node.computed_values().caret_color()
-		rect = LayoutRect{
-			x: box.x - box.padding.left
-			y: box.y - box.padding.top
-			width: 1
-			height: layout_node.computed_values().line_height().to_double()
-		}
+		caret_color = caret_layout_node.computed_values().caret_color()
+		rect = caret_rect_for_empty_line(caret_layout_node, caret_x, caret_y)
 	}
 	if caret_color.a == 0 {
 		return none
