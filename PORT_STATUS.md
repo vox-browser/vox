@@ -311,6 +311,14 @@ decoded replacements enter the translated HTML image update boundary and
 explicitly invalidate layout plus retained paint input, so an intrinsic-size
 replacement with unchanged dimensions still repaints. The upstream
 `svg-image-source-switch-same-size` reference pair is pixel-identical.
+Document ID-map additions, removals, and changes now invalidate published SVG
+paint resources like upstream, so a previously shadowed gradient or pattern is
+resolved after an HTML/SVG ID collision changes. The compact browser bridge
+tracks elements independently of their mutable or duplicate IDs, preserves
+SVG attribute case and namespaces, creates SVG children, replays
+`moveBefore()`, and commits the retained final keyframe used by completed paint
+animations. The nine new gradient, pattern, and ID-collision mutation reftests
+are exact zero-pixel matches.
 Ladybird's new color-matrix reftest is an exact zero-pixel match; its displacement
 and turbulence mismatch references both differ. The comparison driver now
 follows both `rel="match"` and `rel="mismatch"` references.
@@ -370,7 +378,7 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
-| `DOM` | 59 | 34,859 | 36,531 | 2,199 | Complete |
+| `DOM` | 59 | 34,859 | 36,534 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
 | `Editing` | 26 | 12,720 | 8,515 | 797 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
@@ -390,7 +398,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 43,180 | 16,024 | Present |
+| `Layout` | 9 | 4,001 | 43,180 | 16,048 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -437,7 +445,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **349,596** | **70,794** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **349,599** | **70,818** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 

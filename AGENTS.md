@@ -82,6 +82,11 @@
   script bridge or image invalidation. Script-visible `img.src` replacements
   must reach the live DOM, refresh the image model, and invalidate both layout
   and retained paint input even when the replacement has identical dimensions.
+- Keep the SVG paint-server mutation reftests pixel-exact when changing the
+  compact script bridge. Preserve tree-order identity when IDs collide, SVG
+  attribute case and namespaces, script-created SVG children, `moveBefore()`
+  ordering, retained animation end values, and paint-resource invalidation when
+  an ID enters or leaves the document lookup map.
 - Override the defaults with `LADYBIRD_SOURCE_DIR`, `V_BIN`, and
   `SCREENSHOT_OUTPUT_DIR`. The capture workflow is macOS-specific because it uses
   the Cocoa view snapshot helper and `sips`; the PNG diff tool itself is portable and
@@ -91,7 +96,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-19, the module
-translations contain 349,596 implementation V LOC and 70,794 test V LOC.
+translations contain 349,599 implementation V LOC and 70,818 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -103,7 +108,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Clipboard | 973 | Compositor | 2,403 |
 | Compression | 424 | ContentSecurityPolicy | 2,738 |
 | CookieStore | 859 | CredentialManagement | 418 |
-| Crypto (`webcrypto/`) | 4,472 | DOM | 36,531 |
+| Crypto (`webcrypto/`) | 4,472 | DOM | 36,534 |
 | DOMURL | 754 | Editing | 8,515 |
 | Encoding | 705 | EncryptedMediaExtensions | 572 |
 | EntriesAPI | 44 | EventTiming | 153 |
@@ -137,7 +142,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **349,596** |  |  |
+| **Total** | **349,599** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
