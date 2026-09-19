@@ -631,6 +631,23 @@ fn clear_stale_layout_and_paint_node(node &dom.Node, content_visibility_hidden_r
 	return .@continue
 }
 
+fn single_content_replacement_image(content css.ContentData) ?string {
+	if content.type_ != .list || content.items.len != 1 || content.items[0].type_ != .image {
+		return none
+	}
+	return content.items[0].value
+}
+
+fn adjusted_display_for_replaced_element(display css.Display) ?css.Display {
+	if display.is_table_inside() {
+		return css.Display.from_short(if display.is_block_outside() { .block } else { .inline_ })
+	}
+	if display.is_internal_table() || display.is_table_caption() {
+		return css.Display.from_short(.inline_)
+	}
+	return none
+}
+
 fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, element &dom.Element, style_computer &css.StyleComputer, mut builder_state TreeBuilderState, svg_resource_kind ?SVGReferencedResourceKind) ?&Node {
 	computed := css.computed_properties_for_element(element) or {
 		style_computer.compute_style(dom.AbstractElement.new(element, none))
@@ -643,8 +660,25 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 		})
 		return none
 	}
+	mut content_replacement_source := ?string(none)
+	if computed.property(.content, .yes) != none {
+		abstract_element := dom.AbstractElement.new(element, none)
+		registered_counter_styles := css.registered_counter_styles_for_abstract_element(abstract_element)
+		content := computed.content(&abstract_element, builder_state.quote_nesting_level, registered_counter_styles).content_data
+		mut mutable_computed := unsafe { &css.MutableComputedValues(computed) }
+		mutable_computed.set_content(content)
+		if !computed.display().is_contents() {
+			content_replacement_source = single_content_replacement_image(content)
+		}
+	}
 
-	mut box_node := if resource_kind := svg_resource_kind {
+	mut box_node := if source := content_replacement_source {
+		mut replacement_style := computed
+		if adjusted_display := adjusted_display_for_replaced_element(computed.display()) {
+			replacement_style = computed.clone_for_anonymous_with_display(adjusted_display)
+		}
+		unsafe { &Node(ImageBox.new_content_replacement(document, element, replacement_style, source)) }
+	} else if resource_kind := svg_resource_kind {
 		match resource_kind {
 			.mask {
 				resource_box := SVGMaskBox.new(document, element, computed)
@@ -1869,14 +1903,29 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 	content := computed.content(&abstract_element, initial_quote_nesting_level, registered_counter_styles).content_data
 	mut mutable_computed := unsafe { &css.MutableComputedValues(computed) }
 	mutable_computed.set_content(content)
-	mut node := create_layout_node_for_generated_content(document, computed)
+	mut content_replacement_source := single_content_replacement_image(content)
+	if computed.display().is_list_item() || computed.display().is_contents() {
+		content_replacement_source = none
+	}
+	mut generated_style := computed
+	if content_replacement_source != none {
+		if adjusted_display := adjusted_display_for_replaced_element(computed.display()) {
+			generated_style = computed.clone_for_anonymous_with_display(adjusted_display)
+		}
+	}
+	mut node := if source := content_replacement_source {
+		unsafe { &Node(ImageBox.new_generated(document, generated_style, source)) }
+	} else {
+		create_layout_node_for_generated_content(document, generated_style)
+	}
 	node.set_generated_for(layout_pseudo, element)
 	node.initial_quote_nesting_level_ = initial_quote_nesting_level
 	if content.type_ == .list && node.can_have_children() {
 		if content.items.len > 0 {
+			inline_image_style := computed.clone_for_anonymous_with_display(css.Display.from_short(.inline_))
 			for item in content.items {
 				mut child := if item.type_ == .image {
-					unsafe { &Node(ImageBox.new_generated(document, computed, item.value)) }
+					unsafe { &Node(ImageBox.new_generated(document, inline_image_style, item.value)) }
 				} else {
 					unsafe { &Node(TextNode.new_generated(document, item.value)) }
 				}

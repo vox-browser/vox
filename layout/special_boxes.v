@@ -188,8 +188,9 @@ pub struct ImageBox {
 pub mut:
 	renders_as_alt_text_ bool
 mut:
-	svg_image_document_ ?&dom.Document
-	source_             string
+	svg_image_document_       ?&dom.Document
+	source_                   string
+	uses_content_replacement_ bool
 }
 
 fn image_alt_text_natural_size(alt string) css.SizeWithAspectRatio {
@@ -288,6 +289,28 @@ pub fn ImageBox.new_generated(document &dom.Document, computed_values &css.Compu
 		ReplacedBox: generated_replaced_box_base(document, computed_values)
 		renders_as_alt_text_: true
 		source_: source
+	}
+	box.is_image_box_ = true
+	if intrinsic_size := image_intrinsic_size_for_source(document, source) {
+		box.renders_as_alt_text_ = false
+		box.natural_size_ = intrinsic_size
+	} else {
+		box.natural_size_ = css.SizeWithAspectRatio{
+			width: CSSPixels.new(0)
+			height: CSSPixels.new(0)
+		}
+	}
+	box.svg_image_document_ = svg_image_document_for_source(document, source)
+	box.auto_content_box_size_ = box.natural_size_
+	return box
+}
+
+pub fn ImageBox.new_content_replacement(document &dom.Document, element &dom.Element, computed_values &css.ComputedProperties, source string) &ImageBox {
+	mut box := &ImageBox{
+		ReplacedBox: replaced_box_base(document, element, computed_values)
+		renders_as_alt_text_: true
+		source_: source
+		uses_content_replacement_: true
 	}
 	box.is_image_box_ = true
 	if intrinsic_size := image_intrinsic_size_for_source(document, source) {
@@ -891,16 +914,18 @@ pub fn (mut box ImageBox) reset_for_relayout() {
 	mut source := box.source_
 	mut alt := ''
 	mut provider_natural_size := ?css.SizeWithAspectRatio(none)
-	if dom_node := box.dom_node() {
-		if element := dom_node.as_element() {
-			source = image_source_selected_from_attributes(element)
-			alt = element.get_attribute_value('alt')
-			provider_natural_size = available_html_image_natural_size(element)
-			if provider_natural_size != none && element.as_node().is_html_image_element() {
-				image := unsafe { &dom.HTMLImageElement(element) }
-				current_source := html.html_image_element_current_src(image)
-				if current_source != '' {
-					source = current_source
+	if !box.uses_content_replacement_ {
+		if dom_node := box.dom_node() {
+			if element := dom_node.as_element() {
+				source = image_source_selected_from_attributes(element)
+				alt = element.get_attribute_value('alt')
+				provider_natural_size = available_html_image_natural_size(element)
+				if provider_natural_size != none && element.as_node().is_html_image_element() {
+					image := unsafe { &dom.HTMLImageElement(element) }
+					current_source := html.html_image_element_current_src(image)
+					if current_source != '' {
+						source = current_source
+					}
 				}
 			}
 		}

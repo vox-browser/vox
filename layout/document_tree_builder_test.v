@@ -34,6 +34,74 @@ fn document_tree_builder_node_for_dom(root &Node, target &dom.Node) ?&Node {
 	return none
 }
 
+fn document_tree_builder_first_image(root &Node) ?&Node {
+	if root.is_image_box() {
+		return root
+	}
+	for child in root.children() {
+		if found := document_tree_builder_first_image(child) {
+			return found
+		}
+	}
+	return none
+}
+
+const content_replacement_green_image = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAD0lEQVR4nGNgaGBAIOI4ANA0CAF5jtVRAAAAAElFTkSuQmCC'
+const content_replacement_red_image = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAEElEQVR4nGP4z8AARwzEcQCukw/x0F8jngAAAABJRU5ErkJggg=='
+
+fn test_single_content_image_replaces_an_element_and_ignores_source_updates() {
+	document := html.parse_document('<!doctype html><style>
+		#target { display:block; width:100px; height:100px; content:url(${content_replacement_green_image}) }
+		#contents { display:contents; content:url(${content_replacement_green_image}) }
+	</style><img id="target"><div id="contents"><span id="contents-child"></span></div>')
+	root := build_layout_tree(document) or { panic('no layout tree') }
+	mut target := document.get_element_by_id('target') or { panic('missing target') }
+	target_node := document_tree_builder_node_for_dom(root, target.as_node()) or {
+		panic('missing target layout node')
+	}
+	mut image_box := unsafe { &ImageBox(target_node) }
+	assert target_node.is_image_box()
+	assert image_box.source() == content_replacement_green_image
+
+	target.set_attribute_value('src', content_replacement_red_image)
+	image_box.reset_for_relayout()
+	assert image_box.source() == content_replacement_green_image
+	assert document_tree_builder_node_with_id(root, 'contents') == none
+	assert document_tree_builder_node_with_id(root, 'contents-child') != none
+}
+
+fn test_single_pseudo_content_image_becomes_the_pseudo_box() {
+	document := html.parse_document('<!doctype html><style>
+		#block::before { content:url(${content_replacement_green_image}); display:block }
+		#table::before { content:url(${content_replacement_green_image}); display:table }
+		#cell::before { content:url(${content_replacement_green_image}); display:table-cell }
+		#list::before { content:url(${content_replacement_green_image}); display:list-item }
+		#contents::before { content:url(${content_replacement_green_image}); display:contents }
+	</style><div id="block"></div><div id="table"></div><div id="cell"></div><div id="list"></div><div id="contents"></div>')
+	root := build_layout_tree(document) or { panic('no layout tree') }
+	for id in ['block', 'table', 'cell'] {
+		host := document_tree_builder_node_with_id(root, id) or { panic('missing ${id}') }
+		pseudo := host.first_child() or { panic('missing ${id} pseudo') }
+		assert pseudo.is_image_box()
+		assert pseudo.child_count() == 0
+		assert (pseudo.as_image_box() or { panic('missing ${id} image box') }).source() == content_replacement_green_image
+	}
+	block := document_tree_builder_node_with_id(root, 'block') or { panic('missing block') }
+	table := document_tree_builder_node_with_id(root, 'table') or { panic('missing table') }
+	cell := document_tree_builder_node_with_id(root, 'cell') or { panic('missing cell') }
+	assert (block.first_child() or { panic('missing block pseudo') }).display().is_block_outside()
+	assert (table.first_child() or { panic('missing table pseudo') }).display().is_block_outside()
+	assert (cell.first_child() or { panic('missing cell pseudo') }).display().is_inline_outside()
+
+	for id in ['list', 'contents'] {
+		host := document_tree_builder_node_with_id(root, id) or { panic('missing ${id}') }
+		pseudo := host.first_child() or { panic('missing ${id} pseudo') }
+		assert !pseudo.is_image_box()
+		image := document_tree_builder_first_image(pseudo) or { panic('missing ${id} image child') }
+		assert image.display().is_inline_outside()
+	}
+}
+
 // build_layout_tree walks the DOM and produces a real layout tree rooted at the Viewport (whose DOM node is
 // the Document); the root element's box is the viewport's child. display:none elements (and their subtrees)
 // get no box.

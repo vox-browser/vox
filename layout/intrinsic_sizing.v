@@ -40,10 +40,20 @@ fn calculate_min_content_width(mut state LayoutState, box &Box) CSSPixels {
 }
 
 fn calculate_max_content_width(mut state LayoutState, box &Box) CSSPixels {
-	if auto_width := box.auto_content_box_size().width {
+	auto_size := box.auto_content_box_size()
+	if auto_width := auto_size.width {
 		return auto_width
 	}
-	if !unsafe { &Node(box) }.has_children() {
+	node := unsafe { &Node(box) }
+	computed_width := box.computed_values().size_value(.width)
+	computed_height := box.computed_values().size_value(.height)
+	if node.is_replaced_box() && auto_size.has_aspect_ratio() && !auto_size.has_height()
+		&& computed_width.is_length() && computed_height.is_intrinsic_sizing_constraint() {
+		styled := node.as_node_with_style() or { return CSSPixels.new(0) }
+		box_state := state.get(styled)
+		return calculate_inner_width(mut state, box, box_state, AvailableSize.make_definite(CSSPixels.new(0)), computed_width)
+	}
+	if !node.has_children() {
 		return CSSPixels.new(0)
 	}
 	mut mutable_box := unsafe { &Box(box) }

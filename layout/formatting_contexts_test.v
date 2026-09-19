@@ -2542,6 +2542,25 @@ fn test_css_aspect_ratio_overrides_and_auto_falls_back_to_replaced_natural_ratio
 	assert auto_sized.content_height().to_double() == 60
 }
 
+fn test_ratio_only_content_replacement_uses_definite_width_for_max_content_size() {
+	document := html.parse_document('<!doctype html><style>
+		#host { display:flex; width:200px; height:48px }
+		#host::before {
+			content:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 40 40\'%3E%3C/svg%3E");
+			width:32px; height:fit-content; min-width:fit-content; max-height:32px
+		}
+	</style><div id="host"></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	host := layout_node_with_id(result.root, 'host') or { panic('missing host') }
+	image := host.first_child() or { panic('missing generated image') }
+	assert image.is_image_box()
+	image_style := image.as_node_with_style() or { panic('generated image has no style') }
+	mut state := result.state
+	used := state.get(image_style)
+	assert used.content_width().to_double() == 32
+	assert used.content_height().to_double() == 32
+}
+
 fn test_non_replaced_auto_height_uses_preferred_aspect_ratio() {
 	document :=
 		html.parse_document('<!doctype html><style>#box { width:120px; aspect-ratio:2/1 }</style><div id="box"></div>')
