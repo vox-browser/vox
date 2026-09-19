@@ -128,6 +128,10 @@ Visible editing positions now retain distinct script-visible and canonical
 caret boundaries, delegate movement and extension canonicalization to the
 translated caret navigator, scan rendered text and paragraph breaks, and
 distinguish true block edges from carets beside atomic inline layout boxes.
+Caret navigation now discovers text and atomic hosts from retained layout,
+uses rendered line ownership for cross-node equivalence, recognizes empty-line
+breaks from their containing block, and no longer joins caret positions across
+separate block lines merely because they share an editing host.
 
 The refreshed current-tree semantic inventory reports 4,536 unmatched C++
 spellings. That is a structural review queue rather than a count of missing behaviors: active V
@@ -270,7 +274,7 @@ from the current-module totals.
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
 | `DOM` | 59 | 34,859 | 36,103 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
-| `Editing` | 26 | 12,720 | 5,540 | 797 | Complete |
+| `Editing` | 26 | 12,720 | 5,541 | 797 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
 | `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
@@ -310,7 +314,7 @@ from the current-module totals.
 | `SRI` | 1 | 198 | 156 | 100 | Complete |
 | `SVG` | 82 | 9,020 | 5,167 | 1,186 | Complete |
 | `SecureContexts` | 1 | 76 | 59 | 13 | Complete |
-| `Selection` | 3 | 1,470 | 598 | 125 | Complete |
+| `Selection` | 3 | 1,470 | 648 | 149 | Complete |
 | `Serial` | 2 | 366 | 243 | 35 | Complete |
 | `ServiceWorker` | 11 | 2,608 | 1,562 | 513 | Complete |
 | `Speech` | 11 | 421 | 624 | 111 | Complete |
@@ -335,7 +339,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **345,425** | **69,039** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **345,476** | **69,063** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 

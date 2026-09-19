@@ -87,7 +87,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-19, the module
-translations contain 345,425 implementation V LOC and 69,039 test V LOC.
+translations contain 345,476 implementation V LOC and 69,063 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -100,7 +100,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Compression | 424 | ContentSecurityPolicy | 2,738 |
 | CookieStore | 859 | CredentialManagement | 418 |
 | Crypto (`webcrypto/`) | 4,472 | DOM | 36,103 |
-| DOMURL | 754 | Editing | 5,540 |
+| DOMURL | 754 | Editing | 5,541 |
 | Encoding | 705 | EncryptedMediaExtensions | 572 |
 | EntriesAPI | 44 | EventTiming | 153 |
 | Fetch | 5,188 | FileAPI | 1,018 |
@@ -120,7 +120,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | ReferrerPolicy | 239 | RequestIdleCallback | 59 |
 | ResizeObserver | 420 | ResourceTiming | 338 |
 | SRI | 156 | SVG | 5,167 |
-| SecureContexts | 59 | Selection | 598 |
+| SecureContexts | 59 | Selection | 648 |
 | Serial | 243 | ServiceWorker | 1,562 |
 | Speech | 624 | StorageAPI | 444 |
 | Streams | 6,290 | TrustedTypes | 756 |
@@ -133,7 +133,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **345,425** |  |  |
+| **Total** | **345,476** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
