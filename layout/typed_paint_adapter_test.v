@@ -2556,6 +2556,20 @@ fn test_svg_pattern_resolves_vector_image_after_recording() {
 	assert math.abs(vector_paths[0].transform.d - 10.0) < 0.001
 }
 
+fn test_svg_pattern_normalizes_raster_image_coordinates_once() {
+	image_url := 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAD0lEQVR4nGNgaGBAIOI4ANA0CAF5jtVRAAAAAElFTkSuQmCC'
+	document := html.parse_document('<!doctype html><svg width="100" height="100"><defs><pattern id="tile" width="100" height="100" patternUnits="userSpaceOnUse"><image href="${image_url}" width="100" height="100"/></pattern></defs><rect width="100" height="100" fill="url(#tile)"/></svg>')
+	root := layout_document_typed_in_viewport(document, 120, 120)
+	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
+	assert paths.len == 1
+	pattern := paths[0].fill_pattern or { panic('missing retained pattern fill') }
+	operations := (pattern.tile_display_list or {
+		panic('missing raster-image pattern display list')
+	}).operations.filter(it.kind == .image)
+	assert operations.len == 1
+	assert operations[0].transform.map_rect(operations[0].image_rect) == painting.Rect{0, 0, 100, 100}
+}
+
 fn test_svg_pattern_viewbox_overrides_object_bounding_box_content_units() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="200" height="100"><defs><pattern id="scaled" patternUnits="userSpaceOnUse" patternContentUnits="objectBoundingBox" width="40" height="20" viewBox="0 0 10 10" preserveAspectRatio="none"><rect width="5" height="10" fill="red"/><rect x="5" width="5" height="10" fill="blue"/></pattern></defs><rect x="20" y="10" width="100" height="60" fill="url(#scaled)"/></svg>')
 	root := layout_document_typed_in_viewport(document, 220, 120)

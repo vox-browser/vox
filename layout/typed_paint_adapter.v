@@ -2151,9 +2151,6 @@ fn transform_svg_mask_paint_operations(operations []painting.SVGMaskPaintOperati
 		} else if operation.kind == .image {
 			transformed << painting.SVGMaskPaintOperation{
 				...operation
-				image_rect: transform.map_rect(operation.image_rect)
-				image_paintable: normalized_svg_operation_image_paintable(operation.image_paintable,
-					transform)
 				transform: multiply_painting_affine(transform, operation.transform)
 			}
 		} else {
@@ -2174,15 +2171,6 @@ fn normalize_svg_pattern_operations(operations []painting.SVGMaskPaintOperation,
 		f: -content_origin.y
 	}, inverse_target)
 	return transform_svg_mask_paint_operations(operations, normalization)
-}
-
-fn normalized_svg_operation_image_paintable(value ?painting.ImagePaintable,
-	transform painting.Affine) ?painting.ImagePaintable {
-	paintable := value or { return none }
-	return painting.ImagePaintable{
-		...paintable
-		image_rect: transform.map_rect(paintable.image_rect)
-	}
 }
 
 fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVGPaint,
