@@ -1649,7 +1649,9 @@ fn query_feature_numeric_value(value MediaFeatureValueLocal, length_context Leng
 			LengthStyleValue {
 				media_feature_length_to_px(typed_value.length(), length_context)
 			}
-			RatioStyleValue { typed_value.ratio().value() }
+			RatioStyleValue {
+				typed_value.resolved_with_context(calculation_context)?.value()
+			}
 			ResolutionStyleValue { typed_value.resolution().to_dots_per_pixel() }
 			CalculatedStyleValue {
 				media_feature_calculated_numeric_value(typed_value, value.kind, calculation_context, length_context)

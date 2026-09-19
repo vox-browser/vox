@@ -1003,12 +1003,16 @@ fn test_grid_track_interpolation_handles_mixed_values_and_repeats() {
 	assert composited.css_text == 'calc(20% + 10px)'
 }
 
-fn test_ratio_parser_resolves_number_calculations() {
+fn test_ratio_parser_preserves_number_calculations_until_computed_value_time() {
 	value := parse_css_value_logic(.aspect_ratio, 'calc(1 + 1) / calc(2 * 2)') or {
 		panic('calculated ratio did not parse')
 	}
 	assert value is RatioStyleValue
-	assert value.serialize(.normal) == '2 / 4'
+	ratio := value as RatioStyleValue
+	assert ratio.numerator() is CalculatedStyleValue
+	assert ratio.denominator() is CalculatedStyleValue
+	assert value.serialize(.normal) == 'calc(2) / calc(4)'
+	assert ratio.absolutized(ComputationContext{}).serialize(.normal) == '2 / 4'
 }
 
 fn test_border_and_list_style_shorthand_special_resets() {

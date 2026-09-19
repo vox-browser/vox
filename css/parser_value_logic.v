@@ -14134,73 +14134,63 @@ fn media_feature_stream_has_value_token(stream ComponentValueStream) bool {
 }
 
 fn (mut parser Parser) parse_ratio_value(mut tokens ComponentValueStream) ?StyleValue {
-	ratio := parser.parse_ratio(mut tokens) or { return none }
-	return StyleValue(RatioStyleValue.create(ratio))
-}
-
-fn (mut parser Parser) parse_ratio(mut tokens ComponentValueStream) ?Ratio {
 	mut transaction := tokens.clone()
 	transaction.consume_whitespace()
 
-	// FIXME: It seems like `calc(...) / calc(...)` is a valid <ratio>, but this case is neither mentioned in a spec,
-	//        nor tested in WPT, as far as I can tell.
-	//        Still, we should probably support it. That means not assuming we can resolve the calculation immediately.
-
 	// `<ratio> = <number [0,+inf]> [ / <number [0,+inf]> ]?`
-	maybe_numerator := parser.read_ratio_number_value(transaction.consume() or { return none }) or {
+	numerator := parser.read_ratio_number_style_value(transaction.consume() or { return none }) or {
 		return none
 	}
-	if maybe_numerator < 0 {
-		return none
-	}
-	numerator := maybe_numerator
 
 	{
 		mut two_value_transaction := transaction.clone()
 		two_value_transaction.consume_whitespace()
 		solidus := two_value_transaction.consume() or {
 			tokens = transaction
-			return Ratio.new_single(numerator)
+			return StyleValue(RatioStyleValue.create_from_style_values(numerator, StyleValue(NumberStyleValue.create(1))))
 		}
 		two_value_transaction.consume_whitespace()
-		maybe_denominator := parser.read_ratio_number_value(two_value_transaction.consume() or {
+		denominator := parser.read_ratio_number_style_value(two_value_transaction.consume() or {
 			tokens = transaction
-			return Ratio.new_single(numerator)
+			return StyleValue(RatioStyleValue.create_from_style_values(numerator, StyleValue(NumberStyleValue.create(1))))
 		}) or {
 			tokens = transaction
-			return Ratio.new_single(numerator)
+			return StyleValue(RatioStyleValue.create_from_style_values(numerator, StyleValue(NumberStyleValue.create(1))))
 		}
 
-		if solidus.is_delim(u32(`/`)) && maybe_denominator >= 0 {
-			denominator := maybe_denominator
+		if solidus.is_delim(u32(`/`)) {
 			// Two-value ratio
 			tokens = two_value_transaction
-			return Ratio.new(numerator, denominator)
+			return StyleValue(RatioStyleValue.create_from_style_values(numerator, denominator))
 		}
 	}
 
 	// Single-value ratio
 	tokens = transaction
-	return Ratio.new_single(numerator)
+	return StyleValue(RatioStyleValue.create_from_style_values(numerator, StyleValue(NumberStyleValue.create(1))))
 }
 
-fn (mut parser Parser) read_ratio_number_value(component_value ComponentValue) ?f64 {
-	_ = parser
+fn (mut parser Parser) read_ratio_number_style_value(component_value ComponentValue) ?StyleValue {
 	if component_value.is(.number) {
-		return component_value.token().number_value()
+		value := component_value.token().number_value()
+		if value < 0 {
+			return none
+		}
+		return StyleValue(NumberStyleValue.create(value))
 	}
 	if component_value.is_function() {
 		mut stream := ComponentValueStream.new([component_value])
-		context := parser.calculation_context()
+		mut context := parser.calculation_context()
+		context.accepted_type_ranges[.number] = accepted_calculation_range(0, math.max_f32)
 		calculated := parser.parse_calculated_value_with_context(mut stream, context, parser.context_allows_tree_counting_functions()) or { return none }
 		if calculated is NumberStyleValue {
-			return calculated.number()
+			if calculated.number() < 0 {
+				return none
+			}
+			return calculated
 		}
 		if calculated is CalculatedStyleValue && calculated.resolves_to_number() {
-			resolved := calculated.resolve_number(CalculationResolutionContext{}) or { return none }
-			if resolved >= 0 {
-				return resolved
-			}
+			return calculated
 		}
 	}
 	return none

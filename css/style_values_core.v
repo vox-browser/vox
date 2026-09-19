@@ -4383,6 +4383,7 @@ pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleVal
 		RadialGradientStyleValue { StyleValue(style_value.absolutized(context)) }
 		RadialSizeStyleValue { style_value.absolutized(context) }
 		RandomValueSharingStyleValue { style_value.absolutized(context) }
+		RatioStyleValue { style_value.absolutized(context) }
 		RectStyleValue { style_value.absolutized(context) }
 		RGBColorStyleValue { StyleValue(style_value.absolutized(context)) }
 		ScrollbarColorStyleValue { style_value.absolutized(context) }
@@ -4614,6 +4615,13 @@ pub fn (style_value StyleValue) equals(other StyleValue) bool {
 		}
 		StyleValueList {
 			if other is StyleValueList {
+				style_value.properties_equal(other)
+			} else {
+				false
+			}
+		}
+		RatioStyleValue {
+			if other is RatioStyleValue {
 				style_value.properties_equal(other)
 			} else {
 				false
@@ -5014,32 +5022,92 @@ pub fn (style_value NumberStyleValue) reify(associated_property string) CSSStyle
 // --- RatioStyleValue ---
 pub struct RatioStyleValue {
 pub mut:
-	ratio_ Ratio
+	numerator_   StyleValue
+	denominator_ StyleValue
 }
 
 pub fn RatioStyleValue.create(ratio Ratio) RatioStyleValue {
+	return RatioStyleValue.create_from_style_values(StyleValue(NumberStyleValue.create(ratio.numerator())), StyleValue(NumberStyleValue.create(ratio.denominator())))
+}
+
+pub fn RatioStyleValue.create_from_style_values(numerator StyleValue, denominator StyleValue) RatioStyleValue {
 	return RatioStyleValue{
-		ratio_: ratio
+		numerator_: numerator
+		denominator_: denominator
+	}
+}
+
+pub fn (style_value RatioStyleValue) numerator() StyleValue {
+	return style_value.numerator_
+}
+
+pub fn (style_value RatioStyleValue) denominator() StyleValue {
+	return style_value.denominator_
+}
+
+fn resolved_ratio_component(value StyleValue, context CalculationResolutionContext) ?f64 {
+	return match value {
+		NumberStyleValue { value.number() }
+		CalculatedStyleValue { value.resolve_number(context) }
+		else { none }
+	}
+}
+
+pub fn (style_value RatioStyleValue) resolved_with_context(context CalculationResolutionContext) ?Ratio {
+	numerator := resolved_ratio_component(style_value.numerator_, context) or { return none }
+	denominator := resolved_ratio_component(style_value.denominator_, context) or { return none }
+	return Ratio.new(numerator, denominator)
+}
+
+pub fn (style_value RatioStyleValue) resolved() Ratio {
+	return style_value.resolved_with_context(CalculationResolutionContext{}) or {
+		panic('VERIFY_NOT_REACHED')
 	}
 }
 
 pub fn (style_value RatioStyleValue) ratio() Ratio {
-	return style_value.ratio_
+	return style_value.resolved()
+}
+
+fn absolutized_ratio_component(value StyleValue, context ComputationContext) StyleValue {
+	absolutized := value.absolutized(context)
+	if absolutized is CalculatedStyleValue && absolutized.resolves_to_number() {
+		resolution_context := CalculationResolutionContext.from_computation_context(context, none)
+		if number := absolutized.resolve_number(resolution_context) {
+			return StyleValue(NumberStyleValue.create(number))
+		}
+	}
+	return absolutized
+}
+
+pub fn (style_value RatioStyleValue) absolutized(context ComputationContext) StyleValue {
+	absolutized_numerator := absolutized_ratio_component(style_value.numerator_, context)
+	absolutized_denominator := absolutized_ratio_component(style_value.denominator_, context)
+	if absolutized_numerator.equals(style_value.numerator_)
+		&& absolutized_denominator.equals(style_value.denominator_) {
+		return StyleValue(style_value)
+	}
+	return StyleValue(RatioStyleValue.create_from_style_values(absolutized_numerator, absolutized_denominator))
 }
 
 pub fn (style_value RatioStyleValue) serialize(mode SerializationMode) string {
-	_ = mode
-	return style_value.ratio_.to_string()
+	return '${style_value.numerator_.serialize(mode)} / ${style_value.denominator_.serialize(mode)}'
 }
 
 pub fn (style_value RatioStyleValue) tokenize() []ComponentValue {
-	return [
-		ComponentValue.from_token(Token.create_number(Number.with_type(.number, style_value.ratio_.numerator()), serialize_a_number(style_value.ratio_.numerator()))),
+	mut component_values := style_value.numerator_.tokenize()
+	component_values << [
 		ComponentValue.from_token(Token.create_whitespace(' ')),
 		ComponentValue.from_token(Token.create_delim(u32(`/`), '/')),
 		ComponentValue.from_token(Token.create_whitespace(' ')),
-		ComponentValue.from_token(Token.create_number(Number.with_type(.number, style_value.ratio_.denominator()), serialize_a_number(style_value.ratio_.denominator()))),
 	]
+	component_values << style_value.denominator_.tokenize()
+	return component_values
+}
+
+pub fn (style_value RatioStyleValue) properties_equal(other RatioStyleValue) bool {
+	return style_value.numerator_.equals(other.numerator_)
+		&& style_value.denominator_.equals(other.denominator_)
 }
 
 // --- IntegerStyleValue ---
