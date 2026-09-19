@@ -57,6 +57,10 @@ the packed replay data and bounds together; finalization refreshes both once.
 Display-list recording scales and positions the cached bounds with ties-to-even
 rounding and retains the fragment rectangle separately, so damage and culling
 use glyph ink without recomputing font bounds during every recording pass.
+Text shaping now applies computed `word-spacing` to spaces, no-break spaces,
+and collapsed line feeds. The exact shaped advance of trailing ASCII whitespace
+is retained through fragment merging and intrinsic shape reuse, so line-end
+trimming subtracts precisely what shaping added, including text spacing.
 CSSOM `CaretPosition` and `Document.caretPositionFromPoint()` now consume the
 retained text-fragment hit-test offsets, expose a transformed one-pixel client
 rectangle, reject points outside the viewport, and retarget positions through
@@ -476,7 +480,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 43,335 | 16,259 | Present |
+| `Layout` | 9 | 4,001 | 43,373 | 16,301 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -490,7 +494,7 @@ from the current-module totals.
 | `Painting` | 22 | 8,227 | 7,009 | 2,198 | Present |
 | `PerformanceTimeline` | 5 | 476 | 447 | 130 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
-| `Platform` | 4 | 431 | 1,868 | 235 | Complete |
+| `Platform` | 4 | 431 | 1,979 | 255 | Complete |
 | `ReferrerPolicy` | 2 | 341 | 239 | 123 | Complete |
 | `RequestIdleCallback` | 1 | 52 | 59 | 18 | Complete |
 | `ResizeObserver` | 4 | 424 | 420 | 152 | Complete |
@@ -523,7 +527,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **350,847** | **71,565** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **350,996** | **71,627** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
