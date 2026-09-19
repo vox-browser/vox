@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb`
 
 Translation workspace: `~/code/vox2`
-Audited: 2026-09-19
+Audited: 2026-09-20
 
 ## Upstream delta since the V snapshot
 
@@ -429,7 +429,7 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The table below is the refreshed 2026-09-19 inventory. It covers 76 current
+The table below is the refreshed 2026-09-20 inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
 implementation units. Root-level LibWeb `.cpp` support units are mapped
@@ -450,7 +450,7 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
-| `DOM` | 59 | 34,859 | 36,561 | 2,199 | Complete |
+| `DOM` | 59 | 34,859 | 36,584 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
 | `Editing` | 26 | 12,720 | 8,515 | 797 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
@@ -470,7 +470,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 43,314 | 16,241 | Present |
+| `Layout` | 9 | 4,001 | 43,323 | 16,255 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -481,7 +481,7 @@ from the current-module totals.
 | `NavigationTiming` | 4 | 497 | 291 | 45 | Complete |
 | `NotificationsAPI` | 1 | 301 | 290 | 68 | Complete |
 | `Page` | 8 | 6,450 | 2,953 | 858 | Complete |
-| `Painting` | 22 | 8,227 | 6,975 | 2,182 | Present |
+| `Painting` | 22 | 8,227 | 7,000 | 2,194 | Present |
 | `PerformanceTimeline` | 5 | 476 | 447 | 130 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
 | `Platform` | 4 | 431 | 1,750 | 200 | Complete |
@@ -517,7 +517,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **350,651** | **71,496** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **350,708** | **71,522** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -832,6 +832,14 @@ snapshot conversion follows C++'s `FloatPoint` precision. The resulting
 snapshot is retained and replaced only when scroll state is dirty, so display
 recording, hit testing, and captured chrome dispatch no longer allocate and
 copy every frame on each query.
+The retained `ScrollState` now owns that dirty bit instead of mirroring it on
+the document layout result. Element and viewport scroll-offset storage perform
+the invalidation next to the mutation, visual-context rebuilding completes
+before offsets are refreshed, and display-list/hit-test/chrome consumers enter
+through the shared paint-property update instead of issuing defensive refreshes.
+`LIBWEB_VERIFY_SCROLL_STATE=1` force-derives a temporary snapshot after every
+skipped refresh and asserts that it matches the retained publication without
+replacing its storage.
 Scroll-frame parent selection now directly follows
 `PaintableBox::nearest_scroll_frame_index()`: fixed paintables attach to the
 root frame, ordinary descendants stop at an intervening fixed containing block,

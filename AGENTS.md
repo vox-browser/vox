@@ -138,12 +138,17 @@
   visibility carry the upstream hit-test-affecting metadata and still invalidate
   it; focus, selection, media, image, inspector, and scrollbar paint changes do
   not make the next input event rebuild the plan.
+- Retained scroll state owns its single dirty bit and publishes a new snapshot
+  only after visual-context structure is settled. Viewport and element offset
+  stores invalidate at the mutation site, repeated consumers keep the existing
+  snapshot, and `LIBWEB_VERIFY_SCROLL_STATE=1` force-derives skipped refreshes
+  into a temporary snapshot to verify that the retained offsets are current.
 
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
-implementation units have audited V mappings. As of 2026-09-19, the module
-translations contain 350,651 implementation V LOC and 71,496 test V LOC.
+implementation units have audited V mappings. As of 2026-09-20, the module
+translations contain 350,708 implementation V LOC and 71,522 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -155,7 +160,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Clipboard | 973 | Compositor | 2,403 |
 | Compression | 424 | ContentSecurityPolicy | 2,738 |
 | CookieStore | 859 | CredentialManagement | 418 |
-| Crypto (`webcrypto/`) | 4,472 | DOM | 36,561 |
+| Crypto (`webcrypto/`) | 4,472 | DOM | 36,584 |
 | DOMURL | 754 | Editing | 8,515 |
 | Encoding | 705 | EncryptedMediaExtensions | 572 |
 | EntriesAPI | 44 | EventTiming | 153 |
@@ -165,13 +170,13 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Geometry | 2,062 | HTML | 57,064 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 854 |
-| IntersectionObserver | 569 | Layout | 43,314 |
+| IntersectionObserver | 569 | Layout | 43,323 |
 | Loader | 1,921 | MathML | 411 |
 | MediaCapabilitiesAPI | 676 | MediaCapture | 1,205 |
 | MediaSourceExtensions | 357 | MimeSniff | 1,108 |
 | MixedContent | 125 | NavigationTiming | 291 |
 | NotificationsAPI | 290 | Page | 2,953 |
-| Painting | 6,975 | PerformanceTimeline | 447 |
+| Painting | 7,000 | PerformanceTimeline | 447 |
 | PermissionsAPI | 239 | Platform | 1,750 |
 | ReferrerPolicy | 239 | RequestIdleCallback | 59 |
 | ResizeObserver | 420 | ResourceTiming | 338 |
@@ -189,7 +194,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **350,651** |  |  |
+| **Total** | **350,708** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
