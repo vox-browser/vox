@@ -318,6 +318,38 @@ fn protect_collapsible_whitespace_for_interchange(document &dom.Document, serial
 	}
 }
 
+fn is_html_list_element(node &dom.Node) bool {
+	element := node.as_element() or { return false }
+	return element.is_html_element() && element.local_name() in ['ol', 'ul']
+}
+
+fn is_html_list_item_element(node &dom.Node) bool {
+	element := node.as_element() or { return false }
+	return element.is_html_element() && element.local_name() == 'li'
+}
+
+fn wrap_cloned_list_items(range &dom.Range, mut fragment_node dom.Node) {
+	children := fragment_node.children_as_vector()
+	if children.len == 0 || children.any(!is_html_list_item_element(it)) {
+		return
+	}
+
+	mut source_list := ?&dom.Node(range.common_ancestor_container())
+	for source_list != none {
+		current := source_list or { return }
+		if is_html_list_element(current) {
+			wrapper := current.clone_node(none, false, none) or { return }
+			mut wrapper_node := unsafe { &dom.Node(wrapper) }
+			for child in children {
+				wrapper_node.append_child(child) or { return }
+			}
+			fragment_node.append_child(wrapper) or { return }
+			return
+		}
+		source_list = current.parent()
+	}
+}
+
 pub fn serialize_range_as_html_for_clipboard(range &dom.Range) string {
 	if range.collapsed() {
 		return ''
@@ -346,6 +378,7 @@ pub fn serialize_range_as_html_for_clipboard(range &dom.Range) string {
 				mut serialized_text)
 		}
 	}
+	wrap_cloned_list_items(range, mut fragment_node)
 	protect_collapsible_whitespace_for_interchange(document, serialized_text)
 	return fragment_node.serialize_fragment(.no, .inner) or { '' }
 }

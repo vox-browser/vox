@@ -66,3 +66,13 @@ fn test_styled_clipboard_serializer_preserves_preformatted_whitespace() {
 
 	assert editing.serialize_range_as_html_for_clipboard(range) == ' leading  text\nnext '
 }
+
+fn test_styled_clipboard_serializer_restores_shared_list_wrapper() {
+	document := html.parse_document('<!doctype html><body><ol id="selection" start="3"><li>third</li><li>fourth</li></ol></body>')
+	_ := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	selection := document.get_element_by_id('selection') or { panic('missing selection') }
+	mut range := document.create_range()
+	range.select_node_contents(selection.as_node()) or { panic(err) }
+
+	assert editing.serialize_range_as_html_for_clipboard(range) == '<ol id="selection" start="3"><li>third</li><li>fourth</li></ol>'
+}
