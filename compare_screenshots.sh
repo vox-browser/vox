@@ -19,7 +19,7 @@ if [ ! -x "$v_compiler" ]; then
 fi
 
 if [ "$#" -eq 0 ]; then
-	set -- inline-node ordered-list text-decorations line-clamp-properties
+	set -- inline-node ordered-list text-decorations line-clamp-properties canvas-text
 fi
 
 mkdir -p "$output_dir"
@@ -118,6 +118,13 @@ for requested in "$@"; do
         # outlier counts also cover the extra premultiplication round-trip in
         # this native Cocoa capture bridge.
         case "$name" in
+            canvas-text)
+                # The Linux reference and Ladybird's macOS CPU backend choose
+                # different antialiasing coverage for the scaled outline run.
+                # Keep that variance isolated from all other canvas cases.
+                platform_sparse_max_difference=41
+                platform_sparse_outlier_pixels=1700
+                ;;
             svg-gradient-paint-transformation)
                 platform_sparse_max_difference=163
                 platform_sparse_outlier_pixels=1750
