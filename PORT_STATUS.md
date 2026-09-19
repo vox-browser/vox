@@ -368,6 +368,13 @@ changes before style computation. The three upstream live-selection reftests
 now match exactly, including insertion between unchanged boundaries and moving
 a highlight between subtrees after its `::selection` rule changes.
 
+Empty editable blocks, paragraphs, and inline elements now derive caret height
+from the selected font's ascent plus descent, cap it at the computed line
+height, and center it in the line's extra leading. The compact browser bridge
+replays `Selection.collapse()` at element and text boundaries, so the upstream
+`empty-caret-with-placeholder` reference pair paints real carets and matches
+with an exact zero-pixel diff.
+
 CSS backface visibility now parses, computes, inherits, serializes, and
 interpolates through the typed property pipeline. The transform implementation
 retains full 4x4 matrices, builds explicit and synthetic 3D planes, bounds
@@ -443,7 +450,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 43,188 | 16,090 | Present |
+| `Layout` | 9 | 4,001 | 43,223 | 16,139 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -490,7 +497,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **350,011** | **71,147** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **350,046** | **71,196** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -539,7 +546,7 @@ $ ./compare_screenshots.sh <24-new-cases> inline-node ordered-list \
 32 passed, 32 total (31 distinct fixtures)
 
 $ ./compare_screenshots.sh
-8 passed, 8 total (including 3 live-selection reftests)
+9 passed, 9 total (including 3 live-selection and 1 empty-caret reftest)
 ```
 
 The 2026-09-08 default-body pass exhausted the suspicious-stub queue at that
@@ -859,7 +866,10 @@ existing coalesced fast path. Quartz consumes the new blurred text-shadow
 command and the portable player preserves its layer order with a sharp fallback.
 The adjacent `fragment_at_position()` and `paint_cursor()` methods now use the
 same retained UTF-16 glyph geometry for a focused editable caret, including the
-padding-box fallback for an empty editing host and custom `caret-color`. Cursor
+padding-box fallback for an empty editing host and custom `caret-color`. Empty
+block, paragraph, and inline fallbacks use the first available font's ascent
+plus descent, capped by line height and centered in its extra leading, so their
+geometry remains stable when the first character appears. Cursor
 moves, focus changes, and blink transitions invalidate only the old and new
 containing-block foreground buckets, rather than either replaying a stale caret
 or discarding the full paint cache.
