@@ -5253,3 +5253,45 @@ fn test_nested_viewport_commands_compose_translation_transform_clip_and_opacity(
 	assert transformed.mask_clip.mask_operations[0].transform == [f64(2), 0, 0, 2, 45, 68]!
 	assert transformed.mask_clip.cache_key != command.mask_clip.cache_key
 }
+
+fn test_font_smoothing_is_retained_by_text_paint_commands() {
+	fragment := TextFragment{
+		x: 10
+		y: 20
+		width: 40
+		height: 16
+		text: 'Text'
+		color: css.Color{1, 2, 3, 255}
+		font_smoothing: .antialiased
+		text_run_id: 1
+		shape_as_run: true
+		paintable_fragment: painting.PaintableFragment{
+			text_value: 'Text'
+			length_in_code_units: 4
+		}
+		text_shadows: [BoxShadow{
+			offset_x: 1
+			offset_y: 2
+			color: css.Color{4, 5, 6, 255}
+		}]
+	}
+	foreground := unselected_text_fragment_commands([fragment], 1)
+	assert foreground.len == 1
+	assert foreground[0].font_smoothing == .antialiased
+
+	mut shadows := []PaintCommand{}
+	paint_text_shadow(mut shadows, fragment, TextRenderSpan{
+		end_code_unit: 4
+	}, 1)
+	assert shadows.len == 1
+	assert shadows[0].font_smoothing == .antialiased
+
+	box := &BlockBox{
+		paintable_with_lines: true
+		lines: [TextLine{ fragments: [fragment] }]
+	}
+	mut clip_runs := []PaintTextClipRun{}
+	append_background_text_clip_runs(box, mut clip_runs)
+	assert clip_runs.len == 1
+	assert clip_runs[0].font_smoothing == .antialiased
+}

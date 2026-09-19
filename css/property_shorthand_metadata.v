@@ -5,12 +5,12 @@ module css
 pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 	return match property_id {
 		.all {
-			[.webkit_box_orient, .webkit_text_fill_color, .accent_color, .align_content, .align_items,
-				.align_self, .anchor_name, .anchor_scope, .animation_composition, .animation_delay,
-				.animation_direction, .animation_duration, .animation_fill_mode,
-				.animation_iteration_count, .animation_name, .animation_play_state,
-				.animation_timeline, .animation_timing_function, .appearance, .aspect_ratio,
-				.backdrop_filter, .backface_visibility, .background_attachment,
+			[.webkit_box_orient, .webkit_font_smoothing, .webkit_text_fill_color, .accent_color,
+				.align_content, .align_items, .align_self, .anchor_name, .anchor_scope,
+				.animation_composition, .animation_delay, .animation_direction, .animation_duration,
+				.animation_fill_mode, .animation_iteration_count, .animation_name,
+				.animation_play_state, .animation_timeline, .animation_timing_function, .appearance,
+				.aspect_ratio, .backdrop_filter, .backface_visibility, .background_attachment,
 				.background_blend_mode, .background_clip, .background_color, .background_image,
 				.background_origin, .background_position_x, .background_position_y,
 				.background_repeat, .background_size, .block_ellipsis, .block_size,
@@ -361,12 +361,12 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 	return match property_id {
 		.all {
-			[.webkit_box_orient, .webkit_text_fill_color, .accent_color, .align_content, .align_items,
-				.align_self, .anchor_name, .anchor_scope, .animation_composition, .animation_delay,
-				.animation_direction, .animation_duration, .animation_fill_mode,
-				.animation_iteration_count, .animation_name, .animation_play_state,
-				.animation_timeline, .animation_timing_function, .appearance, .aspect_ratio,
-				.backdrop_filter, .backface_visibility, .background_attachment,
+			[.webkit_box_orient, .webkit_font_smoothing, .webkit_text_fill_color, .accent_color,
+				.align_content, .align_items, .align_self, .anchor_name, .anchor_scope,
+				.animation_composition, .animation_delay, .animation_direction, .animation_duration,
+				.animation_fill_mode, .animation_iteration_count, .animation_name,
+				.animation_play_state, .animation_timeline, .animation_timing_function, .appearance,
+				.aspect_ratio, .backdrop_filter, .backface_visibility, .background_attachment,
 				.background_blend_mode, .background_clip, .background_color, .background_image,
 				.background_origin, .background_position_x, .background_position_y,
 				.background_repeat, .background_size, .block_ellipsis, .block_size,
@@ -1446,6 +1446,9 @@ pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 			[.all, .white_space, .text_wrap]
 		}
 		.webkit_text_fill_color {
+			[.all]
+		}
+		.webkit_font_smoothing {
 			[.all]
 		}
 		.block_size {

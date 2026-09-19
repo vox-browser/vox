@@ -8,8 +8,8 @@ fn backface_visibility_serialization(text string) ?string {
 }
 
 fn test_backface_visibility_metadata_and_parsing() {
-	assert number_of_longhand_properties == 354
-	assert last_longhand_property_id() == .vector_effect
+	assert number_of_longhand_properties == 355
+	assert last_longhand_property_id() == .webkit_font_smoothing
 	assert property_id_from_string('backface-visibility')? == .backface_visibility
 	assert property_id_from_string('BACKFACE-VISIBILITY')? == .backface_visibility
 	assert string_from_property_id(.backface_visibility) == 'backface-visibility'

@@ -2562,6 +2562,18 @@ pub fn (c &ComputedProperties) text_rendering() TextRendering {
 	}
 }
 
+pub fn (c &ComputedProperties) font_smoothing() FontSmoothing {
+	value := c.property(.webkit_font_smoothing, .yes) or { return .auto_ }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .auto_ }
+	return match keyword {
+		.auto { FontSmoothing.auto_ }
+		.none_ { FontSmoothing.none_ }
+		.antialiased { FontSmoothing.antialiased }
+		.subpixel_antialiased { FontSmoothing.subpixel_antialiased }
+		else { FontSmoothing.auto_ }
+	}
+}
+
 pub fn (c &ComputedProperties) text_underline_offset() CSSPixels {
 	value := c.property(.text_underline_offset, .yes) or {
 		return InitialValues.text_underline_offset()

@@ -151,12 +151,13 @@ pub mut:
 	width  f64
 	height f64
 pub:
-	text      string
-	color     css.Color
-	font_size f64 = 16.0
-	bold      bool
-	italic    bool
-	mono      bool
+	text           string
+	color          css.Color
+	font_size      f64 = 16.0
+	bold           bool
+	italic         bool
+	mono           bool
+	font_smoothing css.FontSmoothing
 	// Words from the same DOM text node can be shaped and painted as one run when CSS uses natural
 	// letter/word spacing. This lets the renderer use the font's real glyph advances instead of
 	// exposing this minimal layout engine's half-em width estimates between every word.
@@ -1423,6 +1424,7 @@ pub:
 	glyph_translation_x f64
 	glyph_translation_y f64
 	glyph_orientation   painting.Orientation
+	font_smoothing      css.FontSmoothing
 }
 
 pub struct PaintCommand {
@@ -1446,6 +1448,7 @@ pub mut:
 	glyph_translation_x f64
 	glyph_translation_y f64
 	glyph_orientation   painting.Orientation
+	font_smoothing      css.FontSmoothing
 	opacity             f64 = 1.0 // the box's cumulative opacity (this box × its ancestors')
 	// Product of the retained CSS effect layers surrounding this command. The
 	// native player divides it out of `opacity`, because those layers composite
@@ -3273,7 +3276,7 @@ fn apply_live_scrollbar_offset(mut command PaintCommand, box &BlockBox) {
 }
 
 fn text_fragments_share_run(first TextFragment, next TextFragment) bool {
-	return first.shape_as_run && next.shape_as_run && first.text_run_id != 0 && first.text_run_id == next.text_run_id && first.inline_node_id == next.inline_node_id && first.color == next.color && first.font_size == next.font_size && first.bold == next.bold && first.italic == next.italic && first.mono == next.mono && first.decoration == next.decoration && first.decoration_color == next.decoration_color && first.decoration_color_set == next.decoration_color_set && first.decoration_style == next.decoration_style && first.decoration_thickness == next.decoration_thickness && first.preserves_spaces == next.preserves_spaces && first.rtl == next.rtl
+	return first.shape_as_run && next.shape_as_run && first.text_run_id != 0 && first.text_run_id == next.text_run_id && first.inline_node_id == next.inline_node_id && first.color == next.color && first.font_size == next.font_size && first.bold == next.bold && first.italic == next.italic && first.mono == next.mono && first.font_smoothing == next.font_smoothing && first.decoration == next.decoration && first.decoration_color == next.decoration_color && first.decoration_color_set == next.decoration_color_set && first.decoration_style == next.decoration_style && first.decoration_thickness == next.decoration_thickness && first.preserves_spaces == next.preserves_spaces && first.rtl == next.rtl
 }
 
 fn combined_text_fragment_glyph_run(fragments []TextFragment, run_left f64) ?&platform.GlyphRun {
@@ -3360,6 +3363,7 @@ fn unselected_text_fragment_commands(fragments []TextFragment, opacity f64) []Pa
 			bold: first.bold
 			italic: first.italic
 			mono: first.mono
+			font_smoothing: first.font_smoothing
 			rtl: first.rtl
 			opacity: opacity
 		}
@@ -3612,6 +3616,7 @@ fn paint_text_shadow(mut commands []PaintCommand, fragment TextFragment,
 			bold: fragment.bold
 			italic: fragment.italic
 			mono: fragment.mono
+			font_smoothing: fragment.font_smoothing
 			rtl: fragment.rtl
 			opacity: opacity
 			blur: layer.blur
@@ -3645,6 +3650,7 @@ fn paint_text_fragment(mut commands []PaintCommand, fragment TextFragment,
 		bold: fragment.bold
 		italic: fragment.italic
 		mono: fragment.mono
+		font_smoothing: fragment.font_smoothing
 		rtl: fragment.rtl
 		opacity: opacity
 	}
@@ -3842,6 +3848,7 @@ fn append_background_text_clip_runs(box &BlockBox, mut runs []PaintTextClipRun) 
 					glyph_translation_x: command.glyph_translation_x
 					glyph_translation_y: command.glyph_translation_y
 					glyph_orientation: command.glyph_orientation
+					font_smoothing: command.font_smoothing
 				}
 			}
 		}

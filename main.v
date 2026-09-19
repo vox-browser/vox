@@ -81,7 +81,7 @@ fn C.native_draw_document_text_srgb(x f32, y f32, text string, color gg.Color, s
 
 fn C.native_draw_document_text_shadow_srgb(x f32, y f32, text string, color gg.Color, size f32, bold int, italic int, monospace int, blur f32)
 
-fn C.native_draw_document_glyph_run_srgb(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, font_path string, face_index int, color gg.Color, blur f32, shadow_only int) int
+fn C.native_draw_document_glyph_run_srgb(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, font_path string, face_index int, color gg.Color, blur f32, shadow_only int, font_smoothing int) int
 
 fn C.native_draw_canvas_glyph_run_rgba(pixels &u8, width int, height int, pitch int, pixels_are_premultiplied int, glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, font_path string, face_index int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, red u8, green u8, blue u8, alpha u8, gradient_x0 f32, gradient_y0 f32, gradient_x1 f32, gradient_y1 f32, gradient_stops &f32, gradient_stop_count int, global_alpha f32, stroke int, use_outline int, stroke_width f32) int
 
@@ -89,7 +89,7 @@ fn C.native_begin_background_text_clip(canvas_width f32, canvas_height f32, clip
 
 fn C.native_add_background_text_clip_run(x f32, y f32, text string, size f32, bold int, italic int, monospace int)
 
-fn C.native_add_background_glyph_clip_run(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, font_path string, face_index int) int
+fn C.native_add_background_glyph_clip_run(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, font_path string, face_index int, font_smoothing int) int
 
 fn C.native_finish_background_text_clip()
 
@@ -1436,7 +1436,7 @@ fn javascript_program(state map[string]json2.Any, scripts []string) string {
 		'const __listeners = Object.create(null);',
 		'const __canvases = Object.create(null);',
 		'function __listenerKey(s, n) { return (s && (s.bridgeKey || s.id) ? (s.bridgeKey || s.id) : "document") + ":" + n; }',
-		'function __styleName(name) { return String(name).replace(/[A-Z]/g, function (character) { return "-" + character.toLowerCase(); }); }',
+		'function __styleName(name) { const result=String(name).replace(/[A-Z]/g, function (character) { return "-" + character.toLowerCase(); }); return result.indexOf("webkit-")===0?"-"+result:result; }',
 		'function __elementStates() { return Object.keys(__state.elements).map(function (key) { return __state.elements[key]; }).filter(function(s){return !s.removed;}).sort(function (a,b) { return (+a.elementIndex||0)-(+b.elementIndex||0); }); }',
 		'function __attributeName(s, name) { name=String(name); return s.namespaceURI==="http://www.w3.org/1999/xhtml"?name.toLowerCase():name; }',
 		'function __setAttribute(s, name, value) { name=__attributeName(s,name); value=String(value); s.attributes[name]=value; s.attributesDirty=true; if(name==="id")s.id=value; if(name==="class")s.className=value; if(name==="style")s.styleText=value; if(name==="src")s.src=value; if(name==="disabled")s.disabled=true; }',
@@ -2686,7 +2686,7 @@ fn native_draw_retained_glyph_run(command layout.PaintCommand, page_x f32, page_
 			glyph_run.font().font_path() or { '' }
 		}
 		unsafe {
-			return C.native_draw_document_glyph_run_srgb(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(command.glyph_translation_x), f32(command.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_width, canvas_height, font_path, glyph_run.font().face_index(), glyph_color, blur, int(shadow_only)) != 0
+			return C.native_draw_document_glyph_run_srgb(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(command.glyph_translation_x), f32(command.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_width, canvas_height, font_path, glyph_run.font().face_index(), glyph_color, blur, int(shadow_only), int(command.font_smoothing)) != 0
 		}
 	}
 	return false
@@ -3785,7 +3785,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 								glyph_run.font().font_path() or { '' }
 							}
 							unsafe {
-								retained_run_drawn = C.native_add_background_glyph_clip_run(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(run.glyph_translation_x), f32(run.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, 0, f32(app.ctx.width), f32(app.ctx.height), font_path, glyph_run.font().face_index()) != 0
+								retained_run_drawn = C.native_add_background_glyph_clip_run(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(run.glyph_translation_x), f32(run.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, 0, f32(app.ctx.width), f32(app.ctx.height), font_path, glyph_run.font().face_index(), int(run.font_smoothing)) != 0
 							}
 						}
 					}

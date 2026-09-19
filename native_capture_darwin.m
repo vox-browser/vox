@@ -30,7 +30,8 @@ extern int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
 	float baseline_y, float transform_a, float transform_b, float transform_c,
 	float transform_d, float transform_e, float transform_f, float page_x,
 	float page_y, float scroll_y, float canvas_width, float canvas_height,
-	uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
+	uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha,
+	int font_smoothing);
 extern int ladybird_v_skia_draw_canvas_glyph_run(uint8_t *destination_pixels,
 	int width, int height, int pitch, int pixels_are_premultiplied,
 	const char *font_path, int face_index,
@@ -831,10 +832,10 @@ static CGColorRef native_srgb_color(gg__Color color) {
 	return CGColorCreate(color_space, components);
 }
 
-static void native_configure_glyph_rasterization(CGContextRef context) {
-	CGContextSetShouldAntialias(context, true);
-	CGContextSetAllowsFontSmoothing(context, true);
-	CGContextSetShouldSmoothFonts(context, true);
+static void native_configure_glyph_rasterization(CGContextRef context, int font_smoothing) {
+	CGContextSetShouldAntialias(context, font_smoothing != 1);
+	CGContextSetAllowsFontSmoothing(context, font_smoothing != 1 && font_smoothing != 2);
+	CGContextSetShouldSmoothFonts(context, font_smoothing != 1 && font_smoothing != 2);
 	CGContextSetAllowsFontSubpixelPositioning(context, true);
 	CGContextSetShouldSubpixelPositionFonts(context, true);
 	// SkFont retains the exact HarfBuzz positions. Do not let CoreGraphics snap
@@ -855,7 +856,7 @@ static int native_draw_retained_glyph_run(CGContextRef context,
 	float transform_a, float transform_b, float transform_c, float transform_d,
 	float transform_e, float transform_f, float page_x, float page_y,
 	float scroll_y, float canvas_width, float canvas_height, CGColorRef color, float blur,
-	int shadow_only) {
+	int shadow_only, int font_smoothing) {
 	if (context == NULL || glyphs == NULL || packed_positions == NULL
 		|| glyph_count <= 0) {
 		return 0;
@@ -877,7 +878,7 @@ static int native_draw_retained_glyph_run(CGContextRef context,
 				canvas_height, (uint8_t)lrint(components[0] * 255.0),
 				(uint8_t)lrint(components[1] * 255.0),
 				(uint8_t)lrint(components[2] * 255.0),
-				(uint8_t)lrint(components[3] * 255.0))) {
+				(uint8_t)lrint(components[3] * 255.0), font_smoothing)) {
 			return 1;
 		}
 	}
@@ -899,7 +900,7 @@ static int native_draw_retained_glyph_run(CGContextRef context,
 		transform_a, -transform_b, -transform_c, transform_d,
 		origin_x, origin_y);
 	CGContextSaveGState(context);
-	native_configure_glyph_rasterization(context);
+	native_configure_glyph_rasterization(context, font_smoothing);
 	CGContextSetFillColorWithColor(context, color);
 	if (shadow_only && blur > 0.0f) {
 		CGRect clip_bounds = CGContextGetClipBoundingBox(context);
@@ -999,14 +1000,15 @@ int native_draw_document_glyph_run_srgb(const uint16_t *glyphs,
 	float transform_c, float transform_d, float transform_e, float transform_f,
 	float page_x, float page_y, float scroll_y, float canvas_width, float canvas_height,
 	string font_path_value, int face_index,
-	gg__Color color, float blur, int shadow_only) {
+	gg__Color color, float blur, int shadow_only, int font_smoothing) {
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	NSString *font_path = native_capture_string(font_path_value);
 	CGColorRef cg_color = native_srgb_color(color);
 	int did_draw = native_draw_retained_glyph_run(context, [font_path fileSystemRepresentation], face_index, glyphs, positions, glyph_count,
 		font_size, font_weight, emoji_face, baseline_x, baseline_y, transform_a, transform_b,
 		transform_c, transform_d, transform_e, transform_f, page_x, page_y,
-		scroll_y, canvas_width, canvas_height, cg_color, blur, shadow_only);
+		scroll_y, canvas_width, canvas_height, cg_color, blur, shadow_only,
+		font_smoothing);
 	CGColorRelease(cg_color);
 	return did_draw;
 }
@@ -3322,7 +3324,7 @@ int native_add_background_glyph_clip_run(const uint16_t *glyphs,
 	float baseline_x, float baseline_y, float transform_a, float transform_b,
 	float transform_c, float transform_d, float transform_e, float transform_f,
 	float page_x, float page_y, float scroll_y, float canvas_width, float canvas_height,
-	string font_path_value, int face_index) {
+	string font_path_value, int face_index, int font_smoothing) {
 	if (native_background_text_clip_build_context == NULL) {
 		return 0;
 	}
@@ -3336,7 +3338,7 @@ int native_add_background_glyph_clip_run(const uint16_t *glyphs,
 		baseline_y, transform_a, transform_b, transform_c, transform_d,
 		transform_e, transform_f, page_x, page_y, scroll_y,
 		canvas_width, canvas_height,
-		black, 0.0f, 0);
+		black, 0.0f, 0, font_smoothing);
 	CGColorRelease(black);
 	return did_draw;
 }

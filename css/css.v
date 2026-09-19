@@ -443,6 +443,7 @@ pub enum PropertyID {
 	color_interpolation_filters
 	backface_visibility
 	vector_effect
+	webkit_font_smoothing
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow
 	gap

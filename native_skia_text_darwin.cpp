@@ -358,7 +358,7 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
     float baseline_y, float transform_a, float transform_b, float transform_c,
     float transform_d, float transform_e, float transform_f, float page_x,
     float page_y, float scroll_y, float canvas_width, float canvas_height,
-    uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha)
+    uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha, int font_smoothing)
 {
     auto* typeface = select_typeface(font_path, face_index, font_weight, emoji_face);
     if (!destination || !typeface || !glyphs || !packed_positions || glyph_count <= 0
@@ -368,6 +368,21 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
     SkFont font(sk_ref_sp(typeface), std::max(font_size, 0.0f));
     // This is the only non-default setting in Gfx::Font::skia_font().
     font.setSubpixel(true);
+    switch (font_smoothing) {
+    case 1:
+        font.setEdging(SkFont::Edging::kAlias);
+        break;
+    case 2:
+        // Blink disables CoreGraphics outline dilation for antialiased text.
+        font.setEdging(SkFont::Edging::kAntiAlias);
+        font.setHinting(SkFontHinting::kNone);
+        break;
+    case 3:
+        font.setEdging(SkFont::Edging::kSubpixelAntiAlias);
+        break;
+    default:
+        break;
+    }
     // Platform::FontPlugin forces normal hinting in layout-test mode so the
     // compositor produces deterministic screenshot glyphs on every host.
     if (auto* layout_test_font = std::getenv("LADYBIRD_LAYOUT_TEST_FONT");

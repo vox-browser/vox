@@ -46,13 +46,14 @@ pub enum LineJoin {
 
 pub struct DrawGlyphRun {
 pub:
-	glyph_run_id string
-	glyph_run    ?&platform.GlyphRun
-	rect         IntRect
-	translation  Point
-	color        Color
-	orientation  Orientation
-	scale        f64 = 1.0
+	glyph_run_id   string
+	glyph_run      ?&platform.GlyphRun
+	rect           IntRect
+	translation    Point
+	color          Color
+	orientation    Orientation
+	scale          f64 = 1.0
+	font_smoothing u8
 }
 
 pub struct FillRect {
@@ -178,6 +179,7 @@ pub:
 	draw_location        Point
 	blur_radius          int
 	color                Color
+	font_smoothing       u8
 }
 
 pub struct FillRoundedRect {
@@ -886,12 +888,12 @@ pub fn (mut recorder DisplayListRecorder) draw_text(rect IntRect, text string,
 	}
 	metrics := font.pixel_metrics()
 	baseline_y := f32(rect.y) + metrics.ascent + (f32(rect.height) - (metrics.ascent + metrics.descent)) / 2.0
-	return recorder.draw_glyph_run(Point{f64(baseline_x), f64(baseline_y)}, glyph_run, color, rect, 1.0, .horizontal)
+	return recorder.draw_glyph_run(Point{f64(baseline_x), f64(baseline_y)}, glyph_run, color, rect, 1.0, .horizontal, 0)
 }
 
 pub fn (mut recorder DisplayListRecorder) draw_glyph_run(baseline_start Point,
 	glyph_run &platform.GlyphRun, color Color, rect IntRect, scale f64,
-	orientation Orientation) bool {
+	orientation Orientation, font_smoothing u8) bool {
 	if color.a == 0 {
 		return false
 	}
@@ -903,6 +905,7 @@ pub fn (mut recorder DisplayListRecorder) draw_glyph_run(baseline_start Point,
 		color: color
 		orientation: orientation
 		scale: scale
+		font_smoothing: font_smoothing
 	})
 }
 

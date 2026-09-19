@@ -1296,6 +1296,7 @@ pub enum Keyword {
 	anchors_visible
 	ancient_tamil
 	anonymous
+	antialiased
 	anywhere
 	appworkspace
 	arabic_abjad
@@ -1947,6 +1948,7 @@ pub enum Keyword {
 	stroke_box
 	style
 	sub
+	subpixel_antialiased
 	subtract
 	subtractive
 	sundanese
@@ -2194,6 +2196,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.anchors_visible { 'anchors-visible' }
 		.ancient_tamil { 'ancient-tamil' }
 		.anonymous { 'anonymous' }
+		.antialiased { 'antialiased' }
 		.anywhere { 'anywhere' }
 		.appworkspace { 'appworkspace' }
 		.arabic_abjad { 'arabic-abjad' }
@@ -2845,6 +2848,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.stroke_box { 'stroke-box' }
 		.style { 'style' }
 		.sub { 'sub' }
+		.subpixel_antialiased { 'subpixel-antialiased' }
 		.subtract { 'subtract' }
 		.subtractive { 'subtractive' }
 		.sundanese { 'sundanese' }
@@ -3074,6 +3078,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'anchors-visible' { Keyword.anchors_visible }
 		'ancient-tamil' { Keyword.ancient_tamil }
 		'anonymous' { Keyword.anonymous }
+		'antialiased' { Keyword.antialiased }
 		'anywhere' { Keyword.anywhere }
 		'appworkspace' { Keyword.appworkspace }
 		'arabic-abjad' { Keyword.arabic_abjad }
@@ -3725,6 +3730,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'stroke-box' { Keyword.stroke_box }
 		'style' { Keyword.style }
 		'sub' { Keyword.sub }
+		'subpixel-antialiased' { Keyword.subpixel_antialiased }
 		'subtract' { Keyword.subtract }
 		'subtractive' { Keyword.subtractive }
 		'sundanese' { Keyword.sundanese }

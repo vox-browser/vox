@@ -51,6 +51,28 @@ fn test_javascript_bridge_runs_window_load_mutations() {
 	}
 }
 
+fn test_javascript_bridge_maps_webkit_font_smoothing_idl_name() {
+	$if darwin {
+		document := html.parse_document('<!doctype html><div id="target">Text</div>')
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'about:blank', [
+			'target.style.webkitFontSmoothing = "antialiased"; console.log(target.style.webkitFontSmoothing);',
+		], runtime, mut messages)
+		assert messages == ['antialiased']
+		target := document.get_element_by_id('target') or { panic('missing target') }
+		assert target.get_attribute_value('style') == '-webkit-font-smoothing: antialiased'
+
+		result := layout.run_document_layout(document, 200, 100) or { panic('missing layout') }
+		text := result.paint_tree.paint_commands().filter(it.kind == 'draw_text' && it.text == 'Text')
+		assert text.len == 1
+		assert text[0].font_smoothing == .antialiased
+	}
+}
+
 fn test_javascript_bridge_exposes_completed_images_and_delivers_late_load_listeners() {
 	$if darwin {
 		document := html.parse_document('<!doctype html><img id="preload" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="><div id="target"></div>')

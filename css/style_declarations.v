@@ -38,14 +38,14 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	return property_multiplicity(property_id) != .single
 }
 
-pub const number_of_longhand_properties = 354
+pub const number_of_longhand_properties = 355
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
 }
 
 pub fn last_longhand_property_id() PropertyID {
-	return .vector_effect
+	return .webkit_font_smoothing
 }
 
 fn property_id_from_longhand_index(index int) ?PropertyID {
@@ -404,6 +404,7 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		351 { PropertyID.color_interpolation_filters }
 		352 { PropertyID.backface_visibility }
 		353 { PropertyID.vector_effect }
+		354 { PropertyID.webkit_font_smoothing }
 		else { none }
 	}
 }

@@ -4077,6 +4077,7 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 				bold: computed.font_weight() >= 600
 				italic: computed.font_slope() != 0
 				mono: computed_font_is_monospace(computed)
+				font_smoothing: computed.font_smoothing()
 				text_run_id: text_run_identity(fragment.layout_node_)
 				shape_as_run: resolved_text_spacing_for_node(fragment.layout_node_, .letter_spacing).raw_value() == 0 && resolved_text_spacing_for_node(fragment.layout_node_, .word_spacing).raw_value() == 0
 				inline_node_id: inline_node_id

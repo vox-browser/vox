@@ -1137,6 +1137,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.font_kerning {
 			return parser.parse_font_kerning_value(mut tokens)
 		}
+		.webkit_font_smoothing {
+			return parser.parse_webkit_font_smoothing_value(mut tokens)
+		}
 		.font_language_override {
 			return parser.parse_font_language_override_value(mut tokens)
 		}
@@ -10740,6 +10743,12 @@ fn font_style_keyword_from_string(value string) ?FontStyleKeyword {
 fn (mut parser Parser) parse_font_kerning_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
 	return parse_property_keyword_value(mut tokens, ['auto', 'normal', 'none'])
+}
+
+fn (mut parser Parser) parse_webkit_font_smoothing_value(mut tokens ComponentValueStream) ?StyleValue {
+	_ = parser
+	return parse_property_keyword_value(mut tokens, ['auto', 'none', 'antialiased',
+		'subpixel-antialiased'])
 }
 
 fn (mut parser Parser) parse_font_language_override_value(mut tokens ComponentValueStream) ?StyleValue {

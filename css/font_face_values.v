@@ -149,6 +149,13 @@ pub enum TextRendering {
 	geometricprecision
 }
 
+pub enum FontSmoothing {
+	auto_
+	none_
+	antialiased
+	subpixel_antialiased
+}
+
 pub struct FontVariantAlternates {
 pub mut:
 	historical_forms           bool
