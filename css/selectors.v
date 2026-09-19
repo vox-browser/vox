@@ -3537,7 +3537,11 @@ fn matches_indeterminate_pseudo_class(element &dom.Element) bool {
 	// The :indeterminate pseudo-class must match any element falling into one of the following categories:
 	// - input elements whose type attribute is in the Checkbox state and whose indeterminate IDL attribute is set to true
 	// FIXME: - input elements whose type attribute is in the Radio Button state and whose radio button group contains no input elements whose checkedness state is true.
-	// FIXME: HTMLInputElement::indeterminate is not exposed in this port yet.
+	if element.local_name() == 'input'
+		&& element.get_attribute_value('type').trim_space().to_lower() == 'checkbox' {
+		input := unsafe { &dom.HTMLInputElement(element) }
+		return input.indeterminate() && !element.has_attribute('switch')
+	}
 	// - progress elements with no value content attribute
 	if element.local_name() == 'progress' {
 		return !element.has_attribute('value')
@@ -3830,8 +3834,15 @@ fn matches_open_state_pseudo_class(element &dom.Element, open bool) bool {
 		return open == element.has_attribute('open')
 	}
 	// - select elements that are a drop-down box and whose drop-down boxes are open
+	if element.local_name() == 'select' {
+		select_element := unsafe { &dom.HTMLSelectElement(element) }
+		return open == select_element.is_open()
+	}
 	// - input elements that support a picker and whose pickers are open
-	// FIXME: Select/input picker open state is not exposed in this port yet.
+	if element.local_name() == 'input' {
+		input := unsafe { &dom.HTMLInputElement(element) }
+		return input.supports_a_picker() && open == input.is_open()
+	}
 	return false
 }
 

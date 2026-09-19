@@ -271,8 +271,12 @@ pub fn (mut model HTMLSelectElementModel) set_is_open(open bool) {
 		return
 	}
 	model.is_open_ = open
-	mut node := unsafe { &dom.Node(select_node(model.element)) }
-	node.invalidate_style(.element_attribute_change)
+	mut element := unsafe { &dom.HTMLSelectElement(model.element) }
+	element.set_is_open(open)
+}
+
+pub fn (model &HTMLSelectElementModel) is_open() bool {
+	return unsafe { &dom.HTMLSelectElement(model.element) }.is_open()
 }
 
 pub fn (model &HTMLSelectElementModel) has_activation_behavior() bool {

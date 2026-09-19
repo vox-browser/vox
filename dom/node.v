@@ -630,6 +630,7 @@ pub mut:
 	checkedness_initialized_ bool
 	dirty_checkedness_       bool
 	indeterminate_           bool
+	is_open_                 bool
 	input_element_model_     voidptr = unsafe { nil }
 }
 
@@ -653,7 +654,31 @@ pub fn (e &HTMLInputElement) indeterminate() bool {
 }
 
 pub fn (mut e HTMLInputElement) set_indeterminate(value bool) {
+	if e.indeterminate_ == value {
+		return
+	}
 	e.indeterminate_ = value
+	mut node := unsafe { &Node(e) }
+	node.invalidate_style(.other)
+	node.set_needs_repaint(.yes)
+}
+
+pub fn (e &HTMLInputElement) supports_a_picker() bool {
+	type_ := unsafe { &Element(e) }.get_attribute_value('type').trim_space().to_lower()
+	return type_ in ['file', 'color']
+}
+
+pub fn (e &HTMLInputElement) is_open() bool {
+	return e.is_open_
+}
+
+pub fn (mut e HTMLInputElement) set_is_open(value bool) {
+	if e.is_open_ == value {
+		return
+	}
+	e.is_open_ = value
+	mut node := unsafe { &Node(e) }
+	node.invalidate_style(.other)
 }
 
 @[heap]
@@ -661,6 +686,20 @@ pub struct HTMLSelectElement {
 	HTMLElement
 pub mut:
 	select_element_model_ voidptr = unsafe { nil }
+	is_open_              bool
+}
+
+pub fn (e &HTMLSelectElement) is_open() bool {
+	return e.is_open_
+}
+
+pub fn (mut e HTMLSelectElement) set_is_open(value bool) {
+	if e.is_open_ == value {
+		return
+	}
+	e.is_open_ = value
+	mut node := unsafe { &Node(e) }
+	node.invalidate_style(.other)
 }
 
 @[heap]

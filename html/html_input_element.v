@@ -1572,10 +1572,12 @@ pub fn (model &HTMLInputElementModel) supports_a_picker() bool {
 
 pub fn (mut model HTMLInputElementModel) set_is_open(is_open bool) {
 	model.is_open_ = is_open
+	mut element := unsafe { &dom.HTMLInputElement(model.element) }
+	element.set_is_open(is_open)
 }
 
 pub fn (model &HTMLInputElementModel) is_open() bool {
-	return model.is_open_
+	return unsafe { &dom.HTMLInputElement(model.element) }.is_open()
 }
 
 fn (mut model HTMLInputElementModel) show_the_picker_if_applicable() {
