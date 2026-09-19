@@ -315,6 +315,10 @@ pub fn (content &InsertedContent) end_paragraph_was_integrated() bool {
 	return content.end_paragraph_was_integrated_
 }
 
+pub fn (content &InsertedContent) endpoints() &ReplacementEndpoints {
+	return content.endpoints_ or { panic('inserted content is not tracking endpoints') }
+}
+
 pub fn (mut content InsertedContent) require_end_text_seam_normalization() {
 	content.normalize_end_text_seam_ = true
 }
