@@ -240,6 +240,42 @@ fn test_javascript_bridge_removes_an_svg_pattern_referencer_before_image_load() 
 	}
 }
 
+fn test_javascript_bridge_selects_text_before_selection_restyle() {
+	$if darwin {
+		document := html.parse_document('<!doctype html><style>p{font-size:20px;line-height:1.5;margin:10px 0}.restyled::selection{background-color:transparent;color:green}</style><p id="target">Restyled after the selection was painted</p>')
+
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'about:blank', [
+			'const range=document.createRange(); range.selectNodeContents(target.firstChild); getSelection().addRange(range); requestAnimationFrame(() => requestAnimationFrame(() => { target.className="restyled"; }));',
+		], runtime, mut messages)
+		assert messages == []
+		target := document.get_element_by_id('target') or { panic('missing target') }
+		assert target.get_attribute_value('class') == 'restyled'
+		text_node := target.as_node().first_child() or { panic('missing target text') }
+		selection := document.get_selection() or { panic('missing selection') }
+		range := selection.range() or { panic('missing selected range') }
+		assert voidptr(range.start_container()) == voidptr(text_node)
+		assert voidptr(range.end_container()) == voidptr(text_node)
+		assert range.start_offset() == 0
+		assert range.end_offset() == text_node.length()
+
+		layout.run_document_layout(document, 800, 600) or { panic('missing updated layout') }
+		mut mutable_document := unsafe { &dom.Document(document) }
+		commands := layout.display_list_commands(mutable_document.record_display_list() or {
+			panic('missing selected display list')
+		})
+		selected := commands.filter(it.kind == 'draw_text'
+			&& it.text == 'Restyled after the selection was painted'
+			&& it.color == css.Color{0, 128, 0, 255}.serialize())
+		assert selected.len == 1
+		assert commands.all(it.kind != 'fill_rect')
+	}
+}
+
 fn test_javascript_bridge_inserts_created_nodes_and_document_fragments_before_first_child() {
 	$if darwin {
 		document := html.parse_document('<!doctype html>

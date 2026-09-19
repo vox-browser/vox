@@ -1464,12 +1464,14 @@ fn javascript_program(state map[string]json2.Any, scripts []string) string {
 		'}',
 		'let __createdElementCount=0; function __createElement(namespaceURI,name){const key="__created_"+(++__createdElementCount),s={created:true,bridgeKey:key,elementIndex:1000000000+__createdElementCount,namespaceURI:String(namespaceURI||"http://www.w3.org/1999/xhtml"),tagName:String(name),id:"",src:"",width:"",height:"",textContent:"",innerHTML:"",className:"",styleText:"",onclick:"",attributes:{},hasChildren:false,children:[],disabled:false,checked:false,indeterminate:false};__state.elements[key]=s;return __element(s);}',
 		'function __matches(s,q){q=String(q||"").trim();if(!q)return false;if(q[0]==="#")return s.id===q.slice(1);return s.tagName.toLowerCase()===q.toLowerCase();}',
-		'const document = { getElementById: function (id) { const s=__elementStates().find(function(item){return item.id===String(id);}); return s ? __element(s) : null; }, getElementsByTagName: function(name) { const tag=String(name).toLowerCase(); return __elementStates().filter(function(s){return tag==="*"||s.tagName.toLowerCase()===tag;}).map(__element); }, querySelector: function (q) { const s=__elementStates().find(function(item){return __matches(item,q);});return s?__element(s):null; }, addEventListener: function (n, f) { (__listeners[__listenerKey(null, n)] ||= []).push(f); }, createElement: function (name) { return __createElement("http://www.w3.org/1999/xhtml",String(name).toLowerCase()); }, createElementNS:function(namespaceURI,name){return __createElement(namespaceURI,name);}, createDocumentFragment:function(){return __createElement("","#document-fragment");}, createTextNode: function(text) { return {__state:{tagName:"#text",textContent:String(text)}}; } };',
+		'function __range(){return{selected:null,selectNodeContents:function(node){const s=node&&node.__state;if(s)this.selected={target:s.bridgeKey,firstChild:false};else if(node&&node.__firstChildOf)this.selected={target:node.__firstChildOf,firstChild:true};else throw new TypeError("Invalid range node");}};}',
+		'const __selection={addRange:function(range){if(range&&range.selected)__state.operations.push({op:"selectNodeContents",target:range.selected.target,firstChild:range.selected.firstChild});}};',
+		'const document = { getElementById: function (id) { const s=__elementStates().find(function(item){return item.id===String(id);}); return s ? __element(s) : null; }, getElementsByTagName: function(name) { const tag=String(name).toLowerCase(); return __elementStates().filter(function(s){return tag==="*"||s.tagName.toLowerCase()===tag;}).map(__element); }, querySelector: function (q) { const s=__elementStates().find(function(item){return __matches(item,q);});return s?__element(s):null; }, addEventListener: function (n, f) { (__listeners[__listenerKey(null, n)] ||= []).push(f); }, createElement: function (name) { return __createElement("http://www.w3.org/1999/xhtml",String(name).toLowerCase()); }, createElementNS:function(namespaceURI,name){return __createElement(namespaceURI,name);}, createDocumentFragment:function(){return __createElement("","#document-fragment");}, createTextNode: function(text) { return {__state:{tagName:"#text",textContent:String(text)}}; }, createRange:__range };',
 		'Object.defineProperty(document, "title", { get: function () { return __state.title; }, set: function (v) { __state.title = String(v); } });',
 		'document.documentElement={classList:{add:function(){},remove:function(){},contains:function(){return false;}}}; document.body = {appendChild:function(child){return child;}}; Object.defineProperties(document.body, { innerHTML: { get: function () { return __state.bodyHTML; }, set: function (v) { __state.bodyHTML = String(v); __state.bodyHTMLDirty = true; __state.bodyTextDirty = false; } }, textContent: { get: function () { return __state.bodyText; }, set: function (v) { __state.bodyText = String(v); __state.bodyHTML = ""; __state.bodyTextDirty = true; __state.bodyHTMLDirty = false; } } });',
 		'const console = { log: function () { __state.logs.push(Array.prototype.map.call(arguments, String).join(" ")); }, warn: function () { this.log.apply(this, arguments); }, error: function () { this.log.apply(this, arguments); } };',
 		'const location = {}; Object.defineProperty(location, "href", { get: function () { return __state.location; }, set: function (v) { __state.navigate = String(v); } });',
-		'const window = globalThis; window.window = window; window.document = document; window.console = console; window.location = location; window.alert = function (v) { console.log(v); }; window.setTimeout = function (f) { if (typeof f === "function") f(); return 1; }; window.requestAnimationFrame = function(f){if(typeof f === "function")f(Date.now());return 1;}; window.addEventListener = document.addEventListener; window.Image=function(){return document.createElement("img");}; window.HTMLMediaElement={HAVE_NOTHING:0,HAVE_METADATA:1,HAVE_CURRENT_DATA:2,HAVE_FUTURE_DATA:3,HAVE_ENOUGH_DATA:4}; window.internals={imageAnimationStateForURL:function(){return{timerActive:true,frameIndex:1};},signalTestIsDone:function(){},spoofCurrentURL:function(){}}; if(!Promise.withResolvers)Promise.withResolvers=function(){let resolve,reject;const promise=new Promise(function(a,b){resolve=a;reject=b;});return{promise:promise,resolve:resolve,reject:reject};};',
+		'const window = globalThis; window.window = window; window.document = document; window.console = console; window.location = location; window.alert = function (v) { console.log(v); }; window.setTimeout = function (f) { if (typeof f === "function") f(); return 1; }; window.requestAnimationFrame = function(f){if(typeof f === "function")f(Date.now());return 1;}; window.addEventListener = document.addEventListener; window.getSelection=function(){return __selection;}; window.Image=function(){return document.createElement("img");}; window.HTMLMediaElement={HAVE_NOTHING:0,HAVE_METADATA:1,HAVE_CURRENT_DATA:2,HAVE_FUTURE_DATA:3,HAVE_ENOUGH_DATA:4}; window.internals={imageAnimationStateForURL:function(){return{timerActive:true,frameIndex:1};},signalTestIsDone:function(){},spoofCurrentURL:function(){}}; if(!Promise.withResolvers)Promise.withResolvers=function(){let resolve,reject;const promise=new Promise(function(a,b){resolve=a;reject=b;});return{promise:promise,resolve:resolve,reject:reject};};',
 		'for (const s of __elementStates()) { if(!s.id)continue; try { window[s.id] = document.getElementById(s.id); } catch (_) {} }',
 		'window.__ladybirdSnapshot = function () { return JSON.stringify(__state); };',
 		'window.__ladybirdFinalize = function () { for (const key of Object.keys(__canvases)) { const c=__canvases[key]; __state.elements[key].canvasPixels=Array.from(c.data); __state.elements[key].canvasWidth=c.width; __state.elements[key].canvasHeight=c.height; } return window.__ladybirdSnapshot(); };',
@@ -1804,6 +1806,16 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 				} else if kind == 'remove' {
 					mut target_node := unsafe { &dom.Node(target) }
 					target_node.remove(false)
+				} else if kind == 'selectNodeContents' {
+					mut selected_node := target.as_node()
+					if json_bool_property(operation, 'firstChild') {
+						selected_node = target.as_node().first_child() or { continue }
+					}
+					mut range := document.create_range()
+					range.select_node_contents(selected_node) or { continue }
+					if mut selection := document.get_selection() {
+						selection.add_range(range)
+					}
 				}
 			}
 		}
@@ -1827,6 +1839,15 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 }
 
 fn run_document_javascript(document &dom.Document, current_url string, sources []string, runtime &browserjs.Runtime, mut messages []string) ?string {
+	// Parsing creates Document's Selection, while the browsing context normally
+	// arrives with navigation before page scripts run. The compact host executes
+	// scripts before its first layout, so establish that context here as well.
+	mut mutable_document := unsafe { &dom.Document(document) }
+	if mutable_document.get_browsing_context() == none {
+		mutable_document.set_browsing_context(&dom.BrowsingContext{
+			active_document_: document
+		})
+	}
 	runtime.evaluate(javascript_program(javascript_initial_state(document, current_url, sources), sources)) or {
 		messages << 'JavaScript: ${err.msg()}'
 		return none
