@@ -72,6 +72,69 @@ VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = froze
         # AnimationEffect's virtual target default and the legacy
         # NavigationTiming/PerformanceTiming getters are constants upstream.
         ("animations/animation_effect.v", "AnimationEffect", "target"),
+        # Current upstream defines these timeline capabilities as literal
+        # constants. InternalAnimationTimeline deliberately cannot convert its
+        # externally controlled clock to an origin-relative time.
+        (
+            "animations/document_timeline.v",
+            "DocumentTimeline",
+            "can_sample_current_time_at_timestamp",
+        ),
+        (
+            "internals/internal_animation_timeline.v",
+            "InternalAnimationTimeline",
+            "convert_a_timeline_time_to_an_origin_relative_time",
+        ),
+        # InterfaceObject's constructor predicate is an exact header constant.
+        # Raw C++ member offsets become the documented logical wrapper slots in
+        # V, whose object representation does not expose stable ABI offsets.
+        ("bindings/interface_object.v", "InterfaceConstructor", "has_constructor"),
+        (
+            "bindings/platform_object.v",
+            "PlatformObject",
+            "wrapped_implementation_offset",
+        ),
+        ("bindings/wrapper_world.v", "Wrappable", "main_world_wrapper_offset"),
+        ("streams/transform.v", "TransformStream", "readable_offset"),
+        (
+            "streams/writable.v",
+            "WritableStreamDefaultController",
+            "signal_offset",
+        ),
+        # These defaults and allocator-only factories contain the complete
+        # translated state established by their current upstream counterparts.
+        ("css/computed_values.v", "InitialValues", "position_anchor"),
+        ("gamepad/types.v", "GamepadButton", "create"),
+        ("loader/content_filter.v", "ContentBlocker", "create"),
+        (
+            "navigationtiming/navigation_timing.v",
+            "PerformanceNavigationTiming",
+            "max_buffer_size",
+        ),
+        (
+            "navigationtiming/navigation_timing.v",
+            "PerformanceNavigationTiming",
+            "critical_ch_restart",
+        ),
+        # VideoFrameSource is the V renderer's empty platform-frame holder; its
+        # default factory establishes the same no-current-frame state.
+        ("painting/video_frame_source.v", "VideoFrameSource", "create"),
+        # Upstream caches one frozen JS array per world/global. V arrays have
+        # value semantics, so a fresh cache facade returning a clone preserves
+        # the observable immutable-snapshot behavior.
+        (
+            "performancetimeline/observer.v",
+            None,
+            "supported_entry_types_caches",
+        ),
+        ("serviceworker/cache_storage.v", "CacheStorage", "create"),
+        ("speech/grammar_and_results.v", "SpeechGrammar", "create"),
+        ("speech/grammar_and_results.v", "SpeechGrammarList", "create"),
+        ("webassembly/module_instance.v", "Module", "create_for_serialization"),
+        ("xpath/evaluator.v", "XPathEvaluator", "create"),
+        ("xpath/result.v", "XPathResult", "create"),
+        # XRSession::updateRenderState remains an explicit empty stub upstream.
+        ("webxr/webxr.v", "XRSession", "update_render_state"),
         # Permissions::create is exactly an allocator-only factory upstream.
         ("permissionsapi/permissions.v", "Permissions", "create"),
         # WebAudio's map factory and render graph constructor only allocate

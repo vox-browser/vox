@@ -115,6 +115,35 @@ fn (_ &WebGLContextProxyBase) default_renderbuffer() u32 { return 0 }
         }
         self.assertTrue(expected.issubset(audit.VERIFIED_TRIVIAL_IMPLEMENTATIONS))
 
+    def test_current_default_body_review_queue_is_classified(self) -> None:
+        expected = {
+            (
+                "animations/document_timeline.v",
+                "DocumentTimeline",
+                "can_sample_current_time_at_timestamp",
+            ),
+            ("bindings/interface_object.v", "InterfaceConstructor", "has_constructor"),
+            ("css/computed_values.v", "InitialValues", "position_anchor"),
+            ("gamepad/types.v", "GamepadButton", "create"),
+            (
+                "internals/internal_animation_timeline.v",
+                "InternalAnimationTimeline",
+                "convert_a_timeline_time_to_an_origin_relative_time",
+            ),
+            ("loader/content_filter.v", "ContentBlocker", "create"),
+            (
+                "navigationtiming/navigation_timing.v",
+                "PerformanceNavigationTiming",
+                "critical_ch_restart",
+            ),
+            ("painting/video_frame_source.v", "VideoFrameSource", "create"),
+            ("serviceworker/cache_storage.v", "CacheStorage", "create"),
+            ("webassembly/module_instance.v", "Module", "create_for_serialization"),
+            ("webxr/webxr.v", "XRSession", "update_render_state"),
+            ("xpath/result.v", "XPathResult", "create"),
+        }
+        self.assertTrue(expected.issubset(audit.VERIFIED_TRIVIAL_IMPLEMENTATIONS))
+
 
 class VFunctionInventoryTests(unittest.TestCase):
     def test_generic_receiver_owner_drops_type_parameters(self) -> None:
