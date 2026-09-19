@@ -2415,6 +2415,30 @@ fn test_svg_paint_resource_mutation_invalidates_the_retained_display_list() {
 	assert updated_gradient.gradient.color_stops[0].color == painting.Color{0, 128, 0, 255}
 }
 
+fn test_svg_paint_resource_lookup_is_rebuilt_after_an_id_collision_changes() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 }</style><div id="paint" style="display:none"></div><svg width="100" height="100"><defs><linearGradient id="paint"><stop stop-color="green"/></linearGradient></defs><rect width="100" height="100" fill="url(#paint) red"/></svg>')
+	layout_document_typed_in_viewport(document, 100, 100)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	initial_display_list := mutable_document.record_display_list() or {
+		panic('missing initial display list')
+	}
+	initial_path := display_list_commands(initial_display_list).filter(it.kind == 'draw_svg_path')[0]
+	assert initial_path.fill_linear_gradient == none
+	assert initial_path.color == 'rgb(255 0 0)'
+	assert mutable_document.cached_display_list() != none
+
+	mut collision := document.get_element_by_id('paint') or { panic('missing colliding element') }
+	collision.set_attribute_value('id', 'other')
+	assert mutable_document.cached_display_list() == none
+	mutable_document.update_layout(.dump_display_list)
+	updated_display_list := mutable_document.record_display_list() or {
+		panic('missing updated display list')
+	}
+	updated_path := display_list_commands(updated_display_list).filter(it.kind == 'draw_svg_path')[0]
+	updated_gradient := updated_path.fill_linear_gradient or { panic('missing updated gradient') }
+	assert updated_gradient.gradient.color_stops[0].color == painting.Color{0, 128, 0, 255}
+}
+
 fn test_svg_radial_gradient_paints_retain_two_circle_linked_resource_algorithms() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 }</style><svg width="200" height="100" viewBox="0 0 200 100"><defs><radialGradient id="base" gradientUnits="userSpaceOnUse" cx="25%" cy="40%" r="30%" fx="10%" fr="5%" spreadMethod="reflect" gradientTransform="translate(3 4)"><stop offset="20%" stop-color="rgb(10 20 30)"/><stop offset="100%" stop-color="rgb(40 50 60)" stop-opacity=".5"/></radialGradient><radialGradient id="derived" href="#base" cx="60%" r="-3" fr="-10%" color-interpolation="linearRGB"/></defs><rect x="10" y="5" width="80" height="40" fill="url(#derived) magenta" stroke="url(#base) cyan" stroke-width="3" paint-order="stroke fill"/></svg>')
 	root := layout_document_typed_in_viewport(document, 240, 140)

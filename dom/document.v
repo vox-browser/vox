@@ -9845,6 +9845,7 @@ pub fn (mut d Document) element_id_changed(element &Element, old_id ?string) {
 	if new_id := element.id() {
 		d.add_element_by_id(new_id, element)
 	}
+	d.note_svg_paint_resources_changed()
 }
 
 pub fn (mut d Document) element_with_id_was_added(element &Element) {
@@ -9856,6 +9857,7 @@ pub fn (mut d Document) element_with_id_was_added(element &Element) {
 	}
 	if id := element.id() {
 		d.add_element_by_id(id, element)
+		d.note_svg_paint_resources_changed()
 	}
 }
 
@@ -9868,6 +9870,7 @@ pub fn (mut d Document) element_with_id_was_removed(element &Element) {
 	}
 	if id := element.id() {
 		d.remove_element_by_id(id, element)
+		d.note_svg_paint_resources_changed()
 	}
 }
 
