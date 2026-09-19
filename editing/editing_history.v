@@ -19,15 +19,21 @@ pub enum UndoStepCategory {
 
 pub struct SelectionSnapshot {
 pub mut:
-	has_selection  bool
-	anchor_node    &dom.Node = unsafe { nil }
-	anchor_offset  int
-	focus_node     &dom.Node = unsafe { nil }
-	focus_offset   int
-	focus_affinity dom.TextAffinity = .downstream
+	has_selection     bool
+	anchor_node       &dom.Node = unsafe { nil }
+	anchor_offset     int
+	focus_node        &dom.Node = unsafe { nil }
+	focus_offset      int
+	focus_affinity    dom.TextAffinity = .downstream
+	text_control      &dom.InputEventsTarget = unsafe { nil }
+	text_control_host &dom.Node = unsafe { nil }
+	text_selection    dom.TextControlSelectionSnapshot
 }
 
 fn selection_snapshot_is_collapsed(snapshot &SelectionSnapshot) bool {
+	if snapshot.text_control != unsafe { nil } {
+		return snapshot.text_selection.start == snapshot.text_selection.end
+	}
 	return snapshot.has_selection && snapshot.anchor_node == snapshot.focus_node
 		&& snapshot.anchor_offset == snapshot.focus_offset
 }
@@ -99,8 +105,12 @@ pub fn (mut step UndoStep) merge(other &UndoStep) {
 	step.closes_after_next_merge_ = other.closes_after_next_merge_
 	if other.category == .backward_deletion
 		&& selection_snapshot_is_collapsed(&other.ending_selection_) {
-		step.starting_selection_.focus_node = other.ending_selection_.focus_node
-		step.starting_selection_.focus_offset = other.ending_selection_.focus_offset
+		if step.starting_selection_.text_control != unsafe { nil } {
+			step.starting_selection_.text_selection.start = other.ending_selection_.text_selection.start
+		} else {
+			step.starting_selection_.focus_node = other.ending_selection_.focus_node
+			step.starting_selection_.focus_offset = other.ending_selection_.focus_offset
+		}
 	}
 }
 
@@ -109,12 +119,15 @@ pub fn (mut step UndoStep) finalize_starting_selection() {
 		return
 	}
 	if step.category == .backward_deletion {
-		if !selection_snapshot_is_collapsed(&step.ending_selection_)
-			|| step.ending_selection_.focus_node == unsafe { nil } {
+		if !selection_snapshot_is_collapsed(&step.ending_selection_) {
 			return
 		}
-		step.starting_selection_.focus_node = step.ending_selection_.focus_node
-		step.starting_selection_.focus_offset = step.ending_selection_.focus_offset
+		if step.starting_selection_.text_control != unsafe { nil } {
+			step.starting_selection_.text_selection.start = step.ending_selection_.text_selection.start
+		} else if step.ending_selection_.focus_node != unsafe { nil } {
+			step.starting_selection_.focus_node = step.ending_selection_.focus_node
+			step.starting_selection_.focus_offset = step.ending_selection_.focus_offset
+		}
 		return
 	}
 	if step.category != .forward_deletion || step.commands_.len == 0 {
@@ -122,6 +135,11 @@ pub fn (mut step UndoStep) finalize_starting_selection() {
 	}
 	command := step.commands_[0]
 	if command.kind != .replace_data || command.removed_data() == '' {
+		return
+	}
+	if step.starting_selection_.text_control != unsafe { nil } {
+		step.starting_selection_.text_selection.start = u32(command.offset())
+		step.starting_selection_.text_selection.end = u32(command.offset() + edit_command_utf16_length(command.removed_data()))
 		return
 	}
 	step.starting_selection_.anchor_node = command.node()
@@ -194,6 +212,16 @@ pub fn EditingHistory.new() &EditingHistory {
 }
 
 fn capture_selection(editing_host &dom.Node) SelectionSnapshot {
+	if text_control := editing_host.document().form_control_input_events_target(editing_host) {
+		if text_selection := text_control.text_control_selection() {
+			return SelectionSnapshot{
+				has_selection: true
+				text_control: text_control
+				text_control_host: editing_host
+				text_selection: text_selection
+			}
+		}
+	}
 	selection := editing_host.document().get_selection() or { return SelectionSnapshot{} }
 	if selection.range() == none {
 		return SelectionSnapshot{}
@@ -344,6 +372,15 @@ pub fn (mut history EditingHistory) next_redo_step() ?&UndoStep {
 }
 
 fn (mut history EditingHistory) restore_selection(document &dom.Document, snapshot SelectionSnapshot) {
+	if snapshot.text_control != unsafe { nil } {
+		if snapshot.text_control_host == unsafe { nil }
+			|| !snapshot.text_control_host.is_connected()
+			|| snapshot.text_control_host.document() != document {
+			return
+		}
+		snapshot.text_control.set_text_control_selection(snapshot.text_selection)
+		return
+	}
 	selection_pointer := document.get_selection() or { return }
 	if snapshot.anchor_node == unsafe { nil } || snapshot.focus_node == unsafe { nil }
 		|| !snapshot.anchor_node.is_connected() || !snapshot.focus_node.is_connected()

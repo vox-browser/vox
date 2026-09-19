@@ -422,6 +422,14 @@ fn string_from_utf16_code_units(code_units []u16) string {
 	return builder.str()
 }
 
+pub fn substring_by_utf16_offsets(value string, start int, end int) ?string {
+	code_units := utf16_code_units_from_string(value)
+	if start < 0 || end < start || end > code_units.len {
+		return none
+	}
+	return string_from_utf16_code_units(code_units[start..end])
+}
+
 // https://dom.spec.whatwg.org/#dom-characterdata-appenddata
 pub fn (mut c CharacterData) append_data(data string) ! {
 	// The appendData(data) method steps are to replace data with node this, offset this's length, count 0, and data data.

@@ -7,6 +7,7 @@
 module html
 
 import dom
+import editing
 
 pub enum SelectionDirection {
 	forward
@@ -579,6 +580,42 @@ fn form_associated_text_control_handle_delete(target voidptr, input_type string)
 	text.handle_delete(input_type) or {}
 }
 
+fn form_associated_text_control_selection(target voidptr) dom.TextControlSelectionSnapshot {
+	text := unsafe { &FormAssociatedTextControlElement(target) }
+	return dom.TextControlSelectionSnapshot{
+		start: text.selection_start()
+		end: text.selection_end()
+		direction: match text.selection_direction_state() {
+			.forward { .forward }
+			.backward { .backward }
+			.none { .none }
+		}
+	}
+}
+
+fn form_associated_text_control_set_selection(target voidptr, start u32, end u32, direction dom.TextControlSelectionDirection) {
+	mut text := unsafe { &FormAssociatedTextControlElement(target) }
+	text.set_the_selection_range(start, end, match direction {
+		.forward { .forward }
+		.backward { .backward }
+		.none { .none }
+	}, .dom)
+}
+
+fn form_associated_text_control_relevant_value(target voidptr) string {
+	text := unsafe { &FormAssociatedTextControlElement(target) }
+	return text.relevant_value()
+}
+
+fn form_associated_text_control_replace_range(target voidptr, replacement string, start u32, end u32) bool {
+	mut text := unsafe { &FormAssociatedTextControlElement(target) }
+	text.set_range_text(replacement, start, end, .preserve) or { return false }
+	if mut text_node := text.text_node_ {
+		text_node.set_data(text.relevant_value())
+	}
+	return true
+}
+
 pub fn FormAssociatedTextControlElement.create(control &FormAssociatedElement, value string) &FormAssociatedTextControlElement {
 	mut text := &FormAssociatedTextControlElement{
 		control: control
@@ -588,6 +625,10 @@ pub fn FormAssociatedTextControlElement.create(control &FormAssociatedElement, v
 		target: voidptr(text)
 		cursor_position_callback: form_associated_text_control_cursor_position
 		handle_delete_callback: form_associated_text_control_handle_delete
+		selection_callback: form_associated_text_control_selection
+		set_selection_callback: form_associated_text_control_set_selection
+		relevant_value_callback: form_associated_text_control_relevant_value
+		replace_range_callback: form_associated_text_control_replace_range
 	}
 	return text
 }
@@ -805,6 +846,7 @@ pub fn (mut text FormAssociatedTextControlElement) set_the_selection_range(start
 				unsafe { &dom.EventTarget(element.as_node()) }.dispatch_event(select_event)
 			})
 		}
+		text.control.element.document().notify_editing_history_selection_changed()
 		text.selection_was_changed(source)
 	}
 }
@@ -836,11 +878,51 @@ pub fn (mut text FormAssociatedTextControlElement) handle_insert(input_type stri
 			}
 		}
 	}
-	text.set_range_text(data_for_insertion, text.selection_start(), text.selection_end(), .end)!
+	selection_start := text.selection_start()
+	selection_end := text.selection_end()
+	element := text.control.element
+	history_pointer := editing.install_editing_history(element.document())
+	mut history := unsafe { &editing.EditingHistory(history_pointer) }
+	category := if input_type == dom.input_type_insert_from_paste {
+		editing.UndoStepCategory.other
+	} else {
+		editing.UndoStepCategory.insertion
+	}
+	history.begin_recording(element.as_node(), category)
+	old_units := form_string_to_utf16(text.relevant_value())
+	clamped_start := if int(selection_start) > old_units.len {
+		old_units.len
+	} else {
+		int(selection_start)
+	}
+	clamped_end := if int(selection_end) > old_units.len {
+		old_units.len
+	} else {
+		int(selection_end)
+	}
+	removed_data := form_utf16_to_string(old_units[clamped_start..clamped_end])
+	history.begin_proxy_mutation()
+	text.set_range_text(data_for_insertion, selection_start, selection_end, .end) or {
+		history.end_proxy_mutation()
+		history.end_recording()
+		return err
+	}
 	text_node.set_data(text.relevant_value_)
+	history.end_proxy_mutation()
+	if step_pointer := history.undo_step_being_recorded() {
+		mut step := unsafe { &editing.UndoStep(step_pointer) }
+		if removed_data != data_for_insertion {
+			step.add_command(editing.new_replace_data_command(&text_node.CharacterData, clamped_start, removed_data, data_for_insertion))
+		}
+		if input_type in [dom.input_type_insert_line_break, dom.input_type_insert_paragraph] {
+			step.set_closes_after_next_merge()
+		}
+	}
+	history.end_recording()
 	mut node := text_node.as_node()
 	node.invalidate_style(.style_change)
-	input_data := if input_type in ['insertText', 'insertFromPaste'] {
+	input_data := if input_type in [dom.input_type_insert_text,
+		dom.input_type_insert_composition_text, dom.input_type_insert_from_paste] {
 		?string(data_for_insertion)
 	} else {
 		none
@@ -867,8 +949,36 @@ pub fn (mut text FormAssociatedTextControlElement) handle_delete(input_type stri
 			})
 		}
 	}
-	text.set_range_text('', start, end, .end)!
+	element := text.control.element
+	history_pointer := editing.install_editing_history(element.document())
+	mut history := unsafe { &editing.EditingHistory(history_pointer) }
+	category := if input_type == dom.input_type_delete_content_backward {
+		editing.UndoStepCategory.backward_deletion
+	} else if input_type == dom.input_type_delete_content_forward {
+		editing.UndoStepCategory.forward_deletion
+	} else {
+		editing.UndoStepCategory.other
+	}
+	history.begin_recording(element.as_node(), category)
+	old_units := form_string_to_utf16(text.relevant_value())
+	clamped_start := if int(start) > old_units.len { old_units.len } else { int(start) }
+	clamped_end := if int(end) > old_units.len { old_units.len } else { int(end) }
+	removed_data := form_utf16_to_string(old_units[clamped_start..clamped_end])
+	history.begin_proxy_mutation()
+	text.set_range_text('', start, end, .end) or {
+		history.end_proxy_mutation()
+		history.end_recording()
+		return err
+	}
 	text_node.set_data(text.relevant_value_)
+	history.end_proxy_mutation()
+	if removed_data != '' {
+		if step_pointer := history.undo_step_being_recorded() {
+			mut step := unsafe { &editing.UndoStep(step_pointer) }
+			step.add_command(editing.new_replace_data_command(&text_node.CharacterData, clamped_start, removed_data, ''))
+		}
+	}
+	history.end_recording()
 	mut node := text_node.as_node()
 	node.invalidate_style(.style_change)
 	text.did_edit_text_node(input_type, none)

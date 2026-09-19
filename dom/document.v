@@ -2618,12 +2618,37 @@ pub type InputEventsTargetCursorPositionCallback = fn (voidptr) ?&Position
 
 pub type InputEventsTargetHandleDeleteCallback = fn (voidptr, string)
 
+pub enum TextControlSelectionDirection {
+	forward
+	backward
+	none
+}
+
+pub struct TextControlSelectionSnapshot {
+pub mut:
+	start     u32
+	end       u32
+	direction TextControlSelectionDirection
+}
+
+pub type InputEventsTargetSelectionCallback = fn (voidptr) TextControlSelectionSnapshot
+
+pub type InputEventsTargetSetSelectionCallback = fn (voidptr, u32, u32, TextControlSelectionDirection)
+
+pub type InputEventsTargetRelevantValueCallback = fn (voidptr) string
+
+pub type InputEventsTargetReplaceRangeCallback = fn (voidptr, string, u32, u32) bool
+
 @[heap]
 pub struct InputEventsTarget {
 pub:
 	target                   voidptr = unsafe { nil }
 	cursor_position_callback InputEventsTargetCursorPositionCallback = unsafe { nil }
 	handle_delete_callback   InputEventsTargetHandleDeleteCallback = unsafe { nil }
+	selection_callback       InputEventsTargetSelectionCallback = unsafe { nil }
+	set_selection_callback   InputEventsTargetSetSelectionCallback = unsafe { nil }
+	relevant_value_callback  InputEventsTargetRelevantValueCallback = unsafe { nil }
+	replace_range_callback   InputEventsTargetReplaceRangeCallback = unsafe { nil }
 }
 
 pub fn (target &InputEventsTarget) cursor_position() ?&Position {
@@ -2638,6 +2663,34 @@ pub fn (target &InputEventsTarget) handle_delete(input_type string) {
 		return
 	}
 	target.handle_delete_callback(target.target, input_type)
+}
+
+pub fn (target &InputEventsTarget) text_control_selection() ?TextControlSelectionSnapshot {
+	if target.target == unsafe { nil } || target.selection_callback == unsafe { nil } {
+		return none
+	}
+	return target.selection_callback(target.target)
+}
+
+pub fn (target &InputEventsTarget) set_text_control_selection(selection TextControlSelectionSnapshot) {
+	if target.target == unsafe { nil } || target.set_selection_callback == unsafe { nil } {
+		return
+	}
+	target.set_selection_callback(target.target, selection.start, selection.end, selection.direction)
+}
+
+pub fn (target &InputEventsTarget) text_control_relevant_value() ?string {
+	if target.target == unsafe { nil } || target.relevant_value_callback == unsafe { nil } {
+		return none
+	}
+	return target.relevant_value_callback(target.target)
+}
+
+pub fn (target &InputEventsTarget) replace_text_control_range(replacement string, start u32, end u32) bool {
+	if target.target == unsafe { nil } || target.replace_range_callback == unsafe { nil } {
+		return false
+	}
+	return target.replace_range_callback(target.target, replacement, start, end)
 }
 
 @[heap]
@@ -10678,7 +10731,7 @@ pub fn (d &Document) active_input_events_target(for_node ?&Node) ?&InputEventsTa
 			return unsafe { &InputEventsTarget(manager) }
 		}
 	}
-	if form_text_element := form_associated_text_control_input_events_target(focused) {
+	if form_text_element := d.form_control_input_events_target(focused) {
 		node := for_node or { return form_text_element }
 		if focused.is_shadow_including_inclusive_ancestor_of(node) {
 			return form_text_element
@@ -10687,12 +10740,11 @@ pub fn (d &Document) active_input_events_target(for_node ?&Node) ?&InputEventsTa
 	return none
 }
 
-fn form_associated_text_control_input_events_target(node &Node) ?&InputEventsTarget {
-	document := node.document()
-	if document.form_control_input_events_target_callback_ == unsafe { nil } {
+pub fn (d &Document) form_control_input_events_target(node &Node) ?&InputEventsTarget {
+	if d.form_control_input_events_target_callback_ == unsafe { nil } {
 		return none
 	}
-	return document.form_control_input_events_target_callback_(node)
+	return d.form_control_input_events_target_callback_(node)
 }
 
 // --- Pointer lock ---

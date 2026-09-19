@@ -32,6 +32,7 @@ mut:
 	namespace_       ?string
 	old_value_       ?string
 	new_value_       ?string
+	text_control_    &dom.InputEventsTarget = unsafe { nil }
 }
 
 pub fn new_insert_node_command(node &dom.Node, parent &dom.Node, reference_child ?&dom.Node) &EditCommand {
@@ -53,12 +54,16 @@ pub fn new_remove_node_command(node &dom.Node) &EditCommand {
 }
 
 pub fn new_replace_data_command(node &dom.CharacterData, offset int, removed_data string, inserted_data string) &EditCommand {
+	text_control := node.as_node().document().form_control_input_events_target(node.as_node()) or {
+		unsafe { &dom.InputEventsTarget(nil) }
+	}
 	return &EditCommand{
 		kind: .replace_data
 		node_: node.as_node()
 		offset_: offset
 		removed_data_: removed_data
 		inserted_data_: inserted_data
+		text_control_: text_control
 	}
 }
 
@@ -163,16 +168,27 @@ pub fn (command &EditCommand) split_text_result() ?&dom.Text {
 
 fn (command &EditCommand) replay_data(from string, to string) bool {
 	character_data := command.character_data() or { return false }
-	if !command.node_.is_editable_or_editing_host() {
+	if command.text_control_ == unsafe { nil } && !command.node_.is_editable_or_editing_host() {
 		return false
 	}
 	from_length := edit_command_utf16_length(from)
-	if command.offset_ < 0 || command.offset_ + from_length > character_data.length_in_utf16_code_units() {
+	current_data := if command.text_control_ != unsafe { nil } {
+		command.text_control_.text_control_relevant_value() or { return false }
+	} else {
+		character_data.data()
+	}
+	current_length := edit_command_utf16_length(current_data)
+	if command.offset_ < 0 || command.offset_ + from_length > current_length {
 		return false
 	}
-	current := character_data.substring_data(command.offset_, from_length) or { return false }
+	current := dom.substring_by_utf16_offsets(current_data, command.offset_, command.offset_ + from_length) or {
+		return false
+	}
 	if current != from {
 		return false
+	}
+	if command.text_control_ != unsafe { nil } {
+		return command.text_control_.replace_text_control_range(to, u32(command.offset_), u32(command.offset_ + from_length))
 	}
 	mut mutable_data := unsafe { &dom.CharacterData(character_data) }
 	mutable_data.replace_data(command.offset_, from_length, to) or { return false }
