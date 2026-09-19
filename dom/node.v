@@ -1771,6 +1771,10 @@ pub fn (ln &LayoutNode) display() CSSDisplay_ {
 	return ln.display_
 }
 
+pub fn (ln &LayoutNode) is_atomic_inline() bool {
+	return ln.is_atomic_inline_
+}
+
 pub fn (ln &LayoutNode) parent() ?&LayoutNode {
 	return ln.parent_
 }

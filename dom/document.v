@@ -1329,6 +1329,7 @@ pub mut:
 	children_                                       []&LayoutNode
 	is_anonymous_                                   bool
 	is_text_node_                                   bool
+	is_atomic_inline_                               bool
 	display_                                        CSSDisplay_
 	pseudo_element_generator_                       ?&Element
 	generated_for_                                  ?PseudoElement

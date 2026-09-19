@@ -248,6 +248,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		parent_: parent_placeholder
 		is_anonymous_: box.is_anonymous()
 		is_text_node_: box.is_text_node()
+		is_atomic_inline_: box.is_atomic_inline()
 		display_: layout_node_display(box)
 		pseudo_element_generator_: box.pseudo_element_generator()
 		generated_for_: dom_pseudo_element_for_layout_node(box.generated_for_pseudo_element())
