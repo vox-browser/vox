@@ -126,6 +126,23 @@ def normalize_cpp(text: str) -> str:
     return "".join(output).strip()
 
 
+def sanitize_cpp_preserving_offsets(text: str) -> str:
+    """Blank comments and literals without changing offsets or newlines."""
+
+    def blank(match: re.Match[str]) -> str:
+        return "".join("\n" if character == "\n" else " " for character in match.group(0))
+
+    sanitized = re.sub(r"/\*.*?\*/", blank, text, flags=re.DOTALL)
+    sanitized = re.sub(r"//[^\n]*", blank, sanitized)
+    literal = re.compile(
+        r'R"(?P<tag>[^ (\\\t\r\n]{0,16})\(.*?\)(?P=tag)"|'
+        r'"(?:\\.|[^"\\])*"|'
+        r"'(?:\\.|[^'\\])*'",
+        re.DOTALL,
+    )
+    return literal.sub(blank, sanitized)
+
+
 def function_body_opening(text: str, parameters_opening: int) -> int | None:
     parameters_closing = html_audit.matching_closing_parenthesis(text, parameters_opening)
     if parameters_closing is None:
@@ -176,7 +193,7 @@ def definition_from_match(
 
 
 def cpp_definitions(source: str, raw: str) -> list[Definition]:
-    sanitized = html_audit.strip_cpp_comments(raw)
+    sanitized = sanitize_cpp_preserving_offsets(raw)
     definitions: list[Definition] = []
     occupied: list[tuple[int, int]] = []
     for match in html_audit.CPP_METHOD.finditer(sanitized):
@@ -208,7 +225,7 @@ def cpp_definitions(source: str, raw: str) -> list[Definition]:
 
 
 def header_definitions(source: str, raw: str) -> list[Definition]:
-    sanitized = html_audit.strip_cpp_comments(raw)
+    sanitized = sanitize_cpp_preserving_offsets(raw)
     definitions: list[Definition] = []
     for class_match in html_audit.HEADER_CLASS.finditer(sanitized):
         owner = class_match.group("name").split("::")[-1]

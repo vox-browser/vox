@@ -14,7 +14,9 @@ class UpstreamFunctionDeltaTest(unittest.TestCase):
     def test_extracts_methods_and_namespace_functions(self) -> None:
         definitions = delta.cpp_definitions(
             "Libraries/LibWeb/Example/Thing.cpp",
-            """
+            """/*
+ * Copyright header with { braces } and a pretend function().
+ */
 int Thing::value(int input) const
 {
     return input + 1;
@@ -27,12 +29,13 @@ bool enabled()
 """,
         )
         self.assertEqual([(item.owner, item.name) for item in definitions], [("Thing", "value"), ("<namespace>", "enabled")])
-        self.assertIn("return input + 1", definitions[0].body)
+        self.assertEqual(definitions[0].body, "{ return input + 1; }")
+        self.assertEqual(definitions[1].body, "{ return true; }")
 
     def test_extracts_inline_header_methods(self) -> None:
         definitions = delta.header_definitions(
             "Libraries/LibWeb/Example/Thing.h",
-            """
+            """// A leading comment must not shift source offsets.
 class Thing {
 public:
     int value() const { return 42; }
@@ -41,6 +44,7 @@ public:
 """,
         )
         self.assertEqual([(item.owner, item.name) for item in definitions], [("Thing", "value")])
+        self.assertEqual(definitions[0].body, "{ return 42; }")
 
     def test_comparison_recognizes_moves_changes_additions_and_removals(self) -> None:
         def definition(source: str, name: str, body: str, line: int = 1) -> delta.Definition:
