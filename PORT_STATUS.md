@@ -56,6 +56,9 @@ retained text-fragment hit-test offsets, expose a transformed one-pixel client
 rectangle, reject points outside the viewport, and retarget positions through
 shadow hosts unless the caller explicitly exposes the corresponding shadow
 root.
+Custom-element state sets now feed the translated selector matcher, so
+`:state()` participates in direct selector matching and DOM queries while set
+mutation continues to invalidate style.
 
 The current base-to-head semantic delta audit reports 4,600 unmatched changed
 C++ spellings. That is a structural review queue rather than a count of missing behaviors: active V
@@ -188,7 +191,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
 | `Animations` | 10 | 5,187 | 3,972 | 1,041 | Complete |
 | `Bindings` | 11 | 2,501 | 2,675 | 918 | Complete |
-| `CSS` | 215 | 47,722 | 103,918 | 8,721 | Present |
+| `CSS` | 215 | 47,722 | 103,919 | 8,772 | Present |
 | `Clipboard` | 4 | 1,009 | 973 | 343 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 424 | 138 | Complete |
@@ -196,7 +199,7 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
-| `DOM` | 59 | 34,859 | 36,021 | 2,199 | Complete |
+| `DOM` | 59 | 34,859 | 36,049 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
 | `Editing` | 26 | 12,720 | 3,294 | 741 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
@@ -263,7 +266,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **343,100** | **68,126** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **343,129** | **68,177** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
