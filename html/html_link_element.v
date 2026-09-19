@@ -464,16 +464,6 @@ pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_preconnect_resou
 	link.preconnect(options)
 }
 
-fn translate_preload_destination(destination string) ?string {
-	lower := ascii_lowercase_string(destination)
-	if lower !in ['fetch', 'font', 'image', 'script', 'style', 'track'] {
-		return none
-	}
-	// Fetch's potential destination translation maps "fetch" to the empty
-	// destination; use none to retain that distinction.
-	return if lower == 'fetch' { '' } else { lower }
-}
-
 fn request_destination_from_preload_destination(destination ?string) ?RequestDestination {
 	value := destination or { return none }
 	return match value {
@@ -489,7 +479,7 @@ fn request_destination_from_preload_destination(destination ?string) ?RequestDes
 
 pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_preload_resource() {
 	mut options := link.create_link_options()
-	destination := translate_preload_destination(link.as_) or { return }
+	destination := translate_a_preload_destination(link.as_) or { return }
 	options.destination = if destination == '' { none } else { destination }
 	link.preload(mut options)
 }

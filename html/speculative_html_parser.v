@@ -96,7 +96,7 @@ struct SpeculativePreloadDestinationResult {
 }
 
 fn speculative_preload_destination(value string) ?SpeculativePreloadDestinationResult {
-	translated := translate_preload_destination(value) or { return none }
+	translated := translate_a_preload_destination(value) or { return none }
 	if translated == '' {
 		return SpeculativePreloadDestinationResult{}
 	}

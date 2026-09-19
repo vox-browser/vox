@@ -21,6 +21,16 @@ pub fn create_a_preload_key(request PotentialCORSRequest) PreloadKey {
 	return PreloadKey.create(request)
 }
 
+// https://html.spec.whatwg.org/multipage/links.html#translate-a-preload-destination
+// `none` is the algorithm's null result; a present empty string represents
+// Fetch's empty destination for the "fetch" keyword.
+pub fn translate_a_preload_destination(destination string) ?string {
+	if destination !in ['fetch', 'font', 'image', 'script', 'style', 'track'] {
+		return none
+	}
+	return if destination == 'fetch' { '' } else { destination }
+}
+
 fn preload_key_storage_key(key PreloadKey) string {
 	url := key.url.serialize()
 	destination := if value := key.destination { value.str() } else { '-' }

@@ -16,6 +16,15 @@ fn preload_entry_test_fetch(_ dom.URL, kind LinkResourceKind, _ CORSSettingAttri
 	}
 }
 
+fn test_translate_a_preload_destination_uses_exact_keywords() {
+	assert translate_a_preload_destination('fetch')? == ''
+	assert translate_a_preload_destination('image')? == 'image'
+	assert translate_a_preload_destination('track')? == 'track'
+	assert translate_a_preload_destination('IMAGE') == none
+	assert translate_a_preload_destination('audio') == none
+	assert translate_a_preload_destination('') == none
+}
+
 fn test_preload_entry_consumes_a_resolved_response_once() {
 	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/page.html' })
 	url := dom.dom_url_parse('/app.js', document.base_url(), 'UTF-8') or { panic(err) }

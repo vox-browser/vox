@@ -12,7 +12,7 @@ fn record_speculative_parser_request(request PotentialCORSRequest) {
 fn test_speculative_parser_tracks_base_filters_subtrees_and_deduplicates_urls() {
 	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/root/page.html' })
 	speculative_parser_requests.clear()
-	input := '<base href="/assets/"><script src="app.js" crossorigin></script><img src="logo.png"><img src="logo.png"><template><img src="hidden.png"></template><svg><script src="foreign.js"></script></svg><link rel="PRELOAD stylesheet" href="site.css" as="image"><link rel="preload" href="font.woff2" as="font" crossorigin="use-credentials"><link rel="preload" href="ignored.bin" as="invalid">'
+	input := '<base href="/assets/"><script src="app.js" crossorigin></script><img src="logo.png"><img src="logo.png"><template><img src="hidden.png"></template><svg><script src="foreign.js"></script></svg><link rel="PRELOAD stylesheet" href="site.css" as="image"><link rel="preload" href="font.woff2" as="font" crossorigin="use-credentials"><link rel="preload" href="ignored.bin" as="invalid"><link rel="preload" href="uppercase.png" as="IMAGE">'
 	mut parser := SpeculativeHTMLParser.create(document, input, document.base_url(), record_speculative_parser_request)
 	parser.run()
 
@@ -25,6 +25,7 @@ fn test_speculative_parser_tracks_base_filters_subtrees_and_deduplicates_urls() 
 	assert speculative_parser_requests[2].destination? == .style
 	assert speculative_parser_requests[3].destination? == .font
 	assert speculative_parser_requests[3].credentials_mode == .include
+	assert !document.has_speculative_fetch_url(dom.URL{ value: 'https://example.test/assets/uppercase.png' })
 	assert !document.has_speculative_fetch_url(dom.URL{ value: 'https://example.test/assets/hidden.png' })
 	assert !document.has_speculative_fetch_url(dom.URL{ value: 'https://example.test/assets/foreign.js' })
 }
