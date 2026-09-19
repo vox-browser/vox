@@ -109,3 +109,129 @@ pub fn make_block_replacement_plan(insertion_boundary dom.BoundaryPoint, destina
 		insertion_mode: insertion_mode
 	}
 }
+
+fn replacement_boundary_is_at_end_of(boundary dom.BoundaryPoint, ancestor &dom.Node) bool {
+	if boundary.node.is_text() {
+		text := unsafe { &dom.Text(boundary.node) }
+		if boundary.offset != text.length_in_utf16_code_units() {
+			return false
+		}
+	} else {
+		for index := boundary.offset; index < boundary.node.child_count(); index++ {
+			child := boundary.node.child_at_index(index) or { return false }
+			if !is_html_break(child) {
+				return false
+			}
+		}
+	}
+
+	mut node := boundary.node
+	for node != ancestor {
+		parent := node.parent() or { return false }
+		mut sibling := node.next_sibling()
+		for sibling != none {
+			current := sibling or { break }
+			if !is_html_break(current) {
+				return false
+			}
+			sibling = current.next_sibling()
+		}
+		node = parent
+	}
+	return true
+}
+
+fn first_replacement_text_descendant(node &dom.Node) ?&dom.Text {
+	if node.is_text() {
+		return unsafe { &dom.Text(node) }
+	}
+	for child in node.children_as_vector() {
+		if text := first_replacement_text_descendant(child) {
+			return text
+		}
+	}
+	return none
+}
+
+pub fn canonicalize_inserted_content_end(boundary dom.BoundaryPoint, fragment &ReplacementFragment, plan BlockReplacementPlan) dom.BoundaryPoint {
+	if !fragment.has_interchange_newline_at_end() {
+		return boundary
+	}
+
+	visible_end := VisiblePosition.create(boundary.node.document(), boundary)
+	next := visible_end.next()
+	end_position := visible_end.deep_equivalent()
+	end_block := block_node_of_dom_node(end_position.node)
+	if block := end_block {
+		if node_has_html_name(block, ['li']) {
+			if next_position := next {
+				next_equivalent := next_position.deep_equivalent()
+				if next_block := block_node_of_dom_node(next_equivalent.node) {
+					if node_has_html_name(next_block, ['li']) && next_block != block
+						&& optional_nodes_are_same(next_block.parent(), block.parent()) {
+						return next_equivalent
+					}
+				}
+			}
+		}
+	}
+	if (plan.selection_end_was_end_of_paragraph || !visible_end.is_end_of_paragraph()
+		|| next == none) && !visible_end.is_start_of_paragraph() {
+		if block := end_block {
+			if node_has_html_name(block, ['li']) {
+				parent := block.parent() or { return boundary }
+				new_list_item := boundary.node.document().create_element('li') or { return boundary }
+				mut mutable_parent := unsafe { &dom.Node(parent) }
+				mutable_parent.insert_before(new_list_item.as_node(), block.next_sibling(), false)
+				return dom.BoundaryPoint{
+					node: new_list_item.as_node()
+					offset: 0
+				}
+			}
+		}
+	}
+
+	mut traversal_start := boundary.node
+	is_html_non_list_item := if element := boundary.node.as_element() {
+		element.is_html_element() && element.local_name() != 'li'
+	} else {
+		false
+	}
+	is_empty_placeholder := boundary.offset == 0 && is_html_non_list_item
+		&& (if first_child := boundary.node.first_child() {
+		is_html_break(first_child)
+	} else {
+		false
+	})
+	if is_empty_placeholder && plan.selection_end_was_end_of_paragraph {
+		return boundary
+	}
+	if !is_empty_placeholder {
+		block := block_node_of_dom_node(boundary.node) or { return boundary }
+		if !replacement_boundary_is_at_end_of(boundary, block) {
+			return boundary
+		}
+		traversal_start = block
+	}
+
+	mut ancestor := ?&dom.Node(traversal_start)
+	for ancestor != none {
+		current := ancestor or { break }
+		if current.parent() == none || current.is_editing_host() {
+			break
+		}
+		mut sibling := current.next_sibling()
+		for sibling != none {
+			candidate := sibling or { break }
+			if text := first_replacement_text_descendant(candidate) {
+				return dom.BoundaryPoint{
+					node: text.as_node()
+					offset: 0
+				}
+			}
+			sibling = candidate.next_sibling()
+		}
+		ancestor = current.parent()
+	}
+	return boundary
+}
