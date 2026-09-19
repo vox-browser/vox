@@ -678,6 +678,10 @@ fn inline_style_for_abstract_element(abstract_element dom.AbstractElement) ?&CSS
 	return properties
 }
 
+pub fn inline_style_for_element(element &dom.Element) ?&CSSStyleProperties {
+	return inline_style_for_abstract_element(dom.AbstractElement.new(element, none))
+}
+
 fn serialized_text_from_mutable_style_property_map_value(value MutableStylePropertyMapValue) !string {
 	return match value {
 		CSSStyleValue { value.to_string()! }

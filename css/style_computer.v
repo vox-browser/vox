@@ -1584,3 +1584,57 @@ pub fn computed_value_for(element &dom.Element, property_id PropertyID) ?string 
 	value := computed.property(property_id, .no) or { return none }
 	return value.css_text
 }
+
+pub struct ComputedStylePair {
+pub:
+	with_inline    &ComputedProperties
+	without_inline &ComputedProperties
+}
+
+// Compute the element's style with its inline declaration excluded without
+// changing the live style attribute. The declaration and custom-property cache
+// are restored before returning, matching StyleComputer's read-only comparison
+// path used by editing cleanup.
+pub fn computed_styles_with_and_without_inline(element &dom.Element) ?ComputedStylePair {
+	mut document := element.as_node().document()
+	css_style_computer_for(document)
+	abstract_element := dom.AbstractElement.new(element, none)
+	if abstract_element.computed_properties() == none || document.element_needs_style_update(element) {
+		document.needs_full_style_update = true
+		document.update_style()
+	}
+
+	mut style_computer := css_style_computer_for(document)
+	with_inline := if dom_computed := abstract_element.computed_properties() {
+		computed_properties_from_dom(dom_computed) or {
+			style_computer.compute_style_with_seeded_ancestors(abstract_element)
+		}
+	} else {
+		style_computer.compute_style_with_seeded_ancestors(abstract_element)
+	}
+	inline_style := inline_style_for_abstract_element(abstract_element) or { return none }
+	saved_properties := inline_style.properties.clone()
+	saved_custom_properties := inline_style.custom_properties.clone()
+	saved_typed_properties_cache := inline_style.typed_properties_cache_
+	saved_typed_importance_mask := inline_style.typed_importance_mask_
+	saved_custom_property_data := abstract_element.custom_property_data()
+
+	mut mutable_inline_style := unsafe { &CSSStyleProperties(inline_style) }
+	mutable_inline_style.properties = []CSSStyleProperty{}
+	mutable_inline_style.custom_properties = map[string]StyleProperty{}
+	mutable_inline_style.typed_properties_cache_ = none
+	mutable_inline_style.typed_importance_mask_ = 0
+	without_inline := style_computer.compute_style_with_seeded_ancestors(abstract_element)
+
+	mutable_inline_style.properties = saved_properties
+	mutable_inline_style.custom_properties = saved_custom_properties.clone()
+	mutable_inline_style.typed_properties_cache_ = saved_typed_properties_cache
+	mutable_inline_style.typed_importance_mask_ = saved_typed_importance_mask
+	mut mutable_abstract_element := abstract_element
+	mutable_abstract_element.set_custom_property_data(saved_custom_property_data)
+
+	return ComputedStylePair{
+		with_inline: with_inline
+		without_inline: without_inline
+	}
+}
