@@ -157,6 +157,9 @@ fn test_glyph_run_caches_conservative_bounds_with_final_replay_data() {
 		should_paint: false
 	}])
 	assert non_painting.bounding_box() == GlyphRunBounds{}
+	assert non_painting.glyph_indices().len == 0
+	assert non_painting.glyph_positions().len == 0
+	assert non_painting.glyph_intercepts(1, -100, 100).len == 0
 	assert GlyphRun.new(font, .ltr, []).bounding_box() == GlyphRunBounds{}
 }
 
@@ -202,6 +205,26 @@ fn test_shape_text_applies_word_spacing_and_records_trailing_whitespace() {
 	assert shaped.trailing_whitespace.length_in_code_units == 2
 	glyphs := shaped.glyph_run.glyphs()
 	assert shaped.trailing_whitespace.advance == glyphs[glyphs.len - 2].advance + glyphs.last().advance
+}
+
+fn test_shape_text_retains_but_does_not_paint_default_ignorables() {
+	font := &Font{
+		family: 'sans-serif'
+		point_size: 24
+	}
+	plain := shape_text(0, 0, 'Search in r/programming', font, .ltr)
+	isolated := shape_text(0, 0, 'Search in ⁨r/programming⁩', font, .ltr)
+	assert isolated.width() == plain.width()
+	ignored := isolated.glyphs().filter(!it.should_paint)
+	assert ignored.len == 2
+	assert ignored.all(it.advance == 0)
+	assert ignored[0].code_point == 0x2068
+	assert ignored[1].code_point == 0x2069
+	assert isolated.glyph_indices().len == isolated.glyphs().len - ignored.len
+	assert isolated.glyph_positions().len == isolated.glyph_indices().len * 2
+	assert code_point_is_default_ignorable(0x200b)
+	assert code_point_is_default_ignorable(0xfe0f)
+	assert !code_point_is_default_ignorable(u32(`A`))
 }
 
 fn test_timer_state_and_single_shot_fire() {

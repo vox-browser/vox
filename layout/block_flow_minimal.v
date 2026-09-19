@@ -3294,7 +3294,13 @@ fn combined_text_fragment_glyph_run(fragments []TextFragment, run_left f64) ?&pl
 			|| font.source_path != first_font.source_path || font.point_size != first_font.point_size
 			|| font.weight != first_font.weight
 			|| fragment.paintable_fragment.orientation != fragments[0].paintable_fragment.orientation {
-			return none
+			// Default-ignorable controls can be assigned a fallback font even
+			// though every glyph in that fragment is deliberately non-painting.
+			// Their glyph IDs never reach replay, so they may remain in the
+			// combined bookkeeping run without forcing raw-string fallback.
+			if run.glyphs().any(it.should_paint) {
+				return none
+			}
 		}
 		for source_glyph in run.glyphs() {
 			mut glyph := source_glyph

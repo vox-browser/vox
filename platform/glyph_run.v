@@ -184,6 +184,9 @@ pub fn GlyphRun.new_with_face(font &Font, text_type GlyphRunTextType, glyphs []G
 		if glyph.code_point == u32(` `) {
 			space_width = glyph.advance
 		}
+		if !glyph.should_paint {
+			continue
+		}
 		glyph_indices << u16(glyph.glyph_index)
 		glyph_positions << f64(glyph.position.x)
 		glyph_positions << f64(glyph.position.y)
@@ -261,6 +264,9 @@ pub fn (mut run GlyphRun) refresh_replay_data() {
 	run.glyph_indices_.clear()
 	run.glyph_positions_.clear()
 	for glyph in run.glyphs_ {
+		if !glyph.should_paint {
+			continue
+		}
 		run.glyph_indices_ << u16(glyph.glyph_index)
 		run.glyph_positions_ << f64(glyph.position.x)
 		run.glyph_positions_ << f64(glyph.position.y)
@@ -410,6 +416,9 @@ pub fn (run &GlyphRun) glyph_intercepts(scale f32, y_top f32, y_bottom f32) []f3
 	}
 	mut intervals := []f32{}
 	for glyph in run.glyphs_ {
+		if !glyph.should_paint {
+			continue
+		}
 		outline := run.font_.glyph_outline(glyph.glyph_index) or { continue }
 		mut extent := GlyphInkExtent{
 			band_top: (f64(y_top) - f64(glyph.position.y) * f64(scale)) / f64(scale)
@@ -522,14 +531,18 @@ pub fn shape_text_with_spacing(initial_x f32, letter_spacing f32, word_spacing f
 	for character in text.runes() {
 		code_point := u32(character)
 		base_advance, glyph_index := font.glyph_metrics(code_point)
+		should_paint := !code_point_is_default_ignorable(code_point)
 		// HarfBuzz returns positions in the 26.6 scale selected by
 		// Gfx::Font::harfbuzz_font(). Quantize each shaped value separately,
 		// before accumulating it, just as TextLayout.cpp does when dividing the
 		// integer hb_glyph_position_t fields by text_shaping_resolution.
-		x += f32(math.round(f64(font.kerning_for_glyph(glyph_index)) * 64.0) / 64.0)
-		mut advance := f32(math.round(f64(base_advance) * 64.0) / 64.0) + letter_spacing
-		if is_word_separator(code_point) {
-			advance += word_spacing
+		mut advance := f32(0)
+		if should_paint {
+			x += f32(math.round(f64(font.kerning_for_glyph(glyph_index)) * 64.0) / 64.0)
+			advance = f32(math.round(f64(base_advance) * 64.0) / 64.0) + letter_spacing
+			if is_word_separator(code_point) {
+				advance += word_spacing
+			}
 		}
 		glyphs << Glyph{
 			code_point: code_point
@@ -539,6 +552,7 @@ pub fn shape_text_with_spacing(initial_x f32, letter_spacing f32, word_spacing f
 			}
 			advance: advance
 			length_in_code_units: if code_point > 0xffff { 2 } else { 1 }
+			should_paint: should_paint
 		}
 		if code_unit_offset >= first_trailing_offset {
 			trailing_advance += advance

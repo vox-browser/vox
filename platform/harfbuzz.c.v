@@ -8,9 +8,15 @@ import os
 
 #pkgconfig harfbuzz
 
+#flag darwin -licucore
+
+#flag linux -licuuc
+
 #include <hb.h>
 
 #include <hb-ot.h>
+
+#include <unicode/uchar.h>
 
 struct C.hb_glyph_info_t {
 	codepoint u32
@@ -74,9 +80,12 @@ fn C.hb_buffer_get_glyph_infos(buffer voidptr, length &u32) &C.hb_glyph_info_t
 
 fn C.hb_buffer_get_glyph_positions(buffer voidptr, length &u32) &C.hb_glyph_position_t
 
+fn C.u_hasBinaryProperty(code_point i32, property int) int
+
 const harfbuzz_direction_ltr = 4
 const harfbuzz_direction_rtl = 5
 const harfbuzz_text_shaping_resolution = f32(64)
+const icu_default_ignorable_code_point_property = 5
 
 __global (
 	harfbuzz_document_blobs     = map[string]voidptr{}
@@ -435,6 +444,10 @@ fn code_point_at_utf16_offset(text string, utf16_units []u16, is_ascii bool, off
 	return 0x10000 + ((first - 0xd800) << 10) + second - 0xdc00
 }
 
+fn code_point_is_default_ignorable(code_point u32) bool {
+	return C.u_hasBinaryProperty(i32(code_point), icu_default_ignorable_code_point_property) != 0
+}
+
 fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32, text string, font &Font, text_type GlyphRunTextType) ?ShapedText {
 	mut face := unsafe { nil }
 	uses_emoji := text_uses_emoji_fallback(text)
@@ -486,9 +499,13 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 		position := unsafe { positions[index] }
 		starting_offset := int(info.cluster)
 		code_point := code_point_at_utf16_offset(text, utf16_units, is_ascii, starting_offset)
-		mut advance := f32(position.x_advance) / harfbuzz_text_shaping_resolution + letter_spacing
-		if is_word_separator(code_point) {
-			advance += word_spacing
+		should_paint := !code_point_is_default_ignorable(code_point)
+		mut advance := f32(0)
+		if should_paint {
+			advance = f32(position.x_advance) / harfbuzz_text_shaping_resolution + letter_spacing
+			if is_word_separator(code_point) {
+				advance += word_spacing
+			}
 		}
 		mut length_in_code_units := text_length_in_code_units - starting_offset
 		for following_index in index + 1 .. int(glyph_count) {
@@ -507,11 +524,14 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 			}
 			advance: advance
 			length_in_code_units: length_in_code_units
+			should_paint: should_paint
 		}
-		if starting_offset >= first_trailing_offset {
+		if should_paint && starting_offset >= first_trailing_offset {
 			trailing_advance += advance
 		}
-		point_x += advance
+		if should_paint {
+			point_x += advance
+		}
 	}
 	C.hb_buffer_destroy(buffer)
 	return ShapedText{

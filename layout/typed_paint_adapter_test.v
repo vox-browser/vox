@@ -1116,6 +1116,24 @@ fn test_typed_paint_adapter_preserves_large_committed_text_fragment() {
 	assert draws.len == 1
 }
 
+fn test_typed_paint_adapter_keeps_retained_run_across_default_ignorables() {
+	plain_text := 'Search in r/programming'
+	isolated_text := 'Search in ⁨r/programming⁩'
+	document := html.parse_document('<!doctype html><style>html,body{margin:0}div{font:24px Arial}</style><div>${plain_text}</div><div>${isolated_text}</div>')
+	root := layout_document_typed_in_viewport(document, 500, 200)
+	draws := root.paint_commands().filter(it.kind == 'draw_text'
+		&& it.text in [plain_text, isolated_text])
+	assert draws.len == 2
+	plain_run := draws.filter(it.text == plain_text)[0].glyph_run or {
+		panic('plain text lost its retained glyph run')
+	}
+	isolated_run := draws.filter(it.text == isolated_text)[0].glyph_run or {
+		panic('isolated text fell back to raw-string painting')
+	}
+	assert isolated_run.glyph_indices() == plain_run.glyph_indices()
+	assert isolated_run.glyph_positions() == plain_run.glyph_positions()
+}
+
 fn test_box_shadows_follow_source_order_rectangles_and_elliptical_radii() {
 	document := html.parse_document('<!doctype html><style>
 		html, body { margin: 0 }
