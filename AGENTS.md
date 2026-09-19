@@ -74,7 +74,8 @@
   `text-decorations`, `line-clamp-properties`, `canvas-text`, the three
   live-selection reftests (`selection-focus-between-text-controls`,
   `selection-insert-between-boundaries`, and `selection-moves-between-subtrees`),
-  `empty-caret-with-placeholder`, and `caret-after-first-character`.
+  `empty-caret-with-placeholder`, `caret-after-first-character`, and
+  `default-ignorable-code-points-not-painted`.
   A case name first resolves against upstream
   `Tests/LibWeb/Screenshot/{input,expected}`, then against `Tests/LibWeb/Ref/input`.
   For a reftest, the command follows its
@@ -151,12 +152,16 @@
   collapsed line feeds. It records the exact shaped advance of trailing ASCII
   whitespace, carries that record through fragment merging and intrinsic shape
   reuse, and subtracts it directly when trimming line ends.
+- Unicode default-ignorable controls remain in glyph runs for UTF-16 text
+  bookkeeping but have zero advance and are excluded from bounds, intercepts,
+  and retained paint buffers. Non-painting fallback-font fragments can still be
+  coalesced with the surrounding retained text run.
 
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-20, the module
-translations contain 350,996 implementation V LOC and 71,627 test V LOC.
+translations contain 351,043 implementation V LOC and 71,668 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -178,14 +183,14 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Geometry | 2,062 | HTML | 57,064 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 854 |
-| IntersectionObserver | 569 | Layout | 43,373 |
+| IntersectionObserver | 569 | Layout | 43,380 |
 | Loader | 1,921 | MathML | 411 |
 | MediaCapabilitiesAPI | 676 | MediaCapture | 1,205 |
 | MediaSourceExtensions | 357 | MimeSniff | 1,108 |
 | MixedContent | 125 | NavigationTiming | 291 |
 | NotificationsAPI | 290 | Page | 2,953 |
 | Painting | 7,009 | PerformanceTimeline | 447 |
-| PermissionsAPI | 239 | Platform | 1,979 |
+| PermissionsAPI | 239 | Platform | 2,019 |
 | ReferrerPolicy | 239 | RequestIdleCallback | 59 |
 | ResizeObserver | 420 | ResourceTiming | 338 |
 | SRI | 156 | SVG | 5,184 |
@@ -202,7 +207,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **350,996** |  |  |
+| **Total** | **351,043** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
