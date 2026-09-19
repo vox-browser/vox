@@ -140,6 +140,31 @@ fn test_javascript_bridge_replays_svg_paint_server_mutations() {
 	}
 }
 
+fn test_javascript_bridge_replays_post_paint_canvas_creation_and_resize() {
+	$if darwin {
+		document := html.parse_document('<!doctype html><canvas id="canvas" width="50" height="50"></canvas>')
+		layout.run_document_layout(document, 120, 120) or { panic('missing initial layout') }
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'about:blank', [
+			'const context=canvas.getContext("2d"); context.fillStyle="rgb(255, 0, 0)"; context.fillRect(0,0,50,50); canvas.width=100; canvas.height=100; context.fillStyle="rgb(0, 255, 0)"; context.fillRect(0,0,100,100);',
+		], runtime, mut messages)
+		assert messages == []
+		canvas_element := document.get_element_by_id('canvas') or { panic('missing canvas') }
+		canvas := unsafe { &dom.HTMLCanvasElement(canvas_element) }
+		bitmap := html.html_canvas_element_surface(canvas) or { panic('missing canvas bitmap') }
+		assert bitmap.width == 100
+		assert bitmap.height == 100
+		assert bitmap.data[0..4] == [u8(0), 255, 0, 255]
+
+		updated := layout.run_document_layout(document, 120, 120) or { panic('missing updated layout') }
+		assert updated.paint_tree.paint_commands().any(it.kind == 'draw_canvas')
+	}
+}
+
 fn test_browser_animation_frame_refreshes_paint_only_transforms() {
 	mut document := html.parse_document('<!doctype html><style>@keyframes flip{0%{transform:rotateY(60deg)}0.01%,100%{transform:rotateY(180deg)}}.flip{animation:10s linear infinite flip}#scene{width:100px;height:100px;transform:rotateY(60deg);transform-style:preserve-3d}#target{position:absolute;top:0;left:0;width:200px;height:200px;background:lightblue;transform:rotateY(180deg);backface-visibility:hidden}</style><div id="scene" class="flip"><div id="target"></div></div>')
 	mut app := BrowserApp{
