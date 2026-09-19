@@ -13000,15 +13000,14 @@ pub fn (s &StyleComputer) compute_cascaded_values(abstract_element dom.AbstractE
 	// cascade so substitution and invalid-at-computed-value-time handling are
 	// shared with declarations.
 	if abstract_element.pseudo_element() == none {
+		mut hints := []StyleProperty{}
+		collect_element_presentational_hints(mut hints, abstract_element.element(), properties_to_cascade)
 		if abstract_element.element().is_html_element() {
-			mut hints := []StyleProperty{}
 			collect_html_presentational_hints(mut hints, abstract_element.element(), properties_to_cascade)
-			apply_property_list_to_cascade(mut cascaded_properties, abstract_element, hints, .author_presentational_hint, .no, none, unsafe { nil }, none, logical_alias_mapping_context, properties_to_cascade)
 		} else if abstract_element.element().is_svg_element() {
-			mut hints := []StyleProperty{}
 			collect_svg_presentational_hints(mut hints, abstract_element.element(), properties_to_cascade)
-			apply_property_list_to_cascade(mut cascaded_properties, abstract_element, hints, .author_presentational_hint, .no, none, unsafe { nil }, none, logical_alias_mapping_context, properties_to_cascade)
 		}
+		apply_property_list_to_cascade(mut cascaded_properties, abstract_element, hints, .author_presentational_hint, .no, none, unsafe { nil }, none, logical_alias_mapping_context, properties_to_cascade)
 	}
 
 	// Normal author declarations, ordered by @layer, with un-@layer-ed rules last.
@@ -13038,6 +13037,31 @@ fn set_html_presentational_hint(mut properties []StyleProperty, properties_to_ca
 	properties << StyleProperty{
 		property_id: property_id
 		value: dom_style_value_from_value_logic(value)
+	}
+}
+
+// DOM::Element::apply_presentational_hints(). The DOM module cannot own this
+// method directly because CSS style values depend on DOM, so keep the behavior
+// at the existing cascade bridge.
+fn collect_element_presentational_hints(mut properties []StyleProperty, element &dom.Element, properties_to_cascade ComputedInterpolationPropertyIDs) {
+	if element.matches_link_pseudo_class() {
+		if color := element.document().normal_link_color() {
+			value := StyleValue(ColorStyleValue.create_from_color(Color.rgba(color.r, color.g, color.b, color.a), .legacy, none))
+			set_html_presentational_hint(mut properties, properties_to_cascade, .color, value)
+		}
+	}
+	if element.matches_visited_pseudo_class() {
+		if color := element.document().visited_link_color() {
+			value := StyleValue(ColorStyleValue.create_from_color(Color.rgba(color.r, color.g, color.b, color.a), .legacy, none))
+			set_html_presentational_hint(mut properties, properties_to_cascade, .color, value)
+		}
+	}
+	if element.is_being_activated()
+		&& (element.matches_link_pseudo_class() || element.matches_visited_pseudo_class()) {
+		if color := element.document().active_link_color() {
+			value := StyleValue(ColorStyleValue.create_from_color(Color.rgba(color.r, color.g, color.b, color.a), .legacy, none))
+			set_html_presentational_hint(mut properties, properties_to_cascade, .color, value)
+		}
 	}
 }
 
@@ -13736,6 +13760,7 @@ fn table_child_element_align_value(value string) ?StyleValue {
 
 fn apply_html_presentational_hints_to_cascade(mut properties CascadedProperties, element &dom.Element) {
 	mut hints := []StyleProperty{}
+	collect_element_presentational_hints(mut hints, element, ComputedInterpolationPropertyIDs{})
 	collect_html_presentational_hints(mut hints, element, ComputedInterpolationPropertyIDs{})
 	apply_property_list_to_cascade(mut properties, dom.AbstractElement.new(element, none), hints, .author_presentational_hint, .no, none, unsafe { nil }, none, none, [])
 }

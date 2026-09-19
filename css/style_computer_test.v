@@ -1092,6 +1092,43 @@ fn test_concrete_html_element_presentational_hint_entry_points() {
 	assert table_properties.property(.border_spacing)?.css_text == '3px'
 }
 
+fn test_element_presentational_hints_apply_document_link_colors() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_normal_link_color(dom.Color{ r: 0x12, g: 0x34, b: 0x56, a: 0xff })
+	document.set_active_link_color(dom.Color{ r: 0xab, g: 0xcd, b: 0xef, a: 0xff })
+	document.set_visited_link_color(dom.Color{ r: 0x11, g: 0x22, b: 0x33, a: 0xff })
+
+	mut anchor := document.create_element_ns('http://www.w3.org/1999/xhtml', 'a') or {
+		panic('${err}')
+	}
+	anchor.set_attribute_value('href', 'https://example.com/')
+	assert anchor.matches_link_pseudo_class()
+	assert !anchor.matches_visited_pseudo_class()
+
+	mut link_properties := CascadedProperties.new()
+	apply_html_presentational_hints_to_cascade(mut link_properties, anchor)
+	assert link_properties.property(.color)?.css_text == 'rgb(18, 52, 86)'
+
+	anchor.set_being_activated(true)
+	mut active_properties := CascadedProperties.new()
+	apply_html_presentational_hints_to_cascade(mut active_properties, anchor)
+	assert active_properties.property(.color)?.css_text == 'rgb(171, 205, 239)'
+
+	mut div := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	div.set_being_activated(true)
+	mut non_link_properties := CascadedProperties.new()
+	apply_html_presentational_hints_to_cascade(mut non_link_properties, div)
+	assert non_link_properties.property(.color) == none
+
+	mut filtered_hints := []StyleProperty{}
+	mut filtered_properties := ComputedInterpolationPropertyIDs{}
+	filtered_properties << PropertyID.width
+	collect_element_presentational_hints(mut filtered_hints, anchor, filtered_properties)
+	assert filtered_hints.len == 0
+}
+
 fn test_embed_frame_iframe_and_canvas_adjust_display_contents_to_none() {
 	document := dom.Document.create(dom.url_about_blank())
 	computer := StyleComputer.new(document)

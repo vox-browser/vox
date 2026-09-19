@@ -4796,6 +4796,13 @@ pub fn (e &Element) matches_link_pseudo_class() bool {
 	return ((e.is_html_element() && (name == 'a' || name == 'area')) || (e.is_svg_element() && name == 'a')) && e.has_attribute('href')
 }
 
+// https://drafts.csswg.org/selectors/#visited-pseudo
+// Keep visited links indistinguishable from unvisited links. This is the same
+// privacy-preserving policy currently used by upstream Ladybird.
+pub fn (_ &Element) matches_visited_pseudo_class() bool {
+	return false
+}
+
 pub fn (e &Element) matches_local_link_pseudo_class() bool {
 	if !e.matches_link_pseudo_class() {
 		return false

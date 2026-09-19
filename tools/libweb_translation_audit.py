@@ -199,6 +199,9 @@ VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = froze
         # DOM base-class defaults and the Attr specified compatibility getter.
         ("dom/character_nodes.v", "Attr", "specified"),
         ("dom/element.v", "Element", "is_implicitly_potentially_render_blocking"),
+        # Upstream deliberately never matches :visited as its current
+        # privacy-preserving policy.
+        ("dom/element.v", "Element", "matches_visited_pseudo_class"),
         ("dom/shadow_mutation_misc.v", "Element", "contributes_a_script_blocking_style_sheet"),
         ("dom/events.v", "EventTarget", "has_activation_behavior"),
         ("dom/events.v", "EventTarget", "activation_behavior"),
@@ -210,7 +213,6 @@ VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = froze
         ("dom/inline_state.v", "Element", "is_dom_element"),
         ("dom/inline_state.v", "Element", "supports_dimension_attributes"),
         ("dom/inline_state.v", "Element", "is_presentational_hint"),
-        ("dom/inline_state.v", "Element", "apply_presentational_hints"),
         ("dom/inline_state.v", "Element", "did_receive_focus"),
         ("dom/inline_state.v", "Element", "did_lose_focus"),
         ("dom/inline_state.v", "Element", "computed_properties_changed"),
