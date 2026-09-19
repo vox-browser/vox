@@ -383,6 +383,18 @@ attaches a focused HTML navigable before display-list recording, and the visible
 `caret-after-first-character` reference pair matches with an exact zero-pixel
 diff.
 
+Dashed CSS calls now resolve and evaluate active `@function` definitions during
+arbitrary substitution. The translated evaluator carries parameter and result
+registrations through function-local scopes, applies defaults and typed syntax,
+resolves local declarations and inheritance, caches resolved local properties,
+and preserves CSS-wide result-keyword behavior. Shared guarded substitution
+contexts now mark the complete cycle and include function identity in property
+dependencies. Arguments substitute before missing/excess arity rejection, and
+custom properties retain function-registry access when a normal property later
+depends on them. Focused tests mirror the five new upstream regressions for
+cycle fallback, context identity, evaluation order, result keywords, and
+registry dependency.
+
 CSS backface visibility now parses, computes, inherits, serializes, and
 interpolates through the typed property pipeline. The transform implementation
 retains full 4x4 matrices, builds explicit and synthetic 3D planes, bounds
@@ -430,7 +442,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
 | `Animations` | 10 | 5,187 | 3,972 | 1,041 | Complete |
 | `Bindings` | 11 | 2,501 | 2,675 | 918 | Complete |
-| `CSS` | 215 | 47,722 | 104,074 | 8,937 | Present |
+| `CSS` | 215 | 47,722 | 104,527 | 9,114 | Present |
 | `Clipboard` | 4 | 1,009 | 973 | 343 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 424 | 138 | Complete |
@@ -505,7 +517,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **350,106** | **71,245** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **350,559** | **71,422** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 

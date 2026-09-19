@@ -127,12 +127,18 @@
   child, preferring the previous child's end before the next child's start.
   The compact browser attaches a focused HTML navigable before recording paint,
   so caret reftests exercise visible LTR, RTL, and vertical geometry.
+- Dashed CSS calls now evaluate active `@function` definitions during arbitrary
+  substitution. Function-local parameters, defaults, declarations, typed return
+  syntax, inheritance, and resolved-value caching share guarded cycle state;
+  property guards include function identity, arguments substitute before arity
+  rejection, and custom-property dependencies retain access to the function
+  registry.
 
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-19, the module
-translations contain 350,106 implementation V LOC and 71,245 test V LOC.
+translations contain 350,559 implementation V LOC and 71,422 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -140,7 +146,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Module | Implementation V LOC | Module | Implementation V LOC |
 | --- | ---: | --- | ---: |
 | ARIA | 2,535 | Animations | 3,972 |
-| Bindings | 2,675 | CSS | 104,074 |
+| Bindings | 2,675 | CSS | 104,527 |
 | Clipboard | 973 | Compositor | 2,403 |
 | Compression | 424 | ContentSecurityPolicy | 2,738 |
 | CookieStore | 859 | CredentialManagement | 418 |
@@ -178,7 +184,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **350,106** |  |  |
+| **Total** | **350,559** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
