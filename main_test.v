@@ -99,6 +99,47 @@ fn test_javascript_bridge_applies_image_source_replacements_before_relayout() {
 	}
 }
 
+fn test_javascript_bridge_replays_svg_paint_server_mutations() {
+	$if darwin {
+		document := html.parse_document('<!doctype html><style>html,body{margin:0}</style><div id="collision" style="display:none"></div><svg width="500" height="100"><defs><linearGradient id="attribute"><stop id="changed-stop" stop-color="red"/></linearGradient><linearGradient id="append" gradientUnits="userSpaceOnUse" x1="-100" x2="100"><stop offset="0" stop-color="red"/></linearGradient><linearGradient id="move"><stop id="green-stop" offset="0" stop-color="green"/><stop offset="0" stop-color="red"/></linearGradient><linearGradient id="animated"><stop id="animated-stop" offset="0" stop-color="red"/><stop offset="1" stop-color="green"/></linearGradient><linearGradient id="collision"><stop stop-color="green"/></linearGradient></defs><rect width="100" height="100" fill="url(#attribute)"/><rect x="100" width="100" height="100" fill="url(#append)"/><rect x="200" width="100" height="100" fill="url(#move)"/><rect x="300" width="100" height="100" fill="url(#animated)"/><rect x="400" width="100" height="100" fill="url(#collision) red"/></svg>')
+		layout.run_document_layout(document, 500, 100) or { panic('missing initial layout') }
+
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'about:blank', [
+			'document.getElementById("changed-stop").setAttribute("stop-color", "green"); document.getElementById("attribute").setAttribute("gradientTransform", "translate(0)"); const stop=document.createElementNS("http://www.w3.org/2000/svg", "stop"); stop.setAttribute("offset", "0"); stop.setAttribute("stop-color", "green"); document.getElementById("append").appendChild(stop); const move=document.getElementById("move"); move.moveBefore(document.getElementById("green-stop"), null); document.getElementById("animated-stop").animate([{stopColor:"red"},{stopColor:"green"}], {duration:50,fill:"forwards"}).finished.then(() => {}); document.querySelector("div").id="other";',
+		], runtime, mut messages)
+		assert messages == []
+		assert document.get_element_by_id('changed-stop') or { panic('missing changed stop') }.get_attribute_value('stop-color') == 'green'
+		assert document.get_element_by_id('attribute') or { panic('missing gradient') }.get_attribute_value('gradientTransform') == 'translate(0)'
+
+		append_gradient := document.get_element_by_id('append') or { panic('missing append gradient') }
+		appended_node := append_gradient.as_node().last_child() or { panic('missing appended stop') }
+		appended_stop := appended_node.as_element() or { panic('appended child is not an element') }
+		assert appended_stop.namespace_uri() or { '' } == 'http://www.w3.org/2000/svg'
+		assert appended_stop.get_attribute_value('stop-color') == 'green'
+
+		move_gradient := document.get_element_by_id('move') or { panic('missing move gradient') }
+		moved_node := move_gradient.as_node().last_child() or { panic('missing moved stop') }
+		moved_stop := moved_node.as_element() or { panic('moved child is not an element') }
+		assert moved_stop.get_attribute_value('id') == 'green-stop'
+		assert document.get_element_by_id('animated-stop') or { panic('missing animated stop') }.get_attribute_value('stop-color') == 'green'
+		assert document.get_element_by_id('collision') or { panic('missing collision gradient') }.local_name() == 'linearGradient'
+
+		updated := layout.run_document_layout(document, 500, 100) or { panic('missing updated layout') }
+		gradients := updated.paint_tree.paint_commands().filter(it.kind == 'draw_svg_path'
+			&& it.fill_linear_gradient != none)
+		assert gradients.len == 5
+		for command in gradients {
+			gradient := command.fill_linear_gradient or { panic('missing retained gradient') }
+			assert gradient.gradient.color_stops.last().color == painting.Color{0, 128, 0, 255}
+		}
+	}
+}
+
 fn test_browser_animation_frame_refreshes_paint_only_transforms() {
 	mut document := html.parse_document('<!doctype html><style>@keyframes flip{0%{transform:rotateY(60deg)}0.01%,100%{transform:rotateY(180deg)}}.flip{animation:10s linear infinite flip}#scene{width:100px;height:100px;transform:rotateY(60deg);transform-style:preserve-3d}#target{position:absolute;top:0;left:0;width:200px;height:200px;background:lightblue;transform:rotateY(180deg);backface-visibility:hidden}</style><div id="scene" class="flip"><div id="target"></div></div>')
 	mut app := BrowserApp{

@@ -1253,19 +1253,26 @@ fn javascript_initial_state(document &dom.Document, current_url string, scripts 
 	mut elements := map[string]json2.Any{}
 	for element_index, element in css.query_selector_all(root, '*') {
 		id := element.get_attribute_value('id')
-		bridge_key := if id != '' { id } else { '__anonymous_element_${element_index}' }
+		bridge_key := '__element_${element_index}'
+		mut attributes := map[string]json2.Any{}
+		for name in element.get_attribute_names() {
+			attributes[name] = json2.Any(element.get_attribute_value(name))
+		}
 		mut state := {
-			'id':          json2.Any(id)
-			'bridgeKey':   json2.Any(bridge_key)
-			'tagName':     json2.Any(element.local_name())
-			'src':         json2.Any(element.get_attribute_value('src'))
-			'width':       json2.Any(element.get_attribute_value('width'))
-			'height':      json2.Any(element.get_attribute_value('height'))
-			'textContent': json2.Any(element.as_node().text_content() or { '' })
-			'innerHTML':   json2.Any(element.inner_html() or { '' })
-			'className':   json2.Any(element.get_attribute_value('class'))
-			'styleText':   json2.Any(element.get_attribute_value('style'))
-			'onclick':     json2.Any(element.get_attribute_value('onclick'))
+			'id':           json2.Any(id)
+			'bridgeKey':    json2.Any(bridge_key)
+			'elementIndex': json2.Any(element_index)
+			'tagName':      json2.Any(element.local_name())
+			'namespaceURI': json2.Any(element.namespace_uri() or { '' })
+			'attributes':   json2.Any(attributes)
+			'src':          json2.Any(element.get_attribute_value('src'))
+			'width':        json2.Any(element.get_attribute_value('width'))
+			'height':       json2.Any(element.get_attribute_value('height'))
+			'textContent':  json2.Any(element.as_node().text_content() or { '' })
+			'innerHTML':    json2.Any(element.inner_html() or { '' })
+			'className':    json2.Any(element.get_attribute_value('class'))
+			'styleText':    json2.Any(element.get_attribute_value('style'))
+			'onclick':      json2.Any(element.get_attribute_value('onclick'))
 		}
 		if element.local_name() == 'video' {
 			video := unsafe { &dom.HTMLVideoElement(element) }
@@ -1330,40 +1337,46 @@ fn javascript_program(state map[string]json2.Any, scripts []string) string {
 		'const __canvases = Object.create(null);',
 		'function __listenerKey(s, n) { return (s && (s.bridgeKey || s.id) ? (s.bridgeKey || s.id) : "document") + ":" + n; }',
 		'function __styleName(name) { return String(name).replace(/[A-Z]/g, function (character) { return "-" + character.toLowerCase(); }); }',
+		'function __elementStates() { return Object.keys(__state.elements).map(function (key) { return __state.elements[key]; }).sort(function (a,b) { return (+a.elementIndex||0)-(+b.elementIndex||0); }); }',
+		'function __attributeName(s, name) { name=String(name); return s.namespaceURI==="http://www.w3.org/1999/xhtml"?name.toLowerCase():name; }',
+		'function __setAttribute(s, name, value) { name=__attributeName(s,name); value=String(value); s.attributes[name]=value; s.attributesDirty=true; if(name==="id")s.id=value; if(name==="class")s.className=value; if(name==="style")s.styleText=value; if(name==="src")s.src=value; }',
+		'function __removeAttribute(s, name) { name=__attributeName(s,name); delete s.attributes[name]; s.attributesDirty=true; if(name==="id")s.id=""; if(name==="class")s.className=""; if(name==="style")s.styleText=""; if(name==="src")s.src=""; }',
 		'function __styleProxy(s) {',
 		'  const values = Object.create(null);',
 		'  String(s.styleText || "").split(";").forEach(function (part) { const i = part.indexOf(":"); if (i > 0) values[part.slice(0, i).trim()] = part.slice(i + 1).trim(); });',
-		'  function sync() { s.styleText = Object.keys(values).map(function (k) { return k + ": " + values[k]; }).join("; "); }',
-		'  return new Proxy(values, { set: function (o, p, v) { if (p === "cssText") { s.styleText = String(v); return true; } o[__styleName(p)] = String(v); sync(); return true; }, get: function (o, p) { if (p === "cssText") return s.styleText; if (p === "setProperty") return function (name, value) { values[__styleName(name)] = String(value); sync(); }; if (p === "removeProperty") return function (name) { name = __styleName(name); const old = values[name] || ""; delete values[name]; sync(); return old; }; return o[__styleName(p)] || ""; } });',
+		'  function sync() { __setAttribute(s,"style",Object.keys(values).map(function (k) { return k + ": " + values[k]; }).join("; ")); }',
+		'  return new Proxy(values, { set: function (o, p, v) { if (p === "cssText") { __setAttribute(s,"style",v); return true; } o[__styleName(p)] = String(v); sync(); return true; }, get: function (o, p) { if (p === "cssText") return s.styleText; if (p === "setProperty") return function (name, value) { values[__styleName(name)] = String(value); sync(); }; if (p === "removeProperty") return function (name) { name = __styleName(name); const old = values[name] || ""; delete values[name]; sync(); return old; }; return o[__styleName(p)] || ""; } });',
 		'}',
-		'function __classList(s) { function tokens() { return String(s.className || "").trim().split(/\\s+/).filter(Boolean); } function sync(values) { s.className = values.join(" "); } return { add: function () { const values=tokens(); for(const item of arguments){const token=String(item);if(token&&!values.includes(token))values.push(token);} sync(values); }, remove: function () { const removed=Array.prototype.map.call(arguments,String); sync(tokens().filter(function(token){return !removed.includes(token);})); }, contains: function (token) { return tokens().includes(String(token)); }, toggle: function (token, force) { token=String(token); const values=tokens(), present=values.includes(token), add=force===undefined?!present:!!force; if(add&&!present)values.push(token); if(!add&&present)values.splice(values.indexOf(token),1); sync(values); return add; } }; }',
+		'function __classList(s) { function tokens() { return String(s.className || "").trim().split(/\\s+/).filter(Boolean); } function sync(values) { __setAttribute(s,"class",values.join(" ")); } return { add: function () { const values=tokens(); for(const item of arguments){const token=String(item);if(token&&!values.includes(token))values.push(token);} sync(values); }, remove: function () { const removed=Array.prototype.map.call(arguments,String); sync(tokens().filter(function(token){return !removed.includes(token);})); }, contains: function (token) { return tokens().includes(String(token)); }, toggle: function (token, force) { token=String(token); const values=tokens(), present=values.includes(token), add=force===undefined?!present:!!force; if(add&&!present)values.push(token); if(!add&&present)values.splice(values.indexOf(token),1); sync(values); return add; } }; }',
 		'function __canvasDimension(s, name) { const fallback=name === "width" ? 300 : 150; if(s[name]===undefined||s[name]===null||String(s[name])==="")return fallback; const value=Number(s[name]); return Number.isFinite(value) && value >= 0 ? Math.trunc(value) : fallback; }',
-		'function __canvasFor(s) { let c=__canvases[s.id]; const width=__canvasDimension(s,"width"),height=__canvasDimension(s,"height"); if(!c||c.width!==width||c.height!==height)c=__canvases[s.id]={width:width,height:height,data:new Uint8ClampedArray(width*height*4),fillStyle:"#000000"}; return c; }',
+		'function __canvasFor(s) { const key=s.bridgeKey||s.id; let c=__canvases[key]; const width=__canvasDimension(s,"width"),height=__canvasDimension(s,"height"); if(!c||c.width!==width||c.height!==height)c=__canvases[key]={width:width,height:height,data:new Uint8ClampedArray(width*height*4),fillStyle:"#000000"}; return c; }',
 		'function __decodeBase64(input) { const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"; const clean=String(input||"").replace(/[^A-Za-z0-9+/]/g,""); const output=new Uint8ClampedArray(Math.floor(clean.length*3/4)); let bits=0,value=0,index=0; for(const ch of clean){const digit=alphabet.indexOf(ch);if(digit<0)continue;value=(value<<6)|digit;bits+=6;if(bits>=8){bits-=8;output[index++]=(value>>bits)&255;}} return index===output.length?output:output.slice(0,index); }',
 		'function __videoFor(s) { if(s.__videoFrame)return s.__videoFrame; if(!s.videoPixels)return null; return s.__videoFrame={width:+s.videoWidth||0,height:+s.videoHeight||0,data:__decodeBase64(s.videoPixels)}; }',
-		'function __setElementSource(s,value) { s.src=String(value); if(s.tagName==="video"){const frame=__state.videoSources[s.src];if(frame){s.readyState=2;s.videoWidth=frame.width;s.videoHeight=frame.height;s.videoPixels=frame.pixels;s.__videoFrame=null;}} if(s.tagName==="img"){s.complete=true;const target=__element(s),event={type:"load",target:target};for(const listener of (__listeners[__listenerKey(s,"load")]||[]))listener.call(target,event);} }',
+		'function __setElementSource(s,value) { __setAttribute(s,"src",value); if(s.tagName==="video"){const frame=__state.videoSources[s.src];if(frame){s.readyState=2;s.videoWidth=frame.width;s.videoHeight=frame.height;s.videoPixels=frame.pixels;s.__videoFrame=null;}} if(s.tagName==="img"){s.complete=true;const target=__element(s),event={type:"load",target:target};for(const listener of (__listeners[__listenerKey(s,"load")]||[]))listener.call(target,event);} }',
 		'function __canvasColor(value) { const names={black:[0,0,0,255],white:[255,255,255,255],red:[255,0,0,255],green:[0,128,0,255],blue:[0,0,255,255],transparent:[0,0,0,0]}; const text=String(value).trim().toLowerCase(); if(names[text])return names[text]; const match=/^#([0-9a-f]{6})\$/.exec(text); return match?[parseInt(match[1].slice(0,2),16),parseInt(match[1].slice(2,4),16),parseInt(match[1].slice(4,6),16),255]:[0,0,0,255]; }',
 		'function __canvasFill(c,x,y,w,h,color) { const left=Math.max(0,Math.floor(Math.min(x,x+w))),top=Math.max(0,Math.floor(Math.min(y,y+h))),right=Math.min(c.width,Math.ceil(Math.max(x,x+w))),bottom=Math.min(c.height,Math.ceil(Math.max(y,y+h))); for(let yy=top;yy<bottom;++yy)for(let xx=left;xx<right;++xx){const i=(yy*c.width+xx)*4;c.data[i]=color[0];c.data[i+1]=color[1];c.data[i+2]=color[2];c.data[i+3]=color[3];} }',
 		'function __canvasDraw(destination,source,args) { const snapshot=source.data.slice(); let sx=0,sy=0,sw=source.width,sh=source.height,dx=+args[0],dy=+args[1],dw=sw,dh=sh; if(args.length===4){dw=+args[2];dh=+args[3];}else if(args.length>=8){sx=+args[0];sy=+args[1];sw=+args[2];sh=+args[3];dx=+args[4];dy=+args[5];dw=+args[6];dh=+args[7];} if(!sw||!sh||!dw||!dh)return; const left=Math.max(0,Math.floor(Math.min(dx,dx+dw))),top=Math.max(0,Math.floor(Math.min(dy,dy+dh))),right=Math.min(destination.width,Math.ceil(Math.max(dx,dx+dw))),bottom=Math.min(destination.height,Math.ceil(Math.max(dy,dy+dh))); for(let y=top;y<bottom;++y)for(let x=left;x<right;++x){const sourceX=Math.floor(sx+(x-dx)/dw*sw),sourceY=Math.floor(sy+(y-dy)/dh*sh);if(sourceX<0||sourceY<0||sourceX>=source.width||sourceY>=source.height)continue;const si=(sourceY*source.width+sourceX)*4,di=(y*destination.width+x)*4;destination.data[di]=snapshot[si];destination.data[di+1]=snapshot[si+1];destination.data[di+2]=snapshot[si+2];destination.data[di+3]=snapshot[si+3];} }',
 		'function __canvasContext(s) { const c=__canvasFor(s); if(c.context)return c.context; const target={fillRect:function(x,y,w,h){s.canvasVideoSource="";__canvasFill(c,+x,+y,+w,+h,__canvasColor(c.fillStyle));},clearRect:function(x,y,w,h){s.canvasVideoSource="";__canvasFill(c,+x,+y,+w,+h,[0,0,0,0]);},drawImage:function(source){if(!source||!source.__state)throw new TypeError("Unsupported CanvasImageSource");const sourceState=source.__state;const image=sourceState.tagName==="canvas"?__canvasFor(sourceState):sourceState.tagName==="video"?__videoFor(sourceState):null;if(!image)throw new TypeError("Unsupported CanvasImageSource");const args=Array.prototype.slice.call(arguments,1);__canvasDraw(c,image,args);s.canvasVideoSource=sourceState.tagName==="video"&&args.length===2&&+args[0]===0&&+args[1]===0&&c.width===image.width&&c.height===image.height?sourceState.id:"";}}; c.context=new Proxy(target,{get:function(o,p){return p==="fillStyle"?c.fillStyle:o[p];},set:function(o,p,v){if(p==="fillStyle"){c.fillStyle=String(v);return true;}o[p]=v;return true;}}); return c.context; }',
 		'function __element(s) {',
 		'  if (!s.__object) {',
-		'    const o = { getAttribute: function (n) { n=String(n).toLowerCase(); if (n === "id") return s.id; if (n === "class") return s.className; if (n === "style") return s.styleText; if (n === "src") return s.src; return null; }, setAttribute: function (n, v) { n=String(n).toLowerCase(); if (n === "id") s.id = String(v); if (n === "class") s.className = String(v); if (n === "style") s.styleText = String(v); if (n === "src") __setElementSource(s,v); }, addEventListener: function (n, f) { (__listeners[__listenerKey(s, n)] ||= []).push(f); if(s.tagName==="video"&&s.readyState>=2&&(n==="loadeddata"||n==="seeked"))f.call(this,{type:n,target:this}); if(s.tagName==="img"&&s.complete&&n==="load")f.call(this,{type:n,target:this}); }, append: function (child) { return this.appendChild(child); }, appendChild: function (child) { const c=child&&child.__state; if(c)__state.operations.push({op:"appendCreated",target:s.id,child:{tagName:c.tagName,id:c.id,className:c.className,styleText:c.styleText,textContent:c.textContent}}); return child; }, getContext: function(kind) { return s.tagName === "canvas" && String(kind).toLowerCase() === "2d" ? __canvasContext(s) : null; }, getStartDate:function(){return new Date(s.startDateValid?+s.startDate:NaN);}, play:function(){return Promise.resolve();} };',
-		'    Object.defineProperties(o, { id: { get: function () { return s.id; } }, textContent: { get: function () { return s.textContent; }, set: function (v) { s.textContent = String(v); s.innerHTML = ""; } }, innerHTML: { get: function () { return s.innerHTML; }, set: function (v) { s.innerHTML = String(v); } }, className: { get: function () { return s.className; }, set: function (v) { s.className = String(v); } }, width:{get:function(){return __canvasDimension(s,"width");},set:function(v){s.width=String(Math.max(0,Math.trunc(+v||0)));}}, height:{get:function(){return __canvasDimension(s,"height");},set:function(v){s.height=String(Math.max(0,Math.trunc(+v||0)));}}, complete:{get:function(){return !!s.complete;}}, readyState:{get:function(){return +s.readyState||0;}}, videoWidth:{get:function(){return +s.videoWidth||0;}}, videoHeight:{get:function(){return +s.videoHeight||0;}}, currentTime:{get:function(){return +s.currentTime||0;},set:function(v){s.currentTime=+v||0;}}, src:{get:function(){return s.src||"";},set:function(v){__setElementSource(s,v);}} });',
+		'    const o = { getAttribute: function (n) { n=__attributeName(s,n); return Object.prototype.hasOwnProperty.call(s.attributes,n)?s.attributes[n]:null; }, hasAttribute: function(n){return Object.prototype.hasOwnProperty.call(s.attributes,__attributeName(s,n));}, setAttribute: function (n, v) { if(__attributeName(s,n)==="src")__setElementSource(s,v);else __setAttribute(s,n,v); }, removeAttribute:function(n){__removeAttribute(s,n);}, addEventListener: function (n, f) { (__listeners[__listenerKey(s, n)] ||= []).push(f); if(s.tagName==="video"&&s.readyState>=2&&(n==="loadeddata"||n==="seeked"))f.call(this,{type:n,target:this}); if(s.tagName==="img"&&s.complete&&n==="load")f.call(this,{type:n,target:this}); }, append: function (child) { return this.appendChild(child); }, appendChild: function (child) { const c=child&&child.__state; if(c)__state.operations.push({op:"appendCreated",target:s.bridgeKey,child:c}); return child; }, moveBefore:function(child,reference){const c=child&&child.__state,r=reference&&reference.__state;if(c)__state.operations.push({op:"moveBefore",target:s.bridgeKey,child:c.bridgeKey,reference:r?r.bridgeKey:""});}, animate:function(keyframes){const frames=Array.isArray(keyframes)?keyframes:[keyframes];const finalFrame=frames.length?frames[frames.length-1]:{};for(const name of Object.keys(finalFrame||{}))__setAttribute(s,__styleName(name),finalFrame[name]);return{finished:Promise.resolve()};}, getContext: function(kind) { return s.tagName === "canvas" && String(kind).toLowerCase() === "2d" ? __canvasContext(s) : null; }, getStartDate:function(){return new Date(s.startDateValid?+s.startDate:NaN);}, play:function(){return Promise.resolve();} };',
+		'    Object.defineProperties(o, { id: { get: function () { return s.id; }, set:function(v){__setAttribute(s,"id",v);} }, textContent: { get: function () { return s.textContent; }, set: function (v) { s.textContent = String(v); s.innerHTML = ""; } }, innerHTML: { get: function () { return s.innerHTML; }, set: function (v) { s.innerHTML = String(v); } }, className: { get: function () { return s.className; }, set: function (v) { __setAttribute(s,"class",v); } }, width:{get:function(){return __canvasDimension(s,"width");},set:function(v){s.width=String(Math.max(0,Math.trunc(+v||0)));__setAttribute(s,"width",s.width);}}, height:{get:function(){return __canvasDimension(s,"height");},set:function(v){s.height=String(Math.max(0,Math.trunc(+v||0)));__setAttribute(s,"height",s.height);}}, complete:{get:function(){return !!s.complete;}}, readyState:{get:function(){return +s.readyState||0;}}, videoWidth:{get:function(){return +s.videoWidth||0;}}, videoHeight:{get:function(){return +s.videoHeight||0;}}, currentTime:{get:function(){return +s.currentTime||0;},set:function(v){s.currentTime=+v||0;}}, src:{get:function(){return s.src||"";},set:function(v){__setElementSource(s,v);}} });',
 		'    o.style = __styleProxy(s); o.classList = __classList(s); Object.defineProperty(o,"__state",{value:s}); Object.defineProperty(s, "__object", { value: o, writable: true, configurable: true });',
 		'  } return s.__object;',
 		'}',
-		'const document = { getElementById: function (id) { const s = __state.elements[String(id)]; return s ? __element(s) : null; }, getElementsByTagName: function(name) { const tag=String(name).toLowerCase(); return Object.keys(__state.elements).map(function(id){return __state.elements[id];}).filter(function(s){return tag==="*"||s.tagName===tag;}).map(__element); }, querySelector: function (q) { return q && q[0] === "#" ? this.getElementById(q.slice(1)) : null; }, addEventListener: function (n, f) { (__listeners[__listenerKey(null, n)] ||= []).push(f); }, createElement: function (name) { return __element({ created:true,tagName:String(name).toLowerCase(),id:"",textContent:"",innerHTML:"",className:"",styleText:"",onclick:"" }); }, createTextNode: function(text) { return {__state:{tagName:"#text",textContent:String(text)}}; } };',
+		'let __createdElementCount=0; function __createElement(namespaceURI,name){const key="__created_"+(++__createdElementCount),s={created:true,bridgeKey:key,elementIndex:1000000000+__createdElementCount,namespaceURI:String(namespaceURI||"http://www.w3.org/1999/xhtml"),tagName:String(name),id:"",src:"",width:"",height:"",textContent:"",innerHTML:"",className:"",styleText:"",onclick:"",attributes:{}};__state.elements[key]=s;return __element(s);}',
+		'function __matches(s,q){q=String(q||"").trim();if(!q)return false;if(q[0]==="#")return s.id===q.slice(1);return s.tagName.toLowerCase()===q.toLowerCase();}',
+		'const document = { getElementById: function (id) { const s=__elementStates().find(function(item){return item.id===String(id);}); return s ? __element(s) : null; }, getElementsByTagName: function(name) { const tag=String(name).toLowerCase(); return __elementStates().filter(function(s){return tag==="*"||s.tagName.toLowerCase()===tag;}).map(__element); }, querySelector: function (q) { const s=__elementStates().find(function(item){return __matches(item,q);});return s?__element(s):null; }, addEventListener: function (n, f) { (__listeners[__listenerKey(null, n)] ||= []).push(f); }, createElement: function (name) { return __createElement("http://www.w3.org/1999/xhtml",String(name).toLowerCase()); }, createElementNS:function(namespaceURI,name){return __createElement(namespaceURI,name);}, createTextNode: function(text) { return {__state:{tagName:"#text",textContent:String(text)}}; } };',
 		'Object.defineProperty(document, "title", { get: function () { return __state.title; }, set: function (v) { __state.title = String(v); } });',
 		'document.documentElement={classList:{add:function(){},remove:function(){},contains:function(){return false;}}}; document.body = {appendChild:function(child){return child;}}; Object.defineProperties(document.body, { innerHTML: { get: function () { return __state.bodyHTML; }, set: function (v) { __state.bodyHTML = String(v); __state.bodyHTMLDirty = true; __state.bodyTextDirty = false; } }, textContent: { get: function () { return __state.bodyText; }, set: function (v) { __state.bodyText = String(v); __state.bodyHTML = ""; __state.bodyTextDirty = true; __state.bodyHTMLDirty = false; } } });',
 		'const console = { log: function () { __state.logs.push(Array.prototype.map.call(arguments, String).join(" ")); }, warn: function () { this.log.apply(this, arguments); }, error: function () { this.log.apply(this, arguments); } };',
 		'const location = {}; Object.defineProperty(location, "href", { get: function () { return __state.location; }, set: function (v) { __state.navigate = String(v); } });',
 		'const window = globalThis; window.window = window; window.document = document; window.console = console; window.location = location; window.alert = function (v) { console.log(v); }; window.setTimeout = function (f) { if (typeof f === "function") f(); return 1; }; window.requestAnimationFrame = function(f){if(typeof f === "function")f(Date.now());return 1;}; window.addEventListener = document.addEventListener; window.HTMLMediaElement={HAVE_NOTHING:0,HAVE_METADATA:1,HAVE_CURRENT_DATA:2,HAVE_FUTURE_DATA:3,HAVE_ENOUGH_DATA:4}; window.internals={imageAnimationStateForURL:function(){return{timerActive:true,frameIndex:1};},signalTestIsDone:function(){},spoofCurrentURL:function(){}}; if(!Promise.withResolvers)Promise.withResolvers=function(){let resolve,reject;const promise=new Promise(function(a,b){resolve=a;reject=b;});return{promise:promise,resolve:resolve,reject:reject};};',
-		'for (const id of Object.keys(__state.elements)) { try { window[id] = document.getElementById(id); } catch (_) {} }',
+		'for (const s of __elementStates()) { if(!s.id)continue; try { window[s.id] = document.getElementById(s.id); } catch (_) {} }',
 		'window.__ladybirdSnapshot = function () { return JSON.stringify(__state); };',
-		'window.__ladybirdFinalize = function () { for (const id of Object.keys(__canvases)) { const c=__canvases[id]; __state.elements[id].canvasPixels=Array.from(c.data); __state.elements[id].canvasWidth=c.width; __state.elements[id].canvasHeight=c.height; } return window.__ladybirdSnapshot(); };',
+		'window.__ladybirdFinalize = function () { for (const key of Object.keys(__canvases)) { const c=__canvases[key]; __state.elements[key].canvasPixels=Array.from(c.data); __state.elements[key].canvasWidth=c.width; __state.elements[key].canvasHeight=c.height; } return window.__ladybirdSnapshot(); };',
 		'window.__ladybirdClearLogs = function () { __state.logs = []; __state.bodyHTMLDirty = false; __state.bodyTextDirty = false; };',
-		'window.__ladybirdDispatch = function (name, id) { const s = __state.elements[String(id)] || null; const target = s ? __element(s) : document; const event = { type: name, target: target, defaultPrevented: false, preventDefault: function () { this.defaultPrevented = true; } }; for (const listener of (__listeners[__listenerKey(s, name)] || [])) { try { listener.call(target, event); } catch (e) { console.error(e); } } if (!s && typeof window["on" + name] === "function") { try { window["on" + name].call(window, event); } catch (e) { console.error(e); } } if (s && name === "click" && s.onclick) { try { Function("event", s.onclick).call(target, event); } catch (e) { console.error(e); } } __state.defaultPrevented = event.defaultPrevented; return window.__ladybirdSnapshot(); };',
+		'window.__ladybirdDispatch = function (name, id) { const s = String(id)===""?null:(__elementStates().find(function(item){return item.id===String(id);}) || null); const target = s ? __element(s) : document; const event = { type: name, target: target, defaultPrevented: false, preventDefault: function () { this.defaultPrevented = true; } }; for (const listener of (__listeners[__listenerKey(s, name)] || [])) { try { listener.call(target, event); } catch (e) { console.error(e); } } if (!s && typeof window["on" + name] === "function") { try { window["on" + name].call(window, event); } catch (e) { console.error(e); } } if (s && name === "click" && s.onclick) { try { Function("event", s.onclick).call(target, event); } catch (e) { console.error(e); } } __state.defaultPrevented = event.defaultPrevented; return window.__ladybirdSnapshot(); };',
 		'const __scripts = ${scripts_json}; for (const __source of __scripts) { try { (0, eval)(__source); } catch (e) { console.error(e && e.stack ? e.stack : e); } }',
 		'for (const __name of ["DOMContentLoaded", "load"]) window.__ladybirdDispatch(__name, "");',
 		'return window.__ladybirdSnapshot();',
@@ -1420,6 +1433,26 @@ fn json_byte_array_property(object map[string]json2.Any, name string) []u8 {
 	return result
 }
 
+fn apply_javascript_element_attribute(mut element dom.Element, name string, value ?string) {
+	old_value := element.get_attribute(name)
+	if value == old_value {
+		return
+	}
+	if new_value := value {
+		element.set_attribute_value(name, new_value)
+	} else {
+		element.remove_attribute(name)
+	}
+	if element.local_name() == 'img' && name == 'src' {
+		image := unsafe { &dom.HTMLImageElement(&element) }
+		html.html_image_element_form_associated_element_attribute_changed(image, 'src', old_value,
+			value, none)
+		mut node := unsafe { &dom.Node(&element) }
+		node.set_needs_layout_update(.html_image_element_update_the_image_data)
+		node.set_needs_repaint(.yes)
+	}
+}
+
 fn apply_javascript_state(document &dom.Document, encoded string, mut messages []string) ?string {
 	value := json2.decode[json2.Any](encoded) or {
 		messages << 'JavaScript bridge result: ${err.msg()}'
@@ -1430,6 +1463,7 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 	}
 	state := value as map[string]json2.Any
 	root := unsafe { &dom.Node(document) }
+	initial_elements := css.query_selector_all(root, '*')
 	body := css.query_selector(root, 'body')
 	if json_bool_property(state, 'bodyHTMLDirty') {
 		body_html := json_string_property(state, 'bodyHTML') or { '' }
@@ -1447,14 +1481,39 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 			}
 		}
 	}
+	mut element_by_bridge_key := map[string]&dom.Element{}
 	if element_values := state['elements'] {
 		if element_values is map[string]json2.Any {
-			for id, item in element_values as map[string]json2.Any {
+			for _, item in element_values as map[string]json2.Any {
 				if item !is map[string]json2.Any {
 					continue
 				}
-				mut element := document.get_element_by_id(id) or { continue }
 				element_state := item as map[string]json2.Any
+				element_index := json_int_property(element_state, 'elementIndex') or { continue }
+				if element_index < 0 || element_index >= initial_elements.len {
+					continue
+				}
+				mut element := initial_elements[element_index]
+				if bridge_key := json_string_property(element_state, 'bridgeKey') {
+					element_by_bridge_key[bridge_key] = element
+				}
+				if json_bool_property(element_state, 'attributesDirty') {
+					if attribute_values := element_state['attributes'] {
+						if attribute_values is map[string]json2.Any {
+							attributes := attribute_values as map[string]json2.Any
+							for existing_name in element.get_attribute_names() {
+								if existing_name !in attributes {
+									apply_javascript_element_attribute(mut element, existing_name, none)
+								}
+							}
+							for name, attribute_value in attributes {
+								if attribute_value is string && name != 'src' {
+									apply_javascript_element_attribute(mut element, name, attribute_value)
+								}
+							}
+						}
+					}
+				}
 				if inner_html := json_string_property(element_state, 'innerHTML') {
 					if inner_html != (element.inner_html() or { '' }) {
 						element.set_inner_html(inner_html) or { messages << err.msg() }
@@ -1476,17 +1535,8 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 					element.set_attribute_value('style', style_text)
 				}
 				if source := json_string_property(element_state, 'src') {
-					old_source := element.get_attribute('src')
-					if source != (old_source or { '' }) {
-						element.set_attribute_value('src', source)
-						if element.local_name() == 'img' {
-							image := unsafe { &dom.HTMLImageElement(element) }
-							html.html_image_element_form_associated_element_attribute_changed(image,
-								'src', old_source, source, none)
-							mut node := unsafe { &dom.Node(element) }
-							node.set_needs_layout_update(.html_image_element_update_the_image_data)
-							node.set_needs_repaint(.yes)
-						}
+					if source != (element.get_attribute('src') or { '' }) {
+						apply_javascript_element_attribute(mut element, 'src', source)
 					}
 				}
 				if element.local_name() == 'canvas' {
@@ -1540,44 +1590,58 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 					continue
 				}
 				operation := item as map[string]json2.Any
-				if (json_string_property(operation, 'op') or { '' }) != 'appendCreated' {
-					continue
-				}
-				target_id := json_string_property(operation, 'target') or { continue }
-				mut target := document.get_element_by_id(target_id) or { continue }
-				child_value := operation['child'] or { continue }
-				if child_value !is map[string]json2.Any {
-					continue
-				}
-				child_state := child_value as map[string]json2.Any
-				tag_name := json_string_property(child_state, 'tagName') or { 'div' }
-				if tag_name == '' || tag_name == '#text' {
-					continue
-				}
-				mut child := document.create_element(tag_name) or { continue }
-				if id := json_string_property(child_state, 'id') {
-					if id != '' {
-						child.set_attribute_value('id', id)
+				kind := json_string_property(operation, 'op') or { continue }
+				target_key := json_string_property(operation, 'target') or { continue }
+				mut target := element_by_bridge_key[target_key] or { continue }
+				if kind == 'appendCreated' {
+					child_value := operation['child'] or { continue }
+					if child_value !is map[string]json2.Any {
+						continue
 					}
-				}
-				if class_name := json_string_property(child_state, 'className') {
-					if class_name != '' {
-						child.set_attribute_value('class', class_name)
+					child_state := child_value as map[string]json2.Any
+					tag_name := json_string_property(child_state, 'tagName') or { 'div' }
+					if tag_name == '' || tag_name == '#text' {
+						continue
 					}
-				}
-				if style_text := json_string_property(child_state, 'styleText') {
-					if style_text != '' {
-						child.set_attribute_value('style', style_text)
+					namespace_uri := json_string_property(child_state, 'namespaceURI') or {
+						'http://www.w3.org/1999/xhtml'
 					}
-				}
-				if text := json_string_property(child_state, 'textContent') {
-					if text != '' {
-						mut child_node := unsafe { &dom.Node(child) }
-						child_node.set_text_content(text) or {}
+					mut child := document.create_element_ns(namespace_uri, tag_name) or { continue }
+					if attribute_values := child_state['attributes'] {
+						if attribute_values is map[string]json2.Any {
+							for name, attribute_value in attribute_values as map[string]json2.Any {
+								if attribute_value is string {
+									child.set_attribute_value(name, attribute_value)
+								}
+							}
+						}
 					}
+					if text := json_string_property(child_state, 'textContent') {
+						if text != '' {
+							mut child_node := unsafe { &dom.Node(child) }
+							child_node.set_text_content(text) or {}
+						}
+					}
+					mut target_node := unsafe { &dom.Node(target) }
+					target_node.append_child(child.as_node()) or {}
+					if child_key := json_string_property(child_state, 'bridgeKey') {
+						element_by_bridge_key[child_key] = child
+					}
+				} else if kind == 'moveBefore' {
+					child_key := json_string_property(operation, 'child') or { continue }
+					mut child := element_by_bridge_key[child_key] or { continue }
+					reference_key := json_string_property(operation, 'reference') or { '' }
+					reference := if reference_key == '' {
+						?&dom.Node(none)
+					} else if reference_element := element_by_bridge_key[reference_key] {
+						?&dom.Node(reference_element.as_node())
+					} else {
+						?&dom.Node(none)
+					}
+					mut target_node := unsafe { &dom.Node(target) }
+					mut child_node := unsafe { &dom.Node(child) }
+					child_node.move_node(mut target_node, reference) or {}
 				}
-				mut target_node := unsafe { &dom.Node(target) }
-				target_node.append_child(child.as_node()) or {}
 			}
 		}
 	}
