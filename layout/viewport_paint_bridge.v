@@ -2553,13 +2553,32 @@ fn compatibility_element_for_hit_node(node &dom.Node) &dom.Element {
 }
 
 fn compatibility_hit_test_result_for_node(node &dom.Node, index_in_node int,
-	vertical_distance ?f64, horizontal_distance ?f64) dom.HitTestResult {
+	vertical_distance ?f64, horizontal_distance ?f64,
+	caret_rect ?dom.CSSPixelRect_) dom.HitTestResult {
 	return dom.HitTestResult{
 		element: compatibility_element_for_hit_node(node)
 		node: node
 		index_in_node: index_in_node
+		caret_rect: caret_rect
 		vertical_distance: vertical_distance
 		horizontal_distance: horizontal_distance
+	}
+}
+
+fn compatibility_caret_rect_for_fragment(box &BlockBox,
+	fragment painting.PaintableFragment, index_in_node int,
+	tree painting.AccumulatedVisualContextTree,
+	snapshot painting.ScrollStateSnapshot) dom.CSSPixelRect_ {
+	mut rect := fragment.range_rect(.start_and_end, index_in_node, index_in_node)
+	context_index := box.accumulated_visual_context_for_descendants_idx
+	if context_index != 0 {
+		rect = tree.transform_rect_to_viewport(context_index, rect, snapshot)
+	}
+	return dom.CSSPixelRect_{
+		x_: rect.x
+		y_: rect.y
+		width_: rect.width
+		height_: rect.height
 	}
 }
 
@@ -2676,7 +2695,7 @@ fn compatibility_empty_editable_hit_test(box &BlockBox, x f64, y f64,
 	if !box.border_box_contains_hit_test_point(local_position) {
 		return none
 	}
-	return compatibility_hit_test_result_for_node(dom_node, 0, f64(0), f64(0))
+	return compatibility_hit_test_result_for_node(dom_node, 0, f64(0), f64(0), none)
 }
 
 fn compatibility_text_cursor_common_ancestor_parent(document &dom.Document) ?&dom.Node {
@@ -2725,7 +2744,10 @@ fn compatibility_hit_test_fragments(document &dom.Document, box &BlockBox, x f64
 				} else {
 					0
 				}
-				candidate := compatibility_hit_test_result_for_node(dom_node, index_in_node, f64(0), f64(0))
+				caret_rect := compatibility_caret_rect_for_fragment(box,
+					fragment.paintable_fragment, index_in_node, tree, snapshot)
+				candidate := compatibility_hit_test_result_for_node(dom_node, index_in_node,
+					f64(0), f64(0), caret_rect)
 				if hit_test_state.consider_hit_test_result(candidate, type_) {
 					return true
 				}
@@ -2741,14 +2763,34 @@ fn compatibility_hit_test_fragments(document &dom.Document, box &BlockBox, x f64
 
 			mut candidate := ?dom.HitTestResult(none)
 			if fragment_rect.bottom() - 1 <= local_position.y {
-				candidate = compatibility_hit_test_result_for_node(dom_node, fragment.paintable_fragment.start_offset + fragment.paintable_fragment.length_in_code_units, local_position.y - fragment_rect.bottom(), none)
+				index_in_node := fragment.paintable_fragment.start_offset + fragment.paintable_fragment.length_in_code_units
+				caret_rect := compatibility_caret_rect_for_fragment(box,
+					fragment.paintable_fragment, index_in_node, tree, snapshot)
+				hit := compatibility_hit_test_result_for_node(dom_node, index_in_node,
+					local_position.y - fragment_rect.bottom(), none, caret_rect)
+				candidate = hit
 			} else if local_position.y < fragment_rect.top() {
-				candidate = compatibility_hit_test_result_for_node(dom_node, fragment.paintable_fragment.start_offset, fragment_rect.top() - local_position.y, none)
+				index_in_node := fragment.paintable_fragment.start_offset
+				caret_rect := compatibility_caret_rect_for_fragment(box,
+					fragment.paintable_fragment, index_in_node, tree, snapshot)
+				hit := compatibility_hit_test_result_for_node(dom_node, index_in_node,
+					fragment_rect.top() - local_position.y, none, caret_rect)
+				candidate = hit
 			} else if fragment_rect.top() <= local_position.y {
 				if local_position.x < fragment_rect.left() {
-					candidate = compatibility_hit_test_result_for_node(dom_node, fragment.paintable_fragment.start_offset, f64(0), fragment_rect.left() - local_position.x)
+					index_in_node := fragment.paintable_fragment.start_offset
+					caret_rect := compatibility_caret_rect_for_fragment(box,
+						fragment.paintable_fragment, index_in_node, tree, snapshot)
+					hit := compatibility_hit_test_result_for_node(dom_node, index_in_node,
+						f64(0), fragment_rect.left() - local_position.x, caret_rect)
+					candidate = hit
 				} else if local_position.x > fragment_rect.right() {
-					candidate = compatibility_hit_test_result_for_node(dom_node, fragment.paintable_fragment.start_offset + fragment.paintable_fragment.length_in_code_units, f64(0), local_position.x - fragment_rect.right())
+					index_in_node := fragment.paintable_fragment.start_offset + fragment.paintable_fragment.length_in_code_units
+					caret_rect := compatibility_caret_rect_for_fragment(box,
+						fragment.paintable_fragment, index_in_node, tree, snapshot)
+					hit := compatibility_hit_test_result_for_node(dom_node, index_in_node,
+						f64(0), local_position.x - fragment_rect.right(), caret_rect)
+					candidate = hit
 				}
 			}
 			if value := candidate {

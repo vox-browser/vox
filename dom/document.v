@@ -3525,6 +3525,7 @@ pub:
 	node                &Node = unsafe { nil }
 	chrome_widget_id    string
 	index_in_node       int
+	caret_rect          ?CSSPixelRect_
 	vertical_distance   ?f64
 	horizontal_distance ?f64
 }
@@ -4104,6 +4105,7 @@ pub enum UpdateLayoutReason {
 	child_document_style_update
 	cursor_line_navigation
 	debugging
+	document_caret_position_from_point
 	document_element_from_point
 	document_elements_from_point
 	document_find_matching_text
@@ -11236,6 +11238,7 @@ pub fn update_layout_reason_to_string(reason UpdateLayoutReason) string {
 		.child_document_style_update { 'ChildDocumentStyleUpdate' }
 		.cursor_line_navigation { 'CursorLineNavigation' }
 		.debugging { 'Debugging' }
+		.document_caret_position_from_point { 'DocumentCaretPositionFromPoint' }
 		.document_element_from_point { 'DocumentElementFromPoint' }
 		.document_elements_from_point { 'DocumentElementsFromPoint' }
 		.document_find_matching_text { 'DocumentFindMatchingText' }
