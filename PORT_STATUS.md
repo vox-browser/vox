@@ -348,6 +348,12 @@ The native browser bridge now replays live `Selection.selectAllChildren()`,
 DOM implementation; upstream's `first-letter-of-html-root-refcrash` reftest is
 an exact zero-pixel match.
 
+HTML image `x` and `y` geometry queries now resolve accumulated paint and
+hit-testing state only after finding committed layout geometry. Images without
+a box return zero before that work, avoiding stale paint-property resolution
+for disconnected and non-rendered elements. Focused tests observe both the
+committed-box resolution path and the no-box early return.
+
 CSS backface visibility now parses, computes, inherits, serializes, and
 interpolates through the typed property pipeline. The transform implementation
 retains full 4x4 matrices, builds explicit and synthetic 3D planes, bounds
@@ -417,7 +423,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
 | `Geolocation` | 4 | 643 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 57,043 | 14,558 | Complete |
+| `HTML` | 286 | 83,853 | 57,053 | 14,573 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
@@ -470,7 +476,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **349,943** | **71,022** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **349,953** | **71,037** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 

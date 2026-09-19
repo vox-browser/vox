@@ -106,12 +106,15 @@
   they keep their own display type and resolve font-relative lengths through
   the originating root element. The browser bridge replays live selection and
   `Range.surroundContents()` mutations used by the upstream crash reftest.
+- HTML image `x`/`y` geometry resolves accumulated paint state only after a
+  committed layout box is found; disconnected or `display:none` images return
+  zero without touching stale paint properties.
 
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-19, the module
-translations contain 349,943 implementation V LOC and 71,022 test V LOC.
+translations contain 349,953 implementation V LOC and 71,037 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -130,7 +133,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Fetch | 5,188 | FileAPI | 1,018 |
 | Fullscreen | 93 | GPC | 16 |
 | Gamepad | 760 | Geolocation | 416 |
-| Geometry | 2,062 | HTML | 57,043 |
+| Geometry | 2,062 | HTML | 57,053 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 854 |
 | IntersectionObserver | 569 | Layout | 43,180 |
@@ -157,7 +160,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **349,943** |  |  |
+| **Total** | **349,953** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
