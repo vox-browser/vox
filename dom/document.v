@@ -1342,6 +1342,7 @@ pub mut:
 	overflow_x_                                     CSSOverflow_ = .visible
 	visibility_                                     CSSVisibility_ = .visible
 	content_visibility_                             CSSContentVisibility_ = .visible
+	user_select_none_                               bool
 	needs_layout_update_                            bool
 	rendered_text_                                  string
 	rendered_text_chunks_                           []string

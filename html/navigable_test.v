@@ -341,7 +341,14 @@ fn test_navigable_sandbox_viewport_selection_observers_and_rendering() {
 	body := document.body() or { panic('missing body') }
 	mut body_node := unsafe { &dom.Node(body) }
 	mut visible_text_node := document.create_text_node('selected value').as_node()
-	visible_text_node.set_layout_node(&dom.LayoutNode{})
+	visible_text_node.set_layout_node(&dom.LayoutNode{
+		visual_lines_: [dom.VisualLine{
+			start_offset: 0
+			end_offset: 14
+			end_offset_with_trailing_whitespace: 14
+			has_fragments: true
+		}]
+	})
 	body_node.append_child(visible_text_node)!
 	model.select_all()
 	assert model.selected_text() == 'selected value'

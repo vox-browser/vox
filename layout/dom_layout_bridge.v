@@ -237,6 +237,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 	mut visibility := dom.CSSVisibility_.visible
 	mut content_visibility := dom.CSSContentVisibility_.visible
 	mut overflow_x := dom.CSSOverflow_.visible
+	user_select_none := box.user_select_used_value() == .none_
 	if styled := box.as_node_with_style() {
 		visibility = visibility_to_dom_for_layout(styled.computed_values().visibility())
 		content_visibility = content_visibility_to_dom_for_layout(styled.computed_values().content_visibility())
@@ -259,6 +260,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		overflow_x_: overflow_x
 		visibility_: visibility
 		content_visibility_: content_visibility
+		user_select_none_: user_select_none
 		layout_handle: voidptr(box)
 		apply_style_callback: apply_style_to_layout_node
 		set_needs_layout_update_callback: set_layout_node_needs_layout_update

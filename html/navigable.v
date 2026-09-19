@@ -10,6 +10,7 @@ module html
 
 import css
 import dom
+import editing
 import fetch
 import http
 import math
@@ -1724,7 +1725,7 @@ pub fn (model &NavigableModel) selected_text() string {
 		return form_text
 	}
 	range := selection.range() or { return '' }
-	return visible_text_in_range(range)
+	return editing.serialize_range_as_plain_text_for_clipboard(range)
 }
 
 pub fn (model &NavigableModel) cut_selected_text() string {
@@ -1736,42 +1737,6 @@ pub fn (model &NavigableModel) cut_selected_text() string {
 	}
 	target.handle_delete(dom.input_type_delete_by_cut)
 	return text
-}
-
-// This is Range stringification with DOM text nodes that have no corresponding
-// layout node omitted, matching what can actually be selected on screen.
-fn visible_text_in_range(range &dom.Range) string {
-	start_container := range.start_container()
-	end_container := range.end_container()
-	if start_container == end_container && start_container.is_text() {
-		if start_container.layout_node() == none {
-			return ''
-		}
-		text := start_container.character_data() or { return '' }
-		return text.substring_data(range.start_offset(), range.end_offset() - range.start_offset()) or {
-			''
-		}
-	}
-
-	mut result := ''
-	if start_container.is_text() && start_container.layout_node() != none {
-		text := start_container.character_data() or { return '' }
-		result += text.substring_data(range.start_offset(), text.length_in_utf16_code_units() - range.start_offset()) or {
-			''
-		}
-	}
-	for node in range.contained_nodes() {
-		if node.is_text() && node.layout_node() != none {
-			if text := node.character_data() {
-				result += text.data()
-			}
-		}
-	}
-	if end_container.is_text() && end_container.layout_node() != none {
-		text := end_container.character_data() or { return result }
-		result += text.substring_data(0, range.end_offset()) or { '' }
-	}
-	return result
 }
 
 pub fn (mut model NavigableModel) select_all() {

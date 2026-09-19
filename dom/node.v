@@ -1795,6 +1795,10 @@ pub fn (ln &LayoutNode) overflow_x() CSSOverflow_ {
 	return ln.overflow_x_
 }
 
+pub fn (ln &LayoutNode) user_select_is_none() bool {
+	return ln.user_select_none_
+}
+
 pub fn (ln &LayoutNode) real_layout_handle() voidptr {
 	return ln.layout_handle
 }
