@@ -102,6 +102,9 @@ only and block-containing fragments before insertion.
 Inserted-fragment tracking now retains its connected top-level nodes, nested
 text nodes, first and last structural extent, leading text shape, and terminal
 atomic content while replacement preparation moves or substitutes nodes.
+Independent mutation-tracked ranges now own replacement start and end points.
+Their endpoints follow ordinary DOM mutation and explicitly relocate across
+left-to-right and right-to-left text-node merges without range-order coupling.
 
 The refreshed current-tree semantic inventory reports 4,536 unmatched C++
 spellings. That is a structural review queue rather than a count of missing behaviors: active V
@@ -244,7 +247,7 @@ from the current-module totals.
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
 | `DOM` | 59 | 34,859 | 36,098 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
-| `Editing` | 26 | 12,720 | 4,382 | 796 | Complete |
+| `Editing` | 26 | 12,720 | 4,513 | 796 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
 | `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
@@ -256,7 +259,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
 | `Geolocation` | 4 | 643 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 56,528 | 12,538 | Complete |
+| `HTML` | 286 | 83,853 | 56,528 | 12,585 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
@@ -309,7 +312,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **344,261** | **68,547** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **344,392** | **68,594** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
