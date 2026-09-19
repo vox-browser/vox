@@ -227,6 +227,19 @@ fn test_shape_text_retains_but_does_not_paint_default_ignorables() {
 	assert !code_point_is_default_ignorable(u32(`A`))
 }
 
+fn test_harfbuzz_font_scale_clamps_before_integer_conversion() {
+	assert scale_for_harfbuzz(f32(100_000_000)) == 2147483647
+	assert scale_for_harfbuzz(f32(-100_000_000)) == -2147483648
+	assert scale_for_harfbuzz(f32(16)) == 1024
+	font := &Font{
+		family: 'sans-serif'
+		point_size: 100_000_000
+	}
+	run := shape_text(0, 0, 'AAAA', font, .ltr)
+	assert run.glyphs().len == 4
+	assert run.width() > 0
+}
+
 fn test_timer_state_and_single_shot_fire() {
 	mut timer := Timer.create_single_shot(10, no_op)
 	assert timer.interval() == 10

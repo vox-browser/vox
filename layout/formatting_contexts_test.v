@@ -1028,6 +1028,12 @@ fn test_intrinsic_width_keywords_relayout_content_under_constraints() {
 	assert flex.content_width().to_double() == 100
 }
 
+fn test_huge_font_size_min_content_measurement_is_clamped_before_shaping() {
+	document := html.parse_document('<!doctype html><div id="target" style="font-size:100000000px;width:min-content">AAAA</div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'target').content_width().to_double() > 0
+}
+
 fn test_intrinsic_min_and_max_width_constraints_clamp_used_width() {
 	document := html.parse_document('<!doctype html><style>
 		#maximum { width:400px; max-width:max-content }

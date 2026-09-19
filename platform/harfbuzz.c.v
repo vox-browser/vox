@@ -4,6 +4,7 @@
 
 module platform
 
+import math
 import os
 
 #pkgconfig harfbuzz
@@ -35,9 +36,10 @@ struct C.hb_glyph_position_t {
 }
 
 struct HarfBuzzScaledFont {
-	face  voidptr
-	scale int
-	font  voidptr
+	face       voidptr
+	scale      int
+	point_size f32
+	font       voidptr
 }
 
 fn C.hb_blob_create_from_file_or_fail(file_name &char) voidptr
@@ -306,9 +308,9 @@ fn resolve_font_path_for_family(family string, weight int) ?string {
 }
 
 fn scaled_harfbuzz_font(face voidptr, point_size f32) ?voidptr {
-	scale := int(point_size * harfbuzz_text_shaping_resolution)
+	scale := scale_for_harfbuzz(point_size)
 	for cached in harfbuzz_scaled_fonts {
-		if cached.face == face && cached.scale == scale {
+		if cached.face == face && cached.scale == scale && cached.point_size == point_size {
 			return cached.font
 		}
 	}
@@ -322,9 +324,24 @@ fn scaled_harfbuzz_font(face voidptr, point_size f32) ?voidptr {
 	harfbuzz_scaled_fonts << HarfBuzzScaledFont{
 		face: face
 		scale: scale
+		point_size: point_size
 		font: font
 	}
 	return font
+}
+
+fn scale_for_harfbuzz(point_size f32) int {
+	scaled_point_size := f64(point_size) * f64(harfbuzz_text_shaping_resolution)
+	if math.is_nan(scaled_point_size) {
+		return 0
+	}
+	if scaled_point_size >= f64(2147483647) {
+		return 2147483647
+	}
+	if scaled_point_size <= f64(-2147483648) {
+		return -2147483648
+	}
+	return int(scaled_point_size)
 }
 
 fn document_harfbuzz_face(font &Font) ?voidptr {
