@@ -194,6 +194,10 @@ state to `PageClient` so browser chrome can keep menu availability current.
 Live document-selection range mutations and form-control caret navigation now
 close an open typing unit, while selection changes made by the edit being
 recorded or by history replay remain coalesced.
+Contenteditable user edits now carry their UI input type through the live
+command bridge. Cut takes the backward-delete path, cut and paste remain
+standalone history units, and their trusted input events report
+`deleteByCut`/`insertFromPaste` with the corresponding nullable data.
 
 The refreshed current-tree semantic inventory reports 4,536 unmatched C++
 spellings. That is a structural review queue rather than a count of missing behaviors: active V
@@ -334,9 +338,9 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
-| `DOM` | 59 | 34,859 | 36,253 | 2,199 | Complete |
+| `DOM` | 59 | 34,859 | 36,256 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
-| `Editing` | 26 | 12,720 | 8,486 | 797 | Complete |
+| `Editing` | 26 | 12,720 | 8,510 | 797 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
 | `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
@@ -348,7 +352,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
 | `Geolocation` | 4 | 643 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 56,655 | 14,305 | Complete |
+| `HTML` | 286 | 83,853 | 56,655 | 14,391 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
@@ -401,7 +405,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **348,819** | **70,390** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **348,846** | **70,476** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
