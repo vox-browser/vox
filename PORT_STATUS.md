@@ -48,6 +48,9 @@ at most 64 additional sparse Skia CPU edge samples with a maximum channel error
 of 20. Exact comparisons remain exact. All 24 new cases pass this bounded
 workflow. The complete refresh run also covers the three default smoke cases
 and five modified SVG cases: all 32 invocations pass (31 distinct fixtures).
+The four CSS Scroll Snap initial-layout reftests also pass with exact zero-pixel
+diffs, covering mandatory and proximity selection plus horizontal, vertical-lr,
+and vertical-rl writing modes.
 
 The current base-to-head semantic delta audit reports 4,600 unmatched changed
 C++ spellings. That is a structural review queue rather than a count of missing behaviors: active V

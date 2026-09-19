@@ -642,7 +642,8 @@ initial-layout snapping, and remembered-area re-snapping for element and
 viewport scrollers. The compositor-side momentum-fling estimator preserves the
 upstream sample window, decay cutoff, geometric tail, and 1/64 CSS-pixel
 rounding. Focused tests cover these paths, and the combined DOM, HTML, Layout,
-and Painting run passes 197 of 197 tests.
+and Painting run passes 197 of 197 tests. All four upstream initial-layout
+Scroll Snap reftests are exact zero-pixel matches in the native V browser.
 
 ```text
 $ /Users/alex/code/v/v -enable-globals test painting
