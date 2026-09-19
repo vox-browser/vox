@@ -211,6 +211,9 @@ handling, and caret navigation. Page routes character/deletion keys and
 character, word, rendered-line, page, Home/End, Shift-extension, and macOS
 document-boundary movement to the focused form control or contenteditable host;
 textarea returns insert line breaks while input returns preserve form action.
+The platform Ctrl/Cmd+C, X, and V key combinations now enter the shared copy,
+cut, and asynchronous paste actions, preserving their clipboard event,
+representation filtering, newline normalization, and completion behavior.
 
 The refreshed current-tree semantic inventory reports 4,536 unmatched C++
 spellings. That is a structural review queue rather than a count of missing behaviors: active V
@@ -381,7 +384,7 @@ from the current-module totals.
 | `MixedContent` | 1 | 127 | 125 | 105 | Complete |
 | `NavigationTiming` | 4 | 497 | 291 | 45 | Complete |
 | `NotificationsAPI` | 1 | 301 | 290 | 68 | Complete |
-| `Page` | 8 | 6,450 | 2,936 | 835 | Complete |
+| `Page` | 8 | 6,450 | 2,945 | 858 | Complete |
 | `Painting` | 22 | 8,227 | 6,968 | 2,180 | Present |
 | `PerformanceTimeline` | 5 | 476 | 447 | 130 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
@@ -418,7 +421,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **349,337** | **70,685** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **349,346** | **70,708** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
