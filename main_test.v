@@ -85,6 +85,33 @@ fn test_javascript_bridge_resolves_detached_image_decode_promises() {
 	}
 }
 
+fn test_javascript_bridge_loads_object_images_after_data_property_changes() {
+	$if darwin {
+		mut document := html.parse_document('<!doctype html><style>object{display:block;width:100px;height:100px}</style><object id="target" type="image/png"></object>')
+		document.set_url(dom.URL{ value: 'https://example.test/' })
+		install_object_image_fetch_hooks(document)
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'https://example.test/', [
+			'target.addEventListener("load", () => console.log("loaded")); target.data="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";',
+		], runtime, mut messages)
+		assert messages == ['loaded']
+		element := document.get_element_by_id('target') or { panic('missing object') }
+		object_element := unsafe { &dom.HTMLObjectElement(element) }
+		model := html.html_object_element_model_for_dom_element(object_element)
+		assert model.representation() == .image
+		assert model.image_data()?.width == 1
+		assert model.image_data()?.height == 1
+
+		result := layout.run_document_layout(document, 100, 100) or { panic('missing layout') }
+		commands := result.paint_tree.paint_commands()
+		assert commands.any(it.kind == 'draw_replaced_image'), commands.map(it.kind).join(', ')
+	}
+}
+
 fn test_javascript_bridge_applies_image_source_replacements_before_relayout() {
 	$if darwin {
 		red := "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 1 1'%3E%3Crect width='1' height='1' fill='red'/%3E%3C/svg%3E"

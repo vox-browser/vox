@@ -252,6 +252,30 @@ fn available_html_image_natural_size(element &dom.Element) ?css.SizeWithAspectRa
 	return result
 }
 
+fn available_object_image_natural_size(element &dom.Element) ?css.SizeWithAspectRatio {
+	if !element.is_html_element() || element.local_name() != 'object' {
+		return none
+	}
+	object_element := unsafe { &dom.HTMLObjectElement(element) }
+	model := html.html_object_element_model_for_dom_element(object_element)
+	if !model.is_image_available() {
+		return none
+	}
+	mut result := css.SizeWithAspectRatio{}
+	if width := model.intrinsic_width() {
+		result.width = CSSPixels.nearest_value_for(width)
+	}
+	if height := model.intrinsic_height() {
+		result.height = CSSPixels.nearest_value_for(height)
+	}
+	if ratio := model.intrinsic_aspect_ratio() {
+		if ratio > 0 {
+			result.aspect_ratio = css.CSSPixelFraction.new(CSSPixels.nearest_value_for(ratio), CSSPixels.new(1))
+		}
+	}
+	return result
+}
+
 pub fn ImageBox.new(document &dom.Document, element &dom.Element, computed_values &css.ComputedProperties) &ImageBox {
 	alt := element.get_attribute_value('alt')
 	mut box := &ImageBox{
@@ -268,9 +292,18 @@ pub fn ImageBox.new(document &dom.Document, element &dom.Element, computed_value
 				source = current_source
 			}
 		}
+	} else if element.is_html_element() && element.local_name() == 'object' {
+		object_element := unsafe { &dom.HTMLObjectElement(element) }
+		model := html.html_object_element_model_for_dom_element(object_element)
+		if model.is_image_available() {
+			source = model.data()
+		}
 	}
 	box.source_ = source
 	if intrinsic_size := available_html_image_natural_size(element) {
+		box.renders_as_alt_text_ = false
+		box.natural_size_ = intrinsic_size
+	} else if intrinsic_size := available_object_image_natural_size(element) {
 		box.renders_as_alt_text_ = false
 		box.natural_size_ = intrinsic_size
 	} else if intrinsic_size := image_intrinsic_size_for_source(document, source) {
@@ -917,9 +950,16 @@ pub fn (mut box ImageBox) reset_for_relayout() {
 	if !box.uses_content_replacement_ {
 		if dom_node := box.dom_node() {
 			if element := dom_node.as_element() {
-				source = image_source_selected_from_attributes(element)
 				alt = element.get_attribute_value('alt')
-				provider_natural_size = available_html_image_natural_size(element)
+				if element.is_html_element() && element.local_name() == 'object' {
+					object_element := unsafe { &dom.HTMLObjectElement(element) }
+					model := html.html_object_element_model_for_dom_element(object_element)
+					source = model.data()
+					provider_natural_size = available_object_image_natural_size(element)
+				} else {
+					source = image_source_selected_from_attributes(element)
+					provider_natural_size = available_html_image_natural_size(element)
+				}
 				if provider_natural_size != none && element.as_node().is_html_image_element() {
 					image := unsafe { &dom.HTMLImageElement(element) }
 					current_source := html.html_image_element_current_src(image)

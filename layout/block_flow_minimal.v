@@ -397,6 +397,7 @@ pub mut:
 	replaced_image_position_y string
 	replaced_image_rendering  css.ImageRendering
 	replaced_image_paintable  ?painting.ImagePaintable
+	replaced_image_bitmap     ?&dom.Bitmap_
 	canvas_bitmap             ?&dom.Bitmap_
 	canvas_paintable          ?painting.CanvasPaintable
 	video_bitmap              ?&dom.Bitmap_
@@ -1532,7 +1533,8 @@ pub mut:
 	visual_context_index ?int
 	// ImagePaintable's retained, typed replaced-content geometry. Background
 	// images leave this empty and continue through BackgroundPainting.
-	image_paintable ?painting.ImagePaintable
+	image_paintable       ?painting.ImagePaintable
+	replaced_image_bitmap ?&dom.Bitmap_
 	// CanvasPaintable publishes its current RGBA surface as external content.
 	canvas_bitmap    ?&dom.Bitmap_
 	canvas_paintable ?painting.CanvasPaintable
@@ -2748,7 +2750,8 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 				}
 			}
 		}
-		if box.replaced_image_url != '' && !renders_replaced_image_as_alt_text
+		if (box.replaced_image_url != '' || box.replaced_image_bitmap != none)
+			&& !renders_replaced_image_as_alt_text
 			&& box.nested_viewport_document == none {
 			commands << PaintCommand{
 				kind: if box.replaced_image_paintable != none {
@@ -2766,6 +2769,7 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 				image_position_x: box.replaced_image_position_x
 				image_position_y: box.replaced_image_position_y
 				image_rendering: box.replaced_image_rendering
+				replaced_image_bitmap: box.replaced_image_bitmap
 				image_clip_x: box.x
 				image_clip_y: box.y
 				image_clip_width: box.width

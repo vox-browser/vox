@@ -3236,6 +3236,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	mut replaced_image_renders_as_alt_text := false
 	mut replaced_image_alt_text := ''
 	mut replaced_image_paintable := ?painting.ImagePaintable(none)
+	mut replaced_image_bitmap := ?&dom.Bitmap_(none)
 	mut canvas_bitmap := ?&dom.Bitmap_(none)
 	mut canvas_paintable := ?painting.CanvasPaintable(none)
 	mut video_bitmap := ?&dom.Bitmap_(none)
@@ -3459,6 +3460,13 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	}
 	if image_box := node.as_image_box() {
 		replaced_image_renders_as_alt_text = image_box.renders_as_alt_text()
+		if image_element := element {
+			if image_element.is_html_element() && image_element.local_name() == 'object' {
+				object_element := unsafe { &dom.HTMLObjectElement(image_element) }
+				model := html.html_object_element_model_for_dom_element(object_element)
+				replaced_image_bitmap = model.image_data()
+			}
+		}
 		if replaced_image_renders_as_alt_text {
 			if image_element := element {
 				replaced_image_alt_text = image_element.get_attribute_value('alt')
@@ -3821,6 +3829,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		replaced_image_position_y: replaced_image_position_y
 		replaced_image_rendering: computed.image_rendering()
 		replaced_image_paintable: replaced_image_paintable
+		replaced_image_bitmap: replaced_image_bitmap
 		canvas_bitmap: canvas_bitmap
 		canvas_paintable: canvas_paintable
 		video_bitmap: video_bitmap

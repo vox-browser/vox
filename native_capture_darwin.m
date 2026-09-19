@@ -4249,16 +4249,33 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 		return;
 	}
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	if (image->path.len == 0 && image->nr_channels == 4
-	    && ladybird_v_skia_draw_rgba_image(context, image->data, image->width,
-	        image->height, image->width * 4, destination_x, destination_y,
-	        destination_width, destination_height, source_x, source_y,
-	        source_width, source_height, clip_x, clip_y, clip_width,
-	        clip_height, transform_a, transform_b, transform_c, transform_d,
-	        transform_e, transform_f, page_x, page_y, scroll_y,
-	        canvas_width, canvas_height,
-	        opacity, nearest_neighbor)) {
-		return;
+	if (image->path.len == 0 && image->nr_channels == 4) {
+		size_t pitch = (size_t)image->width * 4;
+		size_t byte_count = (size_t)image->height <= SIZE_MAX / pitch
+		    ? pitch * (size_t)image->height
+		    : 0;
+		uint8_t *flipped_pixels = byte_count > 0 ? malloc(byte_count) : NULL;
+		if (flipped_pixels != NULL) {
+			// composite_pixels() publishes its first row through a Quartz image in
+			// bottom-up view coordinates. Reflect top-down decoded/canvas bitmap rows
+			// once before Skia so the final image remains in CSS y-down order.
+			for (int row = 0; row < image->height; ++row) {
+				memcpy(flipped_pixels + (size_t)row * pitch,
+				    (uint8_t const *)image->data
+				        + (size_t)(image->height - row - 1) * pitch,
+				    pitch);
+			}
+			int drawn = ladybird_v_skia_draw_rgba_image(context, flipped_pixels,
+			    image->width, image->height, (int)pitch, destination_x,
+			    destination_y, destination_width, destination_height, source_x,
+			    source_y, source_width, source_height, clip_x, clip_y, clip_width,
+			    clip_height, transform_a, transform_b, transform_c, transform_d,
+			    transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
+			    canvas_height, opacity, nearest_neighbor);
+			free(flipped_pixels);
+			if (drawn)
+				return;
+		}
 	}
 #endif
 	CGImageRef image_copy = native_copy_cg_image(image);
