@@ -49,7 +49,7 @@ of 20. Exact comparisons remain exact. All 24 new cases pass this bounded
 workflow. The complete refresh run also covers the three default smoke cases
 and five modified SVG cases: all 32 invocations pass (31 distinct fixtures).
 
-The current base-to-head semantic delta audit reports 4,612 unmatched changed
+The current base-to-head semantic delta audit reports 4,600 unmatched changed
 C++ spellings. That is a structural review queue rather than a count of missing behaviors: active V
 implementations often consolidate C++ class hierarchies and overloads under a
 single typed path. Empty/default-return implementations are checked separately,
@@ -262,8 +262,8 @@ quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 10
 reviewed upstream-equivalent trivial implementations: 534
 suspicious empty/default-return implementations: 21
-  candidate-name-match: 13847
-  unmatched: 4612
+  candidate-name-match: 13859
+  unmatched: 4600
   language-constructor-or-destructor: 1383
   gc-or-binding-runtime: 655
   consolidated-name-match: 488
@@ -274,9 +274,9 @@ suspicious empty/default-return implementations: 21
 
 largest unmatched modules:
 
-  1716 CSS
-  1261 HTML
-   639 DOM
+  1708 CSS
+  1259 HTML
+   637 DOM
    438 Painting
    316 Layout
    242 Editing
@@ -284,8 +284,8 @@ largest unmatched modules:
 $ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 788 passed, 301 failed, 1089 total
 
-$ /Users/alex/code/v/v -enable-globals test .
-Summary for all V _test.v files: 398 passed, 398 total.
+$ v -enable-globals test .
+Summary for all V _test.v files: 608 passed, 608 total.
 
 $ Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
 Ladybird V smoke check passed
