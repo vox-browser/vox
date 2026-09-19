@@ -2520,6 +2520,9 @@ CONSOLIDATED_METHOD_MAPPINGS.update({
 # type dispatch. Concrete URLs retain intrinsic metadata and resource loading;
 # gradients resolve only after Layout supplies their final tile size.
 CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("Element", "apply_presentational_hints"): (
+        ("collect_element_presentational_hints", None),
+    ),
     ("AbstractImageStyleValue", "natural_width"): (
         ("style_values_extra_image_natural_size", None),
     ),

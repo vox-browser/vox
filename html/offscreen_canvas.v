@@ -514,7 +514,7 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) clear_rect(x f64, y f64, 
 	for row := top; row < bottom; row++ {
 		for column := left; column < right; column++ {
 			point := FloatPoint{f64(column) + 0.5, f64(row) + 0.5}
-			if !canvas_point_is_inside_clip(context.drawing_state, point) || !canvas_point_in_path_internal(path, CanvasAffineTransform{}, point.x, point.y, 'evenodd') {
+			if !canvas_point_is_inside_clip(context.drawing_state, point) || !is_point_in_path_internal(path, CanvasAffineTransform{}, point.x, point.y, 'evenodd') {
 				continue
 			}
 			offset := row * mutable_bitmap.pitch + column * 4

@@ -330,7 +330,7 @@ fn canvas_winding_number(points []FloatPoint, point FloatPoint) int {
 	return winding_number
 }
 
-fn canvas_point_in_path_internal(path CanvasGfxPath, transform CanvasAffineTransform, x f64, y f64, fill_rule string) bool {
+fn is_point_in_path_internal(path CanvasGfxPath, transform CanvasAffineTransform, x f64, y f64, fill_rule string) bool {
 	mut point := FloatPoint{x, y}
 	if inverse := transform.inverse() {
 		point = inverse.map(point)
@@ -354,7 +354,7 @@ fn canvas_point_in_path_internal(path CanvasGfxPath, transform CanvasAffineTrans
 
 fn canvas_point_is_inside_clip(state DrawingState, point FloatPoint) bool {
 	for clip_path in state.clip_paths {
-		if !canvas_point_in_path_internal(clip_path.path, CanvasAffineTransform{}, point.x, point.y, clip_path.fill_rule) {
+		if !is_point_in_path_internal(clip_path.path, CanvasAffineTransform{}, point.x, point.y, clip_path.fill_rule) {
 			return false
 		}
 	}
@@ -498,7 +498,7 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_path_fill(path CanvasGf
 	for y := top; y < bottom; y++ {
 		for x := left; x < right; x++ {
 			point := FloatPoint{f64(x) + 0.5, f64(y) + 0.5}
-			if canvas_point_is_inside_clip(context.drawing_state, point) && canvas_point_in_path_internal(transformed_path, CanvasAffineTransform{}, point.x, point.y, fill_rule) {
+			if canvas_point_is_inside_clip(context.drawing_state, point) && is_point_in_path_internal(transformed_path, CanvasAffineTransform{}, point.x, point.y, fill_rule) {
 				canvas_composite_pixel(mut mutable_bitmap.data, y * mutable_bitmap.pitch + x * 4, color, context.drawing_state.global_alpha, context.drawing_state.current_compositing_and_blending_operator)
 			}
 		}
@@ -603,11 +603,11 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) clip_path(path &Path2D, f
 }
 
 pub fn (context &OffscreenCanvasRenderingContext2D) is_point_in_path(x f64, y f64, fill_rule string) bool {
-	return canvas_point_in_path_internal(context.CanvasPath.path(), context.drawing_state.transform, x, y, fill_rule)
+	return is_point_in_path_internal(context.CanvasPath.path(), context.drawing_state.transform, x, y, fill_rule)
 }
 
 pub fn (context &OffscreenCanvasRenderingContext2D) is_point_in_path_with_path(path &Path2D, x f64, y f64, fill_rule string) bool {
-	return canvas_point_in_path_internal(path.path(), context.drawing_state.transform, x, y, fill_rule)
+	return is_point_in_path_internal(path.path(), context.drawing_state.transform, x, y, fill_rule)
 }
 
 pub fn (context &OffscreenCanvasRenderingContext2D) prepare_text(text string, max_width f64) PreparedCanvasText {
