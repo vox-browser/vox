@@ -298,6 +298,76 @@ fn test_javascript_bridge_selects_text_before_selection_restyle() {
 	}
 }
 
+fn test_javascript_bridge_keeps_boundary_selection_live_across_node_insertion() {
+	$if darwin {
+		document := html.parse_document('<!doctype html><style>span::selection { background: lime; color: black; }</style><div id="selected"><span id="first">first</span><span id="last">last</span></div><div><span id="moved">middle</span></div>')
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'about:blank', [
+			'const range=document.createRange(); range.setStart(first.firstChild,0); range.setEnd(last.firstChild,4); getSelection().addRange(range); selected.getBoundingClientRect(); selected.insertBefore(moved,last); selected.getBoundingClientRect();',
+		], runtime, mut messages)
+		assert messages == []
+
+		selected := document.get_element_by_id('selected') or { panic('missing selected container') }
+		assert selected.as_node().children.len == 3
+		moved_child := selected.as_node().children[1].as_element() or {
+			panic('missing moved child')
+		}
+		assert moved_child.get_attribute_value('id') == 'moved'
+		selection := document.get_selection() or { panic('missing selection') }
+		range := selection.range() or { panic('missing range') }
+		first := document.get_element_by_id('first') or { panic('missing first') }
+		last := document.get_element_by_id('last') or { panic('missing last') }
+		assert voidptr(range.start_container()) == voidptr(first.as_node().first_child() or {
+			panic('missing first text')
+		})
+		assert voidptr(range.end_container()) == voidptr(last.as_node().first_child() or {
+			panic('missing last text')
+		})
+
+		layout.run_document_layout(document, 800, 600) or { panic('missing layout') }
+		mut mutable_document := unsafe { &dom.Document(document) }
+		commands := layout.display_list_commands(mutable_document.record_display_list() or {
+			panic('missing selected display list')
+		})
+		assert commands.any(it.kind == 'fill_rect' && it.color == 'rgb(0 255 0)')
+	}
+}
+
+fn test_javascript_bridge_moves_selection_after_css_rule_mutation() {
+	$if darwin {
+		document := html.parse_document('<!doctype html><style id="rules">span::selection { background: red; color: black; }</style><div><span id="first">first</span></div><div><span id="second">second</span></div>')
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'about:blank', [
+			'const selection=getSelection(); selection.selectAllChildren(first); first.getBoundingClientRect(); selection.removeAllRanges(); second.getBoundingClientRect(); rules.sheet.cssRules[0].style.backgroundColor="lime"; second.getBoundingClientRect(); selection.selectAllChildren(first); first.getBoundingClientRect(); selection.selectAllChildren(second); second.getBoundingClientRect();',
+		], runtime, mut messages)
+		assert messages == []
+
+		rules := document.get_element_by_id('rules') or { panic('missing style element') }
+		assert rules.as_node().text_content() or { '' }.contains('background-color: lime')
+		selection := document.get_selection() or { panic('missing selection') }
+		range := selection.range() or { panic('missing range') }
+		second := document.get_element_by_id('second') or { panic('missing second') }
+		assert voidptr(range.start_container()) == voidptr(second.as_node())
+		assert voidptr(range.end_container()) == voidptr(second.as_node())
+
+		layout.run_document_layout(document, 800, 600) or { panic('missing layout') }
+		mut mutable_document := unsafe { &dom.Document(document) }
+		commands := layout.display_list_commands(mutable_document.record_display_list() or {
+			panic('missing selected display list')
+		})
+		assert commands.any(it.kind == 'fill_rect' && it.color == 'rgb(0 255 0)')
+		assert !commands.any(it.kind == 'fill_rect' && it.color == 'rgb(255 0 0)')
+	}
+}
+
 fn test_javascript_bridge_replays_live_range_surround_contents() {
 	$if darwin {
 		document := html.parse_document('<!doctype html><title>test</title><style id="sheet">html::first-letter { font-size: initial }</style>FAIL')
