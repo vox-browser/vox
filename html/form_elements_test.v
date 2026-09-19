@@ -119,13 +119,19 @@ fn test_document_active_input_events_target_uses_focused_form_text_control() {
 	assert document.active_input_events_target(none) == none
 
 	textarea_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'textarea')!
-	textarea := HTMLTextAreaElementModel.create(unsafe { &dom.HTMLTextAreaElement(textarea_element) })
+	mut textarea := HTMLTextAreaElementModel.create(unsafe { &dom.HTMLTextAreaElement(textarea_element) })
+	textarea.create_shadow_tree_if_needed()
+	textarea.set_value('Ladybird')
+	textarea.text.set_selection_range(2, 4, 'forward')!
 	document.set_focused_area(textarea_element.as_node())
 	target = document.active_input_events_target(none) or {
 		assert false, 'focused textarea did not expose its InputEventsTarget'
 		return
 	}
 	assert voidptr(target) == voidptr(textarea.text)
+	target.select_all()
+	assert textarea.text.selection_start() == 0
+	assert textarea.text.selection_end() == 8
 }
 
 fn test_document_cursor_position_and_blink_timer_use_form_text_control() {

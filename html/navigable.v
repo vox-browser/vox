@@ -1752,9 +1752,12 @@ pub fn (model &NavigableModel) cut_selected_text() string {
 pub fn (mut model NavigableModel) select_all() {
 	document := model.active_document() or { return }
 	selection := document.get_selection() or { return }
-	body := document.body() or { return }
-	mut mutable_selection := unsafe { &dom.Selection(selection) }
-	mutable_selection.select_all_children(unsafe { &dom.Node(body) }) or {}
+	if target := document.active_input_events_target(none) {
+		target.select_all()
+	} else if body := document.body() {
+		mut mutable_selection := unsafe { &dom.Selection(selection) }
+		mutable_selection.select_all_children(unsafe { &dom.Node(body) }) or {}
+	}
 }
 
 pub fn (mut model NavigableModel) paste(text string) {

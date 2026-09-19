@@ -3932,6 +3932,11 @@ fn editing_host_manager_handle_delete_callback(target voidptr, input_type string
 	manager.handle_delete(input_type)
 }
 
+fn editing_host_manager_select_all_callback(target voidptr) {
+	mut manager := unsafe { &EditingHostManager(target) }
+	manager.select_all()
+}
+
 pub fn EditingHostManager.create(mut document Document) &EditingHostManager {
 	mut manager := &EditingHostManager{
 		document_: document
@@ -3939,6 +3944,7 @@ pub fn EditingHostManager.create(mut document Document) &EditingHostManager {
 	manager.InputEventsTarget = InputEventsTarget{
 		target: voidptr(manager)
 		handle_delete_callback: editing_host_manager_handle_delete_callback
+		select_all_callback: editing_host_manager_select_all_callback
 	}
 	return manager
 }
@@ -3967,10 +3973,8 @@ pub fn (mut manager EditingHostManager) select_all() {
 		return
 	}
 	mut document := unsafe { &Document(manager.document_) }
-	mut selection := document.get_selection() or { return }
-	anchor := selection.anchor_node() or { return }
-	focus := selection.focus_node() or { return }
-	selection.set_base_and_extent(anchor, 0, focus, focus.length()) or {}
+	selection := document.get_selection() or { return }
+	SelectionModifier.new(selection).select_all()
 }
 
 pub fn (mut manager EditingHostManager) set_selection_anchor(anchor_node &Node, anchor_offset int) {

@@ -580,6 +580,11 @@ fn form_associated_text_control_handle_delete(target voidptr, input_type string)
 	text.handle_delete(input_type) or {}
 }
 
+fn form_associated_text_control_select_all(target voidptr) {
+	mut text := unsafe { &FormAssociatedTextControlElement(target) }
+	text.select_all()
+}
+
 fn form_associated_text_control_selection(target voidptr) dom.TextControlSelectionSnapshot {
 	text := unsafe { &FormAssociatedTextControlElement(target) }
 	return dom.TextControlSelectionSnapshot{
@@ -625,6 +630,7 @@ pub fn FormAssociatedTextControlElement.create(control &FormAssociatedElement, v
 		target: voidptr(text)
 		cursor_position_callback: form_associated_text_control_cursor_position
 		handle_delete_callback: form_associated_text_control_handle_delete
+		select_all_callback: form_associated_text_control_select_all
 		selection_callback: form_associated_text_control_selection
 		set_selection_callback: form_associated_text_control_set_selection
 		relevant_value_callback: form_associated_text_control_relevant_value

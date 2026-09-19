@@ -205,6 +205,32 @@ fn test_selection_modifier_applies_one_cross_node_mutation_and_select_all() {
 	assert selection.focus_offset() == second.length()
 }
 
+fn test_editing_host_input_target_selects_to_document_boundaries() {
+	document, host := selection_test_editing_host()
+	mut mutable_document := unsafe { &Document(document) }
+	mutable_document.set_browsing_context(&BrowsingContext{
+		active_document_: document
+	})
+	first := document.create_text_node('one ')
+	second := document.create_text_node('two')
+	mut host_node := host.as_node()
+	host_node.append_child(first.as_node()) or { panic(err) }
+	host_node.append_child(second.as_node()) or { panic(err) }
+	attach_selection_test_line(first.as_node(), 1)
+	attach_selection_test_line(second.as_node(), 1)
+	selection_pointer := document.get_selection() or { panic('missing document selection') }
+	mut selection := unsafe { &Selection(selection_pointer) }
+	selection.collapse(second.as_node(), 1) or { panic(err) }
+	mut manager := document.editing_host_manager()
+	manager.set_active_contenteditable_element(host.as_node())
+	input_target := unsafe { &InputEventsTarget(manager) }
+	input_target.select_all()
+	assert selection.anchor_node()? == first.as_node()
+	assert selection.anchor_offset() == 0
+	assert selection.focus_node()? == second.as_node()
+	assert selection.focus_offset() == second.length()
+}
+
 fn test_word_segment_kinds_and_line_boundaries() {
 	assert word_segment_kind(' ') == .separator
 	assert word_segment_kind('!') == .punctuation

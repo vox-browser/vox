@@ -149,6 +149,28 @@ fn test_page_history_shortcuts_and_client_state_follow_editing_history() {
 	assert !can_redo_after_redo
 }
 
+fn test_page_select_all_shortcut_selects_the_active_document_body() {
+	mut model := Page.create(1.0)!
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{
+		active_document_: document
+	})
+	document.populate_with_html_head_and_body()!
+	body := document.body() or { panic('missing body') }
+	text := document.create_text_node('Ladybird')
+	mut body_node := unsafe { &dom.Node(body) }
+	body_node.append_child(text.as_node())!
+	mut navigable := &dom.Navigable{
+		is_top_level_traversable_: true
+	}
+	navigable.set_active_document(document)
+	model.set_local_root_navigable(navigable)!
+
+	assert model.handle_keydown(int(`A`), platform_control_modifier(), 0, false) == .handled
+	selection := document.get_selection() or { panic('missing selection') }
+	assert selection.to_string() == 'Ladybird'
+}
+
 fn test_context_menu_request_is_replaced_and_taken_once() {
 	mut model := Page.create(1.0)!
 	mut document := dom.Document.create_for_fragment_parsing()

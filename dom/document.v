@@ -2622,6 +2622,8 @@ pub type InputEventsTargetCursorPositionCallback = fn (voidptr) ?&Position
 
 pub type InputEventsTargetHandleDeleteCallback = fn (voidptr, string)
 
+pub type InputEventsTargetSelectAllCallback = fn (voidptr)
+
 pub enum TextControlSelectionDirection {
 	forward
 	backward
@@ -2649,6 +2651,7 @@ pub:
 	target                   voidptr = unsafe { nil }
 	cursor_position_callback InputEventsTargetCursorPositionCallback = unsafe { nil }
 	handle_delete_callback   InputEventsTargetHandleDeleteCallback = unsafe { nil }
+	select_all_callback      InputEventsTargetSelectAllCallback = unsafe { nil }
 	selection_callback       InputEventsTargetSelectionCallback = unsafe { nil }
 	set_selection_callback   InputEventsTargetSetSelectionCallback = unsafe { nil }
 	relevant_value_callback  InputEventsTargetRelevantValueCallback = unsafe { nil }
@@ -2667,6 +2670,13 @@ pub fn (target &InputEventsTarget) handle_delete(input_type string) {
 		return
 	}
 	target.handle_delete_callback(target.target, input_type)
+}
+
+pub fn (target &InputEventsTarget) select_all() {
+	if target.target == unsafe { nil } || target.select_all_callback == unsafe { nil } {
+		return
+	}
+	target.select_all_callback(target.target)
 }
 
 pub fn (target &InputEventsTarget) text_control_selection() ?TextControlSelectionSnapshot {

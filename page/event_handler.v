@@ -14,6 +14,8 @@ pub type ChromeWidgetHoverCallback = fn (voidptr, string, bool)
 
 pub type HistoryActionCallback = fn (voidptr, bool) EventResult
 
+pub type SelectAllCallback = fn (voidptr) EventResult
+
 pub enum SelectionMode {
 	none
 	character
@@ -134,11 +136,18 @@ mut:
 	primary_paste_enabled_               bool = true
 	history_action_target_               voidptr = unsafe { nil }
 	history_action_callback_             HistoryActionCallback = unsafe { nil }
+	select_all_target_                   voidptr = unsafe { nil }
+	select_all_callback_                 SelectAllCallback = unsafe { nil }
 }
 
 pub fn (mut handler EventHandler) set_history_action_callback(target voidptr, callback HistoryActionCallback) {
 	handler.history_action_target_ = target
 	handler.history_action_callback_ = callback
+}
+
+pub fn (mut handler EventHandler) set_select_all_callback(target voidptr, callback SelectAllCallback) {
+	handler.select_all_target_ = target
+	handler.select_all_callback_ = callback
 }
 
 fn platform_control_modifier() u32 {
@@ -155,6 +164,14 @@ fn (mut handler EventHandler) perform_history_shortcut(redo bool) EventResult {
 		return .handled
 	}
 	return handler.history_action_callback_(handler.history_action_target_, redo)
+}
+
+fn (mut handler EventHandler) perform_select_all_shortcut() EventResult {
+	if handler.select_all_target_ == unsafe { nil }
+		|| handler.select_all_callback_ == unsafe { nil } {
+		return .handled
+	}
+	return handler.select_all_callback_(handler.select_all_target_)
 }
 
 pub fn (mut handler EventHandler) set_document_state(active bool, has_paint_root bool) {
@@ -450,6 +467,9 @@ pub fn (mut handler EventHandler) handle_keydown(key int, code_point u32, modifi
 	}
 	platform_control := platform_control_modifier()
 	if modifiers & platform_control != 0 && modifiers & dom.modifier_alt == 0 {
+		if key == int(`A`) && modifiers & dom.modifier_shift == 0 {
+			return handler.perform_select_all_shortcut()
+		}
 		if key == int(`Z`) && modifiers & dom.modifier_shift == 0 {
 			return handler.perform_history_shortcut(false)
 		}

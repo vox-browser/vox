@@ -403,6 +403,11 @@ fn test_navigable_cut_returns_and_deletes_focused_text_control_selection() {
 	textarea.text.set_selection_range(1, 5, 'forward')!
 	document.set_focused_area(textarea_element.as_node())
 	assert model.selected_text() == 'adyb'
+	model.select_all()
+	assert textarea.text.selection_start() == 0
+	assert textarea.text.selection_end() == 8
+	assert model.selected_text() == 'Ladybird'
+	textarea.text.set_selection_range(1, 5, 'forward')!
 	assert model.cut_selected_text() == 'adyb'
 	assert textarea.value() == 'Lird'
 	assert textarea.text.selection_start() == 1

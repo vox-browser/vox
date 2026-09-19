@@ -292,6 +292,20 @@ fn page_history_action_callback(target voidptr, redo bool) EventResult {
 	return if result == .handled { .handled } else { .dropped }
 }
 
+fn page_select_all_callback(target voidptr) EventResult {
+	model := unsafe { &Page(target) }
+	root := model.local_root_navigable_ or { return .dropped }
+	document := root.active_document() or { return .dropped }
+	selection := document.get_selection() or { return .dropped }
+	if input_target := document.active_input_events_target(none) {
+		input_target.select_all()
+	} else if body := document.body() {
+		mut mutable_selection := unsafe { &dom.Selection(selection) }
+		mutable_selection.select_all_children(unsafe { &dom.Node(body) }) or { return .dropped }
+	}
+	return .handled
+}
+
 pub fn Page.create(device_scale f64) !&Page {
 	if device_scale <= 0 || math.is_nan(device_scale) || math.is_inf(device_scale, 0) {
 		return error('device pixel scale must be finite and positive')
@@ -302,6 +316,7 @@ pub fn Page.create(device_scale f64) !&Page {
 	model.client_.history_executor_ = model.history_executor_
 	model.event_handler.client_ = model.client_
 	model.event_handler.set_history_action_callback(voidptr(model), page_history_action_callback)
+	model.event_handler.set_select_all_callback(voidptr(model), page_select_all_callback)
 	model.Page = dom.Page{
 		target: voidptr(model)
 		did_create_document_callback: page_did_create_document_callback
