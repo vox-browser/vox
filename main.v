@@ -1273,6 +1273,7 @@ fn javascript_initial_state(document &dom.Document, current_url string, scripts 
 			'className':    json2.Any(element.get_attribute_value('class'))
 			'styleText':    json2.Any(element.get_attribute_value('style'))
 			'onclick':      json2.Any(element.get_attribute_value('onclick'))
+			'hasChildren':  json2.Any(element.as_node().has_children())
 		}
 		if element.local_name() == 'video' {
 			video := unsafe { &dom.HTMLVideoElement(element) }
@@ -1359,14 +1360,14 @@ fn javascript_program(state map[string]json2.Any, scripts []string) string {
 		'function __canvasContext(s) { const c=__canvasFor(s); if(c.context)return c.context; const target={fillRect:function(x,y,w,h){s.canvasVideoSource="";__canvasFill(c,+x,+y,+w,+h,__canvasColor(c.fillStyle));},clearRect:function(x,y,w,h){s.canvasVideoSource="";__canvasFill(c,+x,+y,+w,+h,[0,0,0,0]);},drawImage:function(source){if(!source||!source.__state)throw new TypeError("Unsupported CanvasImageSource");const sourceState=source.__state;const image=sourceState.tagName==="canvas"?__canvasFor(sourceState):sourceState.tagName==="video"?__videoFor(sourceState):null;if(!image)throw new TypeError("Unsupported CanvasImageSource");const args=Array.prototype.slice.call(arguments,1);__canvasDraw(c,image,args);s.canvasVideoSource=sourceState.tagName==="video"&&args.length===2&&+args[0]===0&&+args[1]===0&&c.width===image.width&&c.height===image.height?sourceState.id:"";}}; c.context=new Proxy(target,{get:function(o,p){return p==="fillStyle"?c.fillStyle:o[p];},set:function(o,p,v){if(p==="fillStyle"){c.fillStyle=String(v);return true;}o[p]=v;return true;}}); return c.context; }',
 		'function __element(s) {',
 		'  if (!s.__object) {',
-		'    const o = { getAttribute: function (n) { n=__attributeName(s,n); return Object.prototype.hasOwnProperty.call(s.attributes,n)?s.attributes[n]:null; }, hasAttribute: function(n){return Object.prototype.hasOwnProperty.call(s.attributes,__attributeName(s,n));}, setAttribute: function (n, v) { if(__attributeName(s,n)==="src")__setElementSource(s,v);else __setAttribute(s,n,v); }, removeAttribute:function(n){__removeAttribute(s,n);}, addEventListener: function (n, f) { (__listeners[__listenerKey(s, n)] ||= []).push(f); if(s.tagName==="video"&&s.readyState>=2&&(n==="loadeddata"||n==="seeked"))f.call(this,{type:n,target:this}); if(s.tagName==="img"&&s.complete&&n==="load")f.call(this,{type:n,target:this}); }, append: function (child) { return this.appendChild(child); }, appendChild: function (child) { const c=child&&child.__state; if(c)__state.operations.push({op:"appendCreated",target:s.bridgeKey,child:c}); return child; }, moveBefore:function(child,reference){const c=child&&child.__state,r=reference&&reference.__state;if(c)__state.operations.push({op:"moveBefore",target:s.bridgeKey,child:c.bridgeKey,reference:r?r.bridgeKey:""});}, animate:function(keyframes){const frames=Array.isArray(keyframes)?keyframes:[keyframes];const finalFrame=frames.length?frames[frames.length-1]:{};for(const name of Object.keys(finalFrame||{}))__setAttribute(s,__styleName(name),finalFrame[name]);return{finished:Promise.resolve()};}, decode:function(){return s.tagName==="img"?Promise.resolve():Promise.reject(new Error("InvalidStateError"));}, getContext: function(kind) { return s.tagName === "canvas" && String(kind).toLowerCase() === "2d" ? __canvasContext(s) : null; }, getStartDate:function(){return new Date(s.startDateValid?+s.startDate:NaN);}, play:function(){return Promise.resolve();} };',
-		'    Object.defineProperties(o, { id: { get: function () { return s.id; }, set:function(v){__setAttribute(s,"id",v);} }, textContent: { get: function () { return s.textContent; }, set: function (v) { s.textContent = String(v); s.innerHTML = ""; } }, innerHTML: { get: function () { return s.innerHTML; }, set: function (v) { s.innerHTML = String(v); } }, className: { get: function () { return s.className; }, set: function (v) { __setAttribute(s,"class",v); } }, width:{get:function(){return __canvasDimension(s,"width");},set:function(v){s.width=String(Math.max(0,Math.trunc(+v||0)));__setAttribute(s,"width",s.width);if(s.tagName==="canvas")__canvasFor(s);}}, height:{get:function(){return __canvasDimension(s,"height");},set:function(v){s.height=String(Math.max(0,Math.trunc(+v||0)));__setAttribute(s,"height",s.height);if(s.tagName==="canvas")__canvasFor(s);}}, complete:{get:function(){return !!s.complete;}}, readyState:{get:function(){return +s.readyState||0;}}, videoWidth:{get:function(){return +s.videoWidth||0;}}, videoHeight:{get:function(){return +s.videoHeight||0;}}, currentTime:{get:function(){return +s.currentTime||0;},set:function(v){s.currentTime=+v||0;}}, src:{get:function(){return s.src||"";},set:function(v){__setElementSource(s,v);}} });',
+		'    const o = { getAttribute: function (n) { n=__attributeName(s,n); return Object.prototype.hasOwnProperty.call(s.attributes,n)?s.attributes[n]:null; }, hasAttribute: function(n){return Object.prototype.hasOwnProperty.call(s.attributes,__attributeName(s,n));}, setAttribute: function (n, v) { if(__attributeName(s,n)==="src")__setElementSource(s,v);else __setAttribute(s,n,v); }, removeAttribute:function(n){__removeAttribute(s,n);}, addEventListener: function (n, f) { (__listeners[__listenerKey(s, n)] ||= []).push(f); if(s.tagName==="video"&&s.readyState>=2&&(n==="loadeddata"||n==="seeked"))f.call(this,{type:n,target:this}); if(s.tagName==="img"&&s.complete&&n==="load")f.call(this,{type:n,target:this}); }, append: function (child) { return this.appendChild(child); }, appendChild: function (child) { const c=child&&child.__state; if(!c)return child; if(s.tagName==="#document-fragment"){s.children.push(c);s.hasChildren=true;}else{__state.operations.push({op:"appendCreated",target:s.bridgeKey,child:c});s.hasChildren=true;} return child; }, insertBefore:function(child,reference){const c=child&&child.__state,r=reference&&reference.__state;if(c){__state.operations.push({op:"insertCreated",target:s.bridgeKey,child:c,reference:r?r.bridgeKey:"",referenceFirstChild:!!(reference&&reference.__firstChildOf===s.bridgeKey)});s.hasChildren=true;}return child;}, moveBefore:function(child,reference){const c=child&&child.__state,r=reference&&reference.__state;if(c)__state.operations.push({op:"moveBefore",target:s.bridgeKey,child:c.bridgeKey,reference:r?r.bridgeKey:""});}, animate:function(keyframes){const frames=Array.isArray(keyframes)?keyframes:[keyframes];const finalFrame=frames.length?frames[frames.length-1]:{};for(const name of Object.keys(finalFrame||{}))__setAttribute(s,__styleName(name),finalFrame[name]);return{finished:Promise.resolve()};}, decode:function(){return s.tagName==="img"?Promise.resolve():Promise.reject(new Error("InvalidStateError"));}, getContext: function(kind) { return s.tagName === "canvas" && String(kind).toLowerCase() === "2d" ? __canvasContext(s) : null; }, getStartDate:function(){return new Date(s.startDateValid?+s.startDate:NaN);}, play:function(){return Promise.resolve();} };',
+		'    Object.defineProperties(o, { id: { get: function () { return s.id; }, set:function(v){__setAttribute(s,"id",v);} }, firstChild:{get:function(){if(s.tagName==="#document-fragment")return s.children.length?__element(s.children[0]):null;return s.hasChildren?{__firstChildOf:s.bridgeKey}:null;}}, textContent: { get: function () { return s.textContent; }, set: function (v) { s.textContent = String(v); s.innerHTML = ""; } }, innerHTML: { get: function () { return s.innerHTML; }, set: function (v) { s.innerHTML = String(v); } }, className: { get: function () { return s.className; }, set: function (v) { __setAttribute(s,"class",v); } }, width:{get:function(){return __canvasDimension(s,"width");},set:function(v){s.width=String(Math.max(0,Math.trunc(+v||0)));__setAttribute(s,"width",s.width);if(s.tagName==="canvas")__canvasFor(s);}}, height:{get:function(){return __canvasDimension(s,"height");},set:function(v){s.height=String(Math.max(0,Math.trunc(+v||0)));__setAttribute(s,"height",s.height);if(s.tagName==="canvas")__canvasFor(s);}}, complete:{get:function(){return !!s.complete;}}, readyState:{get:function(){return +s.readyState||0;}}, videoWidth:{get:function(){return +s.videoWidth||0;}}, videoHeight:{get:function(){return +s.videoHeight||0;}}, currentTime:{get:function(){return +s.currentTime||0;},set:function(v){s.currentTime=+v||0;}}, src:{get:function(){return s.src||"";},set:function(v){__setElementSource(s,v);}} });',
 		'    o.style = __styleProxy(s); o.classList = __classList(s); Object.defineProperty(o,"__state",{value:s}); Object.defineProperty(s, "__object", { value: o, writable: true, configurable: true });',
 		'  } return s.__object;',
 		'}',
-		'let __createdElementCount=0; function __createElement(namespaceURI,name){const key="__created_"+(++__createdElementCount),s={created:true,bridgeKey:key,elementIndex:1000000000+__createdElementCount,namespaceURI:String(namespaceURI||"http://www.w3.org/1999/xhtml"),tagName:String(name),id:"",src:"",width:"",height:"",textContent:"",innerHTML:"",className:"",styleText:"",onclick:"",attributes:{}};__state.elements[key]=s;return __element(s);}',
+		'let __createdElementCount=0; function __createElement(namespaceURI,name){const key="__created_"+(++__createdElementCount),s={created:true,bridgeKey:key,elementIndex:1000000000+__createdElementCount,namespaceURI:String(namespaceURI||"http://www.w3.org/1999/xhtml"),tagName:String(name),id:"",src:"",width:"",height:"",textContent:"",innerHTML:"",className:"",styleText:"",onclick:"",attributes:{},hasChildren:false,children:[]};__state.elements[key]=s;return __element(s);}',
 		'function __matches(s,q){q=String(q||"").trim();if(!q)return false;if(q[0]==="#")return s.id===q.slice(1);return s.tagName.toLowerCase()===q.toLowerCase();}',
-		'const document = { getElementById: function (id) { const s=__elementStates().find(function(item){return item.id===String(id);}); return s ? __element(s) : null; }, getElementsByTagName: function(name) { const tag=String(name).toLowerCase(); return __elementStates().filter(function(s){return tag==="*"||s.tagName.toLowerCase()===tag;}).map(__element); }, querySelector: function (q) { const s=__elementStates().find(function(item){return __matches(item,q);});return s?__element(s):null; }, addEventListener: function (n, f) { (__listeners[__listenerKey(null, n)] ||= []).push(f); }, createElement: function (name) { return __createElement("http://www.w3.org/1999/xhtml",String(name).toLowerCase()); }, createElementNS:function(namespaceURI,name){return __createElement(namespaceURI,name);}, createTextNode: function(text) { return {__state:{tagName:"#text",textContent:String(text)}}; } };',
+		'const document = { getElementById: function (id) { const s=__elementStates().find(function(item){return item.id===String(id);}); return s ? __element(s) : null; }, getElementsByTagName: function(name) { const tag=String(name).toLowerCase(); return __elementStates().filter(function(s){return tag==="*"||s.tagName.toLowerCase()===tag;}).map(__element); }, querySelector: function (q) { const s=__elementStates().find(function(item){return __matches(item,q);});return s?__element(s):null; }, addEventListener: function (n, f) { (__listeners[__listenerKey(null, n)] ||= []).push(f); }, createElement: function (name) { return __createElement("http://www.w3.org/1999/xhtml",String(name).toLowerCase()); }, createElementNS:function(namespaceURI,name){return __createElement(namespaceURI,name);}, createDocumentFragment:function(){return __createElement("","#document-fragment");}, createTextNode: function(text) { return {__state:{tagName:"#text",textContent:String(text)}}; } };',
 		'Object.defineProperty(document, "title", { get: function () { return __state.title; }, set: function (v) { __state.title = String(v); } });',
 		'document.documentElement={classList:{add:function(){},remove:function(){},contains:function(){return false;}}}; document.body = {appendChild:function(child){return child;}}; Object.defineProperties(document.body, { innerHTML: { get: function () { return __state.bodyHTML; }, set: function (v) { __state.bodyHTML = String(v); __state.bodyHTMLDirty = true; __state.bodyTextDirty = false; } }, textContent: { get: function () { return __state.bodyText; }, set: function (v) { __state.bodyText = String(v); __state.bodyHTML = ""; __state.bodyTextDirty = true; __state.bodyHTMLDirty = false; } } });',
 		'const console = { log: function () { __state.logs.push(Array.prototype.map.call(arguments, String).join(" ")); }, warn: function () { this.log.apply(this, arguments); }, error: function () { this.log.apply(this, arguments); } };',
@@ -1451,6 +1452,56 @@ fn apply_javascript_element_attribute(mut element dom.Element, name string, valu
 		node.set_needs_layout_update(.html_image_element_update_the_image_data)
 		node.set_needs_repaint(.yes)
 	}
+}
+
+fn javascript_created_node(document &dom.Document, state map[string]json2.Any, mut element_by_bridge_key map[string]&dom.Element) ?&dom.Node {
+	tag_name := json_string_property(state, 'tagName') or { return none }
+	if tag_name == '#text' {
+		return document.create_text_node(json_string_property(state, 'textContent') or { '' }).as_node()
+	}
+	if tag_name == '#document-fragment' {
+		fragment := document.create_document_fragment()
+		mut fragment_node := unsafe { &dom.Node(fragment) }
+		if child_values := state['children'] {
+			if child_values is []json2.Any {
+				for child_value in child_values as []json2.Any {
+					if child_value !is map[string]json2.Any {
+						continue
+					}
+					if child := javascript_created_node(document, child_value as map[string]json2.Any, mut element_by_bridge_key) {
+						fragment_node.append_child(child) or {}
+					}
+				}
+			}
+		}
+		return fragment.as_node()
+	}
+	if tag_name == '' {
+		return none
+	}
+	namespace_uri := json_string_property(state, 'namespaceURI') or {
+		'http://www.w3.org/1999/xhtml'
+	}
+	mut element := document.create_element_ns(namespace_uri, tag_name) or { return none }
+	if attribute_values := state['attributes'] {
+		if attribute_values is map[string]json2.Any {
+			for name, attribute_value in attribute_values as map[string]json2.Any {
+				if attribute_value is string {
+					element.set_attribute_value(name, attribute_value)
+				}
+			}
+		}
+	}
+	if text := json_string_property(state, 'textContent') {
+		if text != '' {
+			mut element_node := unsafe { &dom.Node(element) }
+			element_node.set_text_content(text) or {}
+		}
+	}
+	if bridge_key := json_string_property(state, 'bridgeKey') {
+		element_by_bridge_key[bridge_key] = element
+	}
+	return element.as_node()
 }
 
 fn apply_javascript_state(document &dom.Document, encoded string, mut messages []string) ?string {
@@ -1598,35 +1649,28 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 					if child_value !is map[string]json2.Any {
 						continue
 					}
-					child_state := child_value as map[string]json2.Any
-					tag_name := json_string_property(child_state, 'tagName') or { 'div' }
-					if tag_name == '' || tag_name == '#text' {
+					child := javascript_created_node(document, child_value as map[string]json2.Any, mut element_by_bridge_key) or { continue }
+					mut target_node := unsafe { &dom.Node(target) }
+					target_node.append_child(child) or {}
+				} else if kind == 'insertCreated' {
+					child_value := operation['child'] or { continue }
+					if child_value !is map[string]json2.Any {
 						continue
 					}
-					namespace_uri := json_string_property(child_state, 'namespaceURI') or {
-						'http://www.w3.org/1999/xhtml'
-					}
-					mut child := document.create_element_ns(namespace_uri, tag_name) or { continue }
-					if attribute_values := child_state['attributes'] {
-						if attribute_values is map[string]json2.Any {
-							for name, attribute_value in attribute_values as map[string]json2.Any {
-								if attribute_value is string {
-									child.set_attribute_value(name, attribute_value)
-								}
-							}
-						}
-					}
-					if text := json_string_property(child_state, 'textContent') {
-						if text != '' {
-							mut child_node := unsafe { &dom.Node(child) }
-							child_node.set_text_content(text) or {}
-						}
-					}
+					child := javascript_created_node(document, child_value as map[string]json2.Any, mut element_by_bridge_key) or { continue }
 					mut target_node := unsafe { &dom.Node(target) }
-					target_node.append_child(child.as_node()) or {}
-					if child_key := json_string_property(child_state, 'bridgeKey') {
-						element_by_bridge_key[child_key] = child
+					reference := if json_bool_property(operation, 'referenceFirstChild') {
+						target_node.first_child()
+					} else if reference_key := json_string_property(operation, 'reference') {
+						if reference_element := element_by_bridge_key[reference_key] {
+							?&dom.Node(reference_element.as_node())
+						} else {
+							?&dom.Node(none)
+						}
+					} else {
+						?&dom.Node(none)
 					}
+					target_node.pre_insert(child, reference) or {}
 				} else if kind == 'moveBefore' {
 					child_key := json_string_property(operation, 'child') or { continue }
 					mut child := element_by_bridge_key[child_key] or { continue }

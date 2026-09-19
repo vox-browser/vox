@@ -157,6 +157,47 @@ fn test_javascript_bridge_replays_svg_paint_server_mutations() {
 	}
 }
 
+fn test_javascript_bridge_inserts_created_nodes_and_document_fragments_before_first_child() {
+	$if darwin {
+		document := html.parse_document('<!doctype html>
+			<fieldset id="direct" disabled><legend><input id="direct-input" type="checkbox" checked></legend></fieldset>
+			<fieldset id="fragment" disabled><legend><input id="fragment-input" type="checkbox" checked></legend></fieldset>')
+		direct_input := document.get_element_by_id('direct-input') or { panic('missing direct input') }
+		fragment_input := document.get_element_by_id('fragment-input') or {
+			panic('missing fragment input')
+		}
+		assert !direct_input.is_actually_disabled()
+		assert !fragment_input.is_actually_disabled()
+
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'about:blank', [
+			'const legend=document.createElement("legend"); legend.id="direct-legend"; legend.style.display="none"; direct.insertBefore(legend,direct.firstChild); const container=document.createDocumentFragment(); const fragmentLegend=document.createElement("legend"); fragmentLegend.id="fragment-legend"; fragmentLegend.style.display="none"; container.appendChild(fragmentLegend); fragment.insertBefore(container,fragment.firstChild);',
+		], runtime, mut messages)
+		assert messages == []
+
+		direct_group := document.get_element_by_id('direct') or { panic('missing direct fieldset') }
+		fragment_group := document.get_element_by_id('fragment') or {
+			panic('missing fragment fieldset')
+		}
+		direct_first := direct_group.as_node().first_child() or { panic('missing direct first child') }
+		fragment_first := fragment_group.as_node().first_child() or {
+			panic('missing fragment first child')
+		}
+		assert (direct_first.as_element() or { panic('direct first child is not an element') }).id() or {
+			''
+		} == 'direct-legend'
+		assert (fragment_first.as_element() or { panic('fragment first child is not an element') }).id() or {
+			''
+		} == 'fragment-legend'
+		assert direct_input.is_actually_disabled()
+		assert fragment_input.is_actually_disabled()
+	}
+}
+
 fn test_javascript_bridge_replays_post_paint_canvas_creation_and_resize() {
 	$if darwin {
 		document := html.parse_document('<!doctype html><canvas id="canvas" width="50" height="50"></canvas>')
