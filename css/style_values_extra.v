@@ -910,6 +910,10 @@ pub fn (style_value UnresolvedStyleValue) includes_attr_function() bool {
 	return style_value.substitution_functions_presence().attr
 }
 
+pub fn (style_value UnresolvedStyleValue) includes_custom_function() bool {
+	return style_value.substitution_functions_presence().custom_function
+}
+
 pub fn (style_value UnresolvedStyleValue) includes_inherit_function() bool {
 	return style_value.substitution_functions_presence().inherit
 }

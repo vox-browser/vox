@@ -3675,10 +3675,11 @@ pub enum SubstitutionDependencyType {
 
 pub struct SubstitutionContext {
 pub mut:
-	dependency_type SubstitutionDependencyType
-	first           string
-	second          ?string
-	is_cyclic       bool
+	dependency_type   SubstitutionDependencyType
+	first             string
+	second            ?string
+	function_identity u64
+	is_cyclic         bool
 }
 
 pub fn (context SubstitutionContext) to_string() string {
@@ -3693,15 +3694,19 @@ pub fn (context SubstitutionContext) to_string() string {
 
 pub struct GuardedSubstitutionContexts {
 pub mut:
-	contexts []SubstitutionContext
+	contexts              []SubstitutionContext
+	function_local_scopes []&FunctionLocalScope
 }
 
 pub fn (mut contexts GuardedSubstitutionContexts) guard(mut context SubstitutionContext) {
-	for mut existing_context in contexts.contexts {
+	for index, mut existing_context in contexts.contexts {
 		if existing_context.dependency_type == context.dependency_type
 			&& existing_context.first == context.first
-			&& option_string_equal(existing_context.second, context.second) {
-			existing_context.is_cyclic = true
+			&& option_string_equal(existing_context.second, context.second)
+			&& existing_context.function_identity == context.function_identity {
+			for cyclic_index := index; cyclic_index < contexts.contexts.len; cyclic_index++ {
+				contexts.contexts[cyclic_index].is_cyclic = true
+			}
 			context.is_cyclic = true
 			return
 		}
@@ -3713,7 +3718,8 @@ pub fn (mut contexts GuardedSubstitutionContexts) unguard(context SubstitutionCo
 	for index, existing_context in contexts.contexts {
 		if existing_context.dependency_type == context.dependency_type
 			&& existing_context.first == context.first
-			&& option_string_equal(existing_context.second, context.second) {
+			&& option_string_equal(existing_context.second, context.second)
+			&& existing_context.function_identity == context.function_identity {
 			contexts.contexts.delete(index)
 			return
 		}
@@ -3721,11 +3727,14 @@ pub fn (mut contexts GuardedSubstitutionContexts) unguard(context SubstitutionCo
 }
 
 fn (mut contexts GuardedSubstitutionContexts) mark_existing_as_cyclic(context SubstitutionContext) bool {
-	for mut existing_context in contexts.contexts {
+	for index, existing_context in contexts.contexts {
 		if existing_context.dependency_type == context.dependency_type
 			&& existing_context.first == context.first
-			&& option_string_equal(existing_context.second, context.second) {
-			existing_context.is_cyclic = true
+			&& option_string_equal(existing_context.second, context.second)
+			&& existing_context.function_identity == context.function_identity {
+			for cyclic_index := index; cyclic_index < contexts.contexts.len; cyclic_index++ {
+				contexts.contexts[cyclic_index].is_cyclic = true
+			}
 			return true
 		}
 	}
@@ -3736,7 +3745,8 @@ fn (contexts GuardedSubstitutionContexts) is_marked_cyclic(context SubstitutionC
 	for existing_context in contexts.contexts {
 		if existing_context.dependency_type == context.dependency_type
 			&& existing_context.first == context.first
-			&& option_string_equal(existing_context.second, context.second) {
+			&& option_string_equal(existing_context.second, context.second)
+			&& existing_context.function_identity == context.function_identity {
 			return existing_context.is_cyclic
 		}
 	}
@@ -3782,6 +3792,9 @@ pub fn collect_arbitrary_substitution_function_presence(values []ComponentValue,
 fn collect_arbitrary_substitution_function_presence_from_component(value ComponentValue, mut presence SubstitutionFunctionsPresence) ! {
 	if value.is_function() {
 		function := value.function()
+		if is_a_custom_property_name_string(function.name) {
+			presence.custom_function = true
+		}
 		if substitution_function := to_arbitrary_substitution_function(function.name) {
 			parse_according_to_argument_grammar(substitution_function, function.value) or {
 				return error('invalid arbitrary substitution function syntax')
@@ -4428,6 +4441,14 @@ fn custom_property_tokens_from_element_for_substitution(abstract_element dom.Abs
 }
 
 fn computed_custom_property_tokens_for_substitution(abstract_element dom.AbstractElement, custom_property_name string, mut guarded_contexts GuardedSubstitutionContexts) ?[]ComponentValue {
+	local_resolution := resolve_custom_property_for_function_scope(abstract_element,
+		custom_property_name, mut guarded_contexts)
+	if local_resolution.kind == .resolved {
+		return local_resolution.tokens
+	}
+	if local_resolution.kind == .invalid {
+		return arbitrary_substitution_guaranteed_invalid_value()
+	}
 	computed_value := compute_value_of_custom_property_with_guarded_contexts(abstract_element, custom_property_name, mut guarded_contexts)
 	typed := typed_style_value_logic_from_dom(computed_value) or {
 		return parse_component_values_for_value_logic(computed_value.css_text)
@@ -4455,8 +4476,16 @@ fn replace_an_inherit_function(element ?dom.AbstractElement, mut guarded_context
 	if name_token.is(.ident) && is_a_custom_property_name_string(name_token.token().ident())
 		&& !first_argument_tokens.has_next_token() {
 		if el := element {
-			if element_to_inherit_style_from := el.element_to_inherit_style_from() {
-				if inherited_value := custom_property_tokens_from_element_for_substitution(element_to_inherit_style_from, name_token.token().ident()) {
+			name := name_token.token().ident()
+			if guarded_contexts.function_local_scopes.len > 0 {
+				popped := guarded_contexts.function_local_scopes.pop()
+				inherited := resolve_custom_property_for_function_scope(el, name, mut guarded_contexts)
+				guarded_contexts.function_local_scopes << popped
+				if inherited.kind == .resolved {
+					return inherited.tokens
+				}
+			} else if element_to_inherit_style_from := el.element_to_inherit_style_from() {
+				if inherited_value := custom_property_tokens_from_element_for_substitution(element_to_inherit_style_from, name) {
 					if !contains_guaranteed_invalid_value(inherited_value) {
 						return inherited_value
 					}
@@ -4523,6 +4552,21 @@ fn substitute_arbitrary_substitution_functions_step_2(element ?dom.AbstractEleme
 	for index, value in source {
 		if value.is_function() {
 			source_function := value.function()
+			if is_a_custom_property_name_string(source_function.name) {
+				result := replace_a_dashed_function(element, mut guarded_contexts,
+					source_function.name, source_function.value)
+				if contains_guaranteed_invalid_value(result) {
+					dest << ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})
+				} else {
+					result_after_processing := substitute_arbitrary_substitution_functions_step_2(element,
+						mut guarded_contexts, result) or { return none }
+					if source.len - index - 1 + result_after_processing.len > 16384 {
+						return none
+					}
+					dest << result_after_processing
+				}
+				continue
+			}
 			if maybe_function_id := to_arbitrary_substitution_function(source_function.name) {
 				// FIXME: Substitute early-invoked functions in func's contents.
 				early_result := source_function.value

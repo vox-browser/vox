@@ -1969,15 +1969,17 @@ pub mut:
 
 pub struct SubstitutionFunctionsPresence {
 pub mut:
-	attr    bool
-	env     bool
-	if_     bool
-	inherit bool
-	var     bool
+	attr            bool
+	custom_function bool
+	env             bool
+	if_             bool
+	inherit         bool
+	var             bool
 }
 
 pub fn (presence SubstitutionFunctionsPresence) has_any() bool {
-	return presence.attr || presence.env || presence.if_ || presence.inherit || presence.var
+	return presence.attr || presence.custom_function || presence.env || presence.if_
+		|| presence.inherit || presence.var
 }
 
 // https://drafts.csswg.org/css-syntax/#component-value
