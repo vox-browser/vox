@@ -83,6 +83,17 @@ fn test_element_programmatic_scroll_uses_committed_snap_areas() {
 	assert paintable.snapped_areas_y_[0].element_id == i64(second.as_node().unique_id())
 }
 
+fn test_element_scroll_snaps_after_initial_layout() {
+	document := html.parse_document('<!doctype html><style>html,body{margin:0}#scroller{width:100px;height:100px;overflow:hidden;scroll-snap-type:y mandatory}#spacer{height:50px}#target{height:100px;scroll-snap-align:start}</style><div id="scroller"><div id="spacer"></div><div id="target"></div></div>')
+	_ = layout_document_typed_in_viewport(document, 320, 240)
+	scroller := document.get_element_by_id('scroller') or { panic('missing scroller') }
+	paintable := scroller.paintable_box() or { panic('missing scroller paintable') }
+	assert paintable.scroll_offset().y() == 50
+	target := document.get_element_by_id('target') or { panic('missing snap target') }
+	assert paintable.snapped_areas_y_.len == 1
+	assert paintable.snapped_areas_y_[0].element_id == i64(target.as_node().unique_id())
+}
+
 fn test_directional_element_scroll_honors_always_stop() {
 	document := html.parse_document('<!doctype html><style>html,body{margin:0}#scroller{width:100px;height:100px;overflow:auto;scroll-snap-type:y mandatory}.area{height:100px;scroll-snap-align:start}#second{scroll-snap-stop:always}</style><div id="scroller"><div class="area"></div><div id="second" class="area"></div><div class="area"></div><div class="area"></div></div>')
 	_ = layout_document_typed_in_viewport(document, 320, 240)
@@ -125,6 +136,15 @@ fn test_viewport_scroll_uses_document_element_snap_type() {
 	second := document.get_element_by_id('second') or { panic('missing second area') }
 	assert destination.snapped_areas_y.len == 1
 	assert destination.snapped_areas_y[0].element_id == i64(second.as_node().unique_id())
+}
+
+fn test_viewport_scroll_snaps_after_initial_layout() {
+	document := html.parse_document('<!doctype html><style>html,body{margin:0}html{scroll-snap-type:y mandatory}#spacer{height:50px}#target{height:100px;scroll-snap-align:start}</style><body><div id="spacer"></div><div id="target"></div></body>')
+	_ = layout_document_typed_in_viewport(document, 100, 100)
+	assert document.viewport_rect().y == 50
+	target := document.get_element_by_id('target') or { panic('missing snap target') }
+	assert document.viewport_snapped_areas_y().len == 1
+	assert document.viewport_snapped_areas_y()[0].element_id == i64(target.as_node().unique_id())
 }
 
 fn test_viewport_scroll_reselects_remembered_area_after_relayout() {

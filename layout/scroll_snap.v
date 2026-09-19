@@ -1048,10 +1048,10 @@ fn resnap_committed_paintables(node &dom.LayoutNode, boxes_by_layout map[u64]&Bl
 		}
 		mut box_paintable := unsafe { &dom.PaintableBox(paintable) }
 		previous := snapped_areas_from_dom(box_paintable.snapped_areas_x_, box_paintable.snapped_areas_y_)
-		if previous.is_empty() {
+		box := boxes_by_layout[u64(box_paintable.layout_handle)] or { continue }
+		if previous.is_empty() && !is_scroll_snap_container(box) {
 			continue
 		}
-		box := boxes_by_layout[u64(box_paintable.layout_handle)] or { continue }
 		destination := select_resnap_destination(box, box_paintable.scroll_offset(), ResnapSelection{
 			snapped_areas:       previous
 			focused_node_id:     focused_node_id
@@ -1082,7 +1082,7 @@ fn resnap_document_scroll_containers(result &DocumentLayoutResult) {
 	}
 	previous_viewport_areas := snapped_areas_from_dom(result.document.viewport_snapped_areas_x(),
 		result.document.viewport_snapped_areas_y())
-	if !previous_viewport_areas.is_empty() {
+	if !previous_viewport_areas.is_empty() || is_scroll_snap_container(&result.paint_tree) {
 		viewport_rect := result.document.viewport_rect()
 		destination := select_resnap_destination(&result.paint_tree, dom.CSSPixelPoint_{
 			x_: viewport_rect.x
