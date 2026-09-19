@@ -198,6 +198,38 @@ fn test_javascript_bridge_inserts_created_nodes_and_document_fragments_before_fi
 	}
 }
 
+fn test_javascript_bridge_replays_live_input_state_properties() {
+	$if darwin {
+		document := html.parse_document('<!doctype html>
+			<input id="box" type="checkbox"><input id="dot" type="radio">
+			<input id="unbox" type="checkbox" checked><input id="mixed" type="checkbox">
+			<fieldset id="group"><input id="group-input" type="checkbox" checked></fieldset>')
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'about:blank', [
+			'box.checked=true; dot.checked=true; unbox.checked=false; mixed.indeterminate=true; box.disabled=true; group.disabled=true;',
+		], runtime, mut messages)
+		assert messages == []
+
+		box_element := document.get_element_by_id('box') or { panic('missing checkbox') }
+		dot_element := document.get_element_by_id('dot') or { panic('missing radio') }
+		unbox_element := document.get_element_by_id('unbox') or { panic('missing unchecked box') }
+		mixed_element := document.get_element_by_id('mixed') or { panic('missing mixed box') }
+		group := document.get_element_by_id('group') or { panic('missing fieldset') }
+		group_input := document.get_element_by_id('group-input') or { panic('missing group input') }
+		assert unsafe { &dom.HTMLInputElement(box_element) }.checked()
+		assert unsafe { &dom.HTMLInputElement(dot_element) }.checked()
+		assert !unsafe { &dom.HTMLInputElement(unbox_element) }.checked()
+		assert unsafe { &dom.HTMLInputElement(mixed_element) }.indeterminate()
+		assert box_element.has_attribute('disabled')
+		assert group.has_attribute('disabled')
+		assert group_input.is_actually_disabled()
+	}
+}
+
 fn test_javascript_bridge_replays_post_paint_canvas_creation_and_resize() {
 	$if darwin {
 		document := html.parse_document('<!doctype html><canvas id="canvas" width="50" height="50"></canvas>')
