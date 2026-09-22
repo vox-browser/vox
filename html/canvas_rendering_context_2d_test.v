@@ -1,6 +1,7 @@
 @[has_globals]
 module html
 
+import css
 import dom
 import math
 
@@ -108,6 +109,41 @@ fn test_canvas_font_uses_detached_document_resolution_context() {
 	run := canvas_text_run(context.drawing_state, 'aa', 0)
 	assert metrics.width() == f64(run.width())
 	assert metrics.width() > 0
+}
+
+fn test_canvas_refreshes_saved_font_cascades_when_font_environment_changes() {
+	$if macos {
+		mut document := dom.Document.create(dom.url_about_blank())
+		element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'canvas') or {
+			panic(err)
+		}
+		canvas := unsafe { &dom.HTMLCanvasElement(element) }
+		mut context := html_canvas_element_get_context(canvas, '2d', none) or { panic(err) }
+		context.set_font('20px CanvasRefresh, monospace')
+		initial_generation := context.drawing_state.font_environment_generation
+		assert initial_generation != 0
+		context.save()
+
+		style_computer := css.css_style_computer_for(document)
+		mut font_computer := unsafe { &css.FontComputer(style_computer.font_computer()) }
+		mut face := css.FontFaceObject.construct_impl('CanvasRefresh', css.FontFaceSource.from_string("url('file:///System/Library/Fonts/Supplemental/Arial.ttf')"), css.FontFaceDescriptors{})
+		face.load_with_font_computer(font_computer)
+		assert face.status() == .loaded
+		font_computer.register_font_face(face)
+		assert font_computer.environment_generation() > initial_generation
+
+		context.measure_text('AAAA')
+		assert context.drawing_state.font_environment_generation == font_computer.environment_generation()
+		cascade := context.drawing_state.current_font_cascade_list or { panic('missing canvas font cascade') }
+		assert cascade.font_for_code_point(u32(`A`)).typeface.family_name == 'CanvasRefresh'
+
+		context.restore()
+		assert context.drawing_state.font_environment_generation == initial_generation
+		context.measure_text('AAAA')
+		assert context.drawing_state.font_environment_generation == font_computer.environment_generation()
+		restored := context.drawing_state.current_font_cascade_list or { panic('missing restored canvas font cascade') }
+		assert restored.font_for_code_point(u32(`A`)).typeface.family_name == 'CanvasRefresh'
+	}
 }
 
 fn test_canvas_text_preparation_preserves_non_ascii_code_points() {

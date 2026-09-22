@@ -653,7 +653,7 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) draw_image_internal(reque
 pub fn (context &OffscreenCanvasRenderingContext2D) measure_text(text string) &TextMetrics {
 	mut metrics := TextMetrics.create()
 	replaced := text.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').replace('\f', ' ')
-	run := canvas_text_run(context.drawing_state, replaced, 0)
+	run := canvas_text_run_for_canvas_state(&context.CanvasState, replaced, 0)
 	font_metrics := run.font().pixel_metrics()
 	metrics.set_width(f64(run.width()))
 	metrics.set_font_bounding_box_ascent(f64(font_metrics.ascent))

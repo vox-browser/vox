@@ -3746,6 +3746,7 @@ pub mut:
 	font_feature_values_rules []&CSSFontFeatureValuesRule
 	has_completed_initial_paint_ bool
 	initial_paint_had_pending_fonts_ bool
+	environment_generation_ u64 = 1
 }
 
 pub fn FontComputer.create() &FontComputer {
@@ -3782,6 +3783,7 @@ pub fn (computer &FontComputer) initial_font() PlatformFont {
 }
 
 pub fn (mut computer FontComputer) clear_computed_font_cache(family_name string) {
+	computer.environment_generation_++
 	// Only clear cache entries that reference the loaded font family.
 	mut kept := map[string]FontCascadeList{}
 	for key, value in computer.computed_font_cache {
@@ -3823,6 +3825,10 @@ pub fn (computer &FontComputer) has_completed_initial_paint() bool {
 
 pub fn (computer &FontComputer) initial_paint_had_pending_fonts() bool {
 	return computer.initial_paint_had_pending_fonts_
+}
+
+pub fn (computer &FontComputer) environment_generation() u64 {
+	return computer.environment_generation_
 }
 
 pub fn (mut computer FontComputer) register_font_face(face &FontFaceObject) {

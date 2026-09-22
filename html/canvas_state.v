@@ -10,6 +10,7 @@
 // reset_to_default_state() dispatch performed by the C++ implementation.
 module html
 
+import css
 import dom
 
 // Gfx::AffineTransform — a 2x3 affine matrix; the default is the identity transform.
@@ -247,11 +248,12 @@ pub mut:
 	// CSS::Length letter_spacing (default 0px); represented as px in this port.
 	letter_spacing_px     f64
 	letter_spacing_string string = '0px'
-	font_string           string = '10px sans-serif'
-	font_size_px          f64 = 10.0
-	clip_paths            []CanvasClipPath
-	// Opaque Gfx handles (out of scope for this port): Gfx::Filter, CSS::StyleValue font,
-	// Gfx::FontCascadeList.
+	font_string                 string = '10px sans-serif'
+	font_size_px                f64 = 10.0
+	current_font_cascade_list   ?&css.FontCascadeList
+	font_environment_generation u64
+	clip_paths                  []CanvasClipPath
+	// Opaque Gfx handles (out of scope for this port): Gfx::Filter and CSS::StyleValue font.
 }
 
 // https://html.spec.whatwg.org/multipage/canvas.html#canvasstate

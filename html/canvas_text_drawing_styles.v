@@ -74,6 +74,104 @@ pub fn (mut styles CanvasTextDrawingStyles) set_font(font string) {
 		}
 	}
 	styles.state.drawing_state.font_string = trimmed
+	styles.state.drawing_state.current_font_cascade_list = none
+	styles.state.drawing_state.font_environment_generation = 0
+	refresh_canvas_font_cascade(mut styles.state)
+}
+
+fn canvas_font_family_names(font_value css.StyleValue) []string {
+	shorthand := if font_value is css.ShorthandStyleValue {
+		font_value
+	} else {
+		return []
+	}
+	family_value := shorthand.longhand(.font_family) or { return [] }
+	families := family_value.as_value_list() or { return [] }
+	mut result := []string{cap: families.size()}
+	for family in families.values() {
+		mut name := family.serialize(.normal).trim_space()
+		if name.len >= 2 && ((name[0] == `"` && name[name.len - 1] == `"`)
+			|| (name[0] == `'` && name[name.len - 1] == `'`)) {
+			name = name[1..name.len - 1]
+		}
+		if name != '' {
+			result << name
+		}
+	}
+	return result
+}
+
+fn canvas_font_weight(font_value css.StyleValue) f64 {
+	shorthand := if font_value is css.ShorthandStyleValue {
+		font_value
+	} else {
+		return 400
+	}
+	weight := shorthand.longhand(.font_weight) or { return 400 }
+	return match weight.to_keyword() {
+		.normal { 400 }
+		.bold { 700 }
+		.invalid {
+			if weight.is_number() { css.number_from_style_value(weight, none) } else { 400 }
+		}
+		else { 400 }
+	}
+}
+
+fn canvas_font_slope(font_value css.StyleValue) int {
+	shorthand := if font_value is css.ShorthandStyleValue {
+		font_value
+	} else {
+		return 0
+	}
+	style := shorthand.longhand(.font_style) or { return 0 }
+	font_style := style.as_font_style() or { return 0 }
+	return font_style.to_font_slope()
+}
+
+fn canvas_font_width(font_value css.StyleValue) css.Percentage {
+	shorthand := if font_value is css.ShorthandStyleValue {
+		font_value
+	} else {
+		return css.Percentage{ value_: 100 }
+	}
+	width := shorthand.longhand(.font_width) or { return css.Percentage{ value_: 100 } }
+	if width.is_percentage() {
+		return width.as_percentage().percentage()
+	}
+	percentage := match width.to_keyword() {
+		.ultra_condensed { 50.0 }
+		.extra_condensed { 62.5 }
+		.condensed { 75.0 }
+		.semi_condensed { 87.5 }
+		.semi_expanded { 112.5 }
+		.expanded { 125.0 }
+		.extra_expanded { 150.0 }
+		.ultra_expanded { 200.0 }
+		else { 100.0 }
+	}
+	return css.Percentage{ value_: percentage }
+}
+
+fn refresh_canvas_font_cascade(mut state CanvasState) {
+	document := state.font_resolution_document() or { return }
+	style_computer := css.css_style_computer_for(document)
+	mut font_computer := unsafe { &css.FontComputer(style_computer.font_computer()) }
+	if state.drawing_state.current_font_cascade_list != none
+		&& state.drawing_state.font_environment_generation == font_computer.environment_generation() {
+		return
+	}
+	parsed := css.parse_css_value_logic(.font, state.drawing_state.font_string) or { return }
+	families := canvas_font_family_names(parsed)
+	if families.len == 0 {
+		return
+	}
+	mut cascade := font_computer.compute_font_for_style_values(families,
+		css.CSSPixels.nearest_value_for(state.drawing_state.font_size_px), canvas_font_slope(parsed),
+		canvas_font_weight(parsed), canvas_font_width(parsed), .auto_, map[string]f64{},
+		css.FontFeatureData{})
+	state.drawing_state.current_font_cascade_list = &cascade
+	state.drawing_state.font_environment_generation = font_computer.environment_generation()
 }
 
 pub fn (styles &CanvasTextDrawingStyles) text_align() CanvasTextAlign {

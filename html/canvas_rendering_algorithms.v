@@ -35,7 +35,17 @@ fn resolved_letter_spacing(drawing_state DrawingState) f64 {
 	return drawing_state.letter_spacing_px
 }
 
-fn canvas_font_for_drawing_state(state DrawingState) &platform.Font {
+fn canvas_font_for_drawing_state(state DrawingState, code_point u32) &platform.Font {
+	if cascade := state.current_font_cascade_list {
+		font := cascade.font_for_code_point_for_shaping(code_point)
+		return &platform.Font{
+			family: font.typeface.family_name
+			point_size: font.point_size / 0.75
+			weight: int(font.variations.weight)
+			source_path: font.typeface.source_path
+			is_invisible: font.is_invisible
+		}
+	}
 	font_text := state.font_string.trim_space()
 	mut family := 'sans-serif'
 	mut weight := 400
@@ -65,13 +75,21 @@ fn canvas_font_for_drawing_state(state DrawingState) &platform.Font {
 }
 
 fn canvas_text_run(state DrawingState, text string, initial_x f32) &platform.GlyphRun {
-	font := canvas_font_for_drawing_state(state)
+	code_points := text.runes()
+	code_point := if code_points.len == 0 { u32(`A`) } else { u32(code_points[0]) }
+	font := canvas_font_for_drawing_state(state, code_point)
 	text_type := if state.direction == .rtl {
 		platform.GlyphRunTextType.rtl
 	} else {
 		platform.GlyphRunTextType.ltr
 	}
 	return platform.shape_text(initial_x, f32(resolved_letter_spacing(state)), text, font, text_type)
+}
+
+fn canvas_text_run_for_canvas_state(state &CanvasState, text string, initial_x f32) &platform.GlyphRun {
+	mut mutable_state := unsafe { &CanvasState(state) }
+	refresh_canvas_font_cascade(mut mutable_state)
+	return canvas_text_run(mutable_state.drawing_state, text, initial_x)
 }
 
 fn canvas_text_transform(state DrawingState, font &platform.Font, text_width f64,
@@ -764,7 +782,7 @@ pub fn (context &OffscreenCanvasRenderingContext2D) prepare_text(text string, ma
 		return PreparedCanvasText{}
 	}
 	replaced := text.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').replace('\f', ' ')
-	run := canvas_text_run(context.drawing_state, replaced, 0)
+	run := canvas_text_run_for_canvas_state(&context.CanvasState, replaced, 0)
 	font := run.font()
 	font_size := f64(font.point_size)
 	mut width := f64(run.width())
@@ -810,7 +828,7 @@ pub fn (context &OffscreenCanvasRenderingContext2D) text_path(text string, x f64
 		}
 	}
 	replaced := text.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').replace('\f', ' ')
-	run := canvas_text_run(context.drawing_state, replaced, f32(x))
+	run := canvas_text_run_for_canvas_state(&context.CanvasState, replaced, f32(x))
 	path := canvas_glyph_run_path(run, y)
 	return path.copy_transformed(canvas_text_transform(context.drawing_state, run.font(), f64(run.width()), max_width))
 }
