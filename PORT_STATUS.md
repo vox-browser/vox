@@ -73,6 +73,23 @@ glyph-run consumers. Cached glyphs remain origin-relative and font-independent,
 spacing keys compare their exact bit patterns, common single-ASCII shapes use
 the dedicated fast path, and the upstream 64-font/16,384-text LRU limits are
 enforced without allowing callers to mutate retained cache entries.
+Font-face matching now keeps URL sources lazy while a cascade is merely probed
+and starts a request only when shaping selects a pending face that covers the
+code point. The `font-display` block, swap, and failure periods implement the
+`auto`, `block`, `swap`, `fallback`, and `optional` timelines; invisible fallback
+retains its ordinary metrics, only the selected pending face is resolved, and
+deadline transitions invalidate the owning font computer.
+Pending cache/decode font work can defer the document's first paint without
+holding later rendering for a network request. The document font computer owns
+that decision and exposes the completed/pending result through Internals.
+Font-computer invalidation also advances an environment generation. Canvas and
+offscreen-canvas drawing state retain the computed cascade behind the `font`
+shorthand and refresh it when that generation changes, including cascades saved
+and later restored around a font load.
+Decoded bitmap transport now identifies row orientation independently from
+alpha representation. FFmpeg video and video-backed canvas snapshots stay in
+their native top-down order, while the existing Quartz-ordered image path keeps
+its one native replay flip.
 CSSOM `CaretPosition` and `Document.caretPositionFromPoint()` now consume the
 retained text-fragment hit-test offsets, expose a transformed one-pixel client
 rectangle, reject points outside the viewport, and retarget positions through
@@ -241,7 +258,7 @@ boundary. Contenteditable constrains dragging to its active host, controls use
 their shadow text node, and anchor/focus updates retain hit-test affinity while
 keeping the control's selection model synchronized.
 
-The refreshed current-tree semantic inventory reports 4,375 unmatched C++
+The refreshed current-tree semantic inventory reports 4,354 unmatched C++
 spellings. That is a structural review queue rather than a count of missing behaviors: active V
 implementations often consolidate C++ class hierarchies and overloads under a
 single typed path. Empty/default-return implementations are checked separately,
@@ -464,7 +481,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
 | `Animations` | 10 | 5,187 | 3,981 | 1,041 | Complete |
 | `Bindings` | 11 | 2,501 | 2,679 | 918 | Complete |
-| `CSS` | 215 | 47,722 | 104,576 | 9,135 | Present |
+| `CSS` | 215 | 47,722 | 104,824 | 9,245 | Present |
 | `Clipboard` | 4 | 1,009 | 973 | 343 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 424 | 138 | Complete |
@@ -472,7 +489,7 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
-| `DOM` | 59 | 34,859 | 36,597 | 2,199 | Complete |
+| `DOM` | 59 | 34,859 | 36,604 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 758 | 336 | Complete |
 | `Editing` | 26 | 12,720 | 8,515 | 797 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
@@ -486,13 +503,13 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
 | `Geolocation` | 4 | 643 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 57,075 | 14,584 | Complete |
+| `HTML` | 286 | 83,853 | 57,207 | 14,620 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
-| `Internals` | 7 | 2,583 | 854 | 230 | Complete |
+| `Internals` | 7 | 2,583 | 860 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 43,379 | 16,325 | Present |
+| `Layout` | 9 | 4,001 | 43,419 | 16,325 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -506,7 +523,7 @@ from the current-module totals.
 | `Painting` | 22 | 8,227 | 7,010 | 2,198 | Present |
 | `PerformanceTimeline` | 5 | 476 | 447 | 130 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
-| `Platform` | 4 | 431 | 2,323 | 373 | Complete |
+| `Platform` | 4 | 431 | 2,330 | 405 | Complete |
 | `ReferrerPolicy` | 2 | 341 | 239 | 123 | Complete |
 | `RequestIdleCallback` | 1 | 52 | 59 | 18 | Complete |
 | `ResizeObserver` | 4 | 424 | 420 | 152 | Complete |
@@ -539,7 +556,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **351,450** | **71,781** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **351,890** | **71,959** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -553,10 +570,10 @@ upstream .cpp files: 1193
 upstream implementations: 21401
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 10
-reviewed upstream-equivalent trivial implementations: 556
+reviewed upstream-equivalent trivial implementations: 555
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 14097
-  unmatched: 4360
+  candidate-name-match: 14103
+  unmatched: 4354
   language-constructor-or-destructor: 1383
   gc-or-binding-runtime: 655
   consolidated-name-match: 490
@@ -567,7 +584,7 @@ suspicious empty/default-return implementations: 0
 
 largest unmatched modules:
 
-  1704 CSS
+  1698 CSS
   1236 HTML
    617 DOM
    405 Painting

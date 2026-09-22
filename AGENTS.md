@@ -164,12 +164,22 @@
   and painting. Cache keys preserve exact spacing bit patterns, common ASCII
   shapes use the dedicated fast path, and font/text LRU eviction follows the
   upstream limits without exposing cached runs to caller mutation.
+- URL-backed font faces stay lazy during cascade probes and load only after
+  shaping selects a covered pending face. The complete `font-display` timeline
+  controls invisible fallback, swapping, and failure, while cache/decode work
+  may defer the first paint without letting network requests hold it open.
+- Font invalidation advances a shared environment generation. Canvas and
+  offscreen-canvas text retain their computed cascades and refresh them after a
+  font change, including cascades restored from saved drawing state.
+- Native bitmap replay carries row orientation separately from alpha format, so
+  FFmpeg video and video-backed canvas frames remain top-down while ordinary
+  Quartz-ordered decoded images retain their required replay flip.
 
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-22, the module
-translations contain 351,450 implementation V LOC and 71,781 test V LOC.
+translations contain 351,890 implementation V LOC and 71,959 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -177,28 +187,28 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Module | Implementation V LOC | Module | Implementation V LOC |
 | --- | ---: | --- | ---: |
 | ARIA | 2,535 | Animations | 3,981 |
-| Bindings | 2,679 | CSS | 104,576 |
+| Bindings | 2,679 | CSS | 104,824 |
 | Clipboard | 973 | Compositor | 2,403 |
 | Compression | 424 | ContentSecurityPolicy | 2,740 |
 | CookieStore | 859 | CredentialManagement | 418 |
-| Crypto (`webcrypto/`) | 4,472 | DOM | 36,597 |
+| Crypto (`webcrypto/`) | 4,472 | DOM | 36,604 |
 | DOMURL | 758 | Editing | 8,515 |
 | Encoding | 705 | EncryptedMediaExtensions | 572 |
 | EntriesAPI | 44 | EventTiming | 153 |
 | Fetch | 5,192 | FileAPI | 1,018 |
 | Fullscreen | 93 | GPC | 16 |
 | Gamepad | 760 | Geolocation | 416 |
-| Geometry | 2,062 | HTML | 57,075 |
+| Geometry | 2,062 | HTML | 57,207 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
-| Infra | 207 | Internals | 854 |
-| IntersectionObserver | 569 | Layout | 43,379 |
+| Infra | 207 | Internals | 860 |
+| IntersectionObserver | 569 | Layout | 43,419 |
 | Loader | 1,921 | MathML | 411 |
 | MediaCapabilitiesAPI | 676 | MediaCapture | 1,212 |
 | MediaSourceExtensions | 361 | MimeSniff | 1,108 |
 | MixedContent | 125 | NavigationTiming | 291 |
 | NotificationsAPI | 290 | Page | 2,957 |
 | Painting | 7,010 | PerformanceTimeline | 447 |
-| PermissionsAPI | 239 | Platform | 2,323 |
+| PermissionsAPI | 239 | Platform | 2,330 |
 | ReferrerPolicy | 239 | RequestIdleCallback | 59 |
 | ResizeObserver | 420 | ResourceTiming | 338 |
 | SRI | 156 | SVG | 5,184 |
@@ -215,7 +225,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **351,450** |  |  |
+| **Total** | **351,890** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
