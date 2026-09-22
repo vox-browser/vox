@@ -116,9 +116,17 @@ fn test_async_iterator_and_promise_named_algorithm_entries() {
 	})
 	assert rejected.is_rejected()
 	conversion := property_to_callback(object_value({
-		'run': callback_value()
+		'run': callback_value_with_operation(promise_callback)
 	}), 'run', .no)!
 	assert conversion.callback != none
+	converted_callback := conversion.callback or { panic('callback conversion was empty') }
+	assert invoke_callback(converted_callback, string_value('this'), [number_value(11)])!.number_value == 11
+	assert converted_callback.operation_returns_promise == .no
+	if _ := property_to_callback(object_value({
+		'run': callback_value()
+	}), 'run', .no) {
+		assert false, 'a marker-only callable must not become a fake executable callback'
+	}
 }
 
 fn test_cached_attribute_first_value_wins_until_clear() {

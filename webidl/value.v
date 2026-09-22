@@ -29,6 +29,7 @@ pub:
 	object_value        map[string]Value
 	sequence_value      []Value
 	buffer_value        ?BufferSource
+	callback_operation  ?CallbackOperation
 	platform_interfaces []string
 	opaque_id           u64
 	frozen              bool
@@ -123,6 +124,16 @@ pub fn buffer_source_value_with_id(value BufferSource, opaque_id u64) Value {
 pub fn callback_value() Value {
 	return Value{
 		kind: .callback
+	}
+}
+
+// callback_value_with_operation retains the executable body behind a callable
+// WebIDL value. Plain callback_value() remains available for consumers which
+// only need a JS-callable type marker, such as WebAssembly import validation.
+pub fn callback_value_with_operation(operation CallbackOperation) Value {
+	return Value{
+		kind: .callback
+		callback_operation: operation
 	}
 }
 

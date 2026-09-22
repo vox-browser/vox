@@ -330,10 +330,6 @@ pub fn create_rejected_promise_from_dom_exception(exception DOMException) &Promi
 	return create_rejected_promise(dom_exception_value(exception))
 }
 
-fn property_callback_stub(_ Value, _ []Value) !Value {
-	return undefined_value()
-}
-
 pub struct CallbackConversion {
 pub:
 	callback ?CallbackType
@@ -350,12 +346,12 @@ pub fn property_to_callback(value Value, property_key string, operation_returns_
 	if property.kind != .callback {
 		return error('TypeError: property is not a function')
 	}
-	// Value marks callable identity, while executable closures are supplied as
-	// CallbackType by generated bindings. The stub is therefore only the raw
-	// property-conversion boundary.
+	operation := property.callback_operation or {
+		return error('TypeError: callable property has no executable callback')
+	}
 	return CallbackConversion{
 		callback: CallbackType{
-			callback: property_callback_stub
+			callback: operation
 			operation_returns_promise: operation_returns_promise
 		}
 	}
