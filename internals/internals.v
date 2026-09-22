@@ -217,10 +217,16 @@ pub fn (mut api Internals) mark_as_garbage(variable_name string) ! {
 }
 
 pub fn (api &Internals) has_completed_initial_paint() bool {
+	if document := api.platform.associated_document {
+		return css.css_style_computer_for(document).font_computer().has_completed_initial_paint()
+	}
 	return api.platform.has_completed_initial_paint_
 }
 
 pub fn (api &Internals) initial_paint_had_pending_fonts() bool {
+	if document := api.platform.associated_document {
+		return css.css_style_computer_for(document).font_computer().initial_paint_had_pending_fonts()
+	}
 	return api.platform.initial_paint_had_pending_fonts_
 }
 

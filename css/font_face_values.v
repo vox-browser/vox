@@ -1894,6 +1894,7 @@ pub mut:
 	font_display_period_ FontDisplayPeriod = .block
 	font_download_timer_start_ns_ ?i64
 	font_download_timer_ ?&platform.Timer
+	font_loader_ ?&FontLoader
 	font_display_time_for_testing_ ?u32
 	font_display_failed_ bool
 	font_download_completed_ bool
@@ -2199,7 +2200,9 @@ fn (mut face FontFaceObject) update_font_display_period() {
 	if mut timer := face.font_download_timer_ {
 		timer.stop()
 	}
-	started_at := face.font_download_timer_start_ns_ or { return }
+	if face.font_download_timer_start_ns_ == none {
+		return
+	}
 	if face.font_download_completed_ || face.status_ in [.loaded, .error] {
 		return
 	}
@@ -2220,11 +2223,7 @@ fn (mut face FontFaceObject) update_font_display_period() {
 		}
 	}
 
-	elapsed_ms := if milliseconds := face.font_display_time_for_testing_ {
-		i64(milliseconds)
-	} else {
-		(time.sys_mono_now() - started_at) / 1_000_000
-	}
+	elapsed_ms := face.font_download_elapsed_time()
 	previous_period := face.font_display_period_
 	mut failure_period_reached := false
 	mut next_deadline_ms := ?i64(none)
@@ -2258,6 +2257,27 @@ fn (mut face FontFaceObject) update_font_display_period() {
 	if mut timer := face.font_download_timer_ {
 		timer.start_with_interval(int(deadline_ms - elapsed_ms))
 	}
+}
+
+fn (face &FontFaceObject) font_download_elapsed_time() i64 {
+	started_at := face.font_download_timer_start_ns_ or { return 0 }
+	return if milliseconds := face.font_display_time_for_testing_ {
+		i64(milliseconds)
+	} else {
+		(time.sys_mono_now() - started_at) / 1_000_000
+	}
+}
+
+pub fn (face &FontFaceObject) has_pending_rendering() bool {
+	return face.font_download_timer_start_ns_ != none && face.status_ == .loading
+		&& !face.font_display_failed_
+}
+
+pub fn (face &FontFaceObject) is_pending_rendering_from_cache() bool {
+	loader := face.font_loader_ or { return false }
+	return face.has_pending_rendering() && loader.may_finish_from_cache()
+		&& (loader.has_started_request() || loader.has_received_font_data_
+			|| face.font_download_elapsed_time() < 100)
 }
 
 pub fn (mut face FontFaceObject) disconnect_from_css_rule() {
@@ -2539,6 +2559,7 @@ fn (mut face FontFaceObject) continue_url_load_with_font_computer(mut font_compu
 		mutable_face.finish_loading_from_typeface(typeface)
 	}
 	loader := font_computer.load_font_face(face.parsed_font_face(), on_load) or { return }
+	face.font_loader_ = loader
 
 	mut mutable_loader := unsafe { &FontLoader(loader) }
 	mutable_loader.start_loading_next_url()
@@ -3550,6 +3571,9 @@ pub mut:
 	urls            []URL
 	subscribers     []fn (?PlatformTypeface)
 	has_completed   bool
+	has_started_request_ bool
+	has_received_font_data_ bool
+	requires_network_ bool
 }
 
 pub fn FontLoader.create(font_computer &FontComputer, family_name string, unicode_ranges []UnicodeRange, urls []URL, on_load ?fn (?PlatformTypeface)) &FontLoader {
@@ -3611,8 +3635,13 @@ pub fn (mut loader FontLoader) start_loading_next_url() {
 	// failure or a byte stream stream:
 	url := loader.urls[0]
 	loader.urls.delete(0)
+	loader.has_started_request_ = true
+	loader.requires_network_ = !url.url().starts_with('file:')
 
 	typeface := platform_load_font_from_url_boundary(url.url(), loader.family_name_)
+	if typeface != none {
+		loader.has_received_font_data_ = true
+	}
 	if typeface == none && loader.urls.len != 0 {
 		loader.start_loading_next_url()
 		return
@@ -3622,6 +3651,14 @@ pub fn (mut loader FontLoader) start_loading_next_url() {
 
 pub fn (loader &FontLoader) is_loading() bool {
 	return loader.urls.len != 0 && loader.typeface == none
+}
+
+pub fn (loader &FontLoader) may_finish_from_cache() bool {
+	return !loader.has_started_request_ || !loader.requires_network_
+}
+
+pub fn (loader &FontLoader) has_started_request() bool {
+	return loader.has_started_request_
 }
 
 pub fn (loader &FontLoader) family_name() string {
@@ -3707,6 +3744,8 @@ pub mut:
 	computed_font_cache       map[string]FontCascadeList
 	font_feature_values_cache map[string]map[string][]u32
 	font_feature_values_rules []&CSSFontFeatureValuesRule
+	has_completed_initial_paint_ bool
+	initial_paint_had_pending_fonts_ bool
 }
 
 pub fn FontComputer.create() &FontComputer {
@@ -3758,6 +3797,32 @@ pub fn (mut computer FontComputer) clear_computed_font_cache(family_name string)
 
 pub fn (mut computer FontComputer) did_load_font(family_name string) {
 	computer.clear_computed_font_cache(family_name)
+}
+
+pub fn (mut computer FontComputer) should_defer_initial_paint() bool {
+	if computer.has_completed_initial_paint_ {
+		return false
+	}
+	mut has_pending_fonts := false
+	for _, faces in computer.font_faces {
+		for face in faces {
+			if face.is_pending_rendering_from_cache() {
+				return true
+			}
+			has_pending_fonts = has_pending_fonts || face.has_pending_rendering()
+		}
+	}
+	computer.initial_paint_had_pending_fonts_ = has_pending_fonts
+	computer.has_completed_initial_paint_ = true
+	return false
+}
+
+pub fn (computer &FontComputer) has_completed_initial_paint() bool {
+	return computer.has_completed_initial_paint_
+}
+
+pub fn (computer &FontComputer) initial_paint_had_pending_fonts() bool {
+	return computer.initial_paint_had_pending_fonts_
 }
 
 pub fn (mut computer FontComputer) register_font_face(face &FontFaceObject) {

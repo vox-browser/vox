@@ -7,6 +7,7 @@
 @[has_globals]
 module html
 
+import css
 import dom
 import time
 
@@ -610,10 +611,19 @@ pub fn (mut event_loop EventLoop) update_the_rendering() {
 		mutable_document.run_the_update_intersection_observations_steps(frame_timestamp)
 		mutable_document.process_top_layer_removals()
 	}
-	if hook := event_loop.rendering_hook_ {
-		hook(documents, frame_timestamp)
+	mut documents_to_paint := []&dom.Document{cap: documents.len}
+	for document in documents {
+		style_computer := css.css_style_computer_for(document)
+		mut font_computer := unsafe { &css.FontComputer(style_computer.font_computer()) }
+		if font_computer.should_defer_initial_paint() {
+			continue
+		}
+		documents_to_paint << document
 	}
-	event_loop.rendering_scheduler_counters_.paints += u64(documents.len)
+	if hook := event_loop.rendering_hook_ {
+		hook(documents_to_paint, frame_timestamp)
+	}
+	event_loop.rendering_scheduler_counters_.paints += u64(documents_to_paint.len)
 	event_loop.rendering_scheduler_counters_.update_microseconds += u64((unsafe_shared_current_time_ms() - update_start_time) * 1000.0)
 	event_loop.running_rendering_task = false
 }

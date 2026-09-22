@@ -256,6 +256,25 @@ fn test_font_display_timeline_arms_and_cancels_the_host_deadline_timer() {
 	assert face.resolve_for_rendering() == .visible
 }
 
+fn test_initial_paint_waits_only_for_pending_cache_resident_font_work() {
+	mut computer := FontComputer.create()
+	mut face := pending_font_display_face('block', 0)
+	assert face.resolve_for_rendering() == .invisible
+	mut loader := FontLoader.create(computer, face.family(), face.unicode_ranges(), []URL{}, none)
+	loader.has_started_request_ = true
+	loader.requires_network_ = false
+	face.font_loader_ = loader
+	computer.register_font_face(face)
+
+	assert computer.should_defer_initial_paint()
+	assert !computer.has_completed_initial_paint()
+	loader.requires_network_ = true
+	assert !computer.should_defer_initial_paint()
+	assert computer.has_completed_initial_paint()
+	assert computer.initial_paint_had_pending_fonts()
+	assert !computer.should_defer_initial_paint()
+}
+
 fn test_pending_font_face_preserves_fallback_metrics_and_suppresses_ink_during_block() {
 	mut face := pending_font_display_face('block', 0)
 	mut cascade := FontCascadeList.create()
