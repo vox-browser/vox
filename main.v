@@ -1145,7 +1145,15 @@ fn decode_local_video_frame(resolved_url string, seconds f64) ?&dom.Bitmap_ {
 		height: height
 		pitch: pitch
 		data: data
+		native_rows_are_top_down: true
 	}
+}
+
+fn native_bitmap_channel_marker(bitmap &dom.Bitmap_, premultiplied bool) int {
+	if bitmap.native_rows_are_top_down {
+		return if premultiplied { 7 } else { 6 }
+	}
+	return if premultiplied { 5 } else { 4 }
 }
 
 fn browser_image_resource_bytes(resource_url dom.URL) ![]u8 {
@@ -1847,6 +1855,7 @@ fn apply_javascript_canvas_state(document &dom.Document, mut element dom.Element
 	width := json_int_property(element_state, 'canvasWidth') or { return }
 	height := json_int_property(element_state, 'canvasHeight') or { return }
 	mut pixels := json_byte_array_property(element_state, 'canvasPixels')
+	mut native_rows_are_top_down := false
 	// A full-size video draw is a snapshot of its decoded frame. Preserve that
 	// source directly across the lightweight JS bridge; serializing millions of
 	// byte-valued JSON numbers is both lossy and needlessly expensive.
@@ -1859,6 +1868,7 @@ fn apply_javascript_canvas_state(document &dom.Document, mut element dom.Element
 					source_bitmap := source_frame.bitmap()
 					if source_bitmap.width == width && source_bitmap.height == height {
 						pixels = source_bitmap.data.clone()
+						native_rows_are_top_down = source_bitmap.native_rows_are_top_down
 					}
 				}
 			}
@@ -1877,7 +1887,8 @@ fn apply_javascript_canvas_state(document &dom.Document, mut element dom.Element
 		html.html_canvas_element_set_height(mut canvas, u32(height)) or { return }
 	}
 	mut context := html.html_canvas_element_get_context(canvas, '2d', none) or { return }
-	bitmap := context.surface() or { return }
+	mut bitmap := context.surface() or { return }
+	bitmap.native_rows_are_top_down = native_rows_are_top_down
 	mut mutable_bitmap := unsafe { &dom.Bitmap_(bitmap) }
 	mutable_bitmap.data = pixels.clone()
 	mutable_bitmap.pitch = width * 4
@@ -4511,7 +4522,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				image = &gg.Image{
 					width: bitmap.width
 					height: bitmap.height
-					nr_channels: 4
+					nr_channels: native_bitmap_channel_marker(bitmap, false)
 					ok: true
 					data: bitmap.data.data
 				}
@@ -4580,8 +4591,8 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					canvas_image := &gg.Image{
 						width: bitmap.width
 						height: bitmap.height
-						// Five is a private native marker for premultiplied RGBA.
-						nr_channels: if bitmap.alpha_type == 0 { 5 } else { 4 }
+						// Native markers preserve alpha and decoded row orientation.
+						nr_channels: native_bitmap_channel_marker(bitmap, bitmap.alpha_type == 0)
 						ok: true
 						data: bitmap.data.data
 					}
@@ -4648,7 +4659,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					video_image := &gg.Image{
 						width: bitmap.width
 						height: bitmap.height
-						nr_channels: 4
+						nr_channels: native_bitmap_channel_marker(bitmap, false)
 						ok: true
 						data: bitmap.data.data
 					}

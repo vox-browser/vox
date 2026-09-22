@@ -4210,7 +4210,7 @@ static CGImageRef native_copy_cg_image(gg__Image *image) {
 	// create_image_from_byte_array() stores stb-decoded RGBA pixels rather than
 	// an NSImage in Image.data. Wrap those bytes directly instead of treating
 	// their first machine word as an Objective-C object.
-	if (image->nr_channels != 4) {
+	if (image->nr_channels < 4 || image->nr_channels > 7) {
 		return NULL;
 	}
 	size_t bytes_per_row = (size_t)image->width * 4;
@@ -4219,7 +4219,9 @@ static CGImageRef native_copy_cg_image(gg__Image *image) {
 	CGColorSpaceRef color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
 	CGImageRef cg_image = CGImageCreate((size_t)image->width, (size_t)image->height,
 		8, 32, bytes_per_row, color_space,
-		kCGImageAlphaLast | kCGBitmapByteOrder32Big, provider, NULL, false,
+		((image->nr_channels == 5 || image->nr_channels == 7)
+			? kCGImageAlphaPremultipliedLast : kCGImageAlphaLast)
+			| kCGBitmapByteOrder32Big, provider, NULL, false,
 		kCGRenderingIntentDefault);
 	CGColorSpaceRelease(color_space);
 	CGDataProviderRelease(provider);
@@ -4296,30 +4298,36 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 		return;
 	}
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	if (image->path.len == 0 && (image->nr_channels == 4 || image->nr_channels == 5)) {
+	if (image->path.len == 0 && image->nr_channels >= 4 && image->nr_channels <= 7) {
 		size_t pitch = (size_t)image->width * 4;
 		size_t byte_count = (size_t)image->height <= SIZE_MAX / pitch
 		    ? pitch * (size_t)image->height
 		    : 0;
-		uint8_t *flipped_pixels = byte_count > 0 ? malloc(byte_count) : NULL;
-		if (flipped_pixels != NULL) {
+		int needs_vertical_flip = image->nr_channels == 4 || image->nr_channels == 5;
+		uint8_t *flipped_pixels = needs_vertical_flip && byte_count > 0
+		    ? malloc(byte_count) : NULL;
+		uint8_t const *source_pixels = needs_vertical_flip ? flipped_pixels
+		    : (uint8_t const *)image->data;
+		if (source_pixels != NULL) {
 			// composite_pixels() publishes its first row through a Quartz image in
-			// bottom-up view coordinates. Reflect top-down decoded/canvas bitmap rows
-			// once before Skia so the final image remains in CSS y-down order.
-			for (int row = 0; row < image->height; ++row) {
-				memcpy(flipped_pixels + (size_t)row * pitch,
-				    (uint8_t const *)image->data
-				        + (size_t)(image->height - row - 1) * pitch,
-				    pitch);
+			// bottom-up view coordinates. Reflect Quartz-ordered bitmap rows once;
+			// FFmpeg and copied video-canvas rows are already top-down.
+			if (needs_vertical_flip) {
+				for (int row = 0; row < image->height; ++row) {
+					memcpy(flipped_pixels + (size_t)row * pitch,
+					    (uint8_t const *)image->data
+					        + (size_t)(image->height - row - 1) * pitch,
+					    pitch);
+				}
 			}
-			int drawn = ladybird_v_skia_draw_rgba_image(context, flipped_pixels,
+			int drawn = ladybird_v_skia_draw_rgba_image(context, source_pixels,
 			    image->width, image->height, (int)pitch, destination_x,
 			    destination_y, destination_width, destination_height, source_x,
 			    source_y, source_width, source_height, clip_x, clip_y, clip_width,
 			    clip_height, transform_a, transform_b, transform_c, transform_d,
 			    transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
 			    canvas_height, opacity, nearest_neighbor,
-			    image->nr_channels == 5);
+			    image->nr_channels == 5 || image->nr_channels == 7);
 			free(flipped_pixels);
 			if (drawn)
 				return;

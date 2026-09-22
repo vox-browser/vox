@@ -154,6 +154,16 @@ fn test_browser_installs_decoded_video_poster_frames() {
 	}
 }
 
+fn test_native_bitmap_markers_preserve_video_row_order_and_alpha() {
+	video := &dom.Bitmap_{native_rows_are_top_down: true}
+	quartz := &dom.Bitmap_{}
+	assert native_bitmap_channel_marker(video, false) == 6
+	assert native_bitmap_channel_marker(video, true) == 7
+	assert native_bitmap_channel_marker(quartz, false) == 4
+	assert native_bitmap_channel_marker(quartz, true) == 5
+	assert video.clone().native_rows_are_top_down
+}
+
 fn test_javascript_bridge_applies_image_source_replacements_before_relayout() {
 	$if darwin {
 		red := "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 1 1'%3E%3Crect width='1' height='1' fill='red'/%3E%3C/svg%3E"

@@ -1058,6 +1058,9 @@ pub mut:
 	format     u8
 	alpha_type u8
 	data       []u8
+	// Raw browser-host video frames arrive in CSS top-to-bottom row order.
+	// Other native image bridges retain their historical Quartz row order.
+	native_rows_are_top_down bool
 }
 
 pub fn (bitmap &Bitmap_) clone() &Bitmap_ {
@@ -1068,6 +1071,7 @@ pub fn (bitmap &Bitmap_) clone() &Bitmap_ {
 		format:     bitmap.format
 		alpha_type: bitmap.alpha_type
 		data:       bitmap.data.clone()
+		native_rows_are_top_down: bitmap.native_rows_are_top_down
 	}
 }
 
@@ -1112,6 +1116,7 @@ pub fn DecodedImageFrame_.create_with_alpha_type(bitmap &Bitmap_, alpha_type u8,
 		format:     bitmap.format
 		alpha_type: alpha_type
 		data:       bitmap.data.clone()
+		native_rows_are_top_down: bitmap.native_rows_are_top_down
 	}
 	return DecodedImageFrame_.create_with_color_space(converted, color_space)
 }
