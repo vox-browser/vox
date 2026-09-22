@@ -1,5 +1,7 @@
 module platform
 
+import math
+
 fn successful_decode(bytes []u8) !DecodedImage {
 	return DecodedImage{
 		frame_count: 1
@@ -238,6 +240,86 @@ fn test_harfbuzz_font_scale_clamps_before_integer_conversion() {
 	run := shape_text(0, 0, 'AAAA', font, .ltr)
 	assert run.glyphs().len == 4
 	assert run.width() > 0
+}
+
+fn cached_shape_for_test(glyph_count int) CachedShape {
+	return CachedShape{
+		glyphs: []Glyph{len: glyph_count}
+		face: .document
+	}
+}
+
+fn cache_shape_for_test(mut cache ShapingCache, font_key string, text string, params ShapeParams, glyph_count int) {
+	if _ := cache.lookup(font_key, text, params) {
+		return
+	}
+	cache.store(font_key, text, params, cached_shape_for_test(glyph_count))
+}
+
+fn test_shaping_cache_reuses_text_and_separates_spacing_parameters() {
+	mut cache := ShapingCache{}
+	plain := ShapeParams.new(.common, 0, 0)
+	spaced := ShapeParams.new(.common, 2, 0)
+	cache_shape_for_test(mut cache, 'font', 'word', plain, 4)
+	assert cache.lookup('font', 'word', plain) or { panic('missing cached shape') }.glyphs.len == 4
+	assert cache.lookup('font', 'word', spaced) == none
+	cache.store('font', 'word', spaced, cached_shape_for_test(2))
+	assert cache.lookup('font', 'word', spaced) or { panic('missing spaced shape') }.glyphs.len == 2
+	negative_zero := ShapeParams.new(.common, math.f32_from_bits(u32(0x8000_0000)), 0)
+	assert cache.lookup('font', 'word', negative_zero) == none
+
+	cache_shape_for_test(mut cache, 'font', 'a', plain, 1)
+	font_index := cache.font_index('font')
+	assert cache.fonts[font_index].single_ascii_present[int(`a`)]
+	assert 'a' !in cache.fonts[font_index].text_indices
+	assert cache.lookup('font', 'a', negative_zero) or { panic('signed zero should use ASCII cache') }.glyphs.len == 1
+	cache_shape_for_test(mut cache, 'font', 'a', spaced, 1)
+	assert 'a' in cache.fonts[font_index].text_indices
+}
+
+fn test_shaping_cache_evicts_least_recently_used_font_at_capacity() {
+	mut cache := ShapingCache{}
+	params := ShapeParams.new(.common, 0, 0)
+	for index in 0 .. max_shape_cache_fonts {
+		cache_shape_for_test(mut cache, 'font-${index}', 'a', params, 1)
+	}
+	assert cache.lookup('font-0', 'a', params) or { panic('missing most recent font') }.glyphs.len == 1
+	cache_shape_for_test(mut cache, 'font-overflow', 'a', params, 1)
+	assert cache.fonts.len == max_shape_cache_fonts
+	assert cache.font_index('font-0') >= 0
+	assert cache.font_index('font-1') == -1
+}
+
+fn test_shaping_cache_evicts_least_recently_used_half_of_texts() {
+	mut cache := ShapingCache{}
+	params := ShapeParams.new(.common, 0, 0)
+	for index in 0 .. max_shape_cache_texts_per_font {
+		cache_shape_for_test(mut cache, 'font', 'text-${index}', params, 1)
+	}
+	assert cache.lookup('font', 'text-0', params) or { panic('missing refreshed text') }.glyphs.len == 1
+	cache_shape_for_test(mut cache, 'font', 'one-more', params, 1)
+	font_index := cache.font_index('font')
+	assert cache.fonts[font_index].shapes_by_text.len == max_shape_cache_texts_per_font / 2
+	assert 'text-0' in cache.fonts[font_index].text_indices
+	assert 'text-1' !in cache.fonts[font_index].text_indices
+	assert 'one-more' in cache.fonts[font_index].text_indices
+}
+
+fn test_shared_shaping_cache_returns_independent_translated_runs() {
+	platform_shaping_cache = &ShapingCache{}
+	font := &Font{
+		family: 'sans-serif'
+		point_size: 16
+	}
+	first := shape_text_with_spacing(0, 0, 0, 'cache me', font, .ltr)
+	original_x := first.glyph_run.glyphs_[0].position.x
+	mut first_run := first.glyph_run
+	first_run.glyphs_[0].position.x = 999
+	translated := shape_text_with_spacing(17, 0, 0, 'cache me', font, .ltr)
+	assert translated.glyph_run.glyphs()[0].position.x == original_x + 17
+	assert shaped_text_width(0, 0, 'cache me', font, .ltr) == translated.glyph_run.width()
+	spaced := shape_text_with_spacing(0, 2, 0, 'cache me', font, .ltr)
+	assert spaced.glyph_run.width() > translated.glyph_run.width()
 }
 
 fn test_timer_state_and_single_shot_fire() {

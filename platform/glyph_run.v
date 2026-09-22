@@ -517,6 +517,10 @@ pub fn shape_text(initial_x f32, letter_spacing f32, text string, font &Font, te
 }
 
 pub fn shape_text_with_spacing(initial_x f32, letter_spacing f32, word_spacing f32, text string, font &Font, text_type GlyphRunTextType) ShapedText {
+	return shape_text_cached(initial_x, letter_spacing, word_spacing, text, font, text_type)
+}
+
+fn shape_text_uncached(initial_x f32, letter_spacing f32, word_spacing f32, text string, font &Font, text_type GlyphRunTextType) ShapedText {
 	if shaped := shape_text_with_harfbuzz(initial_x, letter_spacing, word_spacing, text, font, text_type) {
 		return shaped
 	}
