@@ -322,6 +322,20 @@ fn test_shared_shaping_cache_returns_independent_translated_runs() {
 	assert spaced.glyph_run.width() > translated.glyph_run.width()
 }
 
+fn test_single_glyph_width_uses_the_shared_shaping_cache() {
+	platform_shaping_cache = &ShapingCache{}
+	font := &Font{
+		family: 'sans-serif'
+		point_size: 16
+	}
+	width := font.glyph_width(u32(`A`))
+	assert width == shape_text(0, 0, 'A', font, .common).width()
+	font_index := platform_shaping_cache.font_index(shaping_cache_font_key(font))
+	assert font_index >= 0
+	assert platform_shaping_cache.fonts[font_index].single_ascii_present[int(`A`)]
+	assert font.glyph_width(0x11_0000) == font.glyph_width(0xfffd)
+}
+
 fn test_timer_state_and_single_shot_fire() {
 	mut timer := Timer.create_single_shot(10, no_op)
 	assert timer.interval() == 10

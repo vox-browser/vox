@@ -285,8 +285,12 @@ fn (font &Font) pixel_metrics_uncached() FontPixelMetrics {
 // Ladybird source tree is available. The half-em fallback is retained only for
 // standalone deployments which do not provide the test font.
 pub fn (font &Font) glyph_width(code_point u32) f32 {
-	advance, _ := font.glyph_metrics(code_point)
-	return advance
+	scalar := if code_point > 0x10ffff || (code_point >= 0xd800 && code_point <= 0xdfff) {
+		rune(0xfffd)
+	} else {
+		rune(code_point)
+	}
+	return shaped_text_width(0, 0, scalar.str(), font, .common)
 }
 
 // Gfx::Font::contains_glyph(). A decoded face maps missing characters to the
