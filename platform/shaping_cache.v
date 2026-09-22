@@ -240,7 +240,7 @@ fn shared_shaping_cache() &ShapingCache {
 // font configuration cannot alias an older entry.
 fn shaping_cache_font_key(font &Font) string {
 	resolved_path := font.font_path() or { '' }
-	return '${font.family.len}:${font.family}|${font.source_path.len}:${font.source_path}|${resolved_path.len}:${resolved_path}|${font.weight}|${font.face_index()}|${math.f32_bits(font.point_size)}'
+	return '${font.family.len}:${font.family}|${font.source_path.len}:${font.source_path}|${resolved_path.len}:${resolved_path}|${font.weight}|${font.face_index()}|${math.f32_bits(font.point_size)}|${font.is_invisible}'
 }
 
 fn cached_shape_from(shaped ShapedText) CachedShape {

@@ -516,9 +516,10 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 		position := unsafe { positions[index] }
 		starting_offset := int(info.cluster)
 		code_point := code_point_at_utf16_offset(text, utf16_units, is_ascii, starting_offset)
-		should_paint := !code_point_is_default_ignorable(code_point)
+		is_default_ignorable := code_point_is_default_ignorable(code_point)
+		should_paint := !font.is_invisible && !is_default_ignorable
 		mut advance := f32(0)
-		if should_paint {
+		if !is_default_ignorable {
 			advance = f32(position.x_advance) / harfbuzz_text_shaping_resolution + letter_spacing
 			if is_word_separator(code_point) {
 				advance += word_spacing
@@ -543,10 +544,10 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 			length_in_code_units: length_in_code_units
 			should_paint: should_paint
 		}
-		if should_paint && starting_offset >= first_trailing_offset {
+		if !is_default_ignorable && starting_offset >= first_trailing_offset {
 			trailing_advance += advance
 		}
-		if should_paint {
+		if !is_default_ignorable {
 			point_x += advance
 		}
 	}

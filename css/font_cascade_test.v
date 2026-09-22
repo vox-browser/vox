@@ -163,12 +163,18 @@ fn test_stylesheet_font_face_rules_register_local_true_type_loaders() {
 		set := FontFaceSet.create_for_font_computer(computer)
 		computer.load_fonts_from_css_rules(sheet.css_rules().rules, set)
 		assert computer.font_faces.len == 1
-		for _, faces in computer.font_faces {
-			assert faces.len == 1
-			typeface := faces[0].parsed_font or { panic('font face was not loaded') }
-			assert typeface.family_name == 'Fixture'
-			assert typeface.source_path == '/System/Library/Fonts/Supplemental/Arial.ttf'
-		}
+		face := set.set_entries()[0]
+		assert face.status() == .unloaded
+		mut cascade := computer.compute_font_for_style_values(['Fixture'], CSSPixels.new(16), 0,
+			400, Percentage{ value_: 100 }, .auto_, map[string]f64{}, FontFeatureData{})
+		assert cascade.pending_faces.len == 1
+		cascade.font_for_code_point(u32(`A`))
+		assert face.status() == .unloaded
+		cascade.font_for_code_point_for_shaping(u32(`A`))
+		assert face.status() == .loaded
+		typeface := face.parsed_font or { panic('font face was not loaded by shaping') }
+		assert typeface.family_name == 'Fixture'
+		assert typeface.source_path == '/System/Library/Fonts/Supplemental/Arial.ttf'
 	}
 }
 
@@ -202,6 +208,91 @@ fn test_font_cascade_probe_does_not_trigger_pending_face_load() {
 		cascade.font_for_code_point(u32(` `))
 		assert face.status() == .unloaded
 	}
+}
+
+fn pending_font_display_face(display string, elapsed_ms u32) &FontFaceObject {
+	mut face := FontFaceObject.construct_impl('Pending ${display}', FontFaceSource.from_string("url('pending.woff')"), FontFaceDescriptors{
+		display: display
+	})
+	// Keep the request pending so the display period, rather than the synchronous
+	// test loader, decides whether the fallback has ink.
+	face.status_ = .loading
+	face.set_font_display_time_for_testing(elapsed_ms)
+	return face
+}
+
+fn pending_font_display_state(display string, elapsed_ms u32) PendingFontState {
+	mut face := pending_font_display_face(display, elapsed_ms)
+	return face.resolve_for_rendering()
+}
+
+fn test_font_display_timeline_period_boundaries() {
+	assert pending_font_display_state('auto', 0) == .invisible
+	assert pending_font_display_state('auto', 2999) == .invisible
+	assert pending_font_display_state('auto', 3000) == .visible
+	assert pending_font_display_state('block', 2999) == .invisible
+	assert pending_font_display_state('block', 3000) == .visible
+	assert pending_font_display_state('swap', 0) == .visible
+	assert pending_font_display_state('fallback', 99) == .invisible
+	assert pending_font_display_state('fallback', 100) == .visible
+	assert pending_font_display_state('fallback', 3099) == .visible
+	assert pending_font_display_state('fallback', 3100) == .failed
+	assert pending_font_display_state('optional', 99) == .invisible
+	assert pending_font_display_state('optional', 100) == .failed
+}
+
+fn test_font_display_timeline_arms_and_cancels_the_host_deadline_timer() {
+	mut face := FontFaceObject.construct_impl('Timed block', FontFaceSource.from_string("url('pending.woff')"), FontFaceDescriptors{
+		display: 'block'
+	})
+	face.status_ = .loading
+	assert face.resolve_for_rendering() == .invisible
+	mut timer := face.font_download_timer_ or { panic('display timer was not created') }
+	assert timer.is_active()
+	assert timer.interval() > 0
+	assert timer.interval() <= 3000
+	face.set_font_display_time_for_testing(3000)
+	assert !timer.is_active()
+	assert face.resolve_for_rendering() == .visible
+}
+
+fn test_pending_font_face_preserves_fallback_metrics_and_suppresses_ink_during_block() {
+	mut face := pending_font_display_face('block', 0)
+	mut cascade := FontCascadeList.create()
+	cascade.add_pending_face(face)
+	cascade.add(PlatformFont{
+		typeface: PlatformTypeface{
+			family_name: 'Fallback'
+		}
+		point_size: 12
+	}, [])
+
+	probe := cascade.font_for_code_point(u32(`A`))
+	assert !probe.is_invisible
+	assert face.font_download_timer_start_ns_ == none
+	selected := cascade.font_for_code_point_for_shaping(u32(`A`))
+	assert selected.typeface.family_name == probe.typeface.family_name
+	assert selected.point_size == probe.point_size
+	assert selected.is_invisible
+	assert face.font_download_timer_start_ns_ != none
+}
+
+fn test_pending_preferred_face_does_not_resolve_later_fallback_faces() {
+	mut preferred := pending_font_display_face('swap', 0)
+	mut unused := pending_font_display_face('swap', 0)
+	mut cascade := FontCascadeList.create()
+	cascade.add_pending_face(preferred)
+	cascade.add_pending_face(unused)
+	cascade.add(PlatformFont{
+		typeface: PlatformTypeface{
+			family_name: 'Fallback'
+		}
+	}, [])
+
+	selected := cascade.font_for_code_point_for_shaping(u32(`A`))
+	assert selected.typeface.family_name == 'Fallback'
+	assert preferred.font_download_timer_start_ns_ != none
+	assert unused.font_download_timer_start_ns_ == none
 }
 
 fn test_loaded_script_font_face_is_registered_for_matching_and_removed_with_its_set_entry() {

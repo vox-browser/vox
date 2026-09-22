@@ -535,13 +535,14 @@ fn shape_text_uncached(initial_x f32, letter_spacing f32, word_spacing f32, text
 	for character in text.runes() {
 		code_point := u32(character)
 		base_advance, glyph_index := font.glyph_metrics(code_point)
-		should_paint := !code_point_is_default_ignorable(code_point)
+		is_default_ignorable := code_point_is_default_ignorable(code_point)
+		should_paint := !font.is_invisible && !is_default_ignorable
 		// HarfBuzz returns positions in the 26.6 scale selected by
 		// Gfx::Font::harfbuzz_font(). Quantize each shaped value separately,
 		// before accumulating it, just as TextLayout.cpp does when dividing the
 		// integer hb_glyph_position_t fields by text_shaping_resolution.
 		mut advance := f32(0)
-		if should_paint {
+		if !is_default_ignorable {
 			x += f32(math.round(f64(font.kerning_for_glyph(glyph_index)) * 64.0) / 64.0)
 			advance = f32(math.round(f64(base_advance) * 64.0) / 64.0) + letter_spacing
 			if is_word_separator(code_point) {

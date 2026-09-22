@@ -460,9 +460,8 @@ fn block_ellipsis_font(style_source &Node, ellipsis string) &platform.Font {
 		return style_source.first_available_font()
 	}
 	code_point := code_point_at_utf16(units, 0)
-	mut cascade := unsafe { &css.FontCascadeList(style_source.font_list()) }
-	cascade.trigger_pending_loads_for_code_point(code_point)
-	for entry in cascade.fonts {
+	cascade := style_source.font_list()
+	for index, entry in cascade.fonts {
 		mut covers_code_point := entry.unicode_ranges.len == 0
 		for range_ in entry.unicode_ranges {
 			if range_.start <= code_point && code_point <= range_.end {
@@ -475,11 +474,18 @@ fn block_ellipsis_font(style_source &Node, ellipsis string) &platform.Font {
 		}
 		font := text_node_chunk_platform_font(entry.font)
 		if font.contains_glyph(code_point) {
+			if cascade.fallback_is_invisible_for_code_point_through(code_point, index) {
+				return text_node_chunk_invisible_font(font)
+			}
 			return font
 		}
 	}
 	if last_resort := cascade.last_resort_font {
-		return text_node_chunk_platform_font(last_resort)
+		font := text_node_chunk_platform_font(last_resort)
+		if cascade.fallback_is_invisible_for_code_point_through(code_point, cascade.fonts.len) {
+			return text_node_chunk_invisible_font(font)
+		}
+		return font
 	}
 	return style_source.first_available_font()
 }

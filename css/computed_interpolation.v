@@ -5721,6 +5721,7 @@ pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer
 		fonts: computed.fonts.clone()
 		pending_faces: computed.pending_faces.clone()
 		last_resort_font: computed.last_resort_font
+		invisible_fonts: map[string]&PlatformFont{}
 	}
 	c.cached_computed_font_list_ = font_list
 	return font_list

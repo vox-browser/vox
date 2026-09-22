@@ -59,6 +59,7 @@ pub:
 	// A decoded @font-face source. System fonts leave this empty and resolve
 	// through the family cascade.
 	source_path string
+	is_invisible bool
 }
 
 pub struct FontPixelMetrics {

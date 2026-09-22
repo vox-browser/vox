@@ -336,6 +336,24 @@ fn test_single_glyph_width_uses_the_shared_shaping_cache() {
 	assert font.glyph_width(0x11_0000) == font.glyph_width(0xfffd)
 }
 
+fn test_invisible_font_shapes_with_fallback_metrics_but_without_glyph_ink() {
+	visible_font := &Font{
+		family: 'sans-serif'
+		point_size: 16
+	}
+	invisible_font := &Font{
+		family: 'sans-serif'
+		point_size: 16
+		is_invisible: true
+	}
+	visible := shape_text(0, 0, 'fallback', visible_font, .ltr)
+	invisible := shape_text(0, 0, 'fallback', invisible_font, .ltr)
+	assert invisible.width() == visible.width()
+	assert invisible.glyphs().len == visible.glyphs().len
+	assert invisible.glyphs().all(!it.should_paint)
+	assert invisible.glyph_indices().len == 0
+}
+
 fn test_timer_state_and_single_shot_fire() {
 	mut timer := Timer.create_single_shot(10, no_op)
 	assert timer.interval() == 10

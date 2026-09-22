@@ -677,6 +677,10 @@ fn (mut state HTMLParserEndState) check_progress() {
 		state.phase_ = .waiting_for_load_event_delay
 	}
 	if state.phase_ == .waiting_for_load_event_delay {
+		// Font faces are selected lazily by text shaping. Flush layout before the
+		// readiness check so a selected download can delay the load event.
+		mut mutable_document := unsafe { &dom.Document(state.document) }
+		mutable_document.update_layout(.document_readiness_complete)
 		if state.document.anything_is_delaying_the_load_event() {
 			return
 		}

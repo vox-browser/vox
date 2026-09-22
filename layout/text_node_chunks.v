@@ -40,6 +40,8 @@ pub struct TextNodeChunkIterator {
 	font_cascade_fonts     []&platform.Font
 	font_cascade_ranges    [][]css.UnicodeRange
 	last_resort_font       ?&platform.Font
+mut:
+	selected_fonts map[string]&platform.Font
 pub mut:
 	current_index            int
 	grapheme_boundary_index  int = 1
@@ -53,6 +55,17 @@ fn text_node_chunk_platform_font(font css.PlatformFont) &platform.Font {
 		point_size: font.point_size / 0.75
 		weight: int(font.variations.weight)
 		source_path: font.typeface.source_path
+		is_invisible: font.is_invisible
+	}
+}
+
+fn text_node_chunk_invisible_font(font &platform.Font) &platform.Font {
+	return &platform.Font{
+		family: font.family
+		point_size: font.point_size
+		weight: font.weight
+		source_path: font.source_path
+		is_invisible: true
 	}
 }
 
@@ -90,6 +103,7 @@ pub fn TextNodeChunkIterator.new(text_node &TextNode, should_wrap_lines bool, sh
 		font_cascade_fonts: font_cascade_fonts
 		font_cascade_ranges: font_cascade_ranges
 		last_resort_font: last_resort_font
+		selected_fonts: map[string]&platform.Font{}
 	}
 }
 
@@ -168,23 +182,43 @@ fn (iterator &TextNodeChunkIterator) is_at_line_break_opportunity() bool {
 }
 
 fn (iterator &TextNodeChunkIterator) font_for_code_point(code_point u32) &platform.Font {
-	if iterator.font_cascade_list != unsafe { nil } {
-		mut font_cascade_list := unsafe { &css.FontCascadeList(iterator.font_cascade_list) }
-		font_cascade_list.trigger_pending_loads_for_code_point(code_point)
+	if iterator.font_cascade_list == unsafe { nil } && iterator.font_cascade_fonts.len == 0 {
+		return iterator.font
 	}
+	mut selected := iterator.last_resort_font or { iterator.font }
+	mut selected_index := iterator.font_cascade_fonts.len
 	for index, font in iterator.font_cascade_fonts {
 		ranges := iterator.font_cascade_ranges[index]
 		if ranges.len == 0 && font.contains_glyph(code_point) {
-			return font
+			selected = font
+			selected_index = index
+			break
 		}
 		for range_ in ranges {
 			if range_.start <= code_point && code_point <= range_.end
 				&& font.contains_glyph(code_point) {
-				return font
+				selected = font
+				selected_index = index
+				break
 			}
 		}
+		if selected_index == index {
+			break
+		}
 	}
-	return iterator.last_resort_font or { iterator.font }
+	if iterator.font_cascade_list == unsafe { nil }
+		|| !iterator.font_cascade_list.fallback_is_invisible_for_code_point_through(code_point,
+		selected_index) {
+		return selected
+	}
+	key := '${selected.family}|${selected.source_path}|${selected.point_size}|${selected.weight}|invisible'
+	if font := iterator.selected_fonts[key] {
+		return font
+	}
+	font := text_node_chunk_invisible_font(selected)
+	mut mutable_iterator := unsafe { &TextNodeChunkIterator(iterator) }
+	mutable_iterator.selected_fonts[key] = font
+	return font
 }
 
 pub fn (iterator &TextNodeChunkIterator) font_for_space(at_index int, space_code_point u32) &platform.Font {

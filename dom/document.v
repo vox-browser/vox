@@ -4371,6 +4371,7 @@ pub enum UpdateLayoutReason {
 	document_element_from_point
 	document_elements_from_point
 	document_find_matching_text
+	document_readiness_complete
 	document_set_design_mode
 	dump_display_list
 	element_check_visibility
@@ -11561,6 +11562,7 @@ pub fn update_layout_reason_to_string(reason UpdateLayoutReason) string {
 		.document_element_from_point { 'DocumentElementFromPoint' }
 		.document_elements_from_point { 'DocumentElementsFromPoint' }
 		.document_find_matching_text { 'DocumentFindMatchingText' }
+		.document_readiness_complete { 'DocumentReadinessComplete' }
 		.document_set_design_mode { 'DocumentSetDesignMode' }
 		.dump_display_list { 'DumpDisplayList' }
 		.element_check_visibility { 'ElementCheckVisibility' }

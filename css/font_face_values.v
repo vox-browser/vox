@@ -8,6 +8,7 @@ import os
 import platform
 import strconv
 import strings
+import time
 import url as liburl
 import webidl
 
@@ -1534,6 +1535,12 @@ pub enum FontDisplay {
 	optional
 }
 
+pub enum FontDisplayPeriod {
+	block
+	swap
+	failure
+}
+
 pub struct UnicodeRange {
 pub mut:
 	start u32
@@ -1883,7 +1890,13 @@ pub mut:
 	urls                []ParsedFontFaceSource
 	binary_data         []u8
 	parsed_font         ?PlatformTypeface
+	font_display_       FontDisplay = .auto_
+	font_display_period_ FontDisplayPeriod = .block
+	font_download_timer_start_ns_ ?i64
+	font_download_timer_ ?&platform.Timer
 	font_display_time_for_testing_ ?u32
+	font_display_failed_ bool
+	font_download_completed_ bool
 
 	css_font_face_rule ?&CSSFontFaceRule
 	containing_sets    []&FontFaceSet
@@ -1891,6 +1904,7 @@ pub mut:
 
 pub fn (mut face FontFaceObject) set_font_display_time_for_testing(milliseconds u32) {
 	face.font_display_time_for_testing_ = milliseconds
+	face.update_font_display_period()
 }
 
 pub fn (face &FontFaceObject) font_display_time_for_testing() ?u32 {
@@ -1924,7 +1938,7 @@ pub fn FontFaceObject.construct_impl(family string, source FontFaceSource, descr
 	font_face.set_unicode_range_impl(unicode_range)
 	font_face.feature_settings_ = font_face_try_parse_descriptor(mut font_face, .font_feature_settings, descriptors.feature_settings)
 	font_face.variation_settings_ = font_face_try_parse_descriptor(mut font_face, .font_variation_settings, descriptors.variation_settings)
-	font_face.display_ = font_face_try_parse_descriptor(mut font_face, .font_display, descriptors.display)
+	font_face.set_display_impl(font_face_try_parse_descriptor(mut font_face, .font_display, descriptors.display))
 	font_face.ascent_override_ = font_face_try_parse_descriptor(mut font_face, .ascent_override, descriptors.ascent_override)
 	font_face.descent_override_ = font_face_try_parse_descriptor(mut font_face, .descent_override, descriptors.descent_override)
 	font_face.line_gap_override_ = font_face_try_parse_descriptor(mut font_face, .line_gap_override, descriptors.line_gap_override)
@@ -2038,7 +2052,7 @@ pub fn (face &FontFaceObject) parsed_font_face() ParsedFontFace {
 		width_: face.cached_width_
 		sources_: face.urls.clone()
 		unicode_ranges_: face.unicode_ranges_.clone()
-		font_display_: .auto_ // FIXME: font_display
+		font_display_: face.font_display_
 		font_named_instance_: none // font-named-instance doesn't exist in FontFace
 		// font-language-override doesn't exist in FontFace
 		font_language_override_: none
@@ -2109,7 +2123,7 @@ pub fn (face &FontFaceObject) is_css_connected() bool {
 }
 
 pub fn (face &FontFaceObject) should_be_registered_with_font_computer() bool {
-	return face.is_css_connected() || face.status() == .loaded
+	return face.is_css_connected() || face.has_urls() || face.status() == .loaded
 }
 
 pub fn (face &FontFaceObject) declared_width() int {
@@ -2126,15 +2140,124 @@ fn (face &FontFaceObject) font_computer() ?&FontComputer {
 }
 
 fn (face &FontFaceObject) font_with_point_size(point_size f32, variations FontVariationSettings, shape_features ShapeFeatures) ?FontCascadeList {
-	typeface := face.parsed_font or { return none }
+	if face.font_display_failed_ || face.status_ == .error {
+		return none
+	}
 	mut font_list := FontCascadeList.create()
-	font_list.add(PlatformFont{
-		typeface: typeface
-		point_size: point_size
-		variations: variations
-		features: shape_features
-	}, face.unicode_ranges_)
+	if typeface := face.parsed_font {
+		font_list.add(PlatformFont{
+			typeface: typeface
+			point_size: point_size
+			variations: variations
+			features: shape_features
+		}, face.unicode_ranges_)
+	} else if face.has_urls() {
+		font_list.add_pending_face(face)
+	}
+	if font_list.is_empty() {
+		return none
+	}
 	return font_list
+}
+
+// https://drafts.csswg.org/css-fonts-4/#font-display-timeline
+fn (mut face FontFaceObject) resolve_for_rendering() PendingFontState {
+	if face.font_display_failed_ || face.status_ == .error {
+		return .failed
+	}
+	if face.status_ == .loaded {
+		return .visible
+	}
+	if face.font_download_timer_start_ns_ == none {
+		face.font_download_timer_start_ns_ = time.sys_mono_now()
+		if face.font_display_ == .swap {
+			face.font_display_period_ = .swap
+		}
+		face.update_font_display_period()
+	}
+	face.load()
+	if face.status_ == .loaded {
+		return .visible
+	}
+	if face.status_ == .error {
+		return .failed
+	}
+	return match face.font_display_period_ {
+		.block { .invisible }
+		.swap { .visible }
+		.failure { .failed }
+	}
+}
+
+fn (mut face FontFaceObject) invalidate_font_display() {
+	if mut computer := face.font_computer() {
+		computer.did_load_font(face.family_)
+	}
+}
+
+fn (mut face FontFaceObject) update_font_display_period() {
+	if mut timer := face.font_download_timer_ {
+		timer.stop()
+	}
+	started_at := face.font_download_timer_start_ns_ or { return }
+	if face.font_download_completed_ || face.status_ in [.loaded, .error] {
+		return
+	}
+	mut block_period_ms := i64(0)
+	mut failure_period_start_ms := ?i64(none)
+	match face.font_display_ {
+		.auto_, .block {
+			block_period_ms = 3000
+		}
+		.swap {}
+		.fallback {
+			block_period_ms = 100
+			failure_period_start_ms = i64(3100)
+		}
+		.optional {
+			block_period_ms = 100
+			failure_period_start_ms = i64(100)
+		}
+	}
+
+	elapsed_ms := if milliseconds := face.font_display_time_for_testing_ {
+		i64(milliseconds)
+	} else {
+		(time.sys_mono_now() - started_at) / 1_000_000
+	}
+	previous_period := face.font_display_period_
+	mut failure_period_reached := false
+	mut next_deadline_ms := ?i64(none)
+	if failure_start := failure_period_start_ms {
+		failure_period_reached = elapsed_ms >= failure_start
+	}
+	if face.font_display_failed_ || failure_period_reached {
+		face.font_display_period_ = .failure
+		face.font_display_failed_ = true
+	} else if elapsed_ms < block_period_ms {
+		face.font_display_period_ = .block
+		next_deadline_ms = block_period_ms
+	} else {
+		face.font_display_period_ = .swap
+		next_deadline_ms = failure_period_start_ms
+	}
+	if previous_period != face.font_display_period_ {
+		face.invalidate_font_display()
+	}
+	deadline_ms := next_deadline_ms or { return }
+	if face.font_display_time_for_testing_ != none {
+		return
+	}
+	if face.font_download_timer_ == none {
+		face_pointer := unsafe { &FontFaceObject(face) }
+		face.font_download_timer_ = platform.Timer.create_single_shot(0, fn [face_pointer] () {
+			mut mutable_face := unsafe { &FontFaceObject(face_pointer) }
+			mutable_face.update_font_display_period()
+		})
+	}
+	if mut timer := face.font_download_timer_ {
+		timer.start_with_interval(int(deadline_ms - elapsed_ms))
+	}
 }
 
 pub fn (mut face FontFaceObject) disconnect_from_css_rule() {
@@ -2328,6 +2451,8 @@ pub fn (mut face FontFaceObject) set_display(value string) ! {
 
 pub fn (mut face FontFaceObject) set_display_impl(value string) {
 	face.display_ = value
+	face.font_display_ = font_display_from_string(value) or { FontDisplay.auto_ }
+	face.update_font_display_period()
 }
 
 pub fn (mut face FontFaceObject) set_ascent_override(value string) ! {
@@ -2487,6 +2612,11 @@ fn (mut face FontFaceObject) start_binary_load() {
 }
 
 fn (mut face FontFaceObject) finish_loading_from_typeface(maybe_typeface ?PlatformTypeface) {
+	face.update_font_display_period()
+	face.font_download_completed_ = true
+	if mut timer := face.font_download_timer_ {
+		timer.stop()
+	}
 	if typeface := maybe_typeface {
 		// 1. If the load was successful, font face now represents the parsed font;
 		//    fulfill font face's [[FontStatusPromise]] with font face, and set its status attribute to "loaded".
@@ -2513,6 +2643,7 @@ fn (mut face FontFaceObject) finish_loading_from_typeface(maybe_typeface ?Platfo
 		// 2. Otherwise, reject font face's [[FontStatusPromise]] with a DOMException named "SyntaxError"/"NetworkError"
 		//    and set font face's status attribute to "error".
 		face.reject_status_promise('Failed to load font')
+		face.invalidate_font_display()
 
 		for mut font_face_set in face.containing_sets {
 			font_face_set.failed_fonts_ << face
@@ -3081,6 +3212,13 @@ pub mut:
 	point_size f32
 	variations FontVariationSettings
 	features   ShapeFeatures
+	is_invisible bool
+}
+
+pub enum PendingFontState {
+	invisible
+	visible
+	failed
 }
 
 pub struct FontCascadeEntry {
@@ -3091,6 +3229,7 @@ pub:
 
 pub struct PendingFontFace {
 pub:
+	font_index     int
 	unicode_ranges []UnicodeRange
 	font_face      &FontFaceObject = unsafe { nil }
 }
@@ -3101,10 +3240,13 @@ pub mut:
 	fonts            []FontCascadeEntry
 	pending_faces    []PendingFontFace
 	last_resort_font ?PlatformFont
+	invisible_fonts  map[string]&PlatformFont
 }
 
 pub fn FontCascadeList.create() FontCascadeList {
-	return FontCascadeList{}
+	return FontCascadeList{
+		invisible_fonts: map[string]&PlatformFont{}
+	}
 }
 
 pub fn (mut list FontCascadeList) add(font PlatformFont, unicode_ranges []UnicodeRange) {
@@ -3115,11 +3257,16 @@ pub fn (mut list FontCascadeList) add(font PlatformFont, unicode_ranges []Unicod
 }
 
 pub fn (mut list FontCascadeList) extend(other FontCascadeList) {
+	font_offset := list.fonts.len
 	for entry in other.fonts {
 		list.fonts << entry
 	}
 	for pending_face in other.pending_faces {
-		list.pending_faces << pending_face
+		list.pending_faces << PendingFontFace{
+			font_index: font_offset + pending_face.font_index
+			unicode_ranges: pending_face.unicode_ranges.clone()
+			font_face: pending_face.font_face
+		}
 	}
 	if last_resort := other.last_resort_font {
 		list.last_resort_font = last_resort
@@ -3135,33 +3282,19 @@ pub fn (mut list FontCascadeList) add_pending_face(font_face &FontFaceObject) {
 		return
 	}
 	list.pending_faces << PendingFontFace{
+		font_index: list.fonts.len
 		unicode_ranges: font_face.unicode_ranges_.clone()
 		font_face: font_face
 	}
 }
 
-pub fn (mut list FontCascadeList) trigger_pending_loads_for_code_point(code_point u32) {
-	mut kept := []PendingFontFace{cap: list.pending_faces.len}
-	mut faces_to_load := []&FontFaceObject{}
-	for pending_face in list.pending_faces {
-		mut covers_code_point := false
-		for unicode_range in pending_face.unicode_ranges {
-			if unicode_range.start <= code_point && code_point <= unicode_range.end {
-				covers_code_point = true
-				break
-			}
-		}
-		if covers_code_point {
-			faces_to_load << pending_face.font_face
-		} else {
-			kept << pending_face
+fn pending_face_covers(pending_face PendingFontFace, code_point u32) bool {
+	for unicode_range in pending_face.unicode_ranges {
+		if unicode_range.start <= code_point && code_point <= unicode_range.end {
+			return true
 		}
 	}
-	list.pending_faces = kept
-	for font_face in faces_to_load {
-		mut mutable_font_face := unsafe { &FontFaceObject(font_face) }
-		mutable_font_face.load()
-	}
+	return false
 }
 
 fn platform_font_equals(left PlatformFont, right PlatformFont) bool {
@@ -3175,9 +3308,13 @@ fn platform_font_equals(left PlatformFont, right PlatformFont) bool {
 		&& left.variations.width == right.variations.width
 		&& left.variations.opsz == right.variations.opsz
 		&& left.variations.axes == right.variations.axes && left.features == right.features
+		&& left.is_invisible == right.is_invisible
 }
 
 pub fn (list &FontCascadeList) equals(other &FontCascadeList) bool {
+	if list.pending_faces.len != 0 || other.pending_faces.len != 0 {
+		return false
+	}
 	if list.fonts.len != other.fonts.len {
 		return false
 	}
@@ -3201,23 +3338,78 @@ pub fn (mut list FontCascadeList) set_last_resort_font(font PlatformFont) {
 	list.last_resort_font = font
 }
 
-fn (list &FontCascadeList) font_for_code_point_internal(code_point u32, trigger_pending_loads bool) &PlatformFont {
-	if trigger_pending_loads {
-		mut mutable_list := unsafe { &FontCascadeList(list) }
-		mutable_list.trigger_pending_loads_for_code_point(code_point)
+struct PendingFontResolution {
+mut:
+	pending_index          int
+	rendering_with_fallback bool
+	invisible              bool
+}
+
+fn (mut list FontCascadeList) resolve_pending_faces(code_point u32, through_font_index int, current PendingFontResolution) PendingFontResolution {
+	mut result := current
+	for !result.rendering_with_fallback && result.pending_index < list.pending_faces.len
+		&& list.pending_faces[result.pending_index].font_index <= through_font_index {
+		pending_face := list.pending_faces[result.pending_index]
+		result.pending_index++
+		if !pending_face_covers(pending_face, code_point) {
+			continue
+		}
+		mut face := unsafe { &FontFaceObject(pending_face.font_face) }
+		state := face.resolve_for_rendering()
+		if state == .failed {
+			continue
+		}
+		result.invisible = state == .invisible
+		result.rendering_with_fallback = true
 	}
+	return result
+}
+
+fn platform_font_cache_key(font &PlatformFont) string {
+	return '${font.typeface.family_name}|${font.typeface.source_path}|${font.typeface.weight_}|${font.typeface.width_}|${font.typeface.slope_}|${font.point_size}|${font.variations.weight}|${font.variations.width}|${font.variations.opsz}'
+}
+
+fn (list &FontCascadeList) font_with_visibility(font &PlatformFont, invisible bool) &PlatformFont {
+	if !invisible {
+		return unsafe { font }
+	}
+	mut mutable_list := unsafe { &FontCascadeList(list) }
+	key := platform_font_cache_key(font)
+	if cached := mutable_list.invisible_fonts[key] {
+		return cached
+	}
+	variant := &PlatformFont{
+		typeface: font.typeface
+		point_size: font.point_size
+		variations: font.variations
+		features: font.features
+		is_invisible: true
+	}
+	mutable_list.invisible_fonts[key] = variant
+	return variant
+}
+
+fn (list &FontCascadeList) font_for_code_point_internal(code_point u32, trigger_pending_loads bool) &PlatformFont {
+	mut resolution := PendingFontResolution{}
+	mut mutable_list := unsafe { &FontCascadeList(list) }
 	for index, entry in list.fonts {
+		if trigger_pending_loads {
+			resolution = mutable_list.resolve_pending_faces(code_point, index, resolution)
+		}
 		if entry.unicode_ranges.len == 0 {
-			return unsafe { &list.fonts[index].font }
+			return list.font_with_visibility(unsafe { &list.fonts[index].font }, resolution.invisible)
 		}
 		for unicode_range in entry.unicode_ranges {
 			if unicode_range.start <= code_point && code_point <= unicode_range.end {
-				return unsafe { &list.fonts[index].font }
+				return list.font_with_visibility(unsafe { &list.fonts[index].font }, resolution.invisible)
 			}
 		}
 	}
+	if trigger_pending_loads {
+		resolution = mutable_list.resolve_pending_faces(code_point, list.fonts.len, resolution)
+	}
 	if font := list.last_resort_font {
-		return &font
+		return list.font_with_visibility(&font, resolution.invisible)
 	}
 	panic('FontCascadeList must contain a font or a last-resort font')
 }
@@ -3231,6 +3423,14 @@ pub fn (list &FontCascadeList) font_for_code_point(code_point u32) &PlatformFont
 
 pub fn (list &FontCascadeList) font_for_code_point_for_shaping(code_point u32) &PlatformFont {
 	return list.font_for_code_point_internal(code_point, true)
+}
+
+// Layout performs the concrete platform glyph-coverage check. Resolve only the
+// pending author faces which precede that selected fallback in cascade order.
+pub fn (list &FontCascadeList) fallback_is_invisible_for_code_point_through(code_point u32, font_index int) bool {
+	mut mutable_list := unsafe { &FontCascadeList(list) }
+	resolution := mutable_list.resolve_pending_faces(code_point, font_index, PendingFontResolution{})
+	return resolution.invisible
 }
 
 pub struct FontVariationSettings {
@@ -3491,10 +3691,6 @@ fn (mut candidate MatchingFontCandidate) font_with_point_size(point_size f32, va
 	for face in candidate.font_faces {
 		if face_fonts := face.font_with_point_size(point_size, variations, shape_features) {
 			font_list.extend(face_fonts)
-			continue
-		}
-		if face.has_urls() && face.has_non_default_unicode_range() {
-			font_list.add_pending_face(face)
 		}
 	}
 	if font_list.is_empty() {
@@ -3645,17 +3841,7 @@ pub fn (mut computer FontComputer) load_fonts_from_font_face_rules(rules []&CSSF
 		mut mutable_set := unsafe { &FontFaceSet(font_face_set) }
 		mutable_set.add_css_connected_font(font_face)
 
-		if font_face.has_non_default_unicode_range() {
-			computer.register_font_face(font_face)
-		} else {
-			// NB: Load via FontFace::load(), to satisfy this requirement:
-			// https://drafts.csswg.org/css-font-loading/#font-face-load
-			// User agents can initiate font loads on their own, whenever they determine that a given font face is
-			// necessary to render something on the page. When this happens, they must act as if they had called the
-			// corresponding FontFace's load() method described here.
-			mut mutable_face := unsafe { &FontFaceObject(font_face) }
-			mutable_face.load_with_font_computer(computer)
-		}
+		computer.register_font_face(font_face)
 	}
 }
 
@@ -3673,17 +3859,7 @@ pub fn (mut computer FontComputer) load_fonts_from_css_rules(rules []&CSSRule, f
 			mut mutable_set := unsafe { &FontFaceSet(font_face_set) }
 			mutable_set.add_css_connected_font(font_face)
 
-			if font_face.has_non_default_unicode_range() {
-				computer.register_font_face(font_face)
-			} else {
-				// NB: Load via FontFace::load(), to satisfy this requirement:
-				// https://drafts.csswg.org/css-font-loading/#font-face-load
-				// User agents can initiate font loads on their own, whenever they determine that a given font face is
-				// necessary to render something on the page. When this happens, they must act as if they had called the
-				// corresponding FontFace's load() method described here.
-				mut mutable_face := unsafe { &FontFaceObject(font_face) }
-				mutable_face.load_with_font_computer(computer)
-			}
+			computer.register_font_face(font_face)
 		}
 
 		if font_feature_values_rule := rule.font_feature_values_rule_ref() {
