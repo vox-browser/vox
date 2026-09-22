@@ -1,6 +1,7 @@
 module css
 
 import dom
+import platform
 
 fn test_system_ui_generic_font_family_list_parses() {
 	parsed := parse_css_value_logic(.font_family, 'system-ui, sans-serif') or {
@@ -64,6 +65,30 @@ fn test_computed_font_list_uses_computed_font_properties_and_caches_result() {
 	$if macos {
 		assert font.typeface.family_name == 'Serif'
 	}
+}
+
+fn test_first_available_computed_font_retains_owned_value_across_allocation_pressure() {
+	mut computed := ComputedProperties.new()
+	computed.set_property_without_modifying_flags(.font_family, &dom.StyleValue{
+		css_text: 'sans-serif'
+	})
+	computer := FontComputer.create()
+	selected := computed.first_available_computed_font(computer)
+	expected_family := selected.typeface.family_name
+	mut allocation_pressure := []string{cap: 4096}
+	for index in 0 .. 4096 {
+		allocation_pressure << '${index}-${expected_family}'
+	}
+	retained := computed.first_available_computed_font(computer)
+	assert retained.typeface.family_name == expected_family
+	metrics := platform.Font{
+		family: retained.typeface.family_name
+		point_size: retained.point_size / 0.75
+		weight: int(retained.variations.weight)
+		source_path: retained.typeface.source_path
+	}.pixel_metrics()
+	assert metrics.size == retained.point_size / 0.75
+	assert allocation_pressure.len == 4096
 }
 
 fn test_quoted_system_font_family_selects_named_face() {

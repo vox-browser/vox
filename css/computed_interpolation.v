@@ -1572,7 +1572,7 @@ pub mut:
 	animated_property_values_                map[PropertyID]&dom.StyleValue
 	display_before_box_type_transformation_  Display = Display.new()
 	cached_computed_font_list_               ?&FontCascadeList
-	cached_first_available_computed_font_    ?&PlatformFont
+	cached_first_available_computed_font_    ?PlatformFont
 	line_height_                             ?CSSPixels
 	attempted_pseudo_class_matches_          PseudoClassBitmap
 	inheritance_dependent_specified_values_  map[PropertyID]&dom.StyleValue
@@ -5727,11 +5727,12 @@ pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer
 	return font_list
 }
 
-pub fn (mut c ComputedProperties) first_available_computed_font(font_computer &FontComputer) &PlatformFont {
+pub fn (mut c ComputedProperties) first_available_computed_font(font_computer &FontComputer) PlatformFont {
 	if font := c.cached_first_available_computed_font_ {
 		return font
 	}
-	font := c.computed_font_list(font_computer).font_for_code_point(u32(` `))
+	selected_font := c.computed_font_list(font_computer).font_for_code_point(u32(` `))
+	font := *selected_font
 	c.cached_first_available_computed_font_ = font
 	return font
 }
