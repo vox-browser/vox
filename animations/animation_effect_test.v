@@ -65,19 +65,19 @@ fn test_animation_effect_phase_iteration_and_direction() {
 
 	animation.set_current_time(TimeValue.milliseconds(250))!
 	assert effect.phase() == .active
-	assert (effect.current_iteration() or { -1 }) == 0
-	assert (effect.simple_iteration_progress() or { -1 }) == 0.25
-	assert (effect.directed_progress() or { -1 }) == 0.25
+	assert (effect.current_iteration() or { -1.0 }) == 0
+	assert (effect.simple_iteration_progress() or { -1.0 }) == 0.25
+	assert (effect.directed_progress() or { -1.0 }) == 0.25
 
 	animation.set_current_time(TimeValue.milliseconds(1250))!
-	assert (effect.current_iteration() or { -1 }) == 1
+	assert (effect.current_iteration() or { -1.0 }) == 1
 	assert effect.current_direction() == .backwards
-	assert (effect.directed_progress() or { -1 }) == 0.75
+	assert (effect.directed_progress() or { -1.0 }) == 0.75
 
 	animation.set_current_time(TimeValue.milliseconds(2000))!
 	assert effect.phase() == .after
-	assert (effect.simple_iteration_progress() or { -1 }) == 1
-	assert (effect.current_iteration() or { -1 }) == 1
+	assert (effect.simple_iteration_progress() or { -1.0 }) == 1
+	assert (effect.current_iteration() or { -1.0 }) == 1
 }
 
 fn test_progress_timeline_normalizes_timing_to_percentages() {

@@ -558,11 +558,17 @@ pub fn (counter_style CounterStyle) pad() CounterStylePad {
 }
 
 pub fn (counter_style CounterStyle) equals(other CounterStyle) bool {
+	mut fallbacks_equal := counter_style.fallback_ == none && other.fallback_ == none
+	if fallback := counter_style.fallback_ {
+		if other_fallback := other.fallback_ {
+			fallbacks_equal = fallback == other_fallback
+		}
+	}
 	return counter_style.name_ == other.name_ && counter_style.algorithm_ == other.algorithm_
 		&& counter_style.negative_sign_ == other.negative_sign_
 		&& counter_style.prefix_ == other.prefix_ && counter_style.suffix_ == other.suffix_
 		&& counter_style.range_ == other.range_ && counter_style.pad_ == other.pad_
-		&& counter_style.fallback_ == other.fallback_
+		&& fallbacks_equal
 }
 
 // https://drafts.csswg.org/css-counter-styles-3/#extended-range-optional
@@ -1614,6 +1620,11 @@ pub mut:
 	value       ?CounterValue
 }
 
+fn optional_counter_operation_value(value ?i32) ?CounterValue {
+	resolved := value or { return none }
+	return CounterValue(resolved)
+}
+
 // TreeBuilder supplies the layout-tree neighbors because counter inheritance
 // is defined over the layout tree, not the DOM tree. This invokes the literal
 // translated resolve_counters()/inherit_counters() algorithms above and then
@@ -1622,7 +1633,7 @@ pub fn resolve_counters_for_layout(mut abstract_element dom.AbstractElement, com
 	mut reset := []CounterOperation{}
 	computed_values := unsafe { &ComputedValues(computed) }
 	for counter in computed_values.counter_reset() {
-		mut value := counter.value
+		mut value := optional_counter_operation_value(counter.value)
 		if counter.is_reversed && value == none {
 			value = reversed_counter_start_value(counter.name, &abstract_element, computed)
 		}
@@ -1636,14 +1647,14 @@ pub fn resolve_counters_for_layout(mut abstract_element dom.AbstractElement, com
 	for counter in computed_values.counter_increment() {
 		increment << CounterOperation{
 			name: counter.name
-			value: counter.value
+			value: optional_counter_operation_value(counter.value)
 		}
 	}
 	mut set := []CounterOperation{}
 	for counter in computed_values.counter_set() {
 		set << CounterOperation{
 			name: counter.name
-			value: counter.value
+			value: optional_counter_operation_value(counter.value)
 		}
 	}
 	resolved := resolve_counters(CounterElement{

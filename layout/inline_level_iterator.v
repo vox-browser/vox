@@ -600,11 +600,11 @@ fn (mut iterator InlineLevelIterator) dimension_box_on_line(box &Box) {
 			definite_height = clamp_layout_content_size(unsafe { &Node(box) }, resolved, iterator.available_space.height.to_px_or_zero(), state, false)
 		}
 	} else if preferred_height.is_auto() && box.preferred_aspect_ratio() != none {
-		if resolved := resolve_content_height_for_node(mut iterator.state, styled, state, if iterator.available_space.height.is_definite() {
-			iterator.available_space.height.to_px_or_zero().to_double()
-		} else {
-			none
-		}) {
+		mut containing_block_height := ?f64(none)
+		if iterator.available_space.height.is_definite() {
+			containing_block_height = iterator.available_space.height.to_px_or_zero().to_double()
+		}
+		if resolved := resolve_content_height_for_node(mut iterator.state, styled, state, containing_block_height) {
 			definite_height = clamp_layout_content_size(unsafe { &Node(box) }, css_px(resolved), iterator.available_space.height.to_px_or_zero(), state, false)
 		}
 	}

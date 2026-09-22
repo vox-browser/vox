@@ -1,6 +1,7 @@
 module eventtiming
 
 import dom
+import performancetimeline
 
 fn make_timed_event(cancelable bool, time_stamp f64) &dom.Event {
 	mut event := dom.Event.new_with_init('pointerdown', dom.EventInit{
@@ -65,7 +66,7 @@ fn test_registry_metadata_matches_current_upstream_behavior() {
 
 fn test_first_input_registry_branch_is_admitted() {
 	entry := &PerformanceEventTiming{
-		PerformanceEntry: PerformanceEntry{
+		performance_entry_: performancetimeline.PerformanceEntry{
 			name: 'pointerdown'
 			entry_type: 'first-input'
 			start_time: 1

@@ -194,7 +194,8 @@ pub fn should_elements_inline_type_behavior_be_blocked_by_content_security_polic
 				violation.set_element(element)
 				if contains_ascii_case_insensitive(directive.value(), report_sample) {
 					runes := source.runes()
-					violation.set_sample(runes[..if runes.len < 40 { runes.len } else { 40 }].string())
+					sample_length := if runes.len < 40 { runes.len } else { 40 }
+					violation.set_sample(runes[..sample_length].string())
 				}
 				violation.report_a_violation(mut global)
 				if policy.disposition() == .enforce {
@@ -262,7 +263,8 @@ pub fn ensure_csp_does_not_block_string_compilation(mut global GlobalContext, in
 				violation.set_resource(ViolationResource(ViolationResourceKind.eval))
 				if contains_ascii_case_insensitive(source_list, report_sample) {
 					runes := source_string.runes()
-					violation.set_sample(runes[..if runes.len < 40 { runes.len } else { 40 }].string())
+					sample_length := if runes.len < 40 { runes.len } else { 40 }
+					violation.set_sample(runes[..sample_length].string())
 				}
 				violation.report_a_violation(mut global)
 				if policy.disposition() == .enforce {

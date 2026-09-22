@@ -725,11 +725,11 @@ pub fn (mut form HTMLFormElementModel) submit_form(submitter ?&FormAssociatedEle
 			} else {
 				''
 			}
-			close_html_dialog_element(mut dialog, result, if control := submitter {
-				control.element
+			if control := submitter {
+				close_html_dialog_element(mut dialog, result, control.element)
 			} else {
-				none
-			})
+				close_html_dialog_element(mut dialog, result, none)
+			}
 		}
 		return
 	}

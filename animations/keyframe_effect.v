@@ -122,6 +122,7 @@ pub fn KeyframeEffect.create() &KeyframeEffect {
 	keyframe_effect_preparation_identity_counter++
 	return &KeyframeEffect{
 		is_keyframe_effect_: true
+		timing_function_: css.EasingFunction.linear()
 		animation_preparation_identity_: identity
 	}
 }

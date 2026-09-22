@@ -460,7 +460,11 @@ fn process_action_sequence(mut state InputState, value json2.Any) ![]ActionObjec
 			}
 		}
 	}
-	state.get_or_create_input_source(type_, id, if type_ == .pointer { pointer_type } else { none })!
+	if type_ == .pointer {
+		state.get_or_create_input_source(type_, id, pointer_type)!
+	} else {
+		state.get_or_create_input_source(type_, id, none)!
+	}
 	items := object['actions'] or {
 		return error(WebDriverError.from_code(.invalid_argument, "Missing property 'actions'").msg())
 	}

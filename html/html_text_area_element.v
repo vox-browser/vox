@@ -203,7 +203,11 @@ pub fn (mut model HTMLTextAreaElementModel) create_shadow_tree_if_needed() {
 pub fn (mut model HTMLTextAreaElementModel) handle_maxlength_attribute() {
 	mut text_node := model.text_node_ or { return }
 	max_length := model.max_length()
-	text_node.set_max_length(if max_length >= 0 { int(max_length) } else { none })
+	if max_length >= 0 {
+		text_node.set_max_length(int(max_length))
+	} else {
+		text_node.set_max_length(none)
+	}
 	model.update_validity()
 }
 

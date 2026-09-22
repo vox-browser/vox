@@ -570,11 +570,12 @@ pub fn BrowsingContextModel.create_a_new_browsing_context_and_document(_ &dom.Pa
 	document.set_document_type(.html)
 	document.set_content_type('text/html')
 	document.set_quirks_mode(.yes)
-	document.set_origin(determine_the_origin(dom.url_about_blank(), sandbox_flags, if creator_document := creator {
-		creator_document.origin()
+	if creator_document := creator {
+		document.set_origin(determine_the_origin(dom.url_about_blank(), sandbox_flags,
+			creator_document.origin()))
 	} else {
-		none
-	}))
+		document.set_origin(determine_the_origin(dom.url_about_blank(), sandbox_flags, none))
+	}
 	document.set_active_sandboxing_flag_bits(sandbox_flags.bits)
 	document.set_is_initial_about_blank(true)
 	document.set_allow_declarative_shadow_roots(true)

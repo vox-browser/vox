@@ -508,8 +508,9 @@ fn (mut scrollbar Scrollbar) scroll_to_mouse_position(position Point,
 		} else {
 			scrollbar_data.thumb_rect.y
 		}
+		pointer_position := if is_horizontal { position.x } else { position.y }
 		grab_position := if scrollbar_data.thumb_rect.contains(position) {
-			(if is_horizontal { position.x } else { position.y }) - thumb_origin
+			pointer_position - thumb_origin
 		} else {
 			math.max(math.min(offset_relative_to_gutter, thumb_size / 2.0), offset_relative_to_gutter - gutter_size + thumb_size)
 		}

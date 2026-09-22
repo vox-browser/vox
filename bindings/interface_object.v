@@ -100,7 +100,11 @@ pub fn (mut object InterfacePrototypeObject) internal_set_prototype_of(prototype
 	}
 	object.prototype_ = prototype
 	mut platform_object := unsafe { &PlatformObject(object.object) }
-	platform_object.set_prototype(if parent := prototype { parent.object } else { none })
+	if parent := prototype {
+		platform_object.set_prototype(parent.object)
+	} else {
+		platform_object.set_prototype(none)
+	}
 	return true
 }
 

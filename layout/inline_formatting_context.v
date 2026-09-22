@@ -154,10 +154,9 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 					containing_styled := unsafe { &Node(containing_block) }.as_node_with_style() or {
 						continue
 					}
-					container_height := if available_space.height.is_definite() {
-						?CSSPixels(available_space.height.to_px_or_zero())
-					} else {
-						?CSSPixels(none)
+					mut container_height := ?CSSPixels(none)
+					if available_space.height.is_definite() {
+						container_height = available_space.height.to_px_or_zero()
 					}
 					mutable_context.layout_floating_box(mut state, node, containing_styled, available_space.width.to_px_or_zero(), container_height, line_builder.current_block_offset_value(), line_builder)
 					line_builder.recalculate_available_space()

@@ -415,14 +415,13 @@ fn (mut animation Animation) silently_set_current_time(value ?TimeValue) ! {
 		}
 		return
 	}
-	seek := value
 	animation.auto_align_start_time_ = false
 	timeline := animation.timeline_
 	if animation.hold_time_ != none || animation.start_time_ == none || timeline == none
 		|| animation.active_timeline_time() == none || animation.playback_rate_ == 0 {
-		animation.hold_time_ = seek
+		animation.hold_time_ = value
 	} else if timeline_time := animation.active_timeline_time() {
-		animation.start_time_ = timeline_time.subtract(seek.divide(animation.playback_rate_))!
+		animation.start_time_ = timeline_time.subtract(value.divide(animation.playback_rate_))!
 	}
 	if timeline == none || animation.active_timeline_time() == none {
 		animation.start_time_ = none
@@ -646,16 +645,16 @@ pub fn (mut animation Animation) play_an_animation(auto_rewind bool) ! {
 		false
 	}
 	previous := animation.current_time()
+	previous_unresolved := previous == none
+	previous_value := previous or { animation.associated_effect_end() }
 	enable_seek := auto_rewind && !has_finite_timeline
 	rate := animation.effective_playback_rate()
 	end := animation.associated_effect_end()
-	if rate > 0 && enable_seek && (previous == none || previous or { end }.value < 0 || previous or {
-		end
-	}.value >= end.value) {
+	if rate > 0 && enable_seek
+		&& (previous_unresolved || previous_value.value < 0 || previous_value.value >= end.value) {
 		animation.hold_time_ = TimeValue.zero_for_timeline(animation.timeline_)
-	} else if rate < 0 && enable_seek && (previous == none || previous or { end }.value <= 0 || previous or {
-		end
-	}.value > end.value) {
+	} else if rate < 0 && enable_seek
+		&& (previous_unresolved || previous_value.value <= 0 || previous_value.value > end.value) {
 		if math.is_inf(end.value, 1) {
 			return error('Cannot rewind an animation with an infinite effect end')
 		}
@@ -1075,8 +1074,8 @@ fn (mut animation Animation) update_finished_state(did_seek bool) {
 fn (mut animation Animation) emit_playback_event(name string, current ?TimeValue) {
 	timeline_time := animation.active_timeline_time()
 	event := AnimationPlaybackEvent.create(name, AnimationPlaybackEventInit{
-		current_time:  if value := current { value.as_css_numberish() } else { none }
-		timeline_time: if value := timeline_time { value.as_css_numberish() } else { none }
+		current_time:  optional_css_numberish(current)
+		timeline_time: optional_css_numberish(timeline_time)
 	})
 	animation.emitted_events_ << event
 	if document := animation.document_for_timing() {

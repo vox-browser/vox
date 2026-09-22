@@ -117,7 +117,11 @@ pub fn (mut response Response) set_body(body ?&Body) {
 // Byte buffers are the host-network boundary in this standalone port. Keep
 // conversion at that boundary; the response record itself always owns a Body.
 pub fn (mut response Response) set_body_bytes(bytes ?[]u8) {
-	response.set_body(if value := bytes { Body.from_bytes(value, .bytes) } else { none })
+	if value := bytes {
+		response.set_body(Body.from_bytes(value, .bytes))
+	} else {
+		response.set_body(none)
+	}
 }
 
 pub fn (response &Response) fetch_response_body_bytes() ?[]u8 {

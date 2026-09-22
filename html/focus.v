@@ -37,11 +37,11 @@ fn focus_related_id(target ?&dom.Node) ?i64 {
 fn fire_a_focus_event(mut manager FocusManager, target &dom.Node, related_target ?&dom.Node, event_name string, bubbles bool) {
 	mut event := dom.Event.create(event_name, dom.EventInit{ bubbles: bubbles })
 	event.set_composed(true)
-	event.set_related_target(if related := related_target {
-		unsafe { &dom.EventTarget(related) }
+	if related := related_target {
+		event.set_related_target(unsafe { &dom.EventTarget(related) })
 	} else {
-		none
-	})
+		event.set_related_target(none)
+	}
 	unsafe { &dom.EventTarget(target) }.dispatch_event(event)
 	manager.events << FocusEventRecord{
 		type_:             event_name

@@ -26,9 +26,16 @@ pub:
 	value ?CSSNumberish
 }
 
+fn optional_css_numberish(time ?TimeValue) ?CSSNumberish {
+	if resolved := time {
+		return resolved.as_css_numberish()
+	}
+	return none
+}
+
 pub fn NullableCSSNumberish.from_optional_css_numberish_time(time ?TimeValue) NullableCSSNumberish {
 	return NullableCSSNumberish{
-		value: if resolved := time { resolved.as_css_numberish() } else { none }
+		value: optional_css_numberish(time)
 	}
 }
 

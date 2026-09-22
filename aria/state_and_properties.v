@@ -463,18 +463,18 @@ pub fn state_or_property_to_string_value(value StateAndProperty, data &AriaData,
 			aria_sort_to_string(data.aria_sort_or_default())
 		}
 		.aria_value_max {
-			optional_number_to_string(data.aria_value_max_or(if default_value is f64 {
-				default_value
-			} else {
-				none
-			}))
+			mut numeric_default := ?f64(none)
+			if default_value is f64 {
+				numeric_default = default_value
+			}
+			optional_number_to_string(data.aria_value_max_or(numeric_default))
 		}
 		.aria_value_min {
-			optional_number_to_string(data.aria_value_min_or(if default_value is f64 {
-				default_value
-			} else {
-				none
-			}))
+			mut numeric_default := ?f64(none)
+			if default_value is f64 {
+				numeric_default = default_value
+			}
+			optional_number_to_string(data.aria_value_min_or(numeric_default))
 		}
 		.aria_value_now {
 			optional_number_to_string(data.aria_value_now_or_default())

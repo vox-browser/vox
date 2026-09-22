@@ -7994,6 +7994,7 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 		}
 		FilterOperationDropShadow {
 			if to is FilterOperationDropShadow {
+				keeps_radius := if delta >= 0.5 { to.radius != none } else { from.radius != none }
 				x := interpolate_style_value(calculation_context, from.offset_x, to.offset_x, delta, allow_discrete) or { return none }
 				y := interpolate_style_value(calculation_context, from.offset_y, to.offset_y, delta, allow_discrete) or { return none }
 				zero := StyleValue(LengthStyleValue.create(Length.make_px(0)))
@@ -8009,7 +8010,7 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 				FilterStyleValue(FilterOperationDropShadow{
 					offset_x: x
 					offset_y: y
-					radius: if if delta >= 0.5 { to.radius != none } else { from.radius != none } {
+					radius: if keeps_radius {
 						interpolated_radius
 					} else {
 						none
@@ -9038,12 +9039,19 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 // --- Style invalidation after style changes ---
 
 fn is_stacking_context_creating_value_boundary(property_id PropertyID, value ?&dom.StyleValue) bool {
-	style_value := unsafe { value or { return false } }
+	if value == none {
+		return false
+	}
+	style_value := unsafe { value }
 	parsed := style_value_logic_from_dom(property_id, style_value) or { return true }
 	keyword := parsed.to_keyword()
 	return match property_id {
 		.opacity {
-			!parsed.is_number() || number_from_style_value(parsed) != 1.0
+			if !parsed.is_number() {
+				true
+			} else {
+				number_from_style_value(parsed) != 1.0
+			}
 		}
 		.transform {
 			if keyword == .none_ {
@@ -10902,15 +10910,16 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 	start_keyframe := key_frame_set.keyframes_by_key[start_key] or { return }
 	end_keyframe := key_frame_set.keyframes_by_key[end_key] or { return }
 	mut interval_progress := (progress - f64(start_key)) / f64(end_key - start_key)
-	keyframe_easing := if easing := start_keyframe.easing {
+	mut keyframe_easing := effect.default_easing
+	if easing := start_keyframe.easing {
 		match easing {
-			EasingFunction { easing }
+			EasingFunction { keyframe_easing = easing }
 			UnresolvedKeyframeEasing {
-				resolve_keyframe_easing(easing.value, abstract_element) or { effect.default_easing }
+				if resolved_easing := resolve_keyframe_easing(easing.value, abstract_element) {
+					keyframe_easing = resolved_easing
+				}
 			}
 		}
-	} else {
-		effect.default_easing
 	}
 	interval_progress = keyframe_easing.evaluate_at(interval_progress, false)
 
@@ -10919,7 +10928,10 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 	s.clear_computation_context_caches()
 	for property_id, initial_start in start_values {
 		mut start := unsafe { initial_start }
-		mut end := unsafe { end_values[property_id] or { initial_start } }
+		mut end := unsafe { initial_start }
+		if end_value := end_values[property_id] {
+			end = unsafe { end_value }
+		}
 		if !effect.is_css_transition && computed_properties.is_property_important(property_id) {
 			continue
 		}

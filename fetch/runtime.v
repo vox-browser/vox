@@ -465,8 +465,8 @@ pub fn FetchedDataReceiver.create(params &FetchParams, stream &streams.ReadableS
 	}
 	controller.set_pull_algorithm(fn () ! {})
 	controller.set_cancel_algorithm(fn [mut receiver] (reason streams.Value) ! {
-		if params := receiver.fetch_params_ {
-			mut fetch_controller := params.controller
+		if current_params := receiver.fetch_params_ {
+			mut fetch_controller := current_params.controller
 			fetch_controller.abort(reason.description())
 		}
 	})

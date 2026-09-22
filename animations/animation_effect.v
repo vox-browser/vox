@@ -118,7 +118,7 @@ pub mut:
 	iteration_duration_           TimeValue         = TimeValue.milliseconds(0)
 	playback_direction_           PlaybackDirection
 	associated_animation_         ?&Animation
-	timing_function_              css.EasingFunction = css.EasingFunction.linear()
+	timing_function_              css.EasingFunction
 	previous_phase_               EffectPhase        = .idle
 	previous_current_iteration_   f64
 	target_properties_            map[css.PropertyID]bool
@@ -127,7 +127,9 @@ pub mut:
 }
 
 pub fn AnimationEffect.new() &AnimationEffect {
-	return &AnimationEffect{}
+	return &AnimationEffect{
+		timing_function_: css.EasingFunction.linear()
+	}
 }
 
 // Base AnimationEffect has no target. KeyframeEffect supplies the concrete
@@ -174,7 +176,7 @@ pub fn (effect &AnimationEffect) get_computed_timing() ComputedEffectTiming {
 		computed_duration: effect.iteration_duration_.as_css_numberish()
 		end_time:          effect.end_time().as_css_numberish()
 		active_duration:   effect.active_duration().as_css_numberish()
-		local_time:        if value := local { value.as_css_numberish() } else { none }
+		local_time:        optional_css_numberish(local)
 		progress:          effect.transformed_progress()
 		current_iteration: effect.current_iteration()
 	}

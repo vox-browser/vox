@@ -153,8 +153,19 @@ fn request_matches_cached_item(request_query &fetch.Request, request &fetch.Requ
 		return true
 	}
 	for field_value in vary_field_values(cached_response) {
-		if field_value == '*'
-			|| request.fetch_request_header_list().get(field_value) != request_query.fetch_request_header_list().get(field_value) {
+		if field_value == '*' {
+			return false
+		}
+		cached_header := request.fetch_request_header_list().get(field_value)
+		query_header := request_query.fetch_request_header_list().get(field_value)
+		cached_value := cached_header or {
+			if query_header == none {
+				continue
+			}
+			return false
+		}
+		query_value := query_header or { return false }
+		if cached_value != query_value {
 			return false
 		}
 	}

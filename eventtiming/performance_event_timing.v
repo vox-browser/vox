@@ -19,7 +19,7 @@ pub type PerformanceObserverInit = performancetimeline.PerformanceObserverInit
 // https://www.w3.org/TR/event-timing/#sec-performance-event-timing
 @[heap]
 pub struct PerformanceEventTiming {
-	PerformanceEntry
+	performance_entry_ performancetimeline.PerformanceEntry
 mut:
 	entry_type_       string
 	event_target_     ?&dom.EventTarget
@@ -35,7 +35,7 @@ mut:
 // https://www.w3.org/TR/event-timing/#sec-init-event-timing
 pub fn PerformanceEventTiming.create(name string, start_time f64, duration f64, event &dom.Event, processing_start f64, interaction_id u64) &PerformanceEventTiming {
 	return &PerformanceEventTiming{
-		PerformanceEntry: PerformanceEntry{
+		performance_entry_: performancetimeline.PerformanceEntry{
 			name: name
 			entry_type: 'event'
 			start_time: start_time
@@ -52,15 +52,15 @@ pub fn PerformanceEventTiming.create(name string, start_time f64, duration f64, 
 }
 
 pub fn (entry &PerformanceEventTiming) name() string {
-	return entry.PerformanceEntry.name
+	return entry.performance_entry_.name
 }
 
 pub fn (entry &PerformanceEventTiming) start_time() f64 {
-	return entry.PerformanceEntry.start_time
+	return entry.performance_entry_.start_time
 }
 
 pub fn (entry &PerformanceEventTiming) duration() f64 {
-	return entry.PerformanceEntry.duration
+	return entry.performance_entry_.duration
 }
 
 pub fn (entry &PerformanceEventTiming) entry_type() string {

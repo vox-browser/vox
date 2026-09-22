@@ -322,7 +322,11 @@ fn webm_track_kind(track WebMTrackInfo, is_first_of_type bool) MediaSourceTrackK
 			'D_WEBVTT/subtitles' { .subtitles }
 			'D_WEBVTT/descriptions' { .descriptions }
 			else {
-				if track.codec_id.starts_with('D_WEBVTT/') { .metadata } else { .subtitles }
+				if track.codec_id.starts_with('D_WEBVTT/') {
+					MediaSourceTrackKind.metadata
+				} else {
+					MediaSourceTrackKind.subtitles
+				}
 			}
 		}
 	}

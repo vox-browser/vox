@@ -244,21 +244,21 @@ fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node,
 
 	mut definite_height := forced_height
 	if definite_height == none && !use_automatic_height {
-		if resolved := resolve_content_height_for_node(mut state, styled, child_state, if height := containing_height {
-			height.to_double()
-		} else {
-			none
-		}) {
+		mut containing_block_height := ?f64(none)
+		if height := containing_height {
+			containing_block_height = height.to_double()
+		}
+		if resolved := resolve_content_height_for_node(mut state, styled, child_state, containing_block_height) {
 			definite_height = css_px(resolved)
 		}
 	}
 	if resolved_height := definite_height {
 		if !use_automatic_height {
-			definite_height = clamp_content_height_for_node(mut state, styled, child_state, resolved_height, if height := containing_height {
-				height.to_double()
-			} else {
-				none
-			})
+			mut containing_block_height := ?f64(none)
+			if height := containing_height {
+				containing_block_height = height.to_double()
+			}
+			definite_height = clamp_content_height_for_node(mut state, styled, child_state, resolved_height, containing_block_height)
 		}
 	}
 	available_height := if height := definite_height {

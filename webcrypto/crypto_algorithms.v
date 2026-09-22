@@ -335,7 +335,7 @@ fn aes_cbc_encrypt(params AesCbcParams, key &CryptoKey, plaintext []u8) ![]u8 {
 	}
 	padded := pkcs7_pad(plaintext)
 	mut output := []u8{len: padded.len}
-	block := aes.new_cipher(key_bytes)!
+	block := aes.new_cipher(key_bytes)
 	mut mode := cipher.new_cbc(block, params.iv)
 	mode.encrypt_blocks(mut output, padded)
 	return output
@@ -350,7 +350,7 @@ fn aes_cbc_decrypt(params AesCbcParams, key &CryptoKey, ciphertext []u8) ![]u8 {
 		return error('OperationError: AES-CBC ciphertext must contain full blocks')
 	}
 	mut output := []u8{len: ciphertext.len}
-	block := aes.new_cipher(key_bytes)!
+	block := aes.new_cipher(key_bytes)
 	mut mode := cipher.new_cbc(block, params.iv)
 	mode.decrypt_blocks(mut output, ciphertext)
 	return pkcs7_unpad(output)
@@ -381,7 +381,7 @@ fn aes_ctr_crypt(params AesCtrParams, key &CryptoKey, input []u8) ![]u8 {
 	if params.length < 64 && block_count > u64(1) << params.length {
 		return error('OperationError: AES-CTR counter would repeat')
 	}
-	block := aes.new_cipher(key_bytes)!
+	block := aes.new_cipher(key_bytes)
 	mut counter := params.counter.clone()
 	mut output := []u8{len: input.len}
 	mut offset := 0
@@ -503,7 +503,7 @@ fn aes_gcm_encrypt(params AesGcmParams, key &CryptoKey, plaintext []u8) ![]u8 {
 		return error('OperationError: Invalid AES-GCM IV or tag length')
 	}
 	additional_data := params.additional_data or { []u8{} }
-	block := aes.new_cipher(key_bytes)!
+	block := aes.new_cipher(key_bytes)
 	mut hash_subkey := []u8{len: 16}
 	block.encrypt(mut hash_subkey, []u8{len: 16})
 	initial_counter := gcm_initial_counter(params.iv, hash_subkey)
@@ -529,7 +529,7 @@ fn aes_gcm_decrypt(params AesGcmParams, key &CryptoKey, input []u8) ![]u8 {
 	}
 	ciphertext := input[..input.len - tag_size]
 	tag := input[input.len - tag_size..]
-	block := aes.new_cipher(key_bytes)!
+	block := aes.new_cipher(key_bytes)
 	mut hash_subkey := []u8{len: 16}
 	block.encrypt(mut hash_subkey, []u8{len: 16})
 	initial_counter := gcm_initial_counter(params.iv, hash_subkey)
@@ -863,7 +863,7 @@ pub fn aes_key_wrap(key &CryptoKey, plaintext []u8) ![]u8 {
 	n := plaintext.len / 8
 	mut a := []u8{len: 8, init: 0xa6}
 	mut r := plaintext.clone()
-	block_cipher := aes.new_cipher(key_bytes)!
+	block_cipher := aes.new_cipher(key_bytes)
 	for round in 0 .. 6 {
 		for index in 0 .. n {
 			mut input := a.clone()
@@ -888,7 +888,7 @@ pub fn aes_key_unwrap(key &CryptoKey, ciphertext []u8) ![]u8 {
 	n := ciphertext.len / 8 - 1
 	mut a := ciphertext[..8].clone()
 	mut r := ciphertext[8..].clone()
-	block_cipher := aes.new_cipher(key_bytes)!
+	block_cipher := aes.new_cipher(key_bytes)
 	for round := 5; round >= 0; round-- {
 		for index := n - 1; index >= 0; index-- {
 			mut first := a.clone()

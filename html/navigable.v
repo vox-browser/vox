@@ -204,7 +204,11 @@ fn navigable_model_active_document_changed(target voidptr, document ?&dom.Docume
 	if entry := model.active_session_history_entry_ {
 		if state := entry.document_state {
 			mut mutable_state := unsafe { &DocumentState(state) }
-			mutable_state.set_document_id(if value := document { value.unique_id() } else { none })
+			if value := document {
+				mutable_state.set_document_id(value.unique_id())
+			} else {
+				mutable_state.set_document_id(none)
+			}
 		}
 	}
 }
@@ -1336,10 +1340,10 @@ pub fn finalize_a_cross_document_navigation(navigable &NavigableModel, history_h
 		return
 	}
 	if model.parent_ == none {
-		is_auxiliary_with_opener := if context := model.context_ {
-			context.is_auxiliary() && context.opener_browsing_context() != none
-		} else {
-			false
+		mut is_auxiliary_with_opener := false
+		if context := model.context_ {
+			is_auxiliary_with_opener = context.is_auxiliary()
+				&& context.opener_browsing_context() != none
 		}
 		if !is_auxiliary_with_opener && !new_document.origin().is_same_origin(active_document.origin()) {
 			if state := history_entry.document_state {

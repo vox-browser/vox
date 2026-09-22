@@ -247,7 +247,11 @@ pub fn URLSearchParams.create_from_init(init URLSearchParamsInit) !&URLSearchPar
 fn (mut params URLSearchParams) update() {
 	mut url := params.url_ or { return }
 	serialized := params.to_string()
-	url.set_query_from_params(if serialized == '' { none } else { serialized })
+	if serialized == '' {
+		url.set_query_from_params(none)
+	} else {
+		url.set_query_from_params(serialized)
+	}
 }
 
 fn (mut params URLSearchParams) bind_url(url &DOMURL) {

@@ -320,17 +320,18 @@ pub fn all_shared_worker_global_scopes() []&SharedWorkerGlobalScope {
 }
 
 pub fn SharedWorkerGlobalScope.create(url dom.URL, options WorkerOptions, storage_key string, secure_context bool, realm &ScriptingRealm) &SharedWorkerGlobalScope {
+	credentials := match options.credentials {
+		.omit { fetch.CredentialsMode.omit }
+		.same_origin { fetch.CredentialsMode.same_origin }
+		.include { fetch.CredentialsMode.include }
+	}
 	scope := &SharedWorkerGlobalScope{
 		WorkerGlobalScope: *WorkerGlobalScope.create(url, options.type_, options.name, realm)
 		storage_key: storage_key
 		secure_context: secure_context
 		constructor_origin_: url.origin()
 		constructor_url_: url
-		credentials_: match options.credentials {
-			.omit { fetch.CredentialsMode.omit }
-			.same_origin { fetch.CredentialsMode.same_origin }
-			.include { fetch.CredentialsMode.include }
-		}
+		credentials_: credentials
 	}
 	html_shared_worker_global_scopes << scope
 	return scope

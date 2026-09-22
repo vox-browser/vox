@@ -94,9 +94,9 @@ fn classify_ascii_line_byte(byte u8) ASCIILineBreakClass {
 		`}` { .cl }
 		else {
 			if byte >= `0` && byte <= `9` {
-				.nu
+				ASCIILineBreakClass.nu
 			} else {
-				.al
+				ASCIILineBreakClass.al
 			}
 		}
 	}

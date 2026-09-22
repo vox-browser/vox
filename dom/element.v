@@ -4967,12 +4967,16 @@ fn (e &Element) matches_invalidation_pseudo_class(name string) bool {
 			e.as_node().is_inclusive_ancestor_of(focused)
 		}
 		'active' { e.is_being_activated() }
-		'target' { e.document().target_element() or { return false } == e }
+		'target' {
+			target := e.document().target_element() or { return false }
+			target == e
+		}
 		'first-child' { e.as_node().previous_element_sibling() == none }
 		'last-child' { e.as_node().next_element_sibling() == none }
 		'only-child' {
-			e.as_node().previous_element_sibling() == none
-				&& e.as_node().next_element_sibling() == none
+			has_previous_sibling := e.as_node().previous_element_sibling() != none
+			has_next_sibling := e.as_node().next_element_sibling() != none
+			!has_previous_sibling && !has_next_sibling
 		}
 		else { false }
 	}

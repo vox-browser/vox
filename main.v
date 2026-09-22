@@ -1757,7 +1757,13 @@ fn replay_javascript_canvas_text(mut pixels []u8, width int, height int,
 
 fn apply_javascript_element_attribute(mut element dom.Element, name string, value ?string) {
 	old_value := element.get_attribute(name)
-	if value == old_value {
+	if new_value := value {
+		if previous_value := old_value {
+			if new_value == previous_value {
+				return
+			}
+		}
+	} else if old_value == none {
 		return
 	}
 	if new_value := value {

@@ -481,8 +481,8 @@ fn (mut state CheckUnloadingCanceledState) start_traverse_event_task() {
 	}
 	queue_a_task(.navigation_and_traversal, main_thread_event_loop(), active_document, fn [mut state] () {
 		if state.needs_before_unload {
-			if active_document := state.traversable.active_document_ {
-				mut mutable_document := unsafe { &dom.Document(active_document) }
+			if current_active_document := state.traversable.active_document_ {
+				mut mutable_document := unsafe { &dom.Document(current_active_document) }
 				result := mutable_document.steps_to_fire_beforeunload(false)
 				if result.unload_prompt_shown {
 					state.unload_prompt_shown = true

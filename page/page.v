@@ -391,7 +391,11 @@ fn page_editing_key_action_callback(target voidptr, original_key int, code_point
 		}
 		plain_home_or_end := modifiers & ~(dom.modifier_shift | dom.modifier_keypad) == 0
 		action := if focused_is_textarea && plain_home_or_end {
-			if key == 35 { dom.InputEventsTargetNavigationAction.line_start } else { .line_end }
+			if key == 35 {
+				dom.InputEventsTargetNavigationAction.line_start
+			} else {
+				dom.InputEventsTargetNavigationAction.line_end
+			}
 		} else if key == 35 {
 			dom.InputEventsTargetNavigationAction.start
 		} else {

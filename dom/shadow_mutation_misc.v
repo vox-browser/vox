@@ -611,8 +611,17 @@ fn parse_exportparts_attribute(element &Element) []ExportedPart {
 fn append_part_element(mut part_element_map map[string][]AbstractElement, name string, abstract_element AbstractElement) {
 	mut entries := part_element_map[name] or { []AbstractElement{} }
 	for existing in entries {
+		existing_pseudo_element := existing.pseudo_element()
+		candidate_pseudo_element := abstract_element.pseudo_element()
+		mut pseudo_elements_match := existing_pseudo_element == none
+			&& candidate_pseudo_element == none
+		if existing_pseudo := existing_pseudo_element {
+			if candidate_pseudo := candidate_pseudo_element {
+				pseudo_elements_match = existing_pseudo == candidate_pseudo
+			}
+		}
 		if voidptr(existing.element()) == voidptr(abstract_element.element())
-			&& existing.pseudo_element() == abstract_element.pseudo_element() {
+			&& pseudo_elements_match {
 			return
 		}
 	}

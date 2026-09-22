@@ -1848,6 +1848,10 @@ pub fn EventDispatcher.dispatch_with_legacy_output(target &EventTarget, event &E
 						current_target_node.root().is_shadow_including_inclusive_ancestor_of(parent_node)
 				}
 			}
+			mut related_target_is_parent := false
+			if retargeted_related_target := related_target {
+				related_target_is_parent = retargeted_related_target == parent_target
+			}
 			if parent_is_in_current_target_root {
 				if is_activation_event && event.bubbles() && activation_target == none
 					&& parent_target.has_activation_behavior() {
@@ -1855,11 +1859,7 @@ pub fn EventDispatcher.dispatch_with_legacy_output(target &EventTarget, event &E
 				}
 				mutable_event.append_to_path(parent_target, none, related_target, touch_targets,
 					slot_in_closed_tree)
-			} else if if rt := related_target {
-				rt == parent_target
-			} else {
-				false
-			} {
+			} else if related_target_is_parent {
 				parent = none
 			} else {
 				current_target = unsafe { &EventTarget(parent_target) }

@@ -761,10 +761,13 @@ pub fn (mut rule CSSRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSh
 	}
 	if declaration := rule.declaration {
 		mut declaration_with_base := unsafe { &CSSStyleProperties(declaration) }
-		base_url := if sheet := parent_style_sheet {
-			sheet.base_url or { sheet.base.location or { '' } }
-		} else {
-			''
+		mut base_url := ''
+		if sheet := parent_style_sheet {
+			if explicit_base_url := sheet.base_url {
+				base_url = explicit_base_url
+			} else if location := sheet.base.location {
+				base_url = location
+			}
 		}
 		if base_url.len > 0 {
 			for mut property in declaration_with_base.properties {

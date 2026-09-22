@@ -40,7 +40,11 @@ pub:
 pub struct SourceSet {
 pub mut:
 	sources     []ImageSource
-	source_size css.StyleValue = css.StyleValue(css.LengthStyleValue.create(css.Length.make_px(0)))
+	source_size css.StyleValue = css.StyleValue(css.LengthStyleValue{
+		length_: css.Length{
+			unit_: .px
+		}
+	})
 }
 
 pub fn (source_set &SourceSet) is_empty() bool {
