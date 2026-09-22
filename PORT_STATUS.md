@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb`
 
 Translation workspace: `~/code/vox2`
-Audited: 2026-09-20
+Audited: 2026-09-22
 
 ## Upstream delta since the V snapshot
 
@@ -68,6 +68,11 @@ force raw-string replay, and the upstream input-placeholder reftest is exact.
 HarfBuzz font scaling now clamps in double precision before conversion to the
 library's 32-bit scale. Huge CSS font sizes no longer overflow during intrinsic
 text measurement, and saturated cache entries remain separated by point size.
+Text shaping now shares the upstream cache boundary across width-only and full
+glyph-run consumers. Cached glyphs remain origin-relative and font-independent,
+spacing keys compare their exact bit patterns, common single-ASCII shapes use
+the dedicated fast path, and the upstream 64-font/16,384-text LRU limits are
+enforced without allowing callers to mutate retained cache entries.
 CSSOM `CaretPosition` and `Document.caretPositionFromPoint()` now consume the
 retained text-fragment hit-test offsets, expose a transformed one-pixel client
 rectangle, reject points outside the viewport, and retarget positions through
@@ -446,7 +451,7 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The table below is the refreshed 2026-09-20 inventory. It covers 76 current
+The table below is the refreshed 2026-09-22 inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
 implementation units. Root-level LibWeb `.cpp` support units are mapped
@@ -457,51 +462,51 @@ from the current-module totals.
 | Upstream module | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
 | `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
-| `Animations` | 10 | 5,187 | 3,972 | 1,041 | Complete |
-| `Bindings` | 11 | 2,501 | 2,675 | 918 | Complete |
-| `CSS` | 215 | 47,722 | 104,550 | 9,135 | Present |
+| `Animations` | 10 | 5,187 | 3,981 | 1,041 | Complete |
+| `Bindings` | 11 | 2,501 | 2,679 | 918 | Complete |
+| `CSS` | 215 | 47,722 | 104,576 | 9,135 | Present |
 | `Clipboard` | 4 | 1,009 | 973 | 343 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 424 | 138 | Complete |
-| `ContentSecurityPolicy` | 37 | 4,725 | 2,738 | 427 | Complete |
+| `ContentSecurityPolicy` | 37 | 4,725 | 2,740 | 427 | Complete |
 | `CookieStore` | 2 | 850 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
-| `DOM` | 59 | 34,859 | 36,584 | 2,199 | Complete |
-| `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
+| `DOM` | 59 | 34,859 | 36,597 | 2,199 | Complete |
+| `DOMURL` | 4 | 1,039 | 758 | 336 | Complete |
 | `Editing` | 26 | 12,720 | 8,515 | 797 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
 | `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
-| `EventTiming` | 1 | 122 | 153 | 94 | Complete |
-| `Fetch` | 33 | 8,493 | 5,188 | 1,365 | Complete |
+| `EventTiming` | 1 | 122 | 153 | 95 | Complete |
+| `Fetch` | 33 | 8,493 | 5,192 | 1,365 | Complete |
 | `FileAPI` | 6 | 1,357 | 1,018 | 499 | Complete |
 | `Fullscreen` | 0 | 0 | 93 | 177 | Complete |
 | `GPC` | 1 | 21 | 16 | 13 | Complete |
 | `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
 | `Geolocation` | 4 | 643 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 57,064 | 14,573 | Complete |
+| `HTML` | 286 | 83,853 | 57,075 | 14,584 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 43,380 | 16,325 | Present |
+| `Layout` | 9 | 4,001 | 43,379 | 16,325 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
-| `MediaCapture` | 5 | 1,475 | 1,205 | 205 | Complete |
-| `MediaSourceExtensions` | 13 | 4,094 | 357 | 110 | Complete |
+| `MediaCapture` | 5 | 1,475 | 1,212 | 205 | Complete |
+| `MediaSourceExtensions` | 13 | 4,094 | 361 | 110 | Complete |
 | `MimeSniff` | 2 | 1,607 | 1,108 | 308 | Complete |
 | `MixedContent` | 1 | 127 | 125 | 105 | Complete |
 | `NavigationTiming` | 4 | 497 | 291 | 45 | Complete |
 | `NotificationsAPI` | 1 | 301 | 290 | 68 | Complete |
-| `Page` | 8 | 6,450 | 2,953 | 858 | Complete |
-| `Painting` | 22 | 8,227 | 7,009 | 2,198 | Present |
+| `Page` | 8 | 6,450 | 2,957 | 858 | Complete |
+| `Painting` | 22 | 8,227 | 7,010 | 2,198 | Present |
 | `PerformanceTimeline` | 5 | 476 | 447 | 130 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
-| `Platform` | 4 | 431 | 2,036 | 291 | Complete |
+| `Platform` | 4 | 431 | 2,323 | 373 | Complete |
 | `ReferrerPolicy` | 2 | 341 | 239 | 123 | Complete |
 | `RequestIdleCallback` | 1 | 52 | 59 | 18 | Complete |
 | `ResizeObserver` | 4 | 424 | 420 | 152 | Complete |
@@ -511,7 +516,7 @@ from the current-module totals.
 | `SecureContexts` | 1 | 76 | 59 | 13 | Complete |
 | `Selection` | 3 | 1,470 | 648 | 192 | Complete |
 | `Serial` | 2 | 366 | 243 | 35 | Complete |
-| `ServiceWorker` | 11 | 2,608 | 1,562 | 513 | Complete |
+| `ServiceWorker` | 11 | 2,608 | 1,573 | 513 | Complete |
 | `Speech` | 11 | 421 | 624 | 111 | Complete |
 | `StorageAPI` | 6 | 433 | 444 | 235 | Complete |
 | `Streams` | 22 | 8,789 | 6,290 | 1,972 | Complete |
@@ -522,7 +527,7 @@ from the current-module totals.
 | `ViewTransition` | 1 | 1,054 | 598 | 324 | Complete |
 | `WebAssembly` | 7 | 3,441 | 2,065 | 702 | Complete |
 | `WebAudio` | 47 | 8,256 | 2,649 | 444 | Complete |
-| `WebDriver` | 16 | 5,321 | 3,447 | 638 | Complete |
+| `WebDriver` | 16 | 5,321 | 3,451 | 638 | Complete |
 | `WebGL` | 42 | 7,846 | 6,205 | 1,470 | Complete |
 | `WebIDL` | 10 | 2,466 | 2,162 | 613 | Complete |
 | `WebLocks` | 5 | 647 | 701 | 169 | Complete |
@@ -534,7 +539,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **351,060** | **71,687** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **351,450** | **71,781** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -548,10 +553,10 @@ upstream .cpp files: 1193
 upstream implementations: 21401
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 10
-reviewed upstream-equivalent trivial implementations: 557
+reviewed upstream-equivalent trivial implementations: 556
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 14082
-  unmatched: 4375
+  candidate-name-match: 14097
+  unmatched: 4360
   language-constructor-or-destructor: 1383
   gc-or-binding-runtime: 655
   consolidated-name-match: 490
@@ -563,9 +568,9 @@ suspicious empty/default-return implementations: 0
 largest unmatched modules:
 
   1704 CSS
-  1249 HTML
-   618 DOM
-   406 Painting
+  1236 HTML
+   617 DOM
+   405 Painting
    316 Layout
     82 Editing
 
@@ -573,7 +578,7 @@ $ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 788 passed, 301 failed, 1089 total
 
 $ v -enable-globals test .
-Summary for all V _test.v files: 608 passed, 608 total.
+Summary for all V _test.v files: 640 passed, 640 total.
 
 $ Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
 Ladybird V smoke check passed
@@ -583,7 +588,8 @@ $ ./compare_screenshots.sh <24-new-cases> inline-node ordered-list \
 32 passed, 32 total (31 distinct fixtures)
 
 $ ./compare_screenshots.sh
-10 passed, 10 total (including 3 live-selection and 2 caret reftests)
+11 passed, 11 total (including 3 live-selection, 2 caret, and the
+default-ignorable-code-points reftest)
 ```
 
 The 2026-09-08 default-body pass exhausted the suspicious-stub queue at that
