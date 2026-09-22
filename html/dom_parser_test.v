@@ -31,6 +31,17 @@ fn test_dom_parser_parses_namespaced_xml_and_entities() {
 	assert item.as_node().text_content() or { '' } == 'A & B <C> '
 }
 
+fn test_xml_reference_decoder_preserves_utf8_and_resolves_full_named_table() {
+	plain := xml_decode_references('Привет') or { panic('UTF-8 text: ${err}') }
+	assert plain == 'Привет'
+	ligature := xml_decode_references('&AElig;') or { panic('AElig: ${err}') }
+	assert ligature == 'Æ'
+	not_equal_tilde := xml_decode_references('&NotEqualTilde;') or {
+		panic('NotEqualTilde: ${err}')
+	}
+	assert not_equal_tilde == '≂̸'
+}
+
 fn test_dom_parser_places_processing_instructions_at_their_parse_location() {
 	parser := DOMParser.create(dom.Document.create(dom.url_about_blank()))
 	document := parser.parse_from_string('<?before document?><!DOCTYPE root [<?ignored subset?>]><root><?inside element?></root><?after document?>', .text_xml) or { panic(err) }

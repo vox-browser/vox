@@ -137,17 +137,13 @@ fn xml_decode_references(value string) !string {
 				"'"
 			}
 			else {
-				if entity.starts_with('#x') || entity.starts_with('#X') {
-					code_point := u32(strconv.parse_uint(entity[2..], 16, 32) or {
-						return error('invalid hexadecimal character reference')
-					})
-					if code_point == 0 || code_point > 0x10ffff || (code_point >= 0xd800 && code_point <= 0xdfff) {
-						return error('invalid XML character reference')
-					}
-					rune(code_point).str()
-				} else if entity.starts_with('#') {
-					code_point := u32(strconv.parse_uint(entity[1..], 10, 32) or {
-						return error('invalid decimal character reference')
+				if entity.len > 0 && entity[0] == `#` {
+					is_hexadecimal := entity.len > 1 && entity[1] in [`x`, `X`]
+					digits := if is_hexadecimal { entity[2..] } else { entity[1..] }
+					radix := if is_hexadecimal { 16 } else { 10 }
+					code_point := u32(strconv.parse_uint(digits, radix, 32) or {
+						kind := if is_hexadecimal { 'hexadecimal' } else { 'decimal' }
+						return error('invalid ${kind} character reference &${entity};')
 					})
 					if code_point == 0 || code_point > 0x10ffff || (code_point >= 0xd800 && code_point <= 0xdfff) {
 						return error('invalid XML character reference')
@@ -293,11 +289,11 @@ fn (mut parser SimpleXMLDocumentParser) parse_element(parent &dom.Node, inherite
 	} else {
 		namespaces[''] or { '' }
 	}
-	mut element := parser.document.create_element_ns(if namespace_ == '' {
-		none
+	mut element := if namespace_ == '' {
+		parser.document.create_element_ns(none, qualified_name)!
 	} else {
-		namespace_
-	}, qualified_name)!
+		parser.document.create_element_ns(namespace_, qualified_name)!
+	}
 	for attribute in attributes {
 		attribute_prefix, _ := xml_qualified_name_parts(attribute.name)
 		attribute_namespace := if attribute.name == 'xmlns' || attribute_prefix == 'xmlns' {
@@ -311,11 +307,12 @@ fn (mut parser SimpleXMLDocumentParser) parse_element(parent &dom.Node, inherite
 		} else {
 			''
 		}
-		element.set_attribute_ns_for_bindings(if attribute_namespace == '' {
-			none
+		if attribute_namespace == '' {
+			element.set_attribute_ns_for_bindings(none, attribute.name, attribute.value)!
 		} else {
-			attribute_namespace
-		}, attribute.name, attribute.value)!
+			element.set_attribute_ns_for_bindings(attribute_namespace, attribute.name,
+				attribute.value)!
+		}
 	}
 	mut mutable_parent := unsafe { &dom.Node(parent) }
 	mutable_parent.append_child(element.as_node())!
