@@ -2340,6 +2340,17 @@ fn test_nested_svg_viewport_and_element_transforms_are_interleaved_at_paint_time
 	assert target_box.svg_transform == [f64(40), 0, 0, 40, 60, 0]!
 }
 
+fn test_typed_paint_adapter_builds_deep_box_trees_without_stack_recursion() {
+	depth := 160
+	document := html.parse_document('<!doctype html><style>html,body,div{margin:0}</style>${'<div>'.repeat(depth)}<div id="deepest">deep</div>${'</div>'.repeat(depth)}')
+	root := layout_document_typed_in_viewport(document, 320, 240)
+	deepest := document.get_element_by_id('deepest') or { panic('missing deepest element') }
+	deepest_box := root.find_box(i64(deepest.as_node().unique_id())) or {
+		panic('deepest layout box was not retained by the paint adapter')
+	}
+	assert deepest_box.tag_name == 'div'
+}
+
 fn test_svg_stroke_dashes_remain_in_user_units_until_paint() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 }</style><svg width="200" height="100" viewBox="0 0 100 50"><path d="M 0 10 H 100" fill="none" stroke="green" stroke-width="2" stroke-dasharray="3" stroke-dashoffset="1"/></svg>')
 	root := layout_document_typed_in_viewport(document, 220, 120)

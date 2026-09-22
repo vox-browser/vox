@@ -58,10 +58,20 @@ fn is_fully_truncated_inline_fragment(node &Node, state &LayoutState) bool {
 }
 
 fn paint_cumulative_offset(node &Node, state &LayoutState, used &UsedValues) css.CSSPixelPoint {
-	offset := paint_local_offset(node, state, used)
-	if containing := used.containing_block_used_values() {
-		containing_node := unsafe { &Node(containing.node()) }
-		return css_pixel_point_add(paint_cumulative_offset(containing_node, state, containing), offset)
+	mut offset := css.CSSPixelPoint{}
+	mut current_node := node
+	mut current_used := used
+	mut visited := map[u64]bool{}
+	for {
+		key := u64(voidptr(current_used))
+		if visited[key] {
+			break
+		}
+		visited[key] = true
+		offset = css_pixel_point_add(offset, paint_local_offset(current_node, state, current_used))
+		containing := current_used.containing_block_used_values() or { break }
+		current_used = containing
+		current_node = unsafe { &Node(containing.node()) }
 	}
 	return offset
 }
@@ -2462,6 +2472,58 @@ fn block_box_from_typed_layout(node &Node, state &LayoutState) BlockBox {
 	return block_box_from_typed_layout_with_ancestor(node, state, [6]f64{})
 }
 
+struct TypedPaintBuildFrame {
+	node &Node
+mut:
+	box           BlockBox
+	child_indices []int
+}
+
+// Paintable construction used to recurse through this tree while every call
+// retained the adapter's large collection of temporary paint data. Moderately
+// deep, entirely valid documents could consequently exhaust the native stack
+// before painting began. Build the shallow boxes in preorder and attach their
+// already-built children in reverse order instead.
+fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, ancestor_paint_transform [6]f64) BlockBox {
+	root_box := block_box_from_typed_layout_shallow(node, state, ancestor_paint_transform)
+	mut frames := [TypedPaintBuildFrame{
+		node: node
+		box: root_box
+	}]
+	mut frame_index := 0
+	for frame_index < frames.len {
+		parent_node := frames[frame_index].node
+		parent_transform := frames[frame_index].box.paint_transform
+		children := typed_paint_child_nodes(parent_node, state)
+		for child in children {
+			child_box := block_box_from_typed_layout_shallow(child, state, parent_transform)
+			if child_box.tag_name == '' && !child.is_anonymous()
+				&& !child.is_generated_for_pseudo_element() {
+				continue
+			}
+			child_index := frames.len
+			frames << TypedPaintBuildFrame{
+				node: child
+				box: child_box
+			}
+			frames[frame_index].child_indices << child_index
+		}
+		frame_index++
+	}
+
+	mut built := []BlockBox{len: frames.len}
+	mut reverse_index := frames.len
+	for reverse_index > 0 {
+		reverse_index--
+		mut box := frames[reverse_index].box
+		for child_index in frames[reverse_index].child_indices {
+			box.children << built[child_index]
+		}
+		built[reverse_index] = box
+	}
+	return built[0]
+}
+
 fn painting_clip_path_segment(segment html.PathSegment) painting.ClipPathSegment {
 	kind := match segment.kind {
 		.move_to { painting.ClipPathSegmentKind.move_to }
@@ -3205,7 +3267,7 @@ fn paintable_is_positioned(node &Node, computed &css.ComputedValues) bool {
 		|| ((node.is_flex_item() || node.is_grid_item()) && computed.z_index() != none)
 }
 
-fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, ancestor_paint_transform [6]f64) BlockBox {
+fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_paint_transform [6]f64) BlockBox {
 	styled := node.as_node_with_style() or { return BlockBox{} }
 	used := state.try_get(styled) or { return BlockBox{} }
 	if used.svg_rendering_disabled() {
@@ -3768,30 +3830,6 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		}
 	}
 
-	mut children := []BlockBox{}
-	for child in node.children() {
-		if child.is_svg_mask_box() || child.is_svg_clip_box() || child.is_svg_pattern_box() {
-			continue
-		}
-		if child.is_box() && is_fully_truncated_inline_fragment(child, state) {
-			continue
-		}
-		if child.is_box() {
-			if child_styled := child.as_node_with_style() {
-				if state.try_get(child_styled) == none {
-					children << typed_block_descendants(child, state, accumulated_paint_transform)
-					continue
-				}
-			}
-			child_box := block_box_from_typed_layout_with_ancestor(child, state, accumulated_paint_transform)
-			if child_box.tag_name != '' || child.is_anonymous() || child.is_generated_for_pseudo_element() {
-				children << child_box
-			}
-		} else if child.is_inline_node() {
-			children << typed_block_descendants(child, state, accumulated_paint_transform)
-		}
-	}
-
 	lines := text_lines_from_typed_layout(node, used, state, position)
 	display := computed.display()
 	uses_collapsed_borders := computed.border_collapse() == .collapse
@@ -3875,7 +3913,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		node_id: node_id
 		hit_test_continuation_node_id: paintable_box_hit_test_continuation(node)
 		layout_handle: voidptr(node)
-		children: children
+		children: []
 		lines: lines
 		has_svg_path: has_svg_path
 		svg_path: svg_path
@@ -3926,28 +3964,40 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	}
 }
 
-fn typed_block_descendants(node &Node, state &LayoutState, ancestor_paint_transform [6]f64) []BlockBox {
-	mut descendants := []BlockBox{}
-	for child in node.children() {
+fn typed_paint_child_nodes(node &Node, state &LayoutState) []&Node {
+	mut children := []&Node{}
+	mut pending := []&Node{}
+	direct_children := node.children()
+	for reverse_index in 0 .. direct_children.len {
+		child := direct_children[direct_children.len - 1 - reverse_index]
+		if child.is_box() || child.is_inline_node() {
+			pending << child
+		}
+	}
+	for pending.len > 0 {
+		child := pending.pop()
 		if child.is_svg_mask_box() || child.is_svg_clip_box() || child.is_svg_pattern_box() {
 			continue
 		}
 		if child.is_box() && is_fully_truncated_inline_fragment(child, state) {
 			continue
 		}
-		if child.is_box() {
+		mut has_committed_box := child.is_box()
+		if has_committed_box {
 			if styled := child.as_node_with_style() {
-				if state.try_get(styled) == none {
-					descendants << typed_block_descendants(child, state, ancestor_paint_transform)
-					continue
-				}
+				has_committed_box = state.try_get(styled) != none
 			}
-			descendants << block_box_from_typed_layout_with_ancestor(child, state, ancestor_paint_transform)
-		} else {
-			descendants << typed_block_descendants(child, state, ancestor_paint_transform)
+		}
+		if has_committed_box {
+			children << child
+			continue
+		}
+		grandchildren := child.children()
+		for reverse_index in 0 .. grandchildren.len {
+			pending << grandchildren[grandchildren.len - 1 - reverse_index]
 		}
 	}
-	return descendants
+	return children
 }
 
 fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &LayoutState, container_position css.CSSPixelPoint) []TextLine {
