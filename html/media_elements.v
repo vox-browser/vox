@@ -680,7 +680,8 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 			mut created := []&dom.Element{}
 			for class_name in ['play-pause-icon', 'timeline-fill', 'timestamp', 'volume-area',
 				'volume-fill', 'mute-button', 'fullscreen-icon', 'placeholder-circle'] {
-				mut child := dom.create_element(document, 'div', ns_html, none, none, false) or { continue }
+				tag_name := if class_name == 'fullscreen-icon' { 'button' } else { 'div' }
+				mut child := dom.create_element(document, tag_name, ns_html, none, none, false) or { continue }
 				child.set_attribute_value('class', class_name)
 				mut container_node := container.as_node()
 				container_node.append_child(child.as_node()) or { continue }
