@@ -114,7 +114,9 @@
   top-level creation URL and origin, exhausted navigation bodies are released,
   and removing the body no longer leaves an otherwise loaded document
   render-blocked. Child navigables without an active document continue to
-  delay their container's load event until a replacement document is active.
+  delay their container's load event until a replacement document is active;
+  child-document fully-active state follows the logical parent navigable even
+  when its container document is hosted elsewhere.
 - Flex layout completes clamped line measurement, forwards button percentage
   height bases, honors flexible-grid intrinsic minimums, and applies
   `min-height` while stretching lines. Media-control contents retain the

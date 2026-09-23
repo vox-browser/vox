@@ -90,6 +90,9 @@ files.
 - The opaque Page boundary now supplies device-pixel scale and backing-store
   allocation callbacks, allowing Navigable resizing to remain typed without a
   DOM-to-Page module dependency.
+- `Document::is_fully_active()` now asks its logical parent navigable for the
+  parent document's active state, so it does not require a locally hosted
+  container document.
 - The independent audit replaced EventTarget's unsafe memory-shape probing with
   an authoritative Node discriminator, tags every Node/Document allocation,
   and verifies generic EventTarget dispatch plus distinct Document identity.
