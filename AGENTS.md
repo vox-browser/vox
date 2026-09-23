@@ -154,6 +154,12 @@
   deferred or the tokenizer is paused on a parser-blocking script. Late meta
   charset declarations can replace the streaming decoder before those bytes
   are consumed, and retained input is drained before implied EOF.
+- `rel=modulepreload` now selects the upstream script-like, style, JSON, and
+  text destinations; preserves nonce, integrity, CORS credentials, referrer
+  policy, and fetch priority; and populates reusable module-map entries while
+  fetching JavaScript descendants. Failed preloads remain retryable, media
+  mismatches stay silent, and speculative parser requests retain the fetch
+  options without populating the module map ahead of later CSP metadata.
 - SVG and MathML follow CSS Display unboxing rules: `display: contents`
   computes to `none` for CSS-box SVG roots, non-hoisting SVG elements, and all
   MathML elements. Nested SVG containers and text children keep `contents`,
@@ -263,7 +269,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-23, the module
-translations contain 352,050 implementation V LOC and 71,998 test V LOC.
+translations contain 352,327 implementation V LOC and 72,187 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -282,7 +288,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Fetch | 5,192 | FileAPI | 1,018 |
 | Fullscreen | 93 | GPC | 16 |
 | Gamepad | 760 | Geolocation | 416 |
-| Geometry | 2,062 | HTML | 57,207 |
+| Geometry | 2,062 | HTML | 57,484 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 860 |
 | IntersectionObserver | 569 | Layout | 43,517 |
@@ -309,7 +315,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **352,050** |  |  |
+| **Total** | **352,327** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;

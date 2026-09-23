@@ -71,6 +71,14 @@ sampled overlay is visible to `var()` resolution in longhands, shorthands, and
 other animations; target and descendant styles refresh when it changes, while
 the ordinary inherited environment remains independently replaceable beneath
 the overlay.
+Module-preload links now run the translated graph-fetch algorithm with their
+typed script-like, style, JSON, or text destination and preserve nonce,
+integrity, CORS credentials, referrer policy, parser metadata, and fetch
+priority. Successful JavaScript roots start descendant fetching and all module
+types populate the reusable module map; failures remove the in-progress entry
+so a later import can retry. Media mismatches suppress both fetches and events,
+while speculative parser requests preserve the same options but deliberately
+leave the module map untouched so intervening CSP metadata remains effective.
 Inline layout now publishes conservative glyph-run painted bounds in CSS pixels
 when it finalizes each retained run. Merging, ellipsis, and line clamping dirty
 the packed replay data and bounds together; finalization refreshes both once.
@@ -554,7 +562,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
 | `Geolocation` | 4 | 643 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 57,207 | 14,620 | Complete |
+| `HTML` | 286 | 83,853 | 57,484 | 14,809 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
@@ -607,7 +615,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **352,050** | **71,998** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **352,327** | **72,187** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
