@@ -107,6 +107,10 @@
   audio-track list events, use a semantic fullscreen button with the `F`
   shortcut, and coalesce scrub seeks with the upstream timeout. SourceBuffer
   coded-frame appends now enter the throttled media `progress` event path.
+  Automatic resource selection still defers paused `preload="none"` media, but
+  an explicit `load()` promotes that selection to fetch immediately; the
+  promotion survives inactive-document adoption and resets for later automatic
+  selections.
 - File and color inputs request their picker from the `Page` attached to their
   own document, preserving nested-page ownership instead of routing through a
   top-level or per-model fallback.

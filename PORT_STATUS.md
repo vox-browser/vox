@@ -138,6 +138,12 @@ non-cancelable `insertCompositionText` `beforeinput`/`input` pair, with
 paths preserve marked-range replacement, selected starting text, replacement
 commits, cancellation, unmarking, event data, and `isComposing`; the V editing
 bridge refreshes the marked node after rebuilding contenteditable markup.
+Media resource selection now distinguishes automatic selection from an explicit
+`load()` call. Paused `preload="none"` media continues to wait and emits
+`suspend` during automatic selection, while `load()` starts the fetch; changing
+preload/autoplay or calling `play()` resumes a deferred fetch. The explicit
+selection marker survives resumption after document adoption and is cleared
+before the next automatic selection.
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at
 the DOM boundary and schedule style invalidation; `switch` checkboxes retain
