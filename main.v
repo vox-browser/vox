@@ -295,6 +295,9 @@ mut:
 	pending_navigation                  ?PendingNavigation
 	pending_cached_page                 ?PendingCachedPage
 	background_image_ids                map[string]int
+	force_dark_image_states             map[string]int
+	force_dark_image_bitmaps            map[string]&dom.Bitmap_
+	force_dark_images                   map[string]&gg.Image
 	resource_cache                      map[string]PreloadedResource
 	background_resource_results         chan PreloadedResource
 	background_resource_pending         map[string]bool
@@ -3407,6 +3410,66 @@ fn (mut app BrowserApp) background_image(image_url string) ?&gg.Image {
 	return app.ctx.get_cached_image_by_idx(image.id)
 }
 
+fn (mut app BrowserApp) force_dark_image_from_bitmap(key string, bitmap &dom.Bitmap_,
+	original &gg.Image) &gg.Image {
+	if state := app.force_dark_image_states[key] {
+		if state == 1 {
+			return original
+		}
+		if filtered := app.force_dark_images[key] {
+			return filtered
+		}
+	}
+	if !painting.force_dark_should_filter_bitmap(bitmap) {
+		app.force_dark_image_states[key] = 1
+		return original
+	}
+	filtered_bitmap := painting.force_dark_filter_bitmap(bitmap)
+	mut filtered_image := &gg.Image{
+		width: filtered_bitmap.width
+		height: filtered_bitmap.height
+		nr_channels: native_bitmap_channel_marker(filtered_bitmap, false)
+		ok: true
+		data: filtered_bitmap.data.data
+	}
+	if !app.ctx.native_rendering {
+		filtered_image.init_sokol_image()
+	}
+	app.force_dark_image_states[key] = 2
+	app.force_dark_image_bitmaps[key] = filtered_bitmap
+	app.force_dark_images[key] = filtered_image
+	return filtered_image
+}
+
+fn (mut app BrowserApp) force_dark_image_for_url(image_url string,
+	original &gg.Image) &gg.Image {
+	key := 'url:${image_url}'
+	if state := app.force_dark_image_states[key] {
+		if state == 1 {
+			return original
+		}
+		if filtered := app.force_dark_images[key] {
+			return filtered
+		}
+	}
+	bytes := app.background_image_bytes(image_url) or {
+		app.force_dark_image_states[key] = 1
+		return original
+	}
+	bitmap := browser_decode_raster_image_bytes(bytes) or {
+		app.force_dark_image_states[key] = 1
+		return original
+	}
+	return app.force_dark_image_from_bitmap(key, bitmap, original)
+}
+
+fn paint_command_image_allows_force_dark(command layout.PaintCommand, destination_width f64,
+	destination_height f64, image &gg.Image) bool {
+	return command.apply_force_dark_to_image
+		&& painting.force_dark_image_size_allows_classification(math.abs(destination_width),
+			math.abs(destination_height), painting.IntSize{image.width, image.height})
+}
+
 fn background_length(value string, basis f32, automatic f32) f32 {
 	trimmed := value.trim_space().to_lower()
 	if trimmed == '' || trimmed == 'auto' {
@@ -4563,6 +4626,15 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				|| clip.height <= 0 {
 				return
 			}
+			if paint_command_image_allows_force_dark(command, f64(destination.width),
+				f64(destination.height), image) {
+				if bitmap := command.replaced_image_bitmap {
+					image = app.force_dark_image_from_bitmap('bitmap:${u64(voidptr(bitmap))}', bitmap,
+						image)
+				} else {
+					image = app.force_dark_image_for_url(command.image_url, image)
+				}
+			}
 			$if macos {
 				if app.ctx.native_rendering {
 					radii := result.clip_radii
@@ -4776,6 +4848,10 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			}
 			layer := resolved_layer or { return }
 			plan := painting.background_tile_plan(layer, painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, clip)
+			if paint_command_image_allows_force_dark(command, plan.first_tile.width,
+				plan.first_tile.height, image) {
+				image = app.force_dark_image_for_url(command.image_url, image)
+			}
 			mut used_native_repeated_bitmap := false
 			$if macos {
 				if app.ctx.native_rendering {
@@ -4896,10 +4972,14 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			}
 		}
 		'draw_svg_image' {
-			image := app.background_image(command.image_url) or { return }
+			mut image := app.background_image(command.image_url) or { return }
 			destination_x, destination_y, destination_width, destination_height := contained_image_destination(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(image.width), f32(image.height), command.image_position_x, command.image_position_y)
 			if destination_width <= 0 || destination_height <= 0 {
 				return
+			}
+			if paint_command_image_allows_force_dark(command, f64(destination_width),
+				f64(destination_height), image) {
+				image = app.force_dark_image_for_url(command.image_url, image)
 			}
 			$if macos {
 				if app.ctx.native_rendering {
@@ -5547,6 +5627,9 @@ fn main() {
 		address_cursor: initial_url.runes().len
 		page_model: page_model
 		navigation_results: chan NavigationResult{ cap: 4 }
+		force_dark_image_states: map[string]int{}
+		force_dark_image_bitmaps: map[string]&dom.Bitmap_{}
+		force_dark_images: map[string]&gg.Image{}
 		resource_cache: map[string]PreloadedResource{}
 		background_resource_results: chan PreloadedResource{ cap: max_cached_resources }
 		background_resource_pending: map[string]bool{}

@@ -39,6 +39,23 @@ fn test_force_dark_command_resolution_uses_paint_roles_and_explicit_exceptions()
 	assert commands[0].color == 'white'
 }
 
+fn test_force_dark_command_resolution_marks_only_eligible_image_roles() {
+	resolved := resolve_force_dark_paint_commands([
+		PaintCommand{
+			kind: 'draw_replaced_image'
+			force_dark_role: .background
+			force_dark_role_set: true
+		},
+		PaintCommand{
+			kind: 'draw_background_image'
+			force_dark_role: .none_
+			force_dark_role_set: true
+		},
+	], painting.ForceDarkSettings.default())
+	assert resolved[0].apply_force_dark_to_image
+	assert !resolved[1].apply_force_dark_to_image
+}
+
 fn test_force_dark_command_resolution_uses_authored_backdrop_for_contrast_roles() {
 	settings := painting.ForceDarkSettings.default()
 	backdrop := painting.Color{240, 240, 240, 255}

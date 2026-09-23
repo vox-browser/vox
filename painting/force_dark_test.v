@@ -1,5 +1,6 @@
 module painting
 
+import dom
 import math
 
 const force_dark_test_white = Color{255, 255, 255, 255}
@@ -124,4 +125,35 @@ fn test_force_dark_image_size_and_feature_classification() {
 		Color{240, 240, 240, 255}), 0.5)
 	assert !force_dark_should_filter_image(transparent_light)
 	assert !force_dark_should_filter_image(force_dark_features_from_samples([]Color{}, 0))
+}
+
+fn test_force_dark_decoded_bitmap_classification_and_filtering() {
+	mut data := []u8{len: 8 * 8 * 4}
+	for pixel := 0; pixel < 8 * 8; pixel++ {
+		offset := pixel * 4
+		data[offset] = 255
+		data[offset + 1] = 255
+		data[offset + 2] = 255
+		data[offset + 3] = 255
+	}
+	bitmap := &dom.Bitmap_{
+		width: 8
+		height: 8
+		pitch: 32
+		data: data
+		native_rows_are_top_down: true
+	}
+	assert force_dark_should_filter_bitmap(bitmap)
+	filtered := force_dark_filter_bitmap(bitmap)
+	assert filtered != bitmap
+	assert filtered.data[0..4] == [u8(18), 18, 18, 255]
+	assert bitmap.data[0..4] == [u8(255), 255, 255, 255]
+	assert filtered.native_rows_are_top_down
+
+	mut transparent_data := data.clone()
+	for pixel := 0; pixel < 40; pixel++ {
+		transparent_data[pixel * 4 + 3] = 0
+	}
+	transparent_bitmap := &dom.Bitmap_{ width: 8, height: 8, pitch: 32, data: transparent_data }
+	assert !force_dark_should_filter_bitmap(transparent_bitmap)
 }

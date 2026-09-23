@@ -1437,9 +1437,10 @@ pub mut:
 	width     f64
 	height    f64
 	color     string
-	force_dark_role     painting.ForceDarkRole
-	force_dark_role_set bool
-	force_dark_backdrop ?painting.Color
+	force_dark_role           painting.ForceDarkRole
+	force_dark_role_set       bool
+	force_dark_backdrop       ?painting.Color
+	apply_force_dark_to_image bool
 	text      string // for 'draw_text'
 	font_size f64 = 16.0 // for 'draw_text'
 	bold      bool

@@ -93,6 +93,9 @@ fn force_dark_resolved_svg_radial_gradient(gradient painting.SVGRadialGradientPa
 fn resolve_force_dark_paint_command(mut command PaintCommand,
 	mut resolver painting.ForceDarkResolver) {
 	role := force_dark_effective_role(command)
+	if command.kind in ['draw_background_image', 'draw_replaced_image', 'draw_svg_image'] {
+		command.apply_force_dark_to_image = role != .none_
+	}
 	if role == .none_ {
 		return
 	}

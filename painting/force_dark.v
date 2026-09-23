@@ -7,6 +7,7 @@
 // changes lightness without rotating hue.
 module painting
 
+import dom
 import math
 
 pub struct ForceDarkSettings {
@@ -394,6 +395,7 @@ const force_dark_high_luminance_ratio = 0.5
 const force_dark_high_saturation_ratio = 0.3
 const force_dark_low_saturation_ratio = 0.1
 const force_dark_chromatic_pixel_ratio = 0.5
+const force_dark_max_sampled_pixels = 1000
 
 pub const force_dark_low_color_count = [f64(0.8125), 0.015137]
 pub const force_dark_high_color_count = [f64(1.0), 0.025635]
@@ -531,4 +533,67 @@ pub fn force_dark_should_filter_image(features ForceDarkImageFeatures) bool {
 		}
 	}
 	return features.color_buckets_ratio < force_dark_low_color_count[colorful_index]
+}
+
+// DisplayListResourceStorage samples at most roughly one thousand decoded
+// pixels. Transparent pixels describe the image's shape rather than its
+// palette, so they contribute only to the transparency ratio.
+pub fn force_dark_bitmap_features(bitmap &dom.Bitmap_) ?ForceDarkImageFeatures {
+	if bitmap.width <= 0 || bitmap.height <= 0 || bitmap.pitch < bitmap.width * 4
+		|| bitmap.data.len < bitmap.pitch * bitmap.height {
+		return none
+	}
+	total := f64(bitmap.width) * f64(bitmap.height)
+	step := int(math.max(1.0, math.ceil(math.sqrt(total / force_dark_max_sampled_pixels))))
+	mut opaque_samples := []Color{}
+	mut transparent_count := 0
+	mut sampled_count := 0
+	for y := 0; y < bitmap.height; y += step {
+		for x := 0; x < bitmap.width; x += step {
+			offset := y * bitmap.pitch + x * 4
+			sampled_count++
+			if bitmap.data[offset + 3] < 128 {
+				transparent_count++
+				continue
+			}
+			opaque_samples << Color{bitmap.data[offset], bitmap.data[offset + 1],
+				bitmap.data[offset + 2], bitmap.data[offset + 3]}
+		}
+	}
+	if sampled_count == 0 {
+		return none
+	}
+	return force_dark_features_from_samples(opaque_samples,
+		f64(transparent_count) / f64(sampled_count))
+}
+
+pub fn force_dark_should_filter_bitmap(bitmap &dom.Bitmap_) bool {
+	features := force_dark_bitmap_features(bitmap) or { return false }
+	return force_dark_should_filter_image(features)
+}
+
+// The native image filter receives unpremultiplied decoded RGBA. Retain the
+// source bitmap and its row orientation while producing the equivalent
+// Oklab-filtered frame for V replay.
+pub fn force_dark_filter_bitmap(bitmap &dom.Bitmap_) &dom.Bitmap_ {
+	mut filtered := bitmap.clone()
+	if filtered.width <= 0 || filtered.height <= 0 || filtered.pitch < filtered.width * 4
+		|| filtered.data.len < filtered.pitch * filtered.height {
+		return filtered
+	}
+	for y in 0 .. filtered.height {
+		for x in 0 .. filtered.width {
+			offset := y * filtered.pitch + x * 4
+			alpha := filtered.data[offset + 3]
+			if alpha == 0 {
+				continue
+			}
+			resolved := force_dark_invert_lightness(Color{filtered.data[offset],
+				filtered.data[offset + 1], filtered.data[offset + 2], alpha})
+			filtered.data[offset] = resolved.r
+			filtered.data[offset + 1] = resolved.g
+			filtered.data[offset + 2] = resolved.b
+		}
+	}
+	return filtered
 }
