@@ -6115,6 +6115,32 @@ pub fn (mut e Element) moved_from(old_parent ?&Node) {
 pub fn (mut e Element) moved_from_with_context(is_subtree_root NodeIsSubtreeRoot, old_ancestor ?&Node) {
 	mut node := unsafe { &Node(e.as_node()) }
 	node.recompute_editable_subtree_flag()
+	// Language is inherited through the parent/host chain but cached on every
+	// element. A cross-parent move changes that input without changing an
+	// attribute, so discard the moved subtree's cached values before the next
+	// selector match. Directionality is derived live in V and needs no cache
+	// publication equivalent.
+	if is_subtree_root == .yes {
+		old_parent := old_ancestor
+		new_parent := node.parent()
+		mut parent_changed := new_parent != none
+		if old_parent_node := old_parent {
+			parent_changed = if new_parent_node := new_parent {
+				old_parent_node != new_parent_node
+			} else {
+				true
+			}
+		}
+		if parent_changed {
+			node.for_each_shadow_including_inclusive_descendant(fn (descendant &Node) TraversalDecision {
+				if element := descendant.as_element() {
+					mut mutable_element := unsafe { &Element(element) }
+					mutable_element.invalidate_lang_value()
+				}
+				return .@continue
+			})
+		}
+	}
 	if e.is_svg_element() {
 		mut old_ancestor_described_paint_resource := false
 		if old_ancestor_node := old_ancestor {

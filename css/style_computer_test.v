@@ -1425,6 +1425,65 @@ fn test_same_parent_move_invalidates_subtree_for_non_subject_structural_selector
 	assert moved_node.entire_subtree_needs_style_update()
 }
 
+fn test_cross_parent_move_refreshes_inherited_language_and_direction() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{})
+	mut root := document.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic(err)
+	}
+	mut old_parent := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic(err)
+	}
+	old_parent.set_attribute_value('lang', 'en')
+	old_parent.set_attribute_value('dir', 'ltr')
+	mut new_parent := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic(err)
+	}
+	new_parent.set_attribute_value('lang', 'fr')
+	new_parent.set_attribute_value('dir', 'rtl')
+	mut target := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic(err)
+	}
+	target.set_attribute_value('class', 'target')
+	mut descendant := document.create_element_ns('http://www.w3.org/1999/xhtml', 'b') or {
+		panic(err)
+	}
+
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(old_parent.as_node()) or { panic(err) }
+	root_node.append_child(new_parent.as_node()) or { panic(err) }
+	mut old_parent_node := old_parent.as_node()
+	old_parent_node.append_child(target.as_node()) or { panic(err) }
+	mut target_node := target.as_node()
+	target_node.append_child(descendant.as_node()) or { panic(err) }
+
+	add_document_author_style_sheet(document, '.target { color: black; background-color: transparent }
+		.target:lang(fr) { color: rgb(1, 1, 1) }
+		.target:dir(rtl) { background-color: rgb(2, 2, 2) }')
+	css_style_computer_for(document)
+	document.needs_full_style_update = true
+	document.update_style()
+	// Populate both inherited-language caches before moving the subtree.
+	assert target.lang() or { '' } == 'en'
+	assert descendant.lang() or { '' } == 'en'
+	assert target.directionality() == .ltr
+
+	mut new_parent_node := new_parent.as_node()
+	target_node.move_node(mut new_parent_node, none) or { panic(err) }
+	document.update_style()
+
+	assert target.lang() or { '' } == 'fr'
+	assert descendant.lang() or { '' } == 'fr'
+	assert target.directionality() == .rtl
+	assert target.matches(':lang(fr)') or { false }
+	assert target.matches(':dir(rtl)') or { false }
+	assert computed_value_for(target, .color) or { '' } == 'rgb(1, 1, 1)'
+	assert computed_value_for(target, .background_color) or { '' } == 'rgb(2, 2, 2)'
+	assert computed_value_for(descendant, .color) or { '' } == 'rgb(1, 1, 1)'
+}
+
 fn test_sibling_structural_invalidation_only_marks_subject_root() {
 	mut doc := dom.Document.create(dom.url_about_blank())
 	doc.set_browsing_context(&dom.BrowsingContext{})
