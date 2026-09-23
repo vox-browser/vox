@@ -92,7 +92,9 @@ longer leaves live worker processes or IPC-equivalent state behind.
 Meta `color-scheme` discovery now carries the `only` modifier separately from
 the supported scheme list. Changing either value advances the document style
 environment and schedules media-query and full-style reevaluation, preserving
-the opt-out signal consumed by force-dark painting.
+the opt-out signal consumed by force-dark painting. Full-document parsing
+refreshes this metadata after tree construction, so an initial declaration is
+available to the first style and force-dark decision.
 Force-dark display-list resolution now assigns the upstream color roles to
 backgrounds, text and shadows, borders, selections, SVG, gradients, markers,
 form controls, scrollbars, and resizers. Border and selection resolution sees
@@ -587,7 +589,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
 | `Geolocation` | 4 | 643 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 57,751 | 14,966 | Complete |
+| `HTML` | 286 | 83,853 | 57,756 | 14,976 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
@@ -640,7 +642,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **353,543** | **72,677** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **353,548** | **72,687** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 

@@ -171,7 +171,9 @@
   the worker agent without leaving an accumulated process record.
 - Meta `color-scheme` discovery retains the declaration's `only` modifier
   alongside its supported scheme list and invalidates the style environment
-  when either part changes.
+  when either part changes. Parser-created metadata is refreshed when full
+  document tree construction completes, so initial declarations affect the
+  first force-dark decision as well as later DOM mutations.
 - System clipboard entries distinguish raw bytes from user-selected files.
   Clipboard API reads hide file-backed entries, while explicit paste converts
   raw PNG data and selected image files into file items and inserts a sanitized
@@ -298,7 +300,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-24, the module
-translations contain 353,543 implementation V LOC and 72,677 test V LOC.
+translations contain 353,548 implementation V LOC and 72,687 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -317,7 +319,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Fetch | 5,192 | FileAPI | 1,018 |
 | Fullscreen | 93 | GPC | 16 |
 | Gamepad | 760 | Geolocation | 416 |
-| Geometry | 2,062 | HTML | 57,751 |
+| Geometry | 2,062 | HTML | 57,756 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 861 |
 | IntersectionObserver | 569 | Layout | 43,760 |
@@ -344,7 +346,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **353,543** |  |  |
+| **Total** | **353,548** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
