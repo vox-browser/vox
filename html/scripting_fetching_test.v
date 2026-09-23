@@ -162,10 +162,10 @@ fn scripting_fetching_function_compiler(function_ast string, source_length usize
 	return &ScriptExecutable{}
 }
 
-fn scripting_fetching_bytecode_cache_compiler(source string, filename string, program_type ScriptProgramType, line_number_offset usize) ![]u8 {
+fn scripting_fetching_bytecode_cache_compiler(cache_parse &ParsedProgramForCache) ![]u8 {
 	scripting_fetching_cache_events << 'compile-cache'
-	scripting_fetching_cache_types << program_type
-	return '${filename}:${line_number_offset}:${source}'.bytes()
+	scripting_fetching_cache_types << cache_parse.program_type
+	return '${cache_parse.filename}:${cache_parse.line_number_offset}:${cache_parse.source_code}'.bytes()
 }
 
 fn scripting_fetching_bytecode_cache_materializer(bytecode []u8, _ string, _ string, _ usize, program_type ScriptProgramType) !&ScriptExecutable {
@@ -254,6 +254,28 @@ fn test_script_fetch_options_module_requests_and_off_thread_parse() {
 	compile_off_thread('invalid', .module, 0, scripting_fetching_compiler, scripting_fetching_compiled_callback)
 	assert scripting_fetching_compiled.compiled == none
 	assert scripting_fetching_compiled.parsed?.error? == 'syntax error'
+}
+
+fn test_bytecode_cache_parse_snapshot_has_independent_function_ownership() {
+	function_data := &SharedFunctionInstanceData{
+		rust_function_ast: 'nested-function'
+	}
+	execution := &ScriptExecutable{
+		shared_function_data: [function_data]
+	}
+	cache_parse := clone_parsed_program_for_cache('function outer() {}', 'cache.js',
+		.script, 1, execution)
+	assert cache_parse.source_code == 'function outer() {}'
+	assert cache_parse.filename == 'cache.js'
+	assert cache_parse.program_type == .script
+	assert cache_parse.line_number_offset == 1
+	assert cache_parse.executable.shared_function_data.len == 1
+	assert voidptr(cache_parse.executable.shared_function_data[0]) != voidptr(function_data)
+	assert cache_parse.executable.shared_function_data[0].rust_function_ast? == 'nested-function'
+
+	mut cached_function := cache_parse.executable.shared_function_data[0]
+	cached_function.executable = &ScriptExecutable{}
+	assert function_data.executable == none
 }
 
 fn test_remaining_lazy_functions_compile_and_discard_stale_results() {

@@ -86,6 +86,16 @@ pub mut:
 	shared_function_data []&SharedFunctionInstanceData
 }
 
+@[heap]
+pub struct ParsedProgramForCache {
+pub:
+	source_code        string
+	filename           string
+	program_type       ScriptProgramType
+	line_number_offset usize
+	executable         &ScriptExecutable
+}
+
 pub struct CompiledProgram {
 pub:
 	program_type       ScriptProgramType
@@ -95,8 +105,9 @@ pub:
 
 pub struct OffThreadCompiledProgram {
 pub:
-	parsed   ?ParsedProgram
-	compiled ?CompiledProgram
+	parsed      ?ParsedProgram
+	compiled    ?CompiledProgram
+	cache_parse ?&ParsedProgramForCache
 }
 
 pub type OffThreadCompileComplete = fn (OffThreadCompiledProgram, string)
@@ -108,7 +119,7 @@ pub type ScriptCompileHook = fn (string, string, usize, ScriptProgramType) !&Scr
 
 pub type ScriptFunctionCompileHook = fn (string, usize) !&ScriptExecutable
 
-pub type ScriptBytecodeCacheCompileHook = fn (string, string, ScriptProgramType, usize) ![]u8
+pub type ScriptBytecodeCacheCompileHook = fn (&ParsedProgramForCache) ![]u8
 
 pub type ScriptBytecodeCacheMaterializeHook = fn ([]u8, string, string, usize, ScriptProgramType) !&ScriptExecutable
 
@@ -128,8 +139,30 @@ pub fn parse_off_thread(source_code string, program_type ScriptProgramType, line
 	perform_a_microtask_checkpoint()
 }
 
-fn compile_source_off_thread(source_code string, program_type ScriptProgramType, line_number_offset usize, compiler ScriptCompileHook) OffThreadCompiledProgram {
-	executable := compiler(source_code, '', line_number_offset, program_type) or {
+fn clone_parsed_program_for_cache(source_code string, filename string, program_type ScriptProgramType, line_number_offset usize, executable &ScriptExecutable) &ParsedProgramForCache {
+	mut function_table := []&SharedFunctionInstanceData{cap: executable.shared_function_data.len}
+	for shared_data in executable.shared_function_data {
+		function_table << &SharedFunctionInstanceData{
+			rust_function_ast: if function_ast := shared_data.rust_function_ast {
+				?string(function_ast.clone())
+			} else {
+				?string(none)
+			}
+		}
+	}
+	return &ParsedProgramForCache{
+		source_code: source_code
+		filename: filename
+		program_type: program_type
+		line_number_offset: line_number_offset
+		executable: &ScriptExecutable{
+			shared_function_data: function_table
+		}
+	}
+}
+
+fn compile_source_off_thread(source_code string, filename string, program_type ScriptProgramType, line_number_offset usize, retain_parse_for_cache bool, compiler ScriptCompileHook) OffThreadCompiledProgram {
+	executable := compiler(source_code, filename, line_number_offset, program_type) or {
 		return OffThreadCompiledProgram{
 			parsed: ParsedProgram{
 				program_type: program_type
@@ -138,12 +171,19 @@ fn compile_source_off_thread(source_code string, program_type ScriptProgramType,
 			}
 		}
 	}
+	cache_parse := if retain_parse_for_cache {
+		?&ParsedProgramForCache(clone_parsed_program_for_cache(source_code, filename,
+			program_type, line_number_offset, executable))
+	} else {
+		?&ParsedProgramForCache(none)
+	}
 	return OffThreadCompiledProgram{
 		compiled: CompiledProgram{
 			program_type: program_type
 			line_number_offset: line_number_offset
 			executable: executable
 		}
+		cache_parse: cache_parse
 	}
 }
 
@@ -151,7 +191,8 @@ fn compile_source_off_thread(source_code string, program_type ScriptProgramType,
 // validates and compiles outside the script execution context, represented by
 // CompiledProgram, before completion materializes the script on the main loop.
 pub fn compile_off_thread(source_code string, program_type ScriptProgramType, line_number_offset usize, compiler ScriptCompileHook, on_compiled OffThreadCompileComplete) {
-	result := compile_source_off_thread(source_code, program_type, line_number_offset, compiler)
+	result := compile_source_off_thread(source_code, '', program_type, line_number_offset, false,
+		compiler)
 	on_compiled(result, source_code)
 	perform_a_microtask_checkpoint()
 }
@@ -240,16 +281,17 @@ fn bytecode_cache_context_for_request(request &fetch.Request, response &fetch.Re
 	}
 }
 
-// Reparse and fully compile solely for cache generation. The execution path
-// already owns its latency-trimmed artifact, so failure here never changes the
-// script delivered to the caller.
-fn schedule_bytecode_cache_generation(source_code string, filename string, program_type ScriptProgramType, line_number_offset usize, context BytecodeCacheContext, settings &EnvironmentSettingsObject) {
+// Fully compile the retained parse snapshot solely for cache generation. Its
+// function table is independent from the execution artifact, so either path
+// can compile nested functions first without changing the other.
+fn schedule_bytecode_cache_generation(cache_parse &ParsedProgramForCache, context BytecodeCacheContext, settings &EnvironmentSettingsObject) {
 	compiler := settings.script_bytecode_cache_compile_hook() or { return }
-	bytecode := compiler(source_code, filename, program_type, line_number_offset) or { return }
+	bytecode := compiler(cache_parse) or { return }
 	if bytecode.len == 0 {
 		return
 	}
-	blob := serialize_compiled_program_for_bytecode_cache(bytecode, program_type, source_code)
+	blob := serialize_compiled_program_for_bytecode_cache(bytecode, cache_parse.program_type,
+		cache_parse.source_code)
 	if store := settings.script_bytecode_cache_store_hook() {
 		store(context.url, context.method, context.request_headers, context.vary_key, blob) or {}
 	}
@@ -477,8 +519,11 @@ pub fn fetch_classic_script(element &HTMLScriptElementModel, url dom.URL, settin
 	}
 	mut script := ClassicScript.create(response_url.serialize(), source_text, settings_object.realm(), response_url, 1, muted_errors)
 	mut compiled_off_thread := false
+	mut cache_parse := ?&ParsedProgramForCache(none)
 	if compiler := settings_object.script_compile_hook() {
-		result := compile_source_off_thread(source_text, .script, 1, compiler)
+		result := compile_source_off_thread(source_text, response_url.serialize(), .script, 1,
+			bytecode_cache_context != none, compiler)
+		cache_parse = result.cache_parse
 		if compiled := result.compiled {
 			script = ClassicScript.create_from_pre_compiled(response_url.serialize(), source_text, settings_object.realm(), response_url, compiled, muted_errors)
 			compiled_off_thread = true
@@ -492,7 +537,9 @@ pub fn fetch_classic_script(element &HTMLScriptElementModel, url dom.URL, settin
 	on_complete(script_pointer(script))
 	if compiled_off_thread {
 		if context := bytecode_cache_context {
-			schedule_bytecode_cache_generation(source_text, response_url.serialize(), .script, 1, context, settings_object)
+			if retained_parse := cache_parse {
+				schedule_bytecode_cache_generation(retained_parse, context, settings_object)
+			}
 		}
 	}
 }
@@ -620,6 +667,7 @@ fn fetch_single_module_script_result(url dom.URL, fetch_client &EnvironmentSetti
 	mut module_script := ?&ModuleScript(none)
 	mut cache_context := ?BytecodeCacheContext(none)
 	mut should_generate_bytecode_cache := false
+	mut cache_parse := ?&ParsedProgramForCache(none)
 	if mime := mime_type {
 		if mime.is_javascript() && module_type == 'javascript' {
 			response_url := response.url() or { url }
@@ -643,7 +691,9 @@ fn fetch_single_module_script_result(url dom.URL, fetch_client &EnvironmentSetti
 			mut javascript_module := JavaScriptModuleScript.create(url.serialize(), source_text, module_map_realm, response_url)
 			mut compiled_off_thread := false
 			if compiler := fetch_client.script_compile_hook() {
-				result := compile_source_off_thread(source_text, .module, 0, compiler)
+				result := compile_source_off_thread(source_text, url.serialize(), .module, 0,
+					cache_context != none, compiler)
+				cache_parse = result.cache_parse
 				if compiled := result.compiled {
 					javascript_module = JavaScriptModuleScript.create_from_pre_compiled(url.serialize(), source_text, module_map_realm, response_url, compiled)
 					compiled_off_thread = true
@@ -665,7 +715,9 @@ fn fetch_single_module_script_result(url dom.URL, fetch_client &EnvironmentSetti
 		})!
 		if should_generate_bytecode_cache {
 			if context := cache_context {
-				schedule_bytecode_cache_generation(source_text, url.serialize(), .module, 0, context, fetch_client)
+				if retained_parse := cache_parse {
+					schedule_bytecode_cache_generation(retained_parse, context, fetch_client)
+				}
 			}
 		}
 		return ModuleScriptFetchResult{
