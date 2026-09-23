@@ -55,6 +55,20 @@ fn test_obtain_navigation_response_browsing_context_switches_and_propagates_sand
 	assert replacement.popup_sandboxing_flag_bits_ == 0x24
 }
 
+fn test_navigation_document_records_when_readiness_becomes_loading() {
+	start := current_high_resolution_time(&Window{})
+	document := Document.create_and_initialize(.html, 'text/html', &NavigationParams{
+		response_url: URL{ value: 'https://example.test/' }
+		load_timing_info: DocumentLoadTimingInfo{
+			navigation_start_time: start
+		}
+	})!
+	timing := document.document_load_timing_info()
+	assert timing.navigation_start_time == start
+	assert timing.dom_loading_time >= 0
+	assert timing.dom_loading_time < 1000
+}
+
 fn test_relayout_svg_root_delegates_to_layout_implementation() {
 	root := &SVGSVGBox{
 		relayout_callback: consume_svg_relayout_callback

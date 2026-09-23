@@ -2079,6 +2079,7 @@ pub mut:
 	final_sandboxing_flag_bits                 u32
 	opener_policy                              OpenerPolicy
 	was_created_via_cross_origin_redirects     bool
+	load_timing_info                           DocumentLoadTimingInfo
 	create_top_level_browsing_context_target   voidptr = unsafe { nil }
 	create_top_level_browsing_context_callback NavigationParamsCreateTopLevelBrowsingContextCallback = unsafe { nil }
 	html_fragment_parsing_hook                 ?DocumentHTMLFragmentParsingHook
@@ -4511,6 +4512,7 @@ pub type TrustedHTMLOrString = TrustedHTMLValue | string
 pub struct DocumentLoadTimingInfo {
 pub mut:
 	navigation_start_time               f64
+	dom_loading_time                    f64
 	dom_interactive_time                f64
 	dom_content_loaded_event_start_time f64
 	dom_content_loaded_event_end_time   f64
@@ -5078,12 +5080,17 @@ pub fn Document.create_and_initialize(type_ DocumentType_, content_type string, 
 	doc.url = creation_url
 	doc.origin_ = navigation_params.origin
 	doc.was_created_via_cross_origin_redirects = navigation_params.was_created_via_cross_origin_redirects
+	doc.load_timing_info = navigation_params.load_timing_info
 	doc.browsing_context = browsing_context
 	doc.readiness = .loading
 	doc.allow_declarative_shadow_roots = true
 	doc.window = &Window{
 		associated_document_: doc
 	}
+	// Record the first transition to "loading" relative to navigation start.
+	// The Window is not fully installed yet, so use the shared DOM clock that
+	// supplies the rest of this document's load timing values.
+	doc.load_timing_info.dom_loading_time = current_high_resolution_time(doc.window) - doc.load_timing_info.navigation_start_time
 	doc.html_fragment_parsing_hook_ = navigation_params.html_fragment_parsing_hook
 	doc.initialize()
 	// 11. Run CSP initialization for the newly-created Document.

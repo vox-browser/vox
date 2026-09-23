@@ -430,6 +430,10 @@ pub fn (mut d Document) set_load_timing_info(info DocumentLoadTimingInfo) {
 	d.load_timing_info = info
 }
 
+pub fn (d &Document) document_load_timing_info() DocumentLoadTimingInfo {
+	return d.load_timing_info
+}
+
 pub fn (d &Document) document_previous_document_unload_timing() DocumentUnloadTimingInfo {
 	return d.previous_document_unload_timing
 }
