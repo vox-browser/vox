@@ -127,6 +127,9 @@ standalone HTML tests and hosts without an attached page.
 X-Frame-Options `sameorigin` validation now walks logical parent navigables and
 reads their active-document origins through the remote-safe Navigable boundary.
 It no longer depends on dereferencing locally hosted container documents.
+Navigable containers also query their content navigable for session-history
+readiness and load-event delay state; both the full navigation model and the
+compact embedded-content model implement that boundary.
 
 ## Port boundary
 
