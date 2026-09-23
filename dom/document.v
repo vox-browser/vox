@@ -2893,6 +2893,8 @@ pub:
 	request_frame_callback               fn (voidptr) = unsafe { nil }
 	has_media_element_playing_audio_callback fn (voidptr, &Document) bool = unsafe { nil }
 	media_element_audio_state_changed_callback fn (voidptr, &Document, UniqueNodeID, bool) = unsafe { nil }
+	did_request_color_picker_callback    fn (voidptr, string, string) = unsafe { nil }
+	did_request_file_picker_callback     fn (voidptr, string, string, bool) = unsafe { nil }
 mut:
 	last_changed_title_ string
 	title_change_count_ int
@@ -12782,6 +12784,18 @@ pub fn (p &Page) has_media_element_playing_audio(document &Document) bool {
 pub fn (p &Page) media_element_audio_state_changed(document &Document, media_id UniqueNodeID, playing bool) {
 	if p.target != unsafe { nil } && p.media_element_audio_state_changed_callback != unsafe { nil } {
 		p.media_element_audio_state_changed_callback(p.target, document, media_id, playing)
+	}
+}
+
+pub fn (p &Page) did_request_color_picker(input_target string, current_color string) {
+	if p.target != unsafe { nil } && p.did_request_color_picker_callback != unsafe { nil } {
+		p.did_request_color_picker_callback(p.target, input_target, current_color)
+	}
+}
+
+pub fn (p &Page) did_request_file_picker(input_target string, filter string, multiple bool) {
+	if p.target != unsafe { nil } && p.did_request_file_picker_callback != unsafe { nil } {
+		p.did_request_file_picker_callback(p.target, input_target, filter, multiple)
 	}
 }
 

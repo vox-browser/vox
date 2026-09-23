@@ -1589,6 +1589,18 @@ fn (mut model HTMLInputElementModel) show_the_picker_if_applicable() {
 		return
 	}
 	model.set_is_open(true)
+	element := input_element(&model)
+	document := element.document()
+	if document.has_page() {
+		input_target := element.as_node().unique_id().value().str()
+		if model.type_state_ == .file_upload {
+			document.page().did_request_file_picker(input_target,
+				element.get_attribute_value('accept'), element.has_attribute('multiple'))
+		} else {
+			document.page().did_request_color_picker(input_target, model.value())
+		}
+		return
+	}
 	hook := model.picker_hook_ or { return }
 	if hook.request == unsafe { nil } {
 		return
@@ -1597,7 +1609,7 @@ fn (mut model HTMLInputElementModel) show_the_picker_if_applicable() {
 		element: model.element
 		kind: if model.type_state_ == .file_upload { .file } else { .color }
 		file_filter: model.parse_accept_attribute()
-		allow_multiple: input_element(&model).has_attribute('multiple')
+		allow_multiple: element.has_attribute('multiple')
 		initial_color: model.value()
 	})
 }

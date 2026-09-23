@@ -3,6 +3,7 @@ module html
 import css
 import dom
 import math
+import page
 
 fn collect_input_test_elements(node &dom.Node, mut result []&dom.Element) {
 	if element := node.as_element() {
@@ -331,6 +332,31 @@ fn test_input_validation_picker_and_legacy_activation() {
 	checkbox.legacy_cancelled_activation_behavior()
 	assert !checkbox.checked()
 	assert checkbox.indeterminate()
+}
+
+fn test_input_pickers_use_the_owning_documents_page() {
+	mut owner_page := page.Page.create(1) or { panic(err) }
+	other_page := page.Page.create(1) or { panic(err) }
+	document := parse_document('<input id="color" type="color" value="#123456"><input id="file" type="file" accept=".png" multiple>')
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_page(unsafe { &dom.Page(owner_page) })
+
+	color_element := document.get_element_by_id('color') or { panic('missing color input') }
+	mut color := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(color_element) })
+	color.set_picker_security_state(true, true)
+	color.show_picker() or { panic(err) }
+	assert owner_page.client().events.last().name == 'request-color-picker'
+	assert owner_page.client().events.last().text == '#123456'
+	assert other_page.client().events.len == 0
+	owner_page.color_picker_update(none, true)
+
+	file_element := document.get_element_by_id('file') or { panic('missing file input') }
+	mut file := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(file_element) })
+	file.set_picker_security_state(true, true)
+	file.show_picker() or { panic(err) }
+	assert owner_page.client().events.last().name == 'request-file-picker'
+	assert owner_page.client().events.last().text == '.png:true'
+	assert other_page.client().events.len == 0
 }
 
 fn test_input_image_resource_dimensions_and_hints() {
