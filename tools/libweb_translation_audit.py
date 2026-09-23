@@ -108,12 +108,34 @@ VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = froze
         # factory allocates the same field-default state.
         ("editing/editing_history.v", "EditingHistory", "new"),
         ("gamepad/types.v", "GamepadButton", "create"),
+        # The modulepreload algorithm deliberately supplies empty completion
+        # algorithms for the outer fetch and optional descendant fetch.
+        (
+            "html/html_link_element.v",
+            None,
+            "ignore_modulepreload_fetch_complete",
+        ),
+        (
+            "html/scripting_fetching.v",
+            None,
+            "ignore_modulepreload_descendants_complete",
+        ),
+        # Terminating a worker discards every queued task, so its task-queue
+        # predicate is the literal true constant from the translated algorithm.
+        (
+            "html/workers.v",
+            None,
+            "worker_termination_should_remove_task",
+        ),
         ("loader/content_filter.v", "ContentBlocker", "create"),
         (
             "navigationtiming/navigation_timing.v",
             "PerformanceNavigationTiming",
             "max_buffer_size",
         ),
+        # Rust's Default implementation constructs this record using exactly
+        # the two declaration-site threshold defaults mirrored by V.
+        ("painting/force_dark.v", "ForceDarkSettings", "default"),
         (
             "navigationtiming/navigation_timing.v",
             "PerformanceNavigationTiming",
