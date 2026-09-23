@@ -14,7 +14,7 @@ import mimesniff
 pub struct IncrementalDocumentParser {
 mut:
 	document_              &dom.Document = unsafe { nil }
-	body_                  &fetch.Body = unsafe { nil }
+	body_                  ?&fetch.Body
 	url_                   dom.URL
 	mime_type_             ?mimesniff.MimeType
 	parser_                ?&HTMLParser
@@ -38,7 +38,7 @@ pub fn IncrementalDocumentParser.create(document &dom.Document, body &fetch.Body
 
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#read-html
 pub fn (mut parser IncrementalDocumentParser) start() {
-	mut body := parser.body_
+	mut body := parser.body_ or { return }
 	body.wait_for_sniff_bytes(fn [mut parser] (sniff_bytes []u8) {
 		parser.initialize_parser(sniff_bytes)
 	})
@@ -90,7 +90,7 @@ fn (mut parser IncrementalDocumentParser) initialize_parser(sniff_bytes []u8) {
 }
 
 fn (mut parser IncrementalDocumentParser) start_incremental_read() {
-	mut body := parser.body_
+	mut body := parser.body_ or { return }
 	body.incrementally_read(fn [mut parser] (bytes []u8) {
 		parser.process_body_chunk(bytes)
 	}, fn [mut parser] () {
@@ -179,6 +179,10 @@ fn (mut parser IncrementalDocumentParser) feed_parser() {
 }
 
 fn (mut parser IncrementalDocumentParser) process_end_of_body() {
+	// The response stream can belong to the document that initiated this
+	// navigation. Release it as soon as it is exhausted instead of keeping the
+	// previous document alive until the new document's load event.
+	parser.body_ = none
 	parser.body_is_exhausted_ = true
 	if !parser.should_continue() {
 		parser.discard_input_bytes()
@@ -284,6 +288,7 @@ fn (mut parser IncrementalDocumentParser) discard_input_bytes() {
 }
 
 fn (mut parser IncrementalDocumentParser) process_body_error(reason string) {
+	parser.body_ = none
 	parser.error_ = reason
 	if parser.should_continue() && parser.decoded_byte_count_ < parser.input_bytes_.len {
 		parser.decode_and_process(parser.input_bytes_.len - parser.decoded_byte_count_)

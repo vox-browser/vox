@@ -44,7 +44,17 @@ fn test_incremental_document_parser_exposes_partial_dom_before_eof() {
 	assert document.get_element_by_id('last')?.as_node().text_content()? == 'last'
 	assert document.ready_state() == 'complete'
 	assert document.get_source().contains('id="first"')
+	assert incremental_parser.body_ == none
 	assert incremental_parser.error_ == ''
+}
+
+fn test_incremental_document_parser_releases_body_after_read_error() {
+	_, _, parser := incremental_test_parser('text/html;charset=utf-8')
+	mut incremental_parser := parser
+	assert incremental_parser.body_ != none
+	incremental_parser.process_body_error('network error')
+	assert incremental_parser.body_ == none
+	assert incremental_parser.error_ == 'network error'
 }
 
 fn test_incremental_document_parser_preserves_split_utf8_and_tokenizer_lookahead() {
