@@ -10,10 +10,10 @@ import time
 import url
 
 const audio_controls_markup = '<style>
-.container { overflow: hidden; }
+.container { overflow: hidden; text-align: left; }
 .controls { display: flex; flex-direction: column; font-family: sans-serif; font-size: 12px; color: white; user-select: none; }
 .container.audio > .controls { inset: 0; background: rgb(38, 38, 38); justify-content: center; }
-.timeline { z-index: 1; height: 5px; padding: 5px 0; margin: -5px 0; background: rgb(20, 20, 20); background-clip: content-box; flex-shrink: 0; text-align: left; }
+.timeline { z-index: 1; height: 5px; padding: 5px 0; margin: -5px 0; background: rgb(20, 20, 20); background-clip: content-box; flex-shrink: 0; }
 .timeline-fill { height: 100%; background: #9d7cf2; width: 0%; }
 .button-bar { display: flex; align-items: center; padding: 4px 8px; gap: 8px; min-height: 30px; }
 .control-button { background: none; border: none; padding: 0; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }

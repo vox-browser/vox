@@ -547,6 +547,12 @@ fn test_display_type_selects_literal_layout_node_subclass() {
 	assert html_audio_element_layout_node(unsafe { &dom.HTMLAudioElement(audio_dom) }) != none
 	assert html_video_element_layout_node(unsafe { &dom.HTMLVideoElement(video_dom) }) != none
 	audio_shadow := audio_dom.shadow_root() or { panic('audio controls shadow root') }
+	controls_container := css.query_selector(audio_shadow.as_node(), '.container') or {
+		panic('audio controls container')
+	}
+	controls_container_layout := document_tree_builder_node_for_dom(media_root,
+		controls_container.as_node()) or { panic('audio controls container layout node') }
+	assert controls_container_layout.computed_values().text_align() == .left
 	timeline := css.query_selector(audio_shadow.as_node(), '.timeline') or {
 		panic('audio controls timeline')
 	}
