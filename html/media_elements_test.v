@@ -68,9 +68,19 @@ fn test_video_representation_dimensions_poster_and_controls() {
 	assert controls.mute_icon == .low
 	assert controls.was_muted
 	assert controls.shadow_tree_created
-	assert controls.registered_event_listeners_.len == 11
+	assert controls.registered_event_listeners_.len == 12
 	controls.remove_event_listeners()
 	assert controls.registered_event_listeners_.len == 0
+}
+
+fn test_media_controls_toggle_fullscreen_for_the_f_key() {
+	media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
+	controls := MediaControls.create(media)
+	event := dom.KeyboardEvent.create('keydown', dom.KeyboardEventInit{
+		key_code: u32(dom.KeyCode.f)
+	})
+	media.event_target().dispatch_event(unsafe { &dom.Event(event) })
+	assert controls.fullscreen
 }
 
 fn test_media_controls_follow_audio_track_list_additions_and_removals() {

@@ -781,6 +781,16 @@ pub fn (mut controls MediaControls) set_up_event_listeners() {
 				return media_controls_state_handler(controls, event)
 			})
 	}
+	controls.add_event_listener(controls.media.event_target(), 'keydown', .no,
+		fn [controls_pointer] (event &dom.Event) bool {
+			keyboard_event := unsafe { &dom.KeyboardEvent(event) }
+			if keyboard_event.key_code() != u32(dom.KeyCode.f) {
+				return false
+			}
+			mut controls := unsafe { &MediaControls(controls_pointer) }
+			controls.toggle_fullscreen()
+			return true
+		})
 }
 
 pub fn (mut controls MediaControls) toggle_playback() {
