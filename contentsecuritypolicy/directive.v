@@ -234,11 +234,14 @@ pub fn (directive Directive) pre_navigation_check(request &Request, navigation_t
 }
 
 pub fn (directive Directive) navigation_response_check(response &Response, target NavigableContext, check_type CheckType, policy &Policy) Result {
-	if directive.kind != .frame_ancestors || response.is_local || check_type == .source
-		|| target.ancestor_origins.len == 0 {
+	if directive.kind != .frame_ancestors || response.is_local || check_type == .source {
 		return .allowed
 	}
-	for ancestor_origin in target.ancestor_origins {
+	ancestor_origins := target.active_ancestor_origins()
+	if ancestor_origins.len == 0 {
+		return .allowed
+	}
+	for ancestor_origin in ancestor_origins {
 		if ancestor_origin.is_opaque() {
 			return .blocked
 		}

@@ -8,6 +8,7 @@
 // partially translated modules.
 module contentsecuritypolicy
 
+import dom
 import url
 
 pub enum Result {
@@ -143,11 +144,42 @@ pub:
 	connected_to_policy_document bool = true
 }
 
-// The ancestor origins are ordered nearest parent first. This is the only
-// navigable state consulted by frame-ancestors.
+// Detached callers may provide ancestor_origins directly. In-process callers
+// provide navigable so frame-ancestors can walk logical parents and remain
+// independent of locally hosted container documents.
 pub struct NavigableContext {
 pub:
+	navigable        ?&dom.Navigable
 	ancestor_origins []url.Origin
+}
+
+fn opaque_context_origin() url.Origin {
+	return url.Origin.opaque([16]u8{}, .standard)
+}
+
+fn context_origin_from_dom(origin dom.Origin) url.Origin {
+	if origin.is_opaque() {
+		return opaque_context_origin()
+	}
+	parsed := url.parse(origin.serialize()) or { return opaque_context_origin() }
+	return parsed.origin()
+}
+
+pub fn (context NavigableContext) active_ancestor_origins() []url.Origin {
+	navigable := context.navigable or { return context.ancestor_origins.clone() }
+	mut origins := []url.Origin{}
+	mut ancestor := navigable.parent()
+	for ancestor != none {
+		current := ancestor or { break }
+		if origin := current.active_document_origin() {
+			origins << context_origin_from_dom(origin)
+		} else {
+			// Missing replicated state cannot satisfy frame-ancestors.
+			origins << opaque_context_origin()
+		}
+		ancestor = current.parent()
+	}
+	return origins
 }
 
 pub struct GlobalContext {

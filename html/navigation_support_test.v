@@ -26,33 +26,51 @@ fn test_x_frame_options_adherence() {
 	destination := dom.Origin{
 		value: 'https://example.com'
 	}
-	assert check_a_navigation_responses_adherence_to_x_frame_options(false, [], [
+	mut top_document := dom.Document.create(dom.URL{ value: 'https://example.com/' })
+	top_document.set_origin(destination)
+	mut top := &dom.Navigable{}
+	top.set_active_document(top_document)
+	child := &dom.Navigable{
+		parent_: top
+	}
+	assert check_a_navigation_responses_adherence_to_x_frame_options(top, [], [
 		'DENY',
-	], [], destination)
-	assert !check_a_navigation_responses_adherence_to_x_frame_options(true, [], [
+	], destination)
+	assert !check_a_navigation_responses_adherence_to_x_frame_options(child, [], [
 		'deny',
-	], [], destination)
-	assert !check_a_navigation_responses_adherence_to_x_frame_options(true, [], [
+	], destination)
+	assert !check_a_navigation_responses_adherence_to_x_frame_options(child, [], [
 		'deny',
 		'sameorigin',
-	], [], destination)
-	assert check_a_navigation_responses_adherence_to_x_frame_options(true, [], [
+	], destination)
+	assert check_a_navigation_responses_adherence_to_x_frame_options(child, [], [
 		'unknown',
 		'other',
-	], [], destination)
-	assert check_a_navigation_responses_adherence_to_x_frame_options(true, [], [
+	], destination)
+	assert check_a_navigation_responses_adherence_to_x_frame_options(child, [], [
 		'sameorigin',
-	], [dom.Origin{ value: 'https://example.com' }], destination)
-	assert !check_a_navigation_responses_adherence_to_x_frame_options(true, [], [
-		'sameorigin',
-	], [dom.Origin{ value: 'https://other.example' }], destination)
+	], destination)
 	policy := SerializedCSPPolicy{
 		directives:  [SerializedCSPDirective{ name: 'frame-ancestors' }]
 		disposition: .enforce
 	}
-	assert check_a_navigation_responses_adherence_to_x_frame_options(true, [policy], [
+	assert check_a_navigation_responses_adherence_to_x_frame_options(child, [policy], [
 		'deny',
-	], [], destination)
+	], destination)
+
+	mut foreign_document := dom.Document.create(dom.URL{ value: 'https://other.example/' })
+	foreign_document.set_origin(dom.Origin{ value: 'https://other.example' })
+	mut foreign_parent := &dom.Navigable{}
+	foreign_parent.set_active_document(foreign_document)
+	remote_child := &dom.Navigable{
+		parent_: foreign_parent
+		// There is intentionally no local container document. The decision
+		// must come from the logical parent navigable.
+		container_document_: none
+	}
+	assert !check_a_navigation_responses_adherence_to_x_frame_options(remote_child, [], [
+		'sameorigin',
+	], destination)
 }
 
 fn test_session_history_traversal_queue_waits_for_current_promise() {

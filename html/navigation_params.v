@@ -24,11 +24,8 @@ fn append_unique_ascii_lowercase(mut values []string, value string) {
 }
 
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#check-a-navigation-response's-adherence-to-x-frame-options
-// Response header decoding and navigable ancestry walking are performed by the
-// caller; this function translates the decision algorithm after those two
-// dependency operations have produced their values.
-pub fn check_a_navigation_responses_adherence_to_x_frame_options(is_child_navigable bool, csp_list []SerializedCSPPolicy, raw_x_frame_options []string, container_document_origins []dom.Origin, destination_origin dom.Origin) bool {
-	if !is_child_navigable {
+pub fn check_a_navigation_responses_adherence_to_x_frame_options(navigable &dom.Navigable, csp_list []SerializedCSPPolicy, raw_x_frame_options []string, destination_origin dom.Origin) bool {
+	if navigable.parent() == none {
 		return true
 	}
 
@@ -57,10 +54,17 @@ pub fn check_a_navigation_responses_adherence_to_x_frame_options(is_child_naviga
 		return false
 	}
 	if x_frame_options.len > 0 && x_frame_options[0] == 'sameorigin' {
-		for container_origin in container_document_origins {
-			if !container_origin.is_same_origin(destination_origin) {
+		// Each container document is the next parent navigable's active
+		// document. Walking logical parents also works when a container is not
+		// hosted in this process.
+		mut ancestor := navigable.parent()
+		for ancestor != none {
+			current := ancestor or { break }
+			ancestor_origin := current.active_document_origin() or { return false }
+			if !ancestor_origin.is_same_origin(destination_origin) {
 				return false
 			}
+			ancestor = current.parent()
 		}
 	}
 	return true

@@ -1,5 +1,6 @@
 module contentsecuritypolicy
 
+import dom
 import sri
 import url
 
@@ -84,6 +85,18 @@ fn test_frame_ancestors_and_webrtc() {
 		ancestor_origins: [
 			foreign,
 		]
+	}, .response, policy) == .blocked
+
+	mut parent_document := dom.Document.create(dom.URL{ value: 'https://foreign.test/' })
+	parent_document.set_origin(dom.Origin{ value: 'https://foreign.test' })
+	mut parent := &dom.Navigable{}
+	parent.set_active_document(parent_document)
+	target := &dom.Navigable{
+		parent_: parent
+		container_document_: none
+	}
+	assert frame.navigation_response_check(response, NavigableContext{
+		navigable: target
 	}, .response, policy) == .blocked
 	webrtc_directive := policy.get_directive_by_name(webrtc) or { panic('webrtc') }
 	assert webrtc_directive.webrtc_pre_connect_check() == .allowed
