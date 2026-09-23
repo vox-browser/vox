@@ -99,6 +99,27 @@
 
 ## Latest translated behavior
 
+- Cross-document navigation carries same-origin unload timestamps into the
+  replacement document, but suppresses them after cross-origin redirects.
+  Navigation-created documents also preserve their navigation-start record and
+  timestamp the first `loading` readiness state for legacy timing attributes.
+- Media controls derive their timeline from the final seekable range, react to
+  audio-track list events, use a semantic fullscreen button with the `F`
+  shortcut, and coalesce scrub seeks with the upstream timeout. SourceBuffer
+  coded-frame appends now enter the throttled media `progress` event path.
+- Reload reconstructs child session history, nested windows inherit their
+  top-level creation URL and origin, exhausted navigation bodies are released,
+  and removing the body no longer leaves an otherwise loaded document
+  render-blocked.
+- Flex layout completes clamped line measurement, forwards button percentage
+  height bases, honors flexible-grid intrinsic minimums, and applies
+  `min-height` while stretching lines. Media-control contents retain the
+  upstream left alignment.
+- Parsed programs are reused for bytecode cache generation, nested idle
+  callback periods are paced, Window named-property membership avoids full ID
+  enumeration, and SVG presentation attributes retain their case-sensitive
+  namespace behavior. SVG image documents without an explicit opt-in honor the
+  embedding element's preferred color scheme.
 - Incremental HTML parsing retains encoding-sensitive bytes while scripts are
   deferred or the tokenizer is paused on a parser-blocking script. Late meta
   charset declarations can replace the streaming decoder before those bytes
