@@ -220,6 +220,7 @@ mut:
 	can_autoplay_               bool = true
 	loop_                       bool
 	autoplay_                   bool
+	preload_                    ?string
 	controls_                   bool
 	fetch_hook_                 ?MediaResourceFetchHook
 	fetch_generation_           u32
@@ -245,6 +246,8 @@ mut:
 	delaying_load_event_        ?dom.DocumentLoadEventDelayer
 	resource_selection_pending_ bool
 	resource_fetch_started_     bool
+	waiting_for_an_implementation_defined_event_to_fetch_the_resource_ bool
+	current_resource_selection_is_explicit_                            bool
 	assigned_media_provider_    ?MediaProviderObject
 	attached_media_source_      voidptr
 	media_source_detach_        ?MediaSourceDetachHook
@@ -315,6 +318,8 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 				element.document().base_url())
 			model.set_source(element.get_attribute('src'))
 			model.set_crossorigin(element.get_attribute('crossorigin'))
+			model.set_preload(element.get_attribute('preload'))
+			model.set_autoplay(element.has_attribute('autoplay'))
 			audio.media_element_model_ = model
 		}
 		return unsafe { &HTMLMediaElement(audio.media_element_model_) }
@@ -326,6 +331,8 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 				element.document().base_url())
 			model.set_source(element.get_attribute('src'))
 			model.set_crossorigin(element.get_attribute('crossorigin'))
+			model.set_preload(element.get_attribute('preload'))
+			model.set_autoplay(element.has_attribute('autoplay'))
 			video.media_element_model_ = model
 		}
 		return unsafe { &HTMLMediaElement(video.media_element_model_) }
@@ -379,7 +386,7 @@ pub fn (mut element HTMLMediaElement) adopted_from(old_document &dom.Document) {
 		queue.remove_tasks_matching(fn (task &Task) bool {
 			return task.source() == .media_element
 		})
-		element.select_resource() or {}
+		element.select_resource_for_current_load() or {}
 	}
 }
 
@@ -642,6 +649,18 @@ pub fn (mut element HTMLMediaElement) set_loop(value bool) {
 
 pub fn (mut element HTMLMediaElement) set_autoplay(value bool) {
 	element.autoplay_ = value
+	if element.waiting_for_an_implementation_defined_event_to_fetch_the_resource_
+		&& !element.should_wait_for_an_implementation_defined_event_before_fetching_the_resource() {
+		element.continue_fetching_the_resource_after_an_implementation_defined_event() or {}
+	}
+}
+
+pub fn (mut element HTMLMediaElement) set_preload(value ?string) {
+	element.preload_ = value
+	if element.waiting_for_an_implementation_defined_event_to_fetch_the_resource_
+		&& !element.should_wait_for_an_implementation_defined_event_before_fetching_the_resource() {
+		element.continue_fetching_the_resource_after_an_implementation_defined_event() or {}
+	}
 }
 
 fn (mut element HTMLMediaElement) fire_event(name string) {
@@ -656,6 +675,7 @@ pub fn (element &HTMLMediaElement) event_count(name string) int {
 
 pub fn (mut element HTMLMediaElement) cancel_the_fetching_process() {
 	element.fetch_generation_++
+	element.waiting_for_an_implementation_defined_event_to_fetch_the_resource_ = false
 	element.resource_selection_pending_ = false
 	element.resource_fetch_started_ = false
 	if element.network_state_ == .loading {
@@ -701,10 +721,19 @@ pub fn (element &HTMLMediaElement) can_play_type(type_ string) CanPlayTypeResult
 }
 
 pub fn (mut element HTMLMediaElement) load() ! {
-	element.load_element()!
+	// Upstream promotes the selection immediately after load_element(), before
+	// its stable-state task runs. V performs that task synchronously, so record
+	// the promotion first and retain it through the current selection.
+	element.promote_current_resource_selection_to_explicit()
+	element.load_element_for_current_load()!
 }
 
 pub fn (mut element HTMLMediaElement) load_element() ! {
+	element.current_resource_selection_is_explicit_ = false
+	element.load_element_for_current_load()!
+}
+
+fn (mut element HTMLMediaElement) load_element_for_current_load() ! {
 	if element.network_state_ in [.loading, .idle] {
 		element.fire_event('abort')
 	}
@@ -743,10 +772,15 @@ pub fn (mut element HTMLMediaElement) load_element() ! {
 	element.buffered_.clear()
 	element.played_.clear()
 	element.seekable_.clear()
-	element.select_resource()!
+	element.select_resource_for_current_load()!
 }
 
 pub fn (mut element HTMLMediaElement) select_resource() ! {
+	element.current_resource_selection_is_explicit_ = false
+	element.select_resource_for_current_load()!
+}
+
+fn (mut element HTMLMediaElement) select_resource_for_current_load() ! {
 	if html_element := element.associated_element_ {
 		document := unsafe { &dom.Element(html_element) }.document()
 		if !document.is_fully_active() {
@@ -797,6 +831,10 @@ pub fn (mut element HTMLMediaElement) select_resource() ! {
 		if loaded_media_source {
 			return
 		}
+		if element.should_wait_for_an_implementation_defined_event_before_fetching_the_resource() {
+			element.wait_for_an_implementation_defined_event_before_fetching_the_resource()
+			return
+		}
 		hook := element.fetch_hook_ or {
 			last_error = 'No media fetch hook'
 			continue
@@ -827,6 +865,54 @@ pub fn (mut element HTMLMediaElement) select_resource() ! {
 	element.reject_pending_play_promises(dom.js_string('NotSupportedError: ${last_error}'))
 	element.fire_event('error')
 	return error('NotSupportedError: ${last_error}')
+}
+
+// https://html.spec.whatwg.org/multipage/media.html#attr-media-preload
+fn (element &HTMLMediaElement) preload_attribute_is_in_none_state() bool {
+	preload := element.preload_ or { return false }
+	return preload.to_lower() == 'none'
+}
+
+fn (element &HTMLMediaElement) should_wait_for_an_implementation_defined_event_before_fetching_the_resource() bool {
+	// An explicit load() requests that this selection fetch even when
+	// preload=none, matching Chromium, Firefox, and current Ladybird.
+	if element.current_resource_selection_is_explicit_ {
+		return false
+	}
+	if !element.preload_attribute_is_in_none_state() || !element.paused_ {
+		return false
+	}
+	if element.is_eligible_for_autoplay() {
+		return false
+	}
+	return true
+}
+
+fn (mut element HTMLMediaElement) promote_current_resource_selection_to_explicit() {
+	element.current_resource_selection_is_explicit_ = true
+}
+
+fn (mut element HTMLMediaElement) wait_for_an_implementation_defined_event_before_fetching_the_resource() {
+	element.waiting_for_an_implementation_defined_event_to_fetch_the_resource_ = true
+	element.network_state_ = .idle
+	element.fire_event('suspend')
+	element.finish_delaying_load_event()
+}
+
+fn (mut element HTMLMediaElement) continue_fetching_the_resource_after_an_implementation_defined_event() ! {
+	if !element.waiting_for_an_implementation_defined_event_to_fetch_the_resource_ {
+		return
+	}
+	element.waiting_for_an_implementation_defined_event_to_fetch_the_resource_ = false
+	element.begin_delaying_load_event()
+	element.network_state_ = .loading
+	defer {
+		element.finish_delaying_load_event()
+	}
+	url := dom.dom_url_parse(element.current_src_, element.base_url_, 'UTF-8') or {
+		return error('Invalid media URL')
+	}
+	element.load_url_resource(url, none)!
 }
 
 fn (mut element HTMLMediaElement) load_local_resource(provider MediaProviderObject) ! {
@@ -1230,6 +1316,9 @@ pub fn (mut element HTMLMediaElement) play() &dom.Promise {
 pub fn (mut element HTMLMediaElement) play_element() {
 	if element.network_state_ == .empty {
 		element.select_resource() or {}
+	}
+	if element.waiting_for_an_implementation_defined_event_to_fetch_the_resource_ {
+		element.continue_fetching_the_resource_after_an_implementation_defined_event() or {}
 	}
 	if element.has_ended_playback() && element.direction_of_playback() == .forwards {
 		element.seek_element(0, .accurate)

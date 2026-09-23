@@ -45,6 +45,44 @@ fn media_test_fetch(url dom.URL, offset u64) !MediaResourceResponse {
 	}
 }
 
+struct MediaPreloadFetchObservation {
+mut:
+	urls []string
+}
+
+fn test_explicit_media_load_overrides_preload_none_for_only_its_selection() {
+	observation := &MediaPreloadFetchObservation{}
+	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
+	media.set_fetch_hook(fn [observation] (url dom.URL, _ u64) !MediaResourceResponse {
+		mut result := unsafe { &MediaPreloadFetchObservation(observation) }
+		result.urls << url.serialize()
+		return MediaResourceResponse{
+			mime_type: 'audio/mpeg'
+			duration: 1
+			buffered_end: 1
+		}
+	})
+	media.set_preload('none')
+	media.set_source('/automatic.mp3')
+	media.select_resource()!
+
+	assert observation.urls.len == 0
+	assert media.network_state() == .idle
+	assert media.event_count('suspend') == 1
+
+	media.load()!
+	assert observation.urls == ['https://example.test/automatic.mp3']
+	// The completed fetch fires the ordinary resource-fetch suspend event too.
+	assert media.event_count('suspend') == 2
+
+	media.set_source('/next-automatic.mp3')
+	media.select_resource()!
+	assert observation.urls == ['https://example.test/automatic.mp3']
+	assert media.current_src() == 'https://example.test/next-automatic.mp3'
+	assert media.network_state() == .idle
+	assert media.event_count('suspend') == 3
+}
+
 fn media_range_test_fetch(_ dom.URL, offset u64) !MediaResourceResponse {
 	return MediaResourceResponse{
 		mime_type:           'video/mp4'

@@ -30,6 +30,7 @@ fn test_media_adoption_resumes_selection_and_retargets_document_lifecycle() {
 			buffered_end: 1
 		}
 	})
+	media.set_preload('none')
 	media.set_source('/movie.mp4')
 	media.load()!
 	assert observation.calls == 0
