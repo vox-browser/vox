@@ -134,6 +134,9 @@ Navigable initialization keeps the logical DOM Navigable parent separate from
 the optional local HTML model parent. Local roots under a remote parent remain
 children for history/readiness decisions without downcasting that parent, and
 inherit page-local debug state only when a local parent model exists.
+The delaying-load-events flag remains owned by the navigable when its container
+document is remote. Local container documents are scheduled to recheck parser
+completion whenever that flag changes.
 
 ## Port boundary
 

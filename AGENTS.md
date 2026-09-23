@@ -124,7 +124,9 @@
   Containers likewise ask their content navigable for session-history
   readiness and load-event delay state instead of assuming local child state.
   A locally hosted child preserves a logical parent hosted elsewhere, while
-  page-local debug state is inherited only from an available local parent.
+  page-local debug state is inherited only from an available local parent. Its
+  load-delay flag remains navigable-owned even when no local container document
+  exists, and local containers are rescheduled after either flag transition.
 - Flex layout completes clamped line measurement, forwards button percentage
   height bases, honors flexible-grid intrinsic minimums, and applies
   `min-height` while stretching lines. Media-control contents retain the
