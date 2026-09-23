@@ -1536,6 +1536,15 @@ pub fn (mut model NavigableModel) reload(navigation_api_state ?SerializationReco
 		model.set_ongoing_navigation(NavigableOngoingNavigation{})
 		return
 	}
+	// A reload rebuilds child navigables from the replacement document. Do not
+	// carry the previous document's child history identities into that tree.
+	// This mutates only the cloned entry, so a failed reload leaves the active
+	// entry and its child histories intact.
+	if reloaded_state := entry.document_state {
+		mut mutable_reloaded_state := unsafe { &DocumentState(reloaded_state) }
+		mutable_reloaded_state.nested_histories.clear()
+		mutable_reloaded_state.reload_pending = false
+	}
 	model.commit_navigation_entry(entry, .replace, document)
 }
 

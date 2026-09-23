@@ -263,6 +263,7 @@ fn test_navigable_history_cross_document_fragment_reload_and_javascript_url() {
 	model.reload(none, .none)
 	assert model.get_session_history_entries().len == 3
 	assert model.active_document()?.url.fragment()? == 'section'
+	assert !model.current_session_history_entry()?.document_state?.reload_pending
 
 	model.set_javascript_url_hook(navigable_test_javascript_url)
 	current_document := model.active_document() or { panic('missing current document') }
@@ -273,6 +274,37 @@ fn test_navigable_history_cross_document_fragment_reload_and_javascript_url() {
 	})!
 	assert model.active_document()?.body() != none
 	assert model.get_session_history_entries().len == 3
+}
+
+fn test_reload_rebuilds_child_session_history_from_the_replacement_document() {
+	mut document, _, model_pointer := navigable_test_top_level('https://example.test/editor', 'top')!
+	mut model := unsafe { &NavigableModel(model_pointer) }
+	original_entry := model.current_session_history_entry() or { panic('missing original entry') }
+	mut original_state := unsafe { &DocumentState(original_entry.document_state?) }
+	original_state.nested_histories = [NestedHistory{
+		id: 'old-editor-frame'
+		entries: [&SessionHistoryEntry{
+			step: 0
+			url: dom.URL{'https://example.test/stale-frame'}
+			document_state: &DocumentState{
+				document: document
+			}
+		}]
+	}]
+
+	model.reload(none, .none)
+	reloaded_entry := model.current_session_history_entry() or { panic('missing reloaded entry') }
+	assert voidptr(reloaded_entry) != voidptr(original_entry)
+	assert reloaded_entry.document_state?.nested_histories.len == 0
+	assert original_entry.document_state?.nested_histories.len == 1
+
+	mut reloaded_state := unsafe { &DocumentState(reloaded_entry.document_state?) }
+	reloaded_state.nested_histories = [NestedHistory{
+		id: 'new-editor-frame'
+		entries: []
+	}]
+	model.reload(none, .none)
+	assert model.current_session_history_entry()?.document_state?.nested_histories.len == 0
 }
 
 fn test_cross_document_navigation_completion_runs_for_destroyed_navigables() {
