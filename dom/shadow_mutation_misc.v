@@ -3077,6 +3077,10 @@ pub fn (mut id_map ElementByIdMap) remove(element_id string, element &Element) {
 	id_map.elements_by_id[element_id] = elements
 }
 
+pub fn (id_map &ElementByIdMap) contains(element_id string) bool {
+	return element_id in id_map.elements_by_id
+}
+
 pub fn (id_map &ElementByIdMap) get(element_id string, scope_root &Node) ?&Element {
 	_ = id_map.elements_by_id[element_id] or { return none }
 

@@ -143,6 +143,10 @@ fn test_window_named_objects_and_find_follow_upstream_ordering() {
 	assert 'foreign' !in child_names
 	assert 'picture' in window.supported_property_names()
 	assert 'duplicate' in window.supported_property_names()
+	assert window.is_supported_property_name('picture')
+	assert window.is_supported_property_name('duplicate')
+	assert window.is_supported_property_name('frame')
+	assert !window.is_supported_property_name('foreign')
 	assert window.named_objects('picture').elements == [image]
 	assert window.named_item_value('picture').kind == .object
 	assert window.named_objects('duplicate').elements.len == 2
@@ -150,11 +154,24 @@ fn test_window_named_objects_and_find_follow_upstream_ordering() {
 	collection := window.named_collections_.last()
 	assert collection.length() == 2
 	assert collection.item(0) or { panic('missing first collection item') } == first_div
-
 	assert window.find('needle')
 	assert window.find('needle')
 	assert !window.find('needle')
 	assert !window.find('')
+
+	root_node.remove_child(first_div.as_node())!
+	assert window.is_supported_property_name('duplicate')
+	second_div.set_attribute_value('id', 'renamed-id')
+	assert !window.is_supported_property_name('duplicate')
+	assert window.is_supported_property_name('renamed-id')
+	image.set_attribute_value('name', 'renamed-image')
+	assert !window.is_supported_property_name('picture')
+	assert window.is_supported_property_name('renamed-image')
+	root_node.remove_child(second_div.as_node())!
+	root_node.remove_child(image.as_node())!
+	assert !window.is_supported_property_name('renamed-id')
+	assert !window.is_supported_property_name('renamed-image')
+
 }
 
 fn test_document_open_window_routes_to_window_open_steps_and_preserves_proxy_identity() {

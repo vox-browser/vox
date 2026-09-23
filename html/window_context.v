@@ -1849,13 +1849,26 @@ pub fn (window &WindowModel) named_property(name string) dom.JSValue {
 			dom.js_string('[host function ${name}]')
 		}
 		else {
-			if name in window.supported_property_names() {
+			if window.is_supported_property_name(name) {
 				window.named_item_value(name)
 			} else {
 				dom.js_undefined()
 			}
 		}
 	}
+}
+
+pub fn (window &WindowModel) is_supported_property_name(name string) bool {
+	document := window.associated_document()
+	if document.element_by_id_map().contains(name) {
+		return true
+	}
+	for element in document.potentially_named_elements() {
+		if element.get_name() or { '' } == name {
+			return true
+		}
+	}
+	return name in window.document_tree_child_navigable_target_name_property_set()
 }
 
 pub fn (window &WindowModel) supported_property_names() []string {
