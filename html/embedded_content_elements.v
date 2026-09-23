@@ -295,6 +295,13 @@ pub fn (container &NavigableContainerModel) currently_delays_the_load_event() bo
 		return false
 	}
 	navigable := container.content_navigable_ or { return false }
+	// A destroyed document leaves its navigable without an active document
+	// until the replacement is activated or the navigable itself is removed.
+	// Such a child is not ready for post-load tasks and must keep delaying its
+	// container instead of dereferencing the absent document.
+	if navigable.active_document == unsafe { nil } {
+		return true
+	}
 	if !navigable.active_document.ready_for_post_load_tasks {
 		return true
 	}

@@ -95,6 +95,11 @@ fn test_dom_load_event_delay_uses_navigable_container_algorithm() {
 	iframe.container.mark_content_navigable_ready()
 	assert dom_element.as_node().currently_delays_the_load_event()
 
+	active_document := child.active_document
+	child.active_document = unsafe { nil }
+	assert dom_element.as_node().currently_delays_the_load_event()
+	child.active_document = active_document
+
 	child.active_document.ready_for_post_load_tasks = true
 	assert !dom_element.as_node().currently_delays_the_load_event()
 	child.is_delaying_load_events = true
