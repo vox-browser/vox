@@ -147,6 +147,18 @@ fn test_multiline_flex_align_content_distributes_cross_axis_space() {
 	assert two.offset.y().to_double() == 50
 }
 
+fn test_flex_min_height_stretches_lines_before_centering_items() {
+	document := html.parse_document('<!doctype html><style>
+		* { margin:0; padding:0 }
+		#flex { display:flex; flex-wrap:wrap; align-items:center; width:100px; min-height:400px }
+		#one, #two { flex:none; width:40px; height:100px }
+	</style><div id="flex"><div id="one"></div><div id="two"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'flex').content_height().to_double() == 400
+	assert used_for_id(result, 'one').offset.y().to_double() == 150
+	assert used_for_id(result, 'two').offset.y().to_double() == 150
+}
+
 fn test_wrap_reverse_stretch_places_flex_lines_from_the_far_cross_edge() {
 	for direction in ['row', 'row-reverse'] {
 		document := html.parse_document('<!doctype html><style>
