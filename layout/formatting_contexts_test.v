@@ -1207,6 +1207,32 @@ fn test_grid_spanning_item_minimum_grows_flexible_track_before_expansion() {
 	assert flex.content_width().to_double() == 150
 }
 
+fn test_flexible_grid_tracks_honor_intrinsic_minimum_phases() {
+	document := html.parse_document('<!doctype html><style>
+		.grid { display:grid; width:50px; font:10px/1 monospace }
+		.item { min-width:0 }
+		.item span { display:inline-block; width:60px; height:10px }
+		#minimum { grid-template-columns:minmax(min-content, 1fr) }
+		#maximum { grid-template-columns:minmax(max-content, 1fr) }
+		#spanning { grid-template-columns:minmax(max-content, 1fr) minmax(max-content, 2fr) }
+		#zero { width:max-content; grid-template-columns:minmax(auto, 0fr) }
+		#zero-item { overflow:auto }
+		#span { grid-column:span 2 }
+		#second { grid-column:2 }
+	</style>
+	<div class="grid" id="minimum"><div class="item" id="minimum-item"><span></span><wbr><span></span></div></div>
+	<div class="grid" id="maximum"><div class="item" id="maximum-item"><span></span><wbr><span></span></div></div>
+	<div class="grid" id="spanning"><div class="item" id="span"><span></span><wbr><span></span></div><div id="second"></div></div>
+	<div class="grid" id="zero"><div class="item" id="zero-item"><span></span></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'minimum-item').content_width().to_double() == 60
+	assert used_for_id(result, 'maximum-item').content_width().to_double() == 120
+	assert used_for_id(result, 'span').content_width().to_double() == 120
+	assert used_for_id(result, 'second').offset.x().to_double() == 40
+	assert used_for_id(result, 'second').content_width().to_double() == 80
+	assert used_for_id(result, 'zero-item').content_width().to_double() == 0
+}
+
 fn test_grid_spanning_intrinsic_distribution_freezes_at_growth_limits() {
 	document := html.parse_document('<!doctype html><style>
 		#grid { display:grid; width:max-content;

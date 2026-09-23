@@ -10,6 +10,7 @@ struct GridTrack {
 mut:
 	base_size             CSSPixels
 	flex                  f64
+	flexible              bool
 	intrinsic             bool
 	minimum_intrinsic     bool
 	auto_fit              bool
@@ -40,6 +41,25 @@ enum GridBaseSizeDistributionPhase {
 enum GridGrowthLimitDistributionPhase {
 	intrinsic_maximum
 	max_content_maximum
+}
+
+enum GridFlexibleMinimumPhase {
+	intrinsic
+	min_content
+	limited_max_content
+	max_content
+}
+
+fn grid_flexible_minimum_phase_dominates(track GridTrack, phase GridFlexibleMinimumPhase, columns bool, available_size AvailableSize) bool {
+	return match phase {
+		.intrinsic {
+			available_size.is_max_content() || (!columns && available_size.is_min_content())
+				|| track.minimum_intrinsic
+		}
+		.min_content { track.min_content_min || track.max_content_min }
+		.limited_max_content { track.auto_min || track.max_content_min }
+		.max_content { track.max_content_min }
+	}
 }
 
 struct GridItemPlacement {
@@ -189,6 +209,7 @@ fn grid_track_from_size(node &Node, size css.GridSize, basis CSSPixels, availabl
 	if size.is_flexible_length() {
 		return GridTrack{
 			flex: size.flex_factor()
+			flexible: true
 			// A bare <flex> track has an automatic minimum.
 			intrinsic: true
 			minimum_intrinsic: true
@@ -1004,7 +1025,8 @@ fn distribute_grid_item_contribution_across_intrinsic_track_bases(mut tracks []G
 	current := grid_track_range_size(tracks, start, span, gap)
 	mut affected_tracks := []int{}
 	for index in start .. start + span {
-		if index < 0 || index >= tracks.len || tracks[index].flex > 0 {
+		if index < 0 || index >= tracks.len || tracks[index].flexible
+			|| tracks[index].flex > 0 {
 			continue
 		}
 		track := tracks[index]
@@ -1194,7 +1216,7 @@ fn grid_track_range_crosses_flexible_track(tracks []GridTrack, start int, span i
 	first := if start > 0 { start } else { 0 }
 	last := if start + span < tracks.len { start + span } else { tracks.len }
 	for index in first .. last {
-		if tracks[index].flex > 0 {
+		if tracks[index].flexible || tracks[index].flex > 0 {
 			return true
 		}
 	}
@@ -1320,14 +1342,13 @@ fn grid_item_minimum_outer_inline_contribution(mut state LayoutState, item &Node
 		mut spans_flexible_track := false
 		for index in first .. last {
 			spans_auto_track = spans_auto_track || tracks[index].auto_min
-			spans_flexible_track = spans_flexible_track || tracks[index].flex > 0
+			spans_flexible_track = spans_flexible_track || tracks[index].flexible
+				|| tracks[index].flex > 0
 		}
 		if spans_auto_track && !flex_item_is_scroll_container(item)
 			&& (span == 1 || !spans_flexible_track) {
-			min_content_contribution := grid_intrinsic_outer_width_contribution(mut state,
-				item, .min_content)
-			return grid_content_based_minimum_from_outer_contribution(item, item_state,
-				tracks, start, span, gap, min_content_contribution, true)
+			min_content_contribution := grid_intrinsic_outer_width_contribution(mut state, item, .min_content)
+			return grid_content_based_minimum_from_outer_contribution(item, item_state, tracks, start, span, gap, min_content_contribution, true)
 		}
 		return edges
 	}
@@ -1348,71 +1369,100 @@ fn grid_item_minimum_outer_inline_contribution(mut state LayoutState, item &Node
 // this for all items together so overlapping items do not cumulatively grow a
 // track; only the largest contribution assigned to that track is applied.
 fn increase_grid_flexible_tracks_for_spanning_items(mut state LayoutState, container &Node, container_state &UsedValues, mut tracks []GridTrack, placements []GridItemPlacement, columns bool, available_size AvailableSize, gap CSSPixels, percentage_basis CSSPixels, available_height_is_definite bool) {
-	mut track_contributions := []CSSPixels{len: tracks.len}
-	for placement in placements {
-		start := if columns { placement.column } else { placement.row }
-		span := if columns { placement.column_span } else { placement.row_span }
-		first := if start > 0 { start } else { 0 }
-		last := if start + span < tracks.len { start + span } else { tracks.len }
-		if first >= last {
+	for phase in [GridFlexibleMinimumPhase.intrinsic, .min_content, .limited_max_content,
+		.max_content] {
+		if phase == .limited_max_content && !available_size.is_max_content() {
 			continue
 		}
-		mut total_flex := 0.0
-		mut affected_track_count := 0
-		mut non_flexible_space := gap.scaled(f64(last - first - 1))
-		for index in first .. last {
-			track := tracks[index]
-			if track.flex > 0
-				&& (available_size.is_intrinsic_sizing_constraint() || track.minimum_intrinsic) {
-				total_flex += track.flex
-				affected_track_count++
-			} else {
-				non_flexible_space = non_flexible_space.plus(track.base_size)
+		mut track_contributions := []CSSPixels{len: tracks.len}
+		for placement in placements {
+			start := if columns { placement.column } else { placement.row }
+			span := if columns { placement.column_span } else { placement.row_span }
+			first := if start > 0 { start } else { 0 }
+			last := if start + span < tracks.len { start + span } else { tracks.len }
+			if first >= last {
+				continue
 			}
-		}
-		if affected_track_count == 0 {
-			continue
-		}
-		minimum_contribution := if columns {
-			grid_item_minimum_outer_inline_contribution(mut state, placement.item, tracks, start, span, gap)
-		} else {
-			styled := placement.item.as_node_with_style() or { continue }
-			item_state := state.get(styled)
-			grid_item_minimum_outer_block_contribution(mut state, placement.item, item_state, tracks, start, span, available_height_is_definite, percentage_basis, gap)
-		}
-		mut item_contribution := minimum_contribution
-		if available_size.is_intrinsic_sizing_constraint() {
+			mut total_flex := 0.0
+			mut affected_track_count := 0
+			mut non_flexible_space := gap.scaled(f64(last - first - 1))
+			for index in first .. last {
+				track := tracks[index]
+				dominated := grid_flexible_minimum_phase_dominates(track, phase, columns, available_size)
+				if (track.flexible || track.flex > 0) && dominated {
+					total_flex += track.flex
+					affected_track_count++
+				} else {
+					non_flexible_space = non_flexible_space.plus(track.base_size)
+				}
+			}
+			if affected_track_count == 0 {
+				continue
+			}
+			minimum_contribution := if columns {
+				grid_item_minimum_outer_inline_contribution(mut state, placement.item, tracks, start, span, gap)
+			} else {
+				styled := placement.item.as_node_with_style() or { continue }
+				item_state := state.get(styled)
+				grid_item_minimum_outer_block_contribution(mut state, placement.item, item_state, tracks, start, span, available_height_is_definite, percentage_basis, gap)
+			}
+			spanned_track_size := grid_track_range_size(tracks, start, span, gap)
 			min_content_contribution := if columns {
 				grid_intrinsic_outer_width_contribution(mut state, placement.item, .min_content)
 			} else {
 				styled := placement.item.as_node_with_style() or { continue }
 				item_state := state.get(styled)
-				grid_item_outer_block_content_contribution(mut state, placement.item, item_state, .min_content, available_height_is_definite, percentage_basis, grid_track_range_size(tracks, start, span, gap))
+				grid_item_outer_block_content_contribution(mut state, placement.item, item_state, .min_content, available_height_is_definite, percentage_basis, spanned_track_size)
 			}
-			item_contribution = grid_limited_content_contribution(state, container, container_state, available_size, columns, tracks, start, span, min_content_contribution, minimum_contribution)
-		}
-		item_contribution = css_pixels_max(item_contribution.minus(non_flexible_space), CSSPixels.new(0))
-		for index in first .. last {
-			track := tracks[index]
-			if track.flex <= 0
-				|| (!available_size.is_intrinsic_sizing_constraint() && !track.minimum_intrinsic) {
-				continue
-			}
-			contribution := if total_flex > 0 {
-				CSSPixels.nearest_value_for(item_contribution.to_double() * (track.flex / total_flex))
+			max_content_contribution := if columns {
+				grid_intrinsic_outer_width_contribution(mut state, placement.item, .max_content)
 			} else {
-				CSSPixels.from_raw(item_contribution.raw_value() / affected_track_count)
+				styled := placement.item.as_node_with_style() or { continue }
+				item_state := state.get(styled)
+				grid_item_outer_block_content_contribution(mut state, placement.item, item_state, .max_content, available_height_is_definite, percentage_basis, spanned_track_size)
 			}
-			track_contributions[index] = css_pixels_max(track_contributions[index], contribution)
+			mut item_contribution := match phase {
+				.intrinsic {
+					if available_size.is_max_content()
+						|| (!columns && available_size.is_min_content()) {
+						grid_limited_content_contribution(state, container, container_state, available_size, columns, tracks, start, span, min_content_contribution, minimum_contribution)
+					} else {
+						minimum_contribution
+					}
+				}
+				.min_content { min_content_contribution }
+				.limited_max_content {
+					if total_flex == 0 && flex_item_is_scroll_container(placement.item) {
+						minimum_contribution
+					} else {
+						grid_limited_content_contribution(state, container, container_state, available_size, columns, tracks, start, span, max_content_contribution, minimum_contribution)
+					}
+				}
+				.max_content { max_content_contribution }
+			}
+			item_contribution = css_pixels_max(item_contribution.minus(non_flexible_space), CSSPixels.new(0))
+			for index in first .. last {
+				track := tracks[index]
+				dominated := grid_flexible_minimum_phase_dominates(track, phase, columns, available_size)
+				if !(track.flexible || track.flex > 0) || !dominated {
+					continue
+				}
+				contribution := if total_flex > 0 {
+					CSSPixels.nearest_value_for(item_contribution.to_double() * (track.flex / total_flex))
+				} else {
+					CSSPixels.from_raw(item_contribution.raw_value() / affected_track_count)
+				}
+				track_contributions[index] = css_pixels_max(track_contributions[index], contribution)
+			}
 		}
-	}
-	for index in 0 .. tracks.len {
-		if track_contributions[index].raw_value() > tracks[index].base_size.raw_value() {
-			tracks[index].base_size = track_contributions[index]
-		}
-		if tracks[index].has_growth_limit
-			&& tracks[index].growth_limit.raw_value() < tracks[index].base_size.raw_value() {
-			tracks[index].growth_limit = tracks[index].base_size
+		for index in 0 .. tracks.len {
+			if track_contributions[index].raw_value() > tracks[index].base_size.raw_value() {
+				tracks[index].base_size = track_contributions[index]
+			}
+			if tracks[index].has_growth_limit
+				&& tracks[index].growth_limit.raw_value() < tracks[index].base_size.raw_value() {
+				tracks[index].growth_limit = tracks[index].base_size
+			}
 		}
 	}
 }
@@ -1732,13 +1782,11 @@ fn grid_item_outer_block_content_contribution(mut state LayoutState, item &Node,
 fn grid_item_minimum_outer_block_contribution(mut state LayoutState, item &Node, item_state &UsedValues, tracks []GridTrack, start int, span int, available_height_is_definite bool, percentage_basis CSSPixels, gap CSSPixels) CSSPixels {
 	spanned_track_size := grid_track_range_size(tracks, start, span, gap)
 	if !grid_item_preferred_block_size_behaves_as_auto(item, item_state, available_height_is_definite) {
-		return grid_item_outer_block_content_contribution(mut state, item, item_state,
-			.min_content, available_height_is_definite, percentage_basis, spanned_track_size)
+		return grid_item_outer_block_content_contribution(mut state, item, item_state, .min_content, available_height_is_definite, percentage_basis, spanned_track_size)
 	}
 	minimum := item.computed_values().size_value(.min_height)
 	if minimum.is_min_content() {
-		return grid_item_outer_block_content_contribution(mut state, item, item_state,
-			.min_content, available_height_is_definite, percentage_basis, spanned_track_size)
+		return grid_item_outer_block_content_contribution(mut state, item, item_state, .min_content, available_height_is_definite, percentage_basis, spanned_track_size)
 	}
 	if minimum.is_max_content() {
 		return grid_item_outer_block_content_contribution(mut state, item, item_state, .max_content, available_height_is_definite, percentage_basis, spanned_track_size)
@@ -1751,23 +1799,20 @@ fn grid_item_minimum_outer_block_contribution(mut state LayoutState, item &Node,
 		mut spans_flexible_track := false
 		for index in first .. last {
 			spans_auto_track = spans_auto_track || tracks[index].auto_min
-			spans_flexible_track = spans_flexible_track || tracks[index].flex > 0
+			spans_flexible_track = spans_flexible_track || tracks[index].flexible
+				|| tracks[index].flex > 0
 		}
 		if spans_auto_track && !flex_item_is_scroll_container(item)
 			&& (span == 1 || !spans_flexible_track) {
-			min_content_contribution := grid_item_outer_block_content_contribution(mut state,
-				item, item_state, .min_content, available_height_is_definite, percentage_basis,
-				spanned_track_size)
-			return grid_content_based_minimum_from_outer_contribution(item, item_state,
-				tracks, start, span, gap, min_content_contribution, false)
+			min_content_contribution := grid_item_outer_block_content_contribution(mut state, item, item_state, .min_content, available_height_is_definite, percentage_basis, spanned_track_size)
+			return grid_content_based_minimum_from_outer_contribution(item, item_state, tracks, start, span, gap, min_content_contribution, false)
 		}
 		return edges
 	}
 	if resolved := resolve_layout_content_size(item, minimum, percentage_basis, item_state, false) {
 		return resolved.plus(edges)
 	}
-	return grid_item_outer_block_content_contribution(mut state, item, item_state, .min_content,
-		available_height_is_definite, percentage_basis, spanned_track_size)
+	return grid_item_outer_block_content_contribution(mut state, item, item_state, .min_content, available_height_is_definite, percentage_basis, spanned_track_size)
 }
 
 fn grid_should_treat_max_height_as_none(state &LayoutState, container &Node, available_height AvailableSize) bool {
