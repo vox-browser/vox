@@ -42,7 +42,8 @@ mouse-selection state; drag data-store modes, effect negotiation, target
 changes, drop/end and reset; auto-scroll edge expansion, capped speed and fractional accumulation;
 writing-mode-aware element resizing; top-level/focused navigable identity;
 navigation, history and window observations; blocking and non-blocking dialog
-state; clipboard request correlation; media/canvas registries and toggles; user
+state, including file and color picker requests routed from each input's owning
+document; clipboard request correlation; media/canvas registries and toggles; user
 style invalidation; multi-document find-in-page navigation with fragment-excluding
 document URL resets; fullscreen FIFO,
 UI handshakes, promise settlement and error checks; and move-only backing-store

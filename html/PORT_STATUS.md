@@ -120,6 +120,10 @@ form-associated element now explicitly repaints it, and changing a fieldset's
 disabled state repaints every form-associated descendant whose live enabledness
 can change.
 
+File and color picker requests now cross the DOM `Page` bridge belonging to the
+input's own document. The optional per-model hook remains available to
+standalone HTML tests and hosts without an attached page.
+
 ## Port boundary
 
 The algorithms, state transitions, validation, error paths, and observable

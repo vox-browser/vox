@@ -107,6 +107,9 @@
   audio-track list events, use a semantic fullscreen button with the `F`
   shortcut, and coalesce scrub seeks with the upstream timeout. SourceBuffer
   coded-frame appends now enter the throttled media `progress` event path.
+- File and color inputs request their picker from the `Page` attached to their
+  own document, preserving nested-page ownership instead of routing through a
+  top-level or per-model fallback.
 - Reload reconstructs child session history, nested windows inherit their
   top-level creation URL and origin, exhausted navigation bodies are released,
   and removing the body no longer leaves an otherwise loaded document
