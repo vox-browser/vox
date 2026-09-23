@@ -272,9 +272,24 @@ fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node,
 	}
 	// The anonymous button content box may acquire a post-flexing height smaller
 	// than the button. Percentages inside it still resolve against the button's
-	// content height, including while the content box is being measured.
+	// content height, including while the content box is being measured. The V
+	// layout tree has an extra anonymous flex wrapper between the two, so recover
+	// the definite button basis directly when that wrapper's auto height did not
+	// carry it through the flex-item call.
 	child_available_height := if child.is_button_content_box_ {
-		if height := containing_height {
+		mut button_height := containing_height
+		if wrapper := child.parent() {
+			if button := wrapper.parent() {
+				if button_styled := button.as_node_with_style() {
+					if button_state := state.try_get(button_styled) {
+						if button_state.has_definite_height() {
+							button_height = button_state.content_height()
+						}
+					}
+				}
+			}
+		}
+		if height := button_height {
 			AvailableSize.make_definite(height)
 		} else {
 			available_height

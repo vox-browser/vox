@@ -69,12 +69,14 @@ fn test_button_content_percentages_resolve_against_the_button() {
 		canvas { display:block; width:100%; height:100% }
 		#fixed { aspect-ratio:auto; height:75px }
 		#padded { aspect-ratio:auto; width:80px; height:100px; border:5px solid; padding:5px }
+		#wide { width:80px }
 		#auto { aspect-ratio:auto }
 		#half canvas { height:50% }
 	</style><div class="column">
 		<button id="ratio"><canvas id="ratio-content" width="100" height="100"></canvas></button>
 		<button id="fixed"><canvas id="fixed-content" width="100" height="100"></canvas></button>
 		<button id="padded"><canvas id="padded-content" width="100" height="100"></canvas></button>
+		<button id="wide"><canvas id="wide-content" width="100" height="100"></canvas></button>
 		<button id="half"><canvas id="half-content" width="100" height="100"></canvas></button>
 		<button id="auto"><canvas id="auto-content" width="100" height="100"></canvas></button>
 		<button id="nested"><div><canvas id="nested-content" width="100" height="100"></canvas></div></button>
@@ -85,6 +87,8 @@ fn test_button_content_percentages_resolve_against_the_button() {
 	assert used_for_id(result, 'fixed-content').content_height().to_double() == 75
 	assert used_for_id(result, 'padded').border_box_height().to_double() == 100
 	assert used_for_id(result, 'padded-content').content_height().to_double() == 80
+	assert used_for_id(result, 'wide').content_height().to_double() == 100
+	assert used_for_id(result, 'wide-content').content_height().to_double() == 100
 	assert used_for_id(result, 'half-content').content_height().to_double() == 37.5
 	assert used_for_id(result, 'auto').content_height().to_double() == 60
 	assert used_for_id(result, 'auto-content').content_height().to_double() == 60
