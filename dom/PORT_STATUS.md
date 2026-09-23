@@ -99,6 +99,9 @@ files.
 - Navigable's opaque HTML boundary also exposes session-history readiness and
   container load-delay decisions, allowing DOM-facing containers to query the
   content navigable without assuming its HTML model is locally hosted.
+- Traversable and top-level traversable lookup now walk logical Navigable
+  parents. Only an actual top-level traversable reports `is_traversable`, not a
+  child that merely retained a pointer to its traversable root.
 - The independent audit replaced EventTarget's unsafe memory-shape probing with
   an authoritative Node discriminator, tags every Node/Document allocation,
   and verifies generic EventTarget dispatch plus distinct Document identity.

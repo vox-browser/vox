@@ -127,6 +127,8 @@
   page-local debug state is inherited only from an available local parent. Its
   load-delay flag remains navigable-owned even when no local container document
   exists, and local containers are rescheduled after either flag transition.
+  Traversable and top-level traversable lookup walk that logical parent chain;
+  a child is not misclassified merely because it caches its traversable root.
 - Flex layout completes clamped line measurement, forwards button percentage
   height bases, honors flexible-grid intrinsic minimums, and applies
   `min-height` while stretching lines. Media-control contents retain the
