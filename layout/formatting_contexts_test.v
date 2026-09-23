@@ -65,6 +65,18 @@ fn test_large_percentage_width_retains_precision_before_saturation() {
 	assert used_for_id(result, 'child').content_width().to_double() == 4_753_650
 }
 
+fn test_inline_math_uses_completed_run_height_without_enclosing_margin() {
+	document := html.parse_document('<!doctype html><style>
+		body * { border:1px solid black }
+		math a { display:block; width:100px; height:100px }
+	</style><math id="math"><a id="child">Hello</a></math>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	math_used := used_for_id(result, 'math')
+	child_used := used_for_id(result, 'child')
+	assert child_used.border_box_height().to_double() == 102
+	assert math_used.content_height() == child_used.border_box_height()
+}
+
 fn test_auto_width_text_input_stretches_in_nested_column_flex() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }

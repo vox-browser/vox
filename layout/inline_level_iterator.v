@@ -617,18 +617,10 @@ fn (mut iterator InlineLevelIterator) dimension_box_on_line(box &Box) {
 	}
 	inside := layout_inside_independent_formatting_context_with_mode(mut iterator.state, unsafe { &Node(box) }, mut state, iterator.layout_mode, AvailableSpace.new(AvailableSize.make_definite(width), available_height))
 	if definite_height == none {
-		mut automatic_content_height := inside.automatic_content_height
-		// FormattingContext::formatting_context_type_created_by_box() selects a
-		// BlockFormattingContext for `display: math`, while
-		// creates_block_formatting_context() deliberately remains false. The
-		// parent BFC therefore resolves its auto height with CSS 2.2 10.6.3.
-		if computed.display().is_math_inside() {
-			if parent_context := iterator.parent_block_context {
-				mut mutable_parent := unsafe { &BlockFormattingContext(parent_context) }
-				automatic_content_height = mutable_parent.compute_auto_height_for_block_level_element(mut iterator.state, styled)
-			}
-		}
-		automatic_height := clamp_layout_content_size(unsafe { &Node(box) }, automatic_content_height, iterator.available_space.height.to_px_or_zero(), state, false)
+		// The independent formatting run already resolved the atomic root's auto
+		// height. Rewalking its children through the enclosing BFC would leak that
+		// context's still-pending collapsed margin across the atomic boundary.
+		automatic_height := clamp_layout_content_size(unsafe { &Node(box) }, inside.automatic_content_height, iterator.available_space.height.to_px_or_zero(), state, false)
 		state.set_content_height(automatic_height)
 	}
 }
