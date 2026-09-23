@@ -293,7 +293,9 @@
   propagates to child navigables, presents a dark preferred color scheme,
   invalidates style and paint state, and skips filtering when the root or meta
   color-scheme declares `dark` or uses the `only` modifier. The compact script
-  bridge exposes the upstream force-dark threshold and debug-overlay internals.
+  bridge exposes the upstream force-dark threshold and debug-overlay internals;
+  line-box debugging paints each fragment's green bounds and red baseline ahead
+  of its glyphs and explicitly bypasses force-dark resolution.
 - Native bitmap replay carries row orientation separately from alpha format, so
   FFmpeg video and video-backed canvas frames remain top-down while ordinary
   Quartz-ordered decoded images retain their required replay flip.
@@ -302,7 +304,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-24, the module
-translations contain 353,617 implementation V LOC and 72,736 test V LOC.
+translations contain 353,673 implementation V LOC and 72,775 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -324,7 +326,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Geometry | 2,062 | HTML | 57,756 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 861 |
-| IntersectionObserver | 569 | Layout | 43,764 |
+| IntersectionObserver | 569 | Layout | 43,820 |
 | Loader | 1,921 | MathML | 411 |
 | MediaCapabilitiesAPI | 676 | MediaCapture | 1,212 |
 | MediaSourceExtensions | 361 | MimeSniff | 1,108 |
@@ -348,7 +350,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **353,617** |  |  |
+| **Total** | **353,673** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
