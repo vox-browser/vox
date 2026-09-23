@@ -1,12 +1,14 @@
 module html
 
 import dom
+import math
 
 fn media_elements_fetch(url dom.URL, _ u64) !MediaResourceResponse {
 	_ = url
 	return MediaResourceResponse{
 		mime_type: 'video/mp4'
 		duration: 120
+		buffered_end: 120
 		video_tracks: [MediaTrackMetadata{
 			identifier: 1
 			name: 'video'
@@ -69,6 +71,25 @@ fn test_video_representation_dimensions_poster_and_controls() {
 	assert controls.registered_event_listeners_.len == 10
 	controls.remove_event_listeners()
 	assert controls.registered_event_listeners_.len == 0
+}
+
+fn test_media_controls_timeline_uses_the_last_seekable_range() {
+	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
+	media.set_ready_state(.have_enough_data)
+	media.seekable_.add_range(0, 5)
+	media.seekable_.add_range(10, 50)
+	media.set_current_playback_position(20)
+	media.set_duration(math.inf(1))
+
+	mut controls := MediaControls.create(media)
+	controls.update_timeline()
+	controls.update_timestamp()
+	assert controls.timeline_percentage == 25
+	assert controls.timestamp == '0:20'
+
+	media.seekable_.clear()
+	controls.update_timeline()
+	assert controls.timeline_percentage == 0
 }
 
 fn test_concrete_video_poster_attribute_change_uses_video_state() {

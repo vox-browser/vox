@@ -578,6 +578,19 @@ pub enum MediaControlsListenOnce {
 	yes
 }
 
+struct MediaControlsTimelineRange {
+	start f64
+	end   f64
+}
+
+fn (range MediaControlsTimelineRange) span() f64 {
+	return range.end - range.start
+}
+
+fn (range MediaControlsTimelineRange) progress_at(time f64) f64 {
+	return (time - range.start) / range.span()
+}
+
 pub type MediaControlsEventHandler = fn (&dom.Event) bool
 
 struct MediaControlsRegisteredEventListener {
@@ -812,10 +825,27 @@ pub fn (mut controls MediaControls) update_play_pause_icon() {
 	}
 }
 
+fn (controls &MediaControls) timeline_range() ?MediaControlsTimelineRange {
+	seekable := controls.media.seekable()
+	if seekable.length() == 0 {
+		return none
+	}
+	index := seekable.length() - 1
+	range_ := MediaControlsTimelineRange{
+		start: seekable.start(index) or { return none }
+		end: seekable.end(index) or { return none }
+	}
+	if math.is_nan(range_.start) || math.is_nan(range_.end)
+		|| math.is_inf(range_.start, 0) || math.is_inf(range_.end, 0) || range_.span() <= 0 {
+		return none
+	}
+	return range_
+}
+
 pub fn (mut controls MediaControls) update_timeline() {
-	duration := controls.media.duration()
-	percentage := if duration > 0 && !math.is_nan(duration) {
-		(controls.media.current_time() / duration) * 100.0
+	range_ := controls.timeline_range()
+	percentage := if value := range_ {
+		math.max(0.0, math.min(1.0, value.progress_at(controls.media.current_time()))) * 100.0
 	} else {
 		0.0
 	}
@@ -831,8 +861,12 @@ pub fn (mut controls MediaControls) update_timeline() {
 pub fn (mut controls MediaControls) update_timestamp() {
 	current := media_timestamp(math.round(controls.media.current_time()))
 	duration := controls.media.duration()
-	total := media_timestamp(if math.is_nan(duration) { 0.0 } else { math.round(duration) })
-	controls.timestamp = '${current} / ${total}'
+	controls.timestamp = if math.is_inf(duration, 0) {
+		current
+	} else {
+		total := media_timestamp(if math.is_nan(duration) { 0.0 } else { math.round(duration) })
+		'${current} / ${total}'
+	}
 	if element := controls.dom_.timestamp_element {
 		mut node := element.as_node()
 		node.set_text_content(controls.timestamp) or {}
