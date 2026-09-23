@@ -153,6 +153,20 @@ fn test_contenteditable_clipboard_insert_prefers_sanitized_html_and_plaintext_ho
 	assert !plain_host.inner_html()!.contains('<b>')
 }
 
+fn test_contenteditable_clipboard_insert_preserves_generated_image_data_url() {
+	document, host, text, manager_pointer := live_editing_document('a')
+	selection_pointer := document.get_selection() or { panic('missing selection') }
+	mut selection := unsafe { &dom.Selection(selection_pointer) }
+	selection.collapse(text.as_node(), 1) or { panic(err) }
+	mut manager := unsafe { &dom.EditingHostManager(manager_pointer) }
+
+	manager.handle_insert_from_clipboard(dom.input_type_insert_from_paste, '',
+		'<img src="data:image/png;base64,AQID" />')
+	markup := host.inner_html()!
+	assert markup.contains('<img')
+	assert markup.contains('src="data:image/png;base64,AQID"')
+}
+
 fn test_contenteditable_cut_uses_backward_delete_and_stays_separate_from_typing() {
 	document, host, text, manager_pointer := live_editing_document('abc')
 	selection_pointer := document.get_selection() or { panic('missing selection') }

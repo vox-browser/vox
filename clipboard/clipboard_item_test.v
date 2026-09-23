@@ -9,11 +9,12 @@ fn test_system_clipboard_records_round_trip_and_reject_malformed_input() {
 		data: [u8(0), 1, 2, 255]
 		mime_type: 'image/png'
 	}
-	encoded_representation := encode_system_clipboard_representation(representation)
+	encoded_representation := encode_system_clipboard_representation(representation)!
 	decoded_representation := decode_system_clipboard_representation(encoded_representation) or {
 		panic(err)
 	}
-	assert decoded_representation == representation
+	assert decoded_representation.mime_type == representation.mime_type
+	assert decoded_representation.byte_data()? == [u8(0), 1, 2, 255]
 
 	item := SystemClipboardItem{
 		system_clipboard_representations: [representation, SystemClipboardRepresentation{
@@ -21,7 +22,7 @@ fn test_system_clipboard_records_round_trip_and_reject_malformed_input() {
 			mime_type: 'text/plain'
 		}]
 	}
-	encoded_item := encode_system_clipboard_item(item)
+	encoded_item := encode_system_clipboard_item(item)!
 	assert decode_system_clipboard_item(encoded_item) or { panic(err) } == item
 	if _ := decode_system_clipboard_item(encoded_item[..encoded_item.len - 1]) {
 		assert false
@@ -31,6 +32,15 @@ fn test_system_clipboard_records_round_trip_and_reject_malformed_input() {
 	if _ := decode_system_clipboard_representation(representation_with_trailing_data) {
 		assert false
 	}
+
+	file_representation := SystemClipboardRepresentation.from_file('image/png',
+		html.SelectedFile.from_contents('clipboard.png', [u8(137), 80, 78, 71]))
+	decoded_file_representation := decode_system_clipboard_representation(
+		encode_system_clipboard_representation(file_representation)!)!
+	assert decoded_file_representation.is_file_backed()
+	mut decoded_file := decoded_file_representation.selected_file()?
+	assert decoded_file.name() == 'clipboard.png'
+	assert decoded_file.take_contents() == [u8(137), 80, 78, 71]
 }
 
 fn test_system_clipboard_backend_owns_snapshots() {
@@ -47,7 +57,7 @@ fn test_system_clipboard_backend_owns_snapshots() {
 		},
 	], ['inline'])
 	source_data[0] = `X`
-	assert backend.items()[0].system_clipboard_representations[0].data.bytestr() == 'before'
+	assert backend.items()[0].system_clipboard_representations[0].byte_data()?.bytestr() == 'before'
 	assert backend.presentation_styles() == ['inline']
 }
 

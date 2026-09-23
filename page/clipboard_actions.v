@@ -183,13 +183,41 @@ pub fn (mut handler EventHandler) perform_cut_action() EventResult {
 	return .handled
 }
 
+pub fn system_clipboard_data_store(system_items []ClipboardDataItem) ClipboardDataStore {
+	mut items := []ClipboardDataItem{}
+	for item in system_items {
+		mime_type := clipboard_mime_essence(item.mime_type)
+		if item.kind == .text {
+			if mime_type in ['text/plain', 'text/html'] {
+				items << ClipboardDataItem{
+					...item
+					mime_type: mime_type
+					data: item.data.clone()
+				}
+			} else if mime_type == 'image/png' {
+				items << ClipboardDataItem{
+					kind: .file
+					mime_type: mime_type
+					data: item.data.clone()
+					file_name: 'image.png'
+				}
+			}
+		} else {
+			items << ClipboardDataItem{
+				...item
+				mime_type: mime_type
+				data: item.data.clone()
+			}
+		}
+	}
+	return ClipboardDataStore{ items: items }
+}
+
 pub fn (mut handler EventHandler) perform_paste_action() EventResult {
 	if !handler.active_document {
 		return .dropped
 	}
-	mut store := ClipboardDataStore{
-		items: handler.system_clipboard_items_.clone()
-	}
+	mut store := system_clipboard_data_store(handler.system_clipboard_items_)
 	return handler.perform_paste_action_with_data_store(mut store)
 }
 
@@ -210,7 +238,7 @@ pub fn (mut handler EventHandler) perform_paste_action_with_data_store(mut data_
 				html = item.data.bytestr()
 			} else if mime_type == 'text/plain' {
 				plain_text = item.data.bytestr()
-			} else if mime_type.starts_with('image/') {
+			} else if item.kind == .file && mime_type.starts_with('image/') {
 				html = '<img src="data:${mime_type};base64,${base64.encode(item.data)}" />'
 			}
 		}

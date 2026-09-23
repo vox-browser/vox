@@ -350,7 +350,8 @@ pub fn (item &ClipboardItem) get_type(type_ string) !&ClipboardBlobPromise {
 			os_format_name := os_specific_well_known_format(normalized.mime_type)
 			for system_representation in originating.system_clipboard_representations {
 				if os_specific_well_known_format(system_representation.mime_type) == os_format_name {
-					blob := fileapi.Blob.create(system_representation.data.clone(), normalized.mime_type)
+					data := system_representation.byte_data() or { continue }
+					blob := fileapi.Blob.create(data, normalized.mime_type)
 					resolve_clipboard_item_blob_promise(mut result, blob)
 					return result
 				}

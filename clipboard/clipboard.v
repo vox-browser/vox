@@ -226,12 +226,17 @@ pub fn (board &Clipboard) read(formats ClipboardUnsanitizedFormats) &ClipboardRe
 			promise.reject('NotAllowedError: Clipboard reading is only allowed through user activation')
 			return
 		}
-		html.queue_a_task(.clipboard, board.event_loop_, board.document_, fn [board, mut promise, formats] () {
+			html.queue_a_task(.clipboard, board.event_loop_, board.document_, fn [board, mut promise, formats] () {
 			mut items := []&ClipboardItem{}
 			snapshot_change_count := board.backend_.change_count()
 			for system_item in board.backend_.items() {
 				mut item := ClipboardItem.create_empty()
 				for system_representation in system_item.system_clipboard_representations {
+					// File-backed native entries are available to an explicit user paste,
+					// but are never exposed through navigator.clipboard.
+					if system_representation.is_file_backed() {
+						continue
+					}
 					mime_type := os_specific_well_known_format(system_representation.mime_type)
 					if mime_type.len == 0 {
 						continue
@@ -274,8 +279,9 @@ pub fn (board &Clipboard) read_text() &ClipboardTextPromise {
 		html.queue_a_task(.clipboard, board.event_loop_, board.document_, fn [board, mut promise] () {
 			for item in board.backend_.items() {
 				for representation in item.system_clipboard_representations {
+					data := representation.byte_data() or { continue }
 					if os_specific_well_known_format(representation.mime_type) == 'text/plain' {
-						promise.resolve(representation.data.bytestr())
+						promise.resolve(data.bytestr())
 						return
 					}
 				}

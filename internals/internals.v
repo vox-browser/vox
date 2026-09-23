@@ -23,6 +23,7 @@ pub const mod_alt = u16(1)
 pub const mod_ctrl = u16(2)
 pub const mod_shift = u16(4)
 pub const mod_super = u16(8)
+pub const mod_platform_ctrl = mod_ctrl | mod_super
 pub const mod_keypad = u16(16)
 pub const button_left = u16(0)
 pub const button_middle = u16(1)

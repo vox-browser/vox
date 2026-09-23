@@ -133,3 +133,31 @@ fn test_image_paste_creates_data_url_and_text_input_is_cancelable() {
 	handler.focused_target_state = InputTarget{ id: 'editor', is_editable: true, cancel_keyboard: true }
 	assert handler.fire_text_input_event('x') == .cancelled
 }
+
+fn test_system_clipboard_converts_raw_png_and_user_files_to_file_items() {
+	store := system_clipboard_data_store([
+		ClipboardDataItem{
+			kind: .text
+			mime_type: 'image/png'
+			data: [u8(1), 2, 3]
+		},
+		ClipboardDataItem{
+			kind: .file
+			mime_type: 'image/jpeg'
+			data: [u8(4), 5, 6]
+			file_name: 'photo.jpg'
+		},
+		ClipboardDataItem{
+			kind: .text
+			mime_type: 'application/octet-stream'
+			data: [u8(7)]
+		},
+	])
+	assert store.items.len == 2
+	assert store.items[0].kind == .file
+	assert store.items[0].mime_type == 'image/png'
+	assert store.items[0].file_name == 'image.png'
+	assert store.items[1].kind == .file
+	assert store.items[1].mime_type == 'image/jpeg'
+	assert store.items[1].file_name == 'photo.jpg'
+}

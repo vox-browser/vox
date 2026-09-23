@@ -8,10 +8,39 @@
 // encoding used by tests and embedders.
 module clipboard
 
+import html
+
+pub type SystemClipboardData = []u8 | html.SelectedFile
+
 pub struct SystemClipboardRepresentation {
 pub:
-	data      []u8
+	data      SystemClipboardData
 	mime_type string
+}
+
+pub fn SystemClipboardRepresentation.from_file(mime_type string, file html.SelectedFile) SystemClipboardRepresentation {
+	return SystemClipboardRepresentation{
+		data: file
+		mime_type: mime_type
+	}
+}
+
+pub fn (representation &SystemClipboardRepresentation) byte_data() ?[]u8 {
+	if representation.data is []u8 {
+		return representation.data.clone()
+	}
+	return none
+}
+
+pub fn (representation &SystemClipboardRepresentation) selected_file() ?html.SelectedFile {
+	if representation.data is html.SelectedFile {
+		return representation.data.clone_for_transfer()
+	}
+	return none
+}
+
+pub fn (representation &SystemClipboardRepresentation) is_file_backed() bool {
+	return representation.data is html.SelectedFile
 }
 
 pub struct SystemClipboardItem {
@@ -46,6 +75,15 @@ fn (mut decoder SystemClipboardDecoder) read_u32() !u32 {
 	return value
 }
 
+fn (mut decoder SystemClipboardDecoder) read_u8() !u8 {
+	if decoder.offset < 0 || decoder.offset >= decoder.input.len {
+		return error('Invalid SystemClipboard encoding: truncated variant tag')
+	}
+	value := decoder.input[decoder.offset]
+	decoder.offset++
+	return value
+}
+
 fn (mut decoder SystemClipboardDecoder) read_bytes() ![]u8 {
 	length := int(decoder.read_u32()!)
 	if length < 0 || decoder.offset > decoder.input.len
@@ -57,23 +95,36 @@ fn (mut decoder SystemClipboardDecoder) read_bytes() ![]u8 {
 	return value
 }
 
-fn encode_representation_into(mut output []u8, representation SystemClipboardRepresentation) {
-	append_bytes(mut output, representation.data)
+fn encode_representation_into(mut output []u8, representation SystemClipboardRepresentation) ! {
 	append_bytes(mut output, representation.mime_type.bytes())
+	if representation.data is []u8 {
+		output << u8(0)
+		append_bytes(mut output, representation.data)
+		return
+	}
+	output << u8(1)
+	file := representation.data as html.SelectedFile
+	append_bytes(mut output, html.encode_selected_file(&file)!)
 }
 
 fn (mut decoder SystemClipboardDecoder) decode_representation() !SystemClipboardRepresentation {
-	data := decoder.read_bytes()!
 	mime_type := decoder.read_bytes()!.bytestr()
+	tag := decoder.read_u8()!
+	payload := decoder.read_bytes()!
+	data := match tag {
+		0 { SystemClipboardData(payload) }
+		1 { SystemClipboardData(html.decode_selected_file(payload)!) }
+		else { return error('Invalid SystemClipboard representation variant tag') }
+	}
 	return SystemClipboardRepresentation{
 		data: data
 		mime_type: mime_type
 	}
 }
 
-pub fn encode_system_clipboard_representation(representation SystemClipboardRepresentation) []u8 {
+pub fn encode_system_clipboard_representation(representation SystemClipboardRepresentation) ![]u8 {
 	mut output := []u8{}
-	encode_representation_into(mut output, representation)
+	encode_representation_into(mut output, representation)!
 	return output
 }
 
@@ -88,11 +139,11 @@ pub fn decode_system_clipboard_representation(input []u8) !SystemClipboardRepres
 	return representation
 }
 
-pub fn encode_system_clipboard_item(item SystemClipboardItem) []u8 {
+pub fn encode_system_clipboard_item(item SystemClipboardItem) ![]u8 {
 	mut output := []u8{}
 	append_u32(mut output, u32(item.system_clipboard_representations.len))
 	for representation in item.system_clipboard_representations {
-		encode_representation_into(mut output, representation)
+		encode_representation_into(mut output, representation)!
 	}
 	return output
 }
@@ -102,9 +153,9 @@ pub fn decode_system_clipboard_item(input []u8) !SystemClipboardItem {
 		input: input
 	}
 	count := int(decoder.read_u32()!)
-	// Every representation contains at least two u32 lengths. Validate before
+	// Every representation contains at least two u32 lengths and a tag. Validate before
 	// allocating so a malformed count cannot request an unbounded array.
-	if count < 0 || count > (input.len - decoder.offset) / 8 {
+	if count < 0 || count > (input.len - decoder.offset) / 9 {
 		return error('Invalid SystemClipboard item: impossible representation count')
 	}
 	mut representations := []SystemClipboardRepresentation{cap: count}
@@ -124,8 +175,14 @@ fn clone_system_clipboard_items(items []SystemClipboardItem) []SystemClipboardIt
 	for item in items {
 		mut representations := []SystemClipboardRepresentation{cap: item.system_clipboard_representations.len}
 		for representation in item.system_clipboard_representations {
+			data := if representation.data is []u8 {
+				SystemClipboardData(representation.data.clone())
+			} else {
+				file := representation.data as html.SelectedFile
+				SystemClipboardData(file.clone_for_transfer())
+			}
 			representations << SystemClipboardRepresentation{
-				data: representation.data.clone()
+				data: data
 				mime_type: representation.mime_type
 			}
 		}

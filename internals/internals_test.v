@@ -633,6 +633,7 @@ fn test_message_port_and_collection_diagnostics_use_live_objects() {
 }
 
 fn test_input_methods_record_exact_actions() {
+	assert mod_platform_ctrl == u16(10)
 	mut platform := &PlatformState{
 		browser_zoom: 2
 		selected_text_for_clipboard_: 'selected'

@@ -27,9 +27,9 @@ fn test_write_blobs_and_option_to_clipboard_preserves_raw_bytes_and_native_forma
 	assert native_write.presentation_style == 'attachment'
 	assert native_write.item.system_clipboard_representations.len == 2
 	assert native_write.item.system_clipboard_representations[0].mime_type == 'text/plain'
-	assert native_write.item.system_clipboard_representations[0].data == [u8(0x66), 0x6f, 0x80]
+	assert native_write.item.system_clipboard_representations[0].byte_data()? == [u8(0x66), 0x6f, 0x80]
 	assert native_write.item.system_clipboard_representations[1].mime_type == 'image/png'
-	assert native_write.item.system_clipboard_representations[1].data == [u8(0xc2), 0xa9]
+	assert native_write.item.system_clipboard_representations[1].byte_data()? == [u8(0xc2), 0xa9]
 }
 
 fn test_clipboard_operations_require_transient_activation() {
@@ -61,7 +61,7 @@ fn test_clipboard_write_text_and_read_text_cross_backend_boundary_asynchronously
 	assert write.state() == .fulfilled
 	assert backend.items().len == 1
 	assert backend.items()[0].system_clipboard_representations[0].mime_type == 'text/plain'
-	assert backend.items()[0].system_clipboard_representations[0].data.bytestr() == 'hello, clipboard'
+	assert backend.items()[0].system_clipboard_representations[0].byte_data()?.bytestr() == 'hello, clipboard'
 	assert backend.presentation_styles() == ['unspecified']
 
 	read := board.read_text()
@@ -69,6 +69,30 @@ fn test_clipboard_write_text_and_read_text_cross_backend_boundary_asynchronously
 	drain_clipboard_test_event_loop(mut event_loop)
 	assert read.state() == .fulfilled
 	assert read.text() == 'hello, clipboard'
+}
+
+fn test_clipboard_read_text_skips_file_backed_native_entries() {
+	mut event_loop := html.EventLoop.create(.window)
+	mut backend := SystemClipboardBackend.create()
+	backend.replace_items([
+		SystemClipboardItem{
+			system_clipboard_representations: [
+				SystemClipboardRepresentation.from_file('text/plain',
+					html.SelectedFile.from_contents('private.txt', 'private'.bytes())),
+				SystemClipboardRepresentation{
+					data: 'public'.bytes()
+					mime_type: 'text/plain'
+				},
+			]
+		},
+	], ['unspecified'])
+	mut board := Clipboard.create(backend, event_loop, none)
+	board.set_has_transient_activation(true)
+
+	read := board.read_text()
+	drain_clipboard_test_event_loop(mut event_loop)
+	assert read.state() == .fulfilled
+	assert read.text() == 'public'
 }
 
 fn test_clipboard_read_builds_items_and_ignores_unknown_native_formats() {
@@ -95,7 +119,13 @@ fn test_clipboard_read_builds_items_and_ignores_unknown_native_formats() {
 				},
 			]
 		},
-	], ['inline', 'attachment'])
+		SystemClipboardItem{
+			system_clipboard_representations: [
+				SystemClipboardRepresentation.from_file('image/png',
+					html.SelectedFile.from_contents('private.png', [u8(1), 2, 3])),
+			]
+		},
+	], ['inline', 'attachment', 'unspecified'])
 	mut board := Clipboard.create(backend, event_loop, none)
 	board.set_has_transient_activation(true)
 
@@ -140,9 +170,9 @@ fn test_clipboard_write_serializes_supported_representations_and_styles() {
 	representations := backend.items()[0].system_clipboard_representations
 	assert representations.len == 2
 	assert representations[0].mime_type == 'text/plain'
-	assert representations[0].data.bytestr() == 'plain'
+	assert representations[0].byte_data()?.bytestr() == 'plain'
 	assert representations[1].mime_type == 'text/html'
-	assert representations[1].data.bytestr() == '<i>html</i>'
+	assert representations[1].byte_data()?.bytestr() == '<i>html</i>'
 }
 
 fn test_clipboard_write_waits_for_pending_representation_data() {
@@ -165,7 +195,7 @@ fn test_clipboard_write_waits_for_pending_representation_data() {
 	data.resolve(ClipboardItemData.from_string('settled later'))
 	drain_clipboard_test_event_loop(mut event_loop)
 	assert write.state() == .fulfilled
-	assert backend.items()[0].system_clipboard_representations[0].data.bytestr() == 'settled later'
+	assert backend.items()[0].system_clipboard_representations[0].byte_data()?.bytestr() == 'settled later'
 }
 
 fn test_clipboard_write_rejects_rejected_data_and_unsupported_types() {

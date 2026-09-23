@@ -55,6 +55,15 @@ pub fn (file &SelectedFile) file_or_contents() SelectedFileData {
 	return file.file_or_contents
 }
 
+// Clipboard and picker boundaries own their snapshots. Clone in-memory bytes
+// while retaining the same open file handle for descriptor-backed selections.
+pub fn (file &SelectedFile) clone_for_transfer() SelectedFile {
+	if file.file_or_contents is []u8 {
+		return SelectedFile.from_contents(file.name, file.file_or_contents.clone())
+	}
+	return SelectedFile.from_file(file.name, file.file_or_contents as os.File)
+}
+
 pub fn (mut file SelectedFile) take_contents() []u8 {
 	if file.file_or_contents is []u8 {
 		contents := file.file_or_contents as []u8
