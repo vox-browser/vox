@@ -501,10 +501,12 @@ pub fn (easing ResolvedKeyframeEasing) to_string() string {
 
 pub struct ResolvedKeyFrame {
 pub mut:
-	properties             map[PropertyID]&dom.StyleValue
-	use_initial_properties map[PropertyID]bool
-	composite              ?CompositeOperation
-	easing                 ?ResolvedKeyframeEasing
+	properties                    map[PropertyID]&dom.StyleValue
+	custom_properties             map[string]&dom.StyleValue
+	use_initial_properties        map[PropertyID]bool
+	use_initial_custom_properties map[string]bool
+	composite                     ?CompositeOperation
+	easing                        ?ResolvedKeyframeEasing
 }
 
 @[heap]

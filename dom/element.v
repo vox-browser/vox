@@ -688,10 +688,15 @@ pub mut:
 	own_values                           map[string]CSSCustomProperty_
 	parent                               ?&CSSCustomPropertyData_
 	ancestor_count                       u8
+	is_animation_overlay_                bool
 	cached_inheritable_document_identity voidptr = unsafe { nil }
 	cached_inheritable_generation        u64 = max_u64
 	cached_inheritable_data              ?&CSSCustomPropertyData_
 	cached_inheritable_is_self           bool
+}
+
+pub fn (data &CSSCustomPropertyData_) is_animation_overlay() bool {
+	return data.is_animation_overlay_
 }
 
 pub fn (data &CSSCustomPropertyData_) get(name string) ?&CSSStyleValue_ {
@@ -833,6 +838,24 @@ pub fn CSSCustomPropertyData_.create(input_own_values map[string]CSSCustomProper
 		own_values: own_values
 		parent: parent_data
 		ancestor_count: parent_data.ancestor_count + 1
+	}
+}
+
+// Animation values form a distinct layer above the element's ordinary custom
+// property environment. Do not apply create()'s parent absorption here: style
+// recomputation must be able to replace the base while retaining the sampled
+// animation values, and change reporting must compare both layers separately.
+pub fn CSSCustomPropertyData_.create_animation_overlay(animated_values map[string]CSSCustomProperty_, base ?&CSSCustomPropertyData_) &CSSCustomPropertyData_ {
+	ancestor_count := if base_data := base {
+		base_data.ancestor_count + 1
+	} else {
+		u8(0)
+	}
+	return &CSSCustomPropertyData_{
+		own_values: animated_values.clone()
+		parent: base
+		ancestor_count: ancestor_count
+		is_animation_overlay_: true
 	}
 }
 
@@ -2580,7 +2603,18 @@ pub fn (mut e Element) refresh_inherited_custom_property_data() bool {
 			parent_data = data.inheritable(e.document())
 		}
 	}
-	if e.custom_property_data_ == parent_data {
+	current_data := e.custom_property_data_
+	if current := current_data {
+		if current.is_animation_overlay() {
+			if optional_custom_property_data_identical(current.parent, parent_data) {
+				return false
+			}
+			e.custom_property_data_ = CSSCustomPropertyData_.create_animation_overlay(current.own_values,
+				parent_data)
+			return true
+		}
+	}
+	if optional_custom_property_data_identical(current_data, parent_data) {
 		return false
 	}
 	e.custom_property_data_ = parent_data

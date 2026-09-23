@@ -1570,6 +1570,7 @@ pub mut:
 	animated_property_inherited_             [computed_property_flag_byte_count]u8
 	animated_property_result_of_transition_  [computed_property_flag_byte_count]u8
 	animated_property_values_                map[PropertyID]&dom.StyleValue
+	animated_custom_property_values_         map[string]&dom.StyleValue
 	display_before_box_type_transformation_  Display = Display.new()
 	cached_computed_font_list_               ?&FontCascadeList
 	cached_first_available_computed_font_    ?PlatformFont
@@ -1833,6 +1834,7 @@ pub fn ComputedProperties.new() &ComputedProperties {
 	return &ComputedProperties{
 		property_values_: []&dom.StyleValue{len: number_of_longhand_properties, init: unsafe { nil }}
 		animated_property_values_: map[PropertyID]&dom.StyleValue{}
+		animated_custom_property_values_: map[string]&dom.StyleValue{}
 		inheritance_dependent_specified_values_: map[PropertyID]&dom.StyleValue{}
 	}
 }
@@ -1859,6 +1861,7 @@ fn computed_properties_with_initial_values() &ComputedProperties {
 	return &ComputedProperties{
 		property_values_: computed_interpolation_initial_value_cache.clone()
 		animated_property_values_: map[PropertyID]&dom.StyleValue{}
+		animated_custom_property_values_: map[string]&dom.StyleValue{}
 		inheritance_dependent_specified_values_: map[PropertyID]&dom.StyleValue{}
 	}
 }
@@ -2052,6 +2055,10 @@ pub fn (c &ComputedProperties) animated_property_values() map[PropertyID]&dom.St
 	return c.animated_property_values_.clone()
 }
 
+pub fn (c &ComputedProperties) animated_custom_property_values() map[string]&dom.StyleValue {
+	return c.animated_custom_property_values_.clone()
+}
+
 pub fn (c &ComputedProperties) inheritance_dependent_specified_values() map[PropertyID]&dom.StyleValue {
 	return c.inheritance_dependent_specified_values_.clone()
 }
@@ -2078,6 +2085,10 @@ pub fn (mut c ComputedProperties) reset_non_inherited_animated_properties() {
 	for property_id in to_remove {
 		c.animated_property_values_.delete(property_id)
 	}
+}
+
+pub fn (mut c ComputedProperties) reset_animated_custom_properties() {
+	c.animated_custom_property_values_.clear()
 }
 
 pub fn (c &ComputedProperties) is_property_important(property_id PropertyID) bool {
@@ -2173,6 +2184,10 @@ pub fn (mut c ComputedProperties) set_animated_property(property_id PropertyID, 
 	if property_affects_computed_font_list(property_id) {
 		c.clear_computed_font_list_cache()
 	}
+}
+
+pub fn (mut c ComputedProperties) set_animated_custom_property(name string, value &dom.StyleValue) {
+	c.animated_custom_property_values_[name] = unsafe { value }
 }
 
 pub fn (mut c ComputedProperties) remove_animated_property(property_id PropertyID) {
@@ -10880,6 +10895,113 @@ fn resolve_keyframe_easing(style_value &dom.StyleValue, abstract_element dom.Abs
 	return none
 }
 
+fn custom_property_animation_base(abstract_element dom.AbstractElement) ?&dom.CSSCustomPropertyData_ {
+	data := abstract_element.custom_property_data() or { return none }
+	if data.is_animation_overlay() {
+		return data.parent
+	}
+	return data
+}
+
+fn custom_property_animation_underlying_value(abstract_element dom.AbstractElement, name string) &dom.StyleValue {
+	if base := custom_property_animation_base(abstract_element) {
+		if property := base.get_property(name) {
+			return dom_style_value_from_custom_property_bridge(property.value) or {
+				parse_custom_property_value(property.value.css_text)
+			}
+		}
+	}
+	return custom_property_initial_style_value(abstract_element.document(), name)
+}
+
+fn (s &StyleComputer) compute_animated_custom_property_value(abstract_element dom.AbstractElement, computed_properties &ComputedProperties, name string, specified_value &dom.StyleValue) &dom.StyleValue {
+	registration := abstract_element.document().get_registered_custom_property(name)
+	mut value := unsafe { specified_value }
+	if typed := typed_style_value_logic_from_dom(value) {
+		keyword := typed.to_keyword()
+		if keyword == .initial || (keyword == .unset && if registered := registration {
+			!registered.inherits
+		} else {
+			false
+		}) {
+			value = custom_property_initial_style_value(abstract_element.document(), name)
+		} else if keyword in [.inherit, .unset] {
+			if parent := abstract_element.element_to_inherit_style_from() {
+				value = StyleComputer.compute_value_of_custom_property(parent, name)
+			} else {
+				value = custom_property_initial_style_value(abstract_element.document(), name)
+			}
+		} else if typed is UnresolvedStyleValue && typed.substitution_functions_presence.has_any() {
+			mut guarded_contexts := GuardedSubstitutionContexts{}
+			result := substitute_arbitrary_substitution_functions_for_element(abstract_element,
+				mut guarded_contexts, typed.tokens, SubstitutionContext{
+				dependency_type: .property
+				first: name
+			})
+			if contains_guaranteed_invalid_value(result) {
+				value = dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
+			} else {
+				value = dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create_with_presence(result,
+					SubstitutionFunctionsPresence{}, none)))
+			}
+		}
+	}
+
+	registered := registration or { return value }
+	syntax := style_query_registration_syntax(registered) or { return value }
+	if syntax.type() == .universal {
+		return value
+	}
+	mut typed_value := typed_style_value_logic_from_dom(value) or { return value }
+	if typed_value is UnresolvedStyleValue {
+		typed_value = parse_with_a_syntax(typed_value.tokenize(), syntax)
+	}
+	if typed_value is GuaranteedInvalidStyleValue {
+		return dom_style_value_from_value_logic(typed_value)
+	}
+	computation_context := s.get_computation_context_for_property(.width, computed_properties,
+		abstract_element)
+	return dom_style_value_from_value_logic(typed_value.absolutized(computation_context))
+}
+
+fn interpolate_animated_custom_property(document &dom.Document, name string, from &dom.StyleValue, to &dom.StyleValue, delta f64) &dom.StyleValue {
+	registration := document.get_registered_custom_property(name) or {
+		return interpolate_discrete(from, to, delta, .yes) or { unsafe { from } }
+	}
+	syntax := style_query_registration_syntax(registration) or {
+		return interpolate_discrete(from, to, delta, .yes) or { unsafe { from } }
+	}
+	if syntax.type() == .universal {
+		return interpolate_discrete(from, to, delta, .yes) or { unsafe { from } }
+	}
+	from_typed := typed_style_value_logic_from_dom(from) or {
+		return interpolate_discrete(from, to, delta, .yes) or { unsafe { from } }
+	}
+	to_typed := typed_style_value_logic_from_dom(to) or {
+		return interpolate_discrete(from, to, delta, .yes) or { unsafe { from } }
+	}
+	interpolation_context := InterpolationCalculationContext{
+		property: .width
+	}
+	interpolated := interpolate_style_value(interpolation_context, from_typed, to_typed,
+		delta, .yes) or {
+		return interpolate_discrete(from, to, delta, .yes) or { unsafe { from } }
+	}
+	return dom_style_value_from_value_logic(interpolated)
+}
+
+fn composite_animated_custom_property(underlying &dom.StyleValue, animated &dom.StyleValue, operation CompositeOperation) ?&dom.StyleValue {
+	if operation == .replace {
+		return none
+	}
+	underlying_typed := typed_style_value_logic_from_dom(underlying) or { return none }
+	animated_typed := typed_style_value_logic_from_dom(animated) or { return none }
+	composited := composite_style_value(.width, underlying_typed, animated_typed, operation) or {
+		return none
+	}
+	return dom_style_value_from_value_logic(composited)
+}
+
 pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractElement, animation voidptr, mut computed_properties ComputedProperties) {
 	if animation == unsafe { nil } {
 		return
@@ -10956,6 +11078,102 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 			computed_properties.set_animated_property(.visibility, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.hidden))), .no, .no)
 		}
 	}
+
+	mut custom_property_names := map[string]bool{}
+	for name, _ in start_keyframe.custom_properties {
+		custom_property_names[name] = true
+	}
+	for name, _ in start_keyframe.use_initial_custom_properties {
+		custom_property_names[name] = true
+	}
+	for name, _ in end_keyframe.custom_properties {
+		custom_property_names[name] = true
+	}
+	for name, _ in end_keyframe.use_initial_custom_properties {
+		custom_property_names[name] = true
+	}
+	base := custom_property_animation_base(abstract_element)
+	for name, _ in custom_property_names {
+		if !effect.is_css_transition {
+			if base_data := base {
+				if property := base_data.get_property(name) {
+					if property.important {
+						continue
+					}
+				}
+			}
+		}
+		underlying_specified := custom_property_animation_underlying_value(abstract_element, name)
+		underlying := s.compute_animated_custom_property_value(abstract_element,
+			computed_properties, name, underlying_specified)
+		start_specified := start_keyframe.custom_properties[name] or { underlying }
+		end_specified := end_keyframe.custom_properties[name] or { underlying }
+		mut start := s.compute_animated_custom_property_value(abstract_element, computed_properties,
+			name, start_specified)
+		mut end := s.compute_animated_custom_property_value(abstract_element, computed_properties,
+			name, end_specified)
+		start_operation := start_keyframe.composite or { effect.composite }
+		end_operation := end_keyframe.composite or { effect.composite }
+		if composited := composite_animated_custom_property(underlying, start, start_operation) {
+			start = composited
+		}
+		if composited := composite_animated_custom_property(underlying, end, end_operation) {
+			end = composited
+		}
+		interpolated := interpolate_animated_custom_property(abstract_element.document(), name,
+			start, end, interval_progress)
+		computed_properties.set_animated_custom_property(name, interpolated)
+	}
+}
+
+fn publish_animated_custom_properties(computed_properties &ComputedProperties, abstract_element dom.AbstractElement) {
+	data := abstract_element.custom_property_data()
+	mut base := data
+	if current := data {
+		if current.is_animation_overlay() {
+			base = current.parent
+		}
+	}
+	animated_values := computed_properties.animated_custom_property_values()
+	if animated_values.len == 0 {
+		if current := data {
+			if current.is_animation_overlay() {
+				mut mutable_element := abstract_element
+				mutable_element.set_custom_property_data(base)
+			}
+		}
+		return
+	}
+
+	if current := data {
+		if current.is_animation_overlay() && current.own_values.len == animated_values.len {
+			mut values_unchanged := true
+			for name, value in animated_values {
+				existing := current.own_values[name] or {
+					values_unchanged = false
+					break
+				}
+				if !custom_property_bridge_values_equal(existing.value,
+					custom_property_bridge_value(value)) {
+					values_unchanged = false
+					break
+				}
+			}
+			if values_unchanged {
+				return
+			}
+		}
+	}
+
+	mut overlay_values := map[string]dom.CSSCustomProperty_{}
+	for name, value in animated_values {
+		overlay_values[name] = dom.CSSCustomProperty_{
+			value: custom_property_bridge_value(value)
+		}
+	}
+	mut mutable_element := abstract_element
+	mutable_element.set_custom_property_data(dom.CSSCustomPropertyData_.create_animation_overlay(overlay_values,
+		base))
 }
 
 pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElement, mut cascaded_properties CascadedProperties) &ComputedProperties {
@@ -11127,6 +11345,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 			mut animation := existing
 			if animation.sample_at(s.animation_time_ms_) != none {
 				s.collect_animation_into(abstract_element, voidptr(animation.effect_), mut properties)
+				publish_animated_custom_properties(properties, abstract_element)
 			}
 		}
 	}
@@ -11135,9 +11354,11 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 			mut transition := existing
 			if transition.sample_at(s.animation_time_ms_) != none {
 				s.collect_animation_into(abstract_element, voidptr(transition.keyframe_effect_), mut properties)
+				publish_animated_custom_properties(properties, abstract_element)
 			}
 		}
 	}
+	publish_animated_custom_properties(properties, abstract_element)
 
 	// Run automatic box type transformations.
 	s.transform_box_type_if_needed(mut properties, abstract_element)
@@ -12854,17 +13075,69 @@ fn cascade_custom_properties(abstract_element dom.AbstractElement, rules []Scope
 	}
 }
 
-fn custom_property_own_values_equal(left ?&dom.CSSCustomPropertyData_, right ?&dom.CSSCustomPropertyData_) bool {
+fn custom_property_own_values_differ(left ?&dom.CSSCustomPropertyData_, right ?&dom.CSSCustomPropertyData_) bool {
 	if left_data := left {
 		if right_data := right {
-			return custom_property_maps_equal(left_data.own_values, right_data.own_values)
+			return !custom_property_maps_equal(left_data.own_values, right_data.own_values)
 		}
-		return left_data.own_values.len == 0
+		return left_data.own_values.len != 0
 	}
 	if right_data := right {
-		return right_data.own_values.len == 0
+		return right_data.own_values.len != 0
 	}
-	return true
+	return false
+}
+
+fn custom_property_own_values_equal(left ?&dom.CSSCustomPropertyData_, right ?&dom.CSSCustomPropertyData_) bool {
+	return !custom_property_own_values_differ(left, right)
+}
+
+fn optional_custom_property_data_identity_equal(left ?&dom.CSSCustomPropertyData_, right ?&dom.CSSCustomPropertyData_) bool {
+	if left_data := left {
+		right_data := right or { return false }
+		return voidptr(left_data) == voidptr(right_data)
+	}
+	return right == none
+}
+
+fn custom_property_environment_under_overlay(data ?&dom.CSSCustomPropertyData_) ?&dom.CSSCustomPropertyData_ {
+	if current := data {
+		if current.is_animation_overlay() {
+			return current.parent
+		}
+		return current
+	}
+	return none
+}
+
+fn report_custom_property_change(old_data ?&dom.CSSCustomPropertyData_, new_data ?&dom.CSSCustomPropertyData_) bool {
+	if optional_custom_property_data_identity_equal(old_data, new_data) {
+		return false
+	}
+	old_environment := custom_property_environment_under_overlay(old_data)
+	new_environment := custom_property_environment_under_overlay(new_data)
+	if !optional_custom_property_data_identity_equal(old_environment, new_environment) {
+		mut old_inherited := ?&dom.CSSCustomPropertyData_(none)
+		mut new_inherited := ?&dom.CSSCustomPropertyData_(none)
+		if environment := old_environment {
+			old_inherited = environment.parent
+		}
+		if environment := new_environment {
+			new_inherited = environment.parent
+		}
+		if !optional_custom_property_data_identity_equal(old_inherited, new_inherited)
+			|| custom_property_own_values_differ(old_environment, new_environment) {
+			return true
+		}
+	}
+	old_is_overlay := if current := old_data { current.is_animation_overlay() } else { false }
+	new_is_overlay := if current := new_data { current.is_animation_overlay() } else { false }
+	if !old_is_overlay && !new_is_overlay {
+		return false
+	}
+	old_overlay := if old_is_overlay { old_data } else { ?&dom.CSSCustomPropertyData_(none) }
+	new_overlay := if new_is_overlay { new_data } else { ?&dom.CSSCustomPropertyData_(none) }
+	return custom_property_own_values_differ(old_overlay, new_overlay)
 }
 
 fn set_custom_properties_changed(did_change &bool) {
@@ -12879,6 +13152,14 @@ fn inheritable_custom_property_data(abstract_element dom.AbstractElement) ?&dom.
 }
 
 fn install_custom_property_data_for_style(abstract_element dom.AbstractElement, matching_rule_set MatchingRuleSet) {
+	mut had_animation_overlay := false
+	mut animated_values := map[string]dom.CSSCustomProperty_{}
+	if existing := abstract_element.custom_property_data() {
+		if existing.is_animation_overlay() {
+			had_animation_overlay = true
+			animated_values = existing.own_values.clone()
+		}
+	}
 	mut cascaded_all := map[string]dom.CSSCustomProperty_{}
 	for layer in matching_rule_set.author_rules {
 		cascade_custom_properties(abstract_element, layer.rules, mut cascaded_all)
@@ -12913,9 +13194,19 @@ fn install_custom_property_data_for_style(abstract_element dom.AbstractElement, 
 	} else {
 		mutable_abstract_element.set_custom_property_data(dom.CSSCustomPropertyData_.create(cascaded_own, parent_data))
 	}
+	if had_animation_overlay {
+		base := mutable_abstract_element.custom_property_data()
+		mutable_abstract_element.set_custom_property_data(dom.CSSCustomPropertyData_.create_animation_overlay(animated_values,
+			base))
+	}
 }
 
 pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElement, mode ComputeStyleMode, did_change_custom_properties ?&bool, scope &StyleScope) ?&ComputedProperties {
+	return s.compute_style_impl_with_animated_custom_property_recompute(abstract_element, mode,
+		did_change_custom_properties, scope, true)
+}
+
+fn (s &StyleComputer) compute_style_impl_with_animated_custom_property_recompute(abstract_element dom.AbstractElement, mode ComputeStyleMode, did_change_custom_properties ?&bool, scope &StyleScope, allow_animated_custom_property_recompute bool) ?&ComputedProperties {
 	mut profile_checkpoint := if css_style_profile_enabled { time.sys_mono_now() } else { u64(0) }
 	// StyleComputer::compute_style_impl (StyleComputer.cpp:1806).
 	scope.build_rule_cache_if_needed()
@@ -13004,13 +13295,35 @@ pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElemen
 	}
 
 	mut computed_properties := s.compute_properties(abstract_element, mut cascaded_properties)
+	old_had_animation_overlay := if old_data := old_custom_property_data {
+		old_data.is_animation_overlay()
+	} else {
+		false
+	}
+	new_has_animation_overlay := if new_data := abstract_element.custom_property_data() {
+		new_data.is_animation_overlay()
+	} else {
+		false
+	}
+	if allow_animated_custom_property_recompute
+		&& (computed_properties.animated_custom_property_values_.len > 0
+			|| (old_had_animation_overlay && !new_has_animation_overlay)) {
+		recomputed := s.compute_style_impl_with_animated_custom_property_recompute(abstract_element,
+			mode, did_change_custom_properties, scope, false) or { return none }
+		if did_change := did_change_custom_properties {
+			if report_custom_property_change(old_custom_property_data,
+				abstract_element.custom_property_data()) {
+				unsafe { set_custom_properties_changed(did_change) }
+			}
+		}
+		return recomputed
+	}
 	_, compute_elapsed := css_style_profile_checkpoint(profile_checkpoint)
 	css_style_profile_compute_ns += compute_elapsed
 	computed_properties.set_attempted_pseudo_class_matches(attempted_pseudo_class_matches)
 	if did_change := did_change_custom_properties {
 		new_custom_property_data := abstract_element.custom_property_data()
-		if old_custom_property_data != new_custom_property_data
-			&& !custom_property_own_values_equal(old_custom_property_data, new_custom_property_data) {
+		if report_custom_property_change(old_custom_property_data, new_custom_property_data) {
 			unsafe { set_custom_properties_changed(did_change) }
 		}
 	}
@@ -14173,7 +14486,16 @@ fn parse_svg_presentation_attribute_value(document &dom.Document, property_id Pr
 pub fn (s &StyleComputer) compute_custom_properties(mut computed_properties ComputedProperties, abstract_element dom.AbstractElement) {
 	_ = s
 	_ = computed_properties
-	data := abstract_element.custom_property_data() or { return }
+	installed_data := abstract_element.custom_property_data() or { return }
+	data := if installed_data.is_animation_overlay() {
+		installed_data.parent or { return }
+	} else {
+		installed_data
+	}
+	if installed_data.is_animation_overlay() {
+		mut mutable_abstract_element := abstract_element
+		mutable_abstract_element.set_custom_property_data(data)
+	}
 	if inherit_from := abstract_element.element_to_inherit_style_from() {
 		if parent_data := inheritable_custom_property_data(inherit_from) {
 			if data == parent_data {

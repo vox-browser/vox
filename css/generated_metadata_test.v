@@ -1080,7 +1080,7 @@ fn test_shape_outside_accepts_images_shape_boxes_and_combined_shapes() {
 fn test_rule_cache_retains_resolved_keyframes_and_endpoint_markers() {
 	doc := dom.Document.create(dom.url_about_blank())
 	add_document_author_style_sheet(doc, '@keyframes pulse {
-		from { opacity: 0; animation-timing-function: linear; animation-composition: add; }
+		from { opacity: 0; --phase: start; animation-timing-function: linear; animation-composition: add; }
 		50% { transform: translateX(10px); }
 	}')
 	element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
@@ -1100,11 +1100,281 @@ fn test_rule_cache_retains_resolved_keyframes_and_endpoint_markers() {
 		panic('final keyframe missing')
 	}
 	assert PropertyID.opacity in initial.properties
+	assert (initial.custom_properties['--phase'] or {
+		panic('initial custom property missing')
+	}).css_text == 'start'
 	assert initial.use_initial_properties[.transform]
 	assert final.use_initial_properties[.opacity]
 	assert final.use_initial_properties[.transform]
+	assert final.use_initial_custom_properties['--phase']
 	assert initial.composite or { panic('keyframe composition missing') } == .add
 	assert (initial.easing or { panic('keyframe easing missing') }).to_string() == 'linear'
+}
+
+fn test_custom_properties_declared_in_keyframes_are_sampled_and_published() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	register_property_for_document(mut doc, PropertyDefinition{
+		name: '--angle'
+		syntax: '<angle>'
+		inherits: false
+		initial_value: '0deg'
+	}) or { panic('${err}') }
+	register_property_for_document(mut doc, PropertyDefinition{
+		name: '--size'
+		syntax: '<length>'
+		inherits: false
+		initial_value: '0px'
+	}) or { panic('${err}') }
+	register_property_for_document(mut doc, PropertyDefinition{
+		name: '--reset'
+		syntax: '<number>'
+		inherits: false
+		initial_value: '20'
+	}) or { panic('${err}') }
+	register_property_for_document(mut doc, PropertyDefinition{
+		name: '--guarded'
+		syntax: '<number>'
+		inherits: false
+		initial_value: '0'
+	}) or { panic('${err}') }
+	register_property_for_document(mut doc, PropertyDefinition{
+		name: '--added'
+		syntax: '<number>'
+		inherits: false
+		initial_value: '10'
+	}) or { panic('${err}') }
+	add_document_author_style_sheet(doc, '@property --angle {
+		syntax: "<angle>"; inherits: false; initial-value: 0deg;
+	}
+	@property --size {
+		syntax: "<length>"; inherits: false; initial-value: 0px;
+	}
+	@property --reset {
+		syntax: "<number>"; inherits: false; initial-value: 20;
+	}
+	@property --guarded {
+		syntax: "<number>"; inherits: false; initial-value: 0;
+	}
+	@keyframes spin {
+		from { --angle: 0deg; --plain: aaa; }
+		to { --angle: 360deg; --plain: bbb; }
+	}
+	@keyframes grow { to { --size: 100px; } }
+	@keyframes to-initial { from { --reset: 80; } to { --reset: initial; } }
+	@keyframes guarded-run { from { --guarded: 0; } to { --guarded: 100; } }
+	@keyframes add-values {
+		from { --added: 1; animation-composition: add; }
+		to { --added: 3; animation-composition: add; }
+	}
+	.halfway, .implicit, .keyword, .important, .additive {
+		animation-duration: 10000ms; animation-timing-function: linear; animation-fill-mode: both;
+	}
+	.halfway { animation-name: spin; }
+	.implicit { --size: 50px; width: var(--size); margin: var(--size); animation-name: grow; }
+	.keyword { animation-name: to-initial; }
+	.important { --guarded: 10 !important; animation-name: guarded-run; }
+	.additive { animation-name: add-values; animation-composition: add; }')
+
+	mut computer := StyleComputer.new(doc)
+	for class_name in ['halfway', 'implicit', 'keyword', 'important', 'additive'] {
+		computer.set_animation_time_ms(0)
+		mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+			panic('${err}')
+		}
+		element.set_attribute_value('class', class_name)
+		mut abstract_element := dom.AbstractElement.new(element, none)
+		initial := computer.compute_style(abstract_element)
+		abstract_element.set_computed_properties(computed_properties_to_dom(initial))
+		computer.set_animation_time_ms(5000)
+		computed := computer.compute_style(abstract_element)
+		abstract_element.set_computed_properties(computed_properties_to_dom(computed))
+		data := abstract_element.custom_property_data() or {
+			panic('${class_name} custom property data missing')
+		}
+		if class_name == 'important' {
+			assert !data.is_animation_overlay()
+		} else {
+			assert data.is_animation_overlay()
+		}
+		match class_name {
+			'halfway' {
+				assert (data.get('--angle') or { panic('--angle missing') }).css_text == '180deg'
+				assert (data.get('--plain') or { panic('--plain missing') }).css_text == 'bbb'
+			}
+			'implicit' {
+				assert (data.get('--size') or { panic('--size missing') }).css_text == '75px'
+				assert (computed.property(.width, .no) or { panic('width missing') }).css_text == '75px'
+				assert (computed.property(.margin_left, .no) or {
+					panic('margin-left missing')
+				}).css_text == '75px'
+			}
+			'keyword' {
+				assert (data.get('--reset') or { panic('--reset missing') }).css_text == '50'
+			}
+			'important' {
+				assert (data.get('--guarded') or { panic('--guarded missing') }).css_text == '10'
+			}
+			'additive' {
+				assert (data.get('--added') or { panic('--added missing') }).css_text == '12'
+			}
+			else {}
+		}
+	}
+}
+
+fn test_inherited_custom_property_change_passes_through_animation_overlay() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{
+		active_document_: document
+	})
+	add_document_author_style_sheet(document, '@keyframes animate-y {
+		from { --y: 0; } to { --y: 1; }
+	}
+	#parent { --x: 10px; }
+	#middle { animation: animate-y 1s infinite; }
+	#child { width: var(--x); }')
+	mut root := document.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
+	mut parent := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	parent.set_attribute_value('id', 'parent')
+	mut middle := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	middle.set_attribute_value('id', 'middle')
+	mut child := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	child.set_attribute_value('id', 'child')
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(root.as_node()) or { panic('${err}') }
+	mut root_node := root.as_node()
+	root_node.append_child(parent.as_node()) or { panic('${err}') }
+	mut parent_node := parent.as_node()
+	parent_node.append_child(middle.as_node()) or { panic('${err}') }
+	mut middle_node := middle.as_node()
+	middle_node.append_child(child.as_node()) or { panic('${err}') }
+
+	css_style_computer_for(document)
+	document.needs_full_style_update = true
+	document.update_style()
+	assert computed_value_for(child, .width) or { '' } == '10px'
+	middle_data := dom.AbstractElement.new(middle, none).custom_property_data() or {
+		panic('animated middle custom property data missing')
+	}
+	assert middle_data.is_animation_overlay()
+
+	parent.set_attribute_value('style', '--x: 20px')
+	document.update_style()
+	assert computed_value_for(child, .width) or { '' } == '20px'
+	updated_middle_data := dom.AbstractElement.new(middle, none).custom_property_data() or {
+		panic('updated middle custom property data missing')
+	}
+	assert updated_middle_data.is_animation_overlay()
+	assert (updated_middle_data.get('--y') or { panic('--y missing') }).css_text == '0'
+}
+
+fn test_animation_refresh_recomputes_standard_property_using_animated_custom_property() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{
+		active_document_: document
+	})
+	register_property_for_document(mut document, PropertyDefinition{
+		name: '--animated-width'
+		syntax: '<length>'
+		inherits: false
+		initial_value: '0px'
+	}) or { panic('${err}') }
+	add_document_author_style_sheet(document, '@keyframes grow-width {
+		from { --animated-width: 0px; }
+		to { --animated-width: 100px; }
+	}
+	#target {
+		width: var(--animated-width);
+		animation-name: grow-width;
+		animation-duration: 1000ms;
+		animation-timing-function: linear;
+		animation-fill-mode: none;
+	}')
+	mut root := document.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
+	mut target := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	target.set_attribute_value('id', 'target')
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(root.as_node()) or { panic('${err}') }
+	mut root_node := root.as_node()
+	root_node.append_child(target.as_node()) or { panic('${err}') }
+
+	mut computer := css_style_computer_for(document)
+	computer.set_animation_time_ms(0)
+	document.needs_full_style_update = true
+	document.update_style()
+	assert computed_value_for(target, .width) or { '' } == '0px'
+	computer.set_animation_time_ms(500)
+	document.update_animated_style_if_needed()
+	assert computed_value_for(target, .width) or { '' } == '50px'
+	computer.set_animation_time_ms(1500)
+	document.update_animated_style_if_needed()
+	assert computed_value_for(target, .width) or { '' } == '0px'
+}
+
+fn test_animated_registered_custom_property_can_reference_another_animation() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	for definition in [
+		PropertyDefinition{
+			name: '--static'
+			syntax: '<number>'
+			inherits: false
+			initial_value: '0'
+		},
+		PropertyDefinition{
+			name: '--animated'
+			syntax: '<number>'
+			inherits: false
+			initial_value: '0'
+		},
+		PropertyDefinition{
+			name: '--test'
+			syntax: '<number>'
+			inherits: false
+			initial_value: '0'
+		},
+	] {
+		register_property_for_document(mut document, definition) or { panic('${err}') }
+	}
+	add_document_author_style_sheet(document, '@keyframes referenced-value {
+		from { --animated: 200; } to { --animated: 300; }
+	}
+	@keyframes dependent-value {
+		from { --test: var(--static); } to { --test: var(--animated); }
+	}
+	.target {
+		--static: 100;
+		animation-name: referenced-value, dependent-value;
+		animation-duration: 1000ms, 1000ms;
+		animation-timing-function: linear, linear;
+		animation-fill-mode: both, both;
+	}')
+	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	element.set_attribute_value('class', 'target')
+	mut abstract_element := dom.AbstractElement.new(element, none)
+	mut computer := StyleComputer.new(document)
+	computer.set_animation_time_ms(0)
+	initial := computer.compute_style(abstract_element)
+	abstract_element.set_computed_properties(computed_properties_to_dom(initial))
+	computer.set_animation_time_ms(250)
+	computed := computer.compute_style(abstract_element)
+	abstract_element.set_computed_properties(computed_properties_to_dom(computed))
+	data := abstract_element.custom_property_data() or { panic('animation overlay missing') }
+	assert (data.get('--animated') or { panic('--animated missing') }).css_text == '225'
+	assert (data.get('--test') or { panic('--test missing') }).css_text == '131.25'
 }
 
 fn test_rule_cache_merges_duplicate_keyframe_offsets_in_source_order() {

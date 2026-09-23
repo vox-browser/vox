@@ -707,6 +707,7 @@ fn style_scope_resolve_keyframe_set_from_rule(rule &CSSRule) &KeyFrameSet {
 		keyframes_by_key: map[int]ResolvedKeyFrame{}
 	}
 	mut animated_properties := map[PropertyID]bool{}
+	mut animated_custom_properties := map[string]bool{}
 	rules := rule.css_rules() or { return keyframe_set }
 
 	// Forwards pass, resolve all the user-specified keyframe properties.
@@ -719,7 +720,9 @@ fn style_scope_resolve_keyframe_set_from_rule(rule &CSSRule) &KeyFrameSet {
 		keyframe_style := keyframe_rule.style() or { continue }
 		mut resolved_keyframe := ResolvedKeyFrame{
 			properties: map[PropertyID]&dom.StyleValue{}
+			custom_properties: map[string]&dom.StyleValue{}
 			use_initial_properties: map[PropertyID]bool{}
+			use_initial_custom_properties: map[string]bool{}
 		}
 
 		for property in keyframe_style.properties {
@@ -771,10 +774,18 @@ fn style_scope_resolve_keyframe_set_from_rule(rule &CSSRule) &KeyFrameSet {
 			}
 		}
 
+		for name, property in keyframe_style.custom_properties {
+			animated_custom_properties[name] = true
+			resolved_keyframe.custom_properties[name] = unsafe { property.value }
+		}
+
 		if existing_keyframe := keyframe_set.keyframes_by_key[key] {
 			mut merged_keyframe := existing_keyframe
 			for property_id, value in resolved_keyframe.properties {
 				merged_keyframe.properties[property_id] = unsafe { value }
+			}
+			for name, value in resolved_keyframe.custom_properties {
+				merged_keyframe.custom_properties[name] = unsafe { value }
 			}
 			if easing := resolved_keyframe.easing {
 				merged_keyframe.easing = easing
@@ -788,22 +799,27 @@ fn style_scope_resolve_keyframe_set_from_rule(rule &CSSRule) &KeyFrameSet {
 		}
 	}
 
-	style_scope_generate_initial_and_final_keyframes(mut keyframe_set, animated_properties)
+	style_scope_generate_initial_and_final_keyframes(mut keyframe_set, animated_properties,
+		animated_custom_properties)
 	return keyframe_set
 }
 
-fn style_scope_generate_initial_and_final_keyframes(mut keyframe_set KeyFrameSet, animated_properties map[PropertyID]bool) {
+fn style_scope_generate_initial_and_final_keyframes(mut keyframe_set KeyFrameSet, animated_properties map[PropertyID]bool, animated_custom_properties map[string]bool) {
 	final_key := 100 * animation_key_frame_key_scale_factor
 	if 0 !in keyframe_set.keyframes_by_key {
 		keyframe_set.keyframes_by_key[0] = ResolvedKeyFrame{
 			properties: map[PropertyID]&dom.StyleValue{}
+			custom_properties: map[string]&dom.StyleValue{}
 			use_initial_properties: map[PropertyID]bool{}
+			use_initial_custom_properties: map[string]bool{}
 		}
 	}
 	if final_key !in keyframe_set.keyframes_by_key {
 		keyframe_set.keyframes_by_key[final_key] = ResolvedKeyFrame{
 			properties: map[PropertyID]&dom.StyleValue{}
+			custom_properties: map[string]&dom.StyleValue{}
 			use_initial_properties: map[PropertyID]bool{}
+			use_initial_custom_properties: map[string]bool{}
 		}
 	}
 
@@ -815,6 +831,14 @@ fn style_scope_generate_initial_and_final_keyframes(mut keyframe_set KeyFrameSet
 		}
 		if property_id !in final.properties {
 			final.use_initial_properties[property_id] = true
+		}
+	}
+	for name, _ in animated_custom_properties {
+		if name !in initial.custom_properties {
+			initial.use_initial_custom_properties[name] = true
+		}
+		if name !in final.custom_properties {
+			final.use_initial_custom_properties[name] = true
 		}
 	}
 	keyframe_set.keyframes_by_key[0] = initial

@@ -1175,6 +1175,26 @@ fn animated_property_maps_invalidation(old_values map[PropertyID]&dom.StyleValue
 	return invalidation
 }
 
+fn animated_custom_property_maps_differ(old_values map[string]&dom.StyleValue, new_values map[string]&dom.StyleValue) bool {
+	if old_values.len != new_values.len {
+		return true
+	}
+	for name, old_value in old_values {
+		new_value := new_values[name] or { return true }
+		old_typed := typed_style_value_logic_from_dom(old_value) or {
+			if voidptr(old_value) != voidptr(new_value) {
+				return true
+			}
+			continue
+		}
+		new_typed := typed_style_value_logic_from_dom(new_value) or { return true }
+		if !old_typed.equals(new_typed) {
+			return true
+		}
+	}
+	return false
+}
+
 fn (s &StyleComputer) recompute_inherited_style_for_animated_descendants(node &dom.Node) RequiredInvalidationAfterStyleChange {
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
 	if element := node.as_element() {
@@ -1315,7 +1335,9 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 		dom_computed := target_element.computed_properties() or { continue }
 		mut computed := computed_properties_from_dom(dom_computed) or { continue }
 		old_animated_values := computed.animated_property_values()
+		old_animated_custom_values := computed.animated_custom_property_values()
 		computed.reset_non_inherited_animated_properties()
+		computed.reset_animated_custom_properties()
 
 		if style_computer.css_animation_storage_ != unsafe { nil } {
 			for existing in style_computer.css_animation_storage_.animations_for(target_element) {
@@ -1333,23 +1355,47 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 				}
 			}
 		}
+		publish_animated_custom_properties(computed, target_element)
 
 		mut invalidation := animated_property_maps_invalidation(old_animated_values, computed.animated_property_values())
-		if invalidation.is_none() {
+		custom_properties_changed := animated_custom_property_maps_differ(old_animated_custom_values,
+			computed.animated_custom_property_values())
+		if invalidation.is_none() && !custom_properties_changed {
 			continue
+		}
+		mut target_was_recomputed := false
+		if custom_properties_changed
+			&& (target_element.element().style_uses_var_css_function()
+				|| target_element.element().style_uses_inherit_css_function()) {
+			mut mutable_target := target_element
+			mut did_change_custom_properties := false
+			target_invalidation, _ := style_computer.recompute_style_with_invalidation(mut mutable_target,
+				&did_change_custom_properties)
+			invalidation = required_invalidation_after_style_change_or(invalidation,
+				target_invalidation)
+			target_was_recomputed = true
 		}
 		mut child := target_node.first_child()
 		for {
 			current := child or { break }
-			invalidation = required_invalidation_after_style_change_or(invalidation, style_computer.recompute_inherited_style_for_animated_descendants(current))
+			if custom_properties_changed {
+				invalidation = required_invalidation_after_style_change_or(invalidation,
+					update_style_recursively(mut style_computer, current, false, true, false,
+						false))
+			} else {
+				invalidation = required_invalidation_after_style_change_or(invalidation,
+					style_computer.recompute_inherited_style_for_animated_descendants(current))
+			}
 			child = current.next_sibling()
 		}
 
-		computed_dom_mirror := computed_properties_to_dom(computed)
-		mut mutable_target := target_element
-		mutable_target.set_computed_properties(computed_dom_mirror)
-		if layout_node := target_element.unsafe_layout_node() {
-			layout_node.apply_style(computed_dom_mirror)
+		if !target_was_recomputed {
+			computed_dom_mirror := computed_properties_to_dom(computed)
+			mut mutable_target := target_element
+			mutable_target.set_computed_properties(computed_dom_mirror)
+			if layout_node := target_element.unsafe_layout_node() {
+				layout_node.apply_style(computed_dom_mirror)
+			}
 		}
 
 		mut mutable_target_node := unsafe { &dom.Node(target_node) }
