@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb`
 
 Translation workspace: `~/code/vox2`
-Audited: 2026-09-22
+Audited: 2026-09-23
 
 ## Upstream delta since the V snapshot
 
@@ -453,6 +453,11 @@ changes before style computation. The three upstream live-selection reftests
 now match exactly, including insertion between unchanged boundaries and moving
 a highlight between subtrees after its `::selection` rule changes.
 
+Range client rectangles now include selected retained text fragments and map
+each fragment through its containing block's accumulated visual context.
+Element client rectangles use the same viewport transform boundary, so their
+geometry agrees under CSS transforms and both reflect live ancestor scrolling.
+
 Empty editable blocks, paragraphs, and inline elements now derive caret height
 from the selected font's ascent plus descent, cap it at the computed line
 height, and center it in the line's extra leading. The compact browser bridge
@@ -514,7 +519,7 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The table below is the refreshed 2026-09-22 inventory. It covers 76 current
+The table below is the refreshed 2026-09-23 inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
 implementation units. Root-level LibWeb `.cpp` support units are mapped
@@ -535,7 +540,7 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
-| `DOM` | 59 | 34,859 | 36,604 | 2,199 | Complete |
+| `DOM` | 59 | 34,859 | 36,666 | 2,199 | Complete |
 | `DOMURL` | 4 | 1,039 | 758 | 336 | Complete |
 | `Editing` | 26 | 12,720 | 8,515 | 797 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
@@ -555,7 +560,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 860 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 43,419 | 16,325 | Present |
+| `Layout` | 9 | 4,001 | 43,517 | 16,364 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -602,7 +607,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **351,890** | **71,959** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **352,050** | **71,998** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 

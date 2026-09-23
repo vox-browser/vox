@@ -192,6 +192,10 @@
 - Scripted boundary selections remain live when nodes are inserted between
   them, selection moves are replayed in order, and CSSOM selection-style
   mutations reach the final paint without retaining a stale highlight.
+- Range text geometry is derived from retained glyph fragments and transformed
+  into viewport coordinates through the fragment containing block. Range and
+  element client rectangles therefore agree under CSS transforms and continue
+  to follow live ancestor scroll offsets.
 - Empty editable blocks, paragraphs, and inline elements size their caret from
   font ascent plus descent, cap it at line height, and center it in extra line
   leading. The compact browser bridge replays `Selection.collapse()` so the
@@ -258,8 +262,8 @@
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
-implementation units have audited V mappings. As of 2026-09-22, the module
-translations contain 351,890 implementation V LOC and 71,959 test V LOC.
+implementation units have audited V mappings. As of 2026-09-23, the module
+translations contain 352,050 implementation V LOC and 71,998 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -271,7 +275,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Clipboard | 973 | Compositor | 2,403 |
 | Compression | 424 | ContentSecurityPolicy | 2,740 |
 | CookieStore | 859 | CredentialManagement | 418 |
-| Crypto (`webcrypto/`) | 4,472 | DOM | 36,604 |
+| Crypto (`webcrypto/`) | 4,472 | DOM | 36,666 |
 | DOMURL | 758 | Editing | 8,515 |
 | Encoding | 705 | EncryptedMediaExtensions | 572 |
 | EntriesAPI | 44 | EventTiming | 153 |
@@ -281,7 +285,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Geometry | 2,062 | HTML | 57,207 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 860 |
-| IntersectionObserver | 569 | Layout | 43,419 |
+| IntersectionObserver | 569 | Layout | 43,517 |
 | Loader | 1,921 | MathML | 411 |
 | MediaCapabilitiesAPI | 676 | MediaCapture | 1,212 |
 | MediaSourceExtensions | 361 | MimeSniff | 1,108 |
@@ -305,7 +309,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **351,890** |  |  |
+| **Total** | **352,050** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
