@@ -1191,18 +1191,6 @@ fn clear_intrinsic_flex_item_line_boxes(mut state LayoutState, node &Node) {
 }
 
 fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node, mut container_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
-	// During intrinsic sizing a nested flex container whose dimensions were
-	// both resolved by its parent has no intrinsic constraint of its own. The
-	// parent has already determined its size, so rerunning flex layout here is
-	// both redundant and can trigger expensive intrinsic subtree measurement.
-	if layout_mode == .intrinsic_sizing
-		&& !available_space.width.is_intrinsic_sizing_constraint()
-		&& !available_space.height.is_intrinsic_sizing_constraint() {
-		return FormattingContextResult{
-			automatic_content_width: container_state.content_width()
-			automatic_content_height: container_state.content_height()
-		}
-	}
 	// Anonymous whitespace-only flex children are not flex items, but TreeBuilder
 	// still created layout nodes for them. LayoutState keeps zero geometry for
 	// those nodes just as upstream does, so dumps and DOM geometry can observe

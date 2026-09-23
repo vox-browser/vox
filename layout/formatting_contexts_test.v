@@ -44,6 +44,24 @@ fn test_flex_formatting_context_grows_and_aligns_items() {
 	assert two.offset.y().to_double() == 40
 }
 
+fn test_flex_intrinsic_height_accounts_for_line_clamping_and_nested_baselines() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0; font:20px/20px monospace }
+		.row { display:flex; width:100px }
+		.card { width:100px }
+		.title { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:1; overflow:hidden }
+		select { width:100px; height:40px; padding:0; border:0; font:inherit }
+	</style>
+	<div class="row"><div class="card" id="combined"><div class="title" id="combined-title">first second third fourth</div><div><select><option>Tea</option></select></div></div></div>
+	<div class="row"><div class="card" id="title-only"><div class="title">first second third fourth</div></div></div>
+	<div class="row"><div class="card" id="select-only"><div><select><option>Tea</option></select></div></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'combined').content_height().to_double() == 60
+	assert used_for_id(result, 'combined-title').content_height().to_double() == 20
+	assert used_for_id(result, 'title-only').content_height().to_double() == 20
+	assert used_for_id(result, 'select-only').content_height().to_double() == 40
+}
+
 fn test_fractional_calculated_flex_basis_does_not_wrap_the_third_item() {
 	for width in [100, 101, 102, 100] {
 		document := html.parse_document('<!doctype html><style>
@@ -607,7 +625,7 @@ fn test_column_flex_automatic_minimum_size_is_content_based() {
 	assert used_for_id(result, 'scroll').content_height().to_double() == 50
 }
 
-fn test_nested_flex_with_parent_resolved_size_skips_intrinsic_relayout() {
+fn test_nested_flex_with_parent_resolved_size_still_runs_intrinsic_relayout() {
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; width:100px; height:50px }
 		#item { flex:0 0 content }
@@ -621,10 +639,11 @@ fn test_nested_flex_with_parent_resolved_size_skips_intrinsic_relayout() {
 	mut item_box := item_node.as_box() or { panic('#item is not a box') }
 	item_box.reset_cached_intrinsic_sizes()
 	assert item_box.cached_intrinsic_sizes_ == none
-	result_ := run_flex_formatting_context_with_mode(mut measurement_state, flex_node, mut flex_state, .intrinsic_sizing, AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(100)), AvailableSize.make_definite(CSSPixels.new(50))))
-	assert result_.automatic_content_width.to_double() == 100
-	assert result_.automatic_content_height.to_double() == 50
-	assert item_box.cached_intrinsic_sizes_ == none
+	_ = run_flex_formatting_context_with_mode(mut measurement_state, flex_node, mut flex_state, .intrinsic_sizing, AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(100)), AvailableSize.make_definite(CSSPixels.new(50))))
+	// Even with both dimensions resolved by the parent, descendants may supply
+	// the baseline of an inline flex box. The intrinsic run therefore cannot be
+	// skipped; measuring this content populates the item's intrinsic cache.
+	assert item_box.cached_intrinsic_sizes_ != none
 }
 
 fn test_nested_grid_with_parent_resolved_size_skips_intrinsic_relayout() {

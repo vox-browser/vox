@@ -859,19 +859,26 @@ struct TrailingCollapsedMargin {
 	margin CSSPixels
 }
 
-fn BlockFormattingContext.for_root(root &Node, layout_mode LayoutMode) BlockFormattingContext {
+fn BlockFormattingContext.for_root(root &Node, layout_mode LayoutMode, has_definite_inline_size bool) BlockFormattingContext {
 	computed := root.computed_values()
 	active := line_clamp_is_active(computed)
 	return BlockFormattingContext{
 		layout_mode: layout_mode
 		root: root
 		is_line_clamp_container: active
-		max_lines: if active { computed.max_lines() } else { none }
+		// Intrinsic measurements at a definite inline size need the clamped
+		// block size just like committed layout. Measurements at an intrinsic
+		// inline constraint still leave clamping to the final layout pass.
+		max_lines: if active && (layout_mode != .intrinsic_sizing || has_definite_inline_size) {
+			computed.max_lines()
+		} else {
+			none
+		}
 	}
 }
 
 fn (bfc &BlockFormattingContext) has_line_clamp() bool {
-	return bfc.is_line_clamp_container && bfc.layout_mode != .intrinsic_sizing
+	return bfc.is_line_clamp_container && bfc.max_lines != none
 }
 
 fn (bfc &BlockFormattingContext) line_clamp_reached() bool {
