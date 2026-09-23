@@ -670,8 +670,8 @@ quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 10
 reviewed upstream-equivalent trivial implementations: 559
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 14103
-  unmatched: 4354
+  candidate-name-match: 14146
+  unmatched: 4311
   language-constructor-or-destructor: 1383
   gc-or-binding-runtime: 655
   consolidated-name-match: 490
@@ -682,10 +682,10 @@ suspicious empty/default-return implementations: 0
 
 largest unmatched modules:
 
-  1698 CSS
-  1236 HTML
-   617 DOM
-   405 Painting
+  1695 CSS
+  1205 HTML
+   609 DOM
+   404 Painting
    316 Layout
     82 Editing
 
