@@ -51,6 +51,11 @@ and five modified SVG cases: all 32 invocations pass (31 distinct fixtures).
 The four CSS Scroll Snap initial-layout reftests also pass with exact zero-pixel
 diffs, covering mandatory and proximity selection plus horizontal, vertical-lr,
 and vertical-rl writing modes.
+Button layout now forwards the button's definite block-size basis through its
+anonymous flex and content wrappers. Percentage-height descendants therefore
+continue to use the button content height when the content wrapper has a
+smaller post-flexing height, including aspect-ratio, padded, fractional, nested,
+and resized-equivalent cases.
 Inline layout now publishes conservative glyph-run painted bounds in CSS pixels
 when it finalizes each retained run. Merging, ellipsis, and line clamping dirty
 the packed replay data and bounds together; finalization refreshes both once.

@@ -131,10 +131,11 @@
   a child is not misclassified merely because it caches its traversable root.
   Active-document identity can also be queried through the Navigable boundary,
   so form-target checks do not require a locally accessible Document pointer.
-- Flex layout completes clamped line measurement, forwards button percentage
-  height bases, honors flexible-grid intrinsic minimums, and applies
-  `min-height` while stretching lines. Media-control contents retain the
-  upstream left alignment.
+- Flex layout completes clamped line measurement and forwards a button's
+  definite percentage-height basis through its anonymous flex/content wrappers,
+  including aspect-ratio sizing and post-flexing content heights. It also honors
+  flexible-grid intrinsic minimums and applies `min-height` while stretching
+  lines. Media-control contents retain the upstream left alignment.
 - Parsed programs are reused for bytecode cache generation, nested idle
   callback periods are paced, Window named-property membership avoids full ID
   enumeration, and SVG presentation attributes retain their case-sensitive
