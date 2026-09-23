@@ -664,7 +664,7 @@ upstream .cpp files: 1193
 upstream implementations: 21401
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 10
-reviewed upstream-equivalent trivial implementations: 555
+reviewed upstream-equivalent trivial implementations: 559
 suspicious empty/default-return implementations: 0
   candidate-name-match: 14103
   unmatched: 4354
