@@ -101,6 +101,10 @@ form controls, scrollbars, and resizers. Border and selection resolution sees
 the authored backdrop, while automatic focus rings and inspector/debug
 overlays remain unchanged. The navigable's thresholds and page opt-out are
 applied after recording and before retained commands reach native replay.
+Decoded raster replay samples at most roughly one thousand pixels for the
+translated palette, luminance, saturation, transparency, and chroma classifier.
+Eligible icon and separator frames are cached after per-pixel Oklab inversion;
+the CSS-size gate and classifier leave large or photographic images unchanged.
 Inline layout now publishes conservative glyph-run painted bounds in CSS pixels
 when it finalizes each retained run. Merging, ellipsis, and line clamping dirty
 the packed replay data and bounds together; finalization refreshes both once.
@@ -595,7 +599,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 861 | 231 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 43,760 | 16,493 | Present |
+| `Layout` | 9 | 4,001 | 43,764 | 16,510 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -606,7 +610,7 @@ from the current-module totals.
 | `NavigationTiming` | 4 | 497 | 291 | 45 | Complete |
 | `NotificationsAPI` | 1 | 301 | 290 | 68 | Complete |
 | `Page` | 8 | 6,450 | 2,985 | 886 | Complete |
-| `Painting` | 22 | 8,227 | 7,544 | 2,325 | Present |
+| `Painting` | 22 | 8,227 | 7,609 | 2,357 | Present |
 | `PerformanceTimeline` | 5 | 476 | 447 | 130 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
 | `Platform` | 4 | 431 | 2,330 | 405 | Complete |
@@ -642,7 +646,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **353,548** | **72,687** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **353,617** | **72,736** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 

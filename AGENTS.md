@@ -284,7 +284,9 @@
   thresholds. Eligible colors invert through Oklab lightness while retaining
   hue and alpha; selection and border colors preserve backdrop contrast, and
   small images are classified from palette, luminance, saturation,
-  transparency, and chroma features before filtering. Display-list recording
+  transparency, and chroma features before filtering. Decoded raster replay
+  samples and caches that verdict, applies the same Oklab inversion per pixel,
+  and leaves photo-sized or photographic content unchanged. Display-list recording
   assigns those roles to backgrounds, text and shadows, borders, selections,
   SVG, gradients, markers, form controls, scrollbars, and resizers, while UA
   focus rings and inspector overlays remain unfiltered. Its page setting
@@ -300,7 +302,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-24, the module
-translations contain 353,548 implementation V LOC and 72,687 test V LOC.
+translations contain 353,617 implementation V LOC and 72,736 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -322,13 +324,13 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Geometry | 2,062 | HTML | 57,756 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 861 |
-| IntersectionObserver | 569 | Layout | 43,760 |
+| IntersectionObserver | 569 | Layout | 43,764 |
 | Loader | 1,921 | MathML | 411 |
 | MediaCapabilitiesAPI | 676 | MediaCapture | 1,212 |
 | MediaSourceExtensions | 361 | MimeSniff | 1,108 |
 | MixedContent | 125 | NavigationTiming | 291 |
 | NotificationsAPI | 290 | Page | 2,985 |
-| Painting | 7,544 | PerformanceTimeline | 447 |
+| Painting | 7,609 | PerformanceTimeline | 447 |
 | PermissionsAPI | 239 | Platform | 2,330 |
 | ReferrerPolicy | 239 | RequestIdleCallback | 59 |
 | ResizeObserver | 420 | ResourceTiming | 338 |
@@ -346,7 +348,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **353,548** |  |  |
+| **Total** | **353,617** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
