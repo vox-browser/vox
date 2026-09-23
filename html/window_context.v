@@ -1375,6 +1375,15 @@ fn document_timer_visibility_state_changed(target voidptr, _ &dom.Document) {
 	scope.document_visibility_state_changed()
 }
 
+fn document_timer_audio_play_state_changed(target voidptr, _ &dom.Document) {
+	window := unsafe { &WindowModel(target) }
+	if window.global_scope_ == unsafe { nil } {
+		return
+	}
+	mut scope := window.global_scope_
+	scope.document_audio_play_state_changed()
+}
+
 pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel) !&WindowModel {
 	mut document_with_html_hooks := unsafe { &dom.Document(document) }
 	if document.get_browsing_context() == none {
@@ -1480,6 +1489,7 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 		queue_selectionchange_event_task: document_queue_selectionchange_event_task
 		run_unloading_cleanup_steps:      document_run_unloading_cleanup_steps
 		timer_visibility_state_changed:   document_timer_visibility_state_changed
+		timer_audio_play_state_changed:   document_timer_audio_play_state_changed
 	})
 	timer_scope.document_visibility_state_changed()
 	proxy := WindowProxyModel.create(window)

@@ -213,6 +213,7 @@ mut:
 	volume_                     f64 = 1.0
 	muted_                      bool
 	page_muted_                 bool
+	is_playing_audio_           bool
 	audio_tracks_               &AudioTrackList = unsafe { nil }
 	video_tracks_               &VideoTrackList = unsafe { nil }
 	text_tracks_                &TextTrackList = unsafe { nil }
@@ -350,6 +351,12 @@ pub fn (mut element HTMLMediaElement) adopted_from(old_document &dom.Document) {
 	if observer := element.document_observer_ {
 		mut mutable_observer := unsafe { &dom.DocumentObserver(observer) }
 		mutable_observer.retarget_for_adoption(mut new_document)
+	}
+	if element.is_playing_audio_ {
+		media_id := unsafe { &dom.Element(html_element) }.as_node().unique_id()
+		mut mutable_old_document := unsafe { &dom.Document(old_document) }
+		mutable_old_document.media_element_audio_play_state_changed(media_id, false)
+		new_document.media_element_audio_play_state_changed(media_id, true)
 	}
 
 	// The delaying flag belongs to the media element's current node document,
@@ -507,8 +514,23 @@ pub fn (element &HTMLMediaElement) is_fetching() bool {
 }
 
 pub fn (element &HTMLMediaElement) is_playing_audio() bool {
+	return element.is_playing_audio_
+}
+
+fn (element &HTMLMediaElement) should_be_playing_audio() bool {
 	return !element.paused_ && element.audio_tracks_.has_enabled_track()
 		&& element.effective_media_volume() > 0
+}
+
+fn (mut element HTMLMediaElement) update_audio_play_state() {
+	is_playing_audio := element.should_be_playing_audio()
+	if element.is_playing_audio_ == is_playing_audio {
+		return
+	}
+	element.is_playing_audio_ = is_playing_audio
+	html_element := element.associated_element_ or { return }
+	mut document := unsafe { &dom.Element(html_element) }.document()
+	document.media_element_audio_play_state_changed(html_element.as_node().unique_id(), is_playing_audio)
 }
 
 pub fn (element &HTMLMediaElement) video_sink_is_ticking() bool {
@@ -1077,6 +1099,7 @@ pub fn (mut element HTMLMediaElement) set_paused(paused bool) {
 		return
 	}
 	element.paused_ = paused
+	element.update_audio_play_state()
 	if mut video := element.video_element_model_ {
 		video.update_natural_dimensions()
 	}
@@ -1336,6 +1359,7 @@ pub fn (mut element HTMLMediaElement) update_volume() {
 	if hook := element.playback_hooks_.set_volume {
 		hook(element.effective_media_volume())
 	}
+	element.update_audio_play_state()
 }
 
 pub fn (element &HTMLMediaElement) effective_media_volume() f64 {
@@ -1451,6 +1475,7 @@ pub fn (mut element HTMLMediaElement) set_audio_track_enabled(track &AudioTrack,
 	if hook := element.playback_hooks_.set_audio_track {
 		hook(track, enabled)
 	}
+	element.update_audio_play_state()
 }
 
 pub fn (mut element HTMLMediaElement) set_selected_video_track(track ?&VideoTrack) {
@@ -1517,13 +1542,16 @@ pub fn (mut element HTMLMediaElement) update_video_frame_and_timeline() {
 }
 
 pub fn (mut element HTMLMediaElement) on_audio_track_added(metadata MediaTrackMetadata) &AudioTrack {
-	track := AudioTrack.create(metadata, media_element_noop_change_task, media_element_noop_audio_enabled)
+	element_pointer := voidptr(&element)
+	track := AudioTrack.create(metadata, media_element_noop_change_task, fn [element_pointer] (track &AudioTrack, enabled bool) {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
+		media.set_audio_track_enabled(track, enabled)
+	})
 	element.audio_tracks_.add_track(track)
 	mut mutable_track := unsafe { &AudioTrack(track) }
 	enable := !element.audio_tracks_.tracks().any(it != track && it.enabled)
 	if enable {
 		mutable_track.set_enabled(true)
-		element.set_audio_track_enabled(track, true)
 	}
 	if metadata.kind == none {
 		mutable_track.base.kind = if enable { 'main' } else { 'translation' }
@@ -1568,7 +1596,6 @@ pub fn (mut element HTMLMediaElement) on_metadata_parsed(duration f64) {
 		if track := element.audio_tracks_.item(0) {
 			mut mutable_track := unsafe { &AudioTrack(track) }
 			mutable_track.set_enabled(true)
-			element.set_audio_track_enabled(track, true)
 		}
 	}
 	if element.video_tracks_.selected_index() == -1 {

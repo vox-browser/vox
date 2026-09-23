@@ -9,8 +9,11 @@ module page
 import dom
 
 pub fn (p &Page) has_media_element_playing_audio(document &dom.Document) bool {
+	if p.page_mute_state() == .muted {
+		return false
+	}
 	for _, state in p.media_elements {
-		if state.document_id == document.unique_id() && state.playing_audio {
+		if state.document_id == document.unique_id() && state.playing_audio && !state.muted {
 			return true
 		}
 	}

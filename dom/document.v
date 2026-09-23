@@ -1614,6 +1614,7 @@ pub:
 	queue_selectionchange_event_task DocumentQueueSelectionchangeEventTaskCallback = unsafe { nil }
 	run_unloading_cleanup_steps      DocumentLifecycleCallback = unsafe { nil }
 	timer_visibility_state_changed   DocumentLifecycleCallback = unsafe { nil }
+	timer_audio_play_state_changed   DocumentLifecycleCallback = unsafe { nil }
 }
 
 // PageClient owns the cookie jar upstream. DOM cannot import the embedding
@@ -2890,6 +2891,8 @@ pub:
 	preferred_color_scheme_callback      fn (voidptr) string = unsafe { nil }
 	user_style_callback                  fn (voidptr) ?string = unsafe { nil }
 	request_frame_callback               fn (voidptr) = unsafe { nil }
+	has_media_element_playing_audio_callback fn (voidptr, &Document) bool = unsafe { nil }
+	media_element_audio_state_changed_callback fn (voidptr, &Document, UniqueNodeID, bool) = unsafe { nil }
 mut:
 	last_changed_title_ string
 	title_change_count_ int
@@ -8068,6 +8071,26 @@ pub fn (d &Document) hidden() bool {
 	return d.visibility_state == .hidden
 }
 
+pub fn (d &Document) is_playing_audio() bool {
+	if d.page_ == unsafe { nil } {
+		return false
+	}
+	return d.page_.has_media_element_playing_audio(d)
+}
+
+pub fn (mut d Document) media_element_audio_play_state_changed(media_id UniqueNodeID, playing bool) {
+	if d.page_ != unsafe { nil } {
+		d.page_.media_element_audio_state_changed(d, media_id, playing)
+	}
+	d.audio_play_state_changed()
+}
+
+pub fn (mut d Document) audio_play_state_changed() {
+	if hook := d.lifecycle_hook_ {
+		d.run_lifecycle_callback(hook.timer_audio_play_state_changed)
+	}
+}
+
 // https://html.spec.whatwg.org/multipage/interaction.html#dom-document-visibilitystate
 // C++: StringView Document::visibility_state() const
 pub fn (d &Document) visibility_state() string {
@@ -12746,6 +12769,19 @@ pub fn (p &Page) client_page_did_update_editing_history_state(can_undo bool, can
 pub fn (p &Page) client_request_frame() {
 	if p.target != unsafe { nil } && p.request_frame_callback != unsafe { nil } {
 		p.request_frame_callback(p.target)
+	}
+}
+
+pub fn (p &Page) has_media_element_playing_audio(document &Document) bool {
+	if p.target == unsafe { nil } || p.has_media_element_playing_audio_callback == unsafe { nil } {
+		return false
+	}
+	return p.has_media_element_playing_audio_callback(p.target, document)
+}
+
+pub fn (p &Page) media_element_audio_state_changed(document &Document, media_id UniqueNodeID, playing bool) {
+	if p.target != unsafe { nil } && p.media_element_audio_state_changed_callback != unsafe { nil } {
+		p.media_element_audio_state_changed_callback(p.target, document, media_id, playing)
 	}
 }
 

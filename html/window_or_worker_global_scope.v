@@ -202,6 +202,11 @@ fn (scope &WindowOrWorkerGlobalScopeMixin) document_is_hidden() bool {
 	return document.is_fully_active() && document.hidden()
 }
 
+fn (scope &WindowOrWorkerGlobalScopeMixin) timers_are_throttled() bool {
+	window := scope.associated_window_ or { return false }
+	return scope.document_is_hidden() && !window.associated_document().is_playing_audio()
+}
+
 fn (scope &WindowOrWorkerGlobalScopeMixin) hidden_timer_grid_origin_ms() i64 {
 	mut window := scope.associated_window_ or { return 0 }
 	mut context := window.browsing_context()
@@ -219,7 +224,7 @@ fn (scope &WindowOrWorkerGlobalScopeMixin) hidden_timer_grid_origin_ms() i64 {
 }
 
 fn (scope &WindowOrWorkerGlobalScopeMixin) timer_due_time(throttling_class TimerThrottlingClass, deadline_ms i64, now_ms i64) i64 {
-	if throttling_class == .immediate || !scope.document_is_hidden() {
+	if throttling_class == .immediate || !scope.timers_are_throttled() {
 		return deadline_ms
 	}
 	due := if deadline_ms > now_ms { deadline_ms } else { now_ms }
@@ -280,6 +285,10 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) document_visibility_state_chan
 		scope.intensive_timer_grace_deadline_ms_ = none
 	}
 	scope.realign_timers(now_ms)
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScopeMixin) document_audio_play_state_changed() {
+	scope.realign_timers(global_scope_now_ms())
 }
 
 fn (mut scope WindowOrWorkerGlobalScopeMixin) update_intensive_timer_throttling(now_ms i64) {
@@ -380,7 +389,7 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) process_timers(now_ms i64) {
 		if !timer.repeat {
 			scope.active_timers_.delete(id)
 		}
-		if timer.throttling_class == .chained && scope.document_is_hidden() {
+		if timer.throttling_class == .chained && scope.timers_are_throttled() {
 			scope.last_chained_timer_wake_up_ms_ = now_ms
 		}
 		scope.currently_running_timer_nesting = timer.nesting_level

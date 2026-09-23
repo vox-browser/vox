@@ -242,6 +242,20 @@ fn page_did_create_document_callback(target voidptr, document &dom.Document) {
 	model.client_.page_did_create_new_document(document.url_string())
 }
 
+fn page_has_media_element_playing_audio_callback(target voidptr, document &dom.Document) bool {
+	model := unsafe { &Page(target) }
+	return model.has_media_element_playing_audio(document)
+}
+
+fn page_media_element_audio_state_changed_callback(target voidptr, document &dom.Document, media_id dom.UniqueNodeID, playing bool) {
+	mut model := unsafe { &Page(target) }
+	id := u64(media_id.value())
+	mut state := model.media_elements[id] or { MediaElementState{} }
+	state.document_id = document.unique_id()
+	state.playing_audio = playing
+	model.media_elements[id] = state
+}
+
 fn page_did_update_resource_count_callback(target voidptr, count int) {
 	mut model := unsafe { &Page(target) }
 	model.client_.page_did_update_resource_count(i32(count))
@@ -459,6 +473,8 @@ pub fn Page.create(device_scale f64) !&Page {
 		preferred_color_scheme_callback: page_preferred_color_scheme_callback
 		user_style_callback: page_user_style_callback
 		request_frame_callback: page_request_frame_callback
+		has_media_element_playing_audio_callback: page_has_media_element_playing_audio_callback
+		media_element_audio_state_changed_callback: page_media_element_audio_state_changed_callback
 	}
 	return model
 }
@@ -959,6 +975,10 @@ pub fn (mut p Page) set_page_mute_state(mute_state MuteState) {
 	for id, mut state in p.media_elements {
 		state.page_mute_change_count++
 		p.media_elements[id] = state
+	}
+	for document in p.attached_documents_ {
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.audio_play_state_changed()
 	}
 }
 

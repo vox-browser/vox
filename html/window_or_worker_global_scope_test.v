@@ -2,6 +2,7 @@
 module html
 
 import dom
+import page
 
 __global (
 	global_scope_timer_calls       int
@@ -244,6 +245,48 @@ fn test_repeating_timer_becomes_chained_after_deep_nesting() {
 	assert timer.timeout_ms == 4
 	assert timer.throttling_class == .chained
 	scope.clear_interval(id)
+}
+
+fn test_hidden_audible_document_keeps_timers_on_their_deadlines() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	document.set_origin(document.url.origin())
+	mut page_model := page.Page.create(1) or { panic(err) }
+	document.set_page(unsafe { &dom.Page(page_model) })
+	window := WindowModel.create_top_level(document, none, 'audible-timer-test') or {
+		panic(err)
+	}
+	mut scope := window.window_or_worker_global_scope()
+	scope.set_hidden_document_timer_wake_up_interval(1_000)
+	scope.set_hidden_document_intensive_timer_throttling(60_000, 1_000, 1_000)
+	document.update_the_visibility_state(.hidden)
+	grace_deadline := scope.intensive_timer_grace_deadline_ms_
+
+	timer_id := scope.set_timeout(timer_source_handler('audible'), 25, [])
+	hidden_timer := scope.active_timers_[timer_id] or { panic('missing hidden timer') }
+	assert hidden_timer.due_time_ms >= hidden_timer.deadline_ms
+	assert (hidden_timer.due_time_ms - scope.hidden_timer_grid_origin_ms()) % 1_000 == 0
+
+	media_id := dom.UniqueNodeID(987)
+	document.media_element_audio_play_state_changed(media_id, true)
+	assert document.is_playing_audio()
+	audible_timer := scope.active_timers_[timer_id] or { panic('missing audible timer') }
+	assert audible_timer.due_time_ms == audible_timer.deadline_ms
+	assert scope.intensive_timer_grace_deadline_ms_ == grace_deadline
+	page_model.set_page_mute_state(.muted)
+	assert !document.is_playing_audio()
+	page_muted_timer := scope.active_timers_[timer_id] or { panic('missing page-muted timer') }
+	assert (page_muted_timer.due_time_ms - scope.hidden_timer_grid_origin_ms()) % 1_000 == 0
+	page_model.set_page_mute_state(.unmuted)
+	assert document.is_playing_audio()
+	page_unmuted_timer := scope.active_timers_[timer_id] or { panic('missing page-unmuted timer') }
+	assert page_unmuted_timer.due_time_ms == page_unmuted_timer.deadline_ms
+
+	document.media_element_audio_play_state_changed(media_id, false)
+	assert !document.is_playing_audio()
+	silent_timer := scope.active_timers_[timer_id] or { panic('missing silent timer') }
+	assert silent_timer.due_time_ms >= silent_timer.deadline_ms
+	assert (silent_timer.due_time_ms - scope.hidden_timer_grid_origin_ms()) % 1_000 == 0
+	assert scope.intensive_timer_grace_deadline_ms_ == grace_deadline
 }
 
 fn test_global_scope_create_image_bitmap_crop_resize_flip() {

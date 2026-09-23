@@ -4,6 +4,7 @@ module html
 import dom
 import math
 import painting
+import page
 
 __global media_test_seek_modes = []MediaPlaybackSeekMode{}
 __global media_test_audio_track_enabled = false
@@ -166,6 +167,29 @@ fn test_media_element_play_pause_seek_end_and_loop() {
 	media.advance_playback(2)
 	assert !media.ended()
 	assert media.current_time() == 0
+}
+
+fn test_media_element_publishes_audible_state_to_its_document() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	page_model := page.Page.create(1) or { panic(err) }
+	document.set_page(unsafe { &dom.Page(page_model) })
+	element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'audio')!
+	mut media := html_media_element_for_dom_element(element) or { panic('missing media model') }
+	track := media.on_audio_track_added(MediaTrackMetadata{ identifier: 1, name: 'Audio' })
+
+	assert !document.is_playing_audio()
+	media.set_paused(false)
+	assert media.is_playing_audio()
+	assert document.is_playing_audio()
+	media.set_muted(true)
+	assert !media.is_playing_audio()
+	assert !document.is_playing_audio()
+	media.set_muted(false)
+	assert document.is_playing_audio()
+	mut mutable_track := unsafe { &AudioTrack(track) }
+	mutable_track.set_enabled(false)
+	assert !media.is_playing_audio()
+	assert !document.is_playing_audio()
 }
 
 fn test_media_element_fast_seek_at_current_position_is_accurate() {
