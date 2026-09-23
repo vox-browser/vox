@@ -56,3 +56,24 @@ fn test_navigable_exposes_active_document_url_and_origin() {
 	assert navigable.active_document_url() == none
 	assert navigable.active_document_origin() == none
 }
+
+fn test_traversable_navigable_walks_the_logical_parent_chain() {
+	top := &Navigable{
+		is_top_level_traversable_: true
+	}
+	child := &Navigable{
+		parent_: top
+		traversable_navigable_: top
+	}
+	grandchild := &Navigable{
+		parent_: child
+		// A cached root does not make a child a traversable itself.
+		traversable_navigable_: top
+	}
+
+	assert top.is_traversable()
+	assert !child.is_traversable()
+	assert !grandchild.is_traversable()
+	assert grandchild.traversable_navigable()? == top
+	assert grandchild.top_level_traversable() == top
+}

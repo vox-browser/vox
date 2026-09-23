@@ -3466,7 +3466,19 @@ pub fn (n &Navigable) parent() ?&Navigable {
 }
 
 pub fn (n &Navigable) traversable_navigable() ?&Navigable {
-	return n.traversable_navigable_
+	mut current := n
+	for !current.is_traversable() {
+		current = current.parent() or { return none }
+	}
+	return current
+}
+
+pub fn (n &Navigable) top_level_traversable() &Navigable {
+	mut current := n
+	for {
+		current = current.parent() or { return current }
+	}
+	return current
 }
 
 pub fn (n &Navigable) container_document() ?&Document {
@@ -3478,7 +3490,7 @@ pub fn (n &Navigable) is_top_level_traversable() bool {
 }
 
 pub fn (n &Navigable) is_traversable() bool {
-	return n.is_top_level_traversable_ || n.traversable_navigable_ != none
+	return n.is_top_level_traversable_
 }
 
 pub fn (n &Navigable) is_focused() bool {
