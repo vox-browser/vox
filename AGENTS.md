@@ -123,6 +123,8 @@
   navigables, including ancestors whose container document is not local.
   Containers likewise ask their content navigable for session-history
   readiness and load-event delay state instead of assuming local child state.
+  A locally hosted child preserves a logical parent hosted elsewhere, while
+  page-local debug state is inherited only from an available local parent.
 - Flex layout completes clamped line measurement, forwards button percentage
   height bases, honors flexible-grid intrinsic minimums, and applies
   `min-height` while stretching lines. Media-control contents retain the

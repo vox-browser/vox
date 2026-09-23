@@ -130,6 +130,10 @@ It no longer depends on dereferencing locally hosted container documents.
 Navigable containers also query their content navigable for session-history
 readiness and load-event delay state; both the full navigation model and the
 compact embedded-content model implement that boundary.
+Navigable initialization keeps the logical DOM Navigable parent separate from
+the optional local HTML model parent. Local roots under a remote parent remain
+children for history/readiness decisions without downcasting that parent, and
+inherit page-local debug state only when a local parent model exists.
 
 ## Port boundary
 
