@@ -11,6 +11,7 @@ import dom
 import fileapi
 import math
 import painting
+import time
 
 pub enum MediaSeekMode {
 	accurate
@@ -237,6 +238,7 @@ mut:
 	loop_was_specified_at_end_  bool
 	running_time_update_event_  bool
 	last_time_update_position_  ?f64
+	last_progress_event_time_ms_ ?i64
 	allow_autoplay_             bool = true
 	document_observer_          ?&dom.DocumentObserver
 	delaying_load_event_        ?dom.DocumentLoadEventDelayer
@@ -422,6 +424,7 @@ pub fn (mut element HTMLMediaElement) media_source_update_buffered_ranges(ranges
 		element.buffered_.add_range(range_.start, range_.end)
 	}
 	element.playback_has_future_data_ = ranges.any(it.end > element.current_playback_position_)
+	element.process_media_data(.ongoing)
 	element.update_ready_state()
 }
 
@@ -1590,7 +1593,23 @@ pub fn (mut element HTMLMediaElement) process_media_data(status MediaFetchingSta
 			element.fire_event('suspend')
 		}
 		.ongoing {
-			element.network_state_ = .loading
+			element_pointer := voidptr(&element)
+			element.queue_a_media_element_task(fn [element_pointer] () {
+				mut element := unsafe { &HTMLMediaElement(element_pointer) }
+				element.network_state_ = .loading
+			})
+			now_ms := time.sys_mono_now() / 1_000_000
+			if last := element.last_progress_event_time_ms_ {
+				if now_ms - last <= 350 {
+					return
+				}
+			}
+			element.last_progress_event_time_ms_ = now_ms
+			element.queue_a_media_element_task(fn [element_pointer] () {
+				mut element := unsafe { &HTMLMediaElement(element_pointer) }
+				element.fire_event('progress')
+			})
+			element.update_ready_state()
 		}
 		.interrupted {
 			if int(element.ready_state_) > int(MediaReadyState.have_nothing) {

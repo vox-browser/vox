@@ -397,6 +397,7 @@ fn test_webm_initialization_and_media_segments_create_tracks_and_coded_frames() 
 	assert source.active_source_buffers().item(0)? == buffer
 	assert source.duration() == 2
 	assert media.ready_state() == .have_metadata
+	assert media.event_count('progress') == 0
 
 	buffer.append_buffer(minimal_webm_media_segment())!
 	track_buffer := buffer.processor_.track_buffers()[1] or { panic('missing track buffer') }
@@ -414,6 +415,7 @@ fn test_webm_initialization_and_media_segments_create_tracks_and_coded_frames() 
 	assert buffered.start(0)! == 0
 	assert buffered.end(0)! > 0.033 && buffered.end(0)! < 0.034
 	assert media.buffered().length() == 1
+	assert media.event_count('progress') == 1
 	assert append_error.count == 0
 	assert update.count == 3
 }
