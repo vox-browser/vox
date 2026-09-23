@@ -2443,6 +2443,18 @@ fn test_block_abspos_auto_insets_use_normal_flow_static_position() {
 	assert absolute.offset.y().to_double() == 20
 }
 
+fn test_block_abspos_static_position_includes_pending_collapsed_margin() {
+	document := html.parse_document('<!doctype html><style>
+		#container { position:relative; width:100px }
+		#flow { height:20px; margin-bottom:30px }
+		#absolute { position:absolute; width:10px; height:10px }
+	</style><div id="container"><div id="flow"></div><div id="absolute"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	absolute := used_for_id(result, 'absolute')
+	assert absolute.offset.x().to_double() == 0
+	assert absolute.offset.y().to_double() == 50
+}
+
 fn test_inline_abspos_auto_insets_follow_previous_inline_fragment() {
 	document := html.parse_document('<!doctype html><style>
 		#container { position:relative; width:100px }

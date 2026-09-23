@@ -45,6 +45,15 @@ fn (m &BlockMarginState) current_collapsed_margin() f64 {
 	return m.current_positive_collapsible_margin + m.current_negative_collapsible_margin
 }
 
+// The next in-flow placement consumes the pending collapsed margin unless a
+// block container is still waiting for that margin to settle its own position.
+fn (m &BlockMarginState) pending_margin_for_next_box() f64 {
+	if m.has_block_container_waiting_for_final_y_position() {
+		return 0
+	}
+	return m.current_collapsed_margin()
+}
+
 // BlockMarginState::has_block_container_waiting_for_final_y_position.
 fn (m &BlockMarginState) has_block_container_waiting_for_final_y_position() bool {
 	return m.waiting_box != none
@@ -344,7 +353,7 @@ fn (mut bfc BlockFormattingContext) record_trailing_collapsed_margin(state &Layo
 			continue
 		}
 		bfc.trailing_collapsed_margin = TrailingCollapsedMargin{
-			child:  child
+			child: child
 			margin: css_px(collapsed_margin)
 		}
 		return
@@ -405,7 +414,9 @@ fn (mut bfc BlockFormattingContext) layout_block_level_children(mut state Layout
 		if child_node.is_absolutely_positioned() {
 			if child := child_node.as_node_with_style() {
 				mut child_state := state.get_mutable(child)
-				mut static_position_y := css_px(bfc.y_offset_of_current_block_container)
+				// The static position is where the next in-flow block would be
+				// placed, including a collapsed margin pending from earlier siblings.
+				mut static_position_y := css_px(bfc.y_offset_of_current_block_container + bfc.margin_state.pending_margin_for_next_box())
 				// Originally-inline abspos boxes are routed through the BFC after
 				// anonymous-wrapper fixup. Use that wrapper's block offset, matching
 				// Ladybird's current static-position heuristic.
@@ -431,11 +442,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_children(mut state Layout
 			bfc.laying_out_invisible_clamped_content = true
 		}
 		if child_node.is_floating() {
-			margin_top := if bfc.margin_state.has_block_container_waiting_for_final_y_position() {
-				0.0
-			} else {
-				bfc.margin_state.current_collapsed_margin()
-			}
+			margin_top := bfc.margin_state.pending_margin_for_next_box()
 			bfc.layout_floating_box(mut state, child_node, block_container, css_px(content_width), if height := cb_height_for_children {
 				?CSSPixels(css_px(height))
 			} else {
@@ -491,10 +498,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 
 	// If the containing block is waiting for its final Y (its top margin collapses with this, its first
 	// in-flow child), this child's own top margin is absorbed there, so it sits at the container's top.
-	mut margin_top := bfc.margin_state.current_collapsed_margin()
-	if bfc.margin_state.has_block_container_waiting_for_final_y_position() {
-		margin_top = 0.0
-	}
+	margin_top := bfc.margin_state.pending_margin_for_next_box()
 
 	place_block_level_element_in_normal_flow_vertically(mut box_state, y + margin_top)
 
