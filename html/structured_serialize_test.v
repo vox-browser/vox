@@ -137,3 +137,105 @@ fn test_structured_serialize_rejects_unrecognized_host_objects() {
 	}
 	assert false
 }
+
+fn test_structured_serialize_shared_array_buffer_aliases_same_process_clones() {
+	mut source := StructuredObject.create_shared_array_buffer('shared array buffer'.bytes(), none)
+	record := structured_serialize_with_shared_array_buffers(structured_object_value(source), .same_agent_always)!
+	assert record.shared_array_buffers.len == 1
+	assert voidptr(record.shared_array_buffers[0]) == voidptr(source)
+
+	decoded_value := structured_deserialize(record)!
+	mut clone := structured_object_from_value(decoded_value)!
+	assert voidptr(clone) != voidptr(source)
+	assert clone.kind == .shared_array_buffer
+	assert clone.array_buffer_bytes() == 'shared array buffer'.bytes()
+	source_store := source.shared_backing_store or { panic('missing source backing store') }
+	clone_store := clone.shared_backing_store or { panic('missing clone backing store') }
+	assert voidptr(clone_store) == voidptr(source_store)
+
+	source.overwrite_array_buffer(0, 'S'.bytes())!
+	assert clone.array_buffer_bytes()[0] == `S`
+	clone.overwrite_array_buffer(1, 'C'.bytes())!
+	assert source.array_buffer_bytes()[1] == `C`
+}
+
+fn test_structured_serialize_shared_array_buffer_flattens_alias_chains() {
+	source := StructuredObject.create_shared_array_buffer('flatten me'.bytes(), none)
+	first_record := structured_serialize_with_shared_array_buffers(structured_object_value(source), .same_agent_always)!
+	first_clone_value := structured_deserialize(first_record)!
+	first_clone := structured_object_from_value(first_clone_value)!
+	second_record := structured_serialize_with_shared_array_buffers(first_clone_value, .same_agent_always)!
+	second_clone := structured_object_from_value(structured_deserialize(second_record)!)!
+
+	source_store := source.shared_backing_store or { panic('missing source backing store') }
+	first_store := first_clone.shared_backing_store or { panic('missing first clone backing store') }
+	second_store := second_clone.shared_backing_store or { panic('missing second clone backing store') }
+	assert voidptr(first_store) == voidptr(source_store)
+	assert voidptr(second_store) == voidptr(source_store)
+}
+
+fn test_structured_serialize_shared_array_buffer_through_view_aliases() {
+	source := StructuredObject.create_shared_array_buffer('viewed buffer'.bytes(), none)
+	mut view := StructuredObject.create(.array_buffer_view)
+	view.viewed_array_buffer = source
+	view.string_data = 'Uint8Array'
+	view.byte_length = u32(source.array_buffer_bytes().len)
+	view.array_length = u32(source.array_buffer_bytes().len)
+
+	record := structured_serialize_with_shared_array_buffers(structured_object_value(view), .same_agent_always)!
+	clone := structured_object_from_value(structured_deserialize(record)!)!
+	cloned_buffer := clone.viewed_array_buffer or { panic('missing viewed buffer') }
+	assert cloned_buffer.kind == .shared_array_buffer
+	source_store := source.shared_backing_store or { panic('missing source backing store') }
+	clone_store := cloned_buffer.shared_backing_store or { panic('missing clone backing store') }
+	assert voidptr(clone_store) == voidptr(source_store)
+}
+
+fn test_structured_serialize_shared_array_buffer_cross_process_falls_back_to_copy() {
+	mut source := StructuredObject.create_shared_array_buffer('copied across processes'.bytes(), none)
+	record := structured_serialize_with_shared_array_buffers(structured_object_value(source), .same_agent_always)!
+	cross_process_record := SerializationRecord{
+		data: record.data.clone()
+	}
+	mut clone := structured_object_from_value(structured_deserialize(cross_process_record)!)!
+	assert clone.kind == .shared_array_buffer
+	source_store := source.shared_backing_store or { panic('missing source backing store') }
+	clone_store := clone.shared_backing_store or { panic('missing clone backing store') }
+	assert voidptr(clone_store) != voidptr(source_store)
+	assert clone.array_buffer_bytes() == source.array_buffer_bytes()
+
+	source.overwrite_array_buffer(0, 'X'.bytes())!
+	assert clone.array_buffer_bytes()[0] != `X`
+}
+
+fn test_structured_serialize_growable_shared_array_buffer_preserves_maximum() {
+	mut source := StructuredObject.create_shared_array_buffer('growable'.bytes(), u32(128))
+	record := structured_serialize_with_shared_array_buffers(structured_object_value(source), .same_agent_always)!
+	clone := structured_object_from_value(structured_deserialize(record)!)!
+	assert clone.max_byte_length? == 128
+	source_store := source.shared_backing_store or { panic('missing source backing store') }
+	clone_store := clone.shared_backing_store or { panic('missing clone backing store') }
+	assert voidptr(clone_store) == voidptr(source_store)
+	source.grow_shared_array_buffer(16)!
+	assert clone.array_buffer_bytes().len == 16
+}
+
+fn test_structured_serialize_zero_length_shared_array_buffer_round_trips() {
+	source := StructuredObject.create_shared_array_buffer([], none)
+	record := structured_serialize_with_shared_array_buffers(structured_object_value(source), .same_agent_always)!
+	clone := structured_object_from_value(structured_deserialize(record)!)!
+	assert clone.kind == .shared_array_buffer
+	assert clone.array_buffer_bytes().len == 0
+}
+
+fn test_structured_serialize_shared_array_buffer_gates_and_storage() {
+	source := StructuredObject.create_shared_array_buffer('gated'.bytes(), none)
+	structured_serialize(structured_object_value(source)) or {
+		assert err.msg().contains('cross-origin isolated')
+		structured_serialize_for_storage_with_shared_array_buffers(structured_object_value(source), .same_agent_always) or {
+			assert err.msg().contains('for storage')
+			return
+		}
+	}
+	assert false
+}

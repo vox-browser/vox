@@ -230,11 +230,14 @@ pub enum StructuredSerializeValueTag {
 	object_reference
 	array_buffer
 	array_buffer_view
+	shared_array_buffer
+	growable_shared_array_buffer
 }
 
 pub struct SerializationRecord {
 pub:
-	data []u8
+	data                 []u8
+	shared_array_buffers []&StructuredObject
 }
 
 fn serialized_undefined() SerializationRecord {

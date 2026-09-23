@@ -27,6 +27,18 @@ pub enum StructuredObjectKind {
 	object
 	array_buffer
 	array_buffer_view
+	shared_array_buffer
+}
+
+pub enum AllowSharedArrayBuffers {
+	cross_origin_isolated_only
+	same_agent_always
+}
+
+@[heap]
+pub struct StructuredSharedArrayBufferBackingStore {
+pub mut:
+	bytes []u8
 }
 
 pub enum StructuredErrorType {
@@ -64,6 +76,8 @@ pub mut:
 	has_cause           bool
 	cause               string
 	bytes               []u8
+	shared_backing_store ?&StructuredSharedArrayBufferBackingStore
+	max_byte_length      ?u32
 	viewed_array_buffer ?&StructuredObject
 	byte_length         ?u32
 	byte_offset         u32
@@ -77,6 +91,67 @@ pub fn StructuredObject.create(kind StructuredObjectKind) &StructuredObject {
 	return &StructuredObject{
 		kind: kind
 	}
+}
+
+pub fn StructuredObject.create_shared_array_buffer(bytes []u8, max_byte_length ?u32) &StructuredObject {
+	return &StructuredObject{
+		kind: .shared_array_buffer
+		shared_backing_store: &StructuredSharedArrayBufferBackingStore{
+			bytes: bytes.clone()
+		}
+		max_byte_length: max_byte_length
+	}
+}
+
+pub fn (object &StructuredObject) array_buffer_bytes() []u8 {
+	if object.kind == .shared_array_buffer {
+		store := object.shared_backing_store or { return [] }
+		return store.bytes
+	}
+	return object.bytes
+}
+
+pub fn (mut object StructuredObject) overwrite_array_buffer(offset int, bytes []u8) ! {
+	if offset < 0 {
+		return error('RangeError: ArrayBuffer write starts before the buffer')
+	}
+	if object.kind == .shared_array_buffer {
+		mut store := object.shared_backing_store or {
+			return error('TypeError: SharedArrayBuffer has no backing store')
+		}
+		if offset > store.bytes.len || bytes.len > store.bytes.len - offset {
+			return error('RangeError: ArrayBuffer write exceeds the buffer')
+		}
+		for index, byte in bytes {
+			store.bytes[offset + index] = byte
+		}
+		return
+	}
+	if object.kind != .array_buffer {
+		return error('TypeError: value is not an ArrayBuffer')
+	}
+	if offset > object.bytes.len || bytes.len > object.bytes.len - offset {
+		return error('RangeError: ArrayBuffer write exceeds the buffer')
+	}
+	for index, byte in bytes {
+		object.bytes[offset + index] = byte
+	}
+}
+
+pub fn (mut object StructuredObject) grow_shared_array_buffer(new_byte_length int) ! {
+	if object.kind != .shared_array_buffer {
+		return error('TypeError: value is not a SharedArrayBuffer')
+	}
+	max_byte_length := object.max_byte_length or {
+		return error('TypeError: SharedArrayBuffer is fixed length')
+	}
+	mut store := object.shared_backing_store or {
+		return error('TypeError: SharedArrayBuffer has no backing store')
+	}
+	if new_byte_length < store.bytes.len || u64(new_byte_length) > u64(max_byte_length) {
+		return error('RangeError: invalid SharedArrayBuffer growth length')
+	}
+	store.bytes << []u8{len: new_byte_length - store.bytes.len}
 }
 
 pub fn structured_object_value(object &StructuredObject) dom.JSValue {
@@ -104,8 +179,9 @@ fn error_name_to_type(name string) StructuredErrorType {
 
 struct StructuredSerializer {
 mut:
-	data   []u8
-	memory map[u64]u32
+	data                 []u8
+	memory               map[u64]u32
+	shared_array_buffers []&StructuredObject
 }
 
 fn (mut serializer StructuredSerializer) write_u8(value u8) {
@@ -154,34 +230,62 @@ fn (mut serializer StructuredSerializer) write_optional_u32(value ?u32) {
 	}
 }
 
-fn serialize_array_buffer(mut serializer StructuredSerializer, array_buffer &StructuredObject, for_storage bool) ! {
-	if array_buffer.kind != .array_buffer {
+fn serialize_array_buffer(mut serializer StructuredSerializer, array_buffer &StructuredObject, for_storage bool, allow_shared_array_buffers AllowSharedArrayBuffers) ! {
+	if array_buffer.kind != .array_buffer && array_buffer.kind != .shared_array_buffer {
 		return error('DataCloneError: value is not an ArrayBuffer')
 	}
-	_ = for_storage
+	if array_buffer.kind == .shared_array_buffer {
+		if allow_shared_array_buffers == .cross_origin_isolated_only {
+			return error('DataCloneError: cannot serialize SharedArrayBuffer when cross-origin isolated capability is unavailable')
+		}
+		if for_storage {
+			return error('DataCloneError: cannot serialize SharedArrayBuffer for storage')
+		}
+		store := array_buffer.shared_backing_store or {
+			return error('DataCloneError: SharedArrayBuffer has no backing store')
+		}
+		if max_byte_length := array_buffer.max_byte_length {
+			if max_byte_length < u32(store.bytes.len) {
+				return error('DataCloneError: SharedArrayBuffer maximum length is smaller than its byte length')
+			}
+			serializer.write_tag(.growable_shared_array_buffer)
+		} else {
+			serializer.write_tag(.shared_array_buffer)
+		}
+		if u64(serializer.shared_array_buffers.len) >= u64(4294967295) {
+			return error('DataCloneError: too many SharedArrayBuffers')
+		}
+		serializer.write_u32(u32(serializer.shared_array_buffers.len))
+		serializer.shared_array_buffers << array_buffer
+		serializer.write_bytes(store.bytes)!
+		if max_byte_length := array_buffer.max_byte_length {
+			serializer.write_u32(max_byte_length)
+		}
+		return
+	}
 	serializer.write_tag(.array_buffer)
 	serializer.write_bytes(array_buffer.bytes)!
 }
 
-fn serialize_viewed_array_buffer(mut serializer StructuredSerializer, view &StructuredObject, for_storage bool) ! {
+fn serialize_viewed_array_buffer(mut serializer StructuredSerializer, view &StructuredObject, for_storage bool, allow_shared_array_buffers AllowSharedArrayBuffers) ! {
 	if view.kind != .array_buffer_view {
 		return error('DataCloneError: value is not an ArrayBuffer view')
 	}
 	buffer := view.viewed_array_buffer or {
 		return error('DataCloneError: ArrayBuffer view has no viewed buffer')
 	}
-	if buffer.kind != .array_buffer {
+	if buffer.kind != .array_buffer && buffer.kind != .shared_array_buffer {
 		return error('DataCloneError: ArrayBuffer view has an invalid viewed buffer')
 	}
 	serializer.write_tag(.array_buffer_view)
-	serializer.serialize_value(structured_object_value(buffer), for_storage)!
+	serializer.serialize_value(structured_object_value(buffer), for_storage, allow_shared_array_buffers)!
 	serializer.write_string(view.string_data)!
 	serializer.write_optional_u32(view.byte_length)
 	serializer.write_u32(view.byte_offset)
 	serializer.write_optional_u32(view.array_length)
 }
 
-fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_storage bool) ! {
+fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_storage bool, allow_shared_array_buffers AllowSharedArrayBuffers) ! {
 	match value.kind {
 		.undefined {
 			serializer.write_tag(.undefined_primitive)
@@ -251,8 +355,8 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 				if entry.key == unsafe { nil } || entry.value == unsafe { nil } {
 					return error('DataCloneError: map contains a missing key or value')
 				}
-				serializer.serialize_value(*entry.key, for_storage)!
-				serializer.serialize_value(*entry.value, for_storage)!
+				serializer.serialize_value(*entry.key, for_storage, allow_shared_array_buffers)!
+				serializer.serialize_value(*entry.value, for_storage, allow_shared_array_buffers)!
 			}
 		}
 		.set {
@@ -262,7 +366,7 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 				if item == unsafe { nil } {
 					return error('DataCloneError: set contains a missing value')
 				}
-				serializer.serialize_value(*item, for_storage)!
+				serializer.serialize_value(*item, for_storage, allow_shared_array_buffers)!
 			}
 		}
 		.array {
@@ -272,7 +376,7 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 				if item == unsafe { nil } {
 					return error('DataCloneError: array contains a missing value')
 				}
-				serializer.serialize_value(*item, for_storage)!
+				serializer.serialize_value(*item, for_storage, allow_shared_array_buffers)!
 			}
 		}
 		.error_object {
@@ -292,36 +396,49 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 					return error('DataCloneError: object contains a missing property value')
 				}
 				serializer.write_string(property.key)!
-				serializer.serialize_value(*property.value, for_storage)!
+				serializer.serialize_value(*property.value, for_storage, allow_shared_array_buffers)!
 			}
 		}
 		.array_buffer {
-			serialize_array_buffer(mut serializer, object, for_storage)!
+			serialize_array_buffer(mut serializer, object, for_storage, allow_shared_array_buffers)!
 		}
 		.array_buffer_view {
-			serialize_viewed_array_buffer(mut serializer, object, for_storage)!
+			serialize_viewed_array_buffer(mut serializer, object, for_storage, allow_shared_array_buffers)!
+		}
+		.shared_array_buffer {
+			serialize_array_buffer(mut serializer, object, for_storage, allow_shared_array_buffers)!
 		}
 	}
 }
 
 pub fn structured_serialize(value dom.JSValue) !SerializationRecord {
+	return structured_serialize_with_shared_array_buffers(value, .cross_origin_isolated_only)
+}
+
+pub fn structured_serialize_with_shared_array_buffers(value dom.JSValue, allow_shared_array_buffers AllowSharedArrayBuffers) !SerializationRecord {
 	mut serializer := StructuredSerializer{}
-	serializer.serialize_value(value, false)!
+	serializer.serialize_value(value, false, allow_shared_array_buffers)!
 	return SerializationRecord{
 		data: serializer.data
+		shared_array_buffers: serializer.shared_array_buffers
 	}
 }
 
 pub fn structured_serialize_for_storage(value dom.JSValue) !SerializationRecord {
+	return structured_serialize_for_storage_with_shared_array_buffers(value, .cross_origin_isolated_only)
+}
+
+fn structured_serialize_for_storage_with_shared_array_buffers(value dom.JSValue, allow_shared_array_buffers AllowSharedArrayBuffers) !SerializationRecord {
 	mut serializer := StructuredSerializer{}
-	serializer.serialize_value(value, true)!
+	serializer.serialize_value(value, true, allow_shared_array_buffers)!
 	return SerializationRecord{
 		data: serializer.data
 	}
 }
 
 struct StructuredDecoder {
-	data []u8
+	data                 []u8
+	shared_array_buffers []&StructuredObject
 mut:
 	offset int
 	memory []&dom.JSValue
@@ -404,7 +521,7 @@ fn (mut decoder StructuredDecoder) register_object(object &StructuredObject) &do
 
 fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 	tag_byte := decoder.read_u8()!
-	if tag_byte > u8(StructuredSerializeValueTag.array_buffer_view) {
+	if tag_byte > u8(StructuredSerializeValueTag.growable_shared_array_buffer) {
 		return error('DataCloneError: invalid structured serialization tag')
 	}
 	tag := unsafe { StructuredSerializeValueTag(tag_byte) }
@@ -548,12 +665,35 @@ fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 			object.bytes = decoder.read_bytes()!
 			return value
 		}
+		.shared_array_buffer, .growable_shared_array_buffer {
+			side_table_index := int(decoder.read_u32()!)
+			bytes := decoder.read_bytes()!
+			mut max_byte_length := ?u32(none)
+			if tag == .growable_shared_array_buffer {
+				actual_max_byte_length := decoder.read_u32()!
+				if actual_max_byte_length < u32(bytes.len) {
+					return error('DataCloneError: SharedArrayBuffer maximum length is smaller than its byte length')
+				}
+				max_byte_length = actual_max_byte_length
+			}
+			mut object := StructuredObject.create_shared_array_buffer(bytes, max_byte_length)
+			value := decoder.register_object(object)
+			if side_table_index >= 0 && side_table_index < decoder.shared_array_buffers.len {
+				source := decoder.shared_array_buffers[side_table_index]
+				if source.kind == .shared_array_buffer {
+					if source_store := source.shared_backing_store {
+						object.shared_backing_store = source_store
+					}
+				}
+			}
+			return value
+		}
 		.array_buffer_view {
 			mut object := StructuredObject.create(.array_buffer_view)
 			value := decoder.register_object(object)
 			buffer_value := decoder.decode_value()!
 			buffer := structured_object_from_value(*buffer_value)!
-			if buffer.kind != .array_buffer {
+			if buffer.kind != .array_buffer && buffer.kind != .shared_array_buffer {
 				return error('DataCloneError: ArrayBuffer view references a non-buffer')
 			}
 			object.viewed_array_buffer = buffer
@@ -575,6 +715,7 @@ pub fn structured_deserialize(record SerializationRecord) !dom.JSValue {
 	}
 	mut decoder := StructuredDecoder{
 		data: record.data
+		shared_array_buffers: record.shared_array_buffers
 	}
 	value := decoder.decode_value()!
 	if decoder.offset != decoder.data.len {
