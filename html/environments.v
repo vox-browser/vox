@@ -140,6 +140,8 @@ fn create_environment_settings(realm &ScriptingRealm, environment &Environment, 
 	mutable_realm.module_map_ = settings.module_map_
 	mut mutable_environment := unsafe { &Environment(environment) }
 	mutable_environment.settings_handle = voidptr(settings)
+	mut responsible_event_loop := unsafe { &EventLoop(event_loop) }
+	responsible_event_loop.register_environment_settings_object(settings)
 	return settings
 }
 

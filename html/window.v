@@ -492,6 +492,10 @@ pub fn (mut window WindowModel) start_an_idle_period() {
 	})
 }
 
+pub fn (window &WindowModel) has_idle_callbacks() bool {
+	return window.idle_request_callbacks_.len > 0 || window.runnable_idle_callbacks_.len > 0
+}
+
 // https://w3c.github.io/requestidlecallback/#invoke-idle-callbacks-algorithm
 pub fn (mut window WindowModel) invoke_idle_callbacks() {
 	if window_current_time_ms() >= main_thread_event_loop().compute_deadline() || window.runnable_idle_callbacks_.len == 0 {

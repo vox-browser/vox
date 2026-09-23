@@ -9,6 +9,7 @@ module html
 
 import css
 import dom
+import platform
 import time
 
 pub enum EventLoopType {
@@ -317,6 +318,7 @@ mut:
 	rendering_update_requested_           bool
 	rendering_task_queued_                bool
 	rendering_scheduler_counters_         RenderingSchedulerCounters
+	idle_period_timer_                    ?&platform.Timer
 }
 
 pub fn EventLoop.create(type_ EventLoopType) &EventLoop {
@@ -376,6 +378,13 @@ pub fn (event_loop &EventLoop) currently_running_task() ?&Task {
 
 pub fn (event_loop &EventLoop) task_generation() u64 {
 	return event_loop.task_generation_
+}
+
+fn (event_loop &EventLoop) idle_period_timer_active() bool {
+	if timer := event_loop.idle_period_timer_ {
+		return timer.is_active()
+	}
+	return false
 }
 
 fn unsafe_shared_current_time_ms() f64 {
@@ -461,8 +470,36 @@ pub fn (mut event_loop EventLoop) process() {
 	if event_loop.task_queue_.has_runnable_tasks() || (event_loop.microtask_queue.len > 0 && !event_loop.performing_a_microtask_checkpoint) {
 		event_loop.schedule()
 	}
-	if event_loop.type_ == .window && !event_loop.task_queue_.has_runnable_tasks() {
-		event_loop.last_idle_period_start_time_ = unsafe_shared_current_time_ms()
+	if event_loop.type_ == .window && !event_loop.task_queue_.has_runnable_tasks()
+		&& !event_loop.idle_period_timer_active() {
+		windows := event_loop.same_loop_windows()
+		mut has_idle_callbacks := false
+		for window in windows {
+			if !window.associated_document().hidden() && window.has_idle_callbacks() {
+				has_idle_callbacks = true
+				break
+			}
+		}
+		if has_idle_callbacks {
+			// Callbacks registered while this idle period runs belong to the next
+			// period. Keep this single-shot timer active for the whole 50 ms budget
+			// so self-scheduling callbacks cannot spin continuously.
+			if event_loop.idle_period_timer_ == none {
+				event_loop_pointer := unsafe { &EventLoop(event_loop) }
+				event_loop.idle_period_timer_ = platform.Timer.create_single_shot(50, fn [event_loop_pointer] () {
+					mut mutable_event_loop := unsafe { &EventLoop(event_loop_pointer) }
+					mutable_event_loop.schedule()
+				})
+			}
+			if mut timer := event_loop.idle_period_timer_ {
+				timer.restart()
+			}
+			event_loop.last_idle_period_start_time_ = unsafe_shared_current_time_ms()
+			for window in windows {
+				mut mutable_window := unsafe { &WindowModel(window) }
+				mutable_window.start_an_idle_period()
+			}
+		}
 	}
 }
 

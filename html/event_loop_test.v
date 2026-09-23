@@ -1,6 +1,7 @@
 module html
 
 import dom
+import requestidlecallback
 
 struct EventLoopTestCalls {
 mut:
@@ -90,6 +91,64 @@ fn test_event_loop_task_generation_advances_once_per_processing_turn() {
 	assert event_loop.task_generation() == 1
 	event_loop.process()
 	assert event_loop.task_generation() == 2
+}
+
+fn test_idle_periods_are_paced_across_nested_callbacks() {
+	mut event_loop := main_thread_event_loop()
+	event_loop.task_queue_.tasks.clear()
+	event_loop.microtask_queue.clear()
+	event_loop.idle_period_timer_ = none
+
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	document.set_origin(document.url.origin())
+	window_pointer := WindowModel.create_top_level(document, none, 'idle-test') or {
+		panic(err)
+	}
+	document.update_the_visibility_state(.visible)
+	mut window := window_pointer
+	mut calls := &EventLoopTestCalls{}
+	second := fn [mut calls] (_ requestidlecallback.IdleDeadline) ! {
+		calls.values << 'second'
+	}
+	cancelled := fn [mut calls] (_ requestidlecallback.IdleDeadline) ! {
+		calls.values << 'cancelled'
+	}
+	first := fn [mut calls, window_pointer, second, cancelled] (_ requestidlecallback.IdleDeadline) ! {
+		calls.values << 'first'
+		mut callback_window := window_pointer
+		cancelled_handle := callback_window.request_idle_callback(cancelled, requestidlecallback.IdleRequestOptions{})
+		callback_window.cancel_idle_callback(cancelled_handle)
+		callback_window.request_idle_callback(second, requestidlecallback.IdleRequestOptions{})
+		queue_a_task(.microtask, main_thread_event_loop(), none, fn [mut calls] () {
+			calls.values << 'microtask'
+		})
+	}
+	window.request_idle_callback(first, requestidlecallback.IdleRequestOptions{})
+
+	// The first empty turn opens one idle period and arms its full budget.
+	event_loop.process()
+	assert event_loop.idle_period_timer_ != none
+	assert event_loop.idle_period_timer_active()
+	assert window.idle_request_callbacks_.len == 0
+	assert window.runnable_idle_callbacks_.len == 1
+
+	// The callback and its microtask run, but its nested registration remains
+	// pending while the current period's timer is active.
+	event_loop.process()
+	assert calls.values == ['first', 'microtask']
+	assert window.idle_request_callbacks_.len == 1
+	assert window.runnable_idle_callbacks_.len == 0
+	event_loop.process()
+	assert calls.values == ['first', 'microtask']
+
+	mut timer := event_loop.idle_period_timer_ or { panic('missing idle timer') }
+	timer.fire()
+	event_loop.process()
+	assert window.idle_request_callbacks_.len == 0
+	assert window.runnable_idle_callbacks_.len == 1
+	event_loop.process()
+	assert calls.values == ['first', 'microtask', 'second']
+	assert 'cancelled' !in calls.values
 }
 
 fn test_microtask_checkpoint_after_task() {
