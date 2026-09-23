@@ -56,6 +56,32 @@ fn test_javascript_bridge_applies_force_dark_internals_settings() {
 	}
 }
 
+fn test_javascript_bridge_refreshes_color_scheme_after_live_meta_insertion() {
+	$if darwin {
+		document := html.parse_document('<!doctype html><head></head><body>content</body>')
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'about:blank', [
+			'internals.setForceDarkEnabled(true); const meta = document.createElement("meta"); meta.name = "color-scheme"; meta.content = "only light"; document.head.appendChild(meta);',
+		], runtime, mut messages)
+		assert messages == []
+		meta := css.query_selector(unsafe { &dom.Node(document) }, 'meta') or {
+			panic('missing script-created meta')
+		}
+		assert meta.get_attribute_value('name') == 'color-scheme'
+		assert meta.get_attribute_value('content') == 'only light'
+		assert document.supported_color_schemes()? == ['light']
+		assert document.supported_color_schemes_are_only()
+		model := html.NavigableModel.navigable_with_active_document(document) or {
+			panic('missing compact browser navigable')
+		}
+		assert model.active_document_opts_out_of_force_dark()
+	}
+}
+
 fn test_javascript_bridge_runs_window_load_mutations() {
 	$if darwin {
 		document := html.parse_document('<!doctype html><div id="target"></div>')
