@@ -598,7 +598,7 @@ from the current-module totals.
 | `NavigationTiming` | 4 | 497 | 291 | 45 | Complete |
 | `NotificationsAPI` | 1 | 301 | 290 | 68 | Complete |
 | `Page` | 8 | 6,450 | 2,985 | 886 | Complete |
-| `Painting` | 22 | 8,227 | 7,010 | 2,198 | Present |
+| `Painting` | 22 | 8,227 | 7,544 | 2,325 | Present |
 | `PerformanceTimeline` | 5 | 476 | 447 | 130 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
 | `Platform` | 4 | 431 | 2,330 | 405 | Complete |
@@ -634,7 +634,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **352,627** | **72,365** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **353,161** | **72,492** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 

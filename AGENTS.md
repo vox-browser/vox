@@ -277,6 +277,12 @@
 - Font invalidation advances a shared environment generation. Canvas and
   offscreen-canvas text retain their computed cascades and refresh them after a
   font change, including cascades restored from saved drawing state.
+- Force-dark painting classifies foreground, background, SVG, border,
+  selection, and image colors with independently configurable brightness
+  thresholds. Eligible colors invert through Oklab lightness while retaining
+  hue and alpha; selection and border colors preserve backdrop contrast, and
+  small images are classified from palette, luminance, saturation,
+  transparency, and chroma features before filtering.
 - Native bitmap replay carries row orientation separately from alpha format, so
   FFmpeg video and video-backed canvas frames remain top-down while ordinary
   Quartz-ordered decoded images retain their required replay flip.
@@ -285,7 +291,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-23, the module
-translations contain 352,627 implementation V LOC and 72,365 test V LOC.
+translations contain 353,161 implementation V LOC and 72,492 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -313,7 +319,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | MediaSourceExtensions | 361 | MimeSniff | 1,108 |
 | MixedContent | 125 | NavigationTiming | 291 |
 | NotificationsAPI | 290 | Page | 2,985 |
-| Painting | 7,010 | PerformanceTimeline | 447 |
+| Painting | 7,544 | PerformanceTimeline | 447 |
 | PermissionsAPI | 239 | Platform | 2,330 |
 | ReferrerPolicy | 239 | RequestIdleCallback | 59 |
 | ResizeObserver | 420 | ResourceTiming | 338 |
@@ -331,7 +337,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **352,627** |  |  |
+| **Total** | **353,161** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
