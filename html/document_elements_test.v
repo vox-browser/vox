@@ -61,6 +61,16 @@ fn test_meta_referrer_language_refresh_theme_and_csp() {
 	assert state.supported_color_schemes_are_only
 }
 
+fn test_parser_created_meta_color_scheme_updates_document() {
+	light_document := parse_document('<!doctype html><meta name="color-scheme" content="only light"><p>light</p>')
+	assert light_document.supported_color_schemes()? == ['light']
+	assert light_document.supported_color_schemes_are_only()
+
+	dark_document := parse_document('<!doctype html><meta name="color-scheme" content="dark light"><p>dark</p>')
+	assert dark_document.supported_color_schemes()? == ['dark', 'light']
+	assert !dark_document.supported_color_schemes_are_only()
+}
+
 fn test_style_sheet_lifecycle_and_disabled() {
 	mut style := HTMLStyleElementModel.create()
 	style.set_text('body { color: red }')

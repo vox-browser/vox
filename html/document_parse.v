@@ -13,6 +13,11 @@ pub fn parse_html_from_a_string(document &dom.Document, markup string) {
 	install_document_fragment_parsing_hook(document)
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.parse_html_from_a_string(markup)
+	// Parser-created HTML elements currently enter the tree through DOM's base
+	// lifecycle hook. Refresh document metadata once tree construction has
+	// completed so an initial color-scheme meta element takes effect just as a
+	// dynamically inserted or modified one does.
+	mutable_document.obtain_supported_color_schemes()
 }
 
 // Convenience: parse an HTML string into a fresh (about:blank) html Document and return it.
