@@ -3353,6 +3353,11 @@ pub fn (n &Navigable) active_document() ?&Document {
 	return n.active_document_
 }
 
+pub fn (n &Navigable) active_document_is_fully_active() bool {
+	document := n.active_document() or { return false }
+	return document.is_fully_active()
+}
+
 pub fn (n &Navigable) set_needs_repaint() {
 	if n.html_model_handle_ != unsafe { nil } && n.set_needs_repaint_callback_ != unsafe { nil } {
 		n.set_needs_repaint_callback_(n.html_model_handle_)
@@ -8616,19 +8621,18 @@ pub fn (mut d Document) set_referrer(r string) {
 // https://html.spec.whatwg.org/multipage/document-sequences.html#fully-active
 pub fn (d &Document) is_fully_active() bool {
 	// A Document d is said to be fully active when d is the active document of a navigable navigable,
-	// and either navigable is a top-level traversable or navigable's container document is fully active.
+	// and either navigable is a top-level traversable or navigable's parent has a fully active document.
 	nav := d.navigable() or { return false }
 
-	traversable := nav.traversable_navigable() or { return false }
-	if nav == traversable && traversable.is_top_level_traversable() {
+	if nav.is_top_level_traversable() {
 		return true
 	}
 
-	container_doc := nav.container_document() or { return false }
-	if container_doc != d && container_doc.is_fully_active() {
-		return true
-	}
-	return false
+	// The parent navigable's active document is the container document. Asking
+	// the logical parent keeps this check valid when that parent is represented
+	// by replicated state rather than a local container document.
+	parent := nav.parent() or { return false }
+	return parent.active_document_is_fully_active()
 }
 
 pub fn (d &Document) is_active() bool {
