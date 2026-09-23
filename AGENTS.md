@@ -169,6 +169,9 @@
   clears the translated in-process worker event loop, closes the outside port,
   releases its startup keepalive, and asks the owning `PageClient` to shut down
   the worker agent without leaving an accumulated process record.
+- Meta `color-scheme` discovery retains the declaration's `only` modifier
+  alongside its supported scheme list and invalidates the style environment
+  when either part changes.
 - System clipboard entries distinguish raw bytes from user-selected files.
   Clipboard API reads hide file-backed entries, while explicit paste converts
   raw PNG data and selected image files into file items and inserts a sanitized
@@ -282,7 +285,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-23, the module
-translations contain 352,582 implementation V LOC and 72,352 test V LOC.
+translations contain 352,627 implementation V LOC and 72,365 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -294,14 +297,14 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Clipboard | 1,037 | Compositor | 2,403 |
 | Compression | 424 | ContentSecurityPolicy | 2,740 |
 | CookieStore | 859 | CredentialManagement | 418 |
-| Crypto (`webcrypto/`) | 4,472 | DOM | 36,666 |
+| Crypto (`webcrypto/`) | 4,472 | DOM | 36,705 |
 | DOMURL | 758 | Editing | 8,515 |
 | Encoding | 705 | EncryptedMediaExtensions | 572 |
 | EntriesAPI | 44 | EventTiming | 153 |
 | Fetch | 5,192 | FileAPI | 1,018 |
 | Fullscreen | 93 | GPC | 16 |
 | Gamepad | 760 | Geolocation | 416 |
-| Geometry | 2,062 | HTML | 57,646 |
+| Geometry | 2,062 | HTML | 57,652 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 861 |
 | IntersectionObserver | 569 | Layout | 43,517 |
@@ -328,7 +331,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **352,582** |  |  |
+| **Total** | **352,627** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
