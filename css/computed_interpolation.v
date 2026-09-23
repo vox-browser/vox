@@ -14084,27 +14084,34 @@ fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom
 		'ry': ['ellipse', 'rect']
 	}
 	sizing_only := ['foreignObject', 'image', 'rect', 'svg', 'symbol', 'use']
-	for attribute_name in element.get_attribute_names() {
-		lower_name := attribute_name.to_lower()
-		mut property_name := lower_name
-		if lower_name == 'gradienttransform' || lower_name == 'patterntransform' {
+	attributes := element.attribute_list() or { return }
+	for index := 0; index < attributes.length(); index++ {
+		attribute := attributes.item(index) or { continue }
+		// SVG presentation attribute names are case-sensitive, and attributes in
+		// a namespace do not participate in the CSS cascade.
+		if attribute.namespace_uri() != none {
+			continue
+		}
+		attribute_name := attribute.local_name()
+		mut property_name := attribute_name
+		if attribute_name == 'gradientTransform' || attribute_name == 'patternTransform' {
 			property_name = 'transform'
-		} else if lower_name == 'font-stretch' {
+		} else if attribute_name == 'font-stretch' {
 			property_name = 'font-width'
 		}
-		if lower_name in ['cx', 'cy', 'd', 'r', 'rx', 'ry'] {
-			if tag_name !in geometry_only[lower_name] {
+		if attribute_name in ['cx', 'cy', 'd', 'r', 'rx', 'ry'] {
+			if tag_name !in geometry_only[attribute_name] {
 				continue
 			}
-		} else if lower_name == 'transform'
+		} else if attribute_name == 'transform'
 			&& tag_name in ['linearGradient', 'radialGradient', 'pattern'] {
 			// These elements expose gradientTransform/patternTransform instead.
 			continue
-		} else if lower_name in ['height', 'width', 'x', 'y'] {
+		} else if attribute_name in ['height', 'width', 'x', 'y'] {
 			if tag_name !in sizing_only {
 				continue
 			}
-		} else if lower_name !in ['fill', 'clip-path', 'clip-rule', 'color', 'color-interpolation',
+		} else if attribute_name !in ['fill', 'clip-path', 'clip-rule', 'color', 'color-interpolation',
 			'color-interpolation-filters', 'cursor', 'direction', 'display', 'dominant-baseline',
 			'fill-opacity', 'fill-rule', 'filter', 'flood-color', 'flood-opacity', 'font-family',
 			'font-size', 'font-style', 'font-variant', 'font-weight', 'font-stretch',
@@ -14112,8 +14119,8 @@ fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom
 			'paint-order', 'pointer-events', 'shape-rendering', 'stop-color', 'stop-opacity', 'stroke',
 			'stroke-dasharray', 'stroke-dashoffset', 'stroke-linecap', 'stroke-linejoin',
 			'stroke-miterlimit', 'stroke-opacity', 'stroke-width', 'vector-effect', 'text-anchor',
-			'text-decoration', 'text-rendering', 'text-overflow', 'transform', 'gradienttransform',
-			'patterntransform', 'transform-origin', 'unicode-bidi', 'visibility', 'white-space',
+			'text-decoration', 'text-rendering', 'text-overflow', 'transform', 'gradientTransform',
+			'patternTransform', 'transform-origin', 'unicode-bidi', 'visibility', 'white-space',
 			'word-spacing', 'writing-mode'] {
 			continue
 		}
@@ -14121,7 +14128,7 @@ fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom
 		if properties_to_cascade.len > 0 && property_id !in properties_to_cascade {
 			continue
 		}
-		attribute_value := element.get_attribute_value(attribute_name)
+		attribute_value := attribute.value()
 		value_source := if property_id == .d {
 			'path(${serialize_a_string(attribute_value)})'
 		} else {

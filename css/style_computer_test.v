@@ -1931,6 +1931,31 @@ fn test_svg_presentation_attributes_participate_at_the_correct_cascade_position(
 	assert overridden_style.vector_effect() == .none_
 }
 
+fn test_svg_presentation_attribute_names_are_case_sensitive_and_unnamespaced() {
+	doc := dom.Document.create(dom.url_about_blank())
+	computer := StyleComputer.new(doc)
+	mut rect := doc.create_element_ns('http://www.w3.org/2000/svg', 'rect') or {
+		panic('${err}')
+	}
+	rect.set_attribute_value('fill', 'red')
+	rect.set_attribute_value('FILL', 'blue')
+	rect.set_attribute_value_ns('fill', 'green', 'x', 'urn:test')
+
+	computed := computer.compute_style(dom.AbstractElement.new(rect, none))
+	fill := computed.property(.fill, .yes) or { panic('no computed fill') }
+	color := parse_color_string(fill.css_text) or { panic('fill is not a color') }
+	assert color.serialize() == 'rgb(255 0 0)'
+
+	mut upper_only := doc.create_element_ns('http://www.w3.org/2000/svg', 'rect') or {
+		panic('${err}')
+	}
+	upper_only.set_attribute_value('FILL', 'blue')
+	upper_computed := computer.compute_style(dom.AbstractElement.new(upper_only, none))
+	upper_fill := upper_computed.property(.fill, .yes) or { panic('no initial fill') }
+	upper_color := parse_color_string(upper_fill.css_text) or { panic('initial fill is not a color') }
+	assert upper_color.serialize() == 'rgb(0 0 0)'
+}
+
 fn test_svg_transform_presentation_attributes_use_the_svg_transform_grammar() {
 	doc := dom.Document.create(dom.url_about_blank())
 	computer := StyleComputer.new(doc)
