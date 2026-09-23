@@ -10798,7 +10798,14 @@ pub fn (d &Document) is_simple_fullscreen_document() bool {
 
 // https://html.spec.whatwg.org/multipage/dom.html#render-blocked
 pub fn (d &Document) is_render_blocked() bool {
-	return d.render_blocking_elements.len > 0
+	if d.pending_css_import_rules.len > 0 || d.render_blocking_elements.len > 0 {
+		return true
+	}
+	// A missing body only blocks the initial parser-driven render. Once parsing
+	// has advanced the document beyond "loading", removing the body must not
+	// suspend animation frames or screenshot completion again.
+	return d.allows_adding_render_blocking_elements() && d.readiness == .loading
+		&& d.active_parser() != none
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#allows-adding-render-blocking-elements
