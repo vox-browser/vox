@@ -504,6 +504,7 @@ fn test_navigable_fetch_redirect_policy_and_url_history_algorithms() {
 	assert navigable_test_fetches == 2
 	mut fetched_document := model.active_document() or { panic('missing fetched document') }
 	assert fetched_document.url.serialize() == 'https://example.test/fetched'
+	assert !fetched_document.was_created_via_cross_origin_redirects()
 	assert fetched_document.body() or { panic('missing body') }.as_node().text_content()? == 'fetched response'
 	assert model.current_session_history_entry()?.url.serialize() == 'https://example.test/fetched'
 	assert navigation_must_be_a_replace(dom.URL{ value: 'javascript:1' }, fetched_document)

@@ -81,7 +81,8 @@ pub:
 	final_sandboxing_flags SandboxingFlagSet
 	opener_policy          dom.OpenerPolicy
 	about_base_url         ?dom.URL
-	user_involvement       dom.UserNavigationInvolvement
+	user_involvement                       dom.UserNavigationInvolvement
+	was_created_via_cross_origin_redirects bool
 }
 
 @[heap]
@@ -1016,6 +1017,7 @@ fn create_navigation_params_by_fetching(entry &SessionHistoryEntry, navigable &N
 			opener_policy: obtain_an_opener_policy(response, none)
 			about_base_url: state.about_base_url
 			user_involvement: user_involvement
+			was_created_via_cross_origin_redirects: response.fetch_response_redirect_taint() != .same_origin
 		}
 	}
 }
@@ -1081,6 +1083,7 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 		document.set_allow_declarative_shadow_roots(true)
 		if params := navigation_params {
 			document.set_active_sandboxing_flag_bits(params.final_sandboxing_flags.bits)
+			document.set_was_created_via_cross_origin_redirects(params.was_created_via_cross_origin_redirects)
 		}
 		state.set_document(document)
 		if context := model.context_ {

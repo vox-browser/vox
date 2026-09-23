@@ -2078,6 +2078,7 @@ pub mut:
 	would_switch_due_to_report_only            bool
 	final_sandboxing_flag_bits                 u32
 	opener_policy                              OpenerPolicy
+	was_created_via_cross_origin_redirects     bool
 	create_top_level_browsing_context_target   voidptr = unsafe { nil }
 	create_top_level_browsing_context_callback NavigationParamsCreateTopLevelBrowsingContextCallback = unsafe { nil }
 	html_fragment_parsing_hook                 ?DocumentHTMLFragmentParsingHook
@@ -4839,8 +4840,9 @@ pub mut:
 	appropriate_template_contents_owner_document &Document = unsafe { nil }
 
 	// Timing
-	load_timing_info                DocumentLoadTimingInfo
-	previous_document_unload_timing DocumentUnloadTimingInfo
+	load_timing_info                       DocumentLoadTimingInfo
+	previous_document_unload_timing        DocumentUnloadTimingInfo
+	was_created_via_cross_origin_redirects bool
 
 	// Fullscreen
 	pending_fullscreen_events []PendingFullscreenEvent
@@ -5075,6 +5077,7 @@ pub fn Document.create_and_initialize(type_ DocumentType_, content_type string, 
 	doc.content_type = content_type
 	doc.url = creation_url
 	doc.origin_ = navigation_params.origin
+	doc.was_created_via_cross_origin_redirects = navigation_params.was_created_via_cross_origin_redirects
 	doc.browsing_context = browsing_context
 	doc.readiness = .loading
 	doc.allow_declarative_shadow_roots = true
@@ -8850,6 +8853,17 @@ pub fn (mut d Document) abort() {
 
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#unload-a-document
 pub fn (mut d Document) unload() {
+	d.unload_with_replacement(none)
+}
+
+// unload_with_replacement retains the optional new Document argument from the
+// upstream algorithm while keeping unload() convenient for close operations.
+pub fn (mut d Document) unload_with_replacement(new_document ?&Document) {
+	mut unload_timing_info := ?DocumentUnloadTimingInfo(DocumentUnloadTimingInfo{})
+	if new_document == none {
+		unload_timing_info = none
+	}
+
 	// 5. Let intendToStoreInBfcache be false (simplification).
 
 	// 7. Increase eventLoop's termination nesting level by 1.
@@ -8877,10 +8891,20 @@ pub fn (mut d Document) unload() {
 
 	// 12. If document's salvageable state is false, fire an event named unload.
 	if !d.salvageable {
+		if replacement := new_document {
+			mut timing := unload_timing_info or { DocumentUnloadTimingInfo{} }
+			timing.unload_event_start_time = current_high_resolution_time(relevant_global_object_for_doc(replacement))
+			unload_timing_info = timing
+		}
 		// then fire an event named unload at document's relevant global object, with legacy target override flag set.
 		if d.window != unsafe { nil } {
 			event := Event.create(event_unload_, EventInit{})
 			EventDispatcher.dispatch(unsafe { &EventTarget(d.window) }, event, true)
+		}
+		if replacement := new_document {
+			mut timing := unload_timing_info or { DocumentUnloadTimingInfo{} }
+			timing.unload_event_end_time = current_high_resolution_time(relevant_global_object_for_doc(replacement))
+			unload_timing_info = timing
 		}
 	}
 
@@ -8898,6 +8922,18 @@ pub fn (mut d Document) unload() {
 
 	// 20. Decrease document's unload counter by 1.
 	d.unload_counter--
+
+	// Expose the previous document's unload interval only to a same-origin
+	// replacement whose navigation did not pass through cross-origin redirects.
+	if replacement := new_document {
+		if !replacement.was_created_via_cross_origin_redirects
+			&& replacement.origin().is_same_origin(d.origin()) {
+			if timing := unload_timing_info {
+				mut mutable_replacement := unsafe { &Document(replacement) }
+				mutable_replacement.previous_document_unload_timing = timing
+			}
+		}
+	}
 
 	d.did_stop_being_active_document_in_navigable()
 }
@@ -12152,8 +12188,7 @@ pub fn (mut d Document) unload_a_document_and_its_descendants(new_document ?&Doc
 
 	// 6. Queue a global task to:
 	// 2. Unload document, passing along newDocument if it is not null.
-	_ = new_document
-	d.unload()
+	d.unload_with_replacement(new_document)
 }
 
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#destroy-a-document-and-its-descendants

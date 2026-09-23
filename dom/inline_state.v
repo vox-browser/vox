@@ -438,6 +438,14 @@ pub fn (mut d Document) set_previous_document_unload_timing(info DocumentUnloadT
 	d.previous_document_unload_timing = info
 }
 
+pub fn (d &Document) was_created_via_cross_origin_redirects() bool {
+	return d.was_created_via_cross_origin_redirects
+}
+
+pub fn (mut d Document) set_was_created_via_cross_origin_redirects(value bool) {
+	d.was_created_via_cross_origin_redirects = value
+}
+
 pub fn (mut d Document) set_salvageable(value bool) {
 	d.salvageable = value
 }
