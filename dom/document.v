@@ -3353,6 +3353,19 @@ pub fn (n &Navigable) active_document() ?&Document {
 	return n.active_document_
 }
 
+// These accessors mirror Navigable's remote-safe URL/origin interface. The V
+// engine is currently single-process, so the values come from the local active
+// document; callers do not need to depend on that implementation detail.
+pub fn (n &Navigable) active_document_url() ?URL {
+	document := n.active_document() or { return none }
+	return document.url
+}
+
+pub fn (n &Navigable) active_document_origin() ?Origin {
+	document := n.active_document() or { return none }
+	return document.origin()
+}
+
 pub fn (n &Navigable) active_document_is_fully_active() bool {
 	document := n.active_document() or { return false }
 	return document.is_fully_active()

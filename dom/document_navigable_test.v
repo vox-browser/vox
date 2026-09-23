@@ -41,3 +41,18 @@ fn test_child_document_fully_active_state_follows_parent_navigable() {
 	parent_navigable.set_active_document(none)
 	assert !child_document.is_fully_active()
 }
+
+fn test_navigable_exposes_active_document_url_and_origin() {
+	document := Document.create(URL{ value: 'https://example.test/path' })
+	mut navigable := &Navigable{}
+	assert navigable.active_document_url() == none
+	assert navigable.active_document_origin() == none
+
+	navigable.set_active_document(document)
+	assert navigable.active_document_url()? == document.url
+	assert navigable.active_document_origin()?.is_same_origin(document.origin())
+
+	navigable.set_active_document(none)
+	assert navigable.active_document_url() == none
+	assert navigable.active_document_origin() == none
+}
