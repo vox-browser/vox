@@ -236,12 +236,16 @@ pub fn insert_html_table_element_row(table &dom.HTMLTableElement, index i32) !&d
 	}
 	row_element := create_table_dom_element(table_element(table).document(), 'tr')!
 	row := unsafe { &dom.HTMLTableRowElement(row_element) }
-	if rows.len == 0 {
+	bodies := html_table_element_t_bodies(table)
+	if rows.len == 0 && bodies.len == 0 {
 		body := create_table_dom_element(table_element(table).document(), 'tbody')!
 		mut body_node := body.as_node()
 		body_node.append_child(row_element.as_node())!
 		mut table_node := table_element(table).as_node()
 		table_node.append_child(body.as_node())!
+	} else if rows.len == 0 {
+		mut last_body_node := table_section_element(bodies.last()).as_node()
+		last_body_node.append_child(row_element.as_node())!
 	} else if index == -1 || index == rows.len {
 		last_row_node := table_row_element(rows[rows.len - 1]).as_node()
 		mut parent := last_row_node.parent_node() or { return error('Row has no parent') }

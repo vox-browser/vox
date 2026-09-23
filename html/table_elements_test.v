@@ -65,6 +65,21 @@ fn test_table_insert_delete_rows_and_cells() {
 	assert html_table_element_rows(table) == [first]
 }
 
+fn test_table_insert_row_uses_the_last_existing_empty_tbody() {
+	document := parse_document('<table><tbody id="first"></tbody><tbody id="last"></tbody></table>')
+	table_dom_element := table_test_element(unsafe { &dom.Node(document) }, 'table') or {
+		panic('missing table')
+	}
+	table := unsafe { &dom.HTMLTableElement(table_dom_element) }
+	bodies := html_table_element_t_bodies(table)
+	assert bodies.len == 2
+
+	row := insert_html_table_element_row(table, -1) or { panic('${err}') }
+	assert html_table_element_t_bodies(table).len == 2
+	parent := table_row_element(row).as_node().parent_node() or { panic('missing row parent') }
+	assert parent.is_same_node(table_section_element(bodies.last()).as_node())
+}
+
 fn test_table_cell_spans() {
 	document := parse_document('<table><tr><td colspan="0" rowspan="0"></td><td colspan="999999999999999999999999" rowspan="70000"></td></tr></table>')
 	row_element := table_test_element(unsafe { &dom.Node(document) }, 'tr') or {
