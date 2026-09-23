@@ -56,6 +56,37 @@ fn test_reserved_window_environment_transfers_id_and_target() {
 	assert object.settings.environment().target_browsing_context or { panic('missing target') } == window.browsing_context()
 }
 
+fn test_child_window_environment_inherits_top_level_creation_url_and_origin() {
+	mut top_document := environment_test_document('https://top.example/root')
+	top_window := WindowModel.create_top_level(top_document, none, 'top')!
+
+	mut child_document := environment_test_document('https://child.example/frame')
+	child_context := BrowsingContextModel.create(child_document, top_window.browsing_context(),
+		'child')
+	child_window := WindowModel.create(child_document, child_context)!
+	child_settings := child_window.environment_settings_.settings
+	assert child_settings.fetch_request_client_top_level_creation_url() or {
+		panic('missing child top-level creation URL')
+	}.serialize() == top_document.url.serialize()
+	assert (child_settings.fetch_request_client_top_level_origin() or {
+		panic('missing child top-level origin')
+	}).is_same_origin(top_document.origin())
+	assert child_window.environment_settings_.has_cross_site_ancestor()
+
+	mut grandchild_document := environment_test_document('https://child.example/nested')
+	grandchild_context := BrowsingContextModel.create(grandchild_document,
+		child_window.browsing_context(), 'grandchild')
+	grandchild_window := WindowModel.create(grandchild_document, grandchild_context)!
+	grandchild_settings := grandchild_window.environment_settings_.settings
+	assert grandchild_settings.fetch_request_client_top_level_creation_url() or {
+		panic('missing grandchild top-level creation URL')
+	}.serialize() == top_document.url.serialize()
+	assert (grandchild_settings.fetch_request_client_top_level_origin() or {
+		panic('missing grandchild top-level origin')
+	}).is_same_origin(top_document.origin())
+	assert grandchild_window.environment_settings_.has_cross_site_ancestor()
+}
+
 fn test_worker_environment_uses_outside_origin_except_for_data_urls() {
 	document := environment_test_document('https://example.test/')
 	window := WindowModel.create_top_level(document, none, 'main')!

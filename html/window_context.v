@@ -1429,9 +1429,25 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 		initial_about_blank_opened: document_initial_about_blank_opened
 		open_stop_loading:          document_open_stop_loading
 	})
+	mut top_level_creation_url := document.url
+	mut top_level_origin := document.origin()
+	if parent_context := context.parent() {
+		if parent_document := parent_context.active_document() {
+			parent_settings_pointer := parent_document.relevant_settings_object()
+			if parent_settings_pointer != unsafe { nil } {
+				parent_settings := unsafe { &EnvironmentSettingsObject(parent_settings_pointer) }
+				if inherited_url := parent_settings.fetch_request_client_top_level_creation_url() {
+					top_level_creation_url = inherited_url
+				}
+				if inherited_origin := parent_settings.fetch_request_client_top_level_origin() {
+					top_level_origin = inherited_origin
+				}
+			}
+		}
+	}
 	mut window_realm := window.scripting_realm_
 	_ = WindowEnvironmentSettingsObject.setup(window, document.url, mut window_realm, none,
-		document.url, document.origin())
+		top_level_creation_url, top_level_origin)
 	document_with_html_hooks.set_temporary_execution_context_hook(dom.DocumentTemporaryExecutionContextHook{
 		target: voidptr(window)
 		begin:  document_begin_temporary_execution_context
