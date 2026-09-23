@@ -129,6 +129,8 @@
   exists, and local containers are rescheduled after either flag transition.
   Traversable and top-level traversable lookup walk that logical parent chain;
   a child is not misclassified merely because it caches its traversable root.
+  Active-document identity can also be queried through the Navigable boundary,
+  so form-target checks do not require a locally accessible Document pointer.
 - Flex layout completes clamped line measurement, forwards button percentage
   height bases, honors flexible-grid intrinsic minimums, and applies
   `min-height` while stretching lines. Media-control contents retain the

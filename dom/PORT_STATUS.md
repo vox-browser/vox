@@ -102,6 +102,9 @@ files.
 - Traversable and top-level traversable lookup now walk logical Navigable
   parents. Only an actual top-level traversable reports `is_traversable`, not a
   child that merely retained a pointer to its traversable root.
+- Navigable exposes an active-document identity query alongside its URL,
+  origin, and fully-active queries, preserving the form-submission target check
+  without requiring callers to dereference a locally hosted active document.
 - The independent audit replaced EventTarget's unsafe memory-shape probing with
   an authoritative Node discriminator, tags every Node/Document allocation,
   and verifies generic EventTarget dispatch plus distinct Document identity.
