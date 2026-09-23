@@ -6,6 +6,10 @@ import html
 import math
 import painting
 
+fn dark_preferred_color_scheme_for_svg_image_test(_ voidptr) string {
+	return 'dark'
+}
+
 fn typed_paint_node_with_id(root &Node, id string) ?&Node {
 	if dom_node := root.dom_node() {
 		if element := dom_node.as_element() {
@@ -771,6 +775,41 @@ fn test_svg_background_image_uses_the_embedding_elements_color_scheme() {
 	}
 	assert isolated_document.svg_image_color_scheme()? == 'dark'
 	assert isolated_document.preferred_color_scheme() == 'dark'
+}
+
+fn test_svg_images_use_page_preference_without_a_supported_color_scheme() {
+	source := 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2010%2010%22%3E%3Cpath%20d%3D%22M0%200H10V10H0Z%22%2F%3E%3C%2Fsvg%3E'
+	mut document := html.parse_document('<!doctype html><style>html,body{margin:0}.sample{width:10px;height:10px;background-image:url("${source}")}.light{color-scheme:light}.dark{color-scheme:dark}.custom{color-scheme:custom}img{display:block;width:10px;height:10px}</style><div id="normal" class="sample"></div><div id="light" class="sample light"></div><div id="dark" class="sample dark"></div><div id="custom" class="sample custom"></div><img id="normal-image" src="${source}"><img id="light-image" class="light" src="${source}"><img id="custom-image" class="custom" src="${source}">')
+	mut page_target := 0
+	document.set_page(&dom.Page{
+		target: unsafe { voidptr(&page_target) }
+		preferred_color_scheme_callback: dark_preferred_color_scheme_for_svg_image_test
+	})
+	root := layout_document_typed_in_viewport(document, 80, 100)
+
+	for id, expected in {
+		'normal': css.PreferredColorScheme.dark
+		'light':  css.PreferredColorScheme.light
+		'dark':   css.PreferredColorScheme.dark
+		'custom': css.PreferredColorScheme.dark
+	} {
+		element := document.get_element_by_id(id) or { panic('missing ${id}') }
+		box := root.find_box(i64(element.as_node().unique_id())) or { panic('missing ${id} box') }
+		assert box.background_images.len == 1
+		assert box.background_images[0].color_scheme == expected
+		assert box.background_images[0].svg_document?.svg_image_color_scheme()? == css.preferred_color_scheme_to_string(expected)
+	}
+
+	for id, expected in {
+		'normal-image': css.PreferredColorScheme.dark
+		'light-image':  css.PreferredColorScheme.light
+		'custom-image': css.PreferredColorScheme.dark
+	} {
+		element := document.get_element_by_id(id) or { panic('missing ${id}') }
+		box := root.find_box(i64(element.as_node().unique_id())) or { panic('missing ${id} box') }
+		svg_document := box.nested_viewport_document or { panic('missing ${id} SVG document') }
+		assert svg_document.svg_image_color_scheme()? == css.preferred_color_scheme_to_string(expected)
+	}
 }
 
 fn test_typed_background_clip_text_reaches_the_group_mask() {

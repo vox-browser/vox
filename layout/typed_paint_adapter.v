@@ -1393,6 +1393,29 @@ fn computed_coordinated_background_value(computed &css.ComputedProperties, prope
 	return value.serialize(.normal)
 }
 
+fn supports_light_or_dark_color_scheme(schemes []string) bool {
+	return 'light' in schemes || 'dark' in schemes
+}
+
+// Controls use light when neither the element nor its document opts into a
+// supported color scheme. Embedded SVG images instead follow the page's
+// preference in that case, while preserving explicit element/document schemes.
+fn image_color_scheme(document &dom.Document, computed &css.ComputedProperties) css.PreferredColorScheme {
+	preferred_scheme := css.preferred_color_scheme_from_string(document.preferred_color_scheme())
+	if value := computed.typed_property_value(.color_scheme) {
+		if value is css.ColorSchemeStyleValue
+			&& supports_light_or_dark_color_scheme(value.schemes()) {
+			return computed.color_scheme(preferred_scheme, document.supported_color_schemes())
+		}
+	}
+	if schemes := document.supported_color_schemes() {
+		if supports_light_or_dark_color_scheme(schemes) {
+			return computed.color_scheme(preferred_scheme, schemes)
+		}
+	}
+	return preferred_scheme
+}
+
 fn computed_background_image_layers(element &dom.Element, computed &css.ComputedProperties,
 	color_context css.ColorResolutionContext) []BackgroundImageLayer {
 	value := computed.typed_property_value(.background_image) or { return []BackgroundImageLayer{} }
@@ -1451,7 +1474,7 @@ fn computed_background_image_layers(element &dom.Element, computed &css.Computed
 			continue
 		}
 		svg_document := svg_image_document_for_source(element.document(), resolved_url)
-		color_scheme := color_context.color_scheme or { css.PreferredColorScheme.auto_ }
+		color_scheme := image_color_scheme(element.document(), computed)
 		if isolated_document := svg_document {
 			mut mutable_document := unsafe { &dom.Document(isolated_document) }
 			mutable_document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(color_scheme))
@@ -3056,7 +3079,7 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 						height: used.content_height().to_double()
 					}
 					if !collect_svg_vector_image_paint_operations(element, image_url, image_rect,
-						computed.color_scheme(), mut collection) {
+						image_color_scheme(element.document(), computed), mut collection) {
 						collection.operations << painting.SVGMaskPaintOperation{
 							kind: .image
 							image_url: image_url
@@ -3571,7 +3594,7 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 		// replaced element's concrete size and nests that display list here.
 		if svg_document := image_box.svg_image_document() {
 			mut mutable_svg_document := unsafe { &dom.Document(svg_document) }
-			mutable_svg_document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(computed.color_scheme()))
+			mutable_svg_document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(image_color_scheme(node.document(), computed)))
 			nested_viewport_document = svg_document
 			natural_size := image_box.natural_size()
 			default_size := css.CSSPixelSize.new(used.content_width(), used.content_height())
