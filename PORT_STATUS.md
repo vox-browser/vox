@@ -118,6 +118,11 @@ root.
 Custom-element state sets now feed the translated selector matcher, so
 `:state()` participates in direct selector matching and DOM queries while set
 mutation continues to invalidate style.
+Cross-parent `moveBefore()` operations now invalidate cached inherited language
+through the complete shadow-including moved subtree. The existing subtree
+recascade then observes both the refreshed language and V's live parent-derived
+directionality, so `:lang()`, `:dir()`, and inherited computed styles follow the
+new parent without adding needless invalidation for same-parent reordering.
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at
 the DOM boundary and schedule style invalidation; `switch` checkboxes retain
