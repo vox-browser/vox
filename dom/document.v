@@ -4874,6 +4874,7 @@ pub mut:
 	active_link_color_      ?Color
 	visited_link_color_     ?Color
 	supported_color_schemes ?[]string
+	supported_color_schemes_are_only_ bool
 	theme_color_            ?string
 
 	// Focus
@@ -6260,10 +6261,40 @@ pub fn (d &Document) supported_color_schemes() ?[]string {
 	return d.supported_color_schemes
 }
 
+pub fn (d &Document) supported_color_schemes_are_only() bool {
+	return d.supported_color_schemes_are_only_
+}
+
+pub fn (mut d Document) set_supported_color_schemes(schemes ?[]string, only bool) {
+	mut schemes_equal := false
+	if current := d.supported_color_schemes {
+		if next := schemes {
+			schemes_equal = current == next
+		}
+	} else {
+		if _ := schemes {
+		} else {
+			schemes_equal = true
+		}
+	}
+	if schemes_equal && d.supported_color_schemes_are_only_ == only {
+		return
+	}
+	d.supported_color_schemes = schemes
+	d.supported_color_schemes_are_only_ = only
+	d.bump_style_environment_version()
+	d.set_needs_media_query_evaluation()
+	d.set_needs_full_style_update(true)
+}
+
+struct ParsedMetaColorScheme {
+	schemes []string
+	only    bool
+}
+
 // https://html.spec.whatwg.org/multipage/semantics.html#meta-color-scheme
 pub fn (mut d Document) obtain_supported_color_schemes() {
-	d.supported_color_schemes = none
-	mut found := [][]string{}
+	mut found := []ParsedMetaColorScheme{}
 	found_ptr := &found
 	document_node := unsafe { &Node(&d) }
 	document_node.for_each_in_subtree(fn [found_ptr] (node &Node) TraversalDecision {
@@ -6272,28 +6303,33 @@ pub fn (mut d Document) obtain_supported_color_schemes() {
 			return .@continue
 		}
 		content := element.get_attribute('content') or { return .@continue }
-		schemes := parse_meta_color_scheme(content) or { return .@continue }
+		parsed := parse_meta_color_scheme(content) or { return .@continue }
 		unsafe {
-			*found_ptr = [schemes]
+			*found_ptr = [parsed]
 		}
 		return .@break
 	})
 	if found.len > 0 {
-		d.supported_color_schemes = found[0]
+		d.set_supported_color_schemes(found[0].schemes, found[0].only)
+	} else {
+		d.set_supported_color_schemes(none, false)
 	}
 }
 
-fn parse_meta_color_scheme(content string) ?[]string {
+fn parse_meta_color_scheme(content string) ?ParsedMetaColorScheme {
 	mut tokens := content.fields().map(to_ascii_lowercase(it))
 	if tokens.len == 1 && tokens[0] == 'normal' {
-		return []string{}
+		return ParsedMetaColorScheme{}
 	}
 	if tokens.len == 0 {
 		return none
 	}
+	mut only := false
 	if tokens[0] == 'only' {
+		only = true
 		tokens.delete(0)
 	} else if tokens.len > 0 && tokens[tokens.len - 1] == 'only' {
+		only = true
 		tokens.delete(tokens.len - 1)
 	}
 	if tokens.len == 0 {
@@ -6310,7 +6346,10 @@ fn parse_meta_color_scheme(content string) ?[]string {
 			}
 		}
 	}
-	return tokens
+	return ParsedMetaColorScheme{
+		schemes: tokens
+		only: only
+	}
 }
 
 // https://html.spec.whatwg.org/multipage/semantics.html#meta-theme-color

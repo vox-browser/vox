@@ -363,6 +363,12 @@ fn test_meta_color_scheme_discovery() {
 	doc.obtain_supported_color_schemes()
 	schemes := doc.supported_color_schemes() or { panic('no supported color schemes') }
 	assert schemes == ['dark', 'light']
+	assert doc.supported_color_schemes_are_only()
+
+	valid_meta.set_attribute_value('content', 'dark light')
+	doc.obtain_supported_color_schemes()
+	assert !doc.supported_color_schemes_are_only()
+	assert doc.supported_color_schemes()? == ['dark', 'light']
 }
 
 fn test_focus_updates_active_element_and_invalidates_style() {

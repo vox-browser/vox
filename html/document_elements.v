@@ -181,6 +181,7 @@ pub mut:
 	pragma_set_default_language ?string
 	theme_color                 ?string
 	supported_color_schemes     []string
+	supported_color_schemes_are_only bool
 	refresh_input               ?string
 	enforced_meta_csp           []SerializedCSPPolicy
 }
@@ -223,15 +224,18 @@ pub fn (mut meta HTMLMetaElementModel) set_media(value string) {
 	meta.update_metadata()
 }
 
-fn parse_meta_color_schemes(value string) []string {
+fn parse_meta_color_schemes(value string) ([]string, bool) {
 	mut result := []string{}
+	mut only := false
 	for token in value.fields() {
 		lower := ascii_lowercase_string(token)
-		if lower in ['normal', 'light', 'dark', 'only'] && lower !in result {
+		if lower == 'only' {
+			only = true
+		} else if lower in ['normal', 'light', 'dark'] && lower !in result {
 			result << lower
 		}
 	}
-	return result
+	return result, only
 }
 
 // https://html.spec.whatwg.org/multipage/semantics.html#meta-referrer
@@ -253,7 +257,9 @@ fn (mut meta HTMLMetaElementModel) update_metadata() {
 			}
 		}
 		'color-scheme' {
-			meta.document_state.supported_color_schemes = parse_meta_color_schemes(content)
+			schemes, only := parse_meta_color_schemes(content)
+			meta.document_state.supported_color_schemes = schemes
+			meta.document_state.supported_color_schemes_are_only = only
 		}
 		else {}
 	}

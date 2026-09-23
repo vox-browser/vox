@@ -52,6 +52,13 @@ fn test_meta_referrer_language_refresh_theme_and_csp() {
 	assert state.enforced_meta_csp.len == 1
 	assert state.enforced_meta_csp[0].directives.len == 1
 	assert state.enforced_meta_csp[0].directives[0].name == 'default-src'
+
+	mut color_scheme := HTMLMetaElementModel.create(state)
+	color_scheme.set_name('color-scheme')
+	color_scheme.set_content('only dark light')
+	color_scheme.inserted(true)
+	assert state.supported_color_schemes == ['dark', 'light']
+	assert state.supported_color_schemes_are_only
 }
 
 fn test_style_sheet_lifecycle_and_disabled() {
