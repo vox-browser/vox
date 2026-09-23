@@ -127,6 +127,13 @@ Direct CSSOM `StyleSheetList` insertion now keeps an untitled alternate sheet
 disabled instead of accidentally matching the initially empty preferred-set
 name. Persistent untitled sheets and named alternates selected by a
 case-insensitive preferred-set match retain their existing behavior.
+Platform input-method sessions now expose the complete composition contract to
+page script. `compositionstart` precedes each `compositionupdate` and its
+non-cancelable `insertCompositionText` `beforeinput`/`input` pair, with
+`compositionend` after the final update. Input, textarea, and contenteditable
+paths preserve marked-range replacement, selected starting text, replacement
+commits, cancellation, unmarking, event data, and `isComposing`; the V editing
+bridge refreshes the marked node after rebuilding contenteditable markup.
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at
 the DOM boundary and schedule style invalidation; `switch` checkboxes retain
