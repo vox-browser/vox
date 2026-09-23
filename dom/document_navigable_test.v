@@ -51,10 +51,14 @@ fn test_navigable_exposes_active_document_url_and_origin() {
 	navigable.set_active_document(document)
 	assert navigable.active_document_url()? == document.url
 	assert navigable.active_document_origin()?.is_same_origin(document.origin())
+	assert navigable.active_document_is(document)
+	other_document := Document.create(URL{ value: 'https://other.test/' })
+	assert !navigable.active_document_is(other_document)
 
 	navigable.set_active_document(none)
 	assert navigable.active_document_url() == none
 	assert navigable.active_document_origin() == none
+	assert !navigable.active_document_is(document)
 }
 
 fn test_traversable_navigable_walks_the_logical_parent_chain() {

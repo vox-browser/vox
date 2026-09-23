@@ -3375,6 +3375,11 @@ pub fn (n &Navigable) active_document_is_fully_active() bool {
 	return document.is_fully_active()
 }
 
+pub fn (n &Navigable) active_document_is(document &Document) bool {
+	active_document := n.active_document() or { return false }
+	return voidptr(active_document) == voidptr(document)
+}
+
 pub fn (n &Navigable) has_session_history_entry_and_ready_for_navigation() bool {
 	if n.html_model_handle_ == unsafe { nil }
 		|| n.has_session_history_entry_and_ready_callback_ == unsafe { nil } {
