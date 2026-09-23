@@ -151,6 +151,37 @@ fn test_idle_periods_are_paced_across_nested_callbacks() {
 	assert 'cancelled' !in calls.values
 }
 
+fn test_hidden_document_keeps_idle_callbacks_pending() {
+	mut event_loop := main_thread_event_loop()
+	event_loop.task_queue_.tasks.clear()
+	event_loop.microtask_queue.clear()
+	event_loop.idle_period_timer_ = none
+
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	document.set_origin(document.url.origin())
+	window_pointer := WindowModel.create_top_level(document, none, 'hidden-idle-test') or {
+		panic(err)
+	}
+	document.update_the_visibility_state(.hidden)
+	mut window := window_pointer
+	mut calls := &EventLoopTestCalls{}
+	callback := fn [mut calls] (_ requestidlecallback.IdleDeadline) ! {
+		calls.values << 'idle'
+	}
+	window.request_idle_callback(callback, requestidlecallback.IdleRequestOptions{})
+	window.start_an_idle_period()
+	assert window.idle_request_callbacks_.len == 1
+	assert window.runnable_idle_callbacks_.len == 0
+	event_loop.process()
+	assert calls.values.len == 0
+
+	document.update_the_visibility_state(.visible)
+	window.start_an_idle_period()
+	window.invoke_idle_callbacks()
+	assert calls.values == ['idle']
+	event_loop.task_queue_.tasks.clear()
+}
+
 fn test_microtask_checkpoint_after_task() {
 	mut event_loop := EventLoop.create(.window)
 	mut calls := &EventLoopTestCalls{}

@@ -480,6 +480,9 @@ pub fn (mut window WindowModel) consume_user_activation() {
 
 // https://w3c.github.io/requestidlecallback/#start-an-idle-period-algorithm
 pub fn (mut window WindowModel) start_an_idle_period() {
+	if window.associated_document().hidden() {
+		return
+	}
 	window.runnable_idle_callbacks_ << window.idle_request_callbacks_
 	window.idle_request_callbacks_.clear()
 	if window.runnable_idle_callbacks_.len == 0 {
