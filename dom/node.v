@@ -2264,34 +2264,24 @@ fn register_slot_descendants_with_shadow_root(node &Node) {
 	})
 }
 
-fn unregister_slot_descendants_from_shadow_root(node &Node, root &Node) bool {
-	has_descendant_slot := node_has_html_slot_in_inclusive_subtree(node)
-	if shadow_root := root.as_shadow_root() {
-		unregister_slot_descendants_from_shadow_root_impl(node, shadow_root)
-	}
-	return has_descendant_slot
+fn unregister_slot_descendants_from_shadow_root(node &Node, root &Node) []&HTMLSlotElement {
+	shadow_root := root.as_shadow_root() or { return [] }
+	return unregister_slot_descendants_from_shadow_root_impl(node, shadow_root)
 }
 
-fn node_has_html_slot_in_inclusive_subtree(node &Node) bool {
-	if node_as_html_slot_element(node) != none {
-		return true
-	}
-	for child in node.children {
-		if node_has_html_slot_in_inclusive_subtree(child) {
-			return true
-		}
-	}
-	return false
-}
-
-fn unregister_slot_descendants_from_shadow_root_impl(node &Node, shadow_root &ShadowRoot) {
+fn unregister_slot_descendants_from_shadow_root_impl(node &Node,
+	shadow_root &ShadowRoot) []&HTMLSlotElement {
+	mut descendant_slots := []&HTMLSlotElement{}
 	if slot := node_as_html_slot_element(node) {
 		mut mutable_shadow_root := unsafe { &ShadowRoot(shadow_root) }
 		mutable_shadow_root.unregister_slot(slot)
+		descendant_slots << slot
 	}
 	for child in node.children {
-		unregister_slot_descendants_from_shadow_root_impl(child, shadow_root)
+		descendant_slots << unregister_slot_descendants_from_shadow_root_impl(child,
+			shadow_root)
 	}
+	return descendant_slots
 }
 
 // https://dom.spec.whatwg.org/#concept-node-insert
@@ -2532,9 +2522,12 @@ pub fn (mut n Node) remove(suppress_observers bool) {
 	}
 	parent_root := parent.root()
 	signal_slot_change_if_empty_slot(parent, parent_root)
-	if unregister_slot_descendants_from_shadow_root(&n, parent_root) {
+	descendant_slots := unregister_slot_descendants_from_shadow_root(&n, parent_root)
+	if descendant_slots.len > 0 {
 		assign_slottables_for_a_tree(parent_root)
-		assign_slottables_for_a_tree(&n)
+		for slot in descendant_slots {
+			assign_slottables(slot)
+		}
 	}
 	n.removed_from_with_context(.yes, parent, parent_root)
 	n.for_each_shadow_including_descendant(fn [parent, parent_root] (descendant &Node) TraversalDecision {
@@ -2700,9 +2693,12 @@ pub fn (mut n Node) move_node(mut new_parent Node, child ?&Node) ! {
 	}
 	old_parent_root := old_parent.root()
 	signal_slot_change_if_empty_slot(old_parent, old_parent_root)
-	if unregister_slot_descendants_from_shadow_root(&n, old_parent_root) {
+	descendant_slots := unregister_slot_descendants_from_shadow_root(&n, old_parent_root)
+	if descendant_slots.len > 0 {
 		assign_slottables_for_a_tree(old_parent_root)
-		assign_slottables_for_a_tree(&n)
+		for slot in descendant_slots {
+			assign_slottables(slot)
+		}
 	}
 	if child_node := child {
 		for _, live_range in dom_live_ranges {
