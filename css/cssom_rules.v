@@ -2543,9 +2543,14 @@ pub fn (mut list StyleSheetList) add_a_css_style_sheet(mut sheet CSSStyleSheet) 
 	// NOTE: We don't enable alternate sheets with an empty title.  This isn't directly mentioned in the algorithm steps, but the
 	// HTML specification says that the title element must be specified with a non-empty value for alternative style sheets.
 	// See: https://html.spec.whatwg.org/multipage/links.html#the-link-is-an-alternative-stylesheet
-	if (sheet.base.title.len == 0 && !sheet.base.alternate) || (list.last_css_style_sheet_set_name == none && sheet.base.title.to_lower() == list.preferred_css_style_sheet_set_name.to_lower()) || (list.last_css_style_sheet_set_name != none && sheet.base.title.to_lower() == (list.last_css_style_sheet_set_name or {
-		''
-	}).to_lower()) {
+	if (sheet.base.title.len == 0 && !sheet.base.alternate)
+		|| (sheet.base.title.len != 0
+		&& ((list.last_css_style_sheet_set_name == none
+		&& sheet.base.title.to_lower() == list.preferred_css_style_sheet_set_name.to_lower())
+		|| (list.last_css_style_sheet_set_name != none
+		&& sheet.base.title.to_lower() == (list.last_css_style_sheet_set_name or {
+			''
+		}).to_lower()))) {
 		sheet.base.disabled = false
 		return
 	}

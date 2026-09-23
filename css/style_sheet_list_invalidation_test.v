@@ -63,6 +63,27 @@ fn test_style_sheet_list_add_and_remove_target_document_elements() {
 	assert document.style_invalidation_counters().full_style_invalidations == 0
 }
 
+fn test_style_sheet_list_keeps_untitled_alternate_sheet_disabled() {
+	document := dom.Document.create(dom.url_about_blank())
+	document_node := unsafe { &dom.Node(document) }
+	mut list := StyleSheetList.create(document_node)
+
+	untitled_alternate := list.create_a_css_style_sheet('.target { color: red }', 'text/css',
+		none, '', '', .yes, .yes, none, none, none)
+	assert untitled_alternate.base.disabled
+
+	persistent := list.create_a_css_style_sheet('.target { color: blue }', 'text/css', none,
+		'', '', .no, .yes, none, none, none)
+	assert !persistent.base.disabled
+
+	preferred := list.create_a_css_style_sheet('.target { color: green }', 'text/css', none,
+		'', 'dark', .no, .yes, none, none, none)
+	assert !preferred.base.disabled
+	matching_alternate := list.create_a_css_style_sheet('.target { color: black }', 'text/css',
+		none, '', 'DARK', .yes, .yes, none, none, none)
+	assert !matching_alternate.base.disabled
+}
+
 fn test_shadow_sheet_add_targets_local_elements_and_slot_inheritors() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut document_node := unsafe { &dom.Node(document) }
