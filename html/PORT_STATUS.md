@@ -75,7 +75,9 @@ navigation queue jumps, changing-document updates, and non-changing history
 object updates advance through explicit continuation phases. Traversal queue
 entries receive a settlement signal, child navigables become ready only after
 their queued creation bookkeeping, and `Document.open()` cancels pending and
-ongoing navigation without spinning the event loop.
+ongoing navigation without spinning the event loop. A child navigable whose
+active document was cleared during destruction remains a load-event blocker
+until its replacement document is activated.
 
 The rendering update now executes the source content-visibility and
 ResizeObserver fixed-point loop. It determines proximity for the filtered
