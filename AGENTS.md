@@ -160,6 +160,11 @@
   fetching JavaScript descendants. Failed preloads remain retryable, media
   mismatches stay silent, and speculative parser requests retain the fetch
   options without populating the module map ahead of later CSP metadata.
+- Module maps use the `javascript-or-wasm` type key and retain every completion
+  callback while a fetch is in progress. Completion installs a successful
+  script or removes a failed entry before notifying all waiters, so aborted
+  implementation fetch hooks can be retried; text modules expose their source
+  through their sole `default` export.
 - SVG and MathML follow CSS Display unboxing rules: `display: contents`
   computes to `none` for CSS-box SVG roots, non-hoisting SVG elements, and all
   MathML elements. Nested SVG containers and text children keep `contents`,
@@ -269,7 +274,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-23, the module
-translations contain 352,327 implementation V LOC and 72,187 test V LOC.
+translations contain 352,379 implementation V LOC and 72,228 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -288,7 +293,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Fetch | 5,192 | FileAPI | 1,018 |
 | Fullscreen | 93 | GPC | 16 |
 | Gamepad | 760 | Geolocation | 416 |
-| Geometry | 2,062 | HTML | 57,484 |
+| Geometry | 2,062 | HTML | 57,536 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 860 |
 | IntersectionObserver | 569 | Layout | 43,517 |
@@ -315,7 +320,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **352,327** |  |  |
+| **Total** | **352,379** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
