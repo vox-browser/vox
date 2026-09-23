@@ -1392,6 +1392,10 @@ pub type ViewportPaintableVoidCallback = fn (voidptr)
 
 pub type ViewportPaintableRangeCallback = fn (voidptr, &Range)
 
+pub type ViewportPaintableTextRangeRectsCallback = fn (voidptr, &Node, SelectionState, int, int) []DOMRect
+
+pub type ViewportPaintableTransformClientRectsCallback = fn (voidptr, &Node, []CSSPixelRect_) []CSSPixelRect_
+
 pub type ViewportPaintableSelectionCallback = fn (voidptr) ?&Selection
 
 pub type ViewportPaintableRecordDisplayListCallback = fn (voidptr) &DisplayList
@@ -1417,6 +1421,8 @@ pub:
 	assign_accumulated_visual_contexts_callback ViewportPaintableVoidCallback = unsafe { nil }
 	selection_callback                          ViewportPaintableSelectionCallback = unsafe { nil }
 	recompute_selection_states_callback         ViewportPaintableRangeCallback = unsafe { nil }
+	text_range_rects_callback                   ViewportPaintableTextRangeRectsCallback = unsafe { nil }
+	transform_client_rects_callback             ViewportPaintableTransformClientRectsCallback = unsafe { nil }
 	set_needs_repaint_callback                  ViewportPaintableVoidCallback = unsafe { nil }
 	document_set_needs_repaint_callback         ViewportPaintableVoidCallback = unsafe { nil }
 	invalidate_all_paint_caches_callback        ViewportPaintableVoidCallback = unsafe { nil }
@@ -3740,6 +3746,22 @@ pub fn (vp &ViewportPaintable) recompute_selection_states(range &Range) {
 	if vp.target != unsafe { nil } && vp.recompute_selection_states_callback != unsafe { nil } {
 		vp.recompute_selection_states_callback(vp.target, range)
 	}
+}
+
+pub fn (vp &ViewportPaintable) text_range_rects(node &Node, state SelectionState,
+	start_offset int, end_offset int) []DOMRect {
+	if vp.target != unsafe { nil } && vp.text_range_rects_callback != unsafe { nil } {
+		return vp.text_range_rects_callback(vp.target, node, state, start_offset, end_offset)
+	}
+	return []DOMRect{}
+}
+
+pub fn (vp &ViewportPaintable) transform_client_rects(node &Node,
+	rects []CSSPixelRect_) []CSSPixelRect_ {
+	if vp.target != unsafe { nil } && vp.transform_client_rects_callback != unsafe { nil } {
+		return vp.transform_client_rects_callback(vp.target, node, rects)
+	}
+	return rects.clone()
 }
 
 pub fn (vp &ViewportPaintable) set_needs_repaint() {

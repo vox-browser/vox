@@ -3740,6 +3740,45 @@ fn test_document_viewport_paintable_recomputes_text_selection_states() {
 	assert end_paintable.selection_state == .none
 }
 
+fn test_range_client_rects_apply_visual_transforms_and_live_scroll_offsets() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#scroller { width: 200px; height: 50px; overflow: scroll }
+		#content { height: 200px }
+		#transformed { display: inline-block; transform: translate(20px, 10px) scale(2);
+			transform-origin: 0 0 }
+	</style><body><div id="scroller"><div id="content"><span id="transformed">hello</span></div></div></body>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	transformed := document.get_element_by_id('transformed') or { panic('missing transformed element') }
+	text := transformed.as_node().first_child() or { panic('missing transformed text') }
+	range := dom.Range.create_from_boundary_points(text, 0, text, text.length())
+
+	initial := range.get_client_rects()
+	assert initial.length() == 1
+	initial_rect := initial.item(0) or { panic('missing initial range rect') }
+	initial_element_rect := transformed.get_bounding_client_rect()
+	assert math.abs(initial_rect.x - initial_element_rect.x) < 0.01
+	assert math.abs(initial_rect.y - initial_element_rect.y) < 0.01
+	assert math.abs(initial_rect.width - initial_element_rect.width) < 0.01
+	assert math.abs(initial_rect.height - initial_element_rect.height) < 0.01
+
+	scroller := document.get_element_by_id('scroller') or { panic('missing scroller') }
+	mut scroller_paintable := scroller.paintable_box() or { panic('missing scroller paintable') }
+	assert scroller_paintable.set_scroll_offset(dom.CSSPixelPoint_{ y_: 50 })
+	scrolled := range.get_client_rects()
+	assert scrolled.length() == 1
+	scrolled_rect := scrolled.item(0) or { panic('missing scrolled range rect') }
+	scrolled_element_rect := transformed.get_bounding_client_rect()
+	assert math.abs(scrolled_rect.x - initial_rect.x) < 0.01
+	assert math.abs(scrolled_rect.y - (initial_rect.y - 50)) < 0.01
+	assert math.abs(scrolled_rect.width - initial_rect.width) < 0.01
+	assert math.abs(scrolled_rect.height - initial_rect.height) < 0.01
+	assert math.abs(scrolled_rect.x - scrolled_element_rect.x) < 0.01
+	assert math.abs(scrolled_rect.y - scrolled_element_rect.y) < 0.01
+	assert math.abs(scrolled_rect.width - scrolled_element_rect.width) < 0.01
+	assert math.abs(scrolled_rect.height - scrolled_element_rect.height) < 0.01
+}
+
 fn test_paintable_with_lines_translates_selection_render_spans_and_cache_invalidation() {
 	document := html.parse_document('<!doctype html><style>
 		html, body, p { margin: 0 }

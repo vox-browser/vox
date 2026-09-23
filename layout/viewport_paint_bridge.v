@@ -23,6 +23,8 @@ fn install_document_painting_bridge(document &dom.Document, result &DocumentLayo
 		assign_accumulated_visual_contexts_callback: viewport_assign_accumulated_visual_contexts
 		selection_callback: viewport_selection
 		recompute_selection_states_callback: viewport_recompute_selection_states
+		text_range_rects_callback: viewport_text_range_rects
+		transform_client_rects_callback: viewport_transform_client_rects
 		set_needs_repaint_callback: viewport_set_needs_repaint
 		document_set_needs_repaint_callback: viewport_document_set_needs_repaint
 		invalidate_all_paint_caches_callback: viewport_invalidate_all_paint_caches
@@ -739,7 +741,14 @@ fn paintable_box_transform_point_to_local_for_descendants(box &BlockBox,
 fn paintable_box_transform_rect_to_viewport(box &BlockBox, rect LayoutRect,
 	device_pixels_per_css_pixel f64, tree painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot) LayoutRect {
-	if box.accumulated_visual_context_index == 0 {
+	return transform_rect_to_viewport_with_visual_context(box.accumulated_visual_context_index,
+		rect, device_pixels_per_css_pixel, tree, snapshot)
+}
+
+fn transform_rect_to_viewport_with_visual_context(context_index int, rect LayoutRect,
+	device_pixels_per_css_pixel f64, tree painting.AccumulatedVisualContextTree,
+	snapshot painting.ScrollStateSnapshot) LayoutRect {
+	if context_index == 0 {
 		return rect
 	}
 	scale := f32(device_pixels_per_css_pixel)
@@ -749,7 +758,7 @@ fn paintable_box_transform_rect_to_viewport(box &BlockBox, rect LayoutRect,
 		width: f64(f32(rect.width) * scale)
 		height: f64(f32(rect.height) * scale)
 	}
-	result := tree.transform_rect_to_viewport(box.accumulated_visual_context_index, device_rect, snapshot)
+	result := tree.transform_rect_to_viewport(context_index, device_rect, snapshot)
 	inverse_scale := f32(1) / scale
 	return LayoutRect{
 		x: css.CSSPixels.nearest_value_for(f64(f32(result.x) * inverse_scale)).to_double()
@@ -870,6 +879,95 @@ fn viewport_recompute_selection_states(target voidptr, range &dom.Range) {
 	if !end_container.is_inert() && end_container.is_text() {
 		set_node_selection_state(end_container, .end)
 	}
+}
+
+// Range::get_client_rects() asks the retained line fragments for precisely the
+// selected glyph span, then maps each fragment through its containing block's
+// accumulated visual context. This keeps DOM independent of Layout/Painting
+// while sharing the same transforms and live scroll offsets as display replay.
+fn viewport_text_range_rects(target voidptr, text_node &dom.Node, state dom.SelectionState,
+	start_offset int, end_offset int) []dom.DOMRect {
+	result := viewport_layout_result(target)
+	mut rects := []dom.DOMRect{}
+	collect_text_range_rects(result.paint_tree, text_node, dom_selection_state_to_painting(state),
+		start_offset, end_offset, result.document.device_pixels_per_css_pixel(),
+		result.visual_context_tree, result.scroll_state_snapshot, mut rects)
+	return rects
+}
+
+fn collect_text_range_rects(box &BlockBox, text_node &dom.Node,
+	state painting.SelectionState, start_offset int, end_offset int,
+	device_pixels_per_css_pixel f64, tree painting.AccumulatedVisualContextTree,
+	snapshot painting.ScrollStateSnapshot, mut rects []dom.DOMRect) {
+	for line in box.lines {
+		for fragment in line.fragments {
+			if fragment.layout_handle == unsafe { nil } {
+				continue
+			}
+			layout_node := unsafe { &Node(fragment.layout_handle) }
+			fragment_dom_node := layout_node.dom_node() or { continue }
+			if voidptr(fragment_dom_node) != voidptr(text_node) {
+				continue
+			}
+			_ := fragment.paintable_fragment.compute_selection_offsets(state, start_offset,
+				end_offset) or { continue }
+			range_rect := fragment.paintable_fragment.range_rect(state, start_offset, end_offset)
+			transformed := paintable_box_transform_rect_to_viewport(box, LayoutRect{
+				x: range_rect.x
+				y: range_rect.y
+				width: range_rect.width
+				height: range_rect.height
+			}, device_pixels_per_css_pixel, tree, snapshot)
+			rects << dom.DOMRect.construct_impl(transformed.x, transformed.y, transformed.width,
+				transformed.height)
+		}
+	}
+	for child in box.children {
+		collect_text_range_rects(child, text_node, state, start_offset, end_offset,
+			device_pixels_per_css_pixel, tree, snapshot, mut rects)
+	}
+}
+
+fn visual_context_index_for_layout_handle(box &BlockBox, layout_handle voidptr) ?int {
+	if box.layout_handle == layout_handle {
+		return box.accumulated_visual_context_index
+	}
+	for index in 0 .. box.children.len {
+		if found := visual_context_index_for_layout_handle(&box.children[index], layout_handle) {
+			return found
+		}
+	}
+	return none
+}
+
+fn viewport_transform_client_rects(target voidptr, node &dom.Node,
+	rects []dom.CSSPixelRect_) []dom.CSSPixelRect_ {
+	result := viewport_layout_result(target)
+	layout_node := node.layout_node() or { return rects.clone() }
+	layout_handle := layout_node.real_layout_handle()
+	if layout_handle == unsafe { nil } {
+		return rects.clone()
+	}
+	context_index := visual_context_index_for_layout_handle(result.paint_tree, layout_handle) or {
+		return rects.clone()
+	}
+	mut transformed_rects := []dom.CSSPixelRect_{cap: rects.len}
+	for rect in rects {
+		transformed := transform_rect_to_viewport_with_visual_context(context_index, LayoutRect{
+			x: rect.x_
+			y: rect.y_
+			width: rect.width()
+			height: rect.height()
+		}, result.document.device_pixels_per_css_pixel(), result.visual_context_tree,
+			result.scroll_state_snapshot)
+		transformed_rects << dom.CSSPixelRect_{
+			x_: transformed.x
+			y_: transformed.y
+			width_: transformed.width
+			height_: transformed.height
+		}
+	}
+	return transformed_rects
 }
 
 fn viewport_set_needs_repaint(target voidptr) {

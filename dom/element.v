@@ -3324,7 +3324,7 @@ fn compute_client_rects_assuming_layout_clean(e &Element) []CSSPixelRect_ {
 	if !layout.has_geometry_ {
 		return []
 	}
-	return [
+	rects := [
 		CSSPixelRect_{
 			x_: layout.border_box_.x
 			y_: layout.border_box_.y
@@ -3332,6 +3332,10 @@ fn compute_client_rects_assuming_layout_clean(e &Element) []CSSPixelRect_ {
 			height_: layout.border_box_.height
 		},
 	]
+	if paintable := e.document().unsafe_paintable() {
+		return paintable.transform_client_rects(e.as_node(), rects)
+	}
+	return rects
 }
 
 pub fn (e &Element) get_client_rects() []CSSPixelRect_ {

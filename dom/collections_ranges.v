@@ -3174,6 +3174,18 @@ pub fn (l &DOMRectList) item(index int) ?DOMRect {
 	return l.rects[index]
 }
 
+fn next_after_range_subtree(node &Node) ?&Node {
+	mut current := ?&Node(node)
+	for current != none {
+		candidate := current or { break }
+		if next := candidate.next_sibling() {
+			return next
+		}
+		current = candidate.parent_node()
+	}
+	return none
+}
+
 // https://drafts.csswg.org/cssom-view/#dom-element-getclientrects
 // https://drafts.csswg.org/cssom-view/#extensions-to-the-range-interface
 pub fn (r &Range) get_client_rects() &DOMRectList {
@@ -3185,11 +3197,18 @@ pub fn (r &Range) get_client_rects() &DOMRectList {
 	document.update_layout(.range_get_client_rects)
 
 	mut rects := []DOMRect{}
+	mut did_update_paint_and_hit_testing_properties := false
 	// FIXME: take Range collapsed into consideration.
 	// 2. Iterate the nodes included in Range.
 	mut start_node := ?&Node(r.start_container_)
 	if !r.start_container_.is_text() {
-		start_node = r.start_container_.child_at_index(r.start_offset_)
+		if start_child := r.start_container_.child_at_index(r.start_offset_) {
+			start_node = start_child
+		} else if last_child := r.start_container_.last_child() {
+			start_node = next_after_range_subtree(last_child)
+		} else {
+			start_node = r.start_container_.next_in_pre_order(none)
+		}
 	}
 	mut end_node := ?&Node(r.end_container_)
 	if !r.end_container_.is_text() {
@@ -3209,6 +3228,15 @@ pub fn (r &Range) get_client_rects() &DOMRectList {
 				break
 			}
 		}
+		selection_state := if current == start && current == end {
+			if r.start_offset_ == r.end_offset_ { SelectionState.none } else { SelectionState.start_and_end }
+		} else if current == start {
+			SelectionState.start
+		} else if current == end {
+			SelectionState.end
+		} else {
+			SelectionState.full
+		}
 		if element := current.as_element() {
 			// 1. For each element selected by the range, whose parent is not selected by the range,
 			//    include the border areas returned by invoking getClientRects() on the element.
@@ -3222,8 +3250,16 @@ pub fn (r &Range) get_client_rects() &DOMRectList {
 					rects << DOMRect.construct_impl(rect.x_, rect.y_, rect.width_, rect.height_)
 				}
 			}
+		} else if current.is_text() && selection_state != .none {
+			if !did_update_paint_and_hit_testing_properties {
+				document.update_paint_and_hit_testing_properties_if_needed()
+				did_update_paint_and_hit_testing_properties = true
+			}
+			if paintable := document.paintable() {
+				rects << paintable.text_range_rects(current, selection_state, r.start_offset_,
+					r.end_offset_)
+			}
 		}
-		// 2. Text-node fragment geometry depends on the layout line-fragment subsystem and is deferred.
 		node = current.next_in_pre_order(none)
 	}
 	return DOMRectList.create(rects)
