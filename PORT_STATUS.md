@@ -123,6 +123,10 @@ through the complete shadow-including moved subtree. The existing subtree
 recascade then observes both the refreshed language and V's live parent-derived
 directionality, so `:lang()`, `:dir()`, and inherited computed styles follow the
 new parent without adding needless invalidation for same-parent reordering.
+Direct CSSOM `StyleSheetList` insertion now keeps an untitled alternate sheet
+disabled instead of accidentally matching the initially empty preferred-set
+name. Persistent untitled sheets and named alternates selected by a
+case-insensitive preferred-set match retain their existing behavior.
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at
 the DOM boundary and schedule style invalidation; `switch` checkboxes retain
