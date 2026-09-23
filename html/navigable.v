@@ -315,7 +315,10 @@ pub fn NavigableModel.create(host &dom.Navigable, context ?&BrowsingContextModel
 		navigable_target_name: if value := context { value.target_name() } else { '' }
 		ever_populated: true
 	}
-	model.initialize_navigable(state, parent_model, document)!
+	model.initialize_navigable(state, host.parent(), parent_model, document)!
+	if local_parent := parent_model {
+		model.inherit_page_state_from(local_parent)
+	}
 	return model
 }
 
@@ -369,31 +372,28 @@ pub fn (model &NavigableModel) is_svg_page() bool {
 }
 
 // https://html.spec.whatwg.org/multipage/document-sequences.html#initialize-the-navigable
-pub fn (mut model NavigableModel) initialize_navigable(document_state &DocumentState, parent ?&NavigableModel, document &dom.Document) ! {
+pub fn (mut model NavigableModel) initialize_navigable(document_state &DocumentState, logical_parent ?&dom.Navigable, local_parent ?&NavigableModel, document &dom.Document) ! {
 	model.id_ = '${html_next_navigable_id}'
 	html_next_navigable_id++
 	mut entry := &SessionHistoryEntry{
 		url: document.url
 		document_state: document_state
 	}
-	if parent == none {
+	if logical_parent == none {
 		entry.step = 0
 	}
 	model.current_session_history_entry_ = entry
 	model.active_session_history_entry_ = entry
 	model.session_history_entries_ = [entry]
-	model.parent_ = parent
-	if parent_model := parent {
-		model.should_show_line_box_borders_ = parent_model.should_show_line_box_borders_
-	}
-	model.has_session_history_entry_and_ready_ = parent == none
+	model.parent_ = local_parent
+	model.has_session_history_entry_and_ready_ = logical_parent == none
 	mut host := unsafe { &dom.Navigable(model.host_) }
 	host.set_active_document(document)
 	mut mutable_document_state := unsafe { &DocumentState(document_state) }
 	mutable_document_state.set_document_id(document.unique_id())
-	if parent_model := parent {
-		host.parent_ = parent_model.host_
-		host.traversable_navigable_ = parent_model.host_.traversable_navigable()
+	if parent := logical_parent {
+		host.parent_ = parent
+		host.traversable_navigable_ = parent.traversable_navigable() or { parent }
 		host.is_top_level_traversable_ = false
 	} else {
 		host.parent_ = none
@@ -404,6 +404,13 @@ pub fn (mut model NavigableModel) initialize_navigable(document_state &DocumentS
 	// 6. Set the initial visibility state from the navigable's traversable.
 	mutable_document.set_initial_visibility_state(model.system_visibility_state())
 	mutable_document.set_ready_to_run_scripts()
+}
+
+// Page-local state is inherited only when the logical parent is hosted by this
+// V engine. A local root whose parent is remote receives page state from its
+// host instead of downcasting that parent.
+pub fn (mut model NavigableModel) inherit_page_state_from(parent &NavigableModel) {
+	model.should_show_line_box_borders_ = parent.should_show_line_box_borders_
 }
 
 // https://html.spec.whatwg.org/multipage/document-sequences.html#child-navigable
@@ -440,7 +447,7 @@ pub fn (model &NavigableModel) is_ancestor_of(other &NavigableModel) bool {
 }
 
 pub fn (model &NavigableModel) is_top_level_traversable() bool {
-	return model.parent_ == none
+	return model.host_.parent() == none
 }
 
 pub fn (model &NavigableModel) is_traversable() bool {
@@ -1365,7 +1372,7 @@ pub fn finalize_a_cross_document_navigation(navigable &NavigableModel, history_h
 		complete_history_step(on_complete, .applied)
 		return
 	}
-	if model.parent_ == none {
+	if model.host_.parent() == none {
 		mut is_auxiliary_with_opener := false
 		if context := model.context_ {
 			is_auxiliary_with_opener = context.is_auxiliary()
