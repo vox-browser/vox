@@ -3595,6 +3595,53 @@ fn test_checkbox_paint_reads_live_checkedness_and_invalidates_retained_commands(
 		&& it.color == 'rgb(76 76 76)')
 }
 
+fn test_checkbox_paint_reacts_to_direct_and_fieldset_disabled_changes() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #control { accent-color: rgb(255, 0, 0) }</style><body><fieldset id="group"><input id="control" type="checkbox" checked></fieldset></body>')
+	_ := layout_document_typed_in_viewport(document, 320, 200)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	initial_display_list := mutable_document.record_display_list() or {
+		panic('missing initial display list')
+	}
+	assert display_list_commands(initial_display_list).any(it.kind == 'fill_rounded_rect'
+		&& it.color == 'rgb(255 0 0)')
+
+	control := document.get_element_by_id('control') or { panic('missing checkbox') }
+	control_paintable := control.paintable_box() or { panic('missing checkbox paintable') }
+	result := document_layout_result(document) or { panic('missing layout result') }
+	mut control_entry_index := -1
+	for index, entry in result.paint_order {
+		if entry.box.layout_handle == control_paintable.layout_handle {
+			control_entry_index = index
+			break
+		}
+	}
+	assert control_entry_index >= 0
+
+	mut group := document.get_element_by_id('group') or { panic('missing fieldset') }
+	group.set_attribute_value('disabled', '')
+	assert mutable_document.cached_display_list() == none
+	assert !result.paint_phase_entry_valid[control_entry_index]
+	disabled_by_fieldset := mutable_document.record_display_list() or {
+		panic('missing fieldset-disabled display list')
+	}
+	assert !display_list_commands(disabled_by_fieldset).any(it.kind == 'fill_rounded_rect'
+		&& it.color == 'rgb(255 0 0)')
+
+	group.remove_attribute('disabled')
+	assert !result.paint_phase_entry_valid[control_entry_index]
+	_ = mutable_document.record_display_list() or { panic('missing re-enabled display list') }
+
+	mut mutable_control := unsafe { &dom.Element(control) }
+	mutable_control.set_attribute_value('disabled', '')
+	assert mutable_document.cached_display_list() == none
+	assert !result.paint_phase_entry_valid[control_entry_index]
+	directly_disabled := mutable_document.record_display_list() or {
+		panic('missing directly-disabled display list')
+	}
+	assert !display_list_commands(directly_disabled).any(it.kind == 'fill_rounded_rect'
+		&& it.color == 'rgb(255 0 0)')
+}
+
 fn test_fieldset_paint_shifts_background_and_splits_top_border_around_legend() {
 	document := html.parse_document('<!doctype html><style>
 		html, body { margin: 0 }

@@ -3994,6 +3994,14 @@ fn (e &Element) fieldset_element_disabled() bool {
 	return e.is_disabled_by_fieldset_ancestor()
 }
 
+// HTMLFormAssociatedElement is a C++ mixin rather than a DOM interface. Keep
+// the corresponding membership test here so generic attribute changes can
+// invalidate the live form-control paint state without depending on HTML.
+fn (e &Element) is_form_associated_element() bool {
+	return (e.is_html_element() && e.local_name() in ['button', 'fieldset', 'input', 'object',
+		'output', 'select', 'textarea']) || e.is_form_associated_custom_element()
+}
+
 // https://html.spec.whatwg.org/multipage/semantics-other.html#concept-element-disabled
 pub fn (e &Element) is_actually_disabled() bool {
 	// An element is said to be actually disabled if it is one of the following:
@@ -5585,6 +5593,30 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 		}
 		e.update_use_elements_that_reference_this()
 		e.note_svg_paint_resource_description_may_have_changed()
+	}
+
+	// CheckBoxPaintable and RadioButtonPaintable read enabledness directly from
+	// the live element while recording. Attribute style invalidation alone does
+	// not discard their retained paint commands.
+	if namespace_ == none && local_name == 'disabled' && e.is_html_element() {
+		if e.is_form_associated_element() {
+			mut node := unsafe { &Node(e.as_node()) }
+			node.set_needs_repaint(.paint_commands)
+		}
+		// Toggling a fieldset changes the enabledness of every form-associated
+		// descendant outside its first legend, so conservatively repaint all of
+		// them just like HTMLFieldSetElement::attribute_changed().
+		if e.local_name() == 'fieldset' {
+			e.as_node().for_each_in_subtree(fn (descendant &Node) TraversalDecision {
+				if element := descendant.as_element() {
+					if element.is_form_associated_element() {
+						mut mutable_descendant := unsafe { &Node(descendant) }
+						mutable_descendant.set_needs_repaint(.paint_commands)
+					}
+				}
+				return .@continue
+			})
+		}
 	}
 }
 
