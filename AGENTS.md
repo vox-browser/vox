@@ -282,7 +282,11 @@
   thresholds. Eligible colors invert through Oklab lightness while retaining
   hue and alpha; selection and border colors preserve backdrop contrast, and
   small images are classified from palette, luminance, saturation,
-  transparency, and chroma features before filtering.
+  transparency, and chroma features before filtering. Its page setting
+  propagates to child navigables, presents a dark preferred color scheme,
+  invalidates style and paint state, and skips filtering when the root or meta
+  color-scheme declares `dark` or uses the `only` modifier. The compact script
+  bridge exposes the upstream force-dark threshold and debug-overlay internals.
 - Native bitmap replay carries row orientation separately from alpha format, so
   FFmpeg video and video-backed canvas frames remain top-down while ordinary
   Quartz-ordered decoded images retain their required replay flip.
@@ -291,7 +295,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-23, the module
-translations contain 353,161 implementation V LOC and 72,492 test V LOC.
+translations contain 353,300 implementation V LOC and 72,548 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -299,18 +303,18 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Module | Implementation V LOC | Module | Implementation V LOC |
 | --- | ---: | --- | ---: |
 | ARIA | 2,535 | Animations | 3,981 |
-| Bindings | 2,679 | CSS | 104,824 |
+| Bindings | 2,679 | CSS | 104,834 |
 | Clipboard | 1,037 | Compositor | 2,403 |
 | Compression | 424 | ContentSecurityPolicy | 2,740 |
 | CookieStore | 859 | CredentialManagement | 418 |
-| Crypto (`webcrypto/`) | 4,472 | DOM | 36,705 |
+| Crypto (`webcrypto/`) | 4,472 | DOM | 36,735 |
 | DOMURL | 758 | Editing | 8,515 |
 | Encoding | 705 | EncryptedMediaExtensions | 572 |
 | EntriesAPI | 44 | EventTiming | 153 |
 | Fetch | 5,192 | FileAPI | 1,018 |
 | Fullscreen | 93 | GPC | 16 |
 | Gamepad | 760 | Geolocation | 416 |
-| Geometry | 2,062 | HTML | 57,652 |
+| Geometry | 2,062 | HTML | 57,751 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 861 |
 | IntersectionObserver | 569 | Layout | 43,517 |
@@ -337,7 +341,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **353,161** |  |  |
+| **Total** | **353,300** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
