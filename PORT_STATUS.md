@@ -123,6 +123,10 @@ through the complete shadow-including moved subtree. The existing subtree
 recascade then observes both the refreshed language and V's live parent-derived
 directionality, so `:lang()`, `:dir()`, and inherited computed styles follow the
 new parent without adding needless invalidation for same-parent reordering.
+Slot removal now retains the exact descendant-slot list while unregistering a
+subtree from its former shadow root. Each removed slot is reassigned directly,
+so nested slots clear their assigned-node lists and light-tree nodes drop stale
+`assignedSlot` links after either removal or `moveBefore()`.
 Direct CSSOM `StyleSheetList` insertion now keeps an untitled alternate sheet
 disabled instead of accidentally matching the initially empty preferred-set
 name. Persistent untitled sheets and named alternates selected by a

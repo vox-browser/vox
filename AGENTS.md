@@ -158,6 +158,10 @@
   the complete shadow-including moved subtree. Subsequent `:lang()` and `:dir()`
   matching and inherited computed styles therefore reflect the new parent;
   same-parent reordering keeps the cache intact.
+- Removing or moving a wrapper out of a shadow tree unregisters every
+  descendant slot and reruns assignment for those exact slots. Their assigned
+  node lists and each light-tree child's `assignedSlot` are cleared even when
+  the removed subtree root is not itself a slot.
 - Untitled alternate style sheets remain disabled during direct CSSOM
   `StyleSheetList` insertion. Only nonempty named alternates can join the
   selected preferred set; persistent untitled sheets remain enabled.
