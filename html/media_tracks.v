@@ -173,6 +173,10 @@ pub fn (list &AudioTrackList) length() int {
 	return list.audio_tracks.len
 }
 
+pub fn (list &AudioTrackList) event_target() &dom.EventTarget {
+	return &list.EventTarget
+}
+
 pub fn (list &AudioTrackList) item(index u32) ?&AudioTrack {
 	if index < list.audio_tracks.len {
 		return list.audio_tracks[index]
@@ -184,14 +188,24 @@ pub fn (mut list AudioTrackList) add_track(track &AudioTrack) {
 	list.audio_tracks << track
 	mut mutable_track := unsafe { &AudioTrack(track) }
 	mutable_track.audio_track_list = list
+	event := TrackEvent.create('addtrack', TrackEventInit{
+		track: TrackEventTrack.from_audio(track)
+	})
+	list.dispatch_event(unsafe { &dom.Event(event) })
 }
 
 pub fn (mut list AudioTrackList) remove_all_tracks() {
-	for track in list.audio_tracks {
+	removed_tracks := list.audio_tracks.clone()
+	list.audio_tracks.clear()
+	for track in removed_tracks {
 		mut mutable_track := unsafe { &AudioTrack(track) }
 		mutable_track.set_enabled(false)
+		mutable_track.set_audio_track_list(none)
+		event := TrackEvent.create('removetrack', TrackEventInit{
+			track: TrackEventTrack.from_audio(track)
+		})
+		list.dispatch_event(unsafe { &dom.Event(event) })
 	}
-	list.audio_tracks.clear()
 }
 
 // https://html.spec.whatwg.org/multipage/media.html#dom-audiotracklist-gettrackbyid

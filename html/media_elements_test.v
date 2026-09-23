@@ -68,9 +68,26 @@ fn test_video_representation_dimensions_poster_and_controls() {
 	assert controls.mute_icon == .low
 	assert controls.was_muted
 	assert controls.shadow_tree_created
-	assert controls.registered_event_listeners_.len == 10
+	assert controls.registered_event_listeners_.len == 11
 	controls.remove_event_listeners()
 	assert controls.registered_event_listeners_.len == 0
+}
+
+fn test_media_controls_follow_audio_track_list_additions_and_removals() {
+	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
+	mut controls := MediaControls.create(media)
+	assert !controls.had_audio
+
+	media.on_audio_track_added(MediaTrackMetadata{
+		identifier: 42
+		name: 'main'
+	})
+	assert controls.had_audio
+	assert controls.volume_percentage == 100
+
+	media.forget_media_resource_specific_tracks()
+	assert !controls.had_audio
+	assert controls.volume_percentage == 0
 }
 
 fn test_media_controls_timeline_uses_the_last_seekable_range() {

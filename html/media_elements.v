@@ -748,7 +748,7 @@ fn media_controls_state_handler(controls &MediaControls, event &dom.Event) bool 
 			mutable_controls.update_timeline()
 			mutable_controls.update_timestamp()
 		}
-		'volumechange', 'addtrack' { mutable_controls.update_volume_and_mute_indicator() }
+		'volumechange', 'addtrack', 'removetrack' { mutable_controls.update_volume_and_mute_indicator() }
 		'loadedmetadata' {
 			mutable_controls.update_timestamp()
 			mutable_controls.update_volume_and_mute_indicator()
@@ -764,10 +764,19 @@ fn media_controls_state_handler(controls &MediaControls, event &dom.Event) bool 
 }
 
 pub fn (mut controls MediaControls) set_up_event_listeners() {
+	controls_pointer := voidptr(&controls)
 	for event_name in ['play', 'pause', 'playing', 'seeked', 'timeupdate', 'durationchange',
-		'volumechange', 'loadedmetadata', 'addtrack', 'emptied'] {
+		'volumechange', 'loadedmetadata', 'emptied'] {
 		controls.add_event_listener(controls.media.event_target(), event_name, .no,
-			fn [controls] (event &dom.Event) bool {
+			fn [controls_pointer] (event &dom.Event) bool {
+				controls := unsafe { &MediaControls(controls_pointer) }
+				return media_controls_state_handler(controls, event)
+			})
+	}
+	for event_name in ['addtrack', 'removetrack'] {
+		controls.add_event_listener(controls.media.audio_tracks().event_target(), event_name, .no,
+			fn [controls_pointer] (event &dom.Event) bool {
+				controls := unsafe { &MediaControls(controls_pointer) }
 				return media_controls_state_handler(controls, event)
 			})
 	}
