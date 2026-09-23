@@ -1132,6 +1132,10 @@ The root/body branches of `PaintableBox::paint_background()` are now a single
 source-shaped operation. When the body's background is propagated to the root
 canvas, its `image-rendering` value travels with its color and image layers
 instead of leaving the root's sampling mode in place.
+Background propagation also identifies the document's first body before
+looking for its generated box. If that body has no box, a later rendered body
+keeps and paints its own background; containment is read only from the boxes
+that actually exist, matching the upstream restyle-time crash fix.
 URL backgrounds now retain typed layer data and enter the direct
 `BackgroundPainting.cpp` sizing/repetition path after decode. This restores the
 source ordering for default sizing, contain/cover, `round` aspect correction,
