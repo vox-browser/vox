@@ -165,6 +165,10 @@
   script or removes a failed entry before notifying all waiters, so aborted
   implementation fetch hooks can be retried; text modules expose their source
   through their sole `default` export.
+- `Worker.terminate()` discards queued and already-scheduled message deliveries,
+  clears the translated in-process worker event loop, closes the outside port,
+  releases its startup keepalive, and asks the owning `PageClient` to shut down
+  the worker agent without leaving an accumulated process record.
 - System clipboard entries distinguish raw bytes from user-selected files.
   Clipboard API reads hide file-backed entries, while explicit paste converts
   raw PNG data and selected image files into file items and inserts a sanitized
@@ -278,7 +282,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-23, the module
-translations contain 352,481 implementation V LOC and 72,311 test V LOC.
+translations contain 352,582 implementation V LOC and 72,352 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -297,7 +301,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Fetch | 5,192 | FileAPI | 1,018 |
 | Fullscreen | 93 | GPC | 16 |
 | Gamepad | 760 | Geolocation | 416 |
-| Geometry | 2,062 | HTML | 57,545 |
+| Geometry | 2,062 | HTML | 57,646 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 861 |
 | IntersectionObserver | 569 | Layout | 43,517 |
@@ -324,7 +328,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **352,481** |  |  |
+| **Total** | **352,582** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
