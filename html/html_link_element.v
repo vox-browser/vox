@@ -7,12 +7,15 @@
 // state, preloads, media/disabled behavior, and events remain local.
 module html
 
+import css
 import dom
+import fetch
 
 pub enum LinkResourceKind {
 	stylesheet
 	icon
 	preload
+	module_preload
 	dns_prefetch
 	preconnect
 	other
@@ -203,6 +206,7 @@ pub fn html_link_element_model_for_dom_element(element &dom.HTMLLinkElement) &HT
 	model.as_ = ascii_lowercase_string(dom_element.get_attribute_value('as'))
 	model.referrer_policy_ = ascii_lowercase_string(dom_element.get_attribute_value('referrerpolicy'))
 	model.fetch_priority_ = ascii_lowercase_string(dom_element.get_attribute_value('fetchpriority'))
+	model.cryptographic_nonce_ = unsafe { &dom.HTMLElement(element) }.cryptographic_nonce_
 	model.connected_ = dom_element.as_node().is_browsing_context_connected()
 	attach_html_link_element_model(element, model)
 	return model
@@ -303,7 +307,9 @@ pub fn (mut link HTMLLinkElementModel) set_was_enabled_when_created_by_parser(va
 }
 
 pub fn (link &HTMLLinkElementModel) should_fetch_and_process_resource_type() bool {
-	return link.has_relation('stylesheet') || link.has_relation('icon') || link.has_relation('preload') || link.has_relation('dns-prefetch') || link.has_relation('preconnect')
+	return link.has_relation('stylesheet') || link.has_relation('icon') || link.has_relation('preload')
+		|| link.has_relation('modulepreload') || link.has_relation('dns-prefetch')
+		|| link.has_relation('preconnect')
 }
 
 pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_resource() {
@@ -315,6 +321,8 @@ pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_resource() {
 	// and preconnect wins over DNS prefetch.
 	if link.has_relation('stylesheet') || link.has_relation('icon') || link.has_relation('alternate') {
 		link.default_fetch_and_process_linked_resource()
+	} else if link.has_relation('modulepreload') {
+		link.fetch_and_process_linked_modulepreload_resource()
 	} else if link.has_relation('preload') {
 		link.fetch_and_process_linked_preload_resource()
 	} else if link.has_relation('preconnect') {
@@ -437,11 +445,11 @@ pub fn (mut link HTMLLinkElementModel) default_fetch_and_process_linked_resource
 		return
 	}
 	request.initiator = if link.has_relation('stylesheet') { 'css' } else { 'link' }
-	fetch := link.fetch_hook_ or {
+	fetch_resource := link.fetch_hook_ or {
 		link.process_linked_resource(false, request.url, LinkResourceResponse{})
 		return
 	}
-	response := fetch(request.url, request.kind, request.crossorigin) or {
+	response := fetch_resource(request.url, request.kind, request.crossorigin) or {
 		link.process_linked_resource(false, request.url, LinkResourceResponse{})
 		return
 	}
@@ -482,6 +490,108 @@ pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_preload_resource
 	destination := translate_a_preload_destination(link.as_) or { return }
 	options.destination = if destination == '' { none } else { destination }
 	link.preload(mut options)
+}
+
+fn media_attribute_matches_environment(document ?&dom.Document, media string) bool {
+	if media == '' {
+		return true
+	}
+	queries := if actual_document := document {
+		css.parse_media_query_list(css.ParsingParams{
+			document: actual_document
+		}, media)
+	} else {
+		css.parse_media_query_list(css.ParsingParams{}, media)
+	}
+	for query in queries {
+		if query.evaluate(document) {
+			return true
+		}
+	}
+	return false
+}
+
+fn module_preload_destination_from_as_attribute(as_attribute string) ?fetch.Destination {
+	value := ascii_lowercase_string(as_attribute)
+	return match value {
+		'audioworklet' { fetch.Destination.audio_worklet }
+		'paintworklet' { fetch.Destination.paint_worklet }
+		'script' { fetch.Destination.script }
+		'serviceworker' { fetch.Destination.service_worker }
+		'sharedworker' { fetch.Destination.shared_worker }
+		'worker' { fetch.Destination.worker }
+		'style' { fetch.Destination.style }
+		'json' { fetch.Destination.json }
+		'text' { fetch.Destination.text }
+		'audio', 'document', 'embed', 'fetch', 'font', 'frame', 'iframe', 'image',
+		'manifest', 'object', 'report', 'track', 'video', 'webidentity', 'xslt' {
+			none
+		}
+		else { fetch.Destination.script }
+	}
+}
+
+fn (link &HTMLLinkElementModel) resource_document() ?&dom.Document {
+	if element := link.element_ {
+		return link_dom_element(element).document()
+	}
+	return link.parser_document_
+}
+
+fn ignore_modulepreload_fetch_complete(_ ?&Script) {}
+
+// https://html.spec.whatwg.org/multipage/links.html#link-type-modulepreload:fetch-and-process-the-linked-resource
+pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_modulepreload_resource() {
+	document := link.resource_document()
+	if !media_attribute_matches_environment(document, link.media_) || link.href_ == '' {
+		return
+	}
+	destination := module_preload_destination_from_as_attribute(link.as_) or {
+		link.fire_event('error')
+		return
+	}
+	url := dom.dom_url_parse(link.href_, link.base_url_, 'UTF-8') or { return }
+	actual_document := document or {
+		link.fire_event('error')
+		return
+	}
+	settings_pointer := actual_document.relevant_settings_object()
+	if settings_pointer == unsafe { nil } {
+		link.fire_event('error')
+		return
+	}
+	settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }
+	mut integrity_metadata := link.integrity_
+	has_integrity_attribute := if element := link.element_ {
+		link_dom_element(element).has_attribute('integrity')
+	} else {
+		link.integrity_ != ''
+	}
+	if !has_integrity_attribute {
+		integrity_metadata = resolve_a_module_integrity_metadata(url, settings)
+	}
+	nonce := if element := link.element_ {
+		unsafe { &dom.HTMLElement(element) }.cryptographic_nonce_
+	} else {
+		link.cryptographic_nonce_
+	}
+	options := ScriptFetchOptions{
+		cryptographic_nonce: nonce
+		integrity_metadata: integrity_metadata
+		parser_metadata: .not_parser_inserted
+		credentials_mode: if link.crossorigin_ == .use_credentials {
+			fetch.CredentialsMode.include
+		} else {
+			fetch.CredentialsMode.same_origin
+		}
+		referrer_policy: link.referrer_policy_
+		fetch_priority: fetch.request_priority_from_string(link.fetch_priority_) or {
+			fetch.Priority.auto
+		}
+	}
+	success := fetch_modulepreload_module_script_graph(settings.realm(), url, destination,
+		settings, options, ignore_modulepreload_fetch_complete)
+	link.fire_event(if success { 'load' } else { 'error' })
 }
 
 pub fn (mut link HTMLLinkElementModel) preconnect(options &LinkProcessingOptions) {
@@ -526,7 +636,7 @@ pub fn (mut link HTMLLinkElementModel) preload(mut options LinkProcessingOptions
 	}
 	mut request := link.create_link_request(options) or { return }
 	request.kind = .preload
-	fetch := link.fetch_hook_ or {
+	fetch_resource := link.fetch_hook_ or {
 		link.fire_event('error')
 		return
 	}
@@ -538,7 +648,7 @@ pub fn (mut link HTMLLinkElementModel) preload(mut options LinkProcessingOptions
 	if document := options.document {
 		store_preloaded_resource(document, key, entry)
 	}
-	response := fetch(request.url, .preload, request.crossorigin) or {
+	response := fetch_resource(request.url, .preload, request.crossorigin) or {
 		link.fire_event('error')
 		return
 	}
@@ -734,6 +844,9 @@ pub fn html_link_element_attribute_changed(element &dom.HTMLLinkElement, name st
 	if !should_fetch && model.has_relation('preload') {
 		should_fetch = name == 'as'
 	}
+	if !should_fetch && model.has_relation('modulepreload') {
+		should_fetch = name == 'rel' && 'modulepreload' !in old_relations
+	}
 	if !should_fetch && model.has_relation('stylesheet') {
 		should_fetch = name == 'disabled' || 'stylesheet' !in old_relations
 	}
@@ -770,6 +883,11 @@ pub fn html_link_element_fetch_and_process_linked_preconnect_resource(element &d
 pub fn html_link_element_fetch_and_process_linked_preload_resource(element &dom.HTMLLinkElement) {
 	mut model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(element)) }
 	model.fetch_and_process_linked_preload_resource()
+}
+
+pub fn html_link_element_fetch_and_process_linked_modulepreload_resource(element &dom.HTMLLinkElement) {
+	mut model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(element)) }
+	model.fetch_and_process_linked_modulepreload_resource()
 }
 
 pub fn html_link_element_linked_resource_fetch_setup_steps(element &dom.HTMLLinkElement, mut request LinkRequest) bool {

@@ -6,6 +6,7 @@
 module html
 
 import dom
+import fetch
 
 pub enum SameOriginFallbackFlag {
 	no
@@ -36,6 +37,7 @@ pub enum RequestDestination {
 	service_worker
 	shared_worker
 	style
+	text
 	track
 	video
 	web_identity
@@ -52,6 +54,12 @@ pub:
 	mode                PotentialCORSRequestMode
 	credentials_mode    CredentialsMode
 	use_url_credentials bool
+	is_module_preload   bool
+	cryptographic_nonce_metadata string
+	integrity_metadata  string
+	parser_metadata     fetch.ParserMetadata = .not_parser_inserted
+	referrer_policy     string
+	priority            fetch.Priority = .auto
 }
 
 pub struct PreloadKey {

@@ -357,6 +357,27 @@ pub:
 @[heap]
 pub struct ModuleScript {
 	Script
+pub:
+	kind             ModuleScriptKind = .javascript
+	synthetic_source string
+}
+
+pub enum ModuleScriptKind {
+	javascript
+	css
+	json
+	text
+}
+
+pub fn ModuleScript.create_synthetic(filename string, source string, realm &ScriptingRealm, kind ModuleScriptKind) &ModuleScript {
+	return &ModuleScript{
+		Script: Script{
+			filename: filename
+			realm: realm
+		}
+		kind: kind
+		synthetic_source: source
+	}
 }
 
 pub fn (script &ModuleScript) is_module_script() bool {
@@ -385,6 +406,7 @@ pub fn JavaScriptModuleScript.create(filename string, source string, realm &Scri
 				filename: filename
 				realm: realm
 			}
+			kind: .javascript
 		}
 		source: actual_source
 		requested_modules: parse_module_requests(actual_source)
@@ -416,6 +438,7 @@ pub fn JavaScriptModuleScript.create_from_pre_compiled(filename string, source_c
 				filename: filename
 				realm: realm
 			}
+			kind: .javascript
 		}
 		source: actual_source
 		compiled_program: compiled

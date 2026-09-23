@@ -8,6 +8,7 @@
 module html
 
 import dom
+import fetch
 
 pub type SpeculativeFetchHook = fn (PotentialCORSRequest)
 
@@ -126,6 +127,60 @@ fn (mut parser SpeculativeHTMLParser) issue_speculative_fetch(url dom.URL, desti
 	}
 }
 
+fn request_destination_from_fetch_destination(destination fetch.Destination) ?RequestDestination {
+	return match destination {
+		.audio_worklet { RequestDestination.audio_worklet }
+		.json { RequestDestination.json }
+		.paint_worklet { RequestDestination.paint_worklet }
+		.script { RequestDestination.script }
+		.service_worker { RequestDestination.service_worker }
+		.shared_worker { RequestDestination.shared_worker }
+		.style { RequestDestination.style }
+		.text { RequestDestination.text }
+		.worker { RequestDestination.worker }
+		else { none }
+	}
+}
+
+fn (mut parser SpeculativeHTMLParser) issue_speculative_modulepreload_fetch(element SpeculativeMockElement, url dom.URL, destination fetch.Destination) {
+	if parser.document.has_speculative_fetch_url(url) {
+		return
+	}
+	mut document := unsafe { &dom.Document(parser.document) }
+	document.add_speculative_fetch_url(url)
+	mut integrity_metadata := element.attribute('integrity') or { '' }
+	if element.attribute('integrity') == none {
+		settings_pointer := parser.document.relevant_settings_object()
+		if settings_pointer != unsafe { nil } {
+			settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }
+			integrity_metadata = resolve_a_module_integrity_metadata(url, settings)
+		}
+	}
+	cors_setting := cors_setting_attribute_from_keyword(element.attribute('crossorigin'))
+	mode := if destination in [.worker, .shared_worker, .service_worker] {
+		PotentialCORSRequestMode.same_origin
+	} else {
+		PotentialCORSRequestMode.cors
+	}
+	if hook := parser.fetch_hook {
+		hook(PotentialCORSRequest{
+			url: url
+			destination: request_destination_from_fetch_destination(destination)
+			mode: mode
+			credentials_mode: cors_settings_attribute_credentials_mode(cors_setting)
+			use_url_credentials: true
+			is_module_preload: true
+			cryptographic_nonce_metadata: element.attribute('nonce') or { '' }
+			integrity_metadata: integrity_metadata
+			parser_metadata: .not_parser_inserted
+			referrer_policy: ascii_lowercase_string(element.attribute('referrerpolicy') or { '' })
+			priority: fetch.request_priority_from_string(element.attribute('fetchpriority') or { '' }) or {
+				fetch.Priority.auto
+			}
+		})
+	}
+}
+
 // https://html.spec.whatwg.org/multipage/parsing.html#speculative-fetch
 fn (mut parser SpeculativeHTMLParser) speculative_fetch(element SpeculativeMockElement) {
 	if element.local_name == 'base' {
@@ -141,6 +196,7 @@ fn (mut parser SpeculativeHTMLParser) speculative_fetch(element SpeculativeMockE
 
 	mut source := ''
 	mut destination := ?RequestDestination(none)
+	mut modulepreload_destination := ?fetch.Destination(none)
 	if element.local_name == 'script' {
 		source = element.attribute('src') or { return }
 		destination = .script
@@ -149,6 +205,15 @@ fn (mut parser SpeculativeHTMLParser) speculative_fetch(element SpeculativeMockE
 		rel := element.attribute('rel') or { return }
 		if speculative_rel_contains_keyword(rel, 'stylesheet') {
 			destination = .style
+		} else if speculative_rel_contains_keyword(rel, 'modulepreload') {
+			if !media_attribute_matches_environment(parser.document, element.attribute('media') or {
+				''
+			}) {
+				return
+			}
+			modulepreload_destination = module_preload_destination_from_as_attribute(element.attribute('as') or {
+				''
+			}) or { return }
 		} else if speculative_rel_contains_keyword(rel, 'preload') {
 			translated := speculative_preload_destination(element.attribute('as') or { return }) or {
 				return
@@ -167,6 +232,10 @@ fn (mut parser SpeculativeHTMLParser) speculative_fetch(element SpeculativeMockE
 		return
 	}
 	url := dom.dom_url_parse(source, parser.base_url, 'UTF-8') or { return }
+	if module_destination := modulepreload_destination {
+		parser.issue_speculative_modulepreload_fetch(element, url, module_destination)
+		return
+	}
 	parser.issue_speculative_fetch(url, destination, cors_setting_attribute_from_keyword(element.attribute('crossorigin')))
 }
 

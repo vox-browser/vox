@@ -12,6 +12,13 @@ __global (
 	scripting_fetching_last_nonce       string
 	scripting_fetching_last_top_level   TopLevelModule
 	scripting_fetching_last_mode        fetch.Mode
+	scripting_fetching_last_credentials fetch.CredentialsMode
+	scripting_fetching_last_referrer_policy string
+	scripting_fetching_last_priority    fetch.Priority
+	scripting_fetching_last_parser_metadata fetch.ParserMetadata
+	scripting_fetching_completion_request_count int
+	scripting_fetching_completion_nonce string
+	scripting_fetching_retry_count      int
 	scripting_fetching_parsed           ParsedProgram
 	scripting_fetching_parsed_source    string
 	scripting_fetching_compiled         OffThreadCompiledProgram
@@ -67,6 +74,12 @@ fn scripting_fetching_host(request &fetch.Request, is_top_level TopLevelModule) 
 	scripting_fetching_last_nonce = request.cryptographic_nonce_metadata
 	scripting_fetching_last_top_level = is_top_level
 	scripting_fetching_last_mode = request.mode
+	scripting_fetching_last_credentials = request.credentials_mode
+	scripting_fetching_last_referrer_policy = request.referrer_policy
+	scripting_fetching_last_priority = request.priority
+	if parser_metadata := request.parser_metadata {
+		scripting_fetching_last_parser_metadata = parser_metadata
+	}
 	mut response := fetch.Response.create()
 	response.url_list = request.url_list.clone()
 	mut content_type := 'text/javascript'
@@ -79,6 +92,21 @@ fn scripting_fetching_host(request &fetch.Request, is_top_level TopLevelModule) 
 		"import './dep.js'\nexport const root = true".bytes()
 	} else if url.serialize().ends_with('/dep.js') {
 		'export const dependency = true'.bytes()
+	} else if url.serialize().ends_with('/module.txt') {
+		content_type = 'text/plain'
+		'module text'.bytes()
+	} else if url.serialize().ends_with('/module.css') {
+		content_type = 'text/css'
+		':root { color: green; }'.bytes()
+	} else if url.serialize().ends_with('/module.json') {
+		content_type = 'application/json'
+		'{"answer":42}'.bytes()
+	} else if url.serialize().ends_with('/retry.js') {
+		scripting_fetching_retry_count++
+		if scripting_fetching_retry_count == 1 {
+			response.status = 500
+		}
+		'export const retried = true'.bytes()
 	} else if url.serialize().ends_with('/warm-classic.js') {
 		'const warm = true'.bytes()
 	} else if url.serialize().ends_with('/corrupt-classic.js') {
@@ -120,6 +148,12 @@ fn scripting_fetching_complete(script ?&Script) {
 	if scripting_fetching_track_cache {
 		scripting_fetching_cache_events << 'complete'
 	}
+}
+
+fn modulepreload_fetching_complete(script ?&Script) {
+	scripting_fetching_completed_script = script or { unsafe { &Script(nil) } }
+	scripting_fetching_completion_request_count = scripting_fetching_request_urls.len
+	scripting_fetching_completion_nonce = scripting_fetching_last_nonce
 }
 
 fn scripting_fetching_parser(source string, filename string, line usize) ! {
@@ -548,5 +582,120 @@ fn test_external_module_graph_fetches_descendants_caches_and_links() {
 	assert scripting_fetching_request_urls.len == 2
 	assert fetch_destination_from_module_type(.script, 'json') == .json
 	assert fetch_destination_from_module_type(.worker, 'css') == .style
+	assert fetch_destination_from_module_type(.worker, 'text') == .text
 	assert fetch_destination_from_module_type(.worker, 'javascript') == .worker
+}
+
+fn test_modulepreload_fetches_graph_reuses_modules_and_retries_failures() {
+	fixture := scripting_fetching_fixture()!
+	scripting_fetching_request_urls = []
+	scripting_fetching_completed_script = unsafe { &Script(nil) }
+	scripting_fetching_completion_request_count = 0
+	scripting_fetching_completion_nonce = ''
+	options := ScriptFetchOptions{
+		cryptographic_nonce: 'module-nonce'
+		integrity_metadata: 'sha256-module'
+		credentials_mode: .include
+		referrer_policy: 'origin'
+		fetch_priority: .high
+	}
+	root_url := dom.URL{ value: 'https://example.test/app/root.js' }
+	assert fetch_modulepreload_module_script_graph(fixture.realm, root_url, .script,
+		fixture.settings, options, modulepreload_fetching_complete)
+	assert scripting_fetching_completed_script != unsafe { nil }
+	assert scripting_fetching_completion_request_count == 1
+	assert scripting_fetching_completion_nonce == 'module-nonce'
+	assert scripting_fetching_request_urls == [
+		'https://example.test/app/root.js',
+		'https://example.test/app/dep.js',
+	]
+	root := unsafe { &JavaScriptModuleScript(scripting_fetching_completed_script) }
+	assert root.is_linked()
+
+	// Static graph loading reuses both entries populated by modulepreload.
+	fetch_external_module_script_graph(fixture.realm, root_url, fixture.settings,
+		default_script_fetch_options(), scripting_fetching_complete)
+	assert scripting_fetching_request_urls.len == 2
+
+	retry_url := dom.URL{ value: 'https://example.test/app/retry.js' }
+	scripting_fetching_retry_count = 0
+	assert !fetch_modulepreload_module_script_graph(fixture.realm, retry_url, .script,
+		fixture.settings, default_script_fetch_options(), modulepreload_fetching_complete)
+	assert fixture.settings.module_map().get(retry_url, 'javascript') == none
+	assert fetch_modulepreload_module_script_graph(fixture.realm, retry_url, .script,
+		fixture.settings, default_script_fetch_options(), modulepreload_fetching_complete)
+	assert scripting_fetching_retry_count == 2
+}
+
+fn test_modulepreload_populates_typed_module_map_entries() {
+	fixture := scripting_fetching_fixture()!
+	scripting_fetching_request_urls = []
+	text_url := dom.URL{ value: 'https://example.test/app/module.txt' }
+	assert fetch_modulepreload_module_script_graph(fixture.realm, text_url, .text,
+		fixture.settings, default_script_fetch_options(), scripting_fetching_complete)
+	text_entry := fixture.settings.module_map().get(text_url, 'text')?.module_script?
+	assert text_entry.kind == .text
+	assert text_entry.synthetic_source == 'module text'
+	assert scripting_fetching_last_destination == .text
+
+	style_url := dom.URL{ value: 'https://example.test/app/module.css' }
+	assert fetch_modulepreload_module_script_graph(fixture.realm, style_url, .style,
+		fixture.settings, default_script_fetch_options(), scripting_fetching_complete)
+	style_entry := fixture.settings.module_map().get(style_url, 'css')?.module_script?
+	assert style_entry.kind == .css
+	assert style_entry.synthetic_source == ':root { color: green; }'
+	assert scripting_fetching_last_destination == .style
+
+	json_url := dom.URL{ value: 'https://example.test/app/module.json' }
+	assert fetch_modulepreload_module_script_graph(fixture.realm, json_url, .json,
+		fixture.settings, default_script_fetch_options(), scripting_fetching_complete)
+	json_entry := fixture.settings.module_map().get(json_url, 'json')?.module_script?
+	assert json_entry.kind == .json
+	assert json_entry.synthetic_source == '{"answer":42}'
+	assert scripting_fetching_last_destination == .json
+}
+
+fn test_link_modulepreload_dispatches_events_and_preserves_fetch_options() {
+	fixture := scripting_fetching_fixture()!
+	document := fixture.settings.responsible_document() or { panic('missing document') }
+	scripting_fetching_request_urls = []
+	mut element := document.create_element_ns(dom.namespace_html_uri, 'link')!
+	link_element := unsafe { &dom.HTMLLinkElement(element) }
+	mut model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(link_element)) }
+	model.set_rel('preload modulepreload')
+	model.set_href('/app/module.txt')
+	model.set_as('text')
+	model.set_crossorigin('use-credentials')
+	model.integrity_ = 'sha256-link'
+	model.referrer_policy_ = 'origin'
+	model.fetch_priority_ = 'high'
+	mut html_element := unsafe { &dom.HTMLElement(element) }
+	html_element.cryptographic_nonce_ = 'link-nonce'
+	model.fetch_and_process_linked_resource()
+	assert model.event_count('load') == 1
+	assert model.event_count('error') == 0
+	assert scripting_fetching_request_urls == ['https://example.test/app/module.txt']
+	assert scripting_fetching_last_destination == .text
+	assert scripting_fetching_last_credentials == .include
+	assert scripting_fetching_last_nonce == 'link-nonce'
+	assert scripting_fetching_last_referrer_policy == 'origin'
+	assert scripting_fetching_last_priority == .high
+	assert scripting_fetching_last_parser_metadata == .not_parser_inserted
+
+	mut suppressed := HTMLLinkElementModel.create(document.base_url())
+	suppressed.set_rel('modulepreload')
+	suppressed.set_href('/app/suppressed.js')
+	suppressed.set_media('not all')
+	suppressed.fetch_and_process_linked_resource()
+	assert suppressed.event_count('load') == 0
+	assert suppressed.event_count('error') == 0
+	assert scripting_fetching_request_urls.len == 1
+
+	mut invalid := HTMLLinkElementModel.create(document.base_url())
+	invalid.set_rel('modulepreload')
+	invalid.set_href('/app/image.png')
+	invalid.set_as('image')
+	invalid.fetch_and_process_linked_resource()
+	assert invalid.event_count('error') == 1
+	assert scripting_fetching_request_urls.len == 1
 }

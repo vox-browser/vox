@@ -50,6 +50,45 @@ fn test_blocked_html_parser_scans_and_stops_the_remaining_input() {
 	assert !parser.has_active_speculative_html_parser()
 }
 
+fn test_speculative_parser_scans_modulepreload_without_module_map_side_effects() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/page.html' })
+	window := WindowModel.create_top_level(document, none, 'modulepreload-scanner') or {
+		panic(err)
+	}
+	settings_pointer := document.relevant_settings_object()
+	assert settings_pointer != unsafe { nil }
+	settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }
+	_ = window
+	speculative_parser_requests.clear()
+	input := '<link rel="modulepreload" href="module.js" nonce="abc" integrity="sha256-xyz" referrerpolicy="origin" fetchpriority="high"><link rel="modulepreload" href="data.json" as="JSON" crossorigin="use-credentials"><link rel="modulepreload" href="default.js" as="invalid"><link rel="modulepreload" href="image.png" as="image"><link rel="modulepreload" href="hidden.js" media="not all"><link rel="modulepreload preload" href="fetch.bin" as="fetch">'
+	mut parser := SpeculativeHTMLParser.create(document, input, document.base_url(),
+		record_speculative_parser_request)
+	parser.run()
+
+	assert speculative_parser_requests.len == 3
+	module_request := speculative_parser_requests[0]
+	assert module_request.url.serialize() == 'https://example.test/module.js'
+	assert module_request.destination? == .script
+	assert module_request.mode == .cors
+	assert module_request.credentials_mode == .same_origin
+	assert module_request.is_module_preload
+	assert module_request.cryptographic_nonce_metadata == 'abc'
+	assert module_request.integrity_metadata == 'sha256-xyz'
+	assert module_request.parser_metadata == .not_parser_inserted
+	assert module_request.referrer_policy == 'origin'
+	assert module_request.priority == .high
+
+	json_request := speculative_parser_requests[1]
+	assert json_request.destination? == .json
+	assert json_request.credentials_mode == .include
+	assert speculative_parser_requests[2].destination? == .script
+	assert !document.has_speculative_fetch_url(dom.URL{ value: 'https://example.test/image.png' })
+	assert !document.has_speculative_fetch_url(dom.URL{ value: 'https://example.test/hidden.js' })
+	assert !document.has_speculative_fetch_url(dom.URL{ value: 'https://example.test/fetch.bin' })
+	assert settings.module_map().get(dom.URL{ value: 'https://example.test/module.js' },
+		'javascript') == none
+}
+
 fn test_html_tokenizer_exposes_only_unparsed_code_points() {
 	mut tokenizer := HTMLTokenizer.new('one<span>two</span>')
 	for {

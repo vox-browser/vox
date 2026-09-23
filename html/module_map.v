@@ -99,6 +99,10 @@ pub fn (mut module_map ModuleMap) set(url dom.URL, type_ string, entry ModuleMap
 	return was_new
 }
 
+pub fn (mut module_map ModuleMap) remove(url dom.URL, type_ string) {
+	module_map.values_.delete(module_map_key(url, type_))
+}
+
 pub fn (mut module_map ModuleMap) wait_for_change(url dom.URL, type_ string, callback ModuleMapChangeCallback) {
 	key := module_map_key(url, type_)
 	module_map.callbacks_[key] << callback
