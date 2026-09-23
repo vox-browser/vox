@@ -233,6 +233,16 @@ fn navigable_model_reset_mouse_input_tracking(target voidptr) {
 	event_handler.reset_mouse_input_tracking()
 }
 
+fn navigable_model_has_session_history_entry_and_ready(target voidptr) bool {
+	model := unsafe { &NavigableModel(target) }
+	return model.has_session_history_entry_and_ready_for_navigation()
+}
+
+fn navigable_model_delays_container_load_event(target voidptr) bool {
+	model := unsafe { &NavigableModel(target) }
+	return model.delays_the_load_event_of_its_container()
+}
+
 fn (model &NavigableModel) system_visibility_state() dom.VisibilityState {
 	if context := model.context_ {
 		if traversable := context.top_level_traversable() {
@@ -255,6 +265,8 @@ fn connect_navigable_model_to_host(model &NavigableModel) {
 	host.set_needs_repaint_callback_ = navigable_model_set_needs_repaint
 	host.render_screenshot_callback_ = navigable_model_render_screenshot
 	host.reset_mouse_input_tracking_callback_ = navigable_model_reset_mouse_input_tracking
+	host.has_session_history_entry_and_ready_callback_ = navigable_model_has_session_history_entry_and_ready
+	host.delays_container_load_event_callback_ = navigable_model_delays_container_load_event
 }
 
 // Binds the DOM identity created by Document/Window to the translated HTML
@@ -476,6 +488,15 @@ pub fn (model &NavigableModel) is_delaying_load_events() bool {
 	return model.delaying_load_events_
 }
 
+// https://html.spec.whatwg.org/multipage/iframe-embed-object.html#potentially-delays-the-load-event
+pub fn (model &NavigableModel) delays_the_load_event_of_its_container() bool {
+	document := model.active_document() or { return true }
+	if !document.document_ready_for_post_load_tasks() || model.is_delaying_load_events() {
+		return true
+	}
+	return document.anything_is_delaying_the_load_event()
+}
+
 pub fn (mut model NavigableModel) set_navigation_load_event_guard(parent_document &dom.Document) {
 	model.clear_navigation_load_event_guard()
 	mut mutable_parent := unsafe { &dom.Document(parent_document) }
@@ -639,8 +660,10 @@ pub fn (model &NavigableModel) container() ?&dom.Element {
 }
 
 pub fn (model &NavigableModel) container_document() ?&dom.Document {
-	container := model.container() or { return none }
-	return container.document()
+	if container := model.container() {
+		return container.document()
+	}
+	return model.host_.container_document()
 }
 
 pub fn (model &NavigableModel) is_focused() bool {

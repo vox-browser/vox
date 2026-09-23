@@ -194,6 +194,35 @@ fn test_line_box_border_debug_setting_is_inherited_and_propagated() {
 	assert grandchild_model.needs_repaint()
 }
 
+fn test_navigable_host_answers_readiness_and_load_delay_from_its_model() {
+	mut parent_document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	mut parent_host := &dom.Navigable{
+		is_top_level_traversable_: true
+	}
+	parent_host.set_active_document(parent_document)
+	_ = NavigableModel.create(parent_host, none) or { panic(err) }
+
+	mut child_document := dom.Document.create(dom.URL{ value: 'https://example.test/frame' })
+	mut child_host := &dom.Navigable{
+		parent_: parent_host
+		container_document_: parent_document
+	}
+	child_host.set_active_document(child_document)
+	mut child_model := NavigableModel.create(child_host, none) or { panic(err) }
+
+	assert !child_host.has_session_history_entry_and_ready_for_navigation()
+	child_model.set_has_session_history_entry_and_ready_for_navigation()
+	assert child_host.has_session_history_entry_and_ready_for_navigation()
+
+	assert child_host.delays_the_load_event_of_its_container()
+	child_document.set_ready_for_post_load_tasks(true)
+	assert !child_host.delays_the_load_event_of_its_container()
+	child_model.set_delaying_load_events(true)
+	assert child_host.delays_the_load_event_of_its_container()
+	child_model.set_delaying_load_events(false)
+	assert !child_host.delays_the_load_event_of_its_container()
+}
+
 fn test_nested_navigable_uses_the_top_level_traversable_visibility_state() {
 	_, parent_window, _ := navigable_test_top_level('https://example.test/', 'top')!
 	mut traversable := TraversableNavigable.create_a_new_top_level_traversable('')!

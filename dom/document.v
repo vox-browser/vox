@@ -2175,6 +2175,8 @@ pub type NavigableRenderScreenshotCallback = fn (voidptr, PaintConfig, ?UniqueNo
 
 pub type NavigableResetMouseInputTrackingCallback = fn (voidptr)
 
+pub type NavigableBooleanStateCallback = fn (voidptr) bool
+
 @[heap]
 pub struct Navigable {
 pub mut:
@@ -2193,6 +2195,8 @@ pub mut:
 	set_needs_repaint_callback_           NavigableSetNeedsRepaintCallback = unsafe { nil }
 	render_screenshot_callback_           NavigableRenderScreenshotCallback = unsafe { nil }
 	reset_mouse_input_tracking_callback_ NavigableResetMouseInputTrackingCallback = unsafe { nil }
+	has_session_history_entry_and_ready_callback_ NavigableBooleanStateCallback = unsafe { nil }
+	delays_container_load_event_callback_         NavigableBooleanStateCallback = unsafe { nil }
 }
 
 pub fn (n &Navigable) perform_scroll_of_viewport_scrolling_box(position CSSPixelPoint_) {
@@ -3369,6 +3373,22 @@ pub fn (n &Navigable) active_document_origin() ?Origin {
 pub fn (n &Navigable) active_document_is_fully_active() bool {
 	document := n.active_document() or { return false }
 	return document.is_fully_active()
+}
+
+pub fn (n &Navigable) has_session_history_entry_and_ready_for_navigation() bool {
+	if n.html_model_handle_ == unsafe { nil }
+		|| n.has_session_history_entry_and_ready_callback_ == unsafe { nil } {
+		return false
+	}
+	return n.has_session_history_entry_and_ready_callback_(n.html_model_handle_)
+}
+
+pub fn (n &Navigable) delays_the_load_event_of_its_container() bool {
+	if n.html_model_handle_ == unsafe { nil }
+		|| n.delays_container_load_event_callback_ == unsafe { nil } {
+		return false
+	}
+	return n.delays_container_load_event_callback_(n.html_model_handle_)
 }
 
 pub fn (n &Navigable) set_needs_repaint() {

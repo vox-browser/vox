@@ -43,7 +43,7 @@ fn test_navigable_container_origin_navigation_and_destruction() {
 	assert navigable_container_navigable_container_with_content_navigable(navigable)? == container
 	assert navigable_container_content_window(container) != none
 	assert !navigable_container_content_navigable_has_session_history_entry_and_ready_for_navigation(container)
-	navigable_container_set_content_navigable_has_session_history_entry_and_ready_for_navigation(container)
+	container.mark_content_navigable_ready()
 	assert navigable_container_content_navigable_has_session_history_entry_and_ready_for_navigation(container)
 	navigable.has_pending_navigations = true
 	assert container.shared_attribute_processing_steps(.yes, []) == none

@@ -46,6 +46,25 @@ pub mut:
 	active_window_proxy                      ?&dom.WindowProxy
 }
 
+pub fn (navigable &ChildNavigable) has_session_history_entry_and_ready_for_navigation() bool {
+	return navigable.has_session_history_entry_and_ready
+}
+
+pub fn (mut navigable ChildNavigable) set_has_session_history_entry_and_ready_for_navigation() {
+	navigable.has_session_history_entry_and_ready = true
+}
+
+// https://html.spec.whatwg.org/multipage/iframe-embed-object.html#potentially-delays-the-load-event
+pub fn (navigable &ChildNavigable) delays_the_load_event_of_its_container() bool {
+	if navigable.active_document == unsafe { nil } {
+		return true
+	}
+	if !navigable.active_document.ready_for_post_load_tasks || navigable.is_delaying_load_events {
+		return true
+	}
+	return navigable.active_document.anything_delays_load_event
+}
+
 pub struct EmbeddedNavigationRequest {
 pub:
 	url               dom.URL
@@ -295,20 +314,7 @@ pub fn (container &NavigableContainerModel) currently_delays_the_load_event() bo
 		return false
 	}
 	navigable := container.content_navigable_ or { return false }
-	// A destroyed document leaves its navigable without an active document
-	// until the replacement is activated or the navigable itself is removed.
-	// Such a child is not ready for post-load tasks and must keep delaying its
-	// container instead of dereferencing the absent document.
-	if navigable.active_document == unsafe { nil } {
-		return true
-	}
-	if !navigable.active_document.ready_for_post_load_tasks {
-		return true
-	}
-	if navigable.is_delaying_load_events {
-		return true
-	}
-	return navigable.active_document.anything_delays_load_event
+	return navigable.delays_the_load_event_of_its_container()
 }
 
 fn navigable_container_load_event_delay_callback(target voidptr) bool {
@@ -341,7 +347,7 @@ pub fn attach_navigable_container_load_event_delay_hook(element &dom.Element, co
 
 pub fn (mut container NavigableContainerModel) mark_content_navigable_ready() {
 	mut navigable := container.content_navigable_ or { return }
-	navigable.has_session_history_entry_and_ready = true
+	navigable.set_has_session_history_entry_and_ready_for_navigation()
 	if document := container.document_ {
 		document.schedule_html_parser_end_check()
 	}
@@ -349,20 +355,11 @@ pub fn (mut container NavigableContainerModel) mark_content_navigable_ready() {
 
 pub fn (container &NavigableContainerModel) content_navigable_has_session_history_entry_and_ready_for_navigation() bool {
 	navigable := container.content_navigable_ or { return false }
-	return navigable.has_session_history_entry_and_ready
-}
-
-pub fn (mut container NavigableContainerModel) set_content_navigable_has_session_history_entry_and_ready_for_navigation() {
-	container.mark_content_navigable_ready()
+	return navigable.has_session_history_entry_and_ready_for_navigation()
 }
 
 pub fn navigable_container_content_navigable_has_session_history_entry_and_ready_for_navigation(container &NavigableContainerModel) bool {
 	return container.content_navigable_has_session_history_entry_and_ready_for_navigation()
-}
-
-pub fn navigable_container_set_content_navigable_has_session_history_entry_and_ready_for_navigation(container &NavigableContainerModel) {
-	mut mutable_container := unsafe { &NavigableContainerModel(container) }
-	mutable_container.set_content_navigable_has_session_history_entry_and_ready_for_navigation()
 }
 
 @[heap]
