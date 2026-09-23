@@ -634,6 +634,22 @@ pub fn (p &Page) local_root_navigable() &dom.Navigable {
 	return p.local_root_navigable_ or { panic('Page has no local root navigable') }
 }
 
+pub fn (mut p Page) set_marked_text_from_input_method(text string) {
+	mut navigable := p.local_root_navigable_ or { return }
+	navigable.set_marked_text_from_input_method(text)
+}
+
+pub fn (mut p Page) commit_text_from_input_method(text string, replacement_start i32,
+	replacement_length i32) {
+	mut navigable := p.local_root_navigable_ or { return }
+	navigable.commit_text_from_input_method(text, replacement_start, replacement_length)
+}
+
+pub fn (mut p Page) unmark_text_from_input_method() {
+	mut navigable := p.local_root_navigable_ or { return }
+	navigable.unmark_text_from_input_method()
+}
+
 pub fn (mut p Page) set_mouse_event_tracking_navigable(navigable &dom.Navigable) {
 	p.mouse_event_tracking_navigable_ = navigable
 }

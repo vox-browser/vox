@@ -262,8 +262,9 @@ fn dom_editing_exec_command(target voidptr, document &dom.Document, command stri
 			none
 		}
 		event := dom.InputEvent.create_from_platform_event('input', dom.InputEventInit{
-			input_type: input_type
-			data: input_data
+			input_type:   input_type
+			data:         input_data
+			is_composing: document.is_input_method_composing()
 		}, [], dom.current_event_timestamp())
 		event_target := unsafe { &dom.EventTarget(host) }
 		base_event := unsafe { &dom.Event(event) }

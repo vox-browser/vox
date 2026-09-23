@@ -149,7 +149,7 @@ pub fn (mut model HTMLTextAreaElementModel) clear_algorithm() {
 	model.sync_text_node_to_raw_value()
 	model.update_placeholder_visibility()
 	model.update_validity()
-	model.queue_input_event('', none)
+	model.dispatch_input_event('', none)
 }
 
 pub fn (model &HTMLTextAreaElementModel) cloned(mut copy HTMLTextAreaElementModel, _ bool) {
@@ -254,7 +254,7 @@ pub fn (mut model HTMLTextAreaElementModel) form_associated_element_attribute_ch
 pub fn (mut model HTMLTextAreaElementModel) did_edit_text_node(input_type string, data ?string) {
 	text_node := model.text_node_ or { return }
 	model.set_raw_value(text_node.data())
-	model.queue_input_event(input_type, data)
+	model.dispatch_input_event(input_type, data)
 	model.dirty_value = true
 	model.text.dirty_value_flag = true
 	model.user_validity = true
@@ -266,18 +266,15 @@ pub fn (mut model HTMLTextAreaElementModel) handle_return_key(input_type string)
 	model.text.handle_insert(input_type, '\n')!
 }
 
-fn (mut model HTMLTextAreaElementModel) queue_input_event(input_type string, data ?string) {
-	model_pointer := voidptr(&model)
+fn (mut model HTMLTextAreaElementModel) dispatch_input_event(input_type string, data ?string) {
 	document := textarea_element(&model).document()
-	queue_a_task(.user_interaction, main_thread_event_loop(), document, fn [model_pointer, input_type, data] () {
-		mut mutable_model := unsafe { &HTMLTextAreaElementModel(model_pointer) }
-		mut input_event := dom.InputEvent.create_from_platform_event('input', dom.InputEventInit{
-			data: data
-			input_type: input_type
-		}, [], dom.current_event_timestamp())
-		base_event := unsafe { &dom.Event(input_event) }
-		unsafe { &dom.EventTarget(textarea_element(mutable_model).as_node()) }.dispatch_event(base_event)
-	})
+	input_event := dom.InputEvent.create_from_platform_event('input', dom.InputEventInit{
+		data:         data
+		input_type:   input_type
+		is_composing: document.is_input_method_composing()
+	}, [], dom.current_event_timestamp())
+	base_event := unsafe { &dom.Event(input_event) }
+	unsafe { &dom.EventTarget(textarea_element(&model).as_node()) }.dispatch_event(base_event)
 }
 
 pub fn (model &HTMLTextAreaElementModel) is_focusable() bool {

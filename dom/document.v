@@ -2197,6 +2197,10 @@ pub mut:
 	reset_mouse_input_tracking_callback_ NavigableResetMouseInputTrackingCallback = unsafe { nil }
 	has_session_history_entry_and_ready_callback_ NavigableBooleanStateCallback = unsafe { nil }
 	delays_container_load_event_callback_         NavigableBooleanStateCallback = unsafe { nil }
+	input_method_composition_node_                 ?&Node
+	input_method_composition_offset_               int
+	input_method_last_marked_text_                 string
+	input_method_composition_active_               bool
 }
 
 pub fn (n &Navigable) perform_scroll_of_viewport_scrolling_box(position CSSPixelPoint_) {
@@ -4995,6 +4999,7 @@ pub mut:
 
 	// Editing
 	editing_host_manager_              &EditingHostManager = unsafe { nil }
+	is_input_method_composing_         bool
 	default_single_line_container_name string = 'div'
 	command_state_override             map[string]bool
 	command_value_override             map[string]string

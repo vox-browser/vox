@@ -5,10 +5,11 @@ import css
 import dom
 
 __global (
-	textarea_event_types       []string
-	textarea_event_input_types []string
-	textarea_event_data        []string
-	textarea_event_composed    []bool
+	textarea_event_types        []string
+	textarea_event_input_types  []string
+	textarea_event_data         []string
+	textarea_event_composed     []bool
+	textarea_event_is_composing []bool
 )
 
 fn record_textarea_event(event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
@@ -19,6 +20,7 @@ fn record_textarea_event(event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
 			textarea_event_input_types << input_event.input_type()
 			textarea_event_data << input_event.data() or { '' }
 			textarea_event_composed << input_event.composed()
+			textarea_event_is_composing << input_event.is_composing()
 		}
 	}
 	return dom.js_undefined()
@@ -208,6 +210,7 @@ fn test_textarea_shadow_selection_lifecycle_editing_and_clone_algorithms() {
 		textarea_event_input_types = []
 		textarea_event_data = []
 		textarea_event_composed = []
+		textarea_event_is_composing = []
 	}
 	listener := dom.IDLEventListener.create(&dom.CallbackType{
 		handle_event: record_textarea_event
@@ -218,14 +221,15 @@ fn test_textarea_shadow_selection_lifecycle_editing_and_clone_algorithms() {
 	mut mutable_text_node := text_node
 	mutable_text_node.set_data('xy')
 	textarea.did_edit_text_node('insertText', 'y')
+	document.set_is_input_method_composing(true)
 	textarea.did_edit_text_node('insertText', 'z')
+	document.set_is_input_method_composing(false)
 	assert textarea.dirty_value
-	assert textarea_event_types.len == 0
-	drain_form_element_tasks()
 	assert textarea_event_types == ['input', 'input']
 	assert textarea_event_input_types == ['insertText', 'insertText']
 	assert textarea_event_data == ['y', 'z']
 	assert textarea_event_composed == [true, true]
+	assert textarea_event_is_composing == [false, true]
 
 	textarea.handle_return_key('insertLineBreak')!
 	assert textarea.value().ends_with('\n')

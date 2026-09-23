@@ -1158,11 +1158,23 @@ pub fn (mut model HTMLInputElementModel) handle_maxlength_attribute() {
 }
 
 pub fn (mut model HTMLInputElementModel) user_interaction_did_change_input_value(input_type string, data ?string) {
-	_ = input_type
-	_ = data
 	model.has_uncommitted_changes_ = true
 	model.user_validity_ = true
-	model.fire_event('input')
+	model.event_counts_['input']++
+	document := input_element(&model).document()
+	init := dom.InputEventInit{
+		data:         data
+		input_type:   input_type
+		is_composing: document.is_input_method_composing()
+	}
+	model_event := dom.InputEvent.create_from_platform_event('input', init, [],
+		dom.current_event_timestamp())
+	model.event_target_.dispatch_event(unsafe { &dom.Event(model_event) })
+	element_event := dom.InputEvent.create_from_platform_event('input', init, [],
+		dom.current_event_timestamp())
+	element_event_target := unsafe { &dom.EventTarget(input_element(&model).as_node()) }
+	element_base_event := unsafe { &dom.Event(element_event) }
+	element_event_target.dispatch_event(element_base_event)
 	model.update_validity()
 }
 
