@@ -143,6 +143,109 @@ fn test_worker_style_global_scope_does_not_throttle_timers() {
 	assert timer.due_time_ms == timer.deadline_ms
 }
 
+fn test_hidden_document_intensively_throttles_chained_timers_after_grace() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	document.set_origin(document.url.origin())
+	window := WindowModel.create_top_level(document, none, 'intensive-throttling-test') or {
+		panic(err)
+	}
+	mut scope := window.window_or_worker_global_scope()
+	scope.set_hidden_document_timer_wake_up_interval(100)
+	scope.set_hidden_document_intensive_timer_throttling(1_000, 0, 0)
+	scope.last_chained_timer_wake_up_ms_ = global_scope_now_ms()
+	document.update_the_visibility_state(.hidden)
+
+	chained_id := scope.run_steps_after_a_timeout(5, fn () {})
+	delayed_id := scope.set_timeout(timer_source_handler('delayed'), 5, [])
+	grace_deadline := scope.intensive_timer_grace_deadline_ms_ or {
+		panic('missing intensive throttling grace deadline')
+	}
+	scope.process_timers(grace_deadline)
+	assert scope.chained_timers_intensively_throttled_
+	chained := scope.active_timers_[chained_id] or { panic('missing chained timer') }
+	delayed := scope.active_timers_[delayed_id] or { panic('missing delayed timer') }
+	origin := scope.hidden_timer_grid_origin_ms()
+	assert chained.throttling_class == .chained
+	assert (chained.due_time_ms - origin) % 1_000 == 0
+	assert delayed.throttling_class == .delayed
+	assert (delayed.due_time_ms - origin) % 100 == 0
+}
+
+fn test_intensive_throttling_allows_a_rare_chained_timer_at_an_ordinary_wakeup() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	document.set_origin(document.url.origin())
+	window := WindowModel.create_top_level(document, none, 'rare-chained-timer-test') or {
+		panic(err)
+	}
+	document.update_the_visibility_state(.hidden)
+	mut scope := window.window_or_worker_global_scope()
+	scope.set_hidden_document_timer_wake_up_interval(100)
+	scope.set_hidden_document_intensive_timer_throttling(1_000, 0, 0)
+	scope.chained_timers_intensively_throttled_ = true
+	origin := scope.hidden_timer_grid_origin_ms()
+	deadline := origin + 12_345
+	ordinary_wake_up := timer_wake_up_at_or_after(deadline, origin, 100)
+	intensive_wake_up := timer_wake_up_at_or_after(deadline, origin, 1_000)
+
+	scope.last_chained_timer_wake_up_ms_ = none
+	assert scope.timer_due_time(.chained, deadline, deadline) == ordinary_wake_up
+	scope.last_chained_timer_wake_up_ms_ = deadline
+	assert scope.timer_due_time(.chained, deadline, deadline) == intensive_wake_up
+}
+
+fn test_intensive_throttling_grace_depends_on_readiness_when_document_hides() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	document.set_origin(document.url.origin())
+	window := WindowModel.create_top_level(document, none, 'timer-grace-test') or {
+		panic(err)
+	}
+	mut scope := window.window_or_worker_global_scope()
+	scope.set_hidden_document_intensive_timer_throttling(1_000, 10, 50)
+
+	loaded_start := global_scope_now_ms()
+	document.update_the_visibility_state(.hidden)
+	loaded_deadline := scope.intensive_timer_grace_deadline_ms_ or { panic('missing loaded grace') }
+	assert loaded_deadline >= loaded_start + 10
+	assert loaded_deadline <= global_scope_now_ms() + 10
+
+	document.update_the_visibility_state(.visible)
+	document.update_readiness(.loading)
+	loading_start := global_scope_now_ms()
+	document.update_the_visibility_state(.hidden)
+	loading_deadline := scope.intensive_timer_grace_deadline_ms_ or {
+		panic('missing loading grace')
+	}
+	assert loading_deadline >= loading_start + 50
+	assert loading_deadline <= global_scope_now_ms() + 50
+}
+
+fn test_deeply_nested_timer_is_chained_and_clamped() {
+	mut scope := WindowOrWorkerGlobalScopeMixin.create(dom.Origin{}, false, false)
+	scope.currently_running_timer_nesting = 6
+	id := scope.set_timeout(timer_source_handler('nested'), 0, [])
+	timer := scope.active_timers_[id] or { panic('missing nested timer') }
+	assert timer.nesting_level == 7
+	assert timer.timeout_ms == 4
+	assert timer.throttling_class == .chained
+}
+
+fn test_repeating_timer_becomes_chained_after_deep_nesting() {
+	mut scope := WindowOrWorkerGlobalScopeMixin.create(dom.Origin{}, false, false)
+	callback := &dom.CallbackType{
+		call_with_arguments: global_scope_timer_callback
+	}
+	id := scope.set_interval(timer_callback_handler(callback), 0, [])
+	for _ in 0 .. 6 {
+		timer := scope.active_timers_[id] or { panic('missing repeating timer') }
+		scope.process_timers(timer.due_time_ms)
+	}
+	timer := scope.active_timers_[id] or { panic('missing rescheduled timer') }
+	assert timer.nesting_level == 7
+	assert timer.timeout_ms == 4
+	assert timer.throttling_class == .chained
+	scope.clear_interval(id)
+}
+
 fn test_global_scope_create_image_bitmap_crop_resize_flip() {
 	data := ImageData.create_with_data([
 		u8(255),
