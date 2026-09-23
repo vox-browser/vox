@@ -62,6 +62,35 @@ fn test_flex_intrinsic_height_accounts_for_line_clamping_and_nested_baselines() 
 	assert used_for_id(result, 'select-only').content_height().to_double() == 40
 }
 
+fn test_button_content_percentages_resolve_against_the_button() {
+	document := html.parse_document('<!doctype html><style>
+		.column { display:flex; flex-direction:column; align-items:start }
+		button { width:60px; aspect-ratio:4/5; border:0; padding:0 }
+		canvas { display:block; width:100%; height:100% }
+		#fixed { aspect-ratio:auto; height:75px }
+		#padded { aspect-ratio:auto; width:80px; height:100px; border:5px solid; padding:5px }
+		#auto { aspect-ratio:auto }
+		#half canvas { height:50% }
+	</style><div class="column">
+		<button id="ratio"><canvas id="ratio-content" width="100" height="100"></canvas></button>
+		<button id="fixed"><canvas id="fixed-content" width="100" height="100"></canvas></button>
+		<button id="padded"><canvas id="padded-content" width="100" height="100"></canvas></button>
+		<button id="half"><canvas id="half-content" width="100" height="100"></canvas></button>
+		<button id="auto"><canvas id="auto-content" width="100" height="100"></canvas></button>
+		<button id="nested"><div><canvas id="nested-content" width="100" height="100"></canvas></div></button>
+	</div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'ratio').content_height().to_double() == 75
+	assert used_for_id(result, 'ratio-content').content_height().to_double() == 75
+	assert used_for_id(result, 'fixed-content').content_height().to_double() == 75
+	assert used_for_id(result, 'padded').border_box_height().to_double() == 100
+	assert used_for_id(result, 'padded-content').content_height().to_double() == 80
+	assert used_for_id(result, 'half-content').content_height().to_double() == 37.5
+	assert used_for_id(result, 'auto').content_height().to_double() == 60
+	assert used_for_id(result, 'auto-content').content_height().to_double() == 60
+	assert used_for_id(result, 'nested-content').content_height().to_double() == 60
+}
+
 fn test_fractional_calculated_flex_basis_does_not_wrap_the_third_item() {
 	for width in [100, 101, 102, 100] {
 		document := html.parse_document('<!doctype html><style>

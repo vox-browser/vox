@@ -270,7 +270,19 @@ fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node,
 	} else {
 		AvailableSize.make_indefinite()
 	}
-	inside := layout_inside_independent_formatting_context(mut state, child, mut child_state, AvailableSpace.new(AvailableSize.make_definite(child_state.content_width()), available_height))
+	// The anonymous button content box may acquire a post-flexing height smaller
+	// than the button. Percentages inside it still resolve against the button's
+	// content height, including while the content box is being measured.
+	child_available_height := if child.is_button_content_box_ {
+		if height := containing_height {
+			AvailableSize.make_definite(height)
+		} else {
+			available_height
+		}
+	} else {
+		available_height
+	}
+	inside := layout_inside_independent_formatting_context(mut state, child, mut child_state, AvailableSpace.new(AvailableSize.make_definite(child_state.content_width()), child_available_height))
 	mut height := if use_automatic_height {
 		inside.automatic_content_height
 	} else if resolved := definite_height {

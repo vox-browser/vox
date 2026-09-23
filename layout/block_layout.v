@@ -430,8 +430,8 @@ fn layout_inside_independent_formatting_context_without_containment_override(mut
 	}
 	styled := box.as_node_with_style() or { return FormattingContextResult{} }
 	mut child_context := BlockFormattingContext.for_root(box, layout_mode, box_state.has_definite_width())
-	child_context.layout_block_level_children(mut state, styled, box_state.content_width().to_double(), if box_state.has_definite_height()
-		&& available_space.height.is_definite() {
+	child_context.layout_block_level_children(mut state, styled, box_state.content_width().to_double(), if (box_state.has_definite_height()
+		|| box.is_button_content_box_) && available_space.height.is_definite() {
 		available_space.height.to_px_or_zero().to_double()
 	} else {
 		none
