@@ -63,6 +63,14 @@ boundary reconstruct an independent shared buffer from their encoded fallback
 copy. Maximum lengths and growth remain visible through local aliases; storage
 serialization and the default cross-origin-isolation gate still reject shared
 buffers.
+Custom properties declared in `@keyframes` now participate in animation
+sampling. Registered values use typed computed-value interpolation and
+composition, unregistered values animate discretely, important declarations
+suppress the animation, and missing endpoints use the underlying value. The
+sampled overlay is visible to `var()` resolution in longhands, shorthands, and
+other animations; target and descendant styles refresh when it changes, while
+the ordinary inherited environment remains independently replaceable beneath
+the overlay.
 Inline layout now publishes conservative glyph-run painted bounds in CSS pixels
 when it finalizes each retained run. Merging, ellipsis, and line clamping dirty
 the packed replay data and bounds together; finalization refreshes both once.

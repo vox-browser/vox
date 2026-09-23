@@ -181,6 +181,12 @@
   property guards include function identity, arguments substitute before arity
   rejection, and custom-property dependencies retain access to the function
   registry.
+- Custom properties declared in `@keyframes` now animate. Registered values
+  interpolate as typed computed values, unregistered values animate discretely,
+  composition and `!important` suppression follow the upstream rules, and the
+  sampled values participate in `var()` resolution for targets and descendants.
+  Animation overlays retain their authored base environment so inherited custom-
+  property changes continue to propagate through animated elements.
 - Paint-command-only style and UI changes retain the hit-test display list
   across repaint. Border radii, SVG fill/fill-rule, pointer-events, resize, and
   visibility carry the upstream hit-test-affecting metadata and still invalidate
