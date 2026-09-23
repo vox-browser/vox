@@ -877,6 +877,27 @@ fn test_containment_disables_body_background_propagation() {
 	assert fills[0].x != 0 || fills[0].width != 320
 }
 
+fn test_body_without_a_generated_box_prevents_later_body_background_propagation() {
+	mut document := html.parse_document('<!doctype html><style>html { background: transparent } #rendered { margin: 20px; width: 100px; height: 40px; background: rgb(12 34 56) }</style><body id="rendered"></body>')
+	html_element := document.html_element() or { panic('missing html element') }
+	rendered_body := document.body() or { panic('missing rendered body') }
+	mut hidden_body := document.create_element('body')!
+	hidden_body.set_attribute_value('style', 'display: none')
+	mut html_node := unsafe { &dom.Element(html_element) }.as_node()
+	html_node.pre_insert(hidden_body.as_node(), unsafe { &dom.Element(rendered_body) }.as_node())!
+	assert voidptr(unsafe { &dom.Element(document.body()?) }.as_node()) == voidptr(hidden_body.as_node())
+
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	rendered_box := root.find_box(i64(unsafe { &dom.Element(rendered_body) }.as_node().unique_id())) or {
+		panic('missing rendered body box')
+	}
+	assert root.background_color.a == 0
+	assert !rendered_box.skip_background_paint
+	fills := root.paint_commands().filter(it.kind == 'fill_rect' && it.color == 'rgb(12 34 56)')
+	assert fills.len == 1
+	assert fills[0].x != 0 || fills[0].width != 320
+}
+
 fn test_body_background_layers_are_propagated_to_root_canvas() {
 	document := html.parse_document('<!doctype html><style>html { background: transparent } body { margin: 20px; width: 100px; height: 40px; background-image: linear-gradient(red, blue); image-rendering: pixelated }</style><body id="body"></body>')
 	root := layout_document_typed_in_viewport(document, 320, 200)

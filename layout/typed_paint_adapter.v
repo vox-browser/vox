@@ -2361,11 +2361,13 @@ fn background_box_name(box css.BackgroundBox) string {
 }
 
 fn direct_body_layout_node(root &Node) ?&Node {
+	body := root.document().body() or { return none }
+	body_node := unsafe { &dom.Element(body) }.as_node()
 	for child in root.children() {
-		dom_node := child.dom_node() or { continue }
-		element := dom_node.as_element() or { continue }
-		if element.is_html_element() && element.local_name() == 'body' {
-			return child
+		if dom_node := child.dom_node() {
+			if voidptr(dom_node) == voidptr(body_node) {
+				return child
+			}
 		}
 	}
 	return none

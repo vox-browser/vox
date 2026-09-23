@@ -1106,6 +1106,15 @@ fn (mut n NodeWithStyle) image_style_value_did_update() {
 }
 
 fn (n &NodeWithStyle) body_background_is_propagated_to_root() bool {
+	body := n.document_.body() or { return false }
+	body_dom_node := unsafe { &dom.Element(body) }.as_node()
+	if dom_node := n.dom_node() {
+		if voidptr(dom_node) != voidptr(body_dom_node) {
+			return false
+		}
+	} else {
+		return false
+	}
 	html_element := n.document_.html_element() or { return false }
 	html_layout_node := html_element.as_node().unsafe_layout_node() or { return false }
 	if html_layout_node.real_layout_handle() == unsafe { nil } {
