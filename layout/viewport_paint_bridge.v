@@ -1873,6 +1873,11 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	}
 	snapshot := result.scroll_state_snapshot
 	mut commands := lower_visual_layers(replay_cached_paint_commands_with_visual_context(result.paint_steps, result.paint_phase_commands, result.paint_phase_command_count, result.visual_context_tree, snapshot))
+	mut show_line_box_borders := false
+	if model := html.NavigableModel.navigable_with_active_document(result.document) {
+		show_line_box_borders = model.should_show_line_box_borders()
+	}
+	commands = filter_line_box_debug_commands(commands, show_line_box_borders)
 	commands << result.paint_tree.paint_inspector_overlay(result.document, result.visual_context_tree,
 		snapshot)
 	if model := html.NavigableModel.navigable_with_active_document(result.document) {

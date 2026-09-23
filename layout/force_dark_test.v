@@ -144,3 +144,42 @@ fn test_force_dark_navigable_resolves_recorded_page_colors_and_honors_dark_opt_o
 	})
 	assert opted_out_commands.any(it.kind == 'fill_rect' && it.color == 'rgb(255 255 255)')
 }
+
+fn test_force_dark_leaves_line_box_debug_commands_unfiltered() {
+	mut document := html.parse_document('<!doctype html><style>html,body{margin:0}body{background:#181818;color:#e8e8e8}</style><div>chrome stays chrome</div>')
+	host := &dom.Navigable{ active_document_: document }
+	mut navigable := html.NavigableModel.create(host, none) or { panic(err) }
+	document.set_cached_navigable(host)
+	navigable.set_should_show_line_box_borders(true)
+	navigable.set_force_dark_enabled(true)
+	_ = layout_document_typed_in_viewport(document, 320, 100)
+	commands := display_list_commands(document.record_display_list() or {
+		panic('missing debug-overlay display list')
+	})
+	debug_commands := commands.filter(it.line_box_debug)
+	assert debug_commands.len >= 2
+	assert debug_commands.any(it.kind == 'stroke_rounded_rect' && it.color == '#00ff00')
+	assert debug_commands.any(it.kind == 'draw_line' && it.color == '#ff0000')
+	assert debug_commands.all(it.force_dark_role_set && it.force_dark_role == .none_)
+	mut debug_index := -1
+	mut text_index := -1
+	for index, command in commands {
+		if debug_index < 0 && command.line_box_debug {
+			debug_index = index
+		}
+		if text_index < 0 && command.kind == 'draw_text' {
+			text_index = index
+		}
+	}
+	assert debug_index < text_index
+
+	mut plain_document := html.parse_document('<!doctype html><p>plain</p>')
+	plain_host := &dom.Navigable{ active_document_: plain_document }
+	_ = html.NavigableModel.create(plain_host, none) or { panic(err) }
+	plain_document.set_cached_navigable(plain_host)
+	_ = layout_document_typed_in_viewport(plain_document, 320, 100)
+	plain_commands := display_list_commands(plain_document.record_display_list() or {
+		panic('missing ordinary display list')
+	})
+	assert plain_commands.all(!it.line_box_debug)
+}

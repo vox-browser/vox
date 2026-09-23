@@ -1441,6 +1441,7 @@ pub mut:
 	force_dark_role_set       bool
 	force_dark_backdrop       ?painting.Color
 	apply_force_dark_to_image bool
+	line_box_debug            bool
 	text      string // for 'draw_text'
 	font_size f64 = 16.0 // for 'draw_text'
 	bold      bool
@@ -3256,7 +3257,8 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 
 fn (b &BlockBox) paint_commands_from_plan(entries []PaintOrderEntry, steps []CompatibilityPaintStep) []PaintCommand {
 	phase_commands, command_count := b.build_paint_phase_command_cache(entries)
-	return replay_cached_paint_commands(steps, phase_commands, command_count)
+	return filter_line_box_debug_commands(replay_cached_paint_commands(steps, phase_commands,
+		command_count), false)
 }
 
 // Translation of PaintableBox::m_cached_phase_commands. Each retained box has
@@ -3381,10 +3383,49 @@ fn combined_text_fragment_glyph_run(fragments []TextFragment, run_left f64) ?&pl
 	return platform.GlyphRun.new_with_face(first_font, first_run.text_type(), glyphs, first_run.face())
 }
 
+fn append_line_box_debug_commands(mut commands []PaintCommand, fragment TextFragment,
+	opacity f64) {
+	if fragment.paintable_fragment.length_in_code_units == 0 {
+		return
+	}
+	commands << PaintCommand{
+		kind: 'stroke_rounded_rect'
+		x: fragment.x
+		y: fragment.y
+		width: fragment.width
+		height: fragment.height
+		color: '#00ff00'
+		force_dark_role: .none_
+		force_dark_role_set: true
+		opacity: opacity
+		stroke_width: 1
+		line_box_debug: true
+	}
+	commands << PaintCommand{
+		kind: 'draw_line'
+		color: '#ff0000'
+		force_dark_role: .none_
+		force_dark_role_set: true
+		opacity: opacity
+		stroke_width: 1
+		points: [fragment.x, fragment.y + fragment.baseline,
+			fragment.x + fragment.width - 1, fragment.y + fragment.baseline]
+		line_box_debug: true
+	}
+}
+
+fn filter_line_box_debug_commands(commands []PaintCommand, visible bool) []PaintCommand {
+	if visible {
+		return commands
+	}
+	return commands.filter(!it.line_box_debug)
+}
+
 // Compatibility layout can still supply word fragments for one naturally-spaced DOM text node;
 // coalesce those into one paint command. The typed adapter already supplies the committed C++-shaped
 // LineBoxFragment intact, so it takes the single-fragment path without rebuilding the string.
-fn unselected_text_fragment_commands(fragments []TextFragment, opacity f64) []PaintCommand {
+fn unselected_text_fragment_commands_with_debug(fragments []TextFragment, opacity f64,
+	include_line_box_debug bool) []PaintCommand {
 	mut commands := []PaintCommand{}
 	mut i := 0
 	for i < fragments.len {
@@ -3425,6 +3466,11 @@ fn unselected_text_fragment_commands(fragments []TextFragment, opacity f64) []Pa
 				run_left -= fragments[j - 1].separator_width_after
 			} else {
 				run_right += fragments[j - 1].separator_width_after
+			}
+		}
+		if include_line_box_debug {
+			for k := i; k < j; k++ {
+				append_line_box_debug_commands(mut commands, fragments[k], opacity)
 			}
 		}
 		mut text_command := PaintCommand{
@@ -3469,6 +3515,10 @@ fn unselected_text_fragment_commands(fragments []TextFragment, opacity f64) []Pa
 		i = j
 	}
 	return commands
+}
+
+fn unselected_text_fragment_commands(fragments []TextFragment, opacity f64) []PaintCommand {
+	return unselected_text_fragment_commands_with_debug(fragments, opacity, false)
 }
 
 struct TextRenderSpan {
@@ -3798,6 +3848,7 @@ fn selected_text_fragment_commands(fragments []TextFragment, opacity f64) []Pain
 		paint_text_shadow(mut commands, fragments[span.fragment_index], span, opacity)
 	}
 	for span in spans {
+		append_line_box_debug_commands(mut commands, fragments[span.fragment_index], opacity)
 		paint_text_fragment(mut commands, fragments[span.fragment_index], span, opacity)
 	}
 	return commands
@@ -3806,7 +3857,7 @@ fn selected_text_fragment_commands(fragments []TextFragment, opacity f64) []Pain
 fn text_fragment_commands(fragments []TextFragment, opacity f64) []PaintCommand {
 	if !fragments.any(text_fragment_has_active_selection(it))
 		&& !fragments.any(it.text_shadows.len > 0) {
-		return unselected_text_fragment_commands(fragments, opacity)
+		return unselected_text_fragment_commands_with_debug(fragments, opacity, true)
 	}
 	return selected_text_fragment_commands(fragments, opacity)
 }
