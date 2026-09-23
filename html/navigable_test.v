@@ -228,7 +228,8 @@ fn test_local_navigable_root_preserves_a_logical_remote_parent() {
 	mut remote_parent := &dom.Navigable{}
 	remote_parent.set_active_document(remote_parent_document)
 
-	child_document := dom.Document.create(dom.URL{ value: 'https://child.test/' })
+	mut child_document := dom.Document.create(dom.URL{ value: 'https://child.test/' })
+	child_document.set_ready_for_post_load_tasks(true)
 	mut child_host := &dom.Navigable{
 		parent_: remote_parent
 	}
@@ -239,6 +240,11 @@ fn test_local_navigable_root_preserves_a_logical_remote_parent() {
 	assert child_model.parent() == none
 	assert !child_model.is_top_level_traversable()
 	assert !child_host.has_session_history_entry_and_ready_for_navigation()
+	assert !child_host.delays_the_load_event_of_its_container()
+	mut mutable_child_model := unsafe { &NavigableModel(child_model) }
+	mutable_child_model.set_delaying_load_events(true)
+	assert mutable_child_model.is_delaying_load_events()
+	assert child_host.delays_the_load_event_of_its_container()
 }
 
 fn test_nested_navigable_uses_the_top_level_traversable_visibility_state() {

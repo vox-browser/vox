@@ -483,12 +483,13 @@ pub fn (model &NavigableModel) is_closing() bool {
 }
 
 pub fn (mut model NavigableModel) set_delaying_load_events(value bool) {
-	// The upstream DocumentLoadEventDelayer is represented by this owned mode;
-	// container_document() identifies the document whose counter it guards.
-	if value && model.container_document() == none {
-		return
-	}
 	model.delaying_load_events_ = value
+	// The flag belongs to the navigable even when its container document is
+	// hosted elsewhere. A local container observes it through the navigable
+	// boundary and needs another parser-end check after either transition.
+	if container_document := model.container_document() {
+		container_document.schedule_html_parser_end_check()
+	}
 }
 
 pub fn (model &NavigableModel) is_delaying_load_events() bool {
