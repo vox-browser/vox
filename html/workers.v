@@ -225,9 +225,19 @@ fn worker_should_remove_task(task &Task) bool {
 	return task.source != .posted_message
 }
 
+fn worker_termination_should_remove_task(_ &Task) bool {
+	return true
+}
+
 pub fn (mut scope WorkerGlobalScope) close_a_worker() {
 	mut queue := scope.event_loop.task_queue()
 	queue.remove_tasks_matching(worker_should_remove_task)
+	scope.closing_ = true
+}
+
+pub fn (mut scope WorkerGlobalScope) terminate_worker() {
+	mut queue := scope.event_loop.task_queue()
+	queue.remove_tasks_matching(worker_termination_should_remove_task)
 	scope.closing_ = true
 }
 
@@ -313,7 +323,10 @@ pub mut:
 	credentials_        fetch.CredentialsMode = .same_origin
 }
 
-__global html_shared_worker_global_scopes = []&SharedWorkerGlobalScope{}
+__global (
+	html_shared_worker_global_scopes = []&SharedWorkerGlobalScope{}
+	html_next_worker_agent_owner_token u64
+)
 
 pub fn all_shared_worker_global_scopes() []&SharedWorkerGlobalScope {
 	return html_shared_worker_global_scopes.clone()
@@ -425,11 +438,18 @@ pub fn (mut worker Worker) terminate() {
 		return
 	}
 	worker.terminated_ = true
-	if agent := worker.agent_ {
-		agent.worker_close()
+	if mut port := worker.outside_port_ {
+		port.discard_pending_messages()
+		port.close()
 	}
-	if mut port := worker.outside_port_ { port.close() }
-	if mut scope := worker.scope_ { scope.close() }
+	if agent := worker.agent_ {
+		mut mutable_agent := unsafe { &WorkerAgentParent(agent) }
+		mutable_agent.terminate()
+		worker.agent_ = none
+	}
+	if mut scope := worker.scope_ {
+		scope.terminate_worker()
+	}
 }
 
 pub fn (worker &Worker) post_message(message dom.JSValue, options StructuredSerializeOptions) ! {
@@ -587,6 +607,9 @@ pub:
 pub mut:
 	message_port                         ?&MessagePort
 	started                              bool
+	agent_id_                            u64
+	owner_token_                         string
+	terminated_                          bool
 	ipc_callbacks_configured_            bool
 	worker_script_load_failure_callback_ ?fn()
 	worker_exception_callback_            ?fn(string, string, u32, u32)
@@ -602,6 +625,18 @@ pub fn WorkerAgentParent.create(url dom.URL, options WorkerOptions, outside_sett
 	}
 }
 
+fn worker_agent_page(settings &EnvironmentSettingsObject) ?&page.Page {
+	document := settings.responsible_document() or { return none }
+	if !document.has_page() {
+		return none
+	}
+	dom_page := document.page()
+	if dom_page == unsafe { nil } || dom_page.target == unsafe { nil } {
+		return none
+	}
+	return unsafe { &page.Page(dom_page.target) }
+}
+
 pub fn (mut parent WorkerAgentParent) initialize() ! {
 	mut outside_settings := unsafe { &EnvironmentSettingsObject(parent.outside_settings) }
 	outside_settings.keep_worker_agent_alive_while_starting(parent)
@@ -611,7 +646,49 @@ pub fn (mut parent WorkerAgentParent) initialize() ! {
 	mut outside := parent.outside_port
 	outside.start()
 	parent.setup_worker_ipc_callbacks()
+	html_next_worker_agent_owner_token++
+	parent.owner_token_ = 'worker-${html_next_worker_agent_owner_token}'
+	if page_model := worker_agent_page(parent.outside_settings) {
+		mut client := page_model.client()
+		parent.agent_id_ = client.start_worker_agent(page.WorkerAgentStartRequest{
+			owner_token: parent.owner_token_
+			script_url: parent.url.serialize()
+		})
+	}
 	parent.started = true
+}
+
+pub fn (parent &WorkerAgentParent) agent_id() u64 {
+	return parent.agent_id_
+}
+
+pub fn (parent &WorkerAgentParent) owner_token() string {
+	return parent.owner_token_
+}
+
+pub fn (parent &WorkerAgentParent) is_terminated() bool {
+	return parent.terminated_
+}
+
+pub fn (mut parent WorkerAgentParent) terminate() {
+	if parent.terminated_ {
+		return
+	}
+	parent.terminated_ = true
+	if parent.agent_id_ != 0 {
+		if page_model := worker_agent_page(parent.outside_settings) {
+			mut client := page_model.client()
+			client.close_worker_agent(parent.agent_id_, parent.owner_token_)
+		}
+		parent.agent_id_ = 0
+	}
+	if mut port := parent.message_port {
+		port.discard_pending_messages()
+		port.close()
+	}
+	parent.message_port = none
+	parent.started = false
+	parent.release_startup_keep_alive()
 }
 
 pub fn (mut parent WorkerAgentParent) setup_worker_ipc_callbacks() {

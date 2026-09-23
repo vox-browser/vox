@@ -90,6 +90,24 @@ fn test_message_channel_queues_until_started_and_clones_data() {
 	assert recorder.data == ['[object Object]']
 }
 
+fn test_discard_pending_messages_clears_queue_and_invalidates_scheduled_delivery() {
+	queued_channel := MessageChannel.construct_impl()!
+	queued_channel.port1().post_message_without_transfer(dom.js_string('queued'))!
+	mut queued_target := queued_channel.port2()
+	assert queued_target.pending_incoming_message_count() == 1
+	queued_target.discard_pending_messages()
+	assert queued_target.pending_incoming_message_count() == 0
+
+	scheduled_channel := MessageChannel.construct_impl()!
+	mut recorder := &MessageRecorder{}
+	scheduled_channel.port2().set_onmessage(message_recorder_callback(mut recorder))
+	scheduled_channel.port1().post_message_without_transfer(dom.js_string('scheduled'))!
+	mut scheduled_target := scheduled_channel.port2()
+	scheduled_target.discard_pending_messages()
+	drain_messaging_tasks()
+	assert recorder.data.len == 0
+}
+
 fn test_message_port_exact_registry_and_transport_helpers() {
 	mut seen := 0
 	MessagePort.for_each_message_port(fn [mut seen] (_ &MessagePort) {

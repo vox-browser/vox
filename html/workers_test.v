@@ -4,6 +4,13 @@ module html
 import dom
 import fetch
 import http
+import page
+
+__global worker_terminated_task_runs int
+
+fn record_worker_terminated_task_run() {
+	worker_terminated_task_runs++
+}
 
 struct WorkerMessageRecorder {
 mut:
@@ -78,9 +85,16 @@ fn test_dedicated_worker_message_round_trip_import_and_terminate() {
 	assert outside_recorder.values == ['out']
 
 	scope.import_scripts(['dependency.js'], worker_test_fetch_script) or { panic(err) }
+	scope.post_message(dom.js_string('late'), StructuredSerializeOptions{}) or { panic(err) }
+	worker_terminated_task_runs = 0
+	queue_a_task(.dom_manipulation, scope.event_loop, none, record_worker_terminated_task_run)
 	worker.terminate()
+	drain_worker_messages()
 	assert worker.terminated_
 	assert scope.is_closing()
+	assert outside_recorder.values == ['out']
+	assert worker_terminated_task_runs == 0
+	assert !scope.event_loop.task_queue().has_runnable_tasks()
 }
 
 fn test_shared_worker_reuses_matching_scope_and_console_groups() {
@@ -118,15 +132,24 @@ fn test_shared_worker_reuses_matching_scope_and_console_groups() {
 
 fn test_run_a_dedicated_worker_installs_and_starts_parent_agent() {
 	document := dom.Document.create(dom.URL{ value: 'https://example.test/page' })
+	page_model := page.Page.create(1)!
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_page(unsafe { &dom.Page(page_model) })
 	window := WindowModel.create_top_level(document, none, 'worker-run-test')!
 	mut realm := &ScriptingRealm{}
 	settings := WindowEnvironmentSettingsObject.setup(window, document.url, mut realm, none, document.url, document.origin()).settings
 	mut worker := Worker.construct_impl('/worker.js', settings, WorkerOptions{})!
 	agent := worker.agent_ or { panic('missing worker agent') }
+	agent_id := agent.agent_id()
 	assert agent.started
 	assert agent.ipc_callbacks_configured_
+	assert agent_id != 0
+	assert page_model.client().worker_agent(agent_id) != none
 	assert settings.worker_startup_keep_alive_count() == 1
 	worker.terminate()
+	assert agent.is_terminated()
+	assert worker.agent_ == none
+	assert page_model.client().worker_agent(agent_id) == none
 	assert settings.worker_startup_keep_alive_count() == 0
 }
 

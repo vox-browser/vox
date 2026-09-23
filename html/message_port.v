@@ -175,6 +175,7 @@ mut:
 	enabled_             bool
 	pending_messages_    []SerializedTransferRecord
 	pending_outgoing_messages_ []SerializedTransferRecord
+	message_task_generation_ u64
 	fail_next_transfer_for_testing_ bool
 	worker_event_target_ ?&dom.EventTarget
 }
@@ -195,6 +196,15 @@ pub fn MessagePort.for_each_message_port(callback fn(&MessagePort)) {
 	}
 }
 
+fn message_port_with_identity(identity u64) ?&MessagePort {
+	for port in html_all_message_ports {
+		if u64(voidptr(port)) == identity {
+			return port
+		}
+	}
+	return none
+}
+
 pub fn (port &MessagePort) is_entangled() bool {
 	return port.remote_port_ != none
 }
@@ -213,6 +223,10 @@ pub fn (port &MessagePort) entangled_port() ?&MessagePort {
 
 pub fn (port &MessagePort) pending_outgoing_message_count() usize {
 	return usize(port.pending_outgoing_messages_.len)
+}
+
+pub fn (port &MessagePort) pending_incoming_message_count() usize {
+	return usize(port.pending_messages_.len)
 }
 
 pub fn (mut port MessagePort) fail_next_transfer_for_testing() {
@@ -354,9 +368,14 @@ fn (mut port MessagePort) schedule_pending_messages() {
 	for port.enabled_ && port.pending_messages_.len > 0 {
 		record := port.pending_messages_[0]
 		port.pending_messages_.delete(0)
-		port_pointer := &port
-		queue_a_task(.posted_message, main_thread_event_loop(), none, fn [port_pointer, record] () {
-			mut target := port_pointer
+		port_identity := u64(voidptr(&port))
+		message_task_generation := port.message_task_generation_
+		queue_a_task(.posted_message, main_thread_event_loop(), none, fn [port_identity, record, message_task_generation] () {
+			target_pointer := message_port_with_identity(port_identity) or { return }
+			mut target := unsafe { &MessagePort(target_pointer) }
+			if target.message_task_generation_ != message_task_generation {
+				return
+			}
 			target.post_message_task_steps(record)
 		})
 	}
@@ -399,6 +418,11 @@ pub fn (mut port MessagePort) close() {
 	port.detached_ = true
 	port.pending_messages_.clear()
 	port.disentangle()
+}
+
+pub fn (mut port MessagePort) discard_pending_messages() {
+	port.pending_messages_.clear()
+	port.message_task_generation_++
 }
 
 pub fn (port &MessagePort) set_onmessageerror(handler ?&dom.CallbackType) {
