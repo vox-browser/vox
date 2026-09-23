@@ -1412,6 +1412,7 @@ fn javascript_initial_state(document &dom.Document, current_url string, scripts 
 		}
 		elements[bridge_key] = json2.Any(state)
 	}
+	model := html.NavigableModel.navigable_with_active_document(document)
 	return {
 		'title':         json2.Any(document_title(document))
 		'bodyHTML':      json2.Any(if body_element := body {
@@ -1432,6 +1433,10 @@ fn javascript_initial_state(document &dom.Document, current_url string, scripts 
 		'operations':    json2.Any([]json2.Any{})
 		'elements':      json2.Any(elements)
 		'videoSources':  json2.Any(javascript_video_source_states(current_url, scripts))
+		'forceDarkEnabled': json2.Any(if value := model { value.force_dark_enabled() } else { false })
+		'forceDarkForegroundThreshold': json2.Any(if value := model { int(value.force_dark_foreground_threshold()) } else { 150 })
+		'forceDarkBackgroundThreshold': json2.Any(if value := model { int(value.force_dark_background_threshold()) } else { 205 })
+		'showLineBoxBorders': json2.Any(false)
 	}
 }
 
@@ -1490,7 +1495,7 @@ fn javascript_program(state map[string]json2.Any, scripts []string) string {
 		'const __htmlState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="html";}),__bodyState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="body";});document.documentElement=__htmlState?__element(__htmlState):{classList:{add:function(){},remove:function(){},contains:function(){return false;}}};document.body=__bodyState?__element(__bodyState):{appendChild:function(child){return child;}};',
 		'const console = { log: function () { __state.logs.push(Array.prototype.map.call(arguments, String).join(" ")); }, warn: function () { this.log.apply(this, arguments); }, error: function () { this.log.apply(this, arguments); } };',
 		'const location = {}; Object.defineProperty(location, "href", { get: function () { return __state.location; }, set: function (v) { __state.navigate = String(v); } });',
-		'const window = globalThis; window.window = window; window.document = document; window.console = console; window.location = location; window.alert = function (v) { console.log(v); }; window.setTimeout = function (f) { if (typeof f === "function") f(); return 1; }; window.requestAnimationFrame = function(f){if(typeof f === "function")f(Date.now());return 1;}; window.addEventListener = document.addEventListener; window.getSelection=function(){return __selection;}; window.Image=function(){return document.createElement("img");}; window.HTMLMediaElement={HAVE_NOTHING:0,HAVE_METADATA:1,HAVE_CURRENT_DATA:2,HAVE_FUTURE_DATA:3,HAVE_ENOUGH_DATA:4}; window.internals={imageAnimationStateForURL:function(){return{timerActive:true,frameIndex:1};},signalTestIsDone:function(){},spoofCurrentURL:function(){}}; if(!Promise.withResolvers)Promise.withResolvers=function(){let resolve,reject;const promise=new Promise(function(a,b){resolve=a;reject=b;});return{promise:promise,resolve:resolve,reject:reject};};',
+		'const window = globalThis; window.window = window; window.document = document; window.console = console; window.location = location; window.alert = function (v) { console.log(v); }; window.setTimeout = function (f) { if (typeof f === "function") f(); return 1; }; window.requestAnimationFrame = function(f){if(typeof f === "function")f(Date.now());return 1;}; window.addEventListener = document.addEventListener; window.getSelection=function(){return __selection;}; window.Image=function(){return document.createElement("img");}; window.HTMLMediaElement={HAVE_NOTHING:0,HAVE_METADATA:1,HAVE_CURRENT_DATA:2,HAVE_FUTURE_DATA:3,HAVE_ENOUGH_DATA:4}; window.internals={imageAnimationStateForURL:function(){return{timerActive:true,frameIndex:1};},signalTestIsDone:function(){},spoofCurrentURL:function(){},setForceDarkEnabled:function(value){__state.forceDarkEnabled=!!value;},setForceDarkThresholds:function(foreground,background){__state.forceDarkForegroundThreshold=Math.trunc(Number(foreground));__state.forceDarkBackgroundThreshold=Math.trunc(Number(background));},setShowLineBoxBorders:function(value){__state.showLineBoxBorders=!!value;}}; if(!Promise.withResolvers)Promise.withResolvers=function(){let resolve,reject;const promise=new Promise(function(a,b){resolve=a;reject=b;});return{promise:promise,resolve:resolve,reject:reject};};',
 		'for (const s of __elementStates()) { if(!s.id)continue; try { window[s.id] = document.getElementById(s.id); } catch (_) {} }',
 		'window.__ladybirdSnapshot = function () { return JSON.stringify(__state); };',
 		'window.__ladybirdFinalize = function () { for (const key of Object.keys(__canvases)) { const c=__canvases[key]; __state.elements[key].canvasPixels=Array.from(c.data); __state.elements[key].canvasWidth=c.width; __state.elements[key].canvasHeight=c.height; __state.elements[key].canvasTextOperations=c.textOperations; } return window.__ladybirdSnapshot(); };',
@@ -1905,6 +1910,15 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 		return none
 	}
 	state := value as map[string]json2.Any
+	if model := html.NavigableModel.navigable_with_active_document(document) {
+		mut mutable_model := unsafe { &html.NavigableModel(model) }
+		mutable_model.set_force_dark_enabled(json_bool_property(state, 'forceDarkEnabled'))
+		foreground := json_int_property(state, 'forceDarkForegroundThreshold') or { 150 }
+		background := json_int_property(state, 'forceDarkBackgroundThreshold') or { 205 }
+		mutable_model.set_force_dark_thresholds(i32(foreground), i32(background))
+		mutable_model.set_should_show_line_box_borders(json_bool_property(state,
+			'showLineBoxBorders'))
+	}
 	root := unsafe { &dom.Node(document) }
 	initial_elements := css.query_selector_all(root, '*')
 	body := css.query_selector(root, 'body')
@@ -2160,6 +2174,7 @@ fn run_document_javascript(document &dom.Document, current_url string, sources [
 			active_document_: document
 		})
 	}
+	ensure_compact_browser_navigable(document) or { return none }
 	runtime.evaluate(javascript_program(javascript_initial_state(document, current_url, sources), sources)) or {
 		messages << 'JavaScript: ${err.msg()}'
 		return none
@@ -2332,9 +2347,19 @@ fn mouse_cursor_for_resize_handle(cursor ?painting.ResizeCursor) sapp.MouseCurso
 	}
 }
 
+fn ensure_compact_browser_navigable(document &dom.Document) ?&html.NavigableModel {
+	mut mutable_document := unsafe { &dom.Document(document) }
+	if mutable_document.navigable() == none {
+		mutable_document.set_cached_navigable(&dom.Navigable{
+			active_document_: document
+		})
+	}
+	navigable := document.navigable() or { return none }
+	return html.NavigableModel.create(navigable, none) or { return none }
+}
+
 fn focus_compact_browser_navigable(document &dom.Document) {
-	navigable := document.navigable() or { return }
-	mut model := html.NavigableModel.create(navigable, none) or { return }
+	mut model := ensure_compact_browser_navigable(document) or { return }
 	model.set_focused(true)
 }
 

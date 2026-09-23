@@ -406,7 +406,7 @@ fn test_compute_style_inherits_from_parent_via_bridge() {
 fn test_computed_properties_to_dom_mirrors_fields() {
 	doc := dom.Document.create(dom.url_about_blank())
 	mut el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
-	el.set_attribute_value('style', 'overflow-x: hidden; overflow-y: hidden; visibility: hidden')
+	el.set_attribute_value('style', 'overflow-x: hidden; overflow-y: hidden; visibility: hidden; color-scheme: only light dark')
 	abstract_element := dom.AbstractElement.new(el, none)
 
 	s := StyleComputer.new(doc)
@@ -417,6 +417,8 @@ fn test_computed_properties_to_dom_mirrors_fields() {
 	assert placeholder.overflow_x() == .hidden
 	assert placeholder.overflow_y() == .hidden
 	assert placeholder.visibility() == .hidden
+	assert placeholder.color_schemes() == ['light', 'dark']
+	assert placeholder.color_scheme_only()
 	// The handle still round-trips to the same css object.
 	assert voidptr(computed_properties_from_dom(placeholder) or { panic('handle missing') }) == voidptr(computed)
 }

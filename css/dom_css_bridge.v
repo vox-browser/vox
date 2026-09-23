@@ -23,6 +23,14 @@ import os
 // css enums). The css module owns both sides of each enum, so it does the translation here.
 fn computed_properties_to_dom(computed &ComputedProperties) &dom.CSSComputedProperties_ {
 	display := computed.display()
+	mut color_schemes := []string{}
+	mut color_scheme_only := false
+	if value := computed.typed_property_value(.color_scheme) {
+		if value is ColorSchemeStyleValue {
+			color_schemes = value.schemes()
+			color_scheme_only = value.only()
+		}
+	}
 	return &dom.CSSComputedProperties_{
 		display_: dom.CSSDisplay_{
 			is_none_: display.is_none()
@@ -57,6 +65,8 @@ fn computed_properties_to_dom(computed &ComputedProperties) &dom.CSSComputedProp
 		math_style_: math_style_to_dom(computed.math_style())
 		view_transition_name_: computed.view_transition_name()
 		anchor_names_: computed.anchor_names()
+		color_schemes_: color_schemes
+		color_scheme_only_: color_scheme_only
 		attempted_pseudo_class_matches_: attempted_pseudo_class_matches_to_dom(computed)
 		css_handle: voidptr(computed)
 	}

@@ -493,6 +493,8 @@ pub mut:
 	math_style_                     CSSMathStyle_ = .normal
 	view_transition_name_           ?string
 	anchor_names_                   []string
+	color_schemes_                  []string
+	color_scheme_only_              bool
 	attempted_pseudo_class_matches_ u8
 	// dom<->css bridge: opaque handle to the real css.ComputedProperties this placeholder mirrors.
 	// The CSS module (which owns the type) sets/reads it via unsafe cast; dom cannot name the type
@@ -552,6 +554,14 @@ pub fn (c &CSSComputedProperties_) view_transition_name() ?string {
 
 pub fn (c &CSSComputedProperties_) anchor_names() []string {
 	return c.anchor_names_.clone()
+}
+
+pub fn (c &CSSComputedProperties_) color_schemes() []string {
+	return c.color_schemes_.clone()
+}
+
+pub fn (c &CSSComputedProperties_) color_scheme_only() bool {
+	return c.color_scheme_only_
 }
 
 pub fn (c &CSSComputedProperties_) has_attempted_match_against_pseudo_class(pseudo_class PseudoClass) bool {

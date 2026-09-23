@@ -129,6 +129,9 @@ mut:
 	ready_to_paint_                      bool
 	pending_set_browser_zoom_request_    bool
 	should_show_line_box_borders_        bool
+	force_dark_enabled_                  bool
+	force_dark_foreground_threshold_     i32 = 150
+	force_dark_background_threshold_     i32 = 205
 	last_pasted_text_                    string
 	paint_count_                         u64
 	screenshot_count_                    u64
@@ -243,6 +246,11 @@ fn navigable_model_delays_container_load_event(target voidptr) bool {
 	return model.delays_the_load_event_of_its_container()
 }
 
+fn navigable_model_force_dark_enabled(target voidptr) bool {
+	model := unsafe { &NavigableModel(target) }
+	return model.force_dark_enabled()
+}
+
 fn (model &NavigableModel) system_visibility_state() dom.VisibilityState {
 	if context := model.context_ {
 		if traversable := context.top_level_traversable() {
@@ -267,6 +275,7 @@ fn connect_navigable_model_to_host(model &NavigableModel) {
 	host.reset_mouse_input_tracking_callback_ = navigable_model_reset_mouse_input_tracking
 	host.has_session_history_entry_and_ready_callback_ = navigable_model_has_session_history_entry_and_ready
 	host.delays_container_load_event_callback_ = navigable_model_delays_container_load_event
+	host.force_dark_enabled_callback_ = navigable_model_force_dark_enabled
 }
 
 // Binds the DOM identity created by Document/Window to the translated HTML
@@ -411,6 +420,9 @@ pub fn (mut model NavigableModel) initialize_navigable(document_state &DocumentS
 // host instead of downcasting that parent.
 pub fn (mut model NavigableModel) inherit_page_state_from(parent &NavigableModel) {
 	model.should_show_line_box_borders_ = parent.should_show_line_box_borders_
+	model.force_dark_enabled_ = parent.force_dark_enabled_
+	model.force_dark_foreground_threshold_ = parent.force_dark_foreground_threshold_
+	model.force_dark_background_threshold_ = parent.force_dark_background_threshold_
 }
 
 // https://html.spec.whatwg.org/multipage/document-sequences.html#child-navigable
@@ -2037,5 +2049,92 @@ pub fn (mut model NavigableModel) set_should_show_line_box_borders(value bool) {
 	for child in model.child_navigables() {
 		mut mutable_child := unsafe { &NavigableModel(child) }
 		mutable_child.set_should_show_line_box_borders(value)
+	}
+}
+
+pub fn (model &NavigableModel) should_show_line_box_borders() bool {
+	return model.should_show_line_box_borders_
+}
+
+pub fn (model &NavigableModel) force_dark_enabled() bool {
+	return model.force_dark_enabled_
+}
+
+pub fn (model &NavigableModel) force_dark_foreground_threshold() i32 {
+	return model.force_dark_foreground_threshold_
+}
+
+pub fn (model &NavigableModel) force_dark_background_threshold() i32 {
+	return model.force_dark_background_threshold_
+}
+
+fn force_dark_lists_dark_scheme(schemes []string) bool {
+	return 'dark' in schemes
+}
+
+// The root element's color-scheme list wins when it has generated layout;
+// otherwise the document's meta color-scheme list decides the opt-out.
+pub fn (model &NavigableModel) active_document_opts_out_of_force_dark() bool {
+	document := model.active_document() or { return false }
+	if root := document.document_element() {
+		if root.as_node().layout_node() != none {
+			if computed := root.el_computed_properties() {
+				if computed.color_scheme_only() {
+					return true
+				}
+				schemes := computed.color_schemes()
+				if schemes.len > 0 {
+					return force_dark_lists_dark_scheme(schemes)
+				}
+			}
+		}
+	}
+	if document.supported_color_schemes_are_only() {
+		return true
+	}
+	if schemes := document.supported_color_schemes() {
+		return force_dark_lists_dark_scheme(schemes)
+	}
+	return false
+}
+
+pub fn (model &NavigableModel) force_dark_applies_to_active_document() bool {
+	return model.force_dark_enabled_ && !model.active_document_opts_out_of_force_dark()
+}
+
+pub fn (mut model NavigableModel) set_force_dark_enabled(value bool) {
+	if model.force_dark_enabled_ == value {
+		return
+	}
+	model.force_dark_enabled_ = value
+	model.set_needs_repaint()
+	if document := model.active_document() {
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.bump_style_environment_version()
+		mutable_document.set_needs_media_query_evaluation()
+		mutable_document.set_needs_full_style_update(true)
+		mutable_document.set_needs_repaint()
+	}
+	for child in model.child_navigables() {
+		mut mutable_child := unsafe { &NavigableModel(child) }
+		mutable_child.set_force_dark_enabled(value)
+	}
+}
+
+pub fn (mut model NavigableModel) set_force_dark_thresholds(foreground i32, background i32) {
+	if model.force_dark_foreground_threshold_ == foreground
+		&& model.force_dark_background_threshold_ == background {
+		return
+	}
+	model.force_dark_foreground_threshold_ = foreground
+	model.force_dark_background_threshold_ = background
+	model.set_needs_repaint()
+	if document := model.active_document() {
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.set_needs_repaint()
+	}
+	for child in model.child_navigables() {
+		mut mutable_child := unsafe { &NavigableModel(child) }
+		mutable_child.set_force_dark_thresholds(foreground, background)
 	}
 }

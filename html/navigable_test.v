@@ -194,6 +194,60 @@ fn test_line_box_border_debug_setting_is_inherited_and_propagated() {
 	assert grandchild_model.needs_repaint()
 }
 
+fn test_force_dark_settings_inherit_propagate_and_honor_document_opt_outs() {
+	mut parent_document, parent_window, parent_model := navigable_test_top_level('https://example.test/',
+		'top')!
+	mut mutable_parent := unsafe { &NavigableModel(parent_model) }
+	mutable_parent.set_force_dark_enabled(true)
+	mutable_parent.set_force_dark_thresholds(31, 47)
+	assert parent_model.force_dark_enabled()
+	assert parent_model.force_dark_foreground_threshold() == 31
+	assert parent_model.force_dark_background_threshold() == 47
+	assert parent_document.preferred_color_scheme() == 'dark'
+	assert parent_model.force_dark_applies_to_active_document()
+
+	parent_document.set_supported_color_schemes(['dark'], false)
+	assert parent_model.active_document_opts_out_of_force_dark()
+	assert !parent_model.force_dark_applies_to_active_document()
+	parent_document.set_supported_color_schemes(['light'], true)
+	assert parent_model.active_document_opts_out_of_force_dark()
+	parent_document.set_supported_color_schemes(['light'], false)
+	assert parent_model.force_dark_applies_to_active_document()
+
+	mut root := parent_document.document_element() or { panic('missing root') }
+	root.set_computed_properties(none, &dom.CSSComputedProperties_{
+		color_schemes_: ['dark']
+	})
+	mut root_node := root.as_node()
+	root_node.set_layout_node(&dom.LayoutNode{
+		dom_node_: root_node
+	})
+	assert parent_model.active_document_opts_out_of_force_dark()
+	root.set_computed_properties(none, &dom.CSSComputedProperties_{
+		color_schemes_: ['light']
+		color_scheme_only_: true
+	})
+	assert parent_model.active_document_opts_out_of_force_dark()
+
+	mut child_document := dom.Document.create(dom.URL{'https://example.test/frame'})
+	child_document.set_origin(child_document.url.origin())
+	child_context := BrowsingContextModel.create(child_document, parent_window.browsing_context(),
+		'frame')
+	child_window := WindowModel.create(child_document, child_context)!
+	child_model := child_window.navigable_model()
+	assert child_model.force_dark_enabled()
+	assert child_model.force_dark_foreground_threshold() == 31
+	assert child_model.force_dark_background_threshold() == 47
+	mut mutable_child := unsafe { &NavigableModel(child_model) }
+	mutable_child.set_has_session_history_entry_and_ready_for_navigation()
+
+	mutable_parent.set_force_dark_enabled(false)
+	mutable_parent.set_force_dark_thresholds(150, 205)
+	assert !child_model.force_dark_enabled()
+	assert child_model.force_dark_foreground_threshold() == 150
+	assert child_model.force_dark_background_threshold() == 205
+}
+
 fn test_navigable_host_answers_readiness_and_load_delay_from_its_model() {
 	mut parent_document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
 	mut parent_host := &dom.Navigable{

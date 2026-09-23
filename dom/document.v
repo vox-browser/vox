@@ -2203,6 +2203,7 @@ pub mut:
 	reset_mouse_input_tracking_callback_ NavigableResetMouseInputTrackingCallback = unsafe { nil }
 	has_session_history_entry_and_ready_callback_ NavigableBooleanStateCallback = unsafe { nil }
 	delays_container_load_event_callback_         NavigableBooleanStateCallback = unsafe { nil }
+	force_dark_enabled_callback_                  NavigableBooleanStateCallback = unsafe { nil }
 	input_method_composition_node_                 ?&Node
 	input_method_composition_offset_               int
 	input_method_last_marked_text_                 string
@@ -2283,8 +2284,12 @@ pub:
 
 pub struct PaintConfig {
 pub:
-	paint_overlay    bool
-	canvas_fill_rect Rect
+	paint_overlay                   bool
+	should_show_line_box_borders    bool
+	force_dark_enabled              bool
+	force_dark_foreground_threshold i32 = 150
+	force_dark_background_threshold i32 = 205
+	canvas_fill_rect                Rect
 }
 
 @[heap]
@@ -3404,6 +3409,14 @@ pub fn (n &Navigable) delays_the_load_event_of_its_container() bool {
 		return false
 	}
 	return n.delays_container_load_event_callback_(n.html_model_handle_)
+}
+
+pub fn (n &Navigable) force_dark_enabled() bool {
+	if n.html_model_handle_ == unsafe { nil }
+		|| n.force_dark_enabled_callback_ == unsafe { nil } {
+		return false
+	}
+	return n.force_dark_enabled_callback_(n.html_model_handle_)
 }
 
 pub fn (n &Navigable) set_needs_repaint() {
@@ -6093,6 +6106,13 @@ pub fn (mut d Document) set_page(page &Page) {
 pub fn (d &Document) preferred_color_scheme() string {
 	if scheme := d.svg_image_color_scheme_ {
 		return scheme
+	}
+	// Force-dark presents a dark preference so pages with their own dark theme
+	// can select it before paint-time filtering is considered.
+	if navigable := d.navigable() {
+		if navigable.force_dark_enabled() {
+			return 'dark'
+		}
 	}
 	if d.page_ == unsafe { nil } {
 		return 'auto'

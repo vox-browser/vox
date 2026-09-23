@@ -33,6 +33,29 @@ fn test_javascript_bridge_exposes_media_start_date_as_a_date_object() {
 	}
 }
 
+fn test_javascript_bridge_applies_force_dark_internals_settings() {
+	$if darwin {
+		document := html.parse_document('<!doctype html><div>content</div>')
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'about:blank', [
+			'internals.setForceDarkEnabled(true); internals.setForceDarkThresholds(31, 47); internals.setShowLineBoxBorders(true);',
+		], runtime, mut messages)
+		assert messages == []
+		model := html.NavigableModel.navigable_with_active_document(document) or {
+			panic('missing compact browser navigable')
+		}
+		assert model.force_dark_enabled()
+		assert model.force_dark_foreground_threshold() == 31
+		assert model.force_dark_background_threshold() == 47
+		assert model.should_show_line_box_borders()
+		assert document.preferred_color_scheme() == 'dark'
+	}
+}
+
 fn test_javascript_bridge_runs_window_load_mutations() {
 	$if darwin {
 		document := html.parse_document('<!doctype html><div id="target"></div>')
