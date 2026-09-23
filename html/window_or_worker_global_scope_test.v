@@ -64,6 +64,85 @@ fn test_global_scope_identity_timers_and_singletons() {
 	assert scope.caches() == scope.caches()
 }
 
+fn test_hidden_document_delayed_timers_share_aligned_wakeups() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	document.set_origin(document.url.origin())
+	window := WindowModel.create_top_level(document, none, 'timer-throttling-test') or {
+		panic(err)
+	}
+	document.update_the_visibility_state(.hidden)
+	mut scope := window.window_or_worker_global_scope()
+	scope.set_hidden_document_timer_wake_up_interval(1_000)
+	assert document.is_fully_active()
+	assert document.hidden()
+
+	immediate_id := scope.set_timeout(timer_source_handler('immediate'), 0, [])
+	delayed_id := scope.set_timeout(timer_source_handler('delayed'), 25, [])
+	specification_timeout_id := scope.run_steps_after_a_timeout(0, fn () {})
+	immediate := scope.active_timers_[immediate_id] or { panic('missing immediate timer') }
+	delayed := scope.active_timers_[delayed_id] or { panic('missing delayed timer') }
+	specification_timeout := scope.active_timers_[specification_timeout_id] or {
+		panic('missing specification timeout')
+	}
+	origin := scope.hidden_timer_grid_origin_ms()
+	assert immediate.throttling_class == .immediate
+	assert immediate.due_time_ms == immediate.deadline_ms
+	assert delayed.throttling_class == .delayed
+	assert delayed.due_time_ms >= delayed.deadline_ms
+	assert (delayed.due_time_ms - origin) % 1_000 == 0
+	assert specification_timeout.due_time_ms >= specification_timeout.deadline_ms
+	assert (specification_timeout.due_time_ms - origin) % 1_000 == 0
+
+	document.set_initial_visibility_state(.visible)
+	visible_delayed := scope.active_timers_[delayed_id] or { panic('missing visible timer') }
+	assert visible_delayed.due_time_ms == visible_delayed.deadline_ms
+	document.update_the_visibility_state(.hidden)
+	hidden_again := scope.active_timers_[delayed_id] or { panic('missing hidden timer') }
+	assert hidden_again.due_time_ms >= hidden_again.deadline_ms
+	assert (hidden_again.due_time_ms - origin) % 1_000 == 0
+}
+
+fn test_hidden_document_short_interval_fires_once_per_wakeup() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	document.set_origin(document.url.origin())
+	window := WindowModel.create_top_level(document, none, 'interval-throttling-test') or {
+		panic(err)
+	}
+	document.update_the_visibility_state(.hidden)
+	mut scope := window.window_or_worker_global_scope()
+	scope.set_hidden_document_timer_wake_up_interval(1_000)
+	unsafe {
+		global_scope_timer_calls = 0
+	}
+	callback := &dom.CallbackType{
+		call_with_arguments: global_scope_timer_callback
+	}
+	interval_id := scope.set_interval(timer_callback_handler(callback), 10, [])
+	first := scope.active_timers_[interval_id] or { panic('missing interval') }
+	scope.process_timers(first.due_time_ms)
+	unsafe {
+		assert global_scope_timer_calls == 1
+	}
+	second := scope.active_timers_[interval_id] or { panic('missing repeated interval') }
+	assert second.due_time_ms == first.due_time_ms + 1_000
+	scope.process_timers(first.due_time_ms + 999)
+	unsafe {
+		assert global_scope_timer_calls == 1
+	}
+	scope.process_timers(second.due_time_ms)
+	unsafe {
+		assert global_scope_timer_calls == 2
+	}
+	scope.clear_interval(interval_id)
+}
+
+fn test_worker_style_global_scope_does_not_throttle_timers() {
+	mut scope := WindowOrWorkerGlobalScopeMixin.create(dom.Origin{}, false, false)
+	id := scope.set_timeout(timer_source_handler('worker'), 25, [])
+	timer := scope.active_timers_[id] or { panic('missing worker timer') }
+	assert timer.due_time_ms == timer.deadline_ms
+}
+
 fn test_global_scope_create_image_bitmap_crop_resize_flip() {
 	data := ImageData.create_with_data([
 		u8(255),

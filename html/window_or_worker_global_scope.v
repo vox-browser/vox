@@ -31,15 +31,22 @@ pub fn timer_source_handler(source string) TimerHandler {
 	}
 }
 
+enum TimerThrottlingClass {
+	immediate
+	delayed
+}
+
 struct GlobalScopeTimer {
 mut:
-	id            i32
-	handler       TimerHandler
-	timeout_ms    i64
-	due_time_ms   i64
-	arguments     []dom.JSValue
-	repeat        bool
-	nesting_level u32
+	id               i32
+	handler          TimerHandler
+	timeout_ms       i64
+	deadline_ms      i64
+	due_time_ms      i64
+	arguments        []dom.JSValue
+	repeat           bool
+	nesting_level    u32
+	throttling_class TimerThrottlingClass = .delayed
 }
 
 pub struct PerformanceEntry {
@@ -124,6 +131,8 @@ mut:
 	caches_                         ?&GlobalScopeCacheStorage
 	trusted_types_                  ?&GlobalScopeTrustedTypePolicyFactory
 	fetch_host_                     voidptr
+	associated_window_              ?&WindowModel
+	hidden_timer_wake_up_interval_  i64 = 1_000
 }
 
 pub fn WindowOrWorkerGlobalScopeMixin.create(origin dom.Origin, secure_context bool, cross_origin_isolated bool) &WindowOrWorkerGlobalScopeMixin {
@@ -161,6 +170,69 @@ fn global_scope_now_ms() i64 {
 	return time.sys_mono_now() / 1_000_000
 }
 
+fn timer_saturating_add(base i64, delay i64) i64 {
+	if delay > 0 && base > max_i64 - delay {
+		return max_i64
+	}
+	return base + delay
+}
+
+fn timer_wake_up_at_or_after(time_ms i64, origin_ms i64, interval_ms i64) i64 {
+	if time_ms <= origin_ms {
+		return origin_ms
+	}
+	delta := time_ms - origin_ms
+	whole_intervals := (delta - 1) / interval_ms + 1
+	if whole_intervals > (max_i64 - origin_ms) / interval_ms {
+		return max_i64
+	}
+	return origin_ms + whole_intervals * interval_ms
+}
+
+fn (scope &WindowOrWorkerGlobalScopeMixin) document_is_hidden() bool {
+	window := scope.associated_window_ or { return false }
+	document := window.associated_document()
+	return document.is_fully_active() && document.hidden()
+}
+
+fn (scope &WindowOrWorkerGlobalScopeMixin) hidden_timer_grid_origin_ms() i64 {
+	mut window := scope.associated_window_ or { return 0 }
+	mut context := window.browsing_context()
+	for {
+		parent := context.parent() or { break }
+		if parent_window := parent.active_window() {
+			window = parent_window
+		}
+		context = parent
+	}
+	if window.environment_settings_ == unsafe { nil } {
+		return 0
+	}
+	return i64(window.environment_settings_.time_origin())
+}
+
+fn (scope &WindowOrWorkerGlobalScopeMixin) timer_due_time(throttling_class TimerThrottlingClass, deadline_ms i64, now_ms i64) i64 {
+	if throttling_class == .immediate || !scope.document_is_hidden() {
+		return deadline_ms
+	}
+	due := if deadline_ms > now_ms { deadline_ms } else { now_ms }
+	return timer_wake_up_at_or_after(due, scope.hidden_timer_grid_origin_ms(), scope.hidden_timer_wake_up_interval_)
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScopeMixin) set_hidden_document_timer_wake_up_interval(milliseconds i64) {
+	assert milliseconds > 0
+	scope.hidden_timer_wake_up_interval_ = milliseconds
+}
+
+pub fn (mut scope WindowOrWorkerGlobalScopeMixin) document_visibility_state_changed() {
+	now_ms := global_scope_now_ms()
+	for id, timer in scope.active_timers_ {
+		mut realigned := timer
+		realigned.due_time_ms = scope.timer_due_time(timer.throttling_class, timer.deadline_ms, now_ms)
+		scope.active_timers_[id] = realigned
+	}
+}
+
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) set_timer_script_evaluator(evaluator ?TimerScriptEvaluator) {
 	scope.timer_script_evaluator_ = evaluator
 }
@@ -187,14 +259,23 @@ fn (mut scope WindowOrWorkerGlobalScopeMixin) run_timer_initialization_steps(han
 	if nesting > 5 && normalized_timeout < 4 {
 		normalized_timeout = 4
 	}
+	now_ms := global_scope_now_ms()
+	deadline_ms := timer_saturating_add(now_ms, normalized_timeout)
+	throttling_class := if normalized_timeout == 0 {
+		TimerThrottlingClass.immediate
+	} else {
+		TimerThrottlingClass.delayed
+	}
 	scope.active_timers_[id] = GlobalScopeTimer{
 		id: id
 		handler: handler
 		timeout_ms: normalized_timeout
-		due_time_ms: global_scope_now_ms() + normalized_timeout
+		deadline_ms: deadline_ms
+		due_time_ms: scope.timer_due_time(throttling_class, deadline_ms, now_ms)
 		arguments: arguments.clone()
 		repeat: repeat
 		nesting_level: nesting
+		throttling_class: throttling_class
 	}
 	return id
 }
@@ -250,7 +331,8 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) process_timers(now_ms i64) {
 		scope.currently_running_timer_nesting = 0
 		if timer.repeat && id in scope.active_timers_ {
 			mut repeated := scope.active_timers_[id] or { continue }
-			repeated.due_time_ms = now_ms + timer.timeout_ms
+			repeated.deadline_ms = timer_saturating_add(now_ms, timer.timeout_ms)
+			repeated.due_time_ms = scope.timer_due_time(timer.throttling_class, repeated.deadline_ms, now_ms)
 			scope.active_timers_[id] = repeated
 		}
 	}
@@ -578,6 +660,8 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) run_steps_after_a_timeout_impl
 		new_id
 	}
 	normalized_timeout := i64(if timeout < 0 { 0 } else { timeout })
+	now_ms := global_scope_now_ms()
+	deadline_ms := timer_saturating_add(now_ms, normalized_timeout)
 	scope.active_timers_[id] = GlobalScopeTimer{
 		id: id
 		handler: timer_callback_handler(&dom.CallbackType{
@@ -587,8 +671,10 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) run_steps_after_a_timeout_impl
 			}
 		})
 		timeout_ms: normalized_timeout
-		due_time_ms: global_scope_now_ms() + normalized_timeout
+		deadline_ms: deadline_ms
+		due_time_ms: scope.timer_due_time(.delayed, deadline_ms, now_ms)
 		repeat: repeat
+		throttling_class: .delayed
 	}
 	return id
 }

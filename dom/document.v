@@ -1613,6 +1613,7 @@ pub:
 	queue_intersection_observer_task DocumentQueueIntersectionObserverTaskCallback = unsafe { nil }
 	queue_selectionchange_event_task DocumentQueueSelectionchangeEventTaskCallback = unsafe { nil }
 	run_unloading_cleanup_steps      DocumentLifecycleCallback = unsafe { nil }
+	timer_visibility_state_changed   DocumentLifecycleCallback = unsafe { nil }
 }
 
 // PageClient owns the cookie jar upstream. DOM cannot import the embedding
@@ -8098,6 +8099,9 @@ pub fn (mut d Document) update_the_visibility_state(state VisibilityState) {
 
 	// 6. Run any page visibility change steps defined in other specifications.
 	d.notify_each_document_observer_visibility_state()
+	if hook := d.lifecycle_hook_ {
+		d.run_lifecycle_callback(hook.timer_visibility_state_changed)
+	}
 
 	// 7. Fire an event named visibilitychange at document, with its bubbles attribute initialized to true.
 	d.dispatch_event_simple(event_visibilitychange_, true)
@@ -8107,6 +8111,9 @@ pub fn (mut d Document) update_the_visibility_state(state VisibilityState) {
 pub fn (mut d Document) set_initial_visibility_state(state VisibilityState) {
 	// Initial visibility is installed without running the visibility-change steps.
 	d.visibility_state = state
+	if hook := d.lifecycle_hook_ {
+		d.run_lifecycle_callback(hook.timer_visibility_state_changed)
+	}
 }
 
 // --- Media queries ---

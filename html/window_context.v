@@ -1366,6 +1366,15 @@ fn document_run_unloading_cleanup_steps(target voidptr, document &dom.Document) 
 	mutable_document.fully_exit_fullscreen()
 }
 
+fn document_timer_visibility_state_changed(target voidptr, _ &dom.Document) {
+	window := unsafe { &WindowModel(target) }
+	if window.global_scope_ == unsafe { nil } {
+		return
+	}
+	mut scope := window.global_scope_
+	scope.document_visibility_state_changed()
+}
+
 pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel) !&WindowModel {
 	mut document_with_html_hooks := unsafe { &dom.Document(document) }
 	if document.get_browsing_context() == none {
@@ -1450,6 +1459,8 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 	mut window_realm := window.scripting_realm_
 	_ = WindowEnvironmentSettingsObject.setup(window, document.url, mut window_realm, none,
 		top_level_creation_url, top_level_origin)
+	mut timer_scope := window.global_scope_
+	timer_scope.associated_window_ = window
 	document_with_html_hooks.set_temporary_execution_context_hook(dom.DocumentTemporaryExecutionContextHook{
 		target: voidptr(window)
 		begin:  document_begin_temporary_execution_context
@@ -1468,7 +1479,9 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 		queue_intersection_observer_task: document_queue_intersection_observer_task
 		queue_selectionchange_event_task: document_queue_selectionchange_event_task
 		run_unloading_cleanup_steps:      document_run_unloading_cleanup_steps
+		timer_visibility_state_changed:   document_timer_visibility_state_changed
 	})
+	timer_scope.document_visibility_state_changed()
 	proxy := WindowProxyModel.create(window)
 	location := LocationModel.create(document, document.origin())
 	window.window_proxy_ = proxy
