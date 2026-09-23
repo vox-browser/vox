@@ -864,6 +864,10 @@ fn test_multicol_used_column_count_and_width_follow_the_upstream_pseudo_algorith
 	assert determine_used_multicol_column_width(width, css_px(350), 3).to_double() == 103.328125
 	assert determine_used_multicol_column_count(both, css_px(350)) or { 0 } == 3
 	assert determine_used_multicol_column_count(ordinary, css_px(350)) == none
+	assert count.computed_values().establishes_multi_column_container()
+	assert width.computed_values().establishes_multi_column_container()
+	assert both.computed_values().establishes_multi_column_container()
+	assert !ordinary.computed_values().establishes_multi_column_container()
 }
 
 fn test_column_flex_main_size_uses_content_box_target_for_border_box_item() {

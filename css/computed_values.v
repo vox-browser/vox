@@ -1536,6 +1536,11 @@ pub fn (values &ComputedValues) column_height() Size {
 	return values.computed_values_column_height_
 }
 
+// https://drafts.csswg.org/css-multicol-2/#the-multi-column-model
+pub fn (values &ComputedValues) establishes_multi_column_container() bool {
+	return !values.column_width().is_auto() || values.column_count() != none
+}
+
 pub fn (values &ComputedValues) column_rule_color() Color {
 	return values.computed_values_column_rule_color_
 }

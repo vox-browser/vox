@@ -133,10 +133,7 @@ fn creates_block_formatting_context(box &NodeWithStyle) bool {
 			return true
 		}
 	}
-	if !computed.column_width().is_auto() {
-		return true
-	}
-	if _ := computed.column_count() {
+	if computed.establishes_multi_column_container() {
 		return true
 	}
 	if node.is_fieldset_box() {
@@ -214,7 +211,7 @@ fn determine_used_multicol_column_count(node &Node, available_width CSSPixels) ?
 	computed := node.computed_values()
 	column_width_is_auto := computed.column_width().is_auto()
 	column_count := computed_multicol_column_count(computed)
-	if column_width_is_auto && column_count == none {
+	if !computed.establishes_multi_column_container() {
 		return none
 	}
 	if column_width_is_auto {
