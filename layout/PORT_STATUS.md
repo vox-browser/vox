@@ -391,7 +391,9 @@ stacking-tree invalidation reconstructs the complete store.
 Checkbox and radio foreground commands read the owning `HTMLInputElement`'s
 live checked/indeterminate state when their phase bucket is rebuilt; checkedness
 changes use the translated style and repaint invalidation path, so retained
-commands cannot preserve the layout-time `checked` attribute snapshot.
+commands cannot preserve the layout-time `checked` attribute snapshot. Direct
+and fieldset-inherited disabled-state changes invalidate those same retained
+phase buckets before the next display-list recording.
 
 `NavigableContainerViewport` now retains its concrete `about:blank` or
 `srcdoc` DOM document through the typed layout tree. During parent display-list

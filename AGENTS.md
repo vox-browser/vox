@@ -159,7 +159,9 @@
   across repaint. Border radii, SVG fill/fill-rule, pointer-events, resize, and
   visibility carry the upstream hit-test-affecting metadata and still invalidate
   it; focus, selection, media, image, inspector, and scrollbar paint changes do
-  not make the next input event rebuild the plan.
+  not make the next input event rebuild the plan. Direct and fieldset-inherited
+  form-control disabled changes invalidate their retained paint commands so
+  checkbox and radio glyphs immediately reflect live enabledness.
 - Retained scroll state owns its single dirty bit and publishes a new snapshot
   only after visual-context structure is settled. Viewport and element offset
   stores invalidate at the mutation site, repeated consumers keep the existing

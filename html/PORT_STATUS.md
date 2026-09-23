@@ -113,7 +113,10 @@ live on the DOM element, matching C++, rather than being copied into a second
 HTML model. `set_checked()` performs only the single-control transition and
 style/repaint invalidation; binding and radio-group algorithms own exclusivity,
 walk the current DOM root, and compare form owners instead of scanning a
-process-global list of previously created models.
+process-global list of previously created models. Changing `disabled` on a
+form-associated element now explicitly repaints it, and changing a fieldset's
+disabled state repaints every form-associated descendant whose live enabledness
+can change.
 
 ## Port boundary
 
