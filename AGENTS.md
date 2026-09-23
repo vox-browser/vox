@@ -165,6 +165,10 @@
   script or removes a failed entry before notifying all waiters, so aborted
   implementation fetch hooks can be retried; text modules expose their source
   through their sole `default` export.
+- System clipboard entries distinguish raw bytes from user-selected files.
+  Clipboard API reads hide file-backed entries, while explicit paste converts
+  raw PNG data and selected image files into file items and inserts a sanitized
+  data-URL image into rich editable hosts.
 - SVG and MathML follow CSS Display unboxing rules: `display: contents`
   computes to `none` for CSS-box SVG roots, non-hoisting SVG elements, and all
   MathML elements. Nested SVG containers and text children keep `contents`,
@@ -274,7 +278,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-23, the module
-translations contain 352,379 implementation V LOC and 72,228 test V LOC.
+translations contain 352,481 implementation V LOC and 72,311 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -283,7 +287,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | --- | ---: | --- | ---: |
 | ARIA | 2,535 | Animations | 3,981 |
 | Bindings | 2,679 | CSS | 104,824 |
-| Clipboard | 973 | Compositor | 2,403 |
+| Clipboard | 1,037 | Compositor | 2,403 |
 | Compression | 424 | ContentSecurityPolicy | 2,740 |
 | CookieStore | 859 | CredentialManagement | 418 |
 | Crypto (`webcrypto/`) | 4,472 | DOM | 36,666 |
@@ -293,15 +297,15 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Fetch | 5,192 | FileAPI | 1,018 |
 | Fullscreen | 93 | GPC | 16 |
 | Gamepad | 760 | Geolocation | 416 |
-| Geometry | 2,062 | HTML | 57,536 |
+| Geometry | 2,062 | HTML | 57,545 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
-| Infra | 207 | Internals | 860 |
+| Infra | 207 | Internals | 861 |
 | IntersectionObserver | 569 | Layout | 43,517 |
 | Loader | 1,921 | MathML | 411 |
 | MediaCapabilitiesAPI | 676 | MediaCapture | 1,212 |
 | MediaSourceExtensions | 361 | MimeSniff | 1,108 |
 | MixedContent | 125 | NavigationTiming | 291 |
-| NotificationsAPI | 290 | Page | 2,957 |
+| NotificationsAPI | 290 | Page | 2,985 |
 | Painting | 7,010 | PerformanceTimeline | 447 |
 | PermissionsAPI | 239 | Platform | 2,330 |
 | ReferrerPolicy | 239 | RequestIdleCallback | 59 |
@@ -320,7 +324,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **352,379** |  |  |
+| **Total** | **352,481** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;

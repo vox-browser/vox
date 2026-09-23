@@ -312,6 +312,11 @@ textarea returns insert line breaks while input returns preserve form action.
 The platform Ctrl/Cmd+C, X, and V key combinations now enter the shared copy,
 cut, and asynchronous paste actions, preserving their clipboard event,
 representation filtering, newline normalization, and completion behavior.
+System clipboard representations now retain whether their payload is raw bytes
+or a user-selected file. Script-facing `read()` and `readText()` omit the
+file-backed entries, while an explicit trusted paste turns raw PNG bytes and
+selected image files into file items, generates a data-URL image, and sends it
+through the same sanitized rich-editing insertion path.
 Mouse-driven editing selection now also crosses the common input-target
 boundary. Contenteditable constrains dragging to its active host, controls use
 their shadow text node, and anchor/focus updates retain hit-test affinity while
@@ -546,7 +551,7 @@ from the current-module totals.
 | `Animations` | 10 | 5,187 | 3,981 | 1,041 | Complete |
 | `Bindings` | 11 | 2,501 | 2,679 | 918 | Complete |
 | `CSS` | 215 | 47,722 | 104,824 | 9,245 | Present |
-| `Clipboard` | 4 | 1,009 | 973 | 343 | Complete |
+| `Clipboard` | 4 | 1,009 | 1,037 | 383 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 424 | 138 | Complete |
 | `ContentSecurityPolicy` | 37 | 4,725 | 2,740 | 427 | Complete |
@@ -567,11 +572,11 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
 | `Geolocation` | 4 | 643 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 57,536 | 14,850 | Complete |
+| `HTML` | 286 | 83,853 | 57,545 | 14,864 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
-| `Internals` | 7 | 2,583 | 860 | 230 | Complete |
+| `Internals` | 7 | 2,583 | 861 | 231 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
 | `Layout` | 9 | 4,001 | 43,517 | 16,364 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
@@ -583,7 +588,7 @@ from the current-module totals.
 | `MixedContent` | 1 | 127 | 125 | 105 | Complete |
 | `NavigationTiming` | 4 | 497 | 291 | 45 | Complete |
 | `NotificationsAPI` | 1 | 301 | 290 | 68 | Complete |
-| `Page` | 8 | 6,450 | 2,957 | 858 | Complete |
+| `Page` | 8 | 6,450 | 2,985 | 886 | Complete |
 | `Painting` | 22 | 8,227 | 7,010 | 2,198 | Present |
 | `PerformanceTimeline` | 5 | 476 | 447 | 130 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
@@ -620,7 +625,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **352,379** | **72,228** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **352,481** | **72,311** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
