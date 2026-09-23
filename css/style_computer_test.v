@@ -1764,6 +1764,23 @@ fn test_ua_default_stylesheet_applies_display() {
 	assert computed_value_for(span, display) or { panic('no span display') } == 'inline'
 }
 
+fn test_ua_default_stylesheet_keeps_select_labels_on_one_line() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{})
+	mut select_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'select') or {
+		panic('${err}')
+	}
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(select_element.as_node()) or { panic('${err}') }
+
+	assert computed_value_for(select_element, .white_space_collapse) or {
+		panic('no select white-space-collapse')
+	} == 'preserve'
+	assert computed_value_for(select_element, .text_wrap_mode) or {
+		panic('no select text-wrap-mode')
+	} == 'nowrap'
+}
+
 fn test_table_heading_alignment_uses_immediate_parents_computed_value() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	document.set_browsing_context(&dom.BrowsingContext{})

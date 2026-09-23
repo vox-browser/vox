@@ -382,11 +382,13 @@ fn layout_box_baseline(state &LayoutState, box &Node) CSSPixels {
 	}
 
 	display := box.display()
-	has_visible_overflow := computed.overflow_x() == .visible && computed.overflow_y() == .visible
 	is_flex_or_grid_container := display.is_flex_inside() || display.is_grid_inside()
 	is_inline_flex_or_grid_container := display.is_inline_outside()
 		&& is_flex_or_grid_container
-	always_derive_from_content := is_flex_or_grid_container || has_visible_overflow
+	// CSS Align's legacy bottom-edge baseline applies to scroll containers.
+	// `overflow: clip` is non-visible but does not establish one, so it keeps
+	// the same content-derived baseline as visible overflow.
+	always_derive_from_content := is_flex_or_grid_container || !box.is_scroll_container()
 	if always_derive_from_content && box_state.line_boxes.len > 0 {
 		last_line := box_state.line_boxes.last()
 		last_line_top := last_line.bottom().minus(last_line.block_length())

@@ -266,9 +266,19 @@ fn test_select_model_options_picker_notifications_and_shadow_tree() {
 	assert select_element.shadow_root() != none
 	inner := model.inner_text_element_ or { panic('missing inner text') }
 	assert inner.as_node().child_text_content() == 'Beta'
+	assert inner.get_attribute_value('style').contains('min-width:0')
+	assert inner.get_attribute_value('style').contains('overflow:clip')
+	assert inner.get_attribute_value('style').contains('text-overflow:inherit')
+	assert inner.get_attribute_value('style').contains('margin-inline-end:20px')
 	chevron := model.chevron_icon_element_ or { panic('missing chevron') }
+	assert chevron.get_attribute_value('style').contains('position:absolute')
+	assert chevron.get_attribute_value('style').contains('inset-inline-end:0')
 	model.computed_properties_changed(true)
 	assert chevron.get_attribute_value('style').contains('display:none')
+	assert !inner.get_attribute_value('style').contains('margin-inline-end:20px')
+	model.computed_properties_changed(false)
+	assert chevron.get_attribute_value('style').contains('display:block')
+	assert inner.get_attribute_value('style').contains('margin-inline-end:20px')
 
 	model.set_picker_security_state(false, true)
 	mut rejected := false

@@ -883,6 +883,25 @@ fn test_inline_flex_baseline_uses_its_wrapped_childs_first_line() {
 	assert layout_box_baseline(result.state, icon_node).raw_value() != icon.margin_box_top().plus(label.offset.y().minus(label.margin_box_top())).plus(layout_box_baseline(result.state, label_node)).raw_value()
 }
 
+fn test_overflow_clip_inline_block_keeps_its_content_baseline() {
+	document := html.parse_document('<!doctype html><style>
+		span { display:inline-block; height:40px; font:20px/20px monospace }
+		#clip { overflow:clip }
+		#hidden { overflow:hidden }
+	</style><span id="visible">text</span><span id="clip">text</span><span id="hidden">text</span>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	visible := layout_node_with_id(result.root, 'visible') or { panic('missing #visible') }
+	clip := layout_node_with_id(result.root, 'clip') or { panic('missing #clip') }
+	hidden := layout_node_with_id(result.root, 'hidden') or { panic('missing #hidden') }
+
+	visible_baseline := layout_box_baseline(result.state, visible)
+	clip_baseline := layout_box_baseline(result.state, clip)
+	hidden_baseline := layout_box_baseline(result.state, hidden)
+	assert clip_baseline == visible_baseline
+	assert hidden_baseline != visible_baseline
+	assert hidden_baseline == used_for_id(result, 'hidden').margin_box_height()
+}
+
 fn test_relative_insets_resolve_against_the_containing_block_without_changing_flow_offsets() {
 	document := html.parse_document('<!doctype html><style>
 		#parent { width:200px }

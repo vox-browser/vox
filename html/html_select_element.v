@@ -409,9 +409,17 @@ pub fn (mut model HTMLSelectElementModel) computed_properties_changed(appearance
 	if chevron := model.chevron_icon_element_ {
 		mut element := unsafe { &dom.Element(chevron) }
 		element.set_attribute_value('style', if appearance_is_none {
-			'display:none;width:16px;height:16px;margin-left:4px;'
+			'display:none;position:absolute;inset-inline-end:0;top:calc(50% - 8px);width:16px;height:16px;'
 		} else {
-			'display:block;width:16px;height:16px;margin-left:4px;'
+			'display:block;position:absolute;inset-inline-end:0;top:calc(50% - 8px);width:16px;height:16px;'
+		})
+	}
+	if inner_text := model.inner_text_element_ {
+		mut element := unsafe { &dom.Element(inner_text) }
+		element.set_attribute_value('style', if appearance_is_none {
+			'flex:1;min-width:0;overflow:clip;text-overflow:inherit;margin-inline-end:0;'
+		} else {
+			'flex:1;min-width:0;overflow:clip;text-overflow:inherit;margin-inline-end:20px;'
 		})
 	}
 }
@@ -425,15 +433,15 @@ pub fn (mut model HTMLSelectElementModel) create_shadow_tree_if_needed() {
 	mut border := dom.create_element(element.document(), 'div', ns_html, none, none, false) or {
 		return
 	}
-	border.set_attribute_value('style', 'display:flex;align-items:center;height:100%;')
+	border.set_attribute_value('style', 'display:flex;align-items:center;height:100%;position:relative;')
 	mut inner_text := dom.create_element(element.document(), 'div', ns_html, none, none, false) or {
 		return
 	}
-	inner_text.set_attribute_value('style', 'flex:1;')
+	inner_text.set_attribute_value('style', 'flex:1;min-width:0;overflow:clip;text-overflow:inherit;margin-inline-end:20px;')
 	mut chevron := dom.create_element(element.document(), 'div', ns_html, none, none, false) or {
 		return
 	}
-	chevron.set_attribute_value('style', 'width:16px;height:16px;margin-left:4px;')
+	chevron.set_attribute_value('style', 'position:absolute;inset-inline-end:0;top:calc(50% - 8px);width:16px;height:16px;')
 	mut svg := dom.create_element(element.document(), 'svg', ns_svg, none, none, false) or {
 		return
 	}
