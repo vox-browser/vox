@@ -293,7 +293,10 @@
   propagates to child navigables, presents a dark preferred color scheme,
   invalidates style and paint state, and skips filtering when the root or meta
   color-scheme declares `dark` or uses the `only` modifier. The compact script
-  bridge exposes the upstream force-dark threshold and debug-overlay internals;
+  bridge exposes `document.head`, reflects meta `name` and `content` properties,
+  and refreshes color-scheme metadata after live DOM mutation so cached dark
+  paint is discarded when a document opts out. It also exposes the upstream
+  force-dark threshold and debug-overlay internals;
   line-box debugging paints each fragment's green bounds and red baseline ahead
   of its glyphs and explicitly bypasses force-dark resolution.
 - Native bitmap replay carries row orientation separately from alpha format, so

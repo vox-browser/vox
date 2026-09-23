@@ -94,7 +94,11 @@ the supported scheme list. Changing either value advances the document style
 environment and schedules media-query and full-style reevaluation, preserving
 the opt-out signal consumed by force-dark painting. Full-document parsing
 refreshes this metadata after tree construction, so an initial declaration is
-available to the first style and force-dark decision.
+available to the first style and force-dark decision. The compact script bridge
+also exposes `document.head`, reflects meta `name` and `content` properties, and
+refreshes supported schemes after replaying live DOM mutations. A dynamically
+inserted `only light` declaration therefore invalidates cached dark paint while
+leaving the force-dark page setting intact.
 Force-dark display-list resolution now assigns the upstream color roles to
 backgrounds, text and shadows, borders, selections, SVG, gradients, markers,
 form controls, scrollbars, and resizers. Border and selection resolution sees
@@ -689,7 +693,7 @@ $ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 788 passed, 301 failed, 1089 total
 
 $ v -enable-globals test .
-Summary for all V _test.v files: 640 passed, 640 total.
+Summary for all V _test.v files: 645 passed, 645 total.
 
 $ Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
 Ladybird V smoke check passed
