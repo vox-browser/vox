@@ -318,9 +318,12 @@ fn (mut bfc BlockFormattingContext) compute_auto_height_for_block_level_element(
 	return CSSPixels.new(0)
 }
 
-// BlockFormattingContext::run assigns the final collapsed margin to the last
-// in-flow child after the root's descendants have been laid out.
-fn (bfc &BlockFormattingContext) assign_collapsed_margin_to_last_child(mut state LayoutState, root &Node) {
+// The trailing collapsed margin is output of this formatting-context run, not
+// a used margin of its last real child. Trailing collapse-through siblings can
+// enlarge this aggregate after that child has already been placed. Preserve
+// the child's authored margin and let only the root's automatic height consume
+// the aggregate.
+fn (mut bfc BlockFormattingContext) record_trailing_collapsed_margin(state &LayoutState, root &Node) {
 	collapsed_margin := bfc.margin_state.current_collapsed_margin()
 	if collapsed_margin == 0 {
 		return
@@ -340,8 +343,10 @@ fn (bfc &BlockFormattingContext) assign_collapsed_margin_to_last_child(mut state
 		if margins_collapse_through(child_styled, state) {
 			continue
 		}
-		mut child_state := state.get_mutable(child_styled)
-		child_state.margin_bottom = css_px(collapsed_margin)
+		bfc.trailing_collapsed_margin = TrailingCollapsedMargin{
+			child:  child
+			margin: css_px(collapsed_margin)
+		}
 		return
 	}
 }
@@ -834,6 +839,7 @@ fn (mut m BlockMarginState) set_box_last_in_flow_child_margin_bottom_collapsed(v
 struct BlockFormattingContext {
 mut:
 	margin_state                         BlockMarginState
+	trailing_collapsed_margin            ?TrailingCollapsedMargin
 	y_offset_of_current_block_container  f64
 	floating_boxes                       []FloatingBoxRecord
 	left_floats                          FloatSideState
@@ -845,6 +851,11 @@ mut:
 	line_clamp_line_count                int
 	line_clamp_reached_                  bool
 	laying_out_invisible_clamped_content bool
+}
+
+struct TrailingCollapsedMargin {
+	child  &Node
+	margin CSSPixels
 }
 
 fn BlockFormattingContext.for_root(root &Node, layout_mode LayoutMode) BlockFormattingContext {

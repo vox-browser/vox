@@ -175,6 +175,44 @@ fn test_adjacent_margin_collapse() {
 	assert div2_uv.offset.y().to_double() == 40.0
 }
 
+fn test_trailing_collapsed_margin_does_not_replace_the_last_child_margin() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
+	mut real_child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	real_child.set_attribute_value('style', 'height: 10px; margin-bottom: 5px')
+	mut collapsing_child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	collapsing_child.set_attribute_value('style', 'margin-top: 20px; margin-bottom: 30px')
+
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html_el.as_node()) or { panic('${err}') }
+	mut html_node := html_el.as_node()
+	html_node.append_child(real_child.as_node()) or { panic('${err}') }
+	html_node.append_child(collapsing_child.as_node()) or { panic('${err}') }
+
+	root := build_layout_tree(doc) or { panic('no layout tree') }
+	viewport := root.as_viewport() or { panic('root not a Viewport') }
+	mut state := LayoutState.new()
+	layout_viewport(mut state, viewport, 800.0, 600.0)
+
+	html_box := root.first_child() or { panic('no html box') }
+	html_used := state.try_get(html_box.as_node_with_style() or { panic('html') }) or {
+		panic('html used values')
+	}
+	real_used := state.try_get(html_box.children()[0].as_node_with_style() or { panic('real child') }) or {
+		panic('real child used values')
+	}
+	assert real_used.margin_bottom.to_double() == 5.0
+	// The aggregate remains an input to the root's automatic height, so this
+	// ownership correction must not change the already-established geometry.
+	assert html_used.content_height().to_double() == 60.0
+}
+
 // A normal block container's top margin can collapse with its first in-flow
 // child's top margin. The root element is the exception: it establishes a BFC,
 // so its child's margin remains inside it.

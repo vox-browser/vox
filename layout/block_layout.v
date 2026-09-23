@@ -436,10 +436,10 @@ fn layout_inside_independent_formatting_context_without_containment_override(mut
 	} else {
 		none
 	})
-	child_context.assign_collapsed_margin_to_last_child(mut state, box)
+	child_context.record_trailing_collapsed_margin(state, box)
 	// FormattingContext::compute_auto_height_for_block_formatting_context_root.
-	// This is evaluated after BlockFormattingContext::run assigns the final
-	// collapsed margin to the last in-flow child.
+	// A run's trailing collapsed margin replaces the last real child's own
+	// bottom margin for this calculation without mutating that child.
 	mut height := CSSPixels.new(0)
 	for child in box.children() {
 		if child.is_absolutely_positioned() {
@@ -453,8 +453,13 @@ fn layout_inside_independent_formatting_context_without_containment_override(mut
 		if child_state.is_invisible_for_line_clamp() {
 			continue
 		}
-		child_bottom :=
-			child_state.offset.y().plus(child_state.content_height()).plus(child_state.margin_box_bottom())
+		mut margin_bottom := child_state.margin_bottom
+		if trailing := child_context.trailing_collapsed_margin {
+			if layout_nodes_same(trailing.child, child) {
+				margin_bottom = trailing.margin
+			}
+		}
+		child_bottom := child_state.offset.y().plus(child_state.content_height()).plus(child_state.border_box_bottom()).plus(margin_bottom)
 		height = css_pixels_max(height, child_bottom)
 	}
 	// Include every floating descendant whose bottom margin edge extends below
