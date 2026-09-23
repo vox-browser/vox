@@ -114,9 +114,10 @@ fn test_environment_module_set_discard_and_service_worker_identity() {
 	window := WindowModel.create_top_level(document, none, 'main')!
 	mut realm := &ScriptingRealm{}
 	mut settings := WindowEnvironmentSettingsObject.setup(window, document.url, mut realm, none, document.url, document.origin()).settings
-	assert module_type_allowed('javascript')
+	assert module_type_allowed('javascript-or-wasm')
 	assert module_type_allowed('css')
 	assert module_type_allowed('text')
+	assert !module_type_allowed('javascript')
 	assert !module_type_allowed('wasm')
 	settings.add_module_to_resolved_module_set(document.url.serialize(), 'pkg', none)
 	assert settings.resolved_module_set().len == 1

@@ -4,6 +4,7 @@ module html
 import dom
 
 __global scripting_test_module_changes int
+__global scripting_test_module_failures int
 
 fn scripting_test_evaluate(source string, realm &ScriptingRealm) !dom.JSValue {
 	_ = realm
@@ -21,9 +22,11 @@ fn scripting_test_parse(source string, filename string, line usize) ! {
 	}
 }
 
-fn scripting_test_module_changed(entry ModuleMapEntry) {
-	if entry.type_ == .failed {
+fn scripting_test_module_changed(script ?&Script) {
+	if script != none {
 		scripting_test_module_changes++
+	} else {
+		scripting_test_module_failures++
 	}
 }
 
@@ -82,11 +85,21 @@ fn test_module_script_module_map_and_temporary_context() {
 	url := dom.URL{
 		value: 'https://example.test/module.js'
 	}
-	module_map.wait_for_change(url, 'javascript', scripting_test_module_changed)
-	assert module_map.set(url, 'javascript', ModuleMapEntry{ type_: .failed }) or { panic(err) }
-	assert module_map.is_failed(url, 'javascript')
-	assert scripting_test_module_changes == 1
-	assert module_map_is(module_map, url, 'javascript', .failed)
+	scripting_test_module_changes = 0
+	scripting_test_module_failures = 0
+	module_map.begin_fetch(url, 'javascript-or-wasm', [scripting_test_module_changed])!
+	module_map.append_fetch_callback(url, 'javascript-or-wasm', scripting_test_module_changed)!
+	assert module_map.is_fetching(url, 'javascript-or-wasm')
+	module_map.complete_fetch(url, 'javascript-or-wasm', &module_script.ModuleScript)!
+	assert scripting_test_module_changes == 2
+	assert module_map_is(module_map, url, 'javascript-or-wasm', .module_script)
+
+	retry_url := dom.URL{ value: 'https://example.test/retry.js' }
+	module_map.begin_fetch(retry_url, 'javascript-or-wasm', [scripting_test_module_changed])!
+	module_map.complete_fetch(retry_url, 'javascript-or-wasm', none)!
+	assert module_map.get(retry_url, 'javascript-or-wasm') == none
+	assert scripting_test_module_changes == 2
+	assert scripting_test_module_failures == 1
 	preparsed_module := JavaScriptModuleScript.create_from_pre_parsed('cached-module.js', 'value', realm, url, scripting_test_parse)
 	assert preparsed_module.parse_error == none
 	compiled_module := JavaScriptModuleScript.create_from_pre_compiled('compiled-module.js', 'value', realm, url, CompiledProgram{ program_type: .module })

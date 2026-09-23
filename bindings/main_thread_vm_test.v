@@ -103,11 +103,11 @@ fn test_main_thread_vm_promise_jobs_imports_and_buffers() {
 	loaded := vm.host_load_imported_module(ModuleRequest{
 		specifier:  'pkg'
 		attributes: {
-			'type': 'javascript'
+			'type': 'javascript-or-wasm'
 		}
 	}, &import_map, base_url, .window, false) or { panic(err) }
 	assert loaded.url.serialize() == 'https://example.test/app/dependency.js'
-	assert loaded.module_type == 'javascript'
+	assert loaded.module_type == 'javascript-or-wasm'
 	if _ := vm.host_load_imported_module(ModuleRequest{
 		specifier:  'pkg'
 		attributes: {

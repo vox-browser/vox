@@ -379,12 +379,12 @@ pub fn default_script_fetch_options() ScriptFetchOptions {
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#module-type-from-module-request
 pub fn module_type_from_module_request(module_request ModuleRequest) string {
-	mut module_type := 'javascript'
+	mut module_type := 'javascript-or-wasm'
 	for attribute in module_request.attributes {
 		if attribute.key != 'type' {
 			continue
 		}
-		module_type = if attribute.value == 'javascript' { '' } else { attribute.value }
+		module_type = if attribute.value == 'javascript-or-wasm' { '' } else { attribute.value }
 	}
 	return module_type
 }
@@ -616,25 +616,39 @@ pub fn fetch_destination_from_module_type(default_destination fetch.Destination,
 	}
 }
 
-fn fetch_single_module_script_result(url dom.URL, fetch_client &EnvironmentSettingsObject, destination fetch.Destination, options ScriptFetchOptions, module_map_realm &ScriptingRealm, referrer fetch.Referrer, module_request ?ModuleRequest, is_top_level TopLevelModule, perform_fetch ?PerformTheFetchHook) !ModuleScriptFetchResult {
+fn fetch_single_module_script_result(url dom.URL, fetch_client &EnvironmentSettingsObject, destination fetch.Destination, options ScriptFetchOptions, module_map_realm &ScriptingRealm, referrer fetch.Referrer, module_request ?ModuleRequest, is_top_level TopLevelModule, perform_fetch ?PerformTheFetchHook, callbacks []OnFetchScriptComplete) !ModuleScriptFetchResult {
 	module_type := if request := module_request {
 		module_type_from_module_request(request)
 	} else {
-		'javascript'
+		'javascript-or-wasm'
 	}
 	if !module_type_allowed(module_type) {
+		for callback in callbacks {
+			callback(none)
+		}
 		return ModuleScriptFetchResult{}
 	}
 	mut module_map := unsafe { &ModuleMap(module_map_of_realm(module_map_realm)) }
 	if entry := module_map.get(url, module_type) {
 		if entry.type_ == .fetching {
+			if callbacks.len > 0 {
+				for callback in callbacks {
+					module_map.append_fetch_callback(url, module_type, callback)!
+				}
+				return ModuleScriptFetchResult{}
+			}
 			return error('InvalidStateError: module is already being fetched')
+		}
+		if script := entry.module_script {
+			for callback in callbacks {
+				callback(&script.Script)
+			}
 		}
 		return ModuleScriptFetchResult{
 			module_script: entry.module_script
 		}
 	}
-	module_map.set(url, module_type, ModuleMapEntry{ type_: .fetching })!
+	module_map.begin_fetch(url, module_type, callbacks)!
 
 	mut request := fetch.Request.create()
 	request.set_url(url)
@@ -648,20 +662,20 @@ fn fetch_single_module_script_result(url dom.URL, fetch_client &EnvironmentSetti
 	request.initiator_type = .script
 	set_up_module_script_request(mut request, options)
 	response := response_for_script_request(request, is_top_level, fetch_client, perform_fetch) or {
-		module_map.remove(url, module_type)
+		module_map.complete_fetch(url, module_type, none)!
 		return ModuleScriptFetchResult{}
 	}
 	internal_response := response.unsafe_response()
 	if !fetch.is_ok_status(response.status) {
-		module_map.remove(url, module_type)
+		module_map.complete_fetch(url, module_type, none)!
 		return ModuleScriptFetchResult{}
 	}
 	body := internal_response.fetch_response_body_bytes() or {
-		module_map.remove(url, module_type)
+		module_map.complete_fetch(url, module_type, none)!
 		return ModuleScriptFetchResult{}
 	}
 	source_text := decode_script_body(body, 'utf-8') or {
-		module_map.remove(url, module_type)
+		module_map.complete_fetch(url, module_type, none)!
 		return ModuleScriptFetchResult{}
 	}
 	mime_type := fetch.extract_mime_type(response.header_list)
@@ -670,7 +684,7 @@ fn fetch_single_module_script_result(url dom.URL, fetch_client &EnvironmentSetti
 	mut should_generate_bytecode_cache := false
 	mut cache_parse := ?&ParsedProgramForCache(none)
 	if mime := mime_type {
-		if mime.is_javascript() && module_type == 'javascript' {
+		if mime.is_javascript() && module_type == 'javascript-or-wasm' {
 			response_url := response.url() or { url }
 			cache_context = bytecode_cache_context_for_request(request, internal_response, response_url, fetch_client)
 			if bytecode_blob := internal_response.javascript_bytecode_cache() {
@@ -678,10 +692,8 @@ fn fetch_single_module_script_result(url dom.URL, fetch_client &EnvironmentSetti
 					if materializer := fetch_client.script_bytecode_cache_materialize_hook() {
 						cached_module := JavaScriptModuleScript.create_from_bytecode_cache(url.serialize(), source_text, module_map_realm, response_url, bytecode, materializer)
 						if cached_module.parse_error == none {
-							module_map.set(url, module_type, ModuleMapEntry{
-								type_: .module_script
-								module_script: &cached_module.ModuleScript
-							})!
+							module_map.complete_fetch(url, module_type,
+								&cached_module.ModuleScript)!
 							return ModuleScriptFetchResult{
 								module_script: &cached_module.ModuleScript
 							}
@@ -720,10 +732,7 @@ fn fetch_single_module_script_result(url dom.URL, fetch_client &EnvironmentSetti
 			module_map_realm, .text)
 	}
 	if script := module_script {
-		module_map.set(url, module_type, ModuleMapEntry{
-			type_: .module_script
-			module_script: script
-		})!
+		module_map.complete_fetch(url, module_type, script)!
 		if should_generate_bytecode_cache {
 			if context := cache_context {
 				if retained_parse := cache_parse {
@@ -735,21 +744,18 @@ fn fetch_single_module_script_result(url dom.URL, fetch_client &EnvironmentSetti
 			module_script: script
 		}
 	}
-	module_map.remove(url, module_type)
+	module_map.complete_fetch(url, module_type, none)!
 	return ModuleScriptFetchResult{}
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#fetch-a-single-module-script
 pub fn fetch_single_module_script(realm &ScriptingRealm, url dom.URL, fetch_client &EnvironmentSettingsObject, destination fetch.Destination, options ScriptFetchOptions, module_map_realm &ScriptingRealm, referrer fetch.Referrer, module_request ?ModuleRequest, is_top_level TopLevelModule, perform_fetch ?PerformTheFetchHook, on_complete OnFetchScriptComplete) {
 	_ = realm
-	result := fetch_single_module_script_result(url, fetch_client, destination, options, module_map_realm, referrer, module_request, is_top_level, perform_fetch) or {
+	_ := fetch_single_module_script_result(url, fetch_client, destination, options,
+		module_map_realm, referrer, module_request, is_top_level, perform_fetch,
+		[on_complete]) or {
 		on_complete(none)
 		return
-	}
-	if script := result.module_script {
-		on_complete(&script.Script)
-	} else {
-		on_complete(none)
 	}
 }
 
@@ -788,7 +794,8 @@ fn fetch_descendant_module_graph(mut module_script JavaScriptModuleScript, fetch
 			return true
 		}
 		options := get_descendant_script_fetch_options(default_script_fetch_options(), resolved_url, fetch_client)
-		result := fetch_single_module_script_result(resolved_url, fetch_client, destination, options, module_script.realm(), fetch.Referrer{ url: base_url }, module_request, .no, perform_fetch)!
+		result := fetch_single_module_script_result(resolved_url, fetch_client, destination, options, module_script.realm(), fetch.Referrer{ url: base_url }, module_request, .no, perform_fetch,
+			[])!
 		imported := result.module_script or { return false }
 		if imported.kind != .javascript {
 			continue
@@ -825,7 +832,8 @@ pub fn fetch_descendants_of_and_link_a_module_script(realm &ScriptingRealm, modu
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#fetch-a-module-script-tree
 pub fn fetch_external_module_script_graph(realm &ScriptingRealm, url dom.URL, settings_object &EnvironmentSettingsObject, options ScriptFetchOptions, on_complete OnFetchScriptComplete) {
-	result := fetch_single_module_script_result(url, settings_object, .script, options, realm, fetch.Referrer{}, none, .yes, none) or {
+	result := fetch_single_module_script_result(url, settings_object, .script, options, realm, fetch.Referrer{}, none, .yes, none,
+		[]) or {
 		on_complete(none)
 		return
 	}
@@ -859,7 +867,7 @@ fn ignore_modulepreload_descendants_complete(_ ?&Script) {}
 pub fn fetch_modulepreload_module_script_graph(realm &ScriptingRealm, url dom.URL, destination fetch.Destination, settings_object &EnvironmentSettingsObject, options ScriptFetchOptions, on_complete OnFetchScriptComplete) bool {
 	result := fetch_single_module_script_result(url, settings_object, destination, options,
 		settings_object.realm(), fetch.Referrer{}, module_request_for_preload_destination(destination),
-		.yes, none) or {
+		.yes, none, []) or {
 		on_complete(none)
 		return false
 	}
@@ -887,7 +895,8 @@ pub fn fetch_module_worker_script_graph(url dom.URL, fetch_client &EnvironmentSe
 // https://html.spec.whatwg.org/multipage/webappapis.html#fetch-a-worklet/module-worker-script-graph
 pub fn fetch_worklet_module_worker_script_graph(url dom.URL, fetch_client &EnvironmentSettingsObject, destination fetch.Destination, settings_object &EnvironmentSettingsObject, perform_fetch ?PerformTheFetchHook, on_complete OnFetchScriptComplete) ! {
 	options := default_script_fetch_options()
-	result := fetch_single_module_script_result(url, fetch_client, destination, options, settings_object.realm(), fetch.Referrer{}, none, .yes, perform_fetch)!
+	result := fetch_single_module_script_result(url, fetch_client, destination, options, settings_object.realm(), fetch.Referrer{}, none, .yes, perform_fetch,
+		[])!
 	fetched_module := result.module_script or {
 		on_complete(none)
 		return

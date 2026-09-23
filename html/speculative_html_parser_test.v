@@ -86,7 +86,7 @@ fn test_speculative_parser_scans_modulepreload_without_module_map_side_effects()
 	assert !document.has_speculative_fetch_url(dom.URL{ value: 'https://example.test/hidden.js' })
 	assert !document.has_speculative_fetch_url(dom.URL{ value: 'https://example.test/fetch.bin' })
 	assert settings.module_map().get(dom.URL{ value: 'https://example.test/module.js' },
-		'javascript') == none
+		'javascript-or-wasm') == none
 }
 
 fn test_html_tokenizer_exposes_only_unparsed_code_points() {

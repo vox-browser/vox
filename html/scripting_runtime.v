@@ -380,6 +380,22 @@ pub fn ModuleScript.create_synthetic(filename string, source string, realm &Scri
 	}
 }
 
+// Text modules are synthetic modules with exactly one string-valued default export.
+// https://tc39.es/proposal-import-text/#sec-create-text-module
+pub fn (script &ModuleScript) synthetic_default_export() ?dom.JSValue {
+	if script.kind != .text {
+		return none
+	}
+	return dom.js_string(script.synthetic_source)
+}
+
+pub fn (script &ModuleScript) synthetic_export_names() []string {
+	if script.kind != .text {
+		return []
+	}
+	return ['default']
+}
+
 pub fn (script &ModuleScript) is_module_script() bool {
 	_ = script
 	return true

@@ -143,6 +143,14 @@ fn scripting_fetching_host(request &fetch.Request, is_top_level TopLevelModule) 
 	return response
 }
 
+fn scripting_fetching_abort_once_host(request &fetch.Request, is_top_level TopLevelModule) !&fetch.Response {
+	scripting_fetching_retry_count++
+	if scripting_fetching_retry_count == 1 {
+		return error('implementation fetch hook aborted')
+	}
+	return scripting_fetching_host(request, is_top_level)
+}
+
 fn scripting_fetching_complete(script ?&Script) {
 	scripting_fetching_completed_script = script or { unsafe { &Script(nil) } }
 	if scripting_fetching_track_cache {
@@ -237,12 +245,12 @@ fn test_script_fetch_options_module_requests_and_off_thread_parse() {
 	assert options.credentials_mode == .same_origin
 	assert options.fetch_priority == .auto
 
-	assert module_type_from_module_request(ModuleRequest{}) == 'javascript'
+	assert module_type_from_module_request(ModuleRequest{}) == 'javascript-or-wasm'
 	assert module_type_from_module_request(ModuleRequest{
 		attributes: [ModuleRequestAttribute{ key: 'type', value: 'json' }]
 	}) == 'json'
 	assert module_type_from_module_request(ModuleRequest{
-		attributes: [ModuleRequestAttribute{ key: 'type', value: 'javascript' }]
+		attributes: [ModuleRequestAttribute{ key: 'type', value: 'javascript-or-wasm' }]
 	}) == ''
 
 	requests := parse_module_requests("import './side-effect.js'\nimport value from './value.js' with { type: 'json' }\nexport { x } from './export.js'\nimport('./dynamic.js')")
@@ -572,8 +580,8 @@ fn test_external_module_graph_fetches_descendants_caches_and_links() {
 		'https://example.test/app/dep.js',
 	]
 	module_map := fixture.settings.module_map()
-	assert module_map.get(dom.URL{ value: 'https://example.test/app/root.js' }, 'javascript')?.type_ == .module_script
-	assert module_map.get(dom.URL{ value: 'https://example.test/app/dep.js' }, 'javascript')?.type_ == .module_script
+	assert module_map.get(dom.URL{ value: 'https://example.test/app/root.js' }, 'javascript-or-wasm')?.type_ == .module_script
+	assert module_map.get(dom.URL{ value: 'https://example.test/app/dep.js' }, 'javascript-or-wasm')?.type_ == .module_script
 
 	// A second graph load reuses the module-map entries and performs no fetch.
 	fetch_external_module_script_graph(fixture.realm, dom.URL{
@@ -583,7 +591,7 @@ fn test_external_module_graph_fetches_descendants_caches_and_links() {
 	assert fetch_destination_from_module_type(.script, 'json') == .json
 	assert fetch_destination_from_module_type(.worker, 'css') == .style
 	assert fetch_destination_from_module_type(.worker, 'text') == .text
-	assert fetch_destination_from_module_type(.worker, 'javascript') == .worker
+	assert fetch_destination_from_module_type(.worker, 'javascript-or-wasm') == .worker
 }
 
 fn test_modulepreload_fetches_graph_reuses_modules_and_retries_failures() {
@@ -621,9 +629,26 @@ fn test_modulepreload_fetches_graph_reuses_modules_and_retries_failures() {
 	scripting_fetching_retry_count = 0
 	assert !fetch_modulepreload_module_script_graph(fixture.realm, retry_url, .script,
 		fixture.settings, default_script_fetch_options(), modulepreload_fetching_complete)
-	assert fixture.settings.module_map().get(retry_url, 'javascript') == none
+	assert fixture.settings.module_map().get(retry_url, 'javascript-or-wasm') == none
 	assert fetch_modulepreload_module_script_graph(fixture.realm, retry_url, .script,
 		fixture.settings, default_script_fetch_options(), modulepreload_fetching_complete)
+	assert scripting_fetching_retry_count == 2
+}
+
+fn test_module_fetch_hook_abort_removes_in_progress_entry_for_retry() {
+	fixture := scripting_fetching_fixture()!
+	url := dom.URL{ value: 'https://example.test/app/aborted-module.js' }
+	scripting_fetching_retry_count = 0
+	scripting_fetching_completed_script = unsafe { &Script(nil) }
+	fetch_worklet_module_worker_script_graph(url, fixture.settings, .worker, fixture.settings,
+		scripting_fetching_abort_once_host, scripting_fetching_complete)!
+	assert scripting_fetching_completed_script == unsafe { nil }
+	assert fixture.settings.module_map().get(url, 'javascript-or-wasm') == none
+
+	fetch_worklet_module_worker_script_graph(url, fixture.settings, .worker, fixture.settings,
+		scripting_fetching_abort_once_host, scripting_fetching_complete)!
+	assert scripting_fetching_completed_script != unsafe { nil }
+	assert fixture.settings.module_map().get(url, 'javascript-or-wasm')?.type_ == .module_script
 	assert scripting_fetching_retry_count == 2
 }
 
@@ -636,6 +661,8 @@ fn test_modulepreload_populates_typed_module_map_entries() {
 	text_entry := fixture.settings.module_map().get(text_url, 'text')?.module_script?
 	assert text_entry.kind == .text
 	assert text_entry.synthetic_source == 'module text'
+	assert text_entry.synthetic_export_names() == ['default']
+	assert text_entry.synthetic_default_export()?.string_data == 'module text'
 	assert scripting_fetching_last_destination == .text
 
 	style_url := dom.URL{ value: 'https://example.test/app/module.css' }

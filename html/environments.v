@@ -532,7 +532,7 @@ pub fn (mut settings EnvironmentSettingsObject) storage_manager() &storageapi.St
 }
 
 pub fn module_type_allowed(module_type string) bool {
-	return module_type in ['javascript', 'css', 'json', 'text']
+	return module_type in ['javascript-or-wasm', 'css', 'json', 'text']
 }
 
 pub fn settings_object_of_realm(realm &ScriptingRealm) ?&EnvironmentSettingsObject {

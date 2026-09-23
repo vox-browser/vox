@@ -362,7 +362,7 @@ pub fn (_ &MainThreadVM) host_load_imported_module(request ModuleRequest, import
 		}
 	}
 	url := html.resolve_module_specifier(import_map, base_url, request.specifier)!
-	module_type := request.attributes['type'] or { 'javascript' }
+	module_type := request.attributes['type'] or { 'javascript-or-wasm' }
 	if !html.module_type_allowed(module_type) {
 		return error("TypeError: Module type '${module_type}' is not supported")
 	}
