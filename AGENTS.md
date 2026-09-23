@@ -141,6 +141,11 @@
   enumeration, and SVG presentation attributes retain their case-sensitive
   namespace behavior. SVG image documents without an explicit opt-in honor the
   embedding element's preferred color scheme.
+- Same-process structured clones of fixed and growable `SharedArrayBuffer`
+  objects alias one flattened backing store, including buffers reached through
+  typed-array views. Serialization records retain a self-contained byte copy
+  for process boundaries, while storage serialization and the default
+  cross-origin-isolation gate continue to reject shared buffers.
 - Incremental HTML parsing retains encoding-sensitive bytes while scripts are
   deferred or the tokenizer is paused on a parser-blocking script. Late meta
   charset declarations can replace the streaming decoder before those bytes

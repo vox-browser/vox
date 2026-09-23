@@ -56,6 +56,13 @@ anonymous flex and content wrappers. Percentage-height descendants therefore
 continue to use the button content height when the content wrapper has a
 smaller post-flexing height, including aspect-ratio, padded, fractional, nested,
 and resized-equivalent cases.
+Structured serialization records now keep a same-process side table for fixed
+and growable shared array buffers. Local clones and cloned typed-array views
+share one flattened backing store, while records crossing the byte-only IPC
+boundary reconstruct an independent shared buffer from their encoded fallback
+copy. Maximum lengths and growth remain visible through local aliases; storage
+serialization and the default cross-origin-isolation gate still reject shared
+buffers.
 Inline layout now publishes conservative glyph-run painted bounds in CSS pixels
 when it finalizes each retained run. Merging, ellipsis, and line clamping dirty
 the packed replay data and bounds together; finalization refreshes both once.
