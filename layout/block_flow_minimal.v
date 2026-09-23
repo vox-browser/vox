@@ -185,6 +185,7 @@ pub:
 	outline_offset           f64
 	outline_color            css.Color
 	outline_style            painting.LineStyle = .none
+	outline_is_auto          bool
 	shadow                   ?BoxShadow
 	shadows                  []BoxShadow
 	// The resolved text-decoration covering this word.
@@ -383,6 +384,7 @@ pub mut:
 	outline_offset f64
 	outline_color  css.Color
 	outline_style  painting.LineStyle = .solid
+	outline_is_auto bool
 	// Drop shadows behind the box. `shadow` retains the first entry for compatibility; `shadows`
 	// carries the complete comma-separated outer-shadow list.
 	shadow  ?BoxShadow
@@ -1435,6 +1437,9 @@ pub mut:
 	width     f64
 	height    f64
 	color     string
+	force_dark_role     painting.ForceDarkRole
+	force_dark_role_set bool
+	force_dark_backdrop ?painting.Color
 	text      string // for 'draw_text'
 	font_size f64 = 16.0 // for 'draw_text'
 	bold      bool
@@ -1658,6 +1663,8 @@ fn paintable_box_paint_box_shadow(mut commands []PaintCommand, shadows []BoxShad
 				width: shadow.shadow_rect.width
 				height: shadow.shadow_rect.height
 				color: painting_color_string(shadow.color)
+				force_dark_role: .foreground
+				force_dark_role_set: true
 				opacity: opacity
 				blur: shadow.blur_radius
 				corner_radii: transport_radii_from_painting(shadow.shadow_corner_radii)
@@ -1676,6 +1683,8 @@ fn paintable_box_paint_box_shadow(mut commands []PaintCommand, shadows []BoxShad
 				width: shadow.outer_shadow_rect.width
 				height: shadow.outer_shadow_rect.height
 				color: painting_color_string(shadow.color)
+				force_dark_role: .foreground
+				force_dark_role_set: true
 				opacity: opacity
 				blur: shadow.blur_radius
 				corner_radii: transport_radii_from_painting(shadow.content_corner_radii)
@@ -1707,6 +1716,8 @@ fn append_inset_shadow_commands(mut commands []PaintCommand, shadows []BoxShadow
 			width: width
 			height: height
 			color: shadow.color.serialize()
+			force_dark_role: .foreground
+			force_dark_role_set: true
 			opacity: opacity
 			radius: clamp_radius(radius, width, height)
 			blur: shadow.blur
@@ -1813,6 +1824,8 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 			points: points
 			gradient: gradient
 			gradient_background_layer: true
+			force_dark_role: .background
+			force_dark_role_set: true
 			image_clip_x: clip.x
 			image_clip_y: clip.y
 			image_clip_width: clip.width
@@ -1840,6 +1853,8 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 		radius: radius
 		points: points
 		image_url: layer.url
+		force_dark_role: .background
+		force_dark_role_set: true
 		background_svg_document: layer.svg_document
 		background_svg_color_scheme: layer.color_scheme
 		image_intrinsic_width: layer.intrinsic_width
@@ -2028,6 +2043,8 @@ fn append_scrollbar_overlay_command(mut commands []PaintCommand, data painting.S
 			width: gutter.width
 			height: gutter.height
 			color: overlay.scrollbar_track_color.serialize()
+			force_dark_role: .background
+			force_dark_role_set: true
 			opacity: opacity
 		}
 	}
@@ -2049,6 +2066,8 @@ fn append_scrollbar_overlay_command(mut commands []PaintCommand, data painting.S
 		width: thumb.width
 		height: thumb.height
 		color: thumb_color.serialize()
+		force_dark_role: .background
+		force_dark_role_set: true
 		opacity: opacity
 		corner_radii: radii
 		scrollbar_axis: if direction == .vertical { 'vertical' } else { 'horizontal' }
@@ -2062,6 +2081,8 @@ fn append_scrollbar_overlay_command(mut commands []PaintCommand, data painting.S
 		width: thumb.width
 		height: thumb.height
 		color: lightened_paint_color(thumb_color).serialize()
+		force_dark_role: .background
+		force_dark_role_set: true
 		opacity: opacity
 		radius: radius
 		stroke_width: 1
@@ -2079,6 +2100,8 @@ fn append_resizer_line_command(mut commands []PaintCommand, from_x f64, from_y f
 		width: math.abs(from_x - to_x)
 		height: math.abs(from_y - to_y)
 		color: color.serialize()
+		force_dark_role: .foreground
+		force_dark_role_set: true
 		opacity: opacity
 		points: [from_x, from_y, to_x, to_y]
 		stroke_width: 1
@@ -2339,6 +2362,22 @@ fn set_recording_clip_for_range(mut commands []PaintCommand, start int, end int,
 	}
 }
 
+fn set_force_dark_role_for_range(mut commands []PaintCommand, start int, end int,
+	role painting.ForceDarkRole) {
+	for index := start; index < end; index++ {
+		commands[index].force_dark_role = role
+		commands[index].force_dark_role_set = true
+	}
+}
+
+fn set_force_dark_backdrop_for_range(mut commands []PaintCommand, start int, end int,
+	color css.Color) {
+	backdrop := painting.Color{color.r, color.g, color.b, color.a}
+	for index := start; index < end; index++ {
+		commands[index].force_dark_backdrop = backdrop
+	}
+}
+
 fn append_painting_display_command(mut commands []PaintCommand,
 	display_command painting.DisplayListCommand, opacity f64) {
 	match display_command {
@@ -2477,6 +2516,7 @@ fn (b &BlockBox) append_table_border_commands(mut commands []PaintCommand, opaci
 	collect_table_cells(b, mut cells)
 	converter := painting.new_device_pixel_converter(1.0) or { return }
 	mut rounded_clip := ?painting.AddRoundedRectClip(none)
+	start := commands.len
 	for display_command in painting.paint_table_borders(cells, b.uses_collapsed_borders, converter) {
 		match display_command {
 			painting.Save {
@@ -2517,6 +2557,7 @@ fn (b &BlockBox) append_table_border_commands(mut commands []PaintCommand, opaci
 			else {}
 		}
 	}
+	set_force_dark_role_for_range(mut commands, start, commands.len, .border)
 }
 
 // Build the display list for this box tree: for each box in paint order — a background fill (when the
@@ -2778,6 +2819,8 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 				image_clip_width: box.width
 				image_clip_height: box.height
 				image_paintable: box.replaced_image_paintable
+				force_dark_role: .background
+				force_dark_role_set: true
 			}
 		}
 		if bitmap := box.canvas_bitmap {
@@ -2854,6 +2897,7 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 			// A control is one upstream display-list replay unit. Keep its overlapping
 			// antialiased primitives on one Skia surface so intermediate 8-bit Cocoa
 			// composites cannot round the shared edges independently.
+			control_start := commands.len
 			commands << PaintCommand{
 				kind: 'begin_skia_command_group'
 				x: control_rect.x
@@ -2865,6 +2909,23 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 				append_painting_display_command(mut commands, display_command, opacity)
 			}
 			commands << PaintCommand{ kind: 'end_skia_command_group' }
+			if box.form_control_kind == 'checkbox' && form_control_state.checked
+				&& !form_control_state.indeterminate {
+				set_force_dark_role_for_range(mut commands, control_start + 1, control_start + 2,
+					.background)
+				set_force_dark_role_for_range(mut commands, control_start + 2, control_start + 3,
+					.foreground)
+			} else {
+				set_force_dark_role_for_range(mut commands, control_start + 1, control_start + 2,
+					.border)
+				set_force_dark_role_for_range(mut commands, control_start + 2, control_start + 3,
+					.background)
+				if (box.form_control_kind == 'checkbox' && form_control_state.indeterminate)
+					|| (box.form_control_kind == 'radio' && form_control_state.checked) {
+					set_force_dark_role_for_range(mut commands, control_start + 3, control_start + 4,
+						.foreground)
+				}
+			}
 		}
 		foreground_replaced_end := commands.len
 		// Translate each border side through Painting's source-shaped BorderPainting paths. Matching
@@ -2880,6 +2941,8 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 				for fieldset_command in fieldset.paint(borders, painting_radii_from_transport(box_radii), converter) {
 					command_start_index := commands.len
 					append_painting_display_command(mut commands, fieldset_command.command, opacity)
+					set_force_dark_role_for_range(mut commands, command_start_index, commands.len,
+						.border)
 					if clip := fieldset_command.clip {
 						set_recording_clip_for_range(mut commands, command_start_index, commands.len, clip)
 					}
@@ -2895,7 +2958,7 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 		// PaintableBox::paint() inflates the border rect and radii, then sends outlines through the
 		// same BorderPainting.cpp dispatcher as ordinary borders.
 		outline_start := commands.len
-		append_translated_outline_commands(mut commands, box.outline_width, box.outline_offset, box.outline_color, box.outline_style, box_radii, border_left, border_top, border_width, border_height, opacity)
+		append_translated_outline_commands(mut commands, box.outline_width, box.outline_offset, box.outline_color, box.outline_style, box.outline_is_auto, box_radii, border_left, border_top, border_width, border_height, opacity)
 		outline_end := commands.len
 		foreground_content_start := commands.len
 		if box.svg_path.len > 0 {
@@ -2906,6 +2969,8 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 				width: box.width
 				height: box.height
 				color: box.svg_fill_color
+				force_dark_role: .svg
+				force_dark_role_set: true
 				fill_linear_gradient: box.svg_fill_linear_gradient
 				fill_radial_gradient: box.svg_fill_radial_gradient
 				fill_pattern: box.svg_fill_pattern
@@ -2932,6 +2997,7 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 			}
 		}
 		if box.marker_shape.len > 0 {
+			marker_start := commands.len
 			if marker_kind := painting.marker_kind_from_name(box.marker_shape) {
 				converter := painting.new_device_pixel_converter(1.0) or { return commands }
 				marker := painting.MarkerPaintable{
@@ -2943,6 +3009,7 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 					append_painting_display_command(mut commands, display_command, opacity)
 				}
 			}
+			set_force_dark_role_for_range(mut commands, marker_start, commands.len, .list_symbol)
 		}
 		mut inline_outlines := [][]PaintCommand{cap: box.lines.len}
 		for line in box.lines {
@@ -2969,6 +3036,8 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 		for command_index := command_start; command_index < commands.len; command_index++ {
 			commands[command_index].transform = box.paint_transform
 			commands[command_index].paint_box_index = entry_index
+			commands[command_index].force_dark_backdrop = painting.Color{box.background_color.r,
+				box.background_color.g, box.background_color.b, box.background_color.a}
 			if recording_clip := commands[command_index].recording_clip {
 				clip_transform := normalized_affine(box.paint_transform)
 				mapped_clip := compatibility_affine_map_rect(clip_transform, recording_clip)
@@ -3719,6 +3788,8 @@ fn selected_text_fragment_commands(fragments []TextFragment, opacity f64) []Pain
 			width: rect.width
 			height: rect.height
 			color: span.background_color.serialize()
+			force_dark_role: .selection
+			force_dark_role_set: true
 			opacity: opacity
 		}
 	}
@@ -3983,6 +4054,8 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 	mut outlines := []PaintCommand{}
 	mut i := 0
 	for i < fragments.len {
+		decoration_start := commands.len
+		outline_start := outlines.len
 		first := fragments[i]
 		if first.inline_node_id == 0 {
 			i++
@@ -4054,6 +4127,7 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 		}
 		outer_shadows := fragment_shadows.filter(!it.inset)
 		paintable_box_paint_box_shadow(mut commands, outer_shadows, effective_border, first.border_colors, first.border_styles, fragment_radii, border_rect, border_rect, opacity)
+		background_start := commands.len
 		background_isolated := first.background_images.any(background_image_layer_blend_mode(it) != .normal)
 		if background_isolated {
 			commands << PaintCommand{ kind: 'begin_background_blend_group' }
@@ -4105,10 +4179,15 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 		if background_isolated {
 			commands << PaintCommand{ kind: 'end_background_blend_group' }
 		}
+		set_force_dark_role_for_range(mut commands, background_start, commands.len, .background)
 		append_inset_shadow_commands(mut commands, fragment_shadows, left + effective_border.left, top + effective_border.top, non_negative(width - effective_border.left - effective_border.right), non_negative(height - effective_border.top - effective_border.bottom), non_negative(radius - effective_border.top), opacity)
 		border_colors := effective_border_colors(first.border_colors, first.border_color)
 		append_translated_border_commands(mut commands, effective_border, border_colors, first.border_styles, fragment_radii, left, top, width, height, opacity)
-		append_translated_outline_commands(mut outlines, first.outline_width, first.outline_offset, first.outline_color, first.outline_style, fragment_radii, left, top, width, height, opacity)
+		append_translated_outline_commands(mut outlines, first.outline_width, first.outline_offset, first.outline_color, first.outline_style, first.outline_is_auto, fragment_radii, left, top, width, height, opacity)
+		set_force_dark_backdrop_for_range(mut commands, decoration_start, commands.len,
+			first.background_color)
+		set_force_dark_backdrop_for_range(mut outlines, outline_start, outlines.len,
+			first.background_color)
 		i = j
 	}
 	return InlineFragmentPaintCommands{
@@ -5865,6 +5944,7 @@ fn painting_radii_from_transport(radii BoxRadii) painting.CornerRadii {
 fn append_translated_border_commands(mut commands []PaintCommand, border BoxEdges,
 	colors BoxColors, styles BoxBorderStyles, radii BoxRadii, x f64, y f64, width f64,
 	height f64, opacity f64) {
+	start := commands.len
 	left := int(math.round(x))
 	top := int(math.round(y))
 	rect := painting.IntRect{
@@ -5876,6 +5956,7 @@ fn append_translated_border_commands(mut commands []PaintCommand, border BoxEdge
 	for display_command in painting.paint_all_borders(rect, painting_radii_from_transport(radii), painting_borders_from_transport(border, colors, styles)) {
 		append_painting_display_command(mut commands, display_command, opacity)
 	}
+	set_force_dark_role_for_range(mut commands, start, commands.len, .border)
 }
 
 fn inflated_outline_corner(radius CornerRadius, horizontal f64, vertical f64) CornerRadius {
@@ -5885,12 +5966,14 @@ fn inflated_outline_corner(radius CornerRadius, horizontal f64, vertical f64) Co
 	}
 }
 
-// Direct compatibility lowering of PaintableBox.cpp's outline phase. CSS resolves
-// `outline-style:auto` before this point; BorderPainting owns all line-style dispatch.
+// Direct compatibility lowering of PaintableBox.cpp's outline phase. The line
+// style is resolved before this point, while the retained auto flag preserves
+// the user-agent focus-ring force-dark exemption.
 fn append_translated_outline_commands(mut commands []PaintCommand, outline_width f64,
 	outline_offset f64, outline_color css.Color, outline_style painting.LineStyle,
-	border_radii BoxRadii, border_x f64, border_y f64, border_width f64, border_height f64,
-	opacity f64) {
+	outline_is_auto bool, border_radii BoxRadii, border_x f64, border_y f64, border_width f64,
+	border_height f64, opacity f64) {
+	start := commands.len
 	outline_painting_color := painting.Color{outline_color.r, outline_color.g, outline_color.b, outline_color.a}
 	outline_borders := painting.borders_data_for_outline(outline_painting_color, outline_style, outline_width) or { return }
 	mut offset_x := outline_offset
@@ -5921,6 +6004,11 @@ fn append_translated_outline_commands(mut commands []PaintCommand, outline_width
 	for display_command in painting.paint_all_borders(outline_rect, painting_radii_from_transport(outline_radii), outline_borders.to_device_pixels(converter)) {
 		append_painting_display_command(mut commands, display_command, opacity)
 	}
+	set_force_dark_role_for_range(mut commands, start, commands.len, if outline_is_auto {
+		painting.ForceDarkRole.none_
+	} else {
+		painting.ForceDarkRole.border
+	})
 }
 
 fn append_square_border_commands(mut commands []PaintCommand, border BoxEdges, colors BoxColors,
@@ -11042,6 +11130,7 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 		outline_offset: outline_offset
 		outline_color: outline_color
 		outline_style: outline_style
+		outline_is_auto: outline_style_value == 'auto'
 		shadow: shadow
 		shadows: shadows
 		background_gradient: background_gradient

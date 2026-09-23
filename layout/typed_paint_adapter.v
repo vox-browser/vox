@@ -3331,6 +3331,7 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 	mut outline_offset := 0.0
 	mut outline_color := text_color
 	mut outline_style := painting.LineStyle.solid
+	mut outline_is_auto := false
 	mut shadow := ?BoxShadow(none)
 	mut shadows := []BoxShadow{}
 	mut background_gradient := ?LinearGradient(none)
@@ -3424,6 +3425,7 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 			outline_style = outline.top.line_style
 			outline_color = css.Color{outline.top.color.r, outline.top.color.g, outline.top.color.b, outline.top.color.a}
 		}
+		outline_is_auto = computed.outline_style() == .auto_
 		outline_offset_value := computed.typed_property_value(.outline_offset) or {
 			css.StyleValue(css.LengthStyleValue.create(css.Length.make_px(0)))
 		}
@@ -3900,6 +3902,7 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 		outline_offset: outline_offset
 		outline_color: outline_color
 		outline_style: outline_style
+		outline_is_auto: outline_is_auto
 		shadow: shadow
 		shadows: shadows
 		background_gradient: background_gradient
@@ -4068,6 +4071,7 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 			mut outline_offset := 0.0
 			mut outline_color := css.Color{}
 			mut outline_style := painting.LineStyle.none
+			mut outline_is_auto := false
 			mut inline_shadow := ?BoxShadow(none)
 			mut inline_shadows := []BoxShadow{}
 			mut inline_node_id := i64(0)
@@ -4112,6 +4116,7 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 						outline_style = outline.top.line_style
 						outline_color = css.Color{outline.top.color.r, outline.top.color.g, outline.top.color.b, outline.top.color.a}
 					}
+					outline_is_auto = owner_computed.outline_style() == .auto_
 					outline_offset_value := owner_computed.typed_property_value(.outline_offset) or {
 						css.StyleValue(css.LengthStyleValue.create(css.Length.make_px(0)))
 					}
@@ -4172,6 +4177,7 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 				outline_offset: outline_offset
 				outline_color: outline_color
 				outline_style: outline_style
+				outline_is_auto: outline_is_auto
 				shadow: inline_shadow
 				shadows: inline_shadows
 				decoration: text_decoration_string(computed.text_decoration_line())

@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import html
 import math
 import os
 import page
@@ -1871,8 +1872,18 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 		result.paint_phase_command_count += result.paint_tree.refresh_paint_phase_command_cache(result.paint_order, mut result.paint_phase_commands, mut result.paint_phase_entry_valid)
 	}
 	snapshot := result.scroll_state_snapshot
-	result.display_list_commands = lower_visual_layers(replay_cached_paint_commands_with_visual_context(result.paint_steps, result.paint_phase_commands, result.paint_phase_command_count, result.visual_context_tree, snapshot))
-	result.display_list_commands << result.paint_tree.paint_inspector_overlay(result.document, result.visual_context_tree, snapshot)
+	mut commands := lower_visual_layers(replay_cached_paint_commands_with_visual_context(result.paint_steps, result.paint_phase_commands, result.paint_phase_command_count, result.visual_context_tree, snapshot))
+	commands << result.paint_tree.paint_inspector_overlay(result.document, result.visual_context_tree,
+		snapshot)
+	if model := html.NavigableModel.navigable_with_active_document(result.document) {
+		if model.force_dark_applies_to_active_document() {
+			commands = resolve_force_dark_paint_commands(commands, painting.ForceDarkSettings{
+				foreground_brightness_threshold: model.force_dark_foreground_threshold()
+				background_brightness_threshold: model.force_dark_background_threshold()
+			})
+		}
+	}
+	result.display_list_commands = commands
 	result.display_list = &dom.DisplayList{
 		concrete_handle: target
 		command_count_: result.display_list_commands.len
@@ -1945,6 +1956,8 @@ fn compatibility_collect_inspector_box_rects(box &BlockBox, layout_handle voidpt
 fn compatibility_apply_inspector_context(mut commands []PaintCommand,
 	context CompatibilityFlattenedVisualContext, fixed bool) {
 	for mut command in commands {
+		command.force_dark_role = .none_
+		command.force_dark_role_set = true
 		command.transform = context.transform
 		command.fixed_to_viewport = fixed
 		// Paintable::paint_inspector_overlay() keeps scroll, transform, and
