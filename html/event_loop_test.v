@@ -182,6 +182,78 @@ fn test_hidden_document_keeps_idle_callbacks_pending() {
 	event_loop.task_queue_.tasks.clear()
 }
 
+fn test_idle_callback_timeouts_run_once_and_clear_their_handles() {
+	mut event_loop := main_thread_event_loop()
+	event_loop.task_queue_.tasks.clear()
+	event_loop.microtask_queue.clear()
+	event_loop.idle_period_timer_ = none
+
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	document.set_origin(document.url.origin())
+	window_pointer := WindowModel.create_top_level(document, none, 'idle-timeout-test') or {
+		panic(err)
+	}
+	document.update_the_visibility_state(.hidden)
+	mut window := window_pointer
+	mut calls := &EventLoopTestCalls{}
+	timed_out := fn [mut calls] (deadline requestidlecallback.IdleDeadline) ! {
+		calls.values << if deadline.did_timeout() { 'timed-out' } else { 'idle' }
+	}
+
+	handle := window.request_idle_callback(timed_out, requestidlecallback.IdleRequestOptions{
+		timeout: 10
+	})
+	assert window.idle_request_callbacks_.any(it.handle == handle)
+	assert window.window_or_worker_global_scope().active_timer_count() == 1
+	mut scope := window.window_or_worker_global_scope()
+	scope.run_all_timers()
+	event_loop.process()
+	assert calls.values == ['timed-out']
+	assert !window.idle_request_callbacks_.any(it.handle == handle)
+	assert !window.runnable_idle_callbacks_.any(it.handle == handle)
+	assert scope.active_timer_count() == 0
+
+	cancelled := window.request_idle_callback(timed_out, requestidlecallback.IdleRequestOptions{
+		timeout: 10
+	})
+	assert scope.active_timer_count() == 1
+	window.cancel_idle_callback(cancelled)
+	assert scope.active_timer_count() == 0
+	scope.run_all_timers()
+	event_loop.process()
+	assert calls.values == ['timed-out']
+}
+
+fn test_idle_callback_timeout_removes_a_runnable_callback() {
+	mut event_loop := main_thread_event_loop()
+	event_loop.task_queue_.tasks.clear()
+	event_loop.microtask_queue.clear()
+	event_loop.idle_period_timer_ = none
+
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	document.set_origin(document.url.origin())
+	window_pointer := WindowModel.create_top_level(document, none, 'runnable-idle-timeout-test') or {
+		panic(err)
+	}
+	document.update_the_visibility_state(.visible)
+	mut window := window_pointer
+	mut calls := &EventLoopTestCalls{}
+	callback := fn [mut calls] (deadline requestidlecallback.IdleDeadline) ! {
+		calls.values << if deadline.did_timeout() { 'timed-out' } else { 'idle' }
+	}
+	handle := window.request_idle_callback(callback, requestidlecallback.IdleRequestOptions{
+		timeout: 10
+	})
+	window.start_an_idle_period()
+	assert window.runnable_idle_callbacks_.any(it.handle == handle)
+	window.invoke_idle_callback_timeout(handle)
+	assert calls.values == ['timed-out']
+	assert !window.runnable_idle_callbacks_.any(it.handle == handle)
+	window.invoke_idle_callbacks()
+	assert calls.values == ['timed-out']
+	event_loop.task_queue_.tasks.clear()
+}
+
 fn test_microtask_checkpoint_after_task() {
 	mut event_loop := EventLoop.create(.window)
 	mut calls := &EventLoopTestCalls{}

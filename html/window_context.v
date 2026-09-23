@@ -1184,8 +1184,8 @@ mut:
 	cookie_store_                             voidptr = unsafe { nil }
 	cookie_store_created_                     bool
 	current_event_                            ?&dom.Event
-	idle_request_callbacks_                   []WindowIdleCallback
-	runnable_idle_callbacks_                  []WindowIdleCallback
+	idle_request_callbacks_                   []&WindowIdleCallback
+	runnable_idle_callbacks_                  []&WindowIdleCallback
 	idle_callback_identifier_                 u32
 	pdf_viewer_plugin_objects_                []&Plugin
 	pdf_viewer_mime_type_objects_             []&MimeType

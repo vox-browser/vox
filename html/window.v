@@ -96,10 +96,13 @@ pub:
 
 pub type WindowIdleCallbackHandler = fn(requestidlecallback.IdleDeadline) !
 
+@[heap]
 pub struct WindowIdleCallback {
 pub:
 	handler WindowIdleCallbackHandler = unsafe { nil }
 	handle  u32
+pub mut:
+	timeout_timer_id ?i32
 }
 
 pub struct WindowNamedObjects {
@@ -504,8 +507,13 @@ pub fn (mut window WindowModel) invoke_idle_callbacks() {
 	if window_current_time_ms() >= main_thread_event_loop().compute_deadline() || window.runnable_idle_callbacks_.len == 0 {
 		return
 	}
-	callback := window.runnable_idle_callbacks_[0]
+	mut callback := window.runnable_idle_callbacks_[0]
 	window.runnable_idle_callbacks_.delete(0)
+	if timer_id := callback.timeout_timer_id {
+		mut scope := window.global_scope_
+		scope.clear_timeout(timer_id)
+		callback.timeout_timer_id = none
+	}
 	callback.handler(requestidlecallback.IdleDeadline.create(false)) or {}
 	if window.runnable_idle_callbacks_.len > 0 {
 		window_pointer := window
@@ -514,6 +522,34 @@ pub fn (mut window WindowModel) invoke_idle_callbacks() {
 			callback_window.invoke_idle_callbacks()
 		})
 	}
+}
+
+// https://w3c.github.io/requestidlecallback/#invoke-idle-callback-timeout-algorithm
+fn (mut window WindowModel) invoke_idle_callback_timeout(handle u32) {
+	mut callback := ?&WindowIdleCallback(none)
+	for index, candidate in window.idle_request_callbacks_ {
+		if candidate.handle == handle {
+			callback = candidate
+			window.idle_request_callbacks_.delete(index)
+			break
+		}
+	}
+	if callback == none {
+		for index, candidate in window.runnable_idle_callbacks_ {
+			if candidate.handle == handle {
+				callback = candidate
+				window.runnable_idle_callbacks_.delete(index)
+				break
+			}
+		}
+	}
+	mut selected := callback or { return }
+	if timer_id := selected.timeout_timer_id {
+		mut scope := window.global_scope_
+		scope.clear_timeout(timer_id)
+		selected.timeout_timer_id = none
+	}
+	selected.handler(requestidlecallback.IdleDeadline.create(true)) or {}
 }
 
 pub fn (window &WindowModel) navigable() ?&dom.Navigable {
@@ -846,19 +882,55 @@ pub fn (window &WindowModel) animation_frame_callback_driver() &AnimationFrameCa
 
 // https://w3c.github.io/requestidlecallback/#dom-window-requestidlecallback
 pub fn (mut window WindowModel) request_idle_callback(handler WindowIdleCallbackHandler, options requestidlecallback.IdleRequestOptions) u32 {
-	_ = options
 	window.idle_callback_identifier_++
 	handle := window.idle_callback_identifier_
-	window.idle_request_callbacks_ << WindowIdleCallback{
+	mut callback := &WindowIdleCallback{
 		handler: handler
 		handle: handle
+	}
+	window.idle_request_callbacks_ << callback
+	if timeout := options.timeout {
+		if timeout > 0 {
+			window_pointer := window
+			mut scope := window.global_scope_
+			timer_id := scope.run_steps_after_a_timeout(if timeout > u32(2_147_483_647) {
+				2_147_483_647
+			} else {
+				int(timeout)
+			}, fn [window_pointer, handle] () {
+				queue_a_task(.idle_task, main_thread_event_loop(), window_pointer.associated_document(), fn [window_pointer, handle] () {
+					mut callback_window := window_pointer
+					callback_window.invoke_idle_callback_timeout(handle)
+				})
+			})
+			callback.timeout_timer_id = timer_id
+		}
 	}
 	return handle
 }
 
 pub fn (mut window WindowModel) cancel_idle_callback(handle u32) {
-	window.idle_request_callbacks_ = window.idle_request_callbacks_.filter(it.handle != handle)
-	window.runnable_idle_callbacks_ = window.runnable_idle_callbacks_.filter(it.handle != handle)
+	mut callback := ?&WindowIdleCallback(none)
+	for index, candidate in window.idle_request_callbacks_ {
+		if candidate.handle == handle {
+			callback = candidate
+			window.idle_request_callbacks_.delete(index)
+			break
+		}
+	}
+	for index, candidate in window.runnable_idle_callbacks_ {
+		if candidate.handle == handle {
+			callback = candidate
+			window.runnable_idle_callbacks_.delete(index)
+			break
+		}
+	}
+	mut selected := callback or { return }
+	if timer_id := selected.timeout_timer_id {
+		mut scope := window.global_scope_
+		scope.clear_timeout(timer_id)
+		selected.timeout_timer_id = none
+	}
 }
 
 pub fn (window &WindowModel) get_selection() ?&dom.Selection {
