@@ -124,6 +124,10 @@ File and color picker requests now cross the DOM `Page` bridge belonging to the
 input's own document. The optional per-model hook remains available to
 standalone HTML tests and hosts without an attached page.
 
+X-Frame-Options `sameorigin` validation now walks logical parent navigables and
+reads their active-document origins through the remote-safe Navigable boundary.
+It no longer depends on dereferencing locally hosted container documents.
+
 ## Port boundary
 
 The algorithms, state transitions, validation, error paths, and observable

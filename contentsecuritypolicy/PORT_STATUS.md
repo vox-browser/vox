@@ -63,6 +63,10 @@ gates, base URL checks, typed violations and violation events, legacy report
 payloads and report endpoint requests, cloning, and deterministic binary
 serialization.
 
+`frame-ancestors` derives its in-process ancestor origins by walking logical
+parent navigables through their remote-safe origin accessors. Detached callers
+can still supply the serialized ancestor-origin list at the process boundary.
+
 Ladybird obtains Fetch, DOM, navigable, global-object, JS compilation, event
 loop, and network state from the surrounding engine. The V translation exposes
 the exact state consumed by CSP through typed records in `model.v`; generated

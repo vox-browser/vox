@@ -119,6 +119,8 @@
   when its container document is hosted elsewhere. Navigables expose the
   active document URL and origin through the same remote-safe boundary used by
   cross-tree algorithms instead of requiring callers to dereference Document.
+  X-Frame-Options and CSP `frame-ancestors` walk those logical parent
+  navigables, including ancestors whose container document is not local.
 - Flex layout completes clamped line measurement, forwards button percentage
   height bases, honors flexible-grid intrinsic minimums, and applies
   `min-height` while stretching lines. Media-control contents retain the
