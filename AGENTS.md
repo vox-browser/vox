@@ -282,7 +282,10 @@
   thresholds. Eligible colors invert through Oklab lightness while retaining
   hue and alpha; selection and border colors preserve backdrop contrast, and
   small images are classified from palette, luminance, saturation,
-  transparency, and chroma features before filtering. Its page setting
+  transparency, and chroma features before filtering. Display-list recording
+  assigns those roles to backgrounds, text and shadows, borders, selections,
+  SVG, gradients, markers, form controls, scrollbars, and resizers, while UA
+  focus rings and inspector overlays remain unfiltered. Its page setting
   propagates to child navigables, presents a dark preferred color scheme,
   invalidates style and paint state, and skips filtering when the root or meta
   color-scheme declares `dark` or uses the `only` modifier. The compact script
@@ -294,8 +297,8 @@
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
-implementation units have audited V mappings. As of 2026-09-23, the module
-translations contain 353,300 implementation V LOC and 72,548 test V LOC.
+implementation units have audited V mappings. As of 2026-09-24, the module
+translations contain 353,543 implementation V LOC and 72,677 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -317,7 +320,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | Geometry | 2,062 | HTML | 57,751 |
 | HighResolutionTime | 442 | IndexedDB | 5,211 |
 | Infra | 207 | Internals | 861 |
-| IntersectionObserver | 569 | Layout | 43,517 |
+| IntersectionObserver | 569 | Layout | 43,760 |
 | Loader | 1,921 | MathML | 411 |
 | MediaCapabilitiesAPI | 676 | MediaCapture | 1,212 |
 | MediaSourceExtensions | 361 | MimeSniff | 1,108 |
@@ -341,7 +344,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **353,300** |  |  |
+| **Total** | **353,543** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
