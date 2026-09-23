@@ -3,6 +3,12 @@ module html
 import dom
 import math
 
+__global media_controls_scrub_seek_times = []f64{}
+
+fn media_controls_scrub_seek(time f64, _ MediaPlaybackSeekMode) {
+	media_controls_scrub_seek_times << time
+}
+
 fn media_elements_fetch(url dom.URL, _ u64) !MediaResourceResponse {
 	_ = url
 	return MediaResourceResponse{
@@ -81,6 +87,36 @@ fn test_media_controls_toggle_fullscreen_for_the_f_key() {
 	})
 	media.event_target().dispatch_event(unsafe { &dom.Event(event) })
 	assert controls.fullscreen
+}
+
+fn test_media_controls_coalesce_scrub_seeks_and_preempt_a_stalled_seek() {
+	media_controls_scrub_seek_times.clear()
+	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
+	media.set_duration(100)
+	media.set_ready_state(.have_enough_data)
+	media.playback_hooks_ = MediaPlaybackManagerHooks{
+		seek: media_controls_scrub_seek
+	}
+	mut controls := MediaControls.create(media)
+
+	controls.begin_timeline_scrubbing(10)
+	assert media_controls_scrub_seek_times == [10.0]
+	controls.seek_while_scrubbing(20)
+	controls.seek_while_scrubbing(30)
+	assert media_controls_scrub_seek_times == [10.0]
+
+	media.finish_seeking_element()
+	assert media_controls_scrub_seek_times == [10.0, 30.0]
+	controls.seek_while_scrubbing(40)
+	assert media_controls_scrub_seek_times == [10.0, 30.0]
+	mut timer := controls.scrub_seek_preemption_timer_ or { panic('missing preemption timer') }
+	timer.fire()
+	assert media_controls_scrub_seek_times == [10.0, 30.0, 40.0]
+
+	controls.end_timeline_scrubbing(50)
+	assert media_controls_scrub_seek_times == [10.0, 30.0, 40.0, 50.0]
+	assert controls.scrubbing_timeline == .no
+	assert controls.scrub_seek_preemption_timer_ == none
 }
 
 fn test_media_controls_follow_audio_track_list_additions_and_removals() {

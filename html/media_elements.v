@@ -10,6 +10,7 @@ module html
 import dom
 import math
 import painting
+import platform
 
 pub enum VideoRepresentation {
 	video_frame
@@ -634,6 +635,8 @@ pub mut:
 mut:
 	dom_                        MediaControlsDOM
 	registered_event_listeners_ []MediaControlsRegisteredEventListener
+	pending_scrub_seek_time_     ?f64
+	scrub_seek_preemption_timer_ ?&platform.Timer
 }
 
 pub fn MediaControls.create(media &HTMLMediaElement) &MediaControls {
@@ -744,7 +747,12 @@ fn media_controls_state_handler(controls &MediaControls, event &dom.Event) bool 
 			mutable_controls.update_play_pause_icon()
 			mutable_controls.update_placeholder_visibility()
 		}
-		'seeked' { mutable_controls.update_placeholder_visibility() }
+		'seeked' {
+			mutable_controls.update_placeholder_visibility()
+			if mutable_controls.scrubbing_timeline != .no {
+				mutable_controls.submit_pending_scrub_seek()
+			}
+		}
 		'timeupdate', 'durationchange' {
 			mutable_controls.update_timeline()
 			mutable_controls.update_timestamp()
@@ -809,6 +817,60 @@ pub fn (mut controls MediaControls) set_current_time(time f64) {
 	controls.update_timeline()
 	controls.update_timestamp()
 	controls.show_controls()
+}
+
+pub fn (mut controls MediaControls) begin_timeline_scrubbing(time f64) {
+	mut media := controls.media
+	controls.scrubbing_timeline = .while_paused
+	if !media.paused() {
+		media.pause()
+		controls.scrubbing_timeline = .while_playing
+	}
+	controls.pending_scrub_seek_time_ = time
+	controls.submit_pending_scrub_seek()
+}
+
+pub fn (mut controls MediaControls) seek_while_scrubbing(time f64) {
+	controls.pending_scrub_seek_time_ = time
+	if controls.media.seeking() {
+		return
+	}
+	controls.submit_pending_scrub_seek()
+}
+
+fn (mut controls MediaControls) submit_pending_scrub_seek() {
+	time := controls.pending_scrub_seek_time_ or { return }
+	controls.pending_scrub_seek_time_ = none
+	if mut timer := controls.scrub_seek_preemption_timer_ {
+		timer.restart()
+	} else {
+		controls_pointer := voidptr(&controls)
+		mut timer := platform.Timer.create_single_shot(500, fn [controls_pointer] () {
+			mut controls := unsafe { &MediaControls(controls_pointer) }
+			controls.submit_pending_scrub_seek()
+		})
+		timer.start()
+		controls.scrub_seek_preemption_timer_ = timer
+	}
+	controls.set_current_time(time)
+}
+
+pub fn (mut controls MediaControls) end_timeline_scrubbing(time f64) {
+	was_playing := controls.scrubbing_timeline == .while_playing
+	controls.scrubbing_timeline = .no
+	controls.pending_scrub_seek_time_ = none
+	if mut timer := controls.scrub_seek_preemption_timer_ {
+		timer.stop()
+	}
+	controls.scrub_seek_preemption_timer_ = none
+	controls.set_current_time(time)
+	if was_playing {
+		mut media := controls.media
+		if !media.ended() {
+			_ = media.play()
+		}
+	}
+	controls.update_play_pause_icon()
 }
 
 pub fn (mut controls MediaControls) set_volume(volume f64) ! {
