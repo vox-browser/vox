@@ -94,7 +94,10 @@ fn test_window_scroll_idle_animation_selection_and_external() {
 	assert window.idle_request_callbacks_.len == 2
 	window.cancel_idle_callback(first)
 	assert window.idle_request_callbacks_.len == 1
-	assert window.idle_request_callbacks_[0].handle == second
+	remaining := window.idle_request_callbacks_[second] or { panic('missing second idle callback') }
+	assert remaining.handle == second
+	assert window.idle_request_callback_order_ == [second]
+	window.cancel_idle_callback(second)
 
 	assert window.animation_frame_callback_driver() == window.animation_driver_
 	assert window.get_selection() != none

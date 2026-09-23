@@ -486,8 +486,14 @@ pub fn (mut window WindowModel) start_an_idle_period() {
 	if window.associated_document().hidden() {
 		return
 	}
-	window.runnable_idle_callbacks_ << window.idle_request_callbacks_
+	for handle in window.idle_request_callback_order_ {
+		if callback := window.idle_request_callbacks_[handle] {
+			window.runnable_idle_callbacks_[handle] = callback
+			window.runnable_idle_callback_order_ << handle
+		}
+	}
 	window.idle_request_callbacks_.clear()
+	window.idle_request_callback_order_.clear()
 	if window.runnable_idle_callbacks_.len == 0 {
 		return
 	}
@@ -507,8 +513,13 @@ pub fn (mut window WindowModel) invoke_idle_callbacks() {
 	if window_current_time_ms() >= main_thread_event_loop().compute_deadline() || window.runnable_idle_callbacks_.len == 0 {
 		return
 	}
-	mut callback := window.runnable_idle_callbacks_[0]
-	window.runnable_idle_callbacks_.delete(0)
+	if window.runnable_idle_callback_order_.len == 0 {
+		return
+	}
+	handle := window.runnable_idle_callback_order_[0]
+	window.runnable_idle_callback_order_.delete(0)
+	mut callback := window.runnable_idle_callbacks_[handle] or { return }
+	window.runnable_idle_callbacks_.delete(handle)
 	if timer_id := callback.timeout_timer_id {
 		mut scope := window.global_scope_
 		scope.clear_timeout(timer_id)
@@ -526,30 +537,23 @@ pub fn (mut window WindowModel) invoke_idle_callbacks() {
 
 // https://w3c.github.io/requestidlecallback/#invoke-idle-callback-timeout-algorithm
 fn (mut window WindowModel) invoke_idle_callback_timeout(handle u32) {
-	mut callback := ?&WindowIdleCallback(none)
-	for index, candidate in window.idle_request_callbacks_ {
-		if candidate.handle == handle {
-			callback = candidate
-			window.idle_request_callbacks_.delete(index)
-			break
-		}
+	mut callback := if pending := window.idle_request_callbacks_[handle] {
+		window.idle_request_callbacks_.delete(handle)
+		window.idle_request_callback_order_ = window.idle_request_callback_order_.filter(it != handle)
+		pending
+	} else if runnable := window.runnable_idle_callbacks_[handle] {
+		window.runnable_idle_callbacks_.delete(handle)
+		window.runnable_idle_callback_order_ = window.runnable_idle_callback_order_.filter(it != handle)
+		runnable
+	} else {
+		return
 	}
-	if callback == none {
-		for index, candidate in window.runnable_idle_callbacks_ {
-			if candidate.handle == handle {
-				callback = candidate
-				window.runnable_idle_callbacks_.delete(index)
-				break
-			}
-		}
-	}
-	mut selected := callback or { return }
-	if timer_id := selected.timeout_timer_id {
+	if timer_id := callback.timeout_timer_id {
 		mut scope := window.global_scope_
 		scope.clear_timeout(timer_id)
-		selected.timeout_timer_id = none
+		callback.timeout_timer_id = none
 	}
-	selected.handler(requestidlecallback.IdleDeadline.create(true)) or {}
+	callback.handler(requestidlecallback.IdleDeadline.create(true)) or {}
 }
 
 pub fn (window &WindowModel) navigable() ?&dom.Navigable {
@@ -888,7 +892,8 @@ pub fn (mut window WindowModel) request_idle_callback(handler WindowIdleCallback
 		handler: handler
 		handle: handle
 	}
-	window.idle_request_callbacks_ << callback
+	window.idle_request_callbacks_[handle] = callback
+	window.idle_request_callback_order_ << handle
 	if timeout := options.timeout {
 		if timeout > 0 {
 			window_pointer := window
@@ -910,26 +915,17 @@ pub fn (mut window WindowModel) request_idle_callback(handler WindowIdleCallback
 }
 
 pub fn (mut window WindowModel) cancel_idle_callback(handle u32) {
-	mut callback := ?&WindowIdleCallback(none)
-	for index, candidate in window.idle_request_callbacks_ {
-		if candidate.handle == handle {
-			callback = candidate
-			window.idle_request_callbacks_.delete(index)
-			break
-		}
+	mut callback := window.idle_request_callbacks_[handle] or {
+		window.runnable_idle_callbacks_[handle] or { return }
 	}
-	for index, candidate in window.runnable_idle_callbacks_ {
-		if candidate.handle == handle {
-			callback = candidate
-			window.runnable_idle_callbacks_.delete(index)
-			break
-		}
-	}
-	mut selected := callback or { return }
-	if timer_id := selected.timeout_timer_id {
+	window.idle_request_callbacks_.delete(handle)
+	window.runnable_idle_callbacks_.delete(handle)
+	window.idle_request_callback_order_ = window.idle_request_callback_order_.filter(it != handle)
+	window.runnable_idle_callback_order_ = window.runnable_idle_callback_order_.filter(it != handle)
+	if timer_id := callback.timeout_timer_id {
 		mut scope := window.global_scope_
 		scope.clear_timeout(timer_id)
-		selected.timeout_timer_id = none
+		callback.timeout_timer_id = none
 	}
 }
 

@@ -203,14 +203,14 @@ fn test_idle_callback_timeouts_run_once_and_clear_their_handles() {
 	handle := window.request_idle_callback(timed_out, requestidlecallback.IdleRequestOptions{
 		timeout: 10
 	})
-	assert window.idle_request_callbacks_.any(it.handle == handle)
+	assert handle in window.idle_request_callbacks_
 	assert window.window_or_worker_global_scope().active_timer_count() == 1
 	mut scope := window.window_or_worker_global_scope()
 	scope.run_all_timers()
 	event_loop.process()
 	assert calls.values == ['timed-out']
-	assert !window.idle_request_callbacks_.any(it.handle == handle)
-	assert !window.runnable_idle_callbacks_.any(it.handle == handle)
+	assert handle !in window.idle_request_callbacks_
+	assert handle !in window.runnable_idle_callbacks_
 	assert scope.active_timer_count() == 0
 
 	cancelled := window.request_idle_callback(timed_out, requestidlecallback.IdleRequestOptions{
@@ -245,10 +245,10 @@ fn test_idle_callback_timeout_removes_a_runnable_callback() {
 		timeout: 10
 	})
 	window.start_an_idle_period()
-	assert window.runnable_idle_callbacks_.any(it.handle == handle)
+	assert handle in window.runnable_idle_callbacks_
 	window.invoke_idle_callback_timeout(handle)
 	assert calls.values == ['timed-out']
-	assert !window.runnable_idle_callbacks_.any(it.handle == handle)
+	assert handle !in window.runnable_idle_callbacks_
 	window.invoke_idle_callbacks()
 	assert calls.values == ['timed-out']
 	event_loop.task_queue_.tasks.clear()
