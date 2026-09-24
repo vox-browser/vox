@@ -184,6 +184,8 @@
   containers establish independent formatting contexts, but
   an ordinary block with an automatic width still fills its containing block;
   containment's zero intrinsic size is not treated as a replaced-element width.
+  Auto-width replaced elements transfer a definite height through their
+  preferred aspect ratio before contributing their natural intrinsic width.
   Resolved `min-content`, `max-content`, and `fit-content` block sizes remain
   indefinite percentage bases for descendants, including fixed-position boxes
   whose used height is clamped or whose opposing insets are both specified.
