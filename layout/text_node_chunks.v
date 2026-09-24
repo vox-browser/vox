@@ -220,7 +220,6 @@ fn (mut iterator TextNodeChunkIterator) font_for_code_point(code_point u32) &pla
 		// Rebuild it before shaping this code point so the first layout uses the
 		// author font rather than retaining fallback metrics until another pass.
 		mut computed_values := unsafe { &css.ComputedProperties(iterator.text_node.Node.computed_values()) }
-		computed_values.clear_computed_font_list_cache()
 		iterator.install_font_cascade(computed_values.computed_font_list(font_computer))
 		return iterator.font_for_code_point(code_point)
 	}

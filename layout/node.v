@@ -390,7 +390,7 @@ pub fn (n &Node) first_available_font() &platform.Font {
 	// FontComputer before reading it so repaint after relayout preserves the C++
 	// lifetime invariant.
 	mut computed_values := unsafe { &css.ComputedProperties(n.computed_values()) }
-	computed_font := computed_values.computed_font_list(css.css_style_computer_for(n.document()).font_computer()).font_for_code_point(u32(` `))
+	computed_font := computed_values.first_available_computed_font(css.css_style_computer_for(n.document()).font_computer())
 	return &platform.Font{
 		family:      computed_font.typeface.family_name.clone()
 		point_size: computed_font.point_size / 0.75

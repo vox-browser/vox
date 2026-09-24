@@ -5708,11 +5708,13 @@ pub fn (mut c ComputedProperties) clear_computed_font_list_cache() {
 }
 
 pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer) &FontCascadeList {
+	mut font_environment_changed := false
 	if font_list := c.cached_computed_font_list_ {
 		if c.cached_computed_font_list_generation_ == font_computer.environment_generation() {
-		return font_list
-	}
+			return font_list
+		}
 		c.clear_computed_font_list_cache()
+		font_environment_changed = true
 	}
 	value := c.property(.font_family, .yes) or {
 		&dom.StyleValue{
@@ -5743,14 +5745,22 @@ pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer
 	font_list.extend(computed)
 	c.cached_computed_font_list_ = font_list
 	c.cached_computed_font_list_generation_ = font_computer.environment_generation()
+	if font_environment_changed {
+		// A face loaded after this style was materialized. Refresh the selected
+		// face and the layout-facing line height together so the current shaping
+		// pass cannot combine author-font glyphs with fallback line metrics.
+		c.cached_first_available_computed_font_ = font_list.font_for_code_point(u32(` `))
+		c.computed_values_line_height_ = c.line_height()
+	}
 	return font_list
 }
 
 pub fn (mut c ComputedProperties) first_available_computed_font(font_computer &FontComputer) &PlatformFont {
+	font_list := c.computed_font_list(font_computer)
 	if c.cached_first_available_computed_font_ != unsafe { nil } {
 		return c.cached_first_available_computed_font_
 	}
-	selected_font := c.computed_font_list(font_computer).font_for_code_point(u32(` `))
+	selected_font := font_list.font_for_code_point(u32(` `))
 	// The cascade and its entries are heap-backed. Cache the selected entry by
 	// identity so its nested typeface and feature storage remain owned by the
 	// cascade under the old no-GC backend.
