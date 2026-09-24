@@ -212,6 +212,28 @@ fn test_visible_input_placeholder_overlays_the_full_width_editor() {
 	assert number_placeholder_used.margin_left == number_inner_used.content_width().negated()
 }
 
+fn test_visible_textarea_placeholder_overlays_the_full_width_editor() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		textarea { width:240px }
+	</style><textarea id="textarea" placeholder="hint"></textarea>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	textarea := layout_node_with_id(result.root, 'textarea') or { panic('missing textarea') }
+	outer := textarea.first_child() or { panic('missing textarea outer box') }
+	assert outer.display().is_flex_inside()
+	inner := outer.children()[0]
+	placeholder := outer.children()[1]
+	inner_used := result.used_values_for(inner.as_node_with_style() or {
+		panic('textarea editor has no style')
+	}) or { panic('textarea editor has no used values') }
+	placeholder_used := result.used_values_for(placeholder.as_node_with_style() or {
+		panic('textarea placeholder has no style')
+	}) or { panic('textarea placeholder has no used values') }
+	assert inner_used.content_width().to_double() == 240
+	assert placeholder_used.content_width() == inner_used.content_width()
+	assert placeholder_used.margin_left == inner_used.content_width().negated()
+}
+
 fn test_multiline_flex_align_content_distributes_cross_axis_space() {
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-wrap:wrap; align-content:center; width:100px; height:100px }

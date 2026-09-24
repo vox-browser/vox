@@ -1767,23 +1767,19 @@ fn build_textarea_internal_layout_children(document &dom.Document, element &dom.
 		return []
 	}
 	outer_style := computed_style_with_overrides(host_computed, {
-		css.PropertyID.display: 'block'
+		css.PropertyID.display: 'flex'
 	})
 	mut outer := unsafe {
-		&Node(BlockContainer.new(document, outer_element.as_node(), outer_style))
+		&Node(Box.new(document, outer_element.as_node(), outer_style))
 	}
 	inner_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 		return []
 	}
 	inner_style := computed_style_with_overrides(outer_style, {
-		css.PropertyID.display: if placeholder_is_visible { 'inline' } else { 'block' }
+		css.PropertyID.display: 'block'
+		css.PropertyID.width:   '100%'
 	})
-	mut inner := &Node(unsafe { nil })
-	if placeholder_is_visible {
-		inner = unsafe { &Node(InlineNode.new(document, inner_element.as_node(), inner_style)) }
-	} else {
-		inner = unsafe { &Node(BlockContainer.new(document, inner_element.as_node(), inner_style)) }
-	}
+	mut inner := unsafe { &Node(BlockContainer.new(document, inner_element.as_node(), inner_style)) }
 	text := document.create_text_node(value)
 	mut text_layout_node := TextNode.new(document, text.as_node(), value)
 	text_layout_node.is_empty_editable_ = true
@@ -1797,11 +1793,16 @@ fn build_textarea_internal_layout_children(document &dom.Document, element &dom.
 		placeholder_base := css.computed_properties_for_pseudo_element(element, .placeholder) or {
 			host_computed
 		}
-		placeholder_style := computed_style_with_overrides(placeholder_base, {
-			css.PropertyID.display: 'inline'
-		})
+		mut placeholder_overrides := {
+			css.PropertyID.display:    'block'
+			css.PropertyID.width:      '100%'
+			css.PropertyID.overflow_x: 'hidden'
+			css.PropertyID.overflow_y: 'hidden'
+		}
+		placeholder_overrides[inline_start_margin_property(placeholder_base)] = '-100%'
+		placeholder_style := computed_style_with_overrides(placeholder_base, placeholder_overrides)
 		mut placeholder_node := unsafe {
-			&Node(InlineNode.new(document, placeholder_element.as_node(), placeholder_style))
+			&Node(BlockContainer.new(document, placeholder_element.as_node(), placeholder_style))
 		}
 		placeholder_text := document.create_text_node(placeholder)
 		placeholder_node.append_child(unsafe {
@@ -1810,7 +1811,7 @@ fn build_textarea_internal_layout_children(document &dom.Document, element &dom.
 		placeholder_node.set_children_are_inline(true)
 		outer.append_child(placeholder_node)
 	}
-	outer.set_children_are_inline(placeholder_is_visible)
+	outer.set_children_are_inline(false)
 	return [outer]
 }
 

@@ -61,6 +61,8 @@ fn test_input_and_parser_static_helpers() {
 	assert placeholder_style_when_visible().contains('overflow:hidden')
 	assert placeholder_style_when_visible().contains('margin-inline-start:-100%')
 	assert placeholder_style_when_hidden() == 'display:none;'
+	assert textarea_placeholder_style_when_visible().contains('margin-inline-start:-100%')
+	assert textarea_placeholder_style_when_hidden() == 'display:none;'
 
 	assert ascii_alphabetic_to_index(`A`) == 0
 	assert ascii_alphabetic_to_index(`Z`) == 25

@@ -172,10 +172,12 @@ pub fn (mut model HTMLTextAreaElementModel) create_shadow_tree_if_needed() {
 	mut container := dom.create_element(element.document(), 'div', ns_html, none, none, false) or {
 		return
 	}
+	container.set_attribute_value('style', 'display:flex;')
 	mut shadow_node := unsafe { &dom.Node(shadow_root) }
 	shadow_node.append_child(container.as_node()) or { return }
 
 	mut inner_text_element := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
+	inner_text_element.set_attribute_value('style', 'width:100%;')
 	mut container_node := container.as_node()
 	container_node.append_child(inner_text_element.as_node()) or { return }
 
@@ -211,16 +213,21 @@ pub fn (mut model HTMLTextAreaElementModel) handle_maxlength_attribute() {
 	model.update_validity()
 }
 
+fn textarea_placeholder_style_when_visible() string {
+	return 'width:100%;overflow:hidden;margin-inline-start:-100%;'
+}
+
+fn textarea_placeholder_style_when_hidden() string {
+	return 'display:none;'
+}
+
 pub fn (mut model HTMLTextAreaElementModel) update_placeholder_visibility() {
-	mut inner_text_element := model.inner_text_element_ or { return }
 	mut placeholder_element := model.placeholder_element_ or { return }
 	text_node := model.text_node_ or { return }
 	if textarea_element(&model).has_attribute('placeholder') && text_node.data() == '' {
-		inner_text_element.set_attribute_value('style', 'display:inline;')
-		placeholder_element.set_attribute_value('style', 'display:inline;')
+		placeholder_element.set_attribute_value('style', textarea_placeholder_style_when_visible())
 	} else {
-		inner_text_element.set_attribute_value('style', 'display:block;')
-		placeholder_element.set_attribute_value('style', 'display:none;')
+		placeholder_element.set_attribute_value('style', textarea_placeholder_style_when_hidden())
 	}
 }
 

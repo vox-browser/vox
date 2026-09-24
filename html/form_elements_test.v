@@ -188,7 +188,10 @@ fn test_textarea_shadow_selection_lifecycle_editing_and_clone_algorithms() {
 	placeholder := textarea.placeholder_element_ or { panic('placeholder element') }
 	assert placeholder.associated_shadow_host_pseudo_element()? == int(css.PseudoElement.placeholder)
 	assert element.element_reference_pseudo_element(int(css.PseudoElement.placeholder))? == placeholder
-	assert placeholder.get_attribute_value('style').contains('display:inline')
+	assert placeholder.get_attribute_value('style').contains('margin-inline-start:-100%')
+	inner := textarea.inner_text_element_ or { panic('inner text element') }
+	assert inner.get_attribute_value('style').contains('width:100%')
+	assert inner.as_node().parent_element()? == placeholder.as_node().parent_element()?
 
 	textarea.set_relevant_value('abcd')!
 	assert textarea.api_value() == 'abcd'
