@@ -2907,6 +2907,44 @@ pub fn (mut set FontFaceSet) add_css_connected_font(face &FontFaceObject) {
 	}
 }
 
+pub fn (mut set FontFaceSet) synchronize_css_connected_font_order(ordered_connected_faces []&FontFaceObject) {
+	mut ordered_faces := []&FontFaceObject{cap: set.set_entries_.len}
+	for face in ordered_connected_faces {
+		if font_face_object_array_contains(set.set_entries_, face)
+			&& !font_face_object_array_contains(ordered_faces, face) {
+			ordered_faces << face
+		}
+	}
+	for face in set.set_entries_ {
+		if face.is_css_connected() && !font_face_object_array_contains(ordered_faces, face) {
+			ordered_faces << face
+		}
+	}
+	for face in set.set_entries_ {
+		if !face.is_css_connected() {
+			ordered_faces << face
+		}
+	}
+
+	mut order_changed := ordered_faces.len != set.set_entries_.len
+	if !order_changed {
+		for index, face in ordered_faces {
+			if face != set.set_entries_[index] {
+				order_changed = true
+				break
+			}
+		}
+	}
+	if !order_changed {
+		return
+	}
+
+	set.set_entries_ = ordered_faces
+	if mut computer := set.font_computer_ {
+		computer.synchronize_font_face_order(set.set_entries_)
+	}
+}
+
 // https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-delete
 pub fn (mut set FontFaceSet) delete_(face &FontFaceObject) bool {
 	// 1. If font is CSS-connected, return false and exit this algorithm immediately.
@@ -3857,6 +3895,23 @@ pub fn (mut computer FontComputer) unregister_font_face(face &FontFaceObject) {
 	computer.did_load_font(key.family_name)
 }
 
+pub fn (mut computer FontComputer) synchronize_font_face_order(ordered_faces []&FontFaceObject) {
+	for key, faces in computer.font_faces {
+		mut ordered_for_key := []&FontFaceObject{cap: faces.len}
+		for face in ordered_faces {
+			if font_face_object_array_contains(faces, face) {
+				ordered_for_key << face
+			}
+		}
+		for face in faces {
+			if !font_face_object_array_contains(ordered_for_key, face) {
+				ordered_for_key << face
+			}
+		}
+		computer.font_faces[key] = ordered_for_key
+	}
+}
+
 pub fn (mut computer FontComputer) clear_font_feature_values_cache(family_name string) {
 	computer.font_feature_values_cache.delete(family_name)
 }
@@ -3917,24 +3972,44 @@ pub fn (mut computer FontComputer) load_fonts_from_font_face_rules(rules []&CSSF
 }
 
 pub fn (mut computer FontComputer) load_fonts_from_css_rules(rules []&CSSRule, font_face_set &FontFaceSet) {
+	computer.synchronize_fonts_from_css_rules(rules, font_face_set, true)
+}
+
+pub fn (mut computer FontComputer) synchronize_fonts_from_css_rules(rules []&CSSRule, font_face_set &FontFaceSet, ancestors_effective bool) {
 	mut associated_set := unsafe { &FontFaceSet(font_face_set) }
 	associated_set.associate_font_computer(computer)
-	// FIXME: Handle @font-face and @font-feature-values within grouping rules (@media, @supports, etc)
 	for rule in rules {
+		mut rule_effective := ancestors_effective
+		if rule.type_ in [.media, .supports] && !rule.condition_matches() {
+			rule_effective = false
+		}
+
 		if font_face_rule := rule.font_face_rule_ref() {
-			if !font_face_rule.is_valid() {
-				continue
+			if rule_effective && font_face_rule.is_valid() {
+				if connected_face := font_face_rule.css_connected_font_face_ref() {
+					if !font_face_object_array_contains(associated_set.set_entries_, connected_face) {
+						associated_set.add_css_connected_font(connected_face)
+					}
+				} else {
+					font_face := FontFaceObject.create_css_connected(font_face_rule)
+					associated_set.add_css_connected_font(font_face)
+				}
+			} else if font_face_rule.css_connected_font_face_ref() != none {
+				mut mutable_rule := unsafe { &CSSFontFaceRule(font_face_rule) }
+				mutable_rule.disconnect_font_face()
 			}
-
-			font_face := FontFaceObject.create_css_connected(font_face_rule)
-			mut mutable_set := unsafe { &FontFaceSet(font_face_set) }
-			mutable_set.add_css_connected_font(font_face)
-
-			computer.register_font_face(font_face)
 		}
 
 		if font_feature_values_rule := rule.font_feature_values_rule_ref() {
-			computer.add_font_feature_values_rule(font_feature_values_rule)
+			if rule_effective {
+				computer.add_font_feature_values_rule(font_feature_values_rule)
+			} else {
+				computer.remove_font_feature_values_rule(font_feature_values_rule)
+			}
+		}
+
+		if child_rules := rule.rules {
+			computer.synchronize_fonts_from_css_rules(child_rules.rules, font_face_set, rule_effective)
 		}
 	}
 }
@@ -3955,20 +4030,30 @@ pub fn (mut computer FontComputer) unload_fonts_from_font_face_rules(rules []&CS
 }
 
 pub fn (mut computer FontComputer) unload_fonts_from_css_rules(rules []&CSSRule) {
-	// FIXME: Handle @font-face and @font-feature-values within grouping rules (@media, @supports, etc)
 	for rule in rules {
 		if font_face_rule := rule.font_face_rule_ref() {
-			if font_face_rule.is_valid() {
-				if face := font_face_rule.css_connected_font_face_ref() {
-					computer.unregister_font_face(face)
-				}
-			}
 			mut mutable_rule := unsafe { &CSSFontFaceRule(font_face_rule) }
 			mutable_rule.disconnect_font_face()
 		}
 
 		if font_feature_values_rule := rule.font_feature_values_rule_ref() {
 			computer.remove_font_feature_values_rule(font_feature_values_rule)
+		}
+
+		if child_rules := rule.rules {
+			computer.unload_fonts_from_css_rules(child_rules.rules)
+		}
+	}
+}
+
+pub fn disconnect_font_faces_in_css_rules(rules []&CSSRule) {
+	for rule in rules {
+		if font_face_rule := rule.font_face_rule_ref() {
+			mut mutable_rule := unsafe { &CSSFontFaceRule(font_face_rule) }
+			mutable_rule.disconnect_font_face()
+		}
+		if child_rules := rule.rules {
+			disconnect_font_faces_in_css_rules(child_rules.rules)
 		}
 	}
 }

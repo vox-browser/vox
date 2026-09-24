@@ -244,7 +244,20 @@ pub fn (mut rule_list CSSRuleList) set_parent_style_sheet(parent_style_sheet ?&C
 	}
 }
 
+fn (rule_list &CSSRuleList) unload_font_rules(rules []&CSSRule) {
+	if sheet := rule_list.owner_style_sheet {
+		if document := sheet.owning_document() {
+			style_computer := css_style_computer_for(document)
+			mut font_computer := unsafe { &FontComputer(style_computer.font_computer_) }
+			font_computer.unload_fonts_from_css_rules(rules)
+			return
+		}
+	}
+	disconnect_font_faces_in_css_rules(rules)
+}
+
 pub fn (mut rule_list CSSRuleList) set_rules(rules []&CSSRule) {
+	rule_list.unload_font_rules(rule_list.rules)
 	for mut old_rule in rule_list.rules {
 		old_rule.set_parent_rule(none)
 	}
@@ -370,8 +383,13 @@ pub fn (mut rule_list CSSRuleList) insert_a_css_rule(new_rule &CSSRule, index u3
 
 	// 8. Insert new rule into list at the zero-indexed position index.
 	rule_list.rules.insert(int(index), new_rule)
-
-	// FIXME: Load font faces for inserted @font-face rules
+	if owner_rule := rule_list.owner_rule {
+		mut mutable_new_rule := unsafe { &CSSRule(new_rule) }
+		mutable_new_rule.set_parent_rule(owner_rule)
+	} else if parent_style_sheet := rule_list.owner_style_sheet {
+		mut mutable_new_rule := unsafe { &CSSRule(new_rule) }
+		mutable_new_rule.set_parent_style_sheet(parent_style_sheet)
+	}
 
 	// 9. Return index.
 	rule_list.did_change()
@@ -400,11 +418,8 @@ pub fn (mut rule_list CSSRuleList) remove_a_css_rule(index u32) ! {
 		}
 	}
 
-	// https://drafts.csswg.org/css-font-loading/#font-face-css-connection
-	// If a @font-face rule is removed from the document, its connected FontFace object is no longer CSS-connected.
-	if mut font_face_rule := old_rule.font_face_rule_ref() {
-		font_face_rule.disconnect_font_face()
-	}
+	// Disconnect every nested font rule before the removed subtree becomes unreachable.
+	rule_list.unload_font_rules([old_rule])
 
 	// 5. Remove rule old rule from list at the zero-indexed position index.
 	rule_list.rules.delete(int(index))
@@ -638,6 +653,8 @@ pub fn CSSRule.create_grouping(type_ CSSRuleType, rules &CSSRuleList) &CSSRule {
 pub fn CSSRule.create_media(media &MediaList, rules &CSSRuleList) &CSSRule {
 	mut rule := CSSRule.create_grouping(.media, rules)
 	rule.media = media
+	mut mutable_media := unsafe { &MediaList(media) }
+	mutable_media.set_associated_rule(rule)
 	return rule
 }
 
@@ -688,6 +705,8 @@ pub fn CSSRule.create_import(url string, document ?&dom.Document, layer ?string,
 	}
 	rule.supports = supports
 	rule.media = media
+	mut mutable_media := unsafe { &MediaList(media) }
+	mutable_media.set_associated_rule(rule)
 	if layer_name := layer {
 		if layer_name.len == 0 {
 			rule.layer_internal = next_unique_anonymous_layer_name()
@@ -1133,10 +1152,9 @@ pub fn (mut rule CSSRule) insert_rule(rule_text string, index u32) !u32 {
 		// rules at index, with the nested flag set.
 		result := rules.insert_a_css_rule_from_text(rule_text, index, .yes, parent_sheet.declared_namespaces())!
 
-		// AD-HOC: The spec doesn't say where to set the parent rule, so we'll do it here.
-		if mut inserted_rule := rules.item(usize(index)) {
-			inserted_rule.set_parent_rule(rule)
-		}
+		mut mutable_parent_sheet := unsafe { &CSSStyleSheet(parent_sheet) }
+		mutable_parent_sheet.invalidate_owners(.style_sheet_insert_rule)
+		mutable_parent_sheet.synchronize_fonts_after_rule_change()
 		return result
 	}
 	return error('InvalidStateError: Rule has no child rule list')
@@ -1144,7 +1162,12 @@ pub fn (mut rule CSSRule) insert_rule(rule_text string, index u32) !u32 {
 
 pub fn (mut rule CSSRule) delete_rule(index u32) ! {
 	if mut rules := rule.rules {
-		return rules.remove_a_css_rule(index)
+		rules.remove_a_css_rule(index)!
+		if mut parent_sheet := rule.parent_style_sheet {
+			parent_sheet.invalidate_owners(.style_sheet_delete_rule)
+			parent_sheet.synchronize_fonts_after_rule_change()
+		}
+		return
 	}
 	return error('InvalidStateError: Rule has no child rule list')
 }
@@ -1954,6 +1977,7 @@ pub fn (mut sheet CSSStyleSheet) insert_rule(rule string, index u32) !u32 {
 	} else {
 		sheet.invalidate_owners(.style_sheet_insert_rule)
 	}
+	sheet.synchronize_fonts_after_rule_change()
 	return result
 }
 
@@ -1970,6 +1994,7 @@ pub fn (mut sheet CSSStyleSheet) delete_rule(index u32) ! {
 	previous_sheet_effects := determine_shadow_root_style_sheet_effects_for_style_sheet(sheet)
 	sheet.rules.remove_a_css_rule(index)!
 	sheet.invalidate_owners_with_previous_effects(.style_sheet_delete_rule, previous_sheet_effects)
+	sheet.synchronize_fonts_after_rule_change()
 }
 
 // https://drafts.csswg.org/cssom/#dom-cssstylesheet-replace
@@ -1997,6 +2022,7 @@ pub fn (mut sheet CSSStyleSheet) replace(text string) !&CSSStyleSheet {
 	}
 	sheet.rules.set_rules(rules_without_import)
 	sheet.invalidate_owners_with_previous_effects(.style_sheet_replace, previous_sheet_effects)
+	sheet.synchronize_fonts_after_rule_change()
 	sheet.disallow_modification = false
 	return sheet
 }
@@ -2031,6 +2057,7 @@ pub fn (mut sheet CSSStyleSheet) replace_sync(text string) ! {
 	// 4. Set sheet's CSS rules to rules.
 	sheet.rules.set_rules(rules_without_import)
 	sheet.invalidate_owners_with_previous_effects(.style_sheet_replace, previous_sheet_effects)
+	sheet.synchronize_fonts_after_rule_change()
 }
 
 // https://drafts.csswg.org/cssom/#dom-cssstylesheet-addrule
@@ -2271,13 +2298,41 @@ pub fn (mut sheet CSSStyleSheet) set_disabled(disabled bool) {
 fn (mut sheet CSSStyleSheet) load_fonts_for_document(document &dom.Document) {
 	style_computer := css_style_computer_for(document)
 	mut font_computer := unsafe { &FontComputer(style_computer.font_computer_) }
-	font_computer.load_fonts_from_css_rules(sheet.rules.rules, style_computer.font_face_set_)
+	font_computer.synchronize_fonts_from_css_rules(sheet.rules.rules, style_computer.font_face_set_,
+		!sheet.base.disabled && sheet.base.media.matches())
+	synchronize_font_face_order_for_document(document, style_computer)
 }
 
 fn (mut sheet CSSStyleSheet) unload_fonts_for_document(document &dom.Document) {
 	style_computer := css_style_computer_for(document)
 	mut font_computer := unsafe { &FontComputer(style_computer.font_computer_) }
 	font_computer.unload_fonts_from_css_rules(sheet.rules.rules)
+}
+
+fn (mut sheet CSSStyleSheet) synchronize_fonts_after_rule_change() {
+	document := sheet.owning_document() or { return }
+	sheet.load_fonts_for_document(document)
+}
+
+fn synchronize_font_face_order_for_document(document &dom.Document, style_computer &StyleComputer) {
+	mut ordered_faces := []&FontFaceObject{}
+	ordered_faces_ptr := &ordered_faces
+	scope := css_style_scope_for_node(unsafe { &dom.Node(document) })
+	scope.for_each_active_css_style_sheet(fn [ordered_faces_ptr] (active_sheet &CSSStyleSheet) {
+		active_sheet.for_each_effective_rule(.preorder, fn [ordered_faces_ptr] (rule &CSSRule) {
+			font_rule := rule.font_face_rule_ref() or { return }
+			face := font_rule.css_connected_font_face_ref() or { return }
+			unsafe {
+				mut collected := *ordered_faces_ptr
+				if !font_face_object_array_contains(collected, face) {
+					collected << face
+				}
+				*ordered_faces_ptr = collected
+			}
+		})
+	})
+	mut font_face_set := unsafe { &FontFaceSet(style_computer.font_face_set_) }
+	font_face_set.synchronize_css_connected_font_order(ordered_faces)
 }
 
 pub fn (sheet &CSSStyleSheet) owning_document() ?&dom.Document {
@@ -2336,6 +2391,7 @@ pub fn (mut sheet CSSStyleSheet) evaluate_media_queries(document &dom.Document) 
 	sheet.did_match = now_matches
 	if any_media_queries_changed_match_state {
 		sheet.invalidate_shared_style_cache()
+		sheet.synchronize_fonts_after_rule_change()
 	}
 
 	return any_media_queries_changed_match_state

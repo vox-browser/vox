@@ -785,6 +785,7 @@ pub struct MediaList {
 pub mut:
 	media                  []MediaQueryListEntry
 	associated_style_sheet ?&CSSStyleSheet
+	associated_rule        ?&CSSRule
 }
 
 pub fn MediaList.create(media []MediaQueryListEntry) &MediaList {
@@ -901,8 +902,22 @@ pub fn (mut media_list MediaList) set_associated_style_sheet(style_sheet &CSSSty
 	}
 }
 
-fn (media_list &MediaList) associated_style_sheet_effects() ?ShadowRootStylesheetEffects {
+pub fn (mut media_list MediaList) set_associated_rule(rule &CSSRule) {
+	media_list.associated_rule = rule
+}
+
+fn (media_list &MediaList) owning_style_sheet() ?&CSSStyleSheet {
 	if sheet := media_list.associated_style_sheet {
+		return sheet
+	}
+	if rule := media_list.associated_rule {
+		return rule.parent_style_sheet
+	}
+	return none
+}
+
+fn (media_list &MediaList) associated_style_sheet_effects() ?ShadowRootStylesheetEffects {
+	if sheet := media_list.owning_style_sheet() {
 		return determine_shadow_root_style_sheet_effects_for_style_sheet(sheet)
 	}
 	return none
@@ -910,9 +925,10 @@ fn (media_list &MediaList) associated_style_sheet_effects() ?ShadowRootStyleshee
 
 fn (media_list &MediaList) invalidate_associated_style_sheet(reason dom.StyleInvalidationReason,
 	previous_sheet_effects ?ShadowRootStylesheetEffects) {
-	if sheet := media_list.associated_style_sheet {
+	if sheet := media_list.owning_style_sheet() {
 		mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
 		mutable_sheet.invalidate_owners_with_previous_effects(reason, previous_sheet_effects)
+		mutable_sheet.synchronize_fonts_after_rule_change()
 	}
 }
 
