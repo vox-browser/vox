@@ -167,7 +167,10 @@
   baseline-aligned cells establish a row baseline, and inline tables export the
   first visible row through their wrapper while excluding captions. Rows grow
   to the shared baseline plus the largest non-spanning cell descent, keeping
-  baseline-aligned descendants inside the row's used block size.
+  baseline-aligned descendants inside the row's used block size. Cells whose
+  spanned columns are all collapsed remain laid out but are omitted with their
+  complete subtree from retained painting and hit testing; a span that reaches
+  any visible column remains displayed.
   Collapsed borders split on whole CSS pixels at every grid line: cells own the
   inner shares, the table owns the outer shares, and painting snaps the derived
   border edges independently in device space. A collapsed table's used borders
