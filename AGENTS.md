@@ -156,7 +156,10 @@
   definite percentage-height basis through its anonymous flex/content wrappers,
   including aspect-ratio sizing and post-flexing content heights. It also honors
   flexible-grid intrinsic minimums and applies `min-height` while stretching
-  lines. Media-control contents retain the upstream left alignment. Size and
+  lines. Once an auto-height row flex container has resolved its line cross
+  sizes, it relays each item's used height as a definite basis to percentage-
+  sized descendants, including items whose own percentage height was initially
+  indefinite. Media-control contents retain the upstream left alignment. Size and
   inline-size query containers establish independent formatting contexts, but
   an ordinary block with an automatic width still fills its containing block;
   containment's zero intrinsic size is not treated as a replaced-element width.
