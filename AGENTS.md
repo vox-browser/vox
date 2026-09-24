@@ -351,7 +351,9 @@
   the parent track-sizing pass. Subgrid border, padding, margin, and half-gap
   edge adjustments contribute to intrinsic sizing; standalone subgrids retain
   the ordinary-grid fallback. Resolved CSSOM exposes the subgrid's local line
-  names without manufacturing pixel tracks.
+  names without manufacturing pixel tracks. Implicit named-area boundaries are
+  clipped to the subgrid's two-dimensional overlap and remain distinguishable
+  from explicit line names as they pass through nested subgrids.
 - Custom properties declared in `@keyframes` now animate. Registered values
   interpolate as typed computed values, unregistered values animate discretely,
   composition and `!important` suppression follow the upstream rules, and the
