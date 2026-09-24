@@ -46,6 +46,38 @@ fn document_tree_builder_first_image(root &Node) ?&Node {
 	return none
 }
 
+fn test_select_fallback_button_keeps_the_chevron_out_of_flow() {
+	document := html.parse_document('<!doctype html><select id="select"><optgroup><option>First</option><option selected label="Chosen label">ignored</option></optgroup></select>')
+	root := build_layout_tree(document) or { panic('no layout tree') }
+	select_layout_node := document_tree_builder_node_with_id(root, 'select') or {
+		panic('missing select')
+	}
+	outer := select_layout_node.first_child() or { panic('missing select fallback button') }
+	label := outer.children()[0]
+	chevron := outer.children()[1]
+	assert outer.is_positioned()
+	assert label.computed_values().flex_grow() == 1
+	assert label.computed_values().length_percentage_to_px(.margin_right, 0) or { -1.0 } == 20
+	label_text := (label.first_child() or { panic('missing label text') }).as_text_node() or {
+		panic('label child is not text')
+	}
+	assert label_text.text_for_rendering() == 'Chosen label'
+	assert chevron.is_absolutely_positioned()
+	assert chevron.computed_values().length_percentage_to_px(.right, 0) or { -1.0 } == 0
+
+	appearance_none_document := html.parse_document('<!doctype html><select id="select" style="appearance:none"><option>Only label</option></select>')
+	appearance_none_root := build_layout_tree(appearance_none_document) or {
+		panic('no appearance:none layout tree')
+	}
+	appearance_none_select := document_tree_builder_node_with_id(appearance_none_root, 'select') or {
+		panic('missing appearance:none select')
+	}
+	appearance_none_outer := appearance_none_select.first_child() or {
+		panic('missing appearance:none fallback button')
+	}
+	assert appearance_none_outer.child_count() == 1
+}
+
 const content_replacement_green_image = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAD0lEQVR4nGNgaGBAIOI4ANA0CAF5jtVRAAAAAElFTkSuQmCC'
 const content_replacement_red_image = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAEElEQVR4nGP4z8AARwzEcQCukw/x0F8jngAAAABJRU5ErkJggg=='
 

@@ -1235,6 +1235,20 @@ fn inline_start_margin_property(values &css.ComputedProperties) css.PropertyID {
 	return if values.direction() == .ltr { .margin_top } else { .margin_bottom }
 }
 
+fn inline_end_margin_property(values &css.ComputedProperties) css.PropertyID {
+	if values.writing_mode() == .horizontal_tb {
+		return if values.direction() == .ltr { .margin_right } else { .margin_left }
+	}
+	return if values.direction() == .ltr { .margin_bottom } else { .margin_top }
+}
+
+fn inline_end_inset_property(values &css.ComputedProperties) css.PropertyID {
+	if values.writing_mode() == .horizontal_tb {
+		return if values.direction() == .ltr { .right } else { .left }
+	}
+	return if values.direction() == .ltr { .bottom } else { .top }
+}
+
 // HTMLProgressElement::create_shadow_tree_if_needed(). Its closed UA shadow
 // root contains the ::slider-track element and its ::slider-fill child.
 fn build_progress_internal_layout_children(document &dom.Document, element &dom.Element, host_computed &css.ComputedProperties) []&Node {
@@ -1683,16 +1697,19 @@ fn build_number_input_stepper_button(document &dom.Document, host_computed &css.
 }
 
 fn build_select_internal_layout_children(document &dom.Document, element &dom.Element, host_computed &css.ComputedProperties) []&Node {
+	// Parser insertion normally runs selectedness before the UA shadow tree is
+	// constructed. The compact layout-tree path has no persistent shadow tree,
+	// so perform that lifecycle checkpoint before cloning the selected label.
+	html.html_select_element_update_selectedness(unsafe { &dom.HTMLSelectElement(element) })
 	options := css.query_selector_all(element.as_node(), 'option')
 	mut selected_text := ''
 	for option in options {
 		if html.html_option_element_selected(unsafe { &dom.HTMLOptionElement(option) }) {
-			selected_text = (option.as_node().text_content() or { '' }).trim_space()
+			selected_text = html.html_option_element_label(unsafe {
+				&dom.HTMLOptionElement(option)
+			})
 			break
 		}
-	}
-	if selected_text == '' && options.len > 0 {
-		selected_text = (options[0].as_node().text_content() or { '' }).trim_space()
 	}
 	outer_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 		return []
@@ -1700,14 +1717,25 @@ fn build_select_internal_layout_children(document &dom.Document, element &dom.El
 	outer_style := computed_style_with_overrides(host_computed, {
 		css.PropertyID.display:     'flex'
 		css.PropertyID.align_items: 'center'
+		css.PropertyID.position:    'relative'
 	})
 	mut outer := unsafe { &Node(Box.new(document, outer_element.as_node(), outer_style)) }
 	text_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 		return []
 	}
-	text_style := computed_style_with_overrides(host_computed, {
-		css.PropertyID.display: 'block'
-	})
+	mut text_overrides := {
+		css.PropertyID.display:     'block'
+		css.PropertyID.flex_grow:   '1'
+		css.PropertyID.flex_shrink: '1'
+		css.PropertyID.flex_basis:  '0%'
+		css.PropertyID.min_width:   '0'
+	}
+	text_overrides[inline_end_margin_property(host_computed)] = if host_computed.appearance() == .none_ {
+		'0'
+	} else {
+		'20px'
+	}
+	text_style := computed_style_with_overrides(host_computed, text_overrides)
 	mut text_box := unsafe {
 		&Node(BlockContainer.new(document, text_element.as_node(), text_style))
 	}
@@ -1715,25 +1743,30 @@ fn build_select_internal_layout_children(document &dom.Document, element &dom.El
 	text_box.append_child(unsafe { &Node(TextNode.new(document, text.as_node(), selected_text)) })
 	text_box.set_children_are_inline(true)
 	outer.append_child(text_box)
+	if host_computed.appearance() == .none_ {
+		outer.set_children_are_inline(false)
+		return [outer]
+	}
 
 	arrow_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 		return []
 	}
-	arrow_style := computed_style_with_overrides(host_computed, {
-		css.PropertyID.display:     'block'
-		css.PropertyID.width:       '16px'
-		css.PropertyID.height:      '16px'
-		css.PropertyID.margin_left: '4px'
-	})
+	mut arrow_overrides := {
+		css.PropertyID.display:  'block'
+		css.PropertyID.position: 'absolute'
+		css.PropertyID.top:      'calc(50% - 8px)'
+		css.PropertyID.width:    '16px'
+		css.PropertyID.height:   '16px'
+	}
+	arrow_overrides[inline_end_inset_property(host_computed)] = '0'
+	arrow_style := computed_style_with_overrides(host_computed, arrow_overrides)
 	mut arrow := unsafe {
 		&Node(BlockContainer.new(document, arrow_element.as_node(), arrow_style))
 	}
 	mut svg_element := document.create_element_ns('http://www.w3.org/2000/svg', 'svg') or {
 		return []
 	}
-	svg_element.set_attribute_value('width', '16')
-	svg_element.set_attribute_value('height', '16')
-	svg_element.set_attribute_value('viewBox', '0 0 16 16')
+	svg_element.set_attribute_value('viewBox', '0 0 24 24')
 	svg_style := computed_style_with_overrides(host_computed, {
 		css.PropertyID.display: 'inline'
 		css.PropertyID.width:   '16px'
@@ -1745,9 +1778,12 @@ fn build_select_internal_layout_children(document &dom.Document, element &dom.El
 	mut path_element := document.create_element_ns('http://www.w3.org/2000/svg', 'path') or {
 		return []
 	}
-	path_element.set_attribute_value('d', 'M 4 5.71875 L 12 5.71875 L 8 10.671875 Z')
+	path_element.set_attribute_value('fill', 'currentcolor')
+	path_data := 'M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z'
+	path_element.set_attribute_value('d', path_data)
 	path_style := computed_style_with_overrides(host_computed, {
 		css.PropertyID.display: 'inline'
+		css.PropertyID.d:       'path("${path_data}")'
 	})
 	path_box := create_layout_node_for_svg_element(document, path_element, path_style) or {
 		return []
