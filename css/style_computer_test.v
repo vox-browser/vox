@@ -1825,6 +1825,26 @@ fn test_ua_default_stylesheet_applies_display() {
 	assert computed_value_for(span, display) or { panic('no span display') } == 'inline'
 }
 
+fn test_root_pseudo_class_matches_non_html_document_element() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_document_type(.xml)
+	document.set_browsing_context(&dom.BrowsingContext{})
+	mut svg_root := document.create_element_ns('http://www.w3.org/2000/svg', 'svg') or {
+		panic('${err}')
+	}
+	mut nested_html := document.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(svg_root.as_node()) or { panic('${err}') }
+	mut svg_node := svg_root.as_node()
+	svg_node.append_child(nested_html.as_node()) or { panic('${err}') }
+
+	assert element_matches_selector(svg_root, ':root')
+	assert !element_matches_selector(nested_html, ':root')
+	assert computed_value_for(svg_root, .view_transition_name) or { '' } == 'root'
+}
+
 fn test_ua_default_stylesheet_keeps_select_labels_on_one_line() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	document.set_browsing_context(&dom.BrowsingContext{})

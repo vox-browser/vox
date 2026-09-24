@@ -1852,8 +1852,10 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 			return true
 		}
 		.root {
-			// SelectorEngine.cpp currently limits :root to HTMLHtmlElement.
-			return element.is_html_element() && element.local_name() == 'html'
+			// https://drafts.csswg.org/selectors/#root-pseudo
+			// The root is the document element in every document type, not every
+			// HTMLHtmlElement and not only the document element of an HTML document.
+			return element.is_document_element()
 		}
 		.host {
 			return matches_host_pseudo_class(element, shadow_host, mut context, pseudo_class.argument_selector_list)
