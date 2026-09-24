@@ -1631,7 +1631,7 @@ fn test_grid_intrinsic_flexible_row_uses_limited_min_content_contribution() {
 	grid := used_for_id(result, 'grid')
 	item := used_for_id(result, 'item')
 	assert grid.content_height().to_double() == 50
-	assert item.content_height().to_double() == 50
+	assert item.content_height().to_double() == 100
 }
 
 fn test_grid_limited_contribution_is_clamped_by_fit_content_row() {
@@ -3324,7 +3324,27 @@ fn test_intrinsic_height_keyword_relays_out_block_children() {
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	box := used_for_id(result, 'box')
 	assert box.content_height().to_double() == 30
-	assert box.has_definite_height()
+	assert !box.has_definite_height()
+}
+
+fn test_intrinsic_height_keywords_stay_indefinite_for_percentage_children() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		.case { height:fit-content }
+		.percent { height:100% }
+		#fixed-min { position:fixed; top:100px; left:0; width:40px; min-height:48px }
+		#fixed-insets { position:fixed; top:200px; bottom:0 }
+	</style>
+	<div id="normal" class="case"><div id="normal-percent" class="percent">A</div><div>B</div></div>
+	<div id="fixed-min" class="case"><div id="fixed-min-percent" class="percent">A</div><div>B</div></div>
+	<div id="fixed-insets" class="case"><div id="fixed-insets-percent" class="percent">A</div>B</div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'normal').content_height().to_double() == 32
+	assert used_for_id(result, 'normal-percent').content_height().to_double() == 16
+	assert used_for_id(result, 'fixed-min').content_height().to_double() == 48
+	assert used_for_id(result, 'fixed-min-percent').content_height().to_double() == 16
+	assert used_for_id(result, 'fixed-insets').content_height().to_double() == 32
+	assert used_for_id(result, 'fixed-insets-percent').content_height().to_double() == 16
 }
 
 fn test_intrinsic_min_and_max_height_constraints_clamp_used_height() {

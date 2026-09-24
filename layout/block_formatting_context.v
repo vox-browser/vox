@@ -585,7 +585,9 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 	// percentage heights can use it.
 	if resolved_height := definite_content_height {
 		box_state.set_content_height(css_px(resolved_height))
-		box_state.set_has_definite_height(true)
+		if computed_height_establishes_definite_containing_block_height(computed.size_value(.height)) {
+			box_state.set_has_definite_height(true)
+		}
 	}
 	// BlockFormattingContext::layout_block_level_box(): flex containers whose
 	// used height is auto have a max-content automatic block size. Resolve that
@@ -602,10 +604,15 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 	}
 	// Anonymous block wrappers pass through the containing block's available
 	// space instead of introducing an independent percentage-height basis.
+	height_establishes_definite_containing_block := definite_content_height != none
+		&& (html_quirk_min_height != none
+		|| computed_height_establishes_definite_containing_block_height(computed.size_value(.height)))
 	children_containing_block_height := if box_as_node.is_anonymous() {
 		containing_block_height
-	} else {
+	} else if height_establishes_definite_containing_block {
 		definite_content_height
+	} else {
+		none
 	}
 
 	// Collapsed-border conflict resolution happens inside the table formatting
@@ -620,7 +627,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 	} else if creates_block_formatting_context(box) || box_as_node.display().is_math_inside()
 		|| box_as_node.display().is_flex_inside() || box_as_node.display().is_grid_inside()
 		|| box_as_node.display().is_table_inside() || box_as_node.is_replaced_box_with_children() {
-		mut available_height := if resolved_height := definite_content_height {
+		mut available_height := if resolved_height := children_containing_block_height {
 			AvailableSize.make_definite(css_px(resolved_height))
 		} else {
 			AvailableSize.make_indefinite()
@@ -750,7 +757,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 	}
 	height = clamp_content_height_for_node(mut state, box, box_state, css_px(height), height_resolution_basis).to_double()
 	box_state.set_content_height(css_px(height))
-	if definite_content_height != none {
+	if height_establishes_definite_containing_block {
 		box_state.set_has_definite_height(true)
 	}
 

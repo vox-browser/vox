@@ -425,8 +425,9 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 	if height := forced_height {
 		forced_height = clamp_layout_content_size(box, height, containing_height, box_state, false)
 	}
-	box_state = layout_independent_child(mut state, box, mut containing_state, containing_width,
-		containing_height, forced_width, forced_height)
+	box_state = layout_independent_child_with_forced_height_definiteness(mut state, box,
+		mut containing_state, containing_width, containing_height, forced_width, forced_height,
+		computed_height_establishes_definite_containing_block_height(preferred_height))
 
 	// CSS 2.2 10.3.7: with both insets specified and a definite width,
 	// auto margins absorb the remaining space (equally when both are auto).

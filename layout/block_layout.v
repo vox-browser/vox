@@ -34,6 +34,12 @@ fn property_is_auto(computed &css.ComputedValues, property_id css.PropertyID) bo
 	}
 }
 
+// A resolved intrinsic keyword remains dependent on child layout. Its used
+// height therefore does not establish a percentage-height containing block.
+fn computed_height_establishes_definite_containing_block_height(size css.Size) bool {
+	return !size.is_intrinsic_sizing_constraint()
+}
+
 // The used border width for one side: 0 if that side's border-style is none/hidden (CSS 2.1 §8.5.3),
 // otherwise the resolved border-width.
 fn resolve_used_border_width(computed &css.ComputedValues, width_property css.PropertyID) f64 {
@@ -284,6 +290,13 @@ pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_b
 	// This box's definite content height, if any (an explicit length, or a percentage resolved against the
 	// containing block's definite height). Children resolve their own percentage heights against it.
 	definite_content_height := resolve_content_height_for_node(mut state, box, used_values, containing_block_height)
+	height_establishes_definite_containing_block := definite_content_height != none
+		&& computed_height_establishes_definite_containing_block_height(computed.size_value(.height))
+	children_containing_block_height := if height_establishes_definite_containing_block {
+		definite_content_height
+	} else {
+		none
+	}
 
 	box_as_node := unsafe { &Node(box) }
 
@@ -293,7 +306,7 @@ pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_b
 	mut content_height_from_children := 0.0
 	if box_has_inline_content(box_as_node) {
 		if block_container := box_as_node.as_block_container() {
-			available_height := if resolved_height := definite_content_height {
+		available_height := if resolved_height := children_containing_block_height {
 				AvailableSize.make_definite(css_px(resolved_height))
 			} else {
 				AvailableSize.make_indefinite()
@@ -314,7 +327,8 @@ pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_b
 		// vertical margins (CSS 2.1 §8.3.1). `box` is treated as the BFC root, whose own margins (per §8.3.1)
 		// do not collapse with its children — that is handled per-child inside the context.
 		mut block_formatting_context := BlockFormattingContext.for_root(box_as_node, .normal, used_values.has_definite_width())
-		content_height_from_children = block_formatting_context.layout_block_level_children(mut state, box, content_width, definite_content_height)
+		content_height_from_children = block_formatting_context.layout_block_level_children(mut state,
+			box, content_width, children_containing_block_height)
 	}
 
 	// Height (CSS 2.1 §10.6): use the definite height if the box has one, else the content height from
@@ -326,7 +340,7 @@ pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_b
 	// Like BlockFormattingContext::resolve_used_height_if_not_treated_as_auto,
 	// definiteness is established by resolving the computed height, not by the
 	// generic UsedValues setter. An auto height remains indefinite.
-	if definite_content_height != none {
+	if height_establishes_definite_containing_block {
 		used_values.set_has_definite_height(true)
 	}
 }
