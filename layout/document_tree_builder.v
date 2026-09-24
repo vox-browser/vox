@@ -1362,7 +1362,9 @@ fn mark_ua_internal_layout_subtree(mut node Node) {
 // styled subtree for documents parsed without that lifecycle hook.
 fn build_input_internal_layout_children(document &dom.Document, element &dom.Element, host_computed &css.ComputedProperties) []&Node {
 	type_ := element.get_attribute_value('type').trim_space().to_lower()
-	if type_ in ['', 'text', 'search', 'url', 'tel', 'email', 'password', 'number'] {
+	type_state := html.html_input_element_parse_type_attribute(type_)
+	if type_state in [.text, .search, .telephone, .url, .email, .password, .date,
+		.month, .week, .time, .local_date_and_time, .number] {
 		outer_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 			return []
 		}
@@ -2104,10 +2106,11 @@ struct HTMLInputElementLayoutNodeResult {
 // hidden-state null result from the generic display-type fallback.
 fn html_input_element_create_layout_node(document &dom.Document, element &dom.Element, computed &css.ComputedProperties) HTMLInputElementLayoutNodeResult {
 	type_ := element.get_attribute_value('type').trim_space().to_lower()
-	if type_ == 'hidden' {
+	type_state := html.html_input_element_parse_type_attribute(type_)
+	if type_state == .hidden {
 		return HTMLInputElementLayoutNodeResult{ handled: true }
 	}
-	if type_ == 'image' {
+	if type_state == .image_button {
 		return HTMLInputElementLayoutNodeResult{
 			handled: true
 			node: unsafe { &Node(ImageBox.new(document, element, computed)) }
@@ -2116,37 +2119,37 @@ fn html_input_element_create_layout_node(document &dom.Document, element &dom.El
 	if computed.appearance() == .none_ {
 		return HTMLInputElementLayoutNodeResult{}
 	}
-	if type_ == 'checkbox' {
+	if type_state == .checkbox {
 		return HTMLInputElementLayoutNodeResult{
 			handled: true
 			node: unsafe { &Node(CheckBox.new(document, element, computed)) }
 		}
 	}
-	if type_ == 'radio' {
+	if type_state == .radio_button {
 		return HTMLInputElementLayoutNodeResult{
 			handled: true
 			node: unsafe { &Node(RadioButton.new(document, element, computed)) }
 		}
 	}
-	if type_ in ['', 'text', 'search', 'url', 'tel', 'email', 'password', 'number'] {
-		return HTMLInputElementLayoutNodeResult{
-			handled: true
-			node: unsafe { &Node(TextInputBox.new(document, element, computed)) }
-		}
-	}
-	if type_ == 'range' {
+	if type_state == .range {
 		return HTMLInputElementLayoutNodeResult{
 			handled: true
 			node: unsafe { &Node(RangeInputBox.new(document, element, computed)) }
 		}
 	}
-	if type_ in ['submit', 'button', 'reset'] {
+	if type_state in [.submit_button, .button, .reset_button] {
 		return HTMLInputElementLayoutNodeResult{
 			handled: true
 			node: unsafe { &Node(BlockContainer.new(document, element.as_node(), computed)) }
 		}
 	}
-	return HTMLInputElementLayoutNodeResult{}
+	if type_state in [.color, .file_upload] {
+		return HTMLInputElementLayoutNodeResult{}
+	}
+	return HTMLInputElementLayoutNodeResult{
+		handled: true
+		node: unsafe { &Node(TextInputBox.new(document, element, computed)) }
+	}
 }
 
 // Element::create_layout_node_for_display_type plus HTMLBRElement's override.

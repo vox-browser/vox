@@ -4521,6 +4521,20 @@ fn test_range_input_keeps_intrinsic_inline_size_and_stretches_in_grid() {
 	assert grid_range.content_width().raw_value() > inline_range.content_width().raw_value()
 }
 
+fn test_unsupported_input_types_fall_back_to_text_input_layout() {
+	document := html.parse_document('<!doctype html><style>body{margin:0}</style><input id="time" type="time"><input id="unknown" type="not-a-type">')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	time_node := layout_node_with_id(result.root, 'time') or { panic('missing time input') }
+	unknown_node := layout_node_with_id(result.root, 'unknown') or { panic('missing unknown input') }
+	assert time_node.is_text_input_box()
+	assert unknown_node.is_text_input_box()
+	assert time_node.has_children()
+	assert unknown_node.has_children()
+	assert used_for_id(result, 'time').content_width().raw_value() > 0
+	assert used_for_id(result, 'time').content_width().raw_value() == used_for_id(result,
+		'unknown').content_width().raw_value()
+}
+
 fn test_flex_item_baseline_ignores_vertical_align() {
 	document := html.parse_document('<!doctype html><div id="line" style="font-size:26px">x<button style="display:inline-flex"><span id="item" style="display:inline-flex;vertical-align:top">3</span></button>y</div>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
