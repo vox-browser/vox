@@ -133,6 +133,32 @@ fn test_document_bridge_applies_async_created_elements_and_set_property_styles()
 	}
 }
 
+fn test_document_bridge_replays_nested_animation_frame_style_and_class_mutations() {
+	$if darwin {
+		mut document := html.parse_document('<html class="reftest-wait"><div id="target" style="scale: 2; translate: 10px; rotate: 45deg"></div><script>requestAnimationFrame(() => requestAnimationFrame(() => { target.style = ""; document.documentElement.classList.remove("reftest-wait"); }));</script></html>')
+		document.set_viewport_rect(dom.Rect{0, 0, 800, 600})
+		mut runtime := Runtime.create()
+		defer {
+			runtime.close()
+		}
+		run_inline_document_scripts(document, 'about:blank', runtime)!
+
+		target := bridge_test_element(document, '#target')
+		root := bridge_test_element(document, 'html')
+		assert target.get_attribute_value('style') == ''
+		assert root.get_attribute_value('class') == ''
+		snapshot := layout.dump_document_layout_snapshot(document, 800, 600) or {
+			panic('layout failed')
+		}
+		assert !snapshot.contains('transform:')
+		layout_node := target.as_node().layout_node() or { panic('missing target layout node') }
+		real_layout_node := unsafe { &layout.Node(layout_node.real_layout_handle()) }
+		assert real_layout_node.computed_values().scale() == none
+		assert real_layout_node.computed_values().translate() == none
+		assert real_layout_node.computed_values().rotate() == none
+	}
+}
+
 fn test_document_bridge_replays_style_sheet_insert_rule_into_live_cssom_sheet() {
 	$if darwin {
 		mut document := html.parse_document('<style id="style">div::after { content: counter(a, dynamic-counter-style); }</style><div style="counter-reset: a 5"></div><script>style.sheet.insertRule(\'@counter-style dynamic-counter-style { symbols: "*"; }\', 0);</script>')
