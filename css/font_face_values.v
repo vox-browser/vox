@@ -4,7 +4,6 @@ import dom
 import fetch
 import math
 import mimesniff
-import os
 import platform
 import strconv
 import strings
@@ -2628,7 +2627,7 @@ fn (mut face FontFaceObject) start_binary_load() {
 		}
 		font_face_set.loading_fonts_ << face
 	}
-	typeface := platform_load_font_from_bytes_boundary(face.binary_data)
+	typeface := platform_load_font_from_bytes_boundary(face.binary_data, face.family_)
 	face.finish_loading_from_typeface(typeface)
 }
 
@@ -3719,7 +3718,7 @@ pub fn (loader &FontLoader) try_load_font(response &fetch.Response, bytes []u8) 
 	}
 	if mime_type.essence() in ['font/ttf', 'application/x-font-ttf', 'font/otf', 'font/woff',
 		'application/font-woff', 'font/woff2', 'application/font-woff2'] {
-		if typeface := platform_load_font_from_bytes_boundary(bytes) {
+		if typeface := platform_load_font_from_bytes_boundary(bytes, loader.family_name_) {
 			return typeface
 		}
 	}
@@ -3777,6 +3776,7 @@ fn (mut candidate MatchingFontCandidate) font_with_point_size(point_size f32, va
 @[heap]
 pub struct FontComputer {
 pub mut:
+	document_                 ?&dom.Document
 	font_faces                map[string][]&FontFaceObject
 	loaders_by_url            map[string]&FontLoader
 	computed_font_cache       map[string]FontCascadeList
@@ -3794,6 +3794,12 @@ pub fn FontComputer.create() &FontComputer {
 		computed_font_cache: map[string]FontCascadeList{}
 		font_feature_values_cache: map[string]map[string][]u32{}
 	}
+}
+
+pub fn FontComputer.create_for_document(document &dom.Document) &FontComputer {
+	mut computer := FontComputer.create()
+	computer.document_ = document
+	return computer
 }
 
 pub fn (mut computer FontComputer) add_font_feature_values_rule(rule &CSSFontFeatureValuesRule) {
@@ -3824,15 +3830,27 @@ pub fn (mut computer FontComputer) clear_computed_font_cache(family_name string)
 	computer.environment_generation_++
 	// Only clear cache entries that reference the loaded font family.
 	mut kept := map[string]FontCascadeList{}
+	mut removed_referenced_family := false
 	for key, value in computer.computed_font_cache {
-		if !computed_font_cache_key_references_family(key, family_name) {
+		if computed_font_cache_key_references_family(key, family_name) {
+			removed_referenced_family = true
+		} else {
 			kept[key] = value
 		}
 	}
 	computer.computed_font_cache = kept.clone()
 
-	// Boundary: The C++ walks the DOM tree and marks elements using this family for style update. The V DOM style-cache
-	// integration is not present here.
+	// The upstream style engine republishes only elements which retain one of
+	// the invalidated cascade identities. V's style groups are not independently
+	// published yet, so invalidate their owning document after a referenced
+	// cached cascade changes. A font selected during layout is then incorporated
+	// by update_layout()'s stabilization pass before the first paint.
+	if removed_referenced_family {
+		if document := computer.document_ {
+			mut document_node := unsafe { &dom.Node(document) }
+			document_node.invalidate_style(.css_font_loaded)
+		}
+	}
 }
 
 pub fn (mut computer FontComputer) did_load_font(family_name string) {
@@ -5365,21 +5383,18 @@ fn font_face_key_from_id(id string) FontFaceKey {
 }
 
 fn platform_load_font_from_url_boundary(raw_url string, family_name string) ?PlatformTypeface {
-	// Frozen pixel fixtures use file: resources. Mirror FontLoader::try_load_font's
-	// TrueType branch for those deterministic local sources; HTTP fetching and
-	// WOFF/WOFF2 decoding remain asynchronous platform boundaries.
+	// Frozen layout and pixel fixtures use file: resources. Prepare sfnt, WOFF,
+	// and WOFF2 sources through the platform font boundary before retaining the
+	// concrete file used by metrics, HarfBuzz shaping, and native replay.
 	parsed := liburl.parse(raw_url) or { return none }
 	if parsed.scheme != 'file' {
 		return none
 	}
 	path := liburl.percent_decode(parsed.serialize_path()).bytestr()
-	data := os.read_bytes(path) or { return none }
-	if data.len < 4 || data[0] != 0 || data[1] != 1 || data[2] != 0 || data[3] != 0 {
-		return none
-	}
+	prepared_path := platform.prepare_font_file(path)?
 	return PlatformTypeface{
 		family_name: family_name
-		source_path: path
+		source_path: prepared_path
 	}
 }
 
@@ -5390,10 +5405,12 @@ fn resolve_font_face_source_url(source URL, parent_rule ?&CSSFontFaceRule) strin
 	return resolve_css_url_with_base(source.url(), base_url) or { source.url() }
 }
 
-fn platform_load_font_from_bytes_boundary(data []u8) ?PlatformTypeface {
-	_ = data
-	// Boundary for Typeface/WOFF/WOFF2 automatic format detection.
-	return none
+fn platform_load_font_from_bytes_boundary(data []u8, family_name string) ?PlatformTypeface {
+	prepared_path := platform.prepare_font_data(data)?
+	return PlatformTypeface{
+		family_name: family_name
+		source_path: prepared_path
+	}
 }
 
 fn platform_default_font_boundary(point_size f32, variations FontVariationSettings, shape_features ShapeFeatures) PlatformFont {

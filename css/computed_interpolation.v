@@ -10442,7 +10442,7 @@ pub mut:
 
 pub fn StyleComputer.new(document &dom.Document) &StyleComputer {
 	initial_timeline_time := document.last_animation_frame_timestamp_value() or { 0.0 }
-	font_computer := FontComputer.create()
+	font_computer := FontComputer.create_for_document(document)
 	return &StyleComputer{
 		document_: unsafe { document }
 		viewport_rect_: css_pixel_rect_from_dom_rect(document.viewport_rect())

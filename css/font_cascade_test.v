@@ -1,6 +1,8 @@
 module css
 
 import dom
+import math
+import os
 import platform
 
 fn test_system_ui_generic_font_family_list_parses() {
@@ -298,6 +300,38 @@ fn test_initial_paint_waits_only_for_pending_cache_resident_font_work() {
 	assert computer.has_completed_initial_paint()
 	assert computer.initial_paint_had_pending_fonts()
 	assert !computer.should_defer_initial_paint()
+}
+
+fn test_loaded_document_font_invalidates_style_before_the_first_paint() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut computer := FontComputer.create_for_document(document)
+	computer.computed_font_cache['loaded fixture|16|0|400|100|auto||'] = FontCascadeList.create()
+	document.set_needs_full_style_update(false)
+
+	computer.did_load_font('Loaded Fixture')
+
+	assert document.needs_full_style_update()
+}
+
+fn test_local_woff2_font_is_prepared_for_metrics_and_shaping() {
+	$if macos {
+		fixture := os.real_path(os.join_path(os.dir(os.dir(@FILE)), '..', '3rd', 'ladybird',
+			'Tests', 'LibWeb', 'Assets', 'NotoSansEthiopic.woff2'))
+		if !os.is_file(fixture) {
+			return
+		}
+		prepared := platform.prepare_font_file(fixture) or { panic('WOFF2 preparation failed') }
+		assert prepared != fixture
+		assert os.is_file(prepared)
+		font := platform.Font{
+			family: 'Noto Sans Ethiopic'
+			point_size: 16
+			source_path: prepared
+		}
+		metrics := font.pixel_metrics()
+		assert math.round(f64(metrics.ascent)) + math.round(f64(metrics.descent)) == 22
+		assert font.contains_glyph(u32(0x1200))
+	}
 }
 
 fn test_pending_font_face_preserves_fallback_metrics_and_suppresses_ink_during_block() {

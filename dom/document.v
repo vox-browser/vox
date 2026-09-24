@@ -6775,7 +6775,8 @@ fn layout_stabilization_element_count(node &Node) int {
 }
 
 fn (d &Document) needs_style_update_after_layout() bool {
-	if d.query_containers_needing_container_query_evaluation_after_layout.len > 0
+	if d.needs_full_style_update
+		|| d.query_containers_needing_container_query_evaluation_after_layout.len > 0
 		|| d.needs_animated_style_update {
 		return true
 	}

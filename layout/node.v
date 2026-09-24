@@ -1839,9 +1839,10 @@ pub mut:
 }
 
 pub fn (n &TextNode) font_for_rendering() &platform.Font {
-	if font := n.font_for_rendering_ {
-		return font
-	}
+	// A lazy @font-face may become available while the first layout pass is
+	// shaping this node. Re-resolve through the retained ComputedValues on the
+	// stabilization pass instead of returning the fallback cached by that first
+	// pass.
 	mut mutable_node := unsafe { &TextNode(n) }
 	font := n.Node.first_available_font()
 	mutable_node.font_for_rendering_ = font
