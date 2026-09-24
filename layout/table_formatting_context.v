@@ -411,6 +411,12 @@ fn resolve_collapsed_table_borders(mut state LayoutState, table &Node, rows []&N
 			table_state.border_right = outer_right
 			table_state.border_top = outer_top
 			table_state.border_bottom = outer_bottom
+			// CSS 2.2 collapsing borders give the table margins and a resolved
+			// outer border, but no used padding.
+			table_state.padding_left = CSSPixels.new(0)
+			table_state.padding_right = CSSPixels.new(0)
+			table_state.padding_top = CSSPixels.new(0)
+			table_state.padding_bottom = CSSPixels.new(0)
 		}
 	}
 }

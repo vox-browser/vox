@@ -2187,6 +2187,27 @@ fn test_table_cell_height_uses_content_box_except_for_border_box_and_quirks() {
 	assert used_for_id(quirks_result, 'quirks-row').content_height().to_double() == 20
 }
 
+fn test_collapsed_table_ignores_authored_padding() {
+	document := html.parse_document('<!doctype html><style>
+		table { padding:10px; border:2px solid; border-spacing:0 }
+		#collapsed { border-collapse:collapse }
+		td { width:20px; height:10px; padding:0 }
+	</style><table id="collapsed"><tr><td></td></tr></table><table id="separate"><tr><td></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	collapsed := used_for_id(result, 'collapsed')
+	assert collapsed.padding_left.to_double() == 0
+	assert collapsed.padding_right.to_double() == 0
+	assert collapsed.padding_top.to_double() == 0
+	assert collapsed.padding_bottom.to_double() == 0
+	assert collapsed.border_box_left().to_double() == 1
+	assert collapsed.border_box_top().to_double() == 1
+	separate := used_for_id(result, 'separate')
+	assert separate.padding_left.to_double() == 10
+	assert separate.padding_right.to_double() == 10
+	assert separate.padding_top.to_double() == 10
+	assert separate.padding_bottom.to_double() == 10
+}
+
 fn test_table_auto_layout_uses_definite_cell_width_contributions() {
 	document := html.parse_document('<!doctype html><style>
 		table { width:160px; border-spacing:0 }
