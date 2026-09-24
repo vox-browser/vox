@@ -52,6 +52,16 @@ for requested in "$@"; do
         exit 1
 	fi
 	name=$(basename "$input_path" .html)
+	capture_input_source=$input_path
+	case "$input_path" in
+		*.xht)
+			# The native capture browser currently parses local files as HTML.
+			# Normalize XHTML stylesheet CDATA on the test side just as we do for
+			# an XHTML reference, so both halves exercise identical CSS text.
+			capture_input_source="$normalized_reference_dir/$name.input.html"
+			sed 's/<!\[CDATA\[//g; s/\]\]>//g' "$input_path" > "$capture_input_source"
+			;;
+	esac
 	reference_relation=match
 	if [ "$test_kind" = reftest ]; then
 		reference_href=$(sed -n 's/.*<link[^>]*rel="match"[^>]*href="\([^"]*\)"[^>]*>.*/\1/p' "$input_path" | head -n 1)
@@ -99,7 +109,7 @@ for requested in "$@"; do
 	diff_path="$output_dir/$name.diff.png"
 
     LADYBIRD_LAYOUT_TEST_FONT="$layout_test_font" \
-        "$repo_dir/capture_screenshot.sh" "$input_path" "$actual_path" "$width" "$height"
+        "$repo_dir/capture_screenshot.sh" "$capture_input_source" "$actual_path" "$width" "$height"
 
     echo "== $name =="
     fuzzy_content=$(sed -n 's/.*<meta[^>]*name="fuzzy"[^>]*content="\([^"]*\)"[^>]*>.*/\1/p' "$input_path" | head -n 1)
