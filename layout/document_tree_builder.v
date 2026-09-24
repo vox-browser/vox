@@ -1423,6 +1423,8 @@ fn build_input_internal_layout_children(document &dom.Document, element &dom.Ele
 				css.PropertyID.overflow_y:           'hidden'
 				css.PropertyID.white_space_collapse: 'collapse'
 				css.PropertyID.text_wrap_mode:       'nowrap'
+				css.PropertyID.pointer_events:       'none'
+				css.PropertyID.user_select:          'none'
 			}
 			placeholder_overrides[inline_start_margin_property(placeholder_base)] = '-100%'
 			placeholder_style := computed_style_with_overrides(placeholder_base, placeholder_overrides)
@@ -1798,6 +1800,8 @@ fn build_textarea_internal_layout_children(document &dom.Document, element &dom.
 			css.PropertyID.width:      '100%'
 			css.PropertyID.overflow_x: 'hidden'
 			css.PropertyID.overflow_y: 'hidden'
+			css.PropertyID.pointer_events: 'none'
+			css.PropertyID.user_select:    'none'
 		}
 		placeholder_overrides[inline_start_margin_property(placeholder_base)] = '-100%'
 		placeholder_style := computed_style_with_overrides(placeholder_base, placeholder_overrides)

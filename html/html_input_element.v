@@ -158,7 +158,7 @@ fn stepper_button_style_when_hidden() string {
 }
 
 fn placeholder_style_when_visible() string {
-	return 'width:100%;height:1lh;overflow:hidden;text-overflow:clip;white-space:nowrap;margin-inline-start:-100%;'
+	return 'width:100%;height:1lh;overflow:hidden;text-overflow:clip;white-space:nowrap;margin-inline-start:-100%;pointer-events:none;user-select:none;'
 }
 
 fn placeholder_style_when_hidden() string {

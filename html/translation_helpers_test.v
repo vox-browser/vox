@@ -60,8 +60,12 @@ fn test_input_and_parser_static_helpers() {
 	assert stepper_button_style_when_hidden() == 'display:none;'
 	assert placeholder_style_when_visible().contains('overflow:hidden')
 	assert placeholder_style_when_visible().contains('margin-inline-start:-100%')
+	assert placeholder_style_when_visible().contains('pointer-events:none')
+	assert placeholder_style_when_visible().contains('user-select:none')
 	assert placeholder_style_when_hidden() == 'display:none;'
 	assert textarea_placeholder_style_when_visible().contains('margin-inline-start:-100%')
+	assert textarea_placeholder_style_when_visible().contains('pointer-events:none')
+	assert textarea_placeholder_style_when_visible().contains('user-select:none')
 	assert textarea_placeholder_style_when_hidden() == 'display:none;'
 
 	assert ascii_alphabetic_to_index(`A`) == 0

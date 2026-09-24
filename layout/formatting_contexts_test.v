@@ -195,6 +195,8 @@ fn test_visible_input_placeholder_overlays_the_full_width_editor() {
 	assert text_inner_used.content_width().to_double() == 200
 	assert text_placeholder_used.content_width() == text_inner_used.content_width()
 	assert text_placeholder_used.margin_left.to_double() == -200
+	assert text_placeholder.computed_values().pointer_events() == .none_
+	assert text_placeholder.computed_values().user_select() == .none_
 
 	number := layout_node_with_id(result.root, 'number') or { panic('missing number input') }
 	number_outer := number.first_child() or { panic('missing number outer box') }
@@ -232,6 +234,8 @@ fn test_visible_textarea_placeholder_overlays_the_full_width_editor() {
 	assert inner_used.content_width().to_double() == 240
 	assert placeholder_used.content_width() == inner_used.content_width()
 	assert placeholder_used.margin_left == inner_used.content_width().negated()
+	assert placeholder.computed_values().pointer_events() == .none_
+	assert placeholder.computed_values().user_select() == .none_
 }
 
 fn test_multiline_flex_align_content_distributes_cross_axis_space() {
