@@ -179,7 +179,9 @@
   groups; collapsed rows do not synthesize spacing inside the group. Fixed
   layout ignores padding and borders on auto-width cells when measuring
   columns, adds content-box offsets to first-row percentage widths, and ignores
-  later-row cells when deriving column measures.
+  later-row cells when deriving column measures. When those measures make a
+  column narrower than its cell offsets, the cell reduces end/start padding
+  and then borders so its painted border box stays within its columns.
 - Parsed programs are reused for bytecode cache generation, nested idle
   callback periods are paced, Window named-property membership avoids full ID
   enumeration, and SVG presentation attributes retain their case-sensitive
