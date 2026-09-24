@@ -368,6 +368,11 @@
   aligned inline block that raises a line's baseline also carries the font
   strut's descent below it, and wrapped lines advance from that expanded line-
   box end.
+- Inline formatting contexts publish their final inline-end insertion position
+  after forced breaks, alignment, RTL direction, and writing-mode conversion.
+  Originally-inline absolutely positioned descendants routed through an
+  anonymous wrapper therefore retain the exact static position computed by the
+  wrapper's line layout.
 - Text shaping applies computed `word-spacing` to spaces, no-break spaces, and
   collapsed line feeds. It records the exact shaped advance of trailing ASCII
   whitespace, carries that record through fragment merging and intrinsic shape
