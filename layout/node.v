@@ -216,6 +216,13 @@ pub fn (n &Node) is_grid_item() bool {
 	return n.is_grid_item_
 }
 
+pub fn (n &Node) vertical_align_applies() bool {
+	// vertical-align has no effect on flex or grid items. Other applicability
+	// remains intentionally broad until the generic baseline path is narrowed
+	// to inline-level boxes and table cells.
+	return !n.is_flex_item_ && !n.is_grid_item_
+}
+
 pub fn (mut n Node) set_grid_item(value bool) {
 	n.is_grid_item_ = value
 }

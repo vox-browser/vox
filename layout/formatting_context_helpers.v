@@ -381,33 +381,35 @@ fn layout_box_baseline(state &LayoutState, box &Node) CSSPixels {
 	styled := box.as_node_with_style() or { return CSSPixels.new(0) }
 	box_state := state.try_get(styled) or { return CSSPixels.new(0) }
 	computed := box.computed_values()
-	match computed.vertical_align() {
-		.top {
-			return box_state.border_box_top()
-		}
-		.middle {
-			containing_font_metrics := if containing_block := box.containing_block() {
-				layout_font_metrics_for_node(unsafe { &Node(containing_block) })
-			} else {
-				layout_font_metrics_for_node(box)
+	if box.vertical_align_applies() {
+		match computed.vertical_align() {
+			.top {
+				return box_state.border_box_top()
 			}
-			return CSSPixels.from_raw(box_state.margin_box_height().raw_value() / 2).plus(CSSPixels.nearest_value_for(f64(containing_font_metrics.x_height) / 2.0))
-		}
-		.bottom {
-			return box_state.content_height().plus(box_state.margin_box_top())
-		}
-		.text_top {
-			return computed.font_size()
-		}
-		.text_bottom {
-			containing_font_metrics := if containing_block := box.containing_block() {
-				layout_font_metrics_for_node(unsafe { &Node(containing_block) })
-			} else {
-				layout_font_metrics_for_node(box)
+			.middle {
+				containing_font_metrics := if containing_block := box.containing_block() {
+					layout_font_metrics_for_node(unsafe { &Node(containing_block) })
+				} else {
+					layout_font_metrics_for_node(box)
+				}
+				return CSSPixels.from_raw(box_state.margin_box_height().raw_value() / 2).plus(CSSPixels.nearest_value_for(f64(containing_font_metrics.x_height) / 2.0))
 			}
-			return box_state.margin_box_height().minus(CSSPixels.nearest_value_for(f64(containing_font_metrics.descent) * 2.0))
+			.bottom {
+				return box_state.content_height().plus(box_state.margin_box_top())
+			}
+			.text_top {
+				return computed.font_size()
+			}
+			.text_bottom {
+				containing_font_metrics := if containing_block := box.containing_block() {
+					layout_font_metrics_for_node(unsafe { &Node(containing_block) })
+				} else {
+					layout_font_metrics_for_node(box)
+				}
+				return box_state.margin_box_height().minus(CSSPixels.nearest_value_for(f64(containing_font_metrics.descent) * 2.0))
+			}
+			else {}
 		}
-		else {}
 	}
 	// A table formatting context commits the baselines established by its
 	// rows. Inline tables export their first row through the wrapper; other

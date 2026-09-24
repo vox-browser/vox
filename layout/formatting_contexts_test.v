@@ -4521,6 +4521,17 @@ fn test_range_input_keeps_intrinsic_inline_size_and_stretches_in_grid() {
 	assert grid_range.content_width().raw_value() > inline_range.content_width().raw_value()
 }
 
+fn test_flex_item_baseline_ignores_vertical_align() {
+	document := html.parse_document('<!doctype html><div id="line" style="font-size:26px">x<button style="display:inline-flex"><span id="item" style="display:inline-flex;vertical-align:top">3</span></button>y</div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	item := layout_node_with_id(result.root, 'item') or { panic('missing flex item') }
+	assert item.is_flex_item()
+	assert !item.vertical_align_applies()
+	item_used := used_for_id(result, 'item')
+	assert layout_box_baseline(result.state, item).raw_value() > item_used.border_box_top().raw_value()
+	assert used_for_id(result, 'line').content_height().to_double() < 40
+}
+
 fn test_subgrid_inherits_tracks_and_contributes_descendants_to_parent_sizing() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }
