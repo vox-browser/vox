@@ -848,6 +848,18 @@ fn test_document_preload_resources_are_resolved_deduplicated_and_ordered() {
 	]
 }
 
+fn test_document_preload_resources_use_the_document_base_element() {
+	document_url := dom.dom_url_parse('https://example.test/pages/index.html', dom.url_about_blank(),
+		'UTF-8') or { panic(err) }
+	document := html.parse_document_with_url('<!doctype html><head><base href="https://cdn.example/assets/"><link rel="stylesheet" href="site.css"><script src="app.js"></script></head>',
+		document_url)
+	urls := document_preload_resource_urls(document, document.base_url().serialize())
+	assert urls == [
+		'https://cdn.example/assets/site.css',
+		'https://cdn.example/assets/app.js',
+	]
+}
+
 fn test_local_documents_do_not_block_on_remote_images() {
 	document := html.parse_document('<html><head>
 		<link rel="stylesheet" href="https://cdn.example/site.css">

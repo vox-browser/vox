@@ -12,7 +12,15 @@ import dom
 pub fn parse_html_from_a_string(document &dom.Document, markup string) {
 	install_document_fragment_parsing_hook(document)
 	mut mutable_document := unsafe { &dom.Document(document) }
+	old_base_url := document.base_url()
 	mutable_document.parse_html_from_a_string(markup)
+	// Parser-created elements currently enter through DOM's generic lifecycle
+	// hook. Complete HTMLBaseElement's insertion steps once tree construction
+	// has established tree order and the document URL is already final.
+	mutable_document.update_base_element()
+	if first_base := document.first_base_element_with_href_in_tree_order() {
+		html_base_element_set_the_frozen_base_url(first_base, old_base_url)
+	}
 	// Parser-created HTML elements currently enter the tree through DOM's base
 	// lifecycle hook. Refresh document metadata once tree construction has
 	// completed so an initial color-scheme meta element takes effect just as a
@@ -20,9 +28,11 @@ pub fn parse_html_from_a_string(document &dom.Document, markup string) {
 	mutable_document.obtain_supported_color_schemes()
 }
 
-// Convenience: parse an HTML string into a fresh (about:blank) html Document and return it.
-pub fn parse_document(markup string) &dom.Document {
-	mut document := dom.Document.create(dom.url_about_blank())
+// Parse an HTML string into a fresh html Document whose URL is already known.
+// Navigation uses this entry point so parser-time URL consumers, including a
+// parser-inserted <base>, observe the final document URL.
+pub fn parse_document_with_url(markup string, document_url dom.URL) &dom.Document {
+	mut document := dom.Document.create(document_url)
 	document.set_document_type(.html)
 	_ = CustomElementRegistry.create(document)
 	// Documents created by navigation allow declarative shadow roots. This
@@ -30,4 +40,9 @@ pub fn parse_document(markup string) &dom.Document {
 	document.set_allow_declarative_shadow_roots(true)
 	parse_html_from_a_string(document, markup)
 	return document
+}
+
+// Convenience: parse an HTML string into a fresh about:blank html Document.
+pub fn parse_document(markup string) &dom.Document {
+	return parse_document_with_url(markup, dom.url_about_blank())
 }

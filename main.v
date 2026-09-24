@@ -2476,30 +2476,35 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	mut checkpoint := time.sys_mono_now()
 	install_start := checkpoint
 	app.animation_epoch_ns = install_start
-	app.document = html.parse_document(loaded.markup)
+	app.document = if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(),
+		'UTF-8') {
+		html.parse_document_with_url(loaded.markup, document_url)
+	} else {
+		html.parse_document(loaded.markup)
+	}
 	app.document.set_page(unsafe { &dom.Page(app.page_model) })
 	checkpoint = debug_timing_checkpoint('parse_document', checkpoint)
-	if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(), 'UTF-8') {
-		app.document.set_url(document_url)
-	}
+	// Relative subresources use the document base URL, which may be replaced by
+	// the first <base href>. Keep the address/history URL as the document URL.
+	resource_base_url := app.document.base_url().serialize()
 	install_object_image_fetch_hooks(app.document)
 	install_video_poster_fetch_hooks(app.document)
-	preloaded_resources := preload_document_resources(app.document, loaded.url, app.resource_cache)
+	preloaded_resources := preload_document_resources(app.document, resource_base_url, app.resource_cache)
 	checkpoint = debug_timing_checkpoint('preload_resources', checkpoint)
 	for resource_url, resource in preloaded_resources {
 		if resource.error == '' && app.resource_cache.len < max_cached_resources {
 			app.resource_cache[resource_url] = resource
 		}
 	}
-	app.js_messages << install_external_styles(app.document, loaded.url, preloaded_resources)
+	app.js_messages << install_external_styles(app.document, resource_base_url, preloaded_resources)
 	checkpoint = debug_timing_checkpoint('install_styles', checkpoint)
-	install_local_video_frames(app.document, loaded.url, loaded.markup)
+	install_local_video_frames(app.document, resource_base_url, loaded.markup)
 	checkpoint = debug_timing_checkpoint('install_video_frames', checkpoint)
 	if app.js_runtime != unsafe { nil } {
 		app.js_runtime.close()
 		app.js_runtime = unsafe { nil }
 	}
-	sources := script_sources(app.document, loaded.url, preloaded_resources, mut app.js_messages)
+	sources := script_sources(app.document, resource_base_url, preloaded_resources, mut app.js_messages)
 	javascript_navigation := if sources.len > 0 {
 		app.js_runtime = browserjs.Runtime.create()
 		run_document_javascript(app.document, loaded.url, sources, app.js_runtime, mut app.js_messages)
