@@ -326,6 +326,13 @@ struct LayoutDebugStackingContext {
 	parent     int = -1
 }
 
+fn layout_debug_used_z_index(node &Node) ?int {
+	if !node.is_positioned() && !node.is_flex_item() && !node.is_grid_item() {
+		return none
+	}
+	return node.computed_values().z_index()
+}
+
 fn dump_typed_stacking_context_tree(root &Node, state &LayoutState) string {
 	mut contexts := [LayoutDebugStackingContext{
 		node: root
@@ -364,8 +371,8 @@ fn layout_debug_stacking_context_children(context_index int, contexts []LayoutDe
 	children.sort_with_compare(fn [contexts] (a &int, b &int) int {
 		a_context := contexts[*a]
 		b_context := contexts[*b]
-		a_z_index := a_context.node.computed_values().z_index() or { 0 }
-		b_z_index := b_context.node.computed_values().z_index() or { 0 }
+		a_z_index := layout_debug_used_z_index(a_context.node) or { 0 }
+		b_z_index := layout_debug_used_z_index(b_context.node) or { 0 }
 		if a_z_index != b_z_index {
 			return a_z_index - b_z_index
 		}
@@ -387,7 +394,7 @@ fn append_typed_stacking_context(context_index int, contexts []LayoutDebugStacki
 		width: used.content_width()
 		height: used.content_height()
 	}
-	z_index := if value := node.computed_values().z_index() { value.str() } else { 'auto' }
+	z_index := if value := layout_debug_used_z_index(node) { value.str() } else { 'auto' }
 	mut line := '${' '.repeat(depth)}SC for ${layout_debug_node_description(node)} ${layout_debug_css_rect(rect)} (z-index: ${z_index})'
 	computed := node.computed_values()
 	if computed.transformations().len > 0 || computed.rotate() != none

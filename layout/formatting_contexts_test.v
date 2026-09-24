@@ -4502,6 +4502,25 @@ fn test_inline_abspos_static_position_accounts_for_float_intrusion() {
 	assert used_for_id(result, 'abspos').offset.y().to_double() == 0
 }
 
+fn test_range_input_keeps_intrinsic_inline_size_and_stretches_in_grid() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#grid { display:grid; grid-template-columns:auto 1fr; width:400px }
+	</style><input id="inline-range" type="range"><div id="grid"><span>Label</span><input id="grid-range" type="range"></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	inline_node := layout_node_with_id(result.root, 'inline-range') or { panic('missing inline range') }
+	grid_node := layout_node_with_id(result.root, 'grid-range') or { panic('missing grid range') }
+	assert inline_node.is_range_input_box()
+	assert grid_node.is_range_input_box()
+	inline_range := used_for_id(result, 'inline-range')
+	grid_range := used_for_id(result, 'grid-range')
+	assert inline_range.content_width().to_double() > 0
+	assert inline_range.content_width().to_double() < 400
+	assert inline_range.content_height().to_double() == 16
+	assert grid_range.offset.x().plus(grid_range.content_width()).to_double() == 400
+	assert grid_range.content_width().raw_value() > inline_range.content_width().raw_value()
+}
+
 fn test_subgrid_inherits_tracks_and_contributes_descendants_to_parent_sizing() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }

@@ -51,6 +51,7 @@ pub mut:
 	is_fieldset_box_                 bool
 	is_legend_box_                   bool
 	is_text_input_box_               bool
+	is_range_input_box_              bool
 	is_textarea_box_                 bool
 	is_table_wrapper_                bool
 	is_list_item_marker_box_         bool
@@ -1666,6 +1667,10 @@ pub fn (n &Node) is_textarea_box() bool {
 
 pub fn (n &Node) is_text_input_box() bool {
 	return n.is_text_input_box_
+}
+
+pub fn (n &Node) is_range_input_box() bool {
+	return n.is_range_input_box_
 }
 
 pub fn (n &Node) is_table_wrapper() bool {

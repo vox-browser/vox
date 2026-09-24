@@ -542,6 +542,9 @@ fn layout_debug_class_name(node &Node) string {
 	if node.is_text_input_box() {
 		return 'TextInputBox'
 	}
+	if node.is_range_input_box() {
+		return 'RangeInputBox'
+	}
 	if node.is_replaced_box() {
 		return layout_debug_replaced_class_name(node)
 	}

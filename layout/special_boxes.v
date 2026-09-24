@@ -1080,6 +1080,28 @@ pub fn TextInputBox.new(document &dom.Document, element &dom.Element, computed_v
 }
 
 @[heap]
+pub struct RangeInputBox {
+	BlockContainer
+}
+
+pub fn RangeInputBox.new(document &dom.Document, element &dom.Element, computed_values &css.ComputedProperties) &RangeInputBox {
+	mut box := &RangeInputBox{
+		BlockContainer: special_block_container_base(document, element.as_node(), computed_values)
+	}
+	box.is_range_input_box_ = true
+	// A horizontal slider has no in-flow content from which to derive its auto
+	// size. Keep the platform default intrinsic width while leaving it eligible
+	// for ordinary non-replaced grid-item stretching.
+	box_node := unsafe { &Node(box) }
+	box.has_auto_content_box_size_ = true
+	box.auto_content_box_size_ = css.SizeWithAspectRatio{
+		width: resolve_font_dependent_length_for_node(box_node, css.Length.new(20.0, .ch))
+		height: CSSPixels.new(16)
+	}
+	return box
+}
+
+@[heap]
 pub struct TextAreaBox {
 	BlockContainer
 }

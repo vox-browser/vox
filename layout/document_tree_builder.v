@@ -2134,6 +2134,12 @@ fn html_input_element_create_layout_node(document &dom.Document, element &dom.El
 			node: unsafe { &Node(TextInputBox.new(document, element, computed)) }
 		}
 	}
+	if type_ == 'range' {
+		return HTMLInputElementLayoutNodeResult{
+			handled: true
+			node: unsafe { &Node(RangeInputBox.new(document, element, computed)) }
+		}
+	}
 	if type_ in ['submit', 'button', 'reset'] {
 		return HTMLInputElementLayoutNodeResult{
 			handled: true
