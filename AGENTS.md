@@ -165,7 +165,9 @@
   border edges independently in device space. A collapsed table's used borders
   are the winning widths along the four outer grid edges; layout rebases its
   content origin after conflict resolution so those outer shares remain inside
-  the table wrapper.
+  the table wrapper. Anonymous cells created by missing-cell fixup keep zero
+  used borders, leaving each collapsed grid-line border wholly owned by real
+  boxes on its sides.
 - Parsed programs are reused for bytecode cache generation, nested idle
   callback periods are paced, Window named-property membership avoids full ID
   enumeration, and SVG presentation attributes retain their case-sensitive
