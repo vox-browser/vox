@@ -337,6 +337,15 @@ fn resolve_collapsed_table_borders(mut state LayoutState, table &Node, rows []&N
 			column_definitions_by_index[column] = definition
 		}
 	}
+	// A collapsed table has no independently used border. Its four used
+	// borders are the widest winning segments on the corresponding outside
+	// edges of the grid. Start with the table candidate because it covers every
+	// outer segment, including segments for which the grid has no originating
+	// cell.
+	mut outer_left := CSSPixels.nearest_value_for(table_border_candidate(table, .left, .table, none, none).border_data.width)
+	mut outer_right := CSSPixels.nearest_value_for(table_border_candidate(table, .right, .table, none, none).border_data.width)
+	mut outer_top := CSSPixels.nearest_value_for(table_border_candidate(table, .top, .table, none, none).border_data.width)
+	mut outer_bottom := CSSPixels.nearest_value_for(table_border_candidate(table, .bottom, .table, none, none).border_data.width)
 	for placement in placements {
 		styled := placement.cell.as_node_with_style() or { continue }
 		mut cell_state := state.get_mutable(styled)
@@ -356,16 +365,41 @@ fn resolve_collapsed_table_borders(mut state LayoutState, table &Node, rows []&N
 		right := resolved_collapsed_table_cell_border(table, rows, placements_by_coordinate, row_groups_by_index, column_definitions_by_index, column_count, placement, .right)
 		top := resolved_collapsed_table_cell_border(table, rows, placements_by_coordinate, row_groups_by_index, column_definitions_by_index, column_count, placement, .top)
 		bottom := resolved_collapsed_table_cell_border(table, rows, placements_by_coordinate, row_groups_by_index, column_definitions_by_index, column_count, placement, .bottom)
-		cell_state.border_left = CSSPixels.nearest_value_for(left.border_data.width)
-		cell_state.border_right = CSSPixels.nearest_value_for(right.border_data.width)
-		cell_state.border_top = CSSPixels.nearest_value_for(top.border_data.width)
-		cell_state.border_bottom = CSSPixels.nearest_value_for(bottom.border_data.width)
+		left_width := CSSPixels.nearest_value_for(left.border_data.width)
+		right_width := CSSPixels.nearest_value_for(right.border_data.width)
+		top_width := CSSPixels.nearest_value_for(top.border_data.width)
+		bottom_width := CSSPixels.nearest_value_for(bottom.border_data.width)
+		cell_state.border_left = left_width
+		cell_state.border_right = right_width
+		cell_state.border_top = top_width
+		cell_state.border_bottom = bottom_width
+		if placement.column == 0 {
+			outer_left = css_pixels_max(outer_left, left_width)
+		}
+		if placement.column + placement.column_span == column_count {
+			outer_right = css_pixels_max(outer_right, right_width)
+		}
+		if placement.row == 0 {
+			outer_top = css_pixels_max(outer_top, top_width)
+		}
+		if placement.row + placement.row_span == rows.len {
+			outer_bottom = css_pixels_max(outer_bottom, bottom_width)
+		}
 		cell_state.set_override_borders_data(painting.BordersDataWithElementKind{
 			left: painting.BorderDataWithElementKind{left.border_data, left.element_kind}
 			right: painting.BorderDataWithElementKind{right.border_data, right.element_kind}
 			top: painting.BorderDataWithElementKind{top.border_data, top.element_kind}
 			bottom: painting.BorderDataWithElementKind{bottom.border_data, bottom.element_kind}
 		})
+	}
+	if collapsed {
+		if table_styled := table.as_node_with_style() {
+			mut table_state := state.get_mutable(table_styled)
+			table_state.border_left = outer_left
+			table_state.border_right = outer_right
+			table_state.border_top = outer_top
+			table_state.border_bottom = outer_bottom
+		}
 	}
 }
 

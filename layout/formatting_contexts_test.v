@@ -2122,6 +2122,31 @@ fn test_collapsed_table_odd_borders_split_between_table_and_cells() {
 	assert cell.border_box_width().to_double() == 99
 }
 
+fn test_collapsed_table_uses_winning_outer_grid_borders() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin:0 }
+		table { border-collapse:collapse }
+		td { width:20px; height:10px; padding:0; border:5px solid }
+	</style><table id="table"><tr><td id="cell"></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	table := used_for_id(result, 'table')
+	cell := used_for_id(result, 'cell')
+	assert table.border_left.to_double() == 5
+	assert table.border_right.to_double() == 5
+	assert table.border_top.to_double() == 5
+	assert table.border_bottom.to_double() == 5
+	// The table owns the inside half of its outer grid border. Odd widths put
+	// the remainder on the start edges.
+	assert table.border_box_left().to_double() == 3
+	assert table.border_box_right().to_double() == 2
+	assert table.border_box_top().to_double() == 3
+	assert table.border_box_bottom().to_double() == 2
+	assert table.offset.x().to_double() == 3
+	assert table.offset.y().to_double() == 3
+	assert cell.border_left.to_double() == 5
+	assert cell.border_right.to_double() == 5
+}
+
 fn test_table_auto_layout_uses_definite_cell_width_contributions() {
 	document := html.parse_document('<!doctype html><style>
 		table { width:160px; border-spacing:0 }
