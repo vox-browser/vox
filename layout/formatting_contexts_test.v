@@ -2152,7 +2152,7 @@ fn test_missing_collapsed_table_cells_take_no_border_share() {
 		table { border-collapse:collapse }
 		td { border:10px solid; padding:0; width:20px; height:20px }
 		#spacer { height:4px }
-	</style><table><tr><td></td><td></td></tr><tr id="empty"></tr><tr id="spacer"></tr><tr><td></td><td></td></tr></table>')
+	</style><table id="table"><tr id="first"><td></td><td></td></tr><tr id="empty"></tr><tr id="spacer"></tr><tr id="last"><td></td><td></td></tr></table>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	empty_node := layout_node_with_id(result.root, 'empty') or { panic('missing empty row') }
 	missing_cell := empty_node.first_child() or { panic('missing generated cell') }
@@ -2164,8 +2164,27 @@ fn test_missing_collapsed_table_cells_take_no_border_share() {
 	assert missing.border_right.to_double() == 0
 	assert missing.border_top.to_double() == 0
 	assert missing.border_bottom.to_double() == 0
+	assert used_for_id(result, 'first').content_height().to_double() == 30
 	assert used_for_id(result, 'empty').content_height().to_double() == 0
 	assert used_for_id(result, 'spacer').content_height().to_double() == 4
+	assert used_for_id(result, 'last').content_height().to_double() == 30
+	assert used_for_id(result, 'table').content_height().to_double() == 64
+}
+
+fn test_table_cell_height_uses_content_box_except_for_border_box_and_quirks() {
+	standards := html.parse_document('<!doctype html><style>
+		table { border-spacing:0 } td { height:20px; padding:3px; border:2px solid }
+		#border-box { box-sizing:border-box }
+	</style><table><tr id="content-row"><td></td></tr></table><table><tr id="border-row"><td id="border-box"></td></tr></table>')
+	standards_result := run_document_layout(standards, 800, 600) or { panic('layout failed') }
+	assert used_for_id(standards_result, 'content-row').content_height().to_double() == 30
+	assert used_for_id(standards_result, 'border-row').content_height().to_double() == 20
+
+	quirks := html.parse_document('<style>
+		table { border-spacing:0 } td { height:20px; padding:3px; border:2px solid }
+	</style><table><tr id="quirks-row"><td></td></tr></table>')
+	quirks_result := run_document_layout(quirks, 800, 600) or { panic('layout failed') }
+	assert used_for_id(quirks_result, 'quirks-row').content_height().to_double() == 20
 }
 
 fn test_table_auto_layout_uses_definite_cell_width_contributions() {

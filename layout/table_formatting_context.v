@@ -38,8 +38,9 @@ struct TableCellIntrinsicWidthMeasures {
 }
 
 struct TableCellIntrinsicHeightMeasures {
-	outer_min_height CSSPixels
-	outer_max_height CSSPixels
+	outer_min_height       CSSPixels
+	outer_max_height       CSSPixels
+	outer_specified_height CSSPixels
 }
 
 @[heap]
@@ -1249,16 +1250,27 @@ fn table_cell_intrinsic_height_measures(mut state LayoutState, cell &Node, colla
 	min_content_height := calculate_min_content_height(mut state, box, max_content_width)
 	max_content_height := calculate_max_content_height(mut state, box, min_content_width)
 	edges := table_cell_measurement_block_edges(measurement, collapsed)
-	min_height := computed.size_value(.min_height).to_px(layout_length_resolution_context(cell), containing_block_height)
+	mut min_height := computed.size_value(.min_height).to_px(layout_length_resolution_context(cell), containing_block_height)
+	if computed.box_sizing() == .border_box {
+		min_height = css_pixels_max(CSSPixels.new(0), min_height.minus(edges))
+	}
+	specified_height := if computed.size_value(.height).is_auto() {
+		CSSPixels.new(0)
+	} else {
+		table_cell_specified_outer_height(cell, computed.size_value(.height).to_px(layout_length_resolution_context(cell), containing_block_height), edges)
+	}
 	height := if computed.size_value(.height).is_length() {
-		computed.size_value(.height).to_px(layout_length_resolution_context(cell), containing_block_height)
+		css_pixels_max(CSSPixels.new(0), specified_height.minus(edges))
 	} else {
 		CSSPixels.new(0)
 	}
-	max_height := if computed.size_value(.max_height).is_length() {
+	mut max_height := if computed.size_value(.max_height).is_length() {
 		computed.size_value(.max_height).to_px(layout_length_resolution_context(cell), containing_block_height)
 	} else {
 		CSSPixels.max()
+	}
+	if computed.box_sizing() == .border_box && max_height.raw_value() != CSSPixels.max().raw_value() {
+		max_height = css_pixels_max(CSSPixels.new(0), max_height.minus(edges))
 	}
 	outer_min_height := css_pixels_max(min_height, min_content_height).plus(edges)
 	outer_max_height := if row_is_constrained {
@@ -1267,9 +1279,21 @@ fn table_cell_intrinsic_height_measures(mut state LayoutState, cell &Node, colla
 		css_pixels_max(min_height, css_pixels_max(height, css_pixels_max(min_content_height, css_pixels_min(max_height, max_content_height)))).plus(edges)
 	}
 	return TableCellIntrinsicHeightMeasures{
-		outer_min_height: outer_min_height
-		outer_max_height: outer_max_height
+		outer_min_height:       outer_min_height
+		outer_max_height:       outer_max_height
+		outer_specified_height: specified_height
 	}
+}
+
+// CSS 2.2 sizes a row from the computed height of each cell. That height is a
+// content-box size in standards mode, except when box-sizing:border-box asks
+// for the border box explicitly. Quirks mode retains its legacy border-box
+// interpretation.
+fn table_cell_specified_outer_height(cell &Node, specified CSSPixels, block_edges CSSPixels) CSSPixels {
+	if cell.computed_values().box_sizing() == .border_box || cell.document().in_quirks_mode() {
+		return specified
+	}
+	return specified.plus(block_edges)
 }
 
 fn compute_table_row_intrinsic_measures(mut state LayoutState, rows []&Node, placements []TableCellPlacement, collapsed bool, containing_block_height CSSPixels, spacing CSSPixels) ([]CSSPixels, []CSSPixels) {
@@ -1304,8 +1328,7 @@ fn compute_table_row_intrinsic_measures(mut state LayoutState, rows []&Node, pla
 			continue
 		}
 		measures := cell_measures[placement_index]
-		specified_height := placement.cell.computed_values().size_value(.height).to_px(layout_length_resolution_context(placement.cell), containing_block_height)
-		min_heights[placement.row] = css_pixels_max(min_heights[placement.row], css_pixels_max(measures.outer_min_height, specified_height))
+		min_heights[placement.row] = css_pixels_max(min_heights[placement.row], css_pixels_max(measures.outer_min_height, measures.outer_specified_height))
 		max_heights[placement.row] = css_pixels_max(max_heights[placement.row], measures.outer_max_height)
 	}
 	mut maximum_span := 1
@@ -1804,8 +1827,10 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			&& (cell_computed_height.is_length()
 				|| (cell_computed_height.is_calculated() && !cell_computed_height.contains_percentage())) {
 			if cell_used_height := resolve_layout_size(placement.cell, cell_computed_height, table_state.content_height()) {
-				specified_cell_height = cell_used_height
-				forced_cell_height = cell_used_height.minus(table_cell_measurement_block_edges(cell_state, collapsed))
+				edges := table_cell_measurement_block_edges(cell_state, collapsed)
+				outer_height := table_cell_specified_outer_height(placement.cell, cell_used_height, edges)
+				specified_cell_height = outer_height
+				forced_cell_height = outer_height.minus(edges)
 			}
 		}
 		cell_state = layout_independent_child_using_automatic_height(mut state, placement.cell, mut table_state, table_state.content_width(), if table_state.has_definite_height() {
@@ -1889,8 +1914,13 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			continue
 		}
 		if specified_height := resolve_layout_size(placement.cell, cell_height, table_grid_height) {
+			styled := placement.cell.as_node_with_style() or { continue }
+			mut cell_state := state.get_mutable(styled)
+			collapsed := computed.border_collapse() == .collapse
+			edges := table_cell_measurement_block_edges(cell_state, collapsed)
+			outer_height := table_cell_specified_outer_height(placement.cell, specified_height, edges)
 			if !row_is_collapsed[placement.row] {
-				reference_heights[placement.row] = css_pixels_max(reference_heights[placement.row], specified_height)
+				reference_heights[placement.row] = css_pixels_max(reference_heights[placement.row], outer_height)
 			}
 			// TableFormattingContext::compute_table_height() performs a second
 			// cell layout after the table height makes percentages definite. The
@@ -1898,11 +1928,8 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			// content height directly and reruns the already-created independent
 			// formatting context without recomputing or clamping the cell metrics.
 			cell_width := table_column_range_width(column_offsets, placement.column, placement.column_span, horizontal_spacing)
-			styled := placement.cell.as_node_with_style() or { continue }
-			mut cell_state := state.get_mutable(styled)
-			collapsed := computed.border_collapse() == .collapse
 			content_width := cell_width.minus(table_cell_measurement_inline_edges(cell_state, collapsed))
-			content_height := specified_height.minus(table_cell_measurement_block_edges(cell_state, collapsed))
+			content_height := outer_height.minus(edges)
 			cell_state.set_content_width(content_width)
 			cell_state.set_content_height(content_height)
 			cell_state.set_has_definite_width(true)
