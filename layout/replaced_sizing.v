@@ -134,8 +134,12 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 	}
 	width = apply_replaced_axis_constraints(node, computed.size_value(.min_width), computed.size_value(.max_width),
 		width, available_space.width, box_model, true)
-	height = apply_replaced_axis_constraints(node, computed.size_value(.min_height), computed.size_value(.max_height),
-		height, available_space.height, box_model, false)
+	constraint_rerun_uses_intrinsic_height := specified_width == none
+		&& specified_height == none && ratio == none && intrinsic.height != none
+	constraint_rerun_intrinsic_height := intrinsic.height or { CSSPixels.new(0) }
+	height = apply_replaced_block_axis_constraints(node, computed.size_value(.min_height),
+		computed.size_value(.max_height), height, available_space.height, box_model,
+		constraint_rerun_uses_intrinsic_height, constraint_rerun_intrinsic_height)
 	return CSSPixelSize.new(width, height)
 }
 
@@ -212,6 +216,32 @@ fn clamp_replaced_axis(node &Node, minimum css.Size, maximum css.Size, input CSS
 // shared content-box constraint resolver here.
 fn apply_replaced_axis_constraints(node &Node, minimum css.Size, maximum css.Size, input CSSPixels, available_size AvailableSize, box_model ReplacedBoxModel, width bool) CSSPixels {
 	return clamp_replaced_axis(node, minimum, maximum, input, available_size, box_model, width)
+}
+
+// tentative_block_size_for_replaced_element() checks whether both original
+// axes are automatic before it examines the block-size argument supplied by a
+// min/max constraint rerun. Consequently, an intrinsic block size wins again
+// when either constraint is violated. This asymmetry does not apply to the
+// inline-axis tentative-size algorithm.
+fn apply_replaced_block_axis_constraints(node &Node, minimum css.Size, maximum css.Size, input CSSPixels, available_size AvailableSize, box_model ReplacedBoxModel, constraint_rerun_uses_intrinsic_height bool, constraint_rerun_intrinsic_height CSSPixels) CSSPixels {
+	min_value, max_value := replaced_axis_constraints(node, minimum, maximum, input,
+		available_size, box_model, false)
+	mut used := input
+	if used.raw_value() > max_value.raw_value() {
+		used = if constraint_rerun_uses_intrinsic_height {
+			constraint_rerun_intrinsic_height
+		} else {
+			max_value
+		}
+	}
+	if used.raw_value() < min_value.raw_value() {
+		used = if constraint_rerun_uses_intrinsic_height {
+			constraint_rerun_intrinsic_height
+		} else {
+			min_value
+		}
+	}
+	return used
 }
 
 // CSS 2.2 10.4 constraint-violation table. Replaced boxes with a preferred

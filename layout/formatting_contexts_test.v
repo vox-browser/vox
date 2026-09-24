@@ -3910,7 +3910,7 @@ fn test_replaced_constraints_compare_and_assign_converted_sizes() {
 	assert box.content_height().to_double() == 49
 }
 
-fn test_replaced_form_control_min_max_sizes_use_content_box_space() {
+fn test_replaced_form_control_block_constraints_rerun_intrinsic_sizing() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }
 		input { font-size:5px; box-sizing:border-box }
@@ -3921,8 +3921,11 @@ fn test_replaced_form_control_min_max_sizes_use_content_box_space() {
 	</style><input id="max-width"><input id="max-height"><input id="min-height"><canvas id="image"></canvas>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	assert used_for_id(result, 'max-width').content_width().to_double() == 20
-	assert used_for_id(result, 'max-height').content_height().to_double() == 4
-	assert used_for_id(result, 'min-height').content_height().to_double() == 28
+	// The source block-size algorithm reruns tentative sizing after a min/max
+	// violation. Since both original axes are auto, the input's intrinsic line
+	// height wins again before the replacement constraint is inspected.
+	assert used_for_id(result, 'max-height').content_height().to_double() == 5
+	assert used_for_id(result, 'min-height').content_height().to_double() == 5
 	assert used_for_id(result, 'image').content_width().to_double() == 50
 	assert used_for_id(result, 'image').content_height().to_double() == 25
 }
