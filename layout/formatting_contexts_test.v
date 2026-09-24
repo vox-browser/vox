@@ -2100,6 +2100,36 @@ fn test_fixed_table_cell_border_box_width_is_not_counted_twice() {
 	assert second.offset.x().to_double() == 100
 }
 
+fn test_fixed_table_auto_columns_ignore_cell_padding_and_later_rows() {
+	document := html.parse_document('<!doctype html><style>
+		table { width:400px; border-spacing:0; table-layout:fixed }
+		td { height:10px; padding:0; border:0 } #padded { padding:0 60px } #late { width:75% }
+	</style><table><tr><td id="padded"></td><td id="plain"></td></tr><tr><td id="late"></td><td></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	padded := used_for_id(result, 'padded')
+	plain := used_for_id(result, 'plain')
+	late := used_for_id(result, 'late')
+	assert padded.border_box_width().to_double() == 200
+	assert padded.content_width().to_double() == 80
+	assert plain.border_box_width().to_double() == 200
+	assert plain.offset.x().to_double() == 200
+	assert late.border_box_width().to_double() == 200
+}
+
+fn test_fixed_table_percentage_cell_adds_content_box_offsets() {
+	document := html.parse_document('<!doctype html><style>
+		table { width:600px; border-spacing:0; table-layout:fixed }
+		td { height:10px; padding:0; border:0 } #percentage { width:25%; padding:0 10px }
+	</style><table><tr><td id="percentage"></td><td id="auto"></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	percentage := used_for_id(result, 'percentage')
+	auto := used_for_id(result, 'auto')
+	assert percentage.content_width().to_double() == 150
+	assert percentage.border_box_width().to_double() == 170
+	assert auto.border_box_width().to_double() == 430
+	assert auto.offset.x().to_double() == 170
+}
+
 fn test_collapsed_table_odd_borders_split_between_table_and_cells() {
 	document := html.parse_document('<!doctype html><style>
 		table { width:100px; border-collapse:collapse; table-layout:fixed; border:1px solid }
@@ -2573,7 +2603,7 @@ fn test_spanning_table_measure_zero_baseline_truncates_fraction() {
 		outer_min_width: CSSPixels.new(10)
 		outer_max_width: CSSPixels.new(10)
 	}]
-	compute_spanning_table_column_measures(mut minimums, mut maximums, placements, measures, CSSPixels.new(0), 3)
+	compute_spanning_table_column_measures(mut minimums, mut maximums, placements, measures, CSSPixels.new(0), 3, false)
 	// CSSPixels(10) / 3 is a CSSPixelFraction. Converting it for each
 	// contribution truncates raw 640 / 3 to raw 213.
 	for index in 0 .. 3 {

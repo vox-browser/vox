@@ -62,6 +62,7 @@ struct TableGridIntrinsicWidths {
 	constrained_columns       []bool
 	intrinsic_percentages     []f64
 	has_intrinsic_percentage  []bool
+	percentage_offsets        []CSSPixels
 	has_originating_cells     []bool
 }
 
@@ -729,12 +730,12 @@ fn position_table_column_boxes(mut state LayoutState, table &Node, table_state &
 // TableFormattingContext::compute_table_measures<Column>(). Spanning cells are
 // processed by increasing span, and every contribution for a span is derived
 // from the previous span's measures before any column is committed.
-fn compute_spanning_table_column_measures(mut min_widths []CSSPixels, mut max_widths []CSSPixels, placements []TableCellPlacement, cell_measures []TableCellIntrinsicWidthMeasures, spacing CSSPixels, maximum_span int) {
+fn compute_spanning_table_column_measures(mut min_widths []CSSPixels, mut max_widths []CSSPixels, placements []TableCellPlacement, cell_measures []TableCellIntrinsicWidthMeasures, spacing CSSPixels, maximum_span int, fixed_mode bool) {
 	for current_span in 2 .. maximum_span + 1 {
 		mut next_min_widths := min_widths.clone()
 		mut next_max_widths := max_widths.clone()
 		for placement_index, placement in placements {
-			if placement.column_span != current_span {
+			if placement.column_span != current_span || (fixed_mode && placement.row != 0) {
 				continue
 			}
 			end_column := if placement.column + placement.column_span < min_widths.len {
@@ -864,9 +865,10 @@ fn table_cell_intrinsic_percentage_contribution(cell &Node) f64 {
 }
 
 // TableFormattingContext::compute_intrinsic_percentage<Column>().
-fn compute_table_column_intrinsic_percentages(column_count int, column_definitions []TableColumnDefinition, placements []TableCellPlacement, nonspanning_max_widths []CSSPixels, maximum_span int) ([]f64, []bool, []bool) {
+fn compute_table_column_intrinsic_percentages(column_count int, column_definitions []TableColumnDefinition, placements []TableCellPlacement, cell_measures []TableCellIntrinsicWidthMeasures, nonspanning_max_widths []CSSPixels, maximum_span int, fixed_mode bool) ([]f64, []bool, []CSSPixels, []bool) {
 	mut intrinsic_percentages := []f64{len: column_count}
 	mut has_intrinsic_percentage := []bool{len: column_count}
+	mut percentage_offsets := []CSSPixels{len: column_count, init: CSSPixels.new(0)}
 	mut has_originating_cells := []bool{len: column_count}
 	for definition in column_definitions {
 		if definition.index >= column_count {
@@ -886,9 +888,12 @@ fn compute_table_column_intrinsic_percentages(column_count int, column_definitio
 		has_intrinsic_percentage[definition.index] = computed.size_value(.width).is_percentage() || computed.size_value(.max_width).is_percentage()
 		intrinsic_percentages[definition.index] = math.min(width_percentage, max_width_percentage)
 	}
-	for placement in placements {
+	for placement_index, placement in placements {
 		if placement.column < column_count {
 			has_originating_cells[placement.column] = true
+		}
+		if fixed_mode && placement.row != 0 {
+			continue
 		}
 		if !placement.cell.computed_values().size_value(.width).is_percentage() {
 			continue
@@ -902,13 +907,19 @@ fn compute_table_column_intrinsic_percentages(column_count int, column_definitio
 			has_intrinsic_percentage[column] = true
 		}
 		if placement.column_span == 1 && placement.column < column_count {
-			intrinsic_percentages[placement.column] = math.max(intrinsic_percentages[placement.column], table_cell_intrinsic_percentage_contribution(placement.cell))
+			percentage := table_cell_intrinsic_percentage_contribution(placement.cell)
+			if percentage >= intrinsic_percentages[placement.column] {
+				intrinsic_percentages[placement.column] = percentage
+				if fixed_mode {
+					percentage_offsets[placement.column] = cell_measures[placement_index].outer_min_width
+				}
+			}
 		}
 	}
 	for current_span in 2 .. maximum_span + 1 {
 		mut next_percentages := intrinsic_percentages.clone()
 		for placement in placements {
-			if placement.column_span != current_span {
+			if placement.column_span != current_span || (fixed_mode && placement.row != 0) {
 				continue
 			}
 			end_column := if placement.column + placement.column_span < column_count {
@@ -949,7 +960,7 @@ fn compute_table_column_intrinsic_percentages(column_count int, column_definitio
 		intrinsic_percentages[index] = math.max(math.min(100.0 - total_intrinsic_percentage, intrinsic_percentages[index]), 0.0)
 		total_intrinsic_percentage += intrinsic_percentages[index]
 	}
-	return intrinsic_percentages, has_intrinsic_percentage, has_originating_cells
+	return intrinsic_percentages, has_intrinsic_percentage, percentage_offsets, has_originating_cells
 }
 
 fn table_columns_total_width(widths []CSSPixels) CSSPixels {
@@ -1037,7 +1048,7 @@ fn distribute_table_excess_width_by_percentage(mut widths []CSSPixels, eligible 
 
 // TableFormattingContext::distribute_width_to_columns() and
 // distribute_excess_width_to_columns().
-fn distribute_table_width_to_columns(min_widths []CSSPixels, max_widths []CSSPixels, constrained_columns []bool, intrinsic_percentages []f64, has_intrinsic_percentage []bool, has_originating_cells []bool, table_width CSSPixels, spacing CSSPixels, fixed_mode bool) []CSSPixels {
+fn distribute_table_width_to_columns(min_widths []CSSPixels, max_widths []CSSPixels, constrained_columns []bool, intrinsic_percentages []f64, has_intrinsic_percentage []bool, percentage_offsets []CSSPixels, has_originating_cells []bool, table_width CSSPixels, spacing CSSPixels, fixed_mode bool) []CSSPixels {
 	available_width := table_width.minus(spacing.scaled(f64(min_widths.len + 1)))
 	mut widths := []CSSPixels{len: min_widths.len, init: CSSPixels.new(0)}
 	mut candidate_widths := []CSSPixels{len: min_widths.len, init: CSSPixels.new(0)}
@@ -1049,7 +1060,7 @@ fn distribute_table_width_to_columns(min_widths []CSSPixels, max_widths []CSSPix
 	}
 	for index in 0 .. widths.len {
 		if has_intrinsic_percentage[index] {
-			candidate_widths[index] = css_pixels_max(min_widths[index], CSSPixels.nearest_value_for(intrinsic_percentages[index] / 100.0 * available_width.to_double()))
+			candidate_widths[index] = css_pixels_max(min_widths[index], CSSPixels.nearest_value_for(intrinsic_percentages[index] / 100.0 * available_width.to_double()).plus(percentage_offsets[index]))
 		}
 	}
 	if available_width.raw_value() < table_columns_total_width(candidate_widths).raw_value() {
@@ -1246,8 +1257,6 @@ fn table_cell_intrinsic_width_measures(mut state LayoutState, cell &Node, collap
 		values.border_bottom = winning_bottom
 	}
 	computed := cell.computed_values()
-	min_content_width := calculate_min_content_width(mut state, box)
-	max_content_width := calculate_max_content_width(mut state, box)
 	edges := table_cell_measurement_inline_edges(values, collapsed)
 	mut min_width := computed.size_value(.min_width).to_px(layout_length_resolution_context(cell), percentage_basis)
 	mut width := if computed.size_value(.width).is_length() {
@@ -1267,6 +1276,23 @@ fn table_cell_intrinsic_width_measures(mut state LayoutState, cell &Node, collap
 			max_width = css_pixels_max(CSSPixels.new(0), max_width.minus(edges))
 		}
 	}
+	if fixed_mode && !computed.size_value(.width).is_length() {
+		// Fixed layout treats auto and percentage columns as having zero
+		// min-content size. Content-box percentage cells retain only their
+		// padding/border offsets, which distribution adds to the percentage.
+		outer := if computed.size_value(.width).is_percentage()
+			&& computed.box_sizing() != .border_box {
+			edges
+		} else {
+			CSSPixels.new(0)
+		}
+		return TableCellIntrinsicWidthMeasures{
+			outer_min_width: outer
+			outer_max_width: outer
+		}
+	}
+	min_content_width := if fixed_mode { width } else { calculate_min_content_width(mut state, box) }
+	max_content_width := if fixed_mode { width } else { calculate_max_content_width(mut state, box) }
 	width_is_specified_length_or_percentage := computed.size_value(.width).is_length() || computed.size_value(.width).is_percentage()
 	mut outer_min_width := CSSPixels.new(0)
 	mut outer_max_width := CSSPixels.new(0)
@@ -1531,8 +1557,8 @@ fn calculate_table_grid_intrinsic_widths(mut state LayoutState, table &Node, per
 			maximum_span = placement.column_span
 		}
 	}
-	intrinsic_percentages, has_intrinsic_percentage, has_originating_cells := compute_table_column_intrinsic_percentages(column_count, column_definitions, placements, nonspanning_max_widths, maximum_span)
-	compute_spanning_table_column_measures(mut min_widths, mut max_widths, placements, cell_measures, spacing, maximum_span)
+	intrinsic_percentages, has_intrinsic_percentage, percentage_offsets, has_originating_cells := compute_table_column_intrinsic_percentages(column_count, column_definitions, placements, cell_measures, nonspanning_max_widths, maximum_span, fixed_mode)
+	compute_spanning_table_column_measures(mut min_widths, mut max_widths, placements, cell_measures, spacing, maximum_span, fixed_mode)
 	undistributable_space := spacing.scaled(f64(column_count + 1))
 	mut grid_min := undistributable_space
 	mut grid_max := undistributable_space
@@ -1547,6 +1573,9 @@ fn calculate_table_grid_intrinsic_widths(mut state LayoutState, table &Node, per
 	// width. CSS 2.2 auto table layout asks the UA to enlarge the grid enough
 	// for the cell's outer max-content width to occupy that percentage.
 	for placement_index, placement in placements {
+		if fixed_mode && placement.row != 0 {
+			continue
+		}
 		cell_width := placement.cell.computed_values().size_value(.width)
 		if !cell_width.is_percentage() || cell_width.percentage().value() == 0 {
 			continue
@@ -1572,6 +1601,7 @@ fn calculate_table_grid_intrinsic_widths(mut state LayoutState, table &Node, per
 		constrained_columns: constrained_columns
 		intrinsic_percentages: intrinsic_percentages
 		has_intrinsic_percentage: has_intrinsic_percentage
+		percentage_offsets: percentage_offsets
 		has_originating_cells: has_originating_cells
 	}
 	if table_box := table.as_box() {
@@ -1822,7 +1852,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		mut wrapper_state := unsafe { &UsedValues(wrapper_values) }
 		wrapper_state.set_content_width(table_state.border_box_width())
 	}
-	column_widths := distribute_table_width_to_columns(intrinsic_widths.column_min_widths, intrinsic_widths.column_max_widths, intrinsic_widths.constrained_columns, intrinsic_widths.intrinsic_percentages, intrinsic_widths.has_intrinsic_percentage, intrinsic_widths.has_originating_cells, table_state.content_width(), horizontal_spacing, fixed_mode)
+	column_widths := distribute_table_width_to_columns(intrinsic_widths.column_min_widths, intrinsic_widths.column_max_widths, intrinsic_widths.constrained_columns, intrinsic_widths.intrinsic_percentages, intrinsic_widths.has_intrinsic_percentage, intrinsic_widths.percentage_offsets, intrinsic_widths.has_originating_cells, table_state.content_width(), horizontal_spacing, fixed_mode)
 	column_offsets := table_column_offsets(column_widths, horizontal_spacing)
 	row_is_collapsed := rows.map(table_row_is_collapsed(it))
 	row_min_heights, _ := compute_table_row_intrinsic_measures(mut state, rows, placements, computed.border_collapse() == .collapse, table_height_percentage_basis, vertical_spacing)
