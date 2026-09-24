@@ -255,6 +255,10 @@ fn margins_collapse_through(box &NodeWithStyle, state &LayoutState) bool {
 	if creates_block_formatting_context(box) {
 		return false
 	}
+	display := box.computed_values().display()
+	if display.is_flex_inside() || display.is_grid_inside() {
+		return false
+	}
 	box_state := state.try_get(box) or { return false }
 	if box_state.border_box_height().to_double() != 0 {
 		return false

@@ -4546,6 +4546,16 @@ fn test_flex_item_baseline_ignores_vertical_align() {
 	assert used_for_id(result, 'line').content_height().to_double() < 40
 }
 
+fn test_zero_height_flex_and_grid_containers_stop_margin_collapse() {
+	document := html.parse_document('<!doctype html><style>
+		body{margin:0}.before,.after{height:40px}.flex,.grid{height:0;margin:35px 0 15px}.flex{display:flex}.grid{display:grid}
+	</style><div class="before"></div><div><div class="flex"></div></div><div id="after-flex" class="after"></div><div id="before-grid" class="before"></div><div><div class="grid"></div></div><div id="after-grid" class="after"></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'after-flex').offset.y().to_double() == 90
+	assert used_for_id(result, 'before-grid').offset.y().to_double() == 130
+	assert used_for_id(result, 'after-grid').offset.y().to_double() == 220
+}
+
 fn test_subgrid_inherits_tracks_and_contributes_descendants_to_parent_sizing() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }
