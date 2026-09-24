@@ -424,24 +424,13 @@ fn collect_typed_table_columns(table &Node) []TableColumnDefinition {
 		if !child.display().is_table_column_group() {
 			continue
 		}
-		mut found_child_column := false
 		for column in child.children() {
 			if !column.display().is_table_column() {
 				continue
 			}
-			found_child_column = true
 			span := table_span(column, 'span')
 			columns << TableColumnDefinition{
 				node: column
-				index: index
-				span: span
-			}
-			index += span
-		}
-		if !found_child_column {
-			span := table_span(child, 'span')
-			columns << TableColumnDefinition{
-				node: child
 				index: index
 				span: span
 			}
@@ -520,6 +509,116 @@ fn table_cell_physical_offset(table &Node, table_width CSSPixels, offsets []CSSP
 	}
 	cell_width := table_column_range_width(offsets, placement.column, placement.column_span, spacing)
 	return table_width.minus(logical_offset).minus(cell_width)
+}
+
+fn table_column_box_geometry(table &Node, table_width CSSPixels, offsets []CSSPixels, start int, end int, spacing CSSPixels) (CSSPixels, CSSPixels) {
+	column_count := offsets.len - 1
+	clamped_start := if start < 0 {
+		0
+	} else if start > column_count {
+		column_count
+	} else {
+		start
+	}
+	clamped_end := if end < clamped_start {
+		clamped_start
+	} else if end > column_count {
+		column_count
+	} else {
+		end
+	}
+	logical_offset := offsets[clamped_start]
+	width := if clamped_end > clamped_start {
+		offsets[clamped_end].minus(logical_offset).minus(spacing)
+	} else {
+		CSSPixels.new(0)
+	}
+	if table.computed_values().direction() != .rtl {
+		return logical_offset, width
+	}
+	return table_width.minus(logical_offset).minus(width), width
+}
+
+fn position_table_column_box(mut state LayoutState, node &Node, containing &UsedValues, x CSSPixels, y CSSPixels, width CSSPixels, height CSSPixels) {
+	styled := node.as_node_with_style() or { return }
+	mut used := state.get_mutable(styled)
+	used.set_containing_block_used_values(containing)
+	used.set_content_offset(CSSPixelPoint.new(x, y))
+	used.set_content_width(width)
+	used.set_content_height(height)
+}
+
+// TableFormattingContext::position_column_boxes(). Column backgrounds are
+// painted over the grid, so columns and column groups retain concrete boxes
+// even though they do not participate in ordinary block layout. A column
+// group is the containing block of its child columns.
+fn position_table_column_boxes(mut state LayoutState, table &Node, table_state &UsedValues, column_offsets []CSSPixels, rows []&Node, row_is_collapsed []bool, horizontal_spacing CSSPixels, vertical_spacing CSSPixels) {
+	mut block_start := vertical_spacing
+	if rows.len > 0 {
+		if styled := rows[0].as_node_with_style() {
+			block_start = state.get(styled).offset.y()
+		}
+	}
+	mut block_end := block_start
+	for index, row in rows {
+		if index < row_is_collapsed.len && row_is_collapsed[index] {
+			continue
+		}
+		styled := row.as_node_with_style() or { continue }
+		row_used := state.get(styled)
+		block_end = css_pixels_max(block_end, row_used.offset.y().plus(row_used.border_box_height()))
+	}
+	block_size := block_end.minus(block_start)
+
+	mut column_index := 0
+	for child in table.children() {
+		if child.display().is_table_column() {
+			end := column_index + table_span(child, 'span')
+			x, width := table_column_box_geometry(table, table_state.content_width(), column_offsets,
+				column_index, end, horizontal_spacing)
+			position_table_column_box(mut state, child, table_state, x, block_start, width,
+				block_size)
+			column_index = end
+			continue
+		}
+		if !child.display().is_table_column_group() {
+			continue
+		}
+
+		group_start := column_index
+		mut has_child_columns := false
+		for column in child.children() {
+			if !column.display().is_table_column() {
+				continue
+			}
+			has_child_columns = true
+			column_index += table_span(column, 'span')
+		}
+		group_end := column_index
+		group_x, group_width := table_column_box_geometry(table, table_state.content_width(),
+			column_offsets, group_start, group_end, horizontal_spacing)
+		position_table_column_box(mut state, child, table_state, group_x, block_start,
+			group_width, block_size)
+
+		if !has_child_columns {
+			continue
+		}
+		group_styled := child.as_node_with_style() or { continue }
+		group_state := state.get(group_styled)
+		mut child_index := group_start
+		for column in child.children() {
+			if !column.display().is_table_column() {
+				continue
+			}
+			end := child_index + table_span(column, 'span')
+			column_x, column_width := table_column_box_geometry(table,
+				table_state.content_width(), column_offsets, child_index, end,
+				horizontal_spacing)
+			position_table_column_box(mut state, column, group_state,
+				column_x.minus(group_x), CSSPixels.new(0), column_width, block_size)
+			child_index = end
+		}
+	}
 }
 
 // TableFormattingContext::compute_table_measures<Column>(). Spanning cells are
@@ -1253,8 +1352,19 @@ fn calculate_table_grid_intrinsic_widths(mut state LayoutState, table &Node, per
 	mut constrained_columns := []bool{len: column_count}
 	for definition in column_definitions {
 		definition_computed := definition.node.computed_values()
-		definition_min_width := definition_computed.size_value(.min_width).to_px(layout_length_resolution_context(definition.node), percentage_basis)
-		definition_width := definition_computed.size_value(.width).to_px(layout_length_resolution_context(definition.node), percentage_basis)
+		// Percentages on columns are intrinsic-percentage contributions. They
+		// resolve against the assignable table width during distribution, not
+		// against the table's containing block while measuring outer sizes.
+		definition_min_width := if definition_computed.size_value(.min_width).is_length() {
+			definition_computed.size_value(.min_width).to_px(layout_length_resolution_context(definition.node), percentage_basis)
+		} else {
+			CSSPixels.new(0)
+		}
+		definition_width := if definition_computed.size_value(.width).is_length() {
+			definition_computed.size_value(.width).to_px(layout_length_resolution_context(definition.node), percentage_basis)
+		} else {
+			CSSPixels.new(0)
+		}
 		definition_max_width := if definition_computed.size_value(.max_width).is_length() {
 			definition_computed.size_value(.max_width).to_px(layout_length_resolution_context(definition.node), percentage_basis)
 		} else {
@@ -1856,6 +1966,8 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			row_group_top_offset = row_group_top_offset.plus(vertical_spacing)
 		}
 	}
+	position_table_column_boxes(mut state, table, table_state, column_offsets, rows,
+		row_is_collapsed, horizontal_spacing, vertical_spacing)
 	for placement_index, placement in placements {
 		styled := placement.cell.as_node_with_style() or { continue }
 		mut cell_state := state.get_mutable(styled)

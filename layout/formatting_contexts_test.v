@@ -2403,6 +2403,53 @@ fn test_table_column_constraints_receive_priority_in_auto_layout_excess_distribu
 	assert used_for_id(result, 'three').content_width().to_double() == 150
 }
 
+fn test_table_column_boxes_cover_their_grid_tracks() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 } table { width:100px; table-layout:fixed; border-spacing:2px 3px }
+		td { height:20px; padding:0 } #first { width:30px }
+	</style><table><colgroup id="group"><col id="first"><col id="second"></colgroup><tr><td></td><td></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	group := used_for_id(result, 'group')
+	first := used_for_id(result, 'first')
+	second := used_for_id(result, 'second')
+	assert group.offset.x().to_double() == 2
+	assert group.offset.y().to_double() == 3
+	assert group.content_width().to_double() == 96
+	assert group.content_height().to_double() == 20
+	assert first.offset.x().to_double() == 0
+	assert first.offset.y().to_double() == 0
+	assert first.content_width().to_double() == 30
+	assert first.content_height().to_double() == 20
+	assert second.offset.x().to_double() == 32
+	assert second.content_width().to_double() == 64
+	assert second.content_height().to_double() == 20
+}
+
+fn test_table_column_percentage_resolves_against_table_width() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 } table { width:400px; border-spacing:0 } td { padding:0; height:10px }
+		#group-first { width:25% }
+	</style><table><colgroup id="percentage-group"><col id="group-first"><col id="group-second"></colgroup><tr><td></td><td></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'percentage-group').content_width().to_double() == 400
+	assert used_for_id(result, 'group-first').content_width().to_double() == 100
+	assert used_for_id(result, 'group-second').content_width().to_double() == 300
+}
+
+fn test_empty_column_group_does_not_create_a_grid_track() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 } table { border-spacing:4px 2px } td { width:30px; height:10px; padding:0 }
+	</style><table id="table"><colgroup><col><col></colgroup><col span="2"><colgroup id="empty"></colgroup><tr><td></td><td></td><td></td><td></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	table := used_for_id(result, 'table')
+	empty := used_for_id(result, 'empty')
+	assert table.content_width().to_double() == 140
+	assert empty.offset.x().to_double() == 140
+	assert empty.offset.y().to_double() == 2
+	assert empty.content_width().to_double() == 0
+	assert empty.content_height().to_double() == 10
+}
+
 fn test_absolute_positioning_solves_inset_equations() {
 	document := html.parse_document('<!doctype html><style>
 		#container { position:relative; width:300px; height:200px }

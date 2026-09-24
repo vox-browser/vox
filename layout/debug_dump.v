@@ -66,13 +66,6 @@ fn append_typed_layout_node(node &Node, state &LayoutState, depth int, mut lines
 	}
 	if node.is_text_node() || node.is_break_node() || skip_anonymous_item || skip_table_whitespace {
 		line += '(not painted)'
-	} else if node.display().is_table_column_group() || node.display().is_table_column() {
-		// Table columns and column groups participate in the grid but never
-		// generate paintable boxes of their own.
-		line += '(not painted)'
-		if node.display().is_table_column_group() {
-			line += ' table-column-group'
-		}
 	} else if node.is_inline_node() {
 		if metrics := layout_debug_inline_metrics(node, state) {
 			line += 'at ${layout_debug_point(metrics.position)}'
