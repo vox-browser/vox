@@ -26,6 +26,7 @@ label {
 /* FIXME: This is a temporary hack until we can render a native-looking frame for these. */
 input:not([type=submit], input[type=button], input[type=image], input[type=reset], input[type=color], input[type=checkbox], input[type=file], input[type=radio], input[type=range]), textarea {
     border: 1px solid ButtonBorder;
+    padding: 1px 2px;
     min-height: 16px;
     cursor: text;
 
@@ -39,6 +40,9 @@ textarea {
     overflow: auto;
     font-family: monospace;
     resize: both;
+    /* This matches the behavior of other engines.
+     * Spec issue: https://github.com/whatwg/html/issues/953 */
+    overflow-wrap: break-word;
 }
 
 input::placeholder, textarea::placeholder {
@@ -74,7 +78,6 @@ option {
 /* Custom <input type="range"> styles */
 input[type=range] {
     display: inline-block;
-    width: 20ch;
     height: 16px;
 
     &::slider-track {
@@ -637,9 +640,13 @@ input, select, button, textarea {
     appearance: auto;
 }
 
-input:not([type=image i], [type=range i], [type=checkbox i], [type=radio i]) {
+input:not([type=range i], [type=checkbox i], [type=radio i]) {
     overflow: clip !important;
     overflow-clip-margin: 0 !important;
+}
+
+input[type=image i] {
+    overflow-clip-margin: content-box !important;
 }
 
 input, select, textarea {
@@ -652,6 +659,13 @@ input, select, textarea {
 
 input:is([type=reset i], [type=button i], [type=submit i]), button {
     text-align: center;
+}
+
+/* https://www.w3.org/TR/css-ui-3/#default-style-sheet
+ * CSS UI 3's informative default style sheet gives input buttons no wrapping.
+ */
+input:is([type=reset i], [type=button i], [type=submit i]) {
+    white-space: pre;
 }
 
 select {
@@ -791,6 +805,9 @@ details > summary:first-of-type {
     list-style: disclosure-closed inside;
 }
 
+/* https://drafts.csswg.org/css-lists-3/#marker-properties
+ * "UAs must add the following rule to their default style sheet:"
+ * FIXME: Also match ::before::marker and ::after::marker once compound pseudo-element selectors are supported. */
 ::marker {
     unicode-bidi: isolate;
     font-variant-numeric: tabular-nums;

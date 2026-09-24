@@ -1,11 +1,14 @@
+/* https://w3c.github.io/mathml-core/#user-agent-stylesheet */
 @namespace url(http://www.w3.org/1998/Math/MathML);
 
+/* Universal rules */
 * {
   font-size: math;
   display: block math;
   writing-mode: horizontal-tb !important;
 }
 
+/* The <math> element */
 math {
   direction: ltr;
   text-indent: 0;
@@ -30,6 +33,7 @@ math[display="inline" i] {
   math-style: compact;
 }
 
+/* <mrow>-like elements */
 semantics > :not(:first-child) {
   display: none;
 }
@@ -44,10 +48,12 @@ mphantom {
   visibility: hidden;
 }
 
+/* Token elements */
 mi {
   text-transform: math-auto;
 }
 
+/* Tables */
 mtable {
   display: inline-table;
   math-style: compact;
@@ -57,10 +63,13 @@ mtr {
 }
 mtd {
   display: table-cell;
+  /* Centering inside table cells should rely on box alignment properties.
+     See https://github.com/w3c/mathml-core/issues/156 */
   text-align: center;
   padding: 0.5ex 0.4em;
 }
 
+/* Fractions */
 mfrac {
   padding-inline: 1px;
 }
@@ -72,6 +81,7 @@ mfrac > :nth-child(2) {
   math-shift: compact;
 }
 
+/* Other rules for scriptlevel, displaystyle and math-shift */
 mroot > :not(:first-child) {
   math-depth: add(2);
   math-style: compact;
