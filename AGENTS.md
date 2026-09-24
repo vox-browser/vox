@@ -120,7 +120,8 @@
   input padding belongs to the host control, remains author-overridable, and is
   no longer duplicated by the internal flex box or intrinsic line-height size.
   Visible placeholders overlay the full-width editor instead of collapsing it;
-  number inputs group both layers in a dedicated flex item ahead of the steppers.
+  number inputs group both layers in a dedicated flex item ahead of the steppers,
+  and textareas use the same full-width flex overlay in every writing mode.
 - Reload reconstructs child session history, nested windows inherit their
   top-level creation URL and origin, exhausted navigation bodies are released,
   and removing the body no longer leaves an otherwise loaded document
