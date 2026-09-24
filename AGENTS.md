@@ -346,6 +346,12 @@
 - Grid track values parse and serialize `subgrid` line-name lists, including
   fixed and `auto-fill` name repeats. Separate adjacent line-name sets are
   retained, and interpolation/composition involving a subgrid remains discrete.
+  Grid layout inherits a subgrid axis's parent tracks, gutters, and line names,
+  clamps placements to the inherited bounds, and includes nested descendants in
+  the parent track-sizing pass. Subgrid border, padding, margin, and half-gap
+  edge adjustments contribute to intrinsic sizing; standalone subgrids retain
+  the ordinary-grid fallback. Resolved CSSOM exposes the subgrid's local line
+  names without manufacturing pixel tracks.
 - Custom properties declared in `@keyframes` now animate. Registered values
   interpolate as typed computed values, unregistered values animate discretely,
   composition and `!important` suppression follow the upstream rules, and the
