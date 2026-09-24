@@ -167,7 +167,9 @@
   content origin after conflict resolution so those outer shares remain inside
   the table wrapper. Anonymous cells created by missing-cell fixup keep zero
   used borders, leaving each collapsed grid-line border wholly owned by real
-  boxes on its sides.
+  boxes on its sides. A cell's specified height is a content-box minimum in
+  standards mode and grows its row by padding and borders; explicit
+  `border-box` and the table-cell quirks-mode rule retain border-box sizing.
 - Parsed programs are reused for bytecode cache generation, nested idle
   callback periods are paced, Window named-property membership avoids full ID
   enumeration, and SVG presentation attributes retain their case-sensitive
