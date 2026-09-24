@@ -2562,9 +2562,32 @@ fn test_collapsed_table_column_has_zero_width_and_no_border_spacing() {
 	assert first.content_width().to_double() == 100
 	assert first.offset.x().to_double() == 10
 	assert middle.content_width().to_double() == 0
+	assert middle.hidden_by_collapsed_columns()
 	assert middle.offset.x().to_double() == 120
 	assert last.content_width().to_double() == 100
+	assert !last.hidden_by_collapsed_columns()
 	assert last.offset.x().to_double() == 120
+}
+
+fn test_collapsed_table_column_hides_only_cells_wholly_inside_it_from_paint() {
+	document := html.parse_document('<!doctype html><style>
+		table { border-spacing:4px } td { padding:0; width:50px; height:50px }
+		.collapsed { visibility:collapse }
+	</style><table><col><col class="collapsed"><col><tr>
+		<td id="visible"></td><td id="hidden"><div id="hidden-child"></div></td>
+		<td id="spanning" colspan="2"></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'hidden').hidden_by_collapsed_columns()
+	assert !used_for_id(result, 'visible').hidden_by_collapsed_columns()
+	assert !used_for_id(result, 'spanning').hidden_by_collapsed_columns()
+	hidden := document.get_element_by_id('hidden') or { panic('missing hidden cell') }
+	hidden_child := document.get_element_by_id('hidden-child') or { panic('missing hidden child') }
+	visible := document.get_element_by_id('visible') or { panic('missing visible cell') }
+	spanning := document.get_element_by_id('spanning') or { panic('missing spanning cell') }
+	assert result.paint_tree.find_box(i64(hidden.as_node().unique_id())) == none
+	assert result.paint_tree.find_box(i64(hidden_child.as_node().unique_id())) == none
+	assert result.paint_tree.find_box(i64(visible.as_node().unique_id())) != none
+	assert result.paint_tree.find_box(i64(spanning.as_node().unique_id())) != none
 }
 
 fn test_collapsed_table_column_group_collapses_its_columns() {

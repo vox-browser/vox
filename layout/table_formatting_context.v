@@ -2143,6 +2143,13 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		cell_width := table_column_range_width(column_offsets, placement.column, placement.column_span, horizontal_spacing, intrinsic_widths.collapsed_columns)
 		styled := placement.cell.as_node_with_style() or { continue }
 		mut cell_state := state.get_mutable(styled)
+		column_end := if placement.column + placement.column_span < column_count {
+			placement.column + placement.column_span
+		} else {
+			column_count
+		}
+		cell_state.set_hidden_by_collapsed_columns(table_visible_columns_in_range(
+			intrinsic_widths.collapsed_columns, placement.column, column_end) == 0)
 		cell_state.set_containing_block_used_values(table_state)
 		collapsed := computed.border_collapse() == .collapse
 		collapsed_left := if collapsed { ?CSSPixels(cell_state.border_left) } else { none }

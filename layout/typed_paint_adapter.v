@@ -4007,7 +4007,16 @@ fn typed_paint_child_nodes(node &Node, state &LayoutState) []&Node {
 		mut has_committed_box := child.is_box()
 		if has_committed_box {
 			if styled := child.as_node_with_style() {
-				has_committed_box = state.try_get(styled) != none
+				if used := state.try_get(styled) {
+					// A cell wholly covered by collapsed columns is removed from the
+					// display together with its subtree. Filtering it here keeps the
+					// retained paint and hit-test plans in agreement.
+					if used.hidden_by_collapsed_columns() {
+						continue
+					}
+				} else {
+					has_committed_box = false
+				}
 			}
 		}
 		if has_committed_box {

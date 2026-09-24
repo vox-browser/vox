@@ -41,6 +41,7 @@ mut:
 	table_cell_coordinates_       ?painting.TableCellCoordinates
 	uses_collapsing_borders_model_ bool
 	is_collapsed_borders_table_box_ bool
+	hidden_by_collapsed_columns_ bool
 	has_line_clamp_point_         bool
 	is_invisible_for_line_clamp_  bool
 }
@@ -66,6 +67,7 @@ fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
 		table_cell_coordinates_: rare.table_cell_coordinates_
 		uses_collapsing_borders_model_: rare.uses_collapsing_borders_model_
 		is_collapsed_borders_table_box_: rare.is_collapsed_borders_table_box_
+		hidden_by_collapsed_columns_: rare.hidden_by_collapsed_columns_
 		has_line_clamp_point_: rare.has_line_clamp_point_
 		is_invisible_for_line_clamp_: rare.is_invisible_for_line_clamp_
 	}
@@ -183,6 +185,19 @@ pub fn (u &UsedValues) is_collapsed_borders_table_box() bool {
 pub fn (mut u UsedValues) set_is_collapsed_borders_table_box(value bool) {
 	mut rare := u.ensure_rare_data()
 	rare.is_collapsed_borders_table_box_ = value
+}
+
+// CSS 2.2 removes a table cell from the display when every column that it
+// spans has visibility: collapse. Layout still measures the cell, while the
+// retained paint tree uses this bit to omit the cell and its descendants.
+pub fn (u &UsedValues) hidden_by_collapsed_columns() bool {
+	rare := u.rare_ or { return false }
+	return rare.hidden_by_collapsed_columns_
+}
+
+pub fn (mut u UsedValues) set_hidden_by_collapsed_columns(value bool) {
+	mut rare := u.ensure_rare_data()
+	rare.hidden_by_collapsed_columns_ = value
 }
 
 pub fn (u &UsedValues) override_borders_data() ?painting.BordersDataWithElementKind {
