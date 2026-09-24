@@ -184,7 +184,10 @@
   baseline-aligned descendants inside the row's used block size. Cells whose
   spanned columns are all collapsed remain laid out but are omitted with their
   complete subtree from retained painting and hit testing; a span that reaches
-  any visible column remains displayed. A block container's own
+  any visible column remains displayed. Captions flow around the table grid in
+  the wrapper formatting context: their outer sizes contribute to wrapper
+  height, bottom captions follow the grid, and a stretched wrapper gives the
+  grid the definite block space left after both caption groups. A block container's own
   `vertical-align` positions that container only; direct text uses the
   anonymous inline box's initial baseline alignment, including inside cells.
   Collapsed borders split on whole CSS pixels at every grid line: cells own the
