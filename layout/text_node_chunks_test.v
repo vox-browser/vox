@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import html
 import platform
 
 fn chunk_test_style(document &dom.Document, declarations string) &css.ComputedProperties {
@@ -57,6 +58,37 @@ fn test_text_node_chunk_iterator_preserves_utf16_offsets_and_newline() {
 	assert newline.start == 3
 	assert newline.length == 1
 	assert last.start == 4
+}
+
+fn test_text_node_chunk_iterator_uses_a_file_backed_face_on_its_first_shape() {
+	$if macos {
+		document := html.parse_document('<!doctype html><style>@font-face { font-family: Fixture; src: url("file:///System/Library/Fonts/Supplemental/Arial.ttf") } span { font: 20px Fixture }</style><span id="first">X</span><span id="second">X</span>')
+		css.sync_document_style_elements(document)
+		first := css.query_selector(unsafe { &dom.Node(document) }, '#first') or {
+			panic('missing first target')
+		}
+		second := css.query_selector(unsafe { &dom.Node(document) }, '#second') or {
+			panic('missing second target')
+		}
+		computer := css.css_style_computer_for(document)
+		first_style := computer.compute_style(dom.AbstractElement.new(first,
+			none))
+		second_style := computer.compute_style(dom.AbstractElement.new(second,
+			none))
+		first_text := make_chunk_test_text_node(document, 'X', first_style)
+		second_text := make_chunk_test_text_node(document, 'X', second_style)
+		mut first_iterator := TextNodeChunkIterator.new(first_text, true, false)
+		first_chunk := first_iterator.next() or { panic('missing first text chunk') }
+		assert first_chunk.font.family == 'Fixture'
+		assert first_chunk.font.source_path == '/System/Library/Fonts/Supplemental/Arial.ttf'
+		// Both computed styles cached the pending cascade before the first shape
+		// loaded it. The second style must notice the new font generation rather
+		// than retaining its fallback-only cascade.
+		mut second_iterator := TextNodeChunkIterator.new(second_text, true, false)
+		second_chunk := second_iterator.next() or { panic('missing second text chunk') }
+		assert second_chunk.font.family == 'Fixture'
+		assert second_chunk.font.source_path == '/System/Library/Fonts/Supplemental/Arial.ttf'
+	}
 }
 
 fn test_text_node_chunk_iterator_uses_fallback_for_missing_space_glyph() {

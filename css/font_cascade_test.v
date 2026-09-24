@@ -19,12 +19,12 @@ fn test_system_ui_generic_font_family_list_parses() {
 fn test_font_cascade_selects_unicode_range_then_fallback() {
 	mut list := FontCascadeList.create()
 	list.add(PlatformFont{
-		typeface: PlatformTypeface{
+		typeface: &PlatformTypeface{
 			family_name: 'Latin A'
 		}
 	}, [UnicodeRange{ start: u32(`A`), end: u32(`A`) }])
 	list.add(PlatformFont{
-		typeface: PlatformTypeface{
+		typeface: &PlatformTypeface{
 			family_name: 'Unrestricted'
 		}
 	}, [])
@@ -33,12 +33,12 @@ fn test_font_cascade_selects_unicode_range_then_fallback() {
 
 	mut ranged_only := FontCascadeList.create()
 	ranged_only.add(PlatformFont{
-		typeface: PlatformTypeface{
+		typeface: &PlatformTypeface{
 			family_name: 'Latin A'
 		}
 	}, [UnicodeRange{ start: u32(`A`), end: u32(`A`) }])
 	ranged_only.set_last_resort_font(PlatformFont{
-		typeface: PlatformTypeface{
+		typeface: &PlatformTypeface{
 			family_name: 'Last resort'
 		}
 	})
@@ -141,7 +141,7 @@ fn test_font_face_tracks_declared_width_in_registration_key() {
 	})
 	set.add(face)!
 	face.status_ = .loaded
-	face.parsed_font = PlatformTypeface{
+	face.parsed_font = &PlatformTypeface{
 		family_name: 'Width Fixture'
 	}
 	computer.register_font_face(face)
@@ -162,7 +162,7 @@ fn test_font_matching_filters_width_before_weight() {
 		stretch: 'condensed'
 	})
 	condensed.status_ = .loaded
-	condensed.parsed_font = PlatformTypeface{
+	condensed.parsed_font = &PlatformTypeface{
 		family_name: 'Width Match'
 		source_path: 'condensed.ttf'
 	}
@@ -171,7 +171,7 @@ fn test_font_matching_filters_width_before_weight() {
 
 	mut normal := FontFaceObject.construct_impl('Width Match', FontFaceSource.from_string("url('normal.ttf')"), FontFaceDescriptors{})
 	normal.status_ = .loaded
-	normal.parsed_font = PlatformTypeface{
+	normal.parsed_font = &PlatformTypeface{
 		family_name: 'Width Match'
 		source_path: 'normal.ttf'
 	}
@@ -199,9 +199,42 @@ fn test_stylesheet_font_face_rules_register_local_true_type_loaders() {
 		assert face.status() == .unloaded
 		cascade.font_for_code_point_for_shaping(u32(`A`))
 		assert face.status() == .loaded
-		typeface := face.parsed_font or { panic('font face was not loaded by shaping') }
+		assert face.parsed_font != unsafe { nil }
+		typeface := face.parsed_font
 		assert typeface.family_name == 'Fixture'
 		assert typeface.source_path == '/System/Library/Fonts/Supplemental/Arial.ttf'
+	}
+}
+
+fn test_loaded_file_backed_font_cascade_keeps_heap_owned_entries() {
+	$if macos {
+		sheet := parse_css_stylesheet_with_parser("@font-face { font-family: Fixture; src: url('Arial.ttf') format('truetype'); }", 'file:///System/Library/Fonts/Supplemental/main.css')
+		mut computer := FontComputer.create()
+		set := FontFaceSet.create_for_font_computer(computer)
+		computer.load_fonts_from_css_rules(sheet.css_rules().rules, set)
+		mut pending := computer.compute_font_for_style_values(['Fixture'], CSSPixels.new(16),
+			0, 400, Percentage{ value_: 100 }, .auto_, map[string]f64{}, FontFeatureData{})
+		pending.font_for_code_point_for_shaping(u32(`A`))
+		loaded := computer.compute_font_for_style_values(['Fixture'], CSSPixels.new(16), 0,
+			400, Percentage{ value_: 100 }, .auto_, map[string]f64{}, FontFeatureData{})
+		cached := computer.compute_font_for_style_values(['Fixture'], CSSPixels.new(16), 0,
+			400, Percentage{ value_: 100 }, .auto_, map[string]f64{}, FontFeatureData{})
+		assert voidptr(loaded) == voidptr(cached)
+		mut allocation_pressure := []string{cap: 4096}
+		for index in 0 .. 4096 {
+			allocation_pressure << 'file-backed-font-${index}'
+		}
+		selected := cached.font_for_code_point(u32(`A`))
+		assert selected.typeface.family_name == 'Fixture'
+		assert selected.typeface.source_path == '/System/Library/Fonts/Supplemental/Arial.ttf'
+		metrics := platform.Font{
+			family:      selected.typeface.family_name.clone()
+			point_size:  selected.point_size / 0.75
+			weight:      int(selected.variations.weight)
+			source_path: selected.typeface.source_path.clone()
+		}.pixel_metrics()
+		assert metrics.size == selected.point_size / 0.75
+		assert allocation_pressure.len == 4096
 	}
 }
 
@@ -339,7 +372,7 @@ fn test_pending_font_face_preserves_fallback_metrics_and_suppresses_ink_during_b
 	mut cascade := FontCascadeList.create()
 	cascade.add_pending_face(face)
 	cascade.add(PlatformFont{
-		typeface: PlatformTypeface{
+		typeface:   &PlatformTypeface{
 			family_name: 'Fallback'
 		}
 		point_size: 12
@@ -362,7 +395,7 @@ fn test_pending_preferred_face_does_not_resolve_later_fallback_faces() {
 	cascade.add_pending_face(preferred)
 	cascade.add_pending_face(unused)
 	cascade.add(PlatformFont{
-		typeface: PlatformTypeface{
+		typeface: &PlatformTypeface{
 			family_name: 'Fallback'
 		}
 	}, [])
@@ -419,6 +452,8 @@ fn test_font_faces_with_the_same_url_share_one_loader() {
 		assert face_a.status() == .loaded
 		assert face_b.status() == .loaded
 		assert computer.loaders_by_url.len == 1
-		assert face_a.parsed_font?.source_path == face_b.parsed_font?.source_path
+		assert face_a.parsed_font != unsafe { nil }
+		assert face_b.parsed_font != unsafe { nil }
+		assert face_a.parsed_font.source_path == face_b.parsed_font.source_path
 	}
 }

@@ -36,11 +36,11 @@ pub struct TextNodeChunkIterator {
 	line_boundaries        []bool
 	word_break             css.WordBreak
 	font                   &platform.Font = unsafe { nil }
+mut:
 	font_cascade_list      &css.FontCascadeList = unsafe { nil }
 	font_cascade_fonts     []&platform.Font
 	font_cascade_ranges    [][]css.UnicodeRange
 	last_resort_font       ?&platform.Font
-mut:
 	selected_fonts map[string]&platform.Font
 pub mut:
 	current_index            int
@@ -51,21 +51,35 @@ pub mut:
 
 fn text_node_chunk_platform_font(font css.PlatformFont) &platform.Font {
 	return &platform.Font{
-		family: font.typeface.family_name
+		family:       font.typeface.family_name.clone()
 		point_size: font.point_size / 0.75
 		weight: int(font.variations.weight)
-		source_path: font.typeface.source_path
+		source_path:  font.typeface.source_path.clone()
 		is_invisible: font.is_invisible
 	}
 }
 
 fn text_node_chunk_invisible_font(font &platform.Font) &platform.Font {
 	return &platform.Font{
-		family: font.family
+		family:       font.family.clone()
 		point_size: font.point_size
 		weight: font.weight
-		source_path: font.source_path
+		source_path:  font.source_path.clone()
 		is_invisible: true
+	}
+}
+
+fn (mut iterator TextNodeChunkIterator) install_font_cascade(font_cascade &css.FontCascadeList) {
+	iterator.font_cascade_list = font_cascade
+	iterator.font_cascade_fonts = []&platform.Font{cap: font_cascade.fonts.len}
+	iterator.font_cascade_ranges = [][]css.UnicodeRange{cap: font_cascade.fonts.len}
+	for entry in font_cascade.fonts {
+		iterator.font_cascade_fonts << text_node_chunk_platform_font(entry.font)
+		iterator.font_cascade_ranges << entry.unicode_ranges.clone()
+	}
+	iterator.last_resort_font = none
+	if font_cascade.last_resort_font != unsafe { nil } {
+		iterator.last_resort_font = text_node_chunk_platform_font(*font_cascade.last_resort_font)
 	}
 }
 
@@ -75,17 +89,7 @@ pub fn TextNodeChunkIterator.new(text_node &TextNode, should_wrap_lines bool, sh
 	mut mutable_text_node := unsafe { &TextNode(text_node) }
 	mutable_text_node.cached_utf16_code_units_ = code_units
 	font_cascade := text_node.Node.font_list()
-	mut font_cascade_fonts := []&platform.Font{cap: font_cascade.fonts.len}
-	mut font_cascade_ranges := [][]css.UnicodeRange{cap: font_cascade.fonts.len}
-	for entry in font_cascade.fonts {
-		font_cascade_fonts << text_node_chunk_platform_font(entry.font)
-		font_cascade_ranges << entry.unicode_ranges.clone()
-	}
-	mut last_resort_font := ?&platform.Font(none)
-	if font := font_cascade.last_resort_font {
-		last_resort_font = text_node_chunk_platform_font(font)
-	}
-	return &TextNodeChunkIterator{
+	mut iterator := &TextNodeChunkIterator{
 		text_node: text_node
 		should_wrap_lines_: should_wrap_lines
 		should_respect_breaks_: should_respect_linebreaks
@@ -99,12 +103,10 @@ pub fn TextNodeChunkIterator.new(text_node &TextNode, should_wrap_lines bool, sh
 		line_boundaries: text_line_boundaries_from_segmenter(text_node.line_segmenter(), code_units.len)
 		word_break: text_node.Node.computed_values().word_break()
 		font: text_node.font_for_rendering()
-		font_cascade_list: font_cascade
-		font_cascade_fonts: font_cascade_fonts
-		font_cascade_ranges: font_cascade_ranges
-		last_resort_font: last_resort_font
 		selected_fonts: map[string]&platform.Font{}
 	}
+	iterator.install_font_cascade(font_cascade)
+	return iterator
 }
 
 pub fn (iterator &TextNodeChunkIterator) should_wrap_lines() bool {
@@ -181,7 +183,7 @@ fn (iterator &TextNodeChunkIterator) is_at_line_break_opportunity() bool {
 		&& iterator.line_boundaries[iterator.current_index]
 }
 
-fn (iterator &TextNodeChunkIterator) font_for_code_point(code_point u32) &platform.Font {
+fn (mut iterator TextNodeChunkIterator) font_for_code_point(code_point u32) &platform.Font {
 	if iterator.font_cascade_list == unsafe { nil } && iterator.font_cascade_fonts.len == 0 {
 		return iterator.font
 	}
@@ -206,9 +208,23 @@ fn (iterator &TextNodeChunkIterator) font_for_code_point(code_point u32) &platfo
 			break
 		}
 	}
-	if iterator.font_cascade_list == unsafe { nil }
-		|| !iterator.font_cascade_list.fallback_is_invisible_for_code_point_through(code_point,
-		selected_index) {
+	if iterator.font_cascade_list == unsafe { nil } {
+		return selected
+	}
+	font_computer := css.css_style_computer_for(iterator.text_node.Node.document()).font_computer()
+	font_generation := font_computer.environment_generation()
+	fallback_is_invisible := iterator.font_cascade_list.fallback_is_invisible_for_code_point_through(code_point,
+		selected_index)
+	if font_computer.environment_generation() != font_generation {
+		// A synchronously loaded URL-backed face invalidates the old cascade.
+		// Rebuild it before shaping this code point so the first layout uses the
+		// author font rather than retaining fallback metrics until another pass.
+		mut computed_values := unsafe { &css.ComputedProperties(iterator.text_node.Node.computed_values()) }
+		computed_values.clear_computed_font_list_cache()
+		iterator.install_font_cascade(computed_values.computed_font_list(font_computer))
+		return iterator.font_for_code_point(code_point)
+	}
+	if !fallback_is_invisible {
 		return selected
 	}
 	key := '${selected.family}|${selected.source_path}|${selected.point_size}|${selected.weight}|invisible'
@@ -216,12 +232,11 @@ fn (iterator &TextNodeChunkIterator) font_for_code_point(code_point u32) &platfo
 		return font
 	}
 	font := text_node_chunk_invisible_font(selected)
-	mut mutable_iterator := unsafe { &TextNodeChunkIterator(iterator) }
-	mutable_iterator.selected_fonts[key] = font
+	iterator.selected_fonts[key] = font
 	return font
 }
 
-pub fn (iterator &TextNodeChunkIterator) font_for_space(at_index int, space_code_point u32) &platform.Font {
+pub fn (mut iterator TextNodeChunkIterator) font_for_space(at_index int, space_code_point u32) &platform.Font {
 	if font := iterator.last_non_whitespace_font {
 		if !font.is_emoji_font() && font.contains_glyph(space_code_point) {
 			return font
@@ -476,16 +491,20 @@ fn text_type_for_code_point(code_point u32) platform.GlyphRunTextType {
 		return .common
 	}
 	match dom.unicode_bidirectional_class(code_point) {
-		.white_space_neutral, .block_separator, .segment_separator, .common_number_separator, .dir_non_spacing_mark, .arabic_number, .european_number, .european_number_separator, .european_number_terminator {
+		.white_space_neutral, .block_separator, .segment_separator, .common_number_separator,
+		.dir_non_spacing_mark, .arabic_number, .european_number, .european_number_separator,
+		.european_number_terminator {
 			return .context_dependent
 		}
-		.boundary_neutral, .other_neutral, .first_strong_isolate, .pop_directional_format, .pop_directional_isolate {
+		.boundary_neutral, .other_neutral, .first_strong_isolate, .pop_directional_format,
+		.pop_directional_isolate {
 			return .common
 		}
 		.left_to_right, .left_to_right_embedding, .left_to_right_isolate, .left_to_right_override {
 			return .ltr
 		}
-		.right_to_left, .right_to_left_arabic, .right_to_left_embedding, .right_to_left_isolate, .right_to_left_override {
+		.right_to_left, .right_to_left_arabic, .right_to_left_embedding, .right_to_left_isolate,
+		.right_to_left_override {
 			return .rtl
 		}
 	}

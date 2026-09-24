@@ -480,8 +480,8 @@ fn block_ellipsis_font(style_source &Node, ellipsis string) &platform.Font {
 			return font
 		}
 	}
-	if last_resort := cascade.last_resort_font {
-		font := text_node_chunk_platform_font(last_resort)
+	if cascade.last_resort_font != unsafe { nil } {
+		font := text_node_chunk_platform_font(*cascade.last_resort_font)
 		if cascade.fallback_is_invisible_for_code_point_through(code_point, cascade.fonts.len) {
 			return text_node_chunk_invisible_font(font)
 		}

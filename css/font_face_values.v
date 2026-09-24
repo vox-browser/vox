@@ -980,8 +980,7 @@ pub fn (mut descriptors CSSFontFaceDescriptors) set_property(property string, va
 			style_value: parsed
 		})
 	} else if id == .font_display {
-		parsed := parse_font_keyword_descriptor(value, ['auto', 'block', 'swap', 'fallback',
-			'optional']) or { return }
+		parsed := parse_font_keyword_descriptor(value, ['auto', 'block', 'swap', 'fallback', 'optional']) or { return }
 		descriptors.set_descriptor_value(FontFaceDescriptor{
 			id: id
 			value: parsed.serialize(.normal)
@@ -1888,7 +1887,7 @@ pub mut:
 	cached_width_       int = 100
 	urls                []ParsedFontFaceSource
 	binary_data         []u8
-	parsed_font         ?PlatformTypeface
+	parsed_font                    &PlatformTypeface = unsafe { nil }
 	font_display_       FontDisplay = .auto_
 	font_display_period_ FontDisplayPeriod = .block
 	font_download_timer_start_ns_ ?i64
@@ -2139,14 +2138,14 @@ fn (face &FontFaceObject) font_computer() ?&FontComputer {
 	return none
 }
 
-fn (face &FontFaceObject) font_with_point_size(point_size f32, variations FontVariationSettings, shape_features ShapeFeatures) ?FontCascadeList {
+fn (face &FontFaceObject) font_with_point_size(point_size f32, variations FontVariationSettings, shape_features ShapeFeatures) &FontCascadeList {
 	if face.font_display_failed_ || face.status_ == .error {
-		return none
+		return unsafe { nil }
 	}
 	mut font_list := FontCascadeList.create()
-	if typeface := face.parsed_font {
+	if face.parsed_font != unsafe { nil } {
 		font_list.add(PlatformFont{
-			typeface: typeface
+			typeface:   face.parsed_font
 			point_size: point_size
 			variations: variations
 			features: shape_features
@@ -2155,7 +2154,7 @@ fn (face &FontFaceObject) font_with_point_size(point_size f32, variations FontVa
 		font_list.add_pending_face(face)
 	}
 	if font_list.is_empty() {
-		return none
+		return unsafe { nil }
 	}
 	return font_list
 }
@@ -2553,7 +2552,7 @@ pub fn (mut face FontFaceObject) load_with_font_computer(font_computer &FontComp
 
 fn (mut face FontFaceObject) continue_url_load_with_font_computer(mut font_computer FontComputer) {
 	face_pointer := unsafe { &FontFaceObject(face) }
-	on_load := fn [face_pointer] (typeface ?PlatformTypeface) {
+	on_load := fn [face_pointer] (typeface &PlatformTypeface) {
 		mut mutable_face := unsafe { &FontFaceObject(face_pointer) }
 		mutable_face.finish_loading_from_typeface(typeface)
 	}
@@ -2605,18 +2604,19 @@ fn (mut face FontFaceObject) begin_url_load() bool {
 	return true
 }
 
-fn (face &FontFaceObject) load_first_available_url() ?PlatformTypeface {
+fn (face &FontFaceObject) load_first_available_url() &PlatformTypeface {
 	for source in face.urls {
 		if source.kind != .url {
 			continue
 		}
 		url := source.url or { URL.from_url(source.value) }
 		resolved_url := resolve_font_face_source_url(url, face.css_font_face_rule)
-		if typeface := platform_load_font_from_url_boundary(resolved_url, face.family_) {
+		typeface := platform_load_font_from_url_boundary(resolved_url, face.family_)
+		if typeface != unsafe { nil } {
 			return typeface
 		}
 	}
-	return none
+	return unsafe { nil }
 }
 
 fn (mut face FontFaceObject) start_binary_load() {
@@ -2631,16 +2631,16 @@ fn (mut face FontFaceObject) start_binary_load() {
 	face.finish_loading_from_typeface(typeface)
 }
 
-fn (mut face FontFaceObject) finish_loading_from_typeface(maybe_typeface ?PlatformTypeface) {
+fn (mut face FontFaceObject) finish_loading_from_typeface(typeface &PlatformTypeface) {
 	face.update_font_display_period()
 	face.font_download_completed_ = true
 	if mut timer := face.font_download_timer_ {
 		timer.stop()
 	}
-	if typeface := maybe_typeface {
+	if typeface != unsafe { nil } {
 		// 1. If the load was successful, font face now represents the parsed font;
 		//    fulfill font face's [[FontStatusPromise]] with font face, and set its status attribute to "loaded".
-		face.parsed_font = typeface
+		face.parsed_font = owned_platform_typeface(typeface)
 		face.status_ = .loaded
 		face.font_status_promise.resolve(webidl.platform_object_value())
 		if mut computer := face.font_computer() {
@@ -2720,7 +2720,8 @@ pub fn font_tech_is_supported(font_tech FontTech) bool {
 	// https://drafts.csswg.org/css-fonts-4/#font-tech-definitions
 	// https://drafts.csswg.org/css-fonts-5/#font-tech-definitions
 	return match font_tech {
-		.features_opentype, .features_aat, .color_colrv0, .color_colrv1, .color_svg, .color_sbix, .color_cbdt, .palettes, .avar2 {
+		.features_opentype, .features_aat, .color_colrv0, .color_colrv1, .color_svg, .color_sbix,
+		.color_cbdt, .palettes, .avar2 {
 			true
 		}
 
@@ -3255,6 +3256,7 @@ pub enum FontOpticalSizing {
 	none_
 }
 
+@[heap]
 pub struct PlatformTypeface {
 pub mut:
 	family_name string
@@ -3266,11 +3268,49 @@ pub mut:
 
 pub struct PlatformFont {
 pub mut:
-	typeface   PlatformTypeface
+	typeface     &PlatformTypeface = unsafe { nil }
 	point_size f32
 	variations FontVariationSettings
 	features   ShapeFeatures
 	is_invisible bool
+}
+
+fn owned_platform_typeface(typeface &PlatformTypeface) &PlatformTypeface {
+	// PlatformTypeface is immutable after construction and heap-backed. Retain
+	// its identity through cascades; copying its string-bearing value under the
+	// old backend can release storage still referenced by another cascade.
+	return typeface
+}
+
+fn owned_shape_features(features ShapeFeatures) ShapeFeatures {
+	mut result := ShapeFeatures{ cap: features.len }
+	for feature in features {
+		result << ShapeFeature{
+			tag:   feature.tag.clone()
+			value: feature.value
+		}
+	}
+	return result
+}
+
+fn owned_platform_font(font &PlatformFont) PlatformFont {
+	return PlatformFont{
+		typeface:     owned_platform_typeface(font.typeface)
+		point_size:   font.point_size
+		variations:   FontVariationSettings{
+			weight: font.variations.weight
+			width:  font.variations.width
+			opsz:   font.variations.opsz
+			axes:   font.variations.axes.clone()
+		}
+		features:     owned_shape_features(font.features)
+		is_invisible: font.is_invisible
+	}
+}
+
+fn owned_platform_font_ref(font &PlatformFont) &PlatformFont {
+	copy := owned_platform_font(font)
+	return &copy
 }
 
 pub enum PendingFontState {
@@ -3297,27 +3337,27 @@ pub struct FontCascadeList {
 pub mut:
 	fonts            []FontCascadeEntry
 	pending_faces    []PendingFontFace
-	last_resort_font ?PlatformFont
+	last_resort_font &PlatformFont = unsafe { nil }
 	invisible_fonts  map[string]&PlatformFont
 }
 
-pub fn FontCascadeList.create() FontCascadeList {
-	return FontCascadeList{
+pub fn FontCascadeList.create() &FontCascadeList {
+	return &FontCascadeList{
 		invisible_fonts: map[string]&PlatformFont{}
 	}
 }
 
 pub fn (mut list FontCascadeList) add(font PlatformFont, unicode_ranges []UnicodeRange) {
 	list.fonts << FontCascadeEntry{
-		font: font
+		font:           owned_platform_font(&font)
 		unicode_ranges: unicode_ranges.clone()
 	}
 }
 
-pub fn (mut list FontCascadeList) extend(other FontCascadeList) {
+pub fn (mut list FontCascadeList) extend(other &FontCascadeList) {
 	font_offset := list.fonts.len
 	for entry in other.fonts {
-		list.fonts << entry
+		list.add(entry.font, entry.unicode_ranges)
 	}
 	for pending_face in other.pending_faces {
 		list.pending_faces << PendingFontFace{
@@ -3326,13 +3366,14 @@ pub fn (mut list FontCascadeList) extend(other FontCascadeList) {
 			font_face: pending_face.font_face
 		}
 	}
-	if last_resort := other.last_resort_font {
-		list.last_resort_font = last_resort
+	if other.last_resort_font != unsafe { nil } {
+		list.last_resort_font = other.last_resort_font
 	}
 }
 
 pub fn (list &FontCascadeList) is_empty() bool {
-	return list.fonts.len == 0 && list.pending_faces.len == 0 && list.last_resort_font == none
+	return list.fonts.len == 0 && list.pending_faces.len == 0
+		&& list.last_resort_font == unsafe { nil }
 }
 
 pub fn (mut list FontCascadeList) add_pending_face(font_face &FontFaceObject) {
@@ -3383,17 +3424,15 @@ pub fn (list &FontCascadeList) equals(other &FontCascadeList) bool {
 			return false
 		}
 	}
-	if left := list.last_resort_font {
-		if right := other.last_resort_font {
-			return platform_font_equals(left, right)
-		}
-		return false
+	if list.last_resort_font != unsafe { nil } {
+		return other.last_resort_font != unsafe { nil }
+			&& platform_font_equals(*list.last_resort_font, *other.last_resort_font)
 	}
-	return other.last_resort_font == none
+	return other.last_resort_font == unsafe { nil }
 }
 
 pub fn (mut list FontCascadeList) set_last_resort_font(font PlatformFont) {
-	list.last_resort_font = font
+	list.last_resort_font = owned_platform_font_ref(&font)
 }
 
 struct PendingFontResolution {
@@ -3437,10 +3476,15 @@ fn (list &FontCascadeList) font_with_visibility(font &PlatformFont, invisible bo
 		return cached
 	}
 	variant := &PlatformFont{
-		typeface: font.typeface
+		typeface:     owned_platform_typeface(font.typeface)
 		point_size: font.point_size
-		variations: font.variations
-		features: font.features
+		variations:   FontVariationSettings{
+			weight: font.variations.weight
+			width:  font.variations.width
+			opsz:   font.variations.opsz
+			axes:   font.variations.axes.clone()
+		}
+		features:     owned_shape_features(font.features)
 		is_invisible: true
 	}
 	mutable_list.invisible_fonts[key] = variant
@@ -3466,8 +3510,8 @@ fn (list &FontCascadeList) font_for_code_point_internal(code_point u32, trigger_
 	if trigger_pending_loads {
 		resolution = mutable_list.resolve_pending_faces(code_point, list.fonts.len, resolution)
 	}
-	if font := list.last_resort_font {
-		return list.font_with_visibility(&font, resolution.invisible)
+	if list.last_resort_font != unsafe { nil } {
+		return list.font_with_visibility(list.last_resort_font, resolution.invisible)
 	}
 	panic('FontCascadeList must contain a font or a last-resort font')
 }
@@ -3604,16 +3648,16 @@ pub mut:
 	font_computer   &FontComputer = unsafe { nil }
 	family_name_    string
 	unicode_ranges_ []UnicodeRange
-	typeface        ?PlatformTypeface
+	typeface                &PlatformTypeface = unsafe { nil }
 	urls            []URL
-	subscribers     []fn (?PlatformTypeface)
+	subscribers             []fn (&PlatformTypeface)
 	has_completed   bool
 	has_started_request_ bool
 	has_received_font_data_ bool
 	requires_network_ bool
 }
 
-pub fn FontLoader.create(font_computer &FontComputer, family_name string, unicode_ranges []UnicodeRange, urls []URL, on_load ?fn (?PlatformTypeface)) &FontLoader {
+pub fn FontLoader.create(font_computer &FontComputer, family_name string, unicode_ranges []UnicodeRange, urls []URL, on_load ?fn (&PlatformTypeface)) &FontLoader {
 	mut loader := &FontLoader{
 		font_computer: font_computer
 		family_name_: family_name
@@ -3626,7 +3670,7 @@ pub fn FontLoader.create(font_computer &FontComputer, family_name string, unicod
 	return loader
 }
 
-pub fn (mut loader FontLoader) subscribe(callback fn (?PlatformTypeface)) {
+pub fn (mut loader FontLoader) subscribe(callback fn (&PlatformTypeface)) {
 	if loader.has_completed {
 		callback(loader.typeface)
 		return
@@ -3639,22 +3683,26 @@ pub fn (loader &FontLoader) unicode_ranges() []UnicodeRange {
 }
 
 pub fn (mut loader FontLoader) font_with_point_size(point_size f32, variations FontVariationSettings, shape_features ShapeFeatures) ?PlatformFont {
-	if loader.typeface == none {
+	if loader.typeface == unsafe { nil } {
 		if loader.urls.len != 0 {
 			loader.start_loading_next_url()
 		}
 		// The V file-resource boundary completes synchronously. Consume its
 		// result now; network-backed loading still returns none here.
-		if loader.typeface == none {
+		if loader.typeface == unsafe { nil } {
 			return none
 		}
 	}
-	typeface := loader.typeface or { return none }
 	return PlatformFont{
-		typeface: typeface
+		typeface:   loader.typeface
 		point_size: point_size
-		variations: variations
-		features: shape_features
+		variations: FontVariationSettings{
+			weight: variations.weight
+			width:  variations.width
+			opsz:   variations.opsz
+			axes:   variations.axes.clone()
+		}
+		features:   owned_shape_features(shape_features)
 	}
 }
 
@@ -3676,10 +3724,10 @@ pub fn (mut loader FontLoader) start_loading_next_url() {
 	loader.requires_network_ = !url.url().starts_with('file:')
 
 	typeface := platform_load_font_from_url_boundary(url.url(), loader.family_name_)
-	if typeface != none {
+	if typeface != unsafe { nil } {
 		loader.has_received_font_data_ = true
 	}
-	if typeface == none && loader.urls.len != 0 {
+	if typeface == unsafe { nil } && loader.urls.len != 0 {
 		loader.start_loading_next_url()
 		return
 	}
@@ -3687,7 +3735,7 @@ pub fn (mut loader FontLoader) start_loading_next_url() {
 }
 
 pub fn (loader &FontLoader) is_loading() bool {
-	return loader.urls.len != 0 && loader.typeface == none
+	return loader.urls.len != 0 && loader.typeface == unsafe { nil }
 }
 
 pub fn (loader &FontLoader) may_finish_from_cache() bool {
@@ -3702,7 +3750,7 @@ pub fn (loader &FontLoader) family_name() string {
 	return loader.family_name_
 }
 
-pub fn (loader &FontLoader) try_load_font(response &fetch.Response, bytes []u8) !PlatformTypeface {
+pub fn (loader &FontLoader) try_load_font(response &fetch.Response, bytes []u8) !&PlatformTypeface {
 	_ = loader
 	// Match FontComputer.cpp: trust a font MIME type, otherwise sniff in the font context,
 	// then dispatch only the TTF/OTF, WOFF, and WOFF2 families to the platform decoder.
@@ -3718,16 +3766,17 @@ pub fn (loader &FontLoader) try_load_font(response &fetch.Response, bytes []u8) 
 	}
 	if mime_type.essence() in ['font/ttf', 'application/x-font-ttf', 'font/otf', 'font/woff',
 		'application/font-woff', 'font/woff2', 'application/font-woff2'] {
-		if typeface := platform_load_font_from_bytes_boundary(bytes, loader.family_name_) {
+		typeface := platform_load_font_from_bytes_boundary(bytes, loader.family_name_)
+		if typeface != unsafe { nil } {
 			return typeface
 		}
 	}
 	return error('Automatic format detection failed')
 }
 
-fn (mut loader FontLoader) font_did_load_or_fail(typeface ?PlatformTypeface) {
-	if loaded_typeface := typeface {
-		loader.typeface = loaded_typeface
+fn (mut loader FontLoader) font_did_load_or_fail(typeface &PlatformTypeface) {
+	if typeface != unsafe { nil } {
+		loader.typeface = owned_platform_typeface(typeface)
 		mut mutable_computer := unsafe { &FontComputer(loader.font_computer) }
 		mutable_computer.clear_computed_font_cache(loader.family_name_)
 	}
@@ -3742,18 +3791,20 @@ struct MatchingFontCandidate {
 	key              FontFaceKey
 	width            int = 5
 	font_faces       []&FontFaceObject
-	typeface         ?PlatformTypeface
+	typeface         &PlatformTypeface = unsafe { nil }
 	is_platform_font bool
 }
 
-fn (mut candidate MatchingFontCandidate) font_with_point_size(point_size f32, variations FontVariationSettings, font_feature_data FontFeatureData, font_feature_values map[string][]u32) ?FontCascadeList {
+fn (mut candidate MatchingFontCandidate) font_with_point_size(point_size f32, variations FontVariationSettings, font_feature_data FontFeatureData, font_feature_values map[string][]u32) &FontCascadeList {
 	shape_features := font_feature_data.to_shape_features(font_feature_values)
 
 	if candidate.is_platform_font {
-		typeface := candidate.typeface or { return none }
+		if candidate.typeface == unsafe { nil } {
+			return unsafe { nil }
+		}
 		mut font_list := FontCascadeList.create()
 		font_list.add(PlatformFont{
-			typeface: typeface
+			typeface:   candidate.typeface
 			point_size: point_size
 			variations: variations
 			features: shape_features
@@ -3763,12 +3814,13 @@ fn (mut candidate MatchingFontCandidate) font_with_point_size(point_size f32, va
 
 	mut font_list := FontCascadeList.create()
 	for face in candidate.font_faces {
-		if face_fonts := face.font_with_point_size(point_size, variations, shape_features) {
+		face_fonts := face.font_with_point_size(point_size, variations, shape_features)
+		if face_fonts != unsafe { nil } {
 			font_list.extend(face_fonts)
 		}
 	}
 	if font_list.is_empty() {
-		return none
+		return unsafe { nil }
 	}
 	return font_list
 }
@@ -3779,7 +3831,7 @@ pub mut:
 	document_                 ?&dom.Document
 	font_faces                map[string][]&FontFaceObject
 	loaders_by_url            map[string]&FontLoader
-	computed_font_cache       map[string]FontCascadeList
+	computed_font_cache              map[string]&FontCascadeList
 	font_feature_values_cache map[string]map[string][]u32
 	font_feature_values_rules []&CSSFontFeatureValuesRule
 	has_completed_initial_paint_ bool
@@ -3791,7 +3843,7 @@ pub fn FontComputer.create() &FontComputer {
 	return &FontComputer{
 		font_faces: map[string][]&FontFaceObject{}
 		loaders_by_url: map[string]&FontLoader{}
-		computed_font_cache: map[string]FontCascadeList{}
+		computed_font_cache:       map[string]&FontCascadeList{}
 		font_feature_values_cache: map[string]map[string][]u32{}
 	}
 }
@@ -3829,7 +3881,7 @@ pub fn (computer &FontComputer) initial_font() PlatformFont {
 pub fn (mut computer FontComputer) clear_computed_font_cache(family_name string) {
 	computer.environment_generation_++
 	// Only clear cache entries that reference the loaded font family.
-	mut kept := map[string]FontCascadeList{}
+	mut kept := map[string]&FontCascadeList{}
 	mut removed_referenced_family := false
 	for key, value in computer.computed_font_cache {
 		if computed_font_cache_key_references_family(key, family_name) {
@@ -3934,10 +3986,10 @@ pub fn (mut computer FontComputer) clear_font_feature_values_cache(family_name s
 	computer.font_feature_values_cache.delete(family_name)
 }
 
-pub fn (mut computer FontComputer) load_font_face(font_face ParsedFontFace, on_load ?fn (?PlatformTypeface)) ?&FontLoader {
+pub fn (mut computer FontComputer) load_font_face(font_face ParsedFontFace, on_load ?fn (&PlatformTypeface)) ?&FontLoader {
 	if font_face.sources().len == 0 {
 		if callback := on_load {
-			callback(none)
+			callback(unsafe { nil })
 		}
 		return none
 	}
@@ -3954,7 +4006,7 @@ pub fn (mut computer FontComputer) load_font_face(font_face ParsedFontFace, on_l
 
 	if urls.len == 0 {
 		if callback := on_load {
-			callback(none)
+			callback(unsafe { nil })
 		}
 		return none
 	}
@@ -4076,7 +4128,7 @@ pub fn disconnect_font_faces_in_css_rules(rules []&CSSRule) {
 	}
 }
 
-pub fn (mut computer FontComputer) compute_font_for_style_values(font_family []string, font_size CSSPixels, font_slope int, font_weight f64, font_width Percentage, font_optical_sizing FontOpticalSizing, font_variation_settings map[string]f64, font_feature_data FontFeatureData) FontCascadeList {
+pub fn (mut computer FontComputer) compute_font_for_style_values(font_family []string, font_size CSSPixels, font_slope int, font_weight f64, font_width Percentage, font_optical_sizing FontOpticalSizing, font_variation_settings map[string]f64, font_feature_data FontFeatureData) &FontCascadeList {
 	cache_key := ComputedFontCacheKey{
 		font_family: font_family.clone()
 		font_optical_sizing: font_optical_sizing
@@ -4096,7 +4148,7 @@ pub fn (mut computer FontComputer) compute_font_for_style_values(font_family []s
 	return value
 }
 
-fn (mut computer FontComputer) compute_font_for_style_values_impl(font_family []string, font_size CSSPixels, slope int, font_weight f64, font_width Percentage, font_optical_sizing FontOpticalSizing, font_variation_settings map[string]f64, font_feature_data FontFeatureData) FontCascadeList {
+fn (mut computer FontComputer) compute_font_for_style_values_impl(font_family []string, font_size CSSPixels, slope int, font_weight f64, font_width Percentage, font_optical_sizing FontOpticalSizing, font_variation_settings map[string]f64, font_feature_data FontFeatureData) &FontCascadeList {
 	// FIXME: We round to int here as that is what is expected by our font infrastructure below
 	weight := int(math.round(font_weight))
 
@@ -4130,15 +4182,15 @@ fn (mut computer FontComputer) compute_font_for_style_values_impl(font_family []
 	mut font_list := FontCascadeList.create()
 
 	for family in font_family {
-		mut other_font_list := ?FontCascadeList(none)
-		if is_generic_font_family(family) {
-			other_font_list = computer.find_font(platform_generic_font_name_boundary(family), weight, slope, font_size_in_pt, variation, font_feature_data)
+		other_font_list := if is_generic_font_family(family) {
+			computer.find_font(platform_generic_font_name_boundary(family), weight, slope,
+				font_size_in_pt, variation, font_feature_data)
 		} else {
-			other_font_list = computer.find_font(family, weight, slope, font_size_in_pt, variation, font_feature_data)
+			computer.find_font(family, weight, slope, font_size_in_pt, variation,
+				font_feature_data)
 		}
-
-		if other := other_font_list {
-			font_list.extend(other)
+		if other_font_list != unsafe { nil } {
+			font_list.extend(other_font_list)
 		}
 	}
 
@@ -4151,7 +4203,9 @@ fn (mut computer FontComputer) compute_font_for_style_values_impl(font_family []
 
 	// Add emoji and symbol fonts
 	for font_name in platform_symbol_font_names_boundary() {
-		if other_font_list := computer.find_font(font_name, weight, slope, font_size_in_pt, variation, font_feature_data) {
+		other_font_list := computer.find_font(font_name, weight, slope, font_size_in_pt,
+			variation, font_feature_data)
+		if other_font_list != unsafe { nil } {
 			font_list.extend(other_font_list)
 		}
 	}
@@ -4165,7 +4219,7 @@ fn (mut computer FontComputer) compute_font_for_style_values_impl(font_family []
 	return font_list
 }
 
-fn (mut computer FontComputer) find_font(family string, weight int, slope int, font_size_in_pt f32, variation FontVariationSettings, font_feature_data FontFeatureData) ?FontCascadeList {
+fn (mut computer FontComputer) find_font(family string, weight int, slope int, font_size_in_pt f32, variation FontVariationSettings, font_feature_data FontFeatureData) &FontCascadeList {
 	font_feature_values := computer.font_feature_values_for_family(family)
 
 	// OPTIMIZATION: Look for an exact match in loaded fonts first.
@@ -4183,7 +4237,8 @@ fn (mut computer FontComputer) find_font(family string, weight int, slope int, f
 		mut result := FontCascadeList.create()
 		shape_features := font_feature_data.to_shape_features(font_feature_values)
 		for face in faces {
-			if face_fonts := face.font_with_point_size(font_size_in_pt, variation, shape_features) {
+			face_fonts := face.font_with_point_size(font_size_in_pt, variation, shape_features)
+			if face_fonts != unsafe { nil } {
 				result.extend(face_fonts)
 			}
 		}
@@ -4192,17 +4247,19 @@ fn (mut computer FontComputer) find_font(family string, weight int, slope int, f
 		}
 	}
 
-	if found_font := computer.font_matching_algorithm(family, weight, slope, font_size_in_pt, variation, font_feature_data, font_feature_values) {
+	found_font := computer.font_matching_algorithm(family, weight, slope, font_size_in_pt,
+		variation, font_feature_data, font_feature_values)
+	if found_font != unsafe { nil } {
 		if !found_font.is_empty() {
 			return found_font
 		}
 	}
-	return none
+	return unsafe { nil }
 }
 
 // Partial implementation of the font-matching algorithm: https://www.w3.org/TR/css-fonts-4/#font-matching-algorithm
 // FIXME: This should be replaced by the full CSS font selection algorithm.
-fn (mut computer FontComputer) font_matching_algorithm(family_name string, weight int, slope int, font_size_in_pt f32, variations FontVariationSettings, font_feature_data FontFeatureData, font_feature_values map[string][]u32) ?FontCascadeList {
+fn (mut computer FontComputer) font_matching_algorithm(family_name string, weight int, slope int, font_size_in_pt f32, variations FontVariationSettings, font_feature_data FontFeatureData, font_feature_values map[string][]u32) &FontCascadeList {
 	// If a font family match occurs, the user agent assembles the set of font faces in that family and then
 	// narrows the set to a single face using other font properties in the order given below.
 	mut matching_family_fonts := []MatchingFontCandidate{}
@@ -4234,7 +4291,7 @@ fn (mut computer FontComputer) font_matching_algorithm(family_name string, weigh
 	}
 
 	if matching_family_fonts.len == 0 {
-		return none
+		return unsafe { nil }
 	}
 
 	// 1. font-width is tried first. If the desired width is present, discard
@@ -4279,7 +4336,9 @@ fn (mut computer FontComputer) font_matching_algorithm(family_name string, weigh
 	if matching_weight_index >= 0 {
 		for i := matching_weight_index; i < matching_family_fonts.len; i++ {
 			mut candidate := matching_family_fonts[i]
-			if found_font := candidate.font_with_point_size(font_size_in_pt, variations, font_feature_data, font_feature_values) {
+			found_font := candidate.font_with_point_size(font_size_in_pt, variations,
+				font_feature_data, font_feature_values)
+			if found_font != unsafe { nil } {
 				return found_font
 			}
 		}
@@ -4297,16 +4356,22 @@ fn (mut computer FontComputer) font_matching_algorithm(family_name string, weigh
 		}
 		for ; i < matching_family_fonts.len && matching_family_fonts[i].key.weight.min <= 500; i++ {
 			mut candidate := matching_family_fonts[i]
-			if found_font := candidate.font_with_point_size(font_size_in_pt, variations, font_feature_data, font_feature_values) {
+			found_font := candidate.font_with_point_size(font_size_in_pt, variations,
+				font_feature_data, font_feature_values)
+			if found_font != unsafe { nil } {
 				return found_font
 			}
 		}
-		if found_font := find_matching_font_weight_descending(mut matching_family_fonts, weight, font_size_in_pt, variations, font_feature_data, font_feature_values, false) {
-			return found_font
+		found_descending := find_matching_font_weight_descending(mut matching_family_fonts,
+			weight, font_size_in_pt, variations, font_feature_data, font_feature_values, false)
+		if found_descending != unsafe { nil } {
+			return found_descending
 		}
 		for ; i < matching_family_fonts.len; i++ {
 			mut candidate := matching_family_fonts[i]
-			if found_font := candidate.font_with_point_size(font_size_in_pt, variations, font_feature_data, font_feature_values) {
+			found_font := candidate.font_with_point_size(font_size_in_pt, variations,
+				font_feature_data, font_feature_values)
+			if found_font != unsafe { nil } {
 				return found_font
 			}
 		}
@@ -4314,28 +4379,36 @@ fn (mut computer FontComputer) font_matching_algorithm(family_name string, weigh
 	// - If the desired weight is less than 400, weights less than or equal to the desired weight are checked in
 	//   descending order followed by weights above the desired weight in ascending order until a match is found.
 	if weight < 400 {
-		if found_font := find_matching_font_weight_descending(mut matching_family_fonts, weight, font_size_in_pt, variations, font_feature_data, font_feature_values, true) {
-			return found_font
+		found_descending := find_matching_font_weight_descending(mut matching_family_fonts,
+			weight, font_size_in_pt, variations, font_feature_data, font_feature_values, true)
+		if found_descending != unsafe { nil } {
+			return found_descending
 		}
-		if found_font := find_matching_font_weight_ascending(mut matching_family_fonts, weight, font_size_in_pt, variations, font_feature_data, font_feature_values, false) {
-			return found_font
+		found_ascending := find_matching_font_weight_ascending(mut matching_family_fonts,
+			weight, font_size_in_pt, variations, font_feature_data, font_feature_values, false)
+		if found_ascending != unsafe { nil } {
+			return found_ascending
 		}
 	}
 	// - If the desired weight is greater than 500, weights greater than or equal to the desired weight are checked in
 	//   ascending order followed by weights below the desired weight in descending order until a match is found.
 	if weight > 500 {
-		if found_font := find_matching_font_weight_ascending(mut matching_family_fonts, weight, font_size_in_pt, variations, font_feature_data, font_feature_values, true) {
-			return found_font
+		found_ascending := find_matching_font_weight_ascending(mut matching_family_fonts,
+			weight, font_size_in_pt, variations, font_feature_data, font_feature_values, true)
+		if found_ascending != unsafe { nil } {
+			return found_ascending
 		}
-		if found_font := find_matching_font_weight_descending(mut matching_family_fonts, weight, font_size_in_pt, variations, font_feature_data, font_feature_values, false) {
-			return found_font
+		found_descending := find_matching_font_weight_descending(mut matching_family_fonts,
+			weight, font_size_in_pt, variations, font_feature_data, font_feature_values, false)
+		if found_descending != unsafe { nil } {
+			return found_descending
 		}
 	}
 
-	return none
+	return unsafe { nil }
 }
 
-fn find_matching_font_weight_ascending(mut candidates []MatchingFontCandidate, target_weight int, font_size_in_pt f32, variations FontVariationSettings, font_feature_data FontFeatureData, font_feature_values map[string][]u32, inclusive bool) ?FontCascadeList {
+fn find_matching_font_weight_ascending(mut candidates []MatchingFontCandidate, target_weight int, font_size_in_pt f32, variations FontVariationSettings, font_feature_data FontFeatureData, font_feature_values map[string][]u32, inclusive bool) &FontCascadeList {
 	for mut candidate in candidates {
 		if inclusive {
 			if candidate.key.weight.min < target_weight {
@@ -4344,14 +4417,16 @@ fn find_matching_font_weight_ascending(mut candidates []MatchingFontCandidate, t
 		} else if candidate.key.weight.min <= target_weight {
 			continue
 		}
-		if found_font := candidate.font_with_point_size(font_size_in_pt, variations, font_feature_data, font_feature_values) {
+		found_font := candidate.font_with_point_size(font_size_in_pt, variations,
+			font_feature_data, font_feature_values)
+		if found_font != unsafe { nil } {
 			return found_font
 		}
 	}
-	return none
+	return unsafe { nil }
 }
 
-fn find_matching_font_weight_descending(mut candidates []MatchingFontCandidate, target_weight int, font_size_in_pt f32, variations FontVariationSettings, font_feature_data FontFeatureData, font_feature_values map[string][]u32, inclusive bool) ?FontCascadeList {
+fn find_matching_font_weight_descending(mut candidates []MatchingFontCandidate, target_weight int, font_size_in_pt f32, variations FontVariationSettings, font_feature_data FontFeatureData, font_feature_values map[string][]u32, inclusive bool) &FontCascadeList {
 	for i := candidates.len - 1; i >= 0; i-- {
 		mut candidate := candidates[i]
 		if inclusive {
@@ -4361,11 +4436,13 @@ fn find_matching_font_weight_descending(mut candidates []MatchingFontCandidate, 
 		} else if candidate.key.weight.max >= target_weight {
 			continue
 		}
-		if found_font := candidate.font_with_point_size(font_size_in_pt, variations, font_feature_data, font_feature_values) {
+		found_font := candidate.font_with_point_size(font_size_in_pt, variations,
+			font_feature_data, font_feature_values)
+		if found_font != unsafe { nil } {
 			return found_font
 		}
 	}
-	return none
+	return unsafe { nil }
 }
 
 fn (mut computer FontComputer) font_feature_values_for_family(family_name string) map[string][]u32 {
@@ -5382,19 +5459,19 @@ fn font_face_key_from_id(id string) FontFaceKey {
 	}
 }
 
-fn platform_load_font_from_url_boundary(raw_url string, family_name string) ?PlatformTypeface {
+fn platform_load_font_from_url_boundary(raw_url string, family_name string) &PlatformTypeface {
 	// Frozen layout and pixel fixtures use file: resources. Prepare sfnt, WOFF,
 	// and WOFF2 sources through the platform font boundary before retaining the
 	// concrete file used by metrics, HarfBuzz shaping, and native replay.
-	parsed := liburl.parse(raw_url) or { return none }
+	parsed := liburl.parse(raw_url) or { return unsafe { nil } }
 	if parsed.scheme != 'file' {
-		return none
+		return unsafe { nil }
 	}
 	path := liburl.percent_decode(parsed.serialize_path()).bytestr()
-	prepared_path := platform.prepare_font_file(path)?
-	return PlatformTypeface{
-		family_name: family_name
-		source_path: prepared_path
+	prepared_path := platform.prepare_font_file(path) or { return unsafe { nil } }
+	return &PlatformTypeface{
+		family_name: family_name.clone()
+		source_path: prepared_path.clone()
 	}
 }
 
@@ -5405,17 +5482,17 @@ fn resolve_font_face_source_url(source URL, parent_rule ?&CSSFontFaceRule) strin
 	return resolve_css_url_with_base(source.url(), base_url) or { source.url() }
 }
 
-fn platform_load_font_from_bytes_boundary(data []u8, family_name string) ?PlatformTypeface {
-	prepared_path := platform.prepare_font_data(data)?
-	return PlatformTypeface{
-		family_name: family_name
-		source_path: prepared_path
+fn platform_load_font_from_bytes_boundary(data []u8, family_name string) &PlatformTypeface {
+	prepared_path := platform.prepare_font_data(data) or { return unsafe { nil } }
+	return &PlatformTypeface{
+		family_name: family_name.clone()
+		source_path: prepared_path.clone()
 	}
 }
 
 fn platform_default_font_boundary(point_size f32, variations FontVariationSettings, shape_features ShapeFeatures) PlatformFont {
 	return PlatformFont{
-		typeface: PlatformTypeface{
+		typeface:   &PlatformTypeface{
 			family_name: 'Default'
 			weight_: int(variations.weight)
 			width_: int(variations.width)
@@ -5430,17 +5507,17 @@ fn platform_symbol_font_names_boundary() []string {
 	return []
 }
 
-fn platform_typefaces_with_family_name_boundary(family_name string) []PlatformTypeface {
+fn platform_typefaces_with_family_name_boundary(family_name string) []&PlatformTypeface {
 	if !platform.system_font_family_available(family_name) {
 		return []
 	}
 	return [
-		PlatformTypeface{
-			family_name: family_name
+		&PlatformTypeface{
+			family_name: family_name.clone()
 			weight_: 400
 		},
-		PlatformTypeface{
-			family_name: family_name
+		&PlatformTypeface{
+			family_name: family_name.clone()
 			weight_: 700
 		},
 	]

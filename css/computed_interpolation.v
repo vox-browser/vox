@@ -1573,7 +1573,8 @@ pub mut:
 	animated_custom_property_values_         map[string]&dom.StyleValue
 	display_before_box_type_transformation_  Display = Display.new()
 	cached_computed_font_list_               ?&FontCascadeList
-	cached_first_available_computed_font_    ?PlatformFont
+	cached_computed_font_list_generation_    u64
+	cached_first_available_computed_font_    &PlatformFont = unsafe { nil }
 	line_height_                             ?CSSPixels
 	attempted_pseudo_class_matches_          PseudoClassBitmap
 	inheritance_dependent_specified_values_  map[PropertyID]&dom.StyleValue
@@ -5702,12 +5703,16 @@ pub fn (c &ComputedProperties) cached_computed_font_list() ?&FontCascadeList {
 
 pub fn (mut c ComputedProperties) clear_computed_font_list_cache() {
 	c.cached_computed_font_list_ = none
-	c.cached_first_available_computed_font_ = none
+	c.cached_computed_font_list_generation_ = 0
+	c.cached_first_available_computed_font_ = unsafe { nil }
 }
 
 pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer) &FontCascadeList {
 	if font_list := c.cached_computed_font_list_ {
+		if c.cached_computed_font_list_generation_ == font_computer.environment_generation() {
 		return font_list
+	}
+		c.clear_computed_font_list_cache()
 	}
 	value := c.property(.font_family, .yes) or {
 		&dom.StyleValue{
@@ -5732,24 +5737,25 @@ pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer
 	mut mutable_font_computer := unsafe { &FontComputer(font_computer) }
 	computed := mutable_font_computer.compute_font_for_style_values(families, c.font_size(), c.font_slope(), c.font_weight(), c.font_width(), c.font_optical_sizing(), c.font_variation_settings(), c.font_feature_data())
 	assert !computed.is_empty()
-	font_list := &FontCascadeList{
-		fonts: computed.fonts.clone()
-		pending_faces: computed.pending_faces.clone()
-		last_resort_font: computed.last_resort_font
+	mut font_list := &FontCascadeList{
 		invisible_fonts: map[string]&PlatformFont{}
 	}
+	font_list.extend(computed)
 	c.cached_computed_font_list_ = font_list
+	c.cached_computed_font_list_generation_ = font_computer.environment_generation()
 	return font_list
 }
 
-pub fn (mut c ComputedProperties) first_available_computed_font(font_computer &FontComputer) PlatformFont {
-	if font := c.cached_first_available_computed_font_ {
-		return font
+pub fn (mut c ComputedProperties) first_available_computed_font(font_computer &FontComputer) &PlatformFont {
+	if c.cached_first_available_computed_font_ != unsafe { nil } {
+		return c.cached_first_available_computed_font_
 	}
 	selected_font := c.computed_font_list(font_computer).font_for_code_point(u32(` `))
-	font := *selected_font
-	c.cached_first_available_computed_font_ = font
-	return font
+	// The cascade and its entries are heap-backed. Cache the selected entry by
+	// identity so its nested typeface and feature storage remain owned by the
+	// cascade under the old no-GC backend.
+	c.cached_first_available_computed_font_ = selected_font
+	return selected_font
 }
 
 pub fn (c &ComputedProperties) math_style() MathStyle {
@@ -5797,12 +5803,13 @@ pub fn (c &ComputedProperties) line_height() CSSPixels {
 	// Since upstream 0e6db9d9, `normal` is the sum of the selected face's
 	// independently rounded ascent and descent. The font list is materialized
 	// before layout-facing values in resolve_computed_values_for_document().
-	if computed_font := c.cached_first_available_computed_font_ {
+	if c.cached_first_available_computed_font_ != unsafe { nil } {
+		computed_font := c.cached_first_available_computed_font_
 		font := platform.Font{
-			family: computed_font.typeface.family_name
+			family:      computed_font.typeface.family_name.clone()
 			point_size: computed_font.point_size / 0.75
 			weight: int(computed_font.variations.weight)
-			source_path: computed_font.typeface.source_path
+			source_path: computed_font.typeface.source_path.clone()
 		}
 		metrics := font.pixel_metrics()
 		return CSSPixels.new(int(math.round_to_even(f64(metrics.ascent))) + int(math.round_to_even(f64(metrics.descent))))
@@ -9115,10 +9122,58 @@ fn is_stacking_context_creating_value_boundary(property_id PropertyID, value ?&d
 
 fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 	return match property_id {
-		.backface_visibility, .background_attachment, .clip, .filter, .mask_image, .mix_blend_mode, .opacity, .perspective, .perspective_origin, .rotate, .scale, .transform, .transform_origin, .transform_style, .translate {
+		.backface_visibility, .background_attachment, .clip, .filter, .mask_image, .mix_blend_mode,
+		.opacity, .perspective, .perspective_origin, .rotate, .scale, .transform,
+		.transform_origin, .transform_style, .translate {
 			true
 		}
-		.accent_color, .anchor_name, .anchor_scope, .animation_composition, .animation_delay, .animation_direction, .animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline, .animation_timing_function, .aspect_ratio, .background_blend_mode, .background_clip, .background_color, .background_image, .background_origin, .background_position_x, .background_position_y, .background_repeat, .background_size, .border_bottom_color, .border_bottom_style, .border_bottom_width, .border_bottom_left_radius, .border_bottom_right_radius, .border_collapse, .border_image_outset, .border_image_repeat, .border_image_slice, .border_image_source, .border_image_width, .border_left_color, .border_left_style, .border_left_width, .border_right_color, .border_right_style, .border_right_width, .border_top_color, .border_top_style, .border_top_width, .border_top_left_radius, .border_top_right_radius, .box_sizing, .caption_side, .caret_color, .clear, .clip_rule, .color, .color_interpolation, .color_interpolation_filters, .color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color, .flood_opacity, .float_, .direction, .empty_cells, .font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing, .font_style, .font_variant_caps, .font_variant_emoji, .font_variant_position, .font_variation_settings, .font_weight, .font_width, .flex_grow, .flex_shrink, .flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span, .column_count, .column_width, .column_height, .column_gap, .row_gap, .contain, .container_type, .image_rendering, .isolation, .letter_spacing, .line_height, .list_style_image, .list_style_position, .mask_clip, .mask_composite, .mask_mode, .mask_origin, .mask_position, .mask_repeat, .mask_size, .mask_type, .math_depth, .math_shift, .math_style, .object_fit, .object_position, .order, .orphans, .widows, .outline_color, .outline_offset, .outline_style, .outline_width, .overflow_block, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top, .overflow_inline, .overflow_wrap, .overflow_x, .overflow_y, .pointer_events, .position_area, .position_try_fallbacks, .position_try_order, .scroll_behavior, .scroll_timeline_axis, .scrollbar_color, .scrollbar_gutter, .shape_margin, .shape_rendering, .position, .position_anchor, .position_visibility, .scroll_timeline_name, .shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_miterlimit, .stroke_opacity, .stroke_width, .stroke_dashoffset, .tab_size, .table_layout, .text_align, .text_anchor, .text_justify, .text_overflow, .text_decoration_color, .text_decoration_line, .text_decoration_style, .text_decoration_thickness, .text_underline_offset, .text_underline_position, .text_indent, .paint_order, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .timeline_scope, .transform_box, .touch_action, .transition_behavior, .transition_delay, .transition_duration, .transition_property, .transition_timing_function, .unicode_bidi, .user_select, .vertical_align, .view_timeline_axis, .view_timeline_inset, .view_timeline_name, .view_transition_name, .will_change, .writing_mode, .scrollbar_width, .resize, .visibility, .webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break, .word_spacing, .z_index, .cx, .cy, .x, .y, .r, .rx, .ry {
+		.accent_color, .anchor_name, .anchor_scope, .animation_composition, .animation_delay,
+		.animation_direction, .animation_duration, .animation_fill_mode,
+		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
+		.animation_timing_function, .aspect_ratio, .background_blend_mode, .background_clip,
+		.background_color, .background_image, .background_origin, .background_position_x,
+		.background_position_y, .background_repeat, .background_size, .border_bottom_color,
+		.border_bottom_style, .border_bottom_width, .border_bottom_left_radius,
+		.border_bottom_right_radius, .border_collapse, .border_image_outset, .border_image_repeat,
+		.border_image_slice, .border_image_source, .border_image_width, .border_left_color,
+		.border_left_style, .border_left_width, .border_right_color, .border_right_style,
+		.border_right_width, .border_top_color, .border_top_style, .border_top_width,
+		.border_top_left_radius, .border_top_right_radius, .box_sizing, .caption_side,
+		.caret_color, .clear, .clip_rule, .color, .color_interpolation,
+		.color_interpolation_filters, .color_scheme, .content_visibility,
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
+		.corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color, .flood_opacity, .float_,
+		.direction, .empty_cells, .font_feature_settings, .font_kerning, .font_language_override,
+		.font_optical_sizing, .font_style, .font_variant_caps, .font_variant_emoji,
+		.font_variant_position, .font_variation_settings, .font_weight, .font_width, .flex_grow,
+		.flex_shrink, .flex_direction, .flex_wrap, .align_content, .align_items, .align_self,
+		.justify_content, .justify_items, .justify_self, .appearance, .column_span, .column_count,
+		.column_width, .column_height, .column_gap, .row_gap, .contain, .container_type,
+		.image_rendering, .isolation, .letter_spacing, .line_height, .list_style_image,
+		.list_style_position, .mask_clip, .mask_composite, .mask_mode, .mask_origin,
+		.mask_position, .mask_repeat, .mask_size, .mask_type, .math_depth, .math_shift,
+		.math_style, .object_fit, .object_position, .order, .orphans, .widows, .outline_color,
+		.outline_offset, .outline_style, .outline_width, .overflow_block,
+		.overflow_clip_margin_block_end, .overflow_clip_margin_block_start,
+		.overflow_clip_margin_bottom, .overflow_clip_margin_inline_end,
+		.overflow_clip_margin_inline_start, .overflow_clip_margin_left,
+		.overflow_clip_margin_right, .overflow_clip_margin_top, .overflow_inline, .overflow_wrap,
+		.overflow_x, .overflow_y, .pointer_events, .position_area, .position_try_fallbacks,
+		.position_try_order, .scroll_behavior, .scroll_timeline_axis, .scrollbar_color,
+		.scrollbar_gutter, .shape_margin, .shape_rendering, .position, .position_anchor,
+		.position_visibility, .scroll_timeline_name, .shape_image_threshold, .stop_color,
+		.stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_miterlimit, .stroke_opacity,
+		.stroke_width, .stroke_dashoffset, .tab_size, .table_layout, .text_align, .text_anchor,
+		.text_justify, .text_overflow, .text_decoration_color, .text_decoration_line,
+		.text_decoration_style, .text_decoration_thickness, .text_underline_offset,
+		.text_underline_position, .text_indent, .paint_order, .text_rendering, .text_transform,
+		.text_wrap_mode, .text_wrap_style, .timeline_scope, .transform_box, .touch_action,
+		.transition_behavior, .transition_delay, .transition_duration, .transition_property,
+		.transition_timing_function, .unicode_bidi, .user_select, .vertical_align,
+		.view_timeline_axis, .view_timeline_inset, .view_timeline_name, .view_transition_name,
+		.will_change, .writing_mode, .scrollbar_width, .resize, .visibility,
+		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break,
+		.word_spacing, .z_index, .cx, .cy, .x, .y, .r, .rx, .ry {
 			false
 		}
 		else {
@@ -9131,7 +9186,8 @@ fn property_requires_full_invalidation(property_id PropertyID) bool {
 	return match property_id {
 		// C++: Display, Position, Content, ContentVisibility, OverflowX, OverflowY.
 		// Only these represented properties are currently present in the V PropertyID enum.
-		.content_visibility, .overflow_block, .overflow_inline, .overflow_x, .overflow_y, .position {
+		.content_visibility, .overflow_block, .overflow_inline, .overflow_x, .overflow_y,
+		.position {
 			true
 		}
 		else {
@@ -9980,8 +10036,7 @@ fn simple_selector_is_featureless_subtree_sensitive(selector InvalidationSimpleS
 		return false
 	}
 	if selector.name in ['not', 'empty', 'first-child', 'last-child', 'only-child', 'first-of-type',
-		'last-of-type', 'only-of-type', 'nth-child', 'nth-last-child', 'nth-of-type',
-		'nth-last-of-type'] {
+		'last-of-type', 'only-of-type', 'nth-child', 'nth-last-child', 'nth-of-type', 'nth-last-of-type'] {
 		return true
 	}
 	if selector.pseudo_class in [.is_, .where] {
@@ -10080,7 +10135,8 @@ fn build_invalidation_sets_for_simple_selector_impl(selector InvalidationSimpleS
 					}
 					invalidation_set.set_needs_invalidate_pseudo_class(pseudo_class)
 				}
-				.link, .any_link, .local_link, .required, .optional, .hover, .focus, .focus_visible, .focus_within, .active, .target, .host, .root {
+				.link, .any_link, .local_link, .required, .optional, .hover, .focus,
+				.focus_visible, .focus_within, .active, .target, .host, .root {
 					invalidation_set.set_needs_invalidate_pseudo_class(pseudo_class)
 				}
 				else {}
@@ -11867,7 +11923,8 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 
 		// NB: The background properties are coordinated at compute time rather than use time,
 		// unlike other coordinating list property groups.
-		.background_attachment, .background_clip, .background_origin, .background_position_x, .background_position_y, .background_repeat, .background_size {
+		.background_attachment, .background_clip, .background_origin, .background_position_x,
+		.background_position_y, .background_repeat, .background_size {
 			background_image := get_property_specified_value(.background_image)
 			typed_background_image := typed_style_value_logic_from_dom(background_image) or {
 				panic('background-image requires a typed StyleValue')
@@ -11877,10 +11934,14 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 			}
 			repeat_style_value_list_to_n_elements(absolutized_value, (typed_background_image as StyleValueList).size())
 		}
-		.border_block_end_width, .border_block_start_width, .border_bottom_width, .border_inline_end_width, .border_inline_start_width, .border_left_width, .border_right_width, .border_top_width, .column_rule_width, .outline_width {
+		.border_block_end_width, .border_block_start_width, .border_bottom_width,
+		.border_inline_end_width, .border_inline_start_width, .border_left_width,
+		.border_right_width, .border_top_width, .column_rule_width, .outline_width {
 			StyleComputer.compute_border_or_outline_width(absolutized_value, device_pixels_per_css_pixel, computation_context)
 		}
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape {
+		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape,
+		.corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape,
+		.corner_top_left_shape, .corner_top_right_shape {
 			StyleComputer.compute_corner_shape(absolutized_value)
 		}
 		.font_feature_settings {
@@ -11924,7 +11985,16 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 		.line_height {
 			StyleComputer.compute_line_height(absolutized_value, computation_context.length_resolution_context.font_metrics.font_size)
 		}
-		.object_position, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top, .perspective, .perspective_origin, .scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom, .scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left, .scroll_margin_right, .scroll_margin_top, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
+		.object_position, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start,
+		.overflow_clip_margin_bottom, .overflow_clip_margin_inline_end,
+		.overflow_clip_margin_inline_start, .overflow_clip_margin_left,
+		.overflow_clip_margin_right, .overflow_clip_margin_top, .perspective, .perspective_origin,
+		.scroll_margin_block_end, .scroll_margin_block_start, .scroll_margin_bottom,
+		.scroll_margin_inline_end, .scroll_margin_inline_start, .scroll_margin_left,
+		.scroll_margin_right, .scroll_margin_top, .scroll_padding_block_end,
+		.scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline_end,
+		.scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right,
+		.scroll_padding_top {
 			StyleComputer.compute_absolutized_value(property_id, absolutized_value, computation_context)
 		}
 		.outline_offset {
@@ -11934,7 +12004,8 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 			inheritance_parent := style_computation_inheritance_parent(computation_context)
 			StyleComputer.compute_math_depth(absolutized_value, inheritance_parent)
 		}
-		.fill_opacity, .flood_opacity, .opacity, .shape_image_threshold, .stop_opacity, .stroke_opacity {
+		.fill_opacity, .flood_opacity, .opacity, .shape_image_threshold, .stop_opacity,
+		.stroke_opacity {
 			StyleComputer.compute_opacity(absolutized_value)
 		}
 		.position_area {
@@ -12409,10 +12480,10 @@ fn computed_interpolation_font_metrics_for_style(computed_properties &ComputedPr
 	mut mutable_properties := unsafe { &ComputedProperties(computed_properties) }
 	computed_font := mutable_properties.first_available_computed_font(font_computer)
 	font := platform.Font{
-		family: computed_font.typeface.family_name
+		family:      computed_font.typeface.family_name.clone()
 		point_size: computed_font.point_size / 0.75
 		weight: int(computed_font.variations.weight)
-		source_path: computed_font.typeface.source_path
+		source_path: computed_font.typeface.source_path.clone()
 	}
 	metrics := font.pixel_metrics()
 	return LengthFontMetrics{
@@ -13697,8 +13768,8 @@ fn collect_html_presentational_hints(mut cascaded_properties []StyleProperty, el
 	if tag_name == 'hr' {
 		has_solid_border := element.has_attribute('color') || element.has_attribute('noshade')
 		if has_solid_border {
-			for property_id in [PropertyID.border_top_style, .border_right_style,
-				.border_bottom_style, .border_left_style] {
+			for property_id in [PropertyID.border_top_style, .border_right_style, .border_bottom_style,
+				.border_left_style] {
 				if value := parse_css_value_logic(property_id, 'solid') {
 					set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, property_id, value)
 				}
@@ -13830,8 +13901,8 @@ fn collect_html_presentational_hints(mut cascaded_properties []StyleProperty, el
 				'I' { 'upper-roman' }
 				else { type_value.to_lower() }
 			}
-			numbered_style := list_style_type in ['decimal', 'lower-alpha', 'upper-alpha',
-				'lower-roman', 'upper-roman']
+			numbered_style := list_style_type in ['decimal', 'lower-alpha', 'upper-alpha', 'lower-roman',
+				'upper-roman']
 			unordered_style := list_style_type in ['none', 'disc', 'circle', 'square']
 			if (tag_name == 'ol' && numbered_style) || (tag_name == 'ul' && unordered_style) || (tag_name == 'li' && (numbered_style || unordered_style)) {
 				if value := parse_css_value_logic(.list_style_type, list_style_type) {
@@ -14427,9 +14498,9 @@ fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom
 		} else if attribute_name !in ['fill', 'clip-path', 'clip-rule', 'color', 'color-interpolation',
 			'color-interpolation-filters', 'cursor', 'direction', 'display', 'dominant-baseline',
 			'fill-opacity', 'fill-rule', 'filter', 'flood-color', 'flood-opacity', 'font-family',
-			'font-size', 'font-style', 'font-variant', 'font-weight', 'font-stretch',
-			'image-rendering', 'letter-spacing', 'mask', 'mask-type', 'opacity', 'overflow',
-			'paint-order', 'pointer-events', 'shape-rendering', 'stop-color', 'stop-opacity', 'stroke',
+			'font-size', 'font-style', 'font-variant', 'font-weight', 'font-stretch', 'image-rendering',
+			'letter-spacing', 'mask', 'mask-type', 'opacity', 'overflow', 'paint-order',
+			'pointer-events', 'shape-rendering', 'stop-color', 'stop-opacity', 'stroke',
 			'stroke-dasharray', 'stroke-dashoffset', 'stroke-linecap', 'stroke-linejoin',
 			'stroke-miterlimit', 'stroke-opacity', 'stroke-width', 'vector-effect', 'text-anchor',
 			'text-decoration', 'text-rendering', 'text-overflow', 'transform', 'gradientTransform',

@@ -390,12 +390,15 @@ pub fn (n &Node) first_available_font() &platform.Font {
 	// FontComputer before reading it so repaint after relayout preserves the C++
 	// lifetime invariant.
 	mut computed_values := unsafe { &css.ComputedProperties(n.computed_values()) }
-	computed_font := computed_values.first_available_computed_font(css.css_style_computer_for(n.document()).font_computer())
+	computed_font := computed_values.computed_font_list(css.css_style_computer_for(n.document()).font_computer()).font_for_code_point(u32(` `))
 	return &platform.Font{
-		family: computed_font.typeface.family_name
+		family:      computed_font.typeface.family_name.clone()
 		point_size: computed_font.point_size / 0.75
 		weight: int(computed_font.variations.weight)
-		source_path: computed_font.typeface.source_path
+		// The returned Font outlives this borrowed cascade entry. Keep its
+		// file-backed face path owned rather than retaining the optional
+		// PlatformTypeface copy's string storage.
+		source_path: computed_font.typeface.source_path.clone()
 	}
 }
 
@@ -1843,6 +1846,7 @@ pub mut:
 	line_segmenter_               &dom.Segmenter = unsafe { nil }
 	is_empty_editable_            bool
 	cached_inline_chunks_         ?[]TextNodeChunk
+	cached_font_environment_generation_ u64
 	cached_utf16_code_units_      ?[]u16
 	cached_intrinsic_text_shapes_ []IntrinsicTextShapeCacheEntry
 }
@@ -1910,6 +1914,7 @@ pub fn (mut n TextNode) invalidate_text_for_rendering() {
 	n.text_for_rendering_valid_ = false
 	n.text_for_rendering_ = ''
 	n.cached_inline_chunks_ = none
+	n.cached_font_environment_generation_ = 0
 	n.cached_utf16_code_units_ = none
 	n.cached_intrinsic_text_shapes_.clear()
 	n.line_segmenter_ = unsafe { nil }

@@ -1639,6 +1639,7 @@ pub fn (values &ComputedValues) clone_inherited_values() &ComputedValues {
 	mutable_result.computed_values_scrollbar_color_ = values.computed_values_scrollbar_color_
 	mutable_result.computed_values_list_style_type_ = values.computed_values_list_style_type_
 	mutable_result.cached_computed_font_list_ = source.cached_computed_font_list_
+	mutable_result.cached_computed_font_list_generation_ = source.cached_computed_font_list_generation_
 	mutable_result.cached_first_available_computed_font_ = source.cached_first_available_computed_font_
 	return result
 }
@@ -1660,6 +1661,7 @@ pub fn (mut values MutableComputedValues) inherit_from(other &ComputedValues) {
 	values.computed_values_font_variation_settings_ = other.computed_values_font_variation_settings_.clone()
 	values.computed_values_line_height_ = other.computed_values_line_height_
 	values.cached_computed_font_list_ = other.cached_computed_font_list_
+	values.cached_computed_font_list_generation_ = other.cached_computed_font_list_generation_
 	values.cached_first_available_computed_font_ = other.cached_first_available_computed_font_
 	values.computed_values_caret_color_ = other.computed_values_caret_color_
 	values.computed_values_color_ = other.computed_values_color_
@@ -1777,7 +1779,7 @@ pub fn (mut values MutableComputedValues) set_font_variation_settings(value map[
 
 pub fn (mut values MutableComputedValues) set_font_list(value &FontCascadeList) {
 	values.cached_computed_font_list_ = value
-	values.cached_first_available_computed_font_ = none
+	values.cached_first_available_computed_font_ = unsafe { nil }
 }
 
 pub fn (mut values MutableComputedValues) set_caret_color(value Color) {

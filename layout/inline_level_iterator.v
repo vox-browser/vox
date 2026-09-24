@@ -4,6 +4,7 @@
 
 module layout
 
+import css
 import math
 import platform
 
@@ -469,11 +470,17 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 	should_wrap_lines := computed.text_wrap_mode() == .wrap
 	should_respect_linebreaks := white_space_collapse in [.preserve, .preserve_breaks, .break_spaces]
 	mut chunks := []TextNodeChunk{}
+	font_generation := css.css_style_computer_for(text_node.Node.document()).font_computer().environment_generation()
 	if cached := text_node.cached_inline_chunks_ {
 		// The cached chunks are immutable after construction; sharing their
-		// backing array avoids copying it for each intrinsic-sizing pass.
+		// backing array avoids copying it for each intrinsic-sizing pass. A font
+		// load replaces the cascade, so chunks retaining the previous platform
+		// fonts must be shaped again.
+		if text_node.cached_font_environment_generation_ == font_generation {
 		chunks = unsafe { cached }
-	} else {
+		}
+	}
+	if chunks.len == 0 {
 		mut chunk_iterator := TextNodeChunkIterator.new(text_node, should_wrap_lines, should_respect_linebreaks)
 		for {
 			chunk := chunk_iterator.next() or { break }
@@ -489,6 +496,8 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 		}
 		mut mutable_text_node := unsafe { &TextNode(text_node) }
 		mutable_text_node.cached_inline_chunks_ = chunks
+		mutable_text_node.cached_font_environment_generation_ = css.css_style_computer_for(text_node.Node.document()).font_computer().environment_generation()
+		mutable_text_node.cached_intrinsic_text_shapes_.clear()
 	}
 	iterator.text_node_context = &InlineTextNodeContext{
 		chunks: chunks

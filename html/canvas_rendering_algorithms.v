@@ -42,7 +42,7 @@ fn canvas_font_for_drawing_state(state DrawingState, code_point u32) &platform.F
 			family: font.typeface.family_name
 			point_size: font.point_size / 0.75
 			weight: int(font.variations.weight)
-			source_path: font.typeface.source_path
+			source_path:  font.typeface.source_path.clone()
 			is_invisible: font.is_invisible
 		}
 	}
