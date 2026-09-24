@@ -199,7 +199,11 @@
   grid the definite block space left after both caption groups. Caption
   preferred widths are resolved from computed style: `fit-content` contributes
   min-content, `max-content` contributes max-content, and border-box lengths
-  exclude their border and padding before outer edges are added. A block
+  exclude their border and padding before outer edges are added. In grid
+  layout, the anonymous table wrapper owns placement, ordering, margins, and
+  self-alignment while its width follows the principal table's intrinsic,
+  min/max, box-sizing, percentage, and stretch constraints against the grid
+  area. A block
   container's own
   `vertical-align` positions that container only; direct text uses the
   anonymous inline box's initial baseline alignment, including inside cells.
