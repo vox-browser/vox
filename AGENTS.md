@@ -177,6 +177,9 @@
   Resolved `min-content`, `max-content`, and `fit-content` block sizes remain
   indefinite percentage bases for descendants, including fixed-position boxes
   whose used height is clamped or whose opposing insets are both specified.
+  During grid track sizing, a non-replaced item's percentage block size is a
+  cyclic auto contribution; it resolves against the completed grid area only
+  after intrinsic row sizing and free-space distribution.
 - Table column and column-group boxes retain their used grid geometry for
   painting and layout-tree inspection, including spanning columns, empty groups,
   border spacing, and RTL placement. Percentage column widths resolve against
