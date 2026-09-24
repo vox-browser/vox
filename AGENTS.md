@@ -172,8 +172,10 @@
   sizes, it relays each item's used height as a definite basis to percentage-
   sized descendants, including items whose own percentage height was initially
   indefinite. Flex and grid item baselines ignore `vertical-align`, which has no
-  effect on those item roles. A partially intrinsic outer SVG derives its
-  missing max-content width from its intrinsic height and viewBox ratio,
+  effect on those item roles. Flex and grid containers also keep their content
+  margins from collapsing through them, including at zero used height. A
+  partially intrinsic outer SVG derives its missing max-content width from its
+  intrinsic height and viewBox ratio,
   including when it is centered inside a column flex item. Media-control
   contents retain the upstream left alignment. Size and inline-size query
   containers establish independent formatting contexts, but
