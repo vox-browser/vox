@@ -32,6 +32,7 @@ mut:
 	direction                        css.Direction = .ltr
 	writing_mode                     css.WritingMode = .horizontal_tb
 	last_line_needs_update           bool
+	should_advance_to_last_line_box_block_end bool
 	parent_block_context             ?&BlockFormattingContext
 	containing_block_root_offset     CSSPixelPoint
 	current_line_inline_offset       CSSPixels
@@ -115,9 +116,15 @@ fn (mut builder LineBuilder) did_introduce_clearance(clearance CSSPixels) {
 fn (mut builder LineBuilder) begin_new_line(increment_y bool, is_first_break_in_sequence bool, forced_break ForcedLineBreak) {
 	if increment_y {
 		if is_first_break_in_sequence {
-			line_height := builder.containing_block.computed_values().line_height()
-			increment := css_pixels_max(builder.max_height_on_current_line, line_height)
-			builder.current_block_offset = builder.current_block_offset.plus(increment)
+			if builder.should_advance_to_last_line_box_block_end
+				&& builder.containing_block_used_values.line_boxes.len > 1 {
+				previous_index := builder.containing_block_used_values.line_boxes.len - 2
+				builder.current_block_offset = builder.containing_block_used_values.line_boxes[previous_index].bottom()
+			} else {
+				line_height := builder.containing_block.computed_values().line_height()
+				increment := css_pixels_max(builder.max_height_on_current_line, line_height)
+				builder.current_block_offset = builder.current_block_offset.plus(increment)
+			}
 		} else {
 			// Consecutive breaks are squeezing past intruding floats. Scan one CSS
 			// pixel at a time until a complete line-height fits, exactly like
@@ -134,6 +141,7 @@ fn (mut builder LineBuilder) begin_new_line(increment_y bool, is_first_break_in_
 	line_box.original_available_width_ = builder.available_width_for_current_line
 	builder.max_height_on_current_line = CSSPixels.new(0)
 	builder.last_line_needs_update = true
+	builder.should_advance_to_last_line_box_block_end = false
 	mut should_indent := builder.containing_block_used_values.line_boxes.len <= 1
 		|| (builder.text_indent_each_line && forced_break == .yes)
 	if builder.text_indent_hanging {
@@ -300,7 +308,8 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			&& fragment_computed.vertical_align_length_percentage() == none
 			&& fragment_computed.vertical_align() == .baseline {
 			display := fragment_computed.display()
-			should_align_strut_to_line_box_baseline = display.is_inline_block()
+			should_align_strut_to_line_box_baseline = should_align_strut_to_line_box_baseline
+				|| display.is_inline_block()
 				|| (display.is_inline_outside() && display.is_flex_inside())
 		}
 		line_box_baseline = css_pixels_max(line_box_baseline, fragment_baseline)
@@ -408,6 +417,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 	line_box.block_length_ = lowermost_box_bottom.minus(uppermost_box_top)
 	line_box.bottom_ = builder.current_block_offset.plus(line_box.block_length_)
 	line_box.baseline_ = line_box_baseline
+	builder.should_advance_to_last_line_box_block_end = should_align_strut_to_line_box_baseline
 }
 
 pub fn (mut builder LineBuilder) remove_last_line_if_empty() {

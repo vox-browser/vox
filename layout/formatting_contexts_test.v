@@ -4430,3 +4430,22 @@ fn test_grid_table_wrappers_use_table_constraints_and_grid_item_properties() {
 	assert (result.used_values_for(early_wrapper) or { panic('#early wrapper has no values') }).offset.x().to_double() == 0
 	assert (result.used_values_for(late_wrapper) or { panic('#late wrapper has no values') }).offset.x().to_double() == 100
 }
+
+// A baseline-aligned inline-block can raise the line baseline above the
+// containing block's font strut. The strut's descent remains below that raised
+// baseline, and the following wrapped line starts after the resulting line box.
+fn test_wrapped_inline_blocks_preserve_strut_descent_between_lines() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#line { width:80px; font-size:16px; line-height:16px }
+		#line span { display:inline-block; width:80px; height:20px }
+	</style><div id="line"><span></span> <span></span> <span></span></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	line := used_for_id(result, 'line')
+	assert line.line_boxes.len == 3
+	assert line.line_boxes[0].height().to_double() > 20
+	assert line.line_boxes[1].height().to_double() > 20
+	assert line.line_boxes[2].height().to_double() > 20
+	assert line.line_boxes[1].fragments_[0].block_offset().raw_value() >= line.line_boxes[0].bottom().raw_value()
+	assert line.line_boxes[2].fragments_[0].block_offset().raw_value() >= line.line_boxes[1].bottom().raw_value()
+}
