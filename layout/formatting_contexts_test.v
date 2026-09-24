@@ -274,6 +274,18 @@ fn test_visible_textarea_placeholder_overlays_the_full_width_editor() {
 	assert placeholder.computed_values().user_select() == .none_
 }
 
+fn test_text_input_auto_height_uses_selected_font_metrics() {
+	document := html.parse_document('<!doctype html><style>
+		input { font-size:5px }
+	</style><input id="input">')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	input := layout_node_with_id(result.root, 'input') or { panic('missing input') }
+	box := input.as_box() or { panic('input is not a box') }
+	assert input.computed_values().line_height().to_double() == 5
+	assert box.auto_content_box_size().height or { panic('missing auto height') } ==
+		input.computed_values().line_height()
+}
+
 fn test_multiline_flex_align_content_distributes_cross_axis_space() {
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-wrap:wrap; align-content:center; width:100px; height:100px }

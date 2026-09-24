@@ -1064,8 +1064,11 @@ pub fn TextInputBox.new(document &dom.Document, element &dom.Element, computed_v
 	columns := positive_integer_attribute_or_default(element, 'size', 20)
 	box_node := unsafe { &Node(box) }
 	mut width := resolve_font_dependent_length_for_node(box_node, css.Length.new(f64(columns), .ch))
-	mut height := computed_values.line_height()
-	if computed_values.writing_mode() != .horizontal_tb {
+	// `normal` depends on the selected face's metrics. Read the document-
+	// resolved values retained by the new box instead of the pre-materialized
+	// ComputedProperties passed across the tree-builder boundary.
+	mut height := box_node.computed_values().line_height()
+	if box_node.computed_values().writing_mode() != .horizontal_tb {
 		width, height = height, width
 	}
 	box.has_auto_content_box_size_ = true
