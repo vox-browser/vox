@@ -385,6 +385,17 @@ fn resolve_collapsed_table_borders(mut state LayoutState, table &Node, rows []&N
 		if placement.row + placement.row_span == rows.len {
 			outer_bottom = css_pixels_max(outer_bottom, bottom_width)
 		}
+		// Missing-cells fixup creates anonymous cells only to occupy empty grid
+		// slots. No border belongs to such a box, so the real boxes on either
+		// side of each grid line own the complete collapsed-border shares.
+		if placement.cell.is_missing_table_cell() {
+			cell_state.border_left = CSSPixels.new(0)
+			cell_state.border_right = CSSPixels.new(0)
+			cell_state.border_top = CSSPixels.new(0)
+			cell_state.border_bottom = CSSPixels.new(0)
+			cell_state.clear_override_borders_data()
+			continue
+		}
 		cell_state.set_override_borders_data(painting.BordersDataWithElementKind{
 			left: painting.BorderDataWithElementKind{left.border_data, left.element_kind}
 			right: painting.BorderDataWithElementKind{right.border_data, right.element_kind}

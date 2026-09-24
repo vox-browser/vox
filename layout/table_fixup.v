@@ -274,7 +274,8 @@ fn append_missing_table_cells(mut table Node, document &dom.Document) {
 			if occupied[column] {
 				continue
 			}
-			cell := anonymous_table_box(document, row, css.Display.from_internal(.table_cell), .cell)
+			mut cell := anonymous_table_box(document, row, css.Display.from_internal(.table_cell), .cell)
+			cell.set_is_missing_table_cell(true)
 			// Upstream missing-cells fixup explicitly centers a zero-height cell so
 			// its used border box grows symmetrically to the row height.
 			if styled := cell.as_node_with_style() {

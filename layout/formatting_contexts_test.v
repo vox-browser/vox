@@ -2147,6 +2147,27 @@ fn test_collapsed_table_uses_winning_outer_grid_borders() {
 	assert cell.border_right.to_double() == 5
 }
 
+fn test_missing_collapsed_table_cells_take_no_border_share() {
+	document := html.parse_document('<!doctype html><style>
+		table { border-collapse:collapse }
+		td { border:10px solid; padding:0; width:20px; height:20px }
+		#spacer { height:4px }
+	</style><table><tr><td></td><td></td></tr><tr id="empty"></tr><tr id="spacer"></tr><tr><td></td><td></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	empty_node := layout_node_with_id(result.root, 'empty') or { panic('missing empty row') }
+	missing_cell := empty_node.first_child() or { panic('missing generated cell') }
+	assert missing_cell.is_missing_table_cell()
+	missing_styled := missing_cell.as_node_with_style() or { panic('missing cell has no style') }
+	missing := result.used_values_for(missing_styled) or { panic('missing cell has no used values') }
+	assert missing.use_collapsing_borders_model()
+	assert missing.border_left.to_double() == 0
+	assert missing.border_right.to_double() == 0
+	assert missing.border_top.to_double() == 0
+	assert missing.border_bottom.to_double() == 0
+	assert used_for_id(result, 'empty').content_height().to_double() == 0
+	assert used_for_id(result, 'spacer').content_height().to_double() == 4
+}
+
 fn test_table_auto_layout_uses_definite_cell_width_contributions() {
 	document := html.parse_document('<!doctype html><style>
 		table { width:160px; border-spacing:0 }

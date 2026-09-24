@@ -32,6 +32,7 @@ pub mut:
 	is_body_                           bool
 	is_in_ua_internal_shadow_tree_     bool
 	is_button_content_box_             bool
+	is_missing_table_cell_             bool
 	needs_layout_update_               bool
 	initial_quote_nesting_level_       u32
 	has_been_wrapped_in_table_wrapper_ bool
@@ -216,6 +217,14 @@ pub fn (n &Node) is_grid_item() bool {
 
 pub fn (mut n Node) set_grid_item(value bool) {
 	n.is_grid_item_ = value
+}
+
+pub fn (n &Node) is_missing_table_cell() bool {
+	return n.is_missing_table_cell_
+}
+
+pub fn (mut n Node) set_is_missing_table_cell(value bool) {
+	n.is_missing_table_cell_ = value
 }
 
 pub fn (n &Node) is_body() bool {
