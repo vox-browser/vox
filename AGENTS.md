@@ -383,7 +383,9 @@
   after forced breaks, alignment, RTL direction, and writing-mode conversion.
   Originally-inline absolutely positioned descendants routed through an
   anonymous wrapper therefore retain the exact static position computed by the
-  wrapper's line layout.
+  wrapper's line layout. When no preceding fragment exists, their hypothetical
+  first-line position begins after any left float intrusion instead of at the
+  container origin.
 - Text shaping applies computed `word-spacing` to spaces, no-break spaces, and
   collapsed line feeds. It records the exact shaped advance of trailing ASCII
   whitespace, carries that record through fragment merging and intrinsic shape
