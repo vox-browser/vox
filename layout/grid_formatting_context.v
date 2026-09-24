@@ -1720,7 +1720,12 @@ fn grid_item_preferred_block_size_behaves_as_auto(item &Node, item_state &UsedVa
 		}
 		return true
 	}
-	if preferred.contains_percentage() && !available_height_is_definite {
+	// During track sizing a non-replaced item's percentage preferred block
+	// size is cyclic in this axis, even when the grid container itself has a
+	// definite height. It contributes as the property's initial auto value;
+	// the percentage is resolved against the finished grid area only later.
+	if preferred.contains_percentage() && (!item.is_replaced_box()
+		|| !available_height_is_definite) {
 		return true
 	}
 	return false

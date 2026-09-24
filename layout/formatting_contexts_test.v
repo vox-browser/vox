@@ -1634,6 +1634,21 @@ fn test_grid_intrinsic_flexible_row_uses_limited_min_content_contribution() {
 	assert item.content_height().to_double() == 100
 }
 
+fn test_grid_percentage_height_items_contribute_auto_sizes_to_rows() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#grid { display:grid; grid-template-rows:max-content; row-gap:20px;
+			align-items:start; width:120px; height:300px }
+		#label { height:10px } .item { height:100% } .content { height:30px }
+	</style><div id="grid"><div id="label"></div><div id="first" class="item"><div class="content"></div></div><div id="second" class="item"><div class="content"></div></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'label').content_height().to_double() == 10
+	assert used_for_id(result, 'first').offset.y().to_double() == 30
+	assert used_for_id(result, 'first').content_height().to_double() == 125
+	assert used_for_id(result, 'second').offset.y().to_double() == 175
+	assert used_for_id(result, 'second').content_height().to_double() == 125
+}
+
 fn test_grid_limited_contribution_is_clamped_by_fit_content_row() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }
