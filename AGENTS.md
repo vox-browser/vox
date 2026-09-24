@@ -172,6 +172,9 @@
   `border-box` and the table-cell quirks-mode rule retain border-box sizing.
   The table itself has zero used padding in the collapsed-border model, so its
   grid and row backgrounds begin immediately inside the resolved outer border.
+  Table rows use visual group order: the first header group is laid out first,
+  the first footer group last, and additional header/footer groups retain tree
+  order as ordinary row groups.
 - Parsed programs are reused for bytecode cache generation, nested idle
   callback periods are paced, Window named-property membership avoids full ID
   enumeration, and SVG presentation attributes retain their case-sensitive
