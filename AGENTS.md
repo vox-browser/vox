@@ -203,6 +203,9 @@
   removed rule subtrees, and preserve stylesheet order ahead of manually added
   faces. A nested `MediaList` mutation invalidates and resynchronizes the sheet
   reached through its owning rule.
+- Embedded CSS, quirks-mode, SVG, and MathML user-agent stylesheets track the
+  current upstream sources, including text-control padding and wrapping, range
+  sizing, image overflow clipping, and non-wrapping input buttons.
 - The compact script bridge exposes live `<style>.sheet` insertion/deletion,
   constructed `CSSStyleSheet.replaceSync()`, and document
   `adoptedStyleSheets`. Embedded sheets retain their DOM owner and style-scope
