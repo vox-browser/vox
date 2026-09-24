@@ -180,7 +180,9 @@
   partially intrinsic outer SVG derives its missing max-content width from its
   intrinsic height and viewBox ratio,
   including when it is centered inside a column flex item. Media-control
-  contents retain the upstream left alignment. Size and inline-size query
+  contents retain the upstream left alignment. Block formatting contexts keep
+  unified float-intrusion bands, and inline lines use the maximum left and
+  right intrusion across their complete block-axis span. Size and inline-size query
   containers establish independent formatting contexts, but
   an ordinary block with an automatic width still fills its containing block;
   containment's zero intrinsic size is not treated as a replaced-element width.
