@@ -99,6 +99,13 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 	} else if intrinsic_ratio := ratio {
 		width = if available_space.width.is_definite() {
 			available_space.width.to_px_or_zero()
+		} else if computed_width.contains_percentage()
+			&& available_space.width.is_max_content() {
+			// A cyclic percentage preferred size is treated as its initial
+			// value during max-content measurement. For a replaced element
+			// with only a natural ratio, that falls through to the 300px
+			// default instead of stretch-fitting against a zero constraint.
+			CSSPixels.new(300)
 		} else {
 			// CSS 2.2 leaves this width undefined and suggests the normal-flow
 			// constraint equation when the containing block does not depend on

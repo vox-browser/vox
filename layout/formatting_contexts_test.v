@@ -946,6 +946,19 @@ fn test_svg_partial_intrinsic_height_sets_its_max_content_width() {
 	assert image.content_height().to_double() == 24
 }
 
+fn test_ratio_only_svg_cyclic_percentage_uses_replaced_max_content_fallback() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#grid { display:grid; justify-content:space-between }
+		p { margin:16px 0 }
+	</style><div id="grid"><p id="paragraph"><svg id="image" width="100%" viewBox="0 0 99 99"><circle cx="50" cy="50" r="50"></circle></svg></p></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'grid').content_height().to_double() == 332
+	assert used_for_id(result, 'paragraph').content_width().to_double() == 300
+	assert used_for_id(result, 'image').content_width().to_double() == 300
+	assert used_for_id(result, 'image').content_height().to_double() == 300
+}
+
 fn test_column_flex_intrinsic_cross_size_resolves_percentage_minimum_in_second_pass() {
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-direction:column }
