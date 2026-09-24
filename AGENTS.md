@@ -162,7 +162,10 @@
   rows while preserving it on the generated cell that owns the inline run.
   Collapsed borders split on whole CSS pixels at every grid line: cells own the
   inner shares, the table owns the outer shares, and painting snaps the derived
-  border edges independently in device space.
+  border edges independently in device space. A collapsed table's used borders
+  are the winning widths along the four outer grid edges; layout rebases its
+  content origin after conflict resolution so those outer shares remain inside
+  the table wrapper.
 - Parsed programs are reused for bytecode cache generation, nested idle
   callback periods are paced, Window named-property membership avoids full ID
   enumeration, and SVG presentation attributes retain their case-sensitive
