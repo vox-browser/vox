@@ -1020,8 +1020,8 @@ fn test_row_flex_baseline_alignment_uses_each_items_last_line_baseline() {
 	two_node := layout_node_with_id(result.root, 'two') or { panic('missing #two') }
 	one := used_for_id(result, 'one')
 	two := used_for_id(result, 'two')
-	one_baseline := one.offset.y().plus(layout_box_baseline(result.state, one_node))
-	two_baseline := two.offset.y().plus(layout_box_baseline(result.state, two_node))
+	one_baseline := one.offset.y().plus(layout_box_baseline(result.state, one_node, .first))
+	two_baseline := two.offset.y().plus(layout_box_baseline(result.state, two_node, .first))
 	assert one_baseline.raw_value() == two_baseline.raw_value()
 	assert one.offset.y().to_double() == 0
 	assert two.offset.y().to_double() > 0
@@ -1043,8 +1043,9 @@ fn test_inline_flex_baseline_uses_its_wrapped_childs_first_line() {
 	first_line := label.line_boxes.first()
 	first_line_top := first_line.bottom().minus(first_line.block_length())
 	expected := icon.margin_box_top().plus(label.offset.y().minus(label.margin_box_top())).plus(label.margin_box_top()).plus(first_line_top).plus(first_line.baseline())
-	assert layout_box_baseline(result.state, icon_node).raw_value() == expected.raw_value()
-	assert layout_box_baseline(result.state, icon_node).raw_value() != icon.margin_box_top().plus(label.offset.y().minus(label.margin_box_top())).plus(layout_box_baseline(result.state, label_node)).raw_value()
+	assert layout_box_baseline(result.state, icon_node, .last).raw_value() == expected.raw_value()
+	assert layout_box_baseline(result.state, icon_node, .last).raw_value() != icon.margin_box_top().plus(label.offset.y().minus(label.margin_box_top())).plus(layout_box_baseline(result.state,
+		label_node, .last)).raw_value()
 }
 
 fn test_overflow_clip_inline_block_keeps_its_content_baseline() {
@@ -1058,12 +1059,15 @@ fn test_overflow_clip_inline_block_keeps_its_content_baseline() {
 	clip := layout_node_with_id(result.root, 'clip') or { panic('missing #clip') }
 	hidden := layout_node_with_id(result.root, 'hidden') or { panic('missing #hidden') }
 
-	visible_baseline := layout_box_baseline(result.state, visible)
-	clip_baseline := layout_box_baseline(result.state, clip)
-	hidden_baseline := layout_box_baseline(result.state, hidden)
+	visible_baseline := layout_box_baseline(result.state, visible, .last)
+	clip_baseline := layout_box_baseline(result.state, clip, .last)
+	hidden_baseline := layout_box_baseline(result.state, hidden, .last)
+	visible_first_baseline := layout_box_baseline(result.state, visible, .first)
+	hidden_first_baseline := layout_box_baseline(result.state, hidden, .first)
 	assert clip_baseline == visible_baseline
 	assert hidden_baseline != visible_baseline
 	assert hidden_baseline == used_for_id(result, 'hidden').margin_box_height()
+	assert hidden_first_baseline == visible_first_baseline
 }
 
 fn test_inline_table_exports_its_first_row_baseline() {
@@ -1085,7 +1089,7 @@ fn test_inline_table_exports_its_first_row_baseline() {
 	last := used_for_id(result, 'last')
 	first_baseline := first.derived_first_baseline() or { panic('missing first row baseline') }
 	last_baseline := last.derived_last_baseline() or { panic('missing last row baseline') }
-	wrapper_baseline := layout_box_baseline(result.state, wrapper)
+	wrapper_baseline := layout_box_baseline(result.state, wrapper, .last)
 	assert wrapper_baseline.raw_value() == table.offset.y().plus(first.offset.y()).plus(first_baseline).raw_value()
 	assert wrapper_baseline.raw_value() != last.offset.y().plus(last_baseline).raw_value()
 	assert used_for_id(result, 'marker').offset.y().plus(CSSPixels.new(20)).raw_value() ==
@@ -4542,7 +4546,7 @@ fn test_flex_item_baseline_ignores_vertical_align() {
 	assert item.is_flex_item()
 	assert !item.vertical_align_applies()
 	item_used := used_for_id(result, 'item')
-	assert layout_box_baseline(result.state, item).raw_value() > item_used.border_box_top().raw_value()
+	assert layout_box_baseline(result.state, item, .first).raw_value() > item_used.border_box_top().raw_value()
 	assert used_for_id(result, 'line').content_height().to_double() < 40
 }
 

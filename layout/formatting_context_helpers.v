@@ -351,25 +351,39 @@ fn flex_or_grid_item_outer_block_edges(state &UsedValues) CSSPixels {
 	return state.margin_top.plus(state.border_top).plus(state.padding_top).plus(state.padding_bottom).plus(state.border_bottom).plus(state.margin_bottom)
 }
 
+enum BaselineSet {
+	first
+	last
+}
+
 // FormattingContext::box_child_to_derive_baseline_from(). Find the last
 // in-flow block child which has a baseline of its own, either directly from a
 // line box or recursively from one of its descendants.
-fn layout_box_child_to_derive_baseline_from(state &LayoutState, box &Node) ?&Node {
+fn layout_box_child_to_derive_baseline_from(state &LayoutState, box &Node, baseline_set BaselineSet) ?&Node {
 	if !box.has_children() || box.children_are_inline() {
 		return none
 	}
 	children := box.children()
-	for index := children.len - 1; index >= 0; index-- {
+	mut index := if baseline_set == .first { 0 } else { children.len - 1 }
+	for index >= 0 && index < children.len {
 		child := children[index]
 		if !child.is_box() || child.is_out_of_flow() {
+			index += if baseline_set == .first { 1 } else { -1 }
 			continue
 		}
-		styled := child.as_node_with_style() or { continue }
-		child_state := state.try_get(styled) or { continue }
+		styled := child.as_node_with_style() or {
+			index += if baseline_set == .first { 1 } else { -1 }
+			continue
+		}
+		child_state := state.try_get(styled) or {
+			index += if baseline_set == .first { 1 } else { -1 }
+			continue
+		}
 		if child_state.line_boxes.len > 0
-			|| layout_box_child_to_derive_baseline_from(state, child) != none {
+			|| layout_box_child_to_derive_baseline_from(state, child, baseline_set) != none {
 			return child
 		}
+		index += if baseline_set == .first { 1 } else { -1 }
 	}
 	return none
 }
@@ -377,7 +391,7 @@ fn layout_box_child_to_derive_baseline_from(state &LayoutState, box &Node) ?&Nod
 // FormattingContext::box_baseline(). This is shared by inline, flex, grid and
 // table layout; in particular, an atomic inline without an in-flow baseline
 // uses the bottom margin edge rather than merely its content height.
-fn layout_box_baseline(state &LayoutState, box &Node) CSSPixels {
+fn layout_box_baseline(state &LayoutState, box &Node, requested_baseline_set BaselineSet) CSSPixels {
 	styled := box.as_node_with_style() or { return CSSPixels.new(0) }
 	box_state := state.try_get(styled) or { return CSSPixels.new(0) }
 	computed := box.computed_values()
@@ -411,55 +425,59 @@ fn layout_box_baseline(state &LayoutState, box &Node) CSSPixels {
 			else {}
 		}
 	}
+	mut baseline_set := requested_baseline_set
+	display := box.display()
+	is_flex_or_grid_container := display.is_flex_inside() || display.is_grid_inside()
+	if display.is_inline_outside() && is_flex_or_grid_container {
+		baseline_set = .first
+	}
+
 	// A table formatting context commits the baselines established by its
 	// rows. Inline tables export their first row through the wrapper; other
-	// table parts use the last baseline when a generic consumer asks for one.
+	// table parts export the baseline set requested by their consumer.
 	if box.is_table_wrapper() {
 		if baseline := box_state.derived_first_baseline() {
 			return box_state.margin_box_top().plus(baseline)
 		}
-	} else if baseline := box_state.derived_last_baseline() {
-		return box_state.margin_box_top().plus(baseline)
+	} else if baseline_set == .first {
+		if baseline := box_state.derived_first_baseline() {
+			return box_state.margin_box_top().plus(baseline)
+		}
+	} else {
+		if baseline := box_state.derived_last_baseline() {
+			return box_state.margin_box_top().plus(baseline)
+		}
 	}
 
-	display := box.display()
-	is_flex_or_grid_container := display.is_flex_inside() || display.is_grid_inside()
-	is_inline_flex_or_grid_container := display.is_inline_outside()
-		&& is_flex_or_grid_container
 	// CSS Align's legacy bottom-edge baseline applies to scroll containers.
 	// `overflow: clip` is non-visible but does not establish one, so it keeps
 	// the same content-derived baseline as visible overflow.
-	always_derive_from_content := is_flex_or_grid_container || !box.is_scroll_container()
-	if always_derive_from_content && box_state.line_boxes.len > 0 {
-		last_line := box_state.line_boxes.last()
-		last_line_top := last_line.bottom().minus(last_line.block_length())
-		return box_state.margin_box_top().plus(last_line_top).plus(last_line.baseline())
+	derive_from_content := baseline_set == .first || is_flex_or_grid_container
+		|| !box.is_scroll_container()
+	if derive_from_content && box_state.line_boxes.len > 0 {
+		line := if baseline_set == .first {
+			box_state.line_boxes.first()
+		} else {
+			box_state.line_boxes.last()
+		}
+		line_top := line.bottom().minus(line.block_length())
+		return box_state.margin_box_top().plus(line_top).plus(line.baseline())
 	}
 
-	if child := layout_box_child_to_derive_baseline_from(state, box) {
+	if child := layout_box_child_to_derive_baseline_from(state, box, baseline_set) {
 		mut is_input := false
 		if dom_node := box.dom_node() {
 			if element := dom_node.as_element() {
 				is_input = element.local_name() == 'input'
 			}
 		}
-		if always_derive_from_content || is_input {
+		if derive_from_content || is_input {
 			child_styled := child.as_node_with_style() or { return box_state.margin_box_height() }
 			child_state := state.try_get(child_styled) or { return box_state.margin_box_height() }
 			child_offset_from_margin_edge :=
 				child_state.offset.y().minus(child_state.margin_box_top())
-			// Inline flex/grid containers generate their baseline from the
-			// alignment baseline of the selected item. Use that item's first line
-			// directly so wrapped content cannot pull the container down to the
-			// child's generic last-line baseline.
-			if is_inline_flex_or_grid_container && child_state.line_boxes.len > 0
-				&& !child_state.line_boxes.first().is_empty() {
-				first_line := child_state.line_boxes.first()
-				first_line_top := first_line.bottom().minus(first_line.block_length())
-				child_first_line_baseline := child_state.margin_box_top().plus(first_line_top).plus(first_line.baseline())
-				return box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(child_first_line_baseline)
-			}
-			return box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(layout_box_baseline(state, child))
+			return box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(layout_box_baseline(state,
+				child, baseline_set))
 		}
 	}
 

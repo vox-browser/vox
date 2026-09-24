@@ -295,7 +295,8 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		if fragment.layout_node_.is_text_node() {
 			fragment_baseline = font_baseline_for_line_height(layout_font_metrics_for_node(fragment.layout_node_), fragment_computed.line_height())
 		} else {
-			fragment_baseline = layout_box_baseline(builder.layout_state, fragment.layout_node_)
+			fragment_baseline = layout_box_baseline(builder.layout_state, fragment.layout_node_,
+				.last)
 		}
 		fragment.set_baseline(fragment_baseline)
 		if !uses_container_alignment {

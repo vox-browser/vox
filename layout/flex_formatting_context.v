@@ -1098,11 +1098,16 @@ fn cross_alignment_offset(alignment FlexCrossAlignment, cross_size CSSPixels, it
 fn flex_line_max_baseline(state &LayoutState, container &Node, line FlexLine) CSSPixels {
 	mut maximum := CSSPixels.new(0)
 	for item in line.items {
-		if effective_flex_cross_alignment(container, item) == .baseline {
-			maximum = css_pixels_max(maximum, layout_box_baseline(state, item))
+		if flex_item_participates_in_baseline_alignment(container, item) {
+			maximum = css_pixels_max(maximum, layout_box_baseline(state, item, .first))
 		}
 	}
 	return maximum
+}
+
+fn flex_item_participates_in_baseline_alignment(container &Node, item &Node) bool {
+	return effective_flex_cross_alignment(container, item) == .baseline
+		&& item.computed_values().writing_mode() == .horizontal_tb
 }
 
 fn flex_static_main_axis_alignment(container &Node, direction css.FlexDirection) StaticPositionAlignment {
@@ -1465,10 +1470,11 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 				item_state.margin_bottom = cross_free_space
 			} else {
 				cross_delta = cross_alignment_offset(alignment, cross_size, item_state.margin_box_height(), reverse_cross_axis)
-				if alignment == .baseline {
+				if flex_item_participates_in_baseline_alignment(container, item) {
 					// Baseline-aligned items start at the line's cross-start edge, so the
 					// baseline shift always runs towards cross-end.
-					cross_delta = cross_delta.plus(max_baseline.minus(layout_box_baseline(state, item)))
+					cross_delta = cross_delta.plus(max_baseline.minus(layout_box_baseline(state, item,
+						.first)))
 				}
 			}
 			item_state.set_content_x(cursor.plus(item_state.margin_box_left()))
@@ -1700,8 +1706,9 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 			item_state.margin_right = cross_free_space
 		} else {
 			cross_delta = cross_alignment_offset(alignment, container_width, item_state.margin_box_width(), flex_formatting_cross_axis_is_reversed(container))
-			if alignment == .baseline {
-				cross_delta = cross_delta.plus(max_baseline.minus(layout_box_baseline(state, item)))
+			if flex_item_participates_in_baseline_alignment(container, item) {
+				cross_delta = cross_delta.plus(max_baseline.minus(layout_box_baseline(state, item,
+					.first)))
 			}
 		}
 		item_state.set_content_x(cross_delta.plus(item_state.margin_box_left()))
@@ -1917,8 +1924,9 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 				item_state.margin_right = cross_free_space
 			} else {
 				cross_delta = cross_alignment_offset(alignment, cross_size, item_state.margin_box_width(), flex_formatting_cross_axis_is_reversed(container))
-				if alignment == .baseline {
-					cross_delta = cross_delta.plus(max_baseline.minus(layout_box_baseline(state, item)))
+				if flex_item_participates_in_baseline_alignment(container, item) {
+					cross_delta = cross_delta.plus(max_baseline.minus(layout_box_baseline(state, item,
+						.first)))
 				}
 			}
 			line_cross_start := if placement.place_items_backwards {
