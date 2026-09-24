@@ -313,6 +313,10 @@
   shaping selects a covered pending face. The complete `font-display` timeline
   controls invisible fallback, swapping, and failure, while cache/decode work
   may defer the first paint without letting network requests hold it open.
+  Local WOFF and WOFF2 resources are prepared into stable sfnt faces for shared
+  metrics, HarfBuzz shaping, and native replay. A face completed during layout
+  invalidates its cached cascade and participates in the pre-paint stabilization
+  pass, so `line-height: normal` uses the loaded face's metrics.
 - Font invalidation advances a shared environment generation. Canvas and
   offscreen-canvas text retain their computed cascades and refresh them after a
   font change, including cascades restored from saved drawing state.
