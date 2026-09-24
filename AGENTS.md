@@ -311,7 +311,10 @@
   constructed `CSSStyleSheet.replaceSync()`, and document
   `adoptedStyleSheets`. Embedded sheets retain their DOM owner and style-scope
   ownership, so dynamic `@counter-style` rules rebuild generated pseudo-content
-  when their resolved counter-style dependency changes.
+  when their resolved counter-style dependency changes. Nested animation-frame
+  callbacks can clear inline styles through the `style` IDL attribute and
+  remove the root's reftest class through `documentElement.classList`, allowing
+  null transform longhands to replace stale layout values on recomputation.
 - Platform input-method sessions dispatch `compositionstart`, per-update
   `compositionupdate` plus non-cancelable `insertCompositionText`
   `beforeinput`/`input` pairs, and `compositionend`. Marked ranges survive
