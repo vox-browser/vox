@@ -186,6 +186,8 @@ fn test_visible_input_placeholder_overlays_the_full_width_editor() {
 	text_outer := text.first_child() or { panic('missing text outer box') }
 	text_inner := text_outer.children()[0]
 	text_placeholder := text_outer.children()[1]
+	assert text_inner.computed_values().white_space_collapse() == .preserve
+	assert text_inner.computed_values().text_wrap_mode() == .nowrap
 	text_inner_used := result.used_values_for(text_inner.as_node_with_style() or {
 		panic('text editor has no style')
 	}) or { panic('text editor has no used values') }

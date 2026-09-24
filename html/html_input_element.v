@@ -859,7 +859,7 @@ pub fn (mut model HTMLInputElementModel) create_text_input_shadow_tree() {
 		append_input_shadow_child(mut container_node, text_container.as_node())
 	}
 	mut inner := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
-	inner.set_attribute_value('style', 'width:100%;height:1lh;overflow:auto;scrollbar-width:none;text-overflow:clip;white-space:nowrap;')
+	inner.set_attribute_value('style', 'width:100%;height:1lh;overflow:auto;scrollbar-width:none;text-overflow:clip;white-space:pre;')
 	mut text := element.document().create_text_node(model.value_)
 	if model.type_state_ == .password {
 		text.set_is_password_input(true)

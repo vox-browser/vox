@@ -304,6 +304,7 @@ fn test_input_placeholder_overlays_the_full_width_editor() {
 	text_inner := text.inner_text_element_ or { panic('missing text editor') }
 	text_placeholder := text.placeholder_element_ or { panic('missing text placeholder') }
 	assert text_inner.get_attribute_value('style').contains('width:100%')
+	assert text_inner.get_attribute_value('style').contains('white-space:pre')
 	assert text_placeholder.get_attribute_value('style').contains('margin-inline-start:-100%')
 	assert text_inner.as_node().parent_element()? == text_placeholder.as_node().parent_element()?
 

@@ -1395,7 +1395,7 @@ fn build_input_internal_layout_children(document &dom.Document, element &dom.Ele
 			css.PropertyID.line_height:          inner_line_height
 			css.PropertyID.overflow_x:           'auto'
 			css.PropertyID.overflow_y:           'auto'
-			css.PropertyID.white_space_collapse: 'collapse'
+			css.PropertyID.white_space_collapse: 'preserve'
 			css.PropertyID.text_wrap_mode:       'nowrap'
 		})
 		mut inner := unsafe {
