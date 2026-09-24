@@ -1061,7 +1061,8 @@ fn compatibility_absolute_padding_box_rect(box &BlockBox) LayoutRect {
 }
 
 fn compatibility_scroll_box_to_rect(mut result DocumentLayoutResult, box &BlockBox,
-	rect painting.Rect) {
+	rect painting.Rect, scroll_block_direction bool, writing_mode css.WritingMode,
+	synthetic_scroll_container bool) {
 	scrollport := compatibility_absolute_padding_box_rect(box)
 	mut current_x := 0.0
 	mut current_y := 0.0
@@ -1081,12 +1082,31 @@ fn compatibility_scroll_box_to_rect(mut result DocumentLayoutResult, box &BlockB
 			}
 		}
 	}
+	cursor_rect := if !scroll_block_direction {
+		if writing_mode == .horizontal_tb {
+			painting.Rect{
+				x: rect.x
+				y: scrollport.y + current_y
+				width: rect.width
+				height: scrollport.height
+			}
+		} else {
+			painting.Rect{
+				x: scrollport.x + current_x
+				y: rect.y
+				width: scrollport.width
+				height: rect.height
+			}
+		}
+	} else {
+		rect
+	}
 	mut target_x := current_x
 	mut target_y := current_y
-	content_left := rect.x - scrollport.x
-	content_top := rect.y - scrollport.y
-	content_right := content_left + rect.width
-	content_bottom := content_top + rect.height
+	content_left := cursor_rect.x - scrollport.x
+	content_top := cursor_rect.y - scrollport.y
+	content_right := content_left + cursor_rect.width
+	content_bottom := content_top + cursor_rect.height
 	if content_right > current_x + scrollport.width {
 		target_x = content_right - scrollport.width
 	} else if content_left < current_x {
@@ -1101,6 +1121,13 @@ fn compatibility_scroll_box_to_rect(mut result DocumentLayoutResult, box &BlockB
 	if box.is_viewport_scroller {
 		if navigable := result.document.navigable() {
 			navigable.perform_scroll_of_viewport_scrolling_box(requested)
+		}
+	} else if synthetic_scroll_container && box.layout_handle != unsafe { nil } {
+		layout_node := unsafe { &Node(box.layout_handle) }
+		if dom_node := layout_node.dom_node() {
+			if mut element := dom_node.as_element() {
+				element.set_scroll_offset(none, requested)
+			}
 		}
 	} else if mut value := paintable_box {
 		value.set_scroll_offset(requested)
@@ -1120,10 +1147,12 @@ fn layout_paintable_scroll_ancestor_to_offset_into_view(target voidptr, layout_h
 	collect_compatibility_boxes(mut result.paint_tree, mut boxes_by_layout)
 	source_node := unsafe { &Node(layout_handle) }
 	mut form_text_control := false
+	mut input_text_control := false
 	if dom_node := source_node.dom_node() {
 		if element := dom_node.as_element() {
 			form_text_control = element.is_html_element()
 				&& element.local_name() in ['input', 'textarea']
+			input_text_control = element.is_html_element() && element.local_name() == 'input'
 		}
 	}
 	cursor_rect := if form_text_control {
@@ -1148,8 +1177,15 @@ fn layout_paintable_scroll_ancestor_to_offset_into_view(target voidptr, layout_h
 			ancestor_box = box
 		}
 		if box := ancestor_box {
-			if box.has_scrollable_overflow || ancestor.is_viewport() {
-				compatibility_scroll_box_to_rect(mut result, box, cursor_rect)
+			// The compact bridge exposes a text input's anonymous editor through
+			// the host paintable, so the host is its scroll container even though
+			// `overflow: auto` belongs to the internal editor in the DOM tree.
+			input_editor_scroll_container := input_text_control
+				&& voidptr(ancestor) == voidptr(source_node)
+			if box.has_scrollable_overflow || ancestor.is_viewport() || input_editor_scroll_container {
+				compatibility_scroll_box_to_rect(mut result, box, cursor_rect,
+					!input_text_control, source_node.computed_values().writing_mode(),
+					input_editor_scroll_container)
 				return
 			}
 		}

@@ -1593,6 +1593,26 @@ fn test_textarea_scrolls_its_anonymous_cursor_into_view() {
 	assert control.el_scroll_offset().y() > 0
 }
 
+fn test_input_cursor_scroll_keeps_the_block_axis_stable() {
+	document := html.parse_document('<!doctype html><style>html, body { margin:0 } input { display:block;box-sizing:border-box;font:15px/15px monospace;width:70px;height:38px;padding:7px 10px 10px 0;border:0 } #vertical { writing-mode:vertical-rl;width:38px;height:8px;padding:0 }</style><body><input id="horizontal" value="xxxxxxxxxxxxxxxx"><input id="vertical" value="xxxxxxxxxxxxxxxx"></body>')
+	horizontal_element := document.get_element_by_id('horizontal') or { panic('missing horizontal input') }
+	mut horizontal := html.HTMLInputElementModel.create(unsafe {
+		&dom.HTMLInputElement(horizontal_element)
+	})
+	horizontal.text_control.set_selection_range(16, 16, 'none') or { panic(err) }
+	vertical_element := document.get_element_by_id('vertical') or { panic('missing vertical input') }
+	mut vertical := html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(vertical_element) })
+	vertical.text_control.set_selection_range(16, 16, 'none') or { panic(err) }
+	_ = layout_document_typed_in_viewport(document, 240, 140)
+
+	horizontal.text_control.scroll_cursor_into_view()
+	assert horizontal_element.el_scroll_offset().x() > 0
+	assert horizontal_element.el_scroll_offset().y() == 0
+	vertical.text_control.scroll_cursor_into_view()
+	assert vertical_element.el_scroll_offset().y() > 0
+	assert vertical_element.el_scroll_offset().x() == 0
+}
+
 fn test_selection_scrolls_cursor_into_viewport() {
 	document := html.parse_document('<!doctype html><style>html, body, p { margin: 0 } p { width: 80px; line-height: 20px }</style><body><p id="target" contenteditable>one two three four five six seven eight nine ten eleven twelve</p></body>')
 	mut mutable_document := unsafe { &dom.Document(document) }

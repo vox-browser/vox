@@ -22,6 +22,26 @@ fn test_abstract_element_equality_uses_dom_identity() {
 	assert !abstract_elements_equal(dom.AbstractElement.new(first, .before), dom.AbstractElement.new(first, .after))
 }
 
+fn test_single_line_input_clamps_line_height_even_with_fixed_height() {
+	document := dom.Document.create(dom.url_about_blank())
+	mut input := document.create_element_ns('http://www.w3.org/1999/xhtml', 'input') or {
+		panic(err)
+	}
+	input.set_attribute_value('type', 'text')
+	input.set_attribute_value('style', 'height:0;line-height:0;font-size:16px')
+	computed := StyleComputer.new(document).compute_style(dom.AbstractElement.new(input, none))
+	assert computed.line_height().to_double() > 0
+
+	mut url_input := document.create_element_ns('http://www.w3.org/1999/xhtml', 'input') or {
+		panic(err)
+	}
+	url_input.set_attribute_value('type', 'url')
+	url_input.set_attribute_value('style', 'height:0;line-height:0;font-size:16px')
+	url_computed := StyleComputer.new(document).compute_style(dom.AbstractElement.new(url_input,
+		none))
+	assert url_computed.line_height().to_double() == 0
+}
+
 fn test_property_computation_contexts_are_cached_per_style_pass() {
 	document := dom.Document.create(dom.url_about_blank())
 	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {

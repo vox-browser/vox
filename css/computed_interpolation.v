@@ -11673,7 +11673,7 @@ fn html_input_element_adjust_computed_style(mut properties ComputedProperties, e
 
 	// For web compatibility, these are the one-line plain-text controls used by
 	// HTMLInputElement::is_single_line(). URL is intentionally not in this set.
-	if type_ in ['text', 'search', 'password', 'email', 'tel', 'number'] && properties.size_value(.height).is_auto() {
+	if type_ in ['text', 'search', 'password', 'email', 'tel', 'number'] {
 		current_line_height := properties.line_height().to_double()
 		minimum_line_height := properties.font_size().to_double() * computed_properties_normal_line_height_scale
 		if current_line_height < minimum_line_height {
