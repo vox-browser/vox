@@ -395,6 +395,16 @@ fn layout_box_baseline(state &LayoutState, box &Node) CSSPixels {
 		}
 		else {}
 	}
+	// A table formatting context commits the baselines established by its
+	// rows. Inline tables export their first row through the wrapper; other
+	// table parts use the last baseline when a generic consumer asks for one.
+	if box.is_table_wrapper() {
+		if baseline := box_state.derived_first_baseline() {
+			return box_state.margin_box_top().plus(baseline)
+		}
+	} else if baseline := box_state.derived_last_baseline() {
+		return box_state.margin_box_top().plus(baseline)
+	}
 
 	display := box.display()
 	is_flex_or_grid_container := display.is_flex_inside() || display.is_grid_inside()

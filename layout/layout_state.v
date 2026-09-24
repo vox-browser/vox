@@ -103,10 +103,25 @@ pub mut:
 	inset_bottom                 CSSPixels
 	line_boxes                   []LineBox
 	containing_line_box_fragment ?LineBoxFragmentCoordinate
+	derived_first_baseline_      ?CSSPixels
+	derived_last_baseline_       ?CSSPixels
 	scrollable_overflow_rect_    ?css.CSSPixelRect
 	has_scrollable_overflow_     bool
 mut:
 	rare_ ?&UsedValuesRareData
+}
+
+fn (mut u UsedValues) set_derived_baselines(first ?CSSPixels, last ?CSSPixels) {
+	u.derived_first_baseline_ = first
+	u.derived_last_baseline_ = last
+}
+
+fn (u &UsedValues) derived_first_baseline() ?CSSPixels {
+	return u.derived_first_baseline_
+}
+
+fn (u &UsedValues) derived_last_baseline() ?CSSPixels {
+	return u.derived_last_baseline_
 }
 
 fn (mut u UsedValues) ensure_rare_data() &UsedValuesRareData {

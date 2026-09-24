@@ -1257,6 +1257,132 @@ fn table_cell_content_offset_top(values UsedValues, collapsed bool) CSSPixels {
 	return border.plus(values.padding_top)
 }
 
+// Return the first in-flow content baseline relative to a box's content edge.
+// Table cells use this instead of the generic atomic-inline baseline, which is
+// affected by the cell's own vertical-align and selects the last line.
+fn table_first_in_flow_content_baseline(state &LayoutState, box &Node) ?CSSPixels {
+	styled := box.as_node_with_style() or { return none }
+	values := state.try_get(styled) or { return none }
+	if values.line_boxes.len > 0 {
+		line := values.line_boxes.first()
+		line_top := line.bottom().minus(line.block_length())
+		return line_top.plus(line.baseline())
+	}
+	for child in box.children() {
+		if !child.is_box() || child.is_out_of_flow() {
+			continue
+		}
+		child_styled := child.as_node_with_style() or { continue }
+		child_values := state.try_get(child_styled) or { continue }
+		if baseline := child_values.derived_first_baseline() {
+			return child_values.offset.y().plus(baseline)
+		}
+		if baseline := table_first_in_flow_content_baseline(state, child) {
+			return child_values.offset.y().plus(baseline)
+		}
+	}
+	return none
+}
+
+// CSS 2.2 17.5.3: a cell uses its first in-flow line/table-row baseline, or
+// the bottom content edge when it has no such descendant.
+fn table_cell_baseline(state &LayoutState, cell &Node, values &UsedValues, collapsed bool) CSSPixels {
+	content_baseline := table_first_in_flow_content_baseline(state, cell) or {
+		values.content_height()
+	}
+	return table_cell_content_offset_top(*values, collapsed).plus(content_baseline)
+}
+
+fn table_cell_is_baseline_aligned(cell &Node) bool {
+	computed := cell.computed_values()
+	if computed.vertical_align_length_percentage() != none {
+		return true
+	}
+	return computed.vertical_align() !in [.top, .middle, .bottom]
+}
+
+fn table_row_derived_baseline(index int, row_heights []CSSPixels, row_baselines []CSSPixels, row_has_baseline []bool, row_smallest_cell_end_offset []CSSPixels, row_has_cell []bool) CSSPixels {
+	if index < row_has_baseline.len && row_has_baseline[index] {
+		return row_baselines[index]
+	}
+	if index < row_has_cell.len && row_has_cell[index] {
+		return css_pixels_max(row_heights[index].minus(row_smallest_cell_end_offset[index]), CSSPixels.new(0))
+	}
+	return CSSPixels.new(0)
+}
+
+fn store_table_part_baselines(mut state LayoutState, table &Node, table_state &UsedValues, rows []&Node, row_offsets []CSSPixels, row_heights []CSSPixels, row_baselines []CSSPixels, row_has_baseline []bool, row_smallest_cell_end_offset []CSSPixels, row_has_cell []bool, row_is_collapsed []bool) {
+	mut first_visible_row := -1
+	mut last_visible_row := -1
+	for index, row in rows {
+		baseline := table_row_derived_baseline(index, row_heights, row_baselines,
+			row_has_baseline, row_smallest_cell_end_offset, row_has_cell)
+		if styled := row.as_node_with_style() {
+			mut row_values := state.get_mutable(styled)
+			row_values.set_derived_baselines(baseline, baseline)
+		}
+		if index >= row_is_collapsed.len || !row_is_collapsed[index] {
+			if first_visible_row < 0 {
+				first_visible_row = index
+			}
+			last_visible_row = index
+		}
+	}
+
+	for group in table_row_containers_in_layout_order(table) {
+		if !group.display().is_table_row_group() && !group.display().is_table_header_group()
+			&& !group.display().is_table_footer_group() {
+			continue
+		}
+		group_styled := group.as_node_with_style() or { continue }
+		mut group_values := state.get_mutable(group_styled)
+		mut first := ?CSSPixels(none)
+		mut last := ?CSSPixels(none)
+		for index, row in rows {
+			if index < row_is_collapsed.len && row_is_collapsed[index] {
+				continue
+			}
+			parent := row.parent() or { continue }
+			if !layout_nodes_same(parent, group) {
+				continue
+			}
+			baseline := row_offsets[index].plus(table_row_derived_baseline(index,
+				row_heights, row_baselines, row_has_baseline,
+				row_smallest_cell_end_offset, row_has_cell)).minus(group_values.offset.y())
+			if first == none {
+				first = baseline
+			}
+			last = baseline
+		}
+		group_values.set_derived_baselines(first, last)
+	}
+
+	mut table_first := ?CSSPixels(none)
+	mut table_last := ?CSSPixels(none)
+	if first_visible_row >= 0 {
+		table_first = row_offsets[first_visible_row].plus(table_row_derived_baseline(first_visible_row, row_heights, row_baselines, row_has_baseline,
+			row_smallest_cell_end_offset, row_has_cell))
+		table_last = row_offsets[last_visible_row].plus(table_row_derived_baseline(last_visible_row, row_heights, row_baselines, row_has_baseline,
+			row_smallest_cell_end_offset, row_has_cell))
+	}
+	mut mutable_table_state := unsafe { &UsedValues(table_state) }
+	mutable_table_state.set_derived_baselines(table_first, table_last)
+	if wrapper_values := table_state.containing_block_used_values() {
+		mut wrapper_state := unsafe { &UsedValues(wrapper_values) }
+		wrapper_first := if baseline := table_first {
+			?CSSPixels(table_state.offset.y().plus(baseline))
+		} else {
+			?CSSPixels(none)
+		}
+		wrapper_last := if baseline := table_last {
+			?CSSPixels(table_state.offset.y().plus(baseline))
+		} else {
+			?CSSPixels(none)
+		}
+		wrapper_state.set_derived_baselines(wrapper_first, wrapper_last)
+	}
+}
+
 // A cell occupies exactly the columns it spans. Fixed layout can make those
 // columns narrower than an auto-width cell's padding and borders, so reduce the
 // end padding, start padding, end border, and start border in that order until
@@ -1376,8 +1502,16 @@ fn table_cell_intrinsic_width_measures(mut state LayoutState, cell &Node, collap
 			outer_max_width: outer
 		}
 	}
-	min_content_width := if fixed_mode { width } else { calculate_min_content_width(mut state, box) }
-	max_content_width := if fixed_mode { width } else { calculate_max_content_width(mut state, box) }
+	min_content_width := if fixed_mode {
+		width
+	} else {
+		calculate_min_content_width(mut state, box)
+	}
+	max_content_width := if fixed_mode {
+		width
+	} else {
+		calculate_max_content_width(mut state, box)
+	}
 	width_is_specified_length_or_percentage := computed.size_value(.width).is_length() || computed.size_value(.width).is_percentage()
 	mut outer_min_width := CSSPixels.new(0)
 	mut outer_max_width := CSSPixels.new(0)
@@ -1888,7 +2022,8 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	placements := intrinsic_widths.placements
 	column_definitions := intrinsic_widths.column_definitions
 	column_count := intrinsic_widths.column_count
-	top_caption_height := layout_table_captions(mut state, table, mut table_state, .top, CSSPixels.new(0), available_space.height)
+	_ = layout_table_captions(mut state, table, mut table_state, .top, CSSPixels.new(0),
+		available_space.height)
 	for child in table.children() {
 		if !child.display().is_table_caption() || child.computed_values().caption_side() != .top {
 			continue
@@ -1970,6 +2105,9 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	row_min_heights, _ := compute_table_row_intrinsic_measures(mut state, rows, placements, computed.border_collapse() == .collapse, table_height_percentage_basis, vertical_spacing)
 	mut row_heights := []CSSPixels{len: rows.len, init: CSSPixels.new(0)}
 	mut row_baselines := []CSSPixels{len: rows.len, init: CSSPixels.new(0)}
+	mut row_has_baseline := []bool{len: rows.len}
+	mut row_smallest_cell_end_offset := []CSSPixels{len: rows.len, init: CSSPixels.max()}
+	mut row_has_cell := []bool{len: rows.len}
 	mut cell_baselines := []CSSPixels{len: placements.len, init: CSSPixels.new(0)}
 	for index, row in rows {
 		if row_is_collapsed[index] {
@@ -2044,10 +2182,17 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			cell_state.border_bottom = border
 		}
 		shrink_table_cell_inline_offsets_to_fit(mut cell_state, collapsed, cell_width)
-		cell_baselines[placement_index] = layout_box_baseline(state, placement.cell)
+		cell_baselines[placement_index] = table_cell_baseline(state, placement.cell,
+			cell_state, collapsed)
 		if placement.row >= 0 && placement.row < row_baselines.len
 			&& !row_is_collapsed[placement.row] {
-			row_baselines[placement.row] = css_pixels_max(row_baselines[placement.row], cell_baselines[placement_index])
+			row_has_cell[placement.row] = true
+			row_smallest_cell_end_offset[placement.row] = css_pixels_min(row_smallest_cell_end_offset[placement.row], cell_state.border_box_bottom())
+			if table_cell_is_baseline_aligned(placement.cell) {
+				row_has_baseline[placement.row] = true
+				row_baselines[placement.row] = css_pixels_max(row_baselines[placement.row],
+					cell_baselines[placement_index])
+			}
 		}
 		if !row_is_collapsed[placement.row] {
 			if specified_height := specified_cell_height {
@@ -2129,10 +2274,17 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			cell_state.set_has_definite_width(true)
 			cell_state.set_has_definite_height(true)
 			layout_inside_independent_formatting_context(mut state, placement.cell, mut cell_state, AvailableSpace.new(AvailableSize.make_definite(content_width), AvailableSize.make_definite(content_height)))
-			cell_baselines[placement_index] = layout_box_baseline(state, placement.cell)
+			cell_baselines[placement_index] = table_cell_baseline(state, placement.cell,
+				cell_state, collapsed)
 			if !row_is_collapsed[placement.row] {
 				reference_heights[placement.row] = css_pixels_max(reference_heights[placement.row], table_cell_measurement_outer_height(cell_state, collapsed))
-				row_baselines[placement.row] = css_pixels_max(row_baselines[placement.row], cell_baselines[placement_index])
+				row_has_cell[placement.row] = true
+				row_smallest_cell_end_offset[placement.row] = css_pixels_min(row_smallest_cell_end_offset[placement.row], cell_state.border_box_bottom())
+				if table_cell_is_baseline_aligned(placement.cell) {
+					row_has_baseline[placement.row] = true
+					row_baselines[placement.row] = css_pixels_max(row_baselines[placement.row],
+						cell_baselines[placement_index])
+				}
 			}
 		}
 	}
@@ -2269,6 +2421,16 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		alignment_space := spanned_height.minus(table_cell_measurement_outer_height(cell_state, collapsed))
 		if table_cell_is_anonymous_wrapper_for_flex_or_grid(placement.cell) {
 			cell_state.padding_bottom = cell_state.padding_bottom.plus(alignment_space)
+		} else if table_cell_is_baseline_aligned(placement.cell) {
+			row_baseline := if placement.row < row_has_baseline.len
+				&& row_has_baseline[placement.row] {
+				row_baselines[placement.row]
+			} else {
+				cell_baselines[placement_index]
+			}
+			baseline_adjustment := row_baseline.minus(cell_baselines[placement_index])
+			cell_state.padding_top = cell_state.padding_top.plus(baseline_adjustment)
+			cell_state.padding_bottom = cell_state.padding_bottom.plus(alignment_space.minus(baseline_adjustment))
 		} else {
 			match placement.cell.computed_values().vertical_align() {
 				.middle {
@@ -2279,14 +2441,10 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 				.bottom {
 					cell_state.padding_top = cell_state.padding_top.plus(alignment_space)
 				}
-				.baseline, .sub, .super_, .text_top, .text_bottom {
-					baseline_adjustment := row_baselines[placement.row].minus(cell_baselines[placement_index])
-					cell_state.padding_top = cell_state.padding_top.plus(baseline_adjustment)
-					cell_state.padding_bottom = cell_state.padding_bottom.plus(alignment_space.minus(baseline_adjustment))
-				}
 				.top {
 					cell_state.padding_bottom = cell_state.padding_bottom.plus(alignment_space)
 				}
+				else {}
 			}
 		}
 		cell_state.set_content_x(table_cell_physical_offset(table, table_state.content_width(), column_offsets, placement, horizontal_spacing, intrinsic_widths.collapsed_columns).plus(table_cell_content_offset_left(cell_state, collapsed)))
@@ -2294,8 +2452,11 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	}
 	final_table_height := css_pixels_max(css_pixels_max(cursor_y, row_group_top_offset), table_grid_height)
 	table_state.set_content_height(final_table_height)
-	bottom_caption_height := layout_table_captions(mut state, table, mut table_state, .bottom, table_state.margin_box_height(), available_space.height)
-	table_state.margin_bottom = table_state.margin_bottom.plus(top_caption_height).plus(bottom_caption_height)
+	store_table_part_baselines(mut state, table, table_state, rows, row_offsets, row_heights,
+		row_baselines, row_has_baseline, row_smallest_cell_end_offset, row_has_cell,
+		row_is_collapsed)
+	_ = layout_table_captions(mut state, table, mut table_state, .bottom,
+		table_state.margin_box_height(), available_space.height)
 	if table.is_inline_table() {
 		initialize_trailing_table_whitespace_state(mut state, table)
 	}

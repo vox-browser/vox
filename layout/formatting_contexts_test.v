@@ -1041,6 +1041,49 @@ fn test_overflow_clip_inline_block_keeps_its_content_baseline() {
 	assert hidden_baseline == used_for_id(result, 'hidden').margin_box_height()
 }
 
+fn test_inline_table_exports_its_first_row_baseline() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 } #line { font-size:0 }
+		#marker { display:inline-block; width:20px; height:20px }
+		#table { display:inline-table; border-spacing:0 }
+		tr { display:table-row } td { padding:0; font-size:20px; line-height:20px }
+	</style><div id="line"><span id="marker"></span><table id="table"><tr id="first"><td>X</td></tr><tr id="last"><td>X</td></tr></table></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	table_node := layout_node_with_id(result.root, 'table') or { panic('missing table') }
+	wrapper := table_node.parent() or { panic('missing table wrapper') }
+	assert wrapper.is_table_wrapper()
+	table_styled := table_node.as_node_with_style() or { panic('table has no style') }
+	wrapper_styled := wrapper.as_node_with_style() or { panic('wrapper has no style') }
+	table := result.state.try_get(table_styled) or { panic('table has no used values') }
+	wrapper_values := result.state.try_get(wrapper_styled) or { panic('wrapper has no used values') }
+	first := used_for_id(result, 'first')
+	last := used_for_id(result, 'last')
+	first_baseline := first.derived_first_baseline() or { panic('missing first row baseline') }
+	last_baseline := last.derived_last_baseline() or { panic('missing last row baseline') }
+	wrapper_baseline := layout_box_baseline(result.state, wrapper)
+	assert wrapper_baseline.raw_value() == table.offset.y().plus(first.offset.y()).plus(first_baseline).raw_value()
+	assert wrapper_baseline.raw_value() != last.offset.y().plus(last_baseline).raw_value()
+	assert used_for_id(result, 'marker').offset.y().plus(CSSPixels.new(20)).raw_value() ==
+		wrapper_values.offset.y().plus(wrapper_baseline).raw_value()
+}
+
+fn test_table_row_baseline_ignores_middle_aligned_cells() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 } table { border-spacing:0 }
+		td { padding:0; font-size:20px; line-height:20px }
+		#middle { height:40px; vertical-align:middle }
+		#baseline { vertical-align:baseline }
+	</style><table><tr id="row"><td id="middle">X</td><td id="baseline">X</td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	row := used_for_id(result, 'row')
+	baseline := used_for_id(result, 'baseline')
+	row_baseline := row.derived_first_baseline() or { panic('missing row baseline') }
+	baseline_node := layout_node_with_id(result.root, 'baseline') or { panic('missing cell') }
+	assert row_baseline.raw_value() == table_cell_baseline(result.state, baseline_node,
+		baseline, false).raw_value()
+	assert baseline.padding_bottom.to_double() == 20
+}
+
 fn test_relative_insets_resolve_against_the_containing_block_without_changing_flow_offsets() {
 	document := html.parse_document('<!doctype html><style>
 		#parent { width:200px }
@@ -2383,11 +2426,11 @@ fn test_table_captions_are_laid_out_above_and_below_the_grid() {
 	assert used_for_id(result, 'top-caption').offset.y().to_double() == 0
 	assert used_for_id(result, 'top-cell').offset.y().to_double() == 10
 	assert used_for_id(result, 'top-table').content_height().to_double() == 20
-	assert used_for_id(result, 'top-table').margin_bottom.to_double() == 20
+	assert used_for_id(result, 'top-table').margin_bottom.to_double() == 0
 	assert used_for_id(result, 'bottom-cell').offset.y().to_double() == 10
 	assert used_for_id(result, 'bottom-caption').offset.y().to_double() == 20
 	assert used_for_id(result, 'bottom-table').content_height().to_double() == 20
-	assert used_for_id(result, 'bottom-table').margin_bottom.to_double() == 20
+	assert used_for_id(result, 'bottom-table').margin_bottom.to_double() == 0
 }
 
 fn test_table_cell_vertical_alignment_distributes_extra_row_height_to_padding() {
