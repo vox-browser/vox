@@ -64,6 +64,7 @@ struct TableGridIntrinsicWidths {
 	has_intrinsic_percentage  []bool
 	percentage_offsets        []CSSPixels
 	has_originating_cells     []bool
+	collapsed_columns         []bool
 }
 
 enum TableBorderSide {
@@ -586,38 +587,72 @@ fn calculate_table_cell_placements(rows []&Node) ([]TableCellPlacement, int) {
 	return placements, column_count
 }
 
+fn table_column_definition_is_collapsed(definition TableColumnDefinition) bool {
+	if definition.node.computed_values().visibility() == .collapse {
+		return true
+	}
+	parent := definition.node.parent() or { return false }
+	return parent.display().is_table_column_group()
+		&& parent.computed_values().visibility() == .collapse
+}
+
+fn table_visible_column_count(collapsed_columns []bool, column_count int) int {
+	mut count := 0
+	for index in 0 .. column_count {
+		if index >= collapsed_columns.len || !collapsed_columns[index] {
+			count++
+		}
+	}
+	return count
+}
+
+fn table_visible_columns_in_range(collapsed_columns []bool, start int, end int) int {
+	mut count := 0
+	for index in start .. end {
+		if index >= collapsed_columns.len || !collapsed_columns[index] {
+			count++
+		}
+	}
+	return count
+}
+
 // TableFormattingContext::position_cell_boxes() records each column's
 // left_offset once. Keep the equivalent prefix array so cell measurement and
 // final positioning do not repeatedly sum every preceding column.
-fn table_column_offsets(widths []CSSPixels, spacing CSSPixels) []CSSPixels {
+fn table_column_offsets(widths []CSSPixels, spacing CSSPixels, collapsed_columns []bool) []CSSPixels {
 	mut offsets := []CSSPixels{len: widths.len + 1}
 	mut offset := spacing
 	for index, width in widths {
 		offsets[index] = offset
-		offset = offset.plus(width).plus(spacing)
+		if index >= collapsed_columns.len || !collapsed_columns[index] {
+			offset = offset.plus(width).plus(spacing)
+		}
 	}
 	offsets[widths.len] = offset
 	return offsets
 }
 
-fn table_column_range_width(offsets []CSSPixels, start int, span int, spacing CSSPixels) CSSPixels {
+fn table_column_range_width(offsets []CSSPixels, start int, span int, spacing CSSPixels, collapsed_columns []bool) CSSPixels {
 	if start < 0 || span <= 0 || start >= offsets.len - 1 {
 		return CSSPixels.new(0)
 	}
 	end := if start + span < offsets.len { start + span } else { offsets.len - 1 }
+	if table_visible_columns_in_range(collapsed_columns, start, end) == 0 {
+		return CSSPixels.new(0)
+	}
 	return offsets[end].minus(offsets[start]).minus(spacing)
 }
 
-fn table_cell_physical_offset(table &Node, table_width CSSPixels, offsets []CSSPixels, placement TableCellPlacement, spacing CSSPixels) CSSPixels {
+fn table_cell_physical_offset(table &Node, table_width CSSPixels, offsets []CSSPixels, placement TableCellPlacement, spacing CSSPixels, collapsed_columns []bool) CSSPixels {
 	logical_offset := offsets[placement.column]
 	if table.computed_values().direction() != .rtl {
 		return logical_offset
 	}
-	cell_width := table_column_range_width(offsets, placement.column, placement.column_span, spacing)
+	cell_width := table_column_range_width(offsets, placement.column, placement.column_span, spacing, collapsed_columns)
 	return table_width.minus(logical_offset).minus(cell_width)
 }
 
-fn table_column_box_geometry(table &Node, table_width CSSPixels, offsets []CSSPixels, start int, end int, spacing CSSPixels) (CSSPixels, CSSPixels) {
+fn table_column_box_geometry(table &Node, table_width CSSPixels, offsets []CSSPixels, start int, end int, spacing CSSPixels, collapsed_columns []bool) (CSSPixels, CSSPixels) {
 	column_count := offsets.len - 1
 	clamped_start := if start < 0 {
 		0
@@ -634,7 +669,8 @@ fn table_column_box_geometry(table &Node, table_width CSSPixels, offsets []CSSPi
 		end
 	}
 	logical_offset := offsets[clamped_start]
-	width := if clamped_end > clamped_start {
+	width := if clamped_end > clamped_start
+		&& table_visible_columns_in_range(collapsed_columns, clamped_start, clamped_end) > 0 {
 		offsets[clamped_end].minus(logical_offset).minus(spacing)
 	} else {
 		CSSPixels.new(0)
@@ -658,7 +694,7 @@ fn position_table_column_box(mut state LayoutState, node &Node, containing &Used
 // painted over the grid, so columns and column groups retain concrete boxes
 // even though they do not participate in ordinary block layout. A column
 // group is the containing block of its child columns.
-fn position_table_column_boxes(mut state LayoutState, table &Node, table_state &UsedValues, column_offsets []CSSPixels, rows []&Node, row_is_collapsed []bool, horizontal_spacing CSSPixels, vertical_spacing CSSPixels) {
+fn position_table_column_boxes(mut state LayoutState, table &Node, table_state &UsedValues, column_offsets []CSSPixels, collapsed_columns []bool, rows []&Node, row_is_collapsed []bool, horizontal_spacing CSSPixels, vertical_spacing CSSPixels) {
 	mut block_start := vertical_spacing
 	if rows.len > 0 {
 		if styled := rows[0].as_node_with_style() {
@@ -681,7 +717,7 @@ fn position_table_column_boxes(mut state LayoutState, table &Node, table_state &
 		if child.display().is_table_column() {
 			end := column_index + table_span(child, 'span')
 			x, width := table_column_box_geometry(table, table_state.content_width(), column_offsets,
-				column_index, end, horizontal_spacing)
+				column_index, end, horizontal_spacing, collapsed_columns)
 			position_table_column_box(mut state, child, table_state, x, block_start, width,
 				block_size)
 			column_index = end
@@ -702,7 +738,7 @@ fn position_table_column_boxes(mut state LayoutState, table &Node, table_state &
 		}
 		group_end := column_index
 		group_x, group_width := table_column_box_geometry(table, table_state.content_width(),
-			column_offsets, group_start, group_end, horizontal_spacing)
+			column_offsets, group_start, group_end, horizontal_spacing, collapsed_columns)
 		position_table_column_box(mut state, child, table_state, group_x, block_start,
 			group_width, block_size)
 
@@ -719,7 +755,7 @@ fn position_table_column_boxes(mut state LayoutState, table &Node, table_state &
 			end := child_index + table_span(column, 'span')
 			column_x, column_width := table_column_box_geometry(table,
 				table_state.content_width(), column_offsets, child_index, end,
-				horizontal_spacing)
+				horizontal_spacing, collapsed_columns)
 			position_table_column_box(mut state, column, group_state,
 				column_x.minus(group_x), CSSPixels.new(0), column_width, block_size)
 			child_index = end
@@ -1525,6 +1561,20 @@ fn calculate_table_grid_intrinsic_widths(mut state LayoutState, table &Node, per
 			column_count = definition.index + definition.span
 		}
 	}
+	mut collapsed_columns := []bool{len: column_count}
+	for definition in column_definitions {
+		if !table_column_definition_is_collapsed(definition) {
+			continue
+		}
+		end := if definition.index + definition.span < column_count {
+			definition.index + definition.span
+		} else {
+			column_count
+		}
+		for index in definition.index .. end {
+			collapsed_columns[index] = true
+		}
+	}
 	capmin := calculate_table_caption_minimum_width(mut state, table, percentage_basis)
 	computed := table.computed_values()
 	resolve_collapsed_table_borders(mut state, table, rows, placements, column_definitions, column_count)
@@ -1543,6 +1593,7 @@ fn calculate_table_grid_intrinsic_widths(mut state LayoutState, table &Node, per
 			placements: placements
 			column_definitions: column_definitions
 			column_count: column_count
+			collapsed_columns: collapsed_columns
 		}
 	}
 	mut min_widths := []CSSPixels{len: column_count, init: CSSPixels.new(0)}
@@ -1652,6 +1703,7 @@ fn calculate_table_grid_intrinsic_widths(mut state LayoutState, table &Node, per
 		has_intrinsic_percentage: has_intrinsic_percentage
 		percentage_offsets: percentage_offsets
 		has_originating_cells: has_originating_cells
+		collapsed_columns: collapsed_columns
 	}
 	if table_box := table.as_box() {
 		mut mutable_table_box := unsafe { &Box(table_box) }
@@ -1901,8 +1953,19 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		mut wrapper_state := unsafe { &UsedValues(wrapper_values) }
 		wrapper_state.set_content_width(table_state.border_box_width())
 	}
-	column_widths := distribute_table_width_to_columns(intrinsic_widths.column_min_widths, intrinsic_widths.column_max_widths, intrinsic_widths.constrained_columns, intrinsic_widths.intrinsic_percentages, intrinsic_widths.has_intrinsic_percentage, intrinsic_widths.percentage_offsets, intrinsic_widths.has_originating_cells, table_state.content_width(), horizontal_spacing, fixed_mode)
-	column_offsets := table_column_offsets(column_widths, horizontal_spacing)
+	mut column_widths := distribute_table_width_to_columns(intrinsic_widths.column_min_widths, intrinsic_widths.column_max_widths, intrinsic_widths.constrained_columns, intrinsic_widths.intrinsic_percentages, intrinsic_widths.has_intrinsic_percentage, intrinsic_widths.percentage_offsets, intrinsic_widths.has_originating_cells, table_state.content_width(), horizontal_spacing, fixed_mode)
+	mut removed_column_width := CSSPixels.new(0)
+	for index in 0 .. column_widths.len {
+		if index < intrinsic_widths.collapsed_columns.len
+			&& intrinsic_widths.collapsed_columns[index] {
+			removed_column_width = removed_column_width.plus(column_widths[index]).plus(horizontal_spacing)
+			column_widths[index] = CSSPixels.new(0)
+		}
+	}
+	if removed_column_width.raw_value() > 0 {
+		table_state.set_content_width(table_state.content_width().minus(removed_column_width))
+	}
+	column_offsets := table_column_offsets(column_widths, horizontal_spacing, intrinsic_widths.collapsed_columns)
 	row_is_collapsed := rows.map(table_row_is_collapsed(it))
 	row_min_heights, _ := compute_table_row_intrinsic_measures(mut state, rows, placements, computed.border_collapse() == .collapse, table_height_percentage_basis, vertical_spacing)
 	mut row_heights := []CSSPixels{len: rows.len, init: CSSPixels.new(0)}
@@ -1922,7 +1985,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		}
 	}
 	for placement_index, placement in placements {
-		cell_width := table_column_range_width(column_offsets, placement.column, placement.column_span, horizontal_spacing)
+		cell_width := table_column_range_width(column_offsets, placement.column, placement.column_span, horizontal_spacing, intrinsic_widths.collapsed_columns)
 		styled := placement.cell.as_node_with_style() or { continue }
 		mut cell_state := state.get_mutable(styled)
 		cell_state.set_containing_block_used_values(table_state)
@@ -2058,7 +2121,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			// resolved height is the cell's border-box height. It writes that
 			// content height directly and reruns the already-created independent
 			// formatting context without recomputing or clamping the cell metrics.
-			cell_width := table_column_range_width(column_offsets, placement.column, placement.column_span, horizontal_spacing)
+			cell_width := table_column_range_width(column_offsets, placement.column, placement.column_span, horizontal_spacing, intrinsic_widths.collapsed_columns)
 			content_width := cell_width.minus(table_cell_measurement_inline_edges(cell_state, collapsed))
 			content_height := outer_height.minus(edges)
 			cell_state.set_content_width(content_width)
@@ -2129,8 +2192,9 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	}
 
 	mut row_offsets := []CSSPixels{len: rows.len}
-	table_grid_content_width := if column_count > 0 {
-		table_columns_total_width(column_widths).plus(horizontal_spacing.scaled(f64(column_count - 1)))
+	visible_column_count := table_visible_column_count(intrinsic_widths.collapsed_columns, column_count)
+	table_grid_content_width := if visible_column_count > 0 {
+		table_columns_total_width(column_widths).plus(horizontal_spacing.scaled(f64(visible_column_count - 1)))
 	} else {
 		CSSPixels.new(0)
 	}
@@ -2186,7 +2250,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			row_group_top_offset = row_group_top_offset.plus(vertical_spacing)
 		}
 	}
-	position_table_column_boxes(mut state, table, table_state, column_offsets, rows,
+	position_table_column_boxes(mut state, table, table_state, column_offsets, intrinsic_widths.collapsed_columns, rows,
 		row_is_collapsed, horizontal_spacing, vertical_spacing)
 	for placement_index, placement in placements {
 		styled := placement.cell.as_node_with_style() or { continue }
@@ -2225,7 +2289,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 				}
 			}
 		}
-		cell_state.set_content_x(table_cell_physical_offset(table, table_state.content_width(), column_offsets, placement, horizontal_spacing).plus(table_cell_content_offset_left(cell_state, collapsed)))
+		cell_state.set_content_x(table_cell_physical_offset(table, table_state.content_width(), column_offsets, placement, horizontal_spacing, intrinsic_widths.collapsed_columns).plus(table_cell_content_offset_left(cell_state, collapsed)))
 		cell_state.set_content_y(row_offsets[placement.row].plus(table_cell_content_offset_top(cell_state, collapsed)))
 	}
 	final_table_height := css_pixels_max(css_pixels_max(cursor_y, row_group_top_offset), table_grid_height)

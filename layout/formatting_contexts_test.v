@@ -2485,6 +2485,45 @@ fn test_collapsed_table_row_has_zero_height_and_does_not_advance_row_cursor() {
 	assert collapsed_cell.padding_bottom.to_double() == -9
 }
 
+fn test_collapsed_table_column_has_zero_width_and_no_border_spacing() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin:0 }
+		table { width:340px; border-spacing:10px; table-layout:fixed }
+		col { width:100px } td { height:10px; padding:0; border:0 }
+	</style><table id="table"><col><col id="collapsed" style="visibility:collapse"><col>
+		<tr id="row"><td id="first"></td><td id="middle"></td><td id="last"></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	table := used_for_id(result, 'table')
+	collapsed_column := used_for_id(result, 'collapsed')
+	row := used_for_id(result, 'row')
+	first := used_for_id(result, 'first')
+	middle := used_for_id(result, 'middle')
+	last := used_for_id(result, 'last')
+	assert table.content_width().to_double() == 230
+	assert collapsed_column.content_width().to_double() == 0
+	assert row.content_width().to_double() == 210
+	assert first.content_width().to_double() == 100
+	assert first.offset.x().to_double() == 10
+	assert middle.content_width().to_double() == 0
+	assert middle.offset.x().to_double() == 120
+	assert last.content_width().to_double() == 100
+	assert last.offset.x().to_double() == 120
+}
+
+fn test_collapsed_table_column_group_collapses_its_columns() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin:0 }
+		table { width:340px; border-spacing:10px; table-layout:fixed }
+		col { width:100px } td { height:10px; padding:0; border:0 }
+	</style><table id="table"><col><colgroup id="group" style="visibility:collapse"><col></colgroup><col>
+		<tr><td></td><td id="middle"></td><td id="last"></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'table').content_width().to_double() == 230
+	assert used_for_id(result, 'group').content_width().to_double() == 0
+	assert used_for_id(result, 'middle').content_width().to_double() == 0
+	assert used_for_id(result, 'last').offset.x().to_double() == 120
+}
+
 fn test_collapsed_table_row_group_spans_its_positioned_rows() {
 	document := html.parse_document('<!doctype html><style>
 		html, body { margin:0 } table { width:150px; height:160px; border-spacing:3px 5px }
