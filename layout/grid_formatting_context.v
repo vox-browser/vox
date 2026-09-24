@@ -185,24 +185,41 @@ fn set_grid_abspos_descendant_rects(mut state LayoutState, container &Node, ance
 	}
 }
 
-fn resolve_grid_table_wrapper_end_margin(mut state LayoutState, wrapper &Node, grid_area_width CSSPixels) {
-	if !wrapper.is_table_wrapper() {
-		return
-	}
+fn resolve_grid_table_wrapper_width(mut state LayoutState, wrapper &Node, mut wrapper_state UsedValues, grid_area_width CSSPixels, alignment GridItemAlignment) CSSPixels {
+	mut wrapper_width := compute_table_wrapper_content_width(mut state, wrapper, mut wrapper_state,
+		grid_area_width)
+	mut table := ?&Node(none)
 	for child in wrapper.children() {
-		if !child.display().is_table_inside() {
-			continue
+		if child.display().is_table_inside() {
+			table = child
+			break
 		}
-		styled := child.as_node_with_style() or { return }
-		mut table_state := state.get_mutable(styled)
-		remaining := grid_area_width.minus(table_state.margin_box_width())
-		if child.computed_values().direction() == .rtl {
-			table_state.margin_left = table_state.margin_left.plus(remaining)
-		} else {
-			table_state.margin_right = table_state.margin_right.plus(remaining)
-		}
-		return
 	}
+	table_node := table or { return wrapper_width }
+	table_style := table_node.computed_values()
+	if !table_style.size_value(.width).is_auto() || alignment !in [.normal, .stretch]
+		|| property_is_auto(wrapper.computed_values(), .margin_left)
+		|| property_is_auto(wrapper.computed_values(), .margin_right) {
+		return wrapper_width
+	}
+	mut stretched := css_pixels_max(CSSPixels.new(0),
+		grid_area_width.minus(flex_or_grid_item_outer_inline_edges(wrapper_state)))
+	maximum := table_style.size_value(.max_width)
+	if !maximum.is_none() {
+		if maximum.is_intrinsic_sizing_constraint() {
+			stretched = css_pixels_min(stretched, wrapper_width)
+		} else if maximum_width := resolve_layout_size(table_node, maximum, grid_area_width) {
+			table_styled := table_node.as_node_with_style() or { return wrapper_width }
+			table_state := state.get(table_styled)
+			maximum_border_box_width := if table_style.box_sizing() == .border_box {
+				maximum_width
+			} else {
+				maximum_width.plus(table_state.border_left).plus(table_state.padding_left).plus(table_state.padding_right).plus(table_state.border_right)
+			}
+			stretched = css_pixels_min(stretched, maximum_border_box_width)
+		}
+	}
+	return css_pixels_max(wrapper_width, stretched)
 }
 
 fn grid_track_from_size(node &Node, size css.GridSize, basis CSSPixels, available_is_definite bool, auto_fit bool) GridTrack {
@@ -2143,9 +2160,10 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 		has_auto_inline_margin := property_is_auto(placement.item.computed_values(), .margin_left)
 			|| property_is_auto(placement.item.computed_values(), .margin_right)
 		mut forced_width := if placement.item.is_table_wrapper() {
-			?CSSPixels(compute_table_wrapper_content_width(mut state, placement.item, mut item_state, area_width))
+			?CSSPixels(resolve_grid_table_wrapper_width(mut state, placement.item, mut item_state,
+				area_width, inline_alignment))
 		} else if inline_alignment in [.normal, .stretch] && width_is_auto
-			&& !placement.item.is_replaced_box() && !placement.item.is_table_wrapper()
+			&& !placement.item.is_replaced_box()
 			&& !has_auto_inline_margin {
 			?CSSPixels(area_width.minus(flex_or_grid_item_outer_inline_edges(item_state)))
 		} else if width_is_auto && !placement.item.is_replaced_box() {
@@ -2371,11 +2389,6 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 				none
 			}, item_state.content_width(), clamped_height)
 		}
-		// The anonymous table wrapper shrink-wraps, but the principal table's
-		// CSS 2.1 width equation still uses the grid area as its containing
-		// inline size upstream. Preserve that consumed end margin separately
-		// from the wrapper's own fit-content width.
-		resolve_grid_table_wrapper_end_margin(mut state, placement.item, area_width)
 		inline_margin_space := area_width.minus(item_state.margin_box_width())
 		if inline_margin_space.raw_value() > 0 && left_margin_auto && right_margin_auto {
 			item_state.margin_left = inline_margin_space.divided_by_float(2)

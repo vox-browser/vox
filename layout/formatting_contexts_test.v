@@ -4377,3 +4377,56 @@ fn test_size_containment_uses_explicit_intrinsic_inner_sizes() {
 		assert used.content_height().to_double() == 222, id
 	}
 }
+
+// A display:table grid item is represented by its anonymous table wrapper.
+// Grid placement and alignment therefore live on that wrapper, while its used
+// inline size still comes from the principal table's width algorithm.
+fn test_grid_table_wrappers_use_table_constraints_and_grid_item_properties() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		.grid { display:grid; grid-template-columns:100px 100px; width:200px }
+		.wide-grid { grid-template-columns:300px; width:300px }
+		.table { display:table; height:20px }
+		.cell { display:table-cell }
+		.narrow { display:inline-block; width:20px; height:20px }
+		.wide { display:inline-block; width:160px; height:20px }
+		.segment { display:inline-block; width:80px; height:20px }
+		#end { width:50px; justify-self:end }
+		.maximum { max-width:60px }
+		#minimum { max-width:min-content }
+		#fit { max-width:fit-content(120px) }
+		#late { width:50px; order:2 }
+		#early { width:50px; order:1 }
+	</style>
+	<div class="grid"><div id="end" class="table"><i class="cell"><b class="narrow"></b></i></div></div>
+	<div class="grid"><div id="narrow-max" class="table maximum"><i class="cell"><b class="narrow"></b></i></div></div>
+	<div class="grid"><div id="wide-max" class="table maximum"><i class="cell"><b class="wide"></b></i></div></div>
+	<div class="grid wide-grid"><div id="minimum" class="table"><i class="cell"><b class="segment"></b> <b class="segment"></b></i></div></div>
+	<div class="grid wide-grid"><div id="fit" class="table"><i class="cell"><b class="segment"></b> <b class="segment"></b></i></div></div>
+	<div class="grid"><div id="late" class="table"><i class="cell"><b class="narrow"></b></i></div><div id="early" class="table"><i class="cell"><b class="narrow"></b></i></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+
+	end_node := layout_node_with_id(result.root, 'end') or { panic('missing #end') }
+	end_wrapper := end_node.parent() or { panic('#end has no wrapper') }
+	end_wrapper_style := end_wrapper.as_node_with_style() or { panic('#end wrapper has no style') }
+	end_wrapper_used := result.used_values_for(end_wrapper_style) or { panic('#end wrapper has no used values') }
+	assert end_wrapper.is_table_wrapper()
+	assert end_wrapper_used.content_width().to_double() == 50
+	assert end_wrapper_used.offset.x().to_double() == 50
+	assert used_for_id(result, 'end').margin_right.to_double() == 0
+
+	assert used_for_id(result, 'narrow-max').content_width().to_double() == 60
+	assert used_for_id(result, 'wide-max').content_width().to_double() == 160
+	assert used_for_id(result, 'minimum').content_width().to_double() == 80
+	assert used_for_id(result, 'fit').content_width().to_double() == 120
+	early_node := layout_node_with_id(result.root, 'early') or { panic('missing #early') }
+	late_node := layout_node_with_id(result.root, 'late') or { panic('missing #late') }
+	early_wrapper := (early_node.parent() or { panic('#early has no wrapper') }).as_node_with_style() or {
+		panic('#early wrapper has no style')
+	}
+	late_wrapper := (late_node.parent() or { panic('#late has no wrapper') }).as_node_with_style() or {
+		panic('#late wrapper has no style')
+	}
+	assert (result.used_values_for(early_wrapper) or { panic('#early wrapper has no values') }).offset.x().to_double() == 0
+	assert (result.used_values_for(late_wrapper) or { panic('#late wrapper has no values') }).offset.x().to_double() == 100
+}

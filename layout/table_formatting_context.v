@@ -1904,56 +1904,50 @@ fn compute_table_wrapper_content_width(mut state LayoutState, wrapper &Node, mut
 	intrinsic_widths := calculate_table_grid_intrinsic_widths(mut state, table_node, containing_width)
 	grid_min := intrinsic_widths.grid_min
 	grid_max := intrinsic_widths.grid_max
-	used_min_width := css_pixels_max(grid_min, intrinsic_widths.capmin)
+	resolve_width_constraint := fn [table_node, table_state, containing_width, grid_min, grid_max] (constraint css.Size) CSSPixels {
+		if constraint.is_min_content() {
+			return grid_min
+		}
+		if constraint.is_max_content() {
+			return grid_max
+		}
+		if constraint.is_fit_content() {
+			available := constraint.fit_content_available_space() or { return grid_min }
+			limit := available.to_px(layout_length_resolution_context(table_node), containing_width)
+			return css_pixels_min(grid_max, css_pixels_max(grid_min, limit))
+		}
+		return resolve_layout_content_size(table_node, constraint, containing_width, table_state,
+			true) or { CSSPixels.new(0) }
+	}
+	mut used_min_width := css_pixels_max(grid_min, intrinsic_widths.capmin)
+	minimum := table_styled.computed_values().size_value(.min_width)
+	if !minimum.is_auto() {
+		used_min_width = css_pixels_max(used_min_width, resolve_width_constraint(minimum))
+	}
 	mut table_content_width := used_min_width
-	if table_width.is_min_content() || wrapper_state.width_constraint == .min_content {
+	if wrapper_state.width_constraint == .min_content {
 		table_content_width = grid_min
-	} else if table_width.is_max_content() || wrapper_state.width_constraint == .max_content {
+	} else if wrapper_state.width_constraint == .max_content || table_width.is_max_content() {
 		table_content_width = grid_max
 	} else if table_width.is_auto() {
 		available_wrapper_content_width := containing_width.minus(wrapper_state.margin_box_left()).minus(wrapper_state.margin_box_right())
 		available_table_content_width := available_wrapper_content_width.minus(table_state.border_box_left()).minus(table_state.border_box_right())
 		table_content_width = css_pixels_max(css_pixels_min(grid_max, available_table_content_width), used_min_width)
 		table_content_width = css_pixels_min(css_pixels_max(table_content_width, intrinsic_widths.percentage_adjusted_width), available_table_content_width)
-	} else if specified := resolve_layout_content_size(table_node, table_width, containing_width, table_state, true) {
-		table_content_width = css_pixels_max(specified, used_min_width)
+	} else {
+		table_content_width = css_pixels_max(resolve_width_constraint(table_width), used_min_width)
 	}
-	table_content_width = clamp_layout_content_size(table_node, table_content_width, containing_width, table_state, true)
-	table_border_box_width := if table_width.is_auto() {
+	maximum := table_styled.computed_values().size_value(.max_width)
+	if !maximum.is_none() {
+		table_content_width = css_pixels_min(table_content_width, resolve_width_constraint(maximum))
+	}
+	// min-width wins when it conflicts with max-width.
+	table_content_width = css_pixels_max(table_content_width, used_min_width)
+	return if table_width.is_auto() {
 		table_content_width.plus(table_state.border_box_left()).plus(table_state.border_box_right())
 	} else {
 		table_content_width.plus(table_state.border_left).plus(table_state.padding_left).plus(table_state.padding_right).plus(table_state.border_right)
 	}
-	return table_border_box_width
-}
-
-fn table_wrapper_participates_as_grid_item(table &Node) bool {
-	mut ancestor := table.parent()
-	for ancestor != none {
-		current := ancestor or { break }
-		if current.is_grid_item() {
-			return true
-		}
-		ancestor = current.parent()
-	}
-	return false
-}
-
-// Grid intrinsic track sizing can run the table wrapper at its min-content
-// width before the grid item is stretched. The principal table's later table
-// width calculation replaces its content width, but the CSS 2.1 block-width
-// pass's consumed end margin remains from that intrinsic wrapper pass.
-fn preserve_grid_intrinsic_table_end_margin(mut state LayoutState, table &Node, mut table_state UsedValues, percentage_basis CSSPixels) {
-	if !table_wrapper_participates_as_grid_item(table) || !table.computed_values().size_value(.width).contains_percentage() {
-		return
-	}
-	grid_min := calculate_table_grid_intrinsic_width(mut state, table, percentage_basis, .min_content)
-	intrinsic_wrapper_width := grid_min.plus(table_state.border_box_left()).plus(table_state.border_box_right())
-	mut intrinsic_table_state := UsedValues{}
-	resolve_box_model_edges(table.computed_values(), mut intrinsic_table_state, intrinsic_wrapper_width.to_double())
-	compute_block_used_width(table.computed_values(), mut intrinsic_table_state, intrinsic_wrapper_width.to_double())
-	table_state.margin_left = intrinsic_table_state.margin_left
-	table_state.margin_right = intrinsic_table_state.margin_right
 }
 
 fn layout_table_captions(mut state LayoutState, table &Node, mut table_state UsedValues, side css.CaptionSide, start_y CSSPixels, caption_available_height AvailableSize) CSSPixels {
@@ -2064,15 +2058,17 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	}
 	if computed.size_value(.width).contains_percentage() {
 		// Percentages on the principal table are relative to the table wrapper's
-		// containing block, not to the anonymous wrapper itself. The generic
-		// child-width pass intentionally ran first so its over-constraint end
-		// margin is retained, as in LibWeb.
+		// containing block, not to the anonymous wrapper itself.
 		if wrapper_state := table_state.containing_block_used_values() {
 			if outer_containing_state := wrapper_state.containing_block_used_values() {
-				preserve_grid_intrinsic_table_end_margin(mut state, table, mut table_state, outer_containing_state.content_width())
 				if resolved := resolve_layout_content_size(table, computed.size_value(.width), outer_containing_state.content_width(), table_state, true) {
 					table_state.set_content_width(clamp_layout_content_size(table, resolved, outer_containing_state.content_width(), table_state, true))
 					table_state.set_has_definite_width(true)
+					// The table root's authored margins live on its anonymous
+					// wrapper. Do not retain the generic block-width pass's
+					// over-constraint remainder on the inner table box.
+					table_state.margin_left = CSSPixels.new(0)
+					table_state.margin_right = CSSPixels.new(0)
 				}
 			}
 		}

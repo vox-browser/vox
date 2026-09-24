@@ -1997,7 +1997,9 @@ pub fn (mut c ComputedProperties) take_properties_for_table_wrapper() &ComputedP
 	}
 	mut wrapper := c.clone_for_anonymous_with_display(wrapper_display)
 	for property_id in [PropertyID.position, .position_anchor, .top, .right, .bottom, .left, .float_,
-		.clear, .margin_top, .margin_right, .margin_bottom, .margin_left, .z_index] {
+		.clear, .grid_column_end, .grid_column_start, .grid_row_end, .grid_row_start,
+		.align_self, .justify_self, .order, .margin_top, .margin_right, .margin_bottom,
+		.margin_left, .z_index] {
 		if value := c.property(property_id, .no) {
 			wrapper.set_property_without_modifying_flags(property_id, value)
 		}
