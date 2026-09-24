@@ -2718,14 +2718,14 @@ fn test_table_cell_min_height_affects_row_measure_but_not_cell_content_height() 
 	assert span.content_height().to_double() == 7
 }
 
-fn test_table_caption_position_ignores_own_margins_at_wrapper_origin() {
+fn test_table_caption_flows_inside_the_wrapper_with_its_outer_edges() {
 	document := html.parse_document('<!doctype html><style>
 		table { width:200px; border-spacing:0 } caption { height:10px; margin:3px 7px; padding:5px } td { height:20px; padding:0 }
 	</style><table><caption id="caption"><div></div></caption><tr><td></td></tr></table>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	caption := used_for_id(result, 'caption')
-	assert caption.offset.x().to_double() == 5
-	assert caption.offset.y().to_double() == 0
+	assert caption.offset.x().to_double() == 12
+	assert caption.offset.y().to_double() == 8
 }
 
 fn test_table_caption_uses_its_content_width_to_lay_out_descendants() {
@@ -2736,9 +2736,35 @@ fn test_table_caption_uses_its_content_width_to_lay_out_descendants() {
 	caption := used_for_id(result, 'caption')
 	inside := used_for_id(result, 'inside')
 	assert caption.content_width().to_double() == 100
-	assert caption.offset.x().to_double() == 0
+	assert caption.offset.x().to_double() == 5
 	assert inside.content_width().to_double() == 100
 	assert inside.offset.x().to_double() == 0
+}
+
+fn test_table_wrapper_flow_includes_bottom_captions_and_stretches_the_grid() {
+	document := html.parse_document('<!doctype html><style>
+		* { margin:0; padding:0 } table { border-spacing:0 } .flex { display:flex } .table { display:table }
+		.cell { display:table-cell } .sizer { width:20px; height:100px }
+		caption { height:20px } td { height:30px }
+	</style><table id="bottom"><caption style="caption-side:bottom"></caption><tr><td></td></tr></table>
+	<div class="flex"><div id="stretched" class="table"><div style="display:table-caption;height:20px"></div><div class="cell"></div></div><div class="sizer"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	bottom_node := layout_node_with_id(result.root, 'bottom') or { panic('missing bottom table') }
+	bottom_wrapper := bottom_node.parent() or { panic('missing bottom table wrapper') }
+	bottom_wrapper_state := result.used_values_for(bottom_wrapper.as_node_with_style() or {
+		panic('bottom wrapper has no style')
+	}) or { panic('bottom wrapper has no used values') }
+	assert bottom_wrapper_state.content_height().to_double() == 50
+
+	stretched_node := layout_node_with_id(result.root, 'stretched') or {
+		panic('missing stretched table')
+	}
+	stretched_wrapper := stretched_node.parent() or { panic('missing stretched wrapper') }
+	stretched_wrapper_state := result.used_values_for(stretched_wrapper.as_node_with_style() or {
+		panic('stretched wrapper has no style')
+	}) or { panic('stretched wrapper has no used values') }
+	assert stretched_wrapper_state.content_height().to_double() == 100
+	assert used_for_id(result, 'stretched').content_height().to_double() == 80
 }
 
 fn test_table_caption_capmin_includes_outer_edges_and_definite_width() {

@@ -625,6 +625,18 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 		} else {
 			AvailableSize.make_indefinite()
 		}
+		// A table wrapper stretched by flex/grid gives its principal table the
+		// definite block space left for the table-and-caption flow. The table
+		// context subtracts caption outer sizes before distributing the grid.
+		if definite_content_height == none && box_as_node.display().is_table_inside() {
+			if parent := box_as_node.parent() {
+				if parent.is_table_wrapper() {
+					if wrapper_height := containing_block_height {
+						available_height = AvailableSize.make_definite(css_px(wrapper_height))
+					}
+				}
+			}
+		}
 		// BlockFormattingContext::layout_block_level_box(): an independent
 		// formatting context with auto height and a non-auto min-height is
 		// measured first. If the result is smaller than the minimum, its real

@@ -441,7 +441,30 @@ fn layout_inside_independent_formatting_context_without_containment_override(mut
 	// A run's trailing collapsed margin replaces the last real child's own
 	// bottom margin for this calculation without mutating that child.
 	mut height := CSSPixels.new(0)
-	for child in box.children() {
+	mut automatic_height_children := box.children()
+	if box.is_table_wrapper() {
+		mut wrapper_flow_children := []&Node{}
+		for table in box.children() {
+			if !table.display().is_table_inside() {
+				continue
+			}
+			for caption in table.children() {
+				if caption.display().is_table_caption() && !caption.is_absolutely_positioned()
+					&& caption.computed_values().caption_side() == .top {
+					wrapper_flow_children << caption
+				}
+			}
+			wrapper_flow_children << table
+			for caption in table.children() {
+				if caption.display().is_table_caption() && !caption.is_absolutely_positioned()
+					&& caption.computed_values().caption_side() == .bottom {
+					wrapper_flow_children << caption
+				}
+			}
+		}
+		automatic_height_children = wrapper_flow_children.clone()
+	}
+	for child in automatic_height_children {
 		if child.is_absolutely_positioned() {
 			continue
 		}

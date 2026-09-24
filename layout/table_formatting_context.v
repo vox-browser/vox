@@ -1952,7 +1952,8 @@ fn layout_table_captions(mut state LayoutState, table &Node, mut table_state Use
 	mut total_height := CSSPixels.new(0)
 	caption_available_width := table_state.border_box_width()
 	for child in table.children() {
-		if !child.display().is_table_caption() || child.computed_values().caption_side() != side {
+		if !child.display().is_table_caption() || child.is_absolutely_positioned()
+			|| child.computed_values().caption_side() != side {
 			continue
 		}
 		styled := child.as_node_with_style() or { continue }
@@ -1992,21 +1993,27 @@ fn layout_table_captions(mut state LayoutState, table &Node, mut table_state Use
 		} else {
 			caption_state.set_content_height(result.automatic_content_height)
 		}
-		// run_caption_layout() aligns the caption's border box, not its
-		// margin box, with the table wrapper. Top captions keep the origin
-		// assigned by their independent BFC; bottom captions add only their
-		// own margin-box top to the table's margin-box bottom. Multiple
-		// captions therefore overlap upstream rather than advancing a cursor.
-		caption_state.set_content_x(if caption_width.is_auto() {
-			caption_state.border_box_left()
-		} else {
-			CSSPixels.new(0)
-		})
-		caption_state.set_content_y(start_y.plus(if side == .bottom {
-			caption_state.margin_box_top()
-		} else {
-			CSSPixels.new(0)
-		}))
+		// Captions are block-level children of the table wrapper's BFC. Keep
+		// their tree ownership under the table, but place their content boxes
+		// in wrapper flow order: top margin/border/padding, content, then the
+		// remaining outer edges before the next flow child.
+		caption_state.set_content_x(caption_state.margin_box_left())
+		caption_state.set_content_y(start_y.plus(total_height).plus(caption_state.margin_box_top()))
+		total_height = total_height.plus(caption_state.margin_box_height())
+	}
+	return total_height
+}
+
+fn position_table_captions(mut state LayoutState, table &Node, side css.CaptionSide, start_y CSSPixels) CSSPixels {
+	mut total_height := CSSPixels.new(0)
+	for child in table.children() {
+		if !child.display().is_table_caption() || child.is_absolutely_positioned()
+			|| child.computed_values().caption_side() != side {
+			continue
+		}
+		styled := child.as_node_with_style() or { continue }
+		mut caption_state := state.get_mutable(styled)
+		caption_state.set_content_y(start_y.plus(total_height).plus(caption_state.margin_box_top()))
 		total_height = total_height.plus(caption_state.margin_box_height())
 	}
 	return total_height
@@ -2038,17 +2045,12 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	placements := intrinsic_widths.placements
 	column_definitions := intrinsic_widths.column_definitions
 	column_count := intrinsic_widths.column_count
-	_ = layout_table_captions(mut state, table, mut table_state, .top, CSSPixels.new(0),
+	top_caption_height := layout_table_captions(mut state, table, mut table_state, .top,
+		CSSPixels.new(0),
 		available_space.height)
-	for child in table.children() {
-		if !child.display().is_table_caption() || child.computed_values().caption_side() != .top {
-			continue
-		}
-		if styled := child.as_node_with_style() {
-			caption_state := state.get(styled)
-			table_state.set_content_y(caption_state.content_height().plus(caption_state.margin_box_bottom()))
-		}
-	}
+	bottom_caption_height := layout_table_captions(mut state, table, mut table_state, .bottom,
+		CSSPixels.new(0), available_space.height)
+	table_state.set_content_y(top_caption_height.plus(table_state.margin_box_top()))
 	computed := table.computed_values()
 	resolve_collapsed_table_borders(mut state, table, rows, placements, column_definitions, column_count)
 	if computed.border_collapse() == .collapse {
@@ -2265,6 +2267,14 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		if specified_height := resolve_layout_content_size(table, table_height, percentage_basis, table_state, false) {
 			table_grid_height = css_pixels_max(table_grid_height, specified_height)
 		}
+	}
+	if available_space.height.is_definite() {
+		caption_height := top_caption_height.plus(bottom_caption_height)
+		required_outer_height := css_pixels_max(available_space.height.to_px_or_zero().minus(caption_height),
+			CSSPixels.new(0))
+		required_grid_height := css_pixels_max(required_outer_height.minus(table_state.margin_box_top()).minus(table_state.margin_box_bottom()),
+			CSSPixels.new(0))
+		table_grid_height = css_pixels_max(table_grid_height, required_grid_height)
 	}
 	mut reference_heights := row_heights.clone()
 	for index, row in rows {
@@ -2495,8 +2505,8 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	store_table_part_baselines(mut state, table, table_state, rows, row_offsets, row_heights,
 		row_baselines, row_has_baseline, row_smallest_cell_end_offset, row_has_cell,
 		row_is_collapsed)
-	_ = layout_table_captions(mut state, table, mut table_state, .bottom,
-		table_state.margin_box_height(), available_space.height)
+	bottom_caption_start := table_state.offset.y().plus(table_state.content_height()).plus(table_state.margin_box_bottom())
+	_ = position_table_captions(mut state, table, .bottom, bottom_caption_start)
 	if table.is_inline_table() {
 		initialize_trailing_table_whitespace_state(mut state, table)
 	}
