@@ -122,6 +122,7 @@
   Visible placeholders overlay the full-width editor instead of collapsing it;
   number inputs group both layers in a dedicated flex item ahead of the steppers,
   and textareas use the same full-width flex overlay in every writing mode.
+  Placeholder layers are excluded from hit testing and text selection.
 - Reload reconstructs child session history, nested windows inherit their
   top-level creation URL and origin, exhausted navigation bodies are released,
   and removing the body no longer leaves an otherwise loaded document
