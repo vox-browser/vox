@@ -444,14 +444,58 @@ fn initialize_trailing_table_whitespace_state(mut state LayoutState, node &Node)
 	values.set_content_offset(CSSPixelPoint.new(CSSPixels.new(0), CSSPixels.new(0)))
 }
 
-fn collect_typed_table_rows(node &Node, mut rows []&Node) {
-	for child in node.children() {
-		if child.display().is_table_row() {
-			rows << child
-		} else if child.display().is_table_row_group() || child.display().is_table_header_group() || child.display().is_table_footer_group() {
-			collect_typed_table_rows(child, mut rows)
+// CSS 2 lays out the first header group before all ordinary rows and the first
+// footer group after them. Later header/footer groups retain tree order and are
+// treated like ordinary row groups.
+fn table_row_containers_in_layout_order(table &Node) []&Node {
+	mut containers := []&Node{}
+	mut header_index := -1
+	mut footer_index := -1
+	for child in table.children() {
+		display := child.display()
+		if !display.is_table_row() && !display.is_table_row_group()
+			&& !display.is_table_header_group() && !display.is_table_footer_group() {
+			continue
+		}
+		if header_index < 0 && display.is_table_header_group() {
+			header_index = containers.len
+		}
+		if footer_index < 0 && display.is_table_footer_group() {
+			footer_index = containers.len
+		}
+		containers << child
+	}
+	mut ordered := []&Node{cap: containers.len}
+	if header_index >= 0 {
+		ordered << containers[header_index]
+	}
+	for index, container in containers {
+		if index != header_index && index != footer_index {
+			ordered << container
 		}
 	}
+	if footer_index >= 0 {
+		ordered << containers[footer_index]
+	}
+	return ordered
+}
+
+fn collect_table_rows_in_layout_order(table &Node, mut rows []&Node) {
+	for container in table_row_containers_in_layout_order(table) {
+		if container.display().is_table_row() {
+			rows << container
+			continue
+		}
+		for child in container.children() {
+			if child.display().is_table_row() {
+				rows << child
+			}
+		}
+	}
+}
+
+fn collect_typed_table_rows(table &Node, mut rows []&Node) {
+	collect_table_rows_in_layout_order(table, mut rows)
 }
 
 fn table_span(node &Node, attribute string) int {
@@ -2027,7 +2071,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	// while walking each group's own rows. This is linear in the grid size and
 	// also leaves an empty group at the current cursor after preceding groups.
 	mut row_group_top_offset := vertical_spacing
-	for group in table.children() {
+	for group in table_row_containers_in_layout_order(table) {
 		if !group.display().is_table_row_group() && !group.display().is_table_header_group() && !group.display().is_table_footer_group() {
 			continue
 		}

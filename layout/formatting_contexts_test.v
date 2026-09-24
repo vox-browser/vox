@@ -2208,6 +2208,29 @@ fn test_collapsed_table_ignores_authored_padding() {
 	assert separate.padding_bottom.to_double() == 10
 }
 
+fn test_table_lays_out_first_header_first_and_first_footer_last() {
+	document := html.parse_document('<!doctype html><style>
+		#table { display:table; border-spacing:0 }
+		.group { display:table-row-group }
+		.header { display:table-header-group }
+		.footer { display:table-footer-group }
+		.row { display:table-row; height:10px }
+		.cell { display:table-cell }
+	</style><div id="table">
+		<div class="footer"><div class="row" id="footer"><div class="cell"></div></div></div>
+		<div class="header"><div class="row" id="header"><div class="cell"></div></div></div>
+		<div class="group"><div class="row" id="body"><div class="cell"></div></div></div>
+		<div class="header"><div class="row" id="second-header"><div class="cell"></div></div></div>
+		<div class="footer"><div class="row" id="second-footer"><div class="cell"></div></div></div>
+	</div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'header').offset.y().to_double() == 0
+	assert used_for_id(result, 'body').offset.y().to_double() == 10
+	assert used_for_id(result, 'second-header').offset.y().to_double() == 20
+	assert used_for_id(result, 'second-footer').offset.y().to_double() == 30
+	assert used_for_id(result, 'footer').offset.y().to_double() == 40
+}
+
 fn test_table_auto_layout_uses_definite_cell_width_contributions() {
 	document := html.parse_document('<!doctype html><style>
 		table { width:160px; border-spacing:0 }
