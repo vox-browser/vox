@@ -343,6 +343,9 @@
   property guards include function identity, arguments substitute before arity
   rejection, and custom-property dependencies retain access to the function
   registry.
+- Grid track values parse and serialize `subgrid` line-name lists, including
+  fixed and `auto-fill` name repeats. Separate adjacent line-name sets are
+  retained, and interpolation/composition involving a subgrid remains discrete.
 - Custom properties declared in `@keyframes` now animate. Registered values
   interpolate as typed computed values, unregistered values animate discretely,
   composition and `!important` suppression follow the upstream rules, and the
