@@ -4484,3 +4484,78 @@ fn test_inline_end_static_position_survives_anonymous_wrapper_fixup() {
 	assert positioned_used.static_position().x().to_double() == 0
 	assert positioned_used.static_position().y().to_double() == 40
 }
+
+fn test_subgrid_inherits_tracks_and_contributes_descendants_to_parent_sizing() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		.inline-grid { display:inline-grid; vertical-align:top }
+		.subgrid { display:grid; grid-template-columns:subgrid }
+		#matching { grid-template-columns:auto auto }
+		#matching-subgrid { grid-column:1 / span 2 }
+		#matching-item { grid-column:2; width:200px; height:10px }
+		#basic { grid-template-columns:auto }
+		#basic-item { width:200px; height:10px }
+		#edge { grid-template-columns:auto }
+		#edge-subgrid { border-left:5px solid; border-right:7px solid; margin-left:10px; margin-right:13px; padding-left:15px; padding-right:20px }
+		#edge-item { width:100px; height:10px }
+		#auto-span { display:grid; grid-template-columns:40px 50px 60px }
+		#auto-subgrid { grid-template-columns:subgrid [a] [b] [c] }
+		#auto-item { grid-column:2; height:10px }
+		#gap { display:grid; width:300px; grid-template-columns:100px 1fr; column-gap:50px }
+		#gap-subgrid { grid-column:1 / span 2; column-gap:0 }
+		#gap-left { grid-column:1; height:10px }
+		#gap-right { grid-column:2; height:10px }
+		#rows { display:grid; grid-template-columns:30px 30px; grid-template-rows:20px }
+		#rows-subgrid { grid-column:1 / span 2; grid-row:1; grid-template-rows:subgrid }
+		#row-first, #row-second { grid-column:1; height:10px }
+	</style>
+	<div id="matching" style="display:inline-grid;grid-template-columns:auto auto"><div id="matching-subgrid" style="display:grid;grid-column-start:1;grid-column-end:span 2;grid-template-columns:subgrid"><div id="matching-item" style="grid-column-start:2;width:200px;height:10px"></div></div></div>
+	<div id="basic" style="display:inline-grid;grid-template-columns:auto"><div id="basic-subgrid" style="display:grid;grid-template-columns:subgrid"><div id="basic-item" style="width:200px;height:10px"></div></div></div>
+	<div id="edge" style="display:inline-grid;grid-template-columns:auto"><div id="edge-subgrid" style="display:grid;grid-template-columns:subgrid;border-left:5px solid;border-right:7px solid;margin-left:10px;margin-right:13px;padding-left:15px;padding-right:20px"><div id="edge-item" style="width:100px;height:10px"></div></div></div>
+	<div id="auto-span" style="display:grid;grid-template-columns:40px 50px 60px"><div id="auto-subgrid" style="display:grid;grid-template-columns:subgrid [a] [b] [c]"><div id="auto-item" style="grid-column-start:2;height:10px"></div></div></div>
+	<div id="gap" style="display:grid;width:300px;grid-template-columns:100px 1fr;column-gap:50px"><div id="gap-subgrid" style="display:grid;grid-column-start:1;grid-column-end:span 2;grid-template-columns:subgrid;column-gap:0"><div id="gap-left" style="grid-column-start:1;height:10px"></div><div id="gap-right" style="grid-column-start:2;height:10px"></div></div></div>
+	<div id="rows" style="display:grid;grid-template-columns:30px 30px;grid-template-rows:20px"><div id="rows-subgrid" style="display:grid;grid-column-start:1;grid-column-end:span 2;grid-row-start:1;grid-template-columns:subgrid;grid-template-rows:subgrid"><div id="row-first" style="grid-column-start:1;height:10px"></div><div id="row-second" style="grid-column-start:1;height:10px"></div></div></div>
+	<div id="clamp" style="display:grid;grid-template-columns:100px"><div style="display:grid;grid-template-columns:subgrid"><div id="clamp-first" style="grid-column-start:2;width:10px;height:10px"></div><div id="clamp-second" style="grid-column-start:2;width:10px;height:10px"></div></div></div>
+	<div id="no-parent" style="display:grid;grid-template-columns:subgrid [a] [b] [c] [d];grid-auto-columns:10px;width:100px"><i style="grid-row-start:1;width:10px;height:10px"></i><div id="no-parent-target" style="grid-column-start:a;grid-column-end:d;height:10px"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+
+	matching := used_for_id(result, 'matching')
+	assert matching.grid_template_columns().len == 2
+	assert matching.grid_template_columns()[0].to_double() == 0
+	assert matching.grid_template_columns()[1].to_double() == 200
+	assert used_for_id(result, 'matching-item').content_width().to_double() == 200
+
+	assert used_for_id(result, 'basic').content_width().to_double() == 200
+	assert used_for_id(result, 'basic-subgrid').border_box_width().to_double() == 200
+	assert used_for_id(result, 'basic-item').content_width().to_double() == 200
+
+	assert used_for_id(result, 'edge').content_width().to_double() == 170
+	assert used_for_id(result, 'edge-subgrid').border_box_width().to_double() == 147
+	assert used_for_id(result, 'edge-item').content_width().to_double() == 100
+	assert used_for_id(result, 'edge-item').offset.x().to_double() == 0
+
+	assert used_for_id(result, 'auto-subgrid').content_width().to_double() == 90
+	assert used_for_id(result, 'auto-subgrid').grid_columns_are_subgrid()
+	assert used_for_id(result, 'auto-subgrid').grid_column_line_names() == [['a'], ['b'],
+		['c']]
+	assert used_for_id(result, 'auto-item').offset.x().to_double() == 40
+	assert used_for_id(result, 'auto-item').content_width().to_double() == 50
+
+	assert used_for_id(result, 'gap-left').offset.x().to_double() == 0
+	assert used_for_id(result, 'gap-left').content_width().to_double() == 125
+	assert used_for_id(result, 'gap-right').offset.x().to_double() == 125
+	assert used_for_id(result, 'gap-right').content_width().to_double() == 175
+
+	assert used_for_id(result, 'row-first').offset.y().to_double() == 0
+	assert used_for_id(result, 'row-second').offset.y().to_double() == 0
+	assert used_for_id(result, 'row-first').content_width().to_double() == 30
+	assert used_for_id(result, 'row-second').content_width().to_double() == 30
+
+	assert used_for_id(result, 'clamp-first').offset.x().to_double() == 0
+	assert used_for_id(result, 'clamp-first').offset.y().to_double() == 0
+	assert used_for_id(result, 'clamp-second').offset.x().to_double() == 0
+	assert used_for_id(result, 'clamp-second').offset.y().to_double() == 10
+	assert !used_for_id(result, 'no-parent').grid_columns_are_subgrid()
+	assert used_for_id(result, 'no-parent-target').offset.x().to_double() == 10
+	assert used_for_id(result, 'no-parent-target').content_width().to_double() == 10
+}

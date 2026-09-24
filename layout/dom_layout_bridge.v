@@ -482,6 +482,8 @@ fn copy_used_box_model_to_dom_layout_node(mut placeholder dom.LayoutNode, used &
 	placeholder.used_grid_template_rows_ = used_rows
 	placeholder.used_grid_column_line_names_ = used.grid_column_line_names().clone()
 	placeholder.used_grid_row_line_names_ = used.grid_row_line_names().clone()
+	placeholder.used_grid_columns_are_subgrid_ = used.grid_columns_are_subgrid()
+	placeholder.used_grid_rows_are_subgrid_ = used.grid_rows_are_subgrid()
 }
 
 fn dom_pseudo_element_for_layout_node(pseudo_element ?css.PseudoElement) ?dom.PseudoElement {

@@ -1372,6 +1372,8 @@ pub mut:
 	used_grid_template_rows_                        []f64
 	used_grid_column_line_names_                    [][]string
 	used_grid_row_line_names_                       [][]string
+	used_grid_columns_are_subgrid_                  bool
+	used_grid_rows_are_subgrid_                     bool
 	inset_bottom_                                   f64
 	// dom<->layout bridge: opaque handle to the real layout.Node this placeholder mirrors (dom can't
 	// name the layout type). The layout module attaches these via attach_layout_nodes. See layout/dom_layout_bridge.v.

@@ -394,6 +394,13 @@ fn test_subgrid_track_list_parsing_and_serialization() {
 		.grid_template_columns) == none
 }
 
+fn test_resolved_subgrid_track_list_keeps_local_line_name_sets() {
+	resolved := cssom_resolved_grid_template([40.0, 50.0], [['a'], ['b'], ['c']], true) or {
+		panic('subgrid resolved value was not created')
+	}
+	assert resolved.css_text == 'subgrid [a] [b] [c]'
+}
+
 fn test_coordinated_list_shorthands() {
 	// animation/transition components include keyword easings (linear/ease/...);
 	// the easing must bind to timing-function, not fall through to name.

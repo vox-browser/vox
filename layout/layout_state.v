@@ -19,6 +19,18 @@ pub enum SizeConstraint {
 	max_content
 }
 
+struct GridSubgridAxisData {
+	tracks     []GridTrack
+	line_names [][]string
+	gap        CSSPixels
+}
+
+struct GridSubgridNodeData {
+mut:
+	columns ?GridSubgridAxisData
+	rows    ?GridSubgridAxisData
+}
+
 @[heap]
 struct UsedValuesRareData {
 mut:
@@ -31,6 +43,8 @@ mut:
 	used_grid_template_rows       []CSSPixels
 	used_grid_column_line_names   [][]string
 	used_grid_row_line_names      [][]string
+	used_grid_columns_are_subgrid bool
+	used_grid_rows_are_subgrid    bool
 	computed_svg_path_            ?svg.Path
 	has_computed_svg_transforms   bool
 	svg_viewbox_transform_        svg.AffineTransform
@@ -58,6 +72,8 @@ fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
 		used_grid_template_rows: rare.used_grid_template_rows.clone()
 		used_grid_column_line_names: rare.used_grid_column_line_names.clone()
 		used_grid_row_line_names: rare.used_grid_row_line_names.clone()
+		used_grid_columns_are_subgrid: rare.used_grid_columns_are_subgrid
+		used_grid_rows_are_subgrid: rare.used_grid_rows_are_subgrid
 		computed_svg_path_: rare.computed_svg_path_
 		has_computed_svg_transforms: rare.has_computed_svg_transforms
 		svg_viewbox_transform_: rare.svg_viewbox_transform_
@@ -264,6 +280,22 @@ pub fn (u &UsedValues) grid_column_line_names() [][]string {
 pub fn (u &UsedValues) grid_row_line_names() [][]string {
 	rare := u.rare_ or { return [][]string{} }
 	return rare.used_grid_row_line_names
+}
+
+pub fn (mut u UsedValues) set_grid_subgridded_axes(columns bool, rows bool) {
+	mut rare := u.ensure_rare_data()
+	rare.used_grid_columns_are_subgrid = columns
+	rare.used_grid_rows_are_subgrid = rows
+}
+
+pub fn (u &UsedValues) grid_columns_are_subgrid() bool {
+	rare := u.rare_ or { return false }
+	return rare.used_grid_columns_are_subgrid
+}
+
+pub fn (u &UsedValues) grid_rows_are_subgrid() bool {
+	rare := u.rare_ or { return false }
+	return rare.used_grid_rows_are_subgrid
 }
 
 // Flex/Grid call FormattingContext::compute_inset() with the resolved item's
@@ -826,6 +858,8 @@ pub struct LayoutState {
 pub mut:
 	used_values_store UsedValuesPagedStore
 	subtree_root      ?&NodeWithStyle
+mut:
+	subgrid_data map[u32]GridSubgridNodeData
 }
 
 pub fn LayoutState.new() &LayoutState {
@@ -849,6 +883,21 @@ pub fn (mut state LayoutState) get_mutable(node &NodeWithStyle) &UsedValues {
 
 pub fn (mut state LayoutState) get(node &NodeWithStyle) &UsedValues {
 	return state.ensure_used_values_for(node)
+}
+
+fn (mut state LayoutState) set_subgrid_axis_data(node &NodeWithStyle, columns bool, axis GridSubgridAxisData) {
+	mut data := state.subgrid_data[node.layout_index()] or { GridSubgridNodeData{} }
+	if columns {
+		data.columns = axis
+	} else {
+		data.rows = axis
+	}
+	state.subgrid_data[node.layout_index()] = data
+}
+
+fn (state &LayoutState) subgrid_axis_data(node &NodeWithStyle, columns bool) ?GridSubgridAxisData {
+	data := state.subgrid_data[node.layout_index()] or { return none }
+	return if columns { data.columns } else { data.rows }
 }
 
 // LayoutState::populate_node_from(). Intrinsic sizing and partial subtree
@@ -890,6 +939,9 @@ pub fn (mut state LayoutState) populate_node_from(mut source LayoutState, node &
 	values.containing_line_box_fragment = source_values.containing_line_box_fragment
 	if source_rare := source_values.rare_ {
 		values.rare_ = source_rare.clone()
+	}
+	if subgrid := source.subgrid_data[index] {
+		state.subgrid_data[index] = subgrid
 	}
 	values.containing_block_used_values_ = none
 	return values

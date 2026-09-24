@@ -1442,20 +1442,24 @@ fn cssom_multiply_transform_matrices(left FloatMatrix4x4, right FloatMatrix4x4) 
 // "For grid-template-columns and grid-template-rows the resolved value is the
 // used value." The grid formatting context records the final track base sizes;
 // a box that never ran one has none, and falls back to the computed value.
-fn cssom_resolved_grid_template(used_track_sizes []f64, line_names [][]string) ?&dom.StyleValue {
+fn cssom_resolved_grid_template(used_track_sizes []f64, line_names [][]string, is_subgrid bool) ?&dom.StyleValue {
 	if used_track_sizes.len == 0 {
 		return none
 	}
-	mut track_size_list := GridTrackSizeList{}
+	mut track_size_list := if is_subgrid {
+		GridTrackSizeList.make_subgrid()
+	} else {
+		GridTrackSizeList{}
+	}
 	for index in 0 .. used_track_sizes.len + 1 {
-		if index < line_names.len && line_names[index].len > 0 {
+		if index < line_names.len && (line_names[index].len > 0 || is_subgrid) {
 			mut names := GridLineNames{}
 			for name in line_names[index] {
 				names.append(name)
 			}
 			track_size_list.append_line_names(names)
 		}
-		if index < used_track_sizes.len {
+		if index < used_track_sizes.len && !is_subgrid {
 			track_size_list.append_explicit_track(ExplicitGridTrack.from_grid_size(GridSize.from_size(Size.make_px(CSSPixels.nearest_value_for(used_track_sizes[index])))))
 		}
 	}
@@ -1692,12 +1696,14 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 			return cssom_style_value_for_length_percentage_or_auto(inset.top())
 		}
 		.grid_template_columns {
-			if resolved := cssom_resolved_grid_template(layout_node.used_grid_template_columns_, layout_node.used_grid_column_line_names_) {
+			if resolved := cssom_resolved_grid_template(layout_node.used_grid_template_columns_,
+				layout_node.used_grid_column_line_names_, layout_node.used_grid_columns_are_subgrid_) {
 				return resolved
 			}
 		}
 		.grid_template_rows {
-			if resolved := cssom_resolved_grid_template(layout_node.used_grid_template_rows_, layout_node.used_grid_row_line_names_) {
+			if resolved := cssom_resolved_grid_template(layout_node.used_grid_template_rows_,
+				layout_node.used_grid_row_line_names_, layout_node.used_grid_rows_are_subgrid_) {
 				return resolved
 			}
 		}

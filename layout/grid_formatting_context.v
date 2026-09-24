@@ -63,12 +63,24 @@ fn grid_flexible_minimum_phase_dominates(track GridTrack, phase GridFlexibleMini
 }
 
 struct GridItemPlacement {
-	item        &Node = unsafe { nil }
-	row_span    int = 1
-	column_span int = 1
+	item &Node = unsafe { nil }
 mut:
-	row    int
-	column int
+	row                int
+	column             int
+	row_span           int = 1
+	column_span        int = 1
+	inline_start_extra CSSPixels
+	inline_end_extra   CSSPixels
+	block_start_extra  CSSPixels
+	block_end_extra    CSSPixels
+}
+
+fn (placement GridItemPlacement) sizing_extra(columns bool) CSSPixels {
+	return if columns {
+		placement.inline_start_extra.plus(placement.inline_end_extra)
+	} else {
+		placement.block_start_extra.plus(placement.block_end_extra)
+	}
 }
 
 struct GridAxisPlacement {
@@ -462,6 +474,152 @@ fn grid_lines_for_definition(node &Node, definition css.GridTrackSizeList, basis
 	return lines
 }
 
+fn count_subgrid_line_name_lists_from_index(list css.GridTrackSizeList, start_index int) int {
+	mut count := 0
+	items := list.list()
+	for item_index in start_index .. items.len {
+		item := items[item_index]
+		match item {
+			css.GridLineNames {
+				count++
+			}
+			css.ExplicitGridTrack {
+				if !item.is_repeat() {
+					continue
+				}
+				repeat := item.repeat()
+				repeated_count := count_subgrid_line_name_lists_from_index(repeat.grid_track_size_list(),
+					0)
+				count += if repeat.is_fixed() {
+					repeated_count * int(repeat.repeat_count())
+				} else {
+					repeated_count
+				}
+			}
+		}
+	}
+	return count
+}
+
+fn explicit_track_count_from_subgrid_line_name_list(list css.GridTrackSizeList) int {
+	count := count_subgrid_line_name_lists_from_index(list, 0)
+	return if count > 1 { count - 1 } else { 0 }
+}
+
+fn expand_subgrid_line_names(list css.GridTrackSizeList, mut lines [][]string, initial_line_index int) int {
+	mut line_index := initial_line_index
+	items := list.list()
+	for item_index, item in items {
+		match item {
+			css.GridLineNames {
+				if line_index < lines.len {
+					for name in item.names() {
+						lines[line_index] << name.name
+					}
+				}
+				line_index++
+			}
+			css.ExplicitGridTrack {
+				if !item.is_repeat() {
+					continue
+				}
+				repeat := item.repeat()
+				mut repeat_count := 0
+				if repeat.is_fixed() {
+					repeat_count = int(repeat.repeat_count())
+				} else if repeat.is_auto_fill() {
+					line_names_per_repeat := count_subgrid_line_name_lists_from_index(repeat.grid_track_size_list(),
+						0)
+					remaining := count_subgrid_line_name_lists_from_index(list, item_index + 1)
+					if line_names_per_repeat > 0 && line_index < lines.len
+						&& lines.len - line_index > remaining {
+						repeat_count = (lines.len - line_index - remaining) / line_names_per_repeat
+					}
+				}
+				for _ in 0 .. repeat_count {
+					line_index = expand_subgrid_line_names(repeat.grid_track_size_list(), mut lines,
+						line_index)
+				}
+			}
+		}
+	}
+	return line_index
+}
+
+fn subgrid_lines_for_definition(definition css.GridTrackSizeList, inherited [][]string, track_count int) [][]string {
+	mut lines := [][]string{len: track_count + 1}
+	for index in 0 .. lines.len {
+		if index < inherited.len {
+			lines[index] = inherited[index].clone()
+		}
+	}
+	expand_subgrid_line_names(definition, mut lines, 0)
+	return lines
+}
+
+fn clamp_grid_axis_placement_to_subgrid(mut placement GridAxisPlacement, track_count int) {
+	if track_count <= 0 {
+		return
+	}
+	mut end := placement.start + placement.span
+	if end <= 0 {
+		placement.start = 0
+		end = 1
+	} else if placement.start >= track_count {
+		placement.start = track_count - 1
+		end = track_count
+	} else {
+		if placement.start < 0 {
+			placement.start = 0
+		}
+		if end > track_count {
+			end = track_count
+		}
+	}
+	placement.span = end - placement.start
+	placement.end = end
+}
+
+fn resolve_grid_axis_position_for_context(start css.GridTrackPlacement, end css.GridTrackPlacement, explicit_line_count int, lines [][]string, is_subgridded bool) GridAxisPlacement {
+	mut placement := resolve_grid_axis_position(start, end, explicit_line_count, lines)
+	if is_subgridded {
+		clamp_grid_axis_placement_to_subgrid(mut placement, if lines.len > 0 {
+			lines.len - 1
+		} else {
+			0
+		})
+	}
+	return placement
+}
+
+fn resolve_grid_item_axis_position(item &Node, columns bool, start css.GridTrackPlacement, end css.GridTrackPlacement, explicit_line_count int, lines [][]string, is_subgridded bool) GridAxisPlacement {
+	mut placement := resolve_grid_axis_position(start, end, explicit_line_count, lines)
+	if grid_span_value(start) == none && grid_span_value(end) == none
+		&& !(start.is_positioned() && end.is_positioned()) && item.display().is_grid_inside() {
+		template := if columns {
+			item.computed_values().grid_template_columns()
+		} else {
+			item.computed_values().grid_template_rows()
+		}
+		if template.is_subgrid() {
+			placement.span = if explicit_track_count_from_subgrid_line_name_list(template) > 1 {
+				explicit_track_count_from_subgrid_line_name_list(template)
+			} else {
+				1
+			}
+			placement.end = placement.start + placement.span
+		}
+	}
+	if is_subgridded {
+		clamp_grid_axis_placement_to_subgrid(mut placement, if lines.len > 0 {
+			lines.len - 1
+		} else {
+			0
+		})
+	}
+	return placement
+}
+
 fn resolve_grid_tracks(container &Node, list css.GridTrackSizeList, implicit_list css.GridTrackSizeList, available CSSPixels, gap CSSPixels, available_is_definite bool, implicit_before_count int, required_count int) []GridTrack {
 	mut tracks := []GridTrack{}
 	implicit_tracks := implicit_list.track_list()
@@ -684,7 +842,28 @@ fn occupy_grid_area(mut occupied map[u64]bool, placement GridItemPlacement) {
 	}
 }
 
-fn place_grid_items(container &Node, column_lines [][]string, row_lines [][]string) GridPlacementResult {
+fn clamp_grid_item_placement_to_subgrid(mut placement GridItemPlacement, column_track_count int, row_track_count int, subgridded_columns bool, subgridded_rows bool) {
+	if subgridded_columns {
+		mut column := GridAxisPlacement{
+			start: placement.column
+			span: placement.column_span
+		}
+		clamp_grid_axis_placement_to_subgrid(mut column, column_track_count)
+		placement.column = column.start
+		placement.column_span = column.span
+	}
+	if subgridded_rows {
+		mut row := GridAxisPlacement{
+			start: placement.row
+			span: placement.row_span
+		}
+		clamp_grid_axis_placement_to_subgrid(mut row, row_track_count)
+		placement.row = row.start
+		placement.row_span = row.span
+	}
+}
+
+fn place_grid_items(container &Node, column_lines [][]string, row_lines [][]string, subgridded_columns bool, subgridded_rows bool) GridPlacementResult {
 	mut placements := []GridItemPlacement{}
 	mut occupied := map[u64]bool{}
 	items := ordered_grid_items(container)
@@ -701,8 +880,10 @@ fn place_grid_items(container &Node, column_lines [][]string, row_lines [][]stri
 		computed := item.computed_values()
 		column_axis_is_auto := grid_axis_is_auto(computed.grid_column_start(), computed.grid_column_end())
 		row_axis_is_auto := grid_axis_is_auto(computed.grid_row_start(), computed.grid_row_end())
-		column_position := resolve_grid_axis_position(computed.grid_column_start(), computed.grid_column_end(), column_lines.len, column_lines)
-		row_position := resolve_grid_axis_position(computed.grid_row_start(), computed.grid_row_end(), row_lines.len, row_lines)
+		column_position := resolve_grid_item_axis_position(item, true, computed.grid_column_start(),
+			computed.grid_column_end(), column_lines.len, column_lines, subgridded_columns)
+		row_position := resolve_grid_item_axis_position(item, false, computed.grid_row_start(),
+			computed.grid_row_end(), row_lines.len, row_lines, subgridded_rows)
 		column_span := column_position.span
 		row_span := row_position.span
 		column := if column_axis_is_auto { -1 } else { column_position.start }
@@ -740,17 +921,21 @@ fn place_grid_items(container &Node, column_lines [][]string, row_lines [][]stri
 			|| grid_axis_is_auto(computed.grid_column_start(), computed.grid_column_end()) {
 			continue
 		}
-		column_position := resolve_grid_axis_position(computed.grid_column_start(), computed.grid_column_end(), column_lines.len, column_lines)
-		row_position := resolve_grid_axis_position(computed.grid_row_start(), computed.grid_row_end(), row_lines.len, row_lines)
+		column_position := resolve_grid_item_axis_position(item, true, computed.grid_column_start(),
+			computed.grid_column_end(), column_lines.len, column_lines, subgridded_columns)
+		row_position := resolve_grid_item_axis_position(item, false, computed.grid_row_start(),
+			computed.grid_row_end(), row_lines.len, row_lines, subgridded_rows)
 		column_span := column_position.span
 		row_span := row_position.span
-		placement := GridItemPlacement{
+		mut placement := GridItemPlacement{
 			item: item
 			row: row_position.start
 			column: column_position.start
 			row_span: row_span
 			column_span: column_span
 		}
+		clamp_grid_item_placement_to_subgrid(mut placement, explicit_column_count,
+			explicit_row_count, subgridded_columns, subgridded_rows)
 		placements << placement
 		occupy_grid_area(mut occupied, placement)
 	}
@@ -762,8 +947,10 @@ fn place_grid_items(container &Node, column_lines [][]string, row_lines [][]stri
 			|| !grid_axis_is_auto(computed.grid_column_start(), computed.grid_column_end()) {
 			continue
 		}
-		column_position := resolve_grid_axis_position(computed.grid_column_start(), computed.grid_column_end(), column_lines.len, column_lines)
-		row_position := resolve_grid_axis_position(computed.grid_row_start(), computed.grid_row_end(), row_lines.len, row_lines)
+		column_position := resolve_grid_item_axis_position(item, true, computed.grid_column_start(),
+			computed.grid_column_end(), column_lines.len, column_lines, subgridded_columns)
+		row_position := resolve_grid_item_axis_position(item, false, computed.grid_row_start(),
+			computed.grid_row_end(), row_lines.len, row_lines, subgridded_rows)
 		column_span := column_position.span
 		row_span := row_position.span
 		row := row_position.start
@@ -775,13 +962,15 @@ fn place_grid_items(container &Node, column_lines [][]string, row_lines [][]stri
 		if column + column_span > column_count {
 			column_count = column + column_span
 		}
-		placement := GridItemPlacement{
+		mut placement := GridItemPlacement{
 			item: item
 			row: row
 			column: column
 			row_span: row_span
 			column_span: column_span
 		}
+		clamp_grid_item_placement_to_subgrid(mut placement, explicit_column_count,
+			explicit_row_count, subgridded_columns, subgridded_rows)
 		placements << placement
 		occupy_grid_area(mut occupied, placement)
 	}
@@ -818,8 +1007,10 @@ fn place_grid_items(container &Node, column_lines [][]string, row_lines [][]stri
 		if !grid_axis_is_auto(computed.grid_row_start(), computed.grid_row_end()) {
 			continue
 		}
-		column_position := resolve_grid_axis_position(computed.grid_column_start(), computed.grid_column_end(), column_lines.len, column_lines)
-		row_position := resolve_grid_axis_position(computed.grid_row_start(), computed.grid_row_end(), row_lines.len, row_lines)
+		column_position := resolve_grid_item_axis_position(item, true, computed.grid_column_start(),
+			computed.grid_column_end(), column_lines.len, column_lines, subgridded_columns)
+		row_position := resolve_grid_item_axis_position(item, false, computed.grid_row_start(),
+			computed.grid_row_end(), row_lines.len, row_lines, subgridded_rows)
 		column_span := column_position.span
 		row_span := row_position.span
 		column_is_auto := grid_axis_is_auto(computed.grid_column_start(), computed.grid_column_end())
@@ -864,13 +1055,15 @@ fn place_grid_items(container &Node, column_lines [][]string, row_lines [][]stri
 			}
 			found_within_occupation_grid = column <= occupied_maximum_column
 		}
-		placement := GridItemPlacement{
+		mut placement := GridItemPlacement{
 			item: item
 			row: row
 			column: column
 			row_span: row_span
 			column_span: column_span
 		}
+		clamp_grid_item_placement_to_subgrid(mut placement, explicit_column_count,
+			explicit_row_count, subgridded_columns, subgridded_rows)
 		placements << placement
 		occupy_grid_area(mut occupied, placement)
 		if row + row_span - 1 > occupied_maximum_row {
@@ -925,6 +1118,120 @@ fn place_grid_items(container &Node, column_lines [][]string, row_lines [][]stri
 	}
 }
 
+fn collect_grid_track_sizing_placements(mut state LayoutState, container &Node, placements []GridItemPlacement, column_lines [][]string, row_lines [][]string, columns bool, parent_gap CSSPixels, axis_offset int, mut result []GridItemPlacement) {
+	for placement in placements {
+		item := placement.item
+		template := if columns {
+			item.computed_values().grid_template_columns()
+		} else {
+			item.computed_values().grid_template_rows()
+		}
+		if !item.display().is_grid_inside() || !template.is_subgrid() {
+			mut projected := placement
+			if columns {
+				projected.column += axis_offset
+			} else {
+				projected.row += axis_offset
+			}
+			result << projected
+			continue
+		}
+
+		child_columns_template := item.computed_values().grid_template_columns()
+		child_rows_template := item.computed_values().grid_template_rows()
+		child_areas := item.computed_values().grid_template_areas()
+		child_columns_subgridded := child_columns_template.is_subgrid()
+		child_rows_subgridded := child_rows_template.is_subgrid()
+		child_column_lines := if child_columns_subgridded {
+			inherited := subgrid_axis_data_for_item([]GridTrack{}, column_lines, placement.column,
+				placement.column_span, CSSPixels.new(0)).line_names
+			subgrid_lines_for_definition(child_columns_template, inherited, placement.column_span)
+		} else {
+			grid_lines_for_definition(item, child_columns_template, CSSPixels.new(0), CSSPixels.new(0),
+				false, child_areas, true)
+		}
+		child_row_lines := if child_rows_subgridded {
+			inherited := subgrid_axis_data_for_item([]GridTrack{}, row_lines, placement.row,
+				placement.row_span, CSSPixels.new(0)).line_names
+			subgrid_lines_for_definition(child_rows_template, inherited, placement.row_span)
+		} else {
+			grid_lines_for_definition(item, child_rows_template, CSSPixels.new(0), CSSPixels.new(0),
+				false, child_areas, false)
+		}
+		child_result := place_grid_items(item, child_column_lines, child_row_lines,
+			child_columns_subgridded, child_rows_subgridded)
+		mut child_placements := child_result.placements.clone()
+		mut edge_start := if columns { placement.inline_start_extra } else { placement.block_start_extra }
+		mut edge_end := if columns { placement.inline_end_extra } else { placement.block_end_extra }
+		if styled := item.as_node_with_style() {
+			mut item_state := state.get_mutable(styled)
+			resolve_box_model_edges(styled.computed_values(), mut item_state, CSSPixels.new(0).to_double())
+			edge_start = edge_start.plus(if columns {
+				item_state.margin_box_left()
+			} else {
+				item_state.margin_box_top()
+			})
+			edge_end = edge_end.plus(if columns {
+				item_state.margin_box_right()
+			} else {
+				item_state.margin_box_bottom()
+			})
+		}
+		gap_property := if columns { css.PropertyID.column_gap } else { .row_gap }
+		computed_gap := if item.computed_values().gap_value(gap_property).is_normal {
+			parent_gap
+		} else {
+			resolve_layout_gap(item, gap_property, CSSPixels.new(0))
+		}
+		gap_extra := computed_gap.minus(parent_gap).divided_by_float(2)
+		track_count := if columns { placement.column_span } else { placement.row_span }
+		for index in 0 .. child_placements.len {
+			child_start := if columns { child_placements[index].column } else { child_placements[index].row }
+			child_span := if columns {
+				child_placements[index].column_span
+			} else {
+				child_placements[index].row_span
+			}
+			if columns {
+				if child_start == 0 {
+					child_placements[index].inline_start_extra = edge_start
+				} else {
+					child_placements[index].inline_start_extra = gap_extra
+				}
+				if child_start + child_span == track_count {
+					child_placements[index].inline_end_extra = edge_end
+				} else {
+					child_placements[index].inline_end_extra = gap_extra
+				}
+			} else {
+				if child_start == 0 {
+					child_placements[index].block_start_extra = edge_start
+				} else {
+					child_placements[index].block_start_extra = gap_extra
+				}
+				if child_start + child_span == track_count {
+					child_placements[index].block_end_extra = edge_end
+				} else {
+					child_placements[index].block_end_extra = gap_extra
+				}
+			}
+		}
+		collect_grid_track_sizing_placements(mut state, item, child_placements, child_column_lines,
+			child_row_lines, columns, parent_gap, axis_offset + if columns {
+				placement.column
+			} else {
+				placement.row
+			}, mut result)
+	}
+}
+
+fn grid_track_sizing_placements(mut state LayoutState, container &Node, placements []GridItemPlacement, column_lines [][]string, row_lines [][]string, columns bool, parent_gap CSSPixels) []GridItemPlacement {
+	mut result := []GridItemPlacement{}
+	collect_grid_track_sizing_placements(mut state, container, placements, column_lines, row_lines,
+		columns, parent_gap, 0, mut result)
+	return result
+}
+
 fn grid_track_range_size(tracks []GridTrack, start int, span int, gap CSSPixels) CSSPixels {
 	mut size := gap.scaled(f64(if span > 0 { span - 1 } else { 0 }))
 	for index in start .. start + span {
@@ -950,6 +1257,80 @@ fn grid_track_offset(tracks []GridTrack, index int, gap CSSPixels) CSSPixels {
 		}
 	}
 	return offset
+}
+
+fn subgrid_axis_data_for_item(tracks []GridTrack, line_names [][]string, start int, span int, gap CSSPixels) GridSubgridAxisData {
+	mut inherited_tracks := []GridTrack{cap: span}
+	mut inherited_line_names := [][]string{cap: span + 1}
+	for index in 0 .. span {
+		track_index := start + index
+		if track_index >= 0 && track_index < tracks.len {
+			inherited_tracks << tracks[track_index]
+		} else {
+			inherited_tracks << GridTrack{
+				intrinsic: true
+				minimum_intrinsic: true
+				auto_min: true
+				auto_max: true
+			}
+		}
+	}
+	for index in 0 .. span + 1 {
+		line_index := start + index
+		if line_index >= 0 && line_index < line_names.len {
+			inherited_line_names << line_names[line_index].clone()
+		} else {
+			inherited_line_names << []string{}
+		}
+	}
+	return GridSubgridAxisData{
+		tracks: inherited_tracks
+		line_names: inherited_line_names
+		gap: gap
+	}
+}
+
+fn install_grid_item_subgrid_axis_data(mut state LayoutState, item &Node, columns bool, tracks []GridTrack, line_names [][]string, start int, span int, gap CSSPixels) {
+	template := if columns {
+		item.computed_values().grid_template_columns()
+	} else {
+		item.computed_values().grid_template_rows()
+	}
+	if !item.display().is_grid_inside() || !template.is_subgrid() {
+		return
+	}
+	styled := item.as_node_with_style() or { return }
+	state.set_subgrid_axis_data(styled, columns, subgrid_axis_data_for_item(tracks, line_names,
+		start, span, gap))
+}
+
+fn apply_subgrid_gap_extra_margins(container &Node, mut item_state UsedValues, placement GridItemPlacement, columns bool, track_count int, parent_gap CSSPixels, percentage_basis CSSPixels) {
+	gap_property := if columns { css.PropertyID.column_gap } else { .row_gap }
+	computed_gap := if container.computed_values().gap_value(gap_property).is_normal {
+		parent_gap
+	} else {
+		resolve_layout_gap(container, gap_property, percentage_basis)
+	}
+	extra := computed_gap.minus(parent_gap).divided_by_float(2)
+	if extra.raw_value() == 0 {
+		return
+	}
+	start := if columns { placement.column } else { placement.row }
+	span := if columns { placement.column_span } else { placement.row_span }
+	if start > 0 {
+		if columns {
+			item_state.margin_left = item_state.margin_left.plus(extra)
+		} else {
+			item_state.margin_top = item_state.margin_top.plus(extra)
+		}
+	}
+	if start + span < track_count {
+		if columns {
+			item_state.margin_right = item_state.margin_right.plus(extra)
+		} else {
+			item_state.margin_bottom = item_state.margin_bottom.plus(extra)
+		}
+	}
 }
 
 fn grid_inline_content_geometry(container &Node, container_width CSSPixels, tracks []GridTrack, computed_gap CSSPixels) (CSSPixels, CSSPixels) {
@@ -1416,28 +1797,28 @@ fn increase_grid_flexible_tracks_for_spanning_items(mut state LayoutState, conta
 			if affected_track_count == 0 {
 				continue
 			}
-			minimum_contribution := if columns {
+			minimum_contribution := (if columns {
 				grid_item_minimum_outer_inline_contribution(mut state, placement.item, tracks, start, span, gap)
 			} else {
 				styled := placement.item.as_node_with_style() or { continue }
 				item_state := state.get(styled)
 				grid_item_minimum_outer_block_contribution(mut state, placement.item, item_state, tracks, start, span, available_height_is_definite, percentage_basis, gap)
-			}
+			}).plus(placement.sizing_extra(columns))
 			spanned_track_size := grid_track_range_size(tracks, start, span, gap)
-			min_content_contribution := if columns {
+			min_content_contribution := (if columns {
 				grid_intrinsic_outer_width_contribution(mut state, placement.item, .min_content)
 			} else {
 				styled := placement.item.as_node_with_style() or { continue }
 				item_state := state.get(styled)
 				grid_item_outer_block_content_contribution(mut state, placement.item, item_state, .min_content, available_height_is_definite, percentage_basis, spanned_track_size)
-			}
-			max_content_contribution := if columns {
+			}).plus(placement.sizing_extra(columns))
+			max_content_contribution := (if columns {
 				grid_intrinsic_outer_width_contribution(mut state, placement.item, .max_content)
 			} else {
 				styled := placement.item.as_node_with_style() or { continue }
 				item_state := state.get(styled)
 				grid_item_outer_block_content_contribution(mut state, placement.item, item_state, .max_content, available_height_is_definite, percentage_basis, spanned_track_size)
-			}
+			}).plus(placement.sizing_extra(columns))
 			mut item_contribution := match phase {
 				.intrinsic {
 					if available_size.is_max_content()
@@ -1979,24 +2360,72 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 	} else {
 		?CSSPixels(none)
 	}
-	// GridFormattingContext::initialize_gap_tracks() resolves each percentage
-	// gutter against the available size in that gutter's own dimension.
-	column_gap := resolve_layout_gap(container, .column_gap, available_space.width.to_px_or_zero())
-	row_gap := resolve_layout_gap(container, .row_gap, available_space.height.to_px_or_zero())
 	template_columns := container.computed_values().grid_template_columns()
 	template_rows := container.computed_values().grid_template_rows()
+	container_styled := container.as_node_with_style() or { panic('grid container has no style') }
+	inherited_columns := state.subgrid_axis_data(container_styled, true)
+	inherited_rows := state.subgrid_axis_data(container_styled, false)
+	subgridded_columns := template_columns.is_subgrid() && inherited_columns != none
+	subgridded_rows := template_rows.is_subgrid() && inherited_rows != none
+	// Subgridded axes use their parent's gutter. Standalone axes resolve each
+	// percentage gutter against the available size in its own dimension.
+	column_gap := if data := inherited_columns {
+		if subgridded_columns { data.gap } else { resolve_layout_gap(container, .column_gap,
+			available_space.width.to_px_or_zero()) }
+	} else {
+		resolve_layout_gap(container, .column_gap, available_space.width.to_px_or_zero())
+	}
+	row_gap := if data := inherited_rows {
+		if subgridded_rows { data.gap } else { resolve_layout_gap(container, .row_gap,
+			available_space.height.to_px_or_zero()) }
+	} else {
+		resolve_layout_gap(container, .row_gap, available_space.height.to_px_or_zero())
+	}
 	row_basis := if container_state.has_definite_height() {
 		container_state.content_height()
 	} else {
 		CSSPixels.new(0)
 	}
 	areas := container.computed_values().grid_template_areas()
-	column_lines := grid_lines_for_definition(container, template_columns, container_width, column_gap, true, areas, true)
-	row_lines := grid_lines_for_definition(container, template_rows, row_basis, row_gap, container_state.has_definite_height(), areas, false)
+	column_lines := if data := inherited_columns {
+		if subgridded_columns {
+			subgrid_lines_for_definition(template_columns, data.line_names, data.tracks.len)
+		} else {
+			grid_lines_for_definition(container, template_columns, container_width, column_gap,
+				true, areas, true)
+		}
+	} else {
+		if template_columns.is_subgrid() {
+			[][]string{len: 1}
+		} else {
+			grid_lines_for_definition(container, template_columns, container_width, column_gap,
+				true, areas, true)
+		}
+	}
+	row_lines := if data := inherited_rows {
+		if subgridded_rows {
+			subgrid_lines_for_definition(template_rows, data.line_names, data.tracks.len)
+		} else {
+			grid_lines_for_definition(container, template_rows, row_basis, row_gap,
+				container_state.has_definite_height(), areas, false)
+		}
+	} else {
+		if template_rows.is_subgrid() {
+			[][]string{len: 1}
+		} else {
+			grid_lines_for_definition(container, template_rows, row_basis, row_gap,
+				container_state.has_definite_height(), areas, false)
+		}
+	}
 	explicit_column_count := if column_lines.len > 0 { column_lines.len - 1 } else { 0 }
 	explicit_row_count := if row_lines.len > 0 { row_lines.len - 1 } else { 0 }
-	placement_result := place_grid_items(container, column_lines, row_lines)
+	placement_result := place_grid_items(container, column_lines, row_lines, subgridded_columns,
+		subgridded_rows)
 	placements := placement_result.placements
+	column_sizing_placements := grid_track_sizing_placements(mut state, container, placements,
+		column_lines, row_lines, true, column_gap)
+	row_sizing_placements := grid_track_sizing_placements(mut state, container, placements,
+		column_lines, row_lines, false, row_gap)
 	mut required_columns := if explicit_column_count + placement_result.implicit_columns_before > 0 {
 		explicit_column_count + placement_result.implicit_columns_before
 	} else {
@@ -2011,13 +2440,25 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 			required_rows = placement.row + placement.row_span
 		}
 	}
-	mut columns := resolve_grid_tracks(container, template_columns, container.computed_values().grid_auto_columns(), container_width, column_gap, !width_is_intrinsic, placement_result.implicit_columns_before, required_columns)
+	mut columns := if data := inherited_columns {
+		if subgridded_columns {
+			data.tracks.clone()
+		} else {
+			resolve_grid_tracks(container, template_columns, container.computed_values().grid_auto_columns(),
+				container_width, column_gap, !width_is_intrinsic,
+				placement_result.implicit_columns_before, required_columns)
+		}
+	} else {
+		resolve_grid_tracks(container, template_columns, container.computed_values().grid_auto_columns(),
+			container_width, column_gap, !width_is_intrinsic,
+			placement_result.implicit_columns_before, required_columns)
+	}
 	collapse_empty_auto_fit_tracks(mut columns, placements, true)
 
 	// Resolve non-spanning items first, then items of increasing span, through
 	// the same six intrinsic track-sizing phases used by C++.
 	mut maximum_column_span := 1
-	for placement in placements {
+	for placement in column_sizing_placements {
 		if placement.column_span > maximum_column_span {
 			maximum_column_span = placement.column_span
 		}
@@ -2028,14 +2469,16 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 		}
 	}
 	for span in 1 .. maximum_column_span + 1 {
-		for placement in placements {
+		for placement in column_sizing_placements {
 			if placement.column_span != span
 				|| grid_track_range_crosses_flexible_track(columns, placement.column, placement.column_span)
 				|| !grid_track_range_crosses_intrinsic_sizing_track(columns, placement.column, placement.column_span) {
 				continue
 			}
-			minimum_contribution := grid_item_minimum_outer_inline_contribution(mut state, placement.item, columns, placement.column, placement.column_span, column_gap)
-			min_content_contribution := grid_intrinsic_outer_width_contribution(mut state, placement.item, .min_content)
+			minimum_contribution := grid_item_minimum_outer_inline_contribution(mut state, placement.item,
+				columns, placement.column, placement.column_span, column_gap).plus(placement.sizing_extra(true))
+			min_content_contribution := grid_intrinsic_outer_width_contribution(mut state,
+				placement.item, .min_content).plus(placement.sizing_extra(true))
 			phase_one_contribution := if width_is_intrinsic {
 				grid_limited_content_contribution(state, container, container_state, available_space.width, true, columns, placement.column, placement.column_span, min_content_contribution, minimum_contribution)
 			} else {
@@ -2044,7 +2487,8 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 			distribute_grid_item_contribution_across_intrinsic_track_bases(mut columns, placement.column, placement.column_span, column_gap, phase_one_contribution, .minimum_contribution)
 			distribute_grid_item_contribution_across_intrinsic_track_bases(mut columns, placement.column, placement.column_span, column_gap, min_content_contribution, .min_content_contribution)
 			if available_space.width.is_max_content() {
-				max_content_contribution := grid_intrinsic_outer_width_contribution(mut state, placement.item, .max_content)
+				max_content_contribution := grid_intrinsic_outer_width_contribution(mut state,
+					placement.item, .max_content).plus(placement.sizing_extra(true))
 				limited_max_content_contribution := grid_limited_content_contribution(state, container, container_state, available_space.width, true, columns, placement.column, placement.column_span, max_content_contribution, minimum_contribution)
 				distribute_grid_item_contribution_across_intrinsic_track_bases(mut columns, placement.column, placement.column_span, column_gap, limited_max_content_contribution, .max_content_contribution)
 			}
@@ -2055,11 +2499,13 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 				}
 			}
 			distribute_grid_item_contribution_across_intrinsic_track_growth_limits(mut columns, placement.column, placement.column_span, column_gap, min_content_contribution, .intrinsic_maximum)
-			max_content_contribution := grid_intrinsic_outer_width_contribution(mut state, placement.item, .max_content)
+			max_content_contribution := grid_intrinsic_outer_width_contribution(mut state,
+				placement.item, .max_content).plus(placement.sizing_extra(true))
 			distribute_grid_item_contribution_across_intrinsic_track_growth_limits(mut columns, placement.column, placement.column_span, column_gap, max_content_contribution, .max_content_maximum)
 		}
 	}
-	increase_grid_flexible_tracks_for_spanning_items(mut state, container, container_state, mut columns, placements, true, available_space.width, column_gap, container_width, false)
+	increase_grid_flexible_tracks_for_spanning_items(mut state, container, container_state, mut columns,
+		column_sizing_placements, true, available_space.width, column_gap, container_width, false)
 	finalize_grid_track_growth_limits(mut columns)
 	if width_is_intrinsic && available_space.width.is_max_content() {
 		// GridFormattingContext::expand_flexible_tracks() derives the used flex
@@ -2080,7 +2526,7 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 				intrinsic_flex_fraction = candidate
 			}
 		}
-		for placement in placements {
+		for placement in column_sizing_placements {
 			last_column := if placement.column + placement.column_span < columns.len {
 				placement.column + placement.column_span
 			} else {
@@ -2096,7 +2542,8 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 			if !crosses_flexible_track {
 				continue
 			}
-			contribution := grid_intrinsic_outer_width_contribution(mut state, placement.item, .max_content)
+			contribution := grid_intrinsic_outer_width_contribution(mut state, placement.item,
+				.max_content).plus(placement.sizing_extra(true))
 			candidate := grid_flex_fraction_for_range(columns, placement.column, placement.column_span, contribution, column_gap)
 			if candidate.compare(intrinsic_flex_fraction) > 0 {
 				intrinsic_flex_fraction = candidate
@@ -2143,18 +2590,38 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 		container_state.set_content_width(intrinsic_container_width)
 	}
 
-	mut rows := resolve_grid_tracks(container, template_rows, container.computed_values().grid_auto_rows(), row_basis, row_gap, container_state.has_definite_height(), placement_result.implicit_rows_before, if required_rows > 0 {
-		required_rows
+	mut rows := if data := inherited_rows {
+		if subgridded_rows {
+			data.tracks.clone()
+		} else {
+			resolve_grid_tracks(container, template_rows, container.computed_values().grid_auto_rows(),
+				row_basis, row_gap, container_state.has_definite_height(),
+				placement_result.implicit_rows_before, if required_rows > 0 { required_rows } else { 1 })
+		}
 	} else {
-		1
-	})
+		resolve_grid_tracks(container, template_rows, container.computed_values().grid_auto_rows(),
+			row_basis, row_gap, container_state.has_definite_height(),
+			placement_result.implicit_rows_before, if required_rows > 0 { required_rows } else { 1 })
+	}
 	collapse_empty_auto_fit_tracks(mut rows, placements, false)
 	for placement in placements {
 		area_width := grid_track_range_size(columns, placement.column, placement.column_span, effective_column_gap)
 		styled := placement.item.as_node_with_style() or { continue }
 		mut item_state := state.get_mutable(styled)
+		install_grid_item_subgrid_axis_data(mut state, placement.item, true, columns,
+			column_lines, placement.column, placement.column_span, effective_column_gap)
+		install_grid_item_subgrid_axis_data(mut state, placement.item, false, rows, row_lines,
+			placement.row, placement.row_span, row_gap)
 		item_state.set_containing_block_used_values(container_state)
 		resolve_box_model_edges(styled.computed_values(), mut item_state, area_width.to_double())
+		if subgridded_columns {
+			apply_subgrid_gap_extra_margins(container, mut item_state, placement, true, columns.len,
+				column_gap, container_width)
+		}
+		if subgridded_rows {
+			apply_subgrid_gap_extra_margins(container, mut item_state, placement, false, rows.len,
+				row_gap, row_basis)
+		}
 		inline_alignment := grid_inline_alignment(container, placement.item)
 		width_is_auto := placement.item.computed_values().size_value(.width).is_auto()
 		has_auto_inline_margin := property_is_auto(placement.item.computed_values(), .margin_left)
@@ -2186,13 +2653,13 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 		}, forced_width, none)
 	}
 	mut maximum_row_span := 1
-	for placement in placements {
+	for placement in row_sizing_placements {
 		if placement.row_span > maximum_row_span {
 			maximum_row_span = placement.row_span
 		}
 	}
 	for span in 1 .. maximum_row_span + 1 {
-		for placement in placements {
+		for placement in row_sizing_placements {
 			if placement.row_span != span
 				|| grid_track_range_crosses_flexible_track(rows, placement.row, placement.row_span)
 				|| !grid_track_range_crosses_intrinsic_sizing_track(rows, placement.row, placement.row_span) {
@@ -2201,8 +2668,12 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 			styled := placement.item.as_node_with_style() or { continue }
 			item_state := state.get(styled)
 			spanned_track_size := grid_track_range_size(rows, placement.row, placement.row_span, row_gap)
-			minimum_contribution := grid_item_minimum_outer_block_contribution(mut state, placement.item, item_state, rows, placement.row, placement.row_span, container_state.has_definite_height(), row_basis, row_gap)
-			min_content_contribution := grid_item_outer_block_content_contribution(mut state, placement.item, item_state, .min_content, container_state.has_definite_height(), row_basis, spanned_track_size)
+			minimum_contribution := grid_item_minimum_outer_block_contribution(mut state,
+				placement.item, item_state, rows, placement.row, placement.row_span,
+				container_state.has_definite_height(), row_basis, row_gap).plus(placement.sizing_extra(false))
+			min_content_contribution := grid_item_outer_block_content_contribution(mut state,
+				placement.item, item_state, .min_content, container_state.has_definite_height(),
+				row_basis, spanned_track_size).plus(placement.sizing_extra(false))
 			phase_one_contribution := if available_space.height.is_intrinsic_sizing_constraint() {
 				grid_limited_content_contribution(state, container, container_state, available_space.height, false, rows, placement.row, placement.row_span, min_content_contribution, minimum_contribution)
 			} else {
@@ -2211,7 +2682,9 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 			distribute_grid_item_contribution_across_intrinsic_track_bases(mut rows, placement.row, placement.row_span, row_gap, phase_one_contribution, .minimum_contribution)
 			distribute_grid_item_contribution_across_intrinsic_track_bases(mut rows, placement.row, placement.row_span, row_gap, min_content_contribution, .min_content_contribution)
 			if available_space.height.is_max_content() {
-				max_content_contribution := grid_item_outer_block_content_contribution(mut state, placement.item, item_state, .max_content, container_state.has_definite_height(), row_basis, spanned_track_size)
+				max_content_contribution := grid_item_outer_block_content_contribution(mut state,
+					placement.item, item_state, .max_content, container_state.has_definite_height(),
+					row_basis, spanned_track_size).plus(placement.sizing_extra(false))
 				limited_max_content_contribution := grid_limited_content_contribution(state, container, container_state, available_space.height, false, rows, placement.row, placement.row_span, max_content_contribution, minimum_contribution)
 				distribute_grid_item_contribution_across_intrinsic_track_bases(mut rows, placement.row, placement.row_span, row_gap, limited_max_content_contribution, .max_content_contribution)
 			}
@@ -2222,11 +2695,15 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 				}
 			}
 			distribute_grid_item_contribution_across_intrinsic_track_growth_limits(mut rows, placement.row, placement.row_span, row_gap, min_content_contribution, .intrinsic_maximum)
-			max_content_contribution := grid_item_outer_block_content_contribution(mut state, placement.item, item_state, .max_content, container_state.has_definite_height(), row_basis, spanned_track_size)
+			max_content_contribution := grid_item_outer_block_content_contribution(mut state,
+				placement.item, item_state, .max_content, container_state.has_definite_height(),
+				row_basis, spanned_track_size).plus(placement.sizing_extra(false))
 			distribute_grid_item_contribution_across_intrinsic_track_growth_limits(mut rows, placement.row, placement.row_span, row_gap, max_content_contribution, .max_content_maximum)
 		}
 	}
-	increase_grid_flexible_tracks_for_spanning_items(mut state, container, container_state, mut rows, placements, false, available_space.height, row_gap, row_basis, container_state.has_definite_height())
+	increase_grid_flexible_tracks_for_spanning_items(mut state, container, container_state, mut rows,
+		row_sizing_placements, false, available_space.height, row_gap, row_basis,
+		container_state.has_definite_height())
 	finalize_grid_track_growth_limits(mut rows)
 	// Like LibWeb, maximize and choose the flexible-track branch from the
 	// available grid space, not from whether the computed height was definite.
@@ -2253,7 +2730,7 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 				flex_fraction = candidate
 			}
 		}
-		for placement in placements {
+		for placement in row_sizing_placements {
 			last_row := if placement.row + placement.row_span < rows.len {
 				placement.row + placement.row_span
 			} else {
@@ -2271,7 +2748,9 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 			}
 			styled := placement.item.as_node_with_style() or { continue }
 			item_state := state.get(styled)
-			contribution := grid_item_outer_block_content_contribution(mut state, placement.item, item_state, .max_content, container_state.has_definite_height(), row_basis, grid_track_range_size(rows, placement.row, placement.row_span, row_gap))
+			contribution := grid_item_outer_block_content_contribution(mut state, placement.item,
+				item_state, .max_content, container_state.has_definite_height(), row_basis,
+				grid_track_range_size(rows, placement.row, placement.row_span, row_gap)).plus(placement.sizing_extra(false))
 			candidate := grid_flex_fraction_for_range(rows, placement.row, placement.row_span, contribution, row_gap)
 			if candidate.compare(flex_fraction) > 0 {
 				flex_fraction = candidate
@@ -2338,14 +2817,31 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 	}
 	container_state.set_grid_template_columns(used_columns)
 	container_state.set_grid_template_rows(used_rows)
+	container_state.set_grid_subgridded_axes(subgridded_columns, subgridded_rows)
 	// Only *explicit* line names are serialized, so recompute the line map
 	// without the `<area>-start`/`-end` names that grid-template-areas adds.
 	empty_areas := css.GridTemplateAreas{}
-	container_state.set_grid_line_names(grid_lines_for_definition(container, template_columns, container_width, column_gap, true, empty_areas, true), grid_lines_for_definition(container, template_rows, row_basis, row_gap, container_state.has_definite_height(), empty_areas, false))
+	used_column_line_names := if subgridded_columns {
+		subgrid_lines_for_definition(template_columns, [][]string{}, columns.len)
+	} else {
+		grid_lines_for_definition(container, template_columns, container_width, column_gap, true,
+			empty_areas, true)
+	}
+	used_row_line_names := if subgridded_rows {
+		subgrid_lines_for_definition(template_rows, [][]string{}, rows.len)
+	} else {
+		grid_lines_for_definition(container, template_rows, row_basis, row_gap,
+			container_state.has_definite_height(), empty_areas, false)
+	}
+	container_state.set_grid_line_names(used_column_line_names, used_row_line_names)
 
 	for placement in placements {
 		styled := placement.item.as_node_with_style() or { continue }
 		mut item_state := state.get_mutable(styled)
+		install_grid_item_subgrid_axis_data(mut state, placement.item, true, columns,
+			column_lines, placement.column, placement.column_span, effective_column_gap)
+		install_grid_item_subgrid_axis_data(mut state, placement.item, false, rows, row_lines,
+			placement.row, placement.row_span, effective_row_gap)
 		area_width := grid_track_range_size(columns, placement.column, placement.column_span, effective_column_gap)
 		area_height := grid_track_range_size(rows, placement.row, placement.row_span, effective_row_gap)
 		// FlexFormattingContext.cpp/GridFormattingContext.cpp compute relative
@@ -2388,6 +2884,17 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 			} else {
 				none
 			}, item_state.content_width(), clamped_height)
+		}
+		if subgridded_columns || subgridded_rows {
+			resolve_box_model_edges(styled.computed_values(), mut item_state, area_width.to_double())
+			if subgridded_columns {
+				apply_subgrid_gap_extra_margins(container, mut item_state, placement, true,
+					columns.len, column_gap, container_width)
+			}
+			if subgridded_rows {
+				apply_subgrid_gap_extra_margins(container, mut item_state, placement, false,
+					rows.len, row_gap, row_basis)
+			}
 		}
 		inline_margin_space := area_width.minus(item_state.margin_box_width())
 		if inline_margin_space.raw_value() > 0 && left_margin_auto && right_margin_auto {
@@ -2450,8 +2957,10 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 		computed := child.computed_values()
 		column_is_auto := grid_axis_is_auto(computed.grid_column_start(), computed.grid_column_end())
 		row_is_auto := grid_axis_is_auto(computed.grid_row_start(), computed.grid_row_end())
-		column_position := resolve_grid_axis_position(computed.grid_column_start(), computed.grid_column_end(), column_lines.len, column_lines)
-		row_position := resolve_grid_axis_position(computed.grid_row_start(), computed.grid_row_end(), row_lines.len, row_lines)
+		column_position := resolve_grid_axis_position_for_context(computed.grid_column_start(), computed.grid_column_end(),
+			column_lines.len, column_lines, subgridded_columns)
+		row_position := resolve_grid_axis_position_for_context(computed.grid_row_start(), computed.grid_row_end(),
+			row_lines.len, row_lines, subgridded_rows)
 
 		mut area_x := CSSPixels.new(0).minus(container_state.padding_left)
 		mut area_width :=
