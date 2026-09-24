@@ -135,7 +135,10 @@
   when the inline size is explicit, keeping its text and placeholder centered
   in the constrained control. With both axes automatic, the upstream tentative
   block-size rerun preserves the input's intrinsic line height after a min/max
-  violation.
+  violation. Select fallback buttons clone the selected option label after
+  selectedness changes and position their chevron out of flow, so the label is
+  the sole flex item and supplies the inline baseline; `appearance:none`
+  removes both the chevron and its reserved inline-end space.
 - Reload reconstructs child session history, nested windows inherit their
   top-level creation URL and origin, exhausted navigation bodies are released,
   and removing the body no longer leaves an otherwise loaded document
