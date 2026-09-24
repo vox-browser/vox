@@ -165,7 +165,9 @@
   rows while preserving it on the generated cell that owns the inline run.
   Table cells derive their baseline from their first in-flow line or row, only
   baseline-aligned cells establish a row baseline, and inline tables export the
-  first visible row through their wrapper while excluding captions.
+  first visible row through their wrapper while excluding captions. Rows grow
+  to the shared baseline plus the largest non-spanning cell descent, keeping
+  baseline-aligned descendants inside the row's used block size.
   Collapsed borders split on whole CSS pixels at every grid line: cells own the
   inner shares, the table owns the outer shares, and painting snaps the derived
   border edges independently in device space. A collapsed table's used borders
