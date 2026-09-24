@@ -176,7 +176,10 @@
   the first footer group last, and additional header/footer groups retain tree
   order as ordinary row groups. Each row-group box starts at its own first row
   and spans through its own last row, even when loose rows occur between
-  groups; collapsed rows do not synthesize spacing inside the group.
+  groups; collapsed rows do not synthesize spacing inside the group. Fixed
+  layout ignores padding and borders on auto-width cells when measuring
+  columns, adds content-box offsets to first-row percentage widths, and ignores
+  later-row cells when deriving column measures.
 - Parsed programs are reused for bytecode cache generation, nested idle
   callback periods are paced, Window named-property membership avoids full ID
   enumeration, and SVG presentation attributes retain their case-sensitive
