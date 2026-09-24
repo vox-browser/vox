@@ -200,6 +200,11 @@
   removed rule subtrees, and preserve stylesheet order ahead of manually added
   faces. A nested `MediaList` mutation invalidates and resynchronizes the sheet
   reached through its owning rule.
+- The compact script bridge exposes live `<style>.sheet` insertion/deletion,
+  constructed `CSSStyleSheet.replaceSync()`, and document
+  `adoptedStyleSheets`. Embedded sheets retain their DOM owner and style-scope
+  ownership, so dynamic `@counter-style` rules rebuild generated pseudo-content
+  when their resolved counter-style dependency changes.
 - Platform input-method sessions dispatch `compositionstart`, per-update
   `compositionupdate` plus non-cancelable `insertCompositionText`
   `beforeinput`/`input` pairs, and `compositionend`. Marked ranges survive
