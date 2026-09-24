@@ -123,7 +123,9 @@
   number inputs group both layers in a dedicated flex item ahead of the steppers,
   and textareas use the same full-width flex overlay in every writing mode.
   Placeholder layers are excluded from hit testing and text selection. Input
-  editors preserve interior and trailing whitespace verbatim.
+  editors preserve interior and trailing whitespace verbatim. Single-line
+  controls clamp undersized line heights to normal font metrics, and cursor
+  scrolling leaves their logical block-axis position stable.
 - Reload reconstructs child session history, nested windows inherit their
   top-level creation URL and origin, exhausted navigation bodies are released,
   and removing the body no longer leaves an otherwise loaded document
