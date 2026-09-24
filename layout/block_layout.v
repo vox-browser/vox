@@ -130,7 +130,7 @@ fn compute_block_used_width_for_node(mut state LayoutState, box &NodeWithStyle, 
 	// normal fill-available size of a block-level box.
 	if computed_width.is_auto() && node_uses_button_layout(box_node) {
 		intrinsic_width = calculate_fit_content_width(mut state, box_as_box, available_width)
-	} else if computed_width.is_auto() {
+	} else if computed_width.is_auto() && box_as_box.has_auto_content_box_size() {
 		if auto_width := box_as_box.auto_content_box_size().width {
 			intrinsic_width = auto_width
 		}

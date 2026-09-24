@@ -3739,6 +3739,12 @@ fn test_container_type_establishes_an_independent_formatting_context() {
 			panic('container box has no computed style')
 		}
 		assert creates_block_formatting_context(styled_container), container_type
+		result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+		used_container := used_for_id(result, 'container')
+		// Establishing an independent formatting context does not give an
+		// ordinary block a replaced-element intrinsic inline size. Its auto
+		// width still fills the containing block.
+		assert used_container.content_width().to_double() == 784, container_type
 	}
 }
 
