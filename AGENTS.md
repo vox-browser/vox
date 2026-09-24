@@ -172,7 +172,10 @@
   sizes, it relays each item's used height as a definite basis to percentage-
   sized descendants, including items whose own percentage height was initially
   indefinite. Flex and grid item baselines ignore `vertical-align`, which has no
-  effect on those item roles. Flex and grid containers also keep their content
+  effect on those item roles. Baseline consumers distinguish first and last
+  sets: flex alignment derives the first set from content even for scroll
+  containers, while inline block layout retains the legacy last-set bottom-edge
+  fallback. Flex and grid containers also keep their content
   margins from collapsing through them, including at zero used height. A
   partially intrinsic outer SVG derives its missing max-content width from its
   intrinsic height and viewBox ratio,
