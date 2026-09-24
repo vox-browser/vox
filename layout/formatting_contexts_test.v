@@ -1084,6 +1084,20 @@ fn test_table_row_baseline_ignores_middle_aligned_cells() {
 	assert baseline.padding_bottom.to_double() == 20
 }
 
+fn test_table_row_grows_to_contain_shifted_baseline_aligned_cell() {
+	document := html.parse_document('<!doctype html><style>
+		table { border-spacing:0; font-size:0 } td { padding:0; vertical-align:baseline }
+		.inline { display:inline-block; width:20px; height:20px }
+		.block { height:100px }
+	</style><table><tr id="row"><td><div style="width:20px;height:50px"></div></td><td id="shifted"><span class="inline"></span><div class="block"></div></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	row := used_for_id(result, 'row')
+	shifted := used_for_id(result, 'shifted')
+	assert row.content_height().to_double() > 149
+	assert shifted.padding_top.to_double() > 29
+	assert shifted.padding_bottom.to_double() >= 0
+}
+
 fn test_relative_insets_resolve_against_the_containing_block_without_changing_flow_offsets() {
 	document := html.parse_document('<!doctype html><style>
 		#parent { width:200px }

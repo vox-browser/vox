@@ -1311,6 +1311,22 @@ fn table_row_derived_baseline(index int, row_heights []CSSPixels, row_baselines 
 	return CSSPixels.new(0)
 }
 
+// A baseline-aligned cell whose baseline lies above the row baseline is moved
+// down to it. Grow the row far enough to retain the largest descent below that
+// shared baseline instead of giving the shifted cell negative bottom padding.
+fn grow_table_rows_to_baseline_aligned_cells(mut heights []CSSPixels, row_baselines []CSSPixels,
+	row_has_baseline []bool, row_max_cell_descent []CSSPixels, row_is_collapsed []bool) {
+	for index in 0 .. heights.len {
+		if index < row_is_collapsed.len && row_is_collapsed[index] {
+			continue
+		}
+		if index < row_has_baseline.len && row_has_baseline[index] {
+			reach := row_baselines[index].plus(row_max_cell_descent[index])
+			heights[index] = css_pixels_max(heights[index], reach)
+		}
+	}
+}
+
 fn store_table_part_baselines(mut state LayoutState, table &Node, table_state &UsedValues, rows []&Node, row_offsets []CSSPixels, row_heights []CSSPixels, row_baselines []CSSPixels, row_has_baseline []bool, row_smallest_cell_end_offset []CSSPixels, row_has_cell []bool, row_is_collapsed []bool) {
 	mut first_visible_row := -1
 	mut last_visible_row := -1
@@ -2106,6 +2122,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	mut row_heights := []CSSPixels{len: rows.len, init: CSSPixels.new(0)}
 	mut row_baselines := []CSSPixels{len: rows.len, init: CSSPixels.new(0)}
 	mut row_has_baseline := []bool{len: rows.len}
+	mut row_max_cell_descent := []CSSPixels{len: rows.len, init: CSSPixels.new(0)}
 	mut row_smallest_cell_end_offset := []CSSPixels{len: rows.len, init: CSSPixels.max()}
 	mut row_has_cell := []bool{len: rows.len}
 	mut cell_baselines := []CSSPixels{len: placements.len, init: CSSPixels.new(0)}
@@ -2192,6 +2209,12 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 				row_has_baseline[placement.row] = true
 				row_baselines[placement.row] = css_pixels_max(row_baselines[placement.row],
 					cell_baselines[placement_index])
+				if placement.row_span == 1 {
+					cell_descent := table_cell_measurement_outer_height(cell_state,
+						collapsed).minus(cell_baselines[placement_index])
+					row_max_cell_descent[placement.row] = css_pixels_max(
+						row_max_cell_descent[placement.row], cell_descent)
+				}
 			}
 		}
 		if !row_is_collapsed[placement.row] {
@@ -2204,6 +2227,8 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			row_heights[placement.row] = css_pixels_max(row_heights[placement.row], row_min_heights[placement.row])
 		}
 	}
+	grow_table_rows_to_baseline_aligned_cells(mut row_heights, row_baselines,
+		row_has_baseline, row_max_cell_descent, row_is_collapsed)
 	// TableGrid marks a row collapsed when either the row itself or its row
 	// group has visibility: collapse. Intrinsic row measures are still computed,
 	// but compute_table_height() discards the collapsed row's base height.
@@ -2284,10 +2309,18 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 					row_has_baseline[placement.row] = true
 					row_baselines[placement.row] = css_pixels_max(row_baselines[placement.row],
 						cell_baselines[placement_index])
+					if placement.row_span == 1 {
+						cell_descent := table_cell_measurement_outer_height(cell_state,
+							collapsed).minus(cell_baselines[placement_index])
+						row_max_cell_descent[placement.row] = css_pixels_max(
+							row_max_cell_descent[placement.row], cell_descent)
+					}
 				}
 			}
 		}
 	}
+	grow_table_rows_to_baseline_aligned_cells(mut reference_heights, row_baselines,
+		row_has_baseline, row_max_cell_descent, row_is_collapsed)
 	mut sum_reference_height := CSSPixels.new(0)
 	mut visible_row_count := 0
 	for index, height in reference_heights {
