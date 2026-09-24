@@ -181,7 +181,10 @@
   columns, adds content-box offsets to first-row percentage widths, and ignores
   later-row cells when deriving column measures. When those measures make a
   column narrower than its cell offsets, the cell reduces end/start padding
-  and then borders so its painted border box stays within its columns.
+  and then borders so its painted border box stays within its columns. Columns
+  and column groups with `visibility: collapse` retain their sizing influence,
+  then lose their used width and adjacent spacing; cells and track boxes use
+  only the visible columns they span while the table wrapper keeps its width.
 - Parsed programs are reused for bytecode cache generation, nested idle
   callback periods are paced, Window named-property membership avoids full ID
   enumeration, and SVG presentation attributes retain their case-sensitive
