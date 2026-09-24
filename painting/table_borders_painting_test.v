@@ -85,11 +85,39 @@ fn test_collapsed_table_borders_snap_spans_to_shared_grid_lines() {
 	assert spanning.bottom() == left_bottom.y
 }
 
+fn test_collapsed_table_borders_split_in_css_pixels_before_device_snapping() {
+	blue := Color{0, 0, 255, 255}
+	converter := new_device_pixel_converter(1) or { panic(err) }
+	commands := paint_table_borders([
+		TableCellPaintData{
+			coordinates: TableCellCoordinates{0, 0, 1, 1}
+			rect: Rect{10.25, 20.25, 20.5, 10.25}
+			borders: table_test_borders(blue, 1.5, .solid)
+		},
+	], true, converter)
+	assert commands.len == 4
+	mut rects := []IntRect{}
+	for command in commands {
+		match command {
+			FillRect { rects << command.rect }
+			else { assert false }
+		}
+	}
+	// The 1.5 CSS-pixel border has no whole pixel after the grid line and
+	// keeps the remaining 1.5 pixels before it. Snapping those CSS edges
+	// independently may produce one or two device pixels depending on the
+	// fractional grid-line position.
+	assert rects.any(it.x == 9 && it.width == 1)
+	assert rects.any(it.x == 29 && it.width == 2)
+	assert rects.any(it.y == 19 && it.height == 1)
+	assert rects.any(it.y == 29 && it.height == 2)
+}
+
 fn test_collapsed_table_border_sort_paints_stronger_and_top_left_edges_last() {
 	weak := BorderEdgePaintingInfo{
 		rect: IntRect{0, 0, 10, 1}
-		border_data_with_element_kind: DeviceBorderDataWithElementKind{
-			border_data: DeviceBorderData{Color{1, 0, 0, 255}, .dashed, 1}
+		border_data_with_element_kind: BorderDataWithElementKind{
+			border_data: BorderData{Color{1, 0, 0, 255}, .dashed, 1}
 			element_kind: .cell
 		}
 		direction: .horizontal
@@ -98,15 +126,15 @@ fn test_collapsed_table_border_sort_paints_stronger_and_top_left_edges_last() {
 	}
 	strong_later_coordinate := BorderEdgePaintingInfo{
 		...weak
-		border_data_with_element_kind: DeviceBorderDataWithElementKind{
-			border_data: DeviceBorderData{Color{2, 0, 0, 255}, .solid, 2}
+		border_data_with_element_kind: BorderDataWithElementKind{
+			border_data: BorderData{Color{2, 0, 0, 255}, .solid, 2}
 			element_kind: .cell
 		}
 	}
 	strong_top_left := BorderEdgePaintingInfo{
 		...strong_later_coordinate
-		border_data_with_element_kind: DeviceBorderDataWithElementKind{
-			border_data: DeviceBorderData{Color{3, 0, 0, 255}, .solid, 2}
+		border_data_with_element_kind: BorderDataWithElementKind{
+			border_data: BorderData{Color{3, 0, 0, 255}, .solid, 2}
 			element_kind: .cell
 		}
 		row: 0

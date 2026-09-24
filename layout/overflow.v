@@ -298,26 +298,10 @@ fn overflow_box_border_rect(node &Node, state &LayoutState) ?css.CSSPixelRect {
 	styled := node.as_node_with_style() or { return none }
 	used := state.try_get(styled) or { return none }
 	position := layout_offset_in_svg_user_space(node, state, used)
-	border_left := if used.use_collapsing_borders_model() {
-		css.css_pixels_round(used.border_left.divided_by_float(2.0))
-	} else {
-		used.border_left
-	}
-	border_right := if used.use_collapsing_borders_model() {
-		css.css_pixels_round(used.border_right.divided_by_float(2.0))
-	} else {
-		used.border_right
-	}
-	border_top := if used.use_collapsing_borders_model() {
-		css.css_pixels_round(used.border_top.divided_by_float(2.0))
-	} else {
-		used.border_top
-	}
-	border_bottom := if used.use_collapsing_borders_model() {
-		css.css_pixels_round(used.border_bottom.divided_by_float(2.0))
-	} else {
-		used.border_bottom
-	}
+	border_left := used.border_left_collapsed()
+	border_right := used.border_right_collapsed()
+	border_top := used.border_top_collapsed()
+	border_bottom := used.border_bottom_collapsed()
 	left := border_left.plus(used.padding_left)
 	top := border_top.plus(used.padding_top)
 	return css.CSSPixelRect{

@@ -317,6 +317,12 @@ fn resolved_collapsed_table_cell_border(table &Node, rows []&Node, placements_by
 }
 
 fn resolve_collapsed_table_borders(mut state LayoutState, table &Node, rows []&Node, placements []TableCellPlacement, column_definitions []TableColumnDefinition, column_count int) {
+	collapsed := table.computed_values().border_collapse() == .collapse
+	if table_styled := table.as_node_with_style() {
+		mut table_state := state.get_mutable(table_styled)
+		table_state.set_use_collapsing_borders_model(collapsed)
+		table_state.set_is_collapsed_borders_table_box(collapsed)
+	}
 	// TableGrid::m_cells_by_coordinate provides constant-time neighboring-cell
 	// lookup upstream. Preserve that complexity instead of rescanning every
 	// placement for all four edges of every cell.
@@ -334,13 +340,16 @@ fn resolve_collapsed_table_borders(mut state LayoutState, table &Node, rows []&N
 	for placement in placements {
 		styled := placement.cell.as_node_with_style() or { continue }
 		mut cell_state := state.get_mutable(styled)
+		cell_state.set_use_collapsing_borders_model(collapsed)
+		cell_state.set_is_collapsed_borders_table_box(false)
 		cell_state.set_table_cell_coordinates(painting.TableCellCoordinates{
 			row_index: placement.row
 			column_index: placement.column
 			row_span: placement.row_span
 			column_span: placement.column_span
 		})
-		if table.computed_values().border_collapse() != .collapse {
+		if !collapsed {
+			cell_state.clear_override_borders_data()
 			continue
 		}
 		left := resolved_collapsed_table_cell_border(table, rows, placements_by_coordinate, row_groups_by_index, column_definitions_by_index, column_count, placement, .left)
@@ -1055,18 +1064,14 @@ fn distribute_table_width_to_columns(min_widths []CSSPixels, max_widths []CSSPix
 	return widths
 }
 
-fn collapsed_table_border_layout_width(width CSSPixels) CSSPixels {
-	return css.css_pixels_round(width.divided_by_float(2.0))
-}
-
 fn table_cell_measurement_inline_edges(values UsedValues, collapsed bool) CSSPixels {
 	left_border := if collapsed {
-		collapsed_table_border_layout_width(values.border_left)
+		collapsed_border_part_after_line(values.border_left)
 	} else {
 		values.border_left
 	}
 	right_border := if collapsed {
-		collapsed_table_border_layout_width(values.border_right)
+		collapsed_border_part_before_line(values.border_right)
 	} else {
 		values.border_right
 	}
@@ -1075,12 +1080,12 @@ fn table_cell_measurement_inline_edges(values UsedValues, collapsed bool) CSSPix
 
 fn table_cell_measurement_block_edges(values UsedValues, collapsed bool) CSSPixels {
 	top_border := if collapsed {
-		collapsed_table_border_layout_width(values.border_top)
+		collapsed_border_part_after_line(values.border_top)
 	} else {
 		values.border_top
 	}
 	bottom_border := if collapsed {
-		collapsed_table_border_layout_width(values.border_bottom)
+		collapsed_border_part_before_line(values.border_bottom)
 	} else {
 		values.border_bottom
 	}
@@ -1093,7 +1098,7 @@ fn table_cell_measurement_outer_height(values UsedValues, collapsed bool) CSSPix
 
 fn table_cell_content_offset_left(values UsedValues, collapsed bool) CSSPixels {
 	border := if collapsed {
-		collapsed_table_border_layout_width(values.border_left)
+		collapsed_border_part_after_line(values.border_left)
 	} else {
 		values.border_left
 	}
@@ -1102,7 +1107,7 @@ fn table_cell_content_offset_left(values UsedValues, collapsed bool) CSSPixels {
 
 fn table_cell_content_offset_top(values UsedValues, collapsed bool) CSSPixels {
 	border := if collapsed {
-		collapsed_table_border_layout_width(values.border_top)
+		collapsed_border_part_after_line(values.border_top)
 	} else {
 		values.border_top
 	}
@@ -1507,7 +1512,11 @@ fn compute_table_wrapper_content_width(mut state LayoutState, wrapper &Node, mut
 		table_content_width = css_pixels_max(specified, used_min_width)
 	}
 	table_content_width = clamp_layout_content_size(table_node, table_content_width, containing_width, table_state, true)
-	table_border_box_width := table_content_width.plus(table_state.border_left).plus(table_state.padding_left).plus(table_state.padding_right).plus(table_state.border_right)
+	table_border_box_width := if table_width.is_auto() {
+		table_content_width.plus(table_state.border_box_left()).plus(table_state.border_box_right())
+	} else {
+		table_content_width.plus(table_state.border_left).plus(table_state.padding_left).plus(table_state.padding_right).plus(table_state.border_right)
+	}
 	return table_border_box_width
 }
 
@@ -1642,6 +1651,11 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	}
 	computed := table.computed_values()
 	resolve_collapsed_table_borders(mut state, table, rows, placements, column_definitions, column_count)
+	if computed.border_collapse() == .collapse {
+		if wrapper_state := table_state.containing_block_used_values() {
+			table_state.set_content_width(wrapper_state.content_width().minus(table_state.border_box_left()).minus(table_state.border_box_right()))
+		}
+	}
 	if computed.size_value(.width).contains_percentage() {
 		// Percentages on the principal table are relative to the table wrapper's
 		// containing block, not to the anonymous wrapper itself. The generic

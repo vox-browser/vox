@@ -45,21 +45,9 @@ enum TableBorderEdgeDirection {
 	vertical
 }
 
-struct DeviceBorderDataWithElementKind {
-	border_data  DeviceBorderData
-	element_kind ConflictingElementKind
-}
-
-struct DeviceBordersDataWithElementKind {
-	top    DeviceBorderDataWithElementKind
-	right  DeviceBorderDataWithElementKind
-	bottom DeviceBorderDataWithElementKind
-	left   DeviceBorderDataWithElementKind
-}
-
 struct BorderEdgePaintingInfo {
 	rect                          IntRect
-	border_data_with_element_kind DeviceBorderDataWithElementKind
+	border_data_with_element_kind BorderDataWithElementKind
 	direction                     TableBorderEdgeDirection
 	row                           ?int
 	column                        ?int
@@ -83,24 +71,40 @@ fn column_index_for_element_kind(index int, element_kind ConflictingElementKind)
 	}
 }
 
-fn half_ceil(width int) int {
-	return int(math.ceil(f64(width) / 2.0))
+fn collapsed_border_part_after_line(width f64) f64 {
+	if width <= 0 {
+		return 0
+	}
+	return math.floor(width / 2.0)
 }
 
-fn half_floor(width int) int {
-	return int(math.floor(f64(width) / 2.0))
+fn collapsed_border_part_before_line(width f64) f64 {
+	if width <= 0 {
+		return 0
+	}
+	return width - collapsed_border_part_after_line(width)
 }
 
-fn make_right_cell_edge(right_cell_rect IntRect, cell_rect IntRect, borders_data DeviceBordersDataWithElementKind, coordinates TableCellCoordinates) BorderEdgePaintingInfo {
-	connect_top_offset := half_ceil(borders_data.top.border_data.width)
-	connect_excess_height := connect_top_offset + half_floor(borders_data.bottom.border_data.width)
+fn device_rect_from_css_edges(left f64, top f64, right f64, bottom f64, converter DevicePixelConverter) IntRect {
+	x := converter.rounded_device_pixels(left)
+	y := converter.rounded_device_pixels(top)
+	return IntRect{
+		x: x
+		y: y
+		width: converter.rounded_device_pixels(right) - x
+		height: converter.rounded_device_pixels(bottom) - y
+	}
+}
+
+fn make_right_cell_edge(right_cell_rect Rect, cell_rect Rect, borders_data BordersDataWithElementKind, coordinates TableCellCoordinates, converter DevicePixelConverter) BorderEdgePaintingInfo {
+	grid_line := right_cell_rect.x
 	return BorderEdgePaintingInfo{
-		rect: IntRect{
-			x: right_cell_rect.x - half_ceil(borders_data.right.border_data.width)
-			y: cell_rect.y - connect_top_offset
-			width: borders_data.right.border_data.width
-			height: max_int(cell_rect.height, right_cell_rect.height) + connect_excess_height
-		}
+		rect: device_rect_from_css_edges(
+			grid_line - collapsed_border_part_before_line(borders_data.right.border_data.width),
+			cell_rect.y - collapsed_border_part_before_line(borders_data.top.border_data.width),
+			grid_line + collapsed_border_part_after_line(borders_data.right.border_data.width),
+			math.max(cell_rect.bottom(), right_cell_rect.bottom()) + collapsed_border_part_after_line(borders_data.bottom.border_data.width),
+			converter)
 		border_data_with_element_kind: borders_data.right
 		direction: .vertical
 		row: row_index_for_element_kind(coordinates.row_index, borders_data.right.element_kind)
@@ -108,16 +112,15 @@ fn make_right_cell_edge(right_cell_rect IntRect, cell_rect IntRect, borders_data
 	}
 }
 
-fn make_down_cell_edge(down_cell_rect IntRect, cell_rect IntRect, borders_data DeviceBordersDataWithElementKind, coordinates TableCellCoordinates) BorderEdgePaintingInfo {
-	connect_left_offset := half_ceil(borders_data.left.border_data.width)
-	connect_excess_width := connect_left_offset + half_floor(borders_data.right.border_data.width)
+fn make_down_cell_edge(down_cell_rect Rect, cell_rect Rect, borders_data BordersDataWithElementKind, coordinates TableCellCoordinates, converter DevicePixelConverter) BorderEdgePaintingInfo {
+	grid_line := down_cell_rect.y
 	return BorderEdgePaintingInfo{
-		rect: IntRect{
-			x: cell_rect.x - connect_left_offset
-			y: down_cell_rect.y - half_ceil(borders_data.bottom.border_data.width)
-			width: max_int(cell_rect.width, down_cell_rect.width) + connect_excess_width
-			height: borders_data.bottom.border_data.width
-		}
+		rect: device_rect_from_css_edges(
+			cell_rect.x - collapsed_border_part_before_line(borders_data.left.border_data.width),
+			grid_line - collapsed_border_part_before_line(borders_data.bottom.border_data.width),
+			math.max(cell_rect.right(), down_cell_rect.right()) + collapsed_border_part_after_line(borders_data.right.border_data.width),
+			grid_line + collapsed_border_part_after_line(borders_data.bottom.border_data.width),
+			converter)
 		border_data_with_element_kind: borders_data.bottom
 		direction: .horizontal
 		row: row_index_for_element_kind(coordinates.row_index, borders_data.bottom.element_kind)
@@ -125,16 +128,15 @@ fn make_down_cell_edge(down_cell_rect IntRect, cell_rect IntRect, borders_data D
 	}
 }
 
-fn make_first_row_top_cell_edge(cell_rect IntRect, borders_data DeviceBordersDataWithElementKind, coordinates TableCellCoordinates) BorderEdgePaintingInfo {
-	connect_left_offset := half_ceil(borders_data.left.border_data.width)
-	connect_excess_width := connect_left_offset + half_floor(borders_data.right.border_data.width)
+fn make_first_row_top_cell_edge(cell_rect Rect, borders_data BordersDataWithElementKind, coordinates TableCellCoordinates, converter DevicePixelConverter) BorderEdgePaintingInfo {
+	grid_line := cell_rect.y
 	return BorderEdgePaintingInfo{
-		rect: IntRect{
-			x: cell_rect.x - connect_left_offset
-			y: cell_rect.y - half_ceil(borders_data.top.border_data.width)
-			width: cell_rect.width + connect_excess_width
-			height: borders_data.top.border_data.width
-		}
+		rect: device_rect_from_css_edges(
+			cell_rect.x - collapsed_border_part_before_line(borders_data.left.border_data.width),
+			grid_line - collapsed_border_part_before_line(borders_data.top.border_data.width),
+			cell_rect.right() + collapsed_border_part_after_line(borders_data.right.border_data.width),
+			grid_line + collapsed_border_part_after_line(borders_data.top.border_data.width),
+			converter)
 		border_data_with_element_kind: borders_data.top
 		direction: .horizontal
 		row: row_index_for_element_kind(coordinates.row_index, borders_data.top.element_kind)
@@ -142,16 +144,15 @@ fn make_first_row_top_cell_edge(cell_rect IntRect, borders_data DeviceBordersDat
 	}
 }
 
-fn make_last_row_bottom_cell_edge(cell_rect IntRect, borders_data DeviceBordersDataWithElementKind, coordinates TableCellCoordinates) BorderEdgePaintingInfo {
-	connect_left_offset := half_ceil(borders_data.left.border_data.width)
-	connect_excess_width := connect_left_offset + half_floor(borders_data.right.border_data.width)
+fn make_last_row_bottom_cell_edge(cell_rect Rect, borders_data BordersDataWithElementKind, coordinates TableCellCoordinates, converter DevicePixelConverter) BorderEdgePaintingInfo {
+	grid_line := cell_rect.bottom()
 	return BorderEdgePaintingInfo{
-		rect: IntRect{
-			x: cell_rect.x - connect_left_offset
-			y: cell_rect.bottom() - half_ceil(borders_data.bottom.border_data.width)
-			width: cell_rect.width + connect_excess_width
-			height: borders_data.bottom.border_data.width
-		}
+		rect: device_rect_from_css_edges(
+			cell_rect.x - collapsed_border_part_before_line(borders_data.left.border_data.width),
+			grid_line - collapsed_border_part_before_line(borders_data.bottom.border_data.width),
+			cell_rect.right() + collapsed_border_part_after_line(borders_data.right.border_data.width),
+			grid_line + collapsed_border_part_after_line(borders_data.bottom.border_data.width),
+			converter)
 		border_data_with_element_kind: borders_data.bottom
 		direction: .horizontal
 		row: row_index_for_element_kind(coordinates.row_index, borders_data.bottom.element_kind)
@@ -159,16 +160,15 @@ fn make_last_row_bottom_cell_edge(cell_rect IntRect, borders_data DeviceBordersD
 	}
 }
 
-fn make_first_column_left_cell_edge(cell_rect IntRect, borders_data DeviceBordersDataWithElementKind, coordinates TableCellCoordinates) BorderEdgePaintingInfo {
-	connect_top_offset := half_ceil(borders_data.top.border_data.width)
-	connect_excess_height := connect_top_offset + half_floor(borders_data.bottom.border_data.width)
+fn make_first_column_left_cell_edge(cell_rect Rect, borders_data BordersDataWithElementKind, coordinates TableCellCoordinates, converter DevicePixelConverter) BorderEdgePaintingInfo {
+	grid_line := cell_rect.x
 	return BorderEdgePaintingInfo{
-		rect: IntRect{
-			x: cell_rect.x - half_ceil(borders_data.left.border_data.width)
-			y: cell_rect.y - connect_top_offset
-			width: borders_data.left.border_data.width
-			height: cell_rect.height + connect_excess_height
-		}
+		rect: device_rect_from_css_edges(
+			grid_line - collapsed_border_part_before_line(borders_data.left.border_data.width),
+			cell_rect.y - collapsed_border_part_before_line(borders_data.top.border_data.width),
+			grid_line + collapsed_border_part_after_line(borders_data.left.border_data.width),
+			cell_rect.bottom() + collapsed_border_part_after_line(borders_data.bottom.border_data.width),
+			converter)
 		border_data_with_element_kind: borders_data.left
 		direction: .vertical
 		row: row_index_for_element_kind(coordinates.row_index, borders_data.left.element_kind)
@@ -176,40 +176,19 @@ fn make_first_column_left_cell_edge(cell_rect IntRect, borders_data DeviceBorder
 	}
 }
 
-fn make_last_column_right_cell_edge(cell_rect IntRect, borders_data DeviceBordersDataWithElementKind, coordinates TableCellCoordinates) BorderEdgePaintingInfo {
-	connect_top_offset := half_ceil(borders_data.top.border_data.width)
-	connect_excess_height := connect_top_offset + half_floor(borders_data.bottom.border_data.width)
+fn make_last_column_right_cell_edge(cell_rect Rect, borders_data BordersDataWithElementKind, coordinates TableCellCoordinates, converter DevicePixelConverter) BorderEdgePaintingInfo {
+	grid_line := cell_rect.right()
 	return BorderEdgePaintingInfo{
-		rect: IntRect{
-			x: cell_rect.right() - half_ceil(borders_data.right.border_data.width)
-			y: cell_rect.y - connect_top_offset
-			width: borders_data.right.border_data.width
-			height: cell_rect.height + connect_excess_height
-		}
+		rect: device_rect_from_css_edges(
+			grid_line - collapsed_border_part_before_line(borders_data.right.border_data.width),
+			cell_rect.y - collapsed_border_part_before_line(borders_data.top.border_data.width),
+			grid_line + collapsed_border_part_after_line(borders_data.right.border_data.width),
+			cell_rect.bottom() + collapsed_border_part_after_line(borders_data.bottom.border_data.width),
+			converter)
 		border_data_with_element_kind: borders_data.right
 		direction: .vertical
 		row: row_index_for_element_kind(coordinates.row_index, borders_data.right.element_kind)
 		column: column_index_for_element_kind(coordinates.column_index, borders_data.right.element_kind)
-	}
-}
-
-fn device_border_data_from_css_border_data(border BorderDataWithElementKind, converter DevicePixelConverter) DeviceBorderDataWithElementKind {
-	return DeviceBorderDataWithElementKind{
-		border_data: DeviceBorderData{
-			color: border.border_data.color
-			line_style: border.border_data.line_style
-			width: converter.rounded_device_pixels(border.border_data.width)
-		}
-		element_kind: border.element_kind
-	}
-}
-
-fn device_borders_data_from_css_borders_data(borders BordersDataWithElementKind, converter DevicePixelConverter) DeviceBordersDataWithElementKind {
-	return DeviceBordersDataWithElementKind{
-		top: device_border_data_from_css_border_data(borders.top, converter)
-		right: device_border_data_from_css_border_data(borders.right, converter)
-		bottom: device_border_data_from_css_border_data(borders.bottom, converter)
-		left: device_border_data_from_css_border_data(borders.left, converter)
 	}
 }
 
@@ -228,7 +207,7 @@ fn paint_separate_cell_borders(cell TableCellPaintData, cell_rects map[u64]IntRe
 	return paint_all_borders(cell_rect, cell.radii.as_corners(converter), borders)
 }
 
-fn table_border_is_less_specific(a DeviceBorderData, b DeviceBorderData) bool {
+fn table_border_is_less_specific(a BorderData, b BorderData) bool {
 	if a.line_style == .hidden {
 		return false
 	}
@@ -317,7 +296,8 @@ fn paint_collected_edges(mut edges []BorderEdgePaintingInfo) []DisplayListComman
 	mut commands := []DisplayListCommand{cap: edges.len}
 	for edge in edges {
 		border := edge.border_data_with_element_kind.border_data
-		if border.width <= 0 || border.line_style in [.none, .hidden] {
+		if border.width <= 0 || edge.rect.width <= 0 || edge.rect.height <= 0
+			|| border.line_style in [.none, .hidden] {
 			continue
 		}
 		if border.line_style == .dotted || border.line_style == .dashed {
@@ -329,7 +309,7 @@ fn paint_collected_edges(mut edges []BorderEdgePaintingInfo) []DisplayListComman
 					IntPoint{edge.rect.x, edge.rect.bottom()}
 				}
 				color: border.color
-				thickness: border.width
+				thickness: if edge.direction == .horizontal { edge.rect.height } else { edge.rect.width }
 				line_style: border.line_style
 			})
 		} else {
@@ -366,47 +346,53 @@ pub fn paint_table_borders(cells []TableCellPaintData, border_collapse bool, con
 		return commands
 	}
 	mut edges := []BorderEdgePaintingInfo{}
+	mut cell_rects_css := map[u64]Rect{}
+	for cell in cells {
+		cell_rects_css[cell_coordinates_key(cell.coordinates.row_index, cell.coordinates.column_index)] = cell.rect
+	}
 	for cell in cells {
 		coordinates := cell.coordinates
-		cell_rect := cell_rects[cell_coordinates_key(coordinates.row_index, coordinates.column_index)]
-		borders := device_borders_data_from_css_borders_data(cell.borders, converter)
+		cell_rect := cell_rects_css[cell_coordinates_key(coordinates.row_index, coordinates.column_index)]
+		borders := cell.borders
 		right_coordinates := TableCellCoordinates{
 			row_index: coordinates.row_index
 			column_index: coordinates.column_index + coordinates.column_span
 		}
-		if right_cell_rect := cell_rects[cell_coordinates_key(right_coordinates.row_index, right_coordinates.column_index)] {
-			edges << make_right_cell_edge(right_cell_rect, cell_rect, borders, right_coordinates)
+		if right_cell_rect := cell_rects_css[cell_coordinates_key(right_coordinates.row_index, right_coordinates.column_index)] {
+			edges << make_right_cell_edge(right_cell_rect, cell_rect, borders, right_coordinates,
+				converter)
 		}
 		down_coordinates := TableCellCoordinates{
 			row_index: coordinates.row_index + coordinates.row_span
 			column_index: coordinates.column_index
 		}
-		if down_cell_rect := cell_rects[cell_coordinates_key(down_coordinates.row_index, down_coordinates.column_index)] {
-			edges << make_down_cell_edge(down_cell_rect, cell_rect, borders, down_coordinates)
+		if down_cell_rect := cell_rects_css[cell_coordinates_key(down_coordinates.row_index, down_coordinates.column_index)] {
+			edges << make_down_cell_edge(down_cell_rect, cell_rect, borders, down_coordinates,
+				converter)
 		}
 		if coordinates.row_index == 0 {
 			edges << make_first_row_top_cell_edge(cell_rect, borders, TableCellCoordinates{
 				row_index: 0
 				column_index: coordinates.column_index
-			})
+			}, converter)
 		}
 		if coordinates.row_index + coordinates.row_span == row_count {
 			edges << make_last_row_bottom_cell_edge(cell_rect, borders, TableCellCoordinates{
 				row_index: row_count - 1
 				column_index: coordinates.column_index
-			})
+			}, converter)
 		}
 		if coordinates.column_index == 0 {
 			edges << make_first_column_left_cell_edge(cell_rect, borders, TableCellCoordinates{
 				row_index: coordinates.row_index
 				column_index: 0
-			})
+			}, converter)
 		}
 		if coordinates.column_index + coordinates.column_span == column_count {
 			edges << make_last_column_right_cell_edge(cell_rect, borders, TableCellCoordinates{
 				row_index: coordinates.row_index
 				column_index: column_count - 1
-			})
+			}, converter)
 		}
 	}
 	mut commands := paint_collected_edges(mut edges)

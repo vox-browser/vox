@@ -4115,8 +4115,7 @@ fn test_typed_collapsed_table_borders_retain_winners_and_paint_shared_edges_once
 	assert right_borders.left.border_data.width == 6
 	assert left_borders.right.border_data.line_style == .dashed
 	assert left_borders.right.border_data.color == painting.Color{0, 0, 200, 255}
-	// The active paint geometry uses the rounded half-width on either side of
-	// the padding box, matching PaintableBox::absolute_border_box_rect().
+	// An even collapsed border splits equally on both sides of its grid line.
 	assert left_box.border.right == 3
 	assert right_box.border.left == 3
 

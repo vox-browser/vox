@@ -2100,6 +2100,28 @@ fn test_fixed_table_cell_border_box_width_is_not_counted_twice() {
 	assert second.offset.x().to_double() == 100
 }
 
+fn test_collapsed_table_odd_borders_split_between_table_and_cells() {
+	document := html.parse_document('<!doctype html><style>
+		table { width:100px; border-collapse:collapse; table-layout:fixed; border:1px solid }
+		td { height:10px; padding:0; border:1px solid }
+	</style><table id="table"><tr><td id="cell"></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	table := used_for_id(result, 'table')
+	cell := used_for_id(result, 'cell')
+	assert table.use_collapsing_borders_model()
+	assert table.is_collapsed_borders_table_box()
+	assert table.border_left_collapsed().to_double() == 1
+	assert table.border_right_collapsed().to_double() == 0
+	assert table.content_width().to_double() == 99
+	assert table.border_box_width().to_double() == 100
+	assert cell.use_collapsing_borders_model()
+	assert !cell.is_collapsed_borders_table_box()
+	assert cell.border_left_collapsed().to_double() == 0
+	assert cell.border_right_collapsed().to_double() == 1
+	assert cell.content_width().to_double() == 98
+	assert cell.border_box_width().to_double() == 99
+}
+
 fn test_table_auto_layout_uses_definite_cell_width_contributions() {
 	document := html.parse_document('<!doctype html><style>
 		table { width:160px; border-spacing:0 }

@@ -39,6 +39,8 @@ mut:
 	svg_rendering_disabled_       bool
 	override_borders_data_        ?painting.BordersDataWithElementKind
 	table_cell_coordinates_       ?painting.TableCellCoordinates
+	uses_collapsing_borders_model_ bool
+	is_collapsed_borders_table_box_ bool
 	has_line_clamp_point_         bool
 	is_invisible_for_line_clamp_  bool
 }
@@ -62,6 +64,8 @@ fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
 		svg_rendering_disabled_: rare.svg_rendering_disabled_
 		override_borders_data_: rare.override_borders_data_
 		table_cell_coordinates_: rare.table_cell_coordinates_
+		uses_collapsing_borders_model_: rare.uses_collapsing_borders_model_
+		is_collapsed_borders_table_box_: rare.is_collapsed_borders_table_box_
 		has_line_clamp_point_: rare.has_line_clamp_point_
 		is_invisible_for_line_clamp_: rare.is_invisible_for_line_clamp_
 	}
@@ -148,7 +152,22 @@ pub fn (u &UsedValues) containing_block_used_values() ?&UsedValues {
 
 pub fn (u &UsedValues) use_collapsing_borders_model() bool {
 	rare := u.rare_ or { return false }
-	return rare.override_borders_data_ != none
+	return rare.uses_collapsing_borders_model_
+}
+
+pub fn (mut u UsedValues) set_use_collapsing_borders_model(value bool) {
+	mut rare := u.ensure_rare_data()
+	rare.uses_collapsing_borders_model_ = value
+}
+
+pub fn (u &UsedValues) is_collapsed_borders_table_box() bool {
+	rare := u.rare_ or { return false }
+	return rare.is_collapsed_borders_table_box_
+}
+
+pub fn (mut u UsedValues) set_is_collapsed_borders_table_box(value bool) {
+	mut rare := u.ensure_rare_data()
+	rare.is_collapsed_borders_table_box_ = value
 }
 
 pub fn (u &UsedValues) override_borders_data() ?painting.BordersDataWithElementKind {
@@ -159,6 +178,12 @@ pub fn (u &UsedValues) override_borders_data() ?painting.BordersDataWithElementK
 pub fn (mut u UsedValues) set_override_borders_data(override_borders_data painting.BordersDataWithElementKind) {
 	mut rare := u.ensure_rare_data()
 	rare.override_borders_data_ = override_borders_data
+	rare.uses_collapsing_borders_model_ = true
+}
+
+pub fn (mut u UsedValues) clear_override_borders_data() {
+	mut rare := u.ensure_rare_data()
+	rare.override_borders_data_ = none
 }
 
 pub fn (u &UsedValues) table_cell_coordinates() ?painting.TableCellCoordinates {
@@ -575,9 +600,31 @@ pub fn (u &UsedValues) svg_rendering_disabled() bool {
 }
 
 // --- Margin box (margin + border + padding + content) ---
+fn collapsed_border_part_after_line(width CSSPixels) CSSPixels {
+	if width.raw_value() <= 0 {
+		return CSSPixels.new(0)
+	}
+	return css.css_pixels_floor(width.divided_by_float(2.0))
+}
+
+fn collapsed_border_part_before_line(width CSSPixels) CSSPixels {
+	if width.raw_value() <= 0 {
+		return CSSPixels.new(0)
+	}
+	return width.minus(collapsed_border_part_after_line(width))
+}
+
+fn (u &UsedValues) collapsed_border_share(width CSSPixels, start_edge bool) CSSPixels {
+	return if start_edge != u.is_collapsed_borders_table_box() {
+		collapsed_border_part_after_line(width)
+	} else {
+		collapsed_border_part_before_line(width)
+	}
+}
+
 fn (u &UsedValues) border_left_collapsed() CSSPixels {
 	return if u.use_collapsing_borders_model() {
-		css.css_pixels_round(u.border_left.divided_by_float(2.0))
+		u.collapsed_border_share(u.border_left, true)
 	} else {
 		u.border_left
 	}
@@ -585,7 +632,7 @@ fn (u &UsedValues) border_left_collapsed() CSSPixels {
 
 fn (u &UsedValues) border_right_collapsed() CSSPixels {
 	return if u.use_collapsing_borders_model() {
-		css.css_pixels_round(u.border_right.divided_by_float(2.0))
+		u.collapsed_border_share(u.border_right, false)
 	} else {
 		u.border_right
 	}
@@ -593,7 +640,7 @@ fn (u &UsedValues) border_right_collapsed() CSSPixels {
 
 fn (u &UsedValues) border_top_collapsed() CSSPixels {
 	return if u.use_collapsing_borders_model() {
-		css.css_pixels_round(u.border_top.divided_by_float(2.0))
+		u.collapsed_border_share(u.border_top, true)
 	} else {
 		u.border_top
 	}
@@ -601,7 +648,7 @@ fn (u &UsedValues) border_top_collapsed() CSSPixels {
 
 fn (u &UsedValues) border_bottom_collapsed() CSSPixels {
 	return if u.use_collapsing_borders_model() {
-		css.css_pixels_round(u.border_bottom.divided_by_float(2.0))
+		u.collapsed_border_share(u.border_bottom, false)
 	} else {
 		u.border_bottom
 	}

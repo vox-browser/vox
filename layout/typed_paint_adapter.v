@@ -528,18 +528,12 @@ fn compatibility_overflow_clip(node &Node, computed &css.ComputedProperties, use
 }
 
 fn compatibility_paint_border_edges(used &UsedValues) BoxEdges {
-	// PaintableBox::absolute_border_box_rect() gives a collapsed table cell half
-	// of each winning border. Keep the exact CSS-pixel rounding here so every
-	// visual-context consumer uses the same border box as painting.
-	if used.use_collapsing_borders_model() {
-		return BoxEdges{
-			top: math.round(used.border_top.to_double() / 2.0)
-			right: math.round(used.border_right.to_double() / 2.0)
-			bottom: math.round(used.border_bottom.to_double() / 2.0)
-			left: math.round(used.border_left.to_double() / 2.0)
-		}
+	return BoxEdges{
+		top: used.border_top_collapsed().to_double()
+		right: used.border_right_collapsed().to_double()
+		bottom: used.border_bottom_collapsed().to_double()
+		left: used.border_left_collapsed().to_double()
 	}
-	return BoxEdges{used.border_top.to_double(), used.border_right.to_double(), used.border_bottom.to_double(), used.border_left.to_double()}
 }
 
 // Direct translation of PaintableBox::get_clip_rect() and

@@ -51,7 +51,7 @@ fn test_layout_state_used_values() {
 	assert voidptr(found) == voidptr(uv)
 }
 
-fn test_layout_state_collapsed_borders_use_rounded_half_width() {
+fn test_layout_state_collapsed_borders_split_on_whole_pixels() {
 	mut values := UsedValues{}
 	values.set_content_width(CSSPixels.nearest_value_for(100))
 	values.set_content_height(CSSPixels.nearest_value_for(50))
@@ -70,14 +70,22 @@ fn test_layout_state_collapsed_borders_use_rounded_half_width() {
 	assert values.border_box_height().to_double() == 78
 	values.set_override_borders_data(painting.BordersDataWithElementKind{})
 	assert values.use_collapsing_borders_model()
-	assert values.border_left_collapsed().to_double() == 3
+	assert values.border_left_collapsed().to_double() == 2
 	assert values.border_right_collapsed().to_double() == 2
+	assert values.border_top_collapsed().to_double() == 0
+	assert values.border_bottom_collapsed().to_double() == 1
+	assert values.border_box_width().to_double() == 125
+	assert values.border_box_height().to_double() == 76
+	assert values.margin_box_left().to_double() == 17
+	assert values.margin_box_top().to_double() == 19
+
+	values.set_is_collapsed_borders_table_box(true)
+	assert values.border_left_collapsed().to_double() == 3
+	assert values.border_right_collapsed().to_double() == 1
 	assert values.border_top_collapsed().to_double() == 1
 	assert values.border_bottom_collapsed().to_double() == 1
-	assert values.border_box_width().to_double() == 126
+	assert values.border_box_width().to_double() == 125
 	assert values.border_box_height().to_double() == 77
-	assert values.margin_box_left().to_double() == 18
-	assert values.margin_box_top().to_double() == 20
 }
 
 // cumulative_offset sums a box's offset up the containing-block chain.
