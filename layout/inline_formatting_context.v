@@ -13,15 +13,15 @@ pub:
 	automatic_content_height CSSPixels
 }
 
-fn calculate_inline_static_position_rect(box &Box, containing_block_used_values &UsedValues) StaticPositionRect {
+fn calculate_inline_static_position_rect(box &Box, containing_block_used_values &UsedValues, line_builder &LineBuilder) StaticPositionRect {
 	box_node := unsafe { &Node(box) }
 	mut position_x := CSSPixels.new(0)
 	mut position_y := CSSPixels.new(0)
+	mut found := false
+	mut last_offset := css.CSSPixelPoint{}
+	mut last_width := CSSPixels.new(0)
+	mut last_height := CSSPixels.new(0)
 	if sibling := box_node.previous_sibling() {
-		mut found := false
-		mut last_offset := css.CSSPixelPoint{}
-		mut last_width := CSSPixels.new(0)
-		mut last_height := CSSPixels.new(0)
 		for line_box in containing_block_used_values.line_boxes {
 			for fragment in line_box.fragments_ {
 				if fragment.layout_node() == sibling {
@@ -32,14 +32,19 @@ fn calculate_inline_static_position_rect(box &Box, containing_block_used_values 
 				}
 			}
 		}
-		if found {
-			if box.computed_values().display_before_box_type_transformation().is_block_outside() {
-				position_y = last_offset.y().plus(last_height)
-			} else {
-				position_x = last_offset.x().plus(last_width)
-				position_y = last_offset.y()
-			}
+	}
+	is_block_outside := box.computed_values().display_before_box_type_transformation().is_block_outside()
+	if found {
+		if is_block_outside {
+			position_y = last_offset.y().plus(last_height)
+		} else {
+			position_x = last_offset.x().plus(last_width)
+			position_y = last_offset.y()
 		}
+	} else if !is_block_outside {
+		// With no preceding line fragment, an inline-level hypothetical box
+		// starts at the first line's float-shortened inline offset.
+		position_x, _ = line_builder.float_edges_at_block_offset(CSSPixels.new(0))
 	}
 	return StaticPositionRect{
 		rect: css.CSSPixelRect.new(position_x.to_double(), position_y.to_double(), 0, 0)
@@ -287,7 +292,8 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 		for box in absolute_boxes {
 			styled := unsafe { &Node(box) }.as_node_with_style() or { continue }
 			mut box_state := state.get_mutable(styled)
-			box_state.set_static_position_rect(calculate_inline_static_position_rect(box, containing_block_used_values))
+			box_state.set_static_position_rect(calculate_inline_static_position_rect(box,
+				containing_block_used_values, line_builder))
 		}
 	}
 

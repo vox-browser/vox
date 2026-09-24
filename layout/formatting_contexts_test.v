@@ -4486,6 +4486,22 @@ fn test_inline_end_static_position_survives_anonymous_wrapper_fixup() {
 	assert positioned_used.static_position().y().to_double() == 40
 }
 
+fn test_inline_abspos_static_position_accounts_for_float_intrusion() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#wrapper { position:relative; width:400px; height:200px }
+		#float { float:left; width:100px; height:200px }
+		#abspos { display:inline-block; position:absolute; width:50px; height:50px }
+	</style><div id="wrapper">
+		<div id="float"></div>
+		<div id="abspos"></div>
+	</div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'abspos').static_position().x().to_double() == 100
+	assert used_for_id(result, 'abspos').offset.x().to_double() == 100
+	assert used_for_id(result, 'abspos').offset.y().to_double() == 0
+}
+
 fn test_subgrid_inherits_tracks_and_contributes_descendants_to_parent_sizing() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }
