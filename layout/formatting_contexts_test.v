@@ -2590,6 +2590,26 @@ fn test_collapsed_table_column_hides_only_cells_wholly_inside_it_from_paint() {
 	assert result.paint_tree.find_box(i64(spanning.as_node().unique_id())) != none
 }
 
+fn test_block_container_vertical_align_does_not_shift_its_own_text() {
+	font_face := $if macos {
+		'@font-face { font-family:Ahem; src:url("file:///System/Library/Fonts/Supplemental/Arial.ttf") }'
+	} $else {
+		''
+	}
+	document := html.parse_document('<!doctype html><style>${font_face}
+		table, div { font:1.25em/1 Ahem }
+		table { table-layout:fixed; width:420px; border-spacing:4px }
+		td { padding:1px 0 }
+	</style><table><tr id="row"><td id="cell">col</td></tr></table><div id="after">ref</div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	cell := used_for_id(result, 'cell')
+	after := used_for_id(result, 'after')
+	assert cell.line_boxes.len == 1
+	assert cell.line_boxes[0].height().to_double() == after.line_boxes[0].height().to_double()
+	assert cell.content_height().to_double() == after.content_height().to_double()
+	assert used_for_id(result, 'row').content_height().to_double() == cell.content_height().to_double() + 2
+}
+
 fn test_collapsed_table_column_group_collapses_its_columns() {
 	document := html.parse_document('<!doctype html><style>
 		html, body { margin:0 }

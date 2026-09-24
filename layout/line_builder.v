@@ -218,6 +218,18 @@ fn (mut builder LineBuilder) should_break(next_item_width CSSPixels) bool {
 	return builder.available_width_for_current_line.is_less_than_px(current_line_width.plus(next_item_width))
 }
 
+// Direct text in the block container belongs to an anonymous inline box. The
+// container's vertical-align positions the container in its parent formatting
+// context and does not apply to that anonymous inline box, whose initial value
+// is baseline because vertical-align is not inherited.
+fn (builder &LineBuilder) fragment_uses_container_alignment(fragment &LineBoxFragment) bool {
+	if !fragment.layout_node_.is_text_node() {
+		return false
+	}
+	parent := fragment.layout_node_.parent() or { return false }
+	return layout_nodes_same(parent, unsafe { &Node(builder.containing_block) })
+}
+
 pub fn (mut builder LineBuilder) update_last_line() {
 	if !builder.last_line_needs_update {
 		return
@@ -270,6 +282,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 	for index in 0 .. line_box.fragments_.len {
 		mut fragment := &line_box.fragments_[index]
 		fragment_computed := fragment.layout_node_.computed_values()
+		uses_container_alignment := builder.fragment_uses_container_alignment(fragment)
 		mut fragment_baseline := CSSPixels.new(0)
 		if fragment.layout_node_.is_text_node() {
 			fragment_baseline = font_baseline_for_line_height(layout_font_metrics_for_node(fragment.layout_node_), fragment_computed.line_height())
@@ -277,8 +290,10 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			fragment_baseline = layout_box_baseline(builder.layout_state, fragment.layout_node_)
 		}
 		fragment.set_baseline(fragment_baseline)
-		if vertical_align := fragment_computed.vertical_align_length_percentage() {
-			fragment_baseline = fragment_baseline.plus(vertical_align.to_px(layout_length_resolution_context(fragment.layout_node_), fragment_computed.line_height()))
+		if !uses_container_alignment {
+			if vertical_align := fragment_computed.vertical_align_length_percentage() {
+				fragment_baseline = fragment_baseline.plus(vertical_align.to_px(layout_length_resolution_context(fragment.layout_node_), fragment_computed.line_height()))
+			}
 		}
 		if fragment_baseline.raw_value() > line_box_baseline.raw_value()
 			&& !fragment.layout_node_.is_text_node()
@@ -300,6 +315,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 	}
 	for index in 0 .. line_box.fragments_.len {
 		mut fragment := &line_box.fragments_[index]
+		uses_container_alignment := builder.fragment_uses_container_alignment(fragment)
 		fragment_inline_offset := inline_offset.plus(fragment.inline_offset())
 		mut effective_box_top_offset := fragment.border_box_top()
 		mut effective_box_bottom_offset := fragment.border_box_top()
@@ -314,7 +330,12 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			builder.current_block_offset.plus(line_box_baseline).minus(fragment.baseline()).plus(effective_box_top_offset)
 		mut fragment_block_offset := alphabetic_baseline
 		fragment_computed := fragment.layout_node_.computed_values()
-		match fragment_computed.vertical_align() {
+		alignment := if uses_container_alignment {
+			css.VerticalAlign.baseline
+		} else {
+			fragment_computed.vertical_align()
+		}
+		match alignment {
 			.top {
 				fragment_block_offset = builder.current_block_offset.plus(effective_box_top_offset)
 			}
@@ -333,9 +354,11 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			}
 			else {}
 		}
-		if vertical_align := fragment_computed.vertical_align_length_percentage() {
-			vertical_align_amount := vertical_align.to_px(layout_length_resolution_context(fragment.layout_node_), fragment_computed.line_height())
-			fragment_block_offset = alphabetic_baseline.minus(vertical_align_amount)
+		if !uses_container_alignment {
+			if vertical_align := fragment_computed.vertical_align_length_percentage() {
+				vertical_align_amount := vertical_align.to_px(layout_length_resolution_context(fragment.layout_node_), fragment_computed.line_height())
+				fragment_block_offset = alphabetic_baseline.minus(vertical_align_amount)
+			}
 		}
 		fragment.set_inline_offset(fragment_inline_offset)
 		fragment.set_block_offset(css.css_pixels_floor(fragment_block_offset).plus(block_offset))
@@ -361,8 +384,10 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			bottom_of_inline_box =
 				fragment.block_offset().plus(fragment.baseline()).plus(descent).plus(half_leading)
 		}
-		if vertical_align := fragment_computed.vertical_align_length_percentage() {
-			bottom_of_inline_box = bottom_of_inline_box.plus(vertical_align.to_px(layout_length_resolution_context(fragment.layout_node_), fragment_computed.line_height()))
+		if !uses_container_alignment {
+			if vertical_align := fragment_computed.vertical_align_length_percentage() {
+				bottom_of_inline_box = bottom_of_inline_box.plus(vertical_align.to_px(layout_length_resolution_context(fragment.layout_node_), fragment_computed.line_height()))
+			}
 		}
 		uppermost_box_top = css_pixels_min(uppermost_box_top, top_of_inline_box)
 		lowermost_box_bottom = css_pixels_max(lowermost_box_bottom, bottom_of_inline_box)
