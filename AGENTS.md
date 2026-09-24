@@ -156,7 +156,10 @@
   definite percentage-height basis through its anonymous flex/content wrappers,
   including aspect-ratio sizing and post-flexing content heights. It also honors
   flexible-grid intrinsic minimums and applies `min-height` while stretching
-  lines. Media-control contents retain the upstream left alignment.
+  lines. Media-control contents retain the upstream left alignment. Size and
+  inline-size query containers establish independent formatting contexts, but
+  an ordinary block with an automatic width still fills its containing block;
+  containment's zero intrinsic size is not treated as a replaced-element width.
 - Table column and column-group boxes retain their used grid geometry for
   painting and layout-tree inspection, including spanning columns, empty groups,
   border spacing, and RTL placement. Percentage column widths resolve against
