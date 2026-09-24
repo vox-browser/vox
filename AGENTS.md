@@ -364,7 +364,10 @@
 - Inline layout now finalizes conservative glyph-run ink bounds together with
   retained replay data after merging, ellipsis, and line clamping. Painting
   scales and positions those cached CSS-pixel bounds and keeps them distinct
-  from the fragment rectangle for display-list damage and culling.
+  from the fragment rectangle for display-list damage and culling. A baseline-
+  aligned inline block that raises a line's baseline also carries the font
+  strut's descent below it, and wrapped lines advance from that expanded line-
+  box end.
 - Text shaping applies computed `word-spacing` to spaces, no-break spaces, and
   collapsed line feeds. It records the exact shaped advance of trailing ASCII
   whitespace, carries that record through fragment merging and intrinsic shape
