@@ -27,8 +27,28 @@ fi
 
 mkdir -p "$output_dir"
 comparison_status=0
-normalized_reference_dir=$(mktemp -d "${TMPDIR:-/tmp}/vox2-reftest-reference.XXXXXX")
-trap 'rm -rf -- "$normalized_reference_dir"' EXIT HUP INT TERM
+if [ -n "${SCREENSHOT_NORMALIZED_REFERENCE_DIR:-}" ]; then
+	normalized_reference_dir=$SCREENSHOT_NORMALIZED_REFERENCE_DIR
+	mkdir -p "$normalized_reference_dir"
+else
+	normalized_reference_dir=$(mktemp -d "${TMPDIR:-/tmp}/vox2-reftest-reference.XXXXXX")
+	trap 'rm -rf -- "$normalized_reference_dir"' EXIT HUP INT TERM
+fi
+
+normalize_xhtml_for_html_capture() {
+	source_path=$1
+	target_path=$2
+	base_url="file://$(CDPATH= cd -- "$(dirname -- "$source_path")" && pwd)/"
+	awk '
+		{
+			gsub(/<!\[CDATA\[/, "")
+			gsub(/\]\]>/, "")
+			print
+		}
+	' "$source_path" | VOX2_CAPTURE_BASE_URL="$base_url" perl -pe '
+		s{(\b(?:href|src)\s*=\s*")(?!(?:[A-Za-z][A-Za-z0-9+.-]*:|//|#))([^"]*)}{$1 . $ENV{VOX2_CAPTURE_BASE_URL} . $2}ge
+	' > "$target_path"
+}
 
 for requested in "$@"; do
 	test_kind=screenshot
@@ -57,9 +77,10 @@ for requested in "$@"; do
 		*.xht)
 			# The native capture browser currently parses local files as HTML.
 			# Normalize XHTML stylesheet CDATA on the test side just as we do for
-			# an XHTML reference, so both halves exercise identical CSS text.
+			# an XHTML reference, while retaining the original base URL for any
+			# relative stylesheets, fonts, images, or scripts.
 			capture_input_source="$normalized_reference_dir/$name.input.html"
-			sed 's/<!\[CDATA\[//g; s/\]\]>//g' "$input_path" > "$capture_input_source"
+			normalize_xhtml_for_html_capture "$input_path" "$capture_input_source"
 			;;
 	esac
 	reference_relation=match
@@ -90,7 +111,7 @@ for requested in "$@"; do
 				# files, so remove only those XML delimiters before capturing a WPT
 				# reference. The stylesheet contents and comparison remain unchanged.
 				capture_expected_source="$normalized_reference_dir/$name.expected.html"
-				sed 's/<!\[CDATA\[//g; s/\]\]>//g' "$expected_source" > "$capture_expected_source"
+				normalize_xhtml_for_html_capture "$expected_source" "$capture_expected_source"
 				;;
 		esac
 		LADYBIRD_LAYOUT_TEST_FONT="$layout_test_font" \
