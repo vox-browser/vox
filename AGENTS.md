@@ -170,7 +170,9 @@
   baseline-aligned descendants inside the row's used block size. Cells whose
   spanned columns are all collapsed remain laid out but are omitted with their
   complete subtree from retained painting and hit testing; a span that reaches
-  any visible column remains displayed.
+  any visible column remains displayed. A block container's own
+  `vertical-align` positions that container only; direct text uses the
+  anonymous inline box's initial baseline alignment, including inside cells.
   Collapsed borders split on whole CSS pixels at every grid line: cells own the
   inner shares, the table owns the outer shares, and painting snaps the derived
   border edges independently in device space. A collapsed table's used borders
