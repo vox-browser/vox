@@ -116,7 +116,9 @@
   selections.
 - File and color inputs request their picker from the `Page` attached to their
   own document, preserving nested-page ownership instead of routing through a
-  top-level or per-model fallback.
+  top-level or per-model fallback. Range inputs retain a `20ch` by `16px` auto
+  content size through their dedicated layout box while remaining ordinary
+  non-replaced grid items that stretch across an available track.
 - Live input `type` changes preserve the old control model through the
   attribute-change hook and rebuild the layout tree when the state selects a
   different concrete box, including text-to-image transitions. Default text
