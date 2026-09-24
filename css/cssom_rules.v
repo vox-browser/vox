@@ -232,6 +232,16 @@ pub fn (rule_list &CSSRuleList) length() int {
 
 pub fn (mut rule_list CSSRuleList) set_owner_rule(owner_rule &CSSRule) {
 	rule_list.owner_rule = owner_rule
+	for mut rule in rule_list.rules {
+		rule.set_parent_rule(owner_rule)
+	}
+}
+
+pub fn (mut rule_list CSSRuleList) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSheet) {
+	rule_list.owner_style_sheet = parent_style_sheet
+	for mut rule in rule_list.rules {
+		rule.set_parent_style_sheet(parent_style_sheet)
+	}
 }
 
 pub fn (mut rule_list CSSRuleList) set_rules(rules []&CSSRule) {
@@ -622,9 +632,6 @@ pub fn CSSRule.create_grouping(type_ CSSRuleType, rules &CSSRuleList) &CSSRule {
 	rule.rules = rules
 	mut mutable_rules := unsafe { &CSSRuleList(rules) }
 	mutable_rules.set_owner_rule(rule)
-	for mut child_rule in mutable_rules.rules {
-		child_rule.set_parent_rule(rule)
-	}
 	return rule
 }
 
@@ -800,9 +807,7 @@ pub fn (mut rule CSSRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSh
 
 	if child_rules := rule.rules {
 		mut mutable_child_rules := unsafe { &CSSRuleList(child_rules) }
-		for mut child_rule in mutable_child_rules.rules {
-			child_rule.set_parent_style_sheet(parent_style_sheet)
-		}
+		mutable_child_rules.set_parent_style_sheet(parent_style_sheet)
 	}
 
 	if rule.type_ == .style {
@@ -1786,14 +1791,10 @@ pub fn CSSStyleSheet.create(rules &CSSRuleList, media &MediaList, location ?stri
 	mut mutable_media := unsafe { &MediaList(media) }
 	mutable_media.set_associated_style_sheet(sheet)
 
-	for mut rule in sheet.rules.rules {
-		rule.set_parent_style_sheet(sheet)
-	}
+	mut mutable_rules := unsafe { &CSSRuleList(rules) }
+	mutable_rules.set_parent_style_sheet(sheet)
 
 	sheet.recalculate_rule_caches()
-
-	mut mutable_rules := unsafe { &CSSRuleList(rules) }
-	mutable_rules.owner_style_sheet = sheet
 	return sheet
 }
 
