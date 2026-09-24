@@ -1221,6 +1221,55 @@ fn table_cell_content_offset_top(values UsedValues, collapsed bool) CSSPixels {
 	return border.plus(values.padding_top)
 }
 
+// A cell occupies exactly the columns it spans. Fixed layout can make those
+// columns narrower than an auto-width cell's padding and borders, so reduce the
+// end padding, start padding, end border, and start border in that order until
+// the cell's painted border box fits the assigned inline size.
+fn shrink_table_cell_inline_offsets_to_fit(mut values UsedValues, collapsed bool, inline_size CSSPixels) {
+	zero := CSSPixels.new(0)
+	mut excess := values.border_box_left().plus(values.border_box_right()).minus(inline_size)
+	mut reduction := css_pixels_min(css_pixels_max(excess, zero), values.padding_right)
+	values.padding_right = values.padding_right.minus(reduction)
+	excess = values.border_box_left().plus(values.border_box_right()).minus(inline_size)
+	reduction = css_pixels_min(css_pixels_max(excess, zero), values.padding_left)
+	values.padding_left = values.padding_left.minus(reduction)
+
+	for is_start_side in [false, true] {
+		excess = values.border_box_left().plus(values.border_box_right()).minus(inline_size)
+		if excess.raw_value() <= 0 {
+			return
+		}
+		share := if is_start_side {
+			values.border_left_collapsed()
+		} else {
+			values.border_right_collapsed()
+		}
+		allowed := css_pixels_max(share.minus(excess), zero)
+		mut width := if collapsed { allowed.scaled(2.0) } else { allowed }
+		if is_start_side {
+			values.border_left = width
+		} else {
+			values.border_right = width
+		}
+		for width.raw_value() > 0 {
+			current_share := if is_start_side {
+				values.border_left_collapsed()
+			} else {
+				values.border_right_collapsed()
+			}
+			if current_share.raw_value() <= allowed.raw_value() {
+				break
+			}
+			width = css_pixels_max(width.minus(CSSPixels.new(1)), zero)
+			if is_start_side {
+				values.border_left = width
+			} else {
+				values.border_right = width
+			}
+		}
+	}
+}
+
 // TableFormattingContext::position_cell_boxes()'s
 // cell_is_anonymous_wrapper_for_flex_or_grid predicate. A table-cell box that
 // exists only to wrap a flex/grid container is top-aligned; the child
@@ -1895,6 +1944,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		if border := collapsed_bottom {
 			cell_state.border_bottom = border
 		}
+		shrink_table_cell_inline_offsets_to_fit(mut cell_state, collapsed, cell_width)
 		content_width := cell_width.minus(table_cell_measurement_inline_edges(cell_state, collapsed))
 		// CSS Tables computes a definite cell height as the used height of the
 		// cell's border box. UsedValues stores the content height, so subtract
@@ -1930,6 +1980,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		if border := collapsed_bottom {
 			cell_state.border_bottom = border
 		}
+		shrink_table_cell_inline_offsets_to_fit(mut cell_state, collapsed, cell_width)
 		cell_baselines[placement_index] = layout_box_baseline(state, placement.cell)
 		if placement.row >= 0 && placement.row < row_baselines.len
 			&& !row_is_collapsed[placement.row] {

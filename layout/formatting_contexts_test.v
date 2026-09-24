@@ -2130,6 +2130,41 @@ fn test_fixed_table_percentage_cell_adds_content_box_offsets() {
 	assert auto.offset.x().to_double() == 170
 }
 
+fn test_fixed_table_cells_shrink_padding_to_stay_within_columns() {
+	document := html.parse_document('<!doctype html><style>
+		table { width:100px; border-spacing:0; table-layout:fixed }
+		td { height:10px; padding:50px 25px; border:0 }
+		#middle { width:50% }
+	</style><table><tr><td id="left"></td><td id="middle"></td><td id="right"></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	left := used_for_id(result, 'left')
+	middle := used_for_id(result, 'middle')
+	right := used_for_id(result, 'right')
+	assert left.border_box_width().to_double() == 0
+	assert left.padding_left.to_double() == 0
+	assert left.padding_right.to_double() == 0
+	assert middle.content_width().to_double() == 50
+	assert middle.border_box_width().to_double() == 100
+	assert middle.padding_left.to_double() == 25
+	assert middle.padding_right.to_double() == 25
+	assert right.border_box_width().to_double() == 0
+}
+
+fn test_fixed_table_cells_shrink_borders_after_padding() {
+	document := html.parse_document('<!doctype html><style>
+		table { width:15px; border-spacing:0; table-layout:fixed }
+		td { height:10px; padding:0 2px; border:10px solid }
+	</style><table><tr><td id="cell"></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	cell := used_for_id(result, 'cell')
+	assert cell.content_width().to_double() == 0
+	assert cell.padding_left.to_double() == 0
+	assert cell.padding_right.to_double() == 0
+	assert cell.border_left.to_double() == 10
+	assert cell.border_right.to_double() == 5
+	assert cell.border_box_width().to_double() == 15
+}
+
 fn test_collapsed_table_odd_borders_split_between_table_and_cells() {
 	document := html.parse_document('<!doctype html><style>
 		table { width:100px; border-collapse:collapse; table-layout:fixed; border:1px solid }
