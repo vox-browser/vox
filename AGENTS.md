@@ -114,6 +114,9 @@
 - File and color inputs request their picker from the `Page` attached to their
   own document, preserving nested-page ownership instead of routing through a
   top-level or per-model fallback.
+- Live input `type` changes preserve the old control model through the
+  attribute-change hook and rebuild the layout tree when the state selects a
+  different concrete box, including text-to-image transitions.
 - Reload reconstructs child session history, nested windows inherit their
   top-level creation URL and origin, exhausted navigation bodies are released,
   and removing the body no longer leaves an otherwise loaded document
