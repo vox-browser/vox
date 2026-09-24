@@ -1064,8 +1064,7 @@ pub fn TextInputBox.new(document &dom.Document, element &dom.Element, computed_v
 	columns := positive_integer_attribute_or_default(element, 'size', 20)
 	box_node := unsafe { &Node(box) }
 	mut width := resolve_font_dependent_length_for_node(box_node, css.Length.new(f64(columns), .ch))
-	// AD-HOC: 2px is inline shadow DOM padding in HTMLInputElement::create_text_input_shadow_tree()
-	mut height := computed_values.line_height().plus(CSSPixels.new(2))
+	mut height := computed_values.line_height()
 	if computed_values.writing_mode() != .horizontal_tb {
 		width, height = height, width
 	}

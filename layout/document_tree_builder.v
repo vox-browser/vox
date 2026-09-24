@@ -1351,10 +1351,6 @@ fn build_input_internal_layout_children(document &dom.Document, element &dom.Ele
 			css.PropertyID.align_items:          'center'
 			css.PropertyID.white_space_collapse: 'preserve'
 			css.PropertyID.text_wrap_mode:       'nowrap'
-			css.PropertyID.padding_top:          '1px'
-			css.PropertyID.padding_right:        '2px'
-			css.PropertyID.padding_bottom:       '1px'
-			css.PropertyID.padding_left:         '2px'
 		})
 		mut outer := unsafe { &Node(Box.new(document, outer_element.as_node(), outer_style)) }
 		inner_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {

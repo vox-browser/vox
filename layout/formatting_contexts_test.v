@@ -139,6 +139,43 @@ fn test_auto_width_text_input_stretches_in_nested_column_flex() {
 	assert used_for_id(result, 'input').border_box_width().to_double() == 300
 }
 
+fn test_text_input_padding_belongs_to_the_host_box() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		input { font:16px/20px monospace }
+		#custom { padding:7px 11px }
+	</style><input id="default"><input id="custom">')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	default_node := layout_node_with_id(result.root, 'default') or { panic('missing default input') }
+	custom_node := layout_node_with_id(result.root, 'custom') or { panic('missing custom input') }
+	default_used := used_for_id(result, 'default')
+	custom_used := used_for_id(result, 'custom')
+
+	assert default_used.padding_top.to_double() == 1
+	assert default_used.padding_right.to_double() == 2
+	assert default_used.padding_bottom.to_double() == 1
+	assert default_used.padding_left.to_double() == 2
+	assert custom_used.padding_top.to_double() == 7
+	assert custom_used.padding_right.to_double() == 11
+	assert custom_used.padding_bottom.to_double() == 7
+	assert custom_used.padding_left.to_double() == 11
+
+	for node in [default_node, custom_node] {
+		box := node.as_box() or { panic('text input is not a box') }
+		auto_height := box.auto_content_box_size().height or { panic('text input has no auto height') }
+		assert auto_height == node.computed_values().line_height()
+		internal := node.first_child() or { panic('text input has no internal flex box') }
+		internal_nws := internal.as_node_with_style() or { panic('internal flex box has no style') }
+		internal_used := result.used_values_for(internal_nws) or {
+			panic('internal flex box has no used values')
+		}
+		assert internal_used.padding_top.to_double() == 0
+		assert internal_used.padding_right.to_double() == 0
+		assert internal_used.padding_bottom.to_double() == 0
+		assert internal_used.padding_left.to_double() == 0
+	}
+}
+
 fn test_multiline_flex_align_content_distributes_cross_axis_space() {
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-wrap:wrap; align-content:center; width:100px; height:100px }

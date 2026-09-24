@@ -857,7 +857,7 @@ pub fn (mut model HTMLInputElementModel) create_text_input_shadow_tree() {
 	mut element := input_element(&model)
 	shadow := element.attach_a_user_agent_shadow_root(.named)
 	mut container := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
-	container.set_attribute_value('style', 'display:flex;height:100%;align-items:center;white-space:pre;border:none;padding:1px 2px;')
+	container.set_attribute_value('style', 'display:flex;height:100%;align-items:center;white-space:pre;border:none;')
 	inner := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
 	mut text := element.document().create_text_node(model.value_)
 	if model.type_state_ == .password {
