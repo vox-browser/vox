@@ -2781,6 +2781,21 @@ fn test_table_caption_capmin_includes_outer_edges_and_definite_width() {
 	assert table.content_width().to_double() == 140
 }
 
+fn test_table_caption_capmin_resolves_intrinsic_and_border_box_widths() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 } table { border-spacing:0 } td { padding:0; width:100px }
+		caption { font:20px/1 monospace }
+	</style>
+	<table id="fit"><caption style="width:fit-content">AAAA BBBB CCCC</caption><tr><td>x</td></tr></table>
+	<table id="max"><caption style="width:max-content">AAAA BBBB CCCC</caption><tr><td>x</td></tr></table>
+	<table id="border"><caption id="border-caption" style="width:200px;box-sizing:border-box;padding:0 20px">AAAA</caption><tr><td>x</td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'fit').content_width().to_double() == 100
+	assert used_for_id(result, 'max').content_width().to_double() > 100
+	assert used_for_id(result, 'border').content_width().to_double() == 200
+	assert used_for_id(result, 'border-caption').content_width().to_double() == 160
+}
+
 fn test_fixed_table_layout_uses_first_row_widths_and_shares_unassigned_space() {
 	document := html.parse_document('<!doctype html><style>
 		table { width:600px; table-layout:fixed; border-spacing:0 } td { padding:0 }

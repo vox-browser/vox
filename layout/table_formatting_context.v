@@ -1679,9 +1679,17 @@ fn calculate_table_caption_minimum_width(mut state LayoutState, table &Node, con
 		edges := flex_or_grid_item_outer_inline_edges(caption_state)
 		mut contribution := calculate_min_content_width(mut state, caption).plus(edges)
 		preferred_width := styled.computed_values().size_value(.width)
-		if !preferred_width.is_auto() && !preferred_width.contains_percentage() {
-			preferred_inner_width := calculate_inner_width(mut state, caption, caption_state, AvailableSize.make_definite(containing_width), preferred_width)
+		if preferred_width.is_length_percentage() && !preferred_width.contains_percentage() {
+			mut preferred_inner_width := preferred_width.to_px(layout_length_resolution_context(child),
+				containing_width)
+			if styled.computed_values().box_sizing() == .border_box {
+				border_padding := caption_state.border_left.plus(caption_state.padding_left).plus(caption_state.padding_right).plus(caption_state.border_right)
+				preferred_inner_width = css_pixels_max(CSSPixels.new(0), preferred_inner_width.minus(border_padding))
+			}
 			contribution = css_pixels_max(contribution, preferred_inner_width.plus(edges))
+		} else if preferred_width.is_max_content() {
+			contribution = css_pixels_max(contribution, calculate_max_content_width(mut state,
+				caption).plus(edges))
 		}
 		capmin = css_pixels_max(capmin, contribution)
 	}
@@ -1972,12 +1980,8 @@ fn layout_table_captions(mut state LayoutState, table &Node, mut table_state Use
 			caption_state.set_containing_block_used_values(table_state)
 		}
 		resolve_box_model_edges(styled.computed_values(), mut caption_state, caption_available_width.to_double())
-		caption_width := child.computed_values().size_value(.width)
-		if caption_width.is_auto() {
-			caption_state.set_content_width(caption_available_width.minus(flex_or_grid_item_outer_inline_edges(caption_state)))
-		} else if resolved_width := resolve_layout_content_size(child, caption_width, caption_available_width, caption_state, true) {
-			caption_state.set_content_width(clamp_layout_content_size(child, resolved_width, caption_available_width, caption_state, true))
-		}
+		compute_block_used_width_for_node(mut state, styled, mut caption_state,
+			AvailableSize.make_definite(caption_available_width))
 		caption_state.set_has_definite_width(true)
 		caption_outer_space := AvailableSpace.new(AvailableSize.make_definite(caption_available_width), caption_available_height)
 		caption_inner_space := caption_state.available_inner_space_or_constraints_from(caption_outer_space)
