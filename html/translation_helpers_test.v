@@ -59,6 +59,7 @@ fn test_input_and_parser_static_helpers() {
 	assert stepper_button_style_when_visible().contains('cursor:default')
 	assert stepper_button_style_when_hidden() == 'display:none;'
 	assert placeholder_style_when_visible().contains('overflow:hidden')
+	assert placeholder_style_when_visible().starts_with('display:block')
 	assert placeholder_style_when_visible().contains('margin-inline-start:-100%')
 	assert placeholder_style_when_visible().contains('pointer-events:none')
 	assert placeholder_style_when_visible().contains('user-select:none')

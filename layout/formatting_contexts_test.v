@@ -216,6 +216,40 @@ fn test_visible_input_placeholder_overlays_the_full_width_editor() {
 	assert number_placeholder_used.margin_left == number_inner_used.content_width().negated()
 }
 
+fn test_native_input_min_max_height_clamps_are_definite_for_shadow_content() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		input { box-sizing:border-box; width:200px; border:1px solid; padding:1px 10px; font:16px/20px monospace }
+		#minimum { min-height:44px }
+		#maximum { max-height:18px }
+	</style><input id="minimum" placeholder="minimum"><input id="maximum" placeholder="maximum">')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	minimum := layout_node_with_id(result.root, 'minimum') or { panic('missing minimum input') }
+	maximum := layout_node_with_id(result.root, 'maximum') or { panic('missing maximum input') }
+	minimum_outer := minimum.first_child() or { panic('missing minimum internal box') }
+	maximum_outer := maximum.first_child() or { panic('missing maximum internal box') }
+	minimum_outer_used := result.used_values_for(minimum_outer.as_node_with_style() or {
+		panic('minimum internal box has no style')
+	}) or { panic('minimum internal box has no used values') }
+	maximum_outer_used := result.used_values_for(maximum_outer.as_node_with_style() or {
+		panic('maximum internal box has no style')
+	}) or { panic('maximum internal box has no used values') }
+	assert minimum_outer_used.content_height().to_double() == 40
+	assert maximum_outer_used.content_height().to_double() == 14
+	assert minimum_outer_used.has_definite_height()
+	assert maximum_outer_used.has_definite_height()
+	minimum_editor := minimum_outer.children()[0]
+	maximum_editor := maximum_outer.children()[0]
+	minimum_editor_used := result.used_values_for(minimum_editor.as_node_with_style() or {
+		panic('minimum editor has no style')
+	}) or { panic('minimum editor has no used values') }
+	maximum_editor_used := result.used_values_for(maximum_editor.as_node_with_style() or {
+		panic('maximum editor has no style')
+	}) or { panic('maximum editor has no used values') }
+	assert minimum_editor_used.offset.y().to_double() == 10
+	assert maximum_editor_used.offset.y().to_double() == -3
+}
+
 fn test_visible_textarea_placeholder_overlays_the_full_width_editor() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }

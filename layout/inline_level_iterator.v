@@ -519,6 +519,16 @@ fn text_node_is_inside_mutable_control(text_node &TextNode) bool {
 	return false
 }
 
+fn is_native_form_control_box(node &Node) bool {
+	if node.is_text_input_box() || node.is_textarea_box() {
+		return true
+	}
+	dom_node := node.dom_node() or { return false }
+	element := dom_node.as_element() or { return false }
+	return element.is_html_element() && element.local_name() == 'input'
+		&& element.get_attribute_value('type').trim_space().to_lower() == 'range'
+}
+
 fn (mut iterator InlineLevelIterator) dimension_box_on_line(box &Box) {
 	styled := unsafe { &NodeWithStyle(box) }
 	mut state := iterator.state.get_mutable(styled)
@@ -550,6 +560,24 @@ fn (mut iterator InlineLevelIterator) dimension_box_on_line(box &Box) {
 		size := compute_replaced_size(box, iterator.available_space)
 		state.set_content_width(size.width())
 		state.set_content_height(size.height())
+		computed := styled.computed_values()
+		if is_native_form_control_box(box_node) {
+			if auto_height := auto_size.height {
+				preferred_height := computed.size_value(.height)
+				minimum_height := computed.size_value(.min_height)
+				maximum_height := computed.size_value(.max_height)
+				minimum_constraint_is_active := !minimum_height.is_auto()
+					&& size.height().raw_value() > auto_height.raw_value()
+				maximum_constraint_is_active := !maximum_height.is_auto()
+					&& !maximum_height.is_none()
+					&& !should_treat_replaced_max_as_none(maximum_height, iterator.available_space.height)
+					&& size.height().raw_value() < auto_height.raw_value()
+				if !preferred_height.is_intrinsic_sizing_constraint()
+					&& (minimum_constraint_is_active || maximum_constraint_is_active) {
+					state.set_has_definite_height(true)
+				}
+			}
+		}
 		result := layout_inside_independent_formatting_context_with_mode(mut iterator.state, unsafe { &Node(box) }, mut state, iterator.layout_mode, AvailableSpace.new(AvailableSize.make_definite(size.width()), AvailableSize.make_definite(size.height())))
 		if box_node.is_replaced_box() && box_node.can_have_children()
 			&& !box.has_auto_content_box_size()
