@@ -645,10 +645,33 @@ fn (mut iterator InlineLevelIterator) dimension_box_on_line(box &Box) {
 			definite_height = clamp_layout_content_size(unsafe { &Node(box) }, css_px(resolved), iterator.available_space.height.to_px_or_zero(), state, false)
 		}
 	}
+	mut height_establishes_definite_containing_block := definite_height != none
+		&& computed_height_establishes_definite_containing_block_height(preferred_height)
+	if height := definite_height {
+		state.set_content_height(height)
+		if height_establishes_definite_containing_block {
+			state.set_has_definite_height(true)
+		}
+	}
+	button_content_box_became_definite := make_button_content_box_definite(mut iterator.state,
+		box_node, mut state,
+		if iterator.available_space.height.is_definite() {
+			?CSSPixels(iterator.available_space.height.to_px_or_zero())
+		} else {
+			none
+		})
+	if button_content_box_became_definite {
+		definite_height = state.content_height()
+		height_establishes_definite_containing_block = true
+	}
 	available_height := if height := definite_height {
 		state.set_content_height(height)
-		state.set_has_definite_height(true)
-		AvailableSize.make_definite(height)
+		if height_establishes_definite_containing_block {
+			state.set_has_definite_height(true)
+			AvailableSize.make_definite(height)
+		} else {
+			AvailableSize.make_indefinite()
+		}
 	} else {
 		AvailableSize.make_indefinite()
 	}

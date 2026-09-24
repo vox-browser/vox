@@ -1955,9 +1955,6 @@ pub fn (c &ComputedProperties) clone_for_button_flex_wrapper() &ComputedProperti
 		parsed := parse_css_value_logic(property_id, css_text) or { continue }
 		clone.set_property_without_modifying_flags(property_id, dom_style_value_from_value_logic(parsed))
 	}
-	if min_height := c.property(.min_height, .no) {
-		clone.set_property_without_modifying_flags(.min_height, min_height)
-	}
 	return clone
 }
 

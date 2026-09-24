@@ -614,6 +614,11 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 			box_state.set_content_height(calculate_max_content_height(mut state, flex_box, css_px(content_width)))
 		}
 	}
+	make_button_content_box_definite(mut state, box_as_node, mut box_state, if height := containing_block_height {
+		?CSSPixels(css_px(height))
+	} else {
+		none
+	})
 	// Anonymous block wrappers pass through the containing block's available
 	// space instead of introducing an independent percentage-height basis.
 	height_establishes_definite_containing_block := definite_content_height != none
@@ -621,6 +626,8 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 		|| computed_height_establishes_definite_containing_block_height(computed.size_value(.height)))
 	children_containing_block_height := if box_as_node.is_anonymous() {
 		containing_block_height
+	} else if box_state.has_definite_height() {
+		box_state.content_height().to_double()
 	} else if height_establishes_definite_containing_block {
 		definite_content_height
 	} else {

@@ -96,6 +96,46 @@ fn test_button_content_percentages_resolve_against_the_button() {
 	assert used_for_id(result, 'nested-content').content_height().to_double() == 60
 }
 
+fn test_button_content_height_uses_clamped_border_box_height() {
+	document := html.parse_document('<!doctype html><style>
+		button { box-sizing:border-box; min-height:50px; padding:5px; border:5px solid; font:10px/10px SerenitySans }
+		.flex { display:flex; align-items:flex-start }
+		.block button { display:block }
+		.intrinsic button { height:fit-content }
+		.abs button { position:absolute; top:250px }
+		.indefinite button { min-height:auto; height:fit-content }
+		.indefinite .pct { height:100% }
+	</style>
+	<span><button id="inline">x</button></span>
+	<div class="block"><button id="block">x</button></div>
+	<div class="flex"><button id="flex">x</button></div>
+	<div class="intrinsic"><button id="intrinsic">x</button></div>
+	<div class="abs"><button id="absolute">x</button></div>
+	<div class="indefinite"><button id="indefinite"><div class="pct" id="percentage"></div><div>x</div></button></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	for id in ['inline', 'block', 'flex', 'intrinsic', 'absolute'] {
+		button := layout_node_with_id(result.root, id) or { panic('missing #${id}') }
+		button_used := used_for_id(result, id)
+		assert button_used.content_height().to_double() == 30
+		assert button_used.has_definite_height()
+		wrapper := button.first_child() or { panic('#${id} has no flex wrapper') }
+		wrapper_used := result.used_values_for(wrapper.as_node_with_style() or {
+			panic('#${id} flex wrapper has no style')
+		}) or { panic('#${id} flex wrapper has no used values') }
+		assert wrapper_used.content_height().to_double() == 30
+		content := wrapper.first_child() or { panic('#${id} has no content box') }
+		content_used := result.used_values_for(content.as_node_with_style() or {
+			panic('#${id} content box has no style')
+		}) or { panic('#${id} content box has no used values') }
+		assert content_used.content_height().to_double() == 10
+		assert content_used.offset.y().to_double() == 10
+	}
+	indefinite_used := used_for_id(result, 'indefinite')
+	assert indefinite_used.content_height().to_double() == 10
+	assert !indefinite_used.has_definite_height()
+	assert used_for_id(result, 'percentage').content_height().to_double() == 0
+}
+
 fn test_fractional_calculated_flex_basis_does_not_wrap_the_third_item() {
 	for width in [100, 101, 102, 100] {
 		document := html.parse_document('<!doctype html><style>

@@ -215,6 +215,57 @@ fn layout_independent_child_using_automatic_height(mut state LayoutState, child 
 	return layout_independent_child_with_height_mode(mut state, child, mut containing_state, containing_width, containing_height, forced_width, available_content_height, true, true)
 }
 
+fn measure_automatic_button_content_height(mut source_state LayoutState, button &Node, button_state &UsedValues) CSSPixels {
+	styled := button.as_node_with_style() or { return CSSPixels.new(0) }
+	mut throwaway := LayoutState.new_for_subtree(styled)
+	populate_intrinsic_containing_block_chain(mut throwaway, mut source_state, button)
+	populate_intrinsic_external_containing_blocks(mut throwaway, mut source_state, button,
+		button)
+	mut values := throwaway.get_mutable(styled)
+	values.set_content_width(button_state.content_width())
+	values.set_has_definite_width(true)
+	values.set_indefinite_content_height()
+	result := layout_inside_independent_formatting_context_with_mode(mut throwaway, button,
+		mut values, .intrinsic_sizing, AvailableSpace.new(AvailableSize.make_definite(
+		button_state.content_width()), AvailableSize.make_indefinite()))
+	return result.automatic_content_height
+}
+
+// The anonymous column-flex wrapper inside an HTML button has `height: 100%`.
+// Give that percentage a definite basis only when the button's final used
+// content height is larger than its natural contents, so alignment can center
+// those contents without making intrinsic keyword heights spuriously definite.
+fn make_button_content_box_definite(mut state LayoutState, button &Node, mut button_state UsedValues, containing_height ?CSSPixels) bool {
+	if !node_uses_button_layout(button) || button.display().is_flex_inside()
+		|| button.display().is_grid_inside() || button_state.has_definite_height() {
+		return false
+	}
+	computed := button.computed_values()
+	if computed.size_value(.height).is_auto() && computed.size_value(.min_height).is_auto() {
+		return false
+	}
+	_ = button.as_box() or { return false }
+	styled := button.as_node_with_style() or { return false }
+	natural_content_height := measure_automatic_button_content_height(mut state, button,
+		button_state)
+	containing_height_value := if height := containing_height { ?f64(height.to_double()) } else { none }
+	mut used_height := if resolved := resolve_content_height_for_node(mut state,
+		styled, button_state, containing_height_value) {
+		css_px(resolved)
+	} else {
+		natural_content_height
+	}
+	used_height = clamp_content_height_for_node(mut state,
+		styled, button_state, used_height,
+		containing_height_value)
+	if used_height.raw_value() <= natural_content_height.raw_value() {
+		return false
+	}
+	button_state.set_content_height(used_height)
+	button_state.set_has_definite_height(true)
+	return true
+}
+
 fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node, mut containing_state UsedValues, containing_width CSSPixels, containing_height ?CSSPixels, forced_width ?CSSPixels, forced_height ?CSSPixels, use_automatic_height bool, forced_height_is_definite bool) &UsedValues {
 	styled := child.as_node_with_style() or { panic('formatting-context child must have style') }
 	computed := styled.computed_values()
@@ -271,6 +322,10 @@ fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node,
 			definite_height = clamp_content_height_for_node(mut state, styled, child_state, resolved_height, containing_block_height)
 		}
 	}
+	if make_button_content_box_definite(mut state, child, mut child_state, containing_height) {
+		definite_height = child_state.content_height()
+		height_establishes_definite_containing_block = true
+	}
 	available_height := if height := definite_height {
 		// Descendants must see a parent-resolved flex/grid/table block size as
 		// definite during this layout pass, not only after it has completed.
@@ -291,7 +346,7 @@ fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node,
 	// the definite button basis directly when that wrapper's auto height did not
 	// carry it through the flex-item call.
 	child_available_height := if child.is_button_content_box_ {
-		mut button_height := containing_height
+		mut button_height := ?CSSPixels(none)
 		if wrapper := child.parent() {
 			if button := wrapper.parent() {
 				if button_styled := button.as_node_with_style() {
@@ -306,7 +361,7 @@ fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node,
 		if height := button_height {
 			AvailableSize.make_definite(height)
 		} else {
-			available_height
+			AvailableSize.make_indefinite()
 		}
 	} else {
 		available_height
