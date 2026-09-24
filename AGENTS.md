@@ -118,7 +118,9 @@
   own document, preserving nested-page ownership instead of routing through a
   top-level or per-model fallback. Range inputs retain a `20ch` by `16px` auto
   content size through their dedicated layout box while remaining ordinary
-  non-replaced grid items that stretch across an available track.
+  non-replaced grid items that stretch across an available track. Unsupported
+  and domain-specific input states fall back to the text-input layout box and
+  shadow content instead of collapsing to zero width.
 - Live input `type` changes preserve the old control model through the
   attribute-change hook and rebuild the layout tree when the state selects a
   different concrete box, including text-to-image transitions. Default text
