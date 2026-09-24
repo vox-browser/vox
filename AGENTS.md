@@ -143,6 +143,10 @@
   including aspect-ratio sizing and post-flexing content heights. It also honors
   flexible-grid intrinsic minimums and applies `min-height` while stretching
   lines. Media-control contents retain the upstream left alignment.
+- Table column and column-group boxes retain their used grid geometry for
+  painting and layout-tree inspection, including spanning columns, empty groups,
+  border spacing, and RTL placement. Percentage column widths resolve against
+  the assignable table width instead of the table's containing block.
 - Parsed programs are reused for bytecode cache generation, nested idle
   callback periods are paced, Window named-property membership avoids full ID
   enumeration, and SVG presentation attributes retain their case-sensitive
