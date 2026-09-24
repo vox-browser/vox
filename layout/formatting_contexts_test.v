@@ -3287,6 +3287,23 @@ fn test_atomic_inline_applies_calculated_vertical_align_offset() {
 	assert fragments[1].block_offset().to_double() == 30
 }
 
+fn test_text_bottom_atomic_inline_fits_the_parent_content_area() {
+	document := html.parse_document('<!doctype html><style>
+		* { margin:0 }
+		#container { display:block; font:14px/20px sans-serif; padding:5px; border:1px solid }
+		#icon { vertical-align:text-bottom }
+	</style><a id="container"><svg id="icon" width="16" height="16"></svg> Labels</a>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	container := used_for_id(result, 'container')
+	assert container.content_height().to_double() == 20
+	assert container.line_boxes.len == 1
+	fragments := container.line_boxes[0].fragments()
+	assert fragments.len == 2
+	assert fragments[0].is_atomic_inline()
+	assert fragments[0].block_offset().to_double() == 1
+	assert container.line_boxes[0].height().to_double() == 20
+}
+
 fn test_normal_heading_line_height_uses_selected_font_typo_metrics() {
 	document := html.parse_document('<!doctype html><style>h3 { font-family: SerenitySans }</style><h3 id="heading">heading</h3>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }

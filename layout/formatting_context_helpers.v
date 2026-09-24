@@ -475,7 +475,7 @@ fn layout_box_baseline(state &LayoutState, box &Node, requested_baseline_set Bas
 				} else {
 					layout_font_metrics_for_node(box)
 				}
-				return box_state.margin_box_height().minus(CSSPixels.nearest_value_for(f64(containing_font_metrics.descent) * 2.0))
+				return box_state.margin_box_height().minus(CSSPixels.nearest_value_for(f64(containing_font_metrics.descent)))
 			}
 			else {}
 		}
