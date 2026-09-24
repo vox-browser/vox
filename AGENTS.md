@@ -187,7 +187,11 @@
   any visible column remains displayed. Captions flow around the table grid in
   the wrapper formatting context: their outer sizes contribute to wrapper
   height, bottom captions follow the grid, and a stretched wrapper gives the
-  grid the definite block space left after both caption groups. A block container's own
+  grid the definite block space left after both caption groups. Caption
+  preferred widths are resolved from computed style: `fit-content` contributes
+  min-content, `max-content` contributes max-content, and border-box lengths
+  exclude their border and padding before outer edges are added. A block
+  container's own
   `vertical-align` positions that container only; direct text uses the
   anonymous inline box's initial baseline alignment, including inside cells.
   Collapsed borders split on whole CSS pixels at every grid line: cells own the
