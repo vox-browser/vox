@@ -21,7 +21,7 @@ pub enum SizeConstraint {
 
 struct GridSubgridAxisData {
 	tracks     []GridTrack
-	line_names [][]string
+	line_names [][]css.GridLineName
 	gap        CSSPixels
 }
 

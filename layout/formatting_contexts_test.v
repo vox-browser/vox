@@ -1,5 +1,6 @@
 module layout
 
+import css
 import dom
 import html
 import platform
@@ -4558,4 +4559,85 @@ fn test_subgrid_inherits_tracks_and_contributes_descendants_to_parent_sizing() {
 	assert !used_for_id(result, 'no-parent').grid_columns_are_subgrid()
 	assert used_for_id(result, 'no-parent-target').offset.x().to_double() == 10
 	assert used_for_id(result, 'no-parent-target').content_width().to_double() == 10
+}
+
+fn test_subgrid_inherits_clipped_parent_grid_area_line_names() {
+	mut column_lines := [][]css.GridLineName{len: 5}
+	mut row_lines := [][]css.GridLineName{len: 5}
+	column_lines[1] << css.GridLineName{
+		name: 'literal-start'
+	}
+	column_lines[0] << css.GridLineName{
+		name: 'area-start'
+		implicit: true
+	}
+	column_lines[3] << css.GridLineName{
+		name: 'area-end'
+		implicit: true
+	}
+	row_lines[0] << css.GridLineName{
+		name: 'area-start'
+		implicit: true
+	}
+	row_lines[3] << css.GridLineName{
+		name: 'area-end'
+		implicit: true
+	}
+	// This second area overlaps the subgrid's columns but only touches its row
+	// end. It must not leak names into either inherited axis.
+	column_lines[1] << css.GridLineName{
+		name: 'outside-start'
+		implicit: true
+	}
+	column_lines[2] << css.GridLineName{
+		name: 'outside-end'
+		implicit: true
+	}
+	row_lines[3] << css.GridLineName{
+		name: 'outside-start'
+		implicit: true
+	}
+	row_lines[4] << css.GridLineName{
+		name: 'outside-end'
+		implicit: true
+	}
+	placement := GridItemPlacement{
+		column: 1
+		row: 1
+		column_span: 2
+		row_span: 2
+	}
+	inherited_columns := inherited_subgrid_line_names(column_lines, row_lines, placement,
+		true)
+	inherited_rows := inherited_subgrid_line_names(column_lines, row_lines, placement, false)
+	assert inherited_columns.len == 3
+	assert inherited_rows.len == 3
+	assert inherited_columns[0].any(it.name == 'literal-start' && !it.implicit)
+	assert inherited_columns[0].any(it.name == 'area-start' && it.implicit)
+	assert inherited_columns[2].any(it.name == 'area-end' && it.implicit)
+	assert inherited_rows[0].any(it.name == 'area-start' && it.implicit)
+	assert inherited_rows[2].any(it.name == 'area-end' && it.implicit)
+	for lines in [inherited_columns, inherited_rows] {
+		for names in lines {
+			assert !names.any(it.name.starts_with('outside-'))
+		}
+	}
+
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		.parent { display:grid; grid-template-areas:"top top top" "rail notice notice" "rail list page"; grid-template-columns:[start] 50px [rail-end] 100px [list-end] 150px [end]; grid-template-rows:[top] 20px [top-end] 0 [notice-end] 40px [end] }
+		.top { grid-area:top }
+		.content { display:grid; grid-column:start / end; grid-row:top-end / end; grid-template-columns:subgrid; grid-template-rows:subgrid }
+		.sidebar { display:grid; grid-column:start / list-end; grid-row:top-end / end; grid-template-columns:subgrid; grid-template-rows:subgrid }
+		.rail { grid-area:rail }
+		.list { grid-area:list }
+		.page { grid-area:page }
+	</style><div class="parent"><div class="top"></div><div class="content"><div class="sidebar"><div id="rail" class="rail"></div><div id="list" class="list"></div></div><div id="page" class="page"></div></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'rail').offset.x().to_double() == 0
+	assert used_for_id(result, 'rail').content_width().to_double() == 50
+	assert used_for_id(result, 'list').offset.x().to_double() == 50
+	assert used_for_id(result, 'list').content_width().to_double() == 100
+	assert used_for_id(result, 'page').offset.x().to_double() == 150
+	assert used_for_id(result, 'page').content_width().to_double() == 150
 }

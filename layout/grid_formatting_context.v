@@ -426,12 +426,12 @@ fn expanded_explicit_grid_track_count(node &Node, list css.GridTrackSizeList, ba
 	return count
 }
 
-fn expand_grid_lines(node &Node, definition css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool, mut lines [][]string, mut pending_names []string) {
+fn expand_grid_lines(node &Node, definition css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool, mut lines [][]css.GridLineName, mut pending_names []css.GridLineName) {
 	for item in definition.list() {
 		match item {
 			css.GridLineNames {
 				for line_name in item.names() {
-					pending_names << line_name.name
+					pending_names << line_name
 				}
 			}
 			css.ExplicitGridTrack {
@@ -456,20 +456,26 @@ fn expand_grid_lines(node &Node, definition css.GridTrackSizeList, basis CSSPixe
 
 // GridFormattingContext::init_grid_lines() plus build_grid_areas(). Explicit
 // line names and the four implicit <area>-start/end names share one line map.
-fn grid_lines_for_definition(node &Node, definition css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool, areas css.GridTemplateAreas, columns bool) [][]string {
-	mut lines := [][]string{}
-	mut pending_names := []string{}
+fn grid_lines_for_definition(node &Node, definition css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool, areas css.GridTemplateAreas, columns bool) [][]css.GridLineName {
+	mut lines := [][]css.GridLineName{}
+	mut pending_names := []css.GridLineName{}
 	expand_grid_lines(node, definition, basis, gap, available_is_definite, mut lines, mut pending_names)
 	lines << pending_names.clone()
 	required_line_count := int(if columns { areas.column_count } else { areas.row_count }) + 1
 	for lines.len < required_line_count {
-		lines << []string{}
+		lines << []css.GridLineName{}
 	}
 	for name, area in areas.areas {
 		start := int(if columns { area.column_start } else { area.row_start })
 		end := int(if columns { area.column_end } else { area.row_end })
-		lines[start] << '${name}-start'
-		lines[end] << '${name}-end'
+		lines[start] << css.GridLineName{
+			name: '${name}-start'
+			implicit: true
+		}
+		lines[end] << css.GridLineName{
+			name: '${name}-end'
+			implicit: true
+		}
 	}
 	return lines
 }
@@ -506,7 +512,7 @@ fn explicit_track_count_from_subgrid_line_name_list(list css.GridTrackSizeList) 
 	return if count > 1 { count - 1 } else { 0 }
 }
 
-fn expand_subgrid_line_names(list css.GridTrackSizeList, mut lines [][]string, initial_line_index int) int {
+fn expand_subgrid_line_names(list css.GridTrackSizeList, mut lines [][]css.GridLineName, initial_line_index int) int {
 	mut line_index := initial_line_index
 	items := list.list()
 	for item_index, item in items {
@@ -514,7 +520,7 @@ fn expand_subgrid_line_names(list css.GridTrackSizeList, mut lines [][]string, i
 			css.GridLineNames {
 				if line_index < lines.len {
 					for name in item.names() {
-						lines[line_index] << name.name
+						lines[line_index] << name
 					}
 				}
 				line_index++
@@ -546,8 +552,8 @@ fn expand_subgrid_line_names(list css.GridTrackSizeList, mut lines [][]string, i
 	return line_index
 }
 
-fn subgrid_lines_for_definition(definition css.GridTrackSizeList, inherited [][]string, track_count int) [][]string {
-	mut lines := [][]string{len: track_count + 1}
+fn subgrid_lines_for_definition(definition css.GridTrackSizeList, inherited [][]css.GridLineName, track_count int) [][]css.GridLineName {
+	mut lines := [][]css.GridLineName{len: track_count + 1}
 	for index in 0 .. lines.len {
 		if index < inherited.len {
 			lines[index] = inherited[index].clone()
@@ -555,6 +561,143 @@ fn subgrid_lines_for_definition(definition css.GridTrackSizeList, inherited [][]
 	}
 	expand_subgrid_line_names(definition, mut lines, 0)
 	return lines
+}
+
+struct GridAreaLineName {
+	area_name string
+	is_start bool
+}
+
+struct ParentGridArea {
+mut:
+	row_start    ?int
+	row_end      ?int
+	column_start ?int
+	column_end   ?int
+}
+
+fn parse_implicit_grid_area_line_name(line_name css.GridLineName) ?GridAreaLineName {
+	if !line_name.implicit {
+		return none
+	}
+	if line_name.name.ends_with('-start') {
+		return GridAreaLineName{
+			area_name: line_name.name[..line_name.name.len - '-start'.len]
+			is_start: true
+		}
+	}
+	if line_name.name.ends_with('-end') {
+		return GridAreaLineName{
+			area_name: line_name.name[..line_name.name.len - '-end'.len]
+		}
+	}
+	return none
+}
+
+fn collect_parent_grid_areas(lines [][]css.GridLineName, columns bool, mut areas map[string]ParentGridArea) {
+	for line_index, line_names in lines {
+		for line_name in line_names {
+			area_line_name := parse_implicit_grid_area_line_name(line_name) or { continue }
+			mut area := areas[area_line_name.area_name] or { ParentGridArea{} }
+			if columns {
+				if area_line_name.is_start {
+					if old_index := area.column_start {
+						area.column_start = if line_index < old_index { line_index } else { old_index }
+					} else {
+						area.column_start = line_index
+					}
+				} else if old_index := area.column_end {
+					area.column_end = if line_index > old_index { line_index } else { old_index }
+				} else {
+					area.column_end = line_index
+				}
+			} else if area_line_name.is_start {
+				if old_index := area.row_start {
+					area.row_start = if line_index < old_index { line_index } else { old_index }
+				} else {
+					area.row_start = line_index
+				}
+			} else if old_index := area.row_end {
+				area.row_end = if line_index > old_index { line_index } else { old_index }
+			} else {
+				area.row_end = line_index
+			}
+			areas[area_line_name.area_name] = area
+		}
+	}
+}
+
+fn grid_ranges_overlap(first_start int, first_end int, second_start int, second_end int) bool {
+	maximum_start := if first_start > second_start { first_start } else { second_start }
+	minimum_end := if first_end < second_end { first_end } else { second_end }
+	return maximum_start < minimum_end
+}
+
+// CSS Grid 2 subgrid area inheritance clips an overlapping parent named area
+// to the child's two-dimensional span. Only explicitly assigned line names are
+// copied directly; implicit area names are reconstructed at the clipped edges.
+fn inherited_subgrid_line_names(parent_column_lines [][]css.GridLineName, parent_row_lines [][]css.GridLineName, placement GridItemPlacement, columns bool) [][]css.GridLineName {
+	start := if columns { placement.column } else { placement.row }
+	span := if columns { placement.column_span } else { placement.row_span }
+	parent_lines := if columns { parent_column_lines } else { parent_row_lines }
+	mut lines := [][]css.GridLineName{len: span + 1}
+	for index in 0 .. lines.len {
+		parent_line_index := start + index
+		if parent_line_index < 0 || parent_line_index >= parent_lines.len {
+			continue
+		}
+		for parent_line_name in parent_lines[parent_line_index] {
+			if !parent_line_name.implicit {
+				lines[index] << css.GridLineName{
+					name: parent_line_name.name
+				}
+			}
+		}
+	}
+
+	mut parent_areas := map[string]ParentGridArea{}
+	collect_parent_grid_areas(parent_column_lines, true, mut parent_areas)
+	collect_parent_grid_areas(parent_row_lines, false, mut parent_areas)
+	for area_name, area in parent_areas {
+		row_start := area.row_start or { continue }
+		row_end := area.row_end or { continue }
+		column_start := area.column_start or { continue }
+		column_end := area.column_end or { continue }
+		if !grid_ranges_overlap(row_start, row_end, placement.row,
+			placement.row + placement.row_span)
+			|| !grid_ranges_overlap(column_start, column_end, placement.column,
+				placement.column + placement.column_span) {
+			continue
+		}
+		area_start := if columns { column_start } else { row_start }
+		area_end := if columns { column_end } else { row_end }
+		subgrid_end := start + span
+		start_line_index := (if area_start > start { area_start } else { start }) - start
+		end_line_index := (if area_end < subgrid_end { area_end } else { subgrid_end }) - start
+		if start_line_index >= 0 && start_line_index < lines.len {
+			lines[start_line_index] << css.GridLineName{
+				name: '${area_name}-start'
+				implicit: true
+			}
+		}
+		if end_line_index >= 0 && end_line_index < lines.len {
+			lines[end_line_index] << css.GridLineName{
+				name: '${area_name}-end'
+				implicit: true
+			}
+		}
+	}
+	return lines
+}
+
+fn grid_line_name_strings(lines [][]css.GridLineName) [][]string {
+	mut result := [][]string{len: lines.len}
+	for index, names in lines {
+		for name in names {
+			result[index] << name.name
+		}
+	}
+	return result
 }
 
 fn clamp_grid_axis_placement_to_subgrid(mut placement GridAxisPlacement, track_count int) {
@@ -580,7 +723,7 @@ fn clamp_grid_axis_placement_to_subgrid(mut placement GridAxisPlacement, track_c
 	placement.end = end
 }
 
-fn resolve_grid_axis_position_for_context(start css.GridTrackPlacement, end css.GridTrackPlacement, explicit_line_count int, lines [][]string, is_subgridded bool) GridAxisPlacement {
+fn resolve_grid_axis_position_for_context(start css.GridTrackPlacement, end css.GridTrackPlacement, explicit_line_count int, lines [][]css.GridLineName, is_subgridded bool) GridAxisPlacement {
 	mut placement := resolve_grid_axis_position(start, end, explicit_line_count, lines)
 	if is_subgridded {
 		clamp_grid_axis_placement_to_subgrid(mut placement, if lines.len > 0 {
@@ -592,7 +735,7 @@ fn resolve_grid_axis_position_for_context(start css.GridTrackPlacement, end css.
 	return placement
 }
 
-fn resolve_grid_item_axis_position(item &Node, columns bool, start css.GridTrackPlacement, end css.GridTrackPlacement, explicit_line_count int, lines [][]string, is_subgridded bool) GridAxisPlacement {
+fn resolve_grid_item_axis_position(item &Node, columns bool, start css.GridTrackPlacement, end css.GridTrackPlacement, explicit_line_count int, lines [][]css.GridLineName, is_subgridded bool) GridAxisPlacement {
 	mut placement := resolve_grid_axis_position(start, end, explicit_line_count, lines)
 	if grid_span_value(start) == none && grid_span_value(end) == none
 		&& !(start.is_positioned() && end.is_positioned()) && item.display().is_grid_inside() {
@@ -678,14 +821,14 @@ fn grid_axis_is_auto(start css.GridTrackPlacement, end css.GridTrackPlacement) b
 	return start.is_auto_positioned() && end.is_auto_positioned()
 }
 
-fn get_nth_grid_line_index(lines [][]string, name string, nth_line int) ?int {
+fn get_nth_grid_line_index(lines [][]css.GridLineName, name string, nth_line int) ?int {
 	if nth_line == 0 {
 		return none
 	}
 	mut remaining := if nth_line < 0 { lines.len + nth_line } else { nth_line - 1 }
 	for index, names in lines {
 		for candidate in names {
-			if candidate != name {
+			if candidate.name != name {
 				continue
 			}
 			if remaining == 0 {
@@ -710,7 +853,7 @@ fn grid_span_value(placement css.GridTrackPlacement) ?int {
 
 // GridFormattingContext::resolve_grid_position(). Line indexes are zero-based;
 // negative authored indexes are resolved from the end of the explicit grid.
-fn resolve_grid_axis_position(start css.GridTrackPlacement, end css.GridTrackPlacement, explicit_line_count int, lines [][]string) GridAxisPlacement {
+fn resolve_grid_axis_position(start css.GridTrackPlacement, end css.GridTrackPlacement, explicit_line_count int, lines [][]css.GridLineName) GridAxisPlacement {
 	mut result := GridAxisPlacement{}
 	start_line_number := if start.has_line_number() {
 		int(css.int_from_style_value(start.line_number()))
@@ -863,7 +1006,7 @@ fn clamp_grid_item_placement_to_subgrid(mut placement GridItemPlacement, column_
 	}
 }
 
-fn place_grid_items(container &Node, column_lines [][]string, row_lines [][]string, subgridded_columns bool, subgridded_rows bool) GridPlacementResult {
+fn place_grid_items(container &Node, column_lines [][]css.GridLineName, row_lines [][]css.GridLineName, subgridded_columns bool, subgridded_rows bool) GridPlacementResult {
 	mut placements := []GridItemPlacement{}
 	mut occupied := map[u64]bool{}
 	items := ordered_grid_items(container)
@@ -1118,7 +1261,7 @@ fn place_grid_items(container &Node, column_lines [][]string, row_lines [][]stri
 	}
 }
 
-fn collect_grid_track_sizing_placements(mut state LayoutState, container &Node, placements []GridItemPlacement, column_lines [][]string, row_lines [][]string, columns bool, parent_gap CSSPixels, axis_offset int, mut result []GridItemPlacement) {
+fn collect_grid_track_sizing_placements(mut state LayoutState, container &Node, placements []GridItemPlacement, column_lines [][]css.GridLineName, row_lines [][]css.GridLineName, columns bool, parent_gap CSSPixels, axis_offset int, mut result []GridItemPlacement) {
 	for placement in placements {
 		item := placement.item
 		template := if columns {
@@ -1143,16 +1286,14 @@ fn collect_grid_track_sizing_placements(mut state LayoutState, container &Node, 
 		child_columns_subgridded := child_columns_template.is_subgrid()
 		child_rows_subgridded := child_rows_template.is_subgrid()
 		child_column_lines := if child_columns_subgridded {
-			inherited := subgrid_axis_data_for_item([]GridTrack{}, column_lines, placement.column,
-				placement.column_span, CSSPixels.new(0)).line_names
+			inherited := inherited_subgrid_line_names(column_lines, row_lines, placement, true)
 			subgrid_lines_for_definition(child_columns_template, inherited, placement.column_span)
 		} else {
 			grid_lines_for_definition(item, child_columns_template, CSSPixels.new(0), CSSPixels.new(0),
 				false, child_areas, true)
 		}
 		child_row_lines := if child_rows_subgridded {
-			inherited := subgrid_axis_data_for_item([]GridTrack{}, row_lines, placement.row,
-				placement.row_span, CSSPixels.new(0)).line_names
+			inherited := inherited_subgrid_line_names(column_lines, row_lines, placement, false)
 			subgrid_lines_for_definition(child_rows_template, inherited, placement.row_span)
 		} else {
 			grid_lines_for_definition(item, child_rows_template, CSSPixels.new(0), CSSPixels.new(0),
@@ -1225,7 +1366,7 @@ fn collect_grid_track_sizing_placements(mut state LayoutState, container &Node, 
 	}
 }
 
-fn grid_track_sizing_placements(mut state LayoutState, container &Node, placements []GridItemPlacement, column_lines [][]string, row_lines [][]string, columns bool, parent_gap CSSPixels) []GridItemPlacement {
+fn grid_track_sizing_placements(mut state LayoutState, container &Node, placements []GridItemPlacement, column_lines [][]css.GridLineName, row_lines [][]css.GridLineName, columns bool, parent_gap CSSPixels) []GridItemPlacement {
 	mut result := []GridItemPlacement{}
 	collect_grid_track_sizing_placements(mut state, container, placements, column_lines, row_lines,
 		columns, parent_gap, 0, mut result)
@@ -1259,9 +1400,8 @@ fn grid_track_offset(tracks []GridTrack, index int, gap CSSPixels) CSSPixels {
 	return offset
 }
 
-fn subgrid_axis_data_for_item(tracks []GridTrack, line_names [][]string, start int, span int, gap CSSPixels) GridSubgridAxisData {
+fn subgrid_axis_data_for_item(tracks []GridTrack, line_names [][]css.GridLineName, start int, span int, gap CSSPixels) GridSubgridAxisData {
 	mut inherited_tracks := []GridTrack{cap: span}
-	mut inherited_line_names := [][]string{cap: span + 1}
 	for index in 0 .. span {
 		track_index := start + index
 		if track_index >= 0 && track_index < tracks.len {
@@ -1275,33 +1415,28 @@ fn subgrid_axis_data_for_item(tracks []GridTrack, line_names [][]string, start i
 			}
 		}
 	}
-	for index in 0 .. span + 1 {
-		line_index := start + index
-		if line_index >= 0 && line_index < line_names.len {
-			inherited_line_names << line_names[line_index].clone()
-		} else {
-			inherited_line_names << []string{}
-		}
-	}
 	return GridSubgridAxisData{
 		tracks: inherited_tracks
-		line_names: inherited_line_names
+		line_names: line_names
 		gap: gap
 	}
 }
 
-fn install_grid_item_subgrid_axis_data(mut state LayoutState, item &Node, columns bool, tracks []GridTrack, line_names [][]string, start int, span int, gap CSSPixels) {
-	template := if columns {
-		item.computed_values().grid_template_columns()
-	} else {
-		item.computed_values().grid_template_rows()
-	}
-	if !item.display().is_grid_inside() || !template.is_subgrid() {
+fn install_grid_item_subgrid_data(mut state LayoutState, item &Node, columns []GridTrack, rows []GridTrack, column_lines [][]css.GridLineName, row_lines [][]css.GridLineName, placement GridItemPlacement, column_gap CSSPixels, row_gap CSSPixels) {
+	if !item.display().is_grid_inside() {
 		return
 	}
 	styled := item.as_node_with_style() or { return }
-	state.set_subgrid_axis_data(styled, columns, subgrid_axis_data_for_item(tracks, line_names,
-		start, span, gap))
+	if item.computed_values().grid_template_columns().is_subgrid() {
+		inherited_lines := inherited_subgrid_line_names(column_lines, row_lines, placement, true)
+		state.set_subgrid_axis_data(styled, true, subgrid_axis_data_for_item(columns, inherited_lines,
+			placement.column, placement.column_span, column_gap))
+	}
+	if item.computed_values().grid_template_rows().is_subgrid() {
+		inherited_lines := inherited_subgrid_line_names(column_lines, row_lines, placement, false)
+		state.set_subgrid_axis_data(styled, false, subgrid_axis_data_for_item(rows, inherited_lines,
+			placement.row, placement.row_span, row_gap))
+	}
 }
 
 fn apply_subgrid_gap_extra_margins(container &Node, mut item_state UsedValues, placement GridItemPlacement, columns bool, track_count int, parent_gap CSSPixels, percentage_basis CSSPixels) {
@@ -2396,7 +2531,7 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 		}
 	} else {
 		if template_columns.is_subgrid() {
-			[][]string{len: 1}
+			[][]css.GridLineName{len: 1}
 		} else {
 			grid_lines_for_definition(container, template_columns, container_width, column_gap,
 				true, areas, true)
@@ -2411,7 +2546,7 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 		}
 	} else {
 		if template_rows.is_subgrid() {
-			[][]string{len: 1}
+			[][]css.GridLineName{len: 1}
 		} else {
 			grid_lines_for_definition(container, template_rows, row_basis, row_gap,
 				container_state.has_definite_height(), areas, false)
@@ -2608,10 +2743,8 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 		area_width := grid_track_range_size(columns, placement.column, placement.column_span, effective_column_gap)
 		styled := placement.item.as_node_with_style() or { continue }
 		mut item_state := state.get_mutable(styled)
-		install_grid_item_subgrid_axis_data(mut state, placement.item, true, columns,
-			column_lines, placement.column, placement.column_span, effective_column_gap)
-		install_grid_item_subgrid_axis_data(mut state, placement.item, false, rows, row_lines,
-			placement.row, placement.row_span, row_gap)
+		install_grid_item_subgrid_data(mut state, placement.item, columns, rows, column_lines,
+			row_lines, placement, effective_column_gap, row_gap)
 		item_state.set_containing_block_used_values(container_state)
 		resolve_box_model_edges(styled.computed_values(), mut item_state, area_width.to_double())
 		if subgridded_columns {
@@ -2822,26 +2955,26 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 	// without the `<area>-start`/`-end` names that grid-template-areas adds.
 	empty_areas := css.GridTemplateAreas{}
 	used_column_line_names := if subgridded_columns {
-		subgrid_lines_for_definition(template_columns, [][]string{}, columns.len)
+		grid_line_name_strings(subgrid_lines_for_definition(template_columns,
+			[][]css.GridLineName{}, columns.len))
 	} else {
-		grid_lines_for_definition(container, template_columns, container_width, column_gap, true,
-			empty_areas, true)
+		grid_line_name_strings(grid_lines_for_definition(container, template_columns, container_width,
+			column_gap, true, empty_areas, true))
 	}
 	used_row_line_names := if subgridded_rows {
-		subgrid_lines_for_definition(template_rows, [][]string{}, rows.len)
+		grid_line_name_strings(subgrid_lines_for_definition(template_rows, [][]css.GridLineName{},
+			rows.len))
 	} else {
-		grid_lines_for_definition(container, template_rows, row_basis, row_gap,
-			container_state.has_definite_height(), empty_areas, false)
+		grid_line_name_strings(grid_lines_for_definition(container, template_rows, row_basis, row_gap,
+			container_state.has_definite_height(), empty_areas, false))
 	}
 	container_state.set_grid_line_names(used_column_line_names, used_row_line_names)
 
 	for placement in placements {
 		styled := placement.item.as_node_with_style() or { continue }
 		mut item_state := state.get_mutable(styled)
-		install_grid_item_subgrid_axis_data(mut state, placement.item, true, columns,
-			column_lines, placement.column, placement.column_span, effective_column_gap)
-		install_grid_item_subgrid_axis_data(mut state, placement.item, false, rows, row_lines,
-			placement.row, placement.row_span, effective_row_gap)
+		install_grid_item_subgrid_data(mut state, placement.item, columns, rows, column_lines,
+			row_lines, placement, effective_column_gap, effective_row_gap)
 		area_width := grid_track_range_size(columns, placement.column, placement.column_span, effective_column_gap)
 		area_height := grid_track_range_size(rows, placement.row, placement.row_span, effective_row_gap)
 		// FlexFormattingContext.cpp/GridFormattingContext.cpp compute relative
