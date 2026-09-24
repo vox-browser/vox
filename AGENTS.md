@@ -131,8 +131,11 @@
   scrolling leaves their logical block-axis position stable. Their intrinsic
   auto height likewise uses the selected face's resolved normal line-height,
   including at fractional and very small font sizes. Native input
-  min/max-height clamps provide a definite basis to the internal flex editor,
-  keeping its text and placeholder centered in the constrained control.
+  min/max-height clamps provide a definite basis to the internal flex editor
+  when the inline size is explicit, keeping its text and placeholder centered
+  in the constrained control. With both axes automatic, the upstream tentative
+  block-size rerun preserves the input's intrinsic line height after a min/max
+  violation.
 - Reload reconstructs child session history, nested windows inherit their
   top-level creation URL and origin, exhausted navigation bodies are released,
   and removing the body no longer leaves an otherwise loaded document
