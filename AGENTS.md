@@ -160,6 +160,9 @@
   the assignable table width instead of the table's containing block. Table
   fixup also clears stale inline-child state from generated table roots and
   rows while preserving it on the generated cell that owns the inline run.
+  Collapsed borders split on whole CSS pixels at every grid line: cells own the
+  inner shares, the table owns the outer shares, and painting snaps the derived
+  border edges independently in device space.
 - Parsed programs are reused for bytecode cache generation, nested idle
   callback periods are paced, Window named-property membership avoids full ID
   enumeration, and SVG presentation attributes retain their case-sensitive
