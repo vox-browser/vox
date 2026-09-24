@@ -146,7 +146,9 @@
 - Table column and column-group boxes retain their used grid geometry for
   painting and layout-tree inspection, including spanning columns, empty groups,
   border spacing, and RTL placement. Percentage column widths resolve against
-  the assignable table width instead of the table's containing block.
+  the assignable table width instead of the table's containing block. Table
+  fixup also clears stale inline-child state from generated table roots and
+  rows while preserving it on the generated cell that owns the inline run.
 - Parsed programs are reused for bytecode cache generation, nested idle
   callback periods are paced, Window named-property membership avoids full ID
   enumeration, and SVG presentation attributes retain their case-sensitive
