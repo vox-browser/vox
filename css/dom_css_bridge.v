@@ -434,6 +434,7 @@ struct DocumentStyleSource {
 	css_text  string
 	location  string
 	media     string
+	owner     &dom.Element = unsafe { nil }
 }
 
 fn resolve_stylesheet_url(reference string, base_url string) ?string {
@@ -579,6 +580,7 @@ pub fn sync_document_style_elements(document &dom.Document) {
 				css_text: css_text
 				location: style_location
 				media: element.get_attribute_value('media')
+				owner: element
 			}
 		} else if element.local_name() == 'link' {
 			relations := element.get_attribute_value('rel').to_lower().fields()
@@ -597,6 +599,7 @@ pub fn sync_document_style_elements(document &dom.Document) {
 				css_text: css_text
 				location: resolved_url
 				media: element.get_attribute_value('media')
+				owner: element
 			}
 		}
 	}
@@ -620,6 +623,7 @@ pub fn sync_document_style_elements(document &dom.Document) {
 	mut parsed := []&CSSStyleSheet{cap: style_sources.len}
 	for source in style_sources {
 		mut sheet := parse_css_stylesheet_with_parser(source.css_text, source.location)
+		sheet.set_owner_node(source.owner)
 		if source.media.trim_space().len > 0 {
 			sheet.set_media(source.media)
 		}
@@ -634,20 +638,37 @@ pub fn sync_document_style_elements(document &dom.Document) {
 		}
 		parsed << sheet
 	}
-	style_computer := css_style_computer_for(document)
-	mut font_computer := unsafe { &FontComputer(style_computer.font_computer_) }
+	document_root := unsafe { &dom.Node(document) }
 	for old_sheet in holder.embedded_sheets {
-		font_computer.unload_fonts_from_css_rules(old_sheet.css_rules().rules)
-	}
-	for new_sheet in parsed {
-		font_computer.load_fonts_from_css_rules(new_sheet.css_rules().rules, style_computer.font_face_set_)
+		mut mutable_sheet := unsafe { &CSSStyleSheet(old_sheet) }
+		mutable_sheet.remove_owning_document_or_shadow_root(document_root)
 	}
 	unsafe {
 		holder.embedded_sources = sources.clone()
 		holder.embedded_sheets = parsed
 	}
+	for new_sheet in parsed {
+		mut mutable_sheet := unsafe { &CSSStyleSheet(new_sheet) }
+		mutable_sheet.add_owning_document_or_shadow_root(document_root)
+	}
 	mut scope := css_style_scope_for_document(document)
 	scope.invalidate_rule_cache()
+}
+
+// Return the live CSSOM sheet owned by a document <style> or <link> element.
+// Embedded sheets are cached separately from DOM's opaque stylesheet handle,
+// so script bridges use owner identity to reach the same sheet as the cascade.
+pub fn style_sheet_for_owner_node(document &dom.Document, owner &dom.Element) ?&CSSStyleSheet {
+	sync_document_style_elements(document)
+	holder := css_author_style_sheets_for(document)
+	for sheet in holder.embedded_sheets {
+		if sheet_owner := sheet.base.owner_node {
+			if voidptr(sheet_owner) == voidptr(owner) {
+				return sheet
+			}
+		}
+	}
+	return none
 }
 
 // DOM::Document::evaluate_media_rules(). CSSStyleSheet is CSS-owned in the V

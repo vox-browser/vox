@@ -112,3 +112,43 @@ fn test_document_bridge_applies_async_created_elements_and_set_property_styles()
 		assert child.get_attribute_value('style') == 'mask-image: linear-gradient(black, black)'
 	}
 }
+
+fn test_document_bridge_replays_style_sheet_insert_rule_into_live_cssom_sheet() {
+	$if darwin {
+		mut document := html.parse_document('<style id="style">div::after { content: counter(a, dynamic-counter-style); }</style><div style="counter-reset: a 5"></div><script>style.sheet.insertRule(\'@counter-style dynamic-counter-style { symbols: "*"; }\', 0);</script>')
+		document.set_viewport_rect(dom.Rect{0, 0, 800, 600})
+		mut runtime := Runtime.create()
+		defer {
+			runtime.close()
+		}
+		run_inline_document_scripts(document, 'about:blank', runtime)!
+
+		registered := css.registered_counter_styles_for_document(document)
+		style := registered['dynamic-counter-style'] or { panic('inserted counter style missing') }
+		assert css.generate_a_counter_representation(style, registered, 5) == '*****'
+		snapshot := layout.dump_document_layout_snapshot(document, 800, 600) or {
+			panic('layout failed')
+		}
+		assert snapshot.contains('"*****"')
+	}
+}
+
+fn test_document_bridge_replays_constructed_adopted_style_sheet_replacement() {
+	$if darwin {
+		mut document := html.parse_document('<div style="counter-reset: a 5"></div><script>let sheet = new CSSStyleSheet(); sheet.replaceSync(\'div::after { content: counter(a, dynamic-counter-style); }\'); document.adoptedStyleSheets = [sheet]; sheet.replaceSync(\'@counter-style dynamic-counter-style { symbols: "*"; } div::after { content: counter(a, dynamic-counter-style); }\');</script>')
+		document.set_viewport_rect(dom.Rect{0, 0, 800, 600})
+		mut runtime := Runtime.create()
+		defer {
+			runtime.close()
+		}
+		run_inline_document_scripts(document, 'about:blank', runtime)!
+
+		registered := css.registered_counter_styles_for_document(document)
+		style := registered['dynamic-counter-style'] or { panic('adopted counter style missing') }
+		assert css.generate_a_counter_representation(style, registered, 5) == '*****'
+		snapshot := layout.dump_document_layout_snapshot(document, 800, 600) or {
+			panic('layout failed')
+		}
+		assert snapshot.contains('"*****"')
+	}
+}

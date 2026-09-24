@@ -143,6 +143,7 @@ fn bridge_program(state map[string]json2.Any, scripts []string) string {
 		'const __listeners = Object.create(null);',
 		'const __objects = []; let __lastRectElement = null;',
 		'const __canvases = Object.create(null);',
+		'let __nextStyleSheetId = 1; const __styleSheetObjects = Object.create(null); let __adoptedStyleSheets = [];',
 		'function __listenerKey(s, n) { return (s && s.id ? s.id : "document") + ":" + n; }',
 		'function __cssName(p) { return String(p).replace(/[A-Z]/g, function (c) { return "-" + c.toLowerCase(); }); }',
 		'function __styleProxy(s) {',
@@ -157,6 +158,9 @@ fn bridge_program(state map[string]json2.Any, scripts []string) string {
 		'function __canvasFill(c, x, y, w, h, color) { const left = Math.max(0,Math.floor(Math.min(x,x+w))), top = Math.max(0,Math.floor(Math.min(y,y+h))), right = Math.min(c.width,Math.ceil(Math.max(x,x+w))), bottom = Math.min(c.height,Math.ceil(Math.max(y,y+h))); for (let yy=top; yy<bottom; ++yy) for (let xx=left; xx<right; ++xx) { const i=(yy*c.width+xx)*4; c.data[i]=color[0]; c.data[i+1]=color[1]; c.data[i+2]=color[2]; c.data[i+3]=color[3]; } }',
 		'function __canvasDraw(destination, source, args) { const snapshot = source.data.slice(); let sx=0,sy=0,sw=source.width,sh=source.height,dx=+args[0],dy=+args[1],dw=sw,dh=sh; if (args.length === 4) { dw=+args[2]; dh=+args[3]; } else if (args.length >= 8) { sx=+args[0]; sy=+args[1]; sw=+args[2]; sh=+args[3]; dx=+args[4]; dy=+args[5]; dw=+args[6]; dh=+args[7]; } if (!sw || !sh || !dw || !dh) return; const left=Math.max(0,Math.floor(Math.min(dx,dx+dw))),top=Math.max(0,Math.floor(Math.min(dy,dy+dh))),right=Math.min(destination.width,Math.ceil(Math.max(dx,dx+dw))),bottom=Math.min(destination.height,Math.ceil(Math.max(dy,dy+dh))); for(let y=top;y<bottom;++y) for(let x=left;x<right;++x){ const u=(x-dx)/dw,v=(y-dy)/dh,sourceX=Math.floor(sx+u*sw),sourceY=Math.floor(sy+v*sh); if(sourceX<0||sourceY<0||sourceX>=source.width||sourceY>=source.height)continue; const si=(sourceY*source.width+sourceX)*4,di=(y*destination.width+x)*4; destination.data[di]=snapshot[si];destination.data[di+1]=snapshot[si+1];destination.data[di+2]=snapshot[si+2];destination.data[di+3]=snapshot[si+3]; } }',
 		'function __canvasContext(s) { const c=__canvasFor(s); if(c.context)return c.context; const target={ fillRect:function(x,y,w,h){__canvasFill(c,+x,+y,+w,+h,__canvasColor(c.fillStyle));}, clearRect:function(x,y,w,h){__canvasFill(c,+x,+y,+w,+h,[0,0,0,0]);}, drawImage:function(source){if(!source||!source.__state||source.__state.tagName!=="canvas")throw new TypeError("Unsupported CanvasImageSource");__canvasDraw(c,__canvasFor(source.__state),Array.prototype.slice.call(arguments,1));}, getImageData:function(x,y,w,h){const output=new Uint8ClampedArray(Math.max(0,Math.trunc(w))*Math.max(0,Math.trunc(h))*4);for(let yy=0;yy<h;++yy)for(let xx=0;xx<w;++xx){const sourceX=Math.trunc(x)+xx,sourceY=Math.trunc(y)+yy,di=(yy*w+xx)*4;if(sourceX<0||sourceY<0||sourceX>=c.width||sourceY>=c.height)continue;const si=(sourceY*c.width+sourceX)*4;output[di]=c.data[si];output[di+1]=c.data[si+1];output[di+2]=c.data[si+2];output[di+3]=c.data[si+3];}return{data:output,width:w,height:h};} }; c.context=new Proxy(target,{get:function(o,p){if(p==="fillStyle")return c.fillStyle;return o[p];},set:function(o,p,v){if(p==="fillStyle"){c.fillStyle=String(v);return true;}o[p]=v;return true;}});return c.context; }',
+		'function __styleElementSheet(s) { if (s.tagName !== "style") return null; if (s.sheetObject) return s.sheetObject; const sheet = { insertRule: function(rule,index) { const resolved = index === undefined ? -1 : Number(index); __state.operations.push({op:"insertStyleRule",target:s.index,rule:String(rule),index:resolved}); return resolved < 0 ? 0 : resolved; }, deleteRule: function(index) { __state.operations.push({op:"deleteStyleRule",target:s.index,index:Number(index)}); } }; s.sheetObject=sheet; return sheet; }',
+		'function CSSStyleSheet() { if (!(this instanceof CSSStyleSheet)) throw new TypeError("CSSStyleSheet constructor requires new"); this.__sheetId=__nextStyleSheetId++; __styleSheetObjects[this.__sheetId]=this; __state.operations.push({op:"constructStyleSheet",sheet:this.__sheetId}); }',
+		'CSSStyleSheet.prototype.replaceSync = function(text) { __state.operations.push({op:"replaceStyleSheet",sheet:this.__sheetId,text:String(text)}); };',
 		'function __setAttribute(s, n, v) { n = String(n).toLowerCase(); s.attributes[n] = String(v); s.attributesDirty = true; if (n === "id") s.id = String(v); if (n === "class") s.className = String(v); if (n === "style") s.styleText = String(v); }',
 		'function __removeAttribute(s, n) { n = String(n).toLowerCase(); delete s.attributes[n]; s.attributesDirty = true; }',
 		'function __isDescendant(s, ancestor) { for (let p = s.parentIndex; p >= 0; p = __state.nodes[p].parentIndex) if (p === ancestor) return true; return false; }',
@@ -182,7 +186,7 @@ fn bridge_program(state map[string]json2.Any, scripts []string) string {
 		'  };',
 		'  target.style = __styleProxy(s); Object.defineProperty(target, "__state", { value: s });',
 		'  const proxy = new Proxy(target, {',
-		'    get: function (o, p) { if (p in o) return o[p]; if (p === "id") return s.id; if (p === "tagName") return String(s.tagName).toUpperCase(); if (p === "textContent" || p === "innerText") return s.textContent; if (p === "innerHTML") return s.innerHTML; if (p === "className") return s.className; if (p === "offsetLeft") return Math.trunc((s.rect && s.rect.offsetLeft) || 0); if (p === "offsetTop") return Math.trunc((s.rect && s.rect.offsetTop) || 0); if (p === "offsetWidth") return Math.trunc((s.rect && s.rect.width) || 0); if (p === "offsetHeight") return Math.trunc((s.rect && s.rect.height) || 0); if (p === "selectedIndex") return s.selectedIndex === undefined ? -1 : s.selectedIndex; if (["multiple", "hidden", "controls"].indexOf(p) >= 0) return Object.prototype.hasOwnProperty.call(s.attributes, p); if (s.tagName === "canvas" && (p === "width" || p === "height")) return __canvasDimension(s,p); if (["type", "value", "placeholder", "src", "width", "height"].indexOf(p) >= 0) return s.attributes[p] || ""; return undefined; },',
+		'    get: function (o, p) { if (p in o) return o[p]; if (p === "id") return s.id; if (p === "tagName") return String(s.tagName).toUpperCase(); if (p === "textContent" || p === "innerText") return s.textContent; if (p === "innerHTML") return s.innerHTML; if (p === "className") return s.className; if (p === "sheet") return __styleElementSheet(s); if (p === "offsetLeft") return Math.trunc((s.rect && s.rect.offsetLeft) || 0); if (p === "offsetTop") return Math.trunc((s.rect && s.rect.offsetTop) || 0); if (p === "offsetWidth") return Math.trunc((s.rect && s.rect.width) || 0); if (p === "offsetHeight") return Math.trunc((s.rect && s.rect.height) || 0); if (p === "selectedIndex") return s.selectedIndex === undefined ? -1 : s.selectedIndex; if (["multiple", "hidden", "controls"].indexOf(p) >= 0) return Object.prototype.hasOwnProperty.call(s.attributes, p); if (s.tagName === "canvas" && (p === "width" || p === "height")) return __canvasDimension(s,p); if (["type", "value", "placeholder", "src", "width", "height"].indexOf(p) >= 0) return s.attributes[p] || ""; return undefined; },',
 		'    set: function (o, p, v) { if (p === "textContent" || p === "innerText") { s.textContent = String(v); s.innerHTML = ""; s.textContentDirty = true; return true; } if (p === "innerHTML") { s.innerHTML = String(v); s.innerHTMLDirty = true; return true; } if (p === "className") { s.className = String(v); __setAttribute(s, "class", v); return true; } if (p === "selectedIndex") { s.selectedIndex = Number(v); __state.operations.push({ op: "selectedIndex", target: s.index, value: s.selectedIndex }); return true; } if (["multiple", "hidden", "controls"].indexOf(p) >= 0) { if (v) __setAttribute(s, p, ""); else __removeAttribute(s, p); return true; } if (p === "value" && s.tagName === "textarea") { s.textContent = String(v); s.innerHTML = ""; s.textContentDirty = true; return true; } if (p === "value" && s.tagName === "input") { s.value = String(v); __state.operations.push({ op: "inputValue", target: s.index, value: s.value }); return true; } if (["type", "value", "placeholder", "src", "width", "height"].indexOf(p) >= 0) { __setAttribute(s, p, v); if(s.tagName === "canvas" && (p === "width" || p === "height")){delete __canvases[s.index];__canvasFor(s);} return true; } o[p] = v; return true; }',
 		'  }); __objects[s.index] = proxy; return proxy;',
 		'}',
@@ -196,10 +200,11 @@ fn bridge_program(state map[string]json2.Any, scripts []string) string {
 		'  write: function (value) { __state.writeHTML = String(__state.writeHTML || "") + String(value); }, close: function () {}',
 		'};',
 		'Object.defineProperty(document, "title", { get: function () { return __state.title; }, set: function (v) { __state.title = String(v); } });',
+		'Object.defineProperty(document, "adoptedStyleSheets", { get: function () { return __adoptedStyleSheets.slice(); }, set: function (value) { __adoptedStyleSheets=Array.from(value || []); __state.operations.push({op:"setAdoptedStyleSheets",sheets:__adoptedStyleSheets.map(function(sheet){return sheet && sheet.__sheetId || 0;})}); } });',
 		'document.body = __state.bodyIndex >= 0 ? __element(__state.nodes[__state.bodyIndex]) : null;',
 		'const console = { log: function () { __state.logs.push(Array.prototype.map.call(arguments, String).join(" ")); }, warn: function () { this.log.apply(this, arguments); }, error: function () { this.log.apply(this, arguments); } };',
 		'const location = {}; Object.defineProperty(location, "href", { get: function () { return __state.location; }, set: function (v) { __state.navigate = String(v); } });',
-		'const window = globalThis; window.window = window; window.document = document; window.console = console; window.location = location; window.alert = function (v) { console.log(v); }; window.setTimeout = function (f) { if (typeof f === "function") f(); return 1; }; window.addEventListener = document.addEventListener; window.getComputedStyle = function (element) { return element ? element.style : {}; }; window.internals = { click: function () { if (__lastRectElement !== null) __state.operations.push({ op: "click", target: __lastRectElement }); } };',
+		'const window = globalThis; window.window = window; window.document = document; window.console = console; window.location = location; window.CSSStyleSheet = CSSStyleSheet; window.alert = function (v) { console.log(v); }; window.setTimeout = function (f) { if (typeof f === "function") f(); return 1; }; window.addEventListener = document.addEventListener; window.getComputedStyle = function (element) { return element ? element.style : {}; }; window.internals = { click: function () { if (__lastRectElement !== null) __state.operations.push({ op: "click", target: __lastRectElement }); } };',
 		'for (const id of Object.keys(__state.elements)) { try { window[id] = document.getElementById(id); } catch (_) {} }',
 		'window.__ladybirdSnapshot = function () { return JSON.stringify(__state); };',
 		'window.__ladybirdFinalize = function () { for (const __index of Object.keys(__canvases)) { const c=__canvases[__index]; __state.operations.push({op:"canvasPixels",target:Number(__index),width:c.width,height:c.height,pixels:Array.from(c.data)}); } return window.__ladybirdSnapshot(); };',
@@ -255,6 +260,27 @@ fn bridge_byte_array_property(object map[string]json2.Any, name string) []u8 {
 			else { 0 }
 		}
 		result << u8(number)
+	}
+	return result
+}
+
+fn bridge_int_array_property(object map[string]json2.Any, name string) []int {
+	value := object[name] or { return []int{} }
+	if value !is []json2.Any {
+		return []int{}
+	}
+	mut result := []int{cap: (value as []json2.Any).len}
+	for item in value as []json2.Any {
+		result << match item {
+			int { item }
+			i64 { int(item) }
+			i32 { int(item) }
+			u64 { int(item) }
+			u32 { int(item) }
+			f64 { int(item) }
+			f32 { int(item) }
+			else { 0 }
+		}
 	}
 	return result
 }
@@ -402,6 +428,7 @@ fn apply_bridge_state(document &dom.Document, encoded string) ! {
 			}
 		}
 	}
+	mut constructed_style_sheets := map[int]&css.CSSStyleSheet{}
 	if operation_values := state['operations'] {
 		if operation_values is []json2.Any {
 			for item in operation_values as []json2.Any {
@@ -410,9 +437,48 @@ fn apply_bridge_state(document &dom.Document, encoded string) ! {
 				}
 				operation := item as map[string]json2.Any
 				kind := bridge_string_property(operation, 'op') or { continue }
+				if kind == 'constructStyleSheet' {
+					sheet_id := bridge_int_property(operation, 'sheet') or { continue }
+					constructed_style_sheets[sheet_id] = css.css_style_sheet_construct(none,
+						document)!
+					continue
+				}
+				if kind == 'replaceStyleSheet' {
+					sheet_id := bridge_int_property(operation, 'sheet') or { continue }
+					mut sheet := constructed_style_sheets[sheet_id] or { continue }
+					sheet.replace_sync(bridge_string_property(operation, 'text') or { '' })!
+					continue
+				}
+				if kind == 'setAdoptedStyleSheets' {
+					mut sheets := []&css.CSSStyleSheet{}
+					for sheet_id in bridge_int_array_property(operation, 'sheets') {
+						sheets << (constructed_style_sheets[sheet_id] or { continue })
+					}
+					mut adopted := css.create_adopted_style_sheets_list(root)
+					adopted.replace(sheets)!
+					continue
+				}
 				target_index := bridge_int_property(operation, 'target') or { continue }
 				mut target := element_by_index[target_index] or { continue }
 				match kind {
+					'insertStyleRule' {
+						mut sheet := css.style_sheet_for_owner_node(document, target) or { continue }
+						requested_index := bridge_int_property(operation, 'index') or { -1 }
+						index := if requested_index < 0 {
+							u32(sheet.css_rules().length())
+						} else {
+							u32(requested_index)
+						}
+						sheet.insert_rule(bridge_string_property(operation, 'rule') or { '' },
+							index)!
+					}
+					'deleteStyleRule' {
+						mut sheet := css.style_sheet_for_owner_node(document, target) or { continue }
+						index := bridge_int_property(operation, 'index') or { continue }
+						if index >= 0 {
+							sheet.delete_rule(u32(index))!
+						}
+					}
 					'append', 'prependNode' {
 						child_index := bridge_int_property(operation, 'child') or { continue }
 						child := element_by_index[child_index] or { continue }

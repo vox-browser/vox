@@ -957,14 +957,18 @@ pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &C
 	}
 	// A counter style is resolved from the element's current style scope. Its effective
 	// definition can therefore change while the computed property text remains identical.
-	if _ := old_layout_node {
-		if old_content := unsafe { &ComputedValues(old_style) }.computed_content() {
-			registered_counter_styles := registered_counter_styles_for_abstract_element(*abstract_element)
-			new_content := new_style.content(abstract_element, 0, registered_counter_styles).content_data
-			if !counter_style_dependencies_equal(old_content.counter_style_dependencies, new_content.counter_style_dependencies) {
-				invalidation.ensure_at_least(.rebuild_layout_tree)
-			}
+	// Generated pseudo-elements do not expose an independently addressable layout-node
+	// handle through the V bridge, but their ComputedValues retain the dependency snapshot
+	// captured while building generated content. Compare it independently of that handle,
+	// matching ElementDependentInvalidationState upstream.
+	if old_content := unsafe { &ComputedValues(old_style) }.computed_content() {
+		registered_counter_styles := registered_counter_styles_for_abstract_element(*abstract_element)
+		new_content := new_style.content(abstract_element, 0, registered_counter_styles).content_data
+		if !counter_style_dependencies_equal(old_content.counter_style_dependencies, new_content.counter_style_dependencies) {
+			invalidation.ensure_at_least(.rebuild_layout_tree)
 		}
+	}
+	if _ := old_layout_node {
 		old_list_style_type := unsafe { &ComputedValues(old_style) }.computed_list_style_type()
 		if old_list_style_type.kind == .counter_style {
 			new_list_style_type := new_style.list_style_type_for_scope(css_style_scope_for(*abstract_element))
