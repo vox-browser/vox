@@ -174,7 +174,9 @@
   grid and row backgrounds begin immediately inside the resolved outer border.
   Table rows use visual group order: the first header group is laid out first,
   the first footer group last, and additional header/footer groups retain tree
-  order as ordinary row groups.
+  order as ordinary row groups. Each row-group box starts at its own first row
+  and spans through its own last row, even when loose rows occur between
+  groups; collapsed rows do not synthesize spacing inside the group.
 - Parsed programs are reused for bytecode cache generation, nested idle
   callback periods are paced, Window named-property membership avoids full ID
   enumeration, and SVG presentation attributes retain their case-sensitive
