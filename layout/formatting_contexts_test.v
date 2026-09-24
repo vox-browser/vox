@@ -2231,6 +2231,26 @@ fn test_table_lays_out_first_header_first_and_first_footer_last() {
 	assert used_for_id(result, 'footer').offset.y().to_double() == 40
 }
 
+fn test_table_row_groups_span_their_rows_across_loose_rows() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 } #table { display:table; border-spacing:0 }
+		.row { display:table-row } .group { display:table-row-group }
+		.cell { display:table-cell; width:50px; height:20px }
+	</style><div id="table">
+		<div class="row"><div class="cell"></div></div>
+		<div class="group" id="first-group"><div class="row"><div class="cell"></div></div></div>
+		<div class="row"><div class="cell"></div></div>
+		<div class="group" id="second-group"><div class="row"><div class="cell"></div></div><div class="row"><div class="cell"></div></div></div>
+	</div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	first := used_for_id(result, 'first-group')
+	second := used_for_id(result, 'second-group')
+	assert first.offset.y().to_double() == 20
+	assert first.content_height().to_double() == 20
+	assert second.offset.y().to_double() == 60
+	assert second.content_height().to_double() == 40
+}
+
 fn test_table_auto_layout_uses_definite_cell_width_contributions() {
 	document := html.parse_document('<!doctype html><style>
 		table { width:160px; border-spacing:0 }
@@ -2385,8 +2405,8 @@ fn test_collapsed_table_row_has_zero_height_and_does_not_advance_row_cursor() {
 	collapsed := used_for_id(result, 'collapsed')
 	last := used_for_id(result, 'last')
 	collapsed_cell := used_for_id(result, 'collapsed-cell')
-	assert table.content_height().to_double() == 72
-	assert group.content_height().to_double() == 62
+	assert table.content_height().to_double() == 67
+	assert group.content_height().to_double() == 57
 	assert first.content_height().to_double() == 22
 	assert first.offset.y().to_double() == 5
 	assert collapsed.content_height().to_double() == 0
@@ -2400,7 +2420,7 @@ fn test_collapsed_table_row_has_zero_height_and_does_not_advance_row_cursor() {
 	assert collapsed_cell.padding_bottom.to_double() == -9
 }
 
-fn test_collapsed_table_row_group_preserves_upstream_group_spacing_quirk() {
+fn test_collapsed_table_row_group_spans_its_positioned_rows() {
 	document := html.parse_document('<!doctype html><style>
 		html, body { margin:0 } table { width:150px; height:160px; border-spacing:3px 5px }
 		td { padding:2px; border:1px solid }
@@ -2414,13 +2434,13 @@ fn test_collapsed_table_row_group_preserves_upstream_group_spacing_quirk() {
 	assert used_for_id(result, 'collapsed-one').content_height().to_double() == 0
 	assert used_for_id(result, 'collapsed-two').content_height().to_double() == 0
 	assert collapsed_group.offset.y().to_double() == 5
-	// position_row_boxes() still counts the spacing between collapsed row
-	// boxes when it sizes the group, even though the row cursor did not move.
-	assert collapsed_group.content_height().to_double() == 5
-	assert visible_group.offset.y().to_double() == 15
+	// Both collapsed rows occupy the same grid line, so their group is empty at
+	// that line instead of acquiring synthetic spacing between them.
+	assert collapsed_group.content_height().to_double() == 0
+	assert visible_group.offset.y().to_double() == 5
 	assert used_for_id(result, 'visible').offset.y().to_double() == 5
 	assert used_for_id(result, 'visible').content_height().to_double() == 160
-	assert table.content_height().to_double() == 180
+	assert table.content_height().to_double() == 170
 }
 
 fn test_table_auto_row_height_distribution_truncates_fractional_increment() {

@@ -2067,9 +2067,10 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			cursor_y = cursor_y.plus(row_heights[index]).plus(vertical_spacing)
 		}
 	}
-	// TableFormattingContext::position_row_boxes() advances a row-group cursor
-	// while walking each group's own rows. This is linear in the grid size and
-	// also leaves an empty group at the current cursor after preceding groups.
+	// A row group spans its own rows at their already-computed grid positions.
+	// Loose rows may occur between groups, so the previous group's end is only
+	// the fallback position for an empty group, not the next nonempty group's
+	// start.
 	mut row_group_top_offset := vertical_spacing
 	for group in table_row_containers_in_layout_order(table) {
 		if !group.display().is_table_row_group() && !group.display().is_table_header_group() && !group.display().is_table_footer_group() {
@@ -2078,27 +2079,29 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		styled := group.as_node_with_style() or { continue }
 		mut group_state := state.get_mutable(styled)
 		group_state.set_containing_block_used_values(table_state)
-		group_state.set_content_offset(CSSPixelPoint.new(horizontal_spacing, row_group_top_offset))
-		mut group_height := CSSPixels.new(0)
+		mut group_top := row_group_top_offset
+		mut group_bottom := row_group_top_offset
 		mut group_width := CSSPixels.new(0)
-		mut row_count := 0
-		for row in group.children() {
-			if !row.display().is_table_row() {
+		mut has_rows := false
+		for row_index, row in rows {
+			parent := row.parent() or { continue }
+			if !layout_nodes_same(parent, group) {
 				continue
 			}
 			row_styled := row.as_node_with_style() or { continue }
 			row_state := state.get(row_styled)
-			group_height = group_height.plus(row_state.border_box_height())
+			if !has_rows {
+				group_top = row_offsets[row_index]
+				has_rows = true
+			}
+			group_bottom = row_offsets[row_index].plus(row_state.border_box_height())
 			group_width = css_pixels_max(group_width, row_state.border_box_width())
-			row_count++
 		}
-		if row_count >= 2 {
-			group_height = group_height.plus(vertical_spacing.scaled(f64(row_count - 1)))
-		}
+		group_state.set_content_offset(CSSPixelPoint.new(horizontal_spacing, group_top))
 		group_state.set_content_width(group_width)
-		group_state.set_content_height(group_height)
-		row_group_top_offset = row_group_top_offset.plus(group_height)
-		if row_count > 0 {
+		group_state.set_content_height(group_bottom.minus(group_top))
+		row_group_top_offset = group_bottom
+		if has_rows {
 			row_group_top_offset = row_group_top_offset.plus(vertical_spacing)
 		}
 	}
