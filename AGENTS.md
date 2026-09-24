@@ -167,8 +167,11 @@
   lines. Once an auto-height row flex container has resolved its line cross
   sizes, it relays each item's used height as a definite basis to percentage-
   sized descendants, including items whose own percentage height was initially
-  indefinite. Media-control contents retain the upstream left alignment. Size and
-  inline-size query containers establish independent formatting contexts, but
+  indefinite. A partially intrinsic outer SVG derives its missing max-content
+  width from its intrinsic height and viewBox ratio, including when it is
+  centered inside a column flex item. Media-control contents retain the upstream
+  left alignment. Size and inline-size query containers establish independent
+  formatting contexts, but
   an ordinary block with an automatic width still fills its containing block;
   containment's zero intrinsic size is not treated as a replaced-element width.
 - Table column and column-group boxes retain their used grid geometry for
