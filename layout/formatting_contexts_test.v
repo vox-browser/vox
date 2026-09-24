@@ -3748,6 +3748,21 @@ fn test_container_type_establishes_an_independent_formatting_context() {
 	}
 }
 
+fn test_auto_height_flex_items_make_their_used_cross_size_definite_for_descendants() {
+	document := html.parse_document('<!doctype html><style>
+		* { margin:0; padding:0 }
+		html { position:relative; width:400px; height:200px }
+		body { display:flex; position:absolute; inset:0 auto auto 0; width:100% }
+		#outer { width:100%; height:50% }
+		#inner { width:100%; height:50% }
+		#content { width:50px; height:30px }
+	</style><div id="outer"><div id="inner"><div id="content"></div></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'outer').content_height().to_double() == 30
+	assert used_for_id(result, 'inner').content_height().to_double() == 15
+	assert used_for_id(result, 'content').content_height().to_double() == 30
+}
+
 // FormattingContext::box_is_sized_as_replaced_element(): a non-replaced box with
 // a preferred aspect ratio and a definite block size resolves its automatic
 // inline size through the ratio instead of stretching to the containing block.

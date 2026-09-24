@@ -1340,6 +1340,25 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 	for cross_size in line_cross_sizes {
 		total_cross_size = total_cross_size.plus(cross_size)
 	}
+	// https://drafts.csswg.org/css-flexbox-1/#definite-sizes
+	// Once the line cross sizes of an auto-height row flex container are known,
+	// each item's used cross size is definite for laying out its descendants.
+	// This second inside-layout pass is observable when an item's authored
+	// percentage height was initially unresolved: its own used height remains
+	// content-derived, but nested percentage heights now resolve against it.
+	if !container_state.has_definite_height() && layout_mode != .intrinsic_sizing {
+		for current_line in lines {
+			for item_index, item in current_line.items {
+				styled := item.as_node_with_style() or { continue }
+				item_state := state.get(styled)
+				if item_state.has_definite_height() {
+					continue
+				}
+				layout_independent_child(mut state, item, mut container_state, container_width,
+					none, current_line.targets[item_index], item_state.content_height())
+			}
+		}
+	}
 	reverse_cross_axis := flex_formatting_cross_axis_is_reversed(container)
 	available_cross_size := if container_state.has_definite_height() {
 		container_state.content_height()
