@@ -103,6 +103,9 @@
   replacement document, but suppresses them after cross-origin redirects.
   Navigation-created documents also preserve their navigation-start record and
   timestamp the first `loading` readiness state for legacy timing attributes.
+  Browser navigation parses with the final document URL already installed, so
+  parser-created `<base>` elements freeze against that URL and all preloaded,
+  styled, scripted, image, and video subresources use the resulting base URL.
 - Media controls derive their timeline from the final seekable range, react to
   audio-track list events, use a semantic fullscreen button with the `F`
   shortcut, and coalesce scrub seeks with the upstream timeout. SourceBuffer
@@ -160,6 +163,9 @@
   the assignable table width instead of the table's containing block. Table
   fixup also clears stale inline-child state from generated table roots and
   rows while preserving it on the generated cell that owns the inline run.
+  Table cells derive their baseline from their first in-flow line or row, only
+  baseline-aligned cells establish a row baseline, and inline tables export the
+  first visible row through their wrapper while excluding captions.
   Collapsed borders split on whole CSS pixels at every grid line: cells own the
   inner shares, the table owns the outer shares, and painting snaps the derived
   border edges independently in device space. A collapsed table's used borders
@@ -338,6 +344,10 @@
   shaping selects a covered pending face. The complete `font-display` timeline
   controls invisible fallback, swapping, and failure, while cache/decode work
   may defer the first paint without letting network requests hold it open.
+  File-backed face and cascade storage remains heap-owned under the native
+  no-GC build; a synchronous lazy load refreshes every retained style and text
+  cache generation together with `line-height: normal`, so the first shaping
+  pass cannot mix author glyphs with fallback metrics.
   Local WOFF and WOFF2 resources are prepared into stable sfnt faces for shared
   metrics, HarfBuzz shaping, and native replay. A face completed during layout
   invalidates its cached cascade and participates in the pre-paint stabilization
