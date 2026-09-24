@@ -4038,6 +4038,22 @@ fn test_block_size_is_clamped_before_it_transfers_through_the_ratio() {
 	assert box.content_height().to_double() == 25
 }
 
+fn test_replaced_intrinsic_width_transfers_from_definite_height() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		.row { display:flex }
+		.column { display:flex; flex-direction:column }
+		canvas { height:32px }
+	</style><div class="row"><div id="column" class="column"><canvas id="image"></canvas></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	column := used_for_id(result, 'column')
+	image := used_for_id(result, 'image')
+	assert column.content_width().to_double() == 64
+	assert column.content_height().to_double() == 32
+	assert image.content_width().to_double() == 64
+	assert image.content_height().to_double() == 32
+}
+
 // An unresolved percentage block size is treated as automatic. Only a box that
 // box_is_sized_as_replaced_element() selects transfers it from the inline size;
 // a box with two automatic axes takes its automatic content height instead.

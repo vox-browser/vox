@@ -6,6 +6,32 @@ module layout
 
 import css
 
+// CSS Sizing 3 intrinsic sizes: a definite constraint in the opposite axis
+// transfers through a replaced element's preferred aspect ratio before its
+// natural width is used as the intrinsic inline contribution.
+fn calculate_transferred_width_for_replaced_element(mut state LayoutState, box &Box) ?CSSPixels {
+	node := unsafe { &Node(box) }
+	if !node.is_replaced_box() || !box.has_preferred_aspect_ratio() {
+		return none
+	}
+	computed := box.computed_values()
+	if !computed.size_value(.width).is_auto() {
+		return none
+	}
+	computed_height := computed.size_value(.height)
+	if computed_height.is_auto() || computed_height.is_intrinsic_sizing_constraint() {
+		return none
+	}
+	styled := node.as_node_with_style() or { return none }
+	box_state := state.get(styled)
+	available_space := box_state.available_inner_space_or_constraints_from(AvailableSpace.new(
+		AvailableSize.make_max_content(), AvailableSize.make_indefinite()))
+	if should_treat_height_as_auto(state, box, available_space) {
+		return none
+	}
+	return compute_replaced_size(box, available_space).width()
+}
+
 // FormattingContext::calculate_min_content_width() and
 // calculate_max_content_width(). Intrinsic measurement is a real subtree
 // layout in a throwaway LayoutState; it must not read geometry left behind by
@@ -21,6 +47,9 @@ fn calculate_min_content_width(mut state LayoutState, box &Box) CSSPixels {
 		if max_width.is_percentage() {
 			return max_width.to_px(layout_length_resolution_context(unsafe { &Node(box) }), CSSPixels.new(0))
 		}
+	}
+	if transferred_width := calculate_transferred_width_for_replaced_element(mut state, box) {
+		return transferred_width
 	}
 	if auto_width := box.auto_content_box_size().width {
 		return auto_width
@@ -51,6 +80,9 @@ fn calculate_min_content_width(mut state LayoutState, box &Box) CSSPixels {
 
 fn calculate_max_content_width(mut state LayoutState, box &Box) CSSPixels {
 	auto_size := box.auto_content_box_size()
+	if transferred_width := calculate_transferred_width_for_replaced_element(mut state, box) {
+		return transferred_width
+	}
 	if auto_width := auto_size.width {
 		return auto_width
 	}
