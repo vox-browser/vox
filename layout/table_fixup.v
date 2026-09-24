@@ -296,6 +296,23 @@ fn fix_missing_cells_in_tables(mut node Node, document &dom.Document) {
 	}
 }
 
+fn finalize_table_internal_child_classification(mut node Node) {
+	display := node.display()
+	if display.is_table_inside() || display.is_table_row() || display.is_table_row_group()
+		|| display.is_table_header_group() || display.is_table_footer_group()
+		|| display.is_table_column() || display.is_table_column_group() {
+		// CSS table fixup leaves these boxes with table-internal children. The
+		// anonymous rows/tables produced from an original inline run must not
+		// retain the run's pre-fixup inline-child flag; only the generated table
+		// cell owns that inline content.
+		node.set_children_are_inline(false)
+	}
+	for child in node.children_.clone() {
+		mut mutable_child := unsafe { &Node(child) }
+		finalize_table_internal_child_classification(mut mutable_child)
+	}
+}
+
 fn fixup_table_tree(mut root Node, document &dom.Document) {
 	remove_irrelevant_table_children(mut root)
 	generate_table_child_wrappers(mut root, document)
@@ -304,5 +321,6 @@ fn fixup_table_tree(mut root Node, document &dom.Document) {
 	generate_table_child_wrappers(mut root, document)
 	generate_missing_table_parents(mut root, document)
 	fix_missing_cells_in_tables(mut root, document)
+	finalize_table_internal_child_classification(mut root)
 	wrap_table_roots(mut root, document)
 }

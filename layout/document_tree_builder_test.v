@@ -901,9 +901,12 @@ fn test_table_fixup_generates_wrapper_rows_and_cells() {
 	generated_row := table.first_child() or { panic('table text has no generated row') }
 	assert generated_row.is_anonymous()
 	assert generated_row.display().is_table_row()
+	assert !table.children_are_inline()
+	assert !generated_row.children_are_inline()
 	generated_cell := generated_row.first_child() or { panic('row has no generated cell') }
 	assert generated_cell.is_anonymous()
 	assert generated_cell.display().is_table_cell()
+	assert generated_cell.children_are_inline()
 	assert (generated_cell.first_child() or { panic('cell has no text') }).is_text_node()
 }
 
