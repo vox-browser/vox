@@ -893,6 +893,18 @@ fn test_flex_basis_intrinsic_sizing_keywords_choose_their_matching_contribution(
 	assert used_for_id(result, 'auto').content_width().to_double() == 0
 }
 
+fn test_svg_partial_intrinsic_height_sets_its_max_content_width() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 } .row { display:flex } .logo { display:flex; flex-direction:column; align-items:center }
+	</style><div class="row"><div id="logo" class="logo"><svg id="image" height="24" viewBox="0 0 262 33"><rect width="262" height="33"></rect></svg></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	logo := used_for_id(result, 'logo')
+	image := used_for_id(result, 'image')
+	assert logo.content_width().to_double() == 190.53125
+	assert image.content_width().to_double() == 190.53125
+	assert image.content_height().to_double() == 24
+}
+
 fn test_column_flex_intrinsic_cross_size_resolves_percentage_minimum_in_second_pass() {
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-direction:column }

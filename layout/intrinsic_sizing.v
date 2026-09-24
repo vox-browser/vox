@@ -25,7 +25,17 @@ fn calculate_min_content_width(mut state LayoutState, box &Box) CSSPixels {
 	if auto_width := box.auto_content_box_size().width {
 		return auto_width
 	}
-	if !unsafe { &Node(box) }.has_children() {
+	node := unsafe { &Node(box) }
+	// An outer SVG's descendants do not become its intrinsic contribution when
+	// its own height and viewBox ratio determine the missing natural width.
+	if node.is_svg_svg_box() {
+		if intrinsic_height := box.auto_content_box_size().height {
+			if intrinsic_ratio := box.auto_content_box_size().aspect_ratio {
+				return intrinsic_height.times_fraction(intrinsic_ratio)
+			}
+		}
+	}
+	if !node.has_children() {
 		return CSSPixels.new(0)
 	}
 	mut mutable_box := unsafe { &Box(box) }
@@ -45,6 +55,17 @@ fn calculate_max_content_width(mut state LayoutState, box &Box) CSSPixels {
 		return auto_width
 	}
 	node := unsafe { &Node(box) }
+	// SVG Integration keeps a missing outer <svg> dimension automatic while
+	// exposing the other dimension and its viewBox ratio as intrinsic sizing
+	// properties. CSS2 replaced sizing derives that missing width from the
+	// intrinsic height before the generic no-natural-size fallback runs.
+	if node.is_svg_svg_box() {
+		if intrinsic_height := auto_size.height {
+			if intrinsic_ratio := auto_size.aspect_ratio {
+				return intrinsic_height.times_fraction(intrinsic_ratio)
+			}
+		}
+	}
 	computed_width := box.computed_values().size_value(.width)
 	computed_height := box.computed_values().size_value(.height)
 	if node.is_replaced_box() && auto_size.has_aspect_ratio() && !auto_size.has_height()
@@ -361,24 +382,26 @@ fn intrinsic_outer_width_contribution_with_resolved_box_model(mut state LayoutSt
 fn flex_formatting_context_adjust_cross_size_through_aspect_ratio_for_main_size_min_max_constraints(mut state LayoutState, item &Node, item_state &UsedValues, cross_size CSSPixels, row_axis bool, available_main_size ?CSSPixels) CSSPixels {
 	box := item.as_box() or { return cross_size }
 	ratio := box.preferred_aspect_ratio() or { return cross_size }
-	mut main_size := if row_axis {
-		cross_size.times_fraction(ratio)
-	} else {
-		cross_size.divided_by_fraction(ratio)
-	}
 	min_property := if row_axis { css.PropertyID.min_width } else { css.PropertyID.min_height }
 	max_property := if row_axis { css.PropertyID.max_width } else { css.PropertyID.max_height }
-	if minimum := flex_main_size_for_constraint(mut state, item, item.computed_values().size_value(min_property), item_state, row_axis, available_main_size) {
-		main_size = css_pixels_max(main_size, minimum)
-	}
+	mut adjusted_cross_size := cross_size
 	if maximum := flex_main_size_for_constraint(mut state, item, item.computed_values().size_value(max_property), item_state, row_axis, available_main_size) {
-		main_size = css_pixels_min(main_size, maximum)
+		transferred_maximum := if row_axis {
+			maximum.divided_by_fraction(ratio)
+		} else {
+			maximum.times_fraction(ratio)
+		}
+		adjusted_cross_size = css_pixels_min(adjusted_cross_size, transferred_maximum)
 	}
-	return if row_axis {
-		main_size.divided_by_fraction(ratio)
-	} else {
-		main_size.times_fraction(ratio)
+	if minimum := flex_main_size_for_constraint(mut state, item, item.computed_values().size_value(min_property), item_state, row_axis, available_main_size) {
+		transferred_minimum := if row_axis {
+			minimum.divided_by_fraction(ratio)
+		} else {
+			minimum.times_fraction(ratio)
+		}
+		adjusted_cross_size = css_pixels_max(adjusted_cross_size, transferred_minimum)
 	}
+	return adjusted_cross_size
 }
 
 fn flex_cross_width_behaves_as_auto(item &Node, item_state &UsedValues, constraint SizeConstraint) bool {
