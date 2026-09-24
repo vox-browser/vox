@@ -149,14 +149,6 @@ fn is_integral_multiple(value f64, step f64) bool {
 	return remainder <= acceptable_error || remainder >= step - acceptable_error
 }
 
-fn inner_text_style_when_visible() string {
-	return 'width:100%;height:1lh;align-items:center;overflow:auto;scrollbar-width:none;text-overflow:clip;white-space:nowrap;'
-}
-
-fn inner_text_style_when_hidden() string {
-	return 'width:0;display:inline;'
-}
-
 fn stepper_button_style_when_visible() string {
 	return 'padding:0;cursor:default;'
 }
@@ -166,7 +158,7 @@ fn stepper_button_style_when_hidden() string {
 }
 
 fn placeholder_style_when_visible() string {
-	return 'width:100%;height:1lh;align-items:center;overflow:hidden;scrollbar-width:none;text-overflow:clip;white-space:nowrap;'
+	return 'width:100%;height:1lh;overflow:hidden;text-overflow:clip;white-space:nowrap;margin-inline-start:-100%;'
 }
 
 fn placeholder_style_when_hidden() string {
@@ -858,7 +850,16 @@ pub fn (mut model HTMLInputElementModel) create_text_input_shadow_tree() {
 	shadow := element.attach_a_user_agent_shadow_root(.named)
 	mut container := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
 	container.set_attribute_value('style', 'display:flex;height:100%;align-items:center;white-space:pre;border:none;')
-	inner := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
+	mut text_container := container
+	if model.type_state_ == .number {
+		text_container = dom.create_element(element.document(), 'div', ns_html, none, none,
+			false) or { return }
+		text_container.set_attribute_value('style', 'display:flex;align-items:center;flex:1;min-width:0;')
+		mut container_node := container.as_node()
+		append_input_shadow_child(mut container_node, text_container.as_node())
+	}
+	mut inner := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
+	inner.set_attribute_value('style', 'width:100%;height:1lh;overflow:auto;scrollbar-width:none;text-overflow:clip;white-space:nowrap;')
 	mut text := element.document().create_text_node(model.value_)
 	if model.type_state_ == .password {
 		text.set_is_password_input(true)
@@ -869,10 +870,11 @@ pub fn (mut model HTMLInputElementModel) create_text_input_shadow_tree() {
 	placeholder_text := element.document().create_text_node(model.placeholder())
 	mut placeholder_node := placeholder.as_node()
 	append_input_shadow_child(mut placeholder_node, placeholder_text.as_node())
-	mut container_node := container.as_node()
-	append_input_shadow_child(mut container_node, inner.as_node())
-	append_input_shadow_child(mut container_node, placeholder.as_node())
+	mut text_container_node := text_container.as_node()
+	append_input_shadow_child(mut text_container_node, inner.as_node())
+	append_input_shadow_child(mut text_container_node, placeholder.as_node())
 	if model.type_state_ == .number {
+		mut container_node := container.as_node()
 		mut up := dom.create_element(element.document(), 'button', ns_html, none, none, false) or { return }
 		mut down := dom.create_element(element.document(), 'button', ns_html, none, none, false) or { return }
 		up.set_attribute_value('style', stepper_button_style_when_visible())
@@ -1148,13 +1150,10 @@ pub fn (mut model HTMLInputElementModel) update_text_input_shadow_tree() {
 }
 
 pub fn (mut model HTMLInputElementModel) update_placeholder_visibility() {
-	mut inner := model.inner_text_element_ or { return }
 	mut placeholder := model.placeholder_element_ or { return }
 	if model.placeholder_value() != none {
-		inner.set_attribute_value('style', inner_text_style_when_hidden())
 		placeholder.set_attribute_value('style', placeholder_style_when_visible())
 	} else {
-		inner.set_attribute_value('style', inner_text_style_when_visible())
 		placeholder.set_attribute_value('style', placeholder_style_when_hidden())
 	}
 }

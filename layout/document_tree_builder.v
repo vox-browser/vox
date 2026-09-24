@@ -1228,6 +1228,13 @@ fn computed_style_with_overrides(base &css.ComputedProperties, overrides map[css
 	return computed
 }
 
+fn inline_start_margin_property(values &css.ComputedProperties) css.PropertyID {
+	if values.writing_mode() == .horizontal_tb {
+		return if values.direction() == .ltr { .margin_left } else { .margin_right }
+	}
+	return if values.direction() == .ltr { .margin_top } else { .margin_bottom }
+}
+
 // HTMLProgressElement::create_shadow_tree_if_needed(). Its closed UA shadow
 // root contains the ::slider-track element and its ::slider-fill child.
 fn build_progress_internal_layout_children(document &dom.Document, element &dom.Element, host_computed &css.ComputedProperties) []&Node {
@@ -1353,6 +1360,23 @@ fn build_input_internal_layout_children(document &dom.Document, element &dom.Ele
 			css.PropertyID.text_wrap_mode:       'nowrap'
 		})
 		mut outer := unsafe { &Node(Box.new(document, outer_element.as_node(), outer_style)) }
+		mut text_container := outer
+		if type_ == 'number' {
+			text_container_element := document.create_element_ns('http://www.w3.org/1999/xhtml',
+				'div') or { return [] }
+			text_container_style := computed_style_with_overrides(outer_style, {
+				css.PropertyID.display:     'flex'
+				css.PropertyID.align_items: 'center'
+				css.PropertyID.flex_grow:   '1'
+				css.PropertyID.flex_shrink: '1'
+				css.PropertyID.flex_basis:  '0%'
+				css.PropertyID.min_width:   '0'
+			})
+			text_container = unsafe {
+				&Node(Box.new(document, text_container_element.as_node(), text_container_style))
+			}
+			outer.append_child(text_container)
+		}
 		inner_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 			return []
 		}
@@ -1365,15 +1389,10 @@ fn build_input_internal_layout_children(document &dom.Document, element &dom.Ele
 		placeholder := element.get_attribute_value('placeholder')
 		placeholder_is_visible := value.len == 0 && placeholder.len > 0
 		inner_style := computed_style_with_overrides(outer_style, {
-			css.PropertyID.display:              if placeholder_is_visible {
-				'inline'
-			} else {
-				'block'
-			}
-			css.PropertyID.width:                if placeholder_is_visible { '0' } else { '100%' }
+			css.PropertyID.display:              'block'
+			css.PropertyID.width:                '100%'
 			css.PropertyID.height:               inner_height
 			css.PropertyID.line_height:          inner_line_height
-			css.PropertyID.align_items:          'center'
 			css.PropertyID.overflow_x:           'auto'
 			css.PropertyID.overflow_y:           'auto'
 			css.PropertyID.white_space_collapse: 'collapse'
@@ -1387,7 +1406,7 @@ fn build_input_internal_layout_children(document &dom.Document, element &dom.Ele
 		text_layout_node.is_empty_editable_ = true
 		inner.append_child(unsafe { &Node(text_layout_node) })
 		inner.set_children_are_inline(true)
-		outer.append_child(inner)
+		text_container.append_child(inner)
 		if placeholder_is_visible {
 			placeholder_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 				return []
@@ -1395,17 +1414,18 @@ fn build_input_internal_layout_children(document &dom.Document, element &dom.Ele
 			placeholder_base := css.computed_properties_for_pseudo_element(element, .placeholder) or {
 				host_computed
 			}
-			placeholder_style := computed_style_with_overrides(placeholder_base, {
+			mut placeholder_overrides := {
 				css.PropertyID.display:              'block'
 				css.PropertyID.width:                '100%'
 				css.PropertyID.height:               inner_height
 				css.PropertyID.line_height:          inner_line_height
-				css.PropertyID.align_items:          'center'
 				css.PropertyID.overflow_x:           'hidden'
 				css.PropertyID.overflow_y:           'hidden'
 				css.PropertyID.white_space_collapse: 'collapse'
 				css.PropertyID.text_wrap_mode:       'nowrap'
-			})
+			}
+			placeholder_overrides[inline_start_margin_property(placeholder_base)] = '-100%'
+			placeholder_style := computed_style_with_overrides(placeholder_base, placeholder_overrides)
 			mut placeholder_box := unsafe {
 				&Node(BlockContainer.new(document, placeholder_element.as_node(), placeholder_style))
 			}
@@ -1414,7 +1434,7 @@ fn build_input_internal_layout_children(document &dom.Document, element &dom.Ele
 				&Node(TextNode.new(document, placeholder_text.as_node(), placeholder))
 			})
 			placeholder_box.set_children_are_inline(true)
-			outer.append_child(placeholder_box)
+			text_container.append_child(placeholder_box)
 		}
 		if type_ == 'number' && host_computed.appearance() != .textfield {
 			up_button := build_number_input_stepper_button(document, host_computed, 'M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z') or { return [] }
@@ -1422,6 +1442,7 @@ fn build_input_internal_layout_children(document &dom.Document, element &dom.Ele
 			outer.append_child(up_button)
 			outer.append_child(down_button)
 		}
+		text_container.set_children_are_inline(false)
 		outer.set_children_are_inline(false)
 		return [outer]
 	}

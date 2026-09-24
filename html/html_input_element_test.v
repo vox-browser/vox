@@ -298,6 +298,26 @@ fn test_input_shadow_controls_register_host_pseudo_elements() {
 	assert elements[2].element_reference_pseudo_element(int(css.PseudoElement.slider_thumb))? == thumb
 }
 
+fn test_input_placeholder_overlays_the_full_width_editor() {
+	elements := input_test_elements('<input placeholder="hint"><input type="number" placeholder="number">')
+	text := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[0]) })
+	text_inner := text.inner_text_element_ or { panic('missing text editor') }
+	text_placeholder := text.placeholder_element_ or { panic('missing text placeholder') }
+	assert text_inner.get_attribute_value('style').contains('width:100%')
+	assert text_placeholder.get_attribute_value('style').contains('margin-inline-start:-100%')
+	assert text_inner.as_node().parent_element()? == text_placeholder.as_node().parent_element()?
+
+	number := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[1]) })
+	number_inner := number.inner_text_element_ or { panic('missing number editor') }
+	number_placeholder := number.placeholder_element_ or { panic('missing number placeholder') }
+	text_container := number_inner.as_node().parent_element() or { panic('missing number text container') }
+	outer := text_container.as_node().parent_element() or { panic('missing number outer container') }
+	assert text_container.get_attribute_value('style').contains('flex:1')
+	assert number_placeholder.as_node().parent_element()? == text_container
+	assert (number.up_button_element_ or { panic('missing up button') }).as_node().parent_element()? == outer
+	assert (number.down_button_element_ or { panic('missing down button') }).as_node().parent_element()? == outer
+}
+
 fn test_input_validation_picker_and_legacy_activation() {
 	elements := input_test_elements('<input type="radio" name="g"><input type="radio" name="g" required><input pattern="[a-z]+"><input type="file">')
 	mut first := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[0]) })

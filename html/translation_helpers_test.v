@@ -56,11 +56,10 @@ fn test_input_and_parser_static_helpers() {
 	assert !is_applicable_for_maxlength_attribute(.number)
 	assert is_allowed_to_have_placeholder(.number)
 	assert !is_allowed_to_have_placeholder(.checkbox)
-	assert inner_text_style_when_visible().contains('overflow:auto')
-	assert inner_text_style_when_hidden() == 'width:0;display:inline;'
 	assert stepper_button_style_when_visible().contains('cursor:default')
 	assert stepper_button_style_when_hidden() == 'display:none;'
 	assert placeholder_style_when_visible().contains('overflow:hidden')
+	assert placeholder_style_when_visible().contains('margin-inline-start:-100%')
 	assert placeholder_style_when_hidden() == 'display:none;'
 
 	assert ascii_alphabetic_to_index(`A`) == 0

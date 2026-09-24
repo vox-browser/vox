@@ -176,6 +176,42 @@ fn test_text_input_padding_belongs_to_the_host_box() {
 	}
 }
 
+fn test_visible_input_placeholder_overlays_the_full_width_editor() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		input { width:200px }
+	</style><input id="text" placeholder="hint"><input id="number" type="number" placeholder="number">')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	text := layout_node_with_id(result.root, 'text') or { panic('missing text input') }
+	text_outer := text.first_child() or { panic('missing text outer box') }
+	text_inner := text_outer.children()[0]
+	text_placeholder := text_outer.children()[1]
+	text_inner_used := result.used_values_for(text_inner.as_node_with_style() or {
+		panic('text editor has no style')
+	}) or { panic('text editor has no used values') }
+	text_placeholder_used := result.used_values_for(text_placeholder.as_node_with_style() or {
+		panic('text placeholder has no style')
+	}) or { panic('text placeholder has no used values') }
+	assert text_inner_used.content_width().to_double() == 200
+	assert text_placeholder_used.content_width() == text_inner_used.content_width()
+	assert text_placeholder_used.margin_left.to_double() == -200
+
+	number := layout_node_with_id(result.root, 'number') or { panic('missing number input') }
+	number_outer := number.first_child() or { panic('missing number outer box') }
+	text_container := number_outer.children()[0]
+	number_inner := text_container.children()[0]
+	number_placeholder := text_container.children()[1]
+	number_inner_used := result.used_values_for(number_inner.as_node_with_style() or {
+		panic('number editor has no style')
+	}) or { panic('number editor has no used values') }
+	number_placeholder_used := result.used_values_for(number_placeholder.as_node_with_style() or {
+		panic('number placeholder has no style')
+	}) or { panic('number placeholder has no used values') }
+	assert number_inner_used.content_width().to_double() > 0
+	assert number_placeholder_used.content_width() == number_inner_used.content_width()
+	assert number_placeholder_used.margin_left == number_inner_used.content_width().negated()
+}
+
 fn test_multiline_flex_align_content_distributes_cross_axis_space() {
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-wrap:wrap; align-content:center; width:100px; height:100px }
