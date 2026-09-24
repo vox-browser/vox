@@ -498,11 +498,30 @@ pub type GridTrackSizeListItem = ExplicitGridTrack | GridLineNames
 
 pub struct GridTrackSizeList {
 pub mut:
-	list_ []GridTrackSizeListItem
+	list_                    []GridTrackSizeListItem
+	is_subgrid_              bool
+	preserve_line_name_sets_ bool
 }
 
 pub fn GridTrackSizeList.make_none() GridTrackSizeList {
 	return GridTrackSizeList{}
+}
+
+pub fn GridTrackSizeList.make_line_name_list() GridTrackSizeList {
+	return GridTrackSizeList{
+		preserve_line_name_sets_: true
+	}
+}
+
+pub fn GridTrackSizeList.make_subgrid() GridTrackSizeList {
+	return GridTrackSizeList{
+		is_subgrid_: true
+		preserve_line_name_sets_: true
+	}
+}
+
+pub fn (track_size_list GridTrackSizeList) is_subgrid() bool {
+	return track_size_list.is_subgrid_
 }
 
 pub fn (track_size_list GridTrackSizeList) track_list() []ExplicitGridTrack {
@@ -520,7 +539,7 @@ pub fn (track_size_list GridTrackSizeList) list() []GridTrackSizeListItem {
 }
 
 pub fn (track_size_list GridTrackSizeList) is_empty() bool {
-	return track_size_list.list_.len == 0
+	return !track_size_list.is_subgrid_ && track_size_list.list_.len == 0
 }
 
 pub fn (mut track_size_list GridTrackSizeList) append(item GridTrackSizeListItem) {
@@ -535,6 +554,10 @@ pub fn (mut track_size_list GridTrackSizeList) append(item GridTrackSizeListItem
 }
 
 pub fn (mut track_size_list GridTrackSizeList) append_line_names(line_names GridLineNames) {
+	if track_size_list.preserve_line_name_sets_ {
+		track_size_list.list_ << GridTrackSizeListItem(line_names)
+		return
+	}
 	if track_size_list.list_.len > 0 {
 		last_index := track_size_list.list_.len - 1
 		last := track_size_list.list_[last_index]
@@ -555,6 +578,14 @@ pub fn (mut track_size_list GridTrackSizeList) append_explicit_track(explicit_tr
 }
 
 pub fn (track_size_list GridTrackSizeList) serialize(mode SerializationMode) string {
+	mut prefix := ''
+	if track_size_list.is_subgrid_ {
+		prefix = 'subgrid'
+		if track_size_list.list_.len == 0 {
+			return prefix
+		}
+		prefix += ' '
+	}
 	if track_size_list.list_.len == 0 {
 		return 'none'
 	}
@@ -570,7 +601,7 @@ pub fn (track_size_list GridTrackSizeList) serialize(mode SerializationMode) str
 			}
 		}
 	}
-	return parts.join(' ')
+	return prefix + parts.join(' ')
 }
 
 pub fn (track_size_list GridTrackSizeList) to_string() string {
@@ -582,7 +613,10 @@ pub fn (track_size_list GridTrackSizeList) to_string_with_mode(mode Serializatio
 }
 
 pub fn (track_size_list GridTrackSizeList) absolutized(context ComputationContext) GridTrackSizeList {
-	mut result := GridTrackSizeList{}
+	mut result := GridTrackSizeList{
+		is_subgrid_: track_size_list.is_subgrid_
+		preserve_line_name_sets_: track_size_list.preserve_line_name_sets_
+	}
 	for item in track_size_list.list_ {
 		match item {
 			ExplicitGridTrack {

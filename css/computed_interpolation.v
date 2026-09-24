@@ -6564,6 +6564,9 @@ fn interpolate_grid_size(calculation_context InterpolationCalculationContext, fr
 }
 
 fn interpolate_grid_track_size_list(calculation_context InterpolationCalculationContext, from GridTrackSizeList, to GridTrackSizeList, delta f64) ?GridTrackSizeList {
+	if from.is_subgrid() || to.is_subgrid() {
+		return none
+	}
 	expanded_from := expand_grid_tracks_and_lines(from)
 	expanded_to := expand_grid_tracks_and_lines(to)
 	if expanded_from.tracks.len != expanded_to.tracks.len {
@@ -8642,6 +8645,9 @@ fn composite_grid_size(calculation_context InterpolationCalculationContext, unde
 }
 
 fn composite_grid_track_size_list(calculation_context InterpolationCalculationContext, underlying GridTrackSizeList, animated GridTrackSizeList) ?GridTrackSizeList {
+	if underlying.is_subgrid() || animated.is_subgrid() {
+		return none
+	}
 	expanded_underlying := expand_grid_tracks_and_lines(underlying)
 	expanded_animated := expand_grid_tracks_and_lines(animated)
 	if expanded_underlying.tracks.len != expanded_animated.tracks.len {

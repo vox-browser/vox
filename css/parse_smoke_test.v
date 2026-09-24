@@ -381,6 +381,19 @@ fn test_grid_template_and_auto_flow_branches_retain_upstream_longhands() {
 	assert column_flow.longhand(.grid_template_rows)?.serialize(.normal) == '100px'
 }
 
+fn test_subgrid_track_list_parsing_and_serialization() {
+	assert parsed('subgrid', .grid_template_columns)? == 'subgrid'
+	assert parsed('subgrid [a] [b]', .grid_template_columns)? == 'subgrid [a] [b]'
+	assert parsed('subgrid repeat(2, [a] [b]) [c]', .grid_template_columns)? ==
+		'subgrid repeat(2, [a] [b]) [c]'
+	assert parsed('subgrid [a] repeat(auto-fill, [b]) [c]', .grid_template_columns)? ==
+		'subgrid [a] repeat(auto-fill, [b]) [c]'
+	assert parsed('subgrid 10px', .grid_template_columns) == none
+	assert parsed('subgrid repeat(auto-fit, [a])', .grid_template_columns) == none
+	assert parsed('subgrid repeat(auto-fill, [a]) repeat(auto-fill, [b])',
+		.grid_template_columns) == none
+}
+
 fn test_coordinated_list_shorthands() {
 	// animation/transition components include keyword easings (linear/ease/...);
 	// the easing must bind to timing-function, not fall through to name.

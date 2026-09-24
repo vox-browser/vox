@@ -7447,6 +7447,65 @@ fn (mut parser Parser) parse_grid_auto_repeat(mut tokens ComponentValueStream) ?
 	return parser.parse_grid_track_repeat_impl(mut tokens, .auto, .fixed_size_only)
 }
 
+// <name-repeat> = repeat( [ <integer [1,infinity]> | auto-fill ] , <line-names>+ )
+fn (mut parser Parser) parse_grid_name_repeat(mut tokens ComponentValueStream) ?GridRepeat {
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	component_value := transaction.consume() or { return none }
+	if !component_value.is_function_named('repeat') {
+		return none
+	}
+	parser.push_temporary_value_parsing_context(ValueParsingContext(FunctionContext{
+		name: component_value.function().name
+	}))
+	defer {
+		parser.pop_temporary_value_parsing_context()
+	}
+	parts := parse_a_comma_separated_list_of_component_values_for_value_logic(component_value.function().value)
+	if parts.len != 2 {
+		return none
+	}
+	mut first_arg_tokens := ComponentValueStream.new(parts[0])
+	first_arg_tokens.consume_whitespace()
+	mut repeat_params := parser.parse_grid_repeat_params(mut first_arg_tokens, .fixed_integer) or {
+		mut auto_tokens := ComponentValueStream.new(parts[0])
+		auto_tokens.consume_whitespace()
+		params := parser.parse_grid_repeat_params(mut auto_tokens, .auto) or { return none }
+		if params.type_ != .auto_fill {
+			return none
+		}
+		auto_tokens.consume_whitespace()
+		if auto_tokens.has_more_tokens() {
+			return none
+		}
+		params
+	}
+	first_arg_tokens.consume_whitespace()
+	if repeat_params.type_ == .fixed && first_arg_tokens.has_more_tokens() {
+		return none
+	}
+
+	mut second_arg_tokens := ComponentValueStream.new(parts[1])
+	mut line_name_list := GridTrackSizeList.make_line_name_list()
+	mut parsed_line_name_count := 0
+	second_arg_tokens.consume_whitespace()
+	for second_arg_tokens.has_more_tokens() {
+		peek := second_arg_tokens.peek() or { return none }
+		if !peek.is_block() || !peek.block().is_square() {
+			return none
+		}
+		line_names := parser.parse_grid_line_names(mut second_arg_tokens) or { return none }
+		line_name_list.append_line_names(line_names)
+		parsed_line_name_count++
+		second_arg_tokens.consume_whitespace()
+	}
+	if parsed_line_name_count == 0 {
+		return none
+	}
+	tokens = transaction
+	return GridRepeat.from_params(line_name_list, repeat_params)
+}
+
 // <track-list> = [ <line-names>? [ <track-size> | <track-repeat> ] ]+ <line-names>?
 fn (mut parser Parser) parse_grid_track_list(mut tokens ComponentValueStream) ?GridTrackSizeList {
 	mut transaction := tokens.clone()
@@ -7490,12 +7549,43 @@ fn (mut parser Parser) parse_grid_auto_track_list(mut tokens ComponentValueStrea
 	return track_list
 }
 
-// none | <track-list> | <auto-track-list>
+// none | <track-list> | <auto-track-list> | subgrid <line-name-list>?
 fn (mut parser Parser) parse_grid_track_size_list(mut tokens ComponentValueStream) ?StyleValue {
 	mut none_attempt := tokens.clone()
 	if _ := parse_property_keyword_value(mut none_attempt, ['none']) {
 		tokens = none_attempt
 		return StyleValue(GridTrackSizeListStyleValue.make_none())
+	}
+
+	mut subgrid_attempt := tokens.clone()
+	subgrid_attempt.consume_whitespace()
+	if first := subgrid_attempt.peek() {
+		if first.is(.ident) && to_ascii_lowercase(first.token().ident()) == 'subgrid' {
+			subgrid_attempt.consume()
+			mut track_list := GridTrackSizeList.make_subgrid()
+			mut has_auto_fill_repeat := false
+			subgrid_attempt.consume_whitespace()
+			for subgrid_attempt.has_more_tokens() {
+				component := subgrid_attempt.peek() or { return none }
+				if component.is_block() && component.block().is_square() {
+					line_names := parser.parse_grid_line_names(mut subgrid_attempt) or { return none }
+					track_list.append_line_names(line_names)
+				} else if repeat := parser.parse_grid_name_repeat(mut subgrid_attempt) {
+					if repeat.is_auto_fill() {
+						if has_auto_fill_repeat {
+							return none
+						}
+						has_auto_fill_repeat = true
+					}
+					track_list.append_explicit_track(ExplicitGridTrack.from_repeat(repeat))
+				} else {
+					return none
+				}
+				subgrid_attempt.consume_whitespace()
+			}
+			tokens = subgrid_attempt
+			return StyleValue(GridTrackSizeListStyleValue.create(track_list))
+		}
 	}
 
 	mut auto_attempt := tokens.clone()
