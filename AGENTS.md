@@ -128,7 +128,9 @@
   Placeholder layers are excluded from hit testing and text selection. Input
   editors preserve interior and trailing whitespace verbatim. Single-line
   controls clamp undersized line heights to normal font metrics, and cursor
-  scrolling leaves their logical block-axis position stable. Native input
+  scrolling leaves their logical block-axis position stable. Their intrinsic
+  auto height likewise uses the selected face's resolved normal line-height,
+  including at fractional and very small font sizes. Native input
   min/max-height clamps provide a definite basis to the internal flex editor,
   keeping its text and placeholder centered in the constrained control.
 - Reload reconstructs child session history, nested windows inherit their
