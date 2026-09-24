@@ -4449,3 +4449,38 @@ fn test_wrapped_inline_blocks_preserve_strut_descent_between_lines() {
 	assert line.line_boxes[1].fragments_[0].block_offset().raw_value() >= line.line_boxes[0].bottom().raw_value()
 	assert line.line_boxes[2].fragments_[0].block_offset().raw_value() >= line.line_boxes[1].bottom().raw_value()
 }
+
+// Inline fixup can route an originally-inline abspos pseudo-element through
+// the surrounding BFC. The anonymous IFC wrapper publishes its exact inline-
+// end insertion point so the BFC does not have to reconstruct it from fragments.
+fn test_inline_end_static_position_survives_anonymous_wrapper_fixup() {
+	document := html.parse_document('<!doctype html><style>
+		body, ul { margin:0; padding:0 }
+		ul { list-style:none; font-size:10px; line-height:20px }
+		li { position:relative; width:100px }
+		li::after { content:"X"; position:absolute }
+	</style><ul><li id="item">XXX<br><br></li></ul>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	item := layout_node_with_id(result.root, 'item') or { panic('missing #item') }
+	mut inline_wrapper := ?&Node(none)
+	mut positioned := ?&Node(none)
+	for child in item.children() {
+		if child.is_anonymous() && child.children_are_inline() {
+			inline_wrapper = child
+		}
+		if child.is_absolutely_positioned() {
+			positioned = child
+		}
+	}
+	wrapper := inline_wrapper or { panic('missing anonymous inline wrapper') }
+	wrapper_style := wrapper.as_node_with_style() or { panic('inline wrapper has no style') }
+	wrapper_used := result.used_values_for(wrapper_style) or { panic('inline wrapper has no used values') }
+	inline_end := wrapper_used.inline_end_static_position_rect() or { panic('missing inline-end position') }
+	assert inline_end.rect.x.to_double() == 0
+	assert inline_end.rect.y.to_double() == 40
+	positioned_node := positioned or { panic('missing abspos pseudo-element') }
+	positioned_style := positioned_node.as_node_with_style() or { panic('abspos pseudo-element has no style') }
+	positioned_used := result.used_values_for(positioned_style) or { panic('abspos pseudo-element has no used values') }
+	assert positioned_used.static_position().x().to_double() == 0
+	assert positioned_used.static_position().y().to_double() == 40
+}

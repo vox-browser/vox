@@ -46,6 +46,57 @@ fn calculate_inline_static_position_rect(box &Box, containing_block_used_values 
 	}
 }
 
+fn calculate_inline_end_static_position_rect(containing_block &BlockContainer, containing_block_used_values &UsedValues) StaticPositionRect {
+	to_physical_position := fn (writing_mode css.WritingMode, inline_position CSSPixels, block_position CSSPixels) css.CSSPixelPoint {
+		if writing_mode != .horizontal_tb {
+			return css.CSSPixelPoint.new(block_position, inline_position)
+		}
+		return css.CSSPixelPoint.new(inline_position, block_position)
+	}
+	writing_mode := containing_block.computed_values().writing_mode()
+	if containing_block_used_values.line_boxes.len == 0 {
+		return StaticPositionRect{
+			rect: css.CSSPixelRect.new(0, 0, 0, 0)
+		}
+	}
+	mut line_boxes_bottom := CSSPixels.new(0)
+	for line_box in containing_block_used_values.line_boxes {
+		line_boxes_bottom = css_pixels_max(line_boxes_bottom, line_box.bottom())
+	}
+	last_line_box := containing_block_used_values.line_boxes.last()
+	if last_line_box.has_forced_break() || last_line_box.fragments_.len == 0 {
+		position := to_physical_position(writing_mode, CSSPixels.new(0), line_boxes_bottom)
+		return StaticPositionRect{
+			rect: css.CSSPixelRect{
+				x: position.x()
+				y: position.y()
+			}
+		}
+	}
+	last_fragment := last_line_box.fragments_.last()
+	mut direction := containing_block.computed_values().direction()
+	containing_node := unsafe { &Node(containing_block) }
+	if containing_node.is_anonymous() {
+		if parent := containing_node.parent() {
+			direction = parent.computed_values().direction()
+		}
+	}
+	inline_position := if direction == .rtl {
+		last_fragment.inline_offset()
+	} else {
+		css_pixels_max(last_fragment.inline_offset().plus(last_fragment.inline_length()),
+			last_line_box.inline_length())
+	}
+	position := to_physical_position(last_fragment.writing_mode(), inline_position,
+		last_fragment.block_offset())
+	return StaticPositionRect{
+		rect: css.CSSPixelRect{
+			x: position.x()
+			y: position.y()
+		}
+	}
+}
+
 // InlineFormattingContext::run() and generate_line_boxes(). Float placement is
 // shared with BlockFormattingContext; without intruding floats the available
 // width at every block offset is the supplied inline available size.
@@ -209,6 +260,8 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 	// LibWeb records atomic inline offsets before vertical alignment updates the
 	// fragments. Static-position coordinate conversion relies on that ordering.
 	line_builder.update_last_line()
+	containing_block_used_values.set_inline_end_static_position_rect(calculate_inline_end_static_position_rect(containing_block,
+		containing_block_used_values))
 	apply_line_clamp(containing_block, mut containing_block_used_values, mut state, layout_mode, available_space, parent_block_context)
 	if containing_block.computed_values().text_align() == .justify {
 		line_count := containing_block_used_values.line_boxes.len

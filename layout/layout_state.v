@@ -23,6 +23,7 @@ pub enum SizeConstraint {
 struct UsedValuesRareData {
 mut:
 	static_position_rect_         ?StaticPositionRect
+	inline_end_static_position_rect_ ?StaticPositionRect
 	relative_inset_basis_width_   ?CSSPixels
 	relative_inset_basis_height_  ?CSSPixels
 	abspos_containing_block_rect_ ?css.CSSPixelRect
@@ -49,6 +50,7 @@ mut:
 fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
 	return &UsedValuesRareData{
 		static_position_rect_: rare.static_position_rect_
+		inline_end_static_position_rect_: rare.inline_end_static_position_rect_
 		relative_inset_basis_width_: rare.relative_inset_basis_width_
 		relative_inset_basis_height_: rare.relative_inset_basis_height_
 		abspos_containing_block_rect_: rare.abspos_containing_block_rect_
@@ -550,6 +552,16 @@ pub fn (u &UsedValues) cumulative_offset() css.CSSPixelPoint {
 pub fn (mut u UsedValues) set_static_position_rect(position StaticPositionRect) {
 	mut rare := u.ensure_rare_data()
 	rare.static_position_rect_ = position
+}
+
+pub fn (mut u UsedValues) set_inline_end_static_position_rect(position StaticPositionRect) {
+	mut rare := u.ensure_rare_data()
+	rare.inline_end_static_position_rect_ = position
+}
+
+pub fn (u &UsedValues) inline_end_static_position_rect() ?StaticPositionRect {
+	rare := u.rare_ or { return none }
+	return rare.inline_end_static_position_rect_
 }
 
 pub fn (mut u UsedValues) set_abspos_containing_block_rect(rect css.CSSPixelRect) {

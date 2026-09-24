@@ -551,6 +551,10 @@ pub fn (line &LineBox) is_empty() bool {
 	return line.fragments_.len == 0 && !line.has_break_
 }
 
+pub fn (line &LineBox) has_forced_break() bool {
+	return line.has_forced_break_
+}
+
 pub fn (line &LineBox) original_available_width() AvailableSize {
 	return line.original_available_width_
 }

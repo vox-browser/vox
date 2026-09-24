@@ -413,21 +413,29 @@ fn (mut bfc BlockFormattingContext) layout_block_level_children(mut state Layout
 				mut child_state := state.get_mutable(child)
 				// The static position is where the next in-flow block would be
 				// placed, including a collapsed margin pending from earlier siblings.
+				mut static_position_x := CSSPixels.new(0)
 				mut static_position_y := css_px(bfc.y_offset_of_current_block_container + bfc.margin_state.pending_margin_for_next_box())
 				// Originally-inline abspos boxes are routed through the BFC after
-				// anonymous-wrapper fixup. Use that wrapper's block offset, matching
-				// Ladybird's current static-position heuristic.
+				// anonymous-wrapper fixup. Consume the insertion point published by
+				// the inline formatting context which laid out their preceding content.
 				if child.computed_values().display_before_box_type_transformation().is_inline_outside() {
 					if sibling := child_node.previous_sibling() {
 						if sibling.is_anonymous() && sibling.children_are_inline() {
 							if sibling_styled := sibling.as_node_with_style() {
-								static_position_y = state.get(sibling_styled).offset.y()
+								sibling_state := state.get(sibling_styled)
+								if inline_end := sibling_state.inline_end_static_position_rect() {
+									static_position_x = sibling_state.offset.x().plus(inline_end.rect.x)
+									static_position_y = sibling_state.offset.y().plus(inline_end.rect.y)
+								}
 							}
 						}
 					}
 				}
 				child_state.set_static_position_rect(StaticPositionRect{
-					rect: css.CSSPixelRect.new(0, static_position_y.to_double(), 0, 0)
+					rect: css.CSSPixelRect{
+						x: static_position_x
+						y: static_position_y
+					}
 				})
 			}
 			continue
