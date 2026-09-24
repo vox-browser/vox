@@ -161,12 +161,6 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 						mut mutable_context := unsafe { &BlockFormattingContext(context) }
 						clear := node.computed_values().clear()
 						clearance := mutable_context.clearance_y(clear, node.computed_values().direction(), containing_block_used_values.cumulative_offset().y(), vertical_float_clearance)
-						if clear_applies_to_float(clear, .left, node.computed_values().direction()) {
-							mutable_context.left_floats.current_boxes.clear()
-						}
-						if clear_applies_to_float(clear, .right, node.computed_values().direction()) {
-							mutable_context.right_floats.current_boxes.clear()
-						}
 						if clearance.raw_value() > vertical_float_clearance.raw_value() {
 							vertical_float_clearance = clearance
 							line_builder.did_introduce_clearance(clearance)

@@ -36,7 +36,6 @@ mut:
 	parent_block_context             ?&BlockFormattingContext
 	containing_block_root_offset     CSSPixelPoint
 	current_line_inline_offset       CSSPixels
-	next_float_bottom                ?CSSPixels
 }
 
 pub fn LineBuilder.new(mut layout_state LayoutState, containing_block &BlockContainer, containing_block_used_values &UsedValues, available_width AvailableSize, direction css.Direction, writing_mode css.WritingMode) &LineBuilder {
@@ -84,10 +83,14 @@ pub fn (mut builder LineBuilder) break_line(forced_break ForcedLineBreak, next_i
 		builder.containing_block_used_values.line_boxes << LineBox.new(builder.direction, builder.writing_mode)
 		builder.begin_new_line(true, break_count == 0, forced_break)
 		break_count++
-		if !builder.any_floats_intrude_at_block_offset(builder.current_block_offset) {
+		current_line_height := css_pixels_max(builder.max_height_on_current_line,
+			builder.containing_block.computed_values().line_height())
+		if !builder.any_floats_intrude_in_block_range(builder.current_block_offset,
+			builder.current_block_offset.plus(current_line_height)) {
 			break
 		}
-		if !builder.can_fit_new_line_at_block_offset(builder.current_block_offset) {
+		if !builder.can_fit_new_line_at_block_offset(builder.current_block_offset,
+			builder.containing_block.computed_values().line_height()) {
 			continue
 		}
 		if width := next_item_width {
@@ -126,14 +129,21 @@ fn (mut builder LineBuilder) begin_new_line(increment_y bool, is_first_break_in_
 				builder.current_block_offset = builder.current_block_offset.plus(increment)
 			}
 		} else {
-			// Consecutive breaks are squeezing past intruding floats. Scan one CSS
-			// pixel at a time until a complete line-height fits, exactly like
-			// LineBuilder::begin_new_line().
-			mut candidate := builder.current_block_offset.plus(CSSPixels.new(1))
-			for !builder.can_fit_new_line_at_block_offset(candidate) {
-				candidate = candidate.plus(CSSPixels.new(1))
+			// Consecutive breaks are squeezing past intruding floats. A band's
+			// intrusions are constant, so the next possible fit begins at its next
+			// boundary rather than at the following CSS pixel.
+			if context := builder.parent_block_context {
+				root_y := builder.containing_block_root_offset.y().plus(builder.current_block_offset)
+				if boundary := context.next_float_band_start_after(root_y) {
+					builder.current_block_offset = boundary.minus(builder.containing_block_root_offset.y())
+				} else {
+					line_height := builder.containing_block.computed_values().line_height()
+					builder.current_block_offset = builder.current_block_offset.plus(css_pixels_max(builder.max_height_on_current_line,
+						line_height))
+				}
+			} else {
+				builder.current_block_offset = builder.current_block_offset.plus(builder.containing_block.computed_values().line_height())
 			}
-			builder.current_block_offset = candidate
 		}
 	}
 	builder.recalculate_available_space()
@@ -214,11 +224,9 @@ fn (mut builder LineBuilder) should_break(next_item_width CSSPixels) bool {
 	}
 	line_boxes := builder.containing_block_used_values.line_boxes
 	if line_boxes.len == 0 || line_boxes.last().is_empty() {
-		if !builder.any_floats_intrude_at_block_offset(builder.current_block_offset) {
-			return false
-		}
 		line_height := builder.containing_block.computed_values().line_height()
-		if !builder.any_floats_intrude_at_block_offset(builder.current_block_offset.plus(line_height)) {
+		if !builder.any_floats_intrude_in_block_range(builder.current_block_offset,
+			builder.current_block_offset.plus(line_height)) {
 			return false
 		}
 	}
@@ -248,7 +256,18 @@ pub fn (mut builder LineBuilder) update_last_line() {
 	}
 	mut line_box := builder.ensure_last_line_box()
 	computed := builder.containing_block.computed_values()
-	mut inline_offset := builder.current_line_inline_offset
+	current_line_height := css_pixels_max(builder.max_height_on_current_line,
+		computed.line_height())
+	mut start_inline_offset := builder.current_line_inline_offset
+	if context := builder.parent_block_context {
+		if builder.available_width.is_definite() {
+			left, _, _ := context.float_boundaries_at(builder.current_block_offset,
+				current_line_height, builder.available_width.to_px_or_zero(), builder.direction,
+				builder.containing_block_root_offset)
+			start_inline_offset = left
+		}
+	}
+	mut inline_offset := start_inline_offset
 	mut block_offset := CSSPixels.new(0)
 	excess_inline_space :=
 		builder.available_width_for_current_line.to_px_or_zero().minus(line_box.inline_length())
@@ -433,10 +452,13 @@ pub fn (mut builder LineBuilder) remove_last_line_if_empty() {
 pub fn (mut builder LineBuilder) recalculate_available_space() {
 	builder.available_width_for_current_line = builder.available_width
 	builder.current_line_inline_offset = CSSPixels.new(0)
-	builder.next_float_bottom = none
 	if context := builder.parent_block_context {
 		if builder.available_width.is_definite() {
-			left, right, next_bottom := context.float_boundaries_at(builder.current_block_offset, CSSPixels.new(1), builder.available_width.to_px_or_zero(), builder.direction, builder.containing_block_root_offset)
+			line_height := css_pixels_max(builder.max_height_on_current_line,
+				builder.containing_block.computed_values().line_height())
+			left, right, _ := context.float_boundaries_at(builder.current_block_offset,
+				line_height, builder.available_width.to_px_or_zero(), builder.direction,
+				builder.containing_block_root_offset)
 			width := right.minus(left)
 			builder.available_width_for_current_line = AvailableSize.make_definite(if width.raw_value() > 0 {
 				width
@@ -444,9 +466,6 @@ pub fn (mut builder LineBuilder) recalculate_available_space() {
 				CSSPixels.new(0)
 			})
 			builder.current_line_inline_offset = left
-			if !next_bottom.might_be_saturated() {
-				builder.next_float_bottom = next_bottom
-			}
 		}
 	}
 	if builder.containing_block_used_values.line_boxes.len > 0 {
@@ -459,34 +478,32 @@ fn (builder &LineBuilder) float_edges_at_block_offset(block_offset CSSPixels) (C
 	available_width := builder.available_width.to_px_or_zero()
 	context := builder.parent_block_context or { return CSSPixels.new(0), available_width }
 
-	left, right, _ := context.float_boundaries_at(block_offset, CSSPixels.new(1), available_width, builder.direction, builder.containing_block_root_offset)
+	left, right, _ := context.float_boundaries_at(block_offset, CSSPixels.new(0), available_width,
+		builder.direction, builder.containing_block_root_offset)
 	return left, right
 }
 
-fn (builder &LineBuilder) any_floats_intrude_at_block_offset(block_offset CSSPixels) bool {
+fn (builder &LineBuilder) any_floats_intrude_in_block_range(block_start CSSPixels, block_end CSSPixels) bool {
 	if !builder.available_width.is_definite() {
 		return false
 	}
-	left, right := builder.float_edges_at_block_offset(block_offset)
+	context := builder.parent_block_context or { return false }
+	left, right, _ := context.float_boundaries_at(block_start, block_end.minus(block_start),
+		builder.available_width.to_px_or_zero(), builder.direction,
+		builder.containing_block_root_offset)
 	return left.raw_value() > 0
 		|| right.raw_value() < builder.available_width.to_px_or_zero().raw_value()
 }
 
-fn (builder &LineBuilder) can_fit_new_line_at_block_offset(block_offset CSSPixels) bool {
+fn (builder &LineBuilder) can_fit_new_line_at_block_offset(block_offset CSSPixels, line_height CSSPixels) bool {
 	if !builder.available_width.is_definite() {
 		return true
 	}
-	line_height := builder.containing_block.computed_values().line_height()
-	bottom_offset := block_offset.plus(line_height).minus(CSSPixels.new(1))
-	top_left, top_right := builder.float_edges_at_block_offset(block_offset)
-	bottom_left, bottom_right := builder.float_edges_at_block_offset(bottom_offset)
-	if top_left.raw_value() > bottom_right.raw_value() {
-		return false
-	}
-	if bottom_left.raw_value() > top_right.raw_value() {
-		return false
-	}
-	return true
+	context := builder.parent_block_context or { return true }
+	left, right, _ := context.float_boundaries_at(block_offset, line_height,
+		builder.available_width.to_px_or_zero(), builder.direction,
+		builder.containing_block_root_offset)
+	return right.minus(left).raw_value() > 0
 }
 
 pub fn (mut builder LineBuilder) set_trailing_whitespace_on_previous_line() {

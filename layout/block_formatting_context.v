@@ -884,8 +884,7 @@ mut:
 	trailing_collapsed_margin            ?TrailingCollapsedMargin
 	y_offset_of_current_block_container  f64
 	floating_boxes                       []FloatingBoxRecord
-	left_floats                          FloatSideState
-	right_floats                         FloatSideState
+	float_bands                          []BFCFloatBand = [BFCFloatBand{}]
 	layout_mode                          LayoutMode
 	root                                 ?&Node
 	is_line_clamp_container              bool
@@ -926,20 +925,22 @@ fn (bfc &BlockFormattingContext) line_clamp_reached() bool {
 	return bfc.has_line_clamp() && bfc.line_clamp_reached_
 }
 
-struct FloatSideState {
-mut:
-	current_boxes []FloatingBoxRecord
-	y_offset      CSSPixels
-}
-
 struct FloatingBoxRecord {
 	box &Node
 mut:
-	left   CSSPixels
-	top    CSSPixels
-	right  CSSPixels
-	bottom CSSPixels
-	side   css.Float
+	left    CSSPixels
+	top     CSSPixels
+	right   CSSPixels
+	bottom  CSSPixels
+	side    css.Float
+	is_left bool
+}
+
+struct BFCFloatBand {
+mut:
+	block_start CSSPixels
+	left_edge   ?CSSPixels
+	right_edge  ?CSSPixels
 }
 
 // A margin-collapsing block container may acquire its final block offset only
@@ -961,18 +962,7 @@ fn (mut bfc BlockFormattingContext) update_block_waiting_for_final_y_position() 
 			bfc.floating_boxes[index].bottom = record.bottom.plus(delta)
 		}
 	}
-	for index, record in bfc.left_floats.current_boxes {
-		if waiting_node.is_inclusive_ancestor_of(record.box) {
-			bfc.left_floats.current_boxes[index].top = record.top.plus(delta)
-			bfc.left_floats.current_boxes[index].bottom = record.bottom.plus(delta)
-		}
-	}
-	for index, record in bfc.right_floats.current_boxes {
-		if waiting_node.is_inclusive_ancestor_of(record.box) {
-			bfc.right_floats.current_boxes[index].top = record.top.plus(delta)
-			bfc.right_floats.current_boxes[index].bottom = record.bottom.plus(delta)
-		}
-	}
+	bfc.rebuild_float_bands()
 }
 
 fn float_side_is_left(side css.Float, direction css.Direction) bool {
@@ -996,8 +986,8 @@ fn (bfc &BlockFormattingContext) clearance_y(clear css.Clear, direction css.Dire
 		return current_y
 	}
 	mut y := current_y
-	// Per-side current boxes can be reset as floats move to a lower placement
-	// band. Clearance still has to pass every preceding float in this context.
+	// Clearance has to pass every preceding float in this context, including
+	// floats that no longer occupy the current placement band.
 	for floating in bfc.floating_boxes {
 		local_bottom := floating.bottom.minus(container_root_y)
 		if clear_applies_to_float(clear, floating.side, direction)
@@ -1014,12 +1004,6 @@ fn (mut bfc BlockFormattingContext) apply_clearance(clear css.Clear, direction c
 	}
 	current_y := css_px(bfc.y_offset_of_current_block_container)
 	y := bfc.clearance_y(clear, direction, container_root_y, current_y)
-	if clear_applies_to_float(clear, .left, direction) {
-		bfc.left_floats.current_boxes.clear()
-	}
-	if clear_applies_to_float(clear, .right, direction) {
-		bfc.right_floats.current_boxes.clear()
-	}
 	if y.raw_value() <= current_y.raw_value() {
 		return false
 	}
@@ -1028,25 +1012,110 @@ fn (mut bfc BlockFormattingContext) apply_clearance(clear css.Clear, direction c
 	return true
 }
 
-fn (bfc &BlockFormattingContext) float_boundaries_at(y CSSPixels, height CSSPixels, container_width CSSPixels, direction css.Direction, container_root_offset CSSPixelPoint) (CSSPixels, CSSPixels, CSSPixels) {
-	mut left := CSSPixels.new(0)
-	mut right := container_width
-	mut next_y := CSSPixels.max()
-	root_y := container_root_offset.y().plus(y)
-	root_bottom := root_y.plus(height)
-	for current_boxes in [bfc.left_floats.current_boxes, bfc.right_floats.current_boxes] {
-		for floating in current_boxes {
-			if floating.bottom.raw_value() <= root_y.raw_value()
-				|| floating.top.raw_value() >= root_bottom.raw_value() {
-				continue
-			}
-			if float_side_is_left(floating.side, direction) {
-				left = css_pixels_max(left, floating.right.minus(container_root_offset.x()))
-			} else {
-				right = css_pixels_min(right, floating.left.minus(container_root_offset.x()))
-			}
-			next_y = css_pixels_min(next_y, floating.bottom.minus(container_root_offset.y()))
+fn (bfc &BlockFormattingContext) float_band_index_at(y CSSPixels) int {
+	mut index := 0
+	for candidate in 1 .. bfc.float_bands.len {
+		if bfc.float_bands[candidate].block_start.raw_value() > y.raw_value() {
+			break
 		}
+		index = candidate
+	}
+	return index
+}
+
+fn (bfc &BlockFormattingContext) next_float_band_start_after(y CSSPixels) ?CSSPixels {
+	for band in bfc.float_bands {
+		if band.block_start.raw_value() > y.raw_value() {
+			return band.block_start
+		}
+	}
+	return none
+}
+
+fn (mut bfc BlockFormattingContext) ensure_float_band_boundary(block_start CSSPixels) {
+	for index, band in bfc.float_bands {
+		if band.block_start.raw_value() == block_start.raw_value() {
+			return
+		}
+		if band.block_start.raw_value() > block_start.raw_value() {
+			mut inserted := if index == 0 { BFCFloatBand{} } else { bfc.float_bands[index - 1] }
+			inserted.block_start = block_start
+			bfc.float_bands.insert(index, inserted)
+			return
+		}
+	}
+	mut inserted := bfc.float_bands.last()
+	inserted.block_start = block_start
+	bfc.float_bands << inserted
+}
+
+fn (mut bfc BlockFormattingContext) add_float_to_bands(floating FloatingBoxRecord) {
+	if floating.bottom.raw_value() <= floating.top.raw_value() {
+		return
+	}
+	bfc.ensure_float_band_boundary(floating.top)
+	bfc.ensure_float_band_boundary(floating.bottom)
+	for index in 0 .. bfc.float_bands.len {
+		band_start := bfc.float_bands[index].block_start
+		if band_start.raw_value() < floating.top.raw_value() {
+			continue
+		}
+		if band_start.raw_value() >= floating.bottom.raw_value() {
+			break
+		}
+		if floating.is_left {
+			current := bfc.float_bands[index].left_edge or { CSSPixels.min() }
+			bfc.float_bands[index].left_edge = css_pixels_max(current, floating.right)
+		} else {
+			current := bfc.float_bands[index].right_edge or { CSSPixels.max() }
+			bfc.float_bands[index].right_edge = css_pixels_min(current, floating.left)
+		}
+	}
+}
+
+fn (mut bfc BlockFormattingContext) rebuild_float_bands() {
+	bfc.float_bands = [BFCFloatBand{}]
+	for floating in bfc.floating_boxes {
+		bfc.add_float_to_bands(floating)
+	}
+}
+
+fn (bfc &BlockFormattingContext) float_boundaries_at(y CSSPixels, height CSSPixels, container_width CSSPixels, direction css.Direction, container_root_offset CSSPixelPoint) (CSSPixels, CSSPixels, CSSPixels) {
+	_ = direction
+	root_start := container_root_offset.y().plus(y)
+	root_end := root_start.plus(height)
+	mut left_edge := ?CSSPixels(none)
+	mut right_edge := ?CSSPixels(none)
+	start_index := bfc.float_band_index_at(root_start)
+	for index in start_index .. bfc.float_bands.len {
+		band := bfc.float_bands[index]
+		if height.raw_value() > 0 && band.block_start.raw_value() >= root_end.raw_value() {
+			break
+		}
+		if edge := band.left_edge {
+			left_edge = if current := left_edge { css_pixels_max(current, edge) } else { edge }
+		}
+		if edge := band.right_edge {
+			right_edge = if current := right_edge { css_pixels_min(current, edge) } else { edge }
+		}
+		if height.raw_value() <= 0 {
+			break
+		}
+	}
+	left := if edge := left_edge {
+		css_pixels_max(CSSPixels.new(0), edge.minus(container_root_offset.x()))
+	} else {
+		CSSPixels.new(0)
+	}
+	right := if edge := right_edge {
+		css_pixels_min(container_width, edge.minus(container_root_offset.x()))
+	} else {
+		container_width
+	}
+	next_y := if boundary := bfc.next_float_band_start_after(root_start) {
+		boundary.minus(container_root_offset.y())
+	} else {
+		CSSPixels.max()
 	}
 	return left, right, next_y
 }
@@ -1134,55 +1203,30 @@ fn (mut bfc BlockFormattingContext) layout_floating_box(mut state LayoutState, b
 	direction := block_container.computed_values().direction()
 	side := styled.computed_values().float_()
 	is_left := float_side_is_left(side, direction)
-	mut side_y_offset := if is_left {
-		bfc.left_floats.y_offset
-	} else {
-		bfc.right_floats.y_offset
-	}
-	mut current_boxes := if is_left {
-		bfc.left_floats.current_boxes.clone()
-	} else {
-		bfc.right_floats.current_boxes.clone()
-	}
-	if current_boxes.len == 0 {
-		side_y_offset = CSSPixels.new(0)
-	}
 	mut y := if builder := line_builder {
 		builder.y_for_float_to_be_inserted_here(box_state, bfc)
 	} else {
-		start_y.plus(side_y_offset)
+		start_y
 	}
-	has_clearance := if is_left {
-		styled.computed_values().clear() in [.left, .both, .inline_start]
-	} else {
-		styled.computed_values().clear() in [.right, .both, .inline_end]
+	clear := styled.computed_values().clear()
+	if clear_applies_to_float(clear, side, direction) {
+		y = bfc.clearance_y(clear, direction, container_root_offset.y(), y)
 	}
-	if has_clearance && current_boxes.len > 0 {
-		mut lowest_margin_edge := container_root_offset.y()
-		for floating in current_boxes {
-			lowest_margin_edge = css_pixels_max(lowest_margin_edge, floating.bottom)
-		}
-		shift := css_pixels_max(CSSPixels.new(0), lowest_margin_edge.minus(container_root_offset.y().plus(y)))
-		side_y_offset = side_y_offset.plus(shift)
-		y = y.plus(shift)
-		current_boxes.clear()
+	// A later float may not be higher than a preceding float, regardless of
+	// which inline side it uses.
+	if bfc.floating_boxes.len > 0 {
+		last_top := bfc.floating_boxes.last().top.minus(container_root_offset.y())
+		y = css_pixels_max(y, last_top)
 	}
-	if is_left {
-		bfc.left_floats.y_offset = side_y_offset
-		bfc.left_floats.current_boxes = current_boxes
-	} else {
-		bfc.right_floats.y_offset = side_y_offset
-		bfc.right_floats.current_boxes = current_boxes
-	}
-	// Search both float sides together at each candidate Y. If they leave too
-	// little inline space, retry immediately below the shallowest blocker.
+	// Search the shared band map at each candidate block start. If both sides
+	// leave too little inline space, retry at the next band boundary.
 	for {
 		left, right, next_y := bfc.float_boundaries_at(y, box_state.margin_box_height(), container_width, direction, container_root_offset)
-		// With no intersecting float boundary, an over-wide float still goes at
-		// the appropriate containing-block edge and overflows it. There is no
-		// lower Y at which waiting could make it fit.
+		root_y := container_root_offset.y().plus(y)
+		band := bfc.float_bands[bfc.float_band_index_at(root_y)]
+		has_floats_present := band.left_edge != none || band.right_edge != none
 		if right.minus(left).raw_value() >= box_state.margin_box_width().raw_value()
-			|| next_y.might_be_saturated() {
+			|| !has_floats_present || next_y.might_be_saturated() {
 			margin_left := if float_side_is_left(side, direction) {
 				left
 			} else {
@@ -1196,14 +1240,11 @@ fn (mut bfc BlockFormattingContext) layout_floating_box(mut state LayoutState, b
 				right: container_root_offset.x().plus(margin_left).plus(box_state.margin_box_width())
 				bottom: container_root_offset.y().plus(y).plus(box_state.margin_box_height())
 				side: side
+				is_left: is_left
 				box: box
 			}
 			bfc.floating_boxes << record
-			if is_left {
-				bfc.left_floats.current_boxes << record
-			} else {
-				bfc.right_floats.current_boxes << record
-			}
+			bfc.add_float_to_bands(record)
 			return y.plus(box_state.margin_box_height())
 		}
 		y = next_y

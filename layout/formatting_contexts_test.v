@@ -3799,6 +3799,24 @@ fn test_inline_lines_wrap_through_float_intrusion_bands() {
 	assert last_line.fragments()[0].inline_offset().to_double() == 0
 }
 
+fn test_inline_line_uses_float_band_that_starts_midway_through_its_height() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#container { width:300px; font:16px/60px SerenitySans }
+		#spacer { height:50px }
+		#float { float:left; width:120px; height:20px }
+		#probe { margin:-10px 0 0 }
+	</style><div id="container"><div id="spacer"></div><div id="float"></div><p id="probe">line spans the float</p></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	probe_node := layout_node_with_id(result.root, 'probe') or { panic('missing probe') }
+	probe := result.used_values_for(probe_node.as_node_with_style() or {
+		panic('probe has no style')
+	}) or { panic('probe has no used values') }
+	assert probe.line_boxes.len == 1
+	assert probe.line_boxes[0].fragments().len == 1
+	assert probe.line_boxes[0].fragments()[0].inline_offset().to_double() == 120
+}
+
 fn test_line_break_skips_crossing_opposite_float_bands() {
 	document := html.parse_document('<!doctype html><style>
 		#container { width:100px; font:20px SerenitySans; line-height:24px }
