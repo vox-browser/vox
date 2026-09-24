@@ -190,7 +190,9 @@
 - SVG and MathML follow CSS Display unboxing rules: `display: contents`
   computes to `none` for CSS-box SVG roots, non-hoisting SVG elements, and all
   MathML elements. Nested SVG containers and text children keep `contents`,
-  with `foreignObject` resetting the outermost-SVG boundary.
+  with `foreignObject` resetting the outermost-SVG boundary. The `:root`
+  pseudo-class matches the document element in HTML, SVG, and XML documents,
+  so standalone SVG roots receive the UA view-transition stacking context.
 - Cross-parent `moveBefore()` operations discard cached inherited language for
   the complete shadow-including moved subtree. Subsequent `:lang()` and `:dir()`
   matching and inherited computed styles therefore reflect the new parent;
