@@ -193,6 +193,13 @@
 - Untitled alternate style sheets remain disabled during direct CSSOM
   `StyleSheetList` insertion. Only nonempty named alternates can join the
   selected preferred set; persistent untitled sheets remain enabled.
+- CSS rule lists propagate owner-rule and parent-stylesheet changes through
+  wrappers that already exist, including nested grouping lists. Dynamic and
+  replacement `@font-face` rules synchronize their CSS-connected `FontFace`
+  objects recursively, follow sheet and nested-media effectiveness, disconnect
+  removed rule subtrees, and preserve stylesheet order ahead of manually added
+  faces. A nested `MediaList` mutation invalidates and resynchronizes the sheet
+  reached through its owning rule.
 - Platform input-method sessions dispatch `compositionstart`, per-update
   `compositionupdate` plus non-cancelable `insertCompositionText`
   `beforeinput`/`input` pairs, and `compositionend`. Marked ranges survive
