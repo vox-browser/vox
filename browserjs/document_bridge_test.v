@@ -68,6 +68,26 @@ fn test_document_bridge_input_type_uses_one_shadow_tree_and_password_text_flag()
 	}
 }
 
+fn test_document_bridge_input_type_change_replaces_text_layout_with_image_layout() {
+	$if darwin {
+		mut document := html.parse_document('<input id="input" type="text" width="120" height="120"><script>input.type = "image";</script>')
+		document.set_viewport_rect(dom.Rect{0, 0, 800, 600})
+		mut runtime := Runtime.create()
+		defer {
+			runtime.close()
+		}
+		run_inline_document_scripts(document, 'about:blank', runtime)!
+
+		input_element := bridge_test_element(document, '#input')
+		assert input_element.get_attribute_value('type') == 'image'
+		snapshot := layout.dump_document_layout_snapshot(document, 800, 600) or {
+			panic('layout failed')
+		}
+		assert snapshot.contains('ImageBox <input#input>')
+		assert !snapshot.contains('TextInputBox <input#input>')
+	}
+}
+
 fn test_document_bridge_canvas_draw_image_snapshots_cross_canvas_and_self_sources() {
 	$if darwin {
 		mut document := html.parse_document('<canvas id="a" width="4" height="2"></canvas><canvas id="b" width="4" height="2"></canvas><script>const ca=a.getContext("2d"),cb=b.getContext("2d");ca.fillStyle="red";ca.fillRect(0,0,4,2);cb.drawImage(a,0,0);ca.fillStyle="blue";ca.fillRect(0,0,2,2);ca.drawImage(a,2,0);</script>')

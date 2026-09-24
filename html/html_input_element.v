@@ -424,6 +424,12 @@ pub fn (mut model HTMLInputElementModel) type_attribute_changed(old_state HTMLIn
 	old_mode := html_input_value_attribute_mode_for_type_state(old_state)
 	new_mode := html_input_value_attribute_mode_for_type_state(new_state)
 	mut element := input_element(&model)
+	// Input states select different concrete layout-node classes (for example,
+	// TextInputBox versus ImageBox). The shadow-root transition below dirties a
+	// subtree when either state materializes one, but states without a shadow
+	// root still require the host node itself to be replaced.
+	mut document := unsafe { &dom.Document(element.document()) }
+	document.set_needs_full_layout_tree_update(true)
 	if old_mode == .value && model.value_ != '' && new_mode in [.default_, .default_on] {
 		element.set_attribute_value('value', model.value_)
 	} else if old_mode != .value && new_mode == .value {

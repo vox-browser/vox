@@ -321,6 +321,17 @@ fn bridge_html_attribute_changed(element &dom.Element, name string, old_value ?s
 	}
 }
 
+// Parser-created platform objects exist before an attribute mutation reaches
+// their virtual attribute_changed() hook upstream. The compact bridge creates
+// models lazily, so materialize an input model while its old type is still
+// observable; otherwise a text-to-image transition would initialize directly
+// in the new state and retain the old TextInputBox layout node.
+fn bridge_prepare_html_attribute_change(element &dom.Element, name string) {
+	if element.is_html_element() && element.local_name() == 'input' && name == 'type' {
+		_ = html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+	}
+}
+
 fn apply_bridge_state(document &dom.Document, encoded string) ! {
 	if os.getenv('LIBWEB_V_BRIDGE_DUMP') == '1' {
 		eprintln(encoded)
@@ -388,6 +399,7 @@ fn apply_bridge_state(document &dom.Document, encoded string) ! {
 							for existing_name in element.get_attribute_names() {
 								if existing_name !in attributes {
 									old_value := element.get_attribute(existing_name)
+									bridge_prepare_html_attribute_change(element, existing_name)
 									element.remove_attribute(existing_name)
 									bridge_html_attribute_changed(element, existing_name, old_value, none)
 								}
@@ -396,6 +408,7 @@ fn apply_bridge_state(document &dom.Document, encoded string) ! {
 								if attribute_value is string {
 									old_value := element.get_attribute(name)
 									if old_value or { '\x00' } != attribute_value {
+										bridge_prepare_html_attribute_change(element, name)
 										element.set_attribute_value(name, attribute_value)
 										bridge_html_attribute_changed(element, name, old_value, attribute_value)
 									}
