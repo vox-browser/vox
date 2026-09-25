@@ -467,20 +467,13 @@ fn united_rect_for_continuation_chain(start &dom.LayoutNode, kind PaintableBoxRe
 	for current != none {
 		node := current or { break }
 		if node.has_geometry_ {
-			border_boxes := if node.paintable_border_boxes_.len > 0 {
-				node.paintable_border_boxes_
-			} else {
-				[node.border_box_]
-			}
-			for border_box in border_boxes {
-				rect := paintable_box_rect_of_kind(node, border_box, kind)
-				if united := result {
-					if rect.width > 0 && rect.height > 0 {
-						result = unite_layout_rect(united, rect)
-					}
-				} else {
-					result = rect
+			rect := paintable_box_rect_of_kind(node, node.border_box_, kind)
+			if united := result {
+				if rect.width > 0 && rect.height > 0 {
+					result = unite_layout_rect(united, rect)
 				}
+			} else {
+				result = rect
 			}
 		}
 		current = node.continuation_next_

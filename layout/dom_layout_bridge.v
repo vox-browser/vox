@@ -12,12 +12,14 @@ import css
 // Attach populated LayoutNode placeholders onto the DOM for the laid-out tree rooted at `root_box`.
 pub fn attach_layout_nodes(root_box &Node) &dom.LayoutNode {
 	mut placeholders := map[u64]&dom.LayoutNode{}
-	return attach_layout_node_recursive(root_box, none, none, mut placeholders)
+	mut inline_pieces := map[u64][]InlineBoxPiece{}
+	return attach_layout_node_recursive(root_box, none, none, mut placeholders, mut inline_pieces)
 }
 
 pub fn attach_layout_nodes_with_state(root_box &Node, state &LayoutState) &dom.LayoutNode {
 	mut placeholders := map[u64]&dom.LayoutNode{}
-	return attach_layout_node_recursive(root_box, none, state, mut placeholders)
+	mut inline_pieces := map[u64][]InlineBoxPiece{}
+	return attach_layout_node_recursive(root_box, none, state, mut placeholders, mut inline_pieces)
 }
 
 struct VisualLineProjection {
@@ -233,7 +235,7 @@ fn collect_dom_visual_lines(box &Node, state &LayoutState) []dom.VisualLine {
 	return result
 }
 
-fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState, mut placeholders map[u64]&dom.LayoutNode) &dom.LayoutNode {
+fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState, mut placeholders map[u64]&dom.LayoutNode, mut inline_pieces map[u64][]InlineBoxPiece) &dom.LayoutNode {
 	mut visibility := dom.CSSVisibility_.visible
 	mut content_visibility := dom.CSSContentVisibility_.visible
 	mut overflow_x := dom.CSSOverflow_.visible
@@ -301,30 +303,19 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 			placeholder.visual_lines_ = collect_dom_visual_lines(box, layout_state)
 		}
 		if box.is_inline_node() {
-			if metrics := layout_debug_inline_metrics(box, layout_state) {
+			if geometry := inline_box_absolute_geometry_cached(box, layout_state, mut inline_pieces) {
 				placeholder.has_geometry_ = true
 				placeholder.border_box_ = dom.Rect{
-					x: metrics.position.x().to_double()
-					y: metrics.position.y().to_double()
-					width: metrics.width.to_double()
-					height: metrics.height.to_double()
+					x: geometry.border_rect.x.to_double()
+					y: geometry.border_rect.y.to_double()
+					width: geometry.border_rect.width.to_double()
+					height: geometry.border_rect.height.to_double()
 				}
-				placeholder.content_width_ = metrics.width.to_double()
-				placeholder.content_height_ = metrics.height.to_double()
+				placeholder.content_width_ = geometry.content_rect.width.to_double()
+				placeholder.content_height_ = geometry.content_rect.height.to_double()
 				if node_with_style := box.as_node_with_style() {
 					if used := layout_state.try_get(node_with_style) {
 						copy_used_box_model_to_dom_layout_node(mut placeholder, used)
-					}
-				}
-				for paintable_index in 0 .. layout_debug_paintable_count(box, layout_state) {
-					rect := layout_debug_paintable_border_rect(box, layout_state, paintable_index) or {
-						continue
-					}
-					placeholder.paintable_border_boxes_ << dom.Rect{
-						x: rect.x.to_double()
-						y: rect.y.to_double()
-						width: rect.width.to_double()
-						height: rect.height.to_double()
 					}
 				}
 			}
@@ -364,7 +355,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		}
 	}
 	for child in box.children() {
-		attach_layout_node_recursive(child, placeholder, state, mut placeholders)
+		attach_layout_node_recursive(child, placeholder, state, mut placeholders, mut inline_pieces)
 	}
 	return placeholder
 }

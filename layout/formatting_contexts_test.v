@@ -4926,3 +4926,59 @@ fn test_intrinsic_flex_basis_honors_border_box_sizing() {
 	assert used_for_id(result, 'tiny').content_width().to_double() == 0
 	assert used_for_id(result, 'flex').content_width().to_double() == 114
 }
+
+// InlinePaintable geometry: an inline box's pieces span its atomic inline
+// children's margin boxes, not only their content-box fragments.
+fn test_inline_box_geometry_spans_atomic_inline_margin_boxes() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0; font-size:10px; line-height:20px }
+		#atomic { display:inline-block; width:50px; height:10px; padding:0 5px; border:2px solid; margin:0 3px }
+	</style><div><span id="inline"><span id="atomic"></span></span></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	inline_node := layout_node_with_id(result.root, 'inline') or { panic('missing #inline') }
+	geometry := inline_box_absolute_geometry(inline_node, result.state) or {
+		panic('missing inline geometry')
+	}
+	assert geometry.content_rect.x.to_double() == 0
+	assert geometry.content_rect.width.to_double() == 70
+}
+
+// Nested inline boxes contribute their margin boxes to their parent's piece,
+// and a line that only hosts an interrupting block adds no extent.
+fn test_inline_box_geometry_unites_pieces_across_lines() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0; font-size:10px; line-height:20px }
+		#inner { padding-left:7px }
+	</style><div><span id="outer">a<span id="inner">b</span><div style="height:10px"></div>c</span></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	outer := layout_node_with_id(result.root, 'outer') or { panic('missing #outer') }
+	inner := layout_node_with_id(result.root, 'inner') or { panic('missing #inner') }
+	outer_geometry := inline_box_absolute_geometry(outer, result.state) or {
+		panic('missing outer geometry')
+	}
+	inner_geometry := inline_box_absolute_geometry(inner, result.state) or {
+		panic('missing inner geometry')
+	}
+	assert inner_geometry.border_rect.x.plus(inner_geometry.border_rect.width).raw_value() <= outer_geometry.content_rect.x.plus(outer_geometry.content_rect.width).raw_value()
+	assert outer_geometry.content_rect.y.to_double() < 20
+	assert outer_geometry.content_rect.y.plus(outer_geometry.content_rect.height).to_double() > 30
+}
+
+// Upstream abspos-inline-containing-block-atomic-inline-border-box: an inline
+// containing block that only holds an atomic inline spans that box's margin
+// box inline and its content box in the block direction.
+fn test_inline_containing_block_spans_atomic_inline_margin_box() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0; font-size:20px; line-height:20px }
+		#host { position:relative }
+		#atomic { display:inline-block; vertical-align:top; width:0; height:0; padding:6px 10px; border:4px solid }
+		#overlay { position:absolute; inset:0 }
+	</style><div><span id="host"><span id="atomic"></span><span id="overlay"></span></span></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	atomic := used_for_id(result, 'atomic')
+	overlay := used_for_id(result, 'overlay')
+	assert overlay.content_width().to_double() == 28
+	assert overlay.content_height().to_double() == 0
+	assert overlay.offset.x().to_double() == 0
+	assert overlay.offset.y().raw_value() == atomic.offset.y().raw_value()
+}

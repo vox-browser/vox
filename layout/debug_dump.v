@@ -377,143 +377,14 @@ fn inline_descendant_horizontal_edges(fragment_node &Node, inline_node &Node, st
 	return leading, trailing
 }
 
+// InlinePaintable geometry as dumped by upstream: the union of the box's
+// per-line piece content rectangles.
 fn layout_debug_inline_metrics(node &Node, state &LayoutState) ?LayoutDebugInlineMetrics {
-	containing_block := node.containing_block() or { return none }
-	containing_node := unsafe { &Node(containing_block) }
-	containing_styled := containing_node.as_node_with_style() or { return none }
-	containing_used := state.try_get(containing_styled) or { return none }
-	container_position := layout_offset_in_svg_user_space(containing_node, state, containing_used)
-	mut first_position := ?css.CSSPixelPoint(none)
-	mut interrupting_position := ?css.CSSPixelPoint(none)
-	mut physical_left := ?CSSPixels(none)
-	mut physical_top := ?CSSPixels(none)
-	mut physical_right := ?CSSPixels(none)
-	mut physical_bottom := ?CSSPixels(none)
-	mut maximum_width := CSSPixels.new(0)
-	mut maximum_height := CSSPixels.new(0)
-	for line_box in containing_used.line_boxes {
-		mut line_left := ?CSSPixels(none)
-		mut line_right := ?CSSPixels(none)
-		mut line_height := CSSPixels.new(0)
-		mut line_has_direct_fragment := false
-		for fragment in line_box.fragments() {
-			if layout_debug_interrupting_block_is_in_inline_subtree(fragment.layout_node(), node) {
-				if interrupting_position == none {
-					relative_offset := inline_relative_offset(fragment.layout_node(), state)
-					interrupting_position = css.CSSPixelPoint.new(container_position.x().plus(fragment.offset().x()).plus(relative_offset.x()),
-						container_position.y().plus(fragment.offset().y()).plus(relative_offset.y()))
-				}
-				continue
-			}
-			if !layout_debug_fragment_is_in_inline_subtree(fragment.layout_node(), node) {
-				continue
-			}
-			relative_offset := inline_relative_offset(fragment.layout_node(), state)
-			if target := fragment_inline_paintable_target(fragment.layout_node()) {
-				if layout_nodes_same(target, node) {
-					line_has_direct_fragment = true
-				}
-			}
-			fragment_left := fragment.offset().x().plus(relative_offset.x())
-			fragment_top := fragment.offset().y().plus(relative_offset.y())
-			fragment_right := fragment_left.plus(fragment.width())
-			fragment_bottom := fragment_top.plus(fragment.height())
-			if left := physical_left {
-				physical_left = if fragment_left.raw_value() < left.raw_value() { fragment_left } else { left }
-			} else {
-				physical_left = fragment_left
-			}
-			if top := physical_top {
-				physical_top = if fragment_top.raw_value() < top.raw_value() { fragment_top } else { top }
-			} else {
-				physical_top = fragment_top
-			}
-			if right := physical_right {
-				physical_right = if fragment_right.raw_value() > right.raw_value() { fragment_right } else { right }
-			} else {
-				physical_right = fragment_right
-			}
-			if bottom := physical_bottom {
-				physical_bottom = if fragment_bottom.raw_value() > bottom.raw_value() { fragment_bottom } else { bottom }
-			} else {
-				physical_bottom = fragment_bottom
-			}
-			leading, trailing := inline_descendant_horizontal_edges(fragment.layout_node(), node, state)
-			fragment_x := fragment.offset().x().plus(relative_offset.x())
-			left := fragment_x.minus(leading)
-			right := fragment_x.plus(fragment.width()).plus(trailing)
-			if current_left := line_left {
-				if left.raw_value() < current_left.raw_value() {
-					line_left = left
-				}
-			} else {
-				line_left = left
-			}
-			if current_right := line_right {
-				if right.raw_value() > current_right.raw_value() {
-					line_right = right
-				}
-			} else {
-				line_right = right
-			}
-			line_height = css_pixels_max(line_height, fragment.block_length())
-			if first_position == none {
-				first_position = css.CSSPixelPoint.new(container_position.x().plus(left), container_position.y().plus(fragment.offset().y()).plus(relative_offset.y()))
-			}
-		}
-		if left := line_left {
-			if right := line_right {
-				maximum_width = css_pixels_max(maximum_width, right.minus(left))
-			}
-		}
-		if line_left != none && !line_has_direct_fragment {
-			line_height = css_pixels_max(line_height, line_box.height())
-		}
-		maximum_height = css_pixels_max(maximum_height, line_height)
-	}
-	if node.computed_values().writing_mode() != .horizontal_tb {
-		if left := physical_left {
-			if top := physical_top {
-				if right := physical_right {
-					if bottom := physical_bottom {
-						return LayoutDebugInlineMetrics{
-							position: css.CSSPixelPoint.new(container_position.x().plus(left),
-								container_position.y().plus(top))
-							width: right.minus(left)
-							height: bottom.minus(top)
-						}
-					}
-				}
-			}
-		}
-	}
-	position := first_position or {
-		if block_position := interrupting_position {
-			return LayoutDebugInlineMetrics{
-				position: block_position
-				width: CSSPixels.new(0)
-				height: CSSPixels.new(0)
-			}
-		}
-		// Inline paintables exist even when their subtree produces no line-box
-		// fragment (for example an empty <span>, or either empty continuation
-		// around an intervening block). Their empty content rect starts at the
-		// containing block's content origin and has the inline's line height.
-		// Empty generated pseudo-elements do not create that paintable.
-		if node.is_generated_for_pseudo_element() {
-			return none
-		}
-		return LayoutDebugInlineMetrics{
-			position: container_position
-			width: CSSPixels.new(0)
-			height: node.computed_values().line_height()
-		}
-	}
-
+	geometry := inline_box_absolute_geometry(node, state) or { return none }
 	return LayoutDebugInlineMetrics{
-		position: position
-		width: maximum_width
-		height: maximum_height
+		position: css.CSSPixelPoint.new(geometry.content_rect.x, geometry.content_rect.y)
+		width: geometry.content_rect.width
+		height: geometry.content_rect.height
 	}
 }
 
