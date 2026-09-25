@@ -5010,10 +5010,11 @@ fn test_inline_containing_block_spans_atomic_inline_margin_box() {
 		#overlay { position:absolute; inset:0 }
 	</style><div><span id="host"><span id="atomic"></span><span id="overlay"></span></span></div>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
-	atomic := used_for_id(result, 'atomic')
 	overlay := used_for_id(result, 'overlay')
+	// The top-aligned atomic's content box starts below its 4px border and
+	// 6px padding; its content box height is zero.
 	assert overlay.content_width().to_double() == 28
 	assert overlay.content_height().to_double() == 0
 	assert overlay.offset.x().to_double() == 0
-	assert overlay.offset.y().raw_value() == atomic.offset.y().raw_value()
+	assert overlay.offset.y().to_double() == 10
 }
