@@ -5045,3 +5045,41 @@ fn test_formatting_context_roots_clear_floats_they_would_overlap() {
 	assert pulled.offset.x().to_double() == -350
 	assert pulled.content_width().to_double() == 750
 }
+
+// Upstream auto-fit-and-auto-fill-with-zero-min-track-size: a zero repeated
+// track size is floored to 1px when counting automatic repetitions, and the
+// gutters around collapsed auto-fit tracks collapse with them.
+fn test_grid_auto_repeat_floors_zero_tracks_and_collapses_gutters() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		.grid { display:grid; gap:10px; width:530px }
+		#fit { grid-template-columns:repeat(auto-fit, minmax(0, 1fr)) }
+		#fill { grid-template-columns:repeat(auto-fill, minmax(0, 1fr)) }
+		.item { height:40px }
+	</style><div id="fit" class="grid"><div id="fit-a" class="item"></div><div id="fit-b" class="item"></div><div id="fit-c" class="item"></div></div><div id="fill" class="grid"><div id="fill-a" class="item"></div><div id="fill-b" class="item"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	// auto-fit: 49 repetitions, 46 of them empty and collapsed with their gutters.
+	assert used_for_id(result, 'fit').content_height().to_double() == 40
+	assert used_for_id(result, 'fit-a').content_width().to_double() == 170
+	assert used_for_id(result, 'fit-b').offset.x().to_double() == 180
+	assert used_for_id(result, 'fit-c').offset.x().to_double() == 360
+	// auto-fill keeps all 49 tracks: (530 - 48 * 10) / 49 each.
+	fill_a := used_for_id(result, 'fill-a')
+	fill_b := used_for_id(result, 'fill-b')
+	assert fill_a.content_width().to_double() > 1 && fill_a.content_width().to_double() < 1.1
+	assert fill_b.offset.y().raw_value() == fill_a.offset.y().raw_value()
+}
+
+// Upstream fixed-tracks-followed-by-repeat-auto-fill: the definite tracks
+// outside the automatic repetition use up space before repetitions are counted.
+fn test_grid_auto_repeat_count_subtracts_fixed_template_tracks() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#grid { display:grid; width:300px; column-gap:10px; grid-template-columns:100px repeat(auto-fill, 50px) }
+	</style><div id="grid"><div id="a"></div><div id="b"></div><div id="c"></div><div id="d"></div><div id="e"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	// (300 + 10 - 100 - 10) / (50 + 10) = 3 repetitions after the 100px track.
+	assert used_for_id(result, 'd').offset.x().to_double() == 230
+	// The fifth item wraps to the first column of the next row.
+	assert used_for_id(result, 'e').offset.x().to_double() == 0
+}
