@@ -426,6 +426,7 @@ fn layout_inside_independent_formatting_context_without_containment_override(mut
 	if box_has_inline_content(box) {
 		if block_container := box.as_block_container() {
 			mut inline_block_context := BlockFormattingContext.for_root(box, layout_mode, box_state.has_definite_width())
+			inline_block_context.layout_marker_of_list_item_root(mut state, box, mut box_state)
 			inline_result := inline_block_context.run_inline_formatting_context_with_floats(mut state, block_container, mut box_state, layout_mode, available_space)
 			mut automatic_height := if box_state.line_boxes.len > 0 {
 				box_state.line_boxes.last().bottom()
@@ -450,6 +451,7 @@ fn layout_inside_independent_formatting_context_without_containment_override(mut
 	}
 	styled := box.as_node_with_style() or { return FormattingContextResult{} }
 	mut child_context := BlockFormattingContext.for_root(box, layout_mode, box_state.has_definite_width())
+	child_context.layout_marker_of_list_item_root(mut state, box, mut box_state)
 	mut child_containing_block_height := ?f64(none)
 	if (box_state.has_definite_height() || box.is_button_content_box_)
 		&& available_space.height.is_definite() {

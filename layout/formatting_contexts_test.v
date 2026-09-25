@@ -4645,6 +4645,34 @@ fn test_inline_end_static_position_survives_consecutive_forced_breaks() {
 	assert positioned_used.static_position().y().to_double() == 40
 }
 
+// A list item that establishes an independent formatting context lays out its
+// own outside marker, including list items outside their parent's flow.
+fn test_list_items_with_independent_formatting_contexts_lay_out_their_markers() {
+	document := html.parse_document('<!doctype html><style>
+		body, ul { margin:0 }
+		ul { padding-left:100px; font:16px/24px SerenitySans }
+		#floating { float:left }
+		.flex { display:flex }
+		#positioned { position:absolute; top:100px }
+		#flow-root { display:flow-root list-item }
+	</style><ul><li id="floating">a</li></ul><ul class="flex"><li id="flex-item">b</li></ul><ul><li id="positioned">c</li><li id="flow-root">d</li></ul>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	for id in ['floating', 'flex-item', 'positioned', 'flow-root'] {
+		item := layout_node_with_id(result.root, id) or { panic('missing #${id}') }
+		list_item := item.as_list_item_box() or { panic('#${id} is not a list item') }
+		marker := list_item.marker() or { panic('#${id} has no marker') }
+		marker_style := marker.as_node_with_style() or { panic('#${id} marker has no style') }
+		marker_used := result.used_values_for(marker_style) or {
+			panic('#${id} marker has no used values')
+		}
+		assert marker_used.content_width().to_double() > 0
+		assert marker_used.content_height().to_double() == 24
+		// The marker ends at or before the list item's inline-start content edge.
+		assert marker_used.offset.x().plus(marker_used.content_width()).to_double() <= 0
+		assert marker_used.offset.y().to_double() == 0
+	}
+}
+
 fn test_inline_abspos_static_position_accounts_for_float_intrusion() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }

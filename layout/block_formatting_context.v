@@ -604,8 +604,17 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 	} else {
 		place_block_level_element_in_normal_flow_horizontally(mut box_state, containing_block_width)
 	}
+	has_independent_formatting_context := creates_block_formatting_context(box)
+		|| box_as_node.display().is_math_inside() || box_as_node.display().is_flex_inside()
+		|| box_as_node.display().is_grid_inside() || box_as_node.display().is_table_inside()
+		|| box_as_node.is_replaced_box_with_children()
+	// This context only lays out markers of list items that participate in its
+	// flow directly. A list item that establishes an independent formatting
+	// context lays out its marker in its own run.
 	if list_item := box_as_node.as_list_item_box() {
-		layout_list_item_marker(mut state, list_item, mut box_state, bfc)
+		if !has_independent_formatting_context {
+			layout_list_item_marker(mut state, list_item, mut box_state, bfc)
+		}
 	}
 
 	content_width := box_state.content_width().to_double()
@@ -683,9 +692,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 	mut content_height_from_children := 0.0
 	if box_as_node.is_replaced_box() && !box_as_node.is_replaced_box_with_children() {
 		content_height_from_children = box_state.content_height().to_double()
-	} else if creates_block_formatting_context(box) || box_as_node.display().is_math_inside()
-		|| box_as_node.display().is_flex_inside() || box_as_node.display().is_grid_inside()
-		|| box_as_node.display().is_table_inside() || box_as_node.is_replaced_box_with_children() {
+	} else if has_independent_formatting_context {
 		mut available_height := if resolved_height := children_containing_block_height {
 			AvailableSize.make_definite(css_px(resolved_height))
 		} else {
@@ -854,6 +861,18 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 
 	flow_bottom := box_state.offset.y().to_double() + box_state.content_height().to_double() + box_state.margin_box_bottom().to_double()
 	return flow_bottom
+}
+
+// A list item that establishes an independent formatting context lays out its
+// own marker, so markers of floating, absolutely positioned, and flex- or
+// grid-item list items are placed too. Upstream runs this in the epilogue of
+// the list item's block formatting context run; V places markers without the
+// list item's baseline, so it runs before the children instead. No float has
+// been placed in this run yet, and an in-flow root avoids its parent's floats,
+// so no float intrudes on the marker's inline position.
+fn (bfc &BlockFormattingContext) layout_marker_of_list_item_root(mut state LayoutState, box &Node, mut box_state UsedValues) {
+	list_item := box.as_list_item_box() or { return }
+	layout_list_item_marker(mut state, list_item, mut box_state, bfc)
 }
 
 // BlockFormattingContext::ensure_sizes_correct_for_left_offset_calculation()
