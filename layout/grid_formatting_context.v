@@ -1175,28 +1175,6 @@ fn place_grid_items(container &Node, column_lines [][]css.GridLineName, row_line
 	auto_flow := container.computed_values().grid_auto_flow()
 	mut cursor_row := implicit_minimum_row
 	mut cursor_column := implicit_minimum_column
-	mut occupied_maximum_row := if auto_flow.row {
-		if explicit_row_count > 0 { explicit_row_count - 1 } else { 0 }
-	} else {
-		row_count - 1
-	}
-	mut occupied_maximum_column := if auto_flow.row {
-		column_count - 1
-	} else {
-		if explicit_column_count > 0 { explicit_column_count - 1 } else { 0 }
-	}
-	for placement in placements {
-		occupied_maximum_row = if placement.row + placement.row_span - 1 > occupied_maximum_row {
-			placement.row + placement.row_span - 1
-		} else {
-			occupied_maximum_row
-		}
-		occupied_maximum_column = if placement.column + placement.column_span - 1 > occupied_maximum_column {
-			placement.column + placement.column_span - 1
-		} else {
-			occupied_maximum_column
-		}
-	}
 	for item in items {
 		computed := item.computed_values()
 		if !grid_axis_is_auto(computed.grid_row_start(), computed.grid_row_end()) {
@@ -1219,7 +1197,6 @@ fn place_grid_items(container &Node, column_lines [][]css.GridLineName, row_line
 			column_position.start
 		}
 		mut row := cursor_row
-		mut found_within_occupation_grid := true
 		if !column_is_auto {
 			if !auto_flow.dense && column < cursor_column {
 				row++
@@ -1238,7 +1215,6 @@ fn place_grid_items(container &Node, column_lines [][]css.GridLineName, row_line
 					row++
 				}
 			}
-			found_within_occupation_grid = row <= occupied_maximum_row
 		} else {
 			for row + row_span > row_count
 				|| !grid_area_is_free(occupied, row, column, row_span, column_span) {
@@ -1248,7 +1224,6 @@ fn place_grid_items(container &Node, column_lines [][]css.GridLineName, row_line
 					column++
 				}
 			}
-			found_within_occupation_grid = column <= occupied_maximum_column
 		}
 		mut placement := GridItemPlacement{
 			item: item
@@ -1261,31 +1236,19 @@ fn place_grid_items(container &Node, column_lines [][]css.GridLineName, row_line
 			explicit_row_count, subgridded_columns, subgridded_rows)
 		placements << placement
 		occupy_grid_area(mut occupied, placement)
-		if row + row_span - 1 > occupied_maximum_row {
-			occupied_maximum_row = row + row_span - 1
-		}
-		if column + column_span - 1 > occupied_maximum_column {
-			occupied_maximum_column = column + column_span - 1
-		}
+		// place_item_with_no_declared_position(): the cursor's major-axis
+		// position stays at the item's start line so subsequent items keep
+		// packing into the same row (or column); only the minor-axis position
+		// advances past the item.
 		if !column_is_auto {
 			cursor_column = column
 			cursor_row = row
 		} else if auto_flow.row {
-			if found_within_occupation_grid {
-				cursor_column = column + column_span
-				cursor_row = implicit_minimum_row
-			} else {
-				cursor_column = column + column_span - 1
-				cursor_row = row + row_span - 1
-			}
+			cursor_column = column + column_span
+			cursor_row = row
 		} else {
-			if found_within_occupation_grid {
-				cursor_column = implicit_minimum_column
-				cursor_row = row + row_span
-			} else {
-				cursor_column = column + column_span - 1
-				cursor_row = row + row_span - 1
-			}
+			cursor_column = column
+			cursor_row = row + row_span
 		}
 	}
 	mut minimum_column := 0

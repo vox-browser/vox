@@ -5083,3 +5083,22 @@ fn test_grid_auto_repeat_count_subtracts_fixed_template_tracks() {
 	// The fifth item wraps to the first column of the next row.
 	assert used_for_id(result, 'e').offset.x().to_double() == 0
 }
+
+// Upstream auto-placement-cursor-after-spanning-item-overflows-implicit-rows:
+// after an auto-placed item, the cursor keeps its row and only advances past
+// the item's columns, so row-spanning items pack side by side.
+fn test_grid_auto_placement_cursor_keeps_the_row_of_spanning_items() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#grid { display:grid; grid-template-columns:repeat(2, 100px) }
+		.item { grid-row:span 2; height:50px }
+	</style><div id="grid"><div id="a" class="item"></div><div id="b" class="item"></div><div id="c" class="item"></div><div id="d" class="item"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	c := used_for_id(result, 'c')
+	d := used_for_id(result, 'd')
+	assert c.offset.x().to_double() == 0
+	assert c.offset.y().to_double() == 50
+	assert d.offset.x().to_double() == 100
+	assert d.offset.y().to_double() == 50
+	assert used_for_id(result, 'grid').content_height().to_double() == 100
+}
