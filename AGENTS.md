@@ -420,6 +420,23 @@
   exports the block's baseline. CSSOM offsets unite the inline's per-line
   border boxes, while the line that only hosts the block contributes an empty
   box at the block's position.
+- Native inputs are replaced elements for inline layout even when a generic
+  block container hosts their shadow content, so a button-type input with
+  `display: inline` is placed as one atomic fragment. Elements using button
+  layout establish a block formatting context. Fieldsets with a flow inner
+  display lay out as flow-root, and inline fieldsets as inline-block, without
+  changing their computed display; the first anonymous wrapper of a childless
+  inline-block is itself an inline-block.
+- A parent block formatting context lays out only the markers of list items in
+  its own flow; a list item that establishes an independent formatting context
+  lays out its marker in its own run, so floating, absolutely positioned, and
+  flex-item list items get markers. Outside markers with a text baseline align
+  with the list item's first baseline once its children are laid out, and
+  otherwise stay centered in their line height. The marker line height floors
+  only a list item's automatic block size, so a specified height wins over it.
+- An empty generated string creates a text node only inside an ordinary inline
+  pseudo-element, where it carries the inline fragment. Other pseudo-element
+  boxes with `content: ""` have no children and do not report inline content.
 - Text shaping applies computed `word-spacing` to spaces, no-break spaces, and
   collapsed line feeds. It records the exact shaped advance of trailing ASCII
   whitespace, carries that record through fragment merging and intrinsic shape

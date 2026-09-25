@@ -372,6 +372,13 @@ geometric-decay calculation.
 Flex and inline-flex fieldsets retain their special legend layout while applying
 flex direction, wrapping, alignment, and gaps to the anonymous content box. The
 wrapper is also created for flex fieldsets without a rendered legend.
+Fieldsets with a flow inner display lay out as flow-root, and inline fieldsets
+as inline-block, while their computed display is unchanged; an inline
+fieldset therefore joins its parent's line as one atomic inline.
+List items that establish an independent formatting context lay out their own
+markers, outside markers align with the list item's first baseline, and the
+marker line height floors only automatic list item heights. Empty generated
+strings create a text node only inside ordinary inline pseudo-elements.
 Viewport propagation now copies the root scrollbar width and the containment-
 aware principal writing mode and direction, while selecting and neutralizing
 the correct root/body overflow origin.
@@ -690,7 +697,7 @@ largest unmatched modules:
     82 Editing
 
 $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
-Layout corpus: 974 passed, 115 failed, 1089 total
+Layout corpus: 1012 passed, 77 failed, 1089 total
 
 $ v -old-compiler -enable-globals test .
 Summary for all V _test.v files: 647 passed, 647 total.
