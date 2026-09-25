@@ -3289,6 +3289,37 @@ fn test_atomic_inline_applies_calculated_vertical_align_offset() {
 	assert fragments[1].block_offset().to_double() == 30
 }
 
+fn test_inline_display_native_inputs_are_atomic_inlines() {
+	document := html.parse_document('<!doctype html><style>
+		input { display:inline }
+	</style><div id="container"><span id="plain">a</span><input id="submit" type="submit" value="PASS"><input id="reset" type="reset"></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	plain := layout_node_with_id(result.root, 'plain') or { panic('missing #plain') }
+	assert !plain.is_replaced_element()
+	assert !plain.is_atomic_inline()
+	// Button-type inputs keep their inline flow display; text-like inputs are
+	// already adjusted to inline-block by their computed style.
+	submit := layout_node_with_id(result.root, 'submit') or { panic('missing #submit') }
+	reset := layout_node_with_id(result.root, 'reset') or { panic('missing #reset') }
+	for input in [submit, reset] {
+		assert input.display().is_inline_outside()
+		assert input.display().is_flow_inside()
+		assert !input.is_replaced_box()
+		assert input.is_replaced_element()
+		assert input.is_atomic_inline()
+	}
+	// The line places each control as one atomic fragment instead of
+	// descending into its internal shadow content.
+	container := used_for_id(result, 'container')
+	assert container.line_boxes.len == 1
+	mut fragment_nodes := []voidptr{}
+	for fragment in container.line_boxes[0].fragments() {
+		fragment_nodes << voidptr(fragment.layout_node())
+	}
+	assert voidptr(submit) in fragment_nodes
+	assert voidptr(reset) in fragment_nodes
+}
+
 fn test_text_bottom_atomic_inline_fits_the_parent_content_area() {
 	document := html.parse_document('<!doctype html><style>
 		* { margin:0 }

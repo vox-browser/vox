@@ -203,7 +203,7 @@ fn (mut iterator InlineLevelIterator) next_inline_node_in_pre_order(current &Nod
 		if (child.display().is_inline_outside() || child.is_out_of_flow()
 			|| is_inline_flow_interrupting_block(child))
 			&& current.display().is_flow_inside()
-			&& !is_inline_flow_interrupting_block(current) && !current.is_replaced_box()
+			&& !is_inline_flow_interrupting_block(current) && !current.is_atomic_inline()
 			&& (!current.is_box() || !current.is_out_of_flow()) {
 			return child
 		}
@@ -260,7 +260,7 @@ fn (mut iterator InlineLevelIterator) skip_to_next() {
 	if next := iterator.next_node {
 		if box_model_node := next.as_node_with_style_and_box_model_metrics() {
 			if !next.is_list_item_marker_box() && next.is_inline() && next.display().is_flow_inside()
-				&& !next.is_out_of_flow() && !next.is_replaced_box() {
+				&& !next.is_out_of_flow() && !next.is_atomic_inline() {
 				iterator.enter_node_with_box_model_metrics(box_model_node)
 			}
 		}

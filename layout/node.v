@@ -451,8 +451,19 @@ pub fn (n &Node) is_inline_table() bool {
 	return display.is_inline_outside() && display.is_table_inside()
 }
 
-pub fn (n &Node) is_atomic_inline() bool {
+// Node::is_replaced_element(). Some native controls use a generic box so they
+// can host their internal shadow tree, but remain replaced elements for CSS
+// box generation and inline layout.
+pub fn (n &Node) is_replaced_element() bool {
 	if n.is_replaced_box() {
+		return true
+	}
+	dom_node := n.dom_node() or { return false }
+	return dom_node.is_html_input_element()
+}
+
+pub fn (n &Node) is_atomic_inline() bool {
+	if n.is_replaced_element() {
 		return true
 	}
 	display := n.display()
