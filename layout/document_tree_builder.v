@@ -2522,7 +2522,8 @@ fn attach_children_maintaining_inline_invariant(mut parent Node, children []&Nod
 	mut seen_in_flow_block := false
 	for child_index, child in children {
 		if child_is_inline_level(child) {
-			mut wrapper := last_anonymous_inline_wrapper_or_new(mut parent, document, parent_computed)
+			mut wrapper := last_anonymous_inline_wrapper_or_new(mut parent, document, parent_computed,
+				force_inline_wrappers)
 			wrapper.append_child(child)
 		} else if child.is_out_of_flow() && !parent.display().is_flex_inside() && !parent.display().is_grid_inside() {
 			if last := parent.last_child() {
@@ -2547,7 +2548,8 @@ fn attach_children_maintaining_inline_invariant(mut parent Node, children []&Nod
 				}
 			}
 			if followed_by_inline_before_block {
-				mut wrapper := last_anonymous_inline_wrapper_or_new(mut parent, document, parent_computed)
+				mut wrapper := last_anonymous_inline_wrapper_or_new(mut parent, document, parent_computed,
+					force_inline_wrappers)
 				wrapper.append_child(child)
 				continue
 			}
@@ -2563,13 +2565,28 @@ fn attach_children_maintaining_inline_invariant(mut parent Node, children []&Nod
 
 // Return `parent`'s last child if it is an anonymous wrapper holding inline content, otherwise create such a
 // wrapper, append it, and return it (Layout::TreeBuilder's last_child_creating_anonymous_wrapper_if_needed).
-fn last_anonymous_inline_wrapper_or_new(mut parent Node, document &dom.Document, parent_computed &css.ComputedProperties) &Node {
+fn last_anonymous_inline_wrapper_or_new(mut parent Node, document &dom.Document, parent_computed &css.ComputedProperties, wraps_every_inline_run bool) &Node {
 	if last := parent.last_child() {
 		if last.is_anonymous() && last.children_are_inline() {
 			return last
 		}
 	}
-	wrapper := create_anonymous_block_wrapper(document, parent_computed)
+	// NodeWithStyle::create_anonymous_wrapper(): CSS 2.2 9.2.1.1 creates an
+	// anonymous block box, but an inline-block establishes a BFC (9.4.1). The
+	// first wrapper of a childless inline-block is itself an inline-block so it
+	// participates correctly in that inline-block's inline formatting context.
+	// Upstream creates a wrapper around a childless parent only on the paths
+	// that wrap every inline run (fieldsets, foreignObject, flex and grid); an
+	// ordinary mixed-content wrapper is created once a block child arrives.
+	wraps_inline_block := wraps_every_inline_run && parent.display().is_inline_block()
+		&& parent.first_child() == none
+	mut wrapper := create_anonymous_block_wrapper(document, parent_computed)
+	if wraps_inline_block {
+		if styled := wrapper.as_node_with_style() {
+			mut values := unsafe { &css.MutableComputedValues(styled.computed_values_) }
+			values.set_display(css.Display.from_short(.inline_block))
+		}
+	}
 	parent.append_child(wrapper)
 	return wrapper
 }

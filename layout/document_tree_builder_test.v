@@ -992,6 +992,39 @@ fn test_fieldset_moves_non_legend_content_into_flow_root_wrapper() {
 	assert fieldset_used.content_height().to_double() >= 48
 }
 
+fn test_fieldset_lays_out_as_flow_root_without_changing_its_computed_display() {
+	document := html.parse_document('<!doctype html><style>
+		fieldset { margin:0; padding:0 }
+		#inline { display:inline }
+	</style><fieldset id="block"><div></div></fieldset><div id="line"><fieldset id="inline"><span id="content">text</span></fieldset></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	block := tree_builder_node_with_id(result.root, 'block') or { panic('no block fieldset') }
+	assert block.display().is_block_outside()
+	assert block.display().is_flow_root_inside()
+	inline := tree_builder_node_with_id(result.root, 'inline') or { panic('no inline fieldset') }
+	assert inline.display().is_inline_block()
+	inline_style := inline.as_node_with_style() or { panic('fieldset has no style') }
+	computed := unsafe { &css.ComputedProperties(inline_style.computed_values()) }
+	assert computed.display().is_inline_outside()
+	assert computed.display().is_flow_inside()
+	// The first anonymous wrapper of a childless inline-block is itself an
+	// inline-block (NodeWithStyle::create_anonymous_wrapper()).
+	wrapper := inline.first_child() or { panic('inline fieldset has no wrapper') }
+	assert wrapper.is_anonymous()
+	assert wrapper.display().is_inline_block()
+	assert tree_builder_node_with_id(wrapper, 'content') != none
+	// The fieldset joins its parent's line as one atomic inline instead of
+	// exposing its anonymous wrapper to that inline formatting context.
+	line := tree_builder_node_with_id(result.root, 'line') or { panic('no line container') }
+	line_used := result.used_values_for(line.as_node_with_style() or {
+		panic('line container has no style')
+	}) or { panic('line container has no used values') }
+	assert line_used.line_boxes.len == 1
+	fragments := line_used.line_boxes[0].fragments()
+	assert fragments.len == 1
+	assert voidptr(fragments[0].layout_node()) == voidptr(inline)
+}
+
 fn test_root_styles_propagate_to_the_viewport() {
 	document := html.parse_document('<!doctype html><style>
 		html { scrollbar-width:thin; overflow:visible }

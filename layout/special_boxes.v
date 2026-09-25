@@ -1181,6 +1181,16 @@ pub fn FieldSetBox.new(document &dom.Document, element &dom.Element, computed_va
 		BlockContainer: special_block_container_base(document, element.as_node(), computed_values)
 	}
 	box.is_fieldset_box_ = true
+	// https://html.spec.whatwg.org/multipage/rendering.html#the-fieldset-and-legend-elements
+	// If the computed outer display type is inline, the fieldset is expected to
+	// behave as inline-block. Otherwise, it is expected to behave as flow-root.
+	// This changes only the layout-facing display, not the computed value.
+	display := box.computed_values_.display()
+	if display.is_flow_inside() {
+		mut values := unsafe { &css.MutableComputedValues(box.computed_values_) }
+		values.set_display(css.Display.from_outside_inside_and_list_item(display.outside(), .flow_root,
+			display.list_item()))
+	}
 	return box
 }
 
