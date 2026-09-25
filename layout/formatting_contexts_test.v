@@ -4673,6 +4673,39 @@ fn test_list_items_with_independent_formatting_contexts_lay_out_their_markers() 
 	}
 }
 
+fn list_item_marker_used_values(result DocumentLayoutResult, id string) &UsedValues {
+	item := layout_node_with_id(result.root, id) or { panic('missing #${id}') }
+	list_item := item.as_list_item_box() or { panic('#${id} is not a list item') }
+	marker := list_item.marker() or { panic('#${id} has no marker') }
+	marker_style := marker.as_node_with_style() or { panic('#${id} marker has no style') }
+	return result.used_values_for(marker_style) or { panic('#${id} marker has no used values') }
+}
+
+fn test_outside_list_marker_aligns_with_the_list_item_first_baseline() {
+	document := html.parse_document('<!doctype html><style>
+		body, ul { margin:0 }
+		ul { padding-left:100px; font:16px/24px SerenitySans }
+		.big { font:32px/48px SerenitySans }
+		.padded { padding-top:10px }
+		#floating { float:left }
+	</style><ul><li id="tall"><span class="big">X</span></li><li id="nested"><div class="padded">y</div></li><li id="empty"></li><li id="floating"><span class="big">X</span></li></ul>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	for id in ['tall', 'floating'] {
+		item_used := used_for_id(result, id)
+		item_line := item_used.line_boxes[0]
+		item_baseline := item_line.bottom().minus(item_line.block_length()).plus(item_line.baseline())
+		marker_used := list_item_marker_used_values(result, id)
+		marker_line := marker_used.line_boxes[0]
+		marker_baseline := marker_line.bottom().minus(marker_line.block_length()).plus(marker_line.baseline())
+		assert marker_used.offset.y().to_double() > 0
+		assert marker_used.offset.y().plus(marker_baseline) == item_baseline
+	}
+	// A baseline inside a block child includes that child's offset.
+	assert list_item_marker_used_values(result, 'nested').offset.y().to_double() == 10
+	// Without a first baseline, the marker stays centered in its line height.
+	assert list_item_marker_used_values(result, 'empty').offset.y().to_double() == 0
+}
+
 fn test_inline_abspos_static_position_accounts_for_float_intrusion() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }

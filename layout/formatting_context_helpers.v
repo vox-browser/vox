@@ -443,6 +443,46 @@ fn layout_box_child_to_derive_baseline_from(state &LayoutState, box &Node, basel
 	return none
 }
 
+// UsedValues::first_baseline of a laid-out box: the first baseline of its
+// content relative to its content-box top, or none when no in-flow line or
+// descendant supplies one. A list item's marker is laid out separately and
+// never supplies its list item's baseline.
+fn layout_box_first_content_baseline(state &LayoutState, box &Node) ?CSSPixels {
+	styled := box.as_node_with_style() or { return none }
+	box_state := state.try_get(styled) or { return none }
+	if baseline := box_state.derived_first_baseline() {
+		return baseline
+	}
+	for line in box_state.line_boxes {
+		if line.is_empty() {
+			continue
+		}
+		if !line.has_block_level_box() {
+			return line.bottom().minus(line.block_length()).plus(line.baseline())
+		}
+		// A line hosting an interrupting block takes that block's baseline.
+		block_child := line.fragments_[0].layout_node()
+		block_child_styled := block_child.as_node_with_style() or { return none }
+		block_child_state := state.try_get(block_child_styled) or { return none }
+		child_baseline := layout_box_first_content_baseline(state, block_child) or { return none }
+		return block_child_state.offset.y().plus(child_baseline)
+	}
+	if box.children_are_inline() {
+		return none
+	}
+	for child in box.children() {
+		if !child.is_box() || child.is_out_of_flow() || child.is_list_item_marker_box() {
+			continue
+		}
+		child_styled := child.as_node_with_style() or { continue }
+		child_state := state.try_get(child_styled) or { continue }
+		if baseline := layout_box_first_content_baseline(state, child) {
+			return child_state.offset.y().plus(baseline)
+		}
+	}
+	return none
+}
+
 // FormattingContext::box_baseline(). This is shared by inline, flex, grid and
 // table layout; in particular, an atomic inline without an in-flow baseline
 // uses the bottom margin edge rather than merely its content height.

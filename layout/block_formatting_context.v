@@ -830,6 +830,9 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 			}
 		}
 	}
+	if !has_independent_formatting_context {
+		place_list_item_marker_at_first_baseline(mut state, box_as_node)
+	}
 	if list_item := box_as_node.as_list_item_box() {
 		if marker_node := list_item.marker() {
 			if marker := marker_node.as_list_item_marker_box() {
@@ -866,13 +869,32 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 // A list item that establishes an independent formatting context lays out its
 // own marker, so markers of floating, absolutely positioned, and flex- or
 // grid-item list items are placed too. Upstream runs this in the epilogue of
-// the list item's block formatting context run; V places markers without the
-// list item's baseline, so it runs before the children instead. No float has
-// been placed in this run yet, and an in-flow root avoids its parent's floats,
-// so no float intrudes on the marker's inline position.
+// the list item's block formatting context run. V sizes the marker and
+// resolves its inline position before the children instead, where no float of
+// the run can intrude and an in-flow root has already been placed beside its
+// parent's floats; place_list_item_marker_at_first_baseline() then resolves
+// the block offset once the children are laid out.
 fn (bfc &BlockFormattingContext) layout_marker_of_list_item_root(mut state LayoutState, box &Node, mut box_state UsedValues) {
 	list_item := box.as_list_item_box() or { return }
 	layout_list_item_marker(mut state, list_item, mut box_state, bfc)
+}
+
+// The block-offset half of layout_list_item_marker(). An outside marker whose
+// content has a baseline aligns it with the list item's first baseline; a
+// marker without one, or one whose list item has none, stays centered in its
+// line height.
+fn place_list_item_marker_at_first_baseline(mut state LayoutState, box &Node) {
+	list_item := box.as_list_item_box() or { return }
+	marker_node := list_item.marker() or { return }
+	marker := marker_node.as_list_item_marker_box() or { return }
+	if marker.list_style_position() == .inside {
+		return
+	}
+	marker_styled := marker_node.as_node_with_style() or { return }
+	mut marker_state := state.try_get_mutable(marker_styled) or { return }
+	list_item_baseline := layout_box_first_content_baseline(state, box) or { return }
+	marker_baseline := layout_box_first_content_baseline(state, marker_node) or { return }
+	marker_state.set_content_y(list_item_baseline.minus(marker_baseline))
 }
 
 // BlockFormattingContext::ensure_sizes_correct_for_left_offset_calculation()

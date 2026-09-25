@@ -443,6 +443,7 @@ fn layout_inside_independent_formatting_context_without_containment_override(mut
 			for floating in inline_block_context.floating_boxes {
 				automatic_height = css_pixels_max(automatic_height, floating.bottom.minus(root_origin_y))
 			}
+			place_list_item_marker_at_first_baseline(mut state, box)
 			return FormattingContextResult{
 				automatic_content_width: inline_result.automatic_content_width
 				automatic_content_height: automatic_height
@@ -514,6 +515,7 @@ fn layout_inside_independent_formatting_context_without_containment_override(mut
 		local_bottom := floating.bottom.minus(root_origin_y)
 		height = css_pixels_max(height, local_bottom)
 	}
+	place_list_item_marker_at_first_baseline(mut state, box)
 	return FormattingContextResult{
 		automatic_content_width: box_state.content_width()
 		automatic_content_height: height
