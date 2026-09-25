@@ -166,11 +166,15 @@ fn refresh_canvas_font_cascade(mut state CanvasState) {
 	if families.len == 0 {
 		return
 	}
-	mut cascade := font_computer.compute_font_for_style_values(families,
+	computed := font_computer.compute_font_for_style_values(families,
 		css.CSSPixels.nearest_value_for(state.drawing_state.font_size_px), canvas_font_slope(parsed),
 		canvas_font_weight(parsed), canvas_font_width(parsed), .auto_, map[string]f64{},
 		css.FontFeatureData{})
-	state.drawing_state.current_font_cascade_list = &cascade
+	// The font computer owns its cached cascade. Shaping resolves pending faces
+	// in place, so the drawing state keeps its own list.
+	mut cascade := css.FontCascadeList.create()
+	cascade.extend(computed)
+	state.drawing_state.current_font_cascade_list = cascade
 	state.drawing_state.font_environment_generation = font_computer.environment_generation()
 }
 
