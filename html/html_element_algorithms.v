@@ -467,28 +467,46 @@ fn united_rect_for_continuation_chain(start &dom.LayoutNode, kind PaintableBoxRe
 	for current != none {
 		node := current or { break }
 		if node.has_geometry_ {
-			mut rect := node.border_box_
-			if kind == .padding || kind == .content {
-				rect = dom.Rect{
-					x: rect.x + node.border_left_
-					y: rect.y + node.border_top_
-					width: math.max(0.0, rect.width - node.border_left_ - node.border_right_)
-					height: math.max(0.0, rect.height - node.border_top_ - node.border_bottom_)
+			border_boxes := if node.paintable_border_boxes_.len > 0 {
+				node.paintable_border_boxes_
+			} else {
+				[node.border_box_]
+			}
+			for border_box in border_boxes {
+				rect := paintable_box_rect_of_kind(node, border_box, kind)
+				if united := result {
+					if rect.width > 0 && rect.height > 0 {
+						result = unite_layout_rect(united, rect)
+					}
+				} else {
+					result = rect
 				}
 			}
-			if kind == .content {
-				rect = dom.Rect{
-					x: rect.x + node.padding_left_
-					y: rect.y + node.padding_top_
-					width: math.max(0.0, rect.width - node.padding_left_ - node.padding_right_)
-					height: math.max(0.0, rect.height - node.padding_top_ - node.padding_bottom_)
-				}
-			}
-			result = if united := result { unite_layout_rect(united, rect) } else { rect }
 		}
 		current = node.continuation_next_
 	}
 	return result
+}
+
+fn paintable_box_rect_of_kind(node &dom.LayoutNode, border_box dom.Rect, kind PaintableBoxRectKind) dom.Rect {
+	mut rect := border_box
+	if kind == .padding || kind == .content {
+		rect = dom.Rect{
+			x: rect.x + node.border_left_
+			y: rect.y + node.border_top_
+			width: math.max(0.0, rect.width - node.border_left_ - node.border_right_)
+			height: math.max(0.0, rect.height - node.border_top_ - node.border_bottom_)
+		}
+	}
+	if kind == .content {
+		rect = dom.Rect{
+			x: rect.x + node.padding_left_
+			y: rect.y + node.padding_top_
+			width: math.max(0.0, rect.width - node.padding_left_ - node.padding_right_)
+			height: math.max(0.0, rect.height - node.padding_top_ - node.padding_bottom_)
+		}
+	}
+	return rect
 }
 
 fn paintable_box_absolute_united_border_box_rect(start &dom.LayoutNode) ?dom.Rect {

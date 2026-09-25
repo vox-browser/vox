@@ -293,6 +293,14 @@ fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Bo
 					automatic_width = css_pixels_max(automatic_width, contribution)
 				}
 			}
+			// Interrupting blocks are laid out by the parent BFC between lines;
+			// under intrinsic available space an auto-width block takes its
+			// intrinsic width, and its line's inline length is its margin box.
+			for interrupting_block in inline_flow_interrupting_blocks(box_node) {
+				block_box := interrupting_block.as_box() or { continue }
+				automatic_width = css_pixels_max(automatic_width,
+					intrinsic_outer_width_contribution(mut throwaway, block_box, constraint))
+			}
 			return clamp_to_max_dimension_value(automatic_width)
 		}
 	}
@@ -937,4 +945,24 @@ fn clamp_content_height_for_node(mut state LayoutState, node &NodeWithStyle, use
 		result = css_pixels_max(result, calculate_fit_content_height(mut state, box, used_values.content_width(), available_height))
 	}
 	return result
+}
+
+// The in-flow blocks that interrupt `container`'s inline formatting context.
+// Atomic inlines and nested block containers establish their own contexts.
+fn inline_flow_interrupting_blocks(container &Node) []&Node {
+	mut blocks := []&Node{}
+	collect_inline_flow_interrupting_blocks(container, mut blocks)
+	return blocks
+}
+
+fn collect_inline_flow_interrupting_blocks(node &Node, mut blocks []&Node) {
+	for child in node.children() {
+		if is_inline_flow_interrupting_block(child) {
+			blocks << child
+			continue
+		}
+		if child.is_inline_node() && child.display().is_flow_inside() {
+			collect_inline_flow_interrupting_blocks(child, mut blocks)
+		}
+	}
 }

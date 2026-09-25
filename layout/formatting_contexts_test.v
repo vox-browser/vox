@@ -4559,10 +4559,10 @@ fn test_wrapped_inline_blocks_preserve_strut_descent_between_lines() {
 	assert line.line_boxes[2].fragments_[0].block_offset().raw_value() >= line.line_boxes[1].bottom().raw_value()
 }
 
-// Inline fixup can route an originally-inline abspos pseudo-element through
-// the surrounding BFC. The anonymous IFC wrapper publishes its exact inline-
-// end insertion point so the BFC does not have to reconstruct it from fragments.
-fn test_inline_end_static_position_survives_anonymous_wrapper_fixup() {
+// An originally-inline abspos pseudo-element remains in the list item's
+// inline formatting context. The IFC publishes its exact inline-end insertion
+// point after consecutive forced breaks for the static-position pass.
+fn test_inline_end_static_position_survives_consecutive_forced_breaks() {
 	document := html.parse_document('<!doctype html><style>
 		body, ul { margin:0; padding:0 }
 		ul { list-style:none; font-size:10px; line-height:20px }
@@ -4571,20 +4571,17 @@ fn test_inline_end_static_position_survives_anonymous_wrapper_fixup() {
 	</style><ul><li id="item">XXX<br><br></li></ul>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	item := layout_node_with_id(result.root, 'item') or { panic('missing #item') }
-	mut inline_wrapper := ?&Node(none)
+	assert item.children_are_inline()
 	mut positioned := ?&Node(none)
 	for child in item.children() {
-		if child.is_anonymous() && child.children_are_inline() {
-			inline_wrapper = child
-		}
+		assert !child.is_anonymous() || child.is_absolutely_positioned()
 		if child.is_absolutely_positioned() {
 			positioned = child
 		}
 	}
-	wrapper := inline_wrapper or { panic('missing anonymous inline wrapper') }
-	wrapper_style := wrapper.as_node_with_style() or { panic('inline wrapper has no style') }
-	wrapper_used := result.used_values_for(wrapper_style) or { panic('inline wrapper has no used values') }
-	inline_end := wrapper_used.inline_end_static_position_rect() or { panic('missing inline-end position') }
+	item_style := item.as_node_with_style() or { panic('#item has no style') }
+	item_used := result.used_values_for(item_style) or { panic('#item has no used values') }
+	inline_end := item_used.inline_end_static_position_rect() or { panic('missing inline-end position') }
 	assert inline_end.rect.x.to_double() == 0
 	assert inline_end.rect.y.to_double() == 40
 	positioned_node := positioned or { panic('missing abspos pseudo-element') }
@@ -4818,4 +4815,99 @@ fn test_subgrid_inherits_clipped_parent_grid_area_line_names() {
 	assert used_for_id(result, 'list').content_width().to_double() == 100
 	assert used_for_id(result, 'page').offset.x().to_double() == 150
 	assert used_for_id(result, 'page').content_width().to_double() == 150
+}
+
+// Upstream block-and-inline/*interrupting-block*: an in-flow block inside an
+// inline stays in the inline's IFC. The line builder force-breaks around it,
+// the parent BFC lays it out in place, and inline content resumes below it.
+fn test_interrupting_block_is_laid_out_between_inline_lines() {
+	document := html.parse_document('<!doctype html><style>
+		* { margin:0 }
+		body { font-size:10px; line-height:20px }
+	</style><div id="container">first line<br><span id="inline"><b id="abs" style="position:absolute">abs</b><div id="block">block</div>rest</span></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	container := layout_node_with_id(result.root, 'container') or { panic('missing #container') }
+	assert container.children_are_inline()
+	block_node := layout_node_with_id(result.root, 'block') or { panic('missing #block') }
+	block_parent := block_node.parent() or { panic('#block has no parent') }
+	inline_node := layout_node_with_id(result.root, 'inline') or { panic('missing #inline') }
+	assert layout_nodes_same(block_parent, inline_node)
+	block := used_for_id(result, 'block')
+	assert block.offset.y().to_double() == 20
+	assert block.content_width().to_double() == 800
+	assert block.content_height().to_double() == 20
+	// The leading abspos box resolves its static position before the block.
+	assert used_for_id(result, 'abs').static_position().y().to_double() == 20
+	container_used := used_for_id(result, 'container')
+	assert container_used.content_height().to_double() == 60
+	mut rest_line_top := -1.0
+	for line_box in container_used.line_boxes {
+		for fragment in line_box.fragments() {
+			if text := fragment.text() {
+				if text == 'rest' {
+					rest_line_top = line_box.bottom().to_double() - line_box.height().to_double()
+				}
+			}
+		}
+	}
+	assert rest_line_top == 40
+}
+
+fn test_trailing_interrupting_block_margin_extends_bfc_root_height() {
+	document := html.parse_document('<!doctype html><style>
+		* { margin:0 }
+		body { font-size:10px; line-height:20px }
+	</style><div id="root" style="display:flow-root"><span>a<div id="block" style="margin-bottom:50px">b</div></span></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'block').offset.y().to_double() == 20
+	assert used_for_id(result, 'root').content_height().to_double() == 90
+}
+
+fn test_float_after_interrupting_block_consumes_its_bottom_margin() {
+	document := html.parse_document('<!doctype html><style>
+		* { margin:0 }
+		body { font-size:10px; line-height:20px }
+	</style><div id="container"><span><div id="block" style="margin-bottom:40px; height:10px">block</div><img id="float" style="float:left; width:20px; height:20px">text</span></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'block').offset.y().to_double() == 0
+	float_used := used_for_id(result, 'float')
+	assert float_used.offset.x().to_double() == 0
+	assert float_used.offset.y().to_double() == 50
+	assert used_for_id(result, 'container').content_height().to_double() == 70
+}
+
+fn test_inline_start_padding_attaches_after_interrupting_block() {
+	document := html.parse_document('<!doctype html><style>
+		* { margin:0 }
+		body { font-size:10px; line-height:20px }
+	</style><div id="container"><span style="padding-left:50px"> <div id="block" style="height:10px">block</div>text</span></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'block').offset.y().to_double() == 0
+	container_used := used_for_id(result, 'container')
+	assert container_used.content_height().to_double() == 30
+	mut text_left := -1.0
+	for line_box in container_used.line_boxes {
+		for fragment in line_box.fragments() {
+			if text := fragment.text() {
+				if text == 'text' {
+					text_left = fragment.offset().x().to_double()
+				}
+			}
+		}
+	}
+	assert text_left == 50
+}
+
+fn test_line_before_interrupting_block_is_not_justified() {
+	document := html.parse_document('<!doctype html><style>
+		* { margin:0 }
+		body { font-size:10px; line-height:20px }
+	</style><div id="container" style="text-align:justify; width:200px">aa bb cc<span><div id="block" style="height:10px"></div></span>dd ee ff gg hh ii jj kk ll mm nn oo pp qq</div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	container_used := used_for_id(result, 'container')
+	assert container_used.line_boxes.len > 2
+	first_line := container_used.line_boxes[0]
+	assert first_line.has_forced_break()
+	assert first_line.width().to_double() < 200
+	assert used_for_id(result, 'block').offset.y().to_double() == 20
 }

@@ -306,7 +306,7 @@ fn test_apply_style_refreshes_an_existing_table_wrapper() {
 	assert table.computed_values().position() == .static_
 }
 
-fn test_should_create_inline_continuation_matches_upstream_guards() {
+fn test_is_inline_flow_interrupting_block_matches_upstream_guards() {
 	document := dom.Document.create(dom.url_about_blank())
 	base_style := css.ComputedProperties.new()
 	inline_style := base_style.clone_for_anonymous_with_display(css.Display.from_short(.inline_))
@@ -321,17 +321,17 @@ fn test_should_create_inline_continuation_matches_upstream_guards() {
 	block_metrics := unsafe { &Node(block_child) }.as_node_with_style_and_box_model_metrics() or {
 		panic('block child has no box metrics')
 	}
-	assert block_metrics.should_create_inline_continuation()
+	assert block_metrics.is_inline_flow_interrupting_block()
 
 	mut inline_parent_for_inline := InlineNode.new(document, none, inline_style)
 	inline_child := InlineNode.new(document, none, inline_style)
 	inline_parent_for_inline.append_child(unsafe { &Node(inline_child) })
-	assert !inline_child.should_create_inline_continuation()
+	assert !inline_child.is_inline_flow_interrupting_block()
 
 	mut inline_parent_for_contents := InlineNode.new(document, none, inline_style)
 	contents_child := InlineNode.new(document, none, contents_style)
 	inline_parent_for_contents.append_child(unsafe { &Node(contents_child) })
-	assert !contents_child.should_create_inline_continuation()
+	assert !contents_child.is_inline_flow_interrupting_block()
 
 	mut inline_parent_for_table := InlineNode.new(document, none, inline_style)
 	table_child := BlockContainer.new(document, none, table_cell_style)
@@ -339,7 +339,7 @@ fn test_should_create_inline_continuation_matches_upstream_guards() {
 	table_metrics := unsafe { &Node(table_child) }.as_node_with_style_and_box_model_metrics() or {
 		panic('table child has no box metrics')
 	}
-	assert !table_metrics.should_create_inline_continuation()
+	assert !table_metrics.is_inline_flow_interrupting_block()
 
 	mut absolute_style :=
 		base_style.clone_for_anonymous_with_display(css.Display.from_short(.block))
@@ -352,7 +352,7 @@ fn test_should_create_inline_continuation_matches_upstream_guards() {
 	abspos_metrics := unsafe { &Node(abspos_child) }.as_node_with_style_and_box_model_metrics() or {
 		panic('absolutely positioned child has no box metrics')
 	}
-	assert !abspos_metrics.should_create_inline_continuation()
+	assert !abspos_metrics.is_inline_flow_interrupting_block()
 
 	svg_element := document.create_element_ns('http://www.w3.org/2000/svg', 'svg')!
 	mut inline_parent_for_svg := InlineNode.new(document, none, inline_style)
@@ -361,7 +361,7 @@ fn test_should_create_inline_continuation_matches_upstream_guards() {
 	top_level_svg_metrics := unsafe { &Node(top_level_svg) }.as_node_with_style_and_box_model_metrics() or {
 		panic('SVG root has no box metrics')
 	}
-	assert top_level_svg_metrics.should_create_inline_continuation()
+	assert top_level_svg_metrics.is_inline_flow_interrupting_block()
 
 	g_element := document.create_element_ns('http://www.w3.org/2000/svg', 'g')!
 	mut svg_parent := SVGBox.new(document, g_element, inline_style)
@@ -371,7 +371,7 @@ fn test_should_create_inline_continuation_matches_upstream_guards() {
 	nested_svg_metrics := unsafe { &Node(nested_svg) }.as_node_with_style_and_box_model_metrics() or {
 		panic('nested SVG root has no box metrics')
 	}
-	assert !nested_svg_metrics.should_create_inline_continuation()
+	assert !nested_svg_metrics.is_inline_flow_interrupting_block()
 }
 
 // Box / BlockContainer embed the Node->NodeWithStyle chain; the type-discriminant flags let a tree &Node

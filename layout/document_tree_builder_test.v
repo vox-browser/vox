@@ -1030,45 +1030,49 @@ fn test_root_styles_propagate_to_the_viewport() {
 	assert contained_viewport.computed_values().overflow_y() == .hidden
 }
 
-fn test_block_inside_inline_creates_before_and_after_inline_continuations() {
+// An in-flow block inside an inline stays where the DOM puts it. The inline
+// keeps inline children and is not split into anonymous continuation wrappers.
+fn test_block_inside_inline_remains_an_interrupting_child_of_the_inline() {
 	document := html.parse_document('<!doctype html><div id="outer">before<span id="inline">one<div id="block" style="height:20px">block</div>two</span>after</div>')
 	root := build_layout_tree(document) or { panic('no layout tree') }
 	outer := tree_builder_node_with_id(root, 'outer') or { panic('no outer') }
-	assert !outer.children_are_inline()
-	assert outer.child_count() == 3
-	before_wrapper := outer.children()[0]
-	middle_wrapper := outer.children()[1]
-	after_wrapper := outer.children()[2]
-	assert before_wrapper.is_anonymous() && before_wrapper.children_are_inline()
-	assert middle_wrapper.is_anonymous() && !middle_wrapper.children_are_inline()
-	assert middle_wrapper.child_count() == 1
-	block := middle_wrapper.children()[0]
+	assert outer.children_are_inline()
+	for child in outer.children() {
+		assert !child.is_anonymous()
+	}
+	inline_node := tree_builder_node_with_id(outer, 'inline') or { panic('no inline node') }
+	inline_parent := inline_node.parent() or { panic('inline node has no parent') }
+	assert layout_nodes_same(inline_parent, outer)
+	assert inline_node.is_inline_node()
+	assert inline_node.children_are_inline()
+	assert inline_node.child_count() == 3
+	block := inline_node.children()[1]
 	block_dom := block.dom_node() or { panic('block has no DOM node') }
 	assert (block_dom.as_element() or { panic('block DOM node is not element') }).get_attribute_value('id') == 'block'
-	assert after_wrapper.is_anonymous() && after_wrapper.children_are_inline()
-	inline_before := tree_builder_node_with_id(before_wrapper, 'inline') or {
-		panic('no primary inline node')
+	block_metrics := block.as_node_with_style_and_box_model_metrics() or {
+		panic('block has no box metrics')
 	}
-	mut inline_after := ?&Node(none)
-	for child in after_wrapper.children() {
-		if child.is_inline_node() && child.dom_node() != none {
-			inline_after = child
-			break
+	assert block_metrics.is_inline_flow_interrupting_block()
+	inline_metrics := inline_node.as_node_with_style_and_box_model_metrics() or {
+		panic('inline node has no box metrics')
+	}
+	assert inline_metrics.continuation_of_node() == none
+	assert tree_builder_count_nodes_with_id(root, 'inline') == 1
+}
+
+fn tree_builder_count_nodes_with_id(node &Node, id string) int {
+	mut count := 0
+	if dom_node := node.dom_node() {
+		if element := dom_node.as_element() {
+			if element.get_attribute_value('id') == id {
+				count++
+			}
 		}
 	}
-	continuation := inline_after or { panic('no inline continuation') }
-	assert !layout_nodes_same(inline_before, continuation)
-	metrics := continuation.as_node_with_style_and_box_model_metrics() or {
-		panic('continuation has no metrics')
+	for child in node.children() {
+		count += tree_builder_count_nodes_with_id(child, id)
 	}
-	assert metrics.continuation_of_node() != none
-	middle_metrics := middle_wrapper.as_node_with_style_and_box_model_metrics() or {
-		panic('middle continuation has no metrics')
-	}
-	assert middle_metrics.continuation_of_node() != none
-	assert layout_nodes_same(unsafe {
-		&Node(metrics.continuation_of_node() or { panic('continuation has no source') })
-	}, middle_wrapper)
+	return count
 }
 
 fn test_svg_elements_create_their_concrete_layout_node_types_without_html_wrappers() {

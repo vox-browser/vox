@@ -510,13 +510,35 @@ fn layout_box_baseline(state &LayoutState, box &Node, requested_baseline_set Bas
 	derive_from_content := baseline_set == .first || is_flex_or_grid_container
 		|| !box.is_scroll_container()
 	if derive_from_content && box_state.line_boxes.len > 0 {
-		line := if baseline_set == .first {
-			box_state.line_boxes.first()
-		} else {
-			box_state.line_boxes.last()
+		mut line_index := if baseline_set == .first { 0 } else { box_state.line_boxes.len - 1 }
+		for index in 0 .. box_state.line_boxes.len {
+			candidate := if baseline_set == .first {
+				index
+			} else {
+				box_state.line_boxes.len - 1 - index
+			}
+			if !box_state.line_boxes[candidate].is_empty() {
+				line_index = candidate
+				break
+			}
 		}
-		line_top := line.bottom().minus(line.block_length())
-		return box_state.margin_box_top().plus(line_top).plus(line.baseline())
+		line := box_state.line_boxes[line_index]
+		if !line.has_block_level_box() {
+			line_top := line.bottom().minus(line.block_length())
+			return box_state.margin_box_top().plus(line_top).plus(line.baseline())
+		}
+		// A line hosting an interrupting block takes that block's baseline.
+		block_child := line.fragments_[0].layout_node()
+		block_child_styled := block_child.as_node_with_style() or {
+			return box_state.margin_box_height()
+		}
+		block_child_state := state.try_get(block_child_styled) or {
+			return box_state.margin_box_height()
+		}
+		child_offset_from_margin_edge :=
+			block_child_state.offset.y().minus(block_child_state.margin_box_top())
+		return box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(layout_box_baseline(state,
+			block_child, baseline_set))
 	}
 
 	if child := layout_box_child_to_derive_baseline_from(state, box, baseline_set) {

@@ -753,6 +753,22 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 				} else {
 					0.0
 				}
+				// compute_auto_height_for_block_level_element(), rule 1: a
+				// trailing interrupting block's pending bottom margin collapses
+				// through this box unless bottom padding or border separates it.
+				if (definite_content_height == none || html_quirk_min_height != none)
+					&& box_state.line_boxes.len > 0 && box_state.line_boxes.last().has_block_level_box() {
+					mut margin_bottom := bfc.margin_state.current_collapsed_margin()
+					if box_state.padding_bottom.raw_value() == 0
+						&& box_state.border_bottom.raw_value() == 0 {
+						bfc.margin_state.set_box_last_in_flow_child_margin_bottom_collapsed(true)
+						margin_bottom = 0.0
+					}
+					content_height_from_children += margin_bottom
+					if content_height_from_children < 0 {
+						content_height_from_children = 0
+					}
+				}
 			} else {
 				content_height_from_children = computed_line_height_px(computed)
 			}

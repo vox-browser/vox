@@ -316,6 +316,17 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 						copy_used_box_model_to_dom_layout_node(mut placeholder, used)
 					}
 				}
+				for paintable_index in 0 .. layout_debug_paintable_count(box, layout_state) {
+					rect := layout_debug_paintable_border_rect(box, layout_state, paintable_index) or {
+						continue
+					}
+					placeholder.paintable_border_boxes_ << dom.Rect{
+						x: rect.x.to_double()
+						y: rect.y.to_double()
+						width: rect.width.to_double()
+						height: rect.height.to_double()
+					}
+				}
 			}
 		} else if node_with_style := box.as_node_with_style() {
 			if used := layout_state.try_get(node_with_style) {

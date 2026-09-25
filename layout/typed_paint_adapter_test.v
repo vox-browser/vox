@@ -1809,28 +1809,50 @@ fn test_paintable_with_lines_hit_test_preserves_global_candidate_callback_order(
 	assert (after_second.horizontal_distance or { panic('missing second horizontal distance') }) == 99
 }
 
-fn test_split_inline_anonymous_middle_hit_returns_inline_principal_box() {
+// Upstream hit_testing/pointer-events: an interrupting block with
+// `pointer-events: none` is transparent. Its inline parent has no box on the
+// block's line, so the hit reaches the block container behind it.
+fn test_interrupting_block_without_pointer_events_hits_the_enclosing_block() {
 	document := html.parse_document('<!doctype html><style>
 		html, body { margin: 0 }
 		#under { position: absolute; z-index: -1; width: 100px; height: 100px }
 		#child { width: 100px; height: 100px; pointer-events: none }
 	</style><body><div id="under"></div><b id="outer"><div id="child"></div></b></body>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)
-	outer := document.get_element_by_id('outer') or { panic('missing split inline') }
+	body := document.body() or { panic('missing body') }
 	mut mutable_document := unsafe { &dom.Document(document) }
-	hit := mutable_document.element_from_point(10, 10) or { panic('missing continuation hit') }
-	assert hit.as_node().unique_id() == outer.as_node().unique_id()
+	hit := mutable_document.element_from_point(10, 10) or { panic('missing hit') }
+	assert hit.as_node().unique_id() == body.as_node().unique_id()
 }
 
-fn test_split_inline_cssom_offsets_use_the_united_continuation_chain() {
+// Upstream HTML/HTMLElement-offsetFoo-for-split-inline-element: the inline
+// has one layout node and one box per line. The empty box on the line hosting
+// the interrupting block does not contribute to the united border box.
+fn test_inline_with_interrupting_block_offsets_unite_its_line_boxes() {
 	document := html.parse_document('<!doctype html><b>foo<div>bar</div>baz</b>')
 	_ = layout_document_typed_in_viewport(document, 800, 600)
-	bold := document.query_selector('b') or { panic('missing split inline element') }
+	bold := document.query_selector('b') or { panic('missing inline element') }
 	html_bold := unsafe { &dom.HTMLElement(bold) }
+	foo_width, line_height := single_line_inline_offset_size('foo')
+	baz_width, _ := single_line_inline_offset_size('baz')
+	assert foo_width > 0 && baz_width > 0
 	assert html.html_element_offset_top(html_bold) == 8
 	assert html.html_element_offset_left(html_bold) == 8
-	assert html.html_element_offset_width(html_bold) == 784
-	assert html.html_element_offset_height(html_bold) == 48
+	// The interrupting block's 784px line belongs to the block, not the inline.
+	assert html.html_element_offset_width(html_bold) == if foo_width > baz_width {
+		foo_width
+	} else {
+		baz_width
+	}
+	assert html.html_element_offset_height(html_bold) == 3 * line_height
+}
+
+fn single_line_inline_offset_size(text string) (int, int) {
+	document := html.parse_document('<!doctype html><b>${text}</b>')
+	_ = layout_document_typed_in_viewport(document, 800, 600)
+	bold := document.query_selector('b') or { panic('missing single-line inline element') }
+	html_bold := unsafe { &dom.HTMLElement(bold) }
+	return html.html_element_offset_width(html_bold), html.html_element_offset_height(html_bold)
 }
 
 fn test_paintable_box_chrome_predicates_follow_layout_type_and_writing_mode() {

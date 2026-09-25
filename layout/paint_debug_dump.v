@@ -310,7 +310,23 @@ fn layout_debug_inline_metrics_for_line(node &Node, state &LayoutState, line_ind
 		}
 		height = css_pixels_max(height, fragment.block_length())
 	}
-	left_value := left or { return none }
+	left_value := left or {
+		// A per-line paintable that only hosts an interrupting block has no
+		// content of its own; LayoutState::commit() places it at the block
+		// fragment's offset with an empty content size.
+		for fragment in line_box.fragments() {
+			if layout_debug_interrupting_block_is_in_inline_subtree(fragment.layout_node(), node) {
+				relative_offset := inline_relative_offset(fragment.layout_node(), state)
+				return LayoutDebugInlineMetrics{
+					position: css.CSSPixelPoint.new(container_position.x().plus(fragment.offset().x()).plus(relative_offset.x()),
+						container_position.y().plus(fragment.offset().y()).plus(relative_offset.y()))
+					width: CSSPixels.new(0)
+					height: CSSPixels.new(0)
+				}
+			}
+		}
+		return none
+	}
 	right_value := right or { return none }
 	top_value := direct_top or { top or { return none } }
 	return LayoutDebugInlineMetrics{
