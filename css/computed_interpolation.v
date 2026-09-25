@@ -287,6 +287,9 @@ pub struct ContentItem {
 pub:
 	type_ ContentItemType
 	value string
+	// The selected image-set() candidate's resolution in dots per CSS pixel.
+	// Natural image sizes are divided by it.
+	resolution f64 = 1.0
 }
 
 pub struct ContentData {
@@ -3036,6 +3039,23 @@ pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, in
 			items << ContentItem{
 				type_: .image
 				value: item.url_.url()
+			}
+			continue
+		}
+		// https://drafts.csswg.org/css-content-3/#typedef-content-list
+		// https://drafts.csswg.org/css-images-4/#typedef-image
+		// <content-list> accepts <image>, and image-set() is an <image>.
+		if item is ImageSetStyleValue {
+			device_pixels_per_css_pixel := abstract_element.element().document().device_pixels_per_css_pixel()
+			if index := item.select_image_index(device_pixels_per_css_pixel) {
+				option := item.options_[index]
+				if option.image is ImageStyleValue {
+					items << ContentItem{
+						type_: .image
+						value: option.image.url_.url()
+						resolution: option.resolution.dots_per_pixel() or { 1.0 }
+					}
+				}
 			}
 			continue
 		}

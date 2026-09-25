@@ -1269,3 +1269,28 @@ fn test_table_internal_pseudo_element_stays_in_its_inline() {
 	inline_node := tree_builder_node_with_id(root, 'inline') or { panic('no inline') }
 	assert inline_node.child_count() >= 2
 }
+
+// Upstream content-image-set: image-set() is an <image> in <content-list>. The
+// selected candidate's resolution scales the generated image's natural size.
+fn test_generated_content_image_set_uses_candidate_resolution() {
+	document := html.parse_document('<!doctype html><style>
+		#set::before { content:image-set(url(${content_replacement_green_image}) 2x) }
+		#plain::before { content:url(${content_replacement_green_image}) }
+	</style><div id="set"></div><div id="plain"></div>')
+	root := build_layout_tree(document) or { panic('no layout tree') }
+	set_host := document_tree_builder_node_with_id(root, 'set') or { panic('missing set') }
+	plain_host := document_tree_builder_node_with_id(root, 'plain') or { panic('missing plain') }
+	set_image := (set_host.first_child() or { panic('missing set pseudo') }).as_image_box() or {
+		panic('image-set pseudo is not an image box')
+	}
+	plain_image := (plain_host.first_child() or { panic('missing plain pseudo') }).as_image_box() or {
+		panic('url pseudo is not an image box')
+	}
+	assert set_image.source() == content_replacement_green_image
+	plain_width := plain_image.natural_size_.width or { panic('missing plain width') }
+	set_width := set_image.natural_size_.width or { panic('missing image-set width') }
+	set_height := set_image.natural_size_.height or { panic('missing image-set height') }
+	assert plain_width.to_double() == 4
+	assert set_width.to_double() == 2
+	assert set_height.to_double() == 2
+}

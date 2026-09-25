@@ -191,6 +191,8 @@ mut:
 	svg_image_document_       ?&dom.Document
 	source_                   string
 	uses_content_replacement_ bool
+	// Resolution of the image-set() candidate that selected source_.
+	source_resolution_ f64 = 1.0
 }
 
 fn image_alt_text_natural_size(alt string) css.SizeWithAspectRatio {
@@ -334,6 +336,40 @@ pub fn ImageBox.new_generated(document &dom.Document, computed_values &css.Compu
 		}
 	}
 	box.svg_image_document_ = svg_image_document_for_source(document, source)
+	box.auto_content_box_size_ = box.natural_size_
+	return box
+}
+
+// ImageSetStyleValue::natural_size(): an image-set() candidate's natural size
+// is divided by its resolution; the aspect ratio is unchanged.
+fn natural_size_at_resolution(size css.SizeWithAspectRatio, resolution f64) css.SizeWithAspectRatio {
+	if resolution <= 0 || resolution == 1.0 {
+		return size
+	}
+	mut scaled := size
+	if width := size.width {
+		scaled.width = CSSPixels.nearest_value_for(width.to_double() / resolution)
+	}
+	if height := size.height {
+		scaled.height = CSSPixels.nearest_value_for(height.to_double() / resolution)
+	}
+	return scaled
+}
+
+// A generated ImageBox for a content image item, preserving the resolution of
+// a selected image-set() candidate.
+pub fn ImageBox.new_generated_for_content_item(document &dom.Document, computed_values &css.ComputedProperties, item css.ContentItem) &ImageBox {
+	mut box := ImageBox.new_generated(document, computed_values, item.value)
+	box.source_resolution_ = item.resolution
+	box.natural_size_ = natural_size_at_resolution(box.natural_size_, item.resolution)
+	box.auto_content_box_size_ = box.natural_size_
+	return box
+}
+
+pub fn ImageBox.new_content_replacement_for_item(document &dom.Document, element &dom.Element, computed_values &css.ComputedProperties, item css.ContentItem) &ImageBox {
+	mut box := ImageBox.new_content_replacement(document, element, computed_values, item.value)
+	box.source_resolution_ = item.resolution
+	box.natural_size_ = natural_size_at_resolution(box.natural_size_, item.resolution)
 	box.auto_content_box_size_ = box.natural_size_
 	return box
 }
@@ -977,7 +1013,7 @@ pub fn (mut box ImageBox) reset_for_relayout() {
 		box.natural_size_ = natural_size
 	} else if intrinsic_size := image_intrinsic_size_for_source(box.document_, source) {
 		box.renders_as_alt_text_ = false
-		box.natural_size_ = intrinsic_size
+		box.natural_size_ = natural_size_at_resolution(intrinsic_size, box.source_resolution_)
 	} else {
 		box.renders_as_alt_text_ = true
 		box.natural_size_ = image_alt_text_natural_size(alt)

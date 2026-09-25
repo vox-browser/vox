@@ -664,11 +664,11 @@ fn clear_stale_layout_and_paint_node(node &dom.Node, content_visibility_hidden_r
 	return .@continue
 }
 
-fn single_content_replacement_image(content css.ContentData) ?string {
+fn single_content_replacement_image(content css.ContentData) ?css.ContentItem {
 	if content.type_ != .list || content.items.len != 1 || content.items[0].type_ != .image {
 		return none
 	}
-	return content.items[0].value
+	return content.items[0]
 }
 
 fn adjusted_display_for_replaced_element(display css.Display) ?css.Display {
@@ -693,7 +693,7 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 		})
 		return none
 	}
-	mut content_replacement_source := ?string(none)
+	mut content_replacement_source := ?css.ContentItem(none)
 	if computed.property(.content, .yes) != none {
 		abstract_element := dom.AbstractElement.new(element, none)
 		registered_counter_styles := css.registered_counter_styles_for_abstract_element(abstract_element)
@@ -710,7 +710,7 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 		if adjusted_display := adjusted_display_for_replaced_element(computed.display()) {
 			replacement_style = computed.clone_for_anonymous_with_display(adjusted_display)
 		}
-		unsafe { &Node(ImageBox.new_content_replacement(document, element, replacement_style, source)) }
+		unsafe { &Node(ImageBox.new_content_replacement_for_item(document, element, replacement_style, source)) }
 	} else if resource_kind := svg_resource_kind {
 		match resource_kind {
 			.mask {
@@ -2025,7 +2025,7 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 		}
 	}
 	mut node := if source := content_replacement_source {
-		unsafe { &Node(ImageBox.new_generated(document, generated_style, source)) }
+		unsafe { &Node(ImageBox.new_generated_for_content_item(document, generated_style, source)) }
 	} else {
 		create_layout_node_for_generated_content(document, generated_style)
 	}
@@ -2036,7 +2036,7 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 			inline_image_style := computed.clone_for_anonymous_with_display(css.Display.from_short(.inline_))
 			for item in content.items {
 				mut child := if item.type_ == .image {
-					unsafe { &Node(ImageBox.new_generated(document, inline_image_style, item.value)) }
+					unsafe { &Node(ImageBox.new_generated_for_content_item(document, inline_image_style, item)) }
 				} else {
 					unsafe { &Node(TextNode.new_generated(document, item.value)) }
 				}
@@ -2097,7 +2097,7 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 		if marker.can_have_children() {
 			for item in content.items {
 				mut child := if item.type_ == .image {
-					unsafe { &Node(ImageBox.new_generated(document, marker_computed, item.value)) }
+					unsafe { &Node(ImageBox.new_generated_for_content_item(document, marker_computed, item)) }
 				} else {
 					unsafe { &Node(TextNode.new_generated(document, item.value)) }
 				}

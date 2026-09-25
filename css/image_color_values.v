@@ -1775,20 +1775,34 @@ pub fn (style_value ImageSetStyleValue) is_paintable() bool {
 	}
 }
 
+// ImageSetStyleValue::natural_size(): the selected candidate's natural size is
+// scaled by the candidate's resolution.
+fn (style_value ImageSetStyleValue) selected_resolution() f64 {
+	if style_value.selected_index_ < 0 || style_value.selected_index_ >= style_value.options_.len {
+		return 1.0
+	}
+	resolution := style_value.options_[style_value.selected_index_].resolution.dots_per_pixel() or {
+		return 1.0
+	}
+	return if resolution > 0 { resolution } else { 1.0 }
+}
+
 pub fn (style_value ImageSetStyleValue) natural_width() ?CSSPixels {
 	image := style_value.selected_image() or { return none }
-	return match image {
-		ImageStyleValue { image.natural_width() }
-		else { none }
+	width := match image {
+		ImageStyleValue { image.natural_width() or { return none } }
+		else { return none }
 	}
+	return CSSPixels.nearest_value_for(width.to_double() / style_value.selected_resolution())
 }
 
 pub fn (style_value ImageSetStyleValue) natural_height() ?CSSPixels {
 	image := style_value.selected_image() or { return none }
-	return match image {
-		ImageStyleValue { image.natural_height() }
-		else { none }
+	height := match image {
+		ImageStyleValue { image.natural_height() or { return none } }
+		else { return none }
 	}
+	return CSSPixels.nearest_value_for(height.to_double() / style_value.selected_resolution())
 }
 
 pub fn (style_value ImageSetStyleValue) natural_aspect_ratio() ?CSSPixelFraction {
