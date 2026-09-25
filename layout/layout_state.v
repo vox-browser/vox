@@ -59,6 +59,8 @@ mut:
 	hidden_by_collapsed_columns_ bool
 	has_line_clamp_point_         bool
 	is_invisible_for_line_clamp_  bool
+	derived_first_baseline_       ?CSSPixels
+	derived_last_baseline_        ?CSSPixels
 }
 
 fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
@@ -88,6 +90,8 @@ fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
 		hidden_by_collapsed_columns_: rare.hidden_by_collapsed_columns_
 		has_line_clamp_point_: rare.has_line_clamp_point_
 		is_invisible_for_line_clamp_: rare.is_invisible_for_line_clamp_
+		derived_first_baseline_: rare.derived_first_baseline_
+		derived_last_baseline_: rare.derived_last_baseline_
 	}
 }
 
@@ -123,25 +127,31 @@ pub mut:
 	inset_bottom                 CSSPixels
 	line_boxes                   []LineBox
 	containing_line_box_fragment ?LineBoxFragmentCoordinate
-	derived_first_baseline_      ?CSSPixels
-	derived_last_baseline_       ?CSSPixels
 	scrollable_overflow_rect_    ?css.CSSPixelRect
 	has_scrollable_overflow_     bool
 mut:
 	rare_ ?&UsedValuesRareData
 }
 
+// Table layout derives row, row-group, table, and wrapper baselines. Other
+// boxes never carry them, so they live with the rare state.
 fn (mut u UsedValues) set_derived_baselines(first ?CSSPixels, last ?CSSPixels) {
-	u.derived_first_baseline_ = first
-	u.derived_last_baseline_ = last
+	if first == none && last == none && u.rare_ == none {
+		return
+	}
+	mut rare := u.ensure_rare_data()
+	rare.derived_first_baseline_ = first
+	rare.derived_last_baseline_ = last
 }
 
 fn (u &UsedValues) derived_first_baseline() ?CSSPixels {
-	return u.derived_first_baseline_
+	rare := u.rare_ or { return none }
+	return rare.derived_first_baseline_
 }
 
 fn (u &UsedValues) derived_last_baseline() ?CSSPixels {
-	return u.derived_last_baseline_
+	rare := u.rare_ or { return none }
+	return rare.derived_last_baseline_
 }
 
 fn (mut u UsedValues) ensure_rare_data() &UsedValuesRareData {
