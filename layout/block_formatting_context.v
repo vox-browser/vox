@@ -484,6 +484,40 @@ fn (mut bfc BlockFormattingContext) layout_block_level_children(mut state Layout
 	return bottom_of_lowest_margin_box
 }
 
+// Lay out an in-flow block that interrupts an inline formatting context, then
+// hand its flow bottom back to the line builder so subsequent inline content
+// resumes on a fresh line below it.
+fn (mut bfc BlockFormattingContext) layout_interrupting_block_inside_inline_context(mut state LayoutState, box &Box, containing_block &BlockContainer, available_space AvailableSpace, mut line_builder LineBuilder) {
+	box_node := unsafe { &Node(box) }
+	box_styled := box_node.as_node_with_style() or { return }
+	containing_node := unsafe { &Node(containing_block) }
+	containing_styled := containing_node.as_node_with_style() or { return }
+	containing_state := state.get(containing_styled)
+	saved_y_offset := bfc.y_offset_of_current_block_container
+	bfc.y_offset_of_current_block_container = line_builder.current_block_offset_value().to_double()
+	_ = bfc.layout_block_level_box(mut state, box_styled, containing_styled,
+		containing_state.content_width().to_double(), if available_space.height.is_definite() {
+		?f64(available_space.height.to_px_or_zero().to_double())
+	} else {
+		none
+	})
+	block_bottom := css_px(bfc.y_offset_of_current_block_container)
+	block_bottom_margin := css_px(bfc.margin_state.current_collapsed_margin())
+	bfc.y_offset_of_current_block_container = saved_y_offset
+	line_builder.append_block_level_box(box, block_bottom, block_bottom_margin)
+}
+
+// Commit a collapsed margin when inline content resumes after an interrupting
+// block. A margin still collapsing with the containing block only repositions
+// that block; otherwise it advances the next inline line.
+fn (mut bfc BlockFormattingContext) commit_pending_margin_before_inline_content() CSSPixels {
+	margin_collapses_with_block_container := bfc.margin_state.has_block_container_waiting_for_final_y_position()
+	collapsed_margin := css_px(bfc.margin_state.current_collapsed_margin())
+	bfc.margin_state.update_block_waiting_for_final_y_position()
+	bfc.margin_state.reset()
+	return if margin_collapses_with_block_container { CSSPixels.new(0) } else { collapsed_margin }
+}
+
 // BlockFormattingContext::layout_block_level_box — lay out one in-flow block-level child: resolve its box
 // model + width, place it vertically (collapsing its top margin with preceding margins, and with the
 // containing block's top margin when that block is waiting for its final position), lay out its own
@@ -694,23 +728,6 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 		} else {
 			inside_result.automatic_content_height.to_double()
 		}
-	} else if box_has_inline_content(box_as_node) {
-		if inline_container := box_as_node.as_block_container() {
-			available_height := if resolved_height := children_containing_block_height {
-				AvailableSize.make_definite(css_px(resolved_height))
-			} else {
-				AvailableSize.make_indefinite()
-			}
-			inline_result := bfc.run_inline_formatting_context_with_floats(mut state, inline_container, mut box_state, bfc.layout_mode, AvailableSpace.new(AvailableSize.make_definite(css_px(content_width)), available_height))
-			_ = inline_result
-			content_height_from_children = if box_state.line_boxes.len > 0 {
-				box_state.line_boxes.last().bottom().to_double()
-			} else {
-				0.0
-			}
-		} else {
-			content_height_from_children = computed_line_height_px(computed)
-		}
 	} else {
 		mut registered := false
 		if box_state.border_top.to_double() > 0 || box_state.padding_top.to_double() > 0 {
@@ -722,14 +739,33 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 			bfc.margin_state.register_block_container_y_position_update(box_state, y)
 			registered = true
 		}
-		bfc.layout_block_level_children(mut state, box, content_width, children_containing_block_height)
-		// Upstream only invokes the auto-height algorithm (which also records
-		// whether the last child's bottom margin collapsed with this box) when
-		// the used height is actually auto. A definite height must stop that
-		// margin from leaking through this box.
-		if definite_content_height == none || html_quirk_min_height != none {
-			content_height_from_children =
-				bfc.compute_auto_height_for_block_level_element(mut state, box).to_double()
+		if box_has_inline_content(box_as_node) {
+			if inline_container := box_as_node.as_block_container() {
+				available_height := if resolved_height := children_containing_block_height {
+					AvailableSize.make_definite(css_px(resolved_height))
+				} else {
+					AvailableSize.make_indefinite()
+				}
+				inline_result := bfc.run_inline_formatting_context_with_floats(mut state, inline_container, mut box_state, bfc.layout_mode, AvailableSpace.new(AvailableSize.make_definite(css_px(content_width)), available_height))
+				_ = inline_result
+				content_height_from_children = if box_state.line_boxes.len > 0 {
+					box_state.line_boxes.last().bottom().to_double()
+				} else {
+					0.0
+				}
+			} else {
+				content_height_from_children = computed_line_height_px(computed)
+			}
+		} else {
+			bfc.layout_block_level_children(mut state, box, content_width, children_containing_block_height)
+			// Upstream only invokes the auto-height algorithm (which also records
+			// whether the last child's bottom margin collapsed with this box) when
+			// the used height is actually auto. A definite height must stop that
+			// margin from leaking through this box.
+			if definite_content_height == none || html_quirk_min_height != none {
+				content_height_from_children =
+					bfc.compute_auto_height_for_block_level_element(mut state, box).to_double()
+			}
 		}
 		if registered {
 			bfc.margin_state.unregister_block_container_y_position_update()

@@ -1286,8 +1286,9 @@ pub fn (n &NodeWithStyleAndBoxModelMetrics) continuation_of_node() ?&NodeWithSty
 	return n.continuation_of_node_
 }
 
-fn should_create_inline_continuation_with_parent(node &Node, parent &Node) bool {
-	// This node must have an inline parent.
+fn is_inline_flow_interrupting_block_with_parent(node &Node, parent &Node) bool {
+	// This node remains a layout child of its inline-flow parent. The inline
+	// iterator emits it as a block-level item and lays it out between lines.
 	parent_display := parent.display()
 	if !parent_display.is_inline_outside() || !parent_display.is_flow_inside() {
 		return false
@@ -1298,7 +1299,8 @@ fn should_create_inline_continuation_with_parent(node &Node, parent &Node) bool 
 		return false
 	}
 
-	// This node must not have `display: contents`; inline continuation gets handled by its children.
+	// This node must not have `display: contents`; interrupting-block handling
+	// is delegated to its children.
 	if node.display().is_contents() {
 		return false
 	}
@@ -1317,18 +1319,19 @@ fn should_create_inline_continuation_with_parent(node &Node, parent &Node) bool 
 		}
 	}
 
-	// Non-root SVG elements and foreign object boxes should never be split.
+	// Non-root SVG elements and foreign object boxes do not interrupt inline flow.
 	if node.is_svg_box() || node.is_svg_foreign_object_box() {
 		return false
 	}
 
-	// Nested SVG roots should never be split, but a top-level SVG root inside an HTML inline element should be.
+	// Nested SVG roots do not interrupt inline flow, but a top-level SVG root
+	// inside an HTML inline element does.
 	if node.is_svg_svg_box() && (parent.is_svg_box() || parent.is_svg_svg_box()) {
 		return false
 	}
 
 	// Replaced boxes with children (e.g. media elements with shadow DOM controls)
-	// have their own formatting context; don't split them.
+	// have their own formatting context; their children do not interrupt flow.
 	if parent.is_replaced_box_with_children() {
 		return false
 	}
@@ -1336,10 +1339,10 @@ fn should_create_inline_continuation_with_parent(node &Node, parent &Node) bool 
 	return true
 }
 
-pub fn (n &NodeWithStyleAndBoxModelMetrics) should_create_inline_continuation() bool {
+pub fn (n &NodeWithStyleAndBoxModelMetrics) is_inline_flow_interrupting_block() bool {
 	node := unsafe { &Node(n) }
 	parent := node.parent() or { return false }
-	return should_create_inline_continuation_with_parent(node, parent)
+	return is_inline_flow_interrupting_block_with_parent(node, parent)
 }
 
 pub fn (n &NodeWithStyleAndBoxModelMetrics) propagate_style_along_continuation(computed_style &css.ComputedProperties) {

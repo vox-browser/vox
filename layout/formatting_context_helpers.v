@@ -29,7 +29,7 @@ fn fragment_inline_paintable_target(fragment_node &Node) ?&Node {
 	mut ancestor := fragment_node.parent()
 	for ancestor != none {
 		current := ancestor or { break }
-		if current.is_atomic_inline() {
+		if current.is_atomic_inline() || current.is_block_container() {
 			return none
 		}
 		if current.is_inline_node() {

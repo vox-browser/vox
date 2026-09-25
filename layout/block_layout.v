@@ -432,6 +432,12 @@ fn layout_inside_independent_formatting_context_without_containment_override(mut
 			} else {
 				CSSPixels.new(0)
 			}
+			if box_state.line_boxes.len > 0 {
+				last_line := box_state.line_boxes.last()
+				if last_line.has_block_level_box() {
+					automatic_height = automatic_height.plus(last_line.block_level_box_bottom_margin())
+				}
+			}
 			root_origin_y := box_state.cumulative_offset().y()
 			for floating in inline_block_context.floating_boxes {
 				automatic_height = css_pixels_max(automatic_height, floating.bottom.minus(root_origin_y))

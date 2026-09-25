@@ -36,6 +36,8 @@ mut:
 	parent_block_context             ?&BlockFormattingContext
 	containing_block_root_offset     CSSPixelPoint
 	current_line_inline_offset       CSSPixels
+	current_line_committed_pending_margin bool
+	pending_margin_follows_block_level_box bool
 }
 
 pub fn LineBuilder.new(mut layout_state LayoutState, containing_block &BlockContainer, containing_block_used_values &UsedValues, available_width AvailableSize, direction css.Direction, writing_mode css.WritingMode) &LineBuilder {
@@ -102,6 +104,68 @@ pub fn (mut builder LineBuilder) break_line(forced_break ForcedLineBreak, next_i
 	}
 }
 
+// End the current inline line before an in-flow block child. The line is a
+// forced-break boundary for alignment and justification, but an already-empty
+// line does not acquire a strut merely because a block follows it.
+fn (mut builder LineBuilder) finish_current_line_before_block_level_box() {
+	if builder.containing_block_used_values.line_boxes.len == 0
+		|| builder.containing_block_used_values.line_boxes.last().is_empty() {
+		return
+	}
+	mut last_line := builder.ensure_last_line_box()
+	last_line.has_break_ = true
+	last_line.has_forced_break_ = true
+	builder.last_line_needs_update = true
+	builder.update_last_line()
+	builder.containing_block_used_values.line_boxes << LineBox.new(builder.direction,
+		builder.writing_mode)
+	builder.begin_new_line(true, true, .yes)
+}
+
+// Represent an interrupting block as the sole fragment on a zero-height line.
+// Its own used values carry the actual geometry; the line's bottom advances the
+// following inline content past the block and its collapsed flow position.
+fn (mut builder LineBuilder) append_block_level_box(box &Box, block_bottom CSSPixels, block_bottom_margin CSSPixels) {
+	styled := unsafe { &Node(box) }.as_node_with_style() or { return }
+	mut box_state := builder.layout_state.get_mutable(styled)
+	mut line_box := builder.ensure_last_line_box()
+	if line_box.fragments_.len != 0 {
+		return
+	}
+	is_horizontal := builder.writing_mode == .horizontal_tb
+	inline_offset := if is_horizontal { box_state.offset.x() } else { box_state.offset.y() }
+	block_offset := if is_horizontal { box_state.offset.y() } else { box_state.offset.x() }
+	inline_length := if is_horizontal { box_state.content_width() } else { box_state.content_height() }
+	block_length := if is_horizontal { box_state.content_height() } else { box_state.content_width() }
+	line_box.fragments_ << LineBoxFragment.new(unsafe { &Node(box) }, 0, 0, inline_offset,
+		block_offset, inline_length, block_length, box_state.border_box_top(), builder.direction,
+		builder.writing_mode, none)
+	line_box.inline_length_ = if is_horizontal {
+		box_state.margin_box_width()
+	} else {
+		box_state.margin_box_height()
+	}
+	line_box.block_length_ = CSSPixels.new(0)
+	line_box.bottom_ = block_bottom
+	line_box.baseline_ = CSSPixels.new(0)
+	line_box.has_block_level_box_ = true
+	line_box.block_level_box_bottom_margin_ = block_bottom_margin
+	line_box.has_break_ = true
+	line_box.has_forced_break_ = true
+	box_state.containing_line_box_fragment = LineBoxFragmentCoordinate{
+		line_box_index: builder.containing_block_used_values.line_boxes.len - 1
+		fragment_index: 0
+	}
+	builder.pending_margin_follows_block_level_box = true
+	builder.current_block_offset = block_bottom
+	builder.max_height_on_current_line = CSSPixels.new(0)
+	builder.last_line_needs_update = false
+	builder.should_advance_to_last_line_box_block_end = false
+	builder.containing_block_used_values.line_boxes << LineBox.new(builder.direction,
+		builder.writing_mode)
+	builder.begin_new_line(false, true, .no)
+}
+
 // LineBuilder::did_introduce_clearance(). A forced break with `clear` grows
 // the preceding line through the clearance edge and starts the new line there.
 fn (mut builder LineBuilder) did_introduce_clearance(clearance CSSPixels) {
@@ -160,6 +224,7 @@ fn (mut builder LineBuilder) begin_new_line(increment_y bool, is_first_break_in_
 	if should_indent {
 		line_box.inline_length_ = line_box.inline_length_.plus(builder.text_indent)
 	}
+	builder.current_line_committed_pending_margin = false
 }
 
 fn (mut builder LineBuilder) ensure_last_line_box() &LineBox {
@@ -171,6 +236,7 @@ fn (mut builder LineBuilder) ensure_last_line_box() &LineBox {
 }
 
 pub fn (mut builder LineBuilder) append_box(box &Box, leading_size CSSPixels, trailing_size CSSPixels, leading_margin CSSPixels, trailing_margin CSSPixels) {
+	builder.prepare_to_append_inline_content()
 	styled := unsafe { &NodeWithStyle(box) }
 	mut box_state := builder.layout_state.get_mutable(styled)
 	mut line_box := builder.ensure_last_line_box()
@@ -187,9 +253,41 @@ pub fn (mut builder LineBuilder) append_text_chunk(text_node &TextNode, offset_i
 }
 
 pub fn (mut builder LineBuilder) append_text_chunk_with_trailing_whitespace(text_node &TextNode, offset_in_node int, length_in_node int, leading_size CSSPixels, trailing_size CSSPixels, leading_margin CSSPixels, trailing_margin CSSPixels, content_width CSSPixels, content_height CSSPixels, glyph_run &platform.GlyphRun, trailing_whitespace TrailingWhitespace) {
+	builder.prepare_to_append_inline_content()
 	mut line_box := builder.ensure_last_line_box()
 	line_box.add_fragment_with_trailing_whitespace(unsafe { &Node(text_node) }, offset_in_node, length_in_node, leading_size, trailing_size, leading_margin, trailing_margin, content_width, content_height, CSSPixels.new(0), CSSPixels.new(0), glyph_run, trailing_whitespace)
 	builder.max_height_on_current_line = css_pixels_max(builder.max_height_on_current_line, line_box.block_length())
+}
+
+// The BFC keeps a block's trailing margin pending so it may collapse with what
+// follows. Inline content commits that margin exactly once for its line.
+fn (mut builder LineBuilder) prepare_to_append_inline_content() {
+	if builder.current_line_committed_pending_margin {
+		return
+	}
+	line_box := builder.ensure_last_line_box()
+	if line_box.has_block_level_box() {
+		return
+	}
+	if context := builder.parent_block_context {
+		mut mutable_context := unsafe { &BlockFormattingContext(context) }
+		margin_before_line := mutable_context.commit_pending_margin_before_inline_content()
+		if margin_before_line.raw_value() != 0 {
+			builder.current_block_offset = builder.current_block_offset.plus(margin_before_line)
+			builder.recalculate_available_space()
+		}
+	}
+	builder.current_line_committed_pending_margin = true
+	builder.pending_margin_follows_block_level_box = false
+}
+
+fn (mut builder LineBuilder) commit_pending_margin_before_float() {
+	// Ordinary floats do not consume pending collapsible margins. A margin left
+	// by an interrupting block must be consumed so the float and inline content
+	// that share the next line start at the same block offset.
+	if builder.pending_margin_follows_block_level_box {
+		builder.prepare_to_append_inline_content()
+	}
 }
 
 pub fn (mut builder LineBuilder) break_if_needed(next_item_width CSSPixels) bool {
@@ -471,6 +569,28 @@ pub fn (mut builder LineBuilder) recalculate_available_space() {
 	if builder.containing_block_used_values.line_boxes.len > 0 {
 		mut line_box := builder.ensure_last_line_box()
 		line_box.original_available_width_ = builder.available_width_for_current_line
+	}
+}
+
+// An out-of-flow box on an otherwise empty line needs a marker at the line's
+// current flow position. There is no preceding fragment from which the later
+// static-position pass could reconstruct this after an interrupting block.
+fn (mut builder LineBuilder) empty_line_static_position() ?StaticPositionRect {
+	line_box := builder.ensure_last_line_box()
+	if !line_box.is_empty() {
+		return none
+	}
+	inline_position := builder.current_line_inline_offset.plus(line_box.inline_length())
+	position := if builder.writing_mode == .horizontal_tb {
+		css.CSSPixelPoint.new(inline_position, builder.current_block_offset)
+	} else {
+		css.CSSPixelPoint.new(builder.current_block_offset, inline_position)
+	}
+	return StaticPositionRect{
+		rect: css.CSSPixelRect{
+			x: position.x()
+			y: position.y()
+		}
 	}
 }
 

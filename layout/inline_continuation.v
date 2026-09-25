@@ -51,7 +51,7 @@ fn split_inline_around_blocks(mut inline_node Node) ([]&Node, bool) {
 				// and generated pseudo boxes must still trigger restructuring here;
 				// the caller below keeps them out of the middle wrapper.
 				if !part.is_out_of_flow() && !part.is_generated_for_pseudo_element()
-					&& !should_create_inline_continuation_with_parent(part, unsafe { &Node(inline_node) }) {
+					&& !is_inline_flow_interrupting_block_with_parent(part, unsafe { &Node(inline_node) }) {
 					current.append_child(part)
 					continue
 				}

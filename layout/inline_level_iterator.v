@@ -11,6 +11,7 @@ import platform
 pub enum InlineLevelItemType {
 	text
 	element
+	block_level_box
 	forced_break
 	absolutely_positioned_element
 	floating_element
@@ -40,6 +41,11 @@ pub mut:
 pub fn (item &InlineLevelItem) border_box_width() CSSPixels {
 	return css_pixels_sum([item.border_start, item.padding_start, item.width, item.padding_end,
 		item.border_end])
+}
+
+fn is_inline_flow_interrupting_block(node &Node) bool {
+	metrics := node.as_node_with_style_and_box_model_metrics() or { return false }
+	return metrics.is_inline_flow_interrupting_block()
 }
 
 struct InlineExtraBoxMetrics {
@@ -113,7 +119,7 @@ pub fn InlineLevelIterator.new(mut state LayoutState, containing_block &BlockCon
 fn (mut iterator InlineLevelIterator) generate_all_items() {
 	for {
 		item := iterator.generate_next_item() or { break }
-		if item.type_ == .forced_break {
+		if item.type_ in [.forced_break, .block_level_box] {
 			iterator.accumulated_width_for_tabs = CSSPixels.new(0)
 		} else {
 			iterator.accumulated_width_for_tabs =
@@ -140,7 +146,7 @@ pub fn (iterator &InlineLevelIterator) next_non_whitespace_sequence_width() CSSP
 	mut next_width := CSSPixels.new(0)
 	for index := iterator.next_item_index; index < iterator.items.len; index++ {
 		next_item := iterator.items[index]
-		if next_item.type_ == .forced_break {
+		if next_item.type_ in [.forced_break, .block_level_box] {
 			break
 		}
 		node := next_item.node or { break }
@@ -191,8 +197,11 @@ fn (mut iterator InlineLevelIterator) compute_relative_inset(node &NodeWithStyle
 
 fn (mut iterator InlineLevelIterator) next_inline_node_in_pre_order(current &Node, stay_within &Node) ?&Node {
 	if child := current.first_child() {
-		if child.display().is_inline_outside() && current.display().is_flow_inside()
-			&& !current.is_replaced_box() && (!current.is_box() || !current.is_out_of_flow()) {
+		if (child.display().is_inline_outside() || child.is_out_of_flow()
+			|| is_inline_flow_interrupting_block(child))
+			&& current.display().is_flow_inside()
+			&& !is_inline_flow_interrupting_block(current) && !current.is_replaced_box()
+			&& (!current.is_box() || !current.is_out_of_flow()) {
 			return child
 		}
 	}
@@ -235,7 +244,8 @@ fn (mut iterator InlineLevelIterator) compute_next() {
 			next = candidate.next_sibling()
 			continue
 		}
-		if candidate.is_inline() || candidate.is_out_of_flow() {
+		if candidate.is_inline() || candidate.is_out_of_flow()
+			|| is_inline_flow_interrupting_block(candidate) {
 			break
 		}
 		next = iterator.next_inline_node_in_pre_order(candidate, unsafe { &Node(iterator.containing_block) })
@@ -246,7 +256,7 @@ fn (mut iterator InlineLevelIterator) compute_next() {
 fn (mut iterator InlineLevelIterator) skip_to_next() {
 	if next := iterator.next_node {
 		if box_model_node := next.as_node_with_style_and_box_model_metrics() {
-			if !next.is_list_item_marker_box() && next.display().is_flow_inside()
+			if !next.is_list_item_marker_box() && next.is_inline() && next.display().is_flow_inside()
 				&& !next.is_out_of_flow() && !next.is_replaced_box() {
 				iterator.enter_node_with_box_model_metrics(box_model_node)
 			}
@@ -415,6 +425,13 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 	}
 
 	box := current.as_box() or { return none }
+	if is_inline_flow_interrupting_block(current) {
+		iterator.skip_to_next()
+		return InlineLevelItem{
+			type_: .block_level_box
+			node: current
+		}
+	}
 	iterator.dimension_box_on_line(box)
 	styled := current.as_node_with_style() or { return none }
 	box_state := iterator.state.get(styled)

@@ -13,6 +13,11 @@ pub:
 	automatic_content_height CSSPixels
 }
 
+struct InlineStaticPositionMarker {
+	box      &Box = unsafe { nil }
+	position StaticPositionRect
+}
+
 fn calculate_inline_static_position_rect(box &Box, containing_block_used_values &UsedValues, line_builder &LineBuilder) StaticPositionRect {
 	box_node := unsafe { &Node(box) }
 	mut position_x := CSSPixels.new(0)
@@ -123,6 +128,7 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 	mut leading_border_from_collapsible_whitespace := CSSPixels.new(0)
 	mut leading_padding_from_collapsible_whitespace := CSSPixels.new(0)
 	mut absolute_boxes := []&Box{}
+	mut empty_line_static_position_markers := []InlineStaticPositionMarker{}
 	mut vertical_float_clearance := CSSPixels.new(0)
 
 	for {
@@ -185,9 +191,33 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 				}
 				line_builder.append_box(box, item.border_start.plus(item.padding_start), item.padding_end.plus(item.border_end), item.margin_start, item.margin_end)
 			}
+			.block_level_box {
+				node := item.node or { continue }
+				box := node.as_box() or { continue }
+				// Inline start-edge box-model metrics cannot attach to the block;
+				// retain them for the next inline item after the interruption.
+				leading_margin_from_collapsible_whitespace =
+					leading_margin_from_collapsible_whitespace.plus(item.margin_start)
+				leading_border_from_collapsible_whitespace =
+					leading_border_from_collapsible_whitespace.plus(item.border_start)
+				leading_padding_from_collapsible_whitespace =
+					leading_padding_from_collapsible_whitespace.plus(item.padding_start)
+				line_builder.finish_current_line_before_block_level_box()
+				if context := parent_block_context {
+					mut mutable_context := unsafe { &BlockFormattingContext(context) }
+					mutable_context.layout_interrupting_block_inside_inline_context(mut state, box,
+						containing_block, available_space, mut line_builder)
+				}
+			}
 			.absolutely_positioned_element {
 				node := item.node or { continue }
 				if box := node.as_box() {
+					if position := line_builder.empty_line_static_position() {
+						empty_line_static_position_markers << InlineStaticPositionMarker{
+							box: box
+							position: position
+						}
+					}
 					absolute_boxes << box
 				}
 			}
@@ -195,6 +225,7 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 				node := item.node or { continue }
 				if context := parent_block_context {
 					mut mutable_context := unsafe { &BlockFormattingContext(context) }
+					line_builder.commit_pending_margin_before_float()
 					clear := node.computed_values().clear()
 					clearance := mutable_context.clearance_y(clear, node.computed_values().direction(), containing_block_used_values.cumulative_offset().y(), line_builder.current_block_offset_value())
 					if clearance.raw_value() > line_builder.current_block_offset_value().raw_value() {
@@ -286,8 +317,17 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 		for box in absolute_boxes {
 			styled := unsafe { &Node(box) }.as_node_with_style() or { continue }
 			mut box_state := state.get_mutable(styled)
-			box_state.set_static_position_rect(calculate_inline_static_position_rect(box,
-				containing_block_used_values, line_builder))
+			mut marker_position := ?StaticPositionRect(none)
+			for marker in empty_line_static_position_markers {
+				if voidptr(marker.box) == voidptr(box) {
+					marker_position = marker.position
+					break
+				}
+			}
+			box_state.set_static_position_rect(marker_position or {
+				calculate_inline_static_position_rect(box, containing_block_used_values,
+					line_builder)
+			})
 		}
 	}
 

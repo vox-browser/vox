@@ -372,6 +372,8 @@ pub mut:
 	original_available_width_            AvailableSize = AvailableSize.make_indefinite()
 	has_break_                           bool
 	has_forced_break_                    bool
+	has_block_level_box_                 bool
+	block_level_box_bottom_margin_       CSSPixels
 }
 
 pub fn LineBox.new(direction css.Direction, writing_mode css.WritingMode) LineBox {
@@ -553,6 +555,14 @@ pub fn (line &LineBox) is_empty() bool {
 
 pub fn (line &LineBox) has_forced_break() bool {
 	return line.has_forced_break_
+}
+
+pub fn (line &LineBox) has_block_level_box() bool {
+	return line.has_block_level_box_
+}
+
+pub fn (line &LineBox) block_level_box_bottom_margin() CSSPixels {
+	return line.block_level_box_bottom_margin_
 }
 
 pub fn (line &LineBox) original_available_width() AvailableSize {

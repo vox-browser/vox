@@ -135,7 +135,7 @@ fn resolve_marker_layout_counters(mut builder_state TreeBuilderState, abstract_e
 
 // Layout::TreeBuilder::build(): compute style, construct the typed layout-node
 // hierarchy (including text, generated content, special/replaced boxes and
-// SVG), then perform anonymous-inline, continuation and table fixups before
+// SVG), then perform anonymous-inline and table fixups before
 // assigning containing blocks and layout indexes.
 pub fn build_layout_tree(document &dom.Document) ?&Node {
 	mut timing_checkpoint := time.sys_mono_now()
@@ -203,7 +203,6 @@ fn build_layout_tree_from_computed_styles(document &dom.Document, mut style_comp
 		}
 	}
 	attach_referenced_svg_resources_in_subtree(mut viewport, document, style_computer, mut builder_state)
-	fixup_inline_continuations(mut viewport, document)
 	fixup_table_tree(mut viewport, document)
 	recompute_containing_blocks(viewport)
 	assign_layout_indexes(viewport)
@@ -2436,14 +2435,7 @@ fn attach_children_maintaining_inline_invariant(mut parent Node, children []&Nod
 	mut any_inline := false
 	for child in children {
 		if child.is_out_of_flow() {
-			// insertion_parent_for_block_node() gives ordinary out-of-flow boxes a
-			// special path that leaves the parent's inline/block mode unchanged. A
-			// generated pseudo-element deliberately does not take that path: its
-			// block-level display wraps existing inline siblings just like an in-flow
-			// block before the node itself is inserted out of flow.
-			if child.is_generated_for_pseudo_element() && !child_is_inline_level(child) && any_inline {
-				any_block = true
-			}
+			// Out-of-flow children do not select the parent's inline/block mode.
 			continue
 		}
 		if child_is_inline_level(child) {
@@ -2453,11 +2445,10 @@ fn attach_children_maintaining_inline_invariant(mut parent Node, children []&Nod
 		}
 	}
 	force_inline_wrappers := parent.is_fieldset_box() || parent.is_svg_foreign_object_box() || parent.display().is_flex_inside() || parent.display().is_grid_inside()
-	// TreeBuilder temporarily permits in-flow block children inside an inline
-	// flow box. The continuation fixup performed after construction splits that
-	// inline around those blocks.
+	// Inline flow boxes retain their in-flow block children. Their inline
+	// formatting context force-breaks around those interrupting blocks.
 	if parent.is_inline_node() && parent.display().is_inline_outside() && parent.display().is_flow_inside() {
-		parent.set_children_are_inline(!any_block)
+		parent.set_children_are_inline(true)
 		for child in children {
 			parent.append_child(child)
 		}
