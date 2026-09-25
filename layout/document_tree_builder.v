@@ -38,6 +38,40 @@ mut:
 	last_child_by_parent     map[string]string
 	last_processed_key       string
 	counter_tree_order_index i64
+	// Block-level pseudo-element boxes of an InlineNode, waiting to be inserted
+	// into the nearest ancestor that is not an InlineNode.
+	hoisted_pseudo_element_boxes map[u64][]&Node
+}
+
+// insertion_parent_for_block_node(): in-flow blocks and out-of-flow boxes stay
+// in their inline-flow parent, but block-level pseudo-element boxes are
+// anonymous and climb out of InlineNode ancestors. Table-internal pseudo boxes
+// stay so table fixup can group them with their table-internal siblings.
+fn pseudo_element_box_climbs_out_of_inline(node &Node) bool {
+	if !node.is_generated_for_pseudo_element() || child_is_inline_level(node) {
+		return false
+	}
+	display := node.display()
+	return !display.is_internal_table() && !display.is_table_caption()
+}
+
+// Insert an InlineNode child's hoisted pseudo-element boxes where upstream's
+// TreeBuilder places them in the nearest non-InlineNode ancestor: a ::before
+// box was prepended to that ancestor, every other box was appended after the
+// inline. Boxes keep their relative creation order.
+fn insert_hoisted_pseudo_element_boxes(mut children []&Node, child &Node, mut builder_state TreeBuilderState) {
+	key := u64(voidptr(child))
+	hoisted := builder_state.hoisted_pseudo_element_boxes[key] or { return }
+	builder_state.hoisted_pseudo_element_boxes.delete(key)
+	mut prepend_index := 0
+	for box in hoisted {
+		if box.is_generated_for_before_pseudo_element() {
+			children.insert(prepend_index, box)
+			prepend_index++
+		} else {
+			children << box
+		}
+	}
 }
 
 fn abstract_element_counter_key(abstract_element &dom.AbstractElement) string {
@@ -747,6 +781,7 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 					}
 				} else {
 					children << child_box
+					insert_hoisted_pseudo_element_boxes(mut children, child_box, mut builder_state)
 				}
 			}
 		} else if child_node.is_text() {
@@ -801,6 +836,21 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 	}
 	if after := build_generated_pseudo_element(document, element, .after, .after, mut builder_state) {
 		children << after
+	}
+	if box_node.is_inline_node() && !computed.display().is_contents() {
+		mut kept := []&Node{cap: children.len}
+		mut hoisted := []&Node{}
+		for child in children {
+			if pseudo_element_box_climbs_out_of_inline(child) {
+				hoisted << child
+			} else {
+				kept << child
+			}
+		}
+		if hoisted.len > 0 {
+			children = kept.clone()
+			builder_state.hoisted_pseudo_element_boxes[u64(voidptr(box_node))] = hoisted
+		}
 	}
 	if computed.display().is_contents() {
 		// Keep a transient node only while recursively collecting this element's
@@ -914,6 +964,7 @@ fn build_details_internal_layout_children(document &dom.Document, element &dom.E
 		if summary_element := summary_dom_node.as_element() {
 			if summary_box := build_layout_box_for_element(document, summary_element, style_computer, mut builder_state) {
 				children << summary_box
+				insert_hoisted_pseudo_element_boxes(mut children, summary_box, mut builder_state)
 			}
 		}
 	}
@@ -942,6 +993,7 @@ fn build_details_internal_layout_children(document &dom.Document, element &dom.E
 			if child_element := child.as_element() {
 				if child_box := build_layout_box_for_element(document, child_element, style_computer, mut builder_state) {
 					slot_children << child_box
+					insert_hoisted_pseudo_element_boxes(mut slot_children, child_box, mut builder_state)
 				}
 			} else if child.is_text() {
 				if character_data := child.as_character_data() {
@@ -2472,7 +2524,7 @@ fn attach_children_maintaining_inline_invariant(mut parent Node, children []&Nod
 		if child_is_inline_level(child) {
 			mut wrapper := last_anonymous_inline_wrapper_or_new(mut parent, document, parent_computed)
 			wrapper.append_child(child)
-		} else if child.is_out_of_flow() && !child.is_generated_for_pseudo_element() && !parent.display().is_flex_inside() && !parent.display().is_grid_inside() {
+		} else if child.is_out_of_flow() && !parent.display().is_flex_inside() && !parent.display().is_grid_inside() {
 			if last := parent.last_child() {
 				if last.is_anonymous() && last.children_are_inline() && !last.is_generated_for_pseudo_element() {
 					mut wrapper := unsafe { &Node(last) }

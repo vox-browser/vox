@@ -1223,3 +1223,49 @@ fn test_content_visibility_hidden_slot_clears_stale_assigned_layout_and_paint_no
 	assert text.layout_node() == none
 	assert text.paintable() == none
 }
+
+// Upstream insertion_parent_for_block_node(): generated pseudo-element boxes
+// are anonymous, so block-level ones climb out of InlineNode ancestors. An
+// abspos ::after is appended to the nearest block ancestor after the inline;
+// a block ::before is prepended to it.
+fn test_block_level_pseudo_elements_climb_out_of_inline_ancestors() {
+	document := html.parse_document('<!doctype html><style>
+		#inline::after { content:"X"; position:absolute }
+		#inline::before { content:"B"; display:block }
+	</style><div id="outer">first<span id="inline">text</span>last</div>')
+	root := build_layout_tree(document) or { panic('no layout tree') }
+	outer := tree_builder_node_with_id(root, 'outer') or { panic('no outer') }
+	inline_node := tree_builder_node_with_id(root, 'inline') or { panic('no inline') }
+	for child in inline_node.children() {
+		assert !child.is_generated_for_after_pseudo_element()
+		assert !child.is_generated_for_before_pseudo_element()
+	}
+	// The block ::before wraps the existing inline siblings; the abspos ::after
+	// and the trailing text then join that trailing anonymous wrapper.
+	assert !outer.children_are_inline()
+	children := outer.children()
+	assert children.len == 2
+	assert children[0].is_generated_for_before_pseudo_element()
+	assert children[1].is_anonymous() && children[1].children_are_inline()
+	mut after_parent_found := false
+	for child in children[1].children() {
+		if child.is_generated_for_after_pseudo_element() {
+			after_parent_found = true
+			assert child.is_absolutely_positioned()
+		}
+	}
+	assert after_parent_found
+}
+
+// Table-internal pseudo-element boxes stay in their inline so table fixup can
+// group them with the inline's table-internal siblings.
+fn test_table_internal_pseudo_element_stays_in_its_inline() {
+	document := html.parse_document('<!doctype html><style>
+		#inline::after { content:"X"; display:table-cell }
+	</style><div id="outer"><span id="inline">text</span></div>')
+	root := build_layout_tree(document) or { panic('no layout tree') }
+	outer := tree_builder_node_with_id(root, 'outer') or { panic('no outer') }
+	assert outer.children_are_inline()
+	inline_node := tree_builder_node_with_id(root, 'inline') or { panic('no inline') }
+	assert inline_node.child_count() >= 2
+}
