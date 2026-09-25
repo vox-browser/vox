@@ -2032,9 +2032,17 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 	node.set_generated_for(layout_pseudo, element)
 	node.initial_quote_nesting_level_ = initial_quote_nesting_level
 	if content.type_ == .list && node.can_have_children() {
+		// An empty generated text node carries the inline fragment of an
+		// ordinary inline pseudo-element. Other pseudo-element boxes exist
+		// independently of their contents, so they get no zero-length child
+		// that would make layout measure an otherwise empty box.
+		keeps_empty_text := node.display().is_inline_outside() && node.display().is_flow_inside()
 		if content.items.len > 0 {
 			inline_image_style := computed.clone_for_anonymous_with_display(css.Display.from_short(.inline_))
 			for item in content.items {
+				if item.type_ != .image && item.value.len == 0 && !keeps_empty_text {
+					continue
+				}
 				mut child := if item.type_ == .image {
 					unsafe { &Node(ImageBox.new_generated_for_content_item(document, inline_image_style, item)) }
 				} else {
@@ -2043,12 +2051,12 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 				child.set_generated_for(layout_pseudo, element)
 				node.append_child(child)
 			}
-		} else {
-			// A generated string item creates a TextNode even when the string is
-			// empty. The empty node still establishes inline generated content.
+		} else if content.text.len > 0 || keeps_empty_text {
 			node.append_child(unsafe { &Node(TextNode.new_generated(document, content.text)) })
 		}
-		node.set_children_are_inline(true)
+		if node.has_children() {
+			node.set_children_are_inline(true)
+		}
 	}
 	if node.is_list_item_box() {
 		if marker := build_list_item_marker(document, element, computed, mut builder_state) {

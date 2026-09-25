@@ -992,6 +992,46 @@ fn test_fieldset_moves_non_legend_content_into_flow_root_wrapper() {
 	assert fieldset_used.content_height().to_double() >= 48
 }
 
+fn tree_builder_before_pseudo_element(node &Node) ?&Node {
+	for child in node.children() {
+		if child.generated_for_pseudo_element() or { continue } == .before && !child.is_text_node() {
+			return child
+		}
+		if found := tree_builder_before_pseudo_element(child) {
+			return found
+		}
+	}
+	return none
+}
+
+fn tree_builder_before_pseudo_for_id(result DocumentLayoutResult, id string) &Node {
+	host := tree_builder_node_with_id(result.root, id) or { panic('missing #${id}') }
+	return tree_builder_before_pseudo_element(host) or { panic('#${id} has no ::before box') }
+}
+
+fn test_empty_generated_strings_only_create_text_in_inline_pseudo_elements() {
+	document := html.parse_document('<!doctype html><style>
+		#inline::before { content:""; padding:5px }
+		#block::before { content:""; display:block; height:10px }
+		#inline-block::before { content:""; display:inline-block; width:20px; height:20px }
+		#text::before { content:"x"; display:block }
+	</style><div id="inline">a</div><div id="block">b</div><div id="inline-block">c</div><div id="text">d</div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	// The empty text node carries an ordinary inline pseudo-element's fragment.
+	inline := tree_builder_before_pseudo_for_id(result, 'inline')
+	assert inline.child_count() == 1
+	assert inline.children()[0].is_text_node()
+	// Other pseudo-element boxes exist independently of their contents.
+	for id in ['block', 'inline-block'] {
+		pseudo := tree_builder_before_pseudo_for_id(result, id)
+		assert pseudo.child_count() == 0
+		assert !pseudo.children_are_inline()
+	}
+	text := tree_builder_before_pseudo_for_id(result, 'text')
+	assert text.child_count() == 1
+	assert text.children_are_inline()
+}
+
 fn test_fieldset_lays_out_as_flow_root_without_changing_its_computed_display() {
 	document := html.parse_document('<!doctype html><style>
 		fieldset { margin:0; padding:0 }
