@@ -1179,35 +1179,88 @@ fn (bfc &BlockFormattingContext) float_boundaries_at(y CSSPixels, height CSSPixe
 	return left, right, next_y
 }
 
+// BlockFormattingContext::border_box_left_of_box_avoiding_floats(). A
+// non-negative left margin may overlap the floats as far as possible; a
+// negative one cannot pull the border box into an adjacent float.
+fn border_box_left_of_box_avoiding_floats(computed &css.ComputedProperties, box_state &UsedValues, space_used_left CSSPixels, space_used_right CSSPixels) CSSPixels {
+	if property_is_auto(computed, .margin_left) {
+		return space_used_left.plus(box_state.margin_left)
+	}
+	if box_state.margin_left.raw_value() >= 0 {
+		return css_pixels_max(space_used_left, box_state.margin_left)
+	}
+	if space_used_left.raw_value() > 0 || space_used_right.raw_value() > 0 {
+		return space_used_left
+	}
+	return space_used_left.plus(box_state.margin_left)
+}
+
+// BlockFormattingContext::compute_width() and avoid_float_intrusions() for a
+// box that establishes a formatting context: its border box must not overlap
+// the margin box of any float. Its width is resolved against the space next to
+// the floats in its band, reduced by negative margins, and the box is moved to
+// the next float band until it fits without overlapping a float.
 fn (bfc &BlockFormattingContext) place_box_avoiding_float_intrusions(mut box_state UsedValues, block_container &NodeWithStyle, container_width CSSPixels, computed &css.ComputedProperties) {
 	container_state := box_state.containing_block_used_values() or { return }
 	container_root_offset := container_state.cumulative_offset()
 	direction := block_container.computed_values().direction()
-	mut margin_box_y := box_state.offset.y().minus(box_state.margin_box_top())
-	mut first_iteration := true
+	margin_left := if property_is_auto(computed, .margin_left) {
+		CSSPixels.new(0)
+	} else {
+		box_state.margin_left
+	}
+	margin_right := if property_is_auto(computed, .margin_right) {
+		CSSPixels.new(0)
+	} else {
+		box_state.margin_right
+	}
+	negative_margin_sum := css_pixels_min(margin_left, CSSPixels.new(0)).plus(css_pixels_min(margin_right,
+		CSSPixels.new(0)))
+	mut border_box_y := box_state.offset.y().minus(box_state.border_box_top())
 	for {
-		left, right, next_y := bfc.float_boundaries_at(margin_box_y, CSSPixels.new(1), container_width, direction, container_root_offset)
-		remaining := right.minus(left)
-		if first_iteration && property_is_auto(computed, .width) {
+		left, right, next_y := bfc.float_boundaries_at(border_box_y, CSSPixels.new(1), container_width,
+			direction, container_root_offset)
+		space_used_left := left
+		space_used_right := container_width.minus(right)
+		constrained_by_floats := space_used_left.raw_value() > 0 || space_used_right.raw_value() > 0
+		mut remaining := right.minus(left)
+		if constrained_by_floats {
+			// Negative margins do not create additional space next to a float.
+			remaining = css_pixels_max(remaining.plus(negative_margin_sum), CSSPixels.new(0))
+		}
+		if property_is_auto(computed, .width) {
 			compute_block_used_width(computed, mut box_state, remaining.to_double())
-		} else if first_iteration {
+		} else {
 			node := box_state.node()
 			if resolved_width := resolve_layout_content_size(unsafe { &Node(node) }, computed.size_value(.width), container_width, box_state, true) {
 				compute_block_used_width_with_override(computed, mut box_state, remaining.to_double(), resolved_width)
 			}
 		}
-		first_iteration = false
-		if box_state.border_box_width().raw_value() <= remaining.raw_value()
-			|| next_y.might_be_saturated() {
-			mut x := left
-			if !property_is_auto(computed, .margin_left) {
-				x = css_pixels_max(x.minus(css_pixels_max(box_state.margin_left, CSSPixels.new(0))), CSSPixels.new(0))
+		border_box_left := border_box_left_of_box_avoiding_floats(computed, box_state, space_used_left,
+			space_used_right)
+		mut must_clear := constrained_by_floats
+			&& border_box_left.plus(box_state.border_box_width()).raw_value() > right.raw_value()
+		if !must_clear {
+			root_left := container_root_offset.x().plus(border_box_left)
+			root_top := container_root_offset.y().plus(border_box_y)
+			root_right := root_left.plus(box_state.border_box_width())
+			root_bottom := root_top.plus(box_state.border_box_height())
+			for floating in bfc.floating_boxes {
+				if floating.left.raw_value() < root_right.raw_value()
+					&& root_left.raw_value() < floating.right.raw_value()
+					&& floating.top.raw_value() < root_bottom.raw_value()
+					&& root_top.raw_value() < floating.bottom.raw_value() {
+					must_clear = true
+					break
+				}
 			}
-			box_state.set_content_x(x.plus(box_state.margin_box_left()))
-			box_state.set_content_y(margin_box_y.plus(box_state.margin_box_top()))
+		}
+		if !must_clear || next_y.might_be_saturated() {
+			box_state.set_content_x(border_box_left.plus(box_state.border_box_left()))
+			box_state.set_content_y(border_box_y.plus(box_state.border_box_top()))
 			return
 		}
-		margin_box_y = next_y
+		border_box_y = next_y
 	}
 }
 

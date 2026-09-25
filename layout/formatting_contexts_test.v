@@ -5018,3 +5018,30 @@ fn test_inline_containing_block_spans_atomic_inline_margin_box() {
 	assert overlay.offset.x().to_double() == 0
 	assert overlay.offset.y().to_double() == 10
 }
+
+// Upstream flex-container-with-auto-width-avoids-float-intrusions: the border
+// box of a formatting context root never overlaps a float's margin box, even
+// with an automatic width or a negative margin.
+fn test_formatting_context_roots_clear_floats_they_would_overlap() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0; width:400px }
+		.full { float:left; width:100%; height:100px }
+		.partial { float:left; width:100px; height:100px }
+		.small { display:flex; height:100px; margin-left:-5px }
+		.large { display:flex; height:100px; margin-left:-350px }
+		.section { display:flow-root }
+	</style><div class="section"><div class="full"></div><div id="cleared" class="small"></div></div><div class="section"><div class="partial"></div><div id="flush" class="small"></div></div><div class="section"><div class="partial"></div><div id="pulled" class="large"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	cleared := used_for_id(result, 'cleared')
+	assert cleared.offset.y().to_double() == 100
+	assert cleared.offset.x().to_double() == -5
+	assert cleared.content_width().to_double() == 405
+	flush := used_for_id(result, 'flush')
+	assert flush.offset.y().to_double() == 0
+	assert flush.offset.x().to_double() == 100
+	assert flush.content_width().to_double() == 300
+	pulled := used_for_id(result, 'pulled')
+	assert pulled.offset.y().to_double() == 100
+	assert pulled.offset.x().to_double() == -350
+	assert pulled.content_width().to_double() == 750
+}
