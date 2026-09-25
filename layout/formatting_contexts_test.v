@@ -136,6 +136,27 @@ fn test_button_content_height_uses_clamped_border_box_height() {
 	assert used_for_id(result, 'percentage').content_height().to_double() == 0
 }
 
+fn test_button_layout_establishes_a_block_formatting_context() {
+	// Button-type inputs keep a block flow display, unlike <button> and text
+	// inputs, whose computed styles are adjusted to flow-root.
+	document := html.parse_document('<!doctype html><style>
+		input { display:block }
+	</style><input id="submit" type="submit"><input id="reset" type="reset"><input id="button" type="button"><input id="text">')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	for id in ['submit', 'reset', 'button'] {
+		node := layout_node_with_id(result.root, id) or { panic('missing #${id}') }
+		assert node.display().is_block_outside()
+		assert node.display().is_flow_inside()
+		assert creates_block_formatting_context(node.as_node_with_style() or {
+			panic('#${id} has no style')
+		})
+	}
+	text := layout_node_with_id(result.root, 'text') or { panic('missing #text') }
+	assert !creates_block_formatting_context(text.as_node_with_style() or {
+		panic('#text has no style')
+	})
+}
+
 fn test_fractional_calculated_flex_basis_does_not_wrap_the_third_item() {
 	for width in [100, 101, 102, 100] {
 		document := html.parse_document('<!doctype html><style>

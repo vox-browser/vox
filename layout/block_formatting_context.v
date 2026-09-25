@@ -139,6 +139,12 @@ fn creates_block_formatting_context(box &NodeWithStyle) bool {
 	if node.is_fieldset_box() {
 		return true
 	}
+	// https://html.spec.whatwg.org/multipage/rendering.html#button-layout
+	// An element using button layout establishes a new formatting context for
+	// its contents.
+	if node_uses_button_layout(node) {
+		return true
+	}
 	return false
 }
 
