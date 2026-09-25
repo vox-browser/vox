@@ -3243,7 +3243,9 @@ fn test_block_abspos_static_position_includes_pending_collapsed_margin() {
 	assert absolute.offset.y().to_double() == 50
 }
 
-fn test_inline_abspos_auto_insets_follow_previous_inline_fragment() {
+// The static position marker is recorded at the line's inline length and
+// block start, not at the preceding atomic inline's baseline-aligned offset.
+fn test_inline_abspos_auto_insets_follow_the_line_marker() {
 	document := html.parse_document('<!doctype html><style>
 		#container { position:relative; width:100px }
 		#atomic { display:inline-block; width:20px; height:10px }
@@ -3252,7 +3254,7 @@ fn test_inline_abspos_auto_insets_follow_previous_inline_fragment() {
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	absolute := used_for_id(result, 'absolute')
 	assert absolute.offset.x().to_double() == 20
-	assert absolute.offset.y().to_double() > 0
+	assert absolute.offset.y().to_double() == 0
 }
 
 fn test_baseline_aligned_inline_block_keeps_the_containing_strut_descent() {
@@ -4962,6 +4964,39 @@ fn test_inline_box_geometry_unites_pieces_across_lines() {
 	assert inner_geometry.border_rect.x.plus(inner_geometry.border_rect.width).raw_value() <= outer_geometry.content_rect.x.plus(outer_geometry.content_rect.width).raw_value()
 	assert outer_geometry.content_rect.y.to_double() < 20
 	assert outer_geometry.content_rect.y.plus(outer_geometry.content_rect.height).to_double() > 30
+}
+
+// Static positions come from markers recorded at the box's flow position: an
+// abspos box after an inline's text starts at that text's inline end.
+fn test_abspos_static_position_uses_line_marker_after_inline_content() {
+	document := html.parse_document('<!doctype html><style>
+		* { margin:0 }
+		body { font-size:10px; line-height:20px }
+		#abs { position:absolute; width:5px; height:5px }
+	</style><div style="position:relative"><span id="text">text</span><span><i id="abs"></i></span></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	text_node := layout_node_with_id(result.root, 'text') or { panic('missing #text') }
+	text_geometry := inline_box_absolute_geometry(text_node, result.state) or {
+		panic('missing text geometry')
+	}
+	static_position := used_for_id(result, 'abs').static_position()
+	assert static_position.x().to_double() > 0
+	assert static_position.x().raw_value() == text_geometry.content_rect.x.plus(text_geometry.content_rect.width).raw_value()
+	assert static_position.y().to_double() == 0
+}
+
+// A block-level abspos box whose marker follows in-flow content on its line
+// starts below that line.
+fn test_block_level_abspos_static_position_follows_line_content() {
+	document := html.parse_document('<!doctype html><style>
+		* { margin:0 }
+		body { font-size:10px; line-height:20px }
+		#abs { position:absolute; display:block; width:5px; height:5px }
+	</style><div style="position:relative">text<div id="abs"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	static_position := used_for_id(result, 'abs').static_position()
+	assert static_position.x().to_double() == 0
+	assert static_position.y().to_double() == 20
 }
 
 // Upstream abspos-inline-containing-block-atomic-inline-border-box: an inline

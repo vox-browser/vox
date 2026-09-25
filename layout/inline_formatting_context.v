@@ -13,47 +13,36 @@ pub:
 	automatic_content_height CSSPixels
 }
 
-struct InlineStaticPositionMarker {
-	box      &Box = unsafe { nil }
-	position StaticPositionRect
-}
-
-fn calculate_inline_static_position_rect(box &Box, containing_block_used_values &UsedValues, line_builder &LineBuilder) StaticPositionRect {
-	box_node := unsafe { &Node(box) }
-	mut position_x := CSSPixels.new(0)
-	mut position_y := CSSPixels.new(0)
-	mut found := false
-	mut last_offset := css.CSSPixelPoint{}
-	mut last_width := CSSPixels.new(0)
-	mut last_height := CSSPixels.new(0)
-	if sibling := box_node.previous_sibling() {
-		for line_box in containing_block_used_values.line_boxes {
-			for fragment in line_box.fragments_ {
-				if fragment.layout_node() == sibling {
-					found = true
-					last_offset = fragment.offset()
-					last_width = fragment.width()
-					last_height = fragment.height()
+// A block-level abspos box starts below a line holding in-flow content and at
+// the marker's line position otherwise; an inline-level one starts at its
+// marker.
+fn static_position_from_line_markers(box &Box, line_box &LineBox, containing_block_inline_size CSSPixels) ?StaticPositionRect {
+	for marker in line_box.static_position_markers_ {
+		if voidptr(marker.box) != voidptr(box) {
+			continue
+		}
+		if box.computed_values().display_before_box_type_transformation().is_block_outside() {
+			block_position := if marker.preceded_by_in_flow_content {
+				line_box.bottom()
+			} else {
+				marker.offset().y()
+			}
+			return StaticPositionRect{
+				rect: css.CSSPixelRect{
+					y: block_position
+					width: containing_block_inline_size
 				}
 			}
 		}
-	}
-	is_block_outside := box.computed_values().display_before_box_type_transformation().is_block_outside()
-	if found {
-		if is_block_outside {
-			position_y = last_offset.y().plus(last_height)
-		} else {
-			position_x = last_offset.x().plus(last_width)
-			position_y = last_offset.y()
+		offset := marker.offset()
+		return StaticPositionRect{
+			rect: css.CSSPixelRect{
+				x: offset.x()
+				y: offset.y()
+			}
 		}
-	} else if !is_block_outside {
-		// With no preceding line fragment, an inline-level hypothetical box
-		// starts at the first line's float-shortened inline offset.
-		position_x, _ = line_builder.float_edges_at_block_offset(CSSPixels.new(0))
 	}
-	return StaticPositionRect{
-		rect: css.CSSPixelRect.new(position_x.to_double(), position_y.to_double(), 0, 0)
-	}
+	return none
 }
 
 fn calculate_inline_end_static_position_rect(containing_block &BlockContainer, containing_block_used_values &UsedValues) StaticPositionRect {
@@ -128,7 +117,6 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 	mut leading_border_from_collapsible_whitespace := CSSPixels.new(0)
 	mut leading_padding_from_collapsible_whitespace := CSSPixels.new(0)
 	mut absolute_boxes := []&Box{}
-	mut empty_line_static_position_markers := []InlineStaticPositionMarker{}
 	mut vertical_float_clearance := CSSPixels.new(0)
 
 	for {
@@ -212,12 +200,13 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 			.absolutely_positioned_element {
 				node := item.node or { continue }
 				if box := node.as_box() {
-					if position := line_builder.empty_line_static_position() {
-						empty_line_static_position_markers << InlineStaticPositionMarker{
-							box: box
-							position: position
-						}
-					}
+					// Enclosing inline boxes' start edges arrive either still unattached
+					// in the iterator or restashed onto this item from a skipped
+					// collapsible whitespace chunk.
+					preceded_by_inline_box_start_edges := item.preceded_by_unattached_inline_start_edges
+						|| item.margin_start.raw_value() != 0 || item.border_start.raw_value() != 0
+						|| item.padding_start.raw_value() != 0
+					line_builder.append_static_position_marker(box, preceded_by_inline_box_start_edges)
 					absolute_boxes << box
 				}
 			}
@@ -274,6 +263,15 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 		containing_block_used_values.line_boxes[index].trim_trailing_whitespace()
 	}
 	apply_text_overflow_ellipsis(containing_block, mut containing_block_used_values.line_boxes)
+	// Upstream finalizes the last line and resolves static positions before it
+	// removes a trailing empty line. Keep the finalized markers of such a line.
+	mut removed_marker_lines := []LineBox{}
+	if containing_block_used_values.line_boxes.len > 0
+		&& containing_block_used_values.line_boxes.last().is_empty()
+		&& containing_block_used_values.line_boxes.last().static_position_markers_.len > 0 {
+		line_builder.update_last_line()
+		removed_marker_lines << containing_block_used_values.line_boxes.last()
+	}
 	line_builder.remove_last_line_if_empty()
 	for line_index in 0 .. containing_block_used_values.line_boxes.len {
 		mut line_box := &containing_block_used_values.line_boxes[line_index]
@@ -314,20 +312,38 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 		}
 	}
 	if layout_mode == .normal {
+		containing_direction := containing_block.computed_values().direction()
+		containing_block_inline_size := containing_block_used_values.content_width()
 		for box in absolute_boxes {
 			styled := unsafe { &Node(box) }.as_node_with_style() or { continue }
 			mut box_state := state.get_mutable(styled)
-			mut marker_position := ?StaticPositionRect(none)
-			for marker in empty_line_static_position_markers {
-				if voidptr(marker.box) == voidptr(box) {
-					marker_position = marker.position
+			mut static_position_rect := StaticPositionRect{}
+			mut found_marker := false
+			for line_box in containing_block_used_values.line_boxes {
+				if position := static_position_from_line_markers(box, line_box,
+					containing_block_inline_size) {
+					static_position_rect = position
+					found_marker = true
 					break
 				}
 			}
-			box_state.set_static_position_rect(marker_position or {
-				calculate_inline_static_position_rect(box, containing_block_used_values,
-					line_builder)
-			})
+			if !found_marker {
+				for line_box in removed_marker_lines {
+					if position := static_position_from_line_markers(box, line_box,
+						containing_block_inline_size) {
+						static_position_rect = position
+						break
+					}
+				}
+			}
+			if containing_direction == .rtl {
+				if writing_mode == .horizontal_tb {
+					static_position_rect.horizontal_alignment = .end
+				} else {
+					static_position_rect.vertical_alignment = .end
+				}
+			}
+			box_state.set_static_position_rect(static_position_rect)
 		}
 	}
 
@@ -824,6 +840,7 @@ fn apply_text_overflow_ellipsis(containing_block &BlockContainer, mut line_boxes
 				line_box.fragments_[later_index].set_fully_truncated(true)
 			}
 			line_box.inline_length_ = available_width
+			line_box.clamp_static_position_markers_to_inline_length()
 			break
 		}
 	}
@@ -858,7 +875,15 @@ fn apply_justification_to_line(text_justify css.TextJustify, mut line_box LineBo
 		fragment.set_inline_offset(fragment.inline_offset().plus(running_diff))
 		if fragment.is_justifiable_whitespace()
 			&& fragment.inline_length().raw_value() != justified_space_width.raw_value() {
-			running_diff = running_diff.plus(justified_space_width.minus(fragment.inline_length()))
+			diff := justified_space_width.minus(fragment.inline_length())
+			running_diff = running_diff.plus(diff)
+			// This compares against the fragment's already shifted offset,
+			// matching upstream's ordering.
+			for mut marker in line_box.static_position_markers_ {
+				if marker.inline_offset.raw_value() > fragment.inline_offset().raw_value() {
+					marker.inline_offset = marker.inline_offset.plus(diff)
+				}
+			}
 			fragment.set_inline_length(justified_space_width)
 		}
 	}

@@ -156,6 +156,11 @@ fn (mut builder LineBuilder) append_block_level_box(box &Box, block_bottom CSSPi
 		line_box_index: builder.containing_block_used_values.line_boxes.len - 1
 		fragment_index: 0
 	}
+	// Markers recorded on this line never go through update_last_line(), so
+	// anchor them at the flow position where the interrupting block starts.
+	for mut marker in line_box.static_position_markers_ {
+		marker.block_offset = marker.block_offset.plus(builder.current_block_offset)
+	}
 	builder.pending_margin_follows_block_level_box = true
 	builder.current_block_offset = block_bottom
 	builder.max_height_on_current_line = CSSPixels.new(0)
@@ -532,6 +537,10 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			fragment.set_block_length(font_box_height)
 		}
 	}
+	for mut marker in line_box.static_position_markers_ {
+		marker.inline_offset = marker.inline_offset.plus(inline_offset)
+		marker.block_offset = marker.block_offset.plus(block_offset).plus(builder.current_block_offset)
+	}
 	line_box.block_length_ = lowermost_box_bottom.minus(uppermost_box_top)
 	line_box.bottom_ = builder.current_block_offset.plus(line_box.block_length_)
 	line_box.baseline_ = line_box_baseline
@@ -572,35 +581,9 @@ pub fn (mut builder LineBuilder) recalculate_available_space() {
 	}
 }
 
-// An out-of-flow box on an otherwise empty line needs a marker at the line's
-// current flow position. There is no preceding fragment from which the later
-// static-position pass could reconstruct this after an interrupting block.
-fn (mut builder LineBuilder) empty_line_static_position() ?StaticPositionRect {
-	line_box := builder.ensure_last_line_box()
-	if !line_box.is_empty() {
-		return none
-	}
-	inline_position := builder.current_line_inline_offset.plus(line_box.inline_length())
-	position := if builder.writing_mode == .horizontal_tb {
-		css.CSSPixelPoint.new(inline_position, builder.current_block_offset)
-	} else {
-		css.CSSPixelPoint.new(builder.current_block_offset, inline_position)
-	}
-	return StaticPositionRect{
-		rect: css.CSSPixelRect{
-			x: position.x()
-			y: position.y()
-		}
-	}
-}
-
-fn (builder &LineBuilder) float_edges_at_block_offset(block_offset CSSPixels) (CSSPixels, CSSPixels) {
-	available_width := builder.available_width.to_px_or_zero()
-	context := builder.parent_block_context or { return CSSPixels.new(0), available_width }
-
-	left, right, _ := context.float_boundaries_at(block_offset, CSSPixels.new(0), available_width,
-		builder.direction, builder.containing_block_root_offset)
-	return left, right
+pub fn (mut builder LineBuilder) append_static_position_marker(box &Box, preceded_by_inline_box_start_edges bool) {
+	mut line_box := builder.ensure_last_line_box()
+	line_box.add_static_position_marker(box, preceded_by_inline_box_start_edges)
 }
 
 fn (builder &LineBuilder) any_floats_intrude_in_block_range(block_start CSSPixels, block_end CSSPixels) bool {

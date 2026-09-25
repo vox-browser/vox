@@ -359,6 +359,24 @@ fn (mut fragment LineBoxFragment) append_glyph_run_rtl(glyph_run &platform.Glyph
 	fragment.insert_position_ += run_offset
 }
 
+// A zero-size placeholder recorded at an out-of-flow box's position in the
+// inline flow. Offsets are logical until the line is finalized.
+pub struct StaticPositionMarker {
+pub mut:
+	box                         &Box = unsafe { nil }
+	inline_offset               CSSPixels
+	block_offset                CSSPixels
+	writing_mode                css.WritingMode
+	preceded_by_in_flow_content bool
+}
+
+pub fn (marker &StaticPositionMarker) offset() css.CSSPixelPoint {
+	if marker.writing_mode != .horizontal_tb {
+		return css.CSSPixelPoint.new(marker.block_offset, marker.inline_offset)
+	}
+	return css.CSSPixelPoint.new(marker.inline_offset, marker.block_offset)
+}
+
 pub struct LineBox {
 pub mut:
 	fragments_                           []LineBoxFragment
@@ -373,6 +391,7 @@ pub mut:
 	has_break_                           bool
 	has_forced_break_                    bool
 	has_block_level_box_                 bool
+	static_position_markers_             []StaticPositionMarker
 	block_level_box_bottom_margin_       CSSPixels
 }
 
@@ -505,6 +524,7 @@ fn (mut line LineBox) calculate_or_trim_trailing_whitespace(should_remove Remove
 		if should_remove == .yes {
 			line.inline_length_ = line.inline_length_.minus(last_fragment.inline_length_)
 			line.fragments_.delete(fragment_index)
+			line.clamp_static_position_markers_to_inline_length()
 		}
 	}
 
@@ -525,6 +545,7 @@ fn (mut line LineBox) calculate_or_trim_trailing_whitespace(should_remove Remove
 		last_fragment.inline_length_ = last_fragment.inline_length_.minus(fragment_trailing_whitespace.inline_size)
 		last_fragment.trailing_whitespace_ = TrailingWhitespace{}
 		line.inline_length_ = line.inline_length_.minus(fragment_trailing_whitespace.inline_size)
+		line.clamp_static_position_markers_to_inline_length()
 	}
 	if should_remove == .yes
 		&& (trailing_whitespace_width.raw_value() > 0 || !last_fragment.has_trailing_whitespace_) {
@@ -555,6 +576,31 @@ pub fn (line &LineBox) is_empty() bool {
 
 pub fn (line &LineBox) has_forced_break() bool {
 	return line.has_forced_break_
+}
+
+// Inline box start edges count like content: a line box holding an inline
+// element with non-zero margin, border, or padding is not a zero-height line
+// box (CSS 2 9.4.2), so a block-level abspos after such an edge belongs below
+// this line rather than at its top.
+pub fn (mut line LineBox) add_static_position_marker(box &Box, preceded_by_inline_box_start_edges bool) {
+	line.static_position_markers_ << StaticPositionMarker{
+		box: unsafe { box }
+		inline_offset: line.inline_length_
+		writing_mode: line.writing_mode_
+		preceded_by_in_flow_content: line.fragments_.len > 0 || preceded_by_inline_box_start_edges
+	}
+}
+
+pub fn (line &LineBox) static_position_markers() []StaticPositionMarker {
+	return line.static_position_markers_
+}
+
+fn (mut line LineBox) clamp_static_position_markers_to_inline_length() {
+	for mut marker in line.static_position_markers_ {
+		if marker.inline_offset.raw_value() > line.inline_length_.raw_value() {
+			marker.inline_offset = line.inline_length_
+		}
+	}
 }
 
 pub fn (line &LineBox) has_block_level_box() bool {

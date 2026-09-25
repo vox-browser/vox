@@ -28,6 +28,9 @@ pub:
 	is_all_whitespace         bool
 	can_break_before          bool
 	trailing_whitespace       TrailingWhitespace
+	// Whether an enclosing inline box's start edge is still waiting to attach
+	// to content when an out-of-flow item is emitted.
+	preceded_by_unattached_inline_start_edges bool
 pub mut:
 	width         CSSPixels
 	padding_start CSSPixels
@@ -392,10 +395,16 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 	}
 
 	if current.is_absolutely_positioned() {
+		mut has_unattached_inline_start_edges := false
+		if leading := iterator.extra_leading_metrics {
+			has_unattached_inline_start_edges = leading.margin.raw_value() != 0
+				|| leading.border.raw_value() != 0 || leading.padding.raw_value() != 0
+		}
 		iterator.skip_to_next()
 		return InlineLevelItem{
 			type_: .absolutely_positioned_element
 			node: current
+			preceded_by_unattached_inline_start_edges: has_unattached_inline_start_edges
 		}
 	}
 	if current.is_floating() {
