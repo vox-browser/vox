@@ -410,6 +410,16 @@
   wrapper's line layout. When no preceding fragment exists, their hypothetical
   first-line position begins after any left float intrusion instead of at the
   container origin.
+- In-flow blocks inside inline boxes are no longer split into anonymous
+  continuations. They stay children of their inline parent and interrupt its
+  inline formatting context: the line builder force-breaks before them, the
+  parent BFC lays them out in place, and inline content resumes on a new line
+  after their pending bottom margin. A trailing interrupting block's margin
+  collapses through an auto-height parent without bottom padding or border,
+  its width contributes to intrinsic inline sizing, and a line hosting it
+  exports the block's baseline. CSSOM offsets unite the inline's per-line
+  border boxes, while the line that only hosts the block contributes an empty
+  box at the block's position.
 - Text shaping applies computed `word-spacing` to spaces, no-break spaces, and
   collapsed line feeds. It records the exact shaped advance of trailing ASCII
   whitespace, carries that record through fragment merging and intrinsic shape

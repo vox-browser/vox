@@ -689,11 +689,11 @@ largest unmatched modules:
    316 Layout
     82 Editing
 
-$ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
-Layout corpus: 788 passed, 301 failed, 1089 total
+$ v -old-compiler -enable-globals run tools/layout_corpus.v --all
+Layout corpus: 974 passed, 115 failed, 1089 total
 
-$ v -enable-globals test .
-Summary for all V _test.v files: 645 passed, 645 total.
+$ v -old-compiler -enable-globals test .
+Summary for all V _test.v files: 647 passed, 647 total.
 
 $ Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
 Ladybird V smoke check passed
@@ -1000,15 +1000,15 @@ fixed-point through the source's two refinement passes, and padding-edge clips
 only shrink adjacent radii instead of running a second, invented normalization.
 Hit-test eligibility now uses a direct
 `Paintable::visible_for_hit_testing()` predicate, excluding inert DOM nodes as
-well as `pointer-events:none`. Anonymous middle boxes in a split inline chain
-retain the source's `PaintableBox::hit_test_continuation()` fallback to the
-principal inline element after their block descendants decline the hit.
-The active DOM/layout bridge now retains the forward chain corresponding to
-Layout's split-inline continuation links. `PaintableBox`'s three absolute
-united-rectangle operations walk that chain and unite its nonempty border,
-padding, or content boxes; `HTMLElement` CSSOM offsets therefore include block
-descendants and trailing fragments of an inline principal box, matching the
-upstream split-inline regression exactly.
+well as `pointer-events:none`. Upstream no longer splits inlines around
+in-flow blocks, so an interrupting block that declines a hit falls through to
+the block container behind it rather than to its inline parent.
+The active DOM/layout bridge records the absolute border box of every
+paintable an inline generates, one per line. `PaintableBox`'s three absolute
+united-rectangle operations unite those boxes, skipping empty boxes after the
+first; `HTMLElement` CSSOM offsets therefore span all of an inline's lines
+while the line that only hosts an interrupting block contributes nothing,
+matching the upstream flat-inline regression.
 `PaintableBox::transform_reference_box()` is translated on the same active path:
 CSS boxes remap fill/stroke/view to content/border, SVG paintables remap
 content/border to fill/stroke, and SVG view-box transforms use the nearest SVG
