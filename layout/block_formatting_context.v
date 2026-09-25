@@ -293,14 +293,12 @@ fn (mut bfc BlockFormattingContext) compute_auto_height_for_block_level_element(
 	}
 	box_state := state.get(box)
 	children := box_node.children()
-	mut marker_line_height := CSSPixels.new(0)
 	for index := children.len - 1; index >= 0; index-- {
 		child := children[index]
 		if child.is_absolutely_positioned() || child.is_floating() {
 			continue
 		}
 		if child.is_list_item_marker_box() {
-			marker_line_height = child.computed_values().line_height()
 			continue
 		}
 		child_styled := child.as_node_with_style() or { continue }
@@ -319,9 +317,6 @@ fn (mut bfc BlockFormattingContext) compute_auto_height_for_block_level_element(
 			margin_bottom = CSSPixels.new(0)
 		}
 		return css_pixels_max(CSSPixels.new(0), child_state.offset.y().plus(child_state.content_height()).plus(child_state.border_box_bottom()).plus(margin_bottom))
-	}
-	if marker_line_height.raw_value() > 0 {
-		return marker_line_height
 	}
 	// BlockFormattingContext::compute_auto_height_for_block_level_element:
 	// empty editing hosts retain one line-height so they remain usable for text
@@ -804,6 +799,8 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 		intrinsic_height := box_as_node.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }
 		content_height_from_children = intrinsic_height.to_double()
 	}
+	content_height_from_children = floor_list_item_automatic_height_by_marker_line_height(box_as_node,
+		css_px(content_height_from_children)).to_double()
 
 	// A table formatting context computes the final table grid height itself.
 	// The authored height is a minimum for that grid, and border spacing may
@@ -832,15 +829,6 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 	}
 	if !has_independent_formatting_context {
 		place_list_item_marker_at_first_baseline(mut state, box_as_node)
-	}
-	if list_item := box_as_node.as_list_item_box() {
-		if marker_node := list_item.marker() {
-			if marker := marker_node.as_list_item_marker_box() {
-				if marker.computed_values().line_height().to_double() > height {
-					height = marker.computed_values().line_height().to_double()
-				}
-			}
-		}
 	}
 	height = clamp_content_height_for_node(mut state, box, box_state, css_px(height), height_resolution_basis).to_double()
 	box_state.set_content_height(css_px(height))
@@ -877,6 +865,16 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 fn (bfc &BlockFormattingContext) layout_marker_of_list_item_root(mut state LayoutState, box &Node, mut box_state UsedValues) {
 	list_item := box.as_list_item_box() or { return }
 	layout_list_item_marker(mut state, list_item, mut box_state, bfc)
+}
+
+// floor_list_item_automatic_block_size_by_marker_line_height(). A list item's
+// automatic block size is at least its marker's line height, so an empty list
+// item or one containing only floats still stacks like a line. A specified
+// height or max-height is not an automatic size and wins over this floor.
+fn floor_list_item_automatic_height_by_marker_line_height(box &Node, automatic_height CSSPixels) CSSPixels {
+	list_item := box.as_list_item_box() or { return automatic_height }
+	marker := list_item.marker() or { return automatic_height }
+	return css_pixels_max(automatic_height, marker.computed_values().line_height())
 }
 
 // The block-offset half of layout_list_item_marker(). An outside marker whose

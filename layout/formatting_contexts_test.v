@@ -4706,6 +4706,23 @@ fn test_outside_list_marker_aligns_with_the_list_item_first_baseline() {
 	assert list_item_marker_used_values(result, 'empty').offset.y().to_double() == 0
 }
 
+fn test_list_item_marker_line_height_floors_only_automatic_heights() {
+	document := html.parse_document('<!doctype html><style>
+		body, ul { margin:0 }
+		ul { padding-left:100px; font:16px/24px SerenitySans }
+		#fixed { height:5px }
+		#clamped { max-height:5px }
+		#floating { float:left }
+	</style><ul><li id="fixed">a</li><li id="clamped">b</li><li id="empty"></li><li id="floating"></li></ul>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	// Specified heights and max-height win over the marker floor.
+	assert used_for_id(result, 'fixed').content_height().to_double() == 5
+	assert used_for_id(result, 'clamped').content_height().to_double() == 5
+	// Automatic heights, including a float's, are at least the marker's line height.
+	assert used_for_id(result, 'empty').content_height().to_double() == 24
+	assert used_for_id(result, 'floating').content_height().to_double() == 24
+}
+
 fn test_inline_abspos_static_position_accounts_for_float_intrusion() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }

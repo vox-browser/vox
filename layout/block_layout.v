@@ -446,7 +446,8 @@ fn layout_inside_independent_formatting_context_without_containment_override(mut
 			place_list_item_marker_at_first_baseline(mut state, box)
 			return FormattingContextResult{
 				automatic_content_width: inline_result.automatic_content_width
-				automatic_content_height: automatic_height
+				automatic_content_height: floor_list_item_automatic_height_by_marker_line_height(box,
+					automatic_height)
 			}
 		}
 	}
@@ -518,7 +519,7 @@ fn layout_inside_independent_formatting_context_without_containment_override(mut
 	place_list_item_marker_at_first_baseline(mut state, box)
 	return FormattingContextResult{
 		automatic_content_width: box_state.content_width()
-		automatic_content_height: height
+		automatic_content_height: floor_list_item_automatic_height_by_marker_line_height(box, height)
 	}
 }
 
