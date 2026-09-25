@@ -4911,3 +4911,18 @@ fn test_line_before_interrupting_block_is_not_justified() {
 	assert first_line.width().to_double() < 200
 	assert used_for_id(result, 'block').offset.y().to_double() == 20
 }
+
+// A definite flex basis is an inner size: box-sizing applies, and a border-box
+// width smaller than the item's padding and border clamps its content to zero
+// in the container's intrinsic width as it does during flex layout.
+fn test_intrinsic_flex_basis_honors_border_box_sizing() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#flex { display:inline-flex }
+		#tiny { box-sizing:border-box; width:1px; padding:0 5px; border:2px solid; height:10px }
+		#wide { width:100px; height:10px }
+	</style><div id="flex"><div id="tiny"></div><div id="wide"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'tiny').content_width().to_double() == 0
+	assert used_for_id(result, 'flex').content_width().to_double() == 114
+}

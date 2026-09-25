@@ -648,11 +648,12 @@ fn calculate_intrinsic_flex_width(mut state LayoutState, container &Node, constr
 				}
 			}
 		} else if !basis_value.is_content && !basis_value.size.is_auto() {
-			base = resolve_layout_size(item, basis_value.size, CSSPixels.new(0)) or {
-				calculate_max_content_width(mut state, box)
-			}
+			// A definite flex basis is an inner size; box-sizing applies to it.
+			base = resolve_layout_content_size(item, basis_value.size, CSSPixels.new(0),
+				item_state, true) or { calculate_max_content_width(mut state, box) }
 		} else if basis_value.size.is_auto() {
-			base = resolve_layout_size(item, styled.computed_values().size_value(.width), CSSPixels.new(0)) or { calculate_max_content_width(mut state, box) }
+			base = resolve_layout_content_size(item, styled.computed_values().size_value(.width),
+				CSSPixels.new(0), item_state, true) or { calculate_max_content_width(mut state, box) }
 		} else {
 			base = calculate_max_content_width(mut state, box)
 		}
