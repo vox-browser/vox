@@ -24,18 +24,18 @@ fn image_test_fetch(url dom.URL) !DecodedImageData {
 		return error('decode failed')
 	}
 	bitmap := &dom.Bitmap_{
-		width: 200
+		width:  200
 		height: 100
-		pitch: 800
-		data: []u8{len: 200 * 100 * 4}
+		pitch:  800
+		data:   []u8{len: 200 * 100 * 4}
 	}
 	return BitmapDecodedImageData.create([
 		BitmapDecodedImageFrame{
-			frame: dom.DecodedImageFrame_.create(bitmap)
+			frame:    dom.DecodedImageFrame_.create(bitmap)
 			duration: 10
 		},
 		BitmapDecodedImageFrame{
-			frame: dom.DecodedImageFrame_.create(bitmap)
+			frame:    dom.DecodedImageFrame_.create(bitmap)
 			duration: 10
 		},
 	], 1, true)
@@ -64,6 +64,20 @@ fn test_image_source_selection_load_dimensions_and_decode() {
 	image.set_height(25)
 	assert image.width() == 50
 	assert image.height() == 25
+}
+
+fn test_image_decoded_data_tracks_display_client_lifetime() {
+	document := dom.Document.create(dom.URL{ value: 'https://image-client.test/' })
+	mut image := HTMLImageElementModel.create(document, document.base_url())
+	image.set_fetch_hook(image_test_fetch)
+	image.set_src('/displayed.png')
+	image.update_the_image_data(false, false)
+	decoded := image.decoded_image_data() or { panic('missing displayed image data') }
+	assert decoded.has_clients()
+
+	image.set_src('/broken.png')
+	image.update_the_image_data(false, false)
+	assert !decoded.has_clients()
 }
 
 fn test_image_decode_waits_for_completely_available_state() {
@@ -152,9 +166,9 @@ fn test_image_model_coordinates_use_attached_element_layout_geometry() {
 	model := html_image_element_model_for_dom_element(image)
 	mut image_node := image_element.as_node()
 	mut image_layout_node := &dom.LayoutNode{
-		dom_node_: image_node
+		dom_node_:     image_node
 		has_geometry_: true
-		border_box_: dom.Rect{27, 43, 80, 40}
+		border_box_:   dom.Rect{27, 43, 80, 40}
 	}
 	image_node.set_layout_node(image_layout_node)
 
@@ -181,7 +195,7 @@ fn test_image_model_coordinates_use_attached_element_layout_geometry() {
 fn test_concrete_image_element_picture_source_requests_roles_and_dimensions() {
 	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/page' })
 	mut navigable := &dom.Navigable{
-		active_document_: document
+		active_document_:          document
 		is_top_level_traversable_: true
 	}
 	navigable.traversable_navigable_ = navigable

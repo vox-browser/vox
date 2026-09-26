@@ -23,6 +23,8 @@ pub:
 // boundary; consumers obtain the selected decoded frame and destination
 // metadata from this interface.
 pub interface DecodedImageData {
+	external_memory_size() usize
+	has_clients() bool
 	frame(frame_index usize) ?&dom.DecodedImageFrame_
 	frame_duration(frame_index usize) int
 	frame_count() usize
@@ -52,14 +54,43 @@ mut:
 	frames_     []BitmapDecodedImageFrame
 	loop_count_ usize
 	animated_   bool
+	clients     map[u64]DecodedImageClientUpdateCallback
 }
 
 pub fn BitmapDecodedImageData.create(frames []BitmapDecodedImageFrame, loop_count usize, animated bool) &BitmapDecodedImageData {
 	return &BitmapDecodedImageData{
-		frames_: frames.clone()
+		frames_:     frames.clone()
 		loop_count_: loop_count
-		animated_: animated
+		animated_:   animated
+		clients:     map[u64]DecodedImageClientUpdateCallback{}
 	}
+}
+
+pub fn (data &BitmapDecodedImageData) external_memory_size() usize {
+	mut size := usize(0)
+	for retained_frame in data.frames_ {
+		frame := retained_frame.frame or { continue }
+		frame_size := usize(frame.bitmap().data.len)
+		if usize(-1) - size < frame_size {
+			return usize(-1)
+		}
+		size += frame_size
+	}
+	return size
+}
+
+pub fn (data &BitmapDecodedImageData) has_clients() bool {
+	return data.clients.len != 0
+}
+
+pub fn (data &BitmapDecodedImageData) register_client(client_id u64, callback DecodedImageClientUpdateCallback) {
+	mut mutable_data := unsafe { &BitmapDecodedImageData(data) }
+	mutable_data.clients[client_id] = callback
+}
+
+pub fn (data &BitmapDecodedImageData) unregister_client(client_id u64) {
+	mut mutable_data := unsafe { &BitmapDecodedImageData(data) }
+	mutable_data.clients.delete(client_id)
 }
 
 pub fn (data &BitmapDecodedImageData) frame(frame_index usize) ?&dom.DecodedImageFrame_ {
@@ -116,7 +147,7 @@ pub fn (data &BitmapDecodedImageData) intrinsic_aspect_ratio() ?f64 {
 pub fn (data &BitmapDecodedImageData) frame_rect(frame_index usize) ?BitmapRect {
 	frame := data.frame(frame_index) or { return none }
 	return BitmapRect{
-		width: frame.width()
+		width:  frame.width()
 		height: frame.height()
 	}
 }
@@ -129,9 +160,9 @@ pub fn (data &BitmapDecodedImageData) paint(mut recorder painting.DisplayListRec
 	frame := data.frame(frame_index) or { return false }
 	return recorder.draw_scaled_decoded_image_frame(painting.DrawScaledDecodedImageFrame{
 		destination: destination
-		clip_rect: clip_rect
-		frame: frame
-		scaling: scaling_mode
+		clip_rect:   clip_rect
+		frame:       frame
+		scaling:     scaling_mode
 	})
 }
 
@@ -208,18 +239,18 @@ pub fn AnimatedDecodedImageData.install_frame_delivery_callback() {
 pub fn AnimatedDecodedImageData.create(session_id i64, frame_count u32, loop_count u32, width int, height int, color_space dom.DecodedImageColorSpace, durations []u32, initial_bitmaps []&dom.Bitmap_, request_frames ?AnimationFrameRequestCallback, stop_animation_decode ?AnimationStopCallback) &AnimatedDecodedImageData {
 	mut timer := platform.Timer.create_repeating(0, fn () {})
 	mut data := &AnimatedDecodedImageData{
-		session_id: session_id
-		frame_count_: frame_count
-		loop_count_: loop_count
-		width_: width
-		height_: height
-		color_space_: color_space
-		durations_: durations.clone()
-		buffer_slots: []AnimatedBitmapSlot{len: animated_decoded_image_buffer_pool_size}
-		request_frames: request_frames
+		session_id:            session_id
+		frame_count_:          frame_count
+		loop_count_:           loop_count
+		width_:                width
+		height_:               height
+		color_space_:          color_space
+		durations_:            durations.clone()
+		buffer_slots:          []AnimatedBitmapSlot{len: animated_decoded_image_buffer_pool_size}
+		request_frames:        request_frames
 		stop_animation_decode: stop_animation_decode
-		animation_timer: timer
-		clients: map[u64]DecodedImageClientUpdateCallback{}
+		animation_timer:       timer
+		clients:               map[u64]DecodedImageClientUpdateCallback{}
 	}
 	timer.on_timeout = fn [data] () {
 		mut mutable_data := unsafe { &AnimatedDecodedImageData(data) }
@@ -230,8 +261,8 @@ pub fn AnimatedDecodedImageData.create(session_id i64, frame_count u32, loop_cou
 		data.write_generation++
 		data.buffer_slots[slot_index] = AnimatedBitmapSlot{
 			frame_index: u32(index)
-			frame: dom.DecodedImageFrame_.create_with_color_space(bitmap, color_space)
-			generation: data.write_generation
+			frame:       dom.DecodedImageFrame_.create_with_color_space(bitmap, color_space)
+			generation:  data.write_generation
 		}
 	}
 	data.highest_requested_frame = u32(initial_bitmaps.len)
@@ -256,14 +287,31 @@ pub fn (mut data AnimatedDecodedImageData) finalize() {
 
 pub fn (data &AnimatedDecodedImageData) debug_state() AnimatedImageDebugState {
 	return AnimatedImageDebugState{
-		timer_active: data.animation_timer.is_active()
-		session_id: data.session_id
-		frame_index: data.current_frame_index
-		frame_count: data.frame_count_
+		timer_active:    data.animation_timer.is_active()
+		session_id:      data.session_id
+		frame_index:     data.current_frame_index
+		frame_count:     data.frame_count_
 		loops_completed: data.loops_completed_
-		loop_count: data.loop_count_
-		client_count: usize(data.clients.len)
+		loop_count:      data.loop_count_
+		client_count:    usize(data.clients.len)
 	}
+}
+
+pub fn (data &AnimatedDecodedImageData) external_memory_size() usize {
+	mut size := usize(data.durations_.len) * usize(sizeof(u32))
+	for slot in data.buffer_slots {
+		frame := slot.frame or { continue }
+		frame_size := usize(frame.bitmap().data.len)
+		if usize(-1) - size < frame_size {
+			return usize(-1)
+		}
+		size += frame_size
+	}
+	return size
+}
+
+pub fn (data &AnimatedDecodedImageData) has_clients() bool {
+	return data.clients.len != 0
 }
 
 pub fn decoded_image_animation_state(data DecodedImageData) ?AnimatedImageDebugState {
@@ -288,13 +336,17 @@ pub fn (data &AnimatedDecodedImageData) unregister_client(client_id u64) {
 }
 
 pub fn decoded_image_data_register_client(data DecodedImageData, client_id u64, callback DecodedImageClientUpdateCallback) {
-	if data is AnimatedDecodedImageData {
+	if data is BitmapDecodedImageData {
+		data.register_client(client_id, callback)
+	} else if data is AnimatedDecodedImageData {
 		data.register_client(client_id, callback)
 	}
 }
 
 pub fn decoded_image_data_unregister_client(data DecodedImageData, client_id u64) {
-	if data is AnimatedDecodedImageData {
+	if data is BitmapDecodedImageData {
+		data.unregister_client(client_id)
+	} else if data is AnimatedDecodedImageData {
 		data.unregister_client(client_id)
 	}
 }
@@ -486,7 +538,7 @@ pub fn (data &AnimatedDecodedImageData) intrinsic_aspect_ratio() ?f64 {
 
 pub fn (data &AnimatedDecodedImageData) frame_rect(_ usize) ?BitmapRect {
 	return BitmapRect{
-		width: data.width_
+		width:  data.width_
 		height: data.height_
 	}
 }
@@ -495,9 +547,9 @@ pub fn (data &AnimatedDecodedImageData) paint(mut recorder painting.DisplayListR
 	frame := data.frame(frame_index) or { return false }
 	return recorder.draw_scaled_decoded_image_frame(painting.DrawScaledDecodedImageFrame{
 		destination: destination
-		clip_rect: clip_rect
-		frame: frame
-		scaling: scaling_mode
+		clip_rect:   clip_rect
+		frame:       frame
+		scaling:     scaling_mode
 	})
 }
 
@@ -515,8 +567,8 @@ pub fn (mut data AnimatedDecodedImageData) receive_frames(bitmaps []&dom.Bitmap_
 		data.write_generation++
 		data.buffer_slots[slot_index] = AnimatedBitmapSlot{
 			frame_index: frame_index
-			frame: dom.DecodedImageFrame_.create_with_color_space(bitmap, data.color_space_)
-			generation: data.write_generation
+			frame:       dom.DecodedImageFrame_.create_with_color_space(bitmap, data.color_space_)
+			generation:  data.write_generation
 		}
 	}
 }

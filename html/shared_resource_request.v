@@ -39,15 +39,19 @@ pub:
 	url      dom.URL
 	document &dom.Document
 mut:
-	state_           SharedResourceRequestState
-	callbacks        []SharedResourceCallbacks
-	image_data_      ?SharedResourceImageData
-	load_event_delay bool
-	fetch_controller voidptr
-	decode_callback  ?SharedResourceDecodeCallback
+	state_              SharedResourceRequestState
+	callbacks           []SharedResourceCallbacks
+	image_data_         ?SharedResourceImageData
+	load_event_delay    bool
+	fetch_controller    voidptr
+	decode_callback     ?SharedResourceDecodeCallback
+	cache_touch_serial_ u64
 }
 
-__global html_shared_resource_requests map[string]&SharedResourceRequest
+__global (
+	html_shared_resource_requests                  map[string]&SharedResourceRequest
+	html_shared_resource_memory_cache_touch_serial u64
+)
 
 fn shared_resource_request_key(document &dom.Document, url dom.URL) string {
 	return '${u64(voidptr(document))}\x00${url.value}'
@@ -56,12 +60,14 @@ fn shared_resource_request_key(document &dom.Document, url dom.URL) string {
 pub fn SharedResourceRequest.get_or_create(document &dom.Document, url dom.URL) &SharedResourceRequest {
 	key := shared_resource_request_key(document, url)
 	if request := html_shared_resource_requests[key] {
+		request.touch_memory_cache_entry()
 		return request
 	}
 	request := &SharedResourceRequest{
 		url:      url
 		document: document
 	}
+	request.touch_memory_cache_entry()
 	html_shared_resource_requests[key] = request
 	return request
 }
@@ -76,6 +82,21 @@ pub fn (mut request SharedResourceRequest) finalize() {
 
 pub fn (request &SharedResourceRequest) image_data() ?SharedResourceImageData {
 	return request.image_data_
+}
+
+pub fn (request &SharedResourceRequest) can_be_pruned_from_memory_cache() bool {
+	image_data := request.image_data_ or { return false }
+	return !image_data.data.has_clients()
+}
+
+pub fn (request &SharedResourceRequest) cache_touch_serial() u64 {
+	return request.cache_touch_serial_
+}
+
+pub fn (request &SharedResourceRequest) touch_memory_cache_entry() {
+	mut mutable_request := unsafe { &SharedResourceRequest(request) }
+	html_shared_resource_memory_cache_touch_serial++
+	mutable_request.cache_touch_serial_ = html_shared_resource_memory_cache_touch_serial
 }
 
 pub fn (request &SharedResourceRequest) url() dom.URL {
@@ -137,6 +158,7 @@ pub fn (mut request SharedResourceRequest) handle_successful_resource_load(image
 		if callback := callbacks.on_finish { callback() }
 	}
 	request.callbacks.clear()
+	prune_shared_resource_requests_for_document(request.document, 8 * 1024 * 1024, 96)
 }
 
 pub fn (mut request SharedResourceRequest) handle_successful_fetch(url dom.URL, mime_type string, data []u8) {
@@ -157,6 +179,51 @@ pub fn shared_resource_effective_image_mime_type(url dom.URL, mime_type string) 
 		return 'image/svg+xml'
 	}
 	return mime_type
+}
+
+fn shared_resource_request_prunable_size_and_count(document &dom.Document) (usize, usize) {
+	mut size := usize(0)
+	mut count := usize(0)
+	for _, request in html_shared_resource_requests {
+		if request.document != document || !request.can_be_pruned_from_memory_cache() {
+			continue
+		}
+		image_data := request.image_data_ or { continue }
+		image_size := image_data.data.external_memory_size()
+		if usize(-1) - size < image_size {
+			size = usize(-1)
+		} else {
+			size += image_size
+		}
+		count++
+	}
+	return size, count
+}
+
+pub fn prune_shared_resource_requests_for_document(document &dom.Document, external_memory_limit usize, count_limit usize) {
+	mut size, mut count := shared_resource_request_prunable_size_and_count(document)
+	for size > external_memory_limit || count > count_limit {
+		mut least_recently_used_key := ''
+		mut least_recently_used_serial := u64(-1)
+		for key, request in html_shared_resource_requests {
+			if request.document != document || !request.can_be_pruned_from_memory_cache()
+				|| request.cache_touch_serial() >= least_recently_used_serial {
+				continue
+			}
+			least_recently_used_key = key
+			least_recently_used_serial = request.cache_touch_serial()
+		}
+		if least_recently_used_key == '' {
+			break
+		}
+		html_shared_resource_requests.delete(least_recently_used_key)
+		new_size, new_count := shared_resource_request_prunable_size_and_count(document)
+		if new_size == size && new_count == count {
+			break
+		}
+		size = new_size
+		count = new_count
+	}
 }
 
 pub fn (request &SharedResourceRequest) needs_fetching() bool {

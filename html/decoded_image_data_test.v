@@ -24,12 +24,13 @@ fn record_decoded_image_update() {
 
 fn test_bitmap_decoded_image_data_accessors() {
 	bitmap := &dom.Bitmap_{
-		width: 320
+		width:  320
 		height: 200
+		data:   [u8(1), 2, 3, 4]
 	}
 	data := BitmapDecodedImageData.create([
 		BitmapDecodedImageFrame{
-			frame: dom.DecodedImageFrame_.create(bitmap)
+			frame:    dom.DecodedImageFrame_.create(bitmap)
 			duration: 40
 		},
 	], 2, true)
@@ -44,9 +45,15 @@ fn test_bitmap_decoded_image_data_accessors() {
 	assert data.intrinsic_height()? == 200
 	assert data.intrinsic_aspect_ratio()? == 1.6
 	assert data.frame_rect(0)? == BitmapRect{
-		width: 320
+		width:  320
 		height: 200
 	}
+	assert data.external_memory_size() == 4
+	assert !data.has_clients()
+	decoded_image_data_register_client(data, 11, record_decoded_image_update)
+	assert data.has_clients()
+	decoded_image_data_unregister_client(data, 11)
+	assert !data.has_clients()
 	mut recorder := painting.new_display_list_recorder(painting.new_accumulated_visual_context_tree())
 	assert data.paint(mut recorder, 0, painting.IntRect{ width: 10, height: 20 }, painting.IntRect{ width: 10, height: 20 }, .bilinear)
 	assert recorder.display_list.commands.len == 1
@@ -57,11 +64,11 @@ fn test_animated_decoded_image_data_pool_progression_and_delivery() {
 	decoded_image_stops = []
 	decoded_image_updates = 0
 	frame0 := &dom.Bitmap_{
-		width: 64
+		width:  64
 		height: 32
 	}
 	frame1 := &dom.Bitmap_{
-		width: 64
+		width:  64
 		height: 32
 	}
 	mut data := AnimatedDecodedImageData.create(77, 6, 3, 64, 32, .display_p3, [
@@ -79,12 +86,15 @@ fn test_animated_decoded_image_data_pool_progression_and_delivery() {
 	assert registry[i64(77)] or { panic('missing session') } == data
 	assert data.find_slot(0)?.frame?.bitmap() == frame0
 	assert data.find_slot(0)?.frame?.color_space() == .display_p3
+	assert data.external_memory_size() == 6 * sizeof(u32)
+	assert !data.has_clients()
 	mut evicted := data.evict_oldest_slot()
 	assert evicted.generation == 0
 	assert data.frame(0)?.bitmap() == frame0
 	// A missing frame falls back to the last displayed bitmap.
 	assert data.frame(4)?.bitmap() == frame0
 	data.register_client(42, record_decoded_image_update)
+	assert data.has_clients()
 	assert data.debug_state().client_count == 1
 	assert data.debug_state().timer_active
 	assert data.animation_timer.interval() == 10
@@ -100,6 +110,7 @@ fn test_animated_decoded_image_data_pool_progression_and_delivery() {
 	mut recorder := painting.new_display_list_recorder(painting.new_accumulated_visual_context_tree())
 	assert data.paint(mut recorder, 2, painting.IntRect{ width: 10, height: 10 }, painting.IntRect{ width: 10, height: 10 }, .nearest_neighbor)
 	data.unregister_client(42)
+	assert !data.has_clients()
 	assert data.debug_state().client_count == 0
 	data.finalize()
 	assert decoded_image_stops == [i64(77)]

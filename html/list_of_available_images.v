@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // Translation of ListOfAvailableImages.cpp.
+@[has_globals]
 module html
 
 import dom
@@ -51,6 +52,8 @@ pub struct AvailableImageEntry {
 pub:
 	image_data                  DecodedImageData
 	ignore_higher_layer_caching bool
+pub mut:
+	cache_touch_serial u64
 }
 
 struct StoredAvailableImage {
@@ -63,10 +66,18 @@ mut:
 	images []StoredAvailableImage
 }
 
+__global html_available_image_cache_touch_serial u64
+
+fn next_available_image_cache_touch_serial() u64 {
+	html_available_image_cache_touch_serial++
+	return html_available_image_cache_touch_serial
+}
+
 pub fn (mut images ListOfAvailableImages) add(key Key, image_data DecodedImageData, ignore_higher_layer_caching bool) {
 	entry := &AvailableImageEntry{
 		image_data:                  image_data
 		ignore_higher_layer_caching: ignore_higher_layer_caching
+		cache_touch_serial:          next_available_image_cache_touch_serial()
 	}
 	for index, stored in images.images {
 		if stored.key.equals(&key) {
@@ -92,11 +103,57 @@ pub fn (mut images ListOfAvailableImages) remove(key Key) {
 	}
 }
 
-pub fn (images &ListOfAvailableImages) get(key Key) ?&AvailableImageEntry {
+pub fn (mut images ListOfAvailableImages) get(key Key) ?&AvailableImageEntry {
 	for stored in images.images {
 		if stored.key.equals(&key) {
+			mut entry := stored.entry
+			entry.cache_touch_serial = next_available_image_cache_touch_serial()
 			return stored.entry
 		}
 	}
 	return none
+}
+
+fn (images &ListOfAvailableImages) prunable_size_and_count() (usize, usize) {
+	mut size := usize(0)
+	mut count := usize(0)
+	for stored in images.images {
+		if stored.entry.image_data.has_clients() {
+			continue
+		}
+		image_size := stored.entry.image_data.external_memory_size()
+		if usize(-1) - size < image_size {
+			size = usize(-1)
+		} else {
+			size += image_size
+		}
+		count++
+	}
+	return size, count
+}
+
+pub fn (mut images ListOfAvailableImages) prune_to_limits(external_memory_limit usize, count_limit usize) {
+	mut size, mut count := images.prunable_size_and_count()
+	for size > external_memory_limit || count > count_limit {
+		mut least_recently_used_index := -1
+		mut least_recently_used_serial := u64(-1)
+		for index, stored in images.images {
+			if stored.entry.image_data.has_clients()
+				|| stored.entry.cache_touch_serial >= least_recently_used_serial {
+				continue
+			}
+			least_recently_used_index = index
+			least_recently_used_serial = stored.entry.cache_touch_serial
+		}
+		if least_recently_used_index < 0 {
+			break
+		}
+		images.images.delete(least_recently_used_index)
+		new_size, new_count := images.prunable_size_and_count()
+		if new_size == size && new_count == count {
+			break
+		}
+		size = new_size
+		count = new_count
+	}
 }

@@ -4,9 +4,9 @@ module html
 import dom
 
 __global (
-	shared_resource_test_finished int
-	shared_resource_test_failed   int
-	shared_resource_test_decode_url string
+	shared_resource_test_finished    int
+	shared_resource_test_failed      int
+	shared_resource_test_decode_url  string
 	shared_resource_test_decode_mime string
 )
 
@@ -47,7 +47,21 @@ fn shared_resource_test_decode(url dom.URL, mime_type string, bytes []u8) !Decod
 				height: 5
 				data:   bytes.clone()
 			})
-		}
+		},
+	], 0, false)
+}
+
+fn shared_resource_test_client_update() {}
+
+fn shared_resource_test_image_data(bytes []u8) &BitmapDecodedImageData {
+	return BitmapDecodedImageData.create([
+		BitmapDecodedImageFrame{
+			frame: dom.DecodedImageFrame_.create(&dom.Bitmap_{
+				width:  1
+				height: 1
+				data:   bytes.clone()
+			})
+		},
 	], 0, false)
 }
 
@@ -123,4 +137,37 @@ fn test_shared_resource_request_prefers_response_mime_type_over_svg_suffix() {
 	assert shared_resource_effective_image_mime_type(dom.URL{
 		value: 'https://example.test/image.webp'
 	}, '') == ''
+}
+
+fn test_shared_resource_request_pruning_uses_lru_and_preserves_live_images() {
+	document := dom.Document.create(dom.URL{ value: 'https://cache-pruning.test/' })
+	old_url := dom.URL{ value: 'https://cache-pruning.test/old.png' }
+	untouched_url := dom.URL{ value: 'https://cache-pruning.test/untouched.png' }
+	protected_url := dom.URL{ value: 'https://cache-pruning.test/protected.png' }
+	old_image := shared_resource_test_image_data([u8(1), 2, 3])
+	untouched_image := shared_resource_test_image_data([u8(1), 2, 3, 4])
+	protected_image := shared_resource_test_image_data([u8(1), 2, 3, 4, 5])
+	mut old_request := SharedResourceRequest.get_or_create(document, old_url)
+	old_request.handle_successful_resource_load(old_image)
+	mut untouched_request := SharedResourceRequest.get_or_create(document, untouched_url)
+	untouched_request.handle_successful_resource_load(untouched_image)
+	mut protected_request := SharedResourceRequest.get_or_create(document, protected_url)
+	protected_request.handle_successful_resource_load(protected_image)
+	assert old_request.can_be_pruned_from_memory_cache()
+	decoded_image_data_register_client(protected_image, 92, shared_resource_test_client_update)
+	assert !protected_request.can_be_pruned_from_memory_cache()
+
+	old_serial := old_request.cache_touch_serial()
+	assert SharedResourceRequest.get_or_create(document, old_url) == old_request
+	assert old_request.cache_touch_serial() > old_serial
+	prune_shared_resource_requests_for_document(document, usize(-1), 1)
+	assert shared_resource_request_for_document_and_url(document, old_url) != none
+	assert shared_resource_request_for_document_and_url(document, untouched_url) == none
+	assert shared_resource_request_for_document_and_url(document, protected_url) != none
+
+	decoded_image_data_unregister_client(protected_image, 92)
+	assert protected_request.can_be_pruned_from_memory_cache()
+	prune_shared_resource_requests_for_document(document, 0, 0)
+	assert shared_resource_request_for_document_and_url(document, old_url) == none
+	assert shared_resource_request_for_document_and_url(document, protected_url) == none
 }
