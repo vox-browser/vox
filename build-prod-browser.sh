@@ -95,15 +95,18 @@ fi
 # the normal macOS C implementation and avoids duplicate method definitions.
 zoneinfo_exclude='@vlib/time/zoneinfo.native.v'
 
-echo "Building Ladybird V with: -enable-globals -prod -gc none"
+# The translated tree is validated with V's stable compatibility compiler.
+# Select the same frontend explicitly so a newer default compiler on PATH does
+# not turn a browser build into an unrelated source-migration attempt.
+echo "Building Ladybird V with: -old-compiler -enable-globals -prod -gc none"
 # Root browser features are split across main.v and companion module files.
 cd "$repo_dir"
 if [ -n "$extra_ldflags" ]; then
-    "$v_compiler" -exclude "$zoneinfo_exclude" -enable-globals -prod -gc none \
+    "$v_compiler" -old-compiler -exclude "$zoneinfo_exclude" -enable-globals -prod -gc none \
         -cflags "$extra_cflags" -ldflags "$extra_ldflags" \
         -o "$binary_dir/Ladybird" .
 else
-    "$v_compiler" -exclude "$zoneinfo_exclude" -enable-globals -prod -gc none \
+    "$v_compiler" -old-compiler -exclude "$zoneinfo_exclude" -enable-globals -prod -gc none \
         -o "$binary_dir/Ladybird" .
 fi
 
