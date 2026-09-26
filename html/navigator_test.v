@@ -3,6 +3,7 @@ module html
 
 import dom
 import fetch
+import loader
 
 __global navigator_test_beacon_request &fetch.Request
 
@@ -63,4 +64,15 @@ fn test_navigator_beacon_builds_keepalive_fetch_request() {
 	} else {
 		assert err.msg().starts_with('TypeError:')
 	}
+}
+
+fn test_navigator_languages_come_from_the_resource_loader() {
+	if !loader.is_initialized() {
+		loader.initialize()
+	}
+	mut resource_loader := loader.ResourceLoader.the()
+	resource_loader.set_preferred_languages(['fr-CA', 'en']) or { panic(err) }
+	navigator := Navigator.create(NavigatorHostConfiguration{})
+	assert navigator.language() == 'fr-CA'
+	assert navigator.languages() == ['fr-CA', 'en']
 }

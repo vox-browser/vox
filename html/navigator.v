@@ -7,17 +7,24 @@
 // modules are translated, preserving Navigator's required lazy singleton rules.
 module html
 
-pub struct NavigatorLanguageMixin {
-pub:
-	preferred_languages []string = ['en-US']
-}
+import loader
 
+// NavigatorLanguage.h. The language preferences are the process-wide ResourceLoader's, which never holds an empty
+// list.
+pub struct NavigatorLanguageMixin {}
+
+// https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-language
+// FIXME: Honor WebDriver BiDi emulated language.
 pub fn (mixin &NavigatorLanguageMixin) language() string {
-	return if mixin.preferred_languages.len > 0 { mixin.preferred_languages[0] } else { '' }
+	_ = mixin
+	return loader.ResourceLoader.the().preferred_languages()[0]
 }
 
+// https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-languages
+// FIXME: Honor WebDriver BiDi emulated language.
 pub fn (mixin &NavigatorLanguageMixin) languages() []string {
-	return mixin.preferred_languages.clone()
+	_ = mixin
+	return loader.ResourceLoader.the().preferred_languages()
 }
 
 pub struct NavigatorOnLineMixin {}
