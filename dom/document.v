@@ -9397,7 +9397,7 @@ pub fn (d &Document) query_command_value(command string) !string {
 	return hook.query_command_value(hook.target, d, command)!
 }
 
-// --- XPath (stubs) ---
+// --- XPath (XPathEvaluatorBase, through the XPath package bridge) ---
 pub fn (d &Document) create_expression(expression string, resolver ?&XPathNSResolver) !&XPathExpression {
 	return xpath_create_expression(expression, resolver)
 }
