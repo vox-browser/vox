@@ -1569,6 +1569,13 @@ pub fn (model &HTMLInputElementModel) is_image_available() bool {
 	return model.image_data() != none
 }
 
+// A newly created shared request has not started its host fetch yet but is
+// still potentially available, just like an in-flight request.
+pub fn (model &HTMLInputElementModel) is_image_pending() bool {
+	request := model.resource_request_ or { return false }
+	return request.needs_fetching() || request.is_fetching()
+}
+
 pub fn (model &HTMLInputElementModel) intrinsic_width() ?f64 {
 	data := model.image_data() or { return none }
 	return data.intrinsic_width()

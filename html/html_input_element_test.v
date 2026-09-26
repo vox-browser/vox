@@ -397,3 +397,11 @@ fn test_input_image_resource_dimensions_and_hints() {
 	assert hints.margin_left? == 3
 	assert image.is_presentational_hint('width')
 }
+
+fn test_input_image_new_request_is_pending_until_fetch_finishes() {
+	element := input_test_elements('<input type="image" src="https://example.test/pending.png">')[0]
+	mut image := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+	image.handle_src_attribute('https://example.test/pending.png')!
+	assert image.is_image_pending()
+	assert !image.is_image_available()
+}

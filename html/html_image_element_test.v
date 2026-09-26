@@ -73,6 +73,7 @@ fn test_image_decode_waits_for_completely_available_state() {
 	request.set_current_url('https://example.test/async-image.png')
 	request.set_state(.partially_available)
 	image.add_callbacks_to_image_request(request, false, request.current_url(), '', 0)
+	assert image.is_image_pending()
 	promise := image.decode()
 	assert promise.state() == .pending
 	assert image.natural_width() == 0
@@ -86,12 +87,29 @@ fn test_image_decode_waits_for_completely_available_state() {
 	mut event_loop := main_thread_event_loop()
 	event_loop.process()
 	assert request.state() == .completely_available
+	assert !image.is_image_pending()
 	assert image.natural_width() == 200
 	assert image.natural_height() == 100
 	assert promise.state() == .pending
 
 	event_loop.process()
 	assert promise.state() == .fulfilled
+}
+
+fn test_image_pending_state_distinguishes_sources_from_broken_requests() {
+	document := dom.Document.create(dom.URL{ value: 'https://example.test/page' })
+	mut source_less := HTMLImageElementModel.create(document, document.base_url())
+	assert !source_less.is_image_pending()
+
+	source_less.set_src('/pending.png')
+	assert source_less.is_image_pending()
+	mut request := source_less.current_request()
+	request.set_state(.broken)
+	assert !source_less.is_image_pending()
+
+	mut srcset_image := HTMLImageElementModel.create(document, document.base_url())
+	srcset_image.set_srcset('/candidate.png 1x')
+	assert srcset_image.is_image_pending()
 }
 
 fn test_image_failure_empty_lazy_sizes_and_animation() {

@@ -62,6 +62,33 @@ fn test_image_box_recomputes_alt_text_natural_size_after_dom_update() {
 	assert new_size.height == old_size.height
 }
 
+fn test_pending_image_box_renders_blank_until_request_breaks() {
+	document := dom.Document.create(dom.URL{ value: 'https://example.test/page' })
+	mut image_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'img')!
+	image_element.set_attribute_value('alt', 'fallback text')
+	image_element.set_attribute_value('src', '/pending.png')
+	style := css.ComputedProperties.new()
+
+	pending_box := ImageBox.new(document, image_element, style)
+	assert !pending_box.renders_as_alt_text()
+	assert pending_box.natural_size().width?.to_double() == 0
+	assert pending_box.natural_size().height?.to_double() == 0
+
+	image := unsafe { &dom.HTMLImageElement(image_element) }
+	mut model := html.html_image_element_model_for_dom_element(image)
+	mut request := model.current_request()
+	request.set_state(.broken)
+	broken_box := ImageBox.new(document, image_element, style)
+	assert broken_box.renders_as_alt_text()
+	assert broken_box.natural_size().width?.to_double() > 0
+
+	mut source_less_element := document.create_element_ns('http://www.w3.org/1999/xhtml',
+		'img')!
+	source_less_element.set_attribute_value('alt', 'fallback text')
+	source_less_box := ImageBox.new(document, source_less_element, style)
+	assert source_less_box.renders_as_alt_text()
+}
+
 fn test_video_box_natural_size_tracks_live_media_metadata() {
 	document := dom.Document.create(dom.url_about_blank())
 	video_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'video')!

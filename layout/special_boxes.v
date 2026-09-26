@@ -278,6 +278,21 @@ fn available_object_image_natural_size(element &dom.Element) ?css.SizeWithAspect
 	return result
 }
 
+// Layout::ImageProvider::is_image_pending(). Object images run their
+// representation selection before this boundary and have no separate pending
+// provider state; img and image-input models retain their live request state.
+fn element_image_is_pending(element &dom.Element) bool {
+	if element.as_node().is_html_image_element() {
+		image := unsafe { &dom.HTMLImageElement(element) }
+		return html.html_image_element_model_for_dom_element(image).is_image_pending()
+	}
+	if element.as_node().is_html_input_element() {
+		input := unsafe { &dom.HTMLInputElement(element) }
+		return html.HTMLInputElementModel.create(input).is_image_pending()
+	}
+	return false
+}
+
 pub fn ImageBox.new(document &dom.Document, element &dom.Element, computed_values &css.ComputedProperties) &ImageBox {
 	alt := element.get_attribute_value('alt')
 	mut box := &ImageBox{
@@ -311,6 +326,12 @@ pub fn ImageBox.new(document &dom.Document, element &dom.Element, computed_value
 	} else if intrinsic_size := image_intrinsic_size_for_source(document, source) {
 		box.renders_as_alt_text_ = false
 		box.natural_size_ = intrinsic_size
+	} else if element_image_is_pending(element) {
+		box.renders_as_alt_text_ = false
+		box.natural_size_ = css.SizeWithAspectRatio{
+			width: CSSPixels.new(0)
+			height: CSSPixels.new(0)
+		}
 	} else {
 		box.natural_size_ = image_alt_text_natural_size(alt)
 	}
@@ -1015,8 +1036,17 @@ pub fn (mut box ImageBox) reset_for_relayout() {
 		box.renders_as_alt_text_ = false
 		box.natural_size_ = natural_size_at_resolution(intrinsic_size, box.source_resolution_)
 	} else {
-		box.renders_as_alt_text_ = true
-		box.natural_size_ = image_alt_text_natural_size(alt)
+		is_pending := if dom_node := box.dom_node() {
+			if element := dom_node.as_element() { element_image_is_pending(element) } else { false }
+		} else {
+			false
+		}
+		box.renders_as_alt_text_ = !is_pending
+		box.natural_size_ = if is_pending {
+			css.SizeWithAspectRatio{ width: CSSPixels.new(0), height: CSSPixels.new(0) }
+		} else {
+			image_alt_text_natural_size(alt)
+		}
 	}
 	if source != old_source {
 		box.svg_image_document_ = svg_image_document_for_source(box.document_, source)

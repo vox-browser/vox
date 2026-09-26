@@ -666,6 +666,28 @@ pub fn (image &HTMLImageElementModel) is_image_available() bool {
 	return image.current_request_.is_available()
 }
 
+// ImageProvider::is_image_pending(). A request that is fetching, waiting in
+// the pending slot, or still unavailable despite a concrete source is expected
+// to produce pixels later and must render as blank space instead of alt text.
+pub fn (image &HTMLImageElementModel) is_image_pending() bool {
+	if image.current_request_.state() == .broken {
+		return false
+	}
+	if image.current_request_.is_fetching() || image.current_request_.state() == .partially_available
+		|| image.pending_request_ != none {
+		return true
+	}
+	if image.current_request_.state() != .unavailable {
+		return false
+	}
+	if src := image.src_ {
+		if src != '' {
+			return true
+		}
+	}
+	return image.srcset_ != none
+}
+
 pub fn (image &HTMLImageElementModel) intrinsic_width() ?f64 {
 	data := image.current_request_.image_data() or { return none }
 	return data.data.intrinsic_width()
