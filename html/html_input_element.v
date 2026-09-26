@@ -1208,6 +1208,21 @@ pub fn (mut model HTMLInputElementModel) did_lose_focus() {
 }
 
 pub fn (model &HTMLInputElementModel) has_activation_behavior() bool {
+	// https://html.spec.whatwg.org/multipage/input.html#the-input-element:activation-behaviour
+	// Input activation runs this element's input activation behavior, if any,
+	// and then popover target activation.
+	// https://html.spec.whatwg.org/multipage/input.html#button-state-(type=button)
+	// Button-state inputs have no input activation behavior.
+	//
+	// NB: Per spec, input elements have activation behavior even when those
+	//     steps are a no-op. However, making a no-op input button the
+	//     activation target prevents activation behavior on ancestor anchors.
+	//     For compatibility with other browsers, let plain input buttons yield
+	//     to ancestors.
+	if model.type_state_ == .button
+		&& PopoverTargetAttributes.get_the_popover_target_element(input_element(model).as_node()) == none {
+		return false
+	}
 	return true
 }
 

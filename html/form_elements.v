@@ -321,12 +321,17 @@ pub mut:
 }
 
 pub fn HTMLButtonElementModel.create(element &dom.HTMLButtonElement) &HTMLButtonElementModel {
+	if element.button_element_model_ != unsafe { nil } {
+		return unsafe { &HTMLButtonElementModel(element.button_element_model_) }
+	}
 	mut control := FormAssociatedElement.create(button_element(element))
 	control.reset_form_owner()
 	model := &HTMLButtonElementModel{
 		element: element
 		control: control
 	}
+	mut mutable_element := unsafe { &dom.HTMLButtonElement(element) }
+	mutable_element.button_element_model_ = voidptr(model)
 	if form := control.form() {
 		if form_model := html_form_element_model_for(form) {
 			mut mutable_form_model := unsafe { &HTMLFormElementModel(form_model) }

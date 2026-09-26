@@ -84,6 +84,7 @@ __global (
 fn init() {
 	html_main_thread_event_loop = EventLoop.create(.window)
 	html_broadcast_channel_repository = BroadcastChannelRepository.create()
+	install_html_element_activation_behavior()
 }
 
 fn allocate_task_id() u64 {

@@ -1546,33 +1546,76 @@ fn event_target_hyperlink_element(et &EventTarget) ?&Element {
 	return none
 }
 
+// HTML's form and interactive elements (button, input, label, select, summary) override activation behavior. DOM
+// cannot import HTML, so HTML installs those element overrides here.
+pub struct ElementActivationBehaviorHooks {
+pub:
+	has_activation_behavior                             fn (&Element) bool = unsafe { nil }
+	activation_behavior                                 fn (&Element, &Event) = unsafe { nil }
+	legacy_pre_activation_behavior                      fn (&Element) = unsafe { nil }
+	legacy_cancelled_activation_behavior                fn (&Element) = unsafe { nil }
+	legacy_cancelled_activation_behavior_was_not_called fn (&Element) = unsafe { nil }
+}
+
+pub fn install_element_activation_behavior_hooks(hooks ElementActivationBehaviorHooks) {
+	dom_element_activation_behavior_hooks = hooks
+}
+
+fn event_target_element(et &EventTarget) ?&Element {
+	node := event_target_as_node(et) or { return none }
+	return node.as_element()
+}
+
 pub fn (et &EventTarget) has_activation_behavior() bool {
 	if element := event_target_hyperlink_element(et) {
 		// SVGAElement always has activation behavior; HTMLAnchorElement and HTMLAreaElement have it when they create a
 		// hyperlink.
 		return element.is_svg_element() || element.creates_a_hyperlink()
 	}
-	return false
+	element := event_target_element(et) or { return false }
+	hook := dom_element_activation_behavior_hooks.has_activation_behavior
+	if hook == unsafe { nil } {
+		return false
+	}
+	return hook(element)
 }
 
 pub fn (et &EventTarget) activation_behavior(event &Event) {
 	if element := event_target_hyperlink_element(et) {
 		mut mutable_element := unsafe { &Element(element) }
 		mutable_element.activate_the_hyperlink(event)
+		return
+	}
+	element := event_target_element(et) or { return }
+	hook := dom_element_activation_behavior_hooks.activation_behavior
+	if hook != unsafe { nil } {
+		hook(element, event)
 	}
 }
 
 // NOTE: These only exist for checkbox and radio input elements.
 pub fn (et &EventTarget) legacy_pre_activation_behavior() {
-	_ = et
+	element := event_target_element(et) or { return }
+	hook := dom_element_activation_behavior_hooks.legacy_pre_activation_behavior
+	if hook != unsafe { nil } {
+		hook(element)
+	}
 }
 
 pub fn (et &EventTarget) legacy_cancelled_activation_behavior() {
-	_ = et
+	element := event_target_element(et) or { return }
+	hook := dom_element_activation_behavior_hooks.legacy_cancelled_activation_behavior
+	if hook != unsafe { nil } {
+		hook(element)
+	}
 }
 
 pub fn (et &EventTarget) legacy_cancelled_activation_behavior_was_not_called() {
-	_ = et
+	element := event_target_element(et) or { return }
+	hook := dom_element_activation_behavior_hooks.legacy_cancelled_activation_behavior_was_not_called
+	if hook != unsafe { nil } {
+		hook(element)
+	}
 }
 
 pub fn (et &EventTarget) is_universal_global_scope_mixin() bool {

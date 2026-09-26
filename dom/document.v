@@ -42,6 +42,7 @@ __global (
 	dom_custom_element_definition_lookup        CustomElementDefinitionLookupCallback
 	dom_custom_element_registry_is_scoped       CustomElementRegistryIsScopedCallback
 	dom_custom_element_registry_append_document CustomElementRegistryAppendDocumentCallback
+	dom_element_activation_behavior_hooks       ElementActivationBehaviorHooks
 )
 
 // Simple color representation
@@ -607,7 +608,8 @@ pub struct HTMLBRElement {
 pub struct HTMLButtonElement {
 	HTMLElement
 pub mut:
-	command_for_element_ ?&Element
+	command_for_element_  ?&Element
+	button_element_model_ voidptr = unsafe { nil }
 }
 
 @[heap]
