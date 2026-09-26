@@ -31,6 +31,31 @@ fn capture_test_devices() []StoredDevice {
 	]
 }
 
+@[heap]
+struct CaptureTestFocus {
+mut:
+	focused bool = true
+}
+
+// A fully active top-level document whose system focus the test controls.
+fn capture_test_document(focus &CaptureTestFocus) &dom.Document {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{})
+	mut navigable := &dom.Navigable{
+		is_top_level_traversable_: true
+		html_model_handle_: voidptr(focus)
+		is_focused_callback_: fn (handle voidptr) bool {
+			return unsafe { &CaptureTestFocus(handle) }.focused
+		}
+	}
+	navigable.traversable_navigable_ = navigable
+	navigable.set_active_document(document)
+	document.set_cached_navigable(navigable)
+	// NB: A document starts hidden; the page showing it makes it visible.
+	document.visibility_state = .visible
+	return document
+}
+
 fn capture_test_environment() &MediaCaptureEnvironment {
 	return &MediaCaptureEnvironment{
 		test_mode: true
@@ -46,14 +71,14 @@ fn test_device_info_json_and_supported_constraints() {
 	assert json.label == 'Microphone'
 	assert json.group_id == 'group'
 	environment := capture_test_environment()
-	devices := MediaDevices.create(environment)
+	devices := MediaDevices.create(capture_test_document(&CaptureTestFocus{}), environment)
 	supported := devices.get_supported_constraints()
 	assert supported.width && supported.device_id && supported.background_blur
 }
 
 fn test_enumeration_redacts_and_limits_microphones_until_exposed() {
 	environment := capture_test_environment()
-	mut devices := MediaDevices.create(environment)
+	mut devices := MediaDevices.create(capture_test_document(&CaptureTestFocus{}), environment)
 	promise := devices.enumerate_devices()
 	devices.run_until_idle()
 	assert promise.state() == .fulfilled
@@ -74,17 +99,20 @@ fn test_enumeration_redacts_and_limits_microphones_until_exposed() {
 
 fn test_enumeration_and_user_media_wait_for_view_focus_and_cache() {
 	mut environment := capture_test_environment()
-	environment.visible = false
-	environment.focused = false
+	mut focus := &CaptureTestFocus{
+		focused: false
+	}
+	mut document := capture_test_document(focus)
+	document.visibility_state = .hidden
 	environment.audio_device_cache_ready = false
-	mut devices := MediaDevices.create(environment)
+	mut devices := MediaDevices.create(document, environment)
 	enumeration := devices.enumerate_devices()
 	media := devices.get_user_media(MediaStreamConstraints{ audio: .enabled })
 	devices.run_until_idle()
 	assert enumeration.state() == .pending
 	assert media.state() == .pending
-	environment.visible = true
-	environment.focused = true
+	document.visibility_state = .visible
+	focus.focused = true
 	environment.audio_device_cache_ready = true
 	devices.did_observe_audio_device_cache_update()
 	devices.run_until_idle()
@@ -94,7 +122,7 @@ fn test_enumeration_and_user_media_wait_for_view_focus_and_cache() {
 
 fn test_get_user_media_validates_and_selects_requested_device() {
 	environment := capture_test_environment()
-	mut devices := MediaDevices.create(environment)
+	mut devices := MediaDevices.create(capture_test_document(&CaptureTestFocus{}), environment)
 	missing := devices.get_user_media(none)
 	assert missing.state() == .rejected
 	assert missing.reason().starts_with('TypeError:')
@@ -176,7 +204,7 @@ fn test_device_backed_track_capture_start_ignores_stale_completion() {
 
 fn test_device_change_notification_only_fires_for_exposed_changes() {
 	environment := capture_test_environment()
-	mut devices := MediaDevices.create(environment)
+	mut devices := MediaDevices.create(capture_test_document(&CaptureTestFocus{}), environment)
 	devices.stored_device_list = capture_test_devices()
 	devices.set_device_information_exposure(true, false, true)
 	devices.run_until_idle()
@@ -202,4 +230,18 @@ fn test_track_event_retains_its_track() {
 	}, 12.5)
 	assert event.track() == track
 	assert event.Event.type_name() == 'addtrack'
+}
+
+fn test_pending_enumeration_proceeds_when_the_document_becomes_visible() {
+	environment := capture_test_environment()
+	mut document := capture_test_document(&CaptureTestFocus{})
+	document.visibility_state = .hidden
+	mut devices := MediaDevices.create(document, environment)
+	enumeration := devices.enumerate_devices()
+	devices.run_until_idle()
+	assert enumeration.state() == .pending
+
+	document.update_the_visibility_state(.visible)
+	devices.run_until_idle()
+	assert enumeration.state() == .fulfilled
 }

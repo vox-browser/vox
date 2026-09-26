@@ -705,13 +705,10 @@ pub:
 }
 
 @[heap]
+// The platform side of media capture: the audio device cache, the microphone permission, and test mode. The
+// window-side state (full activity, visibility, focus, and permissions policy) comes from MediaDevices' Document.
 pub struct MediaCaptureEnvironment {
 pub mut:
-	fully_active             bool = true
-	visible                  bool = true
-	focused                  bool = true
-	can_use_microphone       bool = true
-	can_use_camera           bool = true
 	test_mode                bool
 	audio_device_cache_ready bool = true
 	microphone_permission    permissionsapi.PermissionState = .prompt
@@ -814,6 +811,8 @@ struct PendingGetUserMediaRequest {
 pub struct MediaDevices {
 	dom.EventTarget
 pub:
+	// MediaDevices' Window, represented by its associated Document; DOM cannot name the HTML Window.
+	document_   &dom.Document
 	environment &MediaCaptureEnvironment
 mut:
 	devices_live_map                     map[string]bool
@@ -824,24 +823,52 @@ mut:
 	media_stream_track_sources           map[u64]bool
 	pending_enumerate_devices_requests   []&MediaDeviceListPromise
 	pending_get_user_media_requests      []PendingGetUserMediaRequest
-	pending_request_listener_initialized bool
+	pending_request_state_change_listener_ ?&dom.IDLEventListener
 	tasks                                []MediaDevicesTask
 	device_change_event_count            int
 }
 
-pub fn MediaDevices.create(environment &MediaCaptureEnvironment) &MediaDevices {
-	mut media_devices := &MediaDevices{ environment: environment }
+pub fn MediaDevices.create(document &dom.Document, environment &MediaCaptureEnvironment) &MediaDevices {
+	mut media_devices := &MediaDevices{
+		document_: document
+		environment: environment
+	}
 	media_devices.initialize_pending_request_state_change_listener()
 	media_devices.did_observe_audio_device_cache_update()
 	return media_devices
 }
 
 pub fn (mut media_devices MediaDevices) initialize_pending_request_state_change_listener() {
-	media_devices.pending_request_listener_initialized = true
+	media_devices_pointer := voidptr(media_devices)
+	listener := dom.IDLEventListener.create(&dom.CallbackType{
+		handle_event: fn [media_devices_pointer] (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			mut devices := unsafe { &MediaDevices(media_devices_pointer) }
+			devices.process_pending_enumerate_devices_requests()
+			devices.process_pending_get_user_media_requests()
+			return dom.js_undefined()
+		}
+	})
+	media_devices.pending_request_state_change_listener_ = listener
+
+	unsafe { &dom.EventTarget(media_devices.document_.as_node()) }.add_event_listener_without_options('visibilitychange',
+		listener)
+	if window := media_devices.document_.get_window() {
+		window_target := unsafe { &dom.EventTarget(window) }
+		window_target.add_event_listener_without_options('focus', listener)
+		window_target.add_event_listener_without_options('blur', listener)
+	}
 }
 
 pub fn (mut media_devices MediaDevices) finalize() {
-	media_devices.pending_request_listener_initialized = false
+	listener := media_devices.pending_request_state_change_listener_ or { return }
+	unsafe { &dom.EventTarget(media_devices.document_.as_node()) }.remove_event_listener_without_options('visibilitychange',
+		listener)
+	if window := media_devices.document_.get_window() {
+		window_target := unsafe { &dom.EventTarget(window) }
+		window_target.remove_event_listener_without_options('focus', listener)
+		window_target.remove_event_listener_without_options('blur', listener)
+	}
+	media_devices.pending_request_state_change_listener_ = none
 }
 
 pub fn (media_devices &MediaDevices) get_supported_constraints() MediaTrackSupportedConstraints {
@@ -865,11 +892,11 @@ pub fn (media_devices &MediaDevices) camera_information_can_be_exposed() bool {
 }
 
 pub fn (media_devices &MediaDevices) can_use_microphone_feature() bool {
-	return media_devices.environment.can_use_microphone
+	return media_devices.document_.is_allowed_to_use_feature(.microphone)
 }
 
 pub fn (media_devices &MediaDevices) can_use_camera_feature() bool {
-	return media_devices.environment.can_use_camera
+	return media_devices.document_.is_allowed_to_use_feature(.camera)
 }
 
 pub fn (media_devices &MediaDevices) device_enumeration_can_proceed() bool {
@@ -877,11 +904,12 @@ pub fn (media_devices &MediaDevices) device_enumeration_can_proceed() bool {
 }
 
 pub fn (media_devices &MediaDevices) get_user_media_can_proceed() bool {
-	return media_devices.is_in_view() && media_devices.environment.focused
+	return media_devices.is_in_view() && media_devices.document_.has_focus()
 }
 
 pub fn (media_devices &MediaDevices) is_in_view() bool {
-	return media_devices.environment.fully_active && media_devices.environment.visible
+	document := media_devices.document_
+	return document.is_fully_active() && document.visibility_state_value() == .visible
 }
 
 pub fn (media_devices &MediaDevices) has_live_device_of_kind(kind MediaDeviceKind) bool {
@@ -1043,7 +1071,7 @@ pub fn (mut media_devices MediaDevices) get_user_media(constraints ?MediaStreamC
 		promise.reject('TypeError: No media types requested')
 		return promise
 	}
-	if !media_devices.environment.fully_active {
+	if !media_devices.document_.is_fully_active() {
 		promise.reject('InvalidStateError: Document is not fully active')
 		return promise
 	}

@@ -9,6 +9,7 @@ module html
 
 import dom
 import loader
+import mediacapture
 
 // NavigatorLanguage.h. The language preferences are the process-wide ResourceLoader's, which never holds an empty
 // list.
@@ -68,6 +69,7 @@ pub:
 	configuration NavigatorHostConfiguration
 pub mut:
 	plugin_array_             ?&PluginArray
+	media_devices_            ?&mediacapture.MediaDevices
 	mime_type_array_          ?&MimeTypeArray
 	clipboard_                ?&NavigatorCapability
 	geolocation_              ?&NavigatorCapability
@@ -169,6 +171,18 @@ fn (mut navigator Navigator) capability(mut slot ?&NavigatorCapability, name str
 	}
 	slot = value
 	return value
+}
+
+// https://w3c.github.io/mediacapture-main/#dom-navigator-mediadevices
+pub fn (mut navigator Navigator) media_devices() ?&mediacapture.MediaDevices {
+	if devices := navigator.media_devices_ {
+		return devices
+	}
+	document := navigator.configuration.associated_document or { return none }
+	// NB: V has no platform audio device cache yet, so the capture environment starts without devices.
+	devices := mediacapture.MediaDevices.create(document, &mediacapture.MediaCaptureEnvironment{})
+	navigator.media_devices_ = devices
+	return devices
 }
 
 pub fn (mut navigator Navigator) clipboard() &NavigatorCapability {

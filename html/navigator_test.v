@@ -76,3 +76,13 @@ fn test_navigator_languages_come_from_the_resource_loader() {
 	assert navigator.language() == 'fr-CA'
 	assert navigator.languages() == ['fr-CA', 'en']
 }
+
+fn test_navigator_media_devices_is_a_lazy_singleton_for_the_window_document() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut navigator := Navigator.create(NavigatorHostConfiguration{
+		associated_document: document
+	})
+	devices := navigator.media_devices() or { panic('missing media devices') }
+	assert voidptr(devices) == voidptr(navigator.media_devices() or { panic('missing media devices') })
+	assert voidptr(devices.document_) == voidptr(document)
+}
