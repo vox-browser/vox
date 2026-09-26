@@ -309,10 +309,19 @@ interface boundary. Their value replacements retain UTF-16 offsets, synchronize
 the control model and shadow text during replay, restore the control's directed
 selection, coalesce typing and directional deletion runs, and keep paste as a
 separate undo unit.
-The live `execCommand` adapter now realizes serialized host changes through
-reversible proxy removals and insertions, records command-specific history
-categories, preserves typing coalescence across its staging replacements, and
-routes `execCommand("undo")` and `execCommand("redo")` to the shared history.
+`execCommand()` and the `queryCommand*()` methods now run the translated
+Commands and Internal/Algorithms steps directly on the live DOM instead of a
+serialized host model. Commands mutate through the recording proxies, read
+state and values from resolved style, record command-specific history
+categories, and route `execCommand("undo")` and `execCommand("redo")` to the
+shared history. The paste pipeline records through the same proxies, so pasted
+content is undone as one step.
+Rich copy now serializes through the translated styled-markup selection,
+accumulator, and serializer, which derive interchange-newline boundaries from
+visible positions and flatten lone transport wrappers. The caret navigator
+follows the current upstream editing canonicalization, adjacent-host, word, and
+editing-host boundary rules; line and page movement still wait for a painting
+hit-test display list.
 Case-insensitive command-enabled queries now reflect the actual undo and redo
 stack state, including histories created by form controls.
 The Page bridge now exposes navigable undo and redo entry points, recognizes
@@ -557,6 +566,31 @@ bodies, rewritten where necessary, and promoted under an implementation name;
 the current audit has no quarantined coverage files. The remaining `Present`
 modules still have upstream bodies that require the same behavioral audit.
 
+A 2026-09-26 triage of the 285 trivial-bodied V functions against upstream
+found 230 faithful, 28 V-only helpers (25 adapters, 3 placeholders), and 27 real
+divergences.
+Those translated since: bare `safe`/`unsafe` alignment keywords, canvas repaint
+requests, navigator languages, queued media source and element tasks,
+traversal initiator sandboxing, theme color resolution, layout tree teardown,
+time-origin-relative DOM timestamps, and external software hand-off. Still
+open:
+
+- Event dispatch does not reach element activation behavior (anchor, area,
+  button, input, label, select, summary, SVG `a`); the browser shell follows
+  links itself.
+- `Element.is_focusable()` is a tag-name switch instead of the per-element
+  overrides with `meets_focusable_area_rendering_requirements()`; image maps
+  have no `usemap` association.
+- The style element's script-blocking style sheet state (parser document,
+  parser-created sheet, media match, enabled-at-creation) is not tracked.
+- The compositor keeps its own visual context tree instead of
+  `AccumulatedVisualContextTree` spatial transforms and sticky offsets.
+- The document's navigation start time is never recorded, so time origins are
+  zero.
+- Stream transfer, IndexedDB connection queues, the WebGL context hookup,
+  ML-KEM, MediaCapture's window wiring, and the WorkerNavigator mixins remain
+  untranslated.
+
 `Complete` means every upstream `.cpp` unit has an audited V implementation
 mapping. `Present` means translated module code exists but its full upstream
 coverage has not yet been audited. `Untranslated` means no module translation
@@ -596,7 +630,7 @@ from the current-module totals.
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
 | `DOM` | 59 | 34,859 | 36,735 | 2,205 | Complete |
 | `DOMURL` | 4 | 1,039 | 758 | 336 | Complete |
-| `Editing` | 26 | 12,720 | 8,515 | 797 | Complete |
+| `Editing` | 26 | 12,720 | 13,918 | 226 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
 | `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
@@ -636,7 +670,7 @@ from the current-module totals.
 | `SRI` | 1 | 198 | 156 | 100 | Complete |
 | `SVG` | 82 | 9,020 | 5,184 | 1,222 | Complete |
 | `SecureContexts` | 1 | 76 | 59 | 13 | Complete |
-| `Selection` | 3 | 1,470 | 648 | 192 | Complete |
+| `Selection` | 3 | 1,470 | 1,479 | 332 | Present |
 | `Serial` | 2 | 366 | 243 | 35 | Complete |
 | `ServiceWorker` | 11 | 2,608 | 1,573 | 513 | Complete |
 | `Speech` | 11 | 421 | 624 | 111 | Complete |
@@ -661,7 +695,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **353,673** | **72,775** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **359,907** | **72,344** | **74 complete, 4 present, 0 untranslated** |
 
 ## Verification
 
