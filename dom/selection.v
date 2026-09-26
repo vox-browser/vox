@@ -5,10 +5,30 @@
 // Translated from Libraries/LibWeb/Selection/Selection.{h,cpp}.
 module dom
 
-import encoding.utf8
+import infra
 
 fn selection_same_node(a &Node, b &Node) bool {
 	return voidptr(a) == voidptr(b)
+}
+
+fn selection_same_optional_node(a ?&Node, b ?&Node) bool {
+	left := a or { return b == none }
+	right := b or { return false }
+	return voidptr(left) == voidptr(right)
+}
+
+// The names of Editing's prohibited paragraph children. Caret canonicalization shares Editing's classification of
+// paragraph structure, but DOM cannot import the editing package.
+pub const editing_prohibited_paragraph_child_names = ['address', 'article', 'aside', 'blockquote', 'caption',
+	'center', 'col', 'colgroup', 'dd', 'details', 'dir', 'div', 'dl', 'dt', 'fieldset', 'figcaption', 'figure',
+	'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'hgroup', 'hr', 'li', 'listing', 'menu', 'nav',
+	'ol', 'p', 'plaintext', 'pre', 'section', 'summary', 'table', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'ul',
+	'xmp']
+
+// Editing::is_prohibited_paragraph_child().
+fn is_editing_prohibited_paragraph_child(node &Node) bool {
+	element := node.as_element() or { return false }
+	return element.is_html_element() && element.local_name() in editing_prohibited_paragraph_child_names
 }
 
 fn selection_same_range(a &Range, b &Range) bool {
@@ -48,11 +68,11 @@ enum WordSegmentKind {
 }
 
 fn word_segment_kind(segment string) WordSegmentKind {
-	runes := segment.runes()
-	if runes.len > 0 && runes.all(utf8.is_space(it)) {
+	code_points := segment.runes()
+	if code_points.all(infra.code_point_has_separator_general_category(u32(it))) {
 		return .separator
 	}
-	if runes.len > 0 && runes.all(utf8.is_rune_global_punct(it)) {
+	if code_points.all(infra.code_point_has_punctuation_general_category(u32(it))) {
 		return .punctuation
 	}
 	return .word
@@ -67,17 +87,27 @@ fn text_node_has_rendered_text(text &Text) bool {
 	return false
 }
 
+// HTMLBRElement.cpp's is_rendered_inline_content(): rendered inline content that would appear before a <br> on its
+// line.
 fn is_rendered_inline_content_before_break(node &Node) bool {
 	if node.is_text() {
 		return text_node_has_rendered_text(unsafe { &Text(node) })
 	}
+	if !node.is_element() {
+		return false
+	}
 	layout_node := node.layout_node() or { return false }
-	return layout_node.is_atomic_inline()
+	if layout_node.is_replaced_box() {
+		return true
+	}
+	display := layout_node.display()
+	return display.is_inline_outside() && !display.is_flow_inside()
 }
 
+// A <br> that renders an empty line hosts a caret position on its parent, at its child index. This covers a leading
+// <br> in a paragraph with text after it, and the lines between consecutive <br>s.
 fn is_empty_line_break(node &Node) bool {
-	element := node.as_element() or { return false }
-	if element.local_name() != 'br' || !node.is_editable() {
+	if !node.is_html_br_element() || !node.is_editable() {
 		return false
 	}
 	layout_node := node.layout_node() or { return false }
@@ -111,6 +141,7 @@ fn is_atomic_inline_caret_host(node &Node) bool {
 	return node.parent() != none && node.is_editable() && layout_node.is_atomic_inline()
 }
 
+// A block-level element that renders no text but hosts an empty line where the caret can sit, such as `<p><br></p>`.
 fn is_empty_line_host(node &Node) bool {
 	element := node.as_element() or { return false }
 	if !node.is_editable() {
@@ -126,8 +157,10 @@ fn is_empty_line_host(node &Node) bool {
 		if current.is_text() && text_node_has_rendered_text(unsafe { &Text(current) }) {
 			return false
 		}
-		if is_atomic_inline_caret_host(current) {
-			return false
+		if descendant_layout_node := current.layout_node() {
+			if current.is_editable() && descendant_layout_node.is_atomic_inline() {
+				return false
+			}
 		}
 		descendant = current.next_in_pre_order(node)
 	}
@@ -225,49 +258,102 @@ fn CaretNavigator.navigation_origin(location CaretLocation, direction CaretNavig
 }
 
 pub fn (navigator &CaretNavigator) inline_coordinate(location CaretLocation) ?f64 {
-	_ = navigator
+	mut document := unsafe { &Document(navigator.document) }
+	document.update_layout_if_needed_for_node(location.node, .cursor_line_navigation)
 	if location.node.is_text() {
-		text := unsafe { &Text(location.node) }
-		if coordinate := cursor_inline_coordinate(text, location.offset, location.affinity) {
-			return coordinate
-		}
-		line_start := find_line_start(text.data(), location.offset)
-		return f64(location.offset - line_start)
+		return cursor_inline_coordinate(unsafe { &Text(location.node) }, location.offset,
+			location.affinity)
 	}
+
+	if location.offset > 0 {
+		if child_before := location.node.child_at_index(location.offset - 1) {
+			if is_atomic_inline_caret_host(child_before) {
+				// A parent boundary after an atomic inline can paint at the same position as the end of the preceding text.
+				// Use that text position when available so a vertical round trip preserves the visually chosen column.
+				if editing_host := location.node.editing_host() {
+					if previous := navigator.adjacent_caret_host(child_before, editing_host, .backward) {
+						if previous.is_text() {
+							return cursor_inline_coordinate(unsafe { &Text(previous) }, previous.length(),
+								.downstream)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// FIXME: Upstream answers with the inline coordinate of the document's current caret rect, which requires the
+	//        painting hit-test display list. Use the boundary offset until that is available.
 	return f64(location.offset)
 }
 
 fn (navigator &CaretNavigator) move_to_adjacent_caret_host(location CaretLocation, direction CaretNavigationDirection) ?CaretLocation {
 	editing_host := location.node.editing_host() or { return none }
+
+	mut document := unsafe { &Document(navigator.document) }
+	document.update_layout_if_needed_for_node(editing_host, .cursor_line_navigation)
+
 	origin := CaretNavigator.navigation_origin(location, direction)
-	mut target := ?&Node(none)
 	mut adjacent_child := ?&Node(none)
 	if direction == .forward {
 		adjacent_child = location.node.child_at_index(location.offset)
 	} else if location.offset > 0 {
 		adjacent_child = location.node.child_at_index(location.offset - 1)
 	}
+	mut target := ?&Node(none)
+	mut target_is_adjacent_child := false
 	if child := adjacent_child {
-		if child.is_text() || is_atomic_inline_caret_host(child) || is_empty_line_host(child)
-			|| is_empty_line_break(child) {
-			target = child
+		// INTEROP: An empty-line <br> contributes a single caret position at its parent boundary. Once the caret is already
+		// at that boundary, forward movement must start after the <br> instead of rediscovering the same position.
+		if direction == .forward && is_empty_line_break(child) {
+			target = navigator.adjacent_caret_host(child, editing_host, direction)
+		} else {
+			is_rendered_editable_text := child.is_text() && child.is_editable()
+				&& text_node_has_rendered_text(unsafe { &Text(child) })
+			if is_rendered_editable_text || is_atomic_inline_caret_host(child)
+				|| is_empty_line_host(child) || is_empty_line_break(child) {
+				target = child
+				target_is_adjacent_child = true
+			}
 		}
 	}
 	if target == none {
 		target = navigator.adjacent_caret_host(origin, editing_host, direction)
 	}
-	candidate := target or { return none }
-	if is_atomic_inline_caret_host(candidate) {
-		parent := candidate.parent() or { return none }
-		return CaretLocation{
-			node: parent
-			offset: candidate.index() + if direction == .forward { 1 } else { 0 }
+	mut candidate := target or { return none }
+
+	mut offset := 0
+	mut affinity := TextAffinity.downstream
+
+	if is_atomic_inline_caret_host(candidate) && candidate.parent() != none {
+		target_is_in_origin_parent := selection_same_optional_node(candidate.parent(), origin.parent())
+		if direction == .backward && target_is_in_origin_parent {
+			if previous_target := navigator.adjacent_caret_host(candidate, editing_host, direction) {
+				if previous_target.is_text() {
+					candidate = previous_target
+				}
+			}
+		}
+		if is_atomic_inline_caret_host(candidate) {
+			if parent := candidate.parent() {
+				// INTEROP: Enter an atomic-only line at its near edge, but cross an atomic child adjacent to the current
+				// parent boundary. Chromium exposes both edges in the former case and one visual step in the latter.
+				use_boundary_after_target := if target_is_adjacent_child {
+					direction == .forward
+				} else {
+					(direction == .forward) == target_is_in_origin_parent
+				}
+				offset = candidate.index() + if use_boundary_after_target { 1 } else { 0 }
+				candidate = parent
+			}
+		}
+	} else if candidate.is_html_br_element() {
+		if parent := candidate.parent() {
+			offset = candidate.index()
+			candidate = parent
 		}
 	}
-	if is_empty_line_break(candidate) {
-		parent := candidate.parent() or { return none }
-		return CaretLocation{ node: parent, offset: candidate.index() }
-	}
+
 	if candidate.is_text() {
 		text := unsafe { &Text(candidate) }
 		position := if direction == .forward {
@@ -275,55 +361,156 @@ fn (navigator &CaretNavigator) move_to_adjacent_caret_host(location CaretLocatio
 		} else {
 			cursor_position_at_visual_end(text)
 		}
-		if destination := position {
-			return CaretLocation{
-				node: candidate
-				offset: destination.offset
-				affinity: destination.affinity
-			}
-		}
-		return CaretLocation{
-			node: candidate
-			offset: if direction == .forward { 0 } else { text.length() }
+		destination := position or { return none }
+		offset = destination.offset
+		affinity = destination.affinity
+	}
+
+	return CaretLocation{
+		node: candidate
+		offset: offset
+		affinity: affinity
+	}
+}
+
+fn caret_is_formatting_whitespace(candidate &Node) bool {
+	if !candidate.is_text() {
+		return false
+	}
+	if !unsafe { &Text(candidate) }.data().runes().all(it in [` `, `\t`, `\n`, `\f`, `\r`]) {
+		return false
+	}
+	if previous_sibling := candidate.previous_sibling() {
+		if is_editing_prohibited_paragraph_child(previous_sibling) {
+			return true
 		}
 	}
-	return CaretLocation{ node: candidate, offset: 0 }
+	if next_sibling := candidate.next_sibling() {
+		if is_editing_prohibited_paragraph_child(next_sibling) {
+			return true
+		}
+	}
+	return false
+}
+
+fn caret_can_descend_into(candidate &Node) bool {
+	if !candidate.is_editable() {
+		return false
+	}
+	if candidate.is_text() {
+		// INTEROP: Source formatting whitespace between blocks is not a rendered caret position. Chromium keeps
+		//          an adjacent editing-host boundary at the element level instead of descending into that text.
+		return !caret_is_formatting_whitespace(candidate)
+	}
+	return candidate.is_element() && candidate.has_children()
+}
+
+fn caret_is_trailing_placeholder(candidate &Node) bool {
+	if !candidate.is_html_br_element() {
+		return false
+	}
+	mut sibling := candidate.next_sibling()
+	for sibling != none {
+		current := sibling or { break }
+		if !current.is_text()
+			|| !unsafe { &Text(current) }.data().runes().all(it in [` `, `\t`, `\n`, `\f`, `\r`]) {
+			return false
+		}
+		sibling = current.next_sibling()
+	}
+	return true
 }
 
 pub fn (navigator &CaretNavigator) canonical_location_for_editing(location CaretLocation) CaretLocation {
 	_ = navigator
 	mut node := location.node
 	mut offset := location.offset
+
 	if node.is_comment() || node.type_() == .processing_instruction_node {
+		// INTEROP: Comments and processing instructions cannot contain rendered carets, and DOM range insertion
+		//          rejects them. Normalize the caret to the parent boundary immediately before the node, matching the
+		//          insertParagraph command's comment handling and giving insertion commands a valid boundary.
 		parent := node.parent() or { return location }
 		offset = node.index()
 		node = parent
+	} else if caret_is_formatting_whitespace(node) {
+		// INTEROP: Source indentation between block children of an editing host is not a rendered caret position.
+		//          Blink and WebKit associate it with the following paragraph, or the preceding paragraph when the
+		//          whitespace trails the final block.
+		if next_sibling := node.next_sibling() {
+			node = next_sibling
+			offset = 0
+		} else if previous_sibling := node.previous_sibling() {
+			node = previous_sibling
+			offset = node.length()
+		}
 	} else if !node.is_element() {
 		return location
 	}
+
 	for node.is_element() {
-		mut before := ?&Node(none)
-		if offset > 0 {
-			before = node.child_at_index(offset - 1)
+		mut before_offset := offset
+		mut before := if before_offset > 0 { node.child_at_index(before_offset - 1) } else { ?&Node(none) }
+		// INTEROP: A trailing br is the block's caret placeholder. An element boundary after it canonicalizes to the
+		//          preceding editable content, rather than remaining after the placeholder itself.
+		for {
+			candidate := before or { break }
+			if !caret_is_trailing_placeholder(candidate) && !caret_is_formatting_whitespace(candidate) {
+				break
+			}
+			before_offset--
+			before = if before_offset > 0 { node.child_at_index(before_offset - 1) } else { ?&Node(none) }
 		}
-		after := node.child_at_index(offset)
+		if before_offset != offset {
+			offset = before_offset
+		}
+
+		mut after := node.child_at_index(offset)
+		for {
+			candidate := after or { break }
+			if !caret_is_formatting_whitespace(candidate) {
+				break
+			}
+			after = candidate.next_sibling()
+		}
+
+		// INTEROP: A boundary between rendered blocks belongs to the following block. Descending backward would
+		//          cross a paragraph boundary and expose the end of the preceding block as the same caret.
 		if candidate := after {
-			if candidate.is_editable() && (candidate.is_text() || candidate.has_children()) {
+			if is_editing_prohibited_paragraph_child(candidate) && caret_can_descend_into(candidate) {
 				node = candidate
 				offset = 0
 				continue
 			}
 		}
 		if candidate := before {
-			if candidate.is_editable() && (candidate.is_text() || candidate.has_children()) {
+			if caret_can_descend_into(candidate) {
 				node = candidate
 				offset = candidate.length()
 				continue
 			}
 		}
+		before_allows_forward_descent := if candidate := before {
+			caret_is_formatting_whitespace(candidate) || candidate.is_html_br_element()
+		} else {
+			true
+		}
+		if before_allows_forward_descent {
+			if candidate := after {
+				if caret_can_descend_into(candidate) {
+					node = candidate
+					offset = 0
+					continue
+				}
+			}
+		}
 		break
 	}
-	return CaretLocation{ node: node, offset: offset, affinity: location.affinity }
+	return CaretLocation{
+		node: node
+		offset: offset
+		affinity: location.affinity
+	}
 }
 
 pub fn (navigator &CaretNavigator) upstream_equivalent_location(location CaretLocation) CaretLocation {
@@ -331,6 +518,9 @@ pub fn (navigator &CaretNavigator) upstream_equivalent_location(location CaretLo
 }
 
 pub fn (navigator &CaretNavigator) canonical_location_for_extension(location CaretLocation, direction CaretNavigationDirection) ?CaretLocation {
+	// INTEROP: A rendered caret boundary can have several equivalent DOM representations, especially between styled
+	// text nodes and beside atomic inline content. Chromium canonicalizes the anchor when selection first extends so
+	// subsequent movement includes the same rendered content regardless of which equivalent boundary held the caret.
 	if !location.node.is_text() {
 		return none
 	}
@@ -339,7 +529,10 @@ pub fn (navigator &CaretNavigator) canonical_location_for_extension(location Car
 		|| (direction == .backward && location.offset != 0) {
 		return none
 	}
+
 	editing_host := location.node.editing_host() or { return none }
+	mut document := unsafe { &Document(navigator.document) }
+	document.update_layout_if_needed_for_node(editing_host, .cursor_line_navigation)
 	target := navigator.adjacent_caret_host(location.node, editing_host, direction) or { return none }
 	if is_atomic_inline_caret_host(target) {
 		parent := target.parent() or { return none }
@@ -373,19 +566,32 @@ fn (_ &CaretNavigator) location_after_atomic_inline(atomic_inline &Node) ?CaretL
 
 fn (navigator &CaretNavigator) location_before_atomic_inline(atomic_inline &Node, alteration SelectionAlteration) ?CaretLocation {
 	parent := atomic_inline.parent() or { return none }
+	// INTEROP: Chromium exposes the parent boundary when extending a range, but canonicalizes a collapsed caret to
+	// the preceding text end when possible. This prevents Right from visiting two visually identical positions before
+	// the atomic inline while retaining the range boundary needed to include it during selection.
 	if alteration == .extend {
-		return CaretLocation{ node: parent, offset: atomic_inline.index() }
+		return CaretLocation{
+			node: parent
+			offset: atomic_inline.index()
+		}
 	}
-	editing_host := atomic_inline.editing_host() or {
-		return CaretLocation{ node: parent, offset: atomic_inline.index() }
+
+	editing_host := atomic_inline.editing_host() or { return none }
+	if previous := navigator.adjacent_caret_host(atomic_inline, editing_host, .backward) {
+		if previous.is_text() {
+			if position := cursor_position_at_visual_end(unsafe { &Text(previous) }) {
+				return CaretLocation{
+					node: previous
+					offset: position.offset
+					affinity: position.affinity
+				}
+			}
+		}
 	}
-	previous := navigator.adjacent_caret_host(atomic_inline, editing_host, .backward) or {
-		return CaretLocation{ node: parent, offset: atomic_inline.index() }
+	return CaretLocation{
+		node: parent
+		offset: atomic_inline.index()
 	}
-	if previous.is_text() {
-		return CaretLocation{ node: previous, offset: previous.length() }
-	}
-	return CaretLocation{ node: parent, offset: atomic_inline.index() }
 }
 
 fn (navigator &CaretNavigator) canonicalize_backward_word_location(location CaretLocation, alteration SelectionAlteration) ?CaretLocation {
@@ -407,12 +613,53 @@ fn (navigator &CaretNavigator) canonicalize_backward_word_location(location Care
 	return CaretLocation{ node: previous, offset: previous.length() }
 }
 
-fn (navigator &CaretNavigator) move_by_word(initial_location CaretLocation, alteration SelectionAlteration, direction CaretNavigationDirection) ?CaretLocation {
-	mut location := initial_location
-	if !location.node.is_text() {
-		return navigator.move_to_adjacent_caret_host(location, direction)
+fn (navigator &CaretNavigator) word_stop(location CaretLocation, alteration SelectionAlteration, direction CaretNavigationDirection) ?CaretLocation {
+	if direction == .backward {
+		return navigator.canonicalize_backward_word_location(location, alteration)
 	}
-	mut text := unsafe { &Text(location.node) }
+	return location
+}
+
+fn (navigator &CaretNavigator) move_by_word(initial_location CaretLocation, alteration SelectionAlteration, direction CaretNavigationDirection) ?CaretLocation {
+	// INTEROP: Chromium word movement skips separators and can continue through DOM-split text when the fragments
+	// share a rendered inline context. Punctuation and atomic inline content remain observable stops. This is editing
+	// behavior rather than a direct application of the Unicode segmentation algorithm.
+	editing_host := initial_location.node.editing_host()
+	mut document := unsafe { &Document(navigator.document) }
+	document.update_layout_if_needed_for_node(initial_location.node, .cursor_line_navigation)
+
+	mut location := initial_location
+	mut text := unsafe { &Text(nil) }
+	if location.node.is_text() {
+		text = unsafe { &Text(location.node) }
+	} else {
+		mut adjacent_child := ?&Node(none)
+		if direction == .forward {
+			adjacent_child = location.node.child_at_index(location.offset)
+		} else if location.offset > 0 {
+			adjacent_child = location.node.child_at_index(location.offset - 1)
+		}
+		if child := adjacent_child {
+			if is_atomic_inline_caret_host(child) {
+				if direction == .forward {
+					return navigator.location_after_atomic_inline(child)
+				}
+				return navigator.location_before_atomic_inline(child, alteration)
+			}
+		}
+		child := adjacent_child or { return navigator.move_to_adjacent_caret_host(location, direction) }
+		if !child.is_text() {
+			return navigator.move_to_adjacent_caret_host(location, direction)
+		}
+		text = unsafe { &Text(child) }
+		location = CaretLocation{
+			node: child
+			offset: if direction == .forward { 0 } else { text.length() }
+		}
+	}
+
+	mut moved := false
+	mut punctuation_end := ?CaretLocation(none)
 	for {
 		next_offset := if direction == .forward {
 			text.word_segmenter().next_boundary(location.offset)
@@ -425,32 +672,72 @@ fn (navigator &CaretNavigator) move_by_word(initial_location CaretLocation, alte
 			} else {
 				selection_utf16_substring(text.data(), offset, location.offset)
 			}
-			location = CaretLocation{ node: text.as_node(), offset: offset }
-			if word_segment_kind(segment) != .separator {
-				if direction == .backward {
-					return navigator.canonicalize_backward_word_location(location, alteration)
+			location = CaretLocation{
+				node: text.as_node()
+				offset: offset
+			}
+			kind := word_segment_kind(segment)
+			if end := punctuation_end {
+				if kind != .punctuation {
+					return navigator.word_stop(end, alteration, direction)
 				}
+			}
+			moved = true
+			if kind == .separator {
+				continue
+			}
+			if kind == .word {
+				return navigator.word_stop(location, alteration, direction)
+			}
+
+			punctuation_end = location
+			if (direction == .forward && location.offset != text.length())
+				|| (direction == .backward && location.offset != 0) {
+				return navigator.word_stop(location, alteration, direction)
+			}
+		}
+
+		host := editing_host or {
+			if moved {
 				return location
 			}
-			continue
+			return none
 		}
-		editing_host := text.as_node().editing_host() or { return location }
-		adjacent := navigator.adjacent_caret_host(text.as_node(), editing_host, direction) or {
-			return location
+		adjacent := navigator.adjacent_caret_host(text.as_node(), host, direction) or {
+			if moved {
+				return location
+			}
+			return none
 		}
 		if is_atomic_inline_caret_host(adjacent) {
+			if end := punctuation_end {
+				return navigator.word_stop(end, alteration, direction)
+			}
 			if direction == .forward {
 				return navigator.location_after_atomic_inline(adjacent)
 			}
 			return navigator.location_before_atomic_inline(adjacent, alteration)
 		}
+
 		if !adjacent.is_text() {
-			return location
+			if moved {
+				return location
+			}
+			return navigator.move_to_adjacent_caret_host(location, direction)
 		}
 		adjacent_text := unsafe { &Text(adjacent) }
-		if !boundary_visual_lines_share_inline_context(text, adjacent_text) {
-			return location
+		shares_inline_context := if direction == .forward {
+			boundary_visual_lines_share_inline_context(text, adjacent_text)
+		} else {
+			boundary_visual_lines_share_inline_context(adjacent_text, text)
 		}
+		if !shares_inline_context {
+			if moved {
+				return location
+			}
+			return navigator.move_to_adjacent_caret_host(location, direction)
+		}
+
 		text = adjacent_text
 		location = CaretLocation{
 			node: adjacent
@@ -461,7 +748,13 @@ fn (navigator &CaretNavigator) move_by_word(initial_location CaretLocation, alte
 }
 
 fn (navigator &CaretNavigator) move_to_editing_host_boundary(location CaretLocation, direction CaretNavigationDirection) ?CaretLocation {
+	// INTEROP: Chromium and WebKit constrain "start/end of document" commands to the active editing host. Letting the
+	// traversal escape the host can create a caret before the first editable position or in unrelated page content.
 	editing_host := location.node.editing_host() or { return none }
+
+	mut document := unsafe { &Document(navigator.document) }
+	document.update_layout_if_needed_for_node(editing_host, .cursor_line_navigation)
+
 	mut target := navigator.adjacent_caret_host(editing_host, editing_host, .forward) or {
 		return none
 	}
@@ -471,20 +764,42 @@ fn (navigator &CaretNavigator) move_to_editing_host_boundary(location CaretLocat
 			target = next
 		}
 	}
+
 	if target.is_text() {
+		text := unsafe { &Text(target) }
+		position := if direction == .forward {
+			cursor_position_at_visual_end(text)
+		} else {
+			cursor_position_at_visual_start(text)
+		}
+		destination := position or { return none }
 		return CaretLocation{
 			node: target
-			offset: if direction == .forward { target.length() } else { 0 }
+			offset: destination.offset
+			affinity: destination.affinity
 		}
 	}
+
 	if is_atomic_inline_caret_host(target) {
-		parent := target.parent() or { return none }
-		return CaretLocation{
-			node: parent
-			offset: target.index() + if direction == .forward { 1 } else { 0 }
+		if parent := target.parent() {
+			return CaretLocation{
+				node: parent
+				offset: target.index() + if direction == .forward { 1 } else { 0 }
+			}
 		}
 	}
-	return CaretLocation{ node: target, offset: 0 }
+	if target.is_html_br_element() {
+		if parent := target.parent() {
+			return CaretLocation{
+				node: parent
+				offset: target.index()
+			}
+		}
+	}
+	return CaretLocation{
+		node: target
+		offset: 0
+	}
 }
 
 fn (navigator &CaretNavigator) move_by_page(location CaretLocation, direction CaretNavigationDirection, inline_coordinate f64) ?CaretLocation {

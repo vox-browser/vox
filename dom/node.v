@@ -1775,6 +1775,10 @@ pub fn (ln &LayoutNode) is_atomic_inline() bool {
 	return ln.is_atomic_inline_
 }
 
+pub fn (ln &LayoutNode) is_replaced_box() bool {
+	return ln.is_replaced_box_
+}
+
 pub fn (ln &LayoutNode) parent() ?&LayoutNode {
 	return ln.parent_
 }

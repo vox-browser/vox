@@ -341,11 +341,7 @@ pub fn is_prohibited_paragraph_child_name(local_name string) bool {
 	// "colgroup", "dd", "details", "dir", "div", "dl", "dt", "fieldset", "figcaption", "figure", "footer", "form",
 	// "h1", "h2", "h3", "h4", "h5", "h6", "header", "hgroup", "hr", "li", "listing", "menu", "nav", "ol", "p",
 	// "plaintext", "pre", "section", "summary", "table", "tbody", "td", "tfoot", "th", "thead", "tr", "ul", or "xmp".
-	return local_name in ['address', 'article', 'aside', 'blockquote', 'caption', 'center', 'col',
-		'colgroup', 'dd', 'details', 'dir', 'div', 'dl', 'dt', 'fieldset', 'figcaption', 'figure',
-		'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'hgroup', 'hr', 'li',
-		'listing', 'menu', 'nav', 'ol', 'p', 'plaintext', 'pre', 'section', 'summary', 'table',
-		'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'ul', 'xmp']
+	return local_name in dom.editing_prohibited_paragraph_child_names
 }
 
 // Whether a resolved display qualifies an Element as a block node; see is_block_node() below.

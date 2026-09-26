@@ -161,11 +161,13 @@ fn test_caret_navigator_crosses_split_text_and_atomic_inline_content() {
 		.forward, .character, none) or { panic('missing atomic-inline destination') }
 	assert after_image.node == host.as_node()
 	assert after_image.offset == 2
+	// A backward step across an atomic inline beside text in the same parent lands on the preceding text end, the
+	// visually identical position before the image.
 	before_image := navigator.move(after_image, .extend, .backward, .character, none) or {
 		panic('missing reverse atomic-inline destination')
 	}
-	assert before_image.node == host.as_node()
-	assert before_image.offset == 1
+	assert before_image.node == first.as_node()
+	assert before_image.offset == 3
 
 	end := navigator.move(CaretLocation{ node: first.as_node(), offset: 1 }, .move, .forward,
 		.document_boundary, none) or { panic('missing editing-host end') }
@@ -260,4 +262,61 @@ fn test_word_segment_kinds_and_line_boundaries() {
 	line_start := navigator.move(CaretLocation{ node: text.as_node(), offset: 6 }, .move,
 		.backward, .line_boundary, none) or { panic('line start') }
 	assert line_start.offset == 4
+}
+
+fn selection_test_paragraph(document &Document, text string) &Element {
+	paragraph := document.create_element_ns('http://www.w3.org/1999/xhtml', 'p') or { panic(err) }
+	mut paragraph_node := paragraph.as_node()
+	paragraph_node.append_child(document.create_text_node(text).as_node()) or { panic(err) }
+	return paragraph
+}
+
+fn test_canonical_editing_location_skips_formatting_whitespace_into_the_following_block() {
+	document, host := selection_test_editing_host()
+	mut host_node := host.as_node()
+	first := selection_test_paragraph(document, 'a')
+	whitespace := document.create_text_node('\n  ')
+	second := selection_test_paragraph(document, 'b')
+	host_node.append_child(first.as_node()) or { panic(err) }
+	host_node.append_child(whitespace.as_node()) or { panic(err) }
+	host_node.append_child(second.as_node()) or { panic(err) }
+	second_text := second.as_node().first_child() or { panic('missing second text') }
+	navigator := CaretNavigator.new(document)
+
+	between := navigator.canonical_location_for_editing(CaretLocation{ node: host_node, offset: 1 })
+	assert between.node == second_text
+	assert between.offset == 0
+
+	inside_whitespace := navigator.canonical_location_for_editing(CaretLocation{
+		node: whitespace.as_node()
+		offset: 1
+	})
+	assert inside_whitespace.node == second_text
+	assert inside_whitespace.offset == 0
+}
+
+fn test_canonical_editing_location_moves_before_a_trailing_placeholder_break() {
+	document, host := selection_test_editing_host()
+	paragraph := selection_test_paragraph(document, 'text')
+	line_break := document.create_element_ns('http://www.w3.org/1999/xhtml', 'br') or { panic(err) }
+	mut paragraph_node := paragraph.as_node()
+	paragraph_node.append_child(line_break.as_node()) or { panic(err) }
+	mut host_node := host.as_node()
+	host_node.append_child(paragraph_node) or { panic(err) }
+	text := paragraph_node.first_child() or { panic('missing text') }
+
+	location := CaretNavigator.new(document).canonical_location_for_editing(CaretLocation{
+		node: paragraph_node
+		offset: 2
+	})
+	assert location.node == text
+	assert location.offset == 4
+}
+
+fn test_word_segment_kind_uses_unicode_general_categories() {
+	assert word_segment_kind('word') == .word
+	assert word_segment_kind('　') == .separator
+	assert word_segment_kind(' ') == .separator
+	assert word_segment_kind('、') == .punctuation
+	assert word_segment_kind('«—') == .punctuation
 }
