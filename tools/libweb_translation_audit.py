@@ -69,6 +69,11 @@ TRIVIAL_RETURN = re.compile(
 # no-ops visible without repeatedly returning them to the investigation queue.
 VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = frozenset(
     {
+        # Editing's wrap() callers pass these no-op criteria as inline lambdas
+        # upstream (Internal/Algorithms.cpp: `[](auto) { return false; }` and
+        # `[] { return nullptr; }`); V names them as reusable functions.
+        ("editing/internal_algorithms_structure.v", None, "no_sibling_criteria"),
+        ("editing/internal_algorithms_structure.v", None, "no_new_parent_instructions"),
         # AnimationEffect's virtual target default and the legacy
         # NavigationTiming/PerformanceTiming getters are constants upstream.
         ("animations/animation_effect.v", "AnimationEffect", "target"),
