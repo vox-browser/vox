@@ -1097,6 +1097,14 @@ CONSOLIDATED_METHOD_MAPPINGS.update({
     ("ReplacementEndpoints", "relocate_for_merging_right_text_into_left"): (
         ("relocate_for_merging_right_text_into_left", None),
     ),
+    # The V ImageBox queries the concrete img/input models at its retained
+    # layout boundary and stores the resulting paint fallback state directly.
+    # Generated, object, and SVG providers keep the upstream default of not
+    # pending.
+    ("ImageProvider", "is_image_pending"): (("element_image_is_pending", None),),
+    ("ImageProvider", "renders_as_alt_text"): (
+        ("renders_as_alt_text", "ImageBox"),
+    ),
 })
 
 # FlexFormattingContext is intentionally decomposed into typed free functions

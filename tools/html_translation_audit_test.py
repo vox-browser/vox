@@ -432,6 +432,20 @@ class ConsolidatedFunctionTests(unittest.TestCase):
             audit.LANGUAGE_ARTIFACT_FREE_FUNCTIONS,
         )
 
+    def test_image_provider_pending_state_maps_to_the_retained_image_box(self) -> None:
+        self.assertEqual(
+            audit.CONSOLIDATED_METHOD_MAPPINGS[
+                ("ImageProvider", "is_image_pending")
+            ],
+            (("element_image_is_pending", None),),
+        )
+        self.assertEqual(
+            audit.CONSOLIDATED_METHOD_MAPPINGS[
+                ("ImageProvider", "renders_as_alt_text")
+            ],
+            (("renders_as_alt_text", "ImageBox"),),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
