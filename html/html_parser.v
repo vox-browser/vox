@@ -1065,6 +1065,11 @@ fn (mut p HTMLParser) create_element_for(token &HTMLToken, namespace_ ?string, i
 	if token.had_duplicate_attribute {
 		element.set_had_duplicate_attribute_during_tokenization()
 	}
+	// AD-HOC: Let style elements know which document they were originally parsed for.
+	//         This is used for the render-blocking logic.
+	if mut style_element := element.style_element_base() {
+		style_element.set_parser_document(document)
+	}
 	// Append each attribute in the token to element. Foreign-content attributes
 	// carry a prefix and namespace from adjust_foreign_attributes().
 	for attribute in token.attributes {
@@ -1158,6 +1163,19 @@ fn (mut p HTMLParser) flush_character_insertions() {
 }
 
 fn (mut p HTMLParser) handle_element_popped(element &dom.Element) {
+	// https://html.spec.whatwg.org/multipage/semantics.html#update-a-style-block
+	// When a style element is popped off the stack of open elements of an HTML parser or XML parser,
+	// the user agent must run the update a style block algorithm.
+	// NB: Upstream's tree builder flushes buffered text before invoking this hook, so the style block sees its
+	//     complete text.
+	if mut style_element := element.style_element_base() {
+		p.flush_character_insertions()
+		style_element.did_pop_off_parser_stack_of_open_elements()
+	}
+
+	// https://html.spec.whatwg.org/multipage/form-elements.html#the-option-element
+	// When an option element is popped off the stack of open elements of an HTML parser or XML parser,
+	// the user agent must run maybe clone an option into selectedcontent given the option element.
 	// An option's buffered text must be visible before the selectedcontent
 	// cloning algorithm observes it.
 	if element_in_namespace(element, ns_html) && element.local_name() == 'option' {

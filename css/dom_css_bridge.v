@@ -156,22 +156,20 @@ fn parent_computed_properties(abstract_element dom.AbstractElement) ?&ComputedPr
 
 // --- Author stylesheets ---
 
-// A minimal css-side holder for a document's author stylesheets, cached on the document via an opaque
-// handle. Deliberately NOT css.StyleSheetList: using that type's full method surface (add_a_css_style_sheet
-// -> media evaluation, style invalidation, attribute code) drags in many `?string ==` comparisons that
-// trip a V codegen bug. This holder only needs to store + iterate the parsed sheets for rule matching.
+// The document's CSS-owned author-sheet state, reached through an opaque
+// handle on dom.Document because DOM cannot import CSS.
 @[heap]
 struct DocumentAuthorStyleSheets {
 mut:
-	// Sheets installed explicitly by CSS-aware callers (link-sheet
-	// equivalents in this port). Constructed adopted sheets have their own
-	// observable list and are iterated after the document's ordinary sheets.
+	// Sheets installed explicitly by CSS-aware callers. They cascade before
+	// the document CSS style sheets; constructed adopted sheets have their own
+	// observable list and are iterated after both.
 	sheets []&CSSStyleSheet
-	// Sheets backed by <style> elements are kept separately so rebuilding the
-	// DOM-derived list neither duplicates them on every layout nor discards
-	// explicitly installed sheets.
-	embedded_sheets  []&CSSStyleSheet
-	embedded_sources []string
+	// Sheets this bridge created for <link rel=stylesheet> elements in the
+	// document CSS style sheet list, keyed by their source so that rebuilding
+	// them on every layout neither duplicates nor reparses them.
+	link_sheets  []&CSSStyleSheet
+	link_sources []string
 }
 
 // The document's author-stylesheet holder, created on first use and cached on the document via its handle.
@@ -473,6 +471,8 @@ struct DocumentStyleSource {
 	css_text  string
 	location  string
 	media     string
+	title     string
+	alternate bool
 	owner     &dom.Element = unsafe { nil }
 }
 
@@ -531,176 +531,199 @@ fn load_local_imported_stylesheets(document &dom.Document, mut sheet CSSStyleShe
 	}
 }
 
-fn sync_shadow_root_style_sheets(document &dom.Document, shadow_root &dom.ShadowRoot) {
-	mut scope := css_style_scope_for_shadow_root(shadow_root)
-	scope.author_style_sheets.clear()
-	location := document.base_url().to_string()
-	root := unsafe { &dom.Node(shadow_root) }
-	for style_element in query_selector_all(root, 'style') {
-		type_ := style_element.get_attribute_value('type').trim_space().to_lower()
-		if type_.len > 0 && type_ != 'text/css' {
-			continue
-		}
-		mut sheet := parse_css_stylesheet_with_parser(style_element.as_node().text_content() or {
-			''
-		}, location)
-		mut active_urls := map[string]bool{}
-		active_urls[location] = true
-		load_local_imported_stylesheets(document, mut sheet, location, mut active_urls)
-		sheet.evaluate_media_queries(document)
-		sheet.add_owning_document_or_shadow_root(root)
-		scope.author_style_sheets << sheet
-	}
-	scope.invalidate_rule_cache()
-	for element in query_selector_all(root, '*') {
-		if nested_root := element.shadow_root() {
-			sync_shadow_root_style_sheets(document, nested_root)
+fn dump_css_style_sheet_if_requested(sheet &CSSStyleSheet) {
+	if os.getenv('LIBWEB_V_CSS_DUMP') == '1' {
+		for rule in sheet.css_rules().rules {
+			eprintln(rule.dump(0))
 		}
 	}
 }
 
-fn sync_shadow_style_sheets_in_subtree(document &dom.Document, node &dom.Node) {
-	if element := node.as_element() {
-		if shadow_root := element.shadow_root() {
-			sync_shadow_root_style_sheets(document, shadow_root)
+// Parse a style sheet for a style or link element and load its local @import
+// sheets before the sheet joins its style sheet list.
+// Boundary: fetch-backed CSSImportRule loading is not wired, so local imports
+// load synchronously here, ahead of the add a CSS style sheet steps, which
+// then see the imported rules when they invalidate style.
+fn parse_css_style_sheet_for_owner_node(document &dom.Document, css_text string, location string) &CSSStyleSheet {
+	mut sheet := parse_css_stylesheet_with_parser(css_text, location)
+	sheet.base.type_string = 'text/css'
+	mut active_urls := map[string]bool{}
+	active_urls[location] = true
+	load_local_imported_stylesheets(document, mut sheet, location, mut active_urls)
+	dump_css_style_sheet_if_requested(sheet)
+	return sheet
+}
+
+fn css_style_scope_for_scope_node(scope_node &dom.Node) &StyleScope {
+	if shadow_root := scope_node.as_shadow_root() {
+		return css_style_scope_for_shadow_root(shadow_root)
+	}
+	return css_style_scope_for_document(scope_node.document())
+}
+
+// StyleScope::create_a_css_style_sheet() for DOM::StyleElementBase.
+fn style_scope_create_a_css_style_sheet_for_style_element(scope_node &dom.Node, css_text string, owner_node &dom.Element, media string, title string, location ?string) voidptr {
+	document := owner_node.document()
+	// Boundary: a style element's sheet has a null location, and this port
+	// resolves a sheet's relative URLs against its location, so the sheet is
+	// parsed at the document base URL. The shell's inlined remote link
+	// stylesheets record their response URL instead.
+	declared_location := owner_node.get_attribute_value('data-libweb-v-source-url')
+	sheet_location := location or {
+		if declared_location == '' {
+			document.base_url().to_string()
+		} else {
+			declared_location
 		}
 	}
-	for child in node.children_as_vector() {
-		sync_shadow_style_sheets_in_subtree(document, child)
+	mut sheet := parse_css_style_sheet_for_owner_node(document, css_text, sheet_location)
+	mut scope := css_style_scope_for_scope_node(scope_node)
+	mut list := scope.style_sheet_list()
+	list.initialize_a_css_style_sheet(mut sheet, owner_node, media, title, .no, .yes, none,
+		none)
+	return voidptr(sheet)
+}
+
+fn style_scope_remove_a_css_style_sheet_for_style_element(scope_node &dom.Node, sheet voidptr) {
+	mut scope := css_style_scope_for_scope_node(scope_node)
+	mut list := scope.style_sheet_list()
+	list.remove_a_css_style_sheet(mut unsafe { &CSSStyleSheet(sheet) })
+}
+
+fn style_scope_move_sheet_for_style_element(scope_node &dom.Node, sheet voidptr, destination_node &dom.Node) {
+	mut scope := css_style_scope_for_scope_node(scope_node)
+	mut list := scope.style_sheet_list()
+	mut destination_scope := css_style_scope_for_scope_node(destination_node)
+	mut destination := destination_scope.style_sheet_list()
+	list.move_sheet(unsafe { &CSSStyleSheet(sheet) }, mut destination)
+}
+
+fn style_sheet_state_set_media(sheet voidptr, media string) {
+	mut style_sheet := unsafe { &CSSStyleSheet(sheet) }
+	style_sheet.set_media(media)
+}
+
+fn style_sheet_state_evaluate_media_queries(sheet voidptr, document &dom.Document) bool {
+	mut style_sheet := unsafe { &CSSStyleSheet(sheet) }
+	return style_sheet.evaluate_media_queries(document)
+}
+
+fn style_sheet_state_media_list_matches(sheet voidptr) bool {
+	style_sheet := unsafe { &CSSStyleSheet(sheet) }
+	return style_sheet.base.media.matches()
+}
+
+fn style_sheet_state_disabled(sheet voidptr) bool {
+	style_sheet := unsafe { &CSSStyleSheet(sheet) }
+	return style_sheet.base.disabled
+}
+
+fn style_sheet_state_set_disabled(sheet voidptr, disabled bool) {
+	mut style_sheet := unsafe { &CSSStyleSheet(sheet) }
+	style_sheet.set_disabled(disabled)
+}
+
+fn style_sheet_state_loading_state(sheet voidptr) dom.CSSStyleSheetLoadingState {
+	style_sheet := unsafe { &CSSStyleSheet(sheet) }
+	return match style_sheet.loading_state() {
+		.unloaded, .loading { dom.CSSStyleSheetLoadingState.loading }
+		.loaded { dom.CSSStyleSheetLoadingState.loaded }
+		.error { dom.CSSStyleSheetLoadingState.error }
 	}
 }
 
-// CSSOM's "add a CSS style sheet" steps select one preferred titled set.
-// Untitled persistent sheets stay active, while an alternate sheet is disabled
-// until its title is the selected set. The local-file bridge has no separate
-// StyleSheetList object to perform those steps, so preserve the same decision
-// while collecting DOM-owned sheets.
-fn document_style_sheet_is_active(title string, is_alternate bool, disabled bool,
-	preferred_title string) (bool, string) {
-	if disabled {
-		return false, preferred_title
-	}
-	mut preferred := preferred_title
-	if title != '' && !is_alternate && preferred == '' {
-		preferred = title
-	}
-	if title == '' {
-		return !is_alternate, preferred
-	}
-	return preferred != '' && title.to_lower() == preferred.to_lower(), preferred
+fn init() {
+	dom.install_style_sheet_scope_hooks(dom.StyleSheetScopeHooks{
+		create_a_css_style_sheet: style_scope_create_a_css_style_sheet_for_style_element
+		remove_a_css_style_sheet: style_scope_remove_a_css_style_sheet_for_style_element
+		move_sheet:               style_scope_move_sheet_for_style_element
+		set_media:                style_sheet_state_set_media
+		evaluate_media_queries:   style_sheet_state_evaluate_media_queries
+		media_list_matches:       style_sheet_state_media_list_matches
+		disabled:                 style_sheet_state_disabled
+		set_disabled:             style_sheet_state_set_disabled
+		loading_state:            style_sheet_state_loading_state
+	})
 }
 
-// Synchronize the document's CSS-owned author-sheet list with its <style>
-// elements. The HTML module cannot construct CSSStyleSheet objects without an
-// import cycle, so this is the module boundary corresponding to
-// HTMLStyleElement::update_a_style_block in LibWeb.
+// The associated CSS style sheet of a style element (LinkStyle::sheet).
+pub fn style_element_sheet(element &dom.Element) ?&CSSStyleSheet {
+	base := element.style_element_base() or { return none }
+	sheet := base.sheet()
+	if sheet == unsafe { nil } {
+		return none
+	}
+	return unsafe { &CSSStyleSheet(sheet) }
+}
+
+// Synchronize the document CSS style sheet list with its <link rel=stylesheet>
+// elements, then re-evaluate media rules for the current viewport. Style
+// elements maintain their own sheets through DOM::StyleElementBase.
+// Boundary: HTMLLinkElement does not yet fetch and process stylesheet
+// resources, so this bridge reads local link stylesheets on each layout and
+// adds them to the list with the link's media, title, and alternate flag.
 pub fn sync_document_style_elements(document &dom.Document) {
 	root := unsafe { &dom.Node(document) }
-	sync_shadow_style_sheets_in_subtree(document, root)
 	base_url := document.base_url().to_string()
-	mut style_sources := []DocumentStyleSource{}
-	mut preferred_title := ''
+	mut link_sources := []DocumentStyleSource{}
 	for element in query_selector_all(root, '*') {
-		if element.local_name() == 'style' {
-			type_ := element.get_attribute_value('type').trim_space().to_lower()
-			if type_.len > 0 && type_ != 'text/css' {
-				continue
-			}
-			active, selected_title := document_style_sheet_is_active(element.get_attribute_value('title'), false, element.style_element_disabled(), preferred_title)
-			preferred_title = selected_title
-			if !active {
-				continue
-			}
-			css_text := element.as_node().text_content() or { '' }
-			declared_location := element.get_attribute_value('data-libweb-v-source-url')
-			style_location := if declared_location == '' { base_url } else { declared_location }
-			style_sources << DocumentStyleSource{
-				cache_key: 'style:${style_location}:${css_text}'
-				css_text: css_text
-				location: style_location
-				media: element.get_attribute_value('media')
-				owner: element
-			}
-		} else if element.local_name() == 'link' {
-			relations := element.get_attribute_value('rel').to_lower().fields()
-			if 'stylesheet' !in relations {
-				continue
-			}
-			active, selected_title := document_style_sheet_is_active(element.get_attribute_value('title'), 'alternate' in relations, element.has_attribute('disabled'), preferred_title)
-			preferred_title = selected_title
-			if !active {
-				continue
-			}
-			href := element.get_attribute_value('href')
-			css_text, resolved_url := read_local_stylesheet(href, base_url) or { continue }
-			style_sources << DocumentStyleSource{
-				cache_key: 'link:${resolved_url}:${css_text}'
-				css_text: css_text
-				location: resolved_url
-				media: element.get_attribute_value('media')
-				owner: element
-			}
+		if element.local_name() != 'link' {
+			continue
+		}
+		relations := element.get_attribute_value('rel').to_lower().fields()
+		if 'stylesheet' !in relations || element.has_attribute('disabled') {
+			continue
+		}
+		href := element.get_attribute_value('href')
+		css_text, resolved_url := read_local_stylesheet(href, base_url) or { continue }
+		link_sources << DocumentStyleSource{
+			cache_key: 'link:${resolved_url}:${css_text}'
+			css_text:  css_text
+			location:  resolved_url
+			media:     element.get_attribute_value('media')
+			title:     element.get_attribute_value('title')
+			alternate: 'alternate' in relations
+			owner:     element
 		}
 	}
-	sources := style_sources.map(it.cache_key)
+	sources := link_sources.map(it.cache_key)
 
 	holder := css_author_style_sheets_for(document)
-	if holder.embedded_sources == sources {
-		mut media_changed := false
-		for sheet in holder.embedded_sheets {
-			mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
-			if mutable_sheet.evaluate_media_queries(document) {
-				media_changed = true
+	if holder.link_sources != sources {
+		mut scope := css_style_scope_for_document(document)
+		mut list := scope.style_sheet_list()
+		for old_sheet in holder.link_sheets {
+			list.remove_a_css_style_sheet(mut unsafe { &CSSStyleSheet(old_sheet) })
+		}
+		mut parsed := []&CSSStyleSheet{cap: link_sources.len}
+		for source in link_sources {
+			mut sheet := parse_css_style_sheet_for_owner_node(document, source.css_text,
+				source.location)
+			alternate := if source.alternate {
+				StyleSheetListAlternate.yes
+			} else {
+				StyleSheetListAlternate.no
 			}
+			list.initialize_a_css_style_sheet(mut sheet, source.owner, source.media, source.title,
+				alternate, .yes, none, none)
+			parsed << sheet
 		}
-		if media_changed {
-			mut scope := css_style_scope_for_document(document)
-			scope.invalidate_rule_cache()
+		unsafe {
+			holder.link_sources = sources.clone()
+			holder.link_sheets = parsed
 		}
-		return
 	}
-	mut parsed := []&CSSStyleSheet{cap: style_sources.len}
-	for source in style_sources {
-		mut sheet := parse_css_stylesheet_with_parser(source.css_text, source.location)
-		sheet.set_owner_node(source.owner)
-		if source.media.trim_space().len > 0 {
-			sheet.set_media(source.media)
-		}
-		mut active_urls := map[string]bool{}
-		active_urls[source.location] = true
-		load_local_imported_stylesheets(document, mut sheet, source.location, mut active_urls)
-		sheet.evaluate_media_queries(document)
-		if os.getenv('LIBWEB_V_CSS_DUMP') == '1' {
-			for rule in sheet.css_rules().rules {
-				eprintln(rule.dump(0))
-			}
-		}
-		parsed << sheet
-	}
-	document_root := unsafe { &dom.Node(document) }
-	for old_sheet in holder.embedded_sheets {
-		mut mutable_sheet := unsafe { &CSSStyleSheet(old_sheet) }
-		mutable_sheet.remove_owning_document_or_shadow_root(document_root)
-	}
-	unsafe {
-		holder.embedded_sources = sources.clone()
-		holder.embedded_sheets = parsed
-	}
-	for new_sheet in parsed {
-		mut mutable_sheet := unsafe { &CSSStyleSheet(new_sheet) }
-		mutable_sheet.add_owning_document_or_shadow_root(document_root)
-	}
-	mut scope := css_style_scope_for_document(document)
-	scope.invalidate_rule_cache()
+	evaluate_media_rules_for_document(document)
 }
 
 // Return the live CSSOM sheet owned by a document <style> or <link> element.
-// Embedded sheets are cached separately from DOM's opaque stylesheet handle,
-// so script bridges use owner identity to reach the same sheet as the cascade.
 pub fn style_sheet_for_owner_node(document &dom.Document, owner &dom.Element) ?&CSSStyleSheet {
+	if owner.is_style_element_base() {
+		return style_element_sheet(owner)
+	}
 	sync_document_style_elements(document)
 	holder := css_author_style_sheets_for(document)
-	for sheet in holder.embedded_sheets {
+	for sheet in holder.link_sheets {
 		if sheet_owner := sheet.base.owner_node {
 			if voidptr(sheet_owner) == voidptr(owner) {
 				return sheet
@@ -798,9 +821,12 @@ fn document_get_style_sheet_source_callback(target voidptr, identifier &dom.Styl
 					return found.source_text()
 				}
 			}
-			for sheet in holder.embedded_sheets {
-				if found := find_style_sheet_with_url(url, sheet) {
-					return found.source_text()
+			scope := css_style_scope_for_document(document)
+			if list := scope.style_sheets {
+				for sheet in list.sheets {
+					if found := find_style_sheet_with_url(url, sheet) {
+						return found.source_text()
+					}
 				}
 			}
 			none

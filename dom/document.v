@@ -43,6 +43,7 @@ __global (
 	dom_custom_element_registry_is_scoped       CustomElementRegistryIsScopedCallback
 	dom_custom_element_registry_append_document CustomElementRegistryAppendDocumentCallback
 	dom_element_activation_behavior_hooks       ElementActivationBehaviorHooks
+	dom_style_sheet_scope_hooks                 StyleSheetScopeHooks
 )
 
 // Simple color representation
@@ -875,8 +876,6 @@ pub struct HTMLSpanElement {
 @[heap]
 pub struct HTMLStyleElement {
 	HTMLElement
-pub mut:
-	style_element_base_ ?&StyleElementBase
 }
 
 @[heap]
@@ -1611,6 +1610,8 @@ pub type DocumentQueueIntersectionObserverTaskCallback = fn (voidptr, &Document)
 
 pub type DocumentQueueSelectionchangeEventTaskCallback = fn (voidptr, &Document, &Document)
 
+pub type DocumentQueueElementTaskCallback = fn (voidptr, &Element, TaskSource, fn ())
+
 pub struct DocumentLifecycleHook {
 pub:
 	target                           voidptr = unsafe { nil }
@@ -1624,6 +1625,7 @@ pub:
 	structured_deserialize           DocumentStructuredDeserializeCallback = unsafe { nil }
 	queue_intersection_observer_task DocumentQueueIntersectionObserverTaskCallback = unsafe { nil }
 	queue_selectionchange_event_task DocumentQueueSelectionchangeEventTaskCallback = unsafe { nil }
+	queue_an_element_task            DocumentQueueElementTaskCallback = unsafe { nil }
 	run_unloading_cleanup_steps      DocumentLifecycleCallback = unsafe { nil }
 	timer_visibility_state_changed   DocumentLifecycleCallback = unsafe { nil }
 	timer_audio_play_state_changed   DocumentLifecycleCallback = unsafe { nil }
@@ -8849,6 +8851,28 @@ pub fn (d &Document) is_fully_active() bool {
 
 pub fn (d &Document) is_active() bool {
 	return d.browsing_context != unsafe { nil }
+}
+
+pub fn (d &Document) script_blocking_style_sheet_set_contains(element &Element) bool {
+	for entry in d.script_blocking_style_sheet_set {
+		if voidptr(entry) == voidptr(element) {
+			return true
+		}
+	}
+	return false
+}
+
+pub fn (mut d Document) append_to_script_blocking_style_sheet_set(element &Element) {
+	if !d.script_blocking_style_sheet_set_contains(element) {
+		d.script_blocking_style_sheet_set << element
+	}
+}
+
+pub fn (mut d Document) remove_from_script_blocking_style_sheet_set(element &Element) {
+	// NB: Removing from the set can unblock this document's parser or parser end state, both of which wait for the
+	//     set to become empty. Always schedule the wake-up here so no removal site can forget it.
+	d.script_blocking_style_sheet_set = d.script_blocking_style_sheet_set.filter(voidptr(it) != voidptr(element))
+	d.schedule_html_parser_end_check()
 }
 
 // https://html.spec.whatwg.org/multipage/semantics.html#has-a-style-sheet-that-is-blocking-scripts

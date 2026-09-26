@@ -71,21 +71,6 @@ fn test_parser_created_meta_color_scheme_updates_document() {
 	assert !dark_document.supported_color_schemes_are_only()
 }
 
-fn test_style_sheet_lifecycle_and_disabled() {
-	mut style := HTMLStyleElementModel.create()
-	style.set_text('body { color: red }')
-	assert style.sheet() == none
-	style.inserted()
-	assert style.sheet()?.text == 'body { color: red }'
-	style.set_media('screen')
-	assert style.sheet()?.media == 'screen'
-	style.set_disabled(true)
-	assert style.disabled()
-	style.set_type('text/less')
-	assert style.sheet() == none
-	style.removed()
-}
-
 fn test_body_hints_anchor_label_fieldset_and_output() {
 	hints := html_body_presentational_hints({
 		'bgcolor':     '#123'
@@ -241,19 +226,6 @@ fn test_concrete_area_base_meta_source_and_style_element_algorithms() {
 	html_meta_element_inserted(referrer)
 	assert document.pragma_set_default_language_value()? == 'en-GB'
 	assert document.meta_referrer_policy() == 'no-referrer'
-
-	style := unsafe {
-		&dom.HTMLStyleElement(document_elements_find(root, 'style') or {
-			panic('style')
-		})
-	}
-	html_style_element_inserted(style)
-	assert html_style_element_sheet(style) != none
-	assert html_style_element_sheet(style)?.media == 'screen'
-	html_style_element_attribute_changed(style, 'media', 'screen', 'print', none)
-	assert html_style_element_sheet(style)?.media == 'print'
-	set_html_style_element_disabled(style, true)
-	assert html_style_element_disabled(style)
 
 	source := unsafe {
 		&dom.HTMLSourceElement(document_elements_find(root, 'source') or {

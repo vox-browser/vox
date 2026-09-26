@@ -11,7 +11,6 @@
 // - Libraries/LibWeb/DOM/SlotRegistry.cpp/.h
 // - Libraries/LibWeb/DOM/Slottable.cpp/.h
 // - Libraries/LibWeb/DOM/StyleInvalidator.cpp/.h
-// - Libraries/LibWeb/DOM/StyleElementBase.cpp/.h
 // - Libraries/LibWeb/DOM/DOMImplementation.cpp/.h
 // - Libraries/LibWeb/DOM/ElementFactory.cpp/.h
 // - Libraries/LibWeb/DOM/ElementByIdMap.cpp/.h
@@ -1430,178 +1429,12 @@ fn (mut invalidator StyleInvalidator) perform_pending_style_invalidations(mut no
 	invalidator.active_descendant_invalidations.trim(previous_active_size)
 }
 
-pub enum StyleElementAnyFailed {
-	no
-	yes
-}
-
-pub struct StyleElementBase {
-pub mut:
-	element_                     &Element = unsafe { nil }
-	associated_css_style_sheet_  ?&CSSStyleSheet
-	style_sheet_list_            ?&StyleSheetList
-	document_load_event_delayer_ ?DocumentLoadEventDelayer
-}
-
-pub fn StyleElementBase.new(element &Element) StyleElementBase {
-	return StyleElementBase{
-		element_: element
-	}
-}
-
-pub fn (base &StyleElementBase) as_element() &Element {
-	return base.element_
-}
-
-// https://html.spec.whatwg.org/multipage/semantics.html#update-a-style-block
-pub fn (mut base StyleElementBase) update_a_style_block() {
-	style_element := base.as_element()
-
-	// OPTIMIZATION: Skip parsing CSS if we're in the middle of parsing a HTML fragment.
-	if style_element.document().is_temporary_document_for_fragment_parsing() {
-		return
-	}
-
-	// 1. Let element be the style element.
-	// 2. If element has an associated CSS style sheet, remove the CSS style sheet in question.
-	if associated_css_style_sheet := base.associated_css_style_sheet_ {
-		if mut style_sheet_list := base.style_sheet_list_ {
-			style_sheet_list.remove_a_css_style_sheet(associated_css_style_sheet)
-		}
-		base.style_sheet_list_ = none
-
-		// FIXME: This should probably be handled by StyleSheet::set_owner_node().
-		base.associated_css_style_sheet_ = none
-	}
-
-	// 3. If element is not connected, then return.
-	if !style_element.as_node().is_connected() {
-		return
-	}
-
-	// 4. If element's type attribute is present and its value is neither the empty string nor an ASCII
-	// case-insensitive match for "text/css", then return.
-	if type_attribute := style_element.get_attribute('type') {
-		if type_attribute.len > 0 && to_ascii_lowercase(type_attribute) != 'text/css' {
-			return
-		}
-	}
-
-	// 5. If the Should element's inline behavior be blocked by Content Security Policy? algorithm returns "Blocked"
-	// when executed upon the style element, "style", and the style element's child text content, then return. [CSP]
-	if should_elements_inline_style_behavior_be_blocked_by_content_security_policy(style_element,
-		style_element.as_node().child_text_content())
-	{
-		return
-	}
-
-	// 6. Create a CSS style sheet with the associated CSS style sheet properties.
-	mut document := unsafe { &Document(style_element.document()) }
-	mut style_sheet_list := style_element.document_or_shadow_root_style_sheets()
-	style_sheet := &CSSStyleSheet{
-		url:          style_element.base_uri()
-		source_text_: style_element.as_node().child_text_content()
-	}
-	style_sheet_list.sheets << style_sheet
-	base.style_sheet_list_ = style_sheet_list
-	base.associated_css_style_sheet_ = style_sheet
-
-	// 7. If element contributes a script-blocking style sheet, append element to its node document's set.
-	if style_element.contributes_a_script_blocking_style_sheet() {
-		base.document_load_event_delayer_ = DocumentLoadEventDelayer.new(mut document)
-		document.script_blocking_style_sheet_set << style_element
-	}
-
-	// FIXME: 8. If element's media attribute matches the environment and element is potentially
-	// render-blocking, then block rendering on element. This is also still a FIXME upstream.
-
-	// AD-HOC: Check if we have already loaded the sheet's resources.
-	loading_state := style_sheet.loading_state_value()
-	if loading_state == .loaded || loading_state == .error {
-		any_failed := if loading_state == .error {
-			StyleElementAnyFailed.yes
-		} else {
-			StyleElementAnyFailed.no
-		}
-		base.finished_loading_critical_subresources(any_failed)
-	}
-}
-
-// https://html.spec.whatwg.org/multipage/semantics.html#the-style-element:critical-subresources
-pub fn (mut base StyleElementBase) finished_loading_critical_subresources(any_failed StyleElementAnyFailed) {
-	// 1. Let element be the style element associated with the style sheet in question.
-	mut element := unsafe { &Element(base.as_element()) }
-
-	// 2. Let success be true.
-	mut success := true
-
-	// 3. If any critical subresource failed, set success to false.
-	if any_failed == .yes {
-		success = false
-	}
-
-	// 4. Queue an element task on the networking task source.
-	if success {
-		element.dispatch_event_simple('load', false)
-	} else {
-		element.dispatch_event_simple('error', false)
-	}
-	if element.contributes_a_script_blocking_style_sheet() {
-		mut document := unsafe { &Document(element.document()) }
-		document.script_blocking_style_sheet_set =
-			document.script_blocking_style_sheet_set.filter(it != element)
-		document.schedule_html_parser_end_check()
-	}
-	element.unblock_rendering()
-	if mut delayer := base.document_load_event_delayer_ {
-		delayer.finish()
-		base.document_load_event_delayer_ = none
-	}
-}
-
-// https://www.w3.org/TR/cssom/#dom-linkstyle-sheet
-pub fn (base &StyleElementBase) sheet() ?&CSSStyleSheet {
-	return base.associated_css_style_sheet_
-}
-
-pub fn (base &StyleElementBase) style_sheet_list() ?&StyleSheetList {
-	return base.style_sheet_list_
-}
-
-pub fn (mut base StyleElementBase) visit_style_element_edges(mut visitor CellVisitor) {
-	if sheet := base.associated_css_style_sheet_ {
-		visitor.visit(sheet)
-	}
-	if list := base.style_sheet_list_ {
-		visitor.visit(list)
-	}
-}
-
-fn should_elements_inline_style_behavior_be_blocked_by_content_security_policy(element &Element, child_text_content string) bool {
-	return element.document().should_block_inline_content(element, 'style', child_text_content)
-}
-
-pub fn (element &Element) document_or_shadow_root_style_sheets() &StyleSheetList {
-	root_node := element.as_node().root()
-	if shadow_root := root_node.as_shadow_root() {
-		mut mutable_shadow_root := unsafe { &ShadowRoot(shadow_root) }
-		return mutable_shadow_root.style_sheets()
-	}
-	mut document := unsafe { &Document(element.document()) }
-	return document.style_sheets()
-}
-
 pub fn (element &Element) document_or_shadow_root_element_by_id_map() &ElementByIdMap {
 	root_node := element.as_node().root()
 	if shadow_root := root_node.as_shadow_root() {
 		return shadow_root.element_by_id()
 	}
 	return element.document().element_by_id_map()
-}
-
-pub fn (element &Element) contributes_a_script_blocking_style_sheet() bool {
-	_ = element
-	return false
 }
 
 pub fn (element &Element) base_uri() string {

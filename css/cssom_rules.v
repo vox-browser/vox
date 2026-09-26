@@ -2621,11 +2621,16 @@ pub fn (mut list StyleSheetList) create_a_css_style_sheet(css_text string, type_
 	// 1. Create a new CSS style sheet object and set its properties as specified.
 	// AD-HOC: The spec never tells us when to parse this style sheet, but the most logical place is here.
 	mut sheet := parse_css_stylesheet_with_parser(css_text, location)
+	sheet.base.type_string = type_
+	list.initialize_a_css_style_sheet(mut sheet, owner_node, media, title, alternate, origin_clean,
+		parent_style_sheet, owner_rule)
+	return sheet
+}
 
+pub fn (mut list StyleSheetList) initialize_a_css_style_sheet(mut sheet CSSStyleSheet, owner_node ?&dom.Element, media string, title string, alternate StyleSheetListAlternate, origin_clean StyleSheetListOriginClean, parent_style_sheet ?&CSSStyleSheet, owner_rule ?&CSSRule) {
 	sheet.set_parent_css_style_sheet(parent_style_sheet)
 	sheet.set_owner_css_rule(owner_rule)
 	sheet.set_owner_node(owner_node)
-	sheet.base.type_string = type_
 	sheet.set_media(media)
 	sheet.base.title = title
 	sheet.base.alternate = alternate == .yes
@@ -2633,8 +2638,6 @@ pub fn (mut list StyleSheetList) create_a_css_style_sheet(css_text string, type_
 
 	// 2. Then run the add a CSS style sheet steps for the newly created CSS style sheet.
 	list.add_a_css_style_sheet(mut sheet)
-
-	return sheet
 }
 
 pub fn (list &StyleSheetList) item(index usize) ?&CSSStyleSheet {
@@ -2705,29 +2708,7 @@ fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
 
 	mutable_sheet.load_pending_image_resources(list.document())
 
-	if list.sheets.len == 0 {
-		// This is the first sheet, append it to the list.
-		list.sheets << sheet
-	} else {
-		// We have sheets from before. Insert the new sheet in the correct position (DOM tree order).
-		mut did_insert := false
-		if owner_node := sheet.base.owner_node {
-			for i := list.sheets.len - 1; i >= 0; i-- {
-				existing_sheet := list.sheets[i]
-				existing_owner_node := existing_sheet.base.owner_node or { continue }
-				position :=
-					existing_owner_node.as_node().compare_document_position(owner_node.as_node())
-				if position & dom.document_position_following != 0 {
-					list.sheets.insert(i + 1, sheet)
-					did_insert = true
-					break
-				}
-			}
-		}
-		if !did_insert {
-			list.sheets.insert(0, sheet)
-		}
-	}
+	list.insert_sheet_in_tree_order(sheet)
 
 	// NOTE: We evaluate media queries immediately when adding a new sheet.
 	//       This coalesces the full document style invalidations.
@@ -2761,6 +2742,40 @@ fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
 	}
 	invalidate_root_for_style_sheet_change(list.document_or_shadow_root, invalidation_result, .style_sheet_list_add_sheet, requires_broad_invalidation)
 	invalidate_root_for_keyframes_rules_in_sheet(list.document_or_shadow_root, sheet)
+}
+
+fn (mut list StyleSheetList) insert_sheet_in_tree_order(sheet &CSSStyleSheet) {
+	if list.sheets.len == 0 {
+		// This is the first sheet, append it to the list.
+		list.sheets << sheet
+	} else {
+		// We have sheets from before. Insert the new sheet in the correct position (DOM tree order).
+		mut did_insert := false
+		if owner_node := sheet.base.owner_node {
+			for i := list.sheets.len - 1; i >= 0; i-- {
+				existing_sheet := list.sheets[i]
+				existing_owner_node := existing_sheet.base.owner_node or { continue }
+				position :=
+					existing_owner_node.as_node().compare_document_position(owner_node.as_node())
+				if position & dom.document_position_following != 0 {
+					list.sheets.insert(i + 1, sheet)
+					did_insert = true
+					break
+				}
+			}
+		}
+		if !did_insert {
+			list.sheets.insert(0, sheet)
+		}
+	}
+}
+
+// StyleScope::move_sheet(). Upstream reorders a sheet that stays in the same scope without detaching it from the
+// StyleEngine; V has no StyleEngine, so both cases take the remove/add path whose invalidation restyles the
+// elements the sheet's rules can reach at their old and new cascade positions.
+pub fn (mut list StyleSheetList) move_sheet(sheet &CSSStyleSheet, mut destination StyleSheetList) {
+	list.remove_sheet(sheet)
+	destination.add_sheet(sheet)
 }
 
 fn (mut list StyleSheetList) remove_sheet(sheet &CSSStyleSheet) {

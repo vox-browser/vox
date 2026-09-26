@@ -213,6 +213,8 @@ pub type TaskID = int
 
 pub enum TaskSource {
 	dom_manipulation
+	user_interaction
+	networking
 }
 
 pub struct PointerLockOptions {}
@@ -1600,7 +1602,7 @@ pub mut:
 	proximity_to_the_viewport_                  ProximityToTheViewport = .not_determined
 	captured_in_a_view_transition               bool
 	is_contained_in_list_subtree                bool
-	style_element_disabled_                     bool
+	style_element_base_                         ?&StyleElementBase
 
 	element_specific_css_random_base_value_cache map[string]f64
 
@@ -5437,6 +5439,13 @@ pub fn (e &Element) is_connected() bool {
 
 // https://dom.spec.whatwg.org/#concept-element-attributes-change-ext
 pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, value ?string, namespace_ ?string) {
+	// HTMLStyleElement::attribute_changed() and SVGStyleElement::attribute_changed() run
+	// style_element_attribute_changed() after the base Element steps.
+	defer {
+		if mut style_element_base := e.style_element_base() {
+			style_element_base.style_element_attribute_changed(local_name, value)
+		}
+	}
 	if namespace_ != none {
 		if e.is_svg_element() && e.local_name() == 'use' && local_name == 'href' {
 			e.svg_use_process_the_url()
@@ -5956,22 +5965,6 @@ pub fn (mut e Element) set_had_duplicate_attribute_during_tokenization() {
 	e.had_duplicate_attribute_during_tokenization = true
 }
 
-// HTMLStyleElement and SVGStyleElement share this non-reflected state. The
-// concrete bindings live in their owning modules, while the stylesheet bridge
-// reads it here without depending on either module.
-pub fn (e &Element) style_element_disabled() bool {
-	return e.local_name() == 'style' && e.style_element_disabled_
-}
-
-pub fn (mut e Element) set_style_element_disabled(disabled bool) {
-	if e.local_name() != 'style' || e.style_element_disabled_ == disabled {
-		return
-	}
-	e.style_element_disabled_ = disabled
-	mut document := unsafe { &Document(e.document()) }
-	document.set_needs_full_style_update(true)
-}
-
 // --- Style tracking ---
 pub fn (mut e Element) set_style_uses_tree_counting_function() {
 	e.style_uses_tree_counting_function = true
@@ -6021,6 +6014,11 @@ pub fn (mut e Element) inserted() {
 		if e.local_name() == 'use' && e.document().is_completely_loaded() {
 			e.svg_use_process_the_url()
 		}
+	}
+
+	// HTMLStyleElement::inserted() and SVGStyleElement::inserted().
+	if mut style_element_base := e.style_element_base() {
+		style_element_base.update_a_style_block_for_dynamic_change()
 	}
 }
 
@@ -6091,6 +6089,11 @@ pub fn (mut e Element) removed_from_with_context(is_subtree_root NodeIsSubtreeRo
 		}
 		dialog.is_modal_ = false
 	}
+
+	// HTMLStyleElement::removed_from() and SVGStyleElement::removed_from().
+	if mut style_element_base := e.style_element_base() {
+		style_element_base.update_a_style_block_for_dynamic_change()
+	}
 	node.run_removed_from_lifecycle_hook(is_subtree_root, old_ancestor, old_root)
 }
 
@@ -6139,6 +6142,11 @@ pub fn (mut e Element) moved_from_with_context(is_subtree_root NodeIsSubtreeRoot
 			document.note_svg_paint_resources_changed()
 		}
 	}
+
+	// HTMLStyleElement::moved_from() and SVGStyleElement::moved_from().
+	if mut style_element_base := e.style_element_base() {
+		style_element_base.style_element_moved()
+	}
 	node.run_moved_from_lifecycle_hook(is_subtree_root, old_ancestor)
 }
 
@@ -6149,6 +6157,12 @@ pub fn (mut e Element) moved_from_with_context(is_subtree_root NodeIsSubtreeRoot
 pub fn (mut e Element) adopted_from(_ &Document) {
 	if e.is_svg_element() && e.local_name() == 'use' {
 		e.svg_use_process_the_url()
+	}
+
+	// HTMLStyleElement::adopted_from() and SVGStyleElement::adopted_from().
+	if style_element_base := e.style_element_base() {
+		mut document := unsafe { &Document(e.document()) }
+		style_element_base.retarget_style_load_event_delayer(mut document)
 	}
 }
 
@@ -6169,6 +6183,11 @@ pub fn (mut e Element) children_changed(metadata ChildrenChangedMetadata) {
 	if e.is_svg_element() {
 		e.update_use_elements_that_reference_this()
 		e.note_svg_paint_resource_description_may_have_changed()
+	}
+
+	// HTMLStyleElement::children_changed() and SVGStyleElement::children_changed().
+	if mut style_element_base := e.style_element_base() {
+		style_element_base.update_a_style_block_for_dynamic_change()
 	}
 }
 

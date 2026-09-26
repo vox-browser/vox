@@ -10465,9 +10465,12 @@ pub mut:
 	pending_nodes_for_style_invalidation_due_to_presence_of_has []&dom.Node
 	pending_has_invalidation_features                           map[i64]&PendingHasInvalidationMutationFeatures
 	node                                                        ?&dom.Node
-	// CSS-owned sheets for a shadow-root scope. Document sheets keep their
-	// existing document holder for compatibility with the HTML bridge.
-	author_style_sheets                 []&CSSStyleSheet
+	// Sheets installed directly by CSS-aware callers into a shadow-root scope.
+	// Document scopes keep theirs in the document's author-sheet holder.
+	author_style_sheets []&CSSStyleSheet
+	// The list of document or shadow root CSS style sheets (StyleScope's
+	// m_style_sheets upstream), created on first use.
+	style_sheets                        ?&StyleSheetList
 	registered_counter_styles           map[string]CounterStyle
 	needs_counter_style_cache_update    bool = true
 	is_doing_counter_style_cache_update bool

@@ -389,8 +389,8 @@ pub fn (mut link HTMLLinkElementModel) stylesheet_linked_resource_fetch_setup_st
 		mut dom_element := link_dom_element(element)
 		mut document := unsafe { &dom.Document(dom_element.document()) }
 		link.begin_delaying_document_load_event(document)
-		if link.contributes_a_script_blocking_style_sheet() && !document.script_blocking_style_sheet_set.contains(dom_element) {
-			document.script_blocking_style_sheet_set << dom_element
+		if link.contributes_a_script_blocking_style_sheet() {
+			document.append_to_script_blocking_style_sheet_set(dom_element)
 		}
 		if link.is_implicitly_potentially_render_blocking() {
 			dom_element.block_rendering()
@@ -706,8 +706,7 @@ pub fn (mut link HTMLLinkElementModel) process_stylesheet_resource(request_succe
 	if element := link.element_ {
 		mut dom_element := link_dom_element(element)
 		mut document := unsafe { &dom.Document(dom_element.document()) }
-		document.script_blocking_style_sheet_set = document.script_blocking_style_sheet_set.filter(voidptr(it) != voidptr(dom_element))
-		document.schedule_html_parser_end_check()
+		document.remove_from_script_blocking_style_sheet_set(dom_element)
 		dom_element.unblock_rendering()
 	}
 	link.finished_loading_critical_style_subresources(link.stylesheet_failed_)

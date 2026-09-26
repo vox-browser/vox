@@ -1360,6 +1360,18 @@ fn document_queue_selectionchange_event_task(_ voidptr, target &dom.Document, do
 	})
 }
 
+fn task_source_from_dom(source dom.TaskSource) TaskSource {
+	return match source {
+		.dom_manipulation { .dom_manipulation }
+		.user_interaction { .user_interaction }
+		.networking { .networking }
+	}
+}
+
+fn document_queue_an_element_task(_ voidptr, element &dom.Element, source dom.TaskSource, steps fn ()) {
+	queue_an_element_task(element, task_source_from_dom(source), steps)
+}
+
 fn document_run_unloading_cleanup_steps(target voidptr, document &dom.Document) {
 	mut window := unsafe { &WindowModel(target) }
 	mut mutable_document := unsafe { &dom.Document(document) }
@@ -1502,6 +1514,7 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 		structured_deserialize:           document_structured_deserialize
 		queue_intersection_observer_task: document_queue_intersection_observer_task
 		queue_selectionchange_event_task: document_queue_selectionchange_event_task
+		queue_an_element_task:            document_queue_an_element_task
 		run_unloading_cleanup_steps:      document_run_unloading_cleanup_steps
 		timer_visibility_state_changed:   document_timer_visibility_state_changed
 		timer_audio_play_state_changed:   document_timer_audio_play_state_changed

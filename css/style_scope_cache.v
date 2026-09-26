@@ -452,6 +452,17 @@ pub fn (mut scope StyleScope) build_rule_cache() {
 	scope.populate_new_rule_cache()
 }
 
+// The list of document or shadow root CSS style sheets.
+pub fn (mut scope StyleScope) style_sheet_list() &StyleSheetList {
+	if list := scope.style_sheets {
+		return list
+	}
+	node := scope.node or { panic('StyleScope.style_sheet_list: scope without a node') }
+	list := StyleSheetList.create(node)
+	scope.style_sheets = list
+	return list
+}
+
 pub fn (mut scope StyleScope) invalidate_rule_cache() {
 	scope.invalidate_counter_style_cache()
 	scope.rule_cache = none
@@ -1648,13 +1659,22 @@ fn style_scope_set_needs_invalidation_of_elements_affected_by_has(document &dom.
 
 fn style_scope_for_each_active_css_style_sheet_boundary(scope &StyleScope, callback fn(&CSSStyleSheet)) {
 	// Concrete CSSStyleSheet objects remain CSS-owned to avoid a dom -> css
-	// dependency. Shadow scopes store theirs directly; document scopes use the
-	// document's opaque author-sheet holder.
+	// dependency. Sheets installed directly by CSS-aware callers come first:
+	// shadow scopes store theirs on the scope, document scopes in the
+	// document's opaque author-sheet holder. The document or shadow root CSS
+	// style sheets follow in tree order, then the adopted style sheets.
 	if node := scope.node {
 		if node.as_shadow_root() != none {
 			for sheet in scope.author_style_sheets {
 				if !sheet.base.disabled {
 					callback(sheet)
+				}
+			}
+			if list := scope.style_sheets {
+				for sheet in list.sheets {
+					if !sheet.base.disabled {
+						callback(sheet)
+					}
 				}
 			}
 			if adopted := adopted_style_sheets_list_if_created(node) {
@@ -1674,11 +1694,13 @@ fn style_scope_for_each_active_css_style_sheet_boundary(scope &StyleScope, callb
 		}
 		callback(sheet)
 	}
-	for sheet in css_author_style_sheets_for(document).embedded_sheets {
-		if sheet.base.disabled {
-			continue
+	if list := scope.style_sheets {
+		for sheet in list.sheets {
+			if sheet.base.disabled {
+				continue
+			}
+			callback(sheet)
 		}
-		callback(sheet)
 	}
 	if adopted := adopted_style_sheets_list_if_created(unsafe { &dom.Node(document) }) {
 		for sheet in adopted.items() {

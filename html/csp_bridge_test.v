@@ -19,9 +19,9 @@ fn test_dom_inline_style_and_event_handler_call_sites_use_csp_hook() {
 	style := document.get_element_by_id('style') or { panic('missing style') }
 	button := document.get_element_by_id('button') or { panic('missing button') }
 
-	mut style_base := html_style_element_base(unsafe { &dom.HTMLStyleElement(style) })
-	style_base.update_a_style_block()
-	assert style_base.sheet() == none
+	mut style_base := style.style_element_base() or { panic('missing style element base') }
+	style_base.update_a_style_block(.dynamic)
+	assert style_base.sheet() == unsafe { nil }
 
 	event_target := unsafe { &dom.EventTarget(button.as_node()) }
 	event_target.element_event_handler_attribute_changed('click', 'alert(1)')
