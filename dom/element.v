@@ -3809,11 +3809,6 @@ pub fn (mut e Element) set_snapped_scroll_areas(x []ScrollSnapAreaReference_,
 	e.snapped_scroll_areas_y_ = y.clone()
 }
 
-pub fn (mut e Element) set_scroll_offset_internal(typ ?int, offset CSSPixelPoint_) {
-	_ = typ
-	e.scroll_offset_ = offset
-}
-
 // https://w3c.github.io/csswg-drafts/cssom-view-1/#dom-element-scrollintoview
 pub fn (mut e Element) scroll_into_view() &Promise {
 	mut document := unsafe { &Document(e.document()) }
