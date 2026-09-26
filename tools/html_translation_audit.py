@@ -320,6 +320,14 @@ for _css_calculation_owner in (
 # Class-qualified implementations that must use a different V owner because
 # the C++ class name is reserved or the translated representation is shared.
 CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None], ...]] = {
+    # LocalNavigable is represented by NavigableModel in V. Keep this mapping
+    # narrow: only the translated response-download operations live there.
+    ("LocalNavigable", "start_download_for_response"): (
+        ("start_download_for_response", "NavigableModel"),
+    ),
+    ("LocalNavigable", "handle_as_a_download"): (
+        ("handle_as_a_download", "NavigableModel"),
+    ),
     # Macro/variant constructor spellings are not valid V method identifiers;
     # they map to the equivalent tagged-value operations.
     ("StyleValue", "__ENUMERATE_CSS_STYLE_VALUE_TYPE"): (("type_", "StyleValue"),),
