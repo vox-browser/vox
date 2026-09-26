@@ -27,18 +27,6 @@ fn inserted_content_start_boundary_of(node &dom.Node) dom.BoundaryPoint {
 	}
 }
 
-fn inserted_content_containing_block(node &dom.Node) ?&dom.Node {
-	mut current := ?&dom.Node(node)
-	for current != none {
-		candidate := current or { return none }
-		if styled_markup_node_is_block(candidate) || candidate.is_editing_host() {
-			return candidate
-		}
-		current = candidate.parent()
-	}
-	return none
-}
-
 @[heap]
 pub struct InsertedContent {
 mut:
@@ -190,7 +178,7 @@ pub fn (mut content InsertedContent) track_replacement_boundary(boundary dom.Bou
 	content.replacement_range_ = MutationTrackedRange.new(range_)
 	for ancestor := ?&dom.Node(boundary.node); ancestor != none;  {
 		current := ancestor or { break }
-		if styled_markup_node_is_block(current) {
+		if is_block_node(current) {
 			break
 		}
 		if current.as_element() != none {

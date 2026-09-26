@@ -40,7 +40,7 @@ fn prepare_paragraph_transfer_style(source_paragraph &dom.Node, destination dom.
 		materialize_single_run_legacy_font_style(source_paragraph)
 	}
 	if options.destination_style == .preserve_visual_appearance {
-		if destination_paragraph := inserted_content_containing_block(destination.node) {
+		if destination_paragraph := block_node_of_node(destination.node) {
 			materialize_single_run_legacy_font_style(destination_paragraph)
 		}
 	}

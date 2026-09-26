@@ -78,7 +78,8 @@ fn test_styled_clipboard_serializer_restores_shared_list_wrapper() {
 }
 
 fn test_styled_clipboard_serializer_encodes_empty_list_item_boundaries() {
-	document := html.parse_document('<!doctype html><body><ul id="selection"><li><br></li><li>content</li><li><br></li></ul></body>')
+	// NB: The selection's visible paragraph boundaries are caret positions, which exist only inside an editing host.
+	document := html.parse_document('<!doctype html><body><div contenteditable><ul id="selection"><li><br></li><li>content</li><li><br></li></ul></div></body>')
 	_ := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	selection := document.get_element_by_id('selection') or { panic('missing selection') }
 	mut range := document.create_range()
@@ -121,4 +122,29 @@ fn test_legacy_font_style_helpers_materialize_and_remove_single_run() {
 	plain_wrapper_node := plain_wrapper.as_node()
 	editing.remove_single_run_legacy_font_style(plain_wrapper_node)
 	assert plain_wrapper_node.serialize_fragment(.no, .inner) or { '' } == '<b>legacy</b>'
+}
+
+fn styled_clipboard_range_between(markup string, start_id string, start_offset int, end_id string, end_offset int) string {
+	document := html.parse_document('<!doctype html><style>body{margin:0}p{margin:0}</style><body><div contenteditable>${markup}</div></body>')
+	_ := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	start_element := document.get_element_by_id(start_id) or { panic('missing start') }
+	end_element := document.get_element_by_id(end_id) or { panic('missing end') }
+	mut range := document.create_range()
+	range.set_start(start_element.as_node().first_child() or { panic('missing start text') }, start_offset) or {
+		panic(err)
+	}
+	range.set_end(end_element.as_node().first_child() or { panic('missing end text') }, end_offset) or {
+		panic(err)
+	}
+	return editing.serialize_range_as_html_for_clipboard(range)
+}
+
+fn test_styled_clipboard_serializer_represents_a_lone_paragraph_break_with_a_marker() {
+	assert styled_clipboard_range_between('<p id="a">first</p><p id="b">second</p>', 'a', 5, 'b',
+		0) == '<br class="Apple-interchange-newline">'
+}
+
+fn test_styled_clipboard_serializer_flattens_a_partial_div_after_a_leading_paragraph_boundary() {
+	assert styled_clipboard_range_between('<p id="a">first</p><div id="b">second</div>', 'a', 5,
+		'b', 3) == '<br class="Apple-interchange-newline">sec'
 }

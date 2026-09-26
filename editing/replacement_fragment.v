@@ -97,7 +97,7 @@ fn replacement_node_has_renderable_descendant(node &dom.Node) bool {
 
 fn collect_empty_inline_staging_wrappers(node &dom.Node, mut wrappers []&dom.Element) {
 	if element := node.as_element() {
-		if !element.is_void_element() && !styled_markup_node_is_block(node)
+		if !element.is_void_element() && !is_prohibited_paragraph_child(node)
 			&& !replacement_node_has_renderable_descendant(node) {
 			wrappers << element
 		}
@@ -135,6 +135,10 @@ mut:
 }
 
 pub fn ReplacementFragment.new(range &dom.Range, value string) !&ReplacementFragment {
+	history := begin_editing_proxy_mutation(range.start_container())
+	defer {
+		end_editing_proxy_mutation(history)
+	}
 	fragment := range.create_contextual_fragment(value)!
 	mut fragment_node := fragment.as_node()
 	remove_formatting_whitespace_between_blocks(mut fragment_node)
@@ -170,7 +174,7 @@ pub fn ReplacementFragment.new(range &dom.Range, value string) !&ReplacementFrag
 		if !child.is_text() {
 			contains_only_text = false
 		}
-		if styled_markup_node_is_block(child) {
+		if is_prohibited_paragraph_child(child) {
 			contains_block_content = true
 		}
 	}
