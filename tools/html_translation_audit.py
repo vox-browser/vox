@@ -141,6 +141,10 @@ LANGUAGE_ARTIFACT_FREE_FUNCTIONS = {
     # BindingsGlue's pointer overload only converts a nullable GC pointer to
     # the non-null wrapper overload; V optionals narrow directly at the call.
     ("BindingsGlue.h", "webgl_wrappable"),
+    # V strings do not distinguish an owning Utf16String from a borrowed
+    # Utf16View. The editing callers pass the optional string directly, so the
+    # C++ lifetime adapter has no executable counterpart in the translation.
+    ("Internal/Algorithms.cpp", "optional_utf16_view"),
 }
 LANGUAGE_ARTIFACT_METHODS = {
     # These are constructor initializer-list and macro-parameter fragments
@@ -1057,6 +1061,43 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     ("ReadableByteStreamTeeBYOBReadRequest", "on_close"): (("close_byte_tee_branches_after_byob_read", None),),
     ("ReadableByteStreamTeeBYOBReadRequest", "on_error"): (("error_tee_branches", None),),
 }
+
+# Editing's five primitive C++ command subclasses share one tagged EditCommand
+# in V. The common apply/unapply/reapply dispatch preserves the subclass bodies;
+# private helpers and inline accessors retain explicit targets so this coverage
+# fails open if the consolidated implementation is renamed or removed.
+for _editing_command_owner in (
+    "InsertNodeCommand",
+    "RemoveNodeCommand",
+    "ReplaceDataCommand",
+    "SplitTextCommand",
+    "SetAttributeCommand",
+):
+    for _editing_command_method in ("apply", "unapply", "reapply"):
+        CONSOLIDATED_METHOD_MAPPINGS[
+            (_editing_command_owner, _editing_command_method)
+        ] = ((_editing_command_method, "EditCommand"),)
+
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("RemoveNodeCommand", "is_lasting_node_removal"): (
+        ("is_lasting_node_removal", "EditCommand"),
+    ),
+    ("ReplaceDataCommand", "replay"): (("replay_data", "EditCommand"),),
+    ("ReplaceDataCommand", "node"): (("node", "EditCommand"),),
+    ("ReplaceDataCommand", "offset"): (("offset", "EditCommand"),),
+    ("ReplaceDataCommand", "removed_data"): (("removed_data", "EditCommand"),),
+    ("SetAttributeCommand", "set_or_remove"): (
+        ("set_or_remove_attribute", "EditCommand"),
+    ),
+    ("EditingHistory", "create"): (("new", "EditingHistory"),),
+    ("Document", "editing_history"): (("install_editing_history", None),),
+    ("ReplacementEndpoints", "relocate_for_merging_left_text_into_right"): (
+        ("relocate_for_merging_left_text_into_right", None),
+    ),
+    ("ReplacementEndpoints", "relocate_for_merging_right_text_into_left"): (
+        ("relocate_for_merging_right_text_into_left", None),
+    ),
+})
 
 # FlexFormattingContext is intentionally decomposed into typed free functions
 # rather than retaining the stateful C++ helper class. The main runner owns the
@@ -2862,6 +2903,10 @@ CONSOLIDATED_METHOD_MAPPINGS.update({
 CONSOLIDATED_FIELD_MAPPINGS: dict[
     tuple[str, str], tuple[tuple[str, str], ...]
 ] = {
+    # UndoStep exposes these immutable values through inline C++ getters. V's
+    # record makes the same values directly readable by the history runner.
+    ("UndoStep", "editing_host"): (("editing_host", "UndoStep"),),
+    ("UndoStep", "category"): (("category", "UndoStep"),),
     ("SVGLengthValue", "kind"): (("kind", "SvgLengthValue"),),
     ("SVGLengthValue", "value"): (("value", "SvgLengthValue"),),
     # WebAudio's C++ offset helpers expose GC member locations to generated
@@ -3236,6 +3281,16 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
 # V target still exists, so they cannot silently turn stale documentation into
 # coverage.
 CONSOLIDATED_FUNCTION_MAPPINGS: dict[tuple[str, str], tuple[str, ...]] = {
+    # The text-control lookup is fused into V's replace-data command factory,
+    # which records the live InputEventsTarget used by every replay. The
+    # callback-shaped traversal returns the same tree-order nodes as a list for
+    # direct iteration at each translated call site.
+    ("EditCommand.cpp", "text_control_owner_of"): (
+        "new_replace_data_command",
+    ),
+    ("Internal/Algorithms.cpp", "for_each_node_effectively_contained_in_range"): (
+        "nodes_effectively_contained_in_range",
+    ),
     # SVGLength keeps the reflected attribute's viewport/font context in its
     # portable value object. The C++ free helpers become the context builder
     # and the percentage-basis method that consume that retained state.

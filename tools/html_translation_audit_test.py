@@ -396,6 +396,42 @@ class ConsolidatedFunctionTests(unittest.TestCase):
             audit.LANGUAGE_ARTIFACT_FREE_FUNCTIONS,
         )
 
+    def test_editing_commands_map_to_the_tagged_v_implementation(self) -> None:
+        for owner in (
+            "InsertNodeCommand",
+            "RemoveNodeCommand",
+            "ReplaceDataCommand",
+            "SplitTextCommand",
+            "SetAttributeCommand",
+        ):
+            for method_name in ("apply", "unapply", "reapply"):
+                self.assertEqual(
+                    audit.CONSOLIDATED_METHOD_MAPPINGS[(owner, method_name)],
+                    ((method_name, "EditCommand"),),
+                )
+        self.assertEqual(
+            audit.CONSOLIDATED_METHOD_MAPPINGS[("ReplaceDataCommand", "replay")],
+            (("replay_data", "EditCommand"),),
+        )
+        self.assertEqual(
+            audit.CONSOLIDATED_METHOD_MAPPINGS[("Document", "editing_history")],
+            (("install_editing_history", None),),
+        )
+        self.assertEqual(
+            audit.CONSOLIDATED_FIELD_MAPPINGS[("UndoStep", "editing_host")],
+            (("editing_host", "UndoStep"),),
+        )
+        self.assertEqual(
+            audit.CONSOLIDATED_FUNCTION_MAPPINGS[
+                ("Internal/Algorithms.cpp", "for_each_node_effectively_contained_in_range")
+            ],
+            ("nodes_effectively_contained_in_range",),
+        )
+        self.assertIn(
+            ("Internal/Algorithms.cpp", "optional_utf16_view"),
+            audit.LANGUAGE_ARTIFACT_FREE_FUNCTIONS,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
