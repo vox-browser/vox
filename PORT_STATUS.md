@@ -360,7 +360,7 @@ boundary. Contenteditable constrains dragging to its active host, controls use
 their shadow text node, and anchor/focus updates retain hit-test affinity while
 keeping the control's selection model synchronized.
 
-The refreshed current-tree semantic inventory reports 4,354 unmatched C++
+The refreshed current-tree semantic inventory reports 4,188 unmatched C++
 spellings. That is a structural review queue rather than a count of missing behaviors: active V
 implementations often consolidate C++ class hierarchies and overloads under a
 single typed path. Empty/default-return implementations are checked separately,
@@ -728,14 +728,14 @@ explicit semantic-divergence markers: 5
 reviewed upstream-equivalent trivial implementations: 543
 suspicious empty/default-return implementations: 0
   candidate-name-match: 14237
-  unmatched: 4218
+  unmatched: 4188
   language-constructor-or-destructor: 1383
   gc-or-binding-runtime: 655
-  consolidated-name-match: 492
+  consolidated-name-match: 519
   namespace-template-specialization: 177
   language-operator: 124
-  language-template-trait: 63
-  value-record-field-match: 52
+  language-template-trait: 64
+  value-record-field-match: 54
 
 largest unmatched modules:
 
@@ -744,7 +744,6 @@ largest unmatched modules:
    590 DOM
    404 Painting
    316 Layout
-    30 Editing
 
 $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 1012 passed, 77 failed, 1089 total
@@ -763,6 +762,14 @@ $ ./compare_screenshots.sh
 11 passed, 11 total (including 3 live-selection, 2 caret, and the
 default-ignorable-code-points reftest)
 ```
+
+The Editing reconciliation accounts for all 432 current upstream
+implementations. Its five primitive command subclasses are dispatched by V's
+tagged `EditCommand`, inline undo-step getters use the corresponding typed
+record fields, callback traversal returns the same tree-order list for direct
+iteration, and C++'s owned-string-to-view helper has no V representation.
+Editing therefore has no unmatched structural entries; each explicit mapping
+fails open if its concrete V target disappears.
 
 The 2026-09-08 default-body pass exhausted the suspicious-stub queue at that
 checkpoint and then
