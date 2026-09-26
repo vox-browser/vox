@@ -810,6 +810,12 @@ pub fn queue_a_task(source TaskSource, event_loop ?&EventLoop, document ?&dom.Do
 	return task.id
 }
 
+// https://html.spec.whatwg.org/multipage/webappapis.html#queue-an-element-task
+// Element::queue_an_element_task(). DOM cannot import the event loop, so the element-owned operation lives here.
+pub fn queue_an_element_task(element &dom.Element, source TaskSource, steps fn ()) u64 {
+	return queue_a_task(source, main_thread_event_loop(), element.as_node().document(), steps)
+}
+
 // https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-global-task
 pub fn queue_global_task(source TaskSource, global_object &dom.Window, steps fn()) u64 {
 	document := if global_object.associated_document_ == unsafe { nil } {

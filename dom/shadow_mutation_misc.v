@@ -1612,11 +1612,6 @@ pub fn (element &Element) dispatch_event_simple(event_name string, bubbles bool)
 	element.as_node().dispatch_event_simple(event_name, bubbles)
 }
 
-pub fn (mut element Element) queue_an_element_task(source string, callback fn ()) {
-	_ = source
-	callback()
-}
-
 pub fn DOMImplementation.create(document &Document) &DOMImplementation {
 	return &DOMImplementation{
 		document_: document

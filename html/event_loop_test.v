@@ -468,3 +468,33 @@ fn test_rendering_updates_content_visibility_proximity_and_resize_observers_to_a
 	assert resize_state.broadcasts == 1
 	event_loop.unregister_document(document)
 }
+
+@[heap]
+struct ElementTaskObservation {
+mut:
+	ran bool
+}
+
+fn test_element_tasks_are_queued_with_the_element_document() {
+	mut document := parse_document('<!doctype html><body><p id="target"></p></body>')
+	// NB: Tasks only become runnable once their document is fully active.
+	mut navigable := &dom.Navigable{
+		active_document_: document
+		is_top_level_traversable_: true
+	}
+	navigable.traversable_navigable_ = navigable
+	document.set_cached_navigable(navigable)
+	element := document.get_element_by_id('target') or { panic('missing target') }
+	mut observation := &ElementTaskObservation{}
+	task_id := queue_an_element_task(element, .dom_manipulation, fn [mut observation] () {
+		observation.ran = true
+	})
+	assert task_id > 0
+	assert !observation.ran
+
+	mut event_loop := main_thread_event_loop()
+	event_loop.spin_until(fn [observation] () bool {
+		return observation.ran
+	})
+	assert observation.ran
+}
