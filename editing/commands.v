@@ -2242,6 +2242,11 @@ fn command_justify_center_state(document &dom.Document) bool {
 	return justify_state(document, .center)
 }
 
+// https://w3c.github.io/editing/docs/execCommand/#the-justifycenter-command
+fn command_justify_center_value(document &dom.Document) string {
+	return justify_value(document)
+}
+
 // https://w3c.github.io/editing/docs/execCommand/#the-justifyfull-command
 pub fn command_justify_full_action(mut document dom.Document, _ string) bool {
 	// Justify the selection with alignment "justify", then return true.
@@ -2255,6 +2260,11 @@ fn command_justify_full_indeterminate(document &dom.Document) bool {
 
 fn command_justify_full_state(document &dom.Document) bool {
 	return justify_state(document, .justify)
+}
+
+// https://w3c.github.io/editing/docs/execCommand/#the-justifyfull-command
+fn command_justify_full_value(document &dom.Document) string {
+	return justify_value(document)
 }
 
 // https://w3c.github.io/editing/docs/execCommand/#the-justifyleft-command
@@ -2272,6 +2282,11 @@ fn command_justify_left_state(document &dom.Document) bool {
 	return justify_state(document, .left)
 }
 
+// https://w3c.github.io/editing/docs/execCommand/#the-justifyleft-command
+fn command_justify_left_value(document &dom.Document) string {
+	return justify_value(document)
+}
+
 // https://w3c.github.io/editing/docs/execCommand/#the-justifyright-command
 pub fn command_justify_right_action(mut document dom.Document, _ string) bool {
 	// Justify the selection with alignment "right", then return true.
@@ -2285,6 +2300,11 @@ fn command_justify_right_indeterminate(document &dom.Document) bool {
 
 fn command_justify_right_state(document &dom.Document) bool {
 	return justify_state(document, .right)
+}
+
+// https://w3c.github.io/editing/docs/execCommand/#the-justifyright-command
+fn command_justify_right_value(document &dom.Document) string {
+	return justify_value(document)
 }
 
 // https://w3c.github.io/editing/docs/execCommand/#the-outdent-command
@@ -2831,7 +2851,7 @@ pub fn command_definitions() []CommandDefinition {
 			action:              command_justify_center_action
 			indeterminate:       command_justify_center_indeterminate
 			state:               command_justify_center_state
-			value:               justify_value
+			value:               command_justify_center_value
 			preserves_overrides: true
 			mapped_value:        'formatJustifyCenter'
 		},
@@ -2841,7 +2861,7 @@ pub fn command_definitions() []CommandDefinition {
 			action:              command_justify_full_action
 			indeterminate:       command_justify_full_indeterminate
 			state:               command_justify_full_state
-			value:               justify_value
+			value:               command_justify_full_value
 			preserves_overrides: true
 			mapped_value:        'formatJustifyFull'
 		},
@@ -2851,7 +2871,7 @@ pub fn command_definitions() []CommandDefinition {
 			action:              command_justify_left_action
 			indeterminate:       command_justify_left_indeterminate
 			state:               command_justify_left_state
-			value:               justify_value
+			value:               command_justify_left_value
 			preserves_overrides: true
 			mapped_value:        'formatJustifyLeft'
 		},
@@ -2861,7 +2881,7 @@ pub fn command_definitions() []CommandDefinition {
 			action:              command_justify_right_action
 			indeterminate:       command_justify_right_indeterminate
 			state:               command_justify_right_state
-			value:               justify_value
+			value:               command_justify_right_value
 			preserves_overrides: true
 			mapped_value:        'formatJustifyRight'
 		},

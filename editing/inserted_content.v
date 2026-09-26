@@ -11,7 +11,7 @@ pub enum ReplacementTopology {
 	block
 }
 
-fn inserted_content_start_boundary_of(node &dom.Node) dom.BoundaryPoint {
+fn start_boundary_of(node &dom.Node) dom.BoundaryPoint {
 	if node.is_text() {
 		return dom.BoundaryPoint{
 			node: node
@@ -19,7 +19,7 @@ fn inserted_content_start_boundary_of(node &dom.Node) dom.BoundaryPoint {
 		}
 	}
 	if first_child := node.first_child() {
-		return inserted_content_start_boundary_of(first_child)
+		return start_boundary_of(first_child)
 	}
 	return dom.BoundaryPoint{
 		node: node
@@ -195,7 +195,7 @@ pub fn (mut content InsertedContent) begin_tracking_content_boundaries() {
 	}
 	first := content.nodes_.first_node() or { return }
 	last := content.nodes_.last_node() or { return }
-	content.endpoints_ = ReplacementEndpoints.new(inserted_content_start_boundary_of(first),
+	content.endpoints_ = ReplacementEndpoints.new(start_boundary_of(first),
 		end_boundary_of_node(last))
 }
 

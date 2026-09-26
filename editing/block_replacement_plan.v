@@ -37,7 +37,7 @@ fn begins_with_list_content(node &dom.Node) bool {
 	return node_has_html_name(first_child, ['ul', 'ol'])
 }
 
-fn same_list_type(first &dom.Node, second &dom.Node) bool {
+fn are_same_list_type(first &dom.Node, second &dom.Node) bool {
 	return (node_has_html_name(first, ['ul']) && node_has_html_name(second, ['ul']))
 		|| (node_has_html_name(first, ['ol']) && node_has_html_name(second, ['ol']))
 }
@@ -48,7 +48,7 @@ pub fn integrate_first_pasted_list(mut inserted_content InsertedContent, destina
 	}
 	destination_list := destination_block.parent() or { return }
 	pasted_list := inserted_content.first_node() or { return }
-	if !same_list_type(pasted_list, destination_list) || !pasted_list.has_children() {
+	if !are_same_list_type(pasted_list, destination_list) || !pasted_list.has_children() {
 		return
 	}
 
@@ -78,7 +78,7 @@ fn can_merge_paragraph_contents(node &dom.Node) bool {
 	return is_non_list_single_line_container(node)
 }
 
-fn restore_replacement_trailing_break(block &dom.Node, trailing_break &dom.Node) {
+fn restore_trailing_break(block &dom.Node, trailing_break &dom.Node) {
 	if last_child := block.last_child() {
 		if last_child == trailing_break {
 			return
@@ -126,7 +126,7 @@ pub fn make_block_replacement_plan(insertion_boundary dom.BoundaryPoint, destina
 	}
 }
 
-fn replacement_boundary_is_at_end_of(boundary dom.BoundaryPoint, ancestor &dom.Node) bool {
+fn is_at_end_of(boundary dom.BoundaryPoint, ancestor &dom.Node) bool {
 	if boundary.node.is_text() {
 		text := unsafe { &dom.Text(boundary.node) }
 		if boundary.offset != text.length_in_utf16_code_units() {
@@ -157,12 +157,12 @@ fn replacement_boundary_is_at_end_of(boundary dom.BoundaryPoint, ancestor &dom.N
 	return true
 }
 
-fn first_replacement_text_descendant(node &dom.Node) ?&dom.Text {
+fn first_text_descendant(node &dom.Node) ?&dom.Text {
 	if node.is_text() {
 		return unsafe { &dom.Text(node) }
 	}
 	for child in node.children_as_vector() {
-		if text := first_replacement_text_descendant(child) {
+		if text := first_text_descendant(child) {
 			return text
 		}
 	}
@@ -223,7 +223,7 @@ pub fn canonicalize_inserted_content_end(boundary dom.BoundaryPoint, fragment &R
 	}
 	if !is_empty_placeholder {
 		block := block_node_of_node(boundary.node) or { return boundary }
-		if !replacement_boundary_is_at_end_of(boundary, block) {
+		if !is_at_end_of(boundary, block) {
 			return boundary
 		}
 		traversal_start = block
@@ -238,7 +238,7 @@ pub fn canonicalize_inserted_content_end(boundary dom.BoundaryPoint, fragment &R
 		mut sibling := current.next_sibling()
 		for sibling != none {
 			candidate := sibling or { break }
-			if text := first_replacement_text_descendant(candidate) {
+			if text := first_text_descendant(candidate) {
 				return dom.BoundaryPoint{
 					node: text.as_node()
 					offset: 0

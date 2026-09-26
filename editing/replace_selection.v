@@ -216,7 +216,7 @@ pub fn replace_selection_with_block_fragment(document &dom.Document, range_point
 		inserted_content.did_move_start_paragraph(transferred.start)
 		if plan.insertion_mode == .insert_after_containing_block {
 			if trailing_break := destination_trailing_break {
-				restore_replacement_trailing_break(destination_block, trailing_break)
+				restore_trailing_break(destination_block, trailing_break)
 			}
 		}
 	} else if !has_visible_children(destination_block) {
@@ -242,7 +242,7 @@ pub fn replace_selection_with_block_fragment(document &dom.Document, range_point
 		inserted_content.did_replace_node(last_inserted, destination_block)
 		caret := finalize_inserted_content(mut inserted_content, transferred.end)
 		if trailing_break := destination_trailing_break {
-			restore_replacement_trailing_break(destination_block, trailing_break)
+			restore_trailing_break(destination_block, trailing_break)
 		}
 		selection.collapse(caret.node, caret.offset)!
 		return caret
@@ -318,7 +318,7 @@ pub fn replace_selection_with_block_fragment(document &dom.Document, range_point
 		right := right_block or { return error('replacement suffix block is missing') }
 		if !has_visible_children(right) {
 			remove_node(right)
-		} else if leading_text := first_replacement_text_descendant(right) {
+		} else if leading_text := first_text_descendant(right) {
 			characters := leading_text.data().runes()
 			if characters.len > 0 && is_ascii_space_character(characters[0]) {
 				contains_only_whitespace := characters.all(is_ascii_space_character(it))

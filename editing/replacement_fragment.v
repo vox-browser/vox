@@ -28,7 +28,7 @@ fn collect_replacement_text_nodes(node &dom.Node, mut text_nodes []&dom.Text) {
 	}
 }
 
-fn make_replacement_whitespace_round_trippable(document &dom.Document, fragment_node &dom.Node) {
+fn make_whitespace_round_trippable(document &dom.Document, fragment_node &dom.Node) {
 	mut text_nodes := []&dom.Text{}
 	collect_replacement_text_nodes(fragment_node, mut text_nodes)
 	for text in text_nodes {
@@ -78,7 +78,7 @@ fn unwrap_interchange_whitespace_spans(fragment_node &dom.Node) {
 	}
 }
 
-fn replacement_node_has_renderable_descendant(node &dom.Node) bool {
+fn has_renderable_descendant(node &dom.Node) bool {
 	if node.is_text() && (node.text_content() or { '' }) != '' {
 		return true
 	}
@@ -88,7 +88,7 @@ fn replacement_node_has_renderable_descendant(node &dom.Node) bool {
 		}
 	}
 	for child in node.children_as_vector() {
-		if replacement_node_has_renderable_descendant(child) {
+		if has_renderable_descendant(child) {
 			return true
 		}
 	}
@@ -98,7 +98,7 @@ fn replacement_node_has_renderable_descendant(node &dom.Node) bool {
 fn collect_empty_inline_staging_wrappers(node &dom.Node, mut wrappers []&dom.Element) {
 	if element := node.as_element() {
 		if !element.is_void_element() && !is_prohibited_paragraph_child(node)
-			&& !replacement_node_has_renderable_descendant(node) {
+			&& !has_renderable_descendant(node) {
 			wrappers << element
 		}
 	}
@@ -165,7 +165,7 @@ pub fn ReplacementFragment.new(range &dom.Range, value string) !&ReplacementFrag
 
 	unwrap_interchange_whitespace_spans(fragment_node)
 	remove_empty_inline_staging_wrappers(fragment_node)
-	make_replacement_whitespace_round_trippable(range.start_container().document(), fragment_node)
+	make_whitespace_round_trippable(range.start_container().document(), fragment_node)
 
 	children := fragment_node.children_as_vector()
 	mut contains_only_text := children.len > 0
