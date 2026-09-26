@@ -191,3 +191,22 @@ fn test_canvas_text_path_uses_shaped_glyph_outlines_and_max_width_transform() {
 	}
 	assert maximum_x - minimum_x <= natural_width / 2.0
 }
+
+fn test_canvas_drawing_requests_a_repaint_of_the_element() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'canvas') or {
+		panic(err)
+	}
+	canvas := unsafe { &dom.HTMLCanvasElement(element) }
+	paintable := &dom.Paintable{}
+	mut canvas_node := unsafe { &dom.Node(element.as_node()) }
+	canvas_node.set_layout_node(&dom.LayoutNode{
+		paintables_: [paintable]
+	})
+	mut context := html_canvas_element_get_context(canvas, '2d', none) or { panic(err) }
+	assert !paintable.needs_repaint
+
+	context.fill_rect(0, 0, 2, 2)
+	assert paintable.needs_repaint
+	assert html_canvas_element_is_dirty(canvas)
+}

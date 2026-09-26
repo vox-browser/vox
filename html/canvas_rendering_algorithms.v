@@ -876,6 +876,12 @@ pub fn (mut context CanvasRenderingContext2D) set_size(width u32, height u32) {
 pub fn (mut context CanvasRenderingContext2D) did_draw(rect CanvasFloatRect) {
 	_ = rect
 	html_canvas_element_set_canvas_content_dirty(context.element) or {}
+
+	// NB: Don't request a display list recording here: the new content reaches the compositor through the canvas
+	// surface registry when the canvas is presented, and the cached DrawCanvas command is invalidated when the
+	// content generation moves in prepare_for_compositing.
+	mut element_node := unsafe { &dom.Node(context.element.as_node()) }
+	element_node.set_needs_repaint(.no)
 }
 
 pub fn (context &CanvasRenderingContext2D) painter() ?&dom.Bitmap_ {
