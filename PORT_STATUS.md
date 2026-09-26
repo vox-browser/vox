@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb`
 
 Translation workspace: `~/code/vox2`
-Audited: 2026-09-24
+Audited: 2026-09-26
 
 ## Upstream delta since the V snapshot
 
@@ -576,20 +576,21 @@ time-origin-relative DOM timestamps, external software hand-off, navigation
 start times for new browsing contexts and navigated documents, hyperlink
 activation and following through the navigable, form and interactive element
 activation behavior from event dispatch, the navigators' ID, language, online,
-and hardware mixins, and media devices bound to their window's document. Still
-open:
+and hardware mixins, media devices bound to their window's document, navigation
+referrer policies from hyperlinks, per-element focusable areas with their
+rendering requirement and image maps, request policy containers, and style
+elements that create their sheets in the style scope's style sheet list with
+the parser handshake and script-blocking state. Still open:
 
 - The browser shell dispatches clicks through its JavaScript mirror and follows
   links itself instead of the page event handler's click and activation path.
-- `Element.is_focusable()` is a tag-name switch instead of the per-element
-  overrides with `meets_focusable_area_rendering_requirements()`, which needs a
-  per-element style update that stops at `display: none`; image maps have no
-  `usemap` association.
-- `StyleElementBase` is simplified: no style-scope sheet creation, update
-  sources, media evaluation, or script-blocking state.
+- `<link rel=stylesheet>` sheets are read from local files by a layout-time
+  CSS bridge, and the shell inlines remote ones as style elements, instead of
+  `HTMLLinkElement` fetching and processing them; the shell installs no fetch
+  host, so the fetch module has no resource loader behind it.
 - The compositor keeps its own visual context tree instead of
   `AccumulatedVisualContextTree` spatial transforms and sticky offsets.
-- Hyperlink downloads and navigation referrer policies are not carried.
+- Hyperlink downloads are not carried.
 - The WebGL module is not connected to `<canvas>` or the DOM event model.
 - IndexedDB is a synchronous model without connection queues or task-driven
   request processing.
@@ -611,7 +612,7 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The table below is the refreshed 2026-09-23 inventory. It covers 76 current
+The table below is the refreshed 2026-09-26 inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
 implementation units. Root-level LibWeb `.cpp` support units are mapped
@@ -624,7 +625,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
 | `Animations` | 10 | 5,187 | 3,981 | 1,041 | Complete |
 | `Bindings` | 11 | 2,501 | 2,679 | 918 | Complete |
-| `CSS` | 215 | 47,722 | 104,834 | 9,247 | Present |
+| `CSS` | 215 | 47,722 | 103,997 | 8,755 | Present |
 | `Clipboard` | 4 | 1,009 | 1,037 | 383 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 424 | 138 | Complete |
@@ -652,7 +653,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 861 | 231 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 43,820 | 16,549 | Present |
+| `Layout` | 9 | 4,001 | 37,944 | 11,639 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
@@ -699,7 +700,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **359,907** | **72,344** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **353,194** | **66,942** | **74 complete, 4 present, 0 untranslated** |
 
 ## Verification
 
@@ -712,11 +713,11 @@ upstream modules: 76
 upstream .cpp files: 1193
 upstream implementations: 21401
 quarantined name-only coverage shims: 0 files / 0 functions
-explicit semantic-divergence markers: 10
-reviewed upstream-equivalent trivial implementations: 559
+explicit semantic-divergence markers: 6
+reviewed upstream-equivalent trivial implementations: 543
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 14146
-  unmatched: 4311
+  candidate-name-match: 14229
+  unmatched: 4228
   language-constructor-or-destructor: 1383
   gc-or-binding-runtime: 655
   consolidated-name-match: 490
@@ -727,18 +728,18 @@ suspicious empty/default-return implementations: 0
 
 largest unmatched modules:
 
-  1695 CSS
+  1682 CSS
   1205 HTML
-   609 DOM
+   591 DOM
    404 Painting
    316 Layout
-    82 Editing
+    30 Editing
 
 $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 1012 passed, 77 failed, 1089 total
 
 $ v -old-compiler -enable-globals test .
-Summary for all V _test.v files: 647 passed, 647 total.
+Summary for all V _test.v files: 650 passed, 650 total.
 
 $ Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
 Ladybird V smoke check passed

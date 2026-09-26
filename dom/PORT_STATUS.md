@@ -58,7 +58,7 @@ files.
 | `Slottable.cpp` | 274 | `shadow_mutation_misc.v` |
 | `StaticNodeList.cpp` | 51 | `collections_ranges.v` |
 | `StaticRange.cpp` | 47 | `collections_ranges.v` |
-| `StyleElementBase.cpp` | 174 | `shadow_mutation_misc.v` |
+| `StyleElementBase.cpp` | 174 | `style_element_base.v` |
 | `StyleInvalidator.cpp` | 174 | `shadow_mutation_misc.v` |
 | `Text.cpp` | 177 | `character_nodes.v` |
 | `TreeWalker.cpp` | 397 | `collections_ranges.v` |

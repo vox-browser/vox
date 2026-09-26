@@ -48,7 +48,7 @@ of mirroring C++ compilation-unit boundaries.
 | `CSSMathClamp.cpp`, `CSSMathInvert.cpp`, `CSSMathMax.cpp`, `CSSMathMin.cpp`, `CSSMathNegate.cpp`, `CSSMathProduct.cpp`, `CSSMathSum.cpp`, `CSSMathValue.cpp`, `CSSNumericArray.cpp`, `CSSNumericValue.cpp` | `typed_om_math.v`, `style_values_core.v` |
 | `CSSMatrixComponent.cpp`, `CSSPerspective.cpp`, `CSSRotate.cpp`, `CSSScale.cpp`, `CSSSkew.cpp`, `CSSSkewX.cpp`, `CSSSkewY.cpp`, `CSSTransformComponent.cpp`, `CSSTransformValue.cpp`, `CSSTranslate.cpp` | `transforms.v` |
 | `CSSUnparsedValue.cpp`, `CSSVariableReferenceValue.cpp` | `unparsed_values.v` |
-| `CascadedProperties.cpp`, `ComputedProperties.cpp`, `Interpolation.cpp`, `StyleComputer.cpp` | `cascade_minimal.v`, `computed_style.v`, `computed_interpolation.v`, `style_computer.v` |
+| `CascadedProperties.cpp`, `ComputedProperties.cpp`, `Interpolation.cpp`, `StyleComputer.cpp` | `computed_interpolation.v`, `style_computer.v` |
 | `CustomPropertyData.cpp`, `StyleProperty.cpp` | `properties_data.v`, `events_misc.v` |
 | `InvalidationSet.cpp`, `StyleInvalidation.cpp`, `StyleInvalidationData.cpp`, `StyleScope.cpp` | `style_scope_cache.v`, `style_computer.v`, `dom_css_bridge.v` |
 | `CounterStyle.cpp`, `CounterStyleDefinition.cpp`, `CountersSet.cpp` | `counter_values.v` |

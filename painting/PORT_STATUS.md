@@ -549,11 +549,11 @@ following behavioral mismatches and added focused regressions:
 | `NavigableContainerViewportPaintable.cpp` | `navigable_container_viewport_paintable.v` |
 | `PaintStyle.cpp` | `svg_painting.v` |
 | `Paintable.cpp` | `paintable.v` |
-| `PaintableBox.cpp` | `paintable.v`, `scrolling.v`, `painting_algorithms.v`, `../layout/block_flow_minimal.v`, `../layout/viewport_paint_bridge.v` |
+| `PaintableBox.cpp` | `paintable.v`, `scrolling.v`, `painting_algorithms.v`, `../layout/paint_transport.v`, `../layout/viewport_paint_bridge.v` |
 | `PaintableFragment.cpp` | `paintable.v` |
 | `PaintableWithLines.cpp` | `paintable.v`, `../layout/viewport_paint_bridge.v` |
 | `RadioButtonPaintable.cpp` | `painting_algorithms.v` |
-| `ResizeHandle.cpp` | `scrolling.v`, `../layout/block_flow_minimal.v` |
+| `ResizeHandle.cpp` | `scrolling.v`, `../layout/paint_transport.v` |
 | `ResolvedCSSFilter.cpp` | `effects.v` |
 | `SVGClipPaintable.cpp` | `svg_painting.v` |
 | `SVGForeignObjectPaintable.cpp` | `svg_painting.v` |
@@ -566,7 +566,7 @@ following behavioral mismatches and added focused regressions:
 | `SVGSVGPaintable.cpp` | `svg_painting.v` |
 | `ScrollFrame.cpp` | `scrolling.v` |
 | `ScrollState.cpp` | `scrolling.v` |
-| `Scrollbar.cpp` | `scrolling.v`, `../layout/block_flow_minimal.v`, `../layout/viewport_paint_bridge.v` |
+| `Scrollbar.cpp` | `scrolling.v`, `../layout/paint_transport.v`, `../layout/viewport_paint_bridge.v` |
 | `ShadowPainting.cpp` | `effects.v` |
 | `StackingContext.cpp` | `paintable.v` |
 | `TableBordersPainting.cpp` | `table_borders_painting.v` |
