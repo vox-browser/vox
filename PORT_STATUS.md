@@ -580,7 +580,11 @@ and hardware mixins, media devices bound to their window's document, navigation
 referrer policies from hyperlinks, per-element focusable areas with their
 rendering requirement and image maps, request policy containers, and style
 elements that create their sheets in the style scope's style sheet list with
-the parser handshake and script-blocking state. Still open:
+the parser handshake and script-blocking state. Hyperlink downloads now fire
+their cancellable Navigation API event, honor sandboxing, fetch with the
+download initiator and URL credentials, apply the upstream Content-Disposition
+and same-origin filename precedence, sanitize the result, and stream response
+bodies through the owning PageClient. Still open:
 
 - The browser shell dispatches clicks through its JavaScript mirror and follows
   links itself instead of the page event handler's click and activation path.
@@ -590,7 +594,6 @@ the parser handshake and script-blocking state. Still open:
   host, so the fetch module has no resource loader behind it.
 - The compositor keeps its own visual context tree instead of
   `AccumulatedVisualContextTree` spatial transforms and sticky offsets.
-- Hyperlink downloads are not carried.
 - The WebGL module is not connected to `<canvas>` or the DOM event model.
 - IndexedDB is a synchronous model without connection queues or task-driven
   request processing.
@@ -633,7 +636,7 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
-| `DOM` | 59 | 34,859 | 36,735 | 2,205 | Complete |
+| `DOM` | 59 | 34,859 | 36,776 | 2,205 | Complete |
 | `DOMURL` | 4 | 1,039 | 758 | 336 | Complete |
 | `Editing` | 26 | 12,720 | 13,918 | 226 | Complete |
 | `Encoding` | 6 | 769 | 705 | 244 | Complete |
@@ -647,7 +650,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
 | `Geolocation` | 4 | 643 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 57,756 | 14,976 | Complete |
+| `HTML` | 286 | 83,853 | 58,060 | 15,101 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
@@ -700,7 +703,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **353,194** | **66,942** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **353,539** | **67,067** | **74 complete, 4 present, 0 untranslated** |
 
 ## Verification
 
@@ -713,14 +716,14 @@ upstream modules: 76
 upstream .cpp files: 1193
 upstream implementations: 21401
 quarantined name-only coverage shims: 0 files / 0 functions
-explicit semantic-divergence markers: 6
+explicit semantic-divergence markers: 5
 reviewed upstream-equivalent trivial implementations: 543
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 14229
-  unmatched: 4228
+  candidate-name-match: 14236
+  unmatched: 4219
   language-constructor-or-destructor: 1383
   gc-or-binding-runtime: 655
-  consolidated-name-match: 490
+  consolidated-name-match: 492
   namespace-template-specialization: 177
   language-operator: 124
   language-template-trait: 63
@@ -729,8 +732,8 @@ suspicious empty/default-return implementations: 0
 largest unmatched modules:
 
   1682 CSS
-  1205 HTML
-   591 DOM
+  1197 HTML
+   590 DOM
    404 Painting
    316 Layout
     30 Editing

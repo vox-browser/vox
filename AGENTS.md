@@ -106,6 +106,10 @@
   Browser navigation parses with the final document URL already installed, so
   parser-created `<base>` elements freeze against that URL and all preloaded,
   styled, scripted, image, and video subresources use the resulting base URL.
+  Hyperlink downloads fire the cancellable download-request navigate event,
+  respect the sandboxed-downloads flag, fetch with the download initiator and
+  URL credentials, select and sanitize the upstream suggested filename, and
+  stream the response body through the owning page's download client.
 - Media controls derive their timeline from the final seekable range, react to
   audio-track list events, use a semantic fullscreen button with the `F`
   shortcut, and coalesce scrub seeks with the upstream timeout. SourceBuffer
