@@ -231,7 +231,7 @@ fn (mut model NavigableModel) start_download_for_response(response &fetch.Respon
 
 // https://html.spec.whatwg.org/multipage/links.html#handle-as-a-download
 fn (mut model NavigableModel) handle_as_a_download(response &fetch.Response,
-	fallback_url dom.URL, proposed_filename ?string, interface_origin dom.Origin) {
+	fallback_url dom.URL, proposed_filename ?string, interface_origin ?dom.Origin) {
 	internal_response := response.unsafe_response()
 	if internal_response.body == none {
 		return
@@ -240,6 +240,68 @@ fn (mut model NavigableModel) handle_as_a_download(response &fetch.Response,
 	suggested_filename := suggested_download_filename(download_url, internal_response.header_list,
 		proposed_filename, interface_origin)
 	model.start_download_for_response(internal_response, download_url, suggested_filename)
+}
+
+// Navigation responses use the same download pipeline as explicit hyperlink
+// downloads, but retain the navigation and request-server identities so the
+// page client can adopt an already-running response body.
+fn (mut model NavigableModel) handle_navigation_response_as_download(
+	navigation_params &NavigationParams, source_allows_downloading bool,
+	interface_origin ?dom.Origin, initial_data []u8) bool {
+	response := navigation_params.response.unsafe_response()
+	if response.body == none {
+		return true
+	}
+
+	target_allows_downloading := !navigation_params.final_sandboxing_flags.contains(.sandboxed_downloads)
+	if !source_allows_downloading || !target_allows_downloading {
+		response.resume_body_delivery()
+		return true
+	}
+	if model.active_window() == none {
+		response.resume_body_delivery()
+		return true
+	}
+
+	download_url := response.url() or {
+		if request := navigation_params.request {
+			request.current_url()
+		} else {
+			dom.URL{ value: 'about:blank' }
+		}
+	}
+	if request_server_request := response.request_server_request() {
+		page_model := page_model_for_download(&model) or {
+			response.resume_body_delivery()
+			return true
+		}
+		suggested_filename := suggested_download_filename(download_url, response.header_list,
+			none, interface_origin)
+		transferred_initial_data := if initial_data.len > 0
+			&& !request_server_request.has_file_backed_response_body {
+			initial_data.clone()
+		} else {
+			[]u8{}
+		}
+		mut client := page_model.client()
+		_ = client.page_did_start_download(page.DownloadRequest{
+			navigable_id: model.id().u64()
+			navigation_id: navigation_params.id
+			url: download_url.serialize()
+			suggested_filename: suggested_filename
+			total_size: response_content_length(response.header_list)
+			request_server_client_id: request_server_request.client_id
+			request_server_request_id: request_server_request.request_id
+			initial_data: transferred_initial_data
+		}) or {
+			response.resume_body_delivery()
+			return true
+		}
+		return true
+	}
+
+	model.handle_as_a_download(response, download_url, none, interface_origin)
+	return true
 }
 
 fn process_hyperlink_download_response(model &NavigableModel, response &fetch.Response,

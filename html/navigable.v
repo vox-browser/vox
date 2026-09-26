@@ -1400,6 +1400,14 @@ fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
 	if navigation_params := received_navigation_params.navigation_params {
 		state.origin = navigation_params.origin
 		state.about_base_url = navigation_params.about_base_url
+		response := navigation_params.response.unsafe_response()
+		if parse_content_disposition(response.header_list).is_attachment {
+			model.handle_navigation_response_as_download(navigation_params,
+				source_snapshot_params.allows_downloading, params.source_document.origin(), []u8{})
+			model.set_ongoing_navigation(NavigableOngoingNavigation{})
+			model.set_delaying_load_events(false)
+			return
+		}
 		if body := navigation_params.response.fetch_response_body() {
 			state.resource = body.bytes().bytestr()
 		}

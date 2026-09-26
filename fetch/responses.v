@@ -52,6 +52,7 @@ pub struct RequestServerRequest {
 pub:
 	client_id                  int = -1
 	request_id                 u64
+	has_file_backed_response_body bool
 	release_transfer_lease     ?RequestServerAction
 	resume_body_delivery       ?RequestServerAction
 	resume_body_delivery_up_to ?RequestServerResumeUpTo

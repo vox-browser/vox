@@ -8,6 +8,8 @@ import page
 
 __global (
 	hyperlink_download_requests = []&fetch.Request{}
+	navigation_download_transfer_releases = 0
+	navigation_download_transfer_resumes  = 0
 )
 
 fn hyperlink_download_fetch(request &fetch.Request) !&fetch.Response {
@@ -22,6 +24,35 @@ fn hyperlink_download_fetch(request &fetch.Request) !&fetch.Response {
 	response.header_list.append(http.Header{
 		name:  'Content-Length'
 		value: '7'
+	})
+	return response
+}
+
+fn note_navigation_download_transfer_release() {
+	navigation_download_transfer_releases++
+}
+
+fn note_navigation_download_transfer_resume() {
+	navigation_download_transfer_resumes++
+}
+
+fn navigation_server_download_fetch(request &fetch.Request) !&fetch.Response {
+	mut response := fetch.Response.create()
+	response.url_list = request.url_list.clone()
+	response.set_body_bytes('server-owned-payload'.bytes())
+	response.header_list.append(http.Header{
+		name:  'Content-Disposition'
+		value: 'attachment; filename="navigation.txt"'
+	})
+	response.header_list.append(http.Header{
+		name:  'Content-Length'
+		value: '20'
+	})
+	response.set_request_server_request(fetch.RequestServerRequest{
+		client_id: 9
+		request_id: 27
+		release_transfer_lease: note_navigation_download_transfer_release
+		resume_body_delivery: note_navigation_download_transfer_resume
 	})
 	return response
 }
@@ -122,4 +153,116 @@ fn test_download_navigate_event_cancellation_and_sandboxing_stop_the_fetch() {
 	html_element_click(unsafe { &dom.HTMLElement(sandboxed_anchor) })
 	assert hyperlink_download_requests.len == 0
 	assert sandboxed_page.client().download(1) == none
+}
+
+fn test_attachment_navigation_downloads_without_committing_a_document() {
+	document, _, model_pointer, page_model := download_test_page()!
+	mut model := unsafe { &NavigableModel(model_pointer) }
+	model.set_navigation_fetch_hook(hyperlink_download_fetch)
+	hyperlink_download_requests = []
+	model.navigate(NavigableNavigateParams{
+		url:             dom.URL{ value: 'https://example.test/files/navigation.txt' }
+		source_document: document
+	})!
+
+	assert model.active_document()? == document
+	assert model.get_session_history_entries().len == 1
+	assert model.ongoing_navigation().kind == .empty
+	assert hyperlink_download_requests.len == 1
+	download := page_model.client().download(1) or { panic('missing navigation download') }
+	assert download.request.url == 'https://example.test/files/navigation.txt'
+	assert download.request.suggested_filename == 'server report.txt'
+	assert download.data == 'payload'.bytes()
+	assert download.status == .finished
+}
+
+fn test_attachment_navigation_hands_request_server_response_to_page_client() {
+	document, _, model_pointer, page_model := download_test_page()!
+	mut model := unsafe { &NavigableModel(model_pointer) }
+	model.set_navigation_fetch_hook(navigation_server_download_fetch)
+	navigation_download_transfer_releases = 0
+	navigation_download_transfer_resumes = 0
+	model.navigate(NavigableNavigateParams{
+		url:             dom.URL{ value: 'https://example.test/server-download' }
+		source_document: document
+	})!
+
+	assert model.active_document()? == document
+	assert model.get_session_history_entries().len == 1
+	download := page_model.client().download(1) or { panic('missing request-server download') }
+	assert download.request.navigable_id? == model.id().u64()
+	assert download.request.navigation_id? != ''
+	assert download.request.request_server_client_id? == 9
+	assert download.request.request_server_request_id? == u64(27)
+	assert download.request.initial_data.len == 0
+	assert download.status == .in_progress
+	assert navigation_download_transfer_releases == 0
+	assert navigation_download_transfer_resumes == 0
+}
+
+fn test_attachment_navigation_respects_source_download_sandboxing() {
+	mut document, _, model_pointer, page_model := download_test_page()!
+	document.set_active_sandboxing_flag_bits(u32(SandboxingFlag.sandboxed_downloads))
+	mut model := unsafe { &NavigableModel(model_pointer) }
+	model.set_navigation_fetch_hook(navigation_server_download_fetch)
+	navigation_download_transfer_releases = 0
+	navigation_download_transfer_resumes = 0
+	model.navigate(NavigableNavigateParams{
+		url:             dom.URL{ value: 'https://example.test/blocked-download' }
+		source_document: document
+	})!
+
+	assert model.active_document()? == document
+	assert model.get_session_history_entries().len == 1
+	assert page_model.client().download(1) == none
+	assert navigation_download_transfer_releases == 1
+	assert navigation_download_transfer_resumes == 1
+}
+
+fn test_attachment_navigation_respects_target_download_sandboxing() {
+	document, window, model_pointer, page_model := download_test_page()!
+	mut context := unsafe { &BrowsingContextModel(window.browsing_context()) }
+	context.set_popup_sandboxing_flag_set(SandboxingFlagSet{
+		bits: u32(SandboxingFlag.sandboxed_downloads)
+	})
+	mut model := unsafe { &NavigableModel(model_pointer) }
+	model.set_navigation_fetch_hook(navigation_server_download_fetch)
+	navigation_download_transfer_releases = 0
+	navigation_download_transfer_resumes = 0
+	model.navigate(NavigableNavigateParams{
+		url:             dom.URL{ value: 'https://example.test/target-blocked-download' }
+		source_document: document
+	})!
+
+	assert model.active_document()? == document
+	assert model.get_session_history_entries().len == 1
+	assert page_model.client().download(1) == none
+	assert navigation_download_transfer_releases == 1
+	assert navigation_download_transfer_resumes == 1
+}
+
+fn test_request_server_download_avoids_duplicate_file_backed_initial_data() {
+	document, _, model_pointer, page_model := download_test_page()!
+	mut response := fetch.Response.create()
+	response.url_list = [dom.URL{ value: 'https://example.test/file-backed' }]
+	response.set_body_bytes('complete-file'.bytes())
+	response.set_request_server_request(fetch.RequestServerRequest{
+		client_id: 14
+		request_id: 31
+		has_file_backed_response_body: true
+	})
+	params := &NavigationParams{
+		id: 'file-backed-navigation'
+		navigable: model_pointer
+		response: response
+		origin: document.origin()
+		policy_container: &PolicyContainer{}
+		final_sandboxing_flags: SandboxingFlagSet{}
+	}
+	mut model := unsafe { &NavigableModel(model_pointer) }
+	assert model.handle_navigation_response_as_download(params, true, document.origin(),
+		'already-sniffed'.bytes())
+
+	download := page_model.client().download(1) or { panic('missing file-backed download') }
+	assert download.request.initial_data.len == 0
 }
