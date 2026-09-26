@@ -983,7 +983,7 @@ VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = froze
         ("internals/xr_testing.v", "XRTest", "create"),
         # Layout and loader entries translate default state or platform
         # boundaries whose upstream result is represented by that state.
-        ("layout/block_flow_minimal.v", None, "solid_box_border_styles"),
+        ("layout/paint_transport.v", None, "solid_box_border_styles"),
         ("layout/layout_state.v", "LayoutState", "new"),
         ("loader/content_filter.v", "ContentFilter", "create"),
         ("loader/proxy_mappings.v", "ProxyMappings", "create"),

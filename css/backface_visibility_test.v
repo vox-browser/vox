@@ -56,36 +56,6 @@ fn test_backface_visibility_invalidation() {
 	assert to_visible.needs_stacking_context_tree_rebuild()
 }
 
-fn test_backface_visibility_matrix_math() {
-	document := dom.Document.create(dom.url_about_blank())
-	element := document.create_element('div') or { panic(err) }
-	front := resolve_transform_4x4_matrix(element, 'rotateY(0deg)', 100, 100, []) or {
-		panic('missing front-facing transform')
-	}
-	back := resolve_transform_4x4_matrix(element, 'rotateY(180deg)', 100, 100, []) or {
-		panic('missing back-facing transform')
-	}
-	assert !is_back_face_visible(front)
-	assert is_back_face_visible(back)
-	inverse := back.inverse() or { panic('rotation should be invertible') }
-	identity := inverse.multiply(back)
-	assert math_abs(identity.m11 - 1) < 0.0000001
-	assert math_abs(identity.m22 - 1) < 0.0000001
-	assert math_abs(identity.m33 - 1) < 0.0000001
-	assert math_abs(identity.m44 - 1) < 0.0000001
-}
-
-fn test_transform_function_names_are_ascii_case_insensitive() {
-	assert transform_function_from_string('rotatex')? == .rotate_x
-	assert transform_function_from_string('ROTATEY')? == .rotate_y
-	assert transform_function_from_string('scalez')? == .scale_z
-
-	document := dom.Document.create(dom.url_about_blank())
-	element := document.create_element('div') or { panic(err) }
-	back := resolve_transform_4x4_matrix(element, 'rotatex(180deg) scalez(2)', 100, 100, []) or { panic('missing back-facing transform') }
-	assert is_back_face_visible(back)
-}
-
 fn test_document_reports_running_css_animations_to_the_browser_host() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut element := document.create_element('div') or { panic(err) }
@@ -102,4 +72,41 @@ fn test_document_reports_running_css_animations_to_the_browser_host() {
 
 fn math_abs(value f64) f64 {
 	return if value < 0 { -value } else { value }
+}
+
+fn backface_visibility_test_matrix(text string) FloatMatrix4x4 {
+	document := dom.Document.create(dom.url_about_blank())
+	parsed := parse_css_value_logic(.transform, text) or { panic('unparsable transform: ${text}') }
+	mut transformations := []TransformationStyleValue{}
+	if parsed is TransformationStyleValue {
+		transformations << parsed
+	} else if parsed is StyleValueList {
+		for item in parsed.values() {
+			transformations << (item as TransformationStyleValue)
+		}
+	}
+	return resolve_transformations_4x4_matrix(transformations, 100, 100,
+		LengthResolutionContext.for_document(document)) or { panic('unresolvable transform: ${text}') }
+}
+
+fn test_backface_visibility_matrix_math() {
+	front := backface_visibility_test_matrix('rotateY(0deg)')
+	back := backface_visibility_test_matrix('rotateY(180deg)')
+	assert !is_back_face_visible(front)
+	assert is_back_face_visible(back)
+	inverse := back.inverse() or { panic('rotation should be invertible') }
+	identity := inverse.multiply(back)
+	assert math_abs(identity.m11 - 1) < 0.0000001
+	assert math_abs(identity.m22 - 1) < 0.0000001
+	assert math_abs(identity.m33 - 1) < 0.0000001
+	assert math_abs(identity.m44 - 1) < 0.0000001
+}
+
+fn test_transform_function_names_are_ascii_case_insensitive() {
+	assert transform_function_from_string('rotatex')? == .rotate_x
+	assert transform_function_from_string('ROTATEY')? == .rotate_y
+	assert transform_function_from_string('scalez')? == .scale_z
+
+	back := backface_visibility_test_matrix('rotatex(180deg) scalez(2)')
+	assert is_back_face_visible(back)
 }

@@ -5,7 +5,6 @@
  */
 module css
 
-import dom
 import math
 
 // Translated from:
@@ -2361,45 +2360,6 @@ fn multiply_affine_2d(left [6]f64, right [6]f64) [6]f64 {
 	return [f64(a), b, c, d, e, f]!
 }
 
-// Parse the computed `transform` list through the translated CSS value machinery and resolve its
-// 2D affine matrix against the element's border-box reference dimensions. The six returned values
-// use the SVG/CSS `matrix(a, b, c, d, e, f)` convention. A genuinely 3D transform is left to the
-// 3D painting path and therefore returns none here instead of silently flattening it.
-pub fn resolve_transform_2d_matrix(element &dom.Element, text string, reference_width f64, reference_height f64, author_rules []&CSSRule) ?[6]f64 {
-	parsed := parse_css_value_logic(.transform, text) or { return none }
-	mut length_context := LengthResolutionContext.for_document(element.document())
-	font_size := CSSPixels.nearest_value_for(computed_font_size_px(element, author_rules))
-	length_context.font_metrics = computed_interpolation_font_metrics_for_size(font_size)
-	length_context.font_metrics.line_height = CSSPixels.nearest_value_for(computed_line_height_px(element, author_rules))
-	root_size := CSSPixels.nearest_value_for(root_font_size_px(element, author_rules))
-	length_context.root_font_metrics = computed_interpolation_font_metrics_for_size(root_size)
-	return resolve_transform_style_value_2d_matrix(parsed, reference_width, reference_height, length_context)
-}
-
-pub fn resolve_transform_4x4_matrix(element &dom.Element, text string, reference_width f64,
-	reference_height f64, author_rules []&CSSRule) ?FloatMatrix4x4 {
-	parsed := parse_css_value_logic(.transform, text) or { return none }
-	mut transformations := []TransformationStyleValue{}
-	if parsed is TransformationStyleValue {
-		transformations << parsed
-	} else if parsed is StyleValueList {
-		for item in parsed.values() {
-			if item !is TransformationStyleValue {
-				return none
-			}
-			transformations << (item as TransformationStyleValue)
-		}
-	} else {
-		return FloatMatrix4x4.identity()
-	}
-	mut length_context := LengthResolutionContext.for_document(element.document())
-	font_size := CSSPixels.nearest_value_for(computed_font_size_px(element, author_rules))
-	length_context.font_metrics = computed_interpolation_font_metrics_for_size(font_size)
-	root_size := CSSPixels.nearest_value_for(root_font_size_px(element, author_rules))
-	length_context.root_font_metrics = computed_interpolation_font_metrics_for_size(root_size)
-	return resolve_transformations_4x4_matrix(transformations, reference_width, reference_height, length_context)
-}
-
 // Paintable::compute_transform() consumes the already-computed typed value and
 // the layout node's length context. This avoids re-running the compatibility
 // cascade and re-parsing transform text from the typed layout adapter.
@@ -2440,29 +2400,6 @@ pub fn resolve_computed_transform_4x4_matrix(computed &ComputedProperties, refer
 		}
 	}
 	return resolve_transformations_4x4_matrix(transformations, reference_width, reference_height, computed.length_resolution_context())
-}
-
-fn resolve_transform_style_value_2d_matrix(parsed StyleValue, reference_width f64, reference_height f64, length_context LengthResolutionContext) ?[6]f64 {
-	mut transformations := []TransformationStyleValue{}
-	if parsed is TransformationStyleValue {
-		transformations << parsed
-	} else if parsed is StyleValueList {
-		for item in parsed.values() {
-			if item !is TransformationStyleValue {
-				return none
-			}
-			transformations << (item as TransformationStyleValue)
-		}
-	} else {
-		return [f64(1), 0, 0, 1, 0, 0]!
-	}
-
-	return resolve_transformations_2d_matrix(transformations, reference_width, reference_height, length_context)
-}
-
-fn resolve_transformations_2d_matrix(transformations []TransformationStyleValue, reference_width f64, reference_height f64, length_context LengthResolutionContext) ?[6]f64 {
-	matrix := resolve_transformations_4x4_matrix(transformations, reference_width, reference_height, length_context) or { return none }
-	return extract_2d_affine_transform(matrix)
 }
 
 pub fn extract_2d_affine_transform(matrix FloatMatrix4x4) ?[6]f64 {

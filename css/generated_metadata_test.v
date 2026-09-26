@@ -1595,22 +1595,6 @@ fn test_unresolved_css_functions_record_dom_style_dependencies() {
 	assert !element.style_uses_var_css_function()
 }
 
-fn test_inline_style_priority_and_viewport_relative_lengths() {
-	doc := dom.Document.create(dom.url_about_blank())
-	mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
-		panic('${err}')
-	}
-	style := inline_style(element)
-	style.set_property_with_priority('color', 'red', 'important')
-	assert style.get_property_value('color') == 'red'
-	assert style.get_property_priority('color') == 'important'
-	assert style.item(0) == 'color'
-	style.set_css_text('width: 10vw; height: 25vh')
-	assert style.length() == 2
-	assert computed_length_px(element, .width, []&CSSRule{}) or { -1 } == 80.0
-	assert computed_length_px(element, .height, []&CSSRule{}) or { -1 } == 150.0
-}
-
 fn test_css_transitions_are_retained_and_sampled() {
 	mut doc := dom.Document.create(dom.url_about_blank())
 	doc.set_browsing_context(&dom.BrowsingContext{
@@ -2030,4 +2014,18 @@ fn test_basic_shape_interpolation_and_composition() {
 		}),
 	]))
 	assert composite_style_value(.background_image, radial_extent, animated_radial_size, .add) == none
+}
+
+fn test_inline_style_priority_and_css_text() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	style := inline_style(element)
+	style.set_property_with_priority('color', 'red', 'important')
+	assert style.get_property_value('color') == 'red'
+	assert style.get_property_priority('color') == 'important'
+	assert style.item(0) == 'color'
+	style.set_css_text('width: 10vw; height: 25vh')
+	assert style.length() == 2
 }

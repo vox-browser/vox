@@ -1790,32 +1790,6 @@ fn test_computed_value_for_inline_and_inheritance() {
 	assert span_color != body_color
 }
 
-fn test_compatibility_property_reads_reuse_retained_computed_style() {
-	mut doc := dom.Document.create(dom.url_about_blank())
-	doc.set_browsing_context(&dom.BrowsingContext{})
-	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
-		panic('${err}')
-	}
-	mut target := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
-		panic('${err}')
-	}
-	target.set_attribute_value('style', 'color: red; font-size: 20px; width: 2em')
-	mut doc_node := unsafe { &dom.Node(doc) }
-	doc_node.append_child(html_el.as_node()) or { panic('append html failed: ${err}') }
-	mut html_node := html_el.as_node()
-	html_node.append_child(target.as_node()) or { panic('append target failed: ${err}') }
-
-	computed_width := computed_value_for(target, .width) or { panic('no computed width') }
-	assert computed_width == '40px'
-	conflicting_rules := parse_css_stylesheet_contents_with_parser('div { color: blue; font-size: 5px; width: 99px }', map[string]bool{})
-	assert cascaded_value_with_ua(target, .width, conflicting_rules) == computed_width
-	computed_color_value := computed_value_for(target, .color) or { panic('no computed color') }
-	assert cascaded_value_with_ua(target, .color, conflicting_rules) == computed_color_value
-	assert computed_font_size_px(target, conflicting_rules) == 20.0
-	assert is_property_specified(target, .width, conflicting_rules)
-	assert !is_property_specified(target, .height, conflicting_rules)
-}
-
 fn test_background_lists_are_coordinated_at_computed_value_time() {
 	doc := dom.Document.create(dom.url_about_blank())
 	mut target := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {

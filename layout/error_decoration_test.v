@@ -3,44 +3,6 @@ module layout
 import css
 import dom
 
-fn test_error_decoration_shorthands_reach_the_paint_pipeline() {
-	document := dom.Document.create(dom.url_about_blank())
-	for decoration, expected_color in {
-		'spelling-error': 'rgb(255 0 0)'
-		'grammar-error':  'rgb(0 128 0)'
-	} {
-		mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'p') or {
-			panic(err)
-		}
-		element.set_attribute_value('style', 'text-decoration: ${decoration}')
-		mut node := element.as_node()
-		node.append_child(document.create_text_node('mistake').as_node()) or { panic(err) }
-		box := layout_block(element, 0, 0, 800, []&css.CSSRule{})
-		assert box.lines.len == 1
-		assert box.lines[0].fragments[0].decoration == decoration
-		commands := box.paint_commands().filter(it.kind == 'draw_svg_path')
-		assert commands.len == 1
-		assert commands[0].stroke_color == expected_color
-		assert commands[0].stroke_width == 1
-	}
-}
-
-fn test_error_decoration_shorthands_reach_layout_from_author_rules() {
-	document := dom.Document.create(dom.url_about_blank())
-	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'p') or {
-		panic(err)
-	}
-	element.set_attribute_value('class', 'spelling-error')
-	mut node := element.as_node()
-	node.append_child(document.create_text_node('mistake').as_node()) or { panic(err) }
-	rules := css.parse_css_stylesheet_contents_with_parser('.spelling-error { text-decoration: spelling-error; }', map[string]bool{})
-	box := layout_block(element, 0, 0, 800, rules)
-	assert box.lines[0].fragments[0].decoration == 'spelling-error'
-	commands := box.paint_commands().filter(it.kind == 'draw_svg_path')
-	assert commands.len == 1
-	assert commands[0].stroke_color == 'rgb(255 0 0)'
-}
-
 fn test_typed_document_paint_preserves_error_decoration_lines() {
 	document := dom.Document.create(dom.url_about_blank())
 	mut html := document.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
