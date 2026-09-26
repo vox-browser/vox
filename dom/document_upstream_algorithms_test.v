@@ -269,3 +269,11 @@ fn test_inactive_document_clears_stale_layout_and_paintable_nodes() {
 		assert document.needs_full_layout_tree_update()
 	}
 }
+
+fn test_invalidate_layout_tree_tears_down_the_layout_tree() {
+	mut document := Document.create(url_about_blank())
+	document.layout_root = &LayoutViewport{}
+	document.invalidate_layout_tree(.document_add_an_element_to_the_top_layer)
+	assert document.layout_node() == none
+	assert document.needs_full_layout_tree_update
+}

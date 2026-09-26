@@ -7041,7 +7041,7 @@ pub fn (d &Document) needs_container_query_evaluation_after_layout(query_contain
 
 pub fn (mut d Document) invalidate_layout_tree(reason InvalidateLayoutTreeReason) {
 	_ = reason
-	d.needs_full_layout_tree_update = true
+	d.tear_down_layout_tree()
 }
 
 pub fn (mut d Document) invalidate_stacking_context_tree() {
