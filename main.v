@@ -197,7 +197,7 @@ fn C.native_add_css_filter_operation(kind int, first f32, second f32, third f32,
 
 fn C.native_begin_svg_filter_graph(root_id int, node_count int, bounds_x f32, bounds_y f32, bounds_width f32, bounds_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32)
 
-fn C.native_add_svg_filter_node(id int, kind int, first f32, second f32, third f32, fourth f32, color gg.Color, mode int, x_channel int, y_channel int)
+fn C.native_add_svg_filter_node(id int, kind int, first f32, second f32, third f32, fourth f32, fifth f32, sixth f32, color gg.Color, mode int, x_channel int, y_channel int)
 
 fn C.native_set_svg_filter_node_inputs(id int, inputs &int, count int)
 
@@ -3802,6 +3802,14 @@ fn native_svg_filter_parameters(node painting.GfxFilterNode) [4]f32 {
 	}
 }
 
+fn native_svg_turbulence_tile_size(node painting.GfxFilterNode) [2]f32 {
+	stitch := node.string_parameters['stitch'] or { 'no-stitch' }
+	if node.kind != 'turbulence' || stitch != 'stitch' {
+		return [f32(0), 0]!
+	}
+	return [f32(node.parameters['tile_width'] or { 0.0 }), f32(node.parameters['tile_height'] or { 0.0 })]!
+}
+
 fn (mut app BrowserApp) add_native_svg_filter_graph(filter painting.GfxFilter, transform [6]f64, page_x f32,
 	page_y f32) {
 	root_id := filter.root_id or { return }
@@ -3821,7 +3829,8 @@ fn (mut app BrowserApp) add_native_svg_filter_graph(filter painting.GfxFilter, t
 		}
 		x_channel := native_svg_channel(node.string_parameters['x_channel'] or { 'A' })
 		y_channel := native_svg_channel(node.string_parameters['y_channel'] or { 'A' })
-		C.native_add_svg_filter_node(node.id, kind, parameters[0], parameters[1], parameters[2], parameters[3], gg.rgba(node.color.r, node.color.g, node.color.b, node.color.a), mode, x_channel, y_channel)
+		tile_size := native_svg_turbulence_tile_size(node)
+		C.native_add_svg_filter_node(node.id, kind, parameters[0], parameters[1], parameters[2], parameters[3], tile_size[0], tile_size[1], gg.rgba(node.color.r, node.color.g, node.color.b, node.color.a), mode, x_channel, y_channel)
 		unsafe {
 			if node.input_ids.len > 0 {
 				C.native_set_svg_filter_node_inputs(node.id, &node.input_ids[0], node.input_ids.len)

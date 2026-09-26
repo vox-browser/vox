@@ -123,6 +123,10 @@ extern int ladybird_v_skia_begin_command_group(CGContextRef destination,
 	float transform_f, float page_x, float page_y, float scroll_y,
 	float canvas_width, float canvas_height);
 extern int ladybird_v_skia_end_command_group(CGContextRef destination);
+extern int ladybird_v_skia_generate_svg_turbulence(uint8_t *destination_pixels,
+	int width, int height, float base_frequency_x, float base_frequency_y,
+	int num_octaves, float seed, int fractal_noise, int tile_width,
+	int tile_height, float origin_x, float origin_y);
 #endif
 
 // Decode the first video frame at or after `seconds` into tightly packed RGBA.
@@ -1954,6 +1958,8 @@ typedef struct {
 	float second;
 	float third;
 	float fourth;
+	float fifth;
+	float sixth;
 	float red;
 	float green;
 	float blue;
@@ -2160,8 +2166,8 @@ void native_begin_svg_filter_graph(int root_id, int node_count, float bounds_x,
 }
 
 void native_add_svg_filter_node(int id, int kind, float first, float second,
-	float third, float fourth, gg__Color color, int mode, int x_channel,
-	int y_channel) {
+	float third, float fourth, float fifth, float sixth, gg__Color color,
+	int mode, int x_channel, int y_channel) {
 	if (native_css_filter_overflow_depth > 0 || native_css_filter_stack_depth <= 0) {
 		return;
 	}
@@ -2179,6 +2185,8 @@ void native_add_svg_filter_node(int id, int kind, float first, float second,
 	node->second = second;
 	node->third = third;
 	node->fourth = fourth;
+	node->fifth = fifth;
+	node->sixth = sixth;
 	node->red = (float)color.r / 255.0f;
 	node->green = (float)color.g / 255.0f;
 	node->blue = (float)color.b / 255.0f;
@@ -2793,15 +2801,30 @@ static CIImage *native_apply_svg_turbulence(CGRect extent,
 	size_t height = (size_t)MAX(1.0, ceil(extent.size.height));
 	NSMutableData *bitmap = [NSMutableData dataWithLength:width * height * 4];
 	uint8_t *pixels = bitmap.mutableBytes;
+	double coordinate_scale = scale > 0.0 ? scale : 1.0;
+	int octave_count = MAX(0, MIN(255, (int)node->third));
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	if (ladybird_v_skia_generate_svg_turbulence(pixels, (int)width,
+		(int)height, node->first / coordinate_scale,
+		node->second / coordinate_scale, octave_count, node->fourth,
+		node->mode == 1, (int)lround(node->fifth * coordinate_scale),
+		(int)lround(node->sixth * coordinate_scale), 0.0f, 0.0f)) {
+		CGColorSpaceRef color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+		CIImage *image = [CIImage imageWithBitmapData:bitmap bytesPerRow:width * 4
+			size:CGSizeMake(width, height) format:kCIFormatRGBA8
+			colorSpace:color_space];
+		CGColorSpaceRelease(color_space);
+		return [image imageByApplyingTransform:CGAffineTransformMakeTranslation(
+			extent.origin.x, extent.origin.y)];
+	}
+#endif
 	NativeSVGTurbulenceData data;
 	native_svg_initialize_turbulence(&data, node->fourth);
-	int octave_count = MAX(0, MIN(255, (int)node->third));
-	double coordinate_scale = scale > 0.0 ? scale : 1.0;
 	for (size_t pixel_y = 0; pixel_y < height; ++pixel_y) {
 		for (size_t pixel_x = 0; pixel_x < width; ++pixel_x) {
-			double coordinate_x = (extent.origin.x + (double)pixel_x + 0.5)
+			double coordinate_x = ((double)pixel_x + 0.5)
 				/ coordinate_scale * node->first;
-			double coordinate_y = (extent.origin.y + (double)pixel_y + 0.5)
+			double coordinate_y = ((double)pixel_y + 0.5)
 				/ coordinate_scale * node->second;
 			double color[4] = { 0, 0, 0, 0 };
 			double ratio = 1.0;
@@ -2998,7 +3021,12 @@ static CIImage *native_apply_svg_filter_graph(NativeCSSFilterLayer const *layer,
 			}
 			break;
 		case 12: // turbulence/fractalNoise
-			outputs[index] = native_apply_svg_turbulence(source_extent, node, layer->scale);
+			// Skia evaluates the shader in the filtered layer's local surface.
+			// Restrict this bitmap to the same retained bounds so browser chrome
+			// offsets do not shift the deterministic noise field.
+			outputs[index] = native_apply_svg_turbulence(
+				layer->has_graph_bounds ? layer->graph_bounds : source_extent,
+				node, layer->scale);
 			output_extents[index] = native_svg_infinite_extent();
 			break;
 		case 13: { // displacement-map

@@ -11,6 +11,32 @@ import painting
 import time
 import x.json2
 
+fn test_native_svg_turbulence_forwards_stitch_tile_size_only_for_stitched_noise() {
+	stitched := painting.GfxFilterNode{
+		kind: 'turbulence'
+		parameters: {
+			'tile_width':  120.5
+			'tile_height': 80.25
+		}
+		string_parameters: {
+			'stitch': 'stitch'
+		}
+	}
+	assert native_svg_turbulence_tile_size(stitched) == [f32(120.5), 80.25]!
+
+	not_stitched := painting.GfxFilterNode{
+		kind: 'turbulence'
+		parameters: {
+			'tile_width':  120.5
+			'tile_height': 80.25
+		}
+		string_parameters: {
+			'stitch': 'no-stitch'
+		}
+	}
+	assert native_svg_turbulence_tile_size(not_stitched) == [f32(0), 0]!
+}
+
 fn test_parse_launch_options_keeps_interactive_defaults() {
 	options := parse_launch_options(['https://example.com']) or { panic(err) }
 	assert options.source == 'https://example.com'

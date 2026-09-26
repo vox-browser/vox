@@ -21,6 +21,7 @@
 #include "include/core/SkPaint.h"
 #include "include/core/SkPath.h"
 #include "include/core/SkRRect.h"
+#include "include/core/SkSize.h"
 #include "include/core/SkSurface.h"
 #include "include/core/SkStream.h"
 #include "include/core/SkTextBlob.h"
@@ -29,6 +30,7 @@
 #include "include/effects/SkImageFilters.h"
 #include "include/effects/SkDashPathEffect.h"
 #include "include/effects/SkGradientShader.h"
+#include "include/effects/SkPerlinNoiseShader.h"
 #include "include/ports/SkFontMgr_fontconfig.h"
 #include "include/ports/SkFontScanner_FreeType.h"
 #include "include/ports/SkFontMgr_mac_ct.h"
@@ -275,6 +277,49 @@ SkPath path_from_serialized_segments(float const* data, int segment_count)
 }
 
 } // namespace
+
+extern "C" int ladybird_v_skia_generate_svg_turbulence(
+    uint8_t* destination_pixels, int width, int height,
+    float base_frequency_x, float base_frequency_y, int num_octaves, float seed,
+    int fractal_noise, int tile_width, int tile_height, float origin_x,
+    float origin_y)
+{
+    if (!destination_pixels || width <= 0 || height <= 0
+        || !std::isfinite(base_frequency_x) || base_frequency_x < 0.0f
+        || !std::isfinite(base_frequency_y) || base_frequency_y < 0.0f
+        || !std::isfinite(seed) || !std::isfinite(origin_x)
+        || !std::isfinite(origin_y))
+        return 0;
+
+    auto tile_size = SkISize::Make(std::max(0, tile_width),
+        std::max(0, tile_height));
+    auto shader = fractal_noise
+        ? SkShaders::MakeFractalNoise(base_frequency_x, base_frequency_y,
+              std::clamp(num_octaves, 0, 255), seed, &tile_size)
+        : SkShaders::MakeTurbulence(base_frequency_x, base_frequency_y,
+              std::clamp(num_octaves, 0, 255), seed, &tile_size);
+    if (!shader)
+        return 0;
+
+    auto image_info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::WrapPixels(image_info, destination_pixels,
+        static_cast<size_t>(width) * 4);
+    if (!surface)
+        return 0;
+
+    SkPaint paint;
+    paint.setImageFilter(SkImageFilters::Shader(std::move(shader)));
+    auto* canvas = surface->getCanvas();
+    canvas->clear(SK_ColorTRANSPARENT);
+    canvas->translate(-origin_x, -origin_y);
+    canvas->saveLayer(nullptr, &paint);
+    canvas->drawRect(SkRect::MakeXYWH(origin_x, origin_y,
+                         static_cast<float>(width), static_cast<float>(height)),
+        SkPaint {});
+    canvas->restore();
+    return 1;
+}
 
 extern "C" int ladybird_v_skia_begin_command_group(CGContextRef destination,
     float x, float y, float width, float height, float transform_a,
