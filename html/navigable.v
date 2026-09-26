@@ -280,6 +280,7 @@ fn connect_navigable_model_to_host(model &NavigableModel) {
 	host.force_dark_enabled_callback_ = navigable_model_force_dark_enabled
 	host.choose_a_navigable_callback_ = navigable_model_choose_a_navigable
 	host.navigate_callback_ = navigable_model_navigate
+	host.download_hyperlink_callback_ = navigable_model_download_hyperlink
 }
 
 fn navigable_model_choose_a_navigable(target voidptr, name string, no_opener dom.TokenizedFeatureNoOpener) ?&dom.Navigable {
@@ -297,6 +298,14 @@ fn navigable_model_navigate(target voidptr, url dom.URL, source_document &dom.Do
 		referrer_policy: referrer_policy_from_string(referrer_policy) or { ReferrerPolicy.empty_string }
 		user_involvement: user_involvement
 	})!
+}
+
+fn navigable_model_download_hyperlink(target voidptr, url dom.URL,
+	user_involvement dom.UserNavigationInvolvement, source_element &dom.Element,
+	proposed_filename ?string, interface_origin dom.Origin) {
+	mut model := unsafe { &NavigableModel(target) }
+	model.download_the_hyperlink(url, user_involvement, source_element, proposed_filename,
+		interface_origin)
 }
 
 // Binds the DOM identity created by Document/Window to the translated HTML

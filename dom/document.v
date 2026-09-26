@@ -2217,6 +2217,8 @@ pub type NavigableChooseANavigableCallback = fn (voidptr, string, TokenizedFeatu
 
 pub type NavigableNavigateCallback = fn (voidptr, URL, &Document, string, UserNavigationInvolvement) !
 
+pub type NavigableDownloadHyperlinkCallback = fn (voidptr, URL, UserNavigationInvolvement, &Element, ?string, Origin)
+
 @[heap]
 pub struct Navigable {
 pub mut:
@@ -2240,6 +2242,7 @@ pub mut:
 	force_dark_enabled_callback_                  NavigableBooleanStateCallback = unsafe { nil }
 	choose_a_navigable_callback_                  NavigableChooseANavigableCallback = unsafe { nil }
 	navigate_callback_                            NavigableNavigateCallback = unsafe { nil }
+	download_hyperlink_callback_                  NavigableDownloadHyperlinkCallback = unsafe { nil }
 	input_method_composition_node_                 ?&Node
 	input_method_composition_offset_               int
 	input_method_last_marked_text_                 string
@@ -3486,6 +3489,15 @@ pub fn (n &Navigable) navigate(url URL, source_document &Document, referrer_poli
 		return error('InvalidStateError: navigable has no navigation model')
 	}
 	n.navigate_callback_(n.html_model_handle_, url, source_document, referrer_policy, user_involvement)!
+}
+
+pub fn (n &Navigable) download_hyperlink(url URL, user_involvement UserNavigationInvolvement,
+	source_element &Element, proposed_filename ?string, interface_origin Origin) {
+	if n.html_model_handle_ == unsafe { nil } || n.download_hyperlink_callback_ == unsafe { nil } {
+		return
+	}
+	n.download_hyperlink_callback_(n.html_model_handle_, url, user_involvement, source_element,
+		proposed_filename, interface_origin)
 }
 
 pub fn (n &Navigable) reset_mouse_input_tracking() {

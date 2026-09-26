@@ -6361,6 +6361,35 @@ pub fn (mut e Element) follow_the_hyperlink(hyperlink_suffix ?string, user_invol
 	target_navigable.navigate(url, e.document(), referrer_policy, user_involvement) or {}
 }
 
+// https://html.spec.whatwg.org/multipage/links.html#downloading-hyperlinks
+pub fn (mut e Element) download_the_hyperlink(hyperlink_suffix ?string, user_involvement UserNavigationInvolvement) {
+	// 1. If subject cannot navigate, then return.
+	if e.cannot_navigate() {
+		return
+	}
+
+	// 2. Sandboxed documents cannot initiate downloads. SandboxingFlagSet is
+	// represented as a cycle-safe bitset in DOM; bit 15 is HTML's sandboxed
+	// downloads browsing-context flag.
+	if e.document().active_sandboxing_flag_bits() & u32(32768) != 0 {
+		return
+	}
+
+	// 3-4. Encoding-parse the href relative to the subject's document.
+	mut url := e.document().encoding_parse_url(e.get_attribute_value('href')) or { return }
+
+	// 5. The image-map suffix is appended to the serialized URL and parsed again.
+	if suffix := hyperlink_suffix {
+		url = dom_url_parse(url.serialize() + suffix, url, 'UTF-8') or { return }
+	}
+
+	// Read the attribute once before the navigate event can run script.
+	download_attribute := e.get_attribute('download')
+	navigable := e.document().navigable() or { return }
+	navigable.download_hyperlink(url, user_involvement, e, download_attribute,
+		e.document().origin())
+}
+
 // HTML's user navigation involvement of an event, https://html.spec.whatwg.org/multipage/browsing-the-web.html#event-uni.
 // NB: DOM cannot import HTML, which owns this algorithm.
 fn user_navigation_involvement_of_event(event &Event) UserNavigationInvolvement {
@@ -6460,7 +6489,7 @@ pub fn (mut e Element) activate_the_hyperlink(event &Event) {
 	//    hyperlink, then download the hyperlink created by element with hyperlinkSuffix set to hyperlinkSuffix and
 	//    userInvolvement set to userInvolvement.
 	if e.has_attribute('download') {
-		// FIXME: Downloading hyperlinks needs a download fetch and download handling, which are not translated yet.
+		e.download_the_hyperlink(hyperlink_suffix, user_involvement)
 		return
 	}
 
