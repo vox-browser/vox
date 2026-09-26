@@ -25,67 +25,81 @@ fn single_legacy_font_run(node &dom.Node) ?&dom.Element {
 	return element
 }
 
-pub fn remove_single_run_legacy_font_style(mut node dom.Node) {
+pub fn remove_single_run_legacy_font_style(node &dom.Node) {
 	font := single_legacy_font_run(node) or { return }
-	mut font_node := font.as_node()
-	for child in font_node.children_as_vector() {
-		node.insert_before(child, font.as_node(), false)
-	}
-	font_node.remove(false)
+	unwrap_node_preserving_ranges(font.as_node())
 }
 
-fn materialize_legacy_font_run(mut node dom.Node, font &dom.Element, materialized_color string, child_run_materialization ChildRunMaterialization) {
-	mut font_node := font.as_node()
+fn materialize_legacy_font_run(node &dom.Node, font &dom.Element, materialized_color string, child_run_materialization ChildRunMaterialization) {
+	// INTEROP: Blink and WebKit traverse a rendered range when serializing editing content. If that traversal contains
+	//          one presentational wrapper, the wrapper is omitted and supplies CSS to the serialized content. A range
+	//          which crosses multiple inline runs includes their elements directly, so their legacy markup remains.
+	font_node := font.as_node()
 	if !font_node.has_children() {
-		font_node.remove(false)
+		remove_node(font_node)
 		return
 	}
 
+	// INTEROP: Serialized paragraph moves protect trailing collapsible whitespace as a separate text run. Blink and
+	//          WebKit materialize each resulting run in its own style span, and later whitespace cleanup decides
+	//          whether the protected space becomes ordinary without erasing that observable node seam.
 	mut preserve_child_runs := font_node.child_count() > 1
-	if child_run_materialization == .preserve_text_node_seams && preserve_child_runs {
+	if child_run_materialization == .preserve_text_node_seams {
 		for child in font_node.children_as_vector() {
-			if !child.is_text() {
-				preserve_child_runs = false
+			if !preserve_child_runs {
 				break
 			}
+			preserve_child_runs = child.is_text()
 		}
 	}
 
 	if first_child := font_node.first_child() {
 		if first_child.is_text() && first_child.next_sibling() == none {
-			mut text := unsafe { &dom.Text(first_child) }
-			data := text.data()
-			mut trailing_whitespace_length := 0
-			for character in data.runes().reverse() {
-				if character !in [` `, `\t`, `\n`, `\v`, `\f`, `\r`, `\u00a0`] {
+			text := unsafe { &dom.Text(first_child) }
+			// NB: Every trailing whitespace code point is a single UTF-16 code unit.
+			data_length := text.length_in_utf16_code_units()
+			mut trailing_whitespace_start := data_length
+			for code_point in text.data().runes().reverse() {
+				if !is_ascii_space_character(code_point) && code_point != `\u00a0` {
 					break
 				}
-				trailing_whitespace_length++
+				trailing_whitespace_start--
 			}
-			if trailing_whitespace_length > 0 && trailing_whitespace_length < data.runes().len {
-				text.split_text(text.length_in_utf16_code_units() - trailing_whitespace_length) or { return }
+			if trailing_whitespace_start > 0 && trailing_whitespace_start < data_length {
+				split_text(text, trailing_whitespace_start) or { panic(err) }
 				preserve_child_runs = true
 			}
 		}
 	}
 
-	for font_child in font_node.children_as_vector() {
-		mut span := node.document().create_element('span') or { return }
-		span.set_attribute_value('style', 'color: ${materialized_color};')
-		mut span_node := span.as_node()
-		node.insert_before(span.as_node(), font.as_node(), false)
-		span_node.append_child(font_child) or { return }
+	for {
+		span := node.document().create_element('span') or { panic(err) }
+		span_node := span.as_node()
+		{
+			// NB: The span is detached staging content. Its eventual insertion is recorded as a whole, so construction
+			//     of its inline style must not be diagnosed as an unrecorded mutation of the edited document.
+			history := begin_editing_proxy_mutation(span_node)
+			mut style := css.element_style(span)
+			style.set_property('color', materialized_color, '') or {}
+			end_editing_proxy_mutation(history)
+		}
+		insert_node_before(span_node, node, font_node)
+		first_font_child := font_node.first_child() or { break }
+		move_node_preserving_ranges(first_font_child, span_node, 0)
 		if !preserve_child_runs {
-			for remaining_child in font_node.children_as_vector() {
-				span_node.append_child(remaining_child) or { return }
+			for font_node.first_child() != none {
+				font_child := font_node.first_child() or { break }
+				move_node_preserving_ranges(font_child, span_node, span_node.child_count())
 			}
+		}
+		if font_node.first_child() == none {
 			break
 		}
 	}
-	font_node.remove(false)
+	remove_node(font_node)
 }
 
-pub fn materialize_single_run_legacy_font_style(mut node dom.Node) {
+pub fn materialize_single_run_legacy_font_style(node &dom.Node) {
 	font := single_legacy_font_run(node) or { return }
 	color_attribute := font.get_attribute('color') or { return }
 	mut materialized_color := color_attribute
@@ -99,16 +113,14 @@ pub fn materialize_single_run_legacy_font_style(mut node dom.Node) {
 				legacy_color.blue).serialize_a_srgb_value()
 		}
 	}
-	materialize_legacy_font_run(mut node, font, materialized_color, .preserve_text_node_seams)
+	materialize_legacy_font_run(node, font, materialized_color, .preserve_text_node_seams)
 }
 
-pub fn materialize_single_run_legacy_font_style_from_rendered_source(mut node dom.Node, rendered_style_source &dom.Node) {
+pub fn materialize_single_run_legacy_font_style_from_rendered_source(node &dom.Node, rendered_style_source &dom.Node) {
 	font := single_legacy_font_run(node) or { return }
-	style_element := if element := rendered_style_source.as_element() {
-		element
-	} else {
-		rendered_style_source.parent_element() or { return }
-	}
-	materialized_color := css.computed_value_for(style_element, .color) or { return }
-	materialize_legacy_font_run(mut node, font, materialized_color, .preserve_all_child_runs)
+	materialized_color := resolved_value(rendered_style_source, 'color') or { return }
+
+	// The serializer has already isolated protected whitespace in child wrappers. Materializing each child as its own
+	// styled run lets fragment cleanup discard those transport wrappers without erasing the inherited style seam.
+	materialize_legacy_font_run(node, font, materialized_color, .preserve_all_child_runs)
 }

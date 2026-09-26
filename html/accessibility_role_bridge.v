@@ -280,6 +280,7 @@ fn trusted_types_factory_for_document(document &dom.Document) &trustedtypes.Trus
 
 fn trusted_types_injection_sink(sink string) !trustedtypes.InjectionSink {
 	return match sink {
+		'document-exec-command' { trustedtypes.InjectionSink.document_exec_command }
 		'document-parse-html-unsafe' { trustedtypes.InjectionSink.document_parse_html_unsafe }
 		'document-write' { trustedtypes.InjectionSink.document_write }
 		'document-writeln' { trustedtypes.InjectionSink.document_writeln }

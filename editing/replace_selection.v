@@ -6,40 +6,25 @@ module editing
 
 import dom
 
-fn dom_collapsed_block_prop(node &dom.Node) bool {
-	if is_html_break(node) {
-		return true
-	}
-	element := node.as_element() or { return false }
-	if !element.is_html_element() || !is_dom_inline_node(node) {
-		return false
-	}
-	mut has_collapsed_prop := false
+fn collect_subtree_descendants(node &dom.Node, mut descendants []&dom.Node) {
 	for child in node.children_as_vector() {
-		if dom_collapsed_block_prop(child) {
-			has_collapsed_prop = true
-			continue
-		}
-		if node_is_visible_for_paragraph_integration(child) {
-			return false
-		}
+		descendants << child
+		collect_subtree_descendants(child, mut descendants)
 	}
-	return has_collapsed_prop
 }
 
 fn remove_collapsed_block_props_at_boundary(boundary dom.BoundaryPoint) {
-	if !is_dom_block_node(boundary.node) {
+	if !is_block_node(boundary.node) {
 		return
 	}
 	mut collapsed_props := []&dom.Node{}
 	for child in boundary.node.children_as_vector() {
-		if child.index() >= boundary.offset && child.is_editable() && dom_collapsed_block_prop(child) {
+		if child.index() >= boundary.offset && child.is_editable() && is_collapsed_block_prop(child) {
 			collapsed_props << child
 		}
 	}
 	for node in collapsed_props {
-		mut mutable_node := unsafe { &dom.Node(node) }
-		mutable_node.remove(false)
+		remove_node(node)
 	}
 }
 
@@ -53,11 +38,11 @@ pub fn replace_selection_with_inline_fragment(document &dom.Document, range_poin
 	mut selection := unsafe { &dom.Selection(selection_pointer) }
 	mut range_ := unsafe { &dom.Range(range_pointer) }
 	mut descendants := []&dom.Node{}
-	collect_dom_descendants(replacement_fragment.fragment().as_node(), mut descendants)
+	collect_subtree_descendants(replacement_fragment.fragment().as_node(), mut descendants)
 	inserted_content.track_replacement_boundary(range_.start(), .inline_)
 	remove_collapsed_block_props_at_boundary(range_.start())
 
-	containing_block := block_node_of_dom_node(range_.start_container()) or {
+	containing_block := block_node_of_node(range_.start_container()) or {
 		return error('inline replacement has no containing block')
 	}
 	insertion := prepare_inline_insertion_boundary(range_.start(), containing_block)
@@ -71,19 +56,19 @@ pub fn replace_selection_with_inline_fragment(document &dom.Document, range_poin
 		return error('inline replacement lost its first node')
 	}
 	if insertion.split_destination_style {
-		canonicalize_dom_whitespace_after_node_insertion(dom.BoundaryPoint{
+		canonicalize_whitespace_after_node_insertion(dom.BoundaryPoint{
 			node: first_inserted
 			offset: 0
 		})
 	}
 	if !first_inserted.is_text() {
-		canonicalize_dom_whitespace_after_node_insertion(dom.BoundaryPoint{
+		canonicalize_whitespace_after_node_insertion(dom.BoundaryPoint{
 			node: first_inserted
 			offset: 0
 		})
 	}
 	if end_boundary := inserted_content.end_boundary() {
-		canonicalize_dom_whitespace_after_node_insertion(end_boundary)
+		canonicalize_whitespace_after_node_insertion(end_boundary)
 	}
 
 	mut caret := inserted_content.end_boundary() or {
@@ -100,19 +85,18 @@ pub fn replace_selection_with_inline_fragment(document &dom.Document, range_poin
 	}
 	caret = finalize_inserted_content(mut inserted_content, caret)
 
-	if is_dom_block_node(range_.start_container())
-		&& !has_dom_visible_children(range_.start_container())
-		&& !replacement_node_has_renderable_descendant(range_.start_container()) {
+	current_range := editing_active_range(document)
+	if is_block_node(current_range.start_container())
+		&& !has_visible_children(current_range.start_container()) {
 		line_break := document.create_element('br')!
-		mut container := unsafe { &dom.Node(range_.start_container()) }
-		container.append_child(line_break.as_node())!
+		append_node(line_break.as_node(), current_range.start_container())!
 	}
 	selection.collapse(caret.node, caret.offset)!
 	for descendant in descendants {
-		fix_disallowed_ancestors_of_dom_node(descendant)
+		fix_disallowed_ancestors_of_node(descendant)
 	}
-	current_range := selection.range() or { return caret }
-	return current_range.start()
+	final_range := selection.range() or { return caret }
+	return final_range.start()
 }
 
 pub fn replace_selection_with_block_fragment(document &dom.Document, range_pointer &dom.Range, destination_block &dom.Node, replacement_fragment &ReplacementFragment, mut inserted_content InsertedContent) !dom.BoundaryPoint {
@@ -132,8 +116,7 @@ pub fn replace_selection_with_block_fragment(document &dom.Document, range_point
 	match plan.insertion_mode {
 		.insert_inside_list_item {
 			insertion := split_inline_ancestors_at_boundary(range_.start(), destination_block)
-			mut mutable_destination := unsafe { &dom.Node(destination_block) }
-			inserted_content.insert_before(mut mutable_destination,
+			inserted_content.insert_before(destination_block,
 				destination_block.child_at_index(insertion.offset))
 		}
 		.insert_inside_empty_block {
@@ -141,30 +124,26 @@ pub fn replace_selection_with_block_fragment(document &dom.Document, range_point
 			if destination_block.child_count() == 1 {
 				if first_child := destination_block.first_child() {
 					if is_html_break(first_child) {
-						mut mutable_break := unsafe { &dom.Node(first_child) }
-						mutable_break.remove(false)
+						remove_node(first_child)
 						removed_placeholder = true
 					}
 				}
 			}
 			if !removed_placeholder {
-				remove_dom_extraneous_line_break_at_end(destination_block)
+				remove_extraneous_line_breaks_at_the_end_of_node(destination_block)
 			}
-			mut mutable_destination := unsafe { &dom.Node(destination_block) }
-			inserted_content.insert_before(mut mutable_destination, none)
+			inserted_content.insert_before(destination_block, none)
 		}
 		.insert_at_internal_paragraph_boundary {
 			insertion := split_inline_ancestors_at_boundary(range_.start(), destination_block)
-			mut mutable_destination := unsafe { &dom.Node(destination_block) }
-			inserted_content.insert_before(mut mutable_destination,
+			inserted_content.insert_before(destination_block,
 				destination_block.child_at_index(insertion.offset))
 		}
 		.insert_after_containing_block {
 			parent := destination_block.parent() or {
 				return error('destination block has no parent')
 			}
-			mut mutable_parent := unsafe { &dom.Node(parent) }
-			inserted_content.insert_before(mut mutable_parent, destination_block.next_sibling())
+			inserted_content.insert_before(parent, destination_block.next_sibling())
 		}
 		.split_destination {
 			right := split_containing_block_at_boundary(range_.start(), destination_block)
@@ -172,8 +151,7 @@ pub fn replace_selection_with_block_fragment(document &dom.Document, range_point
 			parent := destination_block.parent() or {
 				return error('split destination block has no parent')
 			}
-			mut mutable_parent := unsafe { &dom.Node(parent) }
-			inserted_content.insert_before(mut mutable_parent, right)
+			inserted_content.insert_before(parent, right)
 		}
 	}
 
@@ -188,8 +166,7 @@ pub fn replace_selection_with_block_fragment(document &dom.Document, range_point
 		&& plan.selection_end_was_end_of_paragraph
 		&& !replacement_fragment.has_interchange_newline_at_end() {
 		if trailing_break := destination_trailing_break {
-			mut mutable_break := unsafe { &dom.Node(trailing_break) }
-			mutable_break.remove(false)
+			remove_node(trailing_break)
 		}
 	}
 
@@ -198,19 +175,18 @@ pub fn replace_selection_with_block_fragment(document &dom.Document, range_point
 	}
 	if !integration.merge_start {
 		if insertion_boundary := inserted_content.insertion_boundary() {
-			canonicalize_dom_whitespace_after_node_insertion(insertion_boundary)
+			canonicalize_whitespace_after_node_insertion(insertion_boundary)
 		}
 	}
 	if integration.merge_start {
 		if plan.insertion_mode == .insert_after_containing_block {
 			if trailing_break := destination_trailing_break {
-				mut mutable_break := unsafe { &dom.Node(trailing_break) }
-				mutable_break.remove(false)
+				remove_node(trailing_break)
 			}
 		}
 		merge_offset := destination_block.child_count()
-		if has_dom_visible_children(destination_block) {
-			remove_dom_extraneous_line_break_at_end(first_inserted)
+		if has_visible_children(destination_block) {
+			remove_extraneous_line_breaks_at_the_end_of_node(first_inserted)
 		}
 		destination := if plan.insertion_mode in [.insert_inside_list_item,
 			.insert_at_internal_paragraph_boundary] {
@@ -232,7 +208,7 @@ pub fn replace_selection_with_block_fragment(document &dom.Document, range_point
 			}
 		}
 		transferred := transfer_paragraph_contents(first_inserted, destination, transfer_options)
-		canonicalize_dom_whitespace_after_node_insertion(dom.BoundaryPoint{
+		canonicalize_whitespace_after_node_insertion(dom.BoundaryPoint{
 			node: destination_block
 			offset: merge_offset
 		})
@@ -243,10 +219,8 @@ pub fn replace_selection_with_block_fragment(document &dom.Document, range_point
 				restore_replacement_trailing_break(destination_block, trailing_break)
 			}
 		}
-	} else if !has_dom_visible_children(destination_block)
-		&& !replacement_node_has_renderable_descendant(destination_block) {
-		mut mutable_destination := unsafe { &dom.Node(destination_block) }
-		mutable_destination.remove(false)
+	} else if !has_visible_children(destination_block) {
+		remove_node(destination_block)
 	}
 
 	last_inserted := inserted_content.last_node() or {
@@ -257,8 +231,8 @@ pub fn replace_selection_with_block_fragment(document &dom.Document, range_point
 	if plan.insertion_mode == .insert_inside_list_item && integration.merge_end
 		&& last_inserted.parent() != none && can_merge_paragraph_contents(last_inserted)
 		&& has_mergeable_visible_children(last_inserted) {
-		if has_dom_visible_children(destination_block) {
-			remove_dom_extraneous_line_break_at_end(last_inserted)
+		if has_visible_children(destination_block) {
+			remove_extraneous_line_breaks_at_the_end_of_node(last_inserted)
 		}
 		inserted_content.will_integrate_end_paragraph(last_inserted)
 		transferred := transfer_paragraph_contents(last_inserted, dom.BoundaryPoint{
@@ -324,9 +298,9 @@ pub fn replace_selection_with_block_fragment(document &dom.Document, range_point
 			}
 		}
 		if boundary := whitespace_boundary {
-			canonicalize_dom_whitespace_after_node_insertion(boundary)
+			canonicalize_whitespace_after_node_insertion(boundary)
 		} else {
-			canonicalize_dom_whitespace_after_node_insertion(dom.BoundaryPoint{
+			canonicalize_whitespace_after_node_insertion(dom.BoundaryPoint{
 				node: last_inserted
 				offset: merge_offset
 			})
@@ -342,27 +316,26 @@ pub fn replace_selection_with_block_fragment(document &dom.Document, range_point
 	}
 	if plan.insertion_mode == .split_destination {
 		right := right_block or { return error('replacement suffix block is missing') }
-		if !has_dom_visible_children(right) && !replacement_node_has_renderable_descendant(right) {
-			mut mutable_right := unsafe { &dom.Node(right) }
-			mutable_right.remove(false)
+		if !has_visible_children(right) {
+			remove_node(right)
 		} else if leading_text := first_replacement_text_descendant(right) {
 			characters := leading_text.data().runes()
 			if characters.len > 0 && is_ascii_space_character(characters[0]) {
 				contains_only_whitespace := characters.all(is_ascii_space_character(it))
-				mut mutable_leading := unsafe { &dom.Text(leading_text) }
+				leading_data := editing_character_data(leading_text.as_node())
 				if contains_only_whitespace {
-					mutable_leading.insert_data(0, '\u00a0')!
+					insert_data(leading_data, 0, '\u00a0')!
 				} else {
-					mutable_leading.replace_data(0, 1, '\u00a0')!
+					replace_data(leading_data, 0, 1, '\u00a0')!
 				}
 			} else {
-				canonicalize_dom_whitespace_after_node_insertion(dom.BoundaryPoint{
+				canonicalize_whitespace_after_node_insertion(dom.BoundaryPoint{
 					node: right
 					offset: 0
 				})
 			}
 		} else {
-			canonicalize_dom_whitespace_after_node_insertion(dom.BoundaryPoint{
+			canonicalize_whitespace_after_node_insertion(dom.BoundaryPoint{
 				node: right
 				offset: 0
 			})
@@ -392,7 +365,9 @@ pub fn replace_collapsed_selection_with_inline_html(document &dom.Document, valu
 		mut inserted_content)
 }
 
-pub fn replace_collapsed_selection_with_html(document &dom.Document, value string) !dom.BoundaryPoint {
+// ReplaceSelection.cpp's replace_selection_with_fragment(): parse the markup relative to the collapsed active range and
+// insert it as inline or block content.
+pub fn replace_selection_with_fragment(document &dom.Document, value string) !dom.BoundaryPoint {
 	selection := document.get_selection() or { return error('document has no selection') }
 	range_ := selection.range() or { return error('document has no active range') }
 	if !range_.collapsed() {
@@ -406,7 +381,7 @@ pub fn replace_collapsed_selection_with_html(document &dom.Document, value strin
 	defer {
 		inserted_content.release()
 	}
-	destination_block := block_node_of_dom_node(range_.start_container())
+	destination_block := block_node_of_node(range_.start_container())
 	if replacement_fragment.contains_block_content() {
 		if block := destination_block {
 			is_editing_host := if editing_host := range_.start_container().editing_host() {

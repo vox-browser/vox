@@ -484,7 +484,7 @@ pub fn serialize_range_as_html_for_clipboard(range &dom.Range) string {
 	materialize_partial_text_style(range, document, mut fragment_node)
 	protect_collapsible_whitespace_for_interchange(document, serialized_text)
 	if serialized_text.len > 0 {
-		materialize_single_run_legacy_font_style_from_rendered_source(mut fragment_node,
+		materialize_single_run_legacy_font_style_from_rendered_source(fragment_node,
 			serialized_text[0].source.as_node())
 	}
 	return fragment_node.serialize_fragment(.no, .inner) or { '' }

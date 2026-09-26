@@ -64,8 +64,8 @@ fn test_document_exec_command_mutates_the_live_contenteditable_host() {
 	assert host.as_node().text_content()? == 'hello'
 	assert host.inner_html()!.contains('<b>')
 
-	// The adapter restores the live DOM selection after replacing the host's
-	// markup, so a subsequent editing command operates on the same range.
+	// The bold command keeps the selection on the formatted run, so a
+	// subsequent editing command operates on the same range.
 	assert document.exec_command('insertText', false, 'V')!
 	assert host.as_node().text_content()? == 'V'
 	assert host.inner_html()!.contains('V')

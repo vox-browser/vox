@@ -16,8 +16,8 @@ fn test_replacement_cleanup_coalesces_text_seams_and_preserves_inserted_range() 
 		node: host.as_node()
 		offset: marker.as_node().index()
 	}, .inline_)
-	mut host_node := host.as_node()
-	content.insert_before(mut host_node, marker.as_node())
+	host_node := host.as_node()
+	content.insert_before(host_node, marker.as_node())
 	content.begin_tracking_content_boundaries()
 	mut marker_node := marker.as_node()
 	marker_node.remove(false)
@@ -46,8 +46,8 @@ fn test_replacement_cleanup_normalizes_only_interior_protected_spaces() {
 	mut fragment_node := fragment.as_node()
 	fragment_node.append_child(inserted_text.as_node()) or { panic(err) }
 	mut content := editing.InsertedContent.new([inserted_text.as_node()])
-	mut host_node := host.as_node()
-	content.insert_before(mut host_node, none)
+	host_node := host.as_node()
+	content.insert_before(host_node, none)
 	content.begin_tracking_content_boundaries()
 	assert inserted_text.data() == '\u00a0A\u00a0B\u00a0'
 
@@ -74,8 +74,8 @@ fn test_replacement_cleanup_merges_requested_end_text_seam() {
 	fragment_node.append_child(bold.as_node()) or { panic(err) }
 	fragment_node.append_child(last_text.as_node()) or { panic(err) }
 	mut content := editing.InsertedContent.new([bold.as_node(), last_text.as_node()])
-	mut host_node := host.as_node()
-	content.insert_before(mut host_node, marker.as_node())
+	host_node := host.as_node()
+	content.insert_before(host_node, marker.as_node())
 	content.begin_tracking_content_boundaries()
 	mut marker_node := marker.as_node()
 	marker_node.remove(false)
@@ -105,8 +105,8 @@ fn test_replacement_cleanup_removes_empty_modifiable_containers() {
 	mut fragment_node := fragment.as_node()
 	fragment_node.append_child(span.as_node()) or { panic(err) }
 	mut content := editing.InsertedContent.new([span.as_node()])
-	mut host_node := host.as_node()
-	content.insert_before(mut host_node, none)
+	host_node := host.as_node()
+	content.insert_before(host_node, none)
 	content.begin_tracking_content_boundaries()
 	assert host.inner_html()! == '<span><b></b>kept</span>'
 

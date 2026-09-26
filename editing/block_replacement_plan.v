@@ -59,8 +59,7 @@ pub fn integrate_first_pasted_list(mut inserted_content InsertedContent, destina
 		item := pasted_list.first_child() or { break }
 		move_node_preserving_ranges(item, pasted_parent, pasted_list.index())
 	}
-	mut mutable_pasted_list := unsafe { &dom.Node(pasted_list) }
-	mutable_pasted_list.remove(false)
+	remove_node(pasted_list)
 	inserted_content.did_replace_node_range(pasted_list, first_item, last_item)
 }
 
@@ -72,32 +71,11 @@ fn has_mergeable_visible_children(node &dom.Node) bool {
 			}
 		}
 	}
-	return has_dom_visible_children(node)
+	return has_visible_children(node)
 }
 
 fn can_merge_paragraph_contents(node &dom.Node) bool {
-	return is_dom_non_list_single_line_container(node)
-}
-
-fn remove_dom_extraneous_line_break_at_end(node &dom.Node) {
-	mut leaf := node
-	for leaf.last_child() != none {
-		leaf = leaf.last_child() or { break }
-	}
-	if !is_html_break(leaf) || !leaf.is_editable() {
-		return
-	}
-	parent := leaf.parent() or { return }
-	if node_has_html_name(parent, ['li']) && parent.child_count() == 1 {
-		return
-	}
-	previous := leaf.previous_sibling() or { return }
-	if !node_is_visible_for_paragraph_integration(previous) || is_html_break(previous)
-		|| is_dom_block_node(previous) || !is_dom_block_node(parent) {
-		return
-	}
-	mut mutable_leaf := unsafe { &dom.Node(leaf) }
-	mutable_leaf.remove(false)
+	return is_non_list_single_line_container(node)
 }
 
 fn restore_replacement_trailing_break(block &dom.Node, trailing_break &dom.Node) {
@@ -109,8 +87,7 @@ fn restore_replacement_trailing_break(block &dom.Node, trailing_break &dom.Node)
 	if trailing_break.parent() != none {
 		move_node_preserving_ranges(trailing_break, block, block.child_count())
 	} else {
-		mut mutable_block := unsafe { &dom.Node(block) }
-		mutable_block.insert_before(trailing_break, none, false)
+		insert_node_before(trailing_break, block, none)
 	}
 }
 
@@ -200,12 +177,12 @@ pub fn canonicalize_inserted_content_end(boundary dom.BoundaryPoint, fragment &R
 	visible_end := VisiblePosition.create(boundary.node.document(), boundary)
 	next := visible_end.next()
 	end_position := visible_end.deep_equivalent()
-	end_block := block_node_of_dom_node(end_position.node)
+	end_block := block_node_of_node(end_position.node)
 	if block := end_block {
 		if node_has_html_name(block, ['li']) {
 			if next_position := next {
 				next_equivalent := next_position.deep_equivalent()
-				if next_block := block_node_of_dom_node(next_equivalent.node) {
+				if next_block := block_node_of_node(next_equivalent.node) {
 					if node_has_html_name(next_block, ['li']) && next_block != block
 						&& optional_nodes_are_same(next_block.parent(), block.parent()) {
 						return next_equivalent
@@ -220,8 +197,7 @@ pub fn canonicalize_inserted_content_end(boundary dom.BoundaryPoint, fragment &R
 			if node_has_html_name(block, ['li']) {
 				parent := block.parent() or { return boundary }
 				new_list_item := boundary.node.document().create_element('li') or { return boundary }
-				mut mutable_parent := unsafe { &dom.Node(parent) }
-				mutable_parent.insert_before(new_list_item.as_node(), block.next_sibling(), false)
+				insert_node_before(new_list_item.as_node(), parent, block.next_sibling())
 				return dom.BoundaryPoint{
 					node: new_list_item.as_node()
 					offset: 0
@@ -246,7 +222,7 @@ pub fn canonicalize_inserted_content_end(boundary dom.BoundaryPoint, fragment &R
 		return boundary
 	}
 	if !is_empty_placeholder {
-		block := block_node_of_dom_node(boundary.node) or { return boundary }
+		block := block_node_of_node(boundary.node) or { return boundary }
 		if !replacement_boundary_is_at_end_of(boundary, block) {
 			return boundary
 		}

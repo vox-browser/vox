@@ -1,276 +1,36 @@
 // Copyright (c) 2026, Ladybird contributors
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Adapter between Document's live editing host/Selection and the translated
-// EditingDocument command engine. DOM owns the entry point, while this module
-// owns command state, avoiding a DOM -> Editing package cycle.
+// Connects Document's execCommand() and queryCommand*() entry points to the translated editing algorithms. DOM owns
+// the IDL methods, while this package owns Editing/ExecCommand.cpp, avoiding a DOM -> Editing package cycle.
 module editing
 
 import dom
 
-@[heap]
-struct DOMEditingBridge {
-mut:
-	model_       &EditingDocument = unsafe { nil }
-	host_id_     dom.UniqueNodeID
-	last_markup_ string
+fn dom_editing_exec_command(_ voidptr, document &dom.Document, command string, show_ui bool, value string, user_input_type string) !bool {
+	mut mutable_document := unsafe { &dom.Document(document) }
+	input_type := if user_input_type == '' { ?string(none) } else { ?string(user_input_type) }
+	return exec_command_internal(mut mutable_document, command, show_ui, value, .yes, input_type)!
 }
 
-struct DOMEditingBoundary {
-	node   &dom.Node
-	offset int
+fn dom_editing_query_command_enabled(_ voidptr, document &dom.Document, command string) !bool {
+	return query_command_enabled(document, command)!
 }
 
-fn rune_utf16_length(character rune) int {
-	return if character > rune(0xffff) { 2 } else { 1 }
+fn dom_editing_query_command_indeterm(_ voidptr, document &dom.Document, command string) !bool {
+	return query_command_indeterm(document, command)!
 }
 
-fn rune_index_for_utf16_offset(value string, offset int) int {
-	mut code_units := 0
-	mut rune_index := 0
-	for character in value.runes() {
-		units := rune_utf16_length(character)
-		if code_units + units > offset {
-			break
-		}
-		code_units += units
-		rune_index++
-	}
-	return rune_index
+fn dom_editing_query_command_state(_ voidptr, document &dom.Document, command string) !bool {
+	return query_command_state(document, command)!
 }
 
-fn utf16_offset_for_rune_index(value string, requested_index int) int {
-	mut code_units := 0
-	for index, character in value.runes() {
-		if index >= requested_index {
-			break
-		}
-		code_units += rune_utf16_length(character)
-	}
-	return code_units
+fn dom_editing_query_command_supported(_ voidptr, document &dom.Document, command string) !bool {
+	return query_command_supported(document, command)!
 }
 
-fn editing_text_length(node &dom.Node) int {
-	return (node.text_content() or { '' }).runes().len
-}
-
-fn offset_within_editing_host(current &dom.Node, target &dom.Node, target_offset int) ?int {
-	if current == target {
-		if current.is_text() {
-			return rune_index_for_utf16_offset(current.text_content() or { '' }, target_offset)
-		}
-		children := current.children_as_vector()
-		limit := if target_offset < 0 {
-			0
-		} else if target_offset > children.len {
-			children.len
-		} else {
-			target_offset
-		}
-		mut total := 0
-		for child in children[..limit] {
-			total += editing_text_length(child)
-		}
-		return total
-	}
-	mut total := 0
-	for child in current.children_as_vector() {
-		if nested_offset := offset_within_editing_host(child, target, target_offset) {
-			return total + nested_offset
-		}
-		total += editing_text_length(child)
-	}
-	return none
-}
-
-fn model_boundary_for_linear_offset(document &EditingDocument, linear_offset int) Boundary {
-	mut remaining := if linear_offset < 0 { 0 } else { linear_offset }
-	for block_index, block in document.blocks {
-		if remaining <= block.items.len {
-			return Boundary{block_index, remaining}
-		}
-		remaining -= block.items.len
-		if block_index + 1 < document.blocks.len {
-			if remaining == 0 {
-				return Boundary{block_index, block.items.len}
-			}
-			remaining--
-		}
-	}
-	last_index := document.blocks.len - 1
-	return Boundary{last_index, document.blocks[last_index].items.len}
-}
-
-fn linear_offset_for_model_boundary(document &EditingDocument, boundary Boundary) int {
-	mut offset := 0
-	for block_index in 0 .. boundary.block {
-		offset += document.blocks[block_index].items.len + 1
-	}
-	return offset + boundary.offset
-}
-
-fn dom_boundary_for_linear_offset(current &dom.Node, linear_offset int) ?DOMEditingBoundary {
-	if current.is_text() {
-		text := current.text_content() or { '' }
-		length := text.runes().len
-		if linear_offset <= length {
-			return DOMEditingBoundary{
-				node:   current
-				offset: utf16_offset_for_rune_index(text, linear_offset)
-			}
-		}
-		return none
-	}
-	children := current.children_as_vector()
-	if linear_offset <= 0 {
-		return DOMEditingBoundary{
-			node:   current
-			offset: 0
-		}
-	}
-	if linear_offset >= editing_text_length(current) {
-		return DOMEditingBoundary{
-			node:   current
-			offset: children.len
-		}
-	}
-	mut remaining := linear_offset
-	for child in children {
-		length := editing_text_length(child)
-		if remaining <= length {
-			if boundary := dom_boundary_for_linear_offset(child, remaining) {
-				return boundary
-			}
-		}
-		remaining -= length
-	}
-	if remaining <= 0 {
-		return DOMEditingBoundary{
-			node:   current
-			offset: children.len
-		}
-	}
-	return none
-}
-
-fn restore_dom_selection(document &dom.Document, host &dom.Node, model &EditingDocument) {
-	selection_pointer := document.get_selection() or { return }
-	start_offset := linear_offset_for_model_boundary(model, model.selection.start)
-	end_offset := linear_offset_for_model_boundary(model, model.selection.end)
-	start := dom_boundary_for_linear_offset(host, start_offset) or { return }
-	end := dom_boundary_for_linear_offset(host, end_offset) or { return }
-	mut selection := unsafe { &dom.Selection(selection_pointer) }
-	selection.set_base_and_extent(start.node, start.offset, end.node, end.offset) or {}
-}
-
-fn replace_editing_host_markup(host &dom.Element, markup string, mut history EditingHistory) bool {
-	// Fragment parsing performs mutations in detached staging nodes. Keep those
-	// outside the diagnostic path; only the proxy removals and insertions below
-	// belong to the undo step.
-	history.begin_proxy_mutation()
-	fragment := host.parse_fragment(markup) or {
-		history.end_proxy_mutation()
-		return false
-	}
-	history.end_proxy_mutation()
-	for child in host.as_node().children_as_vector() {
-		remove_node_for_host_replacement(child)
-	}
-	append_node(fragment.as_node(), host.as_node()) or { return false }
-	return true
-}
-
-fn dom_editing_exec_command(target voidptr, document &dom.Document, command string, value string, user_input_type string) bool {
-	if target == unsafe { nil } {
-		return false
-	}
-	canonical_command := canonical_command_name(command) or { command }
-	if canonical_command == command_undo || canonical_command == command_redo {
-		history_pointer := editing_history_if_exists(document) or { return false }
-		mut history := unsafe { &EditingHistory(history_pointer) }
-		return if canonical_command == command_undo {
-			history.undo(document)
-		} else {
-			history.redo(document)
-		}
-	}
-	selection := document.get_selection() or { return false }
-	anchor := selection.anchor_node() or { return false }
-	focus := selection.focus_node() or { return false }
-	host := anchor.editing_host() or { return false }
-	focus_host := focus.editing_host() or { return false }
-	if focus_host != host {
-		return false
-	}
-	host_element_pointer := host.as_element() or { return false }
-	current_markup := host_element_pointer.inner_html() or { return false }
-	mut bridge := unsafe { &DOMEditingBridge(target) }
-	if bridge.model_ == unsafe { nil } || bridge.host_id_ != host.unique_id()
-		|| bridge.last_markup_ != current_markup {
-		bridge.model_ = new_document(host.text_content() or { '' })
-		bridge.host_id_ = host.unique_id()
-		bridge.last_markup_ = current_markup
-	}
-	anchor_offset := offset_within_editing_host(host, anchor, selection.anchor_offset()) or {
-		return false
-	}
-	focus_offset := offset_within_editing_host(host, focus, selection.focus_offset()) or {
-		return false
-	}
-	mut model := unsafe { &EditingDocument(bridge.model_) }
-	model.set_selection(model_boundary_for_linear_offset(model, anchor_offset), model_boundary_for_linear_offset(model, focus_offset)) or { return false }
-	history_pointer := install_editing_history(document)
-	mut history := unsafe { &EditingHistory(history_pointer) }
-	is_cut_or_paste := user_input_type in [dom.input_type_delete_by_cut,
-		dom.input_type_insert_from_paste]
-	category := if is_cut_or_paste {
-		UndoStepCategory.other
-	} else {
-		match canonical_command {
-			command_insert_text, command_insert_line_break, command_insert_paragraph {
-				UndoStepCategory.insertion
-			}
-			command_delete { UndoStepCategory.backward_deletion }
-			command_forward_delete { UndoStepCategory.forward_deletion }
-			else { UndoStepCategory.other }
-		}
-	}
-	history.begin_recording(host, category)
-	defer {
-		history.end_recording()
-	}
-	result := model.exec_command(command, false, value) or { return false }
-	if !result {
-		return false
-	}
-	new_markup := model.serialize_html()
-	if new_markup != current_markup {
-		if !replace_editing_host_markup(host_element_pointer, new_markup, mut history) {
-			return false
-		}
-	}
-	bridge.last_markup_ = new_markup
-	restore_dom_selection(document, host, model)
-	history.end_recording()
-	if new_markup != current_markup || is_cut_or_paste {
-		definition := find_command_definition(canonical_command) or { return true }
-		input_type := if user_input_type == '' { definition.mapped_value } else { user_input_type }
-		input_data := if input_type in [dom.input_type_insert_text,
-			dom.input_type_insert_composition_text] {
-			?string(value)
-		} else {
-			none
-		}
-		event := dom.InputEvent.create_from_platform_event('input', dom.InputEventInit{
-			input_type:   input_type
-			data:         input_data
-			is_composing: document.is_input_method_composing()
-		}, [], dom.current_event_timestamp())
-		event_target := unsafe { &dom.EventTarget(host) }
-		base_event := unsafe { &dom.Event(event) }
-		event_target.dispatch_event(base_event)
-	}
-	return true
+fn dom_editing_query_command_value(_ voidptr, document &dom.Document, command string) !string {
+	return query_command_value(document, command)!
 }
 
 fn dom_editing_sanitize_clipboard_html(_ voidptr, range &dom.Range, html string) !string {
@@ -281,11 +41,14 @@ pub fn install_dom_editing_bridge(document &dom.Document) {
 	if document.editing_command_hook() != none {
 		return
 	}
-	bridge := &DOMEditingBridge{}
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_editing_command_hook(dom.DocumentEditingCommandHook{
-		target:                  voidptr(bridge)
 		exec_command:            dom_editing_exec_command
+		query_command_enabled:   dom_editing_query_command_enabled
+		query_command_indeterm:  dom_editing_query_command_indeterm
+		query_command_state:     dom_editing_query_command_state
+		query_command_supported: dom_editing_query_command_supported
+		query_command_value:     dom_editing_query_command_value
 		sanitize_clipboard_html: dom_editing_sanitize_clipboard_html
 	})
 }

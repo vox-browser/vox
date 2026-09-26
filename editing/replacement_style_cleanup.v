@@ -58,8 +58,7 @@ pub fn remove_redundant_styles_from_inserted_content(mut inserted_content Insert
 		retained_style.custom_properties = inline_style.custom_properties.clone()
 		serialized_style := retained_style.serialized()
 		if serialized_style != '' {
-			mut mutable_element := unsafe { &dom.Element(element) }
-			mutable_element.set_attribute_value('style', serialized_style)
+			set_attribute_value(element, 'style', serialized_style)
 			continue
 		}
 
@@ -67,8 +66,7 @@ pub fn remove_redundant_styles_from_inserted_content(mut inserted_content Insert
 			&& element.attribute_list_size() == 1 && element.as_node().has_children()
 		first_child := element.as_node().first_child()
 		last_child := element.as_node().last_child()
-		mut mutable_element := unsafe { &dom.Element(element) }
-		mutable_element.remove_attribute('style')
+		remove_attribute(element, 'style')
 		if !should_unwrap {
 			continue
 		}

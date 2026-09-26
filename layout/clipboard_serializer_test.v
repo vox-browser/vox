@@ -112,13 +112,13 @@ fn test_styled_clipboard_serializer_materializes_legacy_font_run() {
 fn test_legacy_font_style_helpers_materialize_and_remove_single_run() {
 	quirks_document := html.parse_document('<html><body><div id="wrapper"><font color="chucknorris">legacy</font></div></body></html>')
 	wrapper := quirks_document.get_element_by_id('wrapper') or { panic('missing wrapper') }
-	mut wrapper_node := wrapper.as_node()
-	editing.materialize_single_run_legacy_font_style(mut wrapper_node)
+	wrapper_node := wrapper.as_node()
+	editing.materialize_single_run_legacy_font_style(wrapper_node)
 	assert wrapper_node.serialize_fragment(.no, .inner) or { '' } == '<span style="color: rgb(192, 0, 0);">legacy</span>'
 
 	document := html.parse_document('<!doctype html><body><div id="wrapper"><font color="red"><b>legacy</b></font></div></body>')
 	plain_wrapper := document.get_element_by_id('wrapper') or { panic('missing wrapper') }
-	mut plain_wrapper_node := plain_wrapper.as_node()
-	editing.remove_single_run_legacy_font_style(mut plain_wrapper_node)
+	plain_wrapper_node := plain_wrapper.as_node()
+	editing.remove_single_run_legacy_font_style(plain_wrapper_node)
 	assert plain_wrapper_node.serialize_fragment(.no, .inner) or { '' } == '<b>legacy</b>'
 }

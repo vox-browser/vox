@@ -26,7 +26,7 @@ mut:
 	user_input_type string
 }
 
-fn page_editing_command_observer(target voidptr, _ &dom.Document, command string, value string, user_input_type string) bool {
+fn page_editing_command_observer(target voidptr, _ &dom.Document, command string, _ bool, value string, user_input_type string) !bool {
 	mut observation := unsafe { &PageEditingCommandObservation(target) }
 	observation.command = command
 	observation.value = value

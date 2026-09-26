@@ -5,6 +5,7 @@
 // Translation of Libraries/LibWeb/HTML/Numbers.cpp.
 module html
 
+import infra
 import math
 import strconv
 
@@ -19,25 +20,7 @@ fn is_number_ascii_digit(character u8) bool {
 
 // https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-integers
 pub fn parse_integer_digits(input string) ?string {
-	mut position := 0
-	for position < input.len && is_number_ascii_whitespace(input[position]) {
-		position++
-	}
-	if position == input.len {
-		return none
-	}
-
-	start_index := position
-	if input[position] == `-` || input[position] == `+` {
-		position++
-	}
-	if position == input.len || !is_number_ascii_digit(input[position]) {
-		return none
-	}
-	for position < input.len && is_number_ascii_digit(input[position]) {
-		position++
-	}
-	return input[start_index..position]
+	return infra.parse_integer_digits(input)
 }
 
 // https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-integers
@@ -49,21 +32,12 @@ pub fn parse_integer(input string) ?i32 {
 
 // https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-non-negative-integers
 pub fn parse_non_negative_integer_digits(input string) ?string {
-	digits := parse_integer_digits(input) or { return none }
-	if digits.len > 1 && digits[0] == `-` && digits[1] != `0` {
-		return none
-	}
-	return digits
+	return infra.parse_non_negative_integer_digits(input)
 }
 
 // https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-non-negative-integers
 pub fn parse_non_negative_integer(input string) ?u32 {
-	digits := parse_non_negative_integer_digits(input) or { return none }
-	value := strconv.parse_int(digits, 10, 64) or { return none }
-	if value > i64(0xffff_ffff) {
-		return none
-	}
-	return u32(value)
+	return infra.parse_non_negative_integer(input)
 }
 
 fn finish_parsing_floating_point_number(value f64) ?f64 {
@@ -184,44 +158,7 @@ pub fn parse_floating_point_number(input string) ?f64 {
 
 // https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#valid-floating-point-number
 pub fn is_valid_floating_point_number(input string) bool {
-	mut position := 0
-	if position < input.len && input[position] == `-` {
-		position++
-	}
-
-	leading_digits_start := position
-	for position < input.len && is_number_ascii_digit(input[position]) {
-		position++
-	}
-	has_leading_digits := position > leading_digits_start
-
-	if position < input.len && input[position] == `.` {
-		position++
-		fraction_digits_start := position
-		for position < input.len && is_number_ascii_digit(input[position]) {
-			position++
-		}
-		if position == fraction_digits_start {
-			return false
-		}
-	} else if !has_leading_digits {
-		return false
-	}
-
-	if position < input.len && (input[position] == `e` || input[position] == `E`) {
-		position++
-		if position < input.len && (input[position] == `-` || input[position] == `+`) {
-			position++
-		}
-		exponent_digits_start := position
-		for position < input.len && is_number_ascii_digit(input[position]) {
-			position++
-		}
-		if position == exponent_digits_start {
-			return false
-		}
-	}
-	return position == input.len
+	return infra.is_valid_floating_point_number(input)
 }
 
 pub fn convert_non_negative_integer_to_string(value i32) !string {

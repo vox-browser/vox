@@ -63,8 +63,8 @@ fn test_paragraph_integration_rejects_blockquotes_and_heading_mismatches() {
 	blockquote := blockquote_document.get_element_by_id('inserted') or { panic('missing blockquote') }
 	mut blockquote_content := paragraph_integration_content(blockquote_document, blockquote.as_node())
 	blockquote_start := blockquote_content.start_boundary() or { panic('missing blockquote start') }
-	assert editing.block_node_of_dom_node(blockquote_start.node)? == blockquote.as_node()
-	assert (editing.block_node_of_dom_node(blockquote_start.node)?.as_element() or {
+	assert editing.block_node_of_node(blockquote_start.node)? == blockquote.as_node()
+	assert (editing.block_node_of_node(blockquote_start.node)?.as_element() or {
 		panic('blockquote block is not an element')
 	}).local_name() == 'blockquote'
 	blockquote_integration := editing.ParagraphIntegration.new(blockquote_document,
@@ -88,8 +88,8 @@ fn test_paragraph_integration_rejects_blockquotes_and_heading_mismatches() {
 fn test_paragraph_integration_folds_empty_transport_block_at_start() {
 	document := parse_document('<!doctype html><body><div contenteditable><p>before</p><p id="inserted"></p><p>after</p></div></body>')
 	inserted := document.get_element_by_id('inserted') or { panic('missing inserted paragraph') }
-	mut content := editing.InsertedContent.new([inserted.as_node()])
-	content.begin_tracking_content_boundaries()
+	// NB: The fold requires a rendered position before the empty block to merge into.
+	mut content := paragraph_integration_content(document, inserted.as_node())
 	integration := editing.ParagraphIntegration.new(document, content, editing.ParagraphBoundaryState{})
 
 	assert integration.decide().merge_start

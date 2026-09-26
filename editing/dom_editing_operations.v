@@ -62,13 +62,11 @@ pub fn move_node_preserving_ranges(node &dom.Node, new_parent &dom.Node, new_ind
 	old_parent := node.parent() or { unsafe { &dom.Node(nil) } }
 	old_index := node.index()
 	if old_parent != unsafe { nil } {
-		mut mutable_node := unsafe { &dom.Node(node) }
-		mutable_node.remove(false)
+		remove_node(node)
 	}
 
 	new_next_sibling := new_parent.child_at_index(new_index)
-	mut mutable_new_parent := unsafe { &dom.Node(new_parent) }
-	mutable_new_parent.insert_before(node, new_next_sibling, false)
+	insert_node_before(node, new_parent, new_next_sibling)
 
 	for saved in preserved {
 		start := adjust_boundary_after_preserving_move(saved.start, old_parent, old_index,
@@ -87,6 +85,5 @@ pub fn unwrap_node_preserving_ranges(node &dom.Node) {
 		child := node.first_child() or { break }
 		move_node_preserving_ranges(child, parent, node.index())
 	}
-	mut mutable_node := unsafe { &dom.Node(node) }
-	mutable_node.remove(false)
+	remove_node(node)
 }

@@ -12,6 +12,7 @@ module html
 
 import color
 import dom
+import css
 import strconv
 
 pub struct LegacyDimension {
@@ -107,42 +108,7 @@ fn parse_border(value string) u32 {
 
 // https://html.spec.whatwg.org/multipage/rendering.html#rules-for-parsing-a-legacy-font-size
 pub fn parse_legacy_font_size(input string) ?string {
-	mut position := 0
-	for position < input.len && is_number_ascii_whitespace(input[position]) {
-		position++
-	}
-	if position == input.len {
-		return none
-	}
-	mut mode := 0
-	if input[position] == `+` {
-		mode = 1
-		position++
-	} else if input[position] == `-` {
-		mode = -1
-		position++
-	}
-	start := position
-	for position < input.len && is_number_ascii_digit(input[position]) {
-		position++
-	}
-	if position == start {
-		return none
-	}
-	mut value := strconv.atoi(input[start..position]) or { return none }
-	if mode == 1 {
-		value += 3
-	} else if mode == -1 {
-		value = 3 - value
-	}
-	value = if value < 1 {
-		1
-	} else if value > 7 {
-		7
-	} else {
-		value
-	}
-	return ['x-small', 'small', 'medium', 'large', 'x-large', 'xx-large', 'xxx-large'][value - 1]
+	return css.parse_legacy_font_size(input)
 }
 
 // HTMLFontElement::parse_legacy_font_size().

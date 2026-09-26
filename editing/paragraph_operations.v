@@ -24,8 +24,7 @@ fn boundary_outside_text(boundary dom.BoundaryPoint) dom.BoundaryPoint {
 			offset: text.as_node().index() + 1
 		}
 	}
-	mut mutable_text := unsafe { &dom.Text(text) }
-	right_text := mutable_text.split_text(boundary.offset) or { panic(err) }
+	right_text := split_text(text, boundary.offset) or { panic(err) }
 	return dom.BoundaryPoint{
 		node: parent
 		offset: right_text.as_node().index()
@@ -54,9 +53,8 @@ pub fn split_inline_ancestors_at_boundary(boundary_ dom.BoundaryPoint, containin
 			continue
 		}
 
-		container_clone := container.clone_node(none, false, none) or { panic(err) }
-		mut mutable_parent := unsafe { &dom.Node(parent) }
-		mutable_parent.insert_before(container_clone, container.next_sibling(), false)
+		container_clone := clone_node_for_editing(container, false) or { panic(err) }
+		insert_node_before(container_clone, parent, container.next_sibling())
 		for boundary.offset < container.child_count() {
 			child := container.child_at_index(boundary.offset) or { break }
 			move_node_preserving_ranges(child, container_clone, container_clone.child_count())
@@ -71,10 +69,9 @@ pub fn split_inline_ancestors_at_boundary(boundary_ dom.BoundaryPoint, containin
 
 pub fn split_containing_block_at_boundary(boundary dom.BoundaryPoint, containing_block &dom.Node) &dom.Node {
 	block_boundary := split_inline_ancestors_at_boundary(boundary, containing_block)
-	right_block := containing_block.clone_node(none, false, none) or { panic(err) }
+	right_block := clone_node_for_editing(containing_block, false) or { panic(err) }
 	parent := containing_block.parent() or { panic('containing block has no parent') }
-	mut mutable_parent := unsafe { &dom.Node(parent) }
-	mutable_parent.insert_before(right_block, containing_block.next_sibling(), false)
+	insert_node_before(right_block, parent, containing_block.next_sibling())
 	for block_boundary.offset < containing_block.child_count() {
 		child := containing_block.child_at_index(block_boundary.offset) or { break }
 		move_node_preserving_ranges(child, right_block, right_block.child_count())

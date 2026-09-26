@@ -131,18 +131,6 @@ fn is_rendered_atomic_inline(node &dom.Node) bool {
 	return layout_node.is_atomic_inline()
 }
 
-pub fn block_node_of_dom_node(input_node &dom.Node) ?&dom.Node {
-	mut node := ?&dom.Node(input_node)
-	for node != none {
-		current := node or { return none }
-		if !is_dom_inline_node(current) {
-			return current
-		}
-		node = current.parent()
-	}
-	return none
-}
-
 fn has_sibling_toward(node &dom.Node, block &dom.Node, direction VisibleScanDirection) bool {
 	mut ancestor := ?&dom.Node(node)
 	for ancestor != none {
@@ -218,7 +206,7 @@ fn scan_adjacent_content(position dom.CaretLocation, block &dom.Node, direction 
 			}
 			return .paragraph_boundary
 		}
-		if is_dom_block_node(current) {
+		if is_block_node(current) {
 			return .paragraph_boundary
 		}
 		if current.is_text() {
@@ -243,7 +231,7 @@ fn scan_adjacent_content(position dom.CaretLocation, block &dom.Node, direction 
 fn (position &VisiblePosition) adjacent_content(direction VisibleScanDirection) ?AdjacentContent {
 	mut document := unsafe { &dom.Document(position.document_) }
 	document.update_layout_if_needed_for_node(position.boundary_.node, .cursor_line_navigation)
-	block := block_node_of_dom_node(position.boundary_.node) or { return none }
+	block := block_node_of_node(position.boundary_.node) or { return none }
 	return scan_adjacent_content(position.boundary_, block, direction)
 }
 
@@ -264,7 +252,7 @@ pub fn (position &VisiblePosition) is_end_of_containing_block() bool {
 }
 
 pub fn (position &VisiblePosition) is_before_or_after_containing_block() bool {
-	block := block_node_of_dom_node(position.deep_equivalent_.node) or { return false }
+	block := block_node_of_node(position.deep_equivalent_.node) or { return false }
 	if position.deep_equivalent_.node != block {
 		return false
 	}

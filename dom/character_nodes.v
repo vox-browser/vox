@@ -301,6 +301,15 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 	// NOTE: We do this later so that the mutation observer may notify UI clients of this node's new value.
 	node.queue_mutation_record(.character_data, none, none, old_data, []&Node{}, []&Node{}, unsafe { nil }, unsafe { nil })
 
+	mut selection_range_to_preserve := unsafe { voidptr(nil) }
+	if c.data_ == old_data && node.document().preserve_selection_offsets_during_identical_character_data_replacement() {
+		if selection := node.document().get_selection() {
+			if selection_range := selection.range() {
+				selection_range_to_preserve = voidptr(selection_range)
+			}
+		}
+	}
+
 	// 8. For each live range whose start node is node and start offset is greater than offset but less than or equal to
 	//    offset plus count, set its start offset to offset.
 	// 9. For each live range whose end node is node and end offset is greater than offset but less than or equal to
@@ -309,7 +318,8 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 	//     start offset by data's length and decrease it by count.
 	// 11. For each live range whose end node is node and end offset is greater than offset plus count, increase its end
 	//     offset by data's length and decrease it by count.
-	update_live_ranges_for_character_data_replacement(node, offset, actual_count, utf16_code_unit_length(data))
+	update_live_ranges_for_character_data_replacement(node, offset, actual_count, utf16_code_unit_length(data),
+		selection_range_to_preserve)
 
 	// 12. If node's parent is non-null, then run the children changed steps for node's parent.
 	if parent := node.parent() {
@@ -482,11 +492,14 @@ pub fn (c &CharacterData) word_segmenter() &Segmenter {
 	return mutable_character_data.word_segmenter_
 }
 
-fn update_live_ranges_for_character_data_replacement(node &Node, offset int, count int, data_length int) {
+fn update_live_ranges_for_character_data_replacement(node &Node, offset int, count int, data_length int, range_to_preserve voidptr) {
 	end_offset := offset + count
 	delta := data_length - count
 	for _, live_range in dom_live_ranges {
 		mut range := unsafe { &Range(live_range) }
+		if voidptr(range) == range_to_preserve {
+			continue
+		}
 		if range.start_container_ == node {
 			if range.start_offset_ > offset && range.start_offset_ <= end_offset {
 				range.start_offset_ = offset

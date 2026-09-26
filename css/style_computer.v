@@ -1620,6 +1620,14 @@ fn update_style_for_document_from_upstream(document &dom.Document) RequiredInval
 // This reflects the same UA, user, author, inline, inheritance, and initial-value
 // inputs as the document's StyleComputer pass.
 pub fn computed_value_for(element &dom.Element, property_id PropertyID) ?string {
+	computed := up_to_date_computed_properties_for_element(element)
+	value := computed.property(property_id, .no) or { return none }
+	return value.css_text
+}
+
+// The element's computed properties after any pending style update, as read
+// by the resolved-value algorithms (Editing's resolved_value(), for example).
+pub fn up_to_date_computed_properties_for_element(element &dom.Element) &ComputedProperties {
 	mut document := element.as_node().document()
 	css_style_computer_for(document)
 
@@ -1632,7 +1640,7 @@ pub fn computed_value_for(element &dom.Element, property_id PropertyID) ?string 
 		document.update_style()
 	}
 
-	computed := if dom_computed := abstract_element.computed_properties() {
+	return if dom_computed := abstract_element.computed_properties() {
 		computed_properties_from_dom(dom_computed) or {
 			mut style_computer := css_style_computer_for(document)
 			style_computer.compute_style_with_seeded_ancestors(abstract_element)
@@ -1641,8 +1649,6 @@ pub fn computed_value_for(element &dom.Element, property_id PropertyID) ?string 
 		mut style_computer := css_style_computer_for(document)
 		style_computer.compute_style_with_seeded_ancestors(abstract_element)
 	}
-	value := computed.property(property_id, .no) or { return none }
-	return value.css_text
 }
 
 pub struct ComputedStylePair {

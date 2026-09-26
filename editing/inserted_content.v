@@ -27,45 +27,6 @@ fn inserted_content_start_boundary_of(node &dom.Node) dom.BoundaryPoint {
 	}
 }
 
-pub fn end_boundary_of_node(node &dom.Node) dom.BoundaryPoint {
-	if node.is_text() {
-		return dom.BoundaryPoint{
-			node: node
-			offset: node.length()
-		}
-	}
-	if last_child := node.last_child() {
-		if element := last_child.as_element() {
-			if element.is_html_element() && element.local_name() == 'br' {
-				return dom.BoundaryPoint{
-					node: node
-					offset: last_child.index()
-				}
-			}
-		}
-		return end_boundary_of_node(last_child)
-	}
-	if element := node.as_element() {
-		if element.is_void_element()
-			&& !(element.is_html_element() && element.local_name() == 'br') {
-			if parent := node.parent() {
-				return dom.BoundaryPoint{
-					node: parent
-					offset: node.index() + 1
-				}
-			}
-		}
-	}
-	return dom.BoundaryPoint{
-		node: node
-		offset: 0
-	}
-}
-
-fn inserted_boundary_equals(left dom.BoundaryPoint, right dom.BoundaryPoint) bool {
-	return left.node == right.node && left.offset == right.offset
-}
-
 fn inserted_content_containing_block(node &dom.Node) ?&dom.Node {
 	mut current := ?&dom.Node(node)
 	for current != none {
@@ -74,39 +35,6 @@ fn inserted_content_containing_block(node &dom.Node) ?&dom.Node {
 			return candidate
 		}
 		current = candidate.parent()
-	}
-	return none
-}
-
-fn preceding_text_character(boundary dom.BoundaryPoint) ?rune {
-	if boundary.node.is_text() && boundary.offset > 0 {
-		text := unsafe { &dom.Text(boundary.node) }
-		prefix := text.substring_data(0, boundary.offset) or { return none }
-		characters := prefix.runes()
-		if characters.len > 0 {
-			return characters[characters.len - 1]
-		}
-	}
-	mut current := boundary.node
-	mut offset := boundary.offset
-	for {
-		if offset > 0 {
-			mut candidate := current.child_at_index(offset - 1) or { return none }
-			for candidate.last_child() != none {
-				candidate = candidate.last_child() or { break }
-			}
-			if candidate.is_text() {
-				data := unsafe { &dom.Text(candidate) }.data()
-				characters := data.runes()
-				if characters.len > 0 {
-					return characters[characters.len - 1]
-				}
-			}
-			return none
-		}
-		parent := current.parent() or { return none }
-		offset = current.index()
-		current = parent
 	}
 	return none
 }
@@ -204,36 +132,52 @@ pub fn (content &InsertedContent) end_boundary() ?dom.BoundaryPoint {
 }
 
 fn (mut content InsertedContent) track_insertion_boundary(boundary dom.BoundaryPoint) {
-	if content.insertion_range_ != none {
-		return
+	assert content.insertion_range_ == none
+	// INTEROP: Completion treats a protected whitespace run before terminal atomic content differently inside a
+	//          paragraph than at its boundary. Record that topology before insertion changes the visible positions.
+	visible_position := VisiblePosition.create(boundary.node.document(), boundary)
+	content.insertion_was_inside_paragraph_ = !visible_position.is_start_of_paragraph()
+		&& !visible_position.is_end_of_paragraph()
+	if previous_position := visible_position.previous() {
+		previous_boundary := previous_position.deep_equivalent()
+		if previous_boundary.node.is_text() {
+			text := unsafe { &dom.Text(previous_boundary.node) }
+			length := text.length_in_utf16_code_units()
+			if length > 0 {
+				// An upstream-equivalent position can be represented by the end of the preceding text node. In that case
+				// the code unit before the boundary, rather than the out-of-range code unit at the boundary, is relevant.
+				code_unit_offset := if previous_boundary.offset < length - 1 {
+					previous_boundary.offset
+				} else {
+					length - 1
+				}
+				code_unit := text.substring_data(code_unit_offset, 1) or { '' }
+				content.insertion_was_after_whitespace_ = code_unit.len > 0
+					&& (is_ascii_space_character(code_unit.runes()[0]) || code_unit == '\u00a0')
+			}
+		}
 	}
-	if block := inserted_content_containing_block(boundary.node) {
-		content.insertion_was_inside_paragraph_ = !inserted_boundary_equals(boundary,
-			inserted_content_start_boundary_of(block))
-			&& !inserted_boundary_equals(boundary, end_boundary_of_node(block))
-	}
-	if previous := preceding_text_character(boundary) {
-		content.insertion_was_after_whitespace_ = previous in [` `, `\t`, `\n`, `\v`, `\f`, `\r`, `\u00a0`]
-	}
+	// INTEROP: Blink retains the insertion position separately from the first inserted node. In particular, a block
+	//          insertion can move or unwrap that node while the destination-side whitespace seam remains observable.
 	range_ := dom.Range.create_from_boundary_points(boundary.node, boundary.offset, boundary.node,
 		boundary.offset)
 	content.insertion_range_ = MutationTrackedRange.new(range_)
 }
 
-pub fn (mut content InsertedContent) insert_before(mut parent dom.Node, reference_node ?&dom.Node) {
+pub fn (mut content InsertedContent) insert_before(parent &dom.Node, reference_node ?&dom.Node) {
 	insertion_offset := if reference := reference_node { reference.index() } else { parent.child_count() }
 	content.track_insertion_boundary(dom.BoundaryPoint{
 		node: parent
 		offset: insertion_offset
 	})
 	for node in content.nodes_.connected_nodes() {
-		parent.insert_before(node, reference_node, false)
+		insert_node_before(node, parent, reference_node)
 	}
 }
 
 pub fn (mut content InsertedContent) insert_into_range(mut range_ dom.Range, fragment &dom.DocumentFragment) ! {
 	content.track_insertion_boundary(range_.start())
-	range_.insert_node(fragment.as_node())!
+	insert_node_into_range(range_, fragment.as_node())!
 }
 
 pub fn (mut content InsertedContent) track_replacement_boundary(boundary dom.BoundaryPoint, topology ReplacementTopology) {

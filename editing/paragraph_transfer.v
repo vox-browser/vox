@@ -34,16 +34,14 @@ pub:
 }
 
 fn prepare_paragraph_transfer_style(source_paragraph &dom.Node, destination dom.BoundaryPoint, options ParagraphTransferOptions) {
-	mut mutable_source := unsafe { &dom.Node(source_paragraph) }
 	if options.source_style == .match_destination {
-		remove_single_run_legacy_font_style(mut mutable_source)
+		remove_single_run_legacy_font_style(source_paragraph)
 	} else if options.source_style == .preserve_visual_appearance {
-		materialize_single_run_legacy_font_style(mut mutable_source)
+		materialize_single_run_legacy_font_style(source_paragraph)
 	}
 	if options.destination_style == .preserve_visual_appearance {
 		if destination_paragraph := inserted_content_containing_block(destination.node) {
-			mut mutable_destination := unsafe { &dom.Node(destination_paragraph) }
-			materialize_single_run_legacy_font_style(mut mutable_destination)
+			materialize_single_run_legacy_font_style(destination_paragraph)
 		}
 	}
 }
@@ -55,8 +53,7 @@ pub fn transfer_paragraph_contents(source_paragraph &dom.Node, destination dom.B
 	prepare_paragraph_transfer_style(source_paragraph, destination, options)
 
 	if !source_paragraph.has_children() {
-		mut mutable_source := unsafe { &dom.Node(source_paragraph) }
-		mutable_source.remove(false)
+		remove_node(source_paragraph)
 		insertion_point := tracked_destination.range().start()
 		tracked_destination.release()
 		return ParagraphTransferResult{
@@ -85,8 +82,7 @@ pub fn transfer_paragraph_contents(source_paragraph &dom.Node, destination dom.B
 			move_node_preserving_ranges(child, insertion_point.node, insertion_offset)
 			insertion_offset++
 		}
-		mut mutable_source := unsafe { &dom.Node(source_paragraph) }
-		mutable_source.remove(false)
+		remove_node(source_paragraph)
 	}
 
 	mut start := tracked_destination.range().start()
@@ -98,10 +94,10 @@ pub fn transfer_paragraph_contents(source_paragraph &dom.Node, destination dom.B
 			if previous.is_text() {
 				inserted_text := unsafe { &dom.Text(previous) }
 				inserted_length := inserted_text.length_in_utf16_code_units()
-				mut mutable_destination_text := unsafe { &dom.Text(destination_text) }
-				mutable_destination_text.insert_data(0, inserted_text.data()) or { panic(err) }
-				mut mutable_inserted_text := unsafe { &dom.Node(inserted_text.as_node()) }
-				mutable_inserted_text.remove(false)
+				insert_data(editing_character_data(destination_text.as_node()), 0, inserted_text.data()) or {
+					panic(err)
+				}
+				remove_node(inserted_text.as_node())
 				seam := dom.BoundaryPoint{
 					node: destination_text.as_node()
 					offset: inserted_length

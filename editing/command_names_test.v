@@ -57,6 +57,22 @@ fn test_command_name_lookup_is_ascii_case_insensitive() {
 	assert find_command_definition('bacKColor') == none
 }
 
+fn has_action(definition CommandDefinition) bool {
+	return definition.action != unsafe { nil }
+}
+
+fn has_state(definition CommandDefinition) bool {
+	return definition.state != unsafe { nil }
+}
+
+fn has_value(definition CommandDefinition) bool {
+	return definition.value != unsafe { nil }
+}
+
+fn has_indeterminate(definition CommandDefinition) bool {
+	return definition.indeterminate != unsafe { nil }
+}
+
 fn test_command_definition_table_matches_upstream_action_registry() {
 	definitions := command_definitions()
 	assert definitions.map(it.command) == [
@@ -87,6 +103,7 @@ fn test_command_definition_table_matches_upstream_action_registry() {
 		command_justify_right,
 		command_outdent,
 		command_preserve_whitespace,
+		command_redo,
 		command_remove_format,
 		command_select_all,
 		command_strikethrough,
@@ -94,11 +111,12 @@ fn test_command_definition_table_matches_upstream_action_registry() {
 		command_subscript,
 		command_superscript,
 		command_underline,
+		command_undo,
 		command_unlink,
 		command_use_css,
 	]
-	assert definitions.filter(it.has_action).len == 35
-	assert definitions.filter(it.has_state).map(it.command) == [
+	assert definitions.filter(has_action(it)).len == 37
+	assert definitions.filter(has_state(it)).map(it.command) == [
 		command_insert_ordered_list,
 		command_insert_unordered_list,
 		command_justify_center,
@@ -107,17 +125,25 @@ fn test_command_definition_table_matches_upstream_action_registry() {
 		command_justify_right,
 		command_style_with_css,
 	]
-	assert definitions.filter(it.has_value).map(it.command) == [
+	assert definitions.filter(has_value(it)).map(it.command) == [
+		command_back_color,
 		command_default_paragraph_separator,
+		command_font_name,
 		command_font_size,
+		command_fore_color,
 		command_format_block,
+		command_hilite_color,
 		command_justify_center,
 		command_justify_full,
 		command_justify_left,
 		command_justify_right,
 	]
-	assert definitions.filter(it.has_indeterminate).map(it.command) == [
+	assert definitions.filter(has_indeterminate(it)).map(it.command) == [
+		command_back_color,
+		command_font_name,
+		command_fore_color,
 		command_format_block,
+		command_hilite_color,
 		command_insert_ordered_list,
 		command_insert_unordered_list,
 		command_justify_center,
@@ -128,15 +154,18 @@ fn test_command_definition_table_matches_upstream_action_registry() {
 		command_superscript,
 	]
 	assert find_command_definition('copy') == none
-	assert find_command_definition('undo') == none
+	undo := find_command_definition('UNDO')?
+	assert undo.command == command_undo
+	assert undo.mapped_value? == 'historyUndo'
 	preserve := find_command_definition(command_preserve_whitespace)?
-	assert !preserve.has_action
+	assert !has_action(preserve)
+	assert preserve.relevant_css_property? == 'white-space'
 	bold := find_command_definition('BOLD')?
 	assert bold.command == command_bold
-	assert bold.relevant_css_property == 'font-weight'
+	assert bold.relevant_css_property? == 'font-weight'
 	assert bold.inline_activated_values == ['bold', '600', '700', '800', '900']
-	assert bold.mapped_value == 'formatBold'
+	assert bold.mapped_value? == 'formatBold'
 	delete_definition := find_command_definition('delete')?
 	assert delete_definition.preserves_overrides
-	assert delete_definition.mapped_value == 'deleteContentBackward'
+	assert delete_definition.mapped_value? == 'deleteContentBackward'
 }

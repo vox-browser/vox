@@ -679,6 +679,19 @@ fn inline_style_for_abstract_element(abstract_element dom.AbstractElement) ?&CSS
 	return properties
 }
 
+// Element::style(): the element's inline style declaration, created when the
+// element has no style attribute yet.
+pub fn element_style(element &dom.Element) &CSSStyleProperties {
+	if existing := inline_style_for_element(element) {
+		return existing
+	}
+	mut mutable_element := unsafe { &dom.Element(element) }
+	mutable_element.style_for_bindings()
+	return inline_style_for_element(element) or {
+		panic('Element.style must provide an inline style declaration')
+	}
+}
+
 pub fn inline_style_for_element(element &dom.Element) ?&CSSStyleProperties {
 	return inline_style_for_abstract_element(dom.AbstractElement.new(element, none))
 }

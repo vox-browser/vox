@@ -1856,14 +1856,23 @@ pub:
 	parse_xml_document          DocumentXMLDocumentParseCallback = unsafe { nil }
 }
 
-pub type DocumentEditingExecCommandCallback = fn (voidptr, &Document, string, string, string) bool
+pub type DocumentEditingExecCommandCallback = fn (voidptr, &Document, string, bool, string, string) !bool
+
+pub type DocumentEditingQueryCommandCallback = fn (voidptr, &Document, string) !bool
+
+pub type DocumentEditingQueryCommandValueCallback = fn (voidptr, &Document, string) !string
 
 pub type DocumentEditingSanitizeClipboardHTMLCallback = fn (voidptr, &Range, string) !string
 
 pub struct DocumentEditingCommandHook {
 pub:
 	target                  voidptr
-	exec_command            DocumentEditingExecCommandCallback = unsafe { nil }
+	exec_command            DocumentEditingExecCommandCallback           = unsafe { nil }
+	query_command_enabled   DocumentEditingQueryCommandCallback          = unsafe { nil }
+	query_command_indeterm  DocumentEditingQueryCommandCallback          = unsafe { nil }
+	query_command_state     DocumentEditingQueryCommandCallback          = unsafe { nil }
+	query_command_supported DocumentEditingQueryCommandCallback          = unsafe { nil }
+	query_command_value     DocumentEditingQueryCommandValueCallback     = unsafe { nil }
 	sanitize_clipboard_html DocumentEditingSanitizeClipboardHTMLCallback = unsafe { nil }
 }
 
@@ -4212,19 +4221,11 @@ pub fn (mut d Document) dispatch_event_simple(event_name string, bubbles bool) {
 	document_node.dispatch_event_simple(event_name, bubbles)
 }
 
-pub fn editing_exec_command(d &Document, command string, value string, user_input_type string) bool {
-	hook := d.editing_command_hook_ or { return false }
-	if hook.target == unsafe { nil } || hook.exec_command == unsafe { nil } {
-		return false
-	}
-	return hook.exec_command(hook.target, d, command, value, user_input_type)
-}
-
 pub fn (d &Document) sanitize_clipboard_html(range &Range, html string) !string {
 	hook := d.editing_command_hook_ or {
 		return error('clipboard HTML sanitizer is not installed')
 	}
-	if hook.target == unsafe { nil } || hook.sanitize_clipboard_html == unsafe { nil } {
+	if hook.sanitize_clipboard_html == unsafe { nil } {
 		return error('clipboard HTML sanitizer is not installed')
 	}
 	return hook.sanitize_clipboard_html(hook.target, range, html)
@@ -4913,6 +4914,8 @@ pub mut:
 	needs_to_call_page_did_load                bool
 	cursor_blink_state                         bool
 	inside_exec_command                        bool
+	running_editing_command_action             bool
+	preserve_selection_offsets_during_identical_character_data_replacement_ bool
 	css_styling_flag                           bool
 	rendering_suppression_for_view_transitions bool
 	show_view_transition_tree                  bool
@@ -9311,141 +9314,72 @@ pub fn (d &Document) get_hovered_node() ?&Node {
 	return d.hovered_node
 }
 
-// --- Exec command (stubs) ---
+// --- Exec command ---
+// Editing/ExecCommand.cpp defines these Document methods. The algorithms live in the editing package, which imports
+// DOM; the installed editing command hook connects the two without a package cycle.
 pub fn (mut d Document) exec_command(command string, show_ui bool, value string) !bool {
 	return d.exec_command_internal(command, show_ui, value, '')
 }
 
+// An empty user input type means the command does not run on behalf of a user action.
 pub fn (mut d Document) exec_command_internal(command string, show_ui bool, value string, user_input_type string) !bool {
-	// AD-HOC: Not supported on non-HTML documents
-	if !d.is_html_document() {
-		return error('InvalidStateError: execCommand is only supported on HTML documents')
-	}
-	// Prevent recursive execCommand
-	if d.inside_exec_command {
+	hook := d.editing_command_hook_ or {
+		if !d.is_html_document() {
+			return error('InvalidStateError: execCommand is only supported on HTML documents')
+		}
 		return false
 	}
-	d.inside_exec_command = true
-	defer {
-		d.inside_exec_command = false
-	}
-	// 3. If command is not supported or not enabled, return false.
-	if !(d.query_command_enabled(command)!) {
-		return false
-	}
-	// 5. Take the action for command. Delegate to editing module.
-	command_result := editing_exec_command(d, command, value, user_input_type)
-	// 6. If the previous step returned false, return false.
-	if !command_result {
-		return false
-	}
-	// 8. Return true.
-	return true
+	return hook.exec_command(hook.target, d, command, show_ui, value, user_input_type)!
 }
 
 pub fn (d &Document) query_command_enabled(command string) !bool {
-	if !d.is_html_document() {
-		return error('InvalidStateError: queryCommandEnabled is only supported on HTML documents')
-	}
-	if !(d.query_command_supported(command)!) {
+	hook := d.editing_command_hook_ or {
+		if !d.is_html_document() {
+			return error('InvalidStateError: queryCommandEnabled is only supported on HTML documents')
+		}
 		return false
 	}
-	command_lower := command.to_lower()
-	if command_lower == 'undo' {
-		return d.editing_history_can_undo()
-	}
-	if command_lower == 'redo' {
-		return d.editing_history_can_redo()
-	}
-	// Simplified: the remaining miscellaneous commands are always enabled.
-	if command_lower in ['defaultparagraphseparator', 'stylewithcss', 'usecss'] {
-		return true
-	}
-	if command_lower == 'selectall' {
-		return d.selection_ != unsafe { nil }
-	}
-	return d.editable
+	return hook.query_command_enabled(hook.target, d, command)!
 }
 
 pub fn (d &Document) query_command_indeterm(command string) !bool {
-	if !d.is_html_document() {
-		return error('InvalidStateError: queryCommandIndeterm is only supported on HTML documents')
+	hook := d.editing_command_hook_ or {
+		if !d.is_html_document() {
+			return error('InvalidStateError: queryCommandIndeterm is only supported on HTML documents')
+		}
+		return false
 	}
-	// Simplified: check if command definition has indeterminacy
-	_ = command
-	return false
+	return hook.query_command_indeterm(hook.target, d, command)!
 }
 
 pub fn (d &Document) query_command_state(command string) !bool {
-	if !d.is_html_document() {
-		return error('InvalidStateError: queryCommandState is only supported on HTML documents')
+	hook := d.editing_command_hook_ or {
+		if !d.is_html_document() {
+			return error('InvalidStateError: queryCommandState is only supported on HTML documents')
+		}
+		return false
 	}
-	// Check state override
-	if override_val := d.command_state_override(command) {
-		return override_val
-	}
-	return false
+	return hook.query_command_state(hook.target, d, command)!
 }
 
 pub fn (d &Document) query_command_supported(command string) !bool {
-	if !d.is_html_document() {
-		return error('InvalidStateError: queryCommandSupported is only supported on HTML documents')
+	hook := d.editing_command_hook_ or {
+		if !d.is_html_document() {
+			return error('InvalidStateError: queryCommandSupported is only supported on HTML documents')
+		}
+		return false
 	}
-	// Return true if command is known/supported
-	known_commands := [
-		'bold',
-		'italic',
-		'underline',
-		'strikethrough',
-		'subscript',
-		'superscript',
-		'foreColor',
-		'backColor',
-		'hiliteColor',
-		'createLink',
-		'unlink',
-		'insertText',
-		'insertParagraph',
-		'insertLineBreak',
-		'insertOrderedList',
-		'insertUnorderedList',
-		'insertHorizontalRule',
-		'insertHTML',
-		'insertImage',
-		'formatBlock',
-		'indent',
-		'outdent',
-		'removeFormat',
-		'selectAll',
-		'copy',
-		'cut',
-		'paste',
-		'undo',
-		'redo',
-		'delete',
-		'forwardDelete',
-		'defaultParagraphSeparator',
-		'styleWithCSS',
-		'useCSS',
-		'fontSize',
-		'fontName',
-		'justifyCenter',
-		'justifyFull',
-		'justifyLeft',
-		'justifyRight',
-	]
-	return known_commands.any(it.to_lower() == command.to_lower())
+	return hook.query_command_supported(hook.target, d, command)!
 }
 
 pub fn (d &Document) query_command_value(command string) !string {
-	if !d.is_html_document() {
-		return error('InvalidStateError: queryCommandValue is only supported on HTML documents')
+	hook := d.editing_command_hook_ or {
+		if !d.is_html_document() {
+			return error('InvalidStateError: queryCommandValue is only supported on HTML documents')
+		}
+		return ''
 	}
-	// Check value override
-	if override_val := d.command_value_override(command) {
-		return override_val
-	}
-	return ''
+	return hook.query_command_value(hook.target, d, command)!
 }
 
 // --- XPath (stubs) ---
@@ -11112,12 +11046,46 @@ pub fn (d &Document) command_value_override(command string) ?string {
 	return none
 }
 
+// https://w3c.github.io/editing/docs/execCommand/#value-override
 pub fn (mut d Document) set_command_value_override(command string, value string) {
 	d.command_value_override[command] = value
+
+	// The value override for the backColor command must be the same as the value override for the hiliteColor command,
+	// such that setting one sets the other to the same thing and unsetting one unsets the other.
+	if command == 'backColor' {
+		d.command_value_override['hiliteColor'] = value
+	} else if command == 'hiliteColor' {
+		d.command_value_override['backColor'] = value
+	}
 }
 
+// https://w3c.github.io/editing/docs/execCommand/#value-override
 pub fn (mut d Document) clear_command_value_override(command string) {
 	d.command_value_override.delete(command)
+
+	// The value override for the backColor command must be the same as the value override for the hiliteColor command,
+	// such that setting one sets the other to the same thing and unsetting one unsets the other.
+	if command == 'backColor' {
+		d.command_value_override.delete('hiliteColor')
+	} else if command == 'hiliteColor' {
+		d.command_value_override.delete('backColor')
+	}
+}
+
+pub fn (d &Document) preserve_selection_offsets_during_identical_character_data_replacement() bool {
+	return d.preserve_selection_offsets_during_identical_character_data_replacement_
+}
+
+pub fn (mut d Document) set_preserve_selection_offsets_during_identical_character_data_replacement(value bool) {
+	d.preserve_selection_offsets_during_identical_character_data_replacement_ = value
+}
+
+pub fn (d &Document) running_editing_command_action() bool {
+	return d.running_editing_command_action
+}
+
+pub fn (mut d Document) set_running_editing_command_action(value bool) {
+	d.running_editing_command_action = value
 }
 
 pub fn (mut d Document) reset_command_value_overrides() {

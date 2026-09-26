@@ -18,22 +18,18 @@ struct TextNodeCoalescer {
 
 fn (coalescer &TextNodeCoalescer) merge_left_into_right(left &dom.Text, right &dom.Text) {
 	left_length := left.length_in_utf16_code_units()
-	mut mutable_right := unsafe { &dom.Text(right) }
-	mutable_right.insert_data(0, left.data()) or { panic(err) }
+	insert_data(editing_character_data(right.as_node()), 0, left.data()) or { panic(err) }
 	mut endpoints := unsafe { &ReplacementEndpoints(coalescer.endpoints) }
 	endpoints.prepare_for_merging_left_text_into_right(left, right, left_length)
-	mut mutable_left_node := unsafe { &dom.Node(left.as_node()) }
-	mutable_left_node.remove(false)
+	remove_node(left.as_node())
 }
 
 fn (coalescer &TextNodeCoalescer) merge_right_into_left(left &dom.Text, right &dom.Text) {
 	left_length := left.length_in_utf16_code_units()
-	mut mutable_left := unsafe { &dom.Text(left) }
-	mutable_left.insert_data(left_length, right.data()) or { panic(err) }
+	insert_data(editing_character_data(left.as_node()), left_length, right.data()) or { panic(err) }
 	mut endpoints := unsafe { &ReplacementEndpoints(coalescer.endpoints) }
 	endpoints.prepare_for_merging_right_text_into_left(left, right, left_length)
-	mut mutable_right_node := unsafe { &dom.Node(right.as_node()) }
-	mutable_right_node.remove(false)
+	remove_node(right.as_node())
 }
 
 fn utf16_character_at(text &dom.Text, offset int) ?rune {
@@ -54,7 +50,7 @@ fn adjacent_text_character(text &dom.Text, offset int, direction ReplacementTrav
 		return utf16_character_at(text, offset - 1)
 	}
 
-	block := block_node_of_dom_node(text.as_node()) or { return none }
+	block := block_node_of_node(text.as_node()) or { return none }
 	mut node := if search_forward {
 		text.as_node().next_in_pre_order(block)
 	} else {
@@ -140,9 +136,9 @@ fn normalize_inserted_nbsp(inserted_content &InsertedContent) []&dom.Text {
 			utf16_offset += if character > 0xffff { 2 } else { 1 }
 		}
 		if changed {
-			mut mutable_text := unsafe { &dom.Text(text) }
-			mutable_text.set_data(replacement.str())
-			if mutable_text.data().runes().all(is_ascii_space_character(it)) {
+			replace_data(editing_character_data(text.as_node()), 0, text.length_in_utf16_code_units(),
+				replacement.str()) or { panic(err) }
+			if text.data().runes().all(is_ascii_space_character(it)) {
 				normalized_whitespace << text
 			}
 		}
@@ -155,7 +151,7 @@ fn coalesce_normalized_whitespace_in_integrated_end_paragraph(mut inserted_conte
 		return
 	}
 	end_boundary := inserted_content.end_boundary() or { return }
-	integrated_end_block := block_node_of_dom_node(end_boundary.node) or { return }
+	integrated_end_block := block_node_of_node(end_boundary.node) or { return }
 	coalescer := TextNodeCoalescer{
 		endpoints: inserted_content.endpoints()
 	}
@@ -163,7 +159,7 @@ fn coalesce_normalized_whitespace_in_integrated_end_paragraph(mut inserted_conte
 		if text.as_node().parent() == none {
 			continue
 		}
-		text_block := block_node_of_dom_node(text.as_node()) or { continue }
+		text_block := block_node_of_node(text.as_node()) or { continue }
 		if text_block != integrated_end_block {
 			continue
 		}
@@ -185,11 +181,6 @@ fn coalesce_normalized_whitespace_in_integrated_end_paragraph(mut inserted_conte
 			}
 		}
 	}
-}
-
-fn editing_ignores_content(node &dom.Node) bool {
-	element := node.as_element() or { return false }
-	return element.is_void_element()
 }
 
 fn merge_text_nodes_at_start_of_inserted_content(mut inserted_content InsertedContent) {
@@ -308,7 +299,7 @@ fn merge_text_nodes_at_end_of_inserted_content(mut inserted_content InsertedCont
 
 fn collect_empty_modifiable_containers(node &dom.Node, mut containers []&dom.Element) {
 	if element := node.as_element() {
-		if !node.has_children() && is_dom_modifiable_element(node) {
+		if !node.has_children() && is_modifiable_element(node) {
 			containers << element
 		}
 	}
@@ -324,8 +315,7 @@ fn remove_empty_modifiable_containers(inserted_content &InsertedContent) {
 	}
 	for container in empty_containers {
 		if container.as_node().parent() != none {
-			mut node := unsafe { &dom.Node(container.as_node()) }
-			node.remove(false)
+			remove_node(container.as_node())
 		}
 	}
 }
@@ -338,8 +328,8 @@ fn move_end_past_empty_terminal_container(mut inserted_content InsertedContent) 
 	}
 	element := caret.node.as_element() or { return }
 	if (element.is_html_element() && element.local_name() == 'li')
-		|| is_dom_non_list_single_line_container(caret.node)
-		|| has_dom_visible_children(caret.node) {
+		|| is_non_list_single_line_container(caret.node)
+		|| has_visible_children(caret.node) {
 		return
 	}
 	position := VisiblePosition.create(caret.node.document(), caret).next() or { return }

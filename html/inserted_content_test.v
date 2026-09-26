@@ -3,6 +3,33 @@ module html
 import editing
 import dom
 
+fn mark_inserted_content_inline(element &dom.Element) {
+	mut mutable_element := unsafe { &dom.Element(element) }
+	mutable_element.set_computed_properties(none, &dom.CSSComputedProperties_{
+		display_: dom.CSSDisplay_{
+			is_inline_outside_: true
+			is_flow_inside_: true
+		}
+	})
+}
+
+fn attach_rendered_text_for_inserted_content(text_node &dom.Node) {
+	mut mutable_text_node := unsafe { &dom.Node(text_node) }
+	mutable_text_node.set_layout_node(&dom.LayoutNode{
+		is_text_node_: true
+		visual_lines_: [dom.VisualLine{
+			start_offset: 0
+			end_offset: text_node.length()
+			end_offset_with_trailing_whitespace: text_node.length()
+			has_fragments: true
+			caret_stops: [dom.VisualCaretStop{ offset: 0, inline_coordinate: 0 }, dom.VisualCaretStop{
+				offset: text_node.length()
+				inline_coordinate: f64(text_node.length())
+			}]
+		}]
+	})
+}
+
 fn test_inserted_content_tracks_insertion_and_semantic_boundaries() {
 	document := parse_document('<!doctype html><body><div id="host" contenteditable>before <span id="reference">after</span></div></body>')
 	host := document.get_element_by_id('host') or { panic('missing host') }
@@ -13,9 +40,15 @@ fn test_inserted_content_tracks_insertion_and_semantic_boundaries() {
 	replacement := editing.ReplacementFragment.new(range, '<b>one</b><img>') or { panic(err) }
 	mut content := editing.InsertedContent.new(replacement.children())
 	content.track_replacement_boundary(range.start(), .inline_)
+	// NB: Insertion topology is measured on visible positions, so give the destination text rendered lines.
+	mark_inserted_content_inline(reference)
+	attach_rendered_text_for_inserted_content(host.as_node().first_child() or { panic('missing leading text') })
+	attach_rendered_text_for_inserted_content(reference.as_node().first_child() or {
+		panic('missing reference text')
+	})
 
-	mut host_node := host.as_node()
-	content.insert_before(mut host_node, reference.as_node())
+	host_node := host.as_node()
+	content.insert_before(host_node, reference.as_node())
 	content.begin_tracking_content_boundaries()
 
 	assert content.nodes().len == 2

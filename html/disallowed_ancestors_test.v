@@ -25,11 +25,16 @@ fn test_allowed_child_rejects_structural_html_violations() {
 	non_whitespace := document.create_text_node('cell')
 	whitespace := document.create_text_node('  ')
 
-	assert !editing.is_allowed_child_of_dom_node(block.as_node(), paragraph.as_node())
-	assert !editing.is_allowed_child_of_dom_node(nested_link.as_node(), link.as_node())
-	assert editing.is_allowed_child_of_dom_node(row.as_node(), table.as_node())
-	assert !editing.is_allowed_child_of_dom_node(non_whitespace.as_node(), table.as_node())
-	assert editing.is_allowed_child_of_dom_node(whitespace.as_node(), table.as_node())
+	assert !editing.is_allowed_child_of_node(editing.allowed_child_node(block.as_node()),
+		editing.allowed_child_node(paragraph.as_node()))
+	assert !editing.is_allowed_child_of_node(editing.allowed_child_node(nested_link.as_node()),
+		editing.allowed_child_node(link.as_node()))
+	assert editing.is_allowed_child_of_node(editing.allowed_child_node(row.as_node()),
+		editing.allowed_child_node(table.as_node()))
+	assert !editing.is_allowed_child_of_node(editing.allowed_child_node(non_whitespace.as_node()),
+		editing.allowed_child_node(table.as_node()))
+	assert editing.is_allowed_child_of_node(editing.allowed_child_node(whitespace.as_node()),
+		editing.allowed_child_node(table.as_node()))
 }
 
 fn test_fix_disallowed_ancestors_splits_inline_and_paragraph_wrappers() {
@@ -48,7 +53,7 @@ fn test_fix_disallowed_ancestors_splits_inline_and_paragraph_wrappers() {
 	mut selection := unsafe { &dom.Selection(selection_pointer) }
 	selection.collapse(section_text, 3) or { panic(err) }
 
-	editing.fix_disallowed_ancestors_of_dom_node(section.as_node())
+	editing.fix_disallowed_ancestors_of_node(section.as_node())
 
 	assert host.as_node().child_count() == 2
 	assert host.as_node().child_at_index(0)? == paragraph.as_node()
@@ -72,7 +77,7 @@ fn test_fix_disallowed_ancestors_splits_a_middle_nested_anchor() {
 	mut mutable_outer_node := unsafe { &dom.Node(outer.as_node()) }
 	mutable_outer_node.insert_before(inner.as_node(), marker.as_node(), false)
 
-	editing.fix_disallowed_ancestors_of_dom_node(inner.as_node())
+	editing.fix_disallowed_ancestors_of_node(inner.as_node())
 
 	assert host.as_node().child_count() == 3
 	left := host.as_node().child_at_index(0) or { panic('missing left link') }
@@ -91,7 +96,7 @@ fn test_fix_disallowed_ancestors_wraps_definition_items() {
 	host := document.get_element_by_id('host') or { panic('missing host') }
 	term := append_test_element(document, host.as_node(), 'dt', 'term')
 
-	editing.fix_disallowed_ancestors_of_dom_node(term.as_node())
+	editing.fix_disallowed_ancestors_of_node(term.as_node())
 
 	assert host.as_node().child_count() == 1
 	list := host.as_node().first_child() or { panic('missing definition list') }
@@ -107,7 +112,7 @@ fn test_fix_disallowed_ancestors_uses_default_container_for_orphan_list_item() {
 	mut mutable_item := unsafe { &dom.Element(item) }
 	mutable_item.set_attribute_value('class', 'kept')
 
-	editing.fix_disallowed_ancestors_of_dom_node(item.as_node())
+	editing.fix_disallowed_ancestors_of_node(item.as_node())
 
 	replacement := host.as_node().first_child() or { panic('missing replacement') }
 	replacement_element := replacement.as_element() or { panic('replacement is not an element') }
