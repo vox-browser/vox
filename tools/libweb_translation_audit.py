@@ -232,7 +232,6 @@ VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = froze
         # Upstream deliberately never matches :visited as its current
         # privacy-preserving policy.
         ("dom/element.v", "Element", "matches_visited_pseudo_class"),
-        ("dom/shadow_mutation_misc.v", "Element", "contributes_a_script_blocking_style_sheet"),
         ("dom/events.v", "EventTarget", "has_activation_behavior"),
         ("dom/events.v", "EventTarget", "activation_behavior"),
         ("dom/events.v", "EventTarget", "legacy_pre_activation_behavior"),
