@@ -487,8 +487,9 @@ pub fn (mut model HTMLSelectElementModel) update_inner_text_element() {
 	model.clone_selected_option_into_select_button()
 }
 
+// HTMLSelectElement::is_focusable(), which DOM's Element::is_focusable() dispatch translates.
 pub fn (model &HTMLSelectElementModel) is_focusable() bool {
-	return model.control.enabled()
+	return select_dom_element(model.element).is_focusable()
 }
 
 pub fn (model &HTMLSelectElementModel) is_mutable() bool {

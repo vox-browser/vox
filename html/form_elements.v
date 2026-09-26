@@ -464,8 +464,9 @@ pub fn (mut model HTMLButtonElementModel) activation_behavior(event &dom.Event) 
 	}
 }
 
+// HTMLButtonElement::is_focusable(), which DOM's Element::is_focusable() dispatch translates.
 pub fn (model &HTMLButtonElementModel) is_focusable() bool {
-	return model.control.enabled()
+	return button_element(model.element).is_focusable()
 }
 
 pub enum FormMethodState {

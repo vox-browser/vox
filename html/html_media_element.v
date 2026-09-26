@@ -296,9 +296,10 @@ pub fn (media &HTMLMediaElement) document() ?&dom.Document {
 	return unsafe { &dom.Element(html_element) }.document()
 }
 
+// HTMLMediaElement::is_focusable(), which DOM's Element::is_focusable() dispatch translates.
 pub fn (media &HTMLMediaElement) is_focusable() bool {
-	_ = media
-	return true
+	html_element := media.associated_element_ or { return false }
+	return unsafe { &dom.Element(html_element) }.is_focusable()
 }
 
 pub fn (media &HTMLMediaElement) selected_video_track_sink() ?&VideoTrack {

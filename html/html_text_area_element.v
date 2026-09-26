@@ -284,8 +284,9 @@ fn (mut model HTMLTextAreaElementModel) dispatch_input_event(input_type string, 
 	unsafe { &dom.EventTarget(textarea_element(&model).as_node()) }.dispatch_event(base_event)
 }
 
+// HTMLTextAreaElement::is_focusable(), which DOM's Element::is_focusable() dispatch translates.
 pub fn (model &HTMLTextAreaElementModel) is_focusable() bool {
-	return model.control.enabled()
+	return unsafe { &dom.Element(model.element) }.is_focusable()
 }
 
 pub fn (model &HTMLTextAreaElementModel) suffering_from_being_missing() bool {

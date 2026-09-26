@@ -1687,6 +1687,17 @@ pub type DocumentThemeColorParseCallback = fn (voidptr, string) ?string
 
 pub type DocumentThemeColorMediaMatchesCallback = fn (voidptr, string) bool
 
+// Document::update_style_for_element(): CSS owns style computation, which DOM cannot import. The callback updates the
+// element's style (and its flat-tree inheritance chain) and answers whether the element then has style; in
+// stop-at-display-none mode an element in a display:none subtree has none.
+pub type DocumentUpdateStyleForElementCallback = fn (voidptr, &Element, bool) bool
+
+pub struct DocumentUpdateStyleForElementHook {
+pub:
+	target                   voidptr = unsafe { nil }
+	update_style_for_element DocumentUpdateStyleForElementCallback = unsafe { nil }
+}
+
 pub struct DocumentThemeColorHook {
 pub:
 	target        voidptr = unsafe { nil }
@@ -5134,6 +5145,7 @@ pub mut:
 	form_control_selected_text_callback_       DocumentFormControlSelectedTextCallback = unsafe { nil }
 	form_control_input_events_target_callback_ DocumentFormControlInputEventsTargetCallback = unsafe { nil }
 	theme_color_hook_                          ?DocumentThemeColorHook
+	update_style_for_element_hook_             ?DocumentUpdateStyleForElementHook
 
 	// SVG roots needing relayout
 	svg_roots_needing_relayout []&SVGSVGBox
@@ -6453,6 +6465,22 @@ pub fn (mut d Document) obtain_theme_color() {
 
 pub fn (d &Document) theme_color() ?string {
 	return d.theme_color_
+}
+
+pub fn (mut d Document) set_update_style_for_element_hook(hook DocumentUpdateStyleForElementHook) {
+	d.update_style_for_element_hook_ = hook
+}
+
+// Document::update_style_for_element() with StyleUpdateMode::StopAtDisplayNone when stop_at_display_none is set.
+pub fn (d &Document) update_style_for_element(element &Element, stop_at_display_none bool) bool {
+	hook := d.update_style_for_element_hook_ or {
+		// NB: Without the CSS module there is no style to compute, so treat a connected element as styled.
+		return element.as_node().is_connected()
+	}
+	if hook.update_style_for_element == unsafe { nil } {
+		return element.as_node().is_connected()
+	}
+	return hook.update_style_for_element(hook.target, element, stop_at_display_none)
 }
 
 pub fn (mut d Document) set_theme_color_hook(hook DocumentThemeColorHook) {

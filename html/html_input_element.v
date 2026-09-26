@@ -2147,8 +2147,9 @@ pub fn (model &HTMLInputElementModel) uses_button_layout() bool {
 	return model.type_state_ in [.submit_button, .reset_button, .button, .color, .file_upload]
 }
 
+// HTMLInputElement::is_focusable(), which DOM's Element::is_focusable() dispatch translates.
 pub fn (model &HTMLInputElementModel) is_focusable() bool {
-	return model.type_state_ != .hidden && !input_element(model).is_actually_disabled()
+	return input_element(model).is_focusable()
 }
 
 pub fn html_input_element_default_role(input &dom.HTMLInputElement) ?aria.Role {

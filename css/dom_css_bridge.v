@@ -399,6 +399,29 @@ fn style_scope_invalidate_user_style_callback(target voidptr) {
 	scope.invalidate_user_style_sheet()
 }
 
+// CSS::update_style_for_element(): refresh the computed style of the element's flat-tree inheritance chain, from the
+// rootmost element down to the element, and answer whether the element then has style. In stop-at-display-none mode
+// the walk stops at a display:none element, whose subtree is left unstyled.
+fn document_update_style_for_element_callback(_ voidptr, element &dom.Element, stop_at_display_none bool) bool {
+	if !element.as_node().is_connected() {
+		return false
+	}
+	mut chain := []&dom.Element{}
+	mut current := ?&dom.Element(element)
+	for {
+		candidate := current or { break }
+		chain << candidate
+		current = candidate.element_to_inherit_style_from(none)
+	}
+	for index := chain.len - 1; index >= 0; index-- {
+		computed := up_to_date_computed_properties_for_element(chain[index])
+		if stop_at_display_none && computed.display().is_none() {
+			return false
+		}
+	}
+	return true
+}
+
 // Document::obtain_theme_color() steps 2.3 and 2.4: parse the value as a 'color' property value and, if it is a color,
 // resolve it in the context of the root html element's layout node.
 fn document_theme_color_parse_callback(target voidptr, value string) ?string {
@@ -913,6 +936,10 @@ pub fn css_style_computer_for(document &dom.Document) &StyleComputer {
 		build_registered_properties_cache_callback: style_computer_build_registered_properties_cache_callback
 		build_counter_style_cache_callback: style_computer_build_counter_style_cache_callback
 	}
+	mutable_document.set_update_style_for_element_hook(dom.DocumentUpdateStyleForElementHook{
+		target: voidptr(document)
+		update_style_for_element: document_update_style_for_element_callback
+	})
 	mutable_document.set_theme_color_hook(dom.DocumentThemeColorHook{
 		target: voidptr(document)
 		parse_color: document_theme_color_parse_callback
