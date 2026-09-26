@@ -2029,10 +2029,6 @@ pub mut:
 	current_event_            &Event = unsafe { nil }
 	last_activation_timestamp DOMHighResTimeStamp = 1e308
 	close_watcher_manager_    &CloseWatcherManager = unsafe { nil }
-	// The time origin and cross-origin isolated capability of the window's relevant settings object, which HTML
-	// owns. HTML mirrors them here when it sets up that settings object.
-	time_origin_                      DOMHighResTimeStamp
-	cross_origin_isolated_capability_ bool
 }
 
 @[heap]
@@ -4305,10 +4301,12 @@ fn current_high_resolution_time(global_obj &Window) f64 {
 	// The current high resolution time given a global object current global must return the result of relative high
 	// resolution time given unsafe shared current time and current global.
 	mut context := highresolutiontime.TimeOriginContext{}
-	if global_obj != unsafe { nil } {
+	if global_obj != unsafe { nil } && global_obj.associated_document_ != unsafe { nil } {
+		// NB: A Window's relevant settings object, which HTML owns, answers its time origin with the associated
+		//     Document's load timing info's navigation start time. Its cross-origin isolated capability is still
+		//     always "No" upstream.
 		context = highresolutiontime.TimeOriginContext{
-			time_origin: global_obj.time_origin_
-			cross_origin_isolated_capability: global_obj.cross_origin_isolated_capability_
+			time_origin: global_obj.associated_document_.load_timing_info.navigation_start_time
 		}
 	}
 	return highresolutiontime.relative_high_resolution_time(highresolutiontime.unsafe_shared_current_time(),
@@ -5209,10 +5207,10 @@ pub fn Document.create_and_initialize(type_ DocumentType_, content_type string, 
 	doc.window = &Window{
 		associated_document_: doc
 	}
-	// Record the first transition to "loading" relative to navigation start.
-	// The Window is not fully installed yet, so use the shared DOM clock that
-	// supplies the rest of this document's load timing values.
-	doc.load_timing_info.dom_loading_time = current_high_resolution_time(doc.window) - doc.load_timing_info.navigation_start_time
+	// NB: Upstream records the "loading" transition relative to navigation start, coarsened with the window's
+	//     cross-origin isolated capability, which is still always "No".
+	doc.load_timing_info.dom_loading_time = highresolutiontime.coarsen_time(highresolutiontime.unsafe_shared_current_time() - doc.load_timing_info.navigation_start_time,
+		false)
 	doc.html_fragment_parsing_hook_ = navigation_params.html_fragment_parsing_hook
 	doc.initialize()
 	// 11. Run CSP initialization for the newly-created Document.

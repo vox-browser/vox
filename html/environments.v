@@ -719,8 +719,6 @@ pub fn WindowEnvironmentSettingsObject.setup(window &WindowModel, creation_url d
 	settings.universal_global_scope_ = UniversalGlobalScopeMixin.create(settings.global_object_, realm, window.associated_document())
 	settings.origin_ = window.associated_document().origin()
 	settings.time_origin_ = window.associated_document().load_timing_info.navigation_start_time
-	mutable_window.Window.time_origin_ = settings.time_origin_
-	mutable_window.Window.cross_origin_isolated_capability_ = settings.cross_origin_isolated_capability() == .yes
 	object := &WindowEnvironmentSettingsObject{
 		settings: settings
 		window: window
@@ -757,8 +755,10 @@ pub fn (object &WindowEnvironmentSettingsObject) cross_origin_isolated_capabilit
 	return object.settings.cross_origin_isolated_capability()
 }
 
+// https://html.spec.whatwg.org/multipage/nav-history-apis.html#script-settings-for-window-objects:concept-settings-object-time-origin
 pub fn (object &WindowEnvironmentSettingsObject) time_origin() f64 {
-	return object.settings.time_origin()
+	// Return window's associated Document's load timing info's navigation start time.
+	return object.window.associated_document().load_timing_info.navigation_start_time
 }
 
 @[heap]

@@ -461,8 +461,10 @@ fn test_inline_event_handler_source_uses_on_prefixed_function_name() {
 
 fn test_current_high_resolution_time_is_relative_to_the_window_time_origin() {
 	origin := highresolutiontime.coarsen_time(highresolutiontime.unsafe_shared_current_time(), false)
+	mut document := Document.create(url_about_blank())
+	document.load_timing_info.navigation_start_time = origin
 	window := &Window{
-		time_origin_: origin
+		associated_document_: document
 	}
 	relative := current_high_resolution_time(window)
 	assert relative >= 0

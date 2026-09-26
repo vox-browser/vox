@@ -1,6 +1,7 @@
 module html
 
 import dom
+import highresolutiontime
 
 struct AnimationCallbackTestState {
 mut:
@@ -274,4 +275,20 @@ fn test_window_core_relations_close_animation_and_post_message() {
 
 	window.close()
 	assert window.closed()
+}
+
+fn test_new_browsing_context_document_records_its_navigation_start_as_the_time_origin() {
+	page_ := &dom.Page{}
+	group := BrowsingContextGroup.create(page_)
+	before := highresolutiontime.unsafe_shared_current_time()
+	created := BrowsingContextModel.create_a_new_browsing_context_and_document(page_, none, none,
+		group)!
+	after := highresolutiontime.unsafe_shared_current_time()
+	navigation_start := created.document.load_timing_info.navigation_start_time
+	assert navigation_start >= highresolutiontime.coarsen_time(before, false)
+	assert navigation_start <= after
+
+	window := created.browsing_context.active_window() or { panic('missing window') }
+	assert window.environment_settings_ != unsafe { nil }
+	assert window.environment_settings_.time_origin() == navigation_start
 }

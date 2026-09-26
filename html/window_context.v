@@ -11,6 +11,7 @@ module html
 import css
 import dom
 import fileapi
+import highresolutiontime
 import speech
 
 pub struct LocationNavigation {
@@ -563,6 +564,10 @@ pub fn BrowsingContextModel.create(document ?&dom.Document, parent ?&BrowsingCon
 
 pub fn BrowsingContextModel.create_a_new_browsing_context_and_document(_ &dom.Page, creator ?&dom.Document, embedder ?&dom.Element, group &BrowsingContextGroup) !BrowsingContextAndDocument {
 	context := BrowsingContextModel.create(none, none, '')
+
+	// 2. Let unsafeContextCreationTime be the unsafe shared current time.
+	unsafe_context_creation_time := highresolutiontime.unsafe_shared_current_time()
+
 	mut mutable_context := unsafe { &BrowsingContextModel(context) }
 	mutable_context.set_container(embedder)
 	sandbox_flags := determine_the_creation_sandboxing_flags(context, embedder)
@@ -577,6 +582,14 @@ pub fn BrowsingContextModel.create_a_new_browsing_context_and_document(_ &dom.Pa
 		document.set_origin(determine_the_origin(dom.url_about_blank(), sandbox_flags, none))
 	}
 	document.set_active_sandboxing_flag_bits(sandbox_flags.bits)
+
+	// 14. Let loadTimingInfo be a new document load timing info with its navigation start time set to the result of
+	//     calling coarsen time with unsafeContextCreationTime and the new environment settings object's cross-origin
+	//     isolated capability.
+	// NB: A window settings object's cross-origin isolated capability is always "No" for now.
+	document.set_load_timing_info(dom.DocumentLoadTimingInfo{
+		navigation_start_time: highresolutiontime.coarsen_time(unsafe_context_creation_time, false)
+	})
 	document.set_is_initial_about_blank(true)
 	document.set_allow_declarative_shadow_roots(true)
 	if creator_document := creator {
