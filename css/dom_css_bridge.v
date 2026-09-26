@@ -399,9 +399,25 @@ fn style_scope_invalidate_user_style_callback(target voidptr) {
 	scope.invalidate_user_style_sheet()
 }
 
+// Document::obtain_theme_color() steps 2.3 and 2.4: parse the value as a 'color' property value and, if it is a color,
+// resolve it in the context of the root html element's layout node.
 fn document_theme_color_parse_callback(target voidptr, value string) ?string {
-	_ = target
-	color := parse_color_string(value) or { return none }
+	document := unsafe { &dom.Document(target) }
+	// 3. Let color be the result of parsing value.
+	css_value := parse_css_value_logic(color_property_id(), value) or { return none }
+
+	// 4. If color is not failure, then return color.
+	if !css_value.has_color() {
+		return none
+	}
+	mut color_resolution_context := ColorResolutionContext{}
+	// NB: Called during theme color computation, layout may be stale.
+	if html_element := document.html_element() {
+		if layout_node := html_element.as_node().unsafe_layout_node() {
+			color_resolution_context = color_resolution_context_for_layout_node(layout_node)
+		}
+	}
+	color := css_value.to_color(color_resolution_context) or { return none }
 	return color.serialize_a_srgb_value()
 }
 

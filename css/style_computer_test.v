@@ -1735,6 +1735,29 @@ fn test_meta_theme_color_uses_css_color_and_media_parsers() {
 	assert doc.theme_color() or { '' } == 'rgb(0, 255, 0)'
 }
 
+fn test_meta_theme_color_resolves_current_color_against_the_root_element() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
+	mut html := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	html.set_attribute_value('style', 'color: rgb(1, 2, 3)')
+	mut meta := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'meta') or { panic('${err}') }
+	meta.set_attribute_value('name', 'theme-color')
+	meta.set_attribute_value('content', 'currentcolor')
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html.as_node()) or { panic('append html failed: ${err}') }
+	mut html_node := html.as_node()
+	html_node.append_child(meta.as_node()) or { panic('append meta failed: ${err}') }
+	css_style_computer_for(doc)
+	color := property_id_from_string('color') or { panic('color id') }
+	_ := computed_value_for(html, color) or { panic('no computed color for html') }
+	html_node.set_layout_node(&dom.LayoutNode{
+		dom_node_: html.as_node()
+	})
+
+	doc.obtain_theme_color()
+	assert doc.theme_color() or { '' } == 'rgb(1, 2, 3)'
+}
+
 // computed_value_for is the real-StyleComputer cascade query (drop-in for the minimal cascaded_value_for):
 // a full style pass over the document resolves inline styles + inheritance, read back per element.
 fn test_computed_value_for_inline_and_inheritance() {
