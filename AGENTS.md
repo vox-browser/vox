@@ -264,6 +264,11 @@
   enumeration, and SVG presentation attributes retain their case-sensitive
   namespace behavior. SVG image documents without an explicit opt-in honor the
   embedding element's preferred color scheme.
+- SVG `feTurbulence` and `fractalNoise` replay through the same Skia Perlin
+  shader as upstream, including scaled and rounded `stitchTiles` dimensions.
+  The native bridge rasterizes only the retained filter target, so browser
+  chrome offsets cannot shift the deterministic noise field; both canonical
+  turbulence screenshots remain pixel-exact.
 - Same-process structured clones of fixed and growable `SharedArrayBuffer`
   objects alias one flattened backing store, including buffers reached through
   typed-array views. Serialization records retain a self-contained byte copy

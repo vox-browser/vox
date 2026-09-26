@@ -446,7 +446,12 @@ linear-light conversions, and preserve the special color-space behavior of
 flood, image, offset, displacement-map, turbulence, and final filter output.
 The native filter bridge applies those conversions, runs component-transfer
 tables directly in the selected space, clamps arithmetic output to
-premultiplied alpha, and renders turbulence instead of treating it as a no-op.
+premultiplied alpha, and renders turbulence through upstream's Skia Perlin
+shader. Turbulence replay forwards scaled, half-away-from-zero-rounded stitch
+tile dimensions and rasterizes the retained filter target rather than the
+browser's full canvas, keeping deterministic noise independent of chrome
+offsets. The turbulence and fractal-noise canonical screenshots are exact
+zero-pixel matches.
 Decoded `feImage` resources now retain their absolute URL in the graph, preload
 through the browser image cache, and attach the decoded frame during native
 replay. The same filter boundaries are retained inside SVG pattern tiles, and
@@ -745,7 +750,7 @@ $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 1012 passed, 77 failed, 1089 total
 
 $ v -old-compiler -enable-globals test .
-Summary for all V _test.v files: 650 passed, 650 total.
+Summary for all V _test.v files: 651 passed, 651 total.
 
 $ Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
 Ladybird V smoke check passed
@@ -1231,9 +1236,10 @@ and morphology, color matrix/saturate/hue, component-transfer tables, merge,
 offset, and channel-selecting displacement while propagating logical graph
 extents instead of allocating or flooding the full canvas. Native turbulence,
 filter color-space conversions, and decoded-bitmap `feImage` graph inputs now
-execute through that graph. Decoded resources retain their graph URL and target
-bounds, while nested pattern display lists replay the same filter layer and
-bitmap frame. Its
+execute through that graph. The native turbulence node uses Skia's matching
+Perlin shader over the retained target bounds and preserves rounded stitch-tile
+dimensions. Decoded resources retain their graph URL and target bounds, while
+nested pattern display lists replay the same filter layer and bitmap frame. Its
 table phase consumes the translated collapsed and separate border collector,
 including conflict winners, cell snapping, empty-cell suppression, and exact
 rounded-cell repainting. Ordinary block and inline borders now retain their
