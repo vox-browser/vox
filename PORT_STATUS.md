@@ -572,24 +572,28 @@ divergences.
 Those translated since: bare `safe`/`unsafe` alignment keywords, canvas repaint
 requests, navigator languages, queued media source and element tasks,
 traversal initiator sandboxing, theme color resolution, layout tree teardown,
-time-origin-relative DOM timestamps, and external software hand-off. Still
+time-origin-relative DOM timestamps, external software hand-off, navigation
+start times for new browsing contexts and navigated documents, hyperlink
+activation and following through the navigable, form and interactive element
+activation behavior from event dispatch, the navigators' ID, language, online,
+and hardware mixins, and media devices bound to their window's document. Still
 open:
 
-- Event dispatch does not reach element activation behavior (anchor, area,
-  button, input, label, select, summary, SVG `a`); the browser shell follows
-  links itself.
+- The browser shell dispatches clicks through its JavaScript mirror and follows
+  links itself instead of the page event handler's click and activation path.
 - `Element.is_focusable()` is a tag-name switch instead of the per-element
-  overrides with `meets_focusable_area_rendering_requirements()`; image maps
-  have no `usemap` association.
-- The style element's script-blocking style sheet state (parser document,
-  parser-created sheet, media match, enabled-at-creation) is not tracked.
+  overrides with `meets_focusable_area_rendering_requirements()`, which needs a
+  per-element style update that stops at `display: none`; image maps have no
+  `usemap` association.
+- `StyleElementBase` is simplified: no style-scope sheet creation, update
+  sources, media evaluation, or script-blocking state.
 - The compositor keeps its own visual context tree instead of
   `AccumulatedVisualContextTree` spatial transforms and sticky offsets.
-- The document's navigation start time is never recorded, so time origins are
-  zero.
-- Stream transfer, IndexedDB connection queues, the WebGL context hookup,
-  ML-KEM, MediaCapture's window wiring, and the WorkerNavigator mixins remain
-  untranslated.
+- Hyperlink downloads and navigation referrer policies are not carried.
+- The WebGL module is not connected to `<canvas>` or the DOM event model.
+- IndexedDB is a synchronous model without connection queues or task-driven
+  request processing.
+- Stream transfer and ML-KEM remain untranslated.
 
 `Complete` means every upstream `.cpp` unit has an audited V implementation
 mapping. `Present` means translated module code exists but its full upstream
