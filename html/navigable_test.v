@@ -706,3 +706,46 @@ fn test_navigation_does_not_install_response_after_navigable_destruction() {
 	assert model.active_document()? == original_document
 	assert model.get_session_history_entries().len == 1
 }
+
+fn test_non_fetch_scheme_navigation_hands_off_to_external_software_unless_sandboxed() {
+	mut document := dom.Document.create(dom.URL{'https://example.test/'})
+	document.set_origin(document.url.origin())
+	page_model := page.Page.create(1.0)!
+	document.set_page(unsafe { &dom.Page(page_model) })
+	mut parent_host := &dom.Navigable{
+		is_top_level_traversable_: true
+	}
+	parent_host.set_active_document(document)
+	parent_model := NavigableModel.create(parent_host, none)!
+	assert attempt_to_create_a_non_fetch_scheme_document(&NonFetchSchemeNavigationParams{
+		navigable: parent_model
+		url: dom.URL{'mailto:test@example.test'}
+		initiator_origin: document.origin()
+		source_has_transient_activation: true
+	}) == none
+	assert page_model.client().external_url_requests() == [
+		page.ExternalURLRequest{
+			url: 'mailto:test@example.test'
+			initiator_origin: document.origin().value
+			has_transient_activation: true
+		},
+	]
+
+	mut child_document := dom.Document.create(dom.URL{'https://example.test/frame'})
+	child_document.set_page(unsafe { &dom.Page(page_model) })
+	mut child_host := &dom.Navigable{
+		parent_: parent_host
+		container_document_: document
+	}
+	child_host.set_active_document(child_document)
+	child_model := NavigableModel.create(child_host, none)!
+	_ := attempt_to_create_a_non_fetch_scheme_document(&NonFetchSchemeNavigationParams{
+		navigable: child_model
+		url: dom.URL{'mailto:frame@example.test'}
+		target_snapshot_sandboxing_flags: SandboxingFlagSet{
+			bits: u32(SandboxingFlag.sandboxed_custom_protocols)
+		}
+		initiator_origin: document.origin()
+	})
+	assert page_model.client().external_url_requests().len == 1
+}

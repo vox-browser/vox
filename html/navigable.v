@@ -857,11 +857,48 @@ fn obtain_an_opener_policy(response &fetch.Response, reserved_client ?&Environme
 	}
 }
 
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#hand-off-to-external-software
+// FIXME: `resource` can also be a response: https://fetch.spec.whatwg.org/#concept-response
+fn hand_off_to_external_software(resource dom.URL, navigable &NavigableModel, sandboxing_flags SandboxingFlagSet, has_transient_activation bool, initiator_origin dom.Origin) {
+	// 1. If all of the following are true:
+	//    - navigable is not a top-level traversable;
+	//    - sandboxFlags has its sandboxed custom protocols navigation browsing context flag set; and
+	//    - sandboxFlags has its sandboxed top-level navigation with user activation browsing context flag set, or
+	//      hasTransientActivation is false,
+	//    then return without invoking the external software package.
+	if !navigable.is_top_level_traversable() && sandboxing_flags.contains(.sandboxed_custom_protocols)
+		&& (sandboxing_flags.contains(.sandboxed_top_level_navigation_with_user_activation)
+		|| !has_transient_activation) {
+		return
+	}
+
+	// 2. Perform the appropriate handoff of resource while attempting to mitigate the risk that this is an attempt to
+	//    exploit the target software. For example, user agents could prompt the user to confirm that initiatorOrigin is
+	//    to be allowed to invoke the external software in question. In particular, if hasTransientActivation is false,
+	//    then the user agent should not invoke the external software package without prior user confirmation.
+	page_ := navigable.page() or { return }
+	page_.client_page_did_request_external_url(resource.value, initiator_origin.value, has_transient_activation)
+}
+
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#attempt-to-create-a-non-fetch-scheme-document
 fn attempt_to_create_a_non_fetch_scheme_document(params &NonFetchSchemeNavigationParams) ?&dom.Document {
-	// External protocol dispatch and inline protocol error pages are embedding
-	// responsibilities. As upstream currently does, report no created document.
-	_ = params
+	// 1. Let url be navigationParams's URL.
+	url := params.url
+
+	// 2. Let navigable be navigationParams's navigable.
+	navigable := params.navigable
+
+	// 3. If url is to be handled using a mechanism that does not affect navigable, e.g., because url's scheme is
+	//    handled externally, then:
+	// AD-HOC: Checking if there is external software to hand-off to is done asynchronously, so we don't know here if it
+	//         will succeed or not. Only a few cases reject it early. Whether a URL went unhandled is decided by the
+	//         embedder, so an equivalent of step 4 belongs there.
+	// 1. Hand-off to external software given url, navigable, navigationParams's target snapshot sandboxing flags,
+	//    navigationParams's source snapshot has transient activation, and navigationParams's initiator origin.
+	hand_off_to_external_software(url, navigable, params.target_snapshot_sandboxing_flags,
+		params.source_has_transient_activation, params.initiator_origin)
+
+	// 2. Return null.
 	return none
 }
 

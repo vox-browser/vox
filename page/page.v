@@ -303,6 +303,11 @@ fn page_request_frame_callback(target voidptr) {
 	model.client_.request_frame()
 }
 
+fn page_did_request_external_url_callback(target voidptr, url string, initiator_origin string, has_transient_activation bool) {
+	mut model := unsafe { &Page(target) }
+	model.client_.page_did_request_external_url(url, initiator_origin, has_transient_activation)
+}
+
 fn page_did_update_editing_history_callback(target voidptr, can_undo bool, can_redo bool) {
 	mut model := unsafe { &Page(target) }
 	model.client_.page_did_update_editing_history_state(can_undo, can_redo)
@@ -487,6 +492,7 @@ pub fn Page.create(device_scale f64) !&Page {
 		media_element_audio_state_changed_callback: page_media_element_audio_state_changed_callback
 		did_request_color_picker_callback: page_did_request_color_picker_callback
 		did_request_file_picker_callback: page_did_request_file_picker_callback
+		did_request_external_url_callback: page_did_request_external_url_callback
 	}
 	return model
 }

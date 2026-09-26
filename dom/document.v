@@ -2931,6 +2931,7 @@ pub:
 	media_element_audio_state_changed_callback fn (voidptr, &Document, UniqueNodeID, bool) = unsafe { nil }
 	did_request_color_picker_callback    fn (voidptr, string, string) = unsafe { nil }
 	did_request_file_picker_callback     fn (voidptr, string, string, bool) = unsafe { nil }
+	did_request_external_url_callback    fn (voidptr, string, string, bool) = unsafe { nil }
 mut:
 	last_changed_title_ string
 	title_change_count_ int
@@ -12882,6 +12883,12 @@ pub fn (p &Page) user_style() ?string {
 pub fn (p &Page) client_page_did_allocate_backing_stores(front_id int, back_id int) {
 	if p.target != unsafe { nil } && p.did_allocate_backing_stores_callback != unsafe { nil } {
 		p.did_allocate_backing_stores_callback(p.target, front_id, back_id)
+	}
+}
+
+pub fn (p &Page) client_page_did_request_external_url(url string, initiator_origin string, has_transient_activation bool) {
+	if p.target != unsafe { nil } && p.did_request_external_url_callback != unsafe { nil } {
+		p.did_request_external_url_callback(p.target, url, initiator_origin, has_transient_activation)
 	}
 }
 
