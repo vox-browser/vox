@@ -71,7 +71,7 @@ pub fn WorkerGlobalScope.create(url dom.URL, worker_type WorkerType, name string
 		url_: url
 		worker_type: worker_type
 		name_: name
-		navigator_: WorkerNavigator.create()
+		navigator_: WorkerNavigator.create(url)
 		global_scope_: WindowOrWorkerGlobalScopeMixin.create(url.origin(), is_url_potentially_trustworthy(url), false)
 	}
 	scope.location_ = WorkerLocation.create(scope)

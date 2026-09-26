@@ -30,7 +30,7 @@ fn test_navigator_lazily_creates_singletons_and_plugins() {
 	assert battery.reason == 'Battery Status API is not yet implemented'
 	assert voidptr(battery) == voidptr(navigator.get_battery())
 
-	mut worker := WorkerNavigator.create()
+	mut worker := WorkerNavigator.create(dom.URL{ value: 'https://example.test/worker.js' })
 	assert voidptr(worker.serial()) == voidptr(worker.serial())
 	assert worker.media_capabilities().name == 'mediaCapabilities'
 }

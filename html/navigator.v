@@ -7,6 +7,7 @@
 // modules are translated, preserving Navigator's required lazy singleton rules.
 module html
 
+import dom
 import loader
 
 // NavigatorLanguage.h. The language preferences are the process-wide ResourceLoader's, which never holds an empty
@@ -38,6 +39,8 @@ pub struct NavigatorHostConfiguration {
 pub:
 	pdf_viewer_supported bool
 	webdriver_active     bool
+	// The Navigator's Window's associated Document, which answers NavigatorIDMixin::navigator_id_url().
+	associated_document ?&dom.Document
 }
 
 @[heap]
@@ -56,6 +59,11 @@ pub:
 
 @[heap]
 pub struct Navigator {
+	NavigatorConcurrentHardwareMixin
+	NavigatorDeviceMemoryMixin
+	NavigatorIDMixin
+	NavigatorLanguageMixin
+	NavigatorOnLineMixin
 pub:
 	configuration NavigatorHostConfiguration
 pub mut:
@@ -73,27 +81,15 @@ pub mut:
 	beacon_context_           ?&NavigatorBeaconContext
 }
 
-pub fn (navigator &Navigator) language() string {
-	_ = navigator
-	return NavigatorLanguageMixin{}.language()
-}
-
-pub fn (navigator &Navigator) languages() []string {
-	_ = navigator
-	return NavigatorLanguageMixin{}.languages()
-}
-
-pub fn (navigator &Navigator) on_line() bool {
-	_ = navigator
-	return true
-}
-
 pub fn (navigator &Navigator) this_navigator_storage_object() &Navigator {
 	return navigator
 }
 
 pub fn Navigator.create(configuration NavigatorHostConfiguration) &Navigator {
 	return &Navigator{
+		NavigatorIDMixin: NavigatorIDMixin{
+			navigator_id_document: configuration.associated_document
+		}
 		configuration: configuration
 	}
 }
@@ -222,14 +218,23 @@ pub fn Navigator.max_touch_points() int {
 
 @[heap]
 pub struct WorkerNavigator {
+	NavigatorConcurrentHardwareMixin
+	NavigatorDeviceMemoryMixin
+	NavigatorIDMixin
+	NavigatorLanguageMixin
+	NavigatorOnLineMixin
 pub mut:
 	media_capabilities_       ?&NavigatorCapability
 	serial_                   ?&NavigatorCapability
 	service_worker_container_ ?&NavigatorCapability
 }
 
-pub fn WorkerNavigator.create() &WorkerNavigator {
-	return &WorkerNavigator{}
+pub fn WorkerNavigator.create(global_scope_url dom.URL) &WorkerNavigator {
+	return &WorkerNavigator{
+		NavigatorIDMixin: NavigatorIDMixin{
+			navigator_id_global_url: global_scope_url
+		}
+	}
 }
 
 pub fn (navigator &WorkerNavigator) this_navigator_storage_object() &WorkerNavigator {

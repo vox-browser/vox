@@ -1447,7 +1447,9 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 		browsing_context_: context
 		history_: history
 		navigation_: navigation
-		navigator_: Navigator.create(NavigatorHostConfiguration{})
+		navigator_: Navigator.create(NavigatorHostConfiguration{
+			associated_document: document
+		})
 		animation_driver_: &AnimationFrameCallbackDriver{}
 		close_watcher_manager_model_: close_watcher_manager
 		global_scope_: WindowOrWorkerGlobalScopeMixin.create(document.origin(), false, false)
