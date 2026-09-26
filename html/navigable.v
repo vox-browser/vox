@@ -277,6 +277,24 @@ fn connect_navigable_model_to_host(model &NavigableModel) {
 	host.has_session_history_entry_and_ready_callback_ = navigable_model_has_session_history_entry_and_ready
 	host.delays_container_load_event_callback_ = navigable_model_delays_container_load_event
 	host.force_dark_enabled_callback_ = navigable_model_force_dark_enabled
+	host.choose_a_navigable_callback_ = navigable_model_choose_a_navigable
+	host.navigate_callback_ = navigable_model_navigate
+}
+
+fn navigable_model_choose_a_navigable(target voidptr, name string, no_opener dom.TokenizedFeatureNoOpener) ?&dom.Navigable {
+	mut model := unsafe { &NavigableModel(target) }
+	chosen := model.choose_a_navigable(name, no_opener == .yes) or { return none }
+	navigable := chosen.navigable or { return none }
+	return navigable.host_
+}
+
+fn navigable_model_navigate(target voidptr, url dom.URL, source_document &dom.Document, user_involvement dom.UserNavigationInvolvement) ! {
+	mut model := unsafe { &NavigableModel(target) }
+	model.navigate(NavigableNavigateParams{
+		url: url
+		source_document: source_document
+		user_involvement: user_involvement
+	})!
 }
 
 // Binds the DOM identity created by Document/Window to the translated HTML

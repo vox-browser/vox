@@ -829,13 +829,6 @@ fn relation_tokens(value string) []string {
 	return result
 }
 
-pub struct HyperlinkActivationResult {
-pub:
-	url              dom.URL
-	download         bool
-	user_involvement UserNavigationInvolvement
-}
-
 pub fn html_anchor_element_rel_list(anchor &dom.HTMLAnchorElement) &dom.DOMTokenList {
 	if list := anchor.rel_list_ {
 		return list
@@ -891,30 +884,6 @@ pub fn set_html_anchor_element_text(anchor &dom.HTMLAnchorElement, text string) 
 	node.string_replace_all(text)
 }
 
-pub fn activate_html_anchor_element(anchor &dom.HTMLAnchorElement, is_image_map_target bool, trusted bool, offset_x f64, offset_y f64, user_involvement UserNavigationInvolvement, platform_control_key bool) ?HyperlinkActivationResult {
-	element := unsafe { &dom.Element(anchor) }
-	href := element.get_attribute('href') or { return none }
-	if href == '' || platform_control_key {
-		return none
-	}
-	mut serialized := dom.dom_url_parse(href, element.document().base_url(), 'UTF-8') or {
-		return none
-	}.serialize()
-	if is_image_map_target {
-		x := if trusted && offset_x > 0 { int(offset_x) } else { 0 }
-		y := if trusted && offset_y > 0 { int(offset_y) } else { 0 }
-		serialized += '?${x},${y}'
-	}
-	download := element.has_attribute('download')
-	return HyperlinkActivationResult{
-		url: dom.URL{
-			value: serialized
-		}
-		download: download
-		user_involvement: if download { .browser_ui } else { user_involvement }
-	}
-}
-
 pub fn html_anchor_element_has_download_preference(anchor &dom.HTMLAnchorElement) bool {
 	return unsafe { &dom.Element(anchor) }.has_attribute('download')
 }
@@ -932,12 +901,8 @@ pub fn html_anchor_element_attribute_changed(anchor &dom.HTMLAnchorElement, name
 	}
 }
 
-pub fn html_anchor_element_has_activation_behavior(_ &dom.HTMLAnchorElement) bool {
-	return true
-}
-
-pub fn html_anchor_element_activation_behavior(anchor &dom.HTMLAnchorElement, is_image_map_target bool, trusted bool, offset_x f64, offset_y f64, user_involvement UserNavigationInvolvement, platform_control_key bool) ?HyperlinkActivationResult {
-	return activate_html_anchor_element(anchor, is_image_map_target, trusted, offset_x, offset_y, user_involvement, platform_control_key)
+pub fn html_anchor_element_has_activation_behavior(anchor &dom.HTMLAnchorElement) bool {
+	return unsafe { &dom.Element(anchor) }.creates_a_hyperlink()
 }
 
 pub fn html_anchor_element_default_tab_index_value(_ &dom.HTMLAnchorElement) i32 {

@@ -757,3 +757,36 @@ fn test_non_fetch_scheme_navigation_hands_off_to_external_software_unless_sandbo
 	})
 	assert page_model.client().external_url_requests().len == 1
 }
+
+fn test_clicking_a_hyperlink_follows_it_in_its_navigable() {
+	mut document, _, model_pointer := navigable_test_top_level('https://example.test/start', 'top')!
+	mut model := unsafe { &NavigableModel(model_pointer) }
+	model.set_navigation_fetch_hook(navigable_test_fetch)
+	mut anchor := document.create_element_ns('http://www.w3.org/1999/xhtml', 'a')!
+	anchor.set_attribute_value('href', '/fetched')
+	mut body := document.body() or { panic('missing body') }
+	mut body_node := body.as_node()
+	body_node.append_child(anchor.as_node())!
+
+	html_element_click(unsafe { &dom.HTMLElement(anchor) })
+	mut event_loop := main_thread_event_loop()
+	for _ in 0 .. 8 {
+		if active := model.active_document() {
+			if active.url.serialize() == 'https://example.test/fetched' {
+				break
+			}
+		}
+		event_loop.process()
+	}
+	assert model.active_document()?.url.serialize() == 'https://example.test/fetched'
+}
+
+fn test_a_hyperlink_without_href_has_no_activation_behavior() {
+	mut document, _, _ := navigable_test_top_level('https://example.test/start', 'top')!
+	anchor := document.create_element_ns('http://www.w3.org/1999/xhtml', 'a')!
+	assert !unsafe { &dom.EventTarget(anchor.as_node()) }.has_activation_behavior()
+	area := document.create_element_ns('http://www.w3.org/1999/xhtml', 'area')!
+	mut mutable_area := unsafe { &dom.Element(area) }
+	mutable_area.set_attribute_value('href', '/map')
+	assert unsafe { &dom.EventTarget(area.as_node()) }.has_activation_behavior()
+}

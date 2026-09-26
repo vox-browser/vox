@@ -1534,14 +1534,32 @@ pub fn (et &EventTarget) has_event_listeners() bool {
 	return et.event_listener_list().len > 0
 }
 
+// HTMLAnchorElement, HTMLAreaElement, and SVGAElement override activation behavior with activating the hyperlink,
+// which upstream implements on DOM::Element.
+fn event_target_hyperlink_element(et &EventTarget) ?&Element {
+	node := event_target_as_node(et) or { return none }
+	element := node.as_element() or { return none }
+	if is_html_element_with_local_name(element, 'a') || is_html_element_with_local_name(element, 'area')
+		|| (element.is_svg_element() && element.local_name() == 'a') {
+		return element
+	}
+	return none
+}
+
 pub fn (et &EventTarget) has_activation_behavior() bool {
-	_ = et
+	if element := event_target_hyperlink_element(et) {
+		// SVGAElement always has activation behavior; HTMLAnchorElement and HTMLAreaElement have it when they create a
+		// hyperlink.
+		return element.is_svg_element() || element.creates_a_hyperlink()
+	}
 	return false
 }
 
 pub fn (et &EventTarget) activation_behavior(event &Event) {
-	_ = et
-	_ = event
+	if element := event_target_hyperlink_element(et) {
+		mut mutable_element := unsafe { &Element(element) }
+		mutable_element.activate_the_hyperlink(event)
+	}
 }
 
 // NOTE: These only exist for checkbox and radio input elements.

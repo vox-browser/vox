@@ -117,8 +117,8 @@ fn test_body_hints_anchor_label_fieldset_and_output() {
 	assert html_anchor_element_default_role(anchor) == .link
 	set_html_anchor_element_text(anchor, 'new')
 	assert html_anchor_element_text(anchor) == 'new'
-	activation := html_anchor_element_activation_behavior(anchor, true, true, 7, 9, .activation, false)?
-	assert activation.url.serialize().ends_with('/go?7,9')
+	anchor_element.remove_attribute('href')
+	assert !html_anchor_element_has_activation_behavior(anchor)
 
 	label := unsafe { &dom.HTMLLabelElement(document_elements_find(root, 'label')?) }
 	assert html_label_element_control(label)?.get_attribute_value('id') == 'x'

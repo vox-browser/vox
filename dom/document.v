@@ -2196,6 +2196,12 @@ pub type NavigableResetMouseInputTrackingCallback = fn (voidptr)
 
 pub type NavigableBooleanStateCallback = fn (voidptr) bool
 
+// Navigable::choose_a_navigable() and Navigable::navigate() belong to the HTML navigable model, which DOM cannot
+// import. The model installs these on its DOM identity so hyperlink following can reach it.
+pub type NavigableChooseANavigableCallback = fn (voidptr, string, TokenizedFeatureNoOpener) ?&Navigable
+
+pub type NavigableNavigateCallback = fn (voidptr, URL, &Document, UserNavigationInvolvement) !
+
 @[heap]
 pub struct Navigable {
 pub mut:
@@ -2217,6 +2223,8 @@ pub mut:
 	has_session_history_entry_and_ready_callback_ NavigableBooleanStateCallback = unsafe { nil }
 	delays_container_load_event_callback_         NavigableBooleanStateCallback = unsafe { nil }
 	force_dark_enabled_callback_                  NavigableBooleanStateCallback = unsafe { nil }
+	choose_a_navigable_callback_                  NavigableChooseANavigableCallback = unsafe { nil }
+	navigate_callback_                            NavigableNavigateCallback = unsafe { nil }
 	input_method_composition_node_                 ?&Node
 	input_method_composition_offset_               int
 	input_method_last_marked_text_                 string
@@ -3444,6 +3452,23 @@ pub fn (n &Navigable) render_screenshot(config PaintConfig, node_id ?UniqueNodeI
 		return n.render_screenshot_callback_(n.html_model_handle_, config, node_id)
 	}
 	return []
+}
+
+// https://html.spec.whatwg.org/multipage/document-sequences.html#the-rules-for-choosing-a-navigable
+// Returns the chosen navigable, the first of the rules' return values.
+pub fn (n &Navigable) choose_a_navigable(name string, no_opener TokenizedFeatureNoOpener) ?&Navigable {
+	if n.html_model_handle_ == unsafe { nil } || n.choose_a_navigable_callback_ == unsafe { nil } {
+		return none
+	}
+	return n.choose_a_navigable_callback_(n.html_model_handle_, name, no_opener)
+}
+
+// https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate
+pub fn (n &Navigable) navigate(url URL, source_document &Document, user_involvement UserNavigationInvolvement) ! {
+	if n.html_model_handle_ == unsafe { nil } || n.navigate_callback_ == unsafe { nil } {
+		return error('InvalidStateError: navigable has no navigation model')
+	}
+	n.navigate_callback_(n.html_model_handle_, url, source_document, user_involvement)!
 }
 
 pub fn (n &Navigable) reset_mouse_input_tracking() {

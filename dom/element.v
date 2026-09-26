@@ -6318,7 +6318,6 @@ pub fn (e &Element) get_an_elements_noopener(url URL, target string) TokenizedFe
 
 // https://html.spec.whatwg.org/multipage/links.html#following-hyperlinks-2
 pub fn (mut e Element) follow_the_hyperlink(hyperlink_suffix ?string, user_involvement UserNavigationInvolvement) {
-	_ = user_involvement
 	// 1. If subject cannot navigate, then return.
 	if e.cannot_navigate() {
 		return
@@ -6335,19 +6334,143 @@ pub fn (mut e Element) follow_the_hyperlink(hyperlink_suffix ?string, user_invol
 
 	// 4. Let urlRecord be the result of encoding-parsing a URL given subject's href
 	// attribute value, relative to subject's node document.
+	// 5. If urlRecord is failure, then return.
 	url_record := e.document().encoding_parse_url(e.get_attribute_value('href')) or { return }
 
-	// 5. If urlRecord is failure, then return. [Handled above.]
 	// 6. Let noopener be the result of getting an element's noopener with subject, urlRecord, and targetAttributeValue.
-	_ = e.get_an_elements_noopener(url_record, target_attribute_value)
+	noopener := e.get_an_elements_noopener(url_record, target_attribute_value)
 
-	// 7-13. Choosing a navigable and performing navigation are outside the DOM port.
-	// Preserve URL suffix construction to keep the parsed URL path exercised.
-	mut url_string := url_record.serialize()
+	// 7. Let targetNavigable be the first return value of applying the rules for choosing a navigable given
+	//    targetAttributeValue, subject's node navigable, and noopener.
+	navigable := e.document().navigable() or { return }
+	// 8. If targetNavigable is null, then return.
+	target_navigable := navigable.choose_a_navigable(target_attribute_value, noopener) or { return }
+
+	// 9. Let urlString be the result of applying the URL serializer to urlRecord.
+	url_string := url_record.serialize()
+
+	// 10. If hyperlinkSuffix is non-null, then append it to urlString.
+	mut url := url_record
 	if suffix := hyperlink_suffix {
-		url_string += suffix
+		url = dom_url_parse(url_string + suffix, url_record, 'UTF-8') or { return }
 	}
-	_ = url_string
+
+	// 11. Let referrerPolicy be the current state of subject's referrerpolicy content attribute.
+	// FIXME: The V navigation parameters do not carry a referrer policy yet.
+
+	// FIXME: 12. If subject's link types includes the noreferrer keyword, then set referrerPolicy to "no-referrer".
+
+	// 13. Navigate targetNavigable to urlString using subject's node document, with referrerPolicy set to referrerPolicy
+	//     and userInvolvement set to userInvolvement.
+	target_navigable.navigate(url, e.document(), user_involvement) or {}
+}
+
+// HTML's user navigation involvement of an event, https://html.spec.whatwg.org/multipage/browsing-the-web.html#event-uni.
+// NB: DOM cannot import HTML, which owns this algorithm.
+fn user_navigation_involvement_of_event(event &Event) UserNavigationInvolvement {
+	// 1. Assert: event's type is "click".
+	assert event.type_name() == 'click'
+
+	// 2. If event's isTrusted is initialized to true, then return "activation".
+	// 3. Return "none".
+	return if event.is_trusted() { .activation } else { .none }
+}
+
+fn event_as_mouse_event(event &Event) ?&MouseEvent {
+	if event.interface_ !in [.mouse_event, .wheel_event, .pointer_event] {
+		return none
+	}
+	return unsafe { &MouseEvent(event) }
+}
+
+// https://html.spec.whatwg.org/multipage/links.html#hyperlink
+pub fn (e &Element) creates_a_hyperlink() bool {
+	// NB: The href attribute on a and area elements is not required; when those elements do not have href attributes
+	//     they do not create hyperlinks.
+	return (is_html_element_with_local_name(e, 'a') || is_html_element_with_local_name(e, 'area'))
+		&& e.has_attribute('href')
+}
+
+fn event_target_is_ismap_image(event &Event) bool {
+	target := event.target() or { return false }
+	node := event_target_as_node(target) or { return false }
+	image := node.as_element() or { return false }
+	return is_html_element_with_local_name(image, 'img') && image.has_attribute('ismap')
+}
+
+// https://html.spec.whatwg.org/multipage/links.html#links-created-by-a-and-area-elements
+pub fn (mut e Element) activate_the_hyperlink(event &Event) {
+	// The activation behavior of an a or area element element given an event event is:
+
+	// 1. If element has no href attribute, then return.
+	// NB: SVG a elements may create a hyperlink using the deprecated xlink:href attribute.
+	is_svg_a := e.is_svg_element() && e.local_name() == 'a'
+	if !e.has_attribute('href') && !(is_svg_a && e.has_attribute_ns(namespace_xlink_uri, 'href')) {
+		return
+	}
+
+	mouse_event := event_as_mouse_event(event)
+
+	// AD-HOC: Do not activate the element for clicks with the ctrl/cmd modifier present. This lets
+	//         the browser process open the link in a new tab.
+	if mouse := mouse_event {
+		if mouse.platform_ctrl_key() {
+			return
+		}
+	}
+
+	// 2. Let hyperlinkSuffix be null.
+	mut hyperlink_suffix := ?string(none)
+
+	// 3. If element is an a element, and event's target is an img with an ismap attribute specified:
+	if is_html_element_with_local_name(e, 'a') && event_target_is_ismap_image(event) {
+		// 1. Let x and y be 0.
+		mut x := 0.0
+		mut y := 0.0
+
+		// 2. If event's isTrusted attribute is initialized to true, then set x to the distance in CSS pixels from the
+		//    left edge of the image to the location of the click, and set y to the distance in CSS pixels from the
+		//    top edge of the image to the location of the click.
+		if event.is_trusted() {
+			if mouse := mouse_event {
+				x = mouse.offset_x()
+				y = mouse.offset_y()
+			}
+		}
+
+		// 3. If x is negative, set x to 0.
+		if x < 0 {
+			x = 0
+		}
+
+		// 4. If y is negative, set y to 0.
+		if y < 0 {
+			y = 0
+		}
+
+		// 5. Set hyperlinkSuffix to the concatenation of U+003F (?), the value of x expressed as a base-ten integer
+		//    using ASCII digits, U+002C (,), and the value of y expressed as a base-ten integer using ASCII digits.
+		hyperlink_suffix = '?${int(x)},${int(y)}'
+	}
+
+	// 4. Let userInvolvement be event's user navigation involvement.
+	user_involvement := user_navigation_involvement_of_event(event)
+
+	// 5. If the user has expressed a preference to download the hyperlink, then set userInvolvement to "browser UI".
+	// NB: There is currently no way for the user to express a preference to download a hyperlink at activation
+	//     time.
+
+	// 6. If element has a download attribute, or if the user has expressed a preference to download the
+	//    hyperlink, then download the hyperlink created by element with hyperlinkSuffix set to hyperlinkSuffix and
+	//    userInvolvement set to userInvolvement.
+	if e.has_attribute('download') {
+		// FIXME: Downloading hyperlinks needs a download fetch and download handling, which are not translated yet.
+		return
+	}
+
+	// 7. Otherwise, follow the hyperlink created by element with hyperlinkSuffix set to hyperlinkSuffix and
+	//    userInvolvement set to userInvolvement.
+	e.follow_the_hyperlink(hyperlink_suffix, user_involvement)
 }
 
 // --- Misc helpers ---
