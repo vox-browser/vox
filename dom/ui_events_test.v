@@ -1,5 +1,6 @@
 module dom
 
+import highresolutiontime
 import math
 
 struct EventRealmObservation {
@@ -456,4 +457,16 @@ fn test_inline_event_handler_source_uses_on_prefixed_function_name() {
 		panic('inline event handler did not compile')
 	}
 	assert callback.compiled_source_text_ == 'function onclick(event) {\nreturn 42;\n}'
+}
+
+fn test_current_high_resolution_time_is_relative_to_the_window_time_origin() {
+	origin := highresolutiontime.coarsen_time(highresolutiontime.unsafe_shared_current_time(), false)
+	window := &Window{
+		time_origin_: origin
+	}
+	relative := current_high_resolution_time(window)
+	assert relative >= 0
+	assert relative < 60_000
+	// Coarsened to the 100 microsecond resolution of a non-isolated context.
+	assert math.abs(relative * 10 - math.round(relative * 10)) < 1e-4
 }

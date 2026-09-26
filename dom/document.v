@@ -13,6 +13,7 @@ module dom
 import rand
 import strings
 import time as vtime
+import highresolutiontime
 import httpcookie
 import url as liburl
 import viewtransition
@@ -2028,6 +2029,10 @@ pub mut:
 	current_event_            &Event = unsafe { nil }
 	last_activation_timestamp DOMHighResTimeStamp = 1e308
 	close_watcher_manager_    &CloseWatcherManager = unsafe { nil }
+	// The time origin and cross-origin isolated capability of the window's relevant settings object, which HTML
+	// owns. HTML mirrors them here when it sets up that settings object.
+	time_origin_                      DOMHighResTimeStamp
+	cross_origin_isolated_capability_ bool
 }
 
 @[heap]
@@ -4294,13 +4299,19 @@ fn is_html_frame_set_element(el &HTMLElement) bool {
 	return element.namespace_uri() or { '' } == namespace_html_ && element.local_name() == 'frameset'
 }
 
+// https://w3c.github.io/hr-time/#dfn-current-high-resolution-time
 fn current_high_resolution_time(global_obj &Window) f64 {
-	_ = global_obj
-	// The standalone runtime has no per-realm Performance time origin, but all
-	// DOM event and activation timestamps use this same monotonic millisecond
-	// clock. This preserves the upstream ordering and five-second transient
-	// activation window without exposing wall-clock time.
-	return f64(vtime.sys_mono_now()) / 1_000_000.0
+	// The current high resolution time given a global object current global must return the result of relative high
+	// resolution time given unsafe shared current time and current global.
+	mut context := highresolutiontime.TimeOriginContext{}
+	if global_obj != unsafe { nil } {
+		context = highresolutiontime.TimeOriginContext{
+			time_origin: global_obj.time_origin_
+			cross_origin_isolated_capability: global_obj.cross_origin_isolated_capability_
+		}
+	}
+	return highresolutiontime.relative_high_resolution_time(highresolutiontime.unsafe_shared_current_time(),
+		context)
 }
 
 fn relevant_global_object_for_doc(doc &Document) &Window {
