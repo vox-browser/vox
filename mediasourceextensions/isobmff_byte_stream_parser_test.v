@@ -4,6 +4,14 @@ import dom
 import html
 import math
 
+// Media source algorithms queue their steps and events; run them before observing the results.
+fn run_media_source_tasks() {
+	mut event_loop := html.main_thread_event_loop()
+	event_loop.spin_until(fn () bool {
+		return false
+	})
+}
+
 fn iso_test_u32(value u32) []u8 {
 	return [u8(value >> 24), u8(value >> 16), u8(value >> 8), u8(value)]
 }
@@ -146,16 +154,20 @@ fn test_isobmff_initialization_and_media_segments_create_tracks_and_frames() {
 	mut source := MediaSource.create()
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/mp4; codecs="av01.0.00M.08"')!
 
 	buffer.append_buffer(initialization[..initialization.len / 2])!
+	run_media_source_tasks()
 	assert buffer.input_buffer_length() == initialization.len / 2
 	buffer.append_buffer(initialization[initialization.len / 2..])!
+	run_media_source_tasks()
 	assert buffer.input_buffer_length() == 0
 	assert source.duration() == math.inf(1)
 	assert buffer.video_tracks().length() == 1
 
 	buffer.append_buffer(minimal_isobmff_media_segment())!
+	run_media_source_tasks()
 	track_buffer := buffer.processor_.track_buffers()[1] or { panic('missing MP4 track buffer') }
 	frames := track_buffer.demuxer.coded_frames()
 	assert frames.len == 1
@@ -197,8 +209,10 @@ fn test_isobmff_rejects_an_unknown_initialization_segment_codec() {
 	mut source := MediaSource.create()
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/mp4; codecs="av01.0.00M.08"')!
 	buffer.append_buffer(initialization)!
+	run_media_source_tasks()
 
 	assert !buffer.updating()
 	assert source.ready_state() == .ended
@@ -213,8 +227,10 @@ fn test_isobmff_rejects_a_configuration_box_for_another_codec() {
 	mut source := MediaSource.create()
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/mp4; codecs="av01.0.00M.08"')!
 	buffer.append_buffer(initialization)!
+	run_media_source_tasks()
 
 	assert !buffer.updating()
 	assert source.ready_state() == .ended
@@ -224,11 +240,14 @@ fn test_isobmff_rejects_a_repeated_initialization_segment_with_different_tracks(
 	mut source := MediaSource.create()
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/mp4; codecs="av01.0.00M.08"')!
 	buffer.append_buffer(minimal_isobmff_initialization_segment())!
+	run_media_source_tasks()
 
 	buffer.append_buffer(minimal_isobmff_initialization_segment_with_sample_entry(iso_test_box('av01',
 		[]u8{}), 2))!
+	run_media_source_tasks()
 
 	assert !buffer.updating()
 	assert source.ready_state() == .ended

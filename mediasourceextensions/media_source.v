@@ -224,9 +224,13 @@ pub fn (mut source MediaSource) run_end_of_stream_algorithm(error_ ?EndOfStreamE
 }
 
 pub fn (source &MediaSource) queue_a_media_source_task(task fn ()) {
-	_ = source
-	// The V event-loop boundary drains this task source synchronously.
-	task()
+	// FIXME: The MSE spec does not say what task source to use for its tasks. Should this use the media element's
+	//        task source? We may not have access to it if we're in a worker.
+	mut document := ?&dom.Document(none)
+	if media_element := source.media_element_assigned_to() {
+		document = media_element.document()
+	}
+	html.queue_a_task(.unspecified, html.main_thread_event_loop(), document, task)
 }
 
 pub fn (mut source MediaSource) set_ready_state_to_open_and_fire_sourceopen_event() {

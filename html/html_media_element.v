@@ -290,6 +290,12 @@ fn html_media_element_adopted_from_callback(target voidptr, old_document &dom.Do
 	media.adopted_from(old_document)
 }
 
+// DOM::Node::document() of the media element.
+pub fn (media &HTMLMediaElement) document() ?&dom.Document {
+	html_element := media.associated_element_ or { return none }
+	return unsafe { &dom.Element(html_element) }.document()
+}
+
 pub fn (media &HTMLMediaElement) is_focusable() bool {
 	_ = media
 	return true

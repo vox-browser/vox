@@ -4,6 +4,14 @@ import dom
 import html
 import math
 
+// Media source algorithms queue their steps and events; run them before observing the results.
+fn run_media_source_tasks() {
+	mut event_loop := html.main_thread_event_loop()
+	event_loop.spin_until(fn () bool {
+		return false
+	})
+}
+
 @[heap]
 struct RemovalEventCounts {
 mut:
@@ -41,6 +49,7 @@ fn test_source_buffer_remove_discards_the_range_and_decoding_dependants() {
 	mut source := MediaSource.create()
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
 	source.set_duration(20)!
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
 	mut track_buffer := TrackBuffer.create(WebMTrackInfo{
@@ -69,6 +78,7 @@ fn test_source_buffer_remove_discards_the_range_and_decoding_dependants() {
 	buffer.set_onupdate(removal_event_callback(counts, 'update'))
 	buffer.set_onupdateend(removal_event_callback(counts, 'updateend'))
 	buffer.remove(0.5, 5.5)!
+	run_media_source_tasks()
 
 	assert demuxer.coded_frames().map(it.timestamp) == [f64(0), 10]
 	assert !buffer.updating()
@@ -86,32 +96,41 @@ fn test_source_buffer_remove_validates_the_requested_range_and_state() {
 	mut source := MediaSource.create()
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
 
 	buffer.remove(0, 1) or { assert err.msg() == 'TypeError: MediaSource duration is NaN' }
+	run_media_source_tasks()
 	source.set_duration(10)!
 	buffer.remove(-1, 1) or {
 		assert err.msg() == 'TypeError: Removal range start is outside of the duration'
 	}
+	run_media_source_tasks()
 	buffer.remove(11, 12) or {
 		assert err.msg() == 'TypeError: Removal range start is outside of the duration'
 	}
+	run_media_source_tasks()
 	buffer.remove(5, 5) or {
 		assert err.msg() == 'TypeError: Removal range end does not follow its start'
 	}
+	run_media_source_tasks()
 	buffer.remove(5, math.nan()) or {
 		assert err.msg() == 'TypeError: Removal range end does not follow its start'
 	}
+	run_media_source_tasks()
 	buffer.processor_.set_updating(true)
 	buffer.remove(0, 1) or { assert err.msg() == 'InvalidStateError: SourceBuffer is updating' }
+	run_media_source_tasks()
 	buffer.processor_.set_updating(false)
 	buffer.range_removal_running_ = true
 	buffer.abort() or {
 		assert err.msg() == 'InvalidStateError: SourceBuffer is removing a range'
 	}
+	run_media_source_tasks()
 	buffer.range_removal_running_ = false
 
 	source.run_end_of_stream_algorithm(none)
 	buffer.remove(0, 1)!
+	run_media_source_tasks()
 	assert source.ready_state() == .open
 }

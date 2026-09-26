@@ -5,6 +5,14 @@ import fileapi
 import html
 import math
 
+// Media source algorithms queue their steps and events; run them before observing the results.
+fn run_media_source_tasks() {
+	mut event_loop := html.main_thread_event_loop()
+	event_loop.spin_until(fn () bool {
+		return false
+	})
+}
+
 @[heap]
 struct EventObservation {
 mut:
@@ -138,6 +146,7 @@ fn test_media_source_can_be_assigned_to_media_element_src_object() {
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
 	media.set_source('/remote.webm')
 	media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
 
 	provider := media.src_object() or { panic('missing assigned media provider') }
 	assert provider.kind == .media_source
@@ -151,6 +160,7 @@ fn test_media_source_can_be_assigned_to_media_element_src_object() {
 
 	mut second_media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
 	second_media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
 	assert second_media.network_state() == .no_source
 	assert second_media.error()?.message == 'MediaSource is not closed'
 }
@@ -159,6 +169,7 @@ fn test_media_source_detaches_and_removes_source_buffers_when_media_is_reset() {
 	mut source := MediaSource.create()
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
 	mut active_buffers := source.active_source_buffers()
 	active_buffers.append(buffer)
@@ -177,6 +188,7 @@ fn test_media_source_detaches_and_removes_source_buffers_when_media_is_reset() {
 	buffer.processor_.set_updating(true)
 
 	media.set_src_object(none)!
+	run_media_source_tasks()
 
 	assert source.ready_state() == .closed
 	assert math.is_nan(source.duration())
@@ -192,6 +204,7 @@ fn test_media_source_detaches_and_removes_source_buffers_when_media_is_reset() {
 	buffer.append_buffer([u8(4)]) or {
 		assert err.msg() == 'InvalidStateError: SourceBuffer has been removed'
 	}
+	run_media_source_tasks()
 	buffer.buffered() or {
 		assert err.msg() == 'InvalidStateError: SourceBuffer has been removed'
 	}
@@ -246,6 +259,7 @@ fn test_media_source_add_source_buffer_and_indexed_source_buffer_list() {
 
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
 	observation := &EventObservation{}
 	source.source_buffers().set_onaddsourcebuffer(observer_callback(observation))
 	buffer := source.add_source_buffer('video/webm; codecs="vp9,opus"')!
@@ -262,6 +276,7 @@ fn test_media_source_duration_mode_and_change_type() {
 	assert math.is_nan(source.duration())
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
 	source.set_duration(-1) or {
 		assert err.msg() == 'TypeError: duration must not be negative or NaN'
 	}
@@ -286,10 +301,12 @@ fn test_source_buffer_append_error_and_end_of_stream_algorithms() {
 	unattached.append_buffer('data'.bytes()) or {
 		assert err.msg() == 'InvalidStateError: Unsupported in workers'
 	}
+	run_media_source_tasks()
 
 	mut source := MediaSource.create()
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
 	update_start := &EventObservation{}
 	append_error := &EventObservation{}
@@ -301,6 +318,7 @@ fn test_source_buffer_append_error_and_end_of_stream_algorithms() {
 	source.set_onsourceended(observer_callback(source_ended))
 
 	buffer.append_buffer('not yet demuxed'.bytes())!
+	run_media_source_tasks()
 	assert !buffer.updating()
 	assert buffer.input_buffer_length() == 'not yet demuxed'.len
 	assert update_start.count == 1
@@ -310,19 +328,24 @@ fn test_source_buffer_append_error_and_end_of_stream_algorithms() {
 	assert source.ready_state() == .open
 
 	source.end_of_stream(none)!
+	run_media_source_tasks()
 	assert source_ended.count == 1
 	source.end_of_stream(none) or {
 		assert err.msg() == 'InvalidStateError: MediaSource is not open'
 	}
+	run_media_source_tasks()
 	mut mutable_processor := buffer.processor_
 	mutable_processor.set_updating(true)
 	mut mutable_source := source
 	mutable_source.set_ready_state_to_open_and_fire_sourceopen_event()
+	run_media_source_tasks()
 	source.end_of_stream(none) or {
 		assert err.msg() == 'InvalidStateError: A SourceBuffer is still updating'
 	}
+	run_media_source_tasks()
 	mutable_processor.set_updating(false)
 	source.end_of_stream(none)!
+	run_media_source_tasks()
 	assert source.ready_state() == .ended
 }
 
@@ -371,6 +394,7 @@ fn test_webm_initialization_and_media_segments_create_tracks_and_coded_frames() 
 	mut source := MediaSource.create()
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
 	update := &EventObservation{}
 	append_error := &EventObservation{}
@@ -387,9 +411,11 @@ fn test_webm_initialization_and_media_segments_create_tracks_and_coded_frames() 
 	assert parser.audio_tracks().len == 0
 	assert parser.text_tracks().len == 0
 	buffer.append_buffer(initialization[..initialization.len / 2])!
+	run_media_source_tasks()
 	assert buffer.input_buffer_length() == initialization.len / 2
 	assert buffer.video_tracks().length() == 0
 	buffer.append_buffer(initialization[initialization.len / 2..])!
+	run_media_source_tasks()
 	assert buffer.input_buffer_length() == 0
 	assert buffer.video_tracks().length() == 1
 	assert media.video_tracks().length() == 1
@@ -400,6 +426,7 @@ fn test_webm_initialization_and_media_segments_create_tracks_and_coded_frames() 
 	assert media.event_count('progress') == 0
 
 	buffer.append_buffer(minimal_webm_media_segment())!
+	run_media_source_tasks()
 	track_buffer := buffer.processor_.track_buffers()[1] or { panic('missing track buffer') }
 	assert track_buffer.demuxer.coded_frame_count() == 1
 	frame := track_buffer.demuxer.coded_frames()[0]
@@ -450,6 +477,7 @@ fn test_webm_rejects_an_unsupported_initialization_segment_codec() {
 	mut source := MediaSource.create()
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
 	append_error := &EventObservation{}
 	buffer.set_onerror(observer_callback(append_error))
@@ -461,6 +489,7 @@ fn test_webm_rejects_an_unsupported_initialization_segment_codec() {
 	}
 
 	buffer.append_buffer(initialization)!
+	run_media_source_tasks()
 
 	assert append_error.count == 1
 	assert source.ready_state() == .ended
@@ -471,10 +500,13 @@ fn test_source_buffer_abort_resets_parser_and_queues_abort_events_when_updating(
 	mut source := MediaSource.create()
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
 	buffer.append_buffer([u8(0x1a), 0x45])!
+	run_media_source_tasks()
 	assert buffer.input_buffer_length() == 2
 	buffer.abort()!
+	run_media_source_tasks()
 	assert buffer.input_buffer_length() == 0
 
 	abort_event := &EventObservation{}
@@ -484,28 +516,36 @@ fn test_source_buffer_abort_resets_parser_and_queues_abort_events_when_updating(
 	mut processor := buffer.processor_
 	processor.set_updating(true)
 	buffer.abort()!
+	run_media_source_tasks()
 	assert !buffer.updating()
 	assert abort_event.count == 1
 	assert update_end.count == 1
 
 	source.end_of_stream(none)!
+	run_media_source_tasks()
 	buffer.abort() or { assert err.msg() == 'InvalidStateError: MediaSource is not open' }
+	run_media_source_tasks()
 }
 
 fn test_source_buffer_abort_discards_a_partial_media_segment_before_the_next_append() {
 	mut source := MediaSource.create()
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
 	buffer.append_buffer(minimal_webm_initialization_segment())!
+	run_media_source_tasks()
 
 	media_segment := minimal_webm_media_segment()
 	buffer.append_buffer(media_segment[..media_segment.len / 2])!
+	run_media_source_tasks()
 	assert buffer.input_buffer_length() == media_segment.len / 2
 	buffer.abort()!
+	run_media_source_tasks()
 	assert buffer.input_buffer_length() == 0
 
 	buffer.append_buffer(media_segment)!
+	run_media_source_tasks()
 	track_buffer := buffer.processor_.track_buffers()[1] or { panic('missing track buffer') }
 	assert track_buffer.demuxer.coded_frame_count() == 1
 }
@@ -514,17 +554,21 @@ fn test_source_buffer_keeps_a_split_ignored_webm_element_until_it_is_complete() 
 	mut source := MediaSource.create()
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
 	buffer.append_buffer(minimal_webm_initialization_segment())!
+	run_media_source_tasks()
 
 	// A Void element containing eight bytes, split after its header and two
 	// payload bytes. The first append must leave the whole prefix untouched.
 	buffer.append_buffer([u8(0xec), 0x88, 0, 0])!
+	run_media_source_tasks()
 	assert buffer.input_buffer_length() == 4
 
 	mut remainder := [u8(0), 0, 0, 0, 0, 0]
 	remainder << minimal_webm_media_segment()
 	buffer.append_buffer(remainder)!
+	run_media_source_tasks()
 	assert buffer.input_buffer_length() == 0
 	track_buffer := buffer.processor_.track_buffers()[1] or { panic('missing track buffer') }
 	assert track_buffer.demuxer.coded_frame_count() == 1
@@ -534,18 +578,24 @@ fn test_source_buffer_ignores_webm_elements_after_a_repeated_initialization_segm
 	mut source := MediaSource.create()
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
 	initialization := minimal_webm_initialization_segment()
 	media_segment := minimal_webm_media_segment()
 
 	buffer.append_buffer(initialization)!
+	run_media_source_tasks()
 	buffer.append_buffer(media_segment)!
+	run_media_source_tasks()
 	buffer.append_buffer(initialization)!
+	run_media_source_tasks()
 	// Matroska muxers commonly emit Tags after Tracks. It remains an accepted
 	// ignored element even when this initialization segment follows a Cluster.
 	tags := ebml_test_element([u8(0x12), 0x54, 0xc3, 0x67], []u8{})
 	buffer.append_buffer(tags)!
+	run_media_source_tasks()
 	buffer.append_buffer(media_segment)!
+	run_media_source_tasks()
 
 	assert buffer.input_buffer_length() == 0
 	track_buffer := buffer.processor_.track_buffers()[1] or { panic('missing track buffer') }
@@ -625,6 +675,7 @@ fn test_managed_media_source_initializes_its_base_source_buffer_lists() {
 
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
 	buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
 	assert source.source_buffers().length() == 1
 	assert source.source_buffers().item(0)? == buffer
@@ -663,4 +714,26 @@ fn test_media_source_relevant_global_is_shared_by_owned_objects() {
 	managed_source := ManagedMediaSource.create_for_constructor(global_object)
 	assert managed_source.relevant_global_impl() == global_object
 	assert managed_source.source_buffers().relevant_global_impl()? == global_object
+}
+
+fn test_source_buffer_append_runs_its_steps_and_events_as_queued_tasks() {
+	mut source := MediaSource.create()
+	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	media.set_src_object(source.as_media_provider())!
+	run_media_source_tasks()
+	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
+	update_start := &EventObservation{}
+	update_end := &EventObservation{}
+	buffer.set_onupdatestart(observer_callback(update_start))
+	buffer.set_onupdateend(observer_callback(update_end))
+
+	buffer.append_buffer('not yet demuxed'.bytes())!
+	assert buffer.updating()
+	assert update_start.count == 0
+	assert update_end.count == 0
+
+	run_media_source_tasks()
+	assert !buffer.updating()
+	assert update_start.count == 1
+	assert update_end.count == 1
 }
