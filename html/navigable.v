@@ -12,6 +12,7 @@ import css
 import dom
 import editing
 import fetch
+import highresolutiontime
 import http
 import math
 import page
@@ -1164,6 +1165,19 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 		if params := navigation_params {
 			document.set_active_sandboxing_flag_bits(params.final_sandboxing_flags.bits)
 			document.set_was_created_via_cross_origin_redirects(params.was_created_via_cross_origin_redirects)
+
+			// Create and initialize a Document object, step 8: Let loadTimingInfo be a new document load timing info with
+			// its navigation start time set to navigationParams's response's timing info's start time.
+			// AD-HOC: Non-fetch navigations do not have timing info, so use the time at which the response was created.
+			// NB: The navigation fetch here keeps no fetch timing info, so every navigation takes that branch. A window
+			//     settings object's cross-origin isolated capability is always "No" for now.
+			response_creation_time := f64(params.response.fetch_response_monotonic_response_time()) / 1e6
+			navigation_start_time := highresolutiontime.coarsen_time(response_creation_time, false)
+			document.set_load_timing_info(dom.DocumentLoadTimingInfo{
+				navigation_start_time: navigation_start_time
+				dom_loading_time: highresolutiontime.coarsen_time(highresolutiontime.unsafe_shared_current_time() - navigation_start_time,
+					false)
+			})
 		}
 		state.set_document(document)
 		if context := model.context_ {

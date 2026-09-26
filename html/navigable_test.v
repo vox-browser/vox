@@ -4,6 +4,7 @@ module html
 import css
 import dom
 import fetch
+import highresolutiontime
 import http
 import page
 import painting
@@ -604,12 +605,19 @@ fn test_navigable_fetch_redirect_policy_and_url_history_algorithms() {
 	mut model := unsafe { &NavigableModel(model_pointer) }
 	navigable_test_fetches = 0
 	model.set_navigation_fetch_hook(navigable_test_fetch)
+	before_navigation := highresolutiontime.coarsen_time(highresolutiontime.unsafe_shared_current_time(),
+		false)
 	model.navigate(NavigableNavigateParams{
 		url: dom.URL{ value: 'https://example.test/redirect' }
 		source_document: original_document
 	})!
 	assert navigable_test_fetches == 2
 	mut fetched_document := model.active_document() or { panic('missing fetched document') }
+	// The navigated document's time origin is the creation time of its navigation response.
+	timing := fetched_document.document_load_timing_info()
+	assert timing.navigation_start_time >= before_navigation
+	assert timing.navigation_start_time <= highresolutiontime.unsafe_shared_current_time()
+	assert timing.dom_loading_time >= 0
 	assert fetched_document.url.serialize() == 'https://example.test/fetched'
 	assert !fetched_document.was_created_via_cross_origin_redirects()
 	assert fetched_document.body() or { panic('missing body') }.as_node().text_content()? == 'fetched response'
