@@ -811,7 +811,10 @@ rectangle and centers the live `alt` text with the default 12px font when its
 provider is unavailable. Retained layout trees refresh provider availability,
 selected source, intrinsic dimensions, and alternative text before relayout,
 so a failed image can transition to changed fallback text or decoded content
-without rebuilding the tree.
+without rebuilding the tree. Pending image and image-input requests now retain
+the upstream third provider state: they occupy blank zero-sized fallback space
+while a new, in-flight, or pending request can still produce pixels, and switch
+to alternative text only after failure or when no source exists.
 
 The viewport content-visibility pass reduces Painting from 136 to 134. Layout
 now caches the committed `PaintableBox` objects whose used
