@@ -12,6 +12,10 @@ fn (client &CacheTestClient) fetch_request_client_api_base_url() dom.URL {
 	return dom.URL{client.top_level_origin.serialize() + '/'}
 }
 
+fn (_ &CacheTestClient) fetch_request_client_policy_container() RequestPolicyContainer {
+	return RequestPolicyContainer{}
+}
+
 fn (_ &CacheTestClient) fetch_request_client_is_window() bool {
 	return false
 }

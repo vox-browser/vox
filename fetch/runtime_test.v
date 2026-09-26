@@ -321,6 +321,10 @@ fn (client &BlobFetchTestClient) fetch_request_client_api_base_url() dom.URL {
 	return client.creation_url
 }
 
+fn (_ &BlobFetchTestClient) fetch_request_client_policy_container() RequestPolicyContainer {
+	return RequestPolicyContainer{}
+}
+
 fn (_ &BlobFetchTestClient) fetch_request_client_is_window() bool {
 	return true
 }

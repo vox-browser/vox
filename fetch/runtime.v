@@ -835,8 +835,11 @@ pub fn main_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 	if block_bad_port(request) == .blocked {
 		response = Response.network_error('Request was blocked')
 	}
+	// 8. If request's referrer policy is the empty string, then set request's referrer policy to request's policy
+	//    container's referrer policy.
 	if request.referrer_policy == '' {
-		request.referrer_policy = 'strict-origin-when-cross-origin'
+		policy_container := request.resolved_policy_container or { RequestPolicyContainer{} }
+		request.referrer_policy = policy_container.referrer_policy
 	}
 	if response == none {
 		if preloaded := params.preloaded_response {
@@ -960,8 +963,17 @@ pub fn populate_request_from_client(mut request Request) {
 			origin: client.fetch_request_client_origin()
 		}
 	}
-	if request.referrer_policy == '' {
-		request.referrer_policy = 'strict-origin-when-cross-origin'
+
+	// 3. If request's policy container is "client":
+	if request.policy_container == .client && request.resolved_policy_container == none {
+		// 1. If request's client is non-null, then set request's policy container to a clone of request's client's
+		//    policy container.
+		if client := request.client {
+			request.resolved_policy_container = client.fetch_request_client_policy_container()
+		} else {
+			// 2. Otherwise, set request's policy container to a new policy container.
+			request.resolved_policy_container = RequestPolicyContainer{}
+		}
 	}
 }
 

@@ -102,6 +102,12 @@ pub enum PolicyContainerSentinel {
 	client
 }
 
+// The parts of HTML's PolicyContainer that fetching reads. A new policy container has the default referrer policy.
+pub struct RequestPolicyContainer {
+pub:
+	referrer_policy string = 'strict-origin-when-cross-origin'
+}
+
 // https://fetch.spec.whatwg.org/#concept-request-redirect-mode
 pub enum RedirectMode {
 	follow
@@ -191,6 +197,7 @@ pub interface RequestClient {
 	fetch_request_client_top_level_origin() ?dom.Origin
 	fetch_request_client_top_level_creation_url() ?dom.URL
 	fetch_request_client_cross_origin_isolated_capability() bool
+	fetch_request_client_policy_container() RequestPolicyContainer
 }
 
 // Infrastructure::Request::ReservedClientType is HTML::Environment, distinct
@@ -241,6 +248,9 @@ pub mut:
 	// PolicyContainerType = Variant<PolicyContainer, GC::Ref<PolicyContainer>>; the container is
 	// held opaquely and the sentinel captures the "client" case.
 	policy_container PolicyContainerSentinel = .client
+	// The policy container that populate-from-client resolves "client" to. HTML owns PolicyContainer, which Fetch
+	// cannot import; fetching reads only its referrer policy.
+	resolved_policy_container ?RequestPolicyContainer
 	// https://fetch.spec.whatwg.org/#concept-request-referrer
 	referrer Referrer
 	// https://fetch.spec.whatwg.org/#concept-request-referrer-policy
@@ -443,6 +453,7 @@ pub fn (request &Request) clone() &Request {
 		priority: request.priority
 		origin: request.origin
 		policy_container: request.policy_container
+		resolved_policy_container: request.resolved_policy_container
 		referrer: request.referrer
 		referrer_policy: request.referrer_policy
 		mode: request.mode

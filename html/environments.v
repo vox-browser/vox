@@ -11,6 +11,7 @@
 module html
 
 import dom
+import fetch
 import math
 import storageapi
 import time
@@ -280,6 +281,12 @@ pub fn (settings &EnvironmentSettingsObject) origin() dom.Origin {
 		return window.associated_document().origin()
 	}
 	return settings.origin_
+}
+
+pub fn (settings &EnvironmentSettingsObject) fetch_request_client_policy_container() fetch.RequestPolicyContainer {
+	return fetch.RequestPolicyContainer{
+		referrer_policy: settings.policy_container_.referrer_policy.to_string()
+	}
 }
 
 pub fn (settings &EnvironmentSettingsObject) fetch_request_client_is_window() bool {

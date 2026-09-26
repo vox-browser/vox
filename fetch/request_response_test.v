@@ -12,6 +12,10 @@ fn (client &ConstructionTestClient) fetch_request_client_api_base_url() dom.URL 
 	return client.base_url
 }
 
+fn (_ &ConstructionTestClient) fetch_request_client_policy_container() RequestPolicyContainer {
+	return RequestPolicyContainer{}
+}
+
 fn (_ &ConstructionTestClient) fetch_request_client_is_window() bool {
 	return false
 }

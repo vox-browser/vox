@@ -19,6 +19,10 @@ fn (client &PreflightCacheTestClient) fetch_request_client_api_base_url() dom.UR
 	return client.url
 }
 
+fn (_ &PreflightCacheTestClient) fetch_request_client_policy_container() RequestPolicyContainer {
+	return RequestPolicyContainer{}
+}
+
 fn (_ &PreflightCacheTestClient) fetch_request_client_is_window() bool {
 	return false
 }
