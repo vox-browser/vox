@@ -816,6 +816,17 @@ the upstream third provider state: they occupy blank zero-sized fallback space
 while a new, in-flight, or pending request can still produce pixels, and switch
 to alternative text only after failure or when no source exists.
 
+Decoded bitmap data now exposes its retained external-memory size and tracks
+live clients for static images as well as animations. Shared resource requests
+and the list of available images carry monotonic LRU touch serials and prune to
+the upstream 8 MiB/96-entry document limits after successful loads. Entries
+whose decoded data still has a display client are excluded from both cache
+accounting and eviction: removing them would free no pixels, but would force a
+framework-created replacement element to fetch and decode the same URL again.
+Focused tests cover external-memory accounting, touch order, size/count
+eviction, client registration/release by an image element, and retention of a
+live image; the full repository suite passes 651/651.
+
 The viewport content-visibility pass reduces Painting from 136 to 134. Layout
 now caches the committed `PaintableBox` objects whose used
 `content-visibility` is `auto`, and `ViewportPaintable` exposes the source-shaped
