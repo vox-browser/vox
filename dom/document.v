@@ -2202,7 +2202,7 @@ pub type NavigableBooleanStateCallback = fn (voidptr) bool
 // import. The model installs these on its DOM identity so hyperlink following can reach it.
 pub type NavigableChooseANavigableCallback = fn (voidptr, string, TokenizedFeatureNoOpener) ?&Navigable
 
-pub type NavigableNavigateCallback = fn (voidptr, URL, &Document, UserNavigationInvolvement) !
+pub type NavigableNavigateCallback = fn (voidptr, URL, &Document, string, UserNavigationInvolvement) !
 
 @[heap]
 pub struct Navigable {
@@ -3466,11 +3466,13 @@ pub fn (n &Navigable) choose_a_navigable(name string, no_opener TokenizedFeature
 }
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate
-pub fn (n &Navigable) navigate(url URL, source_document &Document, user_involvement UserNavigationInvolvement) ! {
+// The referrer policy is the keyword of a referrerpolicy attribute state; an invalid or empty keyword is the empty
+// string state.
+pub fn (n &Navigable) navigate(url URL, source_document &Document, referrer_policy string, user_involvement UserNavigationInvolvement) ! {
 	if n.html_model_handle_ == unsafe { nil } || n.navigate_callback_ == unsafe { nil } {
 		return error('InvalidStateError: navigable has no navigation model')
 	}
-	n.navigate_callback_(n.html_model_handle_, url, source_document, user_involvement)!
+	n.navigate_callback_(n.html_model_handle_, url, source_document, referrer_policy, user_involvement)!
 }
 
 pub fn (n &Navigable) reset_mouse_input_tracking() {

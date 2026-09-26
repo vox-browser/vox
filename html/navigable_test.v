@@ -16,6 +16,7 @@ __global (
 	navigable_test_paints               = 0
 	navigable_test_screenshots          = 0
 	navigable_test_fetches              = 0
+	navigable_test_referrer_policies    = []string{}
 	navigable_test_destroy_during_fetch = &NavigableModel(unsafe { nil })
 )
 
@@ -60,6 +61,7 @@ fn navigable_test_javascript_url(source string, _ &dom.Document) ?string {
 
 fn navigable_test_fetch(request &fetch.Request) !&fetch.Response {
 	navigable_test_fetches++
+	navigable_test_referrer_policies << request.referrer_policy
 	mut response := fetch.Response.create()
 	response.url_list = request.url_list.clone()
 	if request.current_url().serialize() == 'https://example.test/redirect' {
@@ -764,6 +766,8 @@ fn test_clicking_a_hyperlink_follows_it_in_its_navigable() {
 	model.set_navigation_fetch_hook(navigable_test_fetch)
 	mut anchor := document.create_element_ns('http://www.w3.org/1999/xhtml', 'a')!
 	anchor.set_attribute_value('href', '/fetched')
+	anchor.set_attribute_value('referrerpolicy', 'no-referrer')
+	navigable_test_referrer_policies = []string{}
 	mut body := document.body() or { panic('missing body') }
 	mut body_node := body.as_node()
 	body_node.append_child(anchor.as_node())!
@@ -779,6 +783,8 @@ fn test_clicking_a_hyperlink_follows_it_in_its_navigable() {
 		event_loop.process()
 	}
 	assert model.active_document()?.url.serialize() == 'https://example.test/fetched'
+	// The navigation request carries the link's referrerpolicy attribute state.
+	assert navigable_test_referrer_policies == ['no-referrer']
 }
 
 fn test_a_hyperlink_without_href_has_no_activation_behavior() {

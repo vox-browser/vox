@@ -58,6 +58,7 @@ pub:
 	user_involvement     dom.UserNavigationInvolvement = .none
 	source_element       ?&dom.Element
 	initial_insertion    InitialInsertion = .no
+	referrer_policy      ReferrerPolicy = .empty_string
 }
 
 pub type NavigableJavaScriptURLHook = fn (string, &dom.Document) ?string
@@ -288,11 +289,12 @@ fn navigable_model_choose_a_navigable(target voidptr, name string, no_opener dom
 	return navigable.host_
 }
 
-fn navigable_model_navigate(target voidptr, url dom.URL, source_document &dom.Document, user_involvement dom.UserNavigationInvolvement) ! {
+fn navigable_model_navigate(target voidptr, url dom.URL, source_document &dom.Document, referrer_policy string, user_involvement dom.UserNavigationInvolvement) ! {
 	mut model := unsafe { &NavigableModel(target) }
 	model.navigate(NavigableNavigateParams{
 		url: url
 		source_document: source_document
+		referrer_policy: referrer_policy_from_string(referrer_policy) or { ReferrerPolicy.empty_string }
 		user_involvement: user_involvement
 	})!
 }
@@ -1342,6 +1344,7 @@ fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
 	mut state := &DocumentState{
 		origin: params.url.origin()
 		initiator_origin: params.source_document.origin()
+		request_referrer_policy: params.referrer_policy
 		resource: params.document_resource
 		ever_populated: false
 		navigable_target_name: model.target_name()

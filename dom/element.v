@@ -6356,13 +6356,13 @@ pub fn (mut e Element) follow_the_hyperlink(hyperlink_suffix ?string, user_invol
 	}
 
 	// 11. Let referrerPolicy be the current state of subject's referrerpolicy content attribute.
-	// FIXME: The V navigation parameters do not carry a referrer policy yet.
+	referrer_policy := e.get_attribute_value('referrerpolicy')
 
 	// FIXME: 12. If subject's link types includes the noreferrer keyword, then set referrerPolicy to "no-referrer".
 
 	// 13. Navigate targetNavigable to urlString using subject's node document, with referrerPolicy set to referrerPolicy
 	//     and userInvolvement set to userInvolvement.
-	target_navigable.navigate(url, e.document(), user_involvement) or {}
+	target_navigable.navigate(url, e.document(), referrer_policy, user_involvement) or {}
 }
 
 // HTML's user navigation involvement of an event, https://html.spec.whatwg.org/multipage/browsing-the-web.html#event-uni.
