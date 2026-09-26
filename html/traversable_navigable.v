@@ -862,7 +862,7 @@ fn (mut traversable TraversableNavigable) apply_the_history_step_after_unload_ch
 	state.start()
 }
 
-fn (mut traversable TraversableNavigable) apply_the_history_step(step int, check_for_cancellation bool, source_snapshot_params ?&SourceSnapshotParams, user_involvement UserNavigationInvolvement, navigation_type dom.NavigationType, synchronous_navigation SynchronousNavigation, on_complete ?TraversableHistoryStepCompletion) {
+fn (mut traversable TraversableNavigable) apply_the_history_step(step int, check_for_cancellation bool, source_snapshot_params ?&SourceSnapshotParams, initiator_to_check ?&dom.Navigable, user_involvement UserNavigationInvolvement, navigation_type dom.NavigationType, synchronous_navigation SynchronousNavigation, on_complete ?TraversableHistoryStepCompletion) {
 	if traversable.has_been_destroyed_ {
 		complete_history_step(on_complete, .initiator_disallowed)
 		return
@@ -871,6 +871,36 @@ fn (mut traversable TraversableNavigable) apply_the_history_step(step int, check
 		complete_history_step(on_complete, .initiator_disallowed)
 		return
 	}
+
+	// 3. If initiatorToCheck is not null, then:
+	if initiator := initiator_to_check {
+		// 1. Assert: sourceSnapshotParams is not null.
+		// NB: A traversal with an initiator must also include its sandboxing state. Reject an incomplete request.
+		snapshot := source_snapshot_params or {
+			complete_history_step(on_complete, .initiator_disallowed)
+			return
+		}
+
+		// 2. For each navigable of get all navigables whose current session history entry will change or reload: if
+		//    initiatorToCheck is not allowed by sandboxing to navigate navigable given sourceSnapshotParams, then
+		//    return "initiator-disallowed".
+		initiator_model := navigable_model_for_host(initiator)
+		for navigable in traversable.get_all_navigables_whose_current_session_history_entry_will_change_or_reload(used_step) {
+			target_model := navigable_model_for_host(navigable) or { continue }
+			// NB: A removed initiator is no longer related to any navigable in the tree. Apply the sandboxed
+			//     navigation flag instead of treating the missing relationship as permission.
+			allowed := if model := initiator_model {
+				model.allowed_by_sandboxing_to_navigate(target_model, *snapshot)
+			} else {
+				!snapshot.sandboxing_flags.contains(.sandboxed_navigation)
+			}
+			if !allowed {
+				complete_history_step(on_complete, .initiator_disallowed)
+				return
+			}
+		}
+	}
+
 	target := target_history_entry(traversable.session_history_entries_, used_step) or {
 		complete_history_step(on_complete, .initiator_disallowed)
 		return
@@ -897,13 +927,12 @@ fn (mut traversable TraversableNavigable) apply_the_history_step(step int, check
 }
 
 pub fn (mut traversable TraversableNavigable) apply_the_traverse_history_step(step int, source_snapshot_params ?&SourceSnapshotParams, initiator_to_check ?&dom.Navigable, user_involvement UserNavigationInvolvement, on_complete ?TraversableHistoryStepCompletion) {
-	_ = initiator_to_check
-	traversable.apply_the_history_step(step, true, source_snapshot_params, user_involvement,
+	traversable.apply_the_history_step(step, true, source_snapshot_params, initiator_to_check, user_involvement,
 		.traverse, .no, on_complete)
 }
 
 pub fn (mut traversable TraversableNavigable) apply_the_reload_history_step(user_involvement UserNavigationInvolvement, on_complete ?TraversableHistoryStepCompletion) {
-	traversable.apply_the_history_step(traversable.current_session_history_step_, true, none,
+	traversable.apply_the_history_step(traversable.current_session_history_step_, true, none, none,
 		user_involvement, .reload, .no, on_complete)
 }
 
@@ -913,12 +942,12 @@ pub fn (mut traversable TraversableNavigable) apply_the_push_or_replace_history_
 	} else {
 		dom.NavigationType.push
 	}
-	traversable.apply_the_history_step(step, false, none, user_involvement, type_, synchronous_navigation,
+	traversable.apply_the_history_step(step, false, none, none, user_involvement, type_, synchronous_navigation,
 		on_complete)
 }
 
 pub fn (mut traversable TraversableNavigable) update_for_navigable_creation_or_destruction(on_complete ?TraversableHistoryStepCompletion) {
-	traversable.apply_the_history_step(traversable.current_session_history_step_, false, none,
+	traversable.apply_the_history_step(traversable.current_session_history_step_, false, none, none,
 		.none_, .traverse, .no, on_complete)
 }
 
@@ -959,13 +988,30 @@ pub fn (traversable &TraversableNavigable) can_go_forward() bool {
 }
 
 pub fn (mut traversable TraversableNavigable) traverse_the_history_by_delta(delta int, source_document ?&dom.Document) {
-	user_involvement := if source_document != none {
-		UserNavigationInvolvement.none_
-	} else {
-		UserNavigationInvolvement.browser_ui
+	// 1. Let sourceSnapshotParams and initiatorToCheck be null.
+	mut source_snapshot_params := ?&SourceSnapshotParams(none)
+	mut initiator_to_check := ?&dom.Navigable(none)
+
+	// 2. Let userInvolvement be "browser UI".
+	mut user_involvement := UserNavigationInvolvement.browser_ui
+
+	// 3. If sourceDocument is given, then:
+	if document := source_document {
+		// 1. Set sourceSnapshotParams to the result of snapshotting source snapshot params given sourceDocument.
+		source_snapshot_params = &SourceSnapshotParams{
+			...snapshot_source_snapshot_params(document)
+		}
+
+		// 2. Set initiatorToCheck to sourceDocument's node navigable.
+		initiator_to_check = document.navigable()
+
+		// 3. Set userInvolvement to "none".
+		user_involvement = .none_
 	}
+
+	// 4. Append the following session history traversal steps to traversable:
 	traversable_pointer := voidptr(traversable)
-	traversable.append_session_history_traversal_steps(fn [delta, traversable_pointer, user_involvement] (signal &TraversalPromiseState) {
+	traversable.append_session_history_traversal_steps(fn [delta, traversable_pointer, source_snapshot_params, initiator_to_check, user_involvement] (signal &TraversalPromiseState) {
 		mut mutable_traversable := unsafe { &TraversableNavigable(traversable_pointer) }
 		steps := mutable_traversable.get_all_used_history_steps()
 		current_index := steps.index(mutable_traversable.current_session_history_step_)
@@ -974,8 +1020,8 @@ pub fn (mut traversable TraversableNavigable) traverse_the_history_by_delta(delt
 			signal.resolve()
 			return
 		}
-		mutable_traversable.apply_the_traverse_history_step(steps[target_index], none, none,
-			user_involvement, fn [signal] (_ HistoryStepResult) {
+		mutable_traversable.apply_the_traverse_history_step(steps[target_index], source_snapshot_params,
+			initiator_to_check, user_involvement, fn [signal] (_ HistoryStepResult) {
 				signal.resolve()
 			})
 	})

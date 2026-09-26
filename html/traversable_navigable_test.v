@@ -348,3 +348,48 @@ fn test_top_level_traversable_status_follows_the_host_parent() {
 	assert traversable.is_top_level_traversable()
 	traversable.destroy_top_level_traversable()
 }
+
+fn test_traverse_history_step_rejects_a_sandboxed_or_incomplete_initiator() {
+	mut traversable := TraversableNavigable.create_a_fresh_top_level_traversable(dom.URL{
+		value: 'https://example.test/zero'
+	}, EmptyDocumentResource{})!
+	document := traversable.active_document() or { panic('missing document') }
+	traversable.append_session_history_entry(traversal_entry(1, 'https://example.test/one', document))
+	host := traversable.host_navigable_ or { panic('missing host navigable') }
+	_ := NavigableModel.create(host, none)!
+	removed_initiator := &dom.Navigable{}
+
+	mut incomplete := &HistoryStepObservation{}
+	traversable.apply_the_traverse_history_step(1, none, removed_initiator, .none_, fn [mut incomplete] (result HistoryStepResult) {
+		incomplete.complete(result)
+	})
+	assert incomplete.completed
+	assert incomplete.result == .initiator_disallowed
+
+	sandboxed := &SourceSnapshotParams{
+		sandboxing_flags: SandboxingFlagSet{
+			bits: u32(SandboxingFlag.sandboxed_navigation)
+		}
+	}
+	mut disallowed := &HistoryStepObservation{}
+	traversable.apply_the_traverse_history_step(1, sandboxed, removed_initiator, .none_, fn [mut disallowed] (result HistoryStepResult) {
+		disallowed.complete(result)
+	})
+	assert disallowed.completed
+	assert disallowed.result == .initiator_disallowed
+	assert traversable.current_session_history_step_ == 0
+
+	mut allowed := &HistoryStepObservation{}
+	traversable.apply_the_traverse_history_step(1, &SourceSnapshotParams{}, removed_initiator, .none_, fn [mut allowed] (result HistoryStepResult) {
+		allowed.complete(result)
+	})
+	mut event_loop := main_thread_event_loop()
+	for _ in 0 .. 4 {
+		if allowed.completed {
+			break
+		}
+		event_loop.process()
+	}
+	assert allowed.completed
+	assert allowed.result == .applied
+}
