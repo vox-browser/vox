@@ -4548,10 +4548,12 @@ pub enum UpdateLayoutReason {
 
 pub enum PolicyControlledFeature as u8 {
 	autoplay
+	camera
 	encrypted_media
 	focus_without_user_activation
 	fullscreen
 	gamepad
+	microphone
 	window_management
 }
 
@@ -9435,13 +9437,23 @@ pub fn (d &Document) is_allowed_to_use_feature(feature PolicyControlledFeature) 
 	if !d.is_fully_active() {
 		return false
 	}
-	// 3. Check the feature. For now, allow all features.
+	// 3. If the result of running is feature enabled in document for origin on feature, document, and document's origin
+	//    is "Enabled", then return true.
+	// FIXME: This is ad-hoc. Implement the Permissions Policy specification.
 	return match feature {
+		// FIXME: Implement allowlist for this.
 		.autoplay { true }
-		.focus_without_user_activation { true }
-		.encrypted_media { true }
+		// FIXME: Implement allowlist for this.
+		.camera { true }
+		// FIXME: Implement allowlist for this.
+		.focus_without_user_activation, .encrypted_media { true }
+		// FIXME: Implement allowlist for this.
 		.fullscreen { true }
+		// FIXME: Implement allowlist for this.
 		.gamepad { true }
+		// FIXME: Implement allowlist for this.
+		.microphone { true }
+		// FIXME: Implement allowlist for this.
 		.window_management { true }
 	}
 }
