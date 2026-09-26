@@ -2874,6 +2874,9 @@ fn test_broken_image_paints_and_refreshes_alt_text_fallback() {
 	document := html.parse_document('<!doctype html><style>html,body{margin:0}img{display:block;width:100px;height:30px;color:rgb(10 20 30);font:700 19px monospace}</style><img id="target" src="missing.png" alt="fallback">')
 	mut target := document.get_element_by_id('target') or { panic('missing image') }
 	image := unsafe { &dom.HTMLImageElement(target) }
+	mut image_model := html.html_image_element_model_for_dom_element(image)
+	mut image_request := image_model.current_request()
+	image_request.set_state(.broken)
 	mut root := layout_document_typed_in_viewport(document, 240, 140)
 	mut commands := root.paint_commands()
 	mut text_commands := commands.filter(it.kind == 'draw_text' && it.text == 'fallback')
