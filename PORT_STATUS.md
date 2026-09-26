@@ -584,7 +584,10 @@ the parser handshake and script-blocking state. Hyperlink downloads now fire
 their cancellable Navigation API event, honor sandboxing, fetch with the
 download initiator and URL credentials, apply the upstream Content-Disposition
 and same-origin filename precedence, sanitize the result, and stream response
-bodies through the owning PageClient. Still open:
+bodies through the owning PageClient. Navigation responses with an attachment
+disposition now take that download path without installing a document or
+history entry, enforce both source and target sandboxing, and retain request-
+server identity for direct PageClient handoff. Still open:
 
 - The browser shell dispatches clicks through its JavaScript mirror and follows
   links itself instead of the page event handler's click and activation path.
@@ -643,14 +646,14 @@ from the current-module totals.
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
 | `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
 | `EventTiming` | 1 | 122 | 153 | 95 | Complete |
-| `Fetch` | 33 | 8,493 | 5,192 | 1,365 | Complete |
+| `Fetch` | 33 | 8,493 | 5,193 | 1,365 | Complete |
 | `FileAPI` | 6 | 1,357 | 1,018 | 499 | Complete |
 | `Fullscreen` | 0 | 0 | 93 | 177 | Complete |
 | `GPC` | 1 | 21 | 16 | 13 | Complete |
 | `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
 | `Geolocation` | 4 | 643 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 58,060 | 15,101 | Complete |
+| `HTML` | 286 | 83,853 | 58,131 | 15,244 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
@@ -703,7 +706,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **353,539** | **67,067** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **353,611** | **67,210** | **74 complete, 4 present, 0 untranslated** |
 
 ## Verification
 
@@ -719,8 +722,8 @@ quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 5
 reviewed upstream-equivalent trivial implementations: 543
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 14236
-  unmatched: 4219
+  candidate-name-match: 14237
+  unmatched: 4218
   language-constructor-or-destructor: 1383
   gc-or-binding-runtime: 655
   consolidated-name-match: 492
@@ -732,7 +735,7 @@ suspicious empty/default-return implementations: 0
 largest unmatched modules:
 
   1682 CSS
-  1197 HTML
+  1196 HTML
    590 DOM
    404 Painting
    316 Layout

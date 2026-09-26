@@ -110,6 +110,10 @@
   respect the sandboxed-downloads flag, fetch with the download initiator and
   URL credentials, select and sanitize the upstream suggested filename, and
   stream the response body through the owning page's download client.
+  Navigation responses with an attachment disposition use the same filename
+  and streaming path without committing a history entry; both source and
+  target download sandboxing are enforced, and request-server responses retain
+  their navigation identity for direct PageClient handoff.
 - Media controls derive their timeline from the final seekable range, react to
   audio-track list events, use a semantic fullscreen button with the `F`
   shortcut, and coalesce scrub seeks with the upstream timeout. SourceBuffer
