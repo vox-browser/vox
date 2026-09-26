@@ -137,19 +137,21 @@ fn run_case(input_root string, expected_root string, relative_path string) !bool
 	}
 	source := read_decoded_document_source(input_path)!
 	expected := os.read_file(expected_path)!.trim_right('\n')
+	// Like a navigation, create the document with its final URL before parsing, so
+	// parser-time URL consumers (style sheets created as style elements are
+	// popped, a parser-inserted <base>) observe it.
+	document_url := dom.dom_url_parse('file://${input_path}', dom.url_about_blank(), 'UTF-8') or {
+		return error('could not construct the input URL for ${relative_path}')
+	}
 	mut document := if relative_path.ends_with('.svg') {
-		mut svg_document := dom.Document.create(dom.url_about_blank())
+		mut svg_document := dom.Document.create(document_url)
 		svg_document.set_content_type('image/svg+xml')
 		svg_document.set_document_type(.xml)
 		html.parse_xml_document_source(svg_document, source)!
 		svg_document
 	} else {
-		html.parse_document(source)
+		html.parse_document_with_url(source, document_url)
 	}
-	document_url := dom.dom_url_parse('file://${input_path}', dom.url_about_blank(), 'UTF-8') or {
-		return error('could not construct the input URL for ${relative_path}')
-	}
-	document.set_url(document_url)
 	// LibWeb's layout runner loads each fixture as the active document of a top-level
 	// traversable. Preserve that state here so APIs gated on "fully active" (notably
 	// HTMLDialogElement.showModal()) run instead of throwing InvalidStateError.

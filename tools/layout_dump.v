@@ -84,19 +84,21 @@ fn read_decoded_document_source(path string) !string {
 
 fn dump_case(path string) !string {
 	source := read_decoded_document_source(path)!
+	// Like a navigation, create the document with its final URL before parsing, so
+	// parser-time URL consumers (style sheets created as style elements are
+	// popped, a parser-inserted <base>) observe it.
+	document_url := dom.dom_url_parse('file://${path}', dom.url_about_blank(), 'UTF-8') or {
+		return error('could not construct the input URL for ${path}')
+	}
 	mut document := if path.ends_with('.svg') {
-		mut svg_document := dom.Document.create(dom.url_about_blank())
+		mut svg_document := dom.Document.create(document_url)
 		svg_document.set_content_type('image/svg+xml')
 		svg_document.set_document_type(.xml)
 		html.parse_xml_document_source(svg_document, source)!
 		svg_document
 	} else {
-		html.parse_document(source)
+		html.parse_document_with_url(source, document_url)
 	}
-	document_url := dom.dom_url_parse('file://${path}', dom.url_about_blank(), 'UTF-8') or {
-		return error('could not construct the input URL for ${path}')
-	}
-	document.set_url(document_url)
 	// Match the corpus runner: each fixture is the active document of a top-level
 	// traversable, so APIs gated on "fully active" run instead of throwing.
 	mut navigable := &dom.Navigable{
