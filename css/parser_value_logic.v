@@ -8353,13 +8353,13 @@ fn (mut parser Parser) parse_align_content_value(mut tokens ComponentValueStream
 
 fn (mut parser Parser) parse_align_items_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_property_keyword_value(mut tokens, ['baseline', 'center', 'end', 'flex-end',
+	return parse_alignment_keyword_value(mut tokens, ['baseline', 'center', 'end', 'flex-end',
 		'flex-start', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe'])
 }
 
 fn (mut parser Parser) parse_align_self_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_property_keyword_value(mut tokens, ['auto', 'baseline', 'center', 'end', 'flex-end',
+	return parse_alignment_keyword_value(mut tokens, ['auto', 'baseline', 'center', 'end', 'flex-end',
 		'flex-start', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe'])
 }
 
@@ -8400,14 +8400,14 @@ fn (mut parser Parser) parse_justify_content_value(mut tokens ComponentValueStre
 
 fn (mut parser Parser) parse_justify_items_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_property_keyword_value(mut tokens, ['baseline', 'center', 'end', 'flex-end',
+	return parse_alignment_keyword_value(mut tokens, ['baseline', 'center', 'end', 'flex-end',
 		'flex-start', 'legacy', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch',
 		'unsafe', 'left', 'right'])
 }
 
 fn (mut parser Parser) parse_justify_self_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_property_keyword_value(mut tokens, ['auto', 'baseline', 'center', 'end', 'flex-end',
+	return parse_alignment_keyword_value(mut tokens, ['auto', 'baseline', 'center', 'end', 'flex-end',
 		'flex-start', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe',
 		'left', 'right'])
 }
@@ -9528,6 +9528,19 @@ fn parse_property_keyword_value(mut tokens ComponentValueStream, allowed_keyword
 	keyword := keyword_from_string(ident) or { return none }
 	tokens = transaction
 	return StyleValue(KeywordStyleValue.create(keyword))
+}
+
+// Rust value_parser.rs parse_alignment_property(): align-items, align-self, justify-items, and justify-self accept one
+// of their listed keywords, except that the overflow-position keywords `safe` and `unsafe` are not values on their
+// own.
+fn parse_alignment_keyword_value(mut tokens ComponentValueStream, allowed_keywords []string) ?StyleValue {
+	mut transaction := tokens.clone()
+	value := parse_property_keyword_value(mut transaction, allowed_keywords) or { return none }
+	if value is KeywordStyleValue && value.keyword() in [.safe, .unsafe_] {
+		return none
+	}
+	tokens = transaction
+	return value
 }
 
 fn parse_property_keyword_value_from_metadata(property_id PropertyID, mut tokens ComponentValueStream) ?StyleValue {
