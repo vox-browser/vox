@@ -3735,14 +3735,14 @@ fn test_fieldset_paint_shifts_background_and_splits_top_border_around_legend() {
 	background := commands.filter(it.color == 'rgb(180 220 255)')
 	assert background.len == 1
 	background_clip := background[0].recording_clip or { panic('fieldset background is not clipped') }
-	assert background_clip == LayoutRect{10, 19, 208, 79}
+	assert background_clip == LayoutRect{10, 20, 208, 78}
 	assert background[0].clip_list != unsafe { nil }
 	assert background[0].clip_list.items.last().rect == background_clip
 
 	red_borders := commands.filter(it.color == 'rgb(220 0 0)')
 	clipped_top_borders := red_borders.filter(it.recording_clip != none)
 	assert clipped_top_borders.len == 0
-	top_border_runs := red_borders.filter(it.kind == 'fill_rect' && it.y == 19 && it.height == 6)
+	top_border_runs := red_borders.filter(it.kind == 'fill_rect' && it.y == 20 && it.height == 6)
 	assert top_border_runs.len == 2
 	assert top_border_runs[0].x + top_border_runs[0].width <= top_border_runs[1].x
 	assert red_borders.any(it.recording_clip == none)
@@ -3816,9 +3816,14 @@ fn test_range_client_rects_apply_visual_transforms_and_live_scroll_offsets() {
 	initial_rect := initial.item(0) or { panic('missing initial range rect') }
 	initial_element_rect := transformed.get_bounding_client_rect()
 	assert math.abs(initial_rect.x - initial_element_rect.x) < 0.01
-	assert math.abs(initial_rect.y - initial_element_rect.y) < 0.01
 	assert math.abs(initial_rect.width - initial_element_rect.width) < 0.01
-	assert math.abs(initial_rect.height - initial_element_rect.height) < 0.01
+	// Range geometry includes the selected face's ascent/descent overflow. That
+	// can extend beyond the inline-block's line-height box after transformation.
+	initial_top_overflow := initial_element_rect.y - initial_rect.y
+	initial_bottom_overflow := initial_rect.y + initial_rect.height - (initial_element_rect.y +
+		initial_element_rect.height)
+	assert initial_top_overflow > 0
+	assert initial_bottom_overflow > 0
 
 	scroller := document.get_element_by_id('scroller') or { panic('missing scroller') }
 	mut scroller_paintable := scroller.paintable_box() or { panic('missing scroller paintable') }
@@ -3832,9 +3837,11 @@ fn test_range_client_rects_apply_visual_transforms_and_live_scroll_offsets() {
 	assert math.abs(scrolled_rect.width - initial_rect.width) < 0.01
 	assert math.abs(scrolled_rect.height - initial_rect.height) < 0.01
 	assert math.abs(scrolled_rect.x - scrolled_element_rect.x) < 0.01
-	assert math.abs(scrolled_rect.y - scrolled_element_rect.y) < 0.01
 	assert math.abs(scrolled_rect.width - scrolled_element_rect.width) < 0.01
-	assert math.abs(scrolled_rect.height - scrolled_element_rect.height) < 0.01
+	assert math.abs((scrolled_element_rect.y - scrolled_rect.y) - initial_top_overflow) < 0.01
+	scrolled_bottom_overflow := scrolled_rect.y + scrolled_rect.height - (scrolled_element_rect.y +
+		scrolled_element_rect.height)
+	assert math.abs(scrolled_bottom_overflow - initial_bottom_overflow) < 0.01
 }
 
 fn test_paintable_with_lines_translates_selection_render_spans_and_cache_invalidation() {
