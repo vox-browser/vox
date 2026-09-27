@@ -224,6 +224,17 @@ fn disable_svg_rendering_for_descendants(mut state LayoutState, root &Node) {
 }
 
 fn (mut context SVGFormattingContext) layout_svg_element(child &Node) {
+	// SVG children are positioned in the current SVG formatting context's user
+	// space. Resource subtrees are structurally attached to the referencing box,
+	// which need not be their coordinate containing block (notably a translated
+	// foreignObject), so make that relationship explicit in UsedValues.
+	if child_styled := child.as_node_with_style() {
+		if context_styled := context.context_box.as_node_with_style() {
+			context_state := context.state.get_mutable(context_styled)
+			mut child_state := context.state.get_mutable(child_styled)
+			child_state.set_containing_block_used_values(context_state)
+		}
+	}
 	is_symbol := if element := svg_element_for_layout_node(child) {
 		element.local_name() == 'symbol'
 	} else {
@@ -758,8 +769,13 @@ fn (mut context SVGFormattingContext) layout_mask_or_clip(mask_or_clip &Node) {
 	mut layout_state := context.state.get_mutable(styled)
 	// The resource box is not normal-flow content. A formatting context inside a
 	// foreignObject may have initialized its UsedValues while walking siblings;
-	// SVGFormattingContext starts the referenced viewport at its own origin.
+	// SVGFormattingContext starts the referenced viewport in its own user space.
+	// Its structural owner is not its coordinate containing block: upstream
+	// places every attached resource at (0, 0) after the nested run.
 	layout_state.set_content_offset(CSSPixelPoint{})
+	if context_styled := context.context_box.as_node_with_style() {
+		layout_state.set_containing_block_used_values(context.state.get_mutable(context_styled))
+	}
 	element := svg_element_for_layout_node(mask_or_clip) or { return }
 	units_attribute := if mask_or_clip.is_svg_mask_box() {
 		'maskContentUnits'
