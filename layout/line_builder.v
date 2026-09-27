@@ -508,6 +508,8 @@ pub fn (mut builder LineBuilder) update_last_line() {
 	} else {
 		builder.current_block_offset.plus(computed.line_height())
 	}
+	mut first_unshifted_text_baseline := ?CSSPixels(none)
+	current_block_offset := builder.current_block_offset
 	for index in 0 .. line_box.fragments_.len {
 		mut fragment := &line_box.fragments_[index]
 		uses_container_alignment := builder.fragment_uses_container_alignment(fragment)
@@ -555,6 +557,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 				fragment_block_offset = alphabetic_baseline.minus(vertical_align_amount)
 			}
 		}
+		fragment_is_unshifted := fragment_block_offset == alphabetic_baseline
 		fragment.set_inline_offset(fragment_inline_offset)
 		fragment.set_block_offset(css.css_pixels_floor(fragment_block_offset).plus(block_offset))
 		mut top_of_inline_box := CSSPixels.new(0)
@@ -599,6 +602,10 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			fragment.set_baseline(font_baseline)
 			fragment.set_block_length(font_box_height)
 		}
+		if first_unshifted_text_baseline == none && fragment_is_unshifted
+			&& fragment.layout_node_.is_text_node() && !fragment.is_fully_truncated_ {
+			first_unshifted_text_baseline = fragment.block_offset().plus(fragment.baseline()).minus(current_block_offset)
+		}
 	}
 	for mut marker in line_box.static_position_markers_ {
 		marker.inline_offset = marker.inline_offset.plus(inline_offset)
@@ -606,7 +613,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 	}
 	line_box.block_length_ = lowermost_box_bottom.minus(uppermost_box_top)
 	line_box.bottom_ = builder.current_block_offset.plus(line_box.block_length_)
-	line_box.baseline_ = line_box_baseline
+	line_box.baseline_ = first_unshifted_text_baseline or { line_box_baseline.plus(block_offset) }
 	builder.should_advance_to_last_line_box_block_end = should_align_strut_to_line_box_baseline
 }
 

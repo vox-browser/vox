@@ -3435,6 +3435,20 @@ fn test_baseline_aligned_inline_block_keeps_the_containing_strut_descent() {
 	assert container.content_height().raw_value() == expected_height.raw_value()
 }
 
+fn test_line_box_baseline_comes_from_final_unshifted_text_fragment() {
+	document := html.parse_document('<!doctype html><style>
+		.ib { display:inline-block }
+		.label { display:inline-block; border:1px solid; font-size:20px }
+		button { display:inline-block; border:1px solid; font-size:40px }
+	</style><div id="outer" class="ib"><div class="label">A</div> <button>B</button></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	outer := used_for_id(result, 'outer')
+	assert outer.line_boxes.len == 1
+	line := outer.line_boxes[0]
+	text_fragment := line.fragments().filter(it.layout_node().is_text_node())[0]
+	assert line.baseline() == text_fragment.block_offset().plus(text_fragment.baseline())
+}
+
 fn test_atomic_inline_applies_calculated_vertical_align_offset() {
 	document := html.parse_document('<!doctype html><style>
 		* { margin:0; padding:0; font:16px SerenitySans }
