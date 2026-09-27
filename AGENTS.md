@@ -196,8 +196,10 @@
   indefinite. Before that resolution, percentage cross-axis minimums remain
   indefinite and cannot transfer a provisional size through an item's aspect
   ratio into its flex base. Intrinsic column-flex measurement likewise keeps
-  its original percentage basis across both passes, so a stretched item's
-  cyclic percentage minimum cannot inflate the width it helped determine.
+  its original percentage basis across both passes and clears any numeric
+  width retained after that basis becomes indefinite, so a stretched item's
+  cyclic percentage minimum cannot inflate the width it helped determine or
+  reuse geometry from an earlier normal-layout pass.
   Flex and grid item baselines ignore
   `vertical-align`, which has no effect on those item roles. Baseline consumers
   distinguish first and last
