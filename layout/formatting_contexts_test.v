@@ -167,6 +167,24 @@ fn test_empty_button_content_is_skipped_by_flex_layout() {
 	assert result.state.try_get(content_styled) == none
 }
 
+fn test_inline_grid_whitespace_runs_do_not_acquire_used_values() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#grid { display:inline-grid }
+	</style><div id="grid">
+		<div></div>
+	</div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	grid := layout_node_with_id(result.root, 'grid') or { panic('missing grid') }
+	assert grid.children().len == 3
+	for whitespace in [grid.children()[0], grid.children()[2]] {
+		whitespace_styled := whitespace.as_node_with_style() or {
+			panic('anonymous whitespace run has no style')
+		}
+		assert result.state.try_get(whitespace_styled) == none
+	}
+}
+
 fn test_fractional_calculated_flex_basis_does_not_wrap_the_third_item() {
 	for width in [100, 101, 102, 100] {
 		document := html.parse_document('<!doctype html><style>

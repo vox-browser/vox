@@ -2516,20 +2516,6 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 			automatic_content_height: container_state.content_height()
 		}
 	}
-	// An inline grid is materialized as an atomic inline box. LibWeb retains
-	// zero-sized paintables for its otherwise-skippable anonymous whitespace
-	// children after the atomic inline sizing passes, although they do not
-	// participate in grid placement.
-	if container.display().is_inline_outside() {
-		for child in container.children() {
-			if !can_skip_anonymous_text_run(child) {
-				continue
-			}
-			if styled := child.as_node_with_style() {
-				state.get_mutable(styled)
-			}
-		}
-	}
 	width_is_intrinsic := available_space.width.is_intrinsic_sizing_constraint()
 	container_width := if width_is_intrinsic {
 		CSSPixels.new(0)
