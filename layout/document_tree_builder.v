@@ -664,13 +664,6 @@ fn clear_stale_layout_and_paint_node(node &dom.Node, content_visibility_hidden_r
 	return .@continue
 }
 
-fn single_content_replacement_image(content css.ContentData) ?css.ContentItem {
-	if content.type_ != .list || content.items.len != 1 || content.items[0].type_ != .image {
-		return none
-	}
-	return content.items[0]
-}
-
 fn adjusted_display_for_replaced_element(display css.Display) ?css.Display {
 	if display.is_table_inside() {
 		return css.Display.from_short(if display.is_block_outside() { .block } else { .inline_ })
@@ -696,13 +689,13 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 	mut content_replacement_source := ?css.ContentItem(none)
 	if computed.property(.content, .yes) != none {
 		abstract_element := dom.AbstractElement.new(element, none)
+		if !computed.display().is_contents() {
+			content_replacement_source = computed.content_replacement_image(&abstract_element)
+		}
 		registered_counter_styles := css.registered_counter_styles_for_abstract_element(abstract_element)
 		content := computed.content(&abstract_element, builder_state.quote_nesting_level, registered_counter_styles).content_data
 		mut mutable_computed := unsafe { &css.MutableComputedValues(computed) }
 		mutable_computed.set_content(content)
-		if !computed.display().is_contents() {
-			content_replacement_source = single_content_replacement_image(content)
-		}
 	}
 
 	mut box_node := if source := content_replacement_source {
@@ -2003,6 +1996,7 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 	css.resolve_computed_values_for_document(computed, document)
 	abstract_element := dom.AbstractElement.new(element, dom_pseudo)
 	registered_counter_styles := css.registered_counter_styles_for_abstract_element(abstract_element)
+	mut content_replacement_source := computed.content_replacement_image(&abstract_element)
 	initial_quote_nesting_level := builder_state.quote_nesting_level
 	initial_content_result := computed.content(&abstract_element, initial_quote_nesting_level, registered_counter_styles)
 	builder_state.quote_nesting_level = initial_content_result.final_quote_nesting_level
@@ -2014,7 +2008,6 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 	content := computed.content(&abstract_element, initial_quote_nesting_level, registered_counter_styles).content_data
 	mut mutable_computed := unsafe { &css.MutableComputedValues(computed) }
 	mutable_computed.set_content(content)
-	mut content_replacement_source := single_content_replacement_image(content)
 	if computed.display().is_list_item() || computed.display().is_contents() {
 		content_replacement_source = none
 	}
@@ -2023,6 +2016,10 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 		if adjusted_display := adjusted_display_for_replaced_element(computed.display()) {
 			generated_style = computed.clone_for_anonymous_with_display(adjusted_display)
 		}
+	} else if computed.display().is_contents() {
+		// Generated contents remain as an inline grouping node so their content
+		// participates in the host's inline formatting context.
+		generated_style = computed.clone_for_anonymous_with_display(css.Display.from_short(.inline_))
 	}
 	mut node := if source := content_replacement_source {
 		unsafe { &Node(ImageBox.new_generated_for_content_item(document, generated_style, source)) }
@@ -2032,6 +2029,7 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 	node.set_generated_for(layout_pseudo, element)
 	node.initial_quote_nesting_level_ = initial_quote_nesting_level
 	if content.type_ == .list && node.can_have_children() {
+		mut generated_children := []&Node{}
 		// An empty generated text node carries the inline fragment of an
 		// ordinary inline pseudo-element. Other pseudo-element boxes exist
 		// independently of their contents, so they get no zero-length child
@@ -2049,14 +2047,15 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 					unsafe { &Node(TextNode.new_generated(document, item.value)) }
 				}
 				child.set_generated_for(layout_pseudo, element)
-				node.append_child(child)
+				generated_children << child
 			}
 		} else if content.text.len > 0 || keeps_empty_text {
-			node.append_child(unsafe { &Node(TextNode.new_generated(document, content.text)) })
+			mut child := unsafe { &Node(TextNode.new_generated(document, content.text)) }
+			child.set_generated_for(layout_pseudo, element)
+			generated_children << child
 		}
-		if node.has_children() {
-			node.set_children_are_inline(true)
-		}
+		attach_children_maintaining_inline_invariant(mut node, generated_children, document,
+			generated_style)
 	}
 	if node.is_list_item_box() {
 		if marker := build_list_item_marker(document, element, computed, mut builder_state) {

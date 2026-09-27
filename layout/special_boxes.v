@@ -987,6 +987,10 @@ pub fn (box &ImageBox) source() string {
 	return box.source_
 }
 
+pub fn (box &ImageBox) uses_content_replacement() bool {
+	return box.uses_content_replacement_
+}
+
 pub fn (mut box ImageBox) dom_node_did_update_alt_text() {
 	if !box.renders_as_alt_text_ {
 		return

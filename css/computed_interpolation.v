@@ -3130,6 +3130,42 @@ pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, in
 	}
 }
 
+// A single authored <image> is a content replacement. Inspect the computed
+// content list before quote controls and counters are resolved, since an item
+// such as no-open-quote must still prevent replacement even though it emits no
+// text node.
+pub fn (c &ComputedProperties) content_replacement_image(abstract_element &dom.AbstractElement) ?ContentItem {
+	value := c.property(.content, .yes) or { return none }
+	parsed := style_value_logic_from_dom(.content, value) or { return none }
+	if parsed !is ContentStyleValue {
+		return none
+	}
+	items := (parsed as ContentStyleValue).content().values()
+	if items.len != 1 {
+		return none
+	}
+	item := items[0]
+	if item is ImageStyleValue {
+		return ContentItem{
+			type_: .image
+			value: item.url_.url()
+		}
+	}
+	if item is ImageSetStyleValue {
+		device_pixels_per_css_pixel := abstract_element.element().document().device_pixels_per_css_pixel()
+		index := item.select_image_index(device_pixels_per_css_pixel) or { return none }
+		option := item.options_[index]
+		if option.image is ImageStyleValue {
+			return ContentItem{
+				type_:      .image
+				value:      option.image.url_.url()
+				resolution: option.resolution.dots_per_pixel() or { 1.0 }
+			}
+		}
+	}
+	return none
+}
+
 pub fn (c &ComputedProperties) content_visibility() ContentVisibility {
 	if value := c.property(.content_visibility, .yes) {
 		return content_visibility_from_style_value(value) or { ContentVisibility.visible }

@@ -109,7 +109,8 @@ fn test_single_pseudo_content_image_becomes_the_pseudo_box() {
 		#cell::before { content:url(${content_replacement_green_image}); display:table-cell }
 		#list::before { content:url(${content_replacement_green_image}); display:list-item }
 		#contents::before { content:url(${content_replacement_green_image}); display:contents }
-	</style><div id="block"></div><div id="table"></div><div id="cell"></div><div id="list"></div><div id="contents"></div>')
+		#quote::before { content:no-open-quote url(${content_replacement_green_image}); display:flex }
+	</style><div id="block"></div><div id="table"></div><div id="cell"></div><div id="list"></div><div id="contents"></div><div id="quote"></div>')
 	root := build_layout_tree(document) or { panic('no layout tree') }
 	for id in ['block', 'table', 'cell'] {
 		host := document_tree_builder_node_with_id(root, id) or { panic('missing ${id}') }
@@ -132,6 +133,15 @@ fn test_single_pseudo_content_image_becomes_the_pseudo_box() {
 		image := document_tree_builder_first_image(pseudo) or { panic('missing ${id} image child') }
 		assert image.display().is_inline_outside()
 	}
+	contents_host := document_tree_builder_node_with_id(root, 'contents') or {
+		panic('missing contents')
+	}
+	assert (contents_host.first_child() or { panic('missing contents pseudo') }).is_inline_node()
+	quote_host := document_tree_builder_node_with_id(root, 'quote') or { panic('missing quote') }
+	quote_pseudo := quote_host.first_child() or { panic('missing quote pseudo') }
+	assert !quote_pseudo.is_image_box()
+	assert quote_pseudo.display().is_flex_inside()
+	assert document_tree_builder_first_image(quote_pseudo) != none
 }
 
 // build_layout_tree walks the DOM and produces a real layout tree rooted at the Viewport (whose DOM node is

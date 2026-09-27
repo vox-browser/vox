@@ -188,19 +188,23 @@ fn append_typed_layout_node(node &Node, state &LayoutState, depth int, mut lines
 	// using the replaced element's concrete viewport, and the upstream layout
 	// dump exposes that otherwise isolated context directly below ImageBox.
 	if image_box := node.as_image_box() {
-		if svg_document := image_box.svg_image_document() {
-			if styled := node.as_node_with_style() {
-				if used := state.try_get(styled) {
-					width := used.content_width().to_double()
-					height := used.content_height().to_double()
-					if width <= 0 || height <= 0 {
-						return
-					}
-					mut mutable_svg_document := unsafe { &dom.Document(svg_document) }
-					mutable_svg_document.set_viewport_rect(dom.Rect{0, 0, width, height})
-					if svg_result := run_document_layout_for_tree_dump(svg_document, width, height) {
-						lines << '${'  '.repeat(depth + 1)}(SVG-as-image isolated context)'
-						append_typed_layout_node(svg_result.root, svg_result.state, depth + 1, mut lines)
+		if !node.is_generated_for_pseudo_element() && !image_box.uses_content_replacement() {
+			if svg_document := image_box.svg_image_document() {
+				if styled := node.as_node_with_style() {
+					if used := state.try_get(styled) {
+						width := used.content_width().to_double()
+						height := used.content_height().to_double()
+						if width <= 0 || height <= 0 {
+							return
+						}
+						mut mutable_svg_document := unsafe { &dom.Document(svg_document) }
+						mutable_svg_document.set_viewport_rect(dom.Rect{0, 0, width, height})
+						if svg_result := run_document_layout_for_tree_dump(svg_document, width,
+							height) {
+							lines << '${'  '.repeat(depth + 1)}(SVG-as-image isolated context)'
+							append_typed_layout_node(svg_result.root, svg_result.state, depth + 1,
+								mut lines)
+						}
 					}
 				}
 			}
