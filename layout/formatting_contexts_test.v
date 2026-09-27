@@ -5098,6 +5098,23 @@ fn test_list_item_marker_line_height_floors_only_automatic_heights() {
 	assert used_for_id(result, 'floating').content_height().to_double() == 24
 }
 
+// A floated list item's shrink-to-fit probes must not leave its generated
+// outside marker cached at zero width when nested inline fieldset content is
+// measured before the marker's own formatting-context run.
+fn test_floating_list_item_remeasures_marker_after_fieldset_intrinsic_probe() {
+	document := html.parse_document('<!doctype html><style>
+		li { float:right }
+		fieldset, p { margin:0; padding:0 }
+		fieldset, p, .actions, input { display:inline }
+		p { position:relative }
+	</style><ul><li id="item"><form><fieldset><p><span class="actions"><input type="submit" value="PASS"></span></p></fieldset></form></li></ul>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	marker := list_item_marker_used_values(result, 'item')
+	assert marker.content_width().to_double() > 0
+	assert marker.line_boxes.len == 1
+	assert marker.offset.x().plus(marker.content_width()).to_double() <= 0
+}
+
 fn test_inline_abspos_static_position_accounts_for_float_intrusion() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }

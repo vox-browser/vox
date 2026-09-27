@@ -931,6 +931,12 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 		}
 	}
 	marker_box := marker_node.as_box() or { return }
+	// Intrinsic probes of a shrink-to-fit list item can visit its outside marker
+	// before the marker gets an independent used-value entry. Upstream keeps
+	// those probe results in the run-scoped sizing state; do not reuse a stale
+	// persistent zero after generated marker content is ready for its own run.
+	mut mutable_marker_box := unsafe { &Box(marker_box) }
+	mutable_marker_box.reset_cached_intrinsic_sizes()
 	marker_state.set_content_width(calculate_max_content_width(mut state, marker_box))
 	if marker_node.has_children() {
 		if block_container := marker_node.as_block_container() {
