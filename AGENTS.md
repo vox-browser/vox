@@ -328,7 +328,10 @@
   case-sensitive local names, and descendants of `foreignObject` leave SVG
   rendering context until a nested SVG root establishes it again. SVG viewport
   children bypass HTML anonymous-block fixup regardless of the root's outer
-  display, keeping text and `foreignObject` siblings directly attached.
+  display, keeping text and `foreignObject` siblings directly attached. Their
+  inline-child flag follows ordinary insertion semantics: an in-flow block
+  `foreignObject` clears it for a block SVG viewport, but interrupts rather
+  than clears the inline formatting context of an inline SVG viewport.
   Mask, clip, and pattern subtrees attached beneath translated SVG references
   retain the current SVG viewport as their coordinate containing block, so the
   resource begins at its own user-space origin rather than inheriting the

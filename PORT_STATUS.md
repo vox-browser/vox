@@ -538,7 +538,11 @@ exactly.
 SVG viewport boxes now append their SVG content directly even when the outer
 SVG is block-level. Whitespace text and `foreignObject` siblings no longer gain
 anonymous HTML block wrappers, matching both upstream absolute-positioned
-`foreignObject` corpus cases.
+`foreignObject` corpus cases. Their inline-child state now follows the upstream
+insertion rule as well: an in-flow block `foreignObject` clears a block SVG
+viewport's flag, while remaining an interrupting block in an inline SVG
+viewport. This also matches `svg/foreignObject-with-mask.html` without changing
+the default inline SVG cases.
 
 Attached SVG mask, clip, and pattern layout subtrees now keep the active SVG
 formatting context as their coordinate containing block. A resource referenced
@@ -831,7 +835,7 @@ largest unmatched modules:
    314 Layout
 
 $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
-Layout corpus: 1055 passed, 34 failed, 1089 total
+Layout corpus: 1056 passed, 33 failed, 1089 total
 
 $ v -old-compiler -enable-globals test .
 Summary for all V _test.v files: 651 passed, 651 total.
