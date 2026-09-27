@@ -929,15 +929,18 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 		for child in children {
 			box_node.append_child(child)
 			// SVGBox descendants take TreeBuilder.cpp's direct append path and do
-			// not affect this invariant. A foreignObject is likewise SVG content
-			// at this boundary even though its own descendants establish HTML flow.
-			// Text, nested SVGSVGBox, and other non-SVG children take the ordinary
-			// insertion path and do affect the flag.
-			if !child.is_svg_box() && !child.is_svg_foreign_object_box() {
+			// not affect this invariant. Text, foreignObject, nested SVGSVGBox, and
+			// other non-SVG children take the ordinary insertion path and do affect
+			// the flag. A block child of an inline flow parent interrupts its IFC, so
+			// it does not clear an inline flag established by surrounding text.
+			if !child.is_svg_box() {
 				if child.is_inline() {
 					box_node.set_children_are_inline(true)
 				} else if child.as_node_with_style() != none && child.is_in_flow() {
-					box_node.set_children_are_inline(false)
+					if !box_node.display().is_inline_outside()
+						|| !box_node.display().is_flow_inside() {
+						box_node.set_children_are_inline(false)
+					}
 				}
 			}
 		}
