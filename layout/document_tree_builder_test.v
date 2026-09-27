@@ -586,7 +586,7 @@ fn test_display_type_selects_literal_layout_node_subclass() {
 	assert primitive_node.is_block_container()
 	assert !primitive_node.is_text_input_box()
 
-	media_document := html.parse_document('<!doctype html><audio id="audio" controls><span id="audio-fallback">fallback</span></audio><video id="video"><span id="video-fallback">fallback</span></video>')
+	media_document := html.parse_document('<!doctype html><audio id="audio" controls><span id="audio-fallback">fallback</span></audio><video id="video" controls><span id="video-fallback">fallback</span></video>')
 	media_root := build_layout_tree(media_document) or { panic('no media layout tree') }
 	attach_layout_nodes(media_root)
 	assert tree_builder_node_with_id(media_root, 'audio') or { panic('no audio box') }.is_replaced_box()
@@ -621,6 +621,16 @@ fn test_display_type_selects_literal_layout_node_subclass() {
 	}
 	timeline_fill_parent := timeline_fill.parent_element() or { panic('timeline fill parent') }
 	assert timeline_fill_parent == timeline_track
+	video_shadow := video_dom.shadow_root() or { panic('video controls shadow root') }
+	video_container := css.query_selector(video_shadow.as_node(), '.container.video') or {
+		panic('video controls container')
+	}
+	assert css.query_selector(video_container.as_node(), '.video-overlay') != none
+	assert css.query_selector(video_container.as_node(), '.fullscreen-button') != none
+	video_snapshot := dump_document_layout_snapshot(media_document, 800, 600) or {
+		panic('video controls layout snapshot')
+	}
+	assert video_snapshot.contains('BlockContainer <div.container.video> at [308,8] positioned [0+0+0 300 0+0+0] [0+0+0 150 0+0+0]')
 
 	textarea := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'textarea') or {
 		panic('${err}')
