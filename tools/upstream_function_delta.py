@@ -28,6 +28,44 @@ import libweb_translation_audit as libweb_audit
 DEFAULT_UPSTREAM = Path.home() / "code/3rd/ladybird"
 DEFAULT_BASE = "1d025620e3344e3cc9aee26fe815d8675e4f9810"
 
+# Root LibWeb support is translated across typed V modules rather than a
+# same-named package. Keep the non-lexical mappings explicit so the delta queue
+# audits these definitions instead of reporting them as outside the inventory.
+ROOT_SUPPORT_CONSOLIDATED_MAPPINGS: dict[
+    tuple[str, str], tuple[tuple[str, str | None], ...]
+] = {
+    ("Dump.cpp", "dump_session_history_entry"): (("dump_session_history_entry_into", None),),
+    ("Dump.cpp", "dump_tree"): (
+        ("navigation_tree", None),
+        ("dom_tree", None),
+        ("layout_tree", None),
+    ),
+    ("Dump.cpp", "dump_selector"): (("selector", None),),
+    ("Dump.cpp", "dump_descriptors"): (("descriptors", None),),
+    ("Dump.cpp", "dump_sheet"): (("sheet", None),),
+    ("PixelUnits.cpp", "encode"): (("encode_css_pixel_point", None),),
+    ("PixelUnits.cpp", "decode"): (("decode_css_pixel_point", None),),
+    ("PixelUnits.h", "value_for"): (
+        ("nearest_value_for", "CSSPixels"),
+        ("floored_value_for", "CSSPixels"),
+        ("truncated_value_for", "CSSPixels"),
+    ),
+    ("TreeNode.h", "for_each_inclusive_ancestor_of_type"): (
+        ("for_each_inclusive_ancestor_matching", "Node"),
+    ),
+    ("VisualLines.cpp", "caret_inline_coordinate"): (
+        ("caret_inline_coordinate_for_line", None),
+    ),
+}
+
+ROOT_SUPPORT_RUNTIME_DEFINITIONS = {
+    ("TreeNode.h", "parent_offset"),
+    ("TreeNode.h", "first_child_offset"),
+    ("TreeNode.h", "last_child_offset"),
+    ("TreeNode.h", "previous_sibling_offset"),
+    ("TreeNode.h", "next_sibling_offset"),
+}
+
 
 @dataclass(frozen=True)
 class Definition:
@@ -379,6 +417,32 @@ def is_language_lifecycle_definition(entry: DeltaEntry) -> bool:
     }
 
 
+def root_support_disposition(
+    entry: DeltaEntry, functions: set[tuple[str, str | None]]
+) -> tuple[str | None, tuple[str, ...]]:
+    key = (entry.source, entry.name)
+    if key in ROOT_SUPPORT_RUNTIME_DEFINITIONS:
+        return "gc-or-binding-runtime", ()
+    mapped = ROOT_SUPPORT_CONSOLIDATED_MAPPINGS.get(key, ())
+    if mapped and all(candidate in functions for candidate in mapped):
+        return (
+            "consolidated-name-match",
+            tuple(
+                f"{owner}.{name}" if owner else name
+                for name, owner in mapped
+            ),
+        )
+    if entry.name.startswith("operator"):
+        return "language-operator", ()
+    if entry.owner == "<namespace>":
+        candidates = html_audit.free_function_candidate_names(entry.name, functions)
+    else:
+        candidates = html_audit.candidate_names(entry.name, entry.owner, functions)
+    if candidates:
+        return "candidate-name-match", candidates
+    return None, ()
+
+
 def join_v_dispositions(
     entries: list[DeltaEntry], ladybird: Path, translation: Path
 ) -> list[DeltaEntry]:
@@ -403,6 +467,18 @@ def join_v_dispositions(
                     **{
                         **asdict(entry),
                         "disposition": "language-constructor-or-destructor",
+                    }
+                )
+            )
+            continue
+        if entry.module == "(root support)":
+            disposition, candidates = root_support_disposition(entry, functions)
+            joined.append(
+                DeltaEntry(
+                    **{
+                        **asdict(entry),
+                        "disposition": disposition,
+                        "candidate_v_functions": candidates,
                     }
                 )
             )

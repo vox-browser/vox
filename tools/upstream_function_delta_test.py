@@ -76,6 +76,39 @@ public:
             )
         )
 
+    def test_classifies_root_support_definitions_across_typed_v_modules(self) -> None:
+        functions = {
+            ("nearest_value_for", "CSSPixels"),
+            ("navigation_tree", None),
+            ("dom_tree", None),
+            ("layout_tree", None),
+        }
+        exact = delta.DeltaEntry(
+            "changed", "(root support)", "PixelUnits.h", 96, "CSSPixels", "nearest_value_for"
+        )
+        mapped = delta.DeltaEntry(
+            "changed", "(root support)", "Dump.cpp", 59, "<namespace>", "dump_tree"
+        )
+        runtime = delta.DeltaEntry(
+            "added", "(root support)", "TreeNode.h", 65, "TreeNode", "parent_offset"
+        )
+
+        self.assertEqual(
+            delta.root_support_disposition(exact, functions),
+            ("candidate-name-match", ("nearest_value_for",)),
+        )
+        self.assertEqual(
+            delta.root_support_disposition(mapped, functions),
+            (
+                "consolidated-name-match",
+                ("navigation_tree", "dom_tree", "layout_tree"),
+            ),
+        )
+        self.assertEqual(
+            delta.root_support_disposition(runtime, functions),
+            ("gc-or-binding-runtime", ()),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
