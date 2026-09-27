@@ -393,7 +393,10 @@
   property guards include function identity, arguments substitute before arity
   rejection, and custom-property dependencies retain access to the function
   registry.
-- Grid track values parse and serialize `subgrid` line-name lists, including
+- Grid track values accept calculated flex breadths such as `calc(1fr)`, retain
+  their authored calculation for serialization, and resolve the calculation to
+  an `fr` factor for track sizing. They also parse and serialize `subgrid`
+  line-name lists, including
   fixed and `auto-fill` name repeats. Separate adjacent line-name sets are
   retained, and interpolation/composition involving a subgrid remains discrete.
   Grid layout inherits a subgrid axis's parent tracks, gutters, and line names,
