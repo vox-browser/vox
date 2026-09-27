@@ -441,7 +441,28 @@ fn flex_cross_size_after_min_max(item &Node, item_state &UsedValues, cross_size 
 	} else {
 		item_state.border_left.plus(item_state.padding_left).plus(item_state.padding_right).plus(item_state.border_right)
 	}
-	return css_px(clamp_box_content_to_min_max(computed, min_property, max_property, cross_size.to_double(), percentage_basis.to_double(), edges.to_double()))
+	adjustment := if computed.box_sizing() == .border_box { edges } else { CSSPixels.new(0) }
+	mut result := cross_size
+	if specified_max := computed.length_percentage_to_px(max_property, percentage_basis.to_double()) {
+		maximum := css_pixels_max(CSSPixels.new(0), css_px(specified_max).minus(adjustment))
+		result = css_pixels_min(result, maximum)
+	}
+	min_size := computed.size_value(min_property)
+	container_cross_size_is_definite := if values := containing {
+		if row_axis { values.has_definite_height() } else { values.has_definite_width() }
+	} else {
+		false
+	}
+	// An unresolved percentage minimum cannot transfer a cross-axis constraint
+	// through an aspect ratio into the flex base size.
+	if !min_size.is_auto()
+		&& (!min_size.contains_percentage() || container_cross_size_is_definite) {
+		if specified_min := computed.length_percentage_to_px(min_property, percentage_basis.to_double()) {
+			minimum := css_pixels_max(CSSPixels.new(0), css_px(specified_min).minus(adjustment))
+			result = css_pixels_max(result, minimum)
+		}
+	}
+	return result
 }
 
 fn flex_main_size_through_aspect_ratio(item &Node, item_state &UsedValues, main_size CSSPixels, row_axis bool) CSSPixels {

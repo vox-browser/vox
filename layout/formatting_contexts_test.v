@@ -1014,6 +1014,19 @@ fn test_flex_automatic_minimum_uses_transferred_aspect_ratio_suggestion() {
 	assert used_for_id(result, 'maximum').content_width().to_double() == 60
 }
 
+fn test_auto_height_row_flex_ignores_unresolved_percentage_min_height_for_ratio_transfer() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#flex { display:flex }
+		#ratio { aspect-ratio:2/1; min-height:50% }
+		#fixed { width:40px; height:60px }
+	</style><div id="flex"><div id="ratio"></div><div id="fixed"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	ratio := used_for_id(result, 'ratio')
+	assert ratio.content_width().to_double() == 0
+	assert ratio.content_height().to_double() == 60
+}
+
 fn test_flex_basis_intrinsic_sizing_keywords_choose_their_matching_contribution() {
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; width:500px }
