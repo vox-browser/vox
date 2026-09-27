@@ -894,9 +894,10 @@ Rust layout output use narrowly documented exact overrides under
 `tools/layout_expected/`; the other 1,087 cases compare directly with upstream.
 The function-delta audit classifies every changed definition since the March
 baseline, including root support and the consolidated anchor/style-element
-lifecycle hooks: 0 of 5,653 changed definitions remain unclassified. Its
-remaining unmatched structural queue is confined to definitions classified as
-added in the five large source/Rust-restructured modules; the audit leaves
+lifecycle hooks: 0 of 7,247 changed definitions remain unclassified after
+counting signature-only changes and removing exact cross-module moves. Its
+remaining 4,130-entry structural queue is confined to definitions classified
+as added in the five large source/Rust-restructured modules; the audit leaves
 those visible instead of accepting them through an old symbol-name match.
 
 The Editing reconciliation accounts for all 432 current upstream
