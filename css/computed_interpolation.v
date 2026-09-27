@@ -13422,11 +13422,22 @@ fn (s &StyleComputer) compute_style_impl_with_animated_custom_property_recompute
 			mut style := s.compute_style(pseudo_abstract_element)
 
 			// Internal shadow-tree nodes may still carry inline declarations. Merge
-			// those after the pseudo-element style, as upstream does.
+			// those after the pseudo-element style, as upstream does. Logical aliases
+			// are resolved against the inherited pseudo-element flow before entering
+			// the physical computed-longhand table.
 			if inline_declaration := inline_style_for_abstract_element(abstract_element) {
+				logical_context := LogicalAliasMappingContext{
+					writing_mode: style.writing_mode()
+					direction: style.direction()
+				}
 				for property in declaration_style_properties(inline_declaration) {
 					for longhand in expand_property_longhands(property.property_id, property.value) {
-						style.set_property_without_modifying_flags(longhand.id, longhand.value)
+						physical_id := if property_is_logical_alias(longhand.id) {
+							map_logical_alias_to_physical_property(longhand.id, logical_context)
+						} else {
+							longhand.id
+						}
+						style.set_property_without_modifying_flags(physical_id, longhand.value)
 					}
 				}
 			}

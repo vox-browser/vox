@@ -278,6 +278,37 @@ fn test_visible_input_placeholder_overlays_the_full_width_editor() {
 	assert number_placeholder_used.margin_left == number_inner_used.content_width().negated()
 }
 
+fn test_live_input_placeholder_overlays_after_attribute_mutation() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		input { width:200px }
+	</style><input id="input">')
+	// The compact browser lays parser-created controls out once before it replays
+	// script mutations. Reproduce that lifecycle before materializing the input's
+	// live UA shadow tree.
+	_ = run_document_layout(document, 800, 600) or { panic('initial layout failed') }
+	root := unsafe { &dom.Node(document) }
+	mut element := css.query_selector(root, '#input') or { panic('missing input') }
+	element.set_attribute_value('placeholder', 'hint')
+	mut model := html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+	model.form_associated_element_attribute_changed('placeholder', none, 'hint', none)
+
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	input := layout_node_with_id(result.root, 'input') or { panic('missing input layout node') }
+	outer := input.first_child() or { panic('missing input outer box') }
+	inner := outer.children()[0]
+	placeholder := outer.children()[1]
+	inner_used := result.used_values_for(inner.as_node_with_style() or {
+		panic('text editor has no style')
+	}) or { panic('text editor has no used values') }
+	placeholder_used := result.used_values_for(placeholder.as_node_with_style() or {
+		panic('placeholder has no style')
+	}) or { panic('placeholder has no used values') }
+	assert inner_used.content_width().to_double() == 200
+	assert placeholder_used.content_width() == inner_used.content_width()
+	assert placeholder_used.margin_left == inner_used.content_width().negated()
+}
+
 fn test_native_input_min_max_height_clamps_are_definite_for_shadow_content() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }
