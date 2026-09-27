@@ -119,6 +119,9 @@
   audio-track list events, use a semantic fullscreen button with the `F`
   shortcut, and coalesce scrub seeks with the upstream timeout. SourceBuffer
   coded-frame appends now enter the throttled media `progress` event path.
+  Video controls fill the 300px by 150px default replaced size when no natural
+  video dimensions exist; the replaced shadow wrapper receives both definite
+  percentage bases from that resolved object size.
   Automatic resource selection still defers paused `preload="none"` media, but
   an explicit `load()` promotes that selection to fetch immediately; the
   promotion survives inactive-document adoption and resets for later automatic
