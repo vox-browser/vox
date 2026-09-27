@@ -926,11 +926,7 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 				mutable_text.invalidate_text_for_rendering()
 			}
 		}
-		font := platform.Font{
-			family: 'sans-serif'
-			point_size: f32(marker.computed_values().resolved_font_size_px())
-			weight: int(marker.computed_values().font_weight())
-		}
+		font := marker_node.first_available_font()
 		run := platform.shape_text(0, 0, text, font, .context_dependent)
 		marker_state.set_content_width(CSSPixels.nearest_value_for(f64(run.width())))
 	} else {
@@ -955,17 +951,12 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 	content_width_before_marker := list_item_state.content_width()
 	left_boundary, right_boundary, _ := bfc.float_boundaries_at(offset_y, marker_state.content_height(), content_width_before_marker, direction, list_item_state.cumulative_offset())
 	right_intrusion := content_width_before_marker.minus(right_boundary)
-	marker_offset_x := if direction == .ltr {
+	marker_offset_x := if marker.list_style_position() == .inside {
+		CSSPixels.new(0)
+	} else if direction == .ltr {
 		left_boundary.minus(marker_distance).minus(marker_state.content_width())
 	} else {
 		content_width_before_marker.minus(right_intrusion.minus(marker_distance))
-	}
-	if marker.list_style_position() == .inside {
-		marker_inline_size := marker_state.content_width().plus(marker_distance)
-		if direction == .ltr {
-			list_item_state.set_content_x(list_item_state.offset.x().plus(marker_inline_size))
-		}
-		list_item_state.set_content_width(list_item_state.content_width().minus(marker_inline_size))
 	}
 	offset_x := css.css_pixels_round(marker_offset_x)
 	marker_state.set_content_offset(css.CSSPixelPoint.new(offset_x, offset_y))

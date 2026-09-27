@@ -60,6 +60,8 @@ fn C.hb_font_set_scale(font voidptr, x_scale int, y_scale int)
 
 fn C.hb_font_set_ptem(font voidptr, ptem f32)
 
+fn C.hb_font_get_nominal_glyph(font voidptr, unicode u32, glyph &u32) int
+
 fn C.hb_buffer_create() voidptr
 
 fn C.hb_buffer_destroy(buffer voidptr)
@@ -208,6 +210,10 @@ pub fn font_path_for_family(family string, weight int) ?string {
 }
 
 fn resolve_font_path_for_family(family string, weight int) ?string {
+	lower_family := family.to_lower()
+	if lower_family == 'noto emoji' {
+		return bundled_font_path('NotoEmoji.ttf')
+	}
 	if configured := os.getenv_opt('LADYBIRD_LAYOUT_TEST_FONT') {
 		if os.is_file(configured) {
 			if weight >= 600 {
@@ -243,7 +249,6 @@ fn resolve_font_path_for_family(family string, weight int) ?string {
 		}
 	}
 	$if macos {
-		lower_family := family.to_lower()
 		regular_path := match lower_family {
 			// Font.face_index() selects the regular or bold collection member.
 			'lucida grande', 'lucida sans unicode', 'lucida sans' {
@@ -367,6 +372,16 @@ fn document_harfbuzz_face(font &Font) ?voidptr {
 	harfbuzz_document_blobs[cache_key] = blob
 	harfbuzz_document_faces[cache_key] = face
 	return face
+}
+
+// x.ttf's cmap reader currently handles only formats 0 and 4. Use HarfBuzz as
+// the authoritative glyph-coverage probe as Gfx::Font does upstream, including
+// for BMP characters stored only in a format-12 cmap.
+fn harfbuzz_font_contains_glyph(font &Font, code_point u32) ?bool {
+	face := document_harfbuzz_face(font)?
+	hb_font := scaled_harfbuzz_font(face, font.point_size)?
+	mut glyph := u32(0)
+	return C.hb_font_get_nominal_glyph(hb_font, code_point, &glyph) != 0 && glyph != 0
 }
 
 fn emoji_harfbuzz_face() ?voidptr {

@@ -321,7 +321,16 @@ pub fn (font &Font) contains_glyph(code_point u32) bool {
 		return false
 	}
 	mut mutable_face := unsafe { &ttf.TTF_File(face) }
-	return mutable_face.map_code(int(code_point)) != 0
+	if mutable_face.map_code(int(code_point)) != 0 {
+		return true
+	}
+	// NotoEmoji's BMP symbols are exposed through a cmap format which x.ttf
+	// does not decode. Keep the narrow compatibility fallback here so ordinary
+	// text faces retain the exact coverage behavior used by existing layout.
+	if font.family == 'Noto Emoji' {
+		return harfbuzz_font_contains_glyph(font, code_point) or { false }
+	}
+	return false
 }
 
 // The outline bounds used by Gfx::Path::text(). TrueType's Y axis points up;
@@ -463,6 +472,9 @@ fn font_face(font &Font) ?&ttf.TTF_File {
 }
 
 pub fn system_font_family_available(family string) bool {
+	if family.to_lower() == 'noto emoji' {
+		return emoji_font_path() != none
+	}
 	$if macos {
 		path := match family.to_lower() {
 			// Collection indices are selected alongside these paths by
@@ -492,7 +504,11 @@ pub fn system_font_family_available(family string) bool {
 }
 
 pub fn (font &Font) is_emoji_font() bool {
-	return font.family.to_lower().contains('emoji')
+	// Match Gfx::Font's layout-test heuristic. Family matching here is
+	// intentionally case-sensitive: the bundled monochrome "Noto Emoji" face
+	// is a symbol fallback, rather than a color-emoji face, and may therefore
+	// supply the marker suffix space together with its symbol glyph.
+	return font.family.contains('emoji')
 }
 
 @[heap]
@@ -527,6 +543,23 @@ pub fn FontPlugin.the() &FontPlugin {
 		panic('FontPlugin is not installed')
 	}
 	return platform_font_plugin
+}
+
+pub fn FontPlugin.is_initialized() bool {
+	return platform_font_plugin != unsafe { nil }
+}
+
+// FontComputer consumes this through its platform boundary. Layout tools do
+// not install an embedder singleton, but selecting the deterministic document
+// face is also the signal that they use Ladybird's bundled symbol fallback.
+pub fn symbol_font_names_for_environment() []string {
+	if FontPlugin.is_initialized() {
+		return FontPlugin.the().symbol_font_names()
+	}
+	if os.getenv('LADYBIRD_LAYOUT_TEST_FONT') != '' {
+		return ['Noto Emoji']
+	}
+	return []
 }
 
 pub fn FontPlugin.install(plugin &FontPlugin) {

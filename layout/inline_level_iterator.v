@@ -625,11 +625,14 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 		}
 	}
 	if current.is_list_item_marker_box() {
-		// The marker owns an independent inline formatting context. Skip its
-		// complete subtree while iterating the list item's principal content.
+		marker := current.as_list_item_marker_box() or { return none }
+		if marker.list_style_position() != .inside {
+			// An outside marker owns an independent inline formatting context and
+			// does not participate in the list item's principal inline run.
 		iterator.next_node = current.next_sibling()
 		iterator.skip_to_next()
 		return iterator.generate_next_item()
+	}
 	}
 	if !current.is_box() {
 		iterator.skip_to_next()
@@ -637,7 +640,7 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 	}
 
 	box := current.as_box() or { return none }
-	if is_inline_flow_interrupting_block(current) {
+	if is_inline_flow_interrupting_block(current) && !current.is_list_item_marker_box() {
 		iterator.skip_to_next()
 		return InlineLevelItem{
 			type_: .block_level_box
@@ -659,6 +662,11 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 		margin_end: box_state.margin_right
 	}
 	iterator.add_extra_box_model_metrics_to_item(mut item, true, true)
+	if current.is_list_item_marker_box() {
+		// Treat an inside marker atomically in its list item's IFC; its own text
+		// was already laid out by layout_list_item_marker().
+		iterator.next_node = current.next_sibling()
+	}
 	iterator.skip_to_next()
 	return item
 }

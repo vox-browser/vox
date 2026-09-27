@@ -29,6 +29,20 @@ fn test_font_plugin_fallbacks_and_layout_mode() {
 	assert layout.symbol_font_names() == ['Noto Emoji']
 }
 
+fn test_layout_symbol_font_uses_harfbuzz_coverage_and_remains_text_presentation() {
+	path := bundled_font_path('NotoEmoji.ttf') or { return }
+	font := &Font{
+		family:      'Noto Emoji'
+		point_size:  16
+		source_path: path
+	}
+	assert font.contains_glyph(0x25aa)
+	// Gfx::Font's case-sensitive heuristic treats this monochrome layout-test
+	// face as a symbol fallback, so marker suffix whitespace stays in the face.
+	assert !font.is_emoji_font()
+	assert shape_text(0, 0, '▪ ', font, .common).width() == f32(40.625)
+}
+
 fn test_platform_generic_font_aliases_are_available() {
 	$if macos {
 		assert system_font_family_available('Serif')

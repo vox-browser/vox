@@ -5504,20 +5504,24 @@ fn platform_default_font_boundary(point_size f32, variations FontVariationSettin
 }
 
 fn platform_symbol_font_names_boundary() []string {
-	return []
+	return platform.symbol_font_names_for_environment()
 }
 
 fn platform_typefaces_with_family_name_boundary(family_name string) []&PlatformTypeface {
 	if !platform.system_font_family_available(family_name) {
 		return []
 	}
+	regular_path := platform.font_path_for_family(family_name, 400) or { '' }
+	bold_path := platform.font_path_for_family(family_name, 700) or { regular_path }
 	return [
 		&PlatformTypeface{
 			family_name: family_name.clone()
+			source_path: regular_path
 			weight_: 400
 		},
 		&PlatformTypeface{
 			family_name: family_name.clone()
+			source_path: bold_path
 			weight_: 700
 		},
 	]

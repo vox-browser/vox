@@ -37,6 +37,13 @@ fn test_counter_style_equality_compares_every_effective_descriptor() {
 	assert !original.equals(changed)
 }
 
+fn test_predefined_square_counter_style_keeps_marker_suffix() {
+	document := dom.Document.create(dom.url_about_blank())
+	styles := registered_counter_styles_for_document(document)
+	square := styles['square'] or { panic('missing predefined square counter style') }
+	assert square.suffix() == ' '
+}
+
 fn test_counter_style_rule_mutation_invalidates_registered_style_cache() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	add_document_author_style_sheet(document,

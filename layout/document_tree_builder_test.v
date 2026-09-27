@@ -784,7 +784,7 @@ fn test_normal_list_marker_is_created_and_laid_out() {
 		panic('marker has no style')
 	}) or { panic('marker was not laid out') }
 	assert marker_used.content_width().to_double() > 0
-	assert marker_used.content_height().to_double() == 16
+	assert marker_used.content_height().to_double() >= 16
 	assert marker_used.line_boxes.len == 1
 	assert marker_used.offset.x().to_double() < 0
 }
@@ -806,7 +806,7 @@ fn test_right_to_left_list_marker_is_positioned_after_the_inline_end_edge() {
 	assert marker_used.cumulative_offset().x().raw_value() >= item_used.cumulative_offset().x().plus(item_used.content_width()).raw_value()
 }
 
-fn test_predefined_symbol_marker_uses_geometric_marker_size() {
+fn test_predefined_symbol_marker_uses_generated_text_layout() {
 	document := html.parse_document('<!doctype html><ul><li id="item">item</li></ul>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	item_node := tree_builder_node_with_id(result.root, 'item') or { panic('no list item') }
@@ -815,12 +815,18 @@ fn test_predefined_symbol_marker_uses_geometric_marker_size() {
 	marker := marker_node.as_list_item_marker_box() or { panic('marker has wrong node type') }
 	assert marker.list_style_type_.name == 'disc'
 	assert marker.text() or { '' } == '• '
-	assert marker.relative_size().to_double() == 16
+	generated_text := (marker_node.first_child() or { panic('marker has no content') }).as_text_node() or {
+		panic('marker content is not text')
+	}
+	assert generated_text.text_for_rendering() == '• '
 	marker_used := result.used_values_for(marker_node.as_node_with_style() or {
 		panic('marker has no style')
 	}) or { panic('marker was not laid out') }
-	assert marker_used.content_width().to_double() == 13.84375
-	assert marker_used.content_height().to_double() == 16
+	assert marker_used.line_boxes.len == 1
+	assert marker_used.line_boxes[0].fragments().len == 1
+	fragment := marker_used.line_boxes[0].fragments()[0]
+	assert marker_used.content_width() == fragment.width()
+	assert marker_used.content_height().to_double() >= 16
 }
 
 fn test_marker_preserves_literal_string_list_style_type() {

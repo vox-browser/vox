@@ -282,8 +282,10 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 		}
 	}
 
+	if !unsafe { &Node(containing_block) }.is_list_item_marker_box() {
 	for index in 0 .. containing_block_used_values.line_boxes.len {
 		containing_block_used_values.line_boxes[index].trim_trailing_whitespace()
+	}
 	}
 	apply_text_overflow_ellipsis(containing_block, mut containing_block_used_values.line_boxes)
 	// Upstream finalizes the last line and resolves static positions before it
