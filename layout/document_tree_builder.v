@@ -209,6 +209,18 @@ pub fn build_layout_tree(document &dom.Document) ?&Node {
 fn build_layout_tree_from_computed_styles(document &dom.Document, mut style_computer css.StyleComputer, initial_checkpoint u64) ?&Node {
 	mut timing_checkpoint := initial_checkpoint
 	root_element := document.document_element() or { return none }
+	// A rebuilt tree can add or remove list-item boxes without a DOM child-list
+	// mutation (for example through the reflected `hidden` property). Discard
+	// ordinals cached by the previous tree so the first surviving marker derives
+	// the list-item counter from the boxes in this tree.
+	document_node := unsafe { &dom.Node(document) }
+	document_node.for_each_in_inclusive_subtree(fn (node &dom.Node) dom.TraversalDecision {
+		if element := node.as_element() {
+			mut mutable_element := unsafe { &dom.Element(element) }
+			mutable_element.ordinal_value_ = none
+		}
+		return .@continue
+	})
 	// The layout tree's root is the Viewport (whose DOM node is the Document itself); the root element's box
 	// is its child. This is faithful to TreeBuilder recursing from the Document node, where
 	// `is<DOM::Document>` allocates a Layout::Viewport with the document style.

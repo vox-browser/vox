@@ -88,6 +88,28 @@ fn test_document_bridge_input_type_change_replaces_text_layout_with_image_layout
 	}
 }
 
+fn test_document_bridge_hidden_property_rebuilds_layout_and_renumbers_markers() {
+	$if darwin {
+		mut document := html.parse_document('<!doctype html><style>body,ol{margin:0}</style><ol><li>one</li><li id="hidden-item">two</li><li>three</li></ol><script>document.body.offsetHeight; document.getElementById("hidden-item").hidden = true; document.body.offsetHeight;</script>')
+		document.set_viewport_rect(dom.Rect{0, 0, 800, 600})
+		mut runtime := Runtime.create()
+		defer {
+			runtime.close()
+		}
+		run_inline_document_scripts(document, 'about:blank', runtime)!
+
+		hidden_item := bridge_test_element(document, '#hidden-item')
+		assert hidden_item.has_attribute('hidden')
+		snapshot := layout.dump_document_layout_snapshot(document, 800, 600) or {
+			panic('layout failed')
+		}
+		assert !snapshot.contains('<li#hidden-item>')
+		assert snapshot.contains('"1. "')
+		assert snapshot.contains('"2. "')
+		assert !snapshot.contains('"3. "')
+	}
+}
+
 fn test_document_bridge_canvas_draw_image_snapshots_cross_canvas_and_self_sources() {
 	$if darwin {
 		mut document := html.parse_document('<canvas id="a" width="4" height="2"></canvas><canvas id="b" width="4" height="2"></canvas><script>const ca=a.getContext("2d"),cb=b.getContext("2d");ca.fillStyle="red";ca.fillRect(0,0,4,2);cb.drawImage(a,0,0);ca.fillStyle="blue";ca.fillRect(0,0,2,2);ca.drawImage(a,2,0);</script>')

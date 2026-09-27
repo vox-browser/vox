@@ -80,6 +80,24 @@ fn test_container_properties_recompute_descendant_styles() {
 	assert type_invalidation.recompute_descendant_styles
 }
 
+fn test_display_box_presence_changes_rebuild_the_layout_tree() {
+	block := dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.block))))
+	none_display := dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_))))
+	box_presence := compute_property_invalidation(.display, block, none_display)
+	assert box_presence.needs_layout_tree_rebuild()
+	assert box_presence.layout_tree_rebuild_root() == .box_presence_change
+
+	inline_ := dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.inline_))))
+	box_kind := compute_property_invalidation(.display, block, inline_)
+	assert box_kind.needs_layout_tree_rebuild()
+	assert box_kind.layout_tree_rebuild_root() == .parent
+
+	old_content := &dom.StyleValue{css_text: '"old"'}
+	new_content := &dom.StyleValue{css_text: '"new"'}
+	content := compute_property_invalidation(.content, old_content, new_content)
+	assert content.layout_tree_rebuild_root() == .self
+}
+
 fn test_style_invalidation_tracks_inherited_groups_and_flags() {
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
 	invalidation.mark_inherited_style_group_changed(2)

@@ -126,6 +126,23 @@ fn test_javascript_bridge_runs_window_load_mutations() {
 	}
 }
 
+fn test_javascript_bridge_reflects_the_hidden_property() {
+	$if darwin {
+		document := html.parse_document('<!doctype html><div id="hide"></div><div id="show" hidden></div>')
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'about:blank', [
+			'hide.hidden = true; show.hidden = false; console.log(hide.hidden, show.hidden);',
+		], runtime, mut messages)
+		assert messages == ['true false']
+		assert document.get_element_by_id('hide') or { panic('missing hidden element') }.has_attribute('hidden')
+		assert !(document.get_element_by_id('show') or { panic('missing shown element') }).has_attribute('hidden')
+	}
+}
+
 fn test_javascript_bridge_maps_webkit_font_smoothing_idl_name() {
 	$if darwin {
 		document := html.parse_document('<!doctype html><div id="target">Text</div>')

@@ -9278,16 +9278,25 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 
 fn property_requires_full_invalidation(property_id PropertyID) bool {
 	return match property_id {
-		// C++: Display, Position, Content, ContentVisibility, OverflowX, OverflowY.
-		// Only these represented properties are currently present in the V PropertyID enum.
-		.content_visibility, .overflow_block, .overflow_inline, .overflow_x, .overflow_y,
-		.position {
+		.float_, .overflow_block, .overflow_inline, .overflow_x, .overflow_y, .position {
 			true
 		}
 		else {
 			false
 		}
 	}
+}
+
+fn display_from_invalidation_style_value(value ?&dom.StyleValue) ?Display {
+	if value == none {
+		return none
+	}
+	dom_value := unsafe { value }
+	typed := style_value_logic_from_dom(.display, dom_value) or { return none }
+	if typed is DisplayStyleValue {
+		return typed.display()
+	}
+	return none
 }
 
 // Generated from Properties.json's `affects-hit-testing` metadata.
@@ -9313,17 +9322,33 @@ pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.Sty
 		return invalidation
 	}
 
-	// NOTE: If the computed CSS display, position, content, or content-visibility property changes, we have to rebuild the entire layout tree.
-	//       In the future, we should figure out ways to rebuild a smaller part of the tree.
-	if property_requires_full_invalidation(property_id) {
+	// A principal box appearing or disappearing leaves the sibling box kinds
+	// intact. Preserve that narrower upstream rebuild root even though the V tree
+	// builder currently consumes it through its conservative parent rebuild.
+	if property_id == .display {
+		old_display := display_from_invalidation_style_value(old_value) or {
+			return required_invalidation_after_style_change_full()
+		}
+		new_display := display_from_invalidation_style_value(new_value) or {
+			return required_invalidation_after_style_change_full()
+		}
+		if old_display.is_none() != new_display.is_none() {
+			box_display := if old_display.is_none() { new_display } else { old_display }
+			if box_display.is_outside_and_inside() {
+				return RequiredInvalidationAfterStyleChange.rebuild_layout_tree_from(.box_presence_change)
+			}
+		}
 		return required_invalidation_after_style_change_full()
 	}
 
-	// NOTE: If the text-transform property changes, it may affect layout. Furthermore, since the
-	//       Layout::TextNode caches the post-transform text, we have to update the layout tree.
-	if property_id == .text_transform {
-		invalidation.ensure_at_least(.rebuild_layout_tree)
-		return invalidation
+	// Generated content and text transformation only replace the originating
+	// element's own layout subtree.
+	if property_id in [.content, .content_visibility, .text_transform] {
+		return RequiredInvalidationAfterStyleChange.rebuild_layout_tree_from(.self)
+	}
+
+	if property_requires_full_invalidation(property_id) {
+		return required_invalidation_after_style_change_full()
 	}
 
 	if property_id in [.container_name, .container_type] {
