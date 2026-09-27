@@ -388,6 +388,9 @@
   callbacks can clear inline styles through the `style` IDL attribute and
   remove the root's reftest class through `documentElement.classList`, allowing
   null transform longhands to replace stale layout values on recomputation.
+- CSS `anchor()` functions participate as typed length leaves inside inset
+  calculations, including `calc()`, `min()`, `max()`, nested anchor fallbacks,
+  and calculated fallbacks. They remain invalid outside inset properties.
 - Platform input-method sessions dispatch `compositionstart`, per-update
   `compositionupdate` plus non-cancelable `insertCompositionText`
   `beforeinput`/`input` pairs, and `compositionend`. Marked ranges survive
