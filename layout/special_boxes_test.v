@@ -6,12 +6,14 @@ import encoding.base64
 import html
 import os
 
-fn test_gif_decoder_rejects_a_truncated_lzw_stream() {
-	truncated := base64.decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7')
-	assert !gif_image_data_is_decodable(truncated)
-
-	complete := base64.decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==')
-	assert gif_image_data_is_decodable(complete)
+fn test_gif_without_end_of_information_code_retains_intrinsic_size() {
+	document := dom.Document.create(dom.url_about_blank())
+	size := image_intrinsic_size_for_source(document,
+		'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7') or {
+		panic('GIF without end-of-information code did not load')
+	}
+	assert size.width?.to_double() == 1
+	assert size.height?.to_double() == 1
 }
 
 fn test_encoded_image_dimensions_reads_png_and_jpeg_metadata() {

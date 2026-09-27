@@ -526,9 +526,6 @@ fn image_intrinsic_size_for_source(document &dom.Document, source string) ?css.S
 		if metadata.starts_with('data:image/svg+xml') {
 			return svg_image_natural_size(data.bytestr())
 		}
-		if data.len >= 6 && data[..3].bytestr() == 'GIF' && !gif_image_data_is_decodable(data) {
-			return none
-		}
 		if dimensions := encoded_image_dimensions(data) {
 			return size_with_optional_aspect_ratio(CSSPixels.new(dimensions.width), CSSPixels.new(dimensions.height))
 		}
@@ -557,11 +554,8 @@ fn image_intrinsic_size_for_source(document &dom.Document, source string) ?css.S
 		svg_source := os.read_file(path) or { return none }
 		return svg_image_natural_size(svg_source)
 	}
-	data_for_validation := os.read_bytes(path) or { return none }
-	if data_for_validation.len >= 6 && data_for_validation[..3].bytestr() == 'GIF' && !gif_image_data_is_decodable(data_for_validation) {
-		return none
-	}
-	if dimensions := encoded_image_dimensions(data_for_validation) {
+	data := os.read_bytes(path) or { return none }
+	if dimensions := encoded_image_dimensions(data) {
 		return size_with_optional_aspect_ratio(CSSPixels.new(dimensions.width), CSSPixels.new(dimensions.height))
 	}
 	image := stbi.load(path) or {
@@ -710,163 +704,6 @@ fn big_endian_u32(data []u8, offset int) u32 {
 
 fn big_endian_u16(data []u8, offset int) int {
 	return (int(data[offset]) << 8) | int(data[offset + 1])
-}
-
-// LibGfx's GIFImageDecoderPlugin does not make an image available unless its
-// LZW frame stream can be decoded through an end-of-data code. stb_image is
-// deliberately more forgiving (it accepts truncated streams), so validate the
-// part that affects ImageBox::natural_size() before using stb's dimensions.
-fn gif_lzw_stream_is_decodable(data []u8, minimum_code_size int) bool {
-	if minimum_code_size < 1 || minimum_code_size > 8 || data.len == 0 {
-		return false
-	}
-	mut code_size := minimum_code_size
-	mut table_capacity := 1 << code_size
-	mut table_entry_lengths := []int{len: table_capacity, init: 1}
-	// LzwDecompressor::decompress_all() adds clear and end-of-data controls.
-	clear_code := table_entry_lengths.len
-	table_entry_lengths << 0
-	if table_entry_lengths.len >= table_capacity && code_size < 12 {
-		code_size++
-		table_capacity *= 2
-	}
-	end_of_data_code := table_entry_lengths.len
-	table_entry_lengths << 0
-	original_entry_lengths := table_entry_lengths.clone()
-	original_code_size := code_size
-	original_table_capacity := table_capacity
-	mut previous_output_length := 0
-	mut bit_offset := 0
-	for {
-		if bit_offset + code_size > data.len * 8 {
-			return false
-		}
-		mut code := 0
-		for bit in 0 .. code_size {
-			byte_offset := (bit_offset + bit) / 8
-			bit_in_byte := (bit_offset + bit) % 8
-			code |= int((data[byte_offset] >> bit_in_byte) & 1) << bit
-		}
-		bit_offset += code_size
-		if code == clear_code {
-			table_entry_lengths = original_entry_lengths.clone()
-			code_size = original_code_size
-			table_capacity = original_table_capacity
-			previous_output_length = 0
-			continue
-		}
-		if code == end_of_data_code {
-			return true
-		}
-		if code > table_entry_lengths.len || (code == table_entry_lengths.len && previous_output_length == 0) {
-			return false
-		}
-		mut output_length := 0
-		if code < table_entry_lengths.len {
-			output_length = table_entry_lengths[code]
-			new_entry_length := previous_output_length + 1
-			if new_entry_length > 1 && table_entry_lengths.len < 4096 {
-				table_entry_lengths << new_entry_length
-				if table_entry_lengths.len >= table_capacity && code_size < 12 {
-					code_size++
-					table_capacity *= 2
-				}
-			}
-		} else {
-			output_length = previous_output_length + 1
-			if output_length > 1 && table_entry_lengths.len < 4096 {
-				table_entry_lengths << output_length
-				if table_entry_lengths.len >= table_capacity && code_size < 12 {
-					code_size++
-					table_capacity *= 2
-				}
-			}
-		}
-		previous_output_length = output_length
-	}
-	return false
-}
-
-fn gif_image_data_is_decodable(data []u8) bool {
-	if data.len < 26 || data[..6].bytestr() !in ['GIF87a', 'GIF89a'] {
-		return false
-	}
-	mut offset := 13
-	logical_screen_packed_fields := data[10]
-	if logical_screen_packed_fields & 0x80 != 0 {
-		global_color_table_size := 3 * (1 << (int(logical_screen_packed_fields & 7) + 1))
-		if offset + global_color_table_size > data.len {
-			return false
-		}
-		offset += global_color_table_size
-	}
-	mut saw_frame := false
-	for offset < data.len {
-		sentinel := data[offset]
-		offset++
-		if sentinel == `;` {
-			return saw_frame
-		}
-		if sentinel == `!` {
-			if offset >= data.len {
-				return false
-			}
-			offset++ // Extension label.
-			for {
-				if offset >= data.len {
-					return false
-				}
-				block_size := int(data[offset])
-				offset++
-				if block_size == 0 {
-					break
-				}
-				if offset + block_size > data.len {
-					return false
-				}
-				offset += block_size
-			}
-			continue
-		}
-		if sentinel != `,` || offset + 9 > data.len {
-			return false
-		}
-		image_packed_fields := data[offset + 8]
-		offset += 9
-		if image_packed_fields & 0x80 != 0 {
-			local_color_table_size := 3 * (1 << (int(image_packed_fields & 7) + 1))
-			if offset + local_color_table_size > data.len {
-				return false
-			}
-			offset += local_color_table_size
-		}
-		if offset >= data.len {
-			return false
-		}
-		minimum_code_size := int(data[offset])
-		offset++
-		mut encoded := []u8{}
-		for {
-			if offset >= data.len {
-				return false
-			}
-			block_size := int(data[offset])
-			offset++
-			if block_size == 0 {
-				break
-			}
-			if offset + block_size > data.len {
-				return false
-			}
-			encoded << data[offset..offset + block_size]
-			offset += block_size
-		}
-		if !gif_lzw_stream_is_decodable(encoded, minimum_code_size) {
-			return false
-		}
-		saw_frame = true
-	}
-	return false
 }
 
 fn encoded_image_dimensions(data []u8) ?ImageDimensions {
