@@ -839,6 +839,59 @@ fn test_predefined_symbol_marker_uses_generated_text_layout() {
 	assert marker_used.content_height().to_double() >= 16
 }
 
+fn test_authored_marker_content_uses_the_list_item_marker_box() {
+	document := html.parse_document('<!doctype html><style>li::marker { content: "marker" }</style><ul><li id="item">item</li></ul>')
+	root := build_layout_tree(document) or { panic('no layout tree') }
+	item_node := document_tree_builder_node_with_id(root, 'item') or { panic('no list item') }
+	marker_node := (item_node.as_list_item_box() or { panic('item is not ListItemBox') }).marker() or {
+		panic('list item has no marker')
+	}
+	marker := marker_node.as_list_item_marker_box() or { panic('marker has wrong node type') }
+	assert marker.has_authored_content()
+	assert marker.text() == none
+	assert marker_node.child_count() == 1
+	generated_text := (marker_node.first_child() or { panic('marker has no content') }).as_text_node() or {
+		panic('marker content is not text')
+	}
+	assert generated_text.text_for_rendering() == 'marker'
+}
+
+fn test_list_style_image_uses_a_generated_image_child() {
+	image_url := "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Crect width='12' height='8' fill='green'/%3E%3C/svg%3E"
+	document_url := dom.dom_url_parse('https://example.test/test.html', dom.url_about_blank(), 'UTF-8') or {
+		panic('invalid document URL')
+	}
+	document := html.parse_document_with_url('<!doctype html><style>li { list-style-image: url("${image_url}") }</style><ul><li id="item">item</li></ul>',
+		document_url)
+	root := build_layout_tree(document) or { panic('no layout tree') }
+	item_node := document_tree_builder_node_with_id(root, 'item') or { panic('no list item') }
+	marker_node := (item_node.as_list_item_box() or { panic('item is not ListItemBox') }).marker() or {
+		panic('list item has no marker')
+	}
+	marker := marker_node.as_list_item_marker_box() or { panic('marker has wrong node type') }
+	assert marker.text() == none
+	assert marker_node.child_count() == 1
+	image := (marker_node.first_child() or { panic('marker has no image') }).as_image_box() or {
+		panic('marker content is not an image')
+	}
+	assert image.source() == image_url
+}
+
+fn test_inside_marker_joins_the_trailing_anonymous_inline_wrapper() {
+	document := html.parse_document('<!doctype html><style>li { list-style-position: inside }</style><ul><li id="item"><div>block</div></li></ul>')
+	root := build_layout_tree(document) or { panic('no layout tree') }
+	item_node := document_tree_builder_node_with_id(root, 'item') or { panic('no list item') }
+	marker := (item_node.as_list_item_box() or { panic('item is not ListItemBox') }).marker() or {
+		panic('list item has no marker')
+	}
+	assert item_node.child_count() == 2
+	wrapper := item_node.children()[1]
+	assert wrapper.is_anonymous()
+	assert wrapper.children_are_inline()
+	assert voidptr(wrapper) == voidptr(marker.parent() or { panic('marker has no parent') })
+	assert voidptr(marker) == voidptr(wrapper.first_child() or { panic('wrapper has no marker') })
+}
+
 fn test_marker_preserves_literal_string_list_style_type() {
 	document := html.parse_document('<!doctype html><style>li { list-style-type: "->" }</style><ul><li id="item">item</li></ul>')
 	root := build_layout_tree(document) or { panic('no layout tree') }

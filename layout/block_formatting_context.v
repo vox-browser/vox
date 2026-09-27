@@ -1,7 +1,6 @@
 module layout
 
 import css
-import platform
 
 // Translation of Ladybird's BlockFormattingContext normal-flow core:
 // margin collapsing, floats and clearance, independent contexts, list-item
@@ -903,22 +902,8 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 	marker_styled := marker_node.as_node_with_style() or { return }
 	mut marker_state := state.get_mutable(marker_styled)
 	marker_state.set_containing_block_used_values(list_item_state)
-	marker_size := marker.relative_size()
-	mut marker_width := marker_size
-	mut marker_height := marker_size
-	mut has_list_style_image := false
-	if list_style_image := marker_styled.list_style_image() {
-		if image := list_style_image.as_image() {
-			has_list_style_image = true
-			marker_width = image.natural_width() or { css.CSSPixels.new(0) }
-			marker_height = image.natural_height() or { css.CSSPixels.new(0) }
-		}
-	}
-	marker_state.set_content_height(marker_height)
 	marker_text := marker.text()
-	if has_list_style_image {
-		marker_state.set_content_width(marker_width)
-	} else if text := marker_text {
+	if text := marker_text {
 		if child := marker_node.first_child() {
 			if generated_text := child.as_text_node() {
 				mut mutable_text := unsafe { &TextNode(generated_text) }
@@ -926,22 +911,14 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 				mutable_text.invalidate_text_for_rendering()
 			}
 		}
-		font := marker_node.first_available_font()
-		run := platform.shape_text(0, 0, text, font, .context_dependent)
-		marker_state.set_content_width(CSSPixels.nearest_value_for(f64(run.width())))
-	} else {
-		marker_state.set_content_width(marker_width)
 	}
-	if marker_text != none {
+	marker_box := marker_node.as_box() or { return }
+	marker_state.set_content_width(calculate_max_content_width(mut state, marker_box))
+	if marker_node.has_children() {
 		if block_container := marker_node.as_block_container() {
 			inline_result := run_inline_formatting_context(mut state, block_container, mut marker_state, bfc.layout_mode, AvailableSpace.new(AvailableSize.make_definite(marker_state.content_width()), AvailableSize.make_indefinite()))
 			marker_state.set_content_height(inline_result.automatic_content_height)
 		}
-	}
-	mut marker_distance := CSSPixels.new(0)
-	if marker_text == none {
-		marker_distance =
-			CSSPixels.nearest_value_for(0.5 * marker.computed_values().resolved_font_size_px())
 	}
 	offset_y := css.css_pixels_round(css_pixels_max(CSSPixels.new(0), marker.computed_values().line_height().minus(marker_state.content_height()).divided_by_float(2)))
 	// Capture both inline-side float intrusions before laying out list-item
@@ -954,9 +931,9 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 	marker_offset_x := if marker.list_style_position() == .inside {
 		CSSPixels.new(0)
 	} else if direction == .ltr {
-		left_boundary.minus(marker_distance).minus(marker_state.content_width())
+		left_boundary.minus(marker_state.content_width())
 	} else {
-		content_width_before_marker.minus(right_intrusion.minus(marker_distance))
+		content_width_before_marker.minus(right_intrusion)
 	}
 	offset_x := css.css_pixels_round(marker_offset_x)
 	marker_state.set_content_offset(css.CSSPixelPoint.new(offset_x, offset_y))

@@ -3166,6 +3166,29 @@ pub fn (c &ComputedProperties) content_replacement_image(abstract_element &dom.A
 	return none
 }
 
+// Resolve a URL-backed abstract image to the same generated-content record
+// used by ImageBox. This is also used by list-style-image marker content.
+pub fn content_item_for_abstract_image(value StyleValue, device_pixels_per_css_pixel f64) ?ContentItem {
+	if value is ImageStyleValue {
+		return ContentItem{
+			type_: .image
+			value: value.url_.url()
+		}
+	}
+	if value is ImageSetStyleValue {
+		index := value.select_image_index(device_pixels_per_css_pixel) or { return none }
+		option := value.options_[index]
+		if option.image is ImageStyleValue {
+			return ContentItem{
+				type_: .image
+				value: option.image.url_.url()
+				resolution: option.resolution.dots_per_pixel() or { 1.0 }
+			}
+		}
+	}
+	return none
+}
+
 pub fn (c &ComputedProperties) content_visibility() ContentVisibility {
 	if value := c.property(.content_visibility, .yes) {
 		return content_visibility_from_style_value(value) or { ContentVisibility.visible }

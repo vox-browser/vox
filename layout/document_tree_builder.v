@@ -893,11 +893,8 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 	if box_node.is_svg_svg_box() && children.len > 0 && children.all(it.is_svg_box()) {
 		box_node.set_children_are_inline(false)
 	}
-	// The marker is a direct child maintained by ListItemBox; it does not
-	// participate in the block/inline child classification of list contents.
 	if marker := list_item_marker {
-		mut mutable_marker := unsafe { &Node(marker) }
-		box_node.prepend_child(mutable_marker)
+		attach_list_item_marker(mut box_node, marker, document, computed)
 	}
 	fixup_fieldset_content_box(mut box_node, document)
 	fixup_button_layout_tree(mut box_node, document)
@@ -2059,10 +2056,9 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 	}
 	if node.is_list_item_box() {
 		if marker := build_list_item_marker(document, element, computed, mut builder_state) {
-			mut mutable_marker := unsafe { &Node(marker) }
-			node.prepend_child(mutable_marker)
 			mut list_item := unsafe { &ListItemBox(node) }
-			list_item.set_marker(mutable_marker)
+			list_item.set_marker(marker)
+			attach_list_item_marker(mut node, marker, document, computed)
 		}
 	}
 	return node
@@ -2094,30 +2090,30 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 	if initial_content.type_ == .none_ {
 		return none
 	}
+	list_style_type := list_item_computed.list_style_type_for_scope(css.style_scope_for_abstract_element(dom.AbstractElement.new(element, none)))
+	mut mutable_list_item_computed := unsafe { &css.MutableComputedValues(list_item_computed) }
+	mutable_list_item_computed.set_list_style_type(list_style_type)
 	if initial_content.type_ == .list {
 		resolve_marker_layout_counters(mut builder_state, abstract_element, marker_computed)
 		content := marker_computed.content(&abstract_element, 0, registered_counter_styles).content_data
 		mut mutable_marker_computed := unsafe { &css.MutableComputedValues(marker_computed) }
 		mutable_marker_computed.set_content(content)
-		mut marker := create_layout_node_for_generated_content(document, marker_computed)
+		marker_box := ListItemMarkerBox.new(document, list_style_type, list_item_computed.list_style_position(), element, marker_computed)
+		mut marker := unsafe { &Node(marker_box) }
 		marker.set_generated_for(.marker, element)
-		if marker.can_have_children() {
-			for item in content.items {
-				mut child := if item.type_ == .image {
-					unsafe { &Node(ImageBox.new_generated_for_content_item(document, marker_computed, item)) }
-				} else {
-					unsafe { &Node(TextNode.new_generated(document, item.value)) }
-				}
-				child.set_generated_for(.marker, element)
-				marker.append_child(child)
+		inline_image_style := marker_computed.clone_for_anonymous_with_display(css.Display.from_short(.inline_))
+		for item in content.items {
+			mut child := if item.type_ == .image {
+				unsafe { &Node(ImageBox.new_generated_for_content_item(document, inline_image_style, item)) }
+			} else {
+				unsafe { &Node(TextNode.new_generated(document, item.value)) }
 			}
-			marker.set_children_are_inline(content.items.len > 0)
+			child.set_generated_for(.marker, element)
+			marker.append_child(child)
 		}
+		marker.set_children_are_inline(content.items.len > 0)
 		return marker
 	}
-	list_style_type := list_item_computed.list_style_type_for_scope(css.style_scope_for_abstract_element(dom.AbstractElement.new(element, none)))
-	mut mutable_list_item_computed := unsafe { &css.MutableComputedValues(list_item_computed) }
-	mutable_list_item_computed.set_list_style_type(list_style_type)
 	mut mutable_marker_computed := unsafe { &css.MutableComputedValues(marker_computed) }
 	mutable_marker_computed.set_content(initial_content)
 	list_style_image := list_item_computed.typed_property_value(.list_style_image)
@@ -2133,12 +2129,43 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 	mut marker_node := unsafe { &Node(marker) }
 	marker_node.set_generated_for(.marker, element)
 	marker_node.set_children_are_inline(true)
-	if !has_list_style_image {
+	if has_list_style_image {
+		image_value := list_style_image or { return marker_node }
+		if item := css.content_item_for_abstract_image(image_value, document.device_pixels_per_css_pixel()) {
+			inline_image_style := marker_computed.clone_for_anonymous_with_display(css.Display.from_short(.inline_))
+			mut image := unsafe { &Node(ImageBox.new_generated_for_content_item(document, inline_image_style, item)) }
+			image.set_generated_for(.marker, element)
+			marker_node.append_child(image)
+		}
+	} else {
 		mut text_node := unsafe { &Node(TextNode.new_generated(document, '')) }
 		text_node.set_generated_for(.marker, element)
 		marker_node.append_child(text_node)
 	}
 	return marker_node
+}
+
+// Outside markers remain direct, out-of-flow children of the list item. An
+// inside marker participates in the principal inline run; if block children
+// already selected block-child mode, put the marker in the trailing anonymous
+// inline wrapper created by tree fixup.
+fn attach_list_item_marker(mut list_item Node, marker &Node, document &dom.Document, list_item_computed &css.ComputedProperties) {
+	marker_box := marker.as_list_item_marker_box() or {
+		list_item.prepend_child(marker)
+		return
+	}
+	if marker_box.list_style_position() != .inside {
+		list_item.prepend_child(marker)
+		return
+	}
+	if list_item.children_are_inline() || !list_item.has_children() {
+		list_item.set_children_are_inline(true)
+		list_item.prepend_child(marker)
+		return
+	}
+	mut wrapper := last_anonymous_inline_wrapper_or_new(mut list_item, document, list_item_computed,
+		false)
+	wrapper.append_child(marker)
 }
 
 fn create_layout_node_for_generated_content(document &dom.Document, computed &css.ComputedProperties) &Node {

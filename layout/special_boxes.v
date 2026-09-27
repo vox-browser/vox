@@ -1286,6 +1286,11 @@ pub:
 	list_item_element_   &dom.Element = unsafe { nil }
 }
 
+pub fn (box &ListItemMarkerBox) has_authored_content() bool {
+	content := box.computed_values().computed_content() or { return false }
+	return content.type_ == .list
+}
+
 pub fn ListItemMarkerBox.new(document &dom.Document, list_style_type css.ListStyleType, list_style_position css.ListStylePosition, list_item_element &dom.Element, computed_values &css.ComputedProperties) &ListItemMarkerBox {
 	mut box := special_block_container_base(document, none, computed_values)
 	box.is_list_item_marker_box_ = true
@@ -1298,6 +1303,14 @@ pub fn ListItemMarkerBox.new(document &dom.Document, list_style_type css.ListSty
 }
 
 pub fn (box &ListItemMarkerBox) text() ?string {
+	if box.has_authored_content() || box.list_style_image() != none {
+		return none
+	}
+	if child := box.first_child() {
+		if child.is_image_box() {
+			return none
+		}
+	}
 	// The ordinal is deliberately resolved when the marker is laid out or
 	// painted, after the complete list layout tree exists. Computing this in
 	// the constructor made every item observe the partially-built list and

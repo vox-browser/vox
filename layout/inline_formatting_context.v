@@ -302,9 +302,12 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 		mut line_box := &containing_block_used_values.line_boxes[line_index]
 		for fragment_index in 0 .. line_box.fragments_.len {
 			fragment := line_box.fragments_[fragment_index]
-			if fragment.layout_node_.is_inline_block() {
+			if fragment.layout_node_.is_inline_block() || fragment.layout_node_.is_list_item_marker_box() {
 				if styled := fragment.layout_node_.as_node_with_style() {
 					mut box_state := state.get_mutable(styled)
+					if fragment.layout_node_.is_list_item_marker_box() {
+						box_state.set_containing_block_used_values(containing_block_used_values)
+					}
 					box_state.set_content_offset(fragment.offset())
 				}
 			}

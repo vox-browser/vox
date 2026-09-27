@@ -3540,26 +3540,6 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 			svg_mask = css_mask_image_for_box(target_element, computed, border_box_bounds, node)
 		}
 	}
-	if marker := node.as_list_item_marker_box() {
-		if marker_styled := node.as_node_with_style() {
-			if list_style_image := marker_styled.list_style_image() {
-				if image := list_style_image.as_image() {
-					source := image.url_.url()
-					replaced_image_url = if styled_element := paint_element {
-						styled_element.document().encoding_parse_and_serialize_url(source) or { source }
-					} else {
-						source
-					}
-					replaced_image_size = '100% 100%'
-					replaced_image_position_x = '0%'
-					replaced_image_position_y = '0%'
-				}
-			}
-		}
-		if replaced_image_url == '' && marker.text() == none {
-			marker_shape = marker.list_style_type_.name
-		}
-	}
 	if image_box := node.as_image_box() {
 		replaced_image_renders_as_alt_text = image_box.renders_as_alt_text()
 		if image_element := element {
