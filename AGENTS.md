@@ -195,7 +195,10 @@
   sized descendants, including items whose own percentage height was initially
   indefinite. Before that resolution, percentage cross-axis minimums remain
   indefinite and cannot transfer a provisional size through an item's aspect
-  ratio into its flex base. Flex and grid item baselines ignore
+  ratio into its flex base. Intrinsic column-flex measurement likewise keeps
+  its original percentage basis across both passes, so a stretched item's
+  cyclic percentage minimum cannot inflate the width it helped determine.
+  Flex and grid item baselines ignore
   `vertical-align`, which has no effect on those item roles. Baseline consumers
   distinguish first and last
   sets: flex alignment derives the first set from content even for scroll
