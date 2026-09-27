@@ -134,6 +134,10 @@ them from collapsed whitespace so existing float-band placement stays stable.
 An overflowing line now ignores `text-align` and stays aligned to inline-start;
 RTL content wider than its block consequently extends to the left, matching the
 upstream scrollable-overflow geometry.
+Table width resolution now retains whether `fit-content` had an argument. The
+keyword form clamps against the available inline size, while explicit zero
+length and percentage arguments clamp to min-content; intrinsic min/max width
+constraints also clear the principal table's stale generic-block end margin.
 Text shaping now applies computed `word-spacing` to spaces, no-break spaces,
 and collapsed line feeds. The exact shaped advance of trailing ASCII whitespace
 is retained through fragment merging and intrinsic shape reuse, so line-end
@@ -761,7 +765,7 @@ largest unmatched modules:
    314 Layout
 
 $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
-Layout corpus: 1016 passed, 73 failed, 1089 total
+Layout corpus: 1017 passed, 72 failed, 1089 total
 
 $ v -old-compiler -enable-globals test .
 Summary for all V _test.v files: 651 passed, 651 total.

@@ -230,7 +230,10 @@
   layout, the anonymous table wrapper owns placement, ordering, margins, and
   self-alignment while its width follows the principal table's intrinsic,
   min/max, box-sizing, percentage, and stretch constraints against the grid
-  area. A block
+  area. Table sizing distinguishes the keyword `fit-content`, whose limit is
+  the available inline size, from an explicit zero `fit-content(0)` or
+  `fit-content(0%)`, whose limit remains zero; intrinsic min/max constraints
+  also leave no stale used margin on the principal table. A block
   container's own
   `vertical-align` positions that container only; direct text uses the
   anonymous inline box's initial baseline alignment, including inside cells.
