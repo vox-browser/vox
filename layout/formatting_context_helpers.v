@@ -93,7 +93,13 @@ fn resolve_layout_size(node &Node, size css.Size, percentage_basis CSSPixels) ?C
 fn resolve_layout_content_size(node &Node, size css.Size, percentage_basis CSSPixels, used_values &UsedValues, width bool) ?CSSPixels {
 	mut resolved := resolve_layout_size(node, size, percentage_basis) or { return none }
 	if node.computed_values().box_sizing() == .border_box {
-		edges := if width {
+		edges := if used_values.is_collapsed_borders_table_box() {
+			if width {
+				used_values.border_box_left().plus(used_values.border_box_right())
+			} else {
+				used_values.border_box_top().plus(used_values.border_box_bottom())
+			}
+		} else if width {
 			used_values.border_left.plus(used_values.padding_left).plus(used_values.padding_right).plus(used_values.border_right)
 		} else {
 			used_values.border_top.plus(used_values.padding_top).plus(used_values.padding_bottom).plus(used_values.border_bottom)
@@ -104,7 +110,13 @@ fn resolve_layout_content_size(node &Node, size css.Size, percentage_basis CSSPi
 }
 
 fn clamp_layout_content_size(node &Node, value CSSPixels, percentage_basis CSSPixels, used_values &UsedValues, width bool) CSSPixels {
-	edges := if width {
+	edges := if used_values.is_collapsed_borders_table_box() {
+		if width {
+			used_values.border_box_left().plus(used_values.border_box_right())
+		} else {
+			used_values.border_box_top().plus(used_values.border_box_bottom())
+		}
+	} else if width {
 		used_values.border_left.plus(used_values.padding_left).plus(used_values.padding_right).plus(used_values.border_right)
 	} else {
 		used_values.border_top.plus(used_values.padding_top).plus(used_values.padding_bottom).plus(used_values.border_bottom)

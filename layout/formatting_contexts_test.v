@@ -2460,6 +2460,50 @@ fn test_collapsed_table_odd_borders_split_between_table_and_cells() {
 	assert cell.border_box_width().to_double() == 99
 }
 
+fn test_percentage_collapsed_table_resolves_border_box_from_split_outer_borders() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:8px }
+		table { width:100%; border-collapse:collapse }
+		td { border:1px solid }
+	</style><table id="table"><tr><td></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	table_node := layout_node_with_id(result.root, 'table') or { panic('missing table') }
+	wrapper_node := table_node.parent() or { panic('table has no wrapper') }
+	wrapper_styled := wrapper_node.as_node_with_style() or { panic('wrapper has no style') }
+	wrapper := result.used_values_for(wrapper_styled) or { panic('wrapper has no used values') }
+	table := used_for_id(result, 'table')
+	assert wrapper.content_width().to_double() == 784
+	assert table.content_width().to_double() == 783
+	assert table.border_box_width().to_double() == 784
+}
+
+fn test_inline_block_intrinsic_width_includes_anonymous_collapsed_table_outer_border() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		table { border-collapse:collapse; border-spacing:20px 10px; border:1px solid }
+		td { padding:10px 20px; border:1px solid }
+		.horizontal > * { display:inline-block }
+	</style><div class="horizontal"><table id="outer">
+		<tbody><tr><td>A</td><td>B</td><td>1</td></tr></tbody>
+	</table></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	outer_node := layout_node_with_id(result.root, 'outer') or { panic('missing outer') }
+	outer := used_for_id(result, 'outer')
+	inner_wrapper := outer_node.children().filter(it.is_table_wrapper())[0]
+	inner_styled := inner_wrapper.as_node_with_style() or { panic('inner wrapper has no style') }
+	inner := result.used_values_for(inner_styled) or { panic('inner wrapper has no used values') }
+	assert outer.content_width() == inner.content_width()
+	inner_table := inner_wrapper.children().filter(it.display().is_table_inside())[0]
+	inner_table_styled := inner_table.as_node_with_style() or { panic('inner table has no style') }
+	inner_table_used := result.used_values_for(inner_table_styled) or {
+		panic('inner table has no used values')
+	}
+	assert inner.derived_first_baseline() or { panic('inner wrapper has no baseline') } ==
+		inner_table_used.offset.y().plus(inner_table_used.derived_first_baseline() or {
+			panic('inner table has no baseline')
+		})
+}
+
 fn test_collapsed_table_uses_winning_outer_grid_borders() {
 	document := html.parse_document('<!doctype html><style>
 		html, body { margin:0 }

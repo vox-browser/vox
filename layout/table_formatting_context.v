@@ -1698,6 +1698,14 @@ fn calculate_table_caption_minimum_width(mut state LayoutState, table &Node, con
 
 fn calculate_table_grid_intrinsic_widths(mut state LayoutState, table &Node, percentage_basis CSSPixels) &TableGridIntrinsicWidths {
 	if cached := cached_table_grid_intrinsic_widths(table, percentage_basis) {
+		// Intrinsic widths are node-global, but every intrinsic probe owns a
+		// separate throwaway LayoutState. Reapply the collapsed-border winners so
+		// a cached max-content probe has the same table and cell edges as the
+		// min-content probe that populated the cache.
+		if state.subtree_root != none {
+			resolve_collapsed_table_borders(mut state, table, cached.rows, cached.placements,
+				cached.column_definitions, cached.column_count)
+		}
 		return cached
 	}
 	intrinsic_timing_start := time.sys_mono_now()
@@ -1946,11 +1954,7 @@ fn compute_table_wrapper_content_width(mut state LayoutState, wrapper &Node, mut
 	}
 	// min-width wins when it conflicts with max-width.
 	table_content_width = css_pixels_max(table_content_width, used_min_width)
-	return if table_width.is_auto() {
-		table_content_width.plus(table_state.border_box_left()).plus(table_state.border_box_right())
-	} else {
-		table_content_width.plus(table_state.border_left).plus(table_state.padding_left).plus(table_state.padding_right).plus(table_state.border_right)
-	}
+	return table_content_width.plus(table_state.border_box_left()).plus(table_state.border_box_right())
 }
 
 fn layout_table_captions(mut state LayoutState, table &Node, mut table_state UsedValues, side css.CaptionSide, start_y CSSPixels, caption_available_height AvailableSize) CSSPixels {

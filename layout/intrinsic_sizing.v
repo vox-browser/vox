@@ -342,6 +342,30 @@ fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Bo
 		}
 		greatest = css_pixels_max(greatest, contribution)
 	}
+	// A table wrapper's intrinsic size is the border-edge size of its table
+	// grid. The generic block-child contribution above already includes the
+	// grid's content measure; add the table-owned shares of collapsed outer
+	// borders, which are established in this throwaway state while measuring the
+	// principal table child.
+	if box_node.is_table_wrapper() {
+		for child in box_node.children() {
+			if !child.display().is_table_inside() {
+				continue
+			}
+			child_styled := child.as_node_with_style() or { continue }
+			percentage_basis := if containing := box_state.containing_block_used_values() {
+				containing.content_width()
+			} else {
+				CSSPixels.new(0)
+			}
+			_ = calculate_table_grid_intrinsic_widths(mut throwaway, child, percentage_basis)
+			child_values := throwaway.try_get(child_styled) or { continue }
+			if child_values.is_collapsed_borders_table_box() {
+				greatest = greatest.plus(child_values.border_box_left()).plus(child_values.border_box_right())
+			}
+			break
+		}
+	}
 	return clamp_to_max_dimension_value(greatest)
 }
 
