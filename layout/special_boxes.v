@@ -9,7 +9,6 @@ import encoding.base64
 import html
 import math
 import os
-import platform
 import stbi
 import strconv
 import svg
@@ -185,31 +184,12 @@ pub fn CanvasBox.new(document &dom.Document, element &dom.Element, computed_valu
 @[heap]
 pub struct ImageBox {
 	ReplacedBox
-pub mut:
-	renders_as_alt_text_ bool
 mut:
 	svg_image_document_       ?&dom.Document
 	source_                   string
 	uses_content_replacement_ bool
 	// Resolution of the image-set() candidate that selected source_.
 	source_resolution_ f64 = 1.0
-}
-
-fn image_alt_text_natural_size(alt string) css.SizeWithAspectRatio {
-	if alt.len == 0 {
-		return css.SizeWithAspectRatio{
-			width: CSSPixels.new(0)
-			height: CSSPixels.new(0)
-		}
-	}
-	font := &platform.Font{
-		family: 'sans-serif'
-		point_size: 12
-	}
-	alt_text_width := CSSPixels.nearest_value_for(platform.shape_text(0, 0, alt, font, .context_dependent).width())
-	width := alt_text_width.plus(CSSPixels.new(16))
-	height := CSSPixels.nearest_value_for(font.pixel_metrics().size).plus(CSSPixels.new(16))
-	return size_with_optional_aspect_ratio(width, height)
 }
 
 fn image_source_selected_from_attributes(element &dom.Element) string {
@@ -278,26 +258,9 @@ fn available_object_image_natural_size(element &dom.Element) ?css.SizeWithAspect
 	return result
 }
 
-// Layout::ImageProvider::is_image_pending(). Object images run their
-// representation selection before this boundary and have no separate pending
-// provider state; img and image-input models retain their live request state.
-fn element_image_is_pending(element &dom.Element) bool {
-	if element.as_node().is_html_image_element() {
-		image := unsafe { &dom.HTMLImageElement(element) }
-		return html.html_image_element_model_for_dom_element(image).is_image_pending()
-	}
-	if element.as_node().is_html_input_element() {
-		input := unsafe { &dom.HTMLInputElement(element) }
-		return html.HTMLInputElementModel.create(input).is_image_pending()
-	}
-	return false
-}
-
 pub fn ImageBox.new(document &dom.Document, element &dom.Element, computed_values &css.ComputedProperties) &ImageBox {
-	alt := element.get_attribute_value('alt')
 	mut box := &ImageBox{
 		ReplacedBox: replaced_box_base(document, element, computed_values)
-		renders_as_alt_text_: true
 	}
 	box.is_image_box_ = true
 	mut source := image_source_selected_from_attributes(element)
@@ -318,22 +281,16 @@ pub fn ImageBox.new(document &dom.Document, element &dom.Element, computed_value
 	}
 	box.source_ = source
 	if intrinsic_size := available_html_image_natural_size(element) {
-		box.renders_as_alt_text_ = false
 		box.natural_size_ = intrinsic_size
 	} else if intrinsic_size := available_object_image_natural_size(element) {
-		box.renders_as_alt_text_ = false
 		box.natural_size_ = intrinsic_size
 	} else if intrinsic_size := image_intrinsic_size_for_source(document, source) {
-		box.renders_as_alt_text_ = false
 		box.natural_size_ = intrinsic_size
-	} else if element_image_is_pending(element) {
-		box.renders_as_alt_text_ = false
+	} else {
 		box.natural_size_ = css.SizeWithAspectRatio{
 			width: CSSPixels.new(0)
 			height: CSSPixels.new(0)
 		}
-	} else {
-		box.natural_size_ = image_alt_text_natural_size(alt)
 	}
 	box.svg_image_document_ = svg_image_document_for_source(document, source)
 	box.auto_content_box_size_ = box.natural_size_
@@ -343,12 +300,10 @@ pub fn ImageBox.new(document &dom.Document, element &dom.Element, computed_value
 pub fn ImageBox.new_generated(document &dom.Document, computed_values &css.ComputedProperties, source string) &ImageBox {
 	mut box := &ImageBox{
 		ReplacedBox: generated_replaced_box_base(document, computed_values)
-		renders_as_alt_text_: true
 		source_: source
 	}
 	box.is_image_box_ = true
 	if intrinsic_size := image_intrinsic_size_for_source(document, source) {
-		box.renders_as_alt_text_ = false
 		box.natural_size_ = intrinsic_size
 	} else {
 		box.natural_size_ = css.SizeWithAspectRatio{
@@ -398,13 +353,11 @@ pub fn ImageBox.new_content_replacement_for_item(document &dom.Document, element
 pub fn ImageBox.new_content_replacement(document &dom.Document, element &dom.Element, computed_values &css.ComputedProperties, source string) &ImageBox {
 	mut box := &ImageBox{
 		ReplacedBox: replaced_box_base(document, element, computed_values)
-		renders_as_alt_text_: true
 		source_: source
 		uses_content_replacement_: true
 	}
 	box.is_image_box_ = true
 	if intrinsic_size := image_intrinsic_size_for_source(document, source) {
-		box.renders_as_alt_text_ = false
 		box.natural_size_ = intrinsic_size
 	} else {
 		box.natural_size_ = css.SizeWithAspectRatio{
@@ -816,10 +769,6 @@ fn webp_image_dimensions(data []u8) ?ImageDimensions {
 	return none
 }
 
-pub fn (box &ImageBox) renders_as_alt_text() bool {
-	return box.renders_as_alt_text_
-}
-
 pub fn (box &ImageBox) source() string {
 	return box.source_
 }
@@ -828,27 +777,14 @@ pub fn (box &ImageBox) uses_content_replacement() bool {
 	return box.uses_content_replacement_
 }
 
-pub fn (mut box ImageBox) dom_node_did_update_alt_text() {
-	if !box.renders_as_alt_text_ {
-		return
-	}
-	dom_node := box.dom_node() or { return }
-	element := dom_node.as_element() or { return }
-	box.natural_size_ = image_alt_text_natural_size(element.get_attribute_value('alt'))
-	box.auto_content_box_size_ = box.natural_size_
-}
-
-// ImagePaintable::reset_for_relayout() refreshes image availability and the
-// live alt attribute whenever the retained layout tree is laid out again. V
-// keeps that provider-facing state on ImageBox until the paint tree is rebuilt.
+// ImagePaintable::reset_for_relayout() refreshes image availability whenever
+// the retained layout tree is laid out again.
 pub fn (mut box ImageBox) reset_for_relayout() {
 	mut source := box.source_
-	mut alt := ''
 	mut provider_natural_size := ?css.SizeWithAspectRatio(none)
 	if !box.uses_content_replacement_ {
 		if dom_node := box.dom_node() {
 			if element := dom_node.as_element() {
-				alt = element.get_attribute_value('alt')
 				if element.is_html_element() && element.local_name() == 'object' {
 					object_element := unsafe { &dom.HTMLObjectElement(element) }
 					model := html.html_object_element_model_for_dom_element(object_element)
@@ -871,22 +807,13 @@ pub fn (mut box ImageBox) reset_for_relayout() {
 	old_source := box.source_
 	box.source_ = source
 	if natural_size := provider_natural_size {
-		box.renders_as_alt_text_ = false
 		box.natural_size_ = natural_size
 	} else if intrinsic_size := image_intrinsic_size_for_source(box.document_, source) {
-		box.renders_as_alt_text_ = false
 		box.natural_size_ = natural_size_at_resolution(intrinsic_size, box.source_resolution_)
 	} else {
-		is_pending := if dom_node := box.dom_node() {
-			if element := dom_node.as_element() { element_image_is_pending(element) } else { false }
-		} else {
-			false
-		}
-		box.renders_as_alt_text_ = !is_pending
-		box.natural_size_ = if is_pending {
-			css.SizeWithAspectRatio{ width: CSSPixels.new(0), height: CSSPixels.new(0) }
-		} else {
-			image_alt_text_natural_size(alt)
+		box.natural_size_ = css.SizeWithAspectRatio{
+			width: CSSPixels.new(0)
+			height: CSSPixels.new(0)
 		}
 	}
 	if source != old_source {

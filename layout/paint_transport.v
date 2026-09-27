@@ -2170,36 +2170,7 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 			}, opacity)
 		}
 		foreground_replaced_start := commands.len
-		mut renders_replaced_image_as_alt_text := false
-		if image_paintable := box.replaced_image_paintable {
-			renders_replaced_image_as_alt_text = image_paintable.renders_as_alt_text
-			if alt_text_paint := image_paintable.paint_alt_text(painting.new_device_pixel_converter(1.0) or {
-				panic(err)
-			}) {
-				if glyph_run := alt_text_paint.glyph_run.glyph_run {
-					font := glyph_run.font()
-					commands << PaintCommand{
-						kind: 'draw_text'
-						x: alt_text_paint.glyph_run.translation.x
-						y: f64(alt_text_paint.glyph_run.rect.y) + (f64(alt_text_paint.glyph_run.rect.height) - alt_text_paint.font_size) / 2.0
-						width: f64(glyph_run.width())
-						height: alt_text_paint.font_size
-						color: painting_color_string(alt_text_paint.glyph_run.color)
-						text: alt_text_paint.text
-						font_size: alt_text_paint.font_size
-						bold: font.weight >= 600
-						mono: font.family.to_lower().contains('mono')
-						glyph_run: glyph_run
-						glyph_translation_x: alt_text_paint.glyph_run.translation.x
-						glyph_translation_y: alt_text_paint.glyph_run.translation.y
-						glyph_orientation: alt_text_paint.glyph_run.orientation
-						opacity: opacity
-					}
-				}
-			}
-		}
 		if (box.replaced_image_url != '' || box.replaced_image_bitmap != none)
-			&& !renders_replaced_image_as_alt_text
 			&& box.nested_viewport_document == none {
 			commands << PaintCommand{
 				kind: if box.replaced_image_paintable != none {

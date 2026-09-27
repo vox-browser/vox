@@ -2870,13 +2870,14 @@ fn test_svg_text_reuses_svg_path_painting_instead_of_generic_text_commands() {
 	assert paths[0].stroke_width == 2
 }
 
-fn test_broken_image_paints_and_refreshes_alt_text_fallback() {
+fn test_broken_image_shadow_text_tracks_alt_and_source_changes() {
 	document := html.parse_document('<!doctype html><style>html,body{margin:0}img{display:block;width:100px;height:30px;color:rgb(10 20 30);font:700 19px monospace}</style><img id="target" src="missing.png" alt="fallback">')
 	mut target := document.get_element_by_id('target') or { panic('missing image') }
 	image := unsafe { &dom.HTMLImageElement(target) }
 	mut image_model := html.html_image_element_model_for_dom_element(image)
 	mut image_request := image_model.current_request()
 	image_request.set_state(.broken)
+	image_model.update_alt_text_shadow_tree()
 	mut root := layout_document_typed_in_viewport(document, 240, 140)
 	mut commands := root.paint_commands()
 	mut text_commands := commands.filter(it.kind == 'draw_text' && it.text == 'fallback')
@@ -2886,7 +2887,9 @@ fn test_broken_image_paints_and_refreshes_alt_text_fallback() {
 	assert text_commands[0].bold
 	assert text_commands[0].mono
 	assert text_commands[0].glyph_run != none
-	assert text_commands[0].glyph_translation_x > 0
+	// The fallback participates in ordinary inline layout instead of being
+	// centered by ImagePaintable's deleted bespoke paint branch.
+	assert text_commands[0].glyph_translation_x == 0
 	assert text_commands[0].glyph_translation_y > 0
 	assert commands.all(it.kind != 'stroke_rounded_rect')
 	assert commands.all(it.kind != 'draw_replaced_image')
@@ -2895,17 +2898,27 @@ fn test_broken_image_paints_and_refreshes_alt_text_fallback() {
 	html.html_image_element_form_associated_element_attribute_changed(image, 'alt', 'fallback', 'updated fallback', none)
 	root = layout_document_typed_in_viewport(document, 240, 140)
 	commands = root.paint_commands()
-	assert commands.filter(it.kind == 'draw_text' && it.text == 'updated fallback').len == 1
-	assert commands.all(it.kind != 'draw_text' || it.text != 'fallback')
+	updated_text := commands.filter(it.kind == 'draw_text').map(it.text)
+	assert updated_text.join(' ') == 'updated fallback'
+	assert updated_text.len == 2
 
 	valid_png := 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAF/gL+X9HkWQAAAABJRU5ErkJggg=='
 	target.set_attribute_value('src', valid_png)
-	html.html_image_element_form_associated_element_attribute_changed(image, 'src', 'missing.png', valid_png, none)
+	image_model.set_src(valid_png)
+	image_request.set_current_url(valid_png)
+	image_request.set_state(.partially_available)
+	image_model.update_alt_text_shadow_tree()
+	assert image_model.is_image_available()
+	assert target.shadow_root() == none
+	assert document.needs_full_layout_tree_update()
 	mut target_node := unsafe { &dom.Node(target.as_node()) }
 	target_node.set_needs_layout_update(.html_image_element_update_the_image_data)
 	root = layout_document_typed_in_viewport(document, 240, 140)
+	result := document_layout_result(document) or { panic('missing image layout') }
+	layout_image := typed_paint_node_with_id(result.root, 'target') or { panic('missing image box') }
+	assert layout_image.is_image_box()
 	commands = root.paint_commands()
-	assert commands.all(it.kind != 'draw_text' || it.text != 'updated fallback')
+	assert commands.all(it.kind != 'draw_text')
 	images := commands.filter(it.kind == 'draw_replaced_image')
 	assert images.len == 1
 	assert images[0].image_url == valid_png

@@ -46,49 +46,14 @@ fn test_file_image_intrinsic_size_ignores_the_url_query() {
 	assert size.height?.to_double() == 4
 }
 
-fn test_image_box_recomputes_alt_text_natural_size_after_dom_update() {
+fn test_image_box_without_decoded_data_has_zero_natural_size() {
 	document := dom.Document.create(dom.url_about_blank())
 	mut image_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'img')!
-	image_element.set_attribute_value('alt', 'iii')
-	style := css.ComputedProperties.new()
-	mut image_box := ImageBox.new(document, image_element, style)
-	assert image_box.renders_as_alt_text()
-	old_size := image_box.natural_size()
-
-	image_element.set_attribute_value('alt', 'WWW')
-	image_box.dom_node_did_update_alt_text()
-	new_size := image_box.natural_size()
-	old_width := old_size.width or { panic('alt text has no width') }
-	new_width := new_size.width or { panic('alt text has no width') }
-	assert new_width.to_double() > old_width.to_double()
-	assert new_size.height == old_size.height
-}
-
-fn test_pending_image_box_renders_blank_until_request_breaks() {
-	document := dom.Document.create(dom.URL{ value: 'https://example.test/page' })
-	mut image_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'img')!
 	image_element.set_attribute_value('alt', 'fallback text')
-	image_element.set_attribute_value('src', '/pending.png')
 	style := css.ComputedProperties.new()
-
-	pending_box := ImageBox.new(document, image_element, style)
-	assert !pending_box.renders_as_alt_text()
-	assert pending_box.natural_size().width?.to_double() == 0
-	assert pending_box.natural_size().height?.to_double() == 0
-
-	image := unsafe { &dom.HTMLImageElement(image_element) }
-	mut model := html.html_image_element_model_for_dom_element(image)
-	mut request := model.current_request()
-	request.set_state(.broken)
-	broken_box := ImageBox.new(document, image_element, style)
-	assert broken_box.renders_as_alt_text()
-	assert broken_box.natural_size().width?.to_double() > 0
-
-	mut source_less_element := document.create_element_ns('http://www.w3.org/1999/xhtml',
-		'img')!
-	source_less_element.set_attribute_value('alt', 'fallback text')
-	source_less_box := ImageBox.new(document, source_less_element, style)
-	assert source_less_box.renders_as_alt_text()
+	image_box := ImageBox.new(document, image_element, style)
+	assert image_box.natural_size().width?.to_double() == 0
+	assert image_box.natural_size().height?.to_double() == 0
 }
 
 fn test_video_box_natural_size_tracks_live_media_metadata() {

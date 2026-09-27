@@ -119,6 +119,7 @@ pub mut:
 	picker_hook_                     ?InputPickerHook
 	inner_text_element_              ?&dom.Element
 	text_node_                       ?&dom.Text
+	image_button_alt_text_node_      ?&dom.Text
 	placeholder_element_             ?&dom.Element
 	placeholder_text_node_           ?&dom.Text
 	up_button_element_               ?&dom.Element
@@ -788,6 +789,7 @@ fn (mut model HTMLInputElementModel) clear_shadow_tree_handles() {
 	model.inner_text_element_ = none
 	model.text_node_ = none
 	model.text_control.text_node_ = none
+	model.image_button_alt_text_node_ = none
 	model.placeholder_element_ = none
 	model.placeholder_text_node_ = none
 	model.up_button_element_ = none
@@ -804,8 +806,13 @@ pub fn (mut model HTMLInputElementModel) create_shadow_tree_if_needed() {
 		return
 	}
 	match model.type_state_ {
-		.hidden, .radio_button, .checkbox, .image_button {}
+		.hidden, .radio_button, .checkbox {}
 		.button, .submit_button, .reset_button { model.create_button_input_shadow_tree() }
+		.image_button {
+			if model.renders_as_alt_text() && input_element(&model).get_attribute_value('alt') != '' {
+				model.create_image_button_alt_text_shadow_tree()
+			}
+		}
 		.color { model.create_color_input_shadow_tree() }
 		.file_upload { model.create_file_input_shadow_tree() }
 		.range { model.create_range_input_shadow_tree() }
@@ -819,6 +826,7 @@ pub fn (mut model HTMLInputElementModel) update_shadow_tree() {
 		.file_upload { model.update_file_input_shadow_tree() }
 		.range { model.update_slider_shadow_tree_elements() }
 		.button, .reset_button, .submit_button { model.update_button_input_shadow_tree() }
+		.image_button { model.update_image_button_alt_text_shadow_tree() }
 		else { model.update_text_input_shadow_tree() }
 	}
 }
@@ -843,6 +851,60 @@ pub fn (mut model HTMLInputElementModel) update_button_input_shadow_tree() {
 		mutable_text.set_data(model.button_label())
 	}
 	model.update_placeholder_visibility()
+}
+
+fn (mut model HTMLInputElementModel) create_image_button_alt_text_shadow_tree() {
+	mut element := input_element(&model)
+	if element.shadow_root() != none {
+		return
+	}
+	shadow := element.attach_a_user_agent_shadow_root(.named)
+	mut wrapper := dom.create_element(element.document(), 'div', ns_html, none, none, false) or {
+		return
+	}
+	wrapper.set_attribute_value('style', 'display: inline; unicode-bidi: normal;')
+	text := element.document().create_text_node(element.get_attribute_value('alt'))
+	mut wrapper_node := wrapper.as_node()
+	wrapper_node.append_child(text.as_node()) or { return }
+	mut shadow_node := unsafe { &dom.Node(shadow) }
+	shadow_node.append_child(wrapper.as_node()) or { return }
+	model.image_button_alt_text_node_ = text
+	mut document := unsafe { &dom.Document(element.document()) }
+	document.set_needs_full_layout_tree_update(true)
+}
+
+fn (mut model HTMLInputElementModel) remove_image_button_alt_text_shadow_tree() {
+	if model.image_button_alt_text_node_ == none {
+		return
+	}
+	mut element := input_element(&model)
+	element.set_shadow_root(none)
+	model.image_button_alt_text_node_ = none
+	mut document := unsafe { &dom.Document(element.document()) }
+	document.set_needs_full_layout_tree_update(true)
+}
+
+pub fn (mut model HTMLInputElementModel) update_image_button_alt_text_shadow_tree() {
+	alt_text := input_element(&model).get_attribute_value('alt')
+	if model.type_state_ != .image_button || !model.renders_as_alt_text() || alt_text == '' {
+		model.remove_image_button_alt_text_shadow_tree()
+		return
+	}
+	if model.image_button_alt_text_node_ == none {
+		model.create_image_button_alt_text_shadow_tree()
+		return
+	}
+	if text := model.image_button_alt_text_node_ {
+		if text.data() == alt_text {
+			return
+		}
+		mut mutable_text := text
+		mutable_text.set_data(alt_text)
+		mut node := input_element(&model).as_node()
+		node.set_needs_layout_tree_update(true, .html_input_element_src_attribute)
+		mut document := unsafe { &dom.Document(input_element(&model).document()) }
+		document.set_needs_full_layout_tree_update(true)
+	}
 }
 
 pub fn (mut model HTMLInputElementModel) create_text_input_shadow_tree() {
@@ -1536,12 +1598,15 @@ pub fn (mut model HTMLInputElementModel) handle_src_attribute(value string) ! {
 	url := input_element(&model).document().encoding_parse_url(value) or { return }
 	mut request := SharedResourceRequest.get_or_create(input_element(&model).document(), url)
 	model.resource_request_ = request
+	model.update_image_button_alt_text_shadow_tree()
 	if request.state() == .finished {
 		model.fire_event('load')
+		model.update_image_button_alt_text_shadow_tree()
 		return
 	}
 	if request.state() == .failed {
 		model.fire_event('error')
+		model.update_image_button_alt_text_shadow_tree()
 		return
 	}
 	fetch := model.image_fetch_hook_ or { return }
@@ -1550,11 +1615,13 @@ pub fn (mut model HTMLInputElementModel) handle_src_attribute(value string) ! {
 		request.handle_failed_fetch()
 		model.fire_event('error')
 		model.stop_delaying_document_load_event()
+		model.update_image_button_alt_text_shadow_tree()
 		return
 	}
 	request.handle_successful_resource_load(decoded)
 	model.fire_event('load')
 	model.stop_delaying_document_load_event()
+	model.update_image_button_alt_text_shadow_tree()
 	mut node := input_element(&model).as_node()
 	node.set_needs_layout_tree_update(true, .html_input_element_src_attribute)
 }
@@ -1569,10 +1636,17 @@ pub fn (model &HTMLInputElementModel) is_image_available() bool {
 	return model.image_data() != none
 }
 
+pub fn (model &HTMLInputElementModel) renders_as_alt_text() bool {
+	return !model.is_image_available() && !model.is_image_pending()
+}
+
 // A newly created shared request has not started its host fetch yet but is
 // still potentially available, just like an in-flight request.
 pub fn (model &HTMLInputElementModel) is_image_pending() bool {
-	request := model.resource_request_ or { return false }
+	request := model.resource_request_ or {
+		return model.type_state_ == .image_button
+			&& input_element(model).get_attribute_value('src') != ''
+	}
 	return request.needs_fetching() || request.is_fetching()
 }
 
@@ -2362,6 +2436,11 @@ pub fn (mut model HTMLInputElementModel) form_associated_element_attribute_chang
 			}
 		}
 		'src' { model.handle_src_attribute(value or { '' }) or {} }
+		'alt' {
+			if model.type_state_ == .image_button {
+				model.update_image_button_alt_text_shadow_tree()
+			}
+		}
 		'maxlength' { model.handle_maxlength_attribute() }
 		'multiple' {
 			if model.type_state_ == .email && (old_value == none) != (value == none) {

@@ -92,6 +92,7 @@ pub enum SetNeedsLayoutTreeUpdateReason {
 	element_set_inner_html
 	element_set_shadow_root
 	details_element_opened_or_closed
+	html_image_element_update_the_image_data
 	html_input_element_src_attribute
 	html_ol_list_element_ordinal_values
 	html_object_element_update_layout_and_child_objects
@@ -112,6 +113,7 @@ pub fn set_needs_layout_tree_update_reason_to_string(reason SetNeedsLayoutTreeUp
 		.element_set_inner_html { 'ElementSetInnerHTML' }
 		.element_set_shadow_root { 'ElementSetShadowRoot' }
 		.details_element_opened_or_closed { 'DetailsElementOpenedOrClosed' }
+		.html_image_element_update_the_image_data { 'HTMLImageElementUpdateTheImageData' }
 		.html_input_element_src_attribute { 'HTMLInputElementSrcAttribute' }
 		.html_ol_list_element_ordinal_values { 'HTMLOListElementOrdinalValues' }
 		.html_object_element_update_layout_and_child_objects {

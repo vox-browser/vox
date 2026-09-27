@@ -2254,6 +2254,41 @@ fn create_layout_node_for_generated_content(document &dom.Document, computed &cs
 	return unsafe { &Node(Box.new(document, none, computed)) }
 }
 
+fn create_layout_node_for_display_type(document &dom.Document, element &dom.Element, computed &css.ComputedProperties) &Node {
+	display := computed.display()
+	if display.is_table_inside() || display.is_table_row_group() || display.is_table_header_group()
+		|| display.is_table_footer_group() || display.is_table_row() {
+		return unsafe { &Node(Box.new(document, element.as_node(), computed)) }
+	}
+	if display.is_list_item() {
+		return unsafe { &Node(ListItemBox.new(document, element.as_node(), computed)) }
+	}
+	if display.is_table_cell() || display.is_table_column() || display.is_table_column_group()
+		|| display.is_table_caption() || display.is_math_inside() {
+		return unsafe { &Node(BlockContainer.new(document, element.as_node(), computed)) }
+	}
+	if display.is_inline_outside() {
+		if display.is_flow_root_inside() {
+			return unsafe { &Node(BlockContainer.new(document, element.as_node(), computed)) }
+		}
+		if display.is_flow_inside() {
+			return unsafe { &Node(InlineNode.new(document, element.as_node(), computed)) }
+		}
+		if display.is_flex_inside() || display.is_grid_inside() {
+			return unsafe { &Node(Box.new(document, element.as_node(), computed)) }
+		}
+		return unsafe { &Node(InlineNode.new(document, element.as_node(), computed)) }
+	}
+	if display.is_flex_inside() || display.is_grid_inside() {
+		return unsafe { &Node(Box.new(document, element.as_node(), computed)) }
+	}
+	if display.is_flow_inside() || display.is_flow_root_inside() || display.is_contents()
+		|| display.is_ruby_inside() {
+		return unsafe { &Node(BlockContainer.new(document, element.as_node(), computed)) }
+	}
+	return unsafe { &Node(InlineNode.new(document, element.as_node(), computed)) }
+}
+
 struct HTMLInputElementLayoutNodeResult {
 	handled bool
 	node    ?&Node
@@ -2268,6 +2303,13 @@ fn html_input_element_create_layout_node(document &dom.Document, element &dom.El
 		return HTMLInputElementLayoutNodeResult{ handled: true }
 	}
 	if type_state == .image_button {
+		model := html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+		if model.renders_as_alt_text() && element.get_attribute_value('alt') != '' {
+			return HTMLInputElementLayoutNodeResult{
+				handled: true
+				node: create_layout_node_for_display_type(document, element, computed)
+			}
+		}
 		return HTMLInputElementLayoutNodeResult{
 			handled: true
 			node: unsafe { &Node(ImageBox.new(document, element, computed)) }
@@ -2352,6 +2394,10 @@ pub fn html_canvas_element_create_layout_node(document &dom.Document, element &d
 
 pub fn html_image_element_create_layout_node(document &dom.Document, element &dom.HTMLImageElement, computed &css.ComputedProperties) &Node {
 	dom_element := unsafe { &dom.Element(element) }
+	model := html.html_image_element_model_for_dom_element(element)
+	if model.renders_as_alt_text() && dom_element.get_attribute_value('alt') != '' {
+		return create_layout_node_for_display_type(document, dom_element, computed)
+	}
 	return unsafe { &Node(ImageBox.new(document, dom_element, computed)) }
 }
 
@@ -2511,34 +2557,7 @@ fn create_layout_node_for_element(document &dom.Document, element &dom.Element, 
 			}
 		}
 	}
-	if display.is_table_inside() || display.is_table_row_group() || display.is_table_header_group() || display.is_table_footer_group() || display.is_table_row() {
-		return unsafe { &Node(Box.new(document, element.as_node(), computed)) }
-	}
-	if display.is_list_item() {
-		return unsafe { &Node(ListItemBox.new(document, element.as_node(), computed)) }
-	}
-	if display.is_table_cell() || display.is_table_column() || display.is_table_column_group() || display.is_table_caption() || display.is_math_inside() {
-		return unsafe { &Node(BlockContainer.new(document, element.as_node(), computed)) }
-	}
-	if display.is_inline_outside() {
-		if display.is_flow_root_inside() {
-			return unsafe { &Node(BlockContainer.new(document, element.as_node(), computed)) }
-		}
-		if display.is_flow_inside() {
-			return unsafe { &Node(InlineNode.new(document, element.as_node(), computed)) }
-		}
-		if display.is_flex_inside() || display.is_grid_inside() {
-			return unsafe { &Node(Box.new(document, element.as_node(), computed)) }
-		}
-		return unsafe { &Node(InlineNode.new(document, element.as_node(), computed)) }
-	}
-	if display.is_flex_inside() || display.is_grid_inside() {
-		return unsafe { &Node(Box.new(document, element.as_node(), computed)) }
-	}
-	if display.is_flow_inside() || display.is_flow_root_inside() || display.is_contents() || display.is_ruby_inside() {
-		return unsafe { &Node(BlockContainer.new(document, element.as_node(), computed)) }
-	}
-	return unsafe { &Node(InlineNode.new(document, element.as_node(), computed)) }
+	return create_layout_node_for_display_type(document, element, computed)
 }
 
 // SVGElement::create_layout_node() overrides. Elements which are never

@@ -100,6 +100,7 @@ mut:
 	last_seen_viewport_size_   [2]f64
 	form_control_              ?&FormAssociatedElement
 	load_event_delayer_        ?dom.DocumentLoadEventDelayer
+	alt_text_node_             ?&dom.Text
 }
 
 pub fn HTMLImageElementModel.create(document &dom.Document, base_url dom.URL) &HTMLImageElementModel {
@@ -196,6 +197,7 @@ pub fn html_image_element_model_for_dom_element(element &dom.HTMLImageElement) &
 	model.cors_setting_ = cors_setting_attribute_from_keyword(dom_element.get_attribute('crossorigin'))
 	model.form_control_ = FormAssociatedElement.create(dom_element)
 	attach_html_image_element_model(element, model)
+	model.update_alt_text_shadow_tree()
 	mut document := unsafe { &dom.Document(dom_element.document()) }
 	document.register_viewport_client(image_viewport_client(model))
 	return model
@@ -380,6 +382,7 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 		image.current_request_.set_state(.broken)
 		image.current_request_.set_current_url('')
 		image.replace_decoded_data(none)
+		image.update_alt_text_shadow_tree()
 		if (image.src_ != none || image.srcset_ != none) && (!maybe_omit_events || previous_url != '') {
 			image.fire_event('error')
 		}
@@ -389,6 +392,7 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 	url := dom.dom_url_parse(selection.source.url, image.base_url_, 'UTF-8') or {
 		image.current_request_.set_state(.broken)
 		image.pending_request_ = none
+		image.update_alt_text_shadow_tree()
 		if !maybe_omit_events || previous_url != '' {
 			image.fire_event('error')
 		}
@@ -405,6 +409,7 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 	request.set_current_pixel_density(f32(selection.pixel_density))
 	request.set_state(.partially_available)
 	image.pending_request_ = request
+	image.update_alt_text_shadow_tree()
 	if image.loading_ == .eager {
 		image.begin_delaying_document_load_event()
 	}
@@ -413,6 +418,7 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 		image.pending_request_ = none
 		image.current_request_ = request
 		image.stop_delaying_document_load_event()
+		image.update_alt_text_shadow_tree()
 		if !maybe_omit_events || previous_url != url.serialize() {
 			image.fire_event('error')
 		}
@@ -425,6 +431,7 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 		image.current_request_ = request
 		image.replace_decoded_data(none)
 		image.stop_delaying_document_load_event()
+		image.update_alt_text_shadow_tree()
 		if !maybe_omit_events || previous_url != url.serialize() {
 			image.fire_event('error')
 		}
@@ -443,6 +450,7 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 	image.loops_completed_ = 0
 	image.animation_stopped_ = false
 	image.stop_delaying_document_load_event()
+	image.update_alt_text_shadow_tree()
 	if restart_animations {
 		image.restart_the_animation()
 	}
@@ -679,6 +687,67 @@ pub fn (image &HTMLImageElementModel) is_image_available() bool {
 	return image.current_request_.is_available()
 }
 
+pub fn (image &HTMLImageElementModel) renders_as_alt_text() bool {
+	return !image.is_image_available() && !image.is_image_pending()
+}
+
+fn (mut image HTMLImageElementModel) create_alt_text_shadow_tree() {
+	element := image.element_ or { return }
+	mut dom_element := image_dom_element(element)
+	if dom_element.shadow_root() != none {
+		return
+	}
+	shadow := dom_element.attach_a_user_agent_shadow_root(.named)
+	mut wrapper := dom.create_element(dom_element.document(), 'div', ns_html, none, none,
+		false) or { return }
+	wrapper.set_attribute_value('style', 'display: inline; unicode-bidi: normal;')
+	text := dom_element.document().create_text_node(image.alt())
+	mut wrapper_node := wrapper.as_node()
+	wrapper_node.append_child(text.as_node()) or { return }
+	mut shadow_node := unsafe { &dom.Node(shadow) }
+	shadow_node.append_child(wrapper.as_node()) or { return }
+	image.alt_text_node_ = text
+	mut document := unsafe { &dom.Document(dom_element.document()) }
+	document.set_needs_full_layout_tree_update(true)
+}
+
+fn (mut image HTMLImageElementModel) remove_alt_text_shadow_tree() {
+	if image.alt_text_node_ == none {
+		return
+	}
+	element := image.element_ or { return }
+	mut dom_element := image_dom_element(element)
+	dom_element.set_shadow_root(none)
+	image.alt_text_node_ = none
+	mut document := unsafe { &dom.Document(dom_element.document()) }
+	document.set_needs_full_layout_tree_update(true)
+}
+
+pub fn (mut image HTMLImageElementModel) update_alt_text_shadow_tree() {
+	alt_text := image.alt()
+	if !image.renders_as_alt_text() || alt_text == '' {
+		image.remove_alt_text_shadow_tree()
+		return
+	}
+	if image.alt_text_node_ == none {
+		image.create_alt_text_shadow_tree()
+		return
+	}
+	if text := image.alt_text_node_ {
+		if text.data() == alt_text {
+			return
+		}
+		mut mutable_text := text
+		mutable_text.set_data(alt_text)
+		if element := image.element_ {
+			mut node := image_dom_element(element).as_node()
+			node.set_needs_layout_tree_update(true, .html_image_element_update_the_image_data)
+			mut document := unsafe { &dom.Document(image_dom_element(element).document()) }
+			document.set_needs_full_layout_tree_update(true)
+		}
+	}
+}
+
 // ImageProvider::is_image_pending(). A request that is fetching, waiting in
 // the pending slot, or still unavailable despite a concrete source is expected
 // to produce pixels later and must render as blank space instead of alt text.
@@ -759,6 +828,7 @@ fn (mut image HTMLImageElementModel) image_request_finished(image_request &Image
 		image.loops_completed_ = 0
 		image.animation_stopped_ = false
 		image.stop_delaying_document_load_event()
+		image.update_alt_text_shadow_tree()
 		if !maybe_omit_events || previous_url != url_string {
 			image.fire_event('load')
 		}
@@ -780,8 +850,14 @@ fn (mut image HTMLImageElementModel) image_request_finished(image_request &Image
 		image.upgrade_pending_request_to_current_request()
 	}
 	image.stop_delaying_document_load_event()
+	image.update_alt_text_shadow_tree()
 	if !maybe_omit_events || previous_url != url_string {
 		image.handle_failed_fetch()
+	}
+	if element := image.element_ {
+		mut node := unsafe { &dom.Node(image_dom_element(element).as_node()) }
+		node.set_needs_style_update(true)
+		node.set_needs_layout_update(.html_image_element_update_the_image_data)
 	}
 }
 
@@ -896,16 +972,17 @@ pub fn html_image_element_form_associated_element_attribute_changed(element &dom
 		'src' {
 			model.set_src(value)
 			model.update_the_image_data(true, false)
+			model.update_alt_text_shadow_tree()
 		}
 		'srcset' {
 			model.set_srcset(value)
 			model.update_the_image_data(true, false)
+			model.update_alt_text_shadow_tree()
 		}
 		'sizes' { model.set_sizes(value) }
 		'alt' {
 			model.set_alt(value)
-			mut node := unsafe { &dom.Node(image_dom_element(element).as_node()) }
-			node.set_needs_layout_update(.html_image_element_update_the_image_data)
+			model.update_alt_text_shadow_tree()
 		}
 		'loading' {
 			model.set_loading(if ascii_lowercase_string(value or { '' }) == 'lazy' {

@@ -1,7 +1,6 @@
 module painting
 
 import css
-import platform
 
 // Renderer-independent state consumed by Painting::ImagePaintable::paint().
 // Image loading and frame selection remain renderer responsibilities.
@@ -17,62 +16,13 @@ pub:
 	is_svg_image       bool
 	// The provider's intrinsic CSS size may differ from the decoded frame
 	// bitmap (notably for SVG images). Object fitting uses this size.
-	intrinsic_size      ?css.SizeWithAspectRatio
-	renders_as_alt_text bool
-	alt_text            string
-	alt_text_color      Color
-	alt_text_font       ?&platform.Font
+	intrinsic_size ?css.SizeWithAspectRatio
 }
 
 pub struct ImagePaintResult {
 pub:
 	bitmap     DrawScaledDecodedImageFrame
 	clip_radii CornerRadii
-}
-
-pub struct ImageAltTextPaintResult {
-pub:
-	glyph_run DrawGlyphRun
-	text      string
-	font_size f64
-}
-
-// Translation of ImagePaintable::paint()'s broken-image branch. The image
-// element's alternative text is shaped with its CSS-resolved layout font and
-// centered in the content rectangle. Older callers which do not retain a
-// layout font keep the historical 12px fallback.
-pub fn (paintable ImagePaintable) paint_alt_text(converter DevicePixelConverter) ?ImageAltTextPaintResult {
-	if !paintable.renders_as_alt_text || paintable.alt_text == '' {
-		return none
-	}
-	enclosing_rect := converter.enclosing_device_rect(paintable.image_rect)
-	if enclosing_rect.is_empty() {
-		return none
-	}
-	font := paintable.alt_text_font or {
-		&platform.Font{
-			family: 'sans-serif'
-			point_size: 12
-		}
-	}
-	font_size := f64(font.point_size)
-	glyph_run := platform.shape_text(0, 0, paintable.alt_text, font, .ltr)
-	metrics := font.pixel_metrics()
-	baseline_x := f64(enclosing_rect.x) + (f64(enclosing_rect.width) - f64(glyph_run.width())) / 2.0
-	baseline_y := f64(enclosing_rect.y) + f64(metrics.ascent) + (f64(enclosing_rect.height) - f64(metrics.ascent + metrics.descent)) / 2.0
-	return ImageAltTextPaintResult{
-		glyph_run: DrawGlyphRun{
-			glyph_run_id: u64(voidptr(glyph_run)).str()
-			glyph_run: glyph_run
-			rect: enclosing_rect
-			glyph_bounding_rect: glyph_run_device_bounding_rect(glyph_run, Point{baseline_x, baseline_y}, converter.device_pixels_per_css_pixel())
-			translation: Point{baseline_x, baseline_y}
-			color: paintable.alt_text_color
-			orientation: .horizontal
-		}
-		text: paintable.alt_text
-		font_size: font_size
-	}
 }
 
 // Translation of ImagePaintable::paint()'s decoded-image branch. In

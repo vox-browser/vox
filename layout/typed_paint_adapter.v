@@ -3334,8 +3334,6 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 	mut replaced_image_size := ''
 	mut replaced_image_position_x := '50%'
 	mut replaced_image_position_y := '50%'
-	mut replaced_image_renders_as_alt_text := false
-	mut replaced_image_alt_text := ''
 	mut replaced_image_paintable := ?painting.ImagePaintable(none)
 	mut replaced_image_bitmap := ?&dom.Bitmap_(none)
 	mut canvas_bitmap := ?&dom.Bitmap_(none)
@@ -3541,7 +3539,6 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 		}
 	}
 	if image_box := node.as_image_box() {
-		replaced_image_renders_as_alt_text = image_box.renders_as_alt_text()
 		if image_element := element {
 			if image_element.is_html_element() && image_element.local_name() == 'object' {
 				object_element := unsafe { &dom.HTMLObjectElement(image_element) }
@@ -3549,11 +3546,7 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 				replaced_image_bitmap = model.image_data()
 			}
 		}
-		if replaced_image_renders_as_alt_text {
-			if image_element := element {
-				replaced_image_alt_text = image_element.get_attribute_value('alt')
-			}
-		} else if image_box.source() != '' {
+		if image_box.source() != '' {
 			source := image_box.source()
 			replaced_image_url = node.document().encoding_parse_and_serialize_url(source) or { source }
 			replaced_image_size = match computed.object_fit() {
@@ -3628,7 +3621,6 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 		if image_box := node.as_box() {
 			replaced_intrinsic_size = image_box.natural_size()
 		}
-		alt_text_font := node.first_available_font()
 		replaced_image_paintable = painting.ImagePaintable{
 			image_rect: painting.Rect{
 				x: paint_position.x().to_double()
@@ -3654,10 +3646,6 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 			image_rendering: computed.image_rendering()
 			is_svg_image: node.is_svg_image_box()
 			intrinsic_size: replaced_intrinsic_size
-			renders_as_alt_text: replaced_image_renders_as_alt_text
-			alt_text: replaced_image_alt_text
-			alt_text_color: painting.Color{text_color.r, text_color.g, text_color.b, text_color.a}
-			alt_text_font: alt_text_font
 		}
 	}
 	if tag_name == 'canvas' {

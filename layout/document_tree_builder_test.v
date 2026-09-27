@@ -46,6 +46,34 @@ fn document_tree_builder_first_image(root &Node) ?&Node {
 	return none
 }
 
+fn test_broken_image_alt_text_uses_shadow_content_and_non_replaced_layout() {
+	document := html.parse_document('<!doctype html><body><img id="image" alt="image fallback"><input id="input" type="image" alt="input fallback">')
+	root := build_layout_tree(document) or { panic('no layout tree') }
+	for id in ['image', 'input'] {
+		element := document.get_element_by_id(id) or { panic('missing ${id}') }
+		assert element.shadow_root() != none
+		node := document_tree_builder_node_with_id(root, id) or { panic('missing ${id} box') }
+		assert !node.is_image_box()
+		wrapper := node.first_child() or { panic('missing ${id} alt wrapper') }
+		assert wrapper.is_inline_node()
+		text := (wrapper.first_child() or { panic('missing ${id} alt text') }).as_text_node() or {
+			panic('${id} alt child is not text')
+		}
+		assert text.text_for_rendering() == '${id} fallback'
+	}
+}
+
+fn test_pending_and_decoded_images_keep_replaced_layout_nodes() {
+	document := html.parse_document('<!doctype html><body><img id="pending" src="pending.png" alt="fallback"><img id="decoded" src="${content_replacement_green_image}" alt="fallback"><input id="input-pending" type="image" src="pending.png" alt="fallback"><input id="input-decoded" type="image" src="${content_replacement_green_image}" alt="fallback">')
+	root := build_layout_tree(document) or { panic('no layout tree') }
+	for id in ['pending', 'decoded', 'input-pending', 'input-decoded'] {
+		element := document.get_element_by_id(id) or { panic('missing ${id}') }
+		assert element.shadow_root() == none
+		node := document_tree_builder_node_with_id(root, id) or { panic('missing ${id} box') }
+		assert node.is_image_box()
+	}
+}
+
 fn test_select_fallback_button_keeps_the_chevron_out_of_flow() {
 	document := html.parse_document('<!doctype html><select id="select"><optgroup><option>First</option><option selected label="Chosen label">ignored</option></optgroup></select>')
 	root := build_layout_tree(document) or { panic('no layout tree') }
