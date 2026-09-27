@@ -51,10 +51,11 @@ fn append_typed_layout_node(node &Node, state &LayoutState, depth int, mut lines
 	mut line := '${indent}${layout_debug_class_name(node)} <${layout_debug_tag(node)}${layout_debug_identifier(node)}> '
 	mut skip_anonymous_item := false
 	mut skip_table_whitespace := false
+	mut emitted_inline_block := false
 	if parent := node.parent() {
 		skip_anonymous_item =
 			(parent.display().is_flex_inside() || parent.display().is_grid_inside())
-				&& can_skip_anonymous_text_run(node) && !node.is_button_content_box_
+				&& can_skip_anonymous_text_run(node)
 				&& !(parent.display().is_grid_inside() && parent.display().is_inline_outside())
 				&& !(parent.display().is_flex_inside() && parent.display().is_inline_outside()
 					&& node.next_sibling() == none)
@@ -93,6 +94,7 @@ fn append_typed_layout_node(node &Node, state &LayoutState, depth int, mut lines
 					}
 					if node.is_inline_block() {
 						line += ' inline-block'
+						emitted_inline_block = true
 					}
 					if node.is_inline_table() {
 						line += ' inline-table'
@@ -132,6 +134,11 @@ fn append_typed_layout_node(node &Node, state &LayoutState, depth int, mut lines
 		}
 	} else {
 		line += '(not painted)'
+	}
+	// Box classification is part of the layout-tree identity even when an
+	// anonymous flex item was skipped and consequently has no used values.
+	if node.is_box() && node.is_inline_block() && !emitted_inline_block {
+		line += ' inline-block'
 	}
 	if node.is_box() {
 		if styled := node.as_node_with_style() {

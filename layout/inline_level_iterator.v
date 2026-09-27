@@ -779,21 +779,6 @@ fn is_native_form_control_box(node &Node) bool {
 fn (mut iterator InlineLevelIterator) dimension_box_on_line(box &Box) {
 	styled := unsafe { &NodeWithStyle(box) }
 	mut state := iterator.state.get_mutable(styled)
-	// Empty button content is skipped by intrinsic sizing. Seed its UsedValues
-	// before entering the nested BFC/FFC so V's value-passed LayoutState keeps
-	// the same stable slot that C++'s LayoutState reference would expose.
-	button_node := unsafe { &Node(box) }
-	if node_uses_button_layout(button_node) {
-		for wrapper in button_node.children() {
-			for content in wrapper.children() {
-				if !content.is_button_content_box_ {
-					continue
-				}
-				content_styled := content.as_node_with_style() or { continue }
-				iterator.state.get_mutable(content_styled)
-			}
-		}
-	}
 	available_width := iterator.available_space.width.to_px_or_zero().to_double()
 	resolve_box_model_edges(styled.computed_values(), mut state, available_width)
 	box_node := unsafe { &Node(box) }

@@ -77,24 +77,16 @@ fn ordered_flex_items(container &Node) []&Node {
 	mut items := []&Node{cap: container.children().len}
 	mut first_order := 0
 	mut all_same_order := true
-	parent := container.parent()
-	is_button_wrapper := if candidate := parent {
-		node_uses_button_layout(candidate)
-	} else {
-		false
-	}
 	for child in container.children() {
 		if !child.is_box() || child.is_absolutely_positioned() {
 			continue
 		}
 		skippable_text_run := can_skip_anonymous_text_run(child)
-		if skippable_text_run && !is_button_wrapper && !child.is_button_content_box_ {
+		if skippable_text_run {
 			continue
 		}
-		if !skippable_text_run {
-			mut mutable_child := unsafe { &Node(child) }
-			mutable_child.set_flex_item(true)
-		}
+		mut mutable_child := unsafe { &Node(child) }
+		mutable_child.set_flex_item(true)
 		order := child.computed_values().order()
 		if items.len == 0 {
 			first_order = order
@@ -1196,18 +1188,6 @@ fn clear_intrinsic_flex_item_line_boxes(mut state LayoutState, node &Node) {
 }
 
 fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node, mut container_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
-	// Anonymous whitespace-only flex children are not flex items, but TreeBuilder
-	// still created layout nodes for them. LayoutState keeps zero geometry for
-	// those nodes just as upstream does, so dumps and DOM geometry can observe
-	// their containing-block-relative origin.
-	for child in container.children() {
-		if can_skip_anonymous_text_run(child) {
-			if styled := child.as_node_with_style() {
-				mut skipped_state := state.get_mutable(styled)
-				skipped_state.set_containing_block_used_values(container_state)
-			}
-		}
-	}
 	direction := container.computed_values().effective_flex_direction()
 	if direction in [.column, .column_reverse] {
 		result := run_column_flex_formatting_context(mut state, container, mut container_state, layout_mode, available_space)

@@ -157,6 +157,16 @@ fn test_button_layout_establishes_a_block_formatting_context() {
 	})
 }
 
+fn test_empty_button_content_is_skipped_by_flex_layout() {
+	document := html.parse_document('<!doctype html><style>body { margin:0 }</style><button id="button"></button>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	button := layout_node_with_id(result.root, 'button') or { panic('missing button') }
+	flex_wrapper := button.first_child() or { panic('missing button flex wrapper') }
+	content := flex_wrapper.first_child() or { panic('missing button content wrapper') }
+	content_styled := content.as_node_with_style() or { panic('button content has no style') }
+	assert result.state.try_get(content_styled) == none
+}
+
 fn test_fractional_calculated_flex_basis_does_not_wrap_the_third_item() {
 	for width in [100, 101, 102, 100] {
 		document := html.parse_document('<!doctype html><style>

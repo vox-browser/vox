@@ -86,7 +86,7 @@ fn layout_debug_node_suppresses_paintable(node &Node) bool {
 	}
 	parent := node.parent() or { return false }
 	skip_anonymous_item := (parent.display().is_flex_inside() || parent.display().is_grid_inside())
-		&& can_skip_anonymous_text_run(node) && !node.is_button_content_box_
+		&& can_skip_anonymous_text_run(node)
 		&& !(parent.display().is_grid_inside() && parent.display().is_inline_outside())
 		&& !(parent.display().is_flex_inside() && parent.display().is_inline_outside()
 			&& node.next_sibling() == none)
