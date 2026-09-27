@@ -49,3 +49,31 @@ fn test_line_builder_wraps_and_aligns_fragments() {
 	assert values.line_boxes[0].height().to_double() == 24
 	assert values.line_boxes[1].bottom().to_double() == 48
 }
+
+fn test_line_builder_aligns_rtl_overflow_to_inline_start() {
+	document := dom.Document.create(dom.url_about_blank())
+	style := line_builder_test_style(document,
+		'display:block; width:100px; direction:rtl; text-align:center; font-size:20px; line-height:24px')
+	mut container := BlockContainer.new(document, none, style)
+	container.set_children_are_inline(true)
+	dom_text := document.create_text_node('abcdefgh')
+	text_node := TextNode.new(document, dom_text.as_node(), 'abcdefgh')
+	container.append_child(unsafe { &Node(text_node) })
+	assign_layout_indexes(unsafe { &Node(container) })
+	mut state := LayoutState.new()
+	container_styled := unsafe { &Node(container) }.as_node_with_style() or { panic('style') }
+	mut values := state.get_mutable(container_styled)
+	values.set_content_width(CSSPixels.new(100))
+	font := &platform.Font{
+		family:     'Test'
+		point_size: 20
+	}
+	run := platform.shape_text(0, 0, 'abcdefgh', font, .rtl)
+	mut builder := LineBuilder.new(mut state, container, values,
+		AvailableSize.make_definite(CSSPixels.new(100)), .rtl, .horizontal_tb)
+	builder.append_text_chunk(text_node, 0, 8, CSSPixels.new(0), CSSPixels.new(0),
+		CSSPixels.new(0), CSSPixels.new(0), CSSPixels.new(140), CSSPixels.new(24), run)
+	builder.update_last_line()
+	assert values.line_boxes.len == 1
+	assert values.line_boxes[0].fragments_[0].inline_offset().to_double() == -40
+}

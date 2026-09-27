@@ -451,6 +451,9 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			}
 			else {}
 		}
+	} else if excess_inline_space.raw_value() < 0 && computed.direction() == .rtl {
+		// Overflowing lines ignore text-align and stay aligned to inline-start.
+		inline_offset = inline_offset.plus(excess_inline_space)
 	}
 
 	container_font_size := computed.font_size()
