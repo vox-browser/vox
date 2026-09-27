@@ -498,6 +498,9 @@
   Inline containing-block rectangles are converted through the containing-
   block chain rather than layout-tree parents, avoiding duplicate table row and
   row-group offsets for positioned descendants hosted inside table cells.
+  Atomic inline used offsets are published only after final line alignment, so
+  positioned descendants whose actual containing block lies outside the atomic
+  inline inherit its final baseline and text-alignment displacement.
 - Inline formatting contexts publish their final inline-end insertion position
   after forced breaks, alignment, RTL direction, and writing-mode conversion.
   Originally-inline absolutely positioned descendants routed through an

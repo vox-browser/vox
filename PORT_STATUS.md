@@ -401,6 +401,9 @@ use their inline host instead of falling back to the viewport.
 Inline containing-block rectangles are translated to the outer positioned box
 through containing blocks rather than layout-tree parents, so internal table
 row and row-group offsets are not counted twice for inline hosts inside cells.
+Atomic inline used offsets are copied from fragments after final line alignment;
+absolute-position static-position conversion therefore includes the atomic
+inline's completed baseline and text-alignment shift.
 CSS Scroll Snap now uses the translated candidate collection and selection
 algorithms for element and viewport scrollers. It resolves physical and logical
 axes, scroll margin and padding, oversized covering ranges, proximity and
