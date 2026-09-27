@@ -2409,12 +2409,38 @@ pub fn html_video_element_layout_node(element &dom.HTMLVideoElement) ?&VideoBox 
 	return unsafe { &VideoBox(handle) }
 }
 
+// SVG graphics require an enclosing SVG viewport. foreignObject switches its
+// descendants to the CSS box model, so SVG-namespace children below that
+// boundary stay suppressed until a nested <svg> establishes a new viewport.
+fn svg_element_has_rendering_context(element &dom.Element) bool {
+	if element.local_name() == 'svg' {
+		return true
+	}
+	mut ancestor := element.as_node().parent_or_shadow_host()
+	for ancestor != none {
+		current := ancestor or { break }
+		if candidate := current.as_element() {
+			if candidate.is_svg_element() && candidate.local_name() == 'foreignObject' {
+				return false
+			}
+			if candidate.is_svg_element() && candidate.local_name() == 'svg' {
+				return true
+			}
+		}
+		ancestor = current.parent_or_shadow_host()
+	}
+	return false
+}
+
 fn create_layout_node_for_element(document &dom.Document, element &dom.Element, computed &css.ComputedProperties) ?&Node {
 	display := computed.display()
 	if display.is_none() {
 		return none
 	}
 	if element.is_svg_element() {
+		if !svg_element_has_rendering_context(element) {
+			return none
+		}
 		return create_layout_node_for_svg_element(document, element, computed)
 	}
 	if element.is_html_element() {

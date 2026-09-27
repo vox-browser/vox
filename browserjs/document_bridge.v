@@ -98,6 +98,7 @@ fn bridge_initial_state(document &dom.Document, current_url string) map[string]j
 			'index':              json2.Any(index)
 			'parentIndex':        json2.Any(parent_index)
 			'tagName':            json2.Any(element.local_name())
+			'namespaceURI':       json2.Any(element.namespace_uri() or { '' })
 			'id':                 json2.Any(id)
 			'textContent':        json2.Any(element.as_node().text_content() or { '' })
 			'defaultTextContent': json2.Any(element.as_node().text_content() or { '' })
@@ -161,16 +162,18 @@ fn bridge_program(state map[string]json2.Any, scripts []string) string {
 		'function __styleElementSheet(s) { if (s.tagName !== "style") return null; if (s.sheetObject) return s.sheetObject; const sheet = { insertRule: function(rule,index) { const resolved = index === undefined ? -1 : Number(index); __state.operations.push({op:"insertStyleRule",target:s.index,rule:String(rule),index:resolved}); return resolved < 0 ? 0 : resolved; }, deleteRule: function(index) { __state.operations.push({op:"deleteStyleRule",target:s.index,index:Number(index)}); } }; s.sheetObject=sheet; return sheet; }',
 		'function CSSStyleSheet() { if (!(this instanceof CSSStyleSheet)) throw new TypeError("CSSStyleSheet constructor requires new"); this.__sheetId=__nextStyleSheetId++; __styleSheetObjects[this.__sheetId]=this; __state.operations.push({op:"constructStyleSheet",sheet:this.__sheetId}); }',
 		'CSSStyleSheet.prototype.replaceSync = function(text) { __state.operations.push({op:"replaceStyleSheet",sheet:this.__sheetId,text:String(text)}); };',
-		'function __setAttribute(s, n, v) { n = String(n).toLowerCase(); s.attributes[n] = String(v); s.attributesDirty = true; if (n === "id") s.id = String(v); if (n === "class") s.className = String(v); if (n === "style") s.styleText = String(v); }',
-		'function __removeAttribute(s, n) { n = String(n).toLowerCase(); delete s.attributes[n]; s.attributesDirty = true; if (n === "id") s.id = ""; if (n === "class") s.className = ""; if (n === "style") s.styleText = ""; }',
+		'const __htmlNamespace = "http://www.w3.org/1999/xhtml";',
+		'function __attributeName(s, n) { n = String(n); return s.namespaceURI === __htmlNamespace ? n.toLowerCase() : n; }',
+		'function __setAttribute(s, n, v) { n = __attributeName(s, n); s.attributes[n] = String(v); s.attributesDirty = true; if (n === "id") s.id = String(v); if (n === "class") s.className = String(v); if (n === "style") s.styleText = String(v); }',
+		'function __removeAttribute(s, n) { n = __attributeName(s, n); delete s.attributes[n]; s.attributesDirty = true; if (n === "id") s.id = ""; if (n === "class") s.className = ""; if (n === "style") s.styleText = ""; }',
 		'function __classList(s) { function tokens() { const value=String(s.className || "").trim(); return value ? value.split(/\\s+/) : []; } function sync(values) { __setAttribute(s, "class", values.join(" ")); } return { add: function () { const values=tokens(); for (const item of arguments) { const value=String(item); if (values.indexOf(value) < 0) values.push(value); } sync(values); }, remove: function () { const removed=Array.prototype.map.call(arguments,String); sync(tokens().filter(function(value){return removed.indexOf(value)<0;})); }, contains: function (value) { return tokens().indexOf(String(value)) >= 0; }, toggle: function (value, force) { value=String(value); const values=tokens(), index=values.indexOf(value), present=index>=0; if (force === true || (!present && force !== false)) { if (!present) values.push(value); sync(values); return true; } if (present) values.splice(index,1); sync(values); return false; } }; }',
 		'function __isDescendant(s, ancestor) { for (let p = s.parentIndex; p >= 0; p = __state.nodes[p].parentIndex) if (p === ancestor) return true; return false; }',
 		'function __matches(s, q) { q = String(q || "").trim(); if (!q) return false; if (q[0] === "#") return s.id === q.slice(1); if (q[0] === ".") return String(s.className || "").split(/\\s+/).indexOf(q.slice(1)) >= 0; const a = /^\\[([^=\\]]+)(?:=["\']?([^"\']*)["\']?)?\\]\$/.exec(q); if (a) return Object.prototype.hasOwnProperty.call(s.attributes, a[1]) && (a[2] === undefined || s.attributes[a[1]] === a[2]); return s.tagName === q.toLowerCase(); }',
 		'function __element(s) {',
 		'  if (__objects[s.index]) return __objects[s.index];',
 		'  const target = {',
-		'    getAttribute: function (n) { n = String(n).toLowerCase(); return Object.prototype.hasOwnProperty.call(s.attributes, n) ? s.attributes[n] : null; },',
-		'    hasAttribute: function (n) { return Object.prototype.hasOwnProperty.call(s.attributes, String(n).toLowerCase()); },',
+		'    getAttribute: function (n) { n = __attributeName(s, n); return Object.prototype.hasOwnProperty.call(s.attributes, n) ? s.attributes[n] : null; },',
+		'    hasAttribute: function (n) { return Object.prototype.hasOwnProperty.call(s.attributes, __attributeName(s, n)); },',
 		'    setAttribute: function (n, v) { __setAttribute(s, n, v); }, removeAttribute: function (n) { __removeAttribute(s, n); },',
 		'    addEventListener: function (n, f) { (__listeners[__listenerKey(s, n)] ||= []).push(f); },',
 		'    appendChild: function (child) { const c = child && child.__state; if (!c) return child; c.parentIndex = s.index; __state.operations.push({ op: "append", target: s.index, child: c.index }); return child; },',
@@ -187,7 +190,7 @@ fn bridge_program(state map[string]json2.Any, scripts []string) string {
 		'  };',
 		'  target.style = __styleProxy(s); Object.defineProperty(target, "__state", { value: s });',
 		'  const proxy = new Proxy(target, {',
-		'    get: function (o, p) { if (p in o) return o[p]; if (p === "id") return s.id; if (p === "tagName") return String(s.tagName).toUpperCase(); if (p === "textContent" || p === "innerText") return s.textContent; if (p === "innerHTML") return s.innerHTML; if (p === "className") return s.className; if (p === "classList") return __classList(s); if (p === "sheet") return __styleElementSheet(s); if (p === "offsetLeft") return Math.trunc((s.rect && s.rect.offsetLeft) || 0); if (p === "offsetTop") return Math.trunc((s.rect && s.rect.offsetTop) || 0); if (p === "offsetWidth") return Math.trunc((s.rect && s.rect.width) || 0); if (p === "offsetHeight") return Math.trunc((s.rect && s.rect.height) || 0); if (p === "selectedIndex") return s.selectedIndex === undefined ? -1 : s.selectedIndex; if (["multiple", "hidden", "controls"].indexOf(p) >= 0) return Object.prototype.hasOwnProperty.call(s.attributes, p); if (s.tagName === "canvas" && (p === "width" || p === "height")) return __canvasDimension(s,p); if (["type", "value", "placeholder", "src", "width", "height"].indexOf(p) >= 0) return s.attributes[p] || ""; return undefined; },',
+		'    get: function (o, p) { if (p in o) return o[p]; if (p === "id") return s.id; if (p === "tagName") return s.namespaceURI === __htmlNamespace ? String(s.tagName).toUpperCase() : String(s.tagName); if (p === "namespaceURI") return s.namespaceURI || null; if (p === "textContent" || p === "innerText") return s.textContent; if (p === "innerHTML") return s.innerHTML; if (p === "className") return s.className; if (p === "classList") return __classList(s); if (p === "sheet") return __styleElementSheet(s); if (p === "offsetLeft") return Math.trunc((s.rect && s.rect.offsetLeft) || 0); if (p === "offsetTop") return Math.trunc((s.rect && s.rect.offsetTop) || 0); if (p === "offsetWidth") return Math.trunc((s.rect && s.rect.width) || 0); if (p === "offsetHeight") return Math.trunc((s.rect && s.rect.height) || 0); if (p === "selectedIndex") return s.selectedIndex === undefined ? -1 : s.selectedIndex; if (["multiple", "hidden", "controls"].indexOf(p) >= 0) return Object.prototype.hasOwnProperty.call(s.attributes, p); if (s.tagName === "canvas" && (p === "width" || p === "height")) return __canvasDimension(s,p); if (["type", "value", "placeholder", "src", "width", "height"].indexOf(p) >= 0) return s.attributes[p] || ""; return undefined; },',
 		'    set: function (o, p, v) { if (p === "style") { o.style.cssText = String(v); return true; } if (p === "textContent" || p === "innerText") { s.textContent = String(v); s.innerHTML = ""; s.textContentDirty = true; return true; } if (p === "innerHTML") { s.innerHTML = String(v); s.innerHTMLDirty = true; return true; } if (p === "className") { s.className = String(v); __setAttribute(s, "class", v); return true; } if (p === "selectedIndex") { s.selectedIndex = Number(v); __state.operations.push({ op: "selectedIndex", target: s.index, value: s.selectedIndex }); return true; } if (["multiple", "hidden", "controls"].indexOf(p) >= 0) { if (v) __setAttribute(s, p, ""); else __removeAttribute(s, p); return true; } if (p === "value" && s.tagName === "textarea") { s.textContent = String(v); s.innerHTML = ""; s.textContentDirty = true; return true; } if (p === "value" && s.tagName === "input") { s.value = String(v); __state.operations.push({ op: "inputValue", target: s.index, value: s.value }); return true; } if (["type", "value", "placeholder", "src", "width", "height"].indexOf(p) >= 0) { __setAttribute(s, p, v); if(s.tagName === "canvas" && (p === "width" || p === "height")){delete __canvases[s.index];__canvasFor(s);} return true; } o[p] = v; return true; }',
 		'  }); __objects[s.index] = proxy; return proxy;',
 		'}',
@@ -197,7 +200,8 @@ fn bridge_program(state map[string]json2.Any, scripts []string) string {
 		'  querySelectorAll: function (q) { return __state.nodes.filter(function (n) { return __matches(n, q); }).map(__element); },',
 		'  getElementsByTagName: function (n) { return this.querySelectorAll(String(n).toLowerCase()); },',
 		'  addEventListener: function (n, f) { (__listeners[__listenerKey(null, n)] ||= []).push(f); },',
-		'  createElement: function (name) { const s = { index: __state.nodes.length, parentIndex: -1, tagName: String(name).toLowerCase(), id: "", textContent: "", innerHTML: "", className: "", styleText: "", onclick: "", attributes: {}, created: true }; __state.nodes.push(s); return __element(s); },',
+		'  createElement: function (name) { return this.createElementNS(__htmlNamespace, name); },',
+		'  createElementNS: function (namespace, name) { namespace = String(namespace); const s = { index: __state.nodes.length, parentIndex: -1, tagName: namespace === __htmlNamespace ? String(name).toLowerCase() : String(name), namespaceURI: namespace, id: "", textContent: "", innerHTML: "", className: "", styleText: "", onclick: "", attributes: {}, created: true }; __state.nodes.push(s); return __element(s); },',
 		'  write: function (value) { __state.writeHTML = String(__state.writeHTML || "") + String(value); }, close: function () {}',
 		'};',
 		'Object.defineProperty(document, "title", { get: function () { return __state.title; }, set: function (v) { __state.title = String(v); } });',
@@ -381,7 +385,10 @@ fn apply_bridge_state(document &dom.Document, encoded string) ! {
 				}
 				index := bridge_int_property(node_state, 'index') or { continue }
 				tag_name := bridge_string_property(node_state, 'tagName') or { 'div' }
-				created := document.create_element_ns('http://www.w3.org/1999/xhtml', tag_name) or {
+				namespace_uri := bridge_string_property(node_state, 'namespaceURI') or {
+					'http://www.w3.org/1999/xhtml'
+				}
+				created := document.create_element_ns(namespace_uri, tag_name) or {
 					continue
 				}
 				element_by_index[index] = created

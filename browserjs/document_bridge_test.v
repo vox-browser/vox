@@ -155,6 +155,28 @@ fn test_document_bridge_applies_async_created_elements_and_set_property_styles()
 	}
 }
 
+fn test_document_bridge_preserves_script_created_svg_namespaces_and_names() {
+	$if darwin {
+		mut document := html.parse_document('<body><script>const SVG="http://www.w3.org/2000/svg";const svg=document.createElementNS(SVG,"svg");svg.setAttribute("viewBox","0 0 10 10");const foreign=document.createElementNS(SVG,"foreignObject");svg.appendChild(foreign);document.body.appendChild(svg);</script>')
+		mut runtime := Runtime.create()
+		defer {
+			runtime.close()
+		}
+		run_inline_document_scripts(document, 'about:blank', runtime)!
+
+		svg := bridge_test_element(document, 'svg')
+		foreign := bridge_test_element(document, 'foreignObject')
+		svg_namespace := svg.namespace_uri() or { '' }
+		assert svg_namespace == 'http://www.w3.org/2000/svg'
+		assert svg.get_attribute_value('viewBox') == '0 0 10 10'
+		foreign_namespace := foreign.namespace_uri() or { '' }
+		assert foreign_namespace == 'http://www.w3.org/2000/svg'
+		assert foreign.local_name() == 'foreignObject'
+		foreign_parent := foreign.parent_element() or { panic('foreignObject parent') }
+		assert foreign_parent == svg
+	}
+}
+
 fn test_document_bridge_replays_nested_animation_frame_style_and_class_mutations() {
 	$if darwin {
 		mut document := html.parse_document('<html class="reftest-wait"><div id="target" style="scale: 2; translate: 10px; rotate: 45deg"></div><script>requestAnimationFrame(() => requestAnimationFrame(() => { target.style = ""; document.documentElement.classList.remove("reftest-wait"); }));</script></html>')

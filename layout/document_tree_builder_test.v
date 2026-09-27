@@ -1490,3 +1490,30 @@ fn test_display_contents_text_keeps_an_anonymous_style_wrapper() {
 	text := wrapper.first_child() or { panic('no wrapped text') }
 	assert text.is_text_node()
 }
+
+fn test_foreign_object_requires_a_nested_svg_rendering_context() {
+	document := html.parse_document('<!doctype html><svg id="root"><foreignObject id="foreign"></foreignObject></svg>')
+	foreign := document.get_element_by_id('foreign') or { panic('no foreignObject') }
+	mut orphan_group := document.create_element_ns('http://www.w3.org/2000/svg', 'g') or {
+		panic(err)
+	}
+	orphan_group.set_attribute_value('id', 'orphan')
+	mut nested_svg := document.create_element_ns('http://www.w3.org/2000/svg', 'svg') or {
+		panic(err)
+	}
+	nested_svg.set_attribute_value('id', 'nested')
+	mut nested_rect := document.create_element_ns('http://www.w3.org/2000/svg', 'rect') or {
+		panic(err)
+	}
+	nested_rect.set_attribute_value('id', 'nested-rect')
+	mut nested_node := nested_svg.as_node()
+	nested_node.append_child(nested_rect.as_node()) or { panic(err) }
+	mut foreign_node := foreign.as_node()
+	foreign_node.append_child(orphan_group.as_node()) or { panic(err) }
+	foreign_node.append_child(nested_svg.as_node()) or { panic(err) }
+
+	root := build_layout_tree(document) or { panic('no layout tree') }
+	assert tree_builder_node_with_id(root, 'orphan') == none
+	assert tree_builder_node_with_id(root, 'nested') != none
+	assert tree_builder_node_with_id(root, 'nested-rect') != none
+}
