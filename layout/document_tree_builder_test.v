@@ -286,6 +286,15 @@ fn test_layout_snapshot_uses_current_upstream_sections() {
 	assert !sections[1].contains('[children:')
 }
 
+fn test_hidden_document_element_keeps_an_empty_viewport_bfc() {
+	doc := html.parse_document('<!doctype html><html hidden><body>hidden</body></html>')
+	snapshot := dump_document_layout_snapshot(doc, 320, 200) or {
+		panic('layout snapshot was not produced')
+	}
+	assert snapshot.starts_with('Viewport <#document> at [0,0] [0+0+0 320 0+0+0] [0+0+0 200 0+0+0] [BFC] children: not-inline\n\n')
+	assert !snapshot.contains('BlockContainer <html>')
+}
+
 fn test_layout_tree_dump_includes_scrollable_overflow() {
 	mut doc := html.parse_document('<!doctype html><style>
 		html, body { margin: 0 }

@@ -428,10 +428,7 @@ fn layout_debug_formatting_context(node &Node) ?string {
 	}
 	styled := node.as_node_with_style() or { return none }
 	if node.is_viewport() {
-		if node.has_children() {
-			return 'BFC'
-		}
-		return none
+		return 'BFC'
 	}
 	if creates_block_formatting_context(styled) {
 		return 'BFC'
