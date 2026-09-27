@@ -3634,6 +3634,22 @@ fn test_abspos_static_position_is_converted_to_actual_containing_block_space() {
 	assert absolute.cumulative_offset().y().to_double() == 24
 }
 
+// Final line alignment moves an atomic inline. An abspos descendant whose
+// actual containing block is outside that inline must convert its static
+// position through the atomic inline's final, not provisional, offset.
+fn test_abspos_static_position_uses_final_atomic_inline_offset() {
+	document := html.parse_document('<!doctype html><style>
+		body { display:inline; position:relative }
+		main { display:inline-block }
+		#absolute { position:absolute }
+	</style><body><main id="atomic"><div id="absolute">hello</div></main>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	atomic_box := used_for_id(result, 'atomic')
+	absolute := used_for_id(result, 'absolute')
+	assert atomic_box.cumulative_offset().y().raw_value() > 0
+	assert absolute.cumulative_offset().y().raw_value() == atomic_box.cumulative_offset().y().raw_value()
+}
+
 fn test_flex_abspos_static_position_uses_main_and_cross_alignment() {
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; position:relative; width:100px; height:50px; justify-content:center; align-items:center }

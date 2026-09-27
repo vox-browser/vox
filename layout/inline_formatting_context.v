@@ -298,6 +298,9 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 		removed_marker_lines << containing_block_used_values.line_boxes.last()
 	}
 	line_builder.remove_last_line_if_empty()
+	// Final text and baseline alignment must reach atomic inline used values:
+	// escaping abspos descendants convert their static position through them.
+	line_builder.update_last_line()
 	for line_index in 0 .. containing_block_used_values.line_boxes.len {
 		mut line_box := &containing_block_used_values.line_boxes[line_index]
 		for fragment_index in 0 .. line_box.fragments_.len {
@@ -313,9 +316,6 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 			}
 		}
 	}
-	// LibWeb records atomic inline offsets before vertical alignment updates the
-	// fragments. Static-position coordinate conversion relies on that ordering.
-	line_builder.update_last_line()
 	containing_block_used_values.set_inline_end_static_position_rect(calculate_inline_end_static_position_rect(containing_block,
 		containing_block_used_values))
 	apply_line_clamp(containing_block, mut containing_block_used_values, mut state, layout_mode, available_space, parent_block_context)
