@@ -3646,6 +3646,16 @@ fn test_svg_foreign_object_delegates_its_contents_to_block_layout() {
 	assert html_child.content_height().to_double() == 8
 }
 
+fn test_svg_foreign_object_geometry_is_not_a_definite_percentage_height_basis() {
+	document := html.parse_document('<!doctype html><style>body { margin:0 }</style><svg width="400" height="200" viewBox="0 0 100 100"><foreignObject id="foreign" x="10%" y="10%" width="50%" height="50%"><div id="child" style="height:100%"></div></foreignObject></svg>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	foreign := used_for_id(result, 'foreign')
+	assert foreign.content_width().to_double() == 50
+	assert foreign.content_height().to_double() == 50
+	assert !foreign.has_definite_height()
+	assert used_for_id(result, 'child').content_height().to_double() == 0
+}
+
 fn test_svg_resource_attached_to_foreign_object_keeps_its_own_coordinate_space() {
 	document := html.parse_document('<!doctype html><svg id="root" width="100" height="100"><defs><mask id="mask"><rect width="20" height="20"/></mask></defs><foreignObject id="foreign" x="10" y="20" width="40" height="40" mask="url(#mask)"><div></div></foreignObject></svg>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }

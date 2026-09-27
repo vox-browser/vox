@@ -287,8 +287,11 @@ fn (mut context SVGFormattingContext) layout_foreign_object(child &Node) {
 		height: resolve_computed_svg_length(computed, .height, context.viewport_size.height(), CSSPixels.new(0)).to_double()
 	}
 	set_used_values_rect(mut child_state, rect)
-	child_state.set_has_definite_width(true)
-	child_state.set_has_definite_height(true)
+	// SVG geometry supplies the foreignObject's used rectangle and the definite
+	// available space for its independent formatting context, but it does not
+	// make the CSS width/height properties definite percentage bases.
+	child_state.set_has_definite_width(false)
+	child_state.set_has_definite_height(false)
 	layout_inside_independent_formatting_context(mut context.state, child, mut child_state, AvailableSpace.new(AvailableSize.make_definite(child_state.content_width()), AvailableSize.make_definite(child_state.content_height())))
 	for resource in child.children() {
 		if resource.is_svg_mask_box() || resource.is_svg_clip_box() {
