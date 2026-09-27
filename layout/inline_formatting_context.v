@@ -262,6 +262,8 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 						&& overflow_break_applies_to_style(style, available_space.width)
 					can_break_before_item := item.can_break_before
 						|| (can_break_after_previous_overflow_item && !overflow_break_allowed)
+						|| (containing_block_used_values.line_boxes.len > 0
+						&& containing_block_used_values.line_boxes.last().ends_in_preserved_whitespace())
 					if can_break_before_item && !is_whitespace {
 						line_builder.note_soft_wrap_opportunity()
 						if overflow_break_allowed {

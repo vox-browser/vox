@@ -570,6 +570,20 @@ pub fn (line &LineBox) is_empty_or_ends_in_whitespace() bool {
 	return line.fragments_[line.fragments_.len - 1].ends_in_whitespace()
 }
 
+pub fn (line &LineBox) ends_in_preserved_whitespace() bool {
+	if line.fragments_.len == 0 {
+		return false
+	}
+	last := line.fragments_[line.fragments_.len - 1]
+	if !last.ends_in_whitespace() {
+		return false
+	}
+	return last.layout_node_.computed_values().white_space_collapse() !in [
+		.collapse,
+		.preserve_breaks,
+	]
+}
+
 pub fn (line &LineBox) is_empty() bool {
 	return line.fragments_.len == 0 && !line.has_break_
 }

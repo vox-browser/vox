@@ -119,6 +119,16 @@ fn test_inline_formatting_context_overflow_wrap_intrinsic_difference() {
 		< break_word_result.automatic_content_width.to_double()
 }
 
+fn test_inline_formatting_context_wraps_after_preserved_tab() {
+	document := dom.Document.create(dom.url_about_blank())
+	_, used, _ := run_overflow_wrap_test(document,
+		'white-space:pre; text-wrap:wrap; tab-size:50px', '\tA',
+		AvailableSize.make_definite(CSSPixels.new(50)))
+	assert used.line_boxes.len == 2
+	assert used.line_boxes[0].fragments().map(it.text() or { '' }) == ['\t']
+	assert used.line_boxes[1].fragments().map(it.text() or { '' }) == ['A']
+}
+
 fn test_text_overflow_ellipsis_uses_the_containing_block_style_for_nested_inline_text() {
 	document := dom.Document.create(dom.url_about_blank())
 	container_style := inline_context_test_style(document,
