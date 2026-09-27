@@ -471,6 +471,9 @@
   Preserved trailing spaces and tabs also provide a soft wrap opportunity for
   following text without treating ordinary collapsed whitespace as a second
   float-band break.
+- A line wider than its containing block ignores `text-align` and stays flush
+  with the inline-start edge. RTL overflow therefore extends leftward into the
+  reachable scrollable overflow area instead of being stranded to the right.
 - Text shaping applies computed `word-spacing` to spaces, no-break spaces, and
   collapsed line feeds. It records the exact shaped advance of trailing ASCII
   whitespace, carries that record through fragment merging and intrinsic shape
