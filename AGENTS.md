@@ -319,7 +319,9 @@
   inserted text remains in the DOM without turning `<set>` or `<animate>` into
   an inline layout box. Script-created SVG elements retain their namespace and
   case-sensitive local names, and descendants of `foreignObject` leave SVG
-  rendering context until a nested SVG root establishes it again.
+  rendering context until a nested SVG root establishes it again. SVG viewport
+  children bypass HTML anonymous-block fixup regardless of the root's outer
+  display, keeping text and `foreignObject` siblings directly attached.
 - Non-collapsible text whose flat-tree style parent has `display: contents`
   keeps an anonymous inline style wrapper while the parent itself is unboxed,
   including slotted text that then participates in flex-item blockification.
