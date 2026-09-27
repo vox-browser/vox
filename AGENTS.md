@@ -493,6 +493,8 @@
   descendants move together after the final line size is known, nested roots
   remain independent, and contained absolute-position static markers receive
   the same shift. Direct text ignores the block container's own alignment.
+  Forced-break nodes never enter the inline box-model stack, so borders and
+  padding on a styled `<br>` cannot become leading metrics on the next line.
 - Inline formatting contexts publish their final inline-end insertion position
   after forced breaks, alignment, RTL direction, and writing-mode conversion.
   Originally-inline absolutely positioned descendants routed through an
