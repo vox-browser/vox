@@ -416,7 +416,8 @@ generated inline children of the marker box. Inside markers participate in the
 principal inline run, including through a trailing anonymous wrapper after
 block content, and use the bundled layout-test symbol face. Live box-presence
 changes now rebuild layout; a hidden list item drops its box and invalidates
-cached ordinals so subsequent markers renumber. A single
+cached ordinals so subsequent markers renumber. A hidden document element
+leaves an empty viewport that still reports its root block formatting context. A single
 authored generated image becomes the originating element or pseudo-element's
 replacement box before quote controls resolve; list-item and display-contents
 pseudos retain inline image children instead. Empty generated strings create a
@@ -779,7 +780,7 @@ largest unmatched modules:
    314 Layout
 
 $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
-Layout corpus: 1036 passed, 53 failed, 1089 total
+Layout corpus: 1037 passed, 52 failed, 1089 total
 
 $ v -old-compiler -enable-globals test .
 Summary for all V _test.v files: 651 passed, 651 total.

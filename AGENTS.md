@@ -469,6 +469,8 @@
   the bundled Noto fallback's real glyph coverage and advances. A live
   `display:none` box-presence change rebuilds layout and clears cached list
   ordinals, so hiding a list item removes its box and renumbers later markers.
+  A hidden document element leaves an empty viewport that still establishes
+  and reports the root block formatting context.
 - A single authored image in `content` makes its element or pseudo-element the
   replaced image box. Classification happens before quote controls and counters
   resolve; list-item and `display: contents` pseudos retain anonymous inline
