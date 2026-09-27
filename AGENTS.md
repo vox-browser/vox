@@ -141,6 +141,9 @@
   Visible placeholders overlay the full-width editor instead of collapsing it;
   number inputs group both layers in a dedicated flex item ahead of the steppers,
   and textareas use the same full-width flex overlay in every writing mode.
+  Live UA-shadow placeholder styles resolve logical inline properties through
+  the inherited writing mode and direction, so script-added placeholders keep
+  the same full-width overlay as parser-created controls.
   Placeholder layers are excluded from hit testing and text selection. Input
   editors preserve interior and trailing whitespace verbatim. Single-line
   controls clamp undersized line heights to normal font metrics, and cursor
