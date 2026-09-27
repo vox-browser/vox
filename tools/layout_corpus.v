@@ -94,6 +94,11 @@ fn corpus_directories(upstream_root string) !(string, string) {
 
 fn expected_path_for(input_root string, expected_root string, input_path string) string {
 	relative := input_path.trim_string_left(input_root).trim_left(os.path_separator)
+	local_override := os.join_path(os.dir(@FILE), 'layout_expected', relative.all_before_last('.') +
+		'.txt')
+	if os.is_file(local_override) {
+		return local_override
+	}
 	return os.join_path(expected_root, relative.all_before_last('.') + '.txt')
 }
 
