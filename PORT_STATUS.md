@@ -411,8 +411,10 @@ fieldset therefore joins its parent's line as one atomic inline.
 List items that establish an independent formatting context lay out their own
 markers, outside markers align with the list item's first baseline, and the
 marker line height floors only automatic list item heights. Marker symbols,
-suffixes, and images now flow through generated inline content, including
-inside-marker placement and the bundled layout-test symbol face. A single
+suffixes, list-style images, and authored `::marker` content now flow through
+generated inline children of the marker box. Inside markers participate in the
+principal inline run, including through a trailing anonymous wrapper after
+block content, and use the bundled layout-test symbol face. A single
 authored generated image becomes the originating element or pseudo-element's
 replacement box before quote controls resolve; list-item and display-contents
 pseudos retain inline image children instead. Empty generated strings create a
@@ -775,7 +777,7 @@ largest unmatched modules:
    314 Layout
 
 $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
-Layout corpus: 1031 passed, 58 failed, 1089 total
+Layout corpus: 1035 passed, 54 failed, 1089 total
 
 $ v -old-compiler -enable-globals test .
 Summary for all V _test.v files: 651 passed, 651 total.

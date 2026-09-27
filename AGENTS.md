@@ -462,10 +462,11 @@
   with the list item's first baseline once its children are laid out, and
   otherwise stay centered in their line height. The marker line height floors
   only a list item's automatic block size, so a specified height wins over it.
-  Normal marker symbols, suffixes, and images use generated inline content;
-  inside markers participate atomically at the start of the list item's inline
-  run, and layout-test symbols use the bundled Noto fallback's real glyph
-  coverage and advances.
+  Normal marker symbols, suffixes, list-style images, and authored `::marker`
+  content use generated inline children of the marker box. Inside markers
+  participate atomically in the list item's inline run, including through a
+  trailing anonymous wrapper after block content, and layout-test symbols use
+  the bundled Noto fallback's real glyph coverage and advances.
 - A single authored image in `content` makes its element or pseudo-element the
   replaced image box. Classification happens before quote controls and counters
   resolve; list-item and `display: contents` pseudos retain anonymous inline
