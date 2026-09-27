@@ -3372,6 +3372,41 @@ fn test_css_anchor_positioning_resolves_anchor_functions_in_calculations() {
 	assert calc_fallback.offset.y().to_double() == 86
 }
 
+fn test_span_all_position_area_unites_the_containing_block_and_centers_on_anchor() {
+	document := html.parse_document('<!doctype html><style>
+		* { margin:0 }
+		#fixed-anchor { position:absolute; left:300px; top:100px; width:100px; height:50px; anchor-name:--fixed }
+		#fixed-target { position:fixed; position-anchor:--fixed; position-area:span-all; top:calc(anchor(bottom) + 10px); width:200px; height:40px }
+		#padded { position:absolute; left:50px; top:250px; width:300px; height:160px; padding:40px }
+		#padded-anchor { position:absolute; left:100px; top:40px; width:80px; height:40px; anchor-name:--padded }
+		#padded-target { position:absolute; position-anchor:--padded; position-area:span-all; width:160px; height:30px }
+		#overhang { position:absolute; left:500px; top:300px; width:200px; height:150px }
+		#overhang-anchor { position:absolute; left:-100px; top:-60px; width:40px; height:20px; anchor-name:--overhang }
+		#overhang-target { position:absolute; position-anchor:--overhang; position-area:span-all; left:10px; top:calc(anchor(bottom) + 10px); width:50%; height:50% }
+		#grid { position:absolute; display:grid; left:50px; top:480px; width:300px; height:100px; grid-template-columns:200px 100px; grid-template-rows:100px }
+		#grid-anchor { position:absolute; left:50px; top:20px; width:40px; height:20px; anchor-name:--grid }
+		#grid-target { position:absolute; grid-column:1 / 2; grid-row:1 / 2; position-anchor:--grid; position-area:span-all; justify-self:end; align-self:start; width:60px; height:20px }
+	</style><div id="fixed-anchor"></div><div id="fixed-target"></div>
+	<div id="padded"><div id="padded-anchor"></div><div id="padded-target"></div></div>
+	<div id="overhang"><div id="overhang-anchor"></div><div id="overhang-target"></div></div>
+	<div id="grid"><div id="grid-anchor"></div><div id="grid-target"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	fixed := used_for_id(result, 'fixed-target')
+	padded := used_for_id(result, 'padded-target')
+	overhang := used_for_id(result, 'overhang-target')
+	grid := used_for_id(result, 'grid-target')
+	assert fixed.cumulative_offset().x().to_double() == 250
+	assert fixed.cumulative_offset().y().to_double() == 160
+	assert padded.cumulative_offset().x().to_double() == 110
+	assert padded.cumulative_offset().y().to_double() == 295
+	assert overhang.cumulative_offset().x().to_double() == 410
+	assert overhang.cumulative_offset().y().to_double() == 270
+	assert overhang.content_width().to_double() == 150
+	assert overhang.content_height().to_double() == 105
+	assert grid.cumulative_offset().x().to_double() == 190
+	assert grid.cumulative_offset().y().to_double() == 480
+}
+
 fn test_css_anchor_positioning_skips_ineligible_later_named_elements() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }

@@ -41,10 +41,7 @@ fn is_acceptable_anchor_element(target voidptr, candidate &dom.Element) bool {
 	return false
 }
 
-// https://drafts.csswg.org/css-anchor-position-1/#resolving-anchor
-fn resolve_anchor_rect(state &LayoutState, box &Node, containing_state &UsedValues, anchor css.AnchorStyleValue) ?css.CSSPixelRect {
-	styled := box.as_node_with_style() or { return none }
-	name := anchor.anchor_name() or { styled.computed_values().position_anchor() or { return none } }
+fn resolve_named_anchor_rect(state &LayoutState, box &Node, containing_state &UsedValues, name string) ?css.CSSPixelRect {
 	dom_node := box.dom_node() or { return none }
 	element := dom_node.as_element() or { return none }
 	containing_block := box.containing_block() or { return none }
@@ -76,6 +73,73 @@ fn resolve_anchor_rect(state &LayoutState, box &Node, containing_state &UsedValu
 		y: origin.y()
 		width: anchor_state.border_box_width()
 		height: anchor_state.border_box_height()
+	}
+}
+
+// https://drafts.csswg.org/css-anchor-position-1/#resolving-anchor
+fn resolve_anchor_rect(state &LayoutState, box &Node, containing_state &UsedValues, anchor css.AnchorStyleValue) ?css.CSSPixelRect {
+	styled := box.as_node_with_style() or { return none }
+	name := anchor.anchor_name() or { styled.computed_values().position_anchor() or { return none } }
+	return resolve_named_anchor_rect(state, box, containing_state, name)
+}
+
+struct SpanAllPositionArea {
+	rect        css.CSSPixelRect
+	anchor_rect css.CSSPixelRect
+}
+
+fn position_area_is_span_all(computed &css.ComputedValues) bool {
+	value := unsafe { &css.ComputedProperties(computed) }.typed_property_value(.position_area) or {
+		return false
+	}
+	if value is css.KeywordStyleValue {
+		return value.keyword() == .span_all
+	}
+	if value is css.StyleValueList {
+		values := value.values()
+		if values.len != 2 {
+			return false
+		}
+		for entry in values {
+			if entry !is css.KeywordStyleValue {
+				return false
+			}
+			if entry.to_keyword() != .span_all {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}
+
+// https://drafts.csswg.org/css-anchor-position-1/#valdef-position-area-span-all
+fn span_all_position_area(state &LayoutState, box &Node, containing_state &UsedValues, computed &css.ComputedValues, original_rect css.CSSPixelRect) ?SpanAllPositionArea {
+	if !position_area_is_span_all(computed) {
+		return none
+	}
+	name := computed.position_anchor() or { return none }
+	padding_relative_anchor := resolve_named_anchor_rect(state, box, containing_state, name) or {
+		return none
+	}
+	anchor_rect := css.CSSPixelRect{
+		x: padding_relative_anchor.x.minus(containing_state.padding_left)
+		y: padding_relative_anchor.y.minus(containing_state.padding_top)
+		width: padding_relative_anchor.width
+		height: padding_relative_anchor.height
+	}
+	left := css_pixels_min(original_rect.left(), anchor_rect.left())
+	top := css_pixels_min(original_rect.top(), anchor_rect.top())
+	right := css_pixels_max(original_rect.right(), anchor_rect.right())
+	bottom := css_pixels_max(original_rect.bottom(), anchor_rect.bottom())
+	return SpanAllPositionArea{
+		rect: css.CSSPixelRect{
+			x: left
+			y: top
+			width: right.minus(left)
+			height: bottom.minus(top)
+		}
+		anchor_rect: anchor_rect
 	}
 }
 
@@ -154,20 +218,23 @@ fn resolve_anchor_side(state &LayoutState, box &Node, containing_box &Node, cont
 }
 
 // https://drafts.csswg.org/css-anchor-position-1/#anchor-pos
-fn resolve_anchor_for_inset(state &LayoutState, box &Node, containing_box &Node, containing_state &UsedValues, containing_extent CSSPixels, anchor css.AnchorStyleValue, is_from_end bool, is_horizontal_axis bool) ?CSSPixels {
+fn resolve_anchor_for_inset(state &LayoutState, box &Node, containing_box &Node, containing_state &UsedValues, containing_start CSSPixels, containing_extent CSSPixels, anchor css.AnchorStyleValue, is_from_end bool, is_horizontal_axis bool) ?CSSPixels {
 	if side := resolve_anchor_side(state, box, containing_box, containing_state, anchor, is_from_end, is_horizontal_axis) {
+		padding := if is_horizontal_axis { containing_state.padding_left } else { containing_state.padding_top }
+		relative_side := side.minus(padding).minus(containing_start)
 		if is_from_end {
-			return containing_extent.minus(side)
+			return containing_extent.minus(relative_side)
 		}
-		return side
+		return relative_side
 	}
 	fallback := anchor.fallback_value() or { return none }
 	if fallback is css.AnchorStyleValue {
-		return resolve_anchor_for_inset(state, box, containing_box, containing_state, containing_extent, fallback, is_from_end, is_horizontal_axis)
+		return resolve_anchor_for_inset(state, box, containing_box, containing_state,
+			containing_start, containing_extent, fallback, is_from_end, is_horizontal_axis)
 	}
 	if fallback is css.CalculatedStyleValue {
 		return resolve_calculated_anchor_inset(state, box, containing_box, containing_state,
-			containing_extent, fallback, is_from_end, is_horizontal_axis)
+			containing_start, containing_extent, fallback, is_from_end, is_horizontal_axis)
 	}
 	return resolve_layout_size(box, css.Size.from_style_value(fallback), containing_extent)
 }
@@ -214,6 +281,7 @@ struct AnchorInsetCalculationContext {
 	box                &Node        = unsafe { nil }
 	containing_box     &Node        = unsafe { nil }
 	containing_state   &UsedValues  = unsafe { nil }
+	containing_start   CSSPixels
 	containing_extent  CSSPixels
 	is_from_end        bool
 	is_horizontal_axis bool
@@ -225,16 +293,17 @@ fn resolve_anchor_for_calculation(context_pointer voidptr, anchor css.AnchorStyl
 	}
 	context := unsafe { &AnchorInsetCalculationContext(context_pointer) }
 	return resolve_anchor_for_inset(context.state, context.box, context.containing_box,
-		context.containing_state, context.containing_extent, anchor, context.is_from_end,
-		context.is_horizontal_axis)
+		context.containing_state, context.containing_start, context.containing_extent, anchor,
+		context.is_from_end, context.is_horizontal_axis)
 }
 
-fn resolve_calculated_anchor_inset(state &LayoutState, box &Node, containing_box &Node, containing_state &UsedValues, basis CSSPixels, value css.CalculatedStyleValue, is_from_end bool, is_horizontal_axis bool) ?CSSPixels {
+fn resolve_calculated_anchor_inset(state &LayoutState, box &Node, containing_box &Node, containing_state &UsedValues, containing_start CSSPixels, basis CSSPixels, value css.CalculatedStyleValue, is_from_end bool, is_horizontal_axis bool) ?CSSPixels {
 	context := AnchorInsetCalculationContext{
 		state: state
 		box: box
 		containing_box: containing_box
 		containing_state: containing_state
+		containing_start: containing_start
 		containing_extent: basis
 		is_from_end: is_from_end
 		is_horizontal_axis: is_horizontal_axis
@@ -249,17 +318,17 @@ fn resolve_calculated_anchor_inset(state &LayoutState, box &Node, containing_box
 	return CSSPixels.truncated_value_for(resolved.to_px_without_rounding(length_context))
 }
 
-fn resolved_inset_with_anchors(state &LayoutState, box &Node, containing_box &Node, containing_state &UsedValues, computed &css.ComputedValues, property_id css.PropertyID, basis CSSPixels, is_from_end bool, is_horizontal_axis bool) ?CSSPixels {
+fn resolved_inset_with_anchors(state &LayoutState, box &Node, containing_box &Node, containing_state &UsedValues, computed &css.ComputedValues, property_id css.PropertyID, containing_start CSSPixels, basis CSSPixels, is_from_end bool, is_horizontal_axis bool) ?CSSPixels {
 	value := unsafe { &css.ComputedProperties(computed) }.typed_property_value(property_id) or {
 		return resolved_inset(box, property_id, basis)
 	}
 	if value is css.AnchorStyleValue {
-		return resolve_anchor_for_inset(state, box, containing_box, containing_state, basis,
-			value, is_from_end, is_horizontal_axis)
+		return resolve_anchor_for_inset(state, box, containing_box, containing_state,
+			containing_start, basis, value, is_from_end, is_horizontal_axis)
 	}
 	if value is css.CalculatedStyleValue {
 		return resolve_calculated_anchor_inset(state, box, containing_box, containing_state,
-			basis, value, is_from_end, is_horizontal_axis)
+			containing_start, basis, value, is_from_end, is_horizontal_axis)
 	}
 	if property_is_auto(computed, property_id) {
 		return none
@@ -279,7 +348,7 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 	// containing rectangle is the positioned ancestor's padding box, expressed
 	// relative to its content box. Grid replaces it with the resolved grid area.
 	grid_containing_rect := box_state.abspos_containing_block_rect()
-	containing_rect := if inline_containing_block := box.inline_containing_block_if_applicable() {
+	mut containing_rect := if inline_containing_block := box.inline_containing_block_if_applicable() {
 		compute_inline_containing_block_rect(mut state, inline_containing_block, containing_box) or {
 			css.CSSPixelRect.new(-containing_state.padding_left.to_double(),
 				-containing_state.padding_top.to_double(),
@@ -294,18 +363,22 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 				containing_state.padding_top.plus(containing_state.content_height()).plus(containing_state.padding_bottom).to_double())
 		}
 	}
+	position_area := span_all_position_area(state, box, containing_state, computed, containing_rect)
+	if area := position_area {
+		containing_rect = area.rect
+	}
 	containing_width := containing_rect.width
 	containing_height := containing_rect.height
 	resolve_box_model_edges(computed, mut box_state, containing_width.to_double())
 
 	left := resolved_inset_with_anchors(state, box, containing_box, containing_state,
-		computed, .left, containing_width, false, true)
+		computed, .left, containing_rect.x, containing_width, false, true)
 	right := resolved_inset_with_anchors(state, box, containing_box, containing_state,
-		computed, .right, containing_width, true, true)
+		computed, .right, containing_rect.x, containing_width, true, true)
 	top := resolved_inset_with_anchors(state, box, containing_box, containing_state,
-		computed, .top, containing_height, false, false)
+		computed, .top, containing_rect.y, containing_height, false, false)
 	bottom := resolved_inset_with_anchors(state, box, containing_box, containing_state,
-		computed, .bottom, containing_height, true, false)
+		computed, .bottom, containing_rect.y, containing_height, true, false)
 	mut forced_width := resolve_layout_content_size(box, computed.size_value(.width),
 		containing_width, box_state, true)
 	mut forced_height := resolve_layout_content_size(box, computed.size_value(.height),
@@ -445,6 +518,16 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 					static_position = static_position.plus(offset)
 				}
 			}
+		}
+	}
+	if area := position_area {
+		if left == none && right == none && computed.justify_self() in [.auto_, .normal] {
+			static_position = css.CSSPixelPoint.new(area.anchor_rect.x.plus(area.anchor_rect.width.minus(box_state.margin_box_width()).divided_by_float(2)),
+				static_position.y())
+		}
+		if top == none && bottom == none && computed.align_self() in [.auto_, .normal] {
+			static_position = css.CSSPixelPoint.new(static_position.x(),
+				area.anchor_rect.y.plus(area.anchor_rect.height.minus(box_state.margin_box_height()).divided_by_float(2)))
 		}
 	}
 
