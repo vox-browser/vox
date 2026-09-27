@@ -302,7 +302,16 @@ pub fn html_canvas_element_present(element &dom.HTMLCanvasElement) {
 	}
 }
 
-pub fn html_canvas_element_to_data_url(element &dom.HTMLCanvasElement, type_ string, quality ?f64, encode_png PNGEncodeCallback, encode_jpeg JPEGEncodeCallback) string {
+pub fn html_canvas_element_is_origin_clean(element &dom.HTMLCanvasElement) bool {
+	state := html_canvas_element_states[html_canvas_element_key(element)] or { return true }
+	context := state.context or { return true }
+	return context.origin_clean()
+}
+
+pub fn html_canvas_element_to_data_url(element &dom.HTMLCanvasElement, type_ string, quality ?f64, encode_png PNGEncodeCallback, encode_jpeg JPEGEncodeCallback) !string {
+	if !html_canvas_element_is_origin_clean(element) {
+		return error('SecurityError: Canvas is not origin-clean')
+	}
 	width, height := html_canvas_element_dimensions(element)
 	if width == 0 || height == 0 || u64(width) * u64(height) > maximum_canvas_area {
 		return 'data:,'
@@ -316,6 +325,9 @@ pub fn html_canvas_element_to_data_url(element &dom.HTMLCanvasElement, type_ str
 }
 
 pub fn html_canvas_element_to_blob(element &dom.HTMLCanvasElement, type_ string, quality ?f64, encode_png PNGEncodeCallback, encode_jpeg JPEGEncodeCallback) !SerializeBitmapResult {
+	if !html_canvas_element_is_origin_clean(element) {
+		return error('SecurityError: Canvas is not origin-clean')
+	}
 	width, height := html_canvas_element_dimensions(element)
 	if width == 0 || height == 0 || u64(width) * u64(height) > maximum_canvas_area {
 		return error('IndexSizeError: canvas has no serializable bitmap')

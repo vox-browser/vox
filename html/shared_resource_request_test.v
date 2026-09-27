@@ -123,9 +123,10 @@ fn test_shared_resource_request_handle_successful_fetch_decodes_and_finishes() {
 	url := dom.URL{ value: 'https://example.test/image.bin' }
 	mut request := SharedResourceRequest.get_or_create(document, url)
 	request.set_decode_callback(shared_resource_test_decode)
-	request.handle_successful_fetch(url, 'image/test', [u8(1), 2, 3])
+	request.handle_successful_fetch(url, 'image/test', [u8(1), 2, 3], true)
 	assert request.state() == .finished
 	assert request.image_data()?.data.intrinsic_width()? == 4
+	assert request.image_data()?.data.is_cors_cross_origin()
 	assert shared_resource_test_decode_url == url.serialize()
 	assert shared_resource_test_decode_mime == 'image/test'
 }

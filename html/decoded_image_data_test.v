@@ -50,6 +50,9 @@ fn test_bitmap_decoded_image_data_accessors() {
 	}
 	assert data.external_memory_size() == 4
 	assert !data.has_clients()
+	assert !data.is_cors_cross_origin()
+	data.set_is_cors_cross_origin(true)
+	assert data.is_cors_cross_origin()
 	decoded_image_data_register_client(data, 11, record_decoded_image_update)
 	assert data.has_clients()
 	decoded_image_data_unregister_client(data, 11)
@@ -88,6 +91,9 @@ fn test_animated_decoded_image_data_pool_progression_and_delivery() {
 	assert data.find_slot(0)?.frame?.color_space() == .display_p3
 	assert data.external_memory_size() == 6 * sizeof(u32)
 	assert !data.has_clients()
+	assert !data.is_cors_cross_origin()
+	data.set_is_cors_cross_origin(true)
+	assert data.is_cors_cross_origin()
 	mut evicted := data.evict_oldest_slot()
 	assert evicted.generation == 0
 	assert data.frame(0)?.bitmap() == frame0

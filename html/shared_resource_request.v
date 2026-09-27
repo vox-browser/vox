@@ -161,7 +161,7 @@ pub fn (mut request SharedResourceRequest) handle_successful_resource_load(image
 	prune_shared_resource_requests_for_document(request.document, 8 * 1024 * 1024, 96)
 }
 
-pub fn (mut request SharedResourceRequest) handle_successful_fetch(url dom.URL, mime_type string, data []u8) {
+pub fn (mut request SharedResourceRequest) handle_successful_fetch(url dom.URL, mime_type string, data []u8, image_data_is_cors_cross_origin bool) {
 	decode := request.decode_callback or {
 		request.handle_failed_fetch()
 		return
@@ -171,6 +171,7 @@ pub fn (mut request SharedResourceRequest) handle_successful_fetch(url dom.URL, 
 		request.handle_failed_fetch()
 		return
 	}
+	image_data.set_is_cors_cross_origin(image_data_is_cors_cross_origin)
 	request.handle_successful_resource_load(image_data)
 }
 

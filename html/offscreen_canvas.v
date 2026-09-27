@@ -563,6 +563,9 @@ pub fn (context &OffscreenCanvasRenderingContext2D) get_image_data(x int, y int,
 	if width == 0 || height == 0 {
 		return error('IndexSizeError: width and height must be non-zero')
 	}
+	if !context.origin_clean() {
+		return error('SecurityError: CanvasRenderingContext2D is not origin-clean')
+	}
 	actual_x := if width < 0 { x + width } else { x }
 	actual_y := if height < 0 { y + height } else { y }
 	actual_width := if width < 0 { -width } else { width }
@@ -647,6 +650,9 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) draw_image_internal(reque
 			}
 			canvas_composite_pixel(mut mutable_destination.data, destination_offset, color, context.drawing_state.global_alpha, context.drawing_state.current_compositing_and_blending_operator)
 		}
+	}
+	if image_is_not_origin_clean(request.image) {
+		context.set_origin_clean(false)
 	}
 }
 

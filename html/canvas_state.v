@@ -267,6 +267,8 @@ mut:
 	reset_callback      ?CanvasStateResetCallback
 	// https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-context-lost
 	context_lost_ bool
+	// https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-origin-clean
+	origin_clean_ bool = true
 	// The node document is available even when an element belongs to a detached
 	// document with no Window or navigable.
 	font_resolution_document_ ?&dom.Document
@@ -318,6 +320,14 @@ pub fn (state &CanvasState) is_context_lost() bool {
 
 pub fn (mut state CanvasState) set_context_lost(context_lost bool) {
 	state.context_lost_ = context_lost
+}
+
+pub fn (state &CanvasState) origin_clean() bool {
+	return state.origin_clean_
+}
+
+pub fn (mut state CanvasState) set_origin_clean(origin_clean bool) {
+	state.origin_clean_ = origin_clean
 }
 
 pub fn (mut state CanvasState) set_font_resolution_document(document &dom.Document) {

@@ -257,6 +257,18 @@ pub fn (image &HTMLImageElementModel) crossorigin() CORSSettingAttribute {
 	return image.cors_setting_
 }
 
+fn image_response_is_cors_cross_origin(image &HTMLImageElementModel, url dom.URL) bool {
+	if image.cors_setting_ != .no_cors || url.scheme() !in ['http', 'https'] {
+		return false
+	}
+	document_origin := if image.document_.origin().value == '' {
+		image.document_.url.origin()
+	} else {
+		image.document_.origin()
+	}
+	return !url.origin().is_same_origin(document_origin)
+}
+
 pub fn (image &HTMLImageElementModel) uses_srcset_or_picture() bool {
 	if image.srcset_ != none {
 		return true
@@ -418,6 +430,7 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 		}
 		return
 	}
+	decoded.set_is_cors_cross_origin(image_response_is_cors_cross_origin(image, url))
 	data := SharedResourceImageData{
 		data: decoded
 	}

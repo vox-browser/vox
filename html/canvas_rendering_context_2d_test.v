@@ -32,8 +32,46 @@ fn test_html_canvas_defaults_context_pixels_and_serialization() {
 	pixel := context.get_image_data(0, 0, 1, 1, none) or { panic(err) }
 	assert pixel.data() == [u8(0), 0, 255, 255]
 
-	data_url := html_canvas_element_to_data_url(canvas, 'image/png', none, html_canvas_test_png, html_canvas_test_jpeg)
+	data_url := html_canvas_element_to_data_url(canvas, 'image/png', none, html_canvas_test_png, html_canvas_test_jpeg) or { panic(err) }
 	assert data_url.starts_with('data:image/png;base64,')
+}
+
+fn test_tainted_html_canvas_rejects_serialization() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'canvas') or {
+		panic(err)
+	}
+	canvas := unsafe { &dom.HTMLCanvasElement(element) }
+	mut context := html_canvas_element_get_context(canvas, '2d', none) or { panic(err) }
+	decoded := BitmapDecodedImageData.create([
+		BitmapDecodedImageFrame{
+			frame: dom.DecodedImageFrame_.create(&dom.Bitmap_{
+				width:  1
+				height: 1
+				pitch:  4
+				data:   [u8(1), 2, 3, 255]
+			})
+		},
+	], 0, false)
+	decoded.set_is_cors_cross_origin(true)
+	context.draw_image_internal(CanvasDrawImageRequest{
+		image:              DecodedImageCanvasSource{ value: decoded }
+		source_width:       1
+		source_height:      1
+		destination_width:  1
+		destination_height: 1
+	}) or { panic(err) }
+	assert !html_canvas_element_is_origin_clean(canvas)
+	if _ := html_canvas_element_to_data_url(canvas, 'image/png', none, html_canvas_test_png, html_canvas_test_jpeg) {
+		assert false, 'tainted canvas data URL serialization must fail'
+	} else {
+		assert err.msg().starts_with('SecurityError:')
+	}
+	if _ := html_canvas_element_to_blob(canvas, 'image/png', none, html_canvas_test_png, html_canvas_test_jpeg) {
+		assert false, 'tainted canvas blob serialization must fail'
+	} else {
+		assert err.msg().starts_with('SecurityError:')
+	}
 }
 
 fn test_html_canvas_resize_resets_context_and_offscreen_transfer_rules() {

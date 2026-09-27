@@ -76,6 +76,37 @@ fn test_offscreen_canvas_image_data_draw_image_blob_and_transfer() {
 	assert received.height() == 2
 }
 
+fn test_canvas_cross_origin_decoded_image_taints_readback() {
+	bitmap := &dom.Bitmap_{
+		width:  1
+		height: 1
+		pitch:  4
+		data:   [u8(10), 20, 30, 255]
+	}
+	decoded := BitmapDecodedImageData.create([
+		BitmapDecodedImageFrame{ frame: dom.DecodedImageFrame_.create(bitmap) },
+	], 0, false)
+	decoded.set_is_cors_cross_origin(true)
+	image := CanvasImageSource(DecodedImageCanvasSource{ value: decoded })
+	assert image_is_not_origin_clean(image)
+
+	mut canvas := OffscreenCanvas.create(1, 1) or { panic(err) }
+	mut context := canvas.get_context(.canvas_2d, none) or { panic(err) }
+	context.draw_image_internal(CanvasDrawImageRequest{
+		image:              image
+		source_width:       1
+		source_height:      1
+		destination_width:  1
+		destination_height: 1
+	}) or { panic(err) }
+	assert !context.origin_clean()
+	if _ := context.get_image_data(0, 0, 1, 1, none) {
+		assert false, 'tainted canvas readback must fail'
+	} else {
+		assert err.msg().starts_with('SecurityError:')
+	}
+}
+
 fn test_offscreen_canvas_draw_image_snapshots_an_overlapping_self_source() {
 	mut canvas := OffscreenCanvas.create(4, 1) or { panic(err) }
 	mut context := canvas.get_context(.canvas_2d, none) or { panic(err) }

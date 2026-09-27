@@ -25,6 +25,8 @@ pub:
 pub interface DecodedImageData {
 	external_memory_size() usize
 	has_clients() bool
+	is_cors_cross_origin() bool
+	set_is_cors_cross_origin(value bool)
 	frame(frame_index usize) ?&dom.DecodedImageFrame_
 	frame_duration(frame_index usize) int
 	frame_count() usize
@@ -51,10 +53,11 @@ pub:
 @[heap]
 pub struct BitmapDecodedImageData {
 mut:
-	frames_     []BitmapDecodedImageFrame
-	loop_count_ usize
-	animated_   bool
-	clients     map[u64]DecodedImageClientUpdateCallback
+	frames_               []BitmapDecodedImageFrame
+	loop_count_           usize
+	animated_             bool
+	clients               map[u64]DecodedImageClientUpdateCallback
+	is_cors_cross_origin_ bool
 }
 
 pub fn BitmapDecodedImageData.create(frames []BitmapDecodedImageFrame, loop_count usize, animated bool) &BitmapDecodedImageData {
@@ -81,6 +84,15 @@ pub fn (data &BitmapDecodedImageData) external_memory_size() usize {
 
 pub fn (data &BitmapDecodedImageData) has_clients() bool {
 	return data.clients.len != 0
+}
+
+pub fn (data &BitmapDecodedImageData) is_cors_cross_origin() bool {
+	return data.is_cors_cross_origin_
+}
+
+pub fn (data &BitmapDecodedImageData) set_is_cors_cross_origin(value bool) {
+	mut mutable_data := unsafe { &BitmapDecodedImageData(data) }
+	mutable_data.is_cors_cross_origin_ = value
 }
 
 pub fn (data &BitmapDecodedImageData) register_client(client_id u64, callback DecodedImageClientUpdateCallback) {
@@ -215,6 +227,7 @@ mut:
 	stop_animation_decode      ?AnimationStopCallback
 	animation_timer            &platform.Timer = unsafe { nil }
 	clients                    map[u64]DecodedImageClientUpdateCallback
+	is_cors_cross_origin_      bool
 	loops_completed_           u32
 	document_                  ?&dom.Document
 	document_observer          ?&dom.DocumentObserver
@@ -312,6 +325,15 @@ pub fn (data &AnimatedDecodedImageData) external_memory_size() usize {
 
 pub fn (data &AnimatedDecodedImageData) has_clients() bool {
 	return data.clients.len != 0
+}
+
+pub fn (data &AnimatedDecodedImageData) is_cors_cross_origin() bool {
+	return data.is_cors_cross_origin_
+}
+
+pub fn (data &AnimatedDecodedImageData) set_is_cors_cross_origin(value bool) {
+	mut mutable_data := unsafe { &AnimatedDecodedImageData(data) }
+	mutable_data.is_cors_cross_origin_ = value
 }
 
 pub fn decoded_image_animation_state(data DecodedImageData) ?AnimatedImageDebugState {

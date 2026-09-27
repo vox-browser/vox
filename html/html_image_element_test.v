@@ -80,6 +80,22 @@ fn test_image_decoded_data_tracks_display_client_lifetime() {
 	assert !decoded.has_clients()
 }
 
+fn test_image_decoded_data_tracks_cross_origin_response_tainting() {
+	document := dom.Document.create(dom.URL{ value: 'https://frame.test/page' })
+	mut image := HTMLImageElementModel.create(document, document.base_url())
+	image.set_fetch_hook(image_test_fetch)
+	image.set_src('https://images.test/picture.png')
+	image.update_the_image_data(false, false)
+	assert image.decoded_image_data()?.is_cors_cross_origin()
+
+	mut cors_image := HTMLImageElementModel.create(document, document.base_url())
+	cors_image.set_fetch_hook(image_test_fetch)
+	cors_image.set_crossorigin('anonymous')
+	cors_image.set_src('https://images.test/cors-picture.png')
+	cors_image.update_the_image_data(false, false)
+	assert !cors_image.decoded_image_data()?.is_cors_cross_origin()
+}
+
 fn test_image_decode_waits_for_completely_available_state() {
 	document := dom.Document.create(dom.URL{ value: 'https://example.test/decode-test' })
 	mut image := HTMLImageElementModel.create(document, document.base_url())

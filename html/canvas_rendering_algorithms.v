@@ -308,10 +308,13 @@ fn append_canvas_elliptical_arc(mut points []FloatPoint, start FloatPoint, segme
 	}
 }
 
-// This follows the current upstream implementation: all represented sources are
-// treated as origin-clean until their CORS state is wired into the image models.
-pub fn image_is_not_origin_clean(_ CanvasImageSource) bool {
-	return false
+pub fn image_is_not_origin_clean(image CanvasImageSource) bool {
+	return match image {
+		DecodedImageCanvasSource {
+			(image as DecodedImageCanvasSource).value.is_cors_cross_origin()
+		}
+		ImageBitmapCanvasSource { false }
+	}
 }
 
 fn canvas_path_polygons_with_limit(path CanvasGfxPath, maximum_contours int) [][]FloatPoint {
