@@ -834,12 +834,15 @@ fn calculate_intrinsic_column_flex_width(mut state LayoutState, container &Node,
 		first_pass = css_pixels_max(first_pass, contribution)
 	}
 	container_state.set_content_width(first_pass)
+	// The first pass establishes the used intrinsic cross size; it does not
+	// manufacture a definite percentage basis. Cyclic percentage minimums keep
+	// resolving against the basis supplied to this intrinsic measurement.
 	mut second_pass := CSSPixels.new(0)
 	for item in items {
 		contribution := if constraint == .min_content {
-			flex_formatting_context_calculate_cross_min_content_contribution(mut state, item, true, first_pass, available_main_size)
+			flex_formatting_context_calculate_cross_min_content_contribution(mut state, item, true, initial_basis, available_main_size)
 		} else {
-			flex_formatting_context_calculate_cross_max_content_contribution(mut state, item, true, first_pass, available_main_size)
+			flex_formatting_context_calculate_cross_max_content_contribution(mut state, item, true, initial_basis, available_main_size)
 		}
 		second_pass = css_pixels_max(second_pass, contribution)
 	}

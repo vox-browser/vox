@@ -29,6 +29,19 @@ fn used_for_id(result DocumentLayoutResult, id string) &UsedValues {
 	return result.used_values_for(styled) or { panic('#${id} has no used values') }
 }
 
+fn layout_nodes_with_class(root &Node, class_name string, mut matches []&Node) {
+	if dom_node := root.dom_node() {
+		if element := dom_node.as_element() {
+			if element.get_attribute_value('class').split(' ').contains(class_name) {
+				matches << root
+			}
+		}
+	}
+	for child in root.children() {
+		layout_nodes_with_class(child, class_name, mut matches)
+	}
+}
+
 fn test_flex_formatting_context_grows_and_aligns_items() {
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; width:300px; height:100px; gap:10px; align-items:center }
@@ -1025,6 +1038,28 @@ fn test_auto_height_row_flex_ignores_unresolved_percentage_min_height_for_ratio_
 	ratio := used_for_id(result, 'ratio')
 	assert ratio.content_width().to_double() == 0
 	assert ratio.content_height().to_double() == 60
+}
+
+fn test_intrinsic_column_flex_width_does_not_create_a_cyclic_percentage_minimum_basis() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		.row { display:flex }
+		.column { display:flex; flex-direction:column; padding:4px 20px }
+		.label { width:100px; height:20px }
+		.indicator { min-width:calc(100% + 40px); height:4px }
+		.percentage-only { min-width:150% }
+	</style>
+	<div class="row"><div class="column"><div class="indicator"></div><div class="label"></div></div></div>
+	<div class="row"><div class="column"><div class="indicator percentage-only"></div><div class="label"></div></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	mut columns := []&Node{}
+	layout_nodes_with_class(result.root, 'column', mut columns)
+	assert columns.len == 2
+	for node in columns {
+		styled := node.as_node_with_style() or { panic('matched node has no style') }
+		used := result.used_values_for(styled) or { panic('matched node has no used values') }
+		assert used.content_width().to_double() == 100
+	}
 }
 
 fn test_flex_basis_intrinsic_sizing_keywords_choose_their_matching_contribution() {
