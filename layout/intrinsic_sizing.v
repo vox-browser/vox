@@ -797,7 +797,14 @@ fn flex_formatting_context_calculate_cross_max_content_contribution(mut state La
 fn calculate_intrinsic_column_flex_width(mut state LayoutState, container &Node, items []&Node, constraint SizeConstraint) CSSPixels {
 	container_styled := container.as_node_with_style() or { return CSSPixels.new(0) }
 	mut container_state := state.get_mutable(container_styled)
-	initial_basis := container_state.content_width()
+	// Intrinsic measurement marks this axis indefinite before entering the flex
+	// algorithm. Do not reuse the numeric width retained in that state from an
+	// earlier normal-layout pass as a percentage basis.
+	initial_basis := if container_state.has_definite_width() {
+		container_state.content_width()
+	} else {
+		CSSPixels.new(0)
+	}
 	available_main_size := if container_state.has_definite_height() {
 		?CSSPixels(container_state.content_height())
 	} else {

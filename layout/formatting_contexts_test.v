@@ -1137,7 +1137,7 @@ fn test_ratio_only_replaced_max_content_transfers_constraints() {
 	assert used_for_id(result, 'border').content_height().to_double() == 100
 }
 
-fn test_column_flex_intrinsic_cross_size_resolves_percentage_minimum_in_second_pass() {
+fn test_column_flex_intrinsic_cross_size_keeps_cyclic_percentage_minimum_indefinite() {
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-direction:column }
 		#item { min-width:200% }
@@ -1152,9 +1152,11 @@ fn test_column_flex_intrinsic_cross_size_resolves_percentage_minimum_in_second_p
 	item_box.reset_cached_intrinsic_sizes()
 	mut measurement_state := result.state
 	// Pass one ignores the cyclic percentage and gets 50px from the content.
-	// Pass two resolves min-width:200% against that result, producing 100px.
-	assert calculate_min_content_width(mut measurement_state, flex_box).to_double() == 100
-	assert calculate_max_content_width(mut measurement_state, flex_box).to_double() == 100
+	// The second pass must keep using the initially indefinite percentage basis,
+	// not the 784px width left in the source state by normal layout and not the
+	// first pass's 50px intrinsic result.
+	assert calculate_min_content_width(mut measurement_state, flex_box).to_double() == 50
+	assert calculate_max_content_width(mut measurement_state, flex_box).to_double() == 50
 }
 
 fn test_wrapped_column_flex_max_content_cross_size_sums_flex_lines() {
