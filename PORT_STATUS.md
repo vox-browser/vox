@@ -410,8 +410,13 @@ as inline-block, while their computed display is unchanged; an inline
 fieldset therefore joins its parent's line as one atomic inline.
 List items that establish an independent formatting context lay out their own
 markers, outside markers align with the list item's first baseline, and the
-marker line height floors only automatic list item heights. Empty generated
-strings create a text node only inside ordinary inline pseudo-elements.
+marker line height floors only automatic list item heights. Marker symbols,
+suffixes, and images now flow through generated inline content, including
+inside-marker placement and the bundled layout-test symbol face. A single
+authored generated image becomes the originating element or pseudo-element's
+replacement box before quote controls resolve; list-item and display-contents
+pseudos retain inline image children instead. Empty generated strings create a
+text node only inside ordinary inline pseudo-elements.
 Viewport propagation now copies the root scrollbar width and the containment-
 aware principal writing mode and direction, while selecting and neutralizing
 the correct root/body overflow origin.
@@ -770,7 +775,7 @@ largest unmatched modules:
    314 Layout
 
 $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
-Layout corpus: 1023 passed, 66 failed, 1089 total
+Layout corpus: 1031 passed, 58 failed, 1089 total
 
 $ v -old-compiler -enable-globals test .
 Summary for all V _test.v files: 651 passed, 651 total.

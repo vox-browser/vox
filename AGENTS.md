@@ -462,6 +462,15 @@
   with the list item's first baseline once its children are laid out, and
   otherwise stay centered in their line height. The marker line height floors
   only a list item's automatic block size, so a specified height wins over it.
+  Normal marker symbols, suffixes, and images use generated inline content;
+  inside markers participate atomically at the start of the list item's inline
+  run, and layout-test symbols use the bundled Noto fallback's real glyph
+  coverage and advances.
+- A single authored image in `content` makes its element or pseudo-element the
+  replaced image box. Classification happens before quote controls and counters
+  resolve; list-item and `display: contents` pseudos retain anonymous inline
+  image children, including flex/grid wrapper fixup and table-display
+  normalization.
 - An empty generated string creates a text node only inside an ordinary inline
   pseudo-element, where its degenerate fragment retains the zero-sized content
   geometry and the pseudo-element's padding and borders. Other pseudo-element
