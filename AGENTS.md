@@ -391,6 +391,9 @@
 - CSS `anchor()` functions participate as typed length leaves inside inset
   calculations, including `calc()`, `min()`, `max()`, nested anchor fallbacks,
   and calculated fallbacks. They remain invalid outside inset properties.
+  A `position-area: span-all` box unions its original containing block with its
+  default anchor, resolves insets and percentages against that area, and uses
+  anchor-centered alignment only for axes whose self-alignment remains normal.
 - Platform input-method sessions dispatch `compositionstart`, per-update
   `compositionupdate` plus non-cancelable `insertCompositionText`
   `beforeinput`/`input` pairs, and `compositionend`. Marked ranges survive
