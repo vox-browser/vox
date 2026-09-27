@@ -176,5 +176,45 @@ pub fn (mut cache WrapperWorldWeakValueCacheMap[K, V]) cache_for(key &K) ?&V {
         self.assertNotIn(("cache_for", "V]"), functions)
 
 
+class ConsolidatedMethodMappingTests(unittest.TestCase):
+    def test_html_element_lifecycle_mappings_require_every_delegate(self) -> None:
+        functions = {
+            ("activation_behavior", "EventTarget"),
+            ("activate_the_hyperlink", "Element"),
+            ("children_changed", "Element"),
+            ("inserted", "Element"),
+            ("removed_from", "Element"),
+            ("attribute_changed", "Element"),
+            ("update_a_style_block_for_dynamic_change", "StyleElementBase"),
+            ("style_element_attribute_changed", "StyleElementBase"),
+            ("contributes_a_script_blocking_style_sheet", "Element"),
+            (
+                "style_element_contributes_a_script_blocking_style_sheet",
+                "StyleElementBase",
+            ),
+        }
+        expected = {
+            ("HTMLAnchorElement", "activation_behavior"),
+            ("HTMLStyleElement", "children_changed"),
+            ("HTMLStyleElement", "inserted"),
+            ("HTMLStyleElement", "removed_from"),
+            ("HTMLStyleElement", "attribute_changed"),
+            (
+                "HTMLStyleElement",
+                "contributes_a_script_blocking_style_sheet",
+            ),
+        }
+
+        for key in expected:
+            mappings = audit.html_audit.CONSOLIDATED_METHOD_MAPPINGS[key]
+            self.assertTrue(all(mapping in functions for mapping in mappings))
+
+        functions.remove(("activate_the_hyperlink", "Element"))
+        mappings = audit.html_audit.CONSOLIDATED_METHOD_MAPPINGS[
+            ("HTMLAnchorElement", "activation_behavior")
+        ]
+        self.assertFalse(all(mapping in functions for mapping in mappings))
+
+
 if __name__ == "__main__":
     unittest.main()

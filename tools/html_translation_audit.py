@@ -324,6 +324,36 @@ for _css_calculation_owner in (
 # Class-qualified implementations that must use a different V owner because
 # the C++ class name is reserved or the translated representation is shared.
 CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None], ...]] = {
+    # V dispatches anchor activation and style-element lifecycle hooks through
+    # the tagged DOM Element/EventTarget records. Keep both the generic hook
+    # and the concrete delegated algorithm visible to the coverage audit.
+    ("HTMLAnchorElement", "activation_behavior"): (
+        ("activation_behavior", "EventTarget"),
+        ("activate_the_hyperlink", "Element"),
+    ),
+    ("HTMLStyleElement", "children_changed"): (
+        ("children_changed", "Element"),
+        ("update_a_style_block_for_dynamic_change", "StyleElementBase"),
+    ),
+    ("HTMLStyleElement", "inserted"): (
+        ("inserted", "Element"),
+        ("update_a_style_block_for_dynamic_change", "StyleElementBase"),
+    ),
+    ("HTMLStyleElement", "removed_from"): (
+        ("removed_from", "Element"),
+        ("update_a_style_block_for_dynamic_change", "StyleElementBase"),
+    ),
+    ("HTMLStyleElement", "attribute_changed"): (
+        ("attribute_changed", "Element"),
+        ("style_element_attribute_changed", "StyleElementBase"),
+    ),
+    ("HTMLStyleElement", "contributes_a_script_blocking_style_sheet"): (
+        ("contributes_a_script_blocking_style_sheet", "Element"),
+        (
+            "style_element_contributes_a_script_blocking_style_sheet",
+            "StyleElementBase",
+        ),
+    ),
     # LocalNavigable is represented by NavigableModel in V. Keep this mapping
     # narrow: only the translated response-download operations live there.
     ("LocalNavigable", "start_download_for_response"): (
