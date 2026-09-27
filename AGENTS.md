@@ -468,6 +468,9 @@
   contributions; `break-word` remains an emergency break for definite line
   widths. Split runs preserve their UTF-16 offsets, font faces, inline edges,
   and float-band placement, and text that already fits avoids grapheme work.
+  Preserved trailing spaces and tabs also provide a soft wrap opportunity for
+  following text without treating ordinary collapsed whitespace as a second
+  float-band break.
 - Text shaping applies computed `word-spacing` to spaces, no-break spaces, and
   collapsed line feeds. It records the exact shaped advance of trailing ASCII
   whitespace, carries that record through fragment merging and intrinsic shape

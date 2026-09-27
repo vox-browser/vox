@@ -128,7 +128,9 @@ min-content sizing, while `break-word` only supplies emergency breaks at a
 definite line width. The textarea UA rule was already current, and the hot path
 returns before segmenting text that fits. The four upstream overflow-wrap
 reftests are pixel-exact, and the layout corpus gains the float and textarea
-cases without regressions.
+cases without regressions. Preserved trailing spaces and tabs now provide the
+upstream soft wrap opportunity for following text; the V path distinguishes
+them from collapsed whitespace so existing float-band placement stays stable.
 Text shaping now applies computed `word-spacing` to spaces, no-break spaces,
 and collapsed line feeds. The exact shaped advance of trailing ASCII whitespace
 is retained through fragment merging and intrinsic shape reuse, so line-end
@@ -756,7 +758,7 @@ largest unmatched modules:
    314 Layout
 
 $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
-Layout corpus: 1014 passed, 75 failed, 1089 total
+Layout corpus: 1015 passed, 74 failed, 1089 total
 
 $ v -old-compiler -enable-globals test .
 Summary for all V _test.v files: 651 passed, 651 total.
