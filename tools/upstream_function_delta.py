@@ -287,7 +287,12 @@ def header_definitions(source: str, raw: str) -> list[Definition]:
                 absolute_start = segment_start + match.start()
                 absolute_parameters = segment_start + match.end() - 1
                 name = match.group("name")
-                if not re.fullmatch(r"[A-Z][A-Z0-9_]*", name):
+                callback_return_false_positive = (
+                    name == "void" and "Function<void" in candidate
+                )
+                if not callback_return_false_positive and not re.fullmatch(
+                    r"[A-Z][A-Z0-9_]*", name
+                ):
                     definitions.append(
                         Definition(
                             source=source,

@@ -46,6 +46,21 @@ public:
         self.assertEqual([(item.owner, item.name) for item in definitions], [("Thing", "value")])
         self.assertEqual(definitions[0].body, "{ return 42; }")
 
+    def test_ignores_function_void_callback_return_false_positive(self) -> None:
+        definitions = delta.header_definitions(
+            "Libraries/LibWeb/DOM/Element.h",
+            """class Element {
+public:
+    virtual GC::Ptr<GC::Function<void()>> take_steps(Badge<Document>)
+    {
+        return nullptr;
+    }
+};
+""",
+        )
+
+        self.assertEqual(definitions, [])
+
     def test_comparison_recognizes_moves_changes_additions_and_removals(self) -> None:
         def definition(source: str, name: str, body: str, line: int = 1) -> delta.Definition:
             return delta.Definition(source, line, "Thing", name, "int ()", body)
