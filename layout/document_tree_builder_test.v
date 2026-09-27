@@ -1471,3 +1471,10 @@ fn test_generated_content_image_set_uses_candidate_resolution() {
 	assert set_width.to_double() == 2
 	assert set_height.to_double() == 2
 }
+
+fn test_svg_animation_elements_do_not_generate_layout_boxes() {
+	document := html.parse_document('<!doctype html><svg><set id="set">ignored</set><animate id="animate">ignored</animate></svg>')
+	root := build_layout_tree(document) or { panic('no SVG layout tree') }
+	assert tree_builder_node_with_id(root, 'set') == none
+	assert tree_builder_node_with_id(root, 'animate') == none
+}

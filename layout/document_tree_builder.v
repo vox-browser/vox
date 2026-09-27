@@ -2523,11 +2523,10 @@ fn create_layout_node_for_svg_element(document &dom.Document, element &dom.Eleme
 	if tag_name == 'foreignObject' {
 		return unsafe { &Node(SVGForeignObjectBox.new(document, element, computed)) }
 	}
-	// SVG animation elements do not override SVGElement::create_layout_node();
-	// they therefore use the ordinary display-type factory. Their initial
-	// display is inline, which matters when script inserts text into one.
+	// SVG animation elements inherit SVGElement::create_layout_node(), which
+	// returns no box. Their text stays in the DOM but is never rendered.
 	if tag_name in ['animate', 'animateMotion', 'animateTransform', 'set'] {
-		return unsafe { &Node(InlineNode.new(document, element.as_node(), computed)) }
+		return none
 	}
 	if tag_name == 'symbol' {
 		if element.is_direct_child_of_svg_use_shadow_tree() {
