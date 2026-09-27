@@ -611,6 +611,16 @@ fn test_display_type_selects_literal_layout_node_subclass() {
 		panic('audio controls timeline layout node')
 	}
 	assert timeline_layout.computed_values().text_align() == .left
+	timeline_track := css.query_selector(audio_shadow.as_node(), '.timeline-track') or {
+		panic('audio controls timeline track')
+	}
+	timeline_track_parent := timeline_track.parent_element() or { panic('timeline track parent') }
+	assert timeline_track_parent == timeline
+	timeline_fill := css.query_selector(audio_shadow.as_node(), '.timeline-fill') or {
+		panic('audio controls timeline fill')
+	}
+	timeline_fill_parent := timeline_fill.parent_element() or { panic('timeline fill parent') }
+	assert timeline_fill_parent == timeline_track
 
 	textarea := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'textarea') or {
 		panic('${err}')

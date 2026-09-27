@@ -13,7 +13,8 @@ const audio_controls_markup = '<style>
 .container { overflow: hidden; text-align: left; }
 .controls { display: flex; flex-direction: column; font-family: sans-serif; font-size: 12px; color: white; user-select: none; }
 .container.audio > .controls { inset: 0; background: rgb(38, 38, 38); justify-content: center; }
-.timeline { z-index: 1; height: 5px; padding: 5px 0; margin: -5px 0; background: rgb(20, 20, 20); background-clip: content-box; flex-shrink: 0; }
+.timeline { z-index: 1; padding: 5px 0; margin: -5px 0; flex-shrink: 0; }
+.timeline-track { position: relative; height: 5px; background: rgb(20, 20, 20); }
 .timeline-fill { height: 100%; background: #9d7cf2; width: 0%; }
 .button-bar { display: flex; align-items: center; padding: 4px 8px; gap: 8px; min-height: 30px; }
 .control-button { background: none; border: none; padding: 0; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
@@ -23,7 +24,7 @@ const audio_controls_markup = '<style>
 .mute-button { margin-left: auto; }
 .mute-button.muted > .icon > .volume-low, .mute-button.muted > .icon > .volume-high, .mute-button.muted > .icon > .speaker { clip-path: url(#muted-clip); }
 .timestamp { min-width: 0; overflow: clip; white-space: nowrap; font-variant-numeric: tabular-nums; }
-</style><div class="container audio"><div class="controls visible"><div class="timeline"><div class="timeline-fill"></div></div><div class="button-bar"><button class="control-button play-pause-button"><svg class="icon play-pause-icon" viewBox="0 0 24 24"><path class="play-path" d="m6 5 13 7-13 7Z"/></svg></button><span class="timestamp">00:00 / 00:00</span><button class="control-button mute-button high muted"><svg class="icon" viewBox="0 0 24 24"><defs><clipPath id="muted-clip"><path d="M3 0h21v21ZM0 0v24h24z"/></clipPath></defs><path class="muted-line" d="m5 5 14 14-1.5 1.5-14-14z"/><path class="volume-high" d="M14 4.08v2.04c2.23.55 4 2.9 4 5.88 0 2.97-1.77 5.33-4 5.88v2.04c3.45-.56 6-3.96 6-7.92s-2.55-7.36-6-7.92Z"/><path class="volume-low" d="M14 7.67v8.66c.35-.25.66-.55.92-.9A5.7 5.7 0 0 0 16 12c0-1.3-.39-2.5-1.08-3.43a4.24 4.24 0 0 0-.92-.9Z"/><path class="speaker" d="M4 9v6h4l4 5V4L8 9Z"/></svg></button></div></div></div>'
+</style><div class="container audio"><div class="controls visible"><div class="timeline"><div class="timeline-track"><div class="timeline-fill"></div></div></div><div class="button-bar"><button class="control-button play-pause-button"><svg class="icon play-pause-icon" viewBox="0 0 24 24"><path class="play-path" d="m6 5 13 7-13 7Z"/></svg></button><span class="timestamp">00:00 / 00:00</span><button class="control-button mute-button high muted"><svg class="icon" viewBox="0 0 24 24"><defs><clipPath id="muted-clip"><path d="M3 0h21v21ZM0 0v24h24z"/></clipPath></defs><path class="muted-line" d="m5 5 14 14-1.5 1.5-14-14z"/><path class="volume-high" d="M14 4.08v2.04c2.23.55 4 2.9 4 5.88 0 2.97-1.77 5.33-4 5.88v2.04c3.45-.56 6-3.96 6-7.92s-2.55-7.36-6-7.92Z"/><path class="volume-low" d="M14 7.67v8.66c.35-.25.66-.55.92-.9A5.7 5.7 0 0 0 16 12c0-1.3-.39-2.5-1.08-3.43a4.24 4.24 0 0 0-.92-.9Z"/><path class="speaker" d="M4 9v6h4l4 5V4L8 9Z"/></svg></button></div></div></div>'
 
 enum SVGReferencedResourceKind {
 	mask
