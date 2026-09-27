@@ -227,6 +227,9 @@
   probes likewise measure inline content without baking in the item's own
   min/max-width; cyclic percentage minimums use the still-indefinite grid area
   during track sizing and resolve against the completed area during item layout.
+  A definite grid-item minimum resolves its border, padding, and margin edges
+  before its first track-sizing contribution, so shrink-to-fit grids include
+  the item's complete outer minimum even when no intrinsic probe ran first.
 - Table column and column-group boxes retain their used grid geometry for
   painting and layout-tree inspection, including spanning columns, empty groups,
   border spacing, and RTL placement. Percentage column widths resolve against
