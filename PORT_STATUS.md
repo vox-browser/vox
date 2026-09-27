@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb`
 
 Translation workspace: `~/code/vox2`
-Audited: 2026-09-26
+Audited: 2026-09-27
 
 ## Upstream delta since the V snapshot
 
@@ -360,7 +360,7 @@ boundary. Contenteditable constrains dragging to its active host, controls use
 their shadow text node, and anchor/focus updates retain hit-test affinity while
 keeping the control's selection model synchronized.
 
-The refreshed current-tree semantic inventory reports 4,184 unmatched C++
+The refreshed current-tree semantic inventory reports 4,175 unmatched C++
 spellings. That is a structural review queue rather than a count of missing behaviors: active V
 implementations often consolidate C++ class hierarchies and overloads under a
 single typed path. Empty/default-return implementations are checked separately,
@@ -725,10 +725,10 @@ upstream .cpp files: 1193
 upstream implementations: 21401
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 5
-reviewed upstream-equivalent trivial implementations: 543
+reviewed upstream-equivalent trivial implementations: 542
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 14239
-  unmatched: 4184
+  candidate-name-match: 14248
+  unmatched: 4175
   language-constructor-or-destructor: 1383
   gc-or-binding-runtime: 655
   consolidated-name-match: 521
@@ -740,7 +740,7 @@ suspicious empty/default-return implementations: 0
 largest unmatched modules:
 
   1682 CSS
-  1196 HTML
+  1185 HTML
    590 DOM
    404 Painting
    314 Layout
@@ -826,6 +826,17 @@ framework-created replacement element to fetch and decode the same URL again.
 Focused tests cover external-memory accounting, touch order, size/count
 eviction, client registration/release by an image element, and retention of a
 live image; the full repository suite passes 651/651.
+
+Decoded image data now also carries the upstream response provenance needed by
+canvas security. Shared resource completion preserves the Fetch response's
+CORS-cross-origin bit, while the compact synchronous image hook derives the
+equivalent opaque no-CORS state from the selected URL and the owning document's
+origin. Drawing such an image permanently clears the 2D context's origin-clean
+flag. `getImageData()`, HTML canvas data-URL serialization, and blob
+serialization then reject with a security error; successful CORS image loads
+stay readable. Focused tests cover provenance on bitmap and animated decoded
+data, shared and direct image loads, draw-time tainting, pixel readback, and
+both HTML serialization paths; the full repository suite remains 651/651.
 
 The viewport content-visibility pass reduces Painting from 136 to 134. Layout
 now caches the committed `PaintableBox` objects whose used
