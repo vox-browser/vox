@@ -462,6 +462,12 @@
 - An empty generated string creates a text node only inside an ordinary inline
   pseudo-element, where it carries the inline fragment. Other pseudo-element
   boxes with `content: ""` have no children and do not report inline content.
+- `overflow-wrap:anywhere`, `overflow-wrap:break-word`, and the legacy
+  `word-break:break-word` split overflowing shaped text only at extended
+  grapheme boundaries. `anywhere` and the legacy value reduce min-content
+  contributions; `break-word` remains an emergency break for definite line
+  widths. Split runs preserve their UTF-16 offsets, font faces, inline edges,
+  and float-band placement, and text that already fits avoids grapheme work.
 - Text shaping applies computed `word-spacing` to spaces, no-break spaces, and
   collapsed line feeds. It records the exact shaped advance of trailing ASCII
   whitespace, carries that record through fragment merging and intrinsic shape

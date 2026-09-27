@@ -119,6 +119,16 @@ the packed replay data and bounds together; finalization refreshes both once.
 Display-list recording scales and positions the cached bounds with ties-to-even
 rounding and retains the fragment rectangle separately, so damage and culling
 use glyph ink without recomputing font bounds during every recording pass.
+Overflow wrapping now follows the upstream shaped-text path.
+`overflow-wrap:anywhere`, `overflow-wrap:break-word`, and legacy
+`word-break:break-word` split only at extended grapheme boundaries, preserve
+UTF-16 offsets and font/edge state across the resulting fragments, and continue
+through changing float-intrusion bands. `anywhere` and the legacy value affect
+min-content sizing, while `break-word` only supplies emergency breaks at a
+definite line width. The textarea UA rule was already current, and the hot path
+returns before segmenting text that fits. The four upstream overflow-wrap
+reftests are pixel-exact, and the layout corpus gains the float and textarea
+cases without regressions.
 Text shaping now applies computed `word-spacing` to spaces, no-break spaces,
 and collapsed line feeds. The exact shaped advance of trailing ASCII whitespace
 is retained through fragment merging and intrinsic shape reuse, so line-end
@@ -746,13 +756,16 @@ largest unmatched modules:
    314 Layout
 
 $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
-Layout corpus: 1012 passed, 77 failed, 1089 total
+Layout corpus: 1014 passed, 75 failed, 1089 total
 
 $ v -old-compiler -enable-globals test .
 Summary for all V _test.v files: 651 passed, 651 total.
 
 $ Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
 Ladybird V smoke check passed
+
+$ ./compare_screenshots.sh <four-overflow-wrap-reftests>
+4 passed, 4 total (all exact zero-pixel diffs)
 
 $ ./compare_screenshots.sh <24-new-cases> inline-node ordered-list \
     text-decorations <5-modified-svg-cases>
