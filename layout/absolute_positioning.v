@@ -191,7 +191,7 @@ fn compute_inline_containing_block_rect(mut state LayoutState, inline_node &Inli
 	mut ancestor := ?&Node(unsafe { &Node(inline_root) })
 	for ancestor != none {
 		current := ancestor or { break }
-		if current == abspos_node {
+		if layout_nodes_same(current, abspos_node) {
 			break
 		}
 		if styled := current.as_node_with_style() {
@@ -199,7 +199,11 @@ fn compute_inline_containing_block_rect(mut state LayoutState, inline_node &Inli
 				root_offset = root_offset.plus(used.offset)
 			}
 		}
-		ancestor = current.parent()
+		if containing_block := current.containing_block() {
+			ancestor = unsafe { &Node(containing_block) }
+		} else {
+			ancestor = none
+		}
 	}
 	return translate_css_pixel_rect(rect, root_offset)
 }

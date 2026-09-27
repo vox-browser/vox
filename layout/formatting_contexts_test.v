@@ -5508,6 +5508,23 @@ fn test_inline_containing_block_spans_atomic_inline_margin_box() {
 	assert overlay.offset.y().to_double() == 10
 }
 
+// An inline containing block's pieces are already relative to the table cell
+// that hosts its inline formatting context. Converting them to the abspos
+// containing block must therefore stop at that same cell instead of adding the
+// cell and table wrapper offsets again.
+fn test_inline_containing_block_inside_table_cell_uses_cell_coordinates() {
+	document := html.parse_document('<!doctype html><style>
+		* { margin:0; padding:0 }
+		#host { position:relative }
+		#overlay { position:absolute; inset:0 }
+	</style><table><tr><td id="cell" style="width:200px"><span id="host">cell text<span id="overlay"></span></span></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	cell := used_for_id(result, 'cell')
+	overlay := used_for_id(result, 'overlay')
+	assert overlay.cumulative_offset().x().raw_value() == cell.cumulative_offset().x().raw_value()
+	assert overlay.cumulative_offset().y().raw_value() == cell.cumulative_offset().y().raw_value()
+}
+
 // Upstream flex-container-with-auto-width-avoids-float-intrusions: the border
 // box of a formatting context root never overlaps a float's margin box, even
 // with an automatic width or a negative margin.
