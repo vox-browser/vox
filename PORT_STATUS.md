@@ -924,16 +924,17 @@ bridge as well, reducing Painting from 142 to 141. Label activation updates
 layout and uses that content-box origin plus the live viewport scroll offset to
 recompute a cloned control click's `offsetX`/`offsetY`, as upstream requires.
 
-The inspector-overlay pass then reduced Painting from 141 to 137. The broken
-HTML image branch now reduces it to 136: `ImagePaintable` outlines the content
-rectangle and centers the live `alt` text with the default 12px font when its
-provider is unavailable. Retained layout trees refresh provider availability,
-selected source, intrinsic dimensions, and alternative text before relayout,
-so a failed image can transition to changed fallback text or decoded content
-without rebuilding the tree. Pending image and image-input requests now retain
-the upstream third provider state: they occupy blank zero-sized fallback space
-while a new, in-flight, or pending request can still produce pixels, and switch
-to alternative text only after failure or when no source exists.
+The inspector-overlay pass then reduced Painting from 141 to 137. The earlier
+broken-image branch reduced it to 136 and established the pending third provider
+state: image and image-input requests occupy blank replaced space while a new,
+in-flight, or pending request can still produce pixels. The current upstream
+representation then replaces the bespoke `ImagePaintable` fallback entirely.
+Known-broken and source-less elements with nonempty `alt` content attach a
+closed UA shadow tree and create an ordinary non-replaced layout node, so CSS
+font inheritance, wrapping, selection, and find-in-page use normal text layout.
+Source, request, and alternative-text changes refresh that shadow content and
+rebuild the node kind when the element moves between fallback text, pending
+blank space, and decoded pixels. The `img-alt-text-font` reftest is pixel-exact.
 
 Decoded bitmap data now exposes its retained external-memory size and tracks
 live clients for static images as well as animations. Shared resource requests

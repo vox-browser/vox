@@ -400,7 +400,11 @@
   zero without touching stale paint properties. Image and image-input requests
   that are newly created, fetching, or awaiting a pending request render as
   blank space instead of flashing alternative text; broken and source-less
-  images retain the fallback text path. Decoded image data tracks live display
+  images expose nonempty alternative text through a closed UA shadow tree and
+  ordinary non-replaced layout, so inherited font, wrapping, selection, and
+  find-in-page behavior use the normal text path. Request-state changes rebuild
+  the representation when an image switches between fallback text, pending
+  blank space, and decoded pixels. Decoded image data tracks live display
   clients for both static and animated bitmaps. GIF streams that omit the LZW
   end-of-information code retain successfully decoded pixels and their natural
   dimensions instead of being rejected as broken. The per-document shared-request
