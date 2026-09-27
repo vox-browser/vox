@@ -50,6 +50,9 @@ fn simplify_calc(node CalcNode, calculation_context CalculationContext) CalcNode
 		CalcTreeCounting {
 			return node
 		}
+		CalcAnchor {
+			return node
+		}
 		CalcSum {
 			mut children := []CalcNode{}
 			for child in node.children {
@@ -113,6 +116,12 @@ fn simplify_calc_with_resolution(node CalcNode, calculation_context CalculationC
 			abstract_element := context.abstract_element or { return node }
 			value := node.style_value.resolve_for_dom_abstract_element(&abstract_element)
 			return calc_canonical_leaf(.number, f64(value))
+		}
+		CalcAnchor {
+			if resolved := resolve_calc_anchor(node, calculation_context, context) {
+				return calc_canonical_leaf(.length, resolved.value)
+			}
+			return node
 		}
 		CalcSum {
 			mut children := []CalcNode{cap: node.children.len}

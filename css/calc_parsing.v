@@ -21,6 +21,7 @@ type CalcNode = CalcNumeric
 	| CalcInvert
 	| CalcFunction
 	| CalcRandom
+	| CalcAnchor
 	| CalcTreeCounting
 
 // The kind of a numeric leaf, mirroring the C++ NumericValue variant.
@@ -87,6 +88,12 @@ struct CalcRandom {
 // value resolution.
 struct CalcTreeCounting {
 	style_value TreeCountingFunctionStyleValue
+}
+
+// anchor() is a non-math calculation leaf whose length is supplied by layout
+// after the anchor box and the inset axis are known.
+struct CalcAnchor {
+	style_value AnchorStyleValue
 }
 
 fn calc_function_is_supported(name string) bool {
@@ -574,6 +581,16 @@ fn (mut parser Parser) convert_calc_leaf(component_value ComponentValue, allow_t
 	}
 	if component_value.is_function() {
 		name := to_ascii_lowercase(component_value.function().name)
+		if name == 'anchor' {
+			mut anchor_tokens := ComponentValueStream.new([component_value])
+			anchor := parser.parse_anchor(mut anchor_tokens) or { return none }
+			if anchor !is AnchorStyleValue {
+				return none
+			}
+			return CalcNode(CalcAnchor{
+				style_value: anchor as AnchorStyleValue
+			})
+		}
 		if name in ['sibling-count', 'sibling-index'] {
 			mut tree_parser := Parser{}
 			if !allow_tree_counting_functions {
@@ -670,6 +687,9 @@ fn apply_calculation_context_to_calc_node(node CalcNode, context CalculationCont
 		CalcTreeCounting {
 			return node
 		}
+		CalcAnchor {
+			return node
+		}
 		CalcSum {
 			mut children := []CalcNode{cap: node.children.len}
 			for child in node.children {
@@ -754,6 +774,9 @@ fn (node CalcNode) numeric_type() ?NumericType {
 		}
 		CalcTreeCounting {
 			return NumericType.new()
+		}
+		CalcAnchor {
+			return NumericType.with_type(.length, 1)
 		}
 		CalcSum {
 			mut result := node.children[0].numeric_type() or { return none }
@@ -889,6 +912,9 @@ fn serialize_a_calculation_tree(node CalcNode, emit_outer_parentheses bool) stri
 			return node.serialize_leaf()
 		}
 		CalcTreeCounting {
+			return node.style_value.serialize(.normal)
+		}
+		CalcAnchor {
 			return node.style_value.serialize(.normal)
 		}
 

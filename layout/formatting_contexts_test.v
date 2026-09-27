@@ -3343,6 +3343,35 @@ fn test_css_anchor_positioning_resolves_names_sides_and_fallbacks() {
 	assert chain.offset.y().to_double() == 33
 }
 
+fn test_css_anchor_positioning_resolves_anchor_functions_in_calculations() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#container { position:relative; width:400px; height:200px }
+		#a1 { anchor-name:--a1; position:absolute; left:40px; top:30px; width:80px; height:50px }
+		#a2 { anchor-name:--a2; position:absolute; left:180px; top:100px; width:40px; height:20px }
+		.target { position:absolute; width:10px; height:10px }
+		#sum { position-anchor:--a1; left:calc(anchor(right) + 10px); top:calc(anchor(bottom) + 5px) }
+		#compare { left:max(anchor(--a1 left), anchor(--a2 left)); top:min(anchor(--a1 bottom), anchor(--a2 top)) }
+		#fallback { left:calc(anchor(--missing right, anchor(--a1 center)) + 3px); top:calc(anchor(--missing bottom, 17px) + 2px) }
+		#calc-fallback { left:anchor(--missing right, calc(anchor(--a2 left) + 7px)); top:anchor(--missing bottom, calc(anchor(--a1 bottom) + 6px)) }
+	</style><div id="container"><div id="a1"></div><div id="a2"></div>
+		<div id="sum" class="target"></div><div id="compare" class="target"></div>
+		<div id="fallback" class="target"></div><div id="calc-fallback" class="target"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	sum := used_for_id(result, 'sum')
+	compare := used_for_id(result, 'compare')
+	fallback := used_for_id(result, 'fallback')
+	calc_fallback := used_for_id(result, 'calc-fallback')
+	assert sum.offset.x().to_double() == 130
+	assert sum.offset.y().to_double() == 85
+	assert compare.offset.x().to_double() == 180
+	assert compare.offset.y().to_double() == 80
+	assert fallback.offset.x().to_double() == 83
+	assert fallback.offset.y().to_double() == 19
+	assert calc_fallback.offset.x().to_double() == 187
+	assert calc_fallback.offset.y().to_double() == 86
+}
+
 fn test_css_anchor_positioning_skips_ineligible_later_named_elements() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }

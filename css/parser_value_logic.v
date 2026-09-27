@@ -10163,11 +10163,29 @@ fn (mut parser Parser) parse_border_image_width_value(mut tokens ComponentValueS
 }
 
 // https://drafts.csswg.org/css-anchor-position-1/#funcdef-anchor
+fn anchor_allowed_for_property(property_id PropertyID) bool {
+	return property_id in [.inset, .top, .right, .bottom, .left, .inset_block, .inset_block_start,
+		.inset_block_end, .inset_inline, .inset_inline_start, .inset_inline_end]
+}
+
 fn (mut parser Parser) parse_anchor(mut tokens ComponentValueStream) ?StyleValue {
 	mut transaction := tokens.clone()
 	transaction.consume_whitespace()
 	component_value := transaction.consume() or { return none }
 	if !component_value.is_function_named('anchor') {
+		return none
+	}
+	mut property_context := ?PropertyID(none)
+	for value_context in parser.value_context {
+		if value_context is PropertyID {
+			property_context = value_context
+		}
+	}
+	if property_id := property_context {
+		if !anchor_allowed_for_property(property_id) {
+			return none
+		}
+	} else {
 		return none
 	}
 	parser.push_temporary_value_parsing_context(ValueParsingContext(FunctionContext{

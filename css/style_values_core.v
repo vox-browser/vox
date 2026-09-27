@@ -6502,7 +6502,7 @@ fn reify_calc_node(node CalcNode) !CSSNumericValue {
 				}
 			}
 		}
-		CalcRandom, CalcTreeCounting {
+		CalcAnchor, CalcRandom, CalcTreeCounting {
 			return error('Unable to reify this math function.')
 		}
 	}

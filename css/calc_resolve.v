@@ -28,6 +28,9 @@ fn resolve_calc_node(node CalcNode, calculation_context CalculationContext, ctx 
 				type_: NumericType.new()
 			}
 		}
+		CalcAnchor {
+			return resolve_calc_anchor(node, calculation_context, ctx)
+		}
 		CalcSum {
 			mut accumulated := resolve_calc_node(node.children[0], calculation_context, ctx) or {
 				return none
@@ -74,6 +77,42 @@ fn resolve_calc_node(node CalcNode, calculation_context CalculationContext, ctx 
 		}
 	}
 	return none
+}
+
+fn resolve_calc_anchor(node CalcAnchor, calculation_context CalculationContext, ctx CalculationResolutionContext) ?CalcResult {
+	resolver := ctx.anchor_resolver or { return none }
+	if resolved := resolver(ctx.anchor_resolver_context, node.style_value) {
+		return CalcResult{
+			value: resolved.to_double()
+			type_: NumericType.with_type(.length, 1)
+		}
+	}
+
+	fallback := node.style_value.fallback_value() or { return none }
+	return match fallback {
+		AnchorStyleValue {
+			resolve_calc_anchor(CalcAnchor{
+				style_value: fallback
+			}, calculation_context, ctx)
+		}
+		LengthStyleValue {
+			CalcResult{
+				value: fallback.length().to_px_without_rounding(ctx.length_resolution_context)
+				type_: NumericType.with_type(.length, 1)
+			}
+		}
+		PercentageStyleValue {
+			resolve_calc_percentage_against_basis(fallback.percentage().value(), ctx)
+		}
+		CalculatedStyleValue {
+			if fallback.node.len != 1 {
+				none
+			} else {
+				resolve_calc_node(fallback.node[0], fallback.calculation_context, ctx)
+			}
+		}
+		else { none }
+	}
 }
 
 // A key identifying a type's canonical unit, if it is a single resolvable unit (or a

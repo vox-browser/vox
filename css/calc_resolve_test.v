@@ -33,6 +33,18 @@ fn resolved_degrees(text string) ?f64 {
 	return angle.to_degrees()
 }
 
+fn test_anchor_functions_are_typed_length_leaves_in_calculations() {
+	parsed := parse_css_value_logic(.top, 'calc(anchor(--card bottom) + 10px)') or {
+		panic('anchor() did not parse in calc()')
+	}
+	assert parsed is CalculatedStyleValue
+	calculated := parsed as CalculatedStyleValue
+	assert calculated.serialize(.normal) == 'calc(10px + anchor(--card bottom))'
+	assert calculated.numeric_type()?.matches_length(.length)
+	assert calculated.resolve_length(CalculationResolutionContext{}) == none
+	assert parse_css_value_logic(.width, 'calc(anchor(--card bottom) + 10px)') == none
+}
+
 fn approx(a f64, b f64) bool {
 	d := a - b
 	return (if d < 0 {

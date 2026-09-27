@@ -7,16 +7,6 @@ module layout
 import css
 import dom
 
-fn anchor_style_value_for_inset(computed &css.ComputedValues, property_id css.PropertyID) ?css.AnchorStyleValue {
-	value := unsafe { &css.ComputedProperties(computed) }.typed_property_value(property_id) or {
-		return none
-	}
-	if value is css.AnchorStyleValue {
-		return value
-	}
-	return none
-}
-
 struct AnchorElementLookupContext {
 	box              &Node = unsafe { nil }
 	containing_block &Box = unsafe { nil }
@@ -175,6 +165,10 @@ fn resolve_anchor_for_inset(state &LayoutState, box &Node, containing_box &Node,
 	if fallback is css.AnchorStyleValue {
 		return resolve_anchor_for_inset(state, box, containing_box, containing_state, containing_extent, fallback, is_from_end, is_horizontal_axis)
 	}
+	if fallback is css.CalculatedStyleValue {
+		return resolve_calculated_anchor_inset(state, box, containing_box, containing_state,
+			containing_extent, fallback, is_from_end, is_horizontal_axis)
+	}
 	return resolve_layout_size(box, css.Size.from_style_value(fallback), containing_extent)
 }
 
@@ -215,6 +209,64 @@ fn resolved_inset(node &Node, property_id css.PropertyID, basis CSSPixels) ?CSSP
 	return resolve_layout_size(node, node.computed_values().size_value(property_id), basis)
 }
 
+struct AnchorInsetCalculationContext {
+	state              &LayoutState = unsafe { nil }
+	box                &Node        = unsafe { nil }
+	containing_box     &Node        = unsafe { nil }
+	containing_state   &UsedValues  = unsafe { nil }
+	containing_extent  CSSPixels
+	is_from_end        bool
+	is_horizontal_axis bool
+}
+
+fn resolve_anchor_for_calculation(context_pointer voidptr, anchor css.AnchorStyleValue) ?css.CSSPixels {
+	if context_pointer == unsafe { nil } {
+		return none
+	}
+	context := unsafe { &AnchorInsetCalculationContext(context_pointer) }
+	return resolve_anchor_for_inset(context.state, context.box, context.containing_box,
+		context.containing_state, context.containing_extent, anchor, context.is_from_end,
+		context.is_horizontal_axis)
+}
+
+fn resolve_calculated_anchor_inset(state &LayoutState, box &Node, containing_box &Node, containing_state &UsedValues, basis CSSPixels, value css.CalculatedStyleValue, is_from_end bool, is_horizontal_axis bool) ?CSSPixels {
+	context := AnchorInsetCalculationContext{
+		state: state
+		box: box
+		containing_box: containing_box
+		containing_state: containing_state
+		containing_extent: basis
+		is_from_end: is_from_end
+		is_horizontal_axis: is_horizontal_axis
+	}
+	length_context := layout_length_resolution_context(box)
+	resolved := value.resolve_length(css.CalculationResolutionContext{
+		percentage_basis: css.Length.make_css_px(basis)
+		length_resolution_context: length_context
+		anchor_resolver: resolve_anchor_for_calculation
+		anchor_resolver_context: voidptr(&context)
+	}) or { return none }
+	return CSSPixels.truncated_value_for(resolved.to_px_without_rounding(length_context))
+}
+
+fn resolved_inset_with_anchors(state &LayoutState, box &Node, containing_box &Node, containing_state &UsedValues, computed &css.ComputedValues, property_id css.PropertyID, basis CSSPixels, is_from_end bool, is_horizontal_axis bool) ?CSSPixels {
+	value := unsafe { &css.ComputedProperties(computed) }.typed_property_value(property_id) or {
+		return resolved_inset(box, property_id, basis)
+	}
+	if value is css.AnchorStyleValue {
+		return resolve_anchor_for_inset(state, box, containing_box, containing_state, basis,
+			value, is_from_end, is_horizontal_axis)
+	}
+	if value is css.CalculatedStyleValue {
+		return resolve_calculated_anchor_inset(state, box, containing_box, containing_state,
+			basis, value, is_from_end, is_horizontal_axis)
+	}
+	if property_is_auto(computed, property_id) {
+		return none
+	}
+	return resolved_inset(box, property_id, basis)
+}
+
 fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 	containing_box := box.containing_block() or { return }
 	containing_styled := unsafe { &Node(containing_box) }.as_node_with_style() or { return }
@@ -246,26 +298,14 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 	containing_height := containing_rect.height
 	resolve_box_model_edges(computed, mut box_state, containing_width.to_double())
 
-	left := if anchor := anchor_style_value_for_inset(computed, .left) {
-		resolve_anchor_for_inset(state, box, containing_box, containing_state, containing_width, anchor, false, true)
-	} else {
-		resolved_inset(box, .left, containing_width)
-	}
-	right := if anchor := anchor_style_value_for_inset(computed, .right) {
-		resolve_anchor_for_inset(state, box, containing_box, containing_state, containing_width, anchor, true, true)
-	} else {
-		resolved_inset(box, .right, containing_width)
-	}
-	top := if anchor := anchor_style_value_for_inset(computed, .top) {
-		resolve_anchor_for_inset(state, box, containing_box, containing_state, containing_height, anchor, false, false)
-	} else {
-		resolved_inset(box, .top, containing_height)
-	}
-	bottom := if anchor := anchor_style_value_for_inset(computed, .bottom) {
-		resolve_anchor_for_inset(state, box, containing_box, containing_state, containing_height, anchor, true, false)
-	} else {
-		resolved_inset(box, .bottom, containing_height)
-	}
+	left := resolved_inset_with_anchors(state, box, containing_box, containing_state,
+		computed, .left, containing_width, false, true)
+	right := resolved_inset_with_anchors(state, box, containing_box, containing_state,
+		computed, .right, containing_width, true, true)
+	top := resolved_inset_with_anchors(state, box, containing_box, containing_state,
+		computed, .top, containing_height, false, false)
+	bottom := resolved_inset_with_anchors(state, box, containing_box, containing_state,
+		computed, .bottom, containing_height, true, false)
 	mut forced_width := resolve_layout_content_size(box, computed.size_value(.width),
 		containing_width, box_state, true)
 	mut forced_height := resolve_layout_content_size(box, computed.size_value(.height),

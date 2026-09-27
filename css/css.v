@@ -2558,11 +2558,15 @@ pub fn (loa LengthOrAuto) to_px_or_zero(context LengthResolutionContext) CSSPixe
 // --- Calculated style values ---
 pub type CalculationPercentageBasis = Angle | Frequency | Length | Number | Time
 
+pub type AnchorResolverCallback = fn (voidptr, AnchorStyleValue) ?CSSPixels
+
 pub struct CalculationResolutionContext {
 pub mut:
 	percentage_basis          ?CalculationPercentageBasis
 	length_resolution_context LengthResolutionContext
 	abstract_element          ?dom.AbstractElement
+	anchor_resolver           ?AnchorResolverCallback
+	anchor_resolver_context   voidptr
 }
 
 pub fn (context CalculationResolutionContext) percentage_basis_angle() ?Angle {
