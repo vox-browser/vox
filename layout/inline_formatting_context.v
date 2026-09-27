@@ -617,13 +617,7 @@ fn truncate_line_for_block_ellipsis(mut state LayoutState, mut line LineBox,
 	return retained
 }
 
-fn block_ellipsis_font(style_source &Node, ellipsis string) &platform.Font {
-	units := utf16_code_units_for_line_box(ellipsis)
-	if units.len == 0 {
-		return style_source.first_available_font()
-	}
-	code_point := code_point_at_utf16(units, 0)
-	cascade := style_source.font_list()
+fn block_ellipsis_font_for_code_point(cascade &css.FontCascadeList, code_point u32) &platform.Font {
 	for index, entry in cascade.fonts {
 		mut covers_code_point := entry.unicode_ranges.len == 0
 		for range_ in entry.unicode_ranges {
@@ -644,13 +638,33 @@ fn block_ellipsis_font(style_source &Node, ellipsis string) &platform.Font {
 		}
 	}
 	if cascade.last_resort_font != unsafe { nil } {
-		font := text_node_chunk_platform_font(*cascade.last_resort_font)
+		mut font := text_node_chunk_platform_font(*cascade.last_resort_font)
+		// FontCascadeList may use the same concrete face as both an authored
+		// entry and its last resort. Preserve that handle identity just like the
+		// text chunker so adjacent literal text and a block ellipsis remain one
+		// replayable shaped run even when the face has no glyph for the ellipsis.
+		for entry in cascade.fonts {
+			candidate := text_node_chunk_platform_font(entry.font)
+			if candidate.has_same_identity(font) {
+				font = candidate
+				break
+			}
+		}
 		if cascade.fallback_is_invisible_for_code_point_through(code_point, cascade.fonts.len) {
 			return text_node_chunk_invisible_font(font)
 		}
 		return font
 	}
-	return style_source.first_available_font()
+	return text_node_chunk_platform_font(cascade.fonts[0].font)
+}
+
+fn block_ellipsis_font(style_source &Node, ellipsis string) &platform.Font {
+	units := utf16_code_units_for_line_box(ellipsis)
+	if units.len == 0 {
+		return style_source.first_available_font()
+	}
+	return block_ellipsis_font_for_code_point(style_source.font_list(), code_point_at_utf16(units,
+		0))
 }
 
 fn apply_block_ellipsis(containing_block &BlockContainer, mut used UsedValues,
@@ -676,13 +690,6 @@ fn apply_block_ellipsis(containing_block &BlockContainer, mut used UsedValues,
 	letter_spacing := resolved_text_spacing_for_node(style_source, .letter_spacing)
 	word_spacing := resolved_text_spacing_for_node(style_source, .word_spacing)
 	run := platform.shape_text_with_spacing(0, f32(letter_spacing.to_double()), f32(word_spacing.to_double()), ellipsis, font, .common).glyph_run
-	units := utf16_code_units_for_line_box(ellipsis)
-	first_code_point := if units.len > 0 { code_point_at_utf16(units, 0) } else { u32(0) }
-	retained_run := if first_code_point != 0 && font.contains_glyph(first_code_point) {
-		?&platform.GlyphRun(run)
-	} else {
-		?&platform.GlyphRun(none)
-	}
 	ellipsis_width := CSSPixels.nearest_value_for(f64(run.width()))
 	available_width := if line.original_available_width().is_definite() {
 		line.original_available_width().to_px_or_zero()
@@ -763,7 +770,7 @@ fn apply_block_ellipsis(containing_block &BlockContainer, mut used UsedValues,
 			boundary.start_ + boundary.length_in_code_units_
 		}
 	}
-	line.fragments_ << LineBoxFragment.new_block_ellipsis(ellipsis_layout_node, style_source, ellipsis, ellipsis_start, ellipsis_offset, block_offset, ellipsis_width, block_length, baseline, line.direction_, line.writing_mode_, retained_run)
+	line.fragments_ << LineBoxFragment.new_block_ellipsis(ellipsis_layout_node, style_source, ellipsis, ellipsis_start, ellipsis_offset, block_offset, ellipsis_width, block_length, baseline, line.direction_, line.writing_mode_, ?&platform.GlyphRun(run))
 	line.inline_length_ = retained.plus(ellipsis_width)
 }
 

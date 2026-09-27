@@ -192,3 +192,27 @@ fn test_block_ellipsis_uses_the_same_paint_run_as_literal_text() {
 	assert custom_run.glyph_indices() == literal_custom_run.glyph_indices()
 	assert custom_run.glyph_positions() == literal_custom_run.glyph_positions()
 }
+
+fn test_block_ellipsis_reuses_a_matching_last_resort_face() {
+	typeface := &css.PlatformTypeface{
+		family_name: 'Authored alias'
+		source_path: 'pixel_tests/sites/uclibc-ng/uclibc-ng.org/fonts/glyphicons-halflings-regular.ttf'
+	}
+	last_resort_typeface := &css.PlatformTypeface{
+		family_name: 'Last resort alias'
+		source_path: typeface.source_path
+	}
+	mut cascade := css.FontCascadeList.create()
+	cascade.add(css.PlatformFont{
+		typeface: typeface
+		point_size: 20
+	}, []css.UnicodeRange{})
+	cascade.set_last_resort_font(css.PlatformFont{
+		typeface: last_resort_typeface
+		point_size: 20
+	})
+
+	selected := block_ellipsis_font_for_code_point(cascade, 0x2026)
+	assert !selected.contains_glyph(0x2026)
+	assert selected.family == 'Authored alias'
+}
