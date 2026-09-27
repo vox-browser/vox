@@ -318,6 +318,9 @@
   SVG animation elements inherit the base element's no-layout-node behavior;
   inserted text remains in the DOM without turning `<set>` or `<animate>` into
   an inline layout box.
+- Non-collapsible text whose flat-tree style parent has `display: contents`
+  keeps an anonymous inline style wrapper while the parent itself is unboxed,
+  including slotted text that then participates in flex-item blockification.
 - Cross-parent `moveBefore()` operations discard cached inherited language for
   the complete shadow-including moved subtree. Subsequent `:lang()` and `:dir()`
   matching and inherited computed styles therefore reflect the new parent;
