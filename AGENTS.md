@@ -322,6 +322,10 @@
   rendering context until a nested SVG root establishes it again. SVG viewport
   children bypass HTML anonymous-block fixup regardless of the root's outer
   display, keeping text and `foreignObject` siblings directly attached.
+  Mask, clip, and pattern subtrees attached beneath translated SVG references
+  retain the current SVG viewport as their coordinate containing block, so the
+  resource begins at its own user-space origin rather than inheriting the
+  reference's offset.
 - Non-collapsible text whose flat-tree style parent has `display: contents`
   keeps an anonymous inline style wrapper while the parent itself is unboxed,
   including slotted text that then participates in flex-item blockification.
