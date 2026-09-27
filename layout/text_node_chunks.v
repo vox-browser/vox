@@ -24,6 +24,11 @@ pub:
 	text_type            platform.GlyphRunTextType
 }
 
+enum TextDirectionMode {
+	per_code_point
+	unidirectional_left_to_right
+}
+
 @[heap]
 pub struct TextNodeChunkIterator {
 	text_node              &TextNode = unsafe { nil }
@@ -35,6 +40,7 @@ pub struct TextNodeChunkIterator {
 	grapheme_boundaries    []int
 	line_boundaries        []bool
 	word_break             css.WordBreak
+	text_direction_mode    TextDirectionMode
 	font                   &platform.Font = unsafe { nil }
 mut:
 	font_cascade_list      &css.FontCascadeList = unsafe { nil }
@@ -94,6 +100,11 @@ fn (mut iterator TextNodeChunkIterator) install_font_cascade(font_cascade &css.F
 }
 
 pub fn TextNodeChunkIterator.new(text_node &TextNode, should_wrap_lines bool, should_respect_linebreaks bool) &TextNodeChunkIterator {
+	return TextNodeChunkIterator.new_with_direction(text_node, should_wrap_lines,
+		should_respect_linebreaks, .per_code_point)
+}
+
+fn TextNodeChunkIterator.new_with_direction(text_node &TextNode, should_wrap_lines bool, should_respect_linebreaks bool, text_direction_mode TextDirectionMode) &TextNodeChunkIterator {
 	view := text_node.text_for_rendering()
 	mut code_units := utf16_code_units_for_line_box(view)
 	mut mutable_text_node := unsafe { &TextNode(text_node) }
@@ -112,11 +123,20 @@ pub fn TextNodeChunkIterator.new(text_node &TextNode, should_wrap_lines bool, sh
 		grapheme_boundaries: text_grapheme_boundaries(view)
 		line_boundaries: text_line_boundaries_from_segmenter(text_node.line_segmenter(), code_units.len)
 		word_break: text_node.Node.computed_values().word_break()
+		text_direction_mode: text_direction_mode
 		font: text_node.font_for_rendering()
 		selected_fonts: map[string]&platform.Font{}
 	}
 	iterator.install_font_cascade(font_cascade)
 	return iterator
+}
+
+fn (iterator &TextNodeChunkIterator) current_text_type() platform.GlyphRunTextType {
+	if iterator.text_direction_mode == .unidirectional_left_to_right {
+		return .ltr
+	}
+	return text_type_for_code_point(code_point_at_utf16(iterator.code_units,
+		iterator.current_index))
 }
 
 pub fn (iterator &TextNodeChunkIterator) should_wrap_lines() bool {
@@ -281,7 +301,7 @@ fn (mut iterator TextNodeChunkIterator) next_without_peek() ?TextNodeChunk {
 	} else {
 		iterator.font_for_code_point(code_point)
 	}
-	text_type := text_type_for_code_point(code_point)
+	text_type := iterator.current_text_type()
 	mut broken_on_tab := false
 
 	for iterator.current_index < iterator.code_units.len {
@@ -330,7 +350,7 @@ fn (mut iterator TextNodeChunkIterator) next_without_peek() ?TextNodeChunk {
 		}
 
 		if iterator.should_wrap_lines_ {
-			if text_type != text_type_for_code_point(code_point) {
+			if text_type != iterator.current_text_type() {
 				if chunk := iterator.try_commit_chunk(start_of_chunk, iterator.current_index, false, broken_on_tab, can_break_at_current_position, font, text_type) {
 					return chunk
 				}

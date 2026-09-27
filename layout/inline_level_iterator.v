@@ -5,6 +5,7 @@
 module layout
 
 import css
+import dom
 import math
 import platform
 
@@ -283,6 +284,7 @@ mut:
 	available_space                AvailableSpace
 	parent_block_context           ?&BlockFormattingContext
 	text_node_context              ?&InlineTextNodeContext
+	is_unidirectional_left_to_right bool
 	extra_leading_metrics          ?InlineExtraBoxMetrics
 	extra_trailing_metrics         ?InlineExtraBoxMetrics
 	box_model_node_stack           []&NodeWithStyleAndBoxModelMetrics
@@ -302,9 +304,76 @@ pub fn InlineLevelIterator.new(mut state LayoutState, containing_block &BlockCon
 		available_space: available_space
 		parent_block_context: parent_block_context
 	}
+	iterator.is_unidirectional_left_to_right = iterator.compute_is_unidirectional_left_to_right()
 	iterator.skip_to_next()
 	iterator.generate_all_items()
 	return iterator
+}
+
+fn text_may_require_bidi_processing(text_node &TextNode) bool {
+	text := text_node.text_for_rendering()
+	if text.is_ascii() {
+		return false
+	}
+	for code_point in text.runes() {
+		if dom.unicode_bidirectional_class(u32(code_point)) in [
+			.right_to_left,
+			.right_to_left_arabic,
+			.right_to_left_embedding,
+			.right_to_left_isolate,
+			.right_to_left_override,
+			.left_to_right_embedding,
+			.left_to_right_isolate,
+			.left_to_right_override,
+			.first_strong_isolate,
+			.pop_directional_format,
+			.pop_directional_isolate,
+		] {
+			return true
+		}
+	}
+	return false
+}
+
+// Writing Modes' bidi paragraph classification. Keeping a provably LTR
+// paragraph unidirectional prevents neutral punctuation from splitting shaping
+// runs while retaining per-code-point direction for mixed and RTL content.
+fn (mut iterator InlineLevelIterator) compute_is_unidirectional_left_to_right() bool {
+	if iterator.containing_block.computed_values().direction() == .rtl {
+		return false
+	}
+	mut node := unsafe { &Node(iterator.containing_block) }.first_child()
+	for node != none {
+		current := node or { break }
+		if styled := current.as_node_with_style() {
+			if styled.computed_values().direction() == .rtl
+				|| styled.computed_values().unicode_bidi() != .normal {
+				return false
+			}
+		} else if text_node := current.as_text_node() {
+			if text_may_require_bidi_processing(text_node) {
+				return false
+			}
+		}
+
+		mut next := iterator.next_inline_node_in_pre_order(current,
+			unsafe { &Node(iterator.containing_block) })
+		for {
+			candidate := next or { break }
+			if candidate.is_svg_mask_box() {
+				next = candidate.next_sibling()
+				continue
+			}
+			if candidate.is_inline() || candidate.is_out_of_flow()
+				|| is_inline_flow_interrupting_block(candidate) {
+				break
+			}
+			next = iterator.next_inline_node_in_pre_order(candidate,
+				unsafe { &Node(iterator.containing_block) })
+		}
+		node = next
+	}
+	return true
 }
 
 fn (mut iterator InlineLevelIterator) generate_all_items() {
@@ -718,7 +787,12 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 		}
 	}
 	if chunks.len == 0 {
-		mut chunk_iterator := TextNodeChunkIterator.new(text_node, should_wrap_lines, should_respect_linebreaks)
+		mut chunk_iterator := TextNodeChunkIterator.new_with_direction(text_node, should_wrap_lines,
+			should_respect_linebreaks, if iterator.is_unidirectional_left_to_right {
+				TextDirectionMode.unidirectional_left_to_right
+			} else {
+				TextDirectionMode.per_code_point
+			})
 		for {
 			chunk := chunk_iterator.next() or { break }
 			chunks << chunk

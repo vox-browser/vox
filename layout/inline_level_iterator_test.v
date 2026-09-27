@@ -94,3 +94,31 @@ fn test_inline_level_iterator_emits_forced_break() {
 	_, mut iterator := make_inline_iterator(document, container, 300)
 	assert (iterator.next() or { panic('break') }).type_ == .forced_break
 }
+
+fn test_inline_level_iterator_preserves_ltr_shaping_across_neutral_punctuation() {
+	document := dom.Document.create(dom.url_about_blank())
+	style := inline_iterator_test_style(document, 'div',
+		'display:block; text-align:justify; font:20px SerenitySans')
+	mut container := BlockContainer.new(document, none, style)
+	container.set_children_are_inline(true)
+	dom_text := document.create_text_node("'full-justified'")
+	text_node := TextNode.new(document, dom_text.as_node(), "'full-justified'")
+	container.append_child(unsafe { &Node(text_node) })
+	_, mut iterator := make_inline_iterator(document, container, 300)
+	assert iterator.is_unidirectional_left_to_right
+	first := iterator.next() or { panic('first punctuation run') }
+	second := iterator.next() or { panic('second punctuation run') }
+	assert first.length_in_node == 6
+	assert second.length_in_node == 10
+	assert (first.glyph_run or { panic('first glyph run') }).text_type() == .ltr
+	assert (second.glyph_run or { panic('second glyph run') }).text_type() == .ltr
+	assert iterator.next() == none
+
+	mut mixed_container := BlockContainer.new(document, none, style)
+	mixed_container.set_children_are_inline(true)
+	mixed_dom_text := document.create_text_node('א-a')
+	mixed_text := TextNode.new(document, mixed_dom_text.as_node(), 'א-a')
+	mixed_container.append_child(unsafe { &Node(mixed_text) })
+	_, mixed_iterator := make_inline_iterator(document, mixed_container, 300)
+	assert !mixed_iterator.is_unidirectional_left_to_right
+}
