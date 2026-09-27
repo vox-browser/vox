@@ -495,6 +495,9 @@
   the same shift. Direct text ignores the block container's own alignment.
   Forced-break nodes never enter the inline box-model stack, so borders and
   padding on a styled `<br>` cannot become leading metrics on the next line.
+  Inline containing-block rectangles are converted through the containing-
+  block chain rather than layout-tree parents, avoiding duplicate table row and
+  row-group offsets for positioned descendants hosted inside table cells.
 - Inline formatting contexts publish their final inline-end insertion position
   after forced breaks, alignment, RTL direction, and writing-mode conversion.
   Originally-inline absolutely positioned descendants routed through an

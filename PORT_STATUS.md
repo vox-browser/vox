@@ -398,6 +398,9 @@ and the refreshed audit has no suspicious trivial bodies awaiting review.
 The current Layout refresh also follows shadow hosts while locating a positioned
 inline containing block. Absolutely positioned shadow-tree descendants therefore
 use their inline host instead of falling back to the viewport.
+Inline containing-block rectangles are translated to the outer positioned box
+through containing blocks rather than layout-tree parents, so internal table
+row and row-group offsets are not counted twice for inline hosts inside cells.
 CSS Scroll Snap now uses the translated candidate collection and selection
 algorithms for element and viewport scrollers. It resolves physical and logical
 axes, scroll margin and padding, oversized covering ranges, proximity and
