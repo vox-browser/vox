@@ -463,7 +463,8 @@
   otherwise stay centered in their line height. The marker line height floors
   only a list item's automatic block size, so a specified height wins over it.
 - An empty generated string creates a text node only inside an ordinary inline
-  pseudo-element, where it carries the inline fragment. Other pseudo-element
+  pseudo-element, where its degenerate fragment retains the zero-sized content
+  geometry and the pseudo-element's padding and borders. Other pseudo-element
   boxes with `content: ""` have no children and do not report inline content.
 - `overflow-wrap:anywhere`, `overflow-wrap:break-word`, and the legacy
   `word-break:break-word` split overflowing shaped text only at extended
