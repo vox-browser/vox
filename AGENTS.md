@@ -185,7 +185,8 @@
   including aspect-ratio sizing and post-flexing content heights. Non-flex/grid
   buttons derive that basis from their clamped used content height, so border-box
   minimums center their contents without making content-sized intrinsic heights
-  spuriously definite. It also honors
+  spuriously definite. Empty anonymous button content and whitespace-only flex
+  runs do not become flex items or acquire synthetic used geometry. It also honors
   flexible-grid intrinsic minimums and applies `min-height` while stretching
   lines. Once an auto-height row flex container has resolved its line cross
   sizes, it relays each item's used height as a definite basis to percentage-
