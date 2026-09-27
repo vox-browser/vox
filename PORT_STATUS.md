@@ -427,7 +427,9 @@ List items that establish an independent formatting context lay out their own
 markers, outside markers align with the list item's first baseline, and the
 marker line height floors only automatic list item heights. Marker symbols,
 suffixes, list-style images, and authored `::marker` content now flow through
-generated inline children of the marker box. Inside markers participate in the
+generated inline children of the marker box. Their own run discards a stale
+zero-width intrinsic probe before measuring that content, including for floated
+list items containing shrink-to-fit inline fieldsets. Inside markers participate in the
 principal inline run, including through a trailing anonymous wrapper after
 block content, and use the bundled layout-test symbol face. Live box-presence
 changes now rebuild layout; a hidden list item drops its box and invalidates
@@ -868,7 +870,7 @@ largest unmatched modules:
    314 Layout
 
 $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
-Layout corpus: 1075 passed, 14 failed, 1089 total
+Layout corpus: 1079 passed, 10 failed, 1089 total
 
 $ v -old-compiler -enable-globals test .
 Summary for all V _test.v files: 651 passed, 651 total.

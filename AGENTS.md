@@ -536,7 +536,9 @@
   content use generated inline children of the marker box. Inside markers
   participate atomically in the list item's inline run, including through a
   trailing anonymous wrapper after block content, and layout-test symbols use
-  the bundled Noto fallback's real glyph coverage and advances. A live
+  the bundled Noto fallback's real glyph coverage and advances. A marker's own
+  run remeasures that generated content instead of reusing a zero-width result
+  from an enclosing shrink-to-fit probe. A live
   `display:none` box-presence change rebuilds layout and clears cached list
   ordinals, so hiding a list item removes its box and renumbers later markers.
   A hidden document element leaves an empty viewport that still establishes
