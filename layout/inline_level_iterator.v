@@ -523,7 +523,8 @@ fn (mut iterator InlineLevelIterator) compute_next() {
 fn (mut iterator InlineLevelIterator) skip_to_next() {
 	if next := iterator.next_node {
 		if box_model_node := next.as_node_with_style_and_box_model_metrics() {
-			if !next.is_list_item_marker_box() && next.is_inline() && next.display().is_flow_inside()
+			if !next.is_break_node() && !next.is_list_item_marker_box() && next.is_inline()
+				&& next.display().is_flow_inside()
 				&& !next.is_out_of_flow() && !next.is_atomic_inline() {
 				iterator.enter_node_with_box_model_metrics(box_model_node)
 			}

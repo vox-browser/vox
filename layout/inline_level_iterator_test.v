@@ -95,6 +95,29 @@ fn test_inline_level_iterator_emits_forced_break() {
 	assert (iterator.next() or { panic('break') }).type_ == .forced_break
 }
 
+fn test_inline_level_iterator_does_not_carry_break_edges_to_the_next_line() {
+	document := dom.Document.create(dom.url_about_blank())
+	container_style := inline_iterator_test_style(document, 'div', 'display:block')
+	break_style := inline_iterator_test_style(document, 'br',
+		'display:inline; border-left:3px solid; padding-left:4px')
+	mut container := BlockContainer.new(document, none, container_style)
+	container.set_children_are_inline(true)
+	mut break_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'br') or {
+		panic('${err}')
+	}
+	break_node := BreakNode.new(document, break_element.as_node(), break_style)
+	text := document.create_text_node('next')
+	text_node := TextNode.new(document, text.as_node(), 'next')
+	container.append_child(unsafe { &Node(break_node) })
+	container.append_child(unsafe { &Node(text_node) })
+	_, mut iterator := make_inline_iterator(document, container, 300)
+	assert (iterator.next() or { panic('break') }).type_ == .forced_break
+	next := iterator.next() or { panic('text after break') }
+	assert next.type_ == .text
+	assert next.border_start.to_double() == 0
+	assert next.padding_start.to_double() == 0
+}
+
 fn test_inline_level_iterator_preserves_ltr_shaping_across_neutral_punctuation() {
 	document := dom.Document.create(dom.url_about_blank())
 	style := inline_iterator_test_style(document, 'div',
