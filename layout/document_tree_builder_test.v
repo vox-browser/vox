@@ -1272,6 +1272,19 @@ fn test_svg_elements_create_their_concrete_layout_node_types_without_html_wrappe
 	assert tree_builder_node_with_id(svg_root, 'definition') == none
 }
 
+fn test_block_svg_appends_foreign_object_and_text_without_html_wrappers() {
+	document := html.parse_document('<!doctype html><style>svg { display: block }</style><svg id="root-svg">\n<foreignObject id="foreign"></foreignObject>\n</svg>')
+	root := build_layout_tree(document) or { panic('no layout tree') }
+	svg_root := tree_builder_node_with_id(root, 'root-svg') or { panic('no SVG root') }
+	assert svg_root.is_svg_svg_box()
+	assert svg_root.child_count() == 3
+	assert (svg_root.first_child() or { panic('no leading SVG text') }).is_text_node()
+	foreign := tree_builder_node_with_id(svg_root, 'foreign') or { panic('no foreignObject') }
+	assert layout_nodes_same(foreign.parent() or { panic('foreignObject has no parent') }, svg_root)
+	assert (svg_root.last_child() or { panic('no trailing SVG text') }).is_text_node()
+	assert svg_root.children_are_inline()
+}
+
 fn test_svg_switch_creates_a_graphics_box_for_only_its_first_svg_child() {
 	document := html.parse_document('<!doctype html><svg><switch id="chooser">ignored text<rect id="selected" width="10" height="10"/><circle id="bypassed" r="5"/></switch></svg>')
 	root := build_layout_tree(document) or { panic('no layout tree') }
