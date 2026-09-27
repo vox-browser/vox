@@ -392,7 +392,9 @@
   that are newly created, fetching, or awaiting a pending request render as
   blank space instead of flashing alternative text; broken and source-less
   images retain the fallback text path. Decoded image data tracks live display
-  clients for both static and animated bitmaps. The per-document shared-request
+  clients for both static and animated bitmaps. GIF streams that omit the LZW
+  end-of-information code retain successfully decoded pixels and their natural
+  dimensions instead of being rejected as broken. The per-document shared-request
   cache and list of available images use upstream LRU touch serials and bounded
   memory/count pruning, while excluding live decoded images from both the
   accounting and eviction candidates so DOM re-creation can reuse them without

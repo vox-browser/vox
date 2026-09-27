@@ -582,6 +582,12 @@ Inline-grid formatting no longer materializes used values for anonymous
 whitespace runs that grid placement skipped. They remain present in the layout
 tree but unpainted, matching `grid/fit-content-3.html`.
 
+GIF image loading now follows upstream's tolerant LZW behavior: a stream that
+ends without an explicit end-of-information code keeps the successfully decoded
+frame and its natural dimensions. The one-pixel data GIF in
+`table-replaced-child-percentage-height-in-auto-table.html` therefore supplies
+the table's intrinsic width and height instead of collapsing the table to zero.
+
 Collapsed-table intrinsic probes now replay the cached grid's winning borders
 into each throwaway layout state. Anonymous wrapper intrinsic widths retain the
 table-owned outer shares, percentage border-box widths subtract those split
@@ -844,7 +850,7 @@ largest unmatched modules:
    314 Layout
 
 $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
-Layout corpus: 1058 passed, 31 failed, 1089 total
+Layout corpus: 1059 passed, 30 failed, 1089 total
 
 $ v -old-compiler -enable-globals test .
 Summary for all V _test.v files: 651 passed, 651 total.
