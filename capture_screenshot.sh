@@ -141,12 +141,20 @@ if [ "$needs_stitching" -eq 1 ]; then
     echo "Saved Ladybird V stitched document screenshot: $output (${width}x${height}, ${segment_index} strips)"
     exit 0
 fi
-if ! LADYBIRD_SCREENSHOT_DELAY_SECONDS="${SCREENSHOT_SETTLE_SECONDS:-2}" \
-    "$browser" --window-width "$width" --window-height "$launch_window_height" \
-    --screenshot "$capture_tmp/window.png" "$source" >"$capture_tmp/browser.log" 2>&1; then
-    cat "$capture_tmp/browser.log" >&2
-    exit 1
-fi
+attempt=1
+while [ "$attempt" -le 2 ]; do
+    rm -f "$capture_tmp/window.png"
+    if LADYBIRD_SCREENSHOT_DELAY_SECONDS="${SCREENSHOT_SETTLE_SECONDS:-2}" \
+        "$browser" --window-width "$width" --window-height "$launch_window_height" \
+        --screenshot "$capture_tmp/window.png" "$source" >"$capture_tmp/browser.log" 2>&1; then
+        break
+    fi
+    if [ "$attempt" -eq 2 ]; then
+        cat "$capture_tmp/browser.log" >&2
+        exit 1
+    fi
+    attempt=$((attempt + 1))
+done
 if [ ! -s "$capture_tmp/window.png" ]; then
     echo "Ladybird V did not produce a window screenshot" >&2
     cat "$capture_tmp/browser.log" >&2
