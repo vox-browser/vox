@@ -586,6 +586,14 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 		}
 		iterator.previous_chunk_can_break_after = chunk.can_break_after
 		iterator.add_extra_box_model_metrics_to_item(mut item, is_first_chunk, is_last_chunk)
+		// The zero-length generated fragment anchors its inline ancestor's box
+		// geometry. Its closing edges are derived from that ancestor's used values;
+		// they do not advance the following text in upstream's retained line.
+		if current.is_generated_for_pseudo_element() && chunk.length == 0 {
+			item.padding_end = CSSPixels.new(0)
+			item.border_end = CSSPixels.new(0)
+			item.margin_end = CSSPixels.new(0)
+		}
 		return item
 	}
 
@@ -708,11 +716,12 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 			chunks << chunk
 		}
 		// InlineLevelIterator::generate_next_item() synthesizes one empty chunk for
-		// mutable form-control editing text. The V DOM does not materialize the
-		// closed UA shadow root, so TreeBuilder records that fact on its equivalent
-		// internal TextNode.
+		// mutable form-control editing text and generated empty strings. The V DOM
+		// does not materialize the closed UA shadow root, so TreeBuilder records the
+		// former on its equivalent internal TextNode.
 		if chunks.len == 0 && text_node.text_for_rendering().len == 0
-			&& text_node_is_inside_mutable_control(text_node) {
+			&& (text_node.Node.is_generated_for_pseudo_element()
+			|| text_node_is_inside_mutable_control(text_node)) {
 			chunks << chunk_iterator.create_empty_chunk()
 		}
 		mut mutable_text_node := unsafe { &TextNode(text_node) }

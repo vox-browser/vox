@@ -347,6 +347,16 @@ pub fn (mut builder LineBuilder) current_line_has_no_space_left_by_floats() bool
 pub fn (mut builder LineBuilder) append_text_item(item &InlineLevelItem, content_height CSSPixels) {
 	text_node := (item.node or { return }).as_text_node() or { return }
 	glyph_run := item.glyph_run or { return }
+	if item.length_in_node == 0 && text_node.Node.is_generated_for_pseudo_element() {
+		// An empty generated string retains a degenerate fragment at the inline
+		// box's insertion point. Its opening edges still advance the line, while
+		// the ancestor's used values supply the fragment's painted box geometry.
+		opening_advance := item.margin_start.plus(item.border_start).plus(item.padding_start)
+		builder.append_text_chunk_with_trailing_whitespace(text_node, item.offset_in_node,
+			item.length_in_node, CSSPixels.new(0), opening_advance, CSSPixels.new(0),
+			CSSPixels.new(0), item.width, CSSPixels.new(0), glyph_run, item.trailing_whitespace)
+		return
+	}
 	builder.append_text_chunk_with_trailing_whitespace(text_node, item.offset_in_node,
 		item.length_in_node, item.border_start.plus(item.padding_start),
 		item.padding_end.plus(item.border_end), item.margin_start, item.margin_end, item.width,

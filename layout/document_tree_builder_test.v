@@ -1021,6 +1021,12 @@ fn test_empty_generated_strings_only_create_text_in_inline_pseudo_elements() {
 	inline := tree_builder_before_pseudo_for_id(result, 'inline')
 	assert inline.child_count() == 1
 	assert inline.children()[0].is_text_node()
+	geometry := inline_box_absolute_geometry(inline, result.state) or {
+		panic('empty inline pseudo-element has no retained geometry')
+	}
+	assert geometry.content_rect.width.to_double() == 0
+	assert geometry.content_rect.height.to_double() == 0
+	assert geometry.padding_rect.width.to_double() == 10
 	// Other pseudo-element boxes exist independently of their contents.
 	for id in ['block', 'inline-block'] {
 		pseudo := tree_builder_before_pseudo_for_id(result, id)

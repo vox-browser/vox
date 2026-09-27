@@ -138,7 +138,14 @@ fn compute_inline_box_pieces(container &Node, used &UsedValues, state &LayoutSta
 			mut inline_start := if horizontal { position.x() } else { position.y() }
 			mut inline_end := inline_start.plus(if horizontal { size.width() } else { size.height() })
 			block_start := if horizontal { position.y() } else { position.x() }
-			block_length := if horizontal { size.height() } else { size.width() }
+			block_length := if fragment_node.is_generated_for_pseudo_element()
+				&& fragment_node.is_text_node() && fragment.length_in_code_units() == 0 {
+				CSSPixels.new(0)
+			} else if horizontal {
+				size.height()
+			} else {
+				size.width()
+			}
 			// An atomic inline's fragment covers only its content box; its margin
 			// box is what contributes to ancestor extents on the inline axis.
 			if !interrupting && fragment.is_atomic_inline() {

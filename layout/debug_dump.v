@@ -284,6 +284,11 @@ fn append_typed_inline_line_fragments(node &Node, state &LayoutState, depth int,
 	for line_box in containing_used.line_boxes {
 		mut fragment_index := 0
 		for fragment in line_box.fragments() {
+			if fragment.layout_node().is_generated_for_pseudo_element()
+				&& fragment.layout_node().is_text_node()
+				&& fragment.length_in_code_units() == 0 {
+				continue
+			}
 			target := fragment_inline_paintable_target(fragment.layout_node()) or { continue }
 			if !layout_nodes_same(target, node) {
 				continue
