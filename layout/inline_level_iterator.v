@@ -46,6 +46,194 @@ pub fn (item &InlineLevelItem) border_box_width() CSSPixels {
 		item.border_end])
 }
 
+fn overflow_break_applies_to_style(style &css.ComputedProperties, available_width AvailableSize) bool {
+	if style.text_wrap_mode() != .wrap {
+		return false
+	}
+	if style.overflow_wrap() == .anywhere || style.word_break() == .break_word {
+		return true
+	}
+	return style.overflow_wrap() == .break_word && !available_width.is_min_content()
+}
+
+fn (item &InlineLevelItem) allows_overflow_break(available_width AvailableSize) bool {
+	if item.type_ != .text || item.is_collapsible_whitespace || item.is_all_whitespace {
+		return false
+	}
+	node := item.node or { return false }
+	return overflow_break_applies_to_style(node.computed_values(), available_width)
+}
+
+fn trailing_whitespace_from_shaped_text(shaped platform.ShapedText) TrailingWhitespace {
+	return TrailingWhitespace{
+		length_in_code_units: shaped.trailing_whitespace.length_in_code_units
+		inline_size: CSSPixels.nearest_value_for(shaped.trailing_whitespace.advance)
+	}
+}
+
+struct OverflowItemSplit {
+	prefix    InlineLevelItem
+	remainder InlineLevelItem
+}
+
+fn overflow_split_items(item &InlineLevelItem, node &Node, split int,
+	prefix_run &platform.GlyphRun, remainder_run &platform.GlyphRun,
+	prefix_trailing TrailingWhitespace, remainder_trailing TrailingWhitespace) (InlineLevelItem, InlineLevelItem) {
+	prefix := InlineLevelItem{
+		type_: .text
+		node: node
+		glyph_run: prefix_run
+		offset_in_node: item.offset_in_node
+		length_in_node: split - item.offset_in_node
+		can_break_before: item.can_break_before
+		trailing_whitespace: prefix_trailing
+		preceded_by_unattached_inline_start_edges: item.preceded_by_unattached_inline_start_edges
+		width: CSSPixels.nearest_value_for(f64(prefix_run.width()))
+		padding_start: item.padding_start
+		border_start: item.border_start
+		margin_start: item.margin_start
+	}
+	remainder := InlineLevelItem{
+		type_: .text
+		node: node
+		glyph_run: remainder_run
+		offset_in_node: split
+		length_in_node: item.offset_in_node + item.length_in_node - split
+		trailing_whitespace: remainder_trailing
+		width: CSSPixels.nearest_value_for(f64(remainder_run.width()))
+		padding_end: item.padding_end
+		border_end: item.border_end
+		margin_end: item.margin_end
+	}
+	return prefix, remainder
+}
+
+fn (item &InlineLevelItem) split_overflow_item_at_shaped_glyph(node &Node,
+	boundaries []int, maximum_width CSSPixels,
+	take_first_grapheme_when_none_fits bool) ?OverflowItemSplit {
+	run := item.glyph_run or { return none }
+	if run.text_type() == .rtl || run.glyphs_.len < 2 {
+		return none
+	}
+	mut shaped_length := 0
+	for glyph in run.glyphs_ {
+		shaped_length += glyph.length_in_code_units
+	}
+	if shaped_length != item.length_in_node {
+		return none
+	}
+	mut boundary_set := map[int]bool{}
+	for boundary in boundaries {
+		boundary_set[boundary] = true
+	}
+	leading_width := css_pixels_sum([item.margin_start, item.border_start, item.padding_start])
+	mut split_glyph_index := -1
+	mut split_code_units := 0
+	mut code_units := run.glyphs_[0].length_in_code_units
+	for glyph_index := 1; glyph_index < run.glyphs_.len; glyph_index++ {
+		glyph := run.glyphs_[glyph_index]
+		if glyph.length_in_code_units == 0 {
+			continue
+		}
+		offset := item.offset_in_node + code_units
+		if boundary_set[offset] {
+			prefix_width := CSSPixels.nearest_value_for(f64(glyph.position.x))
+			if leading_width.plus(prefix_width).raw_value() > maximum_width.raw_value() {
+				if split_glyph_index < 0 && take_first_grapheme_when_none_fits {
+					split_glyph_index = glyph_index
+					split_code_units = code_units
+				}
+				break
+			}
+			split_glyph_index = glyph_index
+			split_code_units = code_units
+		}
+		code_units += glyph.length_in_code_units
+	}
+	if split_glyph_index < 0 {
+		return none
+	}
+
+	split_x := run.glyphs_[split_glyph_index].position.x
+	prefix_glyphs := run.glyphs_[..split_glyph_index].clone()
+	mut remainder_glyphs := run.glyphs_[split_glyph_index..].clone()
+	for index in 0 .. remainder_glyphs.len {
+		remainder_glyphs[index].position.translate_by(-split_x, 0)
+	}
+	mut prefix_run := platform.GlyphRun.new_with_face(run.font(), run.text_type(), prefix_glyphs,
+		run.face())
+	mut remainder_run := platform.GlyphRun.new_with_face(run.font(), run.text_type(), remainder_glyphs,
+		run.face())
+	prefix_run.width_ = split_x
+	remainder_run.width_ = run.width() - split_x
+	prefix, remainder := overflow_split_items(item, node,
+		item.offset_in_node + split_code_units, prefix_run, remainder_run, TrailingWhitespace{},
+		TrailingWhitespace{})
+	return OverflowItemSplit{prefix, remainder}
+}
+
+// Split an overflowing shaped text item only at extended grapheme boundaries.
+// Reshaping both halves preserves ligatures and spacing at their new line edges.
+fn (item &InlineLevelItem) split_for_overflow_break(maximum_width CSSPixels, take_first_grapheme_when_none_fits bool) ?(InlineLevelItem, InlineLevelItem) {
+	node := item.node or { return none }
+	text_node := node.as_text_node() or { return none }
+	run := item.glyph_run or { return none }
+	text := text_node.text_for_rendering()
+	start := item.offset_in_node
+	end := start + item.length_in_node
+	if start < 0 || end <= start {
+		return none
+	}
+
+	mut boundaries := []int{}
+	for boundary in text_grapheme_boundaries(text) {
+		if boundary > start && boundary < end {
+			boundaries << boundary
+		}
+	}
+	if boundaries.len == 0 {
+		return none
+	}
+	if split := item.split_overflow_item_at_shaped_glyph(node, boundaries, maximum_width,
+		take_first_grapheme_when_none_fits) {
+		return split.prefix, split.remainder
+	}
+	if run.text_type() == .rtl {
+		return none
+	}
+
+	letter_spacing := f32(resolved_text_spacing_for_node(node, .letter_spacing).to_double())
+	word_spacing := f32(resolved_text_spacing_for_node(node, .word_spacing).to_double())
+	leading_width := css_pixels_sum([item.margin_start, item.border_start, item.padding_start])
+	mut split := -1
+	for boundary in boundaries {
+		prefix_text := utf16_substring_for_line_box(text, start, boundary - start)
+		shaped := platform.shape_text_with_spacing(0, letter_spacing, word_spacing, prefix_text,
+			run.font(), run.text_type())
+		prefix_width := CSSPixels.nearest_value_for(f64(shaped.glyph_run.width()))
+		if leading_width.plus(prefix_width).raw_value() > maximum_width.raw_value() {
+			break
+		}
+		split = boundary
+	}
+	if split < 0 {
+		if !take_first_grapheme_when_none_fits {
+			return none
+		}
+		split = boundaries[0]
+	}
+
+	prefix_text := utf16_substring_for_line_box(text, start, split - start)
+	remainder_text := utf16_substring_for_line_box(text, split, end - split)
+	prefix_shape := platform.shape_text_with_spacing(0, letter_spacing, word_spacing, prefix_text,
+		run.font(), run.text_type())
+	remainder_shape := platform.shape_text_with_spacing(0, letter_spacing, word_spacing,
+		remainder_text, run.font(), run.text_type())
+	return overflow_split_items(item, node, split, prefix_shape.glyph_run,
+		remainder_shape.glyph_run, trailing_whitespace_from_shaped_text(prefix_shape),
+		trailing_whitespace_from_shaped_text(remainder_shape))
+}
+
 fn is_inline_flow_interrupting_block(node &Node) bool {
 	metrics := node.as_node_with_style_and_box_model_metrics() or { return false }
 	return metrics.is_inline_flow_interrupting_block()
@@ -164,6 +352,13 @@ pub fn (iterator &InlineLevelIterator) next_non_whitespace_sequence_width() CSSP
 		next_width = next_width.plus(next_item.border_box_width())
 	}
 	return next_width
+}
+
+pub fn (iterator &InlineLevelIterator) next_non_whitespace_text_allows_overflow_break() bool {
+	if iterator.next_item_index >= iterator.items.len {
+		return false
+	}
+	return iterator.items[iterator.next_item_index].allows_overflow_break(iterator.available_space.width)
 }
 
 fn (mut iterator InlineLevelIterator) enter_node_with_box_model_metrics(node &NodeWithStyleAndBoxModelMetrics) {

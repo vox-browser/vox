@@ -303,6 +303,56 @@ pub fn (mut builder LineBuilder) break_if_needed(next_item_width CSSPixels) bool
 	return false
 }
 
+pub fn (mut builder LineBuilder) current_line_is_empty() bool {
+	return builder.containing_block_used_values.line_boxes.len == 0
+		|| builder.ensure_last_line_box().is_empty()
+}
+
+fn (mut builder LineBuilder) remaining_width_on_current_line() ?CSSPixels {
+	if !builder.available_width_for_current_line.is_definite() {
+		return none
+	}
+	return builder.available_width_for_current_line.to_px_or_zero().minus(builder.ensure_last_line_box().width())
+}
+
+pub fn (mut builder LineBuilder) remaining_width_for_overflow_break() ?CSSPixels {
+	if builder.available_width_for_current_line.is_definite() {
+		return builder.remaining_width_on_current_line()
+	}
+	if builder.available_width_for_current_line.is_min_content() {
+		return CSSPixels.new(0)
+	}
+	return none
+}
+
+pub fn (mut builder LineBuilder) break_if_needed_before_overflow_breakable_item(next_item_width CSSPixels) bool {
+	if builder.current_line_is_empty() || !builder.should_break(next_item_width) {
+		return false
+	}
+	builder.break_line(.no, none)
+	return true
+}
+
+pub fn (mut builder LineBuilder) current_line_has_no_space_left_by_floats() bool {
+	remaining := builder.remaining_width_on_current_line() or { return false }
+	if remaining.raw_value() > 0 {
+		return false
+	}
+	line_height := builder.containing_block.computed_values().line_height()
+	block_end := builder.current_block_offset.plus(css_pixels_max(builder.max_height_on_current_line,
+		line_height))
+	return builder.any_floats_intrude_in_block_range(builder.current_block_offset, block_end)
+}
+
+pub fn (mut builder LineBuilder) append_text_item(item &InlineLevelItem, content_height CSSPixels) {
+	text_node := (item.node or { return }).as_text_node() or { return }
+	glyph_run := item.glyph_run or { return }
+	builder.append_text_chunk_with_trailing_whitespace(text_node, item.offset_in_node,
+		item.length_in_node, item.border_start.plus(item.padding_start),
+		item.padding_end.plus(item.border_end), item.margin_start, item.margin_end, item.width,
+		content_height, glyph_run, item.trailing_whitespace)
+}
+
 pub fn (mut builder LineBuilder) note_soft_wrap_opportunity() {
 	context := builder.parent_block_context or { return }
 	if !context.has_line_clamp() {

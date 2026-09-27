@@ -60,6 +60,65 @@ fn test_inline_formatting_context_collapses_source_indentation() {
 	assert used.line_boxes[0].inline_length().to_double() == 112.890625
 }
 
+fn run_overflow_wrap_test(document &dom.Document, declaration string, text string,
+	available_width AvailableSize) (&LayoutState, &UsedValues, InlineFormattingResult) {
+	style := inline_context_test_style(document,
+		'display:block; width:50px; font:20px/24px SerenitySans; ${declaration}')
+	mut container := BlockContainer.new(document, none, style)
+	container.set_children_are_inline(true)
+	dom_text := document.create_text_node(text)
+	text_node := TextNode.new(document, dom_text.as_node(), text)
+	container.append_child(unsafe { &Node(text_node) })
+	assign_layout_indexes(unsafe { &Node(container) })
+	mut state := LayoutState.new()
+	styled := unsafe { &Node(container) }.as_node_with_style() or { panic('style') }
+	mut used := state.get_mutable(styled)
+	used.set_content_width(CSSPixels.new(50))
+	result := run_inline_formatting_context(mut state, container, mut used, .normal,
+		AvailableSpace.new(available_width, AvailableSize.make_indefinite()))
+	return state, used, result
+}
+
+fn test_inline_formatting_context_overflow_wrap_splits_at_grapheme_boundaries() {
+	document := dom.Document.create(dom.url_about_blank())
+	_, normal, _ := run_overflow_wrap_test(document, 'overflow-wrap:normal', 'abcdefghij',
+		AvailableSize.make_definite(CSSPixels.new(50)))
+	assert normal.line_boxes.len == 1
+	assert normal.line_boxes[0].inline_length().to_double() > 50
+	_, break_word, _ := run_overflow_wrap_test(document, 'overflow-wrap:break-word',
+		'abcdefghij', AvailableSize.make_definite(CSSPixels.new(50)))
+	assert break_word.line_boxes.len > 1
+	for line in break_word.line_boxes {
+		assert line.inline_length().to_double() <= 50
+	}
+
+	_, anywhere, _ := run_overflow_wrap_test(document, 'overflow-wrap:anywhere', 'abcádefghij',
+		AvailableSize.make_definite(CSSPixels.new(50)))
+	assert anywhere.line_boxes.len > 1
+	mut rendered := ''
+	for line in anywhere.line_boxes {
+		assert line.inline_length().to_double() <= 50
+		for fragment in line.fragments_ {
+			part := fragment.text() or { '' }
+			assert !part.starts_with('́')
+			rendered += part
+		}
+	}
+	assert rendered == 'abcádefghij'
+}
+
+fn test_inline_formatting_context_overflow_wrap_intrinsic_difference() {
+	document := dom.Document.create(dom.url_about_blank())
+	_, anywhere, anywhere_result := run_overflow_wrap_test(document, 'overflow-wrap:anywhere',
+		'abcdefghij', AvailableSize.make_min_content())
+	_, break_word, break_word_result := run_overflow_wrap_test(document,
+		'overflow-wrap:break-word', 'abcdefghij', AvailableSize.make_min_content())
+	assert anywhere.line_boxes.len == 10
+	assert break_word.line_boxes.len == 1
+	assert anywhere_result.automatic_content_width.to_double()
+		< break_word_result.automatic_content_width.to_double()
+}
+
 fn test_text_overflow_ellipsis_uses_the_containing_block_style_for_nested_inline_text() {
 	document := dom.Document.create(dom.url_about_blank())
 	container_style := inline_context_test_style(document,

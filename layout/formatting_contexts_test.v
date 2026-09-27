@@ -3923,6 +3923,37 @@ fn test_inline_lines_wrap_through_float_intrusion_bands() {
 	assert last_line.fragments()[0].inline_offset().to_double() == 0
 }
 
+fn test_overflow_wrap_anywhere_splits_long_run_around_float() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#container { width:200px; font:20px/20px monospace; overflow-wrap:anywhere }
+		#float { float:left; width:100px; height:60px }
+	</style><div id="container"><span id="float"></span>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	container_node := layout_node_with_id(result.root, 'container') or { panic('no container') }
+	container := result.used_values_for(container_node.as_node_with_style() or {
+		panic('container has no style')
+	}) or { panic('container has no used values') }
+	mut text := ''
+	mut saw_intruded_line := false
+	mut saw_full_width_line := false
+	for line in container.line_boxes {
+		for fragment in line.fragments() {
+			part := fragment.text() or { continue }
+			text += part
+			if fragment.inline_offset().to_double() >= 100 {
+				saw_intruded_line = true
+			}
+			if fragment.inline_offset().to_double() == 0 {
+				saw_full_width_line = true
+			}
+		}
+	}
+	assert text == 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+	assert saw_intruded_line
+	assert saw_full_width_line
+}
+
 fn test_inline_line_uses_float_band_that_starts_midway_through_its_height() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }

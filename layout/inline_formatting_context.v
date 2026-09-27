@@ -118,9 +118,12 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 	mut leading_padding_from_collapsible_whitespace := CSSPixels.new(0)
 	mut absolute_boxes := []&Box{}
 	mut vertical_float_clearance := CSSPixels.new(0)
+	mut previous_text_item_allows_overflow_break_after := false
 
 	for {
 		mut item := iterator.next() or { break }
+		can_break_after_previous_overflow_item := previous_text_item_allows_overflow_break_after
+		previous_text_item_allows_overflow_break_after = false
 		if item.is_collapsible_whitespace && (containing_block_used_values.line_boxes.len == 0
 			|| containing_block_used_values.line_boxes.last().is_empty_or_ends_in_whitespace()) {
 			if node := item.node {
@@ -235,7 +238,8 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 			.text {
 				node := item.node or { continue }
 				text_node := node.as_text_node() or { continue }
-				if text_node.Node.computed_values().text_wrap_mode() == .wrap {
+				style := text_node.Node.computed_values()
+				if style.text_wrap_mode() == .wrap {
 					is_whitespace := item.is_all_whitespace
 					mut next_width := CSSPixels.new(0)
 					if is_whitespace {
@@ -243,18 +247,35 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 					}
 					if is_whitespace && next_width.raw_value() > 0 {
 						line_builder.note_soft_wrap_opportunity()
-						if line_builder.break_if_needed(item.border_box_width().plus(next_width)) {
+						sequence_width := item.border_box_width().plus(next_width)
+						broke_line := if iterator.next_non_whitespace_text_allows_overflow_break() {
+							line_builder.break_if_needed_before_overflow_breakable_item(sequence_width)
+						} else {
+							line_builder.break_if_needed(sequence_width)
+						}
+						if broke_line {
 							line_builder.set_trailing_whitespace_on_previous_line()
 							continue
 						}
 					}
-					if item.can_break_before && !is_whitespace {
+					overflow_break_allowed := !is_whitespace
+						&& overflow_break_applies_to_style(style, available_space.width)
+					can_break_before_item := item.can_break_before
+						|| (can_break_after_previous_overflow_item && !overflow_break_allowed)
+					if can_break_before_item && !is_whitespace {
 						line_builder.note_soft_wrap_opportunity()
-						line_builder.break_if_needed(item.border_box_width())
+						if overflow_break_allowed {
+							line_builder.break_if_needed_before_overflow_breakable_item(item.border_box_width())
+						} else {
+							line_builder.break_if_needed(item.border_box_width())
+						}
+					}
+					if overflow_break_allowed {
+						break_overflowing_text_item(mut line_builder, mut item)
+						previous_text_item_allows_overflow_break_after = true
 					}
 				}
-				glyph_run := item.glyph_run or { continue }
-				line_builder.append_text_chunk_with_trailing_whitespace(text_node, item.offset_in_node, item.length_in_node, item.border_start.plus(item.padding_start), item.padding_end.plus(item.border_end), item.margin_start, item.margin_end, item.width, text_node.Node.computed_values().line_height(), glyph_run, item.trailing_whitespace)
+				line_builder.append_text_item(item, style.line_height())
 			}
 		}
 	}
@@ -356,6 +377,32 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 	return InlineFormattingResult{
 		automatic_content_width: content_width
 		automatic_content_height: content_height
+	}
+}
+
+fn break_overflowing_text_item(mut line_builder LineBuilder, mut item InlineLevelItem) {
+	for {
+		remaining_width := line_builder.remaining_width_for_overflow_break() or { return }
+		if item.border_box_width().raw_value() <= remaining_width.raw_value() {
+			return
+		}
+		line_is_empty := line_builder.current_line_is_empty()
+		if line_is_empty && line_builder.current_line_has_no_space_left_by_floats() {
+			line_builder.break_line(.no, none)
+			continue
+		}
+		prefix, remainder := item.split_for_overflow_break(remaining_width, line_is_empty) or {
+			if line_is_empty {
+				return
+			}
+			line_builder.note_soft_wrap_opportunity()
+			line_builder.break_line(.no, item.border_box_width())
+			continue
+		}
+		item = remainder
+		line_builder.append_text_item(prefix, (prefix.node or { return }).computed_values().line_height())
+		line_builder.note_soft_wrap_opportunity()
+		line_builder.break_line(.no, none)
 	}
 }
 
