@@ -357,20 +357,12 @@ fn (mut context SVGFormattingContext) layout_path_like_element(graphics_box &Nod
 		set_used_values_rect(mut graphics_state, inflate_svg_rect(quantize_svg_rect(bounds), stroke_width))
 		graphics_state.set_computed_svg_path(path)
 	} else if graphics_box.is_svg_text_box() {
-		text_bounds := context.layout_text_element(graphics_box, element, mut graphics_state)
+		context.layout_text_element(graphics_box, element, mut graphics_state)
 		// <text> and <tspan> elements can contain more text elements.
 		for child in graphics_box.children() {
 			if child.is_svg_text_box() || child.is_svg_text_path_box() {
 				context.layout_graphics_element(child)
 			}
-		}
-		// C++ advances the current text position from this element's own path only after
-		// its children have been laid out. A <text> whose characters all live in nested
-		// <tspan>s has an empty path, so advancing before the recursion would discard the
-		// x/y it just established and start every child from the origin instead.
-		context.current_text_position = svg.Point{
-			x: text_bounds.x + text_bounds.width
-			y: text_bounds.y + text_bounds.height
 		}
 	} else if graphics_box.is_svg_text_path_box() {
 		context.layout_text_path_element(graphics_box, element, mut graphics_state)
@@ -382,6 +374,11 @@ fn (mut context SVGFormattingContext) layout_path_like_element(graphics_box &Nod
 }
 
 fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, element &dom.Element, mut graphics_state UsedValues) svg.Rect {
+	// SVGTextElement starts a new current-text-position sequence; tspans without
+	// absolute coordinates continue from the preceding run.
+	if element.local_name() == 'text' {
+		context.current_text_position = svg.Point{}
+	}
 	if x := first_svg_text_position(element.get_attribute_value('x'), context.viewport_size.width()) {
 		context.current_text_position = svg.Point{
 			x: x
@@ -408,36 +405,243 @@ fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, el
 	}
 	text := svg_direct_text_contents(element)
 	computed := graphics_box.computed_values()
-	font := &platform.Font{
-		family: 'sans-serif'
-		point_size: f32(computed.resolved_font_size_px())
-		weight: int(computed.font_weight())
-	}
-	run := platform.shape_text(0, 0, text, font, .context_dependent)
-	text_width := f64(run.width())
+	shaped := svg_shape_text(graphics_box, text)
 	mut x := context.current_text_position.x
-	anchor := match computed.text_anchor() {
-		.start { svg.TextAnchor.start }
-		.middle { svg.TextAnchor.middle }
-		.end_ { svg.TextAnchor.end }
-	}
-	match anchor {
-		.middle {
-			x -= text_width / 2
+	if svg_text_box_starts_text_chunk(graphics_box) {
+		chunk := measure_svg_text_chunk(graphics_box)
+		match chunk.anchor {
+			.middle {
+				x -= chunk.advance / 2
+			}
+			.end_ {
+				x -= chunk.advance
+			}
+			else {}
 		}
-		.end {
-			x -= text_width
-		}
-		else {}
 	}
 	baseline_metric := resolve_dominant_baseline_metric(computed)
-	baseline_y := context.current_text_position.y + f64(dominant_baseline_offset(baseline_metric, font.pixel_metrics()))
-	path := svg_text_outline_path(text, font, x, baseline_y)
+	baseline_font := graphics_box.first_available_font()
+	baseline_y := context.current_text_position.y + f64(dominant_baseline_offset(baseline_metric,
+		baseline_font.pixel_metrics()))
+	path := svg_glyph_runs_outline_path(shaped.runs, x, baseline_y)
 	final_local_bounds := svg_path_bounds(path) or { svg.Rect{} }
 	stroke_width := visible_svg_stroke_width(graphics_box, context.viewport_size)
 	set_used_values_rect(mut graphics_state, inflate_svg_rect(quantize_svg_rect(final_local_bounds), stroke_width))
 	graphics_state.set_computed_svg_path(path)
+	context.current_text_position = svg.Point{
+		x: f64(f32(x + shaped.width))
+		y: f64(f32(context.current_text_position.y))
+	}
 	return final_local_bounds
+}
+
+struct SVGShapedText {
+	runs  []&platform.GlyphRun
+	width f64
+}
+
+struct SVGTextChunkMeasurement {
+mut:
+	advance             f64
+	anchor              css.TextAnchor
+	found_chunk_start   bool
+	found_rendered_text bool
+	finished            bool
+}
+
+fn svg_text_box_starts_text_chunk(text_box &Node) bool {
+	element := svg_element_for_layout_node(text_box) or { return false }
+	if element.local_name() == 'text' {
+		return true
+	}
+	return first_svg_text_position(element.get_attribute_value('x'), CSSPixels.new(1)) != none
+		|| first_svg_text_position(element.get_attribute_value('y'), CSSPixels.new(1)) != none
+}
+
+fn measure_svg_text_chunk_subtree(node &Node, chunk_start &Node,
+	mut measurement SVGTextChunkMeasurement) {
+	if measurement.finished || node.is_svg_text_path_box() {
+		return
+	}
+	if node.is_svg_text_box() {
+		if voidptr(node) == voidptr(chunk_start) {
+			measurement.found_chunk_start = true
+		} else if measurement.found_chunk_start && svg_text_box_starts_text_chunk(node) {
+			measurement.finished = true
+			return
+		}
+		if measurement.found_chunk_start {
+			if element := svg_element_for_layout_node(node) {
+				text := svg_direct_text_contents(element)
+				if text.len > 0 {
+					if !measurement.found_rendered_text {
+						measurement.anchor = node.computed_values().text_anchor()
+						measurement.found_rendered_text = true
+					}
+					measurement.advance += svg_shape_text(node, text).width
+				}
+			}
+		}
+	}
+	for child in node.children() {
+		measure_svg_text_chunk_subtree(child, chunk_start, mut measurement)
+		if measurement.finished {
+			return
+		}
+	}
+}
+
+fn measure_svg_text_chunk(chunk_start &Node) SVGTextChunkMeasurement {
+	mut subtree_root := chunk_start
+	mut ancestor := chunk_start.parent()
+	for {
+		candidate := ancestor or { break }
+		if !candidate.is_svg_text_box() {
+			break
+		}
+		subtree_root = candidate
+		ancestor = candidate.parent()
+	}
+	mut measurement := SVGTextChunkMeasurement{}
+	measure_svg_text_chunk_subtree(subtree_root, chunk_start, mut measurement)
+	return measurement
+}
+
+struct SVGPlatformFontCascade {
+	fonts       []&platform.Font
+	last_resort &platform.Font = unsafe { nil }
+mut:
+	invisible_fonts map[int]&platform.Font
+}
+
+struct SVGSelectedFont {
+	font  &platform.Font = unsafe { nil }
+	index int
+}
+
+fn svg_cascade_platform_fonts(font_list &css.FontCascadeList) SVGPlatformFontCascade {
+	mut fonts := []&platform.Font{cap: font_list.fonts.len}
+	for entry in font_list.fonts {
+		fonts << text_node_chunk_platform_font(entry.font)
+	}
+	mut last_resort := &platform.Font(unsafe { nil })
+	if font_list.last_resort_font != unsafe { nil } {
+		converted := text_node_chunk_platform_font(*font_list.last_resort_font)
+		for font in fonts {
+			if font.has_same_identity(converted) {
+				last_resort = font
+				return SVGPlatformFontCascade{
+					fonts: fonts
+					last_resort: last_resort
+					invisible_fonts: map[int]&platform.Font{}
+				}
+			}
+		}
+		last_resort = converted
+	}
+	return SVGPlatformFontCascade{
+		fonts: fonts
+		last_resort: last_resort
+		invisible_fonts: map[int]&platform.Font{}
+	}
+}
+
+fn svg_font_for_code_point(font_list &css.FontCascadeList, fonts []&platform.Font,
+	last_resort &platform.Font, code_point u32) SVGSelectedFont {
+	for index, entry in font_list.fonts {
+		font := fonts[index]
+		if entry.unicode_ranges.len == 0 {
+			if font.contains_glyph(code_point) {
+				return SVGSelectedFont{
+					font: font
+					index: index
+				}
+			}
+			continue
+		}
+		for range_ in entry.unicode_ranges {
+			if range_.start <= code_point && code_point <= range_.end
+				&& font.contains_glyph(code_point) {
+				return SVGSelectedFont{
+					font: font
+					index: index
+				}
+			}
+		}
+	}
+	if last_resort != unsafe { nil } {
+		return SVGSelectedFont{
+			font: last_resort
+			index: fonts.len
+		}
+	}
+	if fonts.len > 0 {
+		return SVGSelectedFont{
+			font: fonts[0]
+		}
+	}
+	panic('SVG text font cascade must contain a font')
+}
+
+fn svg_invisible_font(mut cascade SVGPlatformFontCascade, selected SVGSelectedFont) &platform.Font {
+	if font := cascade.invisible_fonts[selected.index] {
+		return font
+	}
+	font := text_node_chunk_invisible_font(selected.font)
+	cascade.invisible_fonts[selected.index] = font
+	return font
+}
+
+// Gfx::shape_text(..., FontCascadeList) selects a concrete face for each code
+// point, coalesces adjacent characters which use that face, and carries each
+// shaped run's advance into the next run's baseline origin.
+fn svg_shape_text(graphics_box &Node, text string) SVGShapedText {
+	if text.len == 0 {
+		return SVGShapedText{}
+	}
+	font_list := graphics_box.font_list()
+	mut cascade := svg_cascade_platform_fonts(font_list)
+	font_computer := css.css_style_computer_for(graphics_box.document()).font_computer()
+	mut runs := []&platform.GlyphRun{}
+	mut segment := ''
+	mut segment_font := &platform.Font(unsafe { nil })
+	mut x := f32(0)
+	for character in text.runes() {
+		selected := svg_font_for_code_point(font_list, cascade.fonts, cascade.last_resort,
+			u32(character))
+		font_generation := font_computer.environment_generation()
+		fallback_is_invisible := font_list.fallback_is_invisible_for_code_point_through(u32(character),
+			selected.index)
+		if font_computer.environment_generation() != font_generation {
+			// A synchronous lazy @font-face load invalidated the cascade. Shape
+			// again so the newly available author face participates immediately.
+			return svg_shape_text(graphics_box, text)
+		}
+		font := if fallback_is_invisible {
+			svg_invisible_font(mut cascade, selected)
+		} else {
+			selected.font
+		}
+		if segment.len > 0 && voidptr(font) != voidptr(segment_font) {
+			run := platform.shape_text(x, 0, segment, segment_font, .common)
+			runs << run
+			x += run.width()
+			segment = ''
+		}
+		if segment.len == 0 {
+			segment_font = font
+		}
+		segment += character.str()
+	}
+	if segment.len > 0 {
+		run := platform.shape_text(x, 0, segment, segment_font, .common)
+		runs << run
+		x += run.width()
+	}
+	return SVGShapedText{
+		runs: runs
+		width: f64(x)
+	}
 }
 
 fn svg_outline_point(point platform.FontGlyphOutlinePoint, transform svg.AffineTransform) svg.Point {
@@ -528,21 +732,27 @@ fn append_svg_glyph_contour(mut instructions []svg.PathInstruction, contour []pl
 	}
 }
 
-fn svg_text_outline_path(text string, font &platform.Font, x f64, baseline_y f64) svg.Path {
+fn svg_glyph_runs_outline_path(runs []&platform.GlyphRun, x f64, baseline_y f64) svg.Path {
 	mut instructions := []svg.PathInstruction{}
-	mut glyph_x := x
-	for character in text.runes() {
-		advance, glyph_index := font.glyph_advance_and_index(u32(character))
-		if outline := font.glyph_outline(glyph_index) {
-			transform := svg.AffineTransform{
-				e: glyph_x
-				f: baseline_y
+	for run in runs {
+		font := run.font()
+		if font.is_invisible {
+			continue
+		}
+		for glyph in run.glyphs() {
+			if !glyph.should_paint {
+				continue
 			}
-			for contour in outline.contours {
-				append_svg_glyph_contour(mut instructions, contour, transform)
+			if outline := font.glyph_outline(glyph.glyph_index) {
+				transform := svg.AffineTransform{
+					e: f64(f32(x) + glyph.position.x)
+					f: f64(f32(baseline_y) + glyph.position.y)
+				}
+				for contour in outline.contours {
+					append_svg_glyph_contour(mut instructions, contour, transform)
+				}
 			}
 		}
-		glyph_x += f64(advance)
 	}
 	return svg.Path{
 		instructions: instructions
@@ -555,7 +765,14 @@ fn first_svg_text_position(text string, reference CSSPixels) ?f64 {
 		return none
 	}
 	value := svg.parse_number_percentage(first[0]) or { return none }
-	return value.resolve_relative_to(reference.to_double())
+	// The Rust/C++ bridge carries SVG text positioning through f32 values.
+	// Quantize both the parsed scalar and its viewport basis at that boundary.
+	quantized_value := svg.NumberPercentage{
+		value: f64(f32(value.value))
+		is_percentage: value.is_percentage
+	}
+	resolved := f64(f32(quantized_value.resolve_relative_to(f64(f32(reference.to_double())))))
+	return CSSPixels.nearest_value_for(resolved).to_double()
 }
 
 fn svg_direct_text_contents(element &dom.Element) string {
@@ -582,35 +799,26 @@ fn (mut context SVGFormattingContext) layout_text_path_element(graphics_box &Nod
 	}
 	shape_path := svg.geometry_path(svg_element_model(shape), context.viewport_size.width().to_double(), context.viewport_size.height().to_double())
 	computed := graphics_box.computed_values()
-	font := &platform.Font{
-		family: 'sans-serif'
-		point_size: f32(computed.resolved_font_size_px())
-		weight: int(computed.font_weight())
-	}
 	text := svg_direct_text_contents(element)
+	shaped := svg_shape_text(graphics_box, text)
 	measure := svg_first_contour_measure(shape_path)
 	path_length := if measured := measure { measured.length } else { 0.0 }
 	mut start_offset := svg_element_model(element).start_offset_for_path_length(path_length)
 	// FIXME: Match upstream's pending writing-mode and text-direction handling.
-	run := platform.shape_text(0, 0, text, font, .context_dependent)
 	match computed.text_anchor() {
 		.middle {
-			start_offset -= f64(run.width()) / 2
+			start_offset -= shaped.width / 2
 		}
 		.end_ {
-			start_offset -= f64(run.width())
+			start_offset -= shaped.width
 		}
 		else {}
 	}
-	path := svg_place_text_along_path(shape_path, text, font, start_offset)
+	path := svg_place_glyph_runs_along_path(shape_path, shaped.runs, start_offset)
 	local_bounds := svg_path_bounds(path) or { svg.Rect{} }
 	stroke_width := visible_svg_stroke_width(graphics_box, context.viewport_size)
 	set_used_values_rect(mut graphics_state, inflate_svg_rect(quantize_svg_rect(local_bounds), stroke_width))
 	graphics_state.set_computed_svg_path(path)
-	context.current_text_position = svg.Point{
-		x: local_bounds.x + local_bounds.width
-		y: local_bounds.y + local_bounds.height
-	}
 }
 
 struct SVGFirstContourMeasure {
@@ -681,39 +889,50 @@ fn (measure SVGFirstContourMeasure) position_and_tangent(distance f64) ?SVGPathP
 	return none
 }
 
-// Gfx::Path::place_text_along(): place each unshaped SkFont glyph at the
-// current path distance, rotate it to the tangent, reject a glyph whose
-// midpoint falls beyond the first contour, then advance by its SkFont width.
+// Gfx::Path::place_glyph_runs_along(): place each shaped glyph at its retained
+// run position, rotate it to the tangent, and stop when its midpoint passes the
+// end of the first contour.
 fn svg_place_text_along_path(shape_path svg.Path, text string, font &platform.Font,
 	start_offset f64) svg.Path {
+	run := platform.shape_text(0, 0, text, font, .common)
+	return svg_place_glyph_runs_along_path(shape_path, [run], start_offset)
+}
+
+fn svg_place_glyph_runs_along_path(shape_path svg.Path, runs []&platform.GlyphRun,
+	start_offset f64) svg.Path {
 	measure := svg_first_contour_measure(shape_path) or { return svg.Path{} }
-	mut accumulated_distance := start_offset
 	mut instructions := []svg.PathInstruction{}
-	for character in text.runes() {
-		advance, glyph_index := font.glyph_advance_and_index(u32(character))
-		position_and_tangent := measure.position_and_tangent(accumulated_distance) or {
+	mut reached_end := false
+	for run in runs {
+		if reached_end || run.font().is_invisible {
 			continue
 		}
-		if accumulated_distance + f64(advance) / 2.0 > measure.length {
-			break
-		}
-		angle := math.atan2(position_and_tangent.tangent.y, position_and_tangent.tangent.x)
-		cosine := math.cos(angle)
-		sine := math.sin(angle)
-		transform := svg.AffineTransform{
-			a: cosine
-			b: sine
-			c: -sine
-			d: cosine
-			e: position_and_tangent.position.x
-			f: position_and_tangent.position.y
-		}
-		if outline := font.glyph_outline(glyph_index) {
-			for contour in outline.contours {
-				append_svg_glyph_contour(mut instructions, contour, transform)
+		for glyph in run.glyphs() {
+			glyph_distance := start_offset + f64(glyph.position.x)
+			position_and_tangent := measure.position_and_tangent(glyph_distance) or {
+				continue
+			}
+			if glyph_distance + f64(glyph.advance) / 2.0 > measure.length {
+				reached_end = true
+				break
+			}
+			angle := math.atan2(position_and_tangent.tangent.y, position_and_tangent.tangent.x)
+			cosine := math.cos(angle)
+			sine := math.sin(angle)
+			transform := svg.AffineTransform{
+				a: cosine
+				b: sine
+				c: -sine
+				d: cosine
+				e: position_and_tangent.position.x
+				f: position_and_tangent.position.y
+			}
+			if outline := run.font().glyph_outline(glyph.glyph_index) {
+				for contour in outline.contours {
+					append_svg_glyph_contour(mut instructions, contour, transform)
+				}
 			}
 		}
-		accumulated_distance += f64(advance)
 	}
 	return svg.Path{
 		instructions: instructions

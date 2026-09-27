@@ -3677,6 +3677,39 @@ fn test_svg_text_is_materialized_as_glyph_outline_path_like_cpp() {
 	assert label.content_height().to_double() > 0
 }
 
+fn test_svg_text_shapes_each_code_point_with_its_computed_font_cascade() {
+	$if macos {
+		document := html.parse_document('<!doctype html><style>
+			@font-face { font-family:Fixture; src:url("file:///System/Library/Fonts/Supplemental/Arial.ttf"); unicode-range:U+41 }
+			#label { font-family:Fixture, serif; font-size:40px }
+		</style><svg width="240" height="100"><text id="label" x="20" y="60">AB</text></svg>')
+		result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+		label_node := layout_node_with_id(result.root, 'label') or { panic('missing SVG text') }
+		shaped := svg_shape_text(label_node, 'AB')
+		assert shaped.runs.len == 2
+		assert shaped.runs[0].font().source_path == '/System/Library/Fonts/Supplemental/Arial.ttf'
+		assert shaped.runs[0].glyphs().map(it.code_point) == [u32(`A`)]
+		assert shaped.runs[1].glyphs().map(it.code_point) == [u32(`B`)]
+		assert !shaped.runs[0].font().has_same_identity(shaped.runs[1].font())
+		assert shaped.runs[1].glyphs()[0].position.x == shaped.runs[0].width()
+	}
+}
+
+fn test_svg_tspans_advance_from_shaped_run_width_instead_of_ink_bounds() {
+	document := html.parse_document('<!doctype html><style>body { margin:0 }</style><svg width="300" height="120"><text x="20" y="36" font-size="28"><tspan id="first" dx="20">foo</tspan><tspan id="second" dx="20">bar</tspan></text></svg>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	first_node := layout_node_with_id(result.root, 'first') or { panic('missing first tspan') }
+	second_node := layout_node_with_id(result.root, 'second') or { panic('missing second tspan') }
+	first_shape := svg_shape_text(first_node, 'foo')
+	second_shape := svg_shape_text(second_node, 'bar')
+	second_local_path := svg_glyph_runs_outline_path(second_shape.runs, 0, 0)
+	second_local_bounds := svg_path_bounds(second_local_path) or { panic('missing local bounds') }
+	expected_second_x := CSSPixels.nearest_value_for(40 + first_shape.width + 20 +
+		second_local_bounds.x)
+	assert used_for_id(result, 'second').offset.x() == expected_second_x
+	assert used_for_id(result, 'first').content_width().to_double() < first_shape.width
+}
+
 fn test_svg_text_path_places_rotated_glyph_outlines_on_first_contour() {
 	font := &platform.Font{
 		family: 'sans-serif'
