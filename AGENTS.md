@@ -218,6 +218,10 @@
   preferred aspect ratio before contributing their natural intrinsic width. A
   ratio-only replaced element with a cyclic percentage width contributes zero
   to min-content sizing and the 300px replaced fallback to max-content sizing.
+  Its max-content size also transfers definite preferred, minimum, and maximum
+  constraints through the preferred ratio, including calculated, cyclic, and
+  border-box values; grid layout reapplies percentage block constraints against
+  the completed grid area.
   Resolved `min-content`, `max-content`, and `fit-content` block sizes remain
   indefinite percentage bases for descendants, including fixed-position boxes
   whose used height is clamped or whose opposing insets are both specified.
