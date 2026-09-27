@@ -548,7 +548,11 @@
   contexts that are provably left-to-right shape neutral punctuation as LTR,
   preserving contextual positioning and kerning across apostrophes, hyphens,
   and inline boundaries; mixed, controlled, and RTL text retains per-code-point
-  direction handling.
+  direction handling. SVG text and text-on-path use the same per-code-point
+  computed font cascade, including lazy author-face activation and invisible
+  fallback, then materialize the shaped glyph positions as outlines. SVG text
+  chunks apply their shared anchor once and advance nested tspans by shaped
+  advance rather than ink bounds.
 - Unicode default-ignorable controls remain in glyph runs for UTF-16 text
   bookkeeping but have zero advance and are excluded from bounds, intercepts,
   and retained paint buffers. Non-painting fallback-font fragments can still be

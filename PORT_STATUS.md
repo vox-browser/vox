@@ -858,7 +858,7 @@ largest unmatched modules:
    314 Layout
 
 $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
-Layout corpus: 1061 passed, 28 failed, 1089 total
+Layout corpus: 1066 passed, 23 failed, 1089 total
 
 $ v -old-compiler -enable-globals test .
 Summary for all V _test.v files: 651 passed, 651 total.
@@ -1306,12 +1306,15 @@ over the complete target context with `destination-in`. URL clips use that same
 layer boundary instead of applying antialiased coverage independently to every
 leaf command. The shared four-entry native cache rasterizes only each mask's
 transformed bounds, not a full-window surface. SVG text is materialized from
-the font's TrueType contours into the same quadratic path representation as
-`Gfx::Path::text()`, so ordinary text and text inside a mask share SVG
-fill/stroke/paint-order and mask compositing. SVG `<textPath>` now follows
-`Path::place_text_along()` too: it measures only the referenced path's first
-contour, rotates glyph outlines to each tangent, and enforces the glyph-midpoint
-cutoff before the same normal or mask path replay. SVG `<image>` now follows
+the shaped per-code-point computed font cascade into the same quadratic path
+representation as `Gfx::Path::glyph_run()`, including lazy author faces and
+invisible fallback, so ordinary text and text inside a mask share SVG
+fill/stroke/paint-order and mask compositing. Text chunks apply `text-anchor`
+once across their nested runs and advance following tspans by shaped advance
+rather than outline bounds. SVG `<textPath>` now follows
+`Path::place_glyph_runs_along()` too: it measures only the referenced path's
+first contour, rotates retained glyph outlines to each tangent, and enforces
+the glyph-midpoint cutoff before the same normal or mask path replay. SVG `<image>` now follows
 `ImagePaintable` through href/XLink selection, intrinsic-ratio sizing, forced
 `contain`, computed object position, `image-rendering` scaling selection,
 image-rect clipping, and transformed native bitmap replay. The same ordered
