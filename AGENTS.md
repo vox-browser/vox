@@ -315,6 +315,9 @@
   with `foreignObject` resetting the outermost-SVG boundary. The `:root`
   pseudo-class matches the document element in HTML, SVG, and XML documents,
   so standalone SVG roots receive the UA view-transition stacking context.
+  SVG animation elements inherit the base element's no-layout-node behavior;
+  inserted text remains in the DOM without turning `<set>` or `<animate>` into
+  an inline layout box.
 - Cross-parent `moveBefore()` operations discard cached inherited language for
   the complete shadow-including moved subtree. Subsequent `:lang()` and `:dir()`
   matching and inherited computed styles therefore reflect the new parent;
