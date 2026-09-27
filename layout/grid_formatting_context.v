@@ -1919,7 +1919,16 @@ fn grid_item_minimum_outer_inline_contribution(mut state LayoutState, item &Node
 	styled := item.as_node_with_style() or {
 		return grid_intrinsic_outer_width_contribution(mut state, item, .min_content)
 	}
-	item_state := state.get(styled)
+	mut item_state := state.get_mutable(styled)
+	containing_width := if containing := item_state.containing_block_used_values() {
+		containing.content_width()
+	} else {
+		CSSPixels.new(0)
+	}
+	// Track sizing can reach an item's definite minimum before any intrinsic
+	// contribution has resolved its box model. Include the complete outer size
+	// even on that first pass.
+	resolve_box_model_edges(styled.computed_values(), mut item_state, containing_width.to_double())
 	edges := flex_or_grid_item_outer_inline_edges(item_state)
 	if minimum.is_auto() {
 		first := if start > 0 { start } else { 0 }

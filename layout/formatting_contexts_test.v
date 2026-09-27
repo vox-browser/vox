@@ -1729,6 +1729,20 @@ fn test_grid_fixed_minimum_does_not_become_an_intrinsic_base_size() {
 	assert probe.content_width().to_double() == 100
 }
 
+fn test_grid_explicit_item_minimum_contribution_includes_box_edges() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#grid { float:left; display:grid; grid-template-columns:auto }
+		#item { min-width:100px; min-height:10px; border:1px solid }
+	</style><div id="grid"><div id="item"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	grid := used_for_id(result, 'grid')
+	item := used_for_id(result, 'item')
+	assert grid.content_width().to_double() == 102
+	assert item.content_width().to_double() == 100
+	assert item.border_box_width().to_double() == 102
+}
+
 fn test_grid_spanning_item_increases_intrinsic_growth_limits() {
 	mut tracks := [GridTrack{
 		max_content_max: true
