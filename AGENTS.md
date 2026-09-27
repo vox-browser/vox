@@ -477,6 +477,11 @@
 - A line wider than its containing block ignores `text-align` and stays flush
   with the inline-start edge. RTL overflow therefore extends leftward into the
   reachable scrollable overflow area instead of being stranded to the right.
+- Locale-sensitive `text-transform` casing uses the inherited element language,
+  and a live `lang` change invalidates both the rendered-text cache and layout
+  for affected text nodes. Recreated CSS/Layout font handles that resolve to the
+  same concrete face are canonicalized, so a last-resort missing glyph and the
+  following covered glyphs retain Ladybird's single shaped fragment.
 - Text shaping applies computed `word-spacing` to spaces, no-break spaces, and
   collapsed line feeds. It records the exact shaped advance of trailing ASCII
   whitespace, carries that record through fragment merging and intrinsic shape
