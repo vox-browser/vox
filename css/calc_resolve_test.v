@@ -229,6 +229,20 @@ fn test_grid_repeat_accepts_and_absolutizes_calculated_integer_counts() {
 	assert computed_list.track_list()[0].repeat().repeat_count() == 4
 }
 
+fn test_grid_tracks_accept_calculated_flex_values() {
+	value := parse_css_value_logic(.grid_template_columns, 'calc(1fr) calc(2 * 1fr)') or {
+		panic('calculated flex tracks did not parse')
+	}
+	assert value is GridTrackSizeListStyleValue
+	assert value.serialize(.normal) == 'calc(1fr) calc(2fr)'
+	tracks := (value as GridTrackSizeListStyleValue).grid_track_size_list().track_list()
+	assert tracks.len == 2
+	assert tracks[0].grid_size().is_flexible_length()
+	assert tracks[0].grid_size().flex_factor() == 1
+	assert tracks[1].grid_size().flex_factor() == 2
+	assert parse_css_value_logic(.grid_template_columns, 'calc(-1fr)') == none
+}
+
 fn test_resolve_numbers() {
 	assert approx(resolved_number('calc(1 + 2)')?, 3)
 	assert approx(resolved_number('sqrt(16)')?, 4)

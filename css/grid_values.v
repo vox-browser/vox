@@ -214,7 +214,7 @@ pub fn (placement GridTrackPlacement) absolutized(context ComputationContext) Gr
 
 // --- GridTrackSize ---
 
-pub type GridSizeValue = Flex | Size
+pub type GridSizeValue = CalculatedStyleValue | Flex | Size
 
 pub struct GridSize {
 pub mut:
@@ -230,6 +230,12 @@ pub fn GridSize.from_size(size Size) GridSize {
 pub fn GridSize.from_flex(flex_factor Flex) GridSize {
 	return GridSize{
 		value_: flex_factor
+	}
+}
+
+pub fn GridSize.from_calculated(calculated CalculatedStyleValue) GridSize {
+	return GridSize{
+		value_: calculated
 	}
 }
 
@@ -271,7 +277,7 @@ pub fn (grid_size GridSize) is_fixed(available_size AvailableSize) bool {
 }
 
 pub fn (grid_size GridSize) is_flexible_length() bool {
-	return grid_size.value_ is Flex
+	return grid_size.value_ is Flex || grid_size.value_ is CalculatedStyleValue
 }
 
 pub fn (grid_size GridSize) is_fit_content() bool {
@@ -314,6 +320,11 @@ pub fn (grid_size GridSize) flex_factor() f64 {
 	if value is Flex {
 		return value.to_fr()
 	}
+	if value is CalculatedStyleValue {
+		return value.resolve_flex(CalculationResolutionContext{}) or {
+			panic('calculated grid flex did not resolve')
+		}.to_fr()
+	}
 	panic('VERIFY_NOT_REACHED')
 }
 
@@ -330,6 +341,9 @@ pub fn (grid_size GridSize) is_intrinsic(available_size AvailableSize) bool {
 		Flex {
 			false
 		}
+		CalculatedStyleValue {
+			false
+		}
 	}
 }
 
@@ -338,6 +352,7 @@ pub fn (grid_size GridSize) is_definite() bool {
 	return match value {
 		Size { value.is_length_percentage() }
 		Flex { false }
+		CalculatedStyleValue { false }
 	}
 }
 
@@ -346,6 +361,7 @@ pub fn (grid_size GridSize) serialize(mode SerializationMode) string {
 	return match value {
 		Size { value.serialize(mode) }
 		Flex { value.serialize(mode) }
+		CalculatedStyleValue { value.serialize(mode) }
 	}
 }
 
@@ -394,6 +410,14 @@ pub fn (grid_size GridSize) absolutized(context ComputationContext) GridSize {
 		}
 		Flex {
 			GridSize.from_flex(value)
+		}
+		CalculatedStyleValue {
+			absolutized := value.absolutized(context)
+			match absolutized {
+				CalculatedStyleValue { GridSize.from_calculated(absolutized) }
+				FlexStyleValue { GridSize.from_flex(absolutized.flex()) }
+				else { GridSize.from_calculated(value) }
+			}
 		}
 	}
 }

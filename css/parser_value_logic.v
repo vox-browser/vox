@@ -7106,7 +7106,6 @@ fn (mut parser Parser) parse_grid_track_breadth(mut tokens ComponentValueStream)
 		return inflexible
 	}
 
-	// FIXME: The C++ implementation does not support calculated flex values yet.
 	mut flex_attempt := tokens.clone()
 	if flex_value := parser.parse_flex_value(mut flex_attempt) {
 		if flex_value is FlexStyleValue {
@@ -7114,6 +7113,14 @@ fn (mut parser Parser) parse_grid_track_breadth(mut tokens ComponentValueStream)
 			if flex.raw_value() >= 0 {
 				tokens = flex_attempt
 				return GridSize.from_flex(flex)
+			}
+		}
+		if flex_value is CalculatedStyleValue {
+			if flex := flex_value.resolve_flex(CalculationResolutionContext{}) {
+				if flex.raw_value() >= 0 {
+					tokens = flex_attempt
+					return GridSize.from_calculated(flex_value)
+				}
 			}
 		}
 	}

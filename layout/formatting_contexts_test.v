@@ -1467,6 +1467,22 @@ fn test_grid_formatting_context_sizes_fr_tracks_and_gap() {
 	assert two.offset.y().to_double() == 0
 }
 
+fn test_grid_formatting_context_sizes_calculated_fr_tracks() {
+	document := html.parse_document('<!doctype html><style>
+		#grid { display:grid; width:300px; grid-template-columns:calc(1fr) calc(2 * 1fr) }
+		#one, #two, #three { height:20px }
+	</style><div id="grid"><div id="one"></div><div id="two"></div><div id="three"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	one := used_for_id(result, 'one')
+	two := used_for_id(result, 'two')
+	three := used_for_id(result, 'three')
+	assert one.content_width().to_double() == 100
+	assert two.content_width().to_double() == 200
+	assert two.offset.x().to_double() == 100
+	assert three.offset.x().to_double() == 0
+	assert three.offset.y().to_double() == 20
+}
+
 fn test_fr_track_sizing_truncates_like_a_css_pixel_fraction() {
 	// expand_flexible_tracks() keeps the hypothetical fr size as an exact CSSPixelFraction
 	// and only lands on a pixel value where it is multiplied by a track's flex factor, and
