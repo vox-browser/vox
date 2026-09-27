@@ -3563,6 +3563,30 @@ fn test_text_bottom_atomic_inline_fits_the_parent_content_area() {
 	assert container.line_boxes[0].height().to_double() == 20
 }
 
+fn test_text_top_and_bottom_use_parent_inline_font_metrics() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		.line { font:20px/40px SerenitySans }
+		.box { display:inline-block; width:20px; height:10px }
+		.top { vertical-align:text-top }
+		.bottom { vertical-align:text-bottom }
+		.parent { font-size:40px }
+	</style>
+	<div class="line" id="direct">A<span class="box top"></span><span class="box bottom"></span></div>
+	<div class="line" id="nested">A<span class="parent">B<span class="box top"></span><span class="box bottom"></span></span></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	for id in ['direct', 'nested'] {
+		line := used_for_id(result, id).line_boxes[0]
+		fragments := line.fragments()
+		text_index := if id == 'direct' { 0 } else { 1 }
+		top_index := text_index + 1
+		bottom_index := text_index + 2
+		assert fragments[top_index].block_offset() == fragments[text_index].block_offset()
+		assert fragments[bottom_index].block_offset().plus(fragments[bottom_index].block_length()) ==
+			fragments[text_index].block_offset().plus(fragments[text_index].block_length())
+	}
+}
+
 fn test_normal_heading_line_height_uses_selected_font_typo_metrics() {
 	document := html.parse_document('<!doctype html><style>h3 { font-family: SerenitySans }</style><h3 id="heading">heading</h3>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }

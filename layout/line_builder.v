@@ -549,6 +549,24 @@ pub fn (mut builder LineBuilder) update_last_line() {
 				fragment_block_offset =
 					alphabetic_baseline.minus(CSSPixels.from_raw(container_font_size.raw_value() / 3))
 			}
+			.text_top {
+				parent_font_metrics := if parent := fragment.style_source_.parent() {
+					layout_font_metrics_for_node(parent)
+				} else {
+					container_font_metrics
+				}
+				fragment_block_offset = builder.current_block_offset.plus(line_box_baseline).minus(CSSPixels.nearest_value_for(f64(parent_font_metrics.ascent))).plus(
+					effective_box_top_offset)
+			}
+			.text_bottom {
+				parent_font_metrics := if parent := fragment.style_source_.parent() {
+					layout_font_metrics_for_node(parent)
+				} else {
+					container_font_metrics
+				}
+				fragment_block_offset = builder.current_block_offset.plus(line_box_baseline).plus(CSSPixels.nearest_value_for(f64(parent_font_metrics.descent))).minus(
+					fragment.height()).minus(effective_box_bottom_offset)
+			}
 			else {}
 		}
 		if !uses_container_alignment {
