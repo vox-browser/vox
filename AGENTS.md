@@ -489,6 +489,10 @@
   against the immediate parent inline's font ascent and descent, including when
   that parent has a different font size; the box's independent baseline
   contribution still participates in selecting the common line baseline.
+  `vertical-align: top` and `bottom` form line-relative aligned subtrees: their
+  descendants move together after the final line size is known, nested roots
+  remain independent, and contained absolute-position static markers receive
+  the same shift. Direct text ignores the block container's own alignment.
 - Inline formatting contexts publish their final inline-end insertion position
   after forced breaks, alignment, RTL direction, and writing-mode conversion.
   Originally-inline absolutely positioned descendants routed through an
