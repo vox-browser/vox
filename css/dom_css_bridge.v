@@ -67,6 +67,7 @@ fn computed_properties_to_dom(computed &ComputedProperties) &dom.CSSComputedProp
 		anchor_names_: computed.anchor_names()
 		color_schemes_: color_schemes
 		color_scheme_only_: color_scheme_only
+		has_casing_text_transform_: computed.text_transform() in [.uppercase, .lowercase, .capitalize]
 		attempted_pseudo_class_matches_: attempted_pseudo_class_matches_to_dom(computed)
 		css_handle: voidptr(computed)
 	}

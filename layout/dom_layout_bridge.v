@@ -269,6 +269,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		layout_handle: voidptr(box)
 		apply_style_callback: apply_style_to_layout_node
 		set_needs_layout_update_callback: set_layout_node_needs_layout_update
+		invalidate_text_for_rendering_callback: invalidate_layout_text_for_rendering
 	}
 	if text_node := box.as_text_node() {
 		// DOM::Node::name_or_description() reads TextNode::text_for_rendering()
@@ -449,6 +450,16 @@ fn set_layout_node_needs_layout_update(layout_handle voidptr, needs_layout_updat
 	}
 	mut node := unsafe { &Node(layout_handle) }
 	node.set_needs_layout_update(needs_layout_update)
+}
+
+fn invalidate_layout_text_for_rendering(layout_handle voidptr) {
+	if layout_handle == unsafe { nil } {
+		return
+	}
+	node := unsafe { &Node(layout_handle) }
+	text_node := node.as_text_node() or { return }
+	mut mutable_text_node := unsafe { &TextNode(text_node) }
+	mutable_text_node.invalidate_text_for_rendering()
 }
 
 // Mirror LayoutState::UsedValues onto DOM's module-cycle boundary object. CSSOM's

@@ -1957,7 +1957,14 @@ fn (mut n TextNode) compute_text_for_rendering() {
 		}
 	}
 
-	text = apply_text_transform_for_text_node(text, n.Node.computed_values().text_transform())
+	mut language := ''
+	if dom_text := n.dom_node_ {
+		if parent_element := dom_text.parent_or_shadow_host_element() {
+			language = parent_element.lang() or { '' }
+		}
+	}
+	text = apply_text_transform_for_text_node(text, n.Node.computed_values().text_transform(),
+		language)
 	white_space_collapse := n.Node.computed_values().white_space_collapse()
 	convert_tabs := white_space_collapse in [.collapse, .preserve_breaks, .preserve_spaces]
 	convert_newlines := white_space_collapse in [.collapse, .preserve_spaces]
@@ -1989,33 +1996,15 @@ pub fn (n &Node) as_text_node() ?&TextNode {
 	return unsafe { &TextNode(n) }
 }
 
-fn apply_text_transform_for_text_node(text string, transform css.TextTransform) string {
+fn apply_text_transform_for_text_node(text string, transform css.TextTransform, language string) string {
 	return match transform {
 		.none_, .full_size_kana { text }
-		.uppercase { text.to_upper() }
-		.lowercase { text.to_lower() }
-		.capitalize { titlecase_words_preserving_existing(text) }
+		.uppercase { platform.transform_text_case(text, language, .uppercase) }
+		.lowercase { platform.transform_text_case(text, language, .lowercase) }
+		.capitalize { platform.transform_text_case(text, language, .titlecase) }
 		.full_width { text_to_full_width(text) }
 		.math_auto { apply_math_auto_text_transform(text) }
 	}
-}
-
-fn titlecase_words_preserving_existing(text string) string {
-	mut result := []rune{}
-	mut at_word_start := true
-	for character in text.runes() {
-		if at_word_start && character.to_lower() != character.to_upper() {
-			result << character.to_title()
-			at_word_start = false
-		} else {
-			result << character
-			if character == ` ` || character == `\t` || character == `\n` || character == `\r`
-				|| character == `\f` {
-				at_word_start = true
-			}
-		}
-	}
-	return result.string()
 }
 
 fn text_to_full_width(text string) string {

@@ -497,6 +497,7 @@ pub mut:
 	anchor_names_                   []string
 	color_schemes_                  []string
 	color_scheme_only_              bool
+	has_casing_text_transform_      bool
 	attempted_pseudo_class_matches_ u8
 	// dom<->css bridge: opaque handle to the real css.ComputedProperties this placeholder mirrors.
 	// The CSS module (which owns the type) sets/reads it via unsafe cast; dom cannot name the type
@@ -524,6 +525,10 @@ pub fn (c &CSSComputedProperties_) overflow_x() CSSOverflow_ {
 
 pub fn (c &CSSComputedProperties_) overflow_y() CSSOverflow_ {
 	return c.overflow_y_
+}
+
+pub fn (c &CSSComputedProperties_) has_casing_text_transform() bool {
+	return c.has_casing_text_transform_
 }
 
 pub fn (c &CSSComputedProperties_) content_visibility() CSSContentVisibility_ {
@@ -5553,7 +5558,20 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 					mutable_element.invalidate_lang_value()
 				}
 				mutable_element.set_needs_style_update(true)
+				return .@continue
 			}
+			if is_dir {
+				return .@continue
+			}
+			layout_node := node.unsafe_layout_node() or { return .@continue }
+			parent_element := node.parent_or_shadow_host_element() or { return .@continue }
+			computed := parent_element.el_computed_properties() or { return .@continue }
+			if !computed.has_casing_text_transform() {
+				return .@continue
+			}
+			mut mutable_layout_node := unsafe { &LayoutNode(layout_node) }
+			mutable_layout_node.invalidate_text_for_rendering()
+			mutable_layout_node.set_needs_layout_update(.language_change_under_casing_text_transform)
 			return .@continue
 		})
 		schedule_has_invalidation_for_inherited_attribute_change(&e, if is_dir {

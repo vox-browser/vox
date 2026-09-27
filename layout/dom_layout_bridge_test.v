@@ -4,6 +4,21 @@ import css
 import dom
 import html
 
+fn test_lang_change_invalidates_locale_sensitive_casing_text() {
+	document := html.parse_document('<!doctype html><div id="host" lang="en" style="text-transform: uppercase">istanbul</div>')
+	_ = layout_document_typed_in_viewport(document, 320, 100)
+	mut host := document.get_element_by_id('host') or { panic('missing host') }
+	text := host.as_node().first_child() or { panic('missing text') }
+	initial_layout := text.layout_node() or { panic('missing initial text layout') }
+	assert initial_layout.rendered_text_ == 'ISTANBUL'
+
+	host.set_attribute_value('lang', 'tr')
+	assert initial_layout.needs_layout_update()
+	_ = layout_document_typed_in_viewport(document, 320, 100)
+	updated_layout := text.layout_node() or { panic('missing updated text layout') }
+	assert updated_layout.rendered_text_ == 'İSTANBUL'
+}
+
 // After layout, attach_layout_nodes wires the real layout tree back onto the DOM: node.layout_node()
 // returns real data (its DOM node, parent layout node, and computed display) instead of the old stubs.
 fn test_dom_layout_bridge() {

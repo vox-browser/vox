@@ -1300,6 +1300,8 @@ pub type LayoutApplyStyleCallback = fn (voidptr, voidptr)
 
 pub type LayoutSetNeedsLayoutUpdateCallback = fn (voidptr, bool)
 
+pub type LayoutInvalidateTextForRenderingCallback = fn (voidptr)
+
 pub struct VisualCaretStop {
 pub:
 	offset            int
@@ -1383,6 +1385,7 @@ pub mut:
 	layout_handle                    voidptr = unsafe { nil }
 	apply_style_callback             LayoutApplyStyleCallback = unsafe { nil }
 	set_needs_layout_update_callback LayoutSetNeedsLayoutUpdateCallback = unsafe { nil }
+	invalidate_text_for_rendering_callback LayoutInvalidateTextForRenderingCallback = unsafe { nil }
 }
 
 pub type SVGRelayoutCallback = fn (&SVGSVGBox)

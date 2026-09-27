@@ -50,6 +50,7 @@ pub enum SetNeedsLayoutReason {
 	html_video_element_natural_dimensions_changed
 	html_video_element_set_video_track
 	keyframe_effect
+	language_change_under_casing_text_transform
 	layout_tree_update
 	navigable_set_viewport_size
 	svg_graphics_element_transform_change
@@ -75,6 +76,7 @@ pub fn set_needs_layout_reason_to_string(reason SetNeedsLayoutReason) string {
 		}
 		.html_video_element_set_video_track { 'HTMLVideoElementSetVideoTrack' }
 		.keyframe_effect { 'KeyframeEffect' }
+		.language_change_under_casing_text_transform { 'LanguageChangeUnderCasingTextTransform' }
 		.layout_tree_update { 'LayoutTreeUpdate' }
 		.navigable_set_viewport_size { 'NavigableSetViewportSize' }
 		.svg_graphics_element_transform_change { 'SVGGraphicsElementTransformChange' }
@@ -94,6 +96,7 @@ pub enum SetNeedsLayoutTreeUpdateReason {
 	html_ol_list_element_ordinal_values
 	html_object_element_update_layout_and_child_objects
 	keyframe_effect
+	language_change_under_casing_text_transform
 	node_insert_before
 	node_insert_before_with_display_contents
 	node_remove
@@ -115,6 +118,7 @@ pub fn set_needs_layout_tree_update_reason_to_string(reason SetNeedsLayoutTreeUp
 			'HTMLObjectElementUpdateLayoutAndChildObjects'
 		}
 		.keyframe_effect { 'KeyframeEffect' }
+		.language_change_under_casing_text_transform { 'LanguageChangeUnderCasingTextTransform' }
 		.node_insert_before { 'NodeInsertBefore' }
 		.node_insert_before_with_display_contents { 'NodeInsertBeforeWithDisplayContents' }
 		.node_remove { 'NodeRemove' }
@@ -5136,6 +5140,13 @@ pub fn (mut ln LayoutNode) set_needs_layout_update(reason SetNeedsLayoutReason) 
 			parent.needs_layout_update_ = true
 		}
 		ancestor = parent.parent_
+	}
+}
+
+pub fn (mut ln LayoutNode) invalidate_text_for_rendering() {
+	if ln.layout_handle != unsafe { nil }
+		&& ln.invalidate_text_for_rendering_callback != unsafe { nil } {
+		ln.invalidate_text_for_rendering_callback(ln.layout_handle)
 	}
 }
 

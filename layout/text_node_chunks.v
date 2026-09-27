@@ -79,7 +79,17 @@ fn (mut iterator TextNodeChunkIterator) install_font_cascade(font_cascade &css.F
 	}
 	iterator.last_resort_font = none
 	if font_cascade.last_resort_font != unsafe { nil } {
-		iterator.last_resort_font = text_node_chunk_platform_font(*font_cascade.last_resort_font)
+		last_resort := text_node_chunk_platform_font(*font_cascade.last_resort_font)
+		// FontCascadeList retains its last-resort font by reference. Reuse the
+		// matching translated cascade object as well, so a missing glyph followed
+		// by covered glyphs from that same face stays one shaped fragment.
+		for font in iterator.font_cascade_fonts {
+			if font.has_same_identity(last_resort) {
+				iterator.last_resort_font = font
+				return
+			}
+		}
+		iterator.last_resort_font = last_resort
 	}
 }
 

@@ -112,6 +112,24 @@ pub:
 	contours [][]FontGlyphOutlinePoint
 }
 
+// Font handles can be recreated while crossing the CSS/Layout boundary. Test
+// whether they still identify the same concrete face and shaping size, as
+// Gfx::FontHandle equality does upstream.
+pub fn (font &Font) has_same_identity(other &Font) bool {
+	if font.point_size != other.point_size || font.weight != other.weight
+		|| font.is_invisible != other.is_invisible {
+		return false
+	}
+	if font_path := font.font_path() {
+		other_path := other.font_path() or { return false }
+		return font_path == other_path && font.face_index() == other.face_index()
+	}
+	if other.font_path() != none {
+		return false
+	}
+	return font.family.to_lower() == other.family.to_lower()
+}
+
 fn font_u16_at(bytes []u8, offset int) ?u16 {
 	if offset < 0 || offset + 2 > bytes.len {
 		return none
