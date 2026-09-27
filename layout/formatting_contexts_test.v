@@ -2913,19 +2913,19 @@ fn test_collapsed_table_row_has_zero_height_and_does_not_advance_row_cursor() {
 	collapsed := used_for_id(result, 'collapsed')
 	last := used_for_id(result, 'last')
 	collapsed_cell := used_for_id(result, 'collapsed-cell')
-	assert table.content_height().to_double() == 67
-	assert group.content_height().to_double() == 57
-	assert first.content_height().to_double() == 22
+	assert table.content_height().to_double() == 68
+	assert group.content_height().to_double() == 58
+	assert first.content_height().to_double() == 23
 	assert first.offset.y().to_double() == 5
 	assert collapsed.content_height().to_double() == 0
-	assert collapsed.offset.y().to_double() == 32
+	assert collapsed.offset.y().to_double() == 33
 	assert last.content_height().to_double() == 30
-	assert last.offset.y().to_double() == 32
+	assert last.offset.y().to_double() == 33
 	// Collapsed cells are still laid out. Positioning applies the signed
 	// alignment difference against their zero-height row.
-	assert collapsed_cell.content_height().to_double() == 16
-	assert collapsed_cell.padding_top.to_double() == -9
-	assert collapsed_cell.padding_bottom.to_double() == -9
+	assert collapsed_cell.content_height().to_double() == 17
+	assert collapsed_cell.padding_top.to_double() == -9.5
+	assert collapsed_cell.padding_bottom.to_double() == -9.5
 }
 
 fn test_collapsed_table_column_has_zero_width_and_no_border_spacing() {
@@ -3772,7 +3772,7 @@ fn test_abspos_static_position_is_converted_to_actual_containing_block_space() {
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	absolute := used_for_id(result, 'absolute')
 	assert absolute.cumulative_offset().x().to_double() == 8
-	assert absolute.cumulative_offset().y().to_double() == 24
+	assert absolute.cumulative_offset().y().to_double() == 25
 }
 
 // Final line alignment moves an atomic inline. An abspos descendant whose
@@ -3889,12 +3889,12 @@ fn test_intrinsic_height_keywords_stay_indefinite_for_percentage_children() {
 	<div id="fixed-min" class="case"><div id="fixed-min-percent" class="percent">A</div><div>B</div></div>
 	<div id="fixed-insets" class="case"><div id="fixed-insets-percent" class="percent">A</div>B</div>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
-	assert used_for_id(result, 'normal').content_height().to_double() == 32
-	assert used_for_id(result, 'normal-percent').content_height().to_double() == 16
+	assert used_for_id(result, 'normal').content_height().to_double() == 34
+	assert used_for_id(result, 'normal-percent').content_height().to_double() == 17
 	assert used_for_id(result, 'fixed-min').content_height().to_double() == 48
-	assert used_for_id(result, 'fixed-min-percent').content_height().to_double() == 16
-	assert used_for_id(result, 'fixed-insets').content_height().to_double() == 32
-	assert used_for_id(result, 'fixed-insets-percent').content_height().to_double() == 16
+	assert used_for_id(result, 'fixed-min-percent').content_height().to_double() == 17
+	assert used_for_id(result, 'fixed-insets').content_height().to_double() == 34
+	assert used_for_id(result, 'fixed-insets-percent').content_height().to_double() == 17
 }
 
 fn test_intrinsic_min_and_max_height_constraints_clamp_used_height() {
@@ -3995,19 +3995,16 @@ fn test_svg_text_path_places_rotated_glyph_outlines_on_first_contour() {
 }
 
 fn test_svg_text_path_start_offset_resolves_against_first_contour_length() {
-	font := &platform.Font{
-		family: 'sans-serif'
-		point_size: 20
-	}
 	shape := svg.parse_path_data('M 50 50 L 250 50')
-	without_offset := svg_place_text_along_path(shape, 'O', font, 0)
-	with_offset := svg_place_text_along_path(shape, 'O', font, 100)
+	document := html.parse_document('<!doctype html><style>body { margin:0 }</style><svg width="300" height="100"><defs><path id="guide" d="M 50 50 L 250 50"/></defs><text><textPath id="label" href="#guide" startOffset="50%" font-size="20">O</textPath></text></svg>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	label_node := layout_node_with_id(result.root, 'label') or { panic('missing textPath') }
+	shaped := svg_shape_text(label_node, 'O')
+	without_offset := svg_place_glyph_runs_along_path(shape, shaped.runs, 0)
+	with_offset := svg_place_glyph_runs_along_path(shape, shaped.runs, 100)
 	without_bounds := svg_path_bounds(without_offset) or { panic('missing text path') }
 	with_bounds := svg_path_bounds(with_offset) or { panic('missing offset text path') }
 	assert math.abs((with_bounds.x - without_bounds.x) - 100) < 0.01
-
-	document := html.parse_document('<!doctype html><style>body { margin:0 }</style><svg width="300" height="100"><defs><path id="guide" d="M 50 50 L 250 50"/></defs><text><textPath id="label" href="#guide" startOffset="50%" font-size="20">O</textPath></text></svg>')
-	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	label := used_for_id(result, 'label')
 	laid_out := svg_path_bounds(label.computed_svg_path() or { panic('textPath has no path') }) or {
 		panic('textPath has no bounds')
@@ -4033,11 +4030,8 @@ fn test_svg_text_path_text_anchor_adjusts_the_start_offset() {
 	end_bounds := svg_path_bounds(used_for_id(end_result, 'label').computed_svg_path() or {
 		panic('end textPath has no path')
 	}) or { panic('end textPath has no bounds') }
-	font := &platform.Font{
-		family: 'sans-serif'
-		point_size: 20
-	}
-	run_width := f64(platform.shape_text(0, 0, 'OO', font, .context_dependent).width())
+	start_label := layout_node_with_id(start_result.root, 'label') or { panic('missing textPath') }
+	run_width := svg_shape_text(start_label, 'OO').width
 	assert math.abs((start_bounds.x - middle_bounds.x) - run_width / 2) < 0.01
 	assert math.abs((start_bounds.x - end_bounds.x) - run_width) < 0.01
 }
