@@ -1912,8 +1912,11 @@ fn compute_table_wrapper_content_width(mut state LayoutState, wrapper &Node, mut
 			return grid_max
 		}
 		if constraint.is_fit_content() {
-			available := constraint.fit_content_available_space() or { return grid_min }
-			limit := available.to_px(layout_length_resolution_context(table_node), containing_width)
+			limit := if available := constraint.fit_content_available_space() {
+				available.to_px(layout_length_resolution_context(table_node), containing_width)
+			} else {
+				containing_width
+			}
 			return css_pixels_min(grid_max, css_pixels_max(grid_min, limit))
 		}
 		return resolve_layout_content_size(table_node, constraint, containing_width, table_state,
@@ -2073,7 +2076,9 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			}
 		}
 	}
-	if computed.size_value(.width).is_intrinsic_sizing_constraint() {
+	if computed.size_value(.width).is_intrinsic_sizing_constraint()
+		|| computed.size_value(.min_width).is_intrinsic_sizing_constraint()
+		|| computed.size_value(.max_width).is_intrinsic_sizing_constraint() {
 		// The wrapper width phase has already resolved an intrinsic table width.
 		// Copy that border-box width back into the principal table before running
 		// the grid, rather than letting the generic block equation retain a stale

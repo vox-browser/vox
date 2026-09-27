@@ -4279,8 +4279,34 @@ fn test_inline_table_honours_intrinsic_sizing_keywords() {
 	</div>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	assert used_for_id(result, 'minimum').content_width().to_double() == 70
-	assert used_for_id(result, 'fit').content_width().to_double() == 70
+	assert used_for_id(result, 'fit').content_width().to_double() == 110
 	assert used_for_id(result, 'maximum').content_width().to_double() == 110
+}
+
+fn test_table_fit_content_distinguishes_zero_argument_from_keyword() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#outer { width:500px }
+		table { border-collapse:collapse; font:10px/10px monospace }
+		td { padding:0 }
+	</style><div id="outer">
+		<table id="zero" style="width:fit-content(0)"><tr><td>XXXX XXXX</td></tr></table>
+		<table id="zero-percent" style="width:fit-content(0%)"><tr><td>XXXX XXXX</td></tr></table>
+		<table id="limited" style="width:fit-content(30px)"><tr><td>XXXX XXXX</td></tr></table>
+		<table id="keyword" style="width:fit-content"><tr><td>XXXX XXXX</td></tr></table>
+		<table id="max-zero" style="max-width:fit-content(0)"><tr><td>XXXX XXXX</td></tr></table>
+	</div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	zero := used_for_id(result, 'zero').content_width()
+	zero_percent := used_for_id(result, 'zero-percent').content_width()
+	limited := used_for_id(result, 'limited').content_width()
+	keyword := used_for_id(result, 'keyword').content_width()
+	max_zero := used_for_id(result, 'max-zero')
+	assert zero == zero_percent
+	assert zero.raw_value() < limited.raw_value()
+	assert limited.raw_value() < keyword.raw_value()
+	assert max_zero.content_width() == zero
+	assert max_zero.margin_right.raw_value() == 0
 }
 
 // BlockFormattingContext::try_compute_width() gives the leftover inline space to
