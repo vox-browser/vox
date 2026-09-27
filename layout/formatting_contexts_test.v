@@ -309,6 +309,29 @@ fn test_live_input_placeholder_overlays_after_attribute_mutation() {
 	assert placeholder_used.margin_left == inner_used.content_width().negated()
 }
 
+fn test_number_input_stepper_icons_keep_computed_path_geometry() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		input { width:200px }
+	</style><input id="number" type="number" value="1">')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	number := layout_node_with_id(result.root, 'number') or { panic('missing number input') }
+	outer := number.first_child() or { panic('missing number input outer box') }
+	assert outer.children().len == 3
+	for button in outer.children()[1..] {
+		flex_wrapper := button.first_child() or { panic('missing button flex wrapper') }
+		content_wrapper := flex_wrapper.first_child() or { panic('missing button content wrapper') }
+		svg_box := content_wrapper.first_child() or { panic('missing stepper svg') }
+		path_box := svg_box.first_child() or { panic('missing stepper path') }
+		assert path_box.is_svg_geometry_box()
+		path_used := result.used_values_for(path_box.as_node_with_style() or {
+			panic('stepper path has no style')
+		}) or { panic('stepper path has no used values') }
+		assert path_used.content_width().to_double() == 12
+		assert path_used.content_height().to_double() > 7
+	}
+}
+
 fn test_native_input_min_max_height_clamps_are_definite_for_shadow_content() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }

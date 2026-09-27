@@ -1786,6 +1786,7 @@ fn build_number_input_stepper_button(document &dom.Document, host_computed &css.
 	path_element.set_attribute_value('d', path_data)
 	path_style := computed_style_with_overrides(host_computed, {
 		css.PropertyID.display: 'inline'
+		css.PropertyID.d:       'path("${path_data}")'
 	})
 	path_box := create_layout_node_for_svg_element(document, path_element, path_style)?
 	svg_box.append_child(path_box)
