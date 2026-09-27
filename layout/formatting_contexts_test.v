@@ -5123,8 +5123,8 @@ fn test_wrapped_inline_blocks_preserve_strut_descent_between_lines() {
 	assert line.line_boxes[0].height().to_double() > 20
 	assert line.line_boxes[1].height().to_double() > 20
 	assert line.line_boxes[2].height().to_double() > 20
-	assert line.line_boxes[1].fragments_[0].block_offset().raw_value() >= line.line_boxes[0].bottom().raw_value()
-	assert line.line_boxes[2].fragments_[0].block_offset().raw_value() >= line.line_boxes[1].bottom().raw_value()
+	assert line.line_boxes[1].bottom().minus(line.line_boxes[1].height()).raw_value() >= line.line_boxes[0].bottom().raw_value()
+	assert line.line_boxes[2].bottom().minus(line.line_boxes[2].height()).raw_value() >= line.line_boxes[1].bottom().raw_value()
 }
 
 // An originally-inline abspos pseudo-element remains in the list item's
