@@ -2111,7 +2111,15 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 				generated_children << child
 			}
 		} else if content.text.len > 0 || keeps_empty_text {
-			mut child := unsafe { &Node(TextNode.new_generated(document, content.text)) }
+			generated_text := TextNode.new_generated(document, content.text)
+			// Quote controls and counters may leave the resolved content list empty.
+			// Keep the layout-tree child used by upstream's tree dump, but only an
+			// authored empty string contributes the degenerate inline fragment.
+			if content.text.len == 0 {
+				mut mutable_text := unsafe { &TextNode(generated_text) }
+				mutable_text.retains_empty_generated_fragment_ = false
+			}
+			mut child := unsafe { &Node(generated_text) }
 			child.set_generated_for(layout_pseudo, element)
 			generated_children << child
 		}

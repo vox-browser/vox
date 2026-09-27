@@ -1871,6 +1871,7 @@ pub mut:
 	font_for_rendering_           ?&platform.Font
 	line_segmenter_               &dom.Segmenter = unsafe { nil }
 	is_empty_editable_            bool
+	retains_empty_generated_fragment_ bool
 	cached_inline_chunks_         ?[]TextNodeChunk
 	cached_font_environment_generation_ u64
 	cached_utf16_code_units_      ?[]u16
@@ -1924,6 +1925,7 @@ pub fn TextNode.new_generated(document &dom.Document, source_text string) &TextN
 			is_generated_text_node_: true
 		}
 		source_text_: source_text
+		retains_empty_generated_fragment_: source_text.len == 0
 	}
 }
 

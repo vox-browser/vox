@@ -1110,10 +1110,12 @@ fn tree_builder_before_pseudo_for_id(result DocumentLayoutResult, id string) &No
 fn test_empty_generated_strings_only_create_text_in_inline_pseudo_elements() {
 	document := html.parse_document('<!doctype html><style>
 		#inline::before { content:""; padding:5px }
+		#quote { quotes:none }
+		#quote::before { content:open-quote }
 		#block::before { content:""; display:block; height:10px }
 		#inline-block::before { content:""; display:inline-block; width:20px; height:20px }
 		#text::before { content:"x"; display:block }
-	</style><div id="inline">a</div><div id="block">b</div><div id="inline-block">c</div><div id="text">d</div>')
+	</style><div id="inline">a</div><div id="quote">q</div><div id="block">b</div><div id="inline-block">c</div><div id="text">d</div>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	// The empty text node carries an ordinary inline pseudo-element's fragment.
 	inline := tree_builder_before_pseudo_for_id(result, 'inline')
@@ -1125,6 +1127,18 @@ fn test_empty_generated_strings_only_create_text_in_inline_pseudo_elements() {
 	assert geometry.content_rect.width.to_double() == 0
 	assert geometry.content_rect.height.to_double() == 0
 	assert geometry.padding_rect.width.to_double() == 10
+	// A quote control resolving to no text keeps its tree child but contributes
+	// no fragment at the current insertion point.
+	quote := tree_builder_before_pseudo_for_id(result, 'quote')
+	assert quote.child_count() == 1
+	quote_text := quote.children()[0].as_text_node() or { panic('quote child is not text') }
+	assert !quote_text.retains_empty_generated_fragment_
+	quote_geometry := inline_box_absolute_geometry(quote, result.state) or {
+		panic('empty quote pseudo-element has no retained geometry')
+	}
+	assert quote_geometry.content_rect.x.to_double() == 8
+	assert quote_geometry.content_rect.width.to_double() == 0
+	assert quote_geometry.content_rect.height.to_double() == 0
 	// Other pseudo-element boxes exist independently of their contents.
 	for id in ['block', 'inline-block'] {
 		pseudo := tree_builder_before_pseudo_for_id(result, id)

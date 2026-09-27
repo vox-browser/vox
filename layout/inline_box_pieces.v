@@ -528,10 +528,16 @@ fn inline_box_absolute_geometry_cached(node &Node, state &LayoutState, mut piece
 	}
 	pieces := pieces_by_container[container_key] or { []InlineBoxPiece{} }
 	local := inline_box_geometry_from_pieces(node, pieces, horizontal, used) or {
-		if node.dom_node() == none {
+		if node.dom_node() == none && !node.is_generated_for_pseudo_element() {
 			return none
 		}
-		line_height := node.computed_values().line_height()
+		// Generated pseudo boxes whose quote controls resolve to no text remain
+		// visible in the layout-tree dump, but do not acquire a line-height box.
+		line_height := if node.dom_node() == none {
+			CSSPixels.new(0)
+		} else {
+			node.computed_values().line_height()
+		}
 		placeholder := InlineBoxPiece{
 			node: node
 			border_box_rect: css.CSSPixelRect{
