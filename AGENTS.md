@@ -200,7 +200,10 @@
   fallback. A line box exports the final position of its first unshifted text
   fragment as its baseline, with its alignment baseline retained only as the
   fallback; reversed writing modes include their final block-axis offset. Flex
-  and grid containers also keep their content
+  intrinsic measurement resolves an inline flex container's automatic block
+  size, including min/max constraints, before item and line alignment, and
+  retains content-derived baselines before discarding measurement line boxes.
+  Flex and grid containers also keep their content
   margins from collapsing through them, including at zero used height. A
   partially intrinsic outer SVG derives its missing max-content width from its
   intrinsic height and viewBox ratio,

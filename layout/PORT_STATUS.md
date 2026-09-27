@@ -100,6 +100,12 @@ continuing through normal positioning and child layout. Column flex-base sizing
 applies the same post-base natural-aspect-ratio cross min/max adjustment as the
 row path, so a constrained cross size transfers back to the main axis.
 
+Intrinsic inline-flex measurement now resolves an automatic block size,
+including min/max constraints, before main- and cross-axis alignment. It also
+retains the content-derived first and last baselines before discarding the
+temporary measurement line boxes, matching the baseline exported by the normal
+layout pass.
+
 Flex and grid now build order-modified document order with C++'s distinct-order
 buckets rather than insertion-sorting every child. Equal-order children retain
 document order. `generate_anonymous_flex_items()` sorts those distinct keys
