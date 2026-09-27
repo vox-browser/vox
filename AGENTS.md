@@ -327,7 +327,9 @@
   resource begins at its own user-space origin rather than inheriting the
   reference's offset. A `foreignObject` receives its resolved SVG geometry as
   definite layout space without turning that geometry into a definite CSS
-  percentage-height basis for its HTML descendants.
+  percentage-height basis for its HTML descendants. The compact script bridge
+  replays `Element.remove()`, allowing resource-removal invalidation to rebuild
+  referencers and discard attached mask, clip, or pattern layout subtrees.
 - Non-collapsible text whose flat-tree style parent has `display: contents`
   keeps an anonymous inline style wrapper while the parent itself is unboxed,
   including slotted text that then participates in flex-item blockification.
