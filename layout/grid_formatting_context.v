@@ -1844,7 +1844,7 @@ fn grid_content_based_minimum_from_outer_contribution(item &Node, item_state &Us
 			content_minimum = specified
 		}
 	} else if box := item.as_box() {
-		if ratio := box.preferred_aspect_ratio() {
+		if box.has_preferred_aspect_ratio() {
 			opposite := item.computed_values().size_value(if columns {
 				css.PropertyID.height
 			} else {
@@ -1853,9 +1853,9 @@ fn grid_content_based_minimum_from_outer_contribution(item &Node, item_state &Us
 			if opposite.is_length() {
 				if opposite_size := resolve_layout_size(item, opposite, CSSPixels.new(0)) {
 					content_minimum = if columns {
-						opposite_size.times_fraction(ratio)
+						intrinsic_content_width_from_aspect_ratio(box, item_state, opposite_size)
 					} else {
-						opposite_size.divided_by_fraction(ratio)
+						intrinsic_content_height_from_aspect_ratio(box, item_state, opposite_size)
 					}
 				}
 			}
@@ -2357,8 +2357,9 @@ fn grid_item_outer_block_content_contribution(mut state LayoutState, item &Node,
 			AvailableSize.make_indefinite()
 		})
 	} else if preferred.is_auto() {
-		if ratio := box.preferred_aspect_ratio() {
-			inner = item_state.content_width().divided_by_fraction(ratio)
+		if box.has_preferred_aspect_ratio() {
+			inner = intrinsic_content_height_from_aspect_ratio(box, item_state,
+				item_state.content_width())
 		} else {
 			inner = item_state.content_height()
 		}
@@ -3081,6 +3082,17 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 			&& placement.item.computed_values().size_value(.height).is_auto() && !top_margin_auto
 			&& !bottom_margin_auto {
 			forced_item_height = area_height.minus(flex_or_grid_item_outer_block_edges(item_state))
+		} else if placement.item.is_replaced_box()
+			&& placement.item.computed_values().size_value(.height).is_auto() {
+			if box := placement.item.as_box() {
+				if box.has_preferred_aspect_ratio() {
+					// Final grid item sizing transfers the resolved inline size
+					// through the preferred ratio using its content- or border-box
+					// semantics before block-axis min/max constraints are applied.
+					forced_item_height = intrinsic_content_height_from_aspect_ratio(box,
+						item_state, item_state.content_width())
+				}
+			}
 		} else if !placement.item.computed_values().size_value(.height).is_auto() {
 			forced_item_height = resolve_layout_content_size(placement.item, placement.item.computed_values().size_value(.height), area_height, item_state, false)
 		}
@@ -3091,6 +3103,16 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 			} else {
 				none
 			}, item_state.content_width(), clamped_height)
+		} else if placement.item.is_replaced_box()
+			&& (placement.item.computed_values().size_value(.height).contains_percentage()
+			|| placement.item.computed_values().size_value(.min_height).contains_percentage()
+			|| placement.item.computed_values().size_value(.max_height).contains_percentage()) {
+			// Percentage block-axis constraints become resolvable only after the
+			// grid rows have their final sizes. Re-run replaced sizing with the
+			// completed grid area as the percentage basis while retaining the
+			// inline size established during column sizing.
+			item_state = layout_independent_child(mut state, placement.item, mut container_state,
+				area_width, area_height, item_state.content_width(), none)
 		}
 		if subgridded_columns || subgridded_rows {
 			resolve_box_model_edges(styled.computed_values(), mut item_state, area_width.to_double())

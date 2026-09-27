@@ -286,7 +286,11 @@ fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node,
 	resolve_box_model_edges(computed, mut child_state, containing_width.to_double())
 	if child.is_replaced_box() && forced_width == none && forced_height == none {
 		box := child.as_box() or { panic('replaced node must be a box') }
-		size := compute_replaced_size(box, AvailableSpace.new(AvailableSize.make_definite(containing_width), if height := containing_height {
+		// A ratio-only replaced box stretch-fits into the available margin-box
+		// space. Its tentative content width therefore excludes the resolved
+		// margins, borders, and padding already occupying that space.
+		replaced_available_width := containing_width.minus(flex_or_grid_item_outer_inline_edges(child_state))
+		size := compute_replaced_size(box, AvailableSpace.new(AvailableSize.make_definite(replaced_available_width), if height := containing_height {
 			AvailableSize.make_definite(height)
 		} else {
 			AvailableSize.make_indefinite()

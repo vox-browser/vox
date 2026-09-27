@@ -1037,6 +1037,15 @@ pub fn (values &ComputedValues) box_sizing() BoxSizing {
 	return values.computed_values_box_sizing_
 }
 
+// CSS Sizing 4 applies an `auto <ratio>` preferred aspect ratio to the content
+// box. An author-specified ratio without `auto` follows `box-sizing`.
+pub fn (values &ComputedValues) box_sizing_for_aspect_ratio() BoxSizing {
+	if values.aspect_ratio().use_natural_aspect_ratio_if_available {
+		return .content_box
+	}
+	return values.box_sizing()
+}
+
 pub fn (values &ComputedValues) vertical_align() VerticalAlign {
 	return values.computed_values_vertical_align_
 }

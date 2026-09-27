@@ -1062,6 +1062,33 @@ fn test_ratio_only_svg_cyclic_percentage_uses_replaced_max_content_fallback() {
 	assert used_for_id(result, 'image').content_height().to_double() == 300
 }
 
+fn test_ratio_only_replaced_max_content_transfers_constraints() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		.grid { display:grid; grid-template-columns:max-content; width:max-content }
+		img { max-height:32px }
+		#conflicting { min-height:100px }
+		#capped { min-height:100px; max-width:150px }
+		#cyclic { min-width:calc(10px + 50%); max-height:2px }
+		#border { aspect-ratio:2/1; box-sizing:border-box; border:10px solid; min-height:120px; max-height:none }
+	</style>
+	<div id="conflicting-grid" class="grid"><img id="conflicting" src="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 2 1\'%3E%3C/svg%3E"></div>
+	<div id="capped-grid" class="grid"><img id="capped" src="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 2 1\'%3E%3C/svg%3E"></div>
+	<div id="cyclic-grid" class="grid"><img id="cyclic" src="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 2 1\'%3E%3C/svg%3E"></div>
+	<div id="border-grid" class="grid"><img id="border" src="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\'%3E%3C/svg%3E"></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'conflicting-grid').content_width().to_double() == 200
+	assert used_for_id(result, 'conflicting').content_height().to_double() == 100
+	assert used_for_id(result, 'capped-grid').content_width().to_double() == 150
+	assert used_for_id(result, 'capped').content_width().to_double() == 150
+	assert used_for_id(result, 'cyclic-grid').content_width().to_double() == 10
+	assert used_for_id(result, 'cyclic').content_width().to_double() == 15
+	assert used_for_id(result, 'border-grid').content_width().to_double() == 240
+	assert used_for_id(result, 'border-grid').content_height().to_double() == 120
+	assert used_for_id(result, 'border').content_width().to_double() == 220
+	assert used_for_id(result, 'border').content_height().to_double() == 100
+}
+
 fn test_column_flex_intrinsic_cross_size_resolves_percentage_minimum_in_second_pass() {
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-direction:column }

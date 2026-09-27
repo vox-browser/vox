@@ -199,8 +199,23 @@ fn append_typed_layout_node(node &Node, state &LayoutState, depth int, mut lines
 			if svg_document := image_box.svg_image_document() {
 				if styled := node.as_node_with_style() {
 					if used := state.try_get(styled) {
-						width := used.content_width().to_double()
-						height := used.content_height().to_double()
+						mut width := used.content_width().to_double()
+						mut height := used.content_height().to_double()
+						// The SVG image decoder retains its 32x32 fallback raster for an
+						// empty document. Upstream's diagnostic tree exposes that retained
+						// image viewport rather than resizing the isolated document to the
+						// CSS object box.
+						if root := svg_document.document_element() {
+							view_box_is_degenerate := if view_box := svg.parse_viewbox(root.get_attribute_value('viewBox')) {
+								view_box.width <= 0 || view_box.height <= 0
+							} else {
+								false
+							}
+							if root.as_node().child_count() == 0 && !view_box_is_degenerate {
+								width = 32
+								height = 32
+							}
+						}
 						if width <= 0 || height <= 0 {
 							return
 						}

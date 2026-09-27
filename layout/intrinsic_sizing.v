@@ -6,6 +6,205 @@ module layout
 
 import css
 
+enum IntrinsicSizeDimension {
+	width
+	height
+}
+
+enum IntrinsicConstraintKind {
+	minimum
+	preferred_or_maximum
+}
+
+struct ReplacedMaxContentSizeConstraints {
+	definite_size_in_ratio_determining_axis ?CSSPixels
+	minimum_width                           ?CSSPixels
+	minimum_height                          ?CSSPixels
+}
+
+// Intrinsic grid sizing can transfer an aspect ratio before block-axis border
+// metrics have been copied into LayoutState. The borders are already definite
+// in computed style, while padding has been resolved in the box state.
+fn intrinsic_aspect_ratio_edges(box &Box, box_state &UsedValues, width bool) CSSPixels {
+	computed := box.computed_values()
+	if computed.box_sizing_for_aspect_ratio() != .border_box {
+		return CSSPixels.new(0)
+	}
+	if width {
+		return css_px(resolve_used_border_width(computed, .border_left_width)).plus(box_state.padding_left).plus(box_state.padding_right).plus(css_px(resolve_used_border_width(computed,
+			.border_right_width)))
+	}
+	return css_px(resolve_used_border_width(computed, .border_top_width)).plus(box_state.padding_top).plus(box_state.padding_bottom).plus(css_px(resolve_used_border_width(computed,
+		.border_bottom_width)))
+}
+
+fn intrinsic_content_height_from_aspect_ratio(box &Box, box_state &UsedValues, content_width CSSPixels) CSSPixels {
+	ratio := box.preferred_aspect_ratio() or { return CSSPixels.new(0) }
+	if box.computed_values().box_sizing_for_aspect_ratio() != .border_box {
+		return content_width.divided_by_fraction(ratio)
+	}
+	border_box_width := content_width.plus(intrinsic_aspect_ratio_edges(box, box_state,
+		true))
+	border_box_height := border_box_width.divided_by_fraction(ratio)
+	return css_pixels_max(CSSPixels.new(0), border_box_height.minus(intrinsic_aspect_ratio_edges(box,
+		box_state, false)))
+}
+
+fn intrinsic_content_width_from_aspect_ratio(box &Box, box_state &UsedValues, content_height CSSPixels) CSSPixels {
+	ratio := box.preferred_aspect_ratio() or { return CSSPixels.new(0) }
+	if box.computed_values().box_sizing_for_aspect_ratio() != .border_box {
+		return content_height.times_fraction(ratio)
+	}
+	border_box_height := content_height.plus(intrinsic_aspect_ratio_edges(box, box_state,
+		false))
+	border_box_width := border_box_height.times_fraction(ratio)
+	return css_pixels_max(CSSPixels.new(0), border_box_width.minus(intrinsic_aspect_ratio_edges(box,
+		box_state, true)))
+}
+
+// Resolve a length-percentage constraint for max-content measurement. Inline
+// percentages are cyclic in an intrinsic inline contribution. Block-axis
+// percentages can still resolve when the containing block has a definite
+// height, as in an explicitly sized grid container.
+fn resolve_replaced_max_content_constraint(node &Node, box_state &UsedValues, size css.Size, dimension IntrinsicSizeDimension, kind IntrinsicConstraintKind) ?CSSPixels {
+	if !size.is_length_percentage() {
+		return none
+	}
+	mut percentage_basis := CSSPixels.new(0)
+	if size.contains_percentage() {
+		if dimension == .width {
+			if kind == .preferred_or_maximum {
+				return none
+			}
+		} else if containing := box_state.containing_block_used_values() {
+			if containing.has_definite_height() {
+				percentage_basis = containing.content_height()
+			} else if kind == .preferred_or_maximum {
+				return none
+			}
+		} else if kind == .preferred_or_maximum {
+			return none
+		}
+	}
+	return resolve_layout_content_size(node, size, percentage_basis, box_state, dimension == .width)
+}
+
+// CSS Sizing 3 defines a max-content fallback for replaced elements that lack
+// a natural size in the queried dimension. Preferred ratios transfer definite
+// sizes and minimums before falling back to the initial containing block.
+fn max_content_size_for_replaced_element_without_natural_size(box &Box, natural_size css.SizeWithAspectRatio, box_state &UsedValues, dimension IntrinsicSizeDimension, constraints ReplacedMaxContentSizeConstraints) ?CSSPixels {
+	node := unsafe { &Node(box) }
+	is_width := dimension == .width
+	if !node.is_replaced_box() || (if is_width {
+		natural_size.has_width()
+	} else {
+		natural_size.has_height()
+	}) {
+		return none
+	}
+
+	// SVG Integration keeps a missing outer SVG dimension automatic while the
+	// other natural dimension and viewBox ratio determine its intrinsic size.
+	if node.is_svg_svg_box() && natural_size.has_aspect_ratio() {
+		if is_width {
+			if natural_height := natural_size.height {
+				return natural_height.times_fraction(natural_size.aspect_ratio or {
+					return none
+				})
+			}
+		} else if natural_width := natural_size.width {
+			return natural_width.divided_by_fraction(natural_size.aspect_ratio or {
+				return none
+			})
+		}
+	}
+
+	if box.has_preferred_aspect_ratio() {
+		if definite_opposite_size := constraints.definite_size_in_ratio_determining_axis {
+			return if is_width {
+				intrinsic_content_width_from_aspect_ratio(box, box_state, definite_opposite_size)
+			} else {
+				intrinsic_content_height_from_aspect_ratio(box, box_state, definite_opposite_size)
+			}
+		}
+
+		mut size_from_min_width := ?CSSPixels(none)
+		if minimum_width := constraints.minimum_width {
+			size_from_min_width = if is_width {
+				minimum_width
+			} else {
+				intrinsic_content_height_from_aspect_ratio(box, box_state, minimum_width)
+			}
+		} else {
+			min_width := box.computed_values().size_value(.min_width)
+			if min_width.is_length_percentage() && !min_width.contains_percentage() {
+				inline_size := min_width.to_px(layout_length_resolution_context(node), CSSPixels.new(0))
+				size_from_min_width = if is_width {
+					inline_size
+				} else {
+					intrinsic_content_height_from_aspect_ratio(box, box_state, inline_size)
+				}
+			}
+		}
+
+		mut size_from_min_height := ?CSSPixels(none)
+		if minimum_height := constraints.minimum_height {
+			size_from_min_height = if is_width {
+				intrinsic_content_width_from_aspect_ratio(box, box_state, minimum_height)
+			} else {
+				minimum_height
+			}
+		} else {
+			min_height := box.computed_values().size_value(.min_height)
+			if min_height.is_length_percentage() && !min_height.contains_percentage() {
+				block_size := min_height.to_px(layout_length_resolution_context(node), CSSPixels.new(0))
+				size_from_min_height = if is_width {
+					intrinsic_content_width_from_aspect_ratio(box, box_state, block_size)
+				} else {
+					block_size
+				}
+			}
+		}
+
+		if minimum_width := size_from_min_width {
+			if minimum_height := size_from_min_height {
+				return css_pixels_max(minimum_width, minimum_height)
+			}
+			return minimum_width
+		}
+		if minimum_height := size_from_min_height {
+			return minimum_height
+		}
+
+		initial_inline_size := CSSPixels.nearest_value_for(node.document().viewport_rect().width)
+		return if is_width {
+			initial_inline_size
+		} else {
+			intrinsic_content_height_from_aspect_ratio(box, box_state, initial_inline_size)
+		}
+	}
+
+	if is_width {
+		if minimum_width := constraints.minimum_width {
+			// Image decoders expose their 300px fallback as a natural width in
+			// upstream. The translated SVG image path reaches this generic helper
+			// instead, so a cyclic zero minimum must not suppress that fallback.
+			if !box.computed_values().size_value(.min_width).contains_percentage() {
+				return minimum_width
+			}
+		}
+	}
+	minimum := if is_width {
+		box.computed_values().size_value(.min_width)
+	} else {
+		box.computed_values().size_value(.min_height)
+	}
+	if minimum.is_length_percentage() && !minimum.contains_percentage() {
+		return minimum.to_px(layout_length_resolution_context(node), CSSPixels.new(0))
+	}
+	return if is_width { CSSPixels.new(300) } else { CSSPixels.new(150) }
+}
+
 // CSS Sizing 3 intrinsic sizes: a definite constraint in the opposite axis
 // transfers through a replaced element's preferred aspect ratio before its
 // natural width is used as the intrinsic inline contribution.
@@ -98,13 +297,62 @@ fn calculate_max_content_width(mut state LayoutState, box &Box) CSSPixels {
 			}
 		}
 	}
-	computed_width := box.computed_values().size_value(.width)
-	computed_height := box.computed_values().size_value(.height)
-	if node.is_replaced_box() && auto_size.has_aspect_ratio() && !auto_size.has_height()
-		&& computed_width.is_length() && computed_height.is_intrinsic_sizing_constraint() {
-		styled := node.as_node_with_style() or { return CSSPixels.new(0) }
-		box_state := state.get(styled)
-		return calculate_inner_width(mut state, box, box_state, AvailableSize.make_definite(CSSPixels.new(0)), computed_width)
+	styled := node.as_node_with_style() or { return CSSPixels.new(0) }
+	box_state := state.get(styled)
+	mut definite_height := ?CSSPixels(none)
+	if node.is_replaced_box() && !auto_size.has_height() && box_state.has_definite_height() {
+		definite_height = box_state.content_height()
+	}
+	minimum_width := resolve_replaced_max_content_constraint(node, box_state,
+		box.computed_values().size_value(.min_width), .width, .minimum)
+	minimum_height := resolve_replaced_max_content_constraint(node, box_state,
+		box.computed_values().size_value(.min_height), .height, .minimum)
+	constraints := ReplacedMaxContentSizeConstraints{
+		definite_size_in_ratio_determining_axis: definite_height
+		minimum_width: minimum_width
+		minimum_height: minimum_height
+	}
+	if max_content_width := max_content_size_for_replaced_element_without_natural_size(box,
+		auto_size, box_state, .width, constraints) {
+		if definite_height == none && box.has_preferred_aspect_ratio() {
+			if maximum_height := resolve_replaced_max_content_constraint(node, box_state,
+				box.computed_values().size_value(.max_height), .height,
+				.preferred_or_maximum) {
+				mut transferred_minimum := ?CSSPixels(none)
+				if definite_minimum_height := minimum_height {
+					mut transferred := intrinsic_content_width_from_aspect_ratio(box,
+						box_state, definite_minimum_height)
+					if preferred_width := resolve_replaced_max_content_constraint(node,
+						box_state, box.computed_values().size_value(.width), .width,
+						.preferred_or_maximum) {
+						transferred = css_pixels_min(transferred, preferred_width)
+					}
+					if maximum_width := resolve_replaced_max_content_constraint(node,
+						box_state, box.computed_values().size_value(.max_width), .width,
+						.preferred_or_maximum) {
+						transferred = css_pixels_min(transferred, maximum_width)
+					}
+					transferred_minimum = transferred
+				}
+
+				mut transferred_maximum := intrinsic_content_width_from_aspect_ratio(box,
+					box_state, maximum_height)
+				if preferred_width := resolve_replaced_max_content_constraint(node, box_state,
+					box.computed_values().size_value(.width), .width,
+					.preferred_or_maximum) {
+					transferred_maximum = css_pixels_max(transferred_maximum, preferred_width)
+				}
+				if definite_minimum_width := minimum_width {
+					transferred_maximum = css_pixels_max(transferred_maximum,
+						definite_minimum_width)
+				}
+				if transferred := transferred_minimum {
+					transferred_maximum = css_pixels_max(transferred_maximum, transferred)
+				}
+				return css_pixels_min(max_content_width, transferred_maximum)
+			}
+		}
+		return max_content_width
 	}
 	if !node.has_children() {
 		return CSSPixels.new(0)
@@ -801,13 +1049,24 @@ fn calculate_min_content_height(mut state LayoutState, box &Box, width CSSPixels
 }
 
 fn calculate_max_content_height(mut state LayoutState, box &Box, width CSSPixels) CSSPixels {
-	if ratio := box.preferred_aspect_ratio() {
-		return width.divided_by_fraction(ratio)
+	if box.has_preferred_aspect_ratio() {
+		if styled := unsafe { &Node(box) }.as_node_with_style() {
+			box_state := state.get(styled)
+			return intrinsic_content_height_from_aspect_ratio(box, box_state, width)
+		}
 	}
 	if auto_height := box.auto_content_box_size().height {
 		return auto_height
 	}
 	node := unsafe { &Node(box) }
+	if styled := node.as_node_with_style() {
+		box_state := state.get(styled)
+		if max_content_height := max_content_size_for_replaced_element_without_natural_size(box,
+			box.auto_content_box_size(), box_state, .height,
+			ReplacedMaxContentSizeConstraints{}) {
+			return max_content_height
+		}
+	}
 	if !node.has_children() {
 		return CSSPixels.new(0)
 	}
