@@ -177,6 +177,24 @@ fn test_document_bridge_preserves_script_created_svg_namespaces_and_names() {
 	}
 }
 
+fn test_document_bridge_element_remove_drops_attached_svg_resource_box() {
+	$if darwin {
+		mut document := html.parse_document('<!doctype html><svg width="200" height="200"><rect width="100" height="100" mask="url(#mask)"/></svg><svg width="0" height="0"><mask id="mask"><rect width="50" height="50"/></mask></svg><script>document.body.offsetWidth; document.getElementById("mask").remove();</script>')
+		document.set_viewport_rect(dom.Rect{0, 0, 800, 600})
+		mut runtime := Runtime.create()
+		defer {
+			runtime.close()
+		}
+		run_inline_document_scripts(document, 'about:blank', runtime)!
+
+		assert document.get_element_by_id('mask') == none
+		snapshot := layout.dump_document_layout_snapshot(document, 800, 600) or {
+			panic('layout failed')
+		}
+		assert !snapshot.contains('SVGMaskBox <mask#mask>')
+	}
+}
+
 fn test_document_bridge_replays_nested_animation_frame_style_and_class_mutations() {
 	$if darwin {
 		mut document := html.parse_document('<html class="reftest-wait"><div id="target" style="scale: 2; translate: 10px; rotate: 45deg"></div><script>requestAnimationFrame(() => requestAnimationFrame(() => { target.style = ""; document.documentElement.classList.remove("reftest-wait"); }));</script></html>')

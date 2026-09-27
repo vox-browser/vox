@@ -178,6 +178,7 @@ fn bridge_program(state map[string]json2.Any, scripts []string) string {
 		'    addEventListener: function (n, f) { (__listeners[__listenerKey(s, n)] ||= []).push(f); },',
 		'    appendChild: function (child) { const c = child && child.__state; if (!c) return child; c.parentIndex = s.index; __state.operations.push({ op: "append", target: s.index, child: c.index }); return child; },',
 		'    removeChild: function (child) { const c = child && child.__state; if (!c || c.parentIndex !== s.index) throw new Error("NotFoundError"); __state.operations.push({ op: "remove", target: s.index, child: c.index }); c.parentIndex = -1; return child; },',
+		'    remove: function () { if (s.parentIndex < 0) return; const parent=s.parentIndex; __state.operations.push({ op: "remove", target: parent, child: s.index }); s.parentIndex=-1; },',
 		'    reset: function () { for (const n of __state.nodes) { if (!__isDescendant(n, s.index)) continue; if (n.tagName === "textarea") { n.textContent = n.defaultTextContent || ""; n.innerHTML = ""; n.textContentDirty = true; } } },',
 		'    prepend: function (value) { const c = value && value.__state; __state.operations.push(c ? { op: "prependNode", target: s.index, child: c.index } : { op: "prependText", target: s.index, text: String(value) }); },',
 		'    insertAdjacentHTML: function (position, value) { __state.operations.push({ op: "insertAdjacentHTML", target: s.index, position: String(position), html: String(value) }); },',
