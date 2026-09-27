@@ -114,7 +114,8 @@
   and streaming path without committing a history entry; both source and
   target download sandboxing are enforced, and request-server responses retain
   their navigation identity for direct PageClient handoff.
-- Media controls derive their timeline from the final seekable range, react to
+- Media controls keep progress inside the positioned timeline-track wrapper,
+  derive their timeline from the final seekable range, react to
   audio-track list events, use a semantic fullscreen button with the `F`
   shortcut, and coalesce scrub seeks with the upstream timeout. SourceBuffer
   coded-frame appends now enter the throttled media `progress` event path.
