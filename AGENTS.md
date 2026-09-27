@@ -325,7 +325,9 @@
   Mask, clip, and pattern subtrees attached beneath translated SVG references
   retain the current SVG viewport as their coordinate containing block, so the
   resource begins at its own user-space origin rather than inheriting the
-  reference's offset.
+  reference's offset. A `foreignObject` receives its resolved SVG geometry as
+  definite layout space without turning that geometry into a definite CSS
+  percentage-height basis for its HTML descendants.
 - Non-collapsible text whose flat-tree style parent has `display: contents`
   keeps an anonymous inline style wrapper while the parent itself is unboxed,
   including slotted text that then participates in flex-item blockification.
