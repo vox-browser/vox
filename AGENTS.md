@@ -193,8 +193,11 @@
   lines. Once an auto-height row flex container has resolved its line cross
   sizes, it relays each item's used height as a definite basis to percentage-
   sized descendants, including items whose own percentage height was initially
-  indefinite. Flex and grid item baselines ignore `vertical-align`, which has no
-  effect on those item roles. Baseline consumers distinguish first and last
+  indefinite. Before that resolution, percentage cross-axis minimums remain
+  indefinite and cannot transfer a provisional size through an item's aspect
+  ratio into its flex base. Flex and grid item baselines ignore
+  `vertical-align`, which has no effect on those item roles. Baseline consumers
+  distinguish first and last
   sets: flex alignment derives the first set from content even for scroll
   containers, while inline block layout retains the legacy last-set bottom-edge
   fallback. A line box exports the final position of its first unshifted text
