@@ -253,7 +253,11 @@
   border edges independently in device space. A collapsed table's used borders
   are the winning widths along the four outer grid edges; layout rebases its
   content origin after conflict resolution so those outer shares remain inside
-  the table wrapper. Anonymous cells created by missing-cell fixup keep zero
+  the table wrapper. Intrinsic min/max probes replay those winners into each
+  throwaway layout state, include the table-owned inline shares in wrapper
+  width, and shift the wrapper's exported baselines with the final block-axis
+  rebase. Border-box percentage sizes subtract the split shares rather than the
+  unsplit winning widths. Anonymous cells created by missing-cell fixup keep zero
   used borders, leaving each collapsed grid-line border wholly owned by real
   boxes on its sides. A cell's specified height is a content-box minimum in
   standards mode and grows its row by padding and borders; explicit
