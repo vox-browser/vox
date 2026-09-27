@@ -1478,3 +1478,15 @@ fn test_svg_animation_elements_do_not_generate_layout_boxes() {
 	assert tree_builder_node_with_id(root, 'set') == none
 	assert tree_builder_node_with_id(root, 'animate') == none
 }
+
+fn test_display_contents_text_keeps_an_anonymous_style_wrapper() {
+	document := html.parse_document('<!doctype html><div id="host"><span style="display:contents">text</span></div>')
+	root := build_layout_tree(document) or { panic('no layout tree') }
+	host := tree_builder_node_with_id(root, 'host') or { panic('no host layout node') }
+	assert host.child_count() == 1
+	wrapper := host.first_child() or { panic('no display:contents text wrapper') }
+	assert wrapper.is_inline_node()
+	assert wrapper.is_anonymous()
+	text := wrapper.first_child() or { panic('no wrapped text') }
+	assert text.is_text_node()
+}

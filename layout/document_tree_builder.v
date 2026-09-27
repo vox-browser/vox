@@ -818,7 +818,24 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 			}
 		} else if child_node.is_text() {
 			if character_data := child_node.as_character_data() {
-				children << unsafe { &Node(TextNode.new(document, child_node, character_data.data())) }
+				text_node := unsafe { &Node(TextNode.new(document, child_node, character_data.data())) }
+				// A display:contents style parent supplies inherited text style even
+				// though it has no principal box. Preserve that style with the same
+				// anonymous inline wrapper as upstream, except for collapsible ASCII
+				// whitespace which cannot produce a fragment.
+				needs_style_wrapper := computed.display().is_contents()
+					&& (!string_is_ascii_whitespace(character_data.data())
+					|| computed.white_space_collapse() != .collapse)
+				if needs_style_wrapper {
+					wrapper_style := computed.clone_for_anonymous_with_display(css.Display.from_short(.inline_))
+					mut wrapper := unsafe { &Node(InlineNode.new(document, none, wrapper_style)) }
+					wrapper.anonymous_ = true
+					wrapper.set_children_are_inline(true)
+					wrapper.append_child(text_node)
+					children << wrapper
+				} else {
+					children << text_node
+				}
 			}
 		}
 	}
