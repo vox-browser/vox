@@ -1523,6 +1523,22 @@ fn test_intrinsic_min_and_max_width_constraints_clamp_used_width() {
 	assert minimum.content_width().to_double() > 1
 }
 
+fn test_grid_intrinsic_measurement_does_not_apply_items_own_percentage_min_max_width() {
+	document := html.parse_document('<!doctype html><style>
+		#grid { display:grid; grid-template-columns:min-content max-content 1fr;
+			grid-template-areas:"one two three" }
+		.item { min-width:25%; max-width:50% }
+	</style><div id="grid"><div id="minimum" class="item" style="grid-area:one">min-content</div><div id="maximum" class="item" style="grid-area:two">max-content</div><div class="item" style="grid-area:three">1fr</div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	minimum := used_for_id(result, 'minimum')
+	maximum := used_for_id(result, 'maximum')
+	// The unit-test font plugin has different glyph metrics from the native
+	// corpus runner, so assert the behavior rather than its platform width.
+	assert minimum.content_width().to_double() < 40
+	assert minimum.content_width().to_double() < maximum.content_width().to_double()
+	assert minimum.content_height().to_double() > 20
+}
+
 fn test_min_content_width_does_not_collapse_at_zero_minimum_descendant() {
 	document := html.parse_document('<!doctype html><style>
 		#bubble { width:min-content }

@@ -1938,12 +1938,12 @@ fn grid_item_minimum_outer_inline_contribution(mut state LayoutState, item &Node
 		}
 		return edges
 	}
-	containing_width := if containing := item_state.containing_block_used_values() {
-		containing.content_width()
-	} else {
-		CSSPixels.new(0)
-	}
-	if resolved := resolve_layout_content_size(item, minimum, containing_width, item_state, true) {
+	// Track sizing has no definite grid-area width yet. Resolve a cyclic
+	// percentage minimum through the item's intrinsic available space (zero),
+	// not through the already definite grid container width. The completed area
+	// becomes the percentage basis when the item is laid out below.
+	if resolved := resolve_layout_content_size(item, minimum, CSSPixels.new(0), item_state,
+		true) {
 		return resolved.plus(edges)
 	}
 	return grid_intrinsic_outer_width_contribution(mut state, item, .min_content)
@@ -2492,19 +2492,59 @@ fn grid_intrinsic_outer_width_contribution(mut state LayoutState, item &Node, co
 	box := item.as_box() or { return CSSPixels.new(0) }
 	preferred := item.computed_values().size_value(.width)
 	preferred_behaves_as_auto := preferred.is_auto() || preferred.contains_percentage()
+	styled := item.as_node_with_style() or { return CSSPixels.new(0) }
+	mut item_state := state.get_mutable(styled)
+	containing_width := if containing := item_state.containing_block_used_values() {
+		containing.content_width()
+	} else {
+		CSSPixels.new(0)
+	}
+	resolve_box_model_edges(styled.computed_values(), mut item_state, containing_width.to_double())
+	edges := flex_or_grid_item_outer_inline_edges(item_state)
+
+	// Grid's min-/max-content contributions are the item's outer size when it is
+	// sized under that intrinsic constraint. The item's minimum size is handled
+	// separately by calculate_minimum_contribution(); baking min-width into this
+	// measurement applies it twice, and cyclic percentage minimums can then grow
+	// an intrinsic track from the grid container's already-resolved width.
+	mut inner := CSSPixels.new(0)
 	if constraint == .min_content && preferred_behaves_as_auto
 		&& flex_item_is_scroll_container(item) {
-		styled := item.as_node_with_style() or { return CSSPixels.new(0) }
-		mut item_state := state.get_mutable(styled)
-		containing_width := if containing := item_state.containing_block_used_values() {
-			containing.content_width()
+		// Scroll containers contribute no content to a column min-content size.
+	} else if preferred_behaves_as_auto {
+		inner = if constraint == .min_content {
+			calculate_min_content_width(mut state, box)
 		} else {
-			CSSPixels.new(0)
+			calculate_max_content_width(mut state, box)
 		}
-		resolve_box_model_edges(styled.computed_values(), mut item_state, containing_width.to_double())
-		return flex_or_grid_item_outer_inline_edges(item_state)
+	} else if preferred.is_fit_content() {
+		inner = calculate_fit_content_width(mut state, box,
+			AvailableSize.make_definite(containing_width))
+	} else if preferred.is_min_content() {
+		inner = calculate_min_content_width(mut state, box)
+	} else if preferred.is_max_content() {
+		inner = calculate_max_content_width(mut state, box)
+	} else {
+		inner = resolve_layout_content_size(item, preferred, containing_width, item_state,
+			true) or {
+				if constraint == .min_content {
+					calculate_min_content_width(mut state, box)
+				} else {
+					calculate_max_content_width(mut state, box)
+				}
+			}
 	}
-	return intrinsic_outer_width_contribution(mut state, box, constraint)
+
+	// A cyclic percentage maximum behaves as none for an intrinsic contribution.
+	maximum := item.computed_values().size_value(.max_width)
+	if !maximum.contains_percentage() && !should_treat_max_width_as_none(state, item,
+		if constraint == .min_content { AvailableSize.make_min_content() } else { AvailableSize.make_max_content() }) {
+		if maximum_size := resolve_layout_content_size(item, maximum, CSSPixels.new(0),
+			item_state, true) {
+			inner = css_pixels_min(inner, maximum_size)
+		}
+	}
+	return inner.plus(edges)
 }
 
 fn run_grid_formatting_context(mut state LayoutState, container &Node, mut container_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
