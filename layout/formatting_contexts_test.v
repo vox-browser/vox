@@ -1204,6 +1204,25 @@ fn test_inline_flex_baseline_uses_its_wrapped_childs_first_line() {
 		label_node, .last)).raw_value()
 }
 
+fn test_intrinsic_inline_flex_resolves_auto_height_before_alignment_and_caches_baseline() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0; font:16px/20px monospace }
+		.flex { display:inline-flex; vertical-align:top; min-height:80px }
+		#column { flex-direction:column; justify-content:center }
+		#wrapped { width:20px; flex-wrap:wrap; align-content:center }
+		.item { display:block; width:10px; height:20px }
+	</style><div><span id="column" class="flex"><span id="column-a" class="item">A</span><span class="item">B</span></span><span id="wrapped" class="flex"><span id="wrapped-a" class="item">A</span><span class="item">B</span><span class="item">C</span></span></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	column := used_for_id(result, 'column')
+	wrapped := used_for_id(result, 'wrapped')
+	assert used_for_id(result, 'column-a').offset.y().minus(column.offset.y()).to_double() == 20
+	assert used_for_id(result, 'wrapped-a').offset.y().minus(wrapped.offset.y()).to_double() == 20
+	column_node := layout_node_with_id(result.root, 'column') or { panic('missing column') }
+	wrapped_node := layout_node_with_id(result.root, 'wrapped') or { panic('missing wrapped') }
+	assert layout_box_baseline(result.state, column_node, .first).raw_value() < column.margin_box_height().raw_value()
+	assert layout_box_baseline(result.state, wrapped_node, .first).raw_value() < wrapped.margin_box_height().raw_value()
+}
+
 fn test_overflow_clip_inline_block_keeps_its_content_baseline() {
 	document := html.parse_document('<!doctype html><style>
 		span { display:inline-block; height:40px; font:20px/20px monospace }

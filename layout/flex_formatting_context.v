@@ -1187,6 +1187,32 @@ fn clear_intrinsic_flex_item_line_boxes(mut state LayoutState, node &Node) {
 	}
 }
 
+// Intrinsic measurement of an inline flex container also supplies its atomic
+// inline block size and baseline to the parent IFC. Resolve an automatic block
+// size before the alignment phases, so min/max-height affect justify-content
+// and align-content rather than being applied only after item placement.
+fn resolve_inline_flex_auto_block_size_for_alignment(state &LayoutState, container &Node, container_state &UsedValues, available_space AvailableSpace, automatic_size CSSPixels) CSSPixels {
+	if !container.display().is_inline_outside() || !available_space.height.is_indefinite() {
+		return automatic_size
+	}
+	box := container.as_box() or { return automatic_size }
+	if !should_treat_height_as_auto(state, box, available_space) {
+		return automatic_size
+	}
+	return clamp_layout_content_size(container, automatic_size,
+		available_space.height.to_px_or_zero(), container_state, false)
+}
+
+fn cache_intrinsic_inline_flex_baselines(mut state LayoutState, container &Node, container_state &UsedValues, layout_mode LayoutMode) {
+	if layout_mode != .intrinsic_sizing || !container.display().is_inline_outside() {
+		return
+	}
+	first := layout_box_baseline(state, container, .first).minus(container_state.margin_box_top())
+	last := layout_box_baseline(state, container, .last).minus(container_state.margin_box_top())
+	mut mutable_container_state := state.get_mutable(container.as_node_with_style() or { return })
+	mutable_container_state.set_derived_baselines(first, last)
+}
+
 fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node, mut container_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
 	direction := container.computed_values().effective_flex_direction()
 	if direction in [.column, .column_reverse] {
@@ -1325,6 +1351,8 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 	for cross_size in line_cross_sizes {
 		total_cross_size = total_cross_size.plus(cross_size)
 	}
+	resolved_automatic_cross_size := resolve_inline_flex_auto_block_size_for_alignment(state, container,
+		container_state, available_space, total_cross_size)
 	// https://drafts.csswg.org/css-flexbox-1/#definite-sizes
 	// Once the line cross sizes of an auto-height row flex container are known,
 	// each item's used cross size is definite for laying out its descendants.
@@ -1350,7 +1378,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 	} else if available_space.height.is_definite() {
 		available_space.height.to_px_or_zero()
 	} else {
-		total_cross_size
+		resolved_automatic_cross_size
 	}
 	_, _, stretched_cross_space := flex_align_content_offsets(container.computed_values().align_content(), available_cross_size.minus(total_cross_size), line_cross_sizes.len, reverse_cross_axis)
 	// handle_align_content_stretch(): grow every line by an equal, truncated share so their
@@ -1498,9 +1526,10 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 		automatic_content_height: if container_state.has_definite_height() {
 			container_state.content_height()
 		} else {
-			total_cross_size
+			resolved_automatic_cross_size
 		}
 	}
+	cache_intrinsic_inline_flex_baselines(mut state, container, container_state, layout_mode)
 	if layout_mode == .intrinsic_sizing {
 		for child in container.children() {
 			clear_intrinsic_flex_item_line_boxes(mut state, child)
@@ -1594,9 +1623,11 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		maximums: maximums
 		hypotheticals: hypotheticals
 	}
-	main_size := container_height or {
+	mut main_size := container_height or {
 		flex_intrinsic_main_size_of_column_container(mut state, items, bases, edges, contributions, row_gap)
 	}
+	main_size = resolve_inline_flex_auto_block_size_for_alignment(state, container, container_state,
+		available_space, main_size)
 
 	line.targets = resolve_flexible_lengths(mut state, line, main_size, edges, row_gap, container_height, false)
 	mut total_main := row_gap.scaled(f64(if items.len > 0 { items.len - 1 } else { 0 }))
@@ -1711,6 +1742,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		}
 	}
 	set_flex_abspos_static_positions(mut state, container, container_state, container.computed_values().effective_flex_direction())
+	cache_intrinsic_inline_flex_baselines(mut state, container, container_state, layout_mode)
 	return FormattingContextResult{
 		automatic_content_width: container_width
 		automatic_content_height: if container_height != none { main_size } else { total_main }
