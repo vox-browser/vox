@@ -485,9 +485,10 @@
   from the fragment rectangle for display-list damage and culling. A baseline-
   aligned inline block that raises a line's baseline also carries the font
   strut's descent below it, and wrapped lines advance from that expanded line-
-  box end. `vertical-align: text-bottom` subtracts one parent-font descent from
-  an atomic inline's margin-box height, keeping fitting boxes inside the
-  parent's content area.
+  box end. `vertical-align: text-top` and `text-bottom` place atomic inlines
+  against the immediate parent inline's font ascent and descent, including when
+  that parent has a different font size; the box's independent baseline
+  contribution still participates in selecting the common line baseline.
 - Inline formatting contexts publish their final inline-end insertion position
   after forced breaks, alignment, RTL direction, and writing-mode conversion.
   Originally-inline absolutely positioned descendants routed through an
