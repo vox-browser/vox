@@ -147,6 +147,11 @@ Text shaping now applies computed `word-spacing` to spaces, no-break spaces,
 and collapsed line feeds. The exact shaped advance of trailing ASCII whitespace
 is retained through fragment merging and intrinsic shape reuse, so line-end
 trimming subtracts precisely what shaping added, including text spacing.
+Each inline formatting context is also classified before chunk generation.
+Provably LTR paragraphs keep neutral punctuation in LTR shaping runs, preserving
+contextual positioning and kerning across apostrophes and hyphens, while RTL,
+mixed-direction, and `unicode-bidi` content retains per-code-point direction
+resolution. This matches the updated `div_align.html` snapshot.
 Unicode default-ignorable controls remain in shaped glyph records for UTF-16
 bookkeeping but receive zero advance and are omitted from bounds, intercepts,
 and retained paint buffers. Non-painting fallback-font fragments no longer
@@ -853,7 +858,7 @@ largest unmatched modules:
    314 Layout
 
 $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
-Layout corpus: 1060 passed, 29 failed, 1089 total
+Layout corpus: 1061 passed, 28 failed, 1089 total
 
 $ v -old-compiler -enable-globals test .
 Summary for all V _test.v files: 651 passed, 651 total.

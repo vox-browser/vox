@@ -544,7 +544,11 @@
 - Text shaping applies computed `word-spacing` to spaces, no-break spaces, and
   collapsed line feeds. It records the exact shaped advance of trailing ASCII
   whitespace, carries that record through fragment merging and intrinsic shape
-  reuse, and subtracts it directly when trimming line ends.
+  reuse, and subtracts it directly when trimming line ends. Inline formatting
+  contexts that are provably left-to-right shape neutral punctuation as LTR,
+  preserving contextual positioning and kerning across apostrophes, hyphens,
+  and inline boundaries; mixed, controlled, and RTL text retains per-code-point
+  direction handling.
 - Unicode default-ignorable controls remain in glyph runs for UTF-16 text
   bookkeeping but have zero advance and are excluded from bounds, intercepts,
   and retained paint buffers. Non-painting fallback-font fragments can still be
