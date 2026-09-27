@@ -2,9 +2,9 @@
 """Audit function-level LibWeb changes between two Ladybird revisions.
 
 Line churn is useful for sizing the source review, but it cannot distinguish a
-function moved between files from newly introduced behavior.  This tool parses
-out-of-line and header-inline function bodies at both revisions, matches exact
-bodies across moves within a module, and reports the remaining added, changed,
+function moved between files or modules from newly introduced behavior.  This
+tool parses out-of-line and header-inline function bodies at both revisions,
+matches exact bodies across moves, and reports the remaining added, changed,
 and removed definitions.  Current definitions are also joined to the V symbol
 audit so the report can be used as a translation review queue.
 """
@@ -342,10 +342,12 @@ def pop_exact_matches(
 ) -> tuple[list[Definition], list[Definition]]:
     old_by_body: dict[tuple[str, str, str, str], list[Definition]] = collections.defaultdict(list)
     for definition in old:
-        old_by_body[(definition.module, definition.owner, definition.name, definition.body)].append(definition)
+        old_by_body[
+            (definition.owner, definition.name, definition.signature, definition.body)
+        ].append(definition)
     unmatched_current: list[Definition] = []
     for definition in current:
-        key = (definition.module, definition.owner, definition.name, definition.body)
+        key = (definition.owner, definition.name, definition.signature, definition.body)
         if old_by_body[key]:
             old_by_body[key].pop()
         else:

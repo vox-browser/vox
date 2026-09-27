@@ -63,6 +63,41 @@ public:
         entries = delta.compare_definitions(old, current)
         self.assertEqual([(entry.kind, entry.name) for entry in entries], [("added", "added"), ("changed", "changed"), ("removed", "removed")])
 
+    def test_comparison_recognizes_an_exact_move_between_modules(self) -> None:
+        old = [
+            delta.Definition(
+                "Libraries/LibWeb/Animations/Animation.cpp",
+                10,
+                "Animation",
+                "play",
+                "void ()",
+                "{ update(); }",
+            )
+        ]
+        current = [
+            delta.Definition(
+                "Libraries/LibWeb/CSS/Animation.cpp",
+                20,
+                "Animation",
+                "play",
+                "void ()",
+                "{ update(); }",
+            )
+        ]
+
+        self.assertEqual(delta.compare_definitions(old, current), [])
+
+    def test_comparison_reports_a_signature_only_change(self) -> None:
+        old = [
+            delta.Definition("Libraries/LibWeb/Example/Thing.cpp", 1, "Thing", "value", "int ()", "{ return 1; }")
+        ]
+        current = [
+            delta.Definition("Libraries/LibWeb/Example/Thing.cpp", 1, "Thing", "value", "long ()", "{ return 1; }")
+        ]
+
+        entries = delta.compare_definitions(old, current)
+        self.assertEqual([(entry.kind, entry.name) for entry in entries], [("changed", "value")])
+
     def test_classifies_out_of_line_lifecycle_definitions(self) -> None:
         entries = [
             delta.DeltaEntry("added", "Example", "Thing.cpp", 1, "Thing", "Thing"),
