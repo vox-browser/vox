@@ -421,7 +421,10 @@ leaves an empty viewport that still reports its root block formatting context. A
 authored generated image becomes the originating element or pseudo-element's
 replacement box before quote controls resolve; list-item and display-contents
 pseudos retain inline image children instead. Empty generated strings create a
-text node only inside ordinary inline pseudo-elements.
+text node only inside ordinary inline pseudo-elements. Quote controls that
+resolve to no text under `quotes: none` remain represented in the layout tree
+without being mistaken for authored empty strings: they contribute no line
+fragment and retain zero geometry at the containing block origin.
 Viewport propagation now copies the root scrollbar width and the containment-
 aware principal writing mode and direction, while selecting and neutralizing
 the correct root/body overflow origin.
@@ -850,7 +853,7 @@ largest unmatched modules:
    314 Layout
 
 $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
-Layout corpus: 1059 passed, 30 failed, 1089 total
+Layout corpus: 1060 passed, 29 failed, 1089 total
 
 $ v -old-compiler -enable-globals test .
 Summary for all V _test.v files: 651 passed, 651 total.

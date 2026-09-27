@@ -521,6 +521,9 @@
   pseudo-element, where its degenerate fragment retains the zero-sized content
   geometry and the pseudo-element's padding and borders. Other pseudo-element
   boxes with `content: ""` have no children and do not report inline content.
+  Quote controls resolving to empty text under `quotes: none` retain their
+  layout-tree child but do not create that degenerate fragment or advance its
+  insertion position.
 - `overflow-wrap:anywhere`, `overflow-wrap:break-word`, and the legacy
   `word-break:break-word` split overflowing shaped text only at extended
   grapheme boundaries. `anywhere` and the legacy value reduce min-content
