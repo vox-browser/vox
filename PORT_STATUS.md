@@ -413,6 +413,10 @@ wrapper is also created for flex fieldsets without a rendered legend.
 Fieldsets with a flow inner display lay out as flow-root, and inline fieldsets
 as inline-block, while their computed display is unchanged; an inline
 fieldset therefore joins its parent's line as one atomic inline.
+Line boxes derive their exported baseline from the final placement of the first
+unshifted text fragment instead of retaining only the pre-alignment font strut.
+Lines without such text keep the alignment-baseline fallback, including the
+far-edge block offset used by reversed writing modes.
 List items that establish an independent formatting context lay out their own
 markers, outside markers align with the list item's first baseline, and the
 marker line height floors only automatic list item heights. Marker symbols,
@@ -858,7 +862,7 @@ largest unmatched modules:
    314 Layout
 
 $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
-Layout corpus: 1066 passed, 23 failed, 1089 total
+Layout corpus: 1069 passed, 20 failed, 1089 total
 
 $ v -old-compiler -enable-globals test .
 Summary for all V _test.v files: 651 passed, 651 total.

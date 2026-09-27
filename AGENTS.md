@@ -197,7 +197,10 @@
   effect on those item roles. Baseline consumers distinguish first and last
   sets: flex alignment derives the first set from content even for scroll
   containers, while inline block layout retains the legacy last-set bottom-edge
-  fallback. Flex and grid containers also keep their content
+  fallback. A line box exports the final position of its first unshifted text
+  fragment as its baseline, with its alignment baseline retained only as the
+  fallback; reversed writing modes include their final block-axis offset. Flex
+  and grid containers also keep their content
   margins from collapsing through them, including at zero used height. A
   partially intrinsic outer SVG derives its missing max-content width from its
   intrinsic height and viewBox ratio,
