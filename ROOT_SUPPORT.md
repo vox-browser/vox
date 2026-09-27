@@ -30,3 +30,8 @@ result for nodes in disconnected trees.
 V's committed `LineBox` state. It preserves per-text-node visual ranges,
 hanging-whitespace boundaries, fragmentless preserved-newline lines, owner/line
 identity across adjacent text nodes, and grapheme-level inline caret stops.
+
+`tools/upstream_function_delta.py` carries explicit mappings for these typed
+root-support implementations. Current `Dump`, pixel-unit conversion, tree-node
+ABI, and visual-line definitions are therefore classified through their real V
+targets instead of falling outside the module-oriented symbol inventory.

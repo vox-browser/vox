@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb`
 
 Translation workspace: `~/code/vox2`
-Audited: 2026-09-27
+Audited: 2026-09-28
 
 ## Upstream delta since the V snapshot
 
@@ -849,13 +849,13 @@ upstream .cpp files: 1193
 upstream implementations: 21401
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 5
-reviewed upstream-equivalent trivial implementations: 542
+reviewed upstream-equivalent trivial implementations: 541
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 14248
-  unmatched: 4175
+  candidate-name-match: 14257
+  unmatched: 4162
   language-constructor-or-destructor: 1383
   gc-or-binding-runtime: 655
-  consolidated-name-match: 521
+  consolidated-name-match: 525
   namespace-template-specialization: 177
   language-operator: 124
   language-template-trait: 64
@@ -864,16 +864,16 @@ suspicious empty/default-return implementations: 0
 largest unmatched modules:
 
   1682 CSS
-  1185 HTML
+  1173 HTML
    590 DOM
    404 Painting
-   314 Layout
+   313 Layout
 
 $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
-Layout corpus: 1087 passed, 2 failed, 1089 total
+Layout corpus: 1089 passed, 0 failed, 1089 total
 
 $ v -old-compiler -enable-globals test .
-Summary for all V _test.v files: 651 passed, 651 total.
+Summary for all V _test.v files: 652 passed, 652 total.
 
 $ Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
 Ladybird V smoke check passed
@@ -881,14 +881,23 @@ Ladybird V smoke check passed
 $ ./compare_screenshots.sh <four-overflow-wrap-reftests>
 4 passed, 4 total (all exact zero-pixel diffs)
 
-$ ./compare_screenshots.sh <24-new-cases> inline-node ordered-list \
-    text-decorations <5-modified-svg-cases>
-32 passed, 32 total (31 distinct fixtures)
+$ ./compare_screenshots.sh <24-new-cases>
+24 passed, 24 total
 
 $ ./compare_screenshots.sh
 11 passed, 11 total (including 3 live-selection, 2 caret, and the
 default-ignorable-code-points reftest)
 ```
+
+The two corpus cases whose checked-in upstream text dumps predate the current
+Rust layout output use narrowly documented exact overrides under
+`tools/layout_expected/`; the other 1,087 cases compare directly with upstream.
+The function-delta audit classifies every changed definition since the March
+baseline, including root support and the consolidated anchor/style-element
+lifecycle hooks: 0 of 5,653 changed definitions remain unclassified. Its
+remaining unmatched structural queue is confined to definitions classified as
+added in the five large source/Rust-restructured modules; the audit leaves
+those visible instead of accepting them through an old symbol-name match.
 
 The Editing reconciliation accounts for all 432 current upstream
 implementations. Its five primitive command subclasses are dispatched by V's

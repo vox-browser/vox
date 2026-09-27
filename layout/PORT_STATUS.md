@@ -60,8 +60,9 @@ covered by focused tests. The complete Layout unit-test directory passes, and
 the upstream `line-clamp-properties` reftest is an exact zero-pixel match in the
 native V browser. Block ellipses use the boundary text node and its UTF-16 end
 offset, and compatible boundary/ellipsis glyph runs are replayed as one retained
-run without reshaping; unavailable ellipsis glyphs follow literal text's native
-font fallback.
+run without reshaping. When the selected face lacks the ellipsis glyph, its
+shaped missing-glyph run matches literal text instead of being reshaped by the
+paint backend.
 
 ## Translated coverage
 

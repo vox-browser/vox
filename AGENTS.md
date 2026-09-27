@@ -61,7 +61,9 @@
   the native Cocoa content view without Screen Recording permission, accounts
   for Retina scale, crops the browser chrome, and writes a logical-pixel PNG. Set
   `SCREENSHOT_SETTLE_SECONDS` when a page needs longer than the default two
-  seconds to settle.
+  seconds to settle. Normal-height captures retry one failed browser launch
+  before reporting an error, covering the intermittent AppKit/Metal window-
+  initialization trap without hiding deterministic failures.
 
 - Compare canonical upstream screenshot inputs pixel by pixel with:
 
@@ -500,7 +502,11 @@
 - Inline layout now finalizes conservative glyph-run ink bounds together with
   retained replay data after merging, ellipsis, and line clamping. Painting
   scales and positions those cached CSS-pixel bounds and keeps them distinct
-  from the fragment rectangle for display-list damage and culling. A baseline-
+  from the fragment rectangle for display-list damage and culling. Block
+  ellipses always retain their shaped glyph data, including a selected font's
+  missing-glyph result, and reuse an authored face when the same concrete face
+  is also the last resort; synthesized and literal ellipses therefore replay
+  identically. A baseline-
   aligned inline block that raises a line's baseline also carries the font
   strut's descent below it, and wrapped lines advance from that expanded line-
   box end. `vertical-align: text-top` and `text-bottom` place atomic inlines
