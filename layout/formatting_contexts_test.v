@@ -3587,6 +3587,26 @@ fn test_text_top_and_bottom_use_parent_inline_font_metrics() {
 	}
 }
 
+fn test_top_and_bottom_align_complete_inline_subtrees_to_line_edges() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		.line { font:20px/20px SerenitySans }
+		#top-subtree { vertical-align:top }
+		#top-child, #tall, #bottom { display:inline-block; width:20px }
+		#top-child { height:40px }
+		#tall { height:60px }
+		#bottom { height:25px; vertical-align:bottom }
+	</style>
+	<div class="line" id="top-line">A<span id="top-subtree">B<span id="top-child"></span>C</span>D</div>
+	<div class="line" id="bottom-line"><span id="tall"></span><span id="bottom"></span></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	top_line := used_for_id(result, 'top-line').line_boxes[0]
+	assert top_line.fragments()[2].block_offset().to_double() == 0
+	bottom_line := used_for_id(result, 'bottom-line').line_boxes[0]
+	bottom_fragment := bottom_line.fragments()[1]
+	assert bottom_fragment.block_offset().plus(bottom_fragment.block_length()) == bottom_line.block_length()
+}
+
 fn test_normal_heading_line_height_uses_selected_font_typo_metrics() {
 	document := html.parse_document('<!doctype html><style>h3 { font-family: SerenitySans }</style><h3 id="heading">heading</h3>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }

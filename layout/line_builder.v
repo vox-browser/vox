@@ -13,6 +13,20 @@ pub enum ForcedLineBreak {
 	yes
 }
 
+struct LineRelativeAlignedSubtreeRoot {
+	root      &Node = unsafe { nil }
+	alignment css.VerticalAlign
+}
+
+struct LineRelativeAlignedSubtree {
+	root      &Node = unsafe { nil }
+	alignment css.VerticalAlign
+mut:
+	block_start CSSPixels
+	block_end   CSSPixels
+	shift       CSSPixels
+}
+
 // LineBuilder owns line creation, overflow breaks, indentation, fragment
 // alignment and baseline geometry. Float intrusion is supplied as the
 // available width; when float layout is absent this is the containing width.
@@ -409,6 +423,105 @@ fn (builder &LineBuilder) fragment_uses_container_alignment(fragment &LineBoxFra
 	return layout_nodes_same(parent, unsafe { &Node(builder.containing_block) })
 }
 
+fn line_relative_alignment(node &Node) ?css.VerticalAlign {
+	computed := node.computed_values()
+	if computed.vertical_align_length_percentage() != none {
+		return none
+	}
+	alignment := computed.vertical_align()
+	if alignment == .top || alignment == .bottom {
+		return alignment
+	}
+	return none
+}
+
+fn fragment_alignment_style_source(fragment &LineBoxFragment) &Node {
+	if fragment.layout_node_.is_text_node() {
+		return fragment.layout_node_.parent() or { fragment.style_source_ }
+	}
+	return fragment.style_source_
+}
+
+// A top- or bottom-aligned subtree contains its root and every descendant
+// inline subtree that is not itself aligned to the line box.
+fn (builder &LineBuilder) line_relative_aligned_subtree_root(style_source &Node) ?LineRelativeAlignedSubtreeRoot {
+	if builder.writing_mode != .horizontal_tb {
+		return none
+	}
+	containing_block := unsafe { &Node(builder.containing_block) }
+	mut node := style_source
+	for !layout_nodes_same(node, containing_block) {
+		if alignment := line_relative_alignment(node) {
+			return LineRelativeAlignedSubtreeRoot{
+				root:      node
+				alignment: alignment
+			}
+		}
+		parent := node.parent() or { break }
+		if !layout_nodes_same(parent, containing_block) && !parent.is_inline_node() {
+			break
+		}
+		node = parent
+	}
+	return none
+}
+
+fn aligned_subtree_index(subtrees []LineRelativeAlignedSubtree, root &Node) int {
+	for index, subtree in subtrees {
+		if layout_nodes_same(subtree.root, root) {
+			return index
+		}
+	}
+	return -1
+}
+
+fn (builder &LineBuilder) inline_box_alignment_delta(node &Node, line_box_baseline CSSPixels, container_font_metrics platform.FontPixelMetrics, container_font_size CSSPixels) CSSPixels {
+	computed := node.computed_values()
+	font_metrics := layout_font_metrics_for_node(node)
+	baseline := font_baseline_for_line_height(font_metrics, computed.line_height())
+	styled := node.as_node_with_style() or { return CSSPixels.new(0) }
+	box_state := builder.layout_state.try_get(styled) or { return CSSPixels.new(0) }
+	box_top := box_state.border_box_top()
+	box_bottom := box_state.border_box_bottom()
+	alphabetic := builder.current_block_offset.plus(line_box_baseline).minus(baseline).plus(box_top)
+	mut aligned := alphabetic
+	if vertical_align := computed.vertical_align_length_percentage() {
+		aligned = alphabetic.minus(vertical_align.to_px(layout_length_resolution_context(node),
+			computed.line_height()))
+	} else {
+		match computed.vertical_align() {
+			.middle {
+				x_height := CSSPixels.nearest_value_for(f64(container_font_metrics.x_height))
+				aligned = builder.current_block_offset.plus(line_box_baseline).plus(CSSPixels.from_raw(box_top.minus(box_bottom).minus(x_height).minus(computed.line_height()).raw_value() / 2))
+			}
+			.sub {
+				aligned = alphabetic.plus(CSSPixels.from_raw(container_font_size.raw_value() / 5))
+			}
+			.super_ {
+				aligned = alphabetic.minus(CSSPixels.from_raw(container_font_size.raw_value() / 3))
+			}
+			.text_top {
+				parent_metrics := if parent := node.parent() {
+					layout_font_metrics_for_node(parent)
+				} else {
+					container_font_metrics
+				}
+				aligned = builder.current_block_offset.plus(line_box_baseline).minus(CSSPixels.nearest_value_for(f64(parent_metrics.ascent))).plus(box_top)
+			}
+			.text_bottom {
+				parent_metrics := if parent := node.parent() {
+					layout_font_metrics_for_node(parent)
+				} else {
+					container_font_metrics
+				}
+				aligned = builder.current_block_offset.plus(line_box_baseline).plus(CSSPixels.nearest_value_for(f64(parent_metrics.descent))).minus(computed.line_height()).minus(box_bottom)
+			}
+			else {}
+		}
+	}
+	return aligned.minus(alphabetic)
+}
+
 pub fn (mut builder LineBuilder) update_last_line() {
 	if !builder.last_line_needs_update {
 		return
@@ -472,6 +585,13 @@ pub fn (mut builder LineBuilder) update_last_line() {
 	strut_baseline := font_baseline_for_line_height(container_font_metrics, computed.line_height())
 	mut line_box_baseline := strut_baseline
 	mut should_align_strut_to_line_box_baseline := false
+	mut has_line_relative_aligned_subtree := false
+	for fragment in line_box.fragments_ {
+		if builder.line_relative_aligned_subtree_root(fragment_alignment_style_source(fragment)) != none {
+			has_line_relative_aligned_subtree = true
+			break
+		}
+	}
 	for index in 0 .. line_box.fragments_.len {
 		mut fragment := &line_box.fragments_[index]
 		fragment_computed := fragment.layout_node_.computed_values()
@@ -484,6 +604,9 @@ pub fn (mut builder LineBuilder) update_last_line() {
 				.last)
 		}
 		fragment.set_baseline(fragment_baseline)
+		if builder.line_relative_aligned_subtree_root(fragment_alignment_style_source(fragment)) != none {
+			continue
+		}
 		if !uses_container_alignment {
 			if vertical_align := fragment_computed.vertical_align_length_percentage() {
 				fragment_baseline = fragment_baseline.plus(vertical_align.to_px(layout_length_resolution_context(fragment.layout_node_), fragment_computed.line_height()))
@@ -491,12 +614,13 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		}
 		if fragment_baseline.raw_value() > line_box_baseline.raw_value()
 			&& !fragment.layout_node_.is_text_node()
-			&& fragment_computed.vertical_align_length_percentage() == none
-			&& fragment_computed.vertical_align() == .baseline {
+			&& fragment_computed.vertical_align_length_percentage() == none {
 			display := fragment_computed.display()
 			should_align_strut_to_line_box_baseline = should_align_strut_to_line_box_baseline
-				|| display.is_inline_block()
-				|| (display.is_inline_outside() && display.is_flex_inside())
+				|| has_line_relative_aligned_subtree
+				|| ((display.is_inline_block()
+					|| (display.is_inline_outside() && display.is_flex_inside()))
+					&& fragment_computed.vertical_align() == .baseline)
 		}
 		line_box_baseline = css_pixels_max(line_box_baseline, fragment_baseline)
 	}
@@ -509,6 +633,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		builder.current_block_offset.plus(computed.line_height())
 	}
 	mut first_unshifted_text_baseline := ?CSSPixels(none)
+	mut aligned_subtrees := []LineRelativeAlignedSubtree{}
 	current_block_offset := builder.current_block_offset
 	for index in 0 .. line_box.fragments_.len {
 		mut fragment := &line_box.fragments_[index]
@@ -527,10 +652,17 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			builder.current_block_offset.plus(line_box_baseline).minus(fragment.baseline()).plus(effective_box_top_offset)
 		mut fragment_block_offset := alphabetic_baseline
 		fragment_computed := fragment.layout_node_.computed_values()
-		alignment := if uses_container_alignment {
+		alignment_style_source := fragment_alignment_style_source(fragment)
+		aligned_subtree := builder.line_relative_aligned_subtree_root(alignment_style_source)
+		mut alignment := if uses_container_alignment {
 			css.VerticalAlign.baseline
 		} else {
 			fragment_computed.vertical_align()
+		}
+		if subtree := aligned_subtree {
+			if layout_nodes_same(subtree.root, alignment_style_source) {
+				alignment = .baseline
+			}
 		}
 		match alignment {
 			.top {
@@ -575,6 +707,29 @@ pub fn (mut builder LineBuilder) update_last_line() {
 				fragment_block_offset = alphabetic_baseline.minus(vertical_align_amount)
 			}
 		}
+		own_alignment_is_line_relative := line_relative_alignment(alignment_style_source) != none
+		if !own_alignment_is_line_relative {
+			mut ancestor := alignment_style_source.parent()
+			containing_block := unsafe { &Node(builder.containing_block) }
+			for {
+				current := ancestor or { break }
+				if layout_nodes_same(current, containing_block) || !current.is_inline_node() {
+					break
+				}
+				if line_relative_alignment(current) != none {
+					break
+				}
+				ancestor_computed := current.computed_values()
+				if ancestor_computed.vertical_align_length_percentage() == none
+					&& ancestor_computed.vertical_align() == .baseline {
+					ancestor = current.parent()
+					continue
+				}
+				fragment_block_offset = fragment_block_offset.plus(builder.inline_box_alignment_delta(current,
+					line_box_baseline, container_font_metrics, container_font_size))
+				ancestor = current.parent()
+			}
+		}
 		fragment_is_unshifted := fragment_block_offset == alphabetic_baseline
 		fragment.set_inline_offset(fragment_inline_offset)
 		fragment.set_block_offset(css.css_pixels_floor(fragment_block_offset).plus(block_offset))
@@ -605,8 +760,25 @@ pub fn (mut builder LineBuilder) update_last_line() {
 				bottom_of_inline_box = bottom_of_inline_box.plus(vertical_align.to_px(layout_length_resolution_context(fragment.layout_node_), fragment_computed.line_height()))
 			}
 		}
-		uppermost_box_top = css_pixels_min(uppermost_box_top, top_of_inline_box)
-		lowermost_box_bottom = css_pixels_max(lowermost_box_bottom, bottom_of_inline_box)
+		if subtree := aligned_subtree {
+			subtree_index := aligned_subtree_index(aligned_subtrees, subtree.root)
+			if subtree_index >= 0 {
+				aligned_subtrees[subtree_index].block_start = css_pixels_min(aligned_subtrees[subtree_index].block_start,
+					top_of_inline_box)
+				aligned_subtrees[subtree_index].block_end = css_pixels_max(aligned_subtrees[subtree_index].block_end,
+					bottom_of_inline_box)
+			} else {
+				aligned_subtrees << LineRelativeAlignedSubtree{
+					root:        subtree.root
+					alignment:   subtree.alignment
+					block_start: top_of_inline_box
+					block_end:   bottom_of_inline_box
+				}
+			}
+		} else {
+			uppermost_box_top = css_pixels_min(uppermost_box_top, top_of_inline_box)
+			lowermost_box_bottom = css_pixels_max(lowermost_box_bottom, bottom_of_inline_box)
+		}
 
 		// Text is initially aligned using its computed line height so that it
 		// contributes the right bounds to the line box. Anchor its paint box to
@@ -625,13 +797,66 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			first_unshifted_text_baseline = fragment.block_offset().plus(fragment.baseline()).minus(current_block_offset)
 		}
 	}
+	mut maximum_top_subtree_height := CSSPixels.new(0)
+	mut maximum_bottom_subtree_height := CSSPixels.new(0)
+	for subtree in aligned_subtrees {
+		height := subtree.block_end.minus(subtree.block_start)
+		if subtree.alignment == .top {
+			maximum_top_subtree_height = css_pixels_max(maximum_top_subtree_height, height)
+		} else {
+			maximum_bottom_subtree_height = css_pixels_max(maximum_bottom_subtree_height,
+				height)
+		}
+	}
+	lowermost_box_bottom = css_pixels_max(lowermost_box_bottom,
+		uppermost_box_top.plus(maximum_top_subtree_height))
+	uppermost_box_top = css_pixels_min(uppermost_box_top,
+		lowermost_box_bottom.minus(maximum_bottom_subtree_height))
+	normal_subtree_shift := if has_line_relative_aligned_subtree {
+		builder.current_block_offset.minus(uppermost_box_top)
+	} else {
+		CSSPixels.new(0)
+	}
+	for index in 0 .. aligned_subtrees.len {
+		aligned_subtrees[index].shift = if aligned_subtrees[index].alignment == .top {
+			builder.current_block_offset.minus(aligned_subtrees[index].block_start)
+		} else {
+			builder.current_block_offset.plus(lowermost_box_bottom.minus(uppermost_box_top)).minus(
+				aligned_subtrees[index].block_end)
+		}
+	}
+	if has_line_relative_aligned_subtree {
+		for index in 0 .. line_box.fragments_.len {
+			mut shift := normal_subtree_shift
+			if subtree := builder.line_relative_aligned_subtree_root(fragment_alignment_style_source(&line_box.fragments_[index])) {
+				subtree_index := aligned_subtree_index(aligned_subtrees, subtree.root)
+				if subtree_index >= 0 {
+					shift = aligned_subtrees[subtree_index].shift
+				}
+			}
+			line_box.fragments_[index].block_offset_ = line_box.fragments_[index].block_offset_.plus(shift)
+		}
+	}
 	for mut marker in line_box.static_position_markers_ {
+		mut shift := normal_subtree_shift
+		marker_node := unsafe { &Node(marker.box) }
+		if parent := marker_node.parent() {
+			if subtree := builder.line_relative_aligned_subtree_root(parent) {
+				subtree_index := aligned_subtree_index(aligned_subtrees, subtree.root)
+				if subtree_index >= 0 {
+					shift = aligned_subtrees[subtree_index].shift
+				}
+			}
+		}
 		marker.inline_offset = marker.inline_offset.plus(inline_offset)
-		marker.block_offset = marker.block_offset.plus(block_offset).plus(builder.current_block_offset)
+		marker.block_offset = marker.block_offset.plus(block_offset).plus(builder.current_block_offset).plus(
+			shift)
 	}
 	line_box.block_length_ = lowermost_box_bottom.minus(uppermost_box_top)
 	line_box.bottom_ = builder.current_block_offset.plus(line_box.block_length_)
-	line_box.baseline_ = first_unshifted_text_baseline or { line_box_baseline.plus(block_offset) }
+	line_box.baseline_ = (first_unshifted_text_baseline or {
+		line_box_baseline.plus(block_offset)
+	}).plus(normal_subtree_shift)
 	builder.should_advance_to_last_line_box_block_end = should_align_strut_to_line_box_baseline
 }
 
