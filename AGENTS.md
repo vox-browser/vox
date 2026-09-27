@@ -220,7 +220,10 @@
   whose used height is clamped or whose opposing insets are both specified.
   During grid track sizing, a non-replaced item's percentage block size is a
   cyclic auto contribution; it resolves against the completed grid area only
-  after intrinsic row sizing and free-space distribution.
+  after intrinsic row sizing and free-space distribution. Grid min/max-content
+  probes likewise measure inline content without baking in the item's own
+  min/max-width; cyclic percentage minimums use the still-indefinite grid area
+  during track sizing and resolve against the completed area during item layout.
 - Table column and column-group boxes retain their used grid geometry for
   painting and layout-tree inspection, including spanning columns, empty groups,
   border spacing, and RTL placement. Percentage column widths resolve against

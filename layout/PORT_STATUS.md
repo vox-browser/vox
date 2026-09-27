@@ -203,7 +203,10 @@ track clamps, definite item maximums, and the zero minimum for multi-track
 flexible spans. Intrinsic container sizing uses C++'s limited min/max-content
 contributions, and row contributions are measured from the item's laid-out
 inline size rather than reusing one previously computed margin-box height for
-every phase.
+every phase. Column min/max-content probes now remain pure content measurements:
+an item's own min/max-width is applied by the contribution caller, while cyclic
+percentage minimums resolve through the still-indefinite grid area rather than
+the definite outer grid width.
 Base-size distribution continues beyond finite limits through the upstream
 intrinsic-maximum selection and keeps fixed minima out of intrinsic base-size
 growth. Spanning flexible tracks receive the largest per-item contribution in
