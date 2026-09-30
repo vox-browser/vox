@@ -1,8 +1,10 @@
 module libjs
 
+import math
+
 // Translated from LibJS/Runtime/Realm.{h,cpp}. Intrinsics and
-// SetDefaultGlobalBindings belong to the pending builtin-object translation, so
-// the default global object is an ordinary object without the standard globals.
+// callable global bindings belong to the pending builtin-object translation.
+// The ordinary global object supplies the four standard value properties.
 
 pub interface RealmHostDefined {
 	is_principal_host_defined() bool
@@ -13,10 +15,10 @@ pub interface RealmHostDefined {
 @[heap]
 pub struct Realm {
 pub mut:
-	global_object                  ?&Object                // [[GlobalObject]]
-	global_environment             ?&GlobalEnvironment     // [[GlobalEnv]]
+	global_object                  ?&Object                 // [[GlobalObject]]
+	global_environment             ?&GlobalEnvironment      // [[GlobalEnv]]
 	global_declarative_environment ?&DeclarativeEnvironment // Cached from GlobalEnv
-	host_defined                   ?RealmHostDefined       // [[HostDefined]]
+	host_defined                   ?RealmHostDefined        // [[HostDefined]]
 }
 
 pub fn Realm.create() &Realm {
@@ -84,10 +86,22 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	// 17. Set realm.[[GlobalEnv]] to NewGlobalEnvironment(global, thisValue).
 	realm.set_global_environment(GlobalEnvironment.create(global, this_value))
 	// 18. Perform ? SetDefaultGlobalBindings(realm).
-	// NOTE: The standard global bindings are part of the pending builtin translation.
+	set_default_global_value_bindings(realm)
 	// 19. Create any host-defined global object properties on global.
 	// 20. Return unused.
 	return new_context
+}
+
+// Runtime/GlobalObject.cpp::set_default_global_bindings, value properties only.
+// Intrinsic constructors, global functions and their prototypes remain pending.
+fn set_default_global_value_bindings(realm &Realm) {
+	mut global := realm.global_object_record()
+	global.define_direct_property(PropertyName.from_str('globalThis'),
+		Value.from_object(realm.global_environment_record().global_this_value),
+		attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('Infinity'), Value.from_f64(math.inf(1)), 0)
+	global.define_direct_property(PropertyName.from_str('NaN'), Value.from_f64(math.nan()), 0)
+	global.define_direct_property(PropertyName.from_str('undefined'), js_undefined(), 0)
 }
 
 // create_simple_execution_context<GlobalObjectType>(VM&)
