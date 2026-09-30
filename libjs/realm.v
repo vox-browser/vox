@@ -87,6 +87,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	realm.set_global_environment(GlobalEnvironment.create(global, this_value))
 	// 18. Perform ? SetDefaultGlobalBindings(realm).
 	set_default_global_value_bindings(realm)
+	set_default_global_numeric_functions(mut vm, realm)
 	// 19. Create any host-defined global object properties on global.
 	// 20. Return unused.
 	return new_context
