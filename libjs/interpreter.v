@@ -9,6 +9,7 @@ pub:
 }
 
 fn typeof_value(value Value) string {
+	if value.is_function() { return 'function' }
 	return match value.tag {
 		.undefined { 'undefined' }
 		.boolean { 'boolean' }

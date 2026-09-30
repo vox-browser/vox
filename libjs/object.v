@@ -126,6 +126,10 @@ pub mut:
 	class_name string = 'Object'
 	// [[ErrorData]] for Error instances created through create_error().
 	error_data ?&ErrorData
+	// FunctionObject inheritance is represented by a callable implementation.
+	callable ?FunctionObject
+	native_callable bool
+	native_initial_name ?Utf16String
 }
 
 // 10.1.12 OrdinaryObjectCreate ( proto [ , additionalInternalSlotsList ] ), https://tc39.es/ecma262/#sec-ordinaryobjectcreate

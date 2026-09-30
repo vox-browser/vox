@@ -150,6 +150,14 @@ pub fn (value Value) is_object() bool {
 	return value.tag == .object
 }
 
+pub fn (value Value) is_function() bool {
+	return value.is_object() && value.as_object().callable != none
+}
+
+pub fn (value Value) as_function() FunctionObject {
+	return value.as_object().callable or { panic('Value.as_function() called on a non-function') }
+}
+
 pub fn (value Value) is_bigint() bool {
 	return value.tag == .bigint
 }
