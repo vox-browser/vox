@@ -487,8 +487,9 @@ fn (mut p Parser) parse_function_common(name ?&Identifier, fn_name Utf16String, 
 	if name != none {
 		p.check_identifier_name_for_assignment_validity(fn_name.data, has_use_strict)
 	}
-	if has_use_strict || kind != .normal {
-		p.check_parameters_post_body(parsed.parameter_info, has_use_strict, kind)
+	parameters_are_strict := p.flags.strict_mode || has_use_strict
+	if parameters_are_strict || kind != .normal {
+		p.check_parameters_post_body(parsed.parameter_info, parameters_are_strict, kind)
 	}
 
 	insights.might_need_arguments_object = p.flags.function_might_need_arguments_object
@@ -1084,7 +1085,6 @@ fn (mut p Parser) parse_formal_parameters_impl(is_arrow bool) ParsedParameters {
 	mut has_seen_default := false
 	mut has_seen_rest := false
 	mut parameter_info := []ParamInfo{}
-	mut seen_parameter_names := map[string]bool{}
 
 	formal_parameters_start := p.position()
 
@@ -1109,20 +1109,6 @@ fn (mut p Parser) parse_formal_parameters_impl(is_arrow bool) ParsedParameters {
 			value := Utf16String.from_slice(p.token_value(token))
 			p.check_identifier_name_for_assignment_validity(value.data, false)
 
-			name_key := value.str()
-			if !is_arrow && name_key in seen_parameter_names {
-				if p.flags.strict_mode {
-					name_str := string_from_utf16_lossy(value.data)
-					p.syntax_error("Duplicate parameter '${name_str}' not allowed in strict mode")
-				} else if has_seen_default {
-					name_str := string_from_utf16_lossy(value.data)
-					p.syntax_error("Duplicate parameter '${name_str}' not allowed in function with default parameter")
-				} else if has_seen_rest {
-					name_str := string_from_utf16_lossy(value.data)
-					p.syntax_error("Duplicate parameter '${name_str}' not allowed in function with rest parameter")
-				}
-			}
-			seen_parameter_names[name_key] = true
 
 			id := Identifier.new(p.range_from(formal_parameters_start), value.clone())
 			parameter_info << ParamInfo{
@@ -1137,8 +1123,6 @@ fn (mut p Parser) parse_formal_parameters_impl(is_arrow bool) ParsedParameters {
 		} else if p.match_token(.curly_open) || p.match_token(.bracket_open) {
 			pat := p.parse_binding_pattern()
 			for bn in p.pattern_bound_names {
-				name_key := bn.name.str()
-				seen_parameter_names[name_key] = true
 				parameter_info << ParamInfo{
 					name:            bn.name.clone()
 					is_rest:         rest
@@ -1196,6 +1180,9 @@ fn (mut p Parser) parse_formal_parameters_impl(is_arrow bool) ParsedParameters {
 		return fp.binding is BindingPatternBinding
 	})
 	is_simple := !has_seen_default && !has_seen_rest && !has_binding_pattern
+	if !is_arrow && (p.flags.strict_mode || !is_simple) {
+		p.check_unique_formal_parameters(parameter_info)
+	}
 	return ParsedParameters{
 		parameters:      parameters
 		function_length: function_length

@@ -634,6 +634,20 @@ fn (mut p Parser) check_arrow_duplicate_parameters(parameter_info []ParamInfo) {
 	}
 }
 
+fn (mut p Parser) check_unique_formal_parameters(parameter_info []ParamInfo) {
+	mut seen_names := map[string]bool{}
+	for pi in parameter_info {
+		if pi.name.is_empty() {
+			continue
+		}
+		key := pi.name.str()
+		if key in seen_names {
+			p.syntax_error("Duplicate parameter '${key}' not allowed")
+		}
+		seen_names[key] = true
+	}
+}
+
 fn (mut p Parser) check_parameters_post_body(parameter_info []ParamInfo, force_strict bool, kind FunctionKind) {
 	_ = kind
 	mut seen_names := map[string]bool{}

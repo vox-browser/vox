@@ -1920,6 +1920,7 @@ fn (mut p Parser) parse_method_definition(is_async bool, is_generator bool, meth
 	p.pattern_bound_names = []BoundName{}
 
 	parsed := p.parse_formal_parameters()
+	p.check_unique_formal_parameters(parsed.parameter_info)
 
 	p.register_function_parameters_with_scope(parsed.parameters, parsed.parameter_info)
 
@@ -1945,8 +1946,9 @@ fn (mut p Parser) parse_method_definition(is_async bool, is_generator bool, meth
 	p.flags.in_class_static_init_block = saved_static_init
 	p.flags.in_class_field_initializer = saved_field_init
 
-	if has_use_strict || fn_kind != .normal {
-		p.check_parameters_post_body(parsed.parameter_info, has_use_strict, fn_kind)
+	parameters_are_strict := p.flags.strict_mode || has_use_strict
+	if parameters_are_strict || fn_kind != .normal {
+		p.check_parameters_post_body(parsed.parameter_info, parameters_are_strict, fn_kind)
 	}
 
 	insights.might_need_arguments_object = p.flags.function_might_need_arguments_object
