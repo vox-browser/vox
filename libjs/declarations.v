@@ -458,7 +458,8 @@ fn (mut p Parser) parse_function_common(name ?&Identifier, fn_name Utf16String, 
 			name_str := string_from_utf16_lossy(fn_name.data)
 			p.syntax_error("async generator function is not allowed to be called '${name_str}'")
 		}
-		if p.flags.in_class_static_init_block && utf16_equals(fn_name.data, utf16('await')) {
+		if p.flags.in_class_static_init_block && is_async
+			&& utf16_equals(fn_name.data, utf16('await')) {
 			p.syntax_error("'await' is a reserved word")
 		}
 	}
@@ -487,9 +488,6 @@ fn (mut p Parser) parse_function_common(name ?&Identifier, fn_name Utf16String, 
 	p.scope_collector.close_scope()
 	p.pattern_bound_names = saved_pattern_bound_names
 
-	p.flags.in_class_static_init_block = saved_static_init
-	p.flags.in_class_field_initializer = saved_field_init
-
 	if name != none {
 		p.check_identifier_name_for_assignment_validity(fn_name.data, has_use_strict)
 	}
@@ -497,6 +495,8 @@ fn (mut p Parser) parse_function_common(name ?&Identifier, fn_name Utf16String, 
 	if parameters_are_strict || kind != .normal {
 		p.check_parameters_post_body(parsed.parameter_info, parameters_are_strict, kind)
 	}
+	p.flags.in_class_static_init_block = saved_static_init
+	p.flags.in_class_field_initializer = saved_field_init
 
 	insights.might_need_arguments_object = p.flags.function_might_need_arguments_object
 	p.flags.function_might_need_arguments_object = saved_might_need_arguments
@@ -974,13 +974,16 @@ fn (mut p Parser) parse_class_element(class_start Position, mut found_private_na
 	mut init := ?Expression(none)
 	if p.match_token(.equals) {
 		p.consume()
+		saved_await := p.flags.await_expression_is_valid
 		saved_field_init := p.flags.in_class_field_initializer
 		saved_super_lookup := p.flags.allow_super_property_lookup
+		p.flags.await_expression_is_valid = false
 		p.flags.in_class_field_initializer = true
 		p.flags.allow_super_property_lookup = true
 		p.scope_collector.open_class_field_scope()
 		init = p.parse_assignment_expression()
 		p.scope_collector.close_scope()
+		p.flags.await_expression_is_valid = saved_await
 		p.flags.in_class_field_initializer = saved_field_init
 		p.flags.allow_super_property_lookup = saved_super_lookup
 	}

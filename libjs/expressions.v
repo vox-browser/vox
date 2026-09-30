@@ -1749,7 +1749,8 @@ fn (mut p Parser) try_parse_arrow_function_expression_impl(expect_parens bool, i
 	} else if p.match_identifier() || p.match_token(.await_kw) {
 		param_token := p.consume()
 		value := p.token_value(param_token).clone()
-		if is_async && utf16_equals(value, utf16('await')) {
+		if utf16_equals(value, utf16('await'))
+			&& (is_async || p.program_type == .module || p.flags.in_class_static_init_block) {
 			p.syntax_error("'await' is a reserved identifier in async functions")
 		}
 		binding := Identifier.new(p.range_from(start), Utf16String.from_slice(value.clone()))
