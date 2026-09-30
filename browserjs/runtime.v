@@ -3,6 +3,19 @@ module browserjs
 import libjs
 import json2
 
+pub enum Engine {
+	javascriptcore
+	libjs
+}
+
+pub fn parse_engine(name string) !Engine {
+	return match name {
+		'javascriptcore' { .javascriptcore }
+		'libjs' { .libjs }
+		else { return error('Unknown JavaScript engine "${name}"; expected javascriptcore or libjs') }
+	}
+}
+
 pub struct ScriptSource {
 pub:
 	code          string
@@ -35,24 +48,31 @@ pub fn prepare_script(source ScriptSource) !&PreparedScript {
 	return &PreparedScript{source, parsed}
 }
 
-// Runtime embeds the LibJS frontend and a JavaScriptCore execution backend.
-// Bytecode generation, builtin objects and module execution are still pending in V.
+// JavaScriptCore preserves the complete browser host while LibJS execution is
+// translated. Choosing LibJS never creates or falls back to a JSC context.
 pub struct Runtime {
 	agent_vm &libjs.VM
 	realm    &libjs.Realm
+pub:
+	engine Engine
 mut:
 	context voidptr
 	closed  bool
 }
 
 pub fn Runtime.create() &Runtime {
+	return Runtime.create_with_engine(.javascriptcore)
+}
+
+pub fn Runtime.create_with_engine(engine Engine) &Runtime {
 	mut agent_vm := libjs.VM.create()
 	realm_context := libjs.create_simple_execution_context(mut agent_vm)
 	mut context := unsafe { nil }
 	$if darwin {
-		context = create_javascript_core_context()
+		if engine == .javascriptcore { context = create_javascript_core_context() }
 	}
 	return &Runtime{
+		engine:   engine
 		agent_vm: agent_vm
 		realm:    realm_context.realm or { panic('browser realm was not initialized') }
 		context:  context
@@ -82,6 +102,26 @@ fn (runtime &Runtime) execute_prepared(script &PreparedScript, stringify_result 
 	if script.source.source_type == .module {
 		return error('Module execution is not yet implemented by the browser JavaScript backend')
 	}
+	if runtime.engine == .libjs {
+		if script.frontend.reached_recursion_limit {
+			return error('LibJS frontend recursion limit reached; this program cannot be executed by the translated runtime')
+		}
+		mut vm := unsafe { &libjs.VM(runtime.agent_vm) }
+		mut record := &libjs.Script{
+			realm:          runtime.realm
+			filename:       if script.source.url == '' { '<script>' } else { script.source.url }
+			starting_line:  u32(script.source.starting_line)
+			host_defined:   voidptr(runtime)
+			parsed:         script.frontend
+			is_strict_mode: script.frontend.is_strict_mode
+		}
+		value := vm.run_with_limits(mut record, libjs.ExecutionLimits{ max_instructions: 1000000 }) or {
+			return error(libjs_exception_message(err))
+		}
+		if !stringify_result { return '' }
+		text := value.to_primitive_string(mut vm) or { return error(libjs_exception_message(err)) }
+		return text.str()
+	}
 	// Associate this host execution with the translated Script/Realm records.
 	// These are embedding contexts; JavaScriptCore still owns its JS call frames,
 	// global bindings and promise reactions until the interpreter is translated.
@@ -110,7 +150,26 @@ fn (runtime &Runtime) execute_prepared(script &PreparedScript, stringify_result 
 // Host-generated bootstrap and DOM dispatch code has its own trusted boundary;
 // it must not consume the much smaller translated parser stack budget.
 pub fn (runtime &Runtime) evaluate_host(source string) !string {
+	if runtime.engine == .libjs { return runtime.evaluate(source) }
 	return runtime.evaluate_backend(ScriptSource{ code: source }, true)
+}
+
+fn libjs_exception_message(err IError) string {
+	if !libjs.is_throw_completion(err) { return err.msg() }
+	value := libjs.thrown_value(err)
+	if value.is_object() {
+		object := value.as_object()
+		if kind := object.error_kind() {
+			message := object.error_message() or { '' }
+			trace := if data := object.error_data { data.stack_string(false) } else { '' }
+			return '${kind.name()}: ${message}' + if trace == '' {
+				''
+			} else {
+				'\n' + trace.trim_right('\n')
+			}
+		}
+	}
+	return err.msg()
 }
 
 fn (runtime &Runtime) evaluate_backend(source ScriptSource, stringify_result bool) !string {
@@ -131,6 +190,11 @@ fn (runtime &Runtime) evaluate_backend(source ScriptSource, stringify_result boo
 // microtask checkpoint. One failed script must not prevent later scripts or
 // the document's readiness events. Do not coerce discarded completion values.
 pub fn (runtime &Runtime) run_document_scripts(sources []ScriptSource) ! {
+	if runtime.engine == .libjs {
+		errors := runtime.run_document_scripts_collect_errors(sources)
+		if errors.len > 0 { return error(errors.join('\n')) }
+		return
+	}
 	for source in sources {
 		script := prepare_script(source) or {
 			runtime.evaluate_host('console.error(${json2.encode(err.msg())})')!
@@ -140,6 +204,21 @@ pub fn (runtime &Runtime) run_document_scripts(sources []ScriptSource) ! {
 			runtime.evaluate_host('console.error(${json2.encode(err.msg())})')!
 		}
 	}
+}
+
+// Collect host-readable diagnostics without requiring a JavaScript console.
+// This lets the native browser run the supported LibJS slice without its
+// JavaScriptCore-based DOM bootstrap. Failures do not stop later programs.
+pub fn (runtime &Runtime) run_document_scripts_collect_errors(sources []ScriptSource) []string {
+	mut errors := []string{}
+	for source in sources {
+		script := prepare_script(source) or {
+			errors << err.msg()
+			continue
+		}
+		runtime.execute_prepared(script, false) or { errors << err.msg() }
+	}
+	return errors
 }
 
 pub fn (mut runtime Runtime) close() {

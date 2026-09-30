@@ -1,5 +1,107 @@
 module browserjs
 
+fn test_libjs_backend_executes_bytecode_and_keeps_javascriptcore_uninitialized() {
+	mut runtime := Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	assert runtime.engine == .libjs
+	assert runtime.context == unsafe { nil }
+	assert runtime.evaluate('const answer=41; answer+1;')! == '42'
+	assert runtime.evaluate('answer;')! == '41'
+	assert runtime.evaluate('var x=0; for(let i=0;i<7;i++) x+=i; x*2;')! == '42'
+	assert runtime.evaluate('undefined;')! == 'undefined'
+	assert runtime.evaluate('NaN !== NaN;')! == 'true'
+	assert runtime.evaluate('this === globalThis;')! == 'true'
+	if _ := runtime.evaluate('answer=0;') {
+		assert false
+	} else {
+		assert err.msg().starts_with('TypeError:')
+	}
+	assert runtime.libjs_vm().execution_context_stack().len == 1
+	assert runtime.libjs_vm().interpreter_stack().depth() == 0
+	runtime.close()
+	if _ := runtime.evaluate('1;') {
+		assert false
+	} else {
+		assert err.msg().contains('closed')
+	}
+}
+
+fn test_libjs_backend_isolates_errors_and_never_falls_back_to_javascriptcore() {
+	mut runtime := Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	errors := runtime.run_document_scripts_collect_errors([
+		ScriptSource{ code: 'const x=40;' },
+		ScriptSource{ code: 'var leaked=1; (() => 42)();', url: 'unsupported.js' },
+		ScriptSource{ code: 'let duplicate; let duplicate;', url: 'syntax.js' },
+		ScriptSource{ code: 'throw 42;', url: 'throw.js' },
+		ScriptSource{ code: 'var result=x+2;' },
+	])
+	assert errors.len == 3
+	assert errors[0].contains('unsupported.js:1:') && errors[0].contains('not translated')
+	assert errors[1].contains('SyntaxError: syntax.js:1:')
+	assert errors[2].contains('42')
+	assert runtime.evaluate('result;')! == '42'
+	assert runtime.evaluate('typeof leaked;')! == 'undefined'
+	assert runtime.context == unsafe { nil }
+	for source in ['('.repeat(40) + '42' + ')'.repeat(40), '/a/', '/[a-/'] {
+		if _ := runtime.evaluate(source) {
+			assert false
+		} else {
+			assert err.msg().contains('limit') || err.msg().contains('not translated')
+				|| err.msg().contains('SyntaxError')
+		}
+	}
+	if _ := runtime.evaluate_host('JSON.stringify({answer:42});') {
+		assert false
+	} else {
+		assert err.msg().contains('not translated')
+	}
+	assert runtime.context == unsafe { nil }
+}
+
+fn test_libjs_backend_preserves_source_urls_and_starting_lines() {
+	mut runtime := Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	script := prepare_script(ScriptSource{
+		code:          '\nconst x=1; x=2;'
+		url:           'https://example.test/limited.js'
+		starting_line: 12
+	})!
+	if _ := runtime.evaluate_prepared(script) {
+		assert false
+	} else {
+		assert err.msg().starts_with('TypeError:')
+		assert err.msg().contains('https://example.test/limited.js:13:')
+	}
+	unsupported := prepare_script(ScriptSource{
+		code:          '\n(()=>1);'
+		url:           'https://example.test/unsupported.js'
+		starting_line: 20
+	})!
+	if _ := runtime.evaluate_prepared(unsupported) {
+		assert false
+	} else {
+		assert err.msg().contains('https://example.test/unsupported.js:21:')
+	}
+}
+
+fn test_engine_selection_keeps_javascriptcore_available() {
+	assert parse_engine('javascriptcore')! == .javascriptcore
+	assert parse_engine('libjs')! == .libjs
+	if _ := parse_engine('unknown') {
+		assert false
+	} else {
+		assert err.msg().contains('javascriptcore or libjs')
+	}
+	$if darwin {
+		mut runtime := Runtime.create_with_engine(.javascriptcore)
+		defer { runtime.close() }
+		assert runtime.engine == .javascriptcore
+		assert runtime.context != unsafe { nil }
+		assert runtime.evaluate('JSON.stringify({answer:42})')! == '{"answer":42}'
+	}
+}
+
 fn test_javascript_core_evaluates_ecmascript_and_reports_exceptions() {
 	mut runtime := Runtime.create()
 	defer {

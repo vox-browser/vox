@@ -270,6 +270,7 @@ mut:
 	ctx                                 &gg.Context = unsafe { nil }
 	page_model                          &page.Page = unsafe { nil }
 	js_runtime                          &browserjs.Runtime = unsafe { nil }
+	js_engine                           browserjs.Engine = .javascriptcore
 	document                            &dom.Document = unsafe { nil }
 	root_box                            layout.BlockBox
 	markup                              string
@@ -334,6 +335,7 @@ struct ChromePointerDispatchResult {
 
 struct LaunchOptions {
 mut:
+	js_engine                  browserjs.Engine = .javascriptcore
 	source                     string
 	headless_smoke             bool
 	headless_layout_tree       bool
@@ -527,6 +529,12 @@ fn parse_launch_options(arguments []string) !LaunchOptions {
 		argument := arguments[index]
 		if argument == '--headless-smoke' {
 			options.headless_smoke = true
+		} else if argument == '--js-engine' {
+			if index + 1 >= arguments.len { return error('--js-engine requires javascriptcore or libjs') }
+			index++
+			options.js_engine = browserjs.parse_engine(arguments[index])!
+		} else if argument.starts_with('--js-engine=') {
+			options.js_engine = browserjs.parse_engine(argument.all_after('='))!
 		} else if argument == '--headless=layout-tree' {
 			options.headless_layout_tree = true
 		} else if argument == '--screenshot' {
@@ -2195,6 +2203,13 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		})
 	}
 	ensure_compact_browser_navigable(document) or { return none }
+	if runtime.engine == .libjs {
+		messages << 'LibJS DOM bindings are not translated yet; page scripts use the supported standalone runtime.'
+		for diagnostic in runtime.run_document_scripts_collect_errors(sources) {
+			messages << 'JavaScript (LibJS): ${diagnostic}'
+		}
+		return none
+	}
 	runtime.evaluate_host(javascript_bootstrap(javascript_initial_state(document, current_url, sources.map(it.code)))) or {
 		messages << 'JavaScript: ${err.msg()}'
 		return none
@@ -2234,6 +2249,7 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 	if app.js_runtime == unsafe { nil } {
 		return false
 	}
+	if app.js_runtime.engine == .libjs { return false }
 	id := element.get_attribute_value('id')
 	if id == '' {
 		return false
@@ -2526,7 +2542,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	}
 	sources := script_sources(app.document, resource_base_url, preloaded_resources, mut app.js_messages)
 	javascript_navigation := if sources.len > 0 {
-		app.js_runtime = browserjs.Runtime.create()
+		app.js_runtime = browserjs.Runtime.create_with_engine(app.js_engine)
 		run_document_script_sources(app.document, loaded.url, sources, app.js_runtime, mut app.js_messages)
 	} else {
 		none
@@ -5676,6 +5692,7 @@ fn main() {
 		screenshot_viewport_height: options.screenshot_viewport_height
 		screenshot_scroll_y: options.screenshot_scroll_y
 		layout_tree_only: options.headless_layout_tree
+		js_engine: options.js_engine
 		use_document_font: use_document_font
 		viewport_width: options.width
 		viewport_height: initial_viewport_height
@@ -5694,7 +5711,16 @@ fn main() {
 		app.navigate(initial_url, true)
 	}
 	if options.headless_smoke {
-		if app.source_label == 'about:home' {
+		if options.js_engine == .libjs {
+			mut runtime := browserjs.Runtime.create_with_engine(.libjs)
+			result := runtime.evaluate('var answer=0; for (let i=0;i<7;i++) answer+=i; answer*2;') or {
+				eprintln('LibJS smoke failed: ${err.msg()}')
+				exit(1)
+			}
+			runtime.close()
+			if result != '42' { panic('LibJS smoke: unexpected result ${result}') }
+			println('LibJS bytecode execution: passed (DOM bindings pending)')
+		} else if app.source_label == 'about:home' {
 			js_status := app.document.get_element_by_id('js-status') or {
 				panic('headless smoke: JavaScript target element is missing')
 			}

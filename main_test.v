@@ -11,6 +11,36 @@ import painting
 import time
 import x.json2
 
+fn test_launch_options_select_javascript_engine_in_both_flag_forms() {
+	assert parse_launch_options([])!.js_engine == .javascriptcore
+	assert parse_launch_options(['--js-engine=javascriptcore', 'about:blank'])!.js_engine == .javascriptcore
+	separate := parse_launch_options(['--js-engine', 'libjs', '--headless-smoke', 'page.html'])!
+	assert separate.js_engine == .libjs
+	assert separate.headless_smoke && separate.source == 'page.html'
+	inline := parse_launch_options(['page.html', '--js-engine=libjs', '--window-width=900'])!
+	assert inline.js_engine == .libjs && inline.source == 'page.html' && inline.width == 900
+	for args in [['--js-engine'], ['--js-engine='], ['--js-engine=unknown'], ['--js-engine', 'unknown']] {
+		if _ := parse_launch_options(args) { assert false }
+	}
+}
+
+fn test_native_libjs_scripts_execute_without_the_javascriptcore_dom_bootstrap() {
+	document := html.parse_document('<div id="result">static</div>')
+	mut runtime := browserjs.Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	mut messages := []string{}
+	run_document_javascript(document, 'https://example.test/page.html', [
+		'const answer=40;',
+		'document.getElementById("result").textContent="changed";',
+		'var result=answer+2;',
+	], runtime, mut messages)
+	assert runtime.evaluate('result;')! == '42'
+	assert document.get_element_by_id('result')?.as_node().text_content()? == 'static'
+	assert messages.len == 2
+	assert messages[0].contains('DOM bindings')
+	assert messages[1].contains('not translated')
+}
+
 fn test_native_browser_scripts_use_libjs_errors_global_bindings_and_readiness_order() {
 	$if darwin {
 		document := html.parse_document('<div id="result"></div>')
