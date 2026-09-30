@@ -1033,7 +1033,7 @@ fn (mut p Parser) parse_function_body(is_async bool, is_generator bool, is_simpl
 		}
 	}
 
-	children << p.parse_statement_list(false)
+	children << p.parse_statement_list(true)
 
 	p.flags.strict_mode = strict_before
 	p.flags.in_function_context = in_function_before

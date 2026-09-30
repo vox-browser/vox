@@ -838,8 +838,13 @@ fn (mut p Parser) try_parse_labelled_statement(allow_labelled_function bool) ?St
 	body_starts_iteration := p.match_iteration_start()
 	p.last_inner_label_is_iteration = false
 	body := if p.match_token(.function_kw) {
+		function_start := p.position()
 		fn_decl := p.parse_function_declaration()
 		if fn_decl.kind.tag == .function_declaration {
+			if name := fn_decl.kind.func_name {
+				p.scope_collector.check_labelled_function_declaration(name.name.data,
+					function_start.line, function_start.column)
+			}
 			match fn_decl.kind.func_kind {
 				.generator, .async_generator {
 					p.syntax_error('Generator functions cannot be defined in labelled statements')

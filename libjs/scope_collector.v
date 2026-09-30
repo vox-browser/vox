@@ -512,6 +512,12 @@ fn (mut sc ScopeCollector) add_catch_parameter_identifier(name []u16, id &Identi
 
 // === Identifier registration ===
 
+fn (mut sc ScopeCollector) check_labelled_function_declaration(name []u16, line u32, column u32) {
+	if sc.current >= 0 && sc.records[sc.current].has_flag(name, var_flag_lexical) {
+		sc.already_declared_error(name, line, column)
+	}
+}
+
 fn (mut sc ScopeCollector) register_identifier(id &Identifier, name []u16, declaration_kind ?int) {
 	index := sc.current
 	if index < 0 {
