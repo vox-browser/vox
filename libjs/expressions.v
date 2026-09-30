@@ -1430,7 +1430,7 @@ fn (mut p Parser) parse_tagged_template_literals(tag_start Position, expression_
 		template := p.parse_template_literal(true)
 		expression = p.expression(tag_start, ExpressionKind{
 			tag:                   .tagged_template_literal
-			tag_expr:              &expression
+			tag_expr:              &Expression{ ...expression }
 			template_literal_expr: &template
 		})
 	}

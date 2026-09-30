@@ -32,6 +32,7 @@ mut:
 // Node wrapper
 // =============================================================================
 
+@[heap]
 struct Expression {
 mut:
 	range SourceRange
@@ -45,6 +46,7 @@ fn Expression.new(range SourceRange, kind ExpressionKind) Expression {
 	}
 }
 
+@[heap]
 struct Statement {
 mut:
 	range SourceRange
@@ -239,6 +241,7 @@ struct FunctionId {
 	id u32
 }
 
+@[heap]
 struct JsFunctionData {
 mut:
 	name              ?&Identifier
@@ -259,7 +262,7 @@ mut:
 
 struct FunctionTable {
 mut:
-	entries []?JsFunctionData
+	entries []?&JsFunctionData
 }
 
 fn FunctionTable.new() FunctionTable {
@@ -267,7 +270,7 @@ fn FunctionTable.new() FunctionTable {
 }
 
 fn (mut ft FunctionTable) insert(data JsFunctionData) FunctionId {
-	ft.entries << ?JsFunctionData(data)
+	ft.entries << ?&JsFunctionData(&JsFunctionData{ ...data })
 	return FunctionId{
 		id: u32(ft.entries.len - 1)
 	}
@@ -275,7 +278,7 @@ fn (mut ft FunctionTable) insert(data JsFunctionData) FunctionId {
 
 fn (ft &FunctionTable) get(id FunctionId) &JsFunctionData {
 	if d := ft.entries[int(id.id)] {
-		return &d
+		return d
 	}
 	panic('FunctionTable.get: slot already taken')
 }
@@ -287,7 +290,7 @@ fn (mut ft FunctionTable) take(id FunctionId) JsFunctionData {
 	}
 	if d := ft.entries[idx] {
 		ft.entries[idx] = none
-		return d
+		return *d
 	}
 	panic('FunctionTable.take: slot already taken')
 }
@@ -299,7 +302,7 @@ fn (mut ft FunctionTable) try_take(id FunctionId) ?JsFunctionData {
 	}
 	if d := ft.entries[idx] {
 		ft.entries[idx] = none
-		return d
+		return *d
 	}
 	return none
 }
@@ -307,9 +310,9 @@ fn (mut ft FunctionTable) try_take(id FunctionId) ?JsFunctionData {
 fn (mut ft FunctionTable) insert_at(id FunctionId, data JsFunctionData) {
 	idx := int(id.id)
 	for ft.entries.len <= idx {
-		ft.entries << ?JsFunctionData(none)
+		ft.entries << ?&JsFunctionData(none)
 	}
-	ft.entries[idx] = data
+	ft.entries[idx] = &JsFunctionData{ ...data }
 }
 
 // extract_reachable extracts a subtable containing all FunctionIds reachable
