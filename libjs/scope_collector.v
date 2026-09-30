@@ -745,7 +745,9 @@ fn (sc &ScopeCollector) has_declaration_in_current_function(name []u16) bool {
 		if si == stop {
 			break
 		}
-		if sc.records[si].has_flag(name, var_flag_lexical | var_flag_var | var_flag_parameter_candidate) {
+		if sc.records[si].has_flag(name,
+			var_flag_lexical | var_flag_var | var_flag_parameter_candidate)
+		{
 			return true
 		}
 		if sc.records[si].has_hoistable_function_named(name) {
@@ -812,21 +814,16 @@ fn (mut sc ScopeCollector) propagate_eval_poisoning(index int) {
 }
 
 fn (mut sc ScopeCollector) resolve_identifiers(index int, initiated_by_eval bool, suppress_globals bool) {
-	// Take groups out and sort by name for deterministic local variable indices.
+	// V maps retain insertion order, matching upstream's IndexMap. Local
+	// variable indices follow the first registration, including propagated uses.
 	groups := sc.records[index].identifier_groups.clone()
 	sc.records[index].identifier_groups = map[string]IdentifierGroup{}
-
-	mut sorted_keys := []string{}
-	for k, _ in groups {
-		sorted_keys << k
-	}
-	sorted_keys.sort()
 
 	mut propagate_to_parent := []string{}
 	mut propagate_groups := []IdentifierGroup{}
 
-	for key in sorted_keys {
-		mut group := unsafe { groups[key] }
+	for key, original_group in groups {
+		mut group := original_group
 
 		// Annotate each Identifier AST node with its declaration kind.
 		if group.declaration_kind != 0 {
@@ -975,7 +972,8 @@ fn (mut sc ScopeCollector) resolve_identifiers(index int, initiated_by_eval bool
 					if sd := sc.records[local_scope].scope_data {
 						unsafe {
 							if is_function_parameter {
-								argument_index := sc.records[local_scope].get_parameter_index(name_u16)
+								argument_index :=
+									sc.records[local_scope].get_parameter_index(name_u16)
 								if argument_index >= 0 {
 									for id in group.identifiers {
 										id.local_index = u32(argument_index)
@@ -1240,7 +1238,8 @@ fn (mut sc ScopeCollector) hoist_functions(index int) {
 		} else {
 			parent_index := sc.records[index].parent
 			if parent_index >= 0 {
-				if !sc.records[parent_index].has_flag(function.name.data, var_flag_lexical | var_flag_function) {
+				if !sc.records[parent_index].has_flag(function.name.data,
+					var_flag_lexical | var_flag_function) {
 					sc.records[parent_index].functions_to_hoist << function
 				}
 			}
