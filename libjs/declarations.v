@@ -562,7 +562,14 @@ fn (mut p Parser) parse_class_expression(expect_name bool) Expression {
 	mut super_class := ?Expression(none)
 	if p.match_token(.extends_kw) {
 		p.consume()
-		super_class = p.parse_expression_any()
+		heritage_start := p.position()
+		expression := p.parse_expression_any()
+		if expression.range.start.offset == heritage_start.offset
+			&& expression.kind.tag == .function_expr
+			&& p.function_table.get(expression.kind.function_id).is_arrow_function {
+			p.syntax_error('Arrow function is not allowed in class heritage')
+		}
+		super_class = expression
 	}
 
 	p.consume_token(.curly_open)
