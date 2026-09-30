@@ -137,6 +137,11 @@ pub enum ShouldThrowExceptions {
 	yes
 }
 
+pub enum IntegrityLevel {
+	sealed
+	frozen
+}
+
 @[heap]
 pub struct Object {
 pub mut:
@@ -169,6 +174,78 @@ fn (object &Object) find_own_property(key PropertyName) int {
 	return -1
 }
 
+// Object.cpp::OrdinaryGetPrototypeOf / OrdinarySetPrototypeOf. Every Object in
+// this runtime slice uses ordinary internal methods; ProxyObject is pending.
+pub fn (object &Object) internal_get_prototype_of() ?&Object {
+	return object.prototype
+}
+
+pub fn (mut object Object) internal_set_prototype_of(new_prototype ?&Object) bool {
+	if current := object.prototype {
+		if proposed := new_prototype {
+			if voidptr(current) == voidptr(proposed) { return true }
+		}
+	} else if new_prototype == none {
+		return true
+	}
+	if !object.extensible { return false }
+	mut prototype := new_prototype
+	for {
+		current := prototype or { break }
+		if voidptr(current) == voidptr(&object) { return false }
+		prototype = current.prototype
+	}
+	object.prototype = new_prototype
+	return true
+}
+
+// 10.1.3 [[IsExtensible]] and 10.1.4 [[PreventExtensions]].
+pub fn (object &Object) internal_is_extensible() bool {
+	return object.extensible
+}
+
+pub fn (mut object Object) internal_prevent_extensions() bool {
+	object.extensible = false
+	return true
+}
+
+// 7.3.16 SetIntegrityLevel ( O, level ), data descriptors only.
+pub fn (mut object Object) set_integrity_level(mut vm VM, level IntegrityLevel) !bool {
+	if !object.internal_prevent_extensions() { return false }
+	keys := object.own_property_keys()
+	if level == .sealed {
+		for key in keys {
+			object.define_property_or_throw(mut vm, key, PropertyDescriptor{ configurable: false })!
+		}
+	} else {
+		for key in keys {
+			if _ := object.internal_get_own_property(key) {
+				object.define_property_or_throw(mut vm, key, PropertyDescriptor{
+					writable:     false
+					configurable: false
+				})!
+			}
+		}
+	}
+	return true
+}
+
+// 7.3.17 TestIntegrityLevel ( O, level ).
+pub fn (object &Object) test_integrity_level(level IntegrityLevel) bool {
+	if object.internal_is_extensible() { return false }
+	for key in object.own_property_keys() {
+		if descriptor := object.internal_get_own_property(key) {
+			if descriptor.configurable or { false } { return false }
+			if level == .frozen && descriptor.is_data_descriptor() && (descriptor.writable or {
+				false
+			}) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 pub fn (object &Object) is_error_object() bool {
 	return object.error_data != none
 }
@@ -181,8 +258,12 @@ pub fn (object &Object) own_property_keys() []PropertyName {
 	mut symbols := []PropertyName{}
 	for property in object.properties {
 		match property.key.kind {
-			.number_key { indices << property.key }
-			.string_key { strings << property.key }
+			.number_key {
+				indices << property.key
+			}
+			.string_key {
+				strings << property.key
+			}
 			.symbol_key {
 				if !property.key.as_symbol().is_private() { symbols << property.key }
 			}
