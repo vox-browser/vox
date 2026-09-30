@@ -1,5 +1,7 @@
 module libjs
 
+import math.big
+
 pub struct ExecutionLimits {
 pub:
 	// Zero permits unlimited instructions, matching upstream execution.
@@ -80,21 +82,13 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 			})
 		}
 		.bitwise_and, .bitwise_or, .bitwise_xor, .left_shift, .right_shift, .unsigned_right_shift {
-			x := left.to_u32(mut vm)!
-			y := right.to_u32(mut vm)!
-			bits := match instruction.op {
-				.bitwise_and { x & y }
-				.bitwise_or { x | y }
-				.bitwise_xor { x ^ y }
-				.left_shift { x << (y & 31) }
-				.right_shift { u32(left.to_i32(mut vm)! >> (y & 31)) }
-				else { x >> (y & 31) }
-			}
-
-			result = if instruction.op == .unsigned_right_shift {
-				Value.from_f64(f64(bits))
-			} else {
-				Value.from_i32(i32(i64(bits) - if bits >= 0x80000000 { i64(4294967296) } else { 0 }))
+			result = match instruction.op {
+				.bitwise_and { bitwise_and(mut vm, left, right)! }
+				.bitwise_or { bitwise_or(mut vm, left, right)! }
+				.bitwise_xor { bitwise_xor(mut vm, left, right)! }
+				.left_shift { left_shift(mut vm, left, right)! }
+				.right_shift { right_shift(mut vm, left, right)! }
+				else { unsigned_right_shift(mut vm, left, right)! }
 			}
 		}
 		.unary_plus {
@@ -106,8 +100,20 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 		.to_numeric {
 			result = left.to_numeric(mut vm)!
 		}
+		.increment, .decrement {
+			// Interpreter/SlowPaths.cpp::{increment,decrement}; the generator
+			// preserves the numeric old value separately for postfix updates.
+			numeric := left.to_numeric(mut vm)!
+			step := if instruction.op == .increment { 1 } else { -1 }
+			result = if numeric.is_number() {
+				Value.from_f64(numeric.number + step)
+			} else {
+				Value.from_bigint(BigInt.create(numeric.as_bigint().big_integer +
+					big.integer_from_int(step)))
+			}
+		}
 		.bitwise_not {
-			result = Value.from_i32(~left.to_i32(mut vm)!)
+			result = bitwise_not(mut vm, left)!
 		}
 		.not_op {
 			result = Value.from_bool(!left.to_boolean())

@@ -124,6 +124,15 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 		.numeric_literal {
 			return generator.constant(Value.from_f64(kind.numeric_value))
 		}
+		.big_int_literal {
+			// codegen.rs::bigint_literal_digits and RustIntegration.cpp's BigInt
+			// constant reader; SignedBigInteger::from_base removes separators.
+			digits := kind.big_int_value.trim_string_right('n').replace('_', '')
+			integer := string_to_bigint(utf16_string(digits)) or {
+				return error('Invalid parsed BigInt literal')
+			}
+			return generator.constant(Value.from_bigint(integer))
+		}
 		.string_literal {
 			return generator.constant(Value.from_string(vm.create_string(kind.string_value)))
 		}
@@ -315,12 +324,10 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			})
 			generator.emit(Instruction{ op: .to_numeric, dst: old, lhs: old })
 			dst := generator.temporary()
-			one := generator.constant(Value.from_i32(1))
 			generator.emit(Instruction{
-				op:  if kind.update_op == .increment { OpCode.add } else { OpCode.sub }
+				op:  if kind.update_op == .increment { OpCode.increment } else { OpCode.decrement }
 				dst: dst
 				lhs: old
-				rhs: one
 			})
 			generator.emit(Instruction{
 				op:         .set_binding

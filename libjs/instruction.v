@@ -31,6 +31,8 @@ pub enum OpCode {
 	not_op
 	typeof_op
 	to_numeric
+	increment
+	decrement
 	get_binding
 	typeof_binding
 	set_binding
@@ -76,8 +78,8 @@ fn (instruction Instruction) input_count() int {
 			2
 		}
 		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric,
-		.set_binding, .set_variable, .initialize_binding, .jump_if_true, .jump_if_false,
-		.jump_if_nullish, .end, .throw_op {
+		.increment, .decrement, .set_binding, .set_variable, .initialize_binding, .jump_if_true,
+		.jump_if_false, .jump_if_nullish, .end, .throw_op {
 			1
 		}
 		else {
