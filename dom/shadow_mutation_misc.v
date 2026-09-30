@@ -355,6 +355,20 @@ pub fn (mut shadow_root ShadowRoot) finalize() {
 	}
 }
 
+pub fn (mut shadow_root ShadowRoot) adopted_from(old_document &Document) {
+	// Document-wide invalidation and tree-scoped name queries must visit roots
+	// owned by this document, including those whose hosts are disconnected.
+	mut previous_document := unsafe { &Document(old_document) }
+	previous_document.unregister_shadow_root(shadow_root)
+	mut document := unsafe { &Document(shadow_root.document()) }
+	document.register_shadow_root(shadow_root)
+
+	// User styles and inherited counter styles belong to the new document.
+	// This CSS boundary drops the existing scope caches without replacing its
+	// author sheets, adopted sheets, or pending selector invalidations.
+	shadow_root.style_scope().invalidate_user_style_sheet()
+}
+
 // https://fullscreen.spec.whatwg.org/#dom-document-fullscreenelement
 pub fn (shadow_root &ShadowRoot) fullscreen_element_for_bindings() ?&Element {
 	// 1. If this is a shadow root and its host is not connected, then return null.

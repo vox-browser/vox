@@ -3251,7 +3251,10 @@ pub fn (mut n Node) moved_from_with_context(is_subtree_root NodeIsSubtreeRoot, o
 
 pub fn (mut n Node) adopted_from(old_document &Document) {
 	n.recompute_editable_subtree_flag()
-	if element := n.as_element() {
+	if shadow_root := n.as_shadow_root() {
+		mut mutable_shadow_root := unsafe { &ShadowRoot(shadow_root) }
+		mutable_shadow_root.adopted_from(old_document)
+	} else if element := n.as_element() {
 		mut mutable_element := unsafe { &Element(element) }
 		mutable_element.adopted_from(old_document)
 	}

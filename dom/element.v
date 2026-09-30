@@ -2128,6 +2128,8 @@ pub fn (mut e Element) attach_a_shadow_root_with_registry(mode ShadowRootMode, c
 		slot_assignment_: slot_assignment
 		custom_element_registry_: registry
 	})
+	mut document := unsafe { &Document(e.document()) }
+	document.register_shadow_root(shadow)
 	e.set_shadow_root(shadow)
 }
 
@@ -2153,6 +2155,8 @@ pub fn (mut e Element) attach_a_user_agent_shadow_root(slot_assignment SlotAssig
 		slot_assignment_: slot_assignment
 		user_agent_internal_: true
 	})
+	mut document := unsafe { &Document(e.document()) }
+	document.register_shadow_root(shadow)
 	e.set_shadow_root(shadow)
 	return shadow
 }
