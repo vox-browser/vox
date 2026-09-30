@@ -737,6 +737,18 @@ coverage has not yet been audited. `Untranslated` means no module translation
 was found. The remaining module rows retain their earlier inventory status
 until their own behavioral re-audits are performed.
 
+The 2026-10-01 structural audit (`python3 tools/libweb_translation_audit.py
+--json`) inventories 21,401 upstream function bodies across those 1,193 C++
+files. It reports 14,261 candidate name matches, 525 consolidated name matches,
+and **4,158 unmatched bodies**, alongside constructors, operators, binding/GC
+functions, and field matches. These classifications are a source-comparison
+worklist, not evidence that a matched body behaves like upstream or that an
+unmatched body has no renamed translation. The whole Ladybird translation is
+not complete. Remaining browser integration gaps above and the runtime boundary
+in [`libjs/PORT_STATUS.md`](libjs/PORT_STATUS.md) require implementation and
+behavioral verification. Full coverage must not be inferred from the `Complete`
+filename-mapping label.
+
 LOC is physical line count (`wc -l`), including comments and blank lines.
 Implementation and test V counts are disjoint. `Selection` includes its shared
 `dom/selection.v` implementation, and `UIEvents` includes its shared

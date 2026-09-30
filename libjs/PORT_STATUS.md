@@ -9,7 +9,9 @@ The frontend baseline comes from `medvednikov/libjs_v` commit
 AST, and scope collector for the frontend, and its C++ `Runtime/VM.{h,cpp}`,
 `Interpreter/Interpreter.cpp` VM members, and runtime records for the VM slice.
 The execution slice additionally follows `Rust/src/bytecode/{operand,generator,codegen}.rs`,
-`Interpreter/interpreter.flap`, `Script.cpp`, and `Runtime/{Value,GlobalObject}.cpp`.
+`Interpreter/{interpreter.flap,SlowPaths.cpp}`, `Script.cpp`,
+`Runtime/{Value,GlobalObject,BigInt,NativeFunction,FunctionObject,PropertyKey,Object,PrimitiveString}`
+source bodies, and the BigInt operations delegated to LibCrypto/LibTomMath.
 All refreshed V code and tests live here; the upstream checkout and the original
 `libjs_v` checkout are references. The upstream BSD-2-Clause notice is retained
 in [`LICENSE`](LICENSE).
@@ -46,12 +48,13 @@ creates a realm with a global environment and pushes its execution context.
 | `value.v`, `completion.v`, `primitive_string.v`, `symbol.v`, `object.v` | Tagged values, completion records, VM string caches, symbols, ordinary objects with data properties and `PropertyName` keys |
 | `error_object.v`, `error_types.v` | Error objects with `[[ErrorData]]` tracebacks and stack strings; the 226-entry `ErrorType` message table |
 | `realm.v`, `script.v`, `module_records.v`, `promise.v`, `function_object.v`, `executable.v` | Realm and Script records, standard global value properties, `Module` records and loading payloads, promise state, job callbacks, executable metadata (handler ranges, source map, identifier table) |
-| `value_operations.v` | Primitive coercion, numeric arithmetic, UTF-16 concatenation, strict/loose equality and relational comparisons |
+| `value_operations.v`, `value_coercion.v`, `big_int.v` | Numeric operations, BigInt cells and conversions, signed bitwise operations, exact mixed numeric comparisons, UTF-16 concatenation, ToPrimitive/OrdinaryToPrimitive and property-key conversion |
+| `native_function.v` | Capturing/raw native callable objects, function metadata, native table dispatch and callee execution contexts |
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 44 implementation files contain **19,317 physical V LOC**. The 40 test
-files contain **3,350 physical V LOC** and **143 test functions**. Physical LOC
+The 47 implementation files contain **20,279 physical V LOC**. The 47 test
+files contain **4,379 physical V LOC** and **175 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -157,12 +160,13 @@ with no JavaScriptCore dependency. `VM.run_with_limits()` and `run_executable()`
 accept an optional instruction budget (zero is unlimited). Browser execution and
 the standalone runner use a one-million-instruction limit.
 
-Supported programs include primitive literals, identifiers, `this`, numeric and
+Supported programs include primitive and BigInt literals, identifiers, `this`, numeric and
 bitwise operators, comparisons, primitive string concatenation, unary operators,
 `typeof` (including unknown names and lexical TDZ checks), conditional and sequence
 expressions, short-circuiting logical operators and assignments, identifier
-assignments/updates, `var`/`let`/`const`, blocks, `if`, `while`, `do`/`while`, `for`,
-unlabelled `break`/`continue`, and `throw`. Bindings persist across scripts in one
+assignments/updates, ordinary data-property reads, native function and method calls
+without spread arguments, string own `length`/character properties, `var`/`let`/`const`,
+blocks, `if`, `while`, `do`/`while`, `for`, unlabelled `break`/`continue`, and `throw`. Bindings persist across scripts in one
 realm. Global declaration conflicts are checked before creating any bindings;
 block declarations are created before executing their initializers. The global
 object supplies `undefined`, `NaN`, `Infinity`, and `globalThis` with upstream
@@ -170,12 +174,44 @@ property attributes.
 
 The entire program is compiled before declaration instantiation or execution.
 An unsupported construct, even inside an untaken branch, rejects the program
-without running its preceding statements or creating its bindings. Functions,
-calls, object/array creation, property access, destructuring, classes, exceptions
-with `try`/`catch`/`finally`, labels, iterators, templates, regex, BigInt, async,
-and modules are still pending. Handwritten bytecode tests exercise exception
+without running its preceding statements or creating its bindings. ECMAScript
+functions, spread calls, property assignment/update/delete, object/array creation,
+destructuring, classes, exceptions with `try`/`catch`/`finally`, labels, iterators,
+templates, regex, async, and modules are still pending. Handwritten bytecode tests exercise exception
 handler dispatch and `Catch`; this does not imply AST-level catch support.
-Object coercion reports an `InternalError` until callable objects exist.
+Ordinary objects supplied by a host can coerce through `@@toPrimitive`, `valueOf`,
+and `toString`, with upstream hint order and abrupt-completion propagation.
+Objects without a usable coercion method throw the upstream `TypeError`.
+Primitive property access beyond virtual string own properties still requires
+untranslated wrapper prototypes and reports the existing explicit runtime error.
+
+BigInt numeric operations follow `Runtime/Value.cpp`: arithmetic, truncating
+division/remainder, signed bitwise operations, arithmetic shifts (including
+negative counts), exponentiation, unary operators, equality, string conversion,
+ToBigInt/NumberToBigInt, and modulo-64-bit conversions. Mixed Number/BigInt
+operators, division by zero, negative exponents, and counts wider than the
+upstream 32-bit size guard produce the upstream errors. Integer-versus-double
+comparison extracts IEEE-754 words without rounding the BigInt through Number.
+Literal readers preserve radix prefixes and numeric separators; updates retain
+BigInt type. V `math.big` supplies storage and basic arithmetic instead of
+LibCrypto's LibTomMath substrate. The signed bitwise conversion loops and double
+extraction follow the upstream dependency bodies. This does not translate the
+BigInt constructor/prototype, LibCrypto as a whole, or external-memory accounting.
+
+`NativeFunction.create()` retains a capturing V callback; `create_raw()` uses the
+VM's typed native function table. Both install `name`/`length` metadata and enter
+an allocated callee context with the supplied realm, receiver, arguments, and
+inherited caller environments. Success and failure restore the caller and stack
+mark. Native calls share the job-callback interface. Creation takes an explicit
+realm/prototype while Intrinsics is pending; hosts install callable globals.
+Compiled calls retain the callee/receiver before argument evaluation and resolve
+an environment binding's `with` receiver through `with_base_object()`.
+
+Runtime property keys canonicalize decimal indices below 2^32-1, while leading
+zeros and 2^32-1 remain strings. Ordinary own keys enumerate indices first in
+numeric order, then strings and public symbols in their creation orders.
+SameValue/SameValueZero compare string and BigInt contents, retain symbol/object
+identity, and apply the upstream Number rules for NaN and signed zero.
 
 A standalone runner makes this boundary usable outside the browser:
 
@@ -247,10 +283,10 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 40 passed, 40 total
+# 47 passed, 47 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 40 passed, 40 total
+# 47 passed, 47 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
@@ -278,13 +314,15 @@ Pass fixture stems to select cases, `--upstream PATH` to choose a checkout, or
 set `LADYBIRD_SOURCE_DIR`. ICU headers and `libicucore` on macOS or `libicuuc` on
 Linux are required for the identifier predicates.
 
-The VM tests exercise the runtime records directly: fake `FunctionObject`,
+The VM tests exercise the runtime records directly and through compiled scripts.
+Translated native functions cover call frames, arguments, receiver/realm state,
+coercion, metadata, and failure cleanup; fake `FunctionObject`,
 `Module`, `FinalizationRegistry`, `Agent`, and `ArrayBuffer` implementations
 stand in for the untranslated builtin objects, and module-loading tests write
 temporary module files. The preceding LibWeb work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 40 libjs files were verified separately in both GC modes.
-There are now 696 repository test files.
+this package; the 47 libjs files are verified separately in both GC modes.
+There are now 703 repository test files.
 
 Browser integration checks pass the two `browserjs` test files in both GC modes,
 the native `main_test.v` bridge and flag tests, the production bundle build,
@@ -299,8 +337,8 @@ paint-server mutation cases; all 14 SVG comparisons are pixel-exact.
 
 ## Deviations from upstream
 
-- `Value` keeps an explicit tag next to its payload instead of NaN-boxing; BigInt
-  and accessor cells have tags but no translated representation.
+- `Value` keeps an explicit tag next to its payload instead of NaN-boxing.
+  BigInt uses V arbitrary-precision storage; accessor cells remain pending.
 - There is no process-wide `VM::the()` singleton or one-VM-per-process guard;
   every record that needs the VM receives it explicitly, and private environment
   ids are handed out by the VM instead of a static counter.
@@ -332,8 +370,15 @@ paint-server mutation cases; all 14 SVG comparisons are pixel-exact.
   context is pushed before instantiation, so unsupported programs cannot mutate
   globals and declaration failures retain a script traceback. Upstream arranges
   instantiation before allocating/pushing the script frame.
-- Callable objects are absent, so per-iteration environments observable through
-  closures are pending; function syntax is rejected before execution.
+- Native callable objects are translated, but ECMAScript functions and
+  per-iteration environments observable through JavaScript closures remain
+  pending; function syntax is rejected before execution. The existing
+  `FunctionObject` interface receives arguments directly, so the native
+  `internal_call()` owns the frame allocation that upstream `call_impl()` performs.
+  Native records use their supplied name for call-stack display, combine raw and
+  capturing variants in one record, and use an explicit prototype until Intrinsics
+  exists. Shapes, builtin optimizations, NativeJavaScriptBackedFunction, direct
+  binding getters, and native construction remain separate work.
 - Debugger hooks inside `handle_exception()` and the interpreter dispatch-table
   selection are not translated; `enable_debugging()` only tracks the record.
 
@@ -351,13 +396,13 @@ complete LibJS runtime migration.
   stack frames. The guard reports a positioned syntax error instead of a stack
   overflow; increasing it requires a compact AST representation and stack
   validation first.
-- Remaining expression/statement generation, calls and inline frames
+- Remaining expression/statement generation, ECMAScript calls and inline frames
   (`push_inline_frame`), functions, generators, async execution, property caches,
   and packed interpreter bytecode remain pending. The current instruction loop
   and declaration-instantiation path cover only the supported slice above.
 - Intrinsics, callable `SetDefaultGlobalBindings` entries, builtin constructors
-  and prototypes, ECMAScript and native function objects, accessors, proxies,
-  and BigInt values remain untranslated; realms expose an ordinary global object
+  and prototypes, ECMAScript function objects, accessors, proxies, and
+  BigInt constructor/prototype methods remain untranslated; realms expose an ordinary global object
   with the four standard value properties.
 - CyclicModule graph loading, linking, evaluation, promise reactions, JSON
   modules, the debugger, and the LibWeb host bindings remain necessary before
