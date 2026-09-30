@@ -50,6 +50,77 @@ pub fn (descriptor PropertyDescriptor) attributes() u8 {
 	return attributes
 }
 
+// Runtime/PropertyDescriptor.cpp::FromPropertyDescriptor. The embedding supplies
+// %Object.prototype% explicitly while the realm Intrinsics graph is pending.
+pub fn from_property_descriptor(mut vm VM, descriptor ?PropertyDescriptor, prototype ?&Object) Value {
+	current := descriptor or { return js_undefined() }
+	mut object := Object.create(vm.realm(), prototype)
+	if value := current.value {
+		assert object.create_data_property(PropertyName.from_str('value'), value)
+	}
+	if writable := current.writable {
+		assert object.create_data_property(PropertyName.from_str('writable'),
+			Value.from_bool(writable))
+	}
+	if getter := current.getter {
+		assert object.create_data_property(PropertyName.from_str('get'), getter)
+	}
+	if setter := current.setter {
+		assert object.create_data_property(PropertyName.from_str('set'), setter)
+	}
+	if enumerable := current.enumerable {
+		assert object.create_data_property(PropertyName.from_str('enumerable'),
+			Value.from_bool(enumerable))
+	}
+	if configurable := current.configurable {
+		assert object.create_data_property(PropertyName.from_str('configurable'),
+			Value.from_bool(configurable))
+	}
+	return Value.from_object(object)
+}
+
+// Runtime/PropertyDescriptor.cpp::ToPropertyDescriptor. HasProperty/Get order is
+// observable through inherited accessors and must precede mixed-kind validation.
+pub fn to_property_descriptor(mut vm VM, argument Value) !PropertyDescriptor {
+	if !argument.is_object() {
+		return vm.throw_error_type(.type_error, .not_an_object, argument.str())
+	}
+	object := argument.as_object()
+	mut descriptor := PropertyDescriptor{}
+	if object.has_property(PropertyName.from_str('enumerable')) {
+		descriptor.enumerable =
+			object.get(mut vm, PropertyName.from_str('enumerable'))!.to_boolean()
+	}
+	if object.has_property(PropertyName.from_str('configurable')) {
+		descriptor.configurable =
+			object.get(mut vm, PropertyName.from_str('configurable'))!.to_boolean()
+	}
+	if object.has_property(PropertyName.from_str('value')) {
+		descriptor.value = object.get(mut vm, PropertyName.from_str('value'))!
+	}
+	if object.has_property(PropertyName.from_str('writable')) {
+		descriptor.writable = object.get(mut vm, PropertyName.from_str('writable'))!.to_boolean()
+	}
+	if object.has_property(PropertyName.from_str('get')) {
+		getter := object.get(mut vm, PropertyName.from_str('get'))!
+		if !getter.is_function() && !getter.is_undefined() {
+			return vm.throw_error_type(.type_error, .accessor_bad_field, 'get')
+		}
+		descriptor.getter = getter
+	}
+	if object.has_property(PropertyName.from_str('set')) {
+		setter := object.get(mut vm, PropertyName.from_str('set'))!
+		if !setter.is_function() && !setter.is_undefined() {
+			return vm.throw_error_type(.type_error, .accessor_bad_field, 'set')
+		}
+		descriptor.setter = setter
+	}
+	if descriptor.is_accessor_descriptor() && descriptor.is_data_descriptor() {
+		return vm.throw_error_type(.type_error, .accessor_value_or_writable)
+	}
+	return descriptor
+}
+
 // AbstractOperations.cpp::IsCompatiblePropertyDescriptor.
 pub fn is_compatible_property_descriptor(extensible bool, descriptor PropertyDescriptor, current ?PropertyDescriptor) bool {
 	return validate_and_apply_property_descriptor(none, PropertyName.from_str(''), extensible,
