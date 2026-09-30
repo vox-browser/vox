@@ -743,6 +743,11 @@ fn is_array_expression(expression Expression) bool {
 	return expression.kind.is_array()
 }
 
+fn is_parenthesized_object_or_array_expression(expression Expression, start Position) bool {
+	return (is_object_expression(expression) || is_array_expression(expression))
+		&& expression.range.start.offset != start.offset
+}
+
 fn is_identifier_expression(expression Expression) bool {
 	return expression.kind.is_identifier()
 }

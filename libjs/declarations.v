@@ -1323,8 +1323,11 @@ fn (mut p Parser) parse_binding_pattern() BindingPattern {
 						expression_start := p.position()
 						expression := p.parse_expression(precedence_assignment, .right,
 							ForbiddenTokens{}.forbid([TokenType.equals]))
-						if is_object_expression(expression) || is_array_expression(expression) {
-							if pattern := p.synthesize_binding_pattern(expression_start) {
+						if is_parenthesized_object_or_array_expression(expression, expression_start) {
+							p.syntax_error('Invalid destructuring assignment target')
+							break
+						} else if is_object_expression(expression) || is_array_expression(expression) {
+							if pattern := p.synthesize_binding_pattern(expression.range.start) {
 								entry_alias = BindingEntryAlias{
 									kind:            .binding_pattern_kind
 									binding_pattern: pattern
@@ -1390,8 +1393,11 @@ fn (mut p Parser) parse_binding_pattern() BindingPattern {
 			expression := p.parse_expression(precedence_assignment, .right, ForbiddenTokens{}.forbid([
 				TokenType.equals,
 			]))
-			if is_object_expression(expression) || is_array_expression(expression) {
-				if pattern := p.synthesize_binding_pattern(expression_start) {
+			if is_parenthesized_object_or_array_expression(expression, expression_start) {
+				p.syntax_error('Invalid destructuring assignment target')
+				break
+			} else if is_object_expression(expression) || is_array_expression(expression) {
+				if pattern := p.synthesize_binding_pattern(expression.range.start) {
 					entry_alias = BindingEntryAlias{
 						kind:            .binding_pattern_kind
 						binding_pattern: pattern
