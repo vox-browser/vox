@@ -1300,7 +1300,7 @@ fn selector_may_match_pending_has_mutation_features(selector Selector, features 
 						}
 					} else if pseudo_class.type_ in [.enabled, .defined, .disabled, .empty,
 						.placeholder_shown, .checked, .dir, .lang, .link, .any_link, .local_link,
-						.required, .optional] {
+						.required, .optional, .read_only, .read_write] {
 						saw_concrete_feature = true
 						css_pseudo_class := css_pseudo_class_from_selector_pseudo_class(pseudo_class.type_)
 						concrete_feature_found = concrete_feature_found

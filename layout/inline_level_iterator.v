@@ -628,7 +628,7 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 		shaped := iterator.shape_text_for_layout(text_node, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
 		glyph_run := shaped.glyph_run
 		chunk_width := CSSPixels.nearest_value_for(f64(glyph_run.width()) + x)
-		is_empty_editable := chunk.length == 0 && text_node_is_inside_mutable_control(text_node)
+		is_empty_editable := chunk.length == 0 && text_node.produces_line_box_fragment_when_empty_
 		is_generated_empty_string := is_empty_editable
 			|| (text_node.retains_empty_generated_fragment_ && chunk.length == 0)
 		mut item := InlineLevelItem{
@@ -804,7 +804,7 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 		// former on its equivalent internal TextNode.
 		if chunks.len == 0 && text_node.text_for_rendering().len == 0
 			&& (text_node.retains_empty_generated_fragment_
-			|| text_node_is_inside_mutable_control(text_node)) {
+			|| text_node.produces_line_box_fragment_when_empty_) {
 			chunks << chunk_iterator.create_empty_chunk()
 		}
 		mut mutable_text_node := unsafe { &TextNode(text_node) }
@@ -818,27 +818,6 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 		should_wrap_lines: should_wrap_lines
 		should_respect_linebreaks: should_respect_linebreaks
 	}
-}
-
-// The upstream predicate reaches the shadow root host. UA shadow roots are
-// represented directly in the V layout tree, so walk to the equivalent host.
-fn text_node_is_inside_mutable_control(text_node &TextNode) bool {
-	mut ancestor := unsafe { &Node(text_node) }.parent()
-	for ancestor != none {
-		current := ancestor or { break }
-		if dom_node := current.dom_node() {
-			if element := dom_node.as_element() {
-				if element.is_html_element() && element.local_name() in ['input', 'textarea'] {
-					return true
-				}
-			}
-			if dom_node.is_editing_host() {
-				return true
-			}
-		}
-		ancestor = current.parent()
-	}
-	return false
 }
 
 fn is_native_form_control_box(node &Node) bool {

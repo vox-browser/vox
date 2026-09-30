@@ -54,13 +54,7 @@ pub fn html_element_attribute_changed(element &dom.HTMLElement, name string, old
 	if name == 'nonce' && namespace_ == none {
 		mutable_element.cryptographic_nonce_ = value or { '' }
 	}
-	if name == 'contenteditable' {
-		dom_element.as_node().for_each_in_inclusive_subtree(fn (node &dom.Node) dom.TraversalDecision {
-			mut mutable_node := unsafe { &dom.Node(node) }
-			mutable_node.recompute_editable_subtree_flag()
-			return .@continue
-		})
-	} else if name == 'inert' {
+	if name == 'inert' {
 		mutable_element.set_subtree_inertness(value != none)
 	}
 	if namespace_ == none && name.starts_with('on') && name.len > 2 && name in html_attribute_names() {

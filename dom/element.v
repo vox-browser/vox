@@ -1542,6 +1542,9 @@ pub mut:
 	classes []string
 	parts   []string
 	dir__   ?Dir
+	// HTMLElement's cached state survives until its attribute-change steps
+	// capture the previous selector state. Shared HTML storage lives in Element.
+	content_editable_state_ string = 'inherit'
 
 	id_   ?string
 	name_ ?string
@@ -5019,6 +5022,8 @@ fn (e &Element) matches_invalidation_pseudo_class(name string) bool {
 		}
 		'required' { e.matches_required_pseudo_class() }
 		'optional' { e.matches_optional_pseudo_class() }
+		'read-write' { e.matches_read_write_pseudo_class() }
+		'read-only' { !e.matches_read_write_pseudo_class() }
 		'link', 'any-link' { e.matches_link_pseudo_class() }
 		'local-link' { e.matches_local_link_pseudo_class() }
 		'root' { e.is_html_element() && e.local_name() == 'html' }
@@ -5470,6 +5475,17 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 	if local_name == 'inert' && e.is_html_element() {
 		mut html_element := unsafe { &HTMLElement(&e) }
 		html_element.set_subtree_inertness(value != none)
+	}
+	if local_name == 'contenteditable' && e.is_html_element() {
+		states := if !option_string_equal(old_value, value) {
+			previous_read_write_states(e.as_node())
+		} else {
+			[]PreviousReadWriteState{}
+		}
+		e.content_editable_state_ = parse_content_editable_state(value)
+		mut node := e.as_node()
+		node.recompute_editable_subtree_flags_and_repaint()
+		invalidate_previous_read_write_states(states)
 	}
 
 	if local_name == 'slot' {

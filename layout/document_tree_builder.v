@@ -1524,6 +1524,7 @@ fn build_input_internal_layout_children(document &dom.Document, element &dom.Ele
 		text := document.create_text_node(value)
 		mut text_layout_node := TextNode.new(document, text.as_node(), value)
 		text_layout_node.is_empty_editable_ = true
+		text_layout_node.update_produces_line_box_fragment_when_empty_flag()
 		inner.append_child(unsafe { &Node(text_layout_node) })
 		inner.set_children_are_inline(true)
 		text_container.append_child(inner)
@@ -1591,6 +1592,7 @@ fn build_input_internal_layout_children(document &dom.Document, element &dom.Ele
 		text := document.create_text_node(label)
 		mut text_layout_node := TextNode.new(document, text.as_node(), label)
 		text_layout_node.is_empty_editable_ = true
+		text_layout_node.update_produces_line_box_fragment_when_empty_flag()
 		span.append_child(unsafe { &Node(text_layout_node) })
 		span.set_children_are_inline(true)
 		return [span]
@@ -1928,6 +1930,7 @@ fn build_textarea_internal_layout_children(document &dom.Document, element &dom.
 	text := document.create_text_node(value)
 	mut text_layout_node := TextNode.new(document, text.as_node(), value)
 	text_layout_node.is_empty_editable_ = true
+	text_layout_node.update_produces_line_box_fragment_when_empty_flag()
 	inner.append_child(unsafe { &Node(text_layout_node) })
 	inner.set_children_are_inline(true)
 	outer.append_child(inner)

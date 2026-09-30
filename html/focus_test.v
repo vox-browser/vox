@@ -46,3 +46,29 @@ fn test_focusing_ignores_inert_and_uses_fallback() {
 	run_focusing_steps(mut manager, none, fallback.as_node(), .focus)
 	assert manager.currently_focused_area? == fallback.as_node()
 }
+
+fn test_design_mode_resets_selection_once_and_runs_focusing_steps() {
+	document := parse_document('<input id="control"><p id="text">hello</p>')
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_browsing_context(&dom.BrowsingContext{})
+	root := document.document_element() or { panic('missing document element') }
+	control := document.get_element_by_id('control') or { panic('missing control') }
+	paragraph := document.get_element_by_id('text') or { panic('missing paragraph') }
+	text := paragraph.as_node().first_child() or { panic('missing text') }
+	mut selection := document.get_selection() or { panic('missing selection') }
+	selection.set_base_and_extent(text, 1, text, 4)!
+	mut manager := FocusManager.create()
+	run_focusing_steps(mut manager, control.as_node(), none, .key)
+	mutable_document.set_design_mode('on')!
+	assert selection.is_collapsed()
+	assert selection.anchor_node() or { panic('missing anchor') } == document.as_node()
+	assert selection.anchor_offset() == 0
+	assert document.focused_area() or { panic('missing focus') } == root.as_node()
+	assert document.last_focus_trigger_() == .other
+
+	selection.set_base_and_extent(text, 1, text, 4)!
+	mutable_document.set_design_mode('ON')!
+	assert selection.to_string() == 'ell'
+	mutable_document.set_design_mode('off')!
+	assert selection.to_string() == 'ell'
+}

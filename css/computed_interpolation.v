@@ -9471,6 +9471,8 @@ pub enum CSSPseudoClass {
 	lang
 	required
 	optional
+	read_only
+	read_write
 	link
 	any_link
 	local_link
@@ -9509,6 +9511,8 @@ pub fn pseudo_class_name(pseudo_class CSSPseudoClass) string {
 		.lang { 'lang' }
 		.required { 'required' }
 		.optional { 'optional' }
+		.read_only { 'read-only' }
+		.read_write { 'read-write' }
 		.link { 'link' }
 		.any_link { 'any-link' }
 		.local_link { 'local-link' }
@@ -9548,6 +9552,8 @@ fn pseudo_class_from_name(name string) CSSPseudoClass {
 		'lang' { .lang }
 		'required' { .required }
 		'optional' { .optional }
+		'read-only' { .read_only }
+		'read-write' { .read_write }
 		'link' { .link }
 		'any-link' { .any_link }
 		'local-link' { .local_link }
@@ -9960,6 +9966,8 @@ fn css_pseudo_class_from_selector_pseudo_class(pseudo_class PseudoClass) CSSPseu
 		.lang { .lang }
 		.required { .required }
 		.optional { .optional }
+		.read_only { .read_only }
+		.read_write { .read_write }
 		.link { .link }
 		.any_link { .any_link }
 		.local_link { .local_link }
@@ -10113,7 +10121,7 @@ fn collect_properties_used_in_has(selector InvalidationSimpleSelector, mut style
 		}
 		.pseudo_class {
 			if in_has && selector.pseudo_class in [.enabled, .disabled, .defined, .placeholder_shown,
-				.checked, .required, .optional, .link, .any_link, .local_link] {
+				.checked, .required, .optional, .read_only, .read_write, .link, .any_link, .local_link] {
 				style_invalidation_data.pseudo_classes_used_in_has_selectors[selector.pseudo_class] = true
 			} else if in_has && selector.pseudo_class !in [.has, .is_, .where] {
 				// The structural subtree filter can only compare concrete features and the pseudo-classes above.
@@ -10254,7 +10262,7 @@ fn build_invalidation_sets_for_simple_selector_impl(selector InvalidationSimpleS
 					}
 					invalidation_set.set_needs_invalidate_pseudo_class(pseudo_class)
 				}
-				.link, .any_link, .local_link, .required, .optional, .hover, .focus,
+				.link, .any_link, .local_link, .required, .optional, .read_only, .read_write, .hover, .focus,
 				.focus_visible, .focus_within, .active, .target, .host, .root {
 					invalidation_set.set_needs_invalidate_pseudo_class(pseudo_class)
 				}

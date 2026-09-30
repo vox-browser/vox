@@ -270,6 +270,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		apply_style_callback: apply_style_to_layout_node
 		set_needs_layout_update_callback: set_layout_node_needs_layout_update
 		invalidate_text_for_rendering_callback: invalidate_layout_text_for_rendering
+		refresh_empty_text_fragment_callback: refresh_layout_empty_text_fragment
 	}
 	if text_node := box.as_text_node() {
 		// DOM::Node::name_or_description() reads TextNode::text_for_rendering()
@@ -450,6 +451,14 @@ fn set_layout_node_needs_layout_update(layout_handle voidptr, needs_layout_updat
 	}
 	mut node := unsafe { &Node(layout_handle) }
 	node.set_needs_layout_update(needs_layout_update)
+}
+
+fn refresh_layout_empty_text_fragment(layout_handle voidptr) bool {
+	node := unsafe { &Node(layout_handle) }
+	if mut text := node.as_text_node() {
+		return text.update_produces_line_box_fragment_when_empty_flag()
+	}
+	return false
 }
 
 fn invalidate_layout_text_for_rendering(layout_handle voidptr) {

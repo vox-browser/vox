@@ -44,6 +44,7 @@ __global (
 	dom_custom_element_registry_append_document CustomElementRegistryAppendDocumentCallback
 	dom_element_activation_behavior_hooks       ElementActivationBehaviorHooks
 	dom_style_sheet_scope_hooks                 StyleSheetScopeHooks
+	dom_run_focusing_steps                      RunFocusingStepsCallback
 )
 
 // Simple color representation
@@ -1351,6 +1352,8 @@ pub mut:
 	user_select_none_                               bool
 	white_space_collapse_is_not_collapse_           bool
 	needs_layout_update_                            bool
+	is_editing_host_                                bool
+	is_editable_or_editing_host_                    bool
 	rendered_text_                                  string
 	rendered_text_chunks_                           []string
 	visual_lines_                                   []VisualLine
@@ -1386,6 +1389,7 @@ pub mut:
 	apply_style_callback             LayoutApplyStyleCallback = unsafe { nil }
 	set_needs_layout_update_callback LayoutSetNeedsLayoutUpdateCallback = unsafe { nil }
 	invalidate_text_for_rendering_callback LayoutInvalidateTextForRenderingCallback = unsafe { nil }
+	refresh_empty_text_fragment_callback fn (voidptr) bool = unsafe { nil }
 }
 
 pub type SVGRelayoutCallback = fn (&SVGSVGBox)
@@ -10225,7 +10229,14 @@ pub fn (d &Document) design_mode_enabled_state() bool {
 }
 
 pub fn (mut d Document) set_design_mode_enabled_state(enabled bool) {
+	if d.design_mode_enabled == enabled {
+		return
+	}
+	states := previous_read_write_states(d.as_node())
 	d.design_mode_enabled = enabled
+	mut node := d.as_node()
+	node.recompute_editable_subtree_flags_and_repaint()
+	invalidate_previous_read_write_states(states)
 }
 
 // https://html.spec.whatwg.org/multipage/interaction.html#making-entire-documents-editable:-the-designmode-idl-attribute
@@ -10237,9 +10248,28 @@ pub fn (d &Document) design_mode() string {
 }
 
 pub fn (mut d Document) set_design_mode(dm string) ! {
-	if dm.to_lower() == 'on' {
-		d.design_mode_enabled = true
+	value := to_ascii_lowercase(dm)
+	if value == 'on' && !d.design_mode_enabled {
+		d.set_design_mode_enabled_state(true)
+		if mut selection := d.get_selection() {
+			selection.collapse(d.as_node(), 0)!
+			d.update_layout(.document_set_design_mode)
+		}
+		if root := d.document_element() {
+			if dom_run_focusing_steps != unsafe { nil } {
+				dom_run_focusing_steps(root.as_node(), none, .other)
+			}
+		}
+	} else if value == 'off' {
+		d.set_design_mode_enabled_state(false)
 	}
+}
+
+// HTML owns the focusing algorithm; this callback is the DOM -> HTML boundary.
+pub type RunFocusingStepsCallback = fn (&Node, ?&Node, FocusTrigger)
+
+pub fn install_run_focusing_steps(callback RunFocusingStepsCallback) {
+	dom_run_focusing_steps = callback
 }
 
 // --- Hit testing ---

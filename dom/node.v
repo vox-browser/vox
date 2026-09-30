@@ -42,6 +42,7 @@ pub enum ShouldComputeRole {
 
 pub enum SetNeedsLayoutReason {
 	character_data_replace_data
+	editable_state_change
 	finalize_a_cross_document_navigation
 	generated_content_image_finished_loading
 	html_canvas_element_width_or_height_change
@@ -64,6 +65,7 @@ pub enum SetNeedsLayoutReason {
 pub fn set_needs_layout_reason_to_string(reason SetNeedsLayoutReason) string {
 	return match reason {
 		.character_data_replace_data { 'CharacterDataReplaceData' }
+		.editable_state_change { 'EditableStateChange' }
 		.finalize_a_cross_document_navigation { 'FinalizeACrossDocumentNavigation' }
 		.generated_content_image_finished_loading { 'GeneratedContentImageFinishedLoading' }
 		.html_canvas_element_width_or_height_change { 'HTMLCanvasElementWidthOrHeightChange' }
@@ -2898,7 +2900,7 @@ pub fn (mut n Node) set_document(document &Document) {
 	}
 }
 
-pub fn (mut n Node) recompute_editable_subtree_flag() {
+pub fn (mut n Node) recompute_editable_subtree_flag() bool {
 	mut new_value := false
 	if n.is_document() {
 		doc := n.document()
@@ -2919,7 +2921,35 @@ pub fn (mut n Node) recompute_editable_subtree_flag() {
 	} else if parent := n.parent() {
 		new_value = parent.in_editable_subtree_
 	}
+	changed := n.in_editable_subtree_ != new_value
 	n.in_editable_subtree_ = new_value
+	return changed
+}
+
+pub fn (mut n Node) recompute_editable_subtree_flags_and_repaint() {
+	n.for_each_in_inclusive_subtree(fn (node &Node) TraversalDecision {
+		mut mutable_node := unsafe { &Node(node) }
+		if mutable_node.recompute_editable_subtree_flag() {
+			mutable_node.set_needs_repaint(.paint_commands_and_hit_test_list)
+		}
+		if mut layout_node := node.unsafe_layout_node() {
+			editable := node.is_editable_or_editing_host()
+			if layout_node.is_editable_or_editing_host_ != editable {
+				layout_node.is_editable_or_editing_host_ = editable
+				mutable_node.set_needs_repaint(.paint_commands_and_hit_test_list)
+			}
+			is_editing_host := node.is_editing_host()
+			if layout_node.is_editing_host_ != is_editing_host {
+				layout_node.is_editing_host_ = is_editing_host
+				mutable_node.set_needs_layout_update(.editable_state_change)
+			}
+			if layout_node.refresh_empty_text_fragment_callback != unsafe { nil }
+				&& layout_node.refresh_empty_text_fragment_callback(layout_node.layout_handle) {
+				mutable_node.set_needs_layout_update(.editable_state_change)
+			}
+		}
+		return .@continue
+	})
 }
 
 // https://w3c.github.io/editing/docs/execCommand/#editable
@@ -2978,7 +3008,11 @@ pub fn (n &Node) is_editing_host() bool {
 }
 
 fn html_content_editable_state(element &Element) string {
-	value := element.get_attribute('contenteditable') or { return 'inherit' }
+	return element.content_editable_state_
+}
+
+fn parse_content_editable_state(attribute_value ?string) string {
+	value := attribute_value or { return 'inherit' }
 	normalized := to_ascii_lowercase(value)
 	if normalized == '' || normalized == 'true' {
 		return 'true'
@@ -3024,6 +3058,9 @@ pub fn (n &Node) editing_host() ?&Node {
 
 pub fn (mut n Node) set_layout_node(layout_node &LayoutNode) {
 	n.layout_node_ = layout_node
+	mut mutable_layout := unsafe { &LayoutNode(layout_node) }
+	mutable_layout.is_editing_host_ = n.is_editing_host()
+	mutable_layout.is_editable_or_editing_host_ = n.is_editable_or_editing_host()
 	if element := n.as_element() {
 		unsafe {
 			mut styled_node := layout_node_with_style(layout_node)

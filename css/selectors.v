@@ -3808,19 +3808,7 @@ fn should_block_shadow_host_matching(component SimpleSelector, shadow_host ?&dom
 
 // https://html.spec.whatwg.org/multipage/semantics-other.html#selector-read-write
 fn matches_read_write_pseudo_class(element &dom.Element) bool {
-	// The :read-write pseudo-class must match any element falling into one of the following categories,
-	// which for the purposes of Selectors are thus considered user-alterable: [SELECTORS]
-	// - input elements to which the readonly attribute applies, and that are mutable
-	//   (i.e. that do not have the readonly attribute specified and that are not disabled)
-	if element.local_name() == 'input' {
-		return !element.has_attribute('readonly') && element.matches_enabled_pseudo_class()
-	}
-	// - textarea elements that do not have a readonly attribute, and that are not disabled
-	if element.local_name() == 'textarea' {
-		return !element.has_attribute('readonly') && element.matches_enabled_pseudo_class()
-	}
-	// - elements that are editing hosts or editable and are neither input elements nor textarea elements
-	return element.as_node().is_editable_or_editing_host()
+	return element.matches_read_write_pseudo_class()
 }
 
 // https://drafts.csswg.org/selectors-4/#open-state

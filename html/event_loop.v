@@ -85,6 +85,7 @@ fn init() {
 	html_main_thread_event_loop = EventLoop.create(.window)
 	html_broadcast_channel_repository = BroadcastChannelRepository.create()
 	install_html_element_activation_behavior()
+	dom.install_run_focusing_steps(dom_run_focusing_steps_callback)
 }
 
 fn allocate_task_id() u64 {

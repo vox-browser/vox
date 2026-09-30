@@ -29,6 +29,12 @@ pub fn FocusManager.create() &FocusManager {
 	return &FocusManager{}
 }
 
+fn dom_run_focusing_steps_callback(target &dom.Node, fallback ?&dom.Node, trigger dom.FocusTrigger) {
+	mut manager := FocusManager.create()
+	manager.currently_focused_area = target.document().focused_area()
+	run_focusing_steps(mut manager, target, fallback, trigger)
+}
+
 fn focus_related_id(target ?&dom.Node) ?i64 {
 	node := target or { return none }
 	return node.unique_id().value()

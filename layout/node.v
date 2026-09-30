@@ -1871,6 +1871,7 @@ pub mut:
 	font_for_rendering_           ?&platform.Font
 	line_segmenter_               &dom.Segmenter = unsafe { nil }
 	is_empty_editable_            bool
+	produces_line_box_fragment_when_empty_ bool
 	retains_empty_generated_fragment_ bool
 	cached_inline_chunks_         ?[]TextNodeChunk
 	cached_font_environment_generation_ u64
@@ -1905,7 +1906,7 @@ pub fn (n &TextNode) line_segmenter() &dom.Segmenter {
 }
 
 pub fn TextNode.new(document &dom.Document, dom_text_node &dom.Node, source_text string) &TextNode {
-	return &TextNode{
+	mut node := &TextNode{
 		Node: Node{
 			document_: document
 			dom_node_: dom_text_node
@@ -1913,6 +1914,33 @@ pub fn TextNode.new(document &dom.Document, dom_text_node &dom.Node, source_text
 		}
 		source_text_: source_text
 	}
+	node.update_produces_line_box_fragment_when_empty_flag()
+	return node
+}
+
+// Layout/TextNode.cpp. Synthetic V control editors carry is_empty_editable_
+// in place of the upstream FormAssociatedTextControlElement shadow host.
+pub fn (mut node TextNode) update_produces_line_box_fragment_when_empty_flag() bool {
+	mut produces := node.is_empty_editable_
+	if text := node.dom_node() {
+		if root := text.root().as_shadow_root() {
+			if host := root.host() {
+				produces = produces || (host.is_html_element()
+					&& host.local_name() in ['input', 'textarea'])
+			}
+		}
+		if parent := text.parent() {
+			produces = produces || parent.is_editing_host()
+		}
+	}
+	if node.produces_line_box_fragment_when_empty_ == produces {
+		return false
+	}
+	node.produces_line_box_fragment_when_empty_ = produces
+	// The cached chunk list may contain an empty fragment from the old state.
+	node.cached_inline_chunks_ = none
+	node.cached_intrinsic_text_shapes_.clear()
+	return true
 }
 
 // GeneratedTextNode is layout-owned and deliberately has no corresponding DOM
