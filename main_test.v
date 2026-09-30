@@ -11,6 +11,37 @@ import painting
 import time
 import x.json2
 
+fn test_native_browser_scripts_use_libjs_errors_global_bindings_and_readiness_order() {
+	$if darwin {
+		document := html.parse_document('<div id="result"></div>')
+		mut runtime := browserjs.Runtime.create()
+		defer { runtime.close() }
+		mut messages := []string{}
+		run_document_javascript(document, 'https://example.test/page.html', [
+			'const prefix="LibJS"; Promise.resolve().then(() => result.textContent=prefix);',
+			'result.textContent="broken"; let duplicate; let duplicate;',
+			'result.textContent += " integrated"; addEventListener("load", () => result.textContent += " ready");',
+		], runtime, mut messages)
+		assert document.get_element_by_id('result')?.as_node().text_content()? == 'LibJS integrated ready'
+		assert messages.len == 1
+		assert messages[0].contains('SyntaxError: https://example.test/page.html:')
+	}
+}
+
+fn test_native_browser_script_sources_keep_urls_and_module_parse_goal() {
+	document := html.parse_document_with_url('<script>const inline=1;</script><script src="app.js"></script><script type="module">export default 42;</script><script type="application/json">{}</script>', dom.URL{value: 'https://example.test/page.html'})
+	mut messages := []string{}
+	sources := script_sources(document, 'https://cdn.example.test/assets/', {
+		'https://cdn.example.test/assets/app.js': PreloadedResource{body: 'const external=2;'}
+	}, mut messages)
+	assert sources.len == 3
+	assert sources[0].url == 'https://example.test/page.html'
+	assert sources[1].url == 'https://cdn.example.test/assets/app.js'
+	assert sources[1].code == 'const external=2;'
+	assert sources[2].source_type == .module
+	assert messages.len == 0
+}
+
 fn test_native_svg_turbulence_forwards_stitch_tile_size_only_for_stitched_noise() {
 	stitched := painting.GfxFilterNode{
 		kind: 'turbulence'

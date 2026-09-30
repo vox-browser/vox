@@ -5,6 +5,18 @@ import dom
 import html
 import layout
 
+fn test_document_bridge_runs_libjs_prepared_scripts_before_readiness_callbacks() {
+	$if darwin {
+		mut document := html.parse_document('<div id="result"></div><script>const prefix="LibJS"; Promise.resolve().then(() => result.textContent=prefix);</script><script>result.textContent="broken"; let duplicate; let duplicate;</script><script>result.textContent += " prepared"; addEventListener("load", () => result.textContent += " ready");</script>')
+		document.set_viewport_rect(dom.Rect{0, 0, 800, 600})
+		mut runtime := Runtime.create()
+		defer { runtime.close() }
+		run_inline_document_scripts(document, 'https://example.test/page.html', runtime)!
+		assert bridge_test_element(document, '#result').as_node().text_content()? == 'LibJS prepared ready'
+		assert runtime.evaluate_host('__ladybirdSnapshot()')!.contains('SyntaxError: https://example.test/page.html:')
+	}
+}
+
 fn bridge_test_element(document &dom.Document, selector string) &dom.Element {
 	return css.query_selector(unsafe { &dom.Node(document) }, selector) or {
 		panic('missing ${selector}')

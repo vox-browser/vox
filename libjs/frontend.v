@@ -20,6 +20,8 @@ pub:
 	diagnostics         []SyntaxDiagnostic
 	is_strict_mode      bool
 	has_top_level_await bool
+	// An embedding VM may accept deeper input than this frontend's stack budget.
+	reached_recursion_limit bool
 }
 
 // The translated frontend is usable independently of the browser's VM host.
@@ -40,11 +42,12 @@ pub fn parse_source(source string, source_type SourceType) &ParsedSource {
 	}
 	data := program.kind.program_data or { panic('parser returned a non-program root') }
 	return &ParsedSource{
-		program: program
-		function_table: parser.function_table
-		diagnostics: diagnostics
-		is_strict_mode: data.is_strict_mode
-		has_top_level_await: data.has_top_level_await
+		program:                 program
+		function_table:          parser.function_table
+		diagnostics:             diagnostics
+		is_strict_mode:          data.is_strict_mode
+		has_top_level_await:     data.has_top_level_await
+		reached_recursion_limit: parser.recursion_limit_reached
 	}
 }
 

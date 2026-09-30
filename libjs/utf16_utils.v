@@ -69,7 +69,7 @@ fn utf16_equals(a []u16, b []u16) bool {
 }
 
 // Source offsets remain UTF-16 code-unit offsets, including supplementary text.
-fn utf16(s string) []u16 {
+pub fn utf16(s string) []u16 {
 	mut result := []u16{cap: s.len}
 	for character in s.runes() {
 		code_point := u32(character)

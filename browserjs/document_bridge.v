@@ -135,9 +135,8 @@ fn bridge_initial_state(document &dom.Document, current_url string) map[string]j
 	}
 }
 
-fn bridge_program(state map[string]json2.Any, scripts []string) string {
+fn bridge_program(state map[string]json2.Any) string {
 	state_json := json2.encode(state)
-	scripts_json := json2.encode(scripts)
 	return [
 		'(function () {',
 		'const __state = ${state_json};',
@@ -215,8 +214,9 @@ fn bridge_program(state map[string]json2.Any, scripts []string) string {
 		'for (const id of Object.keys(__state.elements)) { try { window[id] = document.getElementById(id); } catch (_) {} }',
 		'window.__ladybirdSnapshot = function () { return JSON.stringify(__state); };',
 		'window.__ladybirdFinalize = function () { for (const __index of Object.keys(__canvases)) { const c=__canvases[__index]; __state.operations.push({op:"canvasPixels",target:Number(__index),width:c.width,height:c.height,pixels:Array.from(c.data)}); } return window.__ladybirdSnapshot(); };',
-		'const __scripts = ${scripts_json}; for (const __source of __scripts) { try { (0, eval)(__source); } catch (e) { console.error(e && e.stack ? e.stack : e); } }',
+		'window.__ladybirdDocumentReady = function () {',
 		'for (const __name of ["DOMContentLoaded", "load"]) { const target = document; const event = { type: __name, target: target, defaultPrevented: false, preventDefault: function () { this.defaultPrevented = true; } }; for (const listener of (__listeners[__listenerKey(null, __name)] || [])) { try { listener.call(target, event); } catch (e) { console.error(e); } } if (__name === "load" && typeof window.onload === "function") { try { window.onload.call(window, event); } catch (e) { console.error(e); } } }',
+		'};',
 		'return window.__ladybirdSnapshot();',
 		'})()',
 	].join('\n')
@@ -615,7 +615,7 @@ fn apply_bridge_state(document &dom.Document, encoded string) ! {
 // external script resources.
 pub fn run_inline_document_scripts(document &dom.Document, current_url string, runtime &Runtime) ! {
 	root := unsafe { &dom.Node(document) }
-	mut sources := []string{}
+	mut sources := []ScriptSource{}
 	for script_element in css.query_selector_all(root, 'script') {
 		type_ := script_element.get_attribute_value('type').trim_space().to_lower()
 		if type_ != '' && type_ !in ['text/javascript', 'application/javascript', 'module'] {
@@ -624,16 +624,22 @@ pub fn run_inline_document_scripts(document &dom.Document, current_url string, r
 		if script_element.get_attribute('src') != none {
 			continue
 		}
-		sources << (script_element.as_node().text_content() or { '' })
+		sources << ScriptSource{
+			code: script_element.as_node().text_content() or { '' }
+			url: current_url
+			source_type: if type_ == 'module' { .module } else { .script }
+		}
 	}
 	if sources.len == 0 {
 		return
 	}
 	viewport := document.viewport_rect()
 	layout.run_document_layout(document, viewport.width, viewport.height) or {}
-	runtime.evaluate(bridge_program(bridge_initial_state(document, current_url), sources))!
+	runtime.evaluate_host(bridge_program(bridge_initial_state(document, current_url)))!
+	runtime.run_document_scripts(sources)!
+	runtime.evaluate_host('__ladybirdDocumentReady()')!
 	// Promise reactions queued by inline scripts run at JavaScriptCore's next
 	// evaluation checkpoint. Snapshot once that queue has drained.
-	encoded := runtime.evaluate('__ladybirdFinalize()')!
+	encoded := runtime.evaluate_host('__ladybirdFinalize()')!
 	apply_bridge_state(document, encoded)!
 }

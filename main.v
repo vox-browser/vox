@@ -260,7 +260,7 @@ const demo_markup = '<!doctype html>
       this.textContent = "JavaScript click handler executed.";
       console.log("click handler ran");
     });
-    console.log("JavaScriptCore DOM bridge ready");
+    console.log("LibJS frontend / JavaScriptCore DOM bridge ready");
   </script>
 </body>
 </html>'
@@ -1082,9 +1082,9 @@ fn install_external_styles(document &dom.Document, base_url string, preloaded ma
 	return messages
 }
 
-fn script_sources(document &dom.Document, base_url string, preloaded map[string]PreloadedResource, mut messages []string) []string {
+fn script_sources(document &dom.Document, base_url string, preloaded map[string]PreloadedResource, mut messages []string) []browserjs.ScriptSource {
 	root := unsafe { &dom.Node(document) }
-	mut sources := []string{}
+	mut sources := []browserjs.ScriptSource{}
 	for script_element in css.query_selector_all(root, 'script') {
 		type_ := script_element.get_attribute_value('type').trim_space().to_lower()
 		if type_ != '' && type_ !in ['text/javascript', 'application/javascript', 'module'] {
@@ -1104,9 +1104,17 @@ fn script_sources(document &dom.Document, base_url string, preloaded map[string]
 					continue
 				}
 			}
-			sources << source
+			sources << browserjs.ScriptSource{
+				code: source
+				url: resolved_url
+				source_type: if type_ == 'module' { .module } else { .script }
+			}
 		} else {
-			sources << (script_element.as_node().text_content() or { '' })
+			sources << browserjs.ScriptSource{
+				code: script_element.as_node().text_content() or { '' }
+				url: document.url.serialize()
+				source_type: if type_ == 'module' { .module } else { .script }
+			}
 		}
 	}
 	return sources
@@ -1443,9 +1451,8 @@ fn javascript_initial_state(document &dom.Document, current_url string, scripts 
 	}
 }
 
-fn javascript_program(state map[string]json2.Any, scripts []string) string {
+fn javascript_bootstrap(state map[string]json2.Any) string {
 	state_json := json2.encode(state)
-	scripts_json := json2.encode(scripts)
 	return [
 		'(function () {',
 		'const __state = ${state_json};',
@@ -1504,8 +1511,6 @@ fn javascript_program(state map[string]json2.Any, scripts []string) string {
 		'window.__ladybirdFinalize = function () { for (const key of Object.keys(__canvases)) { const c=__canvases[key]; __state.elements[key].canvasPixels=Array.from(c.data); __state.elements[key].canvasWidth=c.width; __state.elements[key].canvasHeight=c.height; __state.elements[key].canvasTextOperations=c.textOperations; } return window.__ladybirdSnapshot(); };',
 		'window.__ladybirdClearLogs = function () { __state.logs = []; __state.bodyHTMLDirty = false; __state.bodyTextDirty = false; };',
 		'window.__ladybirdDispatch = function (name, id) { const s = String(id)===""?null:(__elementStates().find(function(item){return item.id===String(id);}) || null); const target = s ? __element(s) : document; const event = { type: name, target: target, defaultPrevented: false, preventDefault: function () { this.defaultPrevented = true; } }; for (const listener of (__listeners[__listenerKey(s, name)] || [])) { try { listener.call(target, event); } catch (e) { console.error(e); } } if (!s && typeof window["on" + name] === "function") { try { window["on" + name].call(window, event); } catch (e) { console.error(e); } } if (s && name === "click" && s.onclick) { try { Function("event", s.onclick).call(target, event); } catch (e) { console.error(e); } } __state.defaultPrevented = event.defaultPrevented; return window.__ladybirdSnapshot(); };',
-		'const __scripts = ${scripts_json}; for (const __source of __scripts) { try { (0, eval)(__source); } catch (e) { console.error(e && e.stack ? e.stack : e); } }',
-		'for (const __name of ["DOMContentLoaded", "load"]) window.__ladybirdDispatch(__name, "");',
 		'return window.__ladybirdSnapshot();',
 		'})()',
 	].join('\n')
@@ -2173,6 +2178,13 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 }
 
 fn run_document_javascript(document &dom.Document, current_url string, sources []string, runtime &browserjs.Runtime, mut messages []string) ?string {
+	return run_document_script_sources(document, current_url, sources.map(browserjs.ScriptSource{
+		code: it
+		url: current_url
+	}), runtime, mut messages)
+}
+
+fn run_document_script_sources(document &dom.Document, current_url string, sources []browserjs.ScriptSource, runtime &browserjs.Runtime, mut messages []string) ?string {
 	// Parsing creates Document's Selection, while the browsing context normally
 	// arrives with navigation before page scripts run. The compact host executes
 	// scripts before its first layout, so establish that context here as well.
@@ -2183,7 +2195,15 @@ fn run_document_javascript(document &dom.Document, current_url string, sources [
 		})
 	}
 	ensure_compact_browser_navigable(document) or { return none }
-	runtime.evaluate(javascript_program(javascript_initial_state(document, current_url, sources), sources)) or {
+	runtime.evaluate_host(javascript_bootstrap(javascript_initial_state(document, current_url, sources.map(it.code)))) or {
+		messages << 'JavaScript: ${err.msg()}'
+		return none
+	}
+	runtime.run_document_scripts(sources) or {
+		messages << 'JavaScript: ${err.msg()}'
+		return none
+	}
+	runtime.evaluate_host('for (const name of ["DOMContentLoaded", "load"]) __ladybirdDispatch(name, "");') or {
 		messages << 'JavaScript: ${err.msg()}'
 		return none
 	}
@@ -2191,12 +2211,12 @@ fn run_document_javascript(document &dom.Document, current_url string, sources [
 	// snapshot in a second evaluation observes async screenshot-test setup whose
 	// awaited timer or animation-frame promises were resolved synchronously by
 	// this lightweight browser host.
-	result := runtime.evaluate('__ladybirdFinalize()') or {
+	result := runtime.evaluate_host('__ladybirdFinalize()') or {
 		messages << 'JavaScript: ${err.msg()}'
 		return none
 	}
 	navigation := apply_javascript_state(document, result, mut messages)
-	runtime.evaluate('__ladybirdClearLogs()') or {}
+	runtime.evaluate_host('__ladybirdClearLogs()') or {}
 	return navigation
 }
 
@@ -2218,12 +2238,12 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 	if id == '' {
 		return false
 	}
-	result := app.js_runtime.evaluate('__ladybirdDispatch(${json2.encode(name)}, ${json2.encode(id)})') or {
+	result := app.js_runtime.evaluate_host('__ladybirdDispatch(${json2.encode(name)}, ${json2.encode(id)})') or {
 		app.js_messages << 'JavaScript event: ${err.msg()}'
 		return false
 	}
 	navigation := apply_javascript_state(app.document, result, mut app.js_messages)
-	app.js_runtime.evaluate('__ladybirdClearLogs()') or {}
+	app.js_runtime.evaluate_host('__ladybirdClearLogs()') or {}
 	app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
 	if destination := navigation {
 		if destination != '' {
@@ -2507,7 +2527,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	sources := script_sources(app.document, resource_base_url, preloaded_resources, mut app.js_messages)
 	javascript_navigation := if sources.len > 0 {
 		app.js_runtime = browserjs.Runtime.create()
-		run_document_javascript(app.document, loaded.url, sources, app.js_runtime, mut app.js_messages)
+		run_document_script_sources(app.document, loaded.url, sources, app.js_runtime, mut app.js_messages)
 	} else {
 		none
 	}
@@ -5317,7 +5337,7 @@ fn (mut app BrowserApp) draw() {
 			color: gg.rgb(255, 255, 255)
 			size: 14
 		)
-		app.ctx.draw_text(14, 58, 'V · HTML/DOM/CSS/Layout · JavaScriptCore',
+		app.ctx.draw_text(14, 58, 'V · HTML/DOM/CSS/Layout · LibJS + JavaScriptCore',
 			color: gg.rgb(196, 181, 253)
 			size: 13
 		)
