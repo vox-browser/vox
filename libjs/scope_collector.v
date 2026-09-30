@@ -1262,9 +1262,5 @@ fn (mut sc ScopeCollector) hoist_functions(index int) {
 // === Helper: string to u16 (for map key back-conversion) ===
 
 fn string_to_u16(s string) []u16 {
-	mut result := []u16{cap: s.len}
-	for b in s.bytes() {
-		result << u16(b)
-	}
-	return result
+	return utf16(s)
 }
