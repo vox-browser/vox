@@ -4,7 +4,8 @@ module libjs
 // register/local/constant layout, exception handler ranges, and the bytecode
 // offset to source position map from LibJS/Bytecode/Executable.h, plus
 // SourceCode/SourceRange from LibJS/SourceCode.h and SourceRange.h. Bytecode
-// generation and the instruction stream itself are not translated.
+// instructions below use V records and instruction-index offsets; they do not
+// share the generated upstream interpreter's packed bytecode ABI.
 
 @[heap]
 pub struct SourceCode {
@@ -63,6 +64,8 @@ pub mut:
 	source_map      []SourceMapEntry
 	bytecode_length u32
 	source_code     ?&SourceCode
+	instructions    []Instruction
+	global_bindings []GlobalBinding
 }
 
 pub fn (executable &Executable) get_identifier(index u32) Utf16String {
