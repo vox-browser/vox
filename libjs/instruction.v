@@ -35,6 +35,7 @@ pub enum OpCode {
 	decrement
 	get_binding
 	get_callee_and_this
+	get_property
 	call
 	typeof_binding
 	set_binding
@@ -79,6 +80,9 @@ fn (instruction Instruction) input_count() int {
 		.loose_inequals, .less_than, .less_than_equals, .greater_than, .greater_than_equals,
 		.bitwise_and, .bitwise_or, .bitwise_xor, .left_shift, .right_shift, .unsigned_right_shift,
 		.call {
+			2
+		}
+		.get_property {
 			2
 		}
 		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric,

@@ -133,3 +133,32 @@ fn test_spread_calls_reject_the_program_before_creating_bindings() {
 	}
 	assert !vm.get_global_object().has_own_property(PropertyName.from_str('changed'))
 }
+
+fn test_callee_and_this_secondary_output_follows_upstream_write_order() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	install_callable_global(mut vm, 'host', call_execution_sum)
+	output := Operand.register(reserved_register_count)
+	executable := &Executable{
+		registers_and_locals_count: reserved_register_count + 1
+		identifier_table:           [utf16_string('host')]
+		instructions:               [
+			Instruction{
+				op:  .get_callee_and_this
+				dst: output
+				rhs: output
+			},
+			Instruction{
+				op:  .end
+				lhs: output
+			},
+		]
+		bytecode_length:            2
+	}
+	mut frame := ExecutionContext.create(executable.registers_and_locals_count, [], 0)
+	frame.realm = vm.realm()
+	frame.lexical_environment = Environment(vm.realm().global_environment_record())
+	vm.push_execution_context_checked(mut frame)!
+	defer { vm.pop_execution_context() }
+	assert vm.run_executable(mut frame, executable, 0, ExecutionLimits{})!.is_undefined()
+}

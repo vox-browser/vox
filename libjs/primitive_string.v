@@ -26,6 +26,19 @@ pub fn (primitive &PrimitiveString) str() string {
 	return primitive.utf16.str()
 }
 
+// Runtime/PrimitiveString.cpp::get. Its IgnoreNumericRoundtrip mode accepts
+// only PropertyKey's canonical index representation for virtual characters.
+pub fn (primitive &PrimitiveString) get_own_property(mut vm VM, key PropertyName) ?Value {
+	if key.is_symbol() { return none }
+	if key.is_string() && key.as_string() == utf16_string('length') {
+		return Value.from_f64(f64(primitive.utf16.len()))
+	}
+	if !key.is_number() || u64(key.number) >= u64(primitive.utf16.len()) { return none }
+	return Value.from_string(vm.create_string(Utf16String{
+		data: [primitive.utf16.data[int(key.number)]]
+	}))
+}
+
 pub const fly_string_cache_size = 1024
 pub const numeric_string_cache_size = 1000
 pub const large_numeric_string_cache_size = 1024

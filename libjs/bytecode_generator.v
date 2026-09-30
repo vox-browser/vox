@@ -100,6 +100,23 @@ fn identifier_name(expression &Expression) !Utf16String {
 	return (expression.kind.identifier or { return error('Identifier is missing') }).name
 }
 
+// codegen.rs::{generate_member_expression,generate_call_expression}: retain the
+// base before evaluating a computed key and reuse it as a method's receiver.
+fn (mut generator BytecodeGenerator) member_reference(mut vm VM, expression &Expression) !(Operand, Operand) {
+	kind := expression.kind
+	base := generator.expression(mut vm, kind.object or { return error('Missing member base') })!
+	property := kind.property or { return error('Missing member property') }
+	key := if kind.computed {
+		generator.expression(mut vm, property)!
+	} else {
+		name := identifier_name(property) or {
+			return generator.unsupported('private property access')
+		}
+		generator.constant(Value.from_string(vm.create_string(name)))
+	}
+	return base, key
+}
+
 fn (mut generator BytecodeGenerator) short_circuit(op LogicalOp, operand Operand) []u32 {
 	if op == .nullish_coalescing {
 		take_rhs := generator.emit(Instruction{ op: .jump_if_nullish, lhs: operand })
@@ -161,7 +178,18 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			data := kind.call_data or { return error('Missing call data') }
 			mut callee := Operand{}
 			mut this_value := generator.constant(js_undefined())
-			if data.callee.kind.tag == .identifier_expr {
+			if data.callee.kind.tag == .member {
+				base, key := generator.member_reference(mut vm, &data.callee)!
+				callee = generator.temporary()
+				this_value = base
+				generator.emit(Instruction{
+					op:     .get_property
+					dst:    callee
+					lhs:    base
+					rhs:    key
+					strict: generator.strict
+				})
+			} else if data.callee.kind.tag == .identifier_expr {
 				callee = generator.temporary()
 				this_value = generator.temporary()
 				generator.emit(Instruction{
@@ -189,6 +217,18 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				lhs:       callee
 				rhs:       this_value
 				arguments: arguments
+			})
+			return dst
+		}
+		.member {
+			base, key := generator.member_reference(mut vm, expression)!
+			dst := generator.temporary()
+			generator.emit(Instruction{
+				op:     .get_property
+				dst:    dst
+				lhs:    base
+				rhs:    key
+				strict: generator.strict
 			})
 			return dst
 		}

@@ -55,6 +55,24 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 			}
 			result = call(mut vm, left, right, arguments)!
 		}
+		.get_property {
+			// PropertyAccess.h::get_by_id and SlowPaths.cpp::get_by_value.
+			// Nullish bases fail before invoking the key's coercion hooks.
+			if left.is_nullish() {
+				name := if right.is_string() { right.as_string().str() } else { right.str() }
+				return vm.throw_error_type(.type_error, .to_object_null_or_undefined_with_property,
+					name, left.str())
+			}
+			key := right.to_property_key(mut vm)!
+			if left.is_string() {
+				if own := left.as_string().get_own_property(mut vm, key) {
+					result = own
+					frame.values[instruction.dst.slot(executable, frame.argument_count, true)!] = result
+					return next
+				}
+			}
+			result = Reference.for_value(left, key, none, instruction.strict).get_value(mut vm)!
+		}
 		.get_callee_and_this {
 			// SlowPaths.cpp::asm_dynamic_get_callee_and_this_from_environment.
 			reference := vm.resolve_binding(executable.get_identifier(instruction.identifier),
@@ -68,7 +86,9 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 					this_value = Value.from_object(base)
 				}
 			}
+			frame.values[instruction.dst.slot(executable, frame.argument_count, true)!] = result
 			frame.values[instruction.rhs.slot(executable, frame.argument_count, true)!] = this_value
+			return next
 		}
 		.add {
 			result = add(mut vm, left, right)!

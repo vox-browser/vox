@@ -59,6 +59,26 @@ fn test_libjs_backend_isolates_errors_and_never_falls_back_to_javascriptcore() {
 	assert runtime.context == unsafe { nil }
 }
 
+fn test_libjs_backend_executes_bigint_and_translated_property_reads() {
+	mut runtime := Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	assert runtime.evaluate('2n ** 100n;')! == '1267650600228229401496703205376'
+	assert runtime.evaluate('var big=1n; big++; ++big;')! == '3'
+	assert runtime.evaluate('9007199254740993n > 9007199254740992;')! == 'true'
+	assert runtime.evaluate('"A😀".length;')! == '3'
+	assert runtime.evaluate('globalThis.Infinity === Infinity;')! == 'true'
+	assert runtime.evaluate('globalThis["undefined"];')! == 'undefined'
+	if _ := runtime.evaluate('1n + 1;') {
+		assert false
+	} else {
+		assert err.msg().starts_with('TypeError:')
+	}
+	assert runtime.evaluate('42n;')! == '42'
+	assert runtime.context == unsafe { nil }
+	assert runtime.libjs_vm().execution_context_stack().len == 1
+	assert runtime.libjs_vm().interpreter_stack().depth() == 0
+}
+
 fn test_libjs_backend_preserves_source_urls_and_starting_lines() {
 	mut runtime := Runtime.create_with_engine(.libjs)
 	defer { runtime.close() }
