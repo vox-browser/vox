@@ -408,6 +408,7 @@ fn (mut p Parser) parse_for_statement() Statement {
 	}
 
 	init_start := p.position()
+	init_starts_with_async_keyword := p.match_token(.async)
 	is_var_init := p.match_token(.var_kw)
 	is_using := p.match_for_using_declaration()
 	is_let := p.match_token(.let_kw) && (p.flags.strict_mode || p.try_match_let_declaration())
@@ -478,6 +479,15 @@ fn (mut p Parser) parse_for_statement() Statement {
 				}
 			} else {
 				p.validate_for_in_of_lhs(init)
+				if !is_await && init_starts_with_async_keyword {
+					if init is LocalForInitExpression {
+						if id := init.expression.kind.identifier {
+							if utf16_equals(id.name.data, utf16('async')) {
+								p.syntax_error('For-of statement may not use async as its assignment target')
+							}
+						}
+					}
+				}
 				// Check for 'let' as first token in for-of LHS
 				match init {
 					LocalForInitExpression {
@@ -516,6 +526,9 @@ fn (mut p Parser) parse_for_statement() Statement {
 	}
 
 	// Standard for loop — const requires initializer.
+	if is_await {
+		p.syntax_error("for-await-of statement must use 'of'")
+	}
 	match init {
 		LocalForInitDeclaration {
 			if init.statement.kind.tag == .variable_declaration
@@ -529,6 +542,7 @@ fn (mut p Parser) parse_for_statement() Statement {
 		}
 		else {}
 	}
+
 	p.consume_token(.semicolon)
 	for_init := match init {
 		LocalForInitDeclaration {
@@ -542,6 +556,7 @@ fn (mut p Parser) parse_for_statement() Statement {
 			})
 		}
 	}
+
 	result := p.parse_standard_for_loop(start, for_init)
 	return p.close_for_loop_scope(start, result)
 }
@@ -741,7 +756,8 @@ fn (mut p Parser) parse_catch_clause() CatchClause {
 			param_token := p.consume()
 			value := p.token_value(param_token).clone()
 			p.check_identifier_name_for_assignment_validity(value, false)
-			id := Identifier.new(p.range_from(parameter_start), Utf16String.from_slice(value.clone()))
+			id := Identifier.new(p.range_from(parameter_start),
+				Utf16String.from_slice(value.clone()))
 			p.scope_collector.register_identifier(id, value.clone(), none)
 			p.scope_collector.add_catch_parameter_identifier(value, id)
 			parameter = CatchBindingIdentifier{
@@ -909,8 +925,7 @@ fn (mut p Parser) synthesize_for_in_of_lhs(init LocalForInit, init_start Positio
 			if is_array_expression(expression) || is_object_expression(expression) {
 				if pattern := p.synthesize_binding_pattern(init_start) {
 					for bn in p.pattern_bound_names {
-						p.scope_collector.register_identifier(bn.identifier, bn.name.data,
-							none)
+						p.scope_collector.register_identifier(bn.identifier, bn.name.data, none)
 					}
 					p.pattern_bound_names = []BoundName{}
 					return ForInOfLhsPattern{
