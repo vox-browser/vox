@@ -43,6 +43,33 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 		.mov {
 			result = left
 		}
+		.call {
+			mut arguments := []Value{cap: instruction.arguments.len}
+			for operand in instruction.arguments {
+				argument := frame.values[operand.slot(executable, frame.argument_count, false)!]
+				if argument.is_special_empty_value() {
+					return vm.throw_error(.internal_error,
+						'Bytecode read an uninitialized argument')
+				}
+				arguments << argument
+			}
+			result = call(mut vm, left, right, arguments)!
+		}
+		.get_callee_and_this {
+			// SlowPaths.cpp::asm_dynamic_get_callee_and_this_from_environment.
+			reference := vm.resolve_binding(executable.get_identifier(instruction.identifier),
+				instruction.strict, none)!
+			result = reference.get_value(mut vm)!
+			mut this_value := js_undefined()
+			if reference.is_property_reference() {
+				this_value = reference.get_this_value()
+			} else if reference.is_environment_reference() {
+				if base := reference.base_environment_record().with_base_object() {
+					this_value = Value.from_object(base)
+				}
+			}
+			frame.values[instruction.rhs.slot(executable, frame.argument_count, true)!] = this_value
+		}
 		.add {
 			result = add(mut vm, left, right)!
 		}

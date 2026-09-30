@@ -157,6 +157,41 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			generator.emit(Instruction{ op: .resolve_this_binding, dst: dst })
 			return dst
 		}
+		.call {
+			data := kind.call_data or { return error('Missing call data') }
+			mut callee := Operand{}
+			mut this_value := generator.constant(js_undefined())
+			if data.callee.kind.tag == .identifier_expr {
+				callee = generator.temporary()
+				this_value = generator.temporary()
+				generator.emit(Instruction{
+					op:         .get_callee_and_this
+					dst:        callee
+					rhs:        this_value
+					identifier: generator.identifier(identifier_name(&data.callee)!)
+					strict:     generator.strict
+				})
+			} else {
+				callee = generator.expression(mut vm, &data.callee)!
+			}
+			// codegen.rs::generate_call_expression: evaluate arguments left to
+			// right after retaining the callee and receiver. This generator's
+			// temporaries are never reused, so later arguments cannot overwrite them.
+			mut arguments := []Operand{cap: data.arguments.len}
+			for argument in data.arguments {
+				if argument.is_spread { return generator.unsupported('spread call arguments') }
+				arguments << generator.expression(mut vm, &argument.value)!
+			}
+			dst := generator.temporary()
+			generator.emit(Instruction{
+				op:        .call
+				dst:       dst
+				lhs:       callee
+				rhs:       this_value
+				arguments: arguments
+			})
+			return dst
+		}
 		.binary {
 			op := binary_opcode(kind.binary_op) or {
 				return generator.unsupported(kind.binary_op.str())

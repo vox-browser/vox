@@ -34,6 +34,8 @@ pub enum OpCode {
 	increment
 	decrement
 	get_binding
+	get_callee_and_this
+	call
 	typeof_binding
 	set_binding
 	set_variable
@@ -61,6 +63,7 @@ pub mut:
 	identifier u32
 	target     u32
 	strict     bool
+	arguments  []Operand
 }
 
 pub struct GlobalBinding {
@@ -74,7 +77,8 @@ fn (instruction Instruction) input_count() int {
 	return match instruction.op {
 		.add, .sub, .mul, .div, .mod_, .exp, .strict_equals, .strict_inequals, .loose_equals,
 		.loose_inequals, .less_than, .less_than_equals, .greater_than, .greater_than_equals,
-		.bitwise_and, .bitwise_or, .bitwise_xor, .left_shift, .right_shift, .unsigned_right_shift {
+		.bitwise_and, .bitwise_or, .bitwise_xor, .left_shift, .right_shift, .unsigned_right_shift,
+		.call {
 			2
 		}
 		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric,
@@ -116,7 +120,15 @@ pub fn (executable &Executable) validate(arguments_count u32) ! {
 			operand.slot(executable, arguments_count, false)!
 		}
 		if instruction.writes_operand() { instruction.dst.slot(executable, arguments_count, true)! }
-		if instruction.op in [.get_binding, .typeof_binding, .set_binding, .set_variable, .initialize_binding, .create_mutable_binding, .create_immutable_binding]
+		if instruction.op == .get_callee_and_this {
+			instruction.rhs.slot(executable, arguments_count, true)!
+		}
+		if instruction.op == .call {
+			for argument in instruction.arguments {
+				argument.slot(executable, arguments_count, false)!
+			}
+		}
+		if instruction.op in [.get_binding, .get_callee_and_this, .typeof_binding, .set_binding, .set_variable, .initialize_binding, .create_mutable_binding, .create_immutable_binding]
 			&& instruction.identifier >= u32(executable.identifier_table.len) {
 			return error('Identifier out of range')
 		}
