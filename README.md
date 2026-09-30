@@ -17,8 +17,9 @@ The native browser and inline-document layout bridge now prepare page scripts
 through this frontend, report positioned syntax errors, and associate execution
 with LibJS Script, Realm, and VM records. The translated bytecode generator and
 interpreter execute primitive and BigInt expressions, declarations, lexical
-scopes, loops, data-property reads, string own properties, and calls to host
-native functions. The browser selects this supported slice with `--js-engine=libjs`;
+scopes, loops, ordinary data-property operations, string own properties, and
+native calls. Numeric and URI globals execute through translated native functions.
+The browser selects this supported slice with `--js-engine=libjs`;
 JavaScriptCore remains the default, with `--js-engine=javascriptcore` selecting
 its existing DOM host explicitly. LibJS mode has no DOM bindings and never falls
 back to JavaScriptCore. The status file records the supported boundary, tests,
