@@ -2,7 +2,7 @@ module libjs
 
 // Translated from the Script Record in LibJS/Script.{h,cpp}. Parsing runs through
 // the translated frontend; bytecode generation, cached executables, and
-// GlobalDeclarationInstantiation remain part of the pending interpreter work.
+// GlobalDeclarationInstantiation use the supported bytecode-generation slice.
 
 pub struct ScriptParseError {
 	Error
@@ -22,12 +22,14 @@ pub fn (err ScriptParseError) msg() string {
 @[heap]
 pub struct Script {
 pub mut:
-	realm          &Realm                // [[Realm]]
-	filename       string
-	loaded_modules []LoadedModuleRequest // [[LoadedModules]]
-	host_defined   voidptr               // [[HostDefined]]
-	parsed         &ParsedSource         // [[ECMAScriptCode]]
-	is_strict_mode bool
+	realm             &Realm // [[Realm]]
+	filename          string
+	starting_line     u32 = 1
+	loaded_modules    []LoadedModuleRequest // [[LoadedModules]]
+	host_defined      voidptr               // [[HostDefined]]
+	parsed            &ParsedSource         // [[ECMAScriptCode]]
+	is_strict_mode    bool
+	cached_executable ?&Executable
 }
 
 // 16.1.5 ParseScript ( sourceText, realm, hostDefined ), https://tc39.es/ecma262/#sec-parse-script

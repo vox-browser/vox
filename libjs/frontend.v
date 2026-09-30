@@ -17,6 +17,7 @@ pub struct ParsedSource {
 	program        Statement
 	function_table FunctionTable
 pub:
+	source_text         string
 	diagnostics         []SyntaxDiagnostic
 	is_strict_mode      bool
 	has_top_level_await bool
@@ -42,6 +43,7 @@ pub fn parse_source(source string, source_type SourceType) &ParsedSource {
 	}
 	data := program.kind.program_data or { panic('parser returned a non-program root') }
 	return &ParsedSource{
+		source_text:             source
 		program:                 program
 		function_table:          parser.function_table
 		diagnostics:             diagnostics
