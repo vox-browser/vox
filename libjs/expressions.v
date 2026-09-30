@@ -38,6 +38,9 @@ fn (mut p Parser) match_expression() bool {
 }
 
 fn (p &Parser) match_unary_prefixed_expression() bool {
+	if p.flags.await_expression_is_valid && p.match_token(.await_kw) {
+		return true
+	}
 	return match p.current_token_type() {
 		.plus_plus, .minus_minus, .exclamation_mark, .tilde, .plus, .minus, .typeof_kw, .void_kw,
 		.delete_kw {
@@ -391,10 +394,6 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 			return p.parse_primary_expression_identifier(start, forbidden)
 		}
 		.await_kw {
-			if p.flags.await_expression_is_valid {
-				expression := p.parse_await_expression()
-				return expression, true
-			}
 			// Fall through to identifier handling below
 			return p.parse_primary_expression_identifier(start, forbidden)
 		}
@@ -697,6 +696,9 @@ fn (mut p Parser) parse_unary_prefixed_expression() Expression {
 	tt := p.current_token_type()
 
 	match tt {
+		.await_kw {
+			return p.parse_await_expression()
+		}
 		.plus_plus {
 			p.consume()
 			expression := p.parse_expression(precedence_unary, .right, ForbiddenTokens{})
