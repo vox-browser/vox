@@ -100,3 +100,18 @@ fn test_symbol_conversion_throws_and_untranslated_object_coercion_is_explicit() 
 		assert thrown_value(err).as_object().error_kind()? == .internal_error
 	}
 }
+
+fn test_number_exponentiation_keeps_upstream_infinite_and_signed_zero_cases() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	assert math.is_inf(exp(mut vm, Value.from_f64(math.inf(-1)), Value.from_f64(0.5))!.number, 1)
+	assert math.is_inf(exp(mut vm, Value.from_f64(math.inf(-1)), Value.from_i32(3))!.number, -1)
+	assert math.is_inf(exp(mut vm, Value.from_f64(math.inf(-1)), Value.from_f64(math.inf(1)))!.number, 1)
+	assert !math.signbit(exp(mut vm, Value.from_f64(math.inf(-1)), Value.from_f64(-0.5))!.number)
+	assert math.signbit(exp(mut vm, Value.from_f64(math.inf(-1)), Value.from_i32(-3))!.number)
+	assert !math.signbit(exp(mut vm, Value.from_f64(-0.0), Value.from_f64(0.5))!.number)
+	assert math.signbit(exp(mut vm, Value.from_f64(-0.0), Value.from_i32(3))!.number)
+	assert math.is_inf(exp(mut vm, Value.from_f64(-0.0), Value.from_f64(-0.5))!.number, 1)
+	assert math.is_inf(exp(mut vm, Value.from_f64(-0.0), Value.from_i32(-3))!.number, -1)
+	assert math.is_nan(exp(mut vm, Value.from_i32(-2), Value.from_f64(0.5))!.number)
+}

@@ -101,10 +101,9 @@ pub fn (value Value) to_number(mut vm VM) !Value {
 }
 
 pub fn (value Value) to_numeric(mut vm VM) !Value {
-	if value.is_bigint() {
-		return vm.throw_error(.internal_error, 'BigInt arithmetic is not translated yet')
-	}
-	return value.to_number(mut vm)
+	primitive := value.to_primitive(mut vm)!
+	if primitive.is_bigint() { return primitive }
+	return primitive.to_number(mut vm)
 }
 
 // 7.1.17 ToString's primitive paths. Preserve UTF-16 identity during concatenation.
@@ -123,11 +122,14 @@ pub fn (value Value) to_primitive_string(mut vm VM) !&PrimitiveString {
 		.int32, .double {
 			format_f64_value(value.number)
 		}
+		.bigint {
+			value.as_bigint().big_integer.str()
+		}
 		.symbol {
 			return vm.throw_error_type(.type_error, .convert, 'symbol', 'string')
 		}
 		else {
-			return vm.throw_error(.internal_error, 'Object/BigInt ToString is not translated yet')
+			return vm.throw_error(.internal_error, 'Object ToString is not translated yet')
 		}
 	}
 
@@ -158,47 +160,211 @@ pub fn add(mut vm VM, lhs Value, rhs Value) !Value {
 		units << right_string.utf16.data
 		return Value.from_string(vm.create_string(Utf16String{ data: units }))
 	}
-	x := left.to_numeric(mut vm)!.number
-	y := right.to_numeric(mut vm)!.number
-	return Value.from_f64(x + y)
+	return numeric_binary_operation(mut vm, left, right, .add)
 }
 
 pub fn sub(mut vm VM, lhs Value, rhs Value) !Value {
-	x := lhs.to_numeric(mut vm)!.number
-	y := rhs.to_numeric(mut vm)!.number
-	return Value.from_f64(x - y)
+	return numeric_binary_operation(mut vm, lhs, rhs, .sub)
 }
 
 pub fn mul(mut vm VM, lhs Value, rhs Value) !Value {
-	x := lhs.to_numeric(mut vm)!.number
-	y := rhs.to_numeric(mut vm)!.number
-	return Value.from_f64(x * y)
+	return numeric_binary_operation(mut vm, lhs, rhs, .mul)
 }
 
 pub fn div(mut vm VM, lhs Value, rhs Value) !Value {
-	x := lhs.to_numeric(mut vm)!.number
-	y := rhs.to_numeric(mut vm)!.number
-	return Value.from_f64(x / y)
+	return numeric_binary_operation(mut vm, lhs, rhs, .div)
 }
 
 pub fn mod_(mut vm VM, lhs Value, rhs Value) !Value {
-	x := lhs.to_numeric(mut vm)!.number
-	y := rhs.to_numeric(mut vm)!.number
-	return Value.from_f64(math.fmod(x, y))
+	return numeric_binary_operation(mut vm, lhs, rhs, .mod_)
 }
 
 pub fn exp(mut vm VM, lhs Value, rhs Value) !Value {
-	x := lhs.to_numeric(mut vm)!.number
-	y := rhs.to_numeric(mut vm)!.number
-	// Number::exponentiate differs from libc pow for abs(x)==1 and infinite y.
-	if y == 0 { return Value.from_i32(1) }
-	if math.abs(x) == 1 && math.is_inf(y, 0) { return Value.from_f64(math.nan()) }
-	return Value.from_f64(math.pow(x, y))
+	return numeric_binary_operation(mut vm, lhs, rhs, .exp)
+}
+
+// Runtime/Value.cpp::ApplyStringOrNumericBinaryOperator. Dispatch both numeric
+// types only after converting the left and right operands, in that order.
+fn numeric_binary_operation(mut vm VM, lhs Value, rhs Value, op OpCode) !Value {
+	x := lhs.to_numeric(mut vm)!
+	y := rhs.to_numeric(mut vm)!
+	if x.is_number() && y.is_number() {
+		return Value.from_f64(match op {
+			.add { x.number + y.number }
+			.sub { x.number - y.number }
+			.mul { x.number * y.number }
+			.div { x.number / y.number }
+			.mod_ { math.fmod(x.number, y.number) }
+			else { number_exponentiate(x.number, y.number) }
+		})
+	}
+	if x.is_bigint() && y.is_bigint() {
+		a := x.as_bigint().big_integer
+		b := y.as_bigint().big_integer
+		if op in [.div, .mod_] && b.signum == 0 {
+			return vm.throw_error_type(.range_error, .division_by_zero)
+		}
+		if op == .exp {
+			if b.signum < 0 { return vm.throw_error_type(.range_error, .negative_exponent) }
+			if b.bit_len() > 32 { return vm.throw_error_type(.range_error, .big_int_size_exceeded) }
+		}
+		integer := match op {
+			.add { a + b }
+			.sub { a - b }
+			.mul { a * b }
+			.div { a / b }
+			.mod_ { a % b }
+			else { a.pow(u32(big_integer_to_u64(b))) }
+		}
+
+		return Value.from_bigint(BigInt.create(integer))
+	}
+	name := match op {
+		.add { 'addition' }
+		.sub { 'subtraction' }
+		.mul { 'multiplication' }
+		.div { 'division' }
+		.mod_ { 'modulo' }
+		else { 'exponentiation' }
+	}
+
+	return vm.throw_error_type(.type_error, .big_int_bad_operator_other_type, name)
+}
+
+// Runtime/Value.cpp::Number::exponentiate. The ordered special cases matter:
+// libc pow alone returns different results for non-integral powers of -Infinity
+// and -0, and for |base| == 1 with an infinite exponent.
+fn number_exponentiate(base f64, exponent f64) f64 {
+	if math.is_nan(exponent) { return math.nan() }
+	if exponent == 0 { return 1 }
+	if math.is_nan(base) { return math.nan() }
+	if math.is_inf(base, 1) { return if exponent > 0 { math.inf(1) } else { 0.0 }
+	 }
+	odd := !math.is_inf(exponent, 0) && math.trunc(exponent) == exponent
+		&& math.fmod(exponent, 2) != 0
+	if math.is_inf(base, -1) {
+		if exponent > 0 { return if odd { math.inf(-1) } else { math.inf(1) }
+		 }
+		return if odd { -0.0 } else { 0.0 }
+	}
+	if base == 0 {
+		if exponent > 0 { return if math.signbit(base) && odd { -0.0 } else { 0.0 }
+		 }
+		return if math.signbit(base) && odd { math.inf(-1) } else { math.inf(1) }
+	}
+	if math.is_inf(exponent, 0) {
+		absolute := math.abs(base)
+		if absolute == 1 { return math.nan() }
+		return if (absolute > 1) == (exponent > 0) { math.inf(1) } else { 0.0 }
+	}
+	if base < 0 && math.trunc(exponent) != exponent { return math.nan() }
+	return math.pow(base, exponent)
 }
 
 pub fn unary_minus(mut vm VM, value Value) !Value {
-	number := value.to_numeric(mut vm)!.number
-	return Value.from_f64(-number)
+	numeric := value.to_numeric(mut vm)!
+	if numeric.is_number() { return Value.from_f64(-numeric.number) }
+	return Value.from_bigint(BigInt.create(numeric.as_bigint().big_integer.neg()))
+}
+
+pub fn bitwise_not(mut vm VM, value Value) !Value {
+	numeric := value.to_numeric(mut vm)!
+	if numeric.is_number() { return Value.from_i32(~numeric.to_i32(mut vm)!) }
+	return Value.from_bigint(BigInt.create(numeric.as_bigint().big_integer.bitwise_com()))
+}
+
+pub fn bitwise_and(mut vm VM, lhs Value, rhs Value) !Value {
+	return bitwise_binary_operation(mut vm, lhs, rhs, .bitwise_and)
+}
+
+pub fn bitwise_or(mut vm VM, lhs Value, rhs Value) !Value {
+	return bitwise_binary_operation(mut vm, lhs, rhs, .bitwise_or)
+}
+
+pub fn bitwise_xor(mut vm VM, lhs Value, rhs Value) !Value {
+	return bitwise_binary_operation(mut vm, lhs, rhs, .bitwise_xor)
+}
+
+fn bitwise_binary_operation(mut vm VM, lhs Value, rhs Value, op OpCode) !Value {
+	x := lhs.to_numeric(mut vm)!
+	y := rhs.to_numeric(mut vm)!
+	if x.is_number() && y.is_number() {
+		a := x.to_i32(mut vm)!
+		b := y.to_i32(mut vm)!
+		return Value.from_i32(match op {
+			.bitwise_and { a & b }
+			.bitwise_or { a | b }
+			else { a ^ b }
+		})
+	}
+	if x.is_bigint() && y.is_bigint() {
+		a := x.as_bigint().big_integer
+		b := y.as_bigint().big_integer
+		// SignedBigInteger::bitwise_xor = bitwise_or - bitwise_and.
+		integer := if op == .bitwise_xor {
+			big_integer_bitwise(a, b, false) - big_integer_bitwise(a, b, true)
+		} else {
+			big_integer_bitwise(a, b, op == .bitwise_and)
+		}
+		return Value.from_bigint(BigInt.create(integer))
+	}
+	name := match op {
+		.bitwise_and { 'bitwise AND' }
+		.bitwise_or { 'bitwise OR' }
+		else { 'bitwise XOR' }
+	}
+
+	return vm.throw_error_type(.type_error, .big_int_bad_operator_other_type, name)
+}
+
+pub fn left_shift(mut vm VM, lhs Value, rhs Value) !Value {
+	x := lhs.to_numeric(mut vm)!
+	y := rhs.to_numeric(mut vm)!
+	if x.is_number() && y.is_number() {
+		a := u32(x.to_i32(mut vm)!)
+		b := y.to_u32(mut vm)! & 31
+		return Value.from_i32(i32(a << b))
+	}
+	if x.is_bigint() && y.is_bigint() {
+		a := x.as_bigint().big_integer
+		b := y.as_bigint().big_integer
+		if b.bit_len() > 32 { return vm.throw_error_type(.range_error, .big_int_size_exceeded) }
+		factor := big.integer_from_int(2).pow(u32(big_integer_to_u64(b.abs())))
+		if b.signum < 0 {
+			quotient, remainder := a.div_mod(factor)
+			integer := if remainder.signum == 0 || a.signum >= 0 {
+				quotient
+			} else {
+				quotient - big.integer_from_int(1)
+			}
+			return Value.from_bigint(BigInt.create(integer))
+		}
+		return Value.from_bigint(BigInt.create(a * factor))
+	}
+	return vm.throw_error_type(.type_error, .big_int_bad_operator_other_type, 'left-shift')
+}
+
+pub fn right_shift(mut vm VM, lhs Value, rhs Value) !Value {
+	x := lhs.to_numeric(mut vm)!
+	y := rhs.to_numeric(mut vm)!
+	if x.is_number() && y.is_number() {
+		a := x.to_i32(mut vm)!
+		b := y.to_u32(mut vm)! & 31
+		return Value.from_i32(a >> b)
+	}
+	if x.is_bigint() && y.is_bigint() { return left_shift(mut vm, x, unary_minus(mut vm, y)!) }
+	return vm.throw_error_type(.type_error, .big_int_bad_operator_other_type, 'right-shift')
+}
+
+pub fn unsigned_right_shift(mut vm VM, lhs Value, rhs Value) !Value {
+	x := lhs.to_numeric(mut vm)!
+	y := rhs.to_numeric(mut vm)!
+	if x.is_number() && y.is_number() {
+		a := x.to_u32(mut vm)!
+		b := y.to_u32(mut vm)! & 31
+		return Value.from_f64(f64(a >> b))
+	}
+	return vm.throw_error_type(.type_error, .big_int_bad_operator, 'unsigned right-shift')
 }
 
 // 7.2.15 IsStrictlyEqual: string content, number equality, and cell identity.
@@ -209,6 +375,7 @@ pub fn is_strictly_equal(lhs Value, rhs Value) bool {
 		.undefined, .null { true }
 		.boolean { lhs.number == rhs.number }
 		.string { lhs.as_string().utf16 == rhs.as_string().utf16 }
+		.bigint { lhs.as_bigint().big_integer == rhs.as_bigint().big_integer }
 		.symbol, .object { lhs.cell == rhs.cell }
 		else { false }
 	}
@@ -231,11 +398,30 @@ pub fn compare_primitive_values(mut vm VM, lhs Value, rhs Value) !ComparisonResu
 		if a == b { return .equal }
 		return if a < b { ComparisonResult.less } else { ComparisonResult.greater }
 	}
-	x := left.to_numeric(mut vm)!.number
-	y := right.to_numeric(mut vm)!.number
-	if math.is_nan(x) || math.is_nan(y) { return .unordered }
-	if x == y { return .equal }
-	return if x < y { ComparisonResult.less } else { ComparisonResult.greater }
+	mut x := left
+	mut y := right
+	if x.is_bigint() && y.is_string() {
+		parsed := string_to_bigint(y.as_string().utf16) or { return .unordered }
+		y = Value.from_bigint(parsed)
+	} else if x.is_string() && y.is_bigint() {
+		parsed := string_to_bigint(x.as_string().utf16) or { return .unordered }
+		x = Value.from_bigint(parsed)
+	}
+	x = x.to_numeric(mut vm)!
+	y = y.to_numeric(mut vm)!
+	if x.is_bigint() && y.is_bigint() {
+		a := x.as_bigint().big_integer
+		b := y.as_bigint().big_integer
+		if a == b { return .equal }
+		return if a < b { .less } else { .greater }
+	}
+	if x.is_bigint() { return compare_big_integer_to_double(x.as_bigint().big_integer, y.number) }
+	if y.is_bigint() {
+		return reverse_comparison(compare_big_integer_to_double(y.as_bigint().big_integer, x.number))
+	}
+	if math.is_nan(x.number) || math.is_nan(y.number) { return .unordered }
+	if x.number == y.number { return .equal }
+	return if x.number < y.number { ComparisonResult.less } else { ComparisonResult.greater }
 }
 
 // Primitive branch of IsLooselyEqual; unsupported object conversions still throw.
@@ -248,9 +434,22 @@ pub fn is_loosely_equal(mut vm VM, lhs Value, rhs Value) !bool {
 	if rhs.is_boolean() { return is_loosely_equal(mut vm, lhs, rhs.to_number(mut vm)!) }
 	if lhs.is_number() && rhs.is_string() { return is_strictly_equal(lhs, rhs.to_number(mut vm)!) }
 	if lhs.is_string() && rhs.is_number() { return is_strictly_equal(lhs.to_number(mut vm)!, rhs) }
-	if lhs.is_object() || rhs.is_object() || lhs.is_bigint() || rhs.is_bigint() {
-		return vm.throw_error(.internal_error,
-			'Object/BigInt equality conversion is not translated yet')
+	if lhs.is_bigint() && rhs.is_string() {
+		parsed := string_to_bigint(rhs.as_string().utf16) or { return false }
+		return is_strictly_equal(lhs, Value.from_bigint(parsed))
+	}
+	if lhs.is_string() && rhs.is_bigint() { return is_loosely_equal(mut vm, rhs, lhs) }
+	if (lhs.is_bigint() && rhs.is_number()) || (lhs.is_number() && rhs.is_bigint()) {
+		integer := if lhs.is_bigint() {
+			lhs.as_bigint().big_integer
+		} else {
+			rhs.as_bigint().big_integer
+		}
+		number := if lhs.is_number() { lhs.number } else { rhs.number }
+		return compare_big_integer_to_double(integer, number) == .equal
+	}
+	if lhs.is_object() || rhs.is_object() {
+		return vm.throw_error(.internal_error, 'Object equality conversion is not translated yet')
 	}
 	return false
 }

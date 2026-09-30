@@ -97,6 +97,13 @@ pub fn Value.from_object(object &Object) Value {
 	}
 }
 
+pub fn Value.from_bigint(integer &BigInt) Value {
+	return Value{
+		tag:  .bigint
+		cell: voidptr(integer)
+	}
+}
+
 pub fn (value Value) is_special_empty_value() bool {
 	return value.tag == .empty
 }
@@ -195,6 +202,11 @@ pub fn (value Value) as_object() &Object {
 	return unsafe { &Object(value.cell) }
 }
 
+pub fn (value Value) as_bigint() &BigInt {
+	if value.tag != .bigint { panic('Value.as_bigint() called on a ${value.tag} value') }
+	return unsafe { &BigInt(value.cell) }
+}
+
 // 7.1.2 ToBoolean ( argument ), https://tc39.es/ecma262/#sec-toboolean
 pub fn (value Value) to_boolean() bool {
 	return match value.tag {
@@ -204,7 +216,7 @@ pub fn (value Value) to_boolean() bool {
 		.int32, .double { value.number != 0.0 && value.number == value.number }
 		.string { !value.as_string().is_empty() }
 		.symbol, .object, .accessor { true }
-		.bigint { panic('BigInt values are not translated yet') }
+		.bigint { value.as_bigint().big_integer.signum != 0 }
 	}
 }
 
@@ -227,6 +239,9 @@ pub fn same_value(a Value, b Value) bool {
 			}
 			return a.number == b.number
 		}
+		.bigint {
+			return a.as_bigint().big_integer == b.as_bigint().big_integer
+		}
 		else {
 			return a.cell == b.cell
 		}
@@ -235,16 +250,42 @@ pub fn same_value(a Value, b Value) bool {
 
 pub fn (value Value) str() string {
 	return match value.tag {
-		.empty { '<empty>' }
-		.undefined { 'undefined' }
-		.null { 'null' }
-		.boolean { if value.number != 0.0 { 'true' } else { 'false' } }
-		.int32 { i32(value.number).str() }
-		.double { format_f64_value(value.number) }
-		.string { '"${value.as_string().str()}"' }
-		.symbol { value.as_symbol().descriptive_string().str() }
-		.object { '[object ${value.as_object().class_name}]' }
-		.bigint { '<bigint>' }
-		.accessor { '<accessor>' }
+		.empty {
+			'<empty>'
+		}
+		.undefined {
+			'undefined'
+		}
+		.null {
+			'null'
+		}
+		.boolean {
+			if value.number != 0.0 {
+				'true'
+			} else {
+				'false'
+			}
+		}
+		.int32 {
+			i32(value.number).str()
+		}
+		.double {
+			format_f64_value(value.number)
+		}
+		.string {
+			'"${value.as_string().str()}"'
+		}
+		.symbol {
+			value.as_symbol().descriptive_string().str()
+		}
+		.object {
+			'[object ${value.as_object().class_name}]'
+		}
+		.bigint {
+			value.as_bigint().to_utf16_string().str()
+		}
+		.accessor {
+			'<accessor>'
+		}
 	}
 }
