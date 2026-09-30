@@ -9,6 +9,12 @@ translation-specific documentation belong in this repository. See
 [`PORT_STATUS.md`](PORT_STATUS.md) for the module inventory and LOC table, and
 [`ROOT_SUPPORT.md`](ROOT_SUPPORT.md) for the root support-file mapping.
 
+The refreshed LibJS frontend lives in [`libjs/`](libjs/PORT_STATUS.md). It exposes
+script/module parsing, positioned diagnostics, scope analysis, and retained AST
+dumps. Its status file records the upstream reference, test commands, exact AST
+corpus results, and remaining runtime work. The browser still uses JavaScriptCore
+for execution.
+
 ## Translation footprint
 
 As of 2026-09-12, tracked V sources contain **340,625 implementation LOC** and
