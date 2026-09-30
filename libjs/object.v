@@ -324,7 +324,40 @@ pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value
 	assert descriptor.is_accessor_descriptor()
 	getter := descriptor.getter or { js_undefined() }
 	if getter.is_undefined() { return js_undefined() }
-	return call(mut vm, getter, receiver, []Value{})
+	// Object.cpp retains cached values on the holder, for that holder and
+	// receivers whose direct prototype is the holder. Deeper/foreign receivers
+	// call the getter without reading or populating that shared cache.
+	index := object.find_own_property(key)
+	accessor := object.properties[index].value.as_accessor()
+	mut receiver_uses_holder_cache := false
+	if receiver.is_object() {
+		receiver_object := receiver.as_object()
+		receiver_uses_holder_cache = receiver_object == object
+		if parent := receiver_object.prototype {
+			receiver_uses_holder_cache = receiver_uses_holder_cache || parent == object
+		}
+	}
+	if cached_key := accessor.cached_value_key {
+		if receiver_uses_holder_cache {
+			if cached := object.get_engine_private_property(cached_key) { return cached.value }
+		}
+	}
+	result := call(mut vm, getter, receiver, []Value{})!
+	if receiver_uses_holder_cache {
+		if cached_key := accessor.cached_value_key {
+			current_index := object.find_own_property(key)
+			if current_index >= 0 {
+				value := object.properties[current_index].value
+				// A getter may delete or replace itself. Only the same Accessor
+				// cell may publish the value under its private cache key.
+				if value.is_accessor() && value.as_accessor() == accessor {
+					mut holder := unsafe { &Object(object) }
+					holder.set_engine_private_property(cached_key, result)
+				}
+			}
+		}
+	}
+	return result
 }
 
 // 10.1.9 [[Set]] ( P, V, Receiver ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-set-p-v-receiver
