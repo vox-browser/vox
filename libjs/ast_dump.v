@@ -1,6 +1,7 @@
 module libjs
 
 import math
+import strconv
 
 // ============================================================================
 // AST dump — tree-drawing output matching C++ ASTDump.cpp format
@@ -179,11 +180,28 @@ fn format_f64_value(value f64) string {
 	if math.is_inf(value, -1) {
 		return '-Infinity'
 	}
-	as_int := i64(value)
-	if f64(as_int) == value {
-		return '${as_int}'
+	if value == 0 {
+		return '0'
 	}
-	return '${value}'
+	// Use V's shortest round-tripping digits, then apply the ECMAScript
+	// Number::toString decimal/exponent thresholds rather than V's thresholds.
+	sign := if value < 0 { '-' } else { '' }
+	scientific := strconv.ftoa_64(math.abs(value))
+	digits := scientific.all_before('e').replace('.', '').trim_right('0')
+	exponent := scientific.all_after('e').int()
+	point := exponent + 1
+	if point > 0 && point <= 21 {
+		if point >= digits.len {
+			return sign + digits + '0'.repeat(point - digits.len)
+		}
+		return sign + digits[..point] + '.' + digits[point..]
+	}
+	if point > -6 && point <= 0 {
+		return sign + '0.' + '0'.repeat(-point) + digits
+	}
+	mantissa := if digits.len == 1 { digits } else { digits[..1] + '.' + digits[1..] }
+	exponent_sign := if exponent >= 0 { '+' } else { '' }
+	return '${sign}${mantissa}e${exponent_sign}${exponent}'
 }
 
 // ============================================================================
@@ -458,6 +476,7 @@ fn dump_statement(statement &Statement, state DumpState) {
 				.for_of { 'ForOfStatement' }
 				.for_await_of { 'ForAwaitOfStatement' }
 			}
+
 			dump_node(state, name, statement.range)
 			if lhs := statement.kind.for_in_of_lhs {
 				lhs_state := child_state(state, false)
@@ -474,11 +493,9 @@ fn dump_statement(statement &Statement, state DumpState) {
 		.switch_stmt {
 			dump_node(state, 'SwitchStatement', statement.range)
 			if sd := statement.kind.switch_data {
-				dump_labeled_expression('discriminant', &sd.discriminant, sd.cases.len == 0,
-					state)
+				dump_labeled_expression('discriminant', &sd.discriminant, sd.cases.len == 0, state)
 				for i, case_ in sd.cases {
-					dump_switch_case(&case_, child_state(state, i == sd.cases.len - 1),
-						state)
+					dump_switch_case(&case_, child_state(state, i == sd.cases.len - 1), state)
 				}
 			}
 		}
@@ -521,8 +538,7 @@ fn dump_statement(statement &Statement, state DumpState) {
 			if td := statement.kind.try_data {
 				has_handler := td.handler != none
 				has_finalizer := td.finalizer != none
-				dump_labeled_statement('block', &td.block, !has_handler && !has_finalizer,
-					state)
+				dump_labeled_statement('block', &td.block, !has_handler && !has_finalizer, state)
 				if handler := td.handler {
 					handler_state := child_state(state, !has_finalizer)
 					print_node(handler_state, color_label(state, 'handler'))
@@ -537,15 +553,15 @@ fn dump_statement(statement &Statement, state DumpState) {
 			dump_node_with(state, 'VariableDeclaration', statement.range, color_op(state,
 				declaration_kind_to_string(statement.kind.decl_kind)))
 			for i, decl in statement.kind.declarations {
-				dump_variable_declarator(&decl, child_state(state, i == statement.kind.declarations.len - 1),
-					state)
+				dump_variable_declarator(&decl, child_state(state,
+					i == statement.kind.declarations.len - 1), state)
 			}
 		}
 		.using_declaration {
 			dump_node(state, 'UsingDeclaration', statement.range)
 			for i, decl in statement.kind.declarations {
-				dump_variable_declarator(&decl, child_state(state, i == statement.kind.declarations.len - 1),
-					state)
+				dump_variable_declarator(&decl, child_state(state,
+					i == statement.kind.declarations.len - 1), state)
 			}
 		}
 		.function_declaration {
@@ -572,7 +588,8 @@ fn dump_statement(statement &Statement, state DumpState) {
 							'None'
 						}
 						local_name := entry.local_name.str()
-						print_node(child_state(state, i == id.entries.len - 1), 'ImportName: ${import_name}, LocalName: ${local_name}')
+						print_node(child_state(state, i == id.entries.len - 1),
+							'ImportName: ${import_name}, LocalName: ${local_name}')
 					}
 				}
 			}
@@ -583,8 +600,7 @@ fn dump_statement(statement &Statement, state DumpState) {
 				has_statement := ed.statement != none
 				has_entries := ed.entries.len > 0
 				if has_entries {
-					print_node(child_state(state, !has_statement), color_label(state,
-						'entries'))
+					print_node(child_state(state, !has_statement), color_label(state, 'entries'))
 					entries_state := child_state(state, !has_statement)
 					for i, entry in ed.entries {
 						export_name := if en := entry.export_name {
@@ -607,8 +623,7 @@ fn dump_statement(statement &Statement, state DumpState) {
 						if mr := ed.module_request {
 							entry_desc += ', ModuleRequest: ${mr.module_specifier.str()}${format_assert_clauses(&mr)}'
 						}
-						print_node(child_state(entries_state, i == ed.entries.len - 1),
-							entry_desc)
+						print_node(child_state(entries_state, i == ed.entries.len - 1), entry_desc)
 					}
 				}
 				if export_stmt := ed.statement {
@@ -707,7 +722,8 @@ fn dump_expression(expression &Expression, state DumpState) {
 		}
 		.update {
 			prefix_str := if expression.kind.prefixed { 'prefix' } else { 'postfix' }
-			dump_node_with(state, 'UpdateExpression', expression.range, '(${update_op_to_string(expression.kind.update_op)}, ${prefix_str})')
+			dump_node_with(state, 'UpdateExpression', expression.range,
+				'(${update_op_to_string(expression.kind.update_op)}, ${prefix_str})')
 			if arg := expression.kind.argument {
 				dump_expression(arg, child_state(state, true))
 			}
@@ -721,8 +737,7 @@ fn dump_expression(expression &Expression, state DumpState) {
 						dump_expression(assign_lhs.expression, child_state(state, false))
 					}
 					AssignmentLhsPattern {
-						dump_binding_pattern(&assign_lhs.pattern, child_state(state, false),
-							state)
+						dump_binding_pattern(&assign_lhs.pattern, child_state(state, false), state)
 					}
 				}
 			}
@@ -745,7 +760,8 @@ fn dump_expression(expression &Expression, state DumpState) {
 		.sequence {
 			dump_node(state, 'SequenceExpression', expression.range)
 			for i, child in expression.kind.expressions {
-				dump_expression(&child, child_state(state, i == expression.kind.expressions.len - 1))
+				dump_expression(&child,
+					child_state(state, i == expression.kind.expressions.len - 1))
 			}
 		}
 		.member {
@@ -773,7 +789,8 @@ fn dump_expression(expression &Expression, state DumpState) {
 					OptionalChainCall {
 						print_node(ref_state, 'Call(${optional_mode_str(ref_.mode)})')
 						for j, arg in ref_.arguments {
-							dump_expression(&arg.value, child_state(ref_state, j == ref_.arguments.len - 1))
+							dump_expression(&arg.value, child_state(ref_state,
+								j == ref_.arguments.len - 1))
 						}
 					}
 					OptionalChainComputedRef {
@@ -786,9 +803,11 @@ fn dump_expression(expression &Expression, state DumpState) {
 							true))
 					}
 					OptionalChainPrivateMemberRef {
-						print_node(ref_state, 'PrivateMemberReference(${optional_mode_str(ref_.mode)})')
+						print_node(ref_state,
+							'PrivateMemberReference(${optional_mode_str(ref_.mode)})')
 						print_node(child_state(ref_state, true), '${color_node_name(state,
-							'PrivateIdentifier')} ${color_string_utf16(state, ref_.private_identifier.name)}${format_position(state,
+							'PrivateIdentifier')} ${color_string_utf16(state,
+							ref_.private_identifier.name)}${format_position(state,
 							ref_.private_identifier.range)}')
 					}
 				}
@@ -855,8 +874,8 @@ fn dump_expression(expression &Expression, state DumpState) {
 		.object_expr {
 			dump_node(state, 'ObjectExpression', expression.range)
 			for i, prop in expression.kind.object_properties {
-				dump_object_property(&prop, child_state(state, i == expression.kind.object_properties.len - 1),
-					state)
+				dump_object_property(&prop, child_state(state,
+					i == expression.kind.object_properties.len - 1), state)
 			}
 		}
 		.template_literal {
@@ -881,6 +900,7 @@ fn dump_expression(expression &Expression, state DumpState) {
 				.new_target { 'new.target' }
 				.import_meta { 'import.meta' }
 			}
+
 			dump_node_with(state, 'MetaProperty', expression.range, mp_name)
 		}
 		.import_call {
@@ -935,6 +955,7 @@ fn dump_identifier(ident &Identifier, range SourceRange, state DumpState) {
 			3 { 'const' }
 			else { 'unknown' }
 		}
+
 		desc += ' ' + color_op(state, dk_str)
 	}
 	if ident.is_inside_scope_with_eval {
@@ -1001,8 +1022,8 @@ fn dump_function(function_data &JsFunctionData, class_name string, range SourceR
 				print_node(parameter_state, color_label(state, 'rest'))
 				match param.binding {
 					IdentifierBinding {
-						dump_identifier(param.binding.identifier, param.binding.identifier.range,
-							child_state(parameter_state, !has_default))
+						dump_identifier(param.binding.identifier, param.binding.identifier.range, child_state(parameter_state,
+							!has_default))
 					}
 					BindingPatternBinding {
 						dump_binding_pattern(&param.binding.pattern, child_state(parameter_state,
@@ -1012,8 +1033,8 @@ fn dump_function(function_data &JsFunctionData, class_name string, range SourceR
 			} else {
 				match param.binding {
 					IdentifierBinding {
-						dump_identifier(param.binding.identifier, param.binding.identifier.range,
-							child_state(parameters_state, i == function_data.parameters.len - 1))
+						dump_identifier(param.binding.identifier, param.binding.identifier.range, child_state(parameters_state,
+							i == function_data.parameters.len - 1))
 					}
 					BindingPatternBinding {
 						dump_binding_pattern(&param.binding.pattern, child_state(parameters_state,
@@ -1051,8 +1072,8 @@ fn dump_class(class_data &ClassData, range SourceRange, state DumpState, root_st
 	if has_elements {
 		print_node(child_state(state, true), color_label(root_state, 'elements'))
 		for i, element in class_data.elements {
-			dump_class_element(&element, child_state(child_state(state, true), i == class_data.elements.len - 1),
-				root_state)
+			dump_class_element(&element, child_state(child_state(state, true),
+				i == class_data.elements.len - 1), root_state)
 		}
 	}
 }
@@ -1100,6 +1121,7 @@ fn dump_binding_pattern(pattern &BindingPattern, state DumpState, root_state Dum
 		.array { 'array' }
 		.object { 'object' }
 	}
+
 	print_node(state, '${color_node_name(root_state, 'BindingPattern')} ${color_op(root_state,
 		kind_str)}')
 	for i, entry in pattern.entries {
@@ -1118,15 +1140,15 @@ fn dump_binding_pattern(pattern &BindingPattern, state DumpState, root_state Dum
 		if pattern.kind == .object {
 			if entry.name.kind == .identifier_kind {
 				if id := entry.name.identifier {
-					print_node(child_state(entry_state, !has_alias && !has_initializer),
-						color_label(root_state, 'name'))
-					dump_identifier(id, id.range, child_state(child_state(entry_state,
-						!has_alias && !has_initializer), true))
+					print_node(child_state(entry_state, !has_alias && !has_initializer), color_label(root_state,
+						'name'))
+					dump_identifier(id, id.range, child_state(child_state(entry_state, !has_alias
+						&& !has_initializer), true))
 				}
 			} else if entry.name.kind == .expression_kind {
 				if expr := entry.name.expression {
-					print_node(child_state(entry_state, !has_alias && !has_initializer),
-						color_label(root_state, 'name (computed)'))
+					print_node(child_state(entry_state, !has_alias && !has_initializer), color_label(root_state,
+						'name (computed)'))
 					dump_expression(&expr, child_state(child_state(entry_state, !has_alias
 						&& !has_initializer), true))
 				}
@@ -1159,8 +1181,7 @@ fn dump_binding_pattern(pattern &BindingPattern, state DumpState, root_state Dum
 		if has_initializer {
 			if init_val := entry.initializer {
 				print_node(child_state(entry_state, true), color_label(root_state, 'initializer'))
-				dump_expression(&init_val, child_state(child_state(entry_state, true),
-					true))
+				dump_expression(&init_val, child_state(child_state(entry_state, true), true))
 			}
 		}
 	}
@@ -1177,14 +1198,15 @@ fn dump_variable_declarator(declaration &VariableDeclarator, state DumpState, ro
 	has_init := declaration.init != none
 	match declaration.target {
 		IdentifierVarTarget {
-			dump_identifier(declaration.target.identifier, declaration.target.identifier.range,
-				child_state(state, !has_init))
+			dump_identifier(declaration.target.identifier, declaration.target.identifier.range, child_state(state,
+				!has_init))
 		}
 		BindingPatternVarTarget {
 			dump_binding_pattern(&declaration.target.pattern, child_state(state, !has_init),
 				root_state)
 		}
 	}
+
 	if init_val := declaration.init {
 		dump_expression(&init_val, child_state(state, true))
 	}
@@ -1225,8 +1247,8 @@ fn dump_catch_clause(clause &CatchClause, state DumpState, root_state DumpState)
 			}
 			CatchBindingPattern {
 				print_node(child_state(state, false), color_label(root_state, 'parameter'))
-				dump_binding_pattern(&param.pattern, child_state(child_state(state, false),
-					true), root_state)
+				dump_binding_pattern(&param.pattern, child_state(child_state(state, false), true),
+					root_state)
 			}
 		}
 	}
