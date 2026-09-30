@@ -4,15 +4,8 @@ import math
 import math.big
 import strconv
 
-// Primitive-value paths from Runtime/Value.cpp. Object coercion requires the
-// pending callable/accessor object model; it fails explicitly rather than using
-// the debugging Value.str() representation as an ECMAScript conversion.
-pub fn (value Value) to_primitive(mut vm VM) !Value {
-	if value.tag in [.object, .accessor, .empty] {
-		return vm.throw_error(.internal_error, 'ToPrimitive requires the callable object model')
-	}
-	return value
-}
+// Runtime/Value.cpp numeric, string, and equality operations. Object conversions
+// use the ToPrimitive algorithms in value_coercion.v.
 
 fn is_number_whitespace(character u16) bool {
 	return
@@ -89,19 +82,39 @@ pub fn string_to_number(text Utf16String) f64 {
 // 7.1.4 ToNumber.
 pub fn (value Value) to_number(mut vm VM) !Value {
 	return match value.tag {
-		.int32, .double { value }
-		.undefined { Value.from_f64(math.nan()) }
-		.null { Value.from_i32(0) }
-		.boolean { Value.from_i32(if value.as_bool() { 1 } else { 0 }) }
-		.string { Value.from_f64(string_to_number(value.as_string().utf16)) }
-		.symbol { return vm.throw_error_type(.type_error, .convert, 'symbol', 'number') }
-		.bigint { return vm.throw_error_type(.type_error, .convert, 'BigInt', 'number') }
-		else { return vm.throw_error(.internal_error, 'Object ToNumber is not translated yet') }
+		.int32, .double {
+			value
+		}
+		.undefined {
+			Value.from_f64(math.nan())
+		}
+		.null {
+			Value.from_i32(0)
+		}
+		.boolean {
+			Value.from_i32(if value.as_bool() { 1 } else { 0 })
+		}
+		.string {
+			Value.from_f64(string_to_number(value.as_string().utf16))
+		}
+		.symbol {
+			return vm.throw_error_type(.type_error, .convert, 'symbol', 'number')
+		}
+		.bigint {
+			return vm.throw_error_type(.type_error, .convert, 'BigInt', 'number')
+		}
+		.object {
+			primitive := value.to_primitive_with_hint(mut vm, .number)!
+			return primitive.to_number(mut vm)
+		}
+		else {
+			return vm.throw_error(.internal_error, 'ToNumber received an internal value')
+		}
 	}
 }
 
 pub fn (value Value) to_numeric(mut vm VM) !Value {
-	primitive := value.to_primitive(mut vm)!
+	primitive := value.to_primitive_with_hint(mut vm, .number)!
 	if primitive.is_bigint() { return primitive }
 	return primitive.to_number(mut vm)
 }
@@ -109,6 +122,10 @@ pub fn (value Value) to_numeric(mut vm VM) !Value {
 // 7.1.17 ToString's primitive paths. Preserve UTF-16 identity during concatenation.
 pub fn (value Value) to_primitive_string(mut vm VM) !&PrimitiveString {
 	if value.is_string() { return value.as_string() }
+	if value.is_object() {
+		primitive := value.to_primitive_with_hint(mut vm, .string)!
+		return primitive.to_primitive_string(mut vm)
+	}
 	text := match value.tag {
 		.undefined {
 			'undefined'
@@ -129,7 +146,7 @@ pub fn (value Value) to_primitive_string(mut vm VM) !&PrimitiveString {
 			return vm.throw_error_type(.type_error, .convert, 'symbol', 'string')
 		}
 		else {
-			return vm.throw_error(.internal_error, 'Object ToString is not translated yet')
+			return vm.throw_error(.internal_error, 'ToString received an internal value')
 		}
 	}
 
@@ -390,8 +407,8 @@ pub enum ComparisonResult {
 
 // IsLessThan's primitive paths. UTF-16 ordering differs from scalar ordering.
 pub fn compare_primitive_values(mut vm VM, lhs Value, rhs Value) !ComparisonResult {
-	left := lhs.to_primitive(mut vm)!
-	right := rhs.to_primitive(mut vm)!
+	left := lhs.to_primitive_with_hint(mut vm, .number)!
+	right := rhs.to_primitive_with_hint(mut vm, .number)!
 	if left.is_string() && right.is_string() {
 		a := left.as_string().utf16
 		b := right.as_string().utf16
@@ -424,7 +441,7 @@ pub fn compare_primitive_values(mut vm VM, lhs Value, rhs Value) !ComparisonResu
 	return if x.number < y.number { ComparisonResult.less } else { ComparisonResult.greater }
 }
 
-// Primitive branch of IsLooselyEqual; unsupported object conversions still throw.
+// Runtime/Value.cpp::IsLooselyEqual, including object and BigInt coercion.
 pub fn is_loosely_equal(mut vm VM, lhs Value, rhs Value) !bool {
 	if lhs.tag == rhs.tag || (lhs.is_number() && rhs.is_number()) {
 		return is_strictly_equal(lhs, rhs)
@@ -448,8 +465,7 @@ pub fn is_loosely_equal(mut vm VM, lhs Value, rhs Value) !bool {
 		number := if lhs.is_number() { lhs.number } else { rhs.number }
 		return compare_big_integer_to_double(integer, number) == .equal
 	}
-	if lhs.is_object() || rhs.is_object() {
-		return vm.throw_error(.internal_error, 'Object equality conversion is not translated yet')
-	}
+	if lhs.is_object() { return is_loosely_equal(mut vm, lhs.to_primitive(mut vm)!, rhs) }
+	if rhs.is_object() { return is_loosely_equal(mut vm, lhs, rhs.to_primitive(mut vm)!) }
 	return false
 }

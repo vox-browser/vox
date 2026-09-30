@@ -92,7 +92,7 @@ pub fn string_to_bigint(text Utf16String) ?&BigInt {
 
 // Runtime/Value.cpp::ToBigInt.
 pub fn (value Value) to_bigint(mut vm VM) !&BigInt {
-	primitive := value.to_primitive(mut vm)!
+	primitive := value.to_primitive_with_hint(mut vm, .number)!
 	match primitive.tag {
 		.bigint {
 			return primitive.as_bigint()

@@ -79,7 +79,7 @@ fn test_string_addition_comparisons_and_equality_keep_utf16_content() {
 	assert compare_primitive_values(mut vm, Value.from_f64(math.nan()), one)! == .unordered
 }
 
-fn test_symbol_conversion_throws_and_untranslated_object_coercion_is_explicit() {
+fn test_symbol_conversion_and_objects_without_coercion_methods_throw_type_errors() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
 	symbol := Value.from_symbol(Symbol.create(utf16_string('key'), .unique))
@@ -97,7 +97,7 @@ fn test_symbol_conversion_throws_and_untranslated_object_coercion_is_explicit() 
 	if _ := add(mut vm, object, Value.from_i32(1)) {
 		assert false
 	} else {
-		assert thrown_value(err).as_object().error_kind()? == .internal_error
+		assert thrown_value(err).as_object().error_kind()? == .type_error
 	}
 }
 
