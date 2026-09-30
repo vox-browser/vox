@@ -2,9 +2,9 @@ module libjs
 
 import math
 
-// Translated from LibJS/Runtime/Realm.{h,cpp}. Intrinsics and
-// callable global bindings belong to the pending builtin-object translation.
-// The ordinary global object supplies the four standard value properties.
+// Translated from LibJS/Runtime/Realm.{h,cpp}. The Intrinsics prototype graph
+// and remaining global bindings belong to the pending builtin translation.
+// The ordinary global object supplies value, numeric, and URI properties.
 
 pub interface RealmHostDefined {
 	is_principal_host_defined() bool
@@ -88,6 +88,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	// 18. Perform ? SetDefaultGlobalBindings(realm).
 	set_default_global_value_bindings(realm)
 	set_default_global_numeric_functions(mut vm, realm)
+	set_default_global_uri_functions(mut vm, realm)
 	// 19. Create any host-defined global object properties on global.
 	// 20. Return unused.
 	return new_context
