@@ -365,7 +365,31 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				})
 				return dst
 			}
-			if kind.unary_op == .delete_op { return generator.unsupported('delete') }
+			if kind.unary_op == .delete_op {
+				// codegen.rs::emit_delete_reference: identifiers are resolved
+				// without GetValue; non-references run only for their side effects.
+				if operand.kind.tag == .identifier_expr {
+					generator.emit(Instruction{
+						op:         .delete_binding
+						dst:        dst
+						identifier: generator.identifier(identifier_name(operand)!)
+						strict:     generator.strict
+					})
+				} else if operand.kind.tag == .member {
+					base, key := generator.member_reference(mut vm, operand)!
+					generator.emit(Instruction{
+						op:     .delete_property
+						dst:    dst
+						lhs:    base
+						rhs:    key
+						strict: generator.strict
+					})
+				} else {
+					generator.expression(mut vm, operand)!
+					return generator.constant(Value.from_bool(true))
+				}
+				return dst
+			}
 			value := generator.expression(mut vm, operand)!
 			if kind.unary_op == .void_op { return generator.constant(js_undefined()) }
 			op := match kind.unary_op {

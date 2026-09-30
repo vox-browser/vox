@@ -86,6 +86,19 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 			}
 			Reference.for_value(left, key, none, instruction.strict).put_value(mut vm, source)!
 		}
+		.delete_property {
+			// SlowPaths.cpp::asm_slow_path_delete_by_value: ToPropertyKey precedes
+			// Reference::delete_ and its ToObject, including nullish bases.
+			key := right.to_property_key(mut vm)!
+			result =
+				Value.from_bool(Reference.for_value(left, key, none, instruction.strict).delete_(mut vm)!)
+		}
+		.delete_binding {
+			// SlowPaths.cpp::asm_slow_path_delete_variable.
+			reference := vm.resolve_binding(executable.get_identifier(instruction.identifier),
+				instruction.strict, none)!
+			result = Value.from_bool(reference.delete_(mut vm)!)
+		}
 		.get_callee_and_this {
 			// SlowPaths.cpp::asm_dynamic_get_callee_and_this_from_environment.
 			reference := vm.resolve_binding(executable.get_identifier(instruction.identifier),

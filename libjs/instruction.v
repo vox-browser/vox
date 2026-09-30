@@ -37,6 +37,8 @@ pub enum OpCode {
 	get_callee_and_this
 	get_property
 	put_property
+	delete_property
+	delete_binding
 	call
 	typeof_binding
 	set_binding
@@ -84,7 +86,7 @@ fn (instruction Instruction) input_count() int {
 		.call {
 			2
 		}
-		.get_property {
+		.get_property, .delete_property {
 			2
 		}
 		.put_property {
@@ -145,7 +147,7 @@ pub fn (executable &Executable) validate(arguments_count u32) ! {
 				argument.slot(executable, arguments_count, false)!
 			}
 		}
-		if instruction.op in [.get_binding, .get_callee_and_this, .typeof_binding, .set_binding, .set_variable, .initialize_binding, .create_mutable_binding, .create_immutable_binding]
+		if instruction.op in [.get_binding, .get_callee_and_this, .typeof_binding, .delete_binding, .set_binding, .set_variable, .initialize_binding, .create_mutable_binding, .create_immutable_binding]
 			&& instruction.identifier >= u32(executable.identifier_table.len) {
 			return error('Identifier out of range')
 		}

@@ -215,6 +215,9 @@ pub fn (reference Reference) delete_(mut vm VM) !bool {
 			return vm.throw_error_type(.reference_error, .unsupported_delete_super_property)
 		}
 		// c. Let baseObj be ? ToObject(ref.[[Base]]).
+		if reference.base_value.is_nullish() {
+			return vm.throw_error_type(.type_error, .to_object_null_or_undefined)
+		}
 		mut base_obj := reference.base_object(mut vm)!
 		// d. Let deleteStatus be ? baseObj.[[Delete]](ref.[[ReferencedName]]).
 		delete_status := base_obj.internal_delete(reference.name)
