@@ -1157,3 +1157,13 @@ fn is_strict_reserved_word(name []u16) bool {
 		|| utf16_equals(name, utf16('public')) || utf16_equals(name, utf16('static'))
 		|| utf16_equals(name, utf16('yield'))
 }
+
+// Await and yield use contextual LabelIdentifier rules; the other
+// ReservedWords are never valid labels, including escaped spellings.
+fn is_unconditional_reserved_word(name []u16) bool {
+	return string_from_utf16_lossy(name) in ['break', 'case', 'catch', 'class',
+		'const', 'continue', 'debugger', 'default', 'delete', 'do', 'else', 'enum',
+		'export', 'extends', 'false', 'finally', 'for', 'function', 'if', 'import',
+		'in', 'instanceof', 'new', 'null', 'return', 'super', 'switch', 'this',
+		'throw', 'true', 'try', 'typeof', 'var', 'void', 'while', 'with']
+}

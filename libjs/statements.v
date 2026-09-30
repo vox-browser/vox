@@ -777,6 +777,10 @@ fn (mut p Parser) try_parse_labelled_statement(allow_labelled_function bool) ?St
 	p.discard_saved_state()
 	p.consume() // consume :
 
+	if is_unconditional_reserved_word(label.data) {
+		p.syntax_error('Reserved word cannot be used as a label')
+	}
+
 	if p.flags.strict_mode && (utf16_equals(label.data, utf16('let'))
 		|| is_strict_reserved_word(label.data)) {
 		p.syntax_error('Strict mode reserved word is not allowed in label')
