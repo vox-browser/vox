@@ -113,7 +113,7 @@ fn (mut p Parser) parse_expression(min_precedence int, associativity Associativi
 	}
 
 	lhs_start := p.position()
-	expression, should_continue := p.parse_primary_expression(min_precedence)
+	expression, should_continue := p.parse_primary_expression(min_precedence, forbidden)
 
 	// Check for freestanding `arguments` references after parse_primary_expression.
 	if expression.kind.tag == .identifier_expr {
@@ -182,7 +182,7 @@ fn (mut p Parser) parse_comma_expression(start Position, expression Expression, 
 // Parse a primary expression (literal, identifier, `this`, etc.).
 // Returns `(expression, should_continue)` — `false` means the caller
 // should not attempt to parse a secondary expression (e.g. arrow).
-fn (mut p Parser) parse_primary_expression(min_precedence int) (Expression, bool) {
+fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden ForbiddenTokens) (Expression, bool) {
 	start := p.position()
 	token := p.current_token
 
@@ -380,7 +380,7 @@ fn (mut p Parser) parse_primary_expression(min_precedence int) (Expression, bool
 		}
 		.yield_kw {
 			if p.flags.in_generator_function_context && min_precedence <= 3 {
-				expression := p.parse_yield_expression()
+				expression := p.parse_yield_expression(forbidden)
 				return expression, false
 			}
 			// Fall through to identifier handling below
@@ -981,7 +981,7 @@ fn (mut p Parser) parse_optional_chain(start Position, base Expression) Expressi
 }
 
 // Parse a `yield` or `yield*` expression.
-fn (mut p Parser) parse_yield_expression() Expression {
+fn (mut p Parser) parse_yield_expression(forbidden ForbiddenTokens) Expression {
 	start := p.position()
 
 	if p.flags.in_formal_parameter_context {
@@ -1003,7 +1003,8 @@ fn (mut p Parser) parse_yield_expression() Expression {
 	}
 
 	if is_yield_from || p.match_expression() || p.match_token(.class_kw) {
-		argument := p.parse_assignment_expression()
+		// YieldExpression forwards its surrounding In grammar parameter.
+		argument := p.parse_expression(precedence_assignment, .right, forbidden)
 		return p.expression(start, ExpressionKind{
 			tag:           .yield_expr
 			argument:      &argument

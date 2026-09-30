@@ -424,6 +424,10 @@ fn (mut p Parser) parse_function_expression() Expression {
 	}
 
 	// Register the function expression name in the outer scope.
+	if kind == .generator && utf16_equals(fn_name_value.data, utf16('yield')) {
+		p.syntax_error("'yield' is not allowed as a generator function expression name")
+	}
+
 	if n := name {
 		p.scope_collector.register_identifier(n, fn_name_value.data, none)
 	}
