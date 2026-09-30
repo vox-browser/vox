@@ -794,8 +794,7 @@ fn (mut p Parser) parse_new_expression() Expression {
 		if !utf16_equals(p.token_original_value(target_token), utf16('target')) {
 			p.syntax_error("Expected 'target' after 'new.'")
 		}
-		if !p.flags.in_function_context && !p.in_eval_function_context
-			&& !p.flags.in_class_static_init_block {
+		if !p.flags.new_target_is_valid && !p.in_eval_function_context {
 			p.syntax_error("'new.target' not allowed outside of a function")
 		}
 		if p.scope_collector.has_current_scope() {
@@ -1905,12 +1904,14 @@ fn (mut p Parser) parse_method_definition(is_async bool, is_generator bool, meth
 	await_before := p.flags.await_expression_is_valid
 	saved_static_init := p.flags.in_class_static_init_block
 	saved_field_init := p.flags.in_class_field_initializer
+	saved_new_target := p.flags.new_target_is_valid
 	saved_allow_super_call := p.flags.allow_super_constructor_call
 	saved_allow_super_lookup := p.flags.allow_super_property_lookup
 	p.flags.in_generator_function_context = is_generator
 	p.flags.await_expression_is_valid = is_async
 	p.flags.in_class_static_init_block = false
 	p.flags.in_class_field_initializer = false
+	p.flags.new_target_is_valid = true
 	p.flags.allow_super_constructor_call = method_kind == .constructor && p.class_has_super_class
 	p.flags.allow_super_property_lookup = true
 
@@ -1943,6 +1944,7 @@ fn (mut p Parser) parse_method_definition(is_async bool, is_generator bool, meth
 
 	p.flags.in_class_static_init_block = saved_static_init
 	p.flags.in_class_field_initializer = saved_field_init
+	p.flags.new_target_is_valid = saved_new_target
 
 	parameters_are_strict := p.flags.strict_mode || has_use_strict
 	if parameters_are_strict || fn_kind != .normal {

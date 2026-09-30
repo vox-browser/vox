@@ -146,6 +146,7 @@ mut:
 	string_legacy_octal_escape_sequence_in_scope bool
 	in_class_field_initializer                   bool
 	in_class_static_init_block                   bool
+	new_target_is_valid                          bool
 	function_might_need_arguments_object         bool
 	previous_token_was_period                    bool
 }

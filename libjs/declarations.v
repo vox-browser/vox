@@ -468,10 +468,12 @@ fn (mut p Parser) parse_function_common(name ?&Identifier, fn_name Utf16String, 
 	await_before := p.flags.await_expression_is_valid
 	saved_static_init := p.flags.in_class_static_init_block
 	saved_field_init := p.flags.in_class_field_initializer
+	saved_new_target := p.flags.new_target_is_valid
 	p.flags.in_generator_function_context = is_generator
 	p.flags.await_expression_is_valid = is_async
 	p.flags.in_class_static_init_block = false
 	p.flags.in_class_field_initializer = false
+	p.flags.new_target_is_valid = true
 
 	saved_pattern_bound_names := p.pattern_bound_names.clone()
 	p.pattern_bound_names = []BoundName{}
@@ -497,6 +499,7 @@ fn (mut p Parser) parse_function_common(name ?&Identifier, fn_name Utf16String, 
 	}
 	p.flags.in_class_static_init_block = saved_static_init
 	p.flags.in_class_field_initializer = saved_field_init
+	p.flags.new_target_is_valid = saved_new_target
 
 	insights.might_need_arguments_object = p.flags.function_might_need_arguments_object
 	p.flags.function_might_need_arguments_object = saved_might_need_arguments
@@ -776,6 +779,7 @@ fn (mut p Parser) parse_class_element(class_start Position, mut found_private_na
 			p.flags.await_expression_is_valid = false
 			p.flags.in_class_field_initializer = true
 			p.flags.in_class_static_init_block = true
+			p.flags.new_target_is_valid = true
 			p.flags.allow_super_property_lookup = true
 			p.scope_collector.open_static_init_scope()
 			children := p.parse_statement_list(false)
