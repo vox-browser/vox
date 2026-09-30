@@ -1077,15 +1077,21 @@ fn (mut sc ScopeCollector) build_function_scope_data(index int) {
 	mut non_local_var_count := 0
 	mut non_local_var_count_for_parameter_expressions := 0
 
-	// Build functions_to_initialize by scanning children for FunctionDeclarations.
+	// Keep the last declaration of each name, in source order, including
+	// function declarations wrapped in one or more labels.
 	mut functions_to_initialize := []FunctionToInit{}
-	mut seen_function_names := map[string]bool{}
-	for i := scope_data.children.len - 1; i >= 0; i-- {
-		if scope_data.children[i].kind.tag == .function_declaration {
-			if func_name_id := scope_data.children[i].kind.func_name {
-				fname_key := func_name_id.name.str()
-				if fname_key !in seen_function_names {
-					seen_function_names[fname_key] = true
+	mut seen_function_names := map[string]int{}
+	for i, child in scope_data.children {
+		if function := child.function_declaration_for_labelled_item() {
+			if name := function.kind.func_name {
+				seen_function_names[name.name.str()] = i
+			}
+		}
+	}
+	for i, child in scope_data.children {
+		if function := child.function_declaration_for_labelled_item() {
+			if name := function.kind.func_name {
+				if seen_function_names[name.name.str()] == i {
 					functions_to_initialize << FunctionToInit{
 						child_index: i
 					}
@@ -1231,10 +1237,10 @@ fn (mut sc ScopeCollector) hoist_functions(index int) {
 			if block_sd := function.block_scope_data {
 				unsafe {
 					for ci in 0 .. block_sd.children.len {
-						if block_sd.children[ci].kind.tag == .function_declaration {
-							if fn_id := block_sd.children[ci].kind.func_name {
+						if declaration := block_sd.children[ci].function_declaration_for_labelled_item() {
+							if fn_id := declaration.kind.func_name {
 								if fn_id.name == function.name {
-									block_sd.children[ci].kind.is_hoisted = true
+									declaration.kind.is_hoisted = true
 								}
 							}
 						}

@@ -270,7 +270,9 @@ fn FunctionTable.new() FunctionTable {
 }
 
 fn (mut ft FunctionTable) insert(data JsFunctionData) FunctionId {
-	ft.entries << ?&JsFunctionData(&JsFunctionData{ ...data })
+	ft.entries << ?&JsFunctionData(&JsFunctionData{
+		...data
+	})
 	return FunctionId{
 		id: u32(ft.entries.len - 1)
 	}
@@ -312,7 +314,9 @@ fn (mut ft FunctionTable) insert_at(id FunctionId, data JsFunctionData) {
 	for ft.entries.len <= idx {
 		ft.entries << ?&JsFunctionData(none)
 	}
-	ft.entries[idx] = &JsFunctionData{ ...data }
+	ft.entries[idx] = &JsFunctionData{
+		...data
+	}
 }
 
 // extract_reachable extracts a subtable containing all FunctionIds reachable
@@ -1445,6 +1449,19 @@ fn StatementKind.empty() StatementKind {
 	return StatementKind{
 		tag: .empty
 	}
+}
+
+// Labelled items contribute their function declaration to the surrounding
+// declaration lists without removing the label from the executable tree.
+fn (statement &Statement) function_declaration_for_labelled_item() ?&Statement {
+	mut item := statement
+	for item.kind.tag == .labelled {
+		item = item.kind.labelled_item or { return none }
+	}
+	if item.kind.tag == .function_declaration {
+		return item
+	}
+	return none
 }
 
 fn StatementKind.program(data ProgramData) StatementKind {
