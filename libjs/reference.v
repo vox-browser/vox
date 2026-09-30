@@ -45,8 +45,12 @@ pub fn Reference.unresolvable(name Utf16String, strict bool) Reference {
 
 pub fn Reference.for_environment(environment Environment, name Utf16String, strict bool, coordinate ?EnvironmentCoordinate) Reference {
 	return Reference{
-		base_type:              .environment
-		name:                   PropertyName.from_utf16(name)
+		base_type: .environment
+		// Environment bindings retain a string [[ReferencedName]], including
+		// strings supplied through the runtime API that resemble an index.
+		name:                   PropertyName{
+			string_value: name
+		}
 		strict:                 strict
 		base_environment:       environment
 		environment_coordinate: coordinate
@@ -132,7 +136,8 @@ fn (reference Reference) base_object(mut vm VM) !&Object {
 		return vm.throw_error_type(.type_error, .to_object_null_or_undefined_with_property,
 			reference.name.str(), reference.base_value.str())
 	}
-	return vm.throw_error(.internal_error, 'Property references on primitive values require the object model translation')
+	return vm.throw_error(.internal_error,
+		'Property references on primitive values require the object model translation')
 }
 
 // 6.2.4.5 GetValue ( V ), https://tc39.es/ecma262/#sec-getvalue
@@ -178,8 +183,8 @@ pub fn (reference Reference) put_value(mut vm VM, value Value) ! {
 		succeeded := base_obj.internal_set(reference.name, value, reference.get_this_value())
 		// d. If succeeded is false and V.[[Strict]] is true, throw a TypeError exception.
 		if !succeeded && reference.strict {
-			return vm.throw_error_type(.type_error, .reference_nullish_set_property, reference.name.str(),
-				reference.base_value.str())
+			return vm.throw_error_type(.type_error, .reference_nullish_set_property,
+				reference.name.str(), reference.base_value.str())
 		}
 		// e. Return unused.
 		return
@@ -188,7 +193,8 @@ pub fn (reference Reference) put_value(mut vm VM, value Value) ! {
 	// b. Assert: base is an Environment Record.
 	mut environment := reference.base_environment_record()
 	// c. Return ? base.SetMutableBinding(V.[[ReferencedName]], W, V.[[Strict]]).
-	return environment.set_mutable_binding(mut vm, reference.name.as_string(), value, reference.strict)
+	return environment.set_mutable_binding(mut vm, reference.name.as_string(), value,
+		reference.strict)
 }
 
 // 13.5.1.2 Runtime Semantics: Evaluation, https://tc39.es/ecma262/#sec-delete-operator-runtime-semantics-evaluation
@@ -214,8 +220,8 @@ pub fn (reference Reference) delete_(mut vm VM) !bool {
 		delete_status := base_obj.internal_delete(reference.name)
 		// e. If deleteStatus is false and ref.[[Strict]] is true, throw a TypeError exception.
 		if !delete_status && reference.strict {
-			return vm.throw_error_type(.type_error, .reference_nullish_delete_property, reference.name.str(),
-				reference.base_value.str())
+			return vm.throw_error_type(.type_error, .reference_nullish_delete_property,
+				reference.name.str(), reference.base_value.str())
 		}
 		// f. Return deleteStatus.
 		return delete_status

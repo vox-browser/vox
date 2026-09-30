@@ -20,6 +20,25 @@ pub:
 }
 
 pub fn PropertyName.from_utf16(name Utf16String) PropertyName {
+	// Runtime/PropertyKey.h: canonical decimal indices share numeric storage
+	// with integer keys. Leading zeros and 2^32-1 remain string keys.
+	if name.data.len > 0 && name.data[0] >= u16(`0`) && name.data[0] <= u16(`9`)
+		&& !(name.data[0] == u16(`0`) && name.data.len > 1) {
+		mut number := u64(0)
+		mut valid := true
+		for unit in name.data {
+			if unit < u16(`0`) || unit > u16(`9`) {
+				valid = false
+				break
+			}
+			number = number * 10 + u64(unit - u16(`0`))
+			if number >= 0xffffffff {
+				valid = false
+				break
+			}
+		}
+		if valid { return PropertyName.from_number(u32(number)) }
+	}
 	return PropertyName{
 		kind:         .string_key
 		string_value: name
@@ -38,6 +57,7 @@ pub fn PropertyName.from_symbol(symbol &Symbol) PropertyName {
 }
 
 pub fn PropertyName.from_number(number u32) PropertyName {
+	if number == 0xffffffff { return PropertyName.from_utf16(utf16_string(number.str())) }
 	return PropertyName{
 		kind:   .number_key
 		number: number
@@ -127,8 +147,8 @@ pub mut:
 	// [[ErrorData]] for Error instances created through create_error().
 	error_data ?&ErrorData
 	// FunctionObject inheritance is represented by a callable implementation.
-	callable ?FunctionObject
-	native_callable bool
+	callable            ?FunctionObject
+	native_callable     bool
 	native_initial_name ?Utf16String
 }
 
@@ -154,7 +174,24 @@ pub fn (object &Object) is_error_object() bool {
 }
 
 pub fn (object &Object) own_property_keys() []PropertyName {
-	return object.properties.map(it.key)
+	// Object.cpp::OrdinaryOwnPropertyKeys: indices in ascending order, followed
+	// by strings and then symbols in their respective creation orders.
+	mut indices := []PropertyName{}
+	mut strings := []PropertyName{}
+	mut symbols := []PropertyName{}
+	for property in object.properties {
+		match property.key.kind {
+			.number_key { indices << property.key }
+			.string_key { strings << property.key }
+			.symbol_key {
+				if !property.key.as_symbol().is_private() { symbols << property.key }
+			}
+		}
+	}
+	indices.sort(a.number < b.number)
+	indices << strings
+	indices << symbols
+	return indices
 }
 
 // 10.1.5 [[GetOwnProperty]] ( P ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-getownproperty-p
