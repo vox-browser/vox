@@ -469,11 +469,15 @@ fn (mut p Parser) parse_function_common(name ?&Identifier, fn_name Utf16String, 
 	saved_static_init := p.flags.in_class_static_init_block
 	saved_field_init := p.flags.in_class_field_initializer
 	saved_new_target := p.flags.new_target_is_valid
+	saved_allow_super_call := p.flags.allow_super_constructor_call
+	saved_allow_super_lookup := p.flags.allow_super_property_lookup
 	p.flags.in_generator_function_context = is_generator
 	p.flags.await_expression_is_valid = is_async
 	p.flags.in_class_static_init_block = false
 	p.flags.in_class_field_initializer = false
 	p.flags.new_target_is_valid = true
+	p.flags.allow_super_constructor_call = false
+	p.flags.allow_super_property_lookup = false
 
 	saved_pattern_bound_names := p.pattern_bound_names.clone()
 	p.pattern_bound_names = []BoundName{}
@@ -486,6 +490,8 @@ fn (mut p Parser) parse_function_common(name ?&Identifier, fn_name Utf16String, 
 
 	body, has_use_strict, mut insights := p.parse_function_body(is_async, is_generator,
 		parsed.is_simple)
+	p.flags.allow_super_constructor_call = saved_allow_super_call
+	p.flags.allow_super_property_lookup = saved_allow_super_lookup
 
 	p.scope_collector.close_scope()
 	p.pattern_bound_names = saved_pattern_bound_names
