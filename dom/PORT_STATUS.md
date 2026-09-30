@@ -93,6 +93,13 @@ files.
   top-layer contents, and descendant view-transition captures in addition to
   viewport proximity. The viewport paintable bridge retains the post-layout
   cache consumed by HTML's rendering update.
+- Live `contenteditable` and `designMode` changes recompute inherited
+  editability and invalidate retained caret targets together with read/write
+  selector state, including relational and sibling dependencies. Editing-host
+  transitions relayout empty text even when its editable flag stays true.
+  Enabling design mode resets selection and focuses the document element only
+  on the transition to `on`. Validation covers the complete 656-file LibWeb
+  suite, native headless smoke, and all 11 default screenshot comparisons.
 - The opaque Page boundary now supplies device-pixel scale and backing-store
   allocation callbacks, allowing Navigable resizing to remain typed without a
   DOM-to-Page module dependency.

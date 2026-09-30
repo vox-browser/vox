@@ -837,6 +837,21 @@ from the current-module totals.
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
 | **Total** | **1,193** | **329,970** | **353,611** | **67,210** | **74 complete, 4 present, 0 untranslated** |
 
+### Live editability refresh
+
+Live `contenteditable` attribute changes and `designMode` transitions refresh
+inherited editability, retained caret hit-test targets, and `:read-only` /
+`:read-write` state. Selector invalidation also reaches relational and sibling
+dependencies. An editing-host transition relays out empty text even when its
+inherited editable flag remains true, so stale caret fragments cannot keep an
+empty descendant tall. Enabling design mode resets selection and focuses the
+document element once; repeated `on` assignments preserve the current selection.
+
+The interrupted implementation in `1767041` was subsequently validated by the
+complete 656-file LibWeb suite, the native engine/JavaScript smoke check, and all
+11 default screenshot comparisons. The additional LibJS frontend suite is
+recorded separately below because it was introduced after that full-suite run.
+
 ## Verification
 
 The semantic inventory exits nonzero while structural spellings still require
@@ -873,7 +888,7 @@ $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 1089 passed, 0 failed, 1089 total
 
 $ v -old-compiler -enable-globals test .
-Summary for all V _test.v files: 654 passed, 654 total.
+Summary for all V _test.v files: 656 passed, 656 total.
 
 $ Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
 Ladybird V smoke check passed

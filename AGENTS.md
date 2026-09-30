@@ -664,6 +664,13 @@
   FFmpeg video and video-backed canvas frames remain top-down while ordinary
   Quartz-ordered decoded images retain their required replay flip.
 
+- Live `contenteditable` and `designMode` changes refresh inherited editability,
+  retained caret hit-test targets, and read/write selector state, including
+  relational and sibling dependencies. Editing-host changes relayout empty
+  text even when its inherited editable flag stays true. Enabling design mode
+  resets selection and focuses the document element once; repeated `on`
+  assignments preserve selection.
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
