@@ -807,6 +807,7 @@ fn (mut p Parser) parse_new_expression() Expression {
 		})
 	}
 
+	callee_starts_with_grouping_paren := p.match_token(.paren_open)
 	callee := if p.match_token(.new_kw) {
 		p.parse_new_expression()
 	} else {
@@ -814,7 +815,7 @@ fn (mut p Parser) parse_new_expression() Expression {
 		p.parse_expression(precedence_member, .right, forbidden)
 	}
 
-	if callee.kind.tag == .import_call {
+	if callee.kind.tag == .import_call && !callee_starts_with_grouping_paren {
 		p.syntax_error('Cannot call new on dynamic import')
 	}
 
