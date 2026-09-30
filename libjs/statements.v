@@ -16,6 +16,12 @@ struct LocalForInitExpression {
 }
 
 fn (mut p Parser) parse_statement(allow_labelled_function bool) Statement {
+	if !p.enter_recursion() {
+		return p.statement(p.position(), StatementKind{ tag: .error_stmt })
+	}
+	defer {
+		p.leave_recursion()
+	}
 	start := p.position()
 	tt := p.current_token_type()
 

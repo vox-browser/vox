@@ -1193,6 +1193,12 @@ fn (mut p Parser) parse_formal_parameters_impl(is_arrow bool) ParsedParameters {
 
 // https://tc39.es/ecma262/#sec-destructuring-binding-patterns
 fn (mut p Parser) parse_binding_pattern() BindingPattern {
+	if !p.enter_recursion() {
+		return BindingPattern{ kind: .object }
+	}
+	defer {
+		p.leave_recursion()
+	}
 	is_object := p.match_token(.curly_open)
 	is_array := p.match_token(.bracket_open)
 	if !is_object && !is_array {

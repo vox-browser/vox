@@ -92,6 +92,12 @@ fn (mut p Parser) parse_assignment_expression() Expression {
 }
 
 fn (mut p Parser) parse_expression(min_precedence int, associativity Associativity, forbidden ForbiddenTokens) Expression {
+	if !p.enter_recursion() {
+		return p.expression(p.position(), ExpressionKind.error())
+	}
+	defer {
+		p.leave_recursion()
+	}
 	if p.match_unary_prefixed_expression() {
 		start := p.position()
 		expression := p.parse_unary_prefixed_expression()
