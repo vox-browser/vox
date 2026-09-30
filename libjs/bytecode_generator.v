@@ -100,6 +100,25 @@ fn identifier_name(expression &Expression) !Utf16String {
 	return (expression.kind.identifier or { return error('Identifier is missing') }).name
 }
 
+// codegen.rs::emit_compound_assignment.
+fn compound_assignment_opcode(op AssignmentOp) !OpCode {
+	return match op {
+		.bitwise_and_assignment { .bitwise_and }
+		.bitwise_or_assignment { .bitwise_or }
+		.bitwise_xor_assignment { .bitwise_xor }
+		.left_shift_assignment { .left_shift }
+		.right_shift_assignment { .right_shift }
+		.unsigned_right_shift_assignment { .unsigned_right_shift }
+		.addition_assignment { .add }
+		.subtraction_assignment { .sub }
+		.multiplication_assignment { .mul }
+		.division_assignment { .div }
+		.modulo_assignment { .mod_ }
+		.exponentiation_assignment { .exp }
+		else { return error('Invalid compound assignment operator') }
+	}
+}
+
 // codegen.rs::{generate_member_expression,generate_call_expression}: retain the
 // base before evaluating a computed key and reuse it as a method's receiver.
 fn (mut generator BytecodeGenerator) member_reference(mut vm VM, expression &Expression) !(Operand, Operand) {
@@ -130,6 +149,55 @@ fn (mut generator BytecodeGenerator) short_circuit(op LogicalOp, operand Operand
 			lhs: operand
 		}),
 	]
+}
+
+// generate_assignment_expression's non-super member branches. The retained
+// base and property are Values, as upstream: GetByValue and PutByValue each
+// perform ToPropertyKey, without re-evaluating either AST expression.
+fn (mut generator BytecodeGenerator) member_assignment(mut vm VM, target &Expression, op AssignmentOp, rhs &Expression) !Operand {
+	base, key := generator.member_reference(mut vm, target)!
+	dst := generator.temporary()
+	mut jumps := []u32{}
+	if op != .assignment {
+		generator.emit(Instruction{
+			op:     .get_property
+			dst:    dst
+			lhs:    base
+			rhs:    key
+			strict: generator.strict
+		})
+		if op in [.and_assignment, .or_assignment, .nullish_assignment] {
+			logical := match op {
+				.and_assignment { LogicalOp.and_op }
+				.or_assignment { LogicalOp.or_op }
+				else { LogicalOp.nullish_coalescing }
+			}
+
+			jumps = generator.short_circuit(logical, dst)
+		}
+	}
+	right := generator.expression(mut vm, rhs)!
+	if op == .assignment || jumps.len > 0 {
+		generator.emit(Instruction{ op: .mov, dst: dst, lhs: right })
+	} else {
+		generator.emit(Instruction{
+			op:  compound_assignment_opcode(op)!
+			dst: dst
+			lhs: dst
+			rhs: right
+		})
+	}
+	generator.emit(Instruction{
+		op:     .put_property
+		lhs:    base
+		rhs:    key
+		src:    dst
+		strict: generator.strict
+	})
+	for jump in jumps {
+		generator.patch(jump)
+	}
+	return dst
 }
 
 fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expression) !Operand {
@@ -316,6 +384,11 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			if target !is AssignmentLhsExpression {
 				return generator.unsupported('destructuring assignment')
 			}
+			if target.expression.kind.tag == .member {
+				return generator.member_assignment(mut vm, target.expression, kind.assignment_op, kind.rhs or {
+					return error('Missing assignment rhs')
+				})
+			}
 			name := identifier_name(target.expression) or {
 				return generator.unsupported('property assignment')
 			}
@@ -349,21 +422,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				if jumps.len > 0 {
 					generator.emit(Instruction{ op: .mov, dst: dst, lhs: right })
 				} else {
-					actual := match kind.assignment_op {
-						.bitwise_and_assignment { OpCode.bitwise_and }
-						.bitwise_or_assignment { OpCode.bitwise_or }
-						.bitwise_xor_assignment { OpCode.bitwise_xor }
-						.left_shift_assignment { OpCode.left_shift }
-						.right_shift_assignment { OpCode.right_shift }
-						.unsigned_right_shift_assignment { OpCode.unsigned_right_shift }
-						.addition_assignment { OpCode.add }
-						.subtraction_assignment { OpCode.sub }
-						.multiplication_assignment { OpCode.mul }
-						.division_assignment { OpCode.div }
-						.modulo_assignment { OpCode.mod_ }
-						.exponentiation_assignment { OpCode.exp }
-						else { return error('Invalid compound assignment operator') }
-					}
+					actual := compound_assignment_opcode(kind.assignment_op)!
 
 					generator.emit(Instruction{ op: actual, dst: dst, lhs: dst, rhs: right })
 				}
@@ -388,6 +447,38 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 		}
 		.update {
 			operand := kind.argument or { return error('Missing update operand') }
+			if operand.kind.tag == .member {
+				// generate_update_expression: retain base/key for store-back, and
+				// preserve the numeric old value for postfix results.
+				base, key := generator.member_reference(mut vm, operand)!
+				old := generator.temporary()
+				generator.emit(Instruction{
+					op:     .get_property
+					dst:    old
+					lhs:    base
+					rhs:    key
+					strict: generator.strict
+				})
+				generator.emit(Instruction{ op: .to_numeric, dst: old, lhs: old })
+				dst := generator.temporary()
+				generator.emit(Instruction{
+					op:  if kind.update_op == .increment {
+						OpCode.increment
+					} else {
+						OpCode.decrement
+					}
+					dst: dst
+					lhs: old
+				})
+				generator.emit(Instruction{
+					op:     .put_property
+					lhs:    base
+					rhs:    key
+					src:    dst
+					strict: generator.strict
+				})
+				return if kind.prefixed { dst } else { old }
+			}
 			name := identifier_name(operand) or { return generator.unsupported('property update') }
 			identifier := generator.identifier(name)
 			old := generator.temporary()

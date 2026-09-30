@@ -26,16 +26,19 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 	mut next := frame.program_counter + 1
 	mut left := js_undefined()
 	mut right := js_undefined()
+	mut source := js_undefined()
 	for index in 0 .. instruction.input_count() {
-		operand := if index == 0 { instruction.lhs } else { instruction.rhs }
+		operand := instruction.input_operand(index)
 		value := frame.values[operand.slot(executable, frame.argument_count, false)!]
 		if value.is_special_empty_value() {
 			return vm.throw_error(.internal_error, 'Bytecode read an uninitialized operand')
 		}
 		if index == 0 {
 			left = value
-		} else {
+		} else if index == 1 {
 			right = value
+		} else {
+			source = value
 		}
 	}
 	mut result := js_undefined()
@@ -72,6 +75,16 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 				}
 			}
 			result = Reference.for_value(left, key, none, instruction.strict).get_value(mut vm)!
+		}
+		.put_property {
+			// SlowPaths.cpp::asm_slow_path_put_by_value and PropertyAccess.h's
+			// PutKind::Normal: coerce the retained key after evaluating the RHS.
+			key := right.to_property_key(mut vm)!
+			if instruction.strict && left.is_nullish() {
+				return vm.throw_error_type(.type_error, .reference_nullish_set_property, key.str(),
+					left.str())
+			}
+			Reference.for_value(left, key, none, instruction.strict).put_value(mut vm, source)!
 		}
 		.get_callee_and_this {
 			// SlowPaths.cpp::asm_dynamic_get_callee_and_this_from_environment.

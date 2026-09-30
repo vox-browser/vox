@@ -36,6 +36,7 @@ pub enum OpCode {
 	get_binding
 	get_callee_and_this
 	get_property
+	put_property
 	call
 	typeof_binding
 	set_binding
@@ -61,6 +62,7 @@ pub mut:
 	dst        Operand
 	lhs        Operand
 	rhs        Operand
+	src        Operand
 	identifier u32
 	target     u32
 	strict     bool
@@ -85,6 +87,9 @@ fn (instruction Instruction) input_count() int {
 		.get_property {
 			2
 		}
+		.put_property {
+			3
+		}
 		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric,
 		.increment, .decrement, .set_binding, .set_variable, .initialize_binding, .jump_if_true,
 		.jump_if_false, .jump_if_nullish, .end, .throw_op {
@@ -96,8 +101,16 @@ fn (instruction Instruction) input_count() int {
 	}
 }
 
+fn (instruction Instruction) input_operand(index int) Operand {
+	return match index {
+		0 { instruction.lhs }
+		1 { instruction.rhs }
+		else { instruction.src }
+	}
+}
+
 fn (instruction Instruction) writes_operand() bool {
-	return instruction.op !in [.set_binding, .set_variable, .initialize_binding,
+	return instruction.op !in [.put_property, .set_binding, .set_variable, .initialize_binding,
 		.create_mutable_binding, .create_immutable_binding, .enter_scope, .leave_scope, .jump,
 		.jump_if_true, .jump_if_false, .jump_if_nullish, .end, .throw_op]
 }
@@ -120,7 +133,7 @@ pub fn (executable &Executable) validate(arguments_count u32) ! {
 	}
 	for instruction in executable.instructions {
 		for index in 0 .. instruction.input_count() {
-			operand := if index == 0 { instruction.lhs } else { instruction.rhs }
+			operand := instruction.input_operand(index)
 			operand.slot(executable, arguments_count, false)!
 		}
 		if instruction.writes_operand() { instruction.dst.slot(executable, arguments_count, true)! }
