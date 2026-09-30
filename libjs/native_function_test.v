@@ -16,6 +16,7 @@ fn native_failure(mut vm VM) !Value {
 fn test_native_functions_define_metadata_with_upstream_property_attributes() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
+	initial_native_count := vm.native_function_count()
 	for name, expected in {
 		'plain': 'get plain'
 		'':      'get '
@@ -35,7 +36,7 @@ fn test_native_functions_define_metadata_with_upstream_property_attributes() {
 		assert function.object.get(PropertyName.from_str('name')).as_string().str() == expected
 		assert function.object.get(PropertyName.from_str('length')).number == 2
 	}
-	assert vm.native_function_count() == 1
+	assert vm.native_function_count() == initial_native_count + 1
 	for description, expected in {
 		'key': '[key]'
 		'':    '[]'
