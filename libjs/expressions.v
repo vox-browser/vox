@@ -116,6 +116,7 @@ fn (mut p Parser) parse_expression(min_precedence int, associativity Associativi
 	}
 
 	lhs_start := p.position()
+	p.last_primary_was_parenthesized = false
 	expression, should_continue := p.parse_primary_expression(min_precedence, forbidden)
 
 	// Check for freestanding `arguments` references after parse_primary_expression.
@@ -144,6 +145,8 @@ fn (mut p Parser) continue_parse_expression(lhs_start Position, expression_ Expr
 	original_forbidden := forbidden_
 	mut forbidden := forbidden_
 	mut expression := expression_
+	mut lhs_is_parenthesized := p.last_primary_was_parenthesized
+	p.last_primary_was_parenthesized = false
 	for p.match_secondary_expression(&forbidden) {
 		new_precedence := operator_precedence(p.current_token_type())
 		if new_precedence < min_precedence {
@@ -153,8 +156,9 @@ fn (mut p Parser) continue_parse_expression(lhs_start Position, expression_ Expr
 			break
 		}
 
-		result_expr, result_forbidden := p.parse_secondary_expression(lhs_start, expression,
-			new_precedence, original_forbidden)
+		result_expr, result_forbidden := p.parse_secondary_expression(expression, new_precedence,
+			original_forbidden, lhs_is_parenthesized)
+		lhs_is_parenthesized = false
 		expression = result_expr
 		forbidden = forbidden.merge(result_forbidden)
 
@@ -205,6 +209,7 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 			}
 			expression := p.parse_expression_any()
 			p.consume_token(.paren_close)
+			p.last_primary_was_parenthesized = true
 			return expression, true
 		}
 		.this_kw {
@@ -478,7 +483,7 @@ fn (mut p Parser) parse_regex_literal(start Position, token Token) Expression {
 	})
 }
 
-fn (mut p Parser) parse_secondary_expression(lhs_start_ Position, lhs Expression, min_precedence int, forbidden ForbiddenTokens) (Expression, ForbiddenTokens) {
+fn (mut p Parser) parse_secondary_expression(lhs Expression, min_precedence int, forbidden ForbiddenTokens, lhs_is_parenthesized bool) (Expression, ForbiddenTokens) {
 	start := p.position()
 	tt := p.current_token_type()
 
@@ -538,7 +543,8 @@ fn (mut p Parser) parse_secondary_expression(lhs_start_ Position, lhs Expression
 		.unsigned_shift_right_equals, .ampersand_equals, .caret_equals, .pipe_equals,
 		.double_ampersand_equals, .double_pipe_equals, .double_question_mark_equals {
 			op := token_to_assignment_op(tt)
-			if op == .assignment && (is_object_expression(lhs) || is_array_expression(lhs)) {
+			if op == .assignment && (is_object_expression(lhs) || is_array_expression(lhs))
+				&& !lhs_is_parenthesized {
 				saved_bound_names := p.pattern_bound_names.clone()
 				p.pattern_bound_names = []BoundName{}
 				if pattern := p.synthesize_binding_pattern(lhs.range.start) {
@@ -550,12 +556,13 @@ fn (mut p Parser) parse_secondary_expression(lhs_start_ Position, lhs Expression
 					p.consume()
 					rhs := p.parse_expression(min_precedence, .right, forbidden)
 					return p.expression(start, ExpressionKind{
-						tag:            .assignment
-						assignment_op:  op
-						assignment_lhs: AssignmentLhsPattern{
+						tag:                  .assignment
+						assignment_op:        op
+						lhs_is_parenthesized: lhs_is_parenthesized
+						assignment_lhs:       AssignmentLhsPattern{
 							pattern: pattern
 						}
-						rhs:            &rhs
+						rhs:                  &rhs
 					}), ForbiddenTokens{}
 				} else {
 					p.pattern_bound_names = saved_bound_names
@@ -574,12 +581,13 @@ fn (mut p Parser) parse_secondary_expression(lhs_start_ Position, lhs Expression
 			p.consume()
 			rhs := p.parse_expression(min_precedence, .right, forbidden)
 			return p.expression(start, ExpressionKind{
-				tag:            .assignment
-				assignment_op:  op
-				assignment_lhs: AssignmentLhsExpression{
+				tag:                  .assignment
+				assignment_op:        op
+				lhs_is_parenthesized: lhs_is_parenthesized
+				assignment_lhs:       AssignmentLhsExpression{
 					expression: &lhs
 				}
-				rhs:            &rhs
+				rhs:                  &rhs
 			}), ForbiddenTokens{}
 		}
 		// === Ternary ===

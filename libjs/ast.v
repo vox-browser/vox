@@ -1299,7 +1299,8 @@ mut:
 	computed      bool
 	is_yield_from bool
 	// Assignment lhs
-	assignment_lhs ?AssignmentLhs
+	assignment_lhs       ?AssignmentLhs
+	lhs_is_parenthesized bool
 	// Call data (heap-allocated to break struct cycles)
 	call_data       ?&CallExpressionData
 	super_call_data ?&SuperCallData

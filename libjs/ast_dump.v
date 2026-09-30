@@ -279,7 +279,7 @@ fn assignment_op_to_string(op AssignmentOp) string {
 		.unsigned_right_shift_assignment { '>>>=' }
 		.and_assignment { '&&=' }
 		.or_assignment { '||=' }
-		.nullish_assignment { '??=' }
+		.nullish_assignment { '?'.repeat(2) + '=' }
 	}
 }
 

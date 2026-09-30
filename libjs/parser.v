@@ -191,6 +191,7 @@ mut:
 	in_eval_function_context       bool
 	labels_in_scope                map[string]LabelValue
 	last_inner_label_is_iteration  bool
+	last_primary_was_parenthesized bool
 	last_function_name             Utf16String
 	last_function_kind             FunctionKind
 	last_class_name                Utf16String
