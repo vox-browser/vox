@@ -66,7 +66,7 @@ fn test_same_value_distinguishes_zero_signs_and_equates_nan() {
 	distinct := &PrimitiveString{
 		utf16: utf16_string('shared')
 	}
-	assert !same_value(Value.from_string(first), Value.from_string(distinct))
+	assert same_value(Value.from_string(first), Value.from_string(distinct))
 }
 
 fn test_completions_travel_through_the_error_channel() {
@@ -99,4 +99,29 @@ fn test_error_type_table_matches_upstream_names_and_formatting() {
 	assert ErrorType.bad_arg_count_many.formatted('f') == 'f() needs {} arguments'
 	assert ErrorType.out_of_memory.formatted('ignored') == 'Out of memory'
 	assert format_error_message('{}{}', ['a', 'b']) == 'ab'
+}
+
+fn test_same_value_zero_equates_zero_signs_and_retains_other_type_boundaries() {
+	assert same_value_zero(Value.from_i32(0), Value.from_f64(-0.0))
+	assert same_value_zero(Value.from_f64(math.nan()), Value.from_f64(math.nan()))
+	assert !same_value_zero(Value.from_i32(0), js_null())
+	assert !same_value_zero(Value.from_f64(math.nan()), js_undefined())
+	assert same_value(Value.from_i32(42), Value{ tag: .double, number: 42 })
+	assert !same_value(Value{ tag: .double, number: 0 }, Value.from_f64(-0.0))
+	a := Value.from_string(&PrimitiveString{
+		utf16: Utf16String{
+			data: [u16(0xd800)]
+		}
+	})
+	b := Value.from_string(&PrimitiveString{
+		utf16: Utf16String{
+			data: [u16(0xd800)]
+		}
+	})
+	assert same_value_zero(a, b)
+	assert same_value_non_number(a, b)
+	symbol := Symbol.create(utf16_string('key'), .unique)
+	assert same_value_zero(Value.from_symbol(symbol), Value.from_symbol(symbol))
+	assert !same_value_zero(Value.from_symbol(symbol), Value.from_symbol(Symbol.create(utf16_string('key'),
+		.unique)))
 }

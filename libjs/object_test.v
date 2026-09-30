@@ -85,3 +85,17 @@ fn test_property_names_compare_by_kind_string_symbol_and_index() {
 	assert object.get(PropertyName.from_symbol(other_symbol)).is_undefined()
 	assert vm.cached_strings.number.str() == 'number'
 }
+
+fn test_frozen_string_properties_compare_utf16_values_instead_of_cells() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	mut object := Object.create(vm.realm(), none)
+	key := PropertyName.from_str('fixed')
+	one := Value.from_string(&PrimitiveString{ utf16: utf16_string('unchanged') })
+	two := Value.from_string(&PrimitiveString{ utf16: utf16_string('unchanged') })
+	object.define_direct_property(key, one, 0)
+	assert object.internal_define_own_property(key, PropertyDescriptor{ value: two })
+	assert !object.internal_define_own_property(key, PropertyDescriptor{
+		value: Value.from_string(vm.create_string_from_str('changed'))
+	})
+}

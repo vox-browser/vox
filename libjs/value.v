@@ -1,5 +1,7 @@
 module libjs
 
+import math
+
 // Translated from LibJS/Runtime/Value.h. Upstream NaN-boxes every value into 64
 // bits; this translation keeps an explicit tag beside the payload so the VM,
 // environment, and execution-context records can run before the interpreter and
@@ -220,31 +222,36 @@ pub fn (value Value) to_boolean() bool {
 	}
 }
 
-// 7.2.10 SameValue ( x, y ), https://tc39.es/ecma262/#sec-samevalue
+// Runtime/Value.cpp::SameValue, SameValueZero, and SameValueNonNumber.
+// Both numeric storage tags represent the ECMAScript Number type.
 pub fn same_value(a Value, b Value) bool {
-	if a.tag != b.tag {
-		return false
+	if a.is_number() && b.is_number() {
+		if math.is_nan(a.number) && math.is_nan(b.number) { return true }
+		if a.number == 0 && b.number == 0 && math.signbit(a.number) != math.signbit(b.number) {
+			return false
+		}
+		return a.number == b.number
 	}
-	match a.tag {
-		.empty, .undefined, .null {
-			return true
-		}
-		.boolean, .int32 {
-			return a.number == b.number
-		}
-		.double {
-			// Both NaN compare equal; +0 and -0 never share the double tag.
-			if a.number != a.number && b.number != b.number {
-				return true
-			}
-			return a.number == b.number
-		}
-		.bigint {
-			return a.as_bigint().big_integer == b.as_bigint().big_integer
-		}
-		else {
-			return a.cell == b.cell
-		}
+	if a.tag != b.tag { return false }
+	return same_value_non_number(a, b)
+}
+
+pub fn same_value_zero(a Value, b Value) bool {
+	if a.is_number() && b.is_number() {
+		return (math.is_nan(a.number) && math.is_nan(b.number)) || a.number == b.number
+	}
+	if a.tag != b.tag { return false }
+	return same_value_non_number(a, b)
+}
+
+pub fn same_value_non_number(a Value, b Value) bool {
+	assert a.tag == b.tag && !a.is_number()
+	return match a.tag {
+		.empty, .undefined, .null { true }
+		.boolean { a.number == b.number }
+		.string { a.as_string().utf16 == b.as_string().utf16 }
+		.bigint { a.as_bigint().big_integer == b.as_bigint().big_integer }
+		else { a.cell == b.cell }
 	}
 }
 
