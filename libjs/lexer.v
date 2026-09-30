@@ -146,7 +146,6 @@ fn is_identifier_continue_cp(cp u32) bool {
 	return unicode_id_continue(cp)
 }
 
-
 fn keyword_from_str(s []u16) ?TokenType {
 	match s.len {
 		2 {
@@ -287,6 +286,7 @@ fn keyword_from_str(s []u16) ?TokenType {
 		}
 		else {}
 	}
+
 	return none
 }
 
@@ -456,7 +456,7 @@ fn Lexer.new_at_offset(source []u16, offset int, line_number u32, line_column u3
 		source:              source
 		position:            offset
 		line_number:         line_number
-		line_column:         line_column
+		line_column:         if line_column > 0 { line_column - 1 } else { u32(0) }
 		current_token_type:  .eof
 		allow_html_comments: true
 	}

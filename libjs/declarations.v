@@ -79,6 +79,7 @@ fn collect_pattern_names(pat BindingPattern, mut names []Utf16String) {
 			}
 			else {}
 		}
+
 		if entry.alias.kind == .none_kind {
 			if entry.name.kind == .identifier_kind {
 				if id := entry.name.identifier {
@@ -146,6 +147,7 @@ fn (mut p Parser) parse_variable_declaration(is_for_loop bool) Statement {
 			DeclarationKind.var_kind
 		}
 	}
+
 	p.consume()
 
 	mut declarators := []VariableDeclarator{}
@@ -206,10 +208,9 @@ fn (mut p Parser) parse_variable_declaration(is_for_loop bool) Statement {
 				}
 			} else {
 				for bn in bound_names {
-					p.scope_collector.add_lexical_declaration(bn.name.data.clone(), declaration_line,
-						declaration_column)
-					p.scope_collector.register_identifier(bn.identifier, bn.name.data,
-						none)
+					p.scope_collector.add_lexical_declaration(bn.name.data.clone(),
+						declaration_line, declaration_column)
+					p.scope_collector.register_identifier(bn.identifier, bn.name.data, none)
 				}
 			}
 
@@ -292,7 +293,8 @@ fn (mut p Parser) parse_using_declaration(is_for_loop bool) Statement {
 
 		id := p.make_identifier(declaration_start, Utf16String.from_slice(name.clone()))
 
-		p.scope_collector.add_lexical_declaration(name.clone(), declaration_line, declaration_column)
+		p.scope_collector.add_lexical_declaration(name.clone(), declaration_line,
+			declaration_column)
 		p.scope_collector.register_identifier(id, name, none)
 
 		mut init := ?Expression(none)
@@ -636,10 +638,9 @@ fn (mut p Parser) parse_class_declaration() Statement {
 	if class_expression.kind.tag == .class_expr {
 		if cd := class_expression.kind.class_data {
 			if name_ident := cd.name {
-				p.scope_collector.add_lexical_declaration(name_ident.name.data.clone(),
-					start.line, start.column)
-				p.scope_collector.register_identifier(name_ident, name_ident.name.data,
-					none)
+				p.scope_collector.add_lexical_declaration(name_ident.name.data.clone(), start.line,
+					start.column)
+				p.scope_collector.register_identifier(name_ident, name_ident.name.data, none)
 			}
 			return p.statement(start, StatementKind{
 				tag:        .class_declaration
@@ -852,13 +853,7 @@ fn (mut p Parser) parse_class_element(class_start Position, mut found_private_na
 			is_identifier: false
 		}
 	} else {
-		key_override := if p.current_token.token_type == .identifier
-			|| p.current_token.token_type == .private_identifier {
-			?Position(class_start)
-		} else {
-			?Position(none)
-		}
-		key = p.parse_property_key(key_override)
+		key = p.parse_property_key()
 	}
 
 	// Static prototype check.
@@ -1109,7 +1104,6 @@ fn (mut p Parser) parse_formal_parameters_impl(is_arrow bool) ParsedParameters {
 			value := Utf16String.from_slice(p.token_value(token))
 			p.check_identifier_name_for_assignment_validity(value.data, false)
 
-
 			id := Identifier.new(p.range_from(formal_parameters_start), value.clone())
 			parameter_info << ParamInfo{
 				name:            value
@@ -1149,7 +1143,8 @@ fn (mut p Parser) parse_formal_parameters_impl(is_arrow bool) ParsedParameters {
 			has_seen_default = true
 			saved_in_function := p.flags.in_function_context
 			p.flags.in_function_context = true
-			default_value = p.parse_expression(precedence_assignment, .right, ForbiddenTokens.with_in())
+			default_value = p.parse_expression(precedence_assignment, .right,
+				ForbiddenTokens.with_in())
 			p.flags.in_function_context = saved_in_function
 		}
 
@@ -1194,7 +1189,9 @@ fn (mut p Parser) parse_formal_parameters_impl(is_arrow bool) ParsedParameters {
 // https://tc39.es/ecma262/#sec-destructuring-binding-patterns
 fn (mut p Parser) parse_binding_pattern() BindingPattern {
 	if !p.enter_recursion() {
-		return BindingPattern{ kind: .object }
+		return BindingPattern{
+			kind: .object
+		}
 	}
 	defer {
 		p.leave_recursion()
@@ -1256,7 +1253,7 @@ fn (mut p Parser) parse_binding_pattern() BindingPattern {
 
 				if p.match_identifier_name() || p.match_token(.string_literal)
 					|| p.match_token(.numeric_literal) || p.match_token(.big_int_literal) {
-					entry_start := p.binding_pattern_start or { p.position() }
+					entry_start := p.position()
 
 					if p.match_token(.string_literal) || p.match_token(.numeric_literal) {
 						needs_alias = true
@@ -1321,12 +1318,14 @@ fn (mut p Parser) parse_binding_pattern() BindingPattern {
 					p.consume()
 					if p.allow_member_expressions {
 						expression_start := p.position()
-						expression := p.parse_expression(precedence_assignment, .right,
-							ForbiddenTokens{}.forbid([TokenType.equals]))
+						expression := p.parse_expression(precedence_assignment, .right, ForbiddenTokens{}.forbid([
+							TokenType.equals,
+						]))
 						if is_parenthesized_object_or_array_expression(expression, expression_start) {
 							p.syntax_error('Invalid destructuring assignment target')
 							break
-						} else if is_object_expression(expression) || is_array_expression(expression) {
+						} else if is_object_expression(expression)
+							|| is_array_expression(expression) {
 							if pattern := p.synthesize_binding_pattern(expression.range.start) {
 								entry_alias = BindingEntryAlias{
 									kind:            .binding_pattern_kind
@@ -1354,10 +1353,11 @@ fn (mut p Parser) parse_binding_pattern() BindingPattern {
 							binding_pattern: nested
 						}
 					} else if p.match_identifier_name() {
-						alias_start := p.binding_pattern_start or { p.position() }
+						alias_start := p.position()
 						token := p.consume()
 						value := p.token_value(token).clone()
-						mut id := p.make_identifier(alias_start, Utf16String.from_slice(value.clone()))
+						mut id := p.make_identifier(alias_start,
+							Utf16String.from_slice(value.clone()))
 						p.pattern_bound_names << BoundName{
 							name:       Utf16String.from_slice(value)
 							identifier: id
@@ -1429,7 +1429,7 @@ fn (mut p Parser) parse_binding_pattern() BindingPattern {
 				binding_pattern: nested
 			}
 		} else if p.match_identifier_name() {
-			alias_start := p.binding_pattern_start or { p.position() }
+			alias_start := p.position()
 			token := p.consume()
 			value := p.token_value(token).clone()
 			mut id := p.make_identifier(alias_start, Utf16String.from_slice(value.clone()))
@@ -1842,8 +1842,7 @@ fn (mut p Parser) parse_export_statement() Statement {
 			en_key := en.str()
 			if en_key in p.exported_names {
 				name_str := string_from_utf16_lossy(en.data)
-				p.syntax_error_at_position("Duplicate export with name: '${name_str}'",
-					start)
+				p.syntax_error_at_position("Duplicate export with name: '${name_str}'", start)
 			}
 			p.exported_names[en_key] = true
 		}

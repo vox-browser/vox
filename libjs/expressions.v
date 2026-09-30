@@ -316,9 +316,7 @@ fn (mut p Parser) parse_primary_expression(min_precedence int) (Expression, bool
 				expression := p.parse_function_expression()
 				return expression, true
 			}
-			if arrow := p.try_parse_arrow_function_expression(next.token_type == .paren_open,
-				true)
-			{
+			if arrow := p.try_parse_arrow_function_expression(next.token_type == .paren_open, true) {
 				return arrow, false
 			}
 			async_token := p.consume_and_check_identifier()
@@ -543,8 +541,7 @@ fn (mut p Parser) parse_secondary_expression(lhs_start_ Position, lhs Expression
 				if pattern := p.synthesize_binding_pattern(lhs.range.start) {
 					// Register synthesized identifiers with the scope collector.
 					for bn in p.pattern_bound_names {
-						p.scope_collector.register_identifier(bn.identifier, bn.name.data,
-							none)
+						p.scope_collector.register_identifier(bn.identifier, bn.name.data, none)
 					}
 					p.pattern_bound_names = saved_bound_names
 					p.consume()
@@ -598,9 +595,10 @@ fn (mut p Parser) parse_secondary_expression(lhs_start_ Position, lhs Expression
 		// === Member access ===
 		.period {
 			p.consume()
+			property_start := p.position()
 			if p.match_token(.private_identifier) {
-				id := p.parse_private_identifier(start)
-				property := p.expression(start, ExpressionKind{
+				id := p.parse_private_identifier(property_start)
+				property := p.expression(property_start, ExpressionKind{
 					tag:                .private_identifier_expr
 					private_identifier: id
 				})
@@ -613,7 +611,7 @@ fn (mut p Parser) parse_secondary_expression(lhs_start_ Position, lhs Expression
 			} else if p.match_identifier_name() {
 				mem_token := p.consume()
 				value := p.token_value(mem_token).clone()
-				property := p.expression(start, ExpressionKind.identifier_kind(p.make_identifier(start,
+				property := p.expression(property_start, ExpressionKind.identifier_kind(p.make_identifier(property_start,
 					Utf16String.from_slice(value))))
 				return p.expression(start, ExpressionKind{
 					tag:      .member
@@ -740,6 +738,7 @@ fn (mut p Parser) parse_unary_prefixed_expression() Expression {
 				.typeof_kw { UnaryOp.typeof_op }
 				else { UnaryOp.void_op }
 			}
+
 			p.consume()
 			expression := p.parse_expression(precedence_unary, .right, ForbiddenTokens{})
 			return p.expression(start, ExpressionKind{
@@ -917,7 +916,8 @@ fn (mut p Parser) parse_optional_chain(start Position, base Expression) Expressi
 						mem_token := p.consume()
 						value := p.token_value(mem_token).clone()
 						references << OptionalChainMemberRef{
-							identifier: p.make_identifier(property_start, Utf16String.from_slice(value))
+							identifier: p.make_identifier(property_start,
+								Utf16String.from_slice(value))
 							mode:       .optional
 						}
 					} else {
@@ -1109,19 +1109,7 @@ fn (mut p Parser) parse_object_property(obj_start Position) ObjectProperty {
 		p.consume()
 	}
 
-	// Identifier position override for C++ compatibility.
-	mut is_cpp_identifier := p.match_identifier()
-	if !is_cpp_identifier && p.current_token.token_type == .escaped_keyword {
-		kw_value := p.token_value(p.current_token)
-		is_cpp_identifier = !utf16_equals(kw_value, utf16('let'))
-			&& !utf16_equals(kw_value, utf16('yield')) && !utf16_equals(kw_value, utf16('await'))
-	}
-	ident_override := if !is_getter && !is_setter && !is_generator && is_cpp_identifier {
-		?Position(obj_start)
-	} else {
-		?Position(none)
-	}
-	pk := p.parse_property_key(ident_override)
+	pk := p.parse_property_key()
 	key := pk.expression
 	key_value := pk.name
 	is_proto := pk.is_proto
@@ -1265,16 +1253,16 @@ fn (mut p Parser) match_property_key_ahead() bool {
 	}
 }
 
-fn (mut p Parser) parse_property_key(ident_pos_override ?Position) PropertyKey {
+fn (mut p Parser) parse_property_key() PropertyKey {
 	// Suppress eval/arguments check for property key tokens.
 	saved_property_key_ctx := p.flags.in_property_key_context
 	p.flags.in_property_key_context = true
-	result := p.parse_property_key_inner(ident_pos_override)
+	result := p.parse_property_key_inner()
 	p.flags.in_property_key_context = saved_property_key_ctx
 	return result
 }
 
-fn (mut p Parser) parse_property_key_inner(ident_pos_override ?Position) PropertyKey {
+fn (mut p Parser) parse_property_key_inner() PropertyKey {
 	proto_name := utf16('__proto__')
 	start := p.position()
 	match p.current_token_type() {
@@ -1343,7 +1331,7 @@ fn (mut p Parser) parse_property_key_inner(ident_pos_override ?Position) Propert
 			if utf16_equals(value.data, utf16('#constructor')) {
 				p.syntax_error("Private property with name '#constructor' is not allowed")
 			}
-			key_start := ident_pos_override or { start }
+			key_start := start
 			expression := p.expression(key_start, ExpressionKind{
 				tag:                .private_identifier_expr
 				private_identifier: PrivateIdentifier{
@@ -1362,7 +1350,7 @@ fn (mut p Parser) parse_property_key_inner(ident_pos_override ?Position) Propert
 				id_token := p.consume()
 				value := Utf16String.from_slice(p.token_value(id_token))
 				is_proto := utf16_equals(value.data, proto_name)
-				key_start := ident_pos_override or { start }
+				key_start := start
 				expression := p.expression(key_start, ExpressionKind{
 					tag:          .string_literal
 					string_value: value.clone()
@@ -1430,7 +1418,9 @@ fn (mut p Parser) parse_tagged_template_literals(tag_start Position, expression_
 		template := p.parse_template_literal(true)
 		expression = p.expression(tag_start, ExpressionKind{
 			tag:                   .tagged_template_literal
-			tag_expr:              &Expression{ ...expression }
+			tag_expr:              &Expression{
+				...expression
+			}
 			template_literal_expr: &template
 		})
 	}
