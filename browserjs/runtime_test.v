@@ -68,6 +68,12 @@ fn test_libjs_backend_executes_bigint_and_translated_property_reads() {
 	assert runtime.evaluate('"A😀".length;')! == '3'
 	assert runtime.evaluate('globalThis.Infinity === Infinity;')! == 'true'
 	assert runtime.evaluate('globalThis["undefined"];')! == 'undefined'
+	assert runtime.evaluate('globalThis.runtimeAnswer=parseInt("2a",16); ++globalThis.runtimeAnswer;')! == '43'
+	assert runtime.evaluate('"runtimeAnswer" in globalThis;')! == 'true'
+	assert runtime.evaluate('delete globalThis.runtimeAnswer;')! == 'true'
+	assert runtime.evaluate('"runtimeAnswer" in globalThis;')! == 'false'
+	assert runtime.evaluate('isFinite(parseFloat("1.23tail")) && !isNaN(parseInt("42"));')! == 'true'
+	assert runtime.evaluate('decodeURIComponent(encodeURIComponent("hello 😀"));')! == 'hello 😀'
 	if _ := runtime.evaluate('1n + 1;') {
 		assert false
 	} else {
