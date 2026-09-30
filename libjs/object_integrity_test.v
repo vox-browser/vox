@@ -36,15 +36,15 @@ fn test_ordinary_prototype_replacement_refreshes_lookup_and_receiver_writes() {
 	second.create_data_property(PropertyName.from_str('answer'), Value.from_i32(42))
 	second.define_direct_property(PropertyName.from_str('fixed'), Value.from_i32(2), 0)
 	mut object := Object.create(vm.realm(), first)
-	assert object.get(PropertyName.from_str('answer')).number == 17
+	assert object.get(mut vm, PropertyName.from_str('answer'))!.number == 17
 	assert object.internal_set_prototype_of(second)
-	assert object.get(PropertyName.from_str('answer')).number == 42
-	assert !object.internal_set(PropertyName.from_str('fixed'), Value.from_i32(9),
-		Value.from_object(object))
-	assert object.internal_set(PropertyName.from_str('answer'), Value.from_i32(9),
-		Value.from_object(object))
-	assert object.get(PropertyName.from_str('answer')).number == 9
-	assert second.get(PropertyName.from_str('answer')).number == 42
+	assert object.get(mut vm, PropertyName.from_str('answer'))!.number == 42
+	assert !object.internal_set(mut vm, PropertyName.from_str('fixed'), Value.from_i32(9),
+		Value.from_object(object))!
+	assert object.internal_set(mut vm, PropertyName.from_str('answer'), Value.from_i32(9),
+		Value.from_object(object))!
+	assert object.get(mut vm, PropertyName.from_str('answer'))!.number == 9
+	assert second.get(mut vm, PropertyName.from_str('answer'))!.number == 42
 }
 
 fn test_sealing_and_freezing_follow_ordinary_own_property_keys_and_descriptors() {
@@ -72,7 +72,7 @@ fn test_sealing_and_freezing_follow_ordinary_own_property_keys_and_descriptors()
 			assert !descriptor.configurable? && descriptor.enumerable?
 			assert descriptor.writable? == (level == .sealed)
 			assert !object.internal_delete(key)
-			assert object.internal_set(key, Value.from_i32(9), Value.from_object(object)) == (level == .sealed)
+			assert object.internal_set(mut vm, key, Value.from_i32(9), Value.from_object(object))! == (level == .sealed)
 		}
 		// Private symbols are excluded by OrdinaryOwnPropertyKeys, so the
 		// private slot remains writable/configurable after public freezing.

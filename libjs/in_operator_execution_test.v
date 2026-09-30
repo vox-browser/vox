@@ -32,7 +32,7 @@ fn test_in_operator_sees_own_inherited_symbol_and_numeric_properties() {
 	} {
 		assert execute_in_source(mut vm, source)!.as_bool() == expected, source
 	}
-	assert host.get(PropertyName.from_str('inherited')).number == 17
+	assert host.get(mut vm, PropertyName.from_str('inherited'))!.number == 17
 }
 
 fn test_in_rejects_non_objects_before_key_coercion_and_preserves_throw_cleanup() {

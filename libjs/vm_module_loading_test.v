@@ -345,7 +345,7 @@ fn test_source_text_modules_report_pending_linking_and_import_meta_is_memoized()
 		finalized.names << module_record.filename()
 	}
 	import_meta := vm.get_import_meta()
-	assert import_meta.get(PropertyName.from_str('url')).as_i32() == 7
+	assert import_meta.get(mut vm, PropertyName.from_str('url'))!.as_i32() == 7
 	assert import_meta.prototype == none
 	assert finalized.names == ['meta.js']
 	assert voidptr(vm.get_import_meta()) == voidptr(import_meta)

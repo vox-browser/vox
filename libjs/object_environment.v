@@ -45,11 +45,11 @@ pub fn (environment &ObjectEnvironment) has_binding(mut vm VM, name Utf16String)
 		return true, none
 	}
 	// 5. Let unscopables be ? Get(bindingObject, @@unscopables).
-	unscopables := environment.binding_object.get(PropertyName.from_symbol(vm.well_known_symbol_unscopables()))
+	unscopables := environment.binding_object.get(mut vm, PropertyName.from_symbol(vm.well_known_symbol_unscopables()))!
 	// 6. If Type(unscopables) is Object, then
 	if unscopables.is_object() {
 		// a. Let blocked be ToBoolean(? Get(unscopables, N)).
-		blocked := unscopables.as_object().get(key).to_boolean()
+		blocked := unscopables.as_object().get(mut vm, key)!.to_boolean()
 		// b. If blocked is true, return false.
 		if blocked {
 			return false, none
@@ -124,7 +124,7 @@ pub fn (mut environment ObjectEnvironment) get_binding_value(mut vm VM, name Utf
 	key := PropertyName.from_utf16(name)
 	// OPTIMIZATION: Non-with environments in sloppy mode combine HasProperty and Get.
 	if !environment.with_environment && !strict {
-		return environment.binding_object.get(key)
+		return environment.binding_object.get(mut vm, key)!
 	}
 	// 2. Let value be ? HasProperty(bindingObject, N).
 	value := environment.binding_object.has_property(key)
@@ -137,7 +137,7 @@ pub fn (mut environment ObjectEnvironment) get_binding_value(mut vm VM, name Utf
 		return vm.throw_error_type(.reference_error, .unknown_identifier, name.str())
 	}
 	// 4. Return ? Get(bindingObject, N).
-	return environment.binding_object.get(key)
+	return environment.binding_object.get(mut vm, key)!
 }
 
 // 9.1.1.2.7 DeleteBinding ( N ), https://tc39.es/ecma262/#sec-object-environment-records-deletebinding-n

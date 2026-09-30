@@ -2,7 +2,8 @@ module libjs
 
 // Translated from the parts of LibJS/Runtime/Object.{h,cpp} and PropertyKey.h that
 // the VM, environments, and error records depend on. Only ordinary objects with
-// data properties are translated: no accessors, shapes, proxies, or exotic hooks.
+// data and accessor properties are translated; shapes, proxies, and exotic hooks
+// remain pending.
 // The parser owns the name PropertyKey, so the runtime key is PropertyName.
 
 pub enum PropertyNameKind {
@@ -106,19 +107,6 @@ pub fn (name PropertyName) str() string {
 	}
 }
 
-// 6.2.6 The Property Descriptor Specification Type, https://tc39.es/ecma262/#sec-property-descriptor-specification-type
-pub struct PropertyDescriptor {
-pub mut:
-	value        ?Value
-	writable     ?bool
-	enumerable   ?bool
-	configurable ?bool
-}
-
-pub fn (descriptor PropertyDescriptor) is_data_descriptor() bool {
-	return descriptor.value != none || descriptor.writable != none
-}
-
 pub const attribute_writable = u8(1)
 pub const attribute_enumerable = u8(2)
 pub const attribute_configurable = u8(4)
@@ -209,7 +197,7 @@ pub fn (mut object Object) internal_prevent_extensions() bool {
 	return true
 }
 
-// 7.3.16 SetIntegrityLevel ( O, level ), data descriptors only.
+// 7.3.16 SetIntegrityLevel ( O, level ).
 pub fn (mut object Object) set_integrity_level(mut vm VM, level IntegrityLevel) !bool {
 	if !object.internal_prevent_extensions() { return false }
 	keys := object.own_property_keys()
@@ -219,7 +207,11 @@ pub fn (mut object Object) set_integrity_level(mut vm VM, level IntegrityLevel) 
 		}
 	} else {
 		for key in keys {
-			if _ := object.internal_get_own_property(key) {
+			if current := object.internal_get_own_property(key) {
+				if current.is_accessor_descriptor() {
+					object.define_property_or_throw(mut vm, key, PropertyDescriptor{ configurable: false })!
+					continue
+				}
 				object.define_property_or_throw(mut vm, key, PropertyDescriptor{
 					writable:     false
 					configurable: false
@@ -282,6 +274,15 @@ pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDes
 		return none
 	}
 	property := object.properties[index]
+	if property.value.is_accessor() {
+		accessor := property.value.as_accessor()
+		return PropertyDescriptor{
+			getter: accessor_function_value(accessor.getter)
+			setter: accessor_function_value(accessor.setter)
+			enumerable: property.enumerable
+			configurable: property.configurable
+		}
+	}
 	return PropertyDescriptor{
 		value:        property.value
 		writable:     property.writable
@@ -291,60 +292,9 @@ pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDes
 }
 
 // 10.1.6 [[DefineOwnProperty]] ( P, Desc ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-defineownproperty-p-desc
-// 10.1.6.3 ValidateAndApplyPropertyDescriptor for data properties only.
 pub fn (mut object Object) internal_define_own_property(key PropertyName, descriptor PropertyDescriptor) bool {
-	index := object.find_own_property(key)
-	if index < 0 {
-		if !object.extensible {
-			return false
-		}
-		object.properties << OwnProperty{
-			key:          key
-			value:        descriptor.value or { js_undefined() }
-			writable:     descriptor.writable or { false }
-			enumerable:   descriptor.enumerable or { false }
-			configurable: descriptor.configurable or { false }
-		}
-		return true
-	}
-	current := object.properties[index]
-	if !current.configurable {
-		if configurable := descriptor.configurable {
-			if configurable {
-				return false
-			}
-		}
-		if enumerable := descriptor.enumerable {
-			if enumerable != current.enumerable {
-				return false
-			}
-		}
-		if !current.writable {
-			if writable := descriptor.writable {
-				if writable {
-					return false
-				}
-			}
-			if value := descriptor.value {
-				if !same_value(value, current.value) {
-					return false
-				}
-			}
-		}
-	}
-	if value := descriptor.value {
-		object.properties[index].value = value
-	}
-	if writable := descriptor.writable {
-		object.properties[index].writable = writable
-	}
-	if enumerable := descriptor.enumerable {
-		object.properties[index].enumerable = enumerable
-	}
-	if configurable := descriptor.configurable {
-		object.properties[index].configurable = configurable
-	}
-	return true
+	return validate_and_apply_property_descriptor(&object, key, object.extensible,
+		descriptor, object.internal_get_own_property(key))
 }
 
 // 10.1.7 [[HasProperty]] ( P ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-hasproperty-p
@@ -359,35 +309,49 @@ pub fn (object &Object) internal_has_property(key PropertyName) bool {
 }
 
 // 10.1.8 [[Get]] ( P, Receiver ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-get-p-receiver
-pub fn (object &Object) internal_get(key PropertyName, receiver Value) Value {
-	index := object.find_own_property(key)
-	if index >= 0 {
-		return object.properties[index].value
+pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value) !Value {
+	assert !receiver.is_special_empty_value()
+	descriptor := object.internal_get_own_property(key) or {
+		if parent := object.prototype {
+			if vm.did_reach_stack_space_limit() {
+				return vm.throw_error_type(.internal_error, .call_stack_size_exceeded)
+			}
+			return parent.internal_get(mut vm, key, receiver)
+		}
+		return js_undefined()
 	}
-	if parent := object.prototype {
-		return parent.internal_get(key, receiver)
-	}
-	return js_undefined()
+	if descriptor.is_data_descriptor() { return descriptor.value or { js_undefined() } }
+	assert descriptor.is_accessor_descriptor()
+	getter := descriptor.getter or { js_undefined() }
+	if getter.is_undefined() { return js_undefined() }
+	return call(mut vm, getter, receiver, []Value{})
 }
 
 // 10.1.9 [[Set]] ( P, V, Receiver ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-set-p-v-receiver
-// 10.1.9.2 OrdinarySetWithOwnDescriptor for data properties only.
-pub fn (mut object Object) internal_set(key PropertyName, value Value, receiver Value) bool {
-	index := object.find_own_property(key)
-	if index < 0 {
+// 10.1.9.2 OrdinarySetWithOwnDescriptor.
+pub fn (mut object Object) internal_set(mut vm VM, key PropertyName, value Value, receiver Value) !bool {
+	assert !value.is_special_empty_value() && !receiver.is_special_empty_value()
+	descriptor := object.internal_get_own_property(key) or {
 		if parent := object.prototype {
 			mut parent_object := unsafe { &Object(parent) }
-			return parent_object.internal_set(key, value, receiver)
+			return parent_object.internal_set(mut vm, key, value, receiver)
 		}
-	} else if !object.properties[index].writable {
-		return false
+		PropertyDescriptor{ value: js_undefined(), writable: true, enumerable: true,
+			configurable: true }
 	}
+	if descriptor.is_accessor_descriptor() {
+		setter := descriptor.setter or { js_undefined() }
+		if setter.is_undefined() { return false }
+		call(mut vm, setter, receiver, [value])!
+		return true
+	}
+	if !(descriptor.writable or { false }) { return false }
 	if !receiver.is_object() {
 		return false
 	}
 	mut receiver_object := receiver.as_object()
 	if existing := receiver_object.internal_get_own_property(key) {
-		if !(existing.writable or { false }) {
+		if existing.is_accessor_descriptor() || !(existing.writable or { false }) {
 			return false
 		}
 		return receiver_object.internal_define_own_property(key, PropertyDescriptor{
@@ -420,14 +384,27 @@ pub fn (object &Object) has_own_property(key PropertyName) bool {
 	return object.find_own_property(key) >= 0
 }
 
+// Object.cpp::get_without_side_effects: diagnostics inspect stored values,
+// including internal Accessor cells, without invoking callable properties.
+pub fn (object &Object) get_without_side_effects(key PropertyName) Value {
+	mut current := ?&Object(object)
+	for {
+		holder := current or { return js_special_empty_value() }
+		index := holder.find_own_property(key)
+		if index >= 0 { return holder.properties[index].value }
+		current = holder.prototype
+	}
+	return js_special_empty_value()
+}
+
 // 7.3.2 Get ( O, P ), https://tc39.es/ecma262/#sec-get-o-p
-pub fn (object &Object) get(key PropertyName) Value {
-	return object.internal_get(key, Value.from_object(object))
+pub fn (object &Object) get(mut vm VM, key PropertyName) !Value {
+	return object.internal_get(mut vm, key, Value.from_object(object))
 }
 
 // 7.3.4 Set ( O, P, V, Throw ), https://tc39.es/ecma262/#sec-set-o-p-v-throw
 pub fn (mut object Object) set(mut vm VM, key PropertyName, value Value, throw_exceptions ShouldThrowExceptions) ! {
-	success := object.internal_set(key, value, Value.from_object(object))
+	success := object.internal_set(mut vm, key, value, Value.from_object(object))!
 	if !success && throw_exceptions == .yes {
 		return vm.throw_error_type(.type_error, .object_set_returned_false)
 	}

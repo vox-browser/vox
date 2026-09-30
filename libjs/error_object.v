@@ -106,7 +106,9 @@ pub fn (object &Object) error_message() ?string {
 	if object.error_data == none {
 		return none
 	}
-	message := object.get(PropertyName.from_str('message'))
+	// Embedding diagnostics inspect the error's stored message without
+	// executing JavaScript. Ordinary Get is VM-aware and may call a getter.
+	message := object.get_without_side_effects(PropertyName.from_str('message'))
 	if !message.is_string() {
 		return none
 	}

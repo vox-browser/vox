@@ -106,6 +106,10 @@ pub fn Value.from_bigint(integer &BigInt) Value {
 	}
 }
 
+pub fn Value.from_accessor(accessor &Accessor) Value {
+	return Value{ tag: .accessor, cell: voidptr(accessor) }
+}
+
 pub fn (value Value) is_special_empty_value() bool {
 	return value.tag == .empty
 }
@@ -215,6 +219,11 @@ pub fn (value Value) as_object() &Object {
 pub fn (value Value) as_bigint() &BigInt {
 	if value.tag != .bigint { panic('Value.as_bigint() called on a ${value.tag} value') }
 	return unsafe { &BigInt(value.cell) }
+}
+
+pub fn (value Value) as_accessor() &Accessor {
+	if !value.is_accessor() { panic('Value.as_accessor() called on a ${value.tag} value') }
+	return unsafe { &Accessor(value.cell) }
 }
 
 // 7.1.2 ToBoolean ( argument ), https://tc39.es/ecma262/#sec-toboolean

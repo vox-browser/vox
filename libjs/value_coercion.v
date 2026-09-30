@@ -1,8 +1,8 @@
 module libjs
 
 // Runtime/Value.cpp::ToPrimitive and Object.cpp::OrdinaryToPrimitive. Property
-// lookup uses the translated ordinary data-property object model; accessor and
-// exotic object [[Get]] hooks remain separate runtime work.
+// lookup uses ordinary data and accessor properties; exotic object [[Get]]
+// hooks remain separate runtime work.
 pub enum PreferredType {
 	default_
 	string
@@ -43,7 +43,7 @@ pub fn (value Value) to_primitive_with_hint(mut vm VM, preferred_type PreferredT
 
 // The object-receiver path of 7.3.11 GetMethod ( V, P ).
 pub fn (object &Object) get_method(mut vm VM, key PropertyName) !Value {
-	method := object.get(key)
+	method := object.get(mut vm, key)!
 	if method.is_nullish() { return js_undefined() }
 	if !method.is_function() {
 		return vm.throw_error_type(.type_error, .not_a_function, method.str())
@@ -59,7 +59,7 @@ pub fn (object &Object) ordinary_to_primitive(mut vm VM, preferred_type Preferre
 		['valueOf', 'toString']
 	}
 	for name in method_names {
-		method := object.get(PropertyName.from_str(name))
+		method := object.get(mut vm, PropertyName.from_str(name))!
 		if method.is_function() {
 			result := call(mut vm, method, Value.from_object(object), []Value{})!
 			if !result.is_object() { return result }

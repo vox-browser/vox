@@ -16,8 +16,8 @@ fn test_numeric_global_functions_coerce_arguments_and_have_upstream_metadata() {
 		property := vm.get_global_object().internal_get_own_property(PropertyName.from_str(name))?
 		assert property.writable? && property.configurable? && !property.enumerable?
 		function := property.value?.as_object()
-		assert function.get(PropertyName.from_str('name')).as_string().str() == name
-		assert function.get(PropertyName.from_str('length')).number == if name == 'parseInt' {
+		assert function.get(mut vm, PropertyName.from_str('name'))!.as_string().str() == name
+		assert function.get(mut vm, PropertyName.from_str('length'))!.number == if name == 'parseInt' {
 			2
 		} else {
 			1

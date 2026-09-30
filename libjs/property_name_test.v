@@ -24,9 +24,9 @@ fn test_numeric_and_string_property_names_share_one_live_property() {
 	create_simple_execution_context(mut vm)
 	mut object := Object.create(vm.realm(), none)
 	assert object.create_data_property(PropertyName.from_number(3), Value.from_i32(41))
-	assert object.get(PropertyName.from_str('3')).number == 41
+	assert object.get(mut vm, PropertyName.from_str('3'))!.number == 41
 	object.set(mut vm, PropertyName.from_str('3'), Value.from_i32(42), .yes)!
-	assert object.get(PropertyName.from_number(3)).number == 42
+	assert object.get(mut vm, PropertyName.from_number(3))!.number == 42
 	assert object.own_property_keys().len == 1
 	assert object.internal_delete(PropertyName.from_str('3'))
 	assert !object.has_own_property(PropertyName.from_number(3))

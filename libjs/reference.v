@@ -151,7 +151,7 @@ pub fn (reference Reference) get_value(mut vm VM) !Value {
 		// a. Let baseObj be ? ToObject(V.[[Base]]).
 		base_obj := reference.base_object(mut vm)!
 		// c. Return ? baseObj.[[Get]](V.[[ReferencedName]], GetThisValue(V)).
-		return base_obj.internal_get(reference.name, reference.get_this_value())
+		return base_obj.internal_get(mut vm, reference.name, reference.get_this_value())!
 	}
 	// 5. Else,
 	// b. Assert: base is an Environment Record.
@@ -180,7 +180,7 @@ pub fn (reference Reference) put_value(mut vm VM, value Value) ! {
 		// a. Let baseObj be ? ToObject(V.[[Base]]).
 		mut base_obj := reference.base_object(mut vm)!
 		// c. Let succeeded be ? baseObj.[[Set]](V.[[ReferencedName]], W, GetThisValue(V)).
-		succeeded := base_obj.internal_set(reference.name, value, reference.get_this_value())
+		succeeded := base_obj.internal_set(mut vm, reference.name, value, reference.get_this_value())!
 		// d. If succeeded is false and V.[[Strict]] is true, throw a TypeError exception.
 		if !succeeded && reference.strict {
 			return vm.throw_error_type(.type_error, .reference_nullish_set_property,

@@ -49,7 +49,7 @@ fn test_compiled_data_property_assignments_and_numeric_updates() {
 		create_simple_execution_context(mut vm)
 		host := mutation_host(mut vm)
 		assert run_property_mutation(mut vm, source)!.str() == expected, source
-		assert host.prototype?.get(PropertyName.from_str('inherited')).number == 2
+		assert host.prototype?.get(mut vm, PropertyName.from_str('inherited'))!.number == 2
 		assert vm.execution_context_stack().len == 1
 		assert vm.interpreter_stack().depth() == 0
 	}
@@ -151,7 +151,7 @@ fn test_computed_writes_preserve_upstream_coercion_and_abrupt_completion_order()
 		assert thrown_value(err).as_i32() == 17
 	}
 	assert order.events == ['base', 'rhs']
-	assert host.get(PropertyName.from_str('answer')).number == 2
+	assert host.get(mut vm, PropertyName.from_str('answer'))!.number == 2
 	assert vm.running_execution_context() == base_frame
 	assert vm.interpreter_stack().depth() == 0
 	assert run_property_mutation(mut vm, 'host.answer;')!.number == 2
@@ -177,7 +177,7 @@ fn test_failed_property_writes_distinguish_sloppy_and_strict_execution() {
 		assert vm.running_execution_context() == base
 		assert vm.interpreter_stack().depth() == 0
 	}
-	assert host.get(PropertyName.from_str('fixed')).number == 2
+	assert host.get(mut vm, PropertyName.from_str('fixed'))!.number == 2
 	assert !host.has_own_property(PropertyName.from_str('missing'))
 }
 

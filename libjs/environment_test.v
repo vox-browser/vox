@@ -127,11 +127,11 @@ fn test_object_environments_delegate_to_the_binding_object_and_unscopables() {
 	environment.create_mutable_binding(mut vm, x, true)!
 	found, _ := environment.has_binding(mut vm, x)!
 	assert found
-	assert binding_object.get(PropertyName.from_str('x')).is_undefined()
+	assert binding_object.get(mut vm, PropertyName.from_str('x'))!.is_undefined()
 	environment.initialize_binding(mut vm, x, Value.from_i32(1), .normal)!
 	assert environment.get_binding_value(mut vm, x, true)!.as_i32() == 1
 	environment.set_mutable_binding(mut vm, x, Value.from_i32(2), true)!
-	assert binding_object.get(PropertyName.from_str('x')).as_i32() == 2
+	assert binding_object.get(mut vm, PropertyName.from_str('x'))!.as_i32() == 2
 	assert environment.get_binding_value(mut vm, utf16_string('missing'), false)!.is_undefined()
 	environment.get_binding_value(mut vm, utf16_string('missing'), true) or {
 		assert thrown_error_message(err) == "ReferenceError: 'missing' is not defined"
@@ -260,7 +260,7 @@ fn test_references_read_write_and_delete_through_environments_and_objects() {
 		assert thrown_error_message(err) == "ReferenceError: 'ghost' is not defined"
 	}
 	unresolvable.put_value(mut vm, Value.from_i32(3))!
-	assert vm.get_global_object().get(PropertyName.from_str('ghost')).as_i32() == 3
+	assert vm.get_global_object().get(mut vm, PropertyName.from_str('ghost'))!.as_i32() == 3
 	assert unresolvable.delete_(mut vm)!
 	strict_unresolvable := Reference.unresolvable(utf16_string('ghost'), true)
 	strict_unresolvable.put_value(mut vm, Value.from_i32(4)) or {
@@ -274,7 +274,7 @@ fn test_references_read_write_and_delete_through_environments_and_objects() {
 	assert same_value(property.get_this_value(), Value.from_object(object))
 	assert property.get_value(mut vm)!.is_undefined()
 	property.put_value(mut vm, Value.from_i32(5))!
-	assert object.get(PropertyName.from_str('p')).as_i32() == 5
+	assert object.get(mut vm, PropertyName.from_str('p'))!.as_i32() == 5
 	assert property.delete_(mut vm)!
 	object.define_direct_property(PropertyName.from_str('p'), Value.from_i32(6), 0)
 	property.put_value(mut vm, Value.from_i32(7)) or {

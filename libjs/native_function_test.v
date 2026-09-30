@@ -33,8 +33,8 @@ fn test_native_functions_define_metadata_with_upstream_property_attributes() {
 			descriptor := function.object.internal_get_own_property(PropertyName.from_str(key))?
 			assert !descriptor.writable? && !descriptor.enumerable? && descriptor.configurable?
 		}
-		assert function.object.get(PropertyName.from_str('name')).as_string().str() == expected
-		assert function.object.get(PropertyName.from_str('length')).number == 2
+		assert function.object.get(mut vm, PropertyName.from_str('name'))!.as_string().str() == expected
+		assert function.object.get(mut vm, PropertyName.from_str('length'))!.number == 2
 	}
 	assert vm.native_function_count() == initial_native_count + 1
 	for description, expected in {
@@ -43,21 +43,21 @@ fn test_native_functions_define_metadata_with_upstream_property_attributes() {
 	} {
 		function := NativeFunction.create(mut vm, vm.realm(), none, native_sum, 0, PropertyName.from_symbol(Symbol.create(utf16_string(description),
 			.unique)), none)
-		assert function.object.get(PropertyName.from_str('name')).as_string().str() == expected
+		assert function.object.get(mut vm, PropertyName.from_str('name'))!.as_string().str() == expected
 	}
 	anonymous := NativeFunction.create(mut vm, vm.realm(), none, native_sum, 0, PropertyName.from_symbol(Symbol.create(none,
 		.unique)), none)
-	assert anonymous.object.get(PropertyName.from_str('name')).as_string().is_empty()
+	assert anonymous.object.get(mut vm, PropertyName.from_str('name'))!.as_string().is_empty()
 	private := NativeFunction.create(mut vm, vm.realm(), none, native_sum, 0, PrivateName{
 		unique_id:   1
 		description: utf16_string('#method')
 	}, none)
-	assert private.object.get(PropertyName.from_str('name')).as_string().str() == '#method'
+	assert private.object.get(mut vm, PropertyName.from_str('name'))!.as_string().str() == '#method'
 	mut prototype := Object.create(vm.realm(), none)
 	prototype.create_data_property(PropertyName.from_str('inherited'), Value.from_i32(42))
 	with_prototype := NativeFunction.create_raw(mut vm, vm.realm(), prototype, native_sum, 0,
 		PropertyName.from_str('sum'), none)
-	assert with_prototype.object.get(PropertyName.from_str('inherited')).number == 42
+	assert with_prototype.object.get(mut vm, PropertyName.from_str('inherited'))!.number == 42
 }
 
 fn test_native_calls_install_arguments_this_realm_and_restore_caller_environment() {

@@ -9,17 +9,17 @@ fn test_ordinary_objects_define_get_set_and_delete_data_properties() {
 	key := PropertyName.from_str('answer')
 	assert object.create_data_property(key, Value.from_i32(42))
 	assert object.has_own_property(key)
-	assert object.get(key).as_i32() == 42
+	assert object.get(mut vm, key)!.as_i32() == 42
 	inherited := PropertyName.from_str('inherited')
 	assert prototype.create_data_property(inherited, Value.from_bool(true))
 	assert object.has_property(inherited)
 	assert !object.has_own_property(inherited)
-	assert object.get(inherited).as_bool()
-	assert object.get(PropertyName.from_str('missing')).is_undefined()
+	assert object.get(mut vm, inherited)!.as_bool()
+	assert object.get(mut vm, PropertyName.from_str('missing'))!.is_undefined()
 	// Set walks the prototype chain and creates an own property on the receiver.
 	object.set(mut vm, inherited, Value.from_i32(7), .yes)!
 	assert object.has_own_property(inherited)
-	assert prototype.get(inherited).as_bool()
+	assert prototype.get(mut vm, inherited)!.as_bool()
 	assert object.internal_delete(inherited)
 	assert !object.has_own_property(inherited)
 	assert object.own_property_keys().len == 1
@@ -36,9 +36,9 @@ fn test_non_writable_and_non_configurable_properties_reject_changes() {
 	mut object := Object.create(realm, none)
 	key := PropertyName.from_str('frozen')
 	object.define_direct_property(key, Value.from_i32(1), 0)
-	assert !object.internal_set(key, Value.from_i32(2), Value.from_object(object))
+	assert !object.internal_set(mut vm, key, Value.from_i32(2), Value.from_object(object))!
 	object.set(mut vm, key, Value.from_i32(2), .no)!
-	assert object.get(key).as_i32() == 1
+	assert object.get(mut vm, key)!.as_i32() == 1
 	object.set(mut vm, key, Value.from_i32(2), .yes) or {
 		error_object := thrown_value(err).as_object()
 		assert error_object.error_kind()? == .type_error
@@ -81,8 +81,8 @@ fn test_property_names_compare_by_kind_string_symbol_and_index() {
 	realm := Realm.create()
 	mut object := Object.create(realm, none)
 	assert object.create_data_property(PropertyName.from_symbol(symbol), Value.from_i32(1))
-	assert object.get(PropertyName.from_symbol(symbol)).as_i32() == 1
-	assert object.get(PropertyName.from_symbol(other_symbol)).is_undefined()
+	assert object.get(mut vm, PropertyName.from_symbol(symbol))!.as_i32() == 1
+	assert object.get(mut vm, PropertyName.from_symbol(other_symbol))!.is_undefined()
 	assert vm.cached_strings.number.str() == 'number'
 }
 

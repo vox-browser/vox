@@ -69,7 +69,7 @@ fn test_computed_keys_use_string_hint_once_and_keep_symbol_identity() {
 	method := NativeFunction.create(mut vm, vm.realm(), none, fn [symbol] (mut vm VM) !Value {
 		assert vm.argument(0).as_string().str() == 'string'
 		mut receiver := vm.this_value().as_object()
-		calls := receiver.get(PropertyName.from_str('calls')).number
+		calls := receiver.get(mut vm, PropertyName.from_str('calls'))!.number
 		receiver.set(mut vm, PropertyName.from_str('calls'), Value.from_f64(calls + 1), .yes)!
 		return Value.from_symbol(symbol)
 	}, 1, PropertyName.from_str('key'), none)
@@ -78,14 +78,14 @@ fn test_computed_keys_use_string_hint_once_and_keep_symbol_identity() {
 	mut global := vm.get_global_object()
 	global.create_data_property(PropertyName.from_str('key'), Value.from_object(key))
 	assert execute_property_source(mut vm, 'host[key];')!.number == 42
-	assert key.get(PropertyName.from_str('calls')).number == 1
+	assert key.get(mut vm, PropertyName.from_str('calls'))!.number == 1
 	key.set(mut vm, PropertyName.from_str('calls'), Value.from_i32(0), .yes)!
 	if _ := execute_property_source(mut vm, 'null[key];') {
 		assert false
 	} else {
 		assert thrown_value(err).as_object().error_kind()? == .type_error
 	}
-	assert key.get(PropertyName.from_str('calls')).number == 0
+	assert key.get(mut vm, PropertyName.from_str('calls'))!.number == 0
 	assert vm.execution_context_stack().len == 1
 	assert vm.interpreter_stack().depth() == 0
 }

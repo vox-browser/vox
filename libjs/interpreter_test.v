@@ -208,7 +208,7 @@ fn test_instruction_budget_aborts_a_loop_and_restores_block_environment() {
 		assert false
 	} else {
 		assert thrown_value(err).as_object().error_kind()? == .internal_error
-		assert thrown_value(err).as_object().get(PropertyName.from_utf16(utf16_string('message'))).as_string().str().contains('budget')
+		assert thrown_value(err).as_object().get(mut vm, PropertyName.from_utf16(utf16_string('message')))!.as_string().str().contains('budget')
 	}
 	assert same_environment(frame.lexical_environment or { panic('missing environment') }, original)
 	assert vm.running_execution_context() == base

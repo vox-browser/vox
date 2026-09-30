@@ -55,10 +55,10 @@ fn test_delete_preserves_symbol_keys_and_prototype_properties() {
 	global.create_data_property(PropertyName.from_str('key'), Value.from_symbol(symbol))
 	assert execute_delete_source(mut vm, 'delete host[key];')!.as_bool()
 	assert !host.has_own_property(PropertyName.from_symbol(symbol))
-	assert host.get(PropertyName.from_str('answer')).number == 42
+	assert host.get(mut vm, PropertyName.from_str('answer'))!.number == 42
 	assert execute_delete_source(mut vm, 'delete host.answer;')!.as_bool()
 	assert !host.has_own_property(PropertyName.from_str('answer'))
-	assert host.prototype?.get(PropertyName.from_str('answer')).number == 17
+	assert host.prototype?.get(mut vm, PropertyName.from_str('answer'))!.number == 17
 	assert execute_delete_source(mut vm, 'host.answer;')!.number == 17
 }
 
@@ -85,7 +85,7 @@ fn test_delete_errors_keep_the_original_throw_and_restore_execution_state() {
 	} else {
 		assert thrown_value(err).as_object().error_kind()? == .reference_error
 	}
-	assert host.get(PropertyName.from_str('fixed')).number == 2
+	assert host.get(mut vm, PropertyName.from_str('fixed'))!.number == 2
 	assert execute_delete_source(mut vm, 'host.answer;')!.number == 42
 }
 
@@ -108,7 +108,7 @@ fn test_delete_computed_key_coercion_precedes_nullish_to_object() {
 	} else {
 		assert thrown_value(err).as_i32() == 23
 	}
-	assert host.get(PropertyName.from_str('answer')).number == 17
+	assert host.get(mut vm, PropertyName.from_str('answer'))!.number == 17
 	assert vm.execution_context_stack().len == 1
 	assert vm.interpreter_stack().depth() == 0
 }

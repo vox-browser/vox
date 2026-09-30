@@ -12,14 +12,14 @@ fn test_ordinary_coercion_uses_hint_order_receiver_and_fallback() {
 	mut prototype := Object.create(vm.realm(), none)
 	define_coercion_method(mut vm, mut prototype, PropertyName.from_str('valueOf'), fn (mut vm VM) !Value {
 		mut object := vm.this_value().as_object()
-		log := object.get(PropertyName.from_str('log')).as_string().str()
+		log := object.get(mut vm, PropertyName.from_str('log'))!.as_string().str()
 		object.define_direct_property(PropertyName.from_str('log'), Value.from_string(vm.create_string_from_str(
 			log + 'v')), 7)
 		return vm.this_value()
 	})
 	define_coercion_method(mut vm, mut prototype, PropertyName.from_str('toString'), fn (mut vm VM) !Value {
 		mut object := vm.this_value().as_object()
-		log := object.get(PropertyName.from_str('log')).as_string().str()
+		log := object.get(mut vm, PropertyName.from_str('log'))!.as_string().str()
 		object.define_direct_property(PropertyName.from_str('log'), Value.from_string(vm.create_string_from_str(
 			log + 't')), 7)
 		return Value.from_string(vm.create_string_from_str('42'))
@@ -29,12 +29,12 @@ fn test_ordinary_coercion_uses_hint_order_receiver_and_fallback() {
 		Value.from_string(vm.empty_string()), 7)
 	value := Value.from_object(object)
 	assert value.to_number(mut vm)!.number == 42
-	assert object.get(PropertyName.from_str('log')).as_string().str() == 'vt'
+	assert object.get(mut vm, PropertyName.from_str('log'))!.as_string().str() == 'vt'
 	object.define_direct_property(PropertyName.from_str('log'),
 		Value.from_string(vm.empty_string()), 7)
 	text := value.to_primitive_string(mut vm)!
 	assert text.str() == '42'
-	assert object.get(PropertyName.from_str('log')).as_string().str() == 't'
+	assert object.get(mut vm, PropertyName.from_str('log'))!.as_string().str() == 't'
 	// Non-callable ordinary methods are skipped; their presence does not throw.
 	object.define_direct_property(PropertyName.from_str('valueOf'), Value.from_i32(7), 7)
 	assert value.to_number(mut vm)!.number == 42
@@ -53,20 +53,20 @@ fn test_exotic_coercion_receives_default_number_and_string_hints() {
 		assert vm.argument_count() == 1
 		mut receiver := vm.this_value().as_object()
 		receiver.define_direct_property(PropertyName.from_str('hint'), vm.argument(0), 7)
-		return receiver.get(PropertyName.from_str('primitive'))
+		return receiver.get(mut vm, PropertyName.from_str('primitive'))!
 	})
 	value := Value.from_object(object)
 	assert add(mut vm, value, Value.from_i32(1))!.as_string().str() == '171'
-	assert object.get(PropertyName.from_str('hint')).as_string().str() == 'default'
+	assert object.get(mut vm, PropertyName.from_str('hint'))!.as_string().str() == 'default'
 	assert value.to_number(mut vm)!.number == 17
-	assert object.get(PropertyName.from_str('hint')).as_string().str() == 'number'
+	assert object.get(mut vm, PropertyName.from_str('hint'))!.as_string().str() == 'number'
 	assert value.to_bigint(mut vm)!.big_integer.str() == '17'
-	assert object.get(PropertyName.from_str('hint')).as_string().str() == 'number'
+	assert object.get(mut vm, PropertyName.from_str('hint'))!.as_string().str() == 'number'
 	text := value.to_primitive_string(mut vm)!
 	assert text.str() == '17'
-	assert object.get(PropertyName.from_str('hint')).as_string().str() == 'string'
+	assert object.get(mut vm, PropertyName.from_str('hint'))!.as_string().str() == 'string'
 	assert value.to_property_key(mut vm)!.str() == '17'
-	assert object.get(PropertyName.from_str('hint')).as_string().str() == 'string'
+	assert object.get(mut vm, PropertyName.from_str('hint'))!.as_string().str() == 'string'
 	integer := string_to_bigint(utf16_string('42'))?
 	object.define_direct_property(PropertyName.from_str('primitive'), Value.from_bigint(integer), 7)
 	assert value.to_numeric(mut vm)!.str() == '42n'
@@ -90,19 +90,19 @@ fn test_coercion_preserves_left_to_right_order_and_live_method_replacement() {
 	for i in 0 .. 2 {
 		mut object := if i == 0 { left } else { right }
 		define_coercion_method(mut vm, mut object, PropertyName.from_str('valueOf'), fn [mut log, i] (mut vm VM) !Value {
-			text := log.get(PropertyName.from_str('text')).as_string().str()
+			text := log.get(mut vm, PropertyName.from_str('text'))!.as_string().str()
 			log.define_direct_property(PropertyName.from_str('text'), Value.from_string(vm.create_string_from_str(
 				text + i.str())), 7)
 			return Value.from_i32(i + 1)
 		})
 	}
 	assert add(mut vm, Value.from_object(left), Value.from_object(right))!.number == 3
-	assert log.get(PropertyName.from_str('text')).as_string().str() == '01'
+	assert log.get(mut vm, PropertyName.from_str('text'))!.as_string().str() == '01'
 	define_coercion_method(mut vm, mut left, PropertyName.from_str('valueOf'), fn (mut vm VM) !Value {
 		return Value.from_i32(40)
 	})
 	assert add(mut vm, Value.from_object(left), Value.from_object(right))!.number == 42
-	assert log.get(PropertyName.from_str('text')).as_string().str() == '011'
+	assert log.get(mut vm, PropertyName.from_str('text'))!.as_string().str() == '011'
 }
 
 fn test_exotic_and_ordinary_coercion_errors_preserve_completion_and_frames() {
