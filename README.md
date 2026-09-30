@@ -13,9 +13,12 @@ The refreshed LibJS frontend lives in [`libjs/`](libjs/PORT_STATUS.md). It expos
 script/module parsing, positioned diagnostics, scope analysis, and retained AST
 dumps, plus the translated VM record: execution contexts, environment records,
 realms, error objects, job queues, host hooks, and module loader bookkeeping.
-Its status file records the upstream reference, test commands, exact AST corpus
-results, deviations, and remaining runtime work. The browser still uses
-JavaScriptCore for execution.
+The native browser and inline-document layout bridge now prepare page scripts
+through this frontend, report positioned syntax errors, and associate execution
+with LibJS Script, Realm, and VM embedding records. JavaScriptCore still executes
+the programs and owns JavaScript objects, bindings, and promise reactions. The
+status file records the upstream reference, tests, deviations, and remaining
+bytecode, interpreter, builtin-object, and module-linking work.
 
 ## Translation footprint
 
@@ -125,10 +128,13 @@ The application provides a native single-tab browser chrome with back/forward,
 reload, home, an editable address/search field, link navigation, loading and
 console status, and scrolling. HTTP(S), local files, external stylesheets, and
 classic scripts feed the translated HTML, DOM, CSS, Layout, hit-testing,
-history, and paint-command pipeline. On macOS, JavaScriptCore supplies actual
-ECMAScript evaluation at the translated Bindings host boundary; common
+history, and paint-command pipeline. The LibJS frontend validates page scripts
+and supplies retained AST and scope metadata. On macOS, JavaScriptCore supplies
+ECMAScript evaluation at the browser host boundary; common
 `document`, element mutation, location, events, timers, and console operations
-are bridged back into the translated DOM before reflow.
+are bridged back into the translated DOM before reflow. Each classic script is
+a separate global program with a promise checkpoint before the next script;
+syntax and runtime errors are logged without stopping later document scripts.
 
 On macOS, production layout uses Arial/Helvetica-compatible metrics to match
 the native Cocoa painter. Set `LADYBIRD_BROWSER_FONT` to another TrueType font

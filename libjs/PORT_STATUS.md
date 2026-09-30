@@ -18,7 +18,9 @@ in [`LICENSE`](LICENSE).
 heap-owned program and function table, return positioned syntax diagnostics,
 and expose strict-mode and top-level-await state. `dump_ast()` serializes a
 successfully parsed and scope-analyzed source. Error-bearing programs cannot
-be dumped through this API.
+be dumped through this API. `reached_recursion_limit` distinguishes the V
+frontend's stack budget from grammar errors, and `utf16()` exposes the same
+code-unit conversion to the embedding backend.
 
 `VM.create()` builds the agent-level VM record: pre-allocated strings and
 well-known symbols, the execution context stack with inline-frame walking, the
@@ -142,6 +144,36 @@ package is counted separately from the 78-package LibWeb inventory.
 - The 226-entry `ErrorType` table is generated from `Runtime/ErrorTypes.h` with
   upstream names, templates, and ordered `{}` substitution.
 
+## Browser integration
+
+`browserjs.Runtime` now owns a translated VM and initialized realm. Its
+`prepare_script()` boundary retains the LibJS parse and scope analysis alongside
+the source URL, starting line, and script/module parse goal. `evaluate()` uses
+that boundary, while `evaluate_prepared()` reuses an existing parse. Classic
+program execution pushes a translated Script execution context with its realm
+and global environment, then removes it on both success and failure. Closing
+the runtime releases JavaScriptCore and clears the embedding context stack.
+
+Both the native browser in `main.v` and the inline-document layout bridge use
+this path for page scripts. Bootstrap, document readiness dispatch, and DOM
+snapshot code use `evaluate_host()`. Each page script executes as a separate
+global program, preserving lexical bindings for later scripts and draining
+JavaScriptCore promise jobs between programs. Parse and runtime failures are
+logged per script; later scripts and readiness events still run. Discarded
+completion values are not coerced to strings. The backend receives the full
+UTF-16 source, including embedded NULs, plus the source URL and starting line.
+Runtime error messages retain their stack traces, including source locations;
+an exception from a thrown value's `stack` getter does not replace that value's
+reported error.
+
+JavaScriptCore remains responsible for execution, JavaScript call frames,
+global bindings, objects, and promise reactions. The translated VM contexts
+describe the embedding boundary, not JavaScriptCore's internal frames. Input
+that reaches the frontend's 32-call guard is validated by JavaScriptCore;
+RegExp patterns also receive its syntax validation. Module sources use LibJS's
+module parse goal, but the compact browser reports that module execution is
+pending instead of running a module as a classic script.
+
 ## Verification
 
 The repository's current V checkout requires its old compiler frontend:
@@ -157,7 +189,17 @@ v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
 
 v -old-compiler -enable-globals test browserjs
-# 2 passed, 2 total (the browser package imports libjs)
+# 2 passed, 2 total
+
+v -old-compiler -enable-globals -gc none test browserjs
+# 2 passed, 2 total
+
+v -old-compiler -enable-globals test main_test.v
+# 1 passed, 1 total
+
+./build_ladybird.sh
+Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
+# DOM mutation and click-event checks pass
 ```
 
 All 100 checked-in upstream AST fixtures compare directly and exactly, including
@@ -174,6 +216,12 @@ temporary module files. The preceding LibWeb work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
 this package; the 36 libjs files were verified separately in both GC modes.
 There are now 692 repository test files.
+
+Browser integration checks pass the two `browserjs` test files in both GC modes,
+the native `main_test.v` bridge tests, the production bundle build, and its
+headless DOM-mutation/click smoke check. The 25 screenshot comparisons pass the
+11 default smoke cases, the same-size SVG image source switch, and 13 SVG
+paint-server mutation cases; all 14 SVG comparisons are pixel-exact.
 
 ## Deviations from upstream
 
@@ -206,8 +254,9 @@ There are now 692 repository test files.
 
 ## Remaining translation work
 
-This is a frontend refresh plus the VM record, not a complete LibJS runtime.
-The browser continues to execute scripts through JavaScriptCore.
+The frontend and VM embedding records are integrated into the browser;
+JavaScriptCore continues to execute its scripts. This is not a complete LibJS
+runtime migration.
 
 - RegExp flag checks exist, but `compile_regex_pattern()` still has no backend.
   Pattern syntax validation and compilation require the LibRegex boundary;

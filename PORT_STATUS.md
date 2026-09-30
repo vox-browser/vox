@@ -866,9 +866,19 @@ unwinding, and the file-backed module loader bookkeeping. Its 36 test files pass
 in both GC and no-GC mode, and all 100 upstream AST fixtures match exactly with
 no case overrides. The complete 656-file LibWeb run below preceded that package;
 the repository now has 692 test files verified in those separate runs. The
-browser still uses JavaScriptCore. Regex compilation, bytecode generation, the
-interpreter loop, builtin objects, and module linking remain outside the
-completed slices.
+native browser and inline-document layout bridge now prepare page scripts
+through LibJS and associate classic execution with translated Script, Realm,
+and VM embedding contexts. Sources retain their URLs and parse goals; syntax
+failures are positioned and isolated per script. Classic scripts share global
+lexical bindings and run promise checkpoints before the next script. The browser
+still uses JavaScriptCore for execution and its JavaScript objects and jobs.
+Regex compilation, bytecode generation, the interpreter loop, builtin objects,
+and module linking remain outside the completed slices.
+
+The integration passes the browser package's two test files in both GC modes,
+the native bridge tests, the production bundle build and headless smoke check,
+and 25 screenshot comparisons. These include all 11 default smoke cases and
+14 pixel-exact SVG image/paint-server regression comparisons.
 
 ### LibWeb checks
 
