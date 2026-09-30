@@ -34,18 +34,9 @@ fn (u Utf16String) clone() Utf16String {
 	}
 }
 
-// str converts to a V string for display/map keys.
-// Only handles BMP characters (good enough for ASCII identifiers).
+// WTF-8 preserves even unpaired UTF-16 surrogates in internal map keys.
 fn (u Utf16String) str() string {
-	mut buf := []u8{cap: u.data.len}
-	for ch in u.data {
-		if ch < 128 {
-			buf << u8(ch)
-		} else {
-			buf << u8('?'[0])
-		}
-	}
-	return buf.bytestr()
+	return encode_utf16(u.data, false)
 }
 
 fn (a Utf16String) == (b Utf16String) bool {
@@ -77,11 +68,18 @@ fn utf16_equals(a []u16, b []u16) bool {
 	return true
 }
 
-// utf16 converts an ASCII string to []u16 (compile-time-like helper).
+// Source offsets remain UTF-16 code-unit offsets, including supplementary text.
 fn utf16(s string) []u16 {
 	mut result := []u16{cap: s.len}
-	for b in s.bytes() {
-		result << u16(b)
+	for character in s.runes() {
+		code_point := u32(character)
+		if code_point <= 0xFFFF {
+			result << u16(code_point)
+		} else {
+			value := code_point - 0x10000
+			result << u16(0xD800 + (value >> 10))
+			result << u16(0xDC00 + (value & 0x3FF))
+		}
 	}
 	return result
 }
@@ -91,15 +89,40 @@ fn ch(c u8) u16 {
 	return u16(c)
 }
 
-// string_from_utf16_lossy converts a []u16 to a V string, replacing non-ASCII with '?'.
+// Diagnostic text replaces unpaired surrogates, matching Rust from_utf16_lossy.
 fn string_from_utf16_lossy(data []u16) string {
+	return encode_utf16(data, true)
+}
+
+fn encode_utf16(data []u16, lossy bool) string {
 	mut buf := []u8{cap: data.len}
-	for unit in data {
-		if unit < 128 {
-			buf << u8(unit)
-		} else {
-			buf << u8('?'[0])
+	mut index := 0
+	for index < data.len {
+		unit := data[index]
+		mut code_point := u32(unit)
+		if is_utf16_high_surrogate(unit) && index + 1 < data.len
+			&& is_utf16_low_surrogate(data[index + 1]) {
+			code_point = 0x10000 + (u32(unit - 0xD800) << 10) + u32(data[index + 1] - 0xDC00)
+			index++
+		} else if lossy && (is_utf16_high_surrogate(unit) || is_utf16_low_surrogate(unit)) {
+			code_point = 0xFFFD
 		}
+		if code_point < 0x80 {
+			buf << u8(code_point)
+		} else if code_point < 0x800 {
+			buf << u8(0xC0 | (code_point >> 6))
+			buf << u8(0x80 | (code_point & 0x3F))
+		} else if code_point < 0x10000 {
+			buf << u8(0xE0 | (code_point >> 12))
+			buf << u8(0x80 | ((code_point >> 6) & 0x3F))
+			buf << u8(0x80 | (code_point & 0x3F))
+		} else {
+			buf << u8(0xF0 | (code_point >> 18))
+			buf << u8(0x80 | ((code_point >> 12) & 0x3F))
+			buf << u8(0x80 | ((code_point >> 6) & 0x3F))
+			buf << u8(0x80 | (code_point & 0x3F))
+		}
+		index++
 	}
 	return buf.bytestr()
 }
