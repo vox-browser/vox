@@ -1,0 +1,32 @@
+module libjs
+
+#include <pthread.h>
+#include <alloca.h>
+
+@[typedef]
+struct C.pthread_attr_t {}
+
+fn C.pthread_self() voidptr
+fn C.pthread_getattr_np(thread voidptr, attr &C.pthread_attr_t) int
+fn C.pthread_attr_getstack(attr &C.pthread_attr_t, stack_address &voidptr, stack_size &usize) int
+fn C.pthread_attr_destroy(attr &C.pthread_attr_t) int
+fn C.alloca(size usize) voidptr
+
+fn native_stack_bounds() (usize, usize) {
+	attr := C.pthread_attr_t{}
+	if C.pthread_getattr_np(C.pthread_self(), &attr) != 0 {
+		panic('pthread_getattr_np failed')
+	}
+	mut base := unsafe { nil }
+	mut size := usize(0)
+	if C.pthread_attr_getstack(&attr, &base, &size) != 0 {
+		panic('pthread_attr_getstack failed')
+	}
+	C.pthread_attr_destroy(&attr)
+	return usize(base), size
+}
+
+@[noinline]
+fn current_stack_pointer() usize {
+	return usize(C.alloca(1))
+}
