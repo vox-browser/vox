@@ -357,6 +357,13 @@ suite, native headless smoke, and all 11 default screenshot comparisons before
 this package; the 54 libjs files are verified separately in both GC modes.
 There are now 710 repository test files.
 
+The full 710-file repository run passed 709 files and found one obsolete
+`main_test.v` assertion that expected property assignment to fail compilation.
+With property assignment translated, that script instead reaches the missing
+`document` binding and throws a ReferenceError. The assertion now checks that
+error and its source URL; the complete native `main_test.v` rerun passes.
+Together the full run and that focused rerun verify all 710 test files.
+
 Browser integration checks pass the two `browserjs` test files in both GC modes,
 the native `main_test.v` bridge and flag tests, the production bundle build,
 JavaScriptCore DOM-mutation/click smoke, and LibJS bytecode smoke. A native
