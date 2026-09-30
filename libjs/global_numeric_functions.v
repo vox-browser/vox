@@ -1,6 +1,7 @@
 module libjs
 
 import math
+import strconv
 
 // Translated from Runtime/GlobalObject.cpp. NativeFunction owns the callee realm
 // and frame; the complete Intrinsics prototype graph is separate runtime work.
@@ -14,6 +15,68 @@ fn global_is_nan(mut vm VM) !Value {
 	// 19.2.3 isNaN ( number ).
 	number := vm.argument(0).to_number(mut vm)!
 	return Value.from_bool(math.is_nan(number.number))
+}
+
+// AK::parse_first_number<double>'s decimal prefix path delegates to fast_float
+// parse_number_string (ascii_number.h). Translate its general decimal grammar;
+// V strconv supplies binary conversion rather than fast_float's mantissa backend.
+fn parse_first_decimal(units []u16) ?f64 {
+	if units.len == 0 { return none }
+	mut cursor := 0
+	if units[cursor] in [u16(`-`), u16(`+`)] {
+		cursor++
+		if cursor == units.len { return none }
+	}
+	mut digits := 0
+	for cursor < units.len && units[cursor] >= u16(`0`) && units[cursor] <= u16(`9`) {
+		cursor++
+		digits++
+	}
+	if cursor < units.len && units[cursor] == u16(`.`) {
+		cursor++
+		for cursor < units.len && units[cursor] >= u16(`0`) && units[cursor] <= u16(`9`) {
+			cursor++
+			digits++
+		}
+	}
+	if digits == 0 { return none }
+	if cursor < units.len && units[cursor] in [u16(`e`), u16(`E`)] {
+		location_of_e := cursor
+		cursor++
+		if cursor < units.len && units[cursor] in [u16(`-`), u16(`+`)] { cursor++ }
+		exponent_start := cursor
+		for cursor < units.len && units[cursor] >= u16(`0`) && units[cursor] <= u16(`9`) {
+			cursor++
+		}
+		// General format enables fixed notation: an incomplete exponent is a
+		// trailing token, so restore the prefix ending immediately before e.
+		if cursor == exponent_start { cursor = location_of_e }
+	}
+	return strconv.atof64(encode_utf16(units[..cursor], false)) or { return none }
+}
+
+fn global_parse_float(mut vm VM) !Value {
+	// 19.2.4 parseFloat ( string ).
+	argument := vm.argument(0)
+	if argument.is_number() {
+		if argument.number == 0 && math.signbit(argument.number) { return Value.from_i32(0) }
+		return argument
+	}
+	input := argument.to_primitive_string(mut vm)!
+	mut start := 0
+	for start < input.utf16.data.len && is_number_whitespace(input.utf16.data[start]) {
+		start++
+	}
+	units := input.utf16.data[start..]
+	if units.len == 0 { return Value.from_f64(math.nan()) }
+	if number := parse_first_decimal(units) { return Value.from_f64(number) }
+	first := units[0]
+	infinity_start := if first in [u16(`+`), u16(`-`)] { 1 } else { 0 }
+	if units.len - infinity_start >= 8
+		&& units[infinity_start..infinity_start + 8] == utf16_string('Infinity').data {
+		return Value.from_f64(math.inf(if first == u16(`-`) { -1 } else { 1 }))
+	}
+	return Value.from_f64(math.nan())
 }
 
 fn global_parse_int(mut vm VM) !Value {
@@ -67,9 +130,10 @@ fn set_default_global_numeric_functions(mut vm VM, realm &Realm) {
 	// set_default_global_bindings installs writable/configurable value properties.
 	mut global := realm.global_object_record()
 	for name, behaviour in {
-		'isFinite': NativeFunctionPointer(global_is_finite)
-		'isNaN':    NativeFunctionPointer(global_is_nan)
-		'parseInt': NativeFunctionPointer(global_parse_int)
+		'isFinite':   NativeFunctionPointer(global_is_finite)
+		'isNaN':      NativeFunctionPointer(global_is_nan)
+		'parseFloat': NativeFunctionPointer(global_parse_float)
+		'parseInt':   NativeFunctionPointer(global_parse_int)
 	} {
 		length := if name == 'parseInt' { 2.0 } else { 1.0 }
 		function := NativeFunction.create_raw(mut vm, realm, none, behaviour, length,
