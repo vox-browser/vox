@@ -190,7 +190,9 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 		.paren_open {
 			paren_start := p.position()
 			p.consume_token(.paren_open)
-			if arrow := p.try_parse_arrow_function_expression_impl(true, false, paren_start) {
+			if arrow := p.try_parse_arrow_function_expression_impl(true, false, paren_start,
+				forbidden)
+			{
 				return arrow, false
 			}
 			if p.match_token(.paren_close) {
@@ -316,7 +318,9 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 				expression := p.parse_function_expression()
 				return expression, true
 			}
-			if arrow := p.try_parse_arrow_function_expression(next.token_type == .paren_open, true) {
+			if arrow := p.try_parse_arrow_function_expression(next.token_type == .paren_open, true,
+				forbidden)
+			{
 				return arrow, false
 			}
 			async_token := p.consume_and_check_identifier()
@@ -384,7 +388,7 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 				return expression, false
 			}
 			// Fall through to identifier handling below
-			return p.parse_primary_expression_identifier(start)
+			return p.parse_primary_expression_identifier(start, forbidden)
 		}
 		.await_kw {
 			if p.flags.await_expression_is_valid {
@@ -392,7 +396,7 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 				return expression, true
 			}
 			// Fall through to identifier handling below
-			return p.parse_primary_expression_identifier(start)
+			return p.parse_primary_expression_identifier(start, forbidden)
 		}
 		.private_identifier {
 			id := p.parse_private_identifier(start)
@@ -412,15 +416,15 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 			return p.parse_regex_literal(start, regex_token), true
 		}
 		else {
-			return p.parse_primary_expression_identifier(start)
+			return p.parse_primary_expression_identifier(start, forbidden)
 		}
 	}
 }
 
 // Helper for the default/fallthrough case in parse_primary_expression.
-fn (mut p Parser) parse_primary_expression_identifier(start Position) (Expression, bool) {
+fn (mut p Parser) parse_primary_expression_identifier(start Position, forbidden ForbiddenTokens) (Expression, bool) {
 	if p.match_identifier() || p.match_token(.await_kw) || p.match_token(.yield_kw) {
-		if arrow := p.try_parse_arrow_function_expression(false, false) {
+		if arrow := p.try_parse_arrow_function_expression(false, false, forbidden) {
 			return arrow, false
 		}
 		if p.match_token(.await_kw) && (p.program_type == .module
@@ -1683,11 +1687,12 @@ fn process_escape_sequences_impl(input []u16, mode EscapeMode) EscapeResult {
 }
 
 // Try to parse an arrow function expression. Returns none on failure.
-fn (mut p Parser) try_parse_arrow_function_expression(expect_parens bool, is_async bool) ?Expression {
-	return p.try_parse_arrow_function_expression_impl(expect_parens, is_async, p.position())
+fn (mut p Parser) try_parse_arrow_function_expression(expect_parens bool, is_async bool, forbidden ForbiddenTokens) ?Expression {
+	return p.try_parse_arrow_function_expression_impl(expect_parens, is_async, p.position(),
+		forbidden)
 }
 
-fn (mut p Parser) try_parse_arrow_function_expression_impl(expect_parens bool, is_async bool, source_start_override Position) ?Expression {
+fn (mut p Parser) try_parse_arrow_function_expression_impl(expect_parens bool, is_async bool, source_start_override Position, forbidden ForbiddenTokens) ?Expression {
 	start := source_start_override
 
 	if !expect_parens && !is_async {
@@ -1838,8 +1843,9 @@ fn (mut p Parser) try_parse_arrow_function_expression_impl(expect_parens bool, i
 			function_id: function_id
 		})
 	} else {
-		expression := p.parse_assignment_expression()
 		// C++ uses rule_start (function start) for ReturnStatement and FunctionBody.
+		body_forbidden := if saved_formal_parameter_ctx { ForbiddenTokens{} } else { forbidden }
+		expression := p.parse_expression(precedence_assignment, .right, body_forbidden)
 		return_statement := Statement.new(p.range_from(start), StatementKind{
 			tag:        .return_stmt
 			return_arg: &expression
