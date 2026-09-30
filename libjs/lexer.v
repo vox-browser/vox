@@ -990,11 +990,15 @@ fn (mut l Lexer) next() Token {
 					}
 				}
 			} else if l.is_whitespace() {
+				start_line_number := l.line_number
 				for {
 					l.consume()
 					if !l.is_whitespace() {
 						break
 					}
+				}
+				if start_line_number != l.line_number {
+					line_has_token_yet = false
 				}
 			} else if l.is_line_comment_start(line_has_token_yet) {
 				l.consume()
