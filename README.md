@@ -11,9 +11,11 @@ translation-specific documentation belong in this repository. See
 
 The refreshed LibJS frontend lives in [`libjs/`](libjs/PORT_STATUS.md). It exposes
 script/module parsing, positioned diagnostics, scope analysis, and retained AST
-dumps. Its status file records the upstream reference, test commands, exact AST
-corpus results, and remaining runtime work. The browser still uses JavaScriptCore
-for execution.
+dumps, plus the translated VM record: execution contexts, environment records,
+realms, error objects, job queues, host hooks, and module loader bookkeeping.
+Its status file records the upstream reference, test commands, exact AST corpus
+results, deviations, and remaining runtime work. The browser still uses
+JavaScriptCore for execution.
 
 ## Translation footprint
 

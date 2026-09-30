@@ -18,19 +18,23 @@
 - Preserve working translated behavior when replacing generated placeholders;
   add focused tests for each completed translation slice.
 
-## LibJS frontend translation
+## LibJS translation
 
 - Keep refreshed LibJS V code and tests in `libjs/` in this repository. Use
   `~/code/3rd/ladybird/Libraries/LibJS` as the upstream reference and
-  `libjs/PORT_STATUS.md` for the completed slices and remaining runtime work.
+  `libjs/PORT_STATUS.md` for the completed slices, deviations, and remaining
+  runtime work. The VM record (`vm.v` and the runtime records it depends on)
+  translates `Runtime/VM.{h,cpp}` directly; keep new runtime slices in the same
+  package with focused tests.
 - Run `v -old-compiler -enable-globals test libjs`; exercise heap ownership with
   the same command plus `-gc none`.
 - Compare the current upstream AST fixtures with
   `v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all`.
   Keep these comparisons exact; the driver has no case overrides.
 - The browser still uses JavaScriptCore. The parser's 32-call recursion limit,
-  absent regex backend, and pending bytecode/runtime translation must not be
-  described as full LibJS parity.
+  absent regex backend, and the pending bytecode generation, interpreter loop,
+  builtin objects, and module linking must not be described as full LibJS
+  parity.
 
 ## Build and run Ladybird V
 

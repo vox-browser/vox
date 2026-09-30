@@ -858,12 +858,17 @@ recorded separately below because it was introduced after that full-suite run.
 
 The refreshed [`libjs/`](libjs/PORT_STATUS.md) package imports the February
 `libjs_v` frontend and translates later parser, Unicode, AST ownership, scope,
-and serialization behavior against the current Ladybird checkout. Its 28 test
-files pass in both GC and no-GC mode, and all 100 upstream AST fixtures match
-exactly with no case overrides. The complete 656-file LibWeb run below preceded
-that package; the repository now has 684 test files verified in those separate
-runs. The browser still uses JavaScriptCore. Regex compilation, bytecode, and VM
-translation remain outside this completed frontend slice.
+and serialization behavior against the current Ladybird checkout. It also
+translates the LibJS VM record: execution contexts and the interpreter stack,
+environment and Reference records, realms, error objects with tracebacks and the
+`ErrorType` table, promise and finalization job queues, host hooks, exception
+unwinding, and the file-backed module loader bookkeeping. Its 36 test files pass
+in both GC and no-GC mode, and all 100 upstream AST fixtures match exactly with
+no case overrides. The complete 656-file LibWeb run below preceded that package;
+the repository now has 692 test files verified in those separate runs. The
+browser still uses JavaScriptCore. Regex compilation, bytecode generation, the
+interpreter loop, builtin objects, and module linking remain outside the
+completed slices.
 
 ### LibWeb checks
 
