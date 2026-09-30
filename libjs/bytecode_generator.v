@@ -89,6 +89,7 @@ fn binary_opcode(op BinaryOp) !OpCode {
 		.left_shift { .left_shift }
 		.right_shift { .right_shift }
 		.unsigned_right_shift { .unsigned_right_shift }
+		.in_op { .in_op }
 		else { return error('Object binary operators are not translated yet') }
 	}
 }

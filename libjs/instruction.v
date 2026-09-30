@@ -19,6 +19,7 @@ pub enum OpCode {
 	less_than_equals
 	greater_than
 	greater_than_equals
+	in_op
 	bitwise_and
 	bitwise_or
 	bitwise_xor
@@ -83,7 +84,7 @@ fn (instruction Instruction) input_count() int {
 		.add, .sub, .mul, .div, .mod_, .exp, .strict_equals, .strict_inequals, .loose_equals,
 		.loose_inequals, .less_than, .less_than_equals, .greater_than, .greater_than_equals,
 		.bitwise_and, .bitwise_or, .bitwise_xor, .left_shift, .right_shift, .unsigned_right_shift,
-		.call {
+		.in_op, .call {
 			2
 		}
 		.get_property, .delete_property {

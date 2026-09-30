@@ -398,6 +398,14 @@ pub fn is_strictly_equal(lhs Value, rhs Value) bool {
 	}
 }
 
+// Runtime/Value.cpp::in. Validate the right operand before ToPropertyKey can
+// invoke coercion hooks on the left operand.
+pub fn in_operator(mut vm VM, lhs Value, rhs Value) !Value {
+	if !rhs.is_object() { return vm.throw_error_type(.type_error, .in_operator_with_object) }
+	key := lhs.to_property_key(mut vm)!
+	return Value.from_bool(rhs.as_object().has_property(key))
+}
+
 pub enum ComparisonResult {
 	less
 	greater

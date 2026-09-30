@@ -146,6 +146,10 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 		.loose_inequals {
 			result = Value.from_bool(!is_loosely_equal(mut vm, left, right)!)
 		}
+		.in_op {
+			// SlowPaths.cpp::asm_slow_path_in.
+			result = in_operator(mut vm, left, right)!
+		}
 		.less_than, .less_than_equals, .greater_than, .greater_than_equals {
 			comparison := compare_primitive_values(mut vm, left, right)!
 			result = Value.from_bool(match instruction.op {
