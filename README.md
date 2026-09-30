@@ -15,10 +15,13 @@ dumps, plus the translated VM record: execution contexts, environment records,
 realms, error objects, job queues, host hooks, and module loader bookkeeping.
 The native browser and inline-document layout bridge now prepare page scripts
 through this frontend, report positioned syntax errors, and associate execution
-with LibJS Script, Realm, and VM embedding records. JavaScriptCore still executes
-the programs and owns JavaScript objects, bindings, and promise reactions. The
-status file records the upstream reference, tests, deviations, and remaining
-bytecode, interpreter, builtin-object, and module-linking work.
+with LibJS Script, Realm, and VM records. The translated bytecode generator and
+interpreter execute primitive expressions, declarations, lexical scopes, and
+loops. The browser selects this supported slice with `--js-engine=libjs`;
+JavaScriptCore remains the default, with `--js-engine=javascriptcore` selecting
+its existing DOM host explicitly. LibJS mode has no DOM bindings and never falls
+back to JavaScriptCore. The status file records the supported boundary, tests,
+deviations, and remaining execution, builtin-object, and module-linking work.
 
 ## Translation footprint
 
@@ -145,7 +148,18 @@ Pass a URL, local HTML path, or raw HTML to the bundle executable to open it. A
 small non-windowed build/startup check is available as:
 
 ```sh
-Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
+Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
+Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=libjs
+```
+
+`--js-engine javascriptcore` and `--js-engine libjs` are also accepted. The
+JavaScriptCore smoke tests DOM mutation and click events; the LibJS smoke tests
+bytecode execution and reports that DOM bindings are pending. Run translated
+scripts without a browser or JavaScriptCore with:
+
+```sh
+v -old-compiler -enable-globals run tools/libjs_run.v -e '6 * 7;'
+v -old-compiler -enable-globals run tools/libjs_run.v program.js
 ```
 
 Compare the V browser against checked-in upstream C++ screenshots of the

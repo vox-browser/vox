@@ -1,6 +1,6 @@
 module libjs
 
-// Selected paths from Rust/src/bytecode/{generator,codegen,codegen_stmt}.rs.
+// Selected paths from Rust/src/bytecode/{generator,codegen}.rs.
 // The V stream uses instruction indices and monotonically allocated registers;
 // upstream's register reuse, caches, packed instruction ABI and functions remain
 // pending. Unsupported syntax fails during compilation of the entire program.

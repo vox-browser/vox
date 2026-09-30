@@ -1,6 +1,6 @@
 # LibJS V translation status
 
-Audited: 2026-09-30.
+Audited: 2026-10-01.
 
 The frontend baseline comes from `medvednikov/libjs_v` commit
 `9824cc3fad0910215f0f4de43fb108bb7575f6c7` (2026-02-24). The upstream reference is
@@ -8,6 +8,8 @@ The frontend baseline comes from `medvednikov/libjs_v` commit
 `963d46a829f3e1b79f44dba9d02afb70654300fa` (2026-09-11): its Rust parser, lexer,
 AST, and scope collector for the frontend, and its C++ `Runtime/VM.{h,cpp}`,
 `Interpreter/Interpreter.cpp` VM members, and runtime records for the VM slice.
+The execution slice additionally follows `Rust/src/bytecode/{operand,generator,codegen}.rs`,
+`Interpreter/interpreter.flap`, `Script.cpp`, and `Runtime/{Value,GlobalObject}.cpp`.
 All refreshed V code and tests live here; the upstream checkout and the original
 `libjs_v` checkout are references. The upstream BSD-2-Clause notice is retained
 in [`LICENSE`](LICENSE).
@@ -43,12 +45,15 @@ creates a realm with a global environment and pushes its execution context.
 | `environment.v`, `declarative_environment.v`, `function_environment.v`, `object_environment.v`, `global_environment.v`, `private_environment.v`, `reference.v` | Environment records, GetThisEnvironment, private names, Reference records with GetValue/PutValue/delete |
 | `value.v`, `completion.v`, `primitive_string.v`, `symbol.v`, `object.v` | Tagged values, completion records, VM string caches, symbols, ordinary objects with data properties and `PropertyName` keys |
 | `error_object.v`, `error_types.v` | Error objects with `[[ErrorData]]` tracebacks and stack strings; the 226-entry `ErrorType` message table |
-| `realm.v`, `script.v`, `module_records.v`, `promise.v`, `function_object.v`, `executable.v` | Realm and Script records, `Module` records and loading payloads, promise state, job callbacks, executable metadata (handler ranges, source map, identifier table) |
+| `realm.v`, `script.v`, `module_records.v`, `promise.v`, `function_object.v`, `executable.v` | Realm and Script records, standard global value properties, `Module` records and loading payloads, promise state, job callbacks, executable metadata (handler ranges, source map, identifier table) |
+| `value_operations.v` | Primitive coercion, numeric arithmetic, UTF-16 concatenation, strict/loose equality and relational comparisons |
+| `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
+| `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 38 implementation files contain **17,917 physical V LOC**; the VM slice adds
-26 files and 5,600 LOC. The 36 test files contain **2,833 physical V LOC** and
-**126 test functions**. Physical LOC includes comments and blank lines. This
-package is counted separately from the 78-package LibWeb inventory.
+The 44 implementation files contain **19,317 physical V LOC**. The 40 test
+files contain **3,350 physical V LOC** and **143 test functions**. Physical LOC
+includes comments and blank lines. This package is counted separately from the
+78-package LibWeb inventory.
 
 ## Completed refresh slices
 
@@ -144,6 +149,46 @@ package is counted separately from the 78-package LibWeb inventory.
 - The 226-entry `ErrorType` table is generated from `Runtime/ErrorTypes.h` with
   upstream names, templates, and ordered `{}` substitution.
 
+## Executable runtime slice
+
+`Script.parse()` retains its frontend tree and original source. `Script.compile()`
+generates and caches an `Executable`; `VM.run()` executes it through the V loop,
+with no JavaScriptCore dependency. `VM.run_with_limits()` and `run_executable()`
+accept an optional instruction budget (zero is unlimited). Browser execution and
+the standalone runner use a one-million-instruction limit.
+
+Supported programs include primitive literals, identifiers, `this`, numeric and
+bitwise operators, comparisons, primitive string concatenation, unary operators,
+`typeof` (including unknown names and lexical TDZ checks), conditional and sequence
+expressions, short-circuiting logical operators and assignments, identifier
+assignments/updates, `var`/`let`/`const`, blocks, `if`, `while`, `do`/`while`, `for`,
+unlabelled `break`/`continue`, and `throw`. Bindings persist across scripts in one
+realm. Global declaration conflicts are checked before creating any bindings;
+block declarations are created before executing their initializers. The global
+object supplies `undefined`, `NaN`, `Infinity`, and `globalThis` with upstream
+property attributes.
+
+The entire program is compiled before declaration instantiation or execution.
+An unsupported construct, even inside an untaken branch, rejects the program
+without running its preceding statements or creating its bindings. Functions,
+calls, object/array creation, property access, destructuring, classes, exceptions
+with `try`/`catch`/`finally`, labels, iterators, templates, regex, BigInt, async,
+and modules are still pending. Handwritten bytecode tests exercise exception
+handler dispatch and `Catch`; this does not imply AST-level catch support.
+Object coercion reports an `InternalError` until callable objects exist.
+
+A standalone runner makes this boundary usable outside the browser:
+
+```sh
+v -old-compiler -enable-globals run tools/libjs_run.v -e 'var sum=0; for(let i=0;i<7;i++) sum+=i; sum*2;'
+# 42
+v -old-compiler -enable-globals run tools/libjs_run.v program.js
+```
+
+The runner prints the completion value with `Value.str()` and reports failures
+on stderr with a nonzero exit code. It links ICU for the frontend, with no
+JavaScriptCore linkage.
+
 ## Browser integration
 
 `browserjs.Runtime` now owns a translated VM and initialized realm. Its
@@ -166,13 +211,35 @@ Runtime error messages retain their stack traces, including source locations;
 an exception from a thrown value's `stack` getter does not replace that value's
 reported error.
 
-JavaScriptCore remains responsible for execution, JavaScript call frames,
-global bindings, objects, and promise reactions. The translated VM contexts
-describe the embedding boundary, not JavaScriptCore's internal frames. Input
+In the default JavaScriptCore mode, JavaScriptCore remains responsible for
+execution, JavaScript call frames, global bindings, objects, and promise reactions.
+The translated VM contexts describe the embedding boundary, not JavaScriptCore's internal frames. Input
 that reaches the frontend's 32-call guard is validated by JavaScriptCore;
 RegExp patterns also receive its syntax validation. Module sources use LibJS's
 module parse goal, but the compact browser reports that module execution is
 pending instead of running a module as a classic script.
+
+The native command line selects the backend explicitly:
+
+```sh
+Build/v/Ladybird.app/Contents/MacOS/Ladybird --js-engine=javascriptcore page.html
+Build/v/Ladybird.app/Contents/MacOS/Ladybird --js-engine=libjs page.html
+# The separate form --js-engine libjs is also accepted.
+```
+
+JavaScriptCore remains the default until the LibJS DOM and builtin bindings are
+ready. `Runtime.create_with_engine(.libjs)` creates no JavaScriptCore context,
+runs supported programs through the translated VM, and never falls back to
+JavaScriptCore. Parse-budget exhaustion and unsupported code are reported
+explicitly. Source URLs and starting lines reach bytecode diagnostics and runtime
+tracebacks. Per-script failures leave later scripts runnable.
+
+LibJS mode establishes the native browsing context and renders the document, but
+skips the current JavaScriptCore-based DOM bootstrap and event dispatch. It logs
+that DOM bindings are pending; unsupported DOM scripts produce diagnostics.
+`--headless-smoke --js-engine=libjs` tests bytecode execution and identifies the
+pending DOM bindings. The JavaScriptCore smoke still checks DOM mutation and click
+handlers.
 
 ## Verification
 
@@ -180,10 +247,10 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 36 passed, 36 total
+# 40 passed, 40 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 36 passed, 36 total
+# 40 passed, 40 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
@@ -198,8 +265,10 @@ v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
 
 ./build_ladybird.sh
-Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
+Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
 # DOM mutation and click-event checks pass
+Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=libjs
+# LibJS bytecode execution passes; DOM bindings are pending
 ```
 
 All 100 checked-in upstream AST fixtures compare directly and exactly, including
@@ -214,13 +283,18 @@ The VM tests exercise the runtime records directly: fake `FunctionObject`,
 stand in for the untranslated builtin objects, and module-loading tests write
 temporary module files. The preceding LibWeb work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 36 libjs files were verified separately in both GC modes.
-There are now 692 repository test files.
+this package; the 40 libjs files were verified separately in both GC modes.
+There are now 696 repository test files.
 
 Browser integration checks pass the two `browserjs` test files in both GC modes,
-the native `main_test.v` bridge tests, the production bundle build, and its
-headless DOM-mutation/click smoke check. The 25 screenshot comparisons pass the
-11 default smoke cases, the same-size SVG image source switch, and 13 SVG
+the native `main_test.v` bridge and flag tests, the production bundle build,
+JavaScriptCore DOM-mutation/click smoke, and LibJS bytecode smoke. A native
+LibJS fixture also verifies continuation after an unsupported DOM script.
+Invalid engine flags return exit status 2. The standalone runner passes
+expression and file-input checks, rejects unsupported programs with exit status
+1, and its linked libraries contain ICU and libSystem without JavaScriptCore.
+
+The 25 screenshot comparisons pass the 11 default smoke cases, the same-size SVG image source switch, and 13 SVG
 paint-server mutation cases; all 14 SVG comparisons are pixel-exact.
 
 ## Deviations from upstream
@@ -249,14 +323,25 @@ paint-server mutation cases; all 14 SVG comparisons are pixel-exact.
   carries an `on_finished` continuation where upstream enters
   `ContinueModuleLoading`/`ContinueDynamicImport`. JSON modules go through the
   `parse_json_module` hook, whose default reports an `InternalError`.
+- The operand tag encoding matches upstream, but instructions are typed V records
+  with instruction-index offsets, not packed byte offsets. No upstream bytecode
+  cache ABI is claimed. Register allocation is monotonic, bindings use named
+  environment lookup, and block environment operations use the frame's current
+  environment instead of environment-valued operands.
+- Script compilation precedes global declaration instantiation, and the script
+  context is pushed before instantiation, so unsupported programs cannot mutate
+  globals and declaration failures retain a script traceback. Upstream arranges
+  instantiation before allocating/pushing the script frame.
+- Callable objects are absent, so per-iteration environments observable through
+  closures are pending; function syntax is rejected before execution.
 - Debugger hooks inside `handle_exception()` and the interpreter dispatch-table
   selection are not translated; `enable_debugging()` only tracks the record.
 
 ## Remaining translation work
 
-The frontend and VM embedding records are integrated into the browser;
-JavaScriptCore continues to execute its scripts. This is not a complete LibJS
-runtime migration.
+The frontend and supported VM execution slice are integrated into the browser;
+JavaScriptCore continues to execute scripts in the default mode. This is not a
+complete LibJS runtime migration.
 
 - RegExp flag checks exist, but `compile_regex_pattern()` still has no backend.
   Pattern syntax validation and compilation require the LibRegex boundary;
@@ -266,16 +351,18 @@ runtime migration.
   stack frames. The guard reports a positioned syntax error instead of a stack
   overflow; increasing it requires a compact AST representation and stack
   validation first.
-- Bytecode generation, the interpreter loop (`VM::run`, `run_executable`,
-  `push_inline_frame`), `Script::global_declaration_instantiation`, and the
-  keyed property lookup caches remain untranslated, so `Executable` only carries
-  the metadata the VM reads.
-- Intrinsics, `SetDefaultGlobalBindings`, builtin constructors and prototypes,
-  ECMAScript and native function objects, accessors, proxies, and BigInt values
-  remain untranslated; realms currently expose an ordinary global object.
+- Remaining expression/statement generation, calls and inline frames
+  (`push_inline_frame`), functions, generators, async execution, property caches,
+  and packed interpreter bytecode remain pending. The current instruction loop
+  and declaration-instantiation path cover only the supported slice above.
+- Intrinsics, callable `SetDefaultGlobalBindings` entries, builtin constructors
+  and prototypes, ECMAScript and native function objects, accessors, proxies,
+  and BigInt values remain untranslated; realms expose an ordinary global object
+  with the four standard value properties.
 - CyclicModule graph loading, linking, evaluation, promise reactions, JSON
   modules, the debugger, and the LibWeb host bindings remain necessary before
-  replacing JavaScriptCore or claiming LibJS parity.
+  making LibJS the default browser backend or claiming LibJS parity.
+  JavaScriptCore remains available through its command-line selection.
 
 The AST corpus, focused syntax cases, and VM record tests validate the completed
 slices above; they are not an ECMAScript runtime conformance suite.
