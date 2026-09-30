@@ -1254,15 +1254,6 @@ fn (mut p Parser) match_property_key_ahead() bool {
 }
 
 fn (mut p Parser) parse_property_key() PropertyKey {
-	// Suppress eval/arguments check for property key tokens.
-	saved_property_key_ctx := p.flags.in_property_key_context
-	p.flags.in_property_key_context = true
-	result := p.parse_property_key_inner()
-	p.flags.in_property_key_context = saved_property_key_ctx
-	return result
-}
-
-fn (mut p Parser) parse_property_key_inner() PropertyKey {
 	proto_name := utf16('__proto__')
 	start := p.position()
 	match p.current_token_type() {
@@ -1276,7 +1267,7 @@ fn (mut p Parser) parse_property_key_inner() PropertyKey {
 			}
 		}
 		.string_literal {
-			str_token := p.consume()
+			str_token := p.consume_property_key_token()
 			after_string := p.position()
 			str_value, has_octal := p.parse_string_value(str_token)
 			if has_octal {
@@ -1347,7 +1338,7 @@ fn (mut p Parser) parse_property_key_inner() PropertyKey {
 		else {
 			if p.match_identifier_name() {
 				is_ident := p.match_identifier()
-				id_token := p.consume()
+				id_token := p.consume_property_key_token()
 				value := Utf16String.from_slice(p.token_value(id_token))
 				is_proto := utf16_equals(value.data, proto_name)
 				key_start := start
@@ -1363,7 +1354,7 @@ fn (mut p Parser) parse_property_key_inner() PropertyKey {
 				}
 			} else {
 				p.expected('property key')
-				p.consume()
+				p.consume_property_key_token()
 				expression := p.expression(start, ExpressionKind{
 					tag:          .string_literal
 					string_value: Utf16String.new()

@@ -1262,11 +1262,8 @@ fn (mut p Parser) parse_binding_pattern() BindingPattern {
 					entry_is_keyword = p.current_token.token_type.is_identifier_name()
 						&& !p.match_identifier()
 
-					saved_prop_key_ctx := p.flags.in_property_key_context
-					p.flags.in_property_key_context = true
-
 					if p.match_token(.string_literal) {
-						token := p.consume()
+						token := p.consume_property_key_token()
 						value, _ := p.parse_string_value(token)
 						mut id := p.make_identifier(entry_start, value)
 						p.scope_collector.register_identifier(id, id.name.data, none)
@@ -1275,7 +1272,7 @@ fn (mut p Parser) parse_binding_pattern() BindingPattern {
 							identifier: id
 						}
 					} else if p.match_token(.big_int_literal) {
-						token := p.consume()
+						token := p.consume_property_key_token()
 						value := p.token_value(token)
 						name_value := if value.len > 0 && value[value.len - 1] == ch(`n`) {
 							value[..value.len - 1].clone()
@@ -1289,7 +1286,7 @@ fn (mut p Parser) parse_binding_pattern() BindingPattern {
 							identifier: id
 						}
 					} else {
-						token := p.consume()
+						token := p.consume_property_key_token()
 						value := p.token_value(token).clone()
 						entry_name_value = Utf16String.from_slice(value.clone())
 						mut id := p.make_identifier(entry_start, Utf16String.from_slice(value))
@@ -1299,8 +1296,6 @@ fn (mut p Parser) parse_binding_pattern() BindingPattern {
 							identifier: id
 						}
 					}
-
-					p.flags.in_property_key_context = saved_prop_key_ctx
 				} else if p.match_token(.bracket_open) {
 					p.consume()
 					expression := p.parse_expression_any()

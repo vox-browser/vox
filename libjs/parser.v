@@ -148,7 +148,6 @@ mut:
 	in_class_static_init_block                   bool
 	function_might_need_arguments_object         bool
 	previous_token_was_period                    bool
-	in_property_key_context                      bool
 }
 
 // Snapshot of parser state for speculative parsing (backtracking).
@@ -332,9 +331,16 @@ fn (p &Parser) done() bool {
 fn (mut p Parser) consume() Token {
 	old := p.current_token
 	p.current_token = p.lexer.next()
-	if !p.flags.in_property_key_context {
-		p.check_arguments_or_eval(old)
-	}
+	p.check_arguments_or_eval(old)
+	p.flags.previous_token_was_period = old.token_type == .period
+	return old
+}
+
+// A literal property name is not an identifier reference. Suppress only
+// that token's check; computed-key expressions use ordinary consumption.
+fn (mut p Parser) consume_property_key_token() Token {
+	old := p.current_token
+	p.current_token = p.lexer.next()
 	p.flags.previous_token_was_period = old.token_type == .period
 	return old
 }
@@ -1187,9 +1193,8 @@ fn is_strict_reserved_word(name []u16) bool {
 // Await and yield use contextual LabelIdentifier rules; the other
 // ReservedWords are never valid labels, including escaped spellings.
 fn is_unconditional_reserved_word(name []u16) bool {
-	return string_from_utf16_lossy(name) in ['break', 'case', 'catch', 'class',
-		'const', 'continue', 'debugger', 'default', 'delete', 'do', 'else', 'enum',
-		'export', 'extends', 'false', 'finally', 'for', 'function', 'if', 'import',
-		'in', 'instanceof', 'new', 'null', 'return', 'super', 'switch', 'this',
-		'throw', 'true', 'try', 'typeof', 'var', 'void', 'while', 'with']
+	return string_from_utf16_lossy(name) in ['break', 'case', 'catch', 'class', 'const', 'continue',
+		'debugger', 'default', 'delete', 'do', 'else', 'enum', 'export', 'extends', 'false',
+		'finally', 'for', 'function', 'if', 'import', 'in', 'instanceof', 'new', 'null', 'return',
+		'super', 'switch', 'this', 'throw', 'true', 'try', 'typeof', 'var', 'void', 'while', 'with']
 }
