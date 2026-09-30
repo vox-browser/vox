@@ -38,7 +38,8 @@ fn test_native_libjs_scripts_execute_without_the_javascriptcore_dom_bootstrap() 
 	assert document.get_element_by_id('result')?.as_node().text_content()? == 'static'
 	assert messages.len == 2
 	assert messages[0].contains('DOM bindings')
-	assert messages[1].contains('not translated')
+	assert messages[1].contains("ReferenceError: 'document' is not defined")
+	assert messages[1].contains('https://example.test/page.html')
 }
 
 fn test_native_browser_scripts_use_libjs_errors_global_bindings_and_readiness_order() {
