@@ -83,6 +83,12 @@ files.
   the Web Animations update pass. The typed CSS boundary owns constructed
   adopted-sheet callbacks, while Document and ShadowRoot retain their cached
   list handles without introducing a DOM-to-CSS import cycle.
+- Author and user-agent shadow-root creation populates the owning document's
+  root registry. Adoption transfers every shadow-including root to the new
+  document and invalidates document-derived scope caches; finalization removes
+  the root from its current document. Focused DOM and CSS tests cover nested,
+  disconnected, repeated, and native-control adoption, plus inherited counter
+  text changing after document counter-style mutations.
 - Content-visibility relevance now includes focused and selected subtrees,
   top-layer contents, and descendant view-transition captures in addition to
   viewport proximity. The viewport paintable bridge retains the post-layout

@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb`
 
 Translation workspace: `~/code/vox2`
-Audited: 2026-09-28
+Audited: 2026-09-30
 
 ## Upstream delta since the V snapshot
 
@@ -873,7 +873,7 @@ $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 1089 passed, 0 failed, 1089 total
 
 $ v -old-compiler -enable-globals test .
-Summary for all V _test.v files: 652 passed, 652 total.
+Summary for all V _test.v files: 654 passed, 654 total.
 
 $ Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
 Ladybird V smoke check passed
@@ -892,13 +892,28 @@ default-ignorable-code-points reftest)
 The two corpus cases whose checked-in upstream text dumps predate the current
 Rust layout output use narrowly documented exact overrides under
 `tools/layout_expected/`; the other 1,087 cases compare directly with upstream.
-The function-delta audit classifies every changed definition since the March
+The 2026-09-30 function-delta snapshot taken before the shadow-root registry fix
+classifies every changed definition since the March
 baseline, including root support and the consolidated anchor/style-element
 lifecycle hooks: 0 of 7,247 changed definitions remain unclassified after
 counting signature-only changes and removing exact cross-module moves. Its
 remaining 4,130-entry structural queue is confined to definitions classified
 as added in the five large source/Rust-restructured modules; the audit leaves
 those visible instead of accepting them through an old symbol-name match.
+That snapshot contains 8,607 added, 7,247 changed, and 5,860 removed definitions.
+Its unmatched added entries comprise 1,665 CSS, 1,168 HTML, 590 DOM,
+396 Painting, and 311 Layout definitions. These function-delta counts supersede
+the older semantic-inventory breakdown printed above.
+
+The subsequent DOM behavioral review implements shadow-root document
+registration and adoption from upstream `1284aa854c0`. Author and user-agent
+roots register when created and transfer with nested roots when their host is
+adopted, including disconnected hosts. Adoption invalidates scope caches
+derived from the old document while retaining author and adopted stylesheets.
+Document counter-style mutations now refresh inherited counter text in those
+roots; focused tests reproduce the stale text before the fix and verify
+creation, repeated adoption, transfer back, and finalization. The new
+`ShadowRoot::adopted_from` entry resolves to the active V adoption path.
 
 The Editing reconciliation accounts for all 432 current upstream
 implementations. Its five primitive command subclasses are dispatched by V's

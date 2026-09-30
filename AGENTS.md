@@ -381,6 +381,11 @@
   descendant slot and reruns assignment for those exact slots. Their assigned
   node lists and each light-tree child's `assignedSlot` are cleared even when
   the removed subtree root is not itself a slot.
+- Author and user-agent shadow roots register with their owning document at
+  creation and move that registration when their host is adopted, including
+  nested and disconnected roots. Adoption drops document-derived style caches,
+  and later counter-style changes in the new document refresh inherited
+  counter text in those roots without retaining the old document's definitions.
 - Untitled alternate style sheets remain disabled during direct CSSOM
   `StyleSheetList` insertion. Only nonempty named alternates can join the
   selected preferred set; persistent untitled sheets remain enabled.
