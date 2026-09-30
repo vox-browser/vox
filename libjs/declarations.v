@@ -204,13 +204,13 @@ fn (mut p Parser) parse_variable_declaration(is_for_loop bool) Statement {
 			if kind == .var_kind {
 				for bn in bound_names {
 					p.scope_collector.add_var_declaration(bn.name.data.clone(), bn.identifier,
-						declaration_line, declaration_column, false)
+						declaration_line, declaration_column, true)
 				}
 			} else {
 				for bn in bound_names {
 					p.scope_collector.add_lexical_declaration(bn.name.data.clone(),
 						declaration_line, declaration_column)
-					p.scope_collector.register_identifier(bn.identifier, bn.name.data, none)
+					p.scope_collector.register_identifier(bn.identifier, bn.name.data, int(kind))
 				}
 			}
 
