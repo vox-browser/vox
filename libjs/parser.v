@@ -942,6 +942,7 @@ fn (mut p Parser) check_undeclared_exports(children []Statement) {
 }
 
 fn (mut p Parser) parse_directive() (bool, []Statement) {
+	p.flags.string_legacy_octal_escape_sequence_in_scope = false
 	mut found_use_strict := false
 	mut statements := []Statement{}
 	for !p.done() && p.match_token(.string_literal) {
