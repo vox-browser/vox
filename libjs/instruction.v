@@ -42,6 +42,7 @@ pub enum OpCode {
 	delete_property
 	delete_binding
 	call
+	construct
 	typeof_binding
 	set_binding
 	set_variable
@@ -96,7 +97,7 @@ fn (instruction Instruction) input_count() int {
 		}
 		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric,
 		.increment, .decrement, .set_binding, .set_variable, .initialize_binding, .jump_if_true,
-		.jump_if_false, .jump_if_nullish, .end, .throw_op {
+		.jump_if_false, .jump_if_nullish, .end, .throw_op, .construct {
 			1
 		}
 		else {
@@ -144,7 +145,7 @@ pub fn (executable &Executable) validate(arguments_count u32) ! {
 		if instruction.op == .get_callee_and_this {
 			instruction.rhs.slot(executable, arguments_count, true)!
 		}
-		if instruction.op == .call {
+		if instruction.op in [.call, .construct] {
 			for argument in instruction.arguments {
 				argument.slot(executable, arguments_count, false)!
 			}

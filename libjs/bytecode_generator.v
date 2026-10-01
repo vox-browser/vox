@@ -243,11 +243,16 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			generator.emit(Instruction{ op: .resolve_this_binding, dst: dst })
 			return dst
 		}
-		.call {
+		.call, .new_expr {
 			data := kind.call_data or { return error('Missing call data') }
+			is_new := kind.tag == .new_expr
 			mut callee := Operand{}
 			mut this_value := generator.constant(js_undefined())
-			if data.callee.kind.tag == .member {
+			if is_new {
+				// A new-expression evaluates its callee as a value; no method
+				// receiver or environment this-binding is supplied to [[Construct]].
+				callee = generator.expression(mut vm, &data.callee)!
+			} else if data.callee.kind.tag == .member {
 				base, key := generator.member_reference(mut vm, &data.callee)!
 				callee = generator.temporary()
 				this_value = base
@@ -281,7 +286,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			}
 			dst := generator.temporary()
 			generator.emit(Instruction{
-				op:        .call
+				op:        if is_new { OpCode.construct } else { OpCode.call }
 				dst:       dst
 				lhs:       callee
 				rhs:       this_value

@@ -46,7 +46,7 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 		.mov {
 			result = left
 		}
-		.call {
+		.call, .construct {
 			mut arguments := []Value{cap: instruction.arguments.len}
 			for operand in instruction.arguments {
 				argument := frame.values[operand.slot(executable, frame.argument_count, false)!]
@@ -56,7 +56,13 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 				}
 				arguments << argument
 			}
-			result = call(mut vm, left, right, arguments)!
+			if instruction.op == .construct {
+				// Interpreter/SlowPaths.cpp::execute_asm_call, Construct branch.
+				object := construct(mut vm, left, arguments, none)!
+				result = Value.from_object(object)
+			} else {
+				result = call(mut vm, left, right, arguments)!
+			}
 		}
 		.get_property {
 			// PropertyAccess.h::get_by_id and SlowPaths.cpp::get_by_value.
