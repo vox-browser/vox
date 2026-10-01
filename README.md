@@ -44,10 +44,12 @@ sort, every/some/forEach, the four predicate searches, reduce/reduceRight and
 entries/keys/values, copyWithin, fill, join, toReversed/toSorted/with,
 filter/map/set/slice/subarray and toLocaleString. Same-type and species result
 creation use explicit intrinsic constructor/prototype dependencies. Primitive
-boxing, GetV and Invoke retain explicit Number/BigInt/String dependencies.
-The abstract TypedArray constructor, builtin installation, shared Array toString,
-values/@@iterator alias, Number/BigInt locale formatting, Uint8Array encoding
-helpers and caged storage remain pending.
+boxing, GetV, GetMethod and Invoke retain explicit Number/BigInt/String dependencies.
+The abstract TypedArray constructor adds from/of/species. Its shared prototype
+initializer preserves metadata, Array toString identity and the values/@@iterator
+alias through explicit dependencies. Concrete builtin installation, the complete
+intrinsic graph, Object toString, Number/BigInt locale formatting, Uint8Array
+encoding helpers and caged storage remain pending.
 SharedArrayBuffer construction, three accessors, growth and species-aware slicing
 also follow the active upstream bodies, using the existing DataView methods to
 read and write their storage. Cross-agent shared-memory ordering remains pending.

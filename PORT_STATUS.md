@@ -894,7 +894,7 @@ wrappers/prototypes/globals are translated, including Boolean construction,
 Symbol's description accessor and registry, and primitive property receivers.
 Number/BigInt wrapper records and all primitive ToObject cases are translated
 with explicit Number/BigInt/String prototype dependencies. Their builtin graphs
-and primitive Reference integration remain pending. GetV and Invoke are
+and primitive Reference integration remain pending. GetV, GetMethod and Invoke are
 translated with explicit intrinsic prototype dependencies.
 Host-created String exotic objects preserve fixed UTF-16 character descriptors,
 definition compatibility, and virtual-index key order; String's constructor and
@@ -938,18 +938,20 @@ timing, custom result kinds, tracking views and raw-byte copying. set retains
 the pinned raw/numeric and array-like paths, including its documented original-view
 read flaw after an aliased conversion clone. toLocaleString uses translated GetV
 and Invoke with explicit Number/BigInt locale dependencies. All native
-TypedArrayPrototype method bodies are translated; the abstract constructor,
-builtin installation, shared Array toString, values/@@iterator alias,
-Number/BigInt locale formatting, Uint8Array encoding helpers and caged storage
-remain pending. The LibJS status file records the storage, allocator and native
-binary16 representation boundaries.
+TypedArrayPrototype method bodies are translated. The abstract constructor
+adds from/of/species, while the prototype initializer retains source metadata,
+the shared Array toString identity and the values/@@iterator alias. These records
+use explicit dependencies; concrete builtin installation, the complete intrinsic
+graph, Object toString, Number/BigInt locale formatting, Uint8Array encoding
+helpers and caged storage remain pending. The LibJS status file records the
+storage, allocator and native binary16 representation boundaries.
 SharedArrayBuffer allocation reserves the maximum capacity while exposing the
 initial length. Its constructor, three accessors, growth hook and species-aware
 slicing are installed and tested with live DataView witnesses. Cross-agent
 shared-memory ordering remains pending, as in the pinned upstream active bodies.
-Its 132 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
+Its 135 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
 match exactly with no case overrides. The complete repository suite passes all
-799 test files, including the native bridge and thirteen browser integration files.
+802 test files, including the native bridge and thirteen browser integration files.
 The native browser and inline-document layout bridge now prepare page scripts
 through LibJS and associate classic execution with translated Script, Realm,
 and VM embedding contexts. Sources retain their URLs and parse goals; syntax

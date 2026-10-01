@@ -63,7 +63,7 @@ creates a realm with a global environment and pushes its execution context.
 | `symbol_object.v`, `symbol_prototype.v`, `symbol_constructor.v` | Symbol wrappers, prototype methods and description accessor, unique/global symbol creation, registry methods, static well-known symbols, and primitive references |
 | `string_object.v` | StringCreate, virtual UTF-16 character descriptors, definition compatibility, and exotic own-key ordering |
 | `number_object.v`, `bigint_object.v`, `value_boxing.v` | NumberData/BigIntData wrapper records and all primitive ToObject cases with explicit Number/BigInt/String prototype dependencies |
-| `value_property_access.v` | GetV's direct primitive-prototype lookup and Invoke with the original primitive receiver and explicit intrinsic dependencies |
+| `value_property_access.v` | GetV's direct primitive-prototype lookup, GetMethod's nullish/callable checks and Invoke with the original primitive receiver and explicit intrinsic dependencies |
 | `iterator.v`, `iterator_values.v` | Synchronous iterator acquisition for object receivers, IteratorNext/Step/StepValue, completion-preserving close/close-all, result records, list/callback collection, and SetterThatIgnoresPrototypeProperties |
 | `string_iterator.v`, `string_iterator_prototype.v`, `array_iterator.v`, `array_iterator_prototype.v` | String code-point iteration, ordinary array-like and TypedArray key/value/entry iteration, and branded native next methods with explicit intrinsic dependencies |
 | `byte_length.v`, `data_block.v`, `array_buffer_object.v` | Tagged numeric/auto/detached lengths, owned and fixed-length host byte storage, copy/move/resize, ArrayBuffer records and detach ownership |
@@ -82,13 +82,15 @@ creates a realm with a global environment and pushes its execution context.
 | `typed_array_species.v` | Concrete default allocation/view factories and TypedArraySpeciesCreate's default-constructor fast path |
 | `typed_array_transform.v`, `typed_array_slice.v`, `typed_array_subarray.v` | Species-aware filter/map, bit-preserving slice and fixed/tracking subarray views |
 | `typed_array_set.v`, `typed_array_locale.v` | TypedArray/array-like set paths, encoding dispatch, and toLocaleString iteration with explicit Number/BigInt locale dependencies |
+| `typed_array_constructor.v` | Abstract TypedArray constructor, from/of/species and exact constructor metadata with explicit prototype dependencies |
+| `array_to_string.v`, `typed_array_prototype.v` | Shared Array/TypedArray toString body and full TypedArray prototype initialization, function metadata and values/@@iterator alias |
 | `string_length.v` | Upstream maximum string length and checked sum/product operations |
 | `global_numeric_functions.v`, `global_uri_functions.v`, `global_legacy_functions.v` | isFinite/isNaN/parseInt/parseFloat, URI encoding/decoding, and Annex B escape/unescape global functions |
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 124 implementation files contain **25,888 physical V LOC**. The 132 test
-files contain **16,646 physical V LOC** and **479 test functions**. Physical LOC
+The 127 implementation files contain **26,150 physical V LOC**. The 135 test
+files contain **17,345 physical V LOC** and **491 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -511,7 +513,7 @@ while scalar inputs use ToIndex and the upstream length-RangeError rewrite.
 New-target prototype lookup preserves foreign-realm fallback through an explicit
 IntrinsicPrototypeGetter dependency. These are translated behavior functions;
 the concrete constructors are not installed as builtin globals while their
-prototype graph and Uint8Array encoding methods remain untranslated.
+concrete prototype graph and Uint8Array encoding methods remain untranslated.
 TypedArrayCreate (`749413c`) retains a sole numeric minimum before arbitrary
 construction and validates result brand, bounds and length in source order.
 CompareTypedArrayElements (`e8daaeb`) orders NaNs last and negative zero before
@@ -526,6 +528,10 @@ embedding dependencies. GetV and Invoke (`a21fead`) preserve the active primitiv
 prototype optimization, accessor receivers and call arguments through those
 dependencies. Their builtin constructors/prototypes and primitive Reference
 integration remain pending.
+GetMethod (`9bfb266`) now follows that same primitive boundary, preserving
+getter receivers, nullish missing methods, callable native/bound identities and
+NotAFunction errors. String iteration still needs its builtin prototype and
+iterator method; explicitly supplied methods can use translated StringIterator.
 
 TypedArray receiver conversion, its four branded accessors, at and @@toStringTag
 (`ad194b8`) follow TypedArrayPrototype.cpp through that boxing boundary. Detached
@@ -561,8 +567,8 @@ entries/keys/values (`9dc2893`) validate the view before creating an ArrayIterat
 with the corresponding iteration kind. Its translated next body retains live
 lengths, recoverable out-of-bounds errors, exact BigInt elements, real entry-pair
 Array records and permanent exhaustion. The ArrayIterator prototype dependency
-is explicit; the values/@@iterator alias belongs to the pending intrinsic
-installation.
+is explicit; the values/@@iterator alias is now retained by the translated
+TypedArray prototype initializer described below.
 
 copyWithin (`e74332a`) retains ordered index conversion, the original relative
 index basis and a fresh witness before a nonempty copy. Shrinking limits the
@@ -633,12 +639,31 @@ append. Invalid indices become empty fields after reentrant shrink/detachment.
 Number/BigInt locale formatting remains an explicit untranslated intrinsic
 dependency; the completed native body does not substitute Intl behavior.
 
-All 35 native TypedArrayPrototype bodies are now translated with explicit
-prototype and constructor dependencies. The abstract TypedArray constructor,
-intrinsic graph, Uint8Array base64/hex helpers and cached caged views remain
-separate untranslated work.
-Prototype installation also requires the shared Array toString body and the
-values/@@iterator alias, with upstream property order and metadata.
+The abstract TypedArray constructor (`fecc443`) preserves its call to Construct
+and abstract-class TypeError, from/of/species, source property
+order, method lengths, name and prototype back-reference. from validates the
+constructor and optional mapper before iterator lookup, exhausts iterable input
+before allocation/mapping, and interleaves live array-like reads with mapping
+and converting writes after allocation. Iterator errors do not close the
+iterator, matching the active collection body. of captures argument count and
+retains argument values across nested construction/conversion frames. Both
+paths validate an arbitrary constructor result before their first element write;
+abrupt conversion preserves earlier writes.
+
+Array.prototype.toString (`fab8c38`) supplies the exact shared body: ToObject,
+observable join lookup, callable join or the retained Object toString intrinsic,
+and a call with the boxed object receiver and no forwarded arguments. The Object
+intrinsic function remains an explicit dependency; no Object tag implementation
+is substituted and a mutable Object.prototype.toString property is not read.
+
+TypedArrayPrototype initialization (`1389c86`) installs all 35 native bodies,
+their source metadata and descriptors, in source order. Its toString property
+retains the supplied Array prototype function identity, and @@iterator retains
+the original values function even after later values replacement. The Object,
+Array, iterator, primitive and concrete TypedArray intrinsic dependencies remain
+explicit. Concrete builtin installation, Uint8Array base64/hex helpers and
+cached caged views remain separate untranslated work; these records are not
+installed in the production realm or exposed as builtin globals.
 
 Numeric globals follow the upstream coercion order and errors. parseInt preserves
 radix validation, hexadecimal-prefix stripping, prefix termination, per-digit
@@ -725,10 +750,10 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 132 passed, 132 total
+# 135 passed, 135 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 132 passed, 132 total
+# 135 passed, 135 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
@@ -743,7 +768,7 @@ v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
 
 v -old-compiler -enable-globals test .
-# 799 passed, 799 total
+# 802 passed, 802 total
 
 ./build_ladybird.sh
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
@@ -767,11 +792,11 @@ fixtures; separate tests exercise translated NativeFunction and ArrayBufferObjec
 records. Module-loading tests write temporary module files. The preceding LibWeb
 work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 132 libjs files are verified separately in both GC modes.
-There are now 799 repository test files.
+this package; the 135 libjs files are verified separately in both GC modes.
+There are now 802 repository test files.
 
-The complete 799-file repository suite passes, including the native bridge,
-thirteen browser integration files and all 132 LibJS files. The dedicated LibJS and
+The complete 802-file repository suite passes, including the native bridge,
+thirteen browser integration files and all 135 LibJS files. The dedicated LibJS and
 browser suites also pass in no-GC mode, exercising the retained storage and
 buffer ownership independently of the collector.
 
@@ -836,6 +861,15 @@ tracking growth and a Float64 species result. toLocaleString uses an explicit
 host callback to verify primitive receivers and locale/options forwarding;
 the fixture does not claim Number/BigInt Intl formatting. These checks create
 no JavaScriptCore context.
+The constructor/prototype checks (`27b3fff`) replace the test fixture's hand-wired
+method table with the translated TypedArrayPrototype and abstract constructor
+records. Host concrete constructors inherit from that abstract constructor and
+their prototypes inherit from the shared prototype. Compiled scripts exercise
+inherited from/of/species, primitive-string mapping, iterable TypedArray copies,
+bound construction, shared toString identity, the values/@@iterator alias and
+later-script recovery after abstract-constructor errors. Concrete test records
+and Object/Number/BigInt/String dependencies stay explicitly host-supplied;
+this fixture does not install incomplete builtin globals in production.
 The rebuilt native bundle passes both engine smoke checks and a buffer-regression
 document covering shared BigInt storage, growth, slicing and transferred Float16
 bytes without script errors.
@@ -931,8 +965,9 @@ the same-size SVG source switch with zero differing pixels.
 - Iterator records and result variants use V heap records and explicit done
   flags. Intrinsic parents are supplied by callers; no Iterator/Object/Array
   prototype substitute is installed. Synchronous acquisition currently accepts
-  object receivers. Async acquisition, primitive String method lookup, Iterator
-  helpers and builtin-marker fast paths remain pending. Array iterator next uses
+  object receivers. Primitive GetMethod exists with explicit prototype inputs;
+  String's builtin iterator method, async acquisition, Iterator helpers and
+  builtin-marker fast paths remain pending. Array iterator next uses
   the translated TypedArray witness path as well as ordinary array-like lengths.
   String iteration uses code-unit offsets over the retained flat string rather
   than AK iterator pointers. Array key/entry indices preserve the pinned source's
@@ -983,9 +1018,16 @@ the same-size SVG source switch with zero differing pixels.
   than the clone. The translation preserves and tests this active-body flaw;
   aliased different-encoding copies can therefore read the wrong offset or
   observe earlier writes. This is source fidelity, not an ECMAScript parity claim.
-  GetV and Invoke expose the translated primitive-prototype lookup with explicit
-  Number/BigInt/String dependencies; primitive Reference integration is pending.
+  GetV, GetMethod and Invoke expose the translated primitive-prototype lookup
+  with explicit Number/BigInt/String dependencies; primitive Reference
+  integration is pending.
   Number/BigInt toLocaleString and Intl formatting remain untranslated.
+  The abstract TypedArray constructor and shared prototype are now complete
+  records with explicit dependencies. Their creation follows the subclass
+  initializer and Intrinsics constructor-name/back-reference steps, without
+  installing unfinished concrete globals. Array toString takes an explicit
+  retained Object toString intrinsic function, whose tag/IsArray/Proxy dependency
+  chain is untranslated. Browser fixtures supply a clearly named host callback.
 - `Runtime/Value.cpp` at the pinned upstream revision passes `(target, value)`
   in InstanceofOperator's final no-`@@hasInstance` fallback, although its
   OrdinaryHasInstance helper expects `(value, constructor)`. The translation
@@ -1030,16 +1072,18 @@ complete LibJS runtime migration.
   prototype dependencies. Number/BigInt wrapper records and primitive ToObject
   exist with explicit Number/BigInt/String prototype dependencies; their primitive
   Reference integration and builtin constructors/prototypes remain pending;
-  GetV and Invoke exist with explicit intrinsic dependencies.
+  GetV, GetMethod and Invoke exist with explicit intrinsic dependencies.
   TypedArray's four accessors, at, @@toStringTag, three indexed search methods,
   reverse, sort, every/some/forEach, four predicate searches, reduce/reduceRight,
   entries/keys/values, copyWithin, fill, join, toReversed/toSorted/with and
   TypedArrayCreateSameType, species/default factories, filter/map/set/slice/subarray
   and toLocaleString also exist with explicit intrinsic dependencies. The
-  abstract TypedArray constructor, concrete builtin installation, prototype graph,
-  shared Array toString body, values/@@iterator alias, Number/BigInt locale
-  builtins and Uint8Array encoding helpers remain untranslated, as do
-  concurrent shared backing stores, Atomics and caged storage.
+  abstract TypedArray constructor, from/of/species, shared Array toString body
+  and shared TypedArray prototype including values/@@iterator exist with
+  explicit dependencies. Concrete builtin installation, its complete intrinsic
+  graph, Object toString/IsArray, Number/BigInt locale builtins and Uint8Array
+  encoding helpers remain untranslated, as do concurrent shared backing stores,
+  Atomics and caged storage.
   Realms expose four standard value properties, eight numeric/URI functions,
   Boolean/Symbol/ArrayBuffer/DataView/SharedArrayBuffer constructors, and two legacy
   functions on an ordinary global object. Default native globals inherit the
