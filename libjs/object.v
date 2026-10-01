@@ -154,6 +154,7 @@ pub mut:
 	array_iterator       ?&ArrayIterator
 	array_buffer         ?&ArrayBufferObject
 	data_view            ?&DataView
+	typed_array          ?&TypedArray
 }
 
 // 10.1.12 OrdinaryObjectCreate ( proto [ , additionalInternalSlotsList ] ), https://tc39.es/ecma262/#sec-ordinaryobjectcreate
@@ -204,6 +205,7 @@ pub fn (object &Object) internal_is_extensible() bool {
 }
 
 pub fn (mut object Object) internal_prevent_extensions() bool {
+	if array := object.typed_array { if !is_typed_array_fixed_length(array) { return false } }
 	object.extensible = false
 	return true
 }
@@ -256,6 +258,7 @@ pub fn (object &Object) is_error_object() bool {
 }
 
 pub fn (object &Object) own_property_keys() []PropertyName {
+	if array := object.typed_array { return array.own_property_keys() }
 	// Object.cpp::OrdinaryOwnPropertyKeys: indices in ascending order, followed
 	// by strings and then symbols in their respective creation orders.
 	mut indices := []PropertyName{}
@@ -293,6 +296,13 @@ pub fn (object &Object) own_property_keys() []PropertyName {
 
 // 10.1.5 [[GetOwnProperty]] ( P ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-getownproperty-p
 pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDescriptor {
+	if array := object.typed_array {
+		if index := typed_array_property_index(key) {
+			value := typed_array_get_element(array, index)
+			if value.is_undefined() { return none }
+			return PropertyDescriptor{value: value, writable: true, enumerable: true, configurable: true}
+		}
+	}
 	if array := object.array_object {
 		if key.equals(PropertyName.from_str('length')) { return array.length_descriptor() }
 	}
@@ -321,6 +331,7 @@ pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDes
 
 // 10.1.6 [[DefineOwnProperty]] ( P, Desc ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-defineownproperty-p-desc
 pub fn (mut object Object) internal_define_own_property(mut vm VM, key PropertyName, descriptor PropertyDescriptor) !bool {
+	if mut array := object.typed_array { return array.internal_define_own_property(mut vm, key, descriptor) }
 	if mut array := object.array_object {
 		return array.internal_define_own_property(mut vm, key, descriptor)
 	}
@@ -339,6 +350,9 @@ fn (mut object Object) ordinary_define_own_property(key PropertyName, descriptor
 
 // 10.1.7 [[HasProperty]] ( P ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-hasproperty-p
 pub fn (object &Object) internal_has_property(key PropertyName) bool {
+	if array := object.typed_array {
+		if index := typed_array_property_index(key) { return is_valid_integer_index(array, index) }
+	}
 	if object.internal_get_own_property(key) != none {
 		return true
 	}
@@ -351,6 +365,9 @@ pub fn (object &Object) internal_has_property(key PropertyName) bool {
 // 10.1.8 [[Get]] ( P, Receiver ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-get-p-receiver
 pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value) !Value {
 	assert !receiver.is_special_empty_value()
+	if array := object.typed_array {
+		if index := typed_array_property_index(key) { return typed_array_get_element(array, index) }
+	}
 	descriptor := object.internal_get_own_property(key) or {
 		if parent := object.prototype {
 			if vm.did_reach_stack_space_limit() {
@@ -404,6 +421,15 @@ pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value
 // 10.1.9.2 OrdinarySetWithOwnDescriptor.
 pub fn (mut object Object) internal_set(mut vm VM, key PropertyName, value Value, receiver Value) !bool {
 	assert !value.is_special_empty_value() && !receiver.is_special_empty_value()
+	if mut array := object.typed_array {
+		if index := typed_array_property_index(key) {
+			if same_value(Value.from_object(&object), receiver) {
+				typed_array_set_element(mut vm, mut array, index, value)!
+				return true
+			}
+			if !is_valid_integer_index(array, index) { return true }
+		}
+	}
 	descriptor := object.internal_get_own_property(key) or {
 		if parent := object.prototype {
 			mut parent_object := unsafe { &Object(parent) }
@@ -440,6 +466,9 @@ pub fn (mut object Object) internal_set(mut vm VM, key PropertyName, value Value
 
 // 10.1.10 [[Delete]] ( P ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-delete-p
 pub fn (mut object Object) internal_delete(key PropertyName) bool {
+	if array := object.typed_array {
+		if index := typed_array_property_index(key) { return !is_valid_integer_index(array, index) }
+	}
 	if descriptor := object.internal_get_own_property(key) {
 		if !(descriptor.configurable or { false }) { return false }
 	}

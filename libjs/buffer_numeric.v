@@ -35,6 +35,12 @@ pub fn (kind BufferElementType) is_bigint() bool {
 }
 
 pub fn raw_bytes_to_numeric(mut vm VM, kind BufferElementType, bytes []u8, little_endian bool) Value {
+	return buffer_raw_bytes_to_numeric(kind, bytes, little_endian)
+}
+
+// Object's descriptor API has no VM argument. This conversion needs no VM
+// state and creates standalone BigInt cells, like the other flattened cells.
+fn buffer_raw_bytes_to_numeric(kind BufferElementType, bytes []u8, little_endian bool) Value {
 	assert usize(bytes.len) == kind.size()
 	mut raw := bytes.clone()
 	if !little_endian {
@@ -98,11 +104,17 @@ pub fn numeric_to_raw_bytes(mut vm VM, kind BufferElementType, value Value, litt
 }
 
 pub fn (buffer &ArrayBufferObject) get_value(mut vm VM, index usize, kind BufferElementType, is_typed_array bool, order BufferOrder, little_endian bool) Value {
+	return buffer.read_numeric_value(index, kind, is_typed_array, order, little_endian)
+}
+
+fn (buffer &ArrayBufferObject) read_numeric_value(index usize, kind BufferElementType, is_typed_array bool, order BufferOrder, little_endian bool) Value {
+	_ = is_typed_array
+	_ = order
 	assert !buffer.is_detached()
 	assert index <= buffer.byte_length() && kind.size() <= buffer.byte_length() - index
 	// The pinned source's active branch copies ordinary bytes, including for
 	// shared records. Its shared-memory event/ordering branches remain FIXME.
-	return raw_bytes_to_numeric(mut vm, kind, buffer.read_bytes(index, kind.size()), little_endian)
+	return buffer_raw_bytes_to_numeric(kind, buffer.read_bytes(index, kind.size()), little_endian)
 }
 
 pub fn (mut buffer ArrayBufferObject) set_value(mut vm VM, index usize, kind BufferElementType, value Value, is_typed_array bool, order BufferOrder, little_endian bool) {
