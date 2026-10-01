@@ -4,7 +4,8 @@ import math
 
 // Translated from LibJS/Runtime/Realm.{h,cpp}. The Intrinsics prototype graph
 // and remaining global bindings belong to the pending builtin translation.
-// The ordinary global object supplies value/function properties and Boolean/Symbol.
+// The ordinary global object supplies the translated value, function and
+// constructor properties.
 
 pub interface RealmHostDefined {
 	is_principal_host_defined() bool
@@ -29,6 +30,8 @@ pub mut:
 	array_buffer_constructor       ?&Object
 	data_view_prototype            ?&Object
 	data_view_constructor          ?&Object
+	shared_array_buffer_prototype  ?&Object
+	shared_array_buffer_constructor ?&Object
 }
 
 pub fn Realm.create() &Realm {
@@ -77,6 +80,14 @@ pub fn (realm &Realm) data_view_prototype_record() &Object {
 
 pub fn (realm &Realm) data_view_constructor_record() &Object {
 	return realm.data_view_constructor or { panic('Realm has no DataView constructor yet') }
+}
+
+pub fn (realm &Realm) shared_array_buffer_prototype_record() &Object {
+	return realm.shared_array_buffer_prototype or { panic('Realm has no SharedArrayBuffer prototype yet') }
+}
+
+pub fn (realm &Realm) shared_array_buffer_constructor_record() &Object {
+	return realm.shared_array_buffer_constructor or { panic('Realm has no SharedArrayBuffer constructor yet') }
 }
 
 pub fn (mut realm Realm) set_global_environment(environment &GlobalEnvironment) {
@@ -136,6 +147,13 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	data_view_prototype_object.define_direct_property(PropertyName.from_str('constructor'),
 		Value.from_object(data_view_constructor.object),
 		attribute_writable | attribute_configurable)
+	shared_array_buffer_prototype := SharedArrayBufferPrototype.create(mut vm, realm, none)
+	realm.shared_array_buffer_prototype = shared_array_buffer_prototype.object
+	shared_array_buffer_constructor := SharedArrayBufferConstructor.create(mut vm, realm)
+	realm.shared_array_buffer_constructor = shared_array_buffer_constructor.object
+	mut shared_array_buffer_prototype_object := shared_array_buffer_prototype.object
+	shared_array_buffer_prototype_object.define_direct_property(PropertyName.from_str('constructor'),
+		Value.from_object(shared_array_buffer_constructor.object), attribute_writable | attribute_configurable)
 	// 4. Set realm.[[GlobalObject]] to undefined.
 	// 5. Set realm.[[GlobalEnv]] to undefined.
 	// 7. Let newContext be a new execution context.
@@ -188,6 +206,8 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	global.define_direct_property(PropertyName.from_str('DataView'),
 		Value.from_object(realm.data_view_constructor_record()),
 		attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('SharedArrayBuffer'),
+		Value.from_object(realm.shared_array_buffer_constructor_record()), attribute_writable | attribute_configurable)
 	set_default_global_legacy_functions(mut vm, realm)
 	// 19. Create any host-defined global object properties on global.
 	// 20. Return unused.
