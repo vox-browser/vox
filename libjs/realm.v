@@ -19,6 +19,8 @@ pub mut:
 	global_environment             ?&GlobalEnvironment      // [[GlobalEnv]]
 	global_declarative_environment ?&DeclarativeEnvironment // Cached from GlobalEnv
 	host_defined                   ?RealmHostDefined        // [[HostDefined]]
+	function_prototype ?&Object // Translated intrinsic; Object prototype graph pending
+	throw_type_error_function ?&Object
 }
 
 pub fn Realm.create() &Realm {
@@ -31,6 +33,10 @@ pub fn (realm &Realm) global_object_record() &Object {
 
 pub fn (realm &Realm) global_environment_record() &GlobalEnvironment {
 	return realm.global_environment or { panic('Realm has no global environment yet') }
+}
+
+pub fn (realm &Realm) function_prototype_record() &Object {
+	return realm.function_prototype or { panic('Realm has no Function prototype yet') }
 }
 
 pub fn (mut realm Realm) set_global_environment(environment &GlobalEnvironment) {
@@ -50,7 +56,15 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	// 1. Let realm be a new Realm Record.
 	mut realm := Realm.create()
 	// 2. Perform CreateIntrinsics(realm).
-	// NOTE: Intrinsics are part of the pending builtin translation.
+	// Intrinsics.cpp: initialize the translated Function prototype and shared
+	// thrower before exposing them to global creation hooks. The remaining
+	// intrinsic graph, including %Object.prototype%, is pending.
+	function_prototype := FunctionPrototype.create(mut vm, realm, none)
+	realm.function_prototype = function_prototype.object
+	thrower := create_throw_type_error_function(mut vm, realm, function_prototype.object)
+	realm.throw_type_error_function = thrower
+	mut prototype_object := function_prototype.object
+	prototype_object.add_restricted_function_properties(thrower)
 	// 4. Set realm.[[GlobalObject]] to undefined.
 	// 5. Set realm.[[GlobalEnv]] to undefined.
 	// 7. Let newContext be a new execution context.

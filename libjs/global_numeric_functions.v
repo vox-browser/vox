@@ -136,7 +136,7 @@ fn set_default_global_numeric_functions(mut vm VM, realm &Realm) {
 		'parseInt':   NativeFunctionPointer(global_parse_int)
 	} {
 		length := if name == 'parseInt' { 2.0 } else { 1.0 }
-		function := NativeFunction.create_raw(mut vm, realm, none, behaviour, length,
+		function := NativeFunction.create_raw(mut vm, realm, realm.function_prototype, behaviour, length,
 			PropertyName.from_str(name), none)
 		global.define_direct_property(PropertyName.from_str(name),
 			Value.from_object(function.object), attribute_writable | attribute_configurable)

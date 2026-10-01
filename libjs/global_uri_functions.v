@@ -131,7 +131,7 @@ fn set_default_global_uri_functions(mut vm VM, realm &Realm) {
 		'encodeURI':          NativeFunctionPointer(global_encode_uri)
 		'encodeURIComponent': NativeFunctionPointer(global_encode_uri_component)
 	} {
-		function := NativeFunction.create_raw(mut vm, realm, none, behaviour, 1,
+		function := NativeFunction.create_raw(mut vm, realm, realm.function_prototype, behaviour, 1,
 			PropertyName.from_str(name), none)
 		global.define_direct_property(PropertyName.from_str(name),
 			Value.from_object(function.object), attribute_writable | attribute_configurable)
