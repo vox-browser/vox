@@ -2,7 +2,7 @@ module libjs
 
 // Translated from the parts of LibJS/Runtime/Object.{h,cpp} and PropertyKey.h that
 // the VM, environments, and error records depend on. Ordinary and array exotic
-// properties plus Boolean/Symbol internal slots are translated; shapes, proxies,
+// properties plus String/Boolean/Symbol internal slots are translated; shapes, proxies,
 // and other exotic hooks remain pending.
 // The parser owns the name PropertyKey, so the runtime key is PropertyName.
 
@@ -149,6 +149,7 @@ pub mut:
 	array_object         ?&ArrayObject
 	boolean_object       ?&BooleanObject // [[BooleanData]]
 	symbol_object        ?&SymbolObject // [[SymbolData]]
+	string_object        ?&StringObject // [[StringData]] and virtual indexed properties
 }
 
 // 10.1.12 OrdinaryObjectCreate ( proto [ , additionalInternalSlotsList ] ), https://tc39.es/ecma262/#sec-ordinaryobjectcreate
@@ -254,6 +255,7 @@ pub fn (object &Object) own_property_keys() []PropertyName {
 	// Object.cpp::OrdinaryOwnPropertyKeys: indices in ascending order, followed
 	// by strings and then symbols in their respective creation orders.
 	mut indices := []PropertyName{}
+	string_length := if text := object.string_object { text.value.utf16.len() } else { 0 }
 	mut strings := if object.array_object != none {
 		[PropertyName.from_str('length')]
 	} else {
@@ -263,7 +265,7 @@ pub fn (object &Object) own_property_keys() []PropertyName {
 	for property in object.properties {
 		match property.key.kind {
 			.number_key {
-				indices << property.key
+				if u64(property.key.number) >= u64(string_length) { indices << property.key }
 			}
 			.string_key {
 				strings << property.key
@@ -274,6 +276,12 @@ pub fn (object &Object) own_property_keys() []PropertyName {
 		}
 	}
 	indices.sort(a.number < b.number)
+	if string_length > 0 {
+		mut characters := []PropertyName{cap: string_length + indices.len}
+		for index in 0 .. string_length { characters << PropertyName.from_number(u32(index)) }
+		characters << indices
+		indices = unsafe { characters }
+	}
 	indices << strings
 	indices << symbols
 	return indices
@@ -286,6 +294,7 @@ pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDes
 	}
 	index := object.find_own_property(key)
 	if index < 0 {
+		if text := object.string_object { return text.character_descriptor(key) }
 		return none
 	}
 	property := object.properties[index]
@@ -310,6 +319,11 @@ pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDes
 pub fn (mut object Object) internal_define_own_property(mut vm VM, key PropertyName, descriptor PropertyDescriptor) !bool {
 	if mut array := object.array_object {
 		return array.internal_define_own_property(mut vm, key, descriptor)
+	}
+	if text := object.string_object {
+		if character := text.character_descriptor(key) {
+			return is_compatible_property_descriptor(object.extensible, descriptor, character)
+		}
 	}
 	return object.ordinary_define_own_property(key, descriptor)
 }
@@ -422,7 +436,9 @@ pub fn (mut object Object) internal_set(mut vm VM, key PropertyName, value Value
 
 // 10.1.10 [[Delete]] ( P ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-delete-p
 pub fn (mut object Object) internal_delete(key PropertyName) bool {
-	if object.array_object != none && key.equals(PropertyName.from_str('length')) { return false }
+	if descriptor := object.internal_get_own_property(key) {
+		if !(descriptor.configurable or { false }) { return false }
+	}
 	index := object.find_own_property(key)
 	if index < 0 {
 		return true
