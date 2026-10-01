@@ -892,17 +892,26 @@ identity, and prototype fallback through the translated constructor operations.
 Compiled `new` expressions retain upstream evaluation order. Boolean and Symbol
 wrappers/prototypes/globals are translated, including Boolean construction,
 Symbol's description accessor and registry, and primitive property receivers.
-Their Object prototype graph and other primitive wrappers remain pending.
+Their Object prototype graph and Number/BigInt wrappers remain pending.
+Host-created String exotic objects preserve fixed UTF-16 character descriptors,
+definition compatibility, and virtual-index key order; String's constructor and
+prototype remain pending.
 Array exotic records retain sparse, nonconfigurable length descriptors, grow
 only after successful indexed definitions, and restore failed truncations at
 the highest fixed index. Property definitions propagate VM exceptions through
 compiled writes and Function.apply. Upstream indexed collection, stable merge
 sort, and array-element comparison helpers are translated; Array constructors,
 prototype methods, and literals remain pending.
-Its 79 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
+Synchronous iterator records implement stepping, deferred value-getter errors,
+completion-preserving close/close-all, and list/callback collection. Host-created
+String and ordinary-Array iterators expose branded next methods, Unicode code
+points, live lengths, and entry-pair arrays through explicit intrinsic dependencies.
+Iterator intrinsic installation, iterator-producing methods, helpers, async
+iteration, and TypedArray witnesses remain pending.
+Its 84 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
 match exactly with no case overrides. The preceding full repository checkpoint
-passed 728 files. This addition brings the inventory to 739 test files; the
-updated native bridge and six browser integration files pass focused checks.
+passed 728 files. These additions bring the inventory to 745 test files; the
+native bridge and seven browser integration files pass focused checks.
 The native browser and inline-document layout bridge now prepare page scripts
 through LibJS and associate classic execution with translated Script, Realm,
 and VM embedding contexts. Sources retain their URLs and parse goals; syntax

@@ -10,7 +10,7 @@ AST, and scope collector for the frontend, and its C++ `Runtime/VM.{h,cpp}`,
 `Interpreter/Interpreter.cpp` VM members, and runtime records for the VM slice.
 The execution slice additionally follows `Rust/src/bytecode/{operand,generator,codegen}.rs`,
 `Interpreter/{interpreter.flap,SlowPaths.cpp}`, `Script.cpp`,
-`Runtime/{Value,GlobalObject,BigInt,NativeFunction,FunctionObject,BoundFunction,FunctionPrototype,BooleanObject,BooleanPrototype,BooleanConstructor,SymbolObject,SymbolPrototype,SymbolConstructor,Intrinsics,Array,ArrayPrototype,IndexedProperties,PropertyKey,Object,PrimitiveString,Accessor,PropertyDescriptor,AbstractOperations}`
+`Runtime/{Value,GlobalObject,BigInt,NativeFunction,FunctionObject,BoundFunction,FunctionPrototype,BooleanObject,BooleanPrototype,BooleanConstructor,SymbolObject,SymbolPrototype,SymbolConstructor,StringObject,Iterator,StringIterator,StringIteratorPrototype,ArrayIterator,ArrayIteratorPrototype,Intrinsics,Array,ArrayPrototype,IndexedProperties,PropertyKey,Object,PrimitiveString,Accessor,PropertyDescriptor,AbstractOperations}`
 source bodies, numeric/URI/Annex B global functions from `Runtime/GlobalObject.cpp`,
 `AK/StringConversions.cpp` and fast_float decimal-prefix parsing, and the BigInt
 operations delegated to LibCrypto/LibTomMath.
@@ -59,12 +59,15 @@ creates a realm with a global environment and pushes its execution context.
 | `array_object.v`, `array_sort.v` | Array exotic records and length/property operations, CreateArrayFromList, indexed-value collection, stable merge sorting, and CompareArrayElements |
 | `boolean_object.v`, `boolean_prototype.v`, `boolean_constructor.v` | Boolean internal slots, prototype methods, calls and construction, intrinsic links, and primitive references |
 | `symbol_object.v`, `symbol_prototype.v`, `symbol_constructor.v` | Symbol wrappers, prototype methods and description accessor, unique/global symbol creation, registry methods, static well-known symbols, and primitive references |
+| `string_object.v` | StringCreate, virtual UTF-16 character descriptors, definition compatibility, and exotic own-key ordering |
+| `iterator.v`, `iterator_values.v` | Synchronous iterator acquisition for object receivers, IteratorNext/Step/StepValue, completion-preserving close/close-all, result records, list/callback collection, and SetterThatIgnoresPrototypeProperties |
+| `string_iterator.v`, `string_iterator_prototype.v`, `array_iterator.v`, `array_iterator_prototype.v` | String code-point iteration, ordinary array-like key/value/entry iteration, and branded native next methods with explicit intrinsic dependencies |
 | `global_numeric_functions.v`, `global_uri_functions.v`, `global_legacy_functions.v` | isFinite/isNaN/parseInt/parseFloat, URI encoding/decoding, and Annex B escape/unescape global functions |
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 70 implementation files contain **22,282 physical V LOC**. The 79 test
-files contain **8,496 physical V LOC** and **295 test functions**. Physical LOC
+The 77 implementation files contain **22,678 physical V LOC**. The 84 test
+files contain **9,200 physical V LOC** and **315 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -278,8 +281,21 @@ Description distinguishes undefined from empty and preserves every UTF-16 unit.
 Symbol calls create unique identities; Symbol.for/keyFor use the VM-wide registry
 shared by realms, and all 16 pinned well-known symbols have fixed static descriptors.
 The pinned source gives Symbol a constructor internal method that always throws
-without converting its argument; this behavior is preserved. Number, String, and
-BigInt wrappers/prototypes and the Object prototype graph remain pending.
+without converting its argument; this behavior is preserved. Number/BigInt
+wrappers and prototypes, String's constructor/prototype, and the Object prototype
+graph remain pending.
+
+StringObject translates StringCreate and the string exotic property methods
+(`c17ed07`). Each character descriptor contains exactly one UTF-16 code unit,
+including a surrogate half or NUL, with fixed value, writable/configurable false,
+and enumerable true. The fixed ordinary length is not enumerable. Definitions
+of virtual characters check descriptor compatibility without allocating stored
+properties, including on nonextensible objects. Own-key order places virtual
+indices first, then additional sorted indices, ordinary strings in creation order,
+and public symbols. GetOwnProperty checks ordinary storage before virtual
+characters, while diagnostics continue to inspect ordinary storage only.
+Compiled reads, writes, delete, `in`, and Function.apply reach these exotic
+methods when a host supplies a String object with an explicit prototype.
 
 Runtime property keys canonicalize decimal indices below 2^32-1, while leading
 zeros and 2^32-1 remain strings. Ordinary own keys enumerate indices first in
@@ -321,7 +337,7 @@ inspection follows the prototype chain without invoking accessors.
 ObjectDefineProperties accepts an already-converted property object, gathers
 every enumerable descriptor before writing, and then applies them in own-key
 order. Conversion failure leaves the target untouched; a later definition failure
-retains earlier successful writes. Primitive boxing and the Object constructor's
+retains earlier successful writes. Other primitive boxing and the Object constructor's
 JavaScript-facing methods remain pending.
 
 Array records supplied by a host implement ArrayCreate, CreateArrayFromList,
@@ -346,6 +362,31 @@ converts comparator results once with NaN mapped to positive zero, and compares
 default strings by UTF-16 code units. Getter, comparator, and coercion exceptions
 stop later work. These helpers do not yet expose JavaScript Array.prototype.sort
 or Array.prototype.toSorted; their surrounding prototype methods remain untranslated.
+
+The synchronous Iterator.cpp slices translate cached next-method acquisition,
+IteratorNext/Complete/Value/Step/StepValue, IteratorClose/CloseAll, result records,
+IteratorToList, callback-driven collection, and the setter that ignores inherited
+properties (`9e66501`, `5204b68`). Object receivers support @@iterator acquisition;
+GetIteratorFromMethod can receive any value with an explicitly supplied method.
+Next-call failures, non-object results, and done-getter failures mark the record
+done. IteratorStep retains a value-getter error as a completion; StepValue marks
+done when consuming that error. Closing observes the return getter/call even when
+an original throw must win, and close-all walks records in reverse order.
+Callback completions close the iterator; next/step errors return directly.
+
+StringIterator and its prototype (`7196f2d`) yield complete surrogate pairs and
+preserve unpaired surrogates, following AK's UTF-16 code-point iterator. The
+ordinary-array-like ArrayIterator path and its prototype (`481e0fa`) support
+keys, values, and entry-pair Array objects, inherited sparse entries, live length
+changes, and permanent exhaustion that releases the target. The index advances
+after LengthOfArrayLike and before an indexed getter; reentrant length access
+preserves the pinned source's saved-index/current-slot increment behavior.
+Both prototypes expose branded native next methods and configurable tags with
+upstream metadata. Their Iterator parent, result Object parent, and entry-pair
+Array parent are explicit dependencies. These records are callable from compiled
+scripts when supplied by a host; realm intrinsic installation, iterator-producing
+String/Array methods, TypedArray iteration, Iterator helpers, and async iteration
+remain pending.
 
 Numeric globals follow the upstream coercion order and errors. parseInt preserves
 radix validation, hexadecimal-prefix stripping, prefix termination, per-digit
@@ -432,19 +473,19 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 79 passed, 79 total
+# 84 passed, 84 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 79 passed, 79 total
+# 84 passed, 84 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
 
 v -old-compiler -enable-globals test browserjs
-# 6 passed, 6 total
+# 7 passed, 7 total
 
 v -old-compiler -enable-globals -gc none test browserjs
-# 6 passed, 6 total
+# 7 passed, 7 total
 
 v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
@@ -473,21 +514,24 @@ coercion, metadata, and failure cleanup; fake `FunctionObject`,
 stand in for the untranslated builtin objects, and module-loading tests write
 temporary module files. The preceding LibWeb work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 79 libjs files are verified separately in both GC modes.
-There are now 739 repository test files.
+this package; the 84 libjs files are verified separately in both GC modes.
+There are now 745 repository test files.
 
 The preceding full 728-file repository checkpoint passed every test file,
 including the native bridge, five browser integration files, and 69 LibJS files.
-After the Boolean/Symbol and construction translation, the dedicated LibJS suites
-pass all 79 files and the browser suites pass all six files in both GC modes;
-the updated native bridge tests pass as well. The full repository suite has not
-been repeated for this addition.
+After the primitive-object, construction, and synchronous iterator translations,
+the dedicated LibJS suites pass all 84 files and the browser suites pass all seven
+files in both GC modes; the native bridge tests pass as well. The full repository
+suite has not been repeated for this addition.
 
-Browser integration checks pass the six `browserjs` test files in both GC modes,
+Browser integration checks pass the seven `browserjs` test files in both GC modes,
 the native `main_test.v` bridge and flag tests, the production bundle build,
-JavaScriptCore DOM-mutation/click smoke, and LibJS bytecode smoke. A native
+JavaScriptCore DOM-mutation/click smoke, and LibJS bytecode smoke. Native
 LibJS fixtures also verify bound calls/construction, Boolean and Symbol methods,
 registry-backed property keys, primitive instance checks, and legacy escaping.
+Host-supplied String/Array iterator records are also exercised through compiled
+browser scripts, including Unicode, readonly string characters, live array
+length changes, entry-pair arrays, errors, and later-script recovery.
 Invalid engine flags return exit status 2. The standalone runner passes
 expression and file-input checks, rejects unsupported programs with exit status
 1, and its linked libraries contain ICU and libSystem without JavaScriptCore.
@@ -498,8 +542,9 @@ same-size SVG image source switch, and 13 SVG paint-server mutation cases; all
 bundle passes all 11 default comparisons and the pixel-exact same-size SVG source
 switch again. The screenshot tools use `V_BIN` with a temporary wrapper that
 selects this checkout's old compiler frontend for their pixel-diff helper.
-The Boolean/Symbol and construction refresh passes `inline-node` within its
-documented tolerance and the same-size SVG source switch with zero differing pixels.
+The primitive-object, construction, and iterator refresh passes `inline-node`
+within its documented tolerance and the same-size SVG source switch with zero
+differing pixels.
 
 ## Deviations from upstream
 
@@ -567,6 +612,18 @@ documented tolerance and the same-size SVG source switch with zero differing pix
   Creation takes an explicit prototype because %Array.prototype% is pending.
   Shape/prototype guards and packed-storage fast paths remain untranslated;
   the ordinary property algorithms supply the available array semantics.
+- String characters use flat one-unit PrimitiveString cells instead of upstream
+  substring cells. The VM-less descriptor API bypasses the VM's creation cache;
+  string SameValue still compares the exact UTF-16 contents. StringCreate requires
+  an explicit prototype while the String intrinsic graph remains pending.
+- Iterator records and result variants use V heap records and explicit done
+  flags. Intrinsic parents are supplied by callers; no Iterator/Object/Array
+  prototype substitute is installed. Synchronous acquisition currently accepts
+  object receivers. Async acquisition, primitive String method lookup, Iterator
+  helpers, builtin-marker fast paths, and TypedArray witnesses remain pending.
+  String iteration uses code-unit offsets over the retained flat string rather
+  than AK iterator pointers. Array key/entry indices preserve the pinned source's
+  i32 conversion, including its wraparound for indices at or above 2^31.
 - `Runtime/Value.cpp` at the pinned upstream revision passes `(target, value)`
   in InstanceofOperator's final no-`@@hasInstance` fallback, although its
   OrdinaryHasInstance helper expects `(value, constructor)`. The translation
@@ -597,11 +654,14 @@ complete LibJS runtime migration.
 - The remaining Intrinsics prototype graph, global entries (including eval),
   builtin constructors and prototypes beyond Boolean and Symbol, ECMAScript function objects, other
   intrinsic accessors, proxies, and BigInt constructor/prototype methods remain
-  untranslated. Array exotic records and sorting helpers exist, but the Array
-  constructor/prototype and array-literal generation are pending. Realms expose
-  four standard value properties, eight numeric/URI
-  functions, Boolean/Symbol constructors, and two legacy functions on an ordinary global object. Default
-  native globals inherit the translated Function prototype, whose Object
+  untranslated. String exotic records, synchronous iterator operations, and
+  String/ordinary-Array iterator next prototypes exist with explicit intrinsic
+  dependencies. Array sorting helpers and exotic records exist, but Array/String
+  constructors/prototypes, iterator-producing methods, Iterator helpers, async
+  iteration, TypedArray iteration, and array-literal generation remain pending.
+  Realms expose four standard value properties, eight numeric/URI functions,
+  Boolean/Symbol constructors, and two legacy functions on an ordinary global
+  object. Default native globals inherit the translated Function prototype, whose Object
   prototype and Function constructor linkage remain pending.
 - CyclicModule graph loading, linking, evaluation, promise reactions, JSON
   modules, the debugger, and the LibWeb host bindings remain necessary before

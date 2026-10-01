@@ -23,8 +23,11 @@ URI, and legacy escaping globals execute through translated native functions.
 Boolean and Symbol wrappers, prototypes, and globals retain primitive receiver
 identity; Boolean construction and Symbol's registry methods follow upstream.
 Host-created Array records implement sparse length/property behavior, and the
-runtime provides the upstream sorting helpers. Array literals and prototype
-methods remain pending.
+runtime provides the upstream sorting helpers. Host-created String objects
+expose fixed UTF-16 character descriptors. Synchronous iterator operations and
+String/ordinary-Array iterator records support stepping, collection, and closing.
+Their intrinsic prototypes are supplied explicitly; Array literals, Array/String
+prototype methods, and iterator-producing builtin methods remain pending.
 The browser selects this supported slice with `--js-engine=libjs`;
 JavaScriptCore remains the default, with `--js-engine=javascriptcore` selecting
 its existing DOM host explicitly. LibJS mode has no DOM bindings and never falls
