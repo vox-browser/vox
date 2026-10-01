@@ -153,6 +153,7 @@ pub mut:
 	string_iterator      ?&StringIterator
 	array_iterator       ?&ArrayIterator
 	array_buffer         ?&ArrayBufferObject
+	data_view            ?&DataView
 }
 
 // 10.1.12 OrdinaryObjectCreate ( proto [ , additionalInternalSlotsList ] ), https://tc39.es/ecma262/#sec-ordinaryobjectcreate
