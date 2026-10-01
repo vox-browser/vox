@@ -148,6 +148,8 @@ pub mut:
 	function_source_text ?Utf16String // [[SourceText]] on ECMAScript callables
 	array_object         ?&ArrayObject
 	boolean_object       ?&BooleanObject // [[BooleanData]]
+	number_object        ?&NumberObject  // [[NumberData]]
+	bigint_object        ?&BigIntObject  // [[BigIntData]]
 	symbol_object        ?&SymbolObject // [[SymbolData]]
 	string_object        ?&StringObject // [[StringData]] and virtual indexed properties
 	string_iterator      ?&StringIterator
