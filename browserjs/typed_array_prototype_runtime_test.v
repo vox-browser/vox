@@ -58,25 +58,71 @@ fn install_typed_prototype_test_host(mut runtime Runtime) {
 		libjs.Value.from_object(abstract.object), 7)
 	for index, name in ['HostBytes', 'HostNumbers', 'HostBig'] {
 		kind := [libjs.BufferElementType.uint8, .float64, .big_int64][index]
-		mut concrete_parent := libjs.Object.create(realm, parent)
+		concrete_parent := libjs.ConcreteTypedArrayPrototype.create(mut vm, realm, kind, parent,
+			prototypes, object_parent).object
 		table.prototypes[int(kind)] = concrete_parent
-		constructor := libjs.NativeFunction.create_constructor(mut vm, realm, abstract.object, fn [kind] (mut vm libjs.VM) !libjs.Value {
-			return libjs.call_typed_array_constructor(mut vm, kind)
-		}, fn [kind, prototype_getter] (mut vm libjs.VM, target &libjs.Object) !&libjs.Object {
-			getter := fn [kind, prototype_getter] (realm &libjs.Realm) &libjs.Object {
-				return prototype_getter(realm, kind)
-			}
-			return libjs.construct_typed_array(mut vm, kind, target, getter)!.object
-		}, 3, libjs.PropertyName.from_str(name))
-		mut object := constructor.object
+		getter := fn [kind, prototype_getter] (realm &libjs.Realm) &libjs.Object {
+			return prototype_getter(realm, kind)
+		}
+		constructor := libjs.ConcreteTypedArrayConstructor.create(mut vm, realm, kind,
+			abstract.object, concrete_parent, getter)
+		object := constructor.object
 		table.constructors[int(kind)] = object
-		object.define_direct_property(libjs.PropertyName.from_str('prototype'),
-			libjs.Value.from_object(concrete_parent), 0)
-		concrete_parent.define_direct_property(libjs.PropertyName.from_str('constructor'),
-			libjs.Value.from_object(object), 5)
 		global.define_direct_property(libjs.PropertyName.from_str(name),
 			libjs.Value.from_object(object), 7)
 	}
+}
+
+fn test_browser_uint8_array_encodings_execute_translated_helpers_and_keep_partial_writes_after_errors() {
+	mut runtime := Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	install_typed_prototype_test_host(mut runtime)
+	assert runtime.evaluate('var bytes=HostBytes.fromHex("2a00FF"); bytes.toBase64();')! == 'KgD/'
+	assert runtime.evaluate('HostBytes.fromBase64("KgD/").toHex();')! == '2a00ff'
+	assert runtime.evaluate('var options=new Boolean(false); options.alphabet="base64url"; options.omitPadding=true; bytes.toBase64(options);')! == 'KgD_'
+	assert runtime.evaluate('HostBytes.fromBase64.call(HostBig,"KgD_",options).toHex();')! == '2a00ff'
+	assert runtime.evaluate('bytes.setFromHex("1122").written;')! == '2'
+	assert runtime.evaluate('bytes.toHex();')! == '1122ff'
+	assert runtime.evaluate('bytes.setFromBase64("Zm9vYg==").read;')! == '4'
+	assert runtime.evaluate('bytes.toHex();')! == '666f6f'
+	assert runtime.evaluate('bytes=new HostBytes(5); bytes.fill(9);')! == '9,9,9,9,9'
+	errors := runtime.run_document_scripts_collect_errors([
+		ScriptSource{ code: 'bytes.setFromHex("1122zz");', url: 'uint8-hex-error.js' },
+		ScriptSource{ code: 'var hexPrefix=bytes.toHex();', url: 'uint8-after-hex.js' },
+		ScriptSource{ code: 'bytes.setFromBase64("Zm9v?");', url: 'uint8-base64-error.js' },
+		ScriptSource{ code: 'var base64Prefix=bytes.toHex();', url: 'uint8-after-base64.js' },
+	])
+	assert errors.len == 2
+	assert errors[0].contains('Hex string must only contain hex characters')
+		&& errors[0].contains('uint8-hex-error.js')
+	assert errors[1].contains('Invalid base64 character')
+		&& errors[1].contains('uint8-base64-error.js')
+	assert runtime.evaluate('hexPrefix;')! == '1122090909'
+	assert runtime.evaluate('base64Prefix;')! == '666f6f0909'
+	assert runtime.evaluate('HostBytes.BYTES_PER_ELEMENT===1 && HostNumbers.BYTES_PER_ELEMENT===8 && HostBig.prototype.BYTES_PER_ELEMENT===8;')! == 'true'
+	assert runtime.context == unsafe { nil }
+	vm := runtime.libjs_vm()
+	assert vm.execution_context_stack().len == 1 && vm.interpreter_stack().depth() == 0
+}
+
+fn test_browser_uint8_array_encoding_methods_follow_tracking_growth_offsets_and_detach() {
+	mut runtime := Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	install_typed_prototype_test_host(mut runtime)
+	assert runtime.evaluate('var options=new Boolean(false); options.maxByteLength=8; var buffer=new ArrayBuffer(4,options); var bytes=new HostBytes(buffer,1); bytes.setFromHex("2a0102").read;')! == '6'
+	assert runtime.evaluate('bytes.toHex();')! == '2a0102'
+	assert runtime.evaluate('buffer.resize(8); bytes.setFromBase64("Zm9vYg==").written;')! == '4'
+	assert runtime.evaluate('bytes.toHex();')! == '666f6f62000000'
+	assert runtime.evaluate('buffer.transfer(); bytes.length;')! == '0'
+	if _ := runtime.evaluate('bytes.toBase64();') {
+		assert false
+	} else {
+		assert err.msg().contains("buffer's bounds")
+	}
+	assert runtime.evaluate('HostBytes.fromHex("2a").at(0);')! == '42'
+	assert runtime.context == unsafe { nil }
+	vm := runtime.libjs_vm()
+	assert vm.execution_context_stack().len == 1 && vm.interpreter_stack().depth() == 0
 }
 
 fn test_browser_typed_array_fill_copy_within_join_and_copying_methods_execute_without_javascriptcore() {
