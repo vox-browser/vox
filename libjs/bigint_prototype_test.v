@@ -28,7 +28,13 @@ fn test_bigint_prototype_initialization_preserves_ordinary_record_source_order_a
 	prototype := BigIntPrototype.create(mut vm, realm, parent, bigint_prototype_test_dependencies(mut vm,
 		realm, parent)).object
 	assert voidptr(prototype.internal_get_prototype_of()?) == voidptr(parent)
-	assert prototype.bigint_object == none && prototype.class_name == 'Object'
+	assert prototype.bigint_object == none && prototype.class_name == 'BigIntPrototype'
+	assert Value.from_object(prototype).str() == '[object BigIntPrototype]'
+	if _ := call(mut vm, Value.from_object(prototype), js_null(), []Value{}) {
+		assert false
+	} else {
+		assert thrown_value(err).as_object().error_message()?.str() == '[object BigIntPrototype] is not a function'
+	}
 	assert !Value.from_object(prototype).is_function()
 	assert prototype.own_property_keys().map(it.str()) == ['toString', 'toLocaleString', 'valueOf',
 		'Symbol(Symbol.toStringTag)']

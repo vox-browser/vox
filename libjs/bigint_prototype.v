@@ -11,6 +11,7 @@ pub:
 
 pub fn BigIntPrototype.create(mut vm VM, realm &Realm, object_prototype &Object, locale BigIntLocaleDependencies) &BigIntPrototype {
 	mut object := Object.create(realm, object_prototype)
+	object.class_name = 'BigIntPrototype'
 	for index, name in ['toString', 'toLocaleString', 'valueOf'] {
 		function := if index == 1 {
 			NativeFunction.create(mut vm, realm, realm.function_prototype, fn [locale] (mut vm VM) !Value {

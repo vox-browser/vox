@@ -14,6 +14,8 @@ pub fn BigIntConstructor.create(mut vm VM, realm &Realm, bigint_prototype &Objec
 	function := NativeFunction.create_constructor_record(mut vm, realm, realm.function_prototype,
 		bigint_constructor_call, bigint_constructor_construct, PropertyName.from_str('BigInt'))
 	mut object := function.object
+	// JS_OBJECT/GC_CELL supplies this diagnostic name in the upstream header.
+	object.class_name = 'BigIntConstructor'
 	object.define_direct_property(PropertyName.from_str('prototype'),
 		Value.from_object(bigint_prototype), 0)
 	for index, name in ['asIntN', 'asUintN'] {

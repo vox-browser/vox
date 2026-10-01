@@ -11,8 +11,11 @@ pub:
 
 pub fn BigIntObject.create(realm &Realm, bigint &BigInt, prototype &Object) &BigIntObject {
 	mut object := Object.create(realm, prototype)
-	object.class_name = 'BigInt'
-	wrapper := &BigIntObject{ object: object, bigint: bigint }
+	object.class_name = 'BigIntObject'
+	wrapper := &BigIntObject{
+		object: object
+		bigint: bigint
+	}
 	object.bigint_object = wrapper
 	return wrapper
 }

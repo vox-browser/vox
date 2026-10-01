@@ -11,7 +11,8 @@ fn test_bigint_wrapper_retains_the_exact_primitive_cell_and_ordinary_prototype()
 		assert voidptr(wrapper.bigint) == voidptr(bigint)
 		assert voidptr(wrapper.object.bigint_object?) == voidptr(wrapper)
 		assert wrapper.bigint.big_integer.str() == text
-		assert wrapper.object.class_name == 'BigInt' && wrapper.object.properties.len == 0
+		assert wrapper.object.class_name == 'BigIntObject' && wrapper.object.properties.len == 0
+		assert Value.from_object(wrapper.object).str() == '[object BigIntObject]'
 		assert voidptr(wrapper.object.prototype?) == voidptr(parent)
 		assert wrapper.object.get(mut vm, PropertyName.from_str('inherited'))!.number == 42
 		assert wrapper.object.number_object == none && wrapper.object.symbol_object == none

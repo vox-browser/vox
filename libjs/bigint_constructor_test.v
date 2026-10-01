@@ -19,6 +19,7 @@ fn test_bigint_constructor_initialization_retains_source_order_attributes_and_co
 	create_simple_execution_context(mut vm)
 	constructor := bigint_constructor_test_record(mut vm)
 	value := Value.from_object(constructor)
+	assert value.str() == '[object BigIntConstructor]'
 	assert value.is_function() && value.is_constructor()
 	assert constructor.own_property_keys().map(it.str()) == ['prototype', 'asIntN', 'asUintN',
 		'length', 'name']
