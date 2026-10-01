@@ -1,7 +1,7 @@
 module libjs
 
 // Translated from LibJS/Runtime/Reference.{h,cpp} and EnvironmentCoordinate.h.
-// Boolean primitive bases use the translated ToObject wrapper path. Other
+// Boolean and Symbol primitive bases use the translated ToObject wrapper paths. Other
 // primitive wrappers and their prototypes remain pending; object bases and
 // environment references use the ordinary internal methods.
 
@@ -134,6 +134,10 @@ fn (reference Reference) base_object(mut vm VM) !&Object {
 	// original primitive through GetThisValue, rather than the temporary wrapper.
 	if reference.base_value.is_boolean() {
 		return BooleanObject.create(vm.realm(), reference.base_value.as_bool()).object
+	}
+	// Value.cpp::ToObject's Symbol case retains the same primitive symbol.
+	if reference.base_value.is_symbol() {
+		return SymbolObject.create(vm.realm(), reference.base_value.as_symbol()).object
 	}
 	// 7.1.18 ToObject ( argument ) throws for undefined and null; primitive
 	// wrappers belong to the pending object-model translation.
