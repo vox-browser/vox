@@ -2,8 +2,8 @@ module libjs
 
 // Runtime/ArrayBuffer.{h,cpp}: buffer records and storage/detach operations.
 // The VM's existing ArrayBuffer interface names its host-resize contract, so
-// the concrete translated record uses ArrayBufferObject. Prototype selection
-// is explicit until the constructor/intrinsic installation is translated.
+// the concrete translated record uses ArrayBufferObject. Host-created buffers
+// select their prototype explicitly; AllocateArrayBuffer uses the realm graph.
 pub enum BufferOrder {
 	seq_cst
 	unordered

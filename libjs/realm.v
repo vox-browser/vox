@@ -25,6 +25,8 @@ pub mut:
 	boolean_constructor ?&Object
 	symbol_prototype ?&Object
 	symbol_constructor ?&Object
+	array_buffer_prototype ?&Object
+	array_buffer_constructor ?&Object
 }
 
 pub fn Realm.create() &Realm {
@@ -57,6 +59,14 @@ pub fn (realm &Realm) symbol_prototype_record() &Object {
 
 pub fn (realm &Realm) symbol_constructor_record() &Object {
 	return realm.symbol_constructor or { panic('Realm has no Symbol constructor yet') }
+}
+
+pub fn (realm &Realm) array_buffer_prototype_record() &Object {
+	return realm.array_buffer_prototype or { panic('Realm has no ArrayBuffer prototype yet') }
+}
+
+pub fn (realm &Realm) array_buffer_constructor_record() &Object {
+	return realm.array_buffer_constructor or { panic('Realm has no ArrayBuffer constructor yet') }
 }
 
 pub fn (mut realm Realm) set_global_environment(environment &GlobalEnvironment) {
@@ -100,6 +110,13 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	mut symbol_prototype_object := symbol_prototype.object
 	symbol_prototype_object.define_direct_property(PropertyName.from_str('constructor'),
 		Value.from_object(symbol_constructor.object), attribute_writable | attribute_configurable)
+	array_buffer_prototype := ArrayBufferPrototype.create(mut vm, realm, none)
+	realm.array_buffer_prototype = array_buffer_prototype.object
+	array_buffer_constructor := ArrayBufferConstructor.create(mut vm, realm)
+	realm.array_buffer_constructor = array_buffer_constructor.object
+	mut array_buffer_prototype_object := array_buffer_prototype.object
+	array_buffer_prototype_object.define_direct_property(PropertyName.from_str('constructor'),
+		Value.from_object(array_buffer_constructor.object), attribute_writable | attribute_configurable)
 	// 4. Set realm.[[GlobalObject]] to undefined.
 	// 5. Set realm.[[GlobalEnv]] to undefined.
 	// 7. Let newContext be a new execution context.
@@ -144,6 +161,8 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 		Value.from_object(realm.boolean_constructor_record()), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('Symbol'),
 		Value.from_object(realm.symbol_constructor_record()), attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('ArrayBuffer'),
+		Value.from_object(realm.array_buffer_constructor_record()), attribute_writable | attribute_configurable)
 	set_default_global_legacy_functions(mut vm, realm)
 	// 19. Create any host-defined global object properties on global.
 	// 20. Return unused.

@@ -6,10 +6,10 @@ fn test_default_global_property_order_follows_upstream_function_then_value_insta
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
 	// GlobalObject.cpp::set_default_global_bindings, omitting the eval function
-	// and constructor/prototype entries other than Boolean/Symbol, which are pending.
+	// and other constructor/prototype entries, which are pending.
 	assert vm.get_global_object().own_property_keys().map(it.str()) == ['isFinite', 'isNaN',
 		'parseFloat', 'parseInt', 'decodeURI', 'decodeURIComponent', 'encodeURI',
-		'encodeURIComponent', 'globalThis', 'Infinity', 'NaN', 'undefined', 'Boolean', 'Symbol', 'escape', 'unescape']
+		'encodeURIComponent', 'globalThis', 'Infinity', 'NaN', 'undefined', 'Boolean', 'Symbol', 'ArrayBuffer', 'escape', 'unescape']
 }
 
 fn test_default_global_value_bindings_have_standard_descriptors() {
