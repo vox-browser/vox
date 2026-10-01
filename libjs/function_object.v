@@ -13,6 +13,13 @@ mut:
 	internal_call(mut vm VM, this_value Value, arguments []Value) !Value
 }
 
+// [[Construct]] is optional. Keeping it separate preserves callable host
+// records and native methods that have no constructor internal method.
+pub interface ConstructorFunction {
+mut:
+	internal_construct(mut vm VM, arguments []Value, new_target &Object) !&Object
+}
+
 // 9.5.1 JobCallback Records, https://tc39.es/ecma262/#sec-jobcallback-records
 @[heap]
 pub struct JobCallback {

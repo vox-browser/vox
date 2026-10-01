@@ -141,6 +141,7 @@ pub mut:
 	error_data ?&ErrorData
 	// FunctionObject inheritance is represented by a callable implementation.
 	callable             ?FunctionObject
+	constructor          ?ConstructorFunction
 	native_callable      bool
 	native_initial_name  ?Utf16String
 	bound_function       ?&BoundFunction
