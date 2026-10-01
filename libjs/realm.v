@@ -23,6 +23,7 @@ pub mut:
 	throw_type_error_function ?&Object
 	boolean_prototype ?&Object
 	boolean_constructor ?&Object
+	symbol_prototype ?&Object
 }
 
 pub fn Realm.create() &Realm {
@@ -47,6 +48,10 @@ pub fn (realm &Realm) boolean_prototype_record() &Object {
 
 pub fn (realm &Realm) boolean_constructor_record() &Object {
 	return realm.boolean_constructor or { panic('Realm has no Boolean constructor yet') }
+}
+
+pub fn (realm &Realm) symbol_prototype_record() &Object {
+	return realm.symbol_prototype or { panic('Realm has no Symbol prototype yet') }
 }
 
 pub fn (mut realm Realm) set_global_environment(environment &GlobalEnvironment) {
@@ -83,6 +88,8 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	mut boolean_prototype_object := boolean_prototype.object
 	boolean_prototype_object.define_direct_property(PropertyName.from_str('constructor'),
 		Value.from_object(boolean_constructor.object), attribute_writable | attribute_configurable)
+	symbol_prototype := SymbolPrototype.create(mut vm, realm, none)
+	realm.symbol_prototype = symbol_prototype.object
 	// 4. Set realm.[[GlobalObject]] to undefined.
 	// 5. Set realm.[[GlobalEnv]] to undefined.
 	// 7. Let newContext be a new execution context.
