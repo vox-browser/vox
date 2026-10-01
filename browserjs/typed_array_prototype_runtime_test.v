@@ -30,10 +30,14 @@ fn install_typed_prototype_test_host(mut runtime Runtime) {
 	constructor_getter := fn [table] (realm &libjs.Realm, kind libjs.BufferElementType) &libjs.Object {
 		return table.constructors[int(kind)] or { panic('test intrinsic not installed') }
 	}
+	prototype_getter := fn [parent] (realm &libjs.Realm, kind libjs.BufferElementType) &libjs.Object {
+		return parent
+	}
 	for name in ['at', 'includes', 'indexOf', 'lastIndexOf', 'reverse', 'sort', 'every', 'some',
 		'forEach', 'find', 'findIndex', 'findLast', 'findLastIndex', 'reduce', 'reduceRight',
-		'entries', 'keys', 'values', 'copyWithin', 'fill', 'join', 'toReversed', 'toSorted', 'with'] {
-		function := libjs.NativeFunction.create(mut vm, realm, realm.function_prototype, fn [name, prototypes, iterator_prototype, constructor_getter] (mut vm libjs.VM) !libjs.Value {
+		'entries', 'keys', 'values', 'copyWithin', 'fill', 'join', 'toReversed', 'toSorted', 'with',
+		'filter', 'map', 'set', 'slice', 'subarray', 'toLocaleString'] {
+		function := libjs.NativeFunction.create(mut vm, realm, realm.function_prototype, fn [name, prototypes, iterator_prototype, constructor_getter, prototype_getter] (mut vm libjs.VM) !libjs.Value {
 			return match name {
 				'at' {
 					libjs.typed_array_prototype_at(mut vm, prototypes)!
@@ -106,6 +110,28 @@ fn install_typed_prototype_test_host(mut runtime Runtime) {
 				'toSorted' {
 					libjs.typed_array_prototype_to_sorted(mut vm, prototypes, constructor_getter)!
 				}
+				'filter' {
+					libjs.typed_array_prototype_filter(mut vm, prototypes, constructor_getter,
+						prototype_getter)!
+				}
+				'map' {
+					libjs.typed_array_prototype_map(mut vm, prototypes, constructor_getter,
+						prototype_getter)!
+				}
+				'set' {
+					libjs.typed_array_prototype_set(mut vm, prototypes)!
+				}
+				'slice' {
+					libjs.typed_array_prototype_slice(mut vm, prototypes, constructor_getter,
+						prototype_getter)!
+				}
+				'subarray' {
+					libjs.typed_array_prototype_subarray(mut vm, prototypes, constructor_getter,
+						prototype_getter)!
+				}
+				'toLocaleString' {
+					libjs.typed_array_prototype_to_locale_string(mut vm, prototypes)!
+				}
 				else {
 					libjs.typed_array_prototype_with(mut vm, prototypes, constructor_getter)!
 				}
@@ -167,6 +193,74 @@ fn test_browser_typed_array_fill_copy_within_join_and_copying_methods_execute_wi
 	assert runtime.evaluate('big.fill(43n,-1).join();')! == '9007199254740993,9007199254740992,43'
 	assert runtime.context == unsafe { nil }
 	vm := runtime.libjs_vm()
+	assert vm.execution_context_stack().len == 1 && vm.interpreter_stack().depth() == 0
+}
+
+fn test_browser_typed_array_set_slice_subarray_filter_and_map_run_through_translated_bytecode() {
+	mut runtime := Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	install_typed_prototype_test_host(mut runtime)
+	mut vm := runtime.libjs_vm()
+	mut global := vm.get_global_object()
+	for name in ['select', 'mapValue'] {
+		callback := libjs.NativeFunction.create(mut vm, vm.realm(), vm.realm().function_prototype, fn [name] (mut vm libjs.VM) !libjs.Value {
+			assert vm.argument_count() == 3 && vm.argument(2).is_object()
+			return if name == 'select' {
+				libjs.Value.from_bool(vm.argument(1).number != 1)
+			} else {
+				libjs.Value.from_f64(vm.argument(0).number + vm.this_value().number)
+			}
+		}, 3, libjs.PropertyName.from_str(name), none)
+		global.define_direct_property(libjs.PropertyName.from_str(name),
+			libjs.Value.from_object(callback.object), 7)
+	}
+	assert runtime.evaluate('var bytes=new HostBytes(4); bytes.set("123",1); bytes.join();')! == '0,1,2,3'
+	assert runtime.evaluate('var copied=bytes.slice(-3,-1); copied.join();')! == '1,2'
+	assert runtime.evaluate('copied.buffer!==bytes.buffer;')! == 'true'
+	assert runtime.evaluate('var view=bytes.subarray(1,3); view.buffer===bytes.buffer;')! == 'true'
+	assert runtime.evaluate('view[0]=42; bytes.join();')! == '0,42,2,3'
+	assert runtime.evaluate('bytes.filter(select.bind(null)).join();')! == '0,2,3'
+	assert runtime.evaluate('bytes.map(mapValue,10).join();')! == '10,52,12,13'
+	assert runtime.evaluate('bytes.set(bytes.subarray(0,3),1); bytes.join();')! == '0,0,42,2'
+	assert runtime.evaluate('var big=new HostBig(2); big[0]=9007199254740993n; big[1]=-42n; big.slice().join();')! == '9007199254740993,-42'
+	assert runtime.context == unsafe { nil }
+	assert vm.execution_context_stack().len == 1 && vm.interpreter_stack().depth() == 0
+}
+
+fn test_browser_typed_array_species_and_tracking_views_retain_current_realm_dependencies() {
+	mut runtime := Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	install_typed_prototype_test_host(mut runtime)
+	mut vm := runtime.libjs_vm()
+	assert runtime.evaluate('var options=new Boolean(false); options.maxByteLength=8; var buffer=new ArrayBuffer(4,options); var bytes=new HostBytes(buffer); bytes.set("1234"); var tracking=bytes.subarray(1); var fixed=bytes.subarray(1,3); buffer.resize(6); tracking.length;')! == '5'
+	assert runtime.evaluate('fixed.length;')! == '2'
+	assert runtime.evaluate('var holder=new Boolean(false); holder[Symbol.species]=HostNumbers; bytes.constructor=holder; var copy=bytes.slice(0,3); copy[Symbol.toStringTag];')! == 'Float64Array'
+	assert runtime.evaluate('copy.join();')! == '1,2,3'
+	assert runtime.evaluate('copy.byteLength;')! == '24'
+	assert runtime.evaluate('copy.buffer!==buffer;')! == 'true'
+	assert runtime.context == unsafe { nil }
+	assert vm.execution_context_stack().len == 1 && vm.interpreter_stack().depth() == 0
+}
+
+fn test_browser_typed_array_to_locale_string_uses_explicit_host_locale_dependency_without_javascriptcore() {
+	mut runtime := Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	install_typed_prototype_test_host(mut runtime)
+	mut vm := runtime.libjs_vm()
+	// Supply the pending Number/BigInt locale builtin as an observable host
+	// callback; this fixture tests Invoke and forwarding, not Intl formatting.
+	mut prototype := vm.realm().data_view_prototype_record()
+	function := libjs.NativeFunction.create(mut vm, vm.realm(), vm.realm().function_prototype, fn (mut vm libjs.VM) !libjs.Value {
+		assert vm.argument_count() == 2
+		assert vm.argument(0).as_string().str() == 'host-locale' && vm.argument(1).number == 42
+		return vm.this_value()
+	}, 0, libjs.PropertyName.from_str('hostLocale'), none)
+	prototype.define_direct_property(libjs.PropertyName.from_str('toLocaleString'),
+		libjs.Value.from_object(function.object), 7)
+	assert runtime.evaluate('var bytes=new HostBytes(3); bytes.set("123"); bytes.toLocaleString("host-locale",42);')! == '1,2,3'
+	assert runtime.evaluate('var big=new HostBig(2); big[0]=9007199254740993n; big[1]=-42n; big.toLocaleString("host-locale",42);')! == '9007199254740993,-42'
+	assert runtime.evaluate('new HostBytes(0).toLocaleString();')! == ''
+	assert runtime.context == unsafe { nil }
 	assert vm.execution_context_stack().len == 1 && vm.interpreter_stack().depth() == 0
 }
 
