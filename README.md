@@ -41,12 +41,13 @@ explicit prototype dependencies. Result creation/validation and numeric sorting
 comparison follow upstream. Native behavior functions now cover its four branded
 accessors, at, @@toStringTag, includes/indexOf/lastIndexOf, reverse and numeric
 sort, every/some/forEach, the four predicate searches, reduce/reduceRight and
-entries/keys/values, copyWithin, fill, join, toReversed/toSorted and with.
-Same-type result creation uses an explicit intrinsic constructor dependency.
-They use translated primitive boxing with explicit
-Number/BigInt/String prototype dependencies. The abstract TypedArray constructor, builtin installation,
-remaining prototype methods, Uint8Array encoding helpers and caged storage remain
-pending.
+entries/keys/values, copyWithin, fill, join, toReversed/toSorted/with,
+filter/map/set/slice/subarray and toLocaleString. Same-type and species result
+creation use explicit intrinsic constructor/prototype dependencies. Primitive
+boxing, GetV and Invoke retain explicit Number/BigInt/String dependencies.
+The abstract TypedArray constructor, builtin installation, shared Array toString,
+values/@@iterator alias, Number/BigInt locale formatting, Uint8Array encoding
+helpers and caged storage remain pending.
 SharedArrayBuffer construction, three accessors, growth and species-aware slicing
 also follow the active upstream bodies, using the existing DataView methods to
 read and write their storage. Cross-agent shared-memory ordering remains pending.
