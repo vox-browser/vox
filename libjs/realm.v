@@ -4,7 +4,7 @@ import math
 
 // Translated from LibJS/Runtime/Realm.{h,cpp}. The Intrinsics prototype graph
 // and remaining global bindings belong to the pending builtin translation.
-// The ordinary global object supplies value, numeric, and URI properties.
+// The ordinary global object supplies value/function properties and Boolean/Symbol.
 
 pub interface RealmHostDefined {
 	is_principal_host_defined() bool
@@ -151,7 +151,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 }
 
 // Runtime/GlobalObject.cpp::set_default_global_bindings, value properties only.
-// Intrinsic constructors, global functions and their prototypes remain pending.
+// Other intrinsic constructors and their prototypes remain separate runtime work.
 fn set_default_global_value_bindings(realm &Realm) {
 	mut global := realm.global_object_record()
 	global.define_direct_property(PropertyName.from_str('globalThis'),

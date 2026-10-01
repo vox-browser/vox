@@ -887,15 +887,22 @@ accessors, array-like argument collection, and bound callables. Compiled
 preserving the pinned upstream's documented no-handler fallback behavior.
 Default native globals inherit each realm's Function prototype; its Object
 prototype and constructor linkage remain pending.
+Native and bound construction preserve arguments, callee realms, new-target
+identity, and prototype fallback through the translated constructor operations.
+Compiled `new` expressions retain upstream evaluation order. Boolean and Symbol
+wrappers/prototypes/globals are translated, including Boolean construction,
+Symbol's description accessor and registry, and primitive property receivers.
+Their Object prototype graph and other primitive wrappers remain pending.
 Array exotic records retain sparse, nonconfigurable length descriptors, grow
 only after successful indexed definitions, and restore failed truncations at
 the highest fixed index. Property definitions propagate VM exceptions through
 compiled writes and Function.apply. Upstream indexed collection, stable merge
 sort, and array-element comparison helpers are translated; Array constructors,
 prototype methods, and literals remain pending.
-Its 69 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
-match exactly with no case overrides. A fresh full repository run passes all
-728 test files, including the native bridge and five browser integration files.
+Its 79 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
+match exactly with no case overrides. The preceding full repository checkpoint
+passed 728 files. This addition brings the inventory to 739 test files; the
+updated native bridge and six browser integration files pass focused checks.
 The native browser and inline-document layout bridge now prepare page scripts
 through LibJS and associate classic execution with translated Script, Realm,
 and VM embedding contexts. Sources retain their URLs and parse goals; syntax
@@ -907,11 +914,13 @@ bytecode slice without initializing or falling back to JavaScriptCore. Remaining
 bytecode generation, ECMAScript functions, intrinsic/builtin objects, regex
 compilation, module linking, and LibWeb host bindings remain untranslated.
 
-The integration passes the browser package's five test files in both GC modes,
+The integration passes the browser package's six test files in both GC modes,
 the native bridge tests, the production bundle build and both engine headless
 smoke checks. The function/array refresh also passes all 11 default screenshot cases
 and the pixel-exact same-size SVG source switch. The earlier 25-comparison run
 additionally covered 13 pixel-exact SVG paint-server mutation cases.
+The Boolean/Symbol and construction refresh also passes the `inline-node` and
+pixel-exact same-size SVG source-switch comparisons after rebuilding the bundle.
 
 ### LibWeb checks
 

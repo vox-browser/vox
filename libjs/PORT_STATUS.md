@@ -10,7 +10,7 @@ AST, and scope collector for the frontend, and its C++ `Runtime/VM.{h,cpp}`,
 `Interpreter/Interpreter.cpp` VM members, and runtime records for the VM slice.
 The execution slice additionally follows `Rust/src/bytecode/{operand,generator,codegen}.rs`,
 `Interpreter/{interpreter.flap,SlowPaths.cpp}`, `Script.cpp`,
-`Runtime/{Value,GlobalObject,BigInt,NativeFunction,FunctionObject,BoundFunction,FunctionPrototype,Intrinsics,Array,ArrayPrototype,IndexedProperties,PropertyKey,Object,PrimitiveString,Accessor,PropertyDescriptor,AbstractOperations}`
+`Runtime/{Value,GlobalObject,BigInt,NativeFunction,FunctionObject,BoundFunction,FunctionPrototype,BooleanObject,BooleanPrototype,BooleanConstructor,SymbolObject,SymbolPrototype,SymbolConstructor,Intrinsics,Array,ArrayPrototype,IndexedProperties,PropertyKey,Object,PrimitiveString,Accessor,PropertyDescriptor,AbstractOperations}`
 source bodies, numeric/URI/Annex B global functions from `Runtime/GlobalObject.cpp`,
 `AK/StringConversions.cpp` and fast_float decimal-prefix parsing, and the BigInt
 operations delegated to LibCrypto/LibTomMath.
@@ -54,14 +54,17 @@ creates a realm with a global environment and pushes its execution context.
 | `value_operations.v`, `value_coercion.v`, `big_int.v` | Numeric operations, BigInt cells and conversions, signed bitwise operations, exact mixed numeric comparisons, UTF-16 concatenation, ToPrimitive/OrdinaryToPrimitive and property-key conversion |
 | `value_indices.v`, `array_like.v`, `instanceof.v` | ToIntegerOrInfinity/ToLength/ToIndex, LengthOfArrayLike/CreateListFromArrayLike, OrdinaryHasInstance and InstanceofOperator |
 | `native_function.v` | Capturing/raw native callable objects, function metadata, native table dispatch and callee execution contexts |
+| `construct.v`, `constructor_prototype.v` | Native construction contexts, IsConstructor, GetFunctionRealm, and GetPrototypeFromConstructor |
 | `bound_function.v`, `function_prototype.v`, `restricted_function_properties.v` | Bound callable records and argument forwarding, Function prototype methods, the shared %ThrowTypeError% and restricted caller/arguments accessors |
 | `array_object.v`, `array_sort.v` | Array exotic records and length/property operations, CreateArrayFromList, indexed-value collection, stable merge sorting, and CompareArrayElements |
+| `boolean_object.v`, `boolean_prototype.v`, `boolean_constructor.v` | Boolean internal slots, prototype methods, calls and construction, intrinsic links, and primitive references |
+| `symbol_object.v`, `symbol_prototype.v`, `symbol_constructor.v` | Symbol wrappers, prototype methods and description accessor, unique/global symbol creation, registry methods, static well-known symbols, and primitive references |
 | `global_numeric_functions.v`, `global_uri_functions.v`, `global_legacy_functions.v` | isFinite/isNaN/parseInt/parseFloat, URI encoding/decoding, and Annex B escape/unescape global functions |
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 62 implementation files contain **21,861 physical V LOC**. The 69 test
-files contain **7,541 physical V LOC** and **263 test functions**. Physical LOC
+The 70 implementation files contain **22,282 physical V LOC**. The 79 test
+files contain **8,496 physical V LOC** and **295 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -172,7 +175,7 @@ bitwise operators, comparisons, primitive string concatenation, unary operators,
 `typeof` (including unknown names and lexical TDZ checks), conditional and sequence
 expressions, short-circuiting logical operators and assignments, identifier
 assignments/updates, ordinary data/accessor-property reads/writes/updates, `delete`, `in`, `instanceof`,
-native function and method calls
+native function and method calls and `new` expressions
 without spread arguments, string own `length`/character properties, `var`/`let`/`const`,
 blocks, `if`, `while`, `do`/`while`, `for`, unlabelled `break`/`continue`, and `throw`. Bindings persist across scripts in one
 realm. Global declaration conflicts are checked before creating any bindings;
@@ -182,20 +185,23 @@ property attributes. It also installs the translated `isFinite`, `isNaN`,
 `parseInt`, `parseFloat`, `encodeURI`, `encodeURIComponent`, `decodeURI`, and
 `decodeURIComponent`, `escape`, and `unescape` functions with their upstream names,
 lengths, and descriptors. Global property installation retains upstream
-numeric/URI-function-before-value and legacy-function-after-value key order.
+numeric/URI-function-before-value order, then Boolean/Symbol constructor entries,
+then legacy functions.
 
 The entire program is compiled before declaration instantiation or execution.
 An unsupported construct, even inside an untaken branch, rejects the program
 without running its preceding statements or creating its bindings. ECMAScript
-functions, spread calls, object/array creation,
+functions, spread calls/construction, object/array literals,
 destructuring, classes, exceptions with `try`/`catch`/`finally`, labels, iterators,
 templates, regex, async, and modules are still pending. Handwritten bytecode tests exercise exception
 handler dispatch and `Catch`; this does not imply AST-level catch support.
 Ordinary objects supplied by a host can coerce through `@@toPrimitive`, `valueOf`,
 and `toString`, with upstream hint order and abrupt-completion propagation.
 Objects without a usable coercion method throw the upstream `TypeError`.
-Primitive property access beyond virtual string own properties still requires
-untranslated wrapper prototypes and reports the existing explicit runtime error.
+Boolean and Symbol primitive references box through their translated wrappers
+while preserving the original primitive receiver for inherited methods and
+accessors. Other primitive property access beyond virtual string own properties
+still requires untranslated wrapper prototypes and reports the explicit runtime error.
 
 BigInt numeric operations follow `Runtime/Value.cpp`: arithmetic, truncating
 division/remainder, signed bitwise operations, arithmetic shifts (including
@@ -246,7 +252,34 @@ Each initialized realm owns its Function prototype and a shared, nonextensible
 configurable, nonenumerable `caller` and `arguments` accessors share that thrower
 for reads and writes. Default globals inherit these restrictions through the
 same prototype. The Object prototype, Function constructor and constructor
-back-reference, native construction, and remaining intrinsic graph are pending.
+back-reference, and remaining intrinsic graph are pending.
+
+Native constructors translate `NativeFunction::internal_construct`: arguments,
+callee realm, inherited lexical/variable environments, uninitialized this value,
+and restoration on both normal and abrupt completion. `GetPrototypeFromConstructor`
+performs the observable prototype read before using `GetFunctionRealm` for a
+non-object fallback; bound targets are followed without changing the running realm.
+Bound construction concatenates captured arguments, ignores the bound receiver,
+and substitutes the target only for an identical `newTarget`. Compiled `new`
+expressions retain the callee and each argument before later expressions can
+mutate them, evaluate arguments before constructor validation, and reject spread
+arguments before any execution.
+
+Each realm also owns distinct Boolean and Symbol constructors and prototypes,
+including constructor back-references. Boolean.prototype retains a false-valued
+[[BooleanData]] slot; its toString/valueOf methods accept primitives and branded
+wrappers without conversion hooks. Boolean calls use ToBoolean; construction
+creates a branded wrapper with the new target's chosen prototype. Constructor
+property insertion order follows subclass initialization and subsequent intrinsic
+name installation, including Symbol's fixed well-known properties before length/name.
+Symbol.prototype has no [[SymbolData]] slot. Its methods, description getter,
+@@toPrimitive, and @@toStringTag follow the upstream descriptors and brand checks.
+Description distinguishes undefined from empty and preserves every UTF-16 unit.
+Symbol calls create unique identities; Symbol.for/keyFor use the VM-wide registry
+shared by realms, and all 16 pinned well-known symbols have fixed static descriptors.
+The pinned source gives Symbol a constructor internal method that always throws
+without converting its argument; this behavior is preserved. Number, String, and
+BigInt wrappers/prototypes and the Object prototype graph remain pending.
 
 Runtime property keys canonicalize decimal indices below 2^32-1, while leading
 zeros and 2^32-1 remain strings. Ordinary own keys enumerate indices first in
@@ -399,25 +432,25 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 69 passed, 69 total
+# 79 passed, 79 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 69 passed, 69 total
+# 79 passed, 79 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
 
 v -old-compiler -enable-globals test browserjs
-# 5 passed, 5 total
+# 6 passed, 6 total
 
 v -old-compiler -enable-globals -gc none test browserjs
-# 5 passed, 5 total
+# 6 passed, 6 total
 
 v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
 
 v -old-compiler -enable-globals test .
-# 728 passed, 728 total
+# Previous full checkpoint before Boolean/Symbol additions: 728 passed, 728 total
 
 ./build_ladybird.sh
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
@@ -440,20 +473,21 @@ coercion, metadata, and failure cleanup; fake `FunctionObject`,
 stand in for the untranslated builtin objects, and module-loading tests write
 temporary module files. The preceding LibWeb work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 69 libjs files are verified separately in both GC modes.
-There are now 728 repository test files.
+this package; the 79 libjs files are verified separately in both GC modes.
+There are now 739 repository test files.
 
-The fresh full 728-file repository run passes every test file, including the
-native `main_test.v`, the five browser integration files, and the 69 LibJS
-files. The dedicated LibJS suites also pass all 69 files in both GC modes;
-the browser suite passes all five files without GC as well. This replaces the
-older 710-file checkpoint and its corrected property-assignment assertion.
+The preceding full 728-file repository checkpoint passed every test file,
+including the native bridge, five browser integration files, and 69 LibJS files.
+After the Boolean/Symbol and construction translation, the dedicated LibJS suites
+pass all 79 files and the browser suites pass all six files in both GC modes;
+the updated native bridge tests pass as well. The full repository suite has not
+been repeated for this addition.
 
-Browser integration checks pass the five `browserjs` test files in both GC modes,
+Browser integration checks pass the six `browserjs` test files in both GC modes,
 the native `main_test.v` bridge and flag tests, the production bundle build,
 JavaScriptCore DOM-mutation/click smoke, and LibJS bytecode smoke. A native
-LibJS fixture also verifies bound calls, call/apply, initial function source,
-primitive instance checks, and legacy escaping after an unsupported DOM script.
+LibJS fixtures also verify bound calls/construction, Boolean and Symbol methods,
+registry-backed property keys, primitive instance checks, and legacy escaping.
 Invalid engine flags return exit status 2. The standalone runner passes
 expression and file-input checks, rejects unsupported programs with exit status
 1, and its linked libraries contain ICU and libSystem without JavaScriptCore.
@@ -464,6 +498,8 @@ same-size SVG image source switch, and 13 SVG paint-server mutation cases; all
 bundle passes all 11 default comparisons and the pixel-exact same-size SVG source
 switch again. The screenshot tools use `V_BIN` with a temporary wrapper that
 selects this checkout's old compiler frontend for their pixel-diff helper.
+The Boolean/Symbol and construction refresh passes `inline-node` within its
+documented tolerance and the same-size SVG source switch with zero differing pixels.
 
 ## Deviations from upstream
 
@@ -478,8 +514,10 @@ selects this checkout's old compiler frontend for their pixel-diff helper.
 - `TypeErrorRealmScope` has no destructor; callers must call `restore()`.
 - `Object` supports ordinary data and accessor properties, including native
   holder-value caching, without shapes, inline property-cache metadata, proxies,
-  or the remaining intrinsic prototypes. The Function prototype is initialized
-  separately. Property descriptors omit Shape slot offsets;
+  or the remaining intrinsic prototypes. Function, Boolean, and Symbol prototypes
+  are initialized separately with null Object prototypes until that graph exists.
+  Boolean/Symbol constructor entries are eager data properties in place of the
+  upstream engine-private lazy intrinsic accessor map. Property descriptors omit Shape slot offsets;
   FromPropertyDescriptor takes an explicit prototype, and ObjectDefineProperties
   starts after ToObject. The runtime property key is named
   `PropertyName` because the parser owns `PropertyKey`, and the runtime source
@@ -508,16 +546,17 @@ selects this checkout's old compiler frontend for their pixel-diff helper.
   per-iteration environments observable through JavaScript closures remain
   pending; function syntax is rejected before execution. The existing
   `FunctionObject` interface receives arguments directly, so the native
-  `internal_call()` owns the frame allocation that upstream `call_impl()` performs.
+  `internal_call()` and `internal_construct()` own frame allocation that upstream
+  `call_impl()` and `construct_impl()` perform.
   Native records use their supplied name for call-stack display, combine raw and
   capturing variants in one record, and take an explicit prototype. Default
   native globals receive the realm's Function prototype; its own prototype is
   null until the Object intrinsic exists. Shapes, builtin optimizations,
   NativeJavaScriptBackedFunction, direct
-  binding getters, and native construction remain separate work.
-- Bound calls concatenate V argument arrays before forwarding to the target,
+  binding getters, and ECMAScript construction remain separate work.
+- Bound calls and construction concatenate V argument arrays before forwarding to the target,
   rather than shifting arguments in one preallocated callee frame as upstream
-  does. Bound construction and upstream external-memory accounting are pending.
+  does. Upstream external-memory accounting remains pending.
 - CreateListFromArrayLike uses a V array in place of GC::RootVector. Lengths
   beyond V's signed-int capacity (2^31-1 elements) throw the existing allocation
   RangeError before indexed reads, even on 64-bit hosts where upstream size_t
@@ -556,12 +595,12 @@ complete LibJS runtime migration.
   and packed interpreter bytecode remain pending. The current instruction loop
   and declaration-instantiation path cover only the supported slice above.
 - The remaining Intrinsics prototype graph, global entries (including eval),
-  builtin constructors and prototypes, ECMAScript function objects, other
+  builtin constructors and prototypes beyond Boolean and Symbol, ECMAScript function objects, other
   intrinsic accessors, proxies, and BigInt constructor/prototype methods remain
   untranslated. Array exotic records and sorting helpers exist, but the Array
   constructor/prototype and array-literal generation are pending. Realms expose
   four standard value properties, eight numeric/URI
-  functions, and two legacy functions on an ordinary global object. Default
+  functions, Boolean/Symbol constructors, and two legacy functions on an ordinary global object. Default
   native globals inherit the translated Function prototype, whose Object
   prototype and Function constructor linkage remain pending.
 - CyclicModule graph loading, linking, evaluation, promise reactions, JSON

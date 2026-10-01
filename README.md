@@ -18,8 +18,10 @@ through this frontend, report positioned syntax errors, and associate execution
 with LibJS Script, Realm, and VM records. The translated bytecode generator and
 interpreter execute primitive and BigInt expressions, declarations, lexical
 scopes, loops, ordinary data/accessor-property operations, string own properties,
-native and bound calls, and `instanceof`. Function prototype methods, numeric,
+native and bound calls and construction, and `instanceof`. Function prototype methods, numeric,
 URI, and legacy escaping globals execute through translated native functions.
+Boolean and Symbol wrappers, prototypes, and globals retain primitive receiver
+identity; Boolean construction and Symbol's registry methods follow upstream.
 Host-created Array records implement sparse length/property behavior, and the
 runtime provides the upstream sorting helpers. Array literals and prototype
 methods remain pending.

@@ -1,9 +1,9 @@
 module libjs
 
 // Translated from the parts of LibJS/Runtime/Object.{h,cpp} and PropertyKey.h that
-// the VM, environments, and error records depend on. Only ordinary objects with
-// data and accessor properties are translated; shapes, proxies, and exotic hooks
-// remain pending.
+// the VM, environments, and error records depend on. Ordinary and array exotic
+// properties plus Boolean/Symbol internal slots are translated; shapes, proxies,
+// and other exotic hooks remain pending.
 // The parser owns the name PropertyKey, so the runtime key is PropertyName.
 
 pub enum PropertyNameKind {
