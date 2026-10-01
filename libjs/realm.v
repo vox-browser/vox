@@ -19,14 +19,16 @@ pub mut:
 	global_environment             ?&GlobalEnvironment      // [[GlobalEnv]]
 	global_declarative_environment ?&DeclarativeEnvironment // Cached from GlobalEnv
 	host_defined                   ?RealmHostDefined        // [[HostDefined]]
-	function_prototype ?&Object // Translated intrinsic; Object prototype graph pending
-	throw_type_error_function ?&Object
-	boolean_prototype ?&Object
-	boolean_constructor ?&Object
-	symbol_prototype ?&Object
-	symbol_constructor ?&Object
-	array_buffer_prototype ?&Object
-	array_buffer_constructor ?&Object
+	function_prototype             ?&Object                 // Translated intrinsic; Object prototype graph pending
+	throw_type_error_function      ?&Object
+	boolean_prototype              ?&Object
+	boolean_constructor            ?&Object
+	symbol_prototype               ?&Object
+	symbol_constructor             ?&Object
+	array_buffer_prototype         ?&Object
+	array_buffer_constructor       ?&Object
+	data_view_prototype            ?&Object
+	data_view_constructor          ?&Object
 }
 
 pub fn Realm.create() &Realm {
@@ -67,6 +69,14 @@ pub fn (realm &Realm) array_buffer_prototype_record() &Object {
 
 pub fn (realm &Realm) array_buffer_constructor_record() &Object {
 	return realm.array_buffer_constructor or { panic('Realm has no ArrayBuffer constructor yet') }
+}
+
+pub fn (realm &Realm) data_view_prototype_record() &Object {
+	return realm.data_view_prototype or { panic('Realm has no DataView prototype yet') }
+}
+
+pub fn (realm &Realm) data_view_constructor_record() &Object {
+	return realm.data_view_constructor or { panic('Realm has no DataView constructor yet') }
 }
 
 pub fn (mut realm Realm) set_global_environment(environment &GlobalEnvironment) {
@@ -116,7 +126,16 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	realm.array_buffer_constructor = array_buffer_constructor.object
 	mut array_buffer_prototype_object := array_buffer_prototype.object
 	array_buffer_prototype_object.define_direct_property(PropertyName.from_str('constructor'),
-		Value.from_object(array_buffer_constructor.object), attribute_writable | attribute_configurable)
+		Value.from_object(array_buffer_constructor.object),
+		attribute_writable | attribute_configurable)
+	data_view_prototype := DataViewPrototype.create(mut vm, realm, none)
+	realm.data_view_prototype = data_view_prototype.object
+	data_view_constructor := DataViewConstructor.create(mut vm, realm)
+	realm.data_view_constructor = data_view_constructor.object
+	mut data_view_prototype_object := data_view_prototype.object
+	data_view_prototype_object.define_direct_property(PropertyName.from_str('constructor'),
+		Value.from_object(data_view_constructor.object),
+		attribute_writable | attribute_configurable)
 	// 4. Set realm.[[GlobalObject]] to undefined.
 	// 5. Set realm.[[GlobalEnv]] to undefined.
 	// 7. Let newContext be a new execution context.
@@ -158,11 +177,17 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	// GlobalObject.cpp installs intrinsic constructor properties after values.
 	// Eager materialization replaces the engine-private intrinsic accessor map.
 	global.define_direct_property(PropertyName.from_str('Boolean'),
-		Value.from_object(realm.boolean_constructor_record()), attribute_writable | attribute_configurable)
+		Value.from_object(realm.boolean_constructor_record()),
+		attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('Symbol'),
-		Value.from_object(realm.symbol_constructor_record()), attribute_writable | attribute_configurable)
+		Value.from_object(realm.symbol_constructor_record()),
+		attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('ArrayBuffer'),
-		Value.from_object(realm.array_buffer_constructor_record()), attribute_writable | attribute_configurable)
+		Value.from_object(realm.array_buffer_constructor_record()),
+		attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('DataView'),
+		Value.from_object(realm.data_view_constructor_record()),
+		attribute_writable | attribute_configurable)
 	set_default_global_legacy_functions(mut vm, realm)
 	// 19. Create any host-defined global object properties on global.
 	// 20. Return unused.

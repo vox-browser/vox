@@ -1,8 +1,8 @@
 module libjs
 
 // Runtime/DataView.{h,cpp}. This completes the retained view and its buffer
-// witness algorithms; DataView constructor/prototype and numeric accessors are
-// separate slices. The prototype is explicit, as for other host-created records.
+// witness algorithms. Host-created records select their prototype explicitly;
+// the translated constructor uses the realm's DataView prototype graph.
 @[heap]
 pub struct DataView {
 pub:
