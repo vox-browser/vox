@@ -2,6 +2,12 @@ module browserjs
 
 import libjs
 
+@[heap]
+struct BrowserTypedIntrinsicTable {
+mut:
+	constructors map[int]&libjs.Object
+}
+
 // Test-only installation of the completed bodies with explicit dependencies;
 // this does not expose unfinished builtin intrinsics to browser documents.
 fn install_typed_prototype_test_host(mut runtime Runtime) {
@@ -20,10 +26,14 @@ fn install_typed_prototype_test_host(mut runtime Runtime) {
 		}
 	}
 	iterator_prototype := libjs.ArrayIteratorPrototype.create(mut vm, realm, parent, parent, parent)
+	mut table := &BrowserTypedIntrinsicTable{}
+	constructor_getter := fn [table] (realm &libjs.Realm, kind libjs.BufferElementType) &libjs.Object {
+		return table.constructors[int(kind)] or { panic('test intrinsic not installed') }
+	}
 	for name in ['at', 'includes', 'indexOf', 'lastIndexOf', 'reverse', 'sort', 'every', 'some',
 		'forEach', 'find', 'findIndex', 'findLast', 'findLastIndex', 'reduce', 'reduceRight',
-		'entries', 'keys', 'values'] {
-		function := libjs.NativeFunction.create(mut vm, realm, realm.function_prototype, fn [name, prototypes, iterator_prototype] (mut vm libjs.VM) !libjs.Value {
+		'entries', 'keys', 'values', 'copyWithin', 'fill', 'join', 'toReversed', 'toSorted', 'with'] {
+		function := libjs.NativeFunction.create(mut vm, realm, realm.function_prototype, fn [name, prototypes, iterator_prototype, constructor_getter] (mut vm libjs.VM) !libjs.Value {
 			return match name {
 				'at' {
 					libjs.typed_array_prototype_at(mut vm, prototypes)!
@@ -77,9 +87,27 @@ fn install_typed_prototype_test_host(mut runtime Runtime) {
 				'keys' {
 					libjs.typed_array_prototype_keys(mut vm, prototypes, iterator_prototype.object)!
 				}
-				else {
+				'values' {
 					libjs.typed_array_prototype_values(mut vm, prototypes,
 						iterator_prototype.object)!
+				}
+				'copyWithin' {
+					libjs.typed_array_prototype_copy_within(mut vm, prototypes)!
+				}
+				'fill' {
+					libjs.typed_array_prototype_fill(mut vm, prototypes)!
+				}
+				'join' {
+					libjs.typed_array_prototype_join(mut vm, prototypes)!
+				}
+				'toReversed' {
+					libjs.typed_array_prototype_to_reversed(mut vm, prototypes, constructor_getter)!
+				}
+				'toSorted' {
+					libjs.typed_array_prototype_to_sorted(mut vm, prototypes, constructor_getter)!
+				}
+				else {
+					libjs.typed_array_prototype_with(mut vm, prototypes, constructor_getter)!
 				}
 			}
 		}, 1, libjs.PropertyName.from_str(name), none)
@@ -113,11 +141,87 @@ fn install_typed_prototype_test_host(mut runtime Runtime) {
 			return libjs.construct_typed_array(mut vm, kind, target, getter)!.object
 		}, 3, libjs.PropertyName.from_str(name))
 		mut object := constructor.object
+		table.constructors[int(kind)] = object
 		object.define_direct_property(libjs.PropertyName.from_str('prototype'),
 			libjs.Value.from_object(parent), 0)
 		global.define_direct_property(libjs.PropertyName.from_str(name),
 			libjs.Value.from_object(object), 7)
 	}
+}
+
+fn test_browser_typed_array_fill_copy_within_join_and_copying_methods_execute_without_javascriptcore() {
+	mut runtime := Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	install_typed_prototype_test_host(mut runtime)
+	assert runtime.evaluate('var bytes=new HostBytes(4); bytes.fill(42,1,3)===bytes;')! == 'true'
+	assert runtime.evaluate('bytes.join("|");')! == '0|42|42|0'
+	assert runtime.evaluate('bytes.copyWithin(0,1,3)===bytes;')! == 'true'
+	assert runtime.evaluate('bytes.join();')! == '42,42,42,0'
+	assert runtime.evaluate('var reversed=bytes.toReversed(); reversed.join();')! == '0,42,42,42'
+	assert runtime.evaluate('reversed!==bytes && reversed.buffer!==bytes.buffer;')! == 'true'
+	assert runtime.evaluate('bytes.with(-1,17).join();')! == '42,42,42,17'
+	assert runtime.evaluate('bytes.toSorted().join();')! == '0,42,42,42'
+	assert runtime.evaluate('bytes.join();')! == '42,42,42,0'
+	assert runtime.evaluate('var big=new HostBig(3); big[0]=9007199254740993n; big[1]=9007199254740992n; big[2]=-42n; big.toSorted().join("|");')! == '-42|9007199254740992|9007199254740993'
+	assert runtime.evaluate('big.with(1,42n).toReversed().join();')! == '-42,42,9007199254740993'
+	assert runtime.evaluate('big.fill(43n,-1).join();')! == '9007199254740993,9007199254740992,43'
+	assert runtime.context == unsafe { nil }
+	vm := runtime.libjs_vm()
+	assert vm.execution_context_stack().len == 1 && vm.interpreter_stack().depth() == 0
+}
+
+fn test_browser_typed_array_join_and_fill_callbacks_keep_upstream_resize_coercion_order() {
+	mut runtime := Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	install_typed_prototype_test_host(mut runtime)
+	mut vm := runtime.libjs_vm()
+	separator := libjs.NativeFunction.create(mut vm, vm.realm(), vm.realm().function_prototype, fn (mut vm libjs.VM) !libjs.Value {
+		buffer_value := vm.get_global_object().get(mut vm, libjs.PropertyName.from_str('buffer'))!
+		mut buffer := buffer_value.as_object().array_buffer or { panic('missing buffer') }
+		assert buffer.try_resize(0, true)
+		return libjs.Value.from_string(vm.create_string_from_str('|'))
+	}, 0, libjs.PropertyName.from_str('toString'), none)
+	mut separator_object := libjs.Object.create(vm.realm(), none)
+	separator_object.define_direct_property(libjs.PropertyName.from_str('toString'),
+		libjs.Value.from_object(separator.object), 7)
+	mut global := vm.get_global_object()
+	global.define_direct_property(libjs.PropertyName.from_str('separator'),
+		libjs.Value.from_object(separator_object), 7)
+	assert runtime.evaluate('var options=new Boolean(false); options.maxByteLength=8; var buffer=new ArrayBuffer(3,options); var bytes=new HostBytes(buffer); bytes.fill(42); bytes.join(separator);')! == '||'
+	assert runtime.evaluate('bytes.length;')! == '0'
+	assert runtime.evaluate('buffer.resize(3); bytes.fill(17).copyWithin(1,0).join();')! == '17,17,17'
+	assert runtime.context == unsafe { nil }
+	assert vm.execution_context_stack().len == 1 && vm.interpreter_stack().depth() == 0
+}
+
+fn test_browser_typed_array_copying_errors_recover_and_to_sorted_uses_bound_native_comparison() {
+	mut runtime := Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	install_typed_prototype_test_host(mut runtime)
+	mut vm := runtime.libjs_vm()
+	compare := libjs.NativeFunction.create(mut vm, vm.realm(), vm.realm().function_prototype, fn (mut vm libjs.VM) !libjs.Value {
+		assert vm.this_value().is_null() && vm.argument_count() == 2
+		return libjs.Value.from_f64(vm.argument(1).number - vm.argument(0).number)
+	}, 2, libjs.PropertyName.from_str('compare'), none)
+	mut global := vm.get_global_object()
+	global.define_direct_property(libjs.PropertyName.from_str('compare'),
+		libjs.Value.from_object(compare.object), 7)
+	assert runtime.evaluate('var bytes=new HostBytes(3); bytes[0]=3; bytes[1]=1; bytes[2]=2; bytes.toSorted(compare.bind(null)).join();')! == '3,2,1'
+	assert runtime.evaluate('bytes.join();')! == '3,1,2'
+	errors := runtime.run_document_scripts_collect_errors([
+		ScriptSource{ code: 'bytes.with(99,42);', url: 'typed-with-range.js' },
+		ScriptSource{ code: 'bytes.toSorted(17);', url: 'typed-to-sorted-compare.js' },
+		ScriptSource{ code: 'var big=new HostBig(1); big.fill(42);', url: 'typed-fill-content.js' },
+		ScriptSource{ code: 'bytes.join(Symbol());', url: 'typed-join-symbol.js' },
+		ScriptSource{ code: 'var answer=bytes.toReversed().at(-1);', url: 'typed-copy-after.js' },
+	])
+	assert errors.len == 4
+	assert errors[0].contains('RangeError:') && errors[0].contains('typed-with-range.js')
+	assert errors[1].contains('17 is not a function')
+	assert errors[2].contains('TypeError:') && errors[3].contains('TypeError:')
+	assert runtime.evaluate('answer;')! == '3'
+	assert runtime.context == unsafe { nil }
+	assert vm.execution_context_stack().len == 1 && vm.interpreter_stack().depth() == 0
 }
 
 @[heap]
