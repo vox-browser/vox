@@ -34,6 +34,9 @@ detach ownership, species selection, and DataView bounds witnesses follow the
 upstream bodies. DataView construction, buffer/length/offset accessors, and all
 22 numeric methods execute through translated buffer conversions, including
 BigInt and Float16. TypedArray records and caged storage remain pending.
+SharedArrayBuffer construction, three accessors, growth and species-aware slicing
+also follow the active upstream bodies, using the existing DataView methods to
+read and write their storage. Cross-agent shared-memory ordering remains pending.
 The browser selects this supported slice with `--js-engine=libjs`;
 JavaScriptCore remains the default, with `--js-engine=javascriptcore` selecting
 its existing DOM host explicitly. LibJS mode has no DOM bindings and never falls
