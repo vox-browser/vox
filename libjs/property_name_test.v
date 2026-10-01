@@ -23,7 +23,9 @@ fn test_numeric_and_string_property_names_share_one_live_property() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
 	mut object := Object.create(vm.realm(), none)
-	assert object.create_data_property(PropertyName.from_number(3), Value.from_i32(41))
+	assert object.create_data_property(mut vm, PropertyName.from_number(3), Value.from_i32(41)) or {
+		panic(err)
+	}
 	assert object.get(mut vm, PropertyName.from_str('3'))!.number == 41
 	object.set(mut vm, PropertyName.from_str('3'), Value.from_i32(42), .yes)!
 	assert object.get(mut vm, PropertyName.from_number(3))!.number == 42
@@ -43,15 +45,18 @@ fn test_ordinary_own_property_keys_sort_indices_and_preserve_string_symbol_order
 		PropertyName.from_str('10'), PropertyName.from_str('a'),
 		PropertyName.from_number(2), PropertyName.from_symbol(second_symbol),
 		PropertyName.from_str('01'), PropertyName.from_number(0xffffffff)] {
-		assert object.create_data_property(key, js_undefined())
+		assert object.create_data_property(mut vm, key, js_undefined()) or { panic(err) }
 	}
 	assert object.own_property_keys().map(it.str()) == ['2', '10', 'b', 'a', '01', '4294967295',
 		'Symbol(first)', 'Symbol(second)']
 	assert object.internal_delete(PropertyName.from_str('b'))
-	assert object.create_data_property(PropertyName.from_str('b'), js_undefined())
+	assert object.create_data_property(mut vm, PropertyName.from_str('b'), js_undefined()) or {
+		panic(err)
+	}
 	assert object.own_property_keys().map(it.str()) == ['2', '10', 'a', '01', '4294967295', 'b',
 		'Symbol(first)', 'Symbol(second)']
-	assert object.create_data_property(PropertyName.from_symbol(Symbol.create_private()), js_undefined())
+	assert object.create_data_property(mut vm, PropertyName.from_symbol(Symbol.create_private()),
+		js_undefined()) or { panic(err) }
 	assert object.own_property_keys().len == 8
 }
 

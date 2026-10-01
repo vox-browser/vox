@@ -56,25 +56,31 @@ pub fn from_property_descriptor(mut vm VM, descriptor ?PropertyDescriptor, proto
 	current := descriptor or { return js_undefined() }
 	mut object := Object.create(vm.realm(), prototype)
 	if value := current.value {
-		assert object.create_data_property(PropertyName.from_str('value'), value)
+		assert object.create_data_property(mut vm, PropertyName.from_str('value'), value) or {
+			panic(err)
+		}
 	}
 	if writable := current.writable {
-		assert object.create_data_property(PropertyName.from_str('writable'),
-			Value.from_bool(writable))
+		assert object.create_data_property(mut vm, PropertyName.from_str('writable'),
+			Value.from_bool(writable)) or { panic(err) }
 	}
 	if getter := current.getter {
-		assert object.create_data_property(PropertyName.from_str('get'), getter)
+		assert object.create_data_property(mut vm, PropertyName.from_str('get'), getter) or {
+			panic(err)
+		}
 	}
 	if setter := current.setter {
-		assert object.create_data_property(PropertyName.from_str('set'), setter)
+		assert object.create_data_property(mut vm, PropertyName.from_str('set'), setter) or {
+			panic(err)
+		}
 	}
 	if enumerable := current.enumerable {
-		assert object.create_data_property(PropertyName.from_str('enumerable'),
-			Value.from_bool(enumerable))
+		assert object.create_data_property(mut vm, PropertyName.from_str('enumerable'),
+			Value.from_bool(enumerable)) or { panic(err) }
 	}
 	if configurable := current.configurable {
-		assert object.create_data_property(PropertyName.from_str('configurable'),
-			Value.from_bool(configurable))
+		assert object.create_data_property(mut vm, PropertyName.from_str('configurable'),
+			Value.from_bool(configurable)) or { panic(err) }
 	}
 	return Value.from_object(object)
 }

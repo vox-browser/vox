@@ -81,12 +81,15 @@ fn test_uri_global_metadata_coercion_and_symbol_errors() {
 		assert vm.argument(0).as_string().str() == 'string'
 		return Value.from_string(vm.create_string_from_str('a b'))
 	}, 1, PropertyName.from_str('coerce'), none)
-	object.create_data_property(PropertyName.from_symbol(vm.well_known_symbol_to_primitive()),
-		Value.from_object(method.object))
+	object.create_data_property(mut vm,
+		PropertyName.from_symbol(vm.well_known_symbol_to_primitive()),
+		Value.from_object(method.object)) or { panic(err) }
 	mut global := vm.get_global_object()
-	global.create_data_property(PropertyName.from_str('object'), Value.from_object(object))
-	global.create_data_property(PropertyName.from_str('symbol'), Value.from_symbol(Symbol.create(none,
-		.unique)))
+	global.create_data_property(mut vm, PropertyName.from_str('object'), Value.from_object(object)) or {
+		panic(err)
+	}
+	global.create_data_property(mut vm, PropertyName.from_str('symbol'), Value.from_symbol(Symbol.create(none,
+		.unique))) or { panic(err) }
 	for name in ['encodeURI', 'encodeURIComponent', 'decodeURI', 'decodeURIComponent'] {
 		descriptor := global.internal_get_own_property(PropertyName.from_str(name))?
 		assert descriptor.writable? && descriptor.configurable? && !descriptor.enumerable?

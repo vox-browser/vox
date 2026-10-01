@@ -4,7 +4,8 @@ import libjs
 
 fn install_runtime_accessor_host(mut vm libjs.VM) &libjs.Object {
 	mut host := libjs.Object.create(vm.realm(), none)
-	host.create_data_property(libjs.PropertyName.from_str('stored'), libjs.Value.from_i32(41))
+	host.create_data_property(mut vm, libjs.PropertyName.from_str('stored'),
+		libjs.Value.from_i32(41)) or { panic(err) }
 	host.define_native_accessor(mut vm, vm.realm(), libjs.PropertyName.from_str('value'), fn (mut vm libjs.VM) !libjs.Value {
 		return vm.this_value().as_object().get(mut vm, libjs.PropertyName.from_str('stored'))
 	}, fn (mut vm libjs.VM) !libjs.Value {
@@ -21,7 +22,8 @@ fn install_runtime_accessor_host(mut vm libjs.VM) &libjs.Object {
 		}, unsafe { nil }, libjs.attribute_configurable, none)
 	}
 	mut global := vm.get_global_object()
-	global.create_data_property(libjs.PropertyName.from_str('host'), libjs.Value.from_object(host))
+	global.create_data_property(mut vm, libjs.PropertyName.from_str('host'),
+		libjs.Value.from_object(host)) or { panic(err) }
 	return host
 }
 

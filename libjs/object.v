@@ -140,11 +140,12 @@ pub mut:
 	// [[ErrorData]] for Error instances created through create_error().
 	error_data ?&ErrorData
 	// FunctionObject inheritance is represented by a callable implementation.
-	callable            ?FunctionObject
-	native_callable     bool
-	native_initial_name ?Utf16String
-	bound_function ?&BoundFunction
+	callable             ?FunctionObject
+	native_callable      bool
+	native_initial_name  ?Utf16String
+	bound_function       ?&BoundFunction
 	function_source_text ?Utf16String // [[SourceText]] on ECMAScript callables
+	array_object         ?&ArrayObject
 }
 
 // 10.1.12 OrdinaryObjectCreate ( proto [ , additionalInternalSlotsList ] ), https://tc39.es/ecma262/#sec-ordinaryobjectcreate
@@ -211,7 +212,9 @@ pub fn (mut object Object) set_integrity_level(mut vm VM, level IntegrityLevel) 
 		for key in keys {
 			if current := object.internal_get_own_property(key) {
 				if current.is_accessor_descriptor() {
-					object.define_property_or_throw(mut vm, key, PropertyDescriptor{ configurable: false })!
+					object.define_property_or_throw(mut vm, key, PropertyDescriptor{
+						configurable: false
+					})!
 					continue
 				}
 				object.define_property_or_throw(mut vm, key, PropertyDescriptor{
@@ -248,7 +251,11 @@ pub fn (object &Object) own_property_keys() []PropertyName {
 	// Object.cpp::OrdinaryOwnPropertyKeys: indices in ascending order, followed
 	// by strings and then symbols in their respective creation orders.
 	mut indices := []PropertyName{}
-	mut strings := []PropertyName{}
+	mut strings := if object.array_object != none {
+		[PropertyName.from_str('length')]
+	} else {
+		[]PropertyName{}
+	}
 	mut symbols := []PropertyName{}
 	for property in object.properties {
 		match property.key.kind {
@@ -271,6 +278,9 @@ pub fn (object &Object) own_property_keys() []PropertyName {
 
 // 10.1.5 [[GetOwnProperty]] ( P ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-getownproperty-p
 pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDescriptor {
+	if array := object.array_object {
+		if key.equals(PropertyName.from_str('length')) { return array.length_descriptor() }
+	}
 	index := object.find_own_property(key)
 	if index < 0 {
 		return none
@@ -279,9 +289,9 @@ pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDes
 	if property.value.is_accessor() {
 		accessor := property.value.as_accessor()
 		return PropertyDescriptor{
-			getter: accessor_function_value(accessor.getter)
-			setter: accessor_function_value(accessor.setter)
-			enumerable: property.enumerable
+			getter:       accessor_function_value(accessor.getter)
+			setter:       accessor_function_value(accessor.setter)
+			enumerable:   property.enumerable
 			configurable: property.configurable
 		}
 	}
@@ -294,14 +304,21 @@ pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDes
 }
 
 // 10.1.6 [[DefineOwnProperty]] ( P, Desc ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-defineownproperty-p-desc
-pub fn (mut object Object) internal_define_own_property(key PropertyName, descriptor PropertyDescriptor) bool {
-	return validate_and_apply_property_descriptor(&object, key, object.extensible,
-		descriptor, object.internal_get_own_property(key))
+pub fn (mut object Object) internal_define_own_property(mut vm VM, key PropertyName, descriptor PropertyDescriptor) !bool {
+	if mut array := object.array_object {
+		return array.internal_define_own_property(mut vm, key, descriptor)
+	}
+	return object.ordinary_define_own_property(key, descriptor)
+}
+
+fn (mut object Object) ordinary_define_own_property(key PropertyName, descriptor PropertyDescriptor) bool {
+	return validate_and_apply_property_descriptor(&object, key, object.extensible, descriptor,
+		object.internal_get_own_property(key))
 }
 
 // 10.1.7 [[HasProperty]] ( P ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-hasproperty-p
 pub fn (object &Object) internal_has_property(key PropertyName) bool {
-	if object.find_own_property(key) >= 0 {
+	if object.internal_get_own_property(key) != none {
 		return true
 	}
 	if parent := object.prototype {
@@ -371,8 +388,12 @@ pub fn (mut object Object) internal_set(mut vm VM, key PropertyName, value Value
 			mut parent_object := unsafe { &Object(parent) }
 			return parent_object.internal_set(mut vm, key, value, receiver)
 		}
-		PropertyDescriptor{ value: js_undefined(), writable: true, enumerable: true,
-			configurable: true }
+		PropertyDescriptor{
+			value:        js_undefined()
+			writable:     true
+			enumerable:   true
+			configurable: true
+		}
 	}
 	if descriptor.is_accessor_descriptor() {
 		setter := descriptor.setter or { js_undefined() }
@@ -389,15 +410,16 @@ pub fn (mut object Object) internal_set(mut vm VM, key PropertyName, value Value
 		if existing.is_accessor_descriptor() || !(existing.writable or { false }) {
 			return false
 		}
-		return receiver_object.internal_define_own_property(key, PropertyDescriptor{
+		return receiver_object.internal_define_own_property(mut vm, key, PropertyDescriptor{
 			value: value
 		})
 	}
-	return receiver_object.create_data_property(key, value)
+	return receiver_object.create_data_property(mut vm, key, value)
 }
 
 // 10.1.10 [[Delete]] ( P ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-delete-p
 pub fn (mut object Object) internal_delete(key PropertyName) bool {
+	if object.array_object != none && key.equals(PropertyName.from_str('length')) { return false }
 	index := object.find_own_property(key)
 	if index < 0 {
 		return true
@@ -416,7 +438,7 @@ pub fn (object &Object) has_property(key PropertyName) bool {
 
 // 7.3.13 HasOwnProperty ( O, P ), https://tc39.es/ecma262/#sec-hasownproperty
 pub fn (object &Object) has_own_property(key PropertyName) bool {
-	return object.find_own_property(key) >= 0
+	return object.internal_get_own_property(key) != none
 }
 
 // Object.cpp::get_without_side_effects: diagnostics inspect stored values,
@@ -425,6 +447,11 @@ pub fn (object &Object) get_without_side_effects(key PropertyName) Value {
 	mut current := ?&Object(object)
 	for {
 		holder := current or { return js_special_empty_value() }
+		if array := holder.array_object {
+			if key.equals(PropertyName.from_str('length')) {
+				return Value.from_f64(f64(array.length))
+			}
+		}
 		index := holder.find_own_property(key)
 		if index >= 0 { return holder.properties[index].value }
 		current = holder.prototype
@@ -446,8 +473,8 @@ pub fn (mut object Object) set(mut vm VM, key PropertyName, value Value, throw_e
 }
 
 // 7.3.5 CreateDataProperty ( O, P, V ), https://tc39.es/ecma262/#sec-createdataproperty
-pub fn (mut object Object) create_data_property(key PropertyName, value Value) bool {
-	return object.internal_define_own_property(key, PropertyDescriptor{
+pub fn (mut object Object) create_data_property(mut vm VM, key PropertyName, value Value) !bool {
+	return object.internal_define_own_property(mut vm, key, PropertyDescriptor{
 		value:        value
 		writable:     true
 		enumerable:   true
@@ -457,7 +484,7 @@ pub fn (mut object Object) create_data_property(key PropertyName, value Value) b
 
 // 7.3.7 CreateDataPropertyOrThrow ( O, P, V ), https://tc39.es/ecma262/#sec-createdatapropertyorthrow
 pub fn (mut object Object) create_data_property_or_throw(mut vm VM, key PropertyName, value Value) !bool {
-	success := object.create_data_property(key, value)
+	success := object.create_data_property(mut vm, key, value)!
 	if !success {
 		return vm.throw_error_type(.type_error, .object_define_own_property_returned_false)
 	}
@@ -466,7 +493,7 @@ pub fn (mut object Object) create_data_property_or_throw(mut vm VM, key Property
 
 // 7.3.9 DefinePropertyOrThrow ( O, P, desc ), https://tc39.es/ecma262/#sec-definepropertyorthrow
 pub fn (mut object Object) define_property_or_throw(mut vm VM, key PropertyName, descriptor PropertyDescriptor) ! {
-	success := object.internal_define_own_property(key, descriptor)
+	success := object.internal_define_own_property(mut vm, key, descriptor)!
 	if !success {
 		return vm.throw_error_type(.type_error, .object_define_own_property_returned_false)
 	}
@@ -482,6 +509,12 @@ pub fn (mut object Object) delete_property_or_throw(mut vm VM, key PropertyName)
 
 // Object::define_direct_property: installs a data property without validation.
 pub fn (mut object Object) define_direct_property(key PropertyName, value Value, attributes u8) {
+	if mut array := object.array_object {
+		// Object.cpp::storage_set/indexed_put grows the magical array length
+		// even when an engine-private caller bypasses descriptor validation.
+		assert !key.equals(PropertyName.from_str('length'))
+		if key.is_number() && key.number >= array.length { array.length = key.number + 1 }
+	}
 	property := OwnProperty{
 		key:          key
 		value:        value

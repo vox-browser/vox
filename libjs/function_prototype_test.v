@@ -59,9 +59,15 @@ fn test_function_call_apply_and_bind_preserve_receiver_arguments_and_nested_bind
 		js_null(),
 	])!.number == 42
 	mut arguments := Object.create(vm.realm(), none)
-	arguments.create_data_property(PropertyName.from_str('length'), Value.from_i32(2))
-	arguments.create_data_property(PropertyName.from_number(0), Value.from_i32(20))
-	arguments.create_data_property(PropertyName.from_number(1), Value.from_i32(21))
+	arguments.create_data_property(mut vm, PropertyName.from_str('length'), Value.from_i32(2)) or {
+		panic(err)
+	}
+	arguments.create_data_property(mut vm, PropertyName.from_number(0), Value.from_i32(20)) or {
+		panic(err)
+	}
+	arguments.create_data_property(mut vm, PropertyName.from_number(1), Value.from_i32(21)) or {
+		panic(err)
+	}
 	assert invoke_function_method(mut vm, prototype.object, 'apply', value, [
 		Value.from_i32(1),
 		Value.from_object(arguments),

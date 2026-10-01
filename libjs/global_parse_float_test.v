@@ -75,12 +75,15 @@ fn test_parse_float_uses_string_hint_and_restores_its_native_frame_after_errors(
 		assert vm.argument(0).as_string().str() == 'string'
 		return Value.from_string(vm.create_string_from_str('1.23xyz'))
 	}, 1, PropertyName.from_str('stringify'), none)
-	source.create_data_property(PropertyName.from_symbol(vm.well_known_symbol_to_primitive()),
-		Value.from_object(stringify.object))
+	source.create_data_property(mut vm,
+		PropertyName.from_symbol(vm.well_known_symbol_to_primitive()),
+		Value.from_object(stringify.object)) or { panic(err) }
 	mut global := vm.get_global_object()
-	global.create_data_property(PropertyName.from_str('source'), Value.from_object(source))
-	global.create_data_property(PropertyName.from_str('key'), Value.from_symbol(Symbol.create(none,
-		.unique)))
+	global.create_data_property(mut vm, PropertyName.from_str('source'), Value.from_object(source)) or {
+		panic(err)
+	}
+	global.create_data_property(mut vm, PropertyName.from_str('key'), Value.from_symbol(Symbol.create(none,
+		.unique))) or { panic(err) }
 	assert execute_float_global(mut vm, 'parseFloat(source);')!.number == 1.23
 	if _ := execute_float_global(mut vm, 'parseFloat(key);') {
 		assert false

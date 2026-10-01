@@ -34,7 +34,9 @@ fn test_index_conversions_run_object_coercion_once_and_preserve_its_errors() {
 	mut vm := VM.create()
 	base := create_simple_execution_context(mut vm)
 	mut object := Object.create(vm.realm(), none)
-	object.create_data_property(PropertyName.from_str('calls'), Value.from_i32(0))
+	object.create_data_property(mut vm, PropertyName.from_str('calls'), Value.from_i32(0)) or {
+		panic(err)
+	}
 	method := NativeFunction.create(mut vm, vm.realm(), none, fn (mut vm VM) !Value {
 		assert vm.argument(0).as_string().str() == 'number'
 		mut receiver := vm.this_value().as_object()
@@ -42,8 +44,9 @@ fn test_index_conversions_run_object_coercion_once_and_preserve_its_errors() {
 		receiver.set(mut vm, PropertyName.from_str('calls'), Value.from_f64(calls + 1), .yes)!
 		return Value.from_f64(42.9)
 	}, 1, PropertyName.from_str('primitive'), none)
-	object.create_data_property(PropertyName.from_symbol(vm.well_known_symbol_to_primitive()),
-		Value.from_object(method.object))
+	object.create_data_property(mut vm,
+		PropertyName.from_symbol(vm.well_known_symbol_to_primitive()),
+		Value.from_object(method.object)) or { panic(err) }
 	value := Value.from_object(object)
 	assert value.to_integer_or_infinity(mut vm)! == 42
 	assert value.to_length(mut vm)! == 42

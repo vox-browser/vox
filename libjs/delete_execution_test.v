@@ -8,12 +8,18 @@ fn execute_delete_source(mut vm VM, source string) !Value {
 
 fn delete_test_host(mut vm VM) &Object {
 	mut prototype := Object.create(vm.realm(), none)
-	prototype.create_data_property(PropertyName.from_str('answer'), Value.from_i32(17))
+	prototype.create_data_property(mut vm, PropertyName.from_str('answer'), Value.from_i32(17)) or {
+		panic(err)
+	}
 	mut host := Object.create(vm.realm(), prototype)
-	host.create_data_property(PropertyName.from_str('answer'), Value.from_i32(42))
+	host.create_data_property(mut vm, PropertyName.from_str('answer'), Value.from_i32(42)) or {
+		panic(err)
+	}
 	host.define_direct_property(PropertyName.from_str('fixed'), Value.from_i32(2), 0)
 	mut global := vm.get_global_object()
-	global.create_data_property(PropertyName.from_str('host'), Value.from_object(host))
+	global.create_data_property(mut vm, PropertyName.from_str('host'), Value.from_object(host)) or {
+		panic(err)
+	}
 	return host
 }
 
@@ -50,9 +56,13 @@ fn test_delete_preserves_symbol_keys_and_prototype_properties() {
 	create_simple_execution_context(mut vm)
 	mut host := delete_test_host(mut vm)
 	symbol := Symbol.create(utf16_string('answer'), .unique)
-	host.create_data_property(PropertyName.from_symbol(symbol), Value.from_i32(42))
+	host.create_data_property(mut vm, PropertyName.from_symbol(symbol), Value.from_i32(42)) or {
+		panic(err)
+	}
 	mut global := vm.get_global_object()
-	global.create_data_property(PropertyName.from_str('key'), Value.from_symbol(symbol))
+	global.create_data_property(mut vm, PropertyName.from_str('key'), Value.from_symbol(symbol)) or {
+		panic(err)
+	}
 	assert execute_delete_source(mut vm, 'delete host[key];')!.as_bool()
 	assert !host.has_own_property(PropertyName.from_symbol(symbol))
 	assert host.get(mut vm, PropertyName.from_str('answer'))!.number == 42
@@ -99,10 +109,12 @@ fn test_delete_computed_key_coercion_precedes_nullish_to_object() {
 		host.set(mut vm, PropertyName.from_str('answer'), Value.from_i32(17), .yes)!
 		return throw_completion(Value.from_i32(23))
 	}, 1, PropertyName.from_str('coerce'), none)
-	key.create_data_property(PropertyName.from_symbol(vm.well_known_symbol_to_primitive()),
-		Value.from_object(coerce.object))
+	key.create_data_property(mut vm, PropertyName.from_symbol(vm.well_known_symbol_to_primitive()),
+		Value.from_object(coerce.object)) or { panic(err) }
 	mut global := vm.get_global_object()
-	global.create_data_property(PropertyName.from_str('key'), Value.from_object(key))
+	global.create_data_property(mut vm, PropertyName.from_str('key'), Value.from_object(key)) or {
+		panic(err)
+	}
 	if _ := execute_delete_source(mut vm, 'delete null[key];') {
 		assert false
 	} else {

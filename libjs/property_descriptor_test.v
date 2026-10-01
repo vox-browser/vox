@@ -16,9 +16,9 @@ fn descriptor_read_object(mut vm VM, mut state DescriptorReadState, fields []str
 			if state.fail_at == field { return throw_completion(Value.from_i32(17)) }
 			return state.values[field] or { js_undefined() }
 		}, 0, PropertyName.from_str(field), 'get')
-		assert object.internal_define_own_property(PropertyName.from_str(field), PropertyDescriptor{
+		assert object.internal_define_own_property(mut vm, PropertyName.from_str(field), PropertyDescriptor{
 			getter: Value.from_object(getter.object)
-		})
+		}) or { panic(err) }
 	}
 	return object
 }
@@ -27,12 +27,21 @@ fn test_to_property_descriptor_reads_inherited_fields_and_preserves_presence() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
 	mut parent := Object.create(vm.realm(), none)
-	parent.create_data_property(PropertyName.from_str('enumerable'), Value.from_i32(1))
-	parent.create_data_property(PropertyName.from_str('writable'), Value.from_i32(0))
-	parent.create_data_property(PropertyName.from_str('value'), js_undefined())
+	parent.create_data_property(mut vm, PropertyName.from_str('enumerable'), Value.from_i32(1)) or {
+		panic(err)
+	}
+	parent.create_data_property(mut vm, PropertyName.from_str('writable'), Value.from_i32(0)) or {
+		panic(err)
+	}
+	parent.create_data_property(mut vm, PropertyName.from_str('value'), js_undefined()) or {
+		panic(err)
+	}
 	mut object := Object.create(vm.realm(), parent)
-	object.create_data_property(PropertyName.from_str('configurable'), Value.from_object(parent))
-	object.create_data_property(PropertyName.from_str('ignored'), Value.from_i32(42))
+	object.create_data_property(mut vm, PropertyName.from_str('configurable'),
+		Value.from_object(parent)) or { panic(err) }
+	object.create_data_property(mut vm, PropertyName.from_str('ignored'), Value.from_i32(42)) or {
+		panic(err)
+	}
 	descriptor := to_property_descriptor(mut vm, Value.from_object(object))!
 	assert descriptor.is_data_descriptor()
 	assert descriptor.enumerable? && descriptor.configurable? && !descriptor.writable?

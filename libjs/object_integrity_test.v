@@ -32,8 +32,12 @@ fn test_ordinary_prototype_replacement_refreshes_lookup_and_receiver_writes() {
 	create_simple_execution_context(mut vm)
 	mut first := Object.create(vm.realm(), none)
 	mut second := Object.create(vm.realm(), none)
-	first.create_data_property(PropertyName.from_str('answer'), Value.from_i32(17))
-	second.create_data_property(PropertyName.from_str('answer'), Value.from_i32(42))
+	first.create_data_property(mut vm, PropertyName.from_str('answer'), Value.from_i32(17)) or {
+		panic(err)
+	}
+	second.create_data_property(mut vm, PropertyName.from_str('answer'), Value.from_i32(42)) or {
+		panic(err)
+	}
 	second.define_direct_property(PropertyName.from_str('fixed'), Value.from_i32(2), 0)
 	mut object := Object.create(vm.realm(), first)
 	assert object.get(mut vm, PropertyName.from_str('answer'))!.number == 17
@@ -57,16 +61,19 @@ fn test_sealing_and_freezing_follow_ordinary_own_property_keys_and_descriptors()
 		keys := [PropertyName.from_str('answer'), PropertyName.from_number(3),
 			PropertyName.from_symbol(symbol)]
 		for key in keys {
-			object.create_data_property(key, Value.from_i32(42))
+			object.create_data_property(mut vm, key, Value.from_i32(42)) or { panic(err) }
 		}
-		object.create_data_property(PropertyName.from_symbol(private), Value.from_i32(17))
+		object.create_data_property(mut vm, PropertyName.from_symbol(private), Value.from_i32(17)) or {
+			panic(err)
+		}
 		assert !object.test_integrity_level(.sealed)
 		assert !object.test_integrity_level(.frozen)
 		assert object.set_integrity_level(mut vm, level)!
 		assert !object.internal_is_extensible()
 		assert object.test_integrity_level(.sealed)
 		assert object.test_integrity_level(.frozen) == (level == .frozen)
-		assert !object.create_data_property(PropertyName.from_str('missing'), Value.from_i32(9))
+		assert !object.create_data_property(mut vm, PropertyName.from_str('missing'),
+			Value.from_i32(9)) or { panic(err) }
 		for key in keys {
 			descriptor := object.internal_get_own_property(key)?
 			assert !descriptor.configurable? && descriptor.enumerable?

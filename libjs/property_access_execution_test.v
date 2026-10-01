@@ -7,16 +7,25 @@ fn execute_property_source(mut vm VM, source string) !Value {
 
 fn install_property_object(mut vm VM) &Object {
 	mut prototype := Object.create(vm.realm(), none)
-	prototype.create_data_property(PropertyName.from_str('inherited'), Value.from_i32(42))
+	prototype.create_data_property(mut vm, PropertyName.from_str('inherited'), Value.from_i32(42)) or {
+		panic(err)
+	}
 	mut host := Object.create(vm.realm(), prototype)
-	host.create_data_property(PropertyName.from_str('answer'), Value.from_i32(42))
-	host.create_data_property(PropertyName.from_number(3), Value.from_i32(42))
+	host.create_data_property(mut vm, PropertyName.from_str('answer'), Value.from_i32(42)) or {
+		panic(err)
+	}
+	host.create_data_property(mut vm, PropertyName.from_number(3), Value.from_i32(42)) or {
+		panic(err)
+	}
 	method := NativeFunction.create_raw(mut vm, vm.realm(), none, fn (mut vm VM) !Value {
 		return vm.this_value()
 	}, 0, PropertyName.from_str('method'), none)
-	host.create_data_property(PropertyName.from_str('method'), Value.from_object(method.object))
+	host.create_data_property(mut vm, PropertyName.from_str('method'),
+		Value.from_object(method.object)) or { panic(err) }
 	mut global := vm.get_global_object()
-	global.create_data_property(PropertyName.from_str('host'), Value.from_object(host))
+	global.create_data_property(mut vm, PropertyName.from_str('host'), Value.from_object(host)) or {
+		panic(err)
+	}
 	return host
 }
 
@@ -63,9 +72,13 @@ fn test_computed_keys_use_string_hint_once_and_keep_symbol_identity() {
 	create_simple_execution_context(mut vm)
 	mut host := install_property_object(mut vm)
 	symbol := Symbol.create(utf16_string('slot'), .unique)
-	host.create_data_property(PropertyName.from_symbol(symbol), Value.from_i32(42))
+	host.create_data_property(mut vm, PropertyName.from_symbol(symbol), Value.from_i32(42)) or {
+		panic(err)
+	}
 	mut key := Object.create(vm.realm(), none)
-	key.create_data_property(PropertyName.from_str('calls'), Value.from_i32(0))
+	key.create_data_property(mut vm, PropertyName.from_str('calls'), Value.from_i32(0)) or {
+		panic(err)
+	}
 	method := NativeFunction.create(mut vm, vm.realm(), none, fn [symbol] (mut vm VM) !Value {
 		assert vm.argument(0).as_string().str() == 'string'
 		mut receiver := vm.this_value().as_object()
@@ -73,10 +86,12 @@ fn test_computed_keys_use_string_hint_once_and_keep_symbol_identity() {
 		receiver.set(mut vm, PropertyName.from_str('calls'), Value.from_f64(calls + 1), .yes)!
 		return Value.from_symbol(symbol)
 	}, 1, PropertyName.from_str('key'), none)
-	key.create_data_property(PropertyName.from_symbol(vm.well_known_symbol_to_primitive()),
-		Value.from_object(method.object))
+	key.create_data_property(mut vm, PropertyName.from_symbol(vm.well_known_symbol_to_primitive()),
+		Value.from_object(method.object)) or { panic(err) }
 	mut global := vm.get_global_object()
-	global.create_data_property(PropertyName.from_str('key'), Value.from_object(key))
+	global.create_data_property(mut vm, PropertyName.from_str('key'), Value.from_object(key)) or {
+		panic(err)
+	}
 	assert execute_property_source(mut vm, 'host[key];')!.number == 42
 	assert key.get(mut vm, PropertyName.from_str('calls'))!.number == 1
 	key.set(mut vm, PropertyName.from_str('calls'), Value.from_i32(0), .yes)!

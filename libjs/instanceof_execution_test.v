@@ -11,11 +11,14 @@ fn instance_execution_target(mut vm VM) &Object {
 		return js_undefined()
 	}, 0, PropertyName.from_str('Target'), none)
 	mut target := function.object
-	target.create_data_property(PropertyName.from_str('prototype'), Value.from_object(prototype))
+	target.create_data_property(mut vm, PropertyName.from_str('prototype'),
+		Value.from_object(prototype)) or { panic(err) }
 	mut global := vm.get_global_object()
-	global.create_data_property(PropertyName.from_str('Target'), Value.from_object(target))
-	global.create_data_property(PropertyName.from_str('instance'), Value.from_object(Object.create(vm.realm(),
-		prototype)))
+	global.create_data_property(mut vm, PropertyName.from_str('Target'), Value.from_object(target)) or {
+		panic(err)
+	}
+	global.create_data_property(mut vm, PropertyName.from_str('instance'), Value.from_object(Object.create(vm.realm(),
+		prototype))) or { panic(err) }
 	return target
 }
 
@@ -56,9 +59,9 @@ fn test_compiled_instanceof_custom_handler_getters_preserve_effect_order_and_err
 	getter := NativeFunction.create(mut vm, vm.realm(), vm.realm().function_prototype, fn (mut vm VM) !Value {
 		return throw_completion(Value.from_i32(17))
 	}, 0, key, 'get')
-	assert target.internal_define_own_property(key, PropertyDescriptor{
+	assert target.internal_define_own_property(mut vm, key, PropertyDescriptor{
 		getter: Value.from_object(getter.object)
-	})
+	}) or { panic(err) }
 	if _ := run_instanceof_source(mut vm,
 		'globalThis.before=1; instance instanceof Target; globalThis.after=1;')
 	{

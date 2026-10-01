@@ -75,7 +75,8 @@ fn test_getters_replacing_or_deleting_their_accessor_cannot_publish_stale_cache_
 		}, 0, key, 'get')
 		getter := NativeFunction.create(mut vm, vm.realm(), none, fn [mut holder, key, action, replacement] (mut vm VM) !Value {
 			assert holder.internal_delete(key)
-			if action == 'data' { holder.create_data_property(key, Value.from_i32(42)) }
+			if action == 'data' { holder.create_data_property(mut vm, key, Value.from_i32(42)) or {
+					panic(err)} }
 			if action == 'accessor' {
 				holder.define_direct_cached_accessor(key, replacement.object, none,
 					attribute_configurable)
@@ -129,7 +130,9 @@ fn test_native_accessor_metadata_and_direct_partial_updates_follow_upstream() {
 		return Value.from_i32(42)
 	}, fn (mut vm VM) !Value {
 		mut receiver := vm.this_value().as_object()
-		receiver.create_data_property(PropertyName.from_str('written'), vm.argument(0))
+		receiver.create_data_property(mut vm, PropertyName.from_str('written'), vm.argument(0)) or {
+			panic(err)
+		}
 		return js_undefined()
 	}, attribute_configurable, prototype)
 	descriptor := holder.internal_get_own_property(key)?

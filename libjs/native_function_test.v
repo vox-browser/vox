@@ -54,7 +54,9 @@ fn test_native_functions_define_metadata_with_upstream_property_attributes() {
 	}, none)
 	assert private.object.get(mut vm, PropertyName.from_str('name'))!.as_string().str() == '#method'
 	mut prototype := Object.create(vm.realm(), none)
-	prototype.create_data_property(PropertyName.from_str('inherited'), Value.from_i32(42))
+	prototype.create_data_property(mut vm, PropertyName.from_str('inherited'), Value.from_i32(42)) or {
+		panic(err)
+	}
 	with_prototype := NativeFunction.create_raw(mut vm, vm.realm(), prototype, native_sum, 0,
 		PropertyName.from_str('sum'), none)
 	assert with_prototype.object.get(mut vm, PropertyName.from_str('inherited'))!.number == 42

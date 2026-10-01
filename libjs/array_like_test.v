@@ -10,9 +10,13 @@ fn test_array_like_lists_read_length_once_then_indices_including_inherited_holes
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
 	mut parent := Object.create(vm.realm(), none)
-	parent.create_data_property(PropertyName.from_number(1), Value.from_i32(17))
+	parent.create_data_property(mut vm, PropertyName.from_number(1), Value.from_i32(17)) or {
+		panic(err)
+	}
 	mut object := Object.create(vm.realm(), parent)
-	object.create_data_property(PropertyName.from_number(3), Value.from_i32(42))
+	object.create_data_property(mut vm, PropertyName.from_number(3), Value.from_i32(42)) or {
+		panic(err)
+	}
 	mut reads := &ArrayLikeReads{}
 	object.define_native_accessor(mut vm, vm.realm(), PropertyName.from_str('length'), fn [mut reads] (mut vm VM) !Value {
 		reads.keys << 'length'
@@ -65,9 +69,13 @@ fn test_array_like_checks_each_element_before_reading_the_next_index() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
 	mut object := Object.create(vm.realm(), none)
-	object.create_data_property(PropertyName.from_str('length'), Value.from_i32(3))
-	object.create_data_property(PropertyName.from_number(0), Value.from_i32(1))
-	object.create_data_property(PropertyName.from_number(1), js_null())
+	object.create_data_property(mut vm, PropertyName.from_str('length'), Value.from_i32(3)) or {
+		panic(err)
+	}
+	object.create_data_property(mut vm, PropertyName.from_number(0), Value.from_i32(1)) or {
+		panic(err)
+	}
+	object.create_data_property(mut vm, PropertyName.from_number(1), js_null()) or { panic(err) }
 	object.define_native_accessor(mut vm, vm.realm(), PropertyName.from_number(2), fn (mut vm VM) !Value {
 		return throw_completion(Value.from_i32(99))
 	}, unsafe { nil }, 0, none)

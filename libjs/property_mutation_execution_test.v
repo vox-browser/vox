@@ -10,11 +10,17 @@ fn run_property_mutation(mut vm VM, source string) !Value {
 
 fn mutation_host(mut vm VM) &Object {
 	mut prototype := Object.create(vm.realm(), none)
-	prototype.create_data_property(PropertyName.from_str('inherited'), Value.from_i32(2))
+	prototype.create_data_property(mut vm, PropertyName.from_str('inherited'), Value.from_i32(2)) or {
+		panic(err)
+	}
 	mut host := Object.create(vm.realm(), prototype)
-	host.create_data_property(PropertyName.from_str('answer'), Value.from_i32(2))
+	host.create_data_property(mut vm, PropertyName.from_str('answer'), Value.from_i32(2)) or {
+		panic(err)
+	}
 	mut global := vm.get_global_object()
-	global.create_data_property(PropertyName.from_str('host'), Value.from_object(host))
+	global.create_data_property(mut vm, PropertyName.from_str('host'), Value.from_object(host)) or {
+		panic(err)
+	}
 	return host
 }
 
@@ -116,11 +122,16 @@ fn install_mutation_order(mut vm VM, mut order MutationOrder, host &Object, thro
 		order.events << 'key'
 		return Value.from_string(vm.create_string_from_str('answer'))
 	}, 1, PropertyName.from_str('coerce'), none)
-	key.create_data_property(PropertyName.from_symbol(vm.well_known_symbol_to_primitive()),
-		Value.from_object(coerce.object))
-	global.create_data_property(PropertyName.from_str('key'), Value.from_object(key))
-	global.create_data_property(PropertyName.from_str('base'), Value.from_object(base.object))
-	global.create_data_property(PropertyName.from_str('rhs'), Value.from_object(rhs.object))
+	key.create_data_property(mut vm, PropertyName.from_symbol(vm.well_known_symbol_to_primitive()),
+		Value.from_object(coerce.object)) or { panic(err) }
+	global.create_data_property(mut vm, PropertyName.from_str('key'), Value.from_object(key)) or {
+		panic(err)
+	}
+	global.create_data_property(mut vm, PropertyName.from_str('base'),
+		Value.from_object(base.object)) or { panic(err) }
+	global.create_data_property(mut vm, PropertyName.from_str('rhs'), Value.from_object(rhs.object)) or {
+		panic(err)
+	}
 }
 
 fn test_computed_writes_preserve_upstream_coercion_and_abrupt_completion_order() {

@@ -157,7 +157,8 @@ fn test_type_error_realm_scope_applies_only_at_its_stack_depth() {
 	current := vm.realm()
 	override_realm := Realm.create()
 	mut scope := TypeErrorRealmScope.new(mut vm, override_realm)
-	type_error := thrown_value(vm.throw_error_type(.type_error, .not_an_object, 'value')).as_object()
+	type_error :=
+		thrown_value(vm.throw_error_type(.type_error, .not_an_object, 'value')).as_object()
 	assert type_error.error_kind()? == .type_error
 	assert type_error.error_message()? == 'value is not an object'
 	assert voidptr(type_error.error_realm()?) == voidptr(override_realm)
@@ -167,13 +168,16 @@ fn test_type_error_realm_scope_applies_only_at_its_stack_depth() {
 	mut nested := ExecutionContext.create(0, [], 0)
 	nested.realm = current
 	vm.push_execution_context(mut nested)
-	nested_error := thrown_value(vm.throw_error_type(.type_error, .not_an_object, 'nested')).as_object()
+	nested_error :=
+		thrown_value(vm.throw_error_type(.type_error, .not_an_object, 'nested')).as_object()
 	assert voidptr(nested_error.error_realm()?) == voidptr(current)
 	vm.pop_execution_context()
 	scope.restore()
-	restored := thrown_value(vm.throw_error_type(.type_error, .not_an_object, 'restored')).as_object()
+	restored :=
+		thrown_value(vm.throw_error_type(.type_error, .not_an_object, 'restored')).as_object()
 	assert voidptr(restored.error_realm()?) == voidptr(current)
-	utf16_error := thrown_value(vm.throw_error_utf16(.syntax_error, utf16_string('ünexpected'))).as_object()
+	utf16_error :=
+		thrown_value(vm.throw_error_utf16(.syntax_error, utf16_string('ünexpected'))).as_object()
 	assert utf16_error.error_message()? == 'ünexpected'
 	assert utf16_error.class_name == 'SyntaxError'
 	assert utf16_error.is_error_object()
@@ -254,7 +258,9 @@ fn test_binding_resolution_walks_environments_and_reports_coordinates() {
 	explicit := vm.resolve_binding(y, false, Environment(outer))!
 	assert explicit.environment_coordinate?.hops == 0
 	mut global_object := vm.get_global_object()
-	assert global_object.create_data_property(PropertyName.from_str('g'), Value.from_i32(3))
+	assert global_object.create_data_property(mut vm, PropertyName.from_str('g'), Value.from_i32(3)) or {
+		panic(err)
+	}
 	g_reference := vm.resolve_binding(utf16_string('g'), true, none)!
 	assert g_reference.is_environment_reference()
 	assert g_reference.environment_coordinate == none
@@ -452,7 +458,10 @@ fn test_promise_rejection_tracking_reaches_host_callbacks() {
 		name: 'job'
 	}
 	mut job_callback := vm.host_make_job_callback(FunctionObject(callback))
-	result := vm.host_call_job_callback(mut job_callback, js_undefined(), [Value.from_i32(1), Value.from_i32(2)])!
+	result := vm.host_call_job_callback(mut job_callback, js_undefined(), [
+		Value.from_i32(1),
+		Value.from_i32(2),
+	])!
 	assert result.as_i32() == 2
 	assert callback.calls == 1
 	capability := PromiseCapability.create(fulfilled, FunctionObject(callback), none)
@@ -479,8 +488,8 @@ fn test_module_execution_counters_and_default_host_hooks() {
 	realm := vm.realm()
 	global := vm.global_object()
 	assert vm.host_get_code_for_eval(global) == none
-	vm.host_ensure_can_compile_strings(realm, []Utf16String{}, Utf16String.new(), Utf16String.new(),
-		CompilationType.function, []Value{}, js_undefined())!
+	vm.host_ensure_can_compile_strings(realm, []Utf16String{}, Utf16String.new(),
+		Utf16String.new(), CompilationType.function, []Value{}, js_undefined())!
 	mut object := Object.create(realm, none)
 	vm.host_ensure_can_add_private_element(mut object)!
 	mut buffer := &VmTestArrayBuffer{

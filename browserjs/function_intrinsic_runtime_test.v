@@ -12,14 +12,15 @@ fn test_browser_libjs_function_intrinsics_and_legacy_globals_execute_without_jav
 		return vm.this_value().as_object().get(mut vm, libjs.PropertyName.from_str('stored'))
 	}, 0, libjs.PropertyName.from_str('Target'), none)
 	mut target := function.object
-	target.create_data_property(libjs.PropertyName.from_str('prototype'),
-		libjs.Value.from_object(prototype))
+	target.create_data_property(mut vm, libjs.PropertyName.from_str('prototype'),
+		libjs.Value.from_object(prototype)) or { panic(err) }
 	mut instance := libjs.Object.create(vm.realm(), prototype)
-	instance.create_data_property(libjs.PropertyName.from_str('stored'), libjs.Value.from_i32(42))
-	global.create_data_property(libjs.PropertyName.from_str('Target'),
-		libjs.Value.from_object(target))
-	global.create_data_property(libjs.PropertyName.from_str('instance'),
-		libjs.Value.from_object(instance))
+	instance.create_data_property(mut vm, libjs.PropertyName.from_str('stored'),
+		libjs.Value.from_i32(42)) or { panic(err) }
+	global.create_data_property(mut vm, libjs.PropertyName.from_str('Target'),
+		libjs.Value.from_object(target)) or { panic(err) }
+	global.create_data_property(mut vm, libjs.PropertyName.from_str('instance'),
+		libjs.Value.from_object(instance)) or { panic(err) }
 	assert runtime.evaluate('Target.call(instance);')! == '42'
 	assert runtime.evaluate('Target.bind(instance)();')! == '42'
 	assert runtime.evaluate('instance instanceof Target.bind(null).bind(null);')! == 'true'

@@ -62,7 +62,8 @@ fn test_declarative_environments_follow_the_binding_lifecycle() {
 	assert environment.get_binding_value(mut vm, initialize_or_set, false)!.as_i32() == 7
 	assert environment.environment_serial_number() > 0
 	environment.create_mutable_binding(mut vm, utf16_string('disposable'), false)!
-	environment.initialize_binding(mut vm, utf16_string('disposable'), js_undefined(), .sync_dispose) or {
+	environment.initialize_binding(mut vm, utf16_string('disposable'), js_undefined(),
+		.sync_dispose) or {
 		assert thrown_value(err).as_object().error_kind()? == .internal_error
 		return
 	}
@@ -139,7 +140,8 @@ fn test_object_environments_delegate_to_the_binding_object_and_unscopables() {
 	environment.set_mutable_binding(mut vm, utf16_string('missing'), js_null(), true) or {
 		assert thrown_error_message(err) == "ReferenceError: 'missing' is not defined"
 	}
-	binding_object.define_direct_property(PropertyName.from_str('locked'), Value.from_i32(0), attribute_configurable)
+	binding_object.define_direct_property(PropertyName.from_str('locked'), Value.from_i32(0),
+		attribute_configurable)
 	environment.set_mutable_binding(mut vm, utf16_string('locked'), Value.from_i32(1), true) or {
 		assert thrown_error_message(err) == "TypeError: Cannot write to non-writable property 'locked'"
 	}
@@ -147,13 +149,18 @@ fn test_object_environments_delegate_to_the_binding_object_and_unscopables() {
 	assert !binding_object.has_own_property(PropertyName.from_str('x'))
 
 	mut with_object := Object.create(realm, none)
-	assert with_object.create_data_property(PropertyName.from_str('hidden'), Value.from_i32(1))
-	assert with_object.create_data_property(PropertyName.from_str('shown'), Value.from_i32(2))
+	assert with_object.create_data_property(mut vm, PropertyName.from_str('hidden'),
+		Value.from_i32(1)) or { panic(err) }
+	assert with_object.create_data_property(mut vm, PropertyName.from_str('shown'),
+		Value.from_i32(2)) or { panic(err) }
 	mut unscopables := Object.create(realm, none)
-	assert unscopables.create_data_property(PropertyName.from_str('hidden'), Value.from_bool(true))
-	assert unscopables.create_data_property(PropertyName.from_str('shown'), Value.from_i32(0))
-	assert with_object.create_data_property(PropertyName.from_symbol(vm.well_known_symbol_unscopables()),
-		Value.from_object(unscopables))
+	assert unscopables.create_data_property(mut vm, PropertyName.from_str('hidden'),
+		Value.from_bool(true)) or { panic(err) }
+	assert unscopables.create_data_property(mut vm, PropertyName.from_str('shown'),
+		Value.from_i32(0)) or { panic(err) }
+	assert with_object.create_data_property(mut vm,
+		PropertyName.from_symbol(vm.well_known_symbol_unscopables()),
+		Value.from_object(unscopables)) or { panic(err) }
 	mut with_environment := ObjectEnvironment.create(with_object, true, none)
 	assert voidptr(with_environment.with_base_object()?) == voidptr(with_object)
 	hidden, _ := with_environment.has_binding(mut vm, utf16_string('hidden'))!
@@ -268,7 +275,8 @@ fn test_references_read_write_and_delete_through_environments_and_objects() {
 	}
 
 	mut object := Object.create(realm, none)
-	property := Reference.for_value(Value.from_object(object), PropertyName.from_str('p'), none, true)
+	property :=
+		Reference.for_value(Value.from_object(object), PropertyName.from_str('p'), none, true)
 	assert property.is_property_reference()
 	assert !property.is_super_reference()
 	assert same_value(property.get_this_value(), Value.from_object(object))
@@ -283,8 +291,8 @@ fn test_references_read_write_and_delete_through_environments_and_objects() {
 	property.delete_(mut vm) or {
 		assert thrown_value(err).as_object().error_kind()? == .type_error
 	}
-	super_reference := Reference.for_value(Value.from_object(object), PropertyName.from_str('p'), Value.from_i32(9),
-		true)
+	super_reference := Reference.for_value(Value.from_object(object), PropertyName.from_str('p'),
+		Value.from_i32(9), true)
 	assert super_reference.is_super_reference()
 	assert super_reference.get_this_value().as_i32() == 9
 	super_reference.delete_(mut vm) or {

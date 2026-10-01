@@ -9,15 +9,25 @@ fn test_in_operator_sees_own_inherited_symbol_and_numeric_properties() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
 	mut prototype := Object.create(vm.realm(), none)
-	prototype.create_data_property(PropertyName.from_str('inherited'), Value.from_i32(17))
+	prototype.create_data_property(mut vm, PropertyName.from_str('inherited'), Value.from_i32(17)) or {
+		panic(err)
+	}
 	mut host := Object.create(vm.realm(), prototype)
-	host.create_data_property(PropertyName.from_str('answer'), js_undefined())
-	host.create_data_property(PropertyName.from_number(3), js_null())
+	host.create_data_property(mut vm, PropertyName.from_str('answer'), js_undefined()) or {
+		panic(err)
+	}
+	host.create_data_property(mut vm, PropertyName.from_number(3), js_null()) or { panic(err) }
 	symbol := Symbol.create(utf16_string('answer'), .unique)
-	host.create_data_property(PropertyName.from_symbol(symbol), Value.from_bool(false))
+	host.create_data_property(mut vm, PropertyName.from_symbol(symbol), Value.from_bool(false)) or {
+		panic(err)
+	}
 	mut global := vm.get_global_object()
-	global.create_data_property(PropertyName.from_str('host'), Value.from_object(host))
-	global.create_data_property(PropertyName.from_str('key'), Value.from_symbol(symbol))
+	global.create_data_property(mut vm, PropertyName.from_str('host'), Value.from_object(host)) or {
+		panic(err)
+	}
+	global.create_data_property(mut vm, PropertyName.from_str('key'), Value.from_symbol(symbol)) or {
+		panic(err)
+	}
 	for source, expected in {
 		'"answer" in host;':                     true
 		'"inherited" in host;':                  true
@@ -43,10 +53,12 @@ fn test_in_rejects_non_objects_before_key_coercion_and_preserves_throw_cleanup()
 		assert vm.argument(0).as_string().str() == 'string'
 		return throw_completion(Value.from_i32(23))
 	}, 1, PropertyName.from_str('coerce'), none)
-	key.create_data_property(PropertyName.from_symbol(vm.well_known_symbol_to_primitive()),
-		Value.from_object(coerce.object))
+	key.create_data_property(mut vm, PropertyName.from_symbol(vm.well_known_symbol_to_primitive()),
+		Value.from_object(coerce.object)) or { panic(err) }
 	mut global := vm.get_global_object()
-	global.create_data_property(PropertyName.from_str('key'), Value.from_object(key))
+	global.create_data_property(mut vm, PropertyName.from_str('key'), Value.from_object(key)) or {
+		panic(err)
+	}
 	for source in ['key in null;', 'key in undefined;', 'key in 42;', 'key in "text";',
 		'key in true;', 'key in 42n;'] {
 		if _ := execute_in_source(mut vm, source) {

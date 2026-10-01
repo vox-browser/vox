@@ -27,12 +27,12 @@ fn accessor_host(mut vm VM, mut state AccessorState) &Object {
 		state.value = vm.argument(0)
 		return Value.from_i32(-1)
 	}, 1, PropertyName.from_str('value'), 'set')
-	assert host.internal_define_own_property(PropertyName.from_str('value'), PropertyDescriptor{
+	assert host.internal_define_own_property(mut vm, PropertyName.from_str('value'), PropertyDescriptor{
 		getter:       Value.from_object(getter.object)
 		setter:       Value.from_object(setter.object)
 		enumerable:   true
 		configurable: true
-	})
+	}) or { panic(err) }
 	return host
 }
 
@@ -71,7 +71,9 @@ fn test_undefined_accessors_and_data_receivers_follow_ordinary_set_rules() {
 	create_simple_execution_context(mut vm)
 	key := PropertyName.from_str('value')
 	mut host := Object.create(vm.realm(), none)
-	assert host.internal_define_own_property(key, PropertyDescriptor{ getter: js_undefined() })
+	assert host.internal_define_own_property(mut vm, key, PropertyDescriptor{ getter: js_undefined() }) or {
+		panic(err)
+	}
 	assert host.get(mut vm, key)!.is_undefined()
 	assert !host.internal_set(mut vm, key, Value.from_i32(42), Value.from_object(host))!
 	host.set(mut vm, key, Value.from_i32(42), .no)!
@@ -81,7 +83,7 @@ fn test_undefined_accessors_and_data_receivers_follow_ordinary_set_rules() {
 		assert thrown_value(err).as_object().error_kind()? == .type_error
 	}
 	mut data := Object.create(vm.realm(), none)
-	data.create_data_property(key, Value.from_i32(1))
+	data.create_data_property(mut vm, key, Value.from_i32(1)) or { panic(err) }
 	assert !data.internal_set(mut vm, key, Value.from_i32(42), Value.from_object(host))!
 	assert !data.internal_set(mut vm, key, Value.from_i32(42), js_null())!
 	assert host.internal_get_own_property(key)?.is_accessor_descriptor()
@@ -98,22 +100,30 @@ fn test_descriptor_transitions_preserve_attributes_and_reset_kind_specific_field
 	key := PropertyName.from_str('value')
 	initial := host.internal_get_own_property(key)?
 	// Accessor -> data: omitted value/writable use defaults.
-	assert host.internal_define_own_property(key, PropertyDescriptor{ writable: true })
+	assert host.internal_define_own_property(mut vm, key, PropertyDescriptor{ writable: true }) or {
+		panic(err)
+	}
 	data := host.internal_get_own_property(key)?
 	assert data.is_data_descriptor() && data.getter == none && data.setter == none
 	assert data.value?.is_undefined() && data.writable?
 	assert data.enumerable? && data.configurable?
-	assert host.internal_define_own_property(key, PropertyDescriptor{ getter: initial.getter? })
+	assert host.internal_define_own_property(mut vm, key, PropertyDescriptor{
+		getter: initial.getter?
+	}) or { panic(err) }
 	accessor := host.internal_get_own_property(key)?
 	assert accessor.is_accessor_descriptor() && accessor.setter?.is_undefined()
 	assert accessor.enumerable? && accessor.configurable?
 	assert host.get(mut vm, key)!.number == 42
-	assert host.internal_define_own_property(key, PropertyDescriptor{ enumerable: false })
+	assert host.internal_define_own_property(mut vm, key, PropertyDescriptor{ enumerable: false }) or {
+		panic(err)
+	}
 	updated := host.internal_get_own_property(key)?
 	assert !updated.enumerable? && updated.configurable?
 	assert same_value(updated.getter?, initial.getter?)
 	assert host.get(mut vm, key)!.number == 42
-	assert host.internal_define_own_property(key, PropertyDescriptor{ value: Value.from_i32(7) })
+	assert host.internal_define_own_property(mut vm, key, PropertyDescriptor{
+		value: Value.from_i32(7)
+	}) or { panic(err) }
 	last := host.internal_get_own_property(key)?
 	assert last.value?.number == 7 && !last.writable?
 	assert !last.enumerable? && last.configurable?
@@ -128,17 +138,23 @@ fn test_nonconfigurable_accessors_compare_function_identity_and_reject_kind_chan
 	}
 	mut host := accessor_host(mut vm, mut state)
 	key := PropertyName.from_str('value')
-	assert host.internal_define_own_property(key, PropertyDescriptor{ configurable: false })
+	assert host.internal_define_own_property(mut vm, key, PropertyDescriptor{ configurable: false }) or {
+		panic(err)
+	}
 	current := host.internal_get_own_property(key)?
 	assert is_compatible_property_descriptor(false, PropertyDescriptor{}, current)
-	assert host.internal_define_own_property(key, PropertyDescriptor{ getter: current.getter? })
-	assert host.internal_define_own_property(key, PropertyDescriptor{ setter: current.setter? })
+	assert host.internal_define_own_property(mut vm, key, PropertyDescriptor{
+		getter: current.getter?
+	}) or { panic(err) }
+	assert host.internal_define_own_property(mut vm, key, PropertyDescriptor{
+		setter: current.setter?
+	}) or { panic(err) }
 	for replacement in [PropertyDescriptor{ getter: js_undefined() },
 		PropertyDescriptor{ setter: js_undefined() }, PropertyDescriptor{ value: js_undefined() },
 		PropertyDescriptor{ writable: false }, PropertyDescriptor{ configurable: true },
 		PropertyDescriptor{ enumerable: false }] {
 		assert !is_compatible_property_descriptor(true, replacement, current)
-		assert !host.internal_define_own_property(key, replacement)
+		assert !host.internal_define_own_property(mut vm, key, replacement) or { panic(err) }
 	}
 	assert !host.internal_delete(key)
 	assert host.get(mut vm, key)!.number == 42
@@ -197,7 +213,9 @@ fn test_compiled_accessor_assignments_updates_and_short_circuit_order() {
 		}
 		host := accessor_host(mut vm, mut state)
 		mut global := vm.get_global_object()
-		global.create_data_property(PropertyName.from_str('host'), Value.from_object(host))
+		global.create_data_property(mut vm, PropertyName.from_str('host'), Value.from_object(host)) or {
+			panic(err)
+		}
 		result := execute_accessor_source(mut vm, source.replace('NULLISH', '?'.repeat(2)))!
 		assert state.events == expected, source
 		if expected.len == 2 || source == 'host.value=42;' {
@@ -223,7 +241,9 @@ fn test_accessor_abrupt_completions_stop_later_effects_and_restore_execution_fra
 	}
 	host := accessor_host(mut vm, mut state)
 	mut global := vm.get_global_object()
-	global.create_data_property(PropertyName.from_str('host'), Value.from_object(host))
+	global.create_data_property(mut vm, PropertyName.from_str('host'), Value.from_object(host)) or {
+		panic(err)
+	}
 	for source in ['host.value;', 'host.value+=(globalThis.sideEffect=1);', 'host.value++;',
 		'host.value||=(globalThis.sideEffect=1);'] {
 		if _ := execute_accessor_source(mut vm, source) {
@@ -257,9 +277,9 @@ fn test_accessor_lookup_propagates_through_coercion_bindings_and_unscopables() {
 	}
 	mut host := accessor_host(mut vm, mut state)
 	getter := host.internal_get_own_property(PropertyName.from_str('value'))?.getter?
-	assert host.internal_define_own_property(PropertyName.from_str('valueOf'), PropertyDescriptor{
+	assert host.internal_define_own_property(mut vm, PropertyName.from_str('valueOf'), PropertyDescriptor{
 		getter: getter
-	})
+	}) or { panic(err) }
 	if _ := Value.from_object(host).to_number(mut vm) {
 		assert false
 	} else {
@@ -274,9 +294,10 @@ fn test_accessor_lookup_propagates_through_coercion_bindings_and_unscopables() {
 	// Getter failure should not affect an ordinary setter.
 	environment.set_mutable_binding(mut vm, utf16_string('value'), Value.from_i32(42), true)!
 	assert state.value.number == 42
-	assert host.internal_define_own_property(PropertyName.from_symbol(vm.well_known_symbol_unscopables()), PropertyDescriptor{
+	assert host.internal_define_own_property(mut vm,
+		PropertyName.from_symbol(vm.well_known_symbol_unscopables()), PropertyDescriptor{
 		getter: getter
-	})
+	}) or { panic(err) }
 	with_environment := ObjectEnvironment.create(host, true, none)
 	if _, _ := with_environment.has_binding(mut vm, utf16_string('value')) {
 		assert false
@@ -285,9 +306,9 @@ fn test_accessor_lookup_propagates_through_coercion_bindings_and_unscopables() {
 	}
 	// Embedding error diagnostics must not invoke a user-installed message getter.
 	mut error_object := create_error(mut vm, vm.realm(), .type_error, utf16_string('original'))
-	assert error_object.internal_define_own_property(PropertyName.from_str('message'), PropertyDescriptor{
+	assert error_object.internal_define_own_property(mut vm, PropertyName.from_str('message'), PropertyDescriptor{
 		getter: getter
-	})
+	}) or { panic(err) }
 	count := state.events.len
 	assert error_object.error_message() == none
 	assert error_object.get_without_side_effects(PropertyName.from_str('message')).is_accessor()

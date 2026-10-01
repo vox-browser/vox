@@ -5,7 +5,8 @@ fn instance_test_target(mut vm VM, prototype &Object) &Object {
 		return js_undefined()
 	}, 0, PropertyName.from_str('target'), none)
 	mut object := function.object
-	object.create_data_property(PropertyName.from_str('prototype'), Value.from_object(prototype))
+	object.create_data_property(mut vm, PropertyName.from_str('prototype'),
+		Value.from_object(prototype)) or { panic(err) }
 	return object
 }
 

@@ -84,11 +84,13 @@ fn test_legacy_function_metadata_coercion_and_abrupt_completion() {
 		return Value.from_string(vm.create_string_from_str('a b'))
 	}, 1, PropertyName.from_str('coerce'), none)
 	key := PropertyName.from_symbol(vm.well_known_symbol_to_primitive())
-	object.create_data_property(key, Value.from_object(method.object))
+	object.create_data_property(mut vm, key, Value.from_object(method.object)) or { panic(err) }
 	mut global := vm.get_global_object()
-	global.create_data_property(PropertyName.from_str('object'), Value.from_object(object))
-	global.create_data_property(PropertyName.from_str('symbol'), Value.from_symbol(Symbol.create(none,
-		.unique)))
+	global.create_data_property(mut vm, PropertyName.from_str('object'), Value.from_object(object)) or {
+		panic(err)
+	}
+	global.create_data_property(mut vm, PropertyName.from_str('symbol'), Value.from_symbol(Symbol.create(none,
+		.unique))) or { panic(err) }
 	for name in ['escape', 'unescape'] {
 		descriptor := global.internal_get_own_property(PropertyName.from_str(name))?
 		assert descriptor.writable? && descriptor.configurable? && !descriptor.enumerable?
@@ -115,7 +117,7 @@ fn test_legacy_function_metadata_coercion_and_abrupt_completion() {
 	thrower := NativeFunction.create_raw(mut vm, vm.realm(), vm.realm().function_prototype, fn (mut vm VM) !Value {
 		return throw_completion(Value.from_i32(17))
 	}, 1, PropertyName.from_str('coerce'), none)
-	object.create_data_property(key, Value.from_object(thrower.object))
+	object.create_data_property(mut vm, key, Value.from_object(thrower.object)) or { panic(err) }
 	for name in ['escape', 'unescape'] {
 		if _ := execute_legacy_source(mut vm, '${name}(object);') {
 			assert false

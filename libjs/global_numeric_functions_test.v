@@ -119,13 +119,19 @@ fn test_numeric_globals_follow_live_object_coercion_and_propagate_errors() {
 		assert vm.argument(0).as_string().str() == 'number'
 		return Value.from_i32(8)
 	}, 1, PropertyName.from_str('radix'), none)
-	source.create_data_property(PropertyName.from_symbol(vm.well_known_symbol_to_primitive()),
-		Value.from_object(stringify.object))
-	radix.create_data_property(PropertyName.from_symbol(vm.well_known_symbol_to_primitive()),
-		Value.from_object(to_radix.object))
+	source.create_data_property(mut vm,
+		PropertyName.from_symbol(vm.well_known_symbol_to_primitive()),
+		Value.from_object(stringify.object)) or { panic(err) }
+	radix.create_data_property(mut vm,
+		PropertyName.from_symbol(vm.well_known_symbol_to_primitive()),
+		Value.from_object(to_radix.object)) or { panic(err) }
 	mut global := vm.get_global_object()
-	global.create_data_property(PropertyName.from_str('source'), Value.from_object(source))
-	global.create_data_property(PropertyName.from_str('radix'), Value.from_object(radix))
+	global.create_data_property(mut vm, PropertyName.from_str('source'), Value.from_object(source)) or {
+		panic(err)
+	}
+	global.create_data_property(mut vm, PropertyName.from_str('radix'), Value.from_object(radix)) or {
+		panic(err)
+	}
 	assert execute_numeric_global(mut vm, 'parseInt(source,radix);')!.number == 9
 	assert execute_numeric_global(mut vm, 'isFinite(radix);')!.as_bool()
 	assert !execute_numeric_global(mut vm, 'isNaN(radix);')!.as_bool()

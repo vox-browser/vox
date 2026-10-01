@@ -7,11 +7,13 @@ fn test_ordinary_objects_define_get_set_and_delete_data_properties() {
 	mut prototype := Object.create(realm, none)
 	mut object := Object.create(realm, prototype)
 	key := PropertyName.from_str('answer')
-	assert object.create_data_property(key, Value.from_i32(42))
+	assert object.create_data_property(mut vm, key, Value.from_i32(42)) or { panic(err) }
 	assert object.has_own_property(key)
 	assert object.get(mut vm, key)!.as_i32() == 42
 	inherited := PropertyName.from_str('inherited')
-	assert prototype.create_data_property(inherited, Value.from_bool(true))
+	assert prototype.create_data_property(mut vm, inherited, Value.from_bool(true)) or {
+		panic(err)
+	}
 	assert object.has_property(inherited)
 	assert !object.has_own_property(inherited)
 	assert object.get(mut vm, inherited)!.as_bool()
@@ -49,12 +51,22 @@ fn test_non_writable_and_non_configurable_properties_reject_changes() {
 		assert thrown_value(err).as_object().error_kind()? == .type_error
 	}
 	// Redefining with the same value is allowed; changing it is not.
-	assert object.internal_define_own_property(key, PropertyDescriptor{ value: Value.from_i32(1) })
-	assert !object.internal_define_own_property(key, PropertyDescriptor{ value: Value.from_i32(3) })
-	assert !object.internal_define_own_property(key, PropertyDescriptor{ configurable: true })
-	assert !object.internal_define_own_property(key, PropertyDescriptor{ enumerable: true })
+	assert object.internal_define_own_property(mut vm, key, PropertyDescriptor{
+		value: Value.from_i32(1)
+	}) or { panic(err) }
+	assert !object.internal_define_own_property(mut vm, key, PropertyDescriptor{
+		value: Value.from_i32(3)
+	}) or { panic(err) }
+	assert !object.internal_define_own_property(mut vm, key, PropertyDescriptor{ configurable: true }) or {
+		panic(err)
+	}
+	assert !object.internal_define_own_property(mut vm, key, PropertyDescriptor{ enumerable: true }) or {
+		panic(err)
+	}
 	object.extensible = false
-	assert !object.create_data_property(PropertyName.from_str('later'), js_undefined())
+	assert !object.create_data_property(mut vm, PropertyName.from_str('later'), js_undefined()) or {
+		panic(err)
+	}
 	object.create_data_property_or_throw(mut vm, PropertyName.from_str('later'), js_undefined()) or {
 		assert thrown_value(err).as_object().error_message()? == ErrorType.object_define_own_property_returned_false.message()
 	}
@@ -80,7 +92,9 @@ fn test_property_names_compare_by_kind_string_symbol_and_index() {
 	mut vm := VM.create()
 	realm := Realm.create()
 	mut object := Object.create(realm, none)
-	assert object.create_data_property(PropertyName.from_symbol(symbol), Value.from_i32(1))
+	assert object.create_data_property(mut vm, PropertyName.from_symbol(symbol), Value.from_i32(1)) or {
+		panic(err)
+	}
 	assert object.get(mut vm, PropertyName.from_symbol(symbol))!.as_i32() == 1
 	assert object.get(mut vm, PropertyName.from_symbol(other_symbol))!.is_undefined()
 	assert vm.cached_strings.number.str() == 'number'
@@ -94,8 +108,10 @@ fn test_frozen_string_properties_compare_utf16_values_instead_of_cells() {
 	one := Value.from_string(&PrimitiveString{ utf16: utf16_string('unchanged') })
 	two := Value.from_string(&PrimitiveString{ utf16: utf16_string('unchanged') })
 	object.define_direct_property(key, one, 0)
-	assert object.internal_define_own_property(key, PropertyDescriptor{ value: two })
-	assert !object.internal_define_own_property(key, PropertyDescriptor{
+	assert object.internal_define_own_property(mut vm, key, PropertyDescriptor{ value: two }) or {
+		panic(err)
+	}
+	assert !object.internal_define_own_property(mut vm, key, PropertyDescriptor{
 		value: Value.from_string(vm.create_string_from_str('changed'))
-	})
+	}) or { panic(err) }
 }

@@ -2,10 +2,13 @@ module libjs
 
 fn definition_descriptor(mut vm VM, value Value) &Object {
 	mut descriptor := Object.create(vm.realm(), none)
-	descriptor.create_data_property(PropertyName.from_str('value'), value)
-	descriptor.create_data_property(PropertyName.from_str('writable'), Value.from_bool(true))
-	descriptor.create_data_property(PropertyName.from_str('enumerable'), Value.from_bool(true))
-	descriptor.create_data_property(PropertyName.from_str('configurable'), Value.from_bool(true))
+	descriptor.create_data_property(mut vm, PropertyName.from_str('value'), value) or { panic(err) }
+	descriptor.create_data_property(mut vm, PropertyName.from_str('writable'),
+		Value.from_bool(true)) or { panic(err) }
+	descriptor.create_data_property(mut vm, PropertyName.from_str('enumerable'),
+		Value.from_bool(true)) or { panic(err) }
+	descriptor.create_data_property(mut vm, PropertyName.from_str('configurable'),
+		Value.from_bool(true)) or { panic(err) }
 	return descriptor
 }
 
@@ -53,10 +56,12 @@ fn test_bulk_descriptor_conversion_failure_leaves_the_target_unchanged() {
 	base := create_simple_execution_context(mut vm)
 	for throw_getter in [false, true] {
 		mut target := Object.create(vm.realm(), none)
-		target.create_data_property(PropertyName.from_str('first'), Value.from_i32(1))
+		target.create_data_property(mut vm, PropertyName.from_str('first'), Value.from_i32(1)) or {
+			panic(err)
+		}
 		mut properties := Object.create(vm.realm(), none)
-		properties.create_data_property(PropertyName.from_str('first'), Value.from_object(definition_descriptor(mut vm,
-			Value.from_i32(42))))
+		properties.create_data_property(mut vm, PropertyName.from_str('first'), Value.from_object(definition_descriptor(mut vm,
+			Value.from_i32(42)))) or { panic(err) }
 		if throw_getter {
 			getter := NativeFunction.create(mut vm, vm.realm(), none, fn (mut vm VM) !Value {
 				return throw_completion(Value.from_i32(17))
@@ -64,7 +69,9 @@ fn test_bulk_descriptor_conversion_failure_leaves_the_target_unchanged() {
 			properties.define_direct_accessor(PropertyName.from_str('second'), getter.object, none,
 				attribute_enumerable)
 		} else {
-			properties.create_data_property(PropertyName.from_str('second'), js_undefined())
+			properties.create_data_property(mut vm, PropertyName.from_str('second'), js_undefined()) or {
+				panic(err)
+			}
 		}
 		if _ := target.define_properties(mut vm, properties) {
 			assert false
@@ -119,7 +126,7 @@ fn test_descriptor_getters_can_remove_later_source_properties_before_their_turn(
 		return Value.from_object(definition_descriptor(mut vm, Value.from_i32(42)))
 	}, 0, first, 'get')
 	properties.define_direct_accessor(first, getter.object, none, attribute_enumerable)
-	properties.create_data_property(second, js_undefined())
+	properties.create_data_property(mut vm, second, js_undefined()) or { panic(err) }
 	target.define_properties(mut vm, properties)!
 	assert target.get(mut vm, first)!.number == 42
 	assert !target.has_own_property(second)
