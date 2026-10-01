@@ -33,8 +33,13 @@ fn test_native_libjs_scripts_execute_without_the_javascriptcore_dom_bootstrap() 
 		'const answer=40;',
 		'document.getElementById("result").textContent="changed";',
 		'var result=answer+2;',
+		'var boxedAnswer=new (Boolean.bind(null,true))(); var symbolKey=Symbol.for("native");',
+		'globalThis[symbolKey]=result;',
 	], runtime, mut messages)
 	assert runtime.evaluate('result;')! == '42'
+	assert runtime.evaluate('boxedAnswer.valueOf();')! == 'true'
+	assert runtime.evaluate('globalThis[Symbol.for("native")];')! == '42'
+	assert runtime.evaluate('Symbol.keyFor(symbolKey);')! == 'native'
 	assert document.get_element_by_id('result')?.as_node().text_content()? == 'static'
 	assert messages.len == 2
 	assert messages[0].contains('DOM bindings')
