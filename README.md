@@ -25,6 +25,11 @@ identity; Boolean construction and Symbol's registry methods follow upstream.
 BigInt constructor/prototype records translate number-hint coercion, asIntN/asUintN,
 branded toString/valueOf and locale-call plumbing. Their Object parent and Intl
 formatting remain explicit dependencies; production global installation is pending.
+Number constructor/prototype records translate noncoercing predicates, exact
+BigInt-to-double rounding, branded radix formatting, fixed/scientific precision,
+and locale-call plumbing. Object/parse-function intrinsics, AK's Dragonbox decimal
+backend, and Intl formatting remain explicit dependencies; global installation
+and Number primitive Reference integration are pending.
 Host-created Array records implement sparse length/property behavior, and the
 runtime provides the upstream sorting helpers. Host-created String objects
 expose fixed UTF-16 character descriptors. Synchronous iterator operations and

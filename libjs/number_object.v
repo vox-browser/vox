@@ -1,7 +1,7 @@
 module libjs
 
 // Runtime/NumberObject.{h,cpp}. The prototype is an explicit dependency until
-// Number's intrinsic constructor and prototype have been translated.
+// Number's complete production intrinsic graph has been translated.
 @[heap]
 pub struct NumberObject {
 pub:

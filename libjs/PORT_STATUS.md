@@ -10,11 +10,14 @@ AST, and scope collector for the frontend, and its C++ `Runtime/VM.{h,cpp}`,
 `Interpreter/Interpreter.cpp` VM members, and runtime records for the VM slice.
 The execution slice additionally follows `Rust/src/bytecode/{operand,generator,codegen}.rs`,
 `Interpreter/{interpreter.flap,SlowPaths.cpp}`, `Script.cpp`,
-`Runtime/{Value,GlobalObject,BigInt,BigIntConstructor,BigIntPrototype,NativeFunction,FunctionObject,BoundFunction,FunctionPrototype,BooleanObject,BooleanPrototype,BooleanConstructor,SymbolObject,SymbolPrototype,SymbolConstructor,StringObject,NumberObject,BigIntObject,Iterator,StringIterator,StringIteratorPrototype,ArrayIterator,ArrayIteratorPrototype,ByteLength,ArrayBuffer,ArrayBufferConstructor,ArrayBufferPrototype,DataView,DataViewConstructor,DataViewPrototype,SharedArrayBufferConstructor,SharedArrayBufferPrototype,CanonicalIndex,TypedArray,TypedArrayPrototype,Intrinsics,Array,ArrayPrototype,IndexedProperties,PropertyKey,Object,ObjectPrototype,ReflectObject,PrimitiveString,Accessor,PropertyDescriptor,AbstractOperations}`
+`Runtime/{Value,GlobalObject,BigInt,BigIntConstructor,BigIntPrototype,NativeFunction,FunctionObject,BoundFunction,FunctionPrototype,BooleanObject,BooleanPrototype,BooleanConstructor,SymbolObject,SymbolPrototype,SymbolConstructor,StringObject,NumberObject,NumberConstructor,NumberPrototype,BigIntObject,Iterator,StringIterator,StringIteratorPrototype,ArrayIterator,ArrayIteratorPrototype,ByteLength,ArrayBuffer,ArrayBufferConstructor,ArrayBufferPrototype,DataView,DataViewConstructor,DataViewPrototype,SharedArrayBufferConstructor,SharedArrayBufferPrototype,CanonicalIndex,TypedArray,TypedArrayPrototype,Intrinsics,Array,ArrayPrototype,IndexedProperties,PropertyKey,Object,ObjectPrototype,ReflectObject,PrimitiveString,Accessor,PropertyDescriptor,AbstractOperations}`
 source bodies and `Runtime/ValueInlines.h`, numeric/URI/Annex B global functions
 from `Runtime/GlobalObject.cpp`,
 `AK/StringConversions.cpp` and fast_float decimal-prefix parsing, and the BigInt
 operations delegated to LibCrypto/LibTomMath.
+Number conversion also follows LibCrypto's signed/unsigned double-rounding bodies;
+Number's scientific helpers retain AK's fmt/Dragonbox decimal backend as an
+explicit untranslated dependency.
 All refreshed V code and tests live here; the upstream checkout and the original
 `libjs_v` checkout are references. The upstream BSD-2-Clause notice is retained
 in [`LICENSE`](LICENSE).
@@ -55,6 +58,8 @@ creates a realm with a global environment and pushes its execution context.
 | `value_operations.v`, `value_coercion.v`, `big_int.v` | Numeric operations, BigInt cells and conversions, signed bitwise operations, exact mixed numeric comparisons, UTF-16 concatenation, ToPrimitive/OrdinaryToPrimitive and property-key conversion |
 | `bigint_width.v`, `bigint_constructor.v` | BigInt constructor record, number-hint call/throwing construction, asIntN/asUintN and translated width arithmetic helpers |
 | `bigint_prototype_methods.v`, `bigint_locale.v`, `bigint_prototype.v` | BigInt brand/radix/valueOf bodies, locale-call plumbing with explicit Intl dependencies, and complete prototype initialization |
+| `number_predicates.v`, `bigint_double.v`, `number_constructor.v` | Number/integral/finite/NaN predicates, LibCrypto signed/unsigned double rounding, complete Number constructor initialization, calls and construction |
+| `number_string.v`, `number_fixed.v`, `number_scientific.v`, `number_locale.v`, `number_prototype.v` | Number branding/radix/valueOf, exact binary fixed/scientific rounding, locale plumbing and full prototype initialization with explicit Object/decimal/Intl dependencies |
 | `value_indices.v`, `array_like.v`, `instanceof.v` | ToIntegerOrInfinity/ToLength/ToIndex, LengthOfArrayLike/CreateListFromArrayLike, OrdinaryHasInstance and InstanceofOperator |
 | `object_coercible.v`, `immutable_prototype.v`, `object_prototype_methods.v`, `object_prototype_accessors.v`, `object_prototype_proto.v` | RequireObjectCoercible, SetImmutablePrototype and eleven ObjectPrototype native bodies with explicit primitive dependencies; ObjectPrototype initialization and toString remain pending |
 | `reflect_properties.v`, `reflect_prototypes.v`, `reflect_calls.v`, `reflect_own_keys.v`, `reflect_object.v` | All thirteen Reflect native bodies and complete initialization, PropertyKey-to-Value conversion, explicit Object/Array intrinsic dependencies |
@@ -96,8 +101,8 @@ creates a realm with a global environment and pushes its execution context.
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 149 implementation files contain **27,563 physical V LOC**. The 155 test
-files contain **20,251 physical V LOC** and **563 test functions**. Physical LOC
+The 157 implementation files contain **28,105 physical V LOC**. The 163 test
+files contain **21,243 physical V LOC** and **583 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -264,6 +269,23 @@ realm NumberFormat constructor and the exact BigInt cell to FormatNumeric.
 Object and Intl dependencies are explicit: no replacement locale formatter or
 production BigInt global is installed, and Intl formatting remains untranslated.
 
+Number constructor/prototype records retain source order, metadata, immutable
+constants, parse-function alias identity, and constructor linkage. Calls distinguish
+an omitted argument (+0) from explicit undefined (NaN), apply ToNumeric once, and
+round BigInts directly from their binary magnitude with ties to even. Construction
+converts before newTarget.prototype lookup, with foreign-realm fallback and bound
+construction. Static predicates inspect numeric tags without coercion. The prototype
+is a NumberObject carrying +0; inherited slots and conversion hooks cannot brand
+other receivers. All six native bodies are translated, including exact binary
+fixed-digit scaling and scientific candidate selection. Radix output retains the
+upstream implementation-defined floating-point division and fractional precision.
+Scientific helpers require AK's still-untranslated fmt/Dragonbox decimal-form
+operation; locale calls require the retained Intl NumberFormat/FormatNumeric
+operations and preserve the numeric payload, including -0. These are explicit
+dependencies with fixture-only inputs in tests. Production Number installation,
+its Object/Intl/decimal dependency graph, and primitive Reference integration
+remain pending.
+
 `NativeFunction.create()` retains a capturing V callback; `create_raw()` uses the
 VM's typed native function table. Both install `name`/`length` metadata and enter
 an allocated callee context with the supplied realm, receiver, arguments, and
@@ -326,10 +348,11 @@ Description distinguishes undefined from empty and preserves every UTF-16 unit.
 Symbol calls create unique identities; Symbol.for/keyFor use the VM-wide registry
 shared by realms, and all 16 pinned well-known symbols have fixed static descriptors.
 The pinned source gives Symbol a constructor internal method that always throws
-without converting its argument; this behavior is preserved. Number and String
+without converting its argument; this behavior is preserved. String
 constructor/prototype records and the Object prototype graph remain pending.
-Number/BigInt wrappers are translated; BigInt constructor/prototype records now
-exist with explicit Object/Intl dependencies rather than production globals.
+Number/BigInt wrappers and constructor/prototype records are translated with
+explicit Object/Intl dependencies, plus Number's decimal backend and parse-function
+intrinsics, rather than production globals.
 
 StringObject translates StringCreate and the string exotic property methods
 (`c17ed07`). Each character descriptor contains exactly one UTF-16 code unit,
@@ -549,8 +572,9 @@ five primitive types, returns object inputs unchanged and preserves nullish
 TypeErrors. Number, BigInt and String prototype getters remain explicit
 embedding dependencies. GetV and Invoke (`a21fead`) preserve the active primitive
 prototype optimization, accessor receivers and call arguments through those
-dependencies. Number/String constructor/prototype records and primitive Reference
-integration remain pending; BigInt records exist with explicit Object/Intl dependencies.
+dependencies. String constructor/prototype records and Number/BigInt/String
+primitive Reference integration remain pending; Number/BigInt records now exist
+with explicit intrinsic dependencies.
 GetMethod (`9bfb266`) now follows that same primitive boundary, preserving
 getter receivers, nullish missing methods, callable native/bound identities and
 NotAFunction errors. String iteration still needs its builtin prototype and
@@ -779,6 +803,39 @@ explicit and the records are not installed in the production global graph.
 The wrapper, constructor and prototype preserve the upstream GC_CELL diagnostic
 class names (`5d37b0c`), including errors when a noncallable prototype is invoked.
 
+Number predicates (`6e2f0f7`) translate the finite/integral/NaN Value helpers and
+four static native bodies without argument coercion. Signed and unsigned
+BigInt-to-double paths (`f83c1b6`) retain ties-to-even and toward-zero rounding,
+including mantissa carry, signed boundaries and finite-to-infinity overflow.
+The complete constructor record (`f2d5786`) retains constants and attributes,
+intrinsic parse-function identity, source initialization order, call coercion and
+conversion-before-prototype construction. NumberObject's diagnostic name follows
+its pinned GC_CELL record rather than supplying a partial Object toString.
+
+Number radix/valueOf bodies (`c0dce41`) brand before radix conversion and retain
+the pinned floating-point digit algorithm. Tests include the exact 70 small/large
+fixtures from upstream Number.prototype.toString.js across every supported radix,
+both signs, real wrappers and inherited-brand rejection. Fixed-digit formatting
+(`d43c9fc`) translates IEEE decomposition, integer scaling, division and half-up
+rounding, with range validation before the nonfinite fast path. Tests cover exact
+50/100-digit output, min subnormals, decimal rounding boundaries and negative zero.
+
+Scientific bodies and their exact precision helper (`6b908cb`) retain binary
+scaling and rounding, exponent correction, decimal-power candidate comparison,
+shortest exponential output and the precision formatting thresholds. AK's pinned
+decimal-form operation delegates to fmt/Dragonbox, which is not translated;
+the operation is an explicit callback and tests supply source-shaped decimal-form
+fixtures. No replacement formatter is installed. Upstream precision/exponential
+fixtures, both signs, alternate candidates below decimal powers, 100-digit output,
+subnormals and nonfinite conversion/range order pass in both GC modes.
+
+The locale native body (`90e6030`) preserves NumberFormat construction, both
+original arguments, exact numeric payloads (including -0/NaN/infinities), and
+UTF-16 forwarding through explicit Intl dependencies. Prototype initialization
+(`39e02e2`) includes all six methods in source order, their lengths/attributes,
+an own NumberData = +0 slot and no own @@toStringTag. Tests cover boxing,
+bound calls/construction, foreign new-target fallback and callee-realm Intl lookup.
+
 Reflect property bodies (`5f4813e`) translate defineProperty/deleteProperty/get,
 getOwnPropertyDescriptor/has/set. Target-object validation precedes key conversion;
 defineProperty converts the descriptor only after the key. Rejected definitions,
@@ -897,25 +954,25 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 155 passed, 155 total
+# 163 passed, 163 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 155 passed, 155 total
+# 163 passed, 163 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
 
 v -old-compiler -enable-globals test browserjs
-# 16 passed, 16 total
+# 17 passed, 17 total
 
 v -old-compiler -enable-globals -gc none test browserjs
-# 16 passed, 16 total
+# 17 passed, 17 total
 
 v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
 
 v -old-compiler -enable-globals test .
-# 825 passed, 825 total
+# 834 passed, 834 total
 
 ./build_ladybird.sh
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
@@ -939,15 +996,15 @@ fixtures; separate tests exercise translated NativeFunction and ArrayBufferObjec
 records. Module-loading tests write temporary module files. The preceding LibWeb
 work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 155 libjs files are verified separately in both GC modes.
-There are now 825 repository test files.
+this package; the 163 libjs files are verified separately in both GC modes.
+There are now 834 repository test files.
 
-The complete 825-file repository suite passes, including the native bridge,
-sixteen browser integration files and all 155 LibJS files. The dedicated LibJS and
+The complete 834-file repository suite passes, including the native bridge,
+seventeen browser integration files and all 163 LibJS files. The dedicated LibJS and
 browser suites also pass in no-GC mode, exercising the retained storage and
 buffer ownership independently of the collector.
 
-Browser integration checks pass the sixteen `browserjs` test files in both GC modes,
+Browser integration checks pass the seventeen `browserjs` test files in both GC modes,
 the native `main_test.v` bridge and flag tests, the production bundle build,
 JavaScriptCore DOM-mutation/click smoke, and LibJS bytecode smoke. Native
 LibJS fixtures also verify bound calls/construction, Boolean and Symbol methods,
@@ -1044,6 +1101,12 @@ coercion, both width methods, boxed toString/valueOf, bound natives, metadata,
 large exact integers and recovery from constructor, radix, brand and OOM errors.
 The fixture creates no JavaScriptCore context and does not claim Intl formatting
 or install an incomplete production BigInt global.
+Number browser integration (`c06582e`) likewise supplies the translated complete
+records under a test host name. Compiled scripts exercise constants, parse aliases,
+noncoercing predicates, ties-to-even BigInt conversion, wrappers, bound calls and
+construction, fixed/scientific/radix methods, locale plumbing and recovery from
+brand/range/conversion failures. AK decimal forms and the Intl marker are test-only
+dependencies; no JavaScriptCore context or partial production Number global is used.
 The rebuilt native bundle passes both engine smoke checks and a buffer-regression
 document covering shared BigInt storage, growth, slicing and transferred Float16
 bytes without script errors.
@@ -1076,6 +1139,17 @@ the same-size SVG source switch with zero differing pixels.
   retained NumberFormat/FormatNumeric operations; no host formatter replaces
   untranslated Intl logic in the production realm. Utf16String's record type is
   public for those operation signatures while its storage remains private.
+- Number constructor/prototype records retain explicit Object and parse-function
+  intrinsics rather than installing an incomplete production global. The pinned
+  AK decimal-form helper uses fmt/Dragonbox; it remains an explicit untranslated
+  callback. Tests supply decimal-form fixtures, without adding a host conversion
+  implementation. Exact fixed/scientific integer rounding uses the existing V
+  `math.big` substrate instead of LibCrypto storage; decimal digit counts/strings
+  use that substrate's decimal output. Ordinary decimal NumberToString continues
+  to use the previously documented V shortest-digit backend. Nondecimal output
+  preserves the upstream fixed fractional precision and floating-point division.
+  Intl NumberFormat/FormatNumeric dependencies likewise stay explicit; their
+  tests assert argument/realm/numeric/UTF-16 forwarding only.
 - There is no process-wide `VM::the()` singleton or one-VM-per-process guard;
   every record that needs the VM receives it explicitly, and private environment
   ids are handed out by the VM instead of a static counter.
@@ -1205,8 +1279,8 @@ the same-size SVG source switch with zero differing pixels.
   GetV, GetMethod and Invoke expose the translated primitive-prototype lookup
   with explicit Number/BigInt/String dependencies; primitive Reference
   integration is pending.
-  Number toLocaleString and Intl formatting remain untranslated; BigInt's locale
-  native body retains explicit NumberFormat/FormatNumeric dependencies.
+  Number/BigInt locale native bodies retain explicit NumberFormat/FormatNumeric
+  dependencies; Intl formatting remains untranslated.
   The abstract and all twelve concrete TypedArray constructors/prototypes are
   complete records with explicit dependencies. Their creation follows the subclass
   initializer and Intrinsics constructor-name/back-reference steps, without
@@ -1262,12 +1336,15 @@ complete LibJS runtime migration.
   and packed interpreter bytecode remain pending. The current instruction loop
   and declaration-instantiation path cover only the supported slice above.
 - The remaining Intrinsics prototype graph, global entries (including eval),
-  ECMAScript function objects, Number/String/Array and most other builtin
+  ECMAScript function objects, String/Array and most other builtin
   constructor/prototype records, other intrinsic accessors and proxies remain
   untranslated. Production builtin installation currently includes Boolean,
   Symbol, ArrayBuffer, DataView and SharedArrayBuffer. BigInt constructor/prototype
   records and all native bodies exist with explicit Object/Intl dependencies;
-  production installation and Intl formatting remain pending.
+  production installation and Intl formatting remain pending. Number constructor/
+  prototype records and all native bodies likewise exist with explicit Object,
+  retained parse-function, decimal-form and Intl dependencies; AK/fmt Dragonbox,
+  production Number installation and primitive Reference integration remain pending.
   String exotic records, synchronous iterator operations, and
   String/Array iterator next prototypes exist with explicit intrinsic
   dependencies. Array sorting helpers and exotic records exist, but Array/String
@@ -1280,8 +1357,8 @@ complete LibJS runtime migration.
   TypedArrayCreate, numeric comparison and iterator next exist with explicit
   prototype dependencies. Number/BigInt wrapper records and primitive ToObject
   exist with explicit Number/BigInt/String prototype dependencies; their primitive
-  Reference integration remains pending; Number/String constructors/prototypes
-  are untranslated and BigInt global installation awaits its Object/Intl graph;
+  Reference integration remains pending; String constructors/prototypes remain
+  untranslated. Number/BigInt global installation awaits their dependency graphs;
   GetV, GetMethod and Invoke exist with explicit intrinsic dependencies.
   TypedArray's four accessors, at, @@toStringTag, three indexed search methods,
   reverse, sort, every/some/forEach, four predicate searches, reduce/reduceRight,
@@ -1293,7 +1370,7 @@ complete LibJS runtime migration.
   explicit dependencies, as do all twelve concrete constructor/prototype records
   and Uint8Array's six hex/base64 methods. Production builtin installation, its
   complete intrinsic graph, ObjectPrototype initialization and toString/IsArray,
-  and Number locale builtins/Intl formatting remain untranslated, as do concurrent
+  AK's Number decimal backend and Intl formatting remain untranslated, as do concurrent
   shared backing stores, Atomics and caged storage. ReflectObject's complete record and
   all thirteen native bodies exist with explicit Object/Array dependencies;
   production global installation and Proxy internal methods remain pending.

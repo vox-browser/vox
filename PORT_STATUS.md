@@ -903,6 +903,15 @@ preserves NumberFormat construction and FormatNumeric forwarding through explici
 Intl dependencies. Object/Intl graph integration and production BigInt global
 installation remain pending; the browser tests exercise the records under test
 host names without supplying replacement locale formatting.
+Number constructor/prototype records now retain source initialization order,
+constant descriptors, parse-function aliases, noncoercing static predicates,
+exact BigInt-to-double rounding, and branded fixed, scientific, radix and valueOf
+bodies. The prototype itself carries NumberData = +0. Scientific rounding follows
+the upstream exact binary arithmetic and decimal-boundary candidate comparison;
+AK's untranslated Dragonbox seed backend is an explicit dependency. Locale calls
+retain the current realm's NumberFormat/FormatNumeric dependencies and the original
+numeric payload. Tests supply decimal-form fixtures and an Intl plumbing marker;
+production Number installation and primitive Reference integration remain pending.
 ObjectPrototype's eleven native bodies now translate own/enumerable and prototype
 membership, valueOf/toLocaleString, Annex B accessor definition/lookup and __proto__
 reads/writes, preserving source coercion order and existing opposite callbacks.
@@ -973,9 +982,9 @@ SharedArrayBuffer allocation reserves the maximum capacity while exposing the
 initial length. Its constructor, three accessors, growth hook and species-aware
 slicing are installed and tested with live DataView witnesses. Cross-agent
 shared-memory ordering remains pending, as in the pinned upstream active bodies.
-The LibJS package's 155 test files pass in both GC and no-GC mode, and all 100
+The LibJS package's 163 test files pass in both GC and no-GC mode, and all 100
 upstream AST fixtures match exactly with no case overrides. The complete repository suite passes all
-825 test files, including the native bridge and sixteen browser integration files.
+834 test files, including the native bridge and seventeen browser integration files.
 The native browser and inline-document layout bridge now prepare page scripts
 through LibJS and associate classic execution with translated Script, Realm,
 and VM embedding contexts. Sources retain their URLs and parse goals; syntax
@@ -987,7 +996,7 @@ bytecode slice without initializing or falling back to JavaScriptCore. Remaining
 bytecode generation, ECMAScript functions, intrinsic/builtin objects, regex
 compilation, module linking, and LibWeb host bindings remain untranslated.
 
-The integration passes the browser package's sixteen test files in both GC modes,
+The integration passes the browser package's seventeen test files in both GC modes,
 the native bridge tests, the production bundle build and both engine headless
 smoke checks. The function/array refresh also passes all 11 default screenshot cases
 and the pixel-exact same-size SVG source switch. The earlier 25-comparison run
