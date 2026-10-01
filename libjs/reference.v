@@ -1,9 +1,9 @@
 module libjs
 
 // Translated from LibJS/Runtime/Reference.{h,cpp} and EnvironmentCoordinate.h.
-// Property references on primitive bases need ToObject and the wrapper
-// prototypes from the pending object-model translation; object bases and
-// environment references are complete.
+// Boolean primitive bases use the translated ToObject wrapper path. Other
+// primitive wrappers and their prototypes remain pending; object bases and
+// environment references use the ordinary internal methods.
 
 pub const environment_coordinate_invalid_marker = u32(0xfffffffe)
 
@@ -129,6 +129,11 @@ fn (reference Reference) throw_reference_error(mut vm VM) IError {
 fn (reference Reference) base_object(mut vm VM) !&Object {
 	if reference.base_value.is_object() {
 		return reference.base_value.as_object()
+	}
+	// Value.cpp::ToObject's Boolean case. [[Get]] and [[Set]] still receive the
+	// original primitive through GetThisValue, rather than the temporary wrapper.
+	if reference.base_value.is_boolean() {
+		return BooleanObject.create(vm.realm(), reference.base_value.as_bool()).object
 	}
 	// 7.1.18 ToObject ( argument ) throws for undefined and null; primitive
 	// wrappers belong to the pending object-model translation.
