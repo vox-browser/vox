@@ -81,6 +81,11 @@ pub fn (mut buffer ArrayBufferObject) overwrite(offset usize, bytes []u8) {
 	buffer.block.overwrite(offset, bytes)
 }
 
+// ArrayBuffer.h::move_data forwards to the owned DataBlock operation.
+pub fn (mut buffer ArrayBufferObject) move_data(destination_offset usize, source_offset usize, count usize) {
+	buffer.block.move_data(destination_offset, source_offset, count)
+}
+
 pub fn (buffer &ArrayBufferObject) copy_data_to(mut destination ArrayBufferObject, source_offset usize, destination_offset usize, count usize) {
 	buffer.block.copy_to(mut destination.block, source_offset, destination_offset, count)
 }
