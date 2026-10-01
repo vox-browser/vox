@@ -908,10 +908,16 @@ String and ordinary-Array iterators expose branded next methods, Unicode code
 points, live lengths, and entry-pair arrays through explicit intrinsic dependencies.
 Iterator intrinsic installation, iterator-producing methods, helpers, async
 iteration, and TypedArray witnesses remain pending.
-Its 84 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
-match exactly with no case overrides. The preceding full repository checkpoint
-passed 728 files. These additions bring the inventory to 745 test files; the
-native bridge and seven browser integration files pass focused checks.
+ArrayBuffer records and owned/host-backed DataBlocks preserve zeroed allocation,
+copy/move/resize, captured host lengths and keyed detachment. Its constructor,
+four accessors, resize, species-aware slice and both transfer methods are now
+installed in each realm and execute through the browser's translated VM.
+DataView records retain cached bounds witnesses and fixed/tracking lengths;
+its constructor, numeric accessors, TypedArray records and caged storage remain
+pending. The LibJS status file records the storage and allocator deviations.
+Its 92 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
+match exactly with no case overrides. The complete repository suite passes all
+754 test files, including the native bridge and eight browser integration files.
 The native browser and inline-document layout bridge now prepare page scripts
 through LibJS and associate classic execution with translated Script, Realm,
 and VM embedding contexts. Sources retain their URLs and parse goals; syntax
@@ -923,18 +929,22 @@ bytecode slice without initializing or falling back to JavaScriptCore. Remaining
 bytecode generation, ECMAScript functions, intrinsic/builtin objects, regex
 compilation, module linking, and LibWeb host bindings remain untranslated.
 
-The integration passes the browser package's six test files in both GC modes,
+The integration passes the browser package's eight test files in both GC modes,
 the native bridge tests, the production bundle build and both engine headless
 smoke checks. The function/array refresh also passes all 11 default screenshot cases
 and the pixel-exact same-size SVG source switch. The earlier 25-comparison run
 additionally covered 13 pixel-exact SVG paint-server mutation cases.
-The Boolean/Symbol and construction refresh also passes the `inline-node` and
-pixel-exact same-size SVG source-switch comparisons after rebuilding the bundle.
+The Boolean/Symbol, construction, iterator and buffer refresh also passes
+`inline-node` and the pixel-exact same-size SVG source-switch comparison after
+rebuilding the bundle.
 
 ### LibWeb checks
 
 The semantic inventory exits nonzero while structural spellings still require
-manual classification. Its current baseline is:
+manual classification. It scans LibWeb implementation and root support files;
+the separate LibJS package is excluded from its symbols, fields and review queues
+(`db4e4fc`). LibJS gaps remain tracked in `libjs/PORT_STATUS.md`. Its current
+baseline is:
 
 ```text
 $ python3 tools/libweb_translation_audit.py
@@ -942,11 +952,11 @@ upstream modules: 76
 upstream .cpp files: 1193
 upstream implementations: 21401
 quarantined name-only coverage shims: 0 files / 0 functions
-explicit semantic-divergence markers: 5
+explicit semantic-divergence markers: 6
 reviewed upstream-equivalent trivial implementations: 541
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 14257
-  unmatched: 4162
+  candidate-name-match: 14261
+  unmatched: 4158
   language-constructor-or-destructor: 1383
   gc-or-binding-runtime: 655
   consolidated-name-match: 525
@@ -955,13 +965,13 @@ suspicious empty/default-return implementations: 0
   language-template-trait: 64
   value-record-field-match: 54
 
-largest unmatched modules:
+unmatched implementations by module:
 
-  1682 CSS
-  1173 HTML
-   590 DOM
-   404 Painting
-   313 Layout
+   1681 CSS
+    588 DOM
+   1173 HTML
+    312 Layout
+    404 Painting
 
 $ v -old-compiler -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 1089 passed, 0 failed, 1089 total

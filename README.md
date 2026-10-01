@@ -28,6 +28,10 @@ expose fixed UTF-16 character descriptors. Synchronous iterator operations and
 String/ordinary-Array iterator records support stepping, collection, and closing.
 Their intrinsic prototypes are supplied explicitly; Array literals, Array/String
 prototype methods, and iterator-producing builtin methods remain pending.
+ArrayBuffer construction, branded accessors, resize, slice, and both transfer
+methods execute in the translated VM. Owned and host-backed byte storage,
+detach ownership, species selection, and DataView bounds witnesses follow the
+upstream bodies; DataView numeric methods and TypedArray records remain pending.
 The browser selects this supported slice with `--js-engine=libjs`;
 JavaScriptCore remains the default, with `--js-engine=javascriptcore` selecting
 its existing DOM host explicitly. LibJS mode has no DOM bindings and never falls
