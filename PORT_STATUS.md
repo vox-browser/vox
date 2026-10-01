@@ -866,7 +866,7 @@ recorded separately below because it was introduced after that full-suite run.
 
 ## Verification
 
-### Separate LibJS frontend
+### Separate LibJS frontend and runtime
 
 The refreshed [`libjs/`](libjs/PORT_STATUS.md) package imports the February
 `libjs_v` frontend and translates later parser, Unicode, AST ownership, scope,
@@ -874,23 +874,34 @@ and serialization behavior against the current Ladybird checkout. It also
 translates the LibJS VM record: execution contexts and the interpreter stack,
 environment and Reference records, realms, error objects with tracebacks and the
 `ErrorType` table, promise and finalization job queues, host hooks, exception
-unwinding, and the file-backed module loader bookkeeping. Its 36 test files pass
-in both GC and no-GC mode, and all 100 upstream AST fixtures match exactly with
-no case overrides. The complete 656-file LibWeb run below preceded that package;
-the repository now has 692 test files verified in those separate runs. The
+unwinding, and the file-backed module loader bookkeeping. The supported execution
+slice includes the V bytecode generator and interpreter, BigInt numeric operations,
+native calls, object coercion, ordinary property reads/writes/updates, delete/in,
+numeric and URI global functions, and data/accessor descriptors. Native cached
+accessors preserve holder/receiver identity and reject stale cache publication
+after getter mutation. Descriptor conversion and ordered bulk definitions follow
+the upstream algorithms with explicit intrinsic-prototype/ToObject boundaries.
+Its 58 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
+match exactly with no case overrides. The prior full 710-file repository run
+passed 709 files; its obsolete native property-assignment assertion was corrected
+and the complete native test rerun passed. Five added accessor/descriptor/browser
+test files pass in the focused suites; a new full 715-file run has not been performed. The
 native browser and inline-document layout bridge now prepare page scripts
 through LibJS and associate classic execution with translated Script, Realm,
 and VM embedding contexts. Sources retain their URLs and parse goals; syntax
 failures are positioned and isolated per script. Classic scripts share global
 lexical bindings and run promise checkpoints before the next script. The browser
-still uses JavaScriptCore for execution and its JavaScript objects and jobs.
-Regex compilation, bytecode generation, the interpreter loop, builtin objects,
-and module linking remain outside the completed slices.
+default `--js-engine=javascriptcore` mode uses JavaScriptCore for execution and
+its JavaScript objects and jobs. `--js-engine=libjs` executes the supported V
+bytecode slice without initializing or falling back to JavaScriptCore. Remaining
+bytecode generation, ECMAScript functions, intrinsic/builtin objects, regex
+compilation, module linking, and LibWeb host bindings remain untranslated.
 
-The integration passes the browser package's two test files in both GC modes,
-the native bridge tests, the production bundle build and headless smoke check,
-and 25 screenshot comparisons. These include all 11 default smoke cases and
-14 pixel-exact SVG image/paint-server regression comparisons.
+The integration passes the browser package's three test files in both GC modes,
+the native bridge tests, the production bundle build and both engine headless
+smoke checks. The accessor refresh also passes all 11 default screenshot cases
+and the pixel-exact same-size SVG source switch. The earlier 25-comparison run
+additionally covered 13 pixel-exact SVG paint-server mutation cases.
 
 ### LibWeb checks
 

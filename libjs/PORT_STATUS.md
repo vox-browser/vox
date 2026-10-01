@@ -10,7 +10,7 @@ AST, and scope collector for the frontend, and its C++ `Runtime/VM.{h,cpp}`,
 `Interpreter/Interpreter.cpp` VM members, and runtime records for the VM slice.
 The execution slice additionally follows `Rust/src/bytecode/{operand,generator,codegen}.rs`,
 `Interpreter/{interpreter.flap,SlowPaths.cpp}`, `Script.cpp`,
-`Runtime/{Value,GlobalObject,BigInt,NativeFunction,FunctionObject,PropertyKey,Object,PrimitiveString}`
+`Runtime/{Value,GlobalObject,BigInt,NativeFunction,FunctionObject,PropertyKey,Object,PrimitiveString,Accessor,PropertyDescriptor,AbstractOperations}`
 source bodies, numeric/URI global functions from `Runtime/GlobalObject.cpp`,
 `AK/StringConversions.cpp` and fast_float decimal-prefix parsing, and the BigInt
 operations delegated to LibCrypto/LibTomMath.
@@ -47,7 +47,8 @@ creates a realm with a global environment and pushes its execution context.
 | `vm.v` | `Runtime/VM.{h,cpp}`: VM record, execution context stack, throw completions, jobs, host hooks, native function table, module loader bookkeeping; `Interpreter.cpp` exception unwinding and identifier lookup |
 | `execution_context.v`, `interpreter_stack.v`, `stack_info.v`, `stack_info_{darwin,linux}.c.v` | Execution context records and value layout, the 8 MiB interpreter stack allocator, native stack bounds |
 | `environment.v`, `declarative_environment.v`, `function_environment.v`, `object_environment.v`, `global_environment.v`, `private_environment.v`, `reference.v` | Environment records, GetThisEnvironment, private names, Reference records with GetValue/PutValue/delete |
-| `value.v`, `completion.v`, `primitive_string.v`, `symbol.v`, `object.v` | Tagged values, completion records, VM string caches, symbols, ordinary objects with data properties and `PropertyName` keys |
+| `value.v`, `completion.v`, `primitive_string.v`, `symbol.v`, `object.v` | Tagged values, completion records, VM string caches, symbols, ordinary objects with data/accessor properties and `PropertyName` keys |
+| `accessor.v`, `property_descriptor.v`, `object_accessors.v`, `object_property_definitions.v` | Accessor cells, descriptor completion/conversion/validation, native and cached accessors, engine-private property storage, bulk definitions after ToObject |
 | `error_object.v`, `error_types.v` | Error objects with `[[ErrorData]]` tracebacks and stack strings; the 226-entry `ErrorType` message table |
 | `realm.v`, `script.v`, `module_records.v`, `promise.v`, `function_object.v`, `executable.v` | Realm and Script records, standard global value properties, `Module` records and loading payloads, promise state, job callbacks, executable metadata (handler ranges, source map, identifier table) |
 | `value_operations.v`, `value_coercion.v`, `big_int.v` | Numeric operations, BigInt cells and conversions, signed bitwise operations, exact mixed numeric comparisons, UTF-16 concatenation, ToPrimitive/OrdinaryToPrimitive and property-key conversion |
@@ -56,8 +57,8 @@ creates a realm with a global environment and pushes its execution context.
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 49 implementation files contain **20,818 physical V LOC**. The 54 test
-files contain **5,213 physical V LOC** and **201 test functions**. Physical LOC
+The 53 implementation files contain **21,199 physical V LOC**. The 58 test
+files contain **5,951 physical V LOC** and **222 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -167,7 +168,7 @@ Supported programs include primitive and BigInt literals, identifiers, `this`, n
 bitwise operators, comparisons, primitive string concatenation, unary operators,
 `typeof` (including unknown names and lexical TDZ checks), conditional and sequence
 expressions, short-circuiting logical operators and assignments, identifier
-assignments/updates, ordinary data-property reads/writes/updates, `delete`, `in`,
+assignments/updates, ordinary data/accessor-property reads/writes/updates, `delete`, `in`,
 native function and method calls
 without spread arguments, string own `length`/character properties, `var`/`let`/`const`,
 blocks, `if`, `while`, `do`/`while`, `for`, unlabelled `break`/`continue`, and `throw`. Bindings persist across scripts in one
@@ -231,9 +232,32 @@ right operand before key coercion and walks the ordinary prototype chain.
 
 Ordinary prototype replacement checks identity before extensibility and rejects
 cycles. PreventExtensions, SetIntegrityLevel, and TestIntegrityLevel implement
-sealing/freezing for the existing data descriptors. Private symbols are excluded
+sealing/freezing for data and accessor descriptors. Freezing preserves accessor
+setters. Private symbols are excluded
 from ordinary own-key enumeration and therefore from these public integrity
-operations. Accessor descriptors and proxy hooks remain pending.
+operations. Proxy hooks remain pending.
+
+Accessor cells retain their getter/setter objects and optional private cache key.
+Ordinary Get/Set preserve inherited receivers, missing-getter/setter behavior,
+and abrupt completions through compiled property operations, coercion, and
+environment lookup. ValidateAndApplyPropertyDescriptor handles generic,
+data, and accessor descriptors, including kind transitions and non-configurable
+function-identity checks. CompletePropertyDescriptor preserves absent versus
+explicitly undefined callbacks; ToPropertyDescriptor reads inherited fields in
+upstream order and rejects non-callable or mixed descriptors. FromPropertyDescriptor
+uses a caller-supplied Object prototype until Intrinsics exists.
+
+Native accessor helpers retain upstream getter/setter names, lengths, and partial
+callback updates. Cached accessor values live in engine-private properties on
+the holder and are shared only with that holder and its direct children.
+Getter exceptions do not cache results; deletion/replacement during a getter
+prevents its old Accessor cell from publishing a stale value. Diagnostic property
+inspection follows the prototype chain without invoking accessors.
+ObjectDefineProperties accepts an already-converted property object, gathers
+every enumerable descriptor before writing, and then applies them in own-key
+order. Conversion failure leaves the target untouched; a later definition failure
+retains earlier successful writes. Primitive boxing and the Object constructor's
+JavaScript-facing methods remain pending.
 
 Numeric globals follow the upstream coercion order and errors. parseInt preserves
 radix validation, hexadecimal-prefix stripping, prefix termination, per-digit
@@ -316,19 +340,19 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 54 passed, 54 total
+# 58 passed, 58 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 54 passed, 54 total
+# 58 passed, 58 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
 
 v -old-compiler -enable-globals test browserjs
-# 2 passed, 2 total
+# 3 passed, 3 total
 
 v -old-compiler -enable-globals -gc none test browserjs
-# 2 passed, 2 total
+# 3 passed, 3 total
 
 v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
@@ -354,17 +378,19 @@ coercion, metadata, and failure cleanup; fake `FunctionObject`,
 stand in for the untranslated builtin objects, and module-loading tests write
 temporary module files. The preceding LibWeb work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 54 libjs files are verified separately in both GC modes.
-There are now 710 repository test files.
+this package; the 58 libjs files are verified separately in both GC modes.
+There are now 715 repository test files.
 
 The full 710-file repository run passed 709 files and found one obsolete
 `main_test.v` assertion that expected property assignment to fail compilation.
 With property assignment translated, that script instead reaches the missing
 `document` binding and throws a ReferenceError. The assertion now checks that
 error and its source URL; the complete native `main_test.v` rerun passes.
-Together the full run and that focused rerun verify all 710 test files.
+Together the full run and that focused rerun verified that 710-file checkpoint.
+The five added accessor/descriptor/browser test files pass in the focused suites
+above; a new full 715-file repository run has not been performed.
 
-Browser integration checks pass the two `browserjs` test files in both GC modes,
+Browser integration checks pass the three `browserjs` test files in both GC modes,
 the native `main_test.v` bridge and flag tests, the production bundle build,
 JavaScriptCore DOM-mutation/click smoke, and LibJS bytecode smoke. A native
 LibJS fixture also verifies continuation after an unsupported DOM script.
@@ -372,13 +398,17 @@ Invalid engine flags return exit status 2. The standalone runner passes
 expression and file-input checks, rejects unsupported programs with exit status
 1, and its linked libraries contain ICU and libSystem without JavaScriptCore.
 
-The 25 screenshot comparisons pass the 11 default smoke cases, the same-size SVG image source switch, and 13 SVG
-paint-server mutation cases; all 14 SVG comparisons are pixel-exact.
+The earlier 25 screenshot comparisons passed the 11 default smoke cases, the
+same-size SVG image source switch, and 13 SVG paint-server mutation cases; all
+14 SVG comparisons were pixel-exact. After the accessor translation, the rebuilt
+bundle passes all 11 default comparisons and the pixel-exact same-size SVG source
+switch again. The screenshot tools use `V_BIN` with a temporary wrapper that
+selects this checkout's old compiler frontend for their pixel-diff helper.
 
 ## Deviations from upstream
 
 - `Value` keeps an explicit tag next to its payload instead of NaN-boxing.
-  BigInt uses V arbitrary-precision storage; accessor cells remain pending.
+  BigInt uses V arbitrary-precision storage; accessor cells are V heap records.
 - There is no process-wide `VM::the()` singleton or one-VM-per-process guard;
   every record that needs the VM receives it explicitly, and private environment
   ids are handed out by the VM instead of a static counter.
@@ -386,8 +416,11 @@ paint-server mutation cases; all 14 SVG comparisons are pixel-exact.
   finalization registries are interfaces; `gather_roots()` reports their
   identities into `HeapRoots` for inspection rather than driving a collector.
 - `TypeErrorRealmScope` has no destructor; callers must call `restore()`.
-- `Object` supports ordinary data properties only (no accessors, shapes,
-  proxies, or intrinsic prototypes). The runtime property key is named
+- `Object` supports ordinary data and accessor properties, including native
+  holder-value caching, without shapes, inline property-cache metadata, proxies,
+  or intrinsic prototypes. Property descriptors omit Shape slot offsets;
+  FromPropertyDescriptor takes an explicit prototype, and ObjectDefineProperties
+  starts after ToObject. The runtime property key is named
   `PropertyName` because the parser owns `PropertyKey`, and the runtime source
   range is `SourceCodeRange` because the AST owns `SourceRange`.
 - `Promise` implements state transitions and rejection tracking without
@@ -441,7 +474,7 @@ complete LibJS runtime migration.
   and packed interpreter bytecode remain pending. The current instruction loop
   and declaration-instantiation path cover only the supported slice above.
 - The Intrinsics prototype graph, remaining global entries (including eval),
-  builtin constructors and prototypes, ECMAScript function objects, accessors,
+  builtin constructors and prototypes, ECMAScript function objects, intrinsic accessors,
   proxies, and BigInt constructor/prototype methods remain untranslated. Realms
   expose the four standard value properties and eight numeric/URI functions on an
   ordinary global object; default native functions currently have null prototypes.
