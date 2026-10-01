@@ -75,12 +75,13 @@ creates a realm with a global environment and pushes its execution context.
 | `typed_array.v`, `typed_array_initialization.v` | All twelve concrete element records, buffer witnesses, integer-indexed exotic methods, numeric get/set/modify dispatch, validation, allocation and buffer/TypedArray/list/array-like initialization |
 | `typed_array_construction.v`, `typed_array_create.v`, `typed_array_compare.v` | Concrete constructor behavior with explicit intrinsic dependencies, TypedArrayCreate result validation and CompareTypedArrayElements |
 | `typed_array_receiver.v`, `typed_array_access.v`, `typed_array_search.v`, `typed_array_order.v` | TypedArray receiver conversion, four branded accessors, at, @@toStringTag, includes/indexOf/lastIndexOf, reverse and sort with explicit primitive dependencies |
+| `typed_array_callbacks.v`, `typed_array_find.v`, `typed_array_reduce.v`, `typed_array_iterators.v` | every/some/forEach, FindViaPredicate and four predicate searches, reduce/reduceRight and entries/keys/values with explicit iterator dependencies |
 | `global_numeric_functions.v`, `global_uri_functions.v`, `global_legacy_functions.v` | isFinite/isNaN/parseInt/parseFloat, URI encoding/decoding, and Annex B escape/unescape global functions |
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 107 implementation files contain **24,951 physical V LOC**. The 115 test
-files contain **13,581 physical V LOC** and **424 test functions**. Physical LOC
+The 111 implementation files contain **25,187 physical V LOC**. The 119 test
+files contain **14,385 physical V LOC** and **438 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -398,8 +399,8 @@ Both prototypes expose branded native next methods and configurable tags with
 upstream metadata. Their Iterator parent, result Object parent, and entry-pair
 Array parent are explicit dependencies. These records are callable from compiled
 scripts when supplied by a host; realm intrinsic installation, iterator-producing
-String/Array methods, TypedArray iterator-producing methods, Iterator helpers,
-and async iteration remain pending.
+String/Array methods, Iterator helpers and async iteration remain pending.
+TypedArray iterator-producing bodies are translated below with explicit dependencies.
 
 ByteLength (`4732c43`) distinguishes numeric zero, automatic lengths, and detached
 buffers. DataBlock (`3d6ed51`) translates owned and fixed-length host storage:
@@ -535,10 +536,33 @@ semantics. sort checks callback callability before receiver conversion, snapshot
 all elements before comparisons and writes the stable numeric result through
 live integer-indexed Set operations. Callback errors leave the sorted snapshot
 unwritten; callback-induced shrinking or detachment limits the subsequent writes.
+
+every/some/forEach (`7213d9e`), FindViaPredicate and find/findIndex/findLast/findLastIndex
+(`7b39d87`), and reduce/reduceRight (`d67fc25`) validate the receiver and capture
+length before callback validation. Missing callbacks retain the method-specific
+error; explicit non-callable values retain NotAFunction. Traversals read live
+values without skipping indices that become invalid during callbacks. Growing a
+buffer does not extend the captured index range; shrinking or detaching it yields
+undefined for remaining invalid indices. Predicate truthiness uses ToBoolean
+without object conversion, and searches return the value captured before the
+matching predicate runs. Reductions distinguish omitted from explicit undefined
+initial values and preserve arbitrary accumulator values without coercion.
+
+entries/keys/values (`9dc2893`) validate the view before creating an ArrayIterator
+with the corresponding iteration kind. Its translated next body retains live
+lengths, recoverable out-of-bounds errors, exact BigInt elements, real entry-pair
+Array records and permanent exhaustion. The ArrayIterator prototype dependency
+is explicit; the values/@@iterator alias belongs to the pending intrinsic
+installation.
+
 Factories and these native behavior functions still receive explicit prototype
 dependencies. The abstract TypedArray constructor, intrinsic graph, remaining
 prototype methods, Uint8Array base64/hex helpers, TypedArrayCreateSameType and
 cached caged views remain separate untranslated work.
+The remaining TypedArrayPrototype native bodies are copyWithin, fill, filter,
+join, map, set, slice, subarray, toLocaleString, toReversed, toSorted and with.
+Prototype installation also requires the shared Array toString body and the
+values/@@iterator alias, with upstream property order and metadata.
 
 Numeric globals follow the upstream coercion order and errors. parseInt preserves
 radix validation, hexadecimal-prefix stripping, prefix termination, per-digit
@@ -625,10 +649,10 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 115 passed, 115 total
+# 119 passed, 119 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 115 passed, 115 total
+# 119 passed, 119 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
@@ -643,7 +667,7 @@ v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
 
 v -old-compiler -enable-globals test .
-# 782 passed, 782 total
+# 786 passed, 786 total
 
 ./build_ladybird.sh
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
@@ -667,11 +691,11 @@ fixtures; separate tests exercise translated NativeFunction and ArrayBufferObjec
 records. Module-loading tests write temporary module files. The preceding LibWeb
 work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 115 libjs files are verified separately in both GC modes.
-There are now 782 repository test files.
+this package; the 119 libjs files are verified separately in both GC modes.
+There are now 786 repository test files.
 
-The complete 782-file repository suite passes, including the native bridge,
-thirteen browser integration files and all 115 LibJS files. The dedicated LibJS and
+The complete 786-file repository suite passes, including the native bridge,
+thirteen browser integration files and all 119 LibJS files. The dedicated LibJS and
 browser suites also pass in no-GC mode, exercising the retained storage and
 buffer ownership independently of the collector.
 
@@ -720,6 +744,11 @@ indexing, NaN/signed-zero searches, reverse, default numeric and BigInt sorting,
 bound native comparators, resizing, detachment and per-script recovery. Primitive
 Number and nullish receiver errors go through the translated ToObject boundary.
 No JavaScriptCore context is created by these fixtures.
+The callback/iterator integration checks (`230effb`) use bound native predicates,
+exact BigInt reductions, shrinking callbacks, abrupt completions and later-script
+recovery. Compiled entries/keys/values calls exercise branded next, entry-pair
+Arrays, live growth, bounds-error recovery and permanent exhaustion. ECMAScript
+function bytecode and the builtin TypedArray graph remain pending.
 The rebuilt native bundle passes both engine smoke checks and a buffer-regression
 document covering shared BigInt storage, growth, slicing and transferred Float16
 bytes without script errors.
@@ -900,9 +929,10 @@ complete LibJS runtime migration.
   prototype dependencies. Number/BigInt wrapper records and primitive ToObject
   exist with explicit Number/BigInt/String prototype dependencies; their primitive
   Reference/GetV integration and builtin constructors/prototypes remain pending.
-  TypedArray's four accessors, at, @@toStringTag, three search methods, reverse and
-  sort also exist as native behavior functions. The abstract TypedArray
-  constructor, concrete builtin installation, prototype graph and remaining
+  TypedArray's four accessors, at, @@toStringTag, three indexed search methods,
+  reverse, sort, every/some/forEach, four predicate searches, reduce/reduceRight
+  and entries/keys/values also exist as native behavior functions. The abstract
+  TypedArray constructor, concrete builtin installation, prototype graph and remaining
   methods, TypedArrayCreateSameType and Uint8Array encoding helpers remain
   untranslated, as do concurrent shared backing stores, Atomics and caged storage.
   Realms expose four standard value properties, eight numeric/URI functions,

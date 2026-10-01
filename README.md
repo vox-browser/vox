@@ -27,7 +27,7 @@ runtime provides the upstream sorting helpers. Host-created String objects
 expose fixed UTF-16 character descriptors. Synchronous iterator operations and
 String/ordinary-Array iterator records support stepping, collection, and closing.
 Their intrinsic prototypes are supplied explicitly; Array literals, Array/String
-prototype methods, and iterator-producing builtin methods remain pending.
+prototype methods and the Iterator intrinsic graph remain pending.
 ArrayBuffer construction, branded accessors, resize, slice, and both transfer
 methods execute in the translated VM. Owned and host-backed byte storage,
 detach ownership, species selection, and DataView bounds witnesses follow the
@@ -40,8 +40,9 @@ handles scalar lengths, iterables, array-like input and TypedArray copies with
 explicit prototype dependencies. Result creation/validation and numeric sorting
 comparison follow upstream. Native behavior functions now cover its four branded
 accessors, at, @@toStringTag, includes/indexOf/lastIndexOf, reverse and numeric
-sort. They use translated primitive boxing with explicit Number/BigInt/String
-prototype dependencies. The abstract TypedArray constructor, builtin installation,
+sort, every/some/forEach, the four predicate searches, reduce/reduceRight and
+entries/keys/values. They use translated primitive boxing with explicit
+Number/BigInt/String prototype dependencies. The abstract TypedArray constructor, builtin installation,
 remaining prototype methods, Uint8Array encoding helpers and caged storage remain
 pending.
 SharedArrayBuffer construction, three accessors, growth and species-aware slicing

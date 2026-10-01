@@ -908,9 +908,9 @@ Synchronous iterator records implement stepping, deferred value-getter errors,
 completion-preserving close/close-all, and list/callback collection. Host-created
 String and ordinary-Array iterators expose branded next methods, Unicode code
 points, live lengths, and entry-pair arrays through explicit intrinsic dependencies.
-Iterator intrinsic installation, iterator-producing methods, helpers and async
-iteration remain pending. Array iterator stepping also uses translated TypedArray
-witnesses, including live lengths and recoverable bounds errors.
+Iterator intrinsic installation, ordinary Array/String iterator-producing methods,
+helpers and async iteration remain pending. Array iterator stepping also uses
+translated TypedArray witnesses, including live lengths and recoverable bounds errors.
 ArrayBuffer records and owned/host-backed DataBlocks preserve zeroed allocation,
 copy/move/resize, captured host lengths and keyed detachment. Its constructor,
 four accessors, resize, species-aware slice and both transfer methods are now
@@ -924,7 +924,10 @@ prototype dependencies for scalar lengths, iterables, array-like input and
 TypedArray copies; TypedArrayCreate and numeric comparison are also translated.
 Native behavior functions cover four branded accessors, at, @@toStringTag,
 includes/indexOf/lastIndexOf, reverse and sort through the primitive boxing
-boundary. The abstract constructor, builtin installation, remaining prototype
+boundary. Callback bodies add every/some/forEach, the four predicate searches,
+reduce/reduceRight and entries/keys/values. They retain snapshot traversal lengths,
+live element reads, argument-presence errors and explicit iterator dependencies.
+The abstract constructor, builtin installation, remaining prototype
 methods, Uint8Array encoding helpers and caged storage remain pending. The LibJS
 status file records the storage, allocator and native binary16 representation
 boundaries.
@@ -932,9 +935,9 @@ SharedArrayBuffer allocation reserves the maximum capacity while exposing the
 initial length. Its constructor, three accessors, growth hook and species-aware
 slicing are installed and tested with live DataView witnesses. Cross-agent
 shared-memory ordering remains pending, as in the pinned upstream active bodies.
-Its 115 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
+Its 119 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
 match exactly with no case overrides. The complete repository suite passes all
-782 test files, including the native bridge and thirteen browser integration files.
+786 test files, including the native bridge and thirteen browser integration files.
 The native browser and inline-document layout bridge now prepare page scripts
 through LibJS and associate classic execution with translated Script, Realm,
 and VM embedding contexts. Sources retain their URLs and parse goals; syntax
