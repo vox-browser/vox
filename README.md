@@ -35,8 +35,12 @@ upstream bodies. DataView construction, buffer/length/offset accessors, and all
 22 numeric methods execute through translated buffer conversions, including
 BigInt and Float16. Host-created TypedArray records support all twelve element
 types, integer-indexed exotic properties, fixed/tracking witnesses, buffer-view
-initialization and iterator stepping. TypedArray constructors, prototype methods
-and caged storage remain pending.
+initialization and iterator stepping. Concrete constructor behavior additionally
+handles scalar lengths, iterables, array-like input and TypedArray copies with
+explicit prototype dependencies. Result creation/validation and numeric sorting
+comparison follow upstream. The abstract TypedArray constructor, builtin
+installation, prototype methods, Uint8Array encoding helpers and caged storage
+remain pending.
 SharedArrayBuffer construction, three accessors, growth and species-aware slicing
 also follow the active upstream bodies, using the existing DataView methods to
 read and write their storage. Cross-agent shared-memory ordering remains pending.

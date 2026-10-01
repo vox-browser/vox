@@ -917,16 +917,19 @@ DataView construction, three property accessors and all 22 numeric methods are
 installed, with fixed/tracking bounds witnesses, byte-order handling, BigInt
 modulo conversion and Float16 rounding. Host-created TypedArray records translate
 all twelve element types, integer-indexed exotic methods, fixed/tracking witnesses
-and buffer-view initialization. TypedArray constructors, prototype methods and
-caged storage remain pending. The LibJS status file records the storage, allocator
-and native binary16 representation boundaries.
+and all four initialization paths. Concrete constructor behavior uses explicit
+prototype dependencies for scalar lengths, iterables, array-like input and
+TypedArray copies; TypedArrayCreate and numeric comparison are also translated.
+The abstract constructor, builtin installation, prototype graph/methods, Uint8Array
+encoding helpers and caged storage remain pending. The LibJS status file records
+the storage, allocator and native binary16 representation boundaries.
 SharedArrayBuffer allocation reserves the maximum capacity while exposing the
 initial length. Its constructor, three accessors, growth hook and species-aware
 slicing are installed and tested with live DataView witnesses. Cross-agent
 shared-memory ordering remains pending, as in the pinned upstream active bodies.
-Its 104 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
+Its 109 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
 match exactly with no case overrides. The complete repository suite passes all
-769 test files, including the native bridge and eleven browser integration files.
+775 test files, including the native bridge and twelve browser integration files.
 The native browser and inline-document layout bridge now prepare page scripts
 through LibJS and associate classic execution with translated Script, Realm,
 and VM embedding contexts. Sources retain their URLs and parse goals; syntax
@@ -938,13 +941,13 @@ bytecode slice without initializing or falling back to JavaScriptCore. Remaining
 bytecode generation, ECMAScript functions, intrinsic/builtin objects, regex
 compilation, module linking, and LibWeb host bindings remain untranslated.
 
-The integration passes the browser package's eleven test files in both GC modes,
+The integration passes the browser package's twelve test files in both GC modes,
 the native bridge tests, the production bundle build and both engine headless
 smoke checks. The function/array refresh also passes all 11 default screenshot cases
 and the pixel-exact same-size SVG source switch. The earlier 25-comparison run
 additionally covered 13 pixel-exact SVG paint-server mutation cases.
 The Boolean/Symbol, construction, iterator, buffer, DataView, SharedArrayBuffer
-and TypedArray record refresh also passes
+and TypedArray record/construction refresh also passes
 `inline-node` and the pixel-exact same-size SVG source-switch comparison after
 rebuilding the bundle.
 
