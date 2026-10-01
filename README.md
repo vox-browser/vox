@@ -47,9 +47,11 @@ creation use explicit intrinsic constructor/prototype dependencies. Primitive
 boxing, GetV, GetMethod and Invoke retain explicit Number/BigInt/String dependencies.
 The abstract TypedArray constructor adds from/of/species. Its shared prototype
 initializer preserves metadata, Array toString identity and the values/@@iterator
-alias through explicit dependencies. Concrete builtin installation, the complete
-intrinsic graph, Object toString, Number/BigInt locale formatting, Uint8Array
-encoding helpers and caged storage remain pending.
+alias through explicit dependencies. All twelve concrete constructor/prototype
+records and Uint8Array's six hex/base64 methods are translated, with 16,470 exact
+codec comparisons against the pinned upstream dependency. Production builtin
+installation, the complete intrinsic graph, Object toString, Number/BigInt locale
+formatting and caged storage remain pending.
 SharedArrayBuffer construction, three accessors, growth and species-aware slicing
 also follow the active upstream bodies, using the existing DataView methods to
 read and write their storage. Cross-agent shared-memory ordering remains pending.

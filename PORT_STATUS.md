@@ -941,17 +941,19 @@ and Invoke with explicit Number/BigInt locale dependencies. All native
 TypedArrayPrototype method bodies are translated. The abstract constructor
 adds from/of/species, while the prototype initializer retains source metadata,
 the shared Array toString identity and the values/@@iterator alias. These records
-use explicit dependencies; concrete builtin installation, the complete intrinsic
-graph, Object toString, Number/BigInt locale formatting, Uint8Array encoding
-helpers and caged storage remain pending. The LibJS status file records the
+use explicit dependencies. All twelve concrete constructor/prototype records and
+Uint8Array's six hex/base64 methods are translated, including 16,470 exact codec
+comparisons against the pinned upstream dependency. Production builtin installation,
+the complete intrinsic graph, Object toString, Number/BigInt locale formatting
+and caged storage remain pending. The LibJS status file records the
 storage, allocator and native binary16 representation boundaries.
 SharedArrayBuffer allocation reserves the maximum capacity while exposing the
 initial length. Its constructor, three accessors, growth hook and species-aware
 slicing are installed and tested with live DataView witnesses. Cross-agent
 shared-memory ordering remains pending, as in the pinned upstream active bodies.
-Its 135 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
+Its 140 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
 match exactly with no case overrides. The complete repository suite passes all
-802 test files, including the native bridge and thirteen browser integration files.
+807 test files, including the native bridge and thirteen browser integration files.
 The native browser and inline-document layout bridge now prepare page scripts
 through LibJS and associate classic execution with translated Script, Realm,
 and VM embedding contexts. Sources retain their URLs and parse goals; syntax

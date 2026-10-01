@@ -84,13 +84,16 @@ creates a realm with a global environment and pushes its execution context.
 | `typed_array_set.v`, `typed_array_locale.v` | TypedArray/array-like set paths, encoding dispatch, and toLocaleString iteration with explicit Number/BigInt locale dependencies |
 | `typed_array_constructor.v` | Abstract TypedArray constructor, from/of/species and exact constructor metadata with explicit prototype dependencies |
 | `array_to_string.v`, `typed_array_prototype.v` | Shared Array/TypedArray toString body and full TypedArray prototype initialization, function metadata and values/@@iterator alias |
+| `options_object.v` | GetOptionsObject's fresh null-prototype defaults, unchanged object receivers and primitive rejection |
+| `uint8_array_bytes.v`, `uint8_array_hex.v`, `uint8_array_base64.v`, `base64_codec.v` | Uint8Array brand/byte operations, all six hex/base64 native bodies and the pinned simdutf codec control flow |
+| `concrete_typed_array.v`, `uint8_array_helpers.v` | All twelve concrete constructor/prototype records, BYTES_PER_ELEMENT, inherited shared statics and Uint8Array helper initialization |
 | `string_length.v` | Upstream maximum string length and checked sum/product operations |
 | `global_numeric_functions.v`, `global_uri_functions.v`, `global_legacy_functions.v` | isFinite/isNaN/parseInt/parseFloat, URI encoding/decoding, and Annex B escape/unescape global functions |
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 127 implementation files contain **26,150 physical V LOC**. The 135 test
-files contain **17,345 physical V LOC** and **491 test functions**. Physical LOC
+The 134 implementation files contain **26,949 physical V LOC**. The 140 test
+files contain **18,171 physical V LOC** and **512 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -511,9 +514,9 @@ through those initializers. Object inputs create their initial record before
 iterator or offset access; iterables are exhausted before element conversion,
 while scalar inputs use ToIndex and the upstream length-RangeError rewrite.
 New-target prototype lookup preserves foreign-realm fallback through an explicit
-IntrinsicPrototypeGetter dependency. These are translated behavior functions;
-the concrete constructors are not installed as builtin globals while their
-concrete prototype graph and Uint8Array encoding methods remain untranslated.
+IntrinsicPrototypeGetter dependency. The concrete constructor/prototype records
+and Uint8Array encoding methods are now translated below; their remaining
+intrinsic dependencies and production global installation are still pending.
 TypedArrayCreate (`749413c`) retains a sole numeric minimum before arbitrary
 construction and validates result brand, bounds and length in source order.
 CompareTypedArrayElements (`e8daaeb`) orders NaNs last and negative zero before
@@ -661,8 +664,47 @@ their source metadata and descriptors, in source order. Its toString property
 retains the supplied Array prototype function identity, and @@iterator retains
 the original values function even after later values replacement. The Object,
 Array, iterator, primitive and concrete TypedArray intrinsic dependencies remain
-explicit. Concrete builtin installation, Uint8Array base64/hex helpers and
-cached caged views remain separate untranslated work; these records are not
+explicit. Concrete records and Uint8Array helpers are translated below; production
+builtin installation and cached caged views remain separate untranslated work.
+
+GetOptionsObject (`2f2343b`) creates a fresh empty null-prototype object for
+undefined, preserves object identity without reading properties, and rejects
+every other primitive without boxing or coercion.
+
+Uint8Array hex operations (`9cf836b`) translate ValidateUint8Array, byte reads
+and writes, FromHex, fromHex/setFromHex/toHex. Decoder records carry their partial
+bytes alongside an optional throw completion. Odd UTF-16 lengths fail before
+destination capacity is considered, while even input is only validated through
+the consumed prefix. setFromHex writes valid prefix bytes at the view's byte
+offset before propagating a later SyntaxError. Static fromHex ignores its native
+receiver and uses the current realm's explicit Uint8Array prototype dependency.
+Hex output uses lowercase digits, live fixed/tracking lengths and shared storage;
+other TypedArray kinds, inherited slots and detached/out-of-bounds views retain
+the source's validation order.
+
+Base64 operations (`a7f0fa3`) translate fromBase64/setFromBase64/toBase64, option
+getter order, exact option validation, padding and all three last-chunk modes.
+Options can resize, detach or restore a view before the fresh buffer witness;
+partial decoded bytes are written before a SyntaxError is propagated. ToBoolean
+of omitPadding does not invoke coercion hooks. AK's simdutf 7.4.0 dependency is
+translated from its scalar codec, safe dispatch wrapper and ARM64 block decoder
+control flow; vector loads/tables use scalar code-unit operations in V. The
+64-code-unit blocks, 576-code flush, padding checks, bad-character retry and
+tail backtracking are retained, including the pinned block path's observable
+trailing-whitespace read count. All **16,470** generated UTF-16 comparisons match
+the installed upstream library's output bytes, decoder status and consumed-input
+count exactly, with no case overrides. The MIT notice is retained under
+`licenses/`. Rebuild those fixtures with `python3 tools/libjs_base64_corpus.py`
+(`41c7df5`), using `--simdutf-prefix` for another installed 7.4.0 dependency.
+Fixtures are checked in; runtime builds and ordinary tests need no simdutf
+library or upstream checkout.
+
+All twelve concrete constructor/prototype records (`8b5ed80`) now follow
+TypedArray.cpp's class macro and Intrinsics constructor finalization. They retain
+BYTES_PER_ELEMENT, length/name descriptors, source property order, shared
+constructor/prototype inheritance and the prototype constructor back-reference.
+Uint8Array's two static and four prototype encoding functions use their source
+metadata and descriptors. Dependencies remain explicit; these records are not
 installed in the production realm or exposed as builtin globals.
 
 Numeric globals follow the upstream coercion order and errors. parseInt preserves
@@ -750,10 +792,10 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 135 passed, 135 total
+# 140 passed, 140 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 135 passed, 135 total
+# 140 passed, 140 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
@@ -768,7 +810,7 @@ v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
 
 v -old-compiler -enable-globals test .
-# 802 passed, 802 total
+# 807 passed, 807 total
 
 ./build_ladybird.sh
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
@@ -792,11 +834,11 @@ fixtures; separate tests exercise translated NativeFunction and ArrayBufferObjec
 records. Module-loading tests write temporary module files. The preceding LibWeb
 work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 135 libjs files are verified separately in both GC modes.
-There are now 802 repository test files.
+this package; the 140 libjs files are verified separately in both GC modes.
+There are now 807 repository test files.
 
-The complete 802-file repository suite passes, including the native bridge,
-thirteen browser integration files and all 135 LibJS files. The dedicated LibJS and
+The complete 807-file repository suite passes, including the native bridge,
+thirteen browser integration files and all 140 LibJS files. The dedicated LibJS and
 browser suites also pass in no-GC mode, exercising the retained storage and
 buffer ownership independently of the collector.
 
@@ -870,6 +912,12 @@ bound construction, shared toString identity, the values/@@iterator alias and
 later-script recovery after abstract-constructor errors. Concrete test records
 and Object/Number/BigInt/String dependencies stay explicitly host-supplied;
 this fixture does not install incomplete builtin globals in production.
+The concrete-record checks (`126b4fb`) now replace those host-written concrete
+constructors/prototypes with translated records, retaining explicit host names
+and Object/Array/Number/BigInt/String intrinsic dependencies. Compiled scripts
+exercise hex/base64 round trips, URL alphabets, omitted padding, capacity limits,
+partial writes before errors, BYTES_PER_ELEMENT, tracking growth, byte offsets,
+detachment and recovery in later scripts without creating a JavaScriptCore context.
 The rebuilt native bundle passes both engine smoke checks and a buffer-regression
 document covering shared BigInt storage, growth, slicing and transferred Float16
 bytes without script errors.
@@ -1022,12 +1070,19 @@ the same-size SVG source switch with zero differing pixels.
   with explicit Number/BigInt/String dependencies; primitive Reference
   integration is pending.
   Number/BigInt toLocaleString and Intl formatting remain untranslated.
-  The abstract TypedArray constructor and shared prototype are now complete
-  records with explicit dependencies. Their creation follows the subclass
+  The abstract and all twelve concrete TypedArray constructors/prototypes are
+  complete records with explicit dependencies. Their creation follows the subclass
   initializer and Intrinsics constructor-name/back-reference steps, without
   installing unfinished concrete globals. Array toString takes an explicit
   retained Object toString intrinsic function, whose tag/IsArray/Proxy dependency
   chain is untranslated. Browser fixtures supply a clearly named host callback.
+- Uint8Array's hex/base64 behavior and helper initialization are translated.
+  GetUint8ArrayBytes and encoding use a copied flat byte snapshot instead of a
+  caged readonly span; concurrent shared-memory semantics remain pending.
+  The base64 backend translates the simdutf 7.4.0 paths used by the pinned
+  macOS upstream build, with scalar operations replacing SIMD/table dispatch.
+  Its output/read/status comparisons are exact against that dependency, rather
+  than a claim of SIMD performance or arbitrary simdutf-version equivalence.
 - `Runtime/Value.cpp` at the pinned upstream revision passes `(target, value)`
   in InstanceofOperator's final no-`@@hasInstance` fallback, although its
   OrdinaryHasInstance helper expects `(value, constructor)`. The translation
@@ -1080,9 +1135,10 @@ complete LibJS runtime migration.
   and toLocaleString also exist with explicit intrinsic dependencies. The
   abstract TypedArray constructor, from/of/species, shared Array toString body
   and shared TypedArray prototype including values/@@iterator exist with
-  explicit dependencies. Concrete builtin installation, its complete intrinsic
-  graph, Object toString/IsArray, Number/BigInt locale builtins and Uint8Array
-  encoding helpers remain untranslated, as do concurrent shared backing stores,
+  explicit dependencies, as do all twelve concrete constructor/prototype records
+  and Uint8Array's six hex/base64 methods. Production builtin installation, its
+  complete intrinsic graph, Object toString/IsArray and Number/BigInt locale
+  builtins remain untranslated, as do concurrent shared backing stores,
   Atomics and caged storage.
   Realms expose four standard value properties, eight numeric/URI functions,
   Boolean/Symbol/ArrayBuffer/DataView/SharedArrayBuffer constructors, and two legacy
