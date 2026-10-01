@@ -22,6 +22,7 @@ pub mut:
 	function_prototype ?&Object // Translated intrinsic; Object prototype graph pending
 	throw_type_error_function ?&Object
 	boolean_prototype ?&Object
+	boolean_constructor ?&Object
 }
 
 pub fn Realm.create() &Realm {
@@ -42,6 +43,10 @@ pub fn (realm &Realm) function_prototype_record() &Object {
 
 pub fn (realm &Realm) boolean_prototype_record() &Object {
 	return realm.boolean_prototype or { panic('Realm has no Boolean prototype yet') }
+}
+
+pub fn (realm &Realm) boolean_constructor_record() &Object {
+	return realm.boolean_constructor or { panic('Realm has no Boolean constructor yet') }
 }
 
 pub fn (mut realm Realm) set_global_environment(environment &GlobalEnvironment) {
@@ -72,6 +77,12 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	prototype_object.add_restricted_function_properties(thrower)
 	boolean_prototype := BooleanPrototype.create(mut vm, realm, none)
 	realm.boolean_prototype = boolean_prototype.object
+	boolean_constructor := BooleanConstructor.create(mut vm, realm)
+	realm.boolean_constructor = boolean_constructor.object
+	// Intrinsics.cpp::initialize_constructor installs the companion back-reference.
+	mut boolean_prototype_object := boolean_prototype.object
+	boolean_prototype_object.define_direct_property(PropertyName.from_str('constructor'),
+		Value.from_object(boolean_constructor.object), attribute_writable | attribute_configurable)
 	// 4. Set realm.[[GlobalObject]] to undefined.
 	// 5. Set realm.[[GlobalEnv]] to undefined.
 	// 7. Let newContext be a new execution context.
@@ -110,6 +121,10 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	set_default_global_numeric_functions(mut vm, realm)
 	set_default_global_uri_functions(mut vm, realm)
 	set_default_global_value_bindings(realm)
+	// GlobalObject.cpp installs intrinsic constructor properties after values.
+	// Eager materialization replaces the engine-private intrinsic accessor map.
+	global.define_direct_property(PropertyName.from_str('Boolean'),
+		Value.from_object(realm.boolean_constructor_record()), attribute_writable | attribute_configurable)
 	set_default_global_legacy_functions(mut vm, realm)
 	// 19. Create any host-defined global object properties on global.
 	// 20. Return unused.
