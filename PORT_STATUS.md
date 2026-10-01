@@ -927,6 +927,11 @@ includes/indexOf/lastIndexOf, reverse and sort through the primitive boxing
 boundary. Callback bodies add every/some/forEach, the four predicate searches,
 reduce/reduceRight and entries/keys/values. They retain snapshot traversal lengths,
 live element reads, argument-presence errors and explicit iterator dependencies.
+copyWithin preserves bit encodings across overlapping byte copies; fill retains
+ordered numeric conversion, fresh bounds and the chunked integer path. join
+assembles exact UTF-16 fields from live elements after separator conversion.
+TypedArrayCreateSameType and toReversed/toSorted/with create independent results
+through explicit current-realm intrinsic constructor dependencies.
 The abstract constructor, builtin installation, remaining prototype
 methods, Uint8Array encoding helpers and caged storage remain pending. The LibJS
 status file records the storage, allocator and native binary16 representation
@@ -935,9 +940,9 @@ SharedArrayBuffer allocation reserves the maximum capacity while exposing the
 initial length. Its constructor, three accessors, growth hook and species-aware
 slicing are installed and tested with live DataView witnesses. Cross-agent
 shared-memory ordering remains pending, as in the pinned upstream active bodies.
-Its 119 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
+Its 125 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
 match exactly with no case overrides. The complete repository suite passes all
-786 test files, including the native bridge and thirteen browser integration files.
+792 test files, including the native bridge and thirteen browser integration files.
 The native browser and inline-document layout bridge now prepare page scripts
 through LibJS and associate classic execution with translated Script, Realm,
 and VM embedding contexts. Sources retain their URLs and parse goals; syntax

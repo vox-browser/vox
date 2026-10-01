@@ -76,12 +76,15 @@ creates a realm with a global environment and pushes its execution context.
 | `typed_array_construction.v`, `typed_array_create.v`, `typed_array_compare.v` | Concrete constructor behavior with explicit intrinsic dependencies, TypedArrayCreate result validation and CompareTypedArrayElements |
 | `typed_array_receiver.v`, `typed_array_access.v`, `typed_array_search.v`, `typed_array_order.v` | TypedArray receiver conversion, four branded accessors, at, @@toStringTag, includes/indexOf/lastIndexOf, reverse and sort with explicit primitive dependencies |
 | `typed_array_callbacks.v`, `typed_array_find.v`, `typed_array_reduce.v`, `typed_array_iterators.v` | every/some/forEach, FindViaPredicate and four predicate searches, reduce/reduceRight and entries/keys/values with explicit iterator dependencies |
+| `typed_array_copy_within.v`, `typed_array_fill.v`, `typed_array_join.v` | Bit-preserving overlapping copies, numeric fill with chunked integer writes, and UTF-16 join with live element reads |
+| `typed_array_same_type.v`, `typed_array_copying.v` | TypedArrayCreateSameType with explicit intrinsic lookup, toReversed/toSorted/with and independent result storage |
+| `string_length.v` | Upstream maximum string length and checked sum/product operations |
 | `global_numeric_functions.v`, `global_uri_functions.v`, `global_legacy_functions.v` | isFinite/isNaN/parseInt/parseFloat, URI encoding/decoding, and Annex B escape/unescape global functions |
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 111 implementation files contain **25,187 physical V LOC**. The 119 test
-files contain **14,385 physical V LOC** and **438 test functions**. Physical LOC
+The 117 implementation files contain **25,482 physical V LOC**. The 125 test
+files contain **15,328 physical V LOC** and **455 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -555,12 +558,42 @@ Array records and permanent exhaustion. The ArrayIterator prototype dependency
 is explicit; the values/@@iterator alias belongs to the pending intrinsic
 installation.
 
+copyWithin (`e74332a`) retains ordered index conversion, the original relative
+index basis and a fresh witness before a nonempty copy. Shrinking limits the
+copy to its longest live prefix; an empty copy skips revalidation. Non-shared
+storage uses DataBlock move_data through the translated ArrayBuffer forwarding
+method, while shared storage preserves the source's forward/backward byte loop.
+Both paths preserve NaN payloads and all other source bits.
+
+fill (`d877f4e`) converts its numeric value before start and end, then revalidates
+even an empty range. Its integer fast path retains 256-byte ordinary-buffer
+chunks and per-element shared-buffer writes; other kinds retain numeric indexed
+Set. Fractional clamping, BigInt conversion, signed zero, inverted ranges and
+resizing keep their upstream behavior.
+
+join (`475271a`) converts its separator even for empty views, retains the initial
+length and reads live elements after conversion. Invalid indices become empty
+fields without a second validation. UTF-16 assembly preserves unpaired separator
+surrogates and exact BigInt text. Checked string length arithmetic (`d61447e`)
+uses the upstream unsigned-32-bit maximum and size_t overflow errors; the join
+builder additionally checks V's signed-int storage capacity as described below.
+
+TypedArrayCreateSameType (`abf80bf`) selects the current realm's concrete intrinsic
+from the exemplar's kind through an explicit constructor getter, then delegates
+result validation to TypedArrayCreate. It does not read constructor or species
+properties. toReversed/toSorted/with (`046c2c1`) retain numeric Get/Set copies into
+independent fixed storage. toSorted allocates before reading/comparing the input
+and writes its stable numeric snapshot only after comparison succeeds. with
+converts index and value before live-index validation, then copies the captured
+length. A value conversion that grows the view may validate an index beyond
+that captured length, leaving the result without a replacement, as in upstream.
+
 Factories and these native behavior functions still receive explicit prototype
-dependencies. The abstract TypedArray constructor, intrinsic graph, remaining
-prototype methods, Uint8Array base64/hex helpers, TypedArrayCreateSameType and
-cached caged views remain separate untranslated work.
-The remaining TypedArrayPrototype native bodies are copyWithin, fill, filter,
-join, map, set, slice, subarray, toLocaleString, toReversed, toSorted and with.
+and constructor dependencies. The abstract TypedArray constructor, intrinsic
+graph, remaining prototype methods, Uint8Array base64/hex helpers and cached
+caged views remain separate untranslated work.
+The remaining TypedArrayPrototype native bodies are filter, map, set, slice,
+subarray and toLocaleString.
 Prototype installation also requires the shared Array toString body and the
 values/@@iterator alias, with upstream property order and metadata.
 
@@ -649,10 +682,10 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 119 passed, 119 total
+# 125 passed, 125 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 119 passed, 119 total
+# 125 passed, 125 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
@@ -667,7 +700,7 @@ v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
 
 v -old-compiler -enable-globals test .
-# 786 passed, 786 total
+# 792 passed, 792 total
 
 ./build_ladybird.sh
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
@@ -691,11 +724,11 @@ fixtures; separate tests exercise translated NativeFunction and ArrayBufferObjec
 records. Module-loading tests write temporary module files. The preceding LibWeb
 work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 119 libjs files are verified separately in both GC modes.
-There are now 786 repository test files.
+this package; the 125 libjs files are verified separately in both GC modes.
+There are now 792 repository test files.
 
-The complete 786-file repository suite passes, including the native bridge,
-thirteen browser integration files and all 119 LibJS files. The dedicated LibJS and
+The complete 792-file repository suite passes, including the native bridge,
+thirteen browser integration files and all 125 LibJS files. The dedicated LibJS and
 browser suites also pass in no-GC mode, exercising the retained storage and
 buffer ownership independently of the collector.
 
@@ -749,6 +782,11 @@ exact BigInt reductions, shrinking callbacks, abrupt completions and later-scrip
 recovery. Compiled entries/keys/values calls exercise branded next, entry-pair
 Arrays, live growth, bounds-error recovery and permanent exhaustion. ECMAScript
 function bytecode and the builtin TypedArray graph remain pending.
+The filling/copying integration checks (`5116a3e`) execute fill, copyWithin, join,
+toReversed, toSorted and with through test-only host prototypes and same-type
+constructor dependencies. They verify independent results, exact BigInt sorting
+and replacement, bound comparators, separator-induced shrinkage, coercion errors
+and recovery without creating a JavaScriptCore context.
 The rebuilt native bundle passes both engine smoke checks and a buffer-regression
 document covering shared BigInt storage, growth, slicing and transferred Float16
 bytes without script errors.
@@ -837,6 +875,10 @@ the same-size SVG source switch with zero differing pixels.
   substring cells. The VM-less descriptor API bypasses the VM's creation cache;
   string SameValue still compares the exact UTF-16 contents. StringCreate requires
   an explicit prototype while the String intrinsic graph remains pending.
+- Checked string length sum/product retain upstream's 2^32-1 code-unit maximum.
+  TypedArray join assembles flat V UTF-16 arrays instead of AK's builder and
+  throws the same string-size RangeError above V's 2^31-1 array capacity before
+  an append can overflow that representation.
 - Iterator records and result variants use V heap records and explicit done
   flags. Intrinsic parents are supplied by callers; no Iterator/Object/Array
   prototype substitute is installed. Synchronous acquisition currently accepts
@@ -930,11 +972,12 @@ complete LibJS runtime migration.
   exist with explicit Number/BigInt/String prototype dependencies; their primitive
   Reference/GetV integration and builtin constructors/prototypes remain pending.
   TypedArray's four accessors, at, @@toStringTag, three indexed search methods,
-  reverse, sort, every/some/forEach, four predicate searches, reduce/reduceRight
-  and entries/keys/values also exist as native behavior functions. The abstract
-  TypedArray constructor, concrete builtin installation, prototype graph and remaining
-  methods, TypedArrayCreateSameType and Uint8Array encoding helpers remain
-  untranslated, as do concurrent shared backing stores, Atomics and caged storage.
+  reverse, sort, every/some/forEach, four predicate searches, reduce/reduceRight,
+  entries/keys/values, copyWithin, fill, join, toReversed/toSorted/with and
+  TypedArrayCreateSameType also exist with explicit intrinsic dependencies. The
+  abstract TypedArray constructor, concrete builtin installation, prototype graph,
+  remaining methods and Uint8Array encoding helpers remain untranslated, as do
+  concurrent shared backing stores, Atomics and caged storage.
   Realms expose four standard value properties, eight numeric/URI functions,
   Boolean/Symbol/ArrayBuffer/DataView/SharedArrayBuffer constructors, and two legacy
   functions on an ordinary global object. Default native globals inherit the

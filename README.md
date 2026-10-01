@@ -41,7 +41,9 @@ explicit prototype dependencies. Result creation/validation and numeric sorting
 comparison follow upstream. Native behavior functions now cover its four branded
 accessors, at, @@toStringTag, includes/indexOf/lastIndexOf, reverse and numeric
 sort, every/some/forEach, the four predicate searches, reduce/reduceRight and
-entries/keys/values. They use translated primitive boxing with explicit
+entries/keys/values, copyWithin, fill, join, toReversed/toSorted and with.
+Same-type result creation uses an explicit intrinsic constructor dependency.
+They use translated primitive boxing with explicit
 Number/BigInt/String prototype dependencies. The abstract TypedArray constructor, builtin installation,
 remaining prototype methods, Uint8Array encoding helpers and caged storage remain
 pending.
