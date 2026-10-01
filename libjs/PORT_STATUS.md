@@ -10,7 +10,7 @@ AST, and scope collector for the frontend, and its C++ `Runtime/VM.{h,cpp}`,
 `Interpreter/Interpreter.cpp` VM members, and runtime records for the VM slice.
 The execution slice additionally follows `Rust/src/bytecode/{operand,generator,codegen}.rs`,
 `Interpreter/{interpreter.flap,SlowPaths.cpp}`, `Script.cpp`,
-`Runtime/{Value,GlobalObject,BigInt,NativeFunction,FunctionObject,BoundFunction,FunctionPrototype,BooleanObject,BooleanPrototype,BooleanConstructor,SymbolObject,SymbolPrototype,SymbolConstructor,StringObject,NumberObject,BigIntObject,Iterator,StringIterator,StringIteratorPrototype,ArrayIterator,ArrayIteratorPrototype,ByteLength,ArrayBuffer,ArrayBufferConstructor,ArrayBufferPrototype,DataView,DataViewConstructor,DataViewPrototype,SharedArrayBufferConstructor,SharedArrayBufferPrototype,CanonicalIndex,TypedArray,TypedArrayPrototype,Intrinsics,Array,ArrayPrototype,IndexedProperties,PropertyKey,Object,ObjectPrototype,ReflectObject,PrimitiveString,Accessor,PropertyDescriptor,AbstractOperations}`
+`Runtime/{Value,GlobalObject,BigInt,BigIntConstructor,BigIntPrototype,NativeFunction,FunctionObject,BoundFunction,FunctionPrototype,BooleanObject,BooleanPrototype,BooleanConstructor,SymbolObject,SymbolPrototype,SymbolConstructor,StringObject,NumberObject,BigIntObject,Iterator,StringIterator,StringIteratorPrototype,ArrayIterator,ArrayIteratorPrototype,ByteLength,ArrayBuffer,ArrayBufferConstructor,ArrayBufferPrototype,DataView,DataViewConstructor,DataViewPrototype,SharedArrayBufferConstructor,SharedArrayBufferPrototype,CanonicalIndex,TypedArray,TypedArrayPrototype,Intrinsics,Array,ArrayPrototype,IndexedProperties,PropertyKey,Object,ObjectPrototype,ReflectObject,PrimitiveString,Accessor,PropertyDescriptor,AbstractOperations}`
 source bodies and `Runtime/ValueInlines.h`, numeric/URI/Annex B global functions
 from `Runtime/GlobalObject.cpp`,
 `AK/StringConversions.cpp` and fast_float decimal-prefix parsing, and the BigInt
@@ -53,6 +53,8 @@ creates a realm with a global environment and pushes its execution context.
 | `error_object.v`, `error_types.v` | Error objects with `[[ErrorData]]` tracebacks and stack strings; the 226-entry `ErrorType` message table |
 | `realm.v`, `script.v`, `module_records.v`, `promise.v`, `function_object.v`, `executable.v` | Realm and Script records, standard global value properties, `Module` records and loading payloads, promise state, job callbacks, executable metadata (handler ranges, source map, identifier table) |
 | `value_operations.v`, `value_coercion.v`, `big_int.v` | Numeric operations, BigInt cells and conversions, signed bitwise operations, exact mixed numeric comparisons, UTF-16 concatenation, ToPrimitive/OrdinaryToPrimitive and property-key conversion |
+| `bigint_width.v`, `bigint_constructor.v` | BigInt constructor record, number-hint call/throwing construction, asIntN/asUintN and translated width arithmetic helpers |
+| `bigint_prototype_methods.v`, `bigint_locale.v`, `bigint_prototype.v` | BigInt brand/radix/valueOf bodies, locale-call plumbing with explicit Intl dependencies, and complete prototype initialization |
 | `value_indices.v`, `array_like.v`, `instanceof.v` | ToIntegerOrInfinity/ToLength/ToIndex, LengthOfArrayLike/CreateListFromArrayLike, OrdinaryHasInstance and InstanceofOperator |
 | `object_coercible.v`, `immutable_prototype.v`, `object_prototype_methods.v`, `object_prototype_accessors.v`, `object_prototype_proto.v` | RequireObjectCoercible, SetImmutablePrototype and eleven ObjectPrototype native bodies with explicit primitive dependencies; ObjectPrototype initialization and toString remain pending |
 | `reflect_properties.v`, `reflect_prototypes.v`, `reflect_calls.v`, `reflect_own_keys.v`, `reflect_object.v` | All thirteen Reflect native bodies and complete initialization, PropertyKey-to-Value conversion, explicit Object/Array intrinsic dependencies |
@@ -94,8 +96,8 @@ creates a realm with a global environment and pushes its execution context.
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 144 implementation files contain **27,308 physical V LOC**. The 150 test
-files contain **19,498 physical V LOC** and **546 test functions**. Physical LOC
+The 149 implementation files contain **27,563 physical V LOC**. The 155 test
+files contain **20,251 physical V LOC** and **563 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -244,8 +246,23 @@ comparison extracts IEEE-754 words without rounding the BigInt through Number.
 Literal readers preserve radix prefixes and numeric separators; updates retain
 BigInt type. V `math.big` supplies storage and basic arithmetic instead of
 LibCrypto's LibTomMath substrate. The signed bitwise conversion loops and double
-extraction follow the upstream dependency bodies. This does not translate the
-BigInt constructor/prototype, LibCrypto as a whole, or external-memory accounting.
+extraction follow the upstream dependency bodies. LibCrypto as a whole and
+external-memory accounting remain untranslated.
+
+BigInt constructor/prototype records now retain source initialization order,
+metadata and constructor back-reference. The constructor applies ToPrimitive
+with the number hint once, accepts integral Numbers through NumberToBigInt,
+and otherwise uses ToBigInt. Its pinned IsConstructor result is true while
+[[Construct]] immediately throws, without coercion or newTarget.prototype reads.
+asIntN/asUintN coerce the width before the integer, retain signed-boundary and
+huge-width fast paths, and expose the source InternalError for width overflow.
+The prototype is an ordinary object without BigIntData. toString and valueOf
+accept only BigInt primitives or real wrappers; radix conversion follows the
+brand check and formatting emits lowercase digits without a literal suffix.
+The locale native body forwards both original arguments to the retained current-
+realm NumberFormat constructor and the exact BigInt cell to FormatNumeric.
+Object and Intl dependencies are explicit: no replacement locale formatter or
+production BigInt global is installed, and Intl formatting remains untranslated.
 
 `NativeFunction.create()` retains a capturing V callback; `create_raw()` uses the
 VM's typed native function table. Both install `name`/`length` metadata and enter
@@ -309,9 +326,10 @@ Description distinguishes undefined from empty and preserves every UTF-16 unit.
 Symbol calls create unique identities; Symbol.for/keyFor use the VM-wide registry
 shared by realms, and all 16 pinned well-known symbols have fixed static descriptors.
 The pinned source gives Symbol a constructor internal method that always throws
-without converting its argument; this behavior is preserved. Number/BigInt
-wrappers and prototypes, String's constructor/prototype, and the Object prototype
-graph remain pending.
+without converting its argument; this behavior is preserved. Number and String
+constructor/prototype records and the Object prototype graph remain pending.
+Number/BigInt wrappers are translated; BigInt constructor/prototype records now
+exist with explicit Object/Intl dependencies rather than production globals.
 
 StringObject translates StringCreate and the string exotic property methods
 (`c17ed07`). Each character descriptor contains exactly one UTF-16 code unit,
@@ -531,8 +549,8 @@ five primitive types, returns object inputs unchanged and preserves nullish
 TypeErrors. Number, BigInt and String prototype getters remain explicit
 embedding dependencies. GetV and Invoke (`a21fead`) preserve the active primitive
 prototype optimization, accessor receivers and call arguments through those
-dependencies. Their builtin constructors/prototypes and primitive Reference
-integration remain pending.
+dependencies. Number/String constructor/prototype records and primitive Reference
+integration remain pending; BigInt records exist with explicit Object/Intl dependencies.
 GetMethod (`9bfb266`) now follows that same primitive boundary, preserving
 getter receivers, nullish missing methods, callable native/bound identities and
 NotAFunction errors. String iteration still needs its builtin prototype and
@@ -736,6 +754,31 @@ explicit Number/BigInt/String prototype dependencies. Object toString's complete
 IsArray/Proxy, mapped-arguments, Date and RegExp dependency chain is untranslated;
 no replacement tag implementation or partial production Object intrinsic is added.
 
+BigInt width methods and their numeric helpers (`ebdcf2f`) follow the native
+asIntN/asUintN bodies, LibCrypto modulo/complement control flow and LibTomMath
+1.3.0's magnitude-digit truncation. Tests cover byte/word boundaries, upstream
+large integer fixtures, zero-width conversion, source fast-path cell identity,
+16,384-bit negative conversion and huge-width OOM behavior. The invalid-string
+conversion error now preserves upstream unquoted contents (`056b036`).
+
+BigInt prototype brand/radix/valueOf bodies (`4f8ecb8`) accept primitive cells
+and real BigIntObject payloads without inherited branding or receiver coercion.
+Brand validation precedes radix conversion, all 35 supported radices retain
+lowercase digits, and valueOf ignores arguments and preserves cell identity.
+The constructor record (`6b61e57`) retains metadata, both static methods, the
+non-writable prototype and constructor back-reference. Its call converts once
+with the number hint; construction rejects before coercion or prototype reads.
+
+The locale-call body (`0d07d1a`) retains explicit NumberFormat constructor and
+FormatNumeric dependencies, forwarding locales/options unchanged and preserving
+the original BigInt cell and returned UTF-16. Tests exercise only that plumbing;
+Intl NumberFormat and locale formatting remain untranslated. Full prototype
+initialization (`24f70bd`) preserves source method order and @@toStringTag, with
+no BigIntData slot on the prototype itself. Object/Intl dependencies remain
+explicit and the records are not installed in the production global graph.
+The wrapper, constructor and prototype preserve the upstream GC_CELL diagnostic
+class names (`5d37b0c`), including errors when a noncallable prototype is invoked.
+
 Reflect property bodies (`5f4813e`) translate defineProperty/deleteProperty/get,
 getOwnPropertyDescriptor/has/set. Target-object validation precedes key conversion;
 defineProperty converts the descriptor only after the key. Rejected definitions,
@@ -854,25 +897,25 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 150 passed, 150 total
+# 155 passed, 155 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 150 passed, 150 total
+# 155 passed, 155 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
 
 v -old-compiler -enable-globals test browserjs
-# 15 passed, 15 total
+# 16 passed, 16 total
 
 v -old-compiler -enable-globals -gc none test browserjs
-# 15 passed, 15 total
+# 16 passed, 16 total
 
 v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
 
 v -old-compiler -enable-globals test .
-# 819 passed, 819 total
+# 825 passed, 825 total
 
 ./build_ladybird.sh
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
@@ -896,15 +939,15 @@ fixtures; separate tests exercise translated NativeFunction and ArrayBufferObjec
 records. Module-loading tests write temporary module files. The preceding LibWeb
 work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 150 libjs files are verified separately in both GC modes.
-There are now 819 repository test files.
+this package; the 155 libjs files are verified separately in both GC modes.
+There are now 825 repository test files.
 
-The complete 819-file repository suite passes, including the native bridge,
-fifteen browser integration files and all 150 LibJS files. The dedicated LibJS and
+The complete 825-file repository suite passes, including the native bridge,
+sixteen browser integration files and all 155 LibJS files. The dedicated LibJS and
 browser suites also pass in no-GC mode, exercising the retained storage and
 buffer ownership independently of the collector.
 
-Browser integration checks pass the fifteen `browserjs` test files in both GC modes,
+Browser integration checks pass the sixteen `browserjs` test files in both GC modes,
 the native `main_test.v` bridge and flag tests, the production bundle build,
 JavaScriptCore DOM-mutation/click smoke, and LibJS bytecode smoke. Native
 LibJS fixtures also verify bound calls/construction, Boolean and Symbol methods,
@@ -994,6 +1037,13 @@ explicit receivers, key-array ordering, prototype changes, extensibility, bound
 apply and native construct. Boolean failure results and per-script TypeErrors leave
 later scripts runnable. No JavaScriptCore context is created, and no incomplete
 Reflect global is installed in the production realm.
+BigInt browser integration (`ab034e7`) supplies the actual translated constructor
+and prototype under test-only host names, with an explicit Object parent and a
+clearly marked Intl plumbing fixture. Compiled calls exercise constructor
+coercion, both width methods, boxed toString/valueOf, bound natives, metadata,
+large exact integers and recovery from constructor, radix, brand and OOM errors.
+The fixture creates no JavaScriptCore context and does not claim Intl formatting
+or install an incomplete production BigInt global.
 The rebuilt native bundle passes both engine smoke checks and a buffer-regression
 document covering shared BigInt storage, growth, slicing and transferred Float16
 bytes without script errors.
@@ -1016,6 +1066,16 @@ the same-size SVG source switch with zero differing pixels.
 
 - `Value` keeps an explicit tag next to its payload instead of NaN-boxing.
   BigInt uses V arbitrary-precision storage; accessor cells are V heap records.
+- BigInt width helpers retain the pinned arm64 LibTomMath 60-bit used-digit
+  fast-path bound, while modulo digit clearing uses 8-bit magnitude bytes and
+  complement/radix operations use the existing V arithmetic substrate. Widths
+  above INT_MAX follow LibCrypto's ENOMEM branch and the preallocated VM error;
+  ordinary substrate allocations still use V's nonrecoverable allocator behavior.
+  Radix formatting retains LibCrypto's zero and lowercase UTF-16 output paths.
+  The constructor/prototype records require an explicit Object parent and
+  retained NumberFormat/FormatNumeric operations; no host formatter replaces
+  untranslated Intl logic in the production realm. Utf16String's record type is
+  public for those operation signatures while its storage remains private.
 - There is no process-wide `VM::the()` singleton or one-VM-per-process guard;
   every record that needs the VM receives it explicitly, and private environment
   ids are handed out by the VM instead of a static counter.
@@ -1145,7 +1205,8 @@ the same-size SVG source switch with zero differing pixels.
   GetV, GetMethod and Invoke expose the translated primitive-prototype lookup
   with explicit Number/BigInt/String dependencies; primitive Reference
   integration is pending.
-  Number/BigInt toLocaleString and Intl formatting remain untranslated.
+  Number toLocaleString and Intl formatting remain untranslated; BigInt's locale
+  native body retains explicit NumberFormat/FormatNumeric dependencies.
   The abstract and all twelve concrete TypedArray constructors/prototypes are
   complete records with explicit dependencies. Their creation follows the subclass
   initializer and Intrinsics constructor-name/back-reference steps, without
@@ -1201,9 +1262,12 @@ complete LibJS runtime migration.
   and packed interpreter bytecode remain pending. The current instruction loop
   and declaration-instantiation path cover only the supported slice above.
 - The remaining Intrinsics prototype graph, global entries (including eval),
-  builtin constructors and prototypes beyond Boolean, Symbol, ArrayBuffer,
-  DataView and SharedArrayBuffer, ECMAScript function objects, other intrinsic
-  accessors, proxies, and BigInt constructor/prototype methods remain untranslated.
+  ECMAScript function objects, Number/String/Array and most other builtin
+  constructor/prototype records, other intrinsic accessors and proxies remain
+  untranslated. Production builtin installation currently includes Boolean,
+  Symbol, ArrayBuffer, DataView and SharedArrayBuffer. BigInt constructor/prototype
+  records and all native bodies exist with explicit Object/Intl dependencies;
+  production installation and Intl formatting remain pending.
   String exotic records, synchronous iterator operations, and
   String/Array iterator next prototypes exist with explicit intrinsic
   dependencies. Array sorting helpers and exotic records exist, but Array/String
@@ -1216,7 +1280,8 @@ complete LibJS runtime migration.
   TypedArrayCreate, numeric comparison and iterator next exist with explicit
   prototype dependencies. Number/BigInt wrapper records and primitive ToObject
   exist with explicit Number/BigInt/String prototype dependencies; their primitive
-  Reference integration and builtin constructors/prototypes remain pending;
+  Reference integration remains pending; Number/String constructors/prototypes
+  are untranslated and BigInt global installation awaits its Object/Intl graph;
   GetV, GetMethod and Invoke exist with explicit intrinsic dependencies.
   TypedArray's four accessors, at, @@toStringTag, three indexed search methods,
   reverse, sort, every/some/forEach, four predicate searches, reduce/reduceRight,
@@ -1228,8 +1293,8 @@ complete LibJS runtime migration.
   explicit dependencies, as do all twelve concrete constructor/prototype records
   and Uint8Array's six hex/base64 methods. Production builtin installation, its
   complete intrinsic graph, ObjectPrototype initialization and toString/IsArray,
-  and Number/BigInt locale builtins remain untranslated, as do concurrent shared
-  backing stores, Atomics and caged storage. ReflectObject's complete record and
+  and Number locale builtins/Intl formatting remain untranslated, as do concurrent
+  shared backing stores, Atomics and caged storage. ReflectObject's complete record and
   all thirteen native bodies exist with explicit Object/Array dependencies;
   production global installation and Proxy internal methods remain pending.
   Realms expose four standard value properties, eight numeric/URI functions,

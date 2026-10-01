@@ -896,6 +896,13 @@ Number/BigInt wrapper records and all primitive ToObject cases are translated
 with explicit Number/BigInt/String prototype dependencies. Their builtin graphs
 and primitive Reference integration remain pending. GetV, GetMethod and Invoke are
 translated with explicit intrinsic prototype dependencies.
+BigInt's complete constructor/prototype records retain one number-hint
+conversion, source metadata, throwing construction, asIntN/asUintN width and
+OOM behavior, and branded radix formatting/valueOf. Its locale native body
+preserves NumberFormat construction and FormatNumeric forwarding through explicit
+Intl dependencies. Object/Intl graph integration and production BigInt global
+installation remain pending; the browser tests exercise the records under test
+host names without supplying replacement locale formatting.
 ObjectPrototype's eleven native bodies now translate own/enumerable and prototype
 membership, valueOf/toLocaleString, Annex B accessor definition/lookup and __proto__
 reads/writes, preserving source coercion order and existing opposite callbacks.
@@ -966,9 +973,9 @@ SharedArrayBuffer allocation reserves the maximum capacity while exposing the
 initial length. Its constructor, three accessors, growth hook and species-aware
 slicing are installed and tested with live DataView witnesses. Cross-agent
 shared-memory ordering remains pending, as in the pinned upstream active bodies.
-The LibJS package's 150 test files pass in both GC and no-GC mode, and all 100
+The LibJS package's 155 test files pass in both GC and no-GC mode, and all 100
 upstream AST fixtures match exactly with no case overrides. The complete repository suite passes all
-819 test files, including the native bridge and fifteen browser integration files.
+825 test files, including the native bridge and sixteen browser integration files.
 The native browser and inline-document layout bridge now prepare page scripts
 through LibJS and associate classic execution with translated Script, Realm,
 and VM embedding contexts. Sources retain their URLs and parse goals; syntax
@@ -980,7 +987,7 @@ bytecode slice without initializing or falling back to JavaScriptCore. Remaining
 bytecode generation, ECMAScript functions, intrinsic/builtin objects, regex
 compilation, module linking, and LibWeb host bindings remain untranslated.
 
-The integration passes the browser package's fifteen test files in both GC modes,
+The integration passes the browser package's sixteen test files in both GC modes,
 the native bridge tests, the production bundle build and both engine headless
 smoke checks. The function/array refresh also passes all 11 default screenshot cases
 and the pixel-exact same-size SVG source switch. The earlier 25-comparison run

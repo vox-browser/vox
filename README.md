@@ -22,6 +22,9 @@ native and bound calls and construction, and `instanceof`. Function prototype me
 URI, and legacy escaping globals execute through translated native functions.
 Boolean and Symbol wrappers, prototypes, and globals retain primitive receiver
 identity; Boolean construction and Symbol's registry methods follow upstream.
+BigInt constructor/prototype records translate number-hint coercion, asIntN/asUintN,
+branded toString/valueOf and locale-call plumbing. Their Object parent and Intl
+formatting remain explicit dependencies; production global installation is pending.
 Host-created Array records implement sparse length/property behavior, and the
 runtime provides the upstream sorting helpers. Host-created String objects
 expose fixed UTF-16 character descriptors. Synchronous iterator operations and
