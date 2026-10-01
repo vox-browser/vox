@@ -1,7 +1,8 @@
 module libjs
 
-// Utf16String wraps []u16 to provide UTF-16 string functionality.
-struct Utf16String {
+// Utf16String wraps []u16 to provide UTF-16 string functionality. Public
+// intrinsic-operation dependencies can return it without exposing its storage.
+pub struct Utf16String {
 mut:
 	data []u16
 }
