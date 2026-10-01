@@ -7,6 +7,20 @@ fn bigint_value(text string) Value {
 	return Value.from_bigint(string_to_bigint(utf16_string(text)) or { panic(text) })
 }
 
+fn test_bigint_invalid_string_error_uses_upstream_unquoted_value_formatting() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	for text in ['foo', '123n', '1+1', '0xg', '"quoted"', 'first\nsecond'] {
+		value := Value.from_string(vm.create_string_from_str(text))
+		if _ := value.to_bigint(mut vm) {
+			assert false
+		} else {
+			assert thrown_value(err).as_object().error_kind()? == .syntax_error
+			assert thrown_value(err).as_object().error_message()?.str() == 'Invalid value for BigInt: ${text}'
+		}
+	}
+}
+
 fn test_bigint_string_conversion_matches_upstream_prefix_and_utf16_regressions() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)

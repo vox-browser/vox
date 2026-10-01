@@ -102,7 +102,10 @@ pub fn (value Value) to_bigint(mut vm VM) !&BigInt {
 		}
 		.string {
 			return string_to_bigint(primitive.as_string().utf16) or {
-				return vm.throw_error_type(.syntax_error, .big_int_invalid_value, primitive.str())
+				// Value's upstream error formatter uses the primitive string's
+				// contents, without the quotes in our diagnostic Value.str().
+				return vm.throw_error_type(.syntax_error, .big_int_invalid_value,
+					primitive.as_string().str())
 			}
 		}
 		else {
