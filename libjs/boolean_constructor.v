@@ -9,11 +9,13 @@ pub:
 }
 
 pub fn BooleanConstructor.create(mut vm VM, realm &Realm) &BooleanConstructor {
-	function := NativeFunction.create_constructor(mut vm, realm, realm.function_prototype,
-		boolean_constructor_call, boolean_constructor_construct, 1, PropertyName.from_str('Boolean'))
+	function := NativeFunction.create_constructor_record(mut vm, realm, realm.function_prototype,
+		boolean_constructor_call, boolean_constructor_construct, PropertyName.from_str('Boolean'))
 	mut object := function.object
 	object.define_direct_property(PropertyName.from_str('prototype'),
 		Value.from_object(realm.boolean_prototype_record()), 0)
+	object.set_function_length(1)
+	object.set_function_name(mut vm, PropertyName.from_str('Boolean'), none)
 	return &BooleanConstructor{object: object}
 }
 

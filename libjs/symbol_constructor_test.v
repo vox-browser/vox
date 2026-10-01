@@ -15,6 +15,10 @@ fn test_symbol_constructor_metadata_links_static_methods_and_well_known_symbols(
 	assert constructor.get(mut vm, PropertyName.from_str('length'))!.number == 0
 	assert constructor.internal_get_prototype_of()? == realm.function_prototype_record()
 	assert Value.from_object(constructor).is_constructor() // pinned upstream has_constructor()
+	mut expected_keys := ['prototype', 'for', 'keyFor']
+	expected_keys << well_known_symbol_names
+	expected_keys << ['length', 'name']
+	assert constructor.own_property_keys().map(it.str()) == expected_keys
 	prototype_descriptor := constructor.internal_get_own_property(PropertyName.from_str('prototype'))?
 	assert prototype_descriptor.value?.as_object() == prototype
 	assert !prototype_descriptor.writable? && !prototype_descriptor.configurable? && !prototype_descriptor.enumerable?

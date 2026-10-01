@@ -10,6 +10,7 @@ fn test_boolean_constructor_links_intrinsics_and_defines_standard_global_descrip
 	prototype := realm.boolean_prototype_record()
 	assert constructor.internal_get_prototype_of()? == realm.function_prototype_record()
 	assert Value.from_object(constructor).is_constructor()
+	assert constructor.own_property_keys().map(it.str()) == ['prototype', 'length', 'name']
 	assert constructor.get(mut vm, PropertyName.from_str('length'))!.number == 1
 	assert constructor.get(mut vm, PropertyName.from_str('name'))!.as_string().str() == 'Boolean'
 	descriptor := constructor.internal_get_own_property(PropertyName.from_str('prototype'))?

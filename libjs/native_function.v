@@ -68,12 +68,12 @@ pub fn (mut object Object) set_function_name(mut vm VM, name FunctionName, prefi
 // VM::register_native_function and the table's type check on every invocation.
 pub fn NativeFunction.create(mut vm VM, realm &Realm, prototype ?&Object, behaviour NativeFunctionPointer, length f64, name FunctionName, prefix ?string) &NativeFunction {
 	return create_native_function(mut vm, realm, prototype, behaviour, length, name, prefix,
-		unsafe { nil }, false)
+		unsafe { nil }, false, true)
 }
 
 pub fn NativeFunction.create_raw(mut vm VM, realm &Realm, prototype ?&Object, behaviour NativeFunctionPointer, length f64, name FunctionName, prefix ?string) &NativeFunction {
 	return create_native_function(mut vm, realm, prototype, behaviour, length, name, prefix,
-		unsafe { nil }, true)
+		unsafe { nil }, true, true)
 }
 
 // A translated NativeFunction subclass supplies its call and construct bodies.
@@ -81,16 +81,30 @@ pub fn NativeFunction.create_raw(mut vm VM, realm &Realm, prototype ?&Object, be
 pub fn NativeFunction.create_constructor(mut vm VM, realm &Realm, prototype ?&Object, behaviour NativeFunctionPointer, construct_behaviour NativeConstructPointer, length f64, name FunctionName) &NativeFunction {
 	assert construct_behaviour != unsafe { nil }
 	return create_native_function(mut vm, realm, prototype, behaviour, length, name, none,
-		construct_behaviour, false)
+		construct_behaviour, false, true)
 }
 
-fn create_native_function(mut vm VM, realm &Realm, prototype ?&Object, behaviour NativeFunctionPointer, length f64, name FunctionName, prefix ?string, construct_behaviour NativeConstructPointer, raw bool) &NativeFunction {
+// NativeFunction(name, prototype) used by builtin subclasses retains the initial
+// name but installs no public properties. Subclass initialize() and Intrinsics
+// initialize_constructor() determine their observable insertion order.
+pub fn NativeFunction.create_constructor_record(mut vm VM, realm &Realm, prototype ?&Object, behaviour NativeFunctionPointer, construct_behaviour NativeConstructPointer, name FunctionName) &NativeFunction {
+	assert construct_behaviour != unsafe { nil }
+	return create_native_function(mut vm, realm, prototype, behaviour, 0, name, none,
+		construct_behaviour, false, false)
+}
+
+fn create_native_function(mut vm VM, realm &Realm, prototype ?&Object, behaviour NativeFunctionPointer, length f64, name FunctionName, prefix ?string, construct_behaviour NativeConstructPointer, raw bool, initialize_metadata bool) &NativeFunction {
 	assert behaviour != unsafe { nil }
 	mut object := Object.create(realm, prototype)
 	object.class_name = 'Function'
 	object.native_callable = true
-	object.set_function_length(length)
-	text := object.set_function_name(mut vm, name, prefix)
+	text := make_function_name(name, prefix)
+	if initialize_metadata {
+		object.set_function_length(length)
+		object.set_function_name(mut vm, name, prefix)
+	} else {
+		object.native_initial_name = text
+	}
 	function := &NativeFunction{
 		object:             object
 		realm_:             realm

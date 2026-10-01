@@ -10,8 +10,8 @@ pub:
 }
 
 pub fn SymbolConstructor.create(mut vm VM, realm &Realm) &SymbolConstructor {
-	function := NativeFunction.create_constructor(mut vm, realm, realm.function_prototype,
-		symbol_constructor_call, symbol_constructor_construct, 0, PropertyName.from_str('Symbol'))
+	function := NativeFunction.create_constructor_record(mut vm, realm, realm.function_prototype,
+		symbol_constructor_call, symbol_constructor_construct, PropertyName.from_str('Symbol'))
 	mut object := function.object
 	object.define_direct_property(PropertyName.from_str('prototype'),
 		Value.from_object(realm.symbol_prototype_record()), 0)
@@ -28,6 +28,8 @@ pub fn SymbolConstructor.create(mut vm VM, realm &Realm) &SymbolConstructor {
 		object.define_direct_property(PropertyName.from_str(name),
 			Value.from_symbol(vm.well_known_symbols_[index]), 0)
 	}
+	object.set_function_length(0)
+	object.set_function_name(mut vm, PropertyName.from_str('Symbol'), none)
 	return &SymbolConstructor{object: object}
 }
 
