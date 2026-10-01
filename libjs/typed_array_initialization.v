@@ -1,7 +1,7 @@
 module libjs
 
 // TypedArray.cpp::InitializeTypedArrayFromArrayBuffer. The caller supplies a
-// concrete record; the constructor's iterable/array-like dispatch is separate.
+// concrete record; intrinsic installation is a separate dependency.
 pub fn initialize_typed_array_from_array_buffer(mut vm VM, mut array TypedArray, buffer &ArrayBufferObject, byte_offset Value, length Value) ! {
 	element_size := usize(array.element_size())
 	offset := usize(byte_offset.to_index(mut vm)!)
@@ -64,4 +64,81 @@ fn validate_typed_array_length(mut vm VM, length usize, element_size usize) ! {
 	if length > usize(0x7fffffff) / element_size || length > (~usize(0)) / element_size {
 		return vm.throw_error_type(.range_error, .invalid_length, 'typed array')
 	}
+}
+
+// TypedArray.cpp::AllocateTypedArrayBuffer. Like the active source body this
+// replaces the constructor's throwaway buffer without asserting its absence.
+pub fn allocate_typed_array_buffer(mut vm VM, mut array TypedArray, length usize) ! {
+	element_size := usize(array.element_size())
+	validate_typed_array_length(mut vm, length, element_size)!
+	byte_length := element_size * length
+	buffer := allocate_array_buffer(mut vm, vm.realm().array_buffer_constructor_record(), byte_length, none)!
+	array.viewed_buffer = buffer
+	array.byte_length = ByteLength.from_u32(u32(byte_length))
+	array.byte_offset = 0
+	array.array_length = ByteLength.from_u32(u32(length))
+}
+
+// TypedArray.cpp::InitializeTypedArrayFromList. Values are already collected;
+// element conversion and writes occur only after allocating the complete buffer.
+pub fn initialize_typed_array_from_list(mut vm VM, mut array TypedArray, values []Value) ! {
+	allocate_typed_array_buffer(mut vm, mut array, usize(values.len))!
+	mut object := array.object
+	for index, value in values {
+		object.set(mut vm, PropertyName.from_number(u32(index)), value, .yes)!
+	}
+}
+
+// TypedArray.cpp::InitializeTypedArrayFromArrayLike. Snapshot the observable
+// length once; getters, inherited elements and value conversions remain live.
+pub fn initialize_typed_array_from_array_like(mut vm VM, mut array TypedArray, source &Object) ! {
+	length := length_of_array_like(mut vm, source)!
+	allocate_typed_array_buffer(mut vm, mut array, usize(length))!
+	mut object := array.object
+	for index := u64(0); index < length; index++ {
+		key := PropertyName.from_number(u32(index))
+		value := source.get(mut vm, key)!
+		object.set(mut vm, key, value, .yes)!
+	}
+}
+
+// TypedArray.cpp::InitializeTypedArrayFromTypedArray. Same-type copies clone
+// bytes (including NaN payloads); other types convert each numeric element.
+pub fn initialize_typed_array_from_typed_array(mut vm VM, mut array TypedArray, source &TypedArray) ! {
+	source_buffer := source.viewed_buffer
+	element_size := usize(array.element_size())
+	source_element_size := usize(source.element_size())
+	source_offset := usize(source.byte_offset)
+	record := make_typed_array_with_buffer_witness_record(source, .seq_cst)
+	if is_typed_array_out_of_bounds(record) {
+		return vm.throw_error_type(.type_error, .buffer_out_of_bounds, 'TypedArray')
+	}
+	length := typed_array_length(record)
+	if usize(length) > (~usize(0)) / element_size {
+		return vm.throw_error_type(.range_error, .invalid_length, 'typed array')
+	}
+	byte_length := element_size * usize(length)
+	buffer := if array.kind == source.kind {
+		clone_array_buffer(mut vm, source_buffer, source_offset, byte_length)!
+	} else {
+		mut data := allocate_array_buffer(mut vm, vm.realm().array_buffer_constructor_record(), byte_length, none)!
+		// The allocation, including its observable prototype lookup, precedes
+		// the content-type check in the pinned source.
+		if array.content_type() != source.content_type() {
+			return vm.throw_error_type(.type_error, .typed_array_content_type_mismatch, array.object.class_name, source.object.class_name)
+		}
+		mut source_index := source_offset
+		mut target_index := usize(0)
+		for _ in 0 .. length {
+			value := source.get_value_from_buffer(mut vm, source_index, .unordered, true)
+			data.set_value(mut vm, target_index, array.kind, value, true, .unordered, true)
+			source_index += source_element_size
+			target_index += element_size
+		}
+		data
+	}
+	array.viewed_buffer = buffer
+	array.byte_length = ByteLength.from_u32(u32(byte_length))
+	array.byte_offset = 0
+	array.array_length = ByteLength.from_u32(length)
 }
