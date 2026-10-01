@@ -50,6 +50,10 @@ prototype membership, valueOf/toLocaleString, legacy getter/setter definition an
 lookup, and __proto__ accessors. They retain primitive dependencies explicitly;
 ObjectPrototype initialization and toString's complete type-record/IsArray chain
 remain pending. Coercibility checks and immutable prototype dispatch follow upstream.
+Reflect's complete record and thirteen native methods are translated, preserving
+property descriptors, explicit receivers, key ordering, prototype/extensibility
+checks, apply/construct validation and boolean mutation failures. Its Object/Array
+prototypes remain explicit dependencies; production global installation is pending.
 The abstract TypedArray constructor adds from/of/species. Its shared prototype
 initializer preserves metadata, Array toString identity and the values/@@iterator
 alias through explicit dependencies. All twelve concrete constructor/prototype

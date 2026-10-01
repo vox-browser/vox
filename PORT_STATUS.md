@@ -904,6 +904,13 @@ These bodies retain explicit primitive dependencies; ObjectPrototype initializat
 and its toString/IsArray/type-record chain remain pending. A test-only browser host
 exercises them through compiled scripts, including symbol accessors, live prototype
 changes and recovery after cycles or immutable-prototype errors.
+Reflect's complete record and thirteen native bodies translate descriptor/property
+operations, explicit get/set receivers, prototype/extensibility checks, ordered
+key arrays and apply/construct validation. Failed mutations return booleans while
+conversion and accessor errors propagate. Object/Array intrinsic dependencies stay
+explicit; production Reflect installation and Proxy internal methods remain pending.
+The browser tests exercise the translated record through compiled scripts without
+creating a JavaScriptCore context.
 Host-created String exotic objects preserve fixed UTF-16 character descriptors,
 definition compatibility, and virtual-index key order; String's constructor and
 prototype remain pending.
@@ -959,9 +966,9 @@ SharedArrayBuffer allocation reserves the maximum capacity while exposing the
 initial length. Its constructor, three accessors, growth hook and species-aware
 slicing are installed and tested with live DataView witnesses. Cross-agent
 shared-memory ordering remains pending, as in the pinned upstream active bodies.
-Its 145 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
-match exactly with no case overrides. The complete repository suite passes all
-813 test files, including the native bridge and fourteen browser integration files.
+The LibJS package's 150 test files pass in both GC and no-GC mode, and all 100
+upstream AST fixtures match exactly with no case overrides. The complete repository suite passes all
+819 test files, including the native bridge and fifteen browser integration files.
 The native browser and inline-document layout bridge now prepare page scripts
 through LibJS and associate classic execution with translated Script, Realm,
 and VM embedding contexts. Sources retain their URLs and parse goals; syntax
@@ -973,7 +980,7 @@ bytecode slice without initializing or falling back to JavaScriptCore. Remaining
 bytecode generation, ECMAScript functions, intrinsic/builtin objects, regex
 compilation, module linking, and LibWeb host bindings remain untranslated.
 
-The integration passes the browser package's fourteen test files in both GC modes,
+The integration passes the browser package's fifteen test files in both GC modes,
 the native bridge tests, the production bundle build and both engine headless
 smoke checks. The function/array refresh also passes all 11 default screenshot cases
 and the pixel-exact same-size SVG source switch. The earlier 25-comparison run
