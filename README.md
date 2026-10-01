@@ -38,9 +38,12 @@ types, integer-indexed exotic properties, fixed/tracking witnesses, buffer-view
 initialization and iterator stepping. Concrete constructor behavior additionally
 handles scalar lengths, iterables, array-like input and TypedArray copies with
 explicit prototype dependencies. Result creation/validation and numeric sorting
-comparison follow upstream. The abstract TypedArray constructor, builtin
-installation, prototype methods, Uint8Array encoding helpers and caged storage
-remain pending.
+comparison follow upstream. Native behavior functions now cover its four branded
+accessors, at, @@toStringTag, includes/indexOf/lastIndexOf, reverse and numeric
+sort. They use translated primitive boxing with explicit Number/BigInt/String
+prototype dependencies. The abstract TypedArray constructor, builtin installation,
+remaining prototype methods, Uint8Array encoding helpers and caged storage remain
+pending.
 SharedArrayBuffer construction, three accessors, growth and species-aware slicing
 also follow the active upstream bodies, using the existing DataView methods to
 read and write their storage. Cross-agent shared-memory ordering remains pending.

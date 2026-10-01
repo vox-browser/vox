@@ -10,8 +10,9 @@ AST, and scope collector for the frontend, and its C++ `Runtime/VM.{h,cpp}`,
 `Interpreter/Interpreter.cpp` VM members, and runtime records for the VM slice.
 The execution slice additionally follows `Rust/src/bytecode/{operand,generator,codegen}.rs`,
 `Interpreter/{interpreter.flap,SlowPaths.cpp}`, `Script.cpp`,
-`Runtime/{Value,GlobalObject,BigInt,NativeFunction,FunctionObject,BoundFunction,FunctionPrototype,BooleanObject,BooleanPrototype,BooleanConstructor,SymbolObject,SymbolPrototype,SymbolConstructor,StringObject,Iterator,StringIterator,StringIteratorPrototype,ArrayIterator,ArrayIteratorPrototype,ByteLength,ArrayBuffer,ArrayBufferConstructor,ArrayBufferPrototype,DataView,DataViewConstructor,DataViewPrototype,SharedArrayBufferConstructor,SharedArrayBufferPrototype,CanonicalIndex,TypedArray,Intrinsics,Array,ArrayPrototype,IndexedProperties,PropertyKey,Object,PrimitiveString,Accessor,PropertyDescriptor,AbstractOperations}`
-source bodies, numeric/URI/Annex B global functions from `Runtime/GlobalObject.cpp`,
+`Runtime/{Value,GlobalObject,BigInt,NativeFunction,FunctionObject,BoundFunction,FunctionPrototype,BooleanObject,BooleanPrototype,BooleanConstructor,SymbolObject,SymbolPrototype,SymbolConstructor,StringObject,NumberObject,BigIntObject,Iterator,StringIterator,StringIteratorPrototype,ArrayIterator,ArrayIteratorPrototype,ByteLength,ArrayBuffer,ArrayBufferConstructor,ArrayBufferPrototype,DataView,DataViewConstructor,DataViewPrototype,SharedArrayBufferConstructor,SharedArrayBufferPrototype,CanonicalIndex,TypedArray,TypedArrayPrototype,Intrinsics,Array,ArrayPrototype,IndexedProperties,PropertyKey,Object,PrimitiveString,Accessor,PropertyDescriptor,AbstractOperations}`
+source bodies and `Runtime/ValueInlines.h`, numeric/URI/Annex B global functions
+from `Runtime/GlobalObject.cpp`,
 `AK/StringConversions.cpp` and fast_float decimal-prefix parsing, and the BigInt
 operations delegated to LibCrypto/LibTomMath.
 All refreshed V code and tests live here; the upstream checkout and the original
@@ -61,6 +62,7 @@ creates a realm with a global environment and pushes its execution context.
 | `boolean_object.v`, `boolean_prototype.v`, `boolean_constructor.v` | Boolean internal slots, prototype methods, calls and construction, intrinsic links, and primitive references |
 | `symbol_object.v`, `symbol_prototype.v`, `symbol_constructor.v` | Symbol wrappers, prototype methods and description accessor, unique/global symbol creation, registry methods, static well-known symbols, and primitive references |
 | `string_object.v` | StringCreate, virtual UTF-16 character descriptors, definition compatibility, and exotic own-key ordering |
+| `number_object.v`, `bigint_object.v`, `value_boxing.v` | NumberData/BigIntData wrapper records and all primitive ToObject cases with explicit Number/BigInt/String prototype dependencies |
 | `iterator.v`, `iterator_values.v` | Synchronous iterator acquisition for object receivers, IteratorNext/Step/StepValue, completion-preserving close/close-all, result records, list/callback collection, and SetterThatIgnoresPrototypeProperties |
 | `string_iterator.v`, `string_iterator_prototype.v`, `array_iterator.v`, `array_iterator_prototype.v` | String code-point iteration, ordinary array-like and TypedArray key/value/entry iteration, and branded native next methods with explicit intrinsic dependencies |
 | `byte_length.v`, `data_block.v`, `array_buffer_object.v` | Tagged numeric/auto/detached lengths, owned and fixed-length host byte storage, copy/move/resize, ArrayBuffer records and detach ownership |
@@ -72,12 +74,13 @@ creates a realm with a global environment and pushes its execution context.
 | `canonical_index.v` | CanonicalIndex records, checked double conversion and CanonicalNumericIndexString with both round-trip modes |
 | `typed_array.v`, `typed_array_initialization.v` | All twelve concrete element records, buffer witnesses, integer-indexed exotic methods, numeric get/set/modify dispatch, validation, allocation and buffer/TypedArray/list/array-like initialization |
 | `typed_array_construction.v`, `typed_array_create.v`, `typed_array_compare.v` | Concrete constructor behavior with explicit intrinsic dependencies, TypedArrayCreate result validation and CompareTypedArrayElements |
+| `typed_array_receiver.v`, `typed_array_access.v`, `typed_array_search.v`, `typed_array_order.v` | TypedArray receiver conversion, four branded accessors, at, @@toStringTag, includes/indexOf/lastIndexOf, reverse and sort with explicit primitive dependencies |
 | `global_numeric_functions.v`, `global_uri_functions.v`, `global_legacy_functions.v` | isFinite/isNaN/parseInt/parseFloat, URI encoding/decoding, and Annex B escape/unescape global functions |
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 100 implementation files contain **24,672 physical V LOC**. The 109 test
-files contain **12,883 physical V LOC** and **404 test functions**. Physical LOC
+The 107 implementation files contain **24,951 physical V LOC**. The 115 test
+files contain **13,581 physical V LOC** and **424 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -506,9 +509,36 @@ construction and validates result brand, bounds and length in source order.
 CompareTypedArrayElements (`e8daaeb`) orders NaNs last and negative zero before
 positive zero, compares BigInts exactly and applies callback/ToNumber before
 its default rules.
-Factories still receive explicit prototype dependencies. The abstract TypedArray
-constructor, intrinsic graph, prototype methods, Uint8Array base64/hex helpers,
-TypedArrayCreateSameType and cached caged views remain separate untranslated work.
+
+NumberObject and BigIntObject (`aab4abb`) preserve their exact numeric payload or
+primitive cell and ordinary object identity. ToObject (`f559831`) now covers all
+five primitive types, returns object inputs unchanged and preserves nullish
+TypeErrors. Number, BigInt and String prototype getters remain explicit
+embedding dependencies; their builtin constructors/prototypes and primitive
+Reference/GetV integration are not installed by this slice.
+
+TypedArray receiver conversion, its four branded accessors, at and @@toStringTag
+(`ad194b8`) follow TypedArrayPrototype.cpp through that boxing boundary. Detached
+or out-of-bounds views report zero length/byte length/offset, while the buffer
+and name remain accessible. at snapshots length before index conversion and
+reads current storage afterward. Non-TypedArray receivers retain ToObject's
+nullish error or the subsequent brand error.
+
+The search methods (`230e882`) retain snapshot length, omitted-versus-explicit
+fromIndex, infinity and large-index checks, exact BigInt comparisons and the
+includes SameValueZero versus indexOf/lastIndexOf strict-equality distinction.
+After reentrant resize or detachment, includes reads undefined at invalid
+indices while indexOf/lastIndexOf skip them through HasProperty.
+
+reverse and sort (`d1e4382`) preserve receiver identity and numeric element
+semantics. sort checks callback callability before receiver conversion, snapshots
+all elements before comparisons and writes the stable numeric result through
+live integer-indexed Set operations. Callback errors leave the sorted snapshot
+unwritten; callback-induced shrinking or detachment limits the subsequent writes.
+Factories and these native behavior functions still receive explicit prototype
+dependencies. The abstract TypedArray constructor, intrinsic graph, remaining
+prototype methods, Uint8Array base64/hex helpers, TypedArrayCreateSameType and
+cached caged views remain separate untranslated work.
 
 Numeric globals follow the upstream coercion order and errors. parseInt preserves
 radix validation, hexadecimal-prefix stripping, prefix termination, per-digit
@@ -595,25 +625,25 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 109 passed, 109 total
+# 115 passed, 115 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 109 passed, 109 total
+# 115 passed, 115 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
 
 v -old-compiler -enable-globals test browserjs
-# 12 passed, 12 total
+# 13 passed, 13 total
 
 v -old-compiler -enable-globals -gc none test browserjs
-# 12 passed, 12 total
+# 13 passed, 13 total
 
 v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
 
 v -old-compiler -enable-globals test .
-# 775 passed, 775 total
+# 782 passed, 782 total
 
 ./build_ladybird.sh
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
@@ -637,15 +667,15 @@ fixtures; separate tests exercise translated NativeFunction and ArrayBufferObjec
 records. Module-loading tests write temporary module files. The preceding LibWeb
 work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 109 libjs files are verified separately in both GC modes.
-There are now 775 repository test files.
+this package; the 115 libjs files are verified separately in both GC modes.
+There are now 782 repository test files.
 
-The complete 775-file repository suite passes, including the native bridge,
-twelve browser integration files and all 109 LibJS files. The dedicated LibJS and
+The complete 782-file repository suite passes, including the native bridge,
+thirteen browser integration files and all 115 LibJS files. The dedicated LibJS and
 browser suites also pass in no-GC mode, exercising the retained storage and
 buffer ownership independently of the collector.
 
-Browser integration checks pass the twelve `browserjs` test files in both GC modes,
+Browser integration checks pass the thirteen `browserjs` test files in both GC modes,
 the native `main_test.v` bridge and flag tests, the production bundle build,
 JavaScriptCore DOM-mutation/click smoke, and LibJS bytecode smoke. Native
 LibJS fixtures also verify bound calls/construction, Boolean and Symbol methods,
@@ -684,6 +714,12 @@ record copies, bound construction, tracking buffer views and shared BigInt copie
 through the compiled browser VM. They verify independent backing storage,
 per-script failures and later-script recovery with no JavaScriptCore context.
 These fixtures do not install or claim the pending TypedArray builtin graph.
+TypedArray prototype integration checks (`f55bea6`) attach the completed native
+bodies to test-only host prototypes and execute branded accessors, relative
+indexing, NaN/signed-zero searches, reverse, default numeric and BigInt sorting,
+bound native comparators, resizing, detachment and per-script recovery. Primitive
+Number and nullish receiver errors go through the translated ToObject boundary.
+No JavaScriptCore context is created by these fixtures.
 The rebuilt native bundle passes both engine smoke checks and a buffer-regression
 document covering shared BigInt storage, growth, slicing and transferred Float16
 bytes without script errors.
@@ -698,7 +734,7 @@ bundle passes all 11 default comparisons and the pixel-exact same-size SVG sourc
 switch again. The screenshot tools use `V_BIN` with a temporary wrapper that
 selects this checkout's old compiler frontend for their pixel-diff helper.
 The primitive-object, construction, iterator, buffer, DataView, SharedArrayBuffer
-and TypedArray record/construction refresh passes `inline-node` with 13
+and TypedArray record/construction/prototype refresh passes `inline-node` with 13
 differing pixels (maximum channel error 1, within its documented tolerance) and
 the same-size SVG source switch with zero differing pixels.
 
@@ -815,6 +851,11 @@ the same-size SVG source switch with zero differing pixels.
   it does not install a partial intrinsic graph. Buffer copies, list/array-like
   initialization, TypedArrayCreate and element comparison retain the active
   upstream bodies through the existing allocation, numeric and native-call paths.
+  ToObject receives explicit Number/BigInt/String IntrinsicPrototypeGetter
+  dependencies; Boolean and Symbol use installed current-realm records. This
+  retains real primitive wrappers without synthesizing incomplete prototypes.
+  TypedArray native behavior functions carry those same boxing dependencies;
+  no partial TypedArray builtin prototype is installed in the production realm.
 - `Runtime/Value.cpp` at the pinned upstream revision passes `(target, value)`
   in InstanceofOperator's final no-`@@hasInstance` fallback, although its
   OrdinaryHasInstance helper expects `(value, constructor)`. The translation
@@ -856,10 +897,14 @@ complete LibJS runtime migration.
   accessors, growth and slicing. TypedArray records, buffer witnesses, integer-indexed
   exotic methods, all four initialization paths, concrete constructor behavior,
   TypedArrayCreate, numeric comparison and iterator next exist with explicit
-  prototype dependencies. The abstract TypedArray constructor, concrete builtin
-  installation, prototype graph/methods, TypedArrayCreateSameType and Uint8Array
-  encoding helpers remain untranslated, as do concurrent shared backing stores,
-  Atomics and caged storage.
+  prototype dependencies. Number/BigInt wrapper records and primitive ToObject
+  exist with explicit Number/BigInt/String prototype dependencies; their primitive
+  Reference/GetV integration and builtin constructors/prototypes remain pending.
+  TypedArray's four accessors, at, @@toStringTag, three search methods, reverse and
+  sort also exist as native behavior functions. The abstract TypedArray
+  constructor, concrete builtin installation, prototype graph and remaining
+  methods, TypedArrayCreateSameType and Uint8Array encoding helpers remain
+  untranslated, as do concurrent shared backing stores, Atomics and caged storage.
   Realms expose four standard value properties, eight numeric/URI functions,
   Boolean/Symbol/ArrayBuffer/DataView/SharedArrayBuffer constructors, and two legacy
   functions on an ordinary global object. Default native globals inherit the

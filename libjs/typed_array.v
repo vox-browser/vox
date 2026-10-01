@@ -1,8 +1,8 @@
 module libjs
 
 // Runtime/TypedArray.{h,cpp}: concrete template records use BufferElementType
-// dispatch. Factories take an explicit prototype until the intrinsic graph and
-// TypedArray constructors are translated. Cached caged views remain pending.
+// dispatch. Factories take an explicit prototype until the TypedArray intrinsic
+// graph is installed. Cached caged views remain pending.
 pub enum TypedArrayContentType {
 	number
 	bigint
