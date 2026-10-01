@@ -7,11 +7,12 @@ fn test_number_wrapper_preserves_numeric_payload_brand_and_explicit_prototype() 
 	create_simple_execution_context(mut vm)
 	mut parent := Object.create(vm.realm(), none)
 	parent.define_direct_property(PropertyName.from_str('inherited'), Value.from_i32(42), 7)
-	for value in [0.0, -0.0, 42.5, math.inf(-1), math.inf(1), math.nan()] {
+	for value in [0.0, -0.0, 42.5, math.inf(-1), math.inf(1),
+		math.nan()] {
 		wrapper := NumberObject.create(vm.realm(), value, parent)
 		assert same_value(Value.from_f64(wrapper.value), Value.from_f64(value))
 		assert voidptr(wrapper.object.number_object?) == voidptr(wrapper)
-		assert wrapper.object.class_name == 'Number' && wrapper.object.properties.len == 0
+		assert wrapper.object.class_name == 'NumberObject' && wrapper.object.properties.len == 0
 		assert voidptr(wrapper.object.prototype?) == voidptr(parent)
 		assert wrapper.object.get(mut vm, PropertyName.from_str('inherited'))!.number == 42
 		assert wrapper.object.boolean_object == none && wrapper.object.bigint_object == none

@@ -11,8 +11,11 @@ pub:
 
 pub fn NumberObject.create(realm &Realm, value f64, prototype &Object) &NumberObject {
 	mut object := Object.create(realm, prototype)
-	object.class_name = 'Number'
-	wrapper := &NumberObject{ object: object, value: value }
+	object.class_name = 'NumberObject'
+	wrapper := &NumberObject{
+		object: object
+		value:  value
+	}
 	object.number_object = wrapper
 	return wrapper
 }
