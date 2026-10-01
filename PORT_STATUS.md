@@ -912,12 +912,14 @@ ArrayBuffer records and owned/host-backed DataBlocks preserve zeroed allocation,
 copy/move/resize, captured host lengths and keyed detachment. Its constructor,
 four accessors, resize, species-aware slice and both transfer methods are now
 installed in each realm and execute through the browser's translated VM.
-DataView records retain cached bounds witnesses and fixed/tracking lengths;
-its constructor, numeric accessors, TypedArray records and caged storage remain
-pending. The LibJS status file records the storage and allocator deviations.
-Its 92 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
+DataView construction, three property accessors and all 22 numeric methods are
+installed, with fixed/tracking bounds witnesses, byte-order handling, BigInt
+modulo conversion and Float16 rounding. TypedArray records and caged storage
+remain pending. The LibJS status file records the storage, allocator and native
+binary16 representation boundaries.
+Its 96 test files pass in both GC and no-GC mode, and all 100 upstream AST fixtures
 match exactly with no case overrides. The complete repository suite passes all
-754 test files, including the native bridge and eight browser integration files.
+759 test files, including the native bridge and nine browser integration files.
 The native browser and inline-document layout bridge now prepare page scripts
 through LibJS and associate classic execution with translated Script, Realm,
 and VM embedding contexts. Sources retain their URLs and parse goals; syntax
@@ -929,12 +931,12 @@ bytecode slice without initializing or falling back to JavaScriptCore. Remaining
 bytecode generation, ECMAScript functions, intrinsic/builtin objects, regex
 compilation, module linking, and LibWeb host bindings remain untranslated.
 
-The integration passes the browser package's eight test files in both GC modes,
+The integration passes the browser package's nine test files in both GC modes,
 the native bridge tests, the production bundle build and both engine headless
 smoke checks. The function/array refresh also passes all 11 default screenshot cases
 and the pixel-exact same-size SVG source switch. The earlier 25-comparison run
 additionally covered 13 pixel-exact SVG paint-server mutation cases.
-The Boolean/Symbol, construction, iterator and buffer refresh also passes
+The Boolean/Symbol, construction, iterator, buffer and DataView refresh also passes
 `inline-node` and the pixel-exact same-size SVG source-switch comparison after
 rebuilding the bundle.
 
