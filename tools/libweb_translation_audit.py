@@ -4,7 +4,8 @@
 Filename inventories can establish that a source unit has a translation home,
 but they cannot detect omitted methods or free functions inside that unit.  This
 tool applies the stricter HTML audit's symbol extraction to all module-owned
-LibWeb C++ sources and matches them against non-test V functions workspace-wide.
+LibWeb C++ sources and matches them against non-test LibWeb V functions and
+root support. The separate LibJS translation is outside this inventory.
 """
 
 from __future__ import annotations
@@ -24,6 +25,9 @@ EXCLUDED_TRANSLATION_DIRECTORIES = {
     ".git",
     "Build",
     "third_party",
+    # LibJS has its own source inventory and PORT_STATUS.md. Runtime names such
+    # as Object/get must not count as translations of LibWeb implementations.
+    "libjs",
 }
 
 # These files were introduced as symbol-coverage shims: they expose upstream

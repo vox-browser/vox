@@ -146,6 +146,58 @@ fn (_ &WebGLContextProxyBase) default_renderbuffer() u32 { return 0 }
 
 
 class VFunctionInventoryTests(unittest.TestCase):
+    def test_libjs_cannot_supply_libweb_symbols_fields_or_review_findings(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            web = root / "dom" / "control.v"
+            web.parent.mkdir()
+            web.write_text(
+                """
+module dom
+pub struct Object {
+pub:
+    web_field int
+}
+// not translated: controlled LibWeb review fixture
+fn (object &Object) web_only() bool { return false }
+"""
+            )
+            runtime = root / "libjs" / "runtime.v"
+            runtime.parent.mkdir()
+            runtime.write_text(
+                """
+module libjs
+pub struct Object {
+pub:
+    runtime_field int
+}
+// not translated: controlled LibJS review fixture
+fn (object &Object) runtime_only() bool { return false }
+"""
+            )
+            (runtime.parent / "upstream_fake_entry_points.v").write_text(
+                "module libjs\nfn foreign_shim() bool { return false }\n"
+            )
+            (root / "root_support.v").write_text(
+                "module main\nfn root_helper() bool { return true }\n"
+            )
+
+            functions, quarantined, quarantined_functions = audit.all_v_function_names(root)
+            fields = audit.all_v_field_names(root)
+            markers = audit.semantic_divergence_inventory(root)
+            suspicious, verified = audit.trivial_implementation_inventories(root)
+
+        self.assertEqual(functions, {("web_only", "Object"), ("root_helper", None)})
+        self.assertEqual(fields, {("web_field", "Object")})
+        self.assertEqual(quarantined, [])
+        self.assertEqual(quarantined_functions, 0)
+        self.assertEqual([marker["source"] for marker in markers], ["dom/control.v"])
+        self.assertEqual(
+            {finding["source"] for finding in suspicious},
+            {"dom/control.v", "root_support.v"},
+        )
+        self.assertEqual(verified, [])
+
     def test_generic_receiver_owner_drops_type_parameters(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "bindings" / "wrapper_world.v"
