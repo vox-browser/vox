@@ -21,6 +21,7 @@ pub mut:
 	host_defined                   ?RealmHostDefined        // [[HostDefined]]
 	function_prototype ?&Object // Translated intrinsic; Object prototype graph pending
 	throw_type_error_function ?&Object
+	boolean_prototype ?&Object
 }
 
 pub fn Realm.create() &Realm {
@@ -37,6 +38,10 @@ pub fn (realm &Realm) global_environment_record() &GlobalEnvironment {
 
 pub fn (realm &Realm) function_prototype_record() &Object {
 	return realm.function_prototype or { panic('Realm has no Function prototype yet') }
+}
+
+pub fn (realm &Realm) boolean_prototype_record() &Object {
+	return realm.boolean_prototype or { panic('Realm has no Boolean prototype yet') }
 }
 
 pub fn (mut realm Realm) set_global_environment(environment &GlobalEnvironment) {
@@ -65,6 +70,8 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	realm.throw_type_error_function = thrower
 	mut prototype_object := function_prototype.object
 	prototype_object.add_restricted_function_properties(thrower)
+	boolean_prototype := BooleanPrototype.create(mut vm, realm, none)
+	realm.boolean_prototype = boolean_prototype.object
 	// 4. Set realm.[[GlobalObject]] to undefined.
 	// 5. Set realm.[[GlobalEnv]] to undefined.
 	// 7. Let newContext be a new execution context.
