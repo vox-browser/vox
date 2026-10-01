@@ -67,7 +67,7 @@ fn (generator &BytecodeGenerator) unsupported(description string) IError {
 		generator.starting_line - 1}:${generator.range.start.column + 1}: ${description} is not translated yet')
 }
 
-fn binary_opcode(op BinaryOp) !OpCode {
+fn binary_opcode(op BinaryOp) OpCode {
 	return match op {
 		.addition { .add }
 		.subtraction { .sub }
@@ -90,7 +90,7 @@ fn binary_opcode(op BinaryOp) !OpCode {
 		.right_shift { .right_shift }
 		.unsigned_right_shift { .unsigned_right_shift }
 		.in_op { .in_op }
-		else { return error('Object binary operators are not translated yet') }
+		.instance_of { .instance_of }
 	}
 }
 
@@ -302,9 +302,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			return dst
 		}
 		.binary {
-			op := binary_opcode(kind.binary_op) or {
-				return generator.unsupported(kind.binary_op.str())
-			}
+			op := binary_opcode(kind.binary_op)
 			left :=
 				generator.expression(mut vm, kind.lhs or { return error('Missing binary lhs') })!
 			right := generator.expression(mut vm,

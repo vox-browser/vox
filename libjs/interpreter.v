@@ -150,6 +150,10 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 			// SlowPaths.cpp::asm_slow_path_in.
 			result = in_operator(mut vm, left, right)!
 		}
+		.instance_of {
+			// SlowPaths.cpp::asm_slow_path_instance_of.
+			result = instance_of(mut vm, left, right)!
+		}
 		.less_than, .less_than_equals, .greater_than, .greater_than_equals {
 			comparison := compare_primitive_values(mut vm, left, right)!
 			result = Value.from_bool(match instruction.op {
