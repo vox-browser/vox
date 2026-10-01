@@ -144,6 +144,7 @@ pub mut:
 	native_callable     bool
 	native_initial_name ?Utf16String
 	bound_function ?&BoundFunction
+	function_source_text ?Utf16String // [[SourceText]] on ECMAScript callables
 }
 
 // 10.1.12 OrdinaryObjectCreate ( proto [ , additionalInternalSlotsList ] ), https://tc39.es/ecma262/#sec-ordinaryobjectcreate
