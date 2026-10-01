@@ -137,6 +137,9 @@ pub mut:
 	properties []OwnProperty
 	extensible bool   = true
 	class_name string = 'Object'
+	// ObjectPrototype's immutable-prototype exotic [[SetPrototypeOf]] override.
+	// The intrinsic record that selects this override remains a separate slice.
+	immutable_prototype bool
 	// [[ErrorData]] for Error instances created through create_error().
 	error_data ?&ErrorData
 	// FunctionObject inheritance is represented by a callable implementation.
@@ -176,13 +179,14 @@ fn (object &Object) find_own_property(key PropertyName) int {
 	return -1
 }
 
-// Object.cpp::OrdinaryGetPrototypeOf / OrdinarySetPrototypeOf. Every Object in
-// this runtime slice uses ordinary internal methods; ProxyObject is pending.
+// Object.cpp::OrdinaryGetPrototypeOf / OrdinarySetPrototypeOf, with the
+// ObjectPrototype immutable-prototype override. ProxyObject is pending.
 pub fn (object &Object) internal_get_prototype_of() ?&Object {
 	return object.prototype
 }
 
 pub fn (mut object Object) internal_set_prototype_of(new_prototype ?&Object) bool {
+	if object.immutable_prototype { return object.set_immutable_prototype(new_prototype) }
 	if current := object.prototype {
 		if proposed := new_prototype {
 			if voidptr(current) == voidptr(proposed) { return true }
