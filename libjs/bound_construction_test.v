@@ -76,3 +76,22 @@ fn test_bound_constructor_errors_restore_the_caller_and_nonconstructable_targets
 	}
 	assert vm.running_execution_context() == base && vm.interpreter_stack().depth() == 0
 }
+
+fn test_bound_construction_compares_new_target_identity_even_when_host_records_share_slots() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	realm := vm.realm()
+	target := NativeFunction.create_constructor(mut vm, realm, realm.function_prototype,
+		bound_construction_call, fn (mut vm VM, new_target &Object) !&Object {
+			return new_target
+		}, 0, PropertyName.from_str('Identity'))
+	bound := BoundFunction.create(realm, target.object, js_null(), []Value{})
+	mut distinct := Object.create(realm, bound.object.prototype)
+	distinct.class_name = bound.object.class_name
+	distinct.callable = bound.object.callable
+	distinct.constructor = bound.object.constructor
+	distinct.bound_function = bound.object.bound_function
+	assert voidptr(distinct) != voidptr(bound.object)
+	result := construct(mut vm, Value.from_object(bound.object), []Value{}, distinct)!
+	assert voidptr(result) == voidptr(distinct)
+}

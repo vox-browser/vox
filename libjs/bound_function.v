@@ -56,7 +56,7 @@ pub fn (mut function BoundFunction) internal_construct(mut vm VM, arguments []Va
 	assert function.has_constructor()
 	mut combined := function.bound_arguments.clone()
 	combined << arguments
-	final_new_target := if new_target == function.object { function.bound_target_function } else { new_target }
+	final_new_target := if voidptr(new_target) == voidptr(function.object) { function.bound_target_function } else { new_target }
 	mut target := function.bound_target_function.constructor or { panic('bound target is not a constructor') }
 	return target.internal_construct(mut vm, combined, final_new_target)
 }
