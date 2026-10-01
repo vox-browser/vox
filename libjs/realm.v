@@ -103,6 +103,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	set_default_global_numeric_functions(mut vm, realm)
 	set_default_global_uri_functions(mut vm, realm)
 	set_default_global_value_bindings(realm)
+	set_default_global_legacy_functions(mut vm, realm)
 	// 19. Create any host-defined global object properties on global.
 	// 20. Return unused.
 	return new_context
