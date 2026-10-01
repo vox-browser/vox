@@ -45,6 +45,11 @@ entries/keys/values, copyWithin, fill, join, toReversed/toSorted/with,
 filter/map/set/slice/subarray and toLocaleString. Same-type and species result
 creation use explicit intrinsic constructor/prototype dependencies. Primitive
 boxing, GetV, GetMethod and Invoke retain explicit Number/BigInt/String dependencies.
+Eleven Object prototype native bodies are translated: own/enumerable membership,
+prototype membership, valueOf/toLocaleString, legacy getter/setter definition and
+lookup, and __proto__ accessors. They retain primitive dependencies explicitly;
+ObjectPrototype initialization and toString's complete type-record/IsArray chain
+remain pending. Coercibility checks and immutable prototype dispatch follow upstream.
 The abstract TypedArray constructor adds from/of/species. Its shared prototype
 initializer preserves metadata, Array toString identity and the values/@@iterator
 alias through explicit dependencies. All twelve concrete constructor/prototype

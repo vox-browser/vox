@@ -1,6 +1,6 @@
 # LibJS V translation status
 
-Audited: 2026-10-01.
+Audited: 2026-10-02.
 
 The frontend baseline comes from `medvednikov/libjs_v` commit
 `9824cc3fad0910215f0f4de43fb108bb7575f6c7` (2026-02-24). The upstream reference is
@@ -10,7 +10,7 @@ AST, and scope collector for the frontend, and its C++ `Runtime/VM.{h,cpp}`,
 `Interpreter/Interpreter.cpp` VM members, and runtime records for the VM slice.
 The execution slice additionally follows `Rust/src/bytecode/{operand,generator,codegen}.rs`,
 `Interpreter/{interpreter.flap,SlowPaths.cpp}`, `Script.cpp`,
-`Runtime/{Value,GlobalObject,BigInt,NativeFunction,FunctionObject,BoundFunction,FunctionPrototype,BooleanObject,BooleanPrototype,BooleanConstructor,SymbolObject,SymbolPrototype,SymbolConstructor,StringObject,NumberObject,BigIntObject,Iterator,StringIterator,StringIteratorPrototype,ArrayIterator,ArrayIteratorPrototype,ByteLength,ArrayBuffer,ArrayBufferConstructor,ArrayBufferPrototype,DataView,DataViewConstructor,DataViewPrototype,SharedArrayBufferConstructor,SharedArrayBufferPrototype,CanonicalIndex,TypedArray,TypedArrayPrototype,Intrinsics,Array,ArrayPrototype,IndexedProperties,PropertyKey,Object,PrimitiveString,Accessor,PropertyDescriptor,AbstractOperations}`
+`Runtime/{Value,GlobalObject,BigInt,NativeFunction,FunctionObject,BoundFunction,FunctionPrototype,BooleanObject,BooleanPrototype,BooleanConstructor,SymbolObject,SymbolPrototype,SymbolConstructor,StringObject,NumberObject,BigIntObject,Iterator,StringIterator,StringIteratorPrototype,ArrayIterator,ArrayIteratorPrototype,ByteLength,ArrayBuffer,ArrayBufferConstructor,ArrayBufferPrototype,DataView,DataViewConstructor,DataViewPrototype,SharedArrayBufferConstructor,SharedArrayBufferPrototype,CanonicalIndex,TypedArray,TypedArrayPrototype,Intrinsics,Array,ArrayPrototype,IndexedProperties,PropertyKey,Object,ObjectPrototype,PrimitiveString,Accessor,PropertyDescriptor,AbstractOperations}`
 source bodies and `Runtime/ValueInlines.h`, numeric/URI/Annex B global functions
 from `Runtime/GlobalObject.cpp`,
 `AK/StringConversions.cpp` and fast_float decimal-prefix parsing, and the BigInt
@@ -54,6 +54,7 @@ creates a realm with a global environment and pushes its execution context.
 | `realm.v`, `script.v`, `module_records.v`, `promise.v`, `function_object.v`, `executable.v` | Realm and Script records, standard global value properties, `Module` records and loading payloads, promise state, job callbacks, executable metadata (handler ranges, source map, identifier table) |
 | `value_operations.v`, `value_coercion.v`, `big_int.v` | Numeric operations, BigInt cells and conversions, signed bitwise operations, exact mixed numeric comparisons, UTF-16 concatenation, ToPrimitive/OrdinaryToPrimitive and property-key conversion |
 | `value_indices.v`, `array_like.v`, `instanceof.v` | ToIntegerOrInfinity/ToLength/ToIndex, LengthOfArrayLike/CreateListFromArrayLike, OrdinaryHasInstance and InstanceofOperator |
+| `object_coercible.v`, `immutable_prototype.v`, `object_prototype_methods.v`, `object_prototype_accessors.v`, `object_prototype_proto.v` | RequireObjectCoercible, SetImmutablePrototype and eleven ObjectPrototype native bodies with explicit primitive dependencies; ObjectPrototype initialization and toString remain pending |
 | `value_integer_conversions.v` | ToInt8/ToUint8/ToInt16/ToUint16 and ties-to-even ToUint8Clamp |
 | `native_function.v` | Capturing/raw native callable objects, function metadata, native table dispatch and callee execution contexts |
 | `construct.v`, `constructor_prototype.v` | Native construction contexts, IsConstructor, GetFunctionRealm, and GetPrototypeFromConstructor |
@@ -92,8 +93,8 @@ creates a realm with a global environment and pushes its execution context.
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 134 implementation files contain **26,949 physical V LOC**. The 140 test
-files contain **18,171 physical V LOC** and **512 test functions**. Physical LOC
+The 139 implementation files contain **27,107 physical V LOC**. The 145 test
+files contain **18,828 physical V LOC** and **529 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -707,6 +708,33 @@ Uint8Array's two static and four prototype encoding functions use their source
 metadata and descriptors. Dependencies remain explicit; these records are not
 installed in the production realm or exposed as builtin globals.
 
+ObjectPrototype common methods (`075d278`) translate hasOwnProperty,
+propertyIsEnumerable, isPrototypeOf, valueOf and toLocaleString directly.
+Membership converts the property key before boxing the receiver and reads only
+own descriptors, including String virtual characters and symbol keys. Prototype
+membership short-circuits nonobject arguments before receiver coercion, then
+walks by identity. valueOf preserves objects and creates current-realm primitive
+wrappers; toLocaleString invokes the live toString property with the original
+receiver and no forwarded arguments.
+
+RequireObjectCoercible (`0291ad9`) rejects nullish values using the source error
+and otherwise returns its argument unchanged. SetImmutablePrototype (`a8a54c4`)
+compares prototype identity without mutation or an extensibility check; Object's
+immutable-prototype dispatch flag represents ObjectPrototype's virtual override.
+The actual ObjectPrototype intrinsic record and initialization remain pending.
+
+Annex B accessor bodies (`d8016f4`) preserve ToObject, callability and key-conversion
+order during definitions. Definitions preserve an existing opposite callback,
+set enumerable/configurable, and propagate failed definitions. Lookup walks own
+descriptors without invoking callbacks, stopping at data properties or an
+accessor with an undefined callback. The __proto__ getter/setter (`6730833`)
+retain primitive boxing for reads, coercibility-first validation for writes,
+ignored invalid prototype arguments, unboxed primitive no-ops, and TypeError
+on cycles or rejected prototype changes. These eleven native bodies retain
+explicit Number/BigInt/String prototype dependencies. Object toString's complete
+IsArray/Proxy, mapped-arguments, Date and RegExp dependency chain is untranslated;
+no replacement tag implementation or partial production Object intrinsic is added.
+
 Numeric globals follow the upstream coercion order and errors. parseInt preserves
 radix validation, hexadecimal-prefix stripping, prefix termination, per-digit
 double accumulation, and signed zero. parseFloat preserves the Number fast path,
@@ -792,25 +820,25 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 140 passed, 140 total
+# 145 passed, 145 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 140 passed, 140 total
+# 145 passed, 145 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
 
 v -old-compiler -enable-globals test browserjs
-# 13 passed, 13 total
+# 14 passed, 14 total
 
 v -old-compiler -enable-globals -gc none test browserjs
-# 13 passed, 13 total
+# 14 passed, 14 total
 
 v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
 
 v -old-compiler -enable-globals test .
-# 807 passed, 807 total
+# 813 passed, 813 total
 
 ./build_ladybird.sh
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
@@ -834,15 +862,15 @@ fixtures; separate tests exercise translated NativeFunction and ArrayBufferObjec
 records. Module-loading tests write temporary module files. The preceding LibWeb
 work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 140 libjs files are verified separately in both GC modes.
-There are now 807 repository test files.
+this package; the 145 libjs files are verified separately in both GC modes.
+There are now 813 repository test files.
 
-The complete 807-file repository suite passes, including the native bridge,
-thirteen browser integration files and all 140 LibJS files. The dedicated LibJS and
+The complete 813-file repository suite passes, including the native bridge,
+fourteen browser integration files and all 145 LibJS files. The dedicated LibJS and
 browser suites also pass in no-GC mode, exercising the retained storage and
 buffer ownership independently of the collector.
 
-Browser integration checks pass the thirteen `browserjs` test files in both GC modes,
+Browser integration checks pass the fourteen `browserjs` test files in both GC modes,
 the native `main_test.v` bridge and flag tests, the production bundle build,
 JavaScriptCore DOM-mutation/click smoke, and LibJS bytecode smoke. Native
 LibJS fixtures also verify bound calls/construction, Boolean and Symbol methods,
@@ -918,6 +946,13 @@ and Object/Array/Number/BigInt/String intrinsic dependencies. Compiled scripts
 exercise hex/base64 round trips, URL alphabets, omitted padding, capacity limits,
 partial writes before errors, BYTES_PER_ELEMENT, tracking growth, byte offsets,
 detachment and recovery in later scripts without creating a JavaScriptCore context.
+Object native-body integration (`c0f46fb`) uses an explicit test host, retaining
+an immutable root and live ordinary child prototypes. Compiled browser scripts
+exercise own/enumerable membership, primitive boxing, toLocaleString argument
+suppression, symbol accessors, inherited getter/setter preservation, descriptor
+lookup, prototype mutation, cycle/immutable-root errors and later-script recovery.
+These checks create no JavaScriptCore context and do not install ObjectPrototype
+or supply a replacement Object toString implementation in the production realm.
 The rebuilt native bundle passes both engine smoke checks and a buffer-regression
 document covering shared BigInt storage, growth, slicing and transferred Float16
 bytes without script errors.
@@ -1076,6 +1111,13 @@ the same-size SVG source switch with zero differing pixels.
   installing unfinished concrete globals. Array toString takes an explicit
   retained Object toString intrinsic function, whose tag/IsArray/Proxy dependency
   chain is untranslated. Browser fixtures supply a clearly named host callback.
+- ObjectPrototype native bodies use explicit Number/BigInt/String prototype
+  dependencies in place of unfinished Intrinsics members. Ordinary and already
+  translated Array/String/TypedArray exotic property paths use existing
+  descriptor operations; Proxy internal methods remain pending. The
+  immutable-prototype dispatch flag replaces the C++ ObjectPrototype virtual
+  override. Its eleven translated bodies do not install a partial ObjectPrototype
+  record; initialization and the toString type-record/IsArray chain remain pending.
 - Uint8Array's hex/base64 behavior and helper initialization are translated.
   GetUint8ArrayBytes and encoding use a copied flat byte snapshot instead of a
   caged readonly span; concurrent shared-memory semantics remain pending.
@@ -1137,8 +1179,8 @@ complete LibJS runtime migration.
   and shared TypedArray prototype including values/@@iterator exist with
   explicit dependencies, as do all twelve concrete constructor/prototype records
   and Uint8Array's six hex/base64 methods. Production builtin installation, its
-  complete intrinsic graph, Object toString/IsArray and Number/BigInt locale
-  builtins remain untranslated, as do concurrent shared backing stores,
+  complete intrinsic graph, ObjectPrototype initialization and toString/IsArray,
+  and Number/BigInt locale builtins remain untranslated, as do concurrent shared backing stores,
   Atomics and caged storage.
   Realms expose four standard value properties, eight numeric/URI functions,
   Boolean/Symbol/ArrayBuffer/DataView/SharedArrayBuffer constructors, and two legacy
