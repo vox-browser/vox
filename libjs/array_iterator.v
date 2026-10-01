@@ -1,8 +1,7 @@
 module libjs
 
-// Runtime/ArrayIterator.{h,cpp}: CreateArrayIterator and the ordinary-array-like
-// next path. TypedArray's witness and bounds-check path depends on its pending
-// runtime records; there is no translated TypedArray brand yet.
+// Runtime/ArrayIterator.{h,cpp}: CreateArrayIterator and next, including the
+// TypedArray witness path and the ordinary-array-like observable length path.
 pub enum PropertyKind {
 	key
 	value
@@ -34,7 +33,13 @@ pub fn (mut iterator ArrayIterator) next(mut vm VM, array_prototype &Object) !It
 	assert target.is_object()
 	array := target.as_object()
 	index := iterator.index
-	length := length_of_array_like(mut vm, array)!
+	length := if typed_array := array.typed_array {
+		record := make_typed_array_with_buffer_witness_record(typed_array, .seq_cst)
+		if is_typed_array_out_of_bounds(record) {
+			return vm.throw_error_type(.type_error, .buffer_out_of_bounds, 'TypedArray')
+		}
+		u64(typed_array_length(record))
+	} else { length_of_array_like(mut vm, array)! }
 	if index >= length {
 		iterator.array = js_undefined()
 		return IteratorStepValue{done: true, value: js_undefined()}
