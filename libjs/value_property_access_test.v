@@ -1,5 +1,67 @@
 module libjs
 
+fn test_get_method_uses_primitive_receivers_and_distinguishes_nullish_and_noncallable_results() {
+	mut vm := VM.create()
+	base := create_simple_execution_context(mut vm)
+	mut parent := Object.create(vm.realm(), none)
+	getter := fn [parent] (realm &Realm) &Object {
+		return parent
+	}
+	prototypes := PrimitiveObjectPrototypes{
+		number: getter
+		bigint: getter
+		string: getter
+	}
+	values := [Value.from_i32(42), Value.from_bigint(string_to_bigint(utf16_string('42'))?),
+		Value.from_string(vm.create_string_from_str('abc'))]
+	for receiver in values {
+		function := NativeFunction.create(mut vm, vm.realm(), vm.realm().function_prototype, fn (mut vm VM) !Value {
+			return js_undefined()
+		}, 0, PropertyName.from_str('method'), none)
+		bound := BoundFunction.create(vm.realm(), function.object, js_null(), []Value{})
+		for result in [js_undefined(), js_null(), Value.from_i32(7),
+			Value.from_object(function.object), Value.from_object(bound.object)] {
+			parent.define_native_accessor(mut vm, vm.realm(), PropertyName.from_str('method'), fn [receiver, result] (mut vm VM) !Value {
+				assert same_value(vm.this_value(), receiver)
+				return result
+			}, unsafe { nil }, attribute_configurable, vm.realm().function_prototype)
+			if actual := receiver.get_method_with_prototypes(mut vm,
+				PropertyName.from_str('method'), prototypes)
+			{
+				assert result.is_nullish() || result.is_function()
+				assert if result.is_nullish() {
+					actual.is_undefined()
+				} else {
+					same_value(actual, result)
+				}
+			} else {
+				assert result.number == 7
+				assert thrown_value(err).as_object().error_message()?.str() == '7 is not a function'
+			}
+		}
+	}
+	parent.define_native_accessor(mut vm, vm.realm(), PropertyName.from_str('method'), fn (mut vm VM) !Value {
+		return throw_completion(Value.from_i32(99))
+	}, unsafe { nil }, attribute_configurable, vm.realm().function_prototype)
+	if _ := values[0].get_method_with_prototypes(mut vm, PropertyName.from_str('method'),
+		prototypes)
+	{
+		assert false
+	} else {
+		assert thrown_value(err).number == 99
+	}
+	for nullish in [js_null(), js_undefined()] {
+		if _ := nullish.get_method_with_prototypes(mut vm, PropertyName.from_str('method'),
+			prototypes)
+		{
+			assert false
+		} else {
+			assert thrown_value(err).as_object().error_message()?.str() == 'ToObject on null or undefined'
+		}
+	}
+	assert vm.running_execution_context() == base && vm.interpreter_stack().depth() == 0
+}
+
 fn test_get_v_and_invoke_preserve_primitive_receiver_for_prototype_accessors_and_methods() {
 	mut vm := VM.create()
 	base := create_simple_execution_context(mut vm)

@@ -29,3 +29,14 @@ pub fn (value Value) invoke_with_prototypes(mut vm VM, key PropertyName, argumen
 	function := value.get_with_prototypes(mut vm, key, prototypes)!
 	return call(mut vm, function, value, arguments)
 }
+
+// Value.cpp::get_method (GetMethod), retaining nullish versus non-callable
+// results after GetV. Property caches are a separate representation dependency.
+pub fn (value Value) get_method_with_prototypes(mut vm VM, key PropertyName, prototypes PrimitiveObjectPrototypes) !Value {
+	function := value.get_with_prototypes(mut vm, key, prototypes)!
+	if function.is_nullish() { return js_undefined() }
+	if !function.is_function() {
+		return vm.throw_error_type(.type_error, .not_a_function, function.str())
+	}
+	return function
+}
