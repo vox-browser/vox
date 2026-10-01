@@ -151,6 +151,7 @@ pub mut:
 	symbol_object        ?&SymbolObject // [[SymbolData]]
 	string_object        ?&StringObject // [[StringData]] and virtual indexed properties
 	string_iterator      ?&StringIterator
+	array_iterator       ?&ArrayIterator
 }
 
 // 10.1.12 OrdinaryObjectCreate ( proto [ , additionalInternalSlotsList ] ), https://tc39.es/ecma262/#sec-ordinaryobjectcreate
