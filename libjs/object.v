@@ -143,6 +143,7 @@ pub mut:
 	callable            ?FunctionObject
 	native_callable     bool
 	native_initial_name ?Utf16String
+	bound_function ?&BoundFunction
 }
 
 // 10.1.12 OrdinaryObjectCreate ( proto [ , additionalInternalSlotsList ] ), https://tc39.es/ecma262/#sec-ordinaryobjectcreate
