@@ -58,6 +58,7 @@ pub:
 mut:
 	context voidptr
 	closed  bool
+	host_functions_ []&HostFunctionRecord
 }
 
 pub fn Runtime.create() &Runtime {
@@ -233,5 +234,6 @@ pub fn (mut runtime Runtime) close() {
 	}
 	mut vm := unsafe { &libjs.VM(runtime.agent_vm) }
 	vm.clear_execution_context_stack()
+	runtime.host_functions_.clear()
 	runtime.closed = true
 }
