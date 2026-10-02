@@ -142,6 +142,20 @@ resizable views still reject explicitly: public getters materialize current
 lengths and cannot recover their original automatic/fixed slots, including a
 fixed view that temporarily became out of bounds after resize.
 
+Resizable views reconstructed from source records now retain those known
+immutable constructor slots beside the actual native view pointer. This owner
+belongs to the actual Runtime, so multiple projection bridges in that Runtime
+reuse the same original record. Actual fixed/automatic DataView and TypedArray
+construction preserves automatic flags during source reprojection after growth;
+live witness checks still reject a temporarily out-of-bounds view after shrink,
+and regrowth restores its original fixed slots. Source backing bytes reflect
+the actual current buffer. Three owning-view cases and the fixed-view neighbor
+passed individually with GC disabled. One protected actual view root preserves
+the slot record until Runtime.close, where the owner registry clears before the
+engine context is released. This is explicit embedding retention, not full
+source GC wrapper reclamation. Untracked author-created resizable views remain
+unsupported; current getter values are never substituted for original slots.
+
 The native brand classifier captures a genuine SharedArrayBuffer byte-length
 getter when the engine exposes it. A shared buffer cannot fall through as an
 ordinary empty object, and a shared-backed view rejects before ArrayBuffer-only
