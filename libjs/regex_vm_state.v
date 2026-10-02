@@ -1,0 +1,216 @@
+module libjs
+
+// LibRegex/Rust/src/vm.rs::{SavedState,ActiveModifiers,VmScratch,Vm}: storage,
+// construction/reset, snapshots, saved choices and modifier transitions.
+// Matcher dispatch and backtrack execution are separate untranslated slices.
+pub struct RegexActiveModifiers {
+pub mut:
+	ignore_case bool
+	multiline   bool
+	dot_all     bool
+}
+
+pub type RegexSavedState = RegexSavedNormal | RegexSavedGreedy | RegexSavedLazy
+
+pub struct RegexSavedNormal {
+pub mut:
+	pc                  u32
+	pos                 usize
+	reg_snapshot_offset usize
+	modifiers           RegexActiveModifiers
+	modifier_stack_len  usize
+}
+
+pub struct RegexSavedGreedy {
+pub mut:
+	pc                  u32
+	start_pos           usize
+	current_pos         usize
+	reg_snapshot_offset usize
+	min                 u32
+	backward            bool
+	modifiers           RegexActiveModifiers
+	modifier_stack_len  usize
+}
+
+pub struct RegexSavedLazy {
+pub mut:
+	pc                  u32
+	pos                 usize
+	reg_snapshot_offset usize
+	max                 ?u32
+	consumed            u32
+	modifiers           RegexActiveModifiers
+	modifier_stack_len  usize
+}
+
+@[heap]
+pub struct RegexVmScratch {
+pub mut:
+	registers       []i32
+	backtrack_stack []RegexSavedState
+	register_pool   []i32
+	modifier_stack  []RegexActiveModifiers
+}
+
+pub fn RegexVmScratch.new() &RegexVmScratch {
+	return &RegexVmScratch{}
+}
+
+pub struct RegexVm {
+pub:
+	program &RegexProgram @[required]
+	input   RegexInput
+pub mut:
+	pc        u32
+	pos       usize
+	scratch   &RegexVmScratch @[required]
+	steps     u64
+	modifiers RegexActiveModifiers
+	backward  bool
+	bt_floor  usize
+}
+
+// The VM borrows the stable program/input and this scratch owner. Callers must
+// retain all three and use one active VM per scratch, matching Rust's exclusive
+// borrow of the four vectors. One owner reference replaces four vector borrows.
+pub fn RegexVm.new(program &RegexProgram, input RegexInput, start_pos usize, mut scratch RegexVmScratch) &RegexVm {
+	if program.register_count > u32(max_int) {
+		panic('Regex register count exceeds V array capacity')
+	}
+	reg_count := int(program.register_count)
+	if scratch.registers.len > reg_count { scratch.registers.trim(reg_count) }
+	for scratch.registers.len < reg_count {
+		scratch.registers << i32(-1)
+	}
+	for index in 0 .. scratch.registers.len {
+		scratch.registers[index] = -1
+	}
+	scratch.backtrack_stack.clear()
+	scratch.register_pool.clear()
+	scratch.modifier_stack.clear()
+	return &RegexVm{
+		program:   program
+		input:     input
+		pos:       start_pos
+		scratch:   &scratch
+		modifiers: RegexActiveModifiers{
+			ignore_case: program.ignore_case
+			multiline:   program.multiline
+			dot_all:     program.dot_all
+		}
+	}
+}
+
+pub fn (vm RegexVm) input_len() usize {
+	return vm.input.len()
+}
+
+pub fn (vm RegexVm) input_code_unit(pos usize) u16 {
+	return vm.input.code_unit(pos)
+}
+
+pub fn (mut vm RegexVm) reset(pos usize) {
+	vm.pc = 0
+	vm.pos = pos
+	for index in 0 .. vm.scratch.registers.len {
+		vm.scratch.registers[index] = -1
+	}
+	vm.scratch.backtrack_stack.clear()
+	vm.scratch.register_pool.clear()
+	vm.steps = 0
+	vm.modifiers = RegexActiveModifiers{
+		ignore_case: vm.program.ignore_case
+		multiline:   vm.program.multiline
+		dot_all:     vm.program.dot_all
+	}
+	vm.scratch.modifier_stack.clear()
+	vm.backward = false
+	vm.bt_floor = 0
+}
+
+pub fn (mut vm RegexVm) snapshot_registers() usize {
+	offset := usize(vm.scratch.register_pool.len)
+	vm.scratch.register_pool << vm.scratch.registers
+	return offset
+}
+
+pub fn (mut vm RegexVm) restore_registers(reg_snapshot_offset usize) {
+	reg_count := vm.scratch.registers.len
+	// Rust validates the whole slice before copying, including an empty slice.
+	if reg_snapshot_offset > usize(vm.scratch.register_pool.len)
+		|| usize(reg_count) > usize(vm.scratch.register_pool.len) - reg_snapshot_offset {
+		panic('Regex register snapshot index out of bounds')
+	}
+	start := int(reg_snapshot_offset)
+	snapshot := vm.scratch.register_pool[start..start + reg_count]
+	for index, value in snapshot {
+		vm.scratch.registers[index] = value
+	}
+}
+
+pub fn (mut vm RegexVm) push_backtrack(pc u32, pos usize) {
+	offset := vm.snapshot_registers()
+	vm.scratch.backtrack_stack << RegexSavedNormal{
+		pc:                  pc
+		pos:                 pos
+		reg_snapshot_offset: offset
+		modifiers:           vm.modifiers
+		modifier_stack_len:  usize(vm.scratch.modifier_stack.len)
+	}
+}
+
+pub fn (mut vm RegexVm) push_backtrack_modified(pc u32, pos usize, mod_index usize, mod_value i32) {
+	offset := vm.snapshot_registers()
+	if mod_index >= usize(vm.scratch.registers.len) {
+		panic('Regex register snapshot index out of bounds')
+	}
+	vm.scratch.register_pool[int(offset + mod_index)] = mod_value
+	vm.scratch.backtrack_stack << RegexSavedNormal{
+		pc:                  pc
+		pos:                 pos
+		reg_snapshot_offset: offset
+		modifiers:           vm.modifiers
+		modifier_stack_len:  usize(vm.scratch.modifier_stack.len)
+	}
+}
+
+pub fn (mut vm RegexVm) push_greedy_backtrack(pc u32, start_pos usize, current_pos usize, min u32) {
+	offset := vm.snapshot_registers()
+	vm.scratch.backtrack_stack << RegexSavedGreedy{
+		pc:                  pc
+		start_pos:           start_pos
+		current_pos:         current_pos
+		reg_snapshot_offset: offset
+		min:                 min
+		backward:            vm.backward
+		modifiers:           vm.modifiers
+		modifier_stack_len:  usize(vm.scratch.modifier_stack.len)
+	}
+}
+
+pub fn (mut vm RegexVm) push_lazy_backtrack(pc u32, pos usize, max ?u32, consumed u32) {
+	offset := vm.snapshot_registers()
+	vm.scratch.backtrack_stack << RegexSavedLazy{
+		pc:                  pc
+		pos:                 pos
+		reg_snapshot_offset: offset
+		max:                 max
+		consumed:            consumed
+		modifiers:           vm.modifiers
+		modifier_stack_len:  usize(vm.scratch.modifier_stack.len)
+	}
+}
+
+pub fn (mut vm RegexVm) handle_push_modifiers(ignore_case ?bool, multiline ?bool, dot_all ?bool) {
+	vm.scratch.modifier_stack << vm.modifiers
+	if value := ignore_case { vm.modifiers.ignore_case = value }
+	if value := multiline { vm.modifiers.multiline = value }
+	if value := dot_all { vm.modifiers.dot_all = value }
+	vm.pc++
+}
+
+pub fn (mut vm RegexVm) handle_pop_modifiers() {
+	if vm.scratch.modifier_stack.len > 0 { vm.modifiers = vm.scratch.modifier_stack.pop() }
+	vm.pc++
+}

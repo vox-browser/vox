@@ -32,6 +32,7 @@ pub mut:
 	index u32
 }
 
+@[heap]
 pub struct RegexProgram {
 pub mut:
 	instructions   []RegexInstruction
