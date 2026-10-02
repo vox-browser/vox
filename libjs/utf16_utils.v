@@ -36,7 +36,7 @@ fn (u Utf16String) clone() Utf16String {
 }
 
 // WTF-8 preserves even unpaired UTF-16 surrogates in internal map keys.
-fn (u Utf16String) str() string {
+pub fn (u Utf16String) str() string {
 	return encode_utf16(u.data, false)
 }
 
