@@ -80,7 +80,9 @@ fn test_string_timer_checks_current_csp_before_classic_script_and_preserves_sour
 	scope.run_all_timers()
 	assert observation.bases.len == 0
 	assert scope.reported_errors().len == 1
-	assert scope.reported_errors()[0].string_data == 'EvalError: Blocked by Content Security Policy'
+	reported := scope.reported_errors()[0].as_webidl_value()!
+	assert reported.kind == .string_
+	assert reported.string_value == 'EvalError: Blocked by Content Security Policy'
 	// Source string-compilation failure aborts the task before map removal.
 	assert id in scope.active_timers_
 	scope.clear_timeout(id)

@@ -425,7 +425,8 @@ fn (mut scope WindowOrWorkerGlobalScopeMixin) run_timer_initialization_steps(han
 					code_string: source
 					type_: .timer
 				}) or {
-					exception := if convert := owner.embedding_timer_compilation_exception_value_ { convert(err) } else { webidl.exception_value(err) }
+					compilation_exception := err
+					exception := if convert := owner.embedding_timer_compilation_exception_value_ { convert(compilation_exception) } else { webidl.exception_value(compilation_exception) }
 					owner.report_an_exception(dom.js_webidl_value(exception), false)
 					return
 				}
