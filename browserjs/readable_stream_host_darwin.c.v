@@ -346,8 +346,10 @@ const readable_stream_native_bootstrap = '(function(create,operate){
   const ReadableStreamDefaultReader=new ConstructProxy(function ReadableStreamDefaultReader(stream){throw new Type("ReadableStreamDefaultReader requires new")},{construct(target,args,newTarget){const prototype=newTarget.prototype;if(args.length<1)throw new Type("ReadableStreamDefaultReader requires 1 argument");return operate(args[0],"stream.readerConstructor",prototype)}});
   define(ReadableStream.prototype,"constructor",{value:ReadableStream,writable:true,configurable:true});
   define(ReadableStreamDefaultReader.prototype,"constructor",{value:ReadableStreamDefaultReader,writable:true,configurable:true});
-  function ReadableStreamDefaultController(){throw new Type("Illegal constructor")}
-  function ReadableByteStreamController(){throw new Type("Illegal constructor")}
+  const ReadableStreamDefaultController=new ConstructProxy(function ReadableStreamDefaultController(){throw new Type("ReadableStreamDefaultController requires new")},{construct(){throw new Type("Illegal constructor")}});
+  define(ReadableStreamDefaultController.prototype,"constructor",{value:ReadableStreamDefaultController,writable:true,configurable:true});
+  const ReadableByteStreamController=new ConstructProxy(function ReadableByteStreamController(){throw new Type("ReadableByteStreamController requires new")},{construct(){throw new Type("Illegal constructor")}});
+  define(ReadableByteStreamController.prototype,"constructor",{value:ReadableByteStreamController,writable:true,configurable:true});
   const byobPrototype=Object.create(Object.prototype);
   const attribute=(prototype,name,operation)=>Object.defineProperty(prototype,name,{enumerable:true,configurable:true,get(){return operate(this,operation)}});
   attribute(ReadableStream.prototype,"locked","stream.locked");
@@ -367,6 +369,7 @@ const readable_stream_native_bootstrap = '(function(create,operate){
   ReadableByteStreamController.prototype.close=function(){return operate(this,"byteController.close")};
   ReadableByteStreamController.prototype.error=function(...args){return operate(this,"byteController.error",...args)};
   for(const [Constructor,name] of [[ReadableStream,"ReadableStream"],[ReadableStreamDefaultReader,"ReadableStreamDefaultReader"],[ReadableStreamDefaultController,"ReadableStreamDefaultController"],[ReadableByteStreamController,"ReadableByteStreamController"]]){
+    define(Constructor,"prototype",{writable:false});
     Object.defineProperty(Constructor.prototype,Symbol.toStringTag,{value:name,configurable:true});
     Object.defineProperty(globalThis,name,{value:Constructor,writable:true,configurable:true});
   }

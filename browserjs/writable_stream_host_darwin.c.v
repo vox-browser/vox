@@ -279,7 +279,8 @@ const writable_stream_native_bootstrap = r'(function(create,operate){
  const WritableStreamDefaultWriter=new ConstructProxy(function WritableStreamDefaultWriter(stream){throw new Type("WritableStreamDefaultWriter requires new")},{construct(target,args,newTarget){const prototype=newTarget.prototype;if(args.length<1)throw new Type("WritableStreamDefaultWriter requires 1 argument");return operate(args[0],"stream.writerConstructor",prototype)}});
  define(WritableStream.prototype,"constructor",{value:WritableStream,writable:true,configurable:true});
  define(WritableStreamDefaultWriter.prototype,"constructor",{value:WritableStreamDefaultWriter,writable:true,configurable:true});
- function WritableStreamDefaultController(){throw new Type("Illegal constructor")}
+ const WritableStreamDefaultController=new ConstructProxy(function WritableStreamDefaultController(){throw new Type("WritableStreamDefaultController requires new")},{construct(){throw new Type("Illegal constructor")}});
+  define(WritableStreamDefaultController.prototype,"constructor",{value:WritableStreamDefaultController,writable:true,configurable:true});
  const attribute=(prototype,name,operation)=>define(prototype,name,{enumerable:true,configurable:true,get(){return operate(this,operation)}});
  const method=(prototype,name,value)=>define(prototype,name,{value,writable:true,enumerable:true,configurable:true});
  attribute(WritableStream.prototype,"locked","stream.locked");
@@ -297,6 +298,6 @@ const writable_stream_native_bootstrap = r'(function(create,operate){
  method(WritableStreamDefaultController.prototype,"error",function error(reason){return operate(this,"controller.error",reason)});
  for(const prototype of [WritableStream.prototype,WritableStreamDefaultWriter.prototype])for(const name of ["abort","write"])if(Object.prototype.hasOwnProperty.call(prototype,name))define(prototype[name],"length",{value:0,configurable:true});
  define(WritableStreamDefaultController.prototype.error,"length",{value:0,configurable:true});
- for(const [Constructor,name] of [[WritableStream,"WritableStream"],[WritableStreamDefaultWriter,"WritableStreamDefaultWriter"],[WritableStreamDefaultController,"WritableStreamDefaultController"]]){define(Constructor.prototype,Symbol.toStringTag,{value:name,configurable:true});define(globalThis,name,{value:Constructor,writable:true,configurable:true})}
+ for(const [Constructor,name] of [[WritableStream,"WritableStream"],[WritableStreamDefaultWriter,"WritableStreamDefaultWriter"],[WritableStreamDefaultController,"WritableStreamDefaultController"]]){define(Constructor,"prototype",{writable:false});define(Constructor.prototype,Symbol.toStringTag,{value:name,configurable:true});define(globalThis,name,{value:Constructor,writable:true,configurable:true})}
  return [WritableStream.prototype,WritableStreamDefaultWriter.prototype,WritableStreamDefaultController.prototype]
 })'

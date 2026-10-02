@@ -141,6 +141,7 @@ const queuing_strategy_native_bootstrap = r'(function(create,operate){
  const CountQueuingStrategy=new ConstructProxy(function CountQueuingStrategy(init){throw new Type("CountQueuingStrategy requires new")},{construct(target,args,newTarget){const prototype=newTarget.prototype;return create(false,args.length,args[0],prototype)}});
  const ByteLengthQueuingStrategy=new ConstructProxy(function ByteLengthQueuingStrategy(init){throw new Type("ByteLengthQueuingStrategy requires new")},{construct(target,args,newTarget){const prototype=newTarget.prototype;return create(true,args.length,args[0],prototype)}});
  for(const [Constructor,name,bytes] of [[CountQueuingStrategy,"CountQueuingStrategy",false],[ByteLengthQueuingStrategy,"ByteLengthQueuingStrategy",true]]){
+  define(Constructor,"prototype",{writable:false});
   define(Constructor.prototype,"constructor",{value:Constructor,writable:true,configurable:true});
   define(Constructor.prototype,"highWaterMark",{enumerable:true,configurable:true,get(){return operate(this,bytes,false)}});
   define(Constructor.prototype,"size",{enumerable:true,configurable:true,get(){return operate(this,bytes,true)}});

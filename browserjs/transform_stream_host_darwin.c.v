@@ -186,7 +186,8 @@ const transform_stream_native_bootstrap = r'(function(create,operate){
  const define=Object.defineProperty,Type=TypeError,ConstructProxy=Proxy;
  const TransformStream=new ConstructProxy(function TransformStream(){throw new Type("TransformStream requires new")},{construct(target,args,newTarget){const prototype=newTarget.prototype;return create(args[0],args[1],args[2],prototype)}});
  define(TransformStream.prototype,"constructor",{value:TransformStream,writable:true,configurable:true});
- function TransformStreamDefaultController(){throw new Type("Illegal constructor")}
+ const TransformStreamDefaultController=new ConstructProxy(function TransformStreamDefaultController(){throw new Type("TransformStreamDefaultController requires new")},{construct(){throw new Type("Illegal constructor")}});
+  define(TransformStreamDefaultController.prototype,"constructor",{value:TransformStreamDefaultController,writable:true,configurable:true});
  const attribute=(prototype,name,operation)=>define(prototype,name,{enumerable:true,configurable:true,get(){return operate(this,operation)}});
  const method=(prototype,name,value)=>define(prototype,name,{value,writable:true,enumerable:true,configurable:true});
  attribute(TransformStream.prototype,"readable","stream.readable");attribute(TransformStream.prototype,"writable","stream.writable");
@@ -195,6 +196,6 @@ const transform_stream_native_bootstrap = r'(function(create,operate){
  method(TransformStreamDefaultController.prototype,"error",function error(reason){return operate(this,"controller.error",reason)});
  method(TransformStreamDefaultController.prototype,"terminate",function terminate(){return operate(this,"controller.terminate")});
  for(const name of ["enqueue","error"])define(TransformStreamDefaultController.prototype[name],"length",{value:0,configurable:true});
- for(const [Constructor,name] of [[TransformStream,"TransformStream"],[TransformStreamDefaultController,"TransformStreamDefaultController"]]){define(Constructor.prototype,Symbol.toStringTag,{value:name,configurable:true});define(globalThis,name,{value:Constructor,writable:true,configurable:true})}
+ for(const [Constructor,name] of [[TransformStream,"TransformStream"],[TransformStreamDefaultController,"TransformStreamDefaultController"]]){define(Constructor,"prototype",{writable:false});define(Constructor.prototype,Symbol.toStringTag,{value:name,configurable:true});define(globalThis,name,{value:Constructor,writable:true,configurable:true})}
  return [TransformStream.prototype,TransformStreamDefaultController.prototype]
 })'
