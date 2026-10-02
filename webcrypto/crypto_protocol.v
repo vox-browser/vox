@@ -82,14 +82,13 @@ fn required_algorithm_u32(object map[string]json2.Any, key string) !u32 {
 	}
 }
 
-// CryptoAlgorithms.cpp uses JS::Value::to_u8/to_u16. Reuse the translated
+// CryptoAlgorithms.cpp uses JS::Value::to_u8/to_u16/to_u32. Reuse the translated
 // StringToNumber and WebIDL modulo-integer operations for primitive values.
 // The json2 host boundary cannot execute an arbitrary object's ToPrimitive.
 fn algorithm_js_uint(object map[string]json2.Any, key string, width int) !u32 {
     value := object[key] or { json2.Any(json2.Null{}) }
     number := match value {
-        i64 { f64(value) }
-        f64 { value }
+        i8, i16, i32, int, i64, u8, u16, u32, u64, f32, f64 { f64(value) }
         bool { if value { f64(1) } else { f64(0) } }
         string { libjs.string_to_number(libjs.utf16_string(value)) }
         json2.Null { f64(0) }
@@ -173,16 +172,11 @@ pub fn HKDFParams.from_value(value json2.Any) !HKDFParams {
 }
 
 pub fn PBKDF2Params.from_value(value json2.Any) !PBKDF2Params {
-	object := algorithm_object(value)!
-	hash := hash_algorithm_identifier_from_value(object['hash'] or {
-		return error('TypeError: hash is required')
-	})!
-	return PBKDF2Params(Pbkdf2Params{
-		name: ''
-		hash: hash.name()!
-		salt: required_algorithm_bytes(object, 'salt')!
-		iterations: required_algorithm_u32(object, 'iterations')!
-	})
+    object := algorithm_object(value)!
+    salt := required_algorithm_bytes(object, 'salt')!
+    iterations := algorithm_js_uint(object, 'iterations', 32)!
+    hash := hash_algorithm_identifier_from_value(object['hash'] or { return error('TypeError: hash is required') })!
+    return PBKDF2Params(Pbkdf2Params{ name: '', salt: salt, iterations: iterations, hash: hash.name()! })
 }
 
 pub fn AesKeyGenParams.from_value(value json2.Any) !AesKeyGenParams {
@@ -196,25 +190,18 @@ pub fn AesDerivedKeyParams.from_value(value json2.Any) !AesDerivedKeyParams {
 }
 
 pub fn RsaKeyGenParams.from_value(value json2.Any) !RsaKeyGenParams {
-	object := algorithm_object(value)!
-	return RsaKeyGenParams{
-		name: ''
-		modulus_length: required_algorithm_u32(object, 'modulusLength')!
-		public_exponent: big_integer_from_api_big_integer(required_algorithm_bytes(object, 'publicExponent')!)
-	}
+    object := algorithm_object(value)!
+    modulus_length := algorithm_js_uint(object, 'modulusLength', 32)!
+    public_exponent := big_integer_from_api_big_integer(required_algorithm_bytes(object, 'publicExponent')!)
+    return RsaKeyGenParams{ name: '', modulus_length: modulus_length, public_exponent: public_exponent }
 }
 
 pub fn RsaHashedKeyGenParams.from_value(value json2.Any) !RsaHashedKeyGenParams {
-	object := algorithm_object(value)!
-	hash := hash_algorithm_identifier_from_value(object['hash'] or {
-		return error('TypeError: hash is required')
-	})!
-	return RsaHashedKeyGenParams{
-		name: ''
-		modulus_length: required_algorithm_u32(object, 'modulusLength')!
-		public_exponent: big_integer_from_api_big_integer(required_algorithm_bytes(object, 'publicExponent')!)
-		hash: hash.name()!
-	}
+    object := algorithm_object(value)!
+    modulus_length := algorithm_js_uint(object, 'modulusLength', 32)!
+    public_exponent := big_integer_from_api_big_integer(required_algorithm_bytes(object, 'publicExponent')!)
+    hash := hash_algorithm_identifier_from_value(object['hash'] or { return error('TypeError: hash is required') })!
+    return RsaHashedKeyGenParams{ name: '', modulus_length: modulus_length, public_exponent: public_exponent, hash: hash.name()! }
 }
 
 pub fn RsaHashedImportParams.from_value(value json2.Any) !RsaHashedImportParams {
@@ -240,7 +227,7 @@ pub fn RsaPssParams.from_value(value json2.Any) !RsaPssParams {
 	object := algorithm_object(value)!
 	return RsaPssParams{
 		name: ''
-		salt_length: required_algorithm_u32(object, 'saltLength')!
+		salt_length: algorithm_js_uint(object, 'saltLength', 32)!
 	}
 }
 
@@ -278,7 +265,7 @@ pub fn HmacImportParams.from_value(value json2.Any) !HmacImportParams {
 	})!
 	mut length := ?u32(none)
 	if 'length' in object {
-		length = required_algorithm_u32(object, 'length')!
+		length = algorithm_js_uint(object, 'length', 32)!
 	}
 	return HmacImportParams{
 		name: ''
@@ -294,7 +281,7 @@ pub fn HmacKeyGenParams.from_value(value json2.Any) !HmacKeyGenParams {
 	})!
 	mut length := ?u32(none)
 	if 'length' in object {
-		length = required_algorithm_u32(object, 'length')!
+		length = algorithm_js_uint(object, 'length', 32)!
 	}
 	return HmacKeyGenParams{
 		name: ''
@@ -372,7 +359,7 @@ pub fn KmacKeyGenParams.from_value(value json2.Any) !KmacKeyGenParams {
 	object := algorithm_object(value)!
 	mut length := ?u32(none)
 	if 'length' in object {
-		length = required_algorithm_u32(object, 'length')!
+		length = algorithm_js_uint(object, 'length', 32)!
 	}
 	return KmacKeyGenParams{
 		name: ''
@@ -384,7 +371,7 @@ pub fn KmacImportParams.from_value(value json2.Any) !KmacImportParams {
 	object := algorithm_object(value)!
 	mut length := ?u32(none)
 	if 'length' in object {
-		length = required_algorithm_u32(object, 'length')!
+		length = algorithm_js_uint(object, 'length', 32)!
 	}
 	return KmacImportParams{
 		name: ''

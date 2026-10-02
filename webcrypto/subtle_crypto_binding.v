@@ -176,7 +176,7 @@ fn binding_algorithm_fields(name string, operation string) []string {
 	if operation == 'deriveBits' {
 		return match name {
 			'HKDF' { ['hash', 'salt', 'info'] }
-			'PBKDF2' { ['hash', 'salt', 'iterations'] }
+			'PBKDF2' { ['salt', 'iterations', 'hash'] }
 			'Argon2d', 'Argon2i', 'Argon2id' {
 				['nonce', 'parallelism', 'memory', 'passes', 'version', 'secretValue', 'associatedData']
 			}
@@ -202,8 +202,13 @@ fn normalize_binding_algorithm(algorithm webidl.Value, operation string) !Normal
 	for field in binding_algorithm_fields(name, operation) {
 		property := value.object_value[field] or { continue }
         aes_field := name.starts_with('AES-') || name == 'ChaCha20-Poly1305'
-        if property.kind == .undefined && aes_field && field in ['length', 'tagLength'] {
-            object[field] = json2.Null{}
+        if field in ['length', 'tagLength', 'modulusLength', 'saltLength', 'iterations'] {
+            if property.kind !in [.undefined, .null_, .boolean, .number, .string_, .bigint] {
+                return error('TypeError: ${field} cannot be converted to a number by this value boundary')
+            }
+            converted := json2.Any(webidl.value_to_number(property)!)
+            width := if field == 'tagLength' || (name == 'AES-CTR' && field == 'length' && operation in ['encrypt', 'decrypt']) { 8 } else if name.starts_with('AES-') && field == 'length' { 16 } else { 32 }
+            object[field] = i64(algorithm_js_uint({field: converted}, field, width)!)
             continue
         }
         if property.kind == .undefined && aes_field && field in ['iv', 'counter', 'additionalData'] {
