@@ -144,6 +144,30 @@ fn (runtime &Runtime) clean_up_html_script() {
 	}
 }
 
+fn (runtime &Runtime) callback_settings() ?&html.EnvironmentSettingsObject {
+	if settings := runtime.scripting_settings_ {
+		if settings.realm().script_execution_depth > 0 { return html.incumbent_settings_object() }
+		return settings
+	}
+	return none
+}
+
+fn (runtime &Runtime) prepare_html_callback(stored_settings ?&html.EnvironmentSettingsObject) {
+	runtime.prepare_html_script()
+	if settings := stored_settings {
+		mut realm := unsafe { &html.ScriptingRealm(settings.realm()) }
+		html.prepare_to_run_callback(mut realm)
+	}
+}
+
+fn (runtime &Runtime) clean_up_html_callback(stored_settings ?&html.EnvironmentSettingsObject) {
+	if settings := stored_settings {
+		mut realm := unsafe { &html.ScriptingRealm(settings.realm()) }
+		html.clean_up_after_running_callback(mut realm)
+	}
+	runtime.clean_up_html_script()
+}
+
 pub fn (runtime &Runtime) evaluate(source string) !string {
 	return runtime.evaluate_prepared(prepare_script(ScriptSource{ code: source })!)
 }

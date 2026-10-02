@@ -64,6 +64,21 @@ fn test_native_browser_scripts_use_libjs_errors_global_bindings_and_readiness_or
 	}
 }
 
+fn test_native_browser_readable_stream_runs_real_default_reader_and_source_owner_jobs() {
+	$if !darwin { return }
+	document := html.parse_document('<div id="result">pending</div>')
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close() }
+	mut messages := []string{}
+	run_document_javascript(document, 'https://example.test/streams.html', [
+		'const chunk={label:"native"};const stream=new ReadableStream({start(controller){controller.enqueue(chunk);controller.close()}});const reader=stream.getReader();const closed=reader.closed;reader.read().then(value=>{result.textContent=value.value===chunk&&!value.done&&closed===reader.closed&&reader instanceof ReadableStreamDefaultReader?"source read":"wrong identity"});',
+		'addEventListener("load",()=>result.textContent+=" ready");',
+	], runtime, mut messages)
+	assert messages == []
+	assert document.get_element_by_id('result')?.as_node().text_content()? == 'source read ready'
+	assert !runtime.libjs_vm().has_running_execution_context()
+}
+
 fn test_native_browser_script_sources_keep_urls_and_module_parse_goal() {
 	document := html.parse_document_with_url('<script>const inline=1;</script><script src="app.js"></script><script type="module">export default 42;</script><script type="application/json">{}</script>', dom.URL{value: 'https://example.test/page.html'})
 	mut messages := []string{}

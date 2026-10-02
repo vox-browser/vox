@@ -21,11 +21,14 @@ pub fn (mut runtime Runtime) webidl_promise_callback(function voidptr, context w
 	}
 	runtime.retain_javascript_value(function)!
 	owner_handle := voidptr(&runtime)
+	stored_settings := runtime.callback_settings()
 	return webidl.CallbackType{
 		promise_context: context
-		callback: fn [owner_handle, function, context, convert] (receiver webidl.Value, arguments []webidl.Value) !webidl.Value {
+		callback: fn [owner_handle, function, context, convert, stored_settings] (receiver webidl.Value, arguments []webidl.Value) !webidl.Value {
 			mut owner := unsafe { &Runtime(owner_handle) }
 			owner.require_javascript_value_context()!
+			owner.prepare_html_callback(stored_settings)
+			defer { owner.clean_up_html_callback(stored_settings) }
 			defer { owner.mark_document_state_dirty() }
 			this_value := convert(receiver)!
 			mut actual_arguments := []voidptr{cap: arguments.len}
@@ -62,6 +65,10 @@ pub fn (mut runtime Runtime) webidl_promise_callback(function voidptr, context w
 // exposed ID or serialized value. Only the Promise root survives settlement;
 // resolve/reject roots are released once the native operation has completed.
 pub fn (mut runtime Runtime) javascript_webidl_promise(native &webidl.Promise, convert JavaScriptWebIDLValueConverter) !voidptr {
+	return runtime.javascript_webidl_promise_with_converters(native, convert, convert)
+}
+
+pub fn (mut runtime Runtime) javascript_webidl_promise_with_converters(native &webidl.Promise, fulfilled JavaScriptWebIDLValueConverter, rejected JavaScriptWebIDLValueConverter) !voidptr {
 	runtime.require_javascript_value_context()!
 	key := voidptr(native)
 	if bridge := runtime.webidl_promise_bridges_[key] { return bridge.capability.promise }
@@ -69,11 +76,11 @@ pub fn (mut runtime Runtime) javascript_webidl_promise(native &webidl.Promise, c
 	mut bridge := &WebIDLJavaScriptPromiseBridge{ runtime: runtime, native: native, capability: capability }
 	runtime.webidl_promise_bridges_[key] = bridge
 	mut promise := unsafe { &webidl.Promise(native) }
-	webidl.react_to_promise(mut promise, fn [mut bridge, convert] (value webidl.Value) !webidl.Value {
-		bridge.settle(value, false, convert)
+	webidl.react_to_promise(mut promise, fn [mut bridge, fulfilled] (value webidl.Value) !webidl.Value {
+		bridge.settle(value, false, fulfilled)
 		return webidl.undefined_value()
-	}, fn [mut bridge, convert] (reason webidl.Value) !webidl.Value {
-		bridge.settle(reason, true, convert)
+	}, fn [mut bridge, rejected] (reason webidl.Value) !webidl.Value {
+		bridge.settle(reason, true, rejected)
 		return webidl.undefined_value()
 	})
 	return capability.promise

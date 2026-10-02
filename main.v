@@ -2238,6 +2238,14 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript WebGL bindings: ${err.msg()}'
 		return none
 	}
+	mut readable_host := browserjs.ReadableStreamHost.create(document) or {
+		messages << 'JavaScript ReadableStream bindings: ${err.msg()}'
+		return none
+	}
+	readable_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript ReadableStream bindings: ${err.msg()}'
+		return none
+	}
 	mut xhr_host := browserjs.XMLHttpRequestHost.create_native(document) or {
 		messages << 'JavaScript XMLHttpRequest bindings: ${err.msg()}'
 		return none
