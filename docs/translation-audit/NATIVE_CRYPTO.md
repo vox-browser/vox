@@ -41,6 +41,11 @@ precede normalization. Algorithm name/cSHAKE getters execute before the source
 data copy. Copies consult captured engine internal-slot operations and preserve
 offset views, detached/out-of-bounds empty input, and the source difference
 between restricted IDL arguments and unrestricted algorithm buffer fields.
+String algorithm identifiers now pass through the source-created ordinary
+Algorithm dictionary. Its own `name` data property bypasses inherited setters,
+while inherited parameter getters remain observable at the source read positions.
+A focused native test verifies inherited cSHAKE length/buffer fields and the
+original inherited name-getter exception for an author-supplied object.
 
 Successful digest results are actual ArrayBuffer objects. Deferred operation
 work and the crypto settlement task remain separate on the owning HTML loop.
