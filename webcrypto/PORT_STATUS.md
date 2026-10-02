@@ -13,7 +13,7 @@ import V's standard `crypto.*` primitives without shadowing that namespace.
 | Upstream implementation unit | V implementation |
 | --- | --- |
 | `Crypto.cpp` | `crypto.v` |
-| `CryptoAlgorithms.cpp` | `crypto_algorithms.v`, `aes_ocb.v`, `cshake.v`, `kmac.v`, `native_crypto.c.v`, `native_crypto.h`, `exchange_curves.v`, `ed448.v`, `native_edwards.c.v`, `native_edwards.h`, `mldsa.v`, `mlkem.v`, `native_ml.c.v`, `native_ml.h`, `okp_der.v` |
+| `CryptoAlgorithms.cpp` | `crypto_algorithms.v`, `aes_ocb.v`, `cshake.v`, `kmac.v`, `native_crypto.c.v`, `native_crypto.h`, `exchange_curves.v`, `ed448.v`, `native_edwards.c.v`, `native_edwards.h`, `mldsa.v`, `mlkem.v`, `native_ml.c.v`, `native_ml.h`, `rsa.v`, `rsa_key_formats.v`, `native_rsa.c.v`, `native_rsa.h`, `okp_der.v` |
 | `CryptoBindings.cpp` | `crypto_bindings.v` |
 | `CryptoKey.cpp` | `crypto_key.v`, `crypto_key_objects.v`, `crypto_key_serialization.v` |
 | `KeyAlgorithms.cpp` | `key_algorithms.v` |
@@ -71,7 +71,19 @@ set by the SubtleCrypto import boundary; DER scope behavior matches ML-KEM.
 Native failures in source MUST-wrapped raw-seed/JWK generation become explicit
 OperationErrors rather than terminating the process.
 
-RSA and ECDSA/ECDH still contain
+RSA-OAEP, RSA-PSS, and RSASSA-PKCS1-v1_5 now perform native key generation,
+OAEP label-aware encryption/decryption, PSS salt-aware signing/verification,
+PKCS1 signing/verification, and SPKI/PKCS8/JWK import/export. Source BIGNUM
+validity checks include CRT modular constraints and the first key representation.
+Twenty upstream WPT operation vectors pass across all four RSA hashes, plus
+exact DER round trips, JWK formats, native wrapping/unwrapping, validation and
+Promise tests. Retained source quirks include OAEP decrypt's encrypt error text,
+partial-CRT JWK requirement checks, unread inner RSA DER data, and the shared
+key_ops helper rejecting mixed encrypt/wrap or decrypt/unwrap usages even in
+exported JWKs. Exporting a private key without prime factors returns an explicit
+OperationError instead of the source's MUST-style failure.
+
+ECDSA/ECDH still contain
 unavailable operation bodies. Their normalization and parameter binding do not
 make their cryptographic operations complete. Key-format and validation parity
 outside the completed families also require further source review.
@@ -95,7 +107,7 @@ remain available below the binding.
 
 ## Verification
 
-The 20 WebCrypto test files and all six WebIDL test files passed using direct
+The 22 WebCrypto test files and all six WebIDL test files passed using direct
 `v -old-compiler -enable-globals -path 'WORKTREE|@vlib|@vmodules' FILE_test.v`
 invocations. The focused HTML Crypto, environments, and global-scope tests also
 passed. These checks cover copied views/parameters/usages, immediate versus
