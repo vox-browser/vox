@@ -804,7 +804,14 @@ pub fn (listener &IDLEventListener) callback() &CallbackType {
 fn event_listener_callbacks_match(a ?&IDLEventListener, b ?&IDLEventListener) bool {
 	left := a or { return b == none }
 	right := b or { return false }
-	return left.callback() == right.callback()
+	left_callback := left.callback()
+	right_callback := right.callback()
+	if left_callback.callback_identity_ != unsafe { nil }
+		|| right_callback.callback_identity_ != unsafe { nil } {
+		return left_callback.callback_identity_ != unsafe { nil }
+			&& left_callback.callback_identity_ == right_callback.callback_identity_
+	}
+	return voidptr(left_callback) == voidptr(right_callback)
 }
 
 pub fn (mut listener IDLEventListener) visit_edges(mut visitor CellVisitor) {
@@ -1296,9 +1303,9 @@ pub fn (et &EventTarget) activate_event_handler(name string, event_handler &Even
 	event_target := unsafe { &EventTarget(et) }
 	callback := &CallbackType{
 		associated_window: event_target_relevant_window(event_target)
-		handle_event: fn [event_target, name] (event &Event, current_target ?&EventTarget) JSValue {
+		handle_event_with_exception: fn [event_target, name] (event &Event, current_target ?&EventTarget) !JSValue {
 			_ = current_target
-			event_target.process_event_handler_for_event(name, event) or {}
+			event_target.process_event_handler_for_event(name, event)!
 			return js_undefined()
 		}
 	}
@@ -1343,7 +1350,9 @@ pub fn (et &EventTarget) process_event_handler_for_event(name string, event &Eve
 
 	// 4. Process the Event object event by invoking the callback.
 	mut return_value := js_undefined()
-	if handle_event := callback.handle_event {
+	if handle_event := callback.handle_event_with_exception {
+		return_value = handle_event(event, event.current_target())!
+	} else if handle_event := callback.handle_event {
 		return_value = handle_event(event, event.current_target())
 	}
 
@@ -1717,7 +1726,11 @@ pub fn EventDispatcher.inner_invoke(event &Event, listeners []&DOMEventListener,
 		// 11. Call a user object's operation with listener's callback, "handleEvent", event, and event's currentTarget attribute value.
 		if idle_listener := listener.callback {
 			callback := idle_listener.callback()
-			if handle_event := callback.handle_event {
+			if handle_event := callback.handle_event_with_exception {
+				handle_event(event, event.current_target_for_bindings()) or {
+					legacy_output.did_listeners_throw = true
+				}
+			} else if handle_event := callback.handle_event {
 				_ = handle_event(event, event.current_target_for_bindings())
 			}
 		} else {

@@ -3012,6 +3012,10 @@ pub mut:
 pub struct CallbackType {
 pub mut:
 	handle_event          ?fn (&Event, ?&EventTarget) JSValue
+	handle_event_with_exception ?fn (&Event, ?&EventTarget) !JSValue
+	// WebIDL::CallbackType.callback is the actual JavaScript object. Distinct
+	// callback records can reference that same object with different incumbents.
+	callback_identity_ voidptr
 	call_no_args          ?fn () JSValue
 	call_no_args_promise  ?fn () !&webidl.Promise
 	call_with_arguments   ?fn ([]JSValue) JSValue
