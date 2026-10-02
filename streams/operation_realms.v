@@ -43,6 +43,8 @@ mut:
 	waiting_ready_ bool
 	processing_ bool
 	standalone_jobs_ []fn ()
+	abort_signal_ ?&AbortSignal
+	abort_algorithm_id_ ?u64
 }
 
 pub fn ReadableStreamPipeTo.from_promise(promise &VoidPromise) &ReadableStreamPipeTo {

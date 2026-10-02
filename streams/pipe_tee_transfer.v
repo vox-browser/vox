@@ -36,13 +36,16 @@ fn unlock_pipe(mut source ReadableStream, mut destination WritableStream) {
 		}
 		source.pipe_read_request_ = unsafe { nil }
 	}
-	if mut signal := source.pipe_options_.signal {
-		for index, pipe_source in signal.pipes_ {
-			if pipe_source == &source {
-				signal.pipes_.delete(index)
-				break
+	if !isnil(source.pipe_operation_) {
+		mut operation := source.pipe_operation_
+		if signal := operation.abort_signal_ {
+			if id := operation.abort_algorithm_id_ {
+				mut native := signal.dom_signal()
+				native.remove_abort_algorithm(id)
 			}
 		}
+		operation.abort_signal_ = none
+		operation.abort_algorithm_id_ = none
 	}
 	if !isnil(destination.writer_) {
 		mut writer := destination.writer_
@@ -93,7 +96,13 @@ pub fn (mut source ReadableStream) pipe_to(mut destination WritableStream, optio
 	mut operation := source.pipe_operation_
 	operation.bind(mut source, mut destination, reader, writer)
 	if mut signal := options.signal {
-		signal.pipes_ << &source
+		if !signal.aborted() {
+			mut native := signal.dom_signal()
+			operation.abort_signal_ = signal
+			operation.abort_algorithm_id_ = native.add_abort_algorithm(fn [mut operation] () {
+				operation.check_for_error_and_close_states()
+			})
+		}
 	}
 	pump_readable_pipe(mut source)
 	return source.pipe_promise_

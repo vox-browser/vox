@@ -383,6 +383,11 @@ fn (mut stream WritableStream) abort_internal_in(reason Value, promise_realm Str
 	}
 	mut signal := stream.controller_.signal_
 	signal.abort(reason)
+	// Abort listeners run source DOM algorithms synchronously and can change
+	// the stream state before the abort request is created.
+	if stream.state_ in [.closed, .errored] {
+		return VoidPromise.fulfilled_in(promise_realm)
+	}
 	if !isnil(stream.pending_abort_request_) {
 		return stream.pending_abort_request_
 	}

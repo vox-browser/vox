@@ -8,6 +8,7 @@
 module streams
 
 import webidl
+import dom
 
 pub enum ValueKind {
 	undefined
@@ -641,30 +642,34 @@ pub fn count_size_algorithm(_ Value) !f64 {
 @[heap]
 pub struct AbortSignal {
 mut:
-	aborted_ bool
-	reason_  Value
-	pipes_   []&ReadableStream
+	native_ &dom.AbortSignal = unsafe { nil }
 }
 
 pub fn AbortSignal.create() &AbortSignal {
-	return &AbortSignal{}
+	return AbortSignal.from_dom(dom.AbortSignal.new())
+}
+
+pub fn AbortSignal.from_dom(signal &dom.AbortSignal) &AbortSignal {
+	return &AbortSignal{native_: signal}
+}
+
+pub fn (signal &AbortSignal) dom_signal() &dom.AbortSignal {
+	if signal.native_ == unsafe { nil } {
+		mut mutable_signal := unsafe { &AbortSignal(signal) }
+		mutable_signal.native_ = dom.AbortSignal.new()
+	}
+	return signal.native_
 }
 
 pub fn (signal &AbortSignal) aborted() bool {
-	return signal.aborted_
+	return signal.dom_signal().aborted()
 }
 
 pub fn (signal &AbortSignal) reason() Value {
-	return signal.reason_
+	return stream_value_from_webidl(signal.dom_signal().reason().as_webidl_value() or { panic(err) })
 }
 
 pub fn (mut signal AbortSignal) abort(reason Value) {
-	if !signal.aborted_ {
-		signal.aborted_ = true
-		signal.reason_ = reason
-		for mut source in signal.pipes_ {
-			pump_readable_pipe(mut source)
-		}
-		signal.pipes_.clear()
-	}
+	mut native := signal.dom_signal()
+	native.signal_abort(dom.js_webidl_value(stream_value_to_webidl(reason)))
 }
