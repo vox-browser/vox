@@ -1,7 +1,7 @@
 // Copyright (c) 2026, Ladybird contributors
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of the Actions.cpp algorithms over the portable synchronous dispatcher.
+// Translation of Actions.cpp algorithms and its timer/task ActionExecutor.
 module webdriver
 
 import x.json2
@@ -104,36 +104,36 @@ pub fn (action &ActionObject) key_fields() KeyFields {
 
 pub fn (action &ActionObject) pointer_up_down_fields() PointerUpDownFields {
 	return PointerUpDownFields{
-		pointer_type: action.pointer_type
-		button: action.button
-		width: action.width
-		height: action.height
-		pressure: action.pressure
+		pointer_type:        action.pointer_type
+		button:              action.button
+		width:               action.width
+		height:              action.height
+		pressure:            action.pressure
 		tangential_pressure: action.tangential_pressure
-		tilt_x: action.tilt_x
-		tilt_y: action.tilt_y
-		twist: action.twist
-		altitude_angle: action.altitude_angle
-		azimuth_angle: action.azimuth_angle
+		tilt_x:              action.tilt_x
+		tilt_y:              action.tilt_y
+		twist:               action.twist
+		altitude_angle:      action.altitude_angle
+		azimuth_angle:       action.azimuth_angle
 	}
 }
 
 pub fn (action &ActionObject) pointer_move_fields() PointerMoveFields {
 	return PointerMoveFields{
-		pointer_type: action.pointer_type
-		duration: action.duration_ms
-		origin: action.origin
-		x: action.x
-		y: action.y
-		width: action.width
-		height: action.height
-		pressure: action.pressure
+		pointer_type:        action.pointer_type
+		duration:            action.duration_ms
+		origin:              action.origin
+		x:                   action.x
+		y:                   action.y
+		width:               action.width
+		height:              action.height
+		pressure:            action.pressure
 		tangential_pressure: action.tangential_pressure
-		tilt_x: action.tilt_x
-		tilt_y: action.tilt_y
-		twist: action.twist
-		altitude_angle: action.altitude_angle
-		azimuth_angle: action.azimuth_angle
+		tilt_x:              action.tilt_x
+		tilt_y:              action.tilt_y
+		twist:               action.twist
+		altitude_angle:      action.altitude_angle
+		azimuth_angle:       action.azimuth_angle
 	}
 }
 
@@ -144,11 +144,11 @@ pub fn (action &ActionObject) pointer_cancel_fields() PointerCancelFields {
 pub fn (action &ActionObject) scroll_fields() ScrollFields {
 	return ScrollFields{
 		duration: action.duration_ms
-		origin: action.origin
-		x: action.x
-		y: action.y
-		delta_x: action.delta_x
-		delta_y: action.delta_y
+		origin:   action.origin
+		x:        action.x
+		y:        action.y
+		delta_x:  action.delta_x
+		delta_y:  action.delta_y
 	}
 }
 
@@ -267,13 +267,13 @@ pub fn dispatch_scroll_action(action_object ActionObject, global_key_state Globa
 			'Coordinates (${coordinates.x}, ${coordinates.y}) are out of bounds').msg())
 	}
 	return DispatchedEvent{
-		kind:       'scroll'
-		source_id:  action_object.id
-		modifiers:  global_key_state.modifiers()
-		x:          coordinates.x
-		y:          coordinates.y
-		delta_x:    action_object.delta_x
-		delta_y:    action_object.delta_y
+		kind:      'scroll'
+		source_id: action_object.id
+		modifiers: global_key_state.modifiers()
+		x:         coordinates.x
+		y:         coordinates.y
+		delta_x:   action_object.delta_x
+		delta_y:   action_object.delta_y
 	}
 }
 
@@ -472,9 +472,9 @@ pub fn key_code_data(key string) KeyCodeData {
 		}
 	}
 	return KeyCodeData{
-		key: unshifted
+		key:           unshifted
 		alternate_key: shifted
-		code: code
+		code:          code
 	}
 }
 
@@ -527,7 +527,7 @@ pub fn key_code_to_page_event(raw_key string, initial_modifiers u32, code KeyCod
 	}
 	return KeyPageEvent{
 		code_point: code_point
-		modifiers: modifiers
+		modifiers:  modifiers
 	}
 }
 
@@ -565,23 +565,21 @@ pub fn dispatch_pointer_move_action(mut state InputState, action ActionObject, v
 pub fn wait_for_an_action_queue_token(mut state InputState) {
 	webdriver_action_token_counter++
 	state.actions_queue << 'webdriver-action-token-${webdriver_action_token_counter}'
-	// The portable dispatcher is synchronous, so no other action can be ahead
-	// of this token. dispatch_actions() removes it after the complete tick list.
+	// Actions.cpp:1444 retains this upstream FIXME: the WebDriver client
+	// serializes action commands while an earlier executor remains active.
 	assert state.actions_queue.len == 1
 }
 
+// The typed synchronous API spins the same timer/task executor to completion.
+// Browser hosts use dispatch_actions_async and advance their event loop.
 pub fn dispatch_actions(mut state InputState, ticks [][]ActionObject) ![]DispatchedEvent {
-	wait_for_an_action_queue_token(mut state)
-	mut events := []DispatchedEvent{}
-	for tick in ticks {
-		tick_events := dispatch_tick_actions(mut state, tick) or {
-			state.actions_queue.delete(0)
-			return err
-		}
-		events << tick_events
+	mut event_loop := ActionEventLoop.create()
+	mut executor := dispatch_actions_async(mut state, ticks, event_loop, ActionsOptions{}, none)
+	event_loop.run_until_complete(executor)
+	if executor.result_.error_message != '' {
+		return error(executor.result_.error_message)
 	}
-	state.actions_queue.delete(0)
-	return events
+	return executor.result_.events
 }
 
 pub fn dispatch_list_of_actions(mut state InputState, actions []ActionObject) ![]DispatchedEvent {

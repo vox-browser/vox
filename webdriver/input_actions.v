@@ -73,6 +73,7 @@ pub mut:
 	azimuth_angle       ?f64
 }
 
+@[heap]
 pub struct InputState {
 pub mut:
 	input_state_map   map[string]InputSource
@@ -129,9 +130,9 @@ fn next_pointer_id(state InputState, subtype PointerSubtype) u32 {
 pub fn create_input_source(state InputState, type_ InputSourceType, subtype ?PointerSubtype) InputSource {
 	pointer_type := subtype or { PointerSubtype.mouse }
 	return InputSource{
-		type_: type_
+		type_:           type_
 		pointer_subtype: pointer_type
-		pointer_id: if type_ == .pointer { next_pointer_id(state, pointer_type) } else { 0 }
+		pointer_id:      if type_ == .pointer { next_pointer_id(state, pointer_type) } else { 0 }
 	}
 }
 
@@ -175,10 +176,10 @@ pub fn (state InputState) global_key_state() GlobalKeyState {
 		shift = shift || source.shift
 	}
 	return GlobalKeyState{
-		pressed: keys
-		alt_key: alt
-		ctrl_key: ctrl
-		meta_key: meta
+		pressed:   keys
+		alt_key:   alt
+		ctrl_key:  ctrl
+		meta_key:  meta
 		shift_key: shift
 	}
 }
@@ -223,7 +224,7 @@ fn number_field(object map[string]json2.Any, key string, min ?f64, max ?f64) !Op
 	value := object_number(object, key, min, max)!
 	return OptionalNumber{
 		present: true
-		value: value
+		value:   value
 	}
 }
 
@@ -259,7 +260,7 @@ fn integer_field(object map[string]json2.Any, key string, required bool, min ?i6
 	}
 	return OptionalInteger{
 		present: true
-		value: number
+		value:   number
 	}
 }
 
@@ -286,7 +287,7 @@ fn parse_duration(object map[string]json2.Any) !DurationField {
 	duration := integer_field(object, 'duration', false, i64(0), i64(maximum_safe_integer))!
 	return DurationField{
 		present: duration.present
-		value: u64(duration.value)
+		value:   u64(duration.value)
 	}
 }
 
@@ -372,9 +373,9 @@ fn parse_action(id string, type_ InputSourceType, pointer_type PointerSubtype, o
 		return error(WebDriverError.from_code(.unsupported_operation, 'pointerCancel events not implemented').msg())
 	}
 	mut action := ActionObject{
-		id: id
-		type_: type_
-		subtype: subtype
+		id:           id
+		type_:        type_
+		subtype:      subtype
 		pointer_type: pointer_type
 	}
 	if subtype == .pause {
@@ -409,9 +410,9 @@ fn parse_action(id string, type_ InputSourceType, pointer_type PointerSubtype, o
 		action = ActionObject{
 			...action
 			duration_ms: duration_option(parse_duration(object)!)
-			origin: parse_origin(object, false)!
-			x: x
-			y: y
+			origin:      parse_origin(object, false)!
+			x:           x
+			y:           y
 		}
 		parse_pointer_common(object, mut action)!
 		return action
@@ -425,11 +426,11 @@ fn parse_action(id string, type_ InputSourceType, pointer_type PointerSubtype, o
 	return ActionObject{
 		...action
 		duration_ms: duration_option(parse_duration(object)!)
-		origin: parse_origin(object, true)!
-		x: f64(x.value)
-		y: f64(y.value)
-		delta_x: delta_x.value
-		delta_y: delta_y.value
+		origin:      parse_origin(object, true)!
+		x:           f64(x.value)
+		y:           f64(y.value)
+		delta_x:     delta_x.value
+		delta_y:     delta_y.value
 	}
 }
 
@@ -554,8 +555,8 @@ pub fn resolve_pointer_move_element_origin(action ActionObject, center_x f64, ce
 	return ActionObject{
 		...action
 		origin: 'viewport'
-		x: center_x + action.x
-		y: center_y + action.y
+		x:      center_x + action.x
+		y:      center_y + action.y
 	}
 }
 
@@ -563,8 +564,8 @@ pub fn resolve_scroll_element_origin(action ActionObject, center_x f64, center_y
 	return ActionObject{
 		...action
 		origin: 'viewport'
-		x: center_x + action.x
-		y: center_y + action.y
+		x:      center_x + action.x
+		y:      center_y + action.y
 	}
 }
 
@@ -614,19 +615,19 @@ fn dispatch_tick_actions_with_viewport(mut state InputState, actions []ActionObj
 				code := key_code_data(raw_key)
 				page_event := key_code_to_page_event(raw_key, modifiers, code)
 				events << DispatchedEvent{
-					kind: 'keyDown'
-					source_id: action.id
-					key: key
-					code: code.code
+					kind:       'keyDown'
+					source_id:  action.id
+					key:        key
+					code:       code.code
 					code_point: page_event.code_point
-					repeat: repeat
-					modifiers: page_event.modifiers
+					repeat:     repeat
+					modifiers:  page_event.modifiers
 				}
 				state.input_cancel_list << ActionObject{
-					id: action.id
-					type_: .key
+					id:      action.id
+					type_:   .key
 					subtype: .key_up
-					key: raw_key
+					key:     raw_key
 				}
 			}
 			.key_up {
@@ -659,12 +660,12 @@ fn dispatch_tick_actions_with_viewport(mut state InputState, actions []ActionObj
 				code := key_code_data(raw_key)
 				page_event := key_code_to_page_event(raw_key, modifiers, code)
 				events << DispatchedEvent{
-					kind: 'keyUp'
-					source_id: action.id
-					key: key
-					code: code.code
+					kind:       'keyUp'
+					source_id:  action.id
+					key:        key
+					code:       code.code
 					code_point: page_event.code_point
-					modifiers: page_event.modifiers
+					modifiers:  page_event.modifiers
 				}
 			}
 			.pointer_down {
@@ -674,10 +675,10 @@ fn dispatch_tick_actions_with_viewport(mut state InputState, actions []ActionObj
 				already_pressed := mask == 0 || source.pressed_buttons & mask != 0
 				if already_pressed {
 					state.input_cancel_list << ActionObject{
-						id: action.id
-						type_: .pointer
+						id:      action.id
+						type_:   .pointer
 						subtype: .pointer_up
-						button: button
+						button:  button
 					}
 					continue
 				}
@@ -687,21 +688,21 @@ fn dispatch_tick_actions_with_viewport(mut state InputState, actions []ActionObj
 					return error(WebDriverError.from_code(.unsupported_operation, 'Dispatching ${source.pointer_subtype} pointerDown is not implemented').msg())
 				}
 				events << DispatchedEvent{
-					kind: 'pointerDown'
-					source_id: action.id
-					button: mask
-					buttons: source.pressed_buttons
-					pointer_id: source.pointer_id
+					kind:         'pointerDown'
+					source_id:    action.id
+					button:       mask
+					buttons:      source.pressed_buttons
+					pointer_id:   source.pointer_id
 					pointer_type: source.pointer_subtype
-					modifiers: state.global_key_state().modifiers()
-					x: source.x
-					y: source.y
+					modifiers:    state.global_key_state().modifiers()
+					x:            source.x
+					y:            source.y
 				}
 				state.input_cancel_list << ActionObject{
-					id: action.id
-					type_: .pointer
+					id:      action.id
+					type_:   .pointer
 					subtype: .pointer_up
-					button: button
+					button:  button
 				}
 			}
 			.pointer_up {
@@ -717,15 +718,15 @@ fn dispatch_tick_actions_with_viewport(mut state InputState, actions []ActionObj
 					return error(WebDriverError.from_code(.unsupported_operation, 'Dispatching ${source.pointer_subtype} pointerUp is not implemented').msg())
 				}
 				events << DispatchedEvent{
-					kind: 'pointerUp'
-					source_id: action.id
-					button: mask
-					buttons: source.pressed_buttons
-					pointer_id: source.pointer_id
+					kind:         'pointerUp'
+					source_id:    action.id
+					button:       mask
+					buttons:      source.pressed_buttons
+					pointer_id:   source.pointer_id
 					pointer_type: source.pointer_subtype
-					modifiers: state.global_key_state().modifiers()
-					x: source.x
-					y: source.y
+					modifiers:    state.global_key_state().modifiers()
+					x:            source.x
+					y:            source.y
 				}
 			}
 			.pointer_move {
@@ -748,21 +749,23 @@ fn dispatch_tick_actions_with_viewport(mut state InputState, actions []ActionObj
 				source.x = new_x
 				source.y = new_y
 				events << DispatchedEvent{
-					kind: 'pointerMove'
-					source_id: action.id
-					buttons: source.pressed_buttons
-					pointer_id: source.pointer_id
+					kind:         'pointerMove'
+					source_id:    action.id
+					buttons:      source.pressed_buttons
+					pointer_id:   source.pointer_id
 					pointer_type: source.pointer_subtype
-					modifiers: state.global_key_state().modifiers()
-					x: source.x
-					y: source.y
+					modifiers:    state.global_key_state().modifiers()
+					x:            source.x
+					y:            source.y
 				}
 			}
 			.scroll {
-				bounds := viewport or { Rect{
-					width:  f64(maximum_safe_integer)
-					height: f64(maximum_safe_integer)
-				} }
+				bounds := viewport or {
+					Rect{
+						width:  f64(maximum_safe_integer)
+						height: f64(maximum_safe_integer)
+					}
+				}
 				events << dispatch_scroll_action(action, state.global_key_state(), action.duration_ms or { 0 }, bounds)!
 			}
 			else {}
