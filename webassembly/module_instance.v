@@ -557,33 +557,23 @@ pub fn (instance &Instance) global_instance(address u64) &Global {
 	if global := instance.cache_.get_global_instance(address) {
 		return global
 	}
-	global := global_create_with_cache(instance.cache_, GlobalDescriptor{ value: .i32 }, WasmValue{ type_: .i32 }) or { panic(err) }
-	mut cache := instance.cache_
-	unsafe {
-		cache.add_global_instance(address, global)
-	}
-	return global
+	return Global.create_for_store_address(instance.cache_, address)
 }
 
 pub fn (instance &Instance) memory_instance(address u64) &Memory {
 	if memory := instance.cache_.get_memory_instance(address) {
 		return memory
 	}
-	panic('Invalid WebAssembly memory address ${address}')
+	// Pinned Instance.cpp explicitly selects non-shared until LibWasm has
+	// threads/atomics types; it wraps the existing Store address on cache miss.
+	return memory_wrap_store_address(instance.cache_, address, false)
 }
 
 pub fn (instance &Instance) table_instance(address u64) &Table {
 	if table_ := instance.cache_.get_table_instance(address) {
 		return table_
 	}
-	table_ := table_construct_with_cache(instance.cache_, TableDescriptor{
-		element: .externref
-	}, none) or { panic(err) }
-	mut cache := instance.cache_
-	unsafe {
-		cache.add_table_instance(address, table_)
-	}
-	return table_
+	return Table.create_for_store_address(instance.cache_, address)
 }
 
 pub fn (instance &Instance) exports() map[string]ExternalValue {
