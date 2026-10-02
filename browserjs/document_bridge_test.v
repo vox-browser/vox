@@ -4,6 +4,8 @@ import css
 import dom
 import html
 import layout
+import page
+import time
 
 fn test_document_bridge_runs_libjs_prepared_scripts_before_readiness_callbacks() {
 	$if darwin {
@@ -219,6 +221,10 @@ fn test_document_bridge_replays_nested_animation_frame_style_and_class_mutations
 
 		target := bridge_test_element(document, '#target')
 		root := bridge_test_element(document, 'html')
+		assert root.get_attribute_value('class') == 'reftest-wait'
+		document_bridge_test_frame(document)
+		assert root.get_attribute_value('class') == 'reftest-wait'
+		document_bridge_test_frame(document)
 		assert target.get_attribute_value('style') == ''
 		assert root.get_attribute_value('class') == ''
 		snapshot := layout.dump_document_layout_snapshot(document, 800, 600) or {
@@ -271,4 +277,18 @@ fn test_document_bridge_replays_constructed_adopted_style_sheet_replacement() {
 		}
 		assert snapshot.contains('"*****"')
 	}
+}
+
+fn document_bridge_test_frame(document &dom.Document) {
+ mut page_ := page.Page.create(1) or { panic(err) }
+ mut mutable_document := unsafe { &dom.Document(document) }
+ mutable_document.set_page(unsafe { &dom.Page(page_) })
+ page_.set_local_root_navigable(document.navigable() or { panic('missing navigable') }) or { panic(err) }
+ mutable_document.update_the_visibility_state(.visible)
+ mut client := page_.client()
+ now := time.sys_mono_now()
+ client.rendering_opportunity(now, 16)
+ mut event_loop := html.main_thread_event_loop()
+ event_loop.rendering_opportunity(f64(now) / 1e6, false)
+ for event_loop.task_queue().has_runnable_tasks() { event_loop.process() }
 }

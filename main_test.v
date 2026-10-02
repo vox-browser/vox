@@ -277,6 +277,8 @@ fn test_javascript_bridge_runs_window_load_mutations() {
 		], runtime, mut messages)
 		assert messages == []
 		element := document.get_element_by_id('target') or { panic('missing target') }
+		assert element.get_attribute_value('class') == ''
+		bridge_test_rendering_frame(document)
 		assert element.get_attribute_value('class') == 'ready'
 		assert element.get_attribute_value('style') == 'margin-left: 100px'
 	}
@@ -534,6 +536,10 @@ fn test_javascript_bridge_selects_text_before_selection_restyle() {
 		], runtime, mut messages)
 		assert messages == []
 		target := document.get_element_by_id('target') or { panic('missing target') }
+		assert target.get_attribute_value('class') == ''
+		bridge_test_rendering_frame(document)
+		assert target.get_attribute_value('class') == ''
+		bridge_test_rendering_frame(document)
 		assert target.get_attribute_value('class') == 'restyled'
 		text_node := target.as_node().first_child() or { panic('missing target text') }
 		selection := document.get_selection() or { panic('missing selection') }
@@ -1233,4 +1239,16 @@ fn test_native_chrome_pointer_bridge_resizes_across_layout_updates() {
 	pointer_up := app.dispatch_chrome_pointer_event_at_viewport_point('pointerup', 0, start_x + 30, start_y + 20)
 	assert pointer_up.handled
 	assert !page_model.event_handler.has_captured_chrome_widget()
+}
+
+fn bridge_test_rendering_frame(document &dom.Document) {
+ mut page_ := page.Page.create(1) or { panic(err) }
+ mut mutable_document := unsafe { &dom.Document(document) }
+ mutable_document.set_page(unsafe { &dom.Page(page_) })
+ page_.set_local_root_navigable(document.navigable() or { panic('missing navigable') }) or { panic(err) }
+ mutable_document.update_the_visibility_state(.visible)
+ mut app := BrowserApp{document: mutable_document, page_model: page_}
+ app.deliver_rendering_opportunity(time.sys_mono_now(), 16)
+ mut event_loop := html.main_thread_event_loop()
+ for event_loop.task_queue().has_runnable_tasks() { event_loop.process() }
 }

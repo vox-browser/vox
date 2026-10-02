@@ -217,6 +217,8 @@ fn C.native_end_backdrop_filter_layer(opacity f32)
 fn C.native_end_clip()
 
 fn request_browser_frame() {
+	mut event_loop := html.main_thread_event_loop()
+	event_loop.request_rendering_update()
 	C.native_wake_browser()
 }
 
@@ -369,6 +371,9 @@ struct LoadedPage {
 	markup       string
 	status       string
 	content_type string
+	// Compact navigation produces a response locally; this is the source
+	// Document.cpp non-Fetch timing fallback, recorded when that response exists.
+	monotonic_response_time_ns i64 = time.sys_mono_now()
 }
 
 struct NavigationResult {
@@ -1521,7 +1526,7 @@ fn javascript_bootstrap(state map[string]json2.Any) string {
 		'const __htmlState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="html";}),__headState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="head";}),__bodyState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="body";});document.documentElement=__htmlState?__element(__htmlState):{classList:{add:function(){},remove:function(){},contains:function(){return false;}}};document.head=__headState?__element(__headState):null;document.body=__bodyState?__element(__bodyState):{appendChild:function(child){return child;}};',
 		'const console = { log: function () { __state.logs.push(Array.prototype.map.call(arguments, String).join(" ")); }, warn: function () { this.log.apply(this, arguments); }, error: function () { this.log.apply(this, arguments); } };',
 		'const location = {}; Object.defineProperty(location, "href", { get: function () { return __state.location; }, set: function (v) { __state.navigate = String(v); } });',
-		'const window = globalThis; window.window = window; window.document = document; window.console = console; window.location = location; window.alert = function (v) { console.log(v); }; window.requestAnimationFrame = function(f){if(typeof f === "function")f(Date.now());return 1;}; window.addEventListener = document.addEventListener; window.getSelection=function(){return __selection;}; window.Image=function(){return document.createElement("img");}; window.HTMLMediaElement={HAVE_NOTHING:0,HAVE_METADATA:1,HAVE_CURRENT_DATA:2,HAVE_FUTURE_DATA:3,HAVE_ENOUGH_DATA:4}; window.internals={imageAnimationStateForURL:function(){return{timerActive:true,frameIndex:1};},signalTestIsDone:function(){},spoofCurrentURL:function(){},setForceDarkEnabled:function(value){__state.forceDarkEnabled=!!value;},setForceDarkThresholds:function(foreground,background){__state.forceDarkForegroundThreshold=Math.trunc(Number(foreground));__state.forceDarkBackgroundThreshold=Math.trunc(Number(background));},setShowLineBoxBorders:function(value){__state.showLineBoxBorders=!!value;}}; if(!Promise.withResolvers)Promise.withResolvers=function(){let resolve,reject;const promise=new Promise(function(a,b){resolve=a;reject=b;});return{promise:promise,resolve:resolve,reject:reject};};',
+		'const window = globalThis; window.window = window; window.document = document; window.console = console; window.location = location; window.alert = function (v) { console.log(v); }; window.addEventListener = document.addEventListener; window.getSelection=function(){return __selection;}; window.Image=function(){return document.createElement("img");}; window.HTMLMediaElement={HAVE_NOTHING:0,HAVE_METADATA:1,HAVE_CURRENT_DATA:2,HAVE_FUTURE_DATA:3,HAVE_ENOUGH_DATA:4}; window.internals={imageAnimationStateForURL:function(){return{timerActive:true,frameIndex:1};},signalTestIsDone:function(){},spoofCurrentURL:function(){},setForceDarkEnabled:function(value){__state.forceDarkEnabled=!!value;},setForceDarkThresholds:function(foreground,background){__state.forceDarkForegroundThreshold=Math.trunc(Number(foreground));__state.forceDarkBackgroundThreshold=Math.trunc(Number(background));},setShowLineBoxBorders:function(value){__state.showLineBoxBorders=!!value;}}; if(!Promise.withResolvers)Promise.withResolvers=function(){let resolve,reject;const promise=new Promise(function(a,b){resolve=a;reject=b;});return{promise:promise,resolve:resolve,reject:reject};};',
 		'for (const s of __elementStates()) { if(!s.id)continue; try { window[s.id] = document.getElementById(s.id); } catch (_) {} }',
 		'window.__ladybirdSnapshot = function () { return JSON.stringify(__state); };',
 		'window.__ladybirdFinalize = function () { for (const key of Object.keys(__canvases)) { const c=__canvases[key],s=c.state;if(!c.context||c.kind!=="2d")continue;const snapshot=__canvasCall(s,"snapshot");s.canvasPixels=snapshot.pixels;s.canvasWidth=__canvasDimension(s,"width");s.canvasHeight=__canvasDimension(s,"height");s.canvasPixelsPremultiplied=snapshot.premultiplied;s.canvasPixelsTopDown=snapshot.topDown;s.canvasNative=true; } return window.__ladybirdSnapshot(); };',
@@ -2317,6 +2322,20 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript Crypto bindings: ${err.msg()}'
 		return none
 	}
+	mut animation_frame_host := browserjs.AnimationFrameHost.create(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
+		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
+		mut replay_messages := []string{}
+		apply_javascript_state(document, state, callback_runtime.canvas_elements_for_binding(), mut replay_messages)
+		mut mutable_callback_runtime := unsafe { &browserjs.Runtime(callback_runtime) }
+		mutable_callback_runtime.mark_document_state_dirty()
+	}) or {
+		messages << 'JavaScript animation-frame bindings: ${err.msg()}'
+		return none
+	}
+	animation_frame_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript animation-frame bindings: ${err.msg()}'
+		return none
+	}
 	runtime.run_document_scripts(sources) or {
 		messages << 'JavaScript: ${err.msg()}'
 		return none
@@ -2645,16 +2664,25 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	app.js_messages = []
 	mut checkpoint := time.sys_mono_now()
 	install_start := checkpoint
-	app.animation_epoch_ns = install_start
 	initiator_origin := if app.document != unsafe { nil } { ?dom.Origin(app.document.origin()) } else { none }
 	previous_document := if app.document != unsafe { nil } { ?&dom.Document(app.document) } else { ?&dom.Document(none) }
 	app.document = if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(),
 		'UTF-8') {
-		parse_browser_navigation_document_with_previous(loaded.markup, document_url, initiator_origin, previous_document)
+		parse_browser_navigation_document_with_response_time(loaded.markup, document_url, initiator_origin, previous_document, loaded.monotonic_response_time_ns)
 	} else {
-		parse_browser_navigation_document_with_previous(loaded.markup, dom.url_about_blank(), initiator_origin, previous_document)
+		parse_browser_navigation_document_with_response_time(loaded.markup, dom.url_about_blank(), initiator_origin, previous_document, loaded.monotonic_response_time_ns)
 	}
 	app.document.set_page(unsafe { &dom.Page(app.page_model) })
+	if app.page_model != unsafe { nil } && !app.page_model.has_local_root_navigable() {
+		if navigable := app.document.navigable() {
+			mut page_model := app.page_model
+			page_model.set_local_root_navigable(navigable) or {
+				app.js_messages << 'Rendering root: ${err.msg()}'
+				return
+			}
+		}
+	}
+	app.animation_epoch_ns = u64(app.document.load_timing_info.navigation_start_time * 1_000_000.0)
 	checkpoint = debug_timing_checkpoint('parse_document', checkpoint)
 	// Relative subresources use the document base URL, which may be replaced by
 	// the first <base href>. Keep the address/history URL as the document URL.
@@ -5363,6 +5391,9 @@ fn address_for_display(address string, cursor int, active bool, max_characters i
 }
 
 fn (mut app BrowserApp) draw() {
+	// The local native display callback supplies the opportunity. HTML queues
+	// its rendering task and owns eligibility, timestamps and callback ordering.
+	app.deliver_rendering_opportunity(time.sys_mono_now(), sapp.frame_duration() * 1000.0)
 	app.poll_javascript_tasks()
 	if app.initial_window_frame_presented && app.document == unsafe { nil }
 		&& app.pending_cached_page != none {

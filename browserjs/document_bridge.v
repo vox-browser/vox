@@ -210,7 +210,7 @@ fn bridge_program(state map[string]json2.Any) string {
 		'document.body = __state.bodyIndex >= 0 ? __element(__state.nodes[__state.bodyIndex]) : null;',
 		'const console = { log: function () { __state.logs.push(Array.prototype.map.call(arguments, String).join(" ")); }, warn: function () { this.log.apply(this, arguments); }, error: function () { this.log.apply(this, arguments); } };',
 		'const location = {}; Object.defineProperty(location, "href", { get: function () { return __state.location; }, set: function (v) { __state.navigate = String(v); } });',
-		'const window = globalThis; window.window = window; window.document = document; window.console = console; window.location = location; window.CSSStyleSheet = CSSStyleSheet; window.alert = function (v) { console.log(v); }; window.setTimeout = function (f) { if (typeof f === "function") f(); return 1; }; window.requestAnimationFrame = function (f) { if (typeof f === "function") f(0); return 1; }; window.cancelAnimationFrame = function () {}; window.addEventListener = document.addEventListener; window.getComputedStyle = function (element) { return element ? element.style : {}; }; window.internals = { click: function () { if (__lastRectElement !== null) __state.operations.push({ op: "click", target: __lastRectElement }); } };',
+		'const window = globalThis; window.window = window; window.document = document; window.console = console; window.location = location; window.CSSStyleSheet = CSSStyleSheet; window.alert = function (v) { console.log(v); }; window.setTimeout = function (f) { if (typeof f === "function") f(); return 1; }; window.addEventListener = document.addEventListener; window.getComputedStyle = function (element) { return element ? element.style : {}; }; window.internals = { click: function () { if (__lastRectElement !== null) __state.operations.push({ op: "click", target: __lastRectElement }); } };',
 		'for (const id of Object.keys(__state.elements)) { try { window[id] = document.getElementById(id); } catch (_) {} }',
 		'window.__ladybirdSnapshot = function () { return JSON.stringify(__state); };',
 		'window.__ladybirdFinalize = function () { for (const __index of Object.keys(__canvases)) { const c=__canvases[__index]; __state.operations.push({op:"canvasPixels",target:Number(__index),width:c.width,height:c.height,pixels:Array.from(c.data)}); } return window.__ladybirdSnapshot(); };',
@@ -636,6 +636,12 @@ pub fn run_inline_document_scripts(document &dom.Document, current_url string, r
 	viewport := document.viewport_rect()
 	layout.run_document_layout(document, viewport.width, viewport.height) or {}
 	runtime.evaluate_host(bridge_program(bridge_initial_state(document, current_url)))!
+	mut mutable_runtime := unsafe { &Runtime(runtime) }
+	mut animation_frame_host := AnimationFrameHost.create(document, fn [document] (callback_runtime &Runtime) ! {
+		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
+		apply_bridge_state(document, state)!
+	})!
+	animation_frame_host.install(mut mutable_runtime)!
 	runtime.run_document_scripts(sources)!
 	runtime.evaluate_host('__ladybirdDocumentReady()')!
 	// Promise reactions queued by inline scripts run at JavaScriptCore's next
