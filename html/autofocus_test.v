@@ -1,6 +1,7 @@
 module html
 
 import dom
+import page
 
 fn autofocus_test_document() (&dom.Document, &dom.Navigable) {
 	mut document := dom.Document.create(dom.url_about_blank())
@@ -12,6 +13,8 @@ fn autofocus_test_document() (&dom.Document, &dom.Navigable) {
 	}
 	navigable.traversable_navigable_ = navigable
 	document.set_cached_navigable(navigable)
+	rendering_page := page.Page.create(1) or { panic(err) }
+	document.set_page(unsafe { &dom.Page(rendering_page) })
 	return document, navigable
 }
 

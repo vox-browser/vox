@@ -527,6 +527,11 @@ fn test_navigable_sandbox_viewport_selection_observers_and_rendering() {
 	assert model.screenshot_count() == 1
 	assert navigable_test_paints == 2
 	assert navigable_test_screenshots == 1
+	assert !model.has_a_rendering_opportunity()
+	mut rendering_page := page.Page.create(1)!
+	mut rendering_document := model.active_document() or { panic('missing document') }
+	rendering_document.set_page(unsafe { &dom.Page(rendering_page) })
+	rendering_page.set_local_root_navigable(model.host_navigable())!
 	assert model.has_a_rendering_opportunity()
 }
 

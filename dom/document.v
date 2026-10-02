@@ -2994,6 +2994,10 @@ pub:
 	preferred_color_scheme_callback      fn (voidptr) string = unsafe { nil }
 	user_style_callback                  fn (voidptr) ?string = unsafe { nil }
 	request_frame_callback               fn (voidptr) = unsafe { nil }
+	has_rendering_opportunity_callback   fn (voidptr) bool = unsafe { nil }
+	will_begin_rendering_update_callback fn (voidptr) = unsafe { nil }
+	did_finish_rendering_update_callback fn (voidptr) = unsafe { nil }
+	local_root_navigable_callback        fn (voidptr) ?&Navigable = unsafe { nil }
 	has_media_element_playing_audio_callback fn (voidptr, &Document) bool = unsafe { nil }
 	media_element_audio_state_changed_callback fn (voidptr, &Document, UniqueNodeID, bool) = unsafe { nil }
 	did_request_color_picker_callback    fn (voidptr, string, string) = unsafe { nil }
@@ -13098,6 +13102,32 @@ pub fn (p &Page) client_request_frame() {
 	if p.target != unsafe { nil } && p.request_frame_callback != unsafe { nil } {
 		p.request_frame_callback(p.target)
 	}
+}
+
+pub fn (p &Page) client_has_rendering_opportunity() bool {
+	if p.has_rendering_opportunity_callback == unsafe { nil } {
+		return false
+	}
+	return p.has_rendering_opportunity_callback(p.target)
+}
+
+pub fn (p &Page) client_will_begin_rendering_update() {
+	if p.will_begin_rendering_update_callback != unsafe { nil } {
+		p.will_begin_rendering_update_callback(p.target)
+	}
+}
+
+pub fn (p &Page) client_did_finish_rendering_update() {
+	if p.did_finish_rendering_update_callback != unsafe { nil } {
+		p.did_finish_rendering_update_callback(p.target)
+	}
+}
+
+pub fn (p &Page) local_root_navigable() ?&Navigable {
+	if p.local_root_navigable_callback == unsafe { nil } {
+		return none
+	}
+	return p.local_root_navigable_callback(p.target)
 }
 
 pub fn (p &Page) has_media_element_playing_audio(document &Document) bool {

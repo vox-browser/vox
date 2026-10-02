@@ -1,6 +1,7 @@
 module html
 
 import dom
+import page
 import requestidlecallback
 
 struct EventLoopTestCalls {
@@ -375,6 +376,8 @@ fn test_event_loop_exact_registration_realm_and_pause_algorithms() {
 	}
 	navigable.traversable_navigable_ = navigable
 	document.set_cached_navigable(navigable)
+	rendering_page := page.Page.create(1)!
+	document.set_page(unsafe { &dom.Page(rendering_page) })
 	event_loop.register_document(document)
 	active := event_loop.documents_in_this_event_loop_matching(fn (candidate &dom.Document) bool {
 		return candidate.is_fully_active()
@@ -448,6 +451,8 @@ fn test_rendering_updates_content_visibility_proximity_and_resize_observers_to_a
 	}
 	navigable.traversable_navigable_ = navigable
 	document.set_cached_navigable(navigable)
+	rendering_page := page.Page.create(1)!
+	document.set_page(unsafe { &dom.Page(rendering_page) })
 
 	mut resize_state := &RenderingResizeObserverState{}
 	document.register_resize_observer(&dom.ResizeObserver{

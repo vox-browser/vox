@@ -1844,7 +1844,17 @@ pub fn (mut model NavigableModel) perform_scroll_of_viewport_scrolling_box(posit
 }
 
 pub fn (model &NavigableModel) has_a_rendering_opportunity() bool {
-	return !model.has_been_destroyed_ && model.active_document() != none
+	if main_thread_event_loop().running_synchronous_rendering_update_ {
+		return true
+	}
+	page_ := model.page() or { return false }
+	return page_.client_has_rendering_opportunity()
+}
+
+pub fn (model &NavigableModel) is_local_root() bool {
+	page_ := model.page() or { return false }
+	root := page_.local_root_navigable() or { return false }
+	return same_dom_navigable(root, model.host_)
 }
 
 pub fn (mut model NavigableModel) inform_the_navigation_api_about_child_navigable_destruction() {

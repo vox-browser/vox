@@ -303,6 +303,26 @@ fn page_request_frame_callback(target voidptr) {
 	model.client_.request_frame()
 }
 
+fn page_has_rendering_opportunity_callback(target voidptr) bool {
+	model := unsafe { &Page(target) }
+	return model.client_.has_rendering_opportunity()
+}
+
+fn page_will_begin_rendering_update_callback(target voidptr) {
+	mut model := unsafe { &Page(target) }
+	model.client_.will_begin_rendering_update()
+}
+
+fn page_did_finish_rendering_update_callback(target voidptr) {
+	mut model := unsafe { &Page(target) }
+	model.client_.did_finish_rendering_update()
+}
+
+fn page_local_root_navigable_callback(target voidptr) ?&dom.Navigable {
+	model := unsafe { &Page(target) }
+	return model.local_root_navigable_
+}
+
 fn page_did_request_external_url_callback(target voidptr, url string, initiator_origin string, has_transient_activation bool) {
 	mut model := unsafe { &Page(target) }
 	model.client_.page_did_request_external_url(url, initiator_origin, has_transient_activation)
@@ -488,6 +508,10 @@ pub fn Page.create(device_scale f64) !&Page {
 		preferred_color_scheme_callback: page_preferred_color_scheme_callback
 		user_style_callback: page_user_style_callback
 		request_frame_callback: page_request_frame_callback
+		has_rendering_opportunity_callback: page_has_rendering_opportunity_callback
+		will_begin_rendering_update_callback: page_will_begin_rendering_update_callback
+		did_finish_rendering_update_callback: page_did_finish_rendering_update_callback
+		local_root_navigable_callback: page_local_root_navigable_callback
 		has_media_element_playing_audio_callback: page_has_media_element_playing_audio_callback
 		media_element_audio_state_changed_callback: page_media_element_audio_state_changed_callback
 		did_request_color_picker_callback: page_did_request_color_picker_callback

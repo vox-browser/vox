@@ -10,6 +10,8 @@ module html
 import css
 import dom
 import fetch
+import highresolutiontime
+import math
 import platform
 import time
 
@@ -318,6 +320,7 @@ mut:
 	last_idle_period_start_time_          f64
 	execution_paused                      bool
 	running_rendering_task                bool
+	running_synchronous_rendering_update_ bool
 	scheduled                             bool
 	input_events_hook_                    ?EventLoopInputEventsHook
 	rendering_hook_                       ?EventLoopRenderingHook
@@ -545,7 +548,7 @@ pub fn (mut event_loop EventLoop) rendering_opportunity(frame_time f64, watchdog
 		return true
 	}
 	documents := event_loop.documents_in_this_event_loop_matching(fn (document &dom.Document) bool {
-		return document.is_fully_active() && !document.is_decoded_svg()
+		return document.is_fully_active() && document_has_a_rendering_opportunity(document)
 	})
 	if documents.len == 0 {
 		return false
@@ -574,12 +577,30 @@ pub fn (mut event_loop EventLoop) update_the_rendering() {
 	assert !event_loop.running_rendering_task
 	event_loop.rendering_task_queued_ = false
 	event_loop.running_rendering_task = true
+	for model in all_navigable_models() {
+		if model.is_local_root() {
+			if page_ := model.page() {
+				page_.client_will_begin_rendering_update()
+			}
+		}
+	}
+	defer {
+		for model in all_navigable_models() {
+			if model.is_local_root() {
+				if page_ := model.page() {
+					page_.client_did_finish_rendering_update()
+				}
+			}
+		}
+	}
 	update_start_time := unsafe_shared_current_time_ms()
 	event_loop.rendering_scheduler_counters_.updates_run++
 	event_loop.process_input_events()
 	frame_timestamp := event_loop.last_render_opportunity_time_
 	documents := event_loop.documents_in_this_event_loop_matching(fn (document &dom.Document) bool {
-		return document.is_fully_active() && !document.is_decoded_svg() && !document.is_render_blocked() && !document.hidden()
+		return document.is_fully_active() && !document.is_render_blocked() && !document.hidden()
+			&& !document.rendering_suppression_for_view_transitions
+			&& document_has_a_rendering_opportunity(document)
 	})
 	for document in documents {
 		navigable := document.navigable() or { continue }
@@ -596,15 +617,32 @@ pub fn (mut event_loop EventLoop) update_the_rendering() {
 	for document in documents {
 		mut mutable_document := unsafe { &dom.Document(document) }
 		mutable_document.run_the_resize_steps()
+	}
+	for document in documents {
+		mut mutable_document := unsafe { &dom.Document(document) }
 		mutable_document.run_the_scroll_steps()
+	}
+	for document in documents {
+		mut mutable_document := unsafe { &dom.Document(document) }
 		mutable_document.evaluate_media_queries_and_report_changes()
-		mutable_document.update_animations_and_send_events(frame_timestamp)
+	}
+	for document in documents {
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.update_animations_and_send_events(relative_frame_timestamp_for(document, frame_timestamp))
+	}
+	for document in documents {
+		mut mutable_document := unsafe { &dom.Document(document) }
 		mutable_document.run_fullscreen_steps()
 	}
-	for window in event_loop.same_loop_windows() {
-		if window.associated_document() in documents {
+	for document in documents {
+		settings_pointer := document.relevant_settings_object()
+		if settings_pointer == unsafe { nil } {
+			continue
+		}
+		settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }
+		if window := settings.window_ {
 			mut mutable_window := unsafe { &WindowModel(window) }
-			mutable_window.run_animation_frame_callbacks(frame_timestamp)
+			mutable_window.run_animation_frame_callbacks(relative_frame_timestamp_for(document, frame_timestamp))
 		}
 	}
 	for document in documents {
@@ -616,6 +654,11 @@ pub fn (mut event_loop EventLoop) update_the_rendering() {
 		mut resize_observer_depth := 0
 		for {
 			mutable_document.update_layout(.html_event_loop_rendering_update)
+			// A callback can detach a document while this update is running.
+			navigable := document.navigable() or { break }
+			if !navigable.active_document_is(document) {
+				break
+			}
 
 			mut had_initial_visible_content_visibility_determination := false
 			if document.document_element() != none {
@@ -669,6 +712,31 @@ pub fn (mut event_loop EventLoop) update_the_rendering() {
 	event_loop.rendering_scheduler_counters_.paints += u64(documents_to_paint.len)
 	event_loop.rendering_scheduler_counters_.update_microseconds += u64((unsafe_shared_current_time_ms() - update_start_time) * 1000.0)
 	event_loop.running_rendering_task = false
+}
+
+fn document_has_a_rendering_opportunity(document &dom.Document) bool {
+	navigable := document.navigable() or { return false }
+	if model := navigable_model_for_host(navigable) {
+		return model.has_a_rendering_opportunity()
+	}
+	// DOM callers without an HTML model still consult their owning Page.
+	if document.has_page() {
+		return document.page().client_has_rendering_opportunity()
+	}
+	return false
+}
+
+fn relative_frame_timestamp_for(document &dom.Document, timestamp f64) f64 {
+	settings_pointer := document.relevant_settings_object()
+	if settings_pointer == unsafe { nil } {
+		return math.max(0.0, timestamp)
+	}
+	settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }
+	return math.max(0.0, highresolutiontime.relative_high_resolution_time(timestamp,
+		highresolutiontime.TimeOriginContext{
+			time_origin: settings.time_origin()
+			cross_origin_isolated_capability: settings.cross_origin_isolated_capability() == .yes
+		}))
 }
 
 pub fn (event_loop &EventLoop) rendering_scheduler_counters() RenderingSchedulerCounters {
@@ -830,7 +898,9 @@ pub fn (mut event_loop EventLoop) pause() &PauseHandle {
 	event_loop.execution_paused = true
 	time_before_pause := unsafe_shared_current_time_ms()
 	if !event_loop.running_rendering_task {
+		event_loop.running_synchronous_rendering_update_ = true
 		event_loop.update_the_rendering()
+		event_loop.running_synchronous_rendering_update_ = false
 	}
 	return &PauseHandle{
 		event_loop: event_loop
