@@ -68,6 +68,7 @@ pub mut:
 	function_bodies []BinaryFunctionBody
 	table_definitions []BinaryTableDefinition
 	data_segments []BinaryDataSegment
+	element_segments []BinaryElementSegment
 }
 
 pub struct SerializedModule {
@@ -142,6 +143,7 @@ pub fn (mut compiled Module) deserialization_steps(serialized SerializedModule) 
 	compiled.function_bodies = restored.function_bodies.clone()
 	compiled.table_definitions = restored.table_definitions.clone()
 	compiled.data_segments = restored.data_segments.clone()
+	compiled.element_segments = restored.element_segments.clone()
 }
 
 struct Decoder {
@@ -213,6 +215,7 @@ fn compile_module(bytes []u8) !&Module {
 	mut function_bodies := []BinaryFunctionBody{}
 	mut table_definitions := []BinaryTableDefinition{}
 	mut data_segments := []BinaryDataSegment{}
+	mut element_segments := []BinaryElementSegment{}
 	mut last_non_custom_rank := 0
 	mut seen := map[u8]bool{}
 	for decoder.offset < bytes.len {
@@ -249,6 +252,7 @@ fn compile_module(bytes []u8) !&Module {
 			// Parser.cpp::StartSection::parse retains the function index. The
 			// machine's invocation and signature validation are separate work.
 			8 { start_function_index = section.u32_leb()! }
+			9 { element_segments = parse_element_section(mut section)! }
 			10 { function_bodies = parse_code_section(mut section)! }
 			11 { data_segments = parse_data_section(mut section)! }
 			12 {
@@ -257,7 +261,7 @@ fn compile_module(bytes []u8) !&Module {
 			}
 			13 { tag_types = parse_tag_section(mut section)! }
 			else {
-				section.offset = section.bytes.len
+				return error('CompileError: unknown section id ${section_id}')
 			}
 		}
 		if section.offset != section.bytes.len {
@@ -282,6 +286,7 @@ fn compile_module(bytes []u8) !&Module {
 		function_bodies: function_bodies
 		table_definitions: table_definitions
 		data_segments: data_segments
+		element_segments: element_segments
 	}
 }
 
