@@ -8,6 +8,7 @@ import layout
 import os
 import page
 import painting
+import platform
 import time
 import x.json2
 
@@ -91,6 +92,36 @@ fn test_native_browser_abort_signal_dispatches_source_event_and_replays_author_d
 	], runtime, mut messages)
 	assert messages == []
 	assert document.get_element_by_id('result')?.as_node().text_content()? == 'source abort ready'
+	assert !runtime.libjs_vm().has_running_execution_context()
+}
+
+fn test_native_browser_timer_waits_for_source_task_before_replaying_author_dom_mutation() {
+	$if !darwin { return }
+	if !platform.native_timer_scheduling_available() { return }
+	mut document := html.parse_document('<div id="result">pending</div>')
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close() }
+	mut messages := []string{}
+	run_document_javascript(document, 'https://example.test/timer.html', [
+		'setTimeout(function(value){result.textContent=this===window&&value===result?"source timer":"wrong timer"},5,result);',
+	], runtime, mut messages)
+	assert messages == []
+	assert document.get_element_by_id('result')?.as_node().text_content()? == 'pending'
+	deadline := time.sys_mono_now() + i64(2_000_000_000)
+	for runtime.evaluate_host('result.textContent')! == 'pending' && time.sys_mono_now() < deadline {
+		platform.pump_native_events(0.01)
+	}
+	assert runtime.evaluate_host('result.textContent')! == 'source timer'
+	mut app := BrowserApp{
+		document: document
+		js_runtime: runtime
+		layout_tree_only: true
+		viewport_width: 320
+		viewport_height: 200
+	}
+	app.poll_javascript_tasks()
+	assert document.get_element_by_id('result')?.as_node().text_content()? == 'source timer'
+	assert app.js_messages == []
 	assert !runtime.libjs_vm().has_running_execution_context()
 }
 

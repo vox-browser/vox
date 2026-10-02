@@ -112,7 +112,7 @@ fn (runtime &Runtime) binding_exception_value(exception IError) voidptr {
 	}
 	mut kind := 'Error'
 	mut message := exception.msg()
-	for error_kind in ['TypeError', 'RangeError'] {
+	for error_kind in ['TypeError', 'RangeError', 'EvalError'] {
 		if message.starts_with(error_kind + ':') { kind = error_kind; message = message[error_kind.len + 1..].trim_left(' '); break }
 	}
 	kind_string := js_source_string(kind)
