@@ -24,6 +24,7 @@ pub struct CSSFetchEnvironmentSettings {
 pub mut:
 	api_base_url string
 	origin       string
+	origin_object ?dom.Origin
 	client ?fetch.RequestClient
 }
 
@@ -32,6 +33,7 @@ pub fn CSSFetchEnvironmentSettings.from_document(document &dom.Document) CSSFetc
 	return CSSFetchEnvironmentSettings{
 		api_base_url: base_url
 		origin: document.origin().serialize()
+		origin_object: document.origin()
 		client: if provider := css_fetch_client_provider_ { provider(document) } else { none }
 	}
 }
@@ -163,6 +165,7 @@ fn fetch_a_style_resource_impl(url_value StyleResourceURL, css_rule_or_declarati
 			CSSRequestMode.cors} else {
 			CSSRequestMode.no_cors}
 		origin: environment_settings.origin
+		origin_object: environment_settings.origin_object
 		credentials_mode: .same_origin
 		use_url_credentials: true
 		client_base_url: environment_settings.api_base_url
@@ -227,7 +230,7 @@ fn css_request_to_fetch_request(request CSSRequest) &fetch.Request {
 	}
 	fetch_request.origin = fetch.RequestOrigin{
 		is_client: false
-		origin: dom.Origin{ value: request.origin }
+		origin: request.origin_object or { dom.Origin{ value: request.origin } }
 	}
 	fetch_request.use_url_credentials = request.use_url_credentials
 	fetch_request.integrity_metadata = request.integrity_metadata

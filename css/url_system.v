@@ -9,6 +9,7 @@
 // - Libraries/LibWeb/CSS/URL.cpp/.h
 module css
 
+import dom
 import fetch
 
 // https://www.w3.org/TR/css-color-4/#css-system-colors
@@ -220,6 +221,7 @@ pub mut:
 	url                 string
 	destination         CSSRequestDestination
 	origin              string
+	origin_object       ?dom.Origin
 	use_url_credentials bool
 	client_base_url     string
 	client ?fetch.RequestClient
