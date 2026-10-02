@@ -252,6 +252,15 @@ tests cover every parameter set and source format, duplicate/common usages,
 empty private versus public usages, exact native handles, and copied deferred
 seed import.
 
+Buffer field normalization now retains source required-member ordering and
+NotAnObjectOfType diagnostics. Present Ed448/ML-DSA contexts require a real
+BufferSource, including undefined/null rejection; RSA-OAEP instead accepts
+nullish labels as empty and rejects other invalid values. RSA publicExponent
+requires the source Uint8Array brand and copies only the view's bytes. Focused
+tests cover brands, offset views, optional/required presence, and earlier
+buffer errors before invalid numeric fields. The native RSA generation test
+now supplies and mutates an actual offset Uint8Array view.
+
 Common parameter/typed boundary conversions remain under source review.
 Native backend availability does not establish complete WebCrypto/VM parity.
 
