@@ -52,6 +52,10 @@ that ignore ASCII case.
 VM scratch storage, register snapshots, saved choices, modifier/repetition
 transitions and directional character traversal add 14,942 exact native
 comparisons, including surrogate-pair boundaries and checked position arithmetic.
+Legacy/Unicode case canonicalization, builtin character classes, VM literal
+matching, word boundaries and numbered/named backreferences add 113,204 exact
+native comparisons. They preserve duplicate-name capture priority and retain ICU
+for full UTF-8 uppercasing and simple Unicode folding.
 The regex parser, compiler, Unicode property backend and VM execution remain
 pending.
 Synchronous iterator operations and String/ordinary-Array iterator records

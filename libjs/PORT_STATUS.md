@@ -23,11 +23,13 @@ and simdutf 7.4.0's scalar `utf16.h` validation and repair bodies. Unicode casin
 and normalization follow `LibUnicode/{Utf16String.cpp,Normalize.{h,cpp},ICU.{h,cpp}}`
 and retain ICU as the native algorithm and Unicode-data dependency.
 Regex records, input primitives, pattern analysis, literal prefilters and VM
-storage, repetition and character traversal follow
+storage, repetition, traversal, literal matching and backreferences follow
 `LibRegex/Rust/src/{ast,bytecode,vm}.rs`
 at the same upstream revision. Property-kind and resolved-property records follow
 `LibUnicode/Rust/src/character_types.rs`; Unicode property resolution and regex
 execution remain pending.
+Regex canonicalization additionally follows `LibUnicode/{CharacterTypes,String}.cpp`,
+retaining ICU's full UTF-8 uppercase and simple Unicode folding algorithms.
 All refreshed V code and tests live here; the upstream checkout and the original
 `libjs_v` checkout are references. The upstream BSD-2-Clause notice is retained
 in [`LICENSE`](LICENSE).
@@ -100,6 +102,9 @@ creates a realm with a global environment and pushes its execution context.
 | `regex_vm_state.v` | VM/scratch records, construction/reset, flat register snapshots, all saved-choice variants and modifier-stack transitions |
 | `regex_vm_repeat.v` | Repeat-start/check handlers with greedy/lazy counter snapshots and checked same-matcher loop suffix minima |
 | `regex_vm_traversal.v` | Forward/backward code-point boundaries, pair-aware character movement and checked multi-character position arithmetic |
+| `regex_case_folding.c.v`, `regex_case_folding.h` | Legacy full-uppercase and Unicode simple-fold canonicalization, ASCII shortcuts, equality, word/digit predicates and all six builtin character classes through the native ICU ABI |
+| `regex_vm_character.v` | Modifier-aware literal matching and adjacent-code-unit word-boundary checks |
+| `regex_vm_backreference.v` | Numbered/named references, Unicode code-point comparison in both directions, and first-participating duplicate capture priority |
 | `number_object.v`, `bigint_object.v`, `value_boxing.v` | NumberData/BigIntData wrapper records and all primitive ToObject cases with explicit Number/BigInt/String prototype dependencies |
 | `value_property_access.v` | GetV's direct primitive-prototype lookup, GetMethod's nullish/callable checks and Invoke with the original primitive receiver and explicit intrinsic dependencies |
 | `iterator.v`, `iterator_values.v` | Synchronous iterator acquisition for object receivers, IteratorNext/Step/StepValue, completion-preserving close/close-all, result records, list/callback collection, and SetterThatIgnoresPrototypeProperties |
@@ -130,8 +135,8 @@ creates a realm with a global environment and pushes its execution context.
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 188 implementation files contain **31,321 physical V LOC**. The 196 test
-files contain **26,033 physical V LOC** and **676 test functions**. Physical LOC
+The 191 implementation files contain **31,578 physical V LOC**. The 200 test
+files contain **26,449 physical V LOC** and **687 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -1074,6 +1079,35 @@ when it cannot advance; non-Unicode movement uses checked position arithmetic
 without clamping the result to input length. These helpers do not perform
 character matching, Unicode property resolution or case folding.
 
+LibRegex case folding and builtin classes (`9db85440`) translate the VM's
+ASCII shortcuts, folding equality and word/digit/builtin predicates, plus
+LibUnicode's canonicalization body. Unicode mode calls ICU's simple folding;
+legacy mode calls its full UTF-8 uppercase map, retains multi-code-point
+expansions unchanged and prevents a non-ASCII input from canonicalizing to ASCII.
+WTF-8 lone surrogates retain the upstream result. Equal operands return before
+folding, including invalid legacy code points. The source invalid-code-point
+assertion becomes a V panic. ICU remains the native algorithm/data dependency.
+Property resolution, case closure and inverse-range matching are separate
+untranslated dependencies.
+
+LibRegex VM character matching (`4c2e5efa`) translates literal matching with
+active case modifiers, advancing only after success in the current direction.
+Unicode reads retain the pair-interior rejection from character traversal.
+Word boundaries inspect the adjacent raw code units regardless of direction;
+the Unicode word extension requires both Unicode mode and active ignore-case.
+
+LibRegex backreferences (`44a111e6`) translate the complete numbered, Unicode
+and named comparison bodies. Missing/unmatched groups succeed without consuming
+input. Legacy references compare code units; Unicode references compare code
+points and walk backwards by the captured code-point count before comparing
+forwards. Failed comparisons leave the VM position unchanged; successful ones
+commit their final position. Duplicate names select the first participating
+capture in program order, even when it is empty or subsequently fails to match;
+they do not retry another participating duplicate. The decoder retains the
+source's handling of capture boundaries that cut a surrogate pair. Register
+and input ownership stay with the retained VM scratch/program/input records;
+these comparison bodies do not execute the backreference opcodes yet.
+
 Reflect property bodies (`5f4813e`) translate defineProperty/deleteProperty/get,
 getOwnPropertyDescriptor/has/set. Target-object validation precedes key conversion;
 defineProperty converts the descriptor only after the key. Rejected definitions,
@@ -1192,10 +1226,10 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 196 passed, 196 total
+# 200 passed, 200 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 196 passed, 196 total
+# 200 passed, 200 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
@@ -1210,7 +1244,7 @@ v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
 
 v -old-compiler -enable-globals test .
-# 868 passed, 868 total
+# 872 passed, 872 total
 
 ./build_ladybird.sh
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
@@ -1234,11 +1268,11 @@ fixtures; separate tests exercise translated NativeFunction and ArrayBufferObjec
 records. Module-loading tests write temporary module files. The preceding LibWeb
 work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 196 libjs files are verified separately in both GC modes.
-There are now 868 repository test files.
+this package; the 200 libjs files are verified separately in both GC modes.
+There are now 872 repository test files.
 
-The complete 868-file repository suite passes, including the native bridge,
-eighteen browser integration files and all 196 LibJS files. The dedicated LibJS and
+The complete 872-file repository suite passes, including the native bridge,
+eighteen browser integration files and all 200 LibJS files. The dedicated LibJS and
 browser suites also pass in no-GC mode, exercising the retained storage and
 buffer ownership independently of the collector.
 
@@ -1305,6 +1339,28 @@ execution and Unicode FFI are never invoked. Regenerate with
 `python3 tools/libjs_regex_state_corpus.py --output /tmp/regex-state.tsv`
 and compare with `libjs/testdata/regex-state.tsv`. Every state and helper output
 compares exactly without case overrides; regeneration is byte-exact.
+
+Case folding and VM matching helpers match another 113,204 exact native cases
+in both GC modes (`e643533c`). The 67,118 folding cases include every BMP code
+point, the complete Deseret case ranges and selected supplementary points;
+each compares legacy/Unicode results, word predicates and all six builtin
+classes. The remaining cases compare 27,704 literal matches, 9,344 word
+boundaries, 6,561 numbered references, 1,595 named references and 882 folding
+equalities, including both input views, modifiers, directions, clipped pair
+boundaries and missing/partial captures. The native invalid-code-point assertion
+is also checked; a focused V test exercises its panic in a child process.
+`tools/libjs_regex_matching_corpus.py` imports unchanged Rust records and the
+complete VM module with access wrappers. It extracts unchanged canonicalization
+and UTF-8 uppercase C++ bodies and compiles AK afresh with ASan and simdutf 9.1.0;
+it uses pinned ICU 78.2 for the oracle and the system ICU 78.1 for the V checks.
+Both run with the explicit `en_US_POSIX` locale. No parser, compiler, matcher
+dispatch or backtracking execution is invoked. Regenerate with
+`python3 tools/libjs_regex_matching_corpus.py --output /tmp/regex-matching.tsv`
+and compare `/tmp/regex-matching.tsv` and `/tmp/regex-matching-fold.tsv` with
+their counterparts under `libjs/testdata/`. The split keeps each embedded asset
+below 5 MB. All fields compare exactly without overrides, and regeneration is
+byte-exact. Source/build/dependency/compiler options select alternate native
+locations; the ordinary V tests use checked-in fixtures.
 
 Browser integration checks pass the eighteen `browserjs` test files in both GC modes,
 the native `main_test.v` bridge and flag tests, the production bundle build,
@@ -1615,6 +1671,18 @@ the same-size SVG source switch with zero differing pixels.
   Repeat counters preserve optimized Rust's wrapping arithmetic; Rust debug-mode
   overflow panics are not claimed. Character traversal preserves the source's
   surrogate-interior rejection and unclamped non-Unicode checked arithmetic.
+- Regex legacy canonicalization uses flat WTF-8 arrays and ICU's C full-uppercase
+  API instead of AK's short-string/builder storage and ICU's C++ CaseMap API.
+  Preflight replaces builder growth; failed native maps retain the original
+  code point, and the complete BMP native comparison includes lone surrogates
+  and expanding uppercase maps. Invalid legacy code points use V panic text
+  instead of AK assertion text. Unicode folding retains the native scalar ICU
+  ABI, while ASCII shortcuts and the non-ASCII-to-ASCII exclusion follow source
+  control flow. The native oracle uses ICU 78.2 and the macOS V runtime uses
+  ICU 78.1, both with Unicode 17.0.0; the compared helpers do not establish full
+  ICU/data parity. Linux uses its installed ICU. Backreference methods retain
+  upstream's expectation of valid capture ranges and VM positions; they share
+  the existing V input-view bounds behavior and signed array capacity limit.
 - Checked string length sum/product retain upstream's 2^32-1 code-unit maximum.
   TypedArray join and toLocaleString assemble flat V UTF-16 arrays instead of
   AK's builder and throw the same string-size RangeError above V's 2^31-1 array
@@ -1726,12 +1794,13 @@ complete LibJS runtime migration.
   source escaping are translated, but `compile_regex_pattern()` still has no
   backend. LibRegex's complete AST/bytecode models, input/capture primitives,
   pattern-hint analysis, literal prefilters, scratch storage, register snapshots,
-  saved choices, modifiers/repetition and character traversal are translated.
-  Its `parser.rs`, `compiler.rs`, candidate matcher filters, simple-scan
+  saved choices, modifiers/repetition, character traversal, canonicalization,
+  builtin classes, literal matching, word boundaries and backreferences are
+  translated. Its `parser.rs`, `compiler.rs`, candidate matcher filters, simple-scan
   execution, backtracking dispatcher, fast/general VM execution, lookaround
-  bodies, `regex.rs`/FFI, Unicode property resolution, case folding and
-  string-property backend remain pending. The RegExp object,
-  allocation/initialization, constructor/prototype methods and
+  bodies, `regex.rs`/FFI, Unicode property resolution, case closure,
+  inverse-range matching and the string-property backend remain pending.
+  The RegExp object, allocation/initialization, constructor/prototype methods and
   matching depend on those remaining slices. Neither the JavaScript AST corpus,
   RegExp preparation corpus nor regex helper corpus establishes regex grammar
   or matching conformance.
