@@ -601,7 +601,32 @@ fn style_scope_move_sheet_for_style_element(scope_node &dom.Node, sheet voidptr,
 
 fn style_sheet_state_set_media(sheet voidptr, media string) {
 	mut style_sheet := unsafe { &CSSStyleSheet(sheet) }
-	style_sheet.set_media(media)
+	if style_sheet.base.media.media_text() != media {
+		style_sheet.set_media(media)
+	}
+}
+
+// HTMLLinkElement::process_stylesheet_resource's CSS-owned sheet installation.
+// The link retains the same object exposed through LinkStyle::sheet.
+pub fn install_link_style_sheet(owner &dom.HTMLLinkElement, css_text string, location string, alternate bool) &CSSStyleSheet {
+	mut link := unsafe { &dom.HTMLLinkElement(owner) }
+	link.remove_linked_style_sheet()
+	element := unsafe { &dom.Element(owner) }
+	scope_node := element.as_node().document_or_shadow_root_style_scope_node()
+	mut scope := css_style_scope_for_scope_node(scope_node)
+	mut list := scope.style_sheet_list()
+	mut sheet := parse_css_style_sheet_for_owner_node(element.document(), css_text, location)
+	title := if element.as_node().in_a_document_tree() {
+		element.get_attribute_value('title')
+	} else {
+		''
+	}
+	list.initialize_a_css_style_sheet(mut sheet, element, element.get_attribute_value('media'),
+		title, if alternate { .yes } else { .no }, .yes, none, none)
+	link.linked_style_sheet_ = voidptr(sheet)
+	link.linked_style_sheet_scope_ = scope_node
+	link.linked_style_sheet_from_resource_ = false
+	return sheet
 }
 
 fn style_sheet_state_evaluate_media_queries(sheet voidptr, document &dom.Document) bool {
@@ -675,10 +700,14 @@ pub fn sync_document_style_elements(document &dom.Document) {
 		if 'stylesheet' !in relations || element.has_attribute('disabled') {
 			continue
 		}
+		link := unsafe { &dom.HTMLLinkElement(element) }
+		if link.linked_style_sheet_from_resource_ {
+			continue
+		}
 		href := element.get_attribute_value('href')
 		css_text, resolved_url := read_local_stylesheet(href, base_url) or { continue }
 		link_sources << DocumentStyleSource{
-			cache_key: 'link:${resolved_url}:${css_text}'
+			cache_key: 'link:${element.as_node().unique_id()}:${resolved_url}:${css_text}'
 			css_text:  css_text
 			location:  resolved_url
 			media:     element.get_attribute_value('media')
@@ -695,23 +724,30 @@ pub fn sync_document_style_elements(document &dom.Document) {
 		mut list := scope.style_sheet_list()
 		for old_sheet in holder.link_sheets {
 			list.remove_a_css_style_sheet(mut unsafe { &CSSStyleSheet(old_sheet) })
+			if owner := old_sheet.base.owner_node {
+				mut link := unsafe { &dom.HTMLLinkElement(owner) }
+				if link.linked_style_sheet_ == voidptr(old_sheet) {
+					link.linked_style_sheet_ = unsafe { nil }
+					link.linked_style_sheet_scope_ = none
+				}
+			}
 		}
 		mut parsed := []&CSSStyleSheet{cap: link_sources.len}
 		for source in link_sources {
-			mut sheet := parse_css_style_sheet_for_owner_node(document, source.css_text,
-				source.location)
-			alternate := if source.alternate {
-				StyleSheetListAlternate.yes
-			} else {
-				StyleSheetListAlternate.no
-			}
-			list.initialize_a_css_style_sheet(mut sheet, source.owner, source.media, source.title,
-				alternate, .yes, none, none)
+			sheet := install_link_style_sheet(unsafe { &dom.HTMLLinkElement(source.owner) },
+				source.css_text, source.location, source.alternate)
 			parsed << sheet
 		}
 		unsafe {
 			holder.link_sources = sources.clone()
 			holder.link_sheets = parsed
+		}
+	}
+	// A resource cache hit must still forward live media changes to the existing
+	// object. Retain CSSOM edits and sheet identity across these mutations.
+	for index, source in link_sources {
+		if index < holder.link_sheets.len {
+			style_sheet_state_set_media(voidptr(holder.link_sheets[index]), source.media)
 		}
 	}
 	evaluate_media_rules_for_document(document)
@@ -721,6 +757,12 @@ pub fn sync_document_style_elements(document &dom.Document) {
 pub fn style_sheet_for_owner_node(document &dom.Document, owner &dom.Element) ?&CSSStyleSheet {
 	if owner.is_style_element_base() {
 		return style_element_sheet(owner)
+	}
+	if owner.is_html_element() && owner.local_name() == 'link' {
+		link := unsafe { &dom.HTMLLinkElement(owner) }
+		if link.linked_style_sheet_ != unsafe { nil } {
+			return unsafe { &CSSStyleSheet(link.linked_style_sheet_) }
+		}
 	}
 	sync_document_style_elements(document)
 	holder := css_author_style_sheets_for(document)

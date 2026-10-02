@@ -727,7 +727,30 @@ pub struct HTMLLinkElement {
 pub mut:
 	link_element_model_            voidptr = unsafe { nil }
 	link_has_loaded_icon_callback_ HTMLLinkHasLoadedIconCallback = unsafe { nil }
-	link_load_favicon_callback_    HTMLLinkLoadFaviconCallback = unsafe { nil }
+	link_load_favicon_callback_    HTMLLinkLoadFaviconCallback   = unsafe { nil }
+	// LinkStyle::sheet is CSS-owned, as with StyleElementBase's sheet.
+	linked_style_sheet_               voidptr
+	linked_style_sheet_scope_         ?&Node
+	linked_style_sheet_from_resource_ bool
+}
+
+pub fn (mut link HTMLLinkElement) set_linked_style_sheet_media(media string) {
+	if link.linked_style_sheet_ != unsafe { nil }
+		&& dom_style_sheet_scope_hooks.set_media != unsafe { nil } {
+		dom_style_sheet_scope_hooks.set_media(link.linked_style_sheet_, media)
+	}
+}
+
+pub fn (mut link HTMLLinkElement) remove_linked_style_sheet() {
+	if scope := link.linked_style_sheet_scope_ {
+		if link.linked_style_sheet_ != unsafe { nil }
+			&& dom_style_sheet_scope_hooks.remove_a_css_style_sheet != unsafe { nil } {
+			dom_style_sheet_scope_hooks.remove_a_css_style_sheet(scope, link.linked_style_sheet_)
+		}
+	}
+	link.linked_style_sheet_ = unsafe { nil }
+	link.linked_style_sheet_scope_ = none
+	link.linked_style_sheet_from_resource_ = false
 }
 
 pub fn (link &HTMLLinkElement) has_loaded_icon() bool {

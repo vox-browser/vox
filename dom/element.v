@@ -5471,6 +5471,12 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 	}
 
 	value_or_empty := value or { '' }
+	// HTMLLinkElement::attribute_changed forwards media to its associated
+	// sheet without replacing the sheet or fetching the resource again.
+	if e.is_html_element() && e.local_name() == 'link' && local_name == 'media' {
+		mut link := unsafe { &HTMLLinkElement(&e) }
+		link.set_linked_style_sheet_media(value_or_empty)
+	}
 
 	if local_name == 'inert' && e.is_html_element() {
 		mut html_element := unsafe { &HTMLElement(&e) }

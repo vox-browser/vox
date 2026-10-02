@@ -26,6 +26,7 @@ pub:
 	status       u16 = 200
 	content_type string
 	body         []u8
+	url          ?dom.URL
 }
 
 // V counterparts of HTMLLinkElement::LinkProcessingOptions and the Fetch
@@ -694,8 +695,24 @@ pub fn (mut link HTMLLinkElementModel) process_stylesheet_resource(request_succe
 		success = false
 	}
 	link.loaded_style_sheet_ = none
+	if element := link.element_ {
+		mut dom_link := unsafe { &dom.HTMLLinkElement(element) }
+		dom_link.remove_linked_style_sheet()
+	}
 	if success {
 		link.loaded_style_sheet_ = response.body.bytestr()
+		if element := link.element_ {
+			location := response.url or {
+				dom.dom_url_parse(link.href_, link.base_url_, 'utf-8') or { link.base_url_ }
+			}
+			mut sheet := css.install_link_style_sheet(element, response.body.bytestr(),
+				location.serialize(), link.has_relation('alternate') && !link.explicitly_enabled_)
+			mut dom_link := unsafe { &dom.HTMLLinkElement(element) }
+			dom_link.linked_style_sheet_from_resource_ = true
+			if link.explicitly_enabled_ {
+				sheet.set_disabled(false)
+			}
+		}
 		link.stylesheet_failed_ = false
 		link.fire_event('load')
 	} else {
@@ -771,6 +788,8 @@ pub fn html_link_element_removed_from(element &dom.HTMLLinkElement, old_parent ?
 		model.loaded_style_sheet_ = none
 		dom_element.unblock_rendering()
 	}
+	mut dom_link := unsafe { &dom.HTMLLinkElement(element) }
+	dom_link.remove_linked_style_sheet()
 	model.removed()
 }
 
@@ -827,9 +846,11 @@ pub fn html_link_element_attribute_changed(element &dom.HTMLLinkElement, name st
 	if model.has_relation('stylesheet') && model.loaded_style_sheet_ != none {
 		if name == 'disabled' {
 			model.loaded_style_sheet_ = none
+			mut dom_link := unsafe { &dom.HTMLLinkElement(element) }
+			dom_link.remove_linked_style_sheet()
 		} else if name == 'media' {
-			// The compact sheet representation stores only decoded CSS; media is
-			// retained independently in model.media_.
+			mut dom_link := unsafe { &dom.HTMLLinkElement(element) }
+			dom_link.set_linked_style_sheet_media(value or { '' })
 		}
 	}
 	model.connected_ = dom_element.as_node().is_browsing_context_connected()
