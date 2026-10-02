@@ -945,6 +945,11 @@ fromCodePoint retains the pinned source's integral
 ToInt32 wraparound before its range check. The remaining 10 prototype native
 bodies, initialization/aliases, bytecode builtin shortcuts, production String
 installation and primitive Reference integration remain pending.
+RegExp preparation translates strict/permissive flag handling, exact UTF-16
+error messages, named-group surrogate/origin checks, Unicode escape normalization
+and source escaping. All 9,202 native LibJS/AK preparation cases match exactly in
+both GC modes. RegExp records, constructor/prototype methods, grammar compilation
+and matching remain pending; helper validation does not establish regex parity.
 Array exotic records retain sparse, nonconfigurable length descriptors, grow
 only after successful indexed definitions, and restore failed truncations at
 the highest fixed index. Property definitions propagate VM exceptions through
@@ -997,9 +1002,9 @@ SharedArrayBuffer allocation reserves the maximum capacity while exposing the
 initial length. Its constructor, three accessors, growth hook and species-aware
 slicing are installed and tested with live DataView witnesses. Cross-agent
 shared-memory ordering remains pending, as in the pinned upstream active bodies.
-The LibJS package's 181 test files pass in both GC and no-GC mode, and all 100
+The LibJS package's 185 test files pass in both GC and no-GC mode, and all 100
 upstream AST fixtures match exactly with no case overrides. The complete repository suite passes all
-853 test files, including the native bridge and eighteen browser integration files.
+857 test files, including the native bridge and eighteen browser integration files.
 The native browser and inline-document layout bridge now prepare page scripts
 through LibJS and associate classic execution with translated Script, Realm,
 and VM embedding contexts. Sources retain their URLs and parse goals; syntax

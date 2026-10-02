@@ -40,6 +40,10 @@ with symbol dispatch. Its remaining prototype methods, including Intl locale
 casing/collation, initialization and production installation remain pending;
 dependencies stay explicit. String exotic objects
 expose fixed UTF-16 character descriptors.
+RegExp preparation translates flag validation, named-group surrogate checks,
+Unicode escape normalization and source escaping, with 9,202 exact native
+LibJS/AK comparisons. RegExp objects, constructors/prototypes and the regex
+compiler/matcher remain pending.
 Synchronous iterator operations and String/ordinary-Array iterator records
 support stepping, collection, and closing.
 Their intrinsic prototypes are supplied explicitly; Array literals and methods,

@@ -10,7 +10,7 @@ AST, and scope collector for the frontend, and its C++ `Runtime/VM.{h,cpp}`,
 `Interpreter/Interpreter.cpp` VM members, and runtime records for the VM slice.
 The execution slice additionally follows `Rust/src/bytecode/{operand,generator,codegen}.rs`,
 `Interpreter/{interpreter.flap,SlowPaths.cpp}`, `Script.cpp`,
-`Runtime/{Value,GlobalObject,BigInt,BigIntConstructor,BigIntPrototype,NativeFunction,FunctionObject,BoundFunction,FunctionPrototype,BooleanObject,BooleanPrototype,BooleanConstructor,SymbolObject,SymbolPrototype,SymbolConstructor,StringObject,StringConstructor,StringPrototype,NumberObject,NumberConstructor,NumberPrototype,BigIntObject,Iterator,StringIterator,StringIteratorPrototype,ArrayIterator,ArrayIteratorPrototype,ByteLength,ArrayBuffer,ArrayBufferConstructor,ArrayBufferPrototype,DataView,DataViewConstructor,DataViewPrototype,SharedArrayBufferConstructor,SharedArrayBufferPrototype,CanonicalIndex,TypedArray,TypedArrayPrototype,Intrinsics,Array,ArrayPrototype,IndexedProperties,PropertyKey,Object,ObjectPrototype,ReflectObject,PrimitiveString,Accessor,PropertyDescriptor,AbstractOperations}`
+`Runtime/{Value,GlobalObject,BigInt,BigIntConstructor,BigIntPrototype,NativeFunction,FunctionObject,BoundFunction,FunctionPrototype,BooleanObject,BooleanPrototype,BooleanConstructor,SymbolObject,SymbolPrototype,SymbolConstructor,StringObject,StringConstructor,StringPrototype,RegExpObject,NumberObject,NumberConstructor,NumberPrototype,BigIntObject,Iterator,StringIterator,StringIteratorPrototype,ArrayIterator,ArrayIteratorPrototype,ByteLength,ArrayBuffer,ArrayBufferConstructor,ArrayBufferPrototype,DataView,DataViewConstructor,DataViewPrototype,SharedArrayBufferConstructor,SharedArrayBufferPrototype,CanonicalIndex,TypedArray,TypedArrayPrototype,Intrinsics,Array,ArrayPrototype,IndexedProperties,PropertyKey,Object,ObjectPrototype,ReflectObject,PrimitiveString,Accessor,PropertyDescriptor,AbstractOperations}`
 source bodies and `Runtime/ValueInlines.h`, numeric/URI/Annex B global functions
 from `Runtime/GlobalObject.cpp`,
 `AK/StringConversions.cpp` and fast_float decimal-prefix parsing, and the BigInt
@@ -83,6 +83,9 @@ creates a realm with a global environment and pushes its execution context.
 | `string_normalize.v`, `unicode_normalize.c.v` | normalize form validation and conversion order, all four native UTF-16 ICU normalization forms and original-input failure fallback |
 | `string_substitution.v` | GetSubstitution dollar tokens, one/two-digit capture selection and fallback, live named-group lookup and capture conversion |
 | `string_replace.v`, `string_split.v` | String replace/split symbol dispatch and complete string paths, native replacement callbacks, Uint32 split limits and real Array results with an explicit prototype dependency |
+| `regexp_flags.v` | `RegExpObject::Flags`, strict initialization flag validation, permissive constructor bit mapping and exact UTF-16 SyntaxError diagnostics |
+| `regexp_pattern.v` | ParsePattern preparation, named-group surrogate/origin validation and non-ASCII escape normalization; regex grammar compilation pending |
+| `regexp_source.v` | RegExp source escaping over UTF-16 code points, character-class/backslash state and line terminators, with the stored pattern passed explicitly |
 | `number_object.v`, `bigint_object.v`, `value_boxing.v` | NumberData/BigIntData wrapper records and all primitive ToObject cases with explicit Number/BigInt/String prototype dependencies |
 | `value_property_access.v` | GetV's direct primitive-prototype lookup, GetMethod's nullish/callable checks and Invoke with the original primitive receiver and explicit intrinsic dependencies |
 | `iterator.v`, `iterator_values.v` | Synchronous iterator acquisition for object receivers, IteratorNext/Step/StepValue, completion-preserving close/close-all, result records, list/callback collection, and SetterThatIgnoresPrototypeProperties |
@@ -113,8 +116,8 @@ creates a realm with a global environment and pushes its execution context.
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 177 implementation files contain **29,132 physical V LOC**. The 181 test
-files contain **23,476 physical V LOC** and **627 test functions**. Physical LOC
+The 180 implementation files contain **29,528 physical V LOC**. The 185 test
+files contain **23,759 physical V LOC** and **637 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -744,10 +747,12 @@ Base64 operations (`a7f0fa3`) translate fromBase64/setFromBase64/toBase64, optio
 getter order, exact option validation, padding and all three last-chunk modes.
 Options can resize, detach or restore a view before the fresh buffer witness;
 partial decoded bytes are written before a SyntaxError is propagated. ToBoolean
-of omitPadding does not invoke coercion hooks. AK's simdutf 7.4.0 dependency is
-translated from its scalar codec, safe dispatch wrapper and ARM64 block decoder
-control flow; vector loads/tables use scalar code-unit operations in V. The
-64-code-unit blocks, 576-code flush, padding checks, bad-character retry and
+of omitPadding does not invoke coercion hooks. The codec backend follows the
+installed native build's simdutf 7.4.0 scalar codec, safe dispatch wrapper and
+ARM64 block decoder control flow; vector loads/tables use scalar code-unit
+operations in V. The current source manifest pins 9.1.0; parity with that version
+remains pending. The 64-code-unit blocks, 576-code flush, padding checks,
+bad-character retry and
 tail backtracking are retained, including the pinned block path's observable
 trailing-whitespace read count. All **16,470** generated UTF-16 comparisons match
 the installed upstream library's output bytes, decoder status and consumed-input
@@ -942,6 +947,35 @@ StringPrototype initialization, the remaining 10 native bodies (`endsWith`,
 bytecode builtin optimization metadata, production String installation and
 primitive Reference integration remain pending.
 
+RegExp flag preparation (`aacfa8d`) translates the source bit order, strict
+initialization validation and the constructor's separate permissive bit mapping.
+Bad characters and repeats are reported in scan order before the final incompatible
+u/v check. Diagnostics preserve every offending UTF-16 unit, including NUL and
+lone surrogates, following AK's char16_t formatting path. The VM boundary creates
+a SyntaxError without losing those units.
+
+ParsePattern preparation (`85171dc`) translates the named-capture discovery and
+named-backreference scans, including escaped delimiters, character classes and
+lookbehind exclusion. Named-group validation tracks literal, fixed-escape and
+braced-escape origins: literal pairs and two fixed surrogate escapes are accepted,
+mixed origins and braced surrogate pairs are rejected. Legacy identity `\k`
+escapes remain unchecked when no named capture exists. Non-ASCII units become
+legacy fixed escapes or Unicode braced escapes, combining literal surrogate pairs
+in u/v mode and preserving preceding-backslash parity. This preparation is not
+regex grammar compilation: ASCII grammar errors, empty/invalid identifiers and
+truncated groups remain for the pending ECMAScriptRegex backend. Its direct VM
+boundary reports the original SyntaxError text; RegExpInitialize's separate
+compile-error wrapper remains pending.
+
+RegExp source escaping (`51cb1f4`) translates the stored-pattern helper with the
+pattern passed explicitly. Empty input becomes `(?:)`, slash escaping follows
+character-class state, and all four line terminators are escaped with or without
+a preceding backslash. Code-point iteration retains supplementary pairs and lone
+surrogates. The source's pending u/v-specific escaping and omission of a dangling
+terminal backslash are preserved; no new grammar or matcher is substituted.
+RegExp records, allocation/initialization, constructor/prototype methods, symbol
+methods, bytecode shortcuts and production installation remain pending.
+
 Reflect property bodies (`5f4813e`) translate defineProperty/deleteProperty/get,
 getOwnPropertyDescriptor/has/set. Target-object validation precedes key conversion;
 defineProperty converts the descriptor only after the key. Rejected definitions,
@@ -1060,10 +1094,10 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 181 passed, 181 total
+# 185 passed, 185 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 181 passed, 181 total
+# 185 passed, 185 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
@@ -1078,7 +1112,7 @@ v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
 
 v -old-compiler -enable-globals test .
-# 853 passed, 853 total
+# 857 passed, 857 total
 
 ./build_ladybird.sh
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
@@ -1102,11 +1136,11 @@ fixtures; separate tests exercise translated NativeFunction and ArrayBufferObjec
 records. Module-loading tests write temporary module files. The preceding LibWeb
 work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 181 libjs files are verified separately in both GC modes.
-There are now 853 repository test files.
+this package; the 185 libjs files are verified separately in both GC modes.
+There are now 857 repository test files.
 
-The complete 853-file repository suite passes, including the native bridge,
-eighteen browser integration files and all 181 LibJS files. The dedicated LibJS and
+The complete 857-file repository suite passes, including the native bridge,
+eighteen browser integration files and all 185 LibJS files. The dedicated LibJS and
 browser suites also pass in no-GC mode, exercising the retained storage and
 buffer ownership independently of the collector.
 
@@ -1115,6 +1149,23 @@ validity flags and repaired outputs exactly against simdutf 7.4.0. Regenerating
 with `python3 tools/libjs_utf16_corpus.py --output /tmp/string-well-formed.tsv`
 and comparing that output with `libjs/testdata/string-well-formed.tsv` is
 byte-exact. `--simdutf-prefix` selects the pinned native dependency installation.
+
+RegExp preparation additionally matches 9,202 exact native LibJS/AK cases in
+both GC modes (`f3cde61`). The fixture compares flags, UTF-16 diagnostics, named
+group validation, preprocessing and source escaping without case overrides.
+Regenerate it with
+`python3 tools/libjs_regexp_preparation_corpus.py --output /tmp/regexp-preparation.tsv`
+and compare with
+`libjs/testdata/regexp-preparation.tsv`. The driver extracts the current pinned
+upstream C++ bodies and compiles AK and ErrorTypes afresh in a temporary directory;
+only the member-helper signature and its Flags declaration carrier are adapted.
+It uses ASan and the manifest's simdutf 9.1.0 dependency, selectable with
+`--simdutf-prefix` (the default is Homebrew's simdutf). The stale native Ladybird
+build still has simdutf 7.4.0; the earlier scalar validation/repair and codec
+fixtures above validate that older dependency's paths, not full 9.1.0 parity.
+`--upstream`, `--build-dir` and `--dependency-prefix` select source/generated-header
+and fmt locations. Checked-in fixtures keep ordinary V builds independent of the
+native oracle. Regeneration is byte-exact.
 
 Browser integration checks pass the eighteen `browserjs` test files in both GC modes,
 the native `main_test.v` bridge and flag tests, the production bundle build,
@@ -1383,6 +1434,12 @@ the same-size SVG source switch with zero differing pixels.
   symbol methods remain untranslated; ordinary symbol hooks use the existing
   GetMethod/Call path without a replacement regex implementation. Native callbacks
   work, while ECMAScript function objects remain pending.
+- RegExp preparation uses flat V UTF-16 arrays instead of AK builders/views and
+  retains V's signed array-length/allocation boundary. Source escaping receives
+  the original pattern explicitly until the real RegExp record exists. Named-group
+  surrogate validation does not validate identifiers or complete regex grammar;
+  the exact native corpus covers helper behavior only. Upstream's pending u/v
+  source-escaping logic and trailing-backslash omission remain visible.
 - Checked string length sum/product retain upstream's 2^32-1 code-unit maximum.
   TypedArray join and toLocaleString assemble flat V UTF-16 arrays instead of
   AK's builder and throw the same string-size RangeError above V's 2^31-1 array
@@ -1490,9 +1547,12 @@ The frontend and supported VM execution slice are integrated into the browser;
 JavaScriptCore continues to execute scripts in the default mode. This is not a
 complete LibJS runtime migration.
 
-- RegExp flag checks exist, but `compile_regex_pattern()` still has no backend.
-  Pattern syntax validation and compilation require the LibRegex boundary;
-  passing the AST corpus does not establish RegExp syntax conformance.
+- RegExp flags, named-group surrogate checks, ParsePattern preprocessing and
+  source escaping are translated, but `compile_regex_pattern()` still has no
+  backend. The RegExp object, allocation/initialization, constructor/prototype
+  methods and matching require LibRegex and its Rust parser/compiler/VM.
+  Neither the AST corpus
+  nor the preparation corpus establishes regex grammar or matching conformance.
 - The parser recursion guard is **32 guarded calls**, rather than upstream's
   2,000. V's flattened expression and statement records produce much larger
   stack frames. The guard reports a positioned syntax error instead of a stack
