@@ -1,3 +1,4 @@
+// Copyright (c) 2024, Andrew Kaster <andrew@ladybird.org>
 // Copyright (c) 2026, Ladybird contributors
 //
 // SPDX-License-Identifier: BSD-2-Clause
@@ -56,10 +57,13 @@ pub fn default_webassembly_value(type_ ValueType) !WasmValue {
 pub fn to_webassembly_value(value webidl.Value, type_ ValueType) !WasmValue {
 	return match type_ {
 		.i32 {
-			if value.kind != .number { return error('TypeError: i32 requires a number') }
+			// WebAssembly.cpp delegates to JS::Value::to_i32. The WebIDL
+			// signed, non-enforced 32-bit conversion uses that same ToInt32
+			// algorithm after ToNumber, including wrapping and nonfinite zero.
+			number := webidl.convert_to_int(value, 32, true, .no, .no)!
 			WasmValue{
 				type_:     type_
-				i32_value: i32(value.number_value)
+				i32_value: i32(number)
 			}
 		}
 		.i64 {
@@ -72,17 +76,17 @@ pub fn to_webassembly_value(value webidl.Value, type_ ValueType) !WasmValue {
 			}
 		}
 		.f32 {
-			if value.kind != .number { return error('TypeError: f32 requires a number') }
+			number := webidl.value_to_number(value)!
 			WasmValue{
 				type_:     type_
-				f32_value: f32(value.number_value)
+				f32_value: f32(number)
 			}
 		}
 		.f64 {
-			if value.kind != .number { return error('TypeError: f64 requires a number') }
+			number := webidl.value_to_number(value)!
 			WasmValue{
 				type_:     type_
-				f64_value: value.number_value
+				f64_value: number
 			}
 		}
 		.v128 {
@@ -151,10 +155,10 @@ fn global_create_with_cache(cache &WebAssemblyCache, descriptor GlobalDescriptor
 		return error('TypeError: Initial value does not match the global value type')
 	}
 	global := &Global{
-		type_: descriptor.value
+		type_:    descriptor.value
 		mutable_: descriptor.mutable_
-		cache_: cache
-		stored: value
+		cache_:   cache
+		stored:   value
 	}
 	unsafe {
 		cache.add_global_instance(global.address(), global)
@@ -193,7 +197,7 @@ pub fn (global &Global) cache() &WebAssemblyCache {
 pub fn (global &Global) type() GlobalType {
 	return GlobalType{
 		value_type: global.type_
-		mutable_: global.mutable_
+		mutable_:   global.mutable_
 	}
 }
 
