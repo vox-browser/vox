@@ -6,16 +6,6 @@
 // SubtleCrypto.
 module webcrypto
 
-fn import_secret_algorithm(name string, format KeyFormat, material []u8, extractable bool,
-	usages []KeyUsage, hash_name string) !&CryptoKey {
-	return SubtleCrypto.create().import_key(format, material, name, extractable, usages,
-		hash_name)
-}
-
-fn export_algorithm_key(format KeyFormat, key &CryptoKey) ![]u8 {
-	return SubtleCrypto.create().export_key(format, key)
-}
-
 fn aes_key_length(params AesKeyGenParams) !u32 {
 	if params.length !in [u16(128), 192, 256] {
 		return error('OperationError: Invalid key length')
@@ -63,9 +53,9 @@ pub struct ChaCha20Poly1305 {}
 pub fn ChaCha20Poly1305.create() ChaCha20Poly1305 { return ChaCha20Poly1305{} }
 pub fn (_ ChaCha20Poly1305) encrypt(params AeadParams, key &CryptoKey, data []u8) ![]u8 { return chacha20_poly1305_crypt(params, key, data, false) }
 pub fn (_ ChaCha20Poly1305) decrypt(params AeadParams, key &CryptoKey, data []u8) ![]u8 { return chacha20_poly1305_crypt(params, key, data, true) }
-pub fn (_ ChaCha20Poly1305) generate_key(_ AlgorithmParams, extractable bool, usages []KeyUsage) !GeneratedKey { return SubtleCrypto.create().generate_key(AlgorithmParams{name: 'ChaCha20-Poly1305'}, extractable, usages) }
-pub fn (_ ChaCha20Poly1305) import_key(format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_secret_algorithm('ChaCha20-Poly1305', format, material, extractable, usages, '') }
-pub fn (_ ChaCha20Poly1305) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_algorithm_key(format, key) }
+pub fn (_ ChaCha20Poly1305) generate_key(_ AlgorithmParams, extractable bool, usages []KeyUsage) !GeneratedKey { return generate_chacha_key(extractable, usages) }
+pub fn (_ ChaCha20Poly1305) import_key(format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_chacha_key(format, material, extractable, usages) }
+pub fn (_ ChaCha20Poly1305) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_chacha_key(format, key) }
 pub fn (_ ChaCha20Poly1305) get_key_length(_ AlgorithmParams) !KeyLengthResult { return KeyLengthResult{value: u32(256)} }
 
 pub struct SHA {}

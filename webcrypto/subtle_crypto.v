@@ -5,7 +5,6 @@
 // Translation of Crypto/SubtleCrypto.{h,cpp}.
 module webcrypto
 
-import crypto.rand
 import webidl
 import x.json2
 
@@ -131,67 +130,6 @@ fn validate_jwk_key_ops(jwk JsonWebKey, usages []KeyUsage) ! {
 			return error('DataError: Requested usage is absent from JWK key_ops')
 		}
 	}
-}
-
-fn expected_jwk_algorithm(algorithm string, key_length int, hash_name string) !string {
-	return match algorithm {
-		'AES-CBC' {
-			'A${key_length}CBC'
-		}
-		'AES-CTR' {
-			'A${key_length}CTR'
-		}
-		'AES-GCM' {
-			'A${key_length}GCM'
-		}
-		'AES-KW' {
-			'A${key_length}KW'
-		}
-		'HMAC' {
-			match canonical_hash_name(hash_name)! {
-				'SHA-1' { 'HS1' }
-				'SHA-256' { 'HS256' }
-				'SHA-384' { 'HS384' }
-				'SHA-512' { 'HS512' }
-				else { return error('DataError: This HMAC hash has no JWK alg value') }
-			}
-		}
-		'Ed25519' {
-			'Ed25519'
-		}
-		'ChaCha20-Poly1305' {
-			'C20P'
-		}
-		else {
-			error('NotSupportedError: JWK import is unavailable for ${algorithm}')
-		}
-	}
-}
-
-fn validate_jwk_algorithm_metadata(jwk JsonWebKey, algorithm string, material_length int, hash_name string, usages []KeyUsage) ! {
-	expected_algorithm := expected_jwk_algorithm(algorithm, material_length * 8, hash_name)!
-	if actual_algorithm := jwk.alg {
-		if algorithm == 'Ed25519' {
-			if actual_algorithm !in ['Ed25519', 'EdDSA'] {
-				return error('DataError: Invalid Ed25519 JWK alg')
-			}
-		} else if actual_algorithm != expected_algorithm {
-			return error('DataError: JWK alg contradicts the key algorithm or length')
-		}
-	}
-	if usages.len > 0 {
-		if use := jwk.use {
-			expected_use := match algorithm {
-				'HMAC' { 'sign' }
-				'Ed25519' { 'sig' }
-				else { 'enc' }
-			}
-			if use != expected_use {
-				return error('DataError: Invalid JWK use field')
-			}
-		}
-	}
-	validate_jwk_key_ops(jwk, usages)!
 }
 
 const digest_algorithms = ['SHA-1', 'SHA-256', 'SHA-384', 'SHA-512', 'SHA3-256', 'SHA3-384', 'SHA3-512',
@@ -457,12 +395,7 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 				return KMAC.create().generate_key(KmacKeyGenParams{ name: normalized }, extractable, normalized_usages)
 			}
             if normalized == 'ChaCha20-Poly1305' {
-				validate_usages(normalized_usages, [KeyUsage.encrypt, .decrypt, .wrap_key, .unwrap_key])!
-				return GeneratedKey{
-					key: CryptoKey.create(.secret, extractable, KeyAlgorithm{
-						name: normalized
-					}, normalized_usages, rand.bytes(32)!)
-				}
+                return generate_chacha_key(extractable, normalized_usages)
 			}
             return error('NotSupportedError: ${normalized} key generation backend is unavailable')
 		}
@@ -490,6 +423,17 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(import_algorithm_name(algorithm), 'importKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
+    if normalized == 'ChaCha20-Poly1305' {
+        // Existing typed raw convenience alias; source AlgorithmMethods and JS
+        // importKey support raw-secret and JWK only.
+        actual_format := if format == .raw { KeyFormat.raw_secret } else { format }
+        mut key := import_chacha_key(actual_format, material, extractable, normalized_usages)!
+        if normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+        key.set_extractable(extractable)
+        key.set_usages(normalized_usages)
+        return key
+    }
+
     if normalized in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW'] {
         mut key := import_aes_key(normalized, format, material, extractable, normalized_usages)!
         if normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
@@ -587,6 +531,8 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(import_algorithm_name(algorithm), 'importKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
+    if normalized == 'ChaCha20-Poly1305' { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
+
     if normalized in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW'] { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
 
 	if normalized == 'Ed25519' { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
@@ -604,32 +550,18 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 	if normalized in ['X25519', 'X448', 'Ed448'] {
 		return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name)
 	}
-	if extractable {
-		if jwk_extractable := jwk.ext {
-			if !jwk_extractable {
-				return error('DataError: JWK ext forbids extracting this key')
-			}
-		}
-	}
-	if normalized !in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW', 'HMAC', 'ChaCha20-Poly1305'] {
-		return error('NotSupportedError: JWK import is unavailable for ${normalized}')
-	}
-	key_type := jwk.kty or { '' }
-	if key_type != 'oct' {
-		return error('DataError: Symmetric JWK must use kty oct')
-	}
-	encoded_key := jwk.k or { return error('DataError: Symmetric JWK has no k member') }
-	material := base64url_decode(encoded_key)!
-	validate_jwk_algorithm_metadata(jwk, normalized, material.len, hash_name, normalized_usages)!
-	if normalized_usages.len == 0 {
-		return error('SyntaxError: usages must not be empty')
-	}
-	return import_secret_key(normalized, material, extractable, normalized_usages, hash_name)
+	return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name)
 }
 
 pub fn (subtle_crypto &SubtleCrypto) export_key(format KeyFormat, key &CryptoKey) ![]u8 {
 	_ = subtle_crypto
 	normalize_an_algorithm(key.algorithm_name(), 'exportKey')!
+    if key.algorithm_name() == 'ChaCha20-Poly1305' {
+        if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
+        actual_format := if format == .raw { KeyFormat.raw_secret } else { format }
+        return export_chacha_key(actual_format, key)
+    }
+
     if key.algorithm_name() in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW'] {
         if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
         return export_aes_key(format, key)
@@ -695,6 +627,7 @@ pub fn (subtle_crypto &SubtleCrypto) export_jwk(key &CryptoKey) !JsonWebKey {
 		return error('InvalidAccessError: Key is not extractable')
 	}
     if key.algorithm_name() in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW'] { return export_aes_jwk(key) }
+    if key.algorithm_name() == 'ChaCha20-Poly1305' { return export_chacha_jwk(key) }
 	if key.algorithm_name() == 'Ed25519' { return export_ed25519_jwk(key) }
 	if key.algorithm_name() == 'HMAC' { return export_hmac_jwk(key) }
 	if key.algorithm_name() in ['ECDSA', 'ECDH'] { return export_ec_jwk(key) }
@@ -709,23 +642,7 @@ pub fn (subtle_crypto &SubtleCrypto) export_jwk(key &CryptoKey) !JsonWebKey {
 	if key.algorithm_name().starts_with('ML-KEM-') { return error('NotSupportedError: Invalid key format') }
 	if key.algorithm_name() == 'Ed448' { return export_ed448_jwk(key) }
 	if key.algorithm_name() in ['X25519', 'X448'] { return export_exchange_jwk(key.algorithm_name(), key) }
-	operations := key.usages.map(key_usage_string(it))
-	if key.type_ != .secret {
-		return error('NotSupportedError: JWK export backend is unavailable for ${key.algorithm_name()}')
-	}
-	algorithm := if key.algorithm is HmacKeyAlgorithm {
-		hmac_algorithm := key.algorithm as HmacKeyAlgorithm
-		expected_jwk_algorithm(key.algorithm_name(), key.handle_.len * 8, hmac_algorithm.hash)!
-	} else {
-		expected_jwk_algorithm(key.algorithm_name(), key.handle_.len * 8, '')!
-	}
-	return JsonWebKey{
-		kty:     'oct'
-		alg:     algorithm
-		k:       base64url_encode(key.handle_)
-		key_ops: operations
-		ext:     key.extractable
-	}
+	return error('NotSupportedError: Invalid key format')
 }
 
 pub fn (subtle_crypto &SubtleCrypto) derive_bits(params DeriveParams, base_key &CryptoKey, length_bits ?u32) ![]u8 {

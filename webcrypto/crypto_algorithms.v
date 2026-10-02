@@ -13,7 +13,6 @@ import crypto.sha256
 import crypto.sha3
 import crypto.sha512
 import crypto.subtle
-import x.crypto.chacha20poly1305
 
 pub struct AlgorithmParams {
 pub:
@@ -287,27 +286,6 @@ fn valid_aes_key(key &CryptoKey, expected_name string) ![]u8 {
 	return handle
 }
 
-fn chacha20_poly1305_crypt(params AeadParams, key &CryptoKey, input []u8, decrypt bool) ![]u8 {
-	if params.name != 'ChaCha20-Poly1305' || key.algorithm_name() != params.name || key.type_ != .secret || key.handle_.len != 32 {
-		return error('InvalidAccessError: A ChaCha20-Poly1305 secret key is required')
-	}
-	if params.iv.len != 12 {
-		return error('OperationError: ChaCha20-Poly1305 nonce must be 12 bytes')
-	}
-	tag_length := params.tag_length or { u8(128) }
-	if tag_length != 128 {
-		return error('OperationError: ChaCha20-Poly1305 tag length must be 128 bits')
-	}
-	additional_data := params.additional_data or { []u8{} }
-	aead := chacha20poly1305.new(key.handle_, params.iv.len)!
-	if decrypt {
-		return aead.decrypt(input, params.iv, additional_data) or {
-			return error('OperationError: ChaCha20-Poly1305 authentication failed')
-		}
-	}
-	return aead.encrypt(input, params.iv, additional_data)!
-}
-
 pub fn encrypt_bytes(params EncryptionParams, key &CryptoKey, plaintext []u8) ![]u8 {
 	return match params {
 		RsaOaepParams { rsa_oaep_encrypt(params, key, plaintext)! }
@@ -420,13 +398,12 @@ pub fn import_secret_key(algorithm string, material []u8, extractable bool, usag
             key.set_usages(usages)
             return key
         }
-		'ChaCha20-Poly1305' {
-			if material.len != 32 {
-				return error('DataError: ChaCha20-Poly1305 key must be 256 bits')
-			}
-			validate_usages(usages, [KeyUsage.encrypt, .decrypt, .wrap_key, .unwrap_key])!
-			return CryptoKey.create(.secret, extractable, KeyAlgorithm{ name: canonical }, usages, material)
-		}
+        'ChaCha20-Poly1305' {
+            mut key := import_chacha_key(.raw_secret, material, extractable, usages)!
+            key.set_extractable(extractable)
+            key.set_usages(usages)
+            return key
+        }
 		'HKDF', 'PBKDF2', 'Argon2d', 'Argon2i', 'Argon2id' {
 			if extractable {
 				return error('SyntaxError: Derivation keys must not be extractable')

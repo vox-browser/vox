@@ -427,6 +427,7 @@ fn normalized_verify(algorithm NormalizedCryptoAlgorithm, key &CryptoKey, signat
 
 fn normalized_generate(algorithm NormalizedCryptoAlgorithm, extractable bool, usages []KeyUsage) !GeneratedKey {
 	params := algorithm.params
+    if algorithm.name == 'ChaCha20-Poly1305' { return generate_chacha_key(extractable, usages) }
 	return match params {
 		AesKeyGenParams {
             if algorithm.name == 'AES-OCB' { validate_usages(usages, [KeyUsage.encrypt, .decrypt, .wrap_key, .unwrap_key])! }
@@ -469,6 +470,7 @@ fn normalized_generate(algorithm NormalizedCryptoAlgorithm, extractable bool, us
 
 fn normalized_import(algorithm NormalizedCryptoAlgorithm, format KeyFormat, bytes []u8, extractable bool, usages []KeyUsage) !&CryptoKey {
 	params := algorithm.params
+    if algorithm.name == 'ChaCha20-Poly1305' { return import_chacha_key(format, bytes, extractable, usages) }
     if algorithm.name in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW'] { return import_aes_key(algorithm.name, format, bytes, extractable, usages) }
 	if params is HmacImportParams { return HMAC.create().import_key(params, format, bytes, extractable, usages) }
 	if params is RsaHashedImportParams {
@@ -658,8 +660,8 @@ pub fn (binding &SubtleCryptoBinding) export_key(format KeyFormat, key &CryptoKe
 	return binding.run(fn [binding, format, key] () !webidl.Value {
 		normalize_an_algorithm(key.algorithm_name(), 'exportKey')!
 		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
-        if key.algorithm_name() == 'Ed25519' {
-            bytes := ED25519.create().export_key(format, key)!
+        if key.algorithm_name() in ['Ed25519', 'ChaCha20-Poly1305'] {
+            bytes := if key.algorithm_name() == 'Ed25519' { export_ed25519_key(format, key)! } else { export_chacha_key(format, key)! }
             if format == .jwk { return export_key_result_to_js_value('', ExportKeyResult(JsonWebKey.parse(bytes)!)) }
             return crypto_buffer_value(bytes)
         }
@@ -708,7 +710,7 @@ pub fn (binding &SubtleCryptoBinding) wrap_key(format KeyFormat, key &CryptoKey,
 	return binding.run(fn [binding, normalized, format, key, wrapping_key] () !webidl.Value {
 		binding_validate_key(wrapping_key, normalized.name, .wrap_key)!
 		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
-		bytes := if key.algorithm_name() == 'Ed25519' { ED25519.create().export_key(format, key)! } else { binding.crypto.export_key_bytes_for_wrapping(format, key)! }
+		bytes := if key.algorithm_name() == 'Ed25519' { export_ed25519_key(format, key)! } else if key.algorithm_name() == 'ChaCha20-Poly1305' { export_chacha_key(format, key)! } else { binding.crypto.export_key_bytes_for_wrapping(format, key)! }
 		wrapped := if normalized.name == 'AES-KW' {
 			aes_key_wrap(wrapping_key, bytes)!
 		} else {
