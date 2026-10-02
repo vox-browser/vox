@@ -23,10 +23,10 @@ fn Utf16String.from_slice(s []u16) Utf16String {
 // AK/Utf16String's unvalidated code-unit construction/span at the embedding
 // boundary. Preserve unpaired surrogates and give callers an owned slice.
 pub fn utf16_string_from_code_units(units []u16) Utf16String {
-	// AK/Utf16String::from_utf16 compresses only short ASCII input; longer
-	// raw UTF16 input retains that storage representation.
+	// AK/Utf16String::from_utf16 delegates long input to
+	// Utf16StringData::from_utf16, which also compresses all-ASCII code units.
 	mut text := Utf16String.from_slice(units)
-	text.ascii_storage_ = units.len <= int(sizeof(voidptr)) - 1 && text.has_ascii_storage()
+	text.ascii_storage_ = text.has_ascii_storage()
 	return text
 }
 

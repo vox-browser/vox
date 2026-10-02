@@ -21,8 +21,9 @@ fn test_source_ipc_all_ascii_utf16_storage_remains_utf16_after_decode_and_reseri
 		assert structured_serialize(structured_object_value(object))!.data == boxed
 	}
 	text := libjs.utf16_string_from_code_units_with_storage([]u16{len: 32, init: u16(65)}, false)!
-	assert !libjs.utf16_string_from_code_units([]u16{len: 32, init: u16(65)}).has_ascii_storage()
+	assert libjs.utf16_string_from_code_units([]u16{len: 32, init: u16(65)}).has_ascii_storage()
 	assert libjs.utf16_string_from_code_units([u16(65)]).has_ascii_storage()
+	assert !libjs.utf16_string_from_code_units([u16(65), 0xd800]).has_ascii_storage()
 	mut vm := libjs.VM.create()
 	assert !vm.create_string(text).utf16.has_ascii_storage()
 	if _ := libjs.utf16_string_from_code_units_with_storage([u16(0xd800)], true) { assert false } else { assert err.msg().contains('invalid ASCII') }
