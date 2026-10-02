@@ -289,57 +289,6 @@ fn valid_aes_key(key &CryptoKey, expected_name string) ![]u8 {
 	return handle
 }
 
-fn pkcs7_pad(data []u8) []u8 {
-	padding_length := 16 - data.len % 16
-	mut output := data.clone()
-	output << []u8{len: padding_length, init: u8(padding_length)}
-	return output
-}
-
-fn pkcs7_unpad(data []u8) ![]u8 {
-	if data.len == 0 || data.len % 16 != 0 {
-		return error('OperationError: Invalid AES-CBC ciphertext length')
-	}
-	padding_length := int(data[data.len - 1])
-	if padding_length == 0 || padding_length > 16 || padding_length > data.len {
-		return error('OperationError: Invalid AES-CBC padding')
-	}
-	for byte in data[data.len - padding_length..] {
-		if byte != u8(padding_length) {
-			return error('OperationError: Invalid AES-CBC padding')
-		}
-	}
-	return data[..data.len - padding_length].clone()
-}
-
-fn aes_cbc_encrypt(params AesCbcParams, key &CryptoKey, plaintext []u8) ![]u8 {
-	key_bytes := valid_aes_key(key, 'AES-CBC')!
-	if params.iv.len != 16 {
-		return error('OperationError: AES-CBC IV must be 16 bytes')
-	}
-	padded := pkcs7_pad(plaintext)
-	mut output := []u8{len: padded.len}
-	block := aes.new_cipher(key_bytes)
-	mut mode := cipher.new_cbc(block, params.iv)
-	mode.encrypt_blocks(mut output, padded)
-	return output
-}
-
-fn aes_cbc_decrypt(params AesCbcParams, key &CryptoKey, ciphertext []u8) ![]u8 {
-	key_bytes := valid_aes_key(key, 'AES-CBC')!
-	if params.iv.len != 16 {
-		return error('OperationError: AES-CBC IV must be 16 bytes')
-	}
-	if ciphertext.len == 0 || ciphertext.len % 16 != 0 {
-		return error('OperationError: AES-CBC ciphertext must contain full blocks')
-	}
-	mut output := []u8{len: ciphertext.len}
-	block := aes.new_cipher(key_bytes)
-	mut mode := cipher.new_cbc(block, params.iv)
-	mode.decrypt_blocks(mut output, ciphertext)
-	return pkcs7_unpad(output)
-}
-
 fn increment_counter(mut counter []u8, length u8) {
 	mut remaining := int(length)
 	mut index := counter.len - 1
