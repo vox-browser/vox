@@ -1,3 +1,4 @@
+// Copyright (c) 2025, Shannon Booth <shannon@serenityos.org>
 // Copyright (c) 2026, Ladybird contributors
 // SPDX-License-Identifier: BSD-2-Clause
 // WebIDL/QuotaExceededError.{cpp,idl} generated native engine binding.

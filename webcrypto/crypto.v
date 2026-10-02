@@ -1,3 +1,5 @@
+// Copyright (c) 2021, Idan Horowitz <idan.horowitz@serenityos.org>
+// Copyright (c) 2022, stelar7 <stelar7@protonmail.com>
 // Copyright (c) 2026, Ladybird contributors
 //
 // SPDX-License-Identifier: BSD-2-Clause
