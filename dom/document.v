@@ -5139,6 +5139,8 @@ pub mut:
 	css_animation_event_hook_           ?DocumentCSSAnimationEventHook
 	animations_hook_                    ?DocumentAnimationsHook
 	temporary_execution_context_hook_   ?DocumentTemporaryExecutionContextHook
+	inline_event_handler_compiler_      ?InlineEventHandlerCompiler
+	event_callback_exception_reporter_ ?EventCallbackExceptionReporter
 	lifecycle_hook_                     ?DocumentLifecycleHook
 	event_loop_registered_              bool
 	// dom<->css bridge: opaque handle to the css-side holder of this document's author stylesheets, which

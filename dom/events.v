@@ -1206,9 +1206,19 @@ pub fn (et &EventTarget) get_current_value_of_event_handler(name string) ?&Callb
 	handler := et.data.event_handler_map[name] or { return none }
 	// 3. If eventHandler's value is an internal raw uncompiled handler, then compile it.
 	if handler.value.kind == .string {
-		callback := compile_raw_event_handler(et, name, handler.value.string_data) or {
-			mut target := unsafe { &EventTarget(et) }
-			target.data.event_handler_map.delete(name)
+		document := inline_event_handler_document(et) or { return none }
+		// Source returns before changing the raw value when scripting is disabled.
+		if unsafe { &Node(document) }.is_scripting_disabled() { return none }
+		compiler := document.inline_event_handler_compiler_ or { return none }
+		// An unavailable owner/environment is an explicit port boundary. Preserve
+		// the raw value for an actual compiler; never fabricate a callable.
+		if !compiler.can_compile(et) { return none }
+		callback := compiler.compile(et, name, handler.value.string_data,
+			inline_event_handler_function_source(et, name, handler.value.string_data)) or {
+			// Source parse/early-error failure nulls the value while retaining this
+			// handler and its activated listener. Syntax reporting is a source FIXME.
+			mut mutable_handler := unsafe { &EventHandler_(handler) }
+			mutable_handler.value = js_null()
 			return none
 		}
 		mut mutable_handler := unsafe { &EventHandler_(handler) }
@@ -1223,7 +1233,7 @@ pub fn (et &EventTarget) get_current_value_of_event_handler(name string) ?&Callb
 	return none
 }
 
-fn compile_raw_event_handler(event_target &EventTarget, name string, body string) ?&CallbackType {
+fn inline_event_handler_document(event_target &EventTarget) ?&Document {
 	// 1. If eventTarget is an element, then let element be eventTarget, and document be element's node document.
 	//    Otherwise, eventTarget is a Window object, let element be null, and document be eventTarget's associated Document.
 	mut document := ?&Document(none)
@@ -1235,28 +1245,7 @@ fn compile_raw_event_handler(event_target &EventTarget, name string, body string
 	} else if window := event_target_as_window(event_target) {
 		document = window.associated_document()
 	}
-	document_value := document or { return none }
-
-	// 2. If scripting is disabled for document, then return null.
-	if unsafe { &Node(document_value) }.is_scripting_disabled() {
-		return none
-	}
-
-	// 3. Let body be the uncompiled script body in eventHandler's value.
-	// FIXME: 4. Let location be the location where the script body originated, as given by eventHandler's value.
-	// 5-12. Preserve the dynamic function source text at the runtime boundary.
-	// The JS compiler/runtime is outside this DOM-only port, but the synthesized
-	// name is observable through Function.prototype.toString().
-	compiled_source_text := inline_event_handler_function_source(event_target, name, body)
-	return &CallbackType{
-		associated_window: event_target_relevant_window(event_target)
-		compiled_source_text_: compiled_source_text
-		handle_event: fn (event &Event, current_target ?&EventTarget) JSValue {
-			_ = event
-			_ = current_target
-			return js_undefined()
-		}
-	}
+	return document
 }
 
 fn inline_event_handler_function_source(event_target &EventTarget, name string, body string) string {
@@ -1318,6 +1307,12 @@ pub fn (et &EventTarget) activate_event_handler(name string, event_handler &Even
 		handler_callback := unsafe { &CallbackType(handler.value.object_data) }
 		listener_window = handler_callback.associated_window
 		report_exception = handler_callback.report_exception
+	} else if document := inline_event_handler_document(event_target) {
+		// The activation callback belongs to this original relevant Realm even
+		// when the engine binding arrives after parser-created raw attributes.
+		report_exception = fn [document] (exception IError) {
+			document.report_event_callback_exception(exception)
+		}
 	}
 	mut callback := &CallbackType{
 		associated_window: listener_window
