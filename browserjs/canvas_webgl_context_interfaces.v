@@ -26,7 +26,7 @@ const __webglCreateContext=(function(){
   slots.property(globalThis,name,{value:Constructor,writable:true,configurable:true});
   const specs=Object.assign({},__webglSpecs1,version===2?__webglSpecs2:{}),constants=Object.assign({},__webglConstants1,version===2?__webglConstants2:{});
   for(const key of Object.keys(constants)){const descriptor={value:constants[key],enumerable:true};slots.property(prototype,key,descriptor);slots.property(Constructor,key,descriptor);}
-  for(const method of Object.keys(specs)){const operation=method==="getExtension"?__webglExtensionMethod(version):__webglMethod(null,method,specs[method],version);slots.property(prototype,method,{value:operation,writable:true,enumerable:true,configurable:true});}
+  for(const method of Object.keys(specs)){if(specs[method].every(function(entry){return entry[2].startsWith("[FIXME]");}))continue;const operation=method==="getExtension"?__webglExtensionMethod(version):__webglMethod(null,method,specs[method],version);slots.property(prototype,method,{value:operation,writable:true,enumerable:true,configurable:true});}
   for(const key of ["canvas","drawingBufferWidth","drawingBufferHeight"]){const getter=({[key](){const state=slots.record(this,version).state;return key==="canvas"?__element(state):__webglCall(state,key)}})[key];slots.metadata(getter,"get "+key,0);slots.property(prototype,key,{get:getter,enumerable:true,configurable:true});}
   slots.property(prototype,Symbol.toStringTag,{value:name,configurable:true});prototypes[version]=prototype;
  }
