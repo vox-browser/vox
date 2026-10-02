@@ -53,3 +53,12 @@ bounds in range failures. The existing translated LibJS numeric formatter
 retains AK's decimal/exponent thresholds. Focused tests cover all four target
 widths, signed and unsigned bounds, truncation before checking, nonfinite values,
 and large-number error text; the existing core conversion tests also pass.
+
+Primitive numeric conversion now reuses the translated LibJS StringToNumber
+and Number formatting paths. Radix literals, Unicode whitespace, infinities,
+negative zero, malformed numeric strings, BigInt rejection, and decimal/exponent
+thresholds follow the source. Focused primitive, EnforceRange, and core test
+files pass. Arbitrary object ToPrimitive execution and Symbol values still
+require the VM boundary; these changes do not manufacture their side effects.
+Existing typed object-string convenience representations remain separate from
+claims of complete ECMAScript object conversion.
