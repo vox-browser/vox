@@ -61,31 +61,67 @@ fn screen_animation_clamp_f64(value f64, min f64, max f64) f64 {
 
 pub struct AffineTransform {
 pub mut:
-	translate_x f64
-	translate_y f64
-	scale_x     f64 = 1.0
-	scale_y     f64 = 1.0
+	// Gfx::AffineTransform float coefficients: a, b, c, d, e, f.
+	scale_x     f32 = 1.0
+	shear_y     f32
+	shear_x     f32
+	scale_y     f32 = 1.0
+	translate_x f32
+	translate_y f32
 }
 
-pub fn (mut transform AffineTransform) translate(x f64, y f64) {
-	transform.translate_x += x
-	transform.translate_y += y
+pub fn (mut transform AffineTransform) translate(x f32, y f32) {
+	if transform.scale_x == 1 && transform.scale_y == 1
+		&& transform.shear_x == 0 && transform.shear_y == 0 {
+		transform.translate_x += x
+		transform.translate_y += y
+		return
+	}
+	transform.translate_x += x * transform.scale_x + y * transform.shear_x
+	transform.translate_y += x * transform.shear_y + y * transform.scale_y
 }
 
-pub fn (mut transform AffineTransform) scale(scale_x f64, scale_y f64) {
+pub fn (mut transform AffineTransform) scale(scale_x f32, scale_y f32) {
 	transform.scale_x *= scale_x
+	transform.shear_y *= scale_x
+	transform.shear_x *= scale_y
 	transform.scale_y *= scale_y
 }
 
 pub fn (transform AffineTransform) map(position CSSPixelPoint) CSSPixelPoint {
-	return CSSPixelPoint.from_values(position.x_.to_double() * transform.scale_x + transform.translate_x, position.y_.to_double() * transform.scale_y + transform.translate_y)
+	x := f32(position.x_.to_double())
+	y := f32(position.y_.to_double())
+	return CSSPixelPoint.from_values(f64(transform.scale_x * x + transform.shear_x * y + transform.translate_x),
+		f64(transform.shear_y * x + transform.scale_y * y + transform.translate_y))
+}
+
+pub fn (transform AffineTransform) determinant() f32 {
+	return transform.scale_x * transform.scale_y - transform.shear_y * transform.shear_x
+}
+
+pub fn (transform AffineTransform) inverse() ?AffineTransform {
+	determinant := transform.determinant()
+	if determinant == 0 { return none }
+	return AffineTransform{
+		scale_x: transform.scale_y / determinant
+		shear_y: -transform.shear_y / determinant
+		shear_x: -transform.shear_x / determinant
+		scale_y: transform.scale_x / determinant
+		translate_x: (transform.shear_x * transform.translate_y - transform.scale_y * transform.translate_x) / determinant
+		translate_y: (transform.shear_y * transform.translate_x - transform.scale_x * transform.translate_y) / determinant
+	}
+}
+
+pub fn (transform AffineTransform) map_int_point(x int, y int) [2]int {
+	mapped_x := transform.scale_x * f32(x) + transform.shear_x * f32(y) + transform.translate_x
+	mapped_y := transform.shear_y * f32(x) + transform.scale_y * f32(y) + transform.translate_y
+	return [affine_round_to_int(mapped_x), affine_round_to_int(mapped_y)]!
 }
 
 pub fn (transform AffineTransform) inverse_map(position CSSPixelPoint) CSSPixelPoint {
-	if transform.scale_x == 0 || transform.scale_y == 0 {
-		return position
-	}
-	return CSSPixelPoint.from_values((position.x_.to_double() - transform.translate_x) / transform.scale_x, (position.y_.to_double() - transform.translate_y) / transform.scale_y)
+	inverse := transform.inverse() or { AffineTransform{} }
+	mapped := inverse.map_int_point(position.x().to_int(), position.y().to_int())
+	return CSSPixelPoint.new(CSSPixels.new(mapped[0]), CSSPixels.new(mapped[1]))
 }
 
 // https://drafts.csswg.org/cssom-view/#the-screen-interface
@@ -462,9 +498,11 @@ fn (mut viewport VisualViewport) did_scroll() {
 
 pub fn (viewport &VisualViewport) transform() AffineTransform {
 	mut transform := AffineTransform{}
-	offset := viewport.offset_.times_float(viewport.scale_)
-	transform.translate(-offset.x().to_double(), -offset.y().to_double())
-	transform.scale(viewport.scale_, viewport.scale_)
+	// Source multiplies double coordinates before converting to the float
+	// affine arguments. Do not round through another CSSPixelPoint first.
+	transform.translate(f32(-viewport.offset_.x().to_double() * viewport.scale_),
+		f32(-viewport.offset_.y().to_double() * viewport.scale_))
+	transform.scale(f32(viewport.scale_), f32(viewport.scale_))
 	return transform
 }
 
