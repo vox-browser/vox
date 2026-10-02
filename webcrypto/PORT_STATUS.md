@@ -224,6 +224,15 @@ tests exercise all affected parameter records and a real PBKDF2 derivation
 with a wrapping iteration count; primitive object conversion remains bounded
 by the explicit typed host limitation.
 
+Argon2 parallelism/memory/passes/version and cSHAKE/KMAC output lengths now
+use the source WebIDL EnforceRange conversion, including fractional truncation,
+primitive string/boolean/null coercion, concrete range diagnostics, and
+nonfinite/undefined rejection. Required and optional field presence follows
+the source, and nonce/basic integers precede version/optional buffers. Tests
+include copied native Argon2 RFC9106 output through fractional/string inputs,
+range limits, required-member precedence, explicit undefined members, and
+zero-length cSHAKE settlement.
+
 Common parameter/typed boundary conversions remain under source review.
 Native backend availability does not establish complete WebCrypto/VM parity.
 
