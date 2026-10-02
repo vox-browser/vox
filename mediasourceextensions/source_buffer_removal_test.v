@@ -7,8 +7,9 @@ import math
 // Media source algorithms queue their steps and events; run them before observing the results.
 fn run_media_source_tasks() {
 	mut event_loop := html.main_thread_event_loop()
-	event_loop.spin_until(fn () bool {
-		return false
+	queue := event_loop.task_queue()
+	event_loop.spin_until(fn [queue] () bool {
+		return !queue.has_runnable_tasks()
 	})
 }
 
