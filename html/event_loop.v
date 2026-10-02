@@ -812,8 +812,8 @@ pub fn (mut event_loop EventLoop) update_the_rendering() {
 pub fn (event_loop &EventLoop) update_font_face_sets_pending_on_the_environment(documents []&dom.Document) {
 	for document in documents {
 		context := document.begin_temporary_execution_context()
-		style := css.css_style_computer_for(document)
-		mut fonts := unsafe { &css.FontFaceSet(style.font_face_set_) }
+		mut owner := unsafe { &dom.Document(document) }
+		mut fonts := unsafe { &css.FontFaceSet(owner.fonts().font_face_set_record()) }
 		fonts.set_is_pending_on_the_environment(document.readiness() == .loading
 			|| document.has_pending_style_sheet_requests() || !document.layout_is_up_to_date())
 		document.end_temporary_execution_context(context)

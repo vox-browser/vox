@@ -10631,7 +10631,18 @@ pub mut:
 
 pub fn StyleComputer.new(document &dom.Document) &StyleComputer {
 	initial_timeline_time := document.last_animation_frame_timestamp_value() or { 0.0 }
-	font_computer := FontComputer.create_for_document(document)
+	mut font_computer := FontComputer.create_for_document(document)
+	mut owner := unsafe { &dom.Document(document) }
+	mut fonts := if existing := owner.existing_font_face_set() {
+		unsafe { &FontFaceSet(existing.font_face_set_record()) }
+	} else {
+		FontFaceSet.create_for_font_computer(font_computer)
+	}
+	if existing := fonts.font_computer_ {
+		font_computer = existing
+	}
+	fonts.associate_font_computer(font_computer)
+	owner.set_font_face_set(fonts)
 	return &StyleComputer{
 		document_: unsafe { document }
 		viewport_rect_: css_pixel_rect_from_dom_rect(document.viewport_rect())
@@ -10639,7 +10650,7 @@ pub fn StyleComputer.new(document &dom.Document) &StyleComputer {
 		css_transition_storage_: &CSSTransitionStorage{}
 		document_timeline_: AnimationTimeline.document_timeline(document, 0.0, initial_timeline_time)
 		font_computer_: font_computer
-		font_face_set_: FontFaceSet.create_for_font_computer(font_computer)
+		font_face_set_: fonts
 	}
 }
 

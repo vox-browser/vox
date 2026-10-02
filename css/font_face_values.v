@@ -2949,8 +2949,12 @@ pub fn (mut set FontFaceSet) visit_edges(mut visitor dom.CellVisitor) {
 	}
 }
 
-fn (set &FontFaceSet) event_target() &dom.EventTarget {
+pub fn (set &FontFaceSet) event_target() &dom.EventTarget {
 	return unsafe { &dom.EventTarget(set) }
+}
+
+pub fn (set &FontFaceSet) font_face_set_record() voidptr {
+	return voidptr(set)
 }
 
 pub fn (set &FontFaceSet) set_entries() []&FontFaceObject {

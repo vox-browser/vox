@@ -663,6 +663,7 @@ fn style_sheet_state_loading_state(sheet voidptr) dom.CSSStyleSheetLoadingState 
 }
 
 fn init() {
+	dom.install_document_font_face_set_factory(document_font_face_set_for_dom)
 	dom.install_style_sheet_scope_hooks(dom.StyleSheetScopeHooks{
 		create_a_css_style_sheet: style_scope_create_a_css_style_sheet_for_style_element
 		remove_a_css_style_sheet: style_scope_remove_a_css_style_sheet_for_style_element
@@ -674,6 +675,10 @@ fn init() {
 		set_disabled:             style_sheet_state_set_disabled
 		loading_state:            style_sheet_state_loading_state
 	})
+}
+
+fn document_font_face_set_for_dom(document &dom.Document) dom.FontFaceSet {
+	return css_style_computer_for(document).font_face_set_
 }
 
 // The associated CSS style sheet of a style element (LinkStyle::sheet).

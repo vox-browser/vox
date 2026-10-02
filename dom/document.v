@@ -1556,8 +1556,21 @@ pub fn (sheet &CSSStyleSheet) loading_state_value() CSSStyleSheetLoadingState {
 	return sheet.loading_state
 }
 
-@[heap]
-pub struct FontFaceSet {}
+// CSS owns the concrete FontFaceSet. The DOM/CSS module boundary retains that
+// actual platform object through an interface, rather than an empty DOM copy.
+pub interface FontFaceSet {
+	ready() &webidl.Promise
+	event_target() &EventTarget
+	font_face_set_record() voidptr
+}
+
+pub type DocumentFontFaceSetFactory = fn (&Document) FontFaceSet
+
+__global document_font_face_set_factory_ ?DocumentFontFaceSetFactory
+
+pub fn install_document_font_face_set_factory(factory DocumentFontFaceSetFactory) {
+	document_font_face_set_factory_ = factory
+}
 
 @[heap]
 pub struct VisualViewport {}
@@ -5195,7 +5208,7 @@ pub mut:
 	forms_   &HTMLCollection = unsafe { nil }
 	scripts_ &HTMLCollection = unsafe { nil }
 	all_     &HTMLAllCollection = unsafe { nil }
-	fonts_   &FontFaceSet = unsafe { nil }
+	fonts_   ?FontFaceSet
 
 	// Selection & Base
 	selection_                                   &Selection = unsafe { nil }
@@ -5527,7 +5540,9 @@ pub fn (mut d Document) visit_edges(mut visitor CellVisitor) {
 	visitor.visit(d.forms_)
 	visitor.visit(d.scripts_)
 	visitor.visit(d.all_)
-	visitor.visit(d.fonts_)
+	if fonts := d.fonts_ {
+		visitor.visit(fonts.font_face_set_record())
+	}
 	visitor.visit(d.selection_)
 	visitor.visit(d.first_base_element_with_href_in_tree_order)
 	visitor.visit(d.first_base_element_with_target_in_tree_order)
@@ -8980,8 +8995,28 @@ pub fn (mut d Document) all() &HTMLAllCollection {
 }
 
 // https://drafts.csswg.org/css-font-loading/#font-source
-pub fn (mut d Document) fonts() &FontFaceSet {
+pub fn (mut d Document) fonts() FontFaceSet {
+	if fonts := d.fonts_ {
+		return fonts
+	}
+	if factory := document_font_face_set_factory_ {
+		fonts := factory(&d)
+		d.fonts_ = fonts
+		return fonts
+	}
+	panic('Document.fonts requires the CSS FontFaceSet implementation')
+}
+
+pub fn (d &Document) existing_font_face_set() ?FontFaceSet {
 	return d.fonts_
+}
+
+pub fn (mut d Document) set_font_face_set(fonts FontFaceSet) {
+	if existing := d.fonts_ {
+		assert existing.font_face_set_record() == fonts.font_face_set_record()
+		return
+	}
+	d.fonts_ = fonts
 }
 
 // https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-clear
