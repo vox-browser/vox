@@ -83,3 +83,27 @@ independent native globals, and secure-context exposure. Native wrapper/cache
 roots currently survive until Runtime close. The owning native global supplies
 the typed realm cache key; this does not reconstruct LibJS's WrapperWorld weak
 cache graph or add native structured-clone wrapper deserialization.
+
+SubtleCrypto.generateKey now performs the source IDL argument conversions,
+normalizes actual algorithm property getters in source order, and invokes the
+existing native algorithms on the owning deferred task. Its actual Promise
+resolves to native CryptoKey wrappers or an ordinary key-pair object. Usage
+sequence conversion precedes algorithm name reads, retains duplicates/order,
+and follows the pinned generator's direct iterator loop, including its lack of
+IteratorClose on an element-conversion failure. AES generation keeps the
+supplied usage vector, as the source class body does. RSA validates the exponent
+view before hash normalization and copies its bytes afterward, preserving hash
+getter mutation. Numeric fields use source unsigned conversions and nested
+hash dictionaries use the existing copied digest normalization.
+
+Four focused native generation cases pass with `-gc none`, exercising all 24
+registered generation names, source getter/iteration order, boolean/numeric
+conversion, copied RSA exponent timing, metadata/usage filtering, and immediate
+versus deferred rejection precedence. The source hash helper's assertion for
+non-string/non-object input remains the typed adapter's explicit TypeError
+instead of a native process abort. Iterator diagnostics safely represent
+primitives, arrays, functions, and ordinary objects; uncommon engine-specific
+class-name diagnostics remain part of the missing complete VM class graph.
+Remaining native methods include import/export, encryption, signing,
+derivation, wrapping, and KEM operations. Native generation does not supply
+LibJS Promise/builtin/WrapperWorld parity.

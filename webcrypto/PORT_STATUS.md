@@ -290,6 +290,14 @@ focused native wrapper cases pass with `-gc none`, and native digest regression
 passes after the result-converter extension. Wrapper roots remain Runtime-owned;
 LibJS WrapperWorld weak caching and native clone reconstruction remain distinct
 runtime work.
+
+Native generateKey now reaches all 24 registered algorithm names through the
+existing source-derived native generation bodies. Four focused actual-engine
+cases pass with `-gc none`, covering source IDL/property/parameter order,
+RSA exponent copy timing, real key/pair metadata, and rejection precedence.
+Source assertion edges use the existing explicit typed adapter rejection;
+uncommon iterator diagnostic class labels still depend on the complete VM
+class graph. Other native SubtleCrypto methods remain pending.
 Native backend availability does not establish complete WebCrypto/VM parity.
 
 `SubtleCryptoBinding` implements the asynchronous WebIDL operation boundary.
