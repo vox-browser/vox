@@ -38,6 +38,9 @@ pub:
 	name        string
 	kind        ImportExportKind
 	memory_type WasmLimits
+	function_type_index u32
+	table_type ?BinaryTableType
+	global_type ?BinaryGlobalType
 }
 
 pub struct CustomSection {
@@ -284,43 +287,27 @@ fn parse_import_section(mut decoder Decoder, mut result []ModuleImportDescriptor
 		kind_byte := decoder.byte()!
 		kind := external_kind(kind_byte)!
 		mut memory_type := WasmLimits{}
-		if kind == .memory {
-			memory_type = parse_limits(mut decoder)!
-		} else {
-			skip_import_description(mut decoder, kind)!
+		mut function_type_index := u32(0)
+		mut table_type := ?BinaryTableType(none)
+		mut global_type := ?BinaryGlobalType(none)
+		match kind {
+			.function_ { function_type_index = decoder.u32_leb()! }
+			.table {
+				parsed := parse_binary_table_type(mut decoder)!
+				validate_limits(parsed.limits, if parsed.limits.address_type == .i64 { none } else { ?u64(u64(max_u32)) })!
+				table_type = parsed
+			}
+			.memory { memory_type = parse_limits(mut decoder)! }
+			.global { global_type = parse_binary_global_type(mut decoder)! }
 		}
 		result << ModuleImportDescriptor{
 			module:      module_name
 			name:        name
 			kind:        kind
 			memory_type: memory_type
-		}
-	}
-}
-
-fn skip_import_description(mut decoder Decoder, kind ImportExportKind) ! {
-	match kind {
-		.function_ {
-			decoder.u32_leb()!
-		}
-		.table {
-			decoder.byte()!
-			limits := parse_limits(mut decoder)!
-			validate_limits(limits, if limits.address_type == .i64 {
-				none
-			} else {
-				?u64(u64(max_u32))
-			})!
-		}
-		.memory {
-			parse_limits(mut decoder)!
-		}
-		.global {
-			decoder.byte()!
-			mutability := decoder.byte()!
-			if mutability > 1 {
-				return error('CompileError: invalid global mutability')
-			}
+			function_type_index: function_type_index
+			table_type: table_type
+			global_type: global_type
 		}
 	}
 }
