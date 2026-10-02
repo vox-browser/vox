@@ -66,6 +66,7 @@ pub mut:
 	tag_export_entries []BinaryTagExport
 	global_definitions []BinaryGlobalDefinition
 	function_bodies []BinaryFunctionBody
+	table_definitions []BinaryTableDefinition
 }
 
 pub struct SerializedModule {
@@ -138,6 +139,7 @@ pub fn (mut compiled Module) deserialization_steps(serialized SerializedModule) 
 	compiled.tag_export_entries = restored.tag_export_entries.clone()
 	compiled.global_definitions = restored.global_definitions.clone()
 	compiled.function_bodies = restored.function_bodies.clone()
+	compiled.table_definitions = restored.table_definitions.clone()
 }
 
 struct Decoder {
@@ -212,6 +214,7 @@ fn compile_module(bytes []u8) !&Module {
 	mut tag_export_entries := []BinaryTagExport{}
 	mut global_definitions := []BinaryGlobalDefinition{}
 	mut function_bodies := []BinaryFunctionBody{}
+	mut table_definitions := []BinaryTableDefinition{}
 	mut last_non_custom_rank := 0
 	mut seen := map[u8]bool{}
 	for decoder.offset < bytes.len {
@@ -241,6 +244,7 @@ fn compile_module(bytes []u8) !&Module {
 			1 { types = parse_type_section(mut section)! }
 			2 { parse_import_section(mut section, mut imports, mut tag_import_entries)! }
 			3 { function_type_indices = parse_function_section(mut section)! }
+			4 { table_definitions = parse_table_section(mut section)! }
 			5 { parse_memory_section(mut section, mut memory_types)! }
 			6 { global_definitions = parse_global_section(mut section)! }
 			7 { parse_export_section(mut section, mut exports, mut tag_export_entries)! }
@@ -277,6 +281,7 @@ fn compile_module(bytes []u8) !&Module {
 		tag_export_entries: tag_export_entries
 		global_definitions: global_definitions
 		function_bodies: function_bodies
+		table_definitions: table_definitions
 	}
 }
 
