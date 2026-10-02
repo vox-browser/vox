@@ -1,4 +1,4 @@
-// Copyright (c) 2026-present, the Ladybird developers.
+// Copyright (c) 2020-2022, Linus Groh <linusg@serenityos.org>
 // SPDX-License-Identifier: BSD-2-Clause
 // Runtime/ArrayBuffer.h: DataBlock::OwnedBackingStore.
 module libjs
