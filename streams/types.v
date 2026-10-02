@@ -129,6 +129,13 @@ pub struct StreamRealm {
 pub:
 	id               u64
 	promise_context_ ?&webidl.PromiseContext
+	transform_wrapper_preparer ?fn (&TransformStream)
+}
+
+// Bindings::prepare_transform_stream_readable_writable_wrappers wraps both
+// native components in the owning wrapper world before the start callback.
+pub fn (realm StreamRealm) with_transform_wrapper_preparer(prepare fn (&TransformStream)) StreamRealm {
+	return StreamRealm{...realm, transform_wrapper_preparer: prepare}
 }
 
 pub fn StreamRealm.create_with_promise_context(context webidl.PromiseContext) StreamRealm {

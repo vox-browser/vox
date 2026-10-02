@@ -96,6 +96,7 @@ pub fn TransformStream.writable_offset() int {
 }
 
 pub fn prepare_transform_stream_readable_writable_wrappers(mut stream TransformStream) {
+	if prepare := stream.realm_.transform_wrapper_preparer { prepare(&stream) }
 	stream.wrappers_prepared_ = true
 }
 
