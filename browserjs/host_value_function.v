@@ -49,3 +49,13 @@ pub:
 	resolve voidptr
 	reject voidptr
 }
+
+@[heap]
+struct JavaScriptPromiseObservation {
+	runtime &Runtime
+	capability JavaScriptPromiseCapability
+mut:
+	fulfilled voidptr
+	rejected voidptr
+	released bool
+}

@@ -133,8 +133,31 @@ pub fn (mut runtime Runtime) release_javascript_promise(capability JavaScriptPro
 pub fn (mut runtime Runtime) observe_javascript_promise(value voidptr, fulfilled ValueHostFunction, rejected ValueHostFunction) ! {
 	runtime.require_javascript_value_context()!
 	capability := runtime.create_javascript_promise()!
-	on_fulfilled := runtime.make_value_host_function(fulfilled)!
-	on_rejected := runtime.make_value_host_function(rejected)!
-	runtime.call_engine_function(runtime.promise_observe_intrinsic_, [capability.promise, on_fulfilled, on_rejected])!
-	runtime.resolve_javascript_promise(capability, value)!
+	mut observation := &JavaScriptPromiseObservation{ runtime: runtime, capability: capability }
+	observation.fulfilled = runtime.make_value_host_function(fn [mut observation, fulfilled] (receiver voidptr, args []voidptr) !voidptr {
+		defer { observation.release_roots() }
+		return fulfilled(receiver, args)
+	}) or { observation.release_roots(); return err }
+	observation.rejected = runtime.make_value_host_function(fn [mut observation, rejected] (receiver voidptr, args []voidptr) !voidptr {
+		defer { observation.release_roots() }
+		return rejected(receiver, args)
+	}) or { observation.release_roots(); return err }
+	runtime.call_engine_function(runtime.promise_observe_intrinsic_, [capability.promise, observation.fulfilled, observation.rejected]) or {
+		observation.release_roots()
+		return err
+	}
+	runtime.resolve_javascript_promise(capability, value) or {
+		observation.release_roots()
+		return err
+	}
+}
+
+fn (mut observation JavaScriptPromiseObservation) release_roots() {
+	if observation.released { return }
+	observation.released = true
+	mut runtime := unsafe { &Runtime(observation.runtime) }
+	if runtime.closed || runtime.context != observation.capability.context { return }
+	runtime.release_javascript_promise(observation.capability)
+	if observation.fulfilled != unsafe { nil } { runtime.release_javascript_value(observation.fulfilled) }
+	if observation.rejected != unsafe { nil } { runtime.release_javascript_value(observation.rejected) }
 }

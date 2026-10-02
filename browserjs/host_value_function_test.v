@@ -126,3 +126,36 @@ fn test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked()
 	assert runtime.value_host_functions_.len == 0
 	if _ := runtime.evaluate_host_value('1') { assert false } else { assert err.msg().contains('closed') }
 }
+
+fn test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement() {
+	$if !darwin { return }
+	mut runtime := Runtime.create()
+	defer { runtime.close() }
+	mut seen := &NativeValueObservations{}
+	pending := runtime.create_javascript_promise()!
+	value := runtime.evaluate_host_value('({answer:42})')!
+	baseline := runtime.protected_values_.len
+	runtime.observe_javascript_promise(pending.promise, fn [mut seen, runtime] (_ voidptr, args []voidptr) !voidptr {
+		seen.values << args[0]
+		return C.JSValueMakeUndefined(runtime.context)
+	}, fn [mut seen, runtime] (_ voidptr, args []voidptr) !voidptr {
+		seen.reasons << args[0]
+		return C.JSValueMakeUndefined(runtime.context)
+	})!
+	assert runtime.protected_values_.len == baseline + 5
+	runtime.resolve_javascript_promise(pending, value)!
+	_ = runtime.evaluate_host('0')!
+	assert seen.values == [value]
+	assert seen.reasons.len == 0
+	assert runtime.protected_values_.len == baseline
+	failed := runtime.create_javascript_promise()!
+	failed_baseline := runtime.protected_values_.len
+	runtime.observe_javascript_promise(failed.promise, fn (_ voidptr, _ []voidptr) !voidptr {
+		return error('unexpected fulfillment')
+	}, fn (_ voidptr, _ []voidptr) !voidptr { return error('reaction exception') })!
+	runtime.reject_javascript_promise(failed, value)!
+	_ = runtime.evaluate_host('0')!
+	assert runtime.protected_values_.len == failed_baseline
+	runtime.release_javascript_promise(pending)
+	runtime.release_javascript_promise(failed)
+}
