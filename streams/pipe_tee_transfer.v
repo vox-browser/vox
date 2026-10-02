@@ -110,14 +110,16 @@ pub fn (mut source ReadableStream) pipe_to(mut destination WritableStream, optio
 }
 
 pub fn (mut source ReadableStream) pipe_through(pair ReadableWritablePair, options StreamPipeOptions) !&ReadableStream {
-	if pair.readable.locked() {
-		return error('TypeError: Transform readable side is locked')
+	if source.locked() {
+		return error('TypeError: Source ReadableStream is locked')
+	}
+	if pair.writable.locked() {
+		return error('TypeError: Transform writable side is locked')
 	}
 	mut writable := pair.writable
 	promise := source.pipe_to(mut writable, options)
-	if promise.state() == .rejected {
-		return error(promise.reason())
-	}
+	mut native := promise.as_webidl_promise()
+	webidl.mark_promise_as_handled(mut native)
 	return pair.readable
 }
 
