@@ -16,6 +16,8 @@ substitutes remain. This report records findings rather than repairing the
 translation. It does not certify the unaffected code as correct or establish
 the historical origin of all V algorithms.
 
+Fixes are tracked separately in [audit fix progress](docs/translation-audit/FIX_PROGRESS.md). This document preserves the pre-fix findings.
+
 ## Coverage and parallel reviews
 
 “Big C++ source” means a **tracked `.cpp` file containing at least 1,000 physical
