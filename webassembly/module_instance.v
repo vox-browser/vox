@@ -275,7 +275,7 @@ fn compile_module(bytes []u8) !&Module {
 	validate_binary_type_section(types, canonical_types)!
 	validate_module_counts(function_type_indices, function_bodies, data_count, data_segments)!
 	validate_module_memories(imports, memory_types, exports)!
-	compiled := &Module{
+	mut compiled := &Module{
 		bytes:            bytes.clone()
 		import_entries:   imports
 		export_entries:   exports
@@ -295,7 +295,9 @@ fn compile_module(bytes []u8) !&Module {
 		data_segments: data_segments
 		element_segments: element_segments
 	}
-	validate_binary_module_indices(compiled)!
+	context := validate_binary_module_indices(compiled)!
+	mut validator := &BinaryInstructionValidator{context: context}
+	validator.validate_data_section(mut compiled.data_segments)!
 	return compiled
 }
 

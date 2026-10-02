@@ -11,8 +11,9 @@ pub struct BinaryDataSegment {
 pub:
 	mode         BinaryDataMode
 	memory_index ?u32
-	offset       ?BinaryExpression
 	init         []u8
+pub mut:
+	offset ?BinaryExpression
 }
 
 // Parser/Parser.cpp::DataSection::{Data,parse}: active implicit/explicit

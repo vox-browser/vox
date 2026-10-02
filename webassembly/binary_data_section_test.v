@@ -3,7 +3,11 @@ module webassembly
 import webidl
 
 fn data_section_binary(payload []u8) []u8 {
-	mut bytes := [u8(0), 0x61, 0x73, 0x6d, 1, 0, 0, 0, 11, u8(payload.len)]
+	// Seven memory32 definitions and memory64 at index 7 make both active
+	// parser fixtures genuine valid modules for the source validation pass.
+	mut bytes := [u8(0), 0x61, 0x73, 0x6d, 1, 0, 0, 0, 5, 17, 8]
+	for _ in 0 .. 7 { bytes << [u8(0), 0] }
+	bytes << [u8(4), 0, 11, u8(payload.len)]
 	bytes << payload
 	return bytes
 }
