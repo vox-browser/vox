@@ -349,6 +349,7 @@ mut:
 	rendering_scheduler_counters_         RenderingSchedulerCounters
 	idle_period_timer_                    ?&platform.Timer
 	vm_                                  ?&libjs.VM
+	embedding_vms_                        []&libjs.VM
 	system_event_loop_timer_              ?&platform.Timer
 }
 
@@ -381,11 +382,35 @@ pub fn (mut event_loop EventLoop) unbind_vm(vm &libjs.VM) {
 	}
 }
 
+// The compact JSC host has a separate translated embedding VM per Runtime.
+// Retain actual attached identities without replacing the source agent VM.
+pub fn (mut event_loop EventLoop) attach_embedding_vm(vm &libjs.VM) {
+	for attached in event_loop.embedding_vms_ {
+		if voidptr(attached) == voidptr(vm) { return }
+	}
+	event_loop.embedding_vms_ << vm
+}
+
+pub fn (mut event_loop EventLoop) detach_embedding_vm(vm &libjs.VM) {
+	event_loop.embedding_vms_ = event_loop.embedding_vms_.filter(voidptr(it) != voidptr(vm))
+}
+
+fn (event_loop &EventLoop) execution_vms() []&libjs.VM {
+	mut vms := event_loop.embedding_vms_.clone()
+	if primary := event_loop.vm_ {
+		for attached in vms {
+			if voidptr(attached) == voidptr(primary) { return vms }
+		}
+		vms << primary
+	}
+	return vms
+}
+
 // Host-backed script execution still owns a real translated VM embedding
 // context. Cleanup must wait for that outer context before running jobs.
 pub fn (event_loop &EventLoop) has_running_execution_context() bool {
-	if vm := event_loop.vm_ {
-		return vm.has_running_execution_context()
+	for vm in event_loop.execution_vms() {
+		if vm.has_running_execution_context() { return true }
 	}
 	return false
 }
@@ -814,7 +839,7 @@ pub fn (mut event_loop EventLoop) perform_a_microtask_checkpoint() {
 	if event_loop.execution_paused || event_loop.performing_a_microtask_checkpoint {
 		return
 	}
-	if vm := event_loop.vm_ {
+	for vm in event_loop.execution_vms() {
 		assert vm.execution_context_stack().len == 0
 		assert !vm.has_running_execution_context()
 	}
@@ -837,7 +862,7 @@ pub fn (mut event_loop EventLoop) perform_a_microtask_checkpoint() {
 	}
 	indexeddb.cleanup_indexed_database_transactions(voidptr(&event_loop))
 	// ClearKeptObjects is represented by the real VM's execution generation.
-	if vm_pointer := event_loop.vm_ {
+	for vm_pointer in event_loop.execution_vms() {
 		mut vm := unsafe { &libjs.VM(vm_pointer) }
 		vm.finish_execution_generation()
 	}

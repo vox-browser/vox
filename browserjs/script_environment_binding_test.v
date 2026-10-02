@@ -75,3 +75,37 @@ fn test_browser_realm_attachment_rejects_active_outer_context_without_popping_it
 	assert runtime.evaluate('21*2')! == '42'
 	assert !vm.has_running_execution_context()
 }
+
+fn test_two_browser_realms_preserve_outer_context_gating_and_detach_only_their_own_vm() {
+	$if !darwin { return }
+	mut first := Runtime.create()
+	mut second := Runtime.create()
+	defer { first.close(); second.close() }
+	first_window := html.WindowModel.create_top_level(script_environment_document(), none, 'first-realm')!
+	second_window := html.WindowModel.create_top_level(script_environment_document(), none, 'second-realm')!
+	first_settings := unsafe { &html.EnvironmentSettingsObject(first_window.associated_document().relevant_settings_object()) }
+	second_settings := unsafe { &html.EnvironmentSettingsObject(second_window.associated_document().relevant_settings_object()) }
+	assert voidptr(first_settings.responsible_event_loop()) == voidptr(second_settings.responsible_event_loop())
+	first.bind_scripting_environment(first_settings)!
+	second.bind_scripting_environment(second_settings)!
+	mut event_loop := unsafe { &html.EventLoop(first_settings.responsible_event_loop()) }
+	mut first_vm := unsafe { &libjs.VM(first.libjs_vm()) }
+	mut outer := libjs.ExecutionContext.create(0, [], 0)
+	first_vm.push_execution_context_checked(mut outer)!
+	assert event_loop.has_running_execution_context()
+	mut seen := &ScriptEnvironmentCalls{}
+	event_loop.enqueue_microtask(html.Task.create(.microtask, none, fn [mut seen] () { seen.values << 'both idle' }))
+	mut second_realm := unsafe { &html.ScriptingRealm(second_settings.realm()) }
+	html.prepare_to_run_script(mut second_realm)
+	html.clean_up_after_running_script(mut second_realm)
+	assert seen.values.len == 0
+	assert voidptr(first_vm.running_execution_context()) == voidptr(outer)
+	second.close()
+	assert event_loop.has_running_execution_context()
+	first_vm.pop_execution_context()
+	mut first_realm := unsafe { &html.ScriptingRealm(first_settings.realm()) }
+	html.prepare_to_run_script(mut first_realm)
+	html.clean_up_after_running_script(mut first_realm)
+	assert seen.values == ['both idle']
+	assert !event_loop.has_running_execution_context()
+}

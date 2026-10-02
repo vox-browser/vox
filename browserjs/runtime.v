@@ -126,7 +126,7 @@ pub fn (mut runtime Runtime) bind_scripting_environment(settings &html.Environme
 	mut realm := unsafe { &html.ScriptingRealm(settings.realm()) }
 	realm.bind_embedding_execution_context(vm, runtime.realm_context)
 	mut event_loop := unsafe { &html.EventLoop(settings.responsible_event_loop()) }
-	event_loop.bind_vm(vm)
+	event_loop.attach_embedding_vm(vm)
 	runtime.scripting_settings_ = settings
 }
 
@@ -310,7 +310,7 @@ pub fn (mut runtime Runtime) close() {
 	runtime.canvas_element_providers_.clear()
 	if settings := runtime.scripting_settings_ {
 		mut event_loop := unsafe { &html.EventLoop(settings.responsible_event_loop()) }
-		event_loop.unbind_vm(runtime.agent_vm)
+		event_loop.detach_embedding_vm(runtime.agent_vm)
 	}
 	runtime.scripting_settings_ = none
 	runtime.closed = true

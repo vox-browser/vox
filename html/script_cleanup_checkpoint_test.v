@@ -67,3 +67,22 @@ fn test_script_cleanup_preserves_actual_outer_vm_execution_context() {
 	assert seen.calls == ['job']
 	assert !vm.has_running_execution_context()
 }
+
+fn test_checkpoint_finishes_each_attached_actual_vm_generation_once() {
+	mut event_loop := EventLoop.create(.window)
+	first := libjs.VM.create()
+	second := libjs.VM.create()
+	event_loop.bind_vm(first)
+	event_loop.attach_embedding_vm(first)
+	event_loop.attach_embedding_vm(first)
+	event_loop.attach_embedding_vm(second)
+	first_generation := first.execution_generation()
+	second_generation := second.execution_generation()
+	event_loop.perform_a_microtask_checkpoint()
+	assert first.execution_generation() == first_generation + 1
+	assert second.execution_generation() == second_generation + 1
+	event_loop.detach_embedding_vm(second)
+	event_loop.perform_a_microtask_checkpoint()
+	assert first.execution_generation() == first_generation + 2
+	assert second.execution_generation() == second_generation + 1
+}
