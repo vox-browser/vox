@@ -58,6 +58,7 @@ pub mut:
 	custom_sections_ []CustomSection
 	memory_types     []WasmLimits
 	types            []BinaryDefinedType
+	canonical_types []&BinaryCanonicalType
 	function_type_indices []u32
 	start_function_index ?u32
 	data_count ?u32
@@ -133,6 +134,7 @@ pub fn (mut compiled Module) deserialization_steps(serialized SerializedModule) 
 	compiled.custom_sections_ = restored.custom_sections_.clone()
 	compiled.memory_types = restored.memory_types.clone()
 	compiled.types = restored.types.clone()
+	compiled.canonical_types = restored.canonical_types.clone()
 	compiled.function_type_indices = restored.function_type_indices.clone()
 	compiled.start_function_index = restored.start_function_index
 	compiled.data_count = restored.data_count
@@ -268,6 +270,8 @@ fn compile_module(bytes []u8) !&Module {
 			return error('CompileError: trailing bytes in section ${section_id}')
 		}
 	}
+	canonical_types := canonicalize_binary_module_types(types)!
+	validate_binary_type_section(types, canonical_types)!
 	validate_module_counts(function_type_indices, function_bodies, data_count, data_segments)!
 	validate_module_memories(imports, memory_types, exports)!
 	return &Module{
@@ -277,6 +281,7 @@ fn compile_module(bytes []u8) !&Module {
 		custom_sections_: custom
 		memory_types:     memory_types
 		types:            types
+		canonical_types: canonical_types
 		function_type_indices: function_type_indices
 		start_function_index: start_function_index
 		data_count: data_count
