@@ -1019,47 +1019,6 @@ pub fn populate_request_from_client(mut request Request) {
 	}
 }
 
-pub fn fetch_response_handover(params &FetchParams, response &Response) {
-	algorithms := params.algorithms.input
-	mut controller := params.controller
-	if callback := algorithms.process_response {
-		queue_fetch_task_for_controller(mut controller, fn [callback, response] () {
-			callback(response)
-		})
-	}
-	if callback := algorithms.process_response_consume_body {
-		body_bytes := if mut body := response.unsafe_response().body {
-			if bytes := body.fully_read() {
-				BodyBytes{ kind: .bytes, bytes: bytes }
-			} else {
-				BodyBytes{ kind: .failure }
-			}
-		} else {
-			BodyBytes{ kind: .empty }
-		}
-		queue_fetch_task_for_controller(mut controller, fn [callback, response, body_bytes] () {
-			callback(response, body_bytes)
-		})
-	}
-	unsafe_end_time := highresolutiontime.unsafe_shared_current_time()
-	if destination := params.request.destination {
-		if destination == .document {
-			controller.set_full_timing_info(params.timing_info)
-		}
-	}
-	controller.set_report_timing_steps(fn [unsafe_end_time] (timing_info &FetchTimingInfo) {
-		mut timing := unsafe { &FetchTimingInfo(timing_info) }
-		timing.end_time = unsafe_end_time
-	})
-	mut request := params.request
-	request.done = true
-	if callback := algorithms.process_response_end_of_body {
-		queue_fetch_task_for_controller(mut controller, fn [callback, response] () {
-			callback(response)
-		})
-	}
-}
-
 pub fn http_network_or_cache_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 	mut request := params.request
 	if params.is_canceled() {
