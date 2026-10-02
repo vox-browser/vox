@@ -108,6 +108,14 @@ texture overloads must not be confused with the implemented numeric pixel-pack
 readPixels overload. Source reset_to_default_state bodies are empty in both
 context classes and remain empty in the translation.
 
+The pinned compositor allocates a texture-backed default framebuffer
+(`Services/Compositor/OpenGLContext.cpp:578-580`, `:667-669`), and the implemented
+WebGL2 draw_buffers body forwards its enum vector unchanged
+(`WebGL2RenderingContextImpl.cpp:568-573`). The V CPU surface preserves that
+source forwarding: drawBuffers([BACK]) on this hidden framebuffer reports the
+native INVALID_OPERATION. No inferred BACK remapping has been introduced;
+explicit user framebuffers and their COLOR_ATTACHMENT entries execute natively.
+
 The compact public binding now applies that source `[FIXME]` exclusion before
 overload resolution. Unsupported numeric unpack calls raise TypeError without
 issuing an empty-byte native upload. Failed ambiguous resolution retains the
