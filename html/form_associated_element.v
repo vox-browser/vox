@@ -61,20 +61,32 @@ fn form_element_nearest_ancestor(element &dom.Element, local_name string) ?&dom.
 	return none
 }
 
-fn form_element_find_form_by_id(root &dom.Node, id string) ?&dom.HTMLFormElement {
+fn form_element_find_first_html_element_by_id(root &dom.Node, id string) ?&dom.Element {
 	if candidate := root.as_element() {
-		if candidate.is_html_element() && candidate.local_name() == 'form' && candidate.id() or {
-			''
-		} == id {
-			return unsafe { &dom.HTMLFormElement(candidate) }
+		if candidate.is_html_element() {
+			if candidate_id := candidate.id() {
+				if candidate_id == id {
+					return candidate
+				}
+			}
 		}
 	}
 	for child in root.children {
-		if form := form_element_find_form_by_id(child, id) {
-			return form
+		if element := form_element_find_first_html_element_by_id(child, id) {
+			return element
 		}
 	}
 	return none
+}
+
+fn form_element_find_form_by_id(root &dom.Node, id string) ?&dom.HTMLFormElement {
+	// FormAssociatedElement::reset_form_owner(), step 4: stop at the first
+	// matching HTML element even when that element cannot own a form control.
+	element := form_element_find_first_html_element_by_id(root, id) or { return none }
+	if element.local_name() != 'form' {
+		return none
+	}
+	return unsafe { &dom.HTMLFormElement(element) }
 }
 
 fn remove_associated_element_from_form(form &dom.HTMLFormElement, element &dom.Element) {
