@@ -266,8 +266,9 @@ fields. `resolved_memories()` and `resolved_globals()` cache actual Store-owned
 instance pointers in source order; they retain those identities when the Store
 pointer vectors grow. A small V record exposes the actual mutable vector headers
 because V cannot return a pointer to an array header. The compiled-function-table
-population body, source weak/ref-counted module lifetimes and function Store
-family remain pending; the compiled-entry record supplies no execution result.
+population body and source weak/ref-counted module lifetimes remain pending;
+the later function Store foundation below supplies actual records and addresses,
+while the compiled-entry record supplies no execution result.
 
 `machine_table.v` (`e925b6cd`) translates TableInstance and the Store table family.
 Actual reference vectors retain a defining ModuleInstance anchor per element.
@@ -367,7 +368,9 @@ hashing, wrapper GC, or native primitive-value interning.
 The complete package passes **60/60 files with default GC and 60/60 with
 `-gc none`**. Actual non-null exported function branding, function Store/module
 lookup, synthetic Instance global/table exports, native WebAssembly wrappers,
-instruction execution and the full VM/GC ownership graph remain open. A typed
+instruction execution and the full VM/GC ownership graph remain open. The
+later function Store foundation below completes allocation/lookup records,
+but not actual exported-function branding. A typed
 callback marker is not accepted as a genuine exported function.
 
 
@@ -394,3 +397,24 @@ wrapper lookup does not close WA-12; function Store/branding and native
 WebAssembly/LibJS wrappers remain open. Full unsigned Table64 conversion is
 completed above; the current complete package passes **63/63 files with default
 GC and 63/63 with `-gc none`**.
+
+## Actual function Store foundation
+
+`74a1e9c5` translates `WasmFunction`, `HostFunction`, their actual Store
+variant vector, both allocation branches, checked/unchecked lookup and module
+lookup from `AbstractMachine.{h,cpp}`. Wasm records retain the actual code
+section entry, module instance, module and canonical type. Host allocation
+interns its source function type only when no defined type is supplied. Store
+addresses are vector indices; getters must be queried again after vector growth.
+The source name helper uses the host import index or the first matching index
+in the module's function vector, including imported functions, rather than an
+export label or Store address.
+
+The new source-record cases plus module/global ownership neighbors pass
+**3/3 files with default GC and 3/3 with `-gc none`**. The host callable retains
+an opaque Configuration ABI input; no replacement Configuration or execution
+result is supplied. V currently retains module/code pointer aliases rather than
+the source weak/ref-counted lifetime graph, so weak expiration and strong module
+promotion remain open. The legacy Instance initialization and exported-function
+facades are not yet connected to these actual function records; this foundation
+does not establish Wasm execution or close WA-12.
