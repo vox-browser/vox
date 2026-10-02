@@ -160,3 +160,19 @@ source's unsupported operation. The existing task/Promise relay, typed UTF-8
 string DTO, assertion/error, and WrapperWorld GC boundaries remain explicit.
 Remaining native methods include encryption, signing, derivation, wrapping,
 and KEM operations; this slice does not claim complete LibJS runtime parity.
+
+Native SubtleCrypto.encrypt/decrypt now convert actual receiver/key/buffer
+brands, normalize RSA-OAEP/AES/ChaCha parameter getters in source order, copy
+parameters and input bytes, and invoke the owning native source service.
+Deferred work is followed by the source crypto settlement task and existing
+owner Promise relay. RSA labels retain nullish omission; AEAD optional fields
+use property presence, copied buffers, and modulo unsigned tag lengths.
+
+All three focused cipher cases pass with `-gc none`: a known AES-GCM vector
+checks getter order, copied IV/input timing, actual ArrayBuffer results, and
+separate work/crypto task settlement; all six registered cipher names perform
+native encrypt/decrypt round trips; binding failures preserve original throws
+and source immediate/deferred algorithm/usage/authentication error precedence.
+Signing, derivation, wrapping, and KEM native method bindings remain pending.
+Documented native task/Promise, UTF-8 DTO, assertion, and wrapper GC boundaries
+continue to apply; no JavaScript substitute cryptography is introduced.

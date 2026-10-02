@@ -361,3 +361,11 @@ native import cases pass with `-gc none`, exercising every one of the 29
 registered import names. Pinned ML-KEM JWK TODOs and documented host/VM/string/
 wrapper boundaries remain; encryption, signing, derivation, wrapping, and KEM
 native method bindings are still pending.
+
+Native encrypt/decrypt method bindings now call the actual owning source service
+for all six registered names. Source parameter getter order, optional-field
+presence, unsigned tag conversion, copied input spans, work/crypto settlement,
+real buffers, and immediate/deferred validation are exercised. All three focused
+cipher host cases pass with `-gc none`, including an AES-GCM known vector and
+native AES-CBC/CTR/GCM/OCB, ChaCha20-Poly1305, and RSA-OAEP round trips. Remaining
+native methods include signing, derivation, wrapping, and KEM operations.
