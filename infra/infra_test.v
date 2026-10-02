@@ -53,6 +53,18 @@ fn test_scalar_value_and_character_types() {
 	assert ascii_whitespace_code_points == [u32(9), 10, 12, 13, 32]!
 }
 
+fn test_scalar_conversion_retains_pairs_and_replaces_each_lone_utf16_unit_once() {
+	assert convert_utf16_to_scalar_value_string([u16(0xd800)]) == '�'
+	assert convert_utf16_to_scalar_value_string([u16(0xdc00)]) == '�'
+	assert convert_utf16_to_scalar_value_string([u16(0xd83d), 0xde00]) == '😀'
+	assert convert_utf16_to_scalar_value_string([u16(0xd800), 0xd800, 0x61, 0xdc00]) == '��a�'
+	assert convert_to_scalar_value_string([u8(0xed), 0xa0, 0x80].bytestr()) == '�'
+	assert convert_to_scalar_value_string([u8(0xed), 0xa0, 0xbd, 0xed, 0xb8, 0x80].bytestr()) == '😀'
+	assert convert_to_scalar_value_string('A😀Z') == 'A😀Z'
+	assert code_unit_less_than([u8(0xed), 0xa0, 0x80].bytestr(), [u8(0xed), 0xb0, 0x80].bytestr())
+	assert is_code_unit_prefix([u8(0xed), 0xa0, 0x80].bytestr(), [u8(0xed), 0xa0, 0x80, 0x61].bytestr())
+}
+
 fn test_unsigned_128_bit_integer_preserves_both_limbs() {
 	maximum := Unsigned128BitInteger{
 		high: u64(0xffff_ffff_ffff_ffff)

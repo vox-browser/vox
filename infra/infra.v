@@ -137,8 +137,46 @@ pub fn strip_and_collapse_ascii_whitespace(input string) string {
 
 fn utf16_code_units(input string) []u16 {
 	mut result := []u16{cap: input.len}
-	for code_point_rune in input.runes() {
-		code_point := u32(code_point_rune)
+	// AK::Utf8CodePointIterator's decoding/advance rules at the V string
+	// boundary. Native UTF-16 strings can contain lone surrogates; WTF-8 keeps
+	// them intact rather than V's rune decoder replacing each byte separately.
+	mut offset := 0
+	for offset < input.len {
+		first := input[offset]
+		mut length := 1
+		mut code_point := u32(first)
+		mut valid := true
+		if first <= 0x7f {
+		} else if first & 0xe0 == 0xc0 {
+			length = 2
+			code_point = u32(first & 0x1f)
+		} else if first & 0xf0 == 0xe0 {
+			length = 3
+			code_point = u32(first & 0x0f)
+		} else if first & 0xf8 == 0xf0 {
+			length = 4
+			code_point = u32(first & 0x07)
+		} else {
+			valid = false
+		}
+		if offset + length > input.len {
+			valid = false
+		} else {
+			for index in 1 .. length {
+				if input[offset + index] >> 6 != 2 {
+					valid = false
+					break
+				}
+				code_point = (code_point << 6) | u32(input[offset + index] & 63)
+			}
+		}
+		if !valid {
+			length = 1
+			code_point = 0xfffd
+		} else if code_point > 0x10ffff {
+			code_point = 0xfffd
+		}
+		offset += length
 		if code_point <= 0xffff {
 			result << u16(code_point)
 			continue
@@ -162,12 +200,17 @@ pub fn is_code_unit_prefix(potential_prefix string, input string) bool {
 
 // https://infra.spec.whatwg.org/#scalar-value-string
 pub fn convert_to_scalar_value_string(input string) string {
-	mut output := []rune{cap: input.len}
-	for code_point in input.runes() {
-		value := u32(code_point)
-		output << if value >= 0xd800 && value <= 0xdfff { rune(0xfffd) } else { code_point }
-	}
-	return output.string()
+	return convert_utf16_to_scalar_value_string(utf16_code_units(input))
+}
+
+pub fn convert_utf16_to_scalar_value_string(input []u16) string {
+	// Utf16CodePointIterator combines valid pairs before Infra replaces lone
+	// surrogates. The already translated Encoding scalar conversion implements
+	// exactly that iteration and UTF-8 emission for the V string boundary.
+	mut encoder := encoding.TextEncoderStream.create()
+	mut bytes := encoder.encode_and_enqueue_chunk(input)
+	bytes << encoder.encode_and_flush()
+	return bytes.bytestr()
 }
 
 // https://infra.spec.whatwg.org/#code-unit-less-than
