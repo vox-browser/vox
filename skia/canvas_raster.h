@@ -27,6 +27,9 @@ struct VoxCanvasFilter {
     int clamp;
 };
 struct VoxCanvasCommand {
+    int operation;
+    float destination[4], source[4];
+    int smoothing;
     struct VoxCanvasPath path;
     struct VoxCanvasStyle style;
     float transform[6];

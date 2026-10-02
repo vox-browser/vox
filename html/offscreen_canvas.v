@@ -229,6 +229,7 @@ pub fn OffscreenCanvasRenderingContext2D.create(canvas &OffscreenCanvas, setting
 	}
 	context.CanvasPath.canvas_state_ = &context.CanvasState
 	context.CanvasState.set_reset_callback(voidptr(context), offscreen_canvas_state_reset)
+	if !settings.alpha { context.clear_rect(0, 0, f64(canvas.width()), f64(canvas.height())) }
 	return context
 }
 
@@ -255,6 +256,7 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) set_size(width u32, heigh
 }
 
 pub fn (mut context OffscreenCanvasRenderingContext2D) reset_to_default_state() {
+	context.clear_rect(0, 0, f64(context.width_), f64(context.height_))
 	context.CanvasState.reset_drawing_state()
 	context.CanvasState.clear_drawing_state_stack()
 	context.CanvasPath.path_ = CanvasGfxPath{}
@@ -278,227 +280,6 @@ fn canvas_clamped_rectangle(x f64, y f64, width f64, height f64, bounds_width in
 	return left, top, right, bottom
 }
 
-fn canvas_clamp_unit(value f64) f64 {
-	return math.min(1.0, math.max(0.0, value))
-}
-
-fn canvas_luminosity(color []f64) f64 {
-	return 0.3 * color[0] + 0.59 * color[1] + 0.11 * color[2]
-}
-
-fn canvas_saturation(color []f64) f64 {
-	return math.max(color[0], math.max(color[1], color[2])) - math.min(color[0], math.min(color[1], color[2]))
-}
-
-fn canvas_clip_color(color []f64) []f64 {
-	mut result := color.clone()
-	luminosity := canvas_luminosity(result)
-	minimum := math.min(result[0], math.min(result[1], result[2]))
-	maximum := math.max(result[0], math.max(result[1], result[2]))
-	if minimum < 0 {
-		for index in 0 .. 3 {
-			result[index] = luminosity + ((result[index] - luminosity) * luminosity) / (luminosity - minimum)
-		}
-	}
-	if maximum > 1 {
-		for index in 0 .. 3 {
-			result[index] = luminosity + ((result[index] - luminosity) * (1 - luminosity)) / (maximum - luminosity)
-		}
-	}
-	return result
-}
-
-fn canvas_set_luminosity(color []f64, luminosity f64) []f64 {
-	delta := luminosity - canvas_luminosity(color)
-	return canvas_clip_color([color[0] + delta, color[1] + delta, color[2] + delta])
-}
-
-fn canvas_set_saturation(color []f64, saturation f64) []f64 {
-	mut result := color.clone()
-	mut indices := [0, 1, 2]
-	indices.sort_with_compare(fn [result] (left &int, right &int) int {
-		return if result[*left] < result[*right] {
-			-1
-		} else if result[*left] > result[*right] { 1 } else { 0 }
-	})
-	minimum := indices[0]
-	middle := indices[1]
-	maximum := indices[2]
-	if result[maximum] > result[minimum] {
-		result[middle] = ((result[middle] - result[minimum]) * saturation) / (result[maximum] - result[minimum])
-		result[maximum] = saturation
-	} else {
-		result[middle] = 0
-		result[maximum] = 0
-	}
-	result[minimum] = 0
-	return result
-}
-
-fn canvas_blend_channel(operation CompositingAndBlendingOperator, backdrop f64, source f64) f64 {
-	return match operation {
-		.multiply { backdrop * source }
-		.screen { backdrop + source - backdrop * source }
-		.overlay {
-			if backdrop <= 0.5 { 2 * backdrop * source } else { 1 - 2 * (1 - backdrop) * (1 - source) }
-		}
-		.darken { math.min(backdrop, source) }
-		.lighten { math.max(backdrop, source) }
-		.color_dodge {
-			if source >= 1 { 1.0 } else { math.min(1.0, backdrop / (1 - source)) }
-		}
-		.color_burn {
-			if source <= 0 { 0.0 } else { 1 - math.min(1.0, (1 - backdrop) / source) }
-		}
-		.hard_light {
-			if source <= 0.5 { 2 * backdrop * source } else { 1 - 2 * (1 - backdrop) * (1 - source) }
-		}
-		.soft_light {
-			if source <= 0.5 {
-				backdrop - (1 - 2 * source) * backdrop * (1 - backdrop)
-			} else {
-				d := if backdrop <= 0.25 {
-					((16 * backdrop - 12) * backdrop + 4) * backdrop
-				} else {
-					math.sqrt(backdrop)
-				}
-				backdrop + (2 * source - 1) * (d - backdrop)
-			}
-		}
-		.difference { math.abs(backdrop - source) }
-		.exclusion { backdrop + source - 2 * backdrop * source }
-		.plus_darker { math.max(0.0, backdrop + source - 1) }
-		.plus_lighter { math.min(1.0, backdrop + source) }
-		else { source }
-	}
-}
-
-fn canvas_blend_color(operation CompositingAndBlendingOperator, backdrop []f64, source []f64) []f64 {
-	return match operation {
-		.hue {
-			canvas_set_luminosity(canvas_set_saturation(source, canvas_saturation(backdrop)), canvas_luminosity(backdrop))
-		}
-		.saturation {
-			canvas_set_luminosity(canvas_set_saturation(backdrop, canvas_saturation(source)), canvas_luminosity(backdrop))
-		}
-		.color { canvas_set_luminosity(source, canvas_luminosity(backdrop)) }
-		.luminosity { canvas_set_luminosity(backdrop, canvas_luminosity(source)) }
-		else {
-			[
-				canvas_blend_channel(operation, backdrop[0], source[0]),
-				canvas_blend_channel(operation, backdrop[1], source[1]),
-				canvas_blend_channel(operation, backdrop[2], source[2]),
-			]
-		}
-	}
-}
-
-fn canvas_composite_pixel(mut pixels []u8, offset int, color dom.Color, alpha f64, operation CompositingAndBlendingOperator) {
-	source_alpha := (f64(color.a) / 255.0) * alpha
-	destination_alpha := f64(pixels[offset + 3]) / 255.0
-	source := [f64(color.r) / 255.0, f64(color.g) / 255.0, f64(color.b) / 255.0]
-	destination := [f64(pixels[offset]) / 255.0, f64(pixels[offset + 1]) / 255.0,
-		f64(pixels[offset + 2]) / 255.0]
-	if operation in [.multiply, .screen, .overlay, .darken, .lighten, .color_dodge, .color_burn,
-		.hard_light, .soft_light, .difference, .exclusion, .hue, .saturation, .color, .luminosity,
-		.plus_darker, .plus_lighter] {
-		blended := canvas_blend_color(operation, destination, source)
-		output_alpha := source_alpha + destination_alpha * (1 - source_alpha)
-		if output_alpha <= 0 {
-			for channel in 0 .. 4 {
-				pixels[offset + channel] = 0
-			}
-			return
-		}
-		for channel in 0 .. 3 {
-			premultiplied := source_alpha * (1 - destination_alpha) * source[channel] + source_alpha * destination_alpha * blended[channel] + (1 - source_alpha) * destination_alpha * destination[channel]
-			pixels[offset + channel] = u8(math.round(canvas_clamp_unit(premultiplied / output_alpha) * 255))
-		}
-		pixels[offset + 3] = u8(math.round(canvas_clamp_unit(output_alpha) * 255))
-		return
-	}
-	mut source_factor := 1.0
-	mut destination_factor := 1.0 - source_alpha
-	match operation {
-		.source_in {
-			source_factor = destination_alpha
-			destination_factor = 0
-		}
-		.source_out {
-			source_factor = 1 - destination_alpha
-			destination_factor = 0
-		}
-		.source_atop {
-			source_factor = destination_alpha
-			destination_factor = 1 - source_alpha
-		}
-		.destination_over {
-			source_factor = 1 - destination_alpha
-			destination_factor = 1
-		}
-		.destination_in {
-			source_factor = 0
-			destination_factor = source_alpha
-		}
-		.destination_out {
-			source_factor = 0
-			destination_factor = 1 - source_alpha
-		}
-		.destination_atop {
-			source_factor = 1 - destination_alpha
-			destination_factor = source_alpha
-		}
-		.lighter {
-			source_factor = 1
-			destination_factor = 1
-		}
-		.copy {
-			source_factor = 1
-			destination_factor = 0
-		}
-		.xor {
-			source_factor = 1 - destination_alpha
-			destination_factor = 1 - source_alpha
-		}
-		else {}
-	}
-	output_alpha := canvas_clamp_unit(source_alpha * source_factor + destination_alpha * destination_factor)
-	if output_alpha <= 0 {
-		for channel := 0; channel < 4; channel++ {
-			pixels[offset + channel] = 0
-		}
-		return
-	}
-	for channel in 0 .. 3 {
-		premultiplied := source[channel] * source_alpha * source_factor + destination[channel] * destination_alpha * destination_factor
-		pixels[offset + channel] = u8(math.round(canvas_clamp_unit(premultiplied / output_alpha) * 255))
-	}
-	pixels[offset + 3] = u8(math.round(output_alpha * 255))
-}
-
-fn (mut context OffscreenCanvasRenderingContext2D) paint_rectangle(x f64, y f64, width f64, height f64, color dom.Color, clear bool) {
-	bitmap := context.canvas_.bitmap() or { return }
-	mapped_start := context.drawing_state.transform.map(FloatPoint{x, y})
-	mapped_end := context.drawing_state.transform.map(FloatPoint{x + width, y + height})
-	left, top, right, bottom := canvas_clamped_rectangle(mapped_start.x, mapped_start.y, mapped_end.x - mapped_start.x, mapped_end.y - mapped_start.y, bitmap.width, bitmap.height)
-	mut mutable_bitmap := unsafe { &dom.Bitmap_(bitmap) }
-	for row := top; row < bottom; row++ {
-		for column := left; column < right; column++ {
-			offset := row * mutable_bitmap.pitch + column * 4
-			if offset < 0 || offset + 3 >= mutable_bitmap.data.len {
-				continue
-			}
-			if clear {
-				for channel := 0; channel < 4; channel++ {
-					mutable_bitmap.data[offset + channel] = 0
-				}
-			} else {
-				canvas_composite_pixel(mut mutable_bitmap.data, offset, color, context.drawing_state.global_alpha, context.drawing_state.current_compositing_and_blending_operator)
-			}
-		}
-	}
-}
-
 pub fn (mut context OffscreenCanvasRenderingContext2D) fill_rect(x f64, y f64, width f64, height f64) {
 	if !is_finite(x) || !is_finite(y) || !is_finite(width) || !is_finite(height) {
 		return
@@ -510,23 +291,7 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) clear_rect(x f64, y f64, 
 	if !is_finite(x) || !is_finite(y) || !is_finite(width) || !is_finite(height) {
 		return
 	}
-	bitmap := context.canvas_.bitmap() or { return }
-	path := context.rect_path(x, y, width, height).copy_transformed(context.drawing_state.transform)
-	bounds := canvas_path_bounds(path) or { return }
-	left, top, right, bottom := canvas_clamped_rectangle(bounds.x, bounds.y, bounds.width, bounds.height, bitmap.width, bitmap.height)
-	mut mutable_bitmap := unsafe { &dom.Bitmap_(bitmap) }
-	for row := top; row < bottom; row++ {
-		for column := left; column < right; column++ {
-			point := FloatPoint{f64(column) + 0.5, f64(row) + 0.5}
-			if !canvas_point_is_inside_clip(context.drawing_state, point) || !is_point_in_path_internal(path, CanvasAffineTransform{}, point.x, point.y, 'evenodd') {
-				continue
-			}
-			offset := row * mutable_bitmap.pitch + column * 4
-			for channel := 0; channel < 4; channel++ {
-				mutable_bitmap.data[offset + channel] = 0
-			}
-		}
-	}
+	context.paint_canvas_bitmap_command(1, none, CanvasFloatRect{}, CanvasFloatRect{x, y, width, height})
 }
 
 pub fn (mut context OffscreenCanvasRenderingContext2D) stroke_rect(x f64, y f64, width f64, height f64) {
@@ -629,44 +394,25 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) put_image_data_dirty(imag
 }
 
 pub fn (mut context OffscreenCanvasRenderingContext2D) draw_image_internal(request CanvasDrawImageRequest) ! {
-	if check_usability_of_image(request.image) == .bad {
-		return error('InvalidStateError: image source is not usable')
-	}
-	source_frame := canvas_image_source_frame(request.image) or { return }
-	source := source_frame.bitmap()
-	destination := context.canvas_.bitmap() or { return }
-	if request.source_width == 0 || request.source_height == 0 || request.destination_width == 0 || request.destination_height == 0 {
-		return
-	}
-	mut mutable_destination := unsafe { &dom.Bitmap_(destination) }
-	// CanvasDrawImage resolves the source at draw time. Snapshot the bytes so
-	// self-draws and overlapping source/destination rectangles cannot observe
-	// pixels written earlier in the same operation.
-	source_pixels := source.data.clone()
-	left, top, right, bottom := canvas_clamped_rectangle(request.destination_x, request.destination_y, request.destination_width, request.destination_height, destination.width, destination.height)
-	for destination_y := top; destination_y < bottom; destination_y++ {
-		for destination_x := left; destination_x < right; destination_x++ {
-			u := (f64(destination_x) - request.destination_x) / request.destination_width
-			v := (f64(destination_y) - request.destination_y) / request.destination_height
-			source_x := int(math.floor(request.source_x + u * request.source_width))
-			source_y := int(math.floor(request.source_y + v * request.source_height))
-			if source_x < 0 || source_y < 0 || source_x >= source.width || source_y >= source.height {
-				continue
-			}
-			source_offset := source_y * source.pitch + source_x * 4
-			destination_offset := destination_y * mutable_destination.pitch + destination_x * 4
-			color := dom.Color{
-				r: source_pixels[source_offset]
-				g: source_pixels[source_offset + 1]
-				b: source_pixels[source_offset + 2]
-				a: source_pixels[source_offset + 3]
-			}
-			canvas_composite_pixel(mut mutable_destination.data, destination_offset, color, context.drawing_state.global_alpha, context.drawing_state.current_compositing_and_blending_operator)
-		}
-	}
-	if image_is_not_origin_clean(request.image) {
-		context.set_origin_clean(false)
-	}
+    if ![request.source_x, request.source_y, request.source_width, request.source_height, request.destination_x, request.destination_y, request.destination_width, request.destination_height].all(is_finite(it)) { return }
+    if check_usability_of_image(request.image) == .bad { return }
+    mut sx := request.source_x
+    mut sy := request.source_y
+    mut sw := request.source_width
+    mut sh := request.source_height
+    mut dx := request.destination_x
+    mut dy := request.destination_y
+    mut dw := request.destination_width
+    mut dh := request.destination_height
+    if sw < 0 { sx += sw; sw = -sw }
+    if sh < 0 { sy += sh; sh = -sh }
+    if dw < 0 { dx += dw; dw = -dw }
+    if dh < 0 { dy += dh; dh = -dh }
+    if sw == 0 || sh == 0 { return }
+    frame := canvas_image_source_frame(request.image) or { return }
+    context.paint_canvas_bitmap_command(2, frame, CanvasFloatRect{sx, sy, sw, sh}, CanvasFloatRect{dx, dy, dw, dh})
+    if image_is_not_origin_clean(request.image) { context.set_origin_clean(false) }
+
 }
 
 pub fn (context &OffscreenCanvasRenderingContext2D) measure_text(text string) &TextMetrics {

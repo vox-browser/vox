@@ -64,6 +64,10 @@ pub:
 
 pub struct Command {
 pub:
+	operation    int
+	destination  [4]f32
+	source       [4]f32
+	smoothing    bool
 	path         Path
 	style        Style
 	transform    [6]f32 = [f32(1), 0, 0, 1, 0, 0]!
@@ -120,6 +124,10 @@ struct C.VoxCanvasFilter {
 }
 
 struct C.VoxCanvasCommand {
+	operation    int
+	destination  [4]f32
+	source       [4]f32
+	smoothing    int
 	path         C.VoxCanvasPath
 	style        C.VoxCanvasStyle
 	transform    [6]f32
@@ -178,6 +186,10 @@ pub fn draw_path(mut pixels []u8, width int, height int, pitch int, alpha_type i
 		pattern_transform:   style.pattern_transform
 	}
 	native_command := C.VoxCanvasCommand{
+		operation:    command.operation
+		destination:  command.destination
+		source:       command.source
+		smoothing:    int(command.smoothing)
 		path:         native_path(command.path)
 		style:        native_style
 		transform:    command.transform

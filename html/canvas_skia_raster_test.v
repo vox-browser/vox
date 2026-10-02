@@ -238,3 +238,60 @@ fn test_canvas_readback_unpremultiplies_native_pixels_and_image_data_write_keeps
 	assert canvas_raster_pixel(mut context, 0, 0) == [u8(0), 0, 255, 64]
 	assert canvas_raster_pixel(mut context, 1, 0) == [u8(0), 128, 0, 128]
 }
+
+fn test_canvas_bitmap_command_uses_transform_clip_filter_and_source_alpha_truncation() {
+	mut image := ImageBitmap.create()
+	image.set_bitmap(&dom.Bitmap_{ width: 2, height: 1, pitch: 8, alpha_type: 1, data: [
+		u8(255),
+		0,
+		0,
+		255,
+		0,
+		0,
+		255,
+		255,
+	] })
+	mut canvas := OffscreenCanvas.create(8, 4) or { panic(err) }
+	mut context := canvas.get_context(.canvas_2d, none) or { panic(err) }
+	context.drawing_state.image_smoothing_enabled = false
+	context.drawing_state.transform = CanvasAffineTransform{ e: 2, f: 1 }
+	context.rect(0, 0, 1, 1)
+	context.clip('nonzero')
+	context.begin_path()
+	context.set_filter('invert(100%)')
+	context.set_global_alpha(.5)
+	context.draw_image_internal(CanvasDrawImageRequest{ image: ImageBitmapCanvasSource{ value: image }, source_width: 2, source_height: 1, destination_width: 2, destination_height: 1 }) or { panic(err) }
+	assert canvas_raster_pixel(mut context, 2, 1) == [u8(0), 255, 255, 127]
+	assert canvas_raster_pixel(mut context, 3, 1) == [u8(0), 0, 0, 0]
+	assert canvas_raster_pixel(mut context, 0, 0) == [u8(0), 0, 0, 0]
+	context.set_filter('blur(2px)')
+	context.set_global_alpha(0)
+	context.clear_rect(0, 0, 2, 1)
+	assert canvas_raster_pixel(mut context, 2, 1) == [u8(0), 0, 0, 0]
+}
+
+fn test_canvas_bitmap_command_normalizes_negative_rectangles_and_clear_alpha_false() {
+	mut image := ImageBitmap.create()
+	image.set_bitmap(&dom.Bitmap_{ width: 2, height: 1, pitch: 8, alpha_type: 1, data: [
+		u8(255),
+		0,
+		0,
+		255,
+		0,
+		0,
+		255,
+		255,
+	] })
+	mut canvas := OffscreenCanvas.create(4, 2) or { panic(err) }
+	mut context := canvas.get_context(.canvas_2d, none) or { panic(err) }
+	context.drawing_state.image_smoothing_enabled = false
+	context.draw_image_internal(CanvasDrawImageRequest{ image: ImageBitmapCanvasSource{ value: image }, source_x: 2, source_width: -2, source_height: 1, destination_x: 3, destination_width: -2, destination_height: 1 }) or { panic(err) }
+	assert canvas_raster_pixel(mut context, 1, 0) == [u8(255), 0, 0, 255]
+	assert canvas_raster_pixel(mut context, 2, 0) == [u8(0), 0, 255, 255]
+	mut opaque_canvas := OffscreenCanvas.create(2, 2) or { panic(err) }
+	mut opaque := opaque_canvas.get_context(.canvas_2d, {
+		'alpha': dom.js_bool(false)
+	}) or { panic(err) }
+	opaque.clear_rect(0, 0, 2, 2)
+	assert canvas_raster_pixel(mut opaque, 0, 0) == [u8(0), 0, 0, 255]
+}

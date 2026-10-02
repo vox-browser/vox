@@ -151,7 +151,37 @@ extern "C" bool vox_skia_canvas_path(uint8_t* pixels, int width, int height, int
     for (int i = 0; i < command->clip_count; ++i)
         canvas->clipPath(make_path(command->clips[i]), SkClipOp::kIntersect, true);
     canvas->setMatrix(make_matrix(command->transform));
+    auto destination_rect = SkRect::MakeXYWH(command->destination[0], command->destination[1], command->destination[2], command->destination[3]);
+    if (command->operation == 1) {
+        canvas->save();
+        canvas->clipRect(destination_rect);
+        canvas->clear(command->style.color);
+        canvas->restore();
+        return surface->readPixels(info, pixels, pitch, 0, 0);
+    }
     SkPaint paint;
+    if (command->operation == 2) {
+        auto const& source = command->style;
+        auto space = SkColorSpace::MakeSRGB();
+        if (source.pattern_color_space == 1)
+            space = SkColorSpace::MakeRGB(SkNamedTransferFn::kSRGB, SkNamedGamut::kDisplayP3);
+        auto image_info = SkImageInfo::Make(source.pattern_width, source.pattern_height, kRGBA_8888_SkColorType,
+            source.pattern_alpha == 2 ? kPremul_SkAlphaType : kUnpremul_SkAlphaType, space);
+        SkBitmap bitmap;
+        if (!bitmap.installPixels(image_info, const_cast<uint8_t*>(source.pattern), source.pattern_pitch))
+            return false;
+        bitmap.setImmutable();
+        auto image = bitmap.asImage();
+        if (!image)
+            return false;
+        paint.setImageFilter(make_filter(*command));
+        paint.setAlpha(static_cast<uint8_t>(command->global_alpha * 255));
+        paint.setBlender(make_blender(command->composite));
+        auto source_rect = SkRect::MakeXYWH(command->source[0], command->source[1], command->source[2], command->source[3]);
+        auto sampling = command->smoothing ? SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kLinear) : SkSamplingOptions(SkFilterMode::kNearest);
+        canvas->drawImageRect(image.get(), source_rect, destination_rect, sampling, &paint, SkCanvas::kStrict_SrcRectConstraint);
+        return surface->readPixels(info, pixels, pitch, 0, 0);
+    }
     if (!apply_style(paint, command->style))
         return false;
     paint.setAntiAlias(true);
@@ -174,7 +204,7 @@ extern "C" bool vox_skia_canvas_path(uint8_t* pixels, int width, int height, int
         paint.setPathEffect(SkDashPathEffect::Make({ command->dashes, size_t(command->dash_count) }, command->dash_offset));
     }
     canvas->drawPath(make_path(command->path), paint);
-    return surface->readPixels(source_info, pixels, pitch, 0, 0);
+    return surface->readPixels(info, pixels, pitch, 0, 0);
 }
 
 extern "C" bool vox_skia_canvas_read_pixels(uint8_t const* source, int width, int height, int pitch, int alpha_type, uint8_t* destination, int destination_width, int destination_height, int destination_pitch, int x, int y)

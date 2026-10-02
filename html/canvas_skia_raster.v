@@ -99,6 +99,7 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 	}
 	assert skia.draw_path(mut mutable_bitmap.data, bitmap.width, bitmap.height, bitmap.pitch,
 		int(bitmap.alpha_type), command)
+	mutable_bitmap.alpha_type = 2
 }
 
 // SkiaUtils.cpp: CSS filter matrices, including each source clamp policy.
@@ -234,4 +235,38 @@ fn canvas_skia_filter(function CanvasFilterFunction) skia.Filter {
 			.sepia,
 		]
 	}
+}
+
+// CanvasCommands::ClearRect and DrawBitmap retain the upstream Skia operation.
+fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_bitmap_command(operation int, source ?&dom.DecodedImageFrame_, source_rect CanvasFloatRect, destination_rect CanvasFloatRect) {
+	bitmap := context.canvas_.bitmap() or { return }
+	mut mutable_bitmap := unsafe { &dom.Bitmap_(bitmap) }
+	state := context.drawing_state
+	mut clips := []skia.Path{}
+	for clip in state.clip_paths { clips << canvas_skia_path(clip.path, clip.fill_rule) }
+	mut style := skia.Style{ color: if context.context_attributes.alpha {
+		u32(0)
+	} else {
+		u32(0xff000000)
+	} }
+	if frame := source {
+		image := frame.bitmap()
+		style = skia.Style{ kind: 4, pattern: image.data.clone(), pattern_width: image.width, pattern_height: image.height, pattern_pitch: image.pitch, pattern_alpha: int(image.alpha_type), pattern_color_space: int(frame.color_space()) }
+	}
+	command := skia.Command{
+		operation:    operation
+		destination:  [f32(destination_rect.x), f32(destination_rect.y), f32(destination_rect.width),
+			f32(destination_rect.height)]!
+		source:       [f32(math.round(source_rect.x)), f32(math.round(source_rect.y)),
+			f32(math.round(source_rect.width)), f32(math.round(source_rect.height))]!
+		smoothing:    state.image_smoothing_enabled
+		style:        style
+		transform:    canvas_skia_transform(state.transform)
+		clips:        clips
+		composite:    int(state.current_compositing_and_blending_operator)
+		global_alpha: f32(state.global_alpha)
+		filters:      state.filter_functions.map(canvas_skia_filter(it))
+	}
+	assert skia.draw_path(mut mutable_bitmap.data, bitmap.width, bitmap.height, bitmap.pitch, int(bitmap.alpha_type), command)
+	mutable_bitmap.alpha_type = 2
 }
