@@ -110,6 +110,7 @@ fn install_layout_paintable_repaint_callbacks(node &dom.LayoutNode, result &Docu
 		mutable_paintable.set_needs_repaint_callback = layout_paintable_set_needs_repaint
 		mutable_paintable.scroll_ancestor_to_offset_into_view_callback = layout_paintable_scroll_ancestor_to_offset_into_view
 		mutable_paintable.box_type_agnostic_position_callback = layout_paintable_box_type_agnostic_position
+		mutable_paintable.inverse_transform_point_callback = layout_paintable_inverse_transform_point
 		mutable_paintable.adjust_scroll_destination_callback = layout_paintable_adjust_scroll_destination
 	}
 	for child in node.children_ {
@@ -1219,6 +1220,25 @@ fn layout_paintable_box_type_agnostic_position(target voidptr,
 	// content origin is the only committed position until adjacent fragments
 	// supply a more specific inline coordinate.
 	return dom.CSSPixelPoint_{ x_: box.x, y_: box.y }
+}
+
+fn layout_paintable_inverse_transform_point(target voidptr, layout_handle voidptr,
+	point dom.CSSPixelPoint_) dom.CSSPixelPoint_ {
+	if layout_handle == unsafe { nil } { return point }
+	mut result := viewport_layout_result(target)
+	mut boxes := map[u64]&BlockBox{}
+	collect_compatibility_boxes(mut result.paint_tree, mut boxes)
+	mut node := unsafe { &Node(layout_handle) }
+	for {
+		if box := boxes[u64(voidptr(node))] {
+			transformed := paintable_box_inverse_transform_point(box, painting.Point{point.x(), point.y()},
+				result.document.device_pixels_per_css_pixel(), result.visual_context_tree)
+			return dom.CSSPixelPoint_{x_: transformed.x, y_: transformed.y}
+		}
+		containing_block := node.containing_block() or { return point }
+		node = unsafe { &Node(containing_block) }
+	}
+	return point
 }
 
 fn viewport_invalidate_layout_paint_cache(mut result DocumentLayoutResult, layout_handle voidptr) {

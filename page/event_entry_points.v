@@ -107,6 +107,12 @@ pub fn light_dismiss_activities(mut handler EventHandler) {
 pub fn set_node_and_ancestors_being_activated(mut handler EventHandler, target InputTarget,
 	value bool) {
 	handler.log(if value { 'activation-on' } else { 'activation-off' }, target)
+	mut current := target.node
+	for current != none {
+		node := current or { break }
+		if mut element := node.as_element() { element.set_being_activated(value) }
+		current = node.parent()
+	}
 }
 
 pub fn should_ignore_keydown_event(code_point int, modifiers u32) bool {
@@ -237,7 +243,7 @@ pub fn (handler &EventHandler) compute_mouse_event_coordinates(position PixelPoi
 	offset_origin PixelPoint) MouseEventCoordinates {
 	return MouseEventCoordinates{
 		client: position
-		page: position
+		page: handler.compute_mouse_event_page_offset(position)
 		offset: compute_mouse_event_offset(position, offset_origin)
 		movement: handler.compute_mouse_event_movement(position)
 	}
@@ -285,8 +291,7 @@ pub fn (mut handler EventHandler) dispatch_chrome_widget_pointer_event(target st
 
 pub fn (mut handler EventHandler) dispatch_a_pointer_event_for_a_device_that_supports_hover(
 	name string, target ?InputTarget) EventResult {
-	handler.log(name, target)
-	return .handled
+	return handler.dispatch_hover_pointer_event(name, target)
 }
 
 pub fn (mut handler EventHandler) track_the_effective_position_of_the_legacy_mouse_pointer(
@@ -300,12 +305,24 @@ pub fn (mut handler EventHandler) update_cursor(cursor string) string {
 }
 
 pub fn (mut handler EventHandler) fire_click_events(target InputTarget) EventResult {
-	handler.log('click', target)
-	return .handled
+	return handler.dispatch_click_events(target)
 }
 
 pub fn (mut handler EventHandler) run_activation_behavior(target InputTarget) EventResult {
 	handler.log('activate', target)
+	if node := target.node {
+		if link := node.enclosing_link_element() {
+			element := unsafe { &dom.Element(link) }
+			url := node.document().encoding_parse_url(element.get_attribute_value('href')) or { return .handled }
+			if mut client := handler.client_ {
+				if handler.platform_mouse_button_ == 0 && handler.platform_mouse_modifiers_ & platform_control_modifier() != 0 {
+					client.page_did_click_link(url.serialize(), element.get_attribute_value('target'), handler.platform_mouse_modifiers_)
+				} else if handler.platform_mouse_button_ == 1 {
+					client.page_did_middle_click_link(url.serialize(), element.get_attribute_value('target'), handler.platform_mouse_modifiers_)
+				}
+			}
+		}
+	}
 	return .handled
 }
 
@@ -336,9 +353,12 @@ pub fn (mut handler EventHandler) initiate_paragraph_selection(position PixelPoi
 }
 
 pub fn (mut handler EventHandler) run_mousedown_default_actions(target InputTarget) EventResult {
+	if handler.platform_mouse_button_ != 0 { return .handled }
+	$if macos { if handler.platform_mouse_modifiers_ & dom.modifier_ctrl != 0 { return .handled } }
 	if target.is_focusable {
 		handler.focused_target_ = target.id
 		handler.focused_target_state = target
+		if node := target.node { dom.run_focusing_steps_for_node(node, none, .click) }
 	}
 	return .handled
 }
@@ -423,7 +443,11 @@ pub fn (mut handler EventHandler) handle_sdl_input_events() {
 	handler.log('poll-sdl-input-events', none)
 }
 
-pub fn (_ &EventHandler) compute_mouse_event_page_offset(position PixelPoint) PixelPoint {
+pub fn (handler &EventHandler) compute_mouse_event_page_offset(position PixelPoint) PixelPoint {
+	if document := handler.pointed_document_ {
+		viewport := document.viewport_rect()
+		return PixelPoint{position.x + viewport.x, position.y + viewport.y}
+	}
 	return position
 }
 

@@ -290,6 +290,8 @@ pub:
 
 pub type PaintableAdjustScrollDestinationCallback = fn (voidptr, voidptr, CSSPixelPoint_, ScrollSnapSelectionStrategy_) ScrollSnapDestination_
 
+pub type PaintableInverseTransformPointCallback = fn (voidptr, voidptr, CSSPixelPoint_) CSSPixelPoint_
+
 @[heap]
 pub struct Paintable {
 pub mut:
@@ -301,6 +303,7 @@ pub mut:
 	set_needs_repaint_callback                   PaintableSetNeedsRepaintCallback = unsafe { nil }
 	scroll_ancestor_to_offset_into_view_callback PaintableScrollAncestorToOffsetCallback = unsafe { nil }
 	box_type_agnostic_position_callback          PaintableBoxTypeAgnosticPositionCallback = unsafe { nil }
+	inverse_transform_point_callback            PaintableInverseTransformPointCallback = unsafe { nil }
 	adjust_scroll_destination_callback           PaintableAdjustScrollDestinationCallback = unsafe { nil }
 }
 
@@ -348,6 +351,13 @@ pub fn (p &Paintable) box_type_agnostic_position() CSSPixelPoint_ {
 		return p.box_type_agnostic_position_callback(p.repaint_callback_target, p.layout_handle)
 	}
 	return CSSPixelPoint_{}
+}
+
+pub fn (p &Paintable) inverse_transform_point(point CSSPixelPoint_) CSSPixelPoint_ {
+	if p.repaint_callback_target != unsafe { nil } && p.inverse_transform_point_callback != unsafe { nil } {
+		return p.inverse_transform_point_callback(p.repaint_callback_target, p.layout_handle, point)
+	}
+	return point
 }
 
 @[heap]

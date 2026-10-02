@@ -49,6 +49,8 @@ fn C.native_decode_video_frame(path &char, seconds f64, output_width &int, outpu
 
 fn C.native_free_video_frame(pixels &u8)
 
+fn C.native_pointer_screen_position(x f64, y f64, screen_x &f64, screen_y &f64)
+
 fn C.native_window_width() int
 
 fn C.native_window_height() int
@@ -325,6 +327,8 @@ mut:
 	// widget presses run through Page::EventHandler in event_fn and must not also
 	// enter the browser's compact DOM-click fallback.
 	suppress_next_click_for_chrome bool
+	platform_pointer_buttons u32
+	platform_pointer_modifiers u32
 }
 
 struct ChromePointerDispatchResult {
@@ -2361,18 +2365,27 @@ fn (mut app BrowserApp) dispatch_chrome_pointer_event_at_viewport_point(event_ty
 	}
 	mut handler := app.page_model.event_handler
 	had_capture := handler.has_captured_chrome_widget()
-	handler.update_hovered_chrome_widget(target)
-	_ = handler.dispatch_chrome_widget_pointer_event(target, event_type, button, page.PixelPoint{
-		x: x
-		y: y
-	})
-	handled := target != '' || had_capture || handler.has_captured_chrome_widget()
-	if handled {
-		// ResizeHandle updates element.style during dispatch; Scrollbar updates the
-		// retained scroll state. Commit those mutations before the next frame.
-		document.update_layout(.event_handler_dispatch_chrome_widget_event)
-		app.adopt_current_document_geometry()
+	mut input_target := ?page.InputTarget(none)
+	if value := hit {
+		mut node := if value.node != unsafe { nil } { value.node }
+			else if value.element != unsafe { nil } { value.element.as_node() }
+			else { unsafe { &dom.Node(nil) } }
+		for node != unsafe { nil } && !node.is_element() {
+			node = node.parent() or { unsafe { &dom.Node(nil) } }
+		}
+		if node != unsafe { nil } { input_target = page.InputTarget.from_node_and_chrome_widget(node, target) }
 	}
+	handler.set_document_state(document.is_fully_active(), document.layout_node() != none)
+	mut screen_x := x
+	mut screen_y := y + f64(app.page_top())
+	$if macos { C.native_pointer_screen_position(x, screen_y, &screen_x, &screen_y) }
+	_ = handler.handle_platform_pointer_event(event_type, input_target, page.PixelPoint{x: x, y: y},
+		page.PixelPoint{x: screen_x, y: screen_y}, u32(button), app.platform_pointer_buttons, app.platform_pointer_modifiers, 1)
+	handled := target != '' || had_capture || handler.has_captured_chrome_widget()
+	// Hover, focus, listeners and chrome widgets can all invalidate the retained
+	// tree during dispatch. Commit that state before the embedder's next frame.
+	document.update_layout(if handled { .event_handler_dispatch_chrome_widget_event } else { reason })
+	app.adopt_current_document_geometry()
 	return ChromePointerDispatchResult{
 		target: target
 		handled: handled
@@ -5492,6 +5505,11 @@ fn (mut app BrowserApp) handle_click(x f32, y f32) {
 	}
 	app.address_active = false
 	app.address_select = false
+}
+
+// The compact JavaScriptCore bridge remains the page-script backend. Its click
+// listener replay follows the actual DOM pointerup/click dispatch on release.
+fn (mut app BrowserApp) replay_compact_javascript_click(x f32, y f32) {
 	if mut target := app.element_at_window_point(x, y) {
 		for {
 			if target.get_attribute_value('id') != '' {
@@ -5508,16 +5526,41 @@ fn (mut app BrowserApp) handle_click(x f32, y f32) {
 	}
 }
 
+fn browser_pointer_button(button gg.MouseButton) int {
+	return match button { .left { 0 } .middle { 1 } .right { 2 } else { -1 } }
+}
+
+fn browser_pointer_modifiers(modifiers u32) u32 {
+	mut result := u32(0)
+	if modifiers & 1 != 0 { result |= dom.modifier_shift }
+	if modifiers & 2 != 0 { result |= dom.modifier_ctrl }
+	if modifiers & 4 != 0 { result |= dom.modifier_alt }
+	if modifiers & 8 != 0 { result |= dom.modifier_super }
+	return result
+}
+
+fn browser_pointer_button_mask(button int) u32 {
+	return match button { 0 { u32(1) } 1 { u32(4) } 2 { u32(2) } else { u32(0) } }
+}
+
 fn (mut app BrowserApp) handle_event(event &gg.Event) {
+	app.platform_pointer_modifiers = browser_pointer_modifiers(event.modifiers)
 	match event.typ {
 		.mouse_down {
-			result := app.dispatch_chrome_pointer_event_at_viewport_point('pointerdown', int(event.mouse_button), f64(event.mouse_x), f64(event.mouse_y - app.page_top()))
+			button := browser_pointer_button(event.mouse_button)
+			app.platform_pointer_buttons |= browser_pointer_button_mask(button)
+			result := app.dispatch_chrome_pointer_event_at_viewport_point('pointerdown', browser_pointer_button(event.mouse_button), f64(event.mouse_x), f64(event.mouse_y - app.page_top()))
 			// gg follows event_fn with click_fn for mouse-down. Upstream does not
 			// run mousedown default actions when the hit target is browser chrome.
 			app.suppress_next_click_for_chrome = result.target != ''
 		}
 		.mouse_up {
-			_ = app.dispatch_chrome_pointer_event_at_viewport_point('pointerup', int(event.mouse_button), f64(event.mouse_x), f64(event.mouse_y - app.page_top()))
+			button := browser_pointer_button(event.mouse_button)
+			app.platform_pointer_buttons &= ~browser_pointer_button_mask(button)
+			result := app.dispatch_chrome_pointer_event_at_viewport_point('pointerup', browser_pointer_button(event.mouse_button), f64(event.mouse_x), f64(event.mouse_y - app.page_top()))
+			if !result.handled && app.page_model != unsafe { nil } && app.page_model.event_handler.last_click_allowed() && button == 0 {
+				app.replay_compact_javascript_click(event.mouse_x, event.mouse_y)
+			}
 		}
 		.mouse_scroll {
 			delta_x := -f64(event.scroll_x) * 42.0
@@ -5540,7 +5583,7 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 		}
 		.mouse_leave {
 			if app.page_model != unsafe { nil } {
-				app.page_model.event_handler.update_hovered_chrome_widget('')
+				app.page_model.event_handler.handle_mouseleave()
 			}
 			sapp.set_mouse_cursor(.arrow)
 		}

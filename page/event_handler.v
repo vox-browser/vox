@@ -30,6 +30,8 @@ pub enum SelectionMode {
 pub struct InputTarget {
 pub:
 	id                     string
+	node                   ?&dom.Node
+	chrome_widget_id       string
 	is_editable            bool
 	is_focusable           bool
 	is_link                bool
@@ -105,6 +107,15 @@ mut:
 	paint_root_available                 bool = true
 	selection_mode_                      SelectionMode
 	mousedown_target_                    string
+	mousedown_node_                      ?&dom.Node
+	pointed_document_                    ?&dom.Document
+	platform_mouse_button_               u32
+	platform_mouse_position_             PixelPoint
+	platform_mouse_screen_               PixelPoint
+	platform_mouse_buttons_              u32
+	platform_mouse_modifiers_            u32
+	platform_mouse_coordinates_          ?MouseEventCoordinates
+	last_click_allowed_                  bool
 	mousedown_visual_viewport_position_  ?PixelPoint
 	mousedown_click_count                int
 	mousedown_target_is_drag_candidate_  bool
@@ -246,6 +257,7 @@ pub fn (mut handler EventHandler) stop_updating_selection() {
 
 pub fn (mut handler EventHandler) clear_mousedown_tracking() {
 	handler.mousedown_target_ = ''
+	handler.mousedown_node_ = none
 	handler.mousedown_visual_viewport_position_ = none
 	handler.mousedown_click_count = 0
 	handler.mousedown_target_is_drag_candidate_ = false
@@ -267,13 +279,20 @@ pub fn (mut handler EventHandler) handle_mousedown(target ?InputTarget, click_co
 		return .dropped
 	}
 	value := target or { return .dropped }
+	if !input_target_is_enabled(value) { return .dropped }
 	handler.last_known_mouse_target_ = value
 	// Upstream records the press target before pointer-event dispatch. A
 	// cancelled pointerdown therefore still has a corresponding pointerup/click
 	// target, even though compatibility mouse events and default actions are
 	// suppressed.
 	handler.mousedown_target_ = value.id
+	handler.mousedown_node_ = value.node
 	handler.mousedown_click_count = click_count
+	if value.node != none {
+		result := handler.dispatch_a_pointer_event_for_a_device_that_supports_hover('pointerdown', value)
+		if result == .handled { return handler.run_mousedown_default_actions(value) }
+		return result
+	}
 	handler.log('pointerdown', value)
 	if value.cancel_pointer {
 		handler.prevent_mouse_event = true
@@ -300,6 +319,9 @@ pub fn (mut handler EventHandler) handle_mousedown_with_button_and_modifiers(tar
 	if button == 0 {
 		handler.clear_mousedown_tracking()
 	}
+	handler.platform_mouse_button_ = button
+	handler.platform_mouse_position_ = position
+	handler.platform_mouse_modifiers_ = modifiers
 	result := handler.handle_mousedown(target, click_count)
 	if result != .handled {
 		return result
@@ -334,6 +356,8 @@ pub fn (mut handler EventHandler) handle_mouseup(target ?InputTarget) EventResul
 }
 
 pub fn (mut handler EventHandler) handle_mouseup_with_button(target ?InputTarget, button u32) EventResult {
+	handler.platform_mouse_button_ = button
+	handler.last_click_allowed_ = false
 	middle_button_autoscrolled := if middle := handler.middle_button_scroll_handler_ {
 		middle.mouse_has_moved_beyond_dead_zone()
 	} else {
@@ -368,6 +392,12 @@ pub fn (mut handler EventHandler) handle_mouseup_with_button(target ?InputTarget
 			return .dropped
 		}
 		fallback := InputTarget{ id: handler.mousedown_target_ }
+		if document := handler.pointed_document_ {
+			if root := document.document_element() {
+				_ = handler.dispatch_a_pointer_event_for_a_device_that_supports_hover('pointerup', InputTarget.from_node(root.as_node()))
+				return .handled
+			}
+		}
 		handler.log('pointerup', fallback)
 		if !handler.prevent_mouse_event {
 			handler.log('mouseup', fallback)
@@ -376,6 +406,19 @@ pub fn (mut handler EventHandler) handle_mouseup_with_button(target ?InputTarget
 		return .handled
 	}
 	value := target
+	if !input_target_is_enabled(value) { return .dropped }
+	if value.node != none {
+		_ = handler.dispatch_a_pointer_event_for_a_device_that_supports_hover('pointerup', value)
+		if handler.mousedown_target_ == value.id && !middle_button_autoscrolled {
+			handler.last_click_allowed_ = handler.fire_click_events(value) == .handled
+			if handler.last_click_allowed_ && value.chrome_widget_id == '' && !handler.has_captured_chrome_widget() {
+				mut document := (value.node or { return .handled }).document()
+				document.update_layout(.event_handler_run_activation_behavior)
+				_ = handler.run_activation_behavior(value)
+			}
+		}
+		return .handled
+	}
 	handler.log('pointerup', value)
 	if !handler.prevent_mouse_event {
 		handler.log('mouseup', value)
@@ -400,11 +443,16 @@ pub fn (mut handler EventHandler) handle_mousemove(target ?InputTarget, screen P
 	if handler.should_ignore_device_input_event() || !handler.paint_root_available || target == none {
 		return .dropped
 	}
-	handler.previous_screen = screen
+	defer { handler.previous_screen = screen }
+	handler.platform_mouse_screen_ = screen
 	if mut middle := handler.middle_button_scroll_handler_ {
 		middle.update_mouse_position(screen)
 	}
 	value := target or { return .dropped }
+	if !input_target_is_enabled(value) { return .dropped }
+	if value.node != none {
+		return handler.dispatch_a_pointer_event_for_a_device_that_supports_hover('pointermove', value)
+	}
 	if handler.mousedown_target_is_drag_candidate_ {
 		if origin := handler.mousedown_visual_viewport_position_ {
 			delta_x := screen.x - origin.x
@@ -450,6 +498,7 @@ pub fn (mut handler EventHandler) handle_mouseleave() EventResult {
 	handler.update_hovered_chrome_widget('')
 	handler.update_cursor('arrow')
 	if handler.mousedown_target_ == '' {
+		if mut document := handler.pointed_document_ { document.set_hovered_node_with_data(none, none) }
 		handler.log('pointerout', none)
 		handler.log('pointerleave', none)
 		handler.previous_screen = none

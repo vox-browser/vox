@@ -93,6 +93,7 @@ fn init() {
 	install_html_element_activation_behavior()
 	install_custom_element_registry_dom_hooks()
 	dom.install_run_focusing_steps(dom_run_focusing_steps_callback)
+	dom.install_pointer_light_dismiss_callback(platform_pointer_light_dismiss)
 }
 
 fn allocate_task_id() u64 {

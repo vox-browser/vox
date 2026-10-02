@@ -501,6 +501,20 @@ void native_configure_emoji_font(string path_value) {
 	native_emoji_glyph_font = font;
 }
 
+// Convert the embedding view's logical top-left coordinates to the same global
+// top-left screen coordinates used by platform MouseEvent screenX/screenY.
+void native_pointer_screen_position(double x, double y, double *screen_x, double *screen_y) {
+	NSView *view = native_browser_view();
+	if (view == nil || [view window] == nil)
+		return;
+	NSPoint point = NSMakePoint(x, [view isFlipped] ? y : [view bounds].size.height - y);
+	point = [view convertPoint:point toView:nil];
+	point = [[view window] convertPointToScreen:point];
+	NSScreen *primary_screen = [[NSScreen screens] firstObject];
+	*screen_x = point.x;
+	*screen_y = NSMaxY([primary_screen frame]) - point.y;
+}
+
 int native_window_width(void) {
 	return (int)llround([native_browser_view() bounds].size.width);
 }
