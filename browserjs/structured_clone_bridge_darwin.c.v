@@ -102,6 +102,7 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 		8 { kind = .number_object }
 		9 { kind = .string_object }
 		10 { kind = .big_int_object }
+		11 { kind = .date }
 		13 { kind = .map }
 		14 { kind = .set }
 		17 {
@@ -125,6 +126,10 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 			}
 			else {}
 		}
+		return &result
+	}
+	if kind == .date {
+		object.number_data = bridge.number(bridge.engine('date_value', [value])!)!
 		return &result
 	}
 	if kind == .map || kind == .set {
@@ -185,6 +190,7 @@ fn (mut projection NativeCloneProjection) reconstruct(value dom.JSValue) !voidpt
 			integer := object.bigint_data or { return native_clone_unsupported('Missing source boxed BigInt record') }
 			data = projection.adopt_root(owner.javascript_bigint(webidl.bigint_value_for_record(integer))!)
 		}
+		.date { tag = 11; data = C.JSValueMakeNumber(owner.context, object.number_data) }
 		.map { tag = 13 }
 		.set { tag = 14 }
 		.array { tag = 15; data = C.JSValueMakeNumber(owner.context, f64(object.array_length or { u32(object.values.len) })) }
@@ -247,7 +253,7 @@ pub fn (bridge &StructuredCloneBridge) clone(value voidptr) !voidptr {
 // serialization format. The only bytes are the translated source records.
 const structured_clone_projection_intrinsic = r'(function(){
  const apply=Reflect.apply,ownKeys=Reflect.ownKeys,getOwn=Object.getOwnPropertyDescriptor,get=Reflect.get,define=Reflect.defineProperty,create=Object.create,objectPrototype=Object.prototype;
- const O=Object,A=Array,B=Boolean,N=Number,S=String,M=Map,T=Set;
+ const O=Object,A=Array,B=Boolean,N=Number,S=String,M=Map,T=Set,D=Date;
  const bv=B.prototype.valueOf,nv=N.prototype.valueOf,sv=S.prototype.valueOf,iv=BigInt.prototype.valueOf,integerText=BigInt.prototype.toString;
  const dateValue=Date.prototype.getTime,regexSource=getOwn(RegExp.prototype,"source").get;
  const bufferLength=getOwn(ArrayBuffer.prototype,"byteLength").get,isView=ArrayBuffer.isView;
@@ -274,6 +280,7 @@ const structured_clone_projection_intrinsic = r'(function(){
   },
   boxed_value(value,tag){return apply(tag===7?bv:tag===8?nv:tag===9?sv:iv,value,[])},
   bigint_text(value){return apply(integerText,value,[])},
+  date_value(value){return apply(dateValue,value,[])},
   map_snapshot(value){const list=[];apply(mapEach,value,[function(item,key){append(list,[key,item])}]);return list},
   set_snapshot(value){const list=[];apply(setEach,value,[function(item){append(list,item)}]);return list},
   enumerable_keys(value){const list=[],keys=ownKeys(value);for(let index=0;index<keys.length;++index){const key=keys[index];if(typeof key==="string"){const descriptor=getOwn(value,key);if(descriptor!==undefined&&descriptor.enumerable)append(list,key)}}return list},
@@ -282,7 +289,7 @@ const structured_clone_projection_intrinsic = r'(function(){
   array_length(value){return get(value,"length",value)},
   list_length(list){return list.length},
   list_item(list,index){return list[index]},
-  create(tag,data){if(tag===7)return new B(data);if(tag===8)return new N(data);if(tag===9)return new S(data);if(tag===10)return O(data);if(tag===13)return new M();if(tag===14)return new T();if(tag===15)return new A(data);return create(data?null:objectPrototype)},
+  create(tag,data){if(tag===7)return new B(data);if(tag===8)return new N(data);if(tag===9)return new S(data);if(tag===10)return O(data);if(tag===11)return new D(data);if(tag===13)return new M();if(tag===14)return new T();if(tag===15)return new A(data);return create(data?null:objectPrototype)},
   map_insert(value,key,item){return apply(mapSet,value,[key,item])},
   set_insert(value,item){return apply(setAdd,value,[item])},
   define(value,key,item){return define(value,key,{value:item,writable:true,enumerable:true,configurable:true})}
