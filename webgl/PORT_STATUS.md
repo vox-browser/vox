@@ -89,6 +89,20 @@ WebGL2 declarations below are explicitly `[FIXME]` at pinned commit
 They are upstream unavailable operations, distinct from remaining translation
 work on implemented source bodies.
 
+`xr_operations.v` translates the executed `make_xr_compatible` branches in
+`WebGLRenderingContextBase.cpp:395-462`: deferred context-loss/compatibility
+selection, a separate Unspecified settlement task, source InvalidStateError,
+and a fresh owning-realm Promise. `html/webgl_xr_operations.v` supplies the
+owning HTML loop and the source callbacks-enabled temporary execution context.
+The source platform deferred invocation is adapted to an owning-loop task;
+Promise reactions remain owning-loop microtasks. The two focused owning-loop
+cases passed with GC disabled. Permissions policy and immersive-device
+selection remain the pinned source TODOs; its assumed compatible adapter is
+preserved and does not establish WebXR device support. The synchronous
+`context.v` compatibility helper remains a DTO API; it does not supply the
+asynchronous public operation. The actual JavaScript Promise binding is still
+pending for this operation.
+
 | Upstream unavailable operation | Source declaration under `Libraries/LibWeb/WebGL/` |
 | --- | --- |
 | Numeric PBO texImage2D / texSubImage2D | `WebGL2RenderingContextOverloads.idl:24`, `:31` |
