@@ -2284,3 +2284,20 @@ heads, manifests, log hashes and supplemental-run limits are recorded in
 Math.random now obtains its two constructor seeds from the Source operating-system CSPRNG rather than the default V PRNG (`ce231a42`). Existing splitmix/xorshift and 53-bit projection remain Source translations. The unchanged pinned native bodies match 48 exact outputs and the native two-draw ABI at both optimization levels; focused default and production GC-none Math checks pass. Platform execution and static-initialization limits are recorded in [Math Source entropy](../docs/translation-audit/MATH_RANDOM_SOURCE_ENTROPY.md).
 
 Frozen Math entropy revision `1226f3e4` passes **234/234 LibJS files in both GC modes and all 100 exact AST cases**. The entire 4417-file tracked checkout remained byte-identical; all 490 non-Markdown LibJS files matched canonical at recording. Exact manifest/revision/log evidence and remaining runtime limits are in [verification](../docs/translation-audit/LIBJS_MATH_ENTROPY_VERIFICATION.md).
+
+## Audit fix: Object private elements
+
+`object_private.v` translates `Runtime/Object.cpp`'s PrivateElementFind,
+PrivateFieldAdd, PrivateMethodOrAccessorAdd, PrivateGet and PrivateSet bodies.
+Private storage retains identity by PrivateName, stays separate from ordinary
+properties, calls the existing VM host hook before duplicate validation, and
+passes the owning object and setter argument through native Call. Reference
+now represents the private-name alternative, MakePrivateReference resolves the
+running context's private environment, and GetValue/PutValue dispatch to the
+private storage. Focused tests cover duplicate and missing names, distinct
+environments, frozen receivers, inaccessible inherited fields, accessor
+receivers, missing callbacks, abrupt completion and host-hook ordering.
+
+Class/function execution, private-expression bytecode generation, DefineField,
+InitializeInstanceElements, Proxy, eval and disposable-resource algorithms
+remain pending; this slice does not close the whole JS-05 finding.
