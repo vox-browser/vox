@@ -104,6 +104,17 @@ static int vox_gl_get_sync_parameter(void* sync, unsigned pname)
     return result;
 }
 static unsigned vox_gl_get_error(void) { return glGetError(); }
+static int vox_gl_is_object(int kind, unsigned handle) {
+    switch (kind) {
+    case 0: return glIsBuffer(handle);
+    case 1: return glIsFramebuffer(handle);
+    case 2: return glIsRenderbuffer(handle);
+    case 3: return glIsTexture(handle);
+    case 9: return glIsShader(handle);
+    case 10: return glIsProgram(handle);
+    default: return GL_FALSE;
+    }
+}
 static char const* vox_gl_string(unsigned name) { return (char const*)glGetString(name); }
 static void vox_gl_request_extension(char const* name) { glRequestExtensionANGLE(name); }
 static void vox_egl_free_surface(void* handle)

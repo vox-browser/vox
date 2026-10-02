@@ -526,8 +526,9 @@ pub fn (mut context WebGLRenderingContext) delete_buffer(buffer ?&WebGLBuffer) {
 
 pub fn (mut context WebGLRenderingContext) is_buffer(buffer ?&WebGLBuffer) bool {
 	value := buffer or { return false }
-	handle := context.object_handle_for_query(&value.object) or { return false }
-	return handle in context.buffers
+	context.object_handle_for_query(&value.object) or { return false }
+	context.native.make_current()
+	return C.vox_gl_is_object(0,value.object.native_handle_) == 1
 }
 
 pub fn (mut context WebGLRenderingContext) shader_source(mut shader WebGLShader, source string) {

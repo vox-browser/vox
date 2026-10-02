@@ -52,6 +52,8 @@ fn test_object_generation_invalidates_pre_loss_wrappers() {
 	new_buffer := context.create_buffer()
 	assert new_buffer.object.context_generation == 1
 	assert new_buffer.object.handle_ != old_handle
+	assert !context.is_buffer(new_buffer)
+	context.bind_buffer(array_buffer,new_buffer)
 	assert context.is_buffer(new_buffer)
 }
 

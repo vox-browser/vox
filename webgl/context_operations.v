@@ -1037,32 +1037,37 @@ pub fn (mut context WebGLRenderingContext) get_vertex_attrib_offset(index GLuint
 
 pub fn (mut context WebGLRenderingContext) is_framebuffer(value ?&WebGLFramebuffer) bool {
 	object := value or { return false }
-	handle := context.object_handle_for_query(&object.object) or { return false }
-	return handle in context.framebuffers
+	context.object_handle_for_query(&object.object) or { return false }
+	context.native.make_current()
+	return C.vox_gl_is_object(1,object.object.native_handle_) == 1
 }
 
 pub fn (mut context WebGLRenderingContext) is_renderbuffer(value ?&WebGLRenderbuffer) bool {
 	object := value or { return false }
-	handle := context.object_handle_for_query(&object.object) or { return false }
-	return handle in context.renderbuffers
+	context.object_handle_for_query(&object.object) or { return false }
+	context.native.make_current()
+	return C.vox_gl_is_object(2,object.object.native_handle_) == 1
 }
 
 pub fn (mut context WebGLRenderingContext) is_texture(value ?&WebGLTexture) bool {
 	object := value or { return false }
-	handle := context.object_handle_for_query(&object.object) or { return false }
-	return handle in context.textures
+	context.object_handle_for_query(&object.object) or { return false }
+	context.native.make_current()
+	return C.vox_gl_is_object(3,object.object.native_handle_) == 1
 }
 
 pub fn (mut context WebGLRenderingContext) is_shader(value ?&WebGLShader) bool {
 	object := value or { return false }
-	handle := context.object_handle_for_query(&object.object) or { return false }
-	return handle in context.shaders
+	context.object_handle_for_query(&object.object) or { return false }
+	context.native.make_current()
+	return C.vox_gl_is_object(9,object.object.native_handle_) == 1
 }
 
 pub fn (mut context WebGLRenderingContext) is_program(value ?&WebGLProgram) bool {
 	object := value or { return false }
-	handle := context.object_handle_for_query(&object.object) or { return false }
-	return handle in context.programs
+	context.object_handle_for_query(&object.object) or { return false }
+	context.native.make_current()
+	return C.vox_gl_is_object(10,object.object.native_handle_) == 1
 }
 
 pub fn (mut context WebGLRenderingContext) line_width(width f32) {
