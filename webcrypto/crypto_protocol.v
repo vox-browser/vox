@@ -27,17 +27,23 @@ pub fn hash_algorithm_identifier_from_value(value json2.Any) !HashAlgorithmIdent
 		name = value
 	} else if value is map[string]json2.Any {
 		object := value as map[string]json2.Any
-		name_value := object['name'] or { return error('TypeError: Algorithm has no name') }
-		if name_value !is string {
-			return error('TypeError: Algorithm name is not a string')
+		if 'name' !in object {
+			return error('TypeError: Not an object of type Algorithm')
 		}
-		name = name_value as string
+		name = algorithm_js_string(object, 'name')!
 	} else {
 		return error('TypeError: Algorithm identifier must be a string or object')
 	}
-	return HashAlgorithmIdentifier{
-		name_: normalize_an_algorithm(name, 'digest')!
+	normalized := normalize_an_algorithm(name, 'digest')!
+	if normalized in ['cSHAKE128', 'cSHAKE256'] {
+		dictionary := if value is map[string]json2.Any {
+			json2.Any(value)
+		} else {
+			json2.Any({'name': json2.Any(name)})
+		}
+		_ = CShakeParams.from_value(dictionary)!
 	}
+	return HashAlgorithmIdentifier{ name_: normalized }
 }
 
 fn algorithm_object(value json2.Any) !map[string]json2.Any {
@@ -47,17 +53,20 @@ fn algorithm_object(value json2.Any) !map[string]json2.Any {
 	return value as map[string]json2.Any
 }
 
-fn optional_algorithm_string(object map[string]json2.Any, key string) ?string {
-	value := object[key] or { return none }
-	if value is string {
-		return value
-	}
-	return none
-}
-
-fn required_algorithm_string(object map[string]json2.Any, key string) !string {
-	return optional_algorithm_string(object, key) or {
-		error('TypeError: ${key} must be a string')
+// EC parameter dictionaries read namedCurve with JS ToString, including
+// omitted/undefined values; the actual curve check occurs in the operation.
+fn algorithm_js_string(object map[string]json2.Any, key string) !string {
+	value := object[key] or { return 'undefined' }
+	return match value {
+		string { value }
+		i8, i16, i32, int, i64, u8, u16, u32, u64, f32, f64 {
+			webidl.to_string(webidl.number_value(f64(value)))!
+		}
+		bool { webidl.to_string(webidl.boolean_value(value))! }
+		json2.Null { 'null' }
+		else {
+			return error('TypeError: ${key} cannot be converted to a string by this value boundary')
+		}
 	}
 }
 
@@ -244,7 +253,7 @@ pub fn EcKeyGenParams.from_value(value json2.Any) !EcKeyGenParams {
 	object := algorithm_object(value)!
 	return EcKeyGenParams{
 		name: ''
-		named_curve: required_algorithm_string(object, 'namedCurve')!
+		named_curve: algorithm_js_string(object, 'namedCurve')!
 	}
 }
 
@@ -252,7 +261,7 @@ pub fn EcKeyImportParams.from_value(value json2.Any) !EcKeyImportParams {
 	object := algorithm_object(value)!
 	return EcKeyImportParams{
 		name: ''
-		named_curve: required_algorithm_string(object, 'namedCurve')!
+		named_curve: algorithm_js_string(object, 'namedCurve')!
 	}
 }
 

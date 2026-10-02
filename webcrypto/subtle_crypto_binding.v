@@ -193,8 +193,11 @@ fn normalize_binding_algorithm(algorithm webidl.Value, operation string) !Normal
 		algorithm
 	}
 	if value.kind != .object { return error('TypeError: Algorithm must be an object or string') }
-	initial_name := value.object_value['name'] or { return error('TypeError: Algorithm has no name') }
-	if initial_name.kind == .undefined { return error('TypeError: Algorithm has no name') }
+	initial_name := value.object_value['name'] or { return error('TypeError: Not an object of type Algorithm') }
+	if initial_name.kind == .undefined { return error('TypeError: Not an object of type Algorithm') }
+	if initial_name.kind !in [.null_, .boolean, .number, .string_, .bigint] {
+		return error('TypeError: name cannot be converted to a string by this value boundary')
+	}
 	name := normalize_an_algorithm(webidl.to_string(initial_name)!, operation)!
 	// BufferSource fields are converted before the deferred operation and copied
 	// through get_buffer_source_copy, including offset DataView/TypedArray views.
@@ -204,8 +207,24 @@ fn normalize_binding_algorithm(algorithm webidl.Value, operation string) !Normal
             if (name in ['Argon2d', 'Argon2i', 'Argon2id'] && field in ['nonce', 'parallelism', 'memory', 'passes']) || field == 'outputLength' {
                 return error('TypeError: Required property ${field} is missing or undefined')
             }
+            if field == 'hash' { return error('TypeError: hash is required') }
             if field == 'publicExponent' { return error('TypeError: Not an object of type Uint8Array') }
             if field in ['iv', 'counter', 'salt', 'info'] { return error('TypeError: Not an object of type BufferSource') }
+            continue
+        }
+        if field == 'namedCurve' {
+            if property.kind !in [.undefined, .null_, .boolean, .number, .string_, .bigint] {
+                return error('TypeError: namedCurve cannot be converted to a string by this value boundary')
+            }
+            object[field] = webidl.to_string(property)!
+            continue
+        }
+        if field == 'hash' {
+            // Normalize the nested digest at its source read position, before
+            // later numeric/buffer fields. Preserve its copied dictionary for
+            // the parameter body, including cSHAKE required fields.
+            _ = normalize_binding_algorithm(property, 'digest')!
+            object[field] = binding_value_to_json(property)!
             continue
         }
         if field in ['parallelism', 'memory', 'passes', 'version', 'outputLength'] {
