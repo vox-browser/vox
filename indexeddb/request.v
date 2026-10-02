@@ -38,7 +38,7 @@ pub mut:
 	keys          []Key
 	count         u64
 	records       []IDBRecord
-	cursor        &IDBCursor = unsafe { nil }
+	cursor        &IDBCursor   = unsafe { nil }
 	database      &IDBDatabase = unsafe { nil }
 	error_message string
 	events        []string
@@ -56,7 +56,7 @@ pub fn IDBRequest.create(source_name string) &IDBRequest {
 
 pub fn IDBRequest.create_for_global_scope(global_scope &IndexedDBGlobalScope, source_name string) &IDBRequest {
 	return &IDBRequest{
-		source_name: source_name
+		source_name:  source_name
 		global_scope: global_scope
 	}
 }
@@ -104,16 +104,19 @@ fn (mut request IDBRequest) fail(message string) {
 
 @[heap]
 pub struct IDBOpenDBRequest {
+mut:
+	queue_ &RequestList = unsafe { nil }
 pub mut:
-	request             &IDBRequest
-	factory             &IDBFactory = unsafe { nil }
-	database_name       string
-	connection          &IDBDatabase = unsafe { nil }
-	old_version         u64
-	new_version         ?u64
-	upgrade_transaction &IDBTransaction = unsafe { nil }
-	onblocked_          ?IDBEventHandler
-	onupgradeneeded_    ?IDBEventHandler
+	request               &IDBRequest
+	factory               &IDBFactory = unsafe { nil }
+	database_name         string
+	connection            &IDBDatabase = unsafe { nil }
+	old_version           u64
+	new_version           ?u64
+	upgrade_transaction   &IDBTransaction = unsafe { nil }
+	version_change_events []IDBVersionChangeEvent
+	onblocked_            ?IDBEventHandler
+	onupgradeneeded_      ?IDBEventHandler
 }
 
 pub struct IDBVersionChangeEvent {
@@ -127,7 +130,7 @@ pub:
 
 pub fn new_version_change_event(type_ string, old_version u64, new_version ?u64) IDBVersionChangeEvent {
 	return IDBVersionChangeEvent{
-		type_: type_
+		type_:       type_
 		old_version: old_version
 		new_version: new_version
 	}

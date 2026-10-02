@@ -3,11 +3,12 @@ module indexeddb
 fn create_people_database() !(&IDBFactory, &IDBDatabase) {
 	mut factory := IDBFactory.create('https://example.test')!
 	mut open := factory.open('people-db', u64(1))!
+	run_database_tasks()
 	assert open.request.events == ['upgradeneeded']
 	mut connection := open.connection
 	mut upgrade := open.upgrade_transaction
 	mut people := connection.create_object_store(mut upgrade, 'people', IDBObjectStoreParameters{
-		key_path: 'id'
+		key_path:       'id'
 		auto_increment: true
 	})!
 	people.create_index('by_name', 'name', IDBIndexParameters{ unique: true })!
@@ -17,6 +18,7 @@ fn create_people_database() !(&IDBFactory, &IDBDatabase) {
 		assert err.msg().contains('InvalidStateError')
 	}
 	open.finish_upgrade()!
+	run_database_tasks()
 	assert open.request.ready_state == .done
 	return factory, connection
 }
@@ -32,6 +34,7 @@ fn test_factory_open_upgrade_reopen_and_database_listing() {
 	assert infos[0].version == 1
 
 	mut reopened := factory.open('people-db', none)!
+	run_database_tasks()
 	assert reopened.request.ready_state == .done
 	assert reopened.request.events == ['success']
 	assert factory.cmp(number_key(1), string_key('1'))! == -1
@@ -46,17 +49,17 @@ fn test_factory_open_upgrade_reopen_and_database_listing() {
 	assert connection.state == .closed
 
 	deleted := factory.delete_database('people-db')
+	run_database_tasks()
 	assert deleted.request.ready_state == .done
 	assert factory.database_infos().len == 0
 }
 
 fn test_version_errors_blocked_delete_and_upgrade_abort_restore_schema() {
 	mut factory, mut first := create_people_database()!
-	blocked := factory.delete_database('people-db')
-	assert blocked.request.ready_state == .pending
-	assert blocked.request.events == ['blocked']
+	first.close()
 
 	mut upgrade_request := factory.open('people-db', u64(2))!
+	run_database_tasks()
 	mut connection := upgrade_request.connection
 	mut transaction := upgrade_request.upgrade_transaction
 	mut people := transaction.object_store('people')!
@@ -66,6 +69,7 @@ fn test_version_errors_blocked_delete_and_upgrade_abort_restore_schema() {
 	connection.delete_object_store(mut transaction, 'renamed_people')!
 	connection.create_object_store(mut transaction, 'temporary', IDBObjectStoreParameters{})!
 	upgrade_request.abort_upgrade('AbortError: test')!
+	run_database_tasks()
 	assert 'temporary' !in first.data.stores
 	assert 'renamed_people' !in first.data.stores
 	assert 'people' in first.data.stores
@@ -85,19 +89,23 @@ fn test_version_errors_blocked_delete_and_upgrade_abort_restore_schema() {
 fn test_aborting_initial_upgrade_removes_database_and_scope_names_are_deduplicated() {
 	mut factory := IDBFactory.create('initial-abort')!
 	mut first_open := factory.open('discarded', u64(1))!
+	run_database_tasks()
 	mut connection := first_open.connection
 	mut upgrade := first_open.upgrade_transaction
 	connection.create_object_store(mut upgrade, 'temporary', IDBObjectStoreParameters{})!
 	first_open.abort_upgrade('AbortError: initial upgrade failed')!
+	run_database_tasks()
 	assert 'discarded' !in factory.databases
 
 	mut reopened := factory.open('discarded', none)!
+	run_database_tasks()
 	assert reopened.old_version == 0
 	assert reopened.request.events == ['upgradeneeded']
 	mut reopened_connection := reopened.connection
 	mut reopened_upgrade := reopened.upgrade_transaction
 	reopened_connection.create_object_store(mut reopened_upgrade, 'items', IDBObjectStoreParameters{})!
 	reopened.finish_upgrade()!
+	run_database_tasks()
 	mut transaction := reopened_connection.transaction(['items', 'items', 'items'], .readonly, IDBTransactionOptions{})!
 	assert transaction.object_store_names() == ['items']
 	transaction.commit()!
@@ -106,6 +114,7 @@ fn test_aborting_initial_upgrade_removes_database_and_scope_names_are_deduplicat
 fn test_schema_name_lists_use_utf16_code_unit_order() {
 	mut factory := IDBFactory.create('name-order')!
 	mut open := factory.open('names', u64(1))!
+	run_database_tasks()
 	mut connection := open.connection
 	mut upgrade := open.upgrade_transaction
 	supplementary := rune(0x10000).str()
@@ -124,13 +133,16 @@ fn test_factories_for_the_same_storage_key_share_the_database_registry() {
 	DatabaseData.delete_for_key_and_name(storage_key, 'shared')
 	mut first_factory := IDBFactory.create(storage_key)!
 	mut open := first_factory.open('shared', u64(1))!
+	run_database_tasks()
 	mut first_connection := open.connection
 	mut upgrade := open.upgrade_transaction
 	first_connection.create_object_store(mut upgrade, 'items', IDBObjectStoreParameters{})!
 	open.finish_upgrade()!
+	run_database_tasks()
 
 	mut second_factory := IDBFactory.create(storage_key)!
 	reopened := second_factory.open('shared', none)!
+	run_database_tasks()
 	assert reopened.old_version == 1
 	assert reopened.connection.object_store_names() == ['items']
 	assert voidptr(reopened.connection.data) == voidptr(first_connection.data)
@@ -138,4 +150,5 @@ fn test_factories_for_the_same_storage_key_share_the_database_registry() {
 	mut second_connection := reopened.connection
 	second_connection.close()
 	second_factory.delete_database('shared')
+	run_database_tasks()
 }

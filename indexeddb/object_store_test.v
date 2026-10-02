@@ -12,14 +12,16 @@ fn object_store_test_database() !(&IDBFactory, &IDBDatabase) {
 	DatabaseData.delete_for_key_and_name(storage_key, 'people-db')
 	mut factory := IDBFactory.create(storage_key)!
 	mut open := factory.open('people-db', u64(1))!
+	run_database_tasks()
 	mut connection := open.connection
 	mut upgrade := open.upgrade_transaction
 	mut people := connection.create_object_store(mut upgrade, 'people', IDBObjectStoreParameters{
-		key_path: 'id'
+		key_path:       'id'
 		auto_increment: true
 	})!
 	people.create_index('by_name', 'name', IDBIndexParameters{ unique: true })!
 	open.finish_upgrade()!
+	run_database_tasks()
 	return factory, connection
 }
 
@@ -59,10 +61,12 @@ fn test_object_store_add_put_get_delete_and_key_generator() {
 fn test_out_of_line_keys_ranges_order_and_structured_clone() {
 	mut factory := IDBFactory.create('partition')!
 	mut open := factory.open('db', u64(1))!
+	run_database_tasks()
 	mut connection := open.connection
 	mut upgrade := open.upgrade_transaction
 	connection.create_object_store(mut upgrade, 'items', IDBObjectStoreParameters{})!
 	open.finish_upgrade()!
+	run_database_tasks()
 	mut transaction := connection.transaction(['items'], .readwrite, IDBTransactionOptions{})!
 	mut store := transaction.object_store('items')!
 	mut original := object_value({

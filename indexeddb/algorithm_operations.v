@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // IndexedDB algorithms from Internal/Algorithms.cpp. Browser task dispatch is
-// synchronous at this standalone boundary, while request state transitions and
-// record ordering remain identical to the translated storage operations.
+// queued at the standalone event-loop boundary; the embedding advances them
+// with run_database_tasks(), preserving database task order.
 @[has_globals]
 module indexeddb
 
@@ -19,6 +19,7 @@ pub fn open_a_database_connection(mut factory IDBFactory, name string, version ?
 pub fn fire_a_version_change_event(mut connection IDBDatabase, old_version u64, new_version ?u64) IDBVersionChangeEvent {
 	event := IDBVersionChangeEvent.create('versionchange', old_version, new_version)
 	connection.events << 'versionchange'
+	connection.version_change_events << event
 	if callback := connection.onversionchange_ {
 		callback()
 	}
@@ -204,7 +205,7 @@ pub fn resolve_database_info_list_promise(databases []&DatabaseData) []IDBDataba
 			continue
 		}
 		result << IDBDatabaseInfo{
-			name: database.name
+			name:    database.name
 			version: database.version
 		}
 	}
@@ -304,8 +305,28 @@ pub fn retrieve_multiple_values_from_an_index(index &IndexData, range IDBKeyRang
 	return index.first_n_in_range(range, count).map(it.primary_key.clone())
 }
 
+__global (
+	indexeddb_database_tasks = []DatabaseTask{}
+)
+
 pub fn queue_a_database_task(task DatabaseTask) {
+	indexeddb_database_tasks << task
+}
+
+// One database task, corresponding to an event-loop task-source dispatch.
+pub fn run_next_database_task() bool {
+	if indexeddb_database_tasks.len == 0 {
+		return false
+	}
+	task := indexeddb_database_tasks[0]
+	indexeddb_database_tasks.delete(0)
 	task()
+	return true
+}
+
+pub fn run_database_tasks() {
+	for run_next_database_task() {
+	}
 }
 
 pub fn cleanup_indexed_database_transactions(mut database IDBDatabase) {

@@ -5,14 +5,16 @@ fn cursor_test_database() !(&IDBFactory, &IDBDatabase) {
 	DatabaseData.delete_for_key_and_name(storage_key, 'people-db')
 	mut factory := IDBFactory.create(storage_key)!
 	mut open := factory.open('people-db', u64(1))!
+	run_database_tasks()
 	mut connection := open.connection
 	mut upgrade := open.upgrade_transaction
 	mut people := connection.create_object_store(mut upgrade, 'people', IDBObjectStoreParameters{
-		key_path: 'id'
+		key_path:       'id'
 		auto_increment: true
 	})!
 	people.create_index('by_name', 'name', IDBIndexParameters{ unique: true })!
 	open.finish_upgrade()!
+	run_database_tasks()
 	return factory, connection
 }
 
@@ -26,6 +28,7 @@ fn cursor_person(name string, age f64) Value {
 fn test_index_queries_unique_multi_entry_and_rename() {
 	mut factory := IDBFactory.create('index-test')!
 	mut open := factory.open('db', u64(1))!
+	run_database_tasks()
 	mut connection := open.connection
 	mut upgrade := open.upgrade_transaction
 	if _ := connection.create_object_store(mut upgrade, 'invalid', IDBObjectStoreParameters{
@@ -44,6 +47,7 @@ fn test_index_queries_unique_multi_entry_and_rename() {
 		assert err.msg().contains('SyntaxError')
 	}
 	open.finish_upgrade()!
+	run_database_tasks()
 
 	mut write := connection.transaction(['books'], .readwrite, IDBTransactionOptions{})!
 	mut store := write.object_store('books')!
@@ -96,10 +100,12 @@ fn test_cursor_iteration_advance_update_delete_and_primary_key() {
 fn test_cursor_continuation_reads_the_live_sorted_source() {
 	mut factory := IDBFactory.create('live-cursor-source')!
 	mut open := factory.open('db', u64(1))!
+	run_database_tasks()
 	mut connection := open.connection
 	mut upgrade := open.upgrade_transaction
 	connection.create_object_store(mut upgrade, 'items', IDBObjectStoreParameters{})!
 	open.finish_upgrade()!
+	run_database_tasks()
 	mut transaction := connection.transaction(['items'], .readwrite, IDBTransactionOptions{})!
 	mut store := transaction.object_store('items')!
 	store.add(string_value('one'), number_key(1))!
@@ -165,6 +171,7 @@ fn test_cursor_validation_continue_primary_key_and_key_only_mutations() {
 fn test_cursor_rejects_deleted_source() {
 	mut factory := IDBFactory.create('deleted-cursor-source')!
 	mut open := factory.open('db', u64(1))!
+	run_database_tasks()
 	mut connection := open.connection
 	mut upgrade := open.upgrade_transaction
 	mut store := connection.create_object_store(mut upgrade, 'items', IDBObjectStoreParameters{})!
@@ -182,6 +189,7 @@ fn test_cursor_rejects_deleted_source() {
 		assert err.msg().contains('InvalidStateError')
 	}
 	open.finish_upgrade()!
+	run_database_tasks()
 }
 
 fn test_request_list_and_version_change_event() {
@@ -220,9 +228,11 @@ fn test_request_list_serializes_steps_and_honors_blocking_and_completion_callbac
 	assert first.ready_state == .pending
 	assert second.ready_state == .pending
 	list.unblock_execution()
+	run_database_tasks()
 	assert first.ready_state == .done
 	assert second.ready_state == .pending
 	list.on_request_processed()
+	run_database_tasks()
 	assert second.ready_state == .done
 	assert list.requests() == [first, second]
 	list.set_on_all_processed(observe_all_processed)

@@ -16,6 +16,7 @@ mut:
 	dispatched bool
 }
 
+@[heap]
 pub struct RequestList {
 mut:
 	entries          []RequestListEntry
@@ -40,7 +41,7 @@ pub fn (mut list RequestList) append(request &IDBRequest) {
 		return
 	}
 	list.entries << RequestListEntry{
-		request: request
+		request:    request
 		dispatched: true
 	}
 }
@@ -48,7 +49,7 @@ pub fn (mut list RequestList) append(request &IDBRequest) {
 pub fn (mut list RequestList) enqueue(request &IDBRequest, steps RequestSteps) {
 	list.entries << RequestListEntry{
 		request: request
-		steps: steps
+		steps:   steps
 	}
 	list.maybe_process_next_request()
 }
@@ -68,7 +69,10 @@ pub fn (mut list RequestList) maybe_process_next_request() {
 		entry.steps = none
 		entry.dispatched = true
 		mut request := unsafe { &IDBRequest(entry.request) }
-		steps(mut request)
+		queue_a_database_task(fn [steps, request] () {
+			mut queued_request := unsafe { &IDBRequest(request) }
+			steps(mut queued_request)
+		})
 		return
 	}
 }

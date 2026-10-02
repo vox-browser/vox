@@ -8,6 +8,7 @@ fn test_relevant_global_context_propagates_through_indexeddb_handles() {
 	assert factory.relevant_settings_object() == global_scope
 
 	mut open := factory.open('global-database', u64(1))!
+	run_database_tasks()
 	mut connection := open.connection
 	mut upgrade := open.upgrade_transaction
 	mut store := connection.create_object_store(mut upgrade, 'items', IDBObjectStoreParameters{
@@ -24,6 +25,7 @@ fn test_relevant_global_context_propagates_through_indexeddb_handles() {
 	assert index.key_path_value()!.text == 'name'
 	assert store.key_path_value().text == 'id'
 	open.finish_upgrade()!
+	run_database_tasks()
 
 	mut transaction := connection.transaction(['items'], .readwrite, IDBTransactionOptions{})!
 	mut transaction_store := transaction.object_store('items')!

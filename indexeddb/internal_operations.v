@@ -9,10 +9,11 @@ module indexeddb
 
 __global (
 	indexeddb_database_registry = map[string]&DatabaseData{}
+	indexeddb_connection_queues = map[string]&RequestList{}
 )
 
 fn database_registry_key(storage_key string, name string) string {
-	return '${storage_key}\n${name}'
+	return '${storage_key.len}:${storage_key}${name}'
 }
 
 pub fn idb_databases() map[string]&DatabaseData {
@@ -29,7 +30,7 @@ pub fn DatabaseData.for_each_database(visitor DatabaseVisitor) {
 
 pub fn DatabaseData.create(name string) &DatabaseData {
 	return &DatabaseData{
-		name: name
+		name:   name
 		stores: map[string]&ObjectStoreData{}
 	}
 }
@@ -58,9 +59,9 @@ pub fn DatabaseData.create_for_key_and_name(storage_key string, name string) &Da
 		return existing
 	}
 	database := &DatabaseData{
-		name: name
+		name:        name
 		storage_key: storage_key
-		stores: map[string]&ObjectStoreData{}
+		stores:      map[string]&ObjectStoreData{}
 	}
 	indexeddb_database_registry[key] = database
 	return database
@@ -86,8 +87,26 @@ pub fn (database &DatabaseData) wait_for_connections_to_close() bool {
 	return database.associated_connections.all(it.state == .closed)
 }
 
-pub fn (database &DatabaseData) check_pending_connection_wait() bool {
-	return database.wait_for_connections_to_close()
+pub fn (mut database DatabaseData) check_pending_connection_wait() bool {
+	wait := database.pending_connection_wait_ or { return true }
+	if !wait.connections.all(it.state == .closed) {
+		return false
+	}
+	database.pending_connection_wait_ = none
+	queue_a_database_task(wait.callback)
+	return true
+}
+
+fn (mut database DatabaseData) wait_for_connection_set_to_close(connections []&IDBDatabase, callback DatabaseTask) {
+	if connections.all(it.state == .closed) {
+		queue_a_database_task(callback)
+		return
+	}
+	assert database.pending_connection_wait_ == none
+	database.pending_connection_wait_ = PendingConnectionWait{
+		connections: connections.clone()
+		callback:    callback
+	}
 }
 
 pub fn (mut database DatabaseData) set_version(version u64) {
@@ -164,17 +183,23 @@ pub fn ConnectionQueueHandler.the() ConnectionQueueHandler {
 	return ConnectionQueueHandler{}
 }
 
-pub fn (handler ConnectionQueueHandler) for_key_and_name(storage_key string, name string) ?&DatabaseData {
+pub fn (handler ConnectionQueueHandler) for_key_and_name(storage_key string, name string) &RequestList {
 	_ = handler
-	return DatabaseData.for_key_and_name(storage_key, name)
+	key := database_registry_key(storage_key, name)
+	if queue := indexeddb_connection_queues[key] {
+		return queue
+	}
+	queue := &RequestList{}
+	indexeddb_connection_queues[key] = queue
+	return queue
 }
 
 pub fn ObjectStoreData.create(name string, auto_increment bool, key_path ?KeyPath) &ObjectStoreData {
 	return &ObjectStoreData{
-		name: name
-		key_path: key_path
+		name:           name
+		key_path:       key_path
 		auto_increment: auto_increment
-		indexes: map[string]&IndexData{}
+		indexes:        map[string]&IndexData{}
 	}
 }
 
@@ -227,7 +252,7 @@ pub fn (mut store ObjectStoreData) store_a_record(record ObjectStoreRecord) ! {
 	}
 	position := first_record_index_with_key_at_or_after(store.records, record.key, false)
 	store.records.insert(position, ObjectStoreRecord{
-		key: record.key
+		key:   record.key
 		value: record.value
 	})
 }
@@ -586,23 +611,23 @@ pub fn (log &MutationLog) append_changes(database_name string, object_store_name
 		match entry.kind {
 			.object_store_created {
 				changes.added << TransactionChange{
-					database_name: database_name
+					database_name:     database_name
 					object_store_name: object_store_name
 				}
 			}
 			.object_store_deleted {
 				changes.deleted << TransactionChange{
-					database_name: database_name
+					database_name:     database_name
 					object_store_name: object_store_name
 				}
 			}
 			.object_store_renamed {
 				changes.deleted << TransactionChange{
-					database_name: database_name
+					database_name:     database_name
 					object_store_name: entry.old_name
 				}
 				changes.added << TransactionChange{
-					database_name: database_name
+					database_name:     database_name
 					object_store_name: object_store_name
 				}
 			}
@@ -622,7 +647,8 @@ pub fn (log &MutationLog) append_changes(database_name string, object_store_name
 					stored_keys << entry.key
 				}
 			}
-			.index_created, .index_deleted, .index_renamed, .key_generator_changed, .index_records_deleted, .index_record_stored {
+			.index_created, .index_deleted, .index_renamed, .key_generator_changed,
+			.index_records_deleted, .index_record_stored {
 			}
 		}
 	}
@@ -650,9 +676,9 @@ fn remove_mutation_key(mut keys []Key, key Key) bool {
 
 fn transaction_change_for_key(database_name string, object_store_name string, key Key) TransactionChange {
 	return TransactionChange{
-		database_name: database_name
+		database_name:     database_name
 		object_store_name: object_store_name
-		key: serialize_key_for_inspection(key)
+		key:               serialize_key_for_inspection(key)
 	}
 }
 
@@ -779,7 +805,7 @@ pub fn (list &RequestList) begin() RequestIterator {
 pub fn (list &RequestList) end() RequestIterator {
 	return RequestIterator{
 		requests: list.requests()
-		index: list.length()
+		index:    list.length()
 	}
 }
 

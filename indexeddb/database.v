@@ -12,8 +12,15 @@ pub enum ConnectionState {
 	closed
 }
 
+struct PendingConnectionWait {
+	connections []&IDBDatabase
+	callback    DatabaseTask = unsafe { nil }
+}
+
 @[heap]
 pub struct DatabaseData {
+mut:
+	pending_connection_wait_ ?PendingConnectionWait
 pub:
 	name        string
 	storage_key string
@@ -28,6 +35,8 @@ pub mut:
 
 @[heap]
 pub struct IDBDatabase {
+mut:
+	version_ u64
 pub mut:
 	data                   &DatabaseData
 	global_scope           &IndexedDBGlobalScope
@@ -35,6 +44,7 @@ pub mut:
 	upgrade_active         bool
 	transactions           []&IDBTransaction
 	events                 []string
+	version_change_events  []IDBVersionChangeEvent
 	document_url           string
 	devtools_active        bool
 	devtools_notifications []IndexedDBDevtoolsNotification
@@ -54,8 +64,9 @@ fn new_connection_for_global_scope(data &DatabaseData, global_scope &IndexedDBGl
 		data.connections++
 	}
 	mut connection := &IDBDatabase{
-		data: data
+		data:         data
 		global_scope: global_scope
+		version_:     data.version
 	}
 	unsafe {
 		data.associated_connections << connection
@@ -68,7 +79,7 @@ pub fn (database &IDBDatabase) name() string {
 }
 
 pub fn (database &IDBDatabase) version() u64 {
-	return database.data.version
+	return database.version_
 }
 
 pub fn (database &IDBDatabase) object_store_names() []string {
@@ -94,6 +105,7 @@ fn (mut database IDBDatabase) finish_close() {
 	database.state = .closed
 	unsafe {
 		database.data.dissociate(&database)
+		database.data.check_pending_connection_wait()
 	}
 }
 
@@ -136,11 +148,11 @@ pub fn (mut database IDBDatabase) create_object_store(mut transaction IDBTransac
 		}
 	}
 	mut object_store := &ObjectStoreData{
-		name: name
-		key_path: parameters.key_path
+		name:           name
+		key_path:       parameters.key_path
 		auto_increment: parameters.auto_increment
-		indexes: map[string]&IndexData{}
-		database_: database.data
+		indexes:        map[string]&IndexData{}
+		database_:      database.data
 	}
 	database.data.stores[name] = object_store
 	transaction.set_up_mutation_log_for_new_store(object_store)
@@ -150,8 +162,8 @@ pub fn (mut database IDBDatabase) create_object_store(mut transaction IDBTransac
 	}
 	return IDBObjectStore{
 		transaction: &transaction
-		name_: name
-		store_: object_store
+		name_:       name
+		store_:      object_store
 	}
 }
 
