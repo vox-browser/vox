@@ -37,11 +37,7 @@ fn view_transition_state_changed(target voidptr) {
 }
 
 pub fn (mut document Document) set_view_transition_promise_context(context webidl.PromiseContext) {
-	document.view_transition_promise_context_ = context
-	if document.view_transition_document_ != unsafe { nil } {
-		mut transition_document := document.view_transition_document_
-		transition_document.promise_context = context
-	}
+	document.set_relevant_realm_promise_context(context)
 }
 
 fn view_transition_refresh_elements(target voidptr, mut context viewtransition.TransitionDocument, capturing_old bool) {

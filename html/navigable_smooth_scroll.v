@@ -9,6 +9,23 @@ import dom
 import painting
 import math
 import time
+import webidl
+
+fn (model &NavigableModel) create_scroll_promise() &dom.Promise {
+	context := if document := model.active_document() {
+		document.relevant_realm_promise_context()
+	} else {
+		// Preexisting standalone models have no relevant realm.
+		webidl.PromiseContext{}
+	}
+	return dom.Promise.from_webidl(webidl.create_promise_for(context))
+}
+
+fn (model &NavigableModel) resolved_scroll_promise() &dom.Promise {
+	mut promise := model.create_scroll_promise()
+	promise.resolve(dom.js_undefined())
+	return promise
+}
 
 struct MainThreadSmoothScroll {
 	stable_node_id            compositor.AsyncScrollNodeStableId
@@ -83,8 +100,16 @@ fn (model &NavigableModel) queue_scrollend_for(stable_node_id compositor.AsyncSc
 
 fn queue_scroll_promise_resolution(promise &dom.Promise) {
 	queue_a_microtask(none, fn [promise] () {
-		mut mutable_promise := unsafe { &dom.Promise(promise) }
-		mutable_promise.resolve(dom.js_undefined())
+		steps := fn [promise] () {
+			mut mutable_promise := unsafe { &dom.Promise(promise) }
+			mutable_promise.resolve(dom.js_undefined())
+		}
+		if native := promise.webidl_promise() {
+			context := webidl.promise_context(native)
+			if run := context.realm_steps_runner { run(steps) } else { steps() }
+		} else {
+			steps()
+		}
 	})
 }
 
@@ -122,7 +147,7 @@ fn (mut model NavigableModel) replace_main_thread_scrolls(stable_node_id composi
 // Compositor transport and user gesture latching remain separate source slices.
 fn (mut model NavigableModel) perform_main_thread_scroll(stable_node_id compositor.AsyncScrollNodeStableId, position dom.CSSPixelPoint_, behavior dom.ScrollBehavior, associated_element ?&dom.Element) &dom.Promise {
 	initial := model.scroll_offset_for(stable_node_id) or {
-		return dom.Promise.resolved(dom.js_undefined())
+		return model.resolved_scroll_promise()
 	}
 	mut smooth := behavior == .smooth
 	if behavior == .auto_ {
@@ -136,14 +161,14 @@ fn (mut model NavigableModel) perform_main_thread_scroll(stable_node_id composit
 		for mut scroll in model.main_thread_smooth_scrolls_ {
 			if scroll.stable_node_id == stable_node_id
 				&& scroll.destination_scroll_offset == position {
-				promise := dom.Promise.create()
+				promise := model.create_scroll_promise()
 				scroll.promises << promise
 				return promise
 			}
 		}
 	}
 	model.replace_main_thread_scrolls(stable_node_id)
-	mut promise := dom.Promise.create()
+	mut promise := model.create_scroll_promise()
 	if !smooth {
 		if model.set_scroll_offset_for(stable_node_id, position) {
 			model.queue_scrollend_for(stable_node_id)
@@ -224,12 +249,12 @@ fn navigable_model_perform_element_scroll(target voidptr, element &dom.Element, 
 // LocalNavigable.cpp: programmatic destination snapping precedes operation
 // creation; animation samples must not repeatedly snap to intermediate areas.
 pub fn (mut model NavigableModel) perform_a_scroll_of_an_element(element &dom.Element, position dom.CSSPixelPoint_, behavior dom.ScrollBehavior, strategy dom.ScrollSnapSelectionStrategy_) &dom.Promise {
-	mut document := model.active_document() or { return dom.Promise.resolved(dom.js_undefined()) }
+	mut document := model.active_document() or { return model.resolved_scroll_promise() }
 	if voidptr(element.document()) != voidptr(document) {
-		return dom.Promise.resolved(dom.js_undefined())
+		return model.resolved_scroll_promise()
 	}
 	document.update_layout(.element_scroll)
-	mut paintable := element.paintable_box() or { return dom.Promise.resolved(dom.js_undefined()) }
+	mut paintable := element.paintable_box() or { return model.resolved_scroll_promise() }
 	destination := paintable.select_scroll_snap_destination(position, strategy)
 	paintable.record_scroll_snap_destination(destination)
 	return model.perform_main_thread_scroll(compositor.AsyncScrollNodeStableId{

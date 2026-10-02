@@ -2112,7 +2112,7 @@ fn (mut model NavigableModel) perform_a_scroll_of_the_viewport_with_snap_strateg
 pub fn (mut model NavigableModel) perform_a_scroll_of_the_viewport_with_options(position css.CSSPixelPoint,
 	behavior dom.ScrollBehavior, strategy dom.ScrollSnapSelectionStrategy_) &dom.Promise {
 	document := model.active_document() or {
-		return dom.Promise.resolved(dom.js_undefined())
+		return model.resolved_scroll_promise()
 	}
 	mut mutable_document := unsafe { &dom.Document(document) }
 	viewport := document.viewport_rect()
@@ -2135,7 +2135,7 @@ pub fn (mut model NavigableModel) perform_a_scroll_of_the_viewport_with_options(
 	}
 	mutable_document.update_layout(.navigable_viewport_scroll)
 	requested := dom.CSSPixelPoint_{x_: viewport.x + layout_delta.x(), y_: viewport.y + layout_delta.y()}
-	paintable := document.as_node().paintable_box() or { return dom.Promise.resolved(dom.js_undefined()) }
+	paintable := document.as_node().paintable_box() or { return model.resolved_scroll_promise() }
 	clamped := paintable.clamp_scroll_offset(requested)
 	destination := mutable_document.adjust_viewport_scroll_destination(clamped, strategy)
 	return model.perform_main_thread_scroll(compositor.AsyncScrollNodeStableId{
