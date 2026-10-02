@@ -29,5 +29,17 @@ fn main() {
 	if (context.get_image_data(4, 4, 1, 1, none)!).data() != [u8(0), 255, 255, 255] {
 		panic('production canvas bitmap did not draw')
 	}
-	println('production canvas path, filter, clear and bitmap smoke passed')
+	mut text_canvas := html.OffscreenCanvas.create(48, 48)!
+	mut text_context := text_canvas.get_context(.canvas_2d, none)!
+	text_context.set_font('24px sans-serif')
+	text_context.fill_text('O', 0, 30, none)
+	text_pixels := (text_context.get_image_data(0, 0, 48, 48, none)!).data()
+	mut painted_text_pixels := 0
+	for index := 3; index < text_pixels.len; index += 4 {
+		if text_pixels[index] > 0 { painted_text_pixels++ }
+	}
+	if painted_text_pixels == 0 {
+		panic('production canvas glyph text did not draw')
+	}
+	println('production canvas path, filter, clear, bitmap and glyph smoke passed')
 }

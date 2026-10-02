@@ -921,17 +921,37 @@ pub fn (context &OffscreenCanvasRenderingContext2D) text_path(text string, x f64
 }
 
 pub fn (mut context OffscreenCanvasRenderingContext2D) fill_text(text string, x f64, y f64, max_width ?f64) {
+	context.fill_canvas_text(text, x, y, max_width)
+}
+
+fn (mut context OffscreenCanvasRenderingContext2D) fill_canvas_text(text string, x f64, y f64, max_width ?f64) bool {
+	if !is_finite(x) || !is_finite(y) { return false }
 	if max_width_value := max_width {
-		if max_width_value <= 0 {
-			return
+		if !is_finite(max_width_value) {
+			return false
 		}
 	}
-	context.fill_internal(context.text_path(text, x, y, max_width), 'nonzero')
+	state := context.drawing_state
+	if max_width != none || state.shadow_blur != 0 || state.shadow_offset_x != 0 || state.shadow_offset_y != 0 {
+		path := context.text_path(text, x, y, max_width)
+		context.fill_internal(path, 'nonzero')
+		return canvas_path_bounds(path) != none
+	}
+	replaced := text.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').replace('\f', ' ')
+	run := canvas_text_run_for_canvas_state(&context.CanvasState, replaced, 0)
+	if run.font().is_invisible {
+		path := context.text_path(text, x, y, max_width)
+		context.fill_internal(path, 'nonzero')
+		return canvas_path_bounds(path) != none
+	}
+	translation := canvas_text_transform(context.drawing_state, run.font(), f64(run.width()), none).map(FloatPoint{x, y})
+	return context.paint_canvas_glyph_run(run, translation)
 }
 
 pub fn (mut context OffscreenCanvasRenderingContext2D) stroke_text(text string, x f64, y f64, max_width ?f64) {
+	if !is_finite(x) || !is_finite(y) { return }
 	if max_width_value := max_width {
-		if max_width_value <= 0 {
+		if !is_finite(max_width_value) {
 			return
 		}
 	}
@@ -1150,13 +1170,15 @@ pub fn (mut context CanvasRenderingContext2D) fill_path(path &Path2D, fill_rule 
 }
 
 pub fn (mut context CanvasRenderingContext2D) fill_text(text string, x f64, y f64, max_width ?f64) {
-	path := context.text_path(text, x, y, max_width)
-	context.fill_internal(path, 'nonzero')
+	if context.OffscreenCanvasRenderingContext2D.fill_canvas_text(text, x, y, max_width) {
+		context.did_draw(CanvasFloatRect{})
+	}
 }
 
 pub fn (mut context CanvasRenderingContext2D) stroke_text(text string, x f64, y f64, max_width ?f64) {
-	path := context.text_path(text, x, y, max_width)
-	context.stroke_internal(path)
+	if !is_finite(x) || !is_finite(y) { return }
+	if maximum := max_width { if !is_finite(maximum) { return } }
+	context.stroke_internal(context.text_path(text, x, y, max_width))
 }
 
 pub fn (mut context CanvasRenderingContext2D) clip(fill_rule string) {

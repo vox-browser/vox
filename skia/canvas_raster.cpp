@@ -7,6 +7,9 @@
 #include "include/core/SkColorFilter.h"
 #include "include/core/SkColorSpace.h"
 #include "include/core/SkImage.h"
+#include "include/core/SkFont.h"
+#include "include/core/SkFontMgr.h"
+#include "include/core/SkTextBlob.h"
 #include "include/core/SkMatrix.h"
 #include "include/core/SkPaint.h"
 #include "include/core/SkPath.h"
@@ -19,6 +22,11 @@
 #include "include/effects/SkRuntimeEffect.h"
 #include <cmath>
 #include <vector>
+#ifdef __APPLE__
+#include "include/ports/SkFontMgr_mac_ct.h"
+#else
+#include "include/ports/SkFontMgr_empty.h"
+#endif
 
 static SkPath make_path(VoxCanvasPath const& input)
 {
@@ -215,4 +223,52 @@ extern "C" bool vox_skia_canvas_read_pixels(uint8_t const* source, int width, in
     if (!bitmap.installPixels(source_info, const_cast<uint8_t*>(source), pitch))
         return false;
     return bitmap.readPixels(destination_info, destination, destination_pitch, x, y);
+}
+
+// CanvasCommandPlayer::DrawGlyphRun -> PainterSkia::draw_text_blob(). The
+// resolver uses DisplayListResourceStorage's Unhinted text rasterization mode.
+extern "C" bool vox_skia_canvas_glyphs(uint8_t* pixels, int width, int height, int pitch, int alpha_type, VoxCanvasCommand const* command, VoxCanvasGlyphRun const* glyphs)
+{
+    if (glyphs->count == 0)
+        return true;
+#ifdef __APPLE__
+    static auto manager = SkFontMgr_New_CoreText(nullptr);
+#else
+    static auto manager = SkFontMgr_New_Custom_Empty();
+#endif
+    auto face = manager->makeFromFile(glyphs->font_path, glyphs->face_index);
+    if (!face)
+        return false;
+    SkFont font(face, glyphs->font_size);
+    font.setSubpixel(true);
+    font.setHinting(SkFontHinting::kNone);
+    font.setForceAutoHinting(false);
+    font.setBaselineSnap(false);
+    SkTextBlobBuilder builder;
+    auto const& run = builder.allocRunPos(font, glyphs->count);
+    for (int i = 0; i < glyphs->count; ++i) {
+        run.glyphs[i] = glyphs->glyphs[i];
+        run.pos[i * 2] = glyphs->positions[i * 2];
+        run.pos[i * 2 + 1] = glyphs->positions[i * 2 + 1];
+    }
+    auto blob = builder.make();
+    if (!blob)
+        return true;
+    auto source_info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, alpha_type == 2 ? kPremul_SkAlphaType : kUnpremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto info = source_info.makeAlphaType(kPremul_SkAlphaType);
+    auto surface = SkSurfaces::Raster(info);
+    if (!surface || !surface->getCanvas()->writePixels(source_info, pixels, pitch, 0, 0))
+        return false;
+    auto& canvas = *surface->getCanvas();
+    for (int i = 0; i < command->clip_count; ++i)
+        canvas.clipPath(make_path(command->clips[i]), SkClipOp::kIntersect, true);
+    canvas.setMatrix(make_matrix(command->transform));
+    SkPaint paint;
+    if (!apply_style(paint, command->style))
+        return false;
+    paint.setImageFilter(make_filter(*command));
+    paint.setAlphaf(paint.getAlphaf() * command->global_alpha);
+    paint.setBlender(make_blender(command->composite));
+    canvas.drawTextBlob(blob.get(), glyphs->translation[0], glyphs->translation[1], paint);
+    return surface->readPixels(info, pixels, pitch, 0, 0);
 }

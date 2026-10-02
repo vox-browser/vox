@@ -110,6 +110,7 @@ extern "C" bool vox_skia_shadow(uint8_t* pixels, int width, int height, int pitc
         if (!face)
             return false;
         SkFont font(face, command->font_size);
+        font.setSubpixel(true);
 #ifdef __APPLE__
         switch (command->font_smoothing) {
         case 1: font.setEdging(SkFont::Edging::kAlias); break;

@@ -5,6 +5,7 @@ import css
 import math
 import dom
 import skia
+import platform
 
 fn canvas_skia_path(path CanvasGfxPath, fill_rule string) skia.Path {
 	mut segments := []f32{cap: path.length() * 12}
@@ -102,6 +103,41 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 	assert painted
 	mutable_bitmap.alpha_type = 2
 	mutable_bitmap.native_rows_are_top_down = true
+}
+
+fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_glyph_run(run &platform.GlyphRun, translation FloatPoint) bool {
+	bitmap := context.canvas_.bitmap() or { return false }
+	mut mutable_bitmap := unsafe { &dom.Bitmap_(bitmap) }
+	state := context.drawing_state
+	style := state.fill_style.to_gfx_paint_style()
+	if !style.is_visible() && state.current_compositing_and_blending_operator == .source_over { return false }
+	font_path := if run.face() == .emoji {
+		platform.emoji_font_path() or { return false }
+	} else {
+		run.font().font_path() or { return false }
+	}
+	clips := state.clip_paths.map(canvas_skia_path(it.path, it.fill_rule))
+	command := skia.Command{
+		style: canvas_skia_style(style)
+		transform: canvas_skia_transform(state.transform)
+		clips: clips
+		composite: int(state.current_compositing_and_blending_operator)
+		global_alpha: f32(state.global_alpha)
+		filters: state.filter_functions.map(canvas_skia_filter(it))
+	}
+	glyphs := skia.GlyphRun{
+		font_path: font_path
+		face_index: run.font().face_index()
+		font_size: run.font().point_size
+		glyphs: run.glyph_indices()
+		positions: run.glyph_positions().map(f32(it))
+		translation: [f32(translation.x), f32(translation.y)]!
+	}
+	painted := skia.draw_glyph_run(mut mutable_bitmap.data, bitmap.width, bitmap.height, bitmap.pitch, int(bitmap.alpha_type), command, glyphs)
+	assert painted
+	mutable_bitmap.alpha_type = 2
+	mutable_bitmap.native_rows_are_top_down = true
+	return painted
 }
 
 // SkiaUtils.cpp: CSS filter matrices, including each source clamp policy.

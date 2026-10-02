@@ -44,6 +44,14 @@ struct VoxCanvasCommand {
     int filter_count;
 };
 bool vox_skia_canvas_path(uint8_t* pixels, int width, int height, int pitch, int alpha_type, struct VoxCanvasCommand const* command);
+struct VoxCanvasGlyphRun {
+    char const* font_path;
+    int face_index, count;
+    float font_size, translation[2];
+    uint16_t const* glyphs;
+    float const* positions;
+};
+bool vox_skia_canvas_glyphs(uint8_t* pixels, int width, int height, int pitch, int alpha_type, struct VoxCanvasCommand const* command, struct VoxCanvasGlyphRun const* glyphs);
 #ifdef __cplusplus
 }
 #endif

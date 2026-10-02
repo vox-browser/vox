@@ -150,11 +150,41 @@ struct C.VoxCanvasCommand {
 
 fn C.vox_skia_canvas_path(pixels &u8, width int, height int, pitch int, alpha_type int, command &C.VoxCanvasCommand) bool
 
+pub struct GlyphRun {
+pub:
+	font_path string
+	face_index int
+	font_size f32
+	glyphs []u16
+	positions []f32
+	translation [2]f32
+}
+
+struct C.VoxCanvasGlyphRun {
+	font_path &char
+	face_index int
+	count int
+	font_size f32
+	translation [2]f32
+	glyphs &u16
+	positions &f32
+}
+
+fn C.vox_skia_canvas_glyphs(&u8, int, int, int, int, &C.VoxCanvasCommand, &C.VoxCanvasGlyphRun) bool
+
 fn native_path(path Path) C.VoxCanvasPath {
 	return C.VoxCanvasPath{path.segments.data, path.segments.len / 12, int(path.even_odd)}
 }
 
 pub fn draw_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, command Command) bool {
+	return draw_canvas_command(mut pixels, width, height, pitch, alpha_type, command, none)
+}
+
+pub fn draw_glyph_run(mut pixels []u8, width int, height int, pitch int, alpha_type int, command Command, glyphs GlyphRun) bool {
+	return draw_canvas_command(mut pixels, width, height, pitch, alpha_type, command, glyphs)
+}
+
+fn draw_canvas_command(mut pixels []u8, width int, height int, pitch int, alpha_type int, command Command, glyphs ?GlyphRun) bool {
 	mut clips := []C.VoxCanvasPath{cap: command.clips.len}
 	for clip in command.clips {
 		clips << native_path(clip)
@@ -208,6 +238,10 @@ pub fn draw_path(mut pixels []u8, width int, height int, pitch int, alpha_type i
 		dash_offset:  command.dash_offset
 		filters:      filters.data
 		filter_count: filters.len
+	}
+	if run := glyphs {
+		native := C.VoxCanvasGlyphRun{ run.font_path.str, run.face_index, run.glyphs.len, run.font_size, run.translation, run.glyphs.data, run.positions.data }
+		return C.vox_skia_canvas_glyphs(pixels.data, width, height, pitch, alpha_type, &native_command, &native)
 	}
 	return C.vox_skia_canvas_path(pixels.data, width, height, pitch, alpha_type, &native_command)
 }
