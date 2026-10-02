@@ -13,12 +13,16 @@ pub struct CurlConnection {
 mut:
 	multi_ voidptr
 	timer_ &platform.Timer = platform.Timer.create()
+	// The embedding adapter owns the deferred IPC delivery queue; it uses the
+	// translated native EventLoopPlugin without requiring a global LibWeb plugin.
+	deferred_ &platform.EventLoopPlugin = platform.EventLoopPlugin.new()
 	timer_due_at_ ?i64
 	sockets_ map[int]voidptr
 	socket_flags_ map[int]int
 	requests_ map[u64]&CurlRequest
 	next_id_ u64 = 1
 	closed_ bool
+	in_curl_call_ bool
 }
 
 pub fn CurlConnection.create() !&CurlConnection {
@@ -48,6 +52,7 @@ fn clamp_curl_interval(value i64) int { return if value > 2147483647 { 214748364
 
 fn curl_timeout_callback(_ voidptr, timeout_ms i64, owner voidptr) int {
 	mut connection := unsafe { &CurlConnection(owner) }
+	if connection.closed_ { return 0 }
 	if timeout_ms == -1 {
 		connection.timer_.stop()
 		connection.timer_due_at_ = none
@@ -93,7 +98,9 @@ fn curl_socket_activate(owner voidptr, socket int, flags int) {
 fn (mut connection CurlConnection) socket_action(socket int, flags int) {
 	if connection.closed_ { return }
 	mut running := 0
+	connection.in_curl_call_ = true
 	assert C.curl_multi_socket_action(connection.multi_, socket, flags, &running) == C.CURLM_OK
+	connection.in_curl_call_ = false
 	for {
 		mut result := 0
 		pointer := C.vox_curl_next_completion(connection.multi_, &result)

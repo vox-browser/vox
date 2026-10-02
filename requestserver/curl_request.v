@@ -24,6 +24,7 @@ mut:
 	in_multi_ bool
 	sent_headers_ bool
 	finished_ bool
+	stop_requested_ bool
 	response_headers_ &http.HeaderList = http.HeaderList.create()
 	reason_phrase_ ?string
 	request_body_ []u8
@@ -94,8 +95,15 @@ pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, in
 	native.receiver_.set_network_request(handle)
 	mut controller := params.controller
 	controller.set_pending_network_request(handle)
-	assert C.curl_multi_add_handle(connection.multi_, native.easy_) == C.CURLM_OK
-	native.in_multi_ = true
+	// RequestClient::start_request crosses IPC before RequestServer adds the
+	// handle. Preserve that asynchronous boundary in this in-process adapter,
+	// including redirects started from a curl header callback.
+	mut plugin := connection.deferred_
+	plugin.deferred_invoke(fn [mut native] () {
+		if native.finished_ || native.stop_requested_ { return }
+		assert C.curl_multi_add_handle(native.connection_.multi_, native.easy_) == C.CURLM_OK
+		native.in_multi_ = true
+	})
 	return pending
 }
 
@@ -208,6 +216,19 @@ fn (mut request CurlRequest) notify_fetch_complete(result int) {
 }
 
 pub fn (mut request CurlRequest) stop() {
+	if request.finished_ || request.stop_requested_ { return }
+	request.stop_requested_ = true
+	// LibRequests::stop sends IPC; the server never removes its easy handle
+	// recursively from a libcurl body callback. Defer the same server boundary.
+	if request.connection_.in_curl_call_ {
+		mut plugin := request.connection_.deferred_
+		plugin.deferred_invoke(fn [mut request] () { request.free_curl_structs() })
+		return
+	}
+	request.free_curl_structs()
+}
+
+fn (mut request CurlRequest) free_curl_structs() {
 	if request.finished_ { return }
 	request.finished_ = true
 	if request.in_multi_ {

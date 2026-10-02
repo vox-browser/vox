@@ -18,6 +18,21 @@ fn serve_streaming_response(mut listener net.TcpListener) {
 	socket.write_string('ity') or { panic(err) }
 }
 
+fn serve_redirect_response(mut listener net.TcpListener) {
+	for hop in 0 .. 2 {
+		mut socket := listener.accept() or { panic(err) }
+		mut input := []u8{len: 4096}
+		_ := socket.read(mut input) or { panic(err) }
+		response := if hop == 0 {
+			'HTTP/1.1 302 Found\r\nLocation: /final\r\nContent-Length: 3\r\nConnection: close\r\n\r\nold'
+		} else {
+			'HTTP/1.1 200 Final\r\nContent-Type: text/plain\r\nContent-Length: 4\r\nConnection: close\r\n\r\nreal'
+		}
+		socket.write_string(response) or { panic(err) }
+		socket.close() or {}
+	}
+}
+
 fn native_transport_settings(address string) (&html.EnvironmentSettingsObject, &html.EventLoop) {
 	mut document := dom.Document.create(dom.URL{address})
 	document.set_origin(document.url.origin())
@@ -71,4 +86,27 @@ fn test_source_stop_fetch_removes_the_real_curl_request_from_multi() {
 	assert connection.active_request_count() == 0
 	assert controller.state() == .stopped
 	platform.pump_native_events(0.001)
+}
+
+fn test_actual_redirect_does_not_recursively_add_or_remove_handles_in_curl_body_callback() {
+	$if !darwin { return }
+	mut listener := net.listen_tcp(.ip, '127.0.0.1:0')!
+	defer { listener.close() or {} }
+	server := spawn serve_redirect_response(mut listener)
+	settings, owner := native_transport_settings('http://${listener.addr()!}/owner')
+	mut connection := CurlConnection.create()!
+	defer { connection.close() }
+	mut request := xhr.XMLHttpRequest.construct_in_settings(settings, connection.fetch_host())
+	request.open('GET', '/redirect', true, none, none)!
+	request.send()!
+	deadline := time.sys_mono_now() + 3 * time.second
+	mut loop := owner
+	loop.spin_until(fn [request, deadline] () bool { return request.state == .done || time.sys_mono_now() >= deadline })
+	assert request.state == .done
+	assert request.status() == 200
+	assert request.response_text()! == 'real'
+	assert request.response_url().ends_with('/final')
+	assert connection.active_request_count() == 0
+	assert (request.fetch_request_ or { panic('missing Fetch request') }).redirect_count == 1
+	server.wait()
 }
