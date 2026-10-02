@@ -167,10 +167,10 @@ pub fn (_ X25519) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return ex
 
 pub struct X448 {}
 pub fn X448.create() X448 { return X448{} }
-pub fn (_ X448) derive_bits(_ EcdhKeyDeriveParams, _ &CryptoKey, _ ?u32) ![]u8 { return backend_unavailable[[]u8]('X448', 'derivation') }
-pub fn (_ X448) generate_key(_ AlgorithmParams, _ bool, _ []KeyUsage) !GeneratedKey { return backend_unavailable[GeneratedKey]('X448', 'key generation') }
-pub fn (_ X448) import_key(_ AlgorithmParams, _ KeyFormat, _ []u8, _ bool, _ []KeyUsage) !&CryptoKey { return backend_unavailable[&CryptoKey]('X448', 'key import') }
-pub fn (_ X448) export_key(_ KeyFormat, _ &CryptoKey) ![]u8 { return backend_unavailable[[]u8]('X448', 'key export') }
+pub fn (_ X448) derive_bits(params EcdhKeyDeriveParams, key &CryptoKey, length ?u32) ![]u8 { return derive_exchange_bits('X448', params, key, length) }
+pub fn (_ X448) generate_key(_ AlgorithmParams, extractable bool, usages []KeyUsage) !GeneratedKey { return generate_exchange_key('X448', extractable, usages) }
+pub fn (_ X448) import_key(_ AlgorithmParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_exchange_key('X448', format, material, extractable, usages) }
+pub fn (_ X448) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_exchange_key('X448', format, key) }
 
 pub struct ED448 {}
 pub fn ED448.create() ED448 { return ED448{} }

@@ -669,7 +669,7 @@ fn derive_bits_bytes_for_usage(params DeriveParams, base_key &CryptoKey, length_
 	if params is EcdhKeyDeriveParams {
 		normalized := normalize_an_algorithm(params.name, 'deriveBits')!
 		if normalized != base_key.algorithm_name() { return error('InvalidAccessError: Key algorithm mismatch') }
-		if normalized == 'X25519' { return X25519.create().derive_bits(EcdhKeyDeriveParams{ ...params, name: normalized }, base_key, length_bits) }
+		if normalized in ['X25519', 'X448'] { return derive_exchange_bits(normalized, EcdhKeyDeriveParams{ ...params, name: normalized }, base_key, length_bits) }
 		return error('NotSupportedError: Derivation backend is unavailable for ${normalized}')
 	}
 	if length_bits == 0 || length_bits % 8 != 0 {

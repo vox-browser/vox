@@ -382,8 +382,8 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 				GeneratedKey{
 					pair: generate_ed25519_key(extractable, normalized_usages)!
 				}
-			} else if normalized == 'X25519' {
-				X25519.create().generate_key(AlgorithmParams{ name: normalized }, extractable, normalized_usages)!
+			} else if normalized in ['X25519', 'X448'] {
+				generate_exchange_key(normalized, extractable, normalized_usages)!
 			} else if normalized in ['KMAC128', 'KMAC256'] {
 				KMAC.create().generate_key(KmacKeyGenParams{ name: normalized }, extractable, normalized_usages)!
 			} else if normalized == 'ChaCha20-Poly1305' {
@@ -428,8 +428,8 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
 		if key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
 		return key
 	}
-	if normalized == 'X25519' {
-		key := X25519.create().import_key(AlgorithmParams{ name: normalized }, format, material, extractable, normalized_usages)!
+	if normalized in ['X25519', 'X448'] {
+		key := import_exchange_key(normalized, format, material, extractable, normalized_usages)!
 		if key.type_ == .private_key && key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
 		return key
 	}
@@ -461,7 +461,7 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 	if normalized in ['KMAC128', 'KMAC256'] {
 		return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name)
 	}
-	if normalized == 'X25519' {
+	if normalized in ['X25519', 'X448'] {
 		return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name)
 	}
 	if extractable {
@@ -524,9 +524,9 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 pub fn (subtle_crypto &SubtleCrypto) export_key(format KeyFormat, key &CryptoKey) ![]u8 {
 	_ = subtle_crypto
 	normalize_an_algorithm(key.algorithm_name(), 'exportKey')!
-	if key.algorithm_name() == 'X25519' {
+	if key.algorithm_name() in ['X25519', 'X448'] {
 		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
-		return X25519.create().export_key(format, key)
+		return export_exchange_key(key.algorithm_name(), format, key)
 	}
 	if key.algorithm_name() == 'AES-OCB' {
 		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
@@ -560,7 +560,7 @@ pub fn (subtle_crypto &SubtleCrypto) export_jwk(key &CryptoKey) !JsonWebKey {
 	if key.algorithm_name() == 'AES-OCB' {
 		return JsonWebKey.parse(export_aes_ocb_key(.jwk, key)!)
 	}
-	if key.algorithm_name() == 'X25519' { return export_exchange_jwk('X25519', key) }
+	if key.algorithm_name() in ['X25519', 'X448'] { return export_exchange_jwk(key.algorithm_name(), key) }
 	operations := key.usages.map(key_usage_string(it))
 	if key.algorithm_name() == 'Ed25519' {
 		if key.type_ == .public_key {
@@ -615,7 +615,7 @@ pub fn (subtle_crypto &SubtleCrypto) derive_bits(params DeriveParams, base_key &
 	normalized := normalize_an_algorithm(name, 'deriveBits')!
 	if params is EcdhKeyDeriveParams {
 		validate_operation_key(base_key, normalized, .derive_bits)!
-		if normalized == 'X25519' { return X25519.create().derive_bits(EcdhKeyDeriveParams{ ...params, name: normalized }, base_key, length_bits) }
+		if normalized in ['X25519', 'X448'] { return derive_exchange_bits(normalized, EcdhKeyDeriveParams{ ...params, name: normalized }, base_key, length_bits) }
 		return error('NotSupportedError: Derivation backend is unavailable for ${normalized}')
 	}
 	return derive_bits_bytes(params, base_key, length_bits or { return error('OperationError: length is required') })
