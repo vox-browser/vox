@@ -51,6 +51,10 @@ fn test_native_public_pipe_to_uses_actual_signal_and_later_action_rejection() {
 	runtime.evaluate_host('pipeAbortReject(pipeLater)')!
 	assert runtime.evaluate_host('pipeRejected&&!pipeAbortSource.locked&&!pipeAbortDestination.locked')! == 'true'
 	runtime.evaluate_host('pipeCancelResolve()')!
+	runtime.evaluate_host(r'{
+ globalThis.pipeDefaultReason=undefined,pipeDefaultAbort=false,pipeDefaultCancel=false,pipeDefaultRejected=false;const controller=new AbortController(),source=new ReadableStream({cancel(reason){pipeDefaultCancel=reason===controller.signal.reason&&reason instanceof DOMException&&reason.name==="AbortError"}},{highWaterMark:0}),destination=new WritableStream({abort(reason){pipeDefaultAbort=reason===controller.signal.reason}});source.pipeTo(destination,{signal:controller.signal}).catch(reason=>{pipeDefaultReason=reason;pipeDefaultRejected=reason===controller.signal.reason});controller.abort();
+}')!
+	assert runtime.evaluate_host('pipeDefaultAbort&&pipeDefaultCancel&&pipeDefaultRejected&&pipeDefaultReason instanceof DOMException&&pipeDefaultReason.name==="AbortError"')! == 'true'
 }
 
 fn test_native_public_pipe_through_returns_actual_readable_with_source_lock_checks() {

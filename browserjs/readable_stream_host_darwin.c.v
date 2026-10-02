@@ -218,6 +218,7 @@ fn (mut host ReadableStreamHost) promise(native &webidl.Promise) !voidptr {
 }
 
 fn (mut host ReadableStreamHost) value(value webidl.Value) !voidptr {
+	if value.dom_exception_ != none { return host.runtime.javascript_dom_exception(value) }
 	if value.simple_exception_ != none { return host.runtime.javascript_simple_exception(value) }
 	context := host.runtime.context
 	match value.kind {
