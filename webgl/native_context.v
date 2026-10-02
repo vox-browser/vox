@@ -291,7 +291,10 @@ pub fn (mut context OpenGLContext) dispatch(name string, args ...i64) bool {
 			args: args.clone()
 		}
 	}
-	if name.starts_with('draw') || name in ['clear','blit_framebuffer'] { context.notify_content_will_change() }
+	// Source drawBuffers / WEBGL_draw_buffers only update GL draw-buffer state.
+	// CPU presentation is invalidated by actual rendering commands.
+	if (name.starts_with('draw') && name !in ['draw_buffers', 'draw_buffers_webgl'])
+		|| name in ['clear', 'blit_framebuffer'] { context.notify_content_will_change() }
 	return success
 }
 
