@@ -15,6 +15,7 @@ import math
 @[heap]
 pub struct CanvasWebGLHost {
 mut:
+	document            &dom.Document = unsafe { nil }
 	elements            map[string]&dom.Element
 	contexts            map[string]&webgl.WebGLRenderingContext
 	resource_kinds      map[string]string
@@ -36,12 +37,17 @@ mut:
 }
 
 pub fn CanvasWebGLHost.create(document &dom.Document) &CanvasWebGLHost {
-	mut host := &CanvasWebGLHost{}
+	mut host := &CanvasWebGLHost{document:document}
 	root := unsafe { &dom.Node(document) }
 	for index, element in css.query_selector_all(root, '*') {
 		host.elements['__element_${index}'] = element
 	}
 	return host
+}
+
+// Compact DOM replay must adopt the exact canvas that owns native GL content.
+pub fn (host &CanvasWebGLHost) elements_for_binding() map[string]&dom.Element {
+	return host.elements.clone()
 }
 
 pub fn (mut host CanvasWebGLHost) install(mut runtime Runtime) ! {
@@ -232,9 +238,17 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 	key := wg_string(request['key'] or { json2.Any('') })
 	args := wg_array(request['args'] or { json2.Any([]json2.Any{}) })
 	if method == 'getContext' {
-		element := host.elements[key] or { return json2.Any(json2.Null{}) }
+		element := host.elements[key] or {
+			if !key.starts_with('__created_') { return json2.Any(json2.Null{}) }
+			mut document := unsafe { &dom.Document(host.document) }
+			created := document.create_element_ns('http://www.w3.org/1999/xhtml','canvas')!
+			host.elements[key] = created
+			created
+		}
 		if element.local_name() != 'canvas' { return json2.Any(json2.Null{}) }
-		canvas := unsafe { &dom.HTMLCanvasElement(element) }
+		mut canvas := unsafe { &dom.HTMLCanvasElement(element) }
+		if width := request['width'] { if html.html_canvas_element_width(canvas) != wg_u32(width) { html.html_canvas_element_set_width(mut canvas,wg_u32(width))! } }
+		if height := request['height'] { if html.html_canvas_element_height(canvas) != wg_u32(height) { html.html_canvas_element_set_height(mut canvas,wg_u32(height))! } }
 		kind := wg_string(request['kind'] or { json2.Any('') })
 		result := html.html_canvas_element_get_rendering_context(canvas, kind, wg_options(request['options'] or { json2.Any(json2.Null{}) }))!
 		context := result.webgl_context or { return json2.Any(json2.Null{}) }

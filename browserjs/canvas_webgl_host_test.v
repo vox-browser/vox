@@ -78,5 +78,12 @@ fn test_public_webgl_wrapper_uses_idl_conversions_resources_readback_and_resize(
 		assert runtime.evaluate_host('state.width=2;__webglCall(state,"resize");gl.drawingBufferWidth')! == '2'
 		assert runtime.evaluate_host('gl.getAttachedShaders(program)[0]===vertex')! == 'true'
 		assert runtime.evaluate_host('const vertexArray=gl.createVertexArray();gl.bindVertexArray(vertexArray);gl.getParameter(gl.VERTEX_ARRAY_BINDING)===vertexArray')! == 'true'
+		assert runtime.evaluate_host('const createdState={bridgeKey:"__created_0",width:2,height:3};const createdContext=__webglContext(createdState,"webgl2",{preserveDrawingBuffer:true});createdContext.clearColor(0,1,0,1);createdContext.clear(createdContext.COLOR_BUFFER_BIT);createdContext.drawingBufferWidth===2&&createdContext.drawingBufferHeight===3')! == 'true'
+		created_element := host.elements_for_binding()['__created_0'] or {panic('created canvas identity')}
+		created_canvas := unsafe {&dom.HTMLCanvasElement(created_element)}
+		created_context := html.html_canvas_element_webgl_context(created_canvas) or {panic('context owner')}
+		assert created_context.canvas_for_binding() == voidptr(created_canvas)
+		assert (created_element.owner_document() or {panic("owner document")}).unique_id() == document.unique_id()
+		assert (html.html_canvas_element_present_existing_surface(created_canvas) or {panic('created canvas frame')}).data[..4] == [u8(0),255,0,255]
 	}
 }
