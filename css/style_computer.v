@@ -1273,6 +1273,9 @@ pub fn (effect &KeyframeEffect) update_computed_properties_for_style(mut style_c
 }
 
 fn (style_computer &StyleComputer) target_has_animation_for_property(abstract_element dom.AbstractElement, property_id PropertyID) bool {
+	for effect in web_animation_effects_for_style(abstract_element) {
+		if keyframe_effect_animates_property(effect, property_id) { return true }
+	}
 	if style_computer.css_animation_storage_ != unsafe { nil } {
 		for animation in style_computer.css_animation_storage_.animations_for(abstract_element) {
 			if effect := animation.effect() {
@@ -1306,6 +1309,17 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 	mut style_computer := unsafe { &StyleComputer(target) }
 	mut targets := []dom.AbstractElement{}
 	mut seen := map[i64]bool{}
+	if hook := style_computer.document_.animations_hook_ {
+		if hook.effect_targets != unsafe { nil } {
+			for target_element in hook.effect_targets(hook.target) {
+				key := abstract_element_storage_key(target_element)
+				if key !in seen {
+					seen[key] = true
+					targets << target_element
+				}
+			}
+		}
+	}
 	if style_computer.css_animation_storage_ != unsafe { nil } {
 		for entry in style_computer.css_animation_storage_.entries {
 			key := abstract_element_storage_key(entry.abstract_element)
@@ -1358,6 +1372,9 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 					transition.keyframe_effect_.update_computed_properties_for_style(mut style_computer, target_element, mut computed)
 				}
 			}
+		}
+		for effect in web_animation_effects_for_style(target_element) {
+			effect.update_computed_properties_for_style(mut style_computer, target_element, mut computed)
 		}
 		publish_animated_custom_properties(computed, target_element)
 

@@ -2351,6 +2351,10 @@ pub type DocumentRemoveReplacedAnimationsCallback = fn (voidptr, &Node)
 
 pub type DocumentCompareAnimationsCallback = fn (voidptr, &Animation, &Animation) int
 
+pub type DocumentAnimationEffectTargetsCallback = fn (voidptr) []AbstractElement
+
+pub type DocumentAnimationEffectsForStyleCallback = fn (voidptr, AbstractElement) []voidptr
+
 pub struct DocumentAnimationsHook {
 pub:
 	target                     voidptr = unsafe { nil }
@@ -2358,6 +2362,8 @@ pub:
 	update_animations          DocumentUpdateAnimationsCallback = unsafe { nil }
 	remove_replaced_animations DocumentRemoveReplacedAnimationsCallback = unsafe { nil }
 	compare_animations         DocumentCompareAnimationsCallback = unsafe { nil }
+	effect_targets             DocumentAnimationEffectTargetsCallback = unsafe { nil }
+	effects_for_style          DocumentAnimationEffectsForStyleCallback = unsafe { nil }
 }
 
 pub struct PaintConfig {

@@ -438,7 +438,7 @@ fn css_style_properties_length(properties &CSSStyleProperties) int {
 	return properties.length()
 }
 
-fn parse_custom_property_value(value string) &dom.StyleValue {
+pub fn parse_custom_property_value(value string) &dom.StyleValue {
 	mut parser := Parser.from_css_text(value)
 	mut tokens := ComponentValueStream.new(parser.component_values)
 	if keyword := parser.parse_css_wide_keyword_value(mut tokens) {

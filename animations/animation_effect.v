@@ -122,6 +122,7 @@ pub mut:
 	previous_phase_               EffectPhase        = .idle
 	previous_current_iteration_   f64
 	target_properties_            map[css.PropertyID]bool
+	target_custom_properties_     map[string]bool
 	has_target_                   bool
 	is_keyframe_effect_           bool
 }
@@ -374,6 +375,10 @@ pub fn (mut effect AnimationEffect) set_previous_current_iteration(value f64) {
 
 pub fn (effect &AnimationEffect) target_properties() map[css.PropertyID]bool {
 	return effect.target_properties_.clone()
+}
+
+pub fn (effect &AnimationEffect) target_custom_properties() map[string]bool {
+	return effect.target_custom_properties_.clone()
 }
 
 pub fn (effect &AnimationEffect) is_keyframe_effect() bool {

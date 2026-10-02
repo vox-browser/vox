@@ -43,6 +43,7 @@ pub mut:
 	computed_offset   ?f64
 	properties        map[string]string
 	parsed_properties map[css.PropertyID]&dom.StyleValue
+	parsed_custom_properties map[string]&dom.StyleValue
 }
 
 pub fn (keyframe &BaseKeyframe) unparsed_properties() map[string]string {
@@ -51,6 +52,10 @@ pub fn (keyframe &BaseKeyframe) unparsed_properties() map[string]string {
 
 pub fn (keyframe &BaseKeyframe) parsed_properties() map[css.PropertyID]&dom.StyleValue {
 	return keyframe.parsed_properties.clone()
+}
+
+pub fn (keyframe &BaseKeyframe) parsed_custom_properties() map[string]&dom.StyleValue {
+	return keyframe.parsed_custom_properties.clone()
 }
 
 pub struct BasePropertyIndexedKeyframe {
@@ -70,6 +75,7 @@ pub:
 pub struct ResolvedKeyframe {
 pub mut:
 	properties map[css.PropertyID]ResolvedProperty
+	custom_properties map[string]ResolvedProperty
 	composite  CompositeOperationOrAuto = .auto_
 	easing     ?css.EasingFunction
 }
@@ -115,6 +121,7 @@ pub mut:
 	can_skip_per_frame_style_update_cache_            ?bool
 	last_element_scoped_observation_task_generation_  ?u64
 	per_frame_animation_tick_was_skipped_             bool
+	css_sampling_effect_                              ?&css.KeyframeEffect
 }
 
 pub fn KeyframeEffect.create() &KeyframeEffect {
@@ -156,6 +163,7 @@ pub fn KeyframeEffect.copy(source &KeyframeEffect) &KeyframeEffect {
 	effect.timing_function_ = source.timing_function_
 	effect.has_target_ = source.has_target_
 	effect.target_properties_ = source.target_properties_.clone()
+	effect.target_custom_properties_ = source.target_custom_properties_.clone()
 	effect.normalize_specified_timing()
 	return effect
 }
@@ -350,7 +358,12 @@ fn process_keyframes(input []BaseKeyframe) ![]BaseKeyframe {
 			}
 		}
 		keyframe.parsed_properties = map[css.PropertyID]&dom.StyleValue{}
+		keyframe.parsed_custom_properties = map[string]&dom.StyleValue{}
 		for name, text in keyframe.properties {
+			if name.starts_with('--') && name.len > 2 {
+				keyframe.parsed_custom_properties[name] = css.parse_custom_property_value(text)
+				continue
+			}
 			property_id := animation_property_id(name) or { continue }
 			value := css.parse_css_value(css.ParsingParams{}, text, property_id) or { continue }
 			unsafe {
@@ -445,6 +458,7 @@ fn (mut effect KeyframeEffect) install_processed_keyframes(input []BaseKeyframe)
 	effect.keyframes_ = input.clone()
 	compute_missing_keyframe_offsets(mut effect.keyframes_)
 	effect.target_properties_.clear()
+	effect.target_custom_properties_.clear()
 	mut set := KeyFrameSet{}
 	for keyframe in effect.keyframes_ {
 		mut resolved := ResolvedKeyframe{
@@ -455,12 +469,19 @@ fn (mut effect KeyframeEffect) install_processed_keyframes(input []BaseKeyframe)
 			resolved.properties[property_id] = ResolvedProperty{
 				value: unsafe { value }
 			}
-			effect.target_properties_[property_id] = true
+			css.StyleComputer.for_each_property_expanding_shorthands(property_id, value, fn [mut effect] (id css.PropertyID, _ &dom.StyleValue) {
+				effect.target_properties_[id] = true
+			})
+		}
+		for name, value in keyframe.parsed_custom_properties {
+			resolved.custom_properties[name] = ResolvedProperty{ value: unsafe { value } }
+			effect.target_custom_properties_[name] = true
 		}
 		offset := keyframe.computed_offset or { continue }
 		set.keyframes_by_key[u64(offset * 100_000.0)] = resolved
 	}
 	generate_initial_and_final_frames(mut set, effect.target_properties_)
+	generate_initial_and_final_custom_frames(mut set, effect.target_custom_properties_)
 	effect.key_frame_set_ = set
 	effect.invalidate_animation_preparation()
 	effect.invalidate_effect()
@@ -478,9 +499,13 @@ pub fn (mut effect KeyframeEffect) set_keyframes_from_js(input []BaseKeyframe) !
 
 pub fn (mut effect KeyframeEffect) set_key_frame_set(set KeyFrameSet) {
 	effect.target_properties_.clear()
+	effect.target_custom_properties_.clear()
 	for _, keyframe in set.keyframes_by_key {
 		for property_id, _ in keyframe.properties {
 			effect.target_properties_[property_id] = true
+		}
+		for name, _ in keyframe.custom_properties {
+			effect.target_custom_properties_[name] = true
 		}
 	}
 	effect.key_frame_set_ = set
@@ -667,6 +692,9 @@ pub fn (effect &KeyframeEffect) can_skip_per_frame_style_update() bool {
 	}
 	mut has_animated_property := false
 	for _, keyframe in effect.key_frame_set_.keyframes_by_key {
+		if keyframe.custom_properties.len > 0 {
+			return false
+		}
 		for property_id, _ in keyframe.properties {
 			has_animated_property = true
 			if property_id !in [.transform, .translate, .rotate, .scale] {
@@ -732,15 +760,27 @@ pub fn (effect &KeyframeEffect) can_skip_per_frame_animation_tick() bool {
 pub fn generate_initial_and_final_frames(mut set KeyFrameSet, properties map[css.PropertyID]bool) {
 	mut initial := set.keyframes_by_key[u64(0)] or { ResolvedKeyframe{} }
 	mut final := set.keyframes_by_key[u64(100_000)] or { ResolvedKeyframe{} }
+	mut initial_properties := map[css.PropertyID]bool{}
+	mut final_properties := map[css.PropertyID]bool{}
+	for property_id, _ in initial.properties {
+		if css.property_is_shorthand(property_id) {
+			for id in css.generated_expanded_longhands_for_shorthand(property_id) { initial_properties[id] = true }
+		} else { initial_properties[property_id] = true }
+	}
+	for property_id, _ in final.properties {
+		if css.property_is_shorthand(property_id) {
+			for id in css.generated_expanded_longhands_for_shorthand(property_id) { final_properties[id] = true }
+		} else { final_properties[property_id] = true }
+	}
 	for property_id, enabled in properties {
 		if !enabled { continue
 		 }
-		if property_id !in initial.properties {
+		if property_id !in initial_properties {
 			initial.properties[property_id] = ResolvedProperty{
 				use_initial: true
 			}
 		}
-		if property_id !in final.properties {
+		if property_id !in final_properties {
 			final.properties[property_id] = ResolvedProperty{
 				use_initial: true
 			}
@@ -752,6 +792,70 @@ pub fn generate_initial_and_final_frames(mut set KeyFrameSet, properties map[css
 
 pub fn KeyframeEffect.generate_initial_and_final_frames(mut set KeyFrameSet, properties map[css.PropertyID]bool) {
 	generate_initial_and_final_frames(mut set, properties)
+}
+
+fn generate_initial_and_final_custom_frames(mut set KeyFrameSet, properties map[string]bool) {
+	mut initial := set.keyframes_by_key[u64(0)] or { ResolvedKeyframe{} }
+	mut final := set.keyframes_by_key[u64(100_000)] or { ResolvedKeyframe{} }
+	for name, enabled in properties {
+		if !enabled { continue }
+		if name !in initial.custom_properties {
+			initial.custom_properties[name] = ResolvedProperty{ use_initial: true }
+		}
+		if name !in final.custom_properties {
+			final.custom_properties[name] = ResolvedProperty{ use_initial: true }
+		}
+	}
+	set.keyframes_by_key[0] = initial
+	set.keyframes_by_key[100_000] = final
+}
+
+// The CSS sampler is the translated StyleComputer effect-stack algorithm.
+// Adapt the same resolved keyframes, target, composition and timing into its
+// cycle-free view rather than sampling Web Animations through another algorithm.
+pub fn (mut effect KeyframeEffect) css_effect_for_style() &css.KeyframeEffect {
+	mut sampling_effect := effect.css_sampling_effect_ or { css.KeyframeEffect.create() }
+	mut frames := &css.KeyFrameSet{}
+	for key, frame in effect.key_frame_set_.keyframes_by_key {
+		mut resolved := css.ResolvedKeyFrame{}
+		if frame.composite != .auto_ {
+			resolved.composite = match frame.composite {
+				.replace { css.CompositeOperation.replace }
+				.add { css.CompositeOperation.add }
+				.accumulate { css.CompositeOperation.accumulate }
+				.auto_ { css.CompositeOperation.replace }
+			}
+		}
+		if easing := frame.easing {
+			resolved.easing = css.ResolvedKeyframeEasing(easing)
+		}
+		for id, property in frame.properties {
+			if property.use_initial {
+				resolved.use_initial_properties[id] = true
+			} else if value := property.value {
+				resolved.properties[id] = unsafe { value }
+			}
+		}
+		for name, property in frame.custom_properties {
+			if property.use_initial {
+				resolved.use_initial_custom_properties[name] = true
+			} else if value := property.value {
+				resolved.custom_properties[name] = unsafe { value }
+			}
+		}
+		frames.keyframes_by_key[int(key)] = resolved
+	}
+	sampling_effect.target_ = effect.target_abstract_element()
+	sampling_effect.key_frame_set = frames
+	sampling_effect.composite = match effect.composite_ {
+		.replace { css.CompositeOperation.replace }
+		.add { css.CompositeOperation.add }
+		.accumulate { css.CompositeOperation.accumulate }
+	}
+	sampling_effect.output_progress = effect.transformed_progress()
+	sampling_effect.default_easing = css.EasingFunction.linear()
+	effect.css_sampling_effect_ = sampling_effect
+	return sampling_effect
 }
 
 pub fn (effect &KeyframeEffect) target_abstract_element() ?dom.AbstractElement {

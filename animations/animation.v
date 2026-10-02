@@ -805,6 +805,25 @@ pub fn (animation &Animation) document_for_timing() ?&dom.Document {
 
 pub fn (mut animation Animation) update() {
 	animation.calculate_auto_aligned_start_time()
+	monotonic := if timeline := animation.timeline_ { timeline.is_monotonically_increasing() } else { false }
+	if !animation.is_finished_ || !monotonic {
+		was_finished := animation.is_finished_
+		animation.update_finished_state_with_notification(false, true, .no, none)
+		if animation.play_state() == .running {
+			if raw_effect := animation.effect_ {
+				if raw_effect.is_keyframe_effect_ {
+					effect := unsafe { &KeyframeEffect(raw_effect) }
+					constant_before_start := !animation.pending() && effect.is_in_the_before_phase()
+						&& monotonic && animation.playback_rate() > 0
+					if !effect.can_skip_per_frame_style_update() && !animation.pending() && !constant_before_start {
+						animation.invalidate_effect()
+					}
+				}
+			}
+		} else if animation.is_finished_ != was_finished {
+			animation.invalidate_effect()
+		}
+	}
 	if animation.pending_play_task_ && animation.is_ready() {
 		animation.pending_play_task_ = false
 		animation.run_pending_play_task()
@@ -813,7 +832,6 @@ pub fn (mut animation Animation) update() {
 		animation.pending_pause_task_ = false
 		animation.run_pending_pause_task()
 	}
-	animation.update_finished_state_with_notification(false, true, .no, none)
 }
 
 pub fn (mut animation Animation) effect_timing_changed() {

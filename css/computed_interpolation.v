@@ -11256,7 +11256,9 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 		if !effect.is_css_transition && computed_properties.is_property_important(property_id) {
 			continue
 		}
-		underlying := computed_properties.property(property_id, .no) or { continue }
+		// Rust css/animation.rs::apply_animation_batch keeps each sampled result
+		// as the underlying value for the next effect in composite order.
+		underlying := computed_properties.property(property_id, .yes) or { continue }
 		start_operation := start_keyframe.composite or { effect.composite }
 		end_operation := end_keyframe.composite or { effect.composite }
 		if composited := composite_value(property_id, underlying, start, start_operation) {
@@ -11301,10 +11303,12 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 			}
 		}
 		underlying_specified := custom_property_animation_underlying_value(abstract_element, name)
-		underlying := s.compute_animated_custom_property_value(abstract_element,
+		base_underlying := s.compute_animated_custom_property_value(abstract_element,
 			computed_properties, name, underlying_specified)
-		start_specified := start_keyframe.custom_properties[name] or { underlying }
-		end_specified := end_keyframe.custom_properties[name] or { underlying }
+		previous_values := computed_properties.animated_custom_property_values()
+		underlying := previous_values[name] or { base_underlying }
+		start_specified := start_keyframe.custom_properties[name] or { base_underlying }
+		end_specified := end_keyframe.custom_properties[name] or { base_underlying }
 		mut start := s.compute_animated_custom_property_value(abstract_element, computed_properties,
 			name, start_specified)
 		mut end := s.compute_animated_custom_property_value(abstract_element, computed_properties,
@@ -11321,6 +11325,19 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 			start, end, interval_progress)
 		computed_properties.set_animated_custom_property(name, interpolated)
 	}
+}
+
+// Web Animations owns its concrete effect records and provides the same CSS
+// keyframe view used by CSS animations through the document's cycle boundary.
+fn web_animation_effects_for_style(abstract_element dom.AbstractElement) []&KeyframeEffect {
+	document := abstract_element.document()
+	hook := document.animations_hook_ or { return []&KeyframeEffect{} }
+	if hook.effects_for_style == unsafe { nil } { return []&KeyframeEffect{} }
+	mut effects := []&KeyframeEffect{}
+	for handle in hook.effects_for_style(hook.target, abstract_element) {
+		if handle != unsafe { nil } { effects << unsafe { &KeyframeEffect(handle) } }
+	}
+	return effects
 }
 
 fn publish_animated_custom_properties(computed_properties &ComputedProperties, abstract_element dom.AbstractElement) {
@@ -11558,6 +11575,11 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	publish_animated_custom_properties(properties, abstract_element)
 
 	// Run automatic box type transformations.
+	for effect in web_animation_effects_for_style(abstract_element) {
+		s.collect_animation_into(abstract_element, voidptr(effect), mut properties)
+	}
+	publish_animated_custom_properties(properties, abstract_element)
+
 	s.transform_box_type_if_needed(mut properties, abstract_element)
 
 	// Apply any property-specific computed value logic.

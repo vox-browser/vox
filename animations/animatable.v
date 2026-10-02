@@ -91,7 +91,64 @@ fn install_document_animations_hook(mut document dom.Document) {
 		update_animations: update_animations_for_dom_root
 		remove_replaced_animations: remove_replaced_animations_for_dom_root
 		compare_animations: compare_dom_animations
+		effect_targets: animation_effect_targets_for_document
+		effects_for_style: animation_effects_for_style
 	})
+}
+
+fn append_animation_effect_targets(node &dom.Node, mut result []dom.AbstractElement) {
+	if node.is_element() {
+		element := unsafe { &dom.Element(node) }
+		if element.animations_animatable_handle_ != unsafe { nil } {
+			// Keep the target in the update set after cancellation/removal so its
+			// previous animated overlay can be reset even with no active effects.
+			result << dom.AbstractElement.new(element, none)
+			for raw := 0; raw < int(dom.PseudoElement.known_pseudo_element_count); raw++ {
+				pseudo := unsafe { dom.PseudoElement(raw) }
+				abstract_element := dom.AbstractElement.new(element, pseudo)
+				if abstract_element.computed_properties() != none {
+					result << abstract_element
+				}
+			}
+		}
+	}
+	for child in node.children_as_vector() {
+		append_animation_effect_targets(child, mut result)
+	}
+	if node.is_element() {
+		element := unsafe { &dom.Element(node) }
+		if shadow := element.shadow_root() {
+			append_animation_effect_targets(shadow.as_node(), mut result)
+		}
+	}
+}
+
+fn animation_effect_targets_for_document(target voidptr) []dom.AbstractElement {
+	document := unsafe { &dom.Document(target) }
+	mut targets := []dom.AbstractElement{}
+	append_animation_effect_targets(unsafe { &dom.Node(document) }, mut targets)
+	return targets
+}
+
+fn animation_effects_for_style(_ voidptr, target dom.AbstractElement) []voidptr {
+	element := target.element()
+	if element.animations_animatable_handle_ == unsafe { nil } {
+		return []voidptr{}
+	}
+	mut animatable := unsafe { &Animatable(element.animations_animatable_handle_) }
+	mut effects := []voidptr{}
+	for animation in animatable.associated_animations_in_composite_order() {
+		if animation.replace_state() == .removed { continue }
+		associated_effect := animation.effect_ or { continue }
+		if !associated_effect.is_keyframe_effect_ { continue }
+		mut effect := unsafe { &KeyframeEffect(associated_effect) }
+		abstract_target := effect.target_abstract_element() or { continue }
+		effect_pseudo := abstract_target.pseudo_element()
+		target_pseudo := target.pseudo_element()
+		if effect_pseudo != target_pseudo { continue }
+		effects << voidptr(effect.css_effect_for_style())
+	}
+	return effects
 }
 
 fn append_all_animations_for_dom_subtree(node &dom.Node, mut result []&Animation) {
@@ -179,6 +236,7 @@ fn remove_replaced_animations_for_dom_root(_ voidptr, root &dom.Node) {
 		return compare_animations(*a, *b)
 	})
 	mut highest_property_composite_orders := map[css.PropertyID]int{}
+	mut highest_custom_property_composite_orders := map[string]int{}
 	for index := replaceable_animations.len - 1; index >= 0; index-- {
 		mut animation := replaceable_animations[index]
 		effect := animation.effect_ or { continue }
@@ -187,6 +245,12 @@ fn remove_replaced_animations_for_dom_root(_ voidptr, root &dom.Node) {
 			if property_id !in highest_property_composite_orders {
 				has_any_highest_priority_property = true
 				highest_property_composite_orders[property_id] = index
+			}
+		}
+		for name, _ in effect.target_custom_properties() {
+			if name !in highest_custom_property_composite_orders {
+				has_any_highest_priority_property = true
+				highest_custom_property_composite_orders[name] = index
 			}
 		}
 		if has_any_highest_priority_property {
