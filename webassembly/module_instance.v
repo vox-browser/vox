@@ -268,6 +268,7 @@ fn compile_module(bytes []u8) !&Module {
 			return error('CompileError: trailing bytes in section ${section_id}')
 		}
 	}
+	validate_module_counts(function_type_indices, function_bodies, data_count, data_segments)!
 	validate_module_memories(imports, memory_types, exports)!
 	return &Module{
 		bytes:            bytes.clone()

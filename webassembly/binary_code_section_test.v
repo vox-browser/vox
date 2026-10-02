@@ -3,14 +3,20 @@ module webassembly
 import webidl
 
 fn code_section_binary(payload []u8) []u8 {
-	mut bytes := [u8(0), 0x61, 0x73, 0x6d, 1, 0, 0, 0, 10, u8(payload.len)]
+	// The parser fixtures retain genuine module function/body counts. Full
+	// instruction-stack validation is a subsequent translation slice.
+	mut bytes := [u8(0), 0x61, 0x73, 0x6d, 1, 0, 0, 0, 1, 4, 1, 0x60, 0, 0]
+	if payload.len > 0 {
+		bytes << [u8(3), u8(payload[0] + 1), payload[0]]
+		for _ in 0 .. payload[0] { bytes << u8(0) }
+	}
+	bytes << [u8(10), u8(payload.len)]
 	bytes << payload
 	return bytes
 }
 
 fn test_code_section_retains_local_groups_real_bodies_and_function_boundaries() {
-	compiled := compile_module(code_section_binary([u8(2),
-		8, 1, 2, 0x7f, 0x20, 0, 0x41, 42, 0x0b,
+	compiled := compile_module(code_section_binary([u8(2), 8, 1, 2, 0x7f, 0x20, 0, 0x41, 42, 0x0b,
 		7, 1, 1, 0x64, 0x6f, 0xd0, 0x6f, 0x0b]))!
 	assert compiled.function_bodies.len == 2
 	first := compiled.function_bodies[0]
@@ -30,9 +36,9 @@ fn test_code_section_local_count_limit_and_malformed_body_framing() {
 	// 42069 = d5 c8 02; source Constants.h allows that count per local group.
 	compiled := compile_module(code_section_binary([u8(1), 6, 1, 0xd5, 0xc8, 2, 0x7f, 0x0b]))!
 	assert compiled.function_bodies[0].locals[0].count == 42069
-	for payload in [[]u8{}, [u8(1)], [u8(1), 0], [u8(1), 2, 0, 0x41],
-		[u8(1), 2, 0, 0x0b, 0], [u8(1), 3, 0, 0x0b, 0x0b],
-		[u8(1), 6, 1, 0xd6, 0xc8, 2, 0x7f, 0x0b], [u8(1), 4, 1, 1, 0x78, 0x0b]] {
+	for payload in [[]u8{}, [u8(1)], [u8(1), 0], [u8(1), 2, 0, 0x41], [u8(1), 2, 0, 0x0b, 0],
+		[u8(1), 3, 0, 0x0b, 0x0b], [u8(1), 6, 1, 0xd6, 0xc8, 2, 0x7f, 0x0b],
+		[u8(1), 4, 1, 1, 0x78, 0x0b]] {
 		assert !validate(webidl.BufferSource.array_buffer(code_section_binary(payload)))
 	}
 }
