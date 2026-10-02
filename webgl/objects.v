@@ -236,7 +236,7 @@ pub struct WebGLSync {
 pub mut:
 	object WebGLObject
 mut:
-	signaled_ bool
+	native_handle_ voidptr
 }
 
 pub fn (sync &WebGLSync) sync_handle(context_id u64, context_generation u64) !GLuint {

@@ -25,9 +25,9 @@ fn test_webgl2_copy_sync_transform_feedback_and_offsets() {
 	assert destination.bytes() == [u8(2), 3, 4, 0]
 	assert offset_span([u8(1), 2, 3], 1, 0)! == [u8(2), 3]
 	mut sync := context.fence_sync(sync_gpu_commands_complete, 0) or { panic('sync') }
-	assert context.client_wait_sync(mut sync, 0, 0) == timeout_expired
-	assert context.client_wait_sync(mut sync, 0, 1) == condition_satisfied
-	assert context.client_wait_sync(mut sync, 0, 1) == already_signaled
+	assert context.client_wait_sync(mut sync, 0, 0) in [timeout_expired, already_signaled, condition_satisfied]
+	assert context.client_wait_sync(mut sync, sync_flush_commands_bit, 1_000_000_000) in [condition_satisfied, already_signaled]
+	assert context.client_wait_sync(mut sync, 0, 0) == already_signaled
 	mut feedback := context.create_transform_feedback()
 	context.bind_transform_feedback(transform_feedback, feedback)
 	context.begin_transform_feedback(0x0004)

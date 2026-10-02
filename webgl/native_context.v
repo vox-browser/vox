@@ -1,8 +1,8 @@
 // Copyright (c) 2026, Ladybird contributors
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of OpenGLContext.cpp. IOSurface/Vulkan/Skia allocation and GL
-// dispatch are represented as an explicit platform-state boundary.
+// Translation of OpenGLContext.cpp. The native EGL context uses the upstream
+// ANGLE backend and context attributes; drawing-surface state is retained here.
 module webgl
 
 pub struct DrawingBufferOptions {
@@ -27,6 +27,7 @@ mut:
 	width_                int
 	height_               int
 	current_              bool
+	backend_              voidptr
 	surface_allocated_    bool
 	content_will_change_  bool
 	needs_to_present_     bool
@@ -42,10 +43,13 @@ mut:
 }
 
 pub fn OpenGLContext.new(version WebGLVersion, options DrawingBufferOptions, supported []string) &OpenGLContext {
+	backend := C.vox_egl_create(if version == .webgl1 { 2 } else { 3 })
 	return &OpenGLContext{
 		version: version
 		drawing_buffer_options: options
 		supported_extensions_: supported.clone()
+		backend_: backend
+		lost_: backend == unsafe { nil }
 	}
 }
 
@@ -53,10 +57,13 @@ pub fn (mut context OpenGLContext) make_current() {
 	if context.lost_ {
 		return
 	}
-	context.current_ = true
+	context.current_ = C.vox_egl_make_current(context.backend_) == 1
+	if !context.current_ { context.lost_ = true }
 }
 
 pub fn (mut context OpenGLContext) set_lost() {
+	C.vox_egl_destroy(context.backend_)
+	context.backend_ = unsafe { nil }
 	context.lost_ = true
 	context.current_ = false
 }
@@ -66,7 +73,9 @@ pub fn (context &OpenGLContext) is_lost() bool {
 }
 
 pub fn (mut context OpenGLContext) restore(supported []string) {
-	context.lost_ = false
+	C.vox_egl_destroy(context.backend_)
+	context.backend_ = C.vox_egl_create(if context.version == .webgl1 { 2 } else { 3 })
+	context.lost_ = context.backend_ == unsafe { nil }
 	context.pending_local_error_ = no_error
 	context.current_ = false
 	context.surface_allocated_ = false

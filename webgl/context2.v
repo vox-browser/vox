@@ -268,17 +268,13 @@ pub fn (mut context WebGLRenderingContext) delete_sampler(mut sampler ?&WebGLSam
 }
 
 pub fn (mut context WebGLRenderingContext) fence_sync(condition GLenum, flags GLenum) ?&WebGLSync {
-	if condition != sync_gpu_commands_complete || flags != 0 {
-		context.set_error(if condition != sync_gpu_commands_complete {
-			invalid_enum
-		} else {
-			invalid_value
-		})
-		return none
-	}
+	if !context.require_webgl2() { return none }
+	native_handle := context.native.native_fence_sync(condition, flags)
+	if native_handle == unsafe { nil } { return none }
 	handle := context.allocate_handle()
 	sync := &WebGLSync{
 		object: new_object(context.identity(), context.context_generation_, handle)
+		native_handle_: native_handle
 	}
 	unsafe {
 		context.syncs[handle] = sync
@@ -292,19 +288,8 @@ pub fn (mut context WebGLRenderingContext) client_wait_sync(mut sync WebGLSync, 
 		context.set_error(invalid_operation)
 		return wait_failed
 	}
-	if flags != 0 {
-		context.set_error(invalid_value)
-		return wait_failed
-	}
-	if sync.signaled_ {
-		return already_signaled
-	}
-	if timeout == 0 {
-		return timeout_expired
-	}
-	sync.signaled_ = true
 	context.native.dispatch('client_wait_sync', sync.object.handle_, flags, i64(timeout))
-	return condition_satisfied
+	return context.native.native_client_wait_sync(sync.native_handle_, flags, timeout)
 }
 
 pub fn (mut context WebGLRenderingContext) wait_sync(mut sync WebGLSync, flags GLenum, timeout u64) {
@@ -312,12 +297,8 @@ pub fn (mut context WebGLRenderingContext) wait_sync(mut sync WebGLSync, flags G
 		context.set_error(invalid_operation)
 		return
 	}
-	if flags != 0 || timeout != u64(-1) {
-		context.set_error(invalid_value)
-		return
-	}
-	sync.signaled_ = true
 	context.native.dispatch('wait_sync', sync.object.handle_, flags, i64(timeout))
+	context.native.native_wait_sync(sync.native_handle_, flags, timeout)
 }
 
 pub fn (mut context WebGLRenderingContext) delete_sync(mut sync ?&WebGLSync) {
@@ -331,6 +312,8 @@ pub fn (mut context WebGLRenderingContext) delete_sync(mut sync ?&WebGLSync) {
 		}
 		handle := handle_result.value
 		context.syncs.delete(handle)
+		context.native.native_delete_sync(value.native_handle_)
+		value.native_handle_ = unsafe { nil }
 		context.native.dispatch('delete_sync', handle)
 	}
 }
