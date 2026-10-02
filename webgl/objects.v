@@ -225,9 +225,6 @@ mut:
 pub struct WebGLSampler {
 pub mut:
 	object WebGLObject
-mut:
-	integer_parameters map[GLenum]int
-	float_parameters   map[GLenum]f32
 }
 
 @[heap]

@@ -153,10 +153,12 @@ pub fn (mut context WebGLRenderingContext) delete_query(mut query ?&WebGLQuery) 
 
 pub fn (mut context WebGLRenderingContext) create_sampler() &WebGLSampler {
 	context.require_webgl2()
+	context.native.make_current()
 	handle := context.allocate_handle()
 	sampler := &WebGLSampler{
-		object: new_object(context.identity(), context.context_generation_, handle)
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: C.vox_gl_gen_object(5)}
 	}
+	context.native.collect_native_error()
 	unsafe {
 		context.samplers[handle] = sampler
 	}
@@ -164,20 +166,22 @@ pub fn (mut context WebGLRenderingContext) create_sampler() &WebGLSampler {
 }
 
 pub fn (mut context WebGLRenderingContext) bind_sampler(unit GLuint, sampler ?&WebGLSampler) {
+	if !context.require_webgl2() { return }
 	if value := sampler {
 		if !context.owns(&value.object) {
 			context.set_error(invalid_operation)
 			return
 		}
-		context.bound_samplers[unit] = value.object.handle_
-	} else {
-		context.bound_samplers.delete(unit)
 	}
 	context.native.dispatch('bind_sampler', unit, if value := sampler {
 		value.object.handle_
 	} else {
 		0
 	})
+	C.vox_gl_bind_sampler(unit, if value := sampler { value.object.native_handle_ } else { 0 })
+	if !context.native.collect_native_error() { return }
+	if value := sampler { context.bound_samplers[unit] = value.object.handle_ }
+	else { context.bound_samplers.delete(unit) }
 }
 
 fn valid_sampler_parameter(pname GLenum) bool {
@@ -194,8 +198,9 @@ pub fn (mut context WebGLRenderingContext) sampler_parameteri(mut sampler WebGLS
 		context.set_error(invalid_enum)
 		return
 	}
-	sampler.integer_parameters[pname] = parameter
 	context.native.dispatch('sampler_parameteri', sampler.object.handle_, pname, parameter)
+	C.vox_gl_sampler_parameteri(sampler.object.native_handle_, pname, parameter)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) sampler_parameterf(mut sampler WebGLSampler, pname GLenum, parameter f32) {
@@ -207,8 +212,9 @@ pub fn (mut context WebGLRenderingContext) sampler_parameterf(mut sampler WebGLS
 		context.set_error(invalid_enum)
 		return
 	}
-	sampler.float_parameters[pname] = parameter
 	context.native.dispatch('sampler_parameterf', sampler.object.handle_, pname, i64(parameter))
+	C.vox_gl_sampler_parameterf(sampler.object.native_handle_, pname, parameter)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) delete_sampler(mut sampler ?&WebGLSampler) {
@@ -226,6 +232,8 @@ pub fn (mut context WebGLRenderingContext) delete_sampler(mut sampler ?&WebGLSam
 			if bound == handle { context.bound_samplers.delete(unit) }
 		}
 		context.native.dispatch('delete_sampler', handle)
+		C.vox_gl_delete_object(5, value.object.native_handle_)
+		context.native.collect_native_error()
 	}
 }
 
