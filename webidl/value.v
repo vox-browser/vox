@@ -50,6 +50,8 @@ pub:
 	context voidptr
 	value voidptr
 	is_undefined bool
+	// Genuine engine number projection; this never performs ToNumber on objects.
+	number_primitive ?f64
 	boolean_conversion ?fn () !bool
 	same_value ?fn (RuntimeValue) !bool
 	string_conversion fn () !string @[required]
@@ -57,6 +59,15 @@ pub:
 
 pub fn runtime_value(value RuntimeValue) Value {
 	return Value{ kind: .runtime_value, runtime_value_: value }
+}
+
+pub fn (value &Value) number_primitive() ?f64 {
+	if value.kind == .number { return value.number_value }
+	if value.kind == .runtime_value {
+		actual := value.runtime_value_ or { return none }
+		return actual.number_primitive
+	}
+	return none
 }
 
 pub fn undefined_value() Value {

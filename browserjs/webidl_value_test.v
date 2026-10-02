@@ -62,3 +62,21 @@ fn test_native_webidl_runtime_value_conversion_and_context_ownership_use_actual_
 	runtime.close()
 	if _ := webidl.to_string(wrapped) { assert false } else { assert err.msg().contains('closed') }
 }
+
+fn test_native_number_projection_checks_actual_engine_brand_without_coercion() {
+	$if !darwin { return }
+	mut runtime := Runtime.create()
+	defer { runtime.close() }
+	for expression in ['1.25', '-3', 'Infinity', '-Infinity', 'NaN'] {
+		actual := runtime.evaluate_host_value(expression)!
+		value := runtime.webidl_value(actual)!
+		assert value.number_primitive() != none
+		assert runtime.actual_webidl_value(value)! == actual
+	}
+	for expression in ['null', 'true', '"1"', '1n', 'Symbol()', '({valueOf(){throw "must not coerce"},[Symbol.toPrimitive](){throw "must not coerce"}})'] {
+		actual := runtime.evaluate_host_value(expression)!
+		value := runtime.webidl_value(actual)!
+		assert value.number_primitive() == none
+		assert runtime.actual_webidl_value(value)! == actual
+	}
+}

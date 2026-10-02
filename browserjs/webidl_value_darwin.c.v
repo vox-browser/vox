@@ -13,10 +13,17 @@ fn C.JSValueToBoolean(context voidptr, value voidptr) bool
 pub fn (mut runtime Runtime) webidl_value(value voidptr) !webidl.Value {
 	runtime.retain_javascript_value(value)!
 	owner_handle := voidptr(&runtime)
+	mut number_primitive := ?f64(none)
+	if C.JSValueIsNumber(runtime.context, value) {
+		mut exception := unsafe { nil }
+		number_primitive = C.JSValueToNumber(runtime.context, value, &exception)
+		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+	}
 	return webidl.runtime_value(webidl.RuntimeValue{
 		context: runtime.context
 		value: value
 		is_undefined: C.JSValueIsUndefined(runtime.context, value)
+		number_primitive: number_primitive
 		boolean_conversion: fn [owner_handle, value] () !bool {
 			owner := unsafe { &Runtime(owner_handle) }
 			owner.require_javascript_value_context()!
