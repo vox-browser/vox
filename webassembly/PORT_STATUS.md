@@ -316,3 +316,28 @@ parser remains JavaScriptCore, so this adapter is not source parser or full
 LibJS realm parity. Full unsigned Table64 conversion and actual function
 reference branding remain open. The current complete package passes a clean
 **58/58 files in each GC mode**.
+
+## Actual Global Store bindings and extern identity
+
+`Global` now retains only its actual owning cache and vector-index Store
+address. Construction allocates the source `GlobalInstance`; wrapping an
+existing address preserves its type, mutability and value. Machine writes and
+binding writes reach the same retained record after Store growth. Type/read
+lookup, missing-instance RangeError, V128 checks, const checks and conversion
+ordering follow `Global.cpp`. Omitted V128 initialization differs from explicit
+undefined as in the source binding. Source raw machine getters/setters remain
+separate from the JS value conversion adapter.
+
+Extern conversion uses the owning cache, preserving distinct platform records,
+object identity across property changes, actual Promise records and owning
+runtime references. Numeric keys distinguish signed zero and canonicalize NaN;
+hashing never coerces author objects. A typed dictionary without an actual
+opaque object record has no invented identity key: it remains a separate
+retained entry. This standalone DTO boundary does not complete LibJS Value cell
+hashing, wrapper GC, or native primitive-value interning.
+
+The complete package passes **60/60 files with default GC and 60/60 with
+`-gc none`**. Actual non-null exported function branding, function Store/module
+lookup, synthetic Instance global/table exports, native WebAssembly wrappers,
+instruction execution and the full VM/GC ownership graph remain open. A typed
+callback marker is not accepted as a genuine exported function.
