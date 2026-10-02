@@ -770,6 +770,7 @@ pub fn (binding &SubtleCryptoBinding) wrap_key(format KeyFormat, key &CryptoKey,
 	return binding.run(fn [binding, normalized, format, key, wrapping_key] () !webidl.Value {
 		binding_validate_key(wrapping_key, normalized.name, .wrap_key)!
 		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
+		normalize_an_algorithm(key.algorithm_name(), 'exportKey')!
 		bytes := if key.algorithm_name() == 'Ed25519' { export_ed25519_key(format, key)! } else if key.algorithm_name() == 'ChaCha20-Poly1305' { export_chacha_key(format, key)! } else { binding.crypto.export_key_bytes_for_wrapping(format, key)! }
 		wrapped := if normalized.name == 'AES-KW' {
 			aes_key_wrap(wrapping_key, bytes)!
@@ -793,6 +794,9 @@ pub fn (binding &SubtleCryptoBinding) unwrap_key(format KeyFormat, wrapped_key w
 		} else {
 			normalized_encrypt(normalized, unwrapping_key, bytes, true)!
 		}
+		// unwrap parses JWK JSON before entering the concrete import body; an
+		// ordinary importKey dictionary has no separate mandatory-kty parse step.
+		if format == .jwk { _ = JsonWebKey.parse(unwrapped)! }
 		mut key := normalized_import(normalized_import_params, format, unwrapped, extractable, copied_usages)!
 		if key.type_ in [.secret, .private_key] && copied_usages.len == 0 {
 			return error('SyntaxError: Usages must not be empty')
