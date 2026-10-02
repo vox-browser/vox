@@ -251,7 +251,12 @@ pub fn (api &Internals) has_activity_root(object ActivityRootObject) bool {
 }
 
 pub fn (api &Internals) create_xml_http_request_for_document(document &dom.Document) &xhr.XMLHttpRequest {
-	return xhr.XMLHttpRequest.construct(.window, document.url_string())
+	return xhr.XMLHttpRequest.create(&xhr.XMLHttpRequestGlobal{
+		kind: .window
+		base_url: document.base_url().serialize()
+		origin: document.origin()
+		associated_document: document
+	})
 }
 
 pub fn dump_string_to_utf16(value string) string {

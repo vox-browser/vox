@@ -8,6 +8,7 @@
 module xhr
 
 import fileapi
+import dom
 import encoding
 import mimesniff
 import url as liburl
@@ -45,6 +46,8 @@ pub struct XMLHttpRequestGlobal {
 pub:
 	kind     GlobalKind
 	base_url string
+	origin ?dom.Origin
+	associated_document ?&dom.Document
 	monotonic_now fn () i64 = xhr_monotonic_now
 pub mut:
 	document_destroyed bool
@@ -67,6 +70,7 @@ pub:
 	body          []u8
 	network_error ?string
 	aborted       bool
+	body_is_null bool
 }
 
 pub struct XHRResponse {
@@ -76,11 +80,13 @@ pub:
 	bytes         []u8
 	blob          ?&fileapi.Blob
 	document_text ?string
+	document ?&dom.Document
 	json_text     ?string
 }
 
 pub struct XHRDocumentResult {
 pub:
+	document ?&dom.Document
 	document_text ?string
 }
 
@@ -143,7 +149,7 @@ pub fn XMLHttpRequest.create(global_object &XMLHttpRequestGlobal) &XMLHttpReques
 		global_kind:   global_object.kind
 		base_url:      global_object.base_url
 		global_object_: global_object
-		response_:     MockResponse{}
+		response_:     MockResponse{ body_is_null: true }
 	}
 	live_xml_http_requests_ << request
 	prune_live_xml_http_requests()
@@ -247,7 +253,7 @@ pub fn (mut request XMLHttpRequest) open(method string, input_url string, async 
 	request.request_body_transmitted = 0
 	request.synchronous = !async
 	request.upload_listener = false
-	request.response_ = MockResponse{}
+	request.response_ = MockResponse{ body_is_null: true }
 	request.received_bytes.clear()
 	request.response_cache = none
 	request.response_object_failed_ = false
@@ -569,6 +575,7 @@ fn (mut request XMLHttpRequest) request_error_steps(event string, exception_mess
 	request.update_activity_root()
 	request.response_ = MockResponse{
 		network_error: 'Failed to load'
+		body_is_null: true
 	}
 	request.response_cache = none
 	if request.synchronous {
@@ -594,7 +601,7 @@ pub fn (mut request XMLHttpRequest) abort() {
 	}
 	if request.state == .done {
 		request.state = .unsent
-		request.response_ = MockResponse{}
+		request.response_ = MockResponse{ body_is_null: true }
 		request.update_activity_root()
 	}
 }
@@ -725,27 +732,15 @@ pub fn (request &XMLHttpRequest) get_text_response() string {
 }
 
 pub fn (mut request XMLHttpRequest) set_document_response() {
-	if request.received_bytes.len == 0 {
-		return
-	}
-	final_mime := request.get_final_mime_type()
-	if !final_mime.is_html() && !final_mime.is_xml() {
-		return
-	}
-	if request.response_type_ == .empty && final_mime.is_html() {
-		return
-	}
-	request.response_cache = XHRResponse{
-		type_:         .document
-		document_text: request.get_text_response()
-	}
+	request.populate_document_response()
 }
 
 pub fn (request &XMLHttpRequest) response_document() ?XHRDocumentResult {
 	cached := request.response_cache or { return none }
-	document_text := cached.document_text or { return none }
+	document := cached.document or { return none }
 	return XHRDocumentResult{
-		document_text: document_text
+		document: document
+		document_text: cached.document_text
 	}
 }
 
@@ -763,7 +758,7 @@ pub fn (mut request XMLHttpRequest) set_blob_response_object(blob &fileapi.Blob)
 }
 
 pub fn (request &XMLHttpRequest) response_body_is_null() bool {
-	return request.response_.body.len == 0
+	return request.response_.body_is_null
 }
 
 pub fn (mut request XMLHttpRequest) reset_response_object() {
@@ -778,21 +773,13 @@ pub fn (mut request XMLHttpRequest) response_xml() !XHRDocumentResult {
 	if request.state != .done || request.response_.network_error != none {
 		return XHRDocumentResult{}
 	}
-	parsed := request.final_mime_type_record() or { return XHRDocumentResult{} }
-	if !parsed.is_html() && !parsed.is_xml() {
-		return XHRDocumentResult{}
-	}
-	if request.response_type_ == .empty && parsed.is_html() {
-		return XHRDocumentResult{}
-	}
-	return XHRDocumentResult{
-		document_text: request.received_bytes.bytestr()
-	}
+	request.set_document_response()
+	return request.response_document() or { XHRDocumentResult{} }
 }
 
 pub fn (mut request XMLHttpRequest) response() XHRResponse {
 	if cached := request.response_cache {
-		return cached
+		if request.response_type_ !in [.empty, .text] { return cached }
 	}
 	mut result := XHRResponse{
 		type_: request.response_type_
@@ -835,7 +822,7 @@ pub fn (mut request XMLHttpRequest) response() XHRResponse {
 			else {}
 		}
 	}
-	request.response_cache = result
+	if request.response_type_ !in [.empty, .text] { request.response_cache = result }
 	return result
 }
 
