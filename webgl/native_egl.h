@@ -104,6 +104,8 @@ static int vox_gl_get_sync_parameter(void* sync, unsigned pname)
     return result;
 }
 static unsigned vox_gl_get_error(void) { return glGetError(); }
+static char const* vox_gl_string(unsigned name) { return (char const*)glGetString(name); }
+static void vox_gl_request_extension(char const* name) { glRequestExtensionANGLE(name); }
 static void vox_egl_free_surface(void* handle)
 {
     VoxEGLContext* context = handle;

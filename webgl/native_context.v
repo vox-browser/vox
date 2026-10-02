@@ -38,8 +38,6 @@ mut:
 	record_native_calls_  bool
 	native_calls_         []NativeCall
 	viewport_             [4]int
-	vendor_               string = 'Ladybird'
-	renderer_             string = 'Ladybird V WebGL'
 }
 
 pub fn OpenGLContext.new(version WebGLVersion, options DrawingBufferOptions, supported []string) &OpenGLContext {
@@ -47,7 +45,7 @@ pub fn OpenGLContext.new(version WebGLVersion, options DrawingBufferOptions, sup
 	return &OpenGLContext{
 		version: version
 		drawing_buffer_options: options
-		supported_extensions_: supported.clone()
+		supported_extensions_: if supported.len > 0 { supported.clone() } else if backend != unsafe { nil } { native_gl_extensions() } else { []string{} }
 		width_: 1
 		height_: 1
 		backend_: backend
@@ -84,7 +82,7 @@ pub fn (mut context OpenGLContext) restore(supported []string) {
 	context.surface_allocated_ = false
 	context.content_will_change_ = false
 	context.needs_to_present_ = false
-	context.supported_extensions_ = supported.clone()
+	context.supported_extensions_ = if supported.len > 0 { supported.clone() } else if !context.lost_ { native_gl_extensions() } else { []string{} }
 	context.requested_extensions_.clear()
 	context.native_calls_.clear()
 	context.viewport_ = [0, 0, 0, 0]!
@@ -167,16 +165,21 @@ pub fn (context &OpenGLContext) get_supported_opengl_extensions() []string {
 	return context.supported_extensions_.clone()
 }
 
-pub fn (context &OpenGLContext) vendor() string {
-	return context.vendor_
+pub fn (mut context OpenGLContext) vendor() string {
+	context.make_current()
+	return native_gl_string(0x1f00)
 }
 
-pub fn (context &OpenGLContext) renderer() string {
-	return context.renderer_
+pub fn (mut context OpenGLContext) renderer() string {
+	context.make_current()
+	return native_gl_string(0x1f01)
 }
 
 pub fn (mut context OpenGLContext) request_extension(extension string) {
 	if extension in context.supported_extensions_ && extension !in context.requested_extensions_ {
+		context.make_current()
+		C.vox_gl_request_extension(extension.str)
+		if !context.collect_native_error() { return }
 		context.requested_extensions_ << extension
 	}
 }

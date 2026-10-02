@@ -26,8 +26,11 @@ fn test_debug_renderer_info_enables_unmasked_string_queries() {
 	vendor := context.get_parameter(unmasked_vendor_webgl)
 	renderer := context.get_parameter(unmasked_renderer_webgl)
 	assert vendor.kind == .string_
-	assert vendor.text == 'Ladybird'
+	context.native.make_current()
+	assert vendor.text == native_gl_string(0x1f00)
+	assert vendor.text.len > 0
 	assert renderer.kind == .string_
-	assert renderer.text == 'Ladybird V WebGL'
+	assert renderer.text == native_gl_string(0x1f01)
+	assert renderer.text.len > 0
 	assert context.get_error() == no_error
 }

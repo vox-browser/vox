@@ -15,6 +15,20 @@ fn C.vox_gl_wait_sync(voidptr, u32, u64)
 fn C.vox_gl_delete_sync(voidptr)
 fn C.vox_gl_get_sync_parameter(voidptr, u32) int
 fn C.vox_gl_get_error() u32
+fn C.vox_gl_string(u32) &char
+fn C.vox_gl_request_extension(&char)
+
+fn native_gl_string(name GLenum) string {
+	value := C.vox_gl_string(name)
+	if value == unsafe { nil } { return '' }
+	return unsafe { cstring_to_vstring(value).clone() }
+}
+
+fn native_gl_extensions() []string {
+	mut extensions := native_gl_string(0x1f03).split(' ').filter(it.len > 0)
+	extensions << native_gl_string(0x93a8).split(' ').filter(it.len > 0)
+	return extensions
+}
 fn C.vox_egl_free_surface(voidptr)
 fn C.vox_egl_allocate_surface(voidptr, int, int, int, int) int
 fn C.vox_egl_default_framebuffer(voidptr) u32
