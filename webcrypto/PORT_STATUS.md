@@ -345,3 +345,9 @@ conversion, deferred algorithm/extractability checks, actual ArrayBuffer/JWK
 results, and original engine exceptions. All three native export host tests
 pass with `-gc none`; other native method bindings and complete LibJS wrapper/
 Promise graph parity remain pending.
+
+Algorithm JWK import adapters now distinguish serialized dictionary transport
+from CryptoBindings::parse_json_web_key. Missing optional kty reaches concrete
+usage/type validation; public JSON parsing and unwrap retain the mandatory-kty
+source rule. Both focused jwk_import_dictionary_test cases pass across symmetric,
+RSA, EC, and Ed25519 import paths.

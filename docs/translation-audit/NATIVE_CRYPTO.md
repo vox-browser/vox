@@ -130,3 +130,10 @@ The existing host deferred-task and Promise relay adaptation remains explicit;
 this slice does not reconstruct the missing complete LibJS runtime graph.
 Remaining native methods include import, encryption, signing, derivation,
 wrapping, and KEM operations.
+
+Concrete import bodies now decode the already-converted JsonWebKey DTO without
+applying the separate CryptoBindings JSON parser's mandatory-kty rule. Source
+importKey dictionaries allow absent optional members and let class usage/type
+validation decide the error. Public parse_json_web_key/unwrap retains its source
+mandatory-kty check. Two focused cases pass, checking that boundary and source
+AES/HMAC/KMAC/RSA/EC/Ed25519 class validation for absent key type.
