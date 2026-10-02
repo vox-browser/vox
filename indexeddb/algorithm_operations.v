@@ -372,8 +372,28 @@ pub fn run_database_tasks() {
 	}
 }
 
-pub fn cleanup_indexed_database_transactions(mut database IDBDatabase) {
-	database.transactions = database.transactions.filter(it.state !in [.finished, .aborted])
+pub fn cleanup_indexed_database_transactions(event_loop voidptr) bool {
+	assert event_loop != unsafe { nil }
+	mut has_matching_event_loop := false
+	for _, database in idb_databases() {
+		for connection in database.associated_connections_as_root_vector() {
+			for transaction_pointer in connection.transactions.clone() {
+				mut transaction := unsafe { &IDBTransaction(transaction_pointer) }
+				if transaction.cleanup_event_loop() != event_loop {
+					continue
+				}
+				has_matching_event_loop = true
+				assert transaction.state == .active
+				transaction.state = .inactive
+				list := transaction.request_list()
+				if !list.execution_is_blocked() && list.is_empty() {
+					commit_a_transaction(mut transaction) or { panic(err) }
+				}
+				transaction.set_cleanup_event_loop(unsafe { nil })
+			}
+		}
+	}
+	return has_matching_event_loop
 }
 
 pub fn is_a_potentially_valid_key_range(lower ?Key, upper ?Key, lower_open bool, upper_open bool) bool {

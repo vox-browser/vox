@@ -11,6 +11,7 @@ import css
 import dom
 import fetch
 import highresolutiontime
+import indexeddb
 import libjs
 import math
 import platform
@@ -780,6 +781,7 @@ pub fn (mut event_loop EventLoop) perform_a_microtask_checkpoint() {
 			scope.notify_about_rejected_promises()
 		}
 	}
+	indexeddb.cleanup_indexed_database_transactions(voidptr(&event_loop))
 	// ClearKeptObjects is represented by the real VM's execution generation.
 	if vm_pointer := event_loop.vm_ {
 		mut vm := unsafe { &libjs.VM(vm_pointer) }
