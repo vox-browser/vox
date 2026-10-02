@@ -26,23 +26,9 @@ fn matches_memory_limits(actual WasmLimits, required WasmLimits) bool {
 // though the validator permits memory64 limits up to 2^48 pages.
 fn memory_create_for_module_with_cache(cache &WebAssemblyCache, limits WasmLimits) !&Memory {
 	validate_memory_type(limits)!
-	if limits.minimum > u64(maximum_pages) {
-		return error('LinkError: Failed to allocate a memory instance')
-	}
-	mut runtime_maximum := ?u32(none)
-	if maximum := limits.maximum {
-		limit := if maximum > u64(maximum_pages) { u64(maximum_pages) } else { maximum }
-		runtime_maximum = u32(limit)
-	}
-	memory := &Memory{
-		maximum:          runtime_maximum
-		cache_:           cache
-		address_type_:    limits.address_type
-		declared_maximum: limits.maximum
-		data:             []u8{len: int(limits.minimum) * page_size}
-	}
-	unsafe { cache.add_memory_instance(memory.address(), memory) }
-	return memory
+	mut store := cache.abstract_machine_.store()
+	address := store.allocate_memory(limits) or { return error('LinkError: Failed to allocate a memory instance') }
+	return memory_wrap_store_address(cache, address, false)
 }
 
 pub fn external_memory_value(memory &Memory) ExternalValue {

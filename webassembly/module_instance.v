@@ -480,7 +480,9 @@ fn instance_create_with_cache(cache &WebAssemblyCache, compiled &Module, imports
 				return error('LinkError: Memory import and extern do not match')
 			}
 			memories << memory
-			unsafe { cache.add_memory_instance(memory.address(), memory) }
+			// The legacy typed linking boundary carries the actual imported
+			// object. Its address belongs to its owning Store; installing it in
+			// a different realm's address map would overwrite a local instance.
 		}
 	}
 	for type_ in compiled.memory_types {
@@ -688,7 +690,7 @@ pub fn create_exports_object(realm string, instance &Instance, cache_function_ex
 				globals[export_.name] = instance.global_instance(export_.address)
 			}
 			.memory {
-				memories[export_.name] = instance.memory_instance(export_.address)
+				memories[export_.name] = export_.value.memory or { instance.memory_instance(export_.address) }
 			}
 			.table {
 				tables[export_.name] = instance.table_instance(export_.address)

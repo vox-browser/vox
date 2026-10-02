@@ -78,10 +78,14 @@ __global (
 )
 
 pub struct AbstractMachine {
+mut:
+	store_ &BinaryMachineStore = BinaryMachineStore.create()
 pub mut:
 	compiled_modules u64
 	instances        u64
 }
+
+pub fn (machine &AbstractMachine) store() &BinaryMachineStore { return machine.store_ }
 
 @[heap]
 pub struct ExportedWasmFunction {
