@@ -84,7 +84,7 @@ Native RegExp remains explicit: JSC's public source getter escapes source text
 and its flags getter normalizes order. These cannot recover arbitrary original
 constructor source/flags, so the bridge uses a captured getter only for a genuine
 brand check and rejects that unsupported native family without serializing the
-normalized getter values as the source internal records. Buffers,
+normalized getter values as the source internal records. Buffer views,
 platform registration and source serialization hooks remain subsequent slices;
 public native tee still requires those complete source family bindings.
 
@@ -109,6 +109,21 @@ Date and collection neighbors passed before the final fixture-only correction.
 This JSC has no actual InternalError constructor. Source codec records still
 support that pinned subtype; native reconstruction explicitly rejects it with
 DataCloneError instead of substituting a generic Error with a different name.
+
+Actual fixed/resizable ArrayBuffers now expose their genuine detached,
+resizable and maximum-length internal slots through captured intrinsic getters.
+The projection copies the real backing span immediately into an owned source
+byte block; source IPC/LBSC encode it and its capacity. Reconstruction creates
+the captured owning-engine ArrayBuffer, copies the source bytes into its actual
+backing block, preserves aliases, and provides an independent allocation that
+can grow later when resizable. Author own properties and resize/conversion
+methods are ignored. Detached buffers, including zero-byte detached buffers,
+reject with DataCloneError. Three native buffer cases and the Error neighbor
+passed two files with GC disabled. The V byte-array capacity and the native
+constructor's exact Number capacity remain explicit checked limits; untrusted
+u64 capacity is never rounded into a different native record. Resizable view
+automatic-length slots, SharedArrayBuffer native availability and cross-process
+sharing remain separate boundaries.
 
 The native projection must retain actual JSC object identity and cycle memory,
 source key/enumerability/Get order and original completions, and captured
