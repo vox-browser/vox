@@ -117,3 +117,15 @@ fn test_real_auxiliary_click_uses_auxclick_and_preserves_platform_fields() {
 	assert state.events == ['auxclick']
 	assert state.is_trusted
 }
+
+fn test_pressed_pointer_move_without_a_hit_reaches_the_document_element() {
+	_, root, child := pointer_event_test_tree()
+	state := &PointerEventObservation{}
+	pointer_event_test_listener(root.as_node(), state, ['pointermove', 'mousemove'])
+	mut handler := EventHandler{}
+	handler.handle_platform_pointer_event('pointerdown', InputTarget.from_node(child.as_node()), PixelPoint{}, PixelPoint{}, 0, 1, 0, 1)
+	assert handler.handle_platform_pointer_event('pointermove', none, PixelPoint{-5, -5}, PixelPoint{-5, -5}, 0, 1, 0, 1) == .handled
+	assert state.events == ['pointermove', 'mousemove']
+	assert state.client_x == -5
+	assert state.is_trusted
+}

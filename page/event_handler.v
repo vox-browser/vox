@@ -440,7 +440,7 @@ pub fn (mut handler EventHandler) handle_mousemove(target ?InputTarget, screen P
 		}
 		return handler.drag_and_drop.handle_drag_move(input_target_to_drag_target(target), false, false, false, .none)
 	}
-	if handler.should_ignore_device_input_event() || !handler.paint_root_available || target == none {
+	if handler.should_ignore_device_input_event() || !handler.paint_root_available {
 		return .dropped
 	}
 	defer { handler.previous_screen = screen }
@@ -448,7 +448,19 @@ pub fn (mut handler EventHandler) handle_mousemove(target ?InputTarget, screen P
 	if mut middle := handler.middle_button_scroll_handler_ {
 		middle.update_mouse_position(screen)
 	}
-	value := target or { return .dropped }
+	value := target or {
+		// EventHandler.cpp delivers moves after a pressed pointer leaves the
+		// hit-tested tree through the document element. Captured chrome still
+		// receives that event before the ordinary DOM dispatch.
+		if handler.mousedown_target_ != '' {
+			if document := handler.pointed_document_ {
+				if root := document.document_element() {
+					return handler.dispatch_a_pointer_event_for_a_device_that_supports_hover('pointermove', InputTarget.from_node(root.as_node()))
+				}
+			}
+		}
+		return .dropped
+	}
 	if !input_target_is_enabled(value) { return .dropped }
 	if value.node != none {
 		return handler.dispatch_a_pointer_event_for_a_device_that_supports_hover('pointermove', value)

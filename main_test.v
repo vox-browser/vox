@@ -1095,6 +1095,8 @@ fn test_native_chrome_pointer_bridge_resizes_across_layout_updates() {
 	</style><body><div id="resizable"></div></body>')
 	mut page_model := page.Page.create(1) or { panic(err) }
 	document.set_page(unsafe { &dom.Page(page_model) })
+	_ = html.WindowModel.create_top_level(document, none, 'resize fixture') or { panic(err) }
+	assert document.is_fully_active()
 	root := layout.layout_document_typed_in_viewport(document, 320, 200)
 	element := document.get_element_by_id('resizable') or { panic('missing resizable element') }
 	node_id := element.as_node().unique_id().value()
