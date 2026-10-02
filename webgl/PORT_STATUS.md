@@ -106,6 +106,16 @@ GC disabled (four focused files), including real WebGL2 byte mutation/readback
 through a reflected wrapper. This preserves the pinned source's unusual empty
 and invalid-index result records; it does not claim specification correction.
 
+`get_active_attrib` and `get_active_uniform` now follow
+`WebGLRenderingContextImpl.cpp:825-866`, including its fixed 256-byte name
+buffer and unconditional record creation after the native query. Names truncate
+to 255 bytes; an invalid native index returns an empty/zero WebGLActiveInfo
+alongside INVALID_VALUE, while invalid source ownership still returns null with
+INVALID_OPERATION. The former dynamic maximum-name allocation and zero-length
+null substitution were removed. The two-version typed case, public branded
+record/long-name case, migrated native shader fixture, and existing reflection
+interface file passed with GC disabled (four focused files).
+
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
 ANGLE builds lacking compressed robust entry points use the matching GLES call
