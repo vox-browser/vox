@@ -65,12 +65,15 @@ fn test_reject_promise_with_exception_helpers() {
 	rejected := create_rejected_promise_from_exception_for(context, exception)
 	assert promise_realm(rejected) == 9
 	assert rejected.is_rejected()
-	assert rejected.result.string_value == 'bad input'
+	rejected_exception := rejected.result.simple_exception_ or { panic('missing actual rejected exception descriptor') }
+	assert rejected_exception.type_ == .type_error && rejected_exception.message == 'bad input'
 
 	mut pending := create_promise_for(context)
 	reject_promise_with_exception(mut pending, exception)
 	assert pending.is_rejected()
-	assert pending.result.string_value == 'bad input'
+	pending_exception := pending.result.simple_exception_ or { panic('missing actual pending exception descriptor') }
+	assert pending_exception.type_ == .type_error && pending_exception.message == 'bad input'
+	assert voidptr(rejected_exception) != voidptr(pending_exception)
 }
 
 fn test_async_iterator_next_return_and_throw() {

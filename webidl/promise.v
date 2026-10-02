@@ -370,7 +370,7 @@ pub fn is_promise_fulfilled(promise &Promise) bool {
 }
 
 pub fn create_rejected_promise_from_exception(exception SimpleException) &Promise {
-	return create_rejected_promise(string_value(exception.message))
+	return create_rejected_promise(simple_exception_value(exception))
 }
 
 pub fn create_rejected_promise_from_exception_for(context PromiseContext, exception SimpleException) &Promise {
@@ -380,7 +380,7 @@ pub fn create_rejected_promise_from_exception_for(context PromiseContext, except
 }
 
 pub fn reject_promise_with_exception(mut promise Promise, exception SimpleException) {
-	promise.reject(string_value(exception.message))
+	promise.reject(simple_exception_value(exception))
 }
 
 pub fn create_rejected_promise_from_dom_exception(exception DOMException) &Promise {
