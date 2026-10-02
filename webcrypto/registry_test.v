@@ -175,7 +175,7 @@ fn test_symmetric_jwk_import_validates_key_type_extractability_and_requested_ope
 	{
 		assert false
 	} else {
-		assert err.msg().contains('absent from JWK key_ops')
+		assert err.msg().starts_with('DataError: Missing key_ops usage: ')
 	}
 	if _ := subtle_crypto.import_jwk(JsonWebKey{
 		kty: 'RSA'

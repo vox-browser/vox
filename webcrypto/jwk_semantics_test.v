@@ -64,7 +64,7 @@ fn test_jwk_key_ops_duplicates_relationships_and_requested_usages_are_checked() 
 	{
 		assert false
 	} else {
-		assert err.msg().contains('absent from JWK key_ops')
+		assert err.msg().starts_with('DataError: Missing key_ops usage: ')
 	}
 }
 

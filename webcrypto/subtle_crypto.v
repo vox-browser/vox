@@ -118,16 +118,16 @@ fn validate_jwk_key_ops(jwk JsonWebKey, usages []KeyUsage) ! {
 				continue
 			}
 			if use == 'sig' && operation !in ['sign', 'verify'] {
-				return error('DataError: use=sig contradicts key_ops')
+				return error("DataError: use=sig but key_ops does not contain 'sign' or 'verify'")
 			}
 			if use == 'enc' && operation in ['sign', 'verify'] {
-				return error('DataError: use=enc contradicts key_ops')
+				return error("DataError: use=enc but key_ops contains 'sign' or 'verify'")
 			}
 		}
 	}
 	for usage in usages {
 		if key_usage_string(usage) !in operations {
-			return error('DataError: Requested usage is absent from JWK key_ops')
+			return error('DataError: Missing key_ops usage: ${key_usage_string(usage)}')
 		}
 	}
 }
