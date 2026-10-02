@@ -3,7 +3,7 @@
 Audit snapshot: Ladybird `Libraries/LibWeb/WebAssembly` at
 `963d46a829f3e1b79f44dba9d02afb70654300fa` on 2026-09-11.
 
-## Inventory
+## Historical audit inventory
 
 - Upstream: 7 `.cpp` files, 3,441 implementation LOC; 8 headers; 6 IDLs.
 - V: 7 implementation files, 2,065 LOC; 4 test files, 702 LOC, 29 tests.
@@ -30,7 +30,7 @@ externref/anyfunc defaults, global mutability, table operations, memory growth,
 module framing and section ordering (including tag and data-count ordering),
 custom/import/export section reflection, structured module serialization,
 realm-owned wrapper caches, per-realm memory buffers and instance exports,
-host-function value adaptation, ES module linking, streaming MIME validation,
+host-function value adaptation, ES module adapter records, streaming MIME validation,
 and response-body buffer extraction.
 
 LibWasm validation, compilation, instruction execution, store addresses,
@@ -41,3 +41,27 @@ realm identity, detachment, and resizable refreshes over backing-store snapshots
 native ArrayBuffer detach keys and shared DataBlock ownership remain embedding
 responsibilities. Streaming accepts a completed response body rather than
 driving Fetch and its promise/event-loop machinery.
+
+## Completed binary-parser slices
+
+At the same pinned upstream revision, `binary_types.v` translates LibWasm
+`Parser/Parser.cpp` value/storage/reference/heap types, signed 33-bit heap
+indices, function/struct/array composite types, subtype prefixes, and recursive
+type groups. Module compilation now consumes the type section instead of
+skipping it, retains all fields and group spans, and reconstructs them during
+module deserialization. Malformed type tags, immediates, vector contents and
+trailing section bytes are rejected.
+
+`binary_import_types.v` translates TableType/GlobalType parsing. Imported
+functions retain their type index; table/global imports retain full reference
+operands, limits and mutability instead of dropping their descriptions.
+Numeric table elements, packed global types, invalid mutability and truncated
+reference immediates fail compilation. Memory section/limits and actual memory
+instantiation remain the earlier completed slices.
+
+Focused parser tests and all eight WebAssembly test files pass with
+`v -old-compiler -enable-globals test webassembly`. This does not complete
+recursive type canonicalization/subtyping, the instruction decoder/validator,
+function execution, or table/global instantiation. Other core sections remain
+explicit pending translation work; `validate()` still does not establish full
+LibWasm module validity.
