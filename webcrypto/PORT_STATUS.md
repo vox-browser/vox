@@ -13,7 +13,7 @@ import V's standard `crypto.*` primitives without shadowing that namespace.
 | Upstream implementation unit | V implementation |
 | --- | --- |
 | `Crypto.cpp` | `crypto.v` |
-| `CryptoAlgorithms.cpp` | `crypto_algorithms.v`, `aes_ocb.v`, `cshake.v`, `kmac.v`, `native_crypto.c.v`, `native_crypto.h`, `exchange_curves.v`, `ed448.v`, `native_edwards.c.v`, `native_edwards.h`, `mldsa.v`, `mlkem.v`, `native_ml.c.v`, `native_ml.h`, `rsa.v`, `rsa_key_formats.v`, `native_rsa.c.v`, `native_rsa.h`, `okp_der.v` |
+| `CryptoAlgorithms.cpp` | `crypto_algorithms.v`, `aes_ocb.v`, `cshake.v`, `kmac.v`, `native_crypto.c.v`, `native_crypto.h`, `exchange_curves.v`, `ed448.v`, `native_edwards.c.v`, `native_edwards.h`, `mldsa.v`, `mlkem.v`, `native_ml.c.v`, `native_ml.h`, `rsa.v`, `rsa_key_formats.v`, `native_rsa.c.v`, `native_rsa.h`, `ec.v`, `ec_key_formats.v`, `native_ec.c.v`, `native_ec.h`, `okp_der.v` |
 | `CryptoBindings.cpp` | `crypto_bindings.v` |
 | `CryptoKey.cpp` | `crypto_key.v`, `crypto_key_objects.v`, `crypto_key_serialization.v` |
 | `KeyAlgorithms.cpp` | `key_algorithms.v` |
@@ -83,10 +83,29 @@ key_ops helper rejecting mixed encrypt/wrap or decrypt/unwrap usages even in
 exported JWKs. Exporting a private key without prime factors returns an explicit
 OperationError instead of the source's MUST-style failure.
 
-ECDSA/ECDH still contain
-unavailable operation bodies. Their normalization and parameter binding do not
-make their cryptographic operations complete. Key-format and validation parity
-outside the completed families also require further source review.
+ECDSA/ECDH now use upstream's native EC key generation, generator/public-point
+multiplication, signature operations, compressed-point decoding, and point/key
+consistency checks for P-256/P-384/P-521. Raw/raw-public, SPKI, PKCS8, and JWK
+formats reach those operations through typed and asynchronous dispatch. Tests
+include all twelve upstream WPT ECDSA curve/hash signatures, exact DER fixtures,
+all three LibCrypto shared-point vectors, nullable/zero/non-byte-aligned ECDH
+lengths, real derived/wrapped keys, and deferred input copies. Fixed-width scalar
+octets retain the source's key-handle serialization width.
+
+Retained EC source quirks include verification ignoring an odd final signature
+byte, raw point import skipping point/curve-width validation, compressed raw
+decoding selecting a curve by encoded width, and PKCS8 private keys without an
+optional public point skipping scalar validation. PKCS8 export preserves the
+existing optional inner fields; private JWK export recomputes its public point.
+Inner DER scope leftovers are discarded, while outer data must be exact. DER
+diagnostics use the V parser's messages. Unsupported ECDH formats fail explicitly
+instead of dereferencing the source's unset key/result.
+
+Further source review remains for the earlier symmetric, KDF, and Ed25519
+implementations. In particular, the current Argon2 path rejects source
+secret/associatedData parameters, HMAC import does not apply optional length,
+and HKDF/PBKDF2 derivation validation differs around zero and absent lengths.
+Backend availability alone does not establish parity for these bodies.
 
 `SubtleCryptoBinding` implements the asynchronous WebIDL operation boundary.
 It copies input data and registered algorithm BufferSource fields before
@@ -107,7 +126,7 @@ remain available below the binding.
 
 ## Verification
 
-The 22 WebCrypto test files and all six WebIDL test files passed using direct
+The 25 WebCrypto test files and all six WebIDL test files passed using direct
 `v -old-compiler -enable-globals -path 'WORKTREE|@vlib|@vmodules' FILE_test.v`
 invocations. The focused HTML Crypto, environments, and global-scope tests also
 passed. These checks cover copied views/parameters/usages, immediate versus
