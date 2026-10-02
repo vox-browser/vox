@@ -114,3 +114,19 @@ Absent fields remain absent, and false booleans/empty sequences remain present.
 The focused dictionary-order test passes for both the typed dictionary object
 and the Promise result DTO. This corrects observable native `Object.keys`
 order without sorting unrelated key-algorithm metadata objects.
+
+SubtleCrypto.exportKey now converts the actual KeyFormat enum before checking
+the CryptoKey brand, and returns an actual owning Promise. The source service
+performs internal algorithm normalization, extractability validation, and native
+format export inside its deferred work task. Results become actual ArrayBuffers
+or ordinary JWK objects with source data descriptors and property order; neither
+author edits to key metadata nor edits to exported bytes alter internal keys.
+
+All three focused export cases pass with `-gc none`, covering raw-secret/JWK
+results, getter and enum failures, original thrown objects, missing arguments,
+receiver/key brands, immediate/deferred error precedence, captured property
+construction, task ownership, and pending settlement after Runtime close.
+The existing host deferred-task and Promise relay adaptation remains explicit;
+this slice does not reconstruct the missing complete LibJS runtime graph.
+Remaining native methods include import, encryption, signing, derivation,
+wrapping, and KEM operations.

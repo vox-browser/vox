@@ -338,3 +338,10 @@ Generated JWK result dictionaries now preserve lexicographic member creation
 order from the pinned IDL parser and GenerateToValue converter, including nested
 RSA other-prime dictionaries. `jwk_dictionary_order_test.v` passes for optional
 fields, false booleans, empty sequences, and exported Promise result DTOs.
+
+Native SubtleCrypto.exportKey is connected to the actual owning source service
+and Promise bridge. Its fixed-argument wrapper preserves KeyFormat-before-key
+conversion, deferred algorithm/extractability checks, actual ArrayBuffer/JWK
+results, and original engine exceptions. All three native export host tests
+pass with `-gc none`; other native method bindings and complete LibJS wrapper/
+Promise graph parity remain pending.
