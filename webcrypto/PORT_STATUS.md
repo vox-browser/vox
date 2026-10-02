@@ -13,7 +13,7 @@ import V's standard `crypto.*` primitives without shadowing that namespace.
 | Upstream implementation unit | V implementation |
 | --- | --- |
 | `Crypto.cpp` | `crypto.v` |
-| `CryptoAlgorithms.cpp` | `crypto_algorithms.v`, `aes_ocb.v`, `cshake.v`, `kmac.v`, `native_crypto.c.v`, `native_crypto.h`, `exchange_curves.v`, `ed448.v`, `native_edwards.c.v`, `native_edwards.h`, `okp_der.v` |
+| `CryptoAlgorithms.cpp` | `crypto_algorithms.v`, `aes_ocb.v`, `cshake.v`, `kmac.v`, `native_crypto.c.v`, `native_crypto.h`, `exchange_curves.v`, `ed448.v`, `native_edwards.c.v`, `native_edwards.h`, `mlkem.v`, `native_ml.c.v`, `native_ml.h`, `okp_der.v` |
 | `CryptoBindings.cpp` | `crypto_bindings.v` |
 | `CryptoKey.cpp` | `crypto_key.v`, `crypto_key_objects.v`, `crypto_key_serialization.v` |
 | `KeyAlgorithms.cpp` | `key_algorithms.v` |
@@ -53,7 +53,16 @@ and does not apply raw/JWK length checks to DER key material. Focused tests use
 both upstream RFC7748 exchanges and all nine upstream RFC8032 Ed448 fixtures,
 including explicit contexts and the 1023-byte message.
 
-RSA, ECDSA/ECDH, ML-DSA, and ML-KEM still contain
+ML-KEM-512/768/1024 generation, encapsulation, and decapsulation now use the
+upstream native EVP calls. Source key formats include raw-public, raw-seed,
+SPKI, and PKCS8; the upstream JWK TODO remains unsupported. Tests include all
+three upstream deterministic seed/public/DER fixtures and fixed ciphertext to
+secret vectors, native implicit rejection, direct and asynchronous shared-key
+imports, and copied ciphertext. The ASN.1 expandedKey/both branches retain the
+current upstream constructed-scope nesting, including its rejection of ordinary
+primitive expandedKey encodings. DER diagnostics use the V parser's messages.
+
+RSA, ECDSA/ECDH, and ML-DSA still contain
 unavailable operation bodies. Their normalization and parameter binding do not
 make their cryptographic operations complete. Key-format and validation parity
 outside the completed families also require further source review.
@@ -77,7 +86,7 @@ remain available below the binding.
 
 ## Verification
 
-The 18 WebCrypto test files and all six WebIDL test files passed using direct
+The 19 WebCrypto test files and all six WebIDL test files passed using direct
 `v -old-compiler -enable-globals -path 'WORKTREE|@vlib|@vmodules' FILE_test.v`
 invocations. The focused HTML Crypto, environments, and global-scope tests also
 passed. These checks cover copied views/parameters/usages, immediate versus
