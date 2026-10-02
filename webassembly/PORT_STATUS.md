@@ -286,7 +286,7 @@ These additions pass a clean **55/55-file package suite with default GC and
 uses the source unsigned-long EnforceRange operation: primitive ToNumber and
 fraction truncation precede bounds checks, and output conversion casts to u32.
 Its two focused/neighbor files pass in both GC modes. Actual VM ToPrimitive and
-the full-width unsigned i64 BigInt binding remain pending.
+the full-width unsigned i64 BigInt binding remained pending at that slice.
 
 `value_global.v` (`d17cceac`) now follows the source numeric conversion branches:
 i32 performs ToNumber and wrapping ToInt32, while f32/f64 perform ToNumber before
@@ -297,8 +297,8 @@ owning-engine ToNumber, including the number-hint primitive hook and original
 thrown values, independently of the non-coercing number-brand projection used
 by Streams. Native BigInt/Symbol rejection, replaced author Number constructors
 and closed-owner checks pass. This supplies the native JSC value boundary; it
-does not complete LibJS realm/value integration, arbitrary-width BigInt/table64
-conversion or source function reference branding. The current complete package
+does not complete LibJS realm/value integration or source function reference
+branding. Full-width Table64 conversion is completed in the later slice below. The current complete package
 passes a clean **57/57 files in each GC mode**.
 
 ## Source i64 binding conversion
@@ -313,9 +313,37 @@ so number-hint primitive hooks, original throws, Number/Symbol rejection and
 large signed values survive without rounding through Number or author globals.
 The primitive string parser is the pinned LibJS translation; the native engine
 parser remains JavaScriptCore, so this adapter is not source parser or full
-LibJS realm parity. Full unsigned Table64 conversion and actual function
-reference branding remain open. The current complete package passes a clean
+LibJS realm parity. Full unsigned Table64 conversion remained open at that
+slice; actual function reference branding remains open. The current complete package passes a clean
 **58/58 files in each GC mode**.
+
+## Full unsigned Table64 BigInt binding
+
+`5a3b3e5b` retains the actual arbitrary-precision `libjs.BigInt` record at the
+WebIDL primitive boundary and adds full `ToBigInt` independently of the signed
+i64 wrapping operation. Typed strings use the source LibJS parser. The compact
+engine hook follows source `ToPrimitive(number)` once, preserves original
+getters and thrown values, rejects Number, then converts the remaining primitive
+cases using the captured JavaScriptCore BigInt intrinsic. Author replacements of
+BigInt, Reflect and iterator methods do not change these internal conversions.
+The decimal arithmetic ABI projects an actual BigInt primitive in both
+directions; it does not substitute a JavaScript string or Number for the result.
+
+`Table.cpp::AddressValueToU64` now checks the complete converted integer's sign
+and decimal unsigned-64-bit bound before narrowing. Values through `2^64-1`
+are accepted; `2^64` and arbitrarily larger values reject instead of wrapping.
+`table_limit_to_js_value` creates a positive arbitrary-precision BigInt record
+from u64, preserving the upper unsigned half. The source store binding methods
+use these conversions before indexed reads, writes and growth.
+
+Focused full-width typed/native conversion and existing signed-i64 tests pass
+**3/3 files with `-gc none`**. Table64 typed/native bounds, existing Table32,
+actual store bindings and runtime neighbors pass **5/5 files with `-gc none`**.
+Native tests cover actual BigInt output, original exception identity,
+number-hint coercion exactly once, and overflow before modulo conversion.
+This completes the numeric Table64 boundary; the browser still uses JSC,
+and full LibJS realm execution and public native WebAssembly interface exposure
+remain separate work.
 
 ## Actual Global Store bindings and extern identity
 
