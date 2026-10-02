@@ -1,4 +1,8 @@
 // Copyright (c) 2026, Ladybird contributors
+// Copyright (c) 2024-2025, Aliaksandr Kalenik <kalenik.aliaksandr@gmail.com>
+// Copyright (c) 2024-2025, Luke Wilde <luke@ladybird.org>
+// Copyright (c) 2025, Jelle Raaijmakers <jelle@ladybird.org>
+// Copyright (c) 2025, Undefine <undefine@undefine.pl>
 // SPDX-License-Identifier: BSD-2-Clause
 
 // Translation of WebGL2RenderingContext, WebGL2RenderingContextImpl and its
@@ -122,12 +126,12 @@ pub fn (mut context WebGLRenderingContext) get_query(target GLenum, pname GLenum
 }
 
 pub fn (mut context WebGLRenderingContext) get_query_parameter(query &WebGLQuery, pname GLenum) ?u64 {
+	context.native.make_current()
 	if !context.require_webgl2() { return none }
 	if !context.owns(&query.object) {
 		context.set_error(invalid_operation)
 		return none
 	}
-	context.native.make_current()
 	result := C.vox_gl_query_parameter(query.object.native_handle_, pname)
 	context.native.collect_native_error()
 	if pname !in [query_result, query_result_available] { return none }
@@ -373,9 +377,9 @@ pub fn (mut context WebGLRenderingContext) bind_vertex_array(array ?&WebGLVertex
 }
 
 pub fn (mut context WebGLRenderingContext) is_vertex_array(array ?&WebGLVertexArrayObject) bool {
+	context.native.make_current()
 	value := array or { return false }
 	context.object_handle_for_query(&value.object) or { return false }
-	context.native.make_current()
 	return C.vox_gl_is_vertex_array(value.object.native_handle_,0) == 1
 }
 
@@ -437,6 +441,7 @@ pub fn (mut context WebGLRenderingContext) bind_vertex_array_oes(array ?&WebGLVe
 }
 
 pub fn (mut context WebGLRenderingContext) is_vertex_array_oes(array ?&WebGLVertexArrayObjectOES) bool {
+	context.native.make_current()
 	value := array or { return false }
 	// The extension currently returns false without setting an error for a
 	// vertex array created by another context.
@@ -444,7 +449,6 @@ pub fn (mut context WebGLRenderingContext) is_vertex_array_oes(array ?&WebGLVert
 		return false
 	}
 	if !handle_result.has_value { return false }
-	context.native.make_current()
 	return C.vox_gl_is_vertex_array(value.object.native_handle_,1) == 1
 }
 

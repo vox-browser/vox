@@ -1,4 +1,7 @@
 // Copyright (c) 2026, Ladybird contributors
+// Copyright (c) 2024-2025, Aliaksandr Kalenik <kalenik.aliaksandr@gmail.com>
+// Copyright (c) 2024-2025, Luke Wilde <luke@ladybird.org>
+// Copyright (c) 2025, Undefine <undefine@undefine.pl>
 // SPDX-License-Identifier: BSD-2-Clause
 
 // Translation of WebGLRenderingContext, WebGLRenderingContextBase,
@@ -521,9 +524,9 @@ pub fn (mut context WebGLRenderingContext) delete_buffer(buffer ?&WebGLBuffer) {
 }
 
 pub fn (mut context WebGLRenderingContext) is_buffer(buffer ?&WebGLBuffer) bool {
+	context.native.make_current()
 	value := buffer or { return false }
 	context.object_handle_for_query(&value.object) or { return false }
-	context.native.make_current()
 	return C.vox_gl_is_object(0,value.object.native_handle_) == 1
 }
 

@@ -655,6 +655,7 @@ pub fn (mut context WebGLRenderingContext) framebuffer_texture2d(target GLenum, 
 }
 
 pub fn (mut context WebGLRenderingContext) get_framebuffer_attachment_parameter(target GLenum, attachment GLenum, pname GLenum) WebGLParameterValue {
+	context.native.make_current()
 	if !is_valid_framebuffer_binding_target(context.version, target) {
 		context.set_error(invalid_enum)
 		return WebGLParameterValue{}
@@ -809,6 +810,7 @@ pub fn (mut context WebGLRenderingContext) get_buffer_parameter(target GLenum, p
 }
 
 pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLParameterValue {
+	context.native.make_current()
 	if (pname == fragment_shader_derivative_hint && context.version != .webgl2 && !context.extension_enabled('OES_standard_derivatives'))
 		|| (pname == GLenum(0x8cdf) && context.version != .webgl2 && !context.extension_enabled('WEBGL_draw_buffers'))
 		|| (pname == GLenum(0x8824) && context.version != .webgl2)
@@ -874,7 +876,6 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
    transform_feedback_binding {feedback:=context.current_transform_feedback or {return WebGLParameterValue{}};return WebGLParameterValue{kind:.object,object:feedback.object.handle_}}
    vertex_array_binding {array:=context.current_vertex_array or {return WebGLParameterValue{}};return WebGLParameterValue{kind:.object,object:array.object.handle_}}
    sampler_binding {
-    context.native.make_current()
     mut handle:=0
     C.vox_gl_int_parameter(pname,&handle)
     context.native.collect_native_error()
@@ -891,16 +892,17 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
 }
 
 pub fn (mut context WebGLRenderingContext) get_renderbuffer_parameter(target GLenum, pname GLenum) WebGLParameterValue {
+	context.native.make_current()
  if pname !in [GLenum(0x8d42),0x8d43,0x8d44,0x8d50,0x8d51,0x8d52,0x8d53,0x8d54,0x8cab,0x8d55] {
   context.set_error(invalid_enum); return WebGLParameterValue{}
  }
- context.native.make_current()
  result:=C.vox_gl_renderbuffer_parameter(target,pname)
  context.native.collect_native_error()
  return integer_parameter(result)
 }
 
 pub fn (mut context WebGLRenderingContext) get_tex_parameter(target GLenum, pname GLenum) WebGLParameterValue {
+	context.native.make_current()
  mut queried_name:=pname
  mut boolean_result:=false
  mut float_result:=false
@@ -920,7 +922,6 @@ pub fn (mut context WebGLRenderingContext) get_tex_parameter(target GLenum, pnam
    }
   }
  }
- context.native.make_current()
  result:=if float_result {f64(C.vox_gl_tex_float_parameter(target,queried_name))} else {f64(C.vox_gl_tex_parameter(target,queried_name))}
  context.native.collect_native_error()
  return if boolean_result {WebGLParameterValue{kind:.boolean,boolean:result==1}} else {integer_parameter(i64(result))}
@@ -945,8 +946,8 @@ pub fn (mut context WebGLRenderingContext) get_active_uniform(program &WebGLProg
 }
 
 pub fn (mut context WebGLRenderingContext) get_attrib_location(program &WebGLProgram, name string) int {
-	if !context.owns(&program.object) { context.set_error(invalid_operation); return -1 }
 	context.native.make_current()
+	if !context.owns(&program.object) { context.set_error(invalid_operation); return -1 }
 	result := C.vox_gl_attrib_location(program.object.native_handle_, name.str)
 	context.native.collect_native_error()
 	return result
@@ -1010,37 +1011,37 @@ pub fn (mut context WebGLRenderingContext) get_vertex_attrib_offset(index GLuint
 }
 
 pub fn (mut context WebGLRenderingContext) is_framebuffer(value ?&WebGLFramebuffer) bool {
+	context.native.make_current()
 	object := value or { return false }
 	context.object_handle_for_query(&object.object) or { return false }
-	context.native.make_current()
 	return C.vox_gl_is_object(1,object.object.native_handle_) == 1
 }
 
 pub fn (mut context WebGLRenderingContext) is_renderbuffer(value ?&WebGLRenderbuffer) bool {
+	context.native.make_current()
 	object := value or { return false }
 	context.object_handle_for_query(&object.object) or { return false }
-	context.native.make_current()
 	return C.vox_gl_is_object(2,object.object.native_handle_) == 1
 }
 
 pub fn (mut context WebGLRenderingContext) is_texture(value ?&WebGLTexture) bool {
+	context.native.make_current()
 	object := value or { return false }
 	context.object_handle_for_query(&object.object) or { return false }
-	context.native.make_current()
 	return C.vox_gl_is_object(3,object.object.native_handle_) == 1
 }
 
 pub fn (mut context WebGLRenderingContext) is_shader(value ?&WebGLShader) bool {
+	context.native.make_current()
 	object := value or { return false }
 	context.object_handle_for_query(&object.object) or { return false }
-	context.native.make_current()
 	return C.vox_gl_is_object(9,object.object.native_handle_) == 1
 }
 
 pub fn (mut context WebGLRenderingContext) is_program(value ?&WebGLProgram) bool {
+	context.native.make_current()
 	object := value or { return false }
 	context.object_handle_for_query(&object.object) or { return false }
-	context.native.make_current()
 	return C.vox_gl_is_object(10,object.object.native_handle_) == 1
 }
 
