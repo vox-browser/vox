@@ -200,6 +200,17 @@ sorted dictionary members in `Meta/Utils/webidl_parser.py:554`. Its focused
 native host case passes with `-gc none`, including own-key order, ordinary
 prototype, and independent writable copies.
 
+Active variable and shader precision query results now adapt the concrete
+`WebGLActiveInfo`/`WebGLShaderPrecisionFormat` source records and readonly IDL
+getters instead of exposing their JSON transport records directly. The wrappers
+have the source prototypes, tags, getter descriptors/receiver checks, fresh
+per-query identity, and constructor errors from generated bindings and
+`Bindings/InterfaceObject.cpp:61-64`. A focused native host case passes with
+`-gc none`, querying actual linked shader attributes/uniforms and driver
+precision and checking readonly access, forgery rejection, and allowed own
+property shadows. This is a reflection-wrapper interop adaptation; the remaining
+compact context/resource prototype and full WrapperWorld graph remain open.
+
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
