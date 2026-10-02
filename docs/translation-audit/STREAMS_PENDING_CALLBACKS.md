@@ -251,6 +251,12 @@ explicit realm-less native-clock compatibility adapter. The public JSC
 same native records. Native EventTarget/Event bindings supply listeners,
 handler attributes, authentic trusted events and source dependent-signal
 ordering; factory iteration and thrown conversions execute the actual engine.
+AbortController performs one new-target prototype lookup before creating its
+native record. Illegal AbortSignal construction rejects before that lookup,
+as InterfaceConstructor.cpp does when no construct operation exists. Abort
+wrappers use the same private exact-object record table as Streams, inherit
+source interface tags, reject forged prototypes and retain native EventTarget
+identity; their table/engine roots share the Runtime.close boundary.
 
 `browserjs/timer_host{,_darwin.c}.v` installs real public
 `setTimeout/setInterval/clearTimeout/clearInterval` methods after the compact
@@ -447,4 +453,12 @@ browserjs/stream_interface_tag_test.v + existing readable/writable/transform
   prototype rejection, actual record identity and close cleanup; 4/4 passed.
 main_test.v, focused native queuing-strategy startup: source queue operations
   and actual chunk identity reach live DOM replay; passed with -gc none.
+```
+
+```text
+browserjs/abort_constructor_prototype_test.v + abort_signal_host_test.v +
+  readable_stream_pipe_test.v: source controller prototype Get once/original
+  throw before record creation, illegal signal constructor ordering, actual
+  tags/brand/event identity, native owner timeout and public pipe neighbors;
+  3/3 passed with -gc none.
 ```
