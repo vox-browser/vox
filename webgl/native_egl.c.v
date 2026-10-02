@@ -21,6 +21,9 @@ fn C.vox_egl_default_framebuffer(voidptr) u32
 fn C.vox_egl_default_renderbuffer(voidptr) u32
 fn C.vox_gl_gen_object(int) u32
 fn C.vox_gl_delete_object(int, u32)
+fn C.vox_gl_begin_query(u32, u32)
+fn C.vox_gl_end_query(u32)
+fn C.vox_gl_query_parameter(u32, u32) u32
 fn C.vox_gl_bind_buffer(u32, u32)
 fn C.vox_gl_buffer_data(u32, i64, voidptr, u32)
 fn C.vox_gl_buffer_sub_data(u32, i64, i64, voidptr)

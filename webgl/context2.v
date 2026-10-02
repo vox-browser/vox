@@ -49,10 +49,12 @@ pub fn (mut context WebGLRenderingContext) get_buffer_sub_data(target GLenum, so
 
 pub fn (mut context WebGLRenderingContext) create_query() &WebGLQuery {
 	context.require_webgl2()
+	context.native.make_current()
 	handle := context.allocate_handle()
 	query := &WebGLQuery{
-		object: new_object(context.identity(), context.context_generation_, handle)
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: C.vox_gl_gen_object(4)}
 	}
+	context.native.collect_native_error()
 	unsafe {
 		context.queries[handle] = query
 	}
@@ -82,13 +84,14 @@ pub fn (mut context WebGLRenderingContext) begin_query(target GLenum, mut query 
 			return
 		}
 	}
+	context.native.dispatch('begin_query', target, query.object.handle_)
+	C.vox_gl_begin_query(target, query.object.native_handle_)
+	if !context.native.collect_native_error() { return }
 	query.target_ = target
 	query.active_ = true
-	query.available_ = false
 	unsafe {
 		context.current_queries[target] = query
 	}
-	context.native.dispatch('begin_query', target, query.object.handle_)
 }
 
 pub fn (mut context WebGLRenderingContext) end_query(target GLenum) {
@@ -103,10 +106,11 @@ pub fn (mut context WebGLRenderingContext) end_query(target GLenum) {
 		context.set_error(invalid_operation)
 		return
 	}
-	query.active_ = false
-	query.available_ = true
-	context.current_queries.delete(target)
 	context.native.dispatch('end_query', target)
+	C.vox_gl_end_query(target)
+	if !context.native.collect_native_error() { return }
+	query.active_ = false
+	context.current_queries.delete(target)
 }
 
 pub fn (mut context WebGLRenderingContext) get_query(target GLenum, pname GLenum) ?&WebGLQuery {
@@ -118,26 +122,16 @@ pub fn (mut context WebGLRenderingContext) get_query(target GLenum, pname GLenum
 }
 
 pub fn (mut context WebGLRenderingContext) get_query_parameter(query &WebGLQuery, pname GLenum) ?u64 {
+	if !context.require_webgl2() { return none }
 	if !context.owns(&query.object) {
 		context.set_error(invalid_operation)
 		return none
 	}
-	return match pname {
-		query_result {
-			query.result_
-		}
-		query_result_available {
-			if query.available_ {
-				u64(1)
-			} else {
-				u64(0)
-			}
-		}
-		else {
-			context.set_error(invalid_enum)
-			none
-		}
-	}
+	context.native.make_current()
+	result := C.vox_gl_query_parameter(query.object.native_handle_, pname)
+	context.native.collect_native_error()
+	if pname !in [query_result, query_result_available] { return none }
+	return u64(result)
 }
 
 pub fn (mut context WebGLRenderingContext) delete_query(mut query ?&WebGLQuery) {
@@ -152,6 +146,8 @@ pub fn (mut context WebGLRenderingContext) delete_query(mut query ?&WebGLQuery) 
 		handle := handle_result.value
 		context.queries.delete(handle)
 		context.native.dispatch('delete_query', handle)
+		C.vox_gl_delete_object(4, value.object.native_handle_)
+		context.native.collect_native_error()
 	}
 }
 

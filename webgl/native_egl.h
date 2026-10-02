@@ -156,6 +156,7 @@ static unsigned vox_gl_gen_object(int kind)
     case 1: glGenFramebuffers(1, &result); break;
     case 2: glGenRenderbuffers(1, &result); break;
     case 3: glGenTextures(1, &result); break;
+    case 4: glGenQueries(1, &result); break;
     }
     return result;
 }
@@ -166,8 +167,12 @@ static void vox_gl_delete_object(int kind, unsigned handle)
     case 1: glDeleteFramebuffers(1, &handle); break;
     case 2: glDeleteRenderbuffers(1, &handle); break;
     case 3: glDeleteTextures(1, &handle); break;
+    case 4: glDeleteQueries(1, &handle); break;
     }
 }
+static void vox_gl_begin_query(unsigned target, unsigned handle) { glBeginQuery(target, handle); }
+static void vox_gl_end_query(unsigned target) { glEndQuery(target); }
+static unsigned vox_gl_query_parameter(unsigned handle, unsigned pname) { GLuint result = 0; glGetQueryObjectuivRobustANGLE(handle, pname, 1, NULL, &result); return result; }
 static void vox_gl_bind_buffer(unsigned target, unsigned handle) { glBindBuffer(target, handle); }
 static void vox_gl_buffer_data(unsigned target, long long size, void const* data, unsigned usage) { glBufferData(target, (GLsizeiptr)size, data, usage); }
 static void vox_gl_buffer_sub_data(unsigned target, long long offset, long long size, void const* data) { glBufferSubData(target, (GLintptr)offset, (GLsizeiptr)size, data); }

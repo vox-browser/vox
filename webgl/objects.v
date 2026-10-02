@@ -219,8 +219,6 @@ pub mut:
 mut:
 	target_    ?GLenum
 	active_    bool
-	available_ bool
-	result_    u64
 }
 
 @[heap]

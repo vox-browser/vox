@@ -8,6 +8,7 @@ fn test_query_lifecycle_and_error_queue() {
 	context.begin_query(any_samples_passed, mut query)
 	assert context.get_error() == invalid_operation
 	context.end_query(any_samples_passed)
+	context.finish()
 	assert context.get_query_parameter(query, query_result_available)? == 1
 	context.end_query(any_samples_passed)
 	assert context.get_error() == invalid_operation
