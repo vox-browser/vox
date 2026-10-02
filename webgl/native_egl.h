@@ -122,4 +122,46 @@ static int vox_gl_active_info(unsigned program, unsigned index, int uniform, int
     return length;
 }
 static void vox_gl_shader_precision(unsigned shader, unsigned precision, int* range, int* bits) { glGetShaderPrecisionFormat(shader, precision, range, bits); }
+static void vox_gl_uniform_floats(int location, int width, int count, float const* data)
+{
+    switch (width) {
+    case 1: glUniform1fv(location, count, data); break;
+    case 2: glUniform2fv(location, count, data); break;
+    case 3: glUniform3fv(location, count, data); break;
+    case 4: glUniform4fv(location, count, data); break;
+    }
+}
+static void vox_gl_uniform_ints(int location, int width, int count, int const* data)
+{
+    switch (width) {
+    case 1: glUniform1iv(location, count, data); break;
+    case 2: glUniform2iv(location, count, data); break;
+    case 3: glUniform3iv(location, count, data); break;
+    case 4: glUniform4iv(location, count, data); break;
+    }
+}
+static void vox_gl_uniform_uints(int location, int width, int count, unsigned const* data)
+{
+    switch (width) {
+    case 1: glUniform1uiv(location, count, data); break;
+    case 2: glUniform2uiv(location, count, data); break;
+    case 3: glUniform3uiv(location, count, data); break;
+    case 4: glUniform4uiv(location, count, data); break;
+    }
+}
+static void vox_gl_uniform_matrix(int location, int columns, int rows, int count, float const* data)
+{
+    if (columns == 2 && rows == 2) glUniformMatrix2fv(location, count, GL_FALSE, data);
+    else if (columns == 3 && rows == 3) glUniformMatrix3fv(location, count, GL_FALSE, data);
+    else if (columns == 4 && rows == 4) glUniformMatrix4fv(location, count, GL_FALSE, data);
+    else if (columns == 2 && rows == 3) glUniformMatrix2x3fv(location, count, GL_FALSE, data);
+    else if (columns == 3 && rows == 2) glUniformMatrix3x2fv(location, count, GL_FALSE, data);
+    else if (columns == 2 && rows == 4) glUniformMatrix2x4fv(location, count, GL_FALSE, data);
+    else if (columns == 4 && rows == 2) glUniformMatrix4x2fv(location, count, GL_FALSE, data);
+    else if (columns == 3 && rows == 4) glUniformMatrix3x4fv(location, count, GL_FALSE, data);
+    else if (columns == 4 && rows == 3) glUniformMatrix4x3fv(location, count, GL_FALSE, data);
+}
+static void vox_gl_get_uniform_floats(unsigned program, int location, float* data) { glGetUniformfv(program, location, data); }
+static void vox_gl_get_uniform_ints(unsigned program, int location, int* data) { glGetUniformiv(program, location, data); }
+static void vox_gl_get_uniform_uints(unsigned program, int location, unsigned* data) { glGetUniformuiv(program, location, data); }
 #endif

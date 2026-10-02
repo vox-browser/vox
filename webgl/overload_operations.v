@@ -116,67 +116,47 @@ fn ints_to_floats(values []int) []f32 {
 }
 
 pub fn (mut context WebGLRenderingContext) uniform1fv(location ?&WebGLUniformLocation, values []f32) {
-	context.uniform_floats(location, values)
+ context.uniform_floats(location, values, 1)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform2fv(location ?&WebGLUniformLocation, values []f32) {
-	if values.len % 2 == 0 {
-		context.uniform_floats(location, values)
-	} else {
-		context.set_error(invalid_value)
-	}
+ context.uniform_floats(location, values, 2)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform3fv(location ?&WebGLUniformLocation, values []f32) {
-	if values.len % 3 == 0 {
-		context.uniform_floats(location, values)
-	} else {
-		context.set_error(invalid_value)
-	}
+ context.uniform_floats(location, values, 3)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform4fv(location ?&WebGLUniformLocation, values []f32) {
-	if values.len % 4 == 0 {
-		context.uniform_floats(location, values)
-	} else {
-		context.set_error(invalid_value)
-	}
+ context.uniform_floats(location, values, 4)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform1iv(location ?&WebGLUniformLocation, values []int) {
-	context.uniform_floats(location, ints_to_floats(values))
+ context.uniform_ints(location, values, 1)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform2iv(location ?&WebGLUniformLocation, values []int) {
-	if values.len % 2 == 0 {
-		context.uniform_floats(location, ints_to_floats(values))
-	} else {
-		context.set_error(invalid_value)
-	}
+ context.uniform_ints(location, values, 2)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform3iv(location ?&WebGLUniformLocation, values []int) {
-	if values.len % 3 == 0 {
-		context.uniform_floats(location, ints_to_floats(values))
-	} else {
-		context.set_error(invalid_value)
-	}
+ context.uniform_ints(location, values, 3)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform4iv(location ?&WebGLUniformLocation, values []int) {
-	if values.len % 4 == 0 {
-		context.uniform_floats(location, ints_to_floats(values))
-	} else {
-		context.set_error(invalid_value)
-	}
+ context.uniform_ints(location, values, 4)
 }
 
 fn (mut context WebGLRenderingContext) uniform_matrix(location ?&WebGLUniformLocation, transpose bool, values []f32, columns int, rows int) {
-	if transpose || values.len % (columns * rows) != 0 {
-		context.set_error(invalid_value)
-		return
-	}
-	context.uniform_floats(location, values)
+ value := location or { return }
+ value.handle(context.current_program) or { context.set_error(invalid_operation); return }
+ if transpose || values.len % (columns * rows) != 0 { context.set_error(invalid_value); return }
+ if columns != rows && !context.require_webgl2() { return }
+ context.native.make_current()
+	C.vox_gl_uniform_matrix(int(value.handle_), columns, rows, values.len / (columns * rows), values.data)
+	error_value := GLenum(C.vox_gl_get_error())
+	if error_value != no_error { context.native.set_pending_local_error(error_value); return }
+	context.uniform_values_[value.handle_] = values.clone()
 }
 
 pub fn (mut context WebGLRenderingContext) uniform_matrix2fv(location ?&WebGLUniformLocation, transpose bool, values []f32) {
@@ -417,47 +397,35 @@ fn uints_to_floats(values []u32) []f32 {
 }
 
 pub fn (mut context WebGLRenderingContext) uniform1ui(location ?&WebGLUniformLocation, x u32) {
-	context.uniform_floats(location, [f32(x)])
+ context.uniform_uints(location, [x], 1)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform2ui(location ?&WebGLUniformLocation, x u32, y u32) {
-	context.uniform_floats(location, [f32(x), f32(y)])
+ context.uniform_uints(location, [x, y], 2)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform3ui(location ?&WebGLUniformLocation, x u32, y u32, z u32) {
-	context.uniform_floats(location, [f32(x), f32(y), f32(z)])
+ context.uniform_uints(location, [x, y, z], 3)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform4ui(location ?&WebGLUniformLocation, x u32, y u32, z u32, w u32) {
-	context.uniform_floats(location, [f32(x), f32(y), f32(z), f32(w)])
+ context.uniform_uints(location, [x, y, z, w], 4)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform1uiv(location ?&WebGLUniformLocation, values []u32) {
-	context.uniform_floats(location, uints_to_floats(values))
+ context.uniform_uints(location, values, 1)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform2uiv(location ?&WebGLUniformLocation, values []u32) {
-	if values.len % 2 == 0 {
-		context.uniform_floats(location, uints_to_floats(values))
-	} else {
-		context.set_error(invalid_value)
-	}
+ context.uniform_uints(location, values, 2)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform3uiv(location ?&WebGLUniformLocation, values []u32) {
-	if values.len % 3 == 0 {
-		context.uniform_floats(location, uints_to_floats(values))
-	} else {
-		context.set_error(invalid_value)
-	}
+ context.uniform_uints(location, values, 3)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform4uiv(location ?&WebGLUniformLocation, values []u32) {
-	if values.len % 4 == 0 {
-		context.uniform_floats(location, uints_to_floats(values))
-	} else {
-		context.set_error(invalid_value)
-	}
+ context.uniform_uints(location, values, 4)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform_matrix3x2fv(location ?&WebGLUniformLocation, transpose bool, values []f32) {

@@ -676,11 +676,9 @@ pub fn (mut context WebGLRenderingContext) set_uniform(location ?&WebGLUniformLo
 		context.set_error(invalid_operation)
 		return
 	}
-	mut args := [i64(value.handle_)]
-	for item in values {
-		args << i64(item)
-	}
-	context.native.dispatch('uniform', ...args)
+	if values.len == 0 { return }
+	if values.len > 4 { context.set_error(invalid_value); return }
+	context.uniform_floats(location, values, values.len)
 }
 
 pub fn (mut context WebGLRenderingContext) pixel_storei(pname GLenum, parameter int) {

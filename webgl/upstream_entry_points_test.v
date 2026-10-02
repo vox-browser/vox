@@ -72,8 +72,8 @@ fn test_upstream_uniform_vectors_matrices_and_webgl2_validation() {
 	mut context := WebGLRenderingContext.create(.webgl2, WebGLContextAttributes{}, [])
 	mut vertex := WebGLShader.create(mut context, vertex_shader) or { panic('vertex shader') }
 	mut fragment := WebGLShader.create(mut context, fragment_shader) or { panic('fragment shader') }
-	context.shader_source(mut vertex, 'uniform vec4 u_color; void main() { gl_Position = u_color; }')
-	context.shader_source(mut fragment, 'precision mediump float; void main() { gl_FragColor = vec4(1.0); }')
+	context.shader_source(mut vertex, '#version 300 es\nuniform vec4 u_color; uniform mat3x2 u_matrix; void main() { gl_Position = u_color + vec4(u_matrix[0], 0.0, 0.0); }')
+	context.shader_source(mut fragment, '#version 300 es\nprecision mediump float; out vec4 result; void main() { result = vec4(1.0); }')
 	context.compile_shader(mut vertex)
 	context.compile_shader(mut fragment)
 	mut program := WebGLProgram.create(mut context)
@@ -84,7 +84,8 @@ fn test_upstream_uniform_vectors_matrices_and_webgl2_validation() {
 	location := context.get_uniform_location(mut program, 'u_color') or { panic('uniform') }
 	context.uniform4fv(location, [f32(1), 0.5, 0.25, 1])
 	assert context.get_uniform(program, location).numbers == [f64(1), 0.5, 0.25, 1]
-	context.uniform_matrix3x2fv(location, false, [f32(1), 0, 0, 1, 2, 3])
+	matrix := context.get_uniform_location(mut program, 'u_matrix') or { panic('matrix uniform') }
+	context.uniform_matrix3x2fv(matrix, false, [f32(1), 0, 0, 1, 2, 3])
 	assert context.get_error() == no_error
 	context.uniform_matrix2fv(location, true, [f32(1), 0, 0, 1])
 	assert context.get_error() == invalid_value

@@ -1260,46 +1260,72 @@ pub fn (mut context WebGLRenderingContext) tex_parameterf(target GLenum, pname G
 	context.command('tex_parameterf', target, pname, i64(parameter))
 }
 
-fn (mut context WebGLRenderingContext) uniform_floats(location ?&WebGLUniformLocation, values []f32) {
-	value := location or { return }
-	value.handle(context.current_program) or {
-		context.set_error(invalid_operation)
-		return
-	}
-	context.uniform_values_[value.handle_] = values.clone()
-	context.set_uniform(location, values)
+fn (mut context WebGLRenderingContext) uniform_floats(location ?&WebGLUniformLocation, values []f32, width int) {
+ value := location or { return }
+ value.handle(context.current_program) or { context.set_error(invalid_operation); return }
+
+ if values.len % width != 0 { context.set_error(invalid_value); return }
+ context.native.make_current()
+ C.vox_gl_uniform_floats(int(value.handle_), width, values.len / width, values.data)
+ error_value := GLenum(C.vox_gl_get_error())
+ if error_value != no_error { context.native.set_pending_local_error(error_value); return }
+ context.uniform_values_[value.handle_] = values.clone()
+}
+
+fn (mut context WebGLRenderingContext) uniform_ints(location ?&WebGLUniformLocation, values []int, width int) {
+ value := location or { return }
+ value.handle(context.current_program) or { context.set_error(invalid_operation); return }
+
+ if values.len % width != 0 { context.set_error(invalid_value); return }
+ context.native.make_current()
+ C.vox_gl_uniform_ints(int(value.handle_), width, values.len / width, values.data)
+ error_value := GLenum(C.vox_gl_get_error())
+ if error_value != no_error { context.native.set_pending_local_error(error_value); return }
+ context.uniform_values_[value.handle_] = values.map(f32(it))
+}
+
+fn (mut context WebGLRenderingContext) uniform_uints(location ?&WebGLUniformLocation, values []u32, width int) {
+ value := location or { return }
+ value.handle(context.current_program) or { context.set_error(invalid_operation); return }
+ if !context.require_webgl2() { return }
+ if values.len % width != 0 { context.set_error(invalid_value); return }
+ context.native.make_current()
+ C.vox_gl_uniform_uints(int(value.handle_), width, values.len / width, values.data)
+ error_value := GLenum(C.vox_gl_get_error())
+ if error_value != no_error { context.native.set_pending_local_error(error_value); return }
+ context.uniform_values_[value.handle_] = values.map(f32(it))
 }
 
 pub fn (mut context WebGLRenderingContext) uniform1f(location ?&WebGLUniformLocation, x f32) {
-	context.uniform_floats(location, [x])
+ context.uniform_floats(location, [x], 1)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform2f(location ?&WebGLUniformLocation, x f32, y f32) {
-	context.uniform_floats(location, [x, y])
+ context.uniform_floats(location, [x, y], 2)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform3f(location ?&WebGLUniformLocation, x f32, y f32, z f32) {
-	context.uniform_floats(location, [x, y, z])
+ context.uniform_floats(location, [x, y, z], 3)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform4f(location ?&WebGLUniformLocation, x f32, y f32, z f32, w f32) {
-	context.uniform_floats(location, [x, y, z, w])
+ context.uniform_floats(location, [x, y, z, w], 4)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform1i(location ?&WebGLUniformLocation, x int) {
-	context.uniform_floats(location, [f32(x)])
+ context.uniform_ints(location, [x], 1)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform2i(location ?&WebGLUniformLocation, x int, y int) {
-	context.uniform_floats(location, [f32(x), f32(y)])
+ context.uniform_ints(location, [x, y], 2)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform3i(location ?&WebGLUniformLocation, x int, y int, z int) {
-	context.uniform_floats(location, [f32(x), f32(y), f32(z)])
+ context.uniform_ints(location, [x, y, z], 3)
 }
 
 pub fn (mut context WebGLRenderingContext) uniform4i(location ?&WebGLUniformLocation, x int, y int, z int, w int) {
-	context.uniform_floats(location, [f32(x), f32(y), f32(z), f32(w)])
+ context.uniform_ints(location, [x, y, z, w], 4)
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib1f(index GLuint, x f32) {
