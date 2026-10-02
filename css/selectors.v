@@ -1693,7 +1693,11 @@ fn matches_simple(component SimpleSelector, element &dom.Element, shadow_host ?&
 			return matches_namespace(qualified_name, element, context.style_sheet_for_rule)
 		}
 		.id {
-			return component.name.name == element.id() or { '' }
+			id := element.id() or { return false }
+			if element.document() != unsafe { nil } && element.document().in_quirks_mode() {
+				return equals_ignoring_ascii_case(component.name.name, id)
+			}
+			return component.name.name == id
 		}
 		.class {
 			// Class selectors are matched case insensitively in quirks mode.
@@ -2237,7 +2241,11 @@ fn fast_matches_simple_selector(simple_selector SimpleSelector, element &dom.Ele
 			return element.has_class(simple_selector.name.name)
 		}
 		.id {
-			return simple_selector.name.name == element.id() or { '' }
+			id := element.id() or { return false }
+			if element.document() != unsafe { nil } && element.document().in_quirks_mode() {
+				return equals_ignoring_ascii_case(simple_selector.name.name, id)
+			}
+			return simple_selector.name.name == id
 		}
 		.attribute {
 			return matches_attribute(simple_selector.attribute, context.style_sheet_for_rule, element)
@@ -3148,6 +3156,10 @@ fn can_selector_use_fast_matches(selector Selector) bool {
 }
 
 fn selector_ancestor_hashes(selector Selector) ([8]u32, bool) {
+	return selector_ancestor_hashes_with_name_case(selector, false)
+}
+
+fn selector_ancestor_hashes_with_name_case(selector Selector, fold_id_and_class_name_case bool) ([8]u32, bool) {
 	mut ancestor_hashes := [8]u32{}
 	if selector.is_slotted() {
 		// Ancestor filtering is not supported for slotted selectors, because those
@@ -3168,7 +3180,7 @@ fn selector_ancestor_hashes(selector Selector) ([8]u32, bool) {
 		compound_selector := compound_selectors[i]
 		match combinator_to_right {
 			.descendant, .immediate_child {
-				append_result := append_hashes_from_compound(compound_selector, ancestor_hashes, next_hash_index)
+				append_result := append_hashes_from_compound(compound_selector, ancestor_hashes, next_hash_index, fold_id_and_class_name_case)
 				ancestor_hashes = append_result.ancestor_hashes
 				next_hash_index = append_result.next_hash_index
 				if append_result.is_full {
@@ -3197,7 +3209,7 @@ mut:
 	is_full         bool
 }
 
-fn append_hashes_from_compound(compound_selector CompoundSelector, ancestor_hashes [8]u32, next_hash_index int) AppendHashResult {
+fn append_hashes_from_compound(compound_selector CompoundSelector, ancestor_hashes [8]u32, next_hash_index int, fold_id_and_class_name_case bool) AppendHashResult {
 	mut result := AppendHashResult{
 		ancestor_hashes: ancestor_hashes
 		next_hash_index: next_hash_index
@@ -3205,7 +3217,7 @@ fn append_hashes_from_compound(compound_selector CompoundSelector, ancestor_hash
 	for simple_selector in compound_selector.simple_selectors {
 		match simple_selector.type_ {
 			.id, .class {
-				result = append_unique_hash(selector_string_hash(simple_selector.name.name), result.ancestor_hashes, result.next_hash_index)
+				result = append_unique_hash(selector_string_hash(if fold_id_and_class_name_case { to_ascii_lowercase(simple_selector.name.name) } else { simple_selector.name.name }), result.ancestor_hashes, result.next_hash_index)
 				if result.is_full {
 					return result
 				}

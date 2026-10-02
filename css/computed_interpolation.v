@@ -10592,6 +10592,7 @@ pub mut:
 
 pub struct RuleCache {
 pub mut:
+	fold_id_and_class_name_case   bool
 	rules_by_id                  map[string][]&MatchingRule
 	rules_by_class               map[string][]&MatchingRule
 	rules_by_tag_name            map[string][]&MatchingRule
@@ -10710,11 +10711,21 @@ pub fn (mut s StyleComputer) reset_has_result_cache() {
 fn for_each_element_hash(element &dom.Element, callback fn (u32)) {
 	callback(selector_string_hash(to_ascii_lowercase(element.local_name())))
 	if id := element.id() {
-		callback(selector_string_hash(id))
+		name := if element.document() != unsafe { nil } && element.document().in_quirks_mode() {
+			to_ascii_lowercase(id)
+		} else {
+			id
+		}
+		callback(selector_string_hash(name))
 	}
 	if class_attribute := element.get_attribute('class') {
 		for class_name in class_attribute.fields() {
-			callback(selector_string_hash(class_name))
+			name := if element.document() != unsafe { nil } && element.document().in_quirks_mode() {
+				to_ascii_lowercase(class_name)
+			} else {
+				class_name
+			}
+			callback(selector_string_hash(name))
 		}
 	}
 	for attribute_name in element.get_attribute_names() {
@@ -11944,7 +11955,13 @@ pub fn (s &StyleComputer) process_animation_definitions(computed_properties &Com
 }
 
 pub fn (s &StyleComputer) should_reject_with_ancestor_filter(selector Selector) bool {
-	for hash in selector.ancestor_hashes() {
+	mut ancestor_hashes := selector.ancestor_hashes()
+	if s.document_ != unsafe { nil } && s.document_.in_quirks_mode() {
+		folded_hashes, _ := selector_ancestor_hashes_with_name_case(selector, true)
+		ancestor_hashes = folded_hashes
+	}
+	for index in 0 .. selector_ancestor_hash_count {
+		hash := ancestor_hashes[index]
 		if hash == 0 {
 			break
 		}

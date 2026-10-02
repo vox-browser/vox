@@ -176,6 +176,10 @@ fn style_scope_is_roundabout_selector_bucketable_as_something_simpler(simple_sel
 	return none
 }
 
+fn (cache &RuleCache) selector_name_bucket_key(name string) string {
+	return if cache.fold_id_and_class_name_case { to_ascii_lowercase(name) } else { name }
+}
+
 pub fn (mut cache RuleCache) add_rule(matching_rule &MatchingRule, pseudo_element ?PseudoElement, contains_root_pseudo_class bool) {
 	if matching_rule.slotted {
 		cache.slotted_rules << matching_rule
@@ -199,11 +203,11 @@ pub fn (mut cache RuleCache) add_rule(matching_rule &MatchingRule, pseudo_elemen
 	for i := last_compound_selector.simple_selectors.len - 1; i >= 0; i-- {
 		simple_selector := last_compound_selector.simple_selectors[i]
 		if simple_selector.type_ == .id {
-			style_scope_push_rule(mut cache.rules_by_id, simple_selector.name.name, matching_rule)
+			style_scope_push_rule(mut cache.rules_by_id, cache.selector_name_bucket_key(simple_selector.name.name), matching_rule)
 			return
 		}
 		if simple_selector.type_ == .class {
-			style_scope_push_rule(mut cache.rules_by_class, simple_selector.name.name, matching_rule)
+			style_scope_push_rule(mut cache.rules_by_class, cache.selector_name_bucket_key(simple_selector.name.name), matching_rule)
 			return
 		}
 		if simple_selector.type_ == .tag_name {
@@ -218,11 +222,11 @@ pub fn (mut cache RuleCache) add_rule(matching_rule &MatchingRule, pseudo_elemen
 				return
 			}
 			if simplified.type_ == .class {
-				style_scope_push_rule(mut cache.rules_by_class, simplified.name, matching_rule)
+				style_scope_push_rule(mut cache.rules_by_class, cache.selector_name_bucket_key(simplified.name), matching_rule)
 				return
 			}
 			if simplified.type_ == .id {
-				style_scope_push_rule(mut cache.rules_by_id, simplified.name, matching_rule)
+				style_scope_push_rule(mut cache.rules_by_id, cache.selector_name_bucket_key(simplified.name), matching_rule)
 				return
 			}
 		}
@@ -253,12 +257,14 @@ pub fn (mut cache RuleCache) add_rule(matching_rule &MatchingRule, pseudo_elemen
 pub fn (cache &RuleCache) matching_rule_buckets(abstract_element dom.AbstractElement) [][]&MatchingRule {
 	element := abstract_element.element()
 	mut buckets := [][]&MatchingRule{}
-	for class_name in element.classes {
+	for original_class_name in element.classes {
+		class_name := cache.selector_name_bucket_key(original_class_name)
 		if class_name in cache.rules_by_class {
 			buckets << (cache.rules_by_class[class_name] or { []&MatchingRule{} })
 		}
 	}
-	if id := element.id() {
+	if original_id := element.id() {
+		id := cache.selector_name_bucket_key(original_id)
 		if id in cache.rules_by_id {
 			buckets << (cache.rules_by_id[id] or { []&MatchingRule{} })
 		}
@@ -441,7 +447,7 @@ pub fn (mut scope StyleScope) build_rule_cache() {
 			active_author_sheets := scope.stylesheets_for_cascade_origin(.author)
 			document_scope := css_style_scope_for_document(node.document())
 			if active_author_sheets.len == 1 && active_author_sheets[0].constructed
-				&& document_scope.user_style_source == none {
+				&& document_scope.user_style_source == none && !node.document().in_quirks_mode() {
 				mut constructed_sheet := unsafe { &CSSStyleSheet(active_author_sheets[0]) }
 				cache := constructed_sheet.shared_single_constructed_sheet_style_cache(mut scope)
 				scope.adopt_style_cache(cache)
@@ -577,13 +583,14 @@ pub fn (scope &StyleScope) for_each_stylesheet(cascade_origin CascadeOrigin, cal
 }
 
 pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin CascadeOrigin, insights &SelectorInsights) {
+	fold_id_and_class_name_case := if document := scope.document() { document.in_quirks_mode() } else { false }
 	mut mutable_insights := unsafe { &SelectorInsights(insights) }
 
 	mut style_sheet_index := usize(0)
 	for sheet in scope.stylesheets_for_cascade_origin(cascade_origin) {
 		mut rule_caches := scope.rule_caches_for_origin_mut(cascade_origin) or { continue }
 		mut rule_index := usize(0)
-		sheet.for_each_effective_style_producing_rule(fn [mut scope, mut rule_caches, sheet, cascade_origin, mut mutable_insights, mut rule_index, style_sheet_index] (rule &CSSRule) {
+		sheet.for_each_effective_style_producing_rule(fn [mut scope, mut rule_caches, sheet, cascade_origin, mut mutable_insights, mut rule_index, style_sheet_index, fold_id_and_class_name_case] (rule &CSSRule) {
 			if container_rule := rule.parent_container_rule() {
 				if container_rule.container_rule_contains_size_feature() {
 					scope.has_size_container_queries = true
@@ -624,6 +631,8 @@ pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin 
 					rule_caches.by_layer[qualified_layer_name] or { rule_caches.main }
 				}
 
+				rule_cache.fold_id_and_class_name_case = fold_id_and_class_name_case
+
 				mut contains_root_pseudo_class := false
 				mut pseudo_element := ?PseudoElement(none)
 
@@ -659,6 +668,7 @@ pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin 
 						// For pseudo class rule caches we intentionally pass no
 						// pseudo-element, because we don't want to bucket pseudo
 						// class rules by pseudo-element type.
+						pseudo_class_cache.fold_id_and_class_name_case = fold_id_and_class_name_case
 						pseudo_class_cache.add_rule(matching_rule, none, contains_root_pseudo_class)
 					}
 				}
