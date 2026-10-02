@@ -5,13 +5,8 @@
 module platform
 
 import crypto.sha256
+import gfxfont
 import os
-
-#flag darwin -framework CoreFoundation
-#flag darwin -framework CoreGraphics
-#include "font_decode_bridge.h"
-
-fn C.libweb_v_decode_web_font(input_path &char, output_path &char) int
 
 fn is_sfnt_font_data(data []u8) bool {
 	if data.len < 4 {
@@ -32,36 +27,30 @@ fn prepared_font_cache_path(data []u8, suffix string) string {
 	return os.join_path(directory, '${digest}.${suffix}')
 }
 
-// Prepare a downloaded vector font for the file-backed metrics, shaping, and
-// replay boundaries. sfnt data is retained verbatim. On macOS CoreGraphics
-// performs the same WOFF/WOFF2 preparation step as upstream's decoder and the
-// reconstructed sfnt is cached for the lifetime of this process.
+// Retain the source decoder's prepared bytes for V's file-backed metrics and
+// shaping boundary. Decoding belongs to LibGfx's WOFF/WOFF2 loader above it.
+pub fn cache_prepared_font_data(data []u8) ?string {
+	output_path := prepared_font_cache_path(data, 'ttf')
+	if output_path == '' { return none }
+	if !os.is_file(output_path) {
+		os.write_file_array(output_path, data) or { return none }
+	}
+	return output_path
+}
+
 pub fn prepare_font_data(data []u8) ?string {
 	if !is_sfnt_font_data(data) && !is_web_font_data(data) {
 		return none
 	}
-	output_path := prepared_font_cache_path(data, 'ttf')
-	if output_path == '' {
-		return none
-	}
-	if os.is_file(output_path) {
-		return output_path
-	}
 	if is_sfnt_font_data(data) {
-		os.write_file_array(output_path, data) or { return none }
-		return output_path
+		return cache_prepared_font_data(data)
 	}
-	input_path := prepared_font_cache_path(data, if data[..4].bytestr() == 'wOF2' { 'woff2' } else { 'woff' })
-	if input_path == '' {
-		return none
+	prepared := if data[..4].bytestr() == 'wOF2' {
+		gfxfont.convert_woff2_to_sfnt(data) or { return none }
+	} else {
+		gfxfont.convert_woff_to_sfnt(data) or { return none }
 	}
-	if !os.is_file(input_path) {
-		os.write_file_array(input_path, data) or { return none }
-	}
-	if C.libweb_v_decode_web_font(input_path.str, output_path.str) == 0 || !os.is_file(output_path) {
-		return none
-	}
-	return output_path
+	return cache_prepared_font_data(prepared)
 }
 
 pub fn prepare_font_file(path string) ?string {
