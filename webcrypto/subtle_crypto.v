@@ -63,6 +63,7 @@ pub:
 
 pub type KeyGenerationParams = AesKeyGenParams
 	| AlgorithmParams
+	| EcKeyGenParams
 	| HmacKeyGenParams
 	| KmacKeyGenParams
 	| RsaHashedKeyGenParams
@@ -376,6 +377,7 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 		HmacKeyGenParams { params.name }
 		KmacKeyGenParams { params.name }
 		RsaHashedKeyGenParams { params.name }
+		EcKeyGenParams { params.name }
 		AlgorithmParams { params.name }
 	}
 	normalized := normalize_an_algorithm(name, 'generateKey')!
@@ -385,6 +387,12 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 		return error('SyntaxError: usages must not be empty')
 	}
 	return match params {
+        EcKeyGenParams {
+            generated := generate_ec_key(EcKeyGenParams{ ...params, name: normalized }, extractable, normalized_usages)!
+            pair := generated.pair or { return error('OperationError: Missing key pair') }
+            if pair.private_key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+            generated
+        }
         RsaHashedKeyGenParams {
             hash := normalize_an_algorithm(params.hash, 'digest')!
             generated := generate_rsa_key(RsaHashedKeyGenParams{ ...params, name: normalized, hash: hash }, extractable, normalized_usages)!
