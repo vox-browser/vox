@@ -147,6 +147,12 @@ DataView/typed destination writes, raw-buffer versus view brands, and optional
 engine RAB/SAB exposure. This interop adaptation does not establish complete
 LibJS builtin/prototype/WrapperWorld parity.
 
+Float16Array views retain their two-byte element size, as declared by the
+pinned `Libraries/LibWeb/WebIDL/Buffers.h:20-33` variant. The focused native host
+test passed with Float16Array exposed by JavaScriptCore, checking offset/length
+upload bytes and destination offsets without reading an author-shadowed
+BYTES_PER_ELEMENT property.
+
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
