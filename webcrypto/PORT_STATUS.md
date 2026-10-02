@@ -179,6 +179,15 @@ The earlier typed V `raw` import/export convenience alias remains explicitly
 supported; source AlgorithmMethods and asynchronous import/export/wrap reject
 that alias and accept raw-secret or JWK.
 
+AES-OCB's further review preserves native EVP expression diagnostics,
+usage-first generation/import, full length/contradiction errors, raw-secret-only
+formats, default import slots until common metadata installation, omitted JWK
+`alg` for malformed handles, and its distinct `Invalid key length: N` result.
+The native adapter reports an OperationError for an invalid manually fabricated
+key size where upstream GET_CIPHER asserts; it does not accept or operate on
+that invalid key. Existing 18 source vectors and focused format/error/binding
+checks pass.
+
 Common parameter/typed boundary conversions remain under source review.
 Native backend availability does not establish complete WebCrypto/VM parity.
 
