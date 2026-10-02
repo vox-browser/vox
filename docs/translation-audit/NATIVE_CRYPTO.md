@@ -137,3 +137,26 @@ importKey dictionaries allow absent optional members and let class usage/type
 validation decide the error. Public parse_json_web_key/unwrap retains its source
 mandatory-kty check. Two focused cases pass, checking that boundary and source
 AES/HMAC/KMAC/RSA/EC/Ed25519 class validation for absent key type.
+
+SubtleCrypto.importKey now follows the pinned generated BufferSource/JsonWebKey
+union, KeyFormat enum, dictionary, boolean, AlgorithmIdentifier, and KeyUsage
+sequence conversions using actual engine values. Optional JWK members are read
+in lexical order and use source DOMString/boolean/sequence conversions, including
+nested RSA other-prime dictionaries and original thrown objects. The source
+ImplementedInBindings format/union check runs after every argument conversion.
+Raw SharedArrayBuffer follows the pinned generator's dictionary fallback;
+shared views and resizable buffers retain generated binding restrictions.
+
+Raw bytes are copied after usage iteration and before algorithm getters.
+Normalized parameters are copied in source order before the owning deferred
+import operation, preserving nested hash and unsigned-length conversion.
+The actual Promise resolves to a native CryptoKey wrapper; common metadata
+installation preserves the source sorted usage vector and empty-usage rejection.
+All five focused native import cases pass with `-gc none`, including all 29
+registered import names, source-supported raw/public/SPKI formats, JWK coercion,
+validation precedence, getter mutation, detached-buffer boundaries, and optional
+shared/resizable cases when exposed by the engine. ML-KEM JWK remains the pinned
+source's unsupported operation. The existing task/Promise relay, typed UTF-8
+string DTO, assertion/error, and WrapperWorld GC boundaries remain explicit.
+Remaining native methods include encryption, signing, derivation, wrapping,
+and KEM operations; this slice does not claim complete LibJS runtime parity.

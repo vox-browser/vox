@@ -351,3 +351,13 @@ from CryptoBindings::parse_json_web_key. Missing optional kty reaches concrete
 usage/type validation; public JSON parsing and unwrap retain the mandatory-kty
 source rule. Both focused jwk_import_dictionary_test cases pass across symmetric,
 RSA, EC, and Ed25519 import paths.
+
+Native SubtleCrypto.importKey now connects actual engine dictionary/buffer/enum
+values to the owning source service and actual Promise/CryptoKey wrappers.
+Lexical JWK getter order, DOMString sequences, nested RSA dictionaries, argument
+conversion before format checks, copied bytes before normalization, source
+parameter conversion, and common sorted usages are covered. All five focused
+native import cases pass with `-gc none`, exercising every one of the 29
+registered import names. Pinned ML-KEM JWK TODOs and documented host/VM/string/
+wrapper boundaries remain; encryption, signing, derivation, wrapping, and KEM
+native method bindings are still pending.
