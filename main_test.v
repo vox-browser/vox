@@ -125,6 +125,20 @@ fn test_native_browser_timer_waits_for_source_task_before_replaying_author_dom_m
 	assert !runtime.libjs_vm().has_running_execution_context()
 }
 
+fn test_native_browser_writable_sink_uses_source_controller_before_replaying_author_dom_mutation() {
+	$if !darwin { return }
+	document := html.parse_document('<div id="result">pending</div>')
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close() }
+	mut messages := []string{}
+	run_document_javascript(document, 'https://example.test/writable.html', [
+		'globalThis.nativeSink={write(value,controller){result.textContent=this===nativeSink&&value===result&&controller.signal instanceof AbortSignal&&!controller.signal.aborted?"source write":"wrong sink"}};new WritableStream(nativeSink).getWriter().write(result);',
+	], runtime, mut messages)
+	assert messages == []
+	assert document.get_element_by_id('result')?.as_node().text_content()? == 'source write'
+	assert !runtime.libjs_vm().has_running_execution_context()
+}
+
 fn test_native_browser_script_sources_keep_urls_and_module_parse_goal() {
 	document := html.parse_document_with_url('<script>const inline=1;</script><script src="app.js"></script><script type="module">export default 42;</script><script type="application/json">{}</script>', dom.URL{value: 'https://example.test/page.html'})
 	mut messages := []string{}

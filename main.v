@@ -2254,6 +2254,14 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript AbortSignal bindings: ${err.msg()}'
 		return none
 	}
+	mut writable_host := browserjs.WritableStreamHost.create(document) or {
+		messages << 'JavaScript WritableStream bindings: ${err.msg()}'
+		return none
+	}
+	writable_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript WritableStream bindings: ${err.msg()}'
+		return none
+	}
 	mut xhr_host := browserjs.XMLHttpRequestHost.create_native(document) or {
 		messages << 'JavaScript XMLHttpRequest bindings: ${err.msg()}'
 		return none

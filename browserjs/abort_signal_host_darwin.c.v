@@ -107,6 +107,14 @@ pub fn (runtime &Runtime) native_abort_signal(value voidptr) !&dom.AbortSignal {
 	return unsafe { &dom.AbortSignal(record.native) }
 }
 
+// Generated controller getters wrap the same DOM signal, preserving its native
+// reason, event target and actual engine wrapper identity.
+pub fn (mut runtime Runtime) javascript_abort_signal(signal &dom.AbortSignal) !voidptr {
+	runtime.require_javascript_value_context()!
+	mut host := abort_signal_bindings_[voidptr(&runtime)] or { return error('AbortSignal binding is unavailable') }
+	return host.wrap(.signal, voidptr(signal), unsafe { nil })
+}
+
 pub fn (runtime &Runtime) native_abort_controller(value voidptr) !&dom.AbortController {
 	host := abort_signal_bindings_[voidptr(runtime)] or { return error('AbortController binding is unavailable') }
 	record := host.record(value, .controller)!
