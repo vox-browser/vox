@@ -22,6 +22,10 @@ exposure controls subtle/randomUUID. getRandomValues validates real engine view
 brands, shared/resizable backing restrictions from the pinned IDL generator,
 and detached-view witnesses, then invokes the source random-byte operation and
 overwrites only the actual view span. It returns the original input object.
+Invalid union inputs retain the pinned generator's `No union types matched`
+diagnostic. Required argument counting ignores extra arguments and does not
+invoke an author-modified arguments iterator. Focused random tests verify these
+behaviors alongside captured view brands and shadowed buffer/offset properties.
 
 Focused host tests cover every integer typed-array kind, offset writes, shadowed
 properties, native record identity, UUID format, unsupported brands/kinds,
