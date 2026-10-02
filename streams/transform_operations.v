@@ -6,6 +6,8 @@
 // TransformStream.cpp and TransformStreamOperations.cpp.
 module streams
 
+import webidl
+
 pub fn (mut stream TransformStream) enqueue(value Value) ! {
 	mut controller := stream.controller_
 	controller.enqueue(value)!
@@ -15,11 +17,10 @@ pub fn (mut stream TransformStream) set_up(transformer Transformer, writable_str
 	if transformer.readable_type != none || transformer.writable_type != none {
 		return error('RangeError: TransformStream type members are reserved')
 	}
-	initialize_transform_stream(mut stream, extract_high_water_mark(writable_strategy, 1)!, extract_size_algorithm(writable_strategy), extract_high_water_mark(readable_strategy, 0)!, extract_size_algorithm(readable_strategy))!
+	mut start_promise := webidl.create_promise_for(stream.realm_.promise_context())
+	initialize_transform_stream_with_start_promise(mut stream, start_promise, extract_high_water_mark(writable_strategy, 1)!, extract_size_algorithm(writable_strategy), extract_high_water_mark(readable_strategy, 0)!, extract_size_algorithm(readable_strategy))!
 	set_up_transform_stream_default_controller_from_transformer(mut stream, transformer)
-	if start := transformer.start {
-		start()!
-	}
+	stream.start_transformer(transformer, mut start_promise)!
 }
 
 pub fn (mut stream TransformStream) transfer_steps() !&TransformStream {
@@ -51,27 +52,14 @@ pub fn (mut stream TransformStream) set_writable(mut writable WritableStream) {
 }
 
 pub fn (mut stream TransformStream) set_backpressure(value bool) {
-	if stream.backpressure_ == value {
-		return
-	}
-	if !isnil(stream.backpressure_change_promise_) {
-		mut changed := stream.backpressure_change_promise_
-		changed.resolve()
-	}
+	if stream.backpressure_ == value { return }
+	mut changed := stream.backpressure_change_promise_
 	stream.backpressure_change_promise_ = VoidPromise.pending_in(stream.realm_)
 	stream.backpressure_ = value
-	if value && !isnil(stream.readable_) && stream.readable_.pulling_ {
-		mut readable := stream.readable_
-		readable.pulling_ = false
-		if readable.pull_again_ {
-			readable.pull_again_ = false
-			readable.call_pull_if_needed()
-		}
-	}
-	if !value && !isnil(stream.writable_) {
-		mut writable := stream.writable_
-		writable.process_queue()
-	}
+	// Upstream resolves the old Promise before assigning these slots. Its jobs
+	// run after the operation returns; installing the slots first preserves
+	// that same visible state for the direct standalone reaction adapter.
+	if !isnil(changed) { changed.resolve() }
 }
 
 pub fn (stream &TransformStream) backpressure_change_promise() &VoidPromise {
@@ -135,28 +123,39 @@ pub fn (mut controller TransformStreamDefaultController) set_stream(stream &Tran
 }
 
 pub fn initialize_transform_stream(mut stream TransformStream, writable_high_water_mark f64, writable_size SizeAlgorithm, readable_high_water_mark f64, readable_size SizeAlgorithm) ! {
+	mut start_promise := webidl.create_promise_for(stream.realm_.promise_context())
+	initialize_transform_stream_with_start_promise(mut stream, start_promise, writable_high_water_mark, writable_size, readable_high_water_mark, readable_size)!
+	start_promise.resolve(webidl.undefined_value())
+}
+
+fn initialize_transform_stream_with_start_promise(mut stream TransformStream, start_promise &webidl.Promise, writable_high_water_mark f64, writable_size SizeAlgorithm, readable_high_water_mark f64, readable_size SizeAlgorithm) ! {
 	stream.stored_error_ = ''
 	stream.terminated_ = false
 	stream.transform_algorithm_ = none
 	stream.flush_algorithm_ = none
 	stream.cancel_algorithm_ = none
-	stream.writable_ = WritableStream.create(stream.realm_, UnderlyingSink{}, QueuingStrategy{
+	stream.writable_ = WritableStream.create(stream.realm_, UnderlyingSink{
+		start_promise: fn [start_promise] () !&webidl.Promise { return start_promise }
+	}, QueuingStrategy{
 		high_water_mark: writable_high_water_mark
 		size: writable_size
 	})!
 	stream.writable_.owner_kind_ = .transform
 	stream.writable_.owner_ = voidptr(&stream)
-	stream.readable_ = ReadableStream.create(stream.realm_, UnderlyingSource{}, QueuingStrategy{
+	stream.readable_ = ReadableStream.create(stream.realm_, UnderlyingSource{
+		start_promise: fn [start_promise] () !&webidl.Promise { return start_promise }
+		cancel_promise: fn [mut stream] (reason Value) !&webidl.Promise { return stream.cancel_readable(reason).as_webidl_promise() }
+	}, QueuingStrategy{
 		high_water_mark: readable_high_water_mark
 		size: readable_size
 	})!
+	stream.readable_.set_result_realm(stream.realm_)
 	stream.readable_.owner_kind_ = .transform
 	stream.readable_.owner_ = voidptr(&stream)
 	stream.backpressure_ = false
 	stream.backpressure_change_promise_ = unsafe { nil }
 	stream.controller_ = unsafe { nil }
 	transform_stream_set_backpressure(mut stream, true)
-	stream.readable_.call_pull_if_needed()
 }
 
 pub fn transform_stream_error(mut stream TransformStream, reason Value) {
@@ -186,6 +185,9 @@ pub fn set_up_transform_stream_default_controller(mut stream TransformStream, mu
 	stream.transform_algorithm_ = transform
 	stream.flush_algorithm_ = flush
 	stream.cancel_algorithm_ = cancel
+	stream.promise_transform_algorithm_ = none
+	stream.promise_flush_algorithm_ = none
+	stream.promise_cancel_algorithm_ = none
 }
 
 pub fn set_up_transform_stream_default_controller_from_transformer(mut stream TransformStream, transformer Transformer) {
@@ -193,6 +195,9 @@ pub fn set_up_transform_stream_default_controller_from_transformer(mut stream Tr
 		stream_: &stream
 	}
 	set_up_transform_stream_default_controller(mut stream, mut controller, transformer.transform or { identity_transform_algorithm }, transformer.flush or { empty_flush_algorithm }, transformer.cancel or { no_op_cancel_algorithm })
+	stream.promise_transform_algorithm_ = transformer.transform_promise
+	stream.promise_flush_algorithm_ = transformer.flush_promise
+	stream.promise_cancel_algorithm_ = transformer.cancel_promise
 }
 
 fn identity_transform_algorithm(value Value) ![]Value {
@@ -218,8 +223,8 @@ pub fn transform_stream_default_controller_error(mut controller TransformStreamD
 
 pub fn transform_stream_default_controller_perform_transform(mut controller TransformStreamDefaultController, chunk Value) &VoidPromise {
 	mut stream := controller.stream_
-	stream.write_chunk(chunk) or { return VoidPromise.rejected(err.msg()) }
-	return VoidPromise.fulfilled()
+	mut native := stream.perform_transform_promise(chunk)
+	return void_promise_from_webidl(stream.realm_, mut native)
 }
 
 pub fn transform_stream_default_controller_terminate(mut controller TransformStreamDefaultController) {
@@ -227,8 +232,8 @@ pub fn transform_stream_default_controller_terminate(mut controller TransformStr
 }
 
 pub fn transform_stream_default_sink_write_algorithm(mut stream TransformStream, chunk Value) &VoidPromise {
-	stream.write_chunk(chunk) or { return VoidPromise.rejected(err.msg()) }
-	return VoidPromise.fulfilled()
+	mut native := stream.sink_write_promise(chunk)
+	return void_promise_from_webidl(stream.realm_, mut native)
 }
 
 pub fn transform_stream_default_sink_abort_algorithm(mut stream TransformStream, reason Value) &VoidPromise {

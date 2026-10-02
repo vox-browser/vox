@@ -220,7 +220,7 @@ fn (mut stream WritableStream) perform_write(value Value) &webidl.Promise {
 		}
 		.transform {
 			mut transform := unsafe { &TransformStream(stream.owner_) }
-			transform.write_chunk(value) or { return rejected_callback_promise(stream.realm_, err.msg()) }
+			return transform.sink_write_promise(value)
 		}
 		.message_port {
 			if isnil(stream.message_port_) {
@@ -300,14 +300,7 @@ fn (mut stream WritableStream) process_queue() {
 	}
 	value := stream.queue_.peek_queue_value() or { return }
 	is_close := stream.queue_.first_is_close_sentinel()
-	// TransformStream's sink write algorithm waits for backpressure. Its
-	// sink close algorithm runs the flush algorithm without that wait.
-	if !is_close && stream.owner_kind_ == .transform {
-		mut transform := unsafe { &TransformStream(stream.owner_) }
-		if transform.backpressure_ {
-			return
-		}
-	}
+
 	if stream.owner_kind_ == .message_port && !is_close && !stream.message_backpressure_ {
 		return
 	}

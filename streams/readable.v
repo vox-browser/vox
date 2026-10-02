@@ -368,16 +368,7 @@ fn (mut stream ReadableStream) call_pull_if_needed() {
 		pump_readable_from_iterable(mut stream)
 		return
 	}
-	if stream.owner_kind_ == .transform {
-		if stream.pulling_ {
-			stream.pull_again_ = true
-			return
-		}
-		stream.pulling_ = true
-		mut transform := unsafe { &TransformStream(stream.owner_) }
-		_ = transform_stream_default_source_pull_algorithm(mut transform)
-		return
-	}
+
 	if stream.pulling_ {
 		stream.pull_again_ = true
 		return
@@ -510,10 +501,7 @@ fn (mut stream ReadableStream) cancel_internal(reason Value) &VoidPromise {
 		}
 		stream.byob_reader_.read_into_requests_.clear()
 	}
-	if stream.owner_kind_ == .transform {
-		mut transform := unsafe { &TransformStream(stream.owner_) }
-		return transform.cancel_readable(reason)
-	}
+
 	if stream.owner_kind_ == .message_port && !isnil(stream.message_port_) {
 		mut port := stream.message_port_
 		pack_and_post_message(mut port, 'error', reason) or {

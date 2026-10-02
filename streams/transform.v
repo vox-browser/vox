@@ -6,12 +6,18 @@
 // TransformStreamDefaultController, Transformer, and transform operations.
 module streams
 
+import webidl
+
 pub struct Transformer {
 pub:
 	start         ?StartAlgorithm
 	transform     ?TransformAlgorithm
 	flush         ?FlushAlgorithm
 	cancel        ?CancelAlgorithm
+	start_promise ?PromiseStartAlgorithm
+	transform_promise ?PromiseTransformAlgorithm
+	flush_promise ?PromiseFlushAlgorithm
+	cancel_promise ?PromiseCancelAlgorithm
 	readable_type ?string
 	writable_type ?string
 }
@@ -26,6 +32,9 @@ mut:
 	transform_algorithm_         ?TransformAlgorithm
 	flush_algorithm_             ?FlushAlgorithm
 	cancel_algorithm_            ?CancelAlgorithm
+	promise_transform_algorithm_ ?PromiseTransformAlgorithm
+	promise_flush_algorithm_     ?PromiseFlushAlgorithm
+	promise_cancel_algorithm_    ?PromiseCancelAlgorithm
 	backpressure_                bool
 	backpressure_change_promise_ &VoidPromise = unsafe { nil }
 	stored_error_                string
@@ -59,12 +68,11 @@ pub fn TransformStream.create(realm StreamRealm, transformer Transformer, writab
 	mut transform := &TransformStream{
 		realm_: realm
 	}
-	initialize_transform_stream(mut transform, writable_high_water_mark, extract_size_algorithm(writable_strategy), readable_high_water_mark, extract_size_algorithm(readable_strategy))!
+	mut start_promise := webidl.create_promise_for(realm.promise_context())
+	initialize_transform_stream_with_start_promise(mut transform, start_promise, writable_high_water_mark, extract_size_algorithm(writable_strategy), readable_high_water_mark, extract_size_algorithm(readable_strategy))!
 	prepare_transform_stream_readable_writable_wrappers(mut transform)
 	set_up_transform_stream_default_controller_from_transformer(mut transform, transformer)
-	if start := transformer.start {
-		start()!
-	}
+	transform.start_transformer(transformer, mut start_promise)!
 	return transform
 }
 
@@ -113,139 +121,16 @@ fn (mut stream TransformStream) update_backpressure() {
 	}
 }
 
-fn (mut stream TransformStream) write_chunk(value Value) ! {
-	if stream.terminated_ {
-		return error('TypeError: TransformStream has terminated')
-	}
-	if stream.stored_error_ != '' {
-		return error(stream.stored_error_)
-	}
-	mut outputs := []Value{}
-	if algorithm := stream.transform_algorithm_ {
-		outputs = algorithm(value) or {
-			stream.error(err.msg())
-			return err
-		}
-	} else {
-		outputs << value
-	}
-	mut controller := stream.controller_
-	for output in outputs {
-		controller.enqueue(output)!
-	}
-	stream.update_backpressure()
-}
 
 fn (mut stream TransformStream) clear_algorithms() {
 	stream.transform_algorithm_ = none
 	stream.flush_algorithm_ = none
 	stream.cancel_algorithm_ = none
+	stream.promise_transform_algorithm_ = none
+	stream.promise_flush_algorithm_ = none
+	stream.promise_cancel_algorithm_ = none
 }
 
-// https://streams.spec.whatwg.org/#transform-stream-default-sink-close-algorithm
-fn (mut stream TransformStream) close_writable() &VoidPromise {
-	mut controller := stream.controller_
-	if !isnil(controller.finish_promise_) {
-		return controller.finish_promise_
-	}
-	controller.finish_promise_ = VoidPromise.pending_in(stream.realm_)
-	mut finish_promise := controller.finish_promise_
-	mut outputs := []Value{}
-	if algorithm := stream.flush_algorithm_ {
-		outputs = algorithm() or {
-			reason := err.msg()
-			stream.clear_algorithms()
-			mut readable := stream.readable_
-			readable.error(reason)
-			finish_promise.reject(reason)
-			return finish_promise
-		}
-	}
-	stream.clear_algorithms()
-	if stream.readable_.state_ == .errored {
-		finish_promise.reject(stream.readable_.stored_error_)
-		return finish_promise
-	}
-	for output in outputs {
-		controller.enqueue(output) or {
-			reason := err.msg()
-			mut readable := stream.readable_
-			readable.error(reason)
-			finish_promise.reject(reason)
-			return finish_promise
-		}
-	}
-	mut readable_controller := stream.readable_.default_controller_
-	readable_controller.close() or {
-		reason := err.msg()
-		mut readable := stream.readable_
-		readable.error(reason)
-		finish_promise.reject(reason)
-		return finish_promise
-	}
-	finish_promise.resolve()
-	return finish_promise
-}
-
-// https://streams.spec.whatwg.org/#transform-stream-default-sink-abort-algorithm
-fn (mut stream TransformStream) abort_writable(reason Value) &VoidPromise {
-	mut controller := stream.controller_
-	if !isnil(controller.finish_promise_) {
-		return controller.finish_promise_
-	}
-	controller.finish_promise_ = VoidPromise.pending_in(stream.realm_)
-	mut finish_promise := controller.finish_promise_
-	if algorithm := stream.cancel_algorithm_ {
-		algorithm(reason) or {
-			rejection := err.msg()
-			stream.clear_algorithms()
-			mut readable := stream.readable_
-			readable.error(rejection)
-			finish_promise.reject(rejection)
-			return finish_promise
-		}
-	}
-	stream.clear_algorithms()
-	if stream.readable_.state_ == .errored {
-		finish_promise.reject(stream.readable_.stored_error_)
-		return finish_promise
-	}
-	mut readable := stream.readable_
-	readable.error(reason.description())
-	finish_promise.resolve()
-	return finish_promise
-}
-
-// https://streams.spec.whatwg.org/#transform-stream-default-source-cancel
-fn (mut stream TransformStream) cancel_readable(reason Value) &VoidPromise {
-	mut controller := stream.controller_
-	if !isnil(controller.finish_promise_) {
-		return controller.finish_promise_
-	}
-	controller.finish_promise_ = VoidPromise.pending_in(stream.realm_)
-	mut finish_promise := controller.finish_promise_
-	if algorithm := stream.cancel_algorithm_ {
-		algorithm(reason) or {
-			rejection := err.msg()
-			stream.clear_algorithms()
-			mut writable := stream.writable_
-			writable.start_erroring(rejection)
-			stream.unblock_write()
-			finish_promise.reject(rejection)
-			return finish_promise
-		}
-	}
-	stream.clear_algorithms()
-	if stream.writable_.state_ == .errored {
-		finish_promise.reject(stream.writable_.stored_error_)
-		return finish_promise
-	}
-	mut writable := stream.writable_
-	writable.start_erroring(reason.description())
-	stream.unblock_write()
-	finish_promise.resolve()
-	return finish_promise
-}
 
 fn (mut stream TransformStream) unblock_write() {
 	if stream.backpressure_ {

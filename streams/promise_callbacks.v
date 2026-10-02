@@ -15,6 +15,8 @@ pub type PromiseCancelAlgorithm = fn (Value) !&webidl.Promise
 pub type PromiseWriteAlgorithm = fn (Value) !&webidl.Promise
 pub type PromiseCloseAlgorithm = fn () !&webidl.Promise
 pub type PromiseAbortAlgorithm = fn (Value) !&webidl.Promise
+pub type PromiseTransformAlgorithm = fn (Value) !&webidl.Promise
+pub type PromiseFlushAlgorithm = fn () !&webidl.Promise
 
 fn resolved_callback_promise(realm StreamRealm) &webidl.Promise {
 	return webidl.create_resolved_promise_for(realm.promise_context(), webidl.undefined_value())
@@ -41,6 +43,10 @@ fn void_promise_from_webidl(realm StreamRealm, mut native webidl.Promise) &VoidP
 }
 
 fn (mut stream ReadableStream) invoke_pull_algorithm() &webidl.Promise {
+	if stream.owner_kind_ == .transform {
+		mut transform := unsafe { &TransformStream(stream.owner_) }
+		return transform_stream_default_source_pull_algorithm(mut transform).as_webidl_promise()
+	}
 	if algorithm := stream.promise_pull_algorithm_ {
 		return algorithm() or { rejected_callback_promise(stream.realm_, err.msg()) }
 	}
