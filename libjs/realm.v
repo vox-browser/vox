@@ -206,22 +206,23 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	set_default_global_value_bindings(realm)
 	// GlobalObject.cpp installs intrinsic constructor properties after values.
 	// Eager materialization replaces the engine-private intrinsic accessor map.
-	global.define_direct_property(PropertyName.from_str('Math'),
-		Value.from_object(realm.math_object_record()), attribute_writable | attribute_configurable)
-	global.define_direct_property(PropertyName.from_str('Boolean'),
-		Value.from_object(realm.boolean_constructor_record()),
-		attribute_writable | attribute_configurable)
-	global.define_direct_property(PropertyName.from_str('Symbol'),
-		Value.from_object(realm.symbol_constructor_record()),
-		attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('ArrayBuffer'),
 		Value.from_object(realm.array_buffer_constructor_record()),
+		attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('Boolean'),
+		Value.from_object(realm.boolean_constructor_record()),
 		attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('DataView'),
 		Value.from_object(realm.data_view_constructor_record()),
 		attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('SharedArrayBuffer'),
 		Value.from_object(realm.shared_array_buffer_constructor_record()), attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('Symbol'),
+		Value.from_object(realm.symbol_constructor_record()),
+		attribute_writable | attribute_configurable)
+	// Other intrinsic properties follow constructors in GlobalObject.cpp.
+	global.define_direct_property(PropertyName.from_str('Math'),
+		Value.from_object(realm.math_object_record()), attribute_writable | attribute_configurable)
 	set_default_global_legacy_functions(mut vm, realm)
 	// 19. Create any host-defined global object properties on global.
 	// 20. Return unused.
