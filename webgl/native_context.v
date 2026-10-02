@@ -241,6 +241,10 @@ pub fn (mut context OpenGLContext) dispatch(name string, args ...i64) bool {
 		'copy_tex_sub_image2d' { C.vox_gl_copy_tex_sub_image2d(u32(args[0]),int(args[1]),int(args[2]),int(args[3]),int(args[4]),int(args[5]),int(args[6]),int(args[7])) }
 		'tex_storage2d' { C.vox_gl_tex_storage2d(u32(args[0]),int(args[1]),u32(args[2]),int(args[3]),int(args[4])) }
 		'tex_storage3d' { C.vox_gl_tex_storage3d(u32(args[0]),int(args[1]),u32(args[2]),int(args[3]),int(args[4]),int(args[5])) }
+		'renderbuffer_storage_multisample' { C.vox_gl_renderbuffer_storage_multisample(u32(args[0]),int(args[1]),u32(args[2]),int(args[3]),int(args[4])) }
+		'read_buffer' { C.vox_gl_read_buffer(u32(args[0])) }
+		'draw_buffers', 'draw_buffers_webgl' { buffers:=args.map(u32(it));C.vox_gl_draw_buffers(buffers.len,buffers.data,int(name=='draw_buffers_webgl')) }
+		'blit_framebuffer' { C.vox_gl_blit_framebuffer(int(args[0]),int(args[1]),int(args[2]),int(args[3]),int(args[4]),int(args[5]),int(args[6]),int(args[7]),u32(args[8]),u32(args[9])) }
         'enable_vertex_attrib_array' { C.vox_gl_vertex_attrib_enable(u32(args[0]), 1) }
         'disable_vertex_attrib_array' { C.vox_gl_vertex_attrib_enable(u32(args[0]), 0) }
         'vertex_attrib_pointer' { C.vox_gl_vertex_attrib_pointer(u32(args[0]), int(args[1]), u32(args[2]), int(args[3]), int(args[4]), args[5]) }
@@ -287,7 +291,7 @@ pub fn (mut context OpenGLContext) dispatch(name string, args ...i64) bool {
 			args: args.clone()
 		}
 	}
-	if name.starts_with('draw') || name == 'clear' { context.notify_content_will_change() }
+	if name.starts_with('draw') || name in ['clear','blit_framebuffer'] { context.notify_content_will_change() }
 	return success
 }
 

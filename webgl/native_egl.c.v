@@ -63,6 +63,7 @@ fn C.vox_gl_bind_buffer(u32, u32)
 fn C.vox_gl_buffer_data(u32, i64, voidptr, u32)
 fn C.vox_gl_buffer_sub_data(u32, i64, i64, voidptr)
 fn C.vox_gl_copy_buffer_sub_data(u32, u32, i64, i64, i64)
+fn C.vox_gl_read_buffer_sub_data(u32, i64, i64, voidptr) int
 fn C.vox_gl_buffer_parameter(u32, u32, int) i64
 fn C.vox_gl_vertex_attrib_pointer(u32, int, u32, int, int, i64)
 fn C.vox_gl_vertex_attrib_i_pointer(u32, int, u32, int, i64)
@@ -92,6 +93,12 @@ fn C.vox_gl_tex_sub_image3d(u32,int,int,int,int,int,int,int,u32,u32,int,voidptr)
 fn C.vox_gl_framebuffer_texture_layer(u32,u32,u32,int,int)
 fn C.vox_gl_copy_tex_image2d(u32,int,u32,int,int,int,int,int)
 fn C.vox_gl_copy_tex_sub_image2d(u32,int,int,int,int,int,int,int)
+fn C.vox_gl_draw_buffers(int,&u32,int)
+fn C.vox_gl_read_buffer(u32)
+fn C.vox_gl_blit_framebuffer(int,int,int,int,int,int,int,int,u32,u32)
+fn C.vox_gl_renderbuffer_storage_multisample(u32,int,u32,int,int)
+fn C.vox_gl_invalidate_framebuffer(u32,int,&u32)
+fn C.vox_gl_invalidate_sub_framebuffer(u32,int,&u32,int,int,int,int)
 fn C.vox_gl_tex_parameter(u32,u32) int
 fn C.vox_gl_tex_float_parameter(u32,u32) f32
 fn C.vox_gl_renderbuffer_parameter(u32,u32) int

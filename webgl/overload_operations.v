@@ -439,11 +439,19 @@ pub fn (mut context WebGLRenderingContext) get_active_uniform_block_name(program
 }
 
 pub fn (mut context WebGLRenderingContext) invalidate_framebuffer(target GLenum, attachments []GLenum) {
+	if !context.require_webgl2() { return }
 	context.webgl2_command('invalidate_framebuffer', target, attachments.len)
+	context.native.notify_content_will_change()
+	C.vox_gl_invalidate_framebuffer(target,attachments.len,attachments.data)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) invalidate_sub_framebuffer(target GLenum, attachments []GLenum, x int, y int, width int, height int) {
+	if !context.require_webgl2() { return }
 	context.webgl2_command('invalidate_sub_framebuffer', target, attachments.len, x, y, width, height)
+	context.native.notify_content_will_change()
+	C.vox_gl_invalidate_sub_framebuffer(target,attachments.len,attachments.data,x,y,width,height)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) read_buffer(source GLenum) {
