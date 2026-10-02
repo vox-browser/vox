@@ -31,11 +31,11 @@ macOS target.
 | `Libraries/LibSandbox/Seccomp.cpp` | 1,362 | `:910` permitted fd syscalls; `:1340` policy install | Linux-only sandbox implementation; no V Seccomp policy. Outside native macOS functionality and still outside an entire-Ladybird source port. |
 | `Libraries/LibUnicode/DateTimeFormat.cpp` | 1,027 | `:198` TR-35 calendar pattern assembly; locale week information | ICU casing/normalization bridges implement other responsibilities. No DateTimeFormat/Intl runtime graph found. EX-04. |
 | `Libraries/LibUnicode/NumberFormat.cpp` | 1,004 | `:300` ICU unit/currency width selection; numeric partitions | `libjs/number_locale.v` and `bigint_locale.v` require injected Intl dependencies. Formatting backend/pipeline absent. EX-04. |
-| `Libraries/LibWasm/AbstractMachine/AbstractMachine.cpp` | 1,289 | `:504` resolved global store/cache; module instantiation machinery | `webassembly/module_instance.v` supplies reduced records, not a LibWasm store/machine. Missing dependency of real instantiation. EX-01. |
+| `Libraries/LibWasm/AbstractMachine/AbstractMachine.cpp` | 1,289 | `:504` resolved global store/cache; module instantiation machinery | Initial audit: reduced facade records. Fixes now translate machine values, stacks, trap/results and stable indexed global-store ownership. Instantiation, remaining Store families and execution stay open. EX-01. |
 | `Libraries/LibWasm/AbstractMachine/BytecodeInterpreter.cpp` | 8,513 | `:3586` typed SIMD instruction handler; interpreter dispatch | No Wasm interpreter/instruction graph found in V. Callback export tokens do not execute this source's instructions. EX-01. |
-| `Libraries/LibWasm/AbstractMachine/Validator.cpp` | 5,187 | `:17` module validation; `:3223` lane/stack validation | `webassembly/module_instance.v` parses a subset of sections but provides no corresponding typed validator. EX-01. |
+| `Libraries/LibWasm/AbstractMachine/Validator.cpp` | 5,187 | `:17` module validation; `:3223` lane/stack validation | Initial audit: no typed validator. Fixes now dispatch all 500 pinned validation specializations and execute source expression/module checks. Compilation half remains open. EX-01. |
 | `Libraries/LibWasm/CraneliftBridge.cpp` | 1,641 | `:706` compiled/interpreted direct call; trap/frame bridge | No Cranelift native compilation bridge or matching runtime found. Native YUV Rust helper is unrelated. EX-01. |
-| `Libraries/LibWasm/Parser/Parser.cpp` | 1,901 | `:1353` imports; `:1360` function section | Partial parser in `webassembly/module_instance.v` skips most section kinds. No complete LibWasm parser counterpart. EX-01. |
+| `Libraries/LibWasm/Parser/Parser.cpp` | 1,901 | `:1353` imports; `:1360` function section | Initial audit: skipped core sections. Fixes now decode all core sections and 499 pinned instruction parse cases, retaining operands and expression metadata. EX-01. |
 | `Libraries/LibWasm/Printer/Printer.cpp` | 1,433 | `:449` tag-section printing; module/value diagnostics | No source-equivalent Wasm Printer found; record inspection does not serialize these module/instruction structures. |
 | `Libraries/LibWasm/WASI/Wasi.cpp` | 1,320 | `:190` preopened-directory ABI serialization; system interface | No WASI memory/descriptor/host ABI implementation found. No corresponding standalone Wasm runtime. |
 | `Libraries/LibWebView/Application.cpp` | 3,875 | `:2716` content-blocker update trigger; process/application ownership | `main.v`, `cookie_blocker.v` and native host overlap selected application behavior; no full WebView application/process manager. EX-02. |
@@ -68,14 +68,19 @@ macOS target.
 
 ### EX-01 — A WebAssembly facade is not a translated LibWasm runtime
 
-`Libraries/LibWasm/AbstractMachine/Validator.cpp:17` validates a complete module;
-`Parser/Parser.cpp:1360` parses function sections, and the interpreter executes
-typed instructions. V `webassembly/module_instance.v:202` skips sections other
-than custom/import/export, while `:400` onward supplies default-shaped exports.
-No production Wasm interpreter/validator or Cranelift hook was found in the
-build or V modules. The [web API report](web-apis.md) gives detailed
-LibWeb WebAssembly entry-point comparisons. Completing that source unit also
-requires this missing dependency, not merely renaming its facade methods.
+The initial audit found skipped core sections, default-shaped exports and no
+typed validator or interpreter. Subsequent fixes translate every core section,
+all pinned instruction operands, source type interning/matching and all 500
+instruction validation specializations. Module validation executes the actual
+expression, constant, initialization, signature and index checks in source order.
+Machine value/stack, trap/result and global-store ownership foundations are also
+translated. See [current source mappings and checks](../../webassembly/PORT_STATUS.md).
+
+The interpreter, native compilation/Cranelift bridge, remaining Store allocation
+families and actual instantiation are still missing dependencies. The existing
+WebIDL instance facade continues to manufacture function/global/table exports;
+the completed parser/validator does not supply execution for those exports.
+The [web API report](web-apis.md) retains detailed LibWeb entry-point comparisons.
 
 ### EX-02 — The native bundle implements a narrower embedding than WebView/services/Qt
 

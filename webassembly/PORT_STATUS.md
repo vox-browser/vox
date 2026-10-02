@@ -174,3 +174,36 @@ tags instead of pre-validating defined memory/global/table types. Pinned
 `try_compile_instructions`, Cranelift eligibility/compilation, compiled call-record
 allocation and actual machine execution remain untranslated. These tests are
 focused source regressions, not a full WebAssembly conformance corpus.
+
+## Completed machine value and ownership foundations
+
+`machine_value.v` translates `AbstractMachine.h`'s reference variants and
+two-word, 16-byte untyped value representation. It preserves signed numeric
+extension, float bit patterns, actual defining-module pointers, null reference
+families, i31 masking and the internal/external GC wrapper tags.
+
+`machine_value_stack.v` translates all of `ValueStack.{h,cpp}`. It uses a real
+64 MiB virtual-memory reservation with stable base/top pointers, source stack
+operations, actual member ABI offsets, eight-value conservative scan slack and
+the source four-region LIFO pool per native thread. The native header supplies
+only OS mapping calls and a thread-local slot; V owns the pool and stack logic.
+The intentionally leaked thread pools and explicit owner destructor boundary
+preserve source reuse without clearing the whole mapping.
+
+`machine_result.v` translates trap/result variants and linking/instantiation
+error records. External trap payloads retain the source 64-byte raw storage;
+the generic unsafe access boundary requires a trivially copyable, destructible
+type, with its size asserted in V. Result accessors expose the actual selected
+variant, including mutable result vectors and uncaught-exception identity.
+
+`machine_global.v` translates `GlobalInstance` and the global allocation/getter
+slice of `Store`. Addresses are actual vector indices, and owned global records
+remain at stable addresses when the pointer vector grows. Mutability checks and
+the compiled-code value offset use the real value storage. Other Store families,
+active configurations and the source Heap/RootsProvider are still pending.
+
+The machine value/stack stage passes **45/45 package files with default GC**;
+both focused files also pass with `-gc none`. The later result and global-store
+files pass individually in both GC modes. These foundations are not yet wired
+to instruction execution or the existing WebIDL instance facade, whose
+synthetic function/global/table exports remain open under WA-12.
