@@ -2226,6 +2226,12 @@ pub fn (signal &AbortSignal) aborted() bool {
 
 // https://dom.spec.whatwg.org/#abortsignal-signal-abort
 pub fn (mut signal AbortSignal) signal_abort(reason JSValue) {
+	signal.signal_abort_with_clock(reason, current_event_timestamp)
+}
+
+// AbortSignal.cpp receives the relevant global object. Its clock callback
+// retains the source global-relative event timestamp without a DOM→HTML import.
+pub fn (mut signal AbortSignal) signal_abort_with_clock(reason JSValue, clock fn () f64) {
 	// 1. If signal is aborted, then return.
 	if signal.aborted() {
 		return
@@ -2255,16 +2261,16 @@ pub fn (mut signal AbortSignal) signal_abort(reason JSValue) {
 	}
 
 	// 5. Run the abort steps for signal.
-	signal.run_abort_steps()
+	signal.run_abort_steps(clock)
 
 	// 6. For each dependentSignal of dependentSignalsToAbort, run the abort steps for dependentSignal.
 	for dependent_signal in dependent_signals_to_abort {
 		mut mutable_dependent_signal := unsafe { &AbortSignal(dependent_signal) }
-		mutable_dependent_signal.run_abort_steps()
+		mutable_dependent_signal.run_abort_steps(clock)
 	}
 }
 
-fn (mut signal AbortSignal) run_abort_steps() {
+fn (mut signal AbortSignal) run_abort_steps(clock fn () f64) {
 	// https://dom.spec.whatwg.org/#run-the-abort-steps
 	// 1. For each algorithm in signal's abort algorithms: run algorithm.
 	for algorithm_id in signal.abort_algorithm_order.clone() {
@@ -2279,6 +2285,7 @@ fn (mut signal AbortSignal) run_abort_steps() {
 
 	// 3. Fire an event named abort at signal.
 	mut abort_event := Event.create('abort', EventInit{})
+	abort_event.set_time_stamp(clock())
 	abort_event.set_is_trusted(true)
 	event_target_dispatch_event(unsafe { &EventTarget(signal) }, abort_event)
 }
@@ -2353,33 +2360,6 @@ pub fn AbortSignal.abort(reason JSValue) !&AbortSignal {
 
 	// 3. Return signal.
 	return signal
-}
-
-// https://dom.spec.whatwg.org/#dom-abortsignal-timeout
-pub fn AbortSignal.timeout(milliseconds u64) !&AbortSignal {
-	// 1. Let signal be a new AbortSignal object.
-	mut signal := AbortSignal.construct_impl()!
-
-	// 2-3. Run steps after a timeout. The standalone timer does not require a
-	// realm-global task queue; it schedules the abort directly below.
-	run_steps_after_a_timeout_for_abort_signal(signal, milliseconds)
-
-	// 4. Return signal.
-	return signal
-}
-
-fn run_steps_after_a_timeout_for_abort_signal(signal &AbortSignal, milliseconds u64) {
-	spawn abort_signal_timeout_task(signal, milliseconds)
-}
-
-fn abort_signal_timeout_task(signal &AbortSignal, milliseconds u64) {
-	time.sleep(milliseconds * time.millisecond)
-	queue_abort_signal_timeout_task(signal)
-}
-
-fn queue_abort_signal_timeout_task(signal &AbortSignal) {
-	mut mutable_signal := unsafe { &AbortSignal(signal) }
-	mutable_signal.signal_abort(timeout_error_value('Signal timed out'))
 }
 
 // https://dom.spec.whatwg.org/#dom-abortsignal-any
@@ -2467,9 +2447,13 @@ pub fn (controller &AbortController) signal() &AbortSignal {
 
 // https://dom.spec.whatwg.org/#dom-abortcontroller-abort
 pub fn (mut controller AbortController) abort(reason JSValue) {
+	controller.abort_with_clock(reason, current_event_timestamp)
+}
+
+pub fn (mut controller AbortController) abort_with_clock(reason JSValue, clock fn () f64) {
 	// The abort(reason) method steps are to signal abort on this's signal with reason if it is given.
 	if controller.signal_ != unsafe { nil } {
 		mut signal := unsafe { &AbortSignal(controller.signal_) }
-		signal.signal_abort(reason)
+		signal.signal_abort_with_clock(reason, clock)
 	}
 }
