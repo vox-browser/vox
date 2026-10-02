@@ -215,6 +215,15 @@ source generation-before-common-empty-usage order. Focused tests cover bit
 slicing, wrapped u16 generation sizes, class versus common metadata, copied
 deferred imports, and real ML-KEM encapsulation/decapsulation.
 
+RSA modulus/PSS salt lengths, PBKDF2 iterations, and optional HMAC/KMAC
+lengths now preserve source ToUint32 wrapping, truncation, and undefined/null/
+NaN/infinity behavior. PBKDF2 reads salt/iterations before hash; RSA reads
+modulus/exponent before hash. Binding conversion retains integer presence and
+source order, rejects BigInt, and copies buffers before deferral. Focused
+tests exercise all affected parameter records and a real PBKDF2 derivation
+with a wrapping iteration count; primitive object conversion remains bounded
+by the explicit typed host limitation.
+
 Common parameter/typed boundary conversions remain under source review.
 Native backend availability does not establish complete WebCrypto/VM parity.
 
