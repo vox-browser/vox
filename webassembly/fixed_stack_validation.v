@@ -171,6 +171,93 @@ fn validate_binary_fixed_stack_instruction(instruction BinaryInstruction, mut st
 			stack.append_type(BinaryValueType{ kind: .v128 })
 			return true
 		}
+		binary_op_i8x16_swizzle, binary_op_i8x16_eq, binary_op_i8x16_ne, binary_op_i8x16_lt_s,
+		binary_op_i8x16_lt_u, binary_op_i8x16_gt_s, binary_op_i8x16_gt_u, binary_op_i8x16_le_s,
+		binary_op_i8x16_le_u, binary_op_i8x16_ge_s, binary_op_i8x16_ge_u, binary_op_i16x8_eq,
+		binary_op_i16x8_ne, binary_op_i16x8_lt_s, binary_op_i16x8_lt_u, binary_op_i16x8_gt_s,
+		binary_op_i16x8_gt_u, binary_op_i16x8_le_s, binary_op_i16x8_le_u, binary_op_i16x8_ge_s,
+		binary_op_i16x8_ge_u, binary_op_i32x4_eq, binary_op_i32x4_ne, binary_op_i32x4_lt_s,
+		binary_op_i32x4_lt_u, binary_op_i32x4_gt_s, binary_op_i32x4_gt_u, binary_op_i32x4_le_s,
+		binary_op_i32x4_le_u, binary_op_i32x4_ge_s, binary_op_i32x4_ge_u, binary_op_f32x4_eq,
+		binary_op_f32x4_ne, binary_op_f32x4_lt, binary_op_f32x4_gt, binary_op_f32x4_le,
+		binary_op_f32x4_ge, binary_op_f64x2_eq, binary_op_f64x2_ne, binary_op_f64x2_lt,
+		binary_op_f64x2_gt, binary_op_f64x2_le, binary_op_f64x2_ge, binary_op_v128_and,
+		binary_op_v128_andnot, binary_op_v128_or, binary_op_v128_xor,
+		binary_op_i8x16_narrow_i16x8_s, binary_op_i8x16_narrow_i16x8_u, binary_op_i8x16_add,
+		binary_op_i8x16_add_sat_s, binary_op_i8x16_add_sat_u, binary_op_i8x16_sub,
+		binary_op_i8x16_sub_sat_s, binary_op_i8x16_sub_sat_u, binary_op_i8x16_min_s,
+		binary_op_i8x16_min_u, binary_op_i8x16_max_s, binary_op_i8x16_max_u,
+		binary_op_i8x16_avgr_u, binary_op_i16x8_q15mulr_sat_s, binary_op_i16x8_narrow_i32x4_s,
+		binary_op_i16x8_narrow_i32x4_u, binary_op_i16x8_add, binary_op_i16x8_add_sat_s,
+		binary_op_i16x8_add_sat_u, binary_op_i16x8_sub, binary_op_i16x8_sub_sat_s,
+		binary_op_i16x8_sub_sat_u, binary_op_i16x8_mul, binary_op_i16x8_min_s,
+		binary_op_i16x8_min_u, binary_op_i16x8_max_s, binary_op_i16x8_max_u,
+		binary_op_i16x8_avgr_u, binary_op_i16x8_extmul_low_i8x16_s,
+		binary_op_i16x8_extmul_high_i8x16_s, binary_op_i16x8_extmul_low_i8x16_u,
+		binary_op_i16x8_extmul_high_i8x16_u, binary_op_i32x4_add, binary_op_i32x4_sub,
+		binary_op_i32x4_mul, binary_op_i32x4_min_s, binary_op_i32x4_min_u, binary_op_i32x4_max_s,
+		binary_op_i32x4_max_u, binary_op_i32x4_dot_i16x8_s, binary_op_i32x4_extmul_low_i16x8_s,
+		binary_op_i32x4_extmul_high_i16x8_s, binary_op_i32x4_extmul_low_i16x8_u,
+		binary_op_i32x4_extmul_high_i16x8_u, binary_op_i64x2_add, binary_op_i64x2_sub,
+		binary_op_i64x2_mul, binary_op_i64x2_eq, binary_op_i64x2_ne, binary_op_i64x2_lt_s,
+		binary_op_i64x2_gt_s, binary_op_i64x2_le_s, binary_op_i64x2_ge_s,
+		binary_op_i64x2_extmul_low_i32x4_s, binary_op_i64x2_extmul_high_i32x4_s,
+		binary_op_i64x2_extmul_low_i32x4_u, binary_op_i64x2_extmul_high_i32x4_u,
+		binary_op_f32x4_add, binary_op_f32x4_sub, binary_op_f32x4_mul, binary_op_f32x4_div,
+		binary_op_f32x4_min, binary_op_f32x4_max, binary_op_f32x4_pmin, binary_op_f32x4_pmax,
+		binary_op_f64x2_add, binary_op_f64x2_sub, binary_op_f64x2_mul, binary_op_f64x2_div,
+		binary_op_f64x2_min, binary_op_f64x2_max, binary_op_f64x2_pmin, binary_op_f64x2_pmax,
+		binary_op_i8x16_relaxed_swizzle, binary_op_f32x4_relaxed_min, binary_op_f32x4_relaxed_max,
+		binary_op_f64x2_relaxed_min, binary_op_f64x2_relaxed_max,
+		binary_op_i16x8_relaxed_q15mulr_s, binary_op_i16x8_relaxed_dot_i8x16_i7x16_s {
+			stack.take_and_put([BinaryValueKind.v128, .v128], .v128)!
+			return false
+		}
+		binary_op_v128_not, binary_op_f32x4_demote_f64x2_zero, binary_op_f64x2_promote_low_f32x4,
+		binary_op_i8x16_abs, binary_op_i8x16_neg, binary_op_i8x16_popcnt, binary_op_f32x4_ceil,
+		binary_op_f32x4_floor, binary_op_f32x4_trunc, binary_op_f32x4_nearest,
+		binary_op_f64x2_ceil, binary_op_f64x2_floor, binary_op_f64x2_trunc,
+		binary_op_i16x8_extadd_pairwise_i8x16_s, binary_op_i16x8_extadd_pairwise_i8x16_u,
+		binary_op_i32x4_extadd_pairwise_i16x8_s, binary_op_i32x4_extadd_pairwise_i16x8_u,
+		binary_op_i16x8_abs, binary_op_i16x8_neg, binary_op_i16x8_extend_low_i8x16_s,
+		binary_op_i16x8_extend_high_i8x16_s, binary_op_i16x8_extend_low_i8x16_u,
+		binary_op_i16x8_extend_high_i8x16_u, binary_op_f64x2_nearest, binary_op_i32x4_abs,
+		binary_op_i32x4_neg, binary_op_i32x4_extend_low_i16x8_s,
+		binary_op_i32x4_extend_high_i16x8_s, binary_op_i32x4_extend_low_i16x8_u,
+		binary_op_i32x4_extend_high_i16x8_u, binary_op_i64x2_abs, binary_op_i64x2_neg,
+		binary_op_i64x2_extend_low_i32x4_s, binary_op_i64x2_extend_high_i32x4_s,
+		binary_op_i64x2_extend_low_i32x4_u, binary_op_i64x2_extend_high_i32x4_u,
+		binary_op_f32x4_abs, binary_op_f32x4_neg, binary_op_f32x4_sqrt, binary_op_f64x2_abs,
+		binary_op_f64x2_neg, binary_op_f64x2_sqrt, binary_op_i32x4_trunc_sat_f32x4_s,
+		binary_op_i32x4_trunc_sat_f32x4_u, binary_op_f32x4_convert_i32x4_s,
+		binary_op_f32x4_convert_i32x4_u, binary_op_i32x4_trunc_sat_f64x2_s_zero,
+		binary_op_i32x4_trunc_sat_f64x2_u_zero, binary_op_f64x2_convert_low_i32x4_s,
+		binary_op_f64x2_convert_low_i32x4_u, binary_op_i32x4_relaxed_trunc_f32x4_s,
+		binary_op_i32x4_relaxed_trunc_f32x4_u, binary_op_i32x4_relaxed_trunc_f64x2_s_zero,
+		binary_op_i32x4_relaxed_trunc_f64x2_u_zero {
+			stack.take_and_put([BinaryValueKind.v128], .v128)!
+			return false
+		}
+		binary_op_v128_bitselect, binary_op_f32x4_relaxed_madd, binary_op_f32x4_relaxed_nmadd,
+		binary_op_f64x2_relaxed_madd, binary_op_f64x2_relaxed_nmadd,
+		binary_op_i8x16_relaxed_laneselect, binary_op_i16x8_relaxed_laneselect,
+		binary_op_i32x4_relaxed_laneselect, binary_op_i64x2_relaxed_laneselect,
+		binary_op_i32x4_relaxed_dot_i8x16_i7x16_add_s {
+			stack.take_and_put([BinaryValueKind.v128, .v128, .v128], .v128)!
+			return false
+		}
+		binary_op_v128_any_true, binary_op_i8x16_all_true, binary_op_i8x16_bitmask,
+		binary_op_i16x8_all_true, binary_op_i16x8_bitmask, binary_op_i32x4_all_true,
+		binary_op_i32x4_bitmask, binary_op_i64x2_all_true, binary_op_i64x2_bitmask {
+			stack.take_and_put([BinaryValueKind.v128], .i32)!
+			return false
+		}
+		binary_op_i8x16_shl, binary_op_i8x16_shr_s, binary_op_i8x16_shr_u, binary_op_i16x8_shl,
+		binary_op_i16x8_shr_s, binary_op_i16x8_shr_u, binary_op_i32x4_shl, binary_op_i32x4_shr_s,
+		binary_op_i32x4_shr_u, binary_op_i64x2_shl, binary_op_i64x2_shr_s, binary_op_i64x2_shr_u {
+			stack.take_and_put([BinaryValueKind.i32, .v128], .v128)!
+			return false
+		}
 		binary_op_synthetic_end_expression {
 			return true
 		}
