@@ -3,8 +3,9 @@
 module webassembly
 
 pub struct BinaryExpression {
-pub:
-	instructions []BinaryInstruction
+pub mut:
+	instructions     []BinaryInstruction
+	stack_usage_hint int
 }
 
 // Parser/Parser.cpp::Expression::parse. Structured operands retain actual
@@ -17,7 +18,7 @@ fn parse_binary_expression(mut decoder Decoder) !BinaryExpression {
 fn parse_binary_expression_with_hint(mut decoder Decoder, size_hint ?u32) !BinaryExpression {
 	mut stack := []int{}
 	capacity := size_hint or { u32(0) }
-	mut instructions := []BinaryInstruction{ cap: int(capacity) }
+	mut instructions := []BinaryInstruction{cap: int(capacity)}
 	for {
 		instruction := parse_binary_instruction(mut decoder)!
 		ip := u32(instructions.len)
@@ -35,7 +36,11 @@ fn parse_binary_expression_with_hint(mut decoder Decoder, size_hint ?u32) !Binar
 				match arguments {
 					BinaryStructuredArguments {
 						mut patched := arguments
-						patched.end_ip = ip + if arguments.else_ip != none { u32(1) } else { u32(0) }
+						patched.end_ip = ip + if arguments.else_ip != none {
+							u32(1)
+						} else {
+							u32(0)
+						}
 						instructions[entry].arguments = patched
 					}
 					BinaryTryTableArguments {
