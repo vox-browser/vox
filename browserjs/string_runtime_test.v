@@ -21,14 +21,16 @@ fn install_string_test_host(mut runtime Runtime) {
 		libjs.string_prototype_big, libjs.string_prototype_blink, libjs.string_prototype_bold,
 		libjs.string_prototype_fixed, libjs.string_prototype_fontcolor, libjs.string_prototype_fontsize,
 		libjs.string_prototype_italics, libjs.string_prototype_link, libjs.string_prototype_small,
-		libjs.string_prototype_strike, libjs.string_prototype_sub, libjs.string_prototype_sup]
+		libjs.string_prototype_strike, libjs.string_prototype_sub, libjs.string_prototype_sup,
+		libjs.string_prototype_to_lowercase, libjs.string_prototype_to_uppercase,
+		libjs.string_prototype_normalize]
 	names := ['at', 'charAt', 'charCodeAt', 'codePointAt', 'concat', 'indexOf', 'lastIndexOf',
 		'slice', 'substring', 'substr', 'toString', 'valueOf', 'isWellFormed', 'toWellFormed',
 		'trim', 'trimStart', 'trimEnd', 'repeat', 'padStart', 'padEnd', 'anchor', 'big', 'blink',
 		'bold', 'fixed', 'fontcolor', 'fontsize', 'italics', 'link', 'small', 'strike', 'sub',
-		'sup']
+		'sup', 'toLowerCase', 'toUpperCase', 'normalize']
 	lengths := [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
-		0, 1, 0, 0, 0, 0]
+		0, 1, 0, 0, 0, 0, 0, 0, 0]
 	for index, name in names {
 		method := libjs.NativeFunction.create_raw(mut vm, realm, realm.function_prototype,
 			behaviours[index], lengths[index], libjs.PropertyName.from_str(name), none)
@@ -126,6 +128,48 @@ fn test_browser_string_conversion_brand_and_range_errors_restore_later_script_ex
 	assert errors[0].contains('string-symbol.js')
 	assert runtime.evaluate('HostString.fromCodePoint(4294967296).length===1 && HostString.fromCodePoint(4294967361)==="A";')! == 'true'
 	assert runtime.evaluate('HostString(42);')! == '42'
+	assert runtime.context == unsafe { nil }
+	vm := runtime.libjs_vm()
+	assert vm.execution_context_stack().len == 1 && vm.interpreter_stack().depth() == 0
+}
+
+fn test_browser_string_unicode_case_and_normalization_preserve_utf16_and_error_recovery() {
+	mut runtime := Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	install_string_test_host(mut runtime)
+	assert runtime.evaluate('var text=new HostString("İßﬃ😀"); text.toLowerCase()==="i\\u0307ßﬃ😀" && text.toUpperCase()==="İSSFFI😀";')! == 'true'
+	assert runtime.evaluate('var sigma=new HostString("ΟΣ"); sigma.toLowerCase()==="ος" && (new HostString("ΟΣΑ")).toLowerCase()==="οσα";')! == 'true'
+	assert runtime.evaluate('var norm=new HostString("\\u1e9b\\u0323"); norm.normalize()==="\\u1e9b\\u0323" && norm.normalize("NFD")==="\\u017f\\u0323\\u0307" && norm.normalize("NFKC")==="\\u1e69" && norm.normalize("NFKD")==="s\\u0323\\u0307";')! == 'true'
+	assert runtime.evaluate('var bound=norm.normalize.bind(norm,"NFKC"); bound()==="\\u1e69" && text.toLowerCase.length===0 && text.toUpperCase.length===0 && norm.normalize.length===0;')! == 'true'
+	assert runtime.evaluate('var raw=HostString.fromCharCode(55296,0,65,769,56320); var unpaired=new HostString(raw); unpaired.normalize()===HostString.fromCharCode(55296,0,193,56320) && unpaired.toLowerCase()===HostString.fromCharCode(55296,0,97,769,56320);')! == 'true'
+	assert runtime.evaluate('text.toLowerCase(Symbol("ignored"))==="i\\u0307ßﬃ😀" && (new HostString("e\\u0301")).normalize(undefined)==="é";')! == 'true'
+	errors := runtime.run_document_scripts_collect_errors([
+		ScriptSource{ code: 'norm.normalize("NFC1");', url: 'string-normalization-form.js' },
+		ScriptSource{ code: 'norm.normalize(Symbol("x"));', url: 'string-normalization-symbol.js' },
+		ScriptSource{
+			code: 'HostString.prototype.toLowerCase.call(null);'
+			url:  'string-case-null.js'
+		},
+		ScriptSource{
+			code: 'HostString.prototype.toUpperCase.call(undefined);'
+			url:  'string-case-undefined.js'
+		},
+		ScriptSource{
+			code: 'HostString.prototype.toLowerCase.call(Symbol("x"));'
+			url:  'string-case-symbol.js'
+		},
+	])
+	assert errors.len == 5
+	for index, message in [
+		"The normalization form must be one of NFC, NFD, NFKC, NFKD. Got 'NFC1'",
+		'Cannot convert symbol to string',
+		'null cannot be converted to an object',
+		'undefined cannot be converted to an object',
+		'Cannot convert symbol to string',
+	] {
+		assert errors[index].contains(message)
+	}
+	assert runtime.evaluate('norm.normalize("NFKD")==="s\\u0323\\u0307" && text.toUpperCase()==="İSSFFI😀";')! == 'true'
 	assert runtime.context == unsafe { nil }
 	vm := runtime.libjs_vm()
 	assert vm.execution_context_stack().len == 1 && vm.interpreter_stack().depth() == 0
