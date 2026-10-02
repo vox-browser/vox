@@ -7,6 +7,7 @@ import dom
 import fetch
 import html
 import http
+import highresolutiontime
 import platform
 import url as liburl
 
@@ -18,6 +19,12 @@ pub fn XMLHttpRequest.construct_in_settings(settings &html.EnvironmentSettingsOb
 		associated_document: settings.responsible_document()
 		fetch_client: fetch.RequestClient(settings)
 		fetch_host: host
+		event_timestamp: fn [settings] () f64 {
+			return highresolutiontime.current_high_resolution_time(highresolutiontime.TimeOriginContext{
+				time_origin: settings.time_origin()
+				cross_origin_isolated_capability: settings.fetch_request_client_cross_origin_isolated_capability()
+			})
+		}
 	}
 	return XMLHttpRequest.create(global)
 }

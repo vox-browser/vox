@@ -193,3 +193,40 @@ fn test_open_and_abort_change_the_real_fetch_controller_state() {
 	assert request.state == .opened
 	assert !request.send_flag
 }
+
+fn test_reentrant_loadstart_abort_prevents_the_real_fetch_from_starting() {
+	settings, _ := xhr_settings()
+	state := &XHRTransportObservation{}
+	host := xhr_deferred_host(state)
+	mut request := XMLHttpRequest.construct_in_settings(settings, host)
+	listener := dom.IDLEventListener.create(&dom.CallbackType{ handle_event: fn [mut request] (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+		request.abort()
+		return dom.js_undefined()
+	} })
+	request.as_event_target().add_event_listener_without_options('loadstart', listener)
+	request.open('GET', '/xhr-loadstart-abort', true, none, none)!
+	request.send()!
+	assert state.requests.len == 0
+	assert request.state == .unsent
+	assert !request.send_flag
+}
+
+fn test_reentrant_headers_abort_prevents_incremental_response_body_reading() {
+	settings, owner := xhr_settings()
+	state := &XHRTransportObservation{}
+	host := xhr_deferred_host(state)
+	mut request := XMLHttpRequest.construct_in_settings(settings, host)
+	listener := dom.IDLEventListener.create(&dom.CallbackType{ handle_event: fn [mut request] (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+		if request.state == .headers_received { request.abort() }
+		return dom.js_undefined()
+	} })
+	request.as_event_target().add_event_listener_without_options('readystatechange', listener)
+	request.open('GET', '/xhr-headers-abort', true, none, none)!
+	request.send()!
+	body := fetch.Body.streaming()
+	xhr_resolve_transport(state, 0, xhr_transport_response(state.requests[0], body))
+	xhr_run_queued_work(owner)
+	assert request.state == .unsent
+	assert !body.stream_locked()
+	assert request.received_bytes.len == 0
+}

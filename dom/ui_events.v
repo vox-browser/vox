@@ -23,6 +23,7 @@ pub enum EventInterface {
 	input_event
 	text_event
 	wheel_event
+	progress_event
 	// HTML events that also extend DOM::Event and are identified by the DOM's event dispatch (see
 	// dom/html_events.v).
 	before_unload_event

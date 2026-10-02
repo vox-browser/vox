@@ -816,6 +816,8 @@ pub enum EventTargetKind {
 pub struct EventTargetData {
 pub mut:
 	kind EventTargetKind
+	listener_list_changed_target voidptr
+	listener_list_changed_hook fn (voidptr) = unsafe { nil }
 
 	event_listener_list []&DOMEventListener
 
@@ -1024,6 +1026,7 @@ pub fn (et &EventTarget) add_an_event_listener(listener &DOMEventListener) {
 				mutable_node.event_listener_types << listener.type_
 			}
 		}
+		target.event_listener_list_changed()
 	}
 
 	// 6. If listener's signal is not null, then add the following abort steps to it:
@@ -1082,8 +1085,17 @@ pub fn (et &EventTarget) remove_an_event_listener(listener &DOMEventListener) {
 						mutable_node.event_listener_types.filter(it != listener.type_)
 				}
 			}
+			target.event_listener_list_changed()
 			return
 		}
+	}
+}
+
+// EventTarget.cpp invokes this virtual hook after actual listener-list changes.
+// A typed callback preserves that dispatch for EventTarget subclasses outside DOM.
+pub fn (et &EventTarget) event_listener_list_changed() {
+	if et.data.listener_list_changed_hook != unsafe { nil } {
+		et.data.listener_list_changed_hook(et.data.listener_list_changed_target)
 	}
 }
 

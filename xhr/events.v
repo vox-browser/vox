@@ -6,6 +6,8 @@
 // XMLHttpRequestUpload.
 module xhr
 
+import dom
+
 pub const event_names = ['readystatechange', 'loadstart', 'progress', 'abort', 'error', 'load',
 	'timeout', 'loadend']
 
@@ -19,9 +21,10 @@ pub:
 	total             f64
 }
 
+@[heap]
 pub struct ProgressEvent {
+	dom.Event
 pub:
-	type_      string
 	bubbles    bool
 	cancelable bool
 	composed   bool
@@ -32,8 +35,13 @@ mut:
 }
 
 pub fn ProgressEvent.construct(type_ string, init ProgressEventInit) ProgressEvent {
+	base := dom.Event.create(type_, dom.EventInit{
+		bubbles: init.bubbles
+		cancelable: init.cancelable
+		composed: init.composed
+	})
 	return ProgressEvent{
-		type_:             type_
+		Event:             dom.Event{ ...*base, interface_: .progress_event }
 		bubbles:           init.bubbles
 		cancelable:        init.cancelable
 		composed:          init.composed
@@ -52,11 +60,15 @@ pub fn ProgressEvent.construct_impl(type_ string, init ProgressEventInit) Progre
 }
 
 pub fn fire_progress_event(mut target XMLHttpRequestEventTarget, event_name string, transmitted u64, length u64) {
-	target.events << ProgressEvent.create(event_name, ProgressEventInit{
+	mut event := ProgressEvent.create(event_name, ProgressEventInit{
 		length_computable: length != 0
 		loaded:            f64(transmitted)
 		total:             f64(length)
 	})
+	event.time_stamp_ = target.event_timestamp()
+	event.set_is_trusted(true)
+	target.events << event
+	target.as_event_target().dispatch_event(unsafe { &dom.Event(&event) })
 }
 
 pub fn (event &ProgressEvent) length_computable() bool {
@@ -71,10 +83,25 @@ pub fn (event &ProgressEvent) total() f64 {
 	return event.total_
 }
 
+@[heap]
 pub struct XMLHttpRequestEventTarget {
+	dom.EventTarget
 pub mut:
 	events    []ProgressEvent
 	listeners map[string]bool
+	event_timestamp fn () f64 = dom.current_event_timestamp
+}
+
+pub fn (target &XMLHttpRequestEventTarget) as_event_target() &dom.EventTarget {
+	return unsafe { &dom.EventTarget(target) }
+}
+
+pub fn (target &XMLHttpRequestEventTarget) event_handler_callback(name string) ?&dom.CallbackType {
+	return target.as_event_target().event_handler_attribute(name)
+}
+
+pub fn (target &XMLHttpRequestEventTarget) set_event_handler_callback(name string, callback ?&dom.CallbackType) {
+	target.as_event_target().set_event_handler_attribute(name, callback)
 }
 
 pub fn (mut target XMLHttpRequestEventTarget) dispatch(type_ string, loaded u64, total u64) {
@@ -82,7 +109,10 @@ pub fn (mut target XMLHttpRequestEventTarget) dispatch(type_ string, loaded u64,
 }
 
 pub fn (target &XMLHttpRequestEventTarget) has_relevant_listener() bool {
-	return ['readystatechange', 'progress', 'abort', 'error', 'load', 'timeout', 'loadend'].any(target.listeners[it])
+	for name in ['readystatechange', 'progress', 'abort', 'error', 'load', 'timeout', 'loadend'] {
+		if target.listeners[name] || target.as_event_target().has_event_listener(name) { return true }
+	}
+	return false
 }
 
 pub fn (target &XMLHttpRequestEventTarget) onloadstart() bool { return target.listeners['loadstart'] }
@@ -100,6 +130,7 @@ pub fn (mut target XMLHttpRequestEventTarget) set_ontimeout(value bool) { target
 pub fn (target &XMLHttpRequestEventTarget) onloadend() bool { return target.listeners['loadend'] }
 pub fn (mut target XMLHttpRequestEventTarget) set_onloadend(value bool) { target.listeners['loadend'] = value }
 
+@[heap]
 pub struct XMLHttpRequestUpload {
 	XMLHttpRequestEventTarget
 }

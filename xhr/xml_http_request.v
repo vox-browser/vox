@@ -50,6 +50,7 @@ pub:
 	origin ?dom.Origin
 	associated_document ?&dom.Document
 	monotonic_now fn () i64 = xhr_monotonic_now
+	event_timestamp fn () f64 = dom.current_event_timestamp
 	fetch_client ?fetch.RequestClient
 	fetch_host ?&fetch.FetchHost
 pub mut:
@@ -158,6 +159,12 @@ pub fn XMLHttpRequest.create(global_object &XMLHttpRequestGlobal) &XMLHttpReques
 		global_object_: global_object
 		response_:     MockResponse{ body_is_null: true }
 	}
+	mut target := request.as_event_target()
+	target.data.listener_list_changed_target = voidptr(request)
+	target.data.listener_list_changed_hook = xhr_event_listener_list_changed
+	mut mutable_request := unsafe { &XMLHttpRequest(request) }
+	mutable_request.event_timestamp = global_object.event_timestamp
+	mutable_request.upload_object.event_timestamp = global_object.event_timestamp
 	live_xml_http_requests_ << request
 	prune_live_xml_http_requests()
 	return request
@@ -193,9 +200,11 @@ pub fn (request &XMLHttpRequest) relevant_settings_object() &XMLHttpRequestGloba
 	return request.global_object_
 }
 
-pub fn (request &XMLHttpRequest) create_associated_event(event_name string) ProgressEvent {
-	_ = request.relevant_global_object()
-	return ProgressEvent.create(event_name, ProgressEventInit{})
+pub fn (request &XMLHttpRequest) create_associated_event(event_name string) &dom.Event {
+	mut event := dom.Event.create(event_name, dom.EventInit{})
+	event.time_stamp_ = request.global_object_.event_timestamp()
+	event.set_is_trusted(true)
+	return event
 }
 
 pub fn (mut request XMLHttpRequest) stop_timeout_timer() {
@@ -225,7 +234,9 @@ pub fn (request &XMLHttpRequest) upload() &XMLHttpRequestUpload {
 }
 
 pub fn (mut request XMLHttpRequest) dispatch_state_change() {
-	request.events << request.create_associated_event('readystatechange')
+	event := request.create_associated_event('readystatechange')
+	request.events << ProgressEvent{ Event: *event }
+	request.as_event_target().dispatch_event(event)
 }
 
 pub fn (mut request XMLHttpRequest) open(method string, input_url string, async bool, username ?string, password ?string) ! {
@@ -398,6 +409,7 @@ fn (mut request XMLHttpRequest) send_bytes(body []u8, content_type ?string, body
 		request.ensure_utf8_content_type()
 	}
 	request.upload_listener = request.upload_object.listeners.len > 0
+		|| request.upload_object.as_event_target().has_event_listeners()
 	request.upload_complete = !request.request_body_present
 	request.request_body_transmitted = 0
 	request.timed_out = false
@@ -921,7 +933,10 @@ pub fn (request &XMLHttpRequest) has_activity_root() bool {
 }
 
 pub fn (request &XMLHttpRequest) should_be_kept_alive() bool {
-	if request.global_kind == .window && request.global_object_.document_destroyed {
+	destroyed := if document := request.global_object_.associated_document {
+		document.has_been_destroyed()
+	} else { request.global_object_.document_destroyed }
+	if request.global_kind == .window && destroyed {
 		return false
 	}
 	active := (request.state == .opened && request.send_flag)
@@ -935,6 +950,11 @@ pub fn (mut request XMLHttpRequest) update_activity_root() {
 
 pub fn (mut request XMLHttpRequest) event_listener_list_changed() {
 	request.update_activity_root()
+}
+
+fn xhr_event_listener_list_changed(target voidptr) {
+	mut request := unsafe { &XMLHttpRequest(target) }
+	request.event_listener_list_changed()
 }
 
 pub fn is_legacy_uppercased_byte_less_than(a string, b string) bool {
