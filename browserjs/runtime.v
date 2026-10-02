@@ -51,6 +51,7 @@ pub fn prepare_script(source ScriptSource) !&PreparedScript {
 
 // JavaScriptCore preserves the complete browser host while LibJS execution is
 // translated. Choosing LibJS never creates or falls back to a JSC context.
+@[heap]
 pub struct Runtime {
 	agent_vm &libjs.VM
 	realm    &libjs.Realm

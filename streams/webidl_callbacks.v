@@ -42,5 +42,17 @@ fn stream_value_to_webidl(value Value) webidl.Value {
 			for item in value.items { items << stream_value_to_webidl(item) }
 			webidl.sequence_value(items)
 		}
+		.runtime_value { value.runtime_value_ or { panic('Missing native JavaScript Stream value') } }
+	}
+}
+
+fn stream_value_from_webidl(value webidl.Value) Value {
+	return match value.kind {
+		.undefined { undefined_value() }
+		.null_ { null_value() }
+		.boolean { bool_value(value.boolean_value) }
+		.number { number_value(value.number_value) }
+		.string_ { string_value(value.string_value) }
+		else { runtime_value(value) }
 	}
 }

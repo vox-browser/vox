@@ -17,6 +17,7 @@ pub enum ValueKind {
 	string_
 	bytes
 	array
+	runtime_value
 }
 
 pub struct Value {
@@ -27,6 +28,11 @@ pub mut:
 	text    string
 	bytes_  []u8
 	items   []Value
+	runtime_value_ ?webidl.Value
+}
+
+pub fn runtime_value(value webidl.Value) Value {
+	return Value{ kind: .runtime_value, runtime_value_: value }
 }
 
 pub fn undefined_value() Value {
@@ -86,6 +92,7 @@ pub fn (value Value) clone() Value {
 		text:    value.text
 		bytes_:  value.bytes_.clone()
 		items:   items
+		runtime_value_: value.runtime_value_
 	}
 }
 
@@ -102,6 +109,7 @@ pub fn (value Value) description() string {
 		.string_ { value.text }
 		.bytes { '${value.bytes_.len} bytes' }
 		.array { '${value.items.len} values' }
+		.runtime_value { '[native JavaScript value]' }
 	}
 }
 

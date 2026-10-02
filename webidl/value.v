@@ -18,6 +18,7 @@ pub enum ValueKind {
 	callback
 	platform_object
 	promise
+	runtime_value
 }
 
 pub struct Value {
@@ -35,6 +36,20 @@ pub:
 	opaque_id           u64
 	frozen              bool
 	promise_value_      ?&Promise
+	runtime_value_      ?RuntimeValue
+}
+
+// A host engine's actual JS value reference. Its owner retains the engine GC
+// root; this boundary does not construct an object or copy its properties.
+pub struct RuntimeValue {
+pub:
+	context voidptr
+	value voidptr
+	string_conversion fn () !string @[required]
+}
+
+pub fn runtime_value(value RuntimeValue) Value {
+	return Value{ kind: .runtime_value, runtime_value_: value }
 }
 
 pub fn undefined_value() Value {
@@ -219,6 +234,10 @@ pub fn to_string(value Value) !string {
 			'[object ArrayBuffer]'
 		}
 		.promise { '[object Promise]' }
+		.runtime_value {
+			native := value.runtime_value_ or { return error('Missing host runtime value') }
+			native.string_conversion()!
+		}
 	}
 }
 
