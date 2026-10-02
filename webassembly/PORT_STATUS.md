@@ -33,11 +33,13 @@ realm-owned wrapper caches, per-realm memory buffers and instance exports,
 host-function value adaptation, ES module adapter records, streaming MIME validation,
 and response-body buffer extraction.
 
-LibWasm validation, compilation, instruction execution, store addresses,
-JS realm/promise integration are the explicit native boundary. The V decoder
-parses every core binary section and all pinned instruction operands. It also
-checks defined-function/body and data-segment counts, but does not replace
-LibWasm's full instruction validator. `MemoryBuffer` models
+The V decoder parses every core binary section and all pinned instruction
+operands. Source recursive type canonicalization/matching, type-section checks,
+module indices, tag/start signatures and section counts now run during parsing.
+Instruction validation is being translated into the same package; the completed
+handlers are not yet connected to the module expression-validation pass.
+Full LibWasm validity, native compilation, instruction execution, store addresses
+and JS realm/promise integration remain open. `MemoryBuffer` models
 realm identity, detachment, and resizable refreshes over backing-store snapshots;
 native ArrayBuffer detach keys and shared DataBlock ownership remain embedding
 responsibilities. Streaming accepts a completed response body rather than
@@ -60,7 +62,7 @@ Numeric table elements, packed global types, invalid mutability and truncated
 reference immediates fail compilation. Memory section/limits and actual memory
 instantiation remain the earlier completed slices.
 
-Focused parser tests and all eight WebAssembly test files pass with
+At the initial type/import-parser stage, all eight WebAssembly test files passed with
 `v -old-compiler -enable-globals test webassembly`. This does not complete
 recursive type canonicalization/subtyping, the instruction decoder/validator,
 function execution, or table/global instantiation. Other core sections remain
@@ -73,7 +75,7 @@ The function section retains defined-function type indices separately from
 imports; a zero start index remains distinct from no start. Data-count retains
 the source EOF read-error branch. Tag flags/type indices/imports/exports are
 retained, while `LibWeb/WebAssembly/Module.cpp` still logs and omits tags from
-its current JS reflection API. All 12 package test files pass. Start-function
+its current JS reflection API. At that parser stage, all 12 package test files passed. Start-function
 invocation, tag store/exception execution, function/code-count checks and full
 module validation remain pending with the other machine work.
 
@@ -100,7 +102,43 @@ core section is parsed; there is no skip fallback.
 optional data-count/segment check from `AbstractMachine/Validator.cpp`.
 Parser range fixtures use direct section decoders when their indices/counts
 cannot describe a valid module; serialization fixtures retain matching counts.
-All **21 WebAssembly test files pass** in the canonical checkout. Recursive
+At the complete section/count-parser stage, all **21 WebAssembly test files passed** in the canonical checkout. Recursive
 canonicalization/subtyping, expression stack and constant validation, the
 remaining module checks and actual compilation/execution remain open. No full
 `WebAssembly.validate()` conformance claim is made.
+
+## Completed type system and validator slices
+
+`type_registry.v` and `type_matching.v` translate all of pinned
+`AbstractMachine/TypeSystem.cpp`: synchronized process-wide canonical type
+interning, recursive-group closure and relocation, supertype ancestry, heap and
+value subtyping, storage/field matching, function parameter contravariance,
+result covariance, structs/arrays and cross-context table/global/tag matching.
+Canonical type records retain actual identity and remain rooted under both GC
+modes. Source `canonicalize_type()`'s singleton-group limitation is preserved:
+closed references outside its singleton group fail the pinned source assertion.
+It is not silently replaced with a different canonicalization algorithm.
+
+`type_validation.v` and `module_indices.v` enforce source final-supertype,
+ordering and composite-subtyping checks, valid type uses, import/export indices,
+duplicate export names, exception-tag signatures and `start: [] -> []`. The
+module context retains the source declared `ref.func` set, including references
+from exports, element items and global/table initializers.
+
+`validation_stack.v` translates polymorphic stack entries, frame baselines,
+maximum stack usage and definite-local initialization undo logs.
+`fixed_stack_validation.v` contains **355 complete instruction bodies** copied
+from pinned `Validator.cpp` by a strict source-statement translator. Numeric
+and SIMD types/effects are copied from the complete C++ bodies; no opcode-name
+inference supplies omitted logic. Context-dependent bodies are excluded.
+`reference_variable_validation.v` translates references, both selects and local/
+global access. `control_validation.v` translates blocks, loops, if/else/end,
+branches, returns, `try_table` catches and throws, retaining source metadata and
+local-initialization rollback. Real parsed-expression tests exercise constant
+flags, SIMD scalar/vector operand order, unreachable polymorphism, implicit
+else validation, loop labels and outer catch-label scope.
+
+All **29 WebAssembly test files pass** in the canonical checkout. Remaining
+instruction families, the module expression/constant pass and compilation/
+execution are still open; these supporting handlers do not make the current
+public `validate()` a complete LibWasm validator.
