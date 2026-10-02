@@ -49,6 +49,14 @@ The source PrimitiveString cache uses the actual pointer-size-minus-one inline
 ASCII limit and storage form, with the single-ASCII cache preceding that check.
 The earlier 16-code-unit threshold was not in the source. Boundary tests and
 the storage neighbor passed two files with GC disabled.
+After the actual inline-cache correction, the complete LibJS suite passed
+229 files with each GC mode, and the AST corpus passed all 100 exact fixtures.
+
+The native string prerequisite reads the actual JSC UTF-16 span and recreates
+an actual engine string from code units. Its source IPC round-trip test preserves
+lone surrogates, embedded NUL and surrogate pairs. Non-string values are rejected
+before author ToString, and a closed Runtime is rejected before C calls. The
+native string and Storage tests passed two files with GC disabled.
 
 The native projection must retain actual JSC object identity and cycle memory,
 source key/enumerability/Get order and original completions, and captured
