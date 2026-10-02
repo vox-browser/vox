@@ -247,9 +247,6 @@ pub fn (mut sync WebGLSync) sync_handle_for_deletion(context_id u64, context_gen
 pub struct WebGLTransformFeedback {
 pub mut:
 	object WebGLObject
-mut:
-	active_ bool
-	paused_ bool
 }
 
 @[heap]

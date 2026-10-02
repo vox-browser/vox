@@ -162,6 +162,7 @@ static unsigned vox_gl_gen_object(int kind)
     case 5: glGenSamplers(1, &result); break;
     case 6: glGenVertexArrays(1, &result); break;
     case 7: glGenVertexArraysOES(1, &result); break;
+    case 8: glGenTransformFeedbacks(1, &result); break;
     }
     return result;
 }
@@ -176,6 +177,7 @@ static void vox_gl_delete_object(int kind, unsigned handle)
     case 5: glDeleteSamplers(1, &handle); break;
     case 6: glDeleteVertexArrays(1, &handle); break;
     case 7: glDeleteVertexArraysOES(1, &handle); break;
+    case 8: glDeleteTransformFeedbacks(1, &handle); break;
     }
 }
 static void vox_gl_begin_query(unsigned target, unsigned handle) { glBeginQuery(target, handle); }
@@ -190,6 +192,14 @@ static int vox_gl_is_vertex_array(unsigned handle, int oes) { return oes ? glIsV
 static int vox_gl_vertex_attrib_parameter(unsigned index, unsigned pname) { GLint result = 0; glGetVertexAttribivRobustANGLE(index,pname,1,NULL,&result); return result; }
 static void vox_gl_vertex_attrib_float_parameter(unsigned index, float* result) { glGetVertexAttribfvRobustANGLE(index,GL_CURRENT_VERTEX_ATTRIB,4,NULL,result); }
 static long long vox_gl_vertex_attrib_offset(unsigned index) { void* result = NULL; glGetVertexAttribPointervRobustANGLE(index,GL_VERTEX_ATTRIB_ARRAY_POINTER,1,NULL,&result); return (intptr_t)result; }
+static void vox_gl_bind_transform_feedback(unsigned target, unsigned handle) { glBindTransformFeedback(target,handle); }
+static void vox_gl_begin_transform_feedback(unsigned mode) { glBeginTransformFeedback(mode); }
+static void vox_gl_end_transform_feedback(void) { glEndTransformFeedback(); }
+static void vox_gl_pause_transform_feedback(void) { glPauseTransformFeedback(); }
+static void vox_gl_resume_transform_feedback(void) { glResumeTransformFeedback(); }
+static void vox_gl_transform_feedback_varyings(unsigned program, int count, void const* names, unsigned mode) { glTransformFeedbackVaryings(program,count,(char const* const*)names,mode); }
+static void vox_gl_bind_buffer_base(unsigned target, unsigned index, unsigned buffer) { glBindBufferBase(target,index,buffer); }
+static void vox_gl_bind_buffer_range(unsigned target, unsigned index, unsigned buffer, long long offset, long long size) { glBindBufferRange(target,index,buffer,(GLintptr)offset,(GLsizeiptr)size); }
 static void vox_gl_bind_buffer(unsigned target, unsigned handle) { glBindBuffer(target, handle); }
 static void vox_gl_buffer_data(unsigned target, long long size, void const* data, unsigned usage) { glBufferData(target, (GLsizeiptr)size, data, usage); }
 static void vox_gl_buffer_sub_data(unsigned target, long long offset, long long size, void const* data) { glBufferSubData(target, (GLintptr)offset, (GLsizeiptr)size, data); }

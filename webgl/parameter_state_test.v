@@ -164,7 +164,9 @@ fn test_get_parameter_exposes_webgl2_bindings_and_transform_feedback_state() {
 	feedback := context.create_transform_feedback()
 	context.bind_transform_feedback(transform_feedback, feedback)
 	context.begin_transform_feedback(0x0004)
+	assert context.get_error() == invalid_operation
 	context.pause_transform_feedback()
+	assert context.get_error() == invalid_operation
 	sampler := context.create_sampler()
 	context.bind_sampler(0, sampler)
 	array := context.create_vertex_array()
@@ -181,8 +183,8 @@ fn test_get_parameter_exposes_webgl2_bindings_and_transform_feedback_state() {
 	assert context.get_parameter(uniform_buffer_binding).object == uniform_buffer_object.object.handle_
 	assert context.get_parameter(transform_feedback_buffer_binding).object == feedback_buffer.object.handle_
 	assert context.get_parameter(transform_feedback_binding).object == feedback.object.handle_
-	assert context.get_parameter(transform_feedback_active).boolean
-	assert context.get_parameter(transform_feedback_paused).boolean
+	assert !context.get_parameter(transform_feedback_active).boolean
+	assert !context.get_parameter(transform_feedback_paused).boolean
 	assert context.get_parameter(sampler_binding).object == sampler.object.handle_
 	assert context.get_parameter(vertex_array_binding).object == array.object.handle_
 	assert context.get_parameter(texture_binding_3d).object == texture3d.object.handle_

@@ -32,10 +32,13 @@ fn test_webgl2_copy_sync_transform_feedback_and_offsets() {
 	mut feedback := context.create_transform_feedback()
 	context.bind_transform_feedback(transform_feedback, feedback)
 	context.begin_transform_feedback(0x0004)
+	assert context.get_error() == invalid_operation
 	context.pause_transform_feedback()
+	assert context.get_error() == invalid_operation
 	context.resume_transform_feedback()
+	assert context.get_error() == invalid_operation
 	context.end_transform_feedback()
-	assert context.get_error() == no_error
+	assert context.get_error() == invalid_operation
 }
 
 fn test_surface_lifecycle_and_draw_validation() {

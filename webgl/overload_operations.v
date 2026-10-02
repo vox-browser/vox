@@ -183,37 +183,32 @@ pub fn (mut context WebGLRenderingContext) uniform_matrix4fv(location ?&WebGLUni
 	context.uniform_matrix(location, transpose, values, 4, 4)
 }
 
+fn (mut context WebGLRenderingContext) indexed_buffer_handle(target GLenum, buffer ?&WebGLBuffer) ?GLuint {
+    value := buffer or { return GLuint(0) }
+    if !context.owns(&value.object) { context.set_error(invalid_operation); return none }
+    mut mutable_value := unsafe { &WebGLBuffer(value) }
+    if !mutable_value.is_compatible_with(target) { context.set_error(invalid_operation); return none }
+    return value.object.native_handle_
+}
+
 pub fn (mut context WebGLRenderingContext) bind_buffer_base(target GLenum, index GLuint, buffer ?&WebGLBuffer) {
-	if !context.require_webgl2() {
-		return
-	}
-	handle := if value := buffer {
-		if !context.owns(&value.object) {
-			context.set_error(invalid_operation)
-			return
-		}
-		value.object.handle_
-	} else {
-		GLuint(0)
-	}
-	context.command('bind_buffer_base', target, index, handle)
+    if !context.require_webgl2() { return }
+    native_handle := context.indexed_buffer_handle(target,buffer) or { return }
+    context.command('bind_buffer_base',target,index,if value := buffer { value.object.handle_ } else { 0 })
+    C.vox_gl_bind_buffer_base(target,index,native_handle)
+    if !context.native.collect_native_error() { return }
+    if value := buffer { context.bound_buffers[target] = value.object.handle_ }
+    else { context.bound_buffers.delete(target) }
 }
 
 pub fn (mut context WebGLRenderingContext) bind_buffer_range(target GLenum, index GLuint, buffer ?&WebGLBuffer, offset i64, size i64) {
-	if offset < 0 || size <= 0 {
-		context.set_error(invalid_value)
-		return
-	}
-	handle := if value := buffer {
-		if !context.owns(&value.object) {
-			context.set_error(invalid_operation)
-			return
-		}
-		value.object.handle_
-	} else {
-		GLuint(0)
-	}
-	context.webgl2_command('bind_buffer_range', target, index, handle, offset, size)
+    if !context.require_webgl2() { return }
+    native_handle := context.indexed_buffer_handle(target,buffer) or { return }
+    context.webgl2_command('bind_buffer_range',target,index,if value := buffer { value.object.handle_ } else { 0 },offset,size)
+    C.vox_gl_bind_buffer_range(target,index,native_handle,offset,size)
+    if !context.native.collect_native_error() { return }
+    if value := buffer { context.bound_buffers[target] = value.object.handle_ }
+    else { context.bound_buffers.delete(target) }
 }
 
 pub fn (mut context WebGLRenderingContext) blit_framebuffer(source_x0 int, source_y0 int, source_x1 int, source_y1 int, destination_x0 int, destination_y0 int, destination_x1 int, destination_y1 int, mask GLenum, filter GLenum) {
@@ -291,6 +286,8 @@ pub fn (mut context WebGLRenderingContext) delete_transform_feedback(feedback ?&
 			}
 		}
 		context.webgl2_command('delete_transform_feedback', handle)
+		C.vox_gl_delete_object(8,value.object.native_handle_)
+		context.native.collect_native_error()
 	}
 }
 
@@ -481,7 +478,11 @@ pub fn (mut context WebGLRenderingContext) transform_feedback_varyings(program &
 		context.set_error(invalid_operation)
 		return
 	}
+	if !context.require_webgl2() { return }
 	context.webgl2_command('transform_feedback_varyings', program.object.handle_, varyings.len, buffer_mode)
+	names := varyings.map(voidptr(it.str))
+	C.vox_gl_transform_feedback_varyings(program.object.native_handle_,names.len,names.data,buffer_mode)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) uniform_block_binding(program &WebGLProgram, block_index GLuint, binding GLuint) {

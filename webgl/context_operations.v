@@ -964,12 +964,18 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
 				return WebGLParameterValue{ kind: .object, object: feedback.object.handle_ }
 			}
 			transform_feedback_active {
-				feedback := context.current_transform_feedback or { return WebGLParameterValue{ kind: .boolean } }
-				return WebGLParameterValue{ kind: .boolean, boolean: feedback.active_ }
+				context.native.make_current()
+				mut value := 0
+				C.vox_gl_int_parameter(pname,&value)
+				context.native.collect_native_error()
+				return WebGLParameterValue{kind:.boolean,boolean:value == 1}
 			}
 			transform_feedback_paused {
-				feedback := context.current_transform_feedback or { return WebGLParameterValue{ kind: .boolean } }
-				return WebGLParameterValue{ kind: .boolean, boolean: feedback.paused_ }
+				context.native.make_current()
+				mut value := 0
+				C.vox_gl_int_parameter(pname,&value)
+				context.native.collect_native_error()
+				return WebGLParameterValue{kind:.boolean,boolean:value == 1}
 			}
 			rasterizer_discard {
 				return WebGLParameterValue{ kind: .boolean, boolean: context.is_enabled(pname) }

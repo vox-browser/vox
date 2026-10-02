@@ -47,6 +47,14 @@ fn C.vox_gl_is_vertex_array(u32, int) int
 fn C.vox_gl_vertex_attrib_parameter(u32, u32) int
 fn C.vox_gl_vertex_attrib_float_parameter(u32, &f32)
 fn C.vox_gl_vertex_attrib_offset(u32) i64
+fn C.vox_gl_bind_transform_feedback(u32,u32)
+fn C.vox_gl_begin_transform_feedback(u32)
+fn C.vox_gl_end_transform_feedback()
+fn C.vox_gl_pause_transform_feedback()
+fn C.vox_gl_resume_transform_feedback()
+fn C.vox_gl_transform_feedback_varyings(u32,int,voidptr,u32)
+fn C.vox_gl_bind_buffer_base(u32,u32,u32)
+fn C.vox_gl_bind_buffer_range(u32,u32,u32,i64,i64)
 fn C.vox_gl_bind_buffer(u32, u32)
 fn C.vox_gl_buffer_data(u32, i64, voidptr, u32)
 fn C.vox_gl_buffer_sub_data(u32, i64, i64, voidptr)
