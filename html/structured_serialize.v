@@ -47,6 +47,7 @@ pub mut:
 pub enum StructuredErrorType {
 	error
 	eval_error
+	internal_error
 	range_error
 	reference_error
 	syntax_error
@@ -78,9 +79,12 @@ pub mut:
 	string_utf16_       ?libjs.Utf16String
 	bigint_data         ?&libjs.BigInt
 	second_string_data  string
+	second_string_utf16_ ?libjs.Utf16String
 	error_type          StructuredErrorType
+	has_message         bool
 	has_cause           bool
 	cause               string
+	cause_utf16_        ?libjs.Utf16String
 	bytes               []u8
 	shared_backing_store ?&StructuredSharedArrayBufferBackingStore
 	max_byte_length      ?u64
@@ -175,6 +179,7 @@ pub fn structured_object_from_value(value dom.JSValue) !&StructuredObject {
 fn error_name_to_type(name string) StructuredErrorType {
 	return match name {
 		'EvalError' { .eval_error }
+		'InternalError' { .internal_error }
 		'RangeError' { .range_error }
 		'ReferenceError' { .reference_error }
 		'SyntaxError' { .syntax_error }
@@ -456,8 +461,8 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 		}
 		.regexp {
 			serializer.write_tag(.regexp_object)
-			serializer.write_string(object.string_data)!
-			serializer.write_string(object.second_string_data)!
+			serializer.write_utf16_string(object.string_utf16_ or { libjs.utf16_string(object.string_data) })!
+			serializer.write_utf16_string(object.second_string_utf16_ or { libjs.utf16_string(object.second_string_data) })!
 		}
 		.map {
 			serializer.write_tag(.map_object)
@@ -495,10 +500,18 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 		.error_object {
 			serializer.write_tag(.error_object)
 			serializer.write_u8(u8(object.error_type))
-			serializer.write_string(object.string_data)!
-			serializer.write_u8(if object.has_cause { u8(1) } else { u8(0) })
-			if object.has_cause {
-				serializer.write_string(object.cause)!
+			// Source message/cause are optional UTF16 descriptor values, not
+			// a mandatory message or a recursively cloned cause object.
+			// Nonempty compatibility text projects a present message.
+			has_message := object.has_message || object.string_utf16_ != none || object.string_data.len != 0
+			serializer.write_u8(if has_message { u8(1) } else { u8(0) })
+			if has_message {
+				serializer.write_utf16_string(object.string_utf16_ or { libjs.utf16_string(object.string_data) })!
+			}
+			has_cause := object.has_cause || object.cause_utf16_ != none
+			serializer.write_u8(if has_cause { u8(1) } else { u8(0) })
+			if has_cause {
+				serializer.write_utf16_string(object.cause_utf16_ or { libjs.utf16_string(object.cause) })!
 			}
 		}
 		.object {
@@ -759,8 +772,12 @@ fn (mut decoder StructuredDecoder) decode_value_with_tag(tag_byte u8) !&dom.JSVa
 		.regexp_object {
 			mut object := StructuredObject.create(.regexp)
 			value := decoder.register_object(object)
-			object.string_data = decoder.read_string()!
-			object.second_string_data = decoder.read_string()!
+			pattern := decoder.read_utf16_string()!
+			flags := decoder.read_utf16_string()!
+			object.string_data = pattern.str()
+			object.string_utf16_ = pattern
+			object.second_string_data = flags.str()
+			object.second_string_utf16_ = flags
 			return value
 		}
 		.map_object {
@@ -801,14 +818,23 @@ fn (mut decoder StructuredDecoder) decode_value_with_tag(tag_byte u8) !&dom.JSVa
 				return error('DataCloneError: invalid Error type')
 			}
 			object.error_type = unsafe { StructuredErrorType(error_type) }
-			object.string_data = decoder.read_string()!
+			has_message := decoder.read_u8()!
+			if has_message > 1 { return error('DataCloneError: invalid Error message encoding') }
+			object.has_message = has_message == 1
+			if object.has_message {
+				message := decoder.read_utf16_string()!
+				object.string_data = message.str()
+				object.string_utf16_ = message
+			}
 			has_cause := decoder.read_u8()!
 			if has_cause > 1 {
 				return error('DataCloneError: invalid Error cause encoding')
 			}
 			object.has_cause = has_cause == 1
 			if object.has_cause {
-				object.cause = decoder.read_string()!
+				cause := decoder.read_utf16_string()!
+				object.cause = cause.str()
+				object.cause_utf16_ = cause
 			}
 			return value
 		}
