@@ -56,5 +56,25 @@ buffer/view detachment, original thrown objects, missing arguments/receiver
 brands, Symbol/BigInt conversion, source normalization/parameter order, deferred
 operation errors, poisoned engine builtins, independent worker ownership, and
 pending settlement after Runtime close. Shared-buffer cases execute when the
-engine exposes SharedArrayBuffer. Other SubtleCrypto method bindings and native
-CryptoKey wrappers remain pending; no complete WebCrypto/LibJS parity is claimed.
+engine exposes SharedArrayBuffer. Other SubtleCrypto method bindings remain
+pending; no complete WebCrypto/LibJS parity is claimed.
+
+Native CryptoKey wrappers now preserve actual source record identity and the
+source secure-context interface, illegal constructor, tags, readonly attribute
+descriptors, getter names, and receiver brands. Algorithm getters convert the
+existing source metadata caches to actual mutable engine objects, including
+nested hash objects and real Uint8Array RSA public exponents. Repeated getters
+return the same actual object; native algorithm replacement invalidates that
+cache, while author metadata edits do not alter the key's internal algorithm.
+Usages are real frozen arrays and preserve the source cache after an internal
+usage-vector change. Property construction and freezing use captured engine
+intrinsics and avoid author setters or replaced Object methods.
+
+All four focused key-wrapper cases pass with `-gc none`; the six-case native
+digest regression also passes after the shared result-converter extension.
+Tests cover every internal algorithm record shape, mutable nested metadata,
+cache invalidation, frozen usages, brands/properties, poisoned setters/methods,
+independent native globals, and secure-context exposure. Native wrapper/cache
+roots currently survive until Runtime close. The owning native global supplies
+the typed realm cache key; this does not reconstruct LibJS's WrapperWorld weak
+cache graph or add native structured-clone wrapper deserialization.

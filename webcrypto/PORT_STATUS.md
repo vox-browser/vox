@@ -283,7 +283,13 @@ Six focused native digest cases pass with `-gc none`, including original engine
 exceptions, getter-before-copy ordering, parameter normalization, native
 Promise/task settlement, and independent Window/Worker ownership. The native
 Promise bridge adds its owning HTML microtask relay before engine reactions;
-other SubtleCrypto script method bindings and CryptoKey wrappers remain unfinished.
+other SubtleCrypto script method bindings remain unfinished. Actual native
+CryptoKey wrappers now preserve source record brands and the cached mutable
+algorithm/frozen usages values, including real RSA Uint8Array exponents. Four
+focused native wrapper cases pass with `-gc none`, and native digest regression
+passes after the result-converter extension. Wrapper roots remain Runtime-owned;
+LibJS WrapperWorld weak caching and native clone reconstruction remain distinct
+runtime work.
 Native backend availability does not establish complete WebCrypto/VM parity.
 
 `SubtleCryptoBinding` implements the asynchronous WebIDL operation boundary.
