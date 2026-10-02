@@ -143,11 +143,12 @@ preserves writable/readable strategy order, transformer member order, actual
 reserved any values, native receiver brands and constructor subclasses.
 
 The typed scalar `SizeAlgorithm !f64` boundary still converts a callback result
-earlier than upstream's JS::Value path: source queue insertion performs ToNumber
-after writer stream/state checks. Preserving an arbitrary size result until that
-point, including reentrant writer release or mutation during conversion, needs
-a separate source slice. Generic callback invocation conditions also need their
-own source-order check; EventTarget's caller gate must remain distinct.
+earlier than upstream's JS::Value path. This pinned source requires a genuine
+number at queue insertion; it rejects other values without coercion. Preserving
+that actual result until queue validation, and checking for writer lock release
+during the size callback, needs a separate source slice. Generic WebIDL callback
+invocation now follows source prepare/call/cleanup without an extra can-run-script
+gate; EventTarget retains its distinct source caller gate.
 
 ## Actual DOM abort reasons and owning timeout delivery
 
