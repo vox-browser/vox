@@ -57,6 +57,7 @@ pub enum StructuredErrorType {
 pub struct StructuredProperty {
 pub:
 	key   string
+	key_utf16_ ?libjs.Utf16String
 	value &dom.JSValue = unsafe { nil }
 }
 
@@ -87,6 +88,7 @@ pub mut:
 	byte_length         ?u32
 	byte_offset         u32
 	array_length        ?u32
+	null_prototype      bool
 	values              []&dom.JSValue
 	entries             []StructuredMapEntry
 	properties          []StructuredProperty
@@ -408,7 +410,7 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 		}
 		.map {
 			serializer.write_tag(.map_object)
-			serializer.write_u32(u32(object.entries.len))
+			serializer.write_u64(u64(object.entries.len))
 			for entry in object.entries {
 				if entry.key == unsafe { nil } || entry.value == unsafe { nil } {
 					return error('DataCloneError: map contains a missing key or value')
@@ -419,7 +421,7 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 		}
 		.set {
 			serializer.write_tag(.set_object)
-			serializer.write_u32(u32(object.values.len))
+			serializer.write_u64(u64(object.values.len))
 			for item in object.values {
 				if item == unsafe { nil } {
 					return error('DataCloneError: set contains a missing value')
@@ -429,13 +431,15 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 		}
 		.array {
 			serializer.write_tag(.array_object)
-			serializer.write_u32(u32(object.values.len))
-			for item in object.values {
-				if item == unsafe { nil } {
-					return error('DataCloneError: array contains a missing value')
-				}
+			serializer.write_u64(u64(object.array_length or { u32(object.values.len) }))
+			// The legacy dense prefix is projected into the source ordered
+			// enumerable property list; sparse/named properties stay explicit.
+			for index, item in object.values {
+				if item == unsafe { nil } { continue }
 				serializer.serialize_value(*item, for_storage, allow_shared_array_buffers)!
+				serializer.write_string(index.str())!
 			}
+			serialize_object_properties(mut serializer, object.properties, for_storage, allow_shared_array_buffers)!
 		}
 		.error_object {
 			serializer.write_tag(.error_object)
@@ -448,14 +452,7 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 		}
 		.object {
 			serializer.write_tag(.object)
-			serializer.write_u32(u32(object.properties.len))
-			for property in object.properties {
-				if property.value == unsafe { nil } {
-					return error('DataCloneError: object contains a missing property value')
-				}
-				serializer.write_string(property.key)!
-				serializer.serialize_value(*property.value, for_storage, allow_shared_array_buffers)!
-			}
+			serialize_object_properties(mut serializer, object.properties, for_storage, allow_shared_array_buffers)!
 		}
 		.array_buffer {
 			serialize_array_buffer(mut serializer, object, for_storage, allow_shared_array_buffers)!
@@ -467,6 +464,17 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 			serialize_array_buffer(mut serializer, object, for_storage, allow_shared_array_buffers)!
 		}
 	}
+}
+
+fn serialize_object_properties(mut serializer StructuredSerializer, properties []StructuredProperty, for_storage bool, allow_shared_array_buffers AllowSharedArrayBuffers) ! {
+	// StructuredSerialize.cpp: serialize each value before its UTF-16 key,
+	// then EndObject. Property order is the source enumerable-own-key list.
+	for property in properties {
+		if property.value == unsafe { nil } { return error('DataCloneError: object contains a missing property value') }
+		serializer.serialize_value(*property.value, for_storage, allow_shared_array_buffers)!
+		serializer.write_utf16_string(property.key_utf16_ or { libjs.utf16_string(property.key) })!
+	}
+	serializer.write_tag(.end_object)
 }
 
 pub fn structured_serialize(value dom.JSValue) !SerializationRecord {
@@ -602,7 +610,10 @@ fn (mut decoder StructuredDecoder) register_object(object &StructuredObject) &do
 }
 
 fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
-	tag_byte := decoder.read_u8()!
+	return decoder.decode_value_with_tag(decoder.read_u8()!)
+}
+
+fn (mut decoder StructuredDecoder) decode_value_with_tag(tag_byte u8) !&dom.JSValue {
 	if tag_byte == 0 || tag_byte > u8(StructuredSerializeValueTag.int32_primitive) {
 		return error('DataCloneError: invalid structured serialization tag')
 	}
@@ -644,7 +655,13 @@ fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 			return &value
 		}
 		.object_reference {
-			index := int(decoder.read_u32()!)
+			raw_index := decoder.read_u32()!
+			if raw_index == u32(-1) {
+				object := &StructuredObject{kind: .object, null_prototype: true}
+				value := structured_object_value(object)
+				return &value
+			}
+			index := int(raw_index)
 			if index < 0 || index >= decoder.memory.len {
 				return error('DataCloneError: invalid object reference')
 			}
@@ -697,7 +714,7 @@ fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 		.map_object {
 			mut object := StructuredObject.create(.map)
 			value := decoder.register_object(object)
-			length := int(decoder.read_u32()!)
+			length := decoder.read_collection_count(2)!
 			for _ in 0 .. length {
 				object.entries << StructuredMapEntry{
 					key: decoder.decode_value()!
@@ -706,18 +723,22 @@ fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 			}
 			return value
 		}
-		.set_object, .array_object {
-			kind := if tag == .set_object {
-				StructuredObjectKind.set
-			} else {
-				StructuredObjectKind.array
-			}
-			mut object := StructuredObject.create(kind)
+		.set_object {
+			mut object := StructuredObject.create(.set)
 			value := decoder.register_object(object)
-			length := int(decoder.read_u32()!)
+			length := decoder.read_collection_count(1)!
 			for _ in 0 .. length {
 				object.values << decoder.decode_value()!
 			}
+			return value
+		}
+		.array_object {
+			length := decoder.read_u64()!
+			if length > u64(4294967295) { return error('DataCloneError: Array length out of range') }
+			mut object := StructuredObject.create(.array)
+			object.array_length = u32(length)
+			value := decoder.register_object(object)
+			decode_object_properties(mut decoder, mut object)!
 			return value
 		}
 		.error_object {
@@ -742,13 +763,7 @@ fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 		.object {
 			mut object := StructuredObject.create(.object)
 			value := decoder.register_object(object)
-			length := int(decoder.read_u32()!)
-			for _ in 0 .. length {
-				object.properties << StructuredProperty{
-					key: decoder.read_string()!
-					value: decoder.decode_value()!
-				}
-			}
+			decode_object_properties(mut decoder, mut object)!
 			return value
 		}
 		.array_buffer, .resizable_array_buffer {
@@ -804,6 +819,31 @@ fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 		}
 		.empty, .serializable_object, .end_object {
 			return error('DataCloneError: unsupported structured serialization tag')
+		}
+	}
+}
+
+fn (mut decoder StructuredDecoder) read_collection_count(minimum_value_bytes u64) !int {
+	count := decoder.read_u64()!
+	// Every serialized value has at least one tag. Bound the V vector/loop by
+	// actual available record bytes before converting the source u64 count.
+	if count > u64(decoder.data.len - decoder.offset) / minimum_value_bytes {
+		return error('DataCloneError: truncated collection serialization record')
+	}
+	return int(count)
+}
+
+fn decode_object_properties(mut decoder StructuredDecoder, mut object StructuredObject) ! {
+	for {
+		tag := decoder.read_u8()!
+		if tag == u8(StructuredSerializeValueTag.end_object) { return }
+		value := decoder.decode_value_with_tag(tag)!
+		key := decoder.read_utf16_string()!
+		text := key.str()
+		if object.kind == .array && text == object.values.len.str() && object.properties.len == 0 {
+			object.values << value
+		} else {
+			object.properties << StructuredProperty{key: text, key_utf16_: key, value: value}
 		}
 	}
 }
