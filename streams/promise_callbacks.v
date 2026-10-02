@@ -26,6 +26,12 @@ fn rejected_callback_promise(realm StreamRealm, reason string) &webidl.Promise {
 	return webidl.create_rejected_promise_for(realm.promise_context(), webidl.string_value(reason))
 }
 
+// Callback abrupt completions carry the original JS::Value. In particular,
+// ValueException is the native completion carrier, never a reason to stringify.
+fn rejected_callback_exception(realm StreamRealm, exception IError) &webidl.Promise {
+	return webidl.create_rejected_promise_for(realm.promise_context(), webidl.exception_value(exception))
+}
+
 fn callback_reason(reason webidl.Value) string {
 	if reason.kind == .runtime_value { return '[native JavaScript rejection value]' }
 	return webidl.to_string(reason) or { 'TypeError: Cannot convert callback rejection reason' }
@@ -49,20 +55,20 @@ fn (mut stream ReadableStream) invoke_pull_algorithm() &webidl.Promise {
 		return transform_stream_default_source_pull_algorithm(mut transform).as_webidl_promise()
 	}
 	if algorithm := stream.promise_pull_algorithm_ {
-		return algorithm() or { rejected_callback_promise(stream.realm_, err.msg()) }
+		return algorithm() or { rejected_callback_exception(stream.realm_, err) }
 	}
 	if algorithm := stream.pull_algorithm_ {
-		algorithm() or { return rejected_callback_promise(stream.realm_, err.msg()) }
+		algorithm() or { return rejected_callback_exception(stream.realm_, err) }
 	}
 	return resolved_callback_promise(stream.realm_)
 }
 
 fn (mut stream ReadableStream) invoke_cancel_algorithm(reason Value) &webidl.Promise {
 	if algorithm := stream.promise_cancel_algorithm_ {
-		return algorithm(reason) or { rejected_callback_promise(stream.realm_, err.msg()) }
+		return algorithm(reason) or { rejected_callback_exception(stream.realm_, err) }
 	}
 	if algorithm := stream.cancel_algorithm_ {
-		algorithm(reason) or { return rejected_callback_promise(stream.realm_, err.msg()) }
+		algorithm(reason) or { return rejected_callback_exception(stream.realm_, err) }
 	}
 	return resolved_callback_promise(stream.realm_)
 }

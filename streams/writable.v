@@ -223,10 +223,10 @@ fn (mut stream WritableStream) perform_write(value Value) &webidl.Promise {
 	match stream.owner_kind_ {
 		.regular {
 			if algorithm := stream.promise_write_algorithm_ {
-				return algorithm(value) or { rejected_callback_promise(stream.realm_, err.msg()) }
+				return algorithm(value) or { rejected_callback_exception(stream.realm_, err) }
 			}
 			if algorithm := stream.write_algorithm_ {
-				algorithm(value) or { return rejected_callback_promise(stream.realm_, err.msg()) }
+				algorithm(value) or { return rejected_callback_exception(stream.realm_, err) }
 			}
 		}
 		.transform {
@@ -238,7 +238,7 @@ fn (mut stream WritableStream) perform_write(value Value) &webidl.Promise {
 				return rejected_callback_promise(stream.realm_, 'DataCloneError: Cross-realm writable endpoint is unavailable')
 			}
 			mut port := stream.message_port_
-			pack_and_post_message(mut port, 'chunk', value) or { return rejected_callback_promise(stream.realm_, err.msg()) }
+			pack_and_post_message(mut port, 'chunk', value) or { return rejected_callback_exception(stream.realm_, err) }
 			stream.message_backpressure_ = false
 		}
 	}
@@ -249,10 +249,10 @@ fn (mut stream WritableStream) perform_close() &webidl.Promise {
 	match stream.owner_kind_ {
 		.regular {
 			if algorithm := stream.promise_close_algorithm_ {
-				return algorithm() or { rejected_callback_promise(stream.realm_, err.msg()) }
+				return algorithm() or { rejected_callback_exception(stream.realm_, err) }
 			}
 			if algorithm := stream.close_algorithm_ {
-				algorithm() or { return rejected_callback_promise(stream.realm_, err.msg()) }
+				algorithm() or { return rejected_callback_exception(stream.realm_, err) }
 			}
 		}
 		.transform {
@@ -263,7 +263,7 @@ fn (mut stream WritableStream) perform_close() &webidl.Promise {
 			if !isnil(stream.message_port_) {
 				mut port := stream.message_port_
 				pack_and_post_message(mut port, 'close', undefined_value()) or {
-					return rejected_callback_promise(stream.realm_, err.msg())
+					return rejected_callback_exception(stream.realm_, err)
 				}
 			}
 		}
@@ -275,10 +275,10 @@ fn (mut stream WritableStream) perform_abort(reason Value) &webidl.Promise {
 	match stream.owner_kind_ {
 		.regular {
 			if algorithm := stream.promise_abort_algorithm_ {
-				return algorithm(reason) or { rejected_callback_promise(stream.realm_, err.msg()) }
+				return algorithm(reason) or { rejected_callback_exception(stream.realm_, err) }
 			}
 			if algorithm := stream.abort_algorithm_ {
-				algorithm(reason) or { return rejected_callback_promise(stream.realm_, err.msg()) }
+				algorithm(reason) or { return rejected_callback_exception(stream.realm_, err) }
 			}
 		}
 		.transform {
@@ -289,7 +289,7 @@ fn (mut stream WritableStream) perform_abort(reason Value) &webidl.Promise {
 			if !isnil(stream.message_port_) {
 				mut port := stream.message_port_
 				pack_and_post_message(mut port, 'error', reason) or {
-					return rejected_callback_promise(stream.realm_, err.msg())
+					return rejected_callback_exception(stream.realm_, err)
 				}
 			}
 		}
@@ -330,7 +330,7 @@ fn (mut stream WritableStream) write_internal(value Value) &VoidPromise {
 fn (mut stream WritableStream) write_internal_in(value Value, promise_realm StreamRealm) &VoidPromise {
 	mut controller := stream.controller_
 	chunk_size := writable_stream_default_controller_get_chunk_size(mut controller, value) or {
-		return VoidPromise.rejected_in(promise_realm, err.msg())
+		return VoidPromise.rejected_value_in(promise_realm, webidl.exception_value(err))
 	}
 	if stream.state_ == .errored || stream.state_ == .erroring {
 		return VoidPromise.rejected_value_in(promise_realm, stream.stored_error_value())
@@ -342,7 +342,7 @@ fn (mut stream WritableStream) write_internal_in(value Value, promise_realm Stre
 	stream.write_requests_.append(request)
 	writable_stream_default_controller_write(mut controller, value, chunk_size) or {
 		if request.state() == .pending {
-			request.reject(err.msg())
+			request.reject_value(webidl.exception_value(err))
 		}
 	}
 	return request

@@ -517,7 +517,7 @@ pub fn writable_stream_default_controller_get_backpressure(controller &WritableS
 
 pub fn writable_stream_default_controller_get_chunk_size(mut controller WritableStreamDefaultController, chunk Value) !f64 {
 	return controller.stream_.size_algorithm_(chunk) or {
-		writable_stream_default_controller_error_if_needed(mut controller, string_value(err.msg()))
+		writable_stream_default_controller_error_if_needed(mut controller, stream_value_from_webidl(webidl.exception_value(err)))
 		return 1
 	}
 }
@@ -530,7 +530,7 @@ pub fn writable_stream_default_controller_process_close(mut controller WritableS
 	mut stream := controller.stream_
 	writable_stream_mark_close_request_in_flight(mut stream)
 	_ = stream.queue_.dequeue_value() or {
-		writable_stream_finish_in_flight_close_with_error(mut stream, string_value(err.msg()))
+		writable_stream_finish_in_flight_close_with_error(mut stream, stream_value_from_webidl(webidl.exception_value(err)))
 		return
 	}
 	assert stream.queue_.is_empty()
@@ -554,7 +554,7 @@ pub fn writable_stream_default_controller_process_write(mut controller WritableS
 		writable_stream_finish_in_flight_write(mut stream)
 		_ = stream.queue_.dequeue_value() or {
 			mut controller := stream.controller_
-			writable_stream_default_controller_error_if_needed(mut controller, string_value(err.msg()))
+			writable_stream_default_controller_error_if_needed(mut controller, stream_value_from_webidl(webidl.exception_value(err)))
 			return webidl.undefined_value()
 		}
 		if !writable_stream_close_queued_or_in_flight(stream) && stream.state_ == .writable {
@@ -578,7 +578,7 @@ pub fn writable_stream_default_controller_process_write(mut controller WritableS
 
 pub fn writable_stream_default_controller_write(mut controller WritableStreamDefaultController, chunk Value, chunk_size f64) ! {
 	controller.stream_.queue_.enqueue_value_with_size(chunk, chunk_size) or {
-		writable_stream_default_controller_error_if_needed(mut controller, string_value(err.msg()))
+		writable_stream_default_controller_error_if_needed(mut controller, stream_value_from_webidl(webidl.exception_value(err)))
 		return err
 	}
 	if !writable_stream_close_queued_or_in_flight(controller.stream_) && controller.stream_.state_ == .writable {

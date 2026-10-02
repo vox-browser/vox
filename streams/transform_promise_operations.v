@@ -34,14 +34,14 @@ fn (mut stream TransformStream) start_transformer(transformer Transformer, mut s
 
 fn (mut stream TransformStream) invoke_transform_promise(chunk Value) &webidl.Promise {
 	if algorithm := stream.promise_transform_algorithm_ {
-		return algorithm(chunk) or { rejected_callback_promise(stream.realm_, err.msg()) }
+		return algorithm(chunk) or { rejected_callback_exception(stream.realm_, err) }
 	}
 	outputs := if algorithm := stream.transform_algorithm_ {
-		algorithm(chunk) or { return rejected_callback_promise(stream.realm_, err.msg()) }
+		algorithm(chunk) or { return rejected_callback_exception(stream.realm_, err) }
 	} else { [chunk] }
 	mut controller := stream.controller_
 	for output in outputs {
-		controller.enqueue(output) or { return rejected_callback_promise(stream.realm_, err.msg()) }
+		controller.enqueue(output) or { return rejected_callback_exception(stream.realm_, err) }
 	}
 	return resolved_callback_promise(stream.realm_)
 }
@@ -76,13 +76,13 @@ fn (mut stream TransformStream) sink_write_promise(chunk Value) &webidl.Promise 
 
 fn (mut stream TransformStream) invoke_flush_promise() &webidl.Promise {
 	if algorithm := stream.promise_flush_algorithm_ {
-		return algorithm() or { rejected_callback_promise(stream.realm_, err.msg()) }
+		return algorithm() or { rejected_callback_exception(stream.realm_, err) }
 	}
 	if algorithm := stream.flush_algorithm_ {
-		outputs := algorithm() or { return rejected_callback_promise(stream.realm_, err.msg()) }
+		outputs := algorithm() or { return rejected_callback_exception(stream.realm_, err) }
 		mut controller := stream.controller_
 		for output in outputs {
-			controller.enqueue(output) or { return rejected_callback_promise(stream.realm_, err.msg()) }
+			controller.enqueue(output) or { return rejected_callback_exception(stream.realm_, err) }
 		}
 	}
 	return resolved_callback_promise(stream.realm_)
@@ -90,10 +90,10 @@ fn (mut stream TransformStream) invoke_flush_promise() &webidl.Promise {
 
 fn (mut stream TransformStream) invoke_transformer_cancel_promise(reason Value) &webidl.Promise {
 	if algorithm := stream.promise_cancel_algorithm_ {
-		return algorithm(reason) or { rejected_callback_promise(stream.realm_, err.msg()) }
+		return algorithm(reason) or { rejected_callback_exception(stream.realm_, err) }
 	}
 	if algorithm := stream.cancel_algorithm_ {
-		algorithm(reason) or { return rejected_callback_promise(stream.realm_, err.msg()) }
+		algorithm(reason) or { return rejected_callback_exception(stream.realm_, err) }
 	}
 	return resolved_callback_promise(stream.realm_)
 }
