@@ -10,6 +10,7 @@ module html
 
 import dom
 import libjs
+import webidl
 
 pub enum ErrorInPromise {
 	no
@@ -343,6 +344,16 @@ pub fn (script &ClassicScript) is_classic_script() bool {
 	return true
 }
 
+fn report_classic_script_exception(value dom.JSValue, mut realm ScriptingRealm) {
+	if settings := settings_object_of_realm(&realm) {
+		if mut scope := settings.window_or_worker_global_scope() {
+			scope.report_an_exception(value, false)
+			return
+		}
+	}
+	report_exception(value, mut realm)
+}
+
 pub fn (mut script ClassicScript) run(rethrow_errors RethrowErrors) !dom.JSValue {
 	mut realm := script.realm
 	if !realm.can_run {
@@ -353,13 +364,14 @@ pub fn (mut script ClassicScript) run(rethrow_errors RethrowErrors) !dom.JSValue
 	defer { realm.active_classic_script_ = previous_script }
 	prepare_to_run_script(mut realm)
 	if stored_error := script.error_to_rethrow {
-		clean_up_after_running_script(mut realm)
 		if rethrow_errors == .yes && script.muted_errors == .yes {
+			clean_up_after_running_script(mut realm)
 			return error('NetworkError: Script error.')
 		}
 		if rethrow_errors == .no {
-			report_exception(dom.js_string(stored_error), mut realm)
+			report_classic_script_exception(dom.js_string(stored_error), mut realm)
 		}
+		clean_up_after_running_script(mut realm)
 		return error(stored_error)
 	}
 	evaluator := script.evaluator or {
@@ -368,14 +380,15 @@ pub fn (mut script ClassicScript) run(rethrow_errors RethrowErrors) !dom.JSValue
 	}
 
 	result := evaluator(script.source, realm) or {
-		clean_up_after_running_script(mut realm)
 		if rethrow_errors == .yes {
+			clean_up_after_running_script(mut realm)
 			if script.muted_errors == .yes {
 				return error('NetworkError: Script error.')
 			}
 			return err
 		}
-		report_exception(dom.js_string(err.msg()), mut realm)
+		report_classic_script_exception(dom.js_webidl_value(webidl.exception_value(err)), mut realm)
+		clean_up_after_running_script(mut realm)
 		return err
 	}
 	clean_up_after_running_script(mut realm)
