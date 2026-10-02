@@ -198,6 +198,26 @@ pub fn set_up_transform_stream_default_controller_from_transformer(mut stream Tr
 	stream.promise_transform_algorithm_ = transformer.transform_promise
 	stream.promise_flush_algorithm_ = transformer.flush_promise
 	stream.promise_cancel_algorithm_ = transformer.cancel_promise
+	receiver := transformer.transformer_value
+	controller_value := stream_controller_callback_value(voidptr(stream.controller_), 'TransformStreamDefaultController')
+	if callback := transformer.transform_callback {
+		bound := stream_webidl_callback(callback, stream.realm_, .yes)
+		stream.promise_transform_algorithm_ = fn [bound, receiver, controller_value] (chunk Value) !&webidl.Promise {
+			return webidl.invoke_promise_callback(bound, receiver, [stream_value_to_webidl(chunk), controller_value])
+		}
+	}
+	if callback := transformer.flush_callback {
+		bound := stream_webidl_callback(callback, stream.realm_, .yes)
+		stream.promise_flush_algorithm_ = fn [bound, receiver, controller_value] () !&webidl.Promise {
+			return webidl.invoke_promise_callback(bound, receiver, [controller_value])
+		}
+	}
+	if callback := transformer.cancel_callback {
+		bound := stream_webidl_callback(callback, stream.realm_, .yes)
+		stream.promise_cancel_algorithm_ = fn [bound, receiver] (reason Value) !&webidl.Promise {
+			return webidl.invoke_promise_callback(bound, receiver, [stream_value_to_webidl(reason)])
+		}
+	}
 }
 
 fn identity_transform_algorithm(value Value) ![]Value {

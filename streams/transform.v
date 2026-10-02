@@ -18,6 +18,11 @@ pub:
 	transform_promise ?PromiseTransformAlgorithm
 	flush_promise ?PromiseFlushAlgorithm
 	cancel_promise ?PromiseCancelAlgorithm
+	transformer_value webidl.Value
+	start_callback ?webidl.CallbackType
+	transform_callback ?webidl.CallbackType
+	flush_callback ?webidl.CallbackType
+	cancel_callback ?webidl.CallbackType
 	readable_type ?string
 	writable_type ?string
 }

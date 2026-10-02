@@ -18,7 +18,12 @@ fn adopt_callback_promise(mut target webidl.Promise, mut source webidl.Promise) 
 }
 
 fn (mut stream TransformStream) start_transformer(transformer Transformer, mut start_promise webidl.Promise) ! {
-	if algorithm := transformer.start_promise {
+	if callback := transformer.start_callback {
+		bound := stream_webidl_callback(callback, stream.realm_, .no)
+		controller_value := stream_controller_callback_value(voidptr(stream.controller_), 'TransformStreamDefaultController')
+		result := webidl.invoke_callback(bound, transformer.transformer_value, [controller_value])!
+		start_promise.resolve(result)
+	} else if algorithm := transformer.start_promise {
 		mut result := algorithm()!
 		adopt_callback_promise(mut start_promise, mut result)
 	} else {
