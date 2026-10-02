@@ -90,8 +90,8 @@ pub fn ED25519.create() ED25519 { return ED25519{} }
 pub fn (_ ED25519) sign(_ AlgorithmParams, key &CryptoKey, data []u8) ![]u8 { return ed25519_sign(key, data) }
 pub fn (_ ED25519) verify(_ AlgorithmParams, key &CryptoKey, signature []u8, data []u8) !bool { return ed25519_verify(key, signature, data) }
 pub fn (_ ED25519) generate_key(_ AlgorithmParams, extractable bool, usages []KeyUsage) !GeneratedKey { return GeneratedKey{pair: generate_ed25519_key(extractable, usages)!} }
-pub fn (_ ED25519) import_key(_ AlgorithmParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_ed25519_key(format, material, extractable, usages) }
-pub fn (_ ED25519) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_algorithm_key(format, key) }
+pub fn (_ ED25519) import_key(_ AlgorithmParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_ed25519_algorithm_key(format, material, extractable, usages) }
+pub fn (_ ED25519) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_ed25519_key(format, key) }
 
 pub struct HKDF {}
 pub fn HKDF.create() HKDF { return HKDF{} }

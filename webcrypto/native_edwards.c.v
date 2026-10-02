@@ -69,3 +69,26 @@ fn native_ed448_verify(public_bytes []u8, signature []u8, message []u8, context 
 	}
 	return result == 1
 }
+
+fn native_ed25519_sign(private_bytes []u8, message []u8) ![]u8 {
+    mut signature := []u8{len: 64}
+    mut size := usize(signature.len)
+    if C.vox_edwards_sign(c'ED25519', private_bytes.data, usize(private_bytes.len), message.data, usize(message.len), unsafe { nil }, 0, signature.data, &size) != 1 {
+        return error('OperationError: Failed to sign message')
+    }
+    return signature[..int(size)].clone()
+}
+
+fn native_ed25519_verify(public_bytes []u8, signature []u8, message []u8) !bool {
+    result := C.vox_edwards_verify(c'ED25519', public_bytes.data, usize(public_bytes.len), signature.data, usize(signature.len), message.data, usize(message.len), unsafe { nil }, 0)
+    if result < 0 {
+        failure := match result {
+            -1 { 'ptr failed' }
+            -2 { 'EVP_MD_CTX_new() failed' }
+            -3 { 'EVP_DigestVerifyInit_ex(ctx.ptr(), nullptr, nullptr, nullptr, nullptr, key.ptr(), params) failed' }
+            else { 'res failed' }
+        }
+        return error('OperationError: ${failure}')
+    }
+    return result == 1
+}

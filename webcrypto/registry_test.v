@@ -219,7 +219,7 @@ fn test_ed25519_jwk_import_covers_public_and_private_material() {
 	assert private_key.type_ == .private_key
 	assert private_key.algorithm_name() == 'Ed25519'
 	assert private_key.usages == [.sign]
-	assert private_key.handle().len == 64
+	assert private_key.handle().len == 32
 
 	if _ := subtle_crypto.import_jwk(JsonWebKey{
 		kty: 'OKP'
@@ -229,6 +229,6 @@ fn test_ed25519_jwk_import_covers_public_and_private_material() {
 	{
 		assert false
 	} else {
-		assert err.msg() == 'DataError: Invalid Ed25519 JWK'
+		assert err.msg() == 'DataError: Invalid curve'
 	}
 }

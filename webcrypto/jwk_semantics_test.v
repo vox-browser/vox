@@ -83,7 +83,7 @@ fn test_ed25519_jwk_requires_public_component_and_honors_extractability() {
 	if _ := subtle_crypto.import_jwk(missing_public, 'Ed25519', false, [.sign], '') {
 		assert false
 	} else {
-		assert err.msg().contains('has no x member')
+		assert err.msg().contains('Missing x field')
 	}
 
 	public_material := []u8{len: 32, init: 9}

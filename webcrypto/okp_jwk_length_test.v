@@ -16,7 +16,7 @@ fn test_ed25519_jwk_import_validates_public_key_length() {
 	], '') {
 		assert false, 'truncated public key was accepted'
 	} else {
-		assert err.msg() == 'DataError: Ed25519 public key must be 32 bytes'
+		assert err.msg() == 'DataError: Invalid key length'
 	}
 
 	if _ := subtle_crypto.import_jwk(ed25519_jwk_with_lengths(31, 32), 'Ed25519', false, [
@@ -24,7 +24,7 @@ fn test_ed25519_jwk_import_validates_public_key_length() {
 	], '') {
 		assert false, 'private JWK with a truncated public key was accepted'
 	} else {
-		assert err.msg() == 'DataError: Ed25519 public key must be 32 bytes'
+		assert err.msg() == 'DataError: Invalid key length'
 	}
 }
 
@@ -35,6 +35,6 @@ fn test_ed25519_jwk_import_validates_private_key_length() {
 	], '') {
 		assert false, 'truncated private key was accepted'
 	} else {
-		assert err.msg() == 'DataError: Ed25519 private key must be 32 bytes'
+		assert err.msg() == 'DataError: Invalid key length'
 	}
 }

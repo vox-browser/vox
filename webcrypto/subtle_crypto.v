@@ -387,8 +387,7 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 	}
 	normalized := normalize_an_algorithm(name, 'generateKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
-	if normalized_usages.len == 0
-		|| (normalized == 'Ed25519' && KeyUsage.sign !in normalized_usages) {
+	if normalized_usages.len == 0 {
 		return error('SyntaxError: usages must not be empty')
 	}
 	return match params {
@@ -423,38 +422,43 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 		}
 		AlgorithmParams {
 			if normalized == 'Ed25519' {
-				GeneratedKey{
-					pair: generate_ed25519_key(extractable, normalized_usages)!
-				}
-			} else if normalized == 'Ed448' {
+                pair := generate_ed25519_key(extractable, normalized_usages)!
+                if pair.private_key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+                return GeneratedKey{ pair: pair }
+			}
+            if normalized == 'Ed448' {
 				generated := generate_ed448_key(extractable, normalized_usages)!
 				pair := generated.pair or { return error('OperationError: Missing key pair') }
 				if pair.private_key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
-				generated
-			} else if normalized.starts_with('ML-DSA-') {
+				return generated
+			}
+            if normalized.starts_with('ML-DSA-') {
 				generated := generate_mldsa_key(AlgorithmParams{ name: normalized }, extractable, normalized_usages)!
 				pair := generated.pair or { return error('OperationError: Missing key pair') }
 				if pair.private_key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
-				generated
-			} else if normalized.starts_with('ML-KEM-') {
+				return generated
+			}
+            if normalized.starts_with('ML-KEM-') {
 				generated := generate_mlkem_key(AlgorithmParams{ name: normalized }, extractable, normalized_usages)!
 				pair := generated.pair or { return error('OperationError: Missing key pair') }
 				if pair.private_key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
-				generated
-			} else if normalized in ['X25519', 'X448'] {
-				generate_exchange_key(normalized, extractable, normalized_usages)!
-			} else if normalized in ['KMAC128', 'KMAC256'] {
-				KMAC.create().generate_key(KmacKeyGenParams{ name: normalized }, extractable, normalized_usages)!
-			} else if normalized == 'ChaCha20-Poly1305' {
+				return generated
+			}
+            if normalized in ['X25519', 'X448'] {
+				return generate_exchange_key(normalized, extractable, normalized_usages)
+			}
+            if normalized in ['KMAC128', 'KMAC256'] {
+				return KMAC.create().generate_key(KmacKeyGenParams{ name: normalized }, extractable, normalized_usages)
+			}
+            if normalized == 'ChaCha20-Poly1305' {
 				validate_usages(normalized_usages, [KeyUsage.encrypt, .decrypt, .wrap_key, .unwrap_key])!
-				GeneratedKey{
+				return GeneratedKey{
 					key: CryptoKey.create(.secret, extractable, KeyAlgorithm{
 						name: normalized
 					}, normalized_usages, rand.bytes(32)!)
 				}
-			} else {
-				return error('NotSupportedError: ${normalized} key generation backend is unavailable')
 			}
+            return error('NotSupportedError: ${normalized} key generation backend is unavailable')
 		}
 	}
 }
@@ -545,12 +549,12 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
 		if key.type_ == .private_key && key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
 		return key
 	}
-	if normalized == 'Ed25519' {
-		if format in [KeyFormat.raw_seed, .raw_private] && normalized_usages.len == 0 {
-			return error('SyntaxError: usages must not be empty')
-		}
-		return import_ed25519_key(format, material, extractable, normalized_usages)
-	}
+    if normalized == 'Ed25519' {
+        mut key := import_ed25519_key(format, material, extractable, normalized_usages)!
+        if key.type_ == .private_key && normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+        key.set_usages(normalized_usages)
+        return key
+    }
 	if normalized == 'Ed448' {
 		key := import_ed448_key(format, material, extractable, normalized_usages)!
 		if key.type_ == .private_key && key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
@@ -569,6 +573,7 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(import_algorithm_name(algorithm), 'importKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
+	if normalized == 'Ed25519' { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
 	if normalized == 'HMAC' { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
 	if normalized in ['ECDSA', 'ECDH'] { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
 	if normalized in ['RSA-OAEP', 'RSA-PSS', 'RSASSA-PKCS1-v1_5'] { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
@@ -590,40 +595,6 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 			}
 		}
 	}
-	if normalized == 'Ed25519' {
-		key_type := jwk.kty or { '' }
-		curve := jwk.crv or { '' }
-		if key_type != 'OKP' || curve != 'Ed25519' {
-			return error('DataError: Invalid Ed25519 JWK')
-		}
-		if private_value := jwk.d {
-			public_value := jwk.x or {
-				return error('DataError: Ed25519 private JWK has no x member')
-			}
-			public_material := base64url_decode(public_value)!
-			if public_material.len != 32 {
-				return error('DataError: Ed25519 public key must be 32 bytes')
-			}
-			private_material := base64url_decode(private_value)!
-			if private_material.len != 32 {
-				return error('DataError: Ed25519 private key must be 32 bytes')
-			}
-			if ed25519_public_key_from_seed(private_material)! != public_material {
-				return error('DataError: Invalid Ed25519 key pair')
-			}
-			validate_jwk_algorithm_metadata(jwk, normalized, private_material.len, hash_name,
-				normalized_usages)!
-			if normalized_usages.len == 0 {
-				return error('SyntaxError: usages must not be empty')
-			}
-			return import_ed25519_key(.raw_seed, private_material, extractable, normalized_usages)
-		}
-		public_value := jwk.x or { return error('DataError: Ed25519 JWK has no x member') }
-		public_material := base64url_decode(public_value)!
-		validate_jwk_algorithm_metadata(jwk, normalized, public_material.len, hash_name,
-			normalized_usages)!
-		return import_ed25519_key(.raw_public, public_material, extractable, normalized_usages)
-	}
 	if normalized !in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW', 'HMAC', 'ChaCha20-Poly1305'] {
 		return error('NotSupportedError: JWK import is unavailable for ${normalized}')
 	}
@@ -643,6 +614,17 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 pub fn (subtle_crypto &SubtleCrypto) export_key(format KeyFormat, key &CryptoKey) ![]u8 {
 	_ = subtle_crypto
 	normalize_an_algorithm(key.algorithm_name(), 'exportKey')!
+    if key.algorithm_name() == 'Ed25519' {
+        if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
+        // Existing typed V convenience formats; JS AlgorithmMethods stay source-exact.
+        if format in [.raw_seed, .raw_private] && key.type_ == .private_key {
+            if format == .raw_seed { return key.handle() }
+            mut expanded := key.handle()
+            expanded << native_edwards_public('Ed25519', expanded)!
+            return expanded
+        }
+        return export_ed25519_key(format, key)
+    }
     if key.algorithm_name() == 'HMAC' {
         if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
         return export_hmac_key(format, key)
@@ -682,12 +664,6 @@ pub fn (subtle_crypto &SubtleCrypto) export_key(format KeyFormat, key &CryptoKey
 	if format !in [.raw, .raw_public, .raw_private, .raw_seed, .raw_secret] {
 		return error('NotSupportedError: This typed boundary exports raw key material')
 	}
-	if format == .raw_seed && key.algorithm_name() == 'Ed25519' && key.type_ == .private_key {
-		if !key.extractable {
-			return error('InvalidAccessError: Key is not extractable')
-		}
-		return key.handle_[..32].clone()
-	}
 	return export_raw_key(key)
 }
 
@@ -697,6 +673,7 @@ pub fn (subtle_crypto &SubtleCrypto) export_jwk(key &CryptoKey) !JsonWebKey {
 	if !key.extractable {
 		return error('InvalidAccessError: Key is not extractable')
 	}
+	if key.algorithm_name() == 'Ed25519' { return export_ed25519_jwk(key) }
 	if key.algorithm_name() == 'HMAC' { return export_hmac_jwk(key) }
 	if key.algorithm_name() in ['ECDSA', 'ECDH'] { return export_ec_jwk(key) }
 	if key.algorithm_name() in ['RSA-OAEP', 'RSA-PSS', 'RSASSA-PKCS1-v1_5'] { return export_rsa_jwk(key) }
@@ -711,30 +688,6 @@ pub fn (subtle_crypto &SubtleCrypto) export_jwk(key &CryptoKey) !JsonWebKey {
 	if key.algorithm_name() == 'Ed448' { return export_ed448_jwk(key) }
 	if key.algorithm_name() in ['X25519', 'X448'] { return export_exchange_jwk(key.algorithm_name(), key) }
 	operations := key.usages.map(key_usage_string(it))
-	if key.algorithm_name() == 'Ed25519' {
-		if key.type_ == .public_key {
-			return JsonWebKey{
-				kty:     'OKP'
-				crv:     'Ed25519'
-				alg:     'Ed25519'
-				x:       base64url_encode(key.handle_)
-				key_ops: operations
-				ext:     true
-			}
-		}
-		if key.handle_.len != 64 {
-			return error('OperationError: Invalid Ed25519 private-key handle')
-		}
-		return JsonWebKey{
-			kty:     'OKP'
-			crv:     'Ed25519'
-			alg:     'Ed25519'
-			x:       base64url_encode(key.handle_[32..])
-			d:       base64url_encode(key.handle_[..32])
-			key_ops: operations
-			ext:     key.extractable
-		}
-	}
 	if key.type_ != .secret {
 		return error('NotSupportedError: JWK export backend is unavailable for ${key.algorithm_name()}')
 	}

@@ -4,13 +4,11 @@
 
 // Translation of Crypto/CryptoAlgorithms.{h,cpp}. This file contains the
 // algorithm operation bodies; native backend adapters follow upstream LibCrypto.
-// Registry and
-// WebCrypto access checks live in subtle_crypto.v.
+// Registry and WebCrypto access checks live in subtle_crypto.v.
 module webcrypto
 
 import crypto.aes
 import crypto.cipher
-import crypto.ed25519
 import crypto.rand
 import crypto.sha1
 import crypto.sha256
@@ -691,69 +689,6 @@ pub fn import_secret_key(algorithm string, material []u8, extractable bool, usag
 			return error('NotSupportedError: Raw secret import is unavailable for ${canonical}')
 		}
 	}
-}
-
-pub fn generate_ed25519_key(extractable bool, usages []KeyUsage) !CryptoKeyPair {
-	validate_usages(usages, [KeyUsage.sign, .verify])!
-	public_material, private_material := ed25519.generate_key()!
-	public_usages := if KeyUsage.verify in usages { [KeyUsage.verify] } else { []KeyUsage{} }
-	private_usages := if KeyUsage.sign in usages { [KeyUsage.sign] } else { []KeyUsage{} }
-	return CryptoKeyPair{
-		public_key: CryptoKey.create(.public_key, true, KeyAlgorithm{ name: 'Ed25519' }, public_usages, public_material)
-		private_key: CryptoKey.create(.private_key, extractable, KeyAlgorithm{ name: 'Ed25519' }, private_usages, private_material)
-	}
-}
-
-pub fn import_ed25519_key(format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey {
-	return match format {
-		.raw, .raw_public {
-			if material.len != ed25519.public_key_size {
-				return error('DataError: Ed25519 public key must be 32 bytes')
-			}
-			validate_usages(usages, [KeyUsage.verify])!
-			CryptoKey.create(.public_key, extractable, KeyAlgorithm{ name: 'Ed25519' }, usages, material)
-		}
-		.raw_seed {
-			if material.len != ed25519.seed_size {
-				return error('DataError: Ed25519 seed must be 32 bytes')
-			}
-			validate_usages(usages, [KeyUsage.sign])!
-			private_material := ed25519.new_key_from_seed(material)
-			CryptoKey.create(.private_key, extractable, KeyAlgorithm{ name: 'Ed25519' }, usages, private_material)
-		}
-		.raw_private {
-			if material.len != ed25519.private_key_size {
-				return error('DataError: Ed25519 private key must be 64 bytes')
-			}
-			validate_usages(usages, [KeyUsage.sign])!
-			CryptoKey.create(.private_key, extractable, KeyAlgorithm{ name: 'Ed25519' }, usages, material)
-		}
-		else {
-			error('NotSupportedError: Ed25519 format is not implemented')
-		}
-	}
-}
-
-pub fn ed25519_public_key_from_seed(seed []u8) ![]u8 {
-	if seed.len != ed25519.seed_size {
-		return error('DataError: Ed25519 seed must be 32 bytes')
-	}
-	private_key := ed25519.new_key_from_seed(seed)
-	return private_key[ed25519.seed_size..].clone()
-}
-
-pub fn ed25519_sign(key &CryptoKey, message []u8) ![]u8 {
-	if key.algorithm_name() != 'Ed25519' || key.type_ != .private_key {
-		return error('InvalidAccessError: An Ed25519 private key is required')
-	}
-	return ed25519.sign(ed25519.PrivateKey(key.handle_), message)!
-}
-
-pub fn ed25519_verify(key &CryptoKey, signature []u8, message []u8) !bool {
-	if key.algorithm_name() != 'Ed25519' || key.type_ != .public_key {
-		return error('InvalidAccessError: An Ed25519 public key is required')
-	}
-	return ed25519.verify(ed25519.PublicKey(key.handle_), message, signature)!
 }
 
 pub fn export_raw_key(key &CryptoKey) ![]u8 {

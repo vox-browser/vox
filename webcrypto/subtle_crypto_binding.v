@@ -489,6 +489,7 @@ fn normalized_import(algorithm NormalizedCryptoAlgorithm, format KeyFormat, byte
 		}
 	}
 	basic := AlgorithmParams{ name: algorithm.name }
+	if algorithm.name == 'Ed25519' { return ED25519.create().import_key(basic, format, bytes, extractable, usages) }
 	if algorithm.name == 'X25519' {
 		return X25519.create().import_key(basic, format, bytes, extractable, usages)
 	}
@@ -660,6 +661,11 @@ pub fn (binding &SubtleCryptoBinding) export_key(format KeyFormat, key &CryptoKe
 	return binding.run(fn [binding, format, key] () !webidl.Value {
 		normalize_an_algorithm(key.algorithm_name(), 'exportKey')!
 		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
+        if key.algorithm_name() == 'Ed25519' {
+            bytes := ED25519.create().export_key(format, key)!
+            if format == .jwk { return export_key_result_to_js_value('', ExportKeyResult(JsonWebKey.parse(bytes)!)) }
+            return crypto_buffer_value(bytes)
+        }
 		if format == .jwk {
 			return export_key_result_to_js_value('', ExportKeyResult(binding.crypto.export_jwk(key)!))
 		}
@@ -705,7 +711,7 @@ pub fn (binding &SubtleCryptoBinding) wrap_key(format KeyFormat, key &CryptoKey,
 	return binding.run(fn [binding, normalized, format, key, wrapping_key] () !webidl.Value {
 		binding_validate_key(wrapping_key, normalized.name, .wrap_key)!
 		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
-		bytes := binding.crypto.export_key_bytes_for_wrapping(format, key)!
+		bytes := if key.algorithm_name() == 'Ed25519' { ED25519.create().export_key(format, key)! } else { binding.crypto.export_key_bytes_for_wrapping(format, key)! }
 		wrapped := if normalized.name == 'AES-KW' {
 			aes_key_wrap(wrapping_key, bytes)!
 		} else {

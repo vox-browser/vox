@@ -24,6 +24,6 @@ fn test_ed25519_private_jwk_requires_matching_public_key() {
 	if _ := subtle_crypto.import_jwk(invalid_jwk, 'Ed25519', true, [.sign], '') {
 		assert false, 'inconsistent private JWK was accepted'
 	} else {
-		assert err.msg() == 'DataError: Invalid Ed25519 key pair'
+		assert err.msg() == 'DataError: Invalid key pair'
 	}
 }
