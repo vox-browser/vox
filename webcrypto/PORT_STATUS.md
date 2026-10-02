@@ -277,7 +277,8 @@ public generation rejects successful empty secret/private results. Focused
 tests verify HMAC length/hash, EC curve, and native RSA generation errors win
 before the common check, while successful empty generation remains rejected.
 
-The compact browser script bridge does not yet expose this Crypto service.
+The compact native bridge now exposes Crypto random operations and the owning
+SubtleCrypto record; SubtleCrypto script method bindings remain unfinished.
 Native backend availability does not establish complete WebCrypto/VM parity.
 
 `SubtleCryptoBinding` implements the asynchronous WebIDL operation boundary.

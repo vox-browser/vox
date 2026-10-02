@@ -14,3 +14,18 @@ range/nonfinite errors, original thrown-value identity, and repeated wrapping
 of the same native exception record. Wrapper records remain rooted until the
 owning Runtime closes. This native JavaScriptCore adapter does not establish
 LibJS builtin/realm parity or native structured-clone wrapper reconstruction.
+
+CryptoHost binds the owning Window/Worker scope's concrete Crypto service.
+Its actual engine objects retain the same native Crypto/SubtleCrypto identities,
+source prototypes, tags, illegal-constructor and receiver checks. Secure-context
+exposure controls subtle/randomUUID. getRandomValues validates real engine view
+brands, shared/resizable backing restrictions from the pinned IDL generator,
+and detached-view witnesses, then invokes the source random-byte operation and
+overwrites only the actual view span. It returns the original input object.
+
+Focused host tests cover every integer typed-array kind, offset writes, shadowed
+properties, native record identity, UUID format, unsupported brands/kinds,
+detached/resized views, actual quota subclass fields, secure-context exposure,
+and independent global records. The existing typed Crypto core tests also pass.
+SubtleCrypto operation exposure is the next independent binding slice; the host
+currently exposes its owning same-object record without claiming its methods.
