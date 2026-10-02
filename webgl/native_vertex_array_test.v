@@ -41,13 +41,15 @@ fn test_native_vertex_arrays_retain_attribute_and_element_buffer_state() {
 	context.bind_vertex_array(empty)
 	assert !context.get_vertex_attrib(0, vertex_attrib_array_enabled).boolean
 	assert context.get_vertex_attrib(0, vertex_attrib_array_size).integer == 4
-	assert context.get_vertex_attrib(0, vertex_attrib_array_buffer_binding).kind == .none
+	empty_buffer := context.get_vertex_attrib(0, vertex_attrib_array_buffer_binding).buffer or { panic('source empty buffer wrapper') }
+	assert empty_buffer.object.native_handle_ == 0
 	assert context.get_parameter(element_array_buffer_binding).kind == .none
 	assert context.get_vertex_attrib_offset(0, vertex_attrib_array_pointer) == 0
 	context.bind_vertex_array(triangle)
 	assert context.get_vertex_attrib(0, vertex_attrib_array_enabled).boolean
 	assert context.get_vertex_attrib(0, vertex_attrib_array_size).integer == 2
-	assert context.get_vertex_attrib(0, vertex_attrib_array_buffer_binding).object == vertices.object.handle_
+	queried_vertices := context.get_vertex_attrib(0, vertex_attrib_array_buffer_binding).buffer or { panic('source vertex buffer wrapper') }
+	assert queried_vertices.object.native_handle_ == vertices.object.native_handle_
 	assert context.get_parameter(element_array_buffer_binding).object == indices.object.handle_
 	assert context.get_vertex_attrib_offset(0, vertex_attrib_array_pointer) == 4
 	context.draw_elements(0x0004, 3, unsigned_byte, 0)

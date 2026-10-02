@@ -34,6 +34,7 @@ pub:
 	booleans []bool
 	object   GLuint
 	sampler ?&WebGLSampler
+	buffer  ?&WebGLBuffer
 }
 
 fn integer_parameter(value i64) WebGLParameterValue {
@@ -949,8 +950,8 @@ pub fn (mut context WebGLRenderingContext) get_attrib_location(program &WebGLPro
 	return result
 }
 
-// The GLuint belongs to the native context. Preserve the existing translated
-// wrapper identity when returning source getVertexAttrib buffer bindings.
+// Translate native buffer handles back to retained binding records when
+// refreshing a VAO's element-array slot; getVertexAttrib creates fresh records.
 fn (context &WebGLRenderingContext) buffer_handle_for_native(native_handle GLuint) GLuint {
     if native_handle == 0 { return 0 }
     for handle, buffer in context.buffers {
@@ -987,8 +988,10 @@ pub fn (mut context WebGLRenderingContext) get_vertex_attrib(index GLuint, pname
     value := C.vox_gl_vertex_attrib_parameter(index,pname)
     context.native.collect_native_error()
     if pname == vertex_attrib_array_buffer_binding {
-        handle := context.buffer_handle_for_native(u32(value))
-        return if handle == 0 { WebGLParameterValue{} } else { WebGLParameterValue{kind:.object,object:handle} }
+        handle := context.allocate_handle()
+        buffer := &WebGLBuffer{object: WebGLObject{...new_object(context.identity(),context.context_generation_,handle),native_handle_:GLuint(value)}}
+        unsafe { context.buffers[handle] = buffer }
+        return WebGLParameterValue{kind:.object,object:handle,buffer:buffer}
     }
     if pname in [vertex_attrib_array_enabled,vertex_attrib_array_integer,vertex_attrib_array_normalized] {
         return WebGLParameterValue{kind:.boolean,boolean:value == 1}

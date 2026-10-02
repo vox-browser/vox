@@ -135,7 +135,9 @@ fn test_upstream_parameter_queries_preserve_distinct_gl_state() {
 	assert context.get_buffer_parameter(array_buffer, buffer_usage).integer == 0x88e8
 
 	context.vertex_attrib_pointer(3, 2, unsigned_byte, true, 16, 8)
-	assert context.get_vertex_attrib(3, vertex_attrib_array_buffer_binding).object == buffer.object.handle_
+	queried_buffer := context.get_vertex_attrib(3, vertex_attrib_array_buffer_binding).buffer or { panic('source buffer wrapper') }
+	assert queried_buffer.object.native_handle_ == buffer.object.native_handle_
+	assert voidptr(queried_buffer) != voidptr(buffer)
 	assert context.get_vertex_attrib(3, vertex_attrib_array_size).integer == 2
 	assert context.get_vertex_attrib(3, vertex_attrib_array_normalized).boolean
 	assert context.get_vertex_attrib(3, vertex_attrib_array_stride).integer == 16
