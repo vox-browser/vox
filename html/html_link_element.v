@@ -408,7 +408,7 @@ fn (mut link HTMLLinkElementModel) begin_delaying_document_load_event(document &
 		delayer.finish()
 	}
 	mut mutable_document := unsafe { &dom.Document(document) }
-	link.document_load_event_delayer_ = dom.DocumentLoadEventDelayer.new(mut mutable_document)
+	link.document_load_event_delayer_ = dom.DocumentLoadEventDelayer.new_with_reason(mut mutable_document, .style_sheet_request)
 	link.document_load_event_delaying_ = true
 }
 
@@ -431,7 +431,7 @@ pub fn (mut link HTMLLinkElementModel) adopted_from(_ &dom.Document) {
 	}
 	if was_delaying {
 		mut mutable_new_document := unsafe { &dom.Document(new_document) }
-		link.document_load_event_delayer_ = dom.DocumentLoadEventDelayer.new(mut mutable_new_document)
+		link.document_load_event_delayer_ = dom.DocumentLoadEventDelayer.new_with_reason(mut mutable_new_document, .style_sheet_request)
 		link.document_load_event_delaying_ = true
 	}
 }

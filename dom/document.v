@@ -5152,6 +5152,7 @@ pub mut:
 	ignore_destructive_writes_counter         u32
 	unload_counter                            u32
 	throw_on_dynamic_markup_insertion_counter u32
+	number_of_pending_style_sheet_requests int
 	number_of_things_delaying_the_load_event  int
 
 	// Template
@@ -8381,6 +8382,21 @@ pub fn (d &Document) anything_is_delaying_the_load_event() bool {
 
 	// FIXME: Track down anything else that is supposed to delay the load event.
 	return false
+}
+
+pub fn (d &Document) has_pending_style_sheet_requests() bool {
+	return d.number_of_pending_style_sheet_requests > 0 || d.pending_css_import_rules.len > 0
+}
+
+pub fn (mut d Document) increment_number_of_pending_style_sheet_requests() {
+	d.number_of_pending_style_sheet_requests++
+	d.request_frame()
+}
+
+pub fn (mut d Document) decrement_number_of_pending_style_sheet_requests() {
+	assert d.number_of_pending_style_sheet_requests > 0
+	d.number_of_pending_style_sheet_requests--
+	d.request_frame()
 }
 
 pub fn (mut d Document) increment_number_of_things_delaying_the_load_event() {

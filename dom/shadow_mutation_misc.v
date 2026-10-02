@@ -3088,23 +3088,34 @@ pub fn (array &ObservableArray) items() []&CSSStyleSheet {
 	return array.values
 }
 
+pub enum DocumentLoadEventDelayerReason {
+	other
+	style_sheet_request
+}
+
 pub struct DocumentLoadEventDelayer {
 mut:
+	reason DocumentLoadEventDelayerReason
 	document &Document = unsafe { nil }
 	active   bool
 }
 
 pub fn DocumentLoadEventDelayer.new(mut document Document) DocumentLoadEventDelayer {
+	return DocumentLoadEventDelayer.new_with_reason(mut document, .other)
+}
+
+pub fn DocumentLoadEventDelayer.new_with_reason(mut document Document, reason DocumentLoadEventDelayerReason) DocumentLoadEventDelayer {
 	document.increment_number_of_things_delaying_the_load_event()
-	return DocumentLoadEventDelayer{
-		document: document
-		active:   true
-	}
+	if reason == .style_sheet_request { document.increment_number_of_pending_style_sheet_requests() }
+	return DocumentLoadEventDelayer{ document: document, active: true, reason: reason }
 }
 
 pub fn (mut delayer DocumentLoadEventDelayer) move_from(mut other DocumentLoadEventDelayer) {
+	if unsafe { voidptr(&delayer) == voidptr(&other) } { return }
+	delayer.finish()
 	delayer.document = other.document
 	delayer.active = other.active
+	delayer.reason = other.reason
 	other.document = unsafe { nil }
 	other.active = false
 }
@@ -3112,6 +3123,7 @@ pub fn (mut delayer DocumentLoadEventDelayer) move_from(mut other DocumentLoadEv
 pub fn (mut delayer DocumentLoadEventDelayer) finish() {
 	if delayer.active && delayer.document != unsafe { nil } {
 		mut document := unsafe { &Document(delayer.document) }
+		if delayer.reason == .style_sheet_request { document.decrement_number_of_pending_style_sheet_requests() }
 		document.decrement_number_of_things_delaying_the_load_event()
 	}
 	delayer.document = unsafe { nil }
