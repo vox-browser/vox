@@ -29,7 +29,7 @@ mut:
 	records map[voidptr]&QueuingStrategyHostRecord
 	prototypes map[QueuingStrategyHostKind]voidptr
 	functions map[voidptr]voidptr
-	function_creator_ voidptr
+	byte_length_get_v_ voidptr
 	closed bool
 }
 

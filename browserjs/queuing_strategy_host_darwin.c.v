@@ -19,7 +19,9 @@ pub fn (mut host QueuingStrategyHost) install(mut runtime Runtime) ! {
 		return error('Queuing strategy binding already belongs to this runtime')
 	}
 	host.runtime = &runtime
-	host.function_creator_ = runtime.evaluate_host_value(r'(function(bytes){return bytes?{size(chunk){return chunk.byteLength}}.size:{size(){return 1}}.size})')!
+	// An actual engine GetV preserves primitive receivers and original getter
+	// completions; JSObjectGetProperty on a boxed primitive changes `this`.
+	host.byte_length_get_v_ = runtime.evaluate_host_value(r'(function(chunk){return chunk.byteLength})')!
 	host_handle := voidptr(&host)
 	create := runtime.make_value_host_function(fn [host_handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &QueuingStrategyHost(host_handle) }
@@ -43,10 +45,14 @@ pub fn (mut host QueuingStrategyHost) install(mut runtime Runtime) ! {
 	host.scope.install_queuing_strategy_function_creator(fn [host_handle] (byte_length bool) !&webidl.CallbackType {
 		mut host := unsafe { &QueuingStrategyHost(host_handle) }
 		if host.closed { return error('Queuing strategy binding is closed') }
-		// CreateBuiltinFunction is callable but has no [[Construct]]. Method
-		// syntax supplies that exact engine behavior and source name/length.
-		actual := host.runtime.call_javascript_function(host.function_creator_, C.JSValueMakeUndefined(host.runtime.context), [C.JSValueMakeBoolean(host.runtime.context, byte_length)])!
-		host.runtime.retain_javascript_value(actual)!
+		actual := host.runtime.make_native_value_host_function('size', if byte_length { 1 } else { 0 }, fn [host_handle, byte_length] (_ voidptr, arguments []voidptr) !voidptr {
+			mut host := unsafe { &QueuingStrategyHost(host_handle) }
+			if host.closed { return error('Queuing strategy binding is closed') }
+			// HTML/WindowOrWorkerGlobalScope.cpp builtin steps: Return 1, or
+			// Return ? GetV(chunk, "byteLength"). Neither coerces the result.
+			if !byte_length { return C.JSValueMakeNumber(host.runtime.context, 1) }
+			return host.runtime.call_javascript_function(host.byte_length_get_v_, C.JSValueMakeUndefined(host.runtime.context), [host.argument(arguments, 0)])!
+		})!
 		callback := &webidl.CallbackType{...host.runtime.webidl_callback(actual, fn [host_handle] (value webidl.Value) !voidptr {
 			mut host := unsafe { &QueuingStrategyHost(host_handle) }
 			return host.value(value)
