@@ -9,6 +9,7 @@
 module webassembly
 
 import webidl
+import math
 
 pub type HostEnsureCanCompileWasmBytesHook = fn () !
 
@@ -172,26 +173,49 @@ pub fn (mut cache WebAssemblyCache) add_imported_object(object webidl.Value) {
 	cache.imported_objects_ << object
 }
 
-fn extern_value_key(value webidl.Value) string {
-	// JS::Value is identity-hashable upstream. webidl.Value is the standalone
-	// typed boundary, so primitive values retain SameValue-like keys and opaque
-	// object categories retain their category identity.
+fn extern_value_key(value webidl.Value) ?string {
+	// WebAssemblyCache's JS::Value keys use primitive value/actual cell identity,
+	// not an object's properties or its platform class. Typed DTOs without a
+	// retained object record cannot provide that identity, so they remain
+	// distinct retained extern entries rather than aliasing by category/content.
 	return match value.kind {
-		.undefined, .null_, .callback, .platform_object { value.kind.str() }
+		.undefined, .null_ { value.kind.str() }
 		.boolean { '${value.kind}:${value.boolean_value}' }
-		.number { '${value.kind}:${value.number_value}' }
+		.number {
+			if math.is_nan(value.number_value) {
+				'number:NaN'
+			} else {
+				'number:${math.f64_bits(value.number_value)}'
+			}
+		}
 		.bigint { '${value.kind}:${value.bigint_value}' }
 		.string_ { '${value.kind}:${value.string_value}' }
-		else { '${value.kind}:${value}' }
+		.object, .sequence, .buffer_source, .callback, .platform_object {
+			if value.opaque_id == 0 { return none }
+			'${value.kind}:${value.opaque_id}'
+		}
+		.promise {
+			promise := value.promise_value_ or { return none }
+			'promise:${u64(voidptr(promise))}'
+		}
+		.runtime_value {
+			actual := value.runtime_value_ or { return none }
+			'runtime:${u64(actual.context)}:${u64(actual.value)}'
+		}
 	}
 }
 
 pub fn (mut cache WebAssemblyCache) add_extern_value(address u64, value webidl.Value) {
 	if old := cache.extern_values_[address] {
-		cache.inverse_extern_.delete(extern_value_key(old))
+		if key := extern_value_key(old) { cache.inverse_extern_.delete(key) }
 	}
 	cache.extern_values_[address] = value
-	cache.inverse_extern_[extern_value_key(value)] = address
+	if key := extern_value_key(value) { cache.inverse_extern_[key] = address }
+}
+
+pub fn (cache &WebAssemblyCache) get_extern_address(value webidl.Value) ?u64 {
+	key := extern_value_key(value) or { return none }
+	return cache.inverse_extern_[key] or { return none }
 }
 
 pub fn (mut cache WebAssemblyCache) add_global_instance(address u64, global &Global) {
