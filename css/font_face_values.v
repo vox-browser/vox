@@ -3709,6 +3709,11 @@ pub fn (mut loader FontLoader) font_with_point_size(point_size f32, variations F
 }
 
 pub fn (mut loader FontLoader) start_loading_next_url() {
+	// FontComputer can return a shared loader after its first subscriber has
+	// settled. Its typeface is final; do not consume another fallback URL.
+	if loader.has_completed {
+		return
+	}
 	// FIXME: Load local() fonts somehow.
 	// Boundary: C++ tracks an ongoing FetchController and returns early if a fetch is already in progress. This
 	// synchronous boundary has no fetch-controller state, so each call consumes at most one pending URL chain.
