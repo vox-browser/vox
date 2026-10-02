@@ -90,6 +90,7 @@ fn init() {
 	html_main_thread_event_loop = EventLoop.create(.window)
 	html_broadcast_channel_repository = BroadcastChannelRepository.create()
 	css.install_css_fetch_client_provider(css_fetch_client_for_document)
+	css.install_font_loading_task_provider(font_loading_task_for_document)
 	install_html_element_activation_behavior()
 	install_custom_element_registry_dom_hooks()
 	dom.install_run_focusing_steps(dom_run_focusing_steps_callback)

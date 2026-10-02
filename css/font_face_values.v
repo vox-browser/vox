@@ -2532,8 +2532,8 @@ pub fn (mut face FontFaceObject) load() &webidl.Promise {
 
 	// 3. Otherwise, set font face's status attribute to "loading", return font face's [[FontStatusPromise]],
 	//    and continue executing the rest of this algorithm asynchronously.
-	// Boundary: C++ defers the URL load through the platform event loop and later queues a font-loading task for
-	// completion. The V port runs the boundary synchronously while preserving status, promise, and set-list effects.
+	// The source starts the request in this task; its completion is a separate
+	// font-loading task. FontLoader's transport remains an explicit boundary.
 	if mut computer := face.font_computer() {
 		face.continue_url_load_with_font_computer(mut computer)
 	} else {
@@ -2554,9 +2554,12 @@ pub fn (mut face FontFaceObject) load_with_font_computer(font_computer &FontComp
 
 fn (mut face FontFaceObject) continue_url_load_with_font_computer(mut font_computer FontComputer) {
 	face_pointer := unsafe { &FontFaceObject(face) }
-	on_load := fn [face_pointer] (typeface &PlatformTypeface) {
-		mut mutable_face := unsafe { &FontFaceObject(face_pointer) }
-		mutable_face.finish_loading_from_typeface(typeface)
+	computer_pointer := unsafe { &FontComputer(font_computer) }
+	on_load := fn [face_pointer, computer_pointer] (typeface &PlatformTypeface) {
+		queue_font_loading_task(computer_pointer, true, fn [face_pointer, typeface] () {
+			mut mutable_face := unsafe { &FontFaceObject(face_pointer) }
+			mutable_face.finish_loading_from_typeface(typeface)
+		})
 	}
 	loader := font_computer.load_font_face(face.parsed_font_face(), on_load) or { return }
 	face.font_loader_ = loader
@@ -3193,8 +3196,11 @@ pub fn (mut set FontFaceSet) switch_to_loading() {
 	}
 
 	// 4. Queue a task to fire a font load event named loading at font face set.
-	// Boundary: The C++ queues this event on the font-loading task source. The V port records it immediately.
-	set.fire_a_font_load_event('loading', [])
+	set_pointer := unsafe { &FontFaceSet(set) }
+	queue_font_loading_task(set.font_computer_, false, fn [set_pointer] () {
+		mut mutable_set := unsafe { &FontFaceSet(set_pointer) }
+		mutable_set.fire_a_font_load_event('loading', [])
+	})
 }
 
 // https://drafts.csswg.org/css-font-loading/#switch-the-fontfaceset-to-loaded
@@ -3213,8 +3219,14 @@ pub fn (mut set FontFaceSet) switch_to_loaded() {
 	set.ready_promise.resolve(webidl.platform_object_value())
 
 	// 5. Queue a task to perform the following steps synchronously:
-	// Boundary: The C++ resolves ready immediately, then queues event dispatch and list reset on the font-loading task
-	// source. The V port performs the queued portion inline.
+	set_pointer := unsafe { &FontFaceSet(set) }
+	queue_font_loading_task(set.font_computer_, false, fn [set_pointer] () {
+		mut mutable_set := unsafe { &FontFaceSet(set_pointer) }
+		mutable_set.dispatch_loaded_events()
+	})
+}
+
+fn (mut set FontFaceSet) dispatch_loaded_events() {
 	// 1. Let loaded fonts be the (possibly empty) contents of font face set's [[LoadedFonts]] slot.
 	// 2. Let failed fonts be the (possibly empty) contents of font face set's [[FailedFonts]] slot.
 	// 3. Reset the [[LoadedFonts]] and [[FailedFonts]] slots to empty lists.
