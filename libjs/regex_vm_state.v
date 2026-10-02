@@ -2,7 +2,7 @@ module libjs
 
 // LibRegex/Rust/src/vm.rs::{SavedState,ActiveModifiers,VmScratch,Vm}: storage,
 // construction/reset, snapshots, saved choices and modifier transitions.
-// Matcher dispatch and backtrack execution are separate untranslated slices.
+// Instruction-loop dispatch remains a separate untranslated slice.
 pub struct RegexActiveModifiers {
 pub mut:
 	ignore_case bool
