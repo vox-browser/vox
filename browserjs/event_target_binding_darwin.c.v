@@ -68,6 +68,17 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 		binding.closed = true
 		event_target_bindings_.delete(owner)
 	})
+	if settings := runtime.scripting_settings_ {
+		if document := settings.responsible_document() {
+			mut mutable_document := unsafe { &dom.Document(document) }
+			mutable_document.set_event_callback_exception_reporter(fn [owner, binding] (exception IError) {
+				if binding.closed { return }
+				mut runtime := unsafe { &Runtime(owner) }
+				runtime.report_event_callback_exception(exception)
+			})
+			runtime.install_window_event_handler_compiler(document)!
+		}
+	}
 }
 
 pub fn (mut runtime Runtime) bind_event_target(wrapper voidptr, target &dom.EventTarget) ! {
@@ -223,6 +234,10 @@ fn (mut runtime Runtime) report_event_callback_exception(exception IError) {
 }
 
 fn (mut runtime Runtime) event_callback(value voidptr, handler bool) !&dom.CallbackType {
+	return runtime.event_callback_with_settings(value, handler, runtime.callback_settings())
+}
+
+fn (mut runtime Runtime) event_callback_with_settings(value voidptr, handler bool, stored_settings ?&html.EnvironmentSettingsObject) !&dom.CallbackType {
 	if C.JSValueIsUndefined(runtime.context, value) || C.JSValueIsNull(runtime.context, value) {
 		return unsafe { nil }
 	}
@@ -235,7 +250,6 @@ fn (mut runtime Runtime) event_callback(value voidptr, handler bool) !&dom.Callb
 	}
 	runtime.retain_javascript_value(value)!
 	owner := voidptr(&runtime)
-	stored_settings := runtime.callback_settings()
 	binding := runtime.event_binding()!
 	mut window := ?&dom.Window(none)
 	if settings := runtime.scripting_settings_ {
