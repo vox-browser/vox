@@ -30,7 +30,10 @@ fn regex_unicode_property_strings(property u32) [][]u32 {
 		assert length >= 0 && (status <= 0 || status == int(C.U_BUFFER_OVERFLOW_ERROR))
 		mut units := []u16{len: length}
 		status = 0
-		assert C.vox2_regex_uset_getItem(set, index, &start, &end, units.data, units.len, &status) == length
+		// The ICU extraction supplies the actual string units; production
+		// assertion elimination must not remove this second call.
+		written := C.vox2_regex_uset_getItem(set, index, &start, &end, units.data, units.len, &status)
+		assert written == length
 		assert status <= 0
 		input := RegexInput(RegexUtf16Input{
 			units: units
