@@ -114,10 +114,16 @@ transfer/detachment remain open runtime boundaries. The native browser exposes
 owning-record default ReadableStream/reader/controller, WritableStream/writer/
 controller and TransformStream/component/controller factories. Public pipeTo
 and pipeThrough invoke the real model with actual DOM AbortSignal records,
-options and Promise identities. Factory prototype lookup occurs once before
+options and Promise identities. Native CountQueuingStrategy and
+ByteLengthQueuingStrategy factories create source records and return owning-
+global cached size functions; byte length performs actual engine GetV and
+retains its raw value or completion. The standalone scalar helpers remain
+explicit compatibility adapters. Factory prototype lookup occurs once before
 source argument/dictionary conversion and preserves actual subclasses. Public
 tee/from/iterator, byte enqueue, BYOB JS operations and complete generated
-wrapper worlds remain unbound.
+wrapper worlds remain unbound. Actual ordinary engine wrappers retain source
+record brands in a private Runtime object-identity table and inherit source
+interface tags; records and protected roots still live until Runtime.close.
 
 Underlying source, sink, and transformer dictionaries now retain native
 WebIDL `CallbackType` values, the actual receiver, and the actual controller

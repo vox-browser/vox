@@ -186,6 +186,37 @@ deserialize boundary; standalone typed arrays recursively clone, and unsupported
 opaque values throw a retained DataCloneError. The compact JSC opaque-object
 codec and public tee remain unbound.
 
+## Native queuing strategy factories and interface tags
+
+`browserjs/queuing_strategy_host{,_darwin.c}.v` installs actual
+CountQueuingStrategy and ByteLengthQueuingStrategy factories before author
+scripts. Constructors create their native `streams` records, store unrestricted
+high-water marks without ExtractHighWaterMark validation, preserve generated
+required-dictionary/member and prototype conversion order, and support actual
+constructor subclasses. Source strategy size getters return the relevant
+Window/Worker global's cached WebIDL callback through the native global record;
+`html/queuing_strategy_size_functions.v` also supplies the UniversalGlobalScope
+contract. Its engine creator is an explicit boundary for constructing actual
+builtin functions, not a fabricated standalone function value.
+
+The count function returns one, has source name `size` and length zero, and is
+shared by every count strategy in the global. The byte function has length one
+and performs actual engine GetV(chunk, "byteLength"), returning the original
+value or thrown completion without numeric coercion. Both functions are callable
+without a constructor or prototype. Existing standalone scalar helpers remain
+explicit compatibility adapters. Native stream queues consume these actual
+callbacks and retain genuine-number queue validation.
+
+`browserjs/native_stream_wrapper_darwin.c.v` wraps the existing source records
+in actual ordinary engine objects with a private Runtime table keyed by exact
+JSObjectRef identity. This replaces JSC custom-class wrappers, whose engine
+class tags masked the source interface prototype tags. InterfaceObject.cpp's
+inherited Symbol.toStringTag values, author changes and original tag getter
+exceptions are now observed; copied or forged prototypes still fail native
+record brand checks. Runtime.close clears the table and releases protected
+engine roots. These records and roots remain retained until that close boundary;
+full source wrapper worlds and GC reclamation remain open.
+
 ## Actual DOM abort reasons and owning timeout delivery
 
 `dom.JSValue` now carries the actual WebIDL/engine value for arbitrary reasons.
@@ -397,4 +428,23 @@ streams/tee_clone_order_test.v + tee/pending/pipe neighbors: clone before either
   read fulfillment, original abrupt value, pending cancellation adoption,
   cancelled-branch skip, nested opaque boundary rejection and reentrant clone
   cancellation preserving the first Resolve call; passed.
+```
+
+Queuing strategy and wrapper verification:
+
+```text
+html/queuing_strategy_size_functions_test.v + universal_global_scope_test.v:
+  lazy owner-global cache creation, same callback identity, separate globals
+  and creator ownership passed with -gc none.
+streams/strategy_size_callback_test.v + queue_strategies_test.v: source global
+  getter delegation without callback invocation and scalar adapter neighbors;
+  2/2 passed with -gc none.
+browserjs/queuing_strategy_host_test.v: four actual native-record/high-water-
+  mark, shared callable builtin identity, original GetV values/throws, brands,
+  prototype/IDL/ToNumber/subclass and real queue cases passed with -gc none.
+browserjs/stream_interface_tag_test.v + existing readable/writable/transform
+  host files: source inherited/changed tags, original getter throws, forged
+  prototype rejection, actual record identity and close cleanup; 4/4 passed.
+main_test.v, focused native queuing-strategy startup: source queue operations
+  and actual chunk identity reach live DOM replay; passed with -gc none.
 ```
