@@ -201,6 +201,14 @@ fn normalize_binding_algorithm(algorithm webidl.Value, operation string) !Normal
 	mut object := map[string]json2.Any{}
 	for field in binding_algorithm_fields(name, operation) {
 		property := value.object_value[field] or { continue }
+        aes_field := name.starts_with('AES-') || name == 'ChaCha20-Poly1305'
+        if property.kind == .undefined && aes_field && field in ['length', 'tagLength'] {
+            object[field] = json2.Null{}
+            continue
+        }
+        if property.kind == .undefined && aes_field && field in ['iv', 'counter', 'additionalData'] {
+            return error('TypeError: ${field} must be a buffer source')
+        }
 		if property.kind == .undefined || property.kind == .platform_object { continue }
 		if field in ['iv', 'counter', 'salt', 'info', 'nonce', 'additionalData', 'functionName',
 			'customization', 'context', 'label', 'secretValue', 'associatedData', 'publicExponent']

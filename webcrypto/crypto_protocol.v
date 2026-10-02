@@ -8,6 +8,8 @@
 module webcrypto
 
 import crypto.rand
+import libjs
+import webidl
 import x.json2
 
 pub struct HashAlgorithmIdentifier {
@@ -80,6 +82,22 @@ fn required_algorithm_u32(object map[string]json2.Any, key string) !u32 {
 	}
 }
 
+// CryptoAlgorithms.cpp uses JS::Value::to_u8/to_u16. Reuse the translated
+// StringToNumber and WebIDL modulo-integer operations for primitive values.
+// The json2 host boundary cannot execute an arbitrary object's ToPrimitive.
+fn algorithm_js_uint(object map[string]json2.Any, key string, width int) !u32 {
+    value := object[key] or { json2.Any(json2.Null{}) }
+    number := match value {
+        i64 { f64(value) }
+        f64 { value }
+        bool { if value { f64(1) } else { f64(0) } }
+        string { libjs.string_to_number(libjs.utf16_string(value)) }
+        json2.Null { f64(0) }
+        else { return error('TypeError: ${key} cannot be converted to a number by this value boundary') }
+    }
+    return u32(webidl.convert_to_int(webidl.number_value(number), width, false, .no, .no)!)
+}
+
 fn math_floor(value f64) f64 {
 	return f64(i64(value))
 }
@@ -125,38 +143,20 @@ pub fn AesCbcParams.from_value(value json2.Any) !AesCbcParams {
 }
 
 pub fn AesCtrParams.from_value(value json2.Any) !AesCtrParams {
-	object := algorithm_object(value)!
-	length := required_algorithm_u32(object, 'length')!
-	if length > 255 {
-		return error('TypeError: length is outside the octet range')
-	}
-	return AesCtrParams{
-		name: ''
-		counter: required_algorithm_bytes(object, 'counter')!
-		length: u8(length)
-	}
+    object := algorithm_object(value)!
+    counter := required_algorithm_bytes(object, 'counter')!
+    length := algorithm_js_uint(object, 'length', 8)!
+    return AesCtrParams{ name: '', counter: counter, length: u8(length) }
 }
 
 pub fn AesGcmParams.from_value(value json2.Any) !AesGcmParams {
-	object := algorithm_object(value)!
-	mut tag_length := ?u8(none)
-	if 'tagLength' in object {
-		actual := required_algorithm_u32(object, 'tagLength')!
-		if actual > 255 {
-			return error('TypeError: tagLength is outside the octet range')
-		}
-		tag_length = u8(actual)
-	}
-	mut additional_data := ?[]u8(none)
-	if 'additionalData' in object {
-		additional_data = required_algorithm_bytes(object, 'additionalData')!
-	}
-	return AesGcmParams{
-		name: ''
-		iv: required_algorithm_bytes(object, 'iv')!
-		additional_data: additional_data
-		tag_length: tag_length
-	}
+    object := algorithm_object(value)!
+    iv := required_algorithm_bytes(object, 'iv')!
+    mut additional_data := ?[]u8(none)
+    if 'additionalData' in object { additional_data = required_algorithm_bytes(object, 'additionalData')! }
+    mut tag_length := ?u8(none)
+    if 'tagLength' in object { tag_length = u8(algorithm_js_uint(object, 'tagLength', 8)!) }
+    return AesGcmParams{ name: '', iv: iv, additional_data: additional_data, tag_length: tag_length }
 }
 
 pub fn HKDFParams.from_value(value json2.Any) !HKDFParams {
@@ -186,27 +186,13 @@ pub fn PBKDF2Params.from_value(value json2.Any) !PBKDF2Params {
 }
 
 pub fn AesKeyGenParams.from_value(value json2.Any) !AesKeyGenParams {
-	object := algorithm_object(value)!
-	length := required_algorithm_u32(object, 'length')!
-	if length > 0xffff {
-		return error('TypeError: length is outside the unsigned-short range')
-	}
-	return AesKeyGenParams{
-		name: ''
-		length: u16(length)
-	}
+    object := algorithm_object(value)!
+    return AesKeyGenParams{ name: '', length: u16(algorithm_js_uint(object, 'length', 16)!) }
 }
 
 pub fn AesDerivedKeyParams.from_value(value json2.Any) !AesDerivedKeyParams {
-	object := algorithm_object(value)!
-	length := required_algorithm_u32(object, 'length')!
-	if length > 0xffff {
-		return error('TypeError: length is outside the unsigned-short range')
-	}
-	return AesDerivedKeyParams{
-		name: ''
-		length: u16(length)
-	}
+    object := algorithm_object(value)!
+    return AesDerivedKeyParams{ name: '', length: u16(algorithm_js_uint(object, 'length', 16)!) }
 }
 
 pub fn RsaKeyGenParams.from_value(value json2.Any) !RsaKeyGenParams {
@@ -407,25 +393,13 @@ pub fn KmacImportParams.from_value(value json2.Any) !KmacImportParams {
 }
 
 pub fn AeadParams.from_value(value json2.Any) !AeadParams {
-	object := algorithm_object(value)!
-	mut tag_length := ?u8(none)
-	if 'tagLength' in object {
-		actual := required_algorithm_u32(object, 'tagLength')!
-		if actual > 255 {
-			return error('TypeError: tagLength is outside the octet range')
-		}
-		tag_length = u8(actual)
-	}
-	mut additional_data := ?[]u8(none)
-	if 'additionalData' in object {
-		additional_data = required_algorithm_bytes(object, 'additionalData')!
-	}
-	return AeadParams{
-		name: ''
-		iv: required_algorithm_bytes(object, 'iv')!
-		additional_data: additional_data
-		tag_length: tag_length
-	}
+    object := algorithm_object(value)!
+    iv := required_algorithm_bytes(object, 'iv')!
+    mut additional_data := ?[]u8(none)
+    if 'additionalData' in object { additional_data = required_algorithm_bytes(object, 'additionalData')! }
+    mut tag_length := ?u8(none)
+    if 'tagLength' in object { tag_length = u8(algorithm_js_uint(object, 'tagLength', 8)!) }
+    return AeadParams{ name: '', iv: iv, additional_data: additional_data, tag_length: tag_length }
 }
 
 pub fn usage_intersection(first []KeyUsage, second []KeyUsage) []KeyUsage {
