@@ -16,6 +16,10 @@ pub type ReactionSteps = fn (Value) !Value
 
 pub type PromiseJobScheduler = fn (fn ())
 
+// The owning HTML realm supplies TemporaryExecutionContext without creating
+// a WebIDL -> HTML import cycle. Standalone adapters execute the steps directly.
+pub type PromiseRealmStepsRunner = fn (fn ())
+
 struct PromiseReaction {
 	on_fulfilled     ReactionSteps = unsafe { nil }
 	on_rejected      ReactionSteps = unsafe { nil }
@@ -37,19 +41,21 @@ pub mut:
 	is_handled                             bool
 	rejection_was_handled_after_settlement bool
 mut:
-	realm_id  u64
-	job_scheduler ?PromiseJobScheduler
-	reactions []PromiseReaction
-	observers []PromiseObserver
-	already_resolved bool
+	realm_id           u64
+	job_scheduler      ?PromiseJobScheduler
+	realm_steps_runner ?PromiseRealmStepsRunner
+	reactions          []PromiseReaction
+	observers          []PromiseObserver
+	already_resolved   bool
 }
 
 // PromiseContext is the standalone boundary for the relevant Realm obtained
 // from an environment settings object, JS object, DOM node, or Window.
 pub struct PromiseContext {
 pub:
-	realm_id u64
-	job_scheduler ?PromiseJobScheduler
+	realm_id           u64
+	job_scheduler      ?PromiseJobScheduler
+	realm_steps_runner ?PromiseRealmStepsRunner
 }
 
 pub fn create_promise() &Promise {
@@ -58,18 +64,19 @@ pub fn create_promise() &Promise {
 
 pub fn create_promise_in_realm(realm_id u64) &Promise {
 	return &Promise{
-		state: .pending
-		result: undefined_value()
+		state:    .pending
+		result:   undefined_value()
 		realm_id: realm_id
 	}
 }
 
 pub fn create_promise_for(context PromiseContext) &Promise {
 	return &Promise{
-		state: .pending
-		result: undefined_value()
-		realm_id: context.realm_id
-		job_scheduler: context.job_scheduler
+		state:              .pending
+		result:             undefined_value()
+		realm_id:           context.realm_id
+		job_scheduler:      context.job_scheduler
+		realm_steps_runner: context.realm_steps_runner
 	}
 }
 
@@ -99,6 +106,18 @@ pub fn create_rejected_promise_for(context PromiseContext, reason Value) &Promis
 
 pub fn promise_realm(promise &Promise) u64 {
 	return promise.realm_id
+}
+
+pub fn promise_context(promise &Promise) PromiseContext {
+	return PromiseContext{
+		realm_id:           promise.realm_id
+		job_scheduler:      promise.job_scheduler
+		realm_steps_runner: promise.realm_steps_runner
+	}
+}
+
+fn (context PromiseContext) run_realm_steps(steps fn ()) {
+	if run := context.realm_steps_runner { run(steps) } else { steps() }
 }
 
 pub fn resolve_promise(mut promise Promise, value Value) {
@@ -166,8 +185,11 @@ fn (mut promise Promise) settle(state PromiseState, value Value) {
 	promise.observers.clear()
 	for observer in observers {
 		promise.enqueue_job(fn [state, value, observer] () {
-			if state == .fulfilled { observer.on_fulfilled(value) or {} }
-			else { observer.on_rejected(value) or {} }
+			if state == .fulfilled {
+				observer.on_fulfilled(value) or {}
+			} else {
+				observer.on_rejected(value) or {}
+			}
 		})
 	}
 }
@@ -200,13 +222,13 @@ fn absent_reaction(value Value) !Value {
 
 fn (mut promise Promise) react(on_fulfilled ReactionSteps, has_on_fulfilled bool, on_rejected ReactionSteps, has_on_rejected bool) &Promise {
 	promise.mark_as_handled()
-	mut child := create_promise_for(PromiseContext{ realm_id: promise.realm_id, job_scheduler: promise.job_scheduler })
+	mut child := create_promise_for(promise_context(promise))
 	reaction := PromiseReaction{
-		on_fulfilled: on_fulfilled
-		on_rejected: on_rejected
+		on_fulfilled:     on_fulfilled
+		on_rejected:      on_rejected
 		has_on_fulfilled: has_on_fulfilled
-		has_on_rejected: has_on_rejected
-		child: child
+		has_on_rejected:  has_on_rejected
+		child:            child
 	}
 	if promise.state == .pending {
 		promise.reactions << reaction
@@ -231,15 +253,18 @@ fn (mut promise Promise) observe(on_fulfilled ReactionSteps, on_rejected Reactio
 	if promise.state == .pending {
 		promise.observers << PromiseObserver{
 			on_fulfilled: on_fulfilled
-			on_rejected: on_rejected
+			on_rejected:  on_rejected
 		}
 		return
 	}
 	state := promise.state
 	value := promise.result
 	promise.enqueue_job(fn [state, value, on_fulfilled, on_rejected] () {
-		if state == .fulfilled { on_fulfilled(value) or {} }
-		else { on_rejected(value) or {} }
+		if state == .fulfilled {
+			on_fulfilled(value) or {}
+		} else {
+			on_rejected(value) or {}
+		}
 	})
 }
 
@@ -303,7 +328,7 @@ pub fn wait_for_all(promises []&Promise, success_steps WaitSuccessSteps, failure
 		return
 	}
 	mut state := &WaitForAllState{
-		results: []Value{len: promises.len, init: undefined_value()}
+		results:       []Value{len: promises.len, init: undefined_value()}
 		success_steps: success_steps
 		failure_steps: failure_steps
 	}
@@ -320,11 +345,21 @@ pub fn wait_for_all(promises []&Promise, success_steps WaitSuccessSteps, failure
 // Translation of get_promise_for_wait_for_all: the returned promise adopts
 // the ordered result sequence or the first rejection.
 pub fn get_promise_for_wait_for_all(promises []&Promise) &Promise {
-	mut result := create_promise()
-	wait_for_all(promises, fn [mut result] (values []Value) {
-		result.resolve(sequence_value(values))
-	}, fn [mut result] (reason Value) {
-		result.reject(reason)
+	return get_promise_for_wait_for_all_for(PromiseContext{}, promises)
+}
+
+// Promise.cpp::get_promise_for_wait_for_all creates and settles the aggregate
+// in its supplied realm, including the empty-input and rejection paths.
+pub fn get_promise_for_wait_for_all_for(context PromiseContext, promises []&Promise) &Promise {
+	mut result := create_promise_for(context)
+	wait_for_all(promises, fn [mut result, context] (values []Value) {
+		context.run_realm_steps(fn [mut result, values] () {
+			result.resolve(sequence_value(values))
+		})
+	}, fn [mut result, context] (reason Value) {
+		context.run_realm_steps(fn [mut result, reason] () {
+			result.reject(reason)
+		})
 	})
 	return result
 }
@@ -408,7 +443,7 @@ pub fn property_to_callback(value Value, property_key string, operation_returns_
 	}
 	return CallbackConversion{
 		callback: CallbackType{
-			callback: operation
+			callback:                  operation
 			operation_returns_promise: operation_returns_promise
 		}
 	}
