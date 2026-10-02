@@ -12,6 +12,11 @@ import encoding
 import mimesniff
 import url as liburl
 import x.json2
+import time
+
+fn xhr_monotonic_now() i64 {
+	return time.sys_mono_now()
+}
 
 pub enum State {
 	unsent
@@ -40,6 +45,7 @@ pub struct XMLHttpRequestGlobal {
 pub:
 	kind     GlobalKind
 	base_url string
+	monotonic_now fn () i64 = xhr_monotonic_now
 pub mut:
 	document_destroyed bool
 }
@@ -111,6 +117,8 @@ pub mut:
 	activity_root_            bool
 	timeout_timer_active      bool
 	response_object_failed_   bool
+	last_upload_progress_timestamp_ ?i64
+	last_download_progress_timestamp_ ?i64
 }
 
 pub fn XMLHttpRequest.construct(global_kind GlobalKind, base_url string) &XMLHttpRequest {
@@ -374,6 +382,8 @@ fn (mut request XMLHttpRequest) send_bytes(body []u8, content_type ?string, body
 	request.update_activity_root()
 	if !request.synchronous {
 		request.dispatch('loadstart', 0, 0)
+		request.last_upload_progress_timestamp_ = none
+		request.last_download_progress_timestamp_ = none
 		if !request.upload_complete && request.upload_listener {
 			request.upload_object.dispatch('loadstart', 0, u64(request.request_body.len))
 		}
@@ -406,6 +416,15 @@ pub fn (mut request XMLHttpRequest) receive_upload_chunk_length(length u64) {
 		return
 	}
 	request.request_body_transmitted += length
+	// XMLHttpRequest.cpp: processRequestBodyChunkLength, steps 1–2.
+	// Accumulate every chunk; only progress notification is throttled.
+	now := request.global_object_.monotonic_now()
+	if previous := request.last_upload_progress_timestamp_ {
+		if now - previous < 50_000_000 {
+			return
+		}
+	}
+	request.last_upload_progress_timestamp_ = now
 	if request.upload_listener {
 		request.upload_object.dispatch('progress', request.request_body_transmitted,
 			u64(request.request_body.len))
@@ -462,10 +481,21 @@ pub fn (mut request XMLHttpRequest) receive_chunk(bytes []u8) {
 	if request.state !in [.headers_received, .loading] {
 		return
 	}
-	request.state = .loading
-	request.update_activity_root()
 	request.received_bytes << bytes
 	request.response_cache = none
+	// XMLHttpRequest.cpp: processBodyChunk, steps 1–5. Preserve the bytes
+	// even when the LOADING/readystatechange/progress work is throttled.
+	if !request.synchronous {
+		now := request.global_object_.monotonic_now()
+		if previous := request.last_download_progress_timestamp_ {
+			if now - previous < 50_000_000 {
+				return
+			}
+		}
+		request.last_download_progress_timestamp_ = now
+	}
+	request.state = .loading
+	request.update_activity_root()
 	request.dispatch_state_change()
 	if !request.synchronous {
 		request.dispatch('progress', u64(request.received_bytes.len), request.content_length())
