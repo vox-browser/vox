@@ -95,6 +95,11 @@ IPC and LBSC goldens include the source double payload. The two Date cases and
 the collection neighbor passed two files with GC disabled. Untrusted serialized
 Date doubles outside the native constructor's TimeClip domain remain a JSC
 record-construction boundary; this evidence covers actual source native Dates.
+The native decoder now explicitly rejects fractional, infinite, out-of-range
+and negative-zero raw Date slots that JSC would change through TimeClip. The
+source DTO codec retains those raw doubles; no different native Date is silently
+installed. That boundary test, independent IPC/Storage result bindings, and the
+fixed-view neighbor passed two files with GC disabled.
 
 Native Error serialization follows Get(name), the own message descriptor and
 its data-value ToString, then the own cause descriptor and its data-value
