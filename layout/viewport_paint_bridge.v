@@ -59,6 +59,11 @@ fn install_document_painting_bridge(document &dom.Document, result &DocumentLayo
 // needlessly rebuilding layout geometry.
 fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayoutResult,
 	viewport_width f64, viewport_height f64) {
+	// The renderer snapshot owns the concrete command vector behind Document's
+	// cached DisplayList. Invalidating that vector must invalidate the outer
+	// Document cache too, so record_display_list enters the actual paint path.
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.invalidate_display_list()
 	had_valid_hit_test_display_list := result.hit_test_display_list_is_valid
 	result.paint_tree = renderer_box_from_document_layout_result(result, viewport_width, viewport_height)
 	result.display_list_commands.clear()
