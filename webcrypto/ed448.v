@@ -83,7 +83,7 @@ pub fn import_ed448_key(format KeyFormat, material []u8, extractable bool, usage
 			}
 			return exchange_key('Ed448', private_key, bytes, false, [])
 		}
-		.jwk { return import_ed448_jwk(JsonWebKey.parse(material)!, extractable, usages) }
+		.jwk { return import_ed448_jwk(decode_json_web_key_dictionary(material)!, extractable, usages) }
 		.raw {
 			validate_ed448_usages(usages, [.verify])!
 			if material.len != 57 { return error('DataError: Invalid key length') }

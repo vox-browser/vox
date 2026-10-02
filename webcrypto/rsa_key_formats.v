@@ -134,7 +134,7 @@ fn parse_rsa_jwk(params RsaHashedImportParams, jwk JsonWebKey, extractable bool,
 fn import_rsa_key(params RsaHashedImportParams, format KeyFormat, bytes []u8, extractable bool, usages []KeyUsage) !&CryptoKey {
 	mut private_key := format == .pkcs8
 	handle := if format == .jwk {
-		jwk := JsonWebKey.parse(bytes)!
+		jwk := decode_json_web_key_dictionary(bytes)!
 		private_key = jwk.d != none
 		parse_rsa_jwk(params, jwk, extractable, usages)!
 	} else if format in [.spki, .pkcs8] {

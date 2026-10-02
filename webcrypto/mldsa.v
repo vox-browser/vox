@@ -125,7 +125,7 @@ fn import_mldsa_key(params AlgorithmParams, format KeyFormat, material []u8, ext
 			if material.len != 32 { return error('DataError: Seed must be 256 bits long') }
 			return mldsa_private_key(name, native_mldsa_generate(name, material)!, false, [])
 		}
-		.jwk { return import_mldsa_jwk(name, JsonWebKey.parse(material)!, usages, extractable) }
+		.jwk { return import_mldsa_jwk(name, decode_json_web_key_dictionary(material)!, usages, extractable) }
 		else { return error('NotSupportedError: Invalid key format') }
 	}
 }

@@ -125,7 +125,7 @@ fn import_ed25519_algorithm_key(format KeyFormat, material []u8, extractable boo
 			}
 			return exchange_key('Ed25519', private_key, bytes, false, [])
 		}
-		.jwk { return import_ed25519_jwk(JsonWebKey.parse(material)!, extractable, usages) }
+		.jwk { return import_ed25519_jwk(decode_json_web_key_dictionary(material)!, extractable, usages) }
 		.raw, .raw_public {
 			validate_ed448_usages(usages, [.verify])!
 			if material.len != 32 { return error('DataError: Invalid key length') }

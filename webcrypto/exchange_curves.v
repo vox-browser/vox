@@ -100,7 +100,7 @@ fn import_exchange_key(name string, format KeyFormat, material []u8, extractable
 			validate_exchange_usages(usages)!
 			return exchange_key(name, true, parse_okp_der(name, material, true)!, false, [])
 		}
-		.jwk { return import_exchange_jwk(name, JsonWebKey.parse(material)!, extractable, usages) }
+		.jwk { return import_exchange_jwk(name, decode_json_web_key_dictionary(material)!, extractable, usages) }
 		.raw, .raw_public {
 			// X448's source has only the raw branch, unlike X25519's alias.
 			if name == 'X448' && format == .raw_public {

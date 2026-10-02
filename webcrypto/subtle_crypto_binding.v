@@ -562,7 +562,7 @@ fn normalized_import(algorithm NormalizedCryptoAlgorithm, format KeyFormat, byte
 	if params is KmacImportParams { import_params = params }
 	if params is HmacImportParams { hash_name = params.hash }
 	if format == .jwk {
-		return SubtleCrypto.create().import_jwk(JsonWebKey.parse(bytes)!, import_params, extractable, usages, hash_name)
+		return SubtleCrypto.create().import_jwk(decode_json_web_key_dictionary(bytes)!, import_params, extractable, usages, hash_name)
 	}
 	if format in [.raw, .raw_secret] && algorithm.name in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW', 'HMAC', 'HKDF', 'PBKDF2', 'ChaCha20-Poly1305'] {
 		// Invoke the algorithm import body; public importKey applies the common

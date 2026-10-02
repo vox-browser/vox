@@ -40,7 +40,7 @@ fn import_aes_key(name string, format KeyFormat, material []u8, extractable bool
 			return error("DataError: Invalid key length '${bits}' bits (must be either 128, 192, or 256 bits)")
 		}
 	} else if format == .jwk {
-		jwk := JsonWebKey.parse(material)!
+		jwk := decode_json_web_key_dictionary(material)!
 		if (jwk.kty or { '' }) != 'oct' { return error('DataError: Invalid key type') }
 		if name in ['AES-CTR', 'AES-GCM'] && jwk.k == none {
 			return error("DataError: Missing 'k' field")

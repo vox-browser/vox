@@ -44,7 +44,7 @@ fn import_kmac_key(params KmacImportParams, format KeyFormat, material []u8, ext
 	kmac_validate_usages(usages)!
 	mut data := material.clone()
 	if format == .jwk {
-		jwk := JsonWebKey.parse(material)!
+		jwk := decode_json_web_key_dictionary(material)!
 		if (jwk.kty or { '' }) != 'oct' {
 			return error('DataError: Invalid key type')
 		}

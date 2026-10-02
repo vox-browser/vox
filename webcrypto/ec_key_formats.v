@@ -241,7 +241,7 @@ fn import_ec_key(params EcKeyImportParams, format KeyFormat, material []u8, extr
 	mut private_key := format == .pkcs8
 	mut handle := CryptoKeyInternalHandle(ByteBufferKeyHandle{})
 	if format == .jwk {
-		jwk := JsonWebKey.parse(material)!
+		jwk := decode_json_web_key_dictionary(material)!
 		private_key = jwk.d != none
 		handle = parse_ec_jwk(params, jwk, extractable, usages)!
 		validate_ec_handle(params.named_curve, handle)!

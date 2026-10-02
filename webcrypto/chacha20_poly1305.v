@@ -37,7 +37,7 @@ fn import_chacha_key(format KeyFormat, material []u8, extractable bool, usages [
 	if format == .raw_secret {
 		if data.len != 32 { return error('DataError: Key data must be 256 bits') }
 	} else if format == .jwk {
-		jwk := JsonWebKey.parse(material)!
+		jwk := decode_json_web_key_dictionary(material)!
 		if (jwk.kty or { '' }) != 'oct' { return error('DataError: Invalid key type') }
 		data = parse_jwk_symmetric_key(jwk)!
 		if alg := jwk.alg {

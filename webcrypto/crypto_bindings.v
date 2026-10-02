@@ -133,6 +133,15 @@ fn parse_json_web_key_other_primes(value json2.Any) ![]RsaOtherPrimesInfo {
 // the wrong scalar type are treated as absent, matching JsonObject::get_*;
 // sequence elements are converted strictly.
 pub fn JsonWebKey.parse(data []u8) !JsonWebKey {
+	key := decode_json_web_key_dictionary(data)!
+	if key.kty == none { return error('DataError: kty field is not defined') }
+	return key
+}
+
+// AlgorithmMethods importKey receives a JsonWebKey dictionary, including absent
+// optional members. JSON here transports that already-converted typed DTO;
+// CryptoBindings::parse_json_web_key is the separate unwrap JSON algorithm.
+fn decode_json_web_key_dictionary(data []u8) !JsonWebKey {
 	if data.len > 0 && !utf8.validate(data.data, data.len) {
 		return error('SyntaxError: JSON is not valid UTF-8')
 	}
@@ -172,9 +181,6 @@ pub fn JsonWebKey.parse(data []u8) !JsonWebKey {
 		if other_primes is []json2.Any {
 			key.oth = parse_json_web_key_other_primes(other_primes)!
 		}
-	}
-	if key.kty == none {
-		return error('DataError: kty field is not defined')
 	}
 	return key
 }

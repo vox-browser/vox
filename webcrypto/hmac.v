@@ -35,7 +35,7 @@ fn import_hmac_key(params HmacImportParams, format KeyFormat, material []u8, ext
 	hmac_validate_usages(usages)!
 	mut data := material.clone()
 	if format == .jwk {
-		jwk := JsonWebKey.parse(material)!
+		jwk := decode_json_web_key_dictionary(material)!
 		if (jwk.kty or { '' }) != 'oct' { return error('DataError: Invalid key type') }
 		data = parse_jwk_symmetric_key(jwk)!
 		expected := hmac_jwk_algorithm(params.hash)!
