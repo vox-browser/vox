@@ -41,8 +41,14 @@ fn image_test_fetch(url dom.URL) !DecodedImageData {
 	], 1, true)
 }
 
+fn image_test_active_document(value string) &dom.Document {
+	document := dom.Document.create(dom.URL{ value: value })
+	_ = WindowModel.create_top_level(document, none, 'image-decode') or { panic(err) }
+	return document
+}
+
 fn test_image_source_selection_load_dimensions_and_decode() {
-	document := dom.Document.create(dom.URL{ value: 'https://example.test/page' })
+	document := image_test_active_document('https://example.test/page')
 	mut image := HTMLImageElementModel.create(document, document.base_url())
 	image.set_fetch_hook(image_test_fetch)
 	image.set_src('/fallback.png')
@@ -59,7 +65,17 @@ fn test_image_source_selection_load_dimensions_and_decode() {
 	assert image.width() == 200
 	assert image.height() == 100
 	assert image.event_count('load') == 1
-	assert image.decode().state() == .fulfilled
+	decoded_promise := image.decode()
+	assert decoded_promise.state() == .pending
+	mut decode_loop := main_thread_event_loop()
+	decode_loop.perform_a_microtask_checkpoint()
+	assert decoded_promise.state() == .pending
+	mut decode_queue := decode_loop.task_queue()
+	decode_task := decode_queue.take_first_runnable_matching(fn [document] (task &Task) bool {
+		return task.source() == .dom_manipulation && (task.document() or { return false }) == document
+	}) or { panic('decode settlement task missing') }
+	decode_task.execute()
+	assert decoded_promise.state() == .fulfilled
 	image.set_width(50)
 	image.set_height(25)
 	assert image.width() == 50
@@ -97,7 +113,7 @@ fn test_image_decoded_data_tracks_cross_origin_response_tainting() {
 }
 
 fn test_image_decode_waits_for_completely_available_state() {
-	document := dom.Document.create(dom.URL{ value: 'https://example.test/decode-test' })
+	document := image_test_active_document('https://example.test/decode-test')
 	mut image := HTMLImageElementModel.create(document, document.base_url())
 	mut request := image.current_request()
 	request.set_current_url('https://example.test/async-image.png')
@@ -108,6 +124,8 @@ fn test_image_decode_waits_for_completely_available_state() {
 	assert promise.state() == .pending
 	assert image.natural_width() == 0
 
+	mut decode_loop := main_thread_event_loop()
+	decode_loop.perform_a_microtask_checkpoint()
 	mut shared_request := request.shared_resource_request() or { panic('missing shared request') }
 	decoded := image_test_fetch(dom.URL{ value: request.current_url() }) or { panic(err) }
 	shared_request.handle_successful_resource_load(decoded)
@@ -143,7 +161,7 @@ fn test_image_pending_state_distinguishes_sources_from_broken_requests() {
 }
 
 fn test_image_failure_empty_lazy_sizes_and_animation() {
-	document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	document := image_test_active_document('https://example.test/')
 	mut empty := HTMLImageElementModel.create(document, document.base_url())
 	assert empty.complete()
 	empty.set_loading(.lazy)
@@ -157,7 +175,11 @@ fn test_image_failure_empty_lazy_sizes_and_animation() {
 	assert broken.complete()
 	assert broken.current_request().state() == .broken
 	assert broken.event_count('error') == 1
-	assert broken.decode().state() == .rejected
+	broken_promise := broken.decode()
+	assert broken_promise.state() == .pending
+	mut decode_loop := main_thread_event_loop()
+	decode_loop.perform_a_microtask_checkpoint()
+	assert broken_promise.state() == .rejected
 
 	mut animated := HTMLImageElementModel.create(document, document.base_url())
 	animated.set_fetch_hook(image_test_fetch)

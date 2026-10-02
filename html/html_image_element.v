@@ -525,57 +525,100 @@ pub fn (image &HTMLImageElementModel) y() int {
 	return html_image_element_y(element)
 }
 
-fn queue_image_decode_resolution(promise &dom.Promise) {
-	queue_a_task(.dom_manipulation, main_thread_event_loop(), none, fn [promise] () {
+fn image_decode_event_loop(document &dom.Document) &EventLoop {
+	settings_pointer := document.relevant_settings_object()
+	if settings_pointer != unsafe { nil } {
+		settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }
+		return settings.responsible_event_loop()
+	}
+	return main_thread_event_loop()
+}
+
+fn reject_image_decode(promise &dom.Promise, message string, document &dom.Document) {
+	context := document.begin_temporary_execution_context()
+	defer { document.end_temporary_execution_context(context) }
+	mut mutable_promise := unsafe { &dom.Promise(promise) }
+	mutable_promise.reject(dom.js_string('EncodingError: ${message}'))
+}
+
+fn queue_image_decode_resolution(image &HTMLImageElementModel, promise &dom.Promise, owner &EventLoop, document &dom.Document) {
+	queue_a_task(.dom_manipulation, owner, document, fn [image, promise] () {
+		context := image.document_.begin_temporary_execution_context()
+		defer { image.document_.end_temporary_execution_context(context) }
 		mut mutable_promise := unsafe { &dom.Promise(promise) }
 		mutable_promise.resolve(dom.js_undefined())
 	})
 }
 
-fn queue_image_decode_rejection(promise &dom.Promise, message string) {
-	queue_a_task(.dom_manipulation, main_thread_event_loop(), none, fn [promise, message] () {
-		mut mutable_promise := unsafe { &dom.Promise(promise) }
-		mutable_promise.reject(dom.js_string('EncodingError: ${message}'))
+fn queue_image_decode_rejection(image &HTMLImageElementModel, promise &dom.Promise, message string, owner &EventLoop, document &dom.Document) {
+	queue_a_task(.dom_manipulation, owner, document, fn [image, promise, message] () {
+		reject_image_decode(promise, message, image.document_)
 	})
 }
 
+// HTMLImageElement.cpp: decode always begins in a microtask, including images
+// that are already available or broken when the method is called.
 pub fn (image &HTMLImageElementModel) decode() &dom.Promise {
-	if image.current_request_.state() == .completely_available && image.decoded_data_ != none {
-		return dom.Promise.resolved(dom.js_undefined())
+	promise := dom.Promise.create()
+	owner := image_decode_event_loop(image.document_)
+	queue_a_task(.microtask, owner, image.document_, fn [image, promise] () {
+		image.begin_decode(promise)
+	})
+	return promise
+}
+
+fn (image &HTMLImageElementModel) begin_decode(promise &dom.Promise) {
+	if !image.document_.is_fully_active() {
+		reject_image_decode(promise, 'Node document not fully active', image.document_)
+		return
 	}
 	if image.current_request_.state() == .broken {
-		return dom.Promise.rejected(dom.js_string('EncodingError: current request state is broken'))
+		reject_image_decode(promise, 'Current request state is broken', image.document_)
+		return
 	}
-
-	promise := dom.Promise.create()
+	owner := image_decode_event_loop(image.document_)
+	settlement_document := image.document_
 	expected_request := image.current_request_
+	if expected_request.state() == .completely_available {
+		queue_image_decode_resolution(image, promise, owner, settlement_document)
+		return
+	}
+	if expected_request.shared_resource_request() == none {
+		queue_image_decode_rejection(image, promise, 'Current request changed or was mutated', owner, settlement_document)
+		return
+	}
 	image_pointer := image
 	mut request := unsafe { &ImageRequest(expected_request) }
-	request.add_callbacks(fn [image_pointer, expected_request, promise] () {
+	request.add_callbacks(fn [image_pointer, expected_request, promise, owner, settlement_document] () {
 		mut dispatcher := batching_dispatcher()
-		dispatcher.enqueue(fn [image_pointer, expected_request, promise] () {
+		dispatcher.enqueue(fn [image_pointer, expected_request, promise, owner, settlement_document] () {
+			if !image_pointer.document_.is_fully_active() {
+				queue_image_decode_rejection(image_pointer, promise, 'Node document not fully active', owner, settlement_document)
+				return
+			}
 			if image_pointer.current_request_ != expected_request {
-				queue_image_decode_rejection(promise, 'current request changed or was mutated')
+				queue_image_decode_rejection(image_pointer, promise, 'Current request changed or was mutated', owner, settlement_document)
 				return
 			}
-			if image_pointer.current_request_.state() != .completely_available
-				|| image_pointer.decoded_data_ == none {
-				queue_image_decode_rejection(promise, 'current request is not completely available')
+			if image_pointer.current_request_.state() == .broken {
+				queue_image_decode_rejection(image_pointer, promise, 'Current request state is broken', owner, settlement_document)
 				return
 			}
-			queue_image_decode_resolution(promise)
+			queue_image_decode_resolution(image_pointer, promise, owner, settlement_document)
 		})
-	}, fn [image_pointer, expected_request, promise] () {
-		if image_pointer.current_request_ != expected_request {
-			queue_image_decode_rejection(promise, 'current request changed or was mutated')
+	}, fn [image_pointer, expected_request, promise, owner, settlement_document] () {
+		if !image_pointer.document_.is_fully_active() {
+			queue_image_decode_rejection(image_pointer, promise, 'Node document not fully active', owner, settlement_document)
 			return
 		}
-		queue_image_decode_rejection(promise, 'current request state is broken')
+		if image_pointer.current_request_ != expected_request {
+			queue_image_decode_rejection(image_pointer, promise, 'Current request changed or was mutated', owner, settlement_document)
+			return
+		}
+		queue_image_decode_rejection(image_pointer, promise, 'Current request state is broken', owner, settlement_document)
 	}) or {
-		mut mutable_promise := unsafe { &dom.Promise(promise) }
-		mutable_promise.reject(dom.js_string('EncodingError: image data is not available'))
+		queue_image_decode_rejection(image_pointer, promise, 'Current request changed or was mutated', owner, settlement_document)
 	}
-	return promise
 }
 
 pub fn (mut image HTMLImageElementModel) restart_the_animation() {
