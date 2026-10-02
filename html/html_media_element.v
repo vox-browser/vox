@@ -239,7 +239,9 @@ mut:
 	last_fetch_offset_          u64
 	loop_was_specified_at_end_  bool
 	running_time_update_event_  bool
-	last_time_update_position_  ?f64
+	last_time_update_event_time_ ?i64
+	last_known_current_playback_position_ ?f64
+	queued_media_task_ids_       []u64
 	last_progress_event_time_ms_ ?i64
 	allow_autoplay_             bool = true
 	document_observer_          ?&dom.DocumentObserver
@@ -389,10 +391,7 @@ pub fn (mut element HTMLMediaElement) adopted_from(old_document &dom.Document) {
 	// unless a resource fetch had already begun.
 	if !old_document.is_fully_active() && !element.resource_fetch_started_
 		&& element.resource_selection_pending_ {
-		mut queue := main_thread_event_loop().task_queue()
-		queue.remove_tasks_matching(fn (task &Task) bool {
-			return task.source() == .media_element
-		})
+		element.remove_queued_media_element_tasks()
 		element.select_resource_for_current_load() or {}
 	}
 }
@@ -631,11 +630,48 @@ pub fn (mut element HTMLMediaElement) set_playback_manager_hooks(hooks MediaPlay
 	element.playback_manager_ready_ = true
 }
 
-// V's host event loop drains this module-local task source synchronously. The
-// algorithm boundary is retained so embedders can replace it with their task
-// queue without changing media state-machine callers.
-pub fn (_ &HTMLMediaElement) queue_a_media_element_task(steps MediaElementTask) {
-	steps()
+@[heap]
+struct QueuedMediaElementTask {
+mut:
+	id u64
+}
+
+// HTMLMediaElement::queue_a_media_element_task(), including the active-document
+// guard. Per-element task IDs retain upstream's unique task-source ownership.
+pub fn (element &HTMLMediaElement) queue_a_media_element_task(steps MediaElementTask) {
+	mut queued := &QueuedMediaElementTask{}
+	element_pointer := voidptr(element)
+	mut document := ?&dom.Document(none)
+	if html_element := element.associated_element_ {
+		document = unsafe { &dom.Element(html_element) }.document()
+	}
+	queued.id = queue_a_task(element.media_element_event_task_source(), none, document,
+		fn [element_pointer, queued, steps] () {
+			mut media := unsafe { &HTMLMediaElement(element_pointer) }
+			for index, id in media.queued_media_task_ids_ {
+				if id == queued.id {
+					media.queued_media_task_ids_.delete(index)
+					break
+				}
+			}
+			if html_element := media.associated_element_ {
+				if !unsafe { &dom.Element(html_element) }.document().is_fully_active() {
+					return
+				}
+			}
+			steps()
+		})
+	mut media := unsafe { &HTMLMediaElement(element) }
+	media.queued_media_task_ids_ << queued.id
+}
+
+fn (mut element HTMLMediaElement) remove_queued_media_element_tasks() {
+	ids := element.queued_media_task_ids_.clone()
+	mut queue := main_thread_event_loop().task_queue()
+	queue.remove_tasks_matching(fn [ids] (task &Task) bool {
+		return task.id() in ids
+	})
+	element.queued_media_task_ids_.clear()
 }
 
 pub fn (mut element HTMLMediaElement) set_source(source ?string) {
@@ -741,6 +777,8 @@ pub fn (mut element HTMLMediaElement) load_element() ! {
 }
 
 fn (mut element HTMLMediaElement) load_element_for_current_load() ! {
+	// Upstream load step 5 cancels only this element's outstanding media tasks.
+	element.remove_queued_media_element_tasks()
 	if element.network_state_ in [.loading, .idle] {
 		element.fire_event('abort')
 	}
@@ -1235,12 +1273,15 @@ pub fn (mut element HTMLMediaElement) seek_element(value f64, mode MediaSeekMode
 		return
 	}
 	element.set_seeking(true)
-	element.fire_event('seeking')
 	mut target := if value < 0 { 0.0 } else { value }
 	if !math.is_nan(element.duration_) && target > element.duration_ {
 		target = element.duration_
 	}
-	if !element.seekable_.in_range(target) && element.seekable_.length() > 0 {
+	if !element.seekable_.in_range(target) {
+		if element.seekable_.length() == 0 {
+			element.set_seeking(false)
+			return
+		}
 		mut nearest := element.seekable_.start(0) or { 0.0 }
 		mut nearest_distance := math.abs(target - nearest)
 		for index := u32(0); index < element.seekable_.length(); index++ {
@@ -1256,6 +1297,11 @@ pub fn (mut element HTMLMediaElement) seek_element(value f64, mode MediaSeekMode
 		}
 		target = nearest
 	}
+	element_pointer := voidptr(&element)
+	element.queue_a_media_element_task(fn [element_pointer] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
+		media.fire_event('seeking')
+	})
 	element.official_playback_position_ = target
 	if hook := element.playback_hooks_.seek {
 		mut playback_seek_mode := MediaPlaybackSeekMode.accurate
@@ -1270,16 +1316,27 @@ pub fn (mut element HTMLMediaElement) seek_element(value f64, mode MediaSeekMode
 	} else {
 		element.current_playback_position_ = target
 		element.upon_has_ended_playback_possibly_changed()
-		element.finish_seeking_element()
+		element.queue_a_media_element_task(fn [element_pointer] () {
+			mut media := unsafe { &HTMLMediaElement(element_pointer) }
+			media.finish_seeking_element()
+		})
 	}
 }
 
 pub fn (mut element HTMLMediaElement) finish_seeking_element() {
 	element.set_seeking(false)
 	element.update_video_frame_and_timeline()
+	element.upon_current_playback_position_possibly_changed()
 	element.time_marches_on(.other)
-	element.dispatch_time_update_event()
-	element.fire_event('seeked')
+	element_pointer := voidptr(&element)
+	element.queue_a_media_element_task(fn [element_pointer] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
+		media.dispatch_time_update_event()
+	})
+	element.queue_a_media_element_task(fn [element_pointer] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
+		media.fire_event('seeked')
+	})
 }
 
 pub fn (mut element HTMLMediaElement) set_current_playback_position(value f64) {
@@ -1289,6 +1346,34 @@ pub fn (mut element HTMLMediaElement) set_current_playback_position(value f64) {
 	if mut video := element.video_element_model_ {
 		video.update_natural_dimensions()
 	}
+	element.upon_current_playback_position_possibly_changed()
+}
+
+// HTMLMediaElement.cpp's playback-position observation algorithm keeps buffer
+// monitoring on its own media task rather than tying it to timeupdate throttling.
+pub fn (mut element HTMLMediaElement) upon_current_playback_position_possibly_changed() {
+	if !element.playback_manager_ready_ || element.seeking_ {
+		return
+	}
+	if last := element.last_known_current_playback_position_ {
+		if last == element.current_playback_position_ {
+			return
+		}
+	} else {
+		element.last_known_current_playback_position_ = element.current_playback_position_
+		return
+	}
+	element.last_known_current_playback_position_ = element.current_playback_position_
+	element.time_marches_on(.normal_playback)
+	element.upon_has_ended_playback_possibly_changed()
+	if mut video := element.video_element_model_ {
+		video.update_natural_dimensions()
+	}
+	element_pointer := voidptr(&element)
+	element.queue_a_media_element_task(fn [element_pointer] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
+		media.update_ready_state()
+	})
 }
 
 pub fn (element &HTMLMediaElement) ended() bool {
@@ -1493,7 +1578,7 @@ pub fn (mut element HTMLMediaElement) advance_playback(elapsed_seconds f64) {
 	}
 	element.current_playback_position_ = if new_position < 0 { 0 } else { new_position }
 	element.official_playback_position_ = element.current_playback_position_
-	element.time_marches_on(.normal_playback)
+	element.upon_current_playback_position_possibly_changed()
 }
 
 pub fn (element &HTMLMediaElement) is_eligible_for_autoplay() bool {
@@ -1545,26 +1630,32 @@ pub fn (mut element HTMLMediaElement) reached_end_of_media_playback() {
 
 pub fn (mut element HTMLMediaElement) dispatch_time_update_event() {
 	element.running_time_update_event_ = true
-	element.last_time_update_position_ = element.current_playback_position_
+	element.last_time_update_event_time_ = time.sys_mono_now()
 	element.fire_event('timeupdate')
 	element.running_time_update_event_ = false
 }
 
 pub fn (mut element HTMLMediaElement) time_marches_on(reason TimeMarchesOnReason) {
+	element.time_marches_on_at(reason, time.sys_mono_now())
+}
+
+fn (mut element HTMLMediaElement) time_marches_on_at(reason TimeMarchesOnReason, now i64) {
 	if reason != .normal_playback || element.running_time_update_event_ {
 		return
 	}
-	last_position := element.last_time_update_position_ or {
-		element.dispatch_time_update_event()
-		element.update_ready_state()
-		return
+	// Upstream chooses the 250ms end of the permitted interval and compares
+	// monotonic elapsed wall time, independently of the media playback clock.
+	if last := element.last_time_update_event_time_ {
+		if now - last <= 250_000_000 {
+			return
+		}
 	}
-	// The host tick does not expose wall-clock time. Advancing by at least one
-	// frame is the equivalent opportunity to satisfy upstream's 15-250ms rule.
-	if math.abs(element.current_playback_position_ - last_position) >= 0.015 {
-		element.dispatch_time_update_event()
-		element.update_ready_state()
-	}
+	element.last_time_update_event_time_ = now
+	element_pointer := voidptr(&element)
+	element.queue_a_media_element_task(fn [element_pointer] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
+		media.dispatch_time_update_event()
+	})
 }
 
 pub fn (mut element HTMLMediaElement) set_audio_track_enabled(track &AudioTrack, enabled bool) {
@@ -1770,6 +1861,7 @@ pub fn (mut element HTMLMediaElement) forget_media_resource_specific_tracks() {
 		video.set_intrinsic_video_dimensions(none)
 	}
 	element.playback_manager_ready_ = false
+	element.last_known_current_playback_position_ = none
 	element.playback_has_future_data_ = false
 }
 

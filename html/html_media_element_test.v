@@ -316,7 +316,7 @@ fn test_media_element_ready_state_follows_buffered_data() {
 	assert media.ready_state() == .have_metadata
 }
 
-fn test_media_element_throttles_ready_state_monitoring_with_time_updates() {
+fn test_media_element_ready_state_monitoring_is_independent_of_time_updates() {
 	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
 	media.set_up_playback_manager()
 	media.set_duration(20)
@@ -324,6 +324,14 @@ fn test_media_element_throttles_ready_state_monitoring_with_time_updates() {
 	media.buffered_.add_range(0, 1)
 	media.playback_has_future_data_ = true
 	media.time_marches_on(.normal_playback)
+	assert media.ready_state() == .have_metadata
+	assert media.event_count('timeupdate') == 0
+	mut queue := main_thread_event_loop().task_queue()
+	task := queue.take_first_runnable_matching(fn [media] (task &Task) bool {
+		return task.id() in media.queued_media_task_ids_
+	}) or { panic('missing timeupdate task') }
+	task.execute()
+	media.update_ready_state()
 	assert media.ready_state() == .have_future_data
 	assert media.event_count('timeupdate') == 1
 
@@ -335,8 +343,9 @@ fn test_media_element_throttles_ready_state_monitoring_with_time_updates() {
 
 	media.set_current_playback_position(0.02)
 	media.time_marches_on(.normal_playback)
+	assert media.event_count('timeupdate') == 1
+	media.update_ready_state()
 	assert media.ready_state() == .have_metadata
-	assert media.event_count('timeupdate') == 2
 }
 
 fn test_media_element_updates_ready_state_after_enabling_tracks() {

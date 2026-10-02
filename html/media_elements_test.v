@@ -9,6 +9,16 @@ fn media_controls_scrub_seek(time f64, _ MediaPlaybackSeekMode) {
 	media_controls_scrub_seek_times << time
 }
 
+fn run_media_elements_test_tasks(media &HTMLMediaElement) {
+	mut queue := main_thread_event_loop().task_queue()
+	for media.queued_media_task_ids_.len > 0 {
+		task := queue.take_first_runnable_matching(fn [media] (task &Task) bool {
+			return task.id() in media.queued_media_task_ids_
+		}) or { panic('missing queued media task') }
+		task.execute()
+	}
+}
+
 fn media_elements_fetch(url dom.URL, _ u64) !MediaResourceResponse {
 	_ = url
 	return MediaResourceResponse{
@@ -61,7 +71,10 @@ fn test_video_representation_dimensions_poster_and_controls() {
 	media.set_show_poster(false)
 	assert video.current_representation() == .video_frame
 	assert video.natural_element_size()? == VideoDimensions{1920, 1080}
-	assert media.event_count('resize') == 2
+	assert media.event_count('resize') == 0
+	run_media_elements_test_tasks(media)
+	// load() cancels the resize task from before resource selection.
+	assert media.event_count('resize') == 1
 	mut controls := MediaControls.create(media)
 	controls.toggle_playback()
 	assert controls.play_icon_is_pause
@@ -94,6 +107,7 @@ fn test_media_controls_coalesce_scrub_seeks_and_preempt_a_stalled_seek() {
 	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
 	media.set_duration(100)
 	media.set_ready_state(.have_enough_data)
+	media.seekable_.add_range(0, 100)
 	media.playback_hooks_ = MediaPlaybackManagerHooks{
 		seek: media_controls_scrub_seek
 	}
@@ -106,6 +120,8 @@ fn test_media_controls_coalesce_scrub_seeks_and_preempt_a_stalled_seek() {
 	assert media_controls_scrub_seek_times == [10.0]
 
 	media.finish_seeking_element()
+	assert media_controls_scrub_seek_times == [10.0]
+	run_media_elements_test_tasks(media)
 	assert media_controls_scrub_seek_times == [10.0, 30.0]
 	controls.seek_while_scrubbing(40)
 	assert media_controls_scrub_seek_times == [10.0, 30.0]
