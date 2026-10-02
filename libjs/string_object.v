@@ -2,7 +2,7 @@ module libjs
 
 // Runtime/StringObject.{h,cpp}, including StringCreate and the three exotic
 // internal methods (dispatched by Object). The explicit prototype matches the
-// upstream factory; String's constructor and prototype are separate work.
+// upstream factory; complete StringPrototype initialization remains pending.
 @[heap]
 pub struct StringObject {
 pub:

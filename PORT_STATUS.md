@@ -928,8 +928,15 @@ explicit; production Reflect installation and Proxy internal methods remain pend
 The browser tests exercise the translated record through compiled scripts without
 creating a JavaScriptCore context.
 Host-created String exotic objects preserve fixed UTF-16 character descriptors,
-definition compatibility, and virtual-index key order; String's constructor and
-prototype remain pending.
+definition compatibility, and virtual-index key order. String's complete constructor
+record retains call/construct, raw templates, character creation, source metadata
+and explicit prototype/boxing dependencies. Eighteen prototype native bodies
+translate branding, UTF-16 access/slicing/search, concatenation, exact whitespace
+trimming, well-formed repair and iterator creation. Validation and repair match
+2,388 pinned simdutf cases. fromCodePoint retains the pinned source's integral
+ToInt32 wraparound before its range check. The remaining 31 prototype native
+bodies, initialization/aliases, bytecode builtin shortcuts, production String
+installation and primitive Reference integration remain pending.
 Array exotic records retain sparse, nonconfigurable length descriptors, grow
 only after successful indexed definitions, and restore failed truncations at
 the highest fixed index. Property definitions propagate VM exceptions through
@@ -940,7 +947,7 @@ Synchronous iterator records implement stepping, deferred value-getter errors,
 completion-preserving close/close-all, and list/callback collection. Host-created
 String and ordinary-Array iterators expose branded next methods, Unicode code
 points, live lengths, and entry-pair arrays through explicit intrinsic dependencies.
-Iterator intrinsic installation, ordinary Array/String iterator-producing methods,
+Iterator intrinsic installation, ordinary Array iterator-producing methods,
 helpers and async iteration remain pending. Array iterator stepping also uses
 translated TypedArray witnesses, including live lengths and recoverable bounds errors.
 ArrayBuffer records and owned/host-backed DataBlocks preserve zeroed allocation,
@@ -982,9 +989,9 @@ SharedArrayBuffer allocation reserves the maximum capacity while exposing the
 initial length. Its constructor, three accessors, growth hook and species-aware
 slicing are installed and tested with live DataView witnesses. Cross-agent
 shared-memory ordering remains pending, as in the pinned upstream active bodies.
-The LibJS package's 163 test files pass in both GC and no-GC mode, and all 100
+The LibJS package's 173 test files pass in both GC and no-GC mode, and all 100
 upstream AST fixtures match exactly with no case overrides. The complete repository suite passes all
-834 test files, including the native bridge and seventeen browser integration files.
+845 test files, including the native bridge and eighteen browser integration files.
 The native browser and inline-document layout bridge now prepare page scripts
 through LibJS and associate classic execution with translated Script, Realm,
 and VM embedding contexts. Sources retain their URLs and parse goals; syntax
@@ -996,7 +1003,7 @@ bytecode slice without initializing or falling back to JavaScriptCore. Remaining
 bytecode generation, ECMAScript functions, intrinsic/builtin objects, regex
 compilation, module linking, and LibWeb host bindings remain untranslated.
 
-The integration passes the browser package's seventeen test files in both GC modes,
+The integration passes the browser package's eighteen test files in both GC modes,
 the native bridge tests, the production bundle build and both engine headless
 smoke checks. The function/array refresh also passes all 11 default screenshot cases
 and the pixel-exact same-size SVG source switch. The earlier 25-comparison run

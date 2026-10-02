@@ -1,7 +1,7 @@
 module libjs
 
-// Number, BigInt and String prototypes are still untranslated. These getters
-// replace their Intrinsics members without creating substitute builtin objects.
+// Number, BigInt and String production intrinsic graphs remain pending. These
+// getters retain explicit Intrinsics dependencies without substitute objects.
 // Boolean and Symbol use the existing current-realm intrinsic records.
 pub struct PrimitiveObjectPrototypes {
 pub:

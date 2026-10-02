@@ -31,11 +31,16 @@ and locale-call plumbing. Object/parse-function intrinsics, AK's Dragonbox decim
 backend, and Intl formatting remain explicit dependencies; global installation
 and Number primitive Reference integration are pending.
 Host-created Array records implement sparse length/property behavior, and the
-runtime provides the upstream sorting helpers. Host-created String objects
-expose fixed UTF-16 character descriptors. Synchronous iterator operations and
-String/ordinary-Array iterator records support stepping, collection, and closing.
-Their intrinsic prototypes are supplied explicitly; Array literals, Array/String
-prototype methods and the Iterator intrinsic graph remain pending.
+runtime provides the upstream sorting helpers. String's complete constructor
+record and eighteen prototype native bodies now cover character creation,
+raw templates, branding, UTF-16 access/slicing/search, concatenation, trimming,
+well-formed repair and iterator creation. Its remaining prototype methods,
+initialization and production installation remain pending; dependencies stay
+explicit. String exotic objects expose fixed UTF-16 character descriptors.
+Synchronous iterator operations and String/ordinary-Array iterator records
+support stepping, collection, and closing.
+Their intrinsic prototypes are supplied explicitly; Array literals and methods,
+remaining String prototype methods and the Iterator intrinsic graph remain pending.
 ArrayBuffer construction, branded accessors, resize, slice, and both transfer
 methods execute in the translated VM. Owned and host-backed byte storage,
 detach ownership, species selection, and DataView bounds witnesses follow the
