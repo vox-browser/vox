@@ -2,9 +2,8 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of XHR/XMLHttpRequest.{h,cpp}. Fetch is an explicit typed
-// boundary: send records the request and complete_response/error/timeout feed
-// the same observable XHR state machine used by the native callback.
+// Translation of XHR/XMLHttpRequest.{h,cpp}. Real settings objects bind send
+// to Fetch; manual response entry points remain available for focused fixtures.
 module xhr
 
 import fileapi
@@ -14,6 +13,8 @@ import mimesniff
 import url as liburl
 import x.json2
 import time
+import fetch
+import platform
 
 fn xhr_monotonic_now() i64 {
 	return time.sys_mono_now()
@@ -49,6 +50,8 @@ pub:
 	origin ?dom.Origin
 	associated_document ?&dom.Document
 	monotonic_now fn () i64 = xhr_monotonic_now
+	fetch_client ?fetch.RequestClient
+	fetch_host ?&fetch.FetchHost
 pub mut:
 	document_destroyed bool
 }
@@ -125,6 +128,10 @@ pub mut:
 	response_object_failed_   bool
 	last_upload_progress_timestamp_ ?i64
 	last_download_progress_timestamp_ ?i64
+	fetch_controller_ &fetch.FetchController = fetch.FetchController.create()
+	fetch_request_ ?&fetch.Request
+	fetch_response_ ?&fetch.Response
+	timeout_timer_ ?&platform.Timer
 }
 
 pub fn XMLHttpRequest.construct(global_kind GlobalKind, base_url string) &XMLHttpRequest {
@@ -192,6 +199,8 @@ pub fn (request &XMLHttpRequest) create_associated_event(event_name string) Prog
 }
 
 pub fn (mut request XMLHttpRequest) stop_timeout_timer() {
+	if mut timer := request.timeout_timer_ { timer.stop() }
+	request.timeout_timer_ = none
 	request.timeout_timer_active = false
 }
 
@@ -220,7 +229,10 @@ pub fn (mut request XMLHttpRequest) dispatch_state_change() {
 }
 
 pub fn (mut request XMLHttpRequest) open(method string, input_url string, async bool, username ?string, password ?string) ! {
-	if request.global_kind == .window && !request.window_fully_active {
+	fully_active := if document := request.global_object_.associated_document {
+		document.is_fully_active()
+	} else { request.window_fully_active }
+	if request.global_kind == .window && !fully_active {
 		return error("InvalidStateError: Window's associated document is not fully active")
 	}
 	if !is_http_method(method) {
@@ -229,7 +241,10 @@ pub fn (mut request XMLHttpRequest) open(method string, input_url string, async 
 	if method.to_upper() in ['CONNECT', 'TRACE', 'TRACK'] {
 		return error("SecurityError: Forbidden method, must not be 'CONNECT', 'TRACE', or 'TRACK'")
 	}
-	mut parsed := resolve_url_record(input_url, request.base_url)!
+	base_url := if client := request.global_object_.fetch_client {
+		client.fetch_request_client_api_base_url().serialize()
+	} else { request.base_url }
+	mut parsed := resolve_url_record(input_url, base_url)!
 	if parsed.host != none {
 		if username_value := username {
 			parsed = parsed.with_username(username_value)
@@ -242,6 +257,9 @@ pub fn (mut request XMLHttpRequest) open(method string, input_url string, async 
 		&& (request.timeout_ms != 0 || request.response_type_ != .empty) {
 		return error('InvalidAccessError: Synchronous XMLHttpRequests in a Window context do not support timeout or a non-empty responseType')
 	}
+	request.fetch_controller_.terminate()
+	request.fetch_request_ = none
+	request.fetch_response_ = none
 	request.send_flag = false
 	request.stop_timeout_timer()
 	request.update_activity_root()
@@ -393,6 +411,8 @@ fn (mut request XMLHttpRequest) send_bytes(body []u8, content_type ?string, body
 		if !request.upload_complete && request.upload_listener {
 			request.upload_object.dispatch('loadstart', 0, u64(request.request_body.len))
 		}
+		if request.state != .opened || !request.send_flag { return }
+		request.start_async_fetch_if_bound()!
 	}
 }
 
@@ -524,7 +544,6 @@ pub fn (mut request XMLHttpRequest) handle_response_end_of_body() ! {
 	if request.response_.network_error != none || request.response_.aborted || request.timed_out {
 		return
 	}
-	request.complete_upload()
 	transmitted := u64(request.received_bytes.len)
 	length := request.content_length()
 	if !request.synchronous {
@@ -564,6 +583,7 @@ fn (request &XMLHttpRequest) content_length() u64 {
 pub fn (mut request XMLHttpRequest) timeout_request() ! {
 	if request.send_flag {
 		request.timed_out = true
+		request.fetch_controller_.terminate()
 		request.request_error_steps('timeout', 'TimeoutError: Timed out')!
 	}
 }
@@ -595,13 +615,14 @@ fn (mut request XMLHttpRequest) request_error_steps(event string, exception_mess
 
 pub fn (mut request XMLHttpRequest) abort() {
 	request.stop_timeout_timer()
+	request.fetch_controller_.abort(none)
 	if (request.state == .opened && request.send_flag)
 		|| request.state in [.headers_received, .loading] {
 		request.request_error_steps('abort', '') or {}
 	}
 	if request.state == .done {
 		request.state = .unsent
-		request.response_ = MockResponse{ body_is_null: true }
+		request.response_ = MockResponse{ network_error: 'Not yet sent', body_is_null: true }
 		request.update_activity_root()
 	}
 }

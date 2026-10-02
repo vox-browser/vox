@@ -1,0 +1,125 @@
+// Copyright (c) 2026, Ladybird contributors
+// SPDX-License-Identifier: BSD-2-Clause
+// XMLHttpRequest.cpp: send's Fetch request, async response and timeout algorithms.
+module xhr
+
+import dom
+import fetch
+import html
+import http
+import platform
+import url as liburl
+
+pub fn XMLHttpRequest.construct_in_settings(settings &html.EnvironmentSettingsObject, host &fetch.FetchHost) &XMLHttpRequest {
+	global := &XMLHttpRequestGlobal{
+		kind: if settings.fetch_request_client_is_window() { GlobalKind.window } else { GlobalKind.worker }
+		base_url: settings.api_base_url().serialize()
+		origin: settings.origin()
+		associated_document: settings.responsible_document()
+		fetch_client: fetch.RequestClient(settings)
+		fetch_host: host
+	}
+	return XMLHttpRequest.create(global)
+}
+
+fn (request &XMLHttpRequest) create_fetch_request() &fetch.Request {
+	mut result := fetch.Request.create()
+	result.method = request.request_method
+	result.url_list = [dom.URL{request.request_url}]
+	for header in request.author_request_headers {
+		result.header_list.append(http.Header{ name: header.name, value: header.value })
+	}
+	result.unsafe_request = true
+	if request.request_body_present {
+		result.body = fetch.RequestBody{
+			kind: .body_object
+			body_object: fetch.Body.from_bytes(request.request_body, .bytes)
+		}
+	}
+	result.client = request.global_object_.fetch_client
+	result.mode = .cors
+	result.use_cors_preflight = request.upload_listener
+	result.credentials_mode = if request.with_credentials_ { .include } else { .same_origin }
+	parsed := liburl.parse(request.request_url) or { panic('XHR request URL was not parsed by open()') }
+	result.use_url_credentials = parsed.includes_credentials()
+	result.initiator_type = .xml_http_request
+	return result
+}
+
+fn (mut request XMLHttpRequest) start_async_fetch_if_bound() ! {
+	host := request.global_object_.fetch_host or { return }
+	_ := request.global_object_.fetch_client or { return error('XMLHttpRequest Fetch binding requires its relevant settings object') }
+	fetch_request := request.create_fetch_request()
+	request.fetch_request_ = fetch_request
+	algorithms := fetch.FetchAlgorithms.create(fetch.FetchAlgorithmsInput{
+		process_request_body_chunk_length: fn [mut request] (length u64) {
+			request.receive_upload_chunk_length(length)
+		}
+		process_request_end_of_body: fn [mut request] () {
+			request.complete_upload()
+		}
+		process_response: fn [mut request] (response &fetch.Response) {
+			request.receive_fetch_response(response)
+		}
+	})
+	request.fetch_controller_ = fetch.fetch(fetch_request, algorithms, host, .no)
+	if request.timeout_ms != 0 {
+		request.stop_timeout_timer()
+		mut timer := platform.Timer.create_single_shot(int(request.timeout_ms), fn [mut request, fetch_request] () {
+			if !fetch_request.done {
+				request.timed_out = true
+				request.fetch_controller_.terminate()
+				request.handle_errors() or { panic(err) }
+			}
+			request.stop_timeout_timer()
+		})
+		request.timeout_timer_ = timer
+		request.timeout_timer_active = true
+		timer.start()
+	}
+}
+
+fn project_fetch_response(response &fetch.Response) MockResponse {
+	return MockResponse{
+		url: if final_url := response.url() { final_url.serialize() } else { '' }
+		status: response.status
+		status_text: response.status_message
+		headers: response.header_list.headers().map(ResponseHeader{ name: it.name, value: it.value })
+		network_error: response.network_error_message
+		aborted: response.aborted
+		body_is_null: response.fetch_response_body() == none
+	}
+}
+
+fn (request &XMLHttpRequest) queue_body_read_task(algorithm fn ()) {
+	client := request.global_object_.fetch_client or { panic('XHR body reading requires its relevant settings object') }
+	if client is fetch.FetchTaskDestinationProvider {
+		client.fetch_request_client_queue_fetch_task(algorithm)
+		return
+	}
+	panic('XHR relevant global object does not provide its networking task destination')
+}
+
+fn (mut request XMLHttpRequest) receive_fetch_response(response &fetch.Response) {
+	request.fetch_response_ = response
+	request.receive_headers(project_fetch_response(response)) or { return }
+	if request.response_.network_error != none || request.state != .headers_received { return }
+	if mut body := response.fetch_response_body() {
+		body.incrementally_read(fn [mut request] (bytes []u8) {
+			request.queue_body_read_task(fn [mut request, bytes] () { request.receive_chunk(bytes) })
+		}, fn [mut request] () {
+			request.queue_body_read_task(fn [mut request] () {
+				request.handle_response_end_of_body() or { panic(err) }
+			})
+		}, fn [mut request] (_ string) {
+			request.queue_body_read_task(fn [mut request] () {
+				error_response := fetch.Response.network_error('A network error occurred processing body.')
+				request.fetch_response_ = error_response
+				request.response_ = project_fetch_response(error_response)
+				request.handle_errors() or { panic(err) }
+			})
+		})
+	} else {
+		request.handle_response_end_of_body() or { panic(err) }
+	}
+}
