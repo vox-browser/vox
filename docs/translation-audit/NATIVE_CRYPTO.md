@@ -27,5 +27,30 @@ Focused host tests cover every integer typed-array kind, offset writes, shadowed
 properties, native record identity, UUID format, unsupported brands/kinds,
 detached/resized views, actual quota subclass fields, secure-context exposure,
 and independent global records. The existing typed Crypto core tests also pass.
-SubtleCrypto operation exposure is the next independent binding slice; the host
-currently exposes its owning same-object record without claiming its methods.
+
+SubtleCrypto.digest now uses the actual owning native service, its source
+normalization and cryptographic backend, and a real engine Promise. Generated
+binding receiver/argument errors become Promise rejections; actual engine
+getter and conversion failures retain their original thrown value. Primitive
+AlgorithmIdentifier string conversion and top-level BufferSource conversion
+precede normalization. Algorithm name/cSHAKE getters execute before the source
+data copy. Copies consult captured engine internal-slot operations and preserve
+offset views, detached/out-of-bounds empty input, and the source difference
+between restricted IDL arguments and unrestricted algorithm buffer fields.
+
+Successful digest results are actual ArrayBuffer objects. Deferred operation
+work and the crypto settlement task remain separate on the owning HTML loop.
+The existing native Promise capability bridge relays settlement through an
+owning HTML microtask before JavaScriptCore's own Promise reactions; this is an
+explicit native host adaptation, as is the owning unspecified task replacing
+EventLoopPlugin deferred invocation. Neither changes the native digest backend
+or runs a JavaScript replacement hash algorithm.
+
+All six focused native digest cases pass with `-gc none`. They cover known
+SHA-256/cSHAKE vectors, copied DataView offsets, getter mutation/detachment,
+buffer/view detachment, original thrown objects, missing arguments/receiver
+brands, Symbol/BigInt conversion, source normalization/parameter order, deferred
+operation errors, poisoned engine builtins, independent worker ownership, and
+pending settlement after Runtime close. Shared-buffer cases execute when the
+engine exposes SharedArrayBuffer. Other SubtleCrypto method bindings and native
+CryptoKey wrappers remain pending; no complete WebCrypto/LibJS parity is claimed.

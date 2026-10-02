@@ -277,8 +277,13 @@ public generation rejects successful empty secret/private results. Focused
 tests verify HMAC length/hash, EC curve, and native RSA generation errors win
 before the common check, while successful empty generation remains rejected.
 
-The compact native bridge now exposes Crypto random operations and the owning
-SubtleCrypto record; SubtleCrypto script method bindings remain unfinished.
+The compact native bridge now exposes Crypto random operations, the owning
+SubtleCrypto record, and actual asynchronous digest with ArrayBuffer results.
+Six focused native digest cases pass with `-gc none`, including original engine
+exceptions, getter-before-copy ordering, parameter normalization, native
+Promise/task settlement, and independent Window/Worker ownership. The native
+Promise bridge adds its owning HTML microtask relay before engine reactions;
+other SubtleCrypto script method bindings and CryptoKey wrappers remain unfinished.
 Native backend availability does not establish complete WebCrypto/VM parity.
 
 `SubtleCryptoBinding` implements the asynchronous WebIDL operation boundary.
