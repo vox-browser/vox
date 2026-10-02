@@ -51,7 +51,8 @@ pub:
 pub struct NavigableNavigateParams {
 pub:
 	url                  dom.URL
-	source_document      &dom.Document
+	source_document      &dom.Document = unsafe { nil }
+	navigation_id        ?string
 	document_resource    DocumentResource = EmptyDocumentResource{}
 	history_handling     NavigationHistoryBehavior = .auto
 	navigation_api_state ?SerializationRecord
@@ -280,6 +281,8 @@ fn connect_navigable_model_to_host(model &NavigableModel) {
 	host.force_dark_enabled_callback_ = navigable_model_force_dark_enabled
 	host.choose_a_navigable_callback_ = navigable_model_choose_a_navigable
 	host.navigate_callback_ = navigable_model_navigate
+	host.page_navigate_callback_ = navigable_model_navigate_from_page
+	host.reload_callback_ = navigable_model_reload
 	host.download_hyperlink_callback_ = navigable_model_download_hyperlink
 }
 
@@ -298,6 +301,23 @@ fn navigable_model_navigate(target voidptr, url dom.URL, source_document &dom.Do
 		referrer_policy: referrer_policy_from_string(referrer_policy) or { ReferrerPolicy.empty_string }
 		user_involvement: user_involvement
 	})!
+}
+
+fn navigable_model_navigate_from_page(target voidptr, params dom.PageNavigationParams) ! {
+	mut model := unsafe { &NavigableModel(target) }
+	resource := if value := params.document_resource { DocumentResource(value) } else { DocumentResource(EmptyDocumentResource{}) }
+	model.navigate(NavigableNavigateParams{
+		url: params.url
+		history_handling: match params.history_handling { .auto { NavigationHistoryBehavior.auto } .push { NavigationHistoryBehavior.push } .replace { NavigationHistoryBehavior.replace } }
+		document_resource: resource
+		navigation_id: params.navigation_id
+		user_involvement: .browser_ui
+	})!
+}
+
+fn navigable_model_reload(target voidptr) {
+	mut model := unsafe { &NavigableModel(target) }
+	model.reload(none, .none)
 }
 
 fn navigable_model_download_hyperlink(target voidptr, url dom.URL,
@@ -1319,12 +1339,17 @@ pub fn (mut model NavigableModel) navigate(params NavigableNavigateParams) ! {
 		return error('InvalidStateError: navigable has no active document')
 	}
 	source_snapshot_params := snapshot_source_snapshot_params(params.source_document)
-	if !model.allowed_by_sandboxing_to_navigate(&model, source_snapshot_params) {
-		return error('SecurityError: source is not allowed to navigate target')
+	if params.source_document == unsafe { nil } {
+		assert params.user_involvement == .browser_ui
+	} else {
+		assert params.user_involvement != .browser_ui
+		if !model.allowed_by_sandboxing_to_navigate(&model, source_snapshot_params) {
+			return error('SecurityError: source is not allowed to navigate target')
+		}
 	}
 	history_handling := resolved_history_handling(params.history_handling, active_document)
 	if urls_differ_only_by_fragment(active_document.url, params.url) {
-		model.navigate_to_a_fragment(params.url, history_handling, params.user_involvement, params.source_element, params.navigation_api_state, rand.uuid_v4())
+		model.navigate_to_a_fragment(params.url, history_handling, params.user_involvement, params.source_element, params.navigation_api_state, params.navigation_id or { rand.uuid_v4() })
 		return
 	}
 	model.begin_navigation(params)
@@ -1335,7 +1360,7 @@ fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
 	if model.has_been_destroyed_ {
 		return
 	}
-	navigation_id := rand.uuid_v4()
+	navigation_id := params.navigation_id or { rand.uuid_v4() }
 	model.set_ongoing_navigation(NavigableOngoingNavigation{
 		kind: .navigation
 		id: navigation_id
@@ -1345,14 +1370,17 @@ fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
 		return
 	}
 	source_snapshot_params := snapshot_source_snapshot_params(params.source_document)
+	initiator_origin := if params.source_document != unsafe { nil } { params.source_document.origin() }
+		else if params.url.scheme() == 'javascript' { active_document.origin() }
+		else { dom.origin_create_opaque() }
 	history_handling := resolved_history_handling(params.history_handling, active_document)
 	if params.url.scheme() == 'javascript' {
-		model.navigate_to_a_javascript_url(params.url, history_handling, source_snapshot_params, params.source_document.origin(), params.user_involvement, params.initial_insertion, navigation_id)
+		model.navigate_to_a_javascript_url(params.url, history_handling, source_snapshot_params, initiator_origin, params.user_involvement, params.initial_insertion, navigation_id)
 		return
 	}
 	mut state := &DocumentState{
 		origin: params.url.origin()
-		initiator_origin: params.source_document.origin()
+		initiator_origin: initiator_origin
 		request_referrer_policy: params.referrer_policy
 		resource: params.document_resource
 		ever_populated: false
@@ -1403,7 +1431,7 @@ fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
 		response := navigation_params.response.unsafe_response()
 		if parse_content_disposition(response.header_list).is_attachment {
 			model.handle_navigation_response_as_download(navigation_params,
-				source_snapshot_params.allows_downloading, params.source_document.origin(), []u8{})
+				source_snapshot_params.allows_downloading, initiator_origin, []u8{})
 			model.set_ongoing_navigation(NavigableOngoingNavigation{})
 			model.set_delaying_load_events(false)
 			return

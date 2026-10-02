@@ -29,6 +29,13 @@ pub:
 // method returns an HTML type directly. V's acyclic module graph places the
 // implementation on the HTML side of the DOM/HTML bridge instead.
 pub fn snapshot_source_snapshot_params(source_document &dom.Document) SourceSnapshotParams {
+	if source_document == unsafe { nil } {
+		return SourceSnapshotParams{
+			has_transient_activation: true
+			allows_downloading: true
+			source_policy_container: PolicyContainer{}
+		}
+	}
 	flags := SandboxingFlagSet{
 		bits: source_document.active_sandboxing_flag_bits()
 	}

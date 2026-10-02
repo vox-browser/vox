@@ -2257,6 +2257,26 @@ pub type NavigableChooseANavigableCallback = fn (voidptr, string, TokenizedFeatu
 
 pub type NavigableNavigateCallback = fn (voidptr, URL, &Document, string, UserNavigationInvolvement) !
 
+// Page.cpp enters navigation without a source Document. Keep the complete
+// UI-owned request across the acyclic DOM -> HTML navigable boundary.
+pub enum NavigationHistoryBehavior {
+	auto
+	push
+	replace
+}
+
+pub struct PageNavigationParams {
+pub:
+	url URL
+	history_handling NavigationHistoryBehavior = .auto
+	document_resource ?string
+	navigation_id ?string
+}
+
+pub type NavigablePageNavigateCallback = fn (voidptr, PageNavigationParams) !
+
+pub type NavigableReloadCallback = fn (voidptr)
+
 pub type NavigableDownloadHyperlinkCallback = fn (voidptr, URL, UserNavigationInvolvement, &Element, ?string, Origin)
 
 @[heap]
@@ -2282,6 +2302,8 @@ pub mut:
 	force_dark_enabled_callback_                  NavigableBooleanStateCallback = unsafe { nil }
 	choose_a_navigable_callback_                  NavigableChooseANavigableCallback = unsafe { nil }
 	navigate_callback_                            NavigableNavigateCallback = unsafe { nil }
+	page_navigate_callback_                       NavigablePageNavigateCallback = unsafe { nil }
+	reload_callback_                              NavigableReloadCallback = unsafe { nil }
 	download_hyperlink_callback_                  NavigableDownloadHyperlinkCallback = unsafe { nil }
 	input_method_composition_node_                 ?&Node
 	input_method_composition_offset_               int
@@ -3539,6 +3561,20 @@ pub fn (n &Navigable) navigate(url URL, source_document &Document, referrer_poli
 		return error('InvalidStateError: navigable has no navigation model')
 	}
 	n.navigate_callback_(n.html_model_handle_, url, source_document, referrer_policy, user_involvement)!
+}
+
+pub fn (n &Navigable) navigate_from_page(params PageNavigationParams) ! {
+	if n.html_model_handle_ == unsafe { nil } || n.page_navigate_callback_ == unsafe { nil } {
+		return error('InvalidStateError: navigable has no navigation model')
+	}
+	n.page_navigate_callback_(n.html_model_handle_, params)!
+}
+
+pub fn (n &Navigable) reload() {
+	if n.html_model_handle_ == unsafe { nil } || n.reload_callback_ == unsafe { nil } {
+		panic('Navigable has no reload model')
+	}
+	n.reload_callback_(n.html_model_handle_)
 }
 
 pub fn (n &Navigable) download_hyperlink(url URL, user_involvement UserNavigationInvolvement,

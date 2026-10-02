@@ -183,7 +183,6 @@ mut:
 	device_scale                                 f64 = 1
 	top_level_traversable_                       string
 	focused_navigable_                           string
-	current_url_                                 string
 	history_delta_                               int
 	is_scripting_enabled_                        bool = true
 	should_block_pop_ups_                        bool = true
@@ -769,26 +768,38 @@ pub fn (mut p Page) navigable_document_destroyed(id string) {
 }
 
 pub fn (mut p Page) load(url string) {
-	p.current_url_ = url
-	p.client_events << ClientEvent{
-		name: 'navigate'
-		text: url
-	}
+	parsed := dom.dom_url_parse(url, dom.url_about_blank(), 'UTF-8') or { return }
+	p.load_with_history_and_navigation_id(parsed, .auto, none)
+}
+
+// Page::load() intentionally ignores the navigation exception result.
+pub fn (mut p Page) load_with_history_and_navigation_id(url dom.URL, history_handling dom.NavigationHistoryBehavior, navigation_id ?string) {
+	p.local_root_navigable().navigate_from_page(dom.PageNavigationParams{
+		url: url
+		history_handling: history_handling
+		navigation_id: navigation_id
+	}) or {}
 }
 
 pub fn (mut p Page) load_html(html string) {
-	p.current_url_ = 'about:srcdoc'
-	p.client_events << ClientEvent{
-		name: 'navigate-html'
-		text: html
-	}
+	p.load_html_with_navigation_id(html, none)
+}
+
+pub fn (mut p Page) load_html_with_navigation_id(html string, navigation_id ?string) {
+	p.local_root_navigable().navigate_from_page(dom.PageNavigationParams{
+		url: dom.URL{'about:srcdoc'}
+		document_resource: html
+		navigation_id: navigation_id
+	}) or {}
 }
 
 pub fn (mut p Page) reload() {
-	p.client_events << ClientEvent{
-		name: 'reload'
-		text: p.current_url_
-	}
+	p.local_root_navigable().reload()
+}
+
+fn (p &Page) active_document_url() string {
+	root := p.local_root_navigable_ or { return '' }
+	return (root.active_document_url() or { return '' }).serialize()
 }
 
 pub fn (mut p Page) traverse_the_history_by_delta(delta int) {
@@ -1148,9 +1159,9 @@ fn (mut p Page) perform_find(query FindInPageQuery, delta int) FindInPageResult 
 	// comparing URLs without their fragments. The first next/previous request
 	// in the new document therefore selects its first match.
 	if p.last_find_url_ != ''
-		&& url_without_fragment(p.last_find_url_) != url_without_fragment(p.current_url_) {
+		&& url_without_fragment(p.last_find_url_) != url_without_fragment(p.active_document_url()) {
 		p.find_match_index_ = 0
-		p.last_find_url_ = p.current_url_
+		p.last_find_url_ = p.active_document_url()
 		direction = 0
 	}
 	if direction > 0 {
@@ -1187,7 +1198,7 @@ pub fn (mut p Page) find_in_page(query FindInPageQuery) FindInPageResult {
 	p.find_match_index_ = 0
 	result := p.perform_find(query, 0)
 	p.last_find_query_ = query
-	p.last_find_url_ = p.current_url_
+	p.last_find_url_ = p.active_document_url()
 	return result
 }
 

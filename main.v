@@ -2571,7 +2571,6 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		hide_cookie_banners(app.document)
 	}
 	checkpoint = debug_timing_checkpoint('cookie_blocker', checkpoint)
-	app.page_model.load(loaded.url)
 	if add_history {
 		if app.history_index + 1 < app.history.len {
 			app.history = app.history[..app.history_index + 1].clone()
@@ -2764,7 +2763,6 @@ fn (mut app BrowserApp) reload() {
 	if app.history_index < 0 || app.history_index >= app.history.len {
 		return
 	}
-	app.page_model.reload()
 	app.navigate(app.history[app.history_index].url, false)
 }
 

@@ -34,3 +34,12 @@ fn test_snapshot_source_snapshot_params_copies_live_document_state() {
 	assert snapshot.source_policy_container.referrer_policy == .no_referrer
 	document.finalize()
 }
+
+fn test_browser_ui_navigation_has_no_source_document_or_policy_restrictions() {
+	snapshot := snapshot_source_snapshot_params(unsafe { nil })
+	assert snapshot.has_transient_activation
+	assert snapshot.allows_downloading
+	assert snapshot.sandboxing_flags.bits == 0
+	assert snapshot.fetch_client == none
+	assert snapshot.source_policy_container.referrer_policy == .strict_origin_when_cross_origin
+}

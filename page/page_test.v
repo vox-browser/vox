@@ -343,7 +343,7 @@ fn test_document_work_requests_frames_on_demand() {
 fn test_media_registry_and_find_in_page_wrap_rules() {
 	mut p := Page.create(1)!
 	p.set_top_level_traversable('top')!
-	p.load('https://example.test/')
+	p.set_local_root_navigable(&dom.Navigable{active_document_: dom.Document.create(dom.URL{'https://example.test/'})})!
 	p.documents = [
 		SearchDocument{
 			id:   'main'
@@ -547,16 +547,17 @@ fn test_page_point_queries_and_cross_navigable_mouse_tracking() {
 fn test_find_navigation_resets_on_document_url_change_but_not_fragment_change() {
 	mut p := Page.create(1)!
 	p.set_top_level_traversable('top')!
-	p.load('https://example.test/first')
+	mut find_document := dom.Document.create(dom.URL{'https://example.test/first'})
+	p.set_local_root_navigable(&dom.Navigable{active_document_: find_document})!
 	p.documents = [SearchDocument{ id: 'first', text: 'x x x' }]
 	p.find_in_page(FindInPageQuery{ string_: 'x' })
 	assert p.find_in_page_next_match().current_match_index == 1
 
 	// Fragments are excluded from the URL comparison, matching Page.cpp.
-	p.load('https://example.test/first#section')
+	find_document.set_url(dom.URL{'https://example.test/first#section'})
 	assert p.find_in_page_next_match().current_match_index == 2
 
-	p.load('https://example.test/second')
+	find_document.set_url(dom.URL{'https://example.test/second'})
 	p.documents = [SearchDocument{ id: 'second', text: 'x x' }]
 	result := p.find_in_page_next_match()
 	assert result.current_match_index == 0
