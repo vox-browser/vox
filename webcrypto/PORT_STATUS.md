@@ -13,7 +13,7 @@ import V's standard `crypto.*` primitives without shadowing that namespace.
 | Upstream implementation unit | V implementation |
 | --- | --- |
 | `Crypto.cpp` | `crypto.v` |
-| `CryptoAlgorithms.cpp` | `crypto_algorithms.v`, `aes_ocb.v`, `cshake.v`, `kmac.v`, `native_crypto.c.v`, `native_crypto.h`, `exchange_curves.v`, `ed448.v`, `native_edwards.c.v`, `native_edwards.h`, `mldsa.v`, `mlkem.v`, `native_ml.c.v`, `native_ml.h`, `rsa.v`, `rsa_key_formats.v`, `native_rsa.c.v`, `native_rsa.h`, `ec.v`, `ec_key_formats.v`, `native_ec.c.v`, `native_ec.h`, `okp_der.v` |
+| `CryptoAlgorithms.cpp` | `crypto_algorithms.v`, `hmac.v`, `kdf.v`, `argon2.v`, `native_kdf.c.v`, `native_kdf.h`, `aes_ocb.v`, `cshake.v`, `kmac.v`, `native_crypto.c.v`, `native_crypto.h`, `exchange_curves.v`, `ed448.v`, `native_edwards.c.v`, `native_edwards.h`, `mldsa.v`, `mlkem.v`, `native_ml.c.v`, `native_ml.h`, `rsa.v`, `rsa_key_formats.v`, `native_rsa.c.v`, `native_rsa.h`, `ec.v`, `ec_key_formats.v`, `native_ec.c.v`, `native_ec.h`, `okp_der.v` |
 | `CryptoBindings.cpp` | `crypto_bindings.v` |
 | `CryptoKey.cpp` | `crypto_key.v`, `crypto_key_objects.v`, `crypto_key_serialization.v` |
 | `KeyAlgorithms.cpp` | `key_algorithms.v` |
@@ -117,9 +117,20 @@ are retained. All three upstream RFC9106 secret/associated-data vectors pass,
 along with invalid parameters, native failure, 256-lane generation, real
 deriveKey, and deferred BufferSource copy tests.
 
+HMAC now uses the upstream EVP_MAC operation sequence. Generation, raw/raw-secret
+and JWK imports/exports, and get-key-length preserve source hash restrictions,
+validation order, the optional bit length, and the JWK `use: "sign"` rule.
+Fractional-byte imports discard the trailing byte; generation retains the shared
+u16 random-helper truncation while metadata keeps the requested u32 length.
+Native failures that trigger source VERIFY/MUST failures become explicit
+OperationErrors, including signing with a zero-byte key after fractional import.
+Tests cover upstream SHA-1/SHA-256/SHA-512 MAC vectors, exact-block input,
+truncated signatures, source metadata and JWK rules, and deferred copied imports
+and signatures.
+
 Further source review remains for the earlier symmetric and Ed25519
-implementations. HMAC import still does not apply optional length. Backend
-availability alone does not establish parity for these bodies.
+implementations. Backend availability alone does not establish parity for these
+bodies.
 
 `SubtleCryptoBinding` implements the asynchronous WebIDL operation boundary.
 It copies input data and registered algorithm BufferSource fields before
@@ -140,7 +151,7 @@ remain available below the binding.
 
 ## Verification
 
-The 27 WebCrypto test files and all six WebIDL test files passed using direct
+The 28 WebCrypto test files and all six WebIDL test files passed using direct
 `v -old-compiler -enable-globals -path 'WORKTREE|@vlib|@vmodules' FILE_test.v`
 invocations. The focused HTML Crypto, environments, and global-scope tests also
 passed. These checks cover copied views/parameters/usages, immediate versus
