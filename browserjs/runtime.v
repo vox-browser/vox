@@ -60,6 +60,10 @@ mut:
 	context                   voidptr
 	closed                    bool
 	host_functions_           []&HostFunctionRecord
+	value_host_functions_     []&ValueHostFunctionRecord
+	protected_values_         []voidptr
+	value_call_intrinsic_     voidptr
+	promise_observe_intrinsic_ voidptr
 	canvas_element_providers_ []CanvasElementProvider
 	close_handlers_ []fn ()
 	document_state_dirty_ bool
@@ -76,12 +80,18 @@ pub fn Runtime.create_with_engine(engine Engine) &Runtime {
 	$if darwin {
 		if engine == .javascriptcore { context = create_javascript_core_context() }
 	}
-	return &Runtime{
+	mut runtime := &Runtime{
 		engine:   engine
 		agent_vm: agent_vm
 		realm:    realm_context.realm or { panic('browser realm was not initialized') }
 		context:  context
 	}
+	$if darwin {
+		if engine == .javascriptcore && context != unsafe { nil } {
+			runtime.initialize_javascript_value_intrinsics() or { panic(err) }
+		}
+	}
+	return runtime
 }
 
 pub fn (runtime &Runtime) libjs_vm() &libjs.VM {
@@ -235,6 +245,8 @@ pub fn (mut runtime Runtime) close() {
 	runtime.close_handlers_.clear()
 	$if darwin {
 		if runtime.context != unsafe { nil } {
+			for value in runtime.protected_values_ { C.JSValueUnprotect(runtime.context, value) }
+			runtime.protected_values_.clear()
 			release_javascript_core_context(runtime.context)
 			runtime.context = unsafe { nil }
 		}
@@ -242,6 +254,7 @@ pub fn (mut runtime Runtime) close() {
 	mut vm := unsafe { &libjs.VM(runtime.agent_vm) }
 	vm.clear_execution_context_stack()
 	runtime.host_functions_.clear()
+	runtime.value_host_functions_.clear()
 	runtime.canvas_element_providers_.clear()
 	runtime.closed = true
 }
