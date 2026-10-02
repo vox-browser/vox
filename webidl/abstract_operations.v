@@ -89,6 +89,33 @@ pub fn value_to_number(value Value) !f64 {
 	}
 }
 
+// LibJS Value::to_bigint and LibCrypto SignedBigInteger::to_i64. The typed
+// primitive path shares the translated arbitrary-precision string parser;
+// actual engine objects use their owning ToPrimitive/ToBigInt operation.
+pub fn value_to_bigint_int64(value Value) !i64 {
+	match value.kind {
+		.bigint { return value.bigint_value }
+		.boolean { return if value.boolean_value { i64(1) } else { i64(0) } }
+		.string_ {
+			integer := libjs.string_to_bigint(libjs.utf16_string(value.string_value)) or {
+				return error('SyntaxError: Invalid value for BigInt: ${value.string_value}')
+			}
+			return integer.to_i64()
+		}
+		.runtime_value {
+			actual := value.runtime_value_ or { return error('TypeError: value has no runtime reference') }
+			conversion := actual.bigint_int64_conversion or {
+				return error('TypeError: runtime value has no ToBigInt operation')
+			}
+			return conversion()!
+		}
+		else {
+			name := if value.kind == .null_ { 'null' } else { value.kind.str() }
+			return error('TypeError: Cannot convert ${name} to BigInt')
+		}
+	}
+}
+
 fn round_ties_to_even(number f64) f64 {
 	lower := math.floor(number)
 	fraction := number - lower

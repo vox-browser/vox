@@ -70,6 +70,7 @@ mut:
 	value_error_intrinsic_     voidptr
 	value_same_intrinsic_      voidptr
 	value_number_intrinsic_    voidptr
+	value_bigint_int64_intrinsic_ voidptr
 	webidl_promise_bridges_    map[voidptr]&WebIDLJavaScriptPromiseBridge
 	canvas_element_providers_ []CanvasElementProvider
 	close_handlers_ []fn ()

@@ -95,6 +95,9 @@ fn (mut runtime Runtime) initialize_javascript_value_intrinsics() ! {
 	// JSC's C JSValueToNumber accepts BigInt. Unary plus performs genuine
 	// ECMAScript ToNumber before the C API reads the resulting Number.
 	runtime.value_number_intrinsic_ = runtime.evaluate_host_value('(function(value){return +value})')!
+	// BigInt.asIntN performs ToBigInt (including the Number rejection) and
+	// exactly the signed low-64-bit projection used by Wasm i64 conversion.
+	runtime.value_bigint_int64_intrinsic_ = runtime.evaluate_host_value('(function(){const asIntN=BigInt.asIntN;return function(value){return asIntN(64,value)}})()')!
 }
 
 fn (runtime &Runtime) actual_javascript_exception(value voidptr) IError {

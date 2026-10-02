@@ -6,6 +6,7 @@
 // object or serializes a chunk into a dictionary/string.
 module browserjs
 
+import strconv
 import webidl
 
 fn C.JSValueToBoolean(context voidptr, value voidptr) bool
@@ -32,6 +33,15 @@ pub fn (mut runtime Runtime) webidl_value(value voidptr) !webidl.Value {
 			number := C.JSValueToNumber(owner.context, converted, &exception)
 			if exception != unsafe { nil } { return owner.actual_javascript_exception(exception) }
 			return number
+		}
+		bigint_int64_conversion: fn [owner_handle, value] () !i64 {
+			owner := unsafe { &Runtime(owner_handle) }
+			owner.require_javascript_value_context()!
+			converted := owner.call_engine_function(owner.value_bigint_int64_intrinsic_, [value])!
+			// The intrinsic returns a BigInt primitive, so this string read has
+			// no observable author ToPrimitive or global String lookup.
+			text := js_string_to_v(owner.context, converted)!
+			return strconv.parse_int(text, 10, 64)!
 		}
 		boolean_conversion: fn [owner_handle, value] () !bool {
 			owner := unsafe { &Runtime(owner_handle) }

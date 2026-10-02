@@ -131,6 +131,12 @@ fn big_integer_to_u64(integer big.Integer) u64 {
 	return if integer.signum < 0 { ~result + 1 } else { result }
 }
 
+// LibCrypto::SignedBigInteger::to_i64, used by WebAssembly's ToBigInt
+// conversion after it has obtained the actual arbitrary-precision integer.
+pub fn (integer &BigInt) to_i64() i64 {
+	return i64(big_integer_to_u64(integer.big_integer))
+}
+
 pub fn (value Value) to_bigint_uint64(mut vm VM) !u64 {
 	integer := value.to_bigint(mut vm)!
 	return big_integer_to_u64(integer.big_integer)

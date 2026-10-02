@@ -67,12 +67,10 @@ pub fn to_webassembly_value(value webidl.Value, type_ ValueType) !WasmValue {
 			}
 		}
 		.i64 {
-			if value.kind != .bigint {
-				return error('TypeError: i64 requires a BigInt')
-			}
+			integer := webidl.value_to_bigint_int64(value)!
 			WasmValue{
 				type_:     type_
-				i64_value: value.bigint_value
+				i64_value: integer
 			}
 		}
 		.f32 {

@@ -55,6 +55,8 @@ pub:
 	number_primitive ?f64
 	// Actual engine ToNumber, separate from the non-coercing number brand.
 	number_conversion ?fn () !f64
+	// Owning engine ToBigInt followed by the source low 64-bit signed projection.
+	bigint_int64_conversion ?fn () !i64
 	boolean_conversion ?fn () !bool
 	same_value ?fn (RuntimeValue) !bool
 	string_conversion fn () !string @[required]
