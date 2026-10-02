@@ -3776,6 +3776,24 @@ pub fn (mut loader FontLoader) start_loading_next_url() {
 					return
 				}
 				current.has_received_font_data_ = true
+				mime := current.try_load_font_mime_type_essence(response, body.bytes)
+				if requires_off_thread_vector_font_preparation(body.bytes, mime) {
+					if prepare_vector_font_data_off_thread(body.bytes,
+						fn [loader_handle] (prepared PreparedVectorFontData) {
+							mut owner := unsafe { &FontLoader(loader_handle) }
+							if prepared.error_message != none {
+								owner.try_next_url_or_fail()
+								return
+							}
+							typeface := font_typeface_from_prepared_bytes(prepared.data, owner.family_name_) or {
+								owner.try_next_url_or_fail()
+								return
+							}
+							owner.font_did_load_or_fail(typeface)
+						}) {
+						return
+					}
+				}
 				typeface := current.try_load_font(response, body.bytes) or {
 					current.try_next_url_or_fail()
 					return

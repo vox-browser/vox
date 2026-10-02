@@ -1,12 +1,68 @@
 // Copyright (c) 2026-present, the Ladybird developers.
 // SPDX-License-Identifier: BSD-2-Clause
 // CSS/FontLoading.cpp: format dispatch and vector-font preparation.
+@[has_globals]
 module css
 
 import encoding.binary
 import gfxfont
 import platform
 import skia
+import sync
+import threading
+
+@[heap]
+struct VectorFontPreparationCallback {
+	on_complete fn (PreparedVectorFontData)
+}
+
+__global (
+	vector_font_preparation_callbacks_       = map[u64]&VectorFontPreparationCallback{}
+	vector_font_preparation_callbacks_mutex_ = sync.new_mutex()
+)
+
+pub struct PreparedVectorFontData {
+pub:
+	data          []u8
+	error_message ?string
+}
+
+// CSS/FontLoading.cpp keeps the callback and any captured GC roots on the
+// originating thread. The platform projection supplies its actual native loop.
+pub fn prepare_vector_font_data_off_thread(data []u8, on_complete fn (PreparedVectorFontData)) bool {
+	invoker := platform.capture_native_deferred_invoker() or { return false }
+	// Source allocates the callback on the origin thread and only the native
+	// decoded bytes travel back from its worker. Keep owner roots out of work.
+	callback := &VectorFontPreparationCallback{
+		on_complete: on_complete
+	}
+	callback_id := u64(voidptr(callback))
+	vector_font_preparation_callbacks_mutex_.lock()
+	vector_font_preparation_callbacks_[callback_id] = callback
+	vector_font_preparation_callbacks_mutex_.unlock()
+	mut pool := threading.ThreadPool.the()
+	pool.submit(fn [data, callback_id, invoker] () {
+		mut prepared := PreparedVectorFontData{}
+		if converted := gfxfont.convert_woff2_to_sfnt(data) {
+			prepared = PreparedVectorFontData{ data: converted }
+		} else {
+			prepared = PreparedVectorFontData{
+				error_message: err.msg()
+			}
+		}
+		invoker.deferred_invoke(fn [callback_id, prepared] () {
+			vector_font_preparation_callbacks_mutex_.lock()
+			callback := vector_font_preparation_callbacks_[callback_id] or {
+				vector_font_preparation_callbacks_mutex_.unlock()
+				return
+			}
+			vector_font_preparation_callbacks_.delete(callback_id)
+			vector_font_preparation_callbacks_mutex_.unlock()
+			callback.on_complete(prepared)
+		})
+	})
+	return true
+}
 
 pub fn requires_off_thread_vector_font_preparation(data []u8, mime_type_essence ?string) bool {
 	if mime := mime_type_essence {

@@ -5,6 +5,7 @@ import dom
 import fetch
 import http
 import os
+import time
 
 @[heap]
 struct FontFetchObservation {
@@ -141,6 +142,65 @@ fn test_font_loader_tries_next_source_after_network_cors_and_decode_failures() {
 	drain_font_fetch_tasks(owner)
 	assert face.status() == .loaded
 	assert promise.state == .fulfilled
+	assert !document.anything_is_delaying_the_load_event()
+}
+
+fn test_font_loader_prepares_woff2_on_source_workers_before_owning_font_task_settlement() {
+	$if !darwin { return }
+	document, mut owner, _, mut set, state := font_loader_fetch_fixture()
+	mut face := css.FontFaceObject.construct_impl('Worker WOFF2',
+		css.FontFaceSource.from_string('url("font.woff2"), url("unused.ttf")'), css.FontFaceDescriptors{})
+	set.add(face)!
+	promise := face.load()
+	mut loader := face.font_loader_ or { panic('missing loader') }
+	loader.did_request_for_rendering()
+	bytes := os.read_bytes(os.join_path(os.dir(@FILE), '..', 'gfxfont', 'testdata', 'variable-font-example.woff2'))!
+	finish_font_fetch(state, 0, bytes, 'font/woff2', false)
+	drain_font_fetch_tasks(owner)
+	assert face.status() == .loading
+	assert promise.state == .pending
+	assert !loader.has_completed
+	assert loader.has_received_font_data_
+	assert document.anything_is_delaying_the_load_event()
+	loader.start_loading_next_url()
+	assert state.requests.len == 1
+	deadline := time.sys_mono_now() + 4 * time.second
+	owner.spin_until(fn [promise, deadline] () bool {
+		return promise.state != .pending || time.sys_mono_now() >= deadline
+	})
+	assert promise.state == .fulfilled
+	assert face.status() == .loaded
+	assert loader.has_completed
+	assert !document.anything_is_delaying_the_load_event()
+	assert loader.urls.len == 1
+	assert state.requests.len == 1
+}
+
+fn test_font_loader_worker_decode_failure_resumes_source_fallback_on_the_origin_loop() {
+	$if !darwin { return }
+	document, mut owner, _, mut set, state := font_loader_fetch_fixture()
+	mut face := css.FontFaceObject.construct_impl('Worker fallback',
+		css.FontFaceSource.from_string('url("broken.woff2"), url("good.ttf")'), css.FontFaceDescriptors{})
+	set.add(face)!
+	promise := face.load()
+	mut loader := face.font_loader_ or { panic('missing loader') }
+	loader.did_request_for_rendering()
+	finish_font_fetch(state, 0, 'wOF2'.bytes(), 'font/woff2', false)
+	drain_font_fetch_tasks(owner)
+	assert state.requests.len == 1
+	assert promise.state == .pending
+	deadline := time.sys_mono_now() + 4 * time.second
+	owner.spin_until(fn [state, deadline] () bool {
+		return state.requests.len == 2 || time.sys_mono_now() >= deadline
+	})
+	assert state.requests.len == 2
+	assert state.requests[1].current_url().serialize() == 'https://font-fetch.example/good.ttf'
+	assert promise.state == .pending
+	assert document.anything_is_delaying_the_load_event()
+	finish_font_fetch(state, 1, os.read_bytes('/System/Library/Fonts/Supplemental/Arial.ttf')!, 'font/ttf', false)
+	drain_font_fetch_tasks(owner)
+	assert promise.state == .fulfilled
+	assert face.status() == .loaded
 	assert !document.anything_is_delaying_the_load_event()
 }
 

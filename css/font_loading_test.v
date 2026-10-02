@@ -1,8 +1,20 @@
+@[has_globals]
 module css
 
 import fetch
 import http
 import os
+import platform
+import time
+
+@[heap]
+struct PreparedFontObservation {
+mut:
+	done            bool
+	callback_thread u64
+	data            []u8
+	error_message   ?string
+}
 
 fn font_loading_fixture(name string) []u8 {
 	return os.read_bytes(os.join_path(os.dir(@FILE), '..', 'gfxfont', 'testdata', name)) or {
@@ -45,4 +57,27 @@ fn test_font_loader_trusts_font_mime_and_sniffs_other_or_absent_mime() {
 	assert loader.try_load_font_mime_type_essence(response, font)? == 'font/woff2'
 	if _ := loader.try_load_font(response, font) { assert false
 	 }
+}
+
+fn test_font_preparation_retains_its_origin_callback_through_gc_until_native_delivery() {
+	$if !darwin { return }
+	state := &PreparedFontObservation{}
+	origin_thread := platform.native_thread_identity()
+	assert prepare_vector_font_data_off_thread(font_loading_fixture('incorrect_sfnt_size.woff2'), fn [state] (prepared PreparedVectorFontData) {
+		mut observation := unsafe { &PreparedFontObservation(state) }
+		observation.callback_thread = platform.native_thread_identity()
+		observation.data = prepared.data.clone()
+		observation.error_message = prepared.error_message
+		observation.done = true
+	})
+	assert !state.done
+	gc_collect()
+	deadline := time.sys_mono_now() + 2 * time.second
+	for !state.done && time.sys_mono_now() < deadline {
+		platform.pump_native_events(0.05)
+	}
+	assert state.done
+	assert state.callback_thread == origin_thread
+	assert state.error_message == none
+	assert font_typeface_from_prepared_bytes(state.data, 'Source prepared font')!.source_path != ''
 }
