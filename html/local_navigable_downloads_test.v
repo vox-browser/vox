@@ -121,6 +121,13 @@ fn test_download_hyperlink_fetches_and_streams_the_response_to_the_page_client()
 	assert request.initiator? == .download
 	assert request.use_url_credentials
 	assert request.current_url().serialize() == 'https://example.test/files/report.txt'
+	// Element::download_the_hyperlink processes the response asynchronously on
+	// its client's event loop, even when the transport already has the bytes.
+	assert page_model.client().download(1) == none
+	settings := unsafe { &EnvironmentSettingsObject(document.relevant_settings_object()) }
+	mut owner := settings.responsible_event_loop()
+	assert owner.task_queue().last_added_task()?.source() == .networking
+	owner.process()
 	download := page_model.client().download(1) or { panic('missing download') }
 	assert download.request.url == 'https://example.test/files/report.txt'
 	assert download.request.suggested_filename == 'server report.txt'
