@@ -102,7 +102,7 @@ pub fn html_canvas_element_webgl_context(element &dom.HTMLCanvasElement) ?&webgl
 }
 
 fn webgl_frame_bitmap(frame webgl.WebGLPaintingSurface) &dom.Bitmap_ {
-	return &dom.Bitmap_{ width: frame.width, height: frame.height, pitch: frame.width * 4, format: 0, alpha_type: 0, data: frame.pixels.clone() }
+	return &dom.Bitmap_{ width: frame.width, height: frame.height, pitch: frame.width * 4, format: 0, alpha_type: 2, data: frame.pixels.clone(), native_rows_are_top_down: true }
 }
 
 fn html_webgl_canvas_content_changed(owner voidptr) {

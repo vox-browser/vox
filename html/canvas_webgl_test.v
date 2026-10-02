@@ -60,6 +60,8 @@ fn test_html_webgl_native_surface_reaches_existing_paint_registry_and_readback()
 	assert html_canvas_element_is_dirty(canvas)
 	presented := html_canvas_element_present_existing_surface(canvas) or { panic('presented surface') }
 	assert presented.width == 2 && presented.height == 2
+	assert presented.alpha_type == 2
+	assert presented.native_rows_are_top_down
 	assert presented.data[..4] == [u8(255), 0, 0, 255]
 	frame := source.current_frame() or { panic('retained decoded frame') }
 	assert frame.bitmap().data == presented.data
