@@ -327,6 +327,7 @@ pub fn (mut context WebGLRenderingContext) draw_range_elements(mode GLenum, star
 }
 
 pub fn (mut context WebGLRenderingContext) framebuffer_texture_layer(target GLenum, attachment GLenum, texture ?&WebGLTexture, level int, layer int) {
+	if !context.require_webgl2() { return }
 	handle := if value := texture {
 		if !context.owns(&value.object) {
 			context.set_error(invalid_operation)
@@ -337,6 +338,8 @@ pub fn (mut context WebGLRenderingContext) framebuffer_texture_layer(target GLen
 		GLuint(0)
 	}
 	context.webgl2_command('framebuffer_texture_layer', target, attachment, handle, level, layer)
+	C.vox_gl_framebuffer_texture_layer(target,attachment,if value:=texture {value.object.native_handle_} else {0},level,layer)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) get_internalformat_parameter(target GLenum, internal_format GLenum, pname GLenum) WebGLParameterValue {
@@ -480,19 +483,25 @@ pub fn (mut context WebGLRenderingContext) tex_storage3d(target GLenum, levels i
 }
 
 pub fn (mut context WebGLRenderingContext) tex_image3d(target GLenum, level int, internal_format GLenum, width int, height int, depth int, border int, format GLenum, type_ GLenum, pixels []u8) {
+	if !context.require_webgl2() { return }
 	if width < 0 || height < 0 || depth < 0 || border != 0 {
 		context.set_error(invalid_value)
 		return
 	}
 	context.webgl2_command('tex_image3d', target, level, internal_format, width, height, depth, border, format, type_, pixels.len)
+	C.vox_gl_tex_image3d(target,level,int(internal_format),width,height,depth,border,format,type_,pixels.len,pixels.data)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) tex_sub_image3d(target GLenum, level int, x_offset int, y_offset int, z_offset int, width int, height int, depth int, format GLenum, type_ GLenum, pixels []u8) {
+	if !context.require_webgl2() { return }
 	if width < 0 || height < 0 || depth < 0 {
 		context.set_error(invalid_value)
 		return
 	}
 	context.webgl2_command('tex_sub_image3d', target, level, x_offset, y_offset, z_offset, width, height, depth, format, type_, pixels.len)
+	C.vox_gl_tex_sub_image3d(target,level,x_offset,y_offset,z_offset,width,height,depth,format,type_,pixels.len,pixels.data)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) transform_feedback_varyings(program &WebGLProgram, varyings []string, buffer_mode GLenum) {

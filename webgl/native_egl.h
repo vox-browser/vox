@@ -265,7 +265,6 @@ static void vox_gl_buffer_data(unsigned target, long long size, void const* data
 static void vox_gl_buffer_sub_data(unsigned target, long long offset, long long size, void const* data) { glBufferSubData(target, (GLintptr)offset, (GLsizeiptr)size, data); }
 static void vox_gl_copy_buffer_sub_data(unsigned read_target, unsigned write_target, long long read_offset, long long write_offset, long long size) { glCopyBufferSubData(read_target, write_target, (GLintptr)read_offset, (GLintptr)write_offset, (GLsizeiptr)size); }
 /* Services/Compositor/HostWebGLContext.cpp::read_buffer_sub_data. */
-static int vox_gl_read_buffer_sub_data(unsigned target, long long offset, long long size, void* data) {
     if (size == 0) return 1;
     void* mapped = glMapBufferRange(target, (GLintptr)offset, (GLsizeiptr)size, GL_MAP_READ_BIT);
     if (!mapped) return 0;
@@ -298,6 +297,13 @@ static void vox_gl_tex_image2d(unsigned target, int level, int format, int width
 static void vox_gl_tex_sub_image2d(unsigned target, int level, int x, int y, int width, int height, unsigned format, unsigned type, int capacity, void const* data) { glTexSubImage2DRobustANGLE(target, level, x, y, width, height, format, type, capacity, data); }
 static void vox_gl_tex_parameteri(unsigned target, unsigned pname, int value) { glTexParameteri(target, pname, value); }
 static void vox_gl_tex_parameterf(unsigned target, unsigned pname, float value) { glTexParameterf(target, pname, value); }
+static void vox_gl_tex_storage2d(unsigned target, int levels, unsigned format, int width, int height) { glTexStorage2D(target, levels, format, width, height); }
+static void vox_gl_tex_storage3d(unsigned target, int levels, unsigned format, int width, int height, int depth) { glTexStorage3D(target, levels, format, width, height, depth); }
+static void vox_gl_tex_image3d(unsigned target, int level, int format, int width, int height, int depth, int border, unsigned pixel_format, unsigned type, int capacity, void const* data) { glTexImage3DRobustANGLE(target, level, format, width, height, depth, border, pixel_format, type, capacity, data); }
+static void vox_gl_tex_sub_image3d(unsigned target, int level, int x, int y, int z, int width, int height, int depth, unsigned format, unsigned type, int capacity, void const* data) { glTexSubImage3DRobustANGLE(target, level, x, y, z, width, height, depth, format, type, capacity, data); }
+static void vox_gl_framebuffer_texture_layer(unsigned target, unsigned attachment, unsigned texture, int level, int layer) { glFramebufferTextureLayer(target, attachment, texture, level, layer); }
+static void vox_gl_copy_tex_image2d(unsigned target, int level, unsigned format, int x, int y, int width, int height, int border) { glCopyTexImage2D(target, level, format, x, y, width, height, border); }
+static void vox_gl_copy_tex_sub_image2d(unsigned target, int level, int x_offset, int y_offset, int x, int y, int width, int height) { glCopyTexSubImage2D(target, level, x_offset, y_offset, x, y, width, height); }
 static int vox_gl_tex_parameter(unsigned target, unsigned pname) { GLint value = 0; glGetTexParameterivRobustANGLE(target, pname, 1, NULL, &value); return value; }
 static float vox_gl_tex_float_parameter(unsigned target, unsigned pname) { GLfloat value = 0; glGetTexParameterfvRobustANGLE(target, pname, 1, NULL, &value); return value; }
 static int vox_gl_renderbuffer_parameter(unsigned target, unsigned pname) { GLint value = 0; glGetRenderbufferParameterivRobustANGLE(target, pname, 1, NULL, &value); return value; }

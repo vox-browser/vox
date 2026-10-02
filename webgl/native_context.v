@@ -237,6 +237,10 @@ pub fn (mut context OpenGLContext) dispatch(name string, args ...i64) bool {
 	context.make_current()
 	if !context.current_ { return false }
 	match name {
+		'copy_tex_image2d' { C.vox_gl_copy_tex_image2d(u32(args[0]),int(args[1]),u32(args[2]),int(args[3]),int(args[4]),int(args[5]),int(args[6]),int(args[7])) }
+		'copy_tex_sub_image2d' { C.vox_gl_copy_tex_sub_image2d(u32(args[0]),int(args[1]),int(args[2]),int(args[3]),int(args[4]),int(args[5]),int(args[6]),int(args[7])) }
+		'tex_storage2d' { C.vox_gl_tex_storage2d(u32(args[0]),int(args[1]),u32(args[2]),int(args[3]),int(args[4])) }
+		'tex_storage3d' { C.vox_gl_tex_storage3d(u32(args[0]),int(args[1]),u32(args[2]),int(args[3]),int(args[4]),int(args[5])) }
         'enable_vertex_attrib_array' { C.vox_gl_vertex_attrib_enable(u32(args[0]), 1) }
         'disable_vertex_attrib_array' { C.vox_gl_vertex_attrib_enable(u32(args[0]), 0) }
         'vertex_attrib_pointer' { C.vox_gl_vertex_attrib_pointer(u32(args[0]), int(args[1]), u32(args[2]), int(args[3]), int(args[4]), args[5]) }
