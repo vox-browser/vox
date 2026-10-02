@@ -283,6 +283,13 @@ static int vox_gl_active_info(unsigned program, unsigned index, int uniform, int
         glGetActiveAttrib(program, index, capacity, &length, size, type, name);
     return length;
 }
+static void vox_gl_uniform_indices(unsigned program, int count, void const* names, unsigned* result) { glGetUniformIndices(program,count,(char const* const*)names,result); }
+static void vox_gl_active_uniforms(unsigned program, int count, unsigned const* indices, unsigned pname, int* result) { glGetActiveUniformsiv(program,count,indices,pname,result); }
+static unsigned vox_gl_uniform_block_index(unsigned program, char const* name) { return glGetUniformBlockIndex(program,name); }
+static void vox_gl_uniform_block_parameter(unsigned program, unsigned index, unsigned pname, int capacity, int* result) { glGetActiveUniformBlockivRobustANGLE(program,index,pname,capacity,NULL,result); }
+static void vox_gl_uniform_block_name(unsigned program, unsigned index, int capacity, char* name) { glGetActiveUniformBlockName(program,index,capacity,NULL,name); }
+static void vox_gl_uniform_block_binding(unsigned program, unsigned index, unsigned binding) { glUniformBlockBinding(program,index,binding); }
+static void vox_gl_internalformat_parameter(unsigned target, unsigned format, unsigned pname, int capacity, int* result) { glGetInternalformativRobustANGLE(target,format,pname,capacity,NULL,result); }
 static void vox_gl_shader_precision(unsigned shader, unsigned precision, int* range, int* bits) { glGetShaderPrecisionFormat(shader, precision, range, bits); }
 static void vox_gl_uniform_floats(int location, int width, int count, float const* data)
 {

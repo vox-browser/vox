@@ -321,8 +321,16 @@ pub fn (mut context WebGLRenderingContext) framebuffer_texture_layer(target GLen
 }
 
 pub fn (mut context WebGLRenderingContext) get_internalformat_parameter(target GLenum, internal_format GLenum, pname GLenum) WebGLParameterValue {
-	context.webgl2_command('get_internalformat_parameter', target, internal_format, pname)
-	return WebGLParameterValue{ kind: .integers, integers: [i64(0)] }
+    if !context.require_webgl2() { return WebGLParameterValue{} }
+    context.native.make_current()
+    if pname != samples { context.set_error(invalid_enum); return WebGLParameterValue{} }
+    mut count := 0
+    C.vox_gl_internalformat_parameter(target,internal_format,num_sample_counts,1,&count)
+    context.native.collect_native_error()
+    mut values := []int{len: if count > 0 { count } else { 0 }}
+    C.vox_gl_internalformat_parameter(target,internal_format,samples,values.len,values.data)
+    context.native.collect_native_error()
+    return WebGLParameterValue{kind:.integers, integers:values.map(i64(it))}
 }
 
 pub fn (mut context WebGLRenderingContext) get_sync_parameter(sync &WebGLSync, pname GLenum) WebGLParameterValue {
@@ -333,24 +341,79 @@ pub fn (mut context WebGLRenderingContext) get_sync_parameter(sync &WebGLSync, p
 	return WebGLParameterValue{kind: .integer, integer: context.native.native_sync_parameter(sync.native_handle_, pname)}
 }
 
-pub fn (context &WebGLRenderingContext) get_uniform_indices(_ &WebGLProgram, names []string) []GLuint {
-	return names.map(GLuint(it.hash() & 0x7fff))
+pub fn (mut context WebGLRenderingContext) get_uniform_indices(program &WebGLProgram, names []string) []GLuint {
+    if !context.require_webgl2() { return []GLuint{} }
+    if !context.owns(&program.object) { context.set_error(invalid_operation); return []GLuint{} }
+    context.native.make_current()
+    pointers := names.map(it.str)
+    mut result := []GLuint{len:names.len}
+    C.vox_gl_uniform_indices(program.object.native_handle_,names.len,pointers.data,result.data)
+    context.native.collect_native_error()
+    return result
 }
 
-pub fn (context &WebGLRenderingContext) get_active_uniforms(_ &WebGLProgram, indices []GLuint, _ GLenum) []int {
-	return indices.map(int(it))
+pub fn (mut context WebGLRenderingContext) get_active_uniforms(program &WebGLProgram, indices []GLuint, pname GLenum) WebGLParameterValue {
+    if !context.require_webgl2() { return WebGLParameterValue{} }
+    if !context.owns(&program.object) { context.set_error(invalid_operation); return WebGLParameterValue{} }
+    context.native.make_current()
+    mut result := []int{len:indices.len}
+    C.vox_gl_active_uniforms(program.object.native_handle_,indices.len,indices.data,pname,result.data)
+    context.native.collect_native_error()
+    if pname == uniform_is_row_major { return WebGLParameterValue{kind:.booleans,booleans:result.map(it == 1)} }
+    if pname in [uniform_type,uniform_size,uniform_block_index,uniform_offset,uniform_array_stride,uniform_matrix_stride] {
+        return WebGLParameterValue{kind:.integers,integers:result.map(i64(it))}
+    }
+    context.set_error(invalid_enum)
+    return WebGLParameterValue{}
 }
 
-pub fn (context &WebGLRenderingContext) get_uniform_block_index(_ &WebGLProgram, name string) GLuint {
-	return if name == '' { GLuint(-1) } else { GLuint(name.hash() & 0x7fff) }
+pub fn (mut context WebGLRenderingContext) get_uniform_block_index(program &WebGLProgram, name string) GLuint {
+    if !context.require_webgl2() { return GLuint(0xffff_ffff) }
+    if !context.owns(&program.object) { context.set_error(invalid_operation); return GLuint(0xffff_ffff) }
+    context.native.make_current()
+    result := C.vox_gl_uniform_block_index(program.object.native_handle_,name.str)
+    context.native.collect_native_error()
+    return result
 }
 
-pub fn (context &WebGLRenderingContext) get_active_uniform_block_parameter(_ &WebGLProgram, index GLuint, _ GLenum) WebGLParameterValue {
-	return WebGLParameterValue{ kind: .integer, integer: index }
+fn (mut context WebGLRenderingContext) uniform_block_parameter(program &WebGLProgram, index GLuint, pname GLenum) int {
+    mut result := 0
+    C.vox_gl_uniform_block_parameter(program.object.native_handle_,index,pname,1,&result)
+    context.native.collect_native_error()
+    return result
 }
 
-pub fn (_ &WebGLRenderingContext) get_active_uniform_block_name(_ &WebGLProgram, index GLuint) string {
-	return 'uniform_block_${index}'
+pub fn (mut context WebGLRenderingContext) get_active_uniform_block_parameter(program &WebGLProgram, index GLuint, pname GLenum) WebGLParameterValue {
+    if !context.require_webgl2() { return WebGLParameterValue{} }
+    if !context.owns(&program.object) { context.set_error(invalid_operation); return WebGLParameterValue{} }
+    context.native.make_current()
+    if pname in [uniform_block_binding,uniform_block_data_size,uniform_block_active_uniforms] {
+        return integer_parameter(context.uniform_block_parameter(program,index,pname))
+    }
+    if pname in [uniform_block_referenced_by_vertex_shader,uniform_block_referenced_by_fragment_shader] {
+        return boolean_parameter(context.uniform_block_parameter(program,index,pname) == 1)
+    }
+    if pname == uniform_block_active_uniform_indices {
+        count := context.uniform_block_parameter(program,index,uniform_block_active_uniforms)
+        mut indices := []int{len: if count>0 { count } else { 0 }}
+        C.vox_gl_uniform_block_parameter(program.object.native_handle_,index,pname,indices.len,indices.data)
+        context.native.collect_native_error()
+        return WebGLParameterValue{kind:.integers,integers:indices.map(i64(it))}
+    }
+    context.set_error(invalid_enum)
+    return WebGLParameterValue{}
+}
+
+pub fn (mut context WebGLRenderingContext) get_active_uniform_block_name(program &WebGLProgram, index GLuint) ?string {
+    if !context.require_webgl2() { return none }
+    if !context.owns(&program.object) { context.set_error(invalid_operation); return none }
+    context.native.make_current()
+    length := context.uniform_block_parameter(program,index,uniform_block_name_length)
+    if length<=0 { return '' }
+    mut name := []u8{len:length}
+    C.vox_gl_uniform_block_name(program.object.native_handle_,index,length,name.data)
+    context.native.collect_native_error()
+    return null_terminated_string(name)
 }
 
 pub fn (mut context WebGLRenderingContext) invalidate_framebuffer(target GLenum, attachments []GLenum) {
@@ -426,7 +489,10 @@ pub fn (mut context WebGLRenderingContext) uniform_block_binding(program &WebGLP
 		context.set_error(invalid_operation)
 		return
 	}
+	if !context.require_webgl2() { return }
 	context.webgl2_command('uniform_block_binding', program.object.handle_, block_index, binding)
+	C.vox_gl_uniform_block_binding(program.object.native_handle_,block_index,binding)
+	context.native.collect_native_error()
 }
 
 fn uints_to_floats(values []u32) []f32 {

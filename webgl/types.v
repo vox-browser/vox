@@ -419,3 +419,21 @@ pub:
 	integer       bool
 	divisor       GLuint
 }
+
+// WebGL2 uniform/block reflection enums from WebGL2RenderingContext.idl.
+pub const uniform_type = GLenum(0x8a37)
+pub const uniform_size = GLenum(0x8a38)
+pub const uniform_block_index = GLenum(0x8a3a)
+pub const uniform_offset = GLenum(0x8a3b)
+pub const uniform_array_stride = GLenum(0x8a3c)
+pub const uniform_matrix_stride = GLenum(0x8a3d)
+pub const uniform_is_row_major = GLenum(0x8a3e)
+pub const uniform_block_binding = GLenum(0x8a3f)
+pub const uniform_block_data_size = GLenum(0x8a40)
+pub const uniform_block_name_length = GLenum(0x8a41)
+pub const uniform_block_active_uniforms = GLenum(0x8a42)
+pub const uniform_block_active_uniform_indices = GLenum(0x8a43)
+pub const uniform_block_referenced_by_vertex_shader = GLenum(0x8a44)
+pub const uniform_block_referenced_by_fragment_shader = GLenum(0x8a46)
+pub const samples = GLenum(0x80a9)
+pub const num_sample_counts = GLenum(0x9380)

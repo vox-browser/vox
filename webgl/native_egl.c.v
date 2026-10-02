@@ -112,6 +112,13 @@ fn C.vox_gl_uniform_location(u32, &char) int
 fn C.vox_gl_attrib_location(u32, &char) int
 fn C.vox_gl_bind_attrib_location(u32, u32, &char)
 fn C.vox_gl_active_info(u32, u32, int, int, &u8, &int, &u32) int
+fn C.vox_gl_uniform_indices(u32,int,voidptr,&u32)
+fn C.vox_gl_active_uniforms(u32,int,&u32,u32,&int)
+fn C.vox_gl_uniform_block_index(u32,&char) u32
+fn C.vox_gl_uniform_block_parameter(u32,u32,u32,int,&int)
+fn C.vox_gl_uniform_block_name(u32,u32,int,&u8)
+fn C.vox_gl_uniform_block_binding(u32,u32,u32)
+fn C.vox_gl_internalformat_parameter(u32,u32,u32,int,&int)
 fn C.vox_gl_shader_precision(u32, u32, &int, &int)
 fn C.vox_gl_uniform_floats(int, int, int, &f32)
 fn C.vox_gl_uniform_ints(int, int, int, &int)
