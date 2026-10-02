@@ -24,7 +24,7 @@ and normalization follow `LibUnicode/{Utf16String.cpp,Normalize.{h,cpp},ICU.{h,c
 and retain ICU as the native algorithm and Unicode-data dependency.
 Regex records, input primitives, pattern analysis, literal prefilters and VM
 storage, repetition, traversal, literal/backreference and character-class matching,
-and simple-scan membership follow
+simple-match predicates, candidate filters and simple-scan execution follow
 `LibRegex/Rust/src/{ast,bytecode,vm}.rs`
 at the same upstream revision. Property-kind and resolved-property records,
 Unicode property queries, resolution/validation, scalar predicates and
@@ -110,9 +110,12 @@ creates a realm with a global environment and pushes its execution context.
 | `regex_vm_backreference.v` | Numbered/named references, Unicode code-point comparison in both directions, and first-participating duplicate capture priority |
 | `regex_unicode_set.c.v`, `regex_unicode_set.h` | Ordered bounded case closures, case-insensitive range expansion and inverse-range matching through ICU; header contains ABI declarations only |
 | `regex_character_class.v` | Inclusive small/large range membership and complete legacy, Unicode and UnicodeSets case-insensitive character-class matching |
-| `regex_simple_scan.v` | Complete simple-scan membership predicate; scan execution remains pending |
+| `regex_simple_scan.v` | Complete simple-scan membership predicate |
 | `regex_unicode_property_names.c.v`, `regex_unicode_properties.v`, `regex_unicode_property.h` | Exact category/binary/script aliases, aggregate categories, script extensions, cached case-closed sets, property resolution/validation and scalar predicates; header contains ABI declarations only |
 | `regex_unicode_string_properties.c.v` | ICU string-property enumeration, complete code-point packing and query/short-buffer/Rust wrapper boundaries |
+| `regex_vm_property.v`, `regex_simple_match.v` | VM property forwarding, raw/modifier-only/VM simple-match predicates, unions and the Unicode/UnicodeSets negated-property case distinction |
+| `regex_candidate_start.v` | First-character/first-filter membership and complete next-candidate selection, preserving anchors, empty patterns and surrogate boundaries |
+| `regex_scan_execution.v` | Complete single-match, greedy and find-all simple scan execution with UTF-16 positions and source capture-buffer boundaries |
 | `number_object.v`, `bigint_object.v`, `value_boxing.v` | NumberData/BigIntData wrapper records and all primitive ToObject cases with explicit Number/BigInt/String prototype dependencies |
 | `value_property_access.v` | GetV's direct primitive-prototype lookup, GetMethod's nullish/callable checks and Invoke with the original primitive receiver and explicit intrinsic dependencies |
 | `iterator.v`, `iterator_values.v` | Synchronous iterator acquisition for object receivers, IteratorNext/Step/StepValue, completion-preserving close/close-all, result records, list/callback collection, and SetterThatIgnoresPrototypeProperties |
@@ -143,8 +146,8 @@ creates a realm with a global environment and pushes its execution context.
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 197 implementation files contain **32,196 physical V LOC**. The 207 test
-files contain **27,054 physical V LOC** and **703 test functions**. Physical LOC
+The 201 implementation files contain **32,486 physical V LOC**. The 212 test
+files contain **28,006 physical V LOC** and **720 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -1054,8 +1057,8 @@ Empty substring needles succeed even beyond input length; direct comparisons
 still require a valid position. Start hints give input position zero priority,
 then search one or two units. The one-unit ASCII path rejects a non-ASCII needle,
 while the two-unit path compares raw input units. These are candidate rejection
-helpers; candidate matching, simple-scan execution, the regex VM loops and
-backtracking remain pending.
+helpers; candidate selection and simple-scan execution are translated below.
+The regex VM loops and backtracking remain pending.
 
 LibRegex VM storage (`46a2cbf9`) translates `SavedState`, `ActiveModifiers`,
 `VmScratch` and the VM record, construction/reset, flat register snapshots, all
@@ -1137,8 +1140,8 @@ retains upstream's independence from the supplied Unicode-mode flag.
 LibRegex simple-scan membership (`cbf8f91c`) translates the complete private
 `match_simple_scan` predicate: raw class membership with negation, all builtin
 classes in legacy mode and exact literals. The greedy-quantifier variant returns
-false because upstream handles it in the separate execution caller. That caller
-and scan execution remain pending; this predicate adds no substitute execution.
+false because upstream handles it in the separate execution caller, translated
+below. This predicate adds no substitute execution.
 
 Unicode property lookup and matching (`7771d968`) translate the exact ICU alias
 tables, aggregate category masks, binary and synthetic properties, script and
@@ -1159,6 +1162,39 @@ Null/zero-capacity queries and undersized buffers report the required size witho
 writing; successful writes preserve the unused tail. The Rust wrapper queries,
 allocates, validates the returned size and truncates its independent result.
 ICU's frozen property sets remain library-owned and are never closed or modified.
+
+LibRegex simple-match predicates (`834c7847`) translate all three current bodies
+and the four VM Unicode property forwarders. Raw matching compares both stored
+`CharNoCase` operands; modifier-only matching folds its first operand in legacy
+mode, while VM matching uses the program's Unicode mode. Literal/class/dot
+queries retain active modifier overrides; builtin classes and property paths
+keep each helper's distinct source rules. Resolved property IDs take priority
+over names except in the VM's ignore-case Unicode closure path. Negated `u`
+properties complement the all-case-equivalents query, while `v` properties
+complement the any-case query. Nested unions preserve short-circuit recursion.
+These predicates leave VM positions, instructions and step counts unchanged.
+
+LibRegex candidate filtering (`83d8ea59`) translates `first_char_matches`,
+`first_filter_matches` and `next_candidate_start`. First characters use the
+hint's explicit case flag. First filters preserve raw range/property/literal
+membership, the builtin Unicode-ignore-case rule and the dot payload flag.
+Candidate scans skip surrogate interiors only for nonempty Unicode patterns,
+then apply previous-code-unit anchor checks and both optional filters in source
+order. Filtered end positions fail, while an unfiltered empty candidate can
+retain the end or a requested surrogate interior. Unused hint fields do not
+affect this helper; leading non-multiline anchor enforcement belongs to the
+still-pending outer VM execution caller.
+
+LibRegex simple scan execution (`24380ffd`) translates single-match, greedy
+and find-all fast paths over supplied scan records. Unicode decoding advances
+by code points while captures retain code-unit positions, including an explicit
+starting position inside a surrogate pair. Greedy scans count code points,
+enforce their bounds and skip insufficient runs. Failures leave caller output
+untouched; successes write one pair and preserve unused slots. Find-all returns
+`-1` on capacity exhaustion after retaining earlier complete pairs, and advances
+one code unit after a zero-width result. Zero minimums retain upstream's
+requirement to find a matching point and do not add an empty end-of-input match.
+These helpers do not supply pattern parsing, compilation or general VM dispatch.
 
 Reflect property bodies (`5f4813e`) translate defineProperty/deleteProperty/get,
 getOwnPropertyDescriptor/has/set. Target-object validation precedes key conversion;
@@ -1278,10 +1314,10 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 207 passed, 207 total
+# 212 passed, 212 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 207 passed, 207 total
+# 212 passed, 212 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
@@ -1296,7 +1332,8 @@ v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
 
 v -old-compiler -enable-globals test .
-# 879 passed, 879 total
+# 873 passed; 11 test processes exited with code 9
+# Fresh VJOBS=2 rerun of those 11 files: 11 passed
 
 ./build_ladybird.sh
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
@@ -1327,13 +1364,18 @@ fixtures; separate tests exercise translated NativeFunction and ArrayBufferObjec
 records. Module-loading tests write temporary module files. The preceding LibWeb
 work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 207 libjs files are verified separately in both GC modes.
-There are now 879 repository test files.
+this package; the 212 libjs files are verified separately in both GC modes.
+There are now 884 repository test files.
 
-The complete 879-file repository suite passes, including the native bridge,
-eighteen browser integration files and all 207 LibJS files. The dedicated LibJS and
+All 884 repository test files are verified, including the native bridge,
+eighteen browser integration files and all 212 LibJS files. The dedicated LibJS and
 browser suites also pass in no-GC mode, exercising the retained storage and
 buffer ownership independently of the collector.
+The initial sixteen-job repository run passed 873 files; six WebGL and five
+WebIDL test processes exited with code 9 without assertion output, and their
+automatic retries could not find the generated binaries. A fresh two-job run
+of those eleven files passed every test without a source change. The original
+run's interrupted result is retained rather than reported as a clean command.
 
 String validation and repair tests additionally compare 2,388 UTF-16 inputs,
 validity flags and repaired outputs exactly against simdutf 7.4.0. Regenerating
@@ -1461,6 +1503,36 @@ and compare all three `regex-properties*.tsv` files with `libjs/testdata/`.
 Each embedded asset is below 5 MB; every output is exact and regeneration is
 byte-exact. Parser/compiler, matcher dispatch, backtracking and VM execution
 are not invoked.
+
+Simple-match predicates and candidate filters (`602a2b96`) compare 389,048
+native records exactly in both GC modes: 151,248 simple-match bit vectors,
+52,200 candidate positions and 185,600 first-character results. Each bit vector
+compares raw matching, four active-modifier combinations and sixteen VM/first-
+filter program combinations. The 37 supplied matchers cover all variants,
+nested unions, conflicting `CharNoCase` operands, raw/resolved properties,
+invalid names and the negated `u`/`v` distinction. Negated uppercase classes and
+lowercase properties cover every BMP code point plus supplementary samples.
+Candidate/first-character cases cover both input types, every supplied start,
+empty inputs, surrogate interiors, anchors, combined filters and ignored hints.
+`tools/libjs_regex_predicate_corpus.py` uses unchanged Rust helper bodies and
+the same fresh ASan native property backend; no VM execution loop is invoked.
+Regenerate with `python3 tools/libjs_regex_predicate_corpus.py --output /tmp/regex-predicates.tsv`
+and compare all six `regex-predicates*.tsv` files. Regeneration is byte-exact,
+and every split embedded asset remains below 5 MB.
+
+Simple scan execution (`1d3dcb52`) compares 32,481 native records exactly in both
+GC modes. The 27 supplied scans cover all variants, greedy minimum/maximum and
+zero bounds, unions, raw properties, supplementary points, failed runs and
+requested surrogate-interior starts. Each record compares the complete
+single-match buffer and eight find-all capacities, including zero, odd-sized,
+exact and oversized buffers. Greedy records also compare the direct helper
+against its scan dispatcher. Partial successful pairs and untouched sentinel
+tails are exact. `tools/libjs_regex_scan_corpus.py` reuses the native property
+oracle and imports unchanged scan bodies; parser/compiler, backtracking and
+general VM execution are not invoked. Regenerate with
+`python3 tools/libjs_regex_scan_corpus.py --output /tmp/regex-scans.tsv` and
+compare all three `regex-scans*.tsv` assets. Regeneration is byte-exact, with
+each split asset below 5 MB.
 
 Browser integration checks pass the eighteen `browserjs` test files in both GC modes,
 the native `main_test.v` bridge and flag tests, the production bundle build,
@@ -1804,6 +1876,16 @@ the same-size SVG source switch with zero differing pixels.
   source's callback frame. String enumeration decodes ICU UTF-16 items directly
   to code-point arrays instead of passing through AK UTF-8 Strings; range items,
   string order, filtering and complete packed output compare exactly.
+- Simple-match and candidate helpers expose source-private predicates as V
+  package functions; union boxes use the existing stable V ownership model.
+  First-filter callers must provide an in-bounds position, matching the source
+  caller's precondition. Single-match scan callers provide at least two capture
+  slots, and greedy bounds retain the compiler's `min <= max` precondition.
+  Invalid generated bounds are not repaired with an alternate scan algorithm.
+  V arrays replace Rust slices and the local two-slot find-all array; successful
+  pairs, partial capacity-exhaustion output and unused tails compare exactly.
+  These fast paths are exposed over supplied bytecode records while production
+  RegExp parsing, compilation and general VM dispatch remain untranslated.
 - Checked string length sum/product retain upstream's 2^32-1 code-unit maximum.
   TypedArray join and toLocaleString assemble flat V UTF-16 arrays instead of
   AK's builder and throw the same string-size RangeError above V's 2^31-1 array
@@ -1918,9 +2000,10 @@ complete LibJS runtime migration.
   saved choices, modifiers/repetition, character traversal, canonicalization,
   builtin classes, literal matching, word boundaries, backreferences, UnicodeSet
   case closure/range operations, character classes, simple-scan membership,
-  Unicode property lookup/resolution/validation and string-property data are
-  translated. Its `parser.rs`, `compiler.rs`, candidate matcher filters, simple-scan
-  execution, backtracking dispatcher, fast/general VM execution, lookaround
+  Unicode property lookup/resolution/validation, string-property data,
+  simple-match predicates, candidate filters and simple-scan execution are
+  translated. Its `parser.rs`, `compiler.rs`, backtracking dispatcher,
+  fast/general VM execution, lookaround
   bodies and `regex.rs`/FFI remain pending.
   The RegExp object, allocation/initialization, constructor/prototype methods and
   matching depend on those remaining slices. Neither the JavaScript AST corpus,

@@ -966,8 +966,10 @@ Unicode property resolution, strict aliases, script extensions, case-closed
 queries and string-property packing add 129,233 exact native comparisons.
 These include complete string-property output and every BMP code point; macOS
 queries use standard ICU 78 rather than Apple's private-use category tailoring.
-The parser, compiler, backtracking dispatch and
-VM execution remain pending.
+Simple-match predicates and candidate filters add 389,048 exact native
+comparisons. Single-match, greedy and find-all scan execution adds 32,481,
+including complete capture buffers and capacity exhaustion.
+The parser, compiler, backtracking dispatch and general VM execution remain pending.
 Array exotic records retain sparse, nonconfigurable length descriptors, grow
 only after successful indexed definitions, and restore failed truncations at
 the highest fixed index. Property definitions propagate VM exceptions through
@@ -1020,9 +1022,11 @@ SharedArrayBuffer allocation reserves the maximum capacity while exposing the
 initial length. Its constructor, three accessors, growth hook and species-aware
 slicing are installed and tested with live DataView witnesses. Cross-agent
 shared-memory ordering remains pending, as in the pinned upstream active bodies.
-The LibJS package's 207 test files pass in both GC and no-GC mode, and all 100
-upstream AST fixtures match exactly with no case overrides. The complete repository suite passes all
-879 test files, including the native bridge and eighteen browser integration files.
+The LibJS package's 212 test files pass in both GC and no-GC mode, and all 100
+upstream AST fixtures match exactly with no case overrides. All 884 repository
+test files are verified, including the native bridge and eighteen browser
+integration files. Eleven interrupted WebGL/WebIDL jobs passed after a fresh
+two-job rerun.
 The native browser and inline-document layout bridge now prepare page scripts
 through LibJS and associate classic execution with translated Script, Realm,
 and VM embedding contexts. Sources retain their URLs and parse goals; syntax

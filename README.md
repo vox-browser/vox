@@ -43,7 +43,7 @@ expose fixed UTF-16 character descriptors.
 RegExp preparation translates flag validation, named-group surrogate checks,
 Unicode escape normalization and source escaping, with 9,202 exact native
 LibJS/AK comparisons. RegExp objects, constructors/prototypes and the regex
-compiler/matcher remain pending.
+compiler/general matcher remain pending.
 LibRegex's complete AST and bytecode records, owned cloning and input/capture
 primitives are translated, with 36,166 exact native Rust helper comparisons.
 Bytecode pattern-hint analysis and literal prefilters add 112,458 exact native
@@ -62,8 +62,10 @@ comparisons, including every BMP code point and all class flag combinations.
 Unicode property resolution, strict aliases, script extensions, case-closed
 queries and string-property packing add 129,233 exact native comparisons.
 On macOS, property queries use standard ICU 78 to preserve upstream's data.
-The regex parser, compiler and VM execution remain
-pending.
+Simple-match predicates and candidate filters add 389,048 exact native
+comparisons. Single-match, greedy and find-all scan execution adds 32,481,
+including complete capture buffers and capacity exhaustion.
+The regex parser, compiler, backtracking and general VM execution remain pending.
 Synchronous iterator operations and String/ordinary-Array iterator records
 support stepping, collection, and closing.
 Their intrinsic prototypes are supplied explicitly; Array literals and methods,
