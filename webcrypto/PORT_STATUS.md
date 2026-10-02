@@ -245,6 +245,13 @@ the outer SubtleCrypto import boundary installs it. Normalized asynchronous
 import now invokes Ed448's class body directly. Focused tests cover all formats,
 empty private usage checks, duplicate common usages, and native DER key handles.
 
+ML-KEM class import preserves its source distinction: SPKI explicitly sets
+supplied metadata, while raw-public/raw-seed/PKCS8 keep default slots. Common
+public import installs normalized usages/extractability afterward. Focused
+tests cover every parameter set and source format, duplicate/common usages,
+empty private versus public usages, exact native handles, and copied deferred
+seed import.
+
 Common parameter/typed boundary conversions remain under source review.
 Native backend availability does not establish complete WebCrypto/VM parity.
 
