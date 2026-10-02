@@ -14,12 +14,12 @@ import webidl
 
 // This file ports Ladybird's LibWeb/CSS font-face, font-feature-values, and
 // font-computer logic. It uses the translated WebIDL promise, Fetch response,
-// MIME sniffing, parser descriptor, and style-scope types. JS realms, queued
-// tasks, and the platform font decoders remain explicit integration boundaries.
+// MIME sniffing, parser descriptor, and style-scope types. Owning HTML tasks,
+// actual JSC Promises/wrappers and source-native decoders supply their package
+// and ABI boundaries without duplicating the CSS font-loading algorithms.
 //
-// NOTE: css/events_misc.v already owns a zero-field `FontFace` type for
-// FontFaceSetLoadEvent. To keep this file disjoint, the stateful FontFace
-// translation is named FontFaceObject.
+// FontFaceObject is the native stateful translation. css/events_misc.v exposes
+// FontFace as its WebIDL alias, so load events retain these same objects.
 
 // --- Font feature data ---
 
