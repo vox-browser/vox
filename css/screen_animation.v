@@ -478,8 +478,8 @@ pub fn (mut viewport VisualViewport) zoom(position CSSPixelPoint, scale_delta f6
 	// scale_new * (focal_point - offset_new) = scale_old * (focal_point - offset_old)
 	mut new_offset_x := viewport.offset_.x().to_double() * viewport.scale_ * applied_delta
 	mut new_offset_y := viewport.offset_.y().to_double() * viewport.scale_ * applied_delta
-	new_offset_x += math.round(position.x().to_double()) * (applied_delta - 1.0)
-	new_offset_y += math.round(position.y().to_double()) * (applied_delta - 1.0)
+	new_offset_x += position.x().to_double() * (applied_delta - 1.0)
+	new_offset_y += position.y().to_double() * (applied_delta - 1.0)
 
 	viewport_rect := viewport.layout_viewport_rect()
 	max_x_offset := math.max(0.0, viewport_rect.width.to_double() * (new_scale - 1.0))
