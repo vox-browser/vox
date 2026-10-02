@@ -38,11 +38,13 @@ pub fn BinaryMachineGlobalInstance.value_offset() usize {
 @[heap]
 pub struct BinaryMachineStore {
 mut:
+	memories_   []&BinaryMachineMemoryInstance
 	globals_    []&BinaryMachineGlobalInstance
 	datas_      []BinaryMachineDataInstance
 	elements_   []BinaryMachineElementInstance
 	tags_       []BinaryMachineTagInstance
 	exceptions_ []BinaryMachineExceptionInstance
+	heap_       ?BinaryMachineHeap
 }
 
 pub fn BinaryMachineStore.create() &BinaryMachineStore { return &BinaryMachineStore{} }
