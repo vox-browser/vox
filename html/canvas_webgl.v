@@ -1,4 +1,5 @@
 // Copyright (c) 2026, Ladybird contributors
+// Copyright (c) 2022, Luke Wilde <lukew@serenityos.org>
 // SPDX-License-Identifier: BSD-2-Clause
 // HTMLCanvasElement get_context/create_webgl_context and surface ownership.
 module html
@@ -34,7 +35,7 @@ fn webgl_attributes_from_js(options ?map[string]dom.JSValue) !webgl.WebGLContext
 	if value := dictionary['powerPreference'] {
 		if !value.is_undefined() { power = value.to_string_value() }
 	}
-	return webgl.convert_context_attributes(webgl.ContextAttributeInput{
+	return webgl.convert_value_to_context_attributes_dictionary(webgl.ContextAttributeInput{
 		alpha:                            webgl_dictionary_boolean(dictionary, 'alpha')
 		depth:                            webgl_dictionary_boolean(dictionary, 'depth')
 		stencil:                          webgl_dictionary_boolean(dictionary, 'stencil')
@@ -44,7 +45,7 @@ fn webgl_attributes_from_js(options ?map[string]dom.JSValue) !webgl.WebGLContext
 		power_preference:                 power
 		fail_if_major_performance_caveat: webgl_dictionary_boolean(dictionary, 'failIfMajorPerformanceCaveat')
 		desynchronized:                   webgl_dictionary_boolean(dictionary, 'desynchronized')
-		xr_compatible:                    webgl_dictionary_boolean(dictionary, 'xrCompatible')
+		// The source hand-written converter leaves xr_compatible at false.
 	})
 }
 

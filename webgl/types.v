@@ -344,8 +344,8 @@ pub:
 	skip_rows   u64
 }
 
-// convert_value_to_context_attributes_dictionary preserves WebIDL defaults
-// and throws for an invalid enumeration token.
+// Typed convenience conversion preserves WebIDL defaults and accepts the full
+// IDL record. The source hand-written creation converter omits xrCompatible.
 pub fn convert_context_attributes(input ?ContextAttributeInput) !WebGLContextAttributes {
 	attributes := input or { return WebGLContextAttributes{} }
 	power := if preference := attributes.power_preference {
@@ -354,7 +354,7 @@ pub fn convert_context_attributes(input ?ContextAttributeInput) !WebGLContextAtt
 			'high-performance' { WebGLPowerPreference.high_performance }
 			'low-power' { WebGLPowerPreference.low_power }
 			else {
-				return error("TypeError: invalid WebGLPowerPreference '${preference}'")
+				return error("TypeError: Invalid value '${preference}' for enumeration type 'WebGLPowerPreference'")
 			}
 		}
 	} else {

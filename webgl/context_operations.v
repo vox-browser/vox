@@ -146,7 +146,9 @@ fn is_cube_map_face(target GLenum) bool {
 }
 
 pub fn convert_value_to_context_attributes_dictionary(input ?ContextAttributeInput) !WebGLContextAttributes {
-	return convert_context_attributes(input)
+	attributes := convert_context_attributes(input)!
+	// WebGLContextAttributes.cpp leaves this member at its default false.
+	return WebGLContextAttributes{...attributes, xr_compatible: false}
 }
 
 pub fn fire_webgl_context_event(type_ string) WebGLContextEvent {

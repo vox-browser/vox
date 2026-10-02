@@ -1,4 +1,5 @@
 // Copyright (c) 2026-present, the Ladybird developers.
+// Copyright (c) 2022, Luke Wilde <lukew@serenityos.org>
 // SPDX-License-Identifier: BSD-2-Clause
 // Compact WebGL WebIDL transport. IDL constants/signatures are copied from
 // upstream WebGL/*RenderingContext{Base,Overloads}.idl; native V owns operations.
@@ -28,6 +29,13 @@ function __webglReply(result) {
 function __webglNumber(value){const number=+value;return Number.isFinite(number)?number:String(number);}
 function __webglString(value){return `${value}`;}
 const __webglNumberSequence=__webglSequenceFactory(__webglNumber),__webglStringSequence=__webglSequenceFactory(__webglString),__webglListSequence=__webglSequenceFactory(__webglNumber,true);
+// HTML get_context coerces nonobjects to null before the hand-written
+// WebGLContextAttributes converter. That source converter omits xrCompatible.
+const __webglContextAttributes=(function(){
+ const apply=Reflect.apply,create=Object.create,define=Object.defineProperty,T=TypeError;
+ return function(options){if(options===null||(typeof options!=="object"&&typeof options!=="function"))return;const result=apply(create,Object,[null]);
+ for(const key of ["alpha","antialias","depth","desynchronized","failIfMajorPerformanceCaveat","powerPreference","premultipliedAlpha","preserveDrawingBuffer","stencil"]){const value=options[key];if(value===undefined)continue;let converted;if(key==="powerPreference"){converted=__webglString(value);if(converted!=="default"&&converted!=="low-power"&&converted!=="high-performance")throw new T("Invalid value \u0027"+converted+"\u0027 for enumeration type \u0027WebGLPowerPreference\u0027");}else converted=!!value;apply(define,Object,[result,key,{value:converted,writable:true,enumerable:true,configurable:true}]);}return result;};
+})();
 function __webglBytes(value,nullable) {
  if(value===null||value===undefined){if(nullable)return null;throw new TypeError("Expected a BufferSource");}
  return __webglBufferSlots.bytes(value);
@@ -95,7 +103,7 @@ function __webglMethod(s,name,overloads) {
 function __webglContext(s,kind,options) {
  const canvas=__canvasFor(s),normalized=kind==="experimental-webgl"?"webgl":kind;
  if(canvas.context)return canvas.kind===normalized?canvas.context:null;
- let attributes;if(options!==null&&options!==undefined){if((typeof options!=="object"&&typeof options!=="function"))throw new TypeError("Expected a WebGLContextAttributes dictionary");attributes={};for(const key of ["alpha","depth","stencil","antialias","premultipliedAlpha","preserveDrawingBuffer","powerPreference","failIfMajorPerformanceCaveat","desynchronized","xrCompatible"])if(options[key]!==undefined)attributes[key]=key==="powerPreference"?__webglString(options[key]):!!options[key];}
+ const attributes=__webglContextAttributes(options);
  const info=__webglCall(s,"getContext",[],{kind:kind,options:attributes});if(info===null)return null;
  const context=Object.create(globalThis[info.version===2?"WebGL2RenderingContext":"WebGLRenderingContext"].prototype);Object.defineProperty(context,"canvas",{value:__element(s),enumerable:true});
  const specs=Object.assign({},__webglSpecs1,info.version===2?__webglSpecs2:{}),constants=Object.assign({},__webglConstants1,info.version===2?__webglConstants2:{});

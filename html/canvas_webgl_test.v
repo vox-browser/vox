@@ -15,6 +15,7 @@ fn test_html_webgl_getter_preserves_kind_identity_options_and_source_null_result
 		'preserveDrawingBuffer': dom.js_string('truthy')
 		'alpha':                 dom.js_number(0)
 		'powerPreference':       dom.js_string('high-performance')
+		'xrCompatible':          dom.js_bool(true)
 	}) or { panic(err) }
 	mut context := first.webgl_context or { panic('native context') }
 	assert first.kind == .webgl
@@ -23,6 +24,7 @@ fn test_html_webgl_getter_preserves_kind_identity_options_and_source_null_result
 	assert context.attributes.preserve_drawing_buffer
 	assert !context.attributes.alpha
 	assert context.attributes.power_preference == .high_performance
+	assert !context.attributes.xr_compatible
 	assert context.drawing_buffer_width() == 300
 	assert context.drawing_buffer_height() == 150
 	second := html_canvas_element_get_rendering_context(canvas, 'webgl', {

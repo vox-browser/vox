@@ -17,6 +17,9 @@ fn test_context_attribute_defaults_and_conversion() {
 	assert converted.stencil
 	assert converted.power_preference == .high_performance
 	assert converted.xr_compatible
+	assert !convert_value_to_context_attributes_dictionary(ContextAttributeInput{
+		xr_compatible: true
+	})!.xr_compatible
 	context := WebGLRenderingContext.new(.webgl1, WebGLContextAttributes{
 		depth: false
 		stencil: true
@@ -27,7 +30,7 @@ fn test_context_attribute_defaults_and_conversion() {
 	assert !context.native.drawing_buffer_options.antialias
 	assert !context.xr_compatible()
 	convert_context_attributes(ContextAttributeInput{ power_preference: 'fastest' }) or {
-		assert err.msg().contains('invalid WebGLPowerPreference')
+		assert err.msg() == "TypeError: Invalid value 'fastest' for enumeration type 'WebGLPowerPreference'"
 		return
 	}
 	assert false
