@@ -10,7 +10,10 @@ pub:
 	value Value
 }
 
-pub fn (exception ValueException) msg() string { return 'WebIDL callback threw a value' }
+pub fn (exception ValueException) msg() string {
+	if native := exception.value.simple_exception_ { return native.name() + ': ' + native.message }
+	return 'WebIDL callback threw a value'
+}
 pub fn (exception ValueException) code() int { return 0 }
 
 pub fn throw_value(value Value) IError { return ValueException{value} }

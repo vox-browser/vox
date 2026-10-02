@@ -38,6 +38,7 @@ pub:
 	opaque_id           u64
 	// Retain the actual native exception record across Promise/callback boundaries.
 	dom_exception_      ?&DOMException
+	simple_exception_   ?&SimpleException
 	frozen              bool
 	promise_value_      ?&Promise
 	runtime_value_      ?RuntimeValue

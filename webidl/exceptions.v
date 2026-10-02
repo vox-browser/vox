@@ -13,10 +13,31 @@ pub enum SimpleExceptionType {
 	uri_error
 }
 
+@[heap]
 pub struct SimpleException {
 pub:
 	type_   SimpleExceptionType
 	message string
+}
+
+pub fn (exception &SimpleException) name() string {
+	return match exception.type_ {
+		.eval_error { 'EvalError' }
+		.range_error { 'RangeError' }
+		.reference_error { 'ReferenceError' }
+		.type_error { 'TypeError' }
+		.uri_error { 'URIError' }
+	}
+}
+
+// ExceptionOrUtils.h converts a SimpleException into one thrown Error value.
+// Retain the exception descriptor so later stored-error uses share that value.
+pub fn simple_exception_value(exception SimpleException) Value {
+	return simple_exception_value_for_record(&SimpleException{type_: exception.type_, message: exception.message})
+}
+
+pub fn simple_exception_value_for_record(exception &SimpleException) Value {
+	return Value{kind: .platform_object, simple_exception_: exception, opaque_id: u64(voidptr(exception))}
 }
 
 @[heap]

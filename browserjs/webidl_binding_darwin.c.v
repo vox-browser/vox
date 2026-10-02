@@ -109,6 +109,10 @@ fn (runtime &Runtime) binding_exception_value(exception IError) voidptr {
 	if exception is JavaScriptValueException && exception.context == runtime.context { return exception.value }
 	if exception is webidl.ValueException {
 		if actual := runtime.actual_webidl_value(exception.value) { return actual }
+		if exception.value.simple_exception_ != none {
+			mut owner := unsafe { &Runtime(runtime) }
+			if actual := owner.javascript_simple_exception(exception.value) { return actual }
+		}
 	}
 	mut kind := 'Error'
 	mut message := exception.msg()
