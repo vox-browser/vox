@@ -53,9 +53,9 @@ function __webglOverload(overloads,values) {
  const buffer=ArrayBuffer.isView(value)||value instanceof ArrayBuffer||(typeof SharedArrayBuffer!=="undefined"&&value instanceof SharedArrayBuffer);
  if(type.startsWith("BufferSource")||type.startsWith("ArrayBufferView")){if(!(buffer||(type.endsWith("?")&&value==null)))matches=false;}
  else if(type==="TexImageSource"){if(!(value&&typeof value==="object"&&!buffer))matches=false;}
- else if(type==="GLintptr"||type==="GLsizeiptr"){if(buffer||value===null||typeof value==="object")matches=false;}
+ else if(type==="GLintptr"||type==="GLsizeiptr"){if(buffer||value==null)matches=false;}
  }if(matches)return entry;}
- return candidates[0]||overloads[overloads.length-1];
+ throw new TypeError("Overload resolution failed");
 }
 function __webglArgument(value,type) {
  const nullable=type.endsWith("?");if(nullable)type=type.slice(0,-1);
@@ -68,6 +68,10 @@ function __webglArgument(value,type) {
  return __webglNumber(value);
 }
 function __webglMethod(s,name,overloads) {
+ // operation_overload_sets excludes upstream [FIXME] declarations before
+ // constructing the effective overload set. Numeric unpack overloads have
+ // no source body and must never dispatch as an empty byte upload.
+ overloads=overloads.filter(function(entry){return !entry[2].startsWith("[FIXME]");});
  return function(){const values=Array.from(arguments);const min=Math.min(...overloads.map(function(entry){return entry[0];}));if(values.length<min)throw new TypeError(name+" has too few arguments");const signature=__webglOverload(overloads,values);
  const extra={bufferStates:{}};const args=values.map(function(value,index){
  const type=signature[1][index];if(!type)return value;
