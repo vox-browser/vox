@@ -343,6 +343,7 @@ pub struct ExternalValue {
 pub:
 	kind  ImportExportKind
 	value webidl.Value
+	memory ?&Memory
 }
 
 pub type ImportObject = map[string]map[string]ExternalValue
@@ -361,6 +362,7 @@ pub:
 	module &Module
 pub mut:
 	exports_ []InstanceExport
+	memories []&Memory
 }
 
 pub fn (instance &ModuleInstance) exports() []InstanceExport {
@@ -390,6 +392,7 @@ pub fn Instance.create_for_realm(realm string, compiled &Module, imports ImportO
 }
 
 fn instance_create_with_cache(cache &WebAssemblyCache, compiled &Module, imports ImportObject) !&Instance {
+	mut memories := []&Memory{}
 	for required in compiled.import_entries {
 		if required.module !in imports {
 			return error('LinkError: Import module=${required.module} is not an object')
@@ -401,9 +404,23 @@ fn instance_create_with_cache(cache &WebAssemblyCache, compiled &Module, imports
 		if value.kind != required.kind {
 			return error('LinkError: Import ${required.module}.${required.name} has the wrong kind')
 		}
+		if required.kind == .memory {
+			memory := value.memory or {
+				return error('LinkError: Expected an instance of WebAssembly.Memory for a memory import')
+			}
+			if !matches_memory_limits(memory.wasm_type(), required.memory_type) {
+				return error('LinkError: Memory import and extern do not match')
+			}
+			memories << memory
+			unsafe { cache.add_memory_instance(memory.address(), memory) }
+		}
+	}
+	for type_ in compiled.memory_types {
+		memories << memory_create_for_module_with_cache(cache, type_)!
 	}
 	mut module_instance := &ModuleInstance{
 		module: compiled
+		memories: memories
 	}
 	mut exports := map[string]ExternalValue{}
 	for index, descriptor in compiled.export_entries {
@@ -418,7 +435,10 @@ fn instance_create_with_cache(cache &WebAssemblyCache, compiled &Module, imports
 				webidl.platform_object_value()
 			}
 			.memory {
-				memory := memory_create_with_cache(cache, MemoryDescriptor{})!
+				if descriptor.index >= u32(memories.len) {
+					return error('LinkError: An export could not be resolved')
+				}
+				memory := memories[descriptor.index]
 				address = memory.address()
 				webidl.platform_object_value()
 			}
@@ -433,6 +453,7 @@ fn instance_create_with_cache(cache &WebAssemblyCache, compiled &Module, imports
 		external := ExternalValue{
 			kind: descriptor.kind
 			value: value
+			memory: if descriptor.kind == .memory { ?&Memory(memories[descriptor.index]) } else { ?&Memory(none) }
 		}
 		exports[descriptor.name] = external
 		module_instance.exports_ << InstanceExport{
@@ -478,12 +499,7 @@ pub fn (instance &Instance) memory_instance(address u64) &Memory {
 	if memory := instance.cache_.get_memory_instance(address) {
 		return memory
 	}
-	memory := memory_create_with_cache(instance.cache_, MemoryDescriptor{}) or { panic(err) }
-	mut cache := instance.cache_
-	unsafe {
-		cache.add_memory_instance(address, memory)
-	}
-	return memory
+	panic('Invalid WebAssembly memory address ${address}')
 }
 
 pub fn (instance &Instance) table_instance(address u64) &Table {

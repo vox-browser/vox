@@ -179,6 +179,7 @@ fn test_instance_retains_owner_cache_and_caches_exports_per_realm() {
 
 fn test_instance_resolves_exported_wrapper_objects_through_its_cache() {
 	compiled := &Module{
+		memory_types: [WasmLimits{}]
 		export_entries: [
 			ModuleExportDescriptor{ name: 'global', kind: .global },
 			ModuleExportDescriptor{ name: 'memory', kind: .memory },

@@ -53,6 +53,8 @@ pub:
 	maximum ?u32
 	shared  bool
 	cache_  &WebAssemblyCache
+	address_type_ AddressType
+	declared_maximum ?u64
 mut:
 	data       []u8
 	generation u64
@@ -84,6 +86,7 @@ fn memory_create_with_cache(cache &WebAssemblyCache, descriptor MemoryDescriptor
 		maximum: descriptor.maximum
 		shared: descriptor.shared
 		cache_: cache
+		declared_maximum: if maximum := descriptor.maximum { ?u64(u64(maximum)) } else { none }
 		data: []u8{len: int(descriptor.initial) * page_size}
 	}
 	unsafe {
@@ -106,6 +109,14 @@ pub fn (memory &Memory) address() u64 {
 
 pub fn (memory &Memory) size_pages() u32 {
 	return u32(memory.data.len / page_size)
+}
+
+pub fn (memory &Memory) wasm_type() WasmLimits {
+	return WasmLimits{
+		address_type: memory.address_type_
+		minimum: u64(memory.size_pages())
+		maximum: memory.declared_maximum
+	}
 }
 
 pub fn (memory &Memory) is_shared() bool {
