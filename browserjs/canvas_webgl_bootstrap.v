@@ -95,10 +95,10 @@ function __webglMethod(s,name,overloads,version) {
  if(name==="getBufferSubData"){const destination=values[2],result=__webglCall(state,name,args,extra);if(result!==null)__webglBufferSlots.write(destination,result);return;}
 	const result=__webglCall(state,name,args,extra);if(signature[2].endsWith("undefined"))return;
  if(signature[2]==="WebGLActiveInfo?"||signature[2]==="WebGLShaderPrecisionFormat?")return __webglReflectionRecord(result,signature[2].slice(0,-1));
- if(Array.isArray(result)&&name==="getParameter"){const pname=+values[0];if([0x846e,0x846d,0x8005,0x0c22,0x0b70].includes(pname))return new Float32Array(result);if([0x0d3a,0x0c10,0x0ba2].includes(pname))return new Int32Array(result);if(pname===0x86a3)return new Uint32Array(result);}
+ if(Array.isArray(result)&&name==="getParameter"){const pname=(+args[0])>>>0;if([0x846e,0x846d,0x8005,0x0c22,0x0b70].includes(pname))return new Float32Array(result);if([0x0d3a,0x0c10,0x0ba2].includes(pname))return new Int32Array(result);if(pname===0x86a3)return new Uint32Array(result);}
  if(Array.isArray(result)&&name==="getInternalformatParameter")return new Int32Array(result);
- if(Array.isArray(result)&&name==="getActiveUniformBlockParameter"&&+values[2]===0x8a43)return new Uint32Array(result);
- if(Array.isArray(result)&&name==="getVertexAttrib"&&+values[1]===0x8626)return new Float32Array(result);
+ if(Array.isArray(result)&&name==="getActiveUniformBlockParameter"&&((+args[2])>>>0)===0x8a43)return new Uint32Array(result);
+ if(Array.isArray(result)&&name==="getVertexAttrib"&&((+args[1])>>>0)===0x8626)return new Float32Array(result);
  return __webglReply(result);
  }})[name];
  return __webglContextSlots.metadata(operation,name,min);
