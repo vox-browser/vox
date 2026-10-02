@@ -44,11 +44,17 @@ fn test_universal_global_scope_microtasks_and_rejected_promises() {
 	mut promise := dom.Promise.rejected(dom.js_string('failure'))
 	scope.push_onto_about_to_be_notified_rejected_promises_list(promise)
 	scope.notify_about_rejected_promises()
+	assert realm.reported_exceptions.len == 0
+	mut queue := event_loop.task_queue()
+	notification := queue.take_first_runnable_matching(fn (task &Task) bool { return task.source == .dom_manipulation }) or { panic('missing notification task') }
+	notification.execute()
 	assert realm.reported_exceptions.len == 1
 	assert scope.remove_from_outstanding_rejected_promises_weak_set(promise)
 	promise.mark_handled()
 	scope.push_onto_about_to_be_notified_rejected_promises_list(promise)
 	scope.notify_about_rejected_promises()
+	handled_notification := queue.take_first_runnable_matching(fn (task &Task) bool { return task.source == .dom_manipulation }) or { panic('missing handled notification task') }
+	handled_notification.execute()
 	assert realm.reported_exceptions.len == 1
 }
 

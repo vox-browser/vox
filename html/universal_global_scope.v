@@ -143,26 +143,35 @@ pub fn (mut scope UniversalGlobalScopeMixin) notify_about_rejected_promises() {
 		return
 	}
 	scope.about_to_be_notified_rejected_promises_.clear()
-	for promise in list {
-		if promise.is_handled() {
-			continue
-		}
-		event := dom.PromiseRejectionEvent.create('unhandledrejection', dom.PromiseRejectionEventInit{
-			EventInit: dom.EventInit{
-				cancelable: true
-			}
-			promise:   dom.js_object(voidptr(promise))
-			reason:    promise.result()
-		})
-		not_handled := scope.event_target.dispatch_event(unsafe { &dom.Event(event) })
-		if !promise.is_handled() {
-			scope.push_onto_outstanding_rejected_promises_weak_set(promise)
-		}
-		if not_handled {
-			mut realm := unsafe { &ScriptingRealm(scope.realm) }
-			report_exception_to_console(promise.result(), mut realm, .yes)
-		}
+	scope_pointer := voidptr(&scope)
+	responsible_event_loop := if settings := settings_object_of_realm(scope.realm) {
+		settings.responsible_event_loop()
+	} else {
+		main_thread_event_loop()
 	}
+	queue_a_task(.dom_manipulation, responsible_event_loop, scope.document_, fn [scope_pointer, list] () {
+		mut scope := unsafe { &UniversalGlobalScopeMixin(scope_pointer) }
+		for promise in list {
+			if promise.is_handled() {
+				continue
+			}
+			event := dom.PromiseRejectionEvent.create('unhandledrejection', dom.PromiseRejectionEventInit{
+				EventInit: dom.EventInit{
+					cancelable: true
+				}
+				promise:   dom.js_object(voidptr(promise))
+				reason:    promise.result()
+			})
+			not_handled := scope.event_target.dispatch_event(unsafe { &dom.Event(event) })
+			if !promise.is_handled() {
+				scope.push_onto_outstanding_rejected_promises_weak_set(promise)
+			}
+			if not_handled {
+				mut realm := unsafe { &ScriptingRealm(scope.realm) }
+				report_exception_to_console(promise.result(), mut realm, .yes)
+			}
+		}
+	})
 }
 
 pub fn (scope &UniversalGlobalScopeMixin) import_map() &ImportMap {

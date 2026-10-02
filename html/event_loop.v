@@ -760,6 +760,15 @@ pub fn (mut event_loop EventLoop) perform_a_microtask_checkpoint() {
 		task.execute()
 		event_loop.currently_running_task_ = none
 	}
+	// Rejection notification can change the related settings set. The source
+	// algorithm roots a snapshot before invoking each global's notification.
+	environments := event_loop.related_environment_settings_objects_.clone()
+	for settings in environments {
+		if settings.universal_global_scope_ != unsafe { nil } {
+			mut scope := settings.universal_global_scope_
+			scope.notify_about_rejected_promises()
+		}
+	}
 	event_loop.performing_a_microtask_checkpoint = false
 }
 
