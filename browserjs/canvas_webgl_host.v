@@ -261,7 +261,10 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 		'resize' { return json2.Any(json2.Null{}) }
 		'drawingBufferWidth' { return json2.Any(context.drawing_buffer_width()) }
 		'drawingBufferHeight' { return json2.Any(context.drawing_buffer_height()) }
-		'getContextAttributes' { return wg_attributes(context.attributes) }
+		'getContextAttributes' {
+			if value := context.get_context_attributes() { return wg_attributes(value) }
+			return json2.Any(json2.Null{})
+		}
 		'getSupportedExtensions' {
 			return json2.Any(context.get_supported_extensions(false).map(json2.Any(it)))
 		}

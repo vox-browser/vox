@@ -54,3 +54,28 @@ fn test_javascript_webgl_context_kinds_and_foreign_resource_ownership() {
 		assert runtime.evaluate_host('call(a,"getError",[])')! == '0'
 	}
 }
+
+fn test_public_webgl_wrapper_uses_idl_conversions_resources_readback_and_resize() {
+	$if darwin {
+		mut document := html.parse_document('<canvas id="canvas" width="4" height="4"></canvas>')
+		mut host := CanvasWebGLHost.create(document)
+		mut runtime := Runtime.create()
+		defer { runtime.close() }
+		host.install(mut runtime)!
+		key := host.elements.keys().filter(host.elements[it].local_name() == 'canvas')[0]
+		runtime.evaluate_host('const __canvases=Object.create(null);const state={bridgeKey:"${key}",width:4,height:4};const element={};function __canvasFor(s){return __canvases[s.bridgeKey]||(__canvases[s.bridgeKey]={state:s});}function __canvasDimension(s,key){return s[key];}function __element(s){return element;}')!
+		runtime.evaluate_host(webgl_bootstrap())!
+		assert runtime.evaluate_host('const gl=__webglContext(state,"webgl2",{preserveDrawingBuffer:true});gl instanceof WebGL2RenderingContext && gl.canvas===element && gl.TRIANGLES===4 && __webglContext(state,"webgl2")===gl && __webglContext(state,"webgl")===null')! == 'true'
+		assert runtime.evaluate_host('const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);buffer instanceof WebGLBuffer && gl.getParameter(gl.ARRAY_BUFFER_BINDING)===buffer && gl.getBufferParameter(gl.ARRAY_BUFFER,gl.BUFFER_SIZE)===24')! == 'true'
+		assert runtime.evaluate_host('try{gl.bindBuffer(gl.ARRAY_BUFFER,{});false}catch(e){e instanceof TypeError}')! == 'true'
+		assert runtime.evaluate_host('try{gl.clearColor(1,0);false}catch(e){e instanceof TypeError}')! == 'true'
+		runtime.evaluate_host('const vertex=gl.createShader(gl.VERTEX_SHADER);gl.shaderSource(vertex,"#version 300 es\\nin vec2 position;void main(){gl_Position=vec4(position,0.0,1.0);}");gl.compileShader(vertex);const fragment=gl.createShader(gl.FRAGMENT_SHADER);gl.shaderSource(fragment,"#version 300 es\\nprecision mediump float;out vec4 color;uniform vec4 tint;void main(){color=tint;}");gl.compileShader(fragment);const program=gl.createProgram();gl.attachShader(program,vertex);gl.attachShader(program,fragment);gl.bindAttribLocation(program,0,"position");gl.linkProgram(program);gl.useProgram(program);const location=gl.getUniformLocation(program,"tint");gl.uniform4fv(location,new Float32Array([1,0.25,0.5,1]));gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);gl.enableVertexAttribArray(0);gl.drawArrays(gl.TRIANGLES,0,3);')!
+		assert runtime.evaluate_host('const destination=new Uint8Array(8);destination.fill(99);gl.readPixels(0,0,1,1,gl.RGBA,gl.UNSIGNED_BYTE,destination,4);destination.join(",")')! == '99,99,99,99,255,64,128,255'
+		assert runtime.evaluate_host('const destination2=new Uint32Array(2);gl.readPixels(0,0,1,1,gl.RGBA,gl.UNSIGNED_BYTE,destination2,1);Array.from(new Uint8Array(destination2.buffer)).join(",")')! == '0,0,0,0,255,64,128,255'
+		assert runtime.evaluate_host('gl.getError()')! == '0'
+		assert runtime.evaluate_host('gl.readPixels(0,0,1,1,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array(1));gl.getError()')! == '1282'
+		assert runtime.evaluate_host('state.width=2;__webglCall(state,"resize");gl.drawingBufferWidth')! == '2'
+		assert runtime.evaluate_host('gl.getAttachedShaders(program)[0]===vertex')! == 'true'
+		assert runtime.evaluate_host('const vertexArray=gl.createVertexArray();gl.bindVertexArray(vertexArray);gl.getParameter(gl.VERTEX_ARRAY_BINDING)===vertexArray')! == 'true'
+	}
+}
