@@ -3,6 +3,9 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module dom
 
+import math
+import webidl
+
 // Concrete Painting/VisualViewport inputs to the source alignment algorithm.
 // The committed painting bridge supplies these records without a DOM import
 // cycle through Layout, Painting, CSS, and HTML.
@@ -138,6 +141,120 @@ pub fn determine_the_scroll_into_view_position_from_rect(target &Element, target
 
 // https://drafts.csswg.org/cssom-view-1/#scroll-a-target-into-view
 pub fn scroll_an_element_into_view(target &Element, behavior ScrollBehavior, block ScrollLogicalPosition, inline_ ScrollLogicalPosition, container ?&Element) &Promise {
+	if target.document().relevant_settings_object() == unsafe { nil } {
+		return scroll_an_element_into_view_standalone(target, behavior, block, inline_, container)
+	}
+	native := webidl.create_promise_for(target.document().relevant_realm_promise_context())
+	scroll_an_element_into_view_with_promise(target, behavior, block, inline_, container, native)
+	return Promise.from_webidl(native)
+}
+
+// LibGfx/Rect.h::intersected(), transported through DOM's rectangle ABI.
+fn scroll_into_view_intersection(first Rect, second Rect) Rect {
+	left := math.max(first.x, second.x)
+	right := math.min(first.x + first.width, second.x + second.width)
+	top := math.max(first.y, second.y)
+	bottom := math.min(first.y + first.height, second.y + second.height)
+	if left > right || top > bottom { return Rect{} }
+	return Rect{left, top, right - left, bottom - top}
+}
+
+// Element.cpp's ad-hoc destination projection. Smooth scrolling has not moved
+// the box yet; use the committed clamped destination for the outer iteration.
+fn scroll_into_view_project_target(target Rect, scrolling_box &Node, position CSSPixelPoint_) Rect {
+	layout_node := scrolling_box.layout_node() or { return target }
+	if !layout_node.has_geometry_ { return target }
+	box := scrolling_box.paintable_box() or { return target }
+	current := box.scroll_offset()
+	destination := box.clamp_scroll_offset(position)
+	mut projected := Rect{
+		x:      target.x + current.x() - destination.x()
+		y:      target.y + current.y() - destination.y()
+		width:  target.width
+		height: target.height
+	}
+	viewport := scrolling_box.document().unsafe_paintable() or {
+		panic('VERIFY(committed viewport paintable)')
+	}
+	// The retained transform excludes the visual viewport transform, matching
+	// the pinned source's IncludeVisualViewportTransform::No.
+	rects := viewport.transform_client_rects(scrolling_box, [CSSPixelRect_{
+		x_:      box.padding_box_x_
+		y_:      box.padding_box_y_
+		width_:  box.padding_box_width_
+		height_: box.padding_box_height_
+	}])
+	assert rects.len == 1
+	visible := scroll_into_view_intersection(projected,
+		Rect{rects[0].x_, rects[0].y_, rects[0].width(), rects[0].height()})
+	if visible.width > 0 && visible.height > 0 { projected = visible }
+	return projected
+}
+
+// Element.cpp:4498–4581. The caller supplies its optional real capability;
+// each ancestor operation retains its own actual Navigable capability.
+pub fn scroll_an_element_into_view_with_promise(target &Element, behavior ScrollBehavior,
+	block ScrollLogicalPosition, inline_ ScrollLogicalPosition, container ?&Element,
+	promise ?&webidl.Promise) {
+	mut scrolling_boxes := []&Node{}
+	mut ancestor := target.as_node().parent()
+	for ancestor != none {
+		scrolling_box := ancestor or { break }
+		if layout_node := scrolling_box.layout_node() {
+			if layout_node.has_geometry_ {
+				if box := scrolling_box.paintable_box() {
+					if box.has_scrollable_overflow() { scrolling_boxes << scrolling_box }
+				}
+			}
+		}
+		ancestor = scrolling_box.parent()
+	}
+	mut target_rect := target.get_bounding_client_rect()
+	mut ancestor_promises := []&webidl.Promise{}
+	for scrolling_box in scrolling_boxes {
+		if target.document().origin() != scrolling_box.document().origin() { break }
+		position := determine_the_scroll_into_view_position_from_rect(target, target_rect,
+			block, inline_, scrolling_box)
+		if !scrolling_box.is_document() {
+			target_rect = scroll_into_view_project_target(target_rect, scrolling_box, position)
+		}
+		// FIXME: The pinned source does not yet check whether position changed
+		// or whether this scrolling box has an ongoing smooth scroll.
+		if element := scrolling_box.as_element() {
+			if navigable := element.document().navigable() {
+				scroll := navigable.perform_a_scroll_of_an_element(element, position, behavior,
+					ScrollSnapSelectionStrategy_{})
+				ancestor_promises << scroll.webidl_promise() or {
+					panic('VERIFY(owning element scroll capability)')
+				}
+			}
+		} else if scrolling_box.is_document() {
+			// FIXME: The pinned caller has not wired root-element association;
+			// the existing Navigable viewport operation owns that source boundary.
+			navigable := scrolling_box.document().navigable() or { panic('VERIFY(viewport navigable)') }
+			scroll := navigable.perform_a_scroll_of_the_viewport_with_options(position, behavior,
+				ScrollSnapSelectionStrategy_{})
+			ancestor_promises << scroll.webidl_promise() or {
+				panic('VERIFY(owning viewport scroll capability)')
+			}
+		}
+		if stop_at := container {
+			if scrolling_box.is_shadow_including_inclusive_ancestor_of(stop_at.as_node()) { break }
+		}
+	}
+	if pointer := promise {
+		mut all := webidl.get_promise_for_wait_for_all_for(webidl.promise_context(pointer), ancestor_promises)
+		completion := all.upon_fulfillment(fn (_ webidl.Value) !webidl.Value {
+			return webidl.undefined_value()
+		})
+		mut caller := unsafe { &webidl.Promise(pointer) }
+		caller.resolve(webidl.promise_value(completion))
+	}
+}
+
+// Explicit preexisting DOM-only adapter: no owning Window/Painting realm.
+fn scroll_an_element_into_view_standalone(target &Element, behavior ScrollBehavior,
+	block ScrollLogicalPosition, inline_ ScrollLogicalPosition, container ?&Element) &Promise {
 	mut scrolling_boxes := []&Node{}
 	mut ancestor := target.as_node().parent()
 	for ancestor != none {
@@ -156,8 +273,7 @@ pub fn scroll_an_element_into_view(target &Element, behavior ScrollBehavior, blo
 		}
 
 		position := determine_the_scroll_into_view_position(target, block, inline_, scrolling_box)
-		// The remaining caller translation still needs element scrolls, outward
-		// target projection, behavior forwarding, and ancestor Promise aggregation.
+		// Preserve the old standalone viewport path until it has an HTML owner.
 		if scrolling_box.is_document() {
 			document := scrolling_box.document()
 			_ = behavior

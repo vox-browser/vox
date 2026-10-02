@@ -225,7 +225,15 @@ pub mut:
 	block    ScrollLogicalPosition = .start
 	inline_  ScrollLogicalPosition = .nearest
 	behavior ScrollBehavior = .auto_
+	container ScrollIntoViewContainer = .all
 }
+
+pub enum ScrollIntoViewContainer {
+	all
+	nearest
+}
+
+pub type ScrollIntoViewArgument = bool | ScrollIntoViewOptions
 
 pub enum ScrollLogicalPosition {
 	start
@@ -3889,12 +3897,7 @@ pub fn (mut e Element) set_snapped_scroll_areas(x []ScrollSnapAreaReference_,
 
 // https://w3c.github.io/csswg-drafts/cssom-view-1/#dom-element-scrollintoview
 pub fn (mut e Element) scroll_into_view() &Promise {
-	mut document := unsafe { &Document(e.document()) }
-	document.update_layout(.element_scroll_into_view)
-	if e.as_node().layout_node() == none {
-		return Promise.resolved(js_undefined())
-	}
-	return scroll_an_element_into_view(e, .auto_, .start, .nearest, none)
+	return e.scroll_into_view_with_options(ScrollIntoViewOptions{})
 }
 
 // --- Fullscreen ---
