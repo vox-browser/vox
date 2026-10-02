@@ -1415,6 +1415,7 @@ pub mut:
 	// dom<->layout bridge: opaque handle to the real layout.Node this placeholder mirrors (dom can't
 	// name the layout type). The layout module attaches these via attach_layout_nodes. See layout/dom_layout_bridge.v.
 	layout_handle                    voidptr = unsafe { nil }
+	find_matching_text_callback      fn (voidptr, string, CaseSensitivity) []&Range = unsafe { nil }
 	apply_style_callback             LayoutApplyStyleCallback = unsafe { nil }
 	clear_image_observers_callback   fn (voidptr) = unsafe { nil }
 	set_needs_layout_update_callback LayoutSetNeedsLayoutUpdateCallback = unsafe { nil }
@@ -10663,35 +10664,12 @@ pub fn (d &Document) get_popover_pointerdown_target() ?&HTMLElement {
 
 // --- Text search ---
 pub fn (d &Document) find_matching_text(query string, case_sensitivity CaseSensitivity) []&Range {
-	if query.len == 0 {
-		return []
-	}
-	// Collect all text content from the document tree and search for matches.
-	mut matches := []&Range{}
-	text_content := d.text_content() or { return matches }
-	search_text := if case_sensitivity == .case_insensitive {
-		text_content.to_lower()
-	} else {
-		text_content
-	}
-	search_query := if case_sensitivity == .case_insensitive {
-		query.to_lower()
-	} else {
-		query
-	}
-	mut offset := 0
-	for {
-		idx := search_text.index_after(search_query, offset) or { break }
-		matches << &Range{
-			start_offset_: idx
-			end_offset_: idx + search_query.len
-		}
-		offset = idx + search_query.len
-		if offset >= search_text.len {
-			break
-		}
-	}
-	return matches
+	mut document := unsafe { &Document(d) }
+	document.update_layout(.document_find_matching_text)
+	viewport := document.layout_node() or { return []&Range{} }
+	root := viewport.root_layout_node() or { return []&Range{} }
+	if root.find_matching_text_callback == unsafe { nil } { return []&Range{} }
+	return root.find_matching_text_callback(root.layout_handle, query, case_sensitivity)
 }
 
 // --- HTML parsing ---

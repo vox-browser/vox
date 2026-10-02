@@ -274,6 +274,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		user_select_none_: user_select_none
 		white_space_collapse_is_not_collapse_: box.computed_values().white_space_collapse() != .collapse
 		layout_handle: voidptr(box)
+		find_matching_text_callback: find_matching_layout_text
 		apply_style_callback: apply_style_to_layout_node
 		clear_image_observers_callback: clear_layout_image_observers
 		set_needs_layout_update_callback: set_layout_node_needs_layout_update
