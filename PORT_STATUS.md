@@ -962,7 +962,11 @@ and numbered/named backreferences add 113,204 exact native Rust/C++ comparisons.
 UnicodeSet expansion, bounded case closures, inverse-range matching, character
 classes and simple-scan membership add 255,240 exact native comparisons, including
 every BMP code point and all eight character-class flag combinations.
-The parser, compiler, Unicode property backend, backtracking dispatch and
+Unicode property resolution, strict aliases, script extensions, case-closed
+queries and string-property packing add 129,233 exact native comparisons.
+These include complete string-property output and every BMP code point; macOS
+queries use standard ICU 78 rather than Apple's private-use category tailoring.
+The parser, compiler, backtracking dispatch and
 VM execution remain pending.
 Array exotic records retain sparse, nonconfigurable length descriptors, grow
 only after successful indexed definitions, and restore failed truncations at
@@ -1016,9 +1020,9 @@ SharedArrayBuffer allocation reserves the maximum capacity while exposing the
 initial length. Its constructor, three accessors, growth hook and species-aware
 slicing are installed and tested with live DataView witnesses. Cross-agent
 shared-memory ordering remains pending, as in the pinned upstream active bodies.
-The LibJS package's 204 test files pass in both GC and no-GC mode, and all 100
+The LibJS package's 207 test files pass in both GC and no-GC mode, and all 100
 upstream AST fixtures match exactly with no case overrides. The complete repository suite passes all
-876 test files, including the native bridge and eighteen browser integration files.
+879 test files, including the native bridge and eighteen browser integration files.
 The native browser and inline-document layout bridge now prepare page scripts
 through LibJS and associate classic execution with translated Script, Realm,
 and VM embedding contexts. Sources retain their URLs and parse goals; syntax

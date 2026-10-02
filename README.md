@@ -59,7 +59,10 @@ for full UTF-8 uppercasing and simple Unicode folding.
 UnicodeSet expansion, bounded case closures, inverse-range matching,
 character classes and simple-scan membership add 255,240 exact native
 comparisons, including every BMP code point and all class flag combinations.
-The regex parser, compiler, Unicode property backend and VM execution remain
+Unicode property resolution, strict aliases, script extensions, case-closed
+queries and string-property packing add 129,233 exact native comparisons.
+On macOS, property queries use standard ICU 78 to preserve upstream's data.
+The regex parser, compiler and VM execution remain
 pending.
 Synchronous iterator operations and String/ordinary-Array iterator records
 support stepping, collection, and closing.
