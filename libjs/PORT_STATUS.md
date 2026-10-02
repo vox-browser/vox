@@ -24,7 +24,9 @@ and normalization follow `LibUnicode/{Utf16String.cpp,Normalize.{h,cpp},ICU.{h,c
 and retain ICU as the native algorithm and Unicode-data dependency.
 Regex records, input primitives, pattern analysis, literal prefilters and VM
 storage, repetition, traversal, literal/backreference and character-class matching,
-simple-match predicates, candidate filters and simple-scan execution follow
+simple-match predicates, candidate filters, simple-scan execution, fast greedy
+consumption, loop suffix measurements, saved-state backtracking and shared
+failure/assertion handlers follow
 `LibRegex/Rust/src/{ast,bytecode,vm}.rs`
 at the same upstream revision. Property-kind and resolved-property records,
 Unicode property queries, resolution/validation, scalar predicates and
@@ -76,7 +78,7 @@ creates a realm with a global environment and pushes its execution context.
 | `number_predicates.v`, `bigint_double.v`, `number_constructor.v` | Number/integral/finite/NaN predicates, LibCrypto signed/unsigned double rounding, complete Number constructor initialization, calls and construction |
 | `number_string.v`, `number_fixed.v`, `number_scientific.v`, `number_locale.v`, `number_prototype.v` | Number branding/radix/valueOf, exact binary fixed/scientific rounding, locale plumbing and full prototype initialization with explicit Object/decimal/Intl dependencies |
 | `value_indices.v`, `array_like.v`, `instanceof.v` | ToIntegerOrInfinity/ToLength/ToIndex, LengthOfArrayLike/CreateListFromArrayLike, OrdinaryHasInstance and InstanceofOperator |
-| `object_coercible.v`, `immutable_prototype.v`, `object_prototype_methods.v`, `object_prototype_accessors.v`, `object_prototype_proto.v` | RequireObjectCoercible, SetImmutablePrototype and eleven ObjectPrototype native bodies with explicit primitive dependencies; ObjectPrototype initialization and toString remain pending |
+| `object_coercible.v`, `immutable_prototype.v`, `object_prototype_methods.v`, `object_prototype_accessors.v`, `object_prototype_proto.v`, `object_prototype.v` | RequireObjectCoercible, SetImmutablePrototype, ObjectPrototype allocation/initialization and native methods, including supported-slot toString tag dispatch with explicit primitive dependencies |
 | `reflect_properties.v`, `reflect_prototypes.v`, `reflect_calls.v`, `reflect_own_keys.v`, `reflect_object.v` | All thirteen Reflect native bodies and complete initialization, PropertyKey-to-Value conversion, explicit Object/Array intrinsic dependencies |
 | `value_integer_conversions.v` | ToInt8/ToUint8/ToInt16/ToUint16 and ties-to-even ToUint8Clamp |
 | `native_function.v` | Capturing/raw native callable objects, function metadata, native table dispatch and callee execution contexts |
@@ -116,6 +118,10 @@ creates a realm with a global environment and pushes its execution context.
 | `regex_vm_property.v`, `regex_simple_match.v` | VM property forwarding, raw/modifier-only/VM simple-match predicates, unions and the Unicode/UnicodeSets negated-property case distinction |
 | `regex_candidate_start.v` | First-character/first-filter membership and complete next-candidate selection, preserving anchors, empty patterns and surrogate boundaries |
 | `regex_scan_execution.v` | Complete single-match, greedy and find-all simple scan execution with UTF-16 positions and source capture-buffer boundaries |
+| `regex_greedy_consume.v` | Complete legacy forward greedy consumption, preserving matcher-specific comparison and maximum-count rules |
+| `regex_loop_suffix.v` | Directional same-matcher availability and checked suffix-deficit measurement without changing VM state |
+| `regex_vm_backtrack.v` | Complete normal/greedy/lazy saved-choice execution, register/modifier restoration, literal skipping, suffix deficits and floor enforcement |
+| `regex_vm_assertion.v` | Shared current-path failure, start/end assertions and word-boundary assertions with saved-choice continuation |
 | `number_object.v`, `bigint_object.v`, `value_boxing.v` | NumberData/BigIntData wrapper records and all primitive ToObject cases with explicit Number/BigInt/String prototype dependencies |
 | `value_property_access.v` | GetV's direct primitive-prototype lookup, GetMethod's nullish/callable checks and Invoke with the original primitive receiver and explicit intrinsic dependencies |
 | `iterator.v`, `iterator_values.v` | Synchronous iterator acquisition for object receivers, IteratorNext/Step/StepValue, completion-preserving close/close-all, result records, list/callback collection, and SetterThatIgnoresPrototypeProperties |
@@ -146,8 +152,8 @@ creates a realm with a global environment and pushes its execution context.
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 201 implementation files contain **32,486 physical V LOC**. The 212 test
-files contain **28,006 physical V LOC** and **720 test functions**. Physical LOC
+The 210 implementation files contain **33,663 physical V LOC**. The 222 test
+files contain **29,492 physical V LOC** and **755 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -366,8 +372,8 @@ Each initialized realm owns its Function prototype and a shared, nonextensible
 `%ThrowTypeError%` with fixed name/length descriptors. The Function prototype's
 configurable, nonenumerable `caller` and `arguments` accessors share that thrower
 for reads and writes. Default globals inherit these restrictions through the
-same prototype. The Object prototype, Function constructor and constructor
-back-reference, and remaining intrinsic graph are pending.
+same prototype. The Function constructor and constructor back-reference,
+and the remaining intrinsic graph are pending.
 
 Native constructors translate `NativeFunction::internal_construct`: arguments,
 callee realm, inherited lexical/variable environments, uninitialized this value,
@@ -813,7 +819,8 @@ RequireObjectCoercible (`0291ad9`) rejects nullish values using the source error
 and otherwise returns its argument unchanged. SetImmutablePrototype (`a8a54c4`)
 compares prototype identity without mutation or an extensibility check; Object's
 immutable-prototype dispatch flag represents ObjectPrototype's virtual override.
-The actual ObjectPrototype intrinsic record and initialization remain pending.
+The ObjectPrototype record and initialization are now installed; complete
+primitive prototype and remaining type-record dependencies still require work.
 
 Annex B accessor bodies (`d8016f4`) preserve ToObject, callability and key-conversion
 order during definitions. Definitions preserve an existing opposite callback,
@@ -1032,8 +1039,8 @@ Whitespace and line-terminator predicates, the tri-state VM result and the
 10,000,000-step limit are retained. The UTF-16 override's comparison of two
 invalid ranges remains true; ASCII searches/needles reject non-ASCII values,
 while raw code-unit reads and range comparisons retain byte values. These
-records and helpers do not execute regex bytecode. Parser/compiler translation,
-backtracking dispatch and matching remain pending.
+records and helpers do not execute regex bytecode. Parser/compiler translation
+and full VM instruction execution remain pending.
 
 LibRegex pattern analysis (`0f50cf23`) translates the complete current
 `PatternHints`/`analyze_pattern` path. Control-flow successors preserve order and
@@ -1058,7 +1065,7 @@ still require a valid position. Start hints give input position zero priority,
 then search one or two units. The one-unit ASCII path rejects a non-ASCII needle,
 while the two-unit path compares raw input units. These are candidate rejection
 helpers; candidate selection and simple-scan execution are translated below.
-The regex VM loops and backtracking remain pending.
+The regex VM instruction loops remain pending.
 
 LibRegex VM storage (`46a2cbf9`) translates `SavedState`, `ActiveModifiers`,
 `VmScratch` and the VM record, construction/reset, flat register snapshots, all
@@ -1069,8 +1076,8 @@ only; live registers remain unchanged. Restoring a snapshot validates the whole
 slice before any write, including empty register sets. Focused tests cover owner
 identity, retained capacities, independent snapshots, all choice metadata,
 nested modifier overrides including explicit false, and three invalid-snapshot
-panic conditions in child processes. Saved choices are recorded but not yet
-executed by a backtracking dispatcher.
+panic conditions in child processes. Saved-choice execution is translated in
+the backtracking slice below.
 
 LibRegex repetition (`3e68014b`) translates repeat-start/check and same-matcher
 loop suffix minima. Minimum counts take priority over maximum counts. Greedy
@@ -1196,6 +1203,49 @@ one code unit after a zero-width result. Zero minimums retain upstream's
 requirement to find a matching point and do not add an empty end-of-input match.
 These helpers do not supply pattern parsing, compilation or general VM dispatch.
 
+LibRegex fast greedy consumption (`ab80abb7`) translates all seven matcher
+branches of `Vm::greedy_consume_fast`. Dot-all consumption clips directly to
+the remaining code units and maximum count. Literal payloads narrow to u16
+before comparison, while CharNoCase retains its first full code point. Classes,
+builtin classes, resolved properties and unions retain their distinct legacy
+case rules. V returns the count and updated position together because mutable
+scalar arguments are unsupported; callers retain the source precondition that
+the starting position does not exceed the input length.
+
+LibRegex loop suffix measurement (`ff70c5dd`) translates directional
+same-matcher availability and `same_matcher_loop_suffix_deficit`. Its explicit
+measurement direction is independent of the VM's current direction. Unicode
+reads advance or retreat by character boundaries, preserve active modifier
+rules, and leave positions, instruction counters and step counts unchanged.
+Only consecutive equal-matcher loops contribute their checked minimum sum;
+zero or already-satisfied deficits produce no value.
+
+LibRegex saved-choice execution (`7462eeae`) translates the complete
+`Vm::backtrack` body. Normal choices restore their position, instruction and
+register/modifier snapshots. Greedy choices restore snapshots before measuring
+suffix deficits, preserve minimum consumption, skip directly to BMP or
+supplementary literal candidates when allowed, and requeue only when more
+characters can be returned. Their saved direction remains independent of the
+VM's current direction. Lazy choices restore state before checking their
+maximum, consume one matching code point, then requeue with the source count.
+Failed choices recursively resume earlier choices without crossing the
+backtrack floor. The instruction loops and lookaround callers remain pending.
+
+LibRegex shared failure/assertion handlers (`bcaad7fc`) translate
+`fail_current_path`, `handle_assert_start`, `handle_assert_end` and
+`handle_word_boundary_assert`. Successful assertions advance only the instruction;
+failures resume a saved choice or return NoMatch after exhausting the permitted
+stack. Both the opcode's multiline flag and active scope enable line-terminator
+checks. End assertions retain the fast caller's supplied input length, and word
+boundaries retain adjacent-code-unit membership and Unicode-ignore-case rules.
+No-value results mean execution can continue, including after a restored choice.
+
+Default global intrinsic properties (`9a8cfb7a`) retain the order of the
+available entries in `GlobalObject.cpp`: ArrayBuffer, Boolean, DataView,
+SharedArrayBuffer and Symbol, then Math and the Annex B functions. Pending
+intrinsics remain omitted. The exact own-key-order test includes the newly
+installed Math property rather than silently filtering it out.
+
 Reflect property bodies (`5f4813e`) translate defineProperty/deleteProperty/get,
 getOwnPropertyDescriptor/has/set. Target-object validation precedes key conversion;
 defineProperty converts the descriptor only after the key. Rejected definitions,
@@ -1314,10 +1364,10 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 212 passed, 212 total
+# 221 passed, 221 total; the subsequently added print_test.v also passes
 
 v -old-compiler -enable-globals -gc none test libjs
-# 212 passed, 212 total
+# 222 passed, 222 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
@@ -1332,8 +1382,9 @@ v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
 
 v -old-compiler -enable-globals test .
-# 873 passed; 11 test processes exited with code 9
-# Fresh VJOBS=2 rerun of those 11 files: 11 passed
+# Recursive enumeration also finds temporary worktree copies under Build/.
+# Explicit canonical paths: 896 passed; 14 newly added files also passed.
+# Six later files also pass; 916 canonical files verified.
 
 ./build_ladybird.sh
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
@@ -1364,18 +1415,26 @@ fixtures; separate tests exercise translated NativeFunction and ArrayBufferObjec
 records. Module-loading tests write temporary module files. The preceding LibWeb
 work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 212 libjs files are verified separately in both GC modes.
-There are now 884 repository test files.
+this package; the 222 libjs files are verified separately in both GC modes.
+The verified inventory contains 916 canonical repository test files.
 
-All 884 repository test files are verified, including the native bridge,
-eighteen browser integration files and all 212 LibJS files. The dedicated LibJS and
+All 916 canonical repository test files in the checked inventory are verified, including the native bridge,
+eighteen browser integration files and all 222 LibJS files. The dedicated LibJS and
 browser suites also pass in no-GC mode, exercising the retained storage and
 buffer ownership independently of the collector.
-The initial sixteen-job repository run passed 873 files; six WebGL and five
-WebIDL test processes exited with code 9 without assertion output, and their
-automatic retries could not find the generated binaries. A fresh two-job run
-of those eleven files passed every test without a source change. The original
-run's interrupted result is retained rather than reported as a clean command.
+The recursive root command was stopped after it discovered 3,554 files,
+including temporary worktree copies under `Build/audit-fixes/worktrees/`.
+The canonical list was selected with `git ls-files -co --exclude-standard`,
+retaining `_test.v` paths outside `testdata`; all 896 selected files passed in
+one eight-job command. Fourteen files added during that run passed in a fresh
+two-job command; six later binary-limits, memory-instantiation, media-seek,
+cSHAKE, animation-cancel and element-geometry files also passed. No test case was
+filtered by its result. The earlier sixteen-job run's eleven code-9 exits were
+already verified by a fresh two-job run, as recorded in `692d54bc`.
+The first LibJS batch found the stale global-order expectation after Math was
+installed; `9a8cfb7a` corrects source order and the expectation. A fresh complete
+221-file GC run passes, and the later print test passes separately. The fresh
+no-GC run covers all 222 files.
 
 String validation and repair tests additionally compare 2,388 UTF-16 inputs,
 validity flags and repaired outputs exactly against simdutf 7.4.0. Regenerating
@@ -1534,6 +1593,35 @@ general VM execution are not invoked. Regenerate with
 compare all three `regex-scans*.tsv` assets. Regeneration is byte-exact, with
 each split asset below 5 MB.
 
+Loop consumption and saved-choice execution (`8d33d8bd`) compare 356,554 native
+records exactly in both GC modes: 73,632 fast-consumption cases, 165,672
+directional availability cases, 110,448 suffix-deficit cases and 6,802 complete
+backtracking traces. Traces include the initial state and four subsequent
+calls, comparing the success flag, position, instruction, steps, direction,
+floor, registers, snapshot pool, modifier scopes and every remaining saved
+choice. Fixtures cover all seven matcher variants, legacy/Unicode/UnicodeSets
+case differences, surrogate interiors, both saved greedy directions,
+literal skipping, checked suffix overflow, finite/unbounded lazy maxima and
+recursive fallback. `tools/libjs_regex_backtrack_corpus.py` imports unchanged
+Rust bodies and freshly builds native LibUnicode/AK with ASan. Regenerate with
+`python3 tools/libjs_regex_backtrack_corpus.py --output /tmp/regex-backtracking.tsv`
+and compare all six `regex-backtracking*.tsv` assets; regeneration is byte-exact
+and each embedded file is below 5 MB. The oracle supplies fixture programs and
+saved choices; no parser, compiler, VM instruction loop or lookaround body runs.
+
+Shared failure/assertion handlers (`333afb69`) compare another 9,119 complete
+native state traces exactly in both GC modes: 2,290 current-path failures,
+2,280 start assertions, 2,278 end assertions and 2,271 word-boundary assertions.
+Each trace includes four handler calls, supplied opcode flags and end-length
+bounds, active modifiers, no-choice/floor-exhausted failures, and normal/greedy/
+lazy alternatives. The assertion result and every VM, register, snapshot,
+scope and saved-choice field are exact. Regenerate with
+`python3 tools/libjs_regex_assertion_corpus.py --output /tmp/regex-assertions.tsv`
+and compare with `libjs/testdata/regex-assertions.tsv`; regeneration is byte-exact
+and the embedded file remains below 5 MB. The driver reuses the freshly built
+native oracle and does not invoke regex grammar, instruction-loop or lookaround
+execution.
+
 Browser integration checks pass the eighteen `browserjs` test files in both GC modes,
 the native `main_test.v` bridge and flag tests, the production bundle build,
 JavaScriptCore DOM-mutation/click smoke, and LibJS bytecode smoke. Native
@@ -1615,8 +1703,8 @@ an immutable root and live ordinary child prototypes. Compiled browser scripts
 exercise own/enumerable membership, primitive boxing, toLocaleString argument
 suppression, symbol accessors, inherited getter/setter preservation, descriptor
 lookup, prototype mutation, cycle/immutable-root errors and later-script recovery.
-These checks create no JavaScriptCore context and do not install ObjectPrototype
-or supply a replacement Object toString implementation in the production realm.
+These checks create no JavaScriptCore context. Their explicit HostObject fixture
+remains separate from the installed ObjectPrototype record.
 Reflect browser integration (`17706b9`) supplies the translated record under the
 test-only HostReflect name with explicit Object/Array prototypes. Compiled scripts
 exercise all thirteen methods: symbol/data/accessor descriptors, inherited lookup,
@@ -1962,8 +2050,11 @@ the same-size SVG source switch with zero differing pixels.
   translated Array/String/TypedArray exotic property paths use existing
   descriptor operations; Proxy internal methods remain pending. The
   immutable-prototype dispatch flag replaces the C++ ObjectPrototype virtual
-  override. Its eleven translated bodies do not install a partial ObjectPrototype
-  record; initialization and the toString type-record/IsArray chain remain pending.
+  override. The ObjectPrototype record is allocated before Function.prototype
+  and initialized afterward. Its toString body handles supported internal slots
+  and observable @@toStringTag reads; Arguments, Date, RegExp and Proxy records,
+  the Object constructor link and the complete primitive prototype graph remain
+  pending.
 - ReflectObject's thirteen native bodies and initialization are complete with
   explicit Object/Array prototype dependencies. ownKeys maps the V runtime's
   PropertyName key list through the translated PropertyKey-to-Value conversion
@@ -2001,8 +2092,10 @@ complete LibJS runtime migration.
   builtin classes, literal matching, word boundaries, backreferences, UnicodeSet
   case closure/range operations, character classes, simple-scan membership,
   Unicode property lookup/resolution/validation, string-property data,
-  simple-match predicates, candidate filters and simple-scan execution are
-  translated. Its `parser.rs`, `compiler.rs`, backtracking dispatcher,
+  simple-match predicates, candidate filters, simple-scan execution, fast greedy
+  consumption, suffix measurements, saved-state backtracking and shared
+  failure/assertion handlers are
+  translated. Its `parser.rs`, `compiler.rs`,
   fast/general VM execution, lookaround
   bodies and `regex.rs`/FFI remain pending.
   The RegExp object, allocation/initialization, constructor/prototype methods and
@@ -2021,7 +2114,7 @@ complete LibJS runtime migration.
 - The remaining Intrinsics prototype graph, global entries (including eval),
   ECMAScript function objects, Array, the remaining String prototype and most
   other builtin constructor/prototype records, intrinsic accessors and proxies remain
-  untranslated. Production builtin installation currently includes Boolean,
+  untranslated. Production builtin installation currently includes Math, Boolean,
   Symbol, ArrayBuffer, DataView and SharedArrayBuffer. BigInt constructor/prototype
   records and all native bodies exist with explicit Object/Intl dependencies;
   production installation and Intl formatting remain pending. Number constructor/
@@ -2056,16 +2149,16 @@ complete LibJS runtime migration.
   and shared TypedArray prototype including values/@@iterator exist with
   explicit dependencies, as do all twelve concrete constructor/prototype records
   and Uint8Array's six hex/base64 methods. Production builtin installation, its
-  complete intrinsic graph, ObjectPrototype initialization and toString/IsArray,
+  complete intrinsic graph and remaining ObjectPrototype type-record dependencies,
   AK's Number decimal backend and Intl formatting remain untranslated, as do concurrent
   shared backing stores, Atomics and caged storage. ReflectObject's complete record and
   all thirteen native bodies exist with explicit Object/Array dependencies;
   production global installation and Proxy internal methods remain pending.
   Realms expose four standard value properties, eight numeric/URI functions,
-  Boolean/Symbol/ArrayBuffer/DataView/SharedArrayBuffer constructors, and two legacy
+  Boolean/Symbol/ArrayBuffer/DataView/SharedArrayBuffer constructors, Math, and two legacy
   functions on an ordinary global object. Default native globals inherit the
-  translated Function prototype, whose Object prototype and Function constructor
-  linkage remain pending.
+  translated Function prototype linked to the installed Object prototype;
+  the Function constructor linkage remains pending.
 - CyclicModule graph loading, linking, evaluation, promise reactions, JSON
   modules, the debugger, and the LibWeb host bindings remain necessary before
   making LibJS the default browser backend or claiming LibJS parity.
