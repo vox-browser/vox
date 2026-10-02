@@ -300,3 +300,19 @@ and closed-owner checks pass. This supplies the native JSC value boundary; it
 does not complete LibJS realm/value integration, arbitrary-width BigInt/table64
 conversion or source function reference branding. The current complete package
 passes a clean **57/57 files in each GC mode**.
+
+## Source i64 binding conversion
+
+`8289f13d` replaces the i64-only brand check with source ToBigInt followed by
+the signed low-64-bit projection. Typed booleans and arbitrary-width string
+integers share the existing LibJS parser and SignedBigInteger conversion;
+invalid strings retain SyntaxError and Number/null/undefined retain TypeError.
+Globals and host results use the same operation. Native RuntimeValue retains
+an owning-engine conversion, implemented with captured `BigInt.asIntN(64, value)`
+so number-hint primitive hooks, original throws, Number/Symbol rejection and
+large signed values survive without rounding through Number or author globals.
+The primitive string parser is the pinned LibJS translation; the native engine
+parser remains JavaScriptCore, so this adapter is not source parser or full
+LibJS realm parity. Full unsigned Table64 conversion and actual function
+reference branding remain open. The current complete package passes a clean
+**58/58 files in each GC mode**.
