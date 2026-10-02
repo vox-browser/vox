@@ -64,6 +64,7 @@ pub mut:
 	tag_types []BinaryTagType
 	tag_import_entries []BinaryTagImport
 	tag_export_entries []BinaryTagExport
+	global_definitions []BinaryGlobalDefinition
 }
 
 pub struct SerializedModule {
@@ -134,6 +135,7 @@ pub fn (mut compiled Module) deserialization_steps(serialized SerializedModule) 
 	compiled.tag_types = restored.tag_types.clone()
 	compiled.tag_import_entries = restored.tag_import_entries.clone()
 	compiled.tag_export_entries = restored.tag_export_entries.clone()
+	compiled.global_definitions = restored.global_definitions.clone()
 }
 
 struct Decoder {
@@ -206,6 +208,7 @@ fn compile_module(bytes []u8) !&Module {
 	mut tag_types := []BinaryTagType{}
 	mut tag_import_entries := []BinaryTagImport{}
 	mut tag_export_entries := []BinaryTagExport{}
+	mut global_definitions := []BinaryGlobalDefinition{}
 	mut last_non_custom_rank := 0
 	mut seen := map[u8]bool{}
 	for decoder.offset < bytes.len {
@@ -236,6 +239,7 @@ fn compile_module(bytes []u8) !&Module {
 			2 { parse_import_section(mut section, mut imports, mut tag_import_entries)! }
 			3 { function_type_indices = parse_function_section(mut section)! }
 			5 { parse_memory_section(mut section, mut memory_types)! }
+			6 { global_definitions = parse_global_section(mut section)! }
 			7 { parse_export_section(mut section, mut exports, mut tag_export_entries)! }
 			// Parser.cpp::StartSection::parse retains the function index. The
 			// machine's invocation and signature validation are separate work.
@@ -267,6 +271,7 @@ fn compile_module(bytes []u8) !&Module {
 		tag_types: tag_types
 		tag_import_entries: tag_import_entries
 		tag_export_entries: tag_export_entries
+		global_definitions: global_definitions
 	}
 }
 
