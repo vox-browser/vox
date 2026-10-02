@@ -800,14 +800,9 @@ pub fn (mut context WebGLRenderingContext) get_shader_precision_format(shader GL
 }
 
 pub fn (mut context WebGLRenderingContext) get_buffer_parameter(target GLenum, pname GLenum) WebGLParameterValue {
-	handle := context.bound_buffers[target] or {
-		context.set_error(invalid_operation)
-		return WebGLParameterValue{}
-	}
-	_ := context.buffers[handle] or { return WebGLParameterValue{} }
+	context.native.make_current()
     if pname !in [buffer_size, buffer_usage] { context.set_error(invalid_enum); return WebGLParameterValue{} }
-    context.native.make_current()
-    result := C.vox_gl_buffer_parameter(target, pname, if context.version == .webgl2 { 3 } else { 2 })
+    result := C.vox_gl_buffer_parameter(target, pname)
     context.native.collect_native_error()
     return integer_parameter(result)
 }

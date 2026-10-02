@@ -284,9 +284,10 @@ static int vox_gl_read_buffer_sub_data(unsigned target, long long offset, long l
     glUnmapBuffer(target);
     return 1;
 }
-static long long vox_gl_buffer_parameter(unsigned target, unsigned pname, int version) {
-    if (version == 3) { GLint64 result = 0; glGetBufferParameteri64v(target, pname, &result); return result; }
-    GLint result = 0; glGetBufferParameteriv(target, pname, &result); return result;
+static int vox_gl_buffer_parameter(unsigned target, unsigned pname) {
+    GLint result = 0;
+    glGetBufferParameterivRobustANGLE(target, pname, 1, NULL, &result);
+    return result;
 }
 static void vox_gl_vertex_attrib_pointer(unsigned index, int size, unsigned type, int normalized, int stride, long long offset) { glVertexAttribPointer(index, size, type, normalized, stride, (void const*)(intptr_t)offset); }
 static void vox_gl_vertex_attrib_i_pointer(unsigned index, int size, unsigned type, int stride, long long offset) { glVertexAttribIPointer(index, size, type, stride, (void const*)(intptr_t)offset); }
