@@ -34,6 +34,7 @@ fn canvas_settings_to_boolean(value dom.JSValue) bool {
 		.number { value.number_data != 0 && !math.is_nan(value.number_data) }
 		.string { value.string_data.len != 0 }
 		.object { true }
+		.runtime_value { value.native_boolean_value() or { panic(err) } }
 	}
 }
 

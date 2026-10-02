@@ -47,6 +47,9 @@ pub struct RuntimeValue {
 pub:
 	context voidptr
 	value voidptr
+	is_undefined bool
+	boolean_conversion ?fn () !bool
+	same_value ?fn (RuntimeValue) !bool
 	string_conversion fn () !string @[required]
 }
 

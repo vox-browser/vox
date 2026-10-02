@@ -21,6 +21,7 @@
 module dom
 
 import time
+import webidl
 
 // DOM event algorithms use the translated callback and JS-value boundary types
 // below. Execution realms and arbitrary JavaScript objects remain runtime
@@ -35,6 +36,7 @@ pub enum JSValueKind {
 	number
 	string
 	object
+	runtime_value
 }
 
 @[heap]
@@ -49,6 +51,9 @@ pub mut:
 	// lightweight object model. Other object_data values (event callbacks,
 	// host objects, and so on) remain deliberately non-serializable.
 	is_structured_object_ bool
+	// Actual host/WebIDL values retain their original reason and owning root;
+	// they are not reconstructed as the standalone structured-object model.
+	native_value_ ?webidl.Value
 }
 
 pub fn js_undefined() JSValue {
@@ -153,15 +158,22 @@ pub fn (value JSValue) to_string_value() string {
 		.object {
 			'[object Object]'
 		}
+		.runtime_value {
+			native := value.native_value_ or { panic('Missing actual DOM JavaScript value') }
+			if exception := webidl.dom_exception_from_object(native) {
+				return '${exception.name()}: ${exception.message()}'
+			}
+			webidl.to_string(native) or { err.msg() }
+		}
 	}
 }
 
 fn abort_error_value(message string) JSValue {
-	return js_string('AbortError: ${message}')
+	return js_webidl_value(webidl.dom_exception_value(webidl.DOMException.create('AbortError', message)))
 }
 
 fn timeout_error_value(message string) JSValue {
-	return js_string('TimeoutError: ${message}')
+	return js_webidl_value(webidl.dom_exception_value(webidl.DOMException.create('TimeoutError', message)))
 }
 
 // https://dom.spec.whatwg.org/#dictdef-eventinit
@@ -2313,7 +2325,7 @@ pub fn (signal &AbortSignal) throw_if_aborted() ! {
 	if !signal.aborted() {
 		return
 	}
-	return error(signal.abort_reason.to_string_value())
+	return webidl.throw_value(signal.abort_reason.as_webidl_value()!)
 }
 
 pub fn (mut signal AbortSignal) visit_edges(mut visitor CellVisitor) {

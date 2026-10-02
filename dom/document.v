@@ -10940,6 +10940,7 @@ fn js_value_to_webidl_value(value JSValue) webidl.Value {
 		.number { webidl.number_value(value.number_data) }
 		.string { webidl.string_value(value.string_data) }
 		.object { webidl.platform_object_value() }
+		.runtime_value { value.native_value_ or { webidl.undefined_value() } }
 	}
 }
 

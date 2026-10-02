@@ -323,6 +323,7 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 			return
 		}
 		.object {}
+		.runtime_value { return error('DataCloneError: actual host JavaScript values require their engine structured-clone binding') }
 	}
 
 	object := structured_object_from_value(value)!

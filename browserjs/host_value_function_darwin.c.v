@@ -85,6 +85,7 @@ fn (mut runtime Runtime) initialize_javascript_value_intrinsics() ! {
 	runtime.value_call_intrinsic_ = runtime.evaluate_host_value('(function(){const apply=Reflect.apply;return function(callback,receiver,args){return apply(callback,receiver,args)}})()')!
 	runtime.promise_observe_intrinsic_ = runtime.evaluate_host_value('(function(){const apply=Reflect.apply,then=Promise.prototype.then;return function(promise,fulfilled,rejected){return apply(then,promise,[fulfilled,rejected])}})()')!
 	runtime.value_error_intrinsic_ = runtime.evaluate_host_value('(function(){const E=Error,T=TypeError,R=RangeError;return function(kind,message){return new (kind==="TypeError"?T:kind==="RangeError"?R:E)(message)}})()')!
+	runtime.value_same_intrinsic_ = runtime.evaluate_host_value('Object.is')!
 }
 
 fn (runtime &Runtime) actual_javascript_exception(value voidptr) IError {

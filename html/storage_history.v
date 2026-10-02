@@ -8,6 +8,7 @@
 module html
 
 import dom
+import webidl
 
 pub enum StorageType {
 	local
@@ -196,6 +197,7 @@ pub fn (mut storage Storage) set_value_of_named_property(key string, value dom.J
 		.null_ { 'null' }
 		.undefined { 'undefined' }
 		.object { return error('TypeError: object-to-string conversion requires a host runtime') }
+		.runtime_value { webidl.to_string(value.as_webidl_value()!)! }
 	}
 	storage.set_item(key, converted)!
 }

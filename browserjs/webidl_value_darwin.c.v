@@ -8,12 +8,27 @@ module browserjs
 
 import webidl
 
+fn C.JSValueToBoolean(context voidptr, value voidptr) bool
+
 pub fn (mut runtime Runtime) webidl_value(value voidptr) !webidl.Value {
 	runtime.retain_javascript_value(value)!
 	owner_handle := voidptr(&runtime)
 	return webidl.runtime_value(webidl.RuntimeValue{
 		context: runtime.context
 		value: value
+		is_undefined: C.JSValueIsUndefined(runtime.context, value)
+		boolean_conversion: fn [owner_handle, value] () !bool {
+			owner := unsafe { &Runtime(owner_handle) }
+			owner.require_javascript_value_context()!
+			return C.JSValueToBoolean(owner.context, value)
+		}
+		same_value: fn [owner_handle, value] (other webidl.RuntimeValue) !bool {
+			owner := unsafe { &Runtime(owner_handle) }
+			owner.require_javascript_value_context()!
+			if other.context != owner.context { return error('JavaScript SameValue requires the owning context') }
+			result := owner.call_engine_function(owner.value_same_intrinsic_, [value, other.value])!
+			return C.JSValueToBoolean(owner.context, result)
+		}
 		string_conversion: fn [owner_handle, value] () !string {
 			owner := unsafe { &Runtime(owner_handle) }
 			owner.require_javascript_value_context()!

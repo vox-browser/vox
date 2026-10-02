@@ -75,6 +75,7 @@ fn js_values_are_same(left dom.JSValue, right dom.JSValue) bool {
 		.number { left.number_data == right.number_data }
 		.string { left.string_data == right.string_data }
 		.object { left.object_data == right.object_data }
+		.runtime_value { left.native_same_value(right) or { panic(err) } }
 	}
 }
 
