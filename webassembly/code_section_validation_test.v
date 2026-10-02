@@ -12,14 +12,14 @@ fn code_validation_module(signature []u8, body []u8, imported bool) []u8 {
 fn test_function_validation_uses_signature_parameters_and_local_defaultability_with_import_offset() {
 	compiled := compile_module(code_validation_module([u8(1), 0x64, 0x6f, 1, 0x64, 0x6f],
 		[u8(1), 1, 0x64, 0x6f, 0x20, 0, 0x21, 1, 0x20, 1, 0x0b], true))!
-	assert compiled.function_bodies[0].body.stack_usage_hint == 1
+	assert compiled.function_bodies[0].body.stack_usage_hint? == 1
 	mut restored := Module.create_for_serialization()
 	restored.deserialization_steps(compiled.serialization_steps(false)!)!
 	assert restored.function_bodies == compiled.function_bodies
 	for type_ in [u8(0x7f), 0x7e, 0x7d, 0x7c, 0x7b, 0x6f] {
 		valid := compile_module(code_validation_module([u8(0), 1, type_], [u8(1), 1, type_, 0x20,
 			0, 0x0b], false))!
-		assert valid.function_bodies[0].body.stack_usage_hint == 1
+		assert valid.function_bodies[0].body.stack_usage_hint? == 1
 	}
 }
 
@@ -37,7 +37,7 @@ fn test_function_validation_enforces_nonnullable_local_initialization_and_block_
 	}
 	valid := compile_module(code_validation_module(signature,
 		[u8(1), 1, 0x64, 0x6f, 0x20, 0, 0x22, 1, 0x0b], false))!
-	assert valid.function_bodies[0].body.stack_usage_hint == 1
+	assert valid.function_bodies[0].body.stack_usage_hint? == 1
 }
 
 fn test_function_validation_rejects_unknown_local_type_and_signature_result_errors() {
@@ -56,5 +56,5 @@ fn test_function_validation_rejects_unknown_local_type_and_signature_result_erro
 		}
 	}
 	valid := compile_module(code_validation_module([u8(0), 1, 0x7f], [u8(0), 0x00, 0x0b], false))!
-	assert valid.function_bodies[0].body.stack_usage_hint == 1
+	assert valid.function_bodies[0].body.stack_usage_hint? == 1
 }

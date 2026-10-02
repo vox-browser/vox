@@ -40,7 +40,7 @@ fn parse_code_section(mut decoder Decoder) ![]BinaryFunctionBody {
 			}
 			locals << BinaryLocals{ count: local_count, type_: parse_binary_value_type(mut body_decoder)! }
 		}
-		body := parse_binary_expression_with_hint(mut body_decoder, size / 2)!
+		body := parse_binary_expression_with_hint(mut body_decoder, usize(size / 2))!
 		if body_decoder.offset != body_decoder.bytes.len {
 			return error('CompileError: function body size mismatch')
 		}

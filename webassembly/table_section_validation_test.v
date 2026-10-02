@@ -11,7 +11,7 @@ fn table_validation_module(table []u8, with_defined_global bool, imported_mutabl
 fn test_table_initializers_validate_nullable_implicit_values_and_imported_immutable_reads() {
 	for table in [[u8(0x6f), 0, 0], [u8(0x40), 0, 0x6f, 0, 0, 0x23, 0, 0x0b]] {
 		compiled := compile_module(table_validation_module(table, true, 0))!
-		assert compiled.table_definitions[0].initializer.stack_usage_hint == 1
+		assert compiled.table_definitions[0].initializer.stack_usage_hint? == 1
 		mut restored := Module.create_for_serialization()
 		restored.deserialization_steps(compiled.serialization_steps(false)!)!
 		assert restored.table_definitions == compiled.table_definitions

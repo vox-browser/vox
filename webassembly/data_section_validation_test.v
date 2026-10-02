@@ -17,7 +17,7 @@ fn test_active_data_uses_selected_memory_address_kind_and_retains_expression_pea
 		compiled := compile_module(data_validation_module(definition, [opcode, 1, opcode, 2,
 			if opcode == 0x41 { u8(0x6a) } else { u8(0x7c) }, 0x0b], 0))!
 		offset := compiled.data_segments[0].offset?
-		assert offset.stack_usage_hint == 2 && compiled.data_segments[0].init == [u8(0xff)]
+		assert offset.stack_usage_hint? == 2 && compiled.data_segments[0].init == [u8(0xff)]
 	}
 }
 

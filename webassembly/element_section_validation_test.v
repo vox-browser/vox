@@ -14,16 +14,16 @@ fn element_validation_module(table []u8, segment []u8) []u8 {
 fn test_elements_validate_legacy_function_vectors_and_active_memory64_table_offsets() {
 	legacy := compile_module(element_validation_module([u8(0x70), 0, 0], [u8(0), 0x41, 0, 0x0b,
 		1, 0]))!
-	assert legacy.element_segments[0].items[0].stack_usage_hint == 1
-	assert legacy.element_segments[0].offset?.stack_usage_hint == 1
+	assert legacy.element_segments[0].items[0].stack_usage_hint? == 1
+	assert legacy.element_segments[0].offset?.stack_usage_hint? == 1
 	for tag in [u8(1), 3] {
 		compiled := compile_module(element_validation_module([], [tag, 0, 1, 0]))!
-		assert compiled.element_segments[0].items[0].stack_usage_hint == 1
+		assert compiled.element_segments[0].items[0].stack_usage_hint? == 1
 	}
 	compiled := compile_module(element_validation_module([u8(0x6f), 4, 0], [u8(6), 0, 0x42, 0,
 		0x0b, 0x6f, 1, 0xd0, 0x6f, 0x0b]))!
-	assert compiled.element_segments[0].offset?.stack_usage_hint == 1
-	assert compiled.element_segments[0].items[0].stack_usage_hint == 1
+	assert compiled.element_segments[0].offset?.stack_usage_hint? == 1
+	assert compiled.element_segments[0].items[0].stack_usage_hint? == 1
 	mut restored := Module.create_for_serialization()
 	restored.deserialization_steps(compiled.serialization_steps(false)!)!
 	assert restored.element_segments == compiled.element_segments

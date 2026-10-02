@@ -12,10 +12,10 @@ fn test_expression_validation_extended_constants_retains_peak_hint_and_releases_
 	result := validator.validate_expression(mut expression, [BinaryValueType{ kind: .i32 }])!
 	assert result.is_constant
 	assert result.result_types == [BinaryStackEntry{ concrete_type: BinaryValueType{ kind: .i32 }, is_known: true }]
-	assert expression.stack_usage_hint == 2 && validator.frames.len == 0
+	assert expression.stack_usage_hint? == 2 && validator.frames.len == 0
 	mut empty := expression_validation_fixture([u8(0x0b)])
 	empty_result := validator.validate_expression(mut empty, [])!
-	assert empty_result.is_constant && empty_result.result_types.len == 0 && empty.stack_usage_hint == 0
+	assert empty_result.is_constant && empty_result.result_types.len == 0 && empty.stack_usage_hint? == 0
 }
 
 fn test_expression_validation_visits_every_instruction_after_nonconstant_and_reports_result_underflow() {
@@ -46,7 +46,7 @@ fn test_expression_validation_preserves_structured_and_branch_metadata_in_actual
 	assert loop_.meta.tier_up_eligible && loop_.meta.arity == 0 && loop_.end_ip == 3
 	branch := expression.instructions[2].arguments as BinaryBranchArguments
 	assert branch.has_stack_adjustment
-	assert expression.stack_usage_hint == 1 && validator.frames.len == 0
+	assert expression.stack_usage_hint? == 1 && validator.frames.len == 0
 }
 
 fn test_expression_validation_widens_refined_reference_results_and_keeps_extra_stack_values_for_section_check() {
@@ -57,7 +57,7 @@ fn test_expression_validation_widens_refined_reference_results_and_keeps_extra_s
 	assert !result.is_constant && result.result_types.len == 2
 	assert result.result_types[0].concrete_type.kind == .i32
 	assert result.result_types[1].concrete_type == expected && result.result_types[1].is_known
-	assert expression.stack_usage_hint == 2
+	assert expression.stack_usage_hint? == 2
 }
 
 fn test_expression_validation_dispatches_gc_and_vector_operands_with_actual_source_constant_flags() {
@@ -71,7 +71,7 @@ fn test_expression_validation_dispatches_gc_and_vector_operands_with_actual_sour
 	mut vector := expression_validation_fixture(vector_bytes)
 	vector_result := validator.validate_expression(mut vector, [BinaryValueType{ kind: .i32 }])!
 	assert !vector_result.is_constant && vector_result.result_types.len == 1
-	assert vector.stack_usage_hint == 1
+	assert vector.stack_usage_hint? == 1
 	mut invalid := BinaryExpression{ instructions: [BinaryInstruction{ opcode: 0xffffffff }] }
 	if _ := validator.validate_expression(mut invalid, []) {
 		assert false
