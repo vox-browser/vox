@@ -26,10 +26,6 @@ pub fn (_ &WebGLRenderingContext) null_terminated_string(bytes []u8) string {
 	return bytes[..end].bytestr()
 }
 
-pub fn (_ &WebGLRenderingContext) read_and_pixel_convert_texture_image_source(bytes []u8, flip_y bool, premultiply_alpha bool) []u8 {
-	return read_and_pixel_convert_texture_image_source(bytes, flip_y, premultiply_alpha)
-}
-
 pub fn (context &WebGLRenderingContext) texture_data_for_2d_upload(bytes []u8, width GLsizei, height GLsizei, format GLenum, type_ GLenum) ![]u8 {
 	if !is_valid_2d_pixel_unpack_state(width, context.unpack_state_) {
 		return error('invalid 2D pixel unpack state')

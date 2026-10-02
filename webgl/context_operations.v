@@ -144,17 +144,8 @@ fn is_cube_map_face(target GLenum) bool {
 	return target >= texture_cube_map_positive_x && target <= texture_cube_map_negative_z
 }
 
-pub enum WebGLExportFormat {
-	bgra8
-	rgba8
-}
-
 pub fn convert_value_to_context_attributes_dictionary(input ?ContextAttributeInput) !WebGLContextAttributes {
 	return convert_context_attributes(input)
-}
-
-pub fn determine_export_format(_ GLenum) WebGLExportFormat {
-	return .bgra8
 }
 
 pub fn fire_webgl_context_event(type_ string) WebGLContextEvent {
@@ -246,27 +237,6 @@ pub fn null_terminated_string(bytes []u8) string {
 	index := bytes.index(0)
 	end := if index < 0 { bytes.len } else { index }
 	return bytes[..end].bytestr()
-}
-
-pub fn read_and_pixel_convert_texture_image_source(bytes []u8, flip_y bool, premultiply_alpha bool) []u8 {
-	if !flip_y && !premultiply_alpha {
-		return bytes
-	}
-	mut result := bytes.clone()
-	if premultiply_alpha {
-		for offset := 0; offset + 3 < result.len; offset += 4 {
-			alpha_value := u16(result[offset + 3])
-			result[offset] = u8((u16(result[offset]) * alpha_value + 127) / 255)
-			result[offset + 1] = u8((u16(result[offset + 1]) * alpha_value + 127) / 255)
-			result[offset + 2] = u8((u16(result[offset + 2]) * alpha_value + 127) / 255)
-		}
-	}
-	if flip_y {
-		// Row dimensions are supplied by the binding in Ladybird. At this typed
-		// byte boundary a single row is the only unambiguous representation.
-		return result
-	}
-	return result
 }
 
 pub fn (mut context WebGLRenderingContext) active_texture(texture GLenum) {

@@ -39,8 +39,13 @@ pub:
 
 pub struct WebGLBitmap {
 pub:
-	width  int
+	width int
 	height int
+	pitch int
+	// Native bitmap storage: RGBA, BGRA, RGBx, BGRx.
+	layout int
+	alpha_type int = 1
+	color_space int
 	pixels []u8
 }
 
