@@ -181,6 +181,12 @@ pub fn (runtime &Runtime) native_writable_stream(value voidptr) !&streams.Writab
 	return unsafe { &streams.WritableStream(host.record(value, .stream)!.native) }
 }
 
+pub fn (mut runtime Runtime) javascript_writable_stream(stream &streams.WritableStream) !voidptr {
+	runtime.require_javascript_value_context()!
+	mut host := writable_stream_bindings_[voidptr(&runtime)] or { return error('WritableStream binding is unavailable') }
+	return host.wrap(.stream, voidptr(stream), unsafe { nil })
+}
+
 fn (mut host WritableStreamHost) promise(native &webidl.Promise) !voidptr {
 	host_handle := voidptr(&host)
 	return host.runtime.javascript_webidl_promise_with_converters(native, fn [host_handle] (value webidl.Value) !voidptr {

@@ -4,6 +4,30 @@ import dom
 import html
 import streams
 
+fn test_native_component_stream_wrapper_reuses_exact_model_and_engine_identity() {
+	$if !darwin { return }
+	mut runtime := Runtime.create()
+	defer { runtime.close() }
+	document := native_readable_document()
+	mut readable_host := ReadableStreamHost.create(document)!
+	readable_host.install(mut runtime)!
+	readable_host.install(mut runtime)!
+	mut writable_host := WritableStreamHost.create(document)!
+	writable_host.install(mut runtime)!
+	readable := readable_host.settings.create_readable_stream(streams.UnderlyingSource{}, streams.QueuingStrategy{high_water_mark: 0})!
+	writable := readable_host.settings.create_writable_stream(streams.UnderlyingSink{}, streams.QueuingStrategy{})!
+	actual_readable := runtime.javascript_readable_stream(readable)!
+	actual_writable := runtime.javascript_writable_stream(writable)!
+	assert actual_readable == runtime.javascript_readable_stream(readable)!
+	assert actual_writable == runtime.javascript_writable_stream(writable)!
+	assert voidptr(runtime.native_readable_stream(actual_readable)!) == voidptr(readable)
+	assert voidptr(runtime.native_writable_stream(actual_writable)!) == voidptr(writable)
+	runtime.define_value_host_function('__actualReadableComponent', fn [actual_readable] (_ voidptr, _ []voidptr) !voidptr { return actual_readable })!
+	runtime.define_value_host_function('__actualWritableComponent', fn [actual_writable] (_ voidptr, _ []voidptr) !voidptr { return actual_writable })!
+	assert runtime.evaluate_host('__actualReadableComponent() instanceof ReadableStream&&__actualReadableComponent()===__actualReadableComponent()&&__actualWritableComponent() instanceof WritableStream&&__actualWritableComponent()===__actualWritableComponent()')! == 'true'
+	assert !runtime.libjs_vm().has_running_execution_context()
+}
+
 fn native_readable_document() &dom.Document {
 	url := dom.URL{'https://native-readable.example.test/'}
 	return &dom.Document{url: url, origin_: url.origin()}

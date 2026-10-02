@@ -4,10 +4,13 @@
 // Owning-realm generated binding adaptation for ReadableStream.cpp,
 // ReadableStreamDefaultReader.cpp, generic reader and default controller IDL.
 // The constructor/controller/reader algorithms execute their native records.
+@[has_globals]
 module browserjs
 
 import streams
 import webidl
+
+__global readable_stream_bindings_ = map[voidptr]&ReadableStreamHost{}
 
 #include "stream_wrapper_darwin.h"
 
@@ -29,6 +32,11 @@ fn C.JSObjectGetTypedArrayBytesPtr(context voidptr, object voidptr, exception &v
 pub fn (mut host ReadableStreamHost) install(mut runtime Runtime) ! {
 	runtime.require_javascript_value_context()!
 	runtime.bind_scripting_environment(host.settings)!
+	owner_handle := voidptr(&runtime)
+	if existing := readable_stream_bindings_[owner_handle] {
+		if voidptr(existing) == voidptr(&host) { return }
+		return error('ReadableStream binding already belongs to this runtime')
+	}
 	host.runtime = &runtime
 	host_handle := voidptr(&host)
 	create := runtime.make_value_host_function(fn [host_handle] (_ voidptr, args []voidptr) !voidptr {
@@ -49,7 +57,23 @@ pub fn (mut host ReadableStreamHost) install(mut runtime Runtime) ! {
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		host.prototypes[kind] = runtime.retain_javascript_value(prototype)!
 	}
-	runtime.add_close_handler(fn [host_handle] () { mut host := unsafe { &ReadableStreamHost(host_handle) }; host.close() })
+	readable_stream_bindings_[owner_handle] = &host
+	runtime.add_close_handler(fn [host_handle, owner_handle] () {
+		mut host := unsafe { &ReadableStreamHost(host_handle) }
+		host.close()
+		readable_stream_bindings_.delete(owner_handle)
+	})
+}
+
+pub fn (mut runtime Runtime) javascript_readable_stream(stream &streams.ReadableStream) !voidptr {
+	runtime.require_javascript_value_context()!
+	mut host := readable_stream_bindings_[voidptr(&runtime)] or { return error('ReadableStream binding is unavailable') }
+	return host.wrap(.stream, voidptr(stream))
+}
+
+pub fn (runtime &Runtime) native_readable_stream(value voidptr) !&streams.ReadableStream {
+	host := readable_stream_bindings_[voidptr(runtime)] or { return error('ReadableStream binding is unavailable') }
+	return unsafe { &streams.ReadableStream(host.record(value, .stream)!.native) }
 }
 
 fn (host &ReadableStreamHost) argument(args []voidptr, index int) voidptr {
