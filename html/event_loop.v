@@ -87,10 +87,14 @@ __global (
 )
 
 fn init() {
+	if !platform.EventLoopPlugin.is_installed() {
+		platform.EventLoopPlugin.install(platform.EventLoopPlugin.new())
+	}
 	html_main_thread_event_loop = EventLoop.create(.window)
 	html_broadcast_channel_repository = BroadcastChannelRepository.create()
 	css.install_css_fetch_client_provider(css_fetch_client_for_document)
 	css.install_font_loading_task_provider(font_loading_task_for_document)
+	css.install_font_loading_promise_context_provider(font_loading_promise_context_for_document)
 	fetch.install_parallel_queue_factory(create_fetch_parallel_queue)
 	dom.install_main_thread_documents_provider(main_thread_documents_for_dom)
 	install_html_element_activation_behavior()

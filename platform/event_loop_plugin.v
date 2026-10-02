@@ -30,6 +30,10 @@ pub fn EventLoopPlugin.the() &EventLoopPlugin {
 	return platform_event_loop_plugin
 }
 
+pub fn EventLoopPlugin.is_installed() bool {
+	return platform_event_loop_plugin != unsafe { nil }
+}
+
 pub fn EventLoopPlugin.install(plugin &EventLoopPlugin) {
 	if platform_event_loop_plugin != unsafe { nil } {
 		panic('EventLoopPlugin already installed')

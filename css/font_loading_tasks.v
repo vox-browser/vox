@@ -3,10 +3,43 @@
 module css
 
 import dom
+import platform
+import webidl
 
 pub type FontLoadingTaskProvider = fn (&dom.Document, bool, fn ()) bool
 
 __global font_loading_task_provider_ ?FontLoadingTaskProvider
+
+pub type FontLoadingPromiseContextProvider = fn (&dom.Document) webidl.PromiseContext
+
+__global font_loading_promise_context_provider_ ?FontLoadingPromiseContextProvider
+
+pub fn install_font_loading_promise_context_provider(provider FontLoadingPromiseContextProvider) {
+	font_loading_promise_context_provider_ = provider
+}
+
+fn font_loading_promise_context(computer ?&FontComputer) webidl.PromiseContext {
+	if owner := computer {
+		if document := owner.document_ {
+			if provider := font_loading_promise_context_provider_ {
+				return provider(document)
+			}
+		}
+	}
+	return webidl.PromiseContext{}
+}
+
+fn defer_font_loading_steps(computer ?&FontComputer, steps fn ()) {
+	if owner := computer {
+		if owner.document_ != none && platform.EventLoopPlugin.is_installed() {
+			mut plugin := platform.EventLoopPlugin.the()
+			plugin.deferred_invoke(steps)
+			return
+		}
+	}
+	// Standalone CSS callers have no installed platform event loop or global.
+	steps()
+}
 
 pub fn install_font_loading_task_provider(provider FontLoadingTaskProvider) {
 	font_loading_task_provider_ = provider

@@ -3076,37 +3076,54 @@ fn find_matching_font_faces(font_face_set &FontFaceSet, font string, text string
 // https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-load
 pub fn (mut set FontFaceSet) load(font string, text_arguments ...string) !&webidl.Promise {
 	// 1. Let font face set be the FontFaceSet object this method was called on. Let promise be a newly-created promise object.
-	mut promise := webidl.create_promise()
+	promise := webidl.create_promise_for(font_loading_promise_context(set.font_computer_))
 	text := if text_arguments.len > 0 { text_arguments[0] } else { ' ' }
+	set_handle := voidptr(&set)
+	defer_font_loading_steps(set.font_computer_, fn [set_handle, promise, font, text] () {
+		mut deferred_set := unsafe { &FontFaceSet(set_handle) }
+		deferred_set.load_deferred(promise, font, text)
+	})
+	// 2. Return promise. Complete the rest of these steps asynchronously.
+	return promise
+}
+
+fn (mut set FontFaceSet) load_deferred(promise &webidl.Promise, font string, text string) {
 
 	// 3. Find the matching font faces from font face set using the font and text arguments passed to the function,
 	//    and let font face list be the return value (ignoring the found faces flag). If a syntax error was returned,
 	//    reject promise with a SyntaxError exception and terminate these steps.
 	matched_font_faces := find_matching_font_faces(set, font, text) or {
-		promise.reject(webidl.string_value(err.msg()))
-		return promise
+		mut rejected := unsafe { &webidl.Promise(promise) }
+		rejected.reject(webidl.dom_exception_value(webidl.DOMException.create('SyntaxError', err.msg())))
+		return
 	}
 
 	// 4. Queue a task to run the following steps synchronously:
-	// Boundary: C++ defers this algorithm through the event loop, then queues a font-loading task. The translated
-	// event-loop boundary currently invokes these representable steps synchronously; promise aggregation below still
-	// uses WebIDL::wait_for_all semantics and therefore also handles pending FontStatusPromise values.
-	// 1. For all of the font faces in the font face list, call their load() method.
-	mut promises := []&webidl.Promise{cap: matched_font_faces.len}
-	for font_face in matched_font_faces {
-		mut mutable_font_face := unsafe { &FontFaceObject(font_face) }
-		mutable_font_face.load()
-		promises << font_face.loaded()
-	}
+	queue_font_loading_task(set.font_computer_, false, fn [promise, matched_font_faces] () {
+		// 1. For all of the font faces in the font face list, call their load() method.
+		mut promises := []&webidl.Promise{cap: matched_font_faces.len}
+		for font_face in matched_font_faces {
+			mut mutable_font_face := unsafe { &FontFaceObject(font_face) }
+			mutable_font_face.load()
+			promises << font_face.loaded()
+		}
 
-	// 2. Resolve promise with the result of waiting for all of the [[FontStatusPromise]]s of each font face in
-	//    the font face list, in order.
-	webidl.wait_for_all(promises, fn [mut promise] (fonts []webidl.Value) {
-		promise.resolve(webidl.sequence_value(fonts))
-	}, fn [mut promise] (reason webidl.Value) {
-		promise.reject(reason)
+		// 2. Resolve promise with the result of waiting for all of the [[FontStatusPromise]]s of each font face in
+		//    the font face list, in order.
+		webidl.wait_for_all(promises, fn [promise, matched_font_faces] (_ []webidl.Value) {
+			// The source binding resolves with the matched FontFaces themselves,
+			// preserving their identity and order, rather than the promise values.
+			mut fonts := []webidl.Value{cap: matched_font_faces.len}
+			for face in matched_font_faces {
+				fonts << webidl.platform_object_value_with_id(u64(voidptr(face)))
+			}
+			mut resolved := unsafe { &webidl.Promise(promise) }
+			resolved.resolve(webidl.sequence_value(fonts))
+		}, fn [promise] (reason webidl.Value) {
+			mut rejected := unsafe { &webidl.Promise(promise) }
+			rejected.reject(reason)
+		})
 	})
-	return promise
 }
 
 // https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-check
