@@ -287,6 +287,7 @@ pub fn (subtle_crypto &SubtleCrypto) encrypt(params EncryptionParams, key &Crypt
 		AesCbcParams { params.name }
 		AesCtrParams { params.name }
 		AesGcmParams { params.name }
+		RsaOaepParams { params.name }
 		AlgorithmParams { params.name }
 	}
 	normalized := normalize_an_algorithm(name, 'encrypt')!
@@ -301,6 +302,7 @@ pub fn (subtle_crypto &SubtleCrypto) decrypt(params EncryptionParams, key &Crypt
 		AesCbcParams { params.name }
 		AesCtrParams { params.name }
 		AesGcmParams { params.name }
+		RsaOaepParams { params.name }
 		AlgorithmParams { params.name }
 	}
 	normalized := normalize_an_algorithm(name, 'decrypt')!
@@ -308,12 +310,13 @@ pub fn (subtle_crypto &SubtleCrypto) decrypt(params EncryptionParams, key &Crypt
 	return decrypt_bytes(params, key, data)
 }
 
-pub type SigningParams = Ed448Params | KmacParams | string
+pub type SigningParams = Ed448Params | KmacParams | RsaPssParams | string
 
 fn signing_algorithm_name(algorithm SigningParams) string {
 	return match algorithm {
 		KmacParams { algorithm.name }
 		Ed448Params { algorithm.name }
+		RsaPssParams { algorithm.name }
 		string { algorithm }
 	}
 }
@@ -322,6 +325,8 @@ pub fn (subtle_crypto &SubtleCrypto) sign(algorithm SigningParams, key &CryptoKe
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(signing_algorithm_name(algorithm), 'sign')!
 	validate_operation_key(key, normalized, .sign)!
+	if algorithm is RsaPssParams { return RSAPSS.create().sign(RsaPssParams{ ...algorithm, name: normalized }, key, data) }
+	if normalized == 'RSA-PSS' { return error('TypeError: saltLength is required') }
 	if algorithm is KmacParams {
 		return KMAC.create().sign(KmacParams{ ...algorithm, name: normalized }, key, data)
 	}
@@ -332,6 +337,7 @@ pub fn (subtle_crypto &SubtleCrypto) sign(algorithm SigningParams, key &CryptoKe
 	if normalized in ['KMAC128', 'KMAC256'] { return error('TypeError: outputLength is required') }
 	return match normalized {
 		'HMAC' { hmac_sign(key, data)! }
+		'RSASSA-PKCS1-v1_5' { rsa_sign(key, data, false, 0)! }
 		'Ed25519' { ed25519_sign(key, data)! }
 		'Ed448' { ED448.create().sign(Ed448Params{}, key, data)! }
 		'ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87' { MLDSA.create().sign(Ed448Params{ name: normalized }, key, data)! }
@@ -343,6 +349,8 @@ pub fn (subtle_crypto &SubtleCrypto) verify(algorithm SigningParams, key &Crypto
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(signing_algorithm_name(algorithm), 'verify')!
 	validate_operation_key(key, normalized, .verify)!
+	if algorithm is RsaPssParams { return RSAPSS.create().verify(RsaPssParams{ ...algorithm, name: normalized }, key, signature, data) }
+	if normalized == 'RSA-PSS' { return error('TypeError: saltLength is required') }
 	if algorithm is KmacParams {
 		return KMAC.create().verify(KmacParams{ ...algorithm, name: normalized }, key, signature, data)
 	}
@@ -353,6 +361,7 @@ pub fn (subtle_crypto &SubtleCrypto) verify(algorithm SigningParams, key &Crypto
 	if normalized in ['KMAC128', 'KMAC256'] { return error('TypeError: outputLength is required') }
 	return match normalized {
 		'HMAC' { hmac_verify(key, signature, data)! }
+		'RSASSA-PKCS1-v1_5' { rsa_verify(key, signature, data, false, 0)! }
 		'Ed25519' { ed25519_verify(key, signature, data)! }
 		'Ed448' { ED448.create().verify(Ed448Params{}, key, signature, data)! }
 		'ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87' { MLDSA.create().verify(Ed448Params{ name: normalized }, key, signature, data)! }

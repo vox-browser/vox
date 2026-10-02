@@ -35,3 +35,23 @@ fn generate_rsa_key(params RsaHashedKeyGenParams, extractable bool, usages []Key
 		}
 	}
 }
+
+fn rsa_oaep_encrypt(params RsaOaepParams, key &CryptoKey, message []u8) ![]u8 {
+	if key.type_ != .public_key { return error('InvalidAccessError: Key is not a public key') }
+	return native_rsa_oaep(key, message, params.label, false)
+}
+
+fn rsa_oaep_decrypt(params RsaOaepParams, key &CryptoKey, ciphertext []u8) ![]u8 {
+	if key.type_ != .private_key { return error('InvalidAccessError: Key is not a private key') }
+	return native_rsa_oaep(key, ciphertext, params.label, true)
+}
+
+fn rsa_sign(key &CryptoKey, message []u8, pss bool, salt u32) ![]u8 {
+	if key.type_ != .private_key { return error('InvalidAccessError: Key is not a private key') }
+	return native_rsa_sign(key, message, pss, salt)
+}
+
+fn rsa_verify(key &CryptoKey, signature []u8, message []u8, pss bool, salt u32) !bool {
+	if key.type_ != .public_key { return error('InvalidAccessError: Key is not a public key') }
+	return native_rsa_verify(key, signature, message, pss, salt)
+}

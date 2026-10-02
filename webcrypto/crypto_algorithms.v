@@ -221,6 +221,7 @@ pub type EncryptionParams = AeadParams
 	| AesCtrParams
 	| AesGcmParams
 	| AlgorithmParams
+	| RsaOaepParams
 
 pub type DeriveParams = Argon2Params | EcdhKeyDeriveParams | HkdfParams | Pbkdf2Params
 
@@ -565,6 +566,7 @@ fn chacha20_poly1305_crypt(params AeadParams, key &CryptoKey, input []u8, decryp
 
 pub fn encrypt_bytes(params EncryptionParams, key &CryptoKey, plaintext []u8) ![]u8 {
 	return match params {
+		RsaOaepParams { rsa_oaep_encrypt(params, key, plaintext)! }
 		AeadParams {
 			if key.algorithm_name() == 'AES-OCB' { aes_ocb_crypt(params, key, plaintext, false)! }
 			else { chacha20_poly1305_crypt(params, key, plaintext, false)! }
@@ -578,6 +580,7 @@ pub fn encrypt_bytes(params EncryptionParams, key &CryptoKey, plaintext []u8) ![
 
 pub fn decrypt_bytes(params EncryptionParams, key &CryptoKey, ciphertext []u8) ![]u8 {
 	return match params {
+		RsaOaepParams { rsa_oaep_decrypt(params, key, ciphertext)! }
 		AeadParams {
 			if key.algorithm_name() == 'AES-OCB' { aes_ocb_crypt(params, key, ciphertext, true)! }
 			else { chacha20_poly1305_crypt(params, key, ciphertext, true)! }
