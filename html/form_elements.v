@@ -708,8 +708,19 @@ pub fn (mut form HTMLFormElementModel) submit_form(submitter ?&FormAssociatedEle
 			form.firing_submission_events_ = false
 			return
 		}
-		event := dom.Event.create('submit', dom.EventInit{ bubbles: true, cancelable: true })
-		continue_ := form.event_target_.dispatch_event(event)
+		// HTMLFormElement::submit_form(), steps 5 and 6: the form itself
+		// has no submitter button; requestSubmit(button) retains that button.
+		submitter_button := if control := submitter {
+			?&dom.HTMLElement(unsafe { &dom.HTMLElement(control.element) })
+		} else {
+			?&dom.HTMLElement(none)
+		}
+		event := dom.SubmitEvent.create('submit', dom.SubmitEventInit{
+			submitter: submitter_button
+			bubbles: true
+			cancelable: true
+		})
+		continue_ := form.event_target_.dispatch_event(&event.Event)
 		form.firing_submission_events_ = false
 		if !continue_ || element.cannot_navigate() {
 			return
