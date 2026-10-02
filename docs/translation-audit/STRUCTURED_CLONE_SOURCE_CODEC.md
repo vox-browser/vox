@@ -142,6 +142,17 @@ resizable views still reject explicitly: public getters materialize current
 lengths and cannot recover their original automatic/fixed slots, including a
 fixed view that temporarily became out of bounds after resize.
 
+The native brand classifier captures a genuine SharedArrayBuffer byte-length
+getter when the engine exposes it. A shared buffer cannot fall through as an
+ordinary empty object, and a shared-backed view rejects before ArrayBuffer-only
+slot getters. Both paths retain an explicit DataCloneError boundary while
+native isolation/sharing ownership is absent. This CAPI JSC does not expose
+SharedArrayBuffer, so the real shared cases are conditional and do not establish
+shared transport coverage. Forged tags and the pin's ordinary Promise/WeakMap/
+Proxy fallback are tested; source steps 22/23 remain FIXME and are not replaced
+with an invented general internal-slot rejection. The shared-boundary file and
+fixed-view neighbor passed two files with GC disabled.
+
 The native projection must retain actual JSC object identity and cycle memory,
 source key/enumerability/Get order and original completions, and captured
 intrinsic brands for each supported JavaScript family. Public native `tee()`
