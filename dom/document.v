@@ -3113,6 +3113,20 @@ pub mut:
 	state_   PromiseState
 	result_  JSValue
 	handled_ bool
+mut:
+	// Source-backed APIs expose this exact capability. The old standalone
+	// observer interface reads it directly, without copying settlement state.
+	native_promise_ ?&webidl.Promise
+}
+
+pub fn Promise.from_webidl(promise &webidl.Promise) &Promise {
+	return &Promise{
+		native_promise_: promise
+	}
+}
+
+pub fn (promise &Promise) webidl_promise() ?&webidl.Promise {
+	return promise.native_promise_
 }
 
 pub fn Promise.create() &Promise {
@@ -3121,27 +3135,40 @@ pub fn Promise.create() &Promise {
 
 pub fn Promise.resolved(value JSValue) &Promise {
 	return &Promise{
-		state_: .fulfilled
+		state_:  .fulfilled
 		result_: value
 	}
 }
 
 pub fn Promise.rejected(reason JSValue) &Promise {
 	return &Promise{
-		state_: .rejected
+		state_:  .rejected
 		result_: reason
 	}
 }
 
 pub fn (promise &Promise) state() PromiseState {
+	if native := promise.native_promise_ {
+		return match native.state {
+			.pending { .pending }
+			.fulfilled { .fulfilled }
+			.rejected { .rejected }
+		}
+	}
 	return promise.state_
 }
 
 pub fn (promise &Promise) result() JSValue {
+	if native := promise.native_promise_ { return js_webidl_value(native.result) }
 	return promise.result_
 }
 
 pub fn (mut promise Promise) resolve(value JSValue) {
+	if pointer := promise.native_promise_ {
+		mut native := unsafe { &webidl.Promise(pointer) }
+		native.resolve(value.as_webidl_value() or { panic(err) })
+		return
+	}
 	if promise.state_ != .pending {
 		return
 	}
@@ -3150,6 +3177,11 @@ pub fn (mut promise Promise) resolve(value JSValue) {
 }
 
 pub fn (mut promise Promise) reject(reason JSValue) {
+	if pointer := promise.native_promise_ {
+		mut native := unsafe { &webidl.Promise(pointer) }
+		native.reject(reason.as_webidl_value() or { panic(err) })
+		return
+	}
 	if promise.state_ != .pending {
 		return
 	}
@@ -3158,10 +3190,16 @@ pub fn (mut promise Promise) reject(reason JSValue) {
 }
 
 pub fn (mut promise Promise) mark_handled() {
+	if pointer := promise.native_promise_ {
+		mut native := unsafe { &webidl.Promise(pointer) }
+		native.mark_as_handled()
+		return
+	}
 	promise.handled_ = true
 }
 
 pub fn (promise &Promise) is_handled() bool {
+	if native := promise.native_promise_ { return native.is_handled }
 	return promise.handled_
 }
 

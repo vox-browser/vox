@@ -11,6 +11,7 @@ module html
 import aria
 import css
 import dom
+import webidl
 
 pub enum ImageLoadingAttribute {
 	eager
@@ -538,7 +539,7 @@ fn reject_image_decode(promise &dom.Promise, message string, document &dom.Docum
 	context := document.begin_temporary_execution_context()
 	defer { document.end_temporary_execution_context(context) }
 	mut mutable_promise := unsafe { &dom.Promise(promise) }
-	mutable_promise.reject(dom.js_string('EncodingError: ${message}'))
+	mutable_promise.reject(dom.js_webidl_value(webidl.dom_exception_value_for_record(webidl.DOMException.create_record('EncodingError', message))))
 }
 
 fn queue_image_decode_resolution(image &HTMLImageElementModel, promise &dom.Promise, owner &EventLoop, document &dom.Document) {
@@ -559,7 +560,11 @@ fn queue_image_decode_rejection(image &HTMLImageElementModel, promise &dom.Promi
 // HTMLImageElement.cpp: decode always begins in a microtask, including images
 // that are already available or broken when the method is called.
 pub fn (image &HTMLImageElementModel) decode() &dom.Promise {
-	promise := dom.Promise.create()
+	settings_pointer := image.document_.relevant_settings_object()
+	context := if settings_pointer != unsafe { nil } {
+		unsafe { &EnvironmentSettingsObject(settings_pointer) }.stream_promise_context()
+	} else { webidl.PromiseContext{} }
+	promise := dom.Promise.from_webidl(webidl.create_promise_for(context))
 	owner := image_decode_event_loop(image.document_)
 	queue_a_task(.microtask, owner, image.document_, fn [image, promise] () {
 		image.begin_decode(promise)
@@ -596,7 +601,7 @@ fn (image &HTMLImageElementModel) begin_decode(promise &dom.Promise) {
 				queue_image_decode_rejection(image_pointer, promise, 'Node document not fully active', owner, settlement_document)
 				return
 			}
-			if image_pointer.current_request_ != expected_request {
+			if voidptr(image_pointer.current_request_) != voidptr(expected_request) {
 				queue_image_decode_rejection(image_pointer, promise, 'Current request changed or was mutated', owner, settlement_document)
 				return
 			}
@@ -611,7 +616,7 @@ fn (image &HTMLImageElementModel) begin_decode(promise &dom.Promise) {
 			queue_image_decode_rejection(image_pointer, promise, 'Node document not fully active', owner, settlement_document)
 			return
 		}
-		if image_pointer.current_request_ != expected_request {
+		if voidptr(image_pointer.current_request_) != voidptr(expected_request) {
 			queue_image_decode_rejection(image_pointer, promise, 'Current request changed or was mutated', owner, settlement_document)
 			return
 		}

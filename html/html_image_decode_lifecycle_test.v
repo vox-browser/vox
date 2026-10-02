@@ -1,6 +1,7 @@
 module html
 
 import dom
+import webidl
 
 fn active_image_decode_fixture(path string) (&dom.Document, &EventLoop, &HTMLImageElementModel) {
 	document := parse_document_with_url('<!doctype html><img id="image">', dom.URL{value: 'https://image-decode.example/${path}'})
@@ -27,6 +28,10 @@ fn start_pending_image_decode(mut image HTMLImageElementModel, mut owner EventLo
 	request.set_state(.partially_available)
 	image.add_callbacks_to_image_request(request, false, request.current_url(), '', 0)
 	promise := image.decode()
+	native := promise.webidl_promise() or { panic('missing actual source capability') }
+	settings := unsafe { &EnvironmentSettingsObject(image.document_.relevant_settings_object()) }
+	assert webidl.promise_realm(native) == u64(voidptr(settings.realm()))
+	assert webidl.promise_realm(native) != 0
 	assert promise.state() == .pending
 	owner.perform_a_microtask_checkpoint()
 	assert promise.state() == .pending
@@ -62,6 +67,14 @@ fn test_decode_checks_activity_and_request_state_in_the_microtask() {
 	owner.perform_a_microtask_checkpoint()
 	assert promise.state() == .rejected
 	assert promise.result().to_string_value().contains('Current request state is broken')
+	native := promise.webidl_promise() or { panic('missing source capability') }
+	assert native.state == .rejected
+	exception := webidl.dom_exception_from_object(native.result) or { panic('missing EncodingError record') }
+	assert exception.name() == 'EncodingError'
+	assert exception.message() == 'Current request state is broken'
+	native_exception := native.result.dom_exception_?
+	facade_exception := promise.result().as_webidl_value()!.dom_exception_?
+	assert voidptr(facade_exception) == voidptr(native_exception)
 	assert owner.task_queue().is_empty()
 	mut inactive_document := dom.Document.create(dom.URL{value: 'https://image-decode.example/inactive'})
 	mut inactive := HTMLImageElementModel.create(inactive_document, inactive_document.base_url())
@@ -73,6 +86,36 @@ fn test_decode_checks_activity_and_request_state_in_the_microtask() {
 	main_owner.perform_a_microtask_checkpoint()
 	assert inactive_promise.state() == .rejected
 	assert inactive_promise.result().to_string_value().contains('Node document not fully active')
+}
+
+fn test_decode_native_capability_jobs_run_on_the_original_owning_loop() {
+	document, mut owner, mut image := active_image_decode_fixture('native-jobs')
+	mut request := image.current_request()
+	request.set_state(.completely_available)
+	facade := image.decode()
+	mut promise := facade.webidl_promise() or { panic('missing source capability') }
+	mut log := &DecodeNativeJobLog{}
+	webidl.react_to_promise(mut promise, fn [mut log] (value webidl.Value) !webidl.Value {
+		assert value.kind == .undefined
+		log.ran = true
+		return value
+	}, fn (_ webidl.Value) !webidl.Value { panic('unexpected decode rejection') })
+	owner.perform_a_microtask_checkpoint()
+	assert !log.ran
+	execute_image_decode_settlement(owner, document)
+	assert facade.state() == .fulfilled
+	assert promise.state == .fulfilled
+	// The source TemporaryExecutionContext cleanup checkpoints the owning
+	// realm after settling the capability. Its reaction runs there.
+	assert log.ran
+	assert owner.microtask_queue.len == 0
+	assert facade.is_handled()
+}
+
+@[heap]
+struct DecodeNativeJobLog {
+mut:
+	ran bool
 }
 
 fn test_decode_without_a_resource_queues_rejection_after_the_microtask() {
