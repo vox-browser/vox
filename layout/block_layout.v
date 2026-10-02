@@ -243,12 +243,17 @@ fn resolve_auto_margins(computed &css.ComputedValues, mut used_values UsedValues
 	} else if margin_right_auto {
 		used_values.margin_right = css_px(remaining)
 	} else {
-		// CSS 2.1 §10.3.3 asks the *start* margin to be ignored when the box is
-		// over-constrained in a right-to-left containing block, but
-		// BlockFormattingContext::try_compute_width() never consults the
-		// direction: it always gives the remainder to margin-right, and the
-		// whole block formatting context is direction-agnostic. Reproduce that.
-		used_values.margin_right = css_px(fixed_margin_right + remaining)
+		// Rust/layout/block_formatting_context.rs: compute_inline_size's
+		// equation uses the containing block's direction, including when an
+		// oversized definite width has turned auto margins into zero.
+		containing_direction := if container := used_values.containing_block_used_values() {
+			container.node().computed_values().direction()
+		} else { css.Direction.ltr }
+		if containing_direction == .rtl {
+			used_values.margin_left = css_px(fixed_margin_left + remaining)
+		} else {
+			used_values.margin_right = css_px(fixed_margin_right + remaining)
+		}
 	}
 }
 
