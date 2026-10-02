@@ -60,6 +60,7 @@ pub mut:
 	types            []BinaryDefinedType
 	function_type_indices []u32
 	start_function_index ?u32
+	data_count ?u32
 }
 
 pub struct SerializedModule {
@@ -124,6 +125,7 @@ pub fn (mut compiled Module) deserialization_steps(serialized SerializedModule) 
 	compiled.types = restored.types.clone()
 	compiled.function_type_indices = restored.function_type_indices.clone()
 	compiled.start_function_index = restored.start_function_index
+	compiled.data_count = restored.data_count
 }
 
 struct Decoder {
@@ -192,6 +194,7 @@ fn compile_module(bytes []u8) !&Module {
 	mut types := []BinaryDefinedType{}
 	mut function_type_indices := []u32{}
 	mut start_function_index := ?u32(none)
+	mut data_count := ?u32(none)
 	mut last_non_custom_rank := 0
 	mut seen := map[u8]bool{}
 	for decoder.offset < bytes.len {
@@ -226,6 +229,10 @@ fn compile_module(bytes []u8) !&Module {
 			// Parser.cpp::StartSection::parse retains the function index. The
 			// machine's invocation and signature validation are separate work.
 			8 { start_function_index = section.u32_leb()! }
+			12 {
+				count_section := parse_data_count_section(mut section)!
+				data_count = count_section.count
+			}
 			else {
 				section.offset = section.bytes.len
 			}
@@ -244,6 +251,7 @@ fn compile_module(bytes []u8) !&Module {
 		types:            types
 		function_type_indices: function_type_indices
 		start_function_index: start_function_index
+		data_count: data_count
 	}
 }
 
