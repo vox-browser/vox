@@ -117,7 +117,31 @@ fn (mut stream WritableStream) start_underlying_sink(sink UnderlyingSink) ! {
 	stream.promise_write_algorithm_ = sink.write_promise
 	stream.promise_close_algorithm_ = sink.close_promise
 	stream.promise_abort_algorithm_ = sink.abort_promise
-	mut start_promise := if algorithm := sink.start_promise {
+	controller_value := stream_controller_callback_value(voidptr(stream.controller_), 'WritableStreamDefaultController')
+	receiver := sink.underlying_sink_value
+	if callback := sink.write_callback {
+		bound := stream_webidl_callback(callback, stream.realm_, .yes)
+		stream.promise_write_algorithm_ = fn [bound, receiver, controller_value] (chunk Value) !&webidl.Promise {
+			return webidl.invoke_promise_callback(bound, receiver, [stream_value_to_webidl(chunk), controller_value])
+		}
+	}
+	if callback := sink.close_callback {
+		bound := stream_webidl_callback(callback, stream.realm_, .yes)
+		stream.promise_close_algorithm_ = fn [bound, receiver] () !&webidl.Promise {
+			return webidl.invoke_promise_callback(bound, receiver, []webidl.Value{})
+		}
+	}
+	if callback := sink.abort_callback {
+		bound := stream_webidl_callback(callback, stream.realm_, .yes)
+		stream.promise_abort_algorithm_ = fn [bound, receiver] (reason Value) !&webidl.Promise {
+			return webidl.invoke_promise_callback(bound, receiver, [stream_value_to_webidl(reason)])
+		}
+	}
+	mut start_promise := if callback := sink.start_callback {
+		bound := stream_webidl_callback(callback, stream.realm_, .no)
+		result := webidl.invoke_callback(bound, receiver, [controller_value])!
+		webidl.create_resolved_promise_for(stream.realm_.promise_context(), result)
+	} else if algorithm := sink.start_promise {
 		algorithm()!
 	} else {
 		if algorithm := sink.start { algorithm()! }

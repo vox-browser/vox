@@ -25,6 +25,11 @@ pub:
 	write_promise ?PromiseWriteAlgorithm
 	close_promise ?PromiseCloseAlgorithm
 	abort_promise ?PromiseAbortAlgorithm
+	underlying_sink_value webidl.Value
+	start_callback ?webidl.CallbackType
+	write_callback ?webidl.CallbackType
+	close_callback ?webidl.CallbackType
+	abort_callback ?webidl.CallbackType
 	type_ ?string
 }
 
