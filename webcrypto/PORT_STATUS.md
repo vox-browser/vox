@@ -109,10 +109,17 @@ The installed provider accepts that zero output. Tests include six upstream
 HKDF and all seven upstream PBKDF2 vectors, native failure, validation order,
 and deferred copied salts/zero-length settlement.
 
-Further source review remains for the earlier symmetric, Argon2, and Ed25519
-implementations. The current Argon2 path rejects source secret/associatedData
-parameters, and HMAC import does not apply optional length. Backend availability
-alone does not establish parity for these bodies.
+Argon2d/i/id now call upstream's native EVP_KDF operations with nonce, lanes,
+memory, passes, version, tag size, the native thread cap, and optional secret/
+associated data. Source validation order, the 24-bit parallelism bound,
+raw-secret-only imports, and integer-divided non-byte-aligned output lengths
+are retained. All three upstream RFC9106 secret/associated-data vectors pass,
+along with invalid parameters, native failure, 256-lane generation, real
+deriveKey, and deferred BufferSource copy tests.
+
+Further source review remains for the earlier symmetric and Ed25519
+implementations. HMAC import still does not apply optional length. Backend
+availability alone does not establish parity for these bodies.
 
 `SubtleCryptoBinding` implements the asynchronous WebIDL operation boundary.
 It copies input data and registered algorithm BufferSource fields before
@@ -133,7 +140,7 @@ remain available below the binding.
 
 ## Verification
 
-The 25 WebCrypto test files and all six WebIDL test files passed using direct
+The 27 WebCrypto test files and all six WebIDL test files passed using direct
 `v -old-compiler -enable-globals -path 'WORKTREE|@vlib|@vmodules' FILE_test.v`
 invocations. The focused HTML Crypto, environments, and global-scope tests also
 passed. These checks cover copied views/parameters/usages, immediate versus
