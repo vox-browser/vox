@@ -165,14 +165,16 @@ fn initialize_transform_stream_with_start_promise(mut stream TransformStream, st
 }
 
 pub fn transform_stream_error(mut stream TransformStream, reason Value) {
-	stream.error(reason.description())
+	mut readable_controller := stream.readable_.default_controller_
+	readable_stream_default_controller_error(mut readable_controller, reason)
+	transform_stream_error_writable_and_unblock_write(mut stream, reason)
 }
 
 pub fn transform_stream_error_writable_and_unblock_write(mut stream TransformStream, reason Value) {
 	stream.stored_error_ = reason.description()
 	stream.clear_algorithms()
-	mut writable := stream.writable_
-	writable.start_erroring(reason.description())
+	mut writable_controller := stream.writable_.controller_
+	writable_stream_default_controller_error_if_needed(mut writable_controller, reason)
 	stream.unblock_write()
 }
 
@@ -244,7 +246,7 @@ pub fn transform_stream_default_controller_enqueue(mut controller TransformStrea
 }
 
 pub fn transform_stream_default_controller_error(mut controller TransformStreamDefaultController, reason Value) {
-	controller.error(reason.description())
+	transform_stream_error(mut controller.stream_, reason)
 }
 
 pub fn transform_stream_default_controller_perform_transform(mut controller TransformStreamDefaultController, chunk Value) &VoidPromise {

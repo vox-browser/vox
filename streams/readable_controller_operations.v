@@ -8,6 +8,8 @@
 // state.
 module streams
 
+import webidl
+
 pub fn (mut controller ReadableStreamDefaultController) cancel_steps(reason Value) &VoidPromise {
 	mut stream := controller.stream_
 	stream.queue_.reset()
@@ -299,11 +301,11 @@ pub fn readable_stream_default_controller_enqueue(mut controller ReadableStreamD
 		readable_stream_fulfill_read_request(mut stream, chunk, false)
 	} else {
 		chunk_size := stream.size_algorithm_(chunk) or {
-			readable_stream_default_controller_error(mut controller, string_value(err.msg()))
+			readable_stream_default_controller_error(mut controller, stream_value_from_webidl(webidl.exception_value(err)))
 			return err
 		}
 		stream.queue_.enqueue_value_with_size(chunk, chunk_size) or {
-			readable_stream_default_controller_error(mut controller, string_value(err.msg()))
+			readable_stream_default_controller_error(mut controller, stream_value_from_webidl(webidl.exception_value(err)))
 			return err
 		}
 	}

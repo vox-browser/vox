@@ -144,16 +144,11 @@ fn (mut stream TransformStream) unblock_write() {
 }
 
 pub fn (mut stream TransformStream) error(reason string) {
-	if stream.stored_error_ != '' {
-		return
-	}
-	stream.stored_error_ = reason
-	mut readable := stream.readable_
-	readable.error(reason)
-	stream.clear_algorithms()
-	mut writable := stream.writable_
-	writable.start_erroring(reason)
-	stream.unblock_write()
+	stream.error_value(webidl.string_value(reason))
+}
+
+pub fn (mut stream TransformStream) error_value(reason webidl.Value) {
+	transform_stream_error(mut stream, stream_value_from_webidl(reason))
 }
 
 pub fn (mut stream TransformStream) terminate() {
@@ -182,13 +177,13 @@ pub fn (controller &TransformStreamDefaultController) desired_size() ?f64 {
 
 pub fn (mut controller TransformStreamDefaultController) enqueue(value Value) ! {
 	mut stream := controller.stream_
-	if stream.terminated_ || stream.stored_error_ != '' {
-		return error('TypeError: TransformStream controller cannot enqueue')
-	}
 	mut readable_controller := stream.readable_.default_controller_
-	readable_controller.enqueue(value) or {
-		stream.error(err.msg())
-		return err
+	if !readable_stream_default_controller_can_close_or_enqueue(readable_controller) {
+		return error('TypeError: ReadableController is either closed or not readable.')
+	}
+	readable_stream_default_controller_enqueue(mut readable_controller, value) or {
+		transform_stream_error_writable_and_unblock_write(mut stream, stream_value_from_webidl(webidl.exception_value(err)))
+		return webidl.throw_value(stream.readable_.stored_error_value())
 	}
 	stream.update_backpressure()
 }

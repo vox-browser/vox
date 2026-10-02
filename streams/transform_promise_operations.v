@@ -49,8 +49,8 @@ fn (mut stream TransformStream) invoke_transform_promise(chunk Value) &webidl.Pr
 fn (mut stream TransformStream) perform_transform_promise(chunk Value) &webidl.Promise {
 	mut transform_promise := stream.invoke_transform_promise(chunk)
 	return transform_promise.upon_rejection(fn [mut stream] (reason webidl.Value) !webidl.Value {
-		stream.error(callback_reason(reason))
-		return error(callback_reason(reason))
+		stream.error_value(reason)
+		return webidl.throw_value(reason)
 	})
 }
 
@@ -60,7 +60,7 @@ fn (mut stream TransformStream) sink_write_promise(chunk Value) &webidl.Promise 
 	mut changed := stream.backpressure_change_promise_.as_webidl_promise()
 	webidl.react_to_promise(mut changed, fn [mut stream, mut result, chunk] (_ webidl.Value) !webidl.Value {
 		if stream.writable_.state_ == .erroring {
-			result.reject(webidl.string_value(stream.writable_.stored_error_))
+			result.reject(stream.writable_.stored_error_value())
 		} else {
 			assert stream.writable_.state_ == .writable
 			mut transformed := stream.perform_transform_promise(chunk)
@@ -107,7 +107,7 @@ fn (mut stream TransformStream) close_writable() &VoidPromise {
 	mut flush := stream.invoke_flush_promise()
 	stream.clear_algorithms()
 	webidl.react_to_promise(mut flush, fn [mut stream, mut finish] (_ webidl.Value) !webidl.Value {
-		if stream.readable_.state_ == .errored { finish.reject(stream.readable_.stored_error_) }
+		if stream.readable_.state_ == .errored { finish.reject_value(stream.readable_.stored_error_value()) }
 		else {
 			mut readable_controller := stream.readable_.default_controller_
 			readable_stream_default_controller_close(mut readable_controller)
@@ -116,8 +116,8 @@ fn (mut stream TransformStream) close_writable() &VoidPromise {
 		return webidl.undefined_value()
 	}, fn [mut stream, mut finish] (reason webidl.Value) !webidl.Value {
 		mut readable := stream.readable_
-		readable.error(callback_reason(reason))
-		finish.reject(callback_reason(reason))
+		readable.error_value(reason)
+		finish.reject_value(reason)
 		return webidl.undefined_value()
 	})
 	return finish
@@ -132,17 +132,17 @@ fn (mut stream TransformStream) abort_writable(reason Value) &VoidPromise {
 	mut cancel := stream.invoke_transformer_cancel_promise(reason)
 	stream.clear_algorithms()
 	webidl.react_to_promise(mut cancel, fn [mut stream, mut finish, reason] (_ webidl.Value) !webidl.Value {
-		if stream.readable_.state_ == .errored { finish.reject(stream.readable_.stored_error_) }
+		if stream.readable_.state_ == .errored { finish.reject_value(stream.readable_.stored_error_value()) }
 		else {
 			mut readable := stream.readable_
-			readable.error(reason.description())
+			readable.error_value(stream_value_to_webidl(reason))
 			finish.resolve()
 		}
 		return webidl.undefined_value()
 	}, fn [mut stream, mut finish] (reason webidl.Value) !webidl.Value {
 		mut readable := stream.readable_
-		readable.error(callback_reason(reason))
-		finish.reject(callback_reason(reason))
+		readable.error_value(reason)
+		finish.reject_value(reason)
 		return webidl.undefined_value()
 	})
 	return finish
@@ -157,7 +157,7 @@ fn (mut stream TransformStream) cancel_readable(reason Value) &VoidPromise {
 	mut cancel := stream.invoke_transformer_cancel_promise(reason)
 	stream.clear_algorithms()
 	webidl.react_to_promise(mut cancel, fn [mut stream, mut finish, reason] (_ webidl.Value) !webidl.Value {
-		if stream.writable_.state_ == .errored { finish.reject(stream.writable_.stored_error_) }
+		if stream.writable_.state_ == .errored { finish.reject_value(stream.writable_.stored_error_value()) }
 		else {
 			mut writable_controller := stream.writable_.controller_
 			writable_stream_default_controller_error_if_needed(mut writable_controller, reason)
@@ -167,9 +167,9 @@ fn (mut stream TransformStream) cancel_readable(reason Value) &VoidPromise {
 		return webidl.undefined_value()
 	}, fn [mut stream, mut finish] (reason webidl.Value) !webidl.Value {
 		mut writable_controller := stream.writable_.controller_
-		writable_stream_default_controller_error_if_needed(mut writable_controller, string_value(callback_reason(reason)))
+		writable_stream_default_controller_error_if_needed(mut writable_controller, stream_value_from_webidl(reason))
 		stream.unblock_write()
-		finish.reject(callback_reason(reason))
+		finish.reject_value(reason)
 		return webidl.undefined_value()
 	})
 	return finish
