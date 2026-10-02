@@ -3,6 +3,7 @@
 module browserjs
 
 import webidl
+import libjs
 
 fn C.JSValueIsUndefined(context voidptr, value voidptr) bool
 fn C.JSValueIsNull(context voidptr, value voidptr) bool
@@ -14,6 +15,34 @@ mut:
 	by_wrapper map[voidptr]&webidl.DOMException
 	by_record  map[voidptr]voidptr
 	factory    voidptr
+}
+
+fn (runtime &Runtime) binding_dom_utf16(value voidptr) !libjs.Utf16String {
+	runtime.require_javascript_value_context()!
+	// Real ECMAScript ToString, including one string-hint author conversion,
+	// Symbol rejection, and the original thrown engine value.
+	mut exception := unsafe { nil }
+	text := C.JSValueToStringCopy(runtime.context, value, &exception)
+	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+	if text == unsafe { nil } { return error('Failed to convert IDL UTF16 string') }
+	defer { C.JSStringRelease(text) }
+	length := C.JSStringGetLength(text)
+	if length > usize(2147483647) { return error('IDL string exceeds the source V code-unit span') }
+	characters := C.JSStringGetCharactersPtr(text)
+	mut units := []u16{len: int(length)}
+	for index in 0 .. units.len { units[index] = unsafe { characters[index] } }
+	return libjs.utf16_string_from_code_units(units)
+}
+
+fn (runtime &Runtime) binding_utf16_string(text libjs.Utf16String) !voidptr {
+	runtime.require_javascript_value_context()!
+	units := text.code_units()
+	actual := C.JSStringCreateWithCharacters(units.data, usize(units.len))
+	if actual == unsafe { nil } { return error('Failed to create actual IDL UTF16 string') }
+	defer { C.JSStringRelease(actual) }
+	// Native callback return is rooted by the engine call boundary; unlike a
+	// public retained-value factory, repeated getters add no persistent root.
+	return C.JSValueMakeString(runtime.context, actual)
 }
 
 __global dom_exception_bindings_ = map[voidptr]&DOMExceptionBinding{}
@@ -54,16 +83,16 @@ pub fn (mut runtime Runtime) install_dom_exception_binding() ! {
 	runtime.define_value_host_function('__ladybirdDOMExceptionConstruct', fn [owner, mut binding] (receiver voidptr, args []voidptr) !voidptr {
 		runtime := unsafe { &Runtime(owner) }
 		message := if args.len > 0 && !C.JSValueIsUndefined(runtime.context, args[0]) {
-			runtime.binding_dom_string(args[0])!
+			runtime.binding_dom_utf16(args[0])!
 		} else {
-			''
+			libjs.utf16_string('')
 		}
 		name := if args.len > 1 && !C.JSValueIsUndefined(runtime.context, args[1]) {
-			runtime.binding_dom_string(args[1])!
+			runtime.binding_dom_utf16(args[1])!
 		} else {
-			'Error'
+			libjs.utf16_string('Error')
 		}
-		exception := webidl.DOMException.create_record(name, message)
+		exception := webidl.DOMException.create_utf16_record(name, message)
 		binding.by_wrapper[receiver] = exception
 		binding.by_record[voidptr(exception)] = receiver
 		mut mutable_runtime := unsafe { &Runtime(owner) }
@@ -77,8 +106,8 @@ pub fn (mut runtime Runtime) install_dom_exception_binding() ! {
 		}
 		name := runtime.binding_dom_string(args[0])!
 		return match name {
-			'name' { runtime.binding_string(exception.name()) }
-			'message' { runtime.binding_string(exception.message()) }
+			'name' { runtime.binding_utf16_string(exception.name_utf16())! }
+			'message' { runtime.binding_utf16_string(exception.message_utf16())! }
 			'code' { C.JSValueMakeNumber(runtime.context, exception.code()) }
 			else { return error('TypeError: Unknown DOMException attribute') }
 		}
