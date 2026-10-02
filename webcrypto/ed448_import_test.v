@@ -19,6 +19,6 @@ fn test_ed448_raw_import_rejects_448_bit_public_keys() {
 	if _ := subtle_crypto.import_key(.raw, []u8{len: 56}, 'Ed448', false, [.verify], '') {
 		assert false, '448-bit Ed448 public key was accepted'
 	} else {
-		assert err.msg() == 'DataError: Ed448 public key must be 57 bytes'
+		assert err.msg() == 'DataError: Invalid key length'
 	}
 }

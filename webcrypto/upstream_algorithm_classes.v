@@ -174,11 +174,11 @@ pub fn (_ X448) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return expo
 
 pub struct ED448 {}
 pub fn ED448.create() ED448 { return ED448{} }
-pub fn (_ ED448) generate_key(_ AlgorithmParams, _ bool, _ []KeyUsage) !GeneratedKey { return backend_unavailable[GeneratedKey]('Ed448', 'key generation') }
+pub fn (_ ED448) generate_key(_ AlgorithmParams, extractable bool, usages []KeyUsage) !GeneratedKey { return generate_ed448_key(extractable, usages) }
 pub fn (_ ED448) import_key(_ AlgorithmParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_ed448_key(format, material, extractable, usages) }
-pub fn (_ ED448) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_algorithm_key(format, key) }
-pub fn (_ ED448) sign(_ Ed448Params, _ &CryptoKey, _ []u8) ![]u8 { return backend_unavailable[[]u8]('Ed448', 'signing') }
-pub fn (_ ED448) verify(_ Ed448Params, _ &CryptoKey, _ []u8, _ []u8) !bool { return backend_unavailable[bool]('Ed448', 'verification') }
+pub fn (_ ED448) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_ed448_key(format, key) }
+pub fn (_ ED448) sign(params Ed448Params, key &CryptoKey, message []u8) ![]u8 { return ed448_sign(params, key, message) }
+pub fn (_ ED448) verify(params Ed448Params, key &CryptoKey, signature []u8, message []u8) !bool { return ed448_verify(params, key, signature, message) }
 
 pub struct MLDSA {}
 pub fn MLDSA.create() MLDSA { return MLDSA{} }
