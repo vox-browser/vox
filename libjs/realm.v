@@ -3,7 +3,7 @@ module libjs
 import math
 
 // Translated from LibJS/Runtime/Realm.{h,cpp}. The Intrinsics prototype graph
-// and remaining global bindings belong to the pending builtin translation.
+// and global bindings use the source-defined prototype ancestry.
 // The ordinary global object supplies the translated value, function and
 // constructor properties.
 
@@ -20,7 +20,9 @@ pub mut:
 	global_environment             ?&GlobalEnvironment      // [[GlobalEnv]]
 	global_declarative_environment ?&DeclarativeEnvironment // Cached from GlobalEnv
 	host_defined                   ?RealmHostDefined        // [[HostDefined]]
-	function_prototype             ?&Object                 // Translated intrinsic; Object prototype graph pending
+	object_prototype               ?&Object
+	math_object                    ?&Object
+	function_prototype             ?&Object                 // %Function.prototype%
 	throw_type_error_function      ?&Object
 	boolean_prototype              ?&Object
 	boolean_constructor            ?&Object
@@ -44,6 +46,14 @@ pub fn (realm &Realm) global_object_record() &Object {
 
 pub fn (realm &Realm) global_environment_record() &GlobalEnvironment {
 	return realm.global_environment or { panic('Realm has no global environment yet') }
+}
+
+pub fn (realm &Realm) object_prototype_record() &Object {
+	return realm.object_prototype or { panic('Realm has no Object prototype yet') }
+}
+
+pub fn (realm &Realm) math_object_record() &Object {
+	return realm.math_object or { panic('Realm has no Math object yet') }
 }
 
 pub fn (realm &Realm) function_prototype_record() &Object {
@@ -107,16 +117,19 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	// 1. Let realm be a new Realm Record.
 	mut realm := Realm.create()
 	// 2. Perform CreateIntrinsics(realm).
-	// Intrinsics.cpp: initialize the translated Function prototype and shared
-	// thrower before exposing them to global creation hooks. The remaining
-	// intrinsic graph, including %Object.prototype%, is pending.
-	function_prototype := FunctionPrototype.create(mut vm, realm, none)
+	// Intrinsics.cpp allocates the Object root before Function.prototype and
+	// initializes it after the function intrinsic is available.
+	object_prototype := ObjectPrototype.create(realm)
+	realm.object_prototype = object_prototype.object
+	function_prototype := FunctionPrototype.create(mut vm, realm, object_prototype.object)
 	realm.function_prototype = function_prototype.object
+	object_prototype.initialize(mut vm, realm, PrimitiveObjectPrototypes{})
+	realm.math_object = MathObject.create(mut vm, realm, object_prototype.object).object
 	thrower := create_throw_type_error_function(mut vm, realm, function_prototype.object)
 	realm.throw_type_error_function = thrower
 	mut prototype_object := function_prototype.object
 	prototype_object.add_restricted_function_properties(thrower)
-	boolean_prototype := BooleanPrototype.create(mut vm, realm, none)
+	boolean_prototype := BooleanPrototype.create(mut vm, realm, object_prototype.object)
 	realm.boolean_prototype = boolean_prototype.object
 	boolean_constructor := BooleanConstructor.create(mut vm, realm)
 	realm.boolean_constructor = boolean_constructor.object
@@ -124,14 +137,14 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	mut boolean_prototype_object := boolean_prototype.object
 	boolean_prototype_object.define_direct_property(PropertyName.from_str('constructor'),
 		Value.from_object(boolean_constructor.object), attribute_writable | attribute_configurable)
-	symbol_prototype := SymbolPrototype.create(mut vm, realm, none)
+	symbol_prototype := SymbolPrototype.create(mut vm, realm, object_prototype.object)
 	realm.symbol_prototype = symbol_prototype.object
 	symbol_constructor := SymbolConstructor.create(mut vm, realm)
 	realm.symbol_constructor = symbol_constructor.object
 	mut symbol_prototype_object := symbol_prototype.object
 	symbol_prototype_object.define_direct_property(PropertyName.from_str('constructor'),
 		Value.from_object(symbol_constructor.object), attribute_writable | attribute_configurable)
-	array_buffer_prototype := ArrayBufferPrototype.create(mut vm, realm, none)
+	array_buffer_prototype := ArrayBufferPrototype.create(mut vm, realm, object_prototype.object)
 	realm.array_buffer_prototype = array_buffer_prototype.object
 	array_buffer_constructor := ArrayBufferConstructor.create(mut vm, realm)
 	realm.array_buffer_constructor = array_buffer_constructor.object
@@ -139,7 +152,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	array_buffer_prototype_object.define_direct_property(PropertyName.from_str('constructor'),
 		Value.from_object(array_buffer_constructor.object),
 		attribute_writable | attribute_configurable)
-	data_view_prototype := DataViewPrototype.create(mut vm, realm, none)
+	data_view_prototype := DataViewPrototype.create(mut vm, realm, object_prototype.object)
 	realm.data_view_prototype = data_view_prototype.object
 	data_view_constructor := DataViewConstructor.create(mut vm, realm)
 	realm.data_view_constructor = data_view_constructor.object
@@ -147,7 +160,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	data_view_prototype_object.define_direct_property(PropertyName.from_str('constructor'),
 		Value.from_object(data_view_constructor.object),
 		attribute_writable | attribute_configurable)
-	shared_array_buffer_prototype := SharedArrayBufferPrototype.create(mut vm, realm, none)
+	shared_array_buffer_prototype := SharedArrayBufferPrototype.create(mut vm, realm, object_prototype.object)
 	realm.shared_array_buffer_prototype = shared_array_buffer_prototype.object
 	shared_array_buffer_constructor := SharedArrayBufferConstructor.create(mut vm, realm)
 	realm.shared_array_buffer_constructor = shared_array_buffer_constructor.object
@@ -172,8 +185,7 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 		hooks.create_global_object(realm)
 	} else {
 		// 13. Else, a. Let global be OrdinaryObjectCreate(realm.[[Intrinsics]].[[%Object.prototype%]]).
-		// NOTE: %Object.prototype% is part of the pending intrinsics translation.
-		Object.create(realm, none)
+		Object.create(realm, object_prototype.object)
 	}
 	global.class_name = 'GlobalObject'
 	// 14. If the host requires that the this binding in realm's global scope return an object other than the global object, then
@@ -194,6 +206,8 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	set_default_global_value_bindings(realm)
 	// GlobalObject.cpp installs intrinsic constructor properties after values.
 	// Eager materialization replaces the engine-private intrinsic accessor map.
+	global.define_direct_property(PropertyName.from_str('Math'),
+		Value.from_object(realm.math_object_record()), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('Boolean'),
 		Value.from_object(realm.boolean_constructor_record()),
 		attribute_writable | attribute_configurable)
