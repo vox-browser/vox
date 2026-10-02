@@ -1,5 +1,6 @@
 // Copyright (c) 2026, Ladybird contributors
 // SPDX-License-Identifier: BSD-2-Clause
+@[has_globals]
 module browserjs
 
 import webidl
@@ -12,9 +13,27 @@ fn C.JSValueUnprotect(context voidptr, value voidptr)
 fn C.JSObjectMakeArray(context voidptr, count usize, arguments &voidptr, exception &voidptr) voidptr
 fn C.JSObjectCallAsFunction(context voidptr, function voidptr, receiver voidptr, count usize, arguments &voidptr, exception &voidptr) voidptr
 fn C.JSObjectMakeDeferredPromise(context voidptr, resolve &voidptr, reject &voidptr, exception &voidptr) voidptr
+fn C.JSObjectMakeFunctionWithCallback(context voidptr, name voidptr, callback fn (voidptr, voidptr, voidptr, usize, &voidptr, &voidptr) voidptr) voidptr
+
+__global native_value_host_functions_ = map[voidptr]&ValueHostFunctionRecord{}
 
 fn javascript_core_value_host_function(context voidptr, function voidptr, receiver voidptr, count usize, arguments &voidptr, exception &voidptr) voidptr {
 	record := unsafe { &ValueHostFunctionRecord(C.JSObjectGetPrivate(function)) }
+	return invoke_value_host_function_record(record, context, receiver, count, arguments, exception)
+}
+
+fn javascript_core_native_value_host_function(context voidptr, function voidptr, receiver voidptr, count usize, arguments &voidptr, exception &voidptr) voidptr {
+	record := native_value_host_function_record(function) or {
+		return host_function_error(context, 'Native JavaScript function binding is closed', exception)
+	}
+	return invoke_value_host_function_record(record, context, receiver, count, arguments, exception)
+}
+
+fn native_value_host_function_record(function voidptr) ?&ValueHostFunctionRecord {
+	return native_value_host_functions_[function] or { return none }
+}
+
+fn invoke_value_host_function_record(record &ValueHostFunctionRecord, context voidptr, receiver voidptr, count usize, arguments &voidptr, exception &voidptr) voidptr {
 	if record.runtime.closed { return host_function_error(context, 'JavaScript runtime is closed', exception) }
 	mut args := []voidptr{cap: int(count)}
 	for index in 0 .. int(count) { args << unsafe { arguments[index] } }
@@ -72,6 +91,24 @@ pub fn (mut runtime Runtime) make_value_host_function(callback ValueHostFunction
 	return runtime.retain_javascript_value(function)
 }
 
+// Real JSC native function, including Function prototype, native source text,
+// and no [[Construct]]. Exact actual function references retain their source
+// host records until the owning Runtime closes; this is not full wrapper GC.
+pub fn (mut runtime Runtime) make_native_value_host_function(name string, length int, callback ValueHostFunction) !voidptr {
+	runtime.require_javascript_value_context()!
+	record := &ValueHostFunctionRecord{runtime: &runtime, callback: callback}
+	actual_name := js_source_string(name)
+	defer { C.JSStringRelease(actual_name) }
+	function := C.JSObjectMakeFunctionWithCallback(runtime.context, actual_name, javascript_core_native_value_host_function)
+	if function == unsafe { nil } { return error('JavaScriptCore native function creation failed') }
+	runtime.retain_javascript_value(function)!
+	runtime.call_engine_function(runtime.value_function_metadata_intrinsic_, [function, C.JSValueMakeString(runtime.context, actual_name), C.JSValueMakeNumber(runtime.context, f64(length))])!
+	native_value_host_functions_[function] = record
+	runtime.value_host_functions_ << record
+	runtime.add_close_handler(fn [function] () { native_value_host_functions_.delete(function) })
+	return function
+}
+
 pub fn (mut runtime Runtime) evaluate_host_value(source string) !voidptr {
 	runtime.require_javascript_value_context()!
 	runtime.prepare_html_script()
@@ -102,6 +139,8 @@ fn (mut runtime Runtime) initialize_javascript_value_intrinsics() ! {
 	// constructor accepts Number, so reject that primitive before delegating
 	// its remaining primitive cases. Retain full width before Table bounds.
 	runtime.value_bigint_intrinsic_ = runtime.evaluate_host_value(bigint_conversion_intrinsic)!
+	// Source CreateBuiltinFunction name/length have Configurable only.
+	runtime.value_function_metadata_intrinsic_ = runtime.evaluate_host_value('(function(){const define=Object.defineProperty;return function(callback,name,length){define(callback,"name",{value:name,writable:false,enumerable:false,configurable:true});define(callback,"length",{value:length,writable:false,enumerable:false,configurable:true})}})()')!
 }
 
 const bigint_conversion_intrinsic = r'(function(){
