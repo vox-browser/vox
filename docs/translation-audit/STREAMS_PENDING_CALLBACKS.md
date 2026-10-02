@@ -142,13 +142,20 @@ existing source model and actual owner Promise jobs. Constructor conversion
 preserves writable/readable strategy order, transformer member order, actual
 reserved any values, native receiver brands and constructor subclasses.
 
-The typed scalar `SizeAlgorithm !f64` boundary still converts a callback result
-earlier than upstream's JS::Value path. This pinned source requires a genuine
-number at queue insertion; it rejects other values without coercion. Preserving
-that actual result until queue validation, and checking for writer lock release
-during the size callback, needs a separate source slice. Generic WebIDL callback
-invocation now follows source prepare/call/cleanup without an extra can-run-script
-gate; EventTarget retains its distinct source caller gate.
+Actual size callbacks now return the original WebIDL value through source
+readable/writable/transform controllers. Queue insertion checks the genuine
+engine number brand and rejects other values without ToNumber or valueOf.
+Writable writes recheck the original writer stream after the callback before
+state checks and queue insertion. Legacy scalar `SizeAlgorithm !f64` callers
+remain explicit adapters. Generic WebIDL invocation follows source
+prepare/call/cleanup without an extra can-run-script gate; EventTarget retains
+its distinct source caller gate.
+
+Queue RangeErrors retain the typed native `SimpleException` descriptor and one
+actual engine Error through synchronous throws, stored errors and later
+read/write/closed rejections. Captured engine constructors preserve the source
+exception type after author replacement. Descriptor/wrapper records and roots
+remain retained until Runtime.close, with full wrapper GC reclamation pending.
 
 ## Actual DOM abort reasons and owning timeout delivery
 
@@ -319,4 +326,22 @@ browserjs/transform_stream_host_test.v: four actual source component/startup/
   transform/flush, identity/backpressure/controller error, pending rejection/
   cancellation and generated-conversion/brand/subclass/termination cases passed
   with -gc none; focused main transformed chunk DOM replay also passed.
+webidl/number_primitive_test.v + browserjs/webidl_value_test.v: genuine number
+  brand projection, actual references and no coercion of objects/BigInt/Symbol;
+  passed, native -gc none.
+webidl/simple_exception_value_test.v + browserjs/simple_exception_value_test.v:
+  retained typed descriptor, one actual engine Error, distinct record identity,
+  captured source exception constructors and closed-owner checks passed.
+streams/size_value_order_test.v + queue/callback-abrupt/transform neighbors:
+  raw size completion, reentrant writer lock/state order, source component
+  propagation and one stored RangeError value; 4/4 passed.
+browserjs/stream_size_value_order_test.v + transform_stream_host_test.v: actual
+  numeric and rejected non-number results without coercion, original abrupt
+  values, owner callback contexts, writer reentrancy and exact RangeError identity
+  across synchronous throws and later read/write/closed reactions; 2/2 -gc none.
+browserjs/webidl_callback_order_test.v: generic callback and actual stream size
+  call preserve source invocation/context when caller realm can_run is false.
+streams/pipe_through_entry_test.v + pipe/tee/pending neighbors: source/writable
+  lock ordering, allowed locked returned readable, handled internal rejection
+  and returned actual stream identity; 3/3 passed.
 ```
