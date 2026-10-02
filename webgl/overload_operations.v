@@ -665,3 +665,14 @@ pub fn (mut context WebGLRenderingContext) vertex_attrib_divisor(index GLuint, d
 	}
 	context.command('vertex_attrib_divisor', index, divisor)
 }
+
+// WebGL2RenderingContextOverloads.cpp numeric readPixels overload and the
+// host-side ReadPixelsIntoPixelPackBuffer command. GL retains packing and
+// destination-buffer range validation.
+pub fn (mut context WebGLRenderingContext) read_pixels_into_pixel_pack_buffer(x int, y int, width int, height int, format GLenum, type_ GLenum, offset i64) {
+    if !context.require_webgl2() {return}
+    if pixel_pack_buffer !in context.bound_buffers {context.set_error(invalid_operation);return}
+    if !context.command('read_pixels_into_pixel_pack_buffer',x,y,width,height,format,type_,offset) {return}
+    C.vox_gl_read_pixels_to_buffer(x,y,width,height,format,type_,offset)
+    context.native.collect_native_error()
+}

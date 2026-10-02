@@ -108,6 +108,7 @@ fn C.vox_gl_tex_parameter(u32,u32) int
 fn C.vox_gl_tex_float_parameter(u32,u32) f32
 fn C.vox_gl_renderbuffer_parameter(u32,u32) int
 fn C.vox_gl_read_pixels(int, int, int, int, u32, u32, int, voidptr) int
+fn C.vox_gl_read_pixels_to_buffer(int,int,int,int,u32,u32,i64)
 fn C.vox_gl_clear_color(f32, f32, f32, f32)
 fn C.vox_gl_clear_depth(f32)
 fn C.vox_gl_clear_stencil(int)

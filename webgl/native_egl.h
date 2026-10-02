@@ -331,6 +331,11 @@ static void vox_gl_invalidate_sub_framebuffer(unsigned target, int count, unsign
 static int vox_gl_tex_parameter(unsigned target, unsigned pname) { GLint value = 0; glGetTexParameterivRobustANGLE(target, pname, 1, NULL, &value); return value; }
 static float vox_gl_tex_float_parameter(unsigned target, unsigned pname) { GLfloat value = 0; glGetTexParameterfvRobustANGLE(target, pname, 1, NULL, &value); return value; }
 static int vox_gl_renderbuffer_parameter(unsigned target, unsigned pname) { GLint value = 0; glGetRenderbufferParameterivRobustANGLE(target, pname, 1, NULL, &value); return value; }
+// WebGL2RenderingContextOverloads::read_pixels numeric offset variant.
+static void vox_gl_read_pixels_to_buffer(int x, int y, int width, int height, unsigned format, unsigned type, int64_t offset)
+{
+    glReadPixels(x,y,width,height,format,type,(void*)(intptr_t)offset);
+}
 static int vox_gl_read_pixels(int x, int y, int width, int height, unsigned format, unsigned type, int capacity, void* data)
 {
     GLsizei written = 0;

@@ -979,6 +979,10 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 		}
 
 		'readPixels' {
+			if wg_arg(args,6) !is []json2.Any && wg_arg(args,6) !is json2.Null {
+				context.read_pixels_into_pixel_pack_buffer(wg_int(wg_arg(args,0)),wg_int(wg_arg(args,1)),wg_int(wg_arg(args,2)),wg_int(wg_arg(args,3)),wg_u32(wg_arg(args,4)),wg_u32(wg_arg(args,5)),wg_i64(wg_arg(args,6)))
+				return json2.Any(json2.Null{})
+			}
 			if wg_arg(args, 6) is json2.Null { context.read_pixels_null(); return json2.Any(json2.Null{}) }
 			mut pixels := wg_array(wg_arg(args, 6)).map(u8(wg_u32(it)))
 			context.read_pixels_into(wg_int(wg_arg(args, 0)), wg_int(wg_arg(args, 1)), wg_int(wg_arg(args, 2)), wg_int(wg_arg(args, 3)), wg_u32(wg_arg(args, 4)), wg_u32(wg_arg(args, 5)), mut pixels, wg_u64(wg_arg(args, 7)), wg_u64(request['elementSize'] or { json2.Any(1) }))
