@@ -34,8 +34,8 @@ pub fn (_ AesCbc) get_key_length(params AesKeyGenParams) !KeyLengthResult { retu
 
 pub struct AesCtr {}
 pub fn AesCtr.create() AesCtr { return AesCtr{} }
-pub fn (_ AesCtr) encrypt(params AesCtrParams, key &CryptoKey, data []u8) ![]u8 { return aes_ctr_crypt(params, key, data) }
-pub fn (_ AesCtr) decrypt(params AesCtrParams, key &CryptoKey, data []u8) ![]u8 { return aes_ctr_crypt(params, key, data) }
+pub fn (_ AesCtr) encrypt(params AesCtrParams, key &CryptoKey, data []u8) ![]u8 { return aes_ctr_crypt(params, key, data, false) }
+pub fn (_ AesCtr) decrypt(params AesCtrParams, key &CryptoKey, data []u8) ![]u8 { return aes_ctr_crypt(params, key, data, true) }
 pub fn (_ AesCtr) import_key(format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_secret_algorithm('AES-CTR', format, material, extractable, usages, '') }
 pub fn (_ AesCtr) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_algorithm_key(format, key) }
 pub fn (_ AesCtr) get_key_length(params AesKeyGenParams) !KeyLengthResult { return KeyLengthResult{value: aes_key_length(params)!} }

@@ -289,48 +289,6 @@ fn valid_aes_key(key &CryptoKey, expected_name string) ![]u8 {
 	return handle
 }
 
-fn increment_counter(mut counter []u8, length u8) {
-	mut remaining := int(length)
-	mut index := counter.len - 1
-	mut carry := u16(1)
-	for remaining > 0 && carry != 0 {
-		bits := if remaining >= 8 { 8 } else { remaining }
-		mask := u16((u16(1) << bits) - 1)
-		current := u16(counter[index])
-		low := (current & mask) + carry
-		counter[index] = u8((current & ~mask) | (low & mask))
-		carry = if low > mask { u16(1) } else { u16(0) }
-		remaining -= bits
-		index--
-	}
-}
-
-fn aes_ctr_crypt(params AesCtrParams, key &CryptoKey, input []u8) ![]u8 {
-	key_bytes := valid_aes_key(key, 'AES-CTR')!
-	if params.counter.len != 16 || params.length == 0 || params.length > 128 {
-		return error('OperationError: Invalid AES-CTR counter or length')
-	}
-	block_count := (u64(input.len) + 15) / 16
-	if params.length < 64 && block_count > u64(1) << params.length {
-		return error('OperationError: AES-CTR counter would repeat')
-	}
-	block := aes.new_cipher(key_bytes)
-	mut counter := params.counter.clone()
-	mut output := []u8{len: input.len}
-	mut offset := 0
-	for offset < input.len {
-		mut stream_block := []u8{len: 16}
-		block.encrypt(mut stream_block, counter)
-		count := if input.len - offset < 16 { input.len - offset } else { 16 }
-		for index in 0 .. count {
-			output[offset + index] = input[offset + index] ^ stream_block[index]
-		}
-		increment_counter(mut counter, params.length)
-		offset += count
-	}
-	return output
-}
-
 fn gcm_shift_right(mut block []u8) {
 	mut carry := u8(0)
 	for index in 0 .. block.len {
@@ -504,7 +462,7 @@ pub fn encrypt_bytes(params EncryptionParams, key &CryptoKey, plaintext []u8) ![
 			else { chacha20_poly1305_crypt(params, key, plaintext, false)! }
 		}
 		AesCbcParams { aes_cbc_encrypt(params, key, plaintext)! }
-		AesCtrParams { aes_ctr_crypt(params, key, plaintext)! }
+		AesCtrParams { aes_ctr_crypt(params, key, plaintext, false)! }
 		AesGcmParams { aes_gcm_encrypt(params, key, plaintext)! }
 		AlgorithmParams {
 			if key.algorithm_name() == 'RSA-OAEP' { rsa_oaep_encrypt(RsaOaepParams{}, key, plaintext)! }
@@ -521,7 +479,7 @@ pub fn decrypt_bytes(params EncryptionParams, key &CryptoKey, ciphertext []u8) !
 			else { chacha20_poly1305_crypt(params, key, ciphertext, true)! }
 		}
 		AesCbcParams { aes_cbc_decrypt(params, key, ciphertext)! }
-		AesCtrParams { aes_ctr_crypt(params, key, ciphertext)! }
+		AesCtrParams { aes_ctr_crypt(params, key, ciphertext, true)! }
 		AesGcmParams { aes_gcm_decrypt(params, key, ciphertext)! }
 		AlgorithmParams {
 			if key.algorithm_name() == 'RSA-OAEP' { rsa_oaep_decrypt(RsaOaepParams{}, key, ciphertext)! }

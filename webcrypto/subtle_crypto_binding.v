@@ -360,7 +360,7 @@ fn normalized_encrypt(algorithm NormalizedCryptoAlgorithm, key &CryptoKey, data 
 				aes_cbc_encrypt(params, key, data)!
 			}
 		}
-		AesCtrParams { aes_ctr_crypt(params, key, data)! }
+		AesCtrParams { aes_ctr_crypt(params, key, data, decrypt)! }
 		AesGcmParams {
 			if decrypt {
 				aes_gcm_decrypt(params, key, data)!
