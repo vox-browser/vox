@@ -34,7 +34,7 @@ fn (mut host CryptoHost) install_import_key() ! {
 		}
 		return host.crypto_object(webidl.object_value(properties)) or { return host.exception(err) }
 	})!
-	sequence := runtime.evaluate_host_value(crypto_usage_sequence)!
+	sequence := runtime.evaluate_host_value(webidl_sequence_conversion_factory)!
 	defer { runtime.release_javascript_value(sequence) }
 	host.string_sequence = runtime.retain_javascript_value(runtime.call_javascript_function(sequence, C.JSValueMakeUndefined(runtime.context), [strings])!)!
 	host.prime_sequence = runtime.retain_javascript_value(runtime.call_javascript_function(sequence, C.JSValueMakeUndefined(runtime.context), [primes])!)!

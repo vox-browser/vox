@@ -30,7 +30,7 @@ fn (mut host CryptoHost) install_generate_key() ! {
 		}
 		return host.exception(error("TypeError: Invalid value '${name}' for enumeration type 'KeyUsage'"))
 	})!
-	sequence := runtime.evaluate_host_value(crypto_usage_sequence)!
+	sequence := runtime.evaluate_host_value(webidl_sequence_conversion_factory)!
 	defer { runtime.release_javascript_value(sequence) }
 	host.usage_sequence = runtime.retain_javascript_value(runtime.call_javascript_function(sequence, C.JSValueMakeUndefined(runtime.context), [convert])!)!
 	generate := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
@@ -138,13 +138,3 @@ fn (mut host CryptoHost) generate_key_operation(args []voidptr) !&webidl.Promise
 	normalized := host.normalize_generation(converted, is_object)!
 	return host.service.subtle().generate_key(normalized, extractable, usages)
 }
-
-// Direct translation of the pinned sequence generator's GetIteratorFromMethod /
-// IteratorStepValue loop. Its conversion failure path does not IteratorClose.
-const crypto_usage_sequence = r'(function(convert){
- const apply=Reflect.apply,define=Object.defineProperty,iteratorSymbol=Symbol.iterator,T=TypeError,S=String,isArray=Array.isArray;
- function object(value){return value!==null&&(typeof value==="object"||typeof value==="function")}
- function display(value){if(!object(value))return S(value);return typeof value==="function"?"[object Function]":isArray(value)?"[object Array]":"[object Object]"}
- function failure(value,suffix){throw new T(display(value)+suffix)}
- return function(value){if(!object(value))failure(value," is not an object");const method=value[iteratorSymbol];if(method==null)failure(value," is not iterable");if(typeof method!=="function")failure(method," is not a function");const iterator=apply(method,value,[]);if(!object(iterator))failure(value," is not iterable");const next=iterator.next,result=[];let index=0;for(;;){if(typeof next!=="function")failure(next," is not a function");const step=apply(next,iterator,[]);if(!object(step))failure(step," is not an object");if(step.done)return result;const usage=convert(step.value);define(result,index++,{value:usage,writable:true,enumerable:true,configurable:true})}}
-})'
