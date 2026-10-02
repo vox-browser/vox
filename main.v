@@ -1515,6 +1515,7 @@ fn javascript_bootstrap(state map[string]json2.Any) string {
 		'function __range(){return{selected:null,start:null,end:null,selectNodeContents:function(node){const point=__rangePoint(node,0);this.selected={target:point.target,firstChild:point.firstChild};},setStart:function(node,offset){this.start=__rangePoint(node,offset);},setEnd:function(node,offset){this.end=__rangePoint(node,offset);},surroundContents:function(node){const s=node&&node.__state;if(!s)throw new TypeError("Invalid range parent");__state.operations.push({op:"surroundSelectedContents",target:s.bridgeKey});}};}',
 		'const __selection={range:null,addRange:function(range){if(!range)return;this.range=range;if(range.start&&range.end)__state.operations.push({op:"setSelectionRange",target:range.start.target,firstChild:range.start.firstChild,startOffset:range.start.offset,endTarget:range.end.target,endFirstChild:range.end.firstChild,endOffset:range.end.offset});else if(range.selected)__state.operations.push({op:"selectNodeContents",target:range.selected.target,firstChild:range.selected.firstChild});},collapse:function(node,offset){const point=__rangePoint(node,offset),range=__range();range.start=point;range.end=point;this.range=range;__state.operations.push({op:"collapseSelection",target:point.target,firstChild:point.firstChild,offset:point.offset});},removeAllRanges:function(){this.range=null;__state.operations.push({op:"removeAllRanges"});},selectAllChildren:function(node){const range=__range();range.selectNodeContents(node);this.range=range;__state.operations.push({op:"selectAllChildren",target:range.selected.target});},getRangeAt:function(index){if(+index!==0||!this.range)throw new Error("IndexSizeError");return this.range;}};',
 		'const document = { getElementById: function (id) { const s=__elementStates().find(function(item){return item.id===String(id);}); return s ? __element(s) : null; }, getElementsByTagName: function(name) { const tag=String(name).toLowerCase(); return __elementStates().filter(function(s){return tag==="*"||s.tagName.toLowerCase()===tag;}).map(__element); }, querySelector: function (q) { const s=__elementStates().find(function(item){return __matches(item,q);});return s?__element(s):null; }, addEventListener: function (n, f) { (__listeners[__listenerKey(null, n)] ||= []).push(f); }, createElement: function (name) { return __createElement("http://www.w3.org/1999/xhtml",String(name).toLowerCase()); }, createElementNS:function(namespaceURI,name){return __createElement(namespaceURI,name);}, createDocumentFragment:function(){return __createElement("","#document-fragment");}, createTextNode: function(text) { return {__state:{tagName:"#text",textContent:String(text)}}; }, createRange:__range };',
+		browserjs.view_transition_bootstrap(),
 		'Object.defineProperty(document, "title", { get: function () { return __state.title; }, set: function (v) { __state.title = String(v); } });',
 		'const __htmlState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="html";}),__headState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="head";}),__bodyState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="body";});document.documentElement=__htmlState?__element(__htmlState):{classList:{add:function(){},remove:function(){},contains:function(){return false;}}};document.head=__headState?__element(__headState):null;document.body=__bodyState?__element(__bodyState):{appendChild:function(child){return child;}};',
 		'const console = { log: function () { __state.logs.push(Array.prototype.map.call(arguments, String).join(" ")); }, warn: function () { this.log.apply(this, arguments); }, error: function () { this.log.apply(this, arguments); } };',
@@ -2242,6 +2243,20 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 	}
 	xhr_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript XMLHttpRequest bindings: ${err.msg()}'
+		return none
+	}
+	mut transition_host := browserjs.ViewTransitionHost.create(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
+		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
+		mut replay_messages := []string{}
+		apply_javascript_state(document, state, callback_runtime.canvas_elements_for_binding(), mut replay_messages)
+		mut mutable_callback_runtime := unsafe { &browserjs.Runtime(callback_runtime) }
+		mutable_callback_runtime.mark_document_state_dirty()
+	}) or {
+		messages << 'JavaScript view-transition bindings: ${err.msg()}'
+		return none
+	}
+	transition_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript view-transition bindings: ${err.msg()}'
 		return none
 	}
 	runtime.evaluate_host(javascript_bootstrap(javascript_initial_state(document, current_url, sources.map(it.code)))) or {
