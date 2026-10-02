@@ -64,7 +64,6 @@ fn test_consume_body_remains_pending_and_collects_future_chunks() {
 			observation.results << result
 		}
 	})
-	params.controller.set_full_timing_info(params.timing_info)
 	mut response := Response.create()
 	body := Body.streaming()
 	mut producer := body.stream()
@@ -80,12 +79,14 @@ fn test_consume_body_remains_pending_and_collects_future_chunks() {
 	assert state.results[0].kind == .bytes
 	assert state.results[0].bytes == 'firstsecond'.bytes()
 	assert params.request.done
+	assert params.controller.full_timing_info_ == none
+	params.controller.report_timing()
+	assert params.timing_info.end_time > 0
 }
 
 fn test_consume_body_reports_late_stream_failure_without_a_successful_eof() {
 	state := &ResponseHandoverObservation{}
 	mut params := handover_test_params(state)
-	params.controller.set_full_timing_info(params.timing_info)
 	params.algorithms = FetchAlgorithms.create(FetchAlgorithmsInput{
 		process_response_consume_body: fn [state] (_ &Response, result BodyBytes) {
 			mut observation := unsafe { &ResponseHandoverObservation(state) }
@@ -102,6 +103,7 @@ fn test_consume_body_reports_late_stream_failure_without_a_successful_eof() {
 	assert state.results.len == 1
 	assert state.results[0].kind == .failure
 	assert !params.request.done
+	assert params.controller.full_timing_info_ == none
 	params.controller.report_timing()
 	assert params.timing_info.end_time > 0
 }

@@ -148,8 +148,15 @@ pub fn (controller &FetchController) report_timing() {
 	callback := controller.report_timing_steps_ or {
 		panic('FetchController.report_timing called without report timing steps')
 	}
-	info := controller.full_timing_info_ or {
-		panic('FetchController.report_timing called without full timing info')
+	// FetchController.cpp invokes the installed reporting closure. Its timing
+	// record belongs to FetchParams; full timing info is a navigation-only
+	// export and is not a prerequisite for subresource reporting.
+	info := if params := controller.fetch_params_ {
+		params.timing_info
+	} else {
+		controller.full_timing_info_ or {
+			panic('FetchController report callback has no timing record')
+		}
 	}
 	callback(info)
 }
