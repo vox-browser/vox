@@ -12,10 +12,6 @@ import webidl
 
 __global readable_stream_bindings_ = map[voidptr]&ReadableStreamHost{}
 
-#include "stream_wrapper_darwin.h"
-
-fn C.vox_make_native_stream_wrapper(context voidptr, record voidptr) voidptr
-fn C.vox_native_stream_wrapper_record(context voidptr, value voidptr) voidptr
 fn C.JSObjectSetPrototype(context voidptr, object voidptr, prototype voidptr)
 fn C.JSObjectGetPropertyAtIndex(context voidptr, object voidptr, index u32, exception &voidptr) voidptr
 fn C.JSObjectMake(context voidptr, object_class voidptr, data voidptr) voidptr
@@ -184,18 +180,18 @@ fn (mut host ReadableStreamHost) wrap_with_prototype(kind ReadableStreamHostKind
 		return record.object
 	}
 	mut record := &ReadableStreamHostRecord{ host: host, kind: kind, native: native }
-	object := C.vox_make_native_stream_wrapper(host.runtime.context, record)
+	object := host.runtime.make_native_stream_wrapper(record)!
 	mut prototype := host.prototypes[kind] or { return error('ReadableStream native prototype is missing') }
 	if desired_prototype != unsafe { nil } && C.JSValueIsObject(host.runtime.context, desired_prototype) { prototype = desired_prototype }
 	C.JSObjectSetPrototype(host.runtime.context, object, prototype)
-	record.object = host.runtime.retain_javascript_value(object)!
+	record.object = object
 	host.records[native] = record
 	return object
 }
 
 fn (host &ReadableStreamHost) record(value voidptr, kind ReadableStreamHostKind) !&ReadableStreamHostRecord {
 	if host.closed { return error('ReadableStream binding is closed') }
-	data := C.vox_native_stream_wrapper_record(host.runtime.context, value)
+	data := host.runtime.native_stream_wrapper_record(value)
 	if data == unsafe { nil } { return error('TypeError: Invalid ReadableStream interface receiver') }
 	record := unsafe { &ReadableStreamHostRecord(data) }
 	if voidptr(record.host) != voidptr(host) || record.kind != kind { return error('TypeError: Invalid ReadableStream interface receiver') }

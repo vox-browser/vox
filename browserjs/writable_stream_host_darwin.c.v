@@ -148,18 +148,18 @@ fn (mut host WritableStreamHost) wrap(kind WritableStreamHostKind, native voidpt
 		return existing.object
 	}
 	mut record := &WritableStreamHostRecord{host: host, kind: kind, native: native}
-	object := C.vox_make_native_stream_wrapper(host.runtime.context, record)
+	object := host.runtime.make_native_stream_wrapper(record)!
 	mut prototype := host.prototypes[kind] or { return error('WritableStream prototype is missing') }
 	if desired_prototype != unsafe { nil } && C.JSValueIsObject(host.runtime.context, desired_prototype) { prototype = desired_prototype }
 	C.JSObjectSetPrototype(host.runtime.context, object, prototype)
-	record.object = host.runtime.retain_javascript_value(object)!
+	record.object = object
 	host.records[native] = record
 	return object
 }
 
 fn (host &WritableStreamHost) record(value voidptr, kind WritableStreamHostKind) !&WritableStreamHostRecord {
 	if host.closed { return error('WritableStream binding is closed') }
-	data := C.vox_native_stream_wrapper_record(host.runtime.context, value)
+	data := host.runtime.native_stream_wrapper_record(value)
 	if data == unsafe { nil } { return error('TypeError: Illegal WritableStream interface receiver') }
 	record := unsafe { &WritableStreamHostRecord(data) }
 	if voidptr(record.host) != voidptr(host) || record.kind != kind { return error('TypeError: Illegal WritableStream interface receiver') }

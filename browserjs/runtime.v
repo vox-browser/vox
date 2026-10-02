@@ -64,6 +64,7 @@ mut:
 	closed                    bool
 	host_functions_           []&HostFunctionRecord
 	value_host_functions_     []&ValueHostFunctionRecord
+	native_stream_wrapper_records_ map[voidptr]voidptr
 	protected_values_         []voidptr
 	value_call_intrinsic_     voidptr
 	promise_observe_intrinsic_ voidptr
@@ -333,6 +334,7 @@ pub fn (mut runtime Runtime) close() {
 	vm.clear_execution_context_stack()
 	runtime.host_functions_.clear()
 	runtime.value_host_functions_.clear()
+	runtime.native_stream_wrapper_records_.clear()
 	runtime.webidl_promise_bridges_.clear()
 	runtime.canvas_element_providers_.clear()
 	if settings := runtime.scripting_settings_ {

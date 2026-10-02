@@ -124,18 +124,18 @@ fn (mut host TransformStreamHost) wrap(kind TransformStreamHostKind, native void
 		return existing.object
 	}
 	mut record := &TransformStreamHostRecord{host: host, kind: kind, native: native}
-	object := C.vox_make_native_stream_wrapper(host.runtime.context, record)
+	object := host.runtime.make_native_stream_wrapper(record)!
 	mut prototype := host.prototypes[kind] or { return error('TransformStream prototype is missing') }
 	if desired_prototype != unsafe { nil } && C.JSValueIsObject(host.runtime.context, desired_prototype) { prototype = desired_prototype }
 	C.JSObjectSetPrototype(host.runtime.context, object, prototype)
-	record.object = host.runtime.retain_javascript_value(object)!
+	record.object = object
 	host.records[native] = record
 	return object
 }
 
 fn (host &TransformStreamHost) record(value voidptr, kind TransformStreamHostKind) !&TransformStreamHostRecord {
 	if host.closed { return error('TransformStream binding is closed') }
-	data := C.vox_native_stream_wrapper_record(host.runtime.context, value)
+	data := host.runtime.native_stream_wrapper_record(value)
 	if data == unsafe { nil } { return error('TypeError: Illegal TransformStream interface receiver') }
 	record := unsafe { &TransformStreamHostRecord(data) }
 	if voidptr(record.host) != voidptr(host) || record.kind != kind { return error('TypeError: Illegal TransformStream interface receiver') }
