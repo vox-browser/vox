@@ -30,3 +30,9 @@ fn C.vox_curl_queue_time(handle voidptr) i64
 fn C.vox_curl_socket_create(owner voidptr, socket int, callback fn (voidptr, int, int)) voidptr
 fn C.vox_curl_socket_set_enabled(descriptor voidptr, flags int)
 fn C.vox_curl_socket_destroy(descriptor voidptr)
+
+// C++ VERIFY checks follow the native call. V removes assert expressions in
+// production, so native mutations must execute before this ordinary check.
+fn check_curl_result(result int, expected int) {
+	if result != expected { panic('Native curl call failed (${result}, expected ${expected})') }
+}

@@ -66,30 +66,30 @@ pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, in
 	}
 	if object := request.body.body_object { native.request_body_ = object.bytes() }
 	else if request.body.kind == .bytes { native.request_body_ = request.body.bytes.clone() }
-	assert C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_PRIVATE, native) == C.CURLE_OK
-	assert C.vox_curl_setopt_long(native.easy_, C.CURLOPT_NOSIGNAL, 1) == C.CURLE_OK
-	assert C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_ACCEPT_ENCODING, c'') == C.CURLE_OK
-	assert C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_URL, request.current_url().serialize().str) == C.CURLE_OK
-	assert C.vox_curl_setopt_long(native.easy_, C.CURLOPT_CONNECTTIMEOUT, 90) == C.CURLE_OK
-	assert C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_CUSTOMREQUEST, request.method.str) == C.CURLE_OK
-	assert C.vox_curl_setopt_long(native.easy_, C.CURLOPT_FOLLOWLOCATION, 0) == C.CURLE_OK
+	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_PRIVATE, native), C.CURLE_OK)
+	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_NOSIGNAL, 1), C.CURLE_OK)
+	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_ACCEPT_ENCODING, c''), C.CURLE_OK)
+	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_URL, request.current_url().serialize().str), C.CURLE_OK)
+	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_CONNECTTIMEOUT, 90), C.CURLE_OK)
+	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_CUSTOMREQUEST, request.method.str), C.CURLE_OK)
+	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_FOLLOWLOCATION, 0), C.CURLE_OK)
 	if request.method in ['POST', 'PUT', 'PATCH', 'DELETE'] {
-		assert C.vox_curl_setopt_long(native.easy_, C.CURLOPT_POSTFIELDSIZE, native.request_body_.len) == C.CURLE_OK
-		assert C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_POSTFIELDS, native.request_body_.data) == C.CURLE_OK
+		check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_POSTFIELDSIZE, native.request_body_.len), C.CURLE_OK)
+		check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_POSTFIELDS, native.request_body_.data), C.CURLE_OK)
 		if !request.header_list.contains('Content-Type') { native.append_curl_header('Content-Type:') }
 	} else if request.method == 'HEAD' {
-		assert C.vox_curl_setopt_long(native.easy_, C.CURLOPT_NOBODY, 1) == C.CURLE_OK
+		check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_NOBODY, 1), C.CURLE_OK)
 	}
 	for header in request.header_list.headers() {
 		native.append_curl_header(if header.value == '' { '${header.name};' } else { '${header.name}: ${header.value}' })
 	}
 	if native.headers_ != unsafe { nil } {
-		assert C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_HTTPHEADER, native.headers_) == C.CURLE_OK
+		check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_HTTPHEADER, native.headers_), C.CURLE_OK)
 	}
-	assert C.vox_curl_setopt_write(native.easy_, C.CURLOPT_HEADERFUNCTION, curl_header_received) == C.CURLE_OK
-	assert C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_HEADERDATA, native) == C.CURLE_OK
-	assert C.vox_curl_setopt_write(native.easy_, C.CURLOPT_WRITEFUNCTION, curl_data_received) == C.CURLE_OK
-	assert C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_WRITEDATA, native) == C.CURLE_OK
+	check_curl_result(C.vox_curl_setopt_write(native.easy_, C.CURLOPT_HEADERFUNCTION, curl_header_received), C.CURLE_OK)
+	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_HEADERDATA, native), C.CURLE_OK)
+	check_curl_result(C.vox_curl_setopt_write(native.easy_, C.CURLOPT_WRITEFUNCTION, curl_data_received), C.CURLE_OK)
+	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_WRITEDATA, native), C.CURLE_OK)
 	connection.requests_[native.id_] = native
 	handle := native.request_handle()
 	native.receiver_.set_network_request(handle)
@@ -101,7 +101,7 @@ pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, in
 	mut plugin := connection.deferred_
 	plugin.deferred_invoke(fn [mut native] () {
 		if native.finished_ || native.stop_requested_ { return }
-		assert C.curl_multi_add_handle(native.connection_.multi_, native.easy_) == C.CURLM_OK
+		check_curl_result(C.curl_multi_add_handle(native.connection_.multi_, native.easy_), C.CURLM_OK)
 		native.in_multi_ = true
 	})
 	return pending
@@ -118,10 +118,10 @@ fn (request &CurlRequest) request_handle() fetch.RequestServerRequest {
 		stop: fn [request] () { mut native := unsafe { &CurlRequest(request) }; native.stop() }
 		set_body_delivery_paused: fn [request] (paused bool) {
 			if request.finished_ { return }
-			assert C.curl_easy_pause(request.easy_, if paused { C.CURLPAUSE_RECV } else { C.CURLPAUSE_CONT }) == C.CURLE_OK
+			check_curl_result(C.curl_easy_pause(request.easy_, if paused { C.CURLPAUSE_RECV } else { C.CURLPAUSE_CONT }), C.CURLE_OK)
 		}
 		resume_body_delivery: fn [request] () {
-			if !request.finished_ { assert C.curl_easy_pause(request.easy_, C.CURLPAUSE_CONT) == C.CURLE_OK }
+			if !request.finished_ { check_curl_result(C.curl_easy_pause(request.easy_, C.CURLPAUSE_CONT), C.CURLE_OK) }
 		}
 	}
 }
@@ -232,7 +232,7 @@ fn (mut request CurlRequest) free_curl_structs() {
 	if request.finished_ { return }
 	request.finished_ = true
 	if request.in_multi_ {
-		assert C.curl_multi_remove_handle(request.connection_.multi_, request.easy_) == C.CURLM_OK
+		check_curl_result(C.curl_multi_remove_handle(request.connection_.multi_, request.easy_), C.CURLM_OK)
 		request.in_multi_ = false
 	}
 	C.curl_easy_cleanup(request.easy_)

@@ -30,10 +30,10 @@ pub fn CurlConnection.create() !&CurlConnection {
 	if C.curl_global_init(C.CURL_GLOBAL_ALL) != C.CURLE_OK { return error('Failed to initialize libcurl') }
 	mut connection := &CurlConnection{ multi_: C.curl_multi_init() }
 	if connection.multi_ == unsafe { nil } { return error('Failed to initialize curl multi handle') }
-	assert C.vox_curl_multi_setopt_socket(connection.multi_, curl_socket_callback) == C.CURLM_OK
-	assert C.vox_curl_multi_setopt_pointer(connection.multi_, C.CURLMOPT_SOCKETDATA, connection) == C.CURLM_OK
-	assert C.vox_curl_multi_setopt_timer(connection.multi_, curl_timeout_callback) == C.CURLM_OK
-	assert C.vox_curl_multi_setopt_pointer(connection.multi_, C.CURLMOPT_TIMERDATA, connection) == C.CURLM_OK
+	check_curl_result(C.vox_curl_multi_setopt_socket(connection.multi_, curl_socket_callback), C.CURLM_OK)
+	check_curl_result(C.vox_curl_multi_setopt_pointer(connection.multi_, C.CURLMOPT_SOCKETDATA, connection), C.CURLM_OK)
+	check_curl_result(C.vox_curl_multi_setopt_timer(connection.multi_, curl_timeout_callback), C.CURLM_OK)
+	check_curl_result(C.vox_curl_multi_setopt_pointer(connection.multi_, C.CURLMOPT_TIMERDATA, connection), C.CURLM_OK)
 	connection.timer_ = platform.Timer.create_single_shot(0, fn [mut connection] () {
 		if due := connection.timer_due_at_ {
 			now := time.sys_mono_now()
@@ -99,7 +99,7 @@ fn (mut connection CurlConnection) socket_action(socket int, flags int) {
 	if connection.closed_ { return }
 	mut running := 0
 	connection.in_curl_call_ = true
-	assert C.curl_multi_socket_action(connection.multi_, socket, flags, &running) == C.CURLM_OK
+	check_curl_result(C.curl_multi_socket_action(connection.multi_, socket, flags, &running), C.CURLM_OK)
 	connection.in_curl_call_ = false
 	for {
 		mut result := 0
@@ -121,6 +121,6 @@ pub fn (mut connection CurlConnection) close() {
 		for _, descriptor in connection.sockets_ { C.vox_curl_socket_destroy(descriptor) }
 	}
 	connection.sockets_.clear()
-	assert C.curl_multi_cleanup(connection.multi_) == C.CURLM_OK
+	check_curl_result(C.curl_multi_cleanup(connection.multi_), C.CURLM_OK)
 	connection.multi_ = unsafe { nil }
 }
