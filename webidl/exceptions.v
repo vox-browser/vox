@@ -5,6 +5,8 @@
 // Translation of WebIDL/DOMException, ExceptionOr and QuotaExceededError.
 module webidl
 
+import libjs
+
 pub enum SimpleExceptionType {
 	eval_error
 	range_error
@@ -45,6 +47,8 @@ pub struct DOMException {
 mut:
 	name_    string = 'Error'
 	message_ string
+	name_utf16_ ?libjs.Utf16String
+	message_utf16_ ?libjs.Utf16String
 }
 
 pub fn DOMException.create(name string, message string) DOMException {
@@ -56,6 +60,17 @@ pub fn DOMException.create(name string, message string) DOMException {
 
 pub fn DOMException.create_record(name string, message string) &DOMException {
 	return &DOMException{ name_: name, message_: message }
+}
+
+// Source DOMException stores Utf16FlyString name/message. The typed embedding
+// retains the actual code-unit storage instead of rebuilding it from UTF-8.
+pub fn DOMException.create_utf16_record(name libjs.Utf16String, message libjs.Utf16String) &DOMException {
+	return &DOMException{
+		name_: name.str()
+		message_: message.str()
+		name_utf16_: name
+		message_utf16_: message
+	}
 }
 
 // The JS constructor intentionally takes message before name.
@@ -82,6 +97,14 @@ pub fn (exception DOMException) message() string {
 	return exception.message_
 }
 
+pub fn (exception DOMException) name_utf16() libjs.Utf16String {
+	return exception.name_utf16_ or { libjs.utf16_string(exception.name_) }
+}
+
+pub fn (exception DOMException) message_utf16() libjs.Utf16String {
+	return exception.message_utf16_ or { libjs.utf16_string(exception.message_) }
+}
+
 pub fn (exception DOMException) code() u16 {
 	return get_legacy_code_for_name(exception.name_)
 }
@@ -92,6 +115,19 @@ pub fn (exception DOMException) serialize() []string {
 
 pub fn (exception DOMException) serialization_steps() []string {
 	return [exception.name_, exception.message_]
+}
+
+// Actual source payload fields for the HTML writer, in source order.
+pub fn (exception DOMException) serialization_steps_utf16() []libjs.Utf16String {
+	return [exception.name_utf16(), exception.message_utf16()]
+}
+
+pub fn (mut exception DOMException) deserialization_steps_utf16(fields []libjs.Utf16String) ! {
+	if fields.len != 2 { return error('DataCloneError: invalid DOMException serialization') }
+	exception.name_utf16_ = fields[0]
+	exception.message_utf16_ = fields[1]
+	exception.name_ = fields[0].str()
+	exception.message_ = fields[1].str()
 }
 
 pub fn DOMException.deserialize(fields []string) !DOMException {
@@ -109,6 +145,8 @@ pub fn (mut exception DOMException) deserialization_steps(fields []string) ! {
 	}
 	exception.name_ = fields[0]
 	exception.message_ = fields[1]
+	exception.name_utf16_ = none
+	exception.message_utf16_ = none
 }
 
 pub fn (exception DOMException) str() string {
@@ -119,7 +157,7 @@ pub fn (exception DOMException) str() string {
 // Keep its observable properties on the typed value so promise rejection
 // reasons retain the exception instead of degrading to a message string.
 pub fn dom_exception_value(exception DOMException) Value {
-	native := &DOMException{ name_: exception.name(), message_: exception.message() }
+	native := DOMException.create_utf16_record(exception.name_utf16(), exception.message_utf16())
 	return dom_exception_value_for_record(native)
 }
 
