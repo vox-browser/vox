@@ -28,7 +28,7 @@ fn test_symmetric_jwk_metadata_is_validated_and_exported() {
 	if _ := subtle_crypto.import_jwk(wrong_algorithm, 'AES-GCM', true, [.encrypt], '') {
 		assert false
 	} else {
-		assert err.msg().contains('alg contradicts')
+		assert err.msg() == 'DataError: Contradictory key size: key has 128 bits, but alg specifies non-128-bit algorithm'
 	}
 
 	mut wrong_use := symmetric_jwk([]u8{len: 16})

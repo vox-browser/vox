@@ -157,16 +157,18 @@ fn test_symmetric_jwk_import_validates_key_type_extractability_and_requested_ope
 
 	if _ := subtle_crypto.import_jwk(JsonWebKey{
 		kty: 'oct'
+        alg: 'A128GCM'
 		ext: false
 		k:   base64url_encode(material)
 	}, 'AES-GCM', true, [.encrypt], '')
 	{
 		assert false
 	} else {
-		assert err.msg().contains('ext forbids')
+		assert err.msg() == 'DataError: Invalid ext field'
 	}
 	if _ := subtle_crypto.import_jwk(JsonWebKey{
 		kty:     'oct'
+        alg: 'A128GCM'
 		key_ops: ['decrypt']
 		k:       base64url_encode(material)
 	}, 'AES-GCM', false, [.encrypt], '')
@@ -182,7 +184,7 @@ fn test_symmetric_jwk_import_validates_key_type_extractability_and_requested_ope
 	{
 		assert false
 	} else {
-		assert err.msg().contains('must use kty oct')
+		assert err.msg() == 'DataError: Invalid key type'
 	}
 }
 

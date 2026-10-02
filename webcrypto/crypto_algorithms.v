@@ -385,6 +385,7 @@ pub fn derive_bits_bytes(params DeriveParams, base_key &CryptoKey, length_bits u
 }
 
 pub fn generate_aes_key(params AesKeyGenParams, extractable bool, usages []KeyUsage) !&CryptoKey {
+    if params.name in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW'] { return generate_source_aes_key(params, extractable, usages) }
 	if params.length !in [u16(128), 192, 256] {
 		return error('OperationError: AES key length must be 128, 192, or 256')
 	}
@@ -406,21 +407,12 @@ pub fn generate_aes_key(params AesKeyGenParams, extractable bool, usages []KeyUs
 pub fn import_secret_key(algorithm string, material []u8, extractable bool, usages []KeyUsage, hash_name string) !&CryptoKey {
 	canonical := canonical_algorithm_name(algorithm)!
 	match canonical {
-		'AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW' {
-			if material.len !in [16, 24, 32] {
-				return error('DataError: Invalid AES key length')
-			}
-			allowed := if canonical == 'AES-KW' {
-				[KeyUsage.wrap_key, .unwrap_key]
-			} else {
-				[KeyUsage.encrypt, .decrypt, .wrap_key, .unwrap_key]
-			}
-			validate_usages(usages, allowed)!
-			return CryptoKey.create(.secret, extractable, AesKeyAlgorithm{
-				name: canonical
-				length: u16(material.len * 8)
-			}, usages, material)
-		}
+        'AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW' {
+            mut key := import_aes_key(canonical, .raw, material, extractable, usages)!
+            key.set_extractable(extractable)
+            key.set_usages(usages)
+            return key
+        }
         'HMAC' {
             hash := normalize_an_algorithm(hash_name, 'digest')!
             mut key := import_hmac_key(HmacImportParams{ hash: hash }, .raw, material, extractable, usages)!

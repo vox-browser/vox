@@ -387,6 +387,12 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 	}
 	normalized := normalize_an_algorithm(name, 'generateKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
+    if params is AesKeyGenParams && normalized in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW'] {
+        key := generate_aes_key(AesKeyGenParams{ ...params, name: normalized }, extractable, normalized_usages)!
+        if normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+        return GeneratedKey{ key: key }
+    }
+
 	if normalized_usages.len == 0 {
 		return error('SyntaxError: usages must not be empty')
 	}
@@ -484,6 +490,14 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(import_algorithm_name(algorithm), 'importKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
+    if normalized in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW'] {
+        mut key := import_aes_key(normalized, format, material, extractable, normalized_usages)!
+        if normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+        key.set_extractable(extractable)
+        key.set_usages(normalized_usages)
+        return key
+    }
+
     if normalized == 'HMAC' {
         supplied := if algorithm is HmacImportParams { algorithm } else { HmacImportParams{ hash: hash_name } }
         params := HmacImportParams{ ...supplied, hash: normalize_an_algorithm(supplied.hash, 'digest')! }
@@ -573,6 +587,8 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(import_algorithm_name(algorithm), 'importKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
+    if normalized in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW'] { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
+
 	if normalized == 'Ed25519' { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
 	if normalized == 'HMAC' { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
 	if normalized in ['ECDSA', 'ECDH'] { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
@@ -614,6 +630,11 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 pub fn (subtle_crypto &SubtleCrypto) export_key(format KeyFormat, key &CryptoKey) ![]u8 {
 	_ = subtle_crypto
 	normalize_an_algorithm(key.algorithm_name(), 'exportKey')!
+    if key.algorithm_name() in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW'] {
+        if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
+        return export_aes_key(format, key)
+    }
+
     if key.algorithm_name() == 'Ed25519' {
         if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
         // Existing typed V convenience formats; JS AlgorithmMethods stay source-exact.
@@ -673,6 +694,7 @@ pub fn (subtle_crypto &SubtleCrypto) export_jwk(key &CryptoKey) !JsonWebKey {
 	if !key.extractable {
 		return error('InvalidAccessError: Key is not extractable')
 	}
+    if key.algorithm_name() in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW'] { return export_aes_jwk(key) }
 	if key.algorithm_name() == 'Ed25519' { return export_ed25519_jwk(key) }
 	if key.algorithm_name() == 'HMAC' { return export_hmac_jwk(key) }
 	if key.algorithm_name() in ['ECDSA', 'ECDH'] { return export_ec_jwk(key) }

@@ -18,7 +18,7 @@ fn export_algorithm_key(format KeyFormat, key &CryptoKey) ![]u8 {
 
 fn aes_key_length(params AesKeyGenParams) !u32 {
 	if params.length !in [u16(128), 192, 256] {
-		return error('OperationError: AES key length must be 128, 192, or 256 bits')
+		return error('OperationError: Invalid key length')
 	}
 	return u32(params.length)
 }
@@ -27,17 +27,17 @@ pub struct AesCbc {}
 pub fn AesCbc.create() AesCbc { return AesCbc{} }
 pub fn (_ AesCbc) encrypt(params AesCbcParams, key &CryptoKey, data []u8) ![]u8 { return aes_cbc_encrypt(params, key, data) }
 pub fn (_ AesCbc) decrypt(params AesCbcParams, key &CryptoKey, data []u8) ![]u8 { return aes_cbc_decrypt(params, key, data) }
-pub fn (_ AesCbc) import_key(format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_secret_algorithm('AES-CBC', format, material, extractable, usages, '') }
+pub fn (_ AesCbc) import_key(format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_aes_key('AES-CBC', format, material, extractable, usages) }
 pub fn (_ AesCbc) generate_key(params AesKeyGenParams, extractable bool, usages []KeyUsage) !GeneratedKey { return GeneratedKey{key: generate_aes_key(AesKeyGenParams{...params, name: 'AES-CBC'}, extractable, usages)!} }
-pub fn (_ AesCbc) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_algorithm_key(format, key) }
+pub fn (_ AesCbc) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_aes_key(format, key) }
 pub fn (_ AesCbc) get_key_length(params AesKeyGenParams) !KeyLengthResult { return KeyLengthResult{value: aes_key_length(params)!} }
 
 pub struct AesCtr {}
 pub fn AesCtr.create() AesCtr { return AesCtr{} }
 pub fn (_ AesCtr) encrypt(params AesCtrParams, key &CryptoKey, data []u8) ![]u8 { return aes_ctr_crypt(params, key, data, false) }
 pub fn (_ AesCtr) decrypt(params AesCtrParams, key &CryptoKey, data []u8) ![]u8 { return aes_ctr_crypt(params, key, data, true) }
-pub fn (_ AesCtr) import_key(format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_secret_algorithm('AES-CTR', format, material, extractable, usages, '') }
-pub fn (_ AesCtr) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_algorithm_key(format, key) }
+pub fn (_ AesCtr) import_key(format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_aes_key('AES-CTR', format, material, extractable, usages) }
+pub fn (_ AesCtr) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_aes_key(format, key) }
 pub fn (_ AesCtr) get_key_length(params AesKeyGenParams) !KeyLengthResult { return KeyLengthResult{value: aes_key_length(params)!} }
 pub fn (_ AesCtr) generate_key(params AesKeyGenParams, extractable bool, usages []KeyUsage) !GeneratedKey { return GeneratedKey{key: generate_aes_key(AesKeyGenParams{...params, name: 'AES-CTR'}, extractable, usages)!} }
 
@@ -46,14 +46,14 @@ pub fn AesGcm.create() AesGcm { return AesGcm{} }
 pub fn (_ AesGcm) encrypt(params AesGcmParams, key &CryptoKey, data []u8) ![]u8 { return aes_gcm_encrypt(params, key, data) }
 pub fn (_ AesGcm) decrypt(params AesGcmParams, key &CryptoKey, data []u8) ![]u8 { return aes_gcm_decrypt(params, key, data) }
 pub fn (_ AesGcm) get_key_length(params AesKeyGenParams) !KeyLengthResult { return KeyLengthResult{value: aes_key_length(params)!} }
-pub fn (_ AesGcm) import_key(format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_secret_algorithm('AES-GCM', format, material, extractable, usages, '') }
-pub fn (_ AesGcm) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_algorithm_key(format, key) }
+pub fn (_ AesGcm) import_key(format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_aes_key('AES-GCM', format, material, extractable, usages) }
+pub fn (_ AesGcm) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_aes_key(format, key) }
 pub fn (_ AesGcm) generate_key(params AesKeyGenParams, extractable bool, usages []KeyUsage) !GeneratedKey { return GeneratedKey{key: generate_aes_key(AesKeyGenParams{...params, name: 'AES-GCM'}, extractable, usages)!} }
 
 pub struct AesKw {}
 pub fn AesKw.create() AesKw { return AesKw{} }
-pub fn (_ AesKw) import_key(format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_secret_algorithm('AES-KW', format, material, extractable, usages, '') }
-pub fn (_ AesKw) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_algorithm_key(format, key) }
+pub fn (_ AesKw) import_key(format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_aes_key('AES-KW', format, material, extractable, usages) }
+pub fn (_ AesKw) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_aes_key(format, key) }
 pub fn (_ AesKw) get_key_length(params AesKeyGenParams) !KeyLengthResult { return KeyLengthResult{value: aes_key_length(params)!} }
 pub fn (_ AesKw) generate_key(params AesKeyGenParams, extractable bool, usages []KeyUsage) !GeneratedKey { return GeneratedKey{key: generate_aes_key(AesKeyGenParams{...params, name: 'AES-KW'}, extractable, usages)!} }
 pub fn (_ AesKw) wrap_key(_ AlgorithmParams, key &CryptoKey, data []u8) ![]u8 { return aes_key_wrap(key, data) }

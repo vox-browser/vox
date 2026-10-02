@@ -429,11 +429,7 @@ fn normalized_generate(algorithm NormalizedCryptoAlgorithm, extractable bool, us
 	params := algorithm.params
 	return match params {
 		AesKeyGenParams {
-			validate_usages(usages, if algorithm.name == 'AES-KW' {
-				[KeyUsage.wrap_key, .unwrap_key]
-			} else {
-				[KeyUsage.encrypt, .decrypt, .wrap_key, .unwrap_key]
-			})!
+            if algorithm.name == 'AES-OCB' { validate_usages(usages, [KeyUsage.encrypt, .decrypt, .wrap_key, .unwrap_key])! }
 			GeneratedKey{ key: generate_aes_key(params, extractable, usages)! }
 		}
 		HmacKeyGenParams { GeneratedKey{ key: generate_hmac_key(params, extractable, usages)! } }
@@ -473,6 +469,7 @@ fn normalized_generate(algorithm NormalizedCryptoAlgorithm, extractable bool, us
 
 fn normalized_import(algorithm NormalizedCryptoAlgorithm, format KeyFormat, bytes []u8, extractable bool, usages []KeyUsage) !&CryptoKey {
 	params := algorithm.params
+    if algorithm.name in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW'] { return import_aes_key(algorithm.name, format, bytes, extractable, usages) }
 	if params is HmacImportParams { return HMAC.create().import_key(params, format, bytes, extractable, usages) }
 	if params is RsaHashedImportParams {
 		return match algorithm.name {
