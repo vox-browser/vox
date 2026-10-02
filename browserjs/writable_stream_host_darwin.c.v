@@ -5,7 +5,6 @@
 @[has_globals]
 module browserjs
 
-import html
 import math
 import streams
 import webidl
@@ -101,7 +100,7 @@ fn (mut host WritableStreamHost) strategy(object voidptr) !streams.QueuingStrate
 		stored_settings := host.runtime.callback_settings()
 		size_algorithm = fn [host_handle, size, stored_settings] (chunk streams.Value) !f64 {
 			mut host := unsafe { &WritableStreamHost(host_handle) }
-			if host.closed || html.can_run_script_for_settings(host.settings) == .do_not_run { return math.nan() }
+			if host.closed { return math.nan() }
 			host.runtime.prepare_html_callback(stored_settings)
 			defer { host.runtime.clean_up_html_callback(stored_settings) }
 			defer { host.runtime.mark_document_state_dirty() }

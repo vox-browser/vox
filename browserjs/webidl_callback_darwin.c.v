@@ -2,7 +2,6 @@
 // call results stay values; this path performs no Promise Resolve or then access.
 module browserjs
 
-import html
 import webidl
 
 pub fn (mut runtime Runtime) webidl_callback(function voidptr, convert JavaScriptWebIDLValueConverter) !webidl.CallbackType {
@@ -17,9 +16,6 @@ pub fn (mut runtime Runtime) webidl_callback(function voidptr, convert JavaScrip
 		callback: fn [owner_handle, function, convert, stored_settings] (receiver webidl.Value, arguments []webidl.Value) !webidl.Value {
 			mut owner := unsafe { &Runtime(owner_handle) }
 			if owner.closed { return webidl.undefined_value() }
-			if settings := owner.scripting_settings_ {
-				if html.can_run_script_for_settings(settings) == .do_not_run { return webidl.undefined_value() }
-			}
 			owner.prepare_html_callback(stored_settings)
 			defer { owner.clean_up_html_callback(stored_settings) }
 			defer { owner.mark_document_state_dirty() }
