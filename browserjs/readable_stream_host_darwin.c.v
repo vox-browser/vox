@@ -284,6 +284,7 @@ fn (mut host ReadableStreamHost) operate(args []voidptr) !voidptr {
 		match operation {
 			'stream.locked' { return C.JSValueMakeBoolean(host.runtime.context, stream.locked()) }
 			'stream.cancel' { return host.promise(stream.cancel(streams.runtime_value(host.runtime.webidl_value(argument)!)).as_webidl_promise()) }
+			'stream.pipeTo', 'stream.pipeThrough' { return host.pipe_operation(mut stream, operation, argument, host.argument(args, 3)) }
 			'stream.getReader', 'stream.readerConstructor' {
 				mut mode := ?streams.ReadableStreamReaderMode(none)
 				if operation == 'stream.getReader' && !C.JSValueIsUndefined(host.runtime.context, argument) && !C.JSValueIsNull(host.runtime.context, argument) {
@@ -348,6 +349,8 @@ const readable_stream_native_bootstrap = '(function(create,operate){
   attribute(ReadableStream.prototype,"locked","stream.locked");
   ReadableStream.prototype.cancel=function(...args){return promiseOperation(this,"stream.cancel",args)};
   ReadableStream.prototype.getReader=function(...args){return operate(this,"stream.getReader",...args)};
+  ReadableStream.prototype.pipeTo=function(destination,...args){return promiseOperation(this,"stream.pipeTo",[destination,...args])};
+  ReadableStream.prototype.pipeThrough=function(transform,...args){return operate(this,"stream.pipeThrough",transform,...args)};
   attribute(ReadableStreamDefaultReader.prototype,"closed","reader.closed");
   ReadableStreamDefaultReader.prototype.read=function(){return promiseOperation(this,"reader.read",[])};
   ReadableStreamDefaultReader.prototype.cancel=function(...args){return promiseOperation(this,"reader.cancel",args)};
