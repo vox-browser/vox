@@ -60,6 +60,8 @@ pub mut:
 	global_object_handle                    voidptr
 	module_map_                             ?&ModuleMap
 	skip_when_determining_incumbent_counter usize
+	active_classic_script_                  ?&ClassicScript
+	error_extraction_context_               ?fn (dom.JSValue) ErrorExtractionContext
 }
 
 pub fn prepare_to_run_script(mut realm ScriptingRealm) {
@@ -311,6 +313,9 @@ pub fn (mut script ClassicScript) run(rethrow_errors RethrowErrors) !dom.JSValue
 	if !realm.can_run {
 		return dom.js_undefined()
 	}
+	previous_script := realm.active_classic_script_
+	realm.active_classic_script_ = &script
+	defer { realm.active_classic_script_ = previous_script }
 	prepare_to_run_script(mut realm)
 	if stored_error := script.error_to_rethrow {
 		clean_up_after_running_script(mut realm)

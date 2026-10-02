@@ -827,6 +827,8 @@ pub fn WindowEnvironmentSettingsObject.setup(window &WindowModel, creation_url d
 	settings.window_ = window
 	if mutable_window.global_scope_ != unsafe { nil } {
 		mutable_window.global_scope_.responsible_event_loop_ = settings.responsible_event_loop()
+		mutable_window.global_scope_.error_reporting_target_ = unsafe { &dom.EventTarget(window) }
+		mutable_window.global_scope_.error_reporting_realm_ = realm
 	}
 	settings.global_object_ = unsafe { &dom.EventTarget(window) }
 	settings.universal_global_scope_ = UniversalGlobalScopeMixin.create(settings.global_object_, realm, window.associated_document())
@@ -894,6 +896,8 @@ pub fn WorkerEnvironmentSettingsObject.setup(global_scope &WorkerGlobalScope, mu
 	settings.worker_ = global_scope
 	mut worker_services := unsafe { &WindowOrWorkerGlobalScopeMixin(global_scope.window_or_worker_global_scope()) }
 	worker_services.responsible_event_loop_ = settings.responsible_event_loop()
+	worker_services.error_reporting_target_ = unsafe { &dom.EventTarget(global_scope) }
+	worker_services.error_reporting_realm_ = realm
 	settings.global_object_ = unsafe { &dom.EventTarget(global_scope) }
 	settings.universal_global_scope_ = UniversalGlobalScopeMixin.create(settings.global_object_, realm, none)
 	settings.origin_ = origin

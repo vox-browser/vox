@@ -75,6 +75,9 @@ pub fn WorkerGlobalScope.create(url dom.URL, worker_type WorkerType, name string
 		global_scope_: WindowOrWorkerGlobalScopeMixin.create(url.origin(), is_url_potentially_trustworthy(url), false)
 	}
 	scope.location_ = WorkerLocation.create(scope)
+	scope.global_scope_.error_reporting_target_ = scope.this_impl()
+	scope.global_scope_.error_reporting_realm_ = realm
+	scope.global_scope_.responsible_event_loop_ = scope.event_loop
 	return scope
 }
 
@@ -269,11 +272,29 @@ pub fn (scope &WorkerGlobalScope) onerror() ?&dom.CallbackType {
 @[heap]
 pub struct DedicatedWorkerGlobalScope {
 	WorkerGlobalScope
+mut:
+	exception_reporter_ ?fn (string, string, u32, u32)
 }
 
 pub fn DedicatedWorkerGlobalScope.create(url dom.URL, options WorkerOptions, realm &ScriptingRealm) &DedicatedWorkerGlobalScope {
-	return &DedicatedWorkerGlobalScope{
+	mut scope := &DedicatedWorkerGlobalScope{
 		WorkerGlobalScope: *WorkerGlobalScope.create(url, options.type_, options.name, realm)
+	}
+	scope.global_scope_.error_reporting_target_ = scope.this_impl()
+	scope.global_scope_.dedicated_worker_ = scope
+	return scope
+}
+
+// PageClient is the worker-process boundary upstream. The in-process worker
+// model forwards the same metadata into WorkerAgentParent's existing IPC
+// callback, which queues the owning global's DOM-manipulation task.
+fn (scope &DedicatedWorkerGlobalScope) report_unhandled_exception(message string, filename string, lineno u32, colno u32) {
+	if worker_page := scope.page() {
+		mut client := worker_page.client()
+		client.page_did_report_worker_exception(message, filename, lineno, colno)
+	}
+	if reporter := scope.exception_reporter_ {
+		reporter(message, filename, lineno, colno)
 	}
 }
 
@@ -501,6 +522,14 @@ pub fn run_a_worker(target WorkerRunTarget, url dom.URL, outside_settings &Envir
 		agent.initialize()!
 		mut mutable_worker := unsafe { &Worker(worker) }
 		mutable_worker.set_agent(agent)
+		if mut scope := mutable_worker.scope_ {
+			scope.exception_reporter_ = fn [agent] (message string, filename string, lineno u32, colno u32) {
+				agent.worker_exception(message, filename, lineno, colno)
+			}
+			if owner_page := worker_agent_page(outside_settings) {
+				scope.set_page(owner_page)
+			}
+		}
 		return
 	}
 	if worker := target.shared_worker {

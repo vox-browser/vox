@@ -130,6 +130,9 @@ mut:
 	registered_web_sockets_         []&GlobalScopeWebSocket
 	reported_errors_                []dom.JSValue
 	error_reporting_mode_           bool
+	error_reporting_target_         ?&dom.EventTarget
+	error_reporting_realm_          ?&ScriptingRealm
+	dedicated_worker_               ?&DedicatedWorkerGlobalScope
 	performance_                    ?&GlobalScopePerformance
 	indexed_db_                     ?&GlobalScopeIndexedDBFactory
 	crypto_                         ?&GlobalScopeCrypto
@@ -778,17 +781,54 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) report_error(error dom.JSValue
 }
 
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) report_an_exception(exception dom.JSValue, omit_error bool) {
-	if scope.error_reporting_mode_ {
-		return
+	realm := scope.error_reporting_realm_
+	context := if current_realm := realm {
+		if extract := current_realm.error_extraction_context_ { extract(exception) } else { ErrorExtractionContext{} }
+	} else { ErrorExtractionContext{} }
+	information := extract_error_information(exception, context)
+	mut message := information.message
+	mut filename := information.filename
+	mut lineno := information.lineno
+	mut colno := information.colno
+	mut reported_value := information.error
+	if current_realm := realm {
+		if script := current_realm.active_classic_script_ {
+			if script.muted_errors() == .yes {
+				reported_value = dom.js_null()
+				message = 'Script error.'
+				filename = ''
+				lineno = 0
+				colno = 0
+			}
+		}
 	}
-	scope.error_reporting_mode_ = true
-	scope.reported_errors_ << exception
-	if !omit_error {
-		event := dom.Event.create('error', dom.EventInit{ cancelable: true })
-		unsafe { &dom.EventTarget(scope) }
-		.dispatch_event(event)
+	if omit_error { reported_value = dom.js_null() }
+	mut not_handled := true
+	if !scope.error_reporting_mode_ {
+		scope.error_reporting_mode_ = true
+		event := dom.ErrorEvent.create('error', dom.ErrorEventInit{
+			EventInit: dom.EventInit{ cancelable: true }
+			message: message
+			filename: filename
+			lineno: u32(lineno)
+			colno: u32(colno)
+			error: reported_value
+		})
+		target := scope.error_reporting_target_ or { unsafe { &dom.EventTarget(scope) } }
+		not_handled = target.dispatch_event(unsafe { &dom.Event(event) })
+		scope.error_reporting_mode_ = false
 	}
-	scope.error_reporting_mode_ = false
+	if not_handled {
+		if worker := scope.dedicated_worker_ {
+			worker.report_unhandled_exception(message, filename, u32(lineno), u32(colno))
+			return
+		}
+		scope.reported_errors_ << exception
+		if current_realm := realm {
+			mut mutable_realm := unsafe { &ScriptingRealm(current_realm) }
+			report_exception_to_console(exception, mut mutable_realm, .no)
+		}
+	}
 }
 
 pub fn (scope &WindowOrWorkerGlobalScopeMixin) reported_errors() []dom.JSValue {
