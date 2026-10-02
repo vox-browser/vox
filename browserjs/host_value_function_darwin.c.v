@@ -24,6 +24,12 @@ fn javascript_core_value_host_function(context voidptr, function voidptr, receiv
 			return C.JSValueMakeUndefined(context)
 		}
 		if err is webidl.ValueException {
+			if err.value.simple_exception_ != none {
+				mut owner := record.runtime
+				value := owner.javascript_simple_exception(err.value) or { return host_function_error(context, err.msg(), exception) }
+				unsafe { *exception = value }
+				return C.JSValueMakeUndefined(context)
+			}
 			value := record.runtime.actual_webidl_value(err.value) or {
 				return host_function_error(context, err.msg(), exception)
 			}
