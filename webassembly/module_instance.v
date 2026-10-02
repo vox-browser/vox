@@ -131,6 +131,7 @@ pub fn (mut compiled Module) deserialization_steps(serialized SerializedModule) 
 	restored := compile_a_webassembly_module(serialized.bytes)!
 	compiled.bytes = restored.bytes.clone()
 	compiled.import_entries = restored.import_entries.clone()
+	compiled.binary_import_entries = restored.binary_import_entries.clone()
 	compiled.export_entries = restored.export_entries.clone()
 	compiled.custom_sections_ = restored.custom_sections_.clone()
 	compiled.memory_types = restored.memory_types.clone()

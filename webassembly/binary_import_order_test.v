@@ -58,4 +58,8 @@ fn test_source_machine_imports_preserve_interleaved_tags_and_all_description_slo
 	// The public source Module API omits tags without changing machine ordering.
 	assert module_.import_entries.map(it.name) == ['f', 'm', 'g', 'table']
 	assert module_.tag_import_entries[0].name == 't'
+	serialized := module_.serialization_steps(false)!
+	mut restored := Module.create_for_serialization()
+	restored.deserialization_steps(serialized)!
+	assert restored.binary_import_entries == module_.binary_import_entries
 }
