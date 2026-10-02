@@ -54,6 +54,7 @@ pub struct Module {
 pub mut:
 	bytes            []u8
 	import_entries   []ModuleImportDescriptor
+	binary_import_entries []BinaryImport
 	export_entries   []ModuleExportDescriptor
 	custom_sections_ []CustomSection
 	memory_types     []WasmLimits
@@ -203,6 +204,7 @@ fn compile_module(bytes []u8) !&Module {
 		offset: 8
 	}
 	mut imports := []ModuleImportDescriptor{}
+	mut binary_imports := []BinaryImport{}
 	mut exports := []ModuleExportDescriptor{}
 	mut custom := []CustomSection{}
 	mut memory_types := []WasmLimits{}
@@ -245,7 +247,7 @@ fn compile_module(bytes []u8) !&Module {
 		match section_id {
 			0 { parse_custom_section(mut section, mut custom)! }
 			1 { types = parse_type_section(mut section)! }
-			2 { parse_import_section(mut section, mut imports, mut tag_import_entries)! }
+			2 { parse_import_section(mut section, mut imports, mut tag_import_entries, mut binary_imports)! }
 			3 { function_type_indices = parse_function_section(mut section)! }
 			4 { table_definitions = parse_table_section(mut section)! }
 			5 { parse_memory_section(mut section, mut memory_types)! }
@@ -276,6 +278,7 @@ fn compile_module(bytes []u8) !&Module {
 	mut compiled := &Module{
 		bytes:            bytes.clone()
 		import_entries:   imports
+		binary_import_entries: binary_imports
 		export_entries:   exports
 		custom_sections_: custom
 		memory_types:     memory_types
@@ -349,14 +352,16 @@ fn external_kind(byte u8) !ImportExportKind {
 	}
 }
 
-fn parse_import_section(mut decoder Decoder, mut result []ModuleImportDescriptor, mut tag_result []BinaryTagImport) ! {
+fn parse_import_section(mut decoder Decoder, mut result []ModuleImportDescriptor, mut tag_result []BinaryTagImport, mut binary_result []BinaryImport) ! {
 	count := decoder.u32_leb()!
 	for _ in 0 .. count {
 		module_name := decoder.name()!
 		name := decoder.name()!
 		kind_byte := decoder.byte()!
 		if kind_byte == 4 {
-			tag_result << BinaryTagImport{ module: module_name, name: name, type_: parse_binary_tag_type(mut decoder)! }
+			type_ := parse_binary_tag_type(mut decoder)!
+			tag_result << BinaryTagImport{ module: module_name, name: name, type_: type_ }
+			binary_result << BinaryImport{ module: module_name, name: name, description: type_ }
 			// Module.cpp::imports omits tags at its current JS API boundary;
 			// retain the binary record for the separate machine translation.
 			continue
@@ -366,16 +371,29 @@ fn parse_import_section(mut decoder Decoder, mut result []ModuleImportDescriptor
 		mut function_type_index := u32(0)
 		mut table_type := ?BinaryTableType(none)
 		mut global_type := ?BinaryGlobalType(none)
+		mut description := BinaryImportDescription(BinaryImportTypeIndex{})
 		match kind {
-			.function_ { function_type_index = decoder.u32_leb()! }
+			.function_ {
+				function_type_index = decoder.u32_leb()!
+				description = BinaryImportTypeIndex{ value: function_type_index }
+			}
 			.table {
 				parsed := parse_binary_table_type(mut decoder)!
 				validate_limits(parsed.limits, if parsed.limits.address_type == .i64 { none } else { ?u64(u64(max_u32)) })!
 				table_type = parsed
+				description = parsed
 			}
-			.memory { memory_type = parse_limits(mut decoder)! }
-			.global { global_type = parse_binary_global_type(mut decoder)! }
+			.memory {
+				memory_type = parse_limits(mut decoder)!
+				description = memory_type
+			}
+			.global {
+				parsed := parse_binary_global_type(mut decoder)!
+				global_type = parsed
+				description = parsed
+			}
 		}
+		binary_result << BinaryImport{ module: module_name, name: name, description: description }
 		result << ModuleImportDescriptor{
 			module:      module_name
 			name:        name

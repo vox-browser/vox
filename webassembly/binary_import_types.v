@@ -3,9 +3,28 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // LibWasm Parser.cpp TableType::parse, GlobalType::parse, and retained
-// ImportSection::Import description records. Tag imports remain the existing
-// unported WebAssembly facade boundary, rather than a fabricated descriptor.
+// ImportSection::Import description records. The machine retains every import
+// in source order; the JavaScript facade separately omits tag imports.
 module webassembly
+
+pub struct BinaryImportTypeIndex {
+pub:
+	value u32
+}
+
+pub type BinaryImportDescription = BinaryImportTypeIndex
+	| BinaryTableType
+	| WasmLimits
+	| BinaryGlobalType
+	| BinaryMachineFunctionType
+	| BinaryTagType
+
+pub struct BinaryImport {
+pub:
+	module      string
+	name        string
+	description BinaryImportDescription
+}
 
 pub struct BinaryTableType {
 pub:
