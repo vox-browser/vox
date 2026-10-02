@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/WebGL`
 
 Reference audit: 2026-09-12
-Latest native focused verification: 2026-10-02
+Latest native focused verification: 2026-10-03
 
 All 42 upstream `.cpp` implementation units, 46 headers, and 37 WebIDL files
 were audited. The package implements the renderer-independent WebGL 1/2 model:
@@ -338,6 +338,15 @@ WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
 
 ## Verification
+
+After the source query/error/program-state/interface repairs, the private
+`e5f9d9b1` snapshot passed all 53 tracked `webgl/*_test.v` files and all 22
+`browserjs/canvas_webgl*_test.v` public binding files on 2026-10-03 with
+`-old-compiler -enable-globals -gc none` and an explicit private module path.
+The complete manifest and per-file results are retained under
+`Build/audit-fixes/webgl-final-e5f9d9b1/`. No obsolete fixture failures appeared.
+These counts include the existing remote proxy fixtures and preserve the
+remaining source TODO, remote transport and full VM/WrapperWorld boundaries.
 
 All 44 current WebGL test files passed using direct
 `v -old-compiler -enable-globals -path 'WORKTREE|@vlib|@vmodules' FILE_test.v`
