@@ -46,5 +46,10 @@ fn main() {
 		fail(err)
 		return
 	}
-	println(value.str())
+	// Utilities/js.cpp routes values through JS::print with a PrintContext.
+	output := libjs.inspect_value(mut vm, value, libjs.PrintOptions{strip_ansi: true}) or {
+		fail(err)
+		return
+	}
+	println(output.str())
 }
