@@ -200,6 +200,13 @@ immediate/deferred error boundaries. Arbitrary JS object ToPrimitive/accessors
 remain outside the json2/WebIDL typed host boundary pending the VM binding;
 this change does not fabricate their execution.
 
+EC DER lookahead now preserves the pinned decoder's initial high-tag-byte
+condition and u8 kind truncation; shared sequence decoding retains the original
+constructed bit even after consuming high-tag bytes. Focused tests include a
+malformed optional curve tag that the source recognizes and rejects when it
+contradicts the outer curve, avoiding the earlier skipped-validation behavior.
+EC, Ed25519, Ed448 import, and X25519 format regression files pass.
+
 Common parameter/typed boundary conversions remain under source review.
 Native backend availability does not establish complete WebCrypto/VM parity.
 
