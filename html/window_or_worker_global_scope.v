@@ -9,6 +9,8 @@ module html
 
 import dom
 import fetch
+import highresolutiontime
+import performancetimeline
 import indexeddb
 import serviceworker
 import storageapi
@@ -61,6 +63,7 @@ pub:
 	entry_type string
 	start_time f64
 	duration   f64
+	native_entry ?&performancetimeline.PerformanceEntry
 }
 
 pub struct PerformanceEntryTuple {
@@ -88,6 +91,9 @@ pub:
 @[heap]
 pub struct GlobalScopePerformance {
 	dom.EventTarget
+	highresolutiontime.Performance
+mut:
+	resource_handler_ ?highresolutiontime.ResourceTimingBufferFullHandler
 }
 
 @[heap]
@@ -626,7 +632,7 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) queue_the_performance_observer
 		return
 	}
 	scope.observer_task_queued_ = true
-	queue_a_task(.performance_timeline, main_thread_event_loop(), none, fn [mut scope] () {
+	queue_a_task(.performance_timeline, scope.responsible_event_loop(), none, fn [mut scope] () {
 		scope.process_performance_observers()
 	})
 }
@@ -676,7 +682,7 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) add_resource_timing_entry(entr
 	}
 	if !scope.resource_timing_full_pending_ {
 		scope.resource_timing_full_pending_ = true
-		queue_a_task(.performance_timeline, main_thread_event_loop(), none, fn [mut scope] () {
+		queue_a_task(.performance_timeline, scope.responsible_event_loop(), none, fn [mut scope] () {
 			scope.fire_resource_timing_buffer_full_event()
 		})
 	}
@@ -849,9 +855,7 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) performance() &GlobalScopePerf
 	if value := scope.performance_ {
 		return value
 	}
-	value := &GlobalScopePerformance{
-		EventTarget: dom.EventTarget{}
-	}
+	value := create_global_scope_performance(&scope)
 	scope.performance_ = value
 	return value
 }

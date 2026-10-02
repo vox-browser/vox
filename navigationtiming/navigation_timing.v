@@ -409,6 +409,8 @@ pub fn (entry &PerformanceNavigationTiming) to_json() PerformanceNavigationTimin
 pub struct PerformanceTiming {
 pub:
 	load_timing_info DocumentLoadTimingInfo
+	load_timing_info_provider ?fn () DocumentLoadTimingInfo
+	previous_unload_timing_provider ?fn () DocumentUnloadTimingInfo
 	previous_document_unload_timing DocumentUnloadTimingInfo
 	navigation_timing_entry_ ?&PerformanceNavigationTiming
 	// Injectable for deterministic tests; production callers use
@@ -452,13 +454,19 @@ pub fn PerformanceTiming.with_epoch(load_timing_info DocumentLoadTimingInfo, epo
 // The C++ implementation obtains this through the relevant Window. The V host
 // injects the same document timing record when constructing PerformanceTiming.
 pub fn (timing PerformanceTiming) document_load_timing_info() DocumentLoadTimingInfo {
+	if current := timing.load_timing_info_provider { return current() }
 	return timing.load_timing_info
 }
 
 // document is the V boundary for the upstream Window-owned DOM::Document. The
 // navigation timing package only needs its load timing record.
 pub fn (timing PerformanceTiming) document() DocumentLoadTimingInfo {
-	return timing.load_timing_info
+	return timing.document_load_timing_info()
+}
+
+fn (timing PerformanceTiming) document_unload_timing_info() DocumentUnloadTimingInfo {
+	if current := timing.previous_unload_timing_provider { return current() }
+	return timing.previous_document_unload_timing
 }
 
 fn (timing PerformanceTiming) monotonic_timestamp_to_wall_time_milliseconds(timestamp f64) u64 {
@@ -470,7 +478,7 @@ fn (timing PerformanceTiming) monotonic_timestamp_to_wall_time_milliseconds(time
 }
 
 fn (timing PerformanceTiming) fetch_phase_to_wall_time_milliseconds(relative_timestamp f64) u64 {
-	return timing.monotonic_timestamp_to_wall_time_milliseconds(relative_timestamp + timing.load_timing_info.navigation_start_time)
+	return timing.monotonic_timestamp_to_wall_time_milliseconds(relative_timestamp + timing.document_load_timing_info().navigation_start_time)
 }
 
 fn (timing PerformanceTiming) relative_timestamp_to_wall_time_milliseconds(relative_timestamp f64) u64 {
@@ -485,15 +493,15 @@ pub fn (timing PerformanceTiming) navigation_timing_entry() ?&PerformanceNavigat
 }
 
 pub fn (timing PerformanceTiming) navigation_start() u64 {
-	return timing.monotonic_timestamp_to_wall_time_milliseconds(timing.load_timing_info.navigation_start_time)
+	return timing.monotonic_timestamp_to_wall_time_milliseconds(timing.document_load_timing_info().navigation_start_time)
 }
 
 pub fn (timing PerformanceTiming) unload_event_start() u64 {
-	return timing.relative_timestamp_to_wall_time_milliseconds(timing.previous_document_unload_timing.unload_event_start_time)
+	return timing.relative_timestamp_to_wall_time_milliseconds(timing.document_unload_timing_info().unload_event_start_time)
 }
 
 pub fn (timing PerformanceTiming) unload_event_end() u64 {
-	return timing.relative_timestamp_to_wall_time_milliseconds(timing.previous_document_unload_timing.unload_event_end_time)
+	return timing.relative_timestamp_to_wall_time_milliseconds(timing.document_unload_timing_info().unload_event_end_time)
 }
 
 pub fn (timing PerformanceTiming) redirect_start() u64 {
@@ -558,31 +566,31 @@ pub fn (timing PerformanceTiming) response_end() u64 {
 }
 
 pub fn (timing PerformanceTiming) dom_loading() u64 {
-	return timing.relative_timestamp_to_wall_time_milliseconds(timing.load_timing_info.dom_loading_time)
+	return timing.relative_timestamp_to_wall_time_milliseconds(timing.document_load_timing_info().dom_loading_time)
 }
 
 pub fn (timing PerformanceTiming) dom_interactive() u64 {
-	return timing.relative_timestamp_to_wall_time_milliseconds(timing.load_timing_info.dom_interactive_time)
+	return timing.relative_timestamp_to_wall_time_milliseconds(timing.document_load_timing_info().dom_interactive_time)
 }
 
 pub fn (timing PerformanceTiming) dom_content_loaded_event_start() u64 {
-	return timing.relative_timestamp_to_wall_time_milliseconds(timing.load_timing_info.dom_content_loaded_event_start_time)
+	return timing.relative_timestamp_to_wall_time_milliseconds(timing.document_load_timing_info().dom_content_loaded_event_start_time)
 }
 
 pub fn (timing PerformanceTiming) dom_content_loaded_event_end() u64 {
-	return timing.relative_timestamp_to_wall_time_milliseconds(timing.load_timing_info.dom_content_loaded_event_end_time)
+	return timing.relative_timestamp_to_wall_time_milliseconds(timing.document_load_timing_info().dom_content_loaded_event_end_time)
 }
 
 pub fn (timing PerformanceTiming) dom_complete() u64 {
-	return timing.relative_timestamp_to_wall_time_milliseconds(timing.load_timing_info.dom_complete_time)
+	return timing.relative_timestamp_to_wall_time_milliseconds(timing.document_load_timing_info().dom_complete_time)
 }
 
 pub fn (timing PerformanceTiming) load_event_start() u64 {
-	return timing.relative_timestamp_to_wall_time_milliseconds(timing.load_timing_info.load_event_start_time)
+	return timing.relative_timestamp_to_wall_time_milliseconds(timing.document_load_timing_info().load_event_start_time)
 }
 
 pub fn (timing PerformanceTiming) load_event_end() u64 {
-	return timing.relative_timestamp_to_wall_time_milliseconds(timing.load_timing_info.load_event_end_time)
+	return timing.relative_timestamp_to_wall_time_milliseconds(timing.document_load_timing_info().load_event_end_time)
 }
 
 pub struct PerformanceTimingJSON {

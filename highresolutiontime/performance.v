@@ -18,6 +18,15 @@ pub:
 	navigation_start        u64
 	navigation_timing_names map[string]u64
 	navigation_timing_entry ?&navigationtiming.PerformanceNavigationTiming
+	global_handle voidptr
+	current_time_context ?fn () TimeOriginContext
+	queue_entry ?fn (&performancetimeline.PerformanceEntry)
+	buffer_entry ?fn (&performancetimeline.PerformanceEntry)
+	filter_entries ?fn (?string, ?string) []&performancetimeline.PerformanceEntry
+	buffer_entries ?fn (string) []&performancetimeline.PerformanceEntry
+	remove_entries ?fn (string, ?string)
+	set_resource_buffer_limit ?fn (u32)
+	create_timing ?fn () &navigationtiming.PerformanceTiming
 }
 
 pub struct PerformanceJSON {
@@ -61,6 +70,11 @@ pub fn Performance.construct_impl() &Performance {
 // https://w3c.github.io/navigation-timing/#dom-performance-timing
 pub fn (mut performance Performance) timing() &navigationtiming.PerformanceTiming {
 	if timing := performance.timing_ {
+		return timing
+	}
+	if create := performance.host.create_timing {
+		timing := create()
+		performance.timing_ = timing
 		return timing
 	}
 	value := fn [performance] (name string) f64 {
@@ -110,11 +124,15 @@ pub fn (performance &Performance) relevant_global_object() PerformanceHost {
 }
 
 pub fn (performance &Performance) time_origin() DOMHighResTimeStamp {
+	if current := performance.host.current_time_context {
+		return get_time_origin_timestamp(current())
+	}
 	return performance.time_origin_timestamp
 }
 
 pub fn (performance &Performance) now() DOMHighResTimeStamp {
-	return current_high_resolution_time(performance.host.time)
+	context := if current := performance.host.current_time_context { current() } else { performance.host.time }
+	return current_high_resolution_time(context)
 }
 
 pub fn (performance &Performance) to_json() PerformanceJSON {
@@ -125,8 +143,7 @@ pub fn (performance &Performance) to_json() PerformanceJSON {
 
 pub fn (mut performance Performance) mark(name string, options usertiming.PerformanceMarkOptions) !&usertiming.PerformanceMark {
 	entry := usertiming.PerformanceMark.new(name, options, performance.now(), performance.host.window_context)!
-	mut timeline := performance.window_or_worker()
-	timeline.add_entry(entry.entry)
+	performance.record_entry(entry.entry)
 	return entry
 }
 
@@ -178,11 +195,12 @@ pub fn (mut performance Performance) convert_mark_to_timestamp(mark usertiming.S
 			if mark in usertiming.navigation_timing_entry_names {
 				return performance.convert_name_to_timestamp(mark)
 			}
-			tuple := performance.window_or_worker().entry_buffers['mark'] or {
+			entries := performance.buffer_entries_for_type('mark')
+			if entries.len == 0 {
 				return error("SyntaxError: no PerformanceMark named '${mark}'")
 			}
-			for index := tuple.performance_entry_buffer.len - 1; index >= 0; index-- {
-				entry := tuple.performance_entry_buffer[index]
+			for index := entries.len - 1; index >= 0; index-- {
+				entry := entries[index]
 				if entry.name == mark {
 					return entry.start_time
 				}
@@ -254,8 +272,7 @@ pub fn (mut performance Performance) measure(name string, start_or_options ?Star
 	}
 	detail := if measure_options := options { measure_options.detail } else { none }
 	entry := usertiming.PerformanceMeasure.new(name, start_time, end_time - start_time, detail)
-	mut timeline := performance.window_or_worker()
-	timeline.add_entry(entry.entry)
+	performance.record_entry(entry.entry)
 	return entry
 }
 
@@ -269,6 +286,10 @@ pub fn (mut performance Performance) clear_resource_timings() {
 
 pub fn (mut performance Performance) set_resource_timing_buffer_size(max_size u32) {
 	performance.resource_timing_buffer_size = max_size
+	if set_limit := performance.host.set_resource_buffer_limit {
+		set_limit(max_size)
+		return
+	}
 	mut tuple := performance.window_or_worker().entry_buffers['resource'] or {
 		performancetimeline.PerformanceEntryTuple{}
 	}
@@ -292,6 +313,10 @@ pub fn (performance &Performance) dispatch_resource_timing_buffer_full() {
 }
 
 pub fn (mut performance Performance) add_entry(entry &performancetimeline.PerformanceEntry) {
+	if performance.host.buffer_entry != none {
+		performance.record_entry(entry)
+		return
+	}
 	mut timeline := performance.window_or_worker()
 	if entry.entry_type == 'resource' {
 		bounded_entry := &performancetimeline.PerformanceEntry{
@@ -317,6 +342,10 @@ pub fn (performance &Performance) get_entries_by_name(name string, kind ?string)
 }
 
 fn (mut performance Performance) remove_entries(kind string, name ?string) {
+	if remove := performance.host.remove_entries {
+		remove(kind, name)
+		return
+	}
 	if expected := name {
 		mut tuple := performance.window_or_worker().entry_buffers[kind] or { return }
 		tuple.performance_entry_buffer = tuple.performance_entry_buffer.filter(it.name != expected)
@@ -330,6 +359,7 @@ fn (mut performance Performance) remove_entries(kind string, name ?string) {
 }
 
 fn (performance &Performance) filtered_entries(name ?string, kind ?string) []&performancetimeline.PerformanceEntry {
+	if filter := performance.host.filter_entries { return filter(name, kind) }
 	mut result := []&performancetimeline.PerformanceEntry{}
 	for entry_kind, tuple in performance.window_or_worker().entry_buffers {
 		if expected_type := kind {
@@ -357,4 +387,22 @@ fn (performance &Performance) filtered_entries(name ?string, kind ?string) []&pe
 		}
 	}
 	return result
+}
+
+// Performance.cpp queues and buffers through its relevant global's mixin.
+fn (mut performance Performance) record_entry(entry &performancetimeline.PerformanceEntry) {
+	if queue := performance.host.queue_entry { queue(entry) }
+	if buffer := performance.host.buffer_entry { buffer(entry); return }
+	mut timeline := performance.window_or_worker()
+	timeline.add_entry(entry)
+}
+
+fn (performance &Performance) buffer_entries_for_type(kind string) []&performancetimeline.PerformanceEntry {
+	if entries := performance.host.buffer_entries { return entries(kind) }
+	tuple := performance.window_or_worker().entry_buffers[kind] or { return []&performancetimeline.PerformanceEntry{} }
+	return tuple.performance_entry_buffer.clone()
+}
+
+pub fn (performance &Performance) relevant_global_handle() voidptr {
+	return performance.host.global_handle
 }
