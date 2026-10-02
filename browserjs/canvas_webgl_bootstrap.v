@@ -26,7 +26,7 @@ function __webglReply(result) {
  return result;
 }
 function __webglNumber(value){const number=+value;return Number.isFinite(number)?number:String(number);}
-function __webglString(value){return ""+value;}
+function __webglString(value){return `${value}`;}
 const __webglNumberSequence=__webglSequenceFactory(__webglNumber),__webglStringSequence=__webglSequenceFactory(__webglString),__webglListSequence=__webglSequenceFactory(__webglNumber,true);
 function __webglBytes(value,nullable) {
  if(value===null||value===undefined){if(nullable)return null;throw new TypeError("Expected a BufferSource");}
