@@ -58,6 +58,36 @@ lone surrogates, embedded NUL and surrogate pairs. Non-string values are rejecte
 before author ToString, and a closed Runtime is rejected before C calls. The
 native string and Storage tests passed two files with GC disabled.
 
+The native projection foundation now uses actual primitive, boxed, ordinary
+object, Array, Map and Set values. It captures engine intrinsic brand operations
+before author scripts, retains actual object-pointer identity and copied Map/Set
+lists, and follows source enumerable OwnPropertyKeys/descriptor snapshot followed
+by HasOwnProperty/Get/recursive-value/key ordering. Actual getters retain their
+original thrown value. Deserialization creates actual owning-realm objects with
+source data-property attributes and identity/cycles through the source IPC/LBSC
+record, without JSON or an alternate serialization format.
+
+The native collection tests cover sparse arrays, boxed primitives, arbitrary
+BigInts, alias/cycle memory, getter deletion/order, mutation during copied-list
+serialization, captured intrinsics, forged prototypes and Symbol.toStringTag,
+original thrown identity, closed owners, and temporary root release. The five
+cases and UTF-16 neighbor passed two files with GC disabled; the final collection
+file passed again after adding an explicit exact-Error-brand prerequisite.
+Returned values and bridge intrinsics retain actual Runtime roots until released
+or Runtime.close; this does not establish full source GC reclamation.
+
+The C API's actual JSArray check matches source concrete JS::Array detection:
+Proxy(Array) and an object with Array.prototype remain ordinary-object source
+fallbacks, preserving the pinned source's existing exotic-object FIXME.
+
+Native RegExp remains explicit: JSC's public source getter escapes source text
+and its flags getter normalizes order. These cannot recover arbitrary original
+constructor source/flags, so the bridge uses a captured getter only for a genuine
+brand check and rejects that unsupported native family without serializing the
+normalized getter values as the source internal records. Date, Error, buffers,
+platform registration and source serialization hooks remain subsequent slices;
+public native tee still requires those complete source family bindings.
+
 The native projection must retain actual JSC object identity and cycle memory,
 source key/enumerability/Get order and original completions, and captured
 intrinsic brands for each supported JavaScript family. Public native `tee()`
