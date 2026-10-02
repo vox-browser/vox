@@ -2301,6 +2301,14 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript timer bindings: ${err.msg()}'
 		return none
 	}
+	mut crypto_host := browserjs.CryptoHost.create(document) or {
+		messages << 'JavaScript Crypto bindings: ${err.msg()}'
+		return none
+	}
+	crypto_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript Crypto bindings: ${err.msg()}'
+		return none
+	}
 	runtime.run_document_scripts(sources) or {
 		messages << 'JavaScript: ${err.msg()}'
 		return none
