@@ -101,11 +101,18 @@ Inner DER scope leftovers are discarded, while outer data must be exact. DER
 diagnostics use the V parser's messages. Unsupported ECDH formats fail explicitly
 instead of dereferencing the source's unset key/result.
 
-Further source review remains for the earlier symmetric, KDF, and Ed25519
-implementations. In particular, the current Argon2 path rejects source
-secret/associatedData parameters, HMAC import does not apply optional length,
-and HKDF/PBKDF2 derivation validation differs around zero and absent lengths.
-Backend availability alone does not establish parity for these bodies.
+HKDF/PBKDF2 now call the source EVP_KDF provider operations instead of local
+derivation loops. Length, iterations, supported hashes, raw/raw-secret imports,
+and validation order follow the source bodies; HKDF returns an empty result
+before hash dispatch for zero length, while PBKDF2 delegates zero output to EVP.
+The installed provider accepts that zero output. Tests include six upstream
+HKDF and all seven upstream PBKDF2 vectors, native failure, validation order,
+and deferred copied salts/zero-length settlement.
+
+Further source review remains for the earlier symmetric, Argon2, and Ed25519
+implementations. The current Argon2 path rejects source secret/associatedData
+parameters, and HMAC import does not apply optional length. Backend availability
+alone does not establish parity for these bodies.
 
 `SubtleCryptoBinding` implements the asynchronous WebIDL operation boundary.
 It copies input data and registered algorithm BufferSource fields before
