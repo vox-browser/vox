@@ -209,7 +209,6 @@ mut:
 	linked_                  bool
 	validated_               bool
 	info_log_                string
-	uniform_locations        map[string]&WebGLUniformLocation
 }
 
 @[heap]

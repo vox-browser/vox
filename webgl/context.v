@@ -626,7 +626,6 @@ pub fn (mut context WebGLRenderingContext) link_program(mut program WebGLProgram
 	C.vox_gl_link_program(program.object.native_handle_)
 	program.linked_ = context.native.native_program_parameter(program.object.native_handle_, link_status) != 0
 	program.info_log_ = context.native.native_program_log(program.object.native_handle_)
-	program.uniform_locations.clear()
 	context.native.dispatch('link_program', program.object.handle_)
 }
 
@@ -655,23 +654,17 @@ pub fn (mut context WebGLRenderingContext) validate_program(mut program WebGLPro
 }
 
 pub fn (mut context WebGLRenderingContext) get_uniform_location(mut program WebGLProgram, name string) ?&WebGLUniformLocation {
+	context.native.make_current()
 	if !context.owns(&program.object) {
 		context.set_error(invalid_operation)
 		return none
 	}
-	if existing := program.uniform_locations[name] {
-		return existing
-	}
-	context.native.make_current()
 	native_location := C.vox_gl_uniform_location(program.object.native_handle_, name.str)
 	context.native.collect_native_error()
 	if native_location < 0 { return none }
 	location := &WebGLUniformLocation{
 		handle_: GLuint(native_location)
 		parent_program: program
-	}
-	unsafe {
-		program.uniform_locations[name] = location
 	}
 	return location
 }
