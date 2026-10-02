@@ -2283,6 +2283,14 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript TransformStream bindings: ${err.msg()}'
 		return none
 	}
+	mut strategy_host := browserjs.QueuingStrategyHost.create(document) or {
+		messages << 'JavaScript queuing strategy bindings: ${err.msg()}'
+		return none
+	}
+	strategy_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript queuing strategy bindings: ${err.msg()}'
+		return none
+	}
 	mut xhr_host := browserjs.XMLHttpRequestHost.create_native(document) or {
 		messages << 'JavaScript XMLHttpRequest bindings: ${err.msg()}'
 		return none

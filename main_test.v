@@ -80,6 +80,20 @@ fn test_native_browser_readable_stream_runs_real_default_reader_and_source_owner
 	assert !runtime.libjs_vm().has_running_execution_context()
 }
 
+fn test_native_browser_queuing_strategies_feed_source_stream_records_and_dom_replay() {
+	$if !darwin { return }
+	document := html.parse_document('<div id="result">pending</div>')
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close() }
+	mut messages := []string{}
+	run_document_javascript(document, 'https://example.test/strategies.html', [
+		'const count=new CountQueuingStrategy({highWaterMark:2});const bytes=new ByteLengthQueuingStrategy({highWaterMark:8});let controller;const source=new ReadableStream({start(value){controller=value}},count);controller.enqueue(result);source.getReader().read().then(value=>{const target=new WritableStream({write(chunk){result.textContent=value.value===result&&count.size===new CountQueuingStrategy({highWaterMark:0}).size&&chunk.byteLength===bytes.size(chunk)?"source strategies":"wrong strategy"}},bytes);target.getWriter().write(new Uint8Array(3))});',
+	], runtime, mut messages)
+	assert messages == []
+	assert document.get_element_by_id('result')?.as_node().text_content()? == 'source strategies'
+	assert !runtime.libjs_vm().has_running_execution_context()
+}
+
 fn test_native_browser_abort_signal_dispatches_source_event_and_replays_author_dom_mutation() {
 	$if !darwin { return }
 	document := html.parse_document('<div id="result">pending</div>')
