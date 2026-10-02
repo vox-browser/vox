@@ -263,49 +263,46 @@ fn put_optional_json_web_key_string(mut object map[string]json2.Any, name string
 
 fn rsa_other_primes_info_to_object(info RsaOtherPrimesInfo) map[string]json2.Any {
 	mut object := map[string]json2.Any{}
-	put_optional_json_web_key_string(mut object, 'r', info.r)
 	put_optional_json_web_key_string(mut object, 'd', info.d)
+	put_optional_json_web_key_string(mut object, 'r', info.r)
 	put_optional_json_web_key_string(mut object, 't', info.t)
 	return object
 }
 
-// CryptoBindings.cpp's WebIDL-dictionary-to-object conversion.
+// SubtleCrypto.idl GenerateToValue conversion: the pinned IDL parser sorts
+// dictionary members lexicographically before creating their data properties.
 pub fn (key JsonWebKey) to_object() map[string]json2.Any {
 	mut object := map[string]json2.Any{}
-	put_optional_json_web_key_string(mut object, 'kty', key.kty)
-	put_optional_json_web_key_string(mut object, 'use', key.use)
-	if operations := key.key_ops {
-		mut values := []json2.Any{cap: operations.len}
-		for operation in operations {
-			values << operation
-		}
-		object['key_ops'] = values
-	}
 	put_optional_json_web_key_string(mut object, 'alg', key.alg)
+	put_optional_json_web_key_string(mut object, 'crv', key.crv)
+	put_optional_json_web_key_string(mut object, 'd', key.d)
+	put_optional_json_web_key_string(mut object, 'dp', key.dp)
+	put_optional_json_web_key_string(mut object, 'dq', key.dq)
+	put_optional_json_web_key_string(mut object, 'e', key.e)
 	if extractable := key.ext {
 		object['ext'] = extractable
 	}
-	put_optional_json_web_key_string(mut object, 'crv', key.crv)
-	put_optional_json_web_key_string(mut object, 'x', key.x)
-	put_optional_json_web_key_string(mut object, 'y', key.y)
-	put_optional_json_web_key_string(mut object, 'd', key.d)
+	put_optional_json_web_key_string(mut object, 'k', key.k)
+	if operations := key.key_ops {
+		mut values := []json2.Any{cap: operations.len}
+		for operation in operations { values << operation }
+		object['key_ops'] = values
+	}
+	put_optional_json_web_key_string(mut object, 'kty', key.kty)
 	put_optional_json_web_key_string(mut object, 'n', key.n)
-	put_optional_json_web_key_string(mut object, 'e', key.e)
-	put_optional_json_web_key_string(mut object, 'p', key.p)
-	put_optional_json_web_key_string(mut object, 'q', key.q)
-	put_optional_json_web_key_string(mut object, 'dp', key.dp)
-	put_optional_json_web_key_string(mut object, 'dq', key.dq)
-	put_optional_json_web_key_string(mut object, 'qi', key.qi)
 	if other_primes := key.oth {
 		mut values := []json2.Any{cap: other_primes.len}
-		for info in other_primes {
-			values << rsa_other_primes_info_to_object(info)
-		}
+		for info in other_primes { values << rsa_other_primes_info_to_object(info) }
 		object['oth'] = values
 	}
-	put_optional_json_web_key_string(mut object, 'k', key.k)
-	put_optional_json_web_key_string(mut object, 'pub', key.pub_)
+	put_optional_json_web_key_string(mut object, 'p', key.p)
 	put_optional_json_web_key_string(mut object, 'priv', key.priv)
+	put_optional_json_web_key_string(mut object, 'pub', key.pub_)
+	put_optional_json_web_key_string(mut object, 'q', key.q)
+	put_optional_json_web_key_string(mut object, 'qi', key.qi)
+	put_optional_json_web_key_string(mut object, 'use', key.use)
+	put_optional_json_web_key_string(mut object, 'x', key.x)
+	put_optional_json_web_key_string(mut object, 'y', key.y)
 	return object
 }
 
