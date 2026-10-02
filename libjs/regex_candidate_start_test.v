@@ -105,9 +105,11 @@ fn test_regex_candidate_anchor_hints_test_previous_code_unit_including_the_end_p
 		assert regex_next_candidate_start(RegexProgram{}, input, hints, 5)? == 5
 		assert regex_next_candidate_start(RegexProgram{}, input, hints, 6)? == 6
 	}
-	assert regex_next_candidate_start(RegexProgram{}, RegexAsciiInput{ bytes: [
-		u8(0x61),
-	] }, RegexPatternHints{
+	assert regex_next_candidate_start(RegexProgram{}, RegexAsciiInput{
+		bytes: [
+			u8(0x61),
+		]
+	}, RegexPatternHints{
 		starts_with_anchor: true
 	}, 1) == none
 }
@@ -131,9 +133,12 @@ fn test_regex_candidate_filters_enforce_both_hints_and_never_filter_the_end_posi
 		first_filter:    RegexSimpleMatch(RegexBuiltinCharacterClass.digit)
 		can_match_empty: true
 	}, 0)? == 3
-	assert regex_next_candidate_start(RegexProgram{}, input, RegexPatternHints{ first_filter: RegexSimpleMatch(RegexAnyChar{
-		dot_all: true
-	}), can_match_empty: true }, 5) == none
+	assert regex_next_candidate_start(RegexProgram{}, input, RegexPatternHints{
+		first_filter:    RegexSimpleMatch(RegexAnyChar{
+			dot_all: true
+		})
+		can_match_empty: true
+	}, 5) == none
 	assert regex_next_candidate_start(RegexProgram{}, input, RegexPatternHints{
 		first_char:   RegexFirstChar{
 			code_point: 0x41
