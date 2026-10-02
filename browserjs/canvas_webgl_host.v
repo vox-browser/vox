@@ -58,6 +58,9 @@ pub fn (mut host CanvasWebGLHost) install(mut runtime Runtime) ! {
 	runtime.add_canvas_element_provider(fn [mut host] () map[string]&dom.Element {
 		return host.elements_for_binding()
 	})
+	$if darwin {
+		host.install_xr(mut runtime)!
+	}
 }
 
 fn wg_object(value json2.Any) !map[string]json2.Any {
