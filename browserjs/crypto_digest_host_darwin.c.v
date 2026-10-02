@@ -161,7 +161,13 @@ fn (mut host CryptoHost) crypto_promise(native &webidl.Promise) !voidptr {
 fn (mut host CryptoHost) crypto_value(value webidl.Value) !voidptr {
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	if value.kind == .runtime_value { return runtime.actual_webidl_value(value) }
+	if value.kind == .undefined { return C.JSValueMakeUndefined(runtime.context) }
+	if value.kind == .null_ { return C.JSValueMakeNull(runtime.context) }
+	if value.kind == .boolean { return C.JSValueMakeBoolean(runtime.context, value.boolean_value) }
+	if value.kind == .number { return C.JSValueMakeNumber(runtime.context, value.number_value) }
+	if value.kind == .string_ { return runtime.binding_string(value.string_value) }
 	if _ := value.dom_exception_ { return runtime.javascript_dom_exception(value) }
+	if value.kind == .platform_object { return host.wrap_crypto_key(webcrypto.crypto_key_from_value(value)!) }
 	if value.kind == .buffer_source {
 		source := value.buffer_value or { return error('Missing native Crypto buffer') }
 		bytes := webidl.get_buffer_source_copy(source)
@@ -175,15 +181,21 @@ fn (mut host CryptoHost) crypto_value(value webidl.Value) !voidptr {
 			if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 			unsafe { C.memcpy(pointer, bytes.data, usize(bytes.len)) }
 		}
+		if source.kind == .uint8_array { return view }
 		buffer := C.JSObjectGetTypedArrayBuffer(runtime.context, view, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		return buffer
 	}
 	if value.kind == .object {
-		name := (value.object_value['name'] or { return error('Missing native Crypto error name') }).string_value
-		message := (value.object_value['message'] or { return error('Missing native Crypto error message') }).string_value
-		return runtime.binding_exception_value(error('${name}: ${message}'))
+		if message := value.object_value['message'] {
+			name := (value.object_value['name'] or { webidl.undefined_value() }).string_value
+			if name in ['TypeError', 'RangeError', 'InternalError'] {
+				return runtime.binding_exception_value(error('${name}: ${message.string_value}'))
+			}
+		}
+		return host.crypto_object(value)
 	}
+	if value.kind == .sequence { return host.crypto_object(value) }
 	return error('Value is outside the installed Crypto binding conversions')
 }
 

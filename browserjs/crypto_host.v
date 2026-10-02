@@ -9,6 +9,7 @@ import html
 enum CryptoHostKind {
 	crypto
 	subtle
+	key
 }
 
 @[heap]
@@ -37,6 +38,9 @@ mut:
 	to_dom_string       voidptr
 	to_number           voidptr
 	has_property        voidptr
+	define_data         voidptr
+	freeze_object       voidptr
+	object_wrappers     map[u64]voidptr
 	closed              bool
 }
 
@@ -60,4 +64,5 @@ pub fn (mut host CryptoHost) close() {
 	host.prototypes.clear()
 	host.records.clear()
 	host.by_wrapper.clear()
+	host.object_wrappers.clear()
 }
