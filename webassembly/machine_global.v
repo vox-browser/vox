@@ -39,6 +39,7 @@ pub fn BinaryMachineGlobalInstance.value_offset() usize {
 pub struct BinaryMachineStore {
 mut:
 	memories_   []&BinaryMachineMemoryInstance
+	tables_     []BinaryMachineTableInstance
 	globals_    []&BinaryMachineGlobalInstance
 	datas_      []BinaryMachineDataInstance
 	elements_   []BinaryMachineElementInstance
