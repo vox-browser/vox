@@ -2537,12 +2537,18 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	install_local_video_frames(app.document, resource_base_url, loaded.markup)
 	checkpoint = debug_timing_checkpoint('install_video_frames', checkpoint)
 	if app.js_runtime != unsafe { nil } {
+		mut agent_event_loop := html.main_thread_event_loop()
+		agent_event_loop.bind_vm(none)
 		app.js_runtime.close()
 		app.js_runtime = unsafe { nil }
 	}
 	sources := script_sources(app.document, resource_base_url, preloaded_resources, mut app.js_messages)
 	javascript_navigation := if sources.len > 0 {
 		app.js_runtime = browserjs.Runtime.create_with_engine(app.js_engine)
+		if app.js_engine == .libjs {
+			mut agent_event_loop := html.main_thread_event_loop()
+			agent_event_loop.bind_vm(app.js_runtime.libjs_vm())
+		}
 		run_document_script_sources(app.document, loaded.url, sources, app.js_runtime, mut app.js_messages)
 	} else {
 		none

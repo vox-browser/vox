@@ -11,6 +11,7 @@ import css
 import dom
 import fetch
 import highresolutiontime
+import libjs
 import math
 import platform
 import time
@@ -328,6 +329,7 @@ mut:
 	rendering_task_queued_                bool
 	rendering_scheduler_counters_         RenderingSchedulerCounters
 	idle_period_timer_                    ?&platform.Timer
+	vm_                                  ?&libjs.VM
 }
 
 pub fn EventLoop.create(type_ EventLoopType) &EventLoop {
@@ -346,6 +348,11 @@ pub fn (event_loop &EventLoop) task_queue() &TaskQueue {
 
 pub fn (event_loop &EventLoop) type_() EventLoopType {
 	return event_loop.type_
+}
+
+// The embedding supplies the agent VM which executes this loop's JavaScript.
+pub fn (mut event_loop EventLoop) bind_vm(vm ?&libjs.VM) {
+	event_loop.vm_ = vm
 }
 
 pub fn (mut event_loop EventLoop) dequeue_microtask() ?&Task {
@@ -752,6 +759,10 @@ pub fn (mut event_loop EventLoop) perform_a_microtask_checkpoint() {
 	if event_loop.execution_paused || event_loop.performing_a_microtask_checkpoint {
 		return
 	}
+	if vm := event_loop.vm_ {
+		assert vm.execution_context_stack().len == 0
+		assert !vm.has_running_execution_context()
+	}
 	event_loop.performing_a_microtask_checkpoint = true
 	for event_loop.microtask_queue.len > 0 {
 		task := event_loop.microtask_queue[0]
@@ -768,6 +779,11 @@ pub fn (mut event_loop EventLoop) perform_a_microtask_checkpoint() {
 			mut scope := settings.universal_global_scope_
 			scope.notify_about_rejected_promises()
 		}
+	}
+	// ClearKeptObjects is represented by the real VM's execution generation.
+	if vm_pointer := event_loop.vm_ {
+		mut vm := unsafe { &libjs.VM(vm_pointer) }
+		vm.finish_execution_generation()
 	}
 	event_loop.performing_a_microtask_checkpoint = false
 }
