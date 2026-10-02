@@ -385,3 +385,11 @@ EC/X bilateral results, unsigned/optional conversion, and independent destinatio
 import/key-length getter snapshots. All five typed binding regression cases
 pass after the snapshot adapter. Native wrap/unwrap and KEM methods remain
 pending alongside documented host/VM/string/wrapper boundaries.
+
+Native wrapKey/unwrapKey now retain source actual enum/brand conversion,
+normalization fallback reads, copied wrapped bytes, deferred work settlement,
+export validation, and separate JWK JSON parse order. All four focused host
+cases pass with `-gc none`, covering RFC 3394 and all seven supported wrapping
+operations, real CryptoKey results, JWK round trips, source getter/error order,
+and mandatory-kty unwrap parsing. The four KEM native bindings remain pending;
+source FIXME task behavior and documented host/VM/DTO/wrapper limits are retained.

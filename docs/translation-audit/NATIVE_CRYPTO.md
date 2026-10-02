@@ -213,3 +213,20 @@ unsigned/optional conversions, original throws, and immediate/deferred error
 order. The five-case typed SubtleCrypto binding regression also passes.
 Wrapping and KEM native methods remain pending; existing host/VM/DTO/wrapper
 limits continue to apply.
+
+Native wrapKey/unwrapKey now perform source enum, key/buffer, algorithm,
+boolean, and usage conversions and enter the owning deferred operation.
+Wrap/unwrap normalization retries the original actual algorithm through
+source encrypt/decrypt fallback after any first-pass error, preserving repeated
+name reads and getters that change or initially throw. Unwrap copies wrapped
+bytes after destination normalization. Source's current FIXME settlement runs
+directly in deferred work, without adding a crypto settlement task.
+
+The typed operation now explicitly normalizes export after extractability and
+parses unwrap JWK JSON before class import, preserving the mandatory-kty parser
+rule distinct from ordinary optional-field import dictionaries. All four
+focused host cases pass with `-gc none`: RFC 3394, all seven supported wrapping
+operations, real key/byte results, JWK round trips, fallback/copy getter order,
+binding versus deferred validation, and unwrap JSON parse precedence.
+The four KEM native methods remain pending; documented VM, DTO, host scheduling,
+assertion, and wrapper ownership limits continue to apply.
