@@ -59,6 +59,7 @@ pub mut:
 	memory_types     []WasmLimits
 	types            []BinaryDefinedType
 	function_type_indices []u32
+	start_function_index ?u32
 }
 
 pub struct SerializedModule {
@@ -122,6 +123,7 @@ pub fn (mut compiled Module) deserialization_steps(serialized SerializedModule) 
 	compiled.memory_types = restored.memory_types.clone()
 	compiled.types = restored.types.clone()
 	compiled.function_type_indices = restored.function_type_indices.clone()
+	compiled.start_function_index = restored.start_function_index
 }
 
 struct Decoder {
@@ -189,6 +191,7 @@ fn compile_module(bytes []u8) !&Module {
 	mut memory_types := []WasmLimits{}
 	mut types := []BinaryDefinedType{}
 	mut function_type_indices := []u32{}
+	mut start_function_index := ?u32(none)
 	mut last_non_custom_rank := 0
 	mut seen := map[u8]bool{}
 	for decoder.offset < bytes.len {
@@ -220,6 +223,9 @@ fn compile_module(bytes []u8) !&Module {
 			3 { function_type_indices = parse_function_section(mut section)! }
 			5 { parse_memory_section(mut section, mut memory_types)! }
 			7 { parse_export_section(mut section, mut exports)! }
+			// Parser.cpp::StartSection::parse retains the function index. The
+			// machine's invocation and signature validation are separate work.
+			8 { start_function_index = section.u32_leb()! }
 			else {
 				section.offset = section.bytes.len
 			}
@@ -237,6 +243,7 @@ fn compile_module(bytes []u8) !&Module {
 		memory_types:     memory_types
 		types:            types
 		function_type_indices: function_type_indices
+		start_function_index: start_function_index
 	}
 }
 
