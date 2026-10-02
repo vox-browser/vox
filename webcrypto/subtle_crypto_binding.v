@@ -668,8 +668,8 @@ pub fn (binding &SubtleCryptoBinding) sign(algorithm webidl.Value, key &CryptoKe
 
 pub fn (binding &SubtleCryptoBinding) verify(algorithm webidl.Value, key &CryptoKey, signature webidl.BufferSource, data webidl.BufferSource) &webidl.Promise {
 	normalized := normalize_binding_algorithm(algorithm, 'verify') or { return binding.rejected(err.msg()) }
-	bytes := webidl.get_buffer_source_copy(data)
 	signature_bytes := webidl.get_buffer_source_copy(signature)
+	bytes := webidl.get_buffer_source_copy(data)
 	return binding.run(fn [normalized, key, signature_bytes, bytes] () !webidl.Value {
 		binding_validate_key(key, normalized.name, .verify)!
 		return webidl.boolean_value(normalized_verify(normalized, key, signature_bytes, bytes)!)

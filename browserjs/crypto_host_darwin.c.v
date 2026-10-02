@@ -55,6 +55,7 @@ pub fn (mut host CryptoHost) install(mut runtime Runtime) ! {
 		host.install_export_key()!
 		host.install_import_key()!
 		host.install_cipher_operations()!
+		host.install_signature_operations()!
 	}
 	crypto_bindings_[owner] = &host
 	runtime.add_close_handler(fn [handle, owner] () {
