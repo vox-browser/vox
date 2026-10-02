@@ -4762,13 +4762,9 @@ fn test_table_fit_content_distinguishes_zero_argument_from_keyword() {
 	assert max_zero.margin_right.raw_value() == 0
 }
 
-// BlockFormattingContext::try_compute_width() gives the leftover inline space to
-// margin-right whatever the containing block's direction is - the whole block
-// formatting context never consults `direction`. CSS 2.1 §10.3.3 asks for the
-// start margin to be ignored in a right-to-left containing block, but the
-// source does not implement that, so an over-constrained block box stays at the
-// left content edge in `direction: rtl`.
-fn test_over_constrained_block_keeps_the_left_edge_in_rtl() {
+// The current Rust block formatting context ignores the left margin in an RTL
+// containing block, assigning the remaining width to that side.
+fn test_over_constrained_block_keeps_the_right_edge_in_rtl() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }
 		#outer { width:200px; direction:rtl }
@@ -4779,19 +4775,20 @@ fn test_over_constrained_block_keeps_the_left_edge_in_rtl() {
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 
 	fixed := used_for_id(result, 'fixed')
-	assert fixed.offset.x().to_double() == 0
-	assert fixed.margin_left.to_double() == 0
-	assert fixed.margin_right.to_double() == 170
+	assert fixed.offset.x().to_double() == 170
+	assert fixed.margin_left.to_double() == 170
+	assert fixed.margin_right.to_double() == 0
 
 	with_start_margin := used_for_id(result, 'with_start_margin')
-	assert with_start_margin.offset.x().to_double() == 10
-	assert with_start_margin.margin_left.to_double() == 10
-	assert with_start_margin.margin_right.to_double() == 160
+	assert with_start_margin.offset.x().to_double() == 170
+	assert with_start_margin.margin_left.to_double() == 170
+	assert with_start_margin.margin_right.to_double() == 0
 
 	// A negative remainder goes to the same side.
 	overflowing := used_for_id(result, 'overflowing')
-	assert overflowing.offset.x().to_double() == 0
-	assert overflowing.margin_right.to_double() == -50
+	assert overflowing.offset.x().to_double() == -50
+	assert overflowing.margin_left.to_double() == -50
+	assert overflowing.margin_right.to_double() == 0
 }
 
 // The <meter> UA-internal children are synthesized, so they carry no id: reach
