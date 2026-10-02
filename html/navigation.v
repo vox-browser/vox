@@ -7,6 +7,7 @@
 module html
 
 import dom
+import webidl
 
 pub enum NavigationHistoryBehavior {
 	auto
@@ -82,14 +83,15 @@ pub mut:
 }
 
 fn NavigationAPIMethodTracker.create(navigation &Navigation, key ?string, info dom.JSValue, serialized_state ?SerializationRecord) &NavigationAPIMethodTracker {
-	mut finished := dom.Promise.create()
+	context := navigation.promise_context()
+	mut finished := dom.Promise.from_webidl(webidl.create_promise_for(context))
 	finished.mark_handled()
 	return &NavigationAPIMethodTracker{
 		navigation: navigation
 		key: key
 		info: info
 		serialized_state: serialized_state
-		committed_promise: dom.Promise.create()
+		committed_promise: dom.Promise.from_webidl(webidl.create_promise_for(context))
 		finished_promise: finished
 	}
 }
@@ -221,7 +223,7 @@ pub fn (navigation &Navigation) has_entries_and_events_disabled() bool {
 
 pub fn (navigation &Navigation) get_the_navigation_api_entry_index(session_entry &SessionHistoryEntry) i64 {
 	for index, entry in navigation.entry_list_ {
-		if entry.session_history_entry() == session_entry {
+		if voidptr(entry.session_history_entry()) == voidptr(session_entry) {
 			return i64(index)
 		}
 	}
@@ -273,7 +275,7 @@ pub fn (mut navigation Navigation) promote_an_upcoming_api_method_tracker_to_ong
 
 pub fn (mut navigation Navigation) clean_up(tracker &NavigationAPIMethodTracker) {
 	if current := navigation.ongoing_api_method_tracker_ {
-		if current == tracker {
+		if voidptr(current) == voidptr(tracker) {
 			navigation.ongoing_api_method_tracker_ = none
 			return
 		}
@@ -332,12 +334,12 @@ fn navigation_url_fragments_identical(left dom.URL, right dom.URL) bool {
 
 fn (navigation &Navigation) can_rewrite_to(url dom.URL) bool {
 	document := navigation.associated_document_ or { return false }
-	return document.origin().serialize() == url.origin().serialize()
+	return can_have_its_url_rewritten(document.url, url)
 }
 
 fn (mut navigation Navigation) inner_navigate_event_firing_algorithm(navigation_type dom.NavigationType, destination &NavigationDestination, user_involvement UserNavigationInvolvement, source_element ?&dom.Element, form_data_entries ?[]FormDataEntry, download_request ?string, classic_history_api_state ?SerializationRecord) bool {
 	if navigation.ongoing_navigate_event_ != none {
-		navigation.abort_the_ongoing_navigation(dom.js_string('AbortError: superseded navigation'))
+		navigation.abort_the_ongoing_navigation(navigation.navigation_abort_reason())
 	}
 	if navigation.has_entries_and_events_disabled() {
 		return true
@@ -375,6 +377,7 @@ fn (mut navigation Navigation) inner_navigate_event_firing_algorithm(navigation_
 		source_element: source_element
 		associated_document: document
 		fully_active_override: !navigation.has_entries_and_events_disabled()
+		navigation: navigation
 	}) or { return false }
 	event.set_abort_controller(abort_controller)
 	event.set_classic_history_api_state(classic_history_api_state)
@@ -383,10 +386,22 @@ fn (mut navigation Navigation) inner_navigate_event_firing_algorithm(navigation_
 	navigation.suppress_scroll_restoration_during_navigation_ = false
 	target := unsafe { &dom.EventTarget(navigation) }
 	base_event := unsafe { &dom.Event(event) }
+	navigation.timestamp_navigation_event(base_event)
 	dispatch_result := target.dispatch_event(base_event)
 	if !dispatch_result {
-		navigation.abort_the_ongoing_navigation(dom.js_string('AbortError: navigation canceled'))
+		if !abort_controller.signal().aborted() {
+			navigation.abort_the_ongoing_navigation(navigation.navigation_abort_reason())
+		}
 		return false
+	}
+	if window := navigation.owning_window() {
+		// Source intercepted traversal resumes through the Page HistoryExecutor,
+		// which is not yet available in this translation. Preserve the existing
+		// traversal and ordinary-navigation adapters until their separate source
+		// slices are complete. Interception commits through actual history here.
+		if navigation_type != .traverse && event.interception_state() != .none {
+			return navigation.finish_source_navigate_event(window, event, tracker)
+		}
 	}
 	if event.interception_state() == .intercepted {
 		event.mark_committed() or {
@@ -426,17 +441,31 @@ pub fn (mut navigation Navigation) abort_the_ongoing_navigation(reason dom.JSVal
 }
 
 pub fn (mut navigation Navigation) abort_a_navigate_event(event &NavigateEvent, reason dom.JSValue) {
+	mut execution_context := ?&TemporaryExecutionContext(none)
+	if window := navigation.owning_window() {
+		mut realm := window.scripting_realm_
+		execution_context = TemporaryExecutionContext.create(mut realm, .yes)
+	}
+	defer {
+		if mut context := execution_context { context.close() }
+	}
 	if controller := event.abort_controller() {
 		mut mutable_controller := unsafe { &dom.AbortController(controller) }
-		mutable_controller.abort(reason)
+		if window := navigation.owning_window() {
+			settings := principal_realm_settings_object(window.scripting_realm_)
+			mutable_controller.abort_with_clock(reason, fn [settings] () f64 {
+				return settings.global_relative_event_timestamp()
+			})
+		} else {
+			mutable_controller.abort(reason)
+		}
 	}
+	information := navigation.navigation_error_information(reason)
 	navigation.ongoing_navigate_event_ = none
 	if tracker := navigation.ongoing_api_method_tracker_ {
 		navigation.reject_the_finished_promise(tracker, reason)
 	}
-	error_event := dom.Event.create('navigateerror', dom.EventInit{})
-	unsafe { &dom.EventTarget(navigation) }
-	.dispatch_event(error_event)
+	navigation.dispatch_navigation_error(information)
 	if transition := navigation.transition_ {
 		mut committed := unsafe { &dom.Promise(transition.committed()) }
 		mut finished := unsafe { &dom.Promise(transition.finished()) }
@@ -657,7 +686,7 @@ pub fn (mut navigation Navigation) fire_a_push_replace_reload_navigate_event(nav
 	}
 
 	if is_same_document && navigation.ongoing_navigate_event_ != none {
-		navigation.abort_the_ongoing_navigation(dom.js_string('AbortError: superseded navigation'))
+		navigation.abort_the_ongoing_navigation(navigation.navigation_abort_reason())
 	}
 	mut destination := NavigationDestination.create()
 	destination.set_url(destination_url)
@@ -745,6 +774,16 @@ pub fn (mut navigation Navigation) update_the_navigation_api_entries_for_a_same_
 			navigation.notify_about_the_committed_to_entry(tracker, current)
 		}
 	}
+	navigate_event := navigation.ongoing_navigate_event_
+	api_method_tracker := navigation.ongoing_api_method_tracker_
+	mut execution_context := ?&TemporaryExecutionContext(none)
+	if window := navigation.owning_window() {
+		mut realm := window.scripting_realm_
+		execution_context = TemporaryExecutionContext.create(mut realm, .yes)
+	}
+	defer {
+		if mut context := execution_context { context.close() }
+	}
 	if from := old_current {
 		change_event := NavigationCurrentEntryChangeEvent.construct_impl('currententrychange', NavigationCurrentEntryChangeEventInit{
 			navigation_type: navigation_type
@@ -752,12 +791,23 @@ pub fn (mut navigation Navigation) update_the_navigation_api_entries_for_a_same_
 		}) or { return }
 		target := unsafe { &dom.EventTarget(navigation) }
 		base_event := unsafe { &dom.Event(change_event) }
+		navigation.timestamp_navigation_event(base_event)
 		target.dispatch_event(base_event)
 	}
 	for entry in disposed {
 		dispose_event := dom.Event.create('dispose', dom.EventInit{})
+		navigation.timestamp_navigation_event(dispose_event)
 		unsafe { &dom.EventTarget(entry) }
 		.dispatch_event(dispose_event)
+	}
+	if event := navigate_event {
+		if ongoing := navigation.ongoing_navigate_event_ {
+			if voidptr(event) == voidptr(ongoing)
+				&& !event.has_started_navigate_event_intercept_commit_handler_steps()
+				&& navigation.owning_window() != none {
+				navigation.run_the_navigate_event_intercept_commit_handler_steps(event, api_method_tracker)
+			}
+		}
 	}
 }
 

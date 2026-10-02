@@ -6,6 +6,7 @@
 module html
 
 import dom
+import webidl
 
 pub enum NavigationFocusReset {
 	after_transition
@@ -30,6 +31,7 @@ pub type NavigationInterceptHandler = fn () !
 pub struct NavigationInterceptOptions {
 pub:
 	handler     ?NavigationInterceptHandler
+	callback    ?webidl.CallbackType
 	focus_reset ?NavigationFocusReset
 	scroll      ?NavigationScrollBehavior
 }
@@ -48,8 +50,8 @@ pub:
 	info                     dom.JSValue = dom.js_undefined()
 	has_ua_visual_transition bool
 	source_element           ?&dom.Element
-	// The C++ object obtains this through its relevant Window. The V port has no
-	// realm/global-object graph yet, so its embedding supplies that association.
+	// Native navigation supplies the relevant Window's actual Document.
+	// The override is retained only for standalone events without a realm.
 	associated_document   ?&dom.Document
 	fully_active_override ?bool
 	navigation            ?&Navigation
@@ -59,26 +61,27 @@ pub:
 pub struct NavigateEvent {
 	dom.Event
 mut:
-	interception_state_        NavigateEventInterceptionState
-	navigation_handler_list_   []NavigationInterceptHandler
-	focus_reset_behavior_      ?NavigationFocusReset
-	scroll_behavior_           ?NavigationScrollBehavior
-	abort_controller_          ?&dom.AbortController
-	classic_history_api_state_ ?SerializationRecord
-	navigation_type_           dom.NavigationType
-	destination_               &NavigationDestination
-	can_intercept_             bool
-	user_initiated_            bool
-	hash_change_               bool
-	signal_                    &dom.AbortSignal
-	form_data_                 ?&FormData
-	download_request_          ?string
-	info_                      dom.JSValue
-	has_ua_visual_transition_  bool
-	source_element_            ?&dom.Element
-	associated_document_       ?&dom.Document
-	fully_active_override_     ?bool
-	navigation_                 ?&Navigation
+	interception_state_                                        NavigateEventInterceptionState
+	navigation_handler_list_                                   []webidl.CallbackType
+	has_started_navigate_event_intercept_commit_handler_steps_ bool
+	focus_reset_behavior_                                      ?NavigationFocusReset
+	scroll_behavior_                                           ?NavigationScrollBehavior
+	abort_controller_                                          ?&dom.AbortController
+	classic_history_api_state_                                 ?SerializationRecord
+	navigation_type_                                           dom.NavigationType
+	destination_                                               &NavigationDestination
+	can_intercept_                                             bool
+	user_initiated_                                            bool
+	hash_change_                                               bool
+	signal_                                                    &dom.AbortSignal
+	form_data_                                                 ?&FormData
+	download_request_                                          ?string
+	info_                                                      dom.JSValue
+	has_ua_visual_transition_                                  bool
+	source_element_                                            ?&dom.Element
+	associated_document_                                       ?&dom.Document
+	fully_active_override_                                     ?bool
+	navigation_                                                ?&Navigation
 }
 
 fn NavigateEvent.new(event_name string, event_init NavigateEventInit) !&NavigateEvent {
@@ -111,7 +114,7 @@ fn NavigateEvent.new(event_name string, event_init NavigateEventInit) !&Navigate
 		source_element_:           event_init.source_element
 		associated_document_:      event_init.associated_document
 		fully_active_override_:    event_init.fully_active_override
-		navigation_:                event_init.navigation
+		navigation_:               event_init.navigation
 	}
 }
 
@@ -177,7 +180,7 @@ pub fn (event &NavigateEvent) navigation_handler_count() int {
 	return event.navigation_handler_list_.len
 }
 
-pub fn (event &NavigateEvent) navigation_handler_list() []NavigationInterceptHandler {
+pub fn (event &NavigateEvent) navigation_handler_list() []webidl.CallbackType {
 	return event.navigation_handler_list_.clone()
 }
 
@@ -210,6 +213,11 @@ pub fn (mut event NavigateEvent) set_classic_history_api_state(state ?Serializat
 }
 
 fn (event &NavigateEvent) associated_document_is_fully_active() bool {
+	if document := event.associated_document_ {
+		if document.relevant_settings_object() != unsafe { nil } {
+			return document.is_fully_active()
+		}
+	}
 	if value := event.fully_active_override_ {
 		return value
 	}
@@ -242,7 +250,21 @@ pub fn (mut event NavigateEvent) intercept(options NavigationInterceptOptions) !
 	}
 	event.interception_state_ = .intercepted
 	if handler := options.handler {
-		event.navigation_handler_list_ << handler
+		// Preserve the old standalone V callback through the same source
+		// Promise-returning callback record; it is not a JavaScript binding.
+		event.navigation_handler_list_ << webidl.CallbackType{
+			callback:                  fn [handler] (_ webidl.Value, _ []webidl.Value) !webidl.Value {
+				handler()!
+				return webidl.undefined_value()
+			}
+			operation_returns_promise: .yes
+		}
+	}
+	if callback := options.callback {
+		event.navigation_handler_list_ << webidl.CallbackType{
+			...callback
+			operation_returns_promise: .yes
+		}
 	}
 	if focus_reset := options.focus_reset {
 		event.focus_reset_behavior_ = focus_reset
@@ -252,13 +274,24 @@ pub fn (mut event NavigateEvent) intercept(options NavigationInterceptOptions) !
 	}
 }
 
-// Navigation invokes these handlers after dispatch. Promise-returning WebIDL
-// callbacks are represented as fallible V callbacks until a JS Promise runtime
-// is available.
+// Compatibility entry point for standalone invocation tests. The source
+// Navigation completion path adopts every callback result as a Promise.
 pub fn (event &NavigateEvent) run_navigation_handlers() ! {
 	for handler in event.navigation_handler_list_ {
-		handler()!
+		invocation := webidl.CallbackType{
+			...handler
+			operation_returns_promise: .no
+		}
+		_ = webidl.invoke_callback(invocation, none, [])!
 	}
+}
+
+pub fn (event &NavigateEvent) has_started_navigate_event_intercept_commit_handler_steps() bool {
+	return event.has_started_navigate_event_intercept_commit_handler_steps_
+}
+
+pub fn (mut event NavigateEvent) set_has_started_navigate_event_intercept_commit_handler_steps() {
+	event.has_started_navigate_event_intercept_commit_handler_steps_ = true
 }
 
 pub fn (mut event NavigateEvent) mark_committed() ! {
