@@ -1,0 +1,11 @@
+# VisualViewport resize snapshots and events
+
+Document resize and initial-visibility tracking now translate Ladybird `963d46a829f3e1b79f44dba9d02afb70654300fa`, `DOM/Document.cpp:4872–4912` and `6291–6311`, with the upstream checkout read-only. This uses the [single actual VisualViewport owner](VISUAL_VIEWPORT_OWNERSHIP.md).
+
+Initial visibility records layout size and visual scale/dimensions only when the initial snapshot is absent. The rendering resize steps compare both snapshots, retain the new snapshots before dispatch, and suppress events for the source initial-size case. Changed layout dimensions dispatch Window resize before changed visual scale/dimensions dispatch VisualViewport resize. Both events retain the actual source EventTargets, trusted state, ordinary event flags and owning Window's relative high-resolution timestamp.
+
+Layout snapshots use the actual CSS-owned geometry's `CSSPixels::to_int()` boundary. Visual snapshots retain the source double-precision getter values. The small DOM/CSS interface ABI reads those existing geometry values without copying the viewport model or reimplementing pixel conversion. This distinction preserves visual-only changes within one layout pixel and conversion at the source fixed-point boundary.
+
+Three actual-layout tests pass with default GC and `-gc none`: initialization captures both real owner snapshots before the first layout change; scale-only resize keeps the prior snapshot across repeated initial-visibility calls; fractional dimensions and CSS-pixel rounding retain source event selection; and a Window handler's zoom mutation is observed on the next resize pass because snapshots precede Window/VisualViewport dispatch. Event identity, trust, flags, order, owning relative timestamp and unchanged-state suppression are checked through actual DOM callbacks. Fifteen existing global-scope/timer cases and three VisualViewport ownership cases also pass with `-gc none`.
+
+The explicit DOM-only adapter keeps Window-only resizing when the CSS implementation is absent. This does not complete accumulated painting-context/repaint updates, compositor or remote/process transport, compact JavaScript viewport exposure, or full runtime/GC bindings. The pinned source's initial VisibilityStateEntry TODO and classic-scrollbar exclusion FIXMEs remain unchanged.
