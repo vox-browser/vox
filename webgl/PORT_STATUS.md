@@ -59,8 +59,9 @@ its drawing buffer, and presents native pixels through the retained canvas
 surface registry. The JavaScriptCore host binding reaches those same objects
 and native commands, including the ANGLE instancing, WEBGL draw-buffers, and OES
 vertex-array extensions. Script-created canvases retain the same DOM owner
-when inserted. Public bindings validate element-count BufferSource spans,
-detached/resized views, destination views, and pixel-pack-buffer offsets before
+when inserted. Public bindings retain actual BufferSource brands, generated
+fixed-length/shared backing-store restrictions, late detached witnesses,
+element-count spans, destination views, and pixel-pack-buffer offsets before
 actual execution. TexImageSource uploads use live canvas/image/video frames or
 ImageData and translate the source Skia export, including flip, scaling,
 color-space, and alpha conversion. ImageBitmap and OffscreenCanvas objects
@@ -124,6 +125,27 @@ source getError precedence. The old typed nonnullable index getter remains a
 convenience adapter; public bindings use the new source nullable getter. New
 native/public result-shape cases and the existing native uniform-block file
 pass with `-gc none`.
+
+Actual WebGL buffer/view and exact typed-list argument conversion now uses
+captured engine internal-slot getters, ignoring author-shadowed buffer,
+byteOffset, byteLength, BYTES_PER_ELEMENT, values, and iterator properties.
+Buffer and typed-list snapshots happen after all argument conversions; ordinary
+sequence snapshots remain eager. Destination writeback uses those same real
+slots. The pinned generator disallows resizable backing stores without
+AllowResizable and shared buffers without AllowShared
+(`Meta/Generators/libweb_bindings/to_idl_value.py:1329-1445`): WebGL view
+arguments are AllowShared, ordinary BufferSource and exact Float32/Int32/Uint32
+list members are not, and no WebGL buffer argument is AllowResizable. Earlier
+public RAB acceptance was therefore a translation error; typed witness helpers
+retain the source operation-body rules independently of public IDL restrictions.
+
+All three new slot/timing cases plus the six adjacent source-span, public host,
+effective-overload, texture-source, pixel-pack, and nullable-texture files pass
+with `-gc none`. They exercise mutation/detachment by later argument getters,
+native buffer and rendered uniform results, view-property tampering, actual
+DataView/typed destination writes, raw-buffer versus view brands, and optional
+engine RAB/SAB exposure. This interop adaptation does not establish complete
+LibJS builtin/prototype/WrapperWorld parity.
 
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
