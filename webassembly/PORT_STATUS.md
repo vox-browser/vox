@@ -418,3 +418,22 @@ the source weak/ref-counted lifetime graph, so weak expiration and strong module
 promotion remain open. The legacy Instance initialization and exported-function
 facades are not yet connected to these actual function records; this foundation
 does not establish Wasm execution or close WA-12.
+
+## Source label and frame records
+
+`42417969` translates the complete `Label` and `Frame` classes from
+`AbstractMachine.h:887–966`. Labels retain source arity, continuation, stack
+height and the actual optional try-table instruction pointer. Frames retain
+the actual module instance, locals pointer, expression, result arity, label
+index, owns-locals flag and compiled-function-vector header pointer. The source
+move constructor copies those fields without clearing the moved-from frame or
+freeing locals. A small V owner record supplies the source vector-header pointer
+that V arrays cannot expose directly; growing its entries preserves that owner.
+
+Source alias and control-flow tests plus the function/module owner neighbors
+pass **3/3 files with default GC and 3/3 with `-gc none`**. The borrowed locals
+pointer follows the source contract: Configuration must rederive it when its
+own locals storage moves. V does not enforce the C++ deleted copy operations.
+Configuration, compiled-function-table construction, call-record allocation
+and interpreter execution remain unimplemented; these records do not supply
+an executor or fabricated results.
