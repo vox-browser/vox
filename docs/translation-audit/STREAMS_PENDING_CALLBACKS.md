@@ -50,15 +50,50 @@ previous active-script slot after the job. Standalone `StreamRealm.create()`
 without a host scheduler retains the existing direct job adapter and does not
 provide browser microtask timing.
 
+## Actual JavaScript values and Promise capabilities
+
+The compact host now carries real JSC `JSValueRef` and owning-context references
+through `webidl.RuntimeValue` and `streams.Value`. Chunks retain actual cyclic
+object/function/symbol identity and an actual engine GC root. Explicit string
+conversion invokes the owning engine and preserves its thrown value; ordinary
+queueing, errors, and rejection propagation do not coerce arbitrary reasons.
+Readable/default/BYOB consumer capabilities and writable/transform operations
+retain the original reason, including pending start/pull/write/close/cancel/
+abort/transform/flush reactions. Transform rethrow uses a thrown-value
+completion carrier; an empty string cache cannot make an errored controller
+enqueue again.
+
+`browserjs/webidl_binding_darwin.c.v` calls actual Promise-returning stream
+callbacks with the supplied receiver and arguments. It adopts their returned
+Promise/thenable using JSC's real Promise Resolve and captured engine `then`
+intrinsic, including a throwing `then` getter. The native capability settles
+through its existing owner-job scheduler. Wrapping one native WebIDL capability
+returns the same real JSC Promise; different native addresses remain distinct.
+Synchronous scalar callback conversion continues to call the engine directly.
+This bridge is a constructor prerequisite, not installed Stream globals.
+
+Lifetime remains an explicit boundary. A settled native-to-JSC bridge releases
+its resolve/reject roots and keeps the Promise root and bridge record until
+`Runtime.close()`. Callback observation releases its temporary capability and
+reaction roots on settlement/error. Native chunks/reasons and callable host
+records likewise remain retained until the runtime closes; source wrapper
+finalization and full GC edge tracing/reclamation are not implemented. A closed
+runtime rejects new conversions and queued completion jobs avoid the released
+engine context.
+
 The following boundaries are still open and are not counted as full parity:
 
 - The compact browser's JSC globals do not expose owning native
   `ReadableStream`, `WritableStream`, or `TransformStream` factories through
-  this slice. JSC Promise objects are not native WebIDL Promise values.
-- `streams.Value` represents primitives, recursive sequences, and bytes.
-  Arbitrary JavaScript chunks, rejection reason object identity, JS getters,
-  generic thenables, and JS iterator acquisition require the real object
-  runtime. Byte conversion uses the existing typed BufferSource copy boundary.
+  this slice. Actual callback/Promise wrapping is available to their bindings.
+- Generic JavaScript iterator acquisition and structured cloning of opaque
+  chunks (including a public tee's cloning branch) remain unbound. Typed byte
+  conversion does not provide JSC BYOB ArrayBuffer transfer/detachment or shared
+  native view ownership. Pipe/tee arbitrary rejection-value propagation still
+  needs the same original-value conversion used by readable/writable/transform.
+- Writable controllers still select the reduced `streams.AbortSignal` record;
+  the upstream `DOM::AbortSignal` event target, abort event, and undefined-reason
+  `AbortError` path require the actual DOM signal bridge.
 - Controller platform values retain native identity, but generated JS
   prototypes/wrapper worlds, GC tracing and wrapper lifetime ownership still
   require bindings integration. The native tests do not claim those layers.
@@ -80,4 +115,19 @@ v -old-compiler -enable-globals test html/stream_operations_test.v
 
 v -old-compiler -enable-globals test html/environments_test.v html/scripting_runtime_test.v html/event_loop_test.v
 3 passed, 3 total
+```
+
+Additional actual-engine verification:
+
+```text
+browserjs/webidl_value_test.v: actual chunks/callback identity, engine ToString,
+  thrown conversion identity, context ownership, GC roots, closed-owner guard.
+browserjs/readable_rejection_values_test.v: three actual object/symbol cases.
+browserjs/writable_rejection_values_test.v: four pending operation/race cases.
+browserjs/webidl_exception_values_test.v + webidl: 8/8 passed.
+browserjs/webidl_binding_test.v + host_value_function_test.v: 2/2 passed;
+  final focused bridge file rerun passed (three callback/capability cases).
+browserjs/transform_rejection_values_test.v + streams compression encoding:
+  29/29 passed, including four actual-engine transform reason cases.
+tools/native_js_values_smoke.v: ordinary -prod executable passed.
 ```

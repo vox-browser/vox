@@ -105,9 +105,12 @@ those interfaces.
 
 ## Boundary
 
-Ladybird represents chunks as arbitrary LibJS values. The V package still uses
-a recursively cloneable typed `Value`; arbitrary JS objects, wrapper worlds,
-GC tracing, JavaScript iterator acquisition, and the compact browser's JSC
+Ladybird represents chunks as arbitrary LibJS values. The V package now also
+carries real owning JSC value references through its WebIDL/Streams boundary;
+actual cyclic object/function/symbol chunks and readable/writable/transform
+rejection values preserve identity. Wrapper worlds, GC tracing/reclamation,
+JavaScript iterator acquisition, opaque structured cloning, JSC BYOB view
+transfer/detachment, actual DOM AbortSignal ownership, and the compact browser's
 Stream factories remain open runtime boundaries.
 
 Underlying source, sink, and transformer dictionaries now retain native
@@ -115,6 +118,7 @@ WebIDL `CallbackType` values, the actual receiver, and the actual controller
 address. The source start callback may return a pending Promise value; pull,
 write, close, abort, cancel, transform, and flush use WebIDL Promise callback
 conversion. `VoidPromise` retains an actual native WebIDL Promise backend.
+Read/BYOB read capabilities likewise retain their native Promise backend.
 The controller flags, in-flight requests, backpressure, pipe shutdown, tee
 cancel/delivery, and shared transform startup remain pending until the source
 fulfillment/rejection jobs run.
@@ -124,9 +128,13 @@ actual Window/Worker loop and realm. Promise jobs capture the active classic
 script and implied document, prepare the source script/callback context, and
 clean it up after execution. Native standalone callers without a scheduler
 keep the explicit direct job adapter. This adapter is not a browser Promise
-job queue. Generic JavaScript thenables, Promise objects from JSC, arbitrary
-rejection values, module execution-context capture, and complete generated
-Stream bindings are not implemented by the typed native Promise bridge.
+job queue. The compact JSC prerequisite now adopts real callback Promises and
+thenables using actual engine Resolve; one native capability wraps into one
+stable real JSC Promise. Settled bridges release resolver roots, but retain
+their Promise root and bridge record until Runtime.close. Module execution-
+context capture, complete generated Stream bindings, pipe/tee arbitrary reason
+values, and source host-object GC reclamation remain open. See
+[`STREAMS_PENDING_CALLBACKS.md`](../docs/translation-audit/STREAMS_PENDING_CALLBACKS.md).
 
 The original symbol audit found no Streams bodies in an
 `upstream_*_entry_points.v` quarantine file. Symbol coverage did not detect the
