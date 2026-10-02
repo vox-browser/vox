@@ -5,6 +5,7 @@ module webassembly
 pub struct BinaryTableDefinition {
 pub:
 	type_ BinaryTableType
+pub mut:
 	initializer BinaryExpression
 }
 
@@ -17,7 +18,9 @@ fn parse_table_section(mut decoder Decoder) ![]BinaryTableDefinition {
 	for _ in 0 .. count {
 		tag := decoder.byte()!
 		if tag == 0x40 {
-			if decoder.byte()! != 0 { return error('CompileError: invalid table initializer prefix') }
+			if decoder.byte()! != 0 {
+				return error('CompileError: invalid table initializer prefix')
+			}
 			type_ := parse_binary_table_type(mut decoder)!
 			initializer := parse_binary_expression(mut decoder)!
 			tables << BinaryTableDefinition{ type_: type_, initializer: initializer }
@@ -25,11 +28,13 @@ fn parse_table_section(mut decoder Decoder) ![]BinaryTableDefinition {
 			element := parse_reference_type(mut decoder, tag)!
 			limits := parse_limits(mut decoder)!
 			tables << BinaryTableDefinition{
-				type_: BinaryTableType{ element_type: element, limits: limits }
-				initializer: BinaryExpression{ instructions: [
-					BinaryInstruction{ opcode: binary_op_ref_null, arguments: BinaryValueType{ ...element, nullable: true } },
-					BinaryInstruction{ opcode: binary_op_synthetic_end_expression },
-				] }
+				type_:       BinaryTableType{ element_type: element, limits: limits }
+				initializer: BinaryExpression{
+					instructions: [
+						BinaryInstruction{ opcode: binary_op_ref_null, arguments: BinaryValueType{ ...element, nullable: true } },
+						BinaryInstruction{ opcode: binary_op_synthetic_end_expression },
+					]
+				}
 			}
 		}
 	}

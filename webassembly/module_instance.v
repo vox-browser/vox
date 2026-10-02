@@ -300,6 +300,8 @@ fn compile_module(bytes []u8) !&Module {
 	validator.validate_data_section(mut compiled.data_segments)!
 	validator.validate_element_section(mut compiled.element_segments)!
 	validator.validate_global_section(mut compiled.global_definitions)!
+	for memory in compiled.memory_types { validate_memory_type(memory)! }
+	validator.validate_table_section(mut compiled.table_definitions)!
 	return compiled
 }
 

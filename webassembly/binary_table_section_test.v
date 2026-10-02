@@ -9,24 +9,26 @@ fn table_section_binary(payload []u8) []u8 {
 }
 
 fn test_table_section_retains_explicit_and_source_implicit_initializers() {
-	compiled := compile_module(table_section_binary([u8(3), 0x70, 1, 1, 4, 0x40, 0, 0x64, 0x6f,
-		0, 0, 0xd0, 0x6f, 0x0b, 0x64, 0, 0, 2]))!
-	assert compiled.table_definitions.len == 3
-	function_table := compiled.table_definitions[0]
+	// Nonnullable types with nullable explicit/implicit initializers are valid
+	// parser records but fail source validation. Inspect these directly.
+	mut decoder := Decoder{
+		bytes: [u8(3), 0x70, 1, 1, 4, 0x40, 0, 0x64, 0x6f, 0, 0, 0xd0, 0x6f, 0x0b, 0x64, 0, 0,
+			2]
+	}
+	tables := parse_table_section(mut decoder)!
+	assert tables.len == 3 && decoder.offset == decoder.bytes.len
+	function_table := tables[0]
 	assert function_table.type_.limits.minimum == 1 && function_table.type_.limits.maximum? == 4
 	assert function_table.initializer.instructions[0].opcode == binary_op_ref_null
 	assert function_table.initializer.instructions[1].opcode == binary_op_synthetic_end_expression
-	explicit_table := compiled.table_definitions[1]
+	explicit_table := tables[1]
 	assert !explicit_table.type_.element_type.nullable
 	assert explicit_table.type_.element_type.kind == .extern_reference
 	assert (explicit_table.initializer.instructions[0].arguments as BinaryValueType).kind == .extern_reference
-	typed_table := compiled.table_definitions[2]
+	typed_table := tables[2]
 	assert !typed_table.type_.element_type.nullable && typed_table.type_.element_type.type_index == 0
 	implicit := typed_table.initializer.instructions[0].arguments as BinaryValueType
 	assert implicit.nullable && implicit.type_index == 0
-	mut restored := Module.create_for_serialization()
-	restored.deserialization_steps(compiled.serialization_steps(false)!)!
-	assert restored.table_definitions == compiled.table_definitions
 }
 
 fn test_table_section_rejects_reserved_prefix_numeric_types_and_missing_expressions() {
