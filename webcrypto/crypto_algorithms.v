@@ -8,7 +8,6 @@
 module webcrypto
 
 import crypto.aes
-import crypto.cipher
 import crypto.rand
 import crypto.sha1
 import crypto.sha256
@@ -289,150 +288,6 @@ fn valid_aes_key(key &CryptoKey, expected_name string) ![]u8 {
 	return handle
 }
 
-fn gcm_shift_right(mut block []u8) {
-	mut carry := u8(0)
-	for index in 0 .. block.len {
-		next_carry := block[index] & 1
-		block[index] = (block[index] >> 1) | (carry << 7)
-		carry = next_carry
-	}
-}
-
-fn gcm_multiply(x []u8, y []u8) []u8 {
-	mut z := []u8{len: 16}
-	mut v := y.clone()
-	for bit_index in 0 .. 128 {
-		if x[bit_index / 8] & (u8(1) << (7 - bit_index % 8)) != 0 {
-			xor_into(mut z, v)
-		}
-		least_significant_bit := v[15] & 1
-		gcm_shift_right(mut v)
-		if least_significant_bit != 0 {
-			v[0] ^= 0xe1
-		}
-	}
-	return z
-}
-
-fn append_gcm_padded(mut output []u8, input []u8) {
-	output << input
-	if input.len % 16 != 0 {
-		output << []u8{len: 16 - input.len % 16}
-	}
-}
-
-fn append_u64_be(mut output []u8, value u64) {
-	for index := 7; index >= 0; index-- {
-		output << u8(value >> (index * 8))
-	}
-}
-
-fn gcm_hash(hash_subkey []u8, input []u8) []u8 {
-	mut result := []u8{len: 16}
-	for offset := 0; offset < input.len; offset += 16 {
-		xor_into(mut result, input[offset..offset + 16])
-		result = gcm_multiply(result, hash_subkey)
-	}
-	return result
-}
-
-fn gcm_increment_counter(mut counter []u8) {
-	for index := 15; index >= 12; index-- {
-		counter[index]++
-		if counter[index] != 0 {
-			break
-		}
-	}
-}
-
-fn gcm_counter_crypt(block cipher.Block, initial_counter []u8, input []u8) []u8 {
-	mut counter := initial_counter.clone()
-	mut output := []u8{len: input.len}
-	for offset := 0; offset < input.len; offset += 16 {
-		mut stream_block := []u8{len: 16}
-		block.encrypt(mut stream_block, counter)
-		count := if input.len - offset < 16 { input.len - offset } else { 16 }
-		for index in 0 .. count {
-			output[offset + index] = input[offset + index] ^ stream_block[index]
-		}
-		gcm_increment_counter(mut counter)
-	}
-	return output
-}
-
-fn gcm_initial_counter(iv []u8, hash_subkey []u8) []u8 {
-	if iv.len == 12 {
-		mut counter := iv.clone()
-		counter << [u8(0), 0, 0, 1]
-		return counter
-	}
-	mut input := []u8{}
-	append_gcm_padded(mut input, iv)
-	input << []u8{len: 8}
-	append_u64_be(mut input, u64(iv.len) * 8)
-	return gcm_hash(hash_subkey, input)
-}
-
-fn valid_gcm_tag_length(length u8) bool {
-	return length in [u8(32), 64, 96, 104, 112, 120, 128]
-}
-
-fn gcm_authentication_tag(block cipher.Block, hash_subkey []u8, initial_counter []u8, additional_data []u8, ciphertext []u8) []u8 {
-	mut input := []u8{}
-	append_gcm_padded(mut input, additional_data)
-	append_gcm_padded(mut input, ciphertext)
-	append_u64_be(mut input, u64(additional_data.len) * 8)
-	append_u64_be(mut input, u64(ciphertext.len) * 8)
-	hashed := gcm_hash(hash_subkey, input)
-	return gcm_counter_crypt(block, initial_counter, hashed)
-}
-
-fn aes_gcm_encrypt(params AesGcmParams, key &CryptoKey, plaintext []u8) ![]u8 {
-	key_bytes := valid_aes_key(key, 'AES-GCM')!
-	tag_length := params.tag_length or { u8(128) }
-	if params.iv.len == 0 || !valid_gcm_tag_length(tag_length) {
-		return error('OperationError: Invalid AES-GCM IV or tag length')
-	}
-	additional_data := params.additional_data or { []u8{} }
-	block := aes.new_cipher(key_bytes)
-	mut hash_subkey := []u8{len: 16}
-	block.encrypt(mut hash_subkey, []u8{len: 16})
-	initial_counter := gcm_initial_counter(params.iv, hash_subkey)
-	mut payload_counter := initial_counter.clone()
-	gcm_increment_counter(mut payload_counter)
-	ciphertext := gcm_counter_crypt(block, payload_counter, plaintext)
-	tag := gcm_authentication_tag(block, hash_subkey, initial_counter, additional_data, ciphertext)
-	mut output := ciphertext.clone()
-	output << tag[..int(tag_length / 8)]
-	return output
-}
-
-fn aes_gcm_decrypt(params AesGcmParams, key &CryptoKey, input []u8) ![]u8 {
-	key_bytes := valid_aes_key(key, 'AES-GCM')!
-	tag_length := params.tag_length or { u8(128) }
-	if params.iv.len == 0 || !valid_gcm_tag_length(tag_length) {
-		return error('OperationError: Invalid AES-GCM IV or tag length')
-	}
-	additional_data := params.additional_data or { []u8{} }
-	tag_size := int(tag_length / 8)
-	if input.len < tag_size {
-		return error('OperationError: AES-GCM ciphertext is shorter than its tag')
-	}
-	ciphertext := input[..input.len - tag_size]
-	tag := input[input.len - tag_size..]
-	block := aes.new_cipher(key_bytes)
-	mut hash_subkey := []u8{len: 16}
-	block.encrypt(mut hash_subkey, []u8{len: 16})
-	initial_counter := gcm_initial_counter(params.iv, hash_subkey)
-	expected := gcm_authentication_tag(block, hash_subkey, initial_counter, additional_data, ciphertext)
-	if subtle.constant_time_compare(expected[..tag_size], tag) != 1 {
-		return error('OperationError: AES-GCM authentication failed')
-	}
-	mut payload_counter := initial_counter.clone()
-	gcm_increment_counter(mut payload_counter)
-	return gcm_counter_crypt(block, payload_counter, ciphertext)
-}
-
 fn chacha20_poly1305_crypt(params AeadParams, key &CryptoKey, input []u8, decrypt bool) ![]u8 {
 	if params.name != 'ChaCha20-Poly1305' || key.algorithm_name() != params.name || key.type_ != .secret || key.handle_.len != 32 {
 		return error('InvalidAccessError: A ChaCha20-Poly1305 secret key is required')
@@ -486,10 +341,6 @@ pub fn decrypt_bytes(params EncryptionParams, key &CryptoKey, ciphertext []u8) !
 			else { error('NotSupportedError: ${params.name} decryption is unavailable') }
 		}
 	}
-}
-
-fn xor_into(mut target []u8, source []u8) {
-	for index, byte in source { target[index] ^= byte }
 }
 
 fn derive_bits_bytes_for_usage(params DeriveParams, base_key &CryptoKey, length_bits u32, required_usage KeyUsage) ![]u8 {

@@ -27,3 +27,15 @@ fn native_aes_ctr(decrypt bool, key []u8, input []u8, iv []u8) ![]u8 {
     }
     return output[..int(size)].clone()
 }
+
+fn C.vox_aes_gcm(int, &u8, usize, &u8, usize, &u8, usize, &u8, usize, &u8, usize, &u8, &usize) int
+
+fn native_aes_gcm(decrypt bool, key []u8, input []u8, iv []u8, aad []u8, tag []u8, tag_size int) ![]u8 {
+    mut output := []u8{len: input.len + tag_size + 16}
+    mut size := usize(output.len)
+    if C.vox_aes_gcm(int(decrypt), key.data, usize(key.len), input.data, usize(input.len), iv.data, usize(iv.len), aad.data, usize(aad.len), tag.data, usize(tag_size), output.data, &size) != 1 {
+        action := if decrypt { 'Decryption' } else { 'Encryption' }
+        return error('OperationError: ${action} failed')
+    }
+    return output[..int(size)].clone()
+}

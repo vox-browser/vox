@@ -66,7 +66,7 @@ fn test_aes_gcm_nist_vector_and_authentication_failure() {
 	if _ := subtle_crypto.decrypt(params, key, corrupted) {
 		assert false
 	} else {
-		assert err.msg() == 'OperationError: AES-GCM authentication failed'
+		assert err.msg() == 'OperationError: Decryption failed'
 	}
 }
 
@@ -90,7 +90,7 @@ fn test_aes_gcm_accepts_general_iv_and_spec_tag_lengths() {
 	if _ := subtle_crypto.decrypt(params, key, corrupted) {
 		assert false
 	} else {
-		assert err.msg().contains('authentication failed')
+		assert err.msg() == 'OperationError: Decryption failed'
 	}
 }
 
