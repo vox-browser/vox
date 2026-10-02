@@ -61,7 +61,10 @@ pub:
 	pair ?CryptoKeyPair
 }
 
-pub type KeyGenerationParams = AesKeyGenParams | AlgorithmParams | HmacKeyGenParams
+pub type KeyGenerationParams = AesKeyGenParams
+	| AlgorithmParams
+	| HmacKeyGenParams
+	| KmacKeyGenParams
 
 @[heap]
 pub struct SubtleCrypto {}
@@ -304,10 +307,23 @@ pub fn (subtle_crypto &SubtleCrypto) decrypt(params EncryptionParams, key &Crypt
 	return decrypt_bytes(params, key, data)
 }
 
-pub fn (subtle_crypto &SubtleCrypto) sign(algorithm string, key &CryptoKey, data []u8) ![]u8 {
+pub type SigningParams = KmacParams | string
+
+fn signing_algorithm_name(algorithm SigningParams) string {
+	return match algorithm {
+		KmacParams { algorithm.name }
+		string { algorithm }
+	}
+}
+
+pub fn (subtle_crypto &SubtleCrypto) sign(algorithm SigningParams, key &CryptoKey, data []u8) ![]u8 {
 	_ = subtle_crypto
-	normalized := normalize_an_algorithm(algorithm, 'sign')!
+	normalized := normalize_an_algorithm(signing_algorithm_name(algorithm), 'sign')!
 	validate_operation_key(key, normalized, .sign)!
+	if algorithm is KmacParams {
+		return KMAC.create().sign(KmacParams{ ...algorithm, name: normalized }, key, data)
+	}
+	if normalized in ['KMAC128', 'KMAC256'] { return error('TypeError: outputLength is required') }
 	return match normalized {
 		'HMAC' { hmac_sign(key, data)! }
 		'Ed25519' { ed25519_sign(key, data)! }
@@ -315,10 +331,14 @@ pub fn (subtle_crypto &SubtleCrypto) sign(algorithm string, key &CryptoKey, data
 	}
 }
 
-pub fn (subtle_crypto &SubtleCrypto) verify(algorithm string, key &CryptoKey, signature []u8, data []u8) !bool {
+pub fn (subtle_crypto &SubtleCrypto) verify(algorithm SigningParams, key &CryptoKey, signature []u8, data []u8) !bool {
 	_ = subtle_crypto
-	normalized := normalize_an_algorithm(algorithm, 'verify')!
+	normalized := normalize_an_algorithm(signing_algorithm_name(algorithm), 'verify')!
 	validate_operation_key(key, normalized, .verify)!
+	if algorithm is KmacParams {
+		return KMAC.create().verify(KmacParams{ ...algorithm, name: normalized }, key, signature, data)
+	}
+	if normalized in ['KMAC128', 'KMAC256'] { return error('TypeError: outputLength is required') }
 	return match normalized {
 		'HMAC' { hmac_verify(key, signature, data)! }
 		'Ed25519' { ed25519_verify(key, signature, data)! }
@@ -331,6 +351,7 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 	name := match params {
 		AesKeyGenParams { params.name }
 		HmacKeyGenParams { params.name }
+		KmacKeyGenParams { params.name }
 		AlgorithmParams { params.name }
 	}
 	normalized := normalize_an_algorithm(name, 'generateKey')!
@@ -340,6 +361,9 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 		return error('SyntaxError: usages must not be empty')
 	}
 	return match params {
+		KmacKeyGenParams {
+			KMAC.create().generate_key(KmacKeyGenParams{ ...params, name: normalized }, extractable, normalized_usages)!
+		}
 		AesKeyGenParams {
 			GeneratedKey{
 				key: generate_aes_key(AesKeyGenParams{
@@ -358,6 +382,8 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 				GeneratedKey{
 					pair: generate_ed25519_key(extractable, normalized_usages)!
 				}
+			} else if normalized in ['KMAC128', 'KMAC256'] {
+				KMAC.create().generate_key(KmacKeyGenParams{name: normalized}, extractable, normalized_usages)!
 			} else if normalized == 'ChaCha20-Poly1305' {
 				validate_usages(normalized_usages, [KeyUsage.encrypt, .decrypt, .wrap_key, .unwrap_key])!
 				GeneratedKey{
@@ -372,10 +398,29 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 	}
 }
 
-pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8, algorithm string, extractable bool, usages []KeyUsage, hash_name string) !&CryptoKey {
+pub type ImportKeyParams = KmacImportParams | string
+
+fn import_algorithm_name(algorithm ImportKeyParams) string {
+	return match algorithm {
+		KmacImportParams { algorithm.name }
+		string { algorithm }
+	}
+}
+
+fn normalized_kmac_import_params(algorithm ImportKeyParams, normalized string) KmacImportParams {
+	if algorithm is KmacImportParams { return KmacImportParams{ ...algorithm, name: normalized } }
+	return KmacImportParams{ name: normalized }
+}
+
+pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8, algorithm ImportKeyParams, extractable bool, usages []KeyUsage, hash_name string) !&CryptoKey {
 	_ = subtle_crypto
-	normalized := normalize_an_algorithm(algorithm, 'importKey')!
+	normalized := normalize_an_algorithm(import_algorithm_name(algorithm), 'importKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
+	if normalized in ['KMAC128', 'KMAC256'] {
+		key := KMAC.create().import_key(normalized_kmac_import_params(algorithm, normalized), format, material, extractable, normalized_usages)!
+		if key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+		return key
+	}
 	if normalized == 'Ed25519' {
 		if format in [KeyFormat.raw_seed, .raw_private] && normalized_usages.len == 0 {
 			return error('SyntaxError: usages must not be empty')
@@ -394,10 +439,13 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
 	return import_secret_key(normalized, material, extractable, normalized_usages, hash_name)
 }
 
-pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm string, extractable bool, usages []KeyUsage, hash_name string) !&CryptoKey {
+pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm ImportKeyParams, extractable bool, usages []KeyUsage, hash_name string) !&CryptoKey {
 	_ = subtle_crypto
-	normalized := normalize_an_algorithm(algorithm, 'importKey')!
+	normalized := normalize_an_algorithm(import_algorithm_name(algorithm), 'importKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
+	if normalized in ['KMAC128', 'KMAC256'] {
+		return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name)
+	}
 	if extractable {
 		if jwk_extractable := jwk.ext {
 			if !jwk_extractable {
@@ -458,6 +506,10 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm string
 pub fn (subtle_crypto &SubtleCrypto) export_key(format KeyFormat, key &CryptoKey) ![]u8 {
 	_ = subtle_crypto
 	normalize_an_algorithm(key.algorithm_name(), 'exportKey')!
+	if key.algorithm_name() in ['KMAC128', 'KMAC256'] {
+		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
+		return KMAC.create().export_key(format, key)
+	}
 	if format !in [.raw, .raw_public, .raw_private, .raw_seed, .raw_secret] {
 		return error('NotSupportedError: This typed boundary exports raw key material')
 	}
@@ -475,6 +527,9 @@ pub fn (subtle_crypto &SubtleCrypto) export_jwk(key &CryptoKey) !JsonWebKey {
 	normalize_an_algorithm(key.algorithm_name(), 'exportKey')!
 	if !key.extractable {
 		return error('InvalidAccessError: Key is not extractable')
+	}
+	if key.algorithm_name() in ['KMAC128', 'KMAC256'] {
+		return JsonWebKey.parse(KMAC.create().export_key(.jwk, key)!)
 	}
 	operations := key.usages.map(key_usage_string(it))
 	if key.algorithm_name() == 'Ed25519' {

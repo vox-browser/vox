@@ -377,7 +377,7 @@ pub fn KmacParams.from_value(value json2.Any) !KmacParams {
 	object := algorithm_object(value)!
 	return KmacParams{
 		name: ''
-		length: required_algorithm_u32(object, 'length')!
+		output_length: required_algorithm_u32(object, 'outputLength')!
 		customization: optional_algorithm_bytes(object, 'customization')
 	}
 }
@@ -639,8 +639,12 @@ pub fn hmac_hash_block_size(hash_name string) !u32 {
 	return u32(hash_block_size(hash_name)!)
 }
 
-pub fn kmac_calculate_mac(_ string, _ []u8, _ []u8, _ u32, _ []u8) ![]u8 {
-	return error('NotSupportedError: KMAC backend is unavailable')
+pub fn kmac_calculate_mac(name string, key []u8, message []u8, output_length u32, customization []u8) ![]u8 {
+	kmac_default_length(name)!
+	if output_length == 0 || output_length % 8 != 0 {
+		return error('OperationError: KMAC operation failed')
+	}
+	return native_kmac(name, key, message, customization, int(output_length / 8))
 }
 
 pub fn normalize_key_usages(usages []KeyUsage) []KeyUsage {

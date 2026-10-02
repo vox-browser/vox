@@ -168,7 +168,7 @@ pub:
 pub struct KmacParams {
 pub:
 	name          string
-	length        u32
+	output_length u32
 	customization ?[]u8
 }
 

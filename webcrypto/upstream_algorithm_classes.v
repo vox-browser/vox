@@ -198,11 +198,11 @@ pub fn (_ MLKEM) decapsulate(_ AlgorithmParams, _ &CryptoKey, _ []u8) ![]u8 { re
 
 pub struct KMAC {}
 pub fn KMAC.create() KMAC { return KMAC{} }
-pub fn (_ KMAC) sign(_ KmacParams, _ &CryptoKey, _ []u8) ![]u8 { return backend_unavailable[[]u8]('KMAC', 'signing') }
-pub fn (_ KMAC) verify(_ KmacParams, _ &CryptoKey, _ []u8, _ []u8) !bool { return backend_unavailable[bool]('KMAC', 'verification') }
-pub fn (_ KMAC) generate_key(_ KmacKeyGenParams, _ bool, _ []KeyUsage) !GeneratedKey { return backend_unavailable[GeneratedKey]('KMAC', 'key generation') }
-pub fn (_ KMAC) import_key(_ KmacImportParams, _ KeyFormat, _ []u8, _ bool, _ []KeyUsage) !&CryptoKey { return backend_unavailable[&CryptoKey]('KMAC', 'key import') }
-pub fn (_ KMAC) export_key(_ KeyFormat, _ &CryptoKey) ![]u8 { return backend_unavailable[[]u8]('KMAC', 'key export') }
+pub fn (_ KMAC) sign(params KmacParams, key &CryptoKey, data []u8) ![]u8 { return kmac_sign(params, key, data) }
+pub fn (_ KMAC) verify(params KmacParams, key &CryptoKey, signature []u8, data []u8) !bool { return kmac_sign(params, key, data)! == signature }
+pub fn (_ KMAC) generate_key(params KmacKeyGenParams, extractable bool, usages []KeyUsage) !GeneratedKey { return GeneratedKey{key: generate_kmac_key(params, extractable, usages)!} }
+pub fn (_ KMAC) import_key(params KmacImportParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_kmac_key(params, format, material, extractable, usages) }
+pub fn (_ KMAC) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_kmac_key(format, key) }
 pub fn (_ KMAC) get_key_length(params KmacImportParams) !KeyLengthResult {
 	length := params.length or {
 		match params.name {
