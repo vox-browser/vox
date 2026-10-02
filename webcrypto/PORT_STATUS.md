@@ -144,9 +144,32 @@ and expanded export derives the public half natively. These formats are absent
 from the pinned ED25519 AlgorithmMethods and are rejected by asynchronous
 import/export/wrap bindings. No browser/VM Promise parity is implied.
 
-Further source review remains for the earlier AES and ChaCha20-Poly1305
-implementations. Backend availability alone does not establish parity for these
-bodies.
+AES-CBC, AES-CTR, AES-GCM, and AES-KW operation bodies now follow
+`CryptoAlgorithms.cpp` and `LibCrypto/Cipher/AES.cpp` through native EVP calls;
+the handwritten CBC padding, CTR increment loop, GHash/authentication, and key
+wrap rounds have been removed. CBC preserves source IV/length checks and native
+PKCS7 errors. CTR preserves the pinned implementation's behavior: it validates
+the requested counter width but passes the complete counter to EVP, so the
+native cipher increments all 128 bits and does not reject repeated-block limits
+based on the requested width. GCM retains each tag size, general IVs, optional
+AAD, and native authentication failures. KW retains the source's modulo-eight
+wrap check and less-than-eight unwrap check, then reports actual EVP failures;
+empty wrap yields the native empty result, while eight-byte wrap fails.
+
+Their generation/import/export/get-length bodies preserve usage-first checks,
+source errors, raw/raw-secret aliases, and each JWK validation order. CBC accepts
+absent `alg`; CTR/GCM require `k` then `alg`; KW requires `alg` before decoding
+`k`. AlgorithmMethods import leaves extractable/usages at their source defaults
+for the common SubtleCrypto boundary to install. Malformed JWK export handles
+produce CBC's `unclear key size` error, whereas CTR/GCM/KW omit `alg`, exactly as
+the source does. Tests use four source CBC fixtures, nine source CTR fixtures,
+84 source WPT GCM parameter combinations, six source KW fixtures, provider
+failure cases, every supported key width/format, copied deferred parameters,
+and source metadata/error ordering.
+
+Further source review remains for ChaCha20-Poly1305 and common parameter/typed
+boundary conversions. Native backend availability alone does not establish
+complete WebCrypto/VM parity.
 
 `SubtleCryptoBinding` implements the asynchronous WebIDL operation boundary.
 It copies input data and registered algorithm BufferSource fields before
@@ -167,7 +190,7 @@ remain available below the binding.
 
 ## Verification
 
-The 29 WebCrypto test files and all six WebIDL test files passed using direct
+The 34 WebCrypto test files and all six WebIDL test files passed using direct
 `v -old-compiler -enable-globals -path 'WORKTREE|@vlib|@vmodules' FILE_test.v`
 invocations. The focused HTML Crypto, environments, and global-scope tests also
 passed. These checks cover copied views/parameters/usages, immediate versus
