@@ -306,6 +306,12 @@ static void vox_gl_framebuffer_texture(unsigned target, unsigned attachment, uns
 static void vox_gl_framebuffer_renderbuffer(unsigned target, unsigned attachment, unsigned renderbuffer_target, unsigned renderbuffer) { glFramebufferRenderbuffer(target, attachment, renderbuffer_target, renderbuffer); }
 static void vox_gl_renderbuffer_storage(unsigned target, unsigned format, int width, int height) { glRenderbufferStorage(target, format, width, height); }
 static void vox_gl_tex_image2d(unsigned target, int level, int format, int width, int height, int border, unsigned pixel_format, unsigned type, int capacity, void const* data) { glTexImage2DRobustANGLE(target, level, format, width, height, border, pixel_format, type, capacity, data); }
+// This ANGLE ABI exposes core compressed entry points. Source imageSize and
+// dataSize are identical; the native imageSize remains the exact input bound.
+static void vox_gl_compressed_tex_image2d(unsigned target, int level, unsigned format, int width, int height, int border, int size, void const* data) { glCompressedTexImage2D(target, level, format, width, height, border, size, data); }
+static void vox_gl_compressed_tex_sub_image2d(unsigned target, int level, int x, int y, int width, int height, unsigned format, int size, void const* data) { glCompressedTexSubImage2D(target, level, x, y, width, height, format, size, data); }
+static void vox_gl_compressed_tex_image3d(unsigned target, int level, unsigned format, int width, int height, int depth, int border, int size, void const* data) { glCompressedTexImage3D(target, level, format, width, height, depth, border, size, data); }
+static void vox_gl_compressed_tex_sub_image3d(unsigned target, int level, int x, int y, int z, int width, int height, int depth, unsigned format, int size, void const* data) { glCompressedTexSubImage3D(target, level, x, y, z, width, height, depth, format, size, data); }
 static void vox_gl_tex_sub_image2d(unsigned target, int level, int x, int y, int width, int height, unsigned format, unsigned type, int capacity, void const* data) { glTexSubImage2DRobustANGLE(target, level, x, y, width, height, format, type, capacity, data); }
 static void vox_gl_tex_parameteri(unsigned target, unsigned pname, int value) { glTexParameteri(target, pname, value); }
 static void vox_gl_tex_parameterf(unsigned target, unsigned pname, float value) { glTexParameterf(target, pname, value); }

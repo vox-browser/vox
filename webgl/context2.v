@@ -498,6 +498,8 @@ pub fn (mut context WebGLRenderingContext) compressed_tex_image3d(target GLenum,
 		return
 	}
 	context.native.dispatch('compressed_tex_image3d', target, level, internal_format, width, height, depth, border, pixels.len)
+	C.vox_gl_compressed_tex_image3d(target,level,internal_format,width,height,depth,border,pixels.len,pixels.data)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) draw_arrays_instanced(mode GLenum, first int, count int, instance_count int) {

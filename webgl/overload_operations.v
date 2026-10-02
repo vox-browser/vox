@@ -53,6 +53,8 @@ pub fn (mut context WebGLRenderingContext) compressed_tex_image2d(target GLenum,
 		return
 	}
 	context.command('compressed_tex_image2d', target, level, internal_format, width, height, border, data.len)
+	C.vox_gl_compressed_tex_image2d(target,level,internal_format,width,height,border,data.len,data.data)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) compressed_tex_sub_image2d(target GLenum, level int, x_offset int, y_offset int, width int, height int, format GLenum, data []u8) {
@@ -65,6 +67,8 @@ pub fn (mut context WebGLRenderingContext) compressed_tex_sub_image2d(target GLe
 		return
 	}
 	context.command('compressed_tex_sub_image2d', target, level, x_offset, y_offset, width, height, format, data.len)
+	C.vox_gl_compressed_tex_sub_image2d(target,level,x_offset,y_offset,width,height,format,data.len,data.data)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) tex_image2d(target GLenum, level int, internal_format GLenum, width int, height int, border int, format GLenum, type_ GLenum, pixels []u8) {
@@ -288,6 +292,8 @@ pub fn (mut context WebGLRenderingContext) compressed_tex_sub_image3d(target GLe
 		return
 	}
 	context.webgl2_command('compressed_tex_sub_image3d', target, level, x_offset, y_offset, z_offset, width, height, depth, format, pixels.len)
+	C.vox_gl_compressed_tex_sub_image3d(target,level,x_offset,y_offset,z_offset,width,height,depth,format,pixels.len,pixels.data)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) delete_transform_feedback(feedback ?&WebGLTransformFeedback) {
