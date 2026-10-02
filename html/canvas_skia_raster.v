@@ -97,8 +97,9 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 		dash_offset:  f32(state.line_dash_offset)
 		filters:      state.filter_functions.map(canvas_skia_filter(it))
 	}
-	assert skia.draw_path(mut mutable_bitmap.data, bitmap.width, bitmap.height, bitmap.pitch,
+	painted := skia.draw_path(mut mutable_bitmap.data, bitmap.width, bitmap.height, bitmap.pitch,
 		int(bitmap.alpha_type), command)
+	assert painted
 	mutable_bitmap.alpha_type = 2
 }
 
@@ -267,6 +268,7 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_bitmap_command(o
 		global_alpha: f32(state.global_alpha)
 		filters:      state.filter_functions.map(canvas_skia_filter(it))
 	}
-	assert skia.draw_path(mut mutable_bitmap.data, bitmap.width, bitmap.height, bitmap.pitch, int(bitmap.alpha_type), command)
+	painted := skia.draw_path(mut mutable_bitmap.data, bitmap.width, bitmap.height, bitmap.pitch, int(bitmap.alpha_type), command)
+	assert painted
 	mutable_bitmap.alpha_type = 2
 }
