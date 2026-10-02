@@ -107,3 +107,10 @@ class-name diagnostics remain part of the missing complete VM class graph.
 Remaining native methods include import/export, encryption, signing,
 derivation, wrapping, and KEM operations. Native generation does not supply
 LibJS Promise/builtin/WrapperWorld parity.
+
+The generated JsonWebKey conversion now creates present members in the pinned
+IDL parser's lexicographic order, including `d,r,t` for RSA other-prime records.
+Absent fields remain absent, and false booleans/empty sequences remain present.
+The focused dictionary-order test passes for both the typed dictionary object
+and the Promise result DTO. This corrects observable native `Object.keys`
+order without sorting unrelated key-algorithm metadata objects.

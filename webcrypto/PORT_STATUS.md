@@ -333,3 +333,8 @@ deferred rejection, source key-generation validation order, key binding
 identity, operation results, independent window/worker task ownership, chained
 and late Promise reactions, and observers. They do not establish browser JS
 Promise integration or completion of the remaining algorithm families.
+
+Generated JWK result dictionaries now preserve lexicographic member creation
+order from the pinned IDL parser and GenerateToValue converter, including nested
+RSA other-prime dictionaries. `jwk_dictionary_order_test.v` passes for optional
+fields, false booleans, empty sequences, and exported Promise result DTOs.
