@@ -214,15 +214,6 @@ pub fn (mut context WebGLRenderingContext) take_context_events() []WebGLContextE
 	return events
 }
 
-pub fn (mut context WebGLRenderingContext) make_xr_compatible() !bool {
-	if context.context_lost_ {
-		context.xr_compatible_ = false
-		return error('InvalidStateError: The WebGL context has been lost')
-	}
-	context.xr_compatible_ = true
-	return true
-}
-
 pub fn (mut context WebGLRenderingContext) set_size(width int, height int) {
 	final_width, final_height := initial_drawing_buffer_size(width, height)
 	context.native.set_size(final_width, final_height)

@@ -10,7 +10,7 @@ pub type WebGLTaskScheduler = fn (fn ())
 // WebGLRenderingContextBase.cpp make_xr_compatible's executed branches. The
 // pinned source leaves permissions/device selection TODO and assumes a
 // compatible adapter; its device-null and context-loss fallback are unreachable.
-pub fn (context &WebGLRenderingContext) make_xr_compatible_async(promise_context webidl.PromiseContext,
+pub fn (context &WebGLRenderingContext) make_xr_compatible(promise_context webidl.PromiseContext,
 	deferred_invoke WebGLTaskScheduler, queue_settlement_task WebGLTaskScheduler) &webidl.Promise {
 	mut promise := webidl.create_promise_for(promise_context)
 	deferred_invoke(fn [context, mut promise, queue_settlement_task] () {
