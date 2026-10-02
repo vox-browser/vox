@@ -101,7 +101,7 @@ function __webglMethod(s,name,overloads,version) {
  return __webglContextSlots.metadata(operation,name,min);
 }
 function __webglExtensionMethod(version){
- const operation=({getExtension(name){const record=__webglContextSlots.record(this,version),s=record.state,extensions=record.extensions;if(arguments.length<1)throw new TypeError("getExtension() needs one argument");name=__webglString(name);const result=__webglCall(s,"getExtension",[name]);if(result===null)return null;const canonical=result.name;if(extensions[canonical])return extensions[canonical];const extension=__webglCreateExtension(canonical,s);extensions[canonical]=extension;return extension;}}).getExtension;
+ const operation=({getExtension(name){const record=__webglContextSlots.record(this,version),s=record.state,extensions=record.extensions;if(arguments.length<1)throw new TypeError("getExtension() needs one argument");name=__webglString(name);const result=__webglCall(s,"getExtension",[name]);if(result===null)return null;const canonical=result.name;if(extensions[canonical])return extensions[canonical];const extension=__webglCreateExtension(canonical,s,result.empty);extensions[canonical]=extension;return extension;}}).getExtension;
  return __webglContextSlots.metadata(operation,"getExtension",1);
 }
 function __webglContext(s,kind,options) {

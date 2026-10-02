@@ -320,6 +320,7 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 				return json2.Any({
 					'name': json2.Any(value.name)
 					'kind': json2.Any('extension')
+					'empty': json2.Any(value.creates_empty_object)
 				})
 			}
 			return json2.Any(json2.Null{})

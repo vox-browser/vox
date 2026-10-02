@@ -10,6 +10,7 @@ struct ExtensionDescriptor {
 	required_native    []string
 	version            ?WebGLVersion
 	implemented        bool
+	creates_empty_object bool
 	compressed_formats []GLenum
 }
 
@@ -79,6 +80,7 @@ const available_extensions = [
 	ExtensionDescriptor{
 		name:            'OES_texture_float_linear'
 		required_native: ['GL_OES_texture_float_linear']
+		creates_empty_object: true
 	},
 	ExtensionDescriptor{
 		name:            'OES_texture_half_float'
@@ -152,6 +154,7 @@ const available_extensions = [
 	ExtensionDescriptor{
 		name:            'EXT_float_blend'
 		required_native: ['GL_EXT_float_blend']
+		creates_empty_object: true
 	},
 	ExtensionDescriptor{
 		name:            'EXT_polygon_offset_clamp'
@@ -281,6 +284,7 @@ pub struct WebGLExtension {
 pub:
 	name                string
 	context_id          u64
+	creates_empty_object bool
 	debug_renderer_info ?&WebGLDebugRendererInfo
 }
 
@@ -315,7 +319,7 @@ pub fn (mut context WebGLRenderingContext) get_supported_extensions(experimental
 			if version != context.version { continue
 			 }
 		}
-		if !descriptor.implemented && !experimental { continue
+		if !descriptor.implemented && !descriptor.creates_empty_object && !experimental { continue
 		 }
 		mut supported := true
 		for requirement in descriptor.required_native {
@@ -331,6 +335,10 @@ pub fn (mut context WebGLRenderingContext) get_supported_extensions(experimental
 
 // Repeated case-insensitive requests return the same extension object.
 pub fn (mut context WebGLRenderingContext) get_extension(name string, experimental bool) ?&WebGLExtension {
+	// The source rejects non-ASCII names before extension lookup/cache access.
+	for byte in name.bytes() {
+		if byte > 0x7f { return none }
+	}
 	canonical := name.to_lower_ascii()
 	if existing := context.enabled_extensions[canonical] { return existing }
 	if name !in context.get_supported_extensions(experimental)
@@ -338,7 +346,7 @@ pub fn (mut context WebGLRenderingContext) get_extension(name string, experiment
 		return none
 	}
 	descriptor := find_extension_descriptor(name) or { return none }
-	if !descriptor.implemented { return none }
+	if !descriptor.implemented && !descriptor.creates_empty_object { return none }
 	for requirement in descriptor.required_native {
 		context.native.request_extension(requirement)
 	}
@@ -352,6 +360,7 @@ pub fn (mut context WebGLRenderingContext) get_extension(name string, experiment
 	extension := &WebGLExtension{
 		name: descriptor.name
 		context_id: context.identity()
+		creates_empty_object: descriptor.creates_empty_object
 		debug_renderer_info: debug_renderer_info
 	}
 	unsafe {
