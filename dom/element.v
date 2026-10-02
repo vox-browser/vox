@@ -491,6 +491,8 @@ pub mut:
 	visibility_                     CSSVisibility_ = .visible
 	font_weight_                    f64 = 400
 	scrollbar_width_                string = 'auto'
+	client_border_top_width_        f64
+	client_border_left_width_       f64
 	math_depth_                     int
 	math_style_                     CSSMathStyle_ = .normal
 	view_transition_name_           ?string
@@ -2275,26 +2277,58 @@ pub fn (e &Element) closest(selectors string) ?&Element {
 
 // https://drafts.csswg.org/cssom-view/#dom-element-clienttop
 pub fn (e &Element) client_top() int {
-	mut document := unsafe { &Document(e.document()) }
-	document.update_layout(.element_client_height)
-	layout := e.as_node().layout_node() or { return 0 }
-	return if layout.has_geometry_ { int(layout.border_top_) } else { 0 }
+	document := e.document()
+	_ = document.update_style_for_element(e, false)
+	style := e.el_computed_properties() or { return 0 }
+	if !client_geometry_has_box(style.display()) {
+		return 0
+	}
+	return int(style.client_border_top_width_)
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-element-clientleft
 pub fn (e &Element) client_left() int {
-	mut document := unsafe { &Document(e.document()) }
-	document.update_layout(.element_client_width)
-	layout := e.as_node().layout_node() or { return 0 }
-	return if layout.has_geometry_ { int(layout.border_left_) } else { 0 }
+	document := e.document()
+	_ = document.update_style_for_element(e, false)
+	style := e.el_computed_properties() or { return 0 }
+	if !client_geometry_has_box(style.display()) {
+		return 0
+	}
+	return int(style.client_border_left_width_)
+}
+
+fn client_geometry_has_box(display CSSDisplay_) bool {
+	return !display.is_none() && !display.is_contents()
+		&& !(display.is_inline_outside() && display.is_flow_inside())
+}
+
+fn client_size_has_committed_box(layout &LayoutNode) bool {
+	if !layout.has_geometry_ || layout.display_.is_none() || layout.display_.is_contents() {
+		return false
+	}
+	// Inline fragments have retained geometry in the V bridge, but do not
+	// constitute Painting::has_committed_box(). Atomic/replaced inlines do.
+	return !(layout.display_.is_inline_outside() && layout.display_.is_flow_inside()
+		&& !layout.is_atomic_inline_ && !layout.is_replaced_box_)
+}
+
+fn (e &Element) client_size_uses_viewport() bool {
+	// Element.cpp checks the concrete HTMLHtmlElement/HTMLBodyElement types
+	// before layout; SVG/XML elements with the same local name do not qualify.
+	return e.is_html_element()
+		&& ((e.local_name() == 'html' && !e.document().in_quirks_mode())
+		|| (e.local_name() == 'body' && e.document().in_quirks_mode()))
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-element-clientwidth
 pub fn (e &Element) client_width() int {
+	if e.client_size_uses_viewport() {
+		return int(e.document().viewport_rect().width)
+	}
 	mut document := unsafe { &Document(e.document()) }
 	document.update_layout(.element_client_width)
 	layout := e.as_node().layout_node() or { return 0 }
-	if !layout.has_geometry_ {
+	if !client_size_has_committed_box(layout) {
 		return 0
 	}
 	return int(layout.content_width_ + layout.padding_left_ + layout.padding_right_)
@@ -2302,10 +2336,13 @@ pub fn (e &Element) client_width() int {
 
 // https://drafts.csswg.org/cssom-view/#dom-element-clientheight
 pub fn (e &Element) client_height() int {
+	if e.client_size_uses_viewport() {
+		return int(e.document().viewport_rect().height)
+	}
 	mut document := unsafe { &Document(e.document()) }
 	document.update_layout(.element_client_height)
 	layout := e.as_node().layout_node() or { return 0 }
-	if !layout.has_geometry_ {
+	if !client_size_has_committed_box(layout) {
 		return 0
 	}
 	return int(layout.content_height_ + layout.padding_top_ + layout.padding_bottom_)

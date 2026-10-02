@@ -55,6 +55,8 @@ fn computed_properties_to_dom(computed &ComputedProperties) &dom.CSSComputedProp
 			is_table_column_group_: display.is_table_column_group()
 		}
 		non_animated_display_is_none_: computed_display_is_none_ignoring_animations(computed)
+		client_border_top_width_: computed_values_border_data(computed, .border_top_width, .border_top_style).width.to_double()
+		client_border_left_width_: computed_values_border_data(computed, .border_left_width, .border_left_style).width.to_double()
 		overflow_x_: overflow_to_dom(computed.overflow_x())
 		overflow_y_: overflow_to_dom(computed.overflow_y())
 		content_visibility_: content_visibility_to_dom(computed.content_visibility())
