@@ -94,11 +94,8 @@ fn (host &ReadableStreamHost) property(object voidptr, name string) !voidptr {
 	return value
 }
 
-fn (host &ReadableStreamHost) number(value voidptr) !f64 {
-	mut exception := unsafe { nil }
-	result := C.JSValueToNumber(host.runtime.context, value, &exception)
-	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
-	return result
+fn (mut host ReadableStreamHost) number(value voidptr) !f64 {
+	return webidl.value_to_number(host.runtime.webidl_value(value)!)
 }
 
 fn (mut host ReadableStreamHost) text(value voidptr) !string {
@@ -120,33 +117,8 @@ fn (mut host ReadableStreamHost) source_callback(object voidptr, name string) !w
 fn (mut host ReadableStreamHost) construct(args []voidptr) !voidptr {
 	if host.closed { return error('ReadableStream binding is closed') }
 	object := host.argument(args, 0)
-	mut source := streams.UnderlyingSource{ underlying_source_value: webidl.null_value() }
-	if !C.JSValueIsUndefined(host.runtime.context, object) {
-		if !C.JSValueIsObject(host.runtime.context, object) { return error('TypeError: underlyingSource must be an object') }
-		mut auto_allocate := ?u64(none)
-		auto_value := host.property(object, 'autoAllocateChunkSize')!
-		if !C.JSValueIsUndefined(host.runtime.context, auto_value) {
-			auto_allocate = u64(webidl.convert_to_int(webidl.number_value(host.number(auto_value)!), 64, false, .yes, .no)!)
-		}
-		// Generated dictionary conversion follows the source member-name order.
-		cancel := host.source_callback(object, 'cancel')!
-		pull := host.source_callback(object, 'pull')!
-		start := host.source_callback(object, 'start')!
-		type_value := host.property(object, 'type')!
-		mut type_ := streams.UnderlyingSourceType.default_source
-		if !C.JSValueIsUndefined(host.runtime.context, type_value) {
-			if host.text(type_value)! != 'bytes' { return error('TypeError: Invalid ReadableStreamType value') }
-			type_ = .bytes
-		}
-		source = streams.UnderlyingSource{
-			underlying_source_value: host.runtime.webidl_value(object)!
-			auto_allocate_chunk_size: auto_allocate
-			cancel_callback: cancel.callback
-			pull_callback: pull.callback
-			start_callback: start.callback
-			type_: type_
-		}
-	}
+	if !C.JSValueIsUndefined(host.runtime.context, object) && !C.JSValueIsObject(host.runtime.context, object) { return error('TypeError: underlyingSource must be an object') }
+	// Generated constructor converts strategy before source factory dictionary.
 	strategy_value := host.argument(args, 1)
 	mut strategy := streams.QueuingStrategy{}
 	if !C.JSValueIsUndefined(host.runtime.context, strategy_value) && !C.JSValueIsNull(host.runtime.context, strategy_value) {
@@ -172,18 +144,49 @@ fn (mut host ReadableStreamHost) construct(args []voidptr) !voidptr {
 		}
 		strategy = streams.QueuingStrategy{ high_water_mark: high_water_mark, size_value: size_algorithm }
 	}
+	mut source := streams.UnderlyingSource{ underlying_source_value: webidl.null_value() }
+	if !C.JSValueIsUndefined(host.runtime.context, object) {
+		mut auto_allocate := ?u64(none)
+		auto_value := host.property(object, 'autoAllocateChunkSize')!
+		if !C.JSValueIsUndefined(host.runtime.context, auto_value) {
+			auto_allocate = u64(webidl.convert_to_int(webidl.number_value(host.number(auto_value)!), 64, false, .yes, .no)!)
+		}
+		// Generated dictionary conversion follows the source member-name order.
+		cancel := host.source_callback(object, 'cancel')!
+		pull := host.source_callback(object, 'pull')!
+		start := host.source_callback(object, 'start')!
+		type_value := host.property(object, 'type')!
+		mut type_ := streams.UnderlyingSourceType.default_source
+		if !C.JSValueIsUndefined(host.runtime.context, type_value) {
+			if host.text(type_value)! != 'bytes' { return error('TypeError: Invalid ReadableStreamType value') }
+			type_ = .bytes
+		}
+		source = streams.UnderlyingSource{
+			underlying_source_value: host.runtime.webidl_value(object)!
+			auto_allocate_chunk_size: auto_allocate
+			cancel_callback: cancel.callback
+			pull_callback: pull.callback
+			start_callback: start.callback
+			type_: type_
+		}
+	}
 	stream := host.settings.create_readable_stream(source, strategy)!
-	return host.wrap(.stream, voidptr(stream))
+	return host.wrap_with_prototype(.stream, voidptr(stream), host.argument(args, 2))
 }
 
 fn (mut host ReadableStreamHost) wrap(kind ReadableStreamHostKind, native voidptr) !voidptr {
+	return host.wrap_with_prototype(kind, native, unsafe { nil })
+}
+
+fn (mut host ReadableStreamHost) wrap_with_prototype(kind ReadableStreamHostKind, native voidptr, desired_prototype voidptr) !voidptr {
 	if record := host.records[native] {
 		if record.kind != kind { return error('ReadableStream native wrapper interface mismatch') }
 		return record.object
 	}
 	mut record := &ReadableStreamHostRecord{ host: host, kind: kind, native: native }
 	object := C.vox_make_native_stream_wrapper(host.runtime.context, record)
-	prototype := host.prototypes[kind] or { return error('ReadableStream native prototype is missing') }
+	mut prototype := host.prototypes[kind] or { return error('ReadableStream native prototype is missing') }
+	if desired_prototype != unsafe { nil } && C.JSValueIsObject(host.runtime.context, desired_prototype) { prototype = desired_prototype }
 	C.JSObjectSetPrototype(host.runtime.context, object, prototype)
 	record.object = host.runtime.retain_javascript_value(object)!
 	host.records[native] = record
@@ -297,7 +300,9 @@ fn (mut host ReadableStreamHost) operate(args []voidptr) !voidptr {
 				}
 				reader := stream.get_reader(streams.ReadableStreamGetReaderOptions{ mode: mode })!
 				if reader.kind == .byob { return host.wrap(.byob_reader, voidptr(reader.byob_reader)) }
-				return host.wrap(.default_reader, voidptr(reader.default_reader))
+				mut prototype := unsafe { voidptr(nil) }
+				if operation == 'stream.readerConstructor' { prototype = argument }
+				return host.wrap_with_prototype(.default_reader, voidptr(reader.default_reader), prototype)
 			}
 			else {}
 		}
@@ -338,10 +343,12 @@ fn (mut host ReadableStreamHost) operate(args []voidptr) !voidptr {
 }
 
 const readable_stream_native_bootstrap = '(function(create,operate){
-  const Reject=Promise.reject.bind(Promise),Type=TypeError;
+  const Reject=Promise.reject.bind(Promise),Type=TypeError,ConstructProxy=Proxy,define=Object.defineProperty;
   const promiseOperation=(self,name,args)=>{try{return operate(self,name,...args)}catch(reason){return Reject(reason)}};
-  function ReadableStream(source=undefined,strategy=undefined){if(!new.target)throw new Type("ReadableStream requires new");return create(source,strategy)}
-  function ReadableStreamDefaultReader(stream){if(!new.target)throw new Type("ReadableStreamDefaultReader requires new");return operate(stream,"stream.readerConstructor")}
+  const ReadableStream=new ConstructProxy(function ReadableStream(){throw new Type("ReadableStream requires new")},{construct(target,args,newTarget){const prototype=newTarget.prototype;return create(args[0],args[1],prototype)}});
+  const ReadableStreamDefaultReader=new ConstructProxy(function ReadableStreamDefaultReader(stream){throw new Type("ReadableStreamDefaultReader requires new")},{construct(target,args,newTarget){const prototype=newTarget.prototype;if(args.length<1)throw new Type("ReadableStreamDefaultReader requires 1 argument");return operate(args[0],"stream.readerConstructor",prototype)}});
+  define(ReadableStream.prototype,"constructor",{value:ReadableStream,writable:true,configurable:true});
+  define(ReadableStreamDefaultReader.prototype,"constructor",{value:ReadableStreamDefaultReader,writable:true,configurable:true});
   function ReadableStreamDefaultController(){throw new Type("Illegal constructor")}
   function ReadableByteStreamController(){throw new Type("Illegal constructor")}
   const byobPrototype=Object.create(Object.prototype);
