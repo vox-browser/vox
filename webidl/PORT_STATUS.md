@@ -46,3 +46,10 @@ Web IDL conversion matrix remain with the embedding JavaScript engine. Promise
 reactions settle deterministically when V promises settle rather than through a
 browser event-loop microtask queue. Tracing records lines instead of writing to
 Ladybird's debug stream.
+
+Integer EnforceRange conversion now reports the pinned source's exact nonfinite
+error and includes the truncated value plus concrete signed/unsigned target
+bounds in range failures. The existing translated LibJS numeric formatter
+retains AK's decimal/exponent thresholds. Focused tests cover all four target
+widths, signed and unsigned bounds, truncation before checking, nonfinite values,
+and large-number error text; the existing core conversion tests also pass.
