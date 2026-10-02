@@ -317,6 +317,14 @@ an unattached detachShader can clear a retained slot while the actual shader
 remains attached. The source cache queries and driver parameter queries expose
 those distinct results.
 
+Each successful getUniformLocation now performs the native query and creates a
+fresh source record, as in `WebGLRenderingContextImpl.cpp:2003-2023`; the invented
+per-name record cache has been removed. Typed and actual JavaScriptCore identity
+cases plus existing native uniform tests pass with `-gc none`, including distinct
+wrappers sharing one driver location, use of both wrappers, fresh queries after
+relink, missing names and a native failed relink outside the V status cache.
+The host's resource wrapper lifetime boundary remains unchanged.
+
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
