@@ -304,15 +304,14 @@ fn test_source_close_settles_a_single_tee_cancellation() {
 	assert pair.second.state() == .closed
 }
 
-fn test_source_error_rejects_a_single_tee_cancellation() {
+fn test_source_error_fulfills_a_single_tee_cancellation_and_errors_the_other_branch() {
 	mut source := ReadableStream.construct_impl(UnderlyingSource{}, QueuingStrategy{})!
 	pair := source.tee()!
 	mut first := pair.first
 	first_cancel := first.cancel(string_value('one'))
 	mut controller := source.default_controller()!
 	controller.error('source failed')
-	assert first_cancel.state() == .rejected
-	assert first_cancel.reason() == 'source failed'
+	assert first_cancel.state() == .fulfilled
 	assert pair.second.state() == .errored
 }
 

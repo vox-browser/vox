@@ -100,6 +100,7 @@ mut:
 	tee_byob_request_         &BYOBReadPromise = unsafe { nil }
 	tee_byob_branch_          int
 	tee_reading_              bool
+	tee_delivery_queued_      bool
 	tee_read_again_           bool
 	tee_read_again_1_         bool
 	tee_read_again_2_         bool
@@ -468,13 +469,6 @@ fn (mut stream ReadableStream) error_internal(reason string) {
 		}
 		stream.byob_reader_.read_into_requests_.clear()
 	}
-	for mut branch in stream.tee_branches_ {
-		branch.error(reason)
-		if !isnil(branch.tee_cancel_promise_) && branch.tee_cancel_promise_.state() == .pending {
-			mut cancel_promise := branch.tee_cancel_promise_
-			cancel_promise.reject(reason)
-		}
-	}
 	pump_readable_tee_source(mut stream)
 	pump_readable_pipe(mut stream)
 }
@@ -503,7 +497,8 @@ fn (mut stream ReadableStream) cancel_internal(reason Value) &VoidPromise {
 		return VoidPromise.rejected_in(stream.realm_, stream.stored_error_)
 	}
 	if !isnil(stream.tee_source_) {
-		return cancel_tee_branch(mut stream, reason)
+		mut cancel_result := cancel_tee_branch(mut stream, reason).as_webidl_promise()
+		return void_promise_from_webidl(stream.realm_, mut cancel_result)
 	}
 	if stream.owner_kind_ == .iterable {
 		stream.from_values_.clear()

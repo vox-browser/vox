@@ -6,6 +6,7 @@
 // streams from AbstractOperations, ReadableStream, and WritableStream.
 module streams
 
+
 pub struct StreamPipeOptions {
 pub:
 	prevent_close  bool
@@ -143,7 +144,9 @@ fn error_tee_branches(mut source ReadableStream, reason string) {
 			branch.error(reason)
 		}
 	}
-	settle_tee_cancel_promises(mut source, reason)
+	if source.tee_branches_.any(!it.tee_cancelled_) {
+		settle_tee_cancel_promises(mut source, none)
+	}
 }
 
 fn continue_byte_tee_after_read(mut source ReadableStream) {
@@ -190,7 +193,7 @@ fn close_byte_tee_branches_after_byob_read(mut source ReadableStream, byob_branc
 	}
 }
 
-fn pump_readable_byte_tee_source(mut source ReadableStream) {
+fn deliver_readable_byte_tee_source(mut source ReadableStream) {
 	if !source.tee_reading_ {
 		return
 	}
@@ -257,7 +260,9 @@ fn pump_readable_byte_tee_source(mut source ReadableStream) {
 	source.tee_read_request_ = unsafe { nil }
 	if request.state() == .rejected {
 		source.tee_reading_ = false
-		error_tee_branches(mut source, request.reason())
+		if source.realm_.promise_context().job_scheduler == none {
+			error_tee_branches(mut source, request.reason())
+		}
 		return
 	}
 	source.tee_read_again_1_ = false
@@ -298,11 +303,9 @@ fn pump_readable_byte_tee_source(mut source ReadableStream) {
 	continue_byte_tee_after_read(mut source)
 }
 
-// The V promise records settle synchronously, but these pumps preserve
-// Ladybird's tee read/read-again state machines and demand-driven buffering.
-fn pump_readable_tee_source(mut source ReadableStream) {
+fn deliver_readable_tee_source(mut source ReadableStream) {
 	if source.byte_stream_ {
-		pump_readable_byte_tee_source(mut source)
+		deliver_readable_byte_tee_source(mut source)
 		return
 	}
 	if !source.tee_reading_ || isnil(source.tee_read_request_) {
@@ -315,7 +318,9 @@ fn pump_readable_tee_source(mut source ReadableStream) {
 	source.tee_read_request_ = unsafe { nil }
 	if request.state() == .rejected {
 		source.tee_reading_ = false
-		error_tee_branches(mut source, request.reason())
+		if source.realm_.promise_context().job_scheduler == none {
+			error_tee_branches(mut source, request.reason())
+		}
 		return
 	}
 	result := request.result()
@@ -381,7 +386,8 @@ fn switch_byte_tee_to_default_reader(mut source ReadableStream) ! {
 		reader.release_lock()!
 	}
 	if source.reader_kind_ != .default_reader || isnil(source.default_reader_) {
-		_ = source.get_default_reader()!
+		reader := source.get_default_reader()!
+		observe_tee_reader_closed(mut source, reader.closed())
 	}
 }
 
@@ -394,7 +400,8 @@ fn switch_byte_tee_to_byob_reader(mut source ReadableStream) ! {
 		reader.release_lock()!
 	}
 	if source.reader_kind_ != .byob || isnil(source.byob_reader_) {
-		_ = source.get_byob_reader()!
+		reader := source.get_byob_reader()!
+		observe_tee_reader_closed(mut source, reader.closed())
 	}
 }
 
@@ -432,7 +439,7 @@ fn pump_readable_byte_tee_branch(mut branch ReadableStream, mut source ReadableS
 		mut reader := source.default_reader_
 		source.tee_read_request_ = reader.read()
 	}
-	pump_readable_byte_tee_source(mut source)
+	pump_readable_tee_source(mut source)
 }
 
 fn pump_readable_tee_branch(mut branch ReadableStream) {
@@ -462,7 +469,7 @@ fn (mut source ReadableStream) tee_with_clone(clone_for_branch2 bool) !ReadableS
 	}
 	// Both tee algorithms acquire a default reader initially. Byte tees may
 	// later switch it to a BYOB reader when a branch supplies a BYOB view.
-	_ = source.get_default_reader()!
+	reader := source.get_default_reader()!
 	type_ := if source.byte_stream_ {
 		UnderlyingSourceType.bytes
 	} else {
@@ -481,7 +488,11 @@ fn (mut source ReadableStream) tee_with_clone(clone_for_branch2 bool) !ReadableS
 	source.disturbed_ = true
 	source.tee_clone_branch2_ = clone_for_branch2
 	source.tee_branches_ = [branch1, branch2]
-	if source.state_ == .errored {
+	cancel_promise := VoidPromise.pending_in(source.realm_)
+	branch1.tee_cancel_promise_ = cancel_promise
+	branch2.tee_cancel_promise_ = cancel_promise
+	observe_tee_reader_closed(mut source, reader.closed())
+	if source.state_ == .errored && source.realm_.promise_context().job_scheduler == none {
 		error_tee_branches(mut source, source.stored_error_)
 	} else {
 		branch1.call_pull_if_needed()
@@ -505,7 +516,9 @@ fn cancel_tee_branch(mut branch ReadableStream, reason Value) &VoidPromise {
 	branch.tee_cancel_reason_ = reason
 	branch.queue_.reset()
 	branch.close_internal()
-	branch.tee_cancel_promise_ = VoidPromise.pending_in(branch.realm_)
+	if isnil(branch.tee_cancel_promise_) {
+		branch.tee_cancel_promise_ = VoidPromise.pending_in(branch.realm_)
+	}
 	mut source := branch.tee_source_
 	// The concrete request class depends on which reader the byte tee currently
 	// uses. Constructing it here keeps queued tee work tied to the cancel
@@ -533,17 +546,7 @@ fn cancel_tee_branch(mut branch ReadableStream, reason Value) &VoidPromise {
 		}
 		composite := array_value(reasons)
 		result := source.cancel_internal(composite)
-		if result.state() == .rejected {
-			mut own := branch.tee_cancel_promise_
-			own.reject(result.reason())
-			mut theirs := other.tee_cancel_promise_
-			theirs.reject(result.reason())
-		} else {
-			mut own := branch.tee_cancel_promise_
-			own.resolve()
-			mut theirs := other.tee_cancel_promise_
-			theirs.resolve()
-		}
+		adopt_tee_cancel_result(mut source, result)
 	}
 	return branch.tee_cancel_promise_
 }
