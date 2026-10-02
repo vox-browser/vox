@@ -160,6 +160,8 @@ static unsigned vox_gl_gen_object(int kind)
     case 3: glGenTextures(1, &result); break;
     case 4: glGenQueries(1, &result); break;
     case 5: glGenSamplers(1, &result); break;
+    case 6: glGenVertexArrays(1, &result); break;
+    case 7: glGenVertexArraysOES(1, &result); break;
     }
     return result;
 }
@@ -172,6 +174,8 @@ static void vox_gl_delete_object(int kind, unsigned handle)
     case 3: glDeleteTextures(1, &handle); break;
     case 4: glDeleteQueries(1, &handle); break;
     case 5: glDeleteSamplers(1, &handle); break;
+    case 6: glDeleteVertexArrays(1, &handle); break;
+    case 7: glDeleteVertexArraysOES(1, &handle); break;
     }
 }
 static void vox_gl_begin_query(unsigned target, unsigned handle) { glBeginQuery(target, handle); }
@@ -181,6 +185,11 @@ static void vox_gl_bind_sampler(unsigned unit, unsigned handle) { glBindSampler(
 static void vox_gl_sampler_parameteri(unsigned handle, unsigned pname, int value) { glSamplerParameteri(handle, pname, value); }
 static void vox_gl_sampler_parameterf(unsigned handle, unsigned pname, float value) { glSamplerParameterf(handle, pname, value); }
 static float vox_gl_sampler_parameter(unsigned handle, unsigned pname) { GLfloat result = 0; glGetSamplerParameterfvRobustANGLE(handle, pname, 1, NULL, &result); return result; }
+static void vox_gl_bind_vertex_array(unsigned handle, int oes) { if (oes) glBindVertexArrayOES(handle); else glBindVertexArray(handle); }
+static int vox_gl_is_vertex_array(unsigned handle, int oes) { return oes ? glIsVertexArrayOES(handle) : glIsVertexArray(handle); }
+static int vox_gl_vertex_attrib_parameter(unsigned index, unsigned pname) { GLint result = 0; glGetVertexAttribivRobustANGLE(index,pname,1,NULL,&result); return result; }
+static void vox_gl_vertex_attrib_float_parameter(unsigned index, float* result) { glGetVertexAttribfvRobustANGLE(index,GL_CURRENT_VERTEX_ATTRIB,4,NULL,result); }
+static long long vox_gl_vertex_attrib_offset(unsigned index) { void* result = NULL; glGetVertexAttribPointervRobustANGLE(index,GL_VERTEX_ATTRIB_ARRAY_POINTER,1,NULL,&result); return (intptr_t)result; }
 static void vox_gl_bind_buffer(unsigned target, unsigned handle) { glBindBuffer(target, handle); }
 static void vox_gl_buffer_data(unsigned target, long long size, void const* data, unsigned usage) { glBufferData(target, (GLsizeiptr)size, data, usage); }
 static void vox_gl_buffer_sub_data(unsigned target, long long offset, long long size, void const* data) { glBufferSubData(target, (GLintptr)offset, (GLsizeiptr)size, data); }

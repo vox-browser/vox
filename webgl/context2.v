@@ -383,10 +383,13 @@ pub fn (mut context WebGLRenderingContext) resume_transform_feedback() {
 }
 
 pub fn (mut context WebGLRenderingContext) create_vertex_array() &WebGLVertexArrayObject {
+	context.require_webgl2()
+	context.native.make_current()
 	handle := context.allocate_handle()
 	array := &WebGLVertexArrayObject{
-		object: new_object(context.identity(), context.context_generation_, handle)
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: C.vox_gl_gen_object(6)}
 	}
+	context.native.collect_native_error()
 	unsafe {
 		context.vertex_arrays[handle] = array
 	}
@@ -394,29 +397,30 @@ pub fn (mut context WebGLRenderingContext) create_vertex_array() &WebGLVertexArr
 }
 
 pub fn (mut context WebGLRenderingContext) bind_vertex_array(array ?&WebGLVertexArrayObject) {
+	if !context.require_webgl2() { return }
 	if value := array {
 		if !context.owns(&value.object) {
 			context.set_error(invalid_operation)
 			return
 		}
 	}
+	context.native.dispatch('bind_vertex_array', if value := array { value.object.handle_ } else { 0 })
+	C.vox_gl_bind_vertex_array(if value := array { value.object.native_handle_ } else { 0 },0)
+	if !context.native.collect_native_error() { return }
+	context.refresh_element_array_buffer_binding()
 	context.current_vertex_array = array
 	if value := array {
 		context.set_current_vertex_array_binding(&value.object)
 	} else {
 		context.set_current_vertex_array_binding(none)
 	}
-	context.native.dispatch('bind_vertex_array', if value := array {
-		value.object.handle_
-	} else {
-		0
-	})
 }
 
 pub fn (mut context WebGLRenderingContext) is_vertex_array(array ?&WebGLVertexArrayObject) bool {
 	value := array or { return false }
-	handle := context.object_handle_for_query(&value.object) or { return false }
-	return handle in context.vertex_arrays
+	context.object_handle_for_query(&value.object) or { return false }
+	context.native.make_current()
+	return C.vox_gl_is_vertex_array(value.object.native_handle_,0) == 1
 }
 
 pub fn (mut context WebGLRenderingContext) delete_vertex_array(mut array ?&WebGLVertexArrayObject) {
@@ -437,16 +441,21 @@ pub fn (mut context WebGLRenderingContext) delete_vertex_array(mut array ?&WebGL
 			}
 		}
 		context.native.dispatch('delete_vertex_array', handle)
+		C.vox_gl_delete_object(6,value.object.native_handle_)
+		context.native.collect_native_error()
+		context.refresh_element_array_buffer_binding()
 	}
 }
 
 // OES_vertex_array_object mirrors the WebGL2 ownership/binding contract with
 // its distinct platform object type.
 pub fn (mut context WebGLRenderingContext) create_vertex_array_oes() &WebGLVertexArrayObjectOES {
+	context.native.make_current()
 	handle := context.allocate_handle()
 	array := &WebGLVertexArrayObjectOES{
-		object: new_object(context.identity(), context.context_generation_, handle)
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: C.vox_gl_gen_object(7)}
 	}
+	context.native.collect_native_error()
 	unsafe {
 		context.vertex_arrays_oes[handle] = array
 	}
@@ -459,17 +468,16 @@ pub fn (mut context WebGLRenderingContext) bind_vertex_array_oes(array ?&WebGLVe
 			return
 		}
 	}
+	context.native.dispatch('bind_vertex_array_oes', if value := array { value.object.handle_ } else { 0 })
+	C.vox_gl_bind_vertex_array(if value := array { value.object.native_handle_ } else { 0 },1)
+	if !context.native.collect_native_error() { return }
+	context.refresh_element_array_buffer_binding()
 	context.current_vertex_array_oes = array
 	if value := array {
 		context.set_current_vertex_array_binding(&value.object)
 	} else {
 		context.set_current_vertex_array_binding(none)
 	}
-	context.native.dispatch('bind_vertex_array_oes', if value := array {
-		value.object.handle_
-	} else {
-		0
-	})
 }
 
 pub fn (mut context WebGLRenderingContext) is_vertex_array_oes(array ?&WebGLVertexArrayObjectOES) bool {
@@ -479,7 +487,9 @@ pub fn (mut context WebGLRenderingContext) is_vertex_array_oes(array ?&WebGLVert
 	handle_result := value.object.handle_for_query(context.identity(), context.context_generation_) or {
 		return false
 	}
-	return handle_result.has_value && handle_result.value in context.vertex_arrays_oes
+	if !handle_result.has_value { return false }
+	context.native.make_current()
+	return C.vox_gl_is_vertex_array(value.object.native_handle_,1) == 1
 }
 
 pub fn (mut context WebGLRenderingContext) delete_vertex_array_oes(array ?&WebGLVertexArrayObjectOES) {
@@ -501,6 +511,9 @@ pub fn (mut context WebGLRenderingContext) delete_vertex_array_oes(array ?&WebGL
 			}
 		}
 		context.native.dispatch('delete_vertex_array_oes', handle)
+		C.vox_gl_delete_object(7,value.object.native_handle_)
+		context.native.collect_native_error()
+		context.refresh_element_array_buffer_binding()
 	}
 }
 

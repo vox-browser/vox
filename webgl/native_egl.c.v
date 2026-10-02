@@ -42,6 +42,11 @@ fn C.vox_gl_bind_sampler(u32, u32)
 fn C.vox_gl_sampler_parameteri(u32, u32, int)
 fn C.vox_gl_sampler_parameterf(u32, u32, f32)
 fn C.vox_gl_sampler_parameter(u32, u32) f32
+fn C.vox_gl_bind_vertex_array(u32, int)
+fn C.vox_gl_is_vertex_array(u32, int) int
+fn C.vox_gl_vertex_attrib_parameter(u32, u32) int
+fn C.vox_gl_vertex_attrib_float_parameter(u32, &f32)
+fn C.vox_gl_vertex_attrib_offset(u32) i64
 fn C.vox_gl_bind_buffer(u32, u32)
 fn C.vox_gl_buffer_data(u32, i64, voidptr, u32)
 fn C.vox_gl_buffer_sub_data(u32, i64, i64, voidptr)

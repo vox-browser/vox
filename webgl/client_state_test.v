@@ -9,6 +9,7 @@ fn test_current_vertex_array_binding_tracks_webgl2_and_oes_objects() {
 	assert webgl2.current_vertex_array_binding() == none
 
 	mut webgl1 := WebGLRenderingContext.new(.webgl1, WebGLContextAttributes{}, [])
+	webgl1.get_extension('OES_vertex_array_object', false) or { panic('native VAO') }
 	oes_array := webgl1.create_vertex_array_oes()
 	webgl1.bind_vertex_array_oes(oes_array)
 	assert (webgl1.current_vertex_array_binding() or { panic('OES binding expected') }).handle_ == oes_array.object.handle_

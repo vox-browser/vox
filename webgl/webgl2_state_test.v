@@ -57,6 +57,7 @@ fn test_surface_lifecycle_and_draw_validation() {
 
 fn test_oes_vertex_array_delete_invalidates_and_unbinds() {
 	mut context := WebGLRenderingContext.new(.webgl1, WebGLContextAttributes{}, [])
+	context.get_extension('OES_vertex_array_object', false) or { panic('native VAO') }
 	mut array := context.create_vertex_array_oes()
 	context.bind_vertex_array_oes(array)
 	assert context.is_vertex_array_oes(array)

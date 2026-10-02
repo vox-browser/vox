@@ -1049,61 +1049,59 @@ pub fn (mut context WebGLRenderingContext) get_attrib_location(program &WebGLPro
 	return result
 }
 
+// The GLuint belongs to the native context. Preserve the existing translated
+// wrapper identity when returning source getVertexAttrib buffer bindings.
+fn (context &WebGLRenderingContext) buffer_handle_for_native(native_handle GLuint) GLuint {
+    if native_handle == 0 { return 0 }
+    for handle, buffer in context.buffers {
+        if buffer.object.native_handle_ == native_handle { return handle }
+    }
+    return native_handle
+}
+
+fn (mut context WebGLRenderingContext) refresh_element_array_buffer_binding() {
+    mut native_handle := 0
+    C.vox_gl_int_parameter(element_array_buffer_binding,&native_handle)
+    handle := context.buffer_handle_for_native(u32(native_handle))
+    if handle == 0 { context.bound_buffers.delete(element_array_buffer) }
+    else { context.bound_buffers[element_array_buffer] = handle }
+}
+
 pub fn (mut context WebGLRenderingContext) get_vertex_attrib(index GLuint, pname GLenum) WebGLParameterValue {
-	state := context.vertex_attrib_states_[index] or { VertexAttribState{} }
-	return match pname {
-		current_vertex_attrib {
-			values := context.vertex_attrib_values_[index] or { [f32(0), 0, 0, 1] }
-			WebGLParameterValue{ kind: .numbers, numbers: values.map(f64(it)) }
-		}
-		vertex_attrib_array_buffer_binding {
-			if state.buffer_handle == 0 {
-				WebGLParameterValue{}
-			} else {
-				WebGLParameterValue{ kind: .object, object: state.buffer_handle }
-			}
-		}
-		vertex_attrib_array_divisor {
-			if context.version == .webgl2 || context.extension_enabled('ANGLE_instanced_arrays') {
-				WebGLParameterValue{ kind: .integer, integer: state.divisor }
-			} else {
-				context.set_error(invalid_enum)
-				WebGLParameterValue{}
-			}
-		}
-		vertex_attrib_array_enabled {
-			WebGLParameterValue{
-				kind: .boolean
-				boolean: index in context.enabled_vertex_attributes
-			}
-		}
-		vertex_attrib_array_integer {
-			if context.version == .webgl2 {
-				WebGLParameterValue{ kind: .boolean, boolean: state.integer }
-			} else {
-				context.set_error(invalid_enum)
-				WebGLParameterValue{}
-			}
-		}
-		vertex_attrib_array_normalized {
-			WebGLParameterValue{ kind: .boolean, boolean: state.normalized }
-		}
-		vertex_attrib_array_size { WebGLParameterValue{ kind: .integer, integer: state.size } }
-		vertex_attrib_array_stride { WebGLParameterValue{ kind: .integer, integer: state.stride } }
-		vertex_attrib_array_type { WebGLParameterValue{ kind: .integer, integer: state.type_ } }
-		else {
-			context.set_error(invalid_enum)
-			WebGLParameterValue{}
-		}
-	}
+    context.native.make_current()
+    if pname == current_vertex_attrib {
+        mut values := []f32{len:4}
+        C.vox_gl_vertex_attrib_float_parameter(index,values.data)
+        context.native.collect_native_error()
+        return WebGLParameterValue{kind:.numbers,numbers:values.map(f64(it))}
+    }
+    if pname == vertex_attrib_array_divisor && context.version != .webgl2 && !context.extension_enabled('ANGLE_instanced_arrays') {
+        context.set_error(invalid_enum); return WebGLParameterValue{}
+    }
+    if pname == vertex_attrib_array_integer && context.version != .webgl2 {
+        context.set_error(invalid_enum); return WebGLParameterValue{}
+    }
+    if pname !in [vertex_attrib_array_buffer_binding,vertex_attrib_array_divisor,vertex_attrib_array_enabled,vertex_attrib_array_integer,vertex_attrib_array_normalized,vertex_attrib_array_size,vertex_attrib_array_stride,vertex_attrib_array_type] {
+        context.set_error(invalid_enum); return WebGLParameterValue{}
+    }
+    value := C.vox_gl_vertex_attrib_parameter(index,pname)
+    context.native.collect_native_error()
+    if pname == vertex_attrib_array_buffer_binding {
+        handle := context.buffer_handle_for_native(u32(value))
+        return if handle == 0 { WebGLParameterValue{} } else { WebGLParameterValue{kind:.object,object:handle} }
+    }
+    if pname in [vertex_attrib_array_enabled,vertex_attrib_array_integer,vertex_attrib_array_normalized] {
+        return WebGLParameterValue{kind:.boolean,boolean:value == 1}
+    }
+    return integer_parameter(value)
 }
 
 pub fn (mut context WebGLRenderingContext) get_vertex_attrib_offset(index GLuint, pname GLenum) i64 {
-	if pname != vertex_attrib_array_pointer {
-		context.set_error(invalid_enum)
-		return 0
-	}
-	return (context.vertex_attrib_states_[index] or { VertexAttribState{} }).offset
+    if pname != vertex_attrib_array_pointer { context.set_error(invalid_enum); return 0 }
+    context.native.make_current()
+    result := C.vox_gl_vertex_attrib_offset(index)
+    context.native.collect_native_error()
+    return result
 }
 
 pub fn (mut context WebGLRenderingContext) is_framebuffer(value ?&WebGLFramebuffer) bool {
