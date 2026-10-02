@@ -192,3 +192,24 @@ validation. All 11 registered signature names produce real native signatures,
 verify successfully, and reject modified signatures with false. Derivation,
 wrapping, and KEM native method bindings remain pending. Existing host/VM,
 string DTO, assertion, and wrapper GC limits remain documented.
+
+Native deriveBits/deriveKey now perform source argument, nullable unsigned
+length, key brand, and actual KDF/exchange parameter conversions. HKDF/PBKDF2
+preserve their distinct hash/buffer/numeric read order; Argon2 uses required
+property presence, EnforceRange, and optional copied inputs. ECDH/X25519/X448
+retain real public CryptoKey records, including source ToObject nullish errors.
+Omitted optional length is supplied as undefined without reading inherited
+argument properties. Source deferred settlement does not add a crypto task.
+
+Derived-key import and key-length normalization now retain separate snapshots
+from two reads of the original actual destination object. Changing name/hash
+getters therefore affects each source stage independently. The existing typed
+API delegates unchanged values to the same source operation body.
+
+All four focused native derivation cases pass with `-gc none`, covering all
+eight registered derivation names, RFC HKDF/PBKDF2/Argon2 vectors, bilateral
+EC/X exchange results, distinct destination snapshots, copied inputs, boolean/
+unsigned/optional conversions, original throws, and immediate/deferred error
+order. The five-case typed SubtleCrypto binding regression also passes.
+Wrapping and KEM native methods remain pending; existing host/VM/DTO/wrapper
+limits continue to apply.

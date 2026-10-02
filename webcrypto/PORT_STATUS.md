@@ -377,3 +377,11 @@ verification for all 11 registered names. Source key/argument/parameter error
 order, required KMAC EnforceRange length, context copying, and signature-before-
 message copy order are retained. Derivation, wrapping, and KEM native methods
 remain pending alongside documented host/VM/DTO/wrapper boundaries.
+
+Native deriveBits/deriveKey bindings now call source KDF/exchange operations
+through the actual owning deferred Promise path. All four focused host cases
+pass with `-gc none`, including all eight registered names, RFC known vectors,
+EC/X bilateral results, unsigned/optional conversion, and independent destination
+import/key-length getter snapshots. All five typed binding regression cases
+pass after the snapshot adapter. Native wrap/unwrap and KEM methods remain
+pending alongside documented host/VM/string/wrapper boundaries.
