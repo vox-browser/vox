@@ -232,6 +232,7 @@ pub enum StructuredSerializeValueTag {
 	array_buffer_view
 	shared_array_buffer
 	growable_shared_array_buffer
+	resizable_array_buffer
 }
 
 pub struct SerializationRecord {

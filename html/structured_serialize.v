@@ -263,8 +263,20 @@ fn serialize_array_buffer(mut serializer StructuredSerializer, array_buffer &Str
 		}
 		return
 	}
-	serializer.write_tag(.array_buffer)
-	serializer.write_bytes(array_buffer.bytes)!
+	// StructuredSerialize.cpp: serialize_array_buffer, steps 2.5–2.6.
+	// Presence of [[ArrayBufferMaxByteLength]] distinguishes a resizable buffer,
+	// including an empty buffer whose maximum is zero.
+	if max_byte_length := array_buffer.max_byte_length {
+		if max_byte_length < u32(array_buffer.bytes.len) {
+			return error('DataCloneError: ArrayBuffer maximum length is smaller than its byte length')
+		}
+		serializer.write_tag(.resizable_array_buffer)
+		serializer.write_bytes(array_buffer.bytes)!
+		serializer.write_u32(max_byte_length)
+	} else {
+		serializer.write_tag(.array_buffer)
+		serializer.write_bytes(array_buffer.bytes)!
+	}
 }
 
 fn serialize_viewed_array_buffer(mut serializer StructuredSerializer, view &StructuredObject, for_storage bool, allow_shared_array_buffers AllowSharedArrayBuffers) ! {
@@ -521,7 +533,7 @@ fn (mut decoder StructuredDecoder) register_object(object &StructuredObject) &do
 
 fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 	tag_byte := decoder.read_u8()!
-	if tag_byte > u8(StructuredSerializeValueTag.growable_shared_array_buffer) {
+	if tag_byte > u8(StructuredSerializeValueTag.resizable_array_buffer) {
 		return error('DataCloneError: invalid structured serialization tag')
 	}
 	tag := unsafe { StructuredSerializeValueTag(tag_byte) }
@@ -659,10 +671,17 @@ fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 			}
 			return value
 		}
-		.array_buffer {
+		.array_buffer, .resizable_array_buffer {
 			mut object := StructuredObject.create(.array_buffer)
 			value := decoder.register_object(object)
 			object.bytes = decoder.read_bytes()!
+			if tag == .resizable_array_buffer {
+				max_byte_length := decoder.read_u32()!
+				if max_byte_length < u32(object.bytes.len) {
+					return error('DataCloneError: ArrayBuffer maximum length is smaller than its byte length')
+				}
+				object.max_byte_length = max_byte_length
+			}
 			return value
 		}
 		.shared_array_buffer, .growable_shared_array_buffer {
