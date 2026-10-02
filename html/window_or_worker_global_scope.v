@@ -10,6 +10,7 @@ module html
 import dom
 import fetch
 import indexeddb
+import serviceworker
 import storageapi
 import time
 import webcrypto
@@ -100,7 +101,9 @@ pub struct GlobalScopeCrypto {
 }
 
 @[heap]
-pub struct GlobalScopeCacheStorage {}
+pub struct GlobalScopeCacheStorage {
+	serviceworker.CacheStorage
+}
 
 @[heap]
 pub struct GlobalScopeTrustedTypePolicyFactory {}
@@ -897,7 +900,8 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) caches() &GlobalScopeCacheStor
 	if value := scope.caches_ {
 		return value
 	}
-	value := &GlobalScopeCacheStorage{}
+	storage := serviceworker.CacheStorage.create()
+	value := &GlobalScopeCacheStorage{CacheStorage: *storage}
 	scope.caches_ = value
 	return value
 }
