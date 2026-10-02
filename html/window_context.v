@@ -1498,6 +1498,7 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 	mut window_realm := window.scripting_realm_
 	_ = WindowEnvironmentSettingsObject.setup(window, document.url, mut window_realm, none,
 		top_level_creation_url, top_level_origin)
+	install_view_transition_promise_context(document, window)
 	mut timer_scope := window.global_scope_
 	timer_scope.associated_window_ = window
 	document_with_html_hooks.set_temporary_execution_context_hook(dom.DocumentTemporaryExecutionContextHook{

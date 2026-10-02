@@ -4135,6 +4135,12 @@ pub fn (mut pseudo PseudoElement_) set_scroll_offset(value CSSPixelPoint_) {
 @[heap]
 pub struct PseudoElementTreeNode_ {
 	PseudoElement_
+pub mut:
+	parent_ ?&PseudoElementTreeNode_
+	children_ []&PseudoElementTreeNode_
+	view_transition_type_ ?PseudoElement
+	view_transition_name_ ?string
+	replaced_content_ ?&DecodedImageFrame_
 }
 
 pub struct CSSStyleValue_ {

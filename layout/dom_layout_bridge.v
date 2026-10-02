@@ -280,6 +280,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		set_needs_layout_update_callback: set_layout_node_needs_layout_update
 		invalidate_text_for_rendering_callback: invalidate_layout_text_for_rendering
 		refresh_empty_text_fragment_callback: refresh_layout_empty_text_fragment
+		view_transition_properties_callback: layout_view_transition_properties
 	}
 	if text_node := box.as_text_node() {
 		placeholder.text_has_source_range_ = text_node.source_range_length_ != none

@@ -5363,8 +5363,16 @@ pub fn (mut e Element) ordinal_value() int {
 // https://drafts.csswg.org/css-view-transitions-1/#capture-the-image
 pub fn (e &Element) capture_the_image() &DecodedImageFrame_ {
 	_ = e
-	// FIXME: Actually implement this. Matches the C++ placeholder with a 1x1 frame.
-	return DecodedImageFrame_.create(&Bitmap_{})
+	// Element.cpp retains this 1x1 BGRA premultiplied capture until its source
+	// image-capture algorithm is implemented.
+	return DecodedImageFrame_.create(&Bitmap_{
+		width: 1
+		height: 1
+		pitch: 4
+		format: 2
+		alpha_type: 2
+		data: []u8{len: 4}
+	})
 }
 
 pub fn (e &Element) captured_in_a_view_transition() bool {

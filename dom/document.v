@@ -1421,6 +1421,7 @@ pub mut:
 	set_needs_layout_update_callback LayoutSetNeedsLayoutUpdateCallback = unsafe { nil }
 	invalidate_text_for_rendering_callback LayoutInvalidateTextForRenderingCallback = unsafe { nil }
 	refresh_empty_text_fragment_callback fn (voidptr) bool = unsafe { nil }
+	view_transition_properties_callback fn (voidptr) map[string]string = unsafe { nil }
 }
 
 pub type SVGRelayoutCallback = fn (&SVGSVGBox)
@@ -1538,6 +1539,10 @@ pub mut:
 	source_text_          ?string
 	loading_state         CSSStyleSheetLoadingState = .loaded
 	imported_style_sheets []&CSSStyleSheet
+	css_handle voidptr = unsafe { nil }
+	insert_view_transition_rule_callback fn (voidptr, string) voidptr = unsafe { nil }
+	remove_view_transition_rule_callback fn (voidptr, voidptr) = unsafe { nil }
+	set_view_transition_selector_callback fn (voidptr, string) = unsafe { nil }
 }
 
 // DOM owns pending-import identity while CSS owns the concrete rule behavior.
@@ -3008,6 +3013,7 @@ pub struct CallbackType {
 pub mut:
 	handle_event          ?fn (&Event, ?&EventTarget) JSValue
 	call_no_args          ?fn () JSValue
+	call_no_args_promise  ?fn () !&webidl.Promise
 	call_with_arguments   ?fn ([]JSValue) JSValue
 	accept_node           ?fn (&Node) int
 	mutation_callback     ?fn ([]&MutationRecord, &MutationObserver)
@@ -3024,6 +3030,9 @@ mut:
 	transition_          &viewtransition.ViewTransition = unsafe { nil }
 	transition_document_ &viewtransition.TransitionDocument = unsafe { nil }
 	document_            &Document = unsafe { nil }
+	dom_task_pending_    bool
+	transition_root_pseudo_element_ &PseudoElementTreeNode_ = unsafe { nil }
+	transition_pseudo_nodes_ []&PseudoElementTreeNode_
 }
 
 @[heap]
@@ -3837,8 +3846,9 @@ fn (vt &ViewTransition) sync_document_state() {
 		return
 	}
 	mut document := unsafe { &Document(vt.document_) }
-	document.rendering_suppression_for_view_transitions = vt.transition_document_.rendering_suppression
-	document.show_view_transition_tree = vt.transition_document_.show_view_transition_tree
+	document.set_rendering_suppression_for_view_transitions(vt.transition_document_.rendering_suppression)
+	document.set_show_view_transition_tree(vt.transition_document_.show_view_transition_tree)
+	vt.sync_transition_pseudo_tree()
 	if vt.phase() == .done && document.active_view_transition == vt {
 		document.active_view_transition = unsafe { nil }
 	}
@@ -3851,9 +3861,7 @@ pub fn (vt &ViewTransition) setup_view_transition() {
 	mut transition := unsafe { &viewtransition.ViewTransition(vt.transition_) }
 	transition.setup_view_transition()
 	mut transition_document := unsafe { &viewtransition.TransitionDocument(vt.transition_document_) }
-	// The DOM event-loop bridge consumes the task queued by setup before the
-	// next rendering opportunity, as HTML's DOM-manipulation task source does.
-	transition_document.drain_dom_tasks()
+	if !vt.queue_pending_dom_tasks() { transition_document.drain_dom_tasks() }
 	vt.sync_document_state()
 }
 
@@ -3862,21 +3870,14 @@ pub fn (vt &ViewTransition) handle_transition_frame() {
 		return
 	}
 	mut transition := unsafe { &viewtransition.ViewTransition(vt.transition_) }
-	// Animation objects for the generated pseudo-elements are not exposed to
-	// DOM yet. With none registered, upstream completes the transition here.
+	// The pinned upstream handle_transition_frame() leaves animation activity
+	// detection as a FIXME and retains its initial false value.
 	transition.handle_transition_frame(false)
 	vt.sync_document_state()
 }
 
 pub fn (vt &ViewTransition) skip_the_view_transition() {
-	if vt.transition_ == unsafe { nil } {
-		return
-	}
-	mut transition := unsafe { &viewtransition.ViewTransition(vt.transition_) }
-	transition.skip_the_view_transition(webidl.string_value('AbortError: View transition was skipped'))
-	mut transition_document := unsafe { &viewtransition.TransitionDocument(vt.transition_document_) }
-	transition_document.drain_dom_tasks()
-	vt.sync_document_state()
+	vt.skip_with_reason(webidl.string_value('AbortError: View transition was skipped'))
 }
 
 pub enum ViewTransitionPhase {
@@ -5225,6 +5226,8 @@ pub mut:
 	// View transitions
 	active_view_transition              &ViewTransition = unsafe { nil }
 	dynamic_view_transition_style_sheet &CSSStyleSheet = unsafe { nil }
+	view_transition_document_           &viewtransition.TransitionDocument = unsafe { nil }
+	view_transition_promise_context_    webidl.PromiseContext
 	update_callback_queue               []&ViewTransition
 
 	// Visual viewport
@@ -10942,17 +10945,17 @@ fn js_value_to_webidl_value(value JSValue) webidl.Value {
 
 // https://drafts.csswg.org/css-view-transitions-1/#dom-document-startviewtransition
 pub fn (mut d Document) start_view_transition(update_callback ?&CallbackType) &ViewTransition {
-	viewport := d.viewport_rect()
-	transition_document := &viewtransition.TransitionDocument{
-		snapshot_width:  viewport.width
-		snapshot_height: viewport.height
-	}
-	inner := viewtransition.ViewTransition.create(transition_document)
+	transition_document := d.ensure_view_transition_document()
+	inner := viewtransition.ViewTransition.create_for_live_document(transition_document)
 	if callback := update_callback {
-		if call := callback.call_no_args {
+		if call := callback.call_no_args_promise {
 			mut mutable_inner := unsafe { &viewtransition.ViewTransition(inner) }
-			mutable_inner.set_update_callback(fn [call] () !&webidl.Promise {
-				return webidl.create_resolved_promise(js_value_to_webidl_value(call()))
+			mutable_inner.set_update_callback(call)
+		} else if call := callback.call_no_args {
+			mut mutable_inner := unsafe { &viewtransition.ViewTransition(inner) }
+			context := transition_document.promise_context
+			mutable_inner.set_update_callback(fn [call, context] () !&webidl.Promise {
+				return webidl.create_resolved_promise_for(context, js_value_to_webidl_value(call()))
 			})
 		}
 	}
@@ -10960,15 +10963,18 @@ pub fn (mut d Document) start_view_transition(update_callback ?&CallbackType) &V
 		transition_:          inner
 		transition_document_: transition_document
 		document_:            d
+		transition_root_pseudo_element_: &PseudoElementTreeNode_{}
 	}
 	if d.visibility_state == .hidden {
-		vt.skip_the_view_transition()
+		vt.skip_with_reason(webidl.string_value('InvalidStateError: The document visibility state is hidden'))
 		return vt
 	}
 	if d.active_view_transition != unsafe { nil } {
 		d.active_view_transition.skip_the_view_transition()
 	}
 	d.active_view_transition = vt
+	mut mutable_transition_document := unsafe { &viewtransition.TransitionDocument(transition_document) }
+	mutable_transition_document.active_transition = inner
 	return vt
 }
 
@@ -10988,19 +10994,30 @@ pub fn (mut d Document) perform_pending_transition_operations() {
 
 // https://drafts.csswg.org/css-view-transitions-1/#flush-the-update-callback-queue
 pub fn (mut d Document) flush_the_update_callback_queue() {
+	if d.view_transition_document_ != unsafe { nil } {
+		mut context := d.view_transition_document_
+		context.flush_the_update_callback_queue()
+	}
+	for transition in d.update_callback_queue.clone() {
+		if transition.transition_ != unsafe { nil } {
+			mut inner := transition.transition_
+			inner.call_the_update_callback()
+			transition.sync_document_state()
+		}
+	}
 	d.update_callback_queue.clear()
 }
 
 // https://drafts.csswg.org/css-view-transitions-1/#view-transition-page-visibility-change-steps
 pub fn (mut d Document) view_transition_page_visibility_change_steps() {
-	// Queue a global task on the DOM manipulation task source:
-	// If document's visibility state is "hidden" and active view transition is not null,
-	// skip the view transition with InvalidStateError.
-	if d.visibility_state == .hidden {
-		if d.active_view_transition != unsafe { nil } {
-			d.active_view_transition.skip_the_view_transition()
+	document_pointer := voidptr(&d)
+	steps := fn [document_pointer] () {
+		document := unsafe { &Document(document_pointer) }
+		if document.visibility_state == .hidden && document.active_view_transition != unsafe { nil } {
+			document.active_view_transition.skip_with_reason(webidl.string_value('InvalidStateError: The document visibility state is hidden'))
 		}
 	}
+	if !queue_view_transition_document_task(&d, steps) { steps() }
 }
 
 pub fn (d &Document) get_active_view_transition() ?&ViewTransition {

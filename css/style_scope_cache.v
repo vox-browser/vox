@@ -1719,6 +1719,7 @@ fn style_scope_for_each_active_css_style_sheet_boundary(scope &StyleScope, callb
 			}
 		}
 	}
+	callback(dynamic_view_transition_style_sheet_for_document(document))
 }
 
 fn style_scope_pseudo_element_from_dom(pseudo_element dom.PseudoElement) PseudoElement {
