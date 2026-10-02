@@ -800,9 +800,23 @@ pub fn (mut event_loop EventLoop) update_the_rendering() {
 	if hook := event_loop.rendering_hook_ {
 		hook(documents_to_paint, frame_timestamp)
 	}
+	// EventLoop.cpp: after rendering, update the source environment gate for
+	// the actual FontFaceSet used by this document's style/font computer.
+	event_loop.update_font_face_sets_pending_on_the_environment(documents)
 	event_loop.rendering_scheduler_counters_.paints += u64(documents_to_paint.len)
 	event_loop.rendering_scheduler_counters_.update_microseconds += u64((unsafe_shared_current_time_ms() - update_start_time) * 1000.0)
 	event_loop.running_rendering_task = false
+}
+
+pub fn (event_loop &EventLoop) update_font_face_sets_pending_on_the_environment(documents []&dom.Document) {
+	for document in documents {
+		context := document.begin_temporary_execution_context()
+		style := css.css_style_computer_for(document)
+		mut fonts := unsafe { &css.FontFaceSet(style.font_face_set_) }
+		fonts.set_is_pending_on_the_environment(document.readiness() == .loading
+			|| document.has_pending_style_sheet_requests() || !document.layout_is_up_to_date())
+		document.end_temporary_execution_context(context)
+	}
 }
 
 fn document_has_a_rendering_opportunity(document &dom.Document) bool {

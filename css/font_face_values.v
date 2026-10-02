@@ -3275,6 +3275,14 @@ pub fn (set &FontFaceSet) check(font string, text_arguments ...string) !bool {
 
 // https://drafts.csswg.org/css-font-loading/#font-face-set-ready
 pub fn (set &FontFaceSet) ready() &webidl.Promise {
+	if set.ready_promise.state == .fulfilled {
+		if computer := set.font_computer_ {
+			if document := computer.document_ {
+				mut owner := unsafe { &dom.Document(document) }
+				owner.update_layout(.font_face_set_ready)
+			}
+		}
+	}
 	return set.ready_promise
 }
 
@@ -3359,6 +3367,31 @@ pub fn (mut set FontFaceSet) switch_to_loaded() {
 	if set.is_pending_on_the_environment {
 		set.is_stuck_on_the_environment = true
 		return
+	}
+
+	if computer := set.font_computer_ {
+		if document := computer.document_ {
+			mut owner := unsafe { &dom.Document(document) }
+			if !owner.is_running_update_layout() {
+				owner.update_layout(.font_face_set_ready)
+			}
+		}
+	}
+	if set.loading_fonts_.len != 0 {
+		return
+	}
+	mut context_document := ?&dom.Document(none)
+	mut context_handle := voidptr(0)
+	if computer := set.font_computer_ {
+		if document := computer.document_ {
+			context_document = document
+			context_handle = document.begin_temporary_execution_context()
+		}
+	}
+	defer {
+		if document := context_document {
+			document.end_temporary_execution_context(context_handle)
+		}
 	}
 
 	// 3. Set font face set's status attribute to "loaded".

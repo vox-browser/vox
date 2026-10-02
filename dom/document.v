@@ -4703,6 +4703,7 @@ pub enum UpdateLayoutReason {
 	event_handler_handle_mouse_up
 	event_handler_handle_mouse_wheel
 	event_handler_run_activation_behavior
+	font_face_set_ready
 	event_handler_show_context_menu
 	html_element_get_the_text_steps
 	html_element_offset_height
@@ -12039,6 +12040,7 @@ pub fn update_layout_reason_to_string(reason UpdateLayoutReason) string {
 		.event_handler_handle_mouse_up { 'EventHandlerHandleMouseUp' }
 		.event_handler_handle_mouse_wheel { 'EventHandlerHandleMouseWheel' }
 		.event_handler_run_activation_behavior { 'EventHandlerRunActivationBehavior' }
+		.font_face_set_ready { 'FontFaceSetReady' }
 		.event_handler_show_context_menu { 'EventHandlerShowContextMenu' }
 		.html_element_get_the_text_steps { 'HTMLElementGetTheTextSteps' }
 		.html_element_offset_height { 'HTMLElementOffsetHeight' }
