@@ -16,6 +16,9 @@ fn (mut projection NativeCloneProjection) project_array_buffer_view(value voidpt
 		return native_clone_unsupported('ArrayBuffer view is out of bounds')
 	}
 	buffer := bridge.engine('list_item', [metadata, C.JSValueMakeNumber(owner.context, 0)])!
+	if C.JSValueToBoolean(owner.context, bridge.engine('is_shared_buffer', [buffer])!) {
+		return native_clone_unsupported('Native SharedArrayBuffer isolation and sharing slots are not yet bound')
+	}
 	buffer_metadata := projection.root(bridge.engine('buffer_metadata', [buffer])!)!
 	if C.JSValueIsUndefined(owner.context, buffer_metadata) {
 		return native_clone_unsupported('Exact native viewed ArrayBuffer slots are unavailable')

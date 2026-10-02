@@ -95,6 +95,7 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 		}
 		-1 { return native_clone_unsupported('Cannot serialize Symbol') }
 		-2 { return native_clone_unsupported('Cannot serialize functions') }
+		20 { return native_clone_unsupported('Native SharedArrayBuffer isolation and sharing slots are not yet bound') }
 		else {}
 	}
 	mut kind := html.StructuredObjectKind.object
@@ -299,6 +300,7 @@ const structured_clone_projection_intrinsic = r'(function(){
  const dateValue=Date.prototype.getTime,regexSource=getOwn(RegExp.prototype,"source").get;
  const AB=ArrayBuffer,bufferLength=getOwn(AB.prototype,"byteLength").get,isView=AB.isView;
  const bufferDetached=getOwn(AB.prototype,"detached"),bufferResizable=getOwn(AB.prototype,"resizable"),bufferMaximum=getOwn(AB.prototype,"maxByteLength");
+ const sharedLength=typeof SharedArrayBuffer==="function"?getOwn(SharedArrayBuffer.prototype,"byteLength").get:undefined;
  const typedPrototype=Object.getPrototypeOf(Int8Array.prototype),typedBuffer=getOwn(typedPrototype,"buffer").get,typedLength=getOwn(typedPrototype,"byteLength").get,typedOffset=getOwn(typedPrototype,"byteOffset").get,typedCount=getOwn(typedPrototype,"length").get,typedName=getOwn(typedPrototype,Symbol.toStringTag).get,typedValues=typedPrototype.values;
  const DV=DataView,dataBuffer=getOwn(DV.prototype,"buffer").get,dataLength=getOwn(DV.prototype,"byteLength").get,dataOffset=getOwn(DV.prototype,"byteOffset").get;
  const viewConstructors={DataView:DV,Int8Array,Uint8Array,Uint8ClampedArray,Int16Array,Uint16Array,Int32Array,Uint32Array,Float16Array:typeof Float16Array==="function"?Float16Array:undefined,Float32Array,Float64Array,BigInt64Array,BigUint64Array};
@@ -318,6 +320,7 @@ const structured_clone_projection_intrinsic = r'(function(){
    try{apply(dateValue,value,[]);return 11}catch(ignore){}
    try{apply(regexSource,value,[]);return 12}catch(ignore){}
    try{apply(bufferLength,value,[]);return 22}catch(ignore){}
+   if(sharedLength!==undefined){try{apply(sharedLength,value,[]);return 20}catch(ignore){}}
    if(isView(value))return 23;
    try{apply(mapSize,value,[]);return 13}catch(ignore){}
    try{apply(setSize,value,[]);return 14}catch(ignore){}
@@ -330,6 +333,7 @@ const structured_clone_projection_intrinsic = r'(function(){
   error_metadata(value){const name=get(value,"name",value);let message,cause;const messageDescriptor=getOwn(value,"message");if(messageDescriptor!==undefined&&getOwn(messageDescriptor,"value")!==undefined)message=apply(concat,"",[messageDescriptor.value]);const causeDescriptor=getOwn(value,"cause");if(causeDescriptor!==undefined&&getOwn(causeDescriptor,"value")!==undefined)cause=apply(concat,"",[causeDescriptor.value]);return [name,message,cause]},
   create_error(type,message,cause){const constructor=errorConstructors[type];if(constructor===undefined)return undefined;const value=new constructor();if(message!==undefined)define(value,"message",{value:message,writable:true,enumerable:false,configurable:true});if(cause!==undefined)define(value,"cause",{value:cause,writable:true,enumerable:false,configurable:true});return value},
   buffer_metadata(value){if(bufferDetached===undefined||bufferResizable===undefined||bufferMaximum===undefined)return undefined;const detached=apply(bufferDetached.get,value,[]);if(detached)return [true,false,undefined];const resizable=apply(bufferResizable.get,value,[]);return [false,resizable,resizable?apply(bufferMaximum.get,value,[]):undefined]},
+  is_shared_buffer(value){if(sharedLength===undefined)return false;try{apply(sharedLength,value,[]);return true}catch(ignore){return false}},
   create_buffer(length,maximum){return maximum===undefined?new AB(length):new AB(length,{maxByteLength:maximum})},
   view_metadata(value){let buffer;try{buffer=apply(typedBuffer,value,[])}catch(ignore){try{return [apply(dataBuffer,value,[]),"DataView",apply(dataLength,value,[]),apply(dataOffset,value,[]),undefined]}catch(outOfBounds){return null}}try{apply(typedValues,value,[]);return [buffer,apply(typedName,value,[]),apply(typedLength,value,[]),apply(typedOffset,value,[]),apply(typedCount,value,[])]}catch(outOfBounds){return null}},
   create_view(buffer,name,offset,length){const constructor=viewConstructors[name];return constructor===undefined?undefined:new constructor(buffer,offset,length)},
