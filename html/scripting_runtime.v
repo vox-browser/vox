@@ -9,6 +9,7 @@
 module html
 
 import dom
+import libjs
 
 pub enum ErrorInPromise {
 	no
@@ -62,9 +63,25 @@ pub mut:
 	skip_when_determining_incumbent_counter usize
 	active_classic_script_                  ?&ClassicScript
 	error_extraction_context_               ?fn (dom.JSValue) ErrorExtractionContext
+mut:
+	embedding_vm_                            ?&libjs.VM
+	embedding_realm_execution_context_       ?&libjs.ExecutionContext
+}
+
+// MainThreadVM.cpp gives settings ownership of the actual initialized realm
+// context after popping it from the VM. Host-backed execution preserves that
+// same record instead of constructing surrogate JavaScript call frames.
+pub fn (mut realm ScriptingRealm) bind_embedding_execution_context(vm &libjs.VM, context &libjs.ExecutionContext) {
+	realm.embedding_vm_ = vm
+	realm.embedding_realm_execution_context_ = context
 }
 
 pub fn prepare_to_run_script(mut realm ScriptingRealm) {
+	if vm_pointer := realm.embedding_vm_ {
+		mut vm := unsafe { &libjs.VM(vm_pointer) }
+		mut context := realm.embedding_realm_execution_context_ or { panic('missing owning realm execution context') }
+		vm.push_execution_context(mut context)
+	}
 	realm.script_execution_depth++
 	html_scripting_execution_context_stack << &realm
 }
@@ -72,12 +89,30 @@ pub fn prepare_to_run_script(mut realm ScriptingRealm) {
 pub fn clean_up_after_running_script(mut realm ScriptingRealm) {
 	assert html_scripting_execution_context_stack.len > 0
 	assert voidptr(html_scripting_execution_context_stack.last()) == voidptr(&realm)
+	if vm_pointer := realm.embedding_vm_ {
+		mut vm := unsafe { &libjs.VM(vm_pointer) }
+		context := realm.embedding_realm_execution_context_ or { panic('missing owning realm execution context') }
+		assert vm.has_running_execution_context()
+		assert voidptr(vm.running_execution_context()) == voidptr(context)
+		vm.pop_execution_context()
+	}
 	html_scripting_execution_context_stack.delete_last()
 	if realm.script_execution_depth > 0 {
 		realm.script_execution_depth--
 	}
-	if realm.script_execution_depth == 0 {
+	if html_scripting_execution_context_stack.len == 0 {
+		mut event_loop := main_thread_event_loop()
+		if settings := settings_object_of_realm(&realm) {
+			event_loop = unsafe { &EventLoop(settings.responsible_event_loop()) }
+		}
+		// The compact engine's script frame is popped by its execution entry
+		// before this realm cleanup. A caller's actual outer VM context must
+		// likewise keep the source checkpoint deferred.
+		if event_loop.has_running_execution_context() {
+			return
+		}
 		realm.microtask_checkpoint_count++
+		event_loop.perform_a_microtask_checkpoint()
 	}
 }
 

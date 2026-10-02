@@ -104,14 +104,13 @@ fn test_stream_promise_job_captures_implied_script_document_and_prepares_actual_
 	realm.active_classic_script_ = script
 	pending.resolve(webidl.undefined_value())
 	realm.active_classic_script_ = none
-	clean_up_after_running_script(mut realm)
 	assert seen.reactions.len == 0
 	assert event_loop.microtask_queue.len == 1
 	job := event_loop.microtask_queue[0]
 	assert job.source() == .microtask
 	document := job.document() or { panic('missing script implied document') }
 	assert voidptr(document) == voidptr(window.associated_document())
-	event_loop.perform_a_microtask_checkpoint()
+	clean_up_after_running_script(mut realm)
 	assert seen.reactions == ['source promise job']
 	assert realm.script_execution_depth == 0
 	assert realm.callback_execution_depth == 0

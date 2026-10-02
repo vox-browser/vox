@@ -68,6 +68,8 @@ pub fn (mut runtime Runtime) make_value_host_function(callback ValueHostFunction
 
 pub fn (mut runtime Runtime) evaluate_host_value(source string) !voidptr {
 	runtime.require_javascript_value_context()!
+	runtime.prepare_html_script()
+	defer { runtime.clean_up_html_script() }
 	script := js_source_string(source)
 	defer { C.JSStringRelease(script) }
 	mut exception := unsafe { nil }

@@ -375,6 +375,21 @@ pub fn (mut event_loop EventLoop) bind_vm(vm ?&libjs.VM) {
 	event_loop.vm_ = vm
 }
 
+pub fn (mut event_loop EventLoop) unbind_vm(vm &libjs.VM) {
+	if bound := event_loop.vm_ {
+		if voidptr(bound) == voidptr(vm) { event_loop.vm_ = none }
+	}
+}
+
+// Host-backed script execution still owns a real translated VM embedding
+// context. Cleanup must wait for that outer context before running jobs.
+pub fn (event_loop &EventLoop) has_running_execution_context() bool {
+	if vm := event_loop.vm_ {
+		return vm.has_running_execution_context()
+	}
+	return false
+}
+
 pub fn (mut event_loop EventLoop) dequeue_microtask() ?&Task {
 	if event_loop.microtask_queue.len == 0 {
 		return none

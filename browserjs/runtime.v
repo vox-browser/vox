@@ -2,6 +2,7 @@ module browserjs
 
 import libjs
 import dom
+import html
 import json2
 
 pub enum Engine {
@@ -55,6 +56,7 @@ pub fn prepare_script(source ScriptSource) !&PreparedScript {
 pub struct Runtime {
 	agent_vm &libjs.VM
 	realm    &libjs.Realm
+	realm_context &libjs.ExecutionContext
 pub:
 	engine Engine
 mut:
@@ -70,6 +72,7 @@ mut:
 	canvas_element_providers_ []CanvasElementProvider
 	close_handlers_ []fn ()
 	document_state_dirty_ bool
+	scripting_settings_ ?&html.EnvironmentSettingsObject
 }
 
 pub fn Runtime.create() &Runtime {
@@ -87,6 +90,7 @@ pub fn Runtime.create_with_engine(engine Engine) &Runtime {
 		engine:   engine
 		agent_vm: agent_vm
 		realm:    realm_context.realm or { panic('browser realm was not initialized') }
+		realm_context: realm_context
 		context:  context
 	}
 	$if darwin {
@@ -103,6 +107,41 @@ pub fn (runtime &Runtime) libjs_vm() &libjs.VM {
 
 pub fn (runtime &Runtime) libjs_realm() &libjs.Realm {
 	return runtime.realm
+}
+
+// Bindings/MainThreadVM.cpp::create_a_new_javascript_realm removes the
+// initialization context and gives the settings object ownership of it.
+pub fn (mut runtime Runtime) bind_scripting_environment(settings &html.EnvironmentSettingsObject) ! {
+	if runtime.closed { return error('JavaScript runtime is closed') }
+	if existing := runtime.scripting_settings_ {
+		if voidptr(existing) == voidptr(settings) { return }
+		return error('JavaScript runtime already belongs to a different scripting environment')
+	}
+	mut vm := unsafe { &libjs.VM(runtime.agent_vm) }
+	if vm.execution_context_stack().len != 1 || !vm.has_running_execution_context() || voidptr(vm.running_execution_context()) != voidptr(runtime.realm_context) {
+		return error('Cannot attach a scripting environment during JavaScript execution')
+	}
+	popped := vm.pop_execution_context()
+	assert voidptr(popped) == voidptr(runtime.realm_context)
+	mut realm := unsafe { &html.ScriptingRealm(settings.realm()) }
+	realm.bind_embedding_execution_context(vm, runtime.realm_context)
+	mut event_loop := unsafe { &html.EventLoop(settings.responsible_event_loop()) }
+	event_loop.bind_vm(vm)
+	runtime.scripting_settings_ = settings
+}
+
+fn (runtime &Runtime) prepare_html_script() {
+	if settings := runtime.scripting_settings_ {
+		mut realm := unsafe { &html.ScriptingRealm(settings.realm()) }
+		html.prepare_to_run_script(mut realm)
+	}
+}
+
+fn (runtime &Runtime) clean_up_html_script() {
+	if settings := runtime.scripting_settings_ {
+		mut realm := unsafe { &html.ScriptingRealm(settings.realm()) }
+		html.clean_up_after_running_script(mut realm)
+	}
 }
 
 pub fn (runtime &Runtime) evaluate(source string) !string {
@@ -125,6 +164,8 @@ fn (runtime &Runtime) execute_prepared(script &PreparedScript, stringify_result 
 			return error('LibJS frontend recursion limit reached; this program cannot be executed by the translated runtime')
 		}
 		mut vm := unsafe { &libjs.VM(runtime.agent_vm) }
+		runtime.prepare_html_script()
+		defer { runtime.clean_up_html_script() }
 		mut record := &libjs.Script{
 			realm:          runtime.realm
 			filename:       if script.source.url == '' { '<script>' } else { script.source.url }
@@ -158,9 +199,14 @@ fn (runtime &Runtime) execute_prepared(script &PreparedScript, stringify_result 
 			is_strict_mode: script.frontend.is_strict_mode
 		})
 	}
-	vm.push_execution_context_checked(mut execution)!
+	runtime.prepare_html_script()
+	vm.push_execution_context_checked(mut execution) or {
+		runtime.clean_up_html_script()
+		return err
+	}
 	defer {
 		vm.pop_execution_context()
+		runtime.clean_up_html_script()
 	}
 	return runtime.evaluate_backend(script.source, stringify_result)
 }
@@ -169,6 +215,8 @@ fn (runtime &Runtime) execute_prepared(script &PreparedScript, stringify_result 
 // it must not consume the much smaller translated parser stack budget.
 pub fn (runtime &Runtime) evaluate_host(source string) !string {
 	if runtime.engine == .libjs { return runtime.evaluate(source) }
+	runtime.prepare_html_script()
+	defer { runtime.clean_up_html_script() }
 	return runtime.evaluate_backend(ScriptSource{ code: source }, true)
 }
 
@@ -260,6 +308,11 @@ pub fn (mut runtime Runtime) close() {
 	runtime.value_host_functions_.clear()
 	runtime.webidl_promise_bridges_.clear()
 	runtime.canvas_element_providers_.clear()
+	if settings := runtime.scripting_settings_ {
+		mut event_loop := unsafe { &html.EventLoop(settings.responsible_event_loop()) }
+		event_loop.unbind_vm(runtime.agent_vm)
+	}
+	runtime.scripting_settings_ = none
 	runtime.closed = true
 }
 
