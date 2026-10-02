@@ -1652,6 +1652,7 @@ pub:
 	target                           voidptr = unsafe { nil }
 	register_document                DocumentLifecycleCallback = unsafe { nil }
 	unregister_document              DocumentLifecycleCallback = unsafe { nil }
+	document_navigable_did_change     DocumentLifecycleCallback = unsafe { nil }
 	remove_tasks_for_document        DocumentLifecycleCallback = unsafe { nil }
 	increment_termination_nesting    DocumentLifecycleCallback = unsafe { nil }
 	decrement_termination_nesting    DocumentLifecycleCallback = unsafe { nil }
@@ -10767,12 +10768,17 @@ pub fn (d &Document) get_cursor_blink_state() bool {
 
 // --- Navigable back-pointer ---
 pub fn (mut d Document) set_navigable(navigable ?&Navigable) {
-	if value := navigable {
-		register_navigable(value)
-		d.navigable_ = value
+	value := navigable or { unsafe { nil } }
+	if d.navigable_ == value {
 		return
 	}
-	d.navigable_ = unsafe { nil }
+	if value != unsafe { nil } {
+		register_navigable(value)
+	}
+	d.navigable_ = value
+	if hook := d.lifecycle_hook_ {
+		d.run_lifecycle_callback(hook.document_navigable_did_change)
+	}
 }
 
 // Compatibility aliases for translated callers predating the maintained

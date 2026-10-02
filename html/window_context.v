@@ -1304,6 +1304,11 @@ fn document_unregister_from_event_loop(_ voidptr, document &dom.Document) {
 	event_loop.unregister_document(document)
 }
 
+fn document_navigable_did_change(_ voidptr, _ &dom.Document) {
+	mut event_loop := main_thread_event_loop()
+	event_loop.document_navigable_did_change()
+}
+
 fn document_remove_tasks_from_event_loop(_ voidptr, document &dom.Document) {
 	mut event_loop := main_thread_event_loop()
 	mut queue := event_loop.task_queue()
@@ -1506,6 +1511,7 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 		target:                           voidptr(window)
 		register_document:                document_register_with_event_loop
 		unregister_document:              document_unregister_from_event_loop
+		document_navigable_did_change:     document_navigable_did_change
 		remove_tasks_for_document:        document_remove_tasks_from_event_loop
 		increment_termination_nesting:    document_increment_event_loop_termination_nesting
 		decrement_termination_nesting:    document_decrement_event_loop_termination_nesting

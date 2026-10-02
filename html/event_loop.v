@@ -309,6 +309,7 @@ mut:
 	reached_step_1_tasks                  []fn()
 	performing_a_microtask_checkpoint     bool
 	documents_                            []&dom.Document
+	documents_sort_dirty_                 bool = true
 	related_environment_settings_objects_ []&EnvironmentSettingsObject
 	backup_incumbent_realm_stack_         []&ScriptingRealm
 	last_render_opportunity_time_         f64
@@ -693,6 +694,9 @@ pub fn (mut event_loop EventLoop) perform_a_microtask_checkpoint() {
 }
 
 pub fn (event_loop &EventLoop) documents_in_this_event_loop_matching(callback fn(&dom.Document) bool) []&dom.Document {
+	// C++ keeps the ordered document cache mutable in this const operation.
+	mut mutable_event_loop := unsafe { &EventLoop(event_loop) }
+	mutable_event_loop.ensure_documents_sorted()
 	mut documents := []&dom.Document{}
 	for document in event_loop.documents_ {
 		if document.is_decoded_svg() || !callback(document) {
@@ -705,6 +709,48 @@ pub fn (event_loop &EventLoop) documents_in_this_event_loop_matching(callback fn
 
 pub fn (mut event_loop EventLoop) register_document(document &dom.Document) {
 	event_loop.documents_ << document
+	event_loop.documents_sort_dirty_ = true
+}
+
+pub fn (mut event_loop EventLoop) document_navigable_did_change() {
+	event_loop.documents_sort_dirty_ = true
+}
+
+// EventLoop::ensure_documents_sorted(): visit a registered container before
+// appending its child. Unrelated documents retain their registration order.
+fn (mut event_loop EventLoop) ensure_documents_sorted() {
+	if !event_loop.documents_sort_dirty_ {
+		return
+	}
+	event_loop.documents_sort_dirty_ = false
+	mut document_to_index := map[voidptr]int{}
+	for index, document in event_loop.documents_ {
+		document_to_index[voidptr(document)] = index
+	}
+	mut visited := []bool{len: event_loop.documents_.len}
+	mut sorted := []&dom.Document{cap: event_loop.documents_.len}
+	for index in 0 .. event_loop.documents_.len {
+		visit_document_container_before_child(event_loop.documents_, document_to_index,
+			mut visited, mut sorted, index)
+	}
+	event_loop.documents_ = sorted
+}
+
+fn visit_document_container_before_child(documents []&dom.Document, document_to_index map[voidptr]int,
+	mut visited []bool, mut sorted []&dom.Document, index int) {
+	if visited[index] {
+		return
+	}
+	visited[index] = true
+	if navigable := documents[index].navigable() {
+		if container_document := navigable.container_document() {
+			if container_index := document_to_index[voidptr(container_document)] {
+				visit_document_container_before_child(documents, document_to_index,
+					mut visited, mut sorted, container_index)
+			}
+		}
+	}
+	sorted << documents[index]
 }
 
 pub fn (mut event_loop EventLoop) unregister_document(document &dom.Document) {
