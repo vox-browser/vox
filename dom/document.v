@@ -1440,6 +1440,8 @@ pub type ViewportPaintableTextRangeRectsCallback = fn (voidptr, &Node, Selection
 
 pub type ViewportPaintableTransformClientRectsCallback = fn (voidptr, &Node, []CSSPixelRect_) []CSSPixelRect_
 
+pub type ViewportPaintableScrollIntoViewGeometryCallback = fn (voidptr, &Node) ?ScrollIntoViewGeometry
+
 pub type ViewportPaintableSelectionCallback = fn (voidptr) ?&Selection
 
 pub type ViewportPaintableRecordDisplayListCallback = fn (voidptr) &DisplayList
@@ -1467,6 +1469,7 @@ pub:
 	recompute_selection_states_callback         ViewportPaintableRangeCallback = unsafe { nil }
 	text_range_rects_callback                   ViewportPaintableTextRangeRectsCallback = unsafe { nil }
 	transform_client_rects_callback             ViewportPaintableTransformClientRectsCallback = unsafe { nil }
+	scroll_into_view_geometry_callback          ViewportPaintableScrollIntoViewGeometryCallback = unsafe { nil }
 	set_needs_repaint_callback                  ViewportPaintableVoidCallback = unsafe { nil }
 	document_set_needs_repaint_callback         ViewportPaintableVoidCallback = unsafe { nil }
 	invalidate_all_paint_caches_callback        ViewportPaintableVoidCallback = unsafe { nil }

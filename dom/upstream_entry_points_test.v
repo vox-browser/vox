@@ -236,7 +236,7 @@ fn test_scroll_into_view_uses_committed_paintable_overflow() {
 
 	position := determine_the_scroll_into_view_position(target, .end_, .nearest, document_node)
 	assert position.x() == 0
-	assert position.y() == 120
+	assert position.y() == 150
 	promise := target.scroll_into_view()
 	assert promise.state() == .fulfilled
 	assert window.scroll_x() == 0
@@ -247,10 +247,10 @@ fn test_scroll_into_view_uses_committed_paintable_overflow() {
 	})
 	margin_position := determine_the_scroll_into_view_position(target, .end_, .nearest, document_node)
 	assert margin_position.x() == 0
-	assert margin_position.y() == 135
+	assert margin_position.y() == 165
 	start_position := determine_the_scroll_into_view_position(target, .start, .start, document_node)
 	assert start_position.x() == 7
-	assert start_position.y() == 195
+	assert start_position.y() == 225
 	target.scroll_into_view()
 	assert window.scroll_y() == 225
 
@@ -261,11 +261,11 @@ fn test_scroll_into_view_uses_committed_paintable_overflow() {
 	padded_position := determine_the_scroll_into_view_position(target, .end_, .nearest,
 		document_node)
 	assert padded_position.x() == 0
-	assert padded_position.y() == 155
+	assert padded_position.y() == 185
 	padded_start_position := determine_the_scroll_into_view_position(target, .start, .start,
 		document_node)
 	assert padded_start_position.x() == 1
-	assert padded_start_position.y() == 185
+	assert padded_start_position.y() == 215
 	target.scroll_into_view()
 	assert window.scroll_y() == 215
 }

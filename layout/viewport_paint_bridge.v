@@ -26,6 +26,7 @@ fn install_document_painting_bridge(document &dom.Document, result &DocumentLayo
 		recompute_selection_states_callback: viewport_recompute_selection_states
 		text_range_rects_callback: viewport_text_range_rects
 		transform_client_rects_callback: viewport_transform_client_rects
+		scroll_into_view_geometry_callback: viewport_scroll_into_view_geometry
 		set_needs_repaint_callback: viewport_set_needs_repaint
 		document_set_needs_repaint_callback: viewport_document_set_needs_repaint
 		invalidate_all_paint_caches_callback: viewport_invalidate_all_paint_caches

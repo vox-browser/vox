@@ -1,83 +1,135 @@
-// Copyright (c) 2026, libweb_v contributors
+// Copyright (c) 2026, Ladybird contributors.
 //
 // SPDX-License-Identifier: BSD-2-Clause
 module dom
 
-// https://drafts.csswg.org/cssom-view-1/#determine-the-scroll-into-view-position
-pub fn determine_the_scroll_into_view_position(target &Element, block ScrollLogicalPosition, inline_ ScrollLogicalPosition, scrolling_box &Node) CSSPixelPoint_ {
-	// Current upstream only supports a viewport as the scrolling box here.
-	if !scrolling_box.is_document() {
-		return CSSPixelPoint_{}
-	}
+// Concrete Painting/VisualViewport inputs to the source alignment algorithm.
+// The committed painting bridge supplies these records without a DOM import
+// cycle through Layout, Painting, CSS, and HTML.
+pub struct ScrollIntoViewGeometry {
+pub:
+	scrollport              Rect
+	current_scroll_position CSSPixelPoint_
+}
 
-	mut target_rect := target.get_bounding_client_rect()
-	// AD-HOC: CSSOM View illustrates scroll-margin affecting this box but does
-	// not yet place the adjustment in the numbered algorithm.
-	scroll_margin := target.document().scroll_margin_for_element(target)
-	target_rect.x -= scroll_margin.left
-	target_rect.y -= scroll_margin.top
-	target_rect.width += scroll_margin.left + scroll_margin.right
-	target_rect.height += scroll_margin.top + scroll_margin.bottom
-	// scroll-padding shrinks the scrolling box's snapport. With the viewport
-	// origin normalized to zero here, expanding the target by the corresponding
-	// edges produces the same alignment geometry.
-	scroll_padding := scrolling_box.document().scroll_padding_for_scrolling_box(scrolling_box)
-	target_rect.x -= scroll_padding.left
-	target_rect.y -= scroll_padding.top
-	target_rect.width += scroll_padding.left + scroll_padding.right
-	target_rect.height += scroll_padding.top + scroll_padding.bottom
-	scrolling_rect := scrolling_box.document().viewport_rect()
+// PixelUnits.h::CSSPixelFraction -> CSSPixels truncates the fixed-point
+// quotient before the center-alignment sum. Keep its 6 fractional bits at
+// this DOM boundary, whose rectangle fields otherwise transport doubles.
+fn scroll_into_view_half(value f64) f64 {
+	return f64(i64(value * 64.0) / 2) / 64.0
+}
+
+fn scroll_into_view_geometry(scrolling_box &Node) ?ScrollIntoViewGeometry {
+	document := scrolling_box.document()
+	if paintable := document.unsafe_paintable() {
+		if paintable.target != unsafe { nil }
+			&& paintable.scroll_into_view_geometry_callback != unsafe { nil } {
+			return paintable.scroll_into_view_geometry_callback(paintable.target, scrolling_box)
+		}
+	}
+	// Existing DOM-only adapters have a layout viewport but no HTML visual
+	// viewport record. Preserve their unzoomed viewport state explicitly.
+	if !scrolling_box.is_document() { return none }
+	viewport := document.viewport_rect()
+	padding := document.scroll_padding_for_scrolling_box(scrolling_box)
+	return ScrollIntoViewGeometry{
+		scrollport:              Rect{
+			x:      padding.left
+			y:      padding.top
+			width:  viewport.width - padding.left - padding.right
+			height: viewport.height - padding.top - padding.bottom
+		}
+		current_scroll_position: CSSPixelPoint_{
+			x_: viewport.x
+			y_: viewport.y
+		}
+	}
+}
+
+// Convenience entry point for callers that have not retained the target box.
+pub fn determine_the_scroll_into_view_position(target &Element, block ScrollLogicalPosition,
+	inline_ ScrollLogicalPosition, scrolling_box &Node) CSSPixelPoint_ {
+	return determine_the_scroll_into_view_position_from_rect(target,
+		target.get_bounding_client_rect(), block, inline_, scrolling_box)
+}
+
+// Element.cpp::determine_the_scroll_into_view_position. The source caller
+// passes the target border box once and projects it outward after each scroll.
+pub fn determine_the_scroll_into_view_position_from_rect(target &Element, target_bounding_border_box Rect,
+	block ScrollLogicalPosition, inline_ ScrollLogicalPosition, scrolling_box &Node) CSSPixelPoint_ {
+	geometry := scroll_into_view_geometry(scrolling_box) or { return CSSPixelPoint_{} }
+	mut target_rect := target_bounding_border_box
+	// FIXME: The pinned source does not yet implement other block/inline directions.
+	// AD-HOC: Source applies scroll-margin to the passed target border box.
+	margin := target.document().scroll_margin_for_element(target)
+	target_rect.x -= margin.left
+	target_rect.y -= margin.top
+	target_rect.width += margin.left + margin.right
+	target_rect.height += margin.top + margin.bottom
+	scrollport := geometry.scrollport
 	element_edge_a := target_rect.y
 	element_edge_b := target_rect.y + target_rect.height
 	element_edge_c := target_rect.x
 	element_edge_d := target_rect.x + target_rect.width
-	scrolling_height := scrolling_rect.height
-	scrolling_width := scrolling_rect.width
-	mut x := 0.0
-	mut y := 0.0
-
+	scrolling_box_edge_a := scrollport.y
+	scrolling_box_edge_b := scrollport.y + scrollport.height
+	scrolling_box_edge_c := scrollport.x
+	scrolling_box_edge_d := scrollport.x + scrollport.width
+	element_height := element_edge_b - element_edge_a
+	scrolling_height := scrolling_box_edge_b - scrolling_box_edge_a
+	element_width := element_edge_d - element_edge_c
+	scrolling_width := scrolling_box_edge_d - scrolling_box_edge_c
+	mut x := geometry.current_scroll_position.x()
+	mut y := geometry.current_scroll_position.y()
 	match block {
 		.start {
-			y = element_edge_a
+			y += element_edge_a - scrolling_box_edge_a
 		}
 		.end_ {
-			y = element_edge_a + target_rect.height - scrolling_height
+			y += element_edge_b - scrolling_box_edge_b
 		}
 		.center {
-			y = element_edge_a + target_rect.height / 2.0 - scrolling_height / 2.0
+			y += (element_edge_a + scroll_into_view_half(element_height)) - (scrolling_box_edge_a +
+				scroll_into_view_half(scrolling_height))
 		}
 		.nearest {
-			if element_edge_a <= 0 && element_edge_b >= scrolling_height {
-				// The element covers the scrolling box; do nothing.
-			} else if (element_edge_a <= 0 && target_rect.height < scrolling_height) || (element_edge_b >= scrolling_height && target_rect.height > scrolling_height) {
-				y = element_edge_a
-			} else if (element_edge_b >= scrolling_height && target_rect.height < scrolling_height) || (element_edge_a <= 0 && target_rect.height > scrolling_height) {
-				y = element_edge_a + target_rect.height - scrolling_height
+			if element_edge_a <= scrolling_box_edge_a && element_edge_b >= scrolling_box_edge_b {
+				// Do nothing.
+			} else if (element_edge_a <= scrolling_box_edge_a && element_height < scrolling_height)
+				|| (element_edge_b >= scrolling_box_edge_b && element_height > scrolling_height) {
+				y += element_edge_a - scrolling_box_edge_a
+			} else if (element_edge_b >= scrolling_box_edge_b && element_height < scrolling_height)
+				|| (element_edge_a <= scrolling_box_edge_a && element_height > scrolling_height) {
+				y += element_edge_b - scrolling_box_edge_b
 			}
 		}
 	}
 
 	match inline_ {
 		.start {
-			x = element_edge_c
+			x += element_edge_c - scrolling_box_edge_c
 		}
 		.end_ {
-			x = element_edge_d + target_rect.width - scrolling_width
+			x += element_edge_d - scrolling_box_edge_d
 		}
 		.center {
-			x = element_edge_c + target_rect.width / 2.0 - scrolling_width / 2.0
+			x += (element_edge_c + scroll_into_view_half(element_width)) - (scrolling_box_edge_c +
+				scroll_into_view_half(scrolling_width))
 		}
 		.nearest {
-			if element_edge_c <= 0 && element_edge_d >= scrolling_width {
-				// The element covers the scrolling box; do nothing.
-			} else if (element_edge_c <= 0 && target_rect.width < scrolling_width) || (element_edge_d >= scrolling_width && target_rect.width > scrolling_width) {
-				x = element_edge_c
-			} else if (element_edge_d >= scrolling_width && target_rect.width < scrolling_width) || (element_edge_c <= 0 && target_rect.width > scrolling_width) {
-				x = element_edge_d + target_rect.width - scrolling_width
+			if element_edge_c <= scrolling_box_edge_c && element_edge_d >= scrolling_box_edge_d {
+				// Do nothing.
+			} else if (element_edge_c <= scrolling_box_edge_c && element_width < scrolling_width)
+				|| (element_edge_d >= scrolling_box_edge_d && element_width > scrolling_width) {
+				x += element_edge_c - scrolling_box_edge_c
+			} else if (element_edge_d >= scrolling_box_edge_d && element_width < scrolling_width)
+				|| (element_edge_c <= scrolling_box_edge_c && element_width > scrolling_width) {
+				x += element_edge_d - scrolling_box_edge_d
 			}
 		}
 	}
 
+	// FIXME: The pinned source does not yet snap to the target's scroll-snap positions.
 	return CSSPixelPoint_{
 		x_: x
 		y_: y
@@ -103,12 +155,12 @@ pub fn scroll_an_element_into_view(target &Element, behavior ScrollBehavior, blo
 			break
 		}
 
-		mut position := determine_the_scroll_into_view_position(target, block, inline_, scrolling_box)
-		// Upstream has not implemented scrolling element-associated boxes yet.
+		position := determine_the_scroll_into_view_position(target, block, inline_, scrolling_box)
+		// The remaining caller translation still needs element scrolls, outward
+		// target projection, behavior forwarding, and ancestor Promise aggregation.
 		if scrolling_box.is_document() {
 			document := scrolling_box.document()
 			_ = behavior
-			position.set_y(position.y() + document.viewport_rect().y)
 			if navigable := document.navigable() {
 				_ = navigable.perform_a_scroll_of_the_viewport(position)
 			} else if document.window != unsafe { nil } {
