@@ -61,9 +61,9 @@ fn import_ed448_jwk(jwk JsonWebKey, extractable bool, usages []KeyUsage) !&Crypt
 		if native_edwards_public('Ed448', private_bytes)! != public_bytes {
 			return error('DataError: Invalid key pair')
 		}
-		return exchange_key('Ed448', true, private_bytes, extractable, usages)
+		return exchange_key('Ed448', true, private_bytes, false, [])
 	}
-	return exchange_key('Ed448', false, public_bytes, extractable, usages)
+	return exchange_key('Ed448', false, public_bytes, false, [])
 }
 
 pub fn import_ed448_key(format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey {
@@ -81,13 +81,13 @@ pub fn import_ed448_key(format KeyFormat, material []u8, extractable bool, usage
 				}
 				return err
 			}
-			return exchange_key('Ed448', private_key, bytes, extractable, usages)
+			return exchange_key('Ed448', private_key, bytes, false, [])
 		}
 		.jwk { return import_ed448_jwk(JsonWebKey.parse(material)!, extractable, usages) }
 		.raw {
 			validate_ed448_usages(usages, [.verify])!
 			if material.len != 57 { return error('DataError: Invalid key length') }
-			return exchange_key('Ed448', false, material, extractable, usages)
+			return exchange_key('Ed448', false, material, false, [])
 		}
 		else { return error('NotSupportedError: Invalid key format') }
 	}

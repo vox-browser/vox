@@ -516,6 +516,7 @@ fn normalized_import(algorithm NormalizedCryptoAlgorithm, format KeyFormat, byte
 	}
 	basic := AlgorithmParams{ name: algorithm.name }
 	if algorithm.name == 'Ed25519' { return ED25519.create().import_key(basic, format, bytes, extractable, usages) }
+    if algorithm.name == 'Ed448' { return ED448.create().import_key(basic, format, bytes, extractable, usages) }
 	if algorithm.name == 'X25519' {
 		return X25519.create().import_key(basic, format, bytes, extractable, usages)
 	}

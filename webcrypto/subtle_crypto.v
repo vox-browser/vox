@@ -527,8 +527,10 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
         return key
     }
 	if normalized == 'Ed448' {
-		key := import_ed448_key(format, material, extractable, normalized_usages)!
-		if key.type_ == .private_key && key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+		mut key := import_ed448_key(format, material, extractable, normalized_usages)!
+		if key.type_ == .private_key && normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+        key.set_extractable(extractable)
+        key.set_usages(normalized_usages)
 		return key
 	}
 	if normalized_usages.len == 0 {
