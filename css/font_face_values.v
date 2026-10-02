@@ -1885,6 +1885,7 @@ pub mut:
 	status_             FontFaceLoadStatus = .unloaded
 	font_status_promise &webidl.Promise = unsafe { nil }
 	cached_width_       int = 100
+	cached_slope_       int
 	urls                []ParsedFontFaceSource
 	binary_data         []u8
 	parsed_font                    &PlatformTypeface = unsafe { nil }
@@ -1929,7 +1930,7 @@ pub fn FontFaceObject.construct_impl(family string, source FontFaceSource, descr
 	} else {
 		font_face.reject_status_promise('FontFace constructor: Invalid font-family')
 	}
-	font_face.style_ = font_face_try_parse_descriptor(mut font_face, .font_style, descriptors.style)
+	font_face.set_style_impl(font_face_try_parse_descriptor(mut font_face, .font_style, descriptors.style))
 	font_face.weight_ = font_face_try_parse_descriptor(mut font_face, .font_weight, descriptors.weight)
 	stretch := font_face_try_parse_descriptor(mut font_face, .font_width, descriptors.stretch)
 	font_face.set_stretch_impl(stretch)
@@ -2047,7 +2048,7 @@ pub fn (face &FontFaceObject) parsed_font_face() ParsedFontFace {
 		font_family_: face.family_
 		// FIXME: Actually parse this as we're supposed to.
 		weight_: parse_font_face_object_numeric_weight(face.weight_)
-		slope_: 0 // FIXME: slope
+		slope_: face.cached_slope_
 		width_: face.cached_width_
 		sources_: face.urls.clone()
 		unicode_ranges_: face.unicode_ranges_.clone()
@@ -2346,6 +2347,7 @@ pub fn (mut face FontFaceObject) set_style(value string) ! {
 
 pub fn (mut face FontFaceObject) set_style_impl(value string) {
 	face.style_ = value
+	face.cached_slope_ = compute_font_style_slope(value)
 }
 
 pub fn (mut face FontFaceObject) set_weight(value string) ! {
