@@ -1,0 +1,13 @@
+module libjs
+
+// Runtime/StringPrototype.cpp::to_lowercase and to_uppercase. Locale-list
+// processing for their locale variants remains a separate Intl dependency.
+pub fn string_prototype_to_lowercase(mut vm VM) !Value {
+	text := string_primitive_from(mut vm)!
+	return Value.from_string(vm.create_string(unicode_string_case(text.utf16, false)))
+}
+
+pub fn string_prototype_to_uppercase(mut vm VM) !Value {
+	text := string_primitive_from(mut vm)!
+	return Value.from_string(vm.create_string(unicode_string_case(text.utf16, true)))
+}
