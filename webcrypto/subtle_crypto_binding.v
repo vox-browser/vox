@@ -481,6 +481,7 @@ fn normalized_import(algorithm NormalizedCryptoAlgorithm, format KeyFormat, byte
     if algorithm.name == 'ChaCha20-Poly1305' { return import_chacha_key(format, bytes, extractable, usages) }
     if algorithm.name in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW'] { return import_aes_key(algorithm.name, format, bytes, extractable, usages) }
 	if params is HmacImportParams { return HMAC.create().import_key(params, format, bytes, extractable, usages) }
+    if params is KmacImportParams { return KMAC.create().import_key(params, format, bytes, extractable, usages) }
 	if params is RsaHashedImportParams {
 		return match algorithm.name {
 			'RSA-OAEP' { RSAOAEP.create().import_key(params, format, bytes, extractable, usages)! }

@@ -331,6 +331,13 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
         return GeneratedKey{ key: key }
     }
 
+    if normalized in ['KMAC128', 'KMAC256'] {
+        actual_params := if params is KmacKeyGenParams { KmacKeyGenParams{ ...params, name: normalized } } else { KmacKeyGenParams{ name: normalized } }
+        generated := KMAC.create().generate_key(actual_params, extractable, normalized_usages)!
+        if normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+        return generated
+    }
+
 	if normalized_usages.len == 0 {
 		return error('SyntaxError: usages must not be empty')
 	}
@@ -488,8 +495,10 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
 		return key
 	}
 	if normalized in ['KMAC128', 'KMAC256'] {
-		key := KMAC.create().import_key(normalized_kmac_import_params(algorithm, normalized), format, material, extractable, normalized_usages)!
-		if key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+		mut key := KMAC.create().import_key(normalized_kmac_import_params(algorithm, normalized), format, material, extractable, normalized_usages)!
+		if normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+        key.set_extractable(extractable)
+        key.set_usages(normalized_usages)
 		return key
 	}
 	if normalized.starts_with('ML-DSA-') {
@@ -817,7 +826,10 @@ pub fn (subtle_crypto &SubtleCrypto) encapsulate_key(algorithm string, key &Cryp
 		return error('OperationError: Encapsulation produced no shared key')
 	}
 	shared_name := normalize_an_algorithm(shared_key_algorithm, 'importKey')!
-	shared_key := import_kem_shared_secret(shared_name, shared_key_bits, extractable, normalize_key_usages_for_operation(usages))!
+    normalized_usages := normalize_key_usages_for_operation(usages)
+	mut shared_key := import_kem_shared_secret(shared_name, shared_key_bits, extractable, normalized_usages)!
+    shared_key.set_extractable(extractable)
+    shared_key.set_usages(normalized_usages)
 	return EncapsulatedKey{
 		shared_key: shared_key
 		ciphertext: bits.ciphertext
@@ -831,5 +843,9 @@ pub fn (subtle_crypto &SubtleCrypto) decapsulate_key(algorithm string, key &Cryp
 	validate_operation_key(key, normalized, .decapsulate_key)!
 	bits := MLKEM.create().decapsulate(AlgorithmParams{ name: normalized }, key, ciphertext)!
 	shared_name := normalize_an_algorithm(shared_key_algorithm, 'importKey')!
-	return import_kem_shared_secret(shared_name, bits, extractable, normalize_key_usages_for_operation(usages))
+    normalized_usages := normalize_key_usages_for_operation(usages)
+    mut shared_key := import_kem_shared_secret(shared_name, bits, extractable, normalized_usages)!
+    shared_key.set_extractable(extractable)
+    shared_key.set_usages(normalized_usages)
+    return shared_key
 }

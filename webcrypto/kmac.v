@@ -6,6 +6,14 @@ module webcrypto
 
 import crypto.rand
 
+fn kmac_validate_usages(usages []KeyUsage) ! {
+    for usage in usages {
+        if usage !in [KeyUsage.sign, .verify] {
+            return error("SyntaxError: Invalid key usage '${key_usage_string(usage)}'")
+        }
+    }
+}
+
 fn kmac_default_length(name string) !u32 {
 	return match name {
 		'KMAC128' { u32(128) }
@@ -20,7 +28,7 @@ fn kmac_sign(params KmacParams, key &CryptoKey, message []u8) ![]u8 {
 }
 
 fn generate_kmac_key(params KmacKeyGenParams, extractable bool, usages []KeyUsage) !&CryptoKey {
-	validate_usages(usages, [KeyUsage.sign, .verify])!
+	kmac_validate_usages(usages)!
 	length := params.length or { kmac_default_length(params.name)! }
 	if length == 0 {
 		return error('OperationError: Invalid key length')
@@ -33,7 +41,7 @@ fn generate_kmac_key(params KmacKeyGenParams, extractable bool, usages []KeyUsag
 }
 
 fn import_kmac_key(params KmacImportParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey {
-	validate_usages(usages, [KeyUsage.sign, .verify])!
+	kmac_validate_usages(usages)!
 	mut data := material.clone()
 	if format == .jwk {
 		jwk := JsonWebKey.parse(material)!
@@ -66,7 +74,7 @@ fn import_kmac_key(params KmacImportParams, format KeyFormat, material []u8, ext
 	}
 	// Upstream slices to length / 8 bytes, including a non-byte-aligned length.
 	if data.len > int(length / 8) { data = data[..int(length / 8)].clone() }
-	return CryptoKey.create(.secret, extractable, KmacKeyAlgorithm{ name: params.name, length: length }, usages, data)
+	return CryptoKey.create(.secret, false, KmacKeyAlgorithm{ name: params.name, length: length }, [], data)
 }
 
 fn export_kmac_key(format KeyFormat, key &CryptoKey) ![]u8 {
