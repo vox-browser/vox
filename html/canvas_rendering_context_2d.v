@@ -10,6 +10,7 @@ module html
 
 import dom
 import encoding.base64
+import webgl
 
 const maximum_canvas_area = u64(16384 * 16384)
 
@@ -38,6 +39,7 @@ pub:
 pub mut:
 	surface                 &OffscreenCanvas = unsafe { nil }
 	context                 ?&CanvasRenderingContext2D
+	webgl_context           ?&webgl.WebGLRenderingContext
 	external_content_source ?&CanvasExternalContentSource
 	transferred             bool
 	dirty                   bool
@@ -93,6 +95,10 @@ fn ensure_html_canvas_element_state(element &dom.HTMLCanvasElement) !&HTMLCanvas
 			mut surface := state.surface
 			surface.set_new_bitmap_size(width, height)!
 			mutable_state.dirty = true
+			if context := state.webgl_context {
+				mut mutable_context := unsafe { &webgl.WebGLRenderingContext(context) }
+				mutable_context.set_size(int(width),int(height))
+			}
 		}
 		return state
 	}
@@ -166,6 +172,10 @@ pub fn html_canvas_element_notify_context_about_canvas_size_change(element &dom.
 	width, height := html_canvas_element_dimensions(element)
 	mut surface := state.surface
 	surface.set_new_bitmap_size(width, height)!
+	if context := state.webgl_context {
+		mut mutable_context := unsafe { &webgl.WebGLRenderingContext(context) }
+		mutable_context.set_size(int(width),int(height))
+	}
 	state.dirty = true
 }
 
@@ -173,10 +183,8 @@ pub fn html_canvas_element_create_2d_context(element &dom.HTMLCanvasElement, opt
 	return html_canvas_element_get_context(element, '2d', options)
 }
 
-pub fn html_canvas_element_create_webgl_context(element &dom.HTMLCanvasElement, options ?map[string]dom.JSValue) !voidptr {
-	_ = element
-	_ = options
-	return error('NotSupportedError: WebGL context is not available in the V host')
+pub fn html_canvas_element_create_webgl_context(element &dom.HTMLCanvasElement, options ?map[string]dom.JSValue) !&webgl.WebGLRenderingContext {
+	return html_canvas_element_create_webgl_context_for_version(element,.webgl1,options)
 }
 
 pub fn html_canvas_element_bitmap_size_for_canvas(element &dom.HTMLCanvasElement) (u32, u32) {
@@ -184,7 +192,14 @@ pub fn html_canvas_element_bitmap_size_for_canvas(element &dom.HTMLCanvasElement
 }
 
 pub fn html_canvas_element_get_bitmap_from_surface(element &dom.HTMLCanvasElement) ?&dom.Bitmap_ {
+	width,height := html_canvas_element_dimensions(element)
+	if width == 0 || height == 0 { return none }
 	state := ensure_html_canvas_element_state(element) or { return none }
+	if context := state.webgl_context {
+		mut mutable_context := unsafe { &webgl.WebGLRenderingContext(context) }
+		frame := mutable_context.native.read_back_drawing_buffer() or { return none }
+		return webgl_frame_bitmap(frame)
+	}
 	return state.surface.bitmap()
 }
 
@@ -263,18 +278,18 @@ pub fn html_canvas_element_get_context(element &dom.HTMLCanvasElement, type_ str
 	if type_ != '2d' {
 		return unsafe { nil }
 	}
+	settings := CanvasRenderingContext2DSettings.from_js_value(options)!
+	if state.webgl_context != none { return unsafe { nil } }
 	if context := state.context {
 		return context
 	}
-	settings := CanvasRenderingContext2DSettings.from_js_value(options)!
 	context := CanvasRenderingContext2D.create(element, state.surface, settings)
 	state.context = context
 	return context
 }
 
 pub fn html_canvas_element_bitmap(element &dom.HTMLCanvasElement) !&dom.Bitmap_ {
-	mut state := ensure_html_canvas_element_state(element)!
-	return state.surface.bitmap() or { unsafe { nil } }
+	return html_canvas_element_get_bitmap_from_surface(element) or { unsafe { nil } }
 }
 
 pub fn html_canvas_element_set_canvas_content_dirty(element &dom.HTMLCanvasElement) ! {
@@ -290,6 +305,16 @@ pub fn html_canvas_element_is_dirty(element &dom.HTMLCanvasElement) bool {
 pub fn html_canvas_element_present(element &dom.HTMLCanvasElement) {
 	if state := html_canvas_element_states[html_canvas_element_key(element)] {
 		mut mutable_state := unsafe { &HTMLCanvasElementState(state) }
+		if context := state.webgl_context {
+			width,height := html_canvas_element_dimensions(element)
+			if width == 0 || height == 0 { return }
+			if !state.dirty && !context.needs_to_present() { return }
+			mut mutable_context := unsafe { &webgl.WebGLRenderingContext(context) }
+			if !mutable_context.prepare_for_compositing() { return }
+			frame := context.native.painting_surface() or { return }
+			mut surface := state.surface
+			surface.bitmap_ = webgl_frame_bitmap(frame)
+		}
 		if source := state.external_content_source {
 			mut mutable_source := unsafe { &CanvasExternalContentSource(source) }
 			if bitmap := state.surface.bitmap() {
@@ -316,8 +341,7 @@ pub fn html_canvas_element_to_data_url(element &dom.HTMLCanvasElement, type_ str
 	if width == 0 || height == 0 || u64(width) * u64(height) > maximum_canvas_area {
 		return 'data:,'
 	}
-	state := ensure_html_canvas_element_state(element) or { return 'data:,' }
-	bitmap := state.surface.bitmap() or { return 'data:,' }
+	bitmap := html_canvas_element_get_bitmap_from_surface(element) or { return 'data:,' }
 	serialized := serialize_bitmap(bitmap, type_, quality, encode_png, encode_jpeg) or {
 		return 'data:,'
 	}
@@ -332,14 +356,13 @@ pub fn html_canvas_element_to_blob(element &dom.HTMLCanvasElement, type_ string,
 	if width == 0 || height == 0 || u64(width) * u64(height) > maximum_canvas_area {
 		return error('IndexSizeError: canvas has no serializable bitmap')
 	}
-	mut state := ensure_html_canvas_element_state(element)!
-	bitmap := state.surface.bitmap() or { return error('IndexSizeError: canvas has no bitmap') }
+	bitmap := html_canvas_element_get_bitmap_from_surface(element) or { return error('IndexSizeError: canvas has no bitmap') }
 	return serialize_bitmap(bitmap, type_, quality, encode_png, encode_jpeg)
 }
 
 pub fn html_canvas_element_transfer_control_to_offscreen(element &dom.HTMLCanvasElement) !&OffscreenCanvas {
 	mut state := ensure_html_canvas_element_state(element)!
-	if state.context != none {
+	if state.context != none || state.webgl_context != none {
 		return error('InvalidStateError: canvas already has a rendering context')
 	}
 	if state.transferred {

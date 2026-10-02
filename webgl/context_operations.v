@@ -168,8 +168,12 @@ pub fn WebGLRenderingContext.create(version WebGLVersion, attributes WebGLContex
 	return WebGLRenderingContext.new(version, attributes, supported_native_extensions)
 }
 
-pub fn (_ &WebGLRenderingContext) canvas_for_binding() string {
-	return 'canvas'
+pub fn (context &WebGLRenderingContext) canvas_for_binding() voidptr {
+	return context.canvas_owner_
+}
+
+pub fn (mut context WebGLRenderingContext) bind_canvas_for_binding(canvas voidptr) {
+	context.canvas_owner_ = canvas
 }
 
 pub fn (context &WebGLRenderingContext) surface() bool {

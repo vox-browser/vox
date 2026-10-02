@@ -22,6 +22,7 @@ mut:
 	context_restore_requested_          bool
 	context_events_                     []WebGLContextEvent
 	xr_compatible_                      bool
+	canvas_owner_                       voidptr
 	enabled_extensions                  map[string]&WebGLExtension
 	enabled_compressed_texture_formats_ []GLenum
 	buffers                             map[GLuint]&WebGLBuffer

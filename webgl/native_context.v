@@ -26,6 +26,8 @@ pub:
 	pixels []u8
 }
 
+pub type WebGLCanvasContentChangedCallback = fn (voidptr)
+
 @[heap]
 pub struct OpenGLContext {
 pub:
@@ -46,6 +48,8 @@ mut:
 	record_native_calls_  bool
 	native_calls_         []NativeCall
 	painting_pixels_      []u8
+	canvas_content_owner_ voidptr
+	canvas_content_changed_ ?WebGLCanvasContentChangedCallback
 	viewport_             [4]int
 }
 
@@ -149,6 +153,12 @@ pub fn (mut context OpenGLContext) notify_content_will_change() {
 	}
 	context.content_will_change_ = true
 	context.needs_to_present_ = true
+	if callback := context.canvas_content_changed_ { callback(context.canvas_content_owner_) }
+}
+
+pub fn (mut context OpenGLContext) bind_canvas_content_changed(owner voidptr, callback WebGLCanvasContentChangedCallback) {
+	context.canvas_content_owner_ = owner
+	context.canvas_content_changed_ = callback
 }
 
 pub fn (mut context OpenGLContext) present() bool {
