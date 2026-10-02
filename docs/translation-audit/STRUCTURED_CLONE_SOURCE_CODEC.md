@@ -156,6 +156,19 @@ engine context is released. This is explicit embedding retention, not full
 source GC wrapper reclamation. Untracked author-created resizable views remain
 unsupported; current getter values are never substituted for original slots.
 
+The DOMException prerequisite now retains actual UTF-16 name/message fields,
+including supplied storage metadata, and exposes the source two-field payload
+order. Compatibility string updates clear stale UTF-16 fields; value copies keep
+the authoritative native record's units. The native constructor performs actual
+engine ToString in message-then-name order, copies the true UTF-16 span, and
+getters create actual engine strings from those retained units. Lone surrogates,
+embedded NUL, pairs, one string-hint conversion, Symbol rejection, original
+throws and stable getter root counts are covered. Two typed files and three
+native constructor/identity/brand files passed with GC disabled. This retains
+the source string fields at the typed embedding boundary; full AK Utf16FlyString
+intern-table ownership remains separate. SerializableObject interface ids,
+exposure and payload versions still need the actual source registry codec.
+
 The native brand classifier captures a genuine SharedArrayBuffer byte-length
 getter when the engine exposes it. A shared buffer cannot fall through as an
 ordinary empty object, and a shared-backed view rejects before ArrayBuffer-only
