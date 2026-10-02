@@ -51,7 +51,8 @@ pub fn (host &CanvasWebGLHost) elements_for_binding() map[string]&dom.Element {
 }
 
 pub fn (mut host CanvasWebGLHost) install(mut runtime Runtime) ! {
-	runtime.define_host_function('__ladybirdWebGL', fn [mut host] (input string) !string {
+	runtime.define_host_function('__ladybirdWebGL', fn [mut host, mut runtime] (input string) !string {
+		for key, element in runtime.canvas_elements_for_binding() {host.elements[key]=element}
 		return host.call(input)
 	})!
 	runtime.add_canvas_element_provider(fn [mut host] () map[string]&dom.Element {
@@ -953,11 +954,25 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 			context.compressed_tex_sub_image2d(wg_u32(wg_arg(args, 0)), wg_int(wg_arg(args, 1)), wg_int(wg_arg(args, 2)), wg_int(wg_arg(args, 3)), wg_int(wg_arg(args, 4)), wg_int(wg_arg(args, 5)), wg_u32(wg_arg(args, 6)), wg_array(wg_arg(args, 7)).map(u8(wg_u32(it))))
 		}
 		'texImage2D' {
+			if args.len==6 {
+				context.tex_image2d_source(wg_u32(wg_arg(args,0)),wg_int(wg_arg(args,1)),wg_int(wg_arg(args,2)),wg_u32(wg_arg(args,3)),wg_u32(wg_arg(args,4)),host.texture_source(wg_arg(args,5))!,none,0)!
+			} else if wg_arg(args,8) is map[string]json2.Any {
+				context.tex_image2d_source(wg_u32(wg_arg(args,0)),wg_int(wg_arg(args,1)),wg_int(wg_arg(args,2)),wg_u32(wg_arg(args,6)),wg_u32(wg_arg(args,7)),host.texture_source(wg_arg(args,8))!,webgl.WebGLIntSize{width:wg_int(wg_arg(args,3)),height:wg_int(wg_arg(args,4))},wg_int(wg_arg(args,5)))!
+			} else {
 			context.tex_image2d(wg_u32(wg_arg(args, 0)), wg_int(wg_arg(args, 1)), wg_u32(wg_arg(args, 2)), wg_int(wg_arg(args, 3)), wg_int(wg_arg(args, 4)), wg_int(wg_arg(args, 5)), wg_u32(wg_arg(args, 6)), wg_u32(wg_arg(args, 7)), wg_array(wg_arg(args, 8)).map(u8(wg_u32(it))))
 		}
+		}
+
 		'texSubImage2D' {
+			if args.len==7 {
+				context.tex_sub_image2d_source(wg_u32(wg_arg(args,0)),wg_int(wg_arg(args,1)),wg_int(wg_arg(args,2)),wg_int(wg_arg(args,3)),wg_u32(wg_arg(args,4)),wg_u32(wg_arg(args,5)),host.texture_source(wg_arg(args,6))!,none)!
+			} else if wg_arg(args,8) is map[string]json2.Any {
+				context.tex_sub_image2d_source(wg_u32(wg_arg(args,0)),wg_int(wg_arg(args,1)),wg_int(wg_arg(args,2)),wg_int(wg_arg(args,3)),wg_u32(wg_arg(args,6)),wg_u32(wg_arg(args,7)),host.texture_source(wg_arg(args,8))!,webgl.WebGLIntSize{width:wg_int(wg_arg(args,4)),height:wg_int(wg_arg(args,5))})!
+			} else {
 			context.tex_sub_image2d(wg_u32(wg_arg(args, 0)), wg_int(wg_arg(args, 1)), wg_int(wg_arg(args, 2)), wg_int(wg_arg(args, 3)), wg_int(wg_arg(args, 4)), wg_int(wg_arg(args, 5)), wg_u32(wg_arg(args, 6)), wg_u32(wg_arg(args, 7)), wg_array(wg_arg(args, 8)).map(u8(wg_u32(it))))
 		}
+		}
+
 		'readPixels' {
 			if wg_arg(args, 6) is json2.Null { context.read_pixels_null(); return json2.Any(json2.Null{}) }
 			mut pixels := wg_array(wg_arg(args, 6)).map(u8(wg_u32(it)))
@@ -1097,11 +1112,21 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 			context.tex_storage3d(wg_u32(wg_arg(args, 0)), wg_int(wg_arg(args, 1)), wg_u32(wg_arg(args, 2)), wg_int(wg_arg(args, 3)), wg_int(wg_arg(args, 4)), wg_int(wg_arg(args, 5)))
 		}
 		'texImage3D' {
+			if wg_arg(args,9) is map[string]json2.Any {
+				context.tex_image3d_source(wg_u32(wg_arg(args,0)),wg_int(wg_arg(args,1)),wg_int(wg_arg(args,2)),wg_int(wg_arg(args,5)),wg_u32(wg_arg(args,7)),wg_u32(wg_arg(args,8)),host.texture_source(wg_arg(args,9))!,webgl.WebGLIntSize{width:wg_int(wg_arg(args,3)),height:wg_int(wg_arg(args,4))},wg_int(wg_arg(args,6)))!
+			} else {
 			context.tex_image3d(wg_u32(wg_arg(args, 0)), wg_int(wg_arg(args, 1)), wg_u32(wg_arg(args, 2)), wg_int(wg_arg(args, 3)), wg_int(wg_arg(args, 4)), wg_int(wg_arg(args, 5)), wg_int(wg_arg(args, 6)), wg_u32(wg_arg(args, 7)), wg_u32(wg_arg(args, 8)), wg_array(wg_arg(args, 9)).map(u8(wg_u32(it))))
 		}
+		}
+
 		'texSubImage3D' {
+				if wg_arg(args,10) is map[string]json2.Any {
+				context.tex_sub_image3d_source(wg_u32(wg_arg(args,0)),wg_int(wg_arg(args,1)),wg_int(wg_arg(args,2)),wg_int(wg_arg(args,3)),wg_int(wg_arg(args,4)),wg_int(wg_arg(args,7)),wg_u32(wg_arg(args,8)),wg_u32(wg_arg(args,9)),host.texture_source(wg_arg(args,10))!,webgl.WebGLIntSize{width:wg_int(wg_arg(args,5)),height:wg_int(wg_arg(args,6))})!
+			} else {
 			context.tex_sub_image3d(wg_u32(wg_arg(args, 0)), wg_int(wg_arg(args, 1)), wg_int(wg_arg(args, 2)), wg_int(wg_arg(args, 3)), wg_int(wg_arg(args, 4)), wg_int(wg_arg(args, 5)), wg_int(wg_arg(args, 6)), wg_int(wg_arg(args, 7)), wg_u32(wg_arg(args, 8)), wg_u32(wg_arg(args, 9)), wg_array(wg_arg(args, 10)).map(u8(wg_u32(it))))
 		}
+		}
+
 		'transformFeedbackVaryings' {
 			host.validate_resource(wg_arg(args, 0), 'program', false)!
 			context.transform_feedback_varyings(host.programs[wg_handle(wg_arg(args, 0))] or { return error('TypeError: expected program') }, wg_array(wg_arg(args, 1)).map(wg_string(it)), wg_u32(wg_arg(args, 2)))

@@ -30,6 +30,26 @@ function __webglBytes(value,nullable) {
  if(!ArrayBuffer.isView(value))throw new TypeError("Expected an ArrayBufferView");
  return Array.from(new Uint8Array(value.buffer,value.byteOffset,value.byteLength));
 }
+function __webglTextureSource(value) {
+ if(value&&value.__state){const state=value.__state;if(!["canvas","img","video"].includes(state.tagName))throw new TypeError("Expected a TexImageSource");return {source:state.bridgeKey||state.id};}
+ if(value&&value.data instanceof Uint8ClampedArray)return {kind:"image_data",width:value.width,height:value.height,data:__webglBytes(value.data,false),colorSpace:value.colorSpace};
+ throw new TypeError("Expected a TexImageSource");
+}
+function __webglOverload(overloads,values) {
+ const count=Math.min(values.length,Math.max(...overloads.map(function(entry){return entry[1].length;})));
+ const candidates=overloads.filter(function(entry){return count>=entry[0]&&count<=entry[1].length;});
+ if(candidates.length===1)return candidates[0];
+ // WebIDL effective overload set: distinguish BufferSource/view, platform
+ // TexImageSource and numeric offsets before performing conversions.
+ for(const entry of candidates){let matches=true;for(let index=0;index<count;index++){
+ const type=entry[1][index],value=values[index];if(!candidates.some(function(other){return other[1][index]!==type;}))continue;
+ const buffer=ArrayBuffer.isView(value)||value instanceof ArrayBuffer||(typeof SharedArrayBuffer!=="undefined"&&value instanceof SharedArrayBuffer);
+ if(type.startsWith("BufferSource")||type.startsWith("ArrayBufferView")){if(!(buffer||(type.endsWith("?")&&value==null)))matches=false;}
+ else if(type==="TexImageSource"){if(!(value&&typeof value==="object"&&!buffer))matches=false;}
+ else if(type==="GLintptr"||type==="GLsizeiptr"){if(buffer||value===null||typeof value==="object")matches=false;}
+ }if(matches)return entry;}
+ return candidates[0]||overloads[overloads.length-1];
+}
 function __webglArgument(value,type) {
  const nullable=type.endsWith("?");if(nullable)type=type.slice(0,-1);
  if(type.startsWith("WebGL")){if(value===null||value===undefined){if(nullable)return null;throw new TypeError("Expected "+type);}const brand=__webglBrands.get(value);if(!brand||__webglClassNames[brand.kind]!==type)throw new TypeError("Expected "+type);return brand;}
@@ -37,12 +57,11 @@ function __webglArgument(value,type) {
  if(type==="DOMString")return __webglString(value);
  if(type==="BufferSource"||type==="ArrayBufferView")return __webglBytes(value,nullable);
  if(type==="Float32List"||type==="Int32List"||type==="Uint32List"||type.startsWith("sequence<")){if(value==null||typeof value[Symbol.iterator]!=="function")throw new TypeError("Expected an iterable sequence");return Array.from(value,type==="sequence<DOMString>"?__webglString:__webglNumber);}
- if(type==="TexImageSource")return value;
+ if(type==="TexImageSource")return __webglTextureSource(value);
  return __webglNumber(value);
 }
 function __webglMethod(s,name,overloads) {
- return function(){const values=Array.from(arguments);const min=Math.min(...overloads.map(function(entry){return entry[0];}));if(values.length<min)throw new TypeError(name+" has too few arguments");let signature=overloads.find(function(entry){return values.length>=entry[0]&&values.length<=entry[1].length;})||overloads[overloads.length-1];
- if(name==="bufferData")signature=overloads.find(function(entry){return typeof values[1]==="number"?entry[1][1]==="GLsizeiptr":entry[1][1].startsWith("BufferSource");})||signature;
+ return function(){const values=Array.from(arguments);const min=Math.min(...overloads.map(function(entry){return entry[0];}));if(values.length<min)throw new TypeError(name+" has too few arguments");const signature=__webglOverload(overloads,values);
  const args=values.map(function(value,index){return index<signature[1].length?__webglArgument(value,signature[1][index]):value;});const extra={};
  if(name==="readPixels"){const destination=values[6];if(destination!==null&&destination!==undefined){if(!ArrayBuffer.isView(destination))throw new TypeError("Expected an ArrayBufferView");extra.elementSize=destination.BYTES_PER_ELEMENT||1;}const result=__webglCall(s,name,args,extra);if(result!==null&&destination!=null)new Uint8Array(destination.buffer,destination.byteOffset,destination.byteLength).set(result);return;}
  if(name==="getBufferSubData"){const destination=values[2];if(!ArrayBuffer.isView(destination))throw new TypeError("Expected an ArrayBufferView");const size=destination.BYTES_PER_ELEMENT||1;if(args.length>3)args[3]=+values[3]*size;if(args.length>4)args[4]=+values[4]*size;const result=__webglCall(s,name,args);new Uint8Array(destination.buffer,destination.byteOffset,destination.byteLength).set(result);return;}
