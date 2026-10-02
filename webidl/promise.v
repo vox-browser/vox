@@ -2,9 +2,8 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of WebIDL/Promise.{h,cpp}. The translated event-loop boundary is
-// deterministic: settlement reactions run when settle()/flush_microtasks() is
-// invoked, preserving order and single-settlement semantics.
+// Translation of WebIDL/Promise.{h,cpp}. A host may bind Promise reaction jobs
+// to the relevant event loop; standalone callers retain the direct job adapter.
 module webidl
 
 pub enum PromiseState {
@@ -14,6 +13,8 @@ pub enum PromiseState {
 }
 
 pub type ReactionSteps = fn (Value) !Value
+
+pub type PromiseJobScheduler = fn (fn ())
 
 struct PromiseReaction {
 	on_fulfilled     ReactionSteps = unsafe { nil }
@@ -37,6 +38,7 @@ pub mut:
 	rejection_was_handled_after_settlement bool
 mut:
 	realm_id  u64
+	job_scheduler ?PromiseJobScheduler
 	reactions []PromiseReaction
 	observers []PromiseObserver
 }
@@ -46,6 +48,7 @@ mut:
 pub struct PromiseContext {
 pub:
 	realm_id u64
+	job_scheduler ?PromiseJobScheduler
 }
 
 pub fn create_promise() &Promise {
@@ -61,7 +64,12 @@ pub fn create_promise_in_realm(realm_id u64) &Promise {
 }
 
 pub fn create_promise_for(context PromiseContext) &Promise {
-	return create_promise_in_realm(context.realm_id)
+	return &Promise{
+		state: .pending
+		result: undefined_value()
+		realm_id: context.realm_id
+		job_scheduler: context.job_scheduler
+	}
 }
 
 pub fn create_resolved_promise(value Value) &Promise {
@@ -117,17 +125,20 @@ fn (mut promise Promise) settle(state PromiseState, value Value) {
 	reactions := promise.reactions.clone()
 	promise.reactions.clear()
 	for reaction in reactions {
-		run_reaction(state, value, reaction)
+		promise.enqueue_job(fn [state, value, reaction] () { run_reaction(state, value, reaction) })
 	}
 	observers := promise.observers.clone()
 	promise.observers.clear()
 	for observer in observers {
-		if state == .fulfilled {
-			observer.on_fulfilled(value) or {}
-		} else {
-			observer.on_rejected(value) or {}
-		}
+		promise.enqueue_job(fn [state, value, observer] () {
+			if state == .fulfilled { observer.on_fulfilled(value) or {} }
+			else { observer.on_rejected(value) or {} }
+		})
 	}
+}
+
+fn (promise &Promise) enqueue_job(job fn ()) {
+	if scheduler := promise.job_scheduler { scheduler(job) } else { job() }
 }
 
 fn run_reaction(state PromiseState, value Value, reaction PromiseReaction) {
@@ -153,7 +164,7 @@ fn absent_reaction(value Value) !Value {
 }
 
 fn (mut promise Promise) react(on_fulfilled ReactionSteps, has_on_fulfilled bool, on_rejected ReactionSteps, has_on_rejected bool) &Promise {
-	mut child := create_promise()
+	mut child := create_promise_for(PromiseContext{ realm_id: promise.realm_id, job_scheduler: promise.job_scheduler })
 	reaction := PromiseReaction{
 		on_fulfilled: on_fulfilled
 		on_rejected: on_rejected
@@ -164,7 +175,9 @@ fn (mut promise Promise) react(on_fulfilled ReactionSteps, has_on_fulfilled bool
 	if promise.state == .pending {
 		promise.reactions << reaction
 	} else {
-		run_reaction(promise.state, promise.result, reaction)
+		state := promise.state
+		value := promise.result
+		promise.enqueue_job(fn [state, value, reaction] () { run_reaction(state, value, reaction) })
 	}
 	return child
 }
@@ -185,11 +198,12 @@ fn (mut promise Promise) observe(on_fulfilled ReactionSteps, on_rejected Reactio
 		}
 		return
 	}
-	if promise.state == .fulfilled {
-		on_fulfilled(promise.result) or {}
-	} else {
-		on_rejected(promise.result) or {}
-	}
+	state := promise.state
+	value := promise.result
+	promise.enqueue_job(fn [state, value, on_fulfilled, on_rejected] () {
+		if state == .fulfilled { on_fulfilled(value) or {} }
+		else { on_rejected(value) or {} }
+	})
 }
 
 pub fn (mut promise Promise) mark_as_handled() {
