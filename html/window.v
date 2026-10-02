@@ -1040,31 +1040,9 @@ pub fn (window &WindowModel) named_item_value(name string) dom.JSValue {
 	return dom.js_object(voidptr(collection))
 }
 
-fn count_window_find_matches(haystack string, needle string) int {
-	if needle == '' {
-		return 0
-	}
-	mut count := 0
-	mut remaining := haystack
-	for remaining.len >= needle.len {
-		index := remaining.index(needle) or { break }
-		count++
-		remaining = remaining[index + needle.len..]
-	}
-	return count
-}
-
 pub fn (mut window WindowModel) find(query string) bool {
 	if query == '' {
 		return false
 	}
-	document_node := unsafe { &dom.Node(window.associated_document()) }
-	match_count := count_window_find_matches(document_node.descendant_text_content().to_lower(), query.to_lower())
-	if query != window.last_find_query_ {
-		window.last_find_query_ = query
-		window.find_match_index_ = 0
-		return match_count > 0
-	}
-	window.find_match_index_++
-	return window.find_match_index_ < match_count
+	return window.page().find_from_window(query)
 }

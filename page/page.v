@@ -45,11 +45,17 @@ pub enum WrapAround {
 	no
 }
 
+pub enum ClearSelectionOnNoMatch {
+	yes
+	no
+}
+
 pub struct FindInPageQuery {
 pub:
 	string_          string
 	case_sensitivity CaseSensitivity = .case_insensitive
 	wrap_around      WrapAround      = .yes
+	clear_selection_on_no_match ClearSelectionOnNoMatch = .yes
 }
 
 pub struct FindInPageResult {
@@ -70,6 +76,7 @@ pub:
 	document_id string
 	start       int
 	end         int
+	range       ?&dom.Range
 }
 
 pub struct ClientEvent {
@@ -511,6 +518,7 @@ pub fn Page.create(device_scale f64) !&Page {
 		will_begin_rendering_update_callback: page_will_begin_rendering_update_callback
 		did_finish_rendering_update_callback: page_did_finish_rendering_update_callback
 		local_root_navigable_callback: page_local_root_navigable_callback
+		find_from_window_callback: page_find_from_window_callback
 		has_media_element_playing_audio_callback: page_has_media_element_playing_audio_callback
 		media_element_audio_state_changed_callback: page_media_element_audio_state_changed_callback
 		did_request_color_picker_callback: page_did_request_color_picker_callback
@@ -1102,6 +1110,12 @@ pub fn (p &Page) user_style() ?string {
 
 pub fn (mut p Page) clear_selection() {
 	p.selected_match = none
+	for document in p.rendered_search_documents() {
+		if selection := document.get_selection() {
+			mut mutable_selection := unsafe { &dom.Selection(selection) }
+			mutable_selection.remove_all_ranges()
+		}
+	}
 }
 
 fn occurrences(document SearchDocument, query FindInPageQuery) []FindMatch {
@@ -1147,6 +1161,11 @@ fn url_without_fragment(url string) string {
 }
 
 fn (mut p Page) perform_find(query FindInPageQuery, delta int) FindInPageResult {
+	if root := p.local_root_navigable_ {
+		if document := root.active_document() {
+			if document.get_window() != none { return p.perform_rendered_find(query, delta) }
+		}
+	}
 	matches := p.all_matches(query)
 	if matches.len == 0 {
 		p.selected_match = none
@@ -1190,7 +1209,8 @@ fn (mut p Page) perform_find(query FindInPageQuery, delta int) FindInPageResult 
 }
 
 pub fn (mut p Page) find_in_page(query FindInPageQuery) FindInPageResult {
-	if !p.top_level_traversable_is_initialized() || query.string_ == '' {
+	if !p.has_local_root_navigable() { return FindInPageResult{} }
+	if query.string_ == '' {
 		p.last_find_query_ = none
 		p.clear_selection()
 		return FindInPageResult{}
@@ -1204,11 +1224,13 @@ pub fn (mut p Page) find_in_page(query FindInPageQuery) FindInPageResult {
 
 pub fn (mut p Page) find_in_page_next_match() FindInPageResult {
 	query := p.last_find_query_ or { return FindInPageResult{} }
+	if !p.has_local_root_navigable() { return FindInPageResult{} }
 	return p.perform_find(query, 1)
 }
 
 pub fn (mut p Page) find_in_page_previous_match() FindInPageResult {
 	query := p.last_find_query_ or { return FindInPageResult{} }
+	if !p.has_local_root_navigable() { return FindInPageResult{} }
 	return p.perform_find(query, -1)
 }
 

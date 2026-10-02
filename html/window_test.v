@@ -110,7 +110,7 @@ fn test_window_scroll_idle_animation_selection_and_external() {
 	window.resize_by(20, 10)
 }
 
-fn test_window_named_objects_and_find_follow_upstream_ordering() {
+fn test_window_named_objects_follow_upstream_ordering() {
 	document_pointer, window_pointer := create_active_window('https://example.test/')!
 	mut document := document_pointer
 	mut window := window_pointer
@@ -157,9 +157,7 @@ fn test_window_named_objects_and_find_follow_upstream_ordering() {
 	collection := window.named_collections_.last()
 	assert collection.length() == 2
 	assert collection.item(0) or { panic('missing first collection item') } == first_div
-	assert window.find('needle')
-	assert window.find('needle')
-	assert !window.find('needle')
+	// Live find/selection requires a Page and layout; see layout/window_find_test.v.
 	assert !window.find('')
 
 	root_node.remove_child(first_div.as_node())!

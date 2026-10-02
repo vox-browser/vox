@@ -347,8 +347,8 @@ pub fn (p &Page) media_context_menu_element() ?u64 {
 	return p.media_context_element_
 }
 
-pub fn (p &Page) documents_in_active_window() []SearchDocument {
-	return p.documents.clone()
+pub fn (p &Page) documents_in_active_window() []&dom.Document {
+	return p.rendered_search_documents()
 }
 
 pub fn (mut p Page) perform_find_in_page_query(query FindInPageQuery,
@@ -356,8 +356,8 @@ pub fn (mut p Page) perform_find_in_page_query(query FindInPageQuery,
 	return p.perform_find(query, direction)
 }
 
-pub fn (mut p Page) update_find_in_page_selection(matches []FindMatch) {
-	p.selected_match = if matches.len > 0 { matches[0] } else { none }
+pub fn (mut p Page) update_find_in_page_selection(matches []&dom.Range, clear_on_no_match ClearSelectionOnNoMatch) {
+	p.select_rendered_find_match(matches, clear_on_no_match)
 }
 
 pub fn (p &Page) is_scripting_enabled() bool {

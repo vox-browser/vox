@@ -1222,8 +1222,6 @@ mut:
 	posted_messages_                          []PostedWindowMessage
 	stop_count_                               u32
 	focus_count_                              u32
-	last_find_query_                          string
-	find_match_index_                         int = -1
 	last_activation_timestamp_                dom.DOMHighResTimeStamp = 1e308
 	last_history_action_activation_timestamp_ dom.DOMHighResTimeStamp = 1e308
 	scripting_realm_                          &ScriptingRealm = unsafe { nil }

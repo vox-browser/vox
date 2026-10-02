@@ -3023,6 +3023,7 @@ pub:
 	will_begin_rendering_update_callback fn (voidptr) = unsafe { nil }
 	did_finish_rendering_update_callback fn (voidptr) = unsafe { nil }
 	local_root_navigable_callback        fn (voidptr) ?&Navigable = unsafe { nil }
+	find_from_window_callback            fn (voidptr, string) bool = unsafe { nil }
 	has_media_element_playing_audio_callback fn (voidptr, &Document) bool = unsafe { nil }
 	media_element_audio_state_changed_callback fn (voidptr, &Document, UniqueNodeID, bool) = unsafe { nil }
 	did_request_color_picker_callback    fn (voidptr, string, string) = unsafe { nil }
@@ -13071,6 +13072,11 @@ pub fn (p &Page) local_root_navigable() ?&Navigable {
 		return none
 	}
 	return p.local_root_navigable_callback(p.target)
+}
+
+pub fn (p &Page) find_from_window(query string) bool {
+	if p.find_from_window_callback == unsafe { nil } { return false }
+	return p.find_from_window_callback(p.target, query)
 }
 
 pub fn (p &Page) has_media_element_playing_audio(document &Document) bool {
