@@ -2,7 +2,8 @@
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/WebGL`
 
-Audited: 2026-09-12
+Reference audit: 2026-09-12
+Latest native focused verification: 2026-10-02
 
 All 42 upstream `.cpp` implementation units, 46 headers, and 37 WebIDL files
 were audited. The package implements the renderer-independent WebGL 1/2 model:
@@ -19,7 +20,7 @@ filtered by version/native support and correctly remain non-instantiable.
 
 | Upstream area | `.cpp` files | Upstream `.cpp` LOC | V implementation LOC | V test LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `WebGL/` | 42 | 7,846 | 6,205 | 1,470 | Portable state and remote transport audited; native backend pending |
+| `WebGL/` | 42 | 7,846 | 6,205 | 1,470 | Source mapping retained; native backend partially connected |
 
 The associated declarations comprise 46 headers / 2,473 LOC and 37 IDL files /
 1,403 LOC. Mapping completeness is 42/42 implementation units, 46/46 headers,
@@ -38,39 +39,39 @@ and 37/37 IDL definitions audited.
 | `WebGL2RenderingContext.cpp`, `WebGL2RenderingContextImpl.cpp`, `WebGL2RenderingContextOverloads.cpp` | `context2.v`, `context.v`, `context_operations.v`, `native_context.v`, `overload_operations.v` |
 | `Extensions/ANGLEInstancedArrays.cpp`, `EXTBlendMinMax.cpp`, `EXTColorBufferFloat.cpp`, `EXTRenderSnorm.cpp`, `EXTTextureFilterAnisotropic.cpp`, `EXTTextureNorm16.cpp`, `OESElementIndexUint.cpp`, `OESStandardDerivatives.cpp`, `OESVertexArrayObject.cpp`, `WebGLCompressedTextureS3tc.cpp`, `WebGLCompressedTextureS3tcSrgb.cpp`, `WebGLDebugRendererInfo.cpp`, `WebGLDrawBuffers.cpp`, `WebGLVertexArrayObjectOES.cpp` | `extensions.v`, `context2.v`, `objects.v` |
 
-## Platform boundaries
+## Native backend and remaining work
 
-- EGL/OpenGL ES, ANGLE, Skia, IOSurface, Vulkan image, DMA-BUF, and native
-  painting-surface work stays behind `OpenGLContext`. The V implementation
-  records ordered typed dispatches and owns the Web-observable state around it.
-- Native GLSL compilation/reflection and GPU pixel conversion remain backend
-  operations. Source retention, attachment/link eligibility, program/location
-  identity, WebIDL slices, format enablement, error precedence, and resource
-  lifetime are implemented before dispatch.
-- WebIDL typed arrays are represented by owned V byte/numeric slices. Offset and
-  length checks use borrowed slices like upstream `Span`, avoiding generated
-  full-slice copies. Overlap-safe buffer copies and detached/foreign-object
-  failure behavior are deterministic and tested. Vertex attribute pointer
-  state and program/shader/buffer parameter switches retain distinct GL state
-  instead of returning one fabricated value for every `pname`.
-- The standalone `OpenGLContext` does not claim EGL/ANGLE parity. It records
-  native calls only when the test/debug hook is explicitly enabled, avoiding an
-  unbounded allocation and argument clone on every draw call in normal use.
-  Framebuffer status, GLSL compilation/reflection, attribute/uniform locations,
-  readback, and real painting surfaces still require the native backend.
+`native_egl.h`/`native_egl.c.v` create real EGL/ANGLE contexts using the Metal
+backend on macOS and the source compositor configuration. `pkg-config egl
+glesv2` resolves those libraries. Context loss destroys the native namespace;
+restoration creates a fresh context.
+
+Native operation slices now include GPU fences, waits, sync parameters,
+GLSL compilation, linking, logs, active attribute/uniform reflection,
+locations, precision queries, typed scalar/vector/matrix uniform uploads,
+framebuffers/renderbuffers/textures, framebuffer completeness, robust 2D
+texture uploads, drawing-buffer allocation, clear/masks/scissor/viewport, and
+robust readPixels. Logical WebGL object identities remain separate from real
+native object names. Focused tests exercise actual compiler failures, varying
+link failures, active/unused declarations, precise integer uniforms, array
+locations, fractional framebuffer pixels, live texture subimages, framebuffer
+incompleteness, resizing, and GPU sync validation/results.
+
+Other dispatch paths, buffer/vertex draw execution, WebGL2 query/reflection
+families, and painting-surface presentation still need native connection and
+source review. The old state-only dispatches and source-symbol inventories do
+not establish semantic parity. Native compilation/framebuffer success does not
+close the remaining WebGL translation audit findings. Native calls are recorded
+only when explicitly requested for tests/debugging.
+
+The typed WebIDL boundary uses V byte/numeric slices. Browser runtime objects,
+remote command consumption, and native compositor handoff require independent
+end-to-end validation as their owning subsystems are connected.
 
 ## Verification
 
-```text
-$ /Users/alex/code/v/v -enable-globals test webgl
-Summary for all V _test.v files: 21 passed, 21 total.
-
-$ python3 tools/libweb_translation_audit.py
-WebGL: 520 implementation symbols, 0 unmatched.
-
-$ python3 tools/upstream_function_delta.py --base 1d025620e3344e3cc9aee26fe815d8675e4f9810 --head 963d46a829f3e1b79f44dba9d02afb70654300fa
-WebGL: 0 unmatched changed symbols.
-
-$ git diff --check -- webgl
-(no output; exit status 0)
-```
+All 25 WebGL test files passed using direct
+`v -old-compiler -enable-globals -path 'WORKTREE|@vlib|@vmodules' FILE_test.v`
+invocations. Native shader, uniform, sync, and framebuffer tests use actual
+ANGLE/Metal results. This test count describes completed focused slices and
+existing state tests, not complete WebGL execution parity.
