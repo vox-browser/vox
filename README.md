@@ -56,6 +56,9 @@ Legacy/Unicode case canonicalization, builtin character classes, VM literal
 matching, word boundaries and numbered/named backreferences add 113,204 exact
 native comparisons. They preserve duplicate-name capture priority and retain ICU
 for full UTF-8 uppercasing and simple Unicode folding.
+UnicodeSet expansion, bounded case closures, inverse-range matching,
+character classes and simple-scan membership add 255,240 exact native
+comparisons, including every BMP code point and all class flag combinations.
 The regex parser, compiler, Unicode property backend and VM execution remain
 pending.
 Synchronous iterator operations and String/ordinary-Array iterator records
