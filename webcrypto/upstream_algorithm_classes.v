@@ -216,7 +216,7 @@ pub fn (_ KMAC) get_key_length(params KmacImportParams) !KeyLengthResult {
 
 pub struct CShake {}
 pub fn CShake.create() CShake { return CShake{} }
-pub fn (_ CShake) digest(_ CShakeParams, _ []u8) ![]u8 { return backend_unavailable[[]u8]('cSHAKE', 'digest') }
+pub fn (_ CShake) digest(params CShakeParams, data []u8) ![]u8 { return cshake_digest(params, data) }
 
 pub struct AesOcb {}
 pub fn AesOcb.create() AesOcb { return AesOcb{} }

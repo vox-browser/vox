@@ -72,9 +72,8 @@ pub fn SubtleCrypto.create() &SubtleCrypto {
 
 fn normalize_key_usages_for_operation(usages []KeyUsage) []KeyUsage {
 	mut normalized := []KeyUsage{cap: usages.len}
-	for candidate in [KeyUsage.encrypt, .decrypt, .sign, .verify, .derive_key, .derive_bits,
-		.wrap_key, .unwrap_key, .encapsulate_key, .encapsulate_bits, .decapsulate_key,
-		.decapsulate_bits] {
+	for candidate in [KeyUsage.encrypt, .decrypt, .sign, .verify, .derive_key, .derive_bits, .wrap_key,
+		.unwrap_key, .encapsulate_key, .encapsulate_bits, .decapsulate_key, .decapsulate_bits] {
 		for usage in usages {
 			if usage == candidate {
 				normalized << usage
@@ -190,26 +189,25 @@ fn validate_jwk_algorithm_metadata(jwk JsonWebKey, algorithm string, material_le
 	validate_jwk_key_ops(jwk, usages)!
 }
 
-const digest_algorithms = ['SHA-1', 'SHA-256', 'SHA-384', 'SHA-512', 'SHA3-256', 'SHA3-384',
-	'SHA3-512', 'cSHAKE128', 'cSHAKE256']
+const digest_algorithms = ['SHA-1', 'SHA-256', 'SHA-384', 'SHA-512', 'SHA3-256', 'SHA3-384', 'SHA3-512',
+	'cSHAKE128', 'cSHAKE256']
 const encryption_algorithms = ['RSA-OAEP', 'AES-CTR', 'AES-CBC', 'AES-GCM', 'ChaCha20-Poly1305',
 	'AES-OCB']
 const signing_algorithms = ['RSASSA-PKCS1-v1_5', 'RSA-PSS', 'ECDSA', 'HMAC', 'Ed25519', 'Ed448',
 	'ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87', 'KMAC128', 'KMAC256']
 const generation_algorithms = ['RSASSA-PKCS1-v1_5', 'RSA-PSS', 'RSA-OAEP', 'ECDSA', 'ECDH', 'AES-CTR',
 	'AES-CBC', 'AES-GCM', 'AES-KW', 'HMAC', 'X25519', 'X448', 'Ed25519', 'Ed448', 'ML-DSA-44',
-	'ML-DSA-65', 'ML-DSA-87', 'ML-KEM-512', 'ML-KEM-768', 'ML-KEM-1024', 'ChaCha20-Poly1305',
-	'AES-OCB', 'KMAC128', 'KMAC256']
+	'ML-DSA-65', 'ML-DSA-87', 'ML-KEM-512', 'ML-KEM-768', 'ML-KEM-1024', 'ChaCha20-Poly1305', 'AES-OCB',
+	'KMAC128', 'KMAC256']
 const import_algorithms = ['RSASSA-PKCS1-v1_5', 'RSA-PSS', 'RSA-OAEP', 'ECDSA', 'ECDH', 'AES-CTR',
 	'AES-CBC', 'AES-GCM', 'AES-KW', 'HMAC', 'HKDF', 'PBKDF2', 'X25519', 'X448', 'Ed25519', 'Ed448',
 	'ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87', 'ML-KEM-512', 'ML-KEM-768', 'ML-KEM-1024', 'Argon2d',
 	'Argon2i', 'Argon2id', 'ChaCha20-Poly1305', 'AES-OCB', 'KMAC128', 'KMAC256']
 const export_algorithms = ['RSASSA-PKCS1-v1_5', 'RSA-PSS', 'RSA-OAEP', 'ECDSA', 'ECDH', 'AES-CTR',
 	'AES-CBC', 'AES-GCM', 'AES-KW', 'HMAC', 'X25519', 'X448', 'Ed25519', 'Ed448', 'ML-DSA-44',
-	'ML-DSA-65', 'ML-DSA-87', 'ML-KEM-512', 'ML-KEM-768', 'ML-KEM-1024', 'ChaCha20-Poly1305',
-	'AES-OCB', 'KMAC128', 'KMAC256']
-const derive_algorithms = ['ECDH', 'HKDF', 'PBKDF2', 'X25519', 'X448', 'Argon2d', 'Argon2i',
-	'Argon2id']
+	'ML-DSA-65', 'ML-DSA-87', 'ML-KEM-512', 'ML-KEM-768', 'ML-KEM-1024', 'ChaCha20-Poly1305', 'AES-OCB',
+	'KMAC128', 'KMAC256']
+const derive_algorithms = ['ECDH', 'HKDF', 'PBKDF2', 'X25519', 'X448', 'Argon2d', 'Argon2i', 'Argon2id']
 const key_length_algorithms = ['AES-CTR', 'AES-CBC', 'AES-GCM', 'AES-KW', 'HMAC', 'HKDF', 'PBKDF2',
 	'Argon2d', 'Argon2i', 'Argon2id', 'ChaCha20-Poly1305', 'AES-OCB', 'KMAC128', 'KMAC256']
 const encapsulation_algorithms = ['ML-KEM-512', 'ML-KEM-768', 'ML-KEM-1024']
@@ -240,8 +238,8 @@ pub fn normalize_an_algorithm(name string, operation string) !string {
 }
 
 pub fn canonical_algorithm_name(name string) !string {
-	for operation in ['encrypt', 'sign', 'digest', 'deriveBits', 'generateKey', 'importKey',
-		'exportKey', 'get key length', 'encapsulate'] {
+	for operation in ['encrypt', 'sign', 'digest', 'deriveBits', 'generateKey', 'importKey', 'exportKey',
+		'get key length', 'encapsulate'] {
 		for registered_name in supported_algorithms_for_operation(operation) {
 			if registered_name.to_lower() == name.to_lower() {
 				return registered_name
@@ -260,9 +258,21 @@ fn validate_operation_key(key &CryptoKey, algorithm string, usage KeyUsage) ! {
 	}
 }
 
-pub fn (subtle_crypto &SubtleCrypto) digest(algorithm string, data []u8) ![]u8 {
+pub type DigestParams = CShakeParams | string
+
+pub fn (subtle_crypto &SubtleCrypto) digest(algorithm DigestParams, data []u8) ![]u8 {
 	_ = subtle_crypto
-	normalized := normalize_an_algorithm(algorithm, 'digest')!
+	name := match algorithm {
+		CShakeParams { algorithm.name }
+		string { algorithm }
+	}
+	normalized := normalize_an_algorithm(name, 'digest')!
+	if algorithm is CShakeParams {
+		return CShake.create().digest(CShakeParams{ ...algorithm, name: normalized }, data)
+	}
+	if normalized in ['cSHAKE128', 'cSHAKE256'] {
+		return error('TypeError: outputLength is required')
+	}
 	return digest_bytes(normalized, data)
 }
 
@@ -349,8 +359,7 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 					pair: generate_ed25519_key(extractable, normalized_usages)!
 				}
 			} else if normalized == 'ChaCha20-Poly1305' {
-				validate_usages(normalized_usages, [KeyUsage.encrypt, .decrypt, .wrap_key,
-					.unwrap_key])!
+				validate_usages(normalized_usages, [KeyUsage.encrypt, .decrypt, .wrap_key, .unwrap_key])!
 				GeneratedKey{
 					key: CryptoKey.create(.secret, extractable, KeyAlgorithm{
 						name: normalized
@@ -535,7 +544,11 @@ pub fn (subtle_crypto &SubtleCrypto) derive_key(params DeriveParams, base_key &C
 		return error('InvalidAccessError: Key does not support deriving keys')
 	}
 	normalized_derived_algorithm := normalize_an_algorithm(derived_algorithm, 'get key length')!
-	if normalized_derived_algorithm.starts_with('AES-') && derived_length !in [u16(128), 192, 256] {
+	if normalized_derived_algorithm.starts_with('AES-') && derived_length !in [
+		u16(128),
+		192,
+		256,
+	] {
 		return error('OperationError: Invalid derived AES key length')
 	}
 	bits := derive_bits_bytes_for_usage(params, base_key, u32(derived_length), .derive_key)!
