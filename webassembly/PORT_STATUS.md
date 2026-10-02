@@ -437,3 +437,36 @@ own locals storage moves. V does not enforce the C++ deleted copy operations.
 Configuration, compiled-function-table construction, call-record allocation
 and interpreter execution remain unimplemented; these records do not supply
 an executor or fabricated results.
+
+## Source import records and linker
+
+`2e24843c` retains the complete source `ImportSection::Import::ImportDesc`
+variant and one original-order machine import list alongside the public API's
+separate tag-omitting list. Interleaved tags retain their actual position and
+function/table/memory/global/tag descriptors. `9f8f43bd` restores those records
+when deserializing a Module's actual source bytes. The parser case passes with
+both GC modes; restored-module and existing Module neighbors also pass in both.
+
+`9c15159a` translates every `Linker` method from pinned
+`AbstractMachine.cpp:1209–1292` and its `Name` traits. Module linking ignores
+the qualifier and chooses the first matching export. Qualified linking uses
+module/name equality and deliberately ignores the description, as source does.
+The final vector follows original import order, including duplicate names and
+tags, and preserves actual typed Store addresses. A V string-key adapter encodes
+the module byte length to preserve both ByteStrings without ambiguous boundaries
+or embedded-NUL collisions; it does not add type checking to the source linker.
+
+Five source cases pass in each GC mode, including an actual binary module and
+real Memory/Tag/HostFunction Store allocations, first-export selection, empty
+linking, repeated linking and independent returned error copies. The pinned
+source appends missing names again on repeated failed `finish()` and retains the
+error after imports are later resolved; those behaviors are preserved. The
+complete current package passes **67/67 files with default GC and 67/67 with
+`-gc none`**, recorded in `source-linker-full-wasm-{default,gc-none}.log` under
+`Build/audit-fixes/`.
+
+This source linker resolves existing addresses. The legacy browser Instance
+initialization is not yet routed through source `AbstractMachine::instantiate`;
+Configuration, compiled instructions, constant-expression execution, native
+compilation, interpreter invocation and the full lifetime/root graph remain
+open. No fabricated machine execution or export result is supplied by this slice.
