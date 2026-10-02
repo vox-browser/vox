@@ -183,8 +183,9 @@ fn (mut host TransformStreamHost) operate(args []voidptr) !voidptr {
 }
 
 const transform_stream_native_bootstrap = r'(function(create,operate){
- const define=Object.defineProperty,Type=TypeError;
- function TransformStream(transformer=undefined,writableStrategy=undefined,readableStrategy=undefined){if(!new.target)throw new Type("TransformStream requires new");return create(transformer,writableStrategy,readableStrategy,new.target.prototype)}
+ const define=Object.defineProperty,Type=TypeError,ConstructProxy=Proxy;
+ const TransformStream=new ConstructProxy(function TransformStream(){throw new Type("TransformStream requires new")},{construct(target,args,newTarget){const prototype=newTarget.prototype;return create(args[0],args[1],args[2],prototype)}});
+ define(TransformStream.prototype,"constructor",{value:TransformStream,writable:true,configurable:true});
  function TransformStreamDefaultController(){throw new Type("Illegal constructor")}
  const attribute=(prototype,name,operation)=>define(prototype,name,{enumerable:true,configurable:true,get(){return operate(this,operation)}});
  const method=(prototype,name,value)=>define(prototype,name,{value,writable:true,enumerable:true,configurable:true});
