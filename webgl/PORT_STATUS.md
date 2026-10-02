@@ -153,6 +153,13 @@ test passed with Float16Array exposed by JavaScriptCore, checking offset/length
 upload bytes and destination offsets without reading an author-shadowed
 BYTES_PER_ELEMENT property.
 
+Effective overload selection distinguishes raw ArrayBuffer from ArrayBufferView
+using actual engine brands, matching `WebIDL/OverloadResolution.cpp:203-253`.
+An ambiguous texImage2D call with a raw buffer now raises the source overload
+resolution error before reading earlier numeric argument getters. The focused
+effective-overload file passed with `-gc none`, including supported numeric
+buffer allocation and nullable/typed-view texture uploads.
+
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
