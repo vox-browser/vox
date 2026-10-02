@@ -5,6 +5,13 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/WebGL`
 Reference audit: 2026-09-12
 Latest native focused verification: 2026-10-03
 
+After the XR Promise/owning-context installation changes, all 24 public
+`browserjs/canvas_webgl*_test.v` files plus the mixed 2D/WebGL context file
+passed with GC disabled against snapshot `70dbaa51` (25/25 files). The exact
+manifest, individual logs, and results are under
+`Build/audit-fixes/webgl-xr-70dbaa51/`. This supplements the prior complete
+53-file typed-package and 22-file public sweep; no obsolete fixtures were found.
+
 All 42 upstream `.cpp` implementation units, 46 headers, and 37 WebIDL files
 were audited. The package implements the renderer-independent WebGL 1/2 model:
 context attributes and loss, drawing-buffer lifecycle, first-error retention,
