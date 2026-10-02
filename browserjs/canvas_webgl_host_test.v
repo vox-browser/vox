@@ -18,8 +18,9 @@ fn test_javascript_webgl_host_compiles_shaders_uploads_buffers_and_draws_native_
 		assert runtime.evaluate_host('const fragment=call("createShader",[0x8b30]);call("shaderSource",[fragment,"#version 300 es\\nprecision mediump float;out vec4 color;uniform vec4 tint;void main(){color=tint;}"]);call("compileShader",[fragment]);call("getShaderParameter",[fragment,0x8b81])')! == 'true'
 		assert runtime.evaluate_host('const program=call("createProgram",[]);call("attachShader",[program,vertex]);call("attachShader",[program,fragment]);call("bindAttribLocation",[program,0,"position"]);call("linkProgram",[program]);call("useProgram",[program]);call("getProgramParameter",[program,0x8b82])')! == 'true'
 		runtime.evaluate_host('const tint=call("getUniformLocation",[program,"tint"]);call("uniform4fv",[tint,[1,0.25,0.5,1]]);const buffer=call("createBuffer",[]);call("bindBuffer",[0x8892,buffer]);const vertices=new Float32Array([-1,-1,3,-1,-1,3]);call("bufferData",[0x8892,Array.from(new Uint8Array(vertices.buffer)),0x88e4]);call("vertexAttribPointer",[0,2,0x1406,false,0,0]);call("enableVertexAttribArray",[0]);call("drawArrays",[4,0,3]);')!
-		assert runtime.evaluate_host('call("readPixels",[0,0,1,1,0x1908,0x1401])')! == '255,64,128,255'
+		assert runtime.evaluate_host('call("readPixels",[0,0,1,1,0x1908,0x1401,[0,0,0,0]])')! == '255,64,128,255'
 		assert runtime.evaluate_host('call("getError",[])')! == '0'
+		assert runtime.evaluate_host('call("readPixels",[0,0,1,1,0x1908,0x1401,[99]]);call("getError",[])')! == '1282'
 		assert runtime.evaluate_host('call("getParameter",[0x8894]).handle===buffer.handle')! == 'true'
 		canvas_element := css.query_selector(unsafe { &dom.Node(document) }, '#canvas') or { panic('canvas') }
 		canvas := unsafe { &dom.HTMLCanvasElement(canvas_element) }

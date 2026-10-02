@@ -123,6 +123,28 @@ pub fn (mut context WebGLRenderingContext) read_pixels(x int, y int, width int, 
  return data[..written].clone()
 }
 
+// WebGL{,2}RenderingContextOverloads::read_pixels: the destination view's
+// capacity and element offset reach ANGLE's robust read, before any write-back.
+pub fn (mut context WebGLRenderingContext) read_pixels_into(x int, y int, width int, height int, format GLenum, type_ GLenum, mut pixels []u8, dst_offset u64, element_size u64) {
+	if context.version == .webgl2 && pixel_pack_buffer in context.bound_buffers {
+		context.set_error(invalid_operation)
+		return
+	}
+	if element_size == 0 || dst_offset > u64(pixels.len) / element_size {
+		context.set_error(invalid_operation)
+		return
+	}
+	byte_offset := int(dst_offset * element_size)
+	if !context.command('read_pixels', x, y, width, height, format, type_) { return }
+	written := C.vox_gl_read_pixels(x, y, width, height, format, type_, pixels.len - byte_offset, unsafe { &u8(pixels.data) + byte_offset })
+	context.native.collect_native_error()
+	if written < 0 || written > pixels.len - byte_offset { context.set_error(invalid_operation) }
+}
+
+pub fn (mut context WebGLRenderingContext) read_pixels_null() {
+	context.set_error(invalid_value)
+}
+
 fn ints_to_floats(values []int) []f32 {
 	return values.map(f32(it))
 }

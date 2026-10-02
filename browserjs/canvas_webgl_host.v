@@ -934,7 +934,10 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 			context.tex_sub_image2d(wg_u32(wg_arg(args, 0)), wg_int(wg_arg(args, 1)), wg_int(wg_arg(args, 2)), wg_int(wg_arg(args, 3)), wg_int(wg_arg(args, 4)), wg_int(wg_arg(args, 5)), wg_u32(wg_arg(args, 6)), wg_u32(wg_arg(args, 7)), wg_array(wg_arg(args, 8)).map(u8(wg_u32(it))))
 		}
 		'readPixels' {
-			return json2.Any(context.read_pixels(wg_int(wg_arg(args, 0)), wg_int(wg_arg(args, 1)), wg_int(wg_arg(args, 2)), wg_int(wg_arg(args, 3)), wg_u32(wg_arg(args, 4)), wg_u32(wg_arg(args, 5))).map(json2.Any(it)))
+			if wg_arg(args, 6) is json2.Null { context.read_pixels_null(); return json2.Any(json2.Null{}) }
+			mut pixels := wg_array(wg_arg(args, 6)).map(u8(wg_u32(it)))
+			context.read_pixels_into(wg_int(wg_arg(args, 0)), wg_int(wg_arg(args, 1)), wg_int(wg_arg(args, 2)), wg_int(wg_arg(args, 3)), wg_u32(wg_arg(args, 4)), wg_u32(wg_arg(args, 5)), mut pixels, wg_u64(wg_arg(args, 7)), wg_u64(request['elementSize'] or { json2.Any(1) }))
+			return json2.Any(pixels.map(json2.Any(int(it))))
 		}
 		'uniform1fv' {
 			host.validate_resource(wg_arg(args, 0), 'uniform_location', true)!
