@@ -120,3 +120,26 @@ fn test_canvas_host_draws_shaped_text_immediately() {
 	defer { runtime.close() }
 	assert runtime.evaluate(r'context.font="12px serif";context.fillText("O",1,12);context.getImageData(0,0,16,16).data.some(function(value,index){return index%4===3&&value>0;});')! == 'true'
 }
+
+fn test_canvas_host_keeps_created_canvas_dom_identity_for_replay() {
+	$if !darwin {
+		return
+	}
+	mut runtime, host := canvas_host_test_runtime()
+	defer { runtime.close() }
+	runtime.evaluate('context.fillStyle="red";context.fillRect(0,0,2,2);')!
+	elements := runtime.canvas_elements_for_binding()
+	element := elements['created'] or { panic('created native canvas missing') }
+	if actual := host.contexts['created'].element_context {
+		if voidptr(actual.element) != voidptr(element) {
+			panic('canvas DOM binding identity changed')
+		}
+	} else {
+		panic('created canvas is missing its element context')
+	}
+	canvas := unsafe { &dom.HTMLCanvasElement(element) }
+	context := html.html_canvas_element_get_context(canvas, '2d', none)!
+	if (context.get_image_data(0, 0, 1, 1, none)!).data() != [u8(255), 0, 0, 255] {
+		panic('created canvas surface is missing')
+	}
+}

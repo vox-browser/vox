@@ -37,9 +37,19 @@ pub fn CanvasHost.create(document &dom.Document) &CanvasHost {
 }
 
 pub fn (mut host CanvasHost) install(mut runtime Runtime) ! {
-	runtime.define_host_function('__ladybirdCanvas', fn [mut host] (input string) !string {
+	runtime.define_host_function('__ladybirdCanvas', fn [mut host, mut runtime] (input string) !string {
+		for key, element in runtime.canvas_elements_for_binding() {
+			host.elements[key] = element
+		}
 		return host.call(input)
 	})!
+	runtime.add_canvas_element_provider(fn [mut host] () map[string]&dom.Element {
+		return host.elements_for_binding()
+	})
+}
+
+pub fn (host &CanvasHost) elements_for_binding() map[string]&dom.Element {
+	return host.elements.clone()
 }
 
 fn canvas_host_object(value json2.Any) !map[string]json2.Any {
@@ -126,10 +136,13 @@ fn (mut host CanvasHost) context_for(key string, width u32, height u32, settings
 		host.contexts[key] = record
 		return record
 	}
-	mut canvas := html.OffscreenCanvas.create(width, height)!
-	mut context := canvas.get_context(.canvas_2d, settings)!
-	context.set_font_resolution_document(host.document)
-	record := &CanvasHostContext{ context: context }
+	mut element := host.document.create_element_ns('http://www.w3.org/1999/xhtml', 'canvas')!
+	mut canvas := unsafe { &dom.HTMLCanvasElement(element) }
+	html.html_canvas_element_set_width(mut canvas, width)!
+	html.html_canvas_element_set_height(mut canvas, height)!
+	context := html.html_canvas_element_get_context(canvas, '2d', settings)!
+	record := &CanvasHostContext{ context: &context.OffscreenCanvasRenderingContext2D, element_context: context }
+	host.elements[key] = element
 	host.contexts[key] = record
 	return record
 }
@@ -143,6 +156,14 @@ fn (mut host CanvasHost) image_source(request map[string]json2.Any) !html.Canvas
 		return html.CanvasImageSource(html.ImageBitmapCanvasSource{ value: image })
 	}
 	if element := host.elements[source_key] {
+		if element.local_name() == 'canvas' {
+			canvas := unsafe { &dom.HTMLCanvasElement(element) }
+			if bitmap := html.html_canvas_element_get_bitmap_from_surface(canvas) {
+				mut image := html.ImageBitmap.create()
+				image.set_bitmap(bitmap.clone())
+				return html.CanvasImageSource(html.ImageBitmapCanvasSource{ value: image })
+			}
+		}
 		if element.local_name() == 'img' {
 			image := unsafe { &dom.HTMLImageElement(element) }
 			model := html.html_image_element_model_for_dom_element(image)

@@ -54,6 +54,9 @@ pub fn (mut host CanvasWebGLHost) install(mut runtime Runtime) ! {
 	runtime.define_host_function('__ladybirdWebGL', fn [mut host] (input string) !string {
 		return host.call(input)
 	})!
+	runtime.add_canvas_element_provider(fn [mut host] () map[string]&dom.Element {
+		return host.elements_for_binding()
+	})
 }
 
 fn wg_object(value json2.Any) !map[string]json2.Any {

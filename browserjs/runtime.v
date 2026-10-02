@@ -1,6 +1,7 @@
 module browserjs
 
 import libjs
+import dom
 import json2
 
 pub enum Engine {
@@ -56,9 +57,10 @@ pub struct Runtime {
 pub:
 	engine Engine
 mut:
-	context voidptr
-	closed  bool
-	host_functions_ []&HostFunctionRecord
+	context                   voidptr
+	closed                    bool
+	host_functions_           []&HostFunctionRecord
+	canvas_element_providers_ []CanvasElementProvider
 }
 
 pub fn Runtime.create() &Runtime {
@@ -235,5 +237,6 @@ pub fn (mut runtime Runtime) close() {
 	mut vm := unsafe { &libjs.VM(runtime.agent_vm) }
 	vm.clear_execution_context_stack()
 	runtime.host_functions_.clear()
+	runtime.canvas_element_providers_.clear()
 	runtime.closed = true
 }

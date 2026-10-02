@@ -1485,6 +1485,7 @@ fn javascript_bootstrap(state map[string]json2.Any) string {
 		'function __classList(s) { function tokens() { return String(s.className || "").trim().split(/\\s+/).filter(Boolean); } function sync(values) { __setAttribute(s,"class",values.join(" ")); } return { add: function () { const values=tokens(); for(const item of arguments){const token=String(item);if(token&&!values.includes(token))values.push(token);} sync(values); }, remove: function () { const removed=Array.prototype.map.call(arguments,String); sync(tokens().filter(function(token){return !removed.includes(token);})); }, contains: function (token) { return tokens().includes(String(token)); }, toggle: function (token, force) { token=String(token); const values=tokens(), present=values.includes(token), add=force===undefined?!present:!!force; if(add&&!present)values.push(token); if(!add&&present)values.splice(values.indexOf(token),1); sync(values); return add; } }; }',
 		'function __canvasDimension(s, name) { const fallback=name === "width" ? 300 : 150; if(s[name]===undefined||s[name]===null||String(s[name])==="")return fallback; const value=Number(s[name]); return Number.isFinite(value) && value >= 0 && value <= 2147483647 ? Math.trunc(value) : fallback; }',
 		browserjs.canvas_bootstrap(),
+		browserjs.webgl_bootstrap(),
 		'function __decodeBase64(input) { const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"; const clean=String(input||"").replace(/[^A-Za-z0-9+/]/g,""); const output=new Uint8ClampedArray(Math.floor(clean.length*3/4)); let bits=0,value=0,index=0; for(const ch of clean){const digit=alphabet.indexOf(ch);if(digit<0)continue;value=(value<<6)|digit;bits+=6;if(bits>=8){bits-=8;output[index++]=(value>>bits)&255;}} return index===output.length?output:output.slice(0,index); }',
 		'function __videoFor(s) { if(s.__videoFrame)return s.__videoFrame; if(!s.videoPixels)return null; return s.__videoFrame={width:+s.videoWidth||0,height:+s.videoHeight||0,data:__decodeBase64(s.videoPixels)}; }',
 		'function __setElementSource(s,value) { __setAttribute(s,"src",value); if(s.tagName==="video"){const frame=__state.videoSources[s.src];if(frame){s.readyState=2;s.videoWidth=frame.width;s.videoHeight=frame.height;s.videoPixels=frame.pixels;s.__videoFrame=null;}} if(s.tagName==="img"){s.complete=true;const target=__element(s),event={type:"load",target:target};for(const listener of (__listeners[__listenerKey(s,"load")]||[]))listener.call(target,event);} }',
@@ -1842,12 +1843,17 @@ fn javascript_created_node(document &dom.Document, state map[string]json2.Any, m
 	namespace_uri := json_string_property(state, 'namespaceURI') or {
 		'http://www.w3.org/1999/xhtml'
 	}
-	mut element := document.create_element_ns(namespace_uri, tag_name) or { return none }
+	mut element := if tag_name == 'canvas' {
+		key := json_string_property(state, 'bridgeKey') or { '' }
+		element_by_bridge_key[key] or { document.create_element_ns(namespace_uri, tag_name) or { return none } }
+	} else {
+		document.create_element_ns(namespace_uri, tag_name) or { return none }
+	}
 	if attribute_values := state['attributes'] {
 		if attribute_values is map[string]json2.Any {
 			for name, attribute_value in attribute_values as map[string]json2.Any {
 				if attribute_value is string {
-					element.set_attribute_value(name, attribute_value)
+					apply_javascript_element_attribute(mut element, name, attribute_value)
 				}
 			}
 		}
@@ -1917,7 +1923,7 @@ fn apply_javascript_canvas_state(document &dom.Document, mut element dom.Element
 	context.did_draw(html.CanvasFloatRect{0, 0, f64(width), f64(height)})
 }
 
-fn apply_javascript_state(document &dom.Document, encoded string, mut messages []string) ?string {
+fn apply_javascript_state(document &dom.Document, encoded string, canvas_elements map[string]&dom.Element, mut messages []string) ?string {
 	value := json2.decode[json2.Any](encoded) or {
 		messages << 'JavaScript bridge result: ${err.msg()}'
 		return none
@@ -1954,7 +1960,7 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 			}
 		}
 	}
-	mut element_by_bridge_key := map[string]&dom.Element{}
+	mut element_by_bridge_key := canvas_elements.clone()
 	if element_values := state['elements'] {
 		if element_values is map[string]json2.Any {
 			for _, item in element_values as map[string]json2.Any {
@@ -2216,6 +2222,11 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript canvas bindings: ${err.msg()}'
 		return none
 	}
+	mut webgl_host := browserjs.CanvasWebGLHost.create(document)
+	webgl_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript WebGL bindings: ${err.msg()}'
+		return none
+	}
 	runtime.evaluate_host(javascript_bootstrap(javascript_initial_state(document, current_url, sources.map(it.code)))) or {
 		messages << 'JavaScript: ${err.msg()}'
 		return none
@@ -2236,7 +2247,7 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript: ${err.msg()}'
 		return none
 	}
-	navigation := apply_javascript_state(document, result, mut messages)
+	navigation := apply_javascript_state(document, result, runtime.canvas_elements_for_binding(), mut messages)
 	runtime.evaluate_host('__ladybirdClearLogs()') or {}
 	return navigation
 }
@@ -2264,7 +2275,7 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 		app.js_messages << 'JavaScript event: ${err.msg()}'
 		return false
 	}
-	navigation := apply_javascript_state(app.document, result, mut app.js_messages)
+	navigation := apply_javascript_state(app.document, result, app.js_runtime.canvas_elements_for_binding(), mut app.js_messages)
 	app.js_runtime.evaluate_host('__ladybirdClearLogs()') or {}
 	app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
 	if destination := navigation {
