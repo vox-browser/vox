@@ -20,6 +20,7 @@ fn (mut reader OkpDerReader) byte() !u8 {
 
 fn (mut reader OkpDerReader) read(sequence bool) ![]u8 {
 	mut tag := reader.byte()!
+    constructed := tag & 0x20 != 0
 	mut kind := tag & 0x1f
 	if kind == 0x1f {
 		kind = 0
@@ -28,7 +29,7 @@ fn (mut reader OkpDerReader) read(sequence bool) ![]u8 {
 			kind = (kind << 7) | (tag & 0x7f)
 		}
 	}
-	if sequence && (kind != 16 || tag & 0x20 == 0) {
+	if sequence && (kind != 16 || !constructed) {
 		return error('DataError: ASN1::Decoder: Expected a constructed Sequence')
 	}
 	// READ_OBJECT supplies universal class/kind overrides in the source. Its
