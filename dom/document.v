@@ -2120,6 +2120,9 @@ pub mut:
 	needs_a_browsing_context_group_switch      bool
 	would_switch_due_to_report_only            bool
 	final_sandboxing_flag_bits                 u32
+	policy_container                          ?&PolicyContainer
+	about_base_url                            ?URL
+	id                                        ?string
 	opener_policy                              OpenerPolicy
 	was_created_via_cross_origin_redirects     bool
 	load_timing_info                           DocumentLoadTimingInfo
@@ -5264,6 +5267,14 @@ pub fn Document.create_and_initialize(type_ DocumentType_, content_type string, 
 	doc.was_created_via_cross_origin_redirects = navigation_params.was_created_via_cross_origin_redirects
 	doc.load_timing_info = navigation_params.load_timing_info
 	doc.browsing_context = browsing_context
+	// Document.cpp: create_and_initialize, step 9. Install navigation state
+	// before initialization and document CSP initialization can observe it.
+	doc.set_active_sandboxing_flag_bits(navigation_params.final_sandboxing_flag_bits)
+	if policy_container := navigation_params.policy_container {
+		doc.set_policy_container(policy_container)
+	}
+	doc.about_base_url = navigation_params.about_base_url
+	doc.navigation_id = navigation_params.id
 	doc.readiness = .loading
 	doc.allow_declarative_shadow_roots = true
 	doc.window = &Window{
