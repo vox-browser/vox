@@ -222,7 +222,7 @@ pub type EncryptionParams = AeadParams
 	| AesGcmParams
 	| AlgorithmParams
 
-pub type DeriveParams = Argon2Params | HkdfParams | Pbkdf2Params
+pub type DeriveParams = Argon2Params | EcdhKeyDeriveParams | HkdfParams | Pbkdf2Params
 
 fn canonical_hash_name(name string) !string {
 	return match name.to_upper() {
@@ -666,6 +666,12 @@ fn derive_bits_bytes_for_usage(params DeriveParams, base_key &CryptoKey, length_
 	if !base_key.permits(required_usage) {
 		return error('InvalidAccessError: Key does not permit derivation')
 	}
+	if params is EcdhKeyDeriveParams {
+		normalized := normalize_an_algorithm(params.name, 'deriveBits')!
+		if normalized != base_key.algorithm_name() { return error('InvalidAccessError: Key algorithm mismatch') }
+		if normalized == 'X25519' { return X25519.create().derive_bits(EcdhKeyDeriveParams{ ...params, name: normalized }, base_key, length_bits) }
+		return error('NotSupportedError: Derivation backend is unavailable for ${normalized}')
+	}
 	if length_bits == 0 || length_bits % 8 != 0 {
 		return error('OperationError: Derived bit length must be a positive multiple of 8')
 	}
@@ -677,6 +683,7 @@ fn derive_bits_bytes_for_usage(params DeriveParams, base_key &CryptoKey, length_
 		HkdfParams { hkdf_derive(params, base_key.handle_, length_bytes)! }
 		Pbkdf2Params { pbkdf2_derive(params, base_key.handle_, length_bytes)! }
 		Argon2Params { argon2_derive(params, base_key.handle_, length_bytes)! }
+		EcdhKeyDeriveParams { error('NotSupportedError: Unexpected derivation parameters') }
 	}
 }
 

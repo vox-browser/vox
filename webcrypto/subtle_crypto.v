@@ -382,6 +382,8 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 				GeneratedKey{
 					pair: generate_ed25519_key(extractable, normalized_usages)!
 				}
+			} else if normalized == 'X25519' {
+				X25519.create().generate_key(AlgorithmParams{ name: normalized }, extractable, normalized_usages)!
 			} else if normalized in ['KMAC128', 'KMAC256'] {
 				KMAC.create().generate_key(KmacKeyGenParams{ name: normalized }, extractable, normalized_usages)!
 			} else if normalized == 'ChaCha20-Poly1305' {
@@ -426,6 +428,11 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
 		if key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
 		return key
 	}
+	if normalized == 'X25519' {
+		key := X25519.create().import_key(AlgorithmParams{ name: normalized }, format, material, extractable, normalized_usages)!
+		if key.type_ == .private_key && key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+		return key
+	}
 	if normalized == 'Ed25519' {
 		if format in [KeyFormat.raw_seed, .raw_private] && normalized_usages.len == 0 {
 			return error('SyntaxError: usages must not be empty')
@@ -452,6 +459,9 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 		return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name)
 	}
 	if normalized in ['KMAC128', 'KMAC256'] {
+		return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name)
+	}
+	if normalized == 'X25519' {
 		return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name)
 	}
 	if extractable {
@@ -514,6 +524,10 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 pub fn (subtle_crypto &SubtleCrypto) export_key(format KeyFormat, key &CryptoKey) ![]u8 {
 	_ = subtle_crypto
 	normalize_an_algorithm(key.algorithm_name(), 'exportKey')!
+	if key.algorithm_name() == 'X25519' {
+		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
+		return X25519.create().export_key(format, key)
+	}
 	if key.algorithm_name() == 'AES-OCB' {
 		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
 		return export_aes_ocb_key(format, key)
@@ -546,6 +560,7 @@ pub fn (subtle_crypto &SubtleCrypto) export_jwk(key &CryptoKey) !JsonWebKey {
 	if key.algorithm_name() == 'AES-OCB' {
 		return JsonWebKey.parse(export_aes_ocb_key(.jwk, key)!)
 	}
+	if key.algorithm_name() == 'X25519' { return export_exchange_jwk('X25519', key) }
 	operations := key.usages.map(key_usage_string(it))
 	if key.algorithm_name() == 'Ed25519' {
 		if key.type_ == .public_key {
@@ -589,15 +604,21 @@ pub fn (subtle_crypto &SubtleCrypto) export_jwk(key &CryptoKey) !JsonWebKey {
 	}
 }
 
-pub fn (subtle_crypto &SubtleCrypto) derive_bits(params DeriveParams, base_key &CryptoKey, length_bits u32) ![]u8 {
+pub fn (subtle_crypto &SubtleCrypto) derive_bits(params DeriveParams, base_key &CryptoKey, length_bits ?u32) ![]u8 {
 	_ = subtle_crypto
 	name := match params {
 		HkdfParams { params.name }
 		Pbkdf2Params { params.name }
 		Argon2Params { params.name }
+		EcdhKeyDeriveParams { params.name }
 	}
-	normalize_an_algorithm(name, 'deriveBits')!
-	return derive_bits_bytes(params, base_key, length_bits)
+	normalized := normalize_an_algorithm(name, 'deriveBits')!
+	if params is EcdhKeyDeriveParams {
+		validate_operation_key(base_key, normalized, .derive_bits)!
+		if normalized == 'X25519' { return X25519.create().derive_bits(EcdhKeyDeriveParams{ ...params, name: normalized }, base_key, length_bits) }
+		return error('NotSupportedError: Derivation backend is unavailable for ${normalized}')
+	}
+	return derive_bits_bytes(params, base_key, length_bits or { return error('OperationError: length is required') })
 }
 
 pub fn (subtle_crypto &SubtleCrypto) derive_key(params DeriveParams, base_key &CryptoKey, derived_algorithm string, derived_length u16, extractable bool, usages []KeyUsage) !&CryptoKey {
@@ -608,6 +629,7 @@ pub fn (subtle_crypto &SubtleCrypto) derive_key(params DeriveParams, base_key &C
 		HkdfParams { params.name }
 		Pbkdf2Params { params.name }
 		Argon2Params { params.name }
+		EcdhKeyDeriveParams { params.name }
 	}
 	normalized := normalize_an_algorithm(name, 'deriveBits')!
 	if normalized != base_key.algorithm_name() || !base_key.permits(.derive_key) {
