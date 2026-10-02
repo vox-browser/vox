@@ -167,7 +167,28 @@ throws and stable getter root counts are covered. Two typed files and three
 native constructor/identity/brand files passed with GC disabled. This retains
 the source string fields at the typed embedding boundary; full AK Utf16FlyString
 intern-table ownership remains separate. SerializableObject interface ids,
-exposure and payload versions still need the actual source registry codec.
+exposure and payload versions are a separate source registry codec boundary.
+
+The SerializableObject DOMException payload now follows the actual source
+registry. A reproducible tool imports the pinned source IDL parser/intrinsic
+collector without writing upstream bytecode, checks the pin and input diff,
+and retains a metadata digest. Fresh source metadata contains 586 intrinsic
+interfaces and assigns DOMException id 568 (QuotaExceededError 569). The old
+upstream build header contains 553 entries and assigns DOMException 538; that
+stale artifact is not the translation reference. The two generated CSS inputs
+are only a partial namespace and mixin, so they contribute no interface ordinal;
+an independent full source GenerationContext confirmed the same fresh ids.
+
+IPC emits SerializableObject, the source u16 primary interface id, then name
+and message UTF-16 fields. LBSC emits the stable interface identifier and source
+payload version 1 before those fields. The target's actual exposure callback is
+required before platform allocation/payload reading; standalone decoders do not
+invent a browser realm. Aliases retain the source object memory, malformed ids,
+versions and truncation reject, and an untranslated primary subtype never
+silently becomes a base DOMException. Three codec cases and the LBSC neighbor
+passed two files with GC disabled. The registry retains all sixteen source
+identifiers for validation; other platform payload implementations and actual
+native exposure bindings remain explicit subsequent slices.
 
 The native brand classifier captures a genuine SharedArrayBuffer byte-length
 getter when the engine exposes it. A shared buffer cannot fall through as an
