@@ -116,6 +116,17 @@ null substitution were removed. The two-version typed case, public branded
 record/long-name case, migrated native shader fixture, and existing reflection
 interface file passed with GC disabled (four focused files).
 
+Remaining implemented predicate and pname queries now select their owning GL
+context before null, invalid-enum, or foreign-handle returns, following the
+source's initial `make_current` in `WebGLRenderingContextImpl.cpp`,
+`WebGL2RenderingContextImpl.cpp:769-789`, `:967-981`, `:1121-1278`, `:1316-1332`,
+and `Extensions/OESVertexArrayObject.cpp:64-79`. A focused native test leaves a
+different context current, runs 36 early-return/browser-state cases across both
+versions, and inspects the selected driver's viewport before subsequent API
+calls can change it. The OES foreign-array branch preserves the source's
+false-without-error behavior. That file and object/uniform-block/public-resource
+neighbors passed with GC disabled (four focused files).
+
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
 ANGLE builds lacking compressed robust entry points use the matching GLES call
