@@ -115,6 +115,10 @@ fn (mut host CryptoHost) convert_jwk_dictionary(value voidptr, prime bool) !webi
 }
 
 fn (host &CryptoHost) normalize_import(value voidptr, is_object bool) !webidl.Value {
+	return host.normalize_import_for_operation(value, is_object, 'importKey')
+}
+
+fn (host &CryptoHost) normalize_import_for_operation(value voidptr, is_object bool, operation string) !webidl.Value {
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	dictionary := host.algorithm_dictionary(value, is_object)!
 	runtime.retain_javascript_value(dictionary)!
@@ -123,9 +127,12 @@ fn (host &CryptoHost) normalize_import(value voidptr, is_object bool) !webidl.Va
 	if C.JSValueIsUndefined(runtime.context, initial_name) {
 		return error('TypeError: Not an object of type Algorithm')
 	}
-	name := webcrypto.normalize_an_algorithm(host.algorithm_string(initial_name)!, 'importKey')!
+	name := webcrypto.normalize_an_algorithm(host.algorithm_string(initial_name)!, operation)!
 	mut normalized := {
 		'name': webidl.string_value(name)
+	}
+	if operation == 'get key length' && name.starts_with('AES-') {
+		normalized['length'] = host.generation_uint(dictionary, 'length', 16)!
 	}
 	if name == 'HMAC' || name in ['RSA-OAEP', 'RSA-PSS', 'RSASSA-PKCS1-v1_5'] {
 		normalized['hash'] = host.crypto_hash_identifier(runtime.binding_property(dictionary, 'hash')!)!

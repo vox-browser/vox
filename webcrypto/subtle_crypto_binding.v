@@ -734,9 +734,15 @@ pub fn (binding &SubtleCryptoBinding) derive_bits(algorithm webidl.Value, key &C
 }
 
 pub fn (binding &SubtleCryptoBinding) derive_key(algorithm webidl.Value, key &CryptoKey, derived_algorithm webidl.Value, extractable bool, usages []KeyUsage) &webidl.Promise {
+	return binding.derive_key_with_parameter_snapshots(algorithm, key, derived_algorithm, derived_algorithm, extractable, usages)
+}
+
+// Native bindings perform the two observable destination normalizations on the
+// original engine object. Keep their independently copied parameter snapshots.
+pub fn (binding &SubtleCryptoBinding) derive_key_with_parameter_snapshots(algorithm webidl.Value, key &CryptoKey, derived_import webidl.Value, derived_length webidl.Value, extractable bool, usages []KeyUsage) &webidl.Promise {
 	normalized := normalize_binding_algorithm(algorithm, 'deriveBits') or { return binding.rejected(err.msg()) }
-	normalized_import_params := normalize_binding_algorithm(derived_algorithm, 'importKey') or { return binding.rejected(err.msg()) }
-	normalized_length := normalize_binding_algorithm(derived_algorithm, 'get key length') or { return binding.rejected(err.msg()) }
+	normalized_import_params := normalize_binding_algorithm(derived_import, 'importKey') or { return binding.rejected(err.msg()) }
+	normalized_length := normalize_binding_algorithm(derived_length, 'get key length') or { return binding.rejected(err.msg()) }
 	realm := binding.context.realm_id.str()
 	copied_usages := usages.clone()
 	return binding.run(fn [normalized, key, normalized_import_params, normalized_length, extractable, copied_usages, realm] () !webidl.Value {
