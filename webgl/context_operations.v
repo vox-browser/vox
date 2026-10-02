@@ -933,11 +933,13 @@ pub fn (context &WebGLRenderingContext) get_uniform(_ &WebGLProgram, location ?&
 }
 
 pub fn (mut context WebGLRenderingContext) get_active_attrib(program &WebGLProgram, index GLuint) ?WebGLActiveInfo {
+	context.native.make_current()
 	if !context.owns(&program.object) { context.set_error(invalid_operation); return none }
 	return context.native.native_active_info(program.object.native_handle_, index, false)
 }
 
 pub fn (mut context WebGLRenderingContext) get_active_uniform(program &WebGLProgram, index GLuint) ?WebGLActiveInfo {
+	context.native.make_current()
 	if !context.owns(&program.object) { context.set_error(invalid_operation); return none }
 	return context.native.native_active_info(program.object.native_handle_, index, true)
 }

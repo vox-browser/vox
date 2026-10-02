@@ -277,18 +277,12 @@ fn (mut context OpenGLContext) native_program_log(handle GLuint) string {
 	return output[..length - 1].bytestr()
 }
 
-fn (mut context OpenGLContext) native_active_info(handle GLuint, index GLuint, uniform bool) ?WebGLActiveInfo {
-	maximum := context.native_program_parameter(handle, if uniform {
-		GLenum(0x8b87)
-	} else {
-		GLenum(0x8b8a)
-	})
-	capacity := if maximum > 0 { maximum } else { 1 }
-	mut name := []u8{len: capacity}
+fn (mut context OpenGLContext) native_active_info(handle GLuint, index GLuint, uniform bool) WebGLActiveInfo {
+	context.make_current()
+	mut name := []u8{len: 256}
 	mut size := 0
 	mut type_ := u32(0)
-	length := C.vox_gl_active_info(handle, index, int(uniform), capacity, name.data, &size, &type_)
+	length := C.vox_gl_active_info(handle, index, int(uniform), name.len, name.data, &size, &type_)
 	context.collect_native_error()
-	if length <= 0 { return none }
 	return WebGLActiveInfo.create(name[..length].bytestr(), GLenum(type_), size)
 }

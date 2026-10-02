@@ -32,9 +32,11 @@ fn test_native_shader_compilation_linking_and_real_reflection() {
 	assert context.get_uniform_location(mut program, 'colors') != none
 	assert context.get_uniform_location(mut program, 'colors[1]') != none
 	assert context.get_uniform_location(mut program, 'invented') == none
-	assert context.get_active_attrib(program, 1) == none
+	invalid_attrib := context.get_active_attrib(program, 1) or { panic('source invalid attribute record') }
+	assert invalid_attrib.name == '' && invalid_attrib.size == 0 && invalid_attrib.type_ == 0
 	assert context.get_error() == invalid_value
-	assert context.get_active_uniform(program, 1) == none
+	invalid_uniform := context.get_active_uniform(program, 1) or { panic('source invalid uniform record') }
+	assert invalid_uniform.name == '' && invalid_uniform.size == 0 && invalid_uniform.type_ == 0
 	assert context.get_error() == invalid_value
 }
 
