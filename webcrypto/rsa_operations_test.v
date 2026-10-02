@@ -181,3 +181,238 @@ fn test_rsa_promise_oaep_copies_label_and_message_and_uses_crypto_settlement() {
 	signature := signing.result.buffer_value or { panic('signature') }
 	assert SubtleCrypto.create().verify(RsaPssParams{ salt_length: 0 }, signing_pair.public_key, webidl.get_buffer_source_copy(signature), [])!
 }
+
+fn test_rsa_source_der_jwk_formats_all_names_and_hashes_reach_native_operations() {
+	subtle := SubtleCrypto.create()
+	for name in ['RSA-OAEP', 'RSA-PSS', 'RSASSA-PKCS1-v1_5'] {
+		for hash in ['SHA-1', 'SHA-256', 'SHA-384', 'SHA-512'] {
+			params := RsaHashedImportParams{ name: name, hash: hash }
+			public_key := subtle.import_key(.spki, hex.decode(rsa_wpt_spki_hex)!, params, true, rsa_allowed_usages(name, false), '')!
+			private_key := subtle.import_key(.pkcs8, hex.decode(rsa_wpt_pkcs8_hex)!, params, true, rsa_allowed_usages(name, true), '')!
+			assert subtle.export_key(.spki, public_key)!.hex() == rsa_wpt_spki_hex
+			assert subtle.export_key(.pkcs8, private_key)!.hex() == rsa_wpt_pkcs8_hex
+			assert (private_key.internal_handle() as RsaPrivateKeyHandle) == rsa_wpt_private_handle()
+			assert (public_key.algorithm as RsaHashedKeyAlgorithm).modulus_length == 2048
+			mut public_jwk := subtle.export_jwk(public_key)!
+			mut private_jwk := subtle.export_jwk(private_key)!
+			assert private_jwk.alg? == rsa_jwk_algorithm(name, hash)!
+			assert public_jwk.d == none && private_jwk.oth == none
+			if name == 'RSA-OAEP' {
+				// The source key_ops helper rejects encrypt+wrap/decrypt+unwrap,
+				// even when those usages are returned by its own exporter.
+				if _ := subtle.import_jwk(private_jwk, params, true, private_key.usages, '') {
+					assert false
+				} else {
+					assert err.msg() == 'DataError: Multiple unrelated key operations are specified'
+				}
+				private_jwk.key_ops = none
+				public_jwk.key_ops = none
+			}
+			from_jwk := subtle.import_jwk(private_jwk, params, true, private_key.usages, '')!
+			public_from_jwk := subtle.import_jwk(public_jwk, params, true, public_key.usages, '')!
+			assert from_jwk.internal_handle() == private_key.internal_handle()
+			assert public_from_jwk.internal_handle() == public_key.internal_handle()
+			if name == 'RSA-OAEP' {
+				ciphertext := subtle.encrypt(RsaOaepParams{}, public_from_jwk, 'message'.bytes())!
+				assert subtle.decrypt(RsaOaepParams{}, from_jwk, ciphertext)! == 'message'.bytes()
+			} else if name == 'RSA-PSS' {
+				signature := subtle.sign(RsaPssParams{ salt_length: 0 }, from_jwk, 'message'.bytes())!
+				assert subtle.verify(RsaPssParams{ salt_length: 0 }, public_from_jwk, signature, 'message'.bytes())!
+			} else {
+				signature := subtle.sign(name, from_jwk, 'message'.bytes())!
+				assert subtle.verify(name, public_from_jwk, signature, 'message'.bytes())!
+			}
+		}
+	}
+}
+
+fn test_rsa_import_source_validation_native_crt_and_first_representation() {
+	subtle := SubtleCrypto.create()
+	pair := rsa_wpt_keys('RSA-PSS', 'SHA-256')
+	params := RsaHashedImportParams{ name: 'RSA-PSS', hash: 'SHA-256' }
+	jwk := subtle.export_jwk(pair.private_key)!
+	for malformed in [JsonWebKey{ ...jwk, e: 'Ag' }, JsonWebKey{ ...jwk, n: jwk.e },
+		JsonWebKey{ ...jwk, dp: jwk.p }, JsonWebKey{ ...jwk, dq: jwk.q },
+		JsonWebKey{ ...jwk, qi: jwk.p }, JsonWebKey{ ...jwk, p: 'Aw' }, JsonWebKey{ ...jwk, dp: 'AQ' },
+		JsonWebKey{ ...jwk, dq: 'AQ' }, JsonWebKey{ ...jwk, qi: 'AQ' }, JsonWebKey{ ...jwk, d: jwk.n },
+		JsonWebKey{ ...jwk, d: 'AQ' }] {
+		if _ := subtle.import_jwk(malformed, params, true, [.sign], '') {
+			assert false
+		} else {
+			assert err.msg() == 'DataError: Invalid key'
+		}
+	}
+	if _ := subtle.import_jwk(JsonWebKey{ ...jwk, oth: []RsaOtherPrimesInfo{} }, params, true, [.sign], '') {
+		assert false
+	} else {
+		assert err.msg() == 'DataError: Invalid JWK private key'
+	}
+	if _ := subtle.import_jwk(JsonWebKey{ ...jwk, kty: 'rsa' }, params, true, [.verify], '') {
+		assert false
+	} else {
+		assert err.msg() == "SyntaxError: Invalid key usage 'verify'"
+	}
+	if _ := subtle.import_jwk(JsonWebKey{ ...jwk, kty: 'rsa' }, params, true, [.sign], '') {
+		assert false
+	} else {
+		assert err.msg() == 'DataError: Invalid key type'
+	}
+	if _ := subtle.import_jwk(JsonWebKey{ ...jwk, alg: 'PS384' }, params, true, [.sign], '') {
+		assert false
+	} else {
+		assert err.msg() == 'DataError: Invalid hash'
+	}
+	if _ := subtle.import_jwk(JsonWebKey{ ...jwk, alg: 'RS256' }, params, true, [.sign], '') {
+		assert false
+	} else {
+		assert err.msg() == 'DataError: Invalid algorithm'
+	}
+	if _ := subtle.import_jwk(JsonWebKey{ ...jwk, ext: false }, params, true, [.sign], '') {
+		assert false
+	} else {
+		assert err.msg() == 'DataError: Invalid ext field'
+	}
+	if _ := subtle.import_key(.spki, [], params, true, [.sign], '') {
+		assert false
+	} else {
+		assert err.msg() == "SyntaxError: Invalid key usage 'sign'"
+	}
+	if _ := subtle.import_key(.raw, [], params, true, [.verify], '') {
+		assert false
+	} else {
+		assert err.msg() == 'NotSupportedError: Unsupported key format'
+	}
+	if _ := subtle.export_key(.spki, pair.private_key) {
+		assert false
+	} else {
+		assert err.msg() == 'InvalidAccessError: Key is not public'
+	}
+	if _ := subtle.export_key(.pkcs8, pair.public_key) {
+		assert false
+	} else {
+		assert err.msg() == 'InvalidAccessError: Key is not private'
+	}
+	// Source |= requirements and parse_jwk_rsa_private_key's p-presence branch
+	// accept first-representation keys even with a q member that is ignored.
+	first := JsonWebKey{ ...jwk, p: none, q: '?', dp: none, dq: none, qi: none }
+	first_key := subtle.import_jwk(first, params, true, [.sign], '')!
+	assert (first_key.internal_handle() as RsaPrivateKeyHandle).prime2.all(it == 0)
+	signature := subtle.sign(RsaPssParams{ salt_length: 0 }, first_key, [])!
+	assert subtle.verify(RsaPssParams{ salt_length: 0 }, pair.public_key, signature, [])!
+	if _ := subtle.export_key(.pkcs8, first_key) {
+		assert false
+	} else {
+		assert err.msg() == 'OperationError: Cannot export private key without prime factors'
+	}
+	class_key := RSAPSS.create().import_key(params, .pkcs8, hex.decode(rsa_wpt_pkcs8_hex)!, true, [.sign])!
+	assert !class_key.extractable && class_key.usages.len == 0
+}
+
+fn test_rsa_der_requires_null_and_unsigned_minimal_integers_and_outer_exact_data() {
+	subtle := SubtleCrypto.create()
+	params := RsaHashedImportParams{ name: 'RSA-PSS', hash: 'SHA-256' }
+	mut outer := OkpDerReader{ bytes: hex.decode(rsa_wpt_spki_hex)! }
+	mut body := OkpDerReader{ bytes: outer.read(true)! }
+	body.read(true)!
+	material := body.read(false)!
+	for null_parameter in [okp_der_value(0x05, [u8(0)]), []u8{}] {
+		mut identifier := okp_der_value(0x06, rsa_oid_bytes)
+		identifier << null_parameter
+		mut inner := okp_der_value(0x30, identifier)
+		inner << okp_der_value(0x03, material)
+		if _ := subtle.import_key(.spki, okp_der_value(0x30, inner), params, true, [.verify], '') {
+			assert false
+		} else {
+			assert err.msg().starts_with('DataError:')
+		}
+	}
+	// READ_OBJECT Null applies a kind override, accepting an empty other tag.
+	mut identifier := okp_der_value(0x06, rsa_oid_bytes)
+	identifier << okp_der_value(0x04, [])
+	mut inner := okp_der_value(0x30, identifier)
+	inner << okp_der_value(0x03, material)
+	assert subtle.import_key(.spki, okp_der_value(0x30, inner), params, true, [.verify], '')!.type_ == .public_key
+	mut trailing := hex.decode(rsa_wpt_spki_hex)!
+	trailing << u8(0)
+	if _ := subtle.import_key(.spki, trailing, params, true, [.verify], '') {
+		assert false
+	} else {
+		assert err.msg().starts_with('DataError:')
+	}
+	for modulus in [[u8(0x80)], [u8(0), 0x7f], []u8{}] {
+		mut key_material := okp_der_value(0x02, modulus)
+		key_material << rsa_der_integer([u8(3)])
+		if _ := parse_rsa_der(okp_der_value(0x30, key_material), false) {
+			assert false
+		} else {
+			assert err.msg().starts_with('DataError:')
+		}
+	}
+	// The source's inner RSA parser leaves scopes without checking remaining
+	// data, so retain its acceptance of bytes after the RSA sequence.
+	mut private_outer := OkpDerReader{ bytes: hex.decode(rsa_wpt_pkcs8_hex)! }
+	mut private_body := OkpDerReader{ bytes: private_outer.read(true)! }
+	version := private_body.read(false)!
+	algorithm := private_body.read(true)!
+	mut private_material := private_body.read(false)!
+	private_material << [u8(5), 0]
+	mut wrapped := okp_der_value(0x02, version)
+	wrapped << okp_der_value(0x30, algorithm)
+	wrapped << okp_der_value(0x04, private_material)
+	assert (subtle.import_key(.pkcs8, okp_der_value(0x30, wrapped), params, true, [.sign], '')!.internal_handle() as RsaPrivateKeyHandle) == rsa_wpt_private_handle()
+}
+
+fn test_rsa_promise_import_export_preserves_copies_metadata_and_real_operations() {
+	mut host := &RsaOperationBindingHost{}
+	binding := SubtleCryptoBinding.create(SubtleCrypto.create(), webidl.PromiseContext{}, fn [mut host] (task fn ()) {
+		host.work << task
+	}, fn [mut host] (task fn ()) { host.settle << task })
+	mut material := webidl.BufferSource.array_buffer(hex.decode(rsa_wpt_pkcs8_hex)!)
+	params := webidl.object_value({
+		'name': webidl.string_value('RSASSA-PKCS1-v1_5')
+		'hash': webidl.string_value('SHA-256')
+	})
+	imported := binding.import_key(.pkcs8, webidl.buffer_source_value(material), params, true, [.sign])
+	material.write([u8(0)], 0)!
+	host.work[0]()
+	assert imported.state == .fulfilled && host.settle.len == 0
+	key := crypto_key_from_value(imported.result)!
+	assert key.usages == [KeyUsage.sign] && key.extractable
+	exported := binding.export_key(.pkcs8, key)
+	assert exported.state == .pending
+	host.work[1]()
+	assert exported.state == .fulfilled
+	bytes := exported.result.buffer_value or { panic('bytes') }
+	assert webidl.get_buffer_source_copy(bytes).hex() == rsa_wpt_pkcs8_hex
+	vector := rsa_source_vectors[1]
+	assert SubtleCrypto.create().sign('RSASSA-PKCS1-v1_5', key, hex.decode(vector.message_hex)!)!.hex() == vector.signature_hex
+}
+
+fn test_rsa_oaep_wrap_unwrap_uses_native_operations_and_real_import_dispatch() {
+	subtle := SubtleCrypto.create()
+	pair := rsa_wpt_keys('RSA-OAEP', 'SHA-256')
+	aes_key := subtle.import_key(.raw, []u8{len: 16, init: u8(index)}, 'AES-GCM', true, [.encrypt], '')!
+	params := RsaOaepParams{ label: 'wrap'.bytes() }
+	wrapped := subtle.wrap_key(.raw, aes_key, pair.public_key, params)!
+	unwrapped := subtle.unwrap_key(.raw, wrapped, pair.private_key, params, 'AES-GCM', true, [.encrypt], '')!
+	assert unwrapped.handle() == aes_key.handle()
+	default_wrapped := subtle.wrap_key(.raw, aes_key, pair.public_key, 'RSA-OAEP')!
+	assert subtle.unwrap_key(.raw, default_wrapped, pair.private_key, 'RSA-OAEP', 'AES-GCM', true, [.encrypt], '')!.handle() == aes_key.handle()
+	assert subtle.decrypt(AlgorithmParams{ name: 'RSA-OAEP' }, pair.private_key, subtle.encrypt(AlgorithmParams{ name: 'RSA-OAEP' }, pair.public_key, [])!)!.len == 0
+	mut host := &RsaOperationBindingHost{}
+	binding := SubtleCryptoBinding.create(subtle, webidl.PromiseContext{}, fn [mut host] (task fn ()) {
+		host.work << task
+	}, fn [mut host] (task fn ()) { host.settle << task })
+	algorithm := webidl.object_value({
+		'name':  webidl.string_value('RSA-OAEP')
+		'label': webidl.buffer_source_value(webidl.BufferSource.array_buffer('wrap'.bytes()))
+	})
+	wrapped_promise := binding.wrap_key(.raw, aes_key, pair.public_key, algorithm)
+	host.work[0]()
+	assert wrapped_promise.state == .fulfilled && host.settle.len == 0
+	wrapped_bytes := wrapped_promise.result.buffer_value or { panic('wrapped bytes') }
+	unwrapped_promise := binding.unwrap_key(.raw, wrapped_bytes, pair.private_key, algorithm, webidl.string_value('AES-GCM'), true, [.encrypt])
+	host.work[1]()
+	assert unwrapped_promise.state == .fulfilled && host.settle.len == 0
+	assert crypto_key_from_value(unwrapped_promise.result)!.handle() == aes_key.handle()
+}

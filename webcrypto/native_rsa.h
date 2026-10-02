@@ -172,4 +172,61 @@ cleanup:
     EVP_PKEY_free(key);
     return result;
 }
+
+/* Direct translation of RSAPublicKey/RSAPrivateKey::is_valid. */
+static int vox_rsa_valid(VoxRsaPart* values, int private_key)
+{
+    int result = -1;
+    BIGNUM* bns[8] = { NULL };
+    BIGNUM* three = BN_new();
+    BIGNUM* temp = BN_new();
+    BIGNUM* p1 = BN_new();
+    BIGNUM* q1 = BN_new();
+    BIGNUM* divisor = BN_new();
+    BIGNUM* lambda = BN_new();
+    BN_CTX* ctx = BN_CTX_new();
+    if (!three || !temp || !p1 || !q1 || !divisor || !lambda || !ctx || BN_set_word(three, 3) != 1) goto cleanup;
+    for (int i = 0; i < (private_key ? 8 : 2); ++i) {
+        bns[i] = BN_bin2bn(values[i].bytes, values[i].length, NULL);
+        if (!bns[i]) goto cleanup;
+    }
+    result = 0;
+    if (!BN_is_odd(bns[1]) || BN_cmp(bns[1], three) < 0 || BN_cmp(bns[1], bns[0]) >= 0) goto cleanup;
+    if (!private_key) { result = 1; goto cleanup; }
+    if (!BN_is_zero(bns[3]) && !BN_is_zero(bns[4]) && !BN_is_zero(bns[5]) && !BN_is_zero(bns[6]) && !BN_is_zero(bns[7])) {
+        if (BN_cmp(bns[5], bns[3]) >= 0 || BN_cmp(bns[6], bns[4]) >= 0 || BN_cmp(bns[7], bns[3]) >= 0) goto cleanup;
+        result = -1;
+        if (!BN_mul(temp, bns[3], bns[4], ctx)) goto cleanup;
+        result = 0;
+        if (BN_cmp(temp, bns[0]) != 0) goto cleanup;
+        result = -1;
+        if (!BN_sub(p1, bns[3], BN_value_one()) || !BN_sub(q1, bns[4], BN_value_one())) goto cleanup;
+        if (!BN_mod_mul(temp, bns[1], bns[5], p1, ctx)) goto cleanup;
+        result = 0;
+        if (!BN_is_one(temp)) goto cleanup;
+        result = -1;
+        if (!BN_mod_mul(temp, bns[1], bns[6], q1, ctx)) goto cleanup;
+        result = 0;
+        if (!BN_is_one(temp)) goto cleanup;
+        result = -1;
+        if (!BN_mod_mul(temp, bns[4], bns[7], bns[3], ctx)) goto cleanup;
+        result = 0;
+        if (!BN_is_one(temp)) goto cleanup;
+        if (!BN_is_zero(bns[2])) {
+            if (BN_cmp(bns[2], bns[0]) >= 0) goto cleanup;
+            result = -1;
+            if (!BN_gcd(divisor, p1, q1, ctx) || !BN_mul(temp, p1, q1, ctx) || !BN_div(lambda, NULL, temp, divisor, ctx)
+                || !BN_mod_mul(temp, bns[2], bns[1], lambda, ctx)) goto cleanup;
+            result = 0;
+            if (!BN_is_one(temp)) goto cleanup;
+        }
+        result = 1;
+        goto cleanup;
+    }
+    if (!BN_is_zero(bns[0]) && !BN_is_zero(bns[2]) && BN_cmp(bns[2], bns[0]) < 0) result = 1;
+cleanup:
+    for (int i = 0; i < 8; ++i) BN_free(bns[i]);
+    BN_free(three); BN_free(temp); BN_free(p1); BN_free(q1); BN_free(divisor); BN_free(lambda); BN_CTX_free(ctx);
+    return result;
+}
 #endif

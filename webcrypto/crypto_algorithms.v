@@ -574,7 +574,10 @@ pub fn encrypt_bytes(params EncryptionParams, key &CryptoKey, plaintext []u8) ![
 		AesCbcParams { aes_cbc_encrypt(params, key, plaintext)! }
 		AesCtrParams { aes_ctr_crypt(params, key, plaintext)! }
 		AesGcmParams { aes_gcm_encrypt(params, key, plaintext)! }
-		AlgorithmParams { error('NotSupportedError: ${params.name} encryption is unavailable') }
+		AlgorithmParams {
+			if key.algorithm_name() == 'RSA-OAEP' { rsa_oaep_encrypt(RsaOaepParams{}, key, plaintext)! }
+			else { error('NotSupportedError: ${params.name} encryption is unavailable') }
+		}
 	}
 }
 
@@ -588,7 +591,10 @@ pub fn decrypt_bytes(params EncryptionParams, key &CryptoKey, ciphertext []u8) !
 		AesCbcParams { aes_cbc_decrypt(params, key, ciphertext)! }
 		AesCtrParams { aes_ctr_crypt(params, key, ciphertext)! }
 		AesGcmParams { aes_gcm_decrypt(params, key, ciphertext)! }
-		AlgorithmParams { error('NotSupportedError: ${params.name} decryption is unavailable') }
+		AlgorithmParams {
+			if key.algorithm_name() == 'RSA-OAEP' { rsa_oaep_decrypt(RsaOaepParams{}, key, ciphertext)! }
+			else { error('NotSupportedError: ${params.name} decryption is unavailable') }
+		}
 	}
 }
 

@@ -39,14 +39,12 @@ fn C.vox_rsa_oaep(&C.VoxRsaPart, int, &char, &u8, usize, &u8, usize, &u8, &usize
 fn C.vox_rsa_sign(&C.VoxRsaPart, &char, int, u32, &u8, usize, &u8, &usize) int
 fn C.vox_rsa_verify(&C.VoxRsaPart, &char, int, u32, &u8, usize, &u8, usize) int
 
-fn rsa_handle_parts(key &CryptoKey) []C.VoxRsaPart {
-	bytes := match key.internal_handle_ {
-		RsaPublicKeyHandle { [key.internal_handle_.modulus, key.internal_handle_.public_exponent] }
+fn rsa_parts_from_handle(handle CryptoKeyInternalHandle) []C.VoxRsaPart {
+	bytes := match handle {
+		RsaPublicKeyHandle { [handle.modulus, handle.public_exponent] }
 		RsaPrivateKeyHandle {
-			[key.internal_handle_.modulus, key.internal_handle_.public_exponent,
-				key.internal_handle_.private_exponent, key.internal_handle_.prime1,
-				key.internal_handle_.prime2, key.internal_handle_.exponent1,
-				key.internal_handle_.exponent2, key.internal_handle_.coefficient]
+			[handle.modulus, handle.public_exponent, handle.private_exponent, handle.prime1,
+				handle.prime2, handle.exponent1, handle.exponent2, handle.coefficient]
 		}
 		else { panic('Invalid RSA handle') }
 	}
@@ -64,7 +62,7 @@ fn rsa_operation_hash(key &CryptoKey) !string {
 }
 
 fn native_rsa_oaep(key &CryptoKey, input []u8, label []u8, decrypt bool) ![]u8 {
-	parts := rsa_handle_parts(key)
+	parts := rsa_parts_from_handle(key.internal_handle_)
 	hash := rsa_operation_hash(key)!
 	mut output := []u8{len: int(parts[0].length)}
 	mut length := usize(output.len)
@@ -76,7 +74,7 @@ fn native_rsa_oaep(key &CryptoKey, input []u8, label []u8, decrypt bool) ![]u8 {
 }
 
 fn native_rsa_sign(key &CryptoKey, message []u8, pss bool, salt u32) ![]u8 {
-	parts := rsa_handle_parts(key)
+	parts := rsa_parts_from_handle(key.internal_handle_)
 	hash := rsa_operation_hash(key)!
 	mut signature := []u8{len: int(parts[0].length)}
 	mut length := usize(signature.len)
@@ -87,10 +85,19 @@ fn native_rsa_sign(key &CryptoKey, message []u8, pss bool, salt u32) ![]u8 {
 }
 
 fn native_rsa_verify(key &CryptoKey, signature []u8, message []u8, pss bool, salt u32) !bool {
-	parts := rsa_handle_parts(key)
+	parts := rsa_parts_from_handle(key.internal_handle_)
 	hash := rsa_operation_hash(key)!
 	result := C.vox_rsa_verify(parts.data, hash.str, int(pss), salt, signature.data, usize(signature.len), message.data, usize(message.len))
 	if result == 1 { return true }
 	if result == 0 { return false }
 	return error('OperationError: Failed to verify message')
+}
+
+fn C.vox_rsa_valid(&C.VoxRsaPart, int) int
+
+fn validate_rsa_handle(handle CryptoKeyInternalHandle, private_key bool) ! {
+	parts := rsa_parts_from_handle(handle)
+	result := C.vox_rsa_valid(parts.data, int(private_key))
+	if result < 0 { return error('DataError: Failed to verify key') }
+	if result == 0 { return error('DataError: Invalid key') }
 }

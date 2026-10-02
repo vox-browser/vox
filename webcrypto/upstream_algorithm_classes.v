@@ -124,24 +124,24 @@ pub fn RSAOAEP.create() RSAOAEP { return RSAOAEP{} }
 pub fn (_ RSAOAEP) encrypt(params RsaOaepParams, key &CryptoKey, message []u8) ![]u8 { return rsa_oaep_encrypt(params, key, message) }
 pub fn (_ RSAOAEP) decrypt(params RsaOaepParams, key &CryptoKey, ciphertext []u8) ![]u8 { return rsa_oaep_decrypt(params, key, ciphertext) }
 pub fn (_ RSAOAEP) generate_key(params RsaHashedKeyGenParams, extractable bool, usages []KeyUsage) !GeneratedKey { return generate_rsa_key(RsaHashedKeyGenParams{ ...params, name: 'RSA-OAEP' }, extractable, usages) }
-pub fn (_ RSAOAEP) import_key(_ RsaHashedImportParams, _ KeyFormat, _ []u8, _ bool, _ []KeyUsage) !&CryptoKey { return backend_unavailable[&CryptoKey]('RSA-OAEP', 'key import') }
-pub fn (_ RSAOAEP) export_key(_ KeyFormat, _ &CryptoKey) ![]u8 { return backend_unavailable[[]u8]('RSA-OAEP', 'key export') }
+pub fn (_ RSAOAEP) import_key(params RsaHashedImportParams, format KeyFormat, bytes []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_rsa_key(RsaHashedImportParams{ ...params, name: 'RSA-OAEP' }, format, bytes, extractable, usages) }
+pub fn (_ RSAOAEP) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_rsa_key(format, key) }
 
 pub struct RSAPSS {}
 pub fn RSAPSS.create() RSAPSS { return RSAPSS{} }
 pub fn (_ RSAPSS) sign(params RsaPssParams, key &CryptoKey, message []u8) ![]u8 { return rsa_sign(key, message, true, params.salt_length) }
 pub fn (_ RSAPSS) verify(params RsaPssParams, key &CryptoKey, signature []u8, message []u8) !bool { return rsa_verify(key, signature, message, true, params.salt_length) }
 pub fn (_ RSAPSS) generate_key(params RsaHashedKeyGenParams, extractable bool, usages []KeyUsage) !GeneratedKey { return generate_rsa_key(RsaHashedKeyGenParams{ ...params, name: 'RSA-PSS' }, extractable, usages) }
-pub fn (_ RSAPSS) import_key(_ RsaHashedImportParams, _ KeyFormat, _ []u8, _ bool, _ []KeyUsage) !&CryptoKey { return backend_unavailable[&CryptoKey]('RSA-PSS', 'key import') }
-pub fn (_ RSAPSS) export_key(_ KeyFormat, _ &CryptoKey) ![]u8 { return backend_unavailable[[]u8]('RSA-PSS', 'key export') }
+pub fn (_ RSAPSS) import_key(params RsaHashedImportParams, format KeyFormat, bytes []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_rsa_key(RsaHashedImportParams{ ...params, name: 'RSA-PSS' }, format, bytes, extractable, usages) }
+pub fn (_ RSAPSS) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_rsa_key(format, key) }
 
 pub struct RSASSAPKCS1 {}
 pub fn RSASSAPKCS1.create() RSASSAPKCS1 { return RSASSAPKCS1{} }
 pub fn (_ RSASSAPKCS1) sign(params AlgorithmParams, key &CryptoKey, message []u8) ![]u8 { return rsa_sign(key, message, false, 0) }
 pub fn (_ RSASSAPKCS1) verify(params AlgorithmParams, key &CryptoKey, signature []u8, message []u8) !bool { return rsa_verify(key, signature, message, false, 0) }
 pub fn (_ RSASSAPKCS1) generate_key(params RsaHashedKeyGenParams, extractable bool, usages []KeyUsage) !GeneratedKey { return generate_rsa_key(RsaHashedKeyGenParams{ ...params, name: 'RSASSA-PKCS1-v1_5' }, extractable, usages) }
-pub fn (_ RSASSAPKCS1) import_key(_ RsaHashedImportParams, _ KeyFormat, _ []u8, _ bool, _ []KeyUsage) !&CryptoKey { return backend_unavailable[&CryptoKey]('RSASSA-PKCS1-v1_5', 'key import') }
-pub fn (_ RSASSAPKCS1) export_key(_ KeyFormat, _ &CryptoKey) ![]u8 { return backend_unavailable[[]u8]('RSASSA-PKCS1-v1_5', 'key export') }
+pub fn (_ RSASSAPKCS1) import_key(params RsaHashedImportParams, format KeyFormat, bytes []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_rsa_key(RsaHashedImportParams{ ...params, name: 'RSASSA-PKCS1-v1_5' }, format, bytes, extractable, usages) }
+pub fn (_ RSASSAPKCS1) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_rsa_key(format, key) }
 
 pub struct ECDSA {}
 pub fn ECDSA.create() ECDSA { return ECDSA{} }

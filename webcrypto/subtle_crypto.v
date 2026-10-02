@@ -446,11 +446,12 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 	}
 }
 
-pub type ImportKeyParams = KmacImportParams | string
+pub type ImportKeyParams = KmacImportParams | RsaHashedImportParams | string
 
 fn import_algorithm_name(algorithm ImportKeyParams) string {
 	return match algorithm {
 		KmacImportParams { algorithm.name }
+		RsaHashedImportParams { algorithm.name }
 		string { algorithm }
 	}
 }
@@ -464,6 +465,14 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(import_algorithm_name(algorithm), 'importKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
+    if normalized in ['RSA-OAEP', 'RSA-PSS', 'RSASSA-PKCS1-v1_5'] {
+        hash := normalize_an_algorithm(if algorithm is RsaHashedImportParams { algorithm.hash } else { hash_name }, 'digest')!
+        mut key := import_rsa_key(RsaHashedImportParams{ name: normalized, hash: hash }, format, material, extractable, normalized_usages)!
+        if key.type_ == .private_key && normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+        key.set_extractable(extractable)
+        key.set_usages(normalized_usages)
+        return key
+    }
 	if normalized == 'AES-OCB' {
 		key := import_aes_ocb_key(format, material, extractable, normalized_usages)!
 		if key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
@@ -515,6 +524,7 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(import_algorithm_name(algorithm), 'importKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
+	if normalized in ['RSA-OAEP', 'RSA-PSS', 'RSASSA-PKCS1-v1_5'] { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
 	if normalized == 'AES-OCB' {
 		return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name)
 	}
@@ -586,6 +596,10 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 pub fn (subtle_crypto &SubtleCrypto) export_key(format KeyFormat, key &CryptoKey) ![]u8 {
 	_ = subtle_crypto
 	normalize_an_algorithm(key.algorithm_name(), 'exportKey')!
+	if key.algorithm_name() in ['RSA-OAEP', 'RSA-PSS', 'RSASSA-PKCS1-v1_5'] {
+		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
+		return export_rsa_key(format, key)
+	}
 	if key.algorithm_name().starts_with('ML-DSA-') {
 		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
 		return export_mldsa_key(format, key)
@@ -628,6 +642,7 @@ pub fn (subtle_crypto &SubtleCrypto) export_jwk(key &CryptoKey) !JsonWebKey {
 	if !key.extractable {
 		return error('InvalidAccessError: Key is not extractable')
 	}
+	if key.algorithm_name() in ['RSA-OAEP', 'RSA-PSS', 'RSASSA-PKCS1-v1_5'] { return export_rsa_jwk(key) }
 	if key.algorithm_name() in ['KMAC128', 'KMAC256'] {
 		return JsonWebKey.parse(KMAC.create().export_key(.jwk, key)!)
 	}
@@ -750,6 +765,7 @@ pub type WrappingParams = AeadParams
 	| AesCtrParams
 	| AesGcmParams
 	| AlgorithmParams
+	| RsaOaepParams
 	| string
 
 fn wrapping_algorithm_name(algorithm WrappingParams) string {
@@ -758,6 +774,7 @@ fn wrapping_algorithm_name(algorithm WrappingParams) string {
 		AesCbcParams { algorithm.name }
 		AesCtrParams { algorithm.name }
 		AesGcmParams { algorithm.name }
+		RsaOaepParams { algorithm.name }
 		AlgorithmParams { algorithm.name }
 		string { algorithm }
 	}
@@ -769,7 +786,11 @@ fn wrapping_encryption_params(algorithm WrappingParams, normalized string) !Encr
 		AesCbcParams { EncryptionParams(AesCbcParams{ ...algorithm, name: normalized }) }
 		AesCtrParams { EncryptionParams(AesCtrParams{ ...algorithm, name: normalized }) }
 		AesGcmParams { EncryptionParams(AesGcmParams{ ...algorithm, name: normalized }) }
-		else { return error('TypeError: Required encryption parameters are missing') }
+		RsaOaepParams { EncryptionParams(RsaOaepParams{ ...algorithm, name: normalized }) }
+		else {
+			if normalized == 'RSA-OAEP' { return EncryptionParams(RsaOaepParams{}) }
+			return error('TypeError: Required encryption parameters are missing')
+		}
 	}
 }
 
