@@ -11,7 +11,8 @@ fn test_source_draw_buffer_state_does_not_dirty_canvas_presentation() {
 		context.clear_color(1, 0, 0, 1)
 		context.clear(GLenum(0x4000))
 		assert context.native.needs_to_present()
-		assert context.native.present_with_preserved_buffer(true)
+		presented := context.native.present_with_preserved_buffer(true)
+		assert presented
 		assert !context.native.needs_to_present()
 		before := context.native.painting_surface() or { panic('surface') }
 		framebuffer_object := context.create_framebuffer()
