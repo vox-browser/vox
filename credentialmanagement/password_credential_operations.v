@@ -34,7 +34,9 @@ fn form_data_has(entries []html.FormDataEntry, name string) bool {
 pub fn create_password_credential_from_form(form &html.HTMLFormElementModel, origin dom.Origin) !&PasswordCredential {
 	// The translated HTMLFormElement's entry-list construction is the same
 	// observable data source as invoking FormData(form) upstream.
-	form_data := form.construct_entry_list(none)
+	form_data := form.construct_entry_list_with_encoding(none, none) or {
+		return error('InvalidStateError: form entry list construction is already in progress')
+	}
 	mut data := PasswordCredentialData{}
 	mut new_password_observed := false
 

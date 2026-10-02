@@ -517,6 +517,9 @@ mut:
 __global html_form_element_models []&HTMLFormElementModel
 
 pub fn HTMLFormElementModel.create(element &dom.HTMLFormElement) &HTMLFormElementModel {
+	if existing := html_form_element_model_for(element) {
+		return existing
+	}
 	model := &HTMLFormElementModel{
 		element: element
 		event_target_: unsafe { &dom.EventTarget(element) }
@@ -648,17 +651,9 @@ fn form_url_encode_component(value string) string {
 }
 
 pub fn (form &HTMLFormElementModel) construct_entry_list(submitter ?&FormAssociatedElement) []FormDataEntry {
-	mut entries := []FormDataEntry{}
-	for control in form.controls_ {
-		if !control.enabled() || !control.is_submittable() || control.element.get_attribute_value('name') == '' {
-			continue
-		}
-		if control.is_button() && (submitter == none || submitter or { continue } != control) {
-			continue
-		}
-		entries << create_form_data_string_entry(control.element.get_attribute_value('name'), control.value())
-	}
-	return entries
+	// Compatibility for callers expecting an array. Source-aware callers use
+	// the nullable operation below so recursive construction remains observable.
+	return form.construct_entry_list_with_encoding(submitter, none) or { []FormDataEntry{} }
 }
 
 pub fn (form &HTMLFormElementModel) check_validity() bool {
@@ -741,9 +736,7 @@ pub fn (mut form HTMLFormElementModel) submit_form(submitter ?&FormAssociatedEle
 		}
 	}
 	encoding_name := form.pick_an_encoding()
-	form.constructing_entry_list_ = true
-	entries := form.construct_entry_list(submitter)
-	form.constructing_entry_list_ = false
+	entries := form.construct_entry_list_with_encoding(submitter, encoding_name) or { return }
 	if element.cannot_navigate() {
 		return
 	}

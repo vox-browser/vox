@@ -108,6 +108,42 @@ fn test_form_data_create_from_form_validates_submitter_and_converts_entries() {
 	}
 }
 
+fn test_form_data_from_form_retains_native_file_and_event_mutations() {
+	document := html.parse_document('<form id="f"><input id="file" type="file" name="upload"></form>')
+	form := html.HTMLFormElementModel.create(unsafe {
+		&dom.HTMLFormElement(document.get_element_by_id('f')?)
+	})
+	mut input := html.HTMLInputElementModel.create(unsafe {
+		&dom.HTMLInputElement(document.get_element_by_id('file')?)
+	})
+	mut files := fileapi.FileList.create()
+	file := fileapi.File.create([u8(1), 2], 'selected.bin', 'application/octet-stream', 123)
+	files.add_file(file)
+	input.set_file_list(files)
+	form.event_target().add_event_listener_without_options('formdata', dom.IDLEventListener.create(&dom.CallbackType{
+		handle_event: fn [form] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			if _ := FormData.create_from_form(form, none) {
+				assert false, 'recursive FormData construction must throw'
+			} else {
+				assert err.msg().starts_with('InvalidStateError:')
+			}
+			mut data := unsafe { &html.FormDataEvent(event) }.form_data() or { panic('formData') }
+			data.append(html.create_form_data_string_entry('listener', 'value'))
+			return dom.js_undefined()
+		}
+	}))
+	data := FormData.create_from_form(form, none)!
+	assert (data.get('upload')? as FormDataFile).file == file
+	assert data.get('listener')? == FormDataEntryValue('value')
+	button := document.create_element_ns('http://www.w3.org/1999/xhtml', 'button')!
+	unowned := html.HTMLButtonElementModel.create(unsafe { &dom.HTMLButtonElement(button) })
+	if _ := FormData.create_from_form(form, unowned.control) {
+		assert false
+	} else {
+		assert err.msg().starts_with('NotFoundError:')
+	}
+}
+
 fn test_progress_event_inherits_event_init_members() {
 	event := ProgressEvent.construct('progress', ProgressEventInit{
 		bubbles:           true

@@ -61,22 +61,28 @@ pub fn FormData.create_from_form(form &html.HTMLFormElementModel, submitter ?&ht
 			if voidptr(owner) != voidptr(form.element) {
 				return error('NotFoundError: submitter does not belong to the provided form')
 			}
+		} else {
+			return error('NotFoundError: submitter does not belong to the provided form')
 		}
 	}
-	entries := form.construct_entry_list(submitter)
+	entries := form.construct_entry_list_with_encoding(submitter, none) or {
+		return error('InvalidStateError: form entry list construction is already in progress')
+	}
 	mut converted := []FormDataEntry{cap: entries.len}
 	for entry in entries {
 		value := match entry.value {
 			html.FormDataFile {
 				FormDataEntryValue(FormDataFile{
-					file: fileapi.File.create(entry.value.bytes.clone(), entry.value.name,
-						entry.value.mime_type, time.now().unix_milli())
+					file: entry.value.file or {
+						fileapi.File.create(entry.value.bytes.clone(), entry.value.name,
+							entry.value.mime_type, time.now().unix_milli())
+					}
 				})
 			}
 			string { FormDataEntryValue(entry.value) }
 		}
 		converted << FormDataEntry{
-			name: entry.name
+			name:  entry.name
 			value: value
 		}
 	}

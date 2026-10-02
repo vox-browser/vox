@@ -7,12 +7,17 @@
 module html
 
 import rand
+import fileapi
+import infra
 
 pub struct FormDataFile {
 pub:
 	name      string
 	mime_type string
 	bytes     []u8
+	// Source entries retain File objects; byte fields remain the serialization
+	// and legacy typed boundary used by callers without a platform object.
+	file ?&fileapi.File
 }
 
 pub type FormDataEntryValue = FormDataFile | string
@@ -30,10 +35,29 @@ pub:
 }
 
 pub fn create_form_data_string_entry(name string, value string) FormDataEntry {
-	return FormDataEntry{name, FormDataEntryValue(value)}
+	return FormDataEntry{infra.convert_to_scalar_value_string(name), FormDataEntryValue(infra.convert_to_scalar_value_string(value))}
+}
+
+pub fn create_form_data_native_file_entry(name string, file &fileapi.File) FormDataEntry {
+	return FormDataEntry{
+		name:  infra.convert_to_scalar_value_string(name)
+		value: FormDataFile{
+			name:      file.name()
+			mime_type: file.type_()
+			bytes:     file.raw_bytes()
+			file:      file
+		}
+	}
 }
 
 pub fn create_form_data_file_entry(name string, file FormDataFile, filename ?string) FormDataEntry {
+	if native_file := file.file {
+		if replacement := filename {
+			return create_form_data_native_file_entry(name, fileapi.File.create(native_file.raw_bytes(),
+				replacement, native_file.type_(), native_file.last_modified()))
+		}
+		return create_form_data_native_file_entry(name, native_file)
+	}
 	entry_file := if replacement_name := filename {
 		FormDataFile{
 			name:      replacement_name
@@ -43,7 +67,7 @@ pub fn create_form_data_file_entry(name string, file FormDataFile, filename ?str
 	} else {
 		file
 	}
-	return FormDataEntry{name, FormDataEntryValue(entry_file)}
+	return FormDataEntry{infra.convert_to_scalar_value_string(name), FormDataEntryValue(entry_file)}
 }
 
 pub fn normalize_line_breaks(value string) string {

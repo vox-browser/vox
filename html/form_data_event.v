@@ -28,6 +28,31 @@ pub fn (mut data FormData) append(entry FormDataEntry) {
 	data.entries_ << entry
 }
 
+pub fn (mut data FormData) delete(name string) {
+	data.entries_ = data.entries_.filter(it.name != name)
+}
+
+// XHR::FormData::set(): replace the first matching entry and remove later
+// matches, or append when the name is absent.
+pub fn (mut data FormData) set(entry FormDataEntry) {
+	mut found := false
+	mut entries := []FormDataEntry{}
+	for old in data.entries_ {
+		if old.name == entry.name {
+			if !found {
+				entries << entry
+				found = true
+			}
+		} else {
+			entries << old
+		}
+	}
+	if !found {
+		entries << entry
+	}
+	data.entries_ = entries
+}
+
 pub struct FormDataEventInit {
 	dom.EventInit
 pub:

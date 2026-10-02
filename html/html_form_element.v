@@ -186,13 +186,58 @@ pub fn (form &HTMLFormElementModel) report_validity() bool {
 
 pub fn (form &HTMLFormElementModel) get_submittable_elements() []&FormAssociatedElement {
 	mut controls := []&FormAssociatedElement{}
-	for control in form.controls_ {
-		owner := control.form() or { continue }
-		if control.is_submittable() && voidptr(owner) == voidptr(form.element) {
+	// Upstream owns one concrete FormAssociatedElement per DOM element. The V
+	// wrappers are separate records, so resolve the same associated DOM identity
+	// before filtering, rather than limiting membership to registered wrappers.
+	for element in form.element.associated_elements_.clone() {
+		control := form_associated_record_for_entry(form, element)
+		if control.is_submittable() {
 			controls << control
 		}
 	}
+	for i := 1; i < controls.len; i++ {
+		mut j := i
+		for j > 0 && controls[j].element.as_node().is_preceding(controls[j - 1].element.as_node()) {
+			controls[j], controls[j - 1] = controls[j - 1], controls[j]
+			j--
+		}
+	}
 	return controls
+}
+
+fn form_associated_record_for_entry(form &HTMLFormElementModel, element &dom.Element) &FormAssociatedElement {
+	for control in form.controls_ {
+		if voidptr(control.element) == voidptr(element) {
+			return control
+		}
+	}
+	if element.is_form_associated_custom_element() {
+		target := unsafe { &dom.HTMLElement(element) }
+		if target.attached_internals_handle() != unsafe { nil } {
+			return unsafe { &ElementInternals(target.attached_internals_handle()) }.control
+		}
+	}
+	mut control := match element.local_name() {
+		'input' { HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) }).control }
+		'textarea' {
+			HTMLTextAreaElementModel.create(unsafe { &dom.HTMLTextAreaElement(element) }).control
+		}
+		'select' {
+			HTMLSelectElementModel.create(unsafe { &dom.HTMLSelectElement(element) }).control
+		}
+		'button' {
+			HTMLButtonElementModel.create(unsafe { &dom.HTMLButtonElement(element) }).control
+		}
+		else {
+			if element.is_form_associated_custom_element() {
+				FormAssociatedElement.create_custom(element)
+			} else { FormAssociatedElement.create(element) }
+		}
+	}
+	// Membership in the DOM form's associated list is the authoritative owner
+	// when a previously lazy concrete wrapper is materialized here.
+	control.set_form(form.element)
+	return control
 }
 
 pub fn (mut form HTMLFormElementModel) rel_list() &dom.DOMTokenList {

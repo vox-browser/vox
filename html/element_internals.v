@@ -45,6 +45,7 @@ fn clone_element_internals_value(value ElementInternalsValue) ElementInternalsVa
 				name:      value.name
 				mime_type: value.mime_type
 				bytes:     value.bytes.clone()
+				file:      value.file
 			})
 		}
 		ElementInternalsFormData {
