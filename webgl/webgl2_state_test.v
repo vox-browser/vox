@@ -18,9 +18,9 @@ fn test_webgl2_copy_sync_transform_feedback_and_offsets() {
 	mut source := context.create_buffer()
 	mut destination := context.create_buffer()
 	context.bind_buffer(copy_read_buffer, source)
-	context.buffer_data(copy_read_buffer, [u8(1), 2, 3, 4], 0)
+	context.buffer_data(copy_read_buffer, [u8(1), 2, 3, 4], 0x88e4)
 	context.bind_buffer(copy_write_buffer, destination)
-	context.buffer_data(copy_write_buffer, [u8(0), 0, 0, 0], 0)
+	context.buffer_data(copy_write_buffer, [u8(0), 0, 0, 0], 0x88e4)
 	context.copy_buffer_sub_data(copy_read_buffer, copy_write_buffer, 1, 0, 3)
 	assert destination.bytes() == [u8(2), 3, 4, 0]
 	assert offset_span([u8(1), 2, 3], 1, 0)! == [u8(2), 3]
@@ -43,6 +43,7 @@ fn test_surface_lifecycle_and_draw_validation() {
 	assert context.drawing_buffer_width() == 640
 	assert !context.needs_to_present()
 	context.draw_arrays(0x0004, 0, 3)
+	assert context.get_error() == invalid_operation
 	assert context.needs_to_present()
 	assert context.present()
 	assert !context.needs_to_present()

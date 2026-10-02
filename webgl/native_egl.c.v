@@ -21,6 +21,22 @@ fn C.vox_egl_default_framebuffer(voidptr) u32
 fn C.vox_egl_default_renderbuffer(voidptr) u32
 fn C.vox_gl_gen_object(int) u32
 fn C.vox_gl_delete_object(int, u32)
+fn C.vox_gl_bind_buffer(u32, u32)
+fn C.vox_gl_buffer_data(u32, i64, voidptr, u32)
+fn C.vox_gl_buffer_sub_data(u32, i64, i64, voidptr)
+fn C.vox_gl_copy_buffer_sub_data(u32, u32, i64, i64, i64)
+fn C.vox_gl_read_buffer_sub_data(u32, i64, i64, voidptr) int
+fn C.vox_gl_buffer_parameter(u32, u32, int) i64
+fn C.vox_gl_vertex_attrib_pointer(u32, int, u32, int, int, i64)
+fn C.vox_gl_vertex_attrib_i_pointer(u32, int, u32, int, i64)
+fn C.vox_gl_vertex_attrib_floats(u32, &f32)
+fn C.vox_gl_vertex_attrib_enable(u32, int)
+fn C.vox_gl_vertex_attrib_divisor(u32, u32, int)
+fn C.vox_gl_draw_arrays(u32, int, int)
+fn C.vox_gl_draw_elements(u32, int, u32, i64)
+fn C.vox_gl_draw_arrays_instanced(u32, int, int, int, int)
+fn C.vox_gl_draw_elements_instanced(u32, int, u32, i64, int, int)
+fn C.vox_gl_draw_range_elements(u32, u32, u32, int, u32, i64)
 fn C.vox_gl_bind_framebuffer(u32, u32)
 fn C.vox_gl_bind_renderbuffer(u32, u32)
 fn C.vox_gl_bind_texture(u32, u32)
@@ -72,9 +88,10 @@ fn C.vox_gl_get_uniform_floats(u32, int, &f32)
 fn C.vox_gl_get_uniform_ints(u32, int, &int)
 fn C.vox_gl_get_uniform_uints(u32, int, &u32)
 
-fn (mut context OpenGLContext) collect_native_error() {
+fn (mut context OpenGLContext) collect_native_error() bool {
 	error_value := GLenum(C.vox_gl_get_error())
 	if error_value != no_error { context.set_pending_local_error(error_value) }
+	return error_value == no_error
 }
 
 fn (mut context OpenGLContext) native_fence_sync(condition GLenum, flags GLenum) voidptr {

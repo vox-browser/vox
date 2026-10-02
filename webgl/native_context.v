@@ -188,6 +188,16 @@ pub fn (mut context OpenGLContext) dispatch(name string, args ...i64) {
 	context.make_current()
 	if !context.current_ { return }
 	match name {
+        'enable_vertex_attrib_array' { C.vox_gl_vertex_attrib_enable(u32(args[0]), 1) }
+        'disable_vertex_attrib_array' { C.vox_gl_vertex_attrib_enable(u32(args[0]), 0) }
+        'vertex_attrib_pointer' { C.vox_gl_vertex_attrib_pointer(u32(args[0]), int(args[1]), u32(args[2]), int(args[3]), int(args[4]), args[5]) }
+        'vertex_attrib_i_pointer' { C.vox_gl_vertex_attrib_i_pointer(u32(args[0]), int(args[1]), u32(args[2]), int(args[3]), args[4]) }
+        'vertex_attrib_divisor', 'vertex_attrib_divisor_angle' { C.vox_gl_vertex_attrib_divisor(u32(args[0]), u32(args[1]), if context.version == .webgl2 { 3 } else { 2 }) }
+        'draw_arrays' { C.vox_gl_draw_arrays(u32(args[0]), int(args[1]), int(args[2])) }
+        'draw_elements' { C.vox_gl_draw_elements(u32(args[0]), int(args[1]), u32(args[2]), args[3]) }
+        'draw_arrays_instanced', 'draw_arrays_instanced_angle' { C.vox_gl_draw_arrays_instanced(u32(args[0]), int(args[1]), int(args[2]), int(args[3]), if context.version == .webgl2 { 3 } else { 2 }) }
+        'draw_elements_instanced', 'draw_elements_instanced_angle' { C.vox_gl_draw_elements_instanced(u32(args[0]), int(args[1]), u32(args[2]), args[3], int(args[4]), if context.version == .webgl2 { 3 } else { 2 }) }
+        'draw_range_elements' { C.vox_gl_draw_range_elements(u32(args[0]), u32(args[1]), u32(args[2]), int(args[3]), u32(args[4]), args[5]) }
 		'clear' { C.vox_gl_clear(u32(args[0])) }
 		'viewport' { C.vox_gl_viewport(int(args[0]), int(args[1]), int(args[2]), int(args[3])) }
 		'scissor' { C.vox_gl_scissor(int(args[0]), int(args[1]), int(args[2]), int(args[3])) }

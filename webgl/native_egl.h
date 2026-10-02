@@ -5,6 +5,8 @@
 #ifndef VOX_WEBGL_NATIVE_EGL_H
 #define VOX_WEBGL_NATIVE_EGL_H
 #include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <EGL/eglext_angle.h>
@@ -166,6 +168,33 @@ static void vox_gl_delete_object(int kind, unsigned handle)
     case 3: glDeleteTextures(1, &handle); break;
     }
 }
+static void vox_gl_bind_buffer(unsigned target, unsigned handle) { glBindBuffer(target, handle); }
+static void vox_gl_buffer_data(unsigned target, long long size, void const* data, unsigned usage) { glBufferData(target, (GLsizeiptr)size, data, usage); }
+static void vox_gl_buffer_sub_data(unsigned target, long long offset, long long size, void const* data) { glBufferSubData(target, (GLintptr)offset, (GLsizeiptr)size, data); }
+static void vox_gl_copy_buffer_sub_data(unsigned read_target, unsigned write_target, long long read_offset, long long write_offset, long long size) { glCopyBufferSubData(read_target, write_target, (GLintptr)read_offset, (GLintptr)write_offset, (GLsizeiptr)size); }
+/* Services/Compositor/HostWebGLContext.cpp::read_buffer_sub_data. */
+static int vox_gl_read_buffer_sub_data(unsigned target, long long offset, long long size, void* data) {
+    if (size == 0) return 1;
+    void* mapped = glMapBufferRange(target, (GLintptr)offset, (GLsizeiptr)size, GL_MAP_READ_BIT);
+    if (!mapped) return 0;
+    memcpy(data, mapped, (size_t)size);
+    glUnmapBuffer(target);
+    return 1;
+}
+static long long vox_gl_buffer_parameter(unsigned target, unsigned pname, int version) {
+    if (version == 3) { GLint64 result = 0; glGetBufferParameteri64v(target, pname, &result); return result; }
+    GLint result = 0; glGetBufferParameteriv(target, pname, &result); return result;
+}
+static void vox_gl_vertex_attrib_pointer(unsigned index, int size, unsigned type, int normalized, int stride, long long offset) { glVertexAttribPointer(index, size, type, normalized, stride, (void const*)(intptr_t)offset); }
+static void vox_gl_vertex_attrib_i_pointer(unsigned index, int size, unsigned type, int stride, long long offset) { glVertexAttribIPointer(index, size, type, stride, (void const*)(intptr_t)offset); }
+static void vox_gl_vertex_attrib_floats(unsigned index, float const* data) { glVertexAttrib4fv(index, data); }
+static void vox_gl_vertex_attrib_enable(unsigned index, int enabled) { if (enabled) glEnableVertexAttribArray(index); else glDisableVertexAttribArray(index); }
+static void vox_gl_vertex_attrib_divisor(unsigned index, unsigned divisor, int version) { if (version == 3) glVertexAttribDivisor(index, divisor); else glVertexAttribDivisorANGLE(index, divisor); }
+static void vox_gl_draw_arrays(unsigned mode, int first, int count) { glDrawArrays(mode, first, count); }
+static void vox_gl_draw_elements(unsigned mode, int count, unsigned type, long long offset) { glDrawElements(mode, count, type, (void const*)(intptr_t)offset); }
+static void vox_gl_draw_arrays_instanced(unsigned mode, int first, int count, int instances, int version) { if (version == 3) glDrawArraysInstanced(mode, first, count, instances); else glDrawArraysInstancedANGLE(mode, first, count, instances); }
+static void vox_gl_draw_elements_instanced(unsigned mode, int count, unsigned type, long long offset, int instances, int version) { if (version == 3) glDrawElementsInstanced(mode, count, type, (void const*)(intptr_t)offset, instances); else glDrawElementsInstancedANGLE(mode, count, type, (void const*)(intptr_t)offset, instances); }
+static void vox_gl_draw_range_elements(unsigned mode, unsigned start, unsigned end, int count, unsigned type, long long offset) { glDrawRangeElements(mode, start, end, count, type, (void const*)(intptr_t)offset); }
 static void vox_gl_bind_framebuffer(unsigned target, unsigned handle) { glBindFramebuffer(target, handle); }
 static void vox_gl_bind_renderbuffer(unsigned target, unsigned handle) { glBindRenderbuffer(target, handle); }
 static void vox_gl_bind_texture(unsigned target, unsigned handle) { glBindTexture(target, handle); }

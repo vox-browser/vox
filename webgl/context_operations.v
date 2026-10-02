@@ -822,15 +822,12 @@ pub fn (mut context WebGLRenderingContext) get_buffer_parameter(target GLenum, p
 		context.set_error(invalid_operation)
 		return WebGLParameterValue{}
 	}
-	buffer := context.buffers[handle] or { return WebGLParameterValue{} }
-	return match pname {
-		buffer_size { WebGLParameterValue{ kind: .integer, integer: buffer.data_.len } }
-		buffer_usage { WebGLParameterValue{ kind: .integer, integer: buffer.usage_ } }
-		else {
-			context.set_error(invalid_enum)
-			WebGLParameterValue{}
-		}
-	}
+	_ := context.buffers[handle] or { return WebGLParameterValue{} }
+    if pname !in [buffer_size, buffer_usage] { context.set_error(invalid_enum); return WebGLParameterValue{} }
+    context.native.make_current()
+    result := C.vox_gl_buffer_parameter(target, pname, if context.version == .webgl2 { 3 } else { 2 })
+    context.native.collect_native_error()
+    return integer_parameter(result)
 }
 
 pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLParameterValue {
@@ -1354,18 +1351,30 @@ pub fn (mut context WebGLRenderingContext) uniform4i(location ?&WebGLUniformLoca
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib1f(index GLuint, x f32) {
 	context.vertex_attrib_values_[index] = [x, f32(0), 0, 1]
+    context.native.make_current()
+    C.vox_gl_vertex_attrib_floats(index, context.vertex_attrib_values_[index].data)
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib2f(index GLuint, x f32, y f32) {
 	context.vertex_attrib_values_[index] = [x, y, f32(0), 1]
+    context.native.make_current()
+    C.vox_gl_vertex_attrib_floats(index, context.vertex_attrib_values_[index].data)
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib3f(index GLuint, x f32, y f32, z f32) {
 	context.vertex_attrib_values_[index] = [x, y, z, f32(1)]
+    context.native.make_current()
+    C.vox_gl_vertex_attrib_floats(index, context.vertex_attrib_values_[index].data)
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib4f(index GLuint, x f32, y f32, z f32, w f32) {
 	context.vertex_attrib_values_[index] = [x, y, z, w]
+    context.native.make_current()
+    C.vox_gl_vertex_attrib_floats(index, context.vertex_attrib_values_[index].data)
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib1fv(index GLuint, values []f32) {

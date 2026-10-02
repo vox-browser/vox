@@ -15,70 +15,36 @@ fn (mut context WebGLRenderingContext) require_webgl2() bool {
 }
 
 pub fn (mut context WebGLRenderingContext) copy_buffer_sub_data(read_target GLenum, write_target GLenum, read_offset i64, write_offset i64, size i64) {
-	if !context.require_webgl2() {
-		return
-	}
-	if read_offset < 0 || write_offset < 0 || size < 0 {
-		context.set_error(invalid_value)
-		return
-	}
-	read_handle := context.bound_buffers[read_target] or {
-		context.set_error(invalid_operation)
-		return
-	}
-	write_handle := context.bound_buffers[write_target] or {
-		context.set_error(invalid_operation)
-		return
-	}
-	read_buffer := context.buffers[read_handle] or {
-		context.set_error(invalid_operation)
-		return
-	}
-	write_buffer := context.buffers[write_handle] or {
-		context.set_error(invalid_operation)
-		return
-	}
-	mut mutable_write_buffer := unsafe { &WebGLBuffer(write_buffer) }
-	if read_offset + size > read_buffer.data_.len || write_offset + size > mutable_write_buffer.data_.len {
-		context.set_error(invalid_value)
-		return
-	}
-	read_start := int(read_offset)
-	write_start := int(write_offset)
-	count := int(size)
-	if read_handle == write_handle && write_start > read_start && write_start < read_start + count {
-		for index := count - 1; index >= 0; index-- {
-			mutable_write_buffer.data_[write_start + index] = read_buffer.data_[read_start + index]
-		}
-	} else {
-		copy(mut mutable_write_buffer.data_[write_start..write_start + count], read_buffer.data_[read_start..read_start + count])
-	}
-	context.native.dispatch('copy_buffer_sub_data', read_target, write_target, read_offset, write_offset, size)
+    if !context.require_webgl2() { return }
+    context.native.dispatch('copy_buffer_sub_data', read_target, write_target, read_offset, write_offset, size)
+    C.vox_gl_copy_buffer_sub_data(read_target, write_target, read_offset, write_offset, size)
+    if !context.native.collect_native_error() { return }
+    read_handle := context.bound_buffers[read_target] or { return }
+    write_handle := context.bound_buffers[write_target] or { return }
+    read_buffer := context.buffers[read_handle] or { return }
+    write_buffer := context.buffers[write_handle] or { return }
+    mut mutable_write := unsafe { &WebGLBuffer(write_buffer) }
+    if read_offset >= 0 && write_offset >= 0 && size >= 0
+        && read_offset <= read_buffer.data_.len && size <= read_buffer.data_.len - read_offset
+        && write_offset <= mutable_write.data_.len && size <= mutable_write.data_.len - write_offset {
+        copy(mut mutable_write.data_[int(write_offset)..int(write_offset + size)], read_buffer.data_[int(read_offset)..int(read_offset + size)])
+    }
 }
 
 pub fn (mut context WebGLRenderingContext) get_buffer_sub_data(target GLenum, source_offset i64, mut destination []u8, destination_offset int, length int) {
-	if !context.require_webgl2() {
-		return
-	}
-	if source_offset < 0 || destination_offset < 0 || length < 0 {
-		context.set_error(invalid_value)
-		return
-	}
-	handle := context.bound_buffers[target] or {
-		context.set_error(invalid_operation)
-		return
-	}
-	buffer := context.buffers[handle] or {
-		context.set_error(invalid_operation)
-		return
-	}
-	copy_length := if length == 0 { destination.len - destination_offset } else { length }
-	if destination_offset + copy_length > destination.len || source_offset + copy_length > buffer.data_.len {
-		context.set_error(invalid_value)
-		return
-	}
-	copy(mut destination[destination_offset..destination_offset + copy_length], buffer.data_[int(source_offset)..int(source_offset) + copy_length])
-	context.native.dispatch('get_buffer_sub_data', target, source_offset, destination_offset, copy_length)
+    if !context.require_webgl2() { return }
+    if destination_offset < 0 || length < 0 || destination_offset > destination.len {
+        context.set_error(invalid_value)
+        return
+    }
+    copy_length := if length == 0 { destination.len - destination_offset } else { length }
+    if copy_length == 0 { return }
+    if copy_length > destination.len - destination_offset { context.set_error(invalid_value); return }
+    context.native.dispatch('get_buffer_sub_data', target, source_offset, destination_offset, copy_length)
+    mut bytes := []u8{len: copy_length}
+    success := C.vox_gl_read_buffer_sub_data(target, source_offset, copy_length, bytes.data) == 1
+    context.native.collect_native_error()
+    if success { copy(mut destination[destination_offset..destination_offset + copy_length], bytes) }
 }
 
 pub fn (mut context WebGLRenderingContext) create_query() &WebGLQuery {

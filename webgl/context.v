@@ -329,8 +329,11 @@ pub fn (mut context WebGLRenderingContext) set_current_vertex_array_binding(vert
 
 pub fn (mut context WebGLRenderingContext) create_buffer() &WebGLBuffer {
 	handle := context.allocate_handle()
+	context.native.make_current()
+	native_handle := C.vox_gl_gen_object(0)
+	context.native.collect_native_error()
 	buffer := &WebGLBuffer{
-		object: new_object(context.identity(), context.context_generation_, handle)
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
 	}
 	unsafe {
 		context.buffers[handle] = buffer
@@ -431,67 +434,60 @@ fn (mut context WebGLRenderingContext) object_handle_for_query(object &WebGLObje
 }
 
 pub fn (mut context WebGLRenderingContext) bind_buffer(target GLenum, buffer ?&WebGLBuffer) {
-	if target !in [array_buffer, element_array_buffer, copy_read_buffer, copy_write_buffer,
-		pixel_pack_buffer, pixel_unpack_buffer, transform_feedback_buffer, uniform_buffer] {
-		context.set_error(invalid_enum)
-		return
-	}
-	if value := buffer {
-		mut mutable_value := unsafe { &WebGLBuffer(value) }
-		if !context.owns(&value.object) || !mutable_value.is_compatible_with(target) {
-			context.set_error(invalid_operation)
-			return
-		}
-		context.bound_buffers[target] = value.object.handle_
-	} else {
-		context.bound_buffers.delete(target)
-	}
-	context.native.dispatch('bind_buffer', target, context.bound_buffers[target])
+    if target !in [array_buffer, element_array_buffer, copy_read_buffer, copy_write_buffer,
+        pixel_pack_buffer, pixel_unpack_buffer, transform_feedback_buffer, uniform_buffer]
+        || (context.version == .webgl1 && target !in [array_buffer, element_array_buffer]) {
+        context.set_error(invalid_enum)
+        return
+    }
+    if value := buffer {
+        mut mutable_value := unsafe { &WebGLBuffer(value) }
+        if !context.owns(&value.object) || !mutable_value.is_compatible_with(target) {
+            context.set_error(invalid_operation)
+            return
+        }
+    }
+    context.native.dispatch('bind_buffer', target, if value := buffer { value.object.handle_ } else { 0 })
+    C.vox_gl_bind_buffer(target, if value := buffer { value.object.native_handle_ } else { 0 })
+    if !context.native.collect_native_error() { return }
+    if value := buffer { context.bound_buffers[target] = value.object.handle_ }
+    else { context.bound_buffers.delete(target) }
 }
 
 pub fn (mut context WebGLRenderingContext) buffer_data(target GLenum, data []u8, usage GLenum) {
-	handle := context.bound_buffers[target] or {
-		context.set_error(invalid_operation)
-		return
-	}
-	buffer := context.buffers[handle] or {
-		context.set_error(invalid_operation)
-		return
-	}
-	mut mutable_buffer := unsafe { &WebGLBuffer(buffer) }
-	mutable_buffer.data_ = data.clone()
-	mutable_buffer.usage_ = usage
-	context.native.dispatch('buffer_data', target, data.len, usage)
+    handle := context.bound_buffers[target] or { context.set_error(invalid_operation); return }
+    buffer := context.buffers[handle] or { context.set_error(invalid_operation); return }
+    context.native.dispatch('buffer_data', target, data.len, usage)
+    C.vox_gl_buffer_data(target, data.len, data.data, usage)
+    if !context.native.collect_native_error() { return }
+    mut mutable_buffer := unsafe { &WebGLBuffer(buffer) }
+    mutable_buffer.data_ = data.clone()
+    mutable_buffer.usage_ = usage
 }
 
 pub fn (mut context WebGLRenderingContext) buffer_data_size(target GLenum, size i64, usage GLenum) {
-	if size < 0 {
-		context.set_error(invalid_value)
-		return
-	}
-	context.buffer_data(target, []u8{len: int(size)}, usage)
+    if size < 0 { context.set_error(invalid_value); return }
+    handle := context.bound_buffers[target] or { context.set_error(invalid_operation); return }
+    buffer := context.buffers[handle] or { context.set_error(invalid_operation); return }
+    context.native.dispatch('buffer_data', target, size, usage)
+    C.vox_gl_buffer_data(target, size, unsafe { nil }, usage)
+    if !context.native.collect_native_error() { return }
+    mut mutable_buffer := unsafe { &WebGLBuffer(buffer) }
+    mutable_buffer.data_ = if size <= max_int { []u8{len: int(size)} } else { []u8{} }
+    mutable_buffer.usage_ = usage
 }
 
 pub fn (mut context WebGLRenderingContext) buffer_sub_data(target GLenum, offset i64, data []u8) {
-	if offset < 0 {
-		context.set_error(invalid_value)
-		return
-	}
-	handle := context.bound_buffers[target] or {
-		context.set_error(invalid_operation)
-		return
-	}
-	buffer := context.buffers[handle] or {
-		context.set_error(invalid_operation)
-		return
-	}
-	mut mutable_buffer := unsafe { &WebGLBuffer(buffer) }
-	if offset + data.len > mutable_buffer.data_.len {
-		context.set_error(invalid_value)
-		return
-	}
-	copy(mut mutable_buffer.data_[int(offset)..int(offset) + data.len], data)
-	context.native.dispatch('buffer_sub_data', target, offset, data.len)
+    if offset < 0 { context.set_error(invalid_value); return }
+    handle := context.bound_buffers[target] or { context.set_error(invalid_operation); return }
+    buffer := context.buffers[handle] or { context.set_error(invalid_operation); return }
+    context.native.dispatch('buffer_sub_data', target, offset, data.len)
+    C.vox_gl_buffer_sub_data(target, offset, data.len, data.data)
+    if !context.native.collect_native_error() { return }
+    mut mutable_buffer := unsafe { &WebGLBuffer(buffer) }
+    if offset <= mutable_buffer.data_.len && data.len <= mutable_buffer.data_.len - offset {
+        copy(mut mutable_buffer.data_[int(offset)..int(offset) + data.len], data)
+    }
 }
 
 pub fn (mut context WebGLRenderingContext) delete_buffer(buffer ?&WebGLBuffer) {
@@ -518,6 +514,8 @@ pub fn (mut context WebGLRenderingContext) delete_buffer(buffer ?&WebGLBuffer) {
 			}
 		}
 		context.native.dispatch('delete_buffer', handle)
+		C.vox_gl_delete_object(0, value.object.native_handle_)
+		context.native.collect_native_error()
 	}
 }
 
