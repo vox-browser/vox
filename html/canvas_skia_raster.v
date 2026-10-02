@@ -101,6 +101,7 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 		int(bitmap.alpha_type), command)
 	assert painted
 	mutable_bitmap.alpha_type = 2
+	mutable_bitmap.native_rows_are_top_down = true
 }
 
 // SkiaUtils.cpp: CSS filter matrices, including each source clamp policy.
@@ -271,4 +272,5 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_bitmap_command(o
 	painted := skia.draw_path(mut mutable_bitmap.data, bitmap.width, bitmap.height, bitmap.pitch, int(bitmap.alpha_type), command)
 	assert painted
 	mutable_bitmap.alpha_type = 2
+	mutable_bitmap.native_rows_are_top_down = true
 }

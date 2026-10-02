@@ -588,6 +588,7 @@ pub fn (mut host CanvasHost) call(input string) !string {
 				result = json2.Any({
 					'pixels':        json2.Any(bitmap.data.map(json2.Any(int(it))))
 					'premultiplied': json2.Any(bitmap.alpha_type == 2)
+					'topDown':       json2.Any(bitmap.native_rows_are_top_down)
 				})
 			} else {
 				result = json2.Any({
