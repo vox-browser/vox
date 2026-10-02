@@ -65,6 +65,7 @@ pub type KeyGenerationParams = AesKeyGenParams
 	| AlgorithmParams
 	| HmacKeyGenParams
 	| KmacKeyGenParams
+	| RsaHashedKeyGenParams
 
 @[heap]
 pub struct SubtleCrypto {}
@@ -365,6 +366,7 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 		AesKeyGenParams { params.name }
 		HmacKeyGenParams { params.name }
 		KmacKeyGenParams { params.name }
+		RsaHashedKeyGenParams { params.name }
 		AlgorithmParams { params.name }
 	}
 	normalized := normalize_an_algorithm(name, 'generateKey')!
@@ -374,6 +376,13 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 		return error('SyntaxError: usages must not be empty')
 	}
 	return match params {
+        RsaHashedKeyGenParams {
+            hash := normalize_an_algorithm(params.hash, 'digest')!
+            generated := generate_rsa_key(RsaHashedKeyGenParams{ ...params, name: normalized, hash: hash }, extractable, normalized_usages)!
+            pair := generated.pair or { return error('OperationError: Missing key pair') }
+            if pair.private_key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+            generated
+        }
 		KmacKeyGenParams {
 			KMAC.create().generate_key(KmacKeyGenParams{ ...params, name: normalized }, extractable, normalized_usages)!
 		}
