@@ -181,7 +181,7 @@ fn run_reaction(state PromiseState, value Value, reaction PromiseReaction) {
 	if (state == .fulfilled && reaction.has_on_fulfilled) || (state == .rejected && reaction.has_on_rejected) {
 		steps := if state == .fulfilled { reaction.on_fulfilled } else { reaction.on_rejected }
 		result := steps(value) or {
-			child.reject(string_value(err.msg()))
+			child.reject(exception_value(err))
 			return
 		}
 		child.resolve(result)
@@ -347,7 +347,7 @@ pub fn call_user_object_operation(callback CallbackType, this_argument ?Value, a
 	this_value := this_argument or { undefined_value() }
 	return callback.callback(this_value, arguments) or {
 		if callback.operation_returns_promise == .yes {
-			return promise_value(create_rejected_promise_for(callback.promise_context or { PromiseContext{} }, string_value(err.msg())))
+			return promise_value(create_rejected_promise_for(callback.promise_context or { PromiseContext{} }, exception_value(err)))
 		}
 		return err
 	}

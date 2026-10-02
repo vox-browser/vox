@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module browserjs
 
+import webidl
+
 #include "host_function_darwin.h"
 
 fn C.vox_make_js_host_function(context voidptr, record voidptr, callback fn (voidptr, voidptr, voidptr, usize, &voidptr, &voidptr) voidptr) voidptr
@@ -19,6 +21,13 @@ fn javascript_core_value_host_function(context voidptr, function voidptr, receiv
 	result := record.callback(receiver, args) or {
 		if err is JavaScriptValueException && err.context == context {
 			unsafe { *exception = err.value }
+			return C.JSValueMakeUndefined(context)
+		}
+		if err is webidl.ValueException {
+			value := record.runtime.actual_webidl_value(err.value) or {
+				return host_function_error(context, err.msg(), exception)
+			}
+			unsafe { *exception = value }
 			return C.JSValueMakeUndefined(context)
 		}
 		return host_function_error(context, err.msg(), exception)
