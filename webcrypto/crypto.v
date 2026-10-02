@@ -86,25 +86,28 @@ pub fn (crypto &Crypto) get_random_values(mut destination []u8) ![]u8 {
 // Typed ArrayBufferView form of getRandomValues. The backing slice models the
 // viewed ArrayBuffer; only the view's byte range is overwritten.
 pub fn (crypto &Crypto) get_random_values_view(mut destination RandomValuesArrayView) !RandomValuesArrayView {
-	_ = crypto
-	if !random_values_array_kind_is_allowed(destination.kind) {
-		return error('TypeMismatchError: array must be an integer TypedArray')
-	}
-	if destination.out_of_bounds || destination.byte_offset < 0 || destination.byte_length < 0
+	invalid := destination.out_of_bounds || destination.byte_offset < 0 || destination.byte_length < 0
 		|| destination.byte_offset > destination.buffer.len
-		|| destination.byte_length > destination.buffer.len - destination.byte_offset {
-		return error('InvalidStateError: TypedArray is out of bounds')
+		|| destination.byte_length > destination.buffer.len - destination.byte_offset
+	random := crypto.get_random_values_for_view(destination.kind, invalid, u64(destination.byte_length))!
+	for index, byte in random { destination.buffer[destination.byte_offset + index] = byte }
+	return destination
+}
+
+// The native engine supplies its actual witness/view length. The source creates
+// random bytes before overwriting that view; no JS property or payload models it.
+pub fn (crypto &Crypto) get_random_values_for_view(kind RandomValuesArrayKind, out_of_bounds bool, byte_length u64) ![]u8 {
+	_ = crypto
+	if !random_values_array_kind_is_allowed(kind) {
+		return error('TypeMismatchError: array must be one of Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array, Int32Array, Uint32Array, BigInt64Array, or BigUint64Array')
 	}
-	if destination.byte_length > maximum_random_values_length {
+	if out_of_bounds {
+		return error("InvalidStateError: TypedArray contains a property which references a value at an index not contained within its buffer's bounds")
+	}
+	if byte_length > maximum_random_values_length {
 		return error("QuotaExceededError: array's byteLength may not be greater than 65536")
 	}
-	random := rand.bytes(destination.byte_length) or {
-		return error('OperationError: Unable to obtain secure random bytes: ${err}')
-	}
-	for index, byte in random {
-		destination.buffer[destination.byte_offset + index] = byte
-	}
-	return destination
+	return rand.bytes(int(byte_length)) or { return error('OperationError: Unable to obtain secure random bytes: ${err}') }
 }
 
 // https://w3c.github.io/webcrypto/#Crypto-method-randomUUID
