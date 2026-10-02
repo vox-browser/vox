@@ -223,6 +223,39 @@ static void vox_gl_scissor(int x, int y, int w, int h) { glScissor(x, y, w, h); 
 static void vox_gl_enable(unsigned cap) { glEnable(cap); }
 static void vox_gl_disable(unsigned cap) { glDisable(cap); }
 static void vox_gl_pixel_storei(unsigned pname, int value) { glPixelStorei(pname, value); }
+static void vox_gl_active_texture(unsigned texture) { glActiveTexture(texture); }
+static void vox_gl_blend_color(float r, float g, float b, float a) { glBlendColor(r,g,b,a); }
+static void vox_gl_blend_equation(unsigned mode) { glBlendEquation(mode); }
+static void vox_gl_blend_equation_separate(unsigned rgb, unsigned alpha) { glBlendEquationSeparate(rgb,alpha); }
+static void vox_gl_blend_func(unsigned src, unsigned dst) { glBlendFunc(src,dst); }
+static void vox_gl_blend_func_separate(unsigned srgb, unsigned drgb, unsigned sa, unsigned da) { glBlendFuncSeparate(srgb,drgb,sa,da); }
+static void vox_gl_cull_face(unsigned mode) { glCullFace(mode); }
+static void vox_gl_depth_func(unsigned function) { glDepthFunc(function); }
+static void vox_gl_depth_range(float near_value, float far_value) { glDepthRangef(near_value,far_value); }
+static void vox_gl_finish(void) { glFinish(); }
+static void vox_gl_flush(void) { glFlush(); }
+static void vox_gl_front_face(unsigned mode) { glFrontFace(mode); }
+static void vox_gl_generate_mipmap(unsigned target) { glGenerateMipmap(target); }
+static void vox_gl_hint(unsigned target, unsigned mode) { glHint(target,mode); }
+static void vox_gl_line_width(float value) { glLineWidth(value); }
+static void vox_gl_polygon_offset(float factor, float units) { glPolygonOffset(factor,units); }
+static void vox_gl_sample_coverage(float value, int invert) { glSampleCoverage(value,invert); }
+static void vox_gl_stencil_func(unsigned function, int reference, unsigned mask) { glStencilFunc(function,reference,mask); }
+static void vox_gl_stencil_func_separate(unsigned face, unsigned function, int reference, unsigned mask) { glStencilFuncSeparate(face,function,reference,mask); }
+static void vox_gl_stencil_mask(unsigned mask) { glStencilMask(mask); }
+static void vox_gl_stencil_mask_separate(unsigned face, unsigned mask) { glStencilMaskSeparate(face,mask); }
+static void vox_gl_stencil_op(unsigned fail, unsigned depth_fail, unsigned pass) { glStencilOp(fail,depth_fail,pass); }
+static void vox_gl_stencil_op_separate(unsigned face, unsigned fail, unsigned depth_fail, unsigned pass) { glStencilOpSeparate(face,fail,depth_fail,pass); }
+static void vox_gl_clear_buffer_floats(unsigned buffer, int draw_buffer, float const* values) { glClearBufferfv(buffer,draw_buffer,values); }
+static void vox_gl_clear_buffer_ints(unsigned buffer, int draw_buffer, int const* values) { glClearBufferiv(buffer,draw_buffer,values); }
+static void vox_gl_clear_buffer_uints(unsigned buffer, int draw_buffer, unsigned const* values) { glClearBufferuiv(buffer,draw_buffer,values); }
+static void vox_gl_clear_buffer_depth_stencil(unsigned buffer, int draw_buffer, float depth, int stencil) { glClearBufferfi(buffer,draw_buffer,depth,stencil); }
+static void vox_gl_vertex_attrib_ints(unsigned index, int const* values) { glVertexAttribI4iv(index,values); }
+static void vox_gl_vertex_attrib_uints(unsigned index, unsigned const* values) { glVertexAttribI4uiv(index,values); }
+static void vox_gl_vertex_attrib_int_parameter(unsigned index, int* values) { glGetVertexAttribIiv(index,GL_CURRENT_VERTEX_ATTRIB,values); }
+static void vox_gl_vertex_attrib_uint_parameter(unsigned index, unsigned* values) { glGetVertexAttribIuiv(index,GL_CURRENT_VERTEX_ATTRIB,values); }
+static void vox_gl_float_parameter(unsigned pname, float* values) { glGetFloatv(pname,values); }
+static void vox_gl_int_parameter(unsigned pname, int* values) { glGetIntegerv(pname,values); }
 static unsigned vox_gl_create_shader(unsigned type) { return glCreateShader(type); }
 static unsigned vox_gl_create_program(void) { return glCreateProgram(); }
 static void vox_gl_shader_source(unsigned shader, char const* source, int length) { glShaderSource(shader, 1, &source, &length); }

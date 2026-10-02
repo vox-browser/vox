@@ -265,8 +265,7 @@ pub fn read_and_pixel_convert_texture_image_source(bytes []u8, flip_y bool, prem
 }
 
 pub fn (mut context WebGLRenderingContext) active_texture(texture GLenum) {
-	context.active_texture_ = texture
-	context.command('active_texture', texture)
+	if context.command('active_texture', texture) { context.active_texture_ = texture }
 }
 
 pub fn (mut context WebGLRenderingContext) bind_attrib_location(program &WebGLProgram, index GLuint, name string) {
@@ -358,6 +357,8 @@ pub fn (mut context WebGLRenderingContext) bind_texture(target GLenum, texture ?
 pub fn (mut context WebGLRenderingContext) blend_color(red f32, green f32, blue f32, alpha f32) {
 	context.blend_color_ = [clamp_unit(red), clamp_unit(green), clamp_unit(blue), clamp_unit(alpha)]!
 	context.command('blend_color', i64(red), i64(green), i64(blue), i64(alpha))
+    C.vox_gl_blend_color(red,green,blue,alpha)
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) blend_equation(mode GLenum) {
@@ -572,6 +573,8 @@ pub fn (mut context WebGLRenderingContext) depth_range(near f64, far f64) {
 		} else if far > 1 { f64(1) } else { far },
 	]!
 	context.command('depth_range', i64(context.depth_range_[0]), i64(context.depth_range_[1]))
+    C.vox_gl_depth_range(f32(near),f32(far))
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) finish() {
@@ -1140,12 +1143,16 @@ pub fn (mut context WebGLRenderingContext) line_width(width f32) {
 	}
 	context.line_width_ = width
 	context.command('line_width', i64(width))
+    C.vox_gl_line_width(width)
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) polygon_offset(factor f32, units f32) {
 	context.generic_parameters_[polygon_offset_factor] = number_parameter(factor)
 	context.generic_parameters_[polygon_offset_units] = number_parameter(units)
 	context.command('polygon_offset', i64(factor), i64(units))
+    C.vox_gl_polygon_offset(factor,units)
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) renderbuffer_storage(target GLenum, internal_format GLenum, width int, height int) {
@@ -1169,6 +1176,8 @@ pub fn (mut context WebGLRenderingContext) sample_coverage(value f32, invert boo
 	context.generic_parameters_[sample_coverage_value] = number_parameter(clamp_unit(value))
 	context.generic_parameters_[sample_coverage_invert] = boolean_parameter(invert)
 	context.command('sample_coverage', i64(value), i64(invert))
+    C.vox_gl_sample_coverage(value,int(invert))
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) stencil_func(function GLenum, reference int, mask GLuint) {

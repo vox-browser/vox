@@ -866,6 +866,6 @@ pub fn (mut context WebGLRenderingContext) draw_elements(mode GLenum, count int,
 }
 
 // Native passthrough state commands retain ordering at the platform boundary.
-pub fn (mut context WebGLRenderingContext) command(name string, args ...i64) {
-	context.native.dispatch(name, ...args)
+pub fn (mut context WebGLRenderingContext) command(name string, args ...i64) bool {
+	return context.native.dispatch(name, ...args)
 }

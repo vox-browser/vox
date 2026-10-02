@@ -220,20 +220,45 @@ pub fn (mut context WebGLRenderingContext) blit_framebuffer(source_x0 int, sourc
 	context.webgl2_command('blit_framebuffer', source_x0, source_y0, source_x1, source_y1, destination_x0, destination_y0, destination_x1, destination_y1, mask, filter)
 }
 
+fn (mut context WebGLRenderingContext) validate_clear_buffer_values(buffer GLenum, length int) bool {
+    if !context.require_webgl2() { return false }
+    context.native.make_current()
+    context.native.notify_content_will_change()
+    match buffer {
+        GLenum(0x1800) { if length < 4 { context.set_error(invalid_value); return false } }
+        GLenum(0x1801), GLenum(0x1802) { if length < 1 { context.set_error(invalid_value); return false } }
+        else { context.set_error(invalid_enum); return false }
+    }
+    return true
+}
+
 pub fn (mut context WebGLRenderingContext) clear_bufferfv(buffer GLenum, draw_buffer int, values []f32) {
-	context.webgl2_command('clear_bufferfv', buffer, draw_buffer, values.len)
+    if !context.validate_clear_buffer_values(buffer,values.len) { return }
+    context.webgl2_command('clear_bufferfv',buffer,draw_buffer,values.len)
+    C.vox_gl_clear_buffer_floats(buffer,draw_buffer,values.data)
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) clear_bufferiv(buffer GLenum, draw_buffer int, values []int) {
-	context.webgl2_command('clear_bufferiv', buffer, draw_buffer, values.len)
+    if !context.validate_clear_buffer_values(buffer,values.len) { return }
+    context.webgl2_command('clear_bufferiv',buffer,draw_buffer,values.len)
+    C.vox_gl_clear_buffer_ints(buffer,draw_buffer,values.data)
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) clear_bufferuiv(buffer GLenum, draw_buffer int, values []u32) {
-	context.webgl2_command('clear_bufferuiv', buffer, draw_buffer, values.len)
+    if !context.validate_clear_buffer_values(buffer,values.len) { return }
+    context.webgl2_command('clear_bufferuiv',buffer,draw_buffer,values.len)
+    C.vox_gl_clear_buffer_uints(buffer,draw_buffer,values.data)
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) clear_bufferfi(buffer GLenum, draw_buffer int, depth f32, stencil int) {
-	context.webgl2_command('clear_bufferfi', buffer, draw_buffer, i64(depth), stencil)
+    if !context.require_webgl2() { return }
+    context.webgl2_command('clear_bufferfi',buffer,draw_buffer,i64(depth),stencil)
+    context.native.notify_content_will_change()
+    C.vox_gl_clear_buffer_depth_stencil(buffer,draw_buffer,depth,stencil)
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) compressed_tex_sub_image3d(target GLenum, level int, x_offset int, y_offset int, z_offset int, width int, height int, depth int, format GLenum, data []u8, source_offset u64, length_override u32) {
@@ -465,7 +490,12 @@ pub fn (mut context WebGLRenderingContext) uniform_matrix3x4fv(location ?&WebGLU
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib_i4i(index GLuint, x int, y int, z int, w int) {
+    if !context.require_webgl2() { return }
 	context.vertex_attrib_values_[index] = [f32(x), f32(y), f32(z), f32(w)]
+    values := [x,y,z,w]
+    context.native.make_current()
+    C.vox_gl_vertex_attrib_ints(index,values.data)
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib_i4iv(index GLuint, values []int) {
@@ -477,7 +507,12 @@ pub fn (mut context WebGLRenderingContext) vertex_attrib_i4iv(index GLuint, valu
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib_i4ui(index GLuint, x u32, y u32, z u32, w u32) {
+    if !context.require_webgl2() { return }
 	context.vertex_attrib_values_[index] = [f32(x), f32(y), f32(z), f32(w)]
+    values := [x,y,z,w]
+    context.native.make_current()
+    C.vox_gl_vertex_attrib_uints(index,values.data)
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib_i4uiv(index GLuint, values []u32) {

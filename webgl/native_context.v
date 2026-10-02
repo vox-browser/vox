@@ -181,12 +181,12 @@ pub fn (mut context OpenGLContext) request_extension(extension string) {
 	}
 }
 
-pub fn (mut context OpenGLContext) dispatch(name string, args ...i64) {
+pub fn (mut context OpenGLContext) dispatch(name string, args ...i64) bool {
 	if context.lost_ {
-		return
+		return false
 	}
 	context.make_current()
-	if !context.current_ { return }
+	if !context.current_ { return false }
 	match name {
         'enable_vertex_attrib_array' { C.vox_gl_vertex_attrib_enable(u32(args[0]), 1) }
         'disable_vertex_attrib_array' { C.vox_gl_vertex_attrib_enable(u32(args[0]), 0) }
@@ -198,6 +198,24 @@ pub fn (mut context OpenGLContext) dispatch(name string, args ...i64) {
         'draw_arrays_instanced', 'draw_arrays_instanced_angle' { C.vox_gl_draw_arrays_instanced(u32(args[0]), int(args[1]), int(args[2]), int(args[3]), if context.version == .webgl2 { 3 } else { 2 }) }
         'draw_elements_instanced', 'draw_elements_instanced_angle' { C.vox_gl_draw_elements_instanced(u32(args[0]), int(args[1]), u32(args[2]), args[3], int(args[4]), if context.version == .webgl2 { 3 } else { 2 }) }
         'draw_range_elements' { C.vox_gl_draw_range_elements(u32(args[0]), u32(args[1]), u32(args[2]), int(args[3]), u32(args[4]), args[5]) }
+        'active_texture' { C.vox_gl_active_texture(u32(args[0])) }
+        'blend_equation' { C.vox_gl_blend_equation(u32(args[0])) }
+        'blend_equation_separate' { C.vox_gl_blend_equation_separate(u32(args[0]),u32(args[1])) }
+        'blend_func' { C.vox_gl_blend_func(u32(args[0]),u32(args[1])) }
+        'blend_func_separate' { C.vox_gl_blend_func_separate(u32(args[0]),u32(args[1]),u32(args[2]),u32(args[3])) }
+        'cull_face' { C.vox_gl_cull_face(u32(args[0])) }
+        'depth_func' { C.vox_gl_depth_func(u32(args[0])) }
+        'finish' { C.vox_gl_finish() }
+        'flush' { C.vox_gl_flush() }
+        'front_face' { C.vox_gl_front_face(u32(args[0])) }
+        'generate_mipmap' { C.vox_gl_generate_mipmap(u32(args[0])) }
+        'hint' { C.vox_gl_hint(u32(args[0]),u32(args[1])) }
+        'stencil_func' { C.vox_gl_stencil_func(u32(args[0]),int(args[1]),u32(args[2])) }
+        'stencil_func_separate' { C.vox_gl_stencil_func_separate(u32(args[0]),u32(args[1]),int(args[2]),u32(args[3])) }
+        'stencil_mask' { C.vox_gl_stencil_mask(u32(args[0])) }
+        'stencil_mask_separate' { C.vox_gl_stencil_mask_separate(u32(args[0]),u32(args[1])) }
+        'stencil_op' { C.vox_gl_stencil_op(u32(args[0]),u32(args[1]),u32(args[2])) }
+        'stencil_op_separate' { C.vox_gl_stencil_op_separate(u32(args[0]),u32(args[1]),u32(args[2]),u32(args[3])) }
 		'clear' { C.vox_gl_clear(u32(args[0])) }
 		'viewport' { C.vox_gl_viewport(int(args[0]), int(args[1]), int(args[2]), int(args[3])) }
 		'scissor' { C.vox_gl_scissor(int(args[0]), int(args[1]), int(args[2]), int(args[3])) }
@@ -206,7 +224,7 @@ pub fn (mut context OpenGLContext) dispatch(name string, args ...i64) {
 		'pixel_storei' { C.vox_gl_pixel_storei(u32(args[0]), int(args[1])) }
 		else {}
 	}
-	context.collect_native_error()
+	success := context.collect_native_error()
 	if name == 'viewport' && args.len == 4 {
 		context.viewport_ = [int(args[0]), int(args[1]), int(args[2]), int(args[3])]!
 	}
@@ -217,6 +235,7 @@ pub fn (mut context OpenGLContext) dispatch(name string, args ...i64) {
 		}
 	}
 	if name.starts_with('draw') || name == 'clear' { context.notify_content_will_change() }
+	return success
 }
 
 // Native-call recording is a test/debug hook. Upstream dispatches directly to
