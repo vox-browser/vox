@@ -61,6 +61,9 @@ pub mut:
 	function_type_indices []u32
 	start_function_index ?u32
 	data_count ?u32
+	tag_types []BinaryTagType
+	tag_import_entries []BinaryTagImport
+	tag_export_entries []BinaryTagExport
 }
 
 pub struct SerializedModule {
@@ -89,10 +92,12 @@ pub fn (compiled &Module) compiled_module() &Module {
 }
 
 pub fn (compiled &Module) imports() []ModuleImportDescriptor {
+	for _ in compiled.tag_import_entries { eprintln('Not yet implemented: importing tags') }
 	return compiled.import_entries.clone()
 }
 
 pub fn (compiled &Module) exports() []ModuleExportDescriptor {
+	for _ in compiled.tag_export_entries { eprintln('Not yet implemented: exporting tags') }
 	return compiled.export_entries.clone()
 }
 
@@ -126,6 +131,9 @@ pub fn (mut compiled Module) deserialization_steps(serialized SerializedModule) 
 	compiled.function_type_indices = restored.function_type_indices.clone()
 	compiled.start_function_index = restored.start_function_index
 	compiled.data_count = restored.data_count
+	compiled.tag_types = restored.tag_types.clone()
+	compiled.tag_import_entries = restored.tag_import_entries.clone()
+	compiled.tag_export_entries = restored.tag_export_entries.clone()
 }
 
 struct Decoder {
@@ -195,6 +203,9 @@ fn compile_module(bytes []u8) !&Module {
 	mut function_type_indices := []u32{}
 	mut start_function_index := ?u32(none)
 	mut data_count := ?u32(none)
+	mut tag_types := []BinaryTagType{}
+	mut tag_import_entries := []BinaryTagImport{}
+	mut tag_export_entries := []BinaryTagExport{}
 	mut last_non_custom_rank := 0
 	mut seen := map[u8]bool{}
 	for decoder.offset < bytes.len {
@@ -222,10 +233,10 @@ fn compile_module(bytes []u8) !&Module {
 		match section_id {
 			0 { parse_custom_section(mut section, mut custom)! }
 			1 { types = parse_type_section(mut section)! }
-			2 { parse_import_section(mut section, mut imports)! }
+			2 { parse_import_section(mut section, mut imports, mut tag_import_entries)! }
 			3 { function_type_indices = parse_function_section(mut section)! }
 			5 { parse_memory_section(mut section, mut memory_types)! }
-			7 { parse_export_section(mut section, mut exports)! }
+			7 { parse_export_section(mut section, mut exports, mut tag_export_entries)! }
 			// Parser.cpp::StartSection::parse retains the function index. The
 			// machine's invocation and signature validation are separate work.
 			8 { start_function_index = section.u32_leb()! }
@@ -233,6 +244,7 @@ fn compile_module(bytes []u8) !&Module {
 				count_section := parse_data_count_section(mut section)!
 				data_count = count_section.count
 			}
+			13 { tag_types = parse_tag_section(mut section)! }
 			else {
 				section.offset = section.bytes.len
 			}
@@ -252,6 +264,9 @@ fn compile_module(bytes []u8) !&Module {
 		function_type_indices: function_type_indices
 		start_function_index: start_function_index
 		data_count: data_count
+		tag_types: tag_types
+		tag_import_entries: tag_import_entries
+		tag_export_entries: tag_export_entries
 	}
 }
 
@@ -299,12 +314,18 @@ fn external_kind(byte u8) !ImportExportKind {
 	}
 }
 
-fn parse_import_section(mut decoder Decoder, mut result []ModuleImportDescriptor) ! {
+fn parse_import_section(mut decoder Decoder, mut result []ModuleImportDescriptor, mut tag_result []BinaryTagImport) ! {
 	count := decoder.u32_leb()!
 	for _ in 0 .. count {
 		module_name := decoder.name()!
 		name := decoder.name()!
 		kind_byte := decoder.byte()!
+		if kind_byte == 4 {
+			tag_result << BinaryTagImport{ module: module_name, name: name, type_: parse_binary_tag_type(mut decoder)! }
+			// Module.cpp::imports omits tags at its current JS API boundary;
+			// retain the binary record for the separate machine translation.
+			continue
+		}
 		kind := external_kind(kind_byte)!
 		mut memory_type := WasmLimits{}
 		mut function_type_index := u32(0)
@@ -332,7 +353,7 @@ fn parse_import_section(mut decoder Decoder, mut result []ModuleImportDescriptor
 	}
 }
 
-fn parse_export_section(mut decoder Decoder, mut result []ModuleExportDescriptor) ! {
+fn parse_export_section(mut decoder Decoder, mut result []ModuleExportDescriptor, mut tag_result []BinaryTagExport) ! {
 	count := decoder.u32_leb()!
 	mut names := map[string]bool{}
 	for _ in 0 .. count {
@@ -341,7 +362,12 @@ fn parse_export_section(mut decoder Decoder, mut result []ModuleExportDescriptor
 			return error('CompileError: duplicate export name')
 		}
 		names[name] = true
-		kind := external_kind(decoder.byte()!)!
+		kind_byte := decoder.byte()!
+		if kind_byte == 4 {
+			tag_result << BinaryTagExport{ name: name, index: decoder.u32_leb()! }
+			continue
+		}
+		kind := external_kind(kind_byte)!
 		index := decoder.u32_leb()!
 		result << ModuleExportDescriptor{
 			name:  name
