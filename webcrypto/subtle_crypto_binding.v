@@ -507,6 +507,12 @@ fn normalized_import(algorithm NormalizedCryptoAlgorithm, format KeyFormat, byte
 	if format == .jwk {
 		return SubtleCrypto.create().import_jwk(JsonWebKey.parse(bytes)!, import_params, extractable, usages, hash_name)
 	}
+	if format in [.raw, .raw_secret] && algorithm.name in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW', 'HMAC', 'HKDF', 'PBKDF2', 'ChaCha20-Poly1305'] {
+		// Invoke the algorithm import body; public importKey applies the common
+		// empty-private/secret-usages check afterward. KEM key-returning methods
+		// call this body directly and do not perform that separate check.
+		return import_secret_key(algorithm.name, bytes, extractable, usages, hash_name)
+	}
 	return SubtleCrypto.create().import_key(format, bytes, import_params, extractable, usages, hash_name)
 }
 

@@ -190,11 +190,11 @@ pub fn (_ MLDSA) export_key(_ KeyFormat, _ &CryptoKey) ![]u8 { return backend_un
 
 pub struct MLKEM {}
 pub fn MLKEM.create() MLKEM { return MLKEM{} }
-pub fn (_ MLKEM) generate_key(_ AlgorithmParams, _ bool, _ []KeyUsage) !GeneratedKey { return backend_unavailable[GeneratedKey]('ML-KEM', 'key generation') }
-pub fn (_ MLKEM) import_key(_ AlgorithmParams, _ KeyFormat, _ []u8, _ bool, _ []KeyUsage) !&CryptoKey { return backend_unavailable[&CryptoKey]('ML-KEM', 'key import') }
-pub fn (_ MLKEM) export_key(_ KeyFormat, _ &CryptoKey) ![]u8 { return backend_unavailable[[]u8]('ML-KEM', 'key export') }
-pub fn (_ MLKEM) encapsulate(_ AlgorithmParams, _ &CryptoKey) !EncapsulatedBits { return backend_unavailable[EncapsulatedBits]('ML-KEM', 'encapsulation') }
-pub fn (_ MLKEM) decapsulate(_ AlgorithmParams, _ &CryptoKey, _ []u8) ![]u8 { return backend_unavailable[[]u8]('ML-KEM', 'decapsulation') }
+pub fn (_ MLKEM) generate_key(params AlgorithmParams, extractable bool, usages []KeyUsage) !GeneratedKey { return generate_mlkem_key(params, extractable, usages) }
+pub fn (_ MLKEM) import_key(params AlgorithmParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_mlkem_key(params, format, material, extractable, usages) }
+pub fn (_ MLKEM) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_mlkem_key(format, key) }
+pub fn (_ MLKEM) encapsulate(params AlgorithmParams, key &CryptoKey) !EncapsulatedBits { return mlkem_encapsulate(params, key) }
+pub fn (_ MLKEM) decapsulate(params AlgorithmParams, key &CryptoKey, ciphertext []u8) ![]u8 { return mlkem_decapsulate(params, key, ciphertext) }
 
 pub struct KMAC {}
 pub fn KMAC.create() KMAC { return KMAC{} }

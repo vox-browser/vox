@@ -396,6 +396,11 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 				pair := generated.pair or { return error('OperationError: Missing key pair') }
 				if pair.private_key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
 				generated
+			} else if normalized.starts_with('ML-KEM-') {
+				generated := generate_mlkem_key(AlgorithmParams{ name: normalized }, extractable, normalized_usages)!
+				pair := generated.pair or { return error('OperationError: Missing key pair') }
+				if pair.private_key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+				generated
 			} else if normalized in ['X25519', 'X448'] {
 				generate_exchange_key(normalized, extractable, normalized_usages)!
 			} else if normalized in ['KMAC128', 'KMAC256'] {
@@ -442,6 +447,11 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
 		if key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
 		return key
 	}
+	if normalized.starts_with('ML-KEM-') {
+		key := import_mlkem_key(AlgorithmParams{ name: normalized }, format, material, extractable, normalized_usages)!
+		if key.type_ == .private_key && key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+		return key
+	}
 	if normalized in ['X25519', 'X448'] {
 		key := import_exchange_key(normalized, format, material, extractable, normalized_usages)!
 		if key.type_ == .private_key && key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
@@ -477,6 +487,7 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 	if normalized in ['KMAC128', 'KMAC256'] {
 		return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name)
 	}
+	if normalized.starts_with('ML-KEM-') { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
 	if normalized in ['X25519', 'X448', 'Ed448'] {
 		return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name)
 	}
@@ -540,6 +551,10 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 pub fn (subtle_crypto &SubtleCrypto) export_key(format KeyFormat, key &CryptoKey) ![]u8 {
 	_ = subtle_crypto
 	normalize_an_algorithm(key.algorithm_name(), 'exportKey')!
+	if key.algorithm_name().starts_with('ML-KEM-') {
+		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
+		return export_mlkem_key(format, key)
+	}
 	if key.algorithm_name() == 'Ed448' {
 		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
 		return export_ed448_key(format, key)
@@ -580,6 +595,7 @@ pub fn (subtle_crypto &SubtleCrypto) export_jwk(key &CryptoKey) !JsonWebKey {
 	if key.algorithm_name() == 'AES-OCB' {
 		return JsonWebKey.parse(export_aes_ocb_key(.jwk, key)!)
 	}
+	if key.algorithm_name().starts_with('ML-KEM-') { return error('NotSupportedError: Invalid key format') }
 	if key.algorithm_name() == 'Ed448' { return export_ed448_jwk(key) }
 	if key.algorithm_name() in ['X25519', 'X448'] { return export_exchange_jwk(key.algorithm_name(), key) }
 	operations := key.usages.map(key_usage_string(it))
@@ -744,7 +760,7 @@ pub fn (subtle_crypto &SubtleCrypto) encapsulate_bits(algorithm string, key &Cry
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(algorithm, 'encapsulate')!
 	validate_operation_key(key, normalized, .encapsulate_bits)!
-	return error('NotSupportedError: ${normalized} encapsulation backend is unavailable')
+	return MLKEM.create().encapsulate(AlgorithmParams{ name: normalized }, key)
 }
 
 pub fn (subtle_crypto &SubtleCrypto) decapsulate_bits(algorithm string, key &CryptoKey, ciphertext []u8) ![]u8 {
@@ -752,17 +768,29 @@ pub fn (subtle_crypto &SubtleCrypto) decapsulate_bits(algorithm string, key &Cry
 	_ = ciphertext
 	normalized := normalize_an_algorithm(algorithm, 'decapsulate')!
 	validate_operation_key(key, normalized, .decapsulate_bits)!
-	return error('NotSupportedError: ${normalized} decapsulation backend is unavailable')
+	return MLKEM.create().decapsulate(AlgorithmParams{ name: normalized }, key, ciphertext)
+}
+
+// SubtleCrypto.cpp's KEM key methods invoke the algorithm's import operation
+// directly; their shared-key usages are not checked by public importKey.
+fn import_kem_shared_secret(name string, bytes []u8, extractable bool, usages []KeyUsage) !&CryptoKey {
+	if name == 'AES-OCB' { return import_aes_ocb_key(.raw_secret, bytes, extractable, usages) }
+	if name in ['KMAC128', 'KMAC256'] {
+		return KMAC.create().import_key(KmacImportParams{ name: name }, .raw_secret, bytes, extractable, usages)
+	}
+	return import_secret_key(name, bytes, extractable, usages, '')
 }
 
 pub fn (subtle_crypto &SubtleCrypto) encapsulate_key(algorithm string, key &CryptoKey,
 	shared_key_algorithm string, extractable bool, usages []KeyUsage) !EncapsulatedKey {
-	bits := subtle_crypto.encapsulate_bits(algorithm, key)!
+	normalized := normalize_an_algorithm(algorithm, 'encapsulate')!
+	validate_operation_key(key, normalized, .encapsulate_key)!
+	bits := MLKEM.create().encapsulate(AlgorithmParams{ name: normalized }, key)!
 	shared_key_bits := bits.shared_key or {
 		return error('OperationError: Encapsulation produced no shared key')
 	}
-	shared_key := subtle_crypto.import_key(.raw_secret, shared_key_bits,
-		shared_key_algorithm, extractable, normalize_key_usages_for_operation(usages), '')!
+	shared_name := normalize_an_algorithm(shared_key_algorithm, 'importKey')!
+	shared_key := import_kem_shared_secret(shared_name, shared_key_bits, extractable, normalize_key_usages_for_operation(usages))!
 	return EncapsulatedKey{
 		shared_key: shared_key
 		ciphertext: bits.ciphertext
@@ -772,7 +800,9 @@ pub fn (subtle_crypto &SubtleCrypto) encapsulate_key(algorithm string, key &Cryp
 pub fn (subtle_crypto &SubtleCrypto) decapsulate_key(algorithm string, key &CryptoKey,
 	ciphertext []u8, shared_key_algorithm string, extractable bool,
 	usages []KeyUsage) !&CryptoKey {
-	bits := subtle_crypto.decapsulate_bits(algorithm, key, ciphertext)!
-	return subtle_crypto.import_key(.raw_secret, bits, shared_key_algorithm, extractable,
-		normalize_key_usages_for_operation(usages), '')
+	normalized := normalize_an_algorithm(algorithm, 'decapsulate')!
+	validate_operation_key(key, normalized, .decapsulate_key)!
+	bits := MLKEM.create().decapsulate(AlgorithmParams{ name: normalized }, key, ciphertext)!
+	shared_name := normalize_an_algorithm(shared_key_algorithm, 'importKey')!
+	return import_kem_shared_secret(shared_name, bits, extractable, normalize_key_usages_for_operation(usages))
 }

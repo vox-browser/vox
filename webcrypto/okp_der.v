@@ -91,7 +91,12 @@ fn okp_oid_last(name string) u8 {
 	}
 }
 
-fn parse_okp_der(name string, bytes []u8, private_key bool) ![]u8 {
+struct NoParameterKeyInfo {
+	oid      []u32
+	material []u8
+}
+
+fn parse_no_parameter_key_info(bytes []u8, private_key bool) !NoParameterKeyInfo {
 	mut outer := OkpDerReader{ bytes: bytes }
 	sequence := outer.read(true)!
 	outer.exact()!
@@ -105,23 +110,28 @@ fn parse_okp_der(name string, bytes []u8, private_key bool) ![]u8 {
 	}
 	mut algorithm := OkpDerReader{ bytes: body.read(true)! }
 	oid := decode_okp_oid(algorithm.read(false)!)!
-	// Certificate::parse_algorithm_identifier immediately leaves no-parameter
-	// algorithms, discarding remaining sequence bytes. Preserve that source
-	// behavior rather than adding a stricter parameter/inner-eof check here.
-	if oid != [u32(1), 3, 101, u32(okp_oid_last(name))] {
+	// Certificate::parse_algorithm_identifier leaves no-parameter algorithms
+	// without consuming their remaining inner bytes.
+	material := body.read(false)!
+	if private_key { return NoParameterKeyInfo{ oid: oid, material: material } }
+	if material.len == 0 || material[0] != 0 {
+		return error('DataError: ASN1::BitStringView: Cannot get raw bytes with unused bits')
+	}
+	return NoParameterKeyInfo{ oid: oid, material: material[1..].clone() }
+}
+
+fn parse_okp_der(name string, bytes []u8, private_key bool) ![]u8 {
+	info := parse_no_parameter_key_info(bytes, private_key)!
+	if info.oid != [u32(1), 3, 101, u32(okp_oid_last(name))] {
 		return error('DataError: Invalid algorithm')
 	}
-	material := body.read(false)!
 	if private_key {
-		mut curve := OkpDerReader{ bytes: material }
+		mut curve := OkpDerReader{ bytes: info.material }
 		result := curve.read(false)!
 		curve.exact()!
 		return result
 	}
-	if material.len == 0 || material[0] != 0 {
-		return error('DataError: ASN1::BitStringView: Cannot get raw bytes with unused bits')
-	}
-	return material[1..].clone()
+	return info.material.clone()
 }
 
 fn okp_der_value(tag u8, bytes []u8) []u8 {
@@ -142,17 +152,25 @@ fn okp_der_value(tag u8, bytes []u8) []u8 {
 	return output
 }
 
-fn export_okp_der(name string, material []u8, private_key bool) []u8 {
-	algorithm := okp_der_value(0x30, okp_der_value(0x06, [u8(0x2b), 0x65, okp_oid_last(name)]))
+fn wrap_no_parameter_key_info(oid_bytes []u8, material []u8, private_key bool) []u8 {
+	algorithm := okp_der_value(0x30, okp_der_value(0x06, oid_bytes))
 	mut body := []u8{}
 	if private_key { body << [u8(0x02), 0x01, 0x00] }
 	body << algorithm
 	if private_key {
-		body << okp_der_value(0x04, okp_der_value(0x04, material))
+		body << okp_der_value(0x04, material)
 	} else {
 		mut bit_string := [u8(0)]
 		bit_string << material
 		body << okp_der_value(0x03, bit_string)
 	}
 	return okp_der_value(0x30, body)
+}
+
+fn export_okp_der(name string, material []u8, private_key bool) []u8 {
+	return wrap_no_parameter_key_info([u8(0x2b), 0x65, okp_oid_last(name)], if private_key {
+		okp_der_value(0x04, material)
+	} else {
+		material
+	}, private_key)
 }
