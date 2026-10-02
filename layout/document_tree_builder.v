@@ -714,6 +714,11 @@ fn adjusted_display_for_replaced_element(display css.Display) ?css.Display {
 }
 
 fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, element &dom.Element, style_computer &css.StyleComputer, mut builder_state TreeBuilderState, svg_resource_kind ?SVGReferencedResourceKind) ?&Node {
+	// TreeBuilder destroys synthetic pseudo ownership with the replaced subtree.
+	// The V builder replaces the complete tree, so clear the previous synthetic
+	// first-letter before a possible new target is created below.
+	mut mutable_first_letter_owner := unsafe { &dom.Element(element) }
+	mutable_first_letter_owner.set_pseudo_element_node(int(dom.PseudoElement.first_letter), none)
 	computed := css.computed_properties_for_element(element) or {
 		style_computer.compute_style(dom.AbstractElement.new(element, none))
 	}
@@ -958,6 +963,15 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 	}
 	if marker := list_item_marker {
 		attach_list_item_marker(mut box_node, marker, document, computed)
+	}
+	if box_node.is_block_container() {
+		if first_letter_style := css.computed_properties_for_pseudo_element(element, .first_letter) {
+			if !first_letter_style.display().is_none() {
+				if target := find_first_letter_in_block(box_node) {
+					create_first_letter_boxes(document, element, target, first_letter_style)
+				}
+			}
+		}
 	}
 	fixup_fieldset_content_box(mut box_node, document)
 	fixup_button_layout_tree(mut box_node, document)

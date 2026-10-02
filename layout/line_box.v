@@ -104,6 +104,30 @@ pub fn (fragment &LineBoxFragment) start() int {
 	return fragment.start_
 }
 
+// Source UTF-16 position for DOM ranges, selection and caret projections.
+// Shaping and fragment.text() continue to index the rendered slice locally.
+pub fn (fragment &LineBoxFragment) source_start() int {
+	if text := fragment.layout_node_.as_text_node() {
+		return text.source_offset_for_rendered_text_offset(fragment.start_, .start)
+	}
+	return fragment.start_
+}
+
+pub fn (fragment &LineBoxFragment) source_end() int {
+	if text := fragment.layout_node_.as_text_node() {
+		return text.source_offset_for_rendered_text_offset(fragment.start_ +
+			fragment.length_in_code_units_, .end)
+	}
+	return fragment.start_ + fragment.length_in_code_units_
+}
+
+fn (fragment &LineBoxFragment) source_offset_for_local_rendered(offset int) int {
+	if text := fragment.layout_node_.as_text_node() {
+		return text.source_offset_for_rendered_text_offset(fragment.start_ + offset, .end)
+	}
+	return fragment.start_ + offset
+}
+
 pub fn (fragment &LineBoxFragment) length_in_code_units() int {
 	return fragment.length_in_code_units_
 }

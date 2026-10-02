@@ -54,7 +54,7 @@ fn append_visual_caret_stop(mut stops []dom.VisualCaretStop, offset int,
 // so its advance is divided only at extended grapheme boundaries.
 fn append_fragment_visual_caret_stops(fragment LineBoxFragment,
 	mut stops []dom.VisualCaretStop) {
-	fragment_start := fragment.start()
+	fragment_start := fragment.source_start()
 	fragment_length := fragment.length_in_code_units()
 	inline_start := fragment.inline_offset().to_double()
 	append_visual_caret_stop(mut stops, fragment_start, inline_start)
@@ -83,7 +83,13 @@ fn append_fragment_visual_caret_stops(fragment LineBoxFragment,
 					continue
 				}
 				progress := f64(boundary - cluster_start) / f64(cluster_end - cluster_start)
-				append_visual_caret_stop(mut stops, fragment_start + boundary, inline_start + width_before_cluster + f64(glyph.advance) * progress)
+				source_boundary := fragment.source_offset_for_local_rendered(boundary)
+				if text_node := fragment.layout_node_.as_text_node() {
+					if text_node.rendered_text_offset_for_source_offset(source_boundary, .end) != fragment.start() + boundary {
+						continue
+					}
+				}
+				append_visual_caret_stop(mut stops, source_boundary, inline_start + width_before_cluster + f64(glyph.advance) * progress)
 			}
 			width_before_cluster += f64(glyph.advance)
 			cluster_start = cluster_end
@@ -97,10 +103,11 @@ fn append_fragment_visual_caret_stops(fragment LineBoxFragment,
 				continue
 			}
 			progress := f64(boundary) / f64(fragment_length)
-			append_visual_caret_stop(mut stops, fragment_start + boundary, inline_start + fragment.inline_length().to_double() * progress)
+			append_visual_caret_stop(mut stops,
+				fragment.source_offset_for_local_rendered(boundary), inline_start + fragment.inline_length().to_double() * progress)
 		}
 	}
-	append_visual_caret_stop(mut stops, fragment_start + fragment_length, inline_start + fragment.inline_length().to_double())
+	append_visual_caret_stop(mut stops, fragment.source_end(), inline_start + fragment.inline_length().to_double())
 }
 
 fn visual_caret_coordinate_at(stops []dom.VisualCaretStop, offset int) ?f64 {
@@ -162,15 +169,15 @@ fn collect_dom_visual_lines(box &Node, state &LayoutState) []dom.VisualLine {
 			continue
 		}
 
-		mut start_offset := matching_fragments[0].start()
-		mut end_offset := matching_fragments[0].start() + matching_fragments[0].length_in_code_units()
+		mut start_offset := matching_fragments[0].source_start()
+		mut end_offset := matching_fragments[0].source_end()
 		mut trailing_whitespace_width := f64(0)
 		mut caret_stops := []dom.VisualCaretStop{}
 		for fragment in matching_fragments {
-			if fragment.start() < start_offset {
-				start_offset = fragment.start()
+			if fragment.source_start() < start_offset {
+				start_offset = fragment.source_start()
 			}
-			fragment_end := fragment.start() + fragment.length_in_code_units()
+			fragment_end := fragment.source_end()
 			if fragment_end > end_offset {
 				end_offset = fragment_end
 				trailing_whitespace_width = 0
@@ -274,10 +281,19 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		refresh_empty_text_fragment_callback: refresh_layout_empty_text_fragment
 	}
 	if text_node := box.as_text_node() {
+		placeholder.text_has_source_range_ = text_node.source_range_length_ != none
 		// DOM::Node::name_or_description() reads TextNode::text_for_rendering()
 		// directly. Keep that value separate from the ChunkIterator output used
 		// by HTMLElement::rendered_text_collection_steps().
 		placeholder.rendered_text_ = text_node.text_for_rendering()
+		if first := text_node.first_letter_ {
+			placeholder.rendered_text_ = first.text_for_rendering() + placeholder.rendered_text_
+			mut first_iterator := TextNodeChunkIterator.new(first, false, false)
+			for {
+				chunk := first_iterator.next() or { break }
+				placeholder.rendered_text_chunks_ << chunk.view
+			}
+		}
 		// HTMLElement::rendered_text_collection_steps consumes TextNode::ChunkIterator with both
 		// wrapping and line-break preservation disabled. The chunks, rather than text_for_rendering()
 		// itself, apply the remaining collapsible-space processing used by innerText.
@@ -305,6 +321,13 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 	if layout_state := state {
 		if box.is_text_node() {
 			placeholder.visual_lines_ = collect_dom_visual_lines(box, layout_state)
+			if text := box.as_text_node() {
+				if first := text.first_letter_ {
+					mut all_lines := collect_dom_visual_lines(unsafe { &Node(first) }, layout_state)
+					all_lines << placeholder.visual_lines_
+					placeholder.visual_lines_ = all_lines
+				}
+			}
 		}
 		if box.is_inline_node() {
 			if geometry := inline_box_absolute_geometry_cached(box, layout_state, mut inline_pieces) {
@@ -353,9 +376,26 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		} else {
 			false
 		}
-		if !is_continuation {
+		attach_text := if text := box.as_text_node() { text.attach_to_dom_node_ } else { true }
+		if !is_continuation && attach_text {
 			mut mutable_dom_node := unsafe { &dom.Node(dom_node) }
 			mutable_dom_node.set_layout_node(placeholder)
+		}
+	}
+	if generated := box.generated_for_pseudo_element() {
+		if generated == .first_letter {
+			if owner := box.pseudo_element_generator() {
+				mut mutable_owner := unsafe { &dom.Element(owner) }
+				mutable_owner.set_pseudo_element_node(int(dom.PseudoElement.first_letter), &dom.LayoutNodeWithStyle_{
+					layout_node_:        placeholder
+					applied_properties_: dom.AbstractElement.new(owner, .first_letter).computed_properties()
+					kind_:               if box.is_inline_node() {
+						.inline_node
+					} else {
+						.block_container
+					}
+				})
+			}
 		}
 	}
 	for child in box.children() {
@@ -369,9 +409,12 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 // DOM node's primary paintable. Painting's renderer-independent objects are
 // retained elsewhere; these wrappers are the cycle boundary consumed by DOM.
 fn materialize_dom_paintables(box &Node, state &LayoutState, mut placeholder dom.LayoutNode) {
+	attach_text := if text := box.as_text_node() { text.attach_to_dom_node_ } else { true }
 	if dom_node := box.dom_node() {
+		if attach_text {
 		mut mutable_dom_node := unsafe { &dom.Node(dom_node) }
 		mutable_dom_node.clear_paintable()
+		}
 	}
 	count := layout_debug_paintable_count(box, state)
 	for _ in 0 .. count {
@@ -408,13 +451,11 @@ fn materialize_dom_paintables(box &Node, state &LayoutState, mut placeholder dom
 						computed := styled.computed_values()
 						paintable_box.wheel_scrolls_horizontal_ = computed.overflow_x() in [
 							.auto_,
-							.scroll,
-						]
+							.scroll]
 							&& overflow.width.to_double() > paintable_box.padding_box_width_
 						paintable_box.wheel_scrolls_vertical_ = computed.overflow_y() in [
 							.auto_,
-							.scroll,
-						]
+							.scroll]
 							&& overflow.height.to_double() > paintable_box.padding_box_height_
 						paintable_box.scrollable_overflow_rect_ = dom.CSSPixelRect_{
 							x_: overflow.x.to_double()
@@ -429,8 +470,10 @@ fn materialize_dom_paintables(box &Node, state &LayoutState, mut placeholder dom
 		}
 		placeholder.paintables_ << paintable
 		if dom_node := box.dom_node() {
-			mut mutable_dom_node := unsafe { &dom.Node(dom_node) }
+			if attach_text {
+				mut mutable_dom_node := unsafe { &dom.Node(dom_node) }
 			mutable_dom_node.set_paintable(paintable)
+			}
 		}
 	}
 }

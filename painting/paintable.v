@@ -65,6 +65,11 @@ pub mut:
 	containing_block_offset Point
 	start_offset            int
 	length_in_code_units    int
+	uses_text_mapping       bool
+	rendered_start_offset   int
+	source_range_start      int
+	source_range_length     int
+	text_mapping_edits      []platform.TextMappingEdit
 	glyphs                  []GlyphMetric
 	// The active layout bridge retains the shaped run exactly, matching C++'s
 	// RefPtr<Gfx::GlyphRun>. Standalone painting callers can keep supplying the
@@ -173,6 +178,48 @@ pub fn (fragment PaintableFragment) absolute_rect() Rect {
 	return Rect{fragment.offset.x + fragment.containing_block_offset.x, fragment.offset.y + fragment.containing_block_offset.y, fragment.size.width, fragment.size.height}
 }
 
+// Painting/text_fragment.rs converts retained rendered spans through the text
+// snapshot's edit map, preserving source positions after expanding casing.
+pub fn (fragment PaintableFragment) source_offset_for_local_rendered(offset int, boundary platform.TextMappingBoundary) int {
+	if !fragment.uses_text_mapping { return fragment.start_offset + offset }
+	return platform.source_offset_for_rendered_text_offset(fragment.text_mapping_edits,
+		fragment.source_range_start, fragment.rendered_start_offset + offset, boundary)
+}
+
+pub fn (fragment PaintableFragment) source_end_offset() int {
+	return fragment.source_offset_for_local_rendered(fragment.length_in_code_units, .end)
+}
+
+fn (fragment PaintableFragment) local_rendered_offset_for_source(offset int, boundary platform.TextMappingBoundary) int {
+	if !fragment.uses_text_mapping {
+		local := offset - fragment.start_offset
+		return if local < 0 {
+			0
+		} else if local > fragment.length_in_code_units {
+			fragment.length_in_code_units
+		} else {
+			local
+		}
+	}
+	source_end := fragment.source_range_start + fragment.source_range_length
+	clamped := if offset < fragment.source_range_start {
+		fragment.source_range_start
+	} else if offset > source_end {
+		source_end
+	} else {
+		offset
+	}
+	rendered := platform.rendered_text_offset_for_source_offset(fragment.text_mapping_edits,
+		fragment.source_range_start, clamped, boundary)
+	local := rendered - fragment.rendered_start_offset
+	return if local < 0 {
+		0
+	} else if local > fragment.length_in_code_units {
+		fragment.length_in_code_units
+	} else {
+		local
+	}
+}
 pub fn (fragment PaintableFragment) index_in_node_for_point(position Point) int {
 	rect := fragment.absolute_rect()
 	relative := if fragment.orientation == .horizontal {
@@ -195,8 +242,13 @@ pub fn (fragment PaintableFragment) index_in_node_for_point(position Point) int 
 		for {
 			cluster := clusters.next() or { break }
 			per_unit_advance := cluster.width / f64(cluster.end - cluster.start)
-			mut grapheme_start := fragment.start_offset + cluster.start
-			cluster_absolute_end := fragment.start_offset + cluster.end
+			rendered_fragment_start := if fragment.uses_text_mapping {
+				fragment.rendered_start_offset
+			} else {
+				fragment.start_offset
+			}
+			mut grapheme_start := rendered_fragment_start + cluster.start
+			cluster_absolute_end := rendered_fragment_start + cluster.end
 			for grapheme_start < cluster_absolute_end {
 				grapheme_end := min_int(next_fragment_grapheme_boundary(boundaries, grapheme_start) or { cluster_absolute_end }, cluster_absolute_end)
 				if grapheme_end <= grapheme_start {
@@ -204,12 +256,12 @@ pub fn (fragment PaintableFragment) index_in_node_for_point(position Point) int 
 				}
 				grapheme_units := grapheme_end - grapheme_start
 				if tracker.update(grapheme_units, per_unit_advance * f64(grapheme_units)) {
-					return fragment.start_offset + tracker.resolve()
+					return fragment.source_offset_for_local_rendered(tracker.resolve(), .end)
 				}
 				grapheme_start = grapheme_end
 			}
 		}
-		return fragment.start_offset + min_int(tracker.resolve(), fragment.length_in_code_units)
+		return fragment.source_offset_for_local_rendered(min_int(tracker.resolve(), fragment.length_in_code_units), .end)
 	} else {
 		mut consumed_width := f64(0)
 		mut consumed_units := 0
@@ -223,14 +275,14 @@ pub fn (fragment PaintableFragment) index_in_node_for_point(position Point) int 
 				break
 			}
 		}
-		return fragment.start_offset + min_int(consumed_units, fragment.length_in_code_units)
+		return fragment.source_offset_for_local_rendered(min_int(consumed_units, fragment.length_in_code_units), .end)
 	}
 }
 
 pub fn (fragment PaintableFragment) compute_selection_offsets(state SelectionState,
 	start_offset int, end_offset int) ?SelectionOffsets {
 	start_index := fragment.start_offset
-	end_index := fragment.start_offset + fragment.length_in_code_units
+	end_index := fragment.source_end_offset()
 	return match state {
 		.none {
 			none
@@ -243,8 +295,10 @@ pub fn (fragment PaintableFragment) compute_selection_offsets(state SelectionSta
 				none
 			} else {
 				SelectionOffsets{
-					start: start_offset - min_int(start_offset, fragment.start_offset)
-					end: min_int(end_offset - fragment.start_offset, fragment.length_in_code_units)
+					start:                       fragment.local_rendered_offset_for_source(start_offset,
+						.start)
+					end:                         fragment.local_rendered_offset_for_source(end_offset,
+						.end)
 					include_trailing_whitespace: end_offset >= end_index
 				}
 			}
@@ -253,14 +307,14 @@ pub fn (fragment PaintableFragment) compute_selection_offsets(state SelectionSta
 			if end_index < start_offset {
 				none
 			} else {
-				SelectionOffsets{start_offset - min_int(start_offset, fragment.start_offset), fragment.length_in_code_units, true}
+				SelectionOffsets{fragment.local_rendered_offset_for_source(start_offset, .start), fragment.length_in_code_units, true}
 			}
 		}
 		.end {
 			if start_index > end_offset {
 				none
 			} else {
-				SelectionOffsets{0, min_int(end_offset - fragment.start_offset, fragment.length_in_code_units), end_offset >= end_index}
+				SelectionOffsets{0, fragment.local_rendered_offset_for_source(end_offset, .end), end_offset >= end_index}
 			}
 		}
 	}

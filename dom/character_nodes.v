@@ -335,12 +335,35 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 		return
 	}
 
-	// NB: Called during DOM text mutation, layout is stale.
-	// NOTE: Since the text node's data has changed, we need to invalidate the text for rendering.
-	//       This ensures that the new text is reflected in layout, even if we don't end up
-	//       doing a full layout tree rebuild.
-	// We also need to relayout.
-	node.set_needs_layout_update(.character_data_replace_data)
+	// DOM/CharacterData.cpp: first-letter source ranges are fixed while building
+	// the tree. Rebuild their owning subtree when text changes its match.
+	if node.is_text() {
+		if parent := node.parent() {
+			if owner := parent.first_letter_owner_for_layout_subtree_from(parent) {
+				mut owner_node := unsafe { &Node(owner.as_node()) }
+				owner_node.set_needs_layout_tree_update(true, .character_data_replace_data)
+			}
+		}
+		whitespace_changed := old_data.bytes().all(is_ascii_whitespace(it)) != c.data_.bytes().all(is_ascii_whitespace(it))
+		if layout_node := node.unsafe_layout_node() {
+			if layout_node.is_text_node() && layout_node.text_has_source_range_ {
+				if parent := node.parent() {
+					mut parent_node := unsafe { &Node(parent) }
+					parent_node.set_needs_layout_tree_update(true, .character_data_replace_data)
+				}
+			} else if layout_node.is_text_node() {
+				mut mutable_layout := unsafe { &LayoutNode(layout_node) }
+				mutable_layout.invalidate_text_for_rendering()
+				mutable_layout.set_needs_layout_update(.character_data_replace_data)
+				if whitespace_changed { node.set_needs_layout_tree_update(true, .character_data_replace_data) }
+			}
+		} else if whitespace_changed && node.is_connected() {
+			if parent := node.parent() {
+				mut parent_node := unsafe { &Node(parent) }
+				parent_node.set_needs_layout_tree_update(true, .character_data_replace_data)
+			}
+		}
+	}
 
 	doc := node.document()
 	if doc != unsafe { nil } {

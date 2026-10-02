@@ -9,6 +9,7 @@ import html
 import math
 import os
 import painting
+import platform
 import svg
 import time
 
@@ -4172,7 +4173,24 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 					text_value: fragment_text_for_rendering
 					offset: painting.Point{absolute_x, absolute_y}
 					size: painting.Size{fragment.width().to_double(), fragment.height().to_double()}
-					start_offset: fragment.start()
+					start_offset: fragment.source_start()
+					uses_text_mapping:       fragment.layout_node_.is_text_node()
+					rendered_start_offset:   fragment.start()
+					source_range_start:      if mapped_text := fragment.layout_node_.as_text_node() {
+						mapped_text.source_range_start_
+					} else {
+						0
+					}
+					source_range_length:     if mapped_text := fragment.layout_node_.as_text_node() {
+						mapped_text.rendered_source_length_
+					} else {
+						fragment.length_in_code_units()
+					}
+					text_mapping_edits:      if mapped_text := fragment.layout_node_.as_text_node() {
+						mapped_text.rendered_text_edits_.clone()
+					} else {
+						[]platform.TextMappingEdit{}
+					}
 					length_in_code_units: fragment.length_in_code_units()
 					glyph_run: fragment.glyph_run()
 					baseline: fragment.baseline().to_double()

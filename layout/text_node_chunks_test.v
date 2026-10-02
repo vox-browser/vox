@@ -186,7 +186,9 @@ fn test_text_node_repicks_ascii_line_segmenter_for_rendered_text() {
 	assert first.is_ascii_line_fast_path()
 	assert first.boundaries() == [0, 3, 5]
 
-	text_node.source_text_ = '你好'
+	dom_text := text_node.dom_node() or { panic('missing DOM text source') }
+	mut character_data := dom_text.as_character_data() or { panic('missing character data') }
+	character_data.replace_data_with_mutation_steps(0, 5, '你好') or { panic(err) }
 	text_node.invalidate_text_for_rendering()
 	second := text_node.line_segmenter()
 	assert voidptr(second) != voidptr(first)

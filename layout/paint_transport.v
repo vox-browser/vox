@@ -2991,7 +2991,7 @@ fn text_fragment_has_active_selection(fragment TextFragment) bool {
 // PaintableFragment::range_rect() over the retained LineBoxFragment glyph run.
 fn text_fragment_relative_range_rect(fragment TextFragment, start int, end int) LayoutRect {
 	paintable_fragment := fragment.paintable_fragment
-	rect := paintable_fragment.range_rect(.start_and_end, paintable_fragment.start_offset + start, paintable_fragment.start_offset + end)
+	rect := paintable_fragment.range_rect(.start_and_end, paintable_fragment.source_offset_for_local_rendered(start, .start), paintable_fragment.source_offset_for_local_rendered(end, .end))
 	return LayoutRect{rect.x, rect.y, rect.width, rect.height}
 }
 
@@ -3247,7 +3247,7 @@ fn fragment_at_node_offset(box &BlockBox, position_node &dom.Node, offset int) ?
 			layout_node := unsafe { &Node(fragment.layout_handle) }
 			fragment_node := layout_node.dom_node() or { continue }
 			start := fragment.paintable_fragment.start_offset
-			end := start + fragment.paintable_fragment.length_in_code_units
+			end := fragment.paintable_fragment.source_end_offset()
 			if voidptr(fragment_node) == voidptr(position_node) && offset >= start
 				&& offset <= end {
 				return fragment

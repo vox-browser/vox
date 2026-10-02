@@ -1017,7 +1017,7 @@ fn compatibility_cursor_rect_for_layout_handle(box &BlockBox, layout_handle void
 				continue
 			}
 			start := fragment.paintable_fragment.start_offset
-			end := start + fragment.paintable_fragment.length_in_code_units
+			end := fragment.paintable_fragment.source_end_offset()
 			if offset >= start && offset <= end {
 				return fragment.paintable_fragment.range_rect(.start_and_end, offset, offset)
 			}
@@ -1035,7 +1035,7 @@ fn compatibility_cursor_rect_in_box(box &BlockBox, offset int) ?painting.Rect {
 	for line in box.lines {
 		for fragment in line.fragments {
 			start := fragment.paintable_fragment.start_offset
-			end := start + fragment.paintable_fragment.length_in_code_units
+			end := fragment.paintable_fragment.source_end_offset()
 			if offset >= start && offset <= end {
 				return fragment.paintable_fragment.range_rect(.start_and_end, offset, offset)
 			}
@@ -2982,7 +2982,7 @@ fn compatibility_hit_test_fragments(document &dom.Document, box &BlockBox, x f64
 
 			mut candidate := ?dom.HitTestResult(none)
 			if fragment_rect.bottom() - 1 <= local_position.y {
-				index_in_node := fragment.paintable_fragment.start_offset + fragment.paintable_fragment.length_in_code_units
+				index_in_node := fragment.paintable_fragment.source_end_offset()
 				caret_rect := compatibility_caret_rect_for_fragment(box,
 					fragment.paintable_fragment, index_in_node, tree, snapshot)
 				hit := compatibility_hit_test_result_for_node(dom_node, index_in_node,
@@ -3004,7 +3004,7 @@ fn compatibility_hit_test_fragments(document &dom.Document, box &BlockBox, x f64
 						f64(0), fragment_rect.left() - local_position.x, caret_rect)
 					candidate = hit
 				} else if local_position.x > fragment_rect.right() {
-					index_in_node := fragment.paintable_fragment.start_offset + fragment.paintable_fragment.length_in_code_units
+					index_in_node := fragment.paintable_fragment.source_end_offset()
 					caret_rect := compatibility_caret_rect_for_fragment(box,
 						fragment.paintable_fragment, index_in_node, tree, snapshot)
 					hit := compatibility_hit_test_result_for_node(dom_node, index_in_node,

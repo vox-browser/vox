@@ -1921,6 +1921,12 @@ pub mut:
 	cached_font_environment_generation_ u64
 	cached_utf16_code_units_      ?[]u16
 	cached_intrinsic_text_shapes_ []IntrinsicTextShapeCacheEntry
+	source_range_start_                    int
+	source_range_length_                   ?int
+	first_letter_                          ?&TextNode
+	attach_to_dom_node_                    bool = true
+	rendered_text_edits_                   []platform.TextMappingEdit
+	rendered_source_length_                int
 }
 
 pub fn (n &TextNode) font_for_rendering() &platform.Font {
@@ -2013,6 +2019,7 @@ pub fn (n &TextNode) text_for_rendering() string {
 pub fn (mut n TextNode) invalidate_text_for_rendering() {
 	n.text_for_rendering_valid_ = false
 	n.text_for_rendering_ = ''
+	n.rendered_text_edits_.clear()
 	n.cached_inline_chunks_ = none
 	n.cached_font_environment_generation_ = 0
 	n.cached_utf16_code_units_ = none
@@ -2023,13 +2030,13 @@ pub fn (mut n TextNode) invalidate_text_for_rendering() {
 fn (mut n TextNode) compute_text_for_rendering() {
 	mut text := n.source_text_
 	if dom_text := n.dom_node_ {
-		if dom_text.is_text() && unsafe { &dom.Text(dom_text) }.is_password_input() {
-			text = '●'.repeat(text.runes().len)
-			n.text_for_rendering_ = text
-			n.text_for_rendering_valid_ = true
-			return
+		if character_data := dom_text.as_character_data() {
+			text = character_data.data()
 		}
 	}
+	source_units := utf16_code_units_for_line_box(text)
+	source_length := source_units.len
+	n.rendered_source_length_ = n.source_range_length_ or { source_length }
 
 	mut language := ''
 	if dom_text := n.dom_node_ {
@@ -2037,8 +2044,100 @@ fn (mut n TextNode) compute_text_for_rendering() {
 			language = parent_element.lang() or { '' }
 		}
 	}
-	text = apply_text_transform_for_text_node(text, n.Node.computed_values().text_transform(),
-		language)
+	transform := n.Node.computed_values().text_transform()
+	password := if dom_text := n.dom_node_ {
+		dom_text.is_text() && unsafe { &dom.Text(dom_text) }.is_password_input()
+	} else {
+		false
+	}
+	mut edits := []platform.TextMappingEdit{}
+	if !password && language == '' && source_units.all(it <= 0x7f)
+		&& transform in [.uppercase, .lowercase] {
+		// text_transform.rs preserves the no-locale ASCII fast path.
+		text = if transform == .uppercase { text.to_upper() } else { text.to_lower() }
+	} else if !password && transform in [.uppercase, .lowercase, .capitalize] {
+		mapping := match transform {
+			.uppercase { platform.TextCaseTransform.uppercase }
+			.lowercase { platform.TextCaseTransform.lowercase }
+			else { platform.TextCaseTransform.titlecase }
+		}
+
+		mapped := platform.transform_text_case_with_edits(source_units, language, mapping)
+		text = string_from_utf16_code_units_for_line_box(mapped.units)
+		edits = mapped.edits.clone()
+	} else {
+		text = if password {
+			'●'.repeat(text.runes().len)
+		} else {
+			apply_text_transform_for_text_node(text, transform, language)
+		}
+		// Rust text_transform.rs::map_code_points records every length change.
+		if password || transform == .math_auto {
+			mut source_offset := 0
+			mut rendered_offset := 0
+			for character in string_from_utf16_code_units_for_line_box(source_units).runes() {
+				source_count := if u32(character) > 0xffff { 2 } else { 1 }
+				mapped := if password {
+					rune(0x25cf)
+				} else {
+					math_auto_italic_code_point(character)
+				}
+				rendered_count := if u32(mapped) > 0xffff { 2 } else { 1 }
+				if source_count != rendered_count {
+					edits << platform.TextMappingEdit
+					{
+						source_offset, source_count, rendered_offset, rendered_count
+					}
+				}
+				source_offset += source_count
+				rendered_offset += rendered_count
+			}
+		}
+	}
+	// Transform the complete source before slicing for contextual casing.
+	if length := n.source_range_length_ {
+		source_start := n.source_range_start_
+		source_end := source_start + length
+		rendered_start := platform.rendered_text_offset_for_source_offset(edits, 0, source_start,
+			.start)
+		rendered_end := platform.rendered_text_offset_for_source_offset(edits, 0, source_end, .end)
+		text = utf16_substring_for_line_box(text, rendered_start, rendered_end - rendered_start)
+		mut sliced_edits := []platform.TextMappingEdit{}
+		for edit in edits {
+			edit_source_end := edit.source_start + edit.source_length
+			if edit_source_end <= source_start || edit.source_start >= source_end { continue
+			 }
+			sliced_source_start := if edit.source_start > source_start {
+				edit.source_start
+			} else {
+				source_start
+			}
+			sliced_source_end := if edit_source_end < source_end {
+				edit_source_end
+			} else {
+				source_end
+			}
+			sliced_rendered_start := if edit.rendered_start > rendered_start {
+				edit.rendered_start
+			} else {
+				rendered_start
+			}
+			edit_rendered_end := edit.rendered_start + edit.rendered_length
+			sliced_rendered_end := if edit_rendered_end < rendered_end {
+				edit_rendered_end
+			} else {
+				rendered_end
+			}
+			if sliced_source_end - sliced_source_start != sliced_rendered_end - sliced_rendered_start {
+				sliced_edits << platform.TextMappingEdit
+				{
+					sliced_source_start, sliced_source_end - sliced_source_start, sliced_rendered_start - rendered_start, sliced_rendered_end - sliced_rendered_start
+				}
+			}
+		}
+		edits = sliced_edits.clone()
+	}
+	n.rendered_text_edits_ = edits.clone()
 	white_space_collapse := n.Node.computed_values().white_space_collapse()
 	convert_tabs := white_space_collapse in [.collapse, .preserve_breaks, .preserve_spaces]
 	convert_newlines := white_space_collapse in [.collapse, .preserve_spaces]
@@ -2055,6 +2154,33 @@ fn (mut n TextNode) compute_text_for_rendering() {
 	n.text_for_rendering_valid_ = true
 }
 
+pub fn (n &TextNode) source_offset_for_rendered_text_offset(offset int, boundary platform.TextMappingBoundary) int {
+	units := utf16_code_units_for_line_box(n.text_for_rendering())
+	clamped := if offset < 0 {
+		0
+	} else if offset > units.len {
+		units.len
+	} else {
+		offset
+	}
+	return platform.source_offset_for_rendered_text_offset(n.rendered_text_edits_,
+		n.source_range_start_, clamped, boundary)
+}
+
+pub fn (n &TextNode) rendered_text_offset_for_source_offset(offset int, boundary platform.TextMappingBoundary) int {
+	units := utf16_code_units_for_line_box(n.text_for_rendering())
+	source_end := n.source_range_start_ + n.rendered_source_length_
+	clamped := if offset < n.source_range_start_ {
+		n.source_range_start_
+	} else if offset > source_end {
+		source_end
+	} else {
+		offset
+	}
+	mapped := platform.rendered_text_offset_for_source_offset(n.rendered_text_edits_,
+		n.source_range_start_, clamped, boundary)
+	return if mapped > units.len { units.len } else { mapped }
+}
 pub fn (n &Node) is_text_node() bool {
 	return n.is_text_node_
 }

@@ -1362,6 +1362,7 @@ pub mut:
 	children_                                       []&LayoutNode
 	is_anonymous_                                   bool
 	is_text_node_                                   bool
+	text_has_source_range_                          bool
 	is_atomic_inline_                               bool
 	is_replaced_box_                                bool
 	display_                                        CSSDisplay_

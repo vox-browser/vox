@@ -91,6 +91,7 @@ pub fn set_needs_layout_reason_to_string(reason SetNeedsLayoutReason) string {
 }
 
 pub enum SetNeedsLayoutTreeUpdateReason {
+	character_data_replace_data
 	element_set_inner_html
 	element_set_shadow_root
 	details_element_opened_or_closed
@@ -112,6 +113,7 @@ pub enum SetNeedsLayoutTreeUpdateReason {
 
 pub fn set_needs_layout_tree_update_reason_to_string(reason SetNeedsLayoutTreeUpdateReason) string {
 	return match reason {
+		.character_data_replace_data { 'CharacterDataReplaceData' }
 		.element_set_inner_html { 'ElementSetInnerHTML' }
 		.element_set_shadow_root { 'ElementSetShadowRoot' }
 		.details_element_opened_or_closed { 'DetailsElementOpenedOrClosed' }
@@ -3113,6 +3115,14 @@ pub fn (n &Node) get_parent(event &Event) ?&EventTarget {
 }
 
 pub fn (mut n Node) set_needs_layout_tree_update(value bool, reason SetNeedsLayoutTreeUpdateReason) {
+	if value && reason in [.node_insert_before, .node_remove, .node_set_text_content] {
+		if owner := n.first_letter_owner_for_layout_subtree_from(&n) {
+			if owner.as_node() != &n {
+				mut owner_node := unsafe { &Node(owner.as_node()) }
+				owner_node.set_needs_layout_tree_update(true, reason)
+			}
+		}
+	}
 	if n.needs_layout_tree_update == value {
 		return
 	}
@@ -3171,6 +3181,32 @@ pub fn (mut n Node) set_needs_layout_tree_update(value bool, reason SetNeedsLayo
 			}
 		}
 	}
+}
+
+// DOM/Node.cpp: a generated first-letter owned by an ancestor may live inside
+// this node's layout subtree even when its DOM style owner lies outside it.
+pub fn (n &Node) first_letter_owner_for_layout_subtree_from(inclusive_ancestor &Node) ?&Element {
+	layout_root := n.unsafe_layout_node() or { return none }
+	mut ancestor := ?&Node(inclusive_ancestor)
+	for ancestor != none {
+		current := ancestor or { break }
+		if element := current.as_element() {
+			if element.computed_properties_for_pseudo(int(PseudoElement.first_letter)) != none {
+				if pseudo := element.get_pseudo_element_node(int(PseudoElement.first_letter)) {
+					mut layout_ancestor := ?&LayoutNode(pseudo.layout_node_)
+					for layout_ancestor != none {
+						layout_current := layout_ancestor or { break }
+						if layout_current == layout_root { return element }
+						layout_ancestor = layout_current.parent()
+					}
+				} else {
+					return element
+				}
+			}
+		}
+		ancestor = current.parent_or_shadow_host()
+	}
+	return none
 }
 
 pub fn (n &Node) needs_layout_tree_update_() bool {
