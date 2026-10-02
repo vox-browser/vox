@@ -73,6 +73,7 @@ pub fn (mut stream WritableStream) set_state(value WritableStreamState) {
 
 pub fn (mut stream WritableStream) set_stored_error(reason string) {
 	stream.stored_error_ = reason
+	stream.stored_error_value_ = webidl.string_value(reason)
 }
 
 pub fn (mut stream WritableStream) set_writer(writer ?&WritableStreamDefaultWriter) {
@@ -226,6 +227,7 @@ pub fn create_writable_stream(start StartAlgorithm, write WriteAlgorithm, close 
 pub fn initialize_writable_stream(mut stream WritableStream) {
 	stream.state_ = .writable
 	stream.stored_error_ = ''
+	stream.stored_error_value_ = none
 	stream.writer_ = unsafe { nil }
 	stream.controller_ = unsafe { nil }
 	stream.in_flight_write_request_ = unsafe { nil }
@@ -267,7 +269,7 @@ pub fn writable_stream_close_queued_or_in_flight(stream &WritableStream) bool {
 
 pub fn writable_stream_deal_with_rejection(mut stream WritableStream, reason Value) {
 	if stream.state_ == .writable {
-		stream.start_erroring(reason.description())
+		stream.start_erroring_value(stream_value_to_webidl(reason), reason.description())
 	} else if stream.state_ == .erroring {
 		stream.finish_erroring()
 	}
@@ -285,6 +287,7 @@ pub fn writable_stream_finish_in_flight_close(mut stream WritableStream) {
 	}
 	if stream.state_ == .erroring {
 		stream.stored_error_ = ''
+		stream.stored_error_value_ = none
 		if !isnil(stream.pending_abort_request_) {
 			mut abort_request := stream.pending_abort_request_
 			abort_request.resolve()
@@ -301,12 +304,12 @@ pub fn writable_stream_finish_in_flight_close(mut stream WritableStream) {
 pub fn writable_stream_finish_in_flight_close_with_error(mut stream WritableStream, reason Value) {
 	if !isnil(stream.in_flight_close_request_) {
 		mut request := stream.in_flight_close_request_
-		request.reject(reason.description())
+		request.reject_value(stream_value_to_webidl(reason))
 		stream.in_flight_close_request_ = unsafe { nil }
 	}
 	if !isnil(stream.pending_abort_request_) {
 		mut abort_request := stream.pending_abort_request_
-		abort_request.reject(reason.description())
+		abort_request.reject_value(stream_value_to_webidl(reason))
 		stream.pending_abort_request_ = unsafe { nil }
 	}
 	writable_stream_deal_with_rejection(mut stream, reason)
@@ -323,7 +326,7 @@ pub fn writable_stream_finish_in_flight_write(mut stream WritableStream) {
 pub fn writable_stream_finish_in_flight_write_with_error(mut stream WritableStream, reason Value) {
 	if !isnil(stream.in_flight_write_request_) {
 		mut request := stream.in_flight_write_request_
-		request.reject(reason.description())
+		request.reject_value(stream_value_to_webidl(reason))
 		stream.in_flight_write_request_ = unsafe { nil }
 	}
 	writable_stream_deal_with_rejection(mut stream, reason)
@@ -348,12 +351,12 @@ pub fn writable_stream_mark_first_write_request_in_flight(mut stream WritableStr
 pub fn writable_stream_reject_close_and_closed_promise_if_needed(mut stream WritableStream) {
 	if !isnil(stream.close_request_) {
 		mut request := stream.close_request_
-		request.reject(stream.stored_error_)
+		request.reject_value(stream.stored_error_value())
 		stream.close_request_ = unsafe { nil }
 	}
 	if !isnil(stream.writer_) {
 		mut closed := stream.writer_.closed_
-		closed.reject(stream.stored_error_)
+		closed.reject_value(stream.stored_error_value())
 		mut native_closed := closed.as_webidl_promise()
 		webidl.mark_promise_as_handled(mut native_closed)
 	}
@@ -364,7 +367,7 @@ pub fn writable_stream_reject_close_and_closed_promise_if_needed(mut stream Writ
 }
 
 pub fn writable_stream_start_erroring(mut stream WritableStream, reason Value) {
-	stream.start_erroring(reason.description())
+	stream.start_erroring_value(stream_value_to_webidl(reason), reason.description())
 }
 
 pub fn writable_stream_update_backpressure(mut stream WritableStream, backpressure bool) {
@@ -401,7 +404,7 @@ pub fn writable_stream_default_writer_close_with_error_propagation(mut writer Wr
 		return VoidPromise.fulfilled()
 	}
 	if writer.stream_.state_ == .errored {
-		return VoidPromise.rejected(writer.stream_.stored_error_)
+		return VoidPromise.rejected_value_in(writer.closed_promise_realm(), writer.stream_.stored_error_value())
 	}
 	return writer.close()
 }
@@ -409,18 +412,18 @@ pub fn writable_stream_default_writer_close_with_error_propagation(mut writer Wr
 pub fn writable_stream_default_writer_ensure_closed_promise_rejected(mut writer WritableStreamDefaultWriter, reason Value) {
 	if writer.closed_.state() == .pending {
 		mut closed := writer.closed_
-		closed.reject(reason.description())
+		closed.reject_value(stream_value_to_webidl(reason))
 	} else {
-		writer.closed_ = VoidPromise.rejected_in(writer.closed_promise_realm(), reason.description())
+		writer.closed_ = VoidPromise.rejected_value_in(writer.closed_promise_realm(), stream_value_to_webidl(reason))
 	}
 }
 
 pub fn writable_stream_default_writer_ensure_ready_promise_rejected(mut writer WritableStreamDefaultWriter, reason Value) {
 	if writer.ready_.state() == .pending {
 		mut ready := writer.ready_
-		ready.reject(reason.description())
+		ready.reject_value(stream_value_to_webidl(reason))
 	} else {
-		writer.ready_ = VoidPromise.rejected_in(writer.ready_promise_realm(), reason.description())
+		writer.ready_ = VoidPromise.rejected_value_in(writer.ready_promise_realm(), stream_value_to_webidl(reason))
 	}
 }
 
@@ -499,7 +502,7 @@ pub fn writable_stream_default_controller_error(mut controller WritableStreamDef
 		return
 	}
 	writable_stream_default_controller_clear_algorithms(mut controller)
-	controller.stream_.start_erroring(reason.description())
+	controller.stream_.start_erroring_value(stream_value_to_webidl(reason), reason.description())
 }
 
 pub fn writable_stream_default_controller_error_if_needed(mut controller WritableStreamDefaultController, reason Value) {
@@ -537,7 +540,7 @@ pub fn writable_stream_default_controller_process_close(mut controller WritableS
 		writable_stream_finish_in_flight_close(mut stream)
 		return webidl.undefined_value()
 	}, fn [mut stream] (reason webidl.Value) !webidl.Value {
-		writable_stream_finish_in_flight_close_with_error(mut stream, string_value(callback_reason(reason)))
+		writable_stream_finish_in_flight_close_with_error(mut stream, stream_value_from_webidl(reason))
 		return webidl.undefined_value()
 	})
 }
@@ -568,7 +571,7 @@ pub fn writable_stream_default_controller_process_write(mut controller WritableS
 			mut controller := stream.controller_
 			writable_stream_default_controller_clear_algorithms(mut controller)
 		}
-		writable_stream_finish_in_flight_write_with_error(mut stream, string_value(callback_reason(reason)))
+		writable_stream_finish_in_flight_write_with_error(mut stream, stream_value_from_webidl(reason))
 		return webidl.undefined_value()
 	})
 }

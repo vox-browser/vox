@@ -156,7 +156,7 @@ fn (mut stream WritableStream) start_underlying_sink(sink UnderlyingSink) ! {
 	}, fn [mut stream] (reason webidl.Value) !webidl.Value {
 		assert stream.state_ in [.writable, .erroring]
 		stream.started_ = true
-		writable_stream_deal_with_rejection(mut stream, string_value(callback_reason(reason)))
+		writable_stream_deal_with_rejection(mut stream, stream_value_from_webidl(reason))
 		return webidl.undefined_value()
 	})
 }

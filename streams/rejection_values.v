@@ -43,3 +43,9 @@ pub fn (mut stream ReadableStream) error_value(reason webidl.Value) {
 		stream.error_internal_value(reason, callback_reason(reason))
 	}
 }
+
+// WritableStreamStartErroring preserves the stored JS::Value for all writer
+// capabilities and queued/in-flight operations.
+pub fn (stream &WritableStream) stored_error_value() webidl.Value {
+	return stream.stored_error_value_ or { webidl.string_value(stream.stored_error_) }
+}

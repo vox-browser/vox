@@ -45,6 +45,7 @@ mut:
 	realm_                   StreamRealm
 	state_                   WritableStreamState
 	stored_error_            string
+	stored_error_value_      ?webidl.Value
 	writer_                  &WritableStreamDefaultWriter = unsafe { nil }
 	controller_              &WritableStreamDefaultController = unsafe { nil }
 	queue_                   QueueWithSizes
@@ -152,18 +153,23 @@ fn (mut stream WritableStream) update_backpressure() {
 }
 
 fn (mut stream WritableStream) start_erroring(reason string) {
+	stream.start_erroring_value(webidl.string_value(reason), reason)
+}
+
+fn (mut stream WritableStream) start_erroring_value(reason webidl.Value, description string) {
 	if stream.state_ != .writable {
 		return
 	}
 	stream.state_ = .erroring
-	stream.stored_error_ = reason
+	stream.stored_error_ = description
+	stream.stored_error_value_ = reason
 	if !isnil(stream.writer_) {
 		mut writer := stream.writer_
-			if writer.ready_.state() == .pending {
+		if writer.ready_.state() == .pending {
 			mut ready := writer.ready_
-			ready.reject(reason)
-			} else {
-				writer.ready_ = VoidPromise.rejected_in(writer.ready_promise_realm(), reason)
+			ready.reject_value(reason)
+		} else {
+			writer.ready_ = VoidPromise.rejected_value_in(writer.ready_promise_realm(), reason)
 		}
 	}
 	if !writable_stream_has_operation_marked_in_flight(stream) && stream.started_ {
@@ -182,7 +188,7 @@ fn (mut stream WritableStream) finish_erroring() {
 	stream.state_ = .errored
 	stream.queue_.reset()
 	for mut request in stream.write_requests_.values() {
-		request.reject(stream.stored_error_)
+		request.reject_value(stream.stored_error_value())
 	}
 	stream.write_requests_.clear()
 	if isnil(stream.pending_abort_request_) {
@@ -196,7 +202,7 @@ fn (mut stream WritableStream) finish_erroring() {
 	stream.pending_abort_reason_ = undefined_value()
 	stream.pending_abort_erroring_ = false
 	if was_already_erroring {
-		abort_request.reject(stream.stored_error_)
+		abort_request.reject_value(stream.stored_error_value())
 		writable_stream_reject_close_and_closed_promise_if_needed(mut stream)
 		return
 	}
@@ -207,7 +213,7 @@ fn (mut stream WritableStream) finish_erroring() {
 		writable_stream_reject_close_and_closed_promise_if_needed(mut stream)
 		return webidl.undefined_value()
 	}, fn [mut stream, mut abort_request] (error webidl.Value) !webidl.Value {
-		abort_request.reject(callback_reason(error))
+		abort_request.reject_value(error)
 		writable_stream_reject_close_and_closed_promise_if_needed(mut stream)
 		return webidl.undefined_value()
 	})
@@ -327,7 +333,7 @@ fn (mut stream WritableStream) write_internal_in(value Value, promise_realm Stre
 		return VoidPromise.rejected_in(promise_realm, err.msg())
 	}
 	if stream.state_ == .errored || stream.state_ == .erroring {
-		return VoidPromise.rejected_in(promise_realm, stream.stored_error_)
+		return VoidPromise.rejected_value_in(promise_realm, stream.stored_error_value())
 	}
 	if stream.state_ == .closed || writable_stream_close_queued_or_in_flight(stream) {
 		return VoidPromise.rejected_in(promise_realm, 'TypeError: WritableStream is closing or closed')
@@ -351,7 +357,7 @@ fn (mut stream WritableStream) close_internal_in(promise_realm StreamRealm) &Voi
 		return VoidPromise.rejected_in(promise_realm, 'TypeError: WritableStream is already closed')
 	}
 	if stream.state_ == .errored || stream.state_ == .erroring {
-		return VoidPromise.rejected_in(promise_realm, stream.stored_error_)
+		return VoidPromise.rejected_value_in(promise_realm, stream.stored_error_value())
 	}
 	if writable_stream_close_queued_or_in_flight(stream) {
 		return VoidPromise.rejected_in(promise_realm, 'TypeError: WritableStream is already closing')
@@ -390,7 +396,7 @@ fn (mut stream WritableStream) abort_internal_in(reason Value, promise_realm Str
 	}
 	stream.pending_abort_erroring_ = was_already_erroring
 	if !was_already_erroring {
-		stream.start_erroring(reason.description())
+		stream.start_erroring_value(stream_value_to_webidl(reason), reason.description())
 	} else if !writable_stream_has_operation_marked_in_flight(stream) && stream.started_ {
 		stream.finish_erroring()
 	}
@@ -424,10 +430,10 @@ pub fn WritableStreamDefaultWriter.create(realm StreamRealm, mut stream Writable
 	if stream.state_ == .closed {
 		closed.resolve()
 	} else if stream.state_ == .erroring {
-		ready = VoidPromise.rejected_in(realm, stream.stored_error_)
+		ready = VoidPromise.rejected_value_in(realm, stream.stored_error_value())
 	} else if stream.state_ == .errored {
-		closed.reject(stream.stored_error_)
-		ready = VoidPromise.rejected_in(realm, stream.stored_error_)
+		closed.reject_value(stream.stored_error_value())
+		ready = VoidPromise.rejected_value_in(realm, stream.stored_error_value())
 	} else if stream.backpressure_ {
 		ready = VoidPromise.pending_in(realm)
 	}
