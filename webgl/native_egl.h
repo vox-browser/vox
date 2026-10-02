@@ -351,6 +351,7 @@ static void vox_gl_clear(unsigned mask) { glClear(mask); }
 static void vox_gl_viewport(int x, int y, int w, int h) { glViewport(x, y, w, h); }
 static void vox_gl_scissor(int x, int y, int w, int h) { glScissor(x, y, w, h); }
 static void vox_gl_enable(unsigned cap) { glEnable(cap); }
+static int vox_gl_is_enabled(unsigned cap) { return glIsEnabled(cap); }
 static void vox_gl_disable(unsigned cap) { glDisable(cap); }
 static void vox_gl_pixel_storei(unsigned pname, int value) { glPixelStorei(pname, value); }
 static void vox_gl_active_texture(unsigned texture) { glActiveTexture(texture); }

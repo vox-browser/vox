@@ -118,6 +118,7 @@ fn C.vox_gl_clear(u32)
 fn C.vox_gl_viewport(int, int, int, int)
 fn C.vox_gl_scissor(int, int, int, int)
 fn C.vox_gl_enable(u32)
+fn C.vox_gl_is_enabled(u32) int
 fn C.vox_gl_disable(u32)
 fn C.vox_gl_pixel_storei(u32, int)
 fn C.vox_gl_active_texture(u32)

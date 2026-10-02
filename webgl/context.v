@@ -774,8 +774,12 @@ pub fn (mut context WebGLRenderingContext) disable(capability GLenum) {
 	context.native.dispatch('disable', capability)
 }
 
-pub fn (context &WebGLRenderingContext) is_enabled(capability GLenum) bool {
-	return capability in context.enabled_capabilities
+pub fn (mut context WebGLRenderingContext) is_enabled(capability GLenum) bool {
+	// WebGLRenderingContextImpl::is_enabled forwards to the current GL context.
+	context.native.make_current()
+	result := C.vox_gl_is_enabled(capability) != 0
+	context.native.collect_native_error()
+	return result
 }
 
 pub fn (mut context WebGLRenderingContext) enable_vertex_attrib_array(index GLuint) {
