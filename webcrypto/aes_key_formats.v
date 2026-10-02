@@ -34,7 +34,7 @@ fn generate_source_aes_key(params AesKeyGenParams, extractable bool, usages []Ke
 fn import_aes_key(name string, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey {
 	aes_validate_usages(name, usages)!
 	mut data := material.clone()
-	if format in [.raw, .raw_secret] {
+	if format in [.raw, .raw_secret] && (name != 'AES-OCB' || format == .raw_secret) {
 		bits := data.len * 8
 		if bits !in [128, 192, 256] {
 			return error("DataError: Invalid key length '${bits}' bits (must be either 128, 192, or 256 bits)")
@@ -64,7 +64,8 @@ fn import_aes_key(name string, format KeyFormat, material []u8, extractable bool
 			if !ext && extractable { return error('DataError: Invalid ext field') }
 		}
 	} else {
-		return error('NotSupportedError: Only raw and jwk formats are supported')
+		if name == 'AES-OCB' { return error('NotSupportedError: Only raw-secret and jwk formats are supported') }
+        return error('NotSupportedError: Only raw and jwk formats are supported')
 	}
 	// The common SubtleCrypto import boundary installs extractable and usages.
 	return CryptoKey.create(.secret, false, AesKeyAlgorithm{ name: name, length: u16(data.len * 8) },
@@ -89,7 +90,7 @@ fn export_aes_jwk(key &CryptoKey) !JsonWebKey {
 }
 
 fn export_aes_key(format KeyFormat, key &CryptoKey) ![]u8 {
-	if format in [.raw, .raw_secret] { return key.handle() }
+	if format in [.raw, .raw_secret] && (key.algorithm_name() != 'AES-OCB' || format == .raw_secret) { return key.handle() }
 	if format == .jwk { return export_aes_jwk(key)!.to_json().bytes() }
 	return error('NotSupportedError: Cannot export to unsupported format')
 }

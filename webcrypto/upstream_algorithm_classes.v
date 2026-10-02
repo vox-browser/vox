@@ -209,4 +209,4 @@ pub fn (_ AesOcb) decrypt(params AeadParams, key &CryptoKey, data []u8) ![]u8 { 
 pub fn (_ AesOcb) generate_key(params AesKeyGenParams, extractable bool, usages []KeyUsage) !GeneratedKey { return GeneratedKey{key: generate_aes_key(AesKeyGenParams{...params, name: 'AES-OCB'}, extractable, usages)!} }
 pub fn (_ AesOcb) import_key(_ AlgorithmParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_aes_ocb_key(format, material, extractable, usages) }
 pub fn (_ AesOcb) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_aes_ocb_key(format, key) }
-pub fn (_ AesOcb) get_key_length(params AesKeyGenParams) !KeyLengthResult { return KeyLengthResult{value: aes_key_length(params)!} }
+pub fn (_ AesOcb) get_key_length(params AesKeyGenParams) !KeyLengthResult { return KeyLengthResult{value: aes_ocb_key_length(params)!} }

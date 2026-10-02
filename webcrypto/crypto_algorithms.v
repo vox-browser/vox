@@ -7,7 +7,6 @@
 // Registry and WebCrypto access checks live in subtle_crypto.v.
 module webcrypto
 
-import crypto.rand
 import crypto.sha1
 import crypto.sha256
 import crypto.sha3
@@ -275,17 +274,6 @@ pub fn hmac_verify(key &CryptoKey, signature []u8, data []u8) !bool {
 	return subtle.constant_time_compare(expected, signature) == 1
 }
 
-fn valid_aes_key(key &CryptoKey, expected_name string) ![]u8 {
-	if key.type_ != .secret || key.algorithm_name() != expected_name {
-		return error('InvalidAccessError: Key algorithm mismatch')
-	}
-	handle := key.handle_
-	if handle.len !in [16, 24, 32] {
-		return error('DataError: AES key length must be 128, 192, or 256 bits')
-	}
-	return handle
-}
-
 pub fn encrypt_bytes(params EncryptionParams, key &CryptoKey, plaintext []u8) ![]u8 {
 	return match params {
 		RsaOaepParams { rsa_oaep_encrypt(params, key, plaintext)! }
@@ -363,23 +351,8 @@ pub fn derive_bits_bytes(params DeriveParams, base_key &CryptoKey, length_bits u
 }
 
 pub fn generate_aes_key(params AesKeyGenParams, extractable bool, usages []KeyUsage) !&CryptoKey {
-    if params.name in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW'] { return generate_source_aes_key(params, extractable, usages) }
-	if params.length !in [u16(128), 192, 256] {
-		return error('OperationError: AES key length must be 128, 192, or 256')
-	}
-	allowed := match params.name {
-		'AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-OCB' { [KeyUsage.encrypt, .decrypt, .wrap_key, .unwrap_key] }
-		'AES-KW' { [KeyUsage.wrap_key, .unwrap_key] }
-		else {
-			return error('NotSupportedError: Unsupported AES algorithm: ${params.name}')
-		}
-	}
-	validate_usages(usages, allowed)!
-	material := rand.bytes(int(params.length / 8))!
-	return CryptoKey.create(.secret, extractable, AesKeyAlgorithm{
-		name: params.name
-		length: params.length
-	}, usages, material)
+    if params.name !in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW', 'AES-OCB'] { return error('NotSupportedError: Unsupported AES algorithm: ${params.name}') }
+    return generate_source_aes_key(params, extractable, usages)
 }
 
 pub fn import_secret_key(algorithm string, material []u8, extractable bool, usages []KeyUsage, hash_name string) !&CryptoKey {

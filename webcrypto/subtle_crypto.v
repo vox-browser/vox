@@ -325,7 +325,7 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 	}
 	normalized := normalize_an_algorithm(name, 'generateKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
-    if params is AesKeyGenParams && normalized in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW'] {
+    if params is AesKeyGenParams && normalized in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW', 'AES-OCB'] {
         key := generate_aes_key(AesKeyGenParams{ ...params, name: normalized }, extractable, normalized_usages)!
         if normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
         return GeneratedKey{ key: key }
@@ -481,8 +481,10 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
         return key
     }
 	if normalized == 'AES-OCB' {
-		key := import_aes_ocb_key(format, material, extractable, normalized_usages)!
-		if key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+		mut key := import_aes_ocb_key(format, material, extractable, normalized_usages)!
+		if normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+        key.set_extractable(extractable)
+        key.set_usages(normalized_usages)
 		return key
 	}
 	if normalized in ['KMAC128', 'KMAC256'] {

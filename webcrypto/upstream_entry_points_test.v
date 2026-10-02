@@ -101,7 +101,7 @@ fn test_upstream_base_dispatch_nullable_lengths_and_backend_boundaries() {
 	}
 	assert chacha_length == u32(256)
 	AesOcb.create().encrypt(AeadParams{}, key, []) or {
-		assert err.msg().starts_with('InvalidAccessError:')
+		assert err.msg() == 'OperationError: Encryption failed: No AES-OCB cipher for this key size'
 	}
 }
 

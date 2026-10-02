@@ -430,7 +430,6 @@ fn normalized_generate(algorithm NormalizedCryptoAlgorithm, extractable bool, us
     if algorithm.name == 'ChaCha20-Poly1305' { return generate_chacha_key(extractable, usages) }
 	return match params {
 		AesKeyGenParams {
-            if algorithm.name == 'AES-OCB' { validate_usages(usages, [KeyUsage.encrypt, .decrypt, .wrap_key, .unwrap_key])! }
 			GeneratedKey{ key: generate_aes_key(params, extractable, usages)! }
 		}
 		HmacKeyGenParams { GeneratedKey{ key: generate_hmac_key(params, extractable, usages)! } }
@@ -470,6 +469,7 @@ fn normalized_generate(algorithm NormalizedCryptoAlgorithm, extractable bool, us
 
 fn normalized_import(algorithm NormalizedCryptoAlgorithm, format KeyFormat, bytes []u8, extractable bool, usages []KeyUsage) !&CryptoKey {
 	params := algorithm.params
+    if algorithm.name == 'AES-OCB' { return import_aes_ocb_key(format, bytes, extractable, usages) }
     if algorithm.name == 'ChaCha20-Poly1305' { return import_chacha_key(format, bytes, extractable, usages) }
     if algorithm.name in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW'] { return import_aes_key(algorithm.name, format, bytes, extractable, usages) }
 	if params is HmacImportParams { return HMAC.create().import_key(params, format, bytes, extractable, usages) }
@@ -546,7 +546,7 @@ fn normalized_derive(algorithm NormalizedCryptoAlgorithm, key &CryptoKey, length
 fn normalized_key_length(algorithm NormalizedCryptoAlgorithm) !KeyLengthResult {
 	params := algorithm.params
 	return match params {
-		AesKeyGenParams { KeyLengthResult{ value: aes_key_length(params)! } }
+		AesKeyGenParams { KeyLengthResult{ value: if algorithm.name == 'AES-OCB' { aes_ocb_key_length(params)! } else { aes_key_length(params)! } } }
 		HmacImportParams { HMAC.create().get_key_length(params)! }
 		KmacImportParams { KMAC.create().get_key_length(params)! }
 		else {
