@@ -150,3 +150,17 @@ fn test_underlying_sink_type_is_rejected() {
 		assert err.msg().contains('Unsupported')
 	}
 }
+
+fn test_ordinary_string_chunk_cannot_close_stream() {
+	mut stream := WritableStream.construct_impl(UnderlyingSink{}, QueuingStrategy{})!
+	mut writer := stream.get_writer()!
+	for chunk in [string_value('__libweb_stream_close_sentinel__'), undefined_value(), null_value(), bytes_value([u8(0)])] {
+		assert writer.write(chunk).state() == .fulfilled
+		assert stream.state() == .writable
+		assert stream.written_values().last() == chunk
+	}
+	assert stream.written_values().len == 4
+	assert writer.close().state() == .fulfilled
+	assert stream.state() == .closed
+	assert writer.closed().state() == .fulfilled
+}

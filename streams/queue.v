@@ -9,6 +9,8 @@ module streams
 import math
 
 pub struct ValueWithSize {
+// JS::js_special_empty_value() is a private entry tag, never a caller Value.
+	is_close_ bool
 pub:
 	value Value
 	size  f64
@@ -113,6 +115,20 @@ pub fn (mut queue QueueWithSizes) enqueue_value_with_size(value Value, size f64)
 		size: size
 	})
 	queue.total_size_ += size
+}
+
+// Streams/WritableStreamOperations.cpp:create_close_sentinel. The sentinel
+// shares the queue but cannot compare equal to any JS-visible chunk.
+fn (mut queue QueueWithSizes) enqueue_close_sentinel() {
+	queue.queue_.append(ValueWithSize{
+		is_close_: true
+		size: 0
+	})
+}
+
+fn (queue &QueueWithSizes) first_is_close_sentinel() bool {
+	entry := queue.queue_.first() or { return false }
+	return entry.is_close_
 }
 
 pub fn (mut queue QueueWithSizes) dequeue_value() !Value {

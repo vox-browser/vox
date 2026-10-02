@@ -197,9 +197,12 @@ fn test_writable_entry_points_preserve_slots_and_sentinel() {
 	writable_stream_finish_in_flight_write(mut stream)
 	assert request.state() == .fulfilled
 	assert !writable_stream_has_operation_marked_in_flight(stream)
-	sentinel := create_close_sentinel()
-	assert is_close_sentinel(sentinel)
-	assert !is_close_sentinel(string_value('close'))
+	mut queue := QueueWithSizes{}
+	queue.enqueue_value_with_size(string_value('__libweb_stream_close_sentinel__'), 1)!
+	assert !queue.first_is_close_sentinel()
+	queue.enqueue_close_sentinel()
+	assert queue.dequeue_value()!.text == '__libweb_stream_close_sentinel__'
+	assert queue.first_is_close_sentinel()
 }
 
 fn test_writable_controller_uses_queue_for_backpressure_and_resets_setup_state() {

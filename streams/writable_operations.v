@@ -5,8 +5,6 @@
 // Direct translations of writable-stream object slots and abstract operations.
 module streams
 
-const close_sentinel_text = '__libweb_stream_close_sentinel__'
-
 pub fn (mut stream WritableStream) transfer_steps() !&WritableStream {
 	return stream.transfer()
 }
@@ -200,14 +198,6 @@ pub fn (writer &WritableStreamDefaultWriter) stream() ?&WritableStream {
 pub fn (mut writer WritableStreamDefaultWriter) set_stream(stream ?&WritableStream) {
 	writer.stream_ = stream or { unsafe { nil } }
 	writer.released_ = stream == none
-}
-
-pub fn create_close_sentinel() Value {
-	return string_value(close_sentinel_text)
-}
-
-pub fn is_close_sentinel(value Value) bool {
-	return value.kind == .string_ && value.text == close_sentinel_text
 }
 
 pub fn acquire_writable_stream_default_writer(mut stream WritableStream) !&WritableStreamDefaultWriter {
@@ -480,10 +470,7 @@ pub fn writable_stream_default_controller_clear_algorithms(mut controller Writab
 }
 
 pub fn writable_stream_default_controller_close(mut controller WritableStreamDefaultController) {
-	controller.stream_.queue_.enqueue_value_with_size(create_close_sentinel(), 0) or {
-		writable_stream_default_controller_error_if_needed(mut controller, string_value(err.msg()))
-		return
-	}
+	controller.stream_.queue_.enqueue_close_sentinel()
 	controller.stream_.process_queue()
 }
 

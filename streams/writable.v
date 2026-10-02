@@ -292,11 +292,12 @@ fn (mut stream WritableStream) process_queue() {
 		}
 	}
 	value := stream.queue_.peek_queue_value() or { return }
-	if stream.owner_kind_ == .message_port && !is_close_sentinel(value) && !stream.message_backpressure_ {
+	is_close := stream.queue_.first_is_close_sentinel()
+	if stream.owner_kind_ == .message_port && !is_close && !stream.message_backpressure_ {
 		return
 	}
 	mut controller := stream.controller_
-	if is_close_sentinel(value) {
+	if is_close {
 		writable_stream_default_controller_process_close(mut controller)
 	} else {
 		writable_stream_default_controller_process_write(mut controller, value)
