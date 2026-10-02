@@ -92,30 +92,29 @@ fn (host &CryptoHost) copy_crypto_buffer(value voidptr) !webidl.BufferSource {
 }
 
 fn (host &CryptoHost) normalize_digest(value voidptr, is_object bool) !webidl.Value {
-	mut name := ''
-	if is_object {
-		initial_name := host.runtime.binding_property(value, 'name')!
-		if C.JSValueIsUndefined(host.runtime.context, initial_name) {
-			return error('TypeError: Not an object of type Algorithm')
-		}
-		name = host.algorithm_string(initial_name)!
-	} else {
-		name = host.runtime.binding_dom_string(value)!
+	mut runtime := unsafe { &Runtime(host.runtime) }
+	dictionary := host.algorithm_dictionary(value, is_object)!
+	runtime.retain_javascript_value(dictionary)!
+	defer { runtime.release_javascript_value(dictionary) }
+	initial_name := runtime.binding_property(dictionary, 'name')!
+	if C.JSValueIsUndefined(runtime.context, initial_name) {
+		return error('TypeError: Not an object of type Algorithm')
 	}
+	name := host.algorithm_string(initial_name)!
 	canonical := webcrypto.normalize_an_algorithm(name, 'digest')!
 	mut normalized := {
 		'name': webidl.string_value(canonical)
 	}
 	if canonical in ['cSHAKE128', 'cSHAKE256'] {
-		if !is_object || !host.algorithm_has(value, 'outputLength')! {
+		if !host.algorithm_has(dictionary, 'outputLength')! {
 			return error('TypeError: Required property outputLength is missing or undefined')
 		}
-		length_value := host.runtime.binding_property(value, 'outputLength')!
+		length_value := runtime.binding_property(dictionary, 'outputLength')!
 		length := webidl.convert_to_int(webidl.number_value(host.algorithm_number(length_value)!), 32, false, .yes, .no)!
 		normalized['outputLength'] = webidl.number_value(length)
 		for field in ['functionName', 'customization'] {
-			if host.algorithm_has(value, field)! {
-				buffer := host.runtime.binding_property(value, field)!
+			if host.algorithm_has(dictionary, field)! {
+				buffer := runtime.binding_property(dictionary, field)!
 				// Algorithm parameter bodies use is_buffer_source_type, without
 				// the generated top-level IDL shared/resizable restrictions.
 				host.validate_crypto_buffer(buffer, false)!
