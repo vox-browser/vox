@@ -4,8 +4,9 @@ module webassembly
 
 pub struct BinaryExpression {
 pub mut:
-	instructions     []BinaryInstruction
-	stack_usage_hint ?usize
+	instructions          []BinaryInstruction
+	stack_usage_hint      ?usize
+	compiled_instructions BinaryCompiledInstructions
 }
 
 // Types.h::Expression::set_stack_usage_hint. A parsed expression has no known
