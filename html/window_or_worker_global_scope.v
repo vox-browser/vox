@@ -19,13 +19,21 @@ import storageapi
 import resourcetiming
 import trustedtypes
 import webcrypto
+import webidl
+import contentsecuritypolicy
 
 pub type TimerScriptEvaluator = fn (string) !
 
 pub struct TimerHandler {
 pub:
 	callback ?&dom.CallbackType
+	callback_record ?webidl.CallbackType
+	callback_this_value webidl.Value
 	source   ?string
+}
+
+pub fn timer_webidl_callback_handler(callback webidl.CallbackType, receiver webidl.Value) TimerHandler {
+	return TimerHandler{callback_record: callback, callback_this_value: receiver}
 }
 
 pub fn timer_callback_handler(callback &dom.CallbackType) TimerHandler {
@@ -139,6 +147,8 @@ mut:
 	active_timers_                  map[i32]GlobalScopeTimer
 	manual_timer_clock_              ?f64
 	timer_script_evaluator_         ?TimerScriptEvaluator
+	timer_classic_script_evaluator_ ?ScriptEvaluationHook
+	embedding_timer_compilation_exception_value_ ?fn (IError) webidl.Value
 	performance_entry_buffer_map_   map[string]&PerformanceEntryTuple
 	registered_observers_           []&PerformanceObserverRecord
 	observer_task_queued_           bool
@@ -346,6 +356,16 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) set_timer_script_evaluator(eva
 	scope.timer_script_evaluator_ = evaluator
 }
 
+pub fn (mut scope WindowOrWorkerGlobalScopeMixin) set_timer_classic_script_evaluator(evaluator ?ScriptEvaluationHook) {
+	scope.timer_classic_script_evaluator_ = evaluator
+}
+
+// The compact engine projects the source realm's EvalError into its actual
+// JavaScript object. The native CSP algorithm and its task ordering stay here.
+pub fn (mut scope WindowOrWorkerGlobalScopeMixin) set_timer_compilation_exception_value_converter(converter ?fn (IError) webidl.Value) {
+	scope.embedding_timer_compilation_exception_value_ = converter
+}
+
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) set_fetch_host(host ?&fetch.FetchHost) {
 	if value := host {
 		scope.fetch_host_ = voidptr(value)
@@ -378,16 +398,46 @@ fn (mut scope WindowOrWorkerGlobalScopeMixin) run_timer_initialization_steps(han
 	}
 	owner_handle := voidptr(&scope)
 	nesting_level := current_nesting + 1
-	task_steps := fn [owner_handle, handler, normalized_timeout, arguments, repeat, id] () {
+	initiating_script := if realm := scope.error_reporting_realm_ { realm.active_classic_script_ } else { ?&ClassicScript(none) }
+	task_steps := fn [owner_handle, handler, normalized_timeout, arguments, repeat, id, initiating_script] () {
 		mut owner := unsafe { &WindowOrWorkerGlobalScopeMixin(owner_handle) }
 		// The handle remains in the map after clock firing until the queued task
 		// completes; clearTimeout cancels even a task already queued.
 		if id !in owner.active_timers_ { return }
-		if callback := handler.callback {
+		if callback := handler.callback_record {
+			mut values := []webidl.Value{cap: arguments.len}
+			for argument in arguments {
+				values << (argument.as_webidl_value() or { panic('timer argument requires its actual WebIDL value') })
+			}
+			_ = webidl.invoke_callback(callback, handler.callback_this_value, values) or {
+				owner.report_an_exception(dom.js_webidl_value(webidl.exception_value(err)), false)
+				webidl.undefined_value()
+			}
+		} else if callback := handler.callback {
 			if call := callback.call_with_arguments { _ = call(arguments) }
 		} else if source := handler.source {
-			if evaluator := owner.timer_script_evaluator_ {
-				evaluator(source) or { owner.report_error(dom.js_string(err.msg())) }
+			if evaluator := owner.timer_classic_script_evaluator_ {
+				mut realm := owner.error_reporting_realm_ or { panic('timer classic script requires its relevant realm') }
+				settings := settings_object_of_realm(realm) or { panic('timer classic script requires its relevant settings') }
+				mut global := settings.fetch_request_client_csp_global()
+				contentsecuritypolicy.ensure_csp_does_not_block_string_compilation(mut global, contentsecuritypolicy.CompilationInput{
+					body_string: source
+					code_string: source
+					type_: .timer
+				}) or {
+					exception := if convert := owner.embedding_timer_compilation_exception_value_ { convert(err) } else { webidl.exception_value(err) }
+					owner.report_an_exception(dom.js_webidl_value(exception), false)
+					return
+				}
+				mut base_url := settings.api_base_url()
+				if script := initiating_script { base_url = script.base_url() or { base_url } }
+				// Upstream still leaves the TrustedScript sink conversion and the
+				// initiating script's fetch-option propagation as explicit FIXMEs.
+				mut script := ClassicScript.create(base_url.basename(), source, realm, base_url, 1, .no)
+				script.set_evaluator(evaluator)
+				_ = script.run(.no) or { dom.js_undefined() }
+			} else if evaluator := owner.timer_script_evaluator_ {
+				evaluator(source) or { owner.report_error(dom.js_webidl_value(webidl.exception_value(err))) }
 			}
 		}
 		if id !in owner.active_timers_ { return }
