@@ -22,6 +22,7 @@ module dom
 
 import time
 import webidl
+import libjs
 
 // DOM event algorithms use the translated callback and JS-value boundary types
 // below. Execution realms and arbitrary JavaScript objects remain runtime
@@ -46,6 +47,9 @@ pub mut:
 	boolean_data bool
 	number_data  f64
 	string_data  string
+	// Source PrimitiveString units at the structured-clone engine boundary.
+	// string_data remains the standalone string/diagnostic compatibility view.
+	string_utf16_ ?libjs.Utf16String
 	object_data  voidptr
 	// HTML's structured-clone implementation uses object_data for its
 	// lightweight object model. Other object_data values (event callbacks,
@@ -85,6 +89,10 @@ pub fn js_string(value string) JSValue {
 		kind:        .string
 		string_data: value
 	}
+}
+
+pub fn js_utf16_string(value libjs.Utf16String) JSValue {
+	return JSValue{kind: .string, string_data: value.str(), string_utf16_: value}
 }
 
 pub fn js_object(value voidptr) JSValue {

@@ -17,6 +17,16 @@ fn Utf16String.from_slice(s []u16) Utf16String {
 	}
 }
 
+// AK/Utf16String's unvalidated code-unit construction/span at the embedding
+// boundary. Preserve unpaired surrogates and give callers an owned slice.
+pub fn utf16_string_from_code_units(units []u16) Utf16String {
+	return Utf16String.from_slice(units)
+}
+
+pub fn (text Utf16String) code_units() []u16 {
+	return text.data.clone()
+}
+
 fn (u Utf16String) len() int {
 	return u.data.len
 }

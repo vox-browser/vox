@@ -10,6 +10,8 @@ module html
 import dom
 import math
 import libjs
+import webidl
+import math.big
 
 // StructuredObject is the small host-independent object model used until the
 // LibJS VM is translated. Its address is the object identity used by the
@@ -72,6 +74,8 @@ pub mut:
 	boolean_data        bool
 	number_data         f64
 	string_data         string
+	string_utf16_       ?libjs.Utf16String
+	bigint_data         ?&libjs.BigInt
 	second_string_data  string
 	error_type          StructuredErrorType
 	has_cause           bool
@@ -215,7 +219,31 @@ fn (mut serializer StructuredSerializer) write_bytes(value []u8) ! {
 }
 
 fn (mut serializer StructuredSerializer) write_string(value string) ! {
-	serializer.write_bytes(value.bytes())!
+	serializer.write_utf16_string(libjs.utf16_string(value))!
+}
+
+fn (mut serializer StructuredSerializer) write_utf16_string(value libjs.Utf16String) ! {
+	// LibIPC/Encoder.cpp::encode(Utf16View): ASCII storage, u32 code-unit
+	// count, then ASCII bytes or raw host-endian UTF-16 (pinned little endian).
+	units := value.code_units()
+	mut ascii := true
+	for unit in units { if unit >= 128 { ascii = false; break } }
+	serializer.write_u8(if ascii { u8(1) } else { u8(0) })
+	serializer.write_u32(u32(units.len))
+	for unit in units {
+		serializer.write_u8(u8(unit))
+		if !ascii { serializer.write_u8(u8(unit >> 8)) }
+	}
+}
+
+fn (mut serializer StructuredSerializer) write_bigint(integer &libjs.BigInt) ! {
+	// StructuredSerialize.cpp::encode_signed_big_integer -> mp_to_sbin:
+	// one sign byte followed by the big-endian unsigned magnitude.
+	magnitude, _ := integer.big_integer.bytes()
+	mut bytes := []u8{cap: magnitude.len + 1}
+	bytes << if integer.big_integer.signum < 0 { u8(1) } else { u8(0) }
+	bytes << magnitude
+	serializer.write_bytes(bytes)!
 }
 
 fn (mut serializer StructuredSerializer) write_tag(tag StructuredSerializeValueTag) {
@@ -325,11 +353,19 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 		}
 		.string {
 			serializer.write_tag(.string_primitive)
-			serializer.write_string(value.string_data)!
+			serializer.write_utf16_string(value.string_utf16_ or { libjs.utf16_string(value.string_data) })!
 			return
 		}
 		.object {}
-		.runtime_value { return error('DataCloneError: actual host JavaScript values require their engine structured-clone binding') }
+		.runtime_value {
+			native := value.native_value_ or { return error('DataCloneError: missing source primitive value') }
+			if native.kind != .bigint {
+				return error('DataCloneError: actual host JavaScript values require their engine structured-clone binding')
+			}
+			serializer.write_tag(.big_int_primitive)
+			serializer.write_bigint(webidl.value_to_bigint(native)!)!
+			return
+		}
 	}
 
 	object := structured_object_from_value(value)!
@@ -352,11 +388,14 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 		}
 		.string_object {
 			serializer.write_tag(.string_object)
-			serializer.write_string(object.string_data)!
+			serializer.write_utf16_string(object.string_utf16_ or { libjs.utf16_string(object.string_data) })!
 		}
 		.big_int_object {
 			serializer.write_tag(.big_int_object)
-			serializer.write_string(object.string_data)!
+			integer := object.bigint_data or {
+				libjs.string_to_bigint(libjs.utf16_string(object.string_data)) or { return error('DataCloneError: BigInt object has invalid internal value') }
+			}
+			serializer.write_bigint(integer)!
 		}
 		.date {
 			serializer.write_tag(.date_object)
@@ -508,7 +547,29 @@ fn (mut decoder StructuredDecoder) read_bytes() ![]u8 {
 }
 
 fn (mut decoder StructuredDecoder) read_string() !string {
-	return decoder.read_bytes()!.bytestr()
+	return decoder.read_utf16_string()!.str()
+}
+
+fn (mut decoder StructuredDecoder) read_utf16_string() !libjs.Utf16String {
+	flag := decoder.read_u8()!
+	if flag > 1 { return error('DataCloneError: invalid UTF-16 storage flag') }
+	count := u64(decoder.read_u32()!)
+	size := count * if flag == 1 { u64(1) } else { u64(2) }
+	if size > u64(decoder.data.len - decoder.offset) { return error('DataCloneError: truncated UTF-16 string') }
+	mut units := []u16{cap: int(count)}
+	for _ in 0 .. int(count) {
+		mut unit := u16(decoder.read_u8()!)
+		if flag == 0 { unit |= u16(decoder.read_u8()!) << 8 }
+		if flag == 1 && unit >= 128 { return error('DataCloneError: invalid ASCII string storage') }
+		units << unit
+	}
+	return libjs.utf16_string_from_code_units(units)
+}
+
+fn (mut decoder StructuredDecoder) read_bigint() !&libjs.BigInt {
+	bytes := decoder.read_bytes()!
+	if bytes.len == 0 { return error('DataCloneError: invalid BigInt encoding') }
+	return libjs.BigInt.create(big.integer_from_bytes(bytes[1..], big.IntegerConfig{signum: if bytes[0] == 0 { 1 } else { -1 }}))
 }
 
 struct DecodedOptionalU32 {
@@ -573,10 +634,12 @@ fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 			return &dom.JSValue{kind: .number, number_data: f64(i32(decoder.read_u32()!))}
 		}
 		.string_primitive {
-			return &dom.JSValue{
-				kind: .string
-				string_data: decoder.read_string()!
-			}
+			value := dom.js_utf16_string(decoder.read_utf16_string()!)
+			return &value
+		}
+		.big_int_primitive {
+			value := dom.js_webidl_value(webidl.bigint_value_for_record(decoder.read_bigint()!))
+			return &value
 		}
 		.object_reference {
 			index := int(decoder.read_u32()!)
@@ -606,15 +669,20 @@ fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 			object.number_data = decoder.read_f64()!
 			return value
 		}
-		.string_object, .big_int_object {
-			kind := if tag == .string_object {
-				StructuredObjectKind.string_object
-			} else {
-				StructuredObjectKind.big_int_object
-			}
-			mut object := StructuredObject.create(kind)
+		.string_object {
+			mut object := StructuredObject.create(.string_object)
 			value := decoder.register_object(object)
-			object.string_data = decoder.read_string()!
+			text := decoder.read_utf16_string()!
+			object.string_data = text.str()
+			object.string_utf16_ = text
+			return value
+		}
+		.big_int_object {
+			mut object := StructuredObject.create(.big_int_object)
+			value := decoder.register_object(object)
+			integer := decoder.read_bigint()!
+			object.bigint_data = integer
+			object.string_data = integer.big_integer.str()
 			return value
 		}
 		.regexp_object {
@@ -732,7 +800,7 @@ fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 			object.array_length = decoder.read_optional_u32()!.value
 			return value
 		}
-		.empty, .big_int_primitive, .serializable_object, .end_object {
+		.empty, .serializable_object, .end_object {
 			return error('DataCloneError: unsupported structured serialization tag')
 		}
 	}
