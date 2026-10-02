@@ -44,23 +44,12 @@ pub const numeric_string_cache_size = 1000
 pub const large_numeric_string_cache_size = 1024
 pub const string_to_atom_cache_size = 2
 
-// Utf16String::has_short_ascii_storage() covers inline ASCII strings upstream.
-const short_ascii_storage_limit = 16
-
 pub fn utf16_string(text string) Utf16String {
 	return Utf16String.from_slice(utf16(text))
 }
 
 fn has_short_ascii_storage(text Utf16String) bool {
-	if text.len() > short_ascii_storage_limit {
-		return false
-	}
-	for code_unit in text.as_slice() {
-		if code_unit >= 0x80 {
-			return false
-		}
-	}
-	return true
+	return text.has_short_ascii_storage()
 }
 
 // Upstream hashes the fly string identity; content hashing gives the same cache
