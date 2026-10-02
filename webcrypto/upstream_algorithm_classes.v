@@ -95,14 +95,14 @@ pub fn (_ ED25519) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return e
 
 pub struct HKDF {}
 pub fn HKDF.create() HKDF { return HKDF{} }
-pub fn (_ HKDF) import_key(_ AlgorithmParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_secret_algorithm('HKDF', format, material, extractable, usages, '') }
-pub fn (_ HKDF) derive_bits(params HkdfParams, key &CryptoKey, length ?u32) ![]u8 { return derive_bits_bytes(params, key, length or { return error('OperationError: length is required') }) }
+pub fn (_ HKDF) import_key(_ AlgorithmParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_kdf_key('HKDF', format, material, extractable, usages) }
+pub fn (_ HKDF) derive_bits(params HkdfParams, key &CryptoKey, length ?u32) ![]u8 { return hkdf_derive_bits(params, key, length) }
 pub fn (_ HKDF) get_key_length(_ AlgorithmParams) !KeyLengthResult { return KeyLengthResult{} }
 
 pub struct PBKDF2 {}
 pub fn PBKDF2.create() PBKDF2 { return PBKDF2{} }
-pub fn (_ PBKDF2) import_key(_ AlgorithmParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_secret_algorithm('PBKDF2', format, material, extractable, usages, '') }
-pub fn (_ PBKDF2) derive_bits(params Pbkdf2Params, key &CryptoKey, length ?u32) ![]u8 { return derive_bits_bytes(params, key, length or { return error('OperationError: length is required') }) }
+pub fn (_ PBKDF2) import_key(_ AlgorithmParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_kdf_key('PBKDF2', format, material, extractable, usages) }
+pub fn (_ PBKDF2) derive_bits(params Pbkdf2Params, key &CryptoKey, length ?u32) ![]u8 { return pbkdf2_derive_bits(params, key, length) }
 pub fn (_ PBKDF2) get_key_length(_ AlgorithmParams) !KeyLengthResult { return KeyLengthResult{} }
 
 pub struct Argon2 {}

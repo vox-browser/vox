@@ -599,53 +599,7 @@ pub fn decrypt_bytes(params EncryptionParams, key &CryptoKey, ciphertext []u8) !
 }
 
 fn xor_into(mut target []u8, source []u8) {
-	for index, byte in source {
-		target[index] ^= byte
-	}
-}
-
-fn pbkdf2_derive(params Pbkdf2Params, password []u8, length_bytes int) ![]u8 {
-	if params.iterations == 0 {
-		return error('OperationError: PBKDF2 iterations must be non-zero')
-	}
-	hash_length := digest_bytes(params.hash, [])!.len
-	block_count := (length_bytes + hash_length - 1) / hash_length
-	mut output := []u8{cap: block_count * hash_length}
-	for block_index in 1 .. block_count + 1 {
-		mut initial := params.salt.clone()
-		initial << [u8(block_index >> 24), u8(block_index >> 16), u8(block_index >> 8),
-			u8(block_index)]
-		mut last := hmac_bytes(params.hash, password, initial)!
-		mut accumulator := last.clone()
-		for _ in 1 .. int(params.iterations) {
-			last = hmac_bytes(params.hash, password, last)!
-			xor_into(mut accumulator, last)
-		}
-		output << accumulator
-	}
-	return output[..length_bytes].clone()
-}
-
-fn hkdf_derive(params HkdfParams, secret []u8, length_bytes int) ![]u8 {
-	hash_length := digest_bytes(params.hash, [])!.len
-	if length_bytes > 255 * hash_length {
-		return error('OperationError: HKDF output is too long')
-	}
-	salt := if params.salt.len == 0 { []u8{len: hash_length} } else { params.salt.clone() }
-	prk := hmac_bytes(params.hash, salt, secret)!
-	mut output := []u8{cap: length_bytes}
-	mut previous := []u8{}
-	mut counter := u8(0)
-	for output.len < length_bytes {
-		counter++
-		mut input := previous.clone()
-		input << params.info
-		input << counter
-		previous = hmac_bytes(params.hash, prk, input)!
-		remaining := length_bytes - output.len
-		output << previous[..if remaining < previous.len { remaining } else { previous.len }]
-	}
-	return output
+	for index, byte in source { target[index] ^= byte }
 }
 
 fn argon2_derive(params Argon2Params, password []u8, length_bytes int) ![]u8 {
@@ -682,6 +636,14 @@ fn derive_bits_bytes_for_usage(params DeriveParams, base_key &CryptoKey, length_
 		if normalized == 'ECDH' { return ecdh_derive_bits(EcdhKeyDeriveParams{ ...params, name: normalized }, base_key, length_bits) }
 		return error('NotSupportedError: Derivation backend is unavailable for ${normalized}')
 	}
+	if params is HkdfParams {
+		if normalize_an_algorithm(params.name, 'deriveBits')! != base_key.algorithm_name() { return error('InvalidAccessError: Key algorithm mismatch') }
+		return hkdf_derive_bits(HkdfParams{ ...params, hash: normalize_an_algorithm(params.hash, 'digest')! }, base_key, length_bits)
+	}
+	if params is Pbkdf2Params {
+		if normalize_an_algorithm(params.name, 'deriveBits')! != base_key.algorithm_name() { return error('InvalidAccessError: Key algorithm mismatch') }
+		return pbkdf2_derive_bits(Pbkdf2Params{ ...params, hash: normalize_an_algorithm(params.hash, 'digest')! }, base_key, length_bits)
+	}
 	if length_bits == 0 || length_bits % 8 != 0 {
 		return error('OperationError: Derived bit length must be a positive multiple of 8')
 	}
@@ -690,8 +652,8 @@ fn derive_bits_bytes_for_usage(params DeriveParams, base_key &CryptoKey, length_
 	}
 	length_bytes := int(length_bits / 8)
 	return match params {
-		HkdfParams { hkdf_derive(params, base_key.handle_, length_bytes)! }
-		Pbkdf2Params { pbkdf2_derive(params, base_key.handle_, length_bytes)! }
+		HkdfParams { hkdf_derive_bits(params, base_key, length_bits)! }
+		Pbkdf2Params { pbkdf2_derive_bits(params, base_key, length_bits)! }
 		Argon2Params { argon2_derive(params, base_key.handle_, length_bytes)! }
 		EcdhKeyDeriveParams { error('NotSupportedError: Unexpected derivation parameters') }
 	}

@@ -479,6 +479,12 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(import_algorithm_name(algorithm), 'importKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
+    if normalized in ['HKDF', 'PBKDF2'] {
+        mut key := import_kdf_key(normalized, format, material, extractable, normalized_usages)!
+        if normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+        key.set_usages(normalized_usages)
+        return key
+    }
     if normalized in ['ECDSA', 'ECDH'] {
         if algorithm !is EcKeyImportParams { return error('TypeError: namedCurve is required') }
         params := algorithm as EcKeyImportParams
@@ -734,6 +740,16 @@ pub fn (subtle_crypto &SubtleCrypto) derive_bits(params DeriveParams, base_key &
 		EcdhKeyDeriveParams { params.name }
 	}
 	normalized := normalize_an_algorithm(name, 'deriveBits')!
+	if params is HkdfParams {
+		hash := normalize_an_algorithm(params.hash, 'digest')!
+		validate_operation_key(base_key, normalized, .derive_bits)!
+		return hkdf_derive_bits(HkdfParams{ ...params, name: normalized, hash: hash }, base_key, length_bits)
+	}
+	if params is Pbkdf2Params {
+		hash := normalize_an_algorithm(params.hash, 'digest')!
+		validate_operation_key(base_key, normalized, .derive_bits)!
+		return pbkdf2_derive_bits(Pbkdf2Params{ ...params, name: normalized, hash: hash }, base_key, length_bits)
+	}
 	if params is EcdhKeyDeriveParams {
 		validate_operation_key(base_key, normalized, .derive_bits)!
 		if normalized in ['X25519', 'X448'] { return derive_exchange_bits(normalized, EcdhKeyDeriveParams{ ...params, name: normalized }, base_key, length_bits) }
