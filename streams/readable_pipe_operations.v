@@ -144,7 +144,7 @@ fn (mut operation ReadableStreamPipeTo) wait_for_pending_writes_to_complete(step
 	})
 }
 
-fn (mut operation ReadableStreamPipeTo) shutdown_with_action(action ?fn () &VoidPromise, original_error ?string) {
+fn (mut operation ReadableStreamPipeTo) shutdown_with_action(action ?fn () &VoidPromise, original_error ?webidl.Value) {
 	if operation.shutting_down_ { return }
 	operation.shutting_down_ = true
 	on_pending_writes_complete := fn [mut operation, action, original_error] () {
@@ -154,7 +154,7 @@ fn (mut operation ReadableStreamPipeTo) shutdown_with_action(action ?fn () &Void
 				operation.after_promise_reaction(fn [mut operation, original_error] () { operation.finish(original_error) })
 				return webidl.undefined_value()
 			}, fn [mut operation] (reason webidl.Value) !webidl.Value {
-				operation.after_promise_reaction(fn [mut operation, reason] () { operation.finish(callback_reason(reason)) })
+				operation.after_promise_reaction(fn [mut operation, reason] () { operation.finish(reason) })
 				return webidl.undefined_value()
 			})
 		} else {
@@ -169,14 +169,14 @@ fn (mut operation ReadableStreamPipeTo) shutdown_with_action(action ?fn () &Void
 	}
 }
 
-fn (mut operation ReadableStreamPipeTo) finish(reason ?string) {
+fn (mut operation ReadableStreamPipeTo) finish(reason ?webidl.Value) {
 	if operation.finished_ { return }
 	operation.finished_ = true
 	mut source := operation.source_
 	mut destination := operation.destination_
 	unlock_pipe(mut source, mut destination)
 	mut promise := operation.promise_
-	if error_reason := reason { promise.reject(error_reason) } else { promise.resolve() }
+	if error_reason := reason { promise.reject_value(error_reason) } else { promise.resolve() }
 }
 
 fn (mut operation ReadableStreamPipeTo) check_for_error_and_close_states() bool {
@@ -197,22 +197,22 @@ fn (mut operation ReadableStreamPipeTo) check_for_error_and_close_states() bool 
 				}
 				mut result := VoidPromise.pending_in(source.realm_)
 				webidl.wait_for_all(actions, fn [mut result] (_ []webidl.Value) { result.resolve() },
-					fn [mut result] (error webidl.Value) { result.reject(callback_reason(error)) })
+					fn [mut result] (error webidl.Value) { result.reject_value(error) })
 				return result
-			}, reason.description())
+			}, stream_value_to_webidl(reason))
 			return true
 		}
 	}
 	if source.state_ == .errored {
-		reason := source.stored_error_
+		reason := source.stored_error_value()
 		if options.prevent_abort { operation.shutdown_with_action(none, reason) }
-		else { operation.shutdown_with_action(fn [mut destination, reason] () &VoidPromise { return destination.abort_internal(string_value(reason)) }, reason) }
+		else { operation.shutdown_with_action(fn [mut destination, reason] () &VoidPromise { return destination.abort_internal(stream_value_from_webidl(reason)) }, reason) }
 		return true
 	}
 	if destination.state_ == .errored {
-		reason := destination.stored_error_
+		reason := destination.stored_error_value()
 		if options.prevent_cancel { operation.shutdown_with_action(none, reason) }
-		else { operation.shutdown_with_action(fn [mut source, reason] () &VoidPromise { return source.cancel_internal(string_value(reason)) }, reason) }
+		else { operation.shutdown_with_action(fn [mut source, reason] () &VoidPromise { return source.cancel_internal(stream_value_from_webidl(reason)) }, reason) }
 		return true
 	}
 	if source.state_ == .closed {
@@ -224,9 +224,9 @@ fn (mut operation ReadableStreamPipeTo) check_for_error_and_close_states() bool 
 		return true
 	}
 	if writable_stream_close_queued_or_in_flight(destination) || destination.state_ == .closed {
-		reason := 'TypeError: Destination stream was closed during piping operation'
+		reason := webidl.string_value('TypeError: Destination stream was closed during piping operation')
 		if options.prevent_cancel { operation.shutdown_with_action(none, reason) }
-		else { operation.shutdown_with_action(fn [mut source, reason] () &VoidPromise { return source.cancel_internal(string_value(reason)) }, reason) }
+		else { operation.shutdown_with_action(fn [mut source, reason] () &VoidPromise { return source.cancel_internal(stream_value_from_webidl(reason)) }, reason) }
 		return true
 	}
 	return false
