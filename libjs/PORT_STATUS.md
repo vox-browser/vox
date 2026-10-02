@@ -535,7 +535,12 @@ capacity, including values beyond V's signed vector limit, without committing
 the reserved bytes. Detachment frees owned storage; taking a block transfers its
 owner, and external/borrowed blocks leave their owner's storage intact.
 Five focused files pass with default GC and `-gc none`; the actual storage
-regression also passes `-prod -gc none`. VM collection, automatic cell destruction,
+regression also passes `-prod -gc none`. The current 229-file package has passing
+evidence in both GC modes: full sweeps passed 226 and 227 files respectively;
+three default-GC and two GC-disabled compilation failures reported disk-space
+exhaustion, and all affected files passed exact reruns after space became
+available. This is combined sweep/rerun evidence, not a clean single 229-file
+run. The exact upstream AST corpus remains 100/100. VM collection, automatic cell destruction,
 external-memory accounting and cached TypedArray offset invalidation remain
 pending. Source GC::Ref<Cell> is an actual owner pointer at that unfinished cell
 boundary. V's by-value DataBlock accessors provide borrowed aliases; only the

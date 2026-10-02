@@ -257,3 +257,33 @@ typed cross-realm import adapter; full machine linking, active initialization an
 the source JS/GC realm graph remain pending. Current memory identity, import,
 growth and source-validation checks pass in the complete **53/53-file package
 with default GC and 53/53 with `-gc none`**.
+
+## Actual module owner tables and machine tables
+
+`machine_module_instance.v` (`b03dc960`) translates the source ModuleInstance
+constructors, owned vectors, ExportInstance address variants and compiled-entry
+fields. `resolved_memories()` and `resolved_globals()` cache actual Store-owned
+instance pointers in source order; they retain those identities when the Store
+pointer vectors grow. A small V record exposes the actual mutable vector headers
+because V cannot return a pointer to an array header. The compiled-function-table
+population body, source weak/ref-counted module lifetimes and function Store
+family remain pending; the compiled-entry record supplies no execution result.
+
+`machine_table.v` (`e925b6cd`) translates TableInstance and the Store table family.
+Actual reference vectors retain a defining ModuleInstance anchor per element.
+Replacement, clearing, typed-null initialization, the source 1 MiB initial-size
+cap, indexed allocation and growth follow `AbstractMachine.{h,cpp}`. The Store
+owns table values, so callers re-query after its vector grows. Zero growth returns
+before limit checks; successful growth increments the declared minimum and fills
+new references and anchors. V vectors use signed-int lengths: unrepresentable
+requests fail before narrowing, while other V allocation failures still panic
+instead of returning source `try_resize()` failure. The existing WebIDL Table
+facade is not yet connected to these records; its reference conversion and
+synthetic table exports remain open under WA-12.
+
+These additions pass a clean **55/55-file package suite with default GC and
+55/55 with `-gc none`**. The subsequent Table32 binding correction (`17100b35`)
+uses the source unsigned-long EnforceRange operation: primitive ToNumber and
+fraction truncation precede bounds checks, and output conversion casts to u32.
+Its two focused/neighbor files pass in both GC modes. Actual VM ToPrimitive and
+the full-width unsigned i64 BigInt binding remain pending.
