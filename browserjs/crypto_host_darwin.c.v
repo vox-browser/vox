@@ -58,6 +58,7 @@ pub fn (mut host CryptoHost) install(mut runtime Runtime) ! {
 		host.install_signature_operations()!
 		host.install_derivation_operations()!
 		host.install_wrapping_operations()!
+		host.install_kem_operations()!
 	}
 	crypto_bindings_[owner] = &host
 	runtime.add_close_handler(fn [handle, owner] () {
