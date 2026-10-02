@@ -13,7 +13,7 @@ import V's standard `crypto.*` primitives without shadowing that namespace.
 | Upstream implementation unit | V implementation |
 | --- | --- |
 | `Crypto.cpp` | `crypto.v` |
-| `CryptoAlgorithms.cpp` | `crypto_algorithms.v`, `hmac.v`, `kdf.v`, `argon2.v`, `native_kdf.c.v`, `native_kdf.h`, `aes_ocb.v`, `cshake.v`, `kmac.v`, `native_crypto.c.v`, `native_crypto.h`, `exchange_curves.v`, `ed448.v`, `native_edwards.c.v`, `native_edwards.h`, `mldsa.v`, `mlkem.v`, `native_ml.c.v`, `native_ml.h`, `rsa.v`, `rsa_key_formats.v`, `native_rsa.c.v`, `native_rsa.h`, `ec.v`, `ec_key_formats.v`, `native_ec.c.v`, `native_ec.h`, `okp_der.v` |
+| `CryptoAlgorithms.cpp` | `crypto_algorithms.v`, `hmac.v`, `kdf.v`, `argon2.v`, `native_kdf.c.v`, `native_kdf.h`, `aes_ocb.v`, `cshake.v`, `kmac.v`, `native_crypto.c.v`, `native_crypto.h`, `exchange_curves.v`, `ed25519.v`, `ed448.v`, `native_edwards.c.v`, `native_edwards.h`, `mldsa.v`, `mlkem.v`, `native_ml.c.v`, `native_ml.h`, `rsa.v`, `rsa_key_formats.v`, `native_rsa.c.v`, `native_rsa.h`, `ec.v`, `ec_key_formats.v`, `native_ec.c.v`, `native_ec.h`, `okp_der.v` |
 | `CryptoBindings.cpp` | `crypto_bindings.v` |
 | `CryptoKey.cpp` | `crypto_key.v`, `crypto_key_objects.v`, `crypto_key_serialization.v` |
 | `KeyAlgorithms.cpp` | `key_algorithms.v` |
@@ -128,7 +128,23 @@ Tests cover upstream SHA-1/SHA-256/SHA-512 MAC vectors, exact-block input,
 truncated signatures, source metadata and JWK rules, and deferred copied imports
 and signatures.
 
-Further source review remains for the earlier symmetric and Ed25519
+Ed25519 now uses upstream's EdwardsCurve EVP generation/signing/verification,
+32-byte typed private seed handles, SPKI/PKCS8/raw/raw-public/JWK bodies, and the
+exact twelve-entry source small-order blacklist for both the public key and R.
+Tests include all five upstream RFC8032 fixtures (including the 1023-byte
+message), the WPT DER/signature fixture, fourteen small/mixed-order WPT cases,
+metadata/validation order, malformed DER scopes, source native failures,
+structured serialization, and deferred copied DER/messages and wrapping.
+The old V compiler's first-branch result hoisting is avoided through explicit
+conditional returns in typed generation dispatch.
+
+Existing typed V raw-seed/64-byte raw-private convenience formats remain as
+explicit compatibility extensions; their handles now store the source seed
+and expanded export derives the public half natively. These formats are absent
+from the pinned ED25519 AlgorithmMethods and are rejected by asynchronous
+import/export/wrap bindings. No browser/VM Promise parity is implied.
+
+Further source review remains for the earlier AES and ChaCha20-Poly1305
 implementations. Backend availability alone does not establish parity for these
 bodies.
 
@@ -151,7 +167,7 @@ remain available below the binding.
 
 ## Verification
 
-The 28 WebCrypto test files and all six WebIDL test files passed using direct
+The 29 WebCrypto test files and all six WebIDL test files passed using direct
 `v -old-compiler -enable-globals -path 'WORKTREE|@vlib|@vmodules' FILE_test.v`
 invocations. The focused HTML Crypto, environments, and global-scope tests also
 passed. These checks cover copied views/parameters/usages, immediate versus
