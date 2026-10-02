@@ -84,3 +84,24 @@ fn test_document_font_file_transport_remains_deferred_and_uses_fetch_body_sniffi
 	assert promise.state == webidl.PromiseState.fulfilled
 	assert face.status() == .loaded
 }
+
+fn test_unavailable_native_font_transport_reports_failure_instead_of_reading_standalone_file() {
+	$if !darwin { return }
+	_, mut owner, mut computer, mut set :=
+		native_font_document('file:///System/Library/Fonts/Supplemental/fixture.html')
+	mut transport := NativeFontFetchTransport.create()!
+	transport.close()
+	computer.set_fetch_host(transport.fetch_host())
+	mut face := css.FontFaceObject.construct_impl('Unavailable native font',
+		css.FontFaceSource.from_string('url("Arial.ttf")'), css.FontFaceDescriptors{})
+	set.add(face)!
+	promise := face.load()
+	assert face.status() == .loading
+	deadline := time.sys_mono_now() + 4 * time.second
+	owner.spin_until(fn [promise, deadline] () bool {
+		return promise.state != .pending || time.sys_mono_now() >= deadline
+	})
+	assert promise.state == .rejected
+	assert face.status() == .error
+	assert face.parsed_font == unsafe { nil }
+}

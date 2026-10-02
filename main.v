@@ -5730,7 +5730,10 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 fn main() {
 	main_started := time.sys_mono_now()
 	link_translated_modules()
-	requestserver.install_native_font_fetch_host() or {}
+	requestserver.install_native_font_fetch_host() or {
+		eprintln('Ladybird V: failed to initialize the font RequestServer transport: ${err.msg()}')
+		exit(1)
+	}
 	defer { requestserver.close_native_font_fetch_host() }
 	xpath.install_dom_xpath_bridge()
 	options := parse_launch_options(os.args[1..]) or {
