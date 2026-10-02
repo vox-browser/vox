@@ -189,9 +189,16 @@ fn page_model_for_download(model &NavigableModel) ?&page.Page {
 }
 
 fn (mut model NavigableModel) start_download_for_response(response &fetch.Response,
-	download_url dom.URL, suggested_filename string) {
+	download_url dom.URL, suggested_filename string, controller ?&fetch.FetchController) {
 	mut internal_response := unsafe { &fetch.Response(response.unsafe_response()) }
 	mut body := internal_response.body or { return }
+	window := model.active_window() or {
+		internal_response.release_request_transfer_lease()
+		return
+	}
+	settings := window.environment_settings_.settings
+	owner := settings.responsible_event_loop()
+	document := window.associated_document()
 	page_model := page_model_for_download(&model) or {
 		internal_response.release_request_transfer_lease()
 		return
@@ -202,36 +209,39 @@ fn (mut model NavigableModel) start_download_for_response(response &fetch.Respon
 		suggested_filename: suggested_filename
 		total_size:         response_content_length(internal_response.header_list)
 	}) or {
+		if mut actual_controller := controller { actual_controller.stop_fetch() }
 		return
 	}
-	client.page_did_register_download_controller(download_id)
-	reader := body.incrementally_read(fn [client, download_id] (data []u8) {
-		if client.page_is_download_canceled(download_id) {
-			return
-		}
-		mut mutable_client := unsafe { &page.PageClient(client) }
-		mutable_client.page_did_receive_download_data(download_id, data)
-	}, fn [client, download_id] () {
-		if client.page_is_download_canceled(download_id) {
-			return
-		}
-		mut mutable_client := unsafe { &page.PageClient(client) }
-		mutable_client.page_did_finish_download(download_id)
-	}, fn [client, download_id] (message string) {
-		if client.page_is_download_canceled(download_id) {
-			return
-		}
-		mut mutable_client := unsafe { &page.PageClient(client) }
-		mutable_client.page_did_fail_download(download_id, message)
+	if actual_controller := controller {
+		client.page_did_register_download_controller(download_id, actual_controller)
+	}
+	reader := body.incrementally_read(fn [client, download_id, owner, document] (data []u8) {
+		queue_a_task(.networking, owner, document, fn [client, download_id, data] () {
+			if client.page_is_download_canceled(download_id) { return }
+			mut mutable_client := unsafe { &page.PageClient(client) }
+			mutable_client.page_did_receive_download_data(download_id, data)
+		})
+	}, fn [client, download_id, owner, document] () {
+		queue_a_task(.networking, owner, document, fn [client, download_id] () {
+			if client.page_is_download_canceled(download_id) { return }
+			mut mutable_client := unsafe { &page.PageClient(client) }
+			mutable_client.page_did_finish_download(download_id)
+		})
+	}, fn [client, download_id, owner, document] (_ string) {
+		queue_a_task(.networking, owner, document, fn [client, download_id] () {
+			if client.page_is_download_canceled(download_id) { return }
+			mut mutable_client := unsafe { &page.PageClient(client) }
+			mutable_client.page_did_fail_download(download_id, 'Unable to read downloaded file')
+		})
 	})
-	_ = reader
-	client.page_did_register_download_reader(download_id)
+	client.page_did_register_download_reader(download_id, reader)
 	internal_response.resume_body_delivery()
 }
 
 // https://html.spec.whatwg.org/multipage/links.html#handle-as-a-download
 fn (mut model NavigableModel) handle_as_a_download(response &fetch.Response,
-	fallback_url dom.URL, proposed_filename ?string, interface_origin ?dom.Origin) {
+	fallback_url dom.URL, controller ?&fetch.FetchController,
+	proposed_filename ?string, interface_origin ?dom.Origin) {
 	internal_response := response.unsafe_response()
 	if internal_response.body == none {
 		return
@@ -239,7 +249,7 @@ fn (mut model NavigableModel) handle_as_a_download(response &fetch.Response,
 	download_url := internal_response.url() or { fallback_url }
 	suggested_filename := suggested_download_filename(download_url, internal_response.header_list,
 		proposed_filename, interface_origin)
-	model.start_download_for_response(internal_response, download_url, suggested_filename)
+	model.start_download_for_response(internal_response, download_url, suggested_filename, controller)
 }
 
 // Navigation responses use the same download pipeline as explicit hyperlink
@@ -300,17 +310,17 @@ fn (mut model NavigableModel) handle_navigation_response_as_download(
 		return true
 	}
 
-	model.handle_as_a_download(response, download_url, none, interface_origin)
+	model.handle_as_a_download(response, download_url, navigation_params.fetch_controller, none, interface_origin)
 	return true
 }
 
 fn process_hyperlink_download_response(model &NavigableModel, response &fetch.Response,
-	fallback_url dom.URL, proposed_filename ?string, interface_origin dom.Origin) {
+	fallback_url dom.URL, controller ?&fetch.FetchController, proposed_filename ?string, interface_origin dom.Origin) {
 	if response.is_network_error() {
 		return
 	}
 	mut mutable_model := unsafe { &NavigableModel(model) }
-	mutable_model.handle_as_a_download(response, fallback_url, proposed_filename, interface_origin)
+	mutable_model.handle_as_a_download(response, fallback_url, controller, proposed_filename, interface_origin)
 }
 
 // https://html.spec.whatwg.org/multipage/links.html#downloading-hyperlinks
@@ -346,12 +356,13 @@ fn (mut model NavigableModel) download_the_hyperlink(url dom.URL,
 	}
 	request.initiator = .download
 	request.use_url_credentials = true
+	mut controller_holder := fetch.FetchControllerHolder.create()
 	algorithms := fetch.FetchAlgorithms.create(fetch.FetchAlgorithmsInput{
-		process_response: fn [model, url, proposed_filename, interface_origin] (response &fetch.Response) {
-			process_hyperlink_download_response(model, response, url, proposed_filename, interface_origin)
+		process_response: fn [model, url, controller_holder, proposed_filename, interface_origin] (response &fetch.Response) {
+			process_hyperlink_download_response(model, response, url, controller_holder.controller(), proposed_filename, interface_origin)
 		}
 	})
-	_ = fetch.fetch(request, algorithms, &fetch.FetchHost{
+	controller_holder.set_controller(fetch.fetch(request, algorithms, &fetch.FetchHost{
 		perform: fetch_hook
-	}, .no)
+	}, .no))
 }

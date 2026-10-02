@@ -7,6 +7,8 @@
 module page
 
 import compositor
+import fetch
+import streams
 
 pub struct NewWebViewResult {
 pub:
@@ -49,6 +51,9 @@ pub mut:
 	last_rendering_frame_time_ns_      i64
 	last_rendering_frame_interval_ms_  f64
 	downloads_                         map[u64]DownloadState
+	download_controllers_              map[u64]&fetch.FetchController
+	download_readers_                  map[u64]&streams.ReadableStreamDefaultReader
+	canceled_downloads_                map[u64]bool
 	next_download_id_                  u64 = 1
 	external_url_requests_             []ExternalURLRequest
 	request_server_connection_lost_    bool

@@ -1,10 +1,12 @@
 // Copyright (c) 2026, Ladybird contributors
 // SPDX-License-Identifier: BSD-2-Clause
 
-// PageClient's download hand-off boundary. Fetch controllers and stream
-// readers remain host-owned; their registrations and cancellation lifetime
-// are retained here alongside the byte stream.
+// Services/WebContent/PageClient.cpp's live download controller/reader
+// registrations. DownloadState retains the embedder's observable archive.
 module page
+
+import fetch
+import streams
 
 pub enum DownloadStatus {
 	in_progress
@@ -66,6 +68,7 @@ pub fn (mut client PageClient) page_did_receive_download_data(download_id u64, d
 }
 
 pub fn (mut client PageClient) page_did_finish_download(download_id u64) {
+	client.page_did_unregister_download(download_id)
 	mut download := client.downloads_[download_id] or { return }
 	if download.status != .in_progress {
 		return
@@ -76,6 +79,7 @@ pub fn (mut client PageClient) page_did_finish_download(download_id u64) {
 }
 
 pub fn (mut client PageClient) page_did_fail_download(download_id u64, error_message string) {
+	client.page_did_unregister_download(download_id)
 	mut download := client.downloads_[download_id] or { return }
 	if download.status != .in_progress {
 		return
@@ -86,14 +90,16 @@ pub fn (mut client PageClient) page_did_fail_download(download_id u64, error_mes
 	client.record('fail-download', '${download_id}:${error_message}')
 }
 
-pub fn (mut client PageClient) page_did_register_download_controller(download_id u64) {
+pub fn (mut client PageClient) page_did_register_download_controller(download_id u64, controller &fetch.FetchController) {
+	client.download_controllers_[download_id] = controller
 	mut download := client.downloads_[download_id] or { return }
 	download.controller_registered = true
 	client.downloads_[download_id] = download
 	client.record('register-download-controller', download_id.str())
 }
 
-pub fn (mut client PageClient) page_did_register_download_reader(download_id u64) {
+pub fn (mut client PageClient) page_did_register_download_reader(download_id u64, reader &streams.ReadableStreamDefaultReader) {
+	client.download_readers_[download_id] = reader
 	mut download := client.downloads_[download_id] or { return }
 	download.reader_registered = true
 	client.downloads_[download_id] = download
@@ -101,15 +107,30 @@ pub fn (mut client PageClient) page_did_register_download_reader(download_id u64
 }
 
 pub fn (mut client PageClient) cancel_download(download_id u64) {
-	mut download := client.downloads_[download_id] or { return }
-	download.canceled = true
-	client.downloads_[download_id] = download
+	controller := client.download_controllers_[download_id] or { unsafe { &fetch.FetchController(nil) } }
+	reader := client.download_readers_[download_id] or { unsafe { &streams.ReadableStreamDefaultReader(nil) } }
+	client.download_controllers_.delete(download_id)
+	client.download_readers_.delete(download_id)
+	if controller == unsafe { nil } && reader == unsafe { nil } { return }
+	client.canceled_downloads_[download_id] = true
+	if download_id in client.downloads_ {
+		mut download := client.downloads_[download_id]
+		download.canceled = true
+		client.downloads_[download_id] = download
+	}
+	if controller != unsafe { nil } {
+		mut actual_controller := unsafe { &fetch.FetchController(controller) }
+		actual_controller.stop_fetch()
+	}
+	if reader != unsafe { nil } {
+		mut actual_reader := unsafe { &streams.ReadableStreamDefaultReader(reader) }
+		fetch.cancel_incremental_read(mut actual_reader)
+	}
 	client.record('cancel-download', download_id.str())
 }
 
 pub fn (client &PageClient) page_is_download_canceled(download_id u64) bool {
-	download := client.downloads_[download_id] or { return false }
-	return download.canceled
+	return download_id in client.canceled_downloads_
 }
 
 pub fn (client &PageClient) download(download_id u64) ?DownloadState {
@@ -118,9 +139,8 @@ pub fn (client &PageClient) download(download_id u64) ?DownloadState {
 }
 
 pub fn (mut client PageClient) page_did_unregister_download(download_id u64) {
-	if download_id !in client.downloads_ {
-		return
-	}
-	client.downloads_.delete(download_id)
+	client.download_controllers_.delete(download_id)
+	client.download_readers_.delete(download_id)
+	client.canceled_downloads_.delete(download_id)
 	client.record('unregister-download', download_id.str())
 }

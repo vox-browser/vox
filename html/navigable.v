@@ -79,6 +79,7 @@ pub:
 	navigable              &NavigableModel
 	request                ?&fetch.Request
 	response               &fetch.Response
+	fetch_controller       ?&fetch.FetchController
 	origin                 dom.Origin
 	policy_container       &PolicyContainer
 	final_sandboxing_flags SandboxingFlagSet

@@ -5,12 +5,33 @@ import dom
 import fetch
 import http
 import page
+import streams
 
 __global (
 	hyperlink_download_requests = []&fetch.Request{}
 	navigation_download_transfer_releases = 0
 	navigation_download_transfer_resumes  = 0
+	hyperlink_download_producer &streams.ReadableStream
 )
+
+fn streaming_hyperlink_download_fetch(request &fetch.Request) !&fetch.Response {
+	mut response := fetch.Response.create()
+	response.url_list = request.url_list.clone()
+	body := fetch.Body.streaming()
+	hyperlink_download_producer = body.stream()
+	response.body = body
+	return response
+}
+
+fn drain_download_owner(document &dom.Document) {
+	settings := unsafe { &EnvironmentSettingsObject(document.relevant_settings_object()) }
+	mut queue := settings.responsible_event_loop().task_queue()
+	for i := 0; i < 100; i++ {
+		mut task := queue.take_first_runnable() or { return }
+		task.execute()
+	}
+	panic('download queue did not settle')
+}
 
 fn hyperlink_download_fetch(request &fetch.Request) !&fetch.Response {
 	hyperlink_download_requests << request
@@ -128,6 +149,9 @@ fn test_download_hyperlink_fetches_and_streams_the_response_to_the_page_client()
 	mut owner := settings.responsible_event_loop()
 	assert owner.task_queue().last_added_task()?.source() == .networking
 	owner.process()
+	assert page_model.client().download(1)?.data.len == 0
+	assert page_model.client().download(1)?.status == .in_progress
+	drain_download_owner(document)
 	download := page_model.client().download(1) or { panic('missing download') }
 	assert download.request.url == 'https://example.test/files/report.txt'
 	assert download.request.suggested_filename == 'server report.txt'
@@ -136,6 +160,32 @@ fn test_download_hyperlink_fetches_and_streams_the_response_to_the_page_client()
 	assert download.status == .finished
 	assert download.controller_registered
 	assert download.reader_registered
+}
+
+fn test_canceling_a_streamed_hyperlink_stops_its_actual_fetch_and_reader() {
+	mut document, _, model_pointer, page_model := download_test_page()!
+	mut model := unsafe { &NavigableModel(model_pointer) }
+	model.set_navigation_fetch_hook(streaming_hyperlink_download_fetch)
+	anchor := append_download_anchor(mut document, '/streamed-download', 'streamed.txt')!
+	html_element_click(unsafe { &dom.HTMLElement(anchor) })
+	drain_download_owner(document)
+	mut client := page_model.client()
+	controller := client.download_controllers_[1] or { panic('no actual download controller') }
+	reader := client.download_readers_[1] or { panic('no actual download reader') }
+	assert controller.state() == .ongoing
+	mut producer := hyperlink_download_producer
+	producer.enqueue(streams.bytes_value('queued bytes'.bytes()))!
+	assert client.download(1)?.data.len == 0
+	client.cancel_download(1)
+	assert client.page_is_download_canceled(1)
+	assert controller.state() == .stopped
+	assert reader.closed().state() == .fulfilled
+	assert producer.state() == .closed
+	assert 1 !in client.download_controllers_
+	assert 1 !in client.download_readers_
+	drain_download_owner(document)
+	assert client.download(1)?.data.len == 0
+	assert client.download(1)?.status == .in_progress
 }
 
 fn test_download_navigate_event_cancellation_and_sandboxing_stop_the_fetch() {
@@ -176,6 +226,7 @@ fn test_attachment_navigation_downloads_without_committing_a_document() {
 	assert model.get_session_history_entries().len == 1
 	assert model.ongoing_navigation().kind == .empty
 	assert hyperlink_download_requests.len == 1
+	drain_download_owner(document)
 	download := page_model.client().download(1) or { panic('missing navigation download') }
 	assert download.request.url == 'https://example.test/files/navigation.txt'
 	assert download.request.suggested_filename == 'server report.txt'
