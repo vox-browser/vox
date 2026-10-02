@@ -81,11 +81,34 @@ finalization and full GC edge tracing/reclamation are not implemented. A closed
 runtime rejects new conversions and queued completion jobs avoid the released
 engine context.
 
+## Native compact ReadableStream binding
+
+`browserjs/readable_stream_host{,_darwin.c}.v` and the native browser now expose
+the source constructor, `locked`, `cancel`, default `getReader`, the default
+reader constructor and `closed/read/cancel/releaseLock`, plus default controller
+operations. Actual JSC platform objects carry owning native record pointers;
+interface brand checks do not rely on author-controlled prototypes. Dictionary
+getters and scalar callback conversions execute the actual engine. Source
+callbacks prepare the relevant realm and stored incumbent callback context,
+then clean up the callback before script cleanup. Read result dictionaries
+contain the original engine chunk and wrap the same native Promise capability.
+
+Browser attachment follows `Bindings/MainThreadVM.cpp` realm initialization
+ownership: the actual initialization context is popped into settings ownership,
+and script setup/cleanup pushes/pops that same record. Author frames are popped
+before cleanup drains the owning HTML microtasks. Nested realms, reentrant jobs,
+and actual outer VM contexts retain the source ordering. The compact host has
+one translated embedding VM per Runtime; shared loops register each actual VM
+without replacing their primary source VM. Checkpoints wait for all attached
+outer contexts and advance each distinct VM's execution generation once.
+This remains a compact JSC embedding boundary, not a shared complete LibJS agent.
+
 The following boundaries are still open and are not counted as full parity:
 
-- The compact browser's JSC globals do not expose owning native
-  `ReadableStream`, `WritableStream`, or `TransformStream` factories through
-  this slice. Actual callback/Promise wrapping is available to their bindings.
+- `WritableStream` and `TransformStream` JSC factories remain unbound. The
+  readable binding does not expose public pipe/tee/from/iterator operations,
+  BYOB reader constructors/read operations, byte-controller enqueue/BYOBRequest,
+  subclass constructor prototype selection, or full generated wrapper worlds.
 - Generic JavaScript iterator acquisition and structured cloning of opaque
   chunks (including a public tee's cloning branch) remain unbound. Typed byte
   conversion does not provide JSC BYOB ArrayBuffer transfer/detachment or shared
@@ -94,9 +117,9 @@ The following boundaries are still open and are not counted as full parity:
 - Writable controllers still select the reduced `streams.AbortSignal` record;
   the upstream `DOM::AbortSignal` event target, abort event, and undefined-reason
   `AbortError` path require the actual DOM signal bridge.
-- Controller platform values retain native identity, but generated JS
-  prototypes/wrapper worlds, GC tracing and wrapper lifetime ownership still
-  require bindings integration. The native tests do not claim those layers.
+- Native readable wrappers/prototypes retain actual model identity. Source GC
+  tracing and wrapper reclamation still require integration; native wrappers,
+  callback records, chunks and settled Promise roots live until Runtime.close.
 - The HTML compact realm captures classic scripts. Full LibJS module
   script-or-module execution-context capture and VM Promise builtins remain
   part of the existing LibJS runtime work. No builtin engine parity is claimed.
@@ -130,4 +153,11 @@ browserjs/webidl_binding_test.v + host_value_function_test.v: 2/2 passed;
 browserjs/transform_rejection_values_test.v + streams compression encoding:
   29/29 passed, including four actual-engine transform reason cases.
 tools/native_js_values_smoke.v: ordinary -prod executable passed.
+html/script_cleanup_checkpoint_test.v + browserjs/script_environment_binding_test.v:
+  actual realm/script frame ordering, nested cleanup, reentrancy, shared-loop
+  outer contexts, per-Runtime detach, and once-per-VM generations passed.
+browserjs/readable_stream_host_test.v: three actual native default-reader,
+  pending callback, dictionary/size conversion, original reason and brand cases.
+main_test.v, focused native readable startup: source read reached actual DOM
+  replay and readiness ordering; passed.
 ```

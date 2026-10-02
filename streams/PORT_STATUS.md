@@ -110,8 +110,11 @@ carries real owning JSC value references through its WebIDL/Streams boundary;
 actual cyclic object/function/symbol chunks and readable/writable/transform
 rejection values preserve identity. Wrapper worlds, GC tracing/reclamation,
 JavaScript iterator acquisition, opaque structured cloning, JSC BYOB view
-transfer/detachment, actual DOM AbortSignal ownership, and the compact browser's
-Stream factories remain open runtime boundaries.
+transfer/detachment, actual DOM AbortSignal ownership, and compact writable and
+transform factories remain open runtime boundaries. The native browser exposes
+an owning-record default-readable constructor/reader/controller subset; public
+pipe/tee/from/iterator, byte enqueue, BYOB JS operations and complete generated
+constructor/wrapper behavior remain unbound.
 
 Underlying source, sink, and transformer dictionaries now retain native
 WebIDL `CallbackType` values, the actual receiver, and the actual controller
@@ -131,7 +134,11 @@ keep the explicit direct job adapter. This adapter is not a browser Promise
 job queue. The compact JSC prerequisite now adopts real callback Promises and
 thenables using actual engine Resolve; one native capability wraps into one
 stable real JSC Promise. Settled bridges release resolver roots, but retain
-their Promise root and bridge record until Runtime.close. Module execution-
+their Promise root and bridge record until Runtime.close. Browser script cleanup
+drains the actual owning loop after popping author/realm VM contexts. Shared
+loops track all actual per-Runtime embedding VMs without replacing the primary
+source VM; this does not establish a shared complete LibJS browser agent.
+Module execution-
 context capture, complete generated Stream bindings, pipe/tee arbitrary reason
 values, and source host-object GC reclamation remain open. See
 [`STREAMS_PENDING_CALLBACKS.md`](../docs/translation-audit/STREAMS_PENDING_CALLBACKS.md).
