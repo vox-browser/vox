@@ -117,6 +117,7 @@ pub fn (controller &ReadableStreamDefaultController) strategy_size_algorithm() S
 
 pub fn (mut controller ReadableStreamDefaultController) set_strategy_size_algorithm(value SizeAlgorithm) {
 	controller.stream_.size_algorithm_ = value
+	controller.stream_.size_value_algorithm_ = none
 }
 
 pub fn (controller &ReadableStreamDefaultController) stream() &ReadableStream {
@@ -273,6 +274,7 @@ pub fn readable_stream_default_controller_clear_algorithms(mut controller Readab
 	controller.stream_.promise_pull_algorithm_ = none
 	controller.stream_.promise_cancel_algorithm_ = none
 	controller.stream_.size_algorithm_ = default_size_algorithm
+	controller.stream_.size_value_algorithm_ = none
 }
 
 pub fn readable_stream_default_controller_close(mut controller ReadableStreamDefaultController) {
@@ -300,11 +302,11 @@ pub fn readable_stream_default_controller_enqueue(mut controller ReadableStreamD
 	if stream.locked() && readable_stream_get_num_read_requests(stream) > 0 {
 		readable_stream_fulfill_read_request(mut stream, chunk, false)
 	} else {
-		chunk_size := stream.size_algorithm_(chunk) or {
+		chunk_size := invoke_size_value_algorithm(stream.size_algorithm_, stream.size_value_algorithm_, chunk) or {
 			readable_stream_default_controller_error(mut controller, stream_value_from_webidl(webidl.exception_value(err)))
 			return err
 		}
-		stream.queue_.enqueue_value_with_size(chunk, chunk_size) or {
+		stream.queue_.enqueue_value_with_size_value(chunk, chunk_size) or {
 			readable_stream_default_controller_error(mut controller, stream_value_from_webidl(webidl.exception_value(err)))
 			return err
 		}

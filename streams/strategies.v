@@ -7,11 +7,13 @@
 module streams
 
 import math
+import webidl
 
 pub struct QueuingStrategy {
 pub:
 	high_water_mark ?f64
 	size            ?SizeAlgorithm
+	size_value      ?ValueSizeAlgorithm
 }
 
 pub struct QueuingStrategyInit {
@@ -35,6 +37,11 @@ pub fn extract_size_algorithm(strategy QueuingStrategy) SizeAlgorithm {
 // The typed V boundary preserves the same abrupt-completion result.
 pub fn invoke_queuing_strategy_size_callback(callback SizeAlgorithm, chunk Value) !f64 {
 	return callback(chunk)
+}
+
+fn invoke_size_value_algorithm(scalar SizeAlgorithm, actual ?ValueSizeAlgorithm, chunk Value) !webidl.Value {
+	if callback := actual { return callback(chunk) }
+	return webidl.number_value(scalar(chunk)!)
 }
 
 pub struct ByteLengthQueuingStrategy {

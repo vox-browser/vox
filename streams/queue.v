@@ -7,6 +7,7 @@
 module streams
 
 import math
+import webidl
 
 pub struct ValueWithSize {
 // JS::js_special_empty_value() is a private entry tag, never a caller Value.
@@ -115,6 +116,13 @@ pub fn (mut queue QueueWithSizes) enqueue_value_with_size(value Value, size f64)
 		size: size
 	})
 	queue.total_size_ += size
+}
+
+// AbstractOperations.h receives JS::Value and checks its genuine number brand
+// before reading the double. It does not perform ToNumber on a callback result.
+pub fn (mut queue QueueWithSizes) enqueue_value_with_size_value(value Value, size webidl.Value) ! {
+	number := size.number_primitive() or { return error('RangeError: Chunk size must be a non-negative number') }
+	queue.enqueue_value_with_size(value, number)!
 }
 
 // Streams/WritableStreamOperations.cpp:create_close_sentinel. The sentinel

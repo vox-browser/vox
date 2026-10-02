@@ -628,6 +628,10 @@ pub type PullAlgorithm = fn () !
 
 pub type SizeAlgorithm = fn (Value) !f64
 
+// Source SizeAlgorithm returns JS::Value; legacy native scalar callers retain
+// SizeAlgorithm while actual engine callbacks use this completion boundary.
+pub type ValueSizeAlgorithm = fn (Value) !webidl.Value
+
 pub type StartAlgorithm = fn () !
 
 pub type TransformAlgorithm = fn (Value) ![]Value

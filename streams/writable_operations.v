@@ -162,6 +162,7 @@ pub fn (controller &WritableStreamDefaultController) strategy_size_algorithm() S
 
 pub fn (mut controller WritableStreamDefaultController) set_strategy_size_algorithm(value SizeAlgorithm) {
 	controller.stream_.size_algorithm_ = value
+	controller.stream_.size_value_algorithm_ = none
 }
 
 pub fn (controller &WritableStreamDefaultController) stream() &WritableStream {
@@ -490,6 +491,7 @@ pub fn writable_stream_default_controller_clear_algorithms(mut controller Writab
 	controller.stream_.promise_close_algorithm_ = none
 	controller.stream_.promise_abort_algorithm_ = none
 	controller.stream_.size_algorithm_ = default_size_algorithm
+	controller.stream_.size_value_algorithm_ = none
 }
 
 pub fn writable_stream_default_controller_close(mut controller WritableStreamDefaultController) {
@@ -516,9 +518,14 @@ pub fn writable_stream_default_controller_get_backpressure(controller &WritableS
 }
 
 pub fn writable_stream_default_controller_get_chunk_size(mut controller WritableStreamDefaultController, chunk Value) !f64 {
-	return controller.stream_.size_algorithm_(chunk) or {
+	actual := writable_stream_default_controller_get_chunk_size_value(mut controller, chunk)!
+	return actual.number_primitive() or { return error('RangeError: Chunk size must be a non-negative number') }
+}
+
+pub fn writable_stream_default_controller_get_chunk_size_value(mut controller WritableStreamDefaultController, chunk Value) !webidl.Value {
+	return invoke_size_value_algorithm(controller.stream_.size_algorithm_, controller.stream_.size_value_algorithm_, chunk) or {
 		writable_stream_default_controller_error_if_needed(mut controller, stream_value_from_webidl(webidl.exception_value(err)))
-		return 1
+		return webidl.number_value(1)
 	}
 }
 
@@ -577,7 +584,11 @@ pub fn writable_stream_default_controller_process_write(mut controller WritableS
 }
 
 pub fn writable_stream_default_controller_write(mut controller WritableStreamDefaultController, chunk Value, chunk_size f64) ! {
-	controller.stream_.queue_.enqueue_value_with_size(chunk, chunk_size) or {
+	writable_stream_default_controller_write_value(mut controller, chunk, webidl.number_value(chunk_size))!
+}
+
+pub fn writable_stream_default_controller_write_value(mut controller WritableStreamDefaultController, chunk Value, chunk_size webidl.Value) ! {
+	controller.stream_.queue_.enqueue_value_with_size_value(chunk, chunk_size) or {
 		writable_stream_default_controller_error_if_needed(mut controller, stream_value_from_webidl(webidl.exception_value(err)))
 		return err
 	}

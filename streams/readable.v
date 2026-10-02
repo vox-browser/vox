@@ -79,6 +79,7 @@ mut:
 	queue_                    QueueWithSizes
 	high_water_mark_          f64
 	size_algorithm_           SizeAlgorithm = default_size_algorithm
+	size_value_algorithm_     ?ValueSizeAlgorithm
 	pull_algorithm_           ?PullAlgorithm
 	cancel_algorithm_         ?CancelAlgorithm
 	promise_pull_algorithm_   ?PromisePullAlgorithm
@@ -132,13 +133,14 @@ pub fn ReadableStream.create_for_constructor(realm StreamRealm, source Underlyin
 }
 
 pub fn ReadableStream.create(realm StreamRealm, source UnderlyingSource, strategy QueuingStrategy) !&ReadableStream {
-	if source.type_ == .bytes && strategy.size != none {
+	if source.type_ == .bytes && (strategy.size != none || strategy.size_value != none) {
 		return error('RangeError: A byte stream cannot have a size function')
 	}
 	default_hwm := if source.type_ == .bytes { 0.0 } else { 1.0 }
 	high_water_mark := extract_high_water_mark(strategy, default_hwm)!
 	mut stream := &ReadableStream{
 		realm_: realm
+		size_value_algorithm_: strategy.size_value
 	}
 	initialize_readable_stream(mut stream)
 	if source.type_ == .bytes {
