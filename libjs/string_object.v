@@ -12,7 +12,7 @@ pub:
 
 pub fn StringObject.create(realm &Realm, value &PrimitiveString, prototype &Object) &StringObject {
 	mut object := Object.create(realm, prototype)
-	object.class_name = 'String'
+	object.class_name = 'StringObject'
 	text := &StringObject{
 		object: object
 		value: value

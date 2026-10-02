@@ -12,7 +12,8 @@ fn test_string_exotic_properties_preserve_individual_utf16_units_and_fixed_lengt
 	mut object := text.object
 	assert voidptr(text.value) == voidptr(value)
 	assert voidptr(object.prototype?) == voidptr(prototype)
-	assert object.class_name == 'String'
+	assert object.class_name == 'StringObject'
+	assert Value.from_object(object).str() == '[object StringObject]'
 	assert object.properties.len == 1
 	length := object.internal_get_own_property(PropertyName.from_str('length'))?
 	assert length.value?.number == 5
