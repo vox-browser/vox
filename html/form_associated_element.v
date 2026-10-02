@@ -310,7 +310,43 @@ pub fn (mut control FormAssociatedElement) reset_form_owner() {
 }
 
 pub fn (mut control FormAssociatedElement) reset_algorithm() {
-	control.value_ = control.element.get_attribute('value') or { '' }
+	if value := reset_form_associated_dom_element(control.element) {
+		control.value_ = value
+	}
+}
+
+fn reset_form_associated_dom_element(element &dom.Element) ?string {
+	// The upstream call is virtual. Recover the concrete, cached control
+	// model from its DOM identity rather than resetting only this base record.
+	match element.local_name() {
+		'input' {
+			mut model := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+			model.reset_algorithm()
+			return model.value()
+		}
+		'textarea' {
+			mut model := HTMLTextAreaElementModel.create(unsafe { &dom.HTMLTextAreaElement(element) })
+			model.reset_algorithm()
+			return model.value()
+		}
+		'select' {
+			mut model := HTMLSelectElementModel.create(unsafe { &dom.HTMLSelectElement(element) })
+			model.reset_algorithm()
+			return html_select_element_value(model.element)
+		}
+		'output' {
+			mut model := HTMLOutputElementModel.create(unsafe { &dom.HTMLOutputElement(element) })
+			model.reset_algorithm()
+			return model.value()
+		}
+		else {
+			if element.is_form_associated_custom_element() {
+				mut mutable_element := unsafe { &dom.Element(element) }
+				mutable_element.enqueue_a_custom_element_callback_reaction('formResetCallback', [])
+			}
+		}
+	}
+	return none
 }
 
 pub fn (mut control FormAssociatedElement) clear_algorithm() {

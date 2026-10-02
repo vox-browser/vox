@@ -677,10 +677,24 @@ pub fn (mut form HTMLFormElementModel) reset() {
 pub fn (mut form HTMLFormElementModel) reset_form() {
 	event := dom.Event.create('reset', dom.EventInit{ bubbles: true, cancelable: true })
 	if form.event_target_.dispatch_event(event) {
-		for control in form.controls_ {
-			if control.is_resettable() {
-				mut mutable_control := unsafe { &FormAssociatedElement(control) }
-				mutable_control.reset_algorithm()
+		// Reset algorithms can mutate form ownership. The upstream loop holds
+		// a copy so every member present after the reset event is visited once.
+		associated_elements := form.element.associated_elements_.clone()
+		for element in associated_elements {
+			if element.local_name() !in ['input', 'output', 'select', 'textarea']
+				&& !element.is_form_associated_custom_element() {
+				continue
+			}
+			value := reset_form_associated_dom_element(element)
+			// Older API callers may retain a separately created base record.
+			// Keep that record's value synchronized with its concrete model.
+			for control in form.controls_ {
+				if voidptr(control.element) == voidptr(element) {
+					if reset_value := value {
+						mut mutable_control := unsafe { &FormAssociatedElement(control) }
+						mutable_control.value_ = reset_value
+					}
+				}
 			}
 		}
 	}

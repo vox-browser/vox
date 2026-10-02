@@ -1003,10 +1003,16 @@ mut:
 }
 
 pub fn HTMLOutputElementModel.create(element &dom.HTMLOutputElement) &HTMLOutputElementModel {
-	return &HTMLOutputElementModel{
+	if element.output_element_model_ != unsafe { nil } {
+		return unsafe { &HTMLOutputElementModel(element.output_element_model_) }
+	}
+	model := &HTMLOutputElementModel{
 		element: element
 		html_for_: unsafe { &dom.Element(element) }.get_attribute_value('for')
 	}
+	mut mutable_element := unsafe { &dom.HTMLOutputElement(element) }
+	mutable_element.output_element_model_ = voidptr(model)
+	return model
 }
 
 pub fn (mut output HTMLOutputElementModel) form_associated_element_attribute_changed(name string, _ ?string, value ?string, _ ?string) {

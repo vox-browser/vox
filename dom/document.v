@@ -826,6 +826,8 @@ pub mut:
 @[heap]
 pub struct HTMLOutputElement {
 	HTMLElement
+pub mut:
+	output_element_model_ voidptr = unsafe { nil }
 }
 
 @[heap]
