@@ -277,9 +277,9 @@ owns table values, so callers re-query after its vector grows. Zero growth retur
 before limit checks; successful growth increments the declared minimum and fills
 new references and anchors. V vectors use signed-int lengths: unrepresentable
 requests fail before narrowing, while other V allocation failures still panic
-instead of returning source `try_resize()` failure. The existing WebIDL Table
-facade is not yet connected to these records; its reference conversion and
-synthetic table exports remain open under WA-12.
+instead of returning source `try_resize()` failure. The later WebIDL Table Store slice connects its facade to these records;
+synthetic Instance exports, actual function reference branding and full unsigned
+address conversion remain separate boundaries under WA-12.
 
 These additions pass a clean **55/55-file package suite with default GC and
 55/55 with `-gc none`**. The subsequent Table32 binding correction (`17100b35`)
@@ -341,3 +341,26 @@ The complete package passes **60/60 files with default GC and 60/60 with
 lookup, synthetic Instance global/table exports, native WebAssembly wrappers,
 instruction execution and the full VM/GC ownership graph remain open. A typed
 callback marker is not accepted as a genuine exported function.
+
+
+## Actual Table Store and Instance address wrapping
+
+`e6ed6d2d` replaces Table's copied value array and pointer-derived address with
+its owning Store and vector-index address. Source allocation/fill, actual type
+and limits, lookup errors, exnref-before-bounds checks and reference conversion
+ordering now reach `TableInstance`. Typed JS binding adapters convert addresses
+before references and Store operations. The pinned `Table::grow(u64)` to
+`TableInstance::grow(u32)` narrowing is preserved, including a 2^32 delta
+becoming zero. Wrappers re-query source value records after Store vector growth.
+A clean **61/61-file suite passes with default GC and with `-gc none`**.
+
+`4711dfa7` translates Instance's cache-miss wrapping of an existing Global,
+Memory or Table Store address. It no longer allocates a default i32 Global or
+empty externref Table under a different address, and a real uncached Memory
+gets its source non-shared wrapper and growth hook. Focused Store-address,
+invalid-address and memory-detachment regressions pass with their module and
+memory neighbors: **3/3 default-GC files**, **2/2 GC-disabled files**.
+The legacy Instance instantiation path still fabricates global/table/function
+exports rather than executing source module initialization. The completed
+wrapper lookup does not close WA-12; function Store/branding, full unsigned
+Table64 and native WebAssembly/LibJS wrappers remain open.
