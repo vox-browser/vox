@@ -277,7 +277,7 @@ public generation rejects successful empty secret/private results. Focused
 tests verify HMAC length/hash, EC curve, and native RSA generation errors win
 before the common check, while successful empty generation remains rejected.
 
-Common parameter/typed boundary conversions remain under source review.
+The compact browser script bridge does not yet expose this Crypto service.
 Native backend availability does not establish complete WebCrypto/VM parity.
 
 `SubtleCryptoBinding` implements the asynchronous WebIDL operation boundary.
@@ -305,7 +305,7 @@ source's rejection of mixed encryption/wrapping operation groups.
 
 ## Verification
 
-The 34 WebCrypto test files and all six WebIDL test files passed using direct
+The 48 WebCrypto test files and all eight WebIDL test files passed using direct
 `v -old-compiler -enable-globals -path 'WORKTREE|@vlib|@vmodules' FILE_test.v`
 invocations. The focused HTML Crypto, environments, and global-scope tests also
 passed. These checks cover copied views/parameters/usages, immediate versus
