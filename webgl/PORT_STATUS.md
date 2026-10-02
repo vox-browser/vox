@@ -295,6 +295,15 @@ existing native object-query file pass with `-gc none`, including driver errors
 raised outside translated calls, context switching, exact precedence and the
 source one-time context-loss error branch.
 
+Browser-only pixelStorei state makes its owning context current, and
+UNPACK_COLORSPACE_CONVERSION_WEBGL stores the converted GLint as GLenum without
+extra enum validation, matching `WebGLRenderingContextImpl.cpp:2246-2282`.
+The focused native two-version test and existing texture-source file pass with
+`-gc none`, including context switching, negative/arbitrary color-space state,
+browser-only boolean flags and preserved native unpack-alignment errors. This
+preserves the pinned source behavior even where it accepts state beyond the
+usual NONE/BROWSER_DEFAULT_WEBGL values.
+
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
