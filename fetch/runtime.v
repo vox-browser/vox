@@ -38,6 +38,7 @@ __global (
 	fetch_next_task_id               = u64(1)
 	fetch_http_memory_cache_pending  = map[string][]FetchMemoryCacheEntry{}
 	fetch_http_memory_cache_complete = map[string][]FetchMemoryCacheEntry{}
+	fetch_parallel_queue_factory FetchParallelQueueFactory
 )
 
 pub enum BodyBytesKind {
@@ -93,6 +94,13 @@ pub enum CreateResponseBodyTransferLease {
 	no
 	yes
 }
+
+pub enum UseParallelQueue {
+	no
+	yes
+}
+
+pub type FetchParallelQueueFactory = fn () FetchTaskDestinationProvider
 
 pub type ReportTimingSteps = fn (&FetchTimingInfo)
 
@@ -186,10 +194,8 @@ pub fn (mut controller FetchController) stop_fetch() {
 	}
 	controller.state_ = .stopped
 	if params := controller.fetch_params_ {
-		if client := params.request.client {
-			if client is FetchTaskDestinationProvider {
-				for _, task_id in controller.ongoing_fetch_tasks_ { client.fetch_request_client_cancel_fetch_task(task_id) }
-			}
+		if destination := params.task_destination_provider {
+			for _, task_id in controller.ongoing_fetch_tasks_ { destination.fetch_request_client_cancel_fetch_task(task_id) }
 		}
 	}
 	controller.ongoing_fetch_tasks_.clear()
@@ -295,6 +301,7 @@ pub mut:
 	controller                       &FetchController = unsafe { nil }
 	timing_info                      &FetchTimingInfo = unsafe { nil }
 	task_destination                 string
+	task_destination_provider        ?FetchTaskDestinationProvider
 	cross_origin_isolated            bool
 	preloaded_response_candidate     PreloadedResponseCandidateKind
 	preloaded_response               ?&Response
@@ -303,11 +310,14 @@ pub mut:
 
 pub fn FetchParams.create(request &Request, timing_info &FetchTimingInfo) &FetchParams {
 	mut controller := FetchController.create()
-	params := &FetchParams{
+	mut params := &FetchParams{
 		request:     request
 		algorithms:  FetchAlgorithms.create(FetchAlgorithmsInput{})
 		controller:  controller
 		timing_info: timing_info
+	}
+	if client := request.client {
+		if client is FetchTaskDestinationProvider { params.task_destination_provider = client }
 	}
 	controller.set_fetch_params(params)
 	return params
@@ -320,6 +330,7 @@ pub fn (params &FetchParams) copy() &FetchParams {
 		controller:                       params.controller
 		timing_info:                      params.timing_info
 		task_destination:                 params.task_destination
+		task_destination_provider:        params.task_destination_provider
 		cross_origin_isolated:            params.cross_origin_isolated
 		preloaded_response_candidate:     params.preloaded_response_candidate
 		preloaded_response:               params.preloaded_response
@@ -1417,6 +1428,14 @@ pub fn (request &IncrementalReadLoopReadRequest) on_error(reason string) {
 }
 
 pub fn fetch(request &Request, algorithms &FetchAlgorithms, host &FetchHost, create_response_body_transfer_lease CreateResponseBodyTransferLease) &FetchController {
+	return fetch_with_parallel_queue(request, algorithms, host, .no, create_response_body_transfer_lease)
+}
+
+pub fn install_parallel_queue_factory(factory FetchParallelQueueFactory) {
+	fetch_parallel_queue_factory = factory
+}
+
+pub fn fetch_with_parallel_queue(request &Request, algorithms &FetchAlgorithms, host &FetchHost, use_parallel_queue UseParallelQueue, create_response_body_transfer_lease CreateResponseBodyTransferLease) &FetchController {
 	assert request.mode == .navigate || algorithms.input.process_early_hints_response == none
 	mut mutable_request := request
 	populate_request_from_client(mut mutable_request)
@@ -1431,6 +1450,10 @@ pub fn fetch(request &Request, algorithms &FetchAlgorithms, host &FetchHost, cre
 	timing.post_redirect_start_time = now
 	timing.render_blocking = mutable_request.render_blocking
 	mut params := FetchParams.create(mutable_request, timing)
+	if use_parallel_queue == .yes {
+		assert fetch_parallel_queue_factory != unsafe { nil }
+		params.task_destination_provider = fetch_parallel_queue_factory()
+	}
 	params.algorithms = algorithms
 	params.cross_origin_isolated = cross_origin_isolated
 	params.has_response_body_transfer_lease = create_response_body_transfer_lease == .yes
@@ -1527,17 +1550,15 @@ pub fn deferred_invoke_for_request(request &Request, algorithm fn ()) {
 pub fn queue_fetch_task_for_controller(mut controller FetchController, algorithm fn ()) u64 {
 	fetch_task_id := controller.next_fetch_task_id()
 	if params := controller.fetch_params_ {
-		if client := params.request.client {
-			if client is FetchTaskDestinationProvider {
+		if destination := params.task_destination_provider {
 				controller_pointer := voidptr(&controller)
-				event_id := client.fetch_request_client_queue_fetch_task(fn [controller_pointer, fetch_task_id, algorithm] () {
+				event_id := destination.fetch_request_client_queue_fetch_task(fn [controller_pointer, fetch_task_id, algorithm] () {
 					mut owner := unsafe { &FetchController(controller_pointer) }
 					owner.fetch_task_complete(fetch_task_id)
 					algorithm()
 				})
 				controller.fetch_task_queued(fetch_task_id, event_id)
 				return event_id
-			}
 		}
 	}
 	event_id := queue_fetch_task(algorithm)

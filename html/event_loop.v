@@ -91,6 +91,7 @@ fn init() {
 	html_broadcast_channel_repository = BroadcastChannelRepository.create()
 	css.install_css_fetch_client_provider(css_fetch_client_for_document)
 	css.install_font_loading_task_provider(font_loading_task_for_document)
+	fetch.install_parallel_queue_factory(create_fetch_parallel_queue)
 	install_html_element_activation_behavior()
 	install_custom_element_registry_dom_hooks()
 	dom.install_run_focusing_steps(dom_run_focusing_steps_callback)
@@ -154,19 +155,25 @@ pub fn (task &Task) is_permanently_unrunnable() bool {
 }
 
 @[heap]
-pub struct ParallelQueue {}
+pub struct ParallelQueue {
+	task_source_ UniqueTaskSource
+}
 
 pub fn ParallelQueue.create() &ParallelQueue {
-	return &ParallelQueue{}
+	return &ParallelQueue{ task_source_: UniqueTaskSource.create() }
 }
 
-pub fn (_ &ParallelQueue) enqueue(algorithm fn()) u64 {
+pub fn (queue &ParallelQueue) enqueue(algorithm fn()) u64 {
 	mut event_loop := main_thread_event_loop()
-	task := Task.create(.unspecified, none, algorithm)
-	mut queue := event_loop.task_queue()
-	queue.add(task)
+	task := Task.create(queue.task_source_.source, none, algorithm)
+	mut task_queue := event_loop.task_queue()
+	task_queue.add(task)
 	return task.id
 }
+
+pub fn (queue &ParallelQueue) task_source() TaskSource { return queue.task_source_.source }
+
+pub fn (queue &ParallelQueue) finalize() { queue.task_source_.finalize() }
 
 pub type EventLoopInputEventsHook = fn([]&dom.Document)
 
