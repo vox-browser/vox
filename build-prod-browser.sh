@@ -37,6 +37,10 @@ if [ ! -x "$v_compiler" ]; then
     exit 1
 fi
 
+# LibRegex's translated C++ wrappers reuse the same pinned Rust backend as
+# upstream. Build the repository-owned archive before compiling the browser.
+python3 "$repo_dir/tools/build_regex_backend.py"
+
 case "$(uname -m)" in
     arm64|aarch64) default_vcpkg_triplet=arm64-osx-dynamic ;;
     x86_64|amd64) default_vcpkg_triplet=x64-osx-dynamic ;;

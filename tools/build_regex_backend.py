@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build the byte-exact pinned LibRegex Rust dependency owned by this repository."""
 import argparse
+import fcntl
 import hashlib
 import json
 import os
@@ -39,6 +40,8 @@ def main():
     fingerprint = digest.hexdigest()
     output = repo / 'Build/libregex'
     output.mkdir(parents=True, exist_ok=True)
+    lock = (output / 'build.lock').open('w')
+    fcntl.flock(lock, fcntl.LOCK_EX)
     archive = output / 'libregex_native.a'
     stamp = output / 'source.sha256'
     if archive.exists() and stamp.exists() and stamp.read_text().strip() == fingerprint:
@@ -48,10 +51,12 @@ def main():
     subprocess.run(common + ['--crate-name', 'libunicode_rust', '--crate-type', 'rlib',
                             str(source / 'unicode.rs'), '-o', str(unicode)], check=True)
     environment = dict(os.environ, CARGO_PKG_NAME='libregex_rust')
+    temporary = output / 'libregex_native.a.tmp'
     subprocess.run(common + ['--crate-name', 'libregex_rust', '--crate-type', 'staticlib',
                             '--extern', f'libunicode_rust={unicode}',
-                            str(source / 'Libraries/LibRegex/Rust/src/lib.rs'), '-o', str(archive)],
+                            str(source / 'Libraries/LibRegex/Rust/src/lib.rs'), '-o', str(temporary)],
                    env=environment, check=True)
+    temporary.replace(archive)
     stamp.write_text(fingerprint + '\n')
     print(f'Built pinned LibRegex backend with {version}')
 
