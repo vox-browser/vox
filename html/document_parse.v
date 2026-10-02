@@ -32,7 +32,18 @@ pub fn parse_html_from_a_string(document &dom.Document, markup string) {
 // Navigation uses this entry point so parser-time URL consumers, including a
 // parser-inserted <base>, observe the final document URL.
 pub fn parse_document_with_url(markup string, document_url dom.URL) &dom.Document {
+	return parse_document_with_url_and_optional_origin(markup, document_url, none)
+}
+
+// Navigation creates the Document with its response origin before parsing.
+// Keep standalone string parsing's fresh opaque origin in the entry above.
+pub fn parse_document_with_url_and_origin(markup string, document_url dom.URL, origin dom.Origin) &dom.Document {
+	return parse_document_with_url_and_optional_origin(markup, document_url, origin)
+}
+
+fn parse_document_with_url_and_optional_origin(markup string, document_url dom.URL, origin ?dom.Origin) &dom.Document {
 	mut document := dom.Document.create(document_url)
+	if response_origin := origin { document.set_origin(response_origin) }
 	document.set_document_type(.html)
 	_ = CustomElementRegistry.create(document)
 	// Documents created by navigation allow declarative shadow roots. This
