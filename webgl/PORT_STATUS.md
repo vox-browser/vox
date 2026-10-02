@@ -20,7 +20,7 @@ filtered by version/native support and correctly remain non-instantiable.
 
 | Upstream area | `.cpp` files | Upstream `.cpp` LOC | V implementation LOC | V test LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `WebGL/` | 42 | 7,846 | 6,205 | 1,470 | Source mapping retained; native backend partially connected |
+| `WebGL/` | 42 | 7,846 | 6,205 | 1,470 | Source mapping retained; native direct backend connected; remote transport open |
 
 The associated declarations comprise 46 headers / 2,473 LOC and 37 IDL files /
 1,403 LOC. Mapping completeness is 42/42 implementation units, 46/46 headers,
@@ -46,32 +46,64 @@ backend on macOS and the source compositor configuration. `pkg-config egl
 glesv2` resolves those libraries. Context loss destroys the native namespace;
 restoration creates a fresh context.
 
-Native operation slices now include GPU fences, waits, sync parameters,
-GLSL compilation, linking, logs, active attribute/uniform reflection,
-locations, precision queries, typed scalar/vector/matrix uniform uploads,
-framebuffers/renderbuffers/textures, framebuffer completeness, robust 2D
-texture uploads, drawing-buffer allocation, clear/masks/scissor/viewport, and
-robust readPixels. Logical WebGL object identities remain separate from real
-native object names. Focused tests exercise actual compiler failures, varying
-link failures, active/unused declarations, precise integer uniforms, array
-locations, fractional framebuffer pixels, live texture subimages, framebuffer
-incompleteness, resizing, and GPU sync validation/results.
+The direct backend executes the translated buffer/vertex commands, indexed and
+instanced draws, raster state, shader compilation/linking/reflection, typed
+uniforms, GPU queries, samplers, sync, vertex arrays, transform feedback,
+uniform blocks, internal-format queries, 2D/3D/compressed textures, framebuffer
+attachments, multisample allocation/blits, read/draw buffers, invalidation,
+and robust readback. Object names, limits, extension support, framebuffer
+completeness, compile/link status, and query results come from the driver.
 
-Other dispatch paths, buffer/vertex draw execution, WebGL2 query/reflection
-families, and painting-surface presentation still need native connection and
-source review. The old state-only dispatches and source-symbol inventories do
-not establish semantic parity. Native compilation/framebuffer success does not
-close the remaining WebGL translation audit findings. Native calls are recorded
-only when explicitly requested for tests/debugging.
+`HTMLCanvasElement` creates that real context, preserves its identity, resizes
+its drawing buffer, and presents native pixels through the retained canvas
+surface registry. The JavaScriptCore host binding reaches those same objects
+and native commands, including the ANGLE instancing, WEBGL draw-buffers, and OES
+vertex-array extensions. Script-created canvases retain the same DOM owner
+when inserted. Public bindings validate element-count BufferSource spans,
+detached/resized views, destination views, and pixel-pack-buffer offsets before
+actual execution. TexImageSource uploads use live canvas/image/video frames or
+ImageData and translate the source Skia export, including flip, scaling,
+color-space, and alpha conversion. ImageBitmap and OffscreenCanvas objects
+still require complete script object bindings. The upstream OffscreenCanvas
+WebGL getter itself remains explicitly unimplemented.
 
-The typed WebIDL boundary uses V byte/numeric slices. Browser runtime objects,
-remote command consumption, and native compositor handoff require independent
-end-to-end validation as their owning subsystems are connected.
+Material platform adaptations are explicit: painting uses CPU readback into the
+retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
+ANGLE builds lacking compressed robust entry points use the matching GLES call
+with its exact payload size; unsupported source Skia RGBA5551 export returns an
+error instead of the upstream surface assertion; WebGL1 null texture allocation
+above the V-array/GLsizei capacity reports OUT_OF_MEMORY instead of the upstream
+MUST allocation failure. These do not establish remote compositor parity.
+
+`context_proxy.v` still records transmitted batches in memory and consumes
+fixture-supplied synchronous replies/readback. It has no real remote WebGL
+transport/command processor. Its wait-success and next-reply fields therefore
+remain audit gaps independently of the production direct native path.
+
+Source TODOs remain visible. Upstream `get_uniform` returns zero with a FIXME;
+its V cached-value model does not establish a translated native getter. Upstream
+WebGL2 IDL still marks numeric pixel-unpack-buffer texture/compressed uploads,
+copyTexSubImage3D, getFragDataLocation, isQuery/isSampler/isSync/
+isTransformFeedback, and several indexed/transform-feedback getter bindings as
+FIXME, without operation bodies. Some internal native getters exist, but the
+missing source bodies and public binding behavior are not completed translation
+claims. Numeric pixel-unpack texture overloads must not be confused with the
+implemented pixel-pack readPixels overload. Source reset_to_default_state bodies
+are empty in both context classes and remain empty in the translation.
+
+The browser continues to use JavaScriptCore. Compact wrappers and typed V
+WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
+graph or full WebIDL brand/prototype parity.
 
 ## Verification
 
-All 25 WebGL test files passed using direct
+All 44 current WebGL test files passed using direct
 `v -old-compiler -enable-globals -path 'WORKTREE|@vlib|@vmodules' FILE_test.v`
-invocations. Native shader, uniform, sync, and framebuffer tests use actual
-ANGLE/Metal results. This test count describes completed focused slices and
-existing state tests, not complete WebGL execution parity.
+invocations on 2026-10-02. Native tests use actual ANGLE/Metal results, including
+compiled draws, framebuffer/layer/compressed texture pixels, synchronization,
+query/reflection values, destination/PBO offsets, and nullable uploads. Focused
+JavaScriptCore host tests also pass for typed span/resize/detach rules,
+TexImageSource conversion, PBO readback, nullable textures, instanced extension
+draws, separate draw-buffer attachment pixels, and owner identity. The counts
+include existing state/proxy fixture tests and do not claim remote execution or
+complete source/VM parity.
