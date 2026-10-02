@@ -18,6 +18,9 @@ Completed source slices:
 | BigInt primitive/boxed BigInt | The actual arbitrary `libjs.BigInt` record encodes the source signed-magnitude buffer: sign byte then big-endian magnitude. It is never rounded or narrowed through Number/i64. |
 | UTF-16 storage metadata | `from_ipc_stream` preserves a false ASCII flag even for long all-ASCII units. Ordinary `from_utf16` construction compresses all-ASCII units, including long strings. Decoded records preserve the original storage flag on reserialization. |
 | Collections and properties | Map/Set counts and Array length use source u64 fields. Object/Array properties serialize each value before its UTF-16 key and finish with EndObject. Sparse arrays retain their length without allocating missing elements; aliases, cycles, and the special null-prototype ObjectReference branch survive decoding. |
+| Buffers and views | Resizable/growable capacity uses u64. ByteLength uses a true-is-auto boolean followed by a fixed u32 length when present. DataView omits ArrayLength. Nested buffers claim their memory id before their view, and source brand, alignment, slot consistency and bounds checks reject malformed records. |
+| Error payloads | IPC retains pinned native type order, including InternalError. Optional message/cause preserve UTF-16 units and storage flags, and distinguish an absent message from a present empty string. RegExp source/flags also retain their original UTF-16 payloads. |
+| LBSC storage | The source magic/version/flags envelope, unsigned and signed LEB128 integer codecs, little-endian doubles, length-and-storage-bit string headers, byte buffers, and stable Error names now form a distinct Storage record. Invalid headers, integer overflow, truncation and trailing bytes reject. Storage decoding constructs UTF-16 with `from_utf16`, including ASCII compression, whereas IPC decoding preserves its encoded storage form. |
 
 Focused tag/Int32 and codec/resizable neighbors passed three files with GC
 disabled. The source IPC primitive goldens and those two neighbors passed
@@ -29,12 +32,23 @@ The explicit storage flag and construction correction passed two focused files.
 Collection source goldens plus codec/resizable neighbors passed three files
 with GC disabled. The complete LibJS suite passed 229 files in each GC mode,
 and the exact AST corpus passed all 100 fixtures without case overrides.
+Buffer/view source goldens and three neighbors passed four files with GC
+disabled. Error/RegExp payload goldens and two neighbors passed three files.
+Storage goldens and three neighbors passed four files; the expanded Storage
+case also passed after adding arbitrary BigInts, collection goldens and cycles.
 
-Remaining source codec work is explicit: ArrayBuffer/View nested memory
-registration and byte-length-slot encoding,
-u64 buffer capacity, source Error type/optional payloads, and the distinct
-LBSC storage writer/reader. The existing structured DTO provides standalone
-object identity and cycles; it still needs the actual engine projection.
+The older strict standalone `structured_deserialize` convenience retains its
+full-consumption check. `structured_deserialize_ipc` exposes the source IPC
+entrypoint without that check; Storage always requires full consumption.
+The common-family DTO codec is source-derived, but actual RegExp construction
+and validation, source platform SerializableObject registries/payload versions,
+and transferable records remain separate work. The shared DTO tags IPC and
+Storage explicitly instead of confusing their distinct source record types.
+
+The source PrimitiveString cache uses the actual pointer-size-minus-one inline
+ASCII limit and storage form, with the single-ASCII cache preceding that check.
+The earlier 16-code-unit threshold was not in the source. Boundary tests and
+the storage neighbor passed two files with GC disabled.
 
 The native projection must retain actual JSC object identity and cycle memory,
 source key/enumerability/Get order and original completions, and captured
