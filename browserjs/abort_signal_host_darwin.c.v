@@ -9,10 +9,6 @@ import dom
 import html
 import webidl
 
-#include "abort_signal_wrapper_darwin.h"
-
-fn C.vox_make_native_abort_wrapper(context voidptr, record voidptr) voidptr
-fn C.vox_native_abort_wrapper_record(context voidptr, value voidptr) voidptr
 
 __global abort_signal_bindings_ = map[voidptr]&AbortSignalHost{}
 
@@ -80,13 +76,13 @@ fn (mut host AbortSignalHost) wrap(kind AbortSignalHostKind, native voidptr, des
 		return existing.object
 	}
 	mut record := &AbortSignalHostRecord{host: host, kind: kind, native: native}
-	object := C.vox_make_native_abort_wrapper(host.runtime.context, record)
+	object := host.runtime.make_native_stream_wrapper(record)!
 	mut prototype := host.prototypes[kind] or { return error('Abort object prototype is missing') }
 	if desired_prototype != unsafe { nil } && C.JSValueIsObject(host.runtime.context, desired_prototype) {
 		prototype = desired_prototype
 	}
 	C.JSObjectSetPrototype(host.runtime.context, object, prototype)
-	record.object = host.runtime.retain_javascript_value(object)!
+	record.object = object
 	host.records[native] = record
 	if kind == .signal { host.runtime.bind_event_target(object, unsafe { &dom.EventTarget(native) })! }
 	return object
@@ -94,7 +90,7 @@ fn (mut host AbortSignalHost) wrap(kind AbortSignalHostKind, native voidptr, des
 
 fn (host &AbortSignalHost) record(value voidptr, kind AbortSignalHostKind) !&AbortSignalHostRecord {
 	if host.closed { return error('AbortSignal binding is closed') }
-	data := C.vox_native_abort_wrapper_record(host.runtime.context, value)
+	data := host.runtime.native_stream_wrapper_record(value)
 	if data == unsafe { nil } { return error('TypeError: Illegal Abort interface receiver') }
 	record := unsafe { &AbortSignalHostRecord(data) }
 	if voidptr(record.host) != voidptr(host) || record.kind != kind { return error('TypeError: Illegal Abort interface receiver') }
@@ -192,11 +188,12 @@ fn (mut host AbortSignalHost) operate(args []voidptr) !voidptr {
 }
 
 const abort_signal_native_bootstrap = r'(function(operate){
- const define=Object.defineProperty,create=Object.create,setPrototypeOf=Object.setPrototypeOf,EventTarget=globalThis.EventTarget,TypeError=globalThis.TypeError;
- function AbortSignal(){throw new TypeError("Illegal constructor")}
+ const define=Object.defineProperty,create=Object.create,setPrototypeOf=Object.setPrototypeOf,EventTarget=globalThis.EventTarget,TypeError=globalThis.TypeError,ConstructProxy=Proxy;
+ const AbortSignal=new ConstructProxy(function AbortSignal(){throw new TypeError("AbortSignal constructor requires new")},{construct(){throw new TypeError("Illegal constructor")}});
  AbortSignal.prototype=create(EventTarget.prototype);setPrototypeOf(AbortSignal,EventTarget);
  define(AbortSignal.prototype,"constructor",{value:AbortSignal,writable:true,configurable:true});
- function AbortController(){if(!new.target)throw new TypeError("AbortController constructor requires new");return operate("construct",new.target.prototype)}
+ const AbortController=new ConstructProxy(function AbortController(){throw new TypeError("AbortController constructor requires new")},{construct(target,args,newTarget){const prototype=newTarget.prototype;return operate("construct",prototype)}});
+ define(AbortController.prototype,"constructor",{value:AbortController,writable:true,configurable:true});
  define(AbortController.prototype,"signal",{get:function(){return operate("signal",this)},enumerable:true,configurable:true});
  define(AbortController.prototype,"abort",{value:function abort(reason){return operate("abort",this,reason)},writable:true,enumerable:true,configurable:true});
  for(const name of ["aborted","reason"])define(AbortSignal.prototype,name,{get:function(){return operate(name,this)},enumerable:true,configurable:true});
