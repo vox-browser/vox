@@ -1581,6 +1581,7 @@ pub interface VisualViewport {
 	document() &Document
 	event_target() &EventTarget
 	visual_viewport_record() voidptr
+	layout_viewport_size_for_resize() [2]int
 	offset_left() f64
 	offset_top() f64
 	page_left() f64
@@ -5323,7 +5324,7 @@ pub mut:
 
 	// Visual viewport
 	visual_viewport_           ?VisualViewport
-	last_viewport_size         ?[2]f64
+	last_viewport_size         ?[2]int
 	last_visual_viewport_state ?VisualViewportState
 
 	// Pending scroll events
@@ -8667,6 +8668,14 @@ pub fn (mut d Document) set_initial_visibility_state(state VisibilityState) {
 	if hook := d.lifecycle_hook_ {
 		d.run_lifecycle_callback(hook.timer_visibility_state_changed)
 	}
+	// TODO: The pinned source still queues no initial VisibilityStateEntry.
+	// Source AD-HOC: retain both initial snapshots before the first rendering
+	// update, so an intervening viewport or scale change still fires resize.
+	if d.last_viewport_size == none {
+		viewport_size := d.current_layout_viewport_size_for_resize()
+		d.last_viewport_size = [viewport_size[0], viewport_size[1]]!
+		d.last_visual_viewport_state = d.current_visual_viewport_state()
+	}
 }
 
 // --- Media queries ---
@@ -8708,26 +8717,73 @@ pub fn (mut d Document) add_media_query_list(mql &MediaQueryList) {
 pub fn (mut d Document) run_the_resize_steps() {
 	// 1. If doc's viewport has had its width or height changed since the last time these steps were run,
 	//    fire an event named resize at the Window object associated with doc.
-	viewport_size := d.viewport_rect().size()
+	// 2. If its VisualViewport scale, width or height changed, fire resize at it.
+	// Source viewport-size snapshots use CSSPixels::to_int(), while visual
+	// viewport dimensions retain the source double-precision getter values.
+	viewport_size := d.current_layout_viewport_size_for_resize()
+	visual_state := d.current_visual_viewport_state()
 	is_initial_size := d.last_viewport_size == none
 	viewport_size_changed := if last := d.last_viewport_size {
 		last[0] != viewport_size[0] || last[1] != viewport_size[1]
 	} else {
 		true
 	}
+	visual_state_changed := if current := visual_state {
+		if last := d.last_visual_viewport_state { current != last } else { true }
+	} else {
+		false
+	}
 
-	if !viewport_size_changed {
+	if !viewport_size_changed && !visual_state_changed {
 		return
 	}
 	d.last_viewport_size = [viewport_size[0], viewport_size[1]]!
+	d.last_visual_viewport_state = visual_state
 
 	if !is_initial_size {
 		if viewport_size_changed {
-			if d.window != unsafe { nil } {
-				d.window.dispatch_event_simple('resize', false)
+			if window := d.get_window() {
+				window.dispatch_event(d.create_resize_event())
 			}
 		}
+		if visual_state_changed {
+			viewport := d.visual_viewport()
+			viewport.event_target().dispatch_event(d.create_resize_event())
+		}
 	}
+}
+
+fn (mut d Document) current_visual_viewport_state() ?VisualViewportState {
+	if factory := document_visual_viewport_factory_ {
+		_ = factory
+		viewport := d.visual_viewport()
+		return VisualViewportState{
+			scale: viewport.scale()
+			width: viewport.width()
+			height: viewport.height()
+		}
+	}
+	// Explicit preexisting DOM-only adapter: no concrete CSS viewport is
+	// available. Keep its Window-only resize path rather than inventing data.
+	return none
+}
+
+fn (mut d Document) current_layout_viewport_size_for_resize() [2]int {
+	if factory := document_visual_viewport_factory_ {
+		_ = factory
+		// Retain CSSPixels::to_int() at the actual CSS-owned geometry boundary.
+		return d.visual_viewport().layout_viewport_size_for_resize()
+	}
+	rect := d.viewport_rect()
+	return [int(rect.width), int(rect.height)]!
+}
+
+fn (d &Document) create_resize_event() &Event {
+	mut event := Event.create('resize', EventInit{})
+	if window := d.get_window() {
+		event.time_stamp_ = current_high_resolution_time(window)
+	}
+	return event
 }
 
 pub fn (mut d Document) append_pending_scroll_event(event PendingScrollEvent) bool {

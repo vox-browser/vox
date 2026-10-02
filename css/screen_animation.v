@@ -336,6 +336,13 @@ fn (viewport &VisualViewport) layout_viewport_rect() CSSPixelRect {
 	return viewport.viewport_rect_
 }
 
+// DOM/Document.cpp resize snapshots cast its CSS viewport dimensions to int.
+// This is the CSSPixels ABI boundary; the DOM facade cannot import CSS types.
+pub fn (viewport &VisualViewport) layout_viewport_size_for_resize() [2]int {
+	rect := viewport.layout_viewport_rect()
+	return [rect.width.to_int(), rect.height.to_int()]!
+}
+
 // https://drafts.csswg.org/cssom-view/#dom-visualviewport-offsetleft
 pub fn (viewport &VisualViewport) offset_left() f64 {
 	// 1. If the visual viewport's associated document is not fully active, return 0.
