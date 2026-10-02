@@ -182,11 +182,11 @@ pub fn (_ ED448) verify(params Ed448Params, key &CryptoKey, signature []u8, mess
 
 pub struct MLDSA {}
 pub fn MLDSA.create() MLDSA { return MLDSA{} }
-pub fn (_ MLDSA) sign(_ AlgorithmParams, _ &CryptoKey, _ []u8) ![]u8 { return backend_unavailable[[]u8]('ML-DSA', 'signing') }
-pub fn (_ MLDSA) verify(_ AlgorithmParams, _ &CryptoKey, _ []u8, _ []u8) !bool { return backend_unavailable[bool]('ML-DSA', 'verification') }
-pub fn (_ MLDSA) generate_key(_ AlgorithmParams, _ bool, _ []KeyUsage) !GeneratedKey { return backend_unavailable[GeneratedKey]('ML-DSA', 'key generation') }
-pub fn (_ MLDSA) import_key(_ AlgorithmParams, _ KeyFormat, _ []u8, _ bool, _ []KeyUsage) !&CryptoKey { return backend_unavailable[&CryptoKey]('ML-DSA', 'key import') }
-pub fn (_ MLDSA) export_key(_ KeyFormat, _ &CryptoKey) ![]u8 { return backend_unavailable[[]u8]('ML-DSA', 'key export') }
+pub fn (_ MLDSA) sign(params Ed448Params, key &CryptoKey, message []u8) ![]u8 { return mldsa_sign(params, key, message) }
+pub fn (_ MLDSA) verify(params Ed448Params, key &CryptoKey, signature []u8, message []u8) !bool { return mldsa_verify(params, key, signature, message) }
+pub fn (_ MLDSA) generate_key(params AlgorithmParams, extractable bool, usages []KeyUsage) !GeneratedKey { return generate_mldsa_key(params, extractable, usages) }
+pub fn (_ MLDSA) import_key(params AlgorithmParams, format KeyFormat, bytes []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_mldsa_key(params, format, bytes, extractable, usages) }
+pub fn (_ MLDSA) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_mldsa_key(format, key) }
 
 pub struct MLKEM {}
 pub fn MLKEM.create() MLKEM { return MLKEM{} }

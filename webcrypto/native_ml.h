@@ -101,4 +101,75 @@ cleanup:
     EVP_PKEY_CTX_free(from);
     return error;
 }
+
+/* LibCrypto/PK/MLDSA.cpp private/public_key_to_openssl_pkey. */
+static EVP_PKEY* vox_mldsa_key(const char* name, int private_key,
+    const unsigned char* seed, size_t seed_size, const unsigned char* pub, size_t pub_size,
+    const unsigned char* priv, size_t priv_size)
+{
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_from_name(NULL, name, NULL);
+    EVP_PKEY* key = NULL;
+    OSSL_PARAM_BLD* builder = NULL;
+    OSSL_PARAM* params = NULL;
+    if (!ctx || EVP_PKEY_fromdata_init(ctx) != 1) goto cleanup;
+    builder = OSSL_PARAM_BLD_new();
+    if (!builder) goto cleanup;
+    if (private_key && OSSL_PARAM_BLD_push_octet_string(builder, OSSL_PKEY_PARAM_ML_DSA_SEED, seed, seed_size) != 1) goto cleanup;
+    if (OSSL_PARAM_BLD_push_octet_string(builder, OSSL_PKEY_PARAM_PUB_KEY, pub, pub_size) != 1) goto cleanup;
+    if (private_key && OSSL_PARAM_BLD_push_octet_string(builder, OSSL_PKEY_PARAM_PRIV_KEY, priv, priv_size) != 1) goto cleanup;
+    params = OSSL_PARAM_BLD_to_param(builder);
+    if (!params || EVP_PKEY_fromdata(ctx, &key, EVP_PKEY_KEYPAIR, params) != 1) {
+        EVP_PKEY_free(key);
+        key = NULL;
+    }
+cleanup:
+    OSSL_PARAM_free(params);
+    OSSL_PARAM_BLD_free(builder);
+    EVP_PKEY_CTX_free(ctx);
+    return key;
+}
+
+static int vox_mldsa_sign(const char* name, const unsigned char* seed, size_t seed_size,
+    const unsigned char* pub, size_t pub_size, const unsigned char* priv, size_t priv_size,
+    unsigned char* context, size_t context_size, const unsigned char* message, size_t message_size,
+    unsigned char* signature, size_t* signature_size)
+{
+    int success = 0;
+    EVP_PKEY* key = vox_mldsa_key(name, 1, seed, seed_size, pub, pub_size, priv, priv_size);
+    EVP_PKEY_CTX* ctx = key ? EVP_PKEY_CTX_new_from_pkey(NULL, key, NULL) : NULL;
+    EVP_SIGNATURE* algorithm = EVP_SIGNATURE_fetch(NULL, name, NULL);
+    OSSL_PARAM params[2] = { OSSL_PARAM_END, OSSL_PARAM_END };
+    size_t capacity = *signature_size;
+    if (context_size) params[0] = (OSSL_PARAM)OSSL_PARAM_octet_string(OSSL_SIGNATURE_PARAM_CONTEXT_STRING, context, context_size);
+    if (!ctx || !algorithm) goto cleanup;
+    if (EVP_PKEY_sign_message_init(ctx, algorithm, params) != 1) goto cleanup;
+    if (EVP_PKEY_sign(ctx, NULL, signature_size, message, message_size) != 1) goto cleanup;
+    if (*signature_size > capacity) goto cleanup;
+    success = EVP_PKEY_sign(ctx, signature, signature_size, message, message_size) == 1;
+cleanup:
+    EVP_SIGNATURE_free(algorithm);
+    EVP_PKEY_CTX_free(ctx);
+    EVP_PKEY_free(key);
+    return success;
+}
+
+static int vox_mldsa_verify(const char* name, const unsigned char* pub, size_t pub_size,
+    unsigned char* context, size_t context_size, const unsigned char* signature, size_t signature_size,
+    const unsigned char* message, size_t message_size)
+{
+    int result = -1;
+    EVP_PKEY* key = vox_mldsa_key(name, 0, NULL, 0, pub, pub_size, NULL, 0);
+    EVP_PKEY_CTX* ctx = key ? EVP_PKEY_CTX_new(key, NULL) : NULL;
+    EVP_SIGNATURE* algorithm = EVP_SIGNATURE_fetch(NULL, name, NULL);
+    OSSL_PARAM params[2] = { OSSL_PARAM_END, OSSL_PARAM_END };
+    if (context_size) params[0] = (OSSL_PARAM)OSSL_PARAM_octet_string(OSSL_SIGNATURE_PARAM_CONTEXT_STRING, context, context_size);
+    if (!ctx || !algorithm) goto cleanup;
+    if (EVP_PKEY_verify_message_init(ctx, algorithm, params) != 1) goto cleanup;
+    result = EVP_PKEY_verify(ctx, signature, signature_size, message, message_size);
+cleanup:
+    EVP_SIGNATURE_free(algorithm);
+    EVP_PKEY_CTX_free(ctx);
+    EVP_PKEY_free(key);
+    return result;
+}
 #endif

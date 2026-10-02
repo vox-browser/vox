@@ -388,7 +388,7 @@ fn normalized_sign(algorithm NormalizedCryptoAlgorithm, key &CryptoKey, data []u
 			if algorithm.name == 'Ed448' {
 				ED448.create().sign(params, key, data)!
 			} else {
-				MLDSA.create().sign(AlgorithmParams{ name: algorithm.name }, key, data)!
+				MLDSA.create().sign(params, key, data)!
 			}
 		}
 		KmacParams { KMAC.create().sign(params, key, data)! }
@@ -411,7 +411,7 @@ fn normalized_verify(algorithm NormalizedCryptoAlgorithm, key &CryptoKey, signat
 			if algorithm.name == 'Ed448' {
 				ED448.create().verify(params, key, signature, data)!
 			} else {
-				MLDSA.create().verify(AlgorithmParams{ name: algorithm.name }, key, signature, data)!
+				MLDSA.create().verify(params, key, signature, data)!
 			}
 		}
 		KmacParams { KMAC.create().verify(params, key, signature, data)! }

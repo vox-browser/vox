@@ -60,3 +60,45 @@ fn native_mlkem_decapsulate(name string, private_key MlkemPrivateKeyHandle, ciph
 	}
 	return shared_bytes[..int(shared_length)].clone()
 }
+
+fn C.vox_mldsa_sign(&char, &u8, usize, &u8, usize, &u8, usize, &u8, usize, &u8, usize, &u8, &usize) int
+fn C.vox_mldsa_verify(&char, &u8, usize, &u8, usize, &u8, usize, &u8, usize) int
+
+fn mldsa_sizes(name string) !(int, int, int) {
+	return match name {
+		'ML-DSA-44' { 1312, 2560, 2420 }
+		'ML-DSA-65' { 1952, 4032, 3309 }
+		'ML-DSA-87' { 2592, 4896, 4627 }
+		else { return error('NotSupportedError: Invalid algorithm') }
+	}
+}
+
+fn native_mldsa_generate(name string, seed []u8) !MldsaPrivateKeyHandle {
+	pub_size, priv_size, _ := mldsa_sizes(name)!
+	mut public_bytes := []u8{len: pub_size}
+	mut private_bytes := []u8{len: priv_size}
+	mut seed_out := []u8{len: 32}
+	mut public_length := usize(pub_size)
+	mut private_length := usize(priv_size)
+	mut seed_length := usize(32)
+	failure := C.vox_ml_generate(name.str, c'seed', seed.data, usize(seed.len), public_bytes.data, &public_length, private_bytes.data, &private_length, seed_out.data, &seed_length)
+	if failure != unsafe { nil } { return error('OperationError: Key generation failed') }
+	return MldsaPrivateKeyHandle{ seed: seed_out[..int(seed_length)].clone(), public_key: public_bytes[..int(public_length)].clone(), private_key: private_bytes[..int(private_length)].clone() }
+}
+
+fn native_mldsa_sign(name string, key MldsaPrivateKeyHandle, message []u8, context []u8) ![]u8 {
+	_, _, size := mldsa_sizes(name)!
+	mut signature := []u8{len: size}
+	mut length := usize(size)
+	if C.vox_mldsa_sign(name.str, key.seed.data, usize(key.seed.len), key.public_key.data, usize(key.public_key.len), key.private_key.data, usize(key.private_key.len), context.data, usize(context.len), message.data, usize(message.len), signature.data, &length) != 1 {
+		return error('OperationError: Failed to sign message')
+	}
+	return signature[..int(length)].clone()
+}
+
+fn native_mldsa_verify(name string, key MldsaPublicKeyHandle, signature []u8, message []u8, context []u8) !bool {
+	result := C.vox_mldsa_verify(name.str, key.public_key.data, usize(key.public_key.len), context.data, usize(context.len), signature.data, usize(signature.len), message.data, usize(message.len))
+	if result == 1 { return true }
+	if result == 0 { return false }
+	return error('OperationError: Failed to verify message')
+}

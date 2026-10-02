@@ -325,6 +325,7 @@ pub fn (subtle_crypto &SubtleCrypto) sign(algorithm SigningParams, key &CryptoKe
 		return KMAC.create().sign(KmacParams{ ...algorithm, name: normalized }, key, data)
 	}
 	if algorithm is Ed448Params {
+		if normalized.starts_with('ML-DSA-') { return MLDSA.create().sign(Ed448Params{ ...algorithm, name: normalized }, key, data) }
 		if normalized == 'Ed448' { return ED448.create().sign(Ed448Params{ ...algorithm, name: normalized }, key, data) }
 	}
 	if normalized in ['KMAC128', 'KMAC256'] { return error('TypeError: outputLength is required') }
@@ -332,6 +333,7 @@ pub fn (subtle_crypto &SubtleCrypto) sign(algorithm SigningParams, key &CryptoKe
 		'HMAC' { hmac_sign(key, data)! }
 		'Ed25519' { ed25519_sign(key, data)! }
 		'Ed448' { ED448.create().sign(Ed448Params{}, key, data)! }
+		'ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87' { MLDSA.create().sign(Ed448Params{ name: normalized }, key, data)! }
 		else { error('NotSupportedError: ${normalized} signing backend is unavailable') }
 	}
 }
@@ -344,6 +346,7 @@ pub fn (subtle_crypto &SubtleCrypto) verify(algorithm SigningParams, key &Crypto
 		return KMAC.create().verify(KmacParams{ ...algorithm, name: normalized }, key, signature, data)
 	}
 	if algorithm is Ed448Params {
+		if normalized.starts_with('ML-DSA-') { return MLDSA.create().verify(Ed448Params{ ...algorithm, name: normalized }, key, signature, data) }
 		if normalized == 'Ed448' { return ED448.create().verify(Ed448Params{ ...algorithm, name: normalized }, key, signature, data) }
 	}
 	if normalized in ['KMAC128', 'KMAC256'] { return error('TypeError: outputLength is required') }
@@ -351,6 +354,7 @@ pub fn (subtle_crypto &SubtleCrypto) verify(algorithm SigningParams, key &Crypto
 		'HMAC' { hmac_verify(key, signature, data)! }
 		'Ed25519' { ed25519_verify(key, signature, data)! }
 		'Ed448' { ED448.create().verify(Ed448Params{}, key, signature, data)! }
+		'ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87' { MLDSA.create().verify(Ed448Params{ name: normalized }, key, signature, data)! }
 		else { error('NotSupportedError: ${normalized} verification backend is unavailable') }
 	}
 }
@@ -393,6 +397,11 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 				}
 			} else if normalized == 'Ed448' {
 				generated := generate_ed448_key(extractable, normalized_usages)!
+				pair := generated.pair or { return error('OperationError: Missing key pair') }
+				if pair.private_key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+				generated
+			} else if normalized.starts_with('ML-DSA-') {
+				generated := generate_mldsa_key(AlgorithmParams{ name: normalized }, extractable, normalized_usages)!
 				pair := generated.pair or { return error('OperationError: Missing key pair') }
 				if pair.private_key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
 				generated
@@ -447,6 +456,13 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
 		if key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
 		return key
 	}
+	if normalized.starts_with('ML-DSA-') {
+		mut key := import_mldsa_key(AlgorithmParams{ name: normalized }, format, material, extractable, normalized_usages)!
+		if key.type_ == .private_key && normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+		key.set_extractable(extractable)
+		key.set_usages(normalized_usages)
+		return key
+	}
 	if normalized.starts_with('ML-KEM-') {
 		key := import_mlkem_key(AlgorithmParams{ name: normalized }, format, material, extractable, normalized_usages)!
 		if key.type_ == .private_key && key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
@@ -487,6 +503,7 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 	if normalized in ['KMAC128', 'KMAC256'] {
 		return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name)
 	}
+	if normalized.starts_with('ML-DSA-') { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
 	if normalized.starts_with('ML-KEM-') { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
 	if normalized in ['X25519', 'X448', 'Ed448'] {
 		return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name)
@@ -551,6 +568,10 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 pub fn (subtle_crypto &SubtleCrypto) export_key(format KeyFormat, key &CryptoKey) ![]u8 {
 	_ = subtle_crypto
 	normalize_an_algorithm(key.algorithm_name(), 'exportKey')!
+	if key.algorithm_name().starts_with('ML-DSA-') {
+		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
+		return export_mldsa_key(format, key)
+	}
 	if key.algorithm_name().starts_with('ML-KEM-') {
 		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
 		return export_mlkem_key(format, key)
@@ -595,6 +616,7 @@ pub fn (subtle_crypto &SubtleCrypto) export_jwk(key &CryptoKey) !JsonWebKey {
 	if key.algorithm_name() == 'AES-OCB' {
 		return JsonWebKey.parse(export_aes_ocb_key(.jwk, key)!)
 	}
+	if key.algorithm_name().starts_with('ML-DSA-') { return export_mldsa_jwk(key) }
 	if key.algorithm_name().starts_with('ML-KEM-') { return error('NotSupportedError: Invalid key format') }
 	if key.algorithm_name() == 'Ed448' { return export_ed448_jwk(key) }
 	if key.algorithm_name() in ['X25519', 'X448'] { return export_exchange_jwk(key.algorithm_name(), key) }
