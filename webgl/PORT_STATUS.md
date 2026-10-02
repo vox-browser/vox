@@ -194,6 +194,12 @@ full IDL record; the source-named creation converter leaves xrCompatible false.
 Existing contexts return before option getters run. Native public, typed HTML,
 and typed attribute focused files passed with `-gc none`.
 
+getContextAttributes returns a fresh ordinary dictionary with lexical member
+order, matching `Meta/Generators/libweb_bindings/to_js_value.py:342-391` and the
+sorted dictionary members in `Meta/Utils/webidl_parser.py:554`. Its focused
+native host case passes with `-gc none`, including own-key order, ordinary
+prototype, and independent writable copies.
+
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
