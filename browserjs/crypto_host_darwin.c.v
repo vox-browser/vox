@@ -48,6 +48,7 @@ pub fn (mut host CryptoHost) install(mut runtime Runtime) ! {
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		host.prototypes[kind] = runtime.retain_javascript_value(prototype)!
 	}
+	if host.settings.is_secure_context() { host.install_digest()! }
 	crypto_bindings_[owner] = &host
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &CryptoHost(handle) }
@@ -89,11 +90,12 @@ fn (mut host CryptoHost) wrap(kind CryptoHostKind) !voidptr {
 
 fn (host &CryptoHost) record(value voidptr, kind CryptoHostKind) !&CryptoHostRecord {
 	if host.closed { return error('Crypto global has closed') }
+	interface_name := if kind == .subtle { 'SubtleCrypto' } else { 'Crypto' }
 	record := host.by_wrapper[value] or {
-		return error('TypeError: Not an object of type Crypto')
+		return error('TypeError: Not an object of type ${interface_name}')
 	}
 	if voidptr(record.host) != voidptr(host) || record.kind != kind {
-		return error('TypeError: Not an object of type Crypto')
+		return error('TypeError: Not an object of type ${interface_name}')
 	}
 	return record
 }

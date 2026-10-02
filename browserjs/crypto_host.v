@@ -32,6 +32,11 @@ mut:
 	array_is_view       voidptr
 	view_validation     voidptr
 	typed_array_witness voidptr
+	buffer_validation   voidptr
+	buffer_copy         voidptr
+	to_dom_string       voidptr
+	to_number           voidptr
+	has_property        voidptr
 	closed              bool
 }
 
