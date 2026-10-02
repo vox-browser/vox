@@ -21,6 +21,7 @@ mut:
 	import_map_                             ImportMap
 	outstanding_rejected_promises_weak_set_ []&dom.Promise
 	about_to_be_notified_rejected_promises_ []&dom.Promise
+	queuing_strategy_size_functions_ &GlobalQueuingStrategySizeFunctions = unsafe { nil }
 }
 
 pub struct QueuingStrategyChunk {

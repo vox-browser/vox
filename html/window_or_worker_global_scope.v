@@ -166,6 +166,7 @@ mut:
 	resource_timing_context_        ?&resourcetiming.ResourceTimingContext
 	indexed_db_                     ?&GlobalScopeIndexedDBFactory
 	crypto_                         ?&GlobalScopeCrypto
+	queuing_strategy_size_functions_ &GlobalQueuingStrategySizeFunctions = unsafe { nil }
 	caches_                         ?&GlobalScopeCacheStorage
 	trusted_types_                  ?&GlobalScopeTrustedTypePolicyFactory
 	fetch_host_                     voidptr
