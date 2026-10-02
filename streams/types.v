@@ -312,6 +312,7 @@ pub mut:
 mut:
 	fulfilled_callback_ ?ReadPromiseFulfilledCallback
 	rejected_callback_  ?ReadPromiseRejectedCallback
+	native_promise_     &webidl.Promise = unsafe { nil }
 }
 
 pub fn ReadPromise.pending() &ReadPromise {
@@ -322,6 +323,7 @@ pub fn ReadPromise.pending_in(realm StreamRealm, result_realm ?StreamRealm) &Rea
 	return &ReadPromise{
 		realm_:        realm
 		result_realm_: result_realm
+		native_promise_: webidl.create_promise_for(realm.promise_context())
 	}
 }
 
@@ -330,15 +332,9 @@ pub fn ReadPromise.fulfilled(value Value, done bool) &ReadPromise {
 }
 
 pub fn ReadPromise.fulfilled_in(realm StreamRealm, result_realm ?StreamRealm, value Value, done bool) &ReadPromise {
-	return &ReadPromise{
-		state_:        .fulfilled
-		realm_:        realm
-		result_realm_: result_realm
-		result_:       ReadResult{
-			value: value
-			done:  done
-		}
-	}
+	mut promise := ReadPromise.pending_in(realm, result_realm)
+	promise.resolve(value, done)
+	return promise
 }
 
 pub fn ReadPromise.rejected(reason string) &ReadPromise {
@@ -346,12 +342,9 @@ pub fn ReadPromise.rejected(reason string) &ReadPromise {
 }
 
 pub fn ReadPromise.rejected_in(realm StreamRealm, result_realm ?StreamRealm, reason string) &ReadPromise {
-	return &ReadPromise{
-		state_:        .rejected
-		reason_:       reason
-		realm_:        realm
-		result_realm_: result_realm
-	}
+	mut promise := ReadPromise.pending_in(realm, result_realm)
+	promise.reject(reason)
+	return promise
 }
 
 pub fn (promise &ReadPromise) state() PromiseState {
@@ -391,11 +384,13 @@ pub fn (mut promise ReadPromise) upon_settlement(fulfilled ReadPromiseFulfilledC
 
 fn (mut promise ReadPromise) resolve(value Value, done bool) {
 	if promise.state_ == .pending {
+		mut native := promise.ensure_native_promise()
 		promise.state_ = .fulfilled
 		promise.result_ = ReadResult{
 			value: value
 			done:  done
 		}
+		native.resolve(stream_read_result_value(value, done))
 		if callback := promise.fulfilled_callback_ {
 			promise.fulfilled_callback_ = none
 			promise.rejected_callback_ = none
@@ -406,8 +401,10 @@ fn (mut promise ReadPromise) resolve(value Value, done bool) {
 
 fn (mut promise ReadPromise) reject(reason string) {
 	if promise.state_ == .pending {
+		mut native := promise.ensure_native_promise()
 		promise.state_ = .rejected
 		promise.reason_ = reason
+		native.reject(webidl.string_value(reason))
 		if callback := promise.rejected_callback_ {
 			promise.fulfilled_callback_ = none
 			promise.rejected_callback_ = none
@@ -513,6 +510,8 @@ pub mut:
 	result_ BYOBReadResult
 	reason_ string
 	realm_  StreamRealm
+mut:
+	native_promise_ &webidl.Promise = unsafe { nil }
 }
 
 pub fn BYOBReadPromise.pending() &BYOBReadPromise {
@@ -522,6 +521,7 @@ pub fn BYOBReadPromise.pending() &BYOBReadPromise {
 pub fn BYOBReadPromise.pending_in(realm StreamRealm) &BYOBReadPromise {
 	return &BYOBReadPromise{
 		realm_: realm
+		native_promise_: webidl.create_promise_for(realm.promise_context())
 	}
 }
 
@@ -530,14 +530,9 @@ pub fn BYOBReadPromise.fulfilled(value []u8, done bool) &BYOBReadPromise {
 }
 
 pub fn BYOBReadPromise.fulfilled_in(realm StreamRealm, value []u8, done bool) &BYOBReadPromise {
-	return &BYOBReadPromise{
-		state_:  .fulfilled
-		realm_:  realm
-		result_: BYOBReadResult{
-			value: value
-			done:  done
-		}
-	}
+	mut promise := BYOBReadPromise.pending_in(realm)
+	promise.resolve(value, done)
+	return promise
 }
 
 pub fn BYOBReadPromise.rejected(reason string) &BYOBReadPromise {
@@ -545,11 +540,9 @@ pub fn BYOBReadPromise.rejected(reason string) &BYOBReadPromise {
 }
 
 pub fn BYOBReadPromise.rejected_in(realm StreamRealm, reason string) &BYOBReadPromise {
-	return &BYOBReadPromise{
-		state_:  .rejected
-		reason_: reason
-		realm_:  realm
-	}
+	mut promise := BYOBReadPromise.pending_in(realm)
+	promise.reject(reason)
+	return promise
 }
 
 pub fn (promise &BYOBReadPromise) state() PromiseState {
@@ -570,18 +563,22 @@ pub fn (promise &BYOBReadPromise) realm() StreamRealm {
 
 fn (mut promise BYOBReadPromise) resolve(value []u8, done bool) {
 	if promise.state_ == .pending {
+		mut native := promise.ensure_native_promise()
 		promise.state_ = .fulfilled
 		promise.result_ = BYOBReadResult{
 			value: value
 			done:  done
 		}
+		native.resolve(stream_read_result_value(bytes_value(value), done))
 	}
 }
 
 fn (mut promise BYOBReadPromise) reject(reason string) {
 	if promise.state_ == .pending {
+		mut native := promise.ensure_native_promise()
 		promise.state_ = .rejected
 		promise.reason_ = reason
+		native.reject(webidl.string_value(reason))
 	}
 }
 
