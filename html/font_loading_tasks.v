@@ -3,6 +3,17 @@ module html
 
 import dom
 import webidl
+import highresolutiontime
+
+fn font_loading_event_time_stamp_for_document(document &dom.Document) f64 {
+	settings_pointer := document.relevant_settings_object()
+	if settings_pointer == unsafe { nil } { return dom.current_event_timestamp() }
+	settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }
+	return highresolutiontime.current_high_resolution_time(highresolutiontime.TimeOriginContext{
+		time_origin:                      settings.time_origin()
+		cross_origin_isolated_capability: settings.cross_origin_isolated_capability() == .yes
+	})
+}
 
 fn font_loading_promise_context_for_document(document &dom.Document) webidl.PromiseContext {
 	settings_pointer := document.relevant_settings_object()

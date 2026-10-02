@@ -14,6 +14,7 @@ import math
 // base &Event's real type without RTTI.
 pub enum EventInterface {
 	event
+	font_face_set_load_event
 	ui_event
 	mouse_event
 	keyboard_event

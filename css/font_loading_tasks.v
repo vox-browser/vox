@@ -14,6 +14,23 @@ pub type FontLoadingPromiseContextProvider = fn (&dom.Document) webidl.PromiseCo
 
 __global font_loading_promise_context_provider_ ?FontLoadingPromiseContextProvider
 
+pub type FontLoadingEventTimeStampProvider = fn (&dom.Document) f64
+
+__global font_loading_event_time_stamp_provider_ ?FontLoadingEventTimeStampProvider
+
+pub fn install_font_loading_event_time_stamp_provider(provider FontLoadingEventTimeStampProvider) {
+	font_loading_event_time_stamp_provider_ = provider
+}
+
+fn font_loading_event_time_stamp(computer ?&FontComputer) f64 {
+	if owner := computer {
+		if document := owner.document_ {
+			if provider := font_loading_event_time_stamp_provider_ { return provider(document) }
+		}
+	}
+	return dom.current_event_timestamp()
+}
+
 pub fn install_font_loading_promise_context_provider(provider FontLoadingPromiseContextProvider) {
 	font_loading_promise_context_provider_ = provider
 }

@@ -9,14 +9,19 @@ pub struct FontFaceHost {
 	document &dom.Document
 	computer &css.FontComputer
 mut:
-	set                &css.FontFaceSet
-	faces              map[voidptr]&css.FontFaceObject
-	wrappers           map[voidptr]voidptr
-	set_wrapper        voidptr
-	face_factory       voidptr
-	set_cache          voidptr
-	buffer_source_view voidptr
-	closed             bool
+	set                 &css.FontFaceSet
+	faces               map[voidptr]&css.FontFaceObject
+	wrappers            map[voidptr]voidptr
+	set_wrapper         voidptr
+	face_factory        voidptr
+	set_cache           voidptr
+	buffer_source_view  voidptr
+	font_event_factory  voidptr
+	font_event_sequence voidptr
+	font_event_freeze   voidptr
+	font_events         map[voidptr]&css.FontFaceSetLoadEvent
+	font_event_faces    map[voidptr]voidptr
+	closed              bool
 }
 
 pub fn FontFaceHost.create(document &dom.Document) &FontFaceHost {
@@ -46,6 +51,7 @@ pub fn font_face_bootstrap() string {
  Object.defineProperty(FontFace.prototype,"load",{value:function load(){try{return call("load",this);}catch(error){return apply(reject,PromiseIntrinsic,[error]);}},enumerable:true,writable:true,configurable:true});
  Object.defineProperty(FontFace.prototype,Symbol.toStringTag,{value:"FontFace",configurable:true});
  const FontFaceSet=function FontFaceSet(){throw new TypeError("Illegal constructor");};
+ Object.setPrototypeOf(FontFaceSet,EventTarget);Object.setPrototypeOf(FontFaceSet.prototype,EventTarget.prototype);
  Object.defineProperty(FontFaceSet,"prototype",{writable:false});
  for(const property of ["ready","status","size"])Object.defineProperty(FontFaceSet.prototype,property,{get:function(){return call("set:"+property,this);},enumerable:true,configurable:true});
  for(const method of ["add","delete","has"]){Object.defineProperty(FontFaceSet.prototype,method,{value:function(font){if(arguments.length<1)throw new TypeError("FontFaceSet."+method+" requires one argument");return call("set:"+method,this,[font]);},enumerable:true,writable:true,configurable:true});}
@@ -56,13 +62,23 @@ pub fn font_face_bootstrap() string {
  Object.defineProperty(FontFaceSet.prototype,"forEach",{value:function forEach(callback,thisArg){call("set:brand",this);if(typeof callback!=="function")throw new TypeError("Callback is not callable");const set=this;return apply(methods.forEach,entries,[function(value){apply(callback,thisArg,[value,value,set]);}]);},enumerable:true,writable:true,configurable:true});
  Object.defineProperty(FontFaceSet.prototype,Symbol.iterator,{value:FontFaceSet.prototype.values,writable:true,configurable:true});
  Object.defineProperty(FontFaceSet.prototype,Symbol.toStringTag,{value:"FontFaceSet",configurable:true});
+ for(const name of ["loading","loadingdone","loadingerror"]){Object.defineProperty(FontFaceSet.prototype,"on"+name,{get:function(){return call("set:handler:get",this,[name]);},set:function(value){call("set:handler:set",this,[name,value]);},enumerable:true,configurable:true});}
+ function FontFaceSetLoadEvent(type,eventInitDict={}){if(!new.target)throw new TypeError("FontFaceSetLoadEvent constructor requires new");if(arguments.length<1)throw new TypeError("FontFaceSetLoadEvent requires one argument");call("event:construct",this,[type,eventInitDict]);}
+ Object.setPrototypeOf(FontFaceSetLoadEvent,Event);Object.setPrototypeOf(FontFaceSetLoadEvent.prototype,Event.prototype);Object.defineProperty(FontFaceSetLoadEvent,"prototype",{writable:false});
+ Object.defineProperty(FontFaceSetLoadEvent.prototype,"fontfaces",{get:function(){return call("event:faces",this);},enumerable:true,configurable:true});
+ Object.defineProperty(FontFaceSetLoadEvent.prototype,Symbol.toStringTag,{value:"FontFaceSetLoadEvent",configurable:true});
  Object.defineProperty(globalThis,"FontFace",{value:FontFace,writable:true,configurable:true});
  Object.defineProperty(globalThis,"FontFaceSet",{value:FontFaceSet,writable:true,configurable:true});
+ Object.defineProperty(globalThis,"FontFaceSetLoadEvent",{value:FontFaceSetLoadEvent,writable:true,configurable:true});
  const fontSet=Object.create(FontFaceSet.prototype);
  Object.defineProperty(document,"fonts",{get:function(){return fontSet;},enumerable:true,configurable:true});
  const create=Object.create,facePrototype=FontFace.prototype;
  globalThis.__ladybirdFontFaceFactory=function(){return create(facePrototype);};
  globalThis.__ladybirdFontFaceSetWrapper=fontSet;
+ const eventPrototype=FontFaceSetLoadEvent.prototype,freeze=Object.freeze;
+ globalThis.__ladybirdFontLoadEventFactory=function(){return create(eventPrototype);};
+ globalThis.__ladybirdFontLoadEventFreeze=function(array){return freeze(array);};
+ globalThis.__ladybirdFontLoadEventSequence=function(value){if(value===undefined)return [];if((typeof value!=="object"&&typeof value!=="function")||value===null)throw new TypeError("fontfaces must be a sequence");const method=value[Symbol.iterator];if(typeof method!=="function")throw new TypeError("fontfaces must be iterable");const iterator=apply(method,value,[]),out=[];for(const face of {[Symbol.iterator](){return iterator;}}){call("event:faceBrand",null,[face]);out.push(face);}return out;};
  const setAdd=Set.prototype.add,setDelete=Set.prototype.delete,setClear=Set.prototype.clear;
  globalThis.__ladybirdFontFaceSetCache=function(operation,face){if(operation==="add")apply(setAdd,entries,[face]);else if(operation==="delete")apply(setDelete,entries,[face]);else apply(setClear,entries,[]);};
  const isView=ArrayBuffer.isView,abLength=Object.getOwnPropertyDescriptor(ArrayBuffer.prototype,"byteLength").get;

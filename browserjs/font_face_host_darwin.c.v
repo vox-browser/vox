@@ -3,6 +3,8 @@ module browserjs
 import css
 import html
 import webidl
+import dom
+import highresolutiontime
 
 fn C.JSObjectGetTypedArrayBuffer(context voidptr, object voidptr, exception &voidptr) voidptr
 fn C.JSObjectGetArrayBufferBytesPtr(context voidptr, object voidptr, exception &voidptr) voidptr
@@ -17,6 +19,7 @@ pub fn (mut host FontFaceHost) install(mut runtime Runtime) ! {
 	}
 	runtime.bind_scripting_environment(settings)!
 	runtime.install_dom_exception_binding()!
+	runtime.install_event_target_binding()!
 	owner := voidptr(&runtime)
 	runtime.define_value_host_function('__ladybirdFontFace', fn [mut host, owner] (_ voidptr, args []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
@@ -30,7 +33,21 @@ pub fn (mut host FontFaceHost) install(mut runtime Runtime) ! {
 	host.set_wrapper = runtime.evaluate_host_value('__ladybirdFontFaceSetWrapper')!
 	host.set_cache = runtime.evaluate_host_value('__ladybirdFontFaceSetCache')!
 	host.buffer_source_view = runtime.evaluate_host_value('__ladybirdFontBufferSource')!
+	host.font_event_factory = runtime.evaluate_host_value('__ladybirdFontLoadEventFactory')!
+	host.font_event_sequence = runtime.evaluate_host_value('__ladybirdFontLoadEventSequence')!
+	host.font_event_freeze = runtime.evaluate_host_value('__ladybirdFontLoadEventFreeze')!
+	runtime.bind_event_target(host.set_wrapper, unsafe { &dom.EventTarget(host.set) })!
 	handle := voidptr(&host)
+	runtime.install_event_wrapper_provider(EventWrapperProvider{
+		owner: handle
+		create: fn [handle, owner] (event &dom.Event) !voidptr {
+			if event.interface_ != .font_face_set_load_event { return unsafe { nil } }
+			mut host := unsafe { &FontFaceHost(handle) }
+			mut runtime := unsafe { &Runtime(owner) }
+			if host.closed { return unsafe { nil } }
+			return host.wrap_font_event(mut runtime, unsafe { &css.FontFaceSetLoadEvent(event) })
+		}
+	})!
 	host.set.install_setlike_binding_hooks(css.FontFaceSetBindingHooks{
 		owner:       handle
 		did_add:     fn [handle, owner] (face &css.FontFaceObject) {
@@ -80,7 +97,32 @@ pub fn (mut host FontFaceHost) install(mut runtime Runtime) ! {
 		host.set.clear_setlike_binding_hooks(handle)
 		host.faces.clear()
 		host.wrappers.clear()
+		host.font_events.clear()
+		host.font_event_faces.clear()
 	})
+}
+
+fn (mut host FontFaceHost) cache_font_event(mut runtime Runtime, wrapper voidptr, event &css.FontFaceSetLoadEvent) ! {
+	runtime.bind_event(wrapper, event.base_event())!
+	host.font_events[wrapper] = event
+	mut faces := []voidptr{cap: event.fontfaces().len}
+	for face in event.fontfaces() { faces << host.wrap_face(mut runtime, unsafe { &css.FontFaceObject(face) })! }
+	mut exception := unsafe { nil }
+	array := C.JSObjectMakeArray(runtime.context, usize(faces.len), faces.data, &exception)
+	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+	runtime.retain_javascript_value(array)!
+	defer { runtime.release_javascript_value(array) }
+	frozen := runtime.call_javascript_function(host.font_event_freeze, C.JSValueMakeUndefined(runtime.context), [array])!
+	runtime.retain_javascript_value(frozen)!
+	host.font_event_faces[wrapper] = frozen
+}
+
+fn (mut host FontFaceHost) wrap_font_event(mut runtime Runtime, event &css.FontFaceSetLoadEvent) !voidptr {
+	binding := runtime.event_binding()!
+	if wrapper := binding.event_wrappers[voidptr(event.base_event())] { return wrapper }
+	wrapper := runtime.call_javascript_function(host.font_event_factory, C.JSValueMakeUndefined(runtime.context), [])!
+	host.cache_font_event(mut runtime, wrapper, event)!
+	return wrapper
 }
 
 fn (mut host FontFaceHost) wrap_face(mut runtime Runtime, face &css.FontFaceObject) !voidptr {
@@ -130,6 +172,46 @@ fn (mut host FontFaceHost) promise(mut runtime Runtime, promise &webidl.Promise)
 }
 
 fn (mut host FontFaceHost) call(mut runtime Runtime, method string, receiver voidptr, args []voidptr) !voidptr {
+	if method == 'event:faceBrand' {
+		if _ := host.faces[args[0]] { return C.JSValueMakeUndefined(runtime.context) }
+		return runtime.event_binding_type_error('fontfaces entry is not a FontFace')
+	}
+	if method == 'event:faces' {
+		return host.font_event_faces[receiver] or { return runtime.event_binding_type_error('Illegal FontFaceSetLoadEvent receiver') }
+	}
+	if method == 'event:construct' {
+		type_ := runtime.binding_dom_string(args[0])!
+		mut init := css.FontFaceSetLoadEventInit{
+			EventInit: dom.EventInit{
+				bubbles: runtime.event_binding_bool_property(args[1], 'bubbles', false)!
+				cancelable: runtime.event_binding_bool_property(args[1], 'cancelable', false)!
+				composed: runtime.event_binding_bool_property(args[1], 'composed', false)!
+			}
+		}
+		if C.JSValueIsObject(runtime.context, args[1]) {
+			value := runtime.binding_property(args[1], 'fontfaces')!
+			array := runtime.call_javascript_function(host.font_event_sequence, C.JSValueMakeUndefined(runtime.context), [value])!
+			runtime.retain_javascript_value(array)!
+			defer { runtime.release_javascript_value(array) }
+			length := runtime.binding_property(array, 'length')!
+			mut exception := unsafe { nil }
+			count := int(C.JSValueToNumber(runtime.context, length, &exception))
+			if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+			for index in 0 .. count {
+				face_wrapper := runtime.binding_property(array, index.str())!
+				face := host.faces[face_wrapper] or { return runtime.event_binding_type_error('fontfaces entry is not a FontFace') }
+				init.fontfaces << face
+			}
+		}
+		settings := unsafe { &html.EnvironmentSettingsObject(host.document.relevant_settings_object()) }
+		time_stamp := highresolutiontime.current_high_resolution_time(highresolutiontime.TimeOriginContext{
+			time_origin: settings.time_origin()
+			cross_origin_isolated_capability: settings.cross_origin_isolated_capability() == .yes
+		})
+		event := css.FontFaceSetLoadEvent.create_with_time_stamp(type_, init, time_stamp)
+		host.cache_font_event(mut runtime, receiver, event)!
+		return C.JSValueMakeUndefined(runtime.context)
+	}
 	if method == 'construct' {
 		family := runtime.binding_dom_string(args[0])!
 		view := runtime.call_javascript_function(host.buffer_source_view,
@@ -196,6 +278,13 @@ fn (mut host FontFaceHost) call(mut runtime Runtime, method string, receiver voi
 		}
 		mut set := host.set
 		operation := method[4..]
+		if operation == 'handler:get' {
+			return runtime.javascript_event_handler(unsafe { &dom.EventTarget(set) }, runtime.binding_dom_string(args[0])!)
+		}
+		if operation == 'handler:set' {
+			runtime.set_javascript_event_handler(unsafe { &dom.EventTarget(set) }, runtime.binding_dom_string(args[0])!, args[1])!
+			return C.JSValueMakeUndefined(runtime.context)
+		}
 		if operation == 'ready' { return host.promise(mut runtime, set.ready()) }
 		if operation == 'status' { return runtime.binding_string(set.status().str()) }
 		if operation == 'size' { return C.JSValueMakeNumber(runtime.context, set.set_entries().len) }

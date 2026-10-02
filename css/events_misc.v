@@ -169,7 +169,9 @@ pub mut:
 	fontfaces []&FontFace
 }
 
+@[heap]
 pub struct FontFaceSetLoadEvent {
+	dom.Event
 pub mut:
 	event      &dom.Event = unsafe { nil }
 	fontfaces_ []&FontFace
@@ -177,6 +179,16 @@ pub mut:
 
 pub fn FontFaceSetLoadEvent.create(event_name string, event_init FontFaceSetLoadEventInit) &FontFaceSetLoadEvent {
 	return FontFaceSetLoadEvent.new(event_name, event_init)
+}
+
+pub fn FontFaceSetLoadEvent.create_with_time_stamp(event_name string, event_init FontFaceSetLoadEventInit, time_stamp f64) &FontFaceSetLoadEvent {
+	mut event := FontFaceSetLoadEvent.new(event_name, event_init)
+	event.Event.set_time_stamp(time_stamp)
+	return event
+}
+
+pub fn FontFaceSetLoadEvent.create_for_fonts(event_name string, fontfaces []&FontFaceObject, time_stamp f64) &FontFaceSetLoadEvent {
+	return FontFaceSetLoadEvent.create_with_time_stamp(event_name, FontFaceSetLoadEventInit{fontfaces: fontfaces}, time_stamp)
 }
 
 // https://drafts.csswg.org/css-font-loading/#dom-fontfacesetloadevent-fontfacesetloadevent
@@ -192,10 +204,13 @@ pub fn FontFaceSetLoadEvent.new(event_name string, event_init FontFaceSetLoadEve
 		}
 		fontfaces << font_face
 	}
-	return &FontFaceSetLoadEvent{
-		event:      dom.Event.new_with_init(event_name, event_init.EventInit)
+	mut event := &FontFaceSetLoadEvent{
+		Event:      *dom.Event.new_with_init(event_name, event_init.EventInit)
 		fontfaces_: fontfaces
 	}
+	event.Event.interface_ = .font_face_set_load_event
+	event.event = unsafe { &dom.Event(event) }
+	return event
 }
 
 pub fn (e FontFaceSetLoadEvent) fontfaces() []&FontFace {
@@ -209,7 +224,7 @@ pub fn (mut e FontFaceSetLoadEvent) initialize() {
 
 pub fn (mut e FontFaceSetLoadEvent) visit_edges(mut visitor dom.CellVisitor) {
 	e.event.visit_edges(mut visitor)
-	// visitor.visit(m_fontfaces);
+	for face in e.fontfaces_ { visitor.visit(face) }
 }
 
 // --- StyleProperty ---

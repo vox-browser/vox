@@ -3306,9 +3306,7 @@ pub fn (mut set FontFaceSet) fire_a_font_load_event(name string, font_faces []&F
 		name: name
 		fontfaces: filtered
 	}
-	event := FontFaceSetLoadEvent.create(name, FontFaceSetLoadEventInit{
-		fontfaces: filtered
-	})
+	event := FontFaceSetLoadEvent.create_for_fonts(name, filtered, font_loading_event_time_stamp(set.font_computer_))
 	dom.event_target_dispatch_event(set.event_target(), event.base_event())
 }
 
