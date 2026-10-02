@@ -18,8 +18,8 @@ Validation: five native invocation cases pass with default GC and with `-gc none
 
 ## Remaining DN-01 boundaries
 
-- `compile_raw_event_handler()` still synthesizes a source string and returns an inert callback. It does not compile the source, preserve syntax failures through the engine, install the source document/form/element ObjectEnvironment chain, or set the compiled function's ScriptOrModule to null.
+- Raw Window handlers now use genuine owning dynamic functions, and raw-handler disabled/syntax state follows the source. Element handlers retain their raw source pending actual document/form/element ObjectEnvironments. See [raw Window compilation](RAW_WINDOW_EVENT_HANDLERS.md) for proof and remaining boundaries.
 - The compact document/element/global Window handler accessors and native click adapter still require integration with these actual owning callback records. Calling the native setter in these focused tests does not establish that public compact `window.onerror`, `onbeforeunload` or attribute-created handlers already use this path.
-- The raw-handler compiler's disabled-script and syntax-failure state transitions require their own source correction. Existing attribute CSP checks were inspected and preserved; this slice adds no compilation fallback or substitute scope algorithm.
+- The raw Window compiler preserves the pinned source's syntax location/reporting FIXME. Attribute CSP checks precede replacement and actual compilation.
 - The special-error predicate currently supports the translated native Window. Full Worker global wrappers and their WindowOrWorkerGlobalScope classification remain separate work.
 - Full LibJS execution and VM/wrapper GC are not implied by this JavaScriptCore adapter.
