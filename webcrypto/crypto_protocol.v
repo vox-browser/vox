@@ -620,7 +620,7 @@ pub fn parse_jwk_rsa_public_key(jwk JsonWebKey) !RsaPublicKeyData {
 }
 
 pub fn parse_jwk_symmetric_key(jwk JsonWebKey) ![]u8 {
-	return base64url_decode(jwk.k or { return error('DataError: JWK has no k member') })
+	return base64url_decode(jwk.k or { return error("DataError: JWK has no 'k' field") })
 }
 
 pub fn generate_random_key(length_bits u16) ![]u8 {

@@ -418,7 +418,7 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 		}
 		HmacKeyGenParams {
 			GeneratedKey{
-				key: generate_hmac_key(params, extractable, normalized_usages)!
+				key: generate_hmac_key(HmacKeyGenParams{ ...params, hash: normalize_an_algorithm(params.hash, 'digest')! }, extractable, normalized_usages)!
 			}
 		}
 		AlgorithmParams {
@@ -459,11 +459,12 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 	}
 }
 
-pub type ImportKeyParams = EcKeyImportParams | KmacImportParams | RsaHashedImportParams | string
+pub type ImportKeyParams = EcKeyImportParams | HmacImportParams | KmacImportParams | RsaHashedImportParams | string
 
 fn import_algorithm_name(algorithm ImportKeyParams) string {
 	return match algorithm {
 		KmacImportParams { algorithm.name }
+		HmacImportParams { algorithm.name }
 		RsaHashedImportParams { algorithm.name }
 		EcKeyImportParams { algorithm.name }
 		string { algorithm }
@@ -479,6 +480,15 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(import_algorithm_name(algorithm), 'importKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
+    if normalized == 'HMAC' {
+        supplied := if algorithm is HmacImportParams { algorithm } else { HmacImportParams{ hash: hash_name } }
+        params := HmacImportParams{ ...supplied, hash: normalize_an_algorithm(supplied.hash, 'digest')! }
+        mut key := import_hmac_key(params, format, material, extractable, normalized_usages)!
+        if normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+        key.set_extractable(extractable)
+        key.set_usages(normalized_usages)
+        return key
+    }
     if normalized in ['Argon2d', 'Argon2i', 'Argon2id'] {
         mut key := import_argon2_key(normalized, format, material, extractable, normalized_usages)!
         if normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
@@ -559,6 +569,7 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(import_algorithm_name(algorithm), 'importKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
+	if normalized == 'HMAC' { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
 	if normalized in ['ECDSA', 'ECDH'] { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
 	if normalized in ['RSA-OAEP', 'RSA-PSS', 'RSASSA-PKCS1-v1_5'] { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
 	if normalized == 'AES-OCB' {
@@ -632,6 +643,10 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 pub fn (subtle_crypto &SubtleCrypto) export_key(format KeyFormat, key &CryptoKey) ![]u8 {
 	_ = subtle_crypto
 	normalize_an_algorithm(key.algorithm_name(), 'exportKey')!
+    if key.algorithm_name() == 'HMAC' {
+        if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
+        return export_hmac_key(format, key)
+    }
 	if key.algorithm_name() in ['ECDSA', 'ECDH'] {
 		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
 		return export_ec_key(format, key)
@@ -682,6 +697,7 @@ pub fn (subtle_crypto &SubtleCrypto) export_jwk(key &CryptoKey) !JsonWebKey {
 	if !key.extractable {
 		return error('InvalidAccessError: Key is not extractable')
 	}
+	if key.algorithm_name() == 'HMAC' { return export_hmac_jwk(key) }
 	if key.algorithm_name() in ['ECDSA', 'ECDH'] { return export_ec_jwk(key) }
 	if key.algorithm_name() in ['RSA-OAEP', 'RSA-PSS', 'RSASSA-PKCS1-v1_5'] { return export_rsa_jwk(key) }
 	if key.algorithm_name() in ['KMAC128', 'KMAC256'] {

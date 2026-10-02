@@ -77,8 +77,8 @@ pub fn HMAC.create() HMAC { return HMAC{} }
 pub fn (_ HMAC) sign(_ AlgorithmParams, key &CryptoKey, data []u8) ![]u8 { return hmac_sign(key, data) }
 pub fn (_ HMAC) verify(_ AlgorithmParams, key &CryptoKey, signature []u8, data []u8) !bool { return hmac_verify(key, signature, data) }
 pub fn (_ HMAC) generate_key(params HmacKeyGenParams, extractable bool, usages []KeyUsage) !GeneratedKey { return GeneratedKey{key: generate_hmac_key(params, extractable, usages)!} }
-pub fn (_ HMAC) import_key(params HmacImportParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_secret_algorithm('HMAC', format, material, extractable, usages, params.hash) }
-pub fn (_ HMAC) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_algorithm_key(format, key) }
+pub fn (_ HMAC) import_key(params HmacImportParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_hmac_key(params, format, material, extractable, usages) }
+pub fn (_ HMAC) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_hmac_key(format, key) }
 pub fn (_ HMAC) get_key_length(params HmacImportParams) !KeyLengthResult {
 	length := params.length or { u32(hash_block_size(params.hash)! * 8) }
 	if length == 0 { return error('TypeError: Invalid key length') }

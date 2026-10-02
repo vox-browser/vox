@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webcrypto
 
-// LibCrypto uses OpenSSL 3 EVP_MAC for KMAC. Keep the same provider backend.
+// LibCrypto uses OpenSSL 3 EVP_MAC for HMAC/KMAC and EVP_CIPHER for AES-OCB.
 #pkgconfig openssl
 #include "@DIR/native_crypto.h"
 
@@ -29,4 +29,15 @@ fn native_aes_ocb(decrypt bool, key []u8, input []u8, iv []u8, aad []u8, tag_siz
 		return error('OperationError: ${action} failed')
 	}
 	return output[..output_size].clone()
+}
+
+fn C.vox_hmac(&char, &u8, usize, &u8, usize, &u8, &usize) int
+
+fn native_hmac(hash string, key []u8, message []u8) ![]u8 {
+    mut output := []u8{len: 64}
+    mut size := usize(output.len)
+    if C.vox_hmac(hash.str, key.data, usize(key.len), message.data, usize(message.len), output.data, &size) != 1 {
+        return error('OperationError: HMAC operation failed')
+    }
+    return output[..int(size)].clone()
 }

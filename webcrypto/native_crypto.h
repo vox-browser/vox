@@ -6,6 +6,34 @@
 #define VOX_WEBCRYPTO_NATIVE_CRYPTO_H
 #include <openssl/core_names.h>
 #include <openssl/evp.h>
+#include <string.h>
+
+/* LibCrypto/Authentication/HMAC.cpp: reset, update, digest. */
+static int vox_hmac(char const* hash, unsigned char const* key, size_t key_size,
+    unsigned char const* message, size_t message_size, unsigned char* output, size_t* output_size)
+{
+    EVP_MAC* mac = EVP_MAC_fetch(NULL, "HMAC", NULL);
+    if (!mac)
+        return 0;
+    EVP_MAC_CTX* ctx = EVP_MAC_CTX_new(mac);
+    EVP_MAC_free(mac);
+    if (!ctx)
+        return 0;
+    OSSL_PARAM params[] = {
+        OSSL_PARAM_utf8_string(OSSL_MAC_PARAM_DIGEST, (char*)hash, strlen(hash)),
+        OSSL_PARAM_END,
+    };
+    int ok = EVP_MAC_init(ctx, key, key_size, params)
+        && EVP_MAC_update(ctx, message, message_size);
+    if (ok) {
+        size_t size = EVP_MAC_CTX_get_mac_size(ctx);
+        ok = size <= *output_size && EVP_MAC_final(ctx, output, &size, size);
+        if (ok)
+            *output_size = size;
+    }
+    EVP_MAC_CTX_free(ctx);
+    return ok;
+}
 
 static int vox_kmac(char const* name, unsigned char const* key, size_t key_size,
     unsigned char const* message, size_t message_size, unsigned char const* custom,

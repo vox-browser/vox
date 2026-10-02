@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // Translation of Crypto/CryptoAlgorithms.{h,cpp}. This file contains the
-// algorithms whose backends are available in the pure-V runtime; registry and
+// algorithm operation bodies; native backend adapters follow upstream LibCrypto.
+// Registry and
 // WebCrypto access checks live in subtle_crypto.v.
 module webcrypto
 
 import crypto.aes
 import crypto.cipher
 import crypto.ed25519
-import crypto.hmac
 import crypto.rand
 import crypto.sha1
 import crypto.sha256
@@ -253,32 +253,18 @@ pub fn digest_bytes(algorithm string, data []u8) ![]u8 {
 }
 
 fn hash_block_size(name string) !int {
-	return match canonical_hash_name(name)! {
-		'SHA-1', 'SHA-256' { 64 }
-		'SHA-384', 'SHA-512' { 128 }
-		'SHA3-256' { 136 }
-		'SHA3-384' { 104 }
-		'SHA3-512' { 72 }
-		else {
-			return error('NotSupportedError: Unsupported hash')
-		}
-	}
+    return match name {
+        'SHA-1', 'SHA-256' { 64 }
+        'SHA-384', 'SHA-512' { 128 }
+        else { return error("NotSupportedError: Invalid hash function '${name}'") }
+    }
 }
 
 fn hmac_bytes(hash_name string, key []u8, data []u8) ![]u8 {
-	canonical := canonical_hash_name(hash_name)!
-	return match canonical {
-		'SHA-1' { hmac.new(key, data, sha1.sum, 64) }
-		'SHA-256' { hmac.new(key, data, sha256.sum256, 64) }
-		'SHA-384' { hmac.new(key, data, sha512.sum384, 128) }
-		'SHA-512' { hmac.new(key, data, sha512.sum512, 128) }
-		'SHA3-256' { hmac.new(key, data, sha3.sum256, 136) }
-		'SHA3-384' { hmac.new(key, data, sha3.sum384, 104) }
-		'SHA3-512' { hmac.new(key, data, sha3.sum512, 72) }
-		else {
-			return error('NotSupportedError: Unsupported HMAC hash')
-		}
-	}
+    if hash_name !in ['SHA-1', 'SHA-256', 'SHA-384', 'SHA-512'] {
+        return error("NotSupportedError: Invalid hash function '${hash_name}'")
+    }
+    return native_hmac(hash_name, key, data)
 }
 
 pub fn hmac_sign(key &CryptoKey, data []u8) ![]u8 {
@@ -680,17 +666,13 @@ pub fn import_secret_key(algorithm string, material []u8, extractable bool, usag
 				length: u16(material.len * 8)
 			}, usages, material)
 		}
-		'HMAC' {
-			if material.len == 0 {
-				return error('DataError: HMAC key must not be empty')
-			}
-			validate_usages(usages, [KeyUsage.sign, .verify])!
-			hash := canonical_hash_name(hash_name)!
-			return CryptoKey.create(.secret, extractable, HmacKeyAlgorithm{
-				hash: hash
-				length: u32(material.len * 8)
-			}, usages, material)
-		}
+        'HMAC' {
+            hash := normalize_an_algorithm(hash_name, 'digest')!
+            mut key := import_hmac_key(HmacImportParams{ hash: hash }, .raw, material, extractable, usages)!
+            key.set_extractable(extractable)
+            key.set_usages(usages)
+            return key
+        }
 		'ChaCha20-Poly1305' {
 			if material.len != 32 {
 				return error('DataError: ChaCha20-Poly1305 key must be 256 bits')
@@ -709,21 +691,6 @@ pub fn import_secret_key(algorithm string, material []u8, extractable bool, usag
 			return error('NotSupportedError: Raw secret import is unavailable for ${canonical}')
 		}
 	}
-}
-
-pub fn generate_hmac_key(params HmacKeyGenParams, extractable bool, usages []KeyUsage) !&CryptoKey {
-	validate_usages(usages, [KeyUsage.sign, .verify])!
-	hash := canonical_hash_name(params.hash)!
-	default_length := u32(hash_block_size(hash)! * 8)
-	length := params.length or { default_length }
-	if length == 0 || length % 8 != 0 {
-		return error('OperationError: HMAC key length must be a positive multiple of 8')
-	}
-	material := rand.bytes(int(length / 8))!
-	return CryptoKey.create(.secret, extractable, HmacKeyAlgorithm{
-		hash: hash
-		length: length
-	}, usages, material)
 }
 
 pub fn generate_ed25519_key(extractable bool, usages []KeyUsage) !CryptoKeyPair {

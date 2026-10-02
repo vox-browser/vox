@@ -473,6 +473,7 @@ fn normalized_generate(algorithm NormalizedCryptoAlgorithm, extractable bool, us
 
 fn normalized_import(algorithm NormalizedCryptoAlgorithm, format KeyFormat, bytes []u8, extractable bool, usages []KeyUsage) !&CryptoKey {
 	params := algorithm.params
+	if params is HmacImportParams { return HMAC.create().import_key(params, format, bytes, extractable, usages) }
 	if params is RsaHashedImportParams {
 		return match algorithm.name {
 			'RSA-OAEP' { RSAOAEP.create().import_key(params, format, bytes, extractable, usages)! }
