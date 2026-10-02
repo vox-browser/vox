@@ -9,6 +9,7 @@ module webidl
 
 import libjs
 import math
+import math.big
 
 pub enum EnforceRange {
 	no
@@ -94,7 +95,10 @@ pub fn value_to_number(value Value) !f64 {
 // actual engine objects use their owning ToPrimitive/ToBigInt operation.
 pub fn value_to_bigint_int64(value Value) !i64 {
 	match value.kind {
-		.bigint { return value.bigint_value }
+		.bigint {
+			if integer := value.bigint_record_ { return integer.to_i64() }
+			return value.bigint_value
+		}
 		.boolean { return if value.boolean_value { i64(1) } else { i64(0) } }
 		.string_ {
 			integer := libjs.string_to_bigint(libjs.utf16_string(value.string_value)) or {
@@ -106,6 +110,34 @@ pub fn value_to_bigint_int64(value Value) !i64 {
 			actual := value.runtime_value_ or { return error('TypeError: value has no runtime reference') }
 			conversion := actual.bigint_int64_conversion or {
 				return error('TypeError: runtime value has no ToBigInt operation')
+			}
+			return conversion()!
+		}
+		else {
+			name := if value.kind == .null_ { 'null' } else { value.kind.str() }
+			return error('TypeError: Cannot convert ${name} to BigInt')
+		}
+	}
+}
+
+// Runtime/Value.cpp::ToBigInt, preserving the complete BigInt primitive.
+// Objects at the actual-engine boundary perform ToPrimitive(number) once.
+pub fn value_to_bigint(value Value) !&libjs.BigInt {
+	match value.kind {
+		.bigint {
+			if integer := value.bigint_record_ { return integer }
+			return libjs.BigInt.create(big.integer_from_i64(value.bigint_value))
+		}
+		.boolean { return libjs.BigInt.create(big.integer_from_int(if value.boolean_value { 1 } else { 0 })) }
+		.string_ {
+			return libjs.string_to_bigint(libjs.utf16_string(value.string_value)) or {
+				return error('SyntaxError: Invalid value for BigInt: ${value.string_value}')
+			}
+		}
+		.runtime_value {
+			actual := value.runtime_value_ or { return error('TypeError: value has no runtime reference') }
+			conversion := actual.bigint_conversion or {
+				return error('TypeError: runtime value has no full ToBigInt operation')
 			}
 			return conversion()!
 		}

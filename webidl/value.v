@@ -29,6 +29,9 @@ pub:
 	boolean_value       bool
 	number_value        f64
 	bigint_value        i64
+	// Optional actual arbitrary-precision primitive; bigint_value remains its
+	// low signed-64-bit compatibility projection when this record is present.
+	bigint_record_      ?&libjs.BigInt
 	string_value        string
 	object_value        map[string]Value
 	sequence_value      []Value
@@ -57,6 +60,8 @@ pub:
 	number_conversion ?fn () !f64
 	// Owning engine ToBigInt followed by the source low 64-bit signed projection.
 	bigint_int64_conversion ?fn () !i64
+	// Full ToBigInt, without the Wasm i64 modulo projection.
+	bigint_conversion ?fn () !&libjs.BigInt
 	boolean_conversion ?fn () !bool
 	same_value ?fn (RuntimeValue) !bool
 	string_conversion fn () !string @[required]
@@ -110,6 +115,10 @@ pub fn bigint_value(value i64) Value {
 		kind:         .bigint
 		bigint_value: value
 	}
+}
+
+pub fn bigint_value_for_record(integer &libjs.BigInt) Value {
+	return Value{kind: .bigint, bigint_value: integer.to_i64(), bigint_record_: integer}
 }
 
 pub fn string_value(value string) Value {
@@ -235,7 +244,7 @@ pub fn to_string(value Value) !string {
 			format_number(value.number_value)
 		}
 		.bigint {
-			value.bigint_value.str()
+			if integer := value.bigint_record_ { integer.big_integer.str() } else { value.bigint_value.str() }
 		}
 		.string_ {
 			value.string_value

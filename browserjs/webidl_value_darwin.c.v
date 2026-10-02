@@ -8,6 +8,7 @@ module browserjs
 
 import strconv
 import webidl
+import libjs
 
 fn C.JSValueToBoolean(context voidptr, value voidptr) bool
 
@@ -43,6 +44,15 @@ pub fn (mut runtime Runtime) webidl_value(value voidptr) !webidl.Value {
 			text := js_string_to_v(owner.context, converted)!
 			return strconv.parse_int(text, 10, 64)!
 		}
+		bigint_conversion: fn [owner_handle, value] () !&libjs.BigInt {
+			owner := unsafe { &Runtime(owner_handle) }
+			owner.require_javascript_value_context()!
+			converted := owner.call_engine_function(owner.value_bigint_intrinsic_, [value])!
+			text := js_string_to_v(owner.context, converted)!
+			return libjs.string_to_bigint(libjs.utf16_string(text)) or {
+				return error('Actual engine BigInt primitive could not be projected')
+			}
+		}
 		boolean_conversion: fn [owner_handle, value] () !bool {
 			owner := unsafe { &Runtime(owner_handle) }
 			owner.require_javascript_value_context()!
@@ -70,6 +80,18 @@ pub fn (mut runtime Runtime) webidl_value(value voidptr) !webidl.Value {
 			return bytes[..int(written) - 1].bytestr()
 		}
 	})
+}
+
+// Translate the complete source BigInt record into an actual engine primitive.
+// Decimal text is the arithmetic ABI, never the returned JavaScript value.
+pub fn (mut runtime Runtime) javascript_bigint(value webidl.Value) !voidptr {
+	runtime.require_javascript_value_context()!
+	if value.kind != .bigint { return error('BigInt projection requires a source BigInt primitive') }
+	integer := webidl.value_to_bigint(value)!
+	text := js_source_string(integer.big_integer.str())
+	defer { C.JSStringRelease(text) }
+	actual := runtime.call_engine_function(runtime.value_bigint_intrinsic_, [C.JSValueMakeString(runtime.context, text)])!
+	return runtime.retain_javascript_value(actual)
 }
 
 pub fn (runtime &Runtime) actual_webidl_value(value webidl.Value) !voidptr {

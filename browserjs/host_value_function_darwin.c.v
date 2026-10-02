@@ -98,7 +98,36 @@ fn (mut runtime Runtime) initialize_javascript_value_intrinsics() ! {
 	// BigInt.asIntN performs ToBigInt (including the Number rejection) and
 	// exactly the signed low-64-bit projection used by Wasm i64 conversion.
 	runtime.value_bigint_int64_intrinsic_ = runtime.evaluate_host_value('(function(){const asIntN=BigInt.asIntN;return function(value){return asIntN(64,value)}})()')!
+	// Runtime/Value.cpp::ToPrimitive(number) + ToBigInt. JSC's BigInt
+	// constructor accepts Number, so reject that primitive before delegating
+	// its remaining primitive cases. Retain full width before Table bounds.
+	runtime.value_bigint_intrinsic_ = runtime.evaluate_host_value(bigint_conversion_intrinsic)!
 }
+
+const bigint_conversion_intrinsic = r'(function(){
+ const B=BigInt,T=TypeError,apply=Reflect.apply,exoticKey=Symbol.toPrimitive;
+ const object=value=>value!==null&&(typeof value==="object"||typeof value==="function");
+ const primitive=input=>{
+  if(!object(input))return input;
+  const exotic=input[exoticKey];
+  if(exotic!==undefined&&exotic!==null){
+   if(typeof exotic!=="function")throw new T("@@toPrimitive is not callable");
+   const result=apply(exotic,input,["number"]);
+   if(!object(result))return result;
+   throw new T("@@toPrimitive returned an object");
+  }
+  for(let index=0;index<2;index++){
+   const name=index===0?"valueOf":"toString";
+   const method=input[name];
+   if(typeof method==="function"){
+    const result=apply(method,input,[]);
+    if(!object(result))return result;
+   }
+  }
+  throw new T("Cannot convert object to primitive value");
+ };
+ return function(value){const result=primitive(value);if(typeof result==="number")throw new T("Cannot convert number to BigInt");return B(result)};
+})()'
 
 fn (runtime &Runtime) actual_javascript_exception(value voidptr) IError {
 	mut owner := unsafe { &Runtime(runtime) }
