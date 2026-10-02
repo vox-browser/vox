@@ -6,6 +6,7 @@
 #include <openssl/evp.h>
 #include <openssl/ec.h>
 #include <openssl/bn.h>
+#include <openssl/param_build.h>
 
 /* LibCrypto/Curves/SECPxxxr1.cpp generate_private_key, scalar_to_bytes. */
 static int vox_ec_private(const char* curve, unsigned char* output, size_t size)
@@ -61,5 +62,123 @@ cleanup:
     BN_free(d); BN_free(y); BN_free(x);
     EC_POINT_free(expected); EC_POINT_free(point); EC_GROUP_free(group);
     return result;
+}
+/* sign/verify import the same group-name and scalar/point parameters upstream uses. */
+static const char* vox_ec_import(const char* curve, const unsigned char* bytes, size_t size, int private_key, EVP_PKEY** key)
+{
+    const char* failure = NULL;
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_from_name(NULL, "EC", NULL);
+    OSSL_PARAM_BLD* builder = NULL;
+    OSSL_PARAM* params = NULL;
+    BIGNUM* d = NULL;
+    if (!ctx) { failure = "EVP_PKEY_CTX_new_from_name(nullptr, \"EC\", nullptr) failed"; goto cleanup; }
+    if (EVP_PKEY_fromdata_init(ctx) != 1) { failure = "EVP_PKEY_fromdata_init(ctx_import.ptr()) failed"; goto cleanup; }
+    builder = OSSL_PARAM_BLD_new();
+    if (!builder) { failure = "OSSL_PARAM_BLD_new() failed"; goto cleanup; }
+    if (OSSL_PARAM_BLD_push_utf8_string(builder, OSSL_PKEY_PARAM_GROUP_NAME, curve, strlen(curve)) != 1) {
+        failure = "OSSL_PARAM_BLD_push_utf8_string(params_bld, OSSL_PKEY_PARAM_GROUP_NAME, m_curve_name, strlen(m_curve_name)) failed"; goto cleanup;
+    }
+    if (private_key) {
+        d = BN_bin2bn(bytes, size, NULL);
+        if (!d) { failure = "BN_bin2bn(bytes.data(), bytes.size(), nullptr) failed"; goto cleanup; }
+        if (OSSL_PARAM_BLD_push_BN(builder, OSSL_PKEY_PARAM_PRIV_KEY, d) != 1) {
+            failure = "OSSL_PARAM_BLD_push_BN(params_bld, OSSL_PKEY_PARAM_PRIV_KEY, d.ptr()) failed"; goto cleanup;
+        }
+    } else if (OSSL_PARAM_BLD_push_octet_string(builder, OSSL_PKEY_PARAM_PUB_KEY, bytes, size) != 1) {
+        failure = "OSSL_PARAM_BLD_push_octet_string(params_bld, OSSL_PKEY_PARAM_PUB_KEY, pubkey_bytes.data(), pubkey_bytes.size()) failed"; goto cleanup;
+    }
+    params = OSSL_PARAM_BLD_to_param(builder);
+    if (!params) { failure = "OSSL_PARAM_BLD_to_param(params_bld) failed"; goto cleanup; }
+    if (EVP_PKEY_fromdata(ctx, key, private_key ? EVP_PKEY_KEYPAIR : EVP_PKEY_PUBLIC_KEY, params) != 1)
+        failure = private_key ? "EVP_PKEY_fromdata(ctx_import.ptr(), &key_ptr, EVP_PKEY_KEYPAIR, params) failed"
+            : "EVP_PKEY_fromdata(ctx_import.ptr(), &key_ptr, EVP_PKEY_PUBLIC_KEY, params) failed";
+cleanup:
+    BN_free(d); OSSL_PARAM_free(params); OSSL_PARAM_BLD_free(builder); EVP_PKEY_CTX_free(ctx);
+    return failure;
+}
+
+static const char* vox_ec_sign(const char* curve, const unsigned char* d, size_t d_size,
+    const unsigned char* hash, size_t hash_size, unsigned char* output, size_t scalar_size)
+{
+    EVP_PKEY* key = NULL;
+    const char* failure = vox_ec_import(curve, d, d_size, 1, &key);
+    EVP_PKEY_CTX* ctx = NULL;
+    unsigned char* encoded = NULL;
+    ECDSA_SIG* signature = NULL;
+    size_t size = 0;
+    if (failure) goto cleanup;
+    ctx = EVP_PKEY_CTX_new_from_pkey(NULL, key, NULL);
+    if (!ctx) { failure = "EVP_PKEY_CTX_new_from_pkey(nullptr, key.ptr(), nullptr) failed"; goto cleanup; }
+    if (EVP_PKEY_sign_init(ctx) != 1) { failure = "EVP_PKEY_sign_init(ctx.ptr()) failed"; goto cleanup; }
+    if (EVP_PKEY_sign(ctx, NULL, &size, hash, hash_size) != 1) { failure = "EVP_PKEY_sign(ctx.ptr(), nullptr, &sig_len, hash.data(), hash.size()) failed"; goto cleanup; }
+    encoded = OPENSSL_malloc(size);
+    if (!encoded) { failure = "Failed to allocate signature"; goto cleanup; }
+    if (EVP_PKEY_sign(ctx, encoded, &size, hash, hash_size) != 1) { failure = "EVP_PKEY_sign(ctx.ptr(), sig.data(), &sig_len, hash.data(), hash.size()) failed"; goto cleanup; }
+    const unsigned char* cursor = encoded;
+    signature = d2i_ECDSA_SIG(NULL, &cursor, size);
+    if (!signature) { failure = "d2i_ECDSA_SIG(nullptr, &sig_data, sig.size()) failed"; goto cleanup; }
+    if (BN_bn2binpad(ECDSA_SIG_get0_r(signature), output, scalar_size) != (int)scalar_size
+        || BN_bn2binpad(ECDSA_SIG_get0_s(signature), output + scalar_size, scalar_size) != (int)scalar_size)
+        failure = "Scalar is too large for the given size";
+cleanup:
+    ECDSA_SIG_free(signature); OPENSSL_free(encoded); EVP_PKEY_CTX_free(ctx); EVP_PKEY_free(key);
+    return failure;
+}
+
+static const char* vox_ec_verify(const char* curve, const unsigned char* public_bytes, size_t public_size,
+    const unsigned char* hash, size_t hash_size, const unsigned char* bytes, size_t half_size, int* result)
+{
+    static const unsigned char zero = 0;
+    if (!bytes) bytes = &zero;
+    EVP_PKEY* key = NULL;
+    const char* failure = vox_ec_import(curve, public_bytes, public_size, 0, &key);
+    EVP_PKEY_CTX* ctx = NULL;
+    ECDSA_SIG* signature = NULL;
+    BIGNUM* r = NULL;
+    BIGNUM* s = NULL;
+    unsigned char* encoded = NULL;
+    if (failure) goto cleanup;
+    ctx = EVP_PKEY_CTX_new_from_pkey(NULL, key, NULL);
+    if (!ctx) { failure = "EVP_PKEY_CTX_new_from_pkey(nullptr, key.ptr(), nullptr) failed"; goto cleanup; }
+    if (EVP_PKEY_verify_init(ctx) != 1) { failure = "EVP_PKEY_verify_init(ctx.ptr()) failed"; goto cleanup; }
+    signature = ECDSA_SIG_new();
+    if (!signature) { failure = "ECDSA_SIG_new() failed"; goto cleanup; }
+    r = BN_bin2bn(bytes, half_size, NULL);
+    s = BN_bin2bn(bytes + half_size, half_size, NULL);
+    if (!r || !s) { failure = "BN_bin2bn(bytes.data(), bytes.size(), nullptr) failed"; goto cleanup; }
+    if (ECDSA_SIG_set0(signature, r, s) != 1) { failure = "ECDSA_SIG_set0(sig_obj, BN_dup(r.ptr()), BN_dup(s.ptr())) failed"; goto cleanup; }
+    r = NULL; s = NULL;
+    int size = i2d_ECDSA_SIG(signature, &encoded);
+    if (size <= 0) { failure = "ret failed"; goto cleanup; }
+    int verified = EVP_PKEY_verify(ctx, encoded, size, hash, hash_size);
+    if (verified == 1 || verified == 0) *result = verified;
+    else failure = "ret failed";
+cleanup:
+    OPENSSL_free(encoded); BN_free(s); BN_free(r); ECDSA_SIG_free(signature);
+    EVP_PKEY_CTX_free(ctx); EVP_PKEY_free(key);
+    return failure;
+}
+
+/* compute_coordinate: multiply the supplied public point by the private scalar. */
+static const char* vox_ec_coordinate(const char* curve, const unsigned char* d_bytes, size_t d_size,
+    const unsigned char* x_bytes, size_t x_size, const unsigned char* y_bytes, size_t y_size,
+    unsigned char* x_out, unsigned char* y_out, size_t size)
+{
+    const char* failure = NULL;
+    EC_GROUP* group = EC_GROUP_new_by_curve_name(EC_curve_nist2nid(curve));
+    EC_POINT* q = group ? EC_POINT_new(group) : NULL;
+    EC_POINT* r = group ? EC_POINT_new(group) : NULL;
+    BIGNUM* d = BN_bin2bn(d_bytes, d_size, NULL);
+    BIGNUM* x = BN_bin2bn(x_bytes, x_size, NULL);
+    BIGNUM* y = BN_bin2bn(y_bytes, y_size, NULL);
+    if (!group || !q || !r || !d || !x || !y) { failure = "Failed to create EC coordinate"; goto cleanup; }
+    if (EC_POINT_set_affine_coordinates(group, q, x, y, NULL) != 1) { failure = "EC_POINT_set_affine_coordinates(group, q, qx.ptr(), qy.ptr(), nullptr) failed"; goto cleanup; }
+    if (EC_POINT_mul(group, r, NULL, q, d, NULL) != 1) { failure = "EC_POINT_mul(group, r, nullptr, q, scalar_int.ptr(), nullptr) failed"; goto cleanup; }
+    if (EC_POINT_get_affine_coordinates(group, r, x, y, NULL) != 1) { failure = "EC_POINT_get_affine_coordinates(group, r, rx.ptr(), ry.ptr(), nullptr) failed"; goto cleanup; }
+    if (BN_bn2binpad(x, x_out, size) != (int)size || BN_bn2binpad(y, y_out, size) != (int)size)
+        failure = "Scalar is too large for the given size";
+cleanup:
+    BN_free(y); BN_free(x); BN_free(d); EC_POINT_free(r); EC_POINT_free(q); EC_GROUP_free(group);
+    return failure;
 }
 #endif

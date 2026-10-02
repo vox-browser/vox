@@ -34,3 +34,53 @@ fn generate_ec_key(params EcKeyGenParams, extractable bool, usages []KeyUsage) !
 		}
 	}
 }
+
+fn ecdsa_digest(hash string, message []u8) ![]u8 {
+	if hash !in ['SHA-1', 'SHA-256', 'SHA-384', 'SHA-512'] {
+		return error("NotSupportedError: Invalid hash function '${hash}'")
+	}
+	return digest_bytes(hash, message)
+}
+
+fn ecdsa_sign(params EcdsaParams, key &CryptoKey, message []u8) ![]u8 {
+	if key.type_ != .private_key { return error('InvalidAccessError: Key is not a private key') }
+	digest := ecdsa_digest(params.hash, message)!
+	curve := (key.algorithm as EcKeyAlgorithm).named_curve
+	if ec_scalar_size(curve) == 0 { return error('DataError: Invalid algorithm') }
+	return native_ec_sign(curve, (key.internal_handle_ as EcPrivateKeyHandle).d, digest)
+}
+
+fn ecdsa_verify(params EcdsaParams, key &CryptoKey, signature []u8, message []u8) !bool {
+	if key.type_ != .public_key { return error('InvalidAccessError: Key is not a public key') }
+	digest := ecdsa_digest(params.hash, message)!
+	curve := (key.algorithm as EcKeyAlgorithm).named_curve
+	if ec_scalar_size(curve) == 0 { return error('NotSupportedError: Invalid algorithm') }
+	// Source splits at floor(size / 2), preserving its ignored final odd byte.
+	return native_ec_verify(curve, key.internal_handle_ as EcPublicKeyHandle, signature, digest)
+}
+
+fn ecdh_derive_bits(params EcdhKeyDeriveParams, key &CryptoKey, length ?u32) ![]u8 {
+	if key.type_ != .private_key { return error('InvalidAccessError: Key is not a private key') }
+	public_key := params.public_key
+	if public_key.type_ != .public_key {
+		return error('InvalidAccessError: Public key is not a public key')
+	}
+	algorithm := key.algorithm as EcKeyAlgorithm
+	public_algorithm := public_key.algorithm as EcKeyAlgorithm
+	if algorithm.name != public_algorithm.name {
+		return error('InvalidAccessError: Algorithm mismatch')
+	}
+	if algorithm.named_curve != public_algorithm.named_curve {
+		return error('InvalidAccessError: Curve mismatch')
+	}
+	if ec_scalar_size(algorithm.named_curve) == 0 { return error('DataError: Invalid algorithm') }
+	point := native_ec_coordinate(algorithm.named_curve, (key.internal_handle_ as EcPrivateKeyHandle).d, public_key.internal_handle_ as EcPublicKeyHandle)!
+	secret := point.x
+	if bits := length {
+		if u64(secret.len) * 8 < bits { return error('OperationError: Secret is too short') }
+		mut result := secret[..int((bits + 7) / 8)].clone()
+		if bits % 8 != 0 { result[result.len - 1] &= u8(0xff << (8 - bits % 8)) }
+		return result
+	}
+	return secret
+}

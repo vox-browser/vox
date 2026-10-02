@@ -311,13 +311,14 @@ pub fn (subtle_crypto &SubtleCrypto) decrypt(params EncryptionParams, key &Crypt
 	return decrypt_bytes(params, key, data)
 }
 
-pub type SigningParams = Ed448Params | KmacParams | RsaPssParams | string
+pub type SigningParams = EcdsaParams | Ed448Params | KmacParams | RsaPssParams | string
 
 fn signing_algorithm_name(algorithm SigningParams) string {
 	return match algorithm {
 		KmacParams { algorithm.name }
 		Ed448Params { algorithm.name }
 		RsaPssParams { algorithm.name }
+		EcdsaParams { algorithm.name }
 		string { algorithm }
 	}
 }
@@ -326,6 +327,8 @@ pub fn (subtle_crypto &SubtleCrypto) sign(algorithm SigningParams, key &CryptoKe
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(signing_algorithm_name(algorithm), 'sign')!
 	validate_operation_key(key, normalized, .sign)!
+	if algorithm is EcdsaParams { return ecdsa_sign(EcdsaParams{ ...algorithm, name: normalized, hash: normalize_an_algorithm(algorithm.hash, 'digest')! }, key, data) }
+	if normalized == 'ECDSA' { return error('TypeError: hash is required') }
 	if algorithm is RsaPssParams { return RSAPSS.create().sign(RsaPssParams{ ...algorithm, name: normalized }, key, data) }
 	if normalized == 'RSA-PSS' { return error('TypeError: saltLength is required') }
 	if algorithm is KmacParams {
@@ -350,6 +353,8 @@ pub fn (subtle_crypto &SubtleCrypto) verify(algorithm SigningParams, key &Crypto
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(signing_algorithm_name(algorithm), 'verify')!
 	validate_operation_key(key, normalized, .verify)!
+	if algorithm is EcdsaParams { return ecdsa_verify(EcdsaParams{ ...algorithm, name: normalized, hash: normalize_an_algorithm(algorithm.hash, 'digest')! }, key, signature, data) }
+	if normalized == 'ECDSA' { return error('TypeError: hash is required') }
 	if algorithm is RsaPssParams { return RSAPSS.create().verify(RsaPssParams{ ...algorithm, name: normalized }, key, signature, data) }
 	if normalized == 'RSA-PSS' { return error('TypeError: saltLength is required') }
 	if algorithm is KmacParams {
@@ -716,6 +721,7 @@ pub fn (subtle_crypto &SubtleCrypto) derive_bits(params DeriveParams, base_key &
 	if params is EcdhKeyDeriveParams {
 		validate_operation_key(base_key, normalized, .derive_bits)!
 		if normalized in ['X25519', 'X448'] { return derive_exchange_bits(normalized, EcdhKeyDeriveParams{ ...params, name: normalized }, base_key, length_bits) }
+		if normalized == 'ECDH' { return ecdh_derive_bits(EcdhKeyDeriveParams{ ...params, name: normalized }, base_key, length_bits) }
 		return error('NotSupportedError: Derivation backend is unavailable for ${normalized}')
 	}
 	return derive_bits_bytes(params, base_key, length_bits or { return error('OperationError: length is required') })
