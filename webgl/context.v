@@ -601,36 +601,20 @@ pub fn (mut context WebGLRenderingContext) attach_shader(mut program WebGLProgra
 }
 
 pub fn (mut context WebGLRenderingContext) detach_shader(mut program WebGLProgram, shader &WebGLShader) {
+	context.native.make_current()
 	if !context.owns(&program.object) || !context.owns(&shader.object) {
 		context.set_error(invalid_operation)
 		return
 	}
-	if shader.type_ == vertex_shader {
-		attached := program.attached_vertex_shader or {
-			context.set_error(invalid_operation)
-			return
-		}
-
-		if attached != shader {
-			context.set_error(invalid_operation)
-			return
-		}
-		program.attached_vertex_shader = none
-	} else {
-		attached := program.attached_fragment_shader or {
-			context.set_error(invalid_operation)
-			return
-		}
-
-		if attached != shader {
-			context.set_error(invalid_operation)
-			return
-		}
-		program.attached_fragment_shader = none
-	}
-	context.native.make_current()
 	C.vox_gl_detach_shader(program.object.native_handle_, shader.object.native_handle_)
 	context.native.collect_native_error()
+	// The pinned source clears the typed retained slot after the driver call,
+	// including when GL rejects an owned shader that was never attached.
+	if shader.type_ == vertex_shader {
+		program.attached_vertex_shader = none
+	} else if shader.type_ == fragment_shader {
+		program.attached_fragment_shader = none
+	}
 }
 
 pub fn (mut context WebGLRenderingContext) link_program(mut program WebGLProgram) {
@@ -647,16 +631,16 @@ pub fn (mut context WebGLRenderingContext) link_program(mut program WebGLProgram
 }
 
 pub fn (mut context WebGLRenderingContext) use_program(program ?&WebGLProgram) {
+	context.native.make_current()
 	if value := program {
-		if !context.owns(&value.object) || !value.linked_ {
+		if !context.owns(&value.object) {
 			context.set_error(invalid_operation)
 			return
 		}
 	}
-	context.current_program = program
-	context.native.make_current()
 	C.vox_gl_use_program(if value := program { value.object.native_handle_ } else { 0 })
 	context.native.collect_native_error()
+	context.current_program = program
 	context.native.dispatch('use_program', if value := program { value.object.handle_ } else { 0 })
 }
 
@@ -671,7 +655,7 @@ pub fn (mut context WebGLRenderingContext) validate_program(mut program WebGLPro
 }
 
 pub fn (mut context WebGLRenderingContext) get_uniform_location(mut program WebGLProgram, name string) ?&WebGLUniformLocation {
-	if !context.owns(&program.object) || !program.linked_ {
+	if !context.owns(&program.object) {
 		context.set_error(invalid_operation)
 		return none
 	}
