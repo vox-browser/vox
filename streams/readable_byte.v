@@ -359,7 +359,7 @@ fn (mut reader ReadableStreamBYOBReader) read_into_existing_view(view []u8, mini
 	mut stream := reader.stream_
 	stream.disturbed_ = true
 	if stream.state_ == .errored {
-		promise.reject(stream.stored_error_)
+		promise.reject_value(stream.stored_error_value())
 		return promise
 	}
 	mut controller := stream.byte_controller_
@@ -383,7 +383,7 @@ pub fn ReadableStreamBYOBReader.create(realm StreamRealm, mut stream ReadableStr
 	if stream.state_ == .closed {
 		closed.resolve()
 	} else if stream.state_ == .errored {
-		closed.reject(stream.stored_error_)
+		closed.reject_value(stream.stored_error_value())
 	}
 	reader := &ReadableStreamBYOBReader{
 		stream_: &stream
@@ -434,7 +434,7 @@ pub fn (mut reader ReadableStreamBYOBReader) read(view_length int, minimum int) 
 	mut stream := reader.stream_
 	stream.disturbed_ = true
 	if stream.state_ == .errored {
-		promise.reject(stream.stored_error_)
+		promise.reject_value(stream.stored_error_value())
 		return promise
 	}
 	mut controller := stream.byte_controller_

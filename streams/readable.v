@@ -73,6 +73,7 @@ mut:
 	result_realm_             ?StreamRealm
 	state_                    ReadableStreamState
 	stored_error_             string
+	stored_error_value_       ?webidl.Value
 	disturbed_                bool
 	reader_kind_              ReaderKind
 	queue_                    QueueWithSizes
@@ -388,7 +389,7 @@ fn (mut stream ReadableStream) call_pull_if_needed() {
 		}
 		return webidl.undefined_value()
 	}, fn [mut stream] (reason webidl.Value) !webidl.Value {
-		stream.error(callback_reason(reason))
+		stream.error_value(reason)
 		return webidl.undefined_value()
 	})
 }
@@ -443,24 +444,29 @@ pub fn (mut stream ReadableStream) close() {
 }
 
 fn (mut stream ReadableStream) error_internal(reason string) {
+	stream.error_internal_value(webidl.string_value(reason), reason)
+}
+
+fn (mut stream ReadableStream) error_internal_value(reason webidl.Value, description string) {
 	if stream.state_ != .readable {
 		return
 	}
 	stream.state_ = .errored
-	stream.stored_error_ = reason
+	stream.stored_error_ = description
+	stream.stored_error_value_ = reason
 	for mut promise in stream.pending_reads_.values() {
-		promise.reject(reason)
+		promise.reject_value(reason)
 	}
 	stream.pending_reads_.clear()
 	if !isnil(stream.default_reader_) {
 		mut closed := stream.default_reader_.closed_
-		closed.reject(reason)
+		closed.reject_value(reason)
 	}
 	if !isnil(stream.byob_reader_) {
 		mut closed := stream.byob_reader_.closed_
-		closed.reject(reason)
+		closed.reject_value(reason)
 		for mut request in stream.byob_reader_.read_into_requests_ {
-			request.reject(reason)
+			request.reject_value(reason)
 		}
 		stream.byob_reader_.read_into_requests_.clear()
 	}
@@ -489,7 +495,7 @@ fn (mut stream ReadableStream) cancel_internal(reason Value) &VoidPromise {
 		return VoidPromise.fulfilled_in(stream.realm_)
 	}
 	if stream.state_ == .errored {
-		return VoidPromise.rejected_in(stream.realm_, stream.stored_error_)
+		return VoidPromise.rejected_value_in(stream.realm_, stream.stored_error_value())
 	}
 	if !isnil(stream.tee_source_) {
 		mut cancel_result := cancel_tee_branch(mut stream, reason).as_webidl_promise()
@@ -540,7 +546,7 @@ fn (mut stream ReadableStream) read_internal_in(promise_realm StreamRealm) &Read
 		return ReadPromise.fulfilled_in(promise_realm, stream.result_realm_, undefined_value(), true)
 	}
 	if stream.state_ == .errored {
-		return ReadPromise.rejected_in(promise_realm, stream.result_realm_, stream.stored_error_)
+		return ReadPromise.rejected_value_in(promise_realm, stream.result_realm_, stream.stored_error_value())
 	}
 	if stream.byte_stream_ {
 		mut controller := stream.byte_controller_
@@ -562,7 +568,7 @@ pub fn ReadableStreamDefaultReader.create(realm StreamRealm, mut stream Readable
 	if stream.state_ == .closed {
 		closed.resolve()
 	} else if stream.state_ == .errored {
-		closed.reject(stream.stored_error_)
+		closed.reject_value(stream.stored_error_value())
 	}
 	reader := &ReadableStreamDefaultReader{
 		stream_: &stream

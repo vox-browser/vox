@@ -27,6 +27,7 @@ fn rejected_callback_promise(realm StreamRealm, reason string) &webidl.Promise {
 }
 
 fn callback_reason(reason webidl.Value) string {
+	if reason.kind == .runtime_value { return '[native JavaScript rejection value]' }
 	return webidl.to_string(reason) or { 'TypeError: Cannot convert callback rejection reason' }
 }
 
@@ -36,7 +37,7 @@ fn void_promise_from_webidl(realm StreamRealm, mut native webidl.Promise) &VoidP
 		result.resolve()
 		return webidl.undefined_value()
 	}, fn [mut result] (reason webidl.Value) !webidl.Value {
-		result.reject(callback_reason(reason))
+		result.reject_value(reason)
 		return webidl.undefined_value()
 	})
 	return result
@@ -74,7 +75,7 @@ fn (mut stream ReadableStream) react_to_start(mut start_promise webidl.Promise) 
 		stream.call_pull_if_needed()
 		return webidl.undefined_value()
 	}, fn [mut stream] (reason webidl.Value) !webidl.Value {
-		stream.error(callback_reason(reason))
+		stream.error_value(reason)
 		return webidl.undefined_value()
 	})
 }

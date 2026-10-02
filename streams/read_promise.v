@@ -27,7 +27,7 @@ fn (mut promise ReadPromise) ensure_native_promise() &webidl.Promise {
 		match promise.state_ {
 			.pending {}
 			.fulfilled { native.resolve(stream_read_result_value(promise.result_.value, promise.result_.done)) }
-			.rejected { native.reject(webidl.string_value(promise.reason_)) }
+			.rejected { native.reject(promise.reason_value_ or { webidl.string_value(promise.reason_) }) }
 		}
 	}
 	return promise.native_promise_
@@ -45,7 +45,7 @@ fn (mut promise BYOBReadPromise) ensure_native_promise() &webidl.Promise {
 		match promise.state_ {
 			.pending {}
 			.fulfilled { native.resolve(stream_read_result_value(bytes_value(promise.result_.value), promise.result_.done)) }
-			.rejected { native.reject(webidl.string_value(promise.reason_)) }
+			.rejected { native.reject(promise.reason_value_ or { webidl.string_value(promise.reason_) }) }
 		}
 	}
 	return promise.native_promise_

@@ -319,7 +319,7 @@ pub fn readable_stream_default_controller_error(mut controller ReadableStreamDef
 	}
 	stream.queue_.reset()
 	readable_stream_default_controller_clear_algorithms(mut controller)
-	stream.error_internal(reason.description())
+	stream.error_internal_value(stream_value_to_webidl(reason), reason.description())
 }
 
 pub fn readable_stream_default_controller_get_desired_size(controller &ReadableStreamDefaultController) ?f64 {
@@ -540,7 +540,7 @@ pub fn readable_byte_stream_controller_error(mut controller ReadableByteStreamCo
 	readable_byte_stream_controller_clear_pending_pull_intos(mut controller)
 	controller.reset_byte_queue()
 	readable_byte_stream_controller_clear_algorithms(mut controller)
-	stream.error_internal(reason.description())
+	stream.error_internal_value(stream_value_to_webidl(reason), reason.description())
 }
 
 pub fn readable_byte_stream_controller_fill_head_pull_into_descriptor(_ &ReadableByteStreamController, size int, mut descriptor PullIntoDescriptor) {

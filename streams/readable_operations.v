@@ -7,6 +7,8 @@
 // records while retaining the upstream state transitions and controller slots.
 module streams
 
+import webidl
+
 pub fn (stream &ReadableStream) is_readable() bool {
 	return stream.state_ == .readable
 }
@@ -62,6 +64,7 @@ pub fn (mut stream ReadableStream) set_byte_controller(controller &ReadableByteS
 
 pub fn (mut stream ReadableStream) set_stored_error(reason string) {
 	stream.stored_error_ = reason
+	stream.stored_error_value_ = webidl.string_value(reason)
 }
 
 pub fn (mut stream ReadableStream) set_reader(reader ReadableStreamReader) {
@@ -213,6 +216,7 @@ pub fn create_readable_byte_stream(start StartAlgorithm, pull PullAlgorithm, can
 pub fn initialize_readable_stream(mut stream ReadableStream) {
 	stream.state_ = .readable
 	stream.stored_error_ = ''
+	stream.stored_error_value_ = none
 	stream.disturbed_ = false
 	stream.reader_kind_ = .none
 	stream.default_reader_ = unsafe { nil }
@@ -273,7 +277,7 @@ pub fn readable_stream_close(mut stream ReadableStream) {
 }
 
 pub fn readable_stream_error(mut stream ReadableStream, reason Value) {
-	stream.error_internal(reason.description())
+	stream.error_internal_value(stream_value_to_webidl(reason), reason.description())
 }
 
 pub fn readable_stream_fulfill_read_into_request(mut stream ReadableStream, chunk []u8, done bool) {
