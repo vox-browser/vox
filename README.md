@@ -49,6 +49,9 @@ primitives are translated, with 36,166 exact native Rust helper comparisons.
 Bytecode pattern-hint analysis and literal prefilters add 112,458 exact native
 comparisons, covering anchors, branches, suffixes, required literals and searches
 that ignore ASCII case.
+VM scratch storage, register snapshots, saved choices, modifier/repetition
+transitions and directional character traversal add 14,942 exact native
+comparisons, including surrogate-pair boundaries and checked position arithmetic.
 The regex parser, compiler, Unicode property backend and VM execution remain
 pending.
 Synchronous iterator operations and String/ordinary-Array iterator records

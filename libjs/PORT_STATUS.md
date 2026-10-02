@@ -22,7 +22,8 @@ String UTF-16 helpers also follow `AK/{UnicodeUtils.h,Utf16View.cpp,Utf16String.
 and simdutf 7.4.0's scalar `utf16.h` validation and repair bodies. Unicode casing
 and normalization follow `LibUnicode/{Utf16String.cpp,Normalize.{h,cpp},ICU.{h,cpp}}`
 and retain ICU as the native algorithm and Unicode-data dependency.
-Regex records, input primitives, pattern analysis and literal prefilters follow
+Regex records, input primitives, pattern analysis, literal prefilters and VM
+storage, repetition and character traversal follow
 `LibRegex/Rust/src/{ast,bytecode,vm}.rs`
 at the same upstream revision. Property-kind and resolved-property records follow
 `LibUnicode/Rust/src/character_types.rs`; Unicode property resolution and regex
@@ -96,6 +97,9 @@ creates a realm with a global environment and pushes its execution context.
 | `regex_input.v` | ASCII/WTF-16 input views, search/comparison operations, code-point decoding/width, clipped capture copying, search advancement, character predicates and VM result/limit metadata; execution pending |
 | `regex_hint_analysis.v` | Complete PatternHints analysis: control-flow successors and linear tails, first-character/first-filter metadata, leading anchors, alternative start hints, trailing/required literals and all simple-scan variants |
 | `regex_literal_search.v` | Exact and ASCII-insensitive literal searches, trailing/required-literal rejection and one/two-code-unit start-position scans; regex matching pending |
+| `regex_vm_state.v` | VM/scratch records, construction/reset, flat register snapshots, all saved-choice variants and modifier-stack transitions |
+| `regex_vm_repeat.v` | Repeat-start/check handlers with greedy/lazy counter snapshots and checked same-matcher loop suffix minima |
+| `regex_vm_traversal.v` | Forward/backward code-point boundaries, pair-aware character movement and checked multi-character position arithmetic |
 | `number_object.v`, `bigint_object.v`, `value_boxing.v` | NumberData/BigIntData wrapper records and all primitive ToObject cases with explicit Number/BigInt/String prototype dependencies |
 | `value_property_access.v` | GetV's direct primitive-prototype lookup, GetMethod's nullish/callable checks and Invoke with the original primitive receiver and explicit intrinsic dependencies |
 | `iterator.v`, `iterator_values.v` | Synchronous iterator acquisition for object receivers, IteratorNext/Step/StepValue, completion-preserving close/close-all, result records, list/callback collection, and SetterThatIgnoresPrototypeProperties |
@@ -126,8 +130,8 @@ creates a realm with a global environment and pushes its execution context.
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 185 implementation files contain **30,938 physical V LOC**. The 192 test
-files contain **25,272 physical V LOC** and **662 test functions**. Physical LOC
+The 188 implementation files contain **31,321 physical V LOC**. The 196 test
+files contain **26,033 physical V LOC** and **676 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -1013,7 +1017,7 @@ Whitespace and line-terminator predicates, the tri-state VM result and the
 invalid ranges remains true; ASCII searches/needles reject non-ASCII values,
 while raw code-unit reads and range comparisons retain byte values. These
 records and helpers do not execute regex bytecode. Parser/compiler translation,
-scratch storage, backtracking and matching remain pending.
+backtracking dispatch and matching remain pending.
 
 LibRegex pattern analysis (`0f50cf23`) translates the complete current
 `PatternHints`/`analyze_pattern` path. Control-flow successors preserve order and
@@ -1039,6 +1043,36 @@ then search one or two units. The one-unit ASCII path rejects a non-ASCII needle
 while the two-unit path compares raw input units. These are candidate rejection
 helpers; candidate matching, simple-scan execution, the regex VM loops and
 backtracking remain pending.
+
+LibRegex VM storage (`46a2cbf9`) translates `SavedState`, `ActiveModifiers`,
+`VmScratch` and the VM record, construction/reset, flat register snapshots, all
+four saved-choice creation methods and modifier push/pop. A VM retains a stable
+program and scratch owner, resets every source scalar and vector, and preserves
+allocated storage across resets. Modified choices update their copied register
+only; live registers remain unchanged. Restoring a snapshot validates the whole
+slice before any write, including empty register sets. Focused tests cover owner
+identity, retained capacities, independent snapshots, all choice metadata,
+nested modifier overrides including explicit false, and three invalid-snapshot
+panic conditions in child processes. Saved choices are recorded but not yet
+executed by a backtracking dispatcher.
+
+LibRegex repetition (`3e68014b`) translates repeat-start/check and same-matcher
+loop suffix minima. Minimum counts take priority over maximum counts. Greedy
+checks retain the old counter in the exit choice before incrementing the live
+counter; lazy checks increment only the deferred body choice. Counter arithmetic
+matches optimized Rust release-mode wrapping at the signed/unsigned boundaries.
+Suffix minima scan only consecutive greedy/lazy loops with equal matcher values,
+stop at a different instruction or matcher, reject u32 overflow and return no
+value for an all-zero suffix.
+
+LibRegex character traversal (`0f3db694`) translates current-code-point reads,
+directional advancement, one-character movement and multi-character movement.
+Unicode reads reject an interior boundary between surrogate halves in either
+direction; complete pairs decode together and lone surrogates remain code points.
+Raw byte views retain non-ASCII bytes. Unicode multi-character movement stops
+when it cannot advance; non-Unicode movement uses checked position arithmetic
+without clamping the result to input length. These helpers do not perform
+character matching, Unicode property resolution or case folding.
 
 Reflect property bodies (`5f4813e`) translate defineProperty/deleteProperty/get,
 getOwnPropertyDescriptor/has/set. Target-object validation precedes key conversion;
@@ -1158,10 +1192,10 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 192 passed, 192 total
+# 196 passed, 196 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 192 passed, 192 total
+# 196 passed, 196 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
@@ -1176,7 +1210,7 @@ v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
 
 v -old-compiler -enable-globals test .
-# 864 passed, 864 total
+# 868 passed, 868 total
 
 ./build_ladybird.sh
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
@@ -1200,11 +1234,11 @@ fixtures; separate tests exercise translated NativeFunction and ArrayBufferObjec
 records. Module-loading tests write temporary module files. The preceding LibWeb
 work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 192 libjs files are verified separately in both GC modes.
-There are now 864 repository test files.
+this package; the 196 libjs files are verified separately in both GC modes.
+There are now 868 repository test files.
 
-The complete 864-file repository suite passes, including the native bridge,
-eighteen browser integration files and all 192 LibJS files. The dedicated LibJS and
+The complete 868-file repository suite passes, including the native bridge,
+eighteen browser integration files and all 196 LibJS files. The dedicated LibJS and
 browser suites also pass in no-GC mode, exercising the retained storage and
 buffer ownership independently of the collector.
 
@@ -1257,6 +1291,20 @@ and compare both `/tmp/regex-hints.tsv` and `/tmp/regex-hints-fold.tsv` with
 their counterparts under `libjs/testdata/`. Folding cases are a separate asset
 to keep each V embedded fixture below 5 MB. Every output field compares exactly,
 there are no case overrides, and both regenerated files are byte-exact.
+
+VM state and character traversal match another 14,942 exact native Rust cases
+in both GC modes (`cd941a12`): 1,400 state transcripts compare construction,
+reset, snapshots, saved choices, modifiers and repetition after every transition;
+12,830 cases compare directional traversal, 24 cover checked position arithmetic
+at usize boundaries, and 688 cover same-matcher suffix minima. The oracle also
+checks three invalid-snapshot panic conditions, exercised by V child-process
+tests. It imports the unchanged AST, bytecode and Unicode record modules and
+complete VM source, appending only construction/access/serialization wrappers.
+Optimized Rust arithmetic is the reference. Matcher dispatch, backtracking
+execution and Unicode FFI are never invoked. Regenerate with
+`python3 tools/libjs_regex_state_corpus.py --output /tmp/regex-state.tsv`
+and compare with `libjs/testdata/regex-state.tsv`. Every state and helper output
+compares exactly without case overrides; regeneration is byte-exact.
 
 Browser integration checks pass the eighteen `browserjs` test files in both GC modes,
 the native `main_test.v` bridge and flag tests, the production bundle build,
@@ -1556,6 +1604,17 @@ the same-size SVG source switch with zero differing pixels.
   of compiler-generated acyclic leading alternatives; recursive anchor/first
   probes advance through the supplied instruction vector. No parser or matcher
   implementation is substituted for these prefilters.
+- Regex VM programs and scratch owners use stable heap records; one scratch
+  reference replaces Rust's four exclusive vector borrows. Callers retain the
+  program, input and scratch and use one active VM per scratch without a Rust
+  borrow checker. V array resizing preserves storage when capacity permits,
+  but allocator and capacity-growth behavior are not Rust Vec parity. Register
+  counts above V's signed array capacity are rejected before narrowing. Snapshot
+  bounds use subtraction-based validation and V panic text; overflowing invalid
+  caller indices are guarded rather than following unchecked release arithmetic.
+  Repeat counters preserve optimized Rust's wrapping arithmetic; Rust debug-mode
+  overflow panics are not claimed. Character traversal preserves the source's
+  surrogate-interior rejection and unclamped non-Unicode checked arithmetic.
 - Checked string length sum/product retain upstream's 2^32-1 code-unit maximum.
   TypedArray join and toLocaleString assemble flat V UTF-16 arrays instead of
   AK's builder and throw the same string-size RangeError above V's 2^31-1 array
@@ -1666,11 +1725,13 @@ complete LibJS runtime migration.
 - RegExp flags, named-group surrogate checks, ParsePattern preprocessing and
   source escaping are translated, but `compile_regex_pattern()` still has no
   backend. LibRegex's complete AST/bytecode models, input/capture primitives,
-  pattern-hint analysis and literal prefilters are translated. Its `parser.rs`,
-  `compiler.rs`, candidate matcher filters, simple-scan execution, scratch
-  storage, backtracking/execution, `regex.rs`/FFI, Unicode property
-  resolution, case folding and string-property backend remain pending. The
-  RegExp object, allocation/initialization, constructor/prototype methods and
+  pattern-hint analysis, literal prefilters, scratch storage, register snapshots,
+  saved choices, modifiers/repetition and character traversal are translated.
+  Its `parser.rs`, `compiler.rs`, candidate matcher filters, simple-scan
+  execution, backtracking dispatcher, fast/general VM execution, lookaround
+  bodies, `regex.rs`/FFI, Unicode property resolution, case folding and
+  string-property backend remain pending. The RegExp object,
+  allocation/initialization, constructor/prototype methods and
   matching depend on those remaining slices. Neither the JavaScript AST corpus,
   RegExp preparation corpus nor regex helper corpus establishes regex grammar
   or matching conformance.

@@ -955,7 +955,10 @@ ASCII/WTF-16 input/capture primitives are translated. All 36,166 native Rust
 helper cases match exactly in both GC modes. Pattern-hint analysis and literal
 prefilters additionally match 112,458 native cases, including complete hint
 metadata, control-flow/suffix checks and exhaustive UTF-16 ASCII folding. Its
-parser, compiler, Unicode property backend and VM execution remain pending.
+VM scratch storage, register snapshots, saved choices, modifier/repetition
+transitions and directional character traversal additionally match 14,942 native
+cases. The parser, compiler, Unicode property backend, backtracking dispatch and
+VM execution remain pending.
 Array exotic records retain sparse, nonconfigurable length descriptors, grow
 only after successful indexed definitions, and restore failed truncations at
 the highest fixed index. Property definitions propagate VM exceptions through
@@ -1008,9 +1011,9 @@ SharedArrayBuffer allocation reserves the maximum capacity while exposing the
 initial length. Its constructor, three accessors, growth hook and species-aware
 slicing are installed and tested with live DataView witnesses. Cross-agent
 shared-memory ordering remains pending, as in the pinned upstream active bodies.
-The LibJS package's 192 test files pass in both GC and no-GC mode, and all 100
+The LibJS package's 196 test files pass in both GC and no-GC mode, and all 100
 upstream AST fixtures match exactly with no case overrides. The complete repository suite passes all
-864 test files, including the native bridge and eighteen browser integration files.
+868 test files, including the native bridge and eighteen browser integration files.
 The native browser and inline-document layout bridge now prepare page scripts
 through LibJS and associate classic execution with translated Script, Realm,
 and VM embedding contexts. Sources retain their URLs and parse goals; syntax
