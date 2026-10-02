@@ -462,3 +462,16 @@ browserjs/abort_constructor_prototype_test.v + abort_signal_host_test.v +
   tags/brand/event identity, native owner timeout and public pipe neighbors;
   3/3 passed with -gc none.
 ```
+
+Generated Stream and strategy constructor metadata now follows
+`Bindings/InterfaceObject.cpp`: constructor `prototype` properties have no
+attribute flags, and controller interfaces without IDL constructors reject
+construction before reading `newTarget.prototype`. The bridge retains actual
+native records and engine subclass prototypes.
+
+```text
+browserjs/stream_constructor_metadata_test.v + readable conversion/writable
+  prototype/transform prototype neighbors: eleven readonly constructor
+  prototypes, four illegal-controller lookup-order checks and native
+  subclass behavior; 4/4 files passed with -gc none.
+```
