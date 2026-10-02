@@ -220,9 +220,9 @@ pub fn (_ CShake) digest(params CShakeParams, data []u8) ![]u8 { return cshake_d
 
 pub struct AesOcb {}
 pub fn AesOcb.create() AesOcb { return AesOcb{} }
-pub fn (_ AesOcb) encrypt(_ AeadParams, _ &CryptoKey, _ []u8) ![]u8 { return backend_unavailable[[]u8]('AES-OCB', 'encryption') }
-pub fn (_ AesOcb) decrypt(_ AeadParams, _ &CryptoKey, _ []u8) ![]u8 { return backend_unavailable[[]u8]('AES-OCB', 'decryption') }
-pub fn (_ AesOcb) generate_key(_ AesKeyGenParams, _ bool, _ []KeyUsage) !GeneratedKey { return backend_unavailable[GeneratedKey]('AES-OCB', 'key generation') }
-pub fn (_ AesOcb) import_key(_ AlgorithmParams, _ KeyFormat, _ []u8, _ bool, _ []KeyUsage) !&CryptoKey { return backend_unavailable[&CryptoKey]('AES-OCB', 'key import') }
-pub fn (_ AesOcb) export_key(_ KeyFormat, _ &CryptoKey) ![]u8 { return backend_unavailable[[]u8]('AES-OCB', 'key export') }
+pub fn (_ AesOcb) encrypt(params AeadParams, key &CryptoKey, data []u8) ![]u8 { return aes_ocb_crypt(params, key, data, false) }
+pub fn (_ AesOcb) decrypt(params AeadParams, key &CryptoKey, data []u8) ![]u8 { return aes_ocb_crypt(params, key, data, true) }
+pub fn (_ AesOcb) generate_key(params AesKeyGenParams, extractable bool, usages []KeyUsage) !GeneratedKey { return GeneratedKey{key: generate_aes_key(AesKeyGenParams{...params, name: 'AES-OCB'}, extractable, usages)!} }
+pub fn (_ AesOcb) import_key(_ AlgorithmParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_aes_ocb_key(format, material, extractable, usages) }
+pub fn (_ AesOcb) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_aes_ocb_key(format, key) }
 pub fn (_ AesOcb) get_key_length(params AesKeyGenParams) !KeyLengthResult { return KeyLengthResult{value: aes_key_length(params)!} }

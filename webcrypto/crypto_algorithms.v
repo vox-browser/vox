@@ -565,7 +565,10 @@ fn chacha20_poly1305_crypt(params AeadParams, key &CryptoKey, input []u8, decryp
 
 pub fn encrypt_bytes(params EncryptionParams, key &CryptoKey, plaintext []u8) ![]u8 {
 	return match params {
-		AeadParams { chacha20_poly1305_crypt(params, key, plaintext, false)! }
+		AeadParams {
+			if key.algorithm_name() == 'AES-OCB' { aes_ocb_crypt(params, key, plaintext, false)! }
+			else { chacha20_poly1305_crypt(params, key, plaintext, false)! }
+		}
 		AesCbcParams { aes_cbc_encrypt(params, key, plaintext)! }
 		AesCtrParams { aes_ctr_crypt(params, key, plaintext)! }
 		AesGcmParams { aes_gcm_encrypt(params, key, plaintext)! }
@@ -575,7 +578,10 @@ pub fn encrypt_bytes(params EncryptionParams, key &CryptoKey, plaintext []u8) ![
 
 pub fn decrypt_bytes(params EncryptionParams, key &CryptoKey, ciphertext []u8) ![]u8 {
 	return match params {
-		AeadParams { chacha20_poly1305_crypt(params, key, ciphertext, true)! }
+		AeadParams {
+			if key.algorithm_name() == 'AES-OCB' { aes_ocb_crypt(params, key, ciphertext, true)! }
+			else { chacha20_poly1305_crypt(params, key, ciphertext, true)! }
+		}
 		AesCbcParams { aes_cbc_decrypt(params, key, ciphertext)! }
 		AesCtrParams { aes_ctr_crypt(params, key, ciphertext)! }
 		AesGcmParams { aes_gcm_decrypt(params, key, ciphertext)! }
@@ -683,7 +689,7 @@ pub fn generate_aes_key(params AesKeyGenParams, extractable bool, usages []KeyUs
 		return error('OperationError: AES key length must be 128, 192, or 256')
 	}
 	allowed := match params.name {
-		'AES-CBC', 'AES-CTR', 'AES-GCM' { [KeyUsage.encrypt, .decrypt, .wrap_key, .unwrap_key] }
+		'AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-OCB' { [KeyUsage.encrypt, .decrypt, .wrap_key, .unwrap_key] }
 		'AES-KW' { [KeyUsage.wrap_key, .unwrap_key] }
 		else {
 			return error('NotSupportedError: Unsupported AES algorithm: ${params.name}')

@@ -383,7 +383,7 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 					pair: generate_ed25519_key(extractable, normalized_usages)!
 				}
 			} else if normalized in ['KMAC128', 'KMAC256'] {
-				KMAC.create().generate_key(KmacKeyGenParams{name: normalized}, extractable, normalized_usages)!
+				KMAC.create().generate_key(KmacKeyGenParams{ name: normalized }, extractable, normalized_usages)!
 			} else if normalized == 'ChaCha20-Poly1305' {
 				validate_usages(normalized_usages, [KeyUsage.encrypt, .decrypt, .wrap_key, .unwrap_key])!
 				GeneratedKey{
@@ -416,6 +416,11 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(import_algorithm_name(algorithm), 'importKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
+	if normalized == 'AES-OCB' {
+		key := import_aes_ocb_key(format, material, extractable, normalized_usages)!
+		if key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+		return key
+	}
 	if normalized in ['KMAC128', 'KMAC256'] {
 		key := KMAC.create().import_key(normalized_kmac_import_params(algorithm, normalized), format, material, extractable, normalized_usages)!
 		if key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
@@ -443,6 +448,9 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(import_algorithm_name(algorithm), 'importKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
+	if normalized == 'AES-OCB' {
+		return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name)
+	}
 	if normalized in ['KMAC128', 'KMAC256'] {
 		return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name)
 	}
@@ -506,6 +514,10 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 pub fn (subtle_crypto &SubtleCrypto) export_key(format KeyFormat, key &CryptoKey) ![]u8 {
 	_ = subtle_crypto
 	normalize_an_algorithm(key.algorithm_name(), 'exportKey')!
+	if key.algorithm_name() == 'AES-OCB' {
+		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
+		return export_aes_ocb_key(format, key)
+	}
 	if key.algorithm_name() in ['KMAC128', 'KMAC256'] {
 		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
 		return KMAC.create().export_key(format, key)
@@ -530,6 +542,9 @@ pub fn (subtle_crypto &SubtleCrypto) export_jwk(key &CryptoKey) !JsonWebKey {
 	}
 	if key.algorithm_name() in ['KMAC128', 'KMAC256'] {
 		return JsonWebKey.parse(KMAC.create().export_key(.jwk, key)!)
+	}
+	if key.algorithm_name() == 'AES-OCB' {
+		return JsonWebKey.parse(export_aes_ocb_key(.jwk, key)!)
 	}
 	operations := key.usages.map(key_usage_string(it))
 	if key.algorithm_name() == 'Ed25519' {
@@ -631,18 +646,54 @@ fn (subtle_crypto &SubtleCrypto) import_unwrapped_key(format KeyFormat, bytes []
 	return subtle_crypto.import_key(format, bytes, algorithm, extractable, usages, hash_name)
 }
 
-pub fn (subtle_crypto &SubtleCrypto) wrap_key(format KeyFormat, key &CryptoKey, wrapping_key &CryptoKey, algorithm string) ![]u8 {
-	normalized := normalize_an_algorithm(algorithm, 'wrapKey')!
-	validate_operation_key(wrapping_key, normalized, .wrap_key)!
-	plain_key := subtle_crypto.export_key_bytes_for_wrapping(format, key)!
-	return aes_key_wrap(wrapping_key, plain_key)
+pub type WrappingParams = AeadParams
+	| AesCbcParams
+	| AesCtrParams
+	| AesGcmParams
+	| AlgorithmParams
+	| string
+
+fn wrapping_algorithm_name(algorithm WrappingParams) string {
+	return match algorithm {
+		AeadParams { algorithm.name }
+		AesCbcParams { algorithm.name }
+		AesCtrParams { algorithm.name }
+		AesGcmParams { algorithm.name }
+		AlgorithmParams { algorithm.name }
+		string { algorithm }
+	}
 }
 
-pub fn (subtle_crypto &SubtleCrypto) unwrap_key(format KeyFormat, wrapped_key []u8, unwrapping_key &CryptoKey, algorithm string, unwrapped_algorithm string, extractable bool, usages []KeyUsage, hash_name string) !&CryptoKey {
-	normalized := normalize_an_algorithm(algorithm, 'unwrapKey')!
+fn wrapping_encryption_params(algorithm WrappingParams, normalized string) !EncryptionParams {
+	return match algorithm {
+		AeadParams { EncryptionParams(AeadParams{ ...algorithm, name: normalized }) }
+		AesCbcParams { EncryptionParams(AesCbcParams{ ...algorithm, name: normalized }) }
+		AesCtrParams { EncryptionParams(AesCtrParams{ ...algorithm, name: normalized }) }
+		AesGcmParams { EncryptionParams(AesGcmParams{ ...algorithm, name: normalized }) }
+		else { return error('TypeError: Required encryption parameters are missing') }
+	}
+}
+
+pub fn (subtle_crypto &SubtleCrypto) wrap_key(format KeyFormat, key &CryptoKey, wrapping_key &CryptoKey, algorithm WrappingParams) ![]u8 {
+	name := wrapping_algorithm_name(algorithm)
+	// SubtleCrypto.cpp retries normalization for encrypt if wrapKey is absent.
+	normalized := normalize_an_algorithm(name, 'wrapKey') or { normalize_an_algorithm(name, 'encrypt')! }
+	validate_operation_key(wrapping_key, normalized, .wrap_key)!
+	plain_key := subtle_crypto.export_key_bytes_for_wrapping(format, key)!
+	if normalized == 'AES-KW' { return aes_key_wrap(wrapping_key, plain_key) }
+	return encrypt_bytes(wrapping_encryption_params(algorithm, normalized)!, wrapping_key, plain_key)
+}
+
+pub fn (subtle_crypto &SubtleCrypto) unwrap_key(format KeyFormat, wrapped_key []u8, unwrapping_key &CryptoKey, algorithm WrappingParams, unwrapped_algorithm string, extractable bool, usages []KeyUsage, hash_name string) !&CryptoKey {
+	name := wrapping_algorithm_name(algorithm)
+	normalized := normalize_an_algorithm(name, 'unwrapKey') or { normalize_an_algorithm(name, 'decrypt')! }
 	normalize_an_algorithm(unwrapped_algorithm, 'importKey')!
 	validate_operation_key(unwrapping_key, normalized, .unwrap_key)!
-	plain_key := aes_key_unwrap(unwrapping_key, wrapped_key)!
+	plain_key := if normalized == 'AES-KW' {
+		aes_key_unwrap(unwrapping_key, wrapped_key)!
+	} else {
+		decrypt_bytes(wrapping_encryption_params(algorithm, normalized)!, unwrapping_key, wrapped_key)!
+	}
 	return subtle_crypto.import_unwrapped_key(format, plain_key, unwrapped_algorithm, extractable, normalize_key_usages_for_operation(usages), hash_name)
 }
 
