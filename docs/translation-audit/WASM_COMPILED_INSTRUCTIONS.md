@@ -1,0 +1,11 @@
+# Wasm expression compilation records
+
+Reference: Ladybird `963d46a829f3e1b79f44dba9d02afb70654300fa`, `LibWasm/Types.h:919–1033,1259–1279`, `Parser/Parser.cpp:1425–1480`, and `AbstractMachine/Validator.cpp:5094–5114`.
+
+Parsed and directly constructed expressions now retain an optional `size_t` stack requirement. Unknown and known zero remain distinct. The parser's allocation hint likewise uses `size_t` and does not publish a stack requirement. Successful validation publishes the source maximum; failure leaves an existing requirement unchanged. Focused cases cover absent/zero, failed validation and values above 32 bits, and existing section-validation fixtures explicitly unwrap the known requirements.
+
+Each actual `BinaryExpression` owns its source `CompiledInstructions` record: dispatch and register-mapping vectors, stable extra instruction storage, local-type bytes, native entry/code/trap pointers, all source size/count fields and flags. Dispatch opcode/handler storage and four-byte source/destination mappings are actual V unions. Register markers retain their one-byte source representation and traps retain the eight-byte source layout. The `CountRegisters` alias is represented by a constant with the same value as `Stack`.
+
+The narrow atomic ABI translates the actual source acquire load and release publication of the entry member. A real native-thread reader checks preceding metadata after publication. Other cases verify union aliasing, default records, real expression ownership and borrowed instruction pointers through storage growth. The new record file passes with default GC; it and the optional-requirement/frame neighbors pass 3/3 files with GC disabled. These tests publish a data address marker; they do not execute generated machine code.
+
+Instruction compilation, module compilation coordination, installed-code destruction by the owning module, compiled-function-table construction, configuration, interpreter/Cranelift execution and GC root reporting remain open. No compiler entry, successful compilation or interpreter result is manufactured by these records. Existing V-owned vector and manual native-region lifetime boundaries remain as documented in [instruction storage](WASM_INSTRUCTION_STORAGE.md) and [the package status](../../webassembly/PORT_STATUS.md).
