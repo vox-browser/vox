@@ -1,4 +1,8 @@
 // Copyright (c) 2026, Ladybird contributors
+// Copyright (c) 2024-2025, Aliaksandr Kalenik <kalenik.aliaksandr@gmail.com>
+// Copyright (c) 2024-2025, Luke Wilde <luke@ladybird.org>
+// Copyright (c) 2025, Jelle Raaijmakers <jelle@ladybird.org>
+// Copyright (c) 2025, Undefine <undefine@undefine.pl>
 // SPDX-License-Identifier: BSD-2-Clause
 
 // Typed-array overloads and WebGL2 implementation operations.
@@ -366,8 +370,16 @@ pub fn (mut context WebGLRenderingContext) get_sync_parameter(sync &WebGLSync, p
 }
 
 pub fn (mut context WebGLRenderingContext) get_uniform_indices(program &WebGLProgram, names []string) []GLuint {
-    if !context.require_webgl2() { return []GLuint{} }
-    if !context.owns(&program.object) { context.set_error(invalid_operation); return []GLuint{} }
+    // Retain the existing typed convenience return shape; browser bindings
+    // use the source nullable operation below.
+    return context.get_uniform_indices_nullable(program, names) or { []GLuint{} }
+}
+
+// WebGL2RenderingContextImpl::get_uniform_indices returns OptionalNone on a
+// failed program handle, distinct from a successful empty name list.
+pub fn (mut context WebGLRenderingContext) get_uniform_indices_nullable(program &WebGLProgram, names []string) ?[]GLuint {
+    if !context.require_webgl2() { return none }
+    if !context.owns(&program.object) { context.set_error(invalid_operation); return none }
     context.native.make_current()
     pointers := names.map(it.str)
     mut result := []GLuint{len:names.len}
@@ -378,11 +390,14 @@ pub fn (mut context WebGLRenderingContext) get_uniform_indices(program &WebGLPro
 
 pub fn (mut context WebGLRenderingContext) get_active_uniforms(program &WebGLProgram, indices []GLuint, pname GLenum) WebGLParameterValue {
     if !context.require_webgl2() { return WebGLParameterValue{} }
-    if !context.owns(&program.object) { context.set_error(invalid_operation); return WebGLParameterValue{} }
+    if !context.owns(&program.object) { context.set_error(invalid_operation); return WebGLParameterValue{kind:.undefined_} }
     context.native.make_current()
     mut result := []int{len:indices.len}
     C.vox_gl_active_uniforms(program.object.native_handle_,indices.len,indices.data,pname,result.data)
     context.native.collect_native_error()
+    // Source validates pname in its per-element result loop, after GL. An
+    // empty index vector skips that switch and still creates an empty Array.
+    if indices.len == 0 { return WebGLParameterValue{kind:.integers} }
     if pname == uniform_is_row_major { return WebGLParameterValue{kind:.booleans,booleans:result.map(it == 1)} }
     if pname in [uniform_type,uniform_size,uniform_block_index,uniform_offset,uniform_array_stride,uniform_matrix_stride] {
         return WebGLParameterValue{kind:.integers,integers:result.map(i64(it))}

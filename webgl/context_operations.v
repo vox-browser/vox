@@ -8,6 +8,7 @@ module webgl
 
 pub enum WebGLParameterKind {
 	none
+	undefined_
 	integer
 	number
 	boolean

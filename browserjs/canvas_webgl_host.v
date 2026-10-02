@@ -205,6 +205,7 @@ fn (mut host CanvasWebGLHost) parameter(context &webgl.WebGLRenderingContext, va
 	}
 	return match value.kind {
 		.none { json2.Any(json2.Null{}) }
+		.undefined_ { json2.Any({'webglUndefined': json2.Any(true)}) }
 		.integer { json2.Any(value.integer) }
 		.number { json2.Any(value.number) }
 		.boolean { json2.Any(value.boolean) }
@@ -1112,7 +1113,10 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 		}
 		'getUniformIndices' {
 			host.validate_resource(wg_arg(args, 0), 'program', false)!
-			return json2.Any(context.get_uniform_indices(host.programs[wg_handle(wg_arg(args, 0))] or { return error('TypeError: expected program') }, wg_array(wg_arg(args, 1)).map(wg_string(it))).map(json2.Any(it)))
+			if indices := context.get_uniform_indices_nullable(host.programs[wg_handle(wg_arg(args, 0))] or { return error('TypeError: expected program') }, wg_array(wg_arg(args, 1)).map(wg_string(it))) {
+				return json2.Any(indices.map(json2.Any(it)))
+			}
+			return json2.Any(json2.Null{})
 		}
 		'getActiveUniforms' {
 			host.validate_resource(wg_arg(args, 0), 'program', false)!

@@ -1,3 +1,5 @@
+// Copyright (c) 2026-present, the Ladybird developers.
+// SPDX-License-Identifier: BSD-2-Clause
 // Compact WebGL WebIDL transport. IDL constants/signatures are copied from
 // upstream WebGL/*RenderingContext{Base,Overloads}.idl; native V owns operations.
 module browserjs
@@ -18,6 +20,7 @@ function __webglCall(s,method,args,extra) {
  return result;
 }
 function __webglReply(result) {
+ if(result&&result.webglUndefined===true)return undefined;
  if(Array.isArray(result))return result.map(__webglReply);
  if(result&&result.handle){if(__webglObjects[result.handle])return __webglObjects[result.handle];const name=__webglClassNames[result.kind];const object=Object.create(name?globalThis[name].prototype:Object.prototype);__webglBrands.set(object,result);__webglObjects[result.handle]=object;return object;}
  return result;
