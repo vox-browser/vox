@@ -12,7 +12,9 @@ module html
 import aria
 import css
 import dom
+import fileapi
 import math
+import mimesniff
 import regex
 
 const max_ecmascript_time_value = 8.64e15
@@ -72,7 +74,7 @@ pub type InputPickerRequestCallback = fn (voidptr, InputPickerRequest)
 
 pub struct InputPickerHook {
 pub:
-	target  voidptr = unsafe { nil }
+	target  voidptr                    = unsafe { nil }
 	request InputPickerRequestCallback = unsafe { nil }
 }
 
@@ -92,7 +94,7 @@ pub type InputFormActionCallback = fn (voidptr, &FormAssociatedElement, InputFor
 
 pub struct InputFormActionHook {
 pub:
-	target voidptr = unsafe { nil }
+	target voidptr                 = unsafe { nil }
 	run    InputFormActionCallback = unsafe { nil }
 }
 
@@ -108,7 +110,7 @@ pub mut:
 	dirty_value_                     bool
 	user_validity_                   bool
 	has_uncommitted_changes_         bool
-	selected_files_                  []SelectedFile
+	selected_files_                  ?&fileapi.FileList
 	event_target_                    &dom.EventTarget = unsafe { nil }
 	event_counts_                    map[string]int
 	selected_x_                      int
@@ -188,7 +190,7 @@ fn attach_html_input_element_model(element &dom.HTMLInputElement, model &HTMLInp
 	mutable_element.input_element_model_ = voidptr(model)
 	mut node := unsafe { &dom.Element(element) }.as_node()
 	node.set_adopted_from_hook(dom.NodeAdoptedFromHook{
-		target: voidptr(model)
+		target:   voidptr(model)
 		callback: html_input_element_adopted_from_callback
 	})
 }
@@ -261,10 +263,10 @@ pub fn HTMLInputElementModel.create(element &dom.HTMLInputElement) &HTMLInputEle
 	control := FormAssociatedElement.create(dom_element)
 	type_state := parse_html_input_type(dom_element.get_attribute_value('type'))
 	mut model := &HTMLInputElementModel{
-		element: element
-		control: control
-		text_control: FormAssociatedTextControlElement.create(control, '')
-		type_state_: type_state
+		element:       element
+		control:       control
+		text_control:  FormAssociatedTextControlElement.create(control, '')
+		type_state_:   type_state
 		event_target_: dom.EventTarget.new()
 	}
 	// Install the model identity before initialization below. Radio-group
@@ -396,7 +398,8 @@ pub fn html_input_element_parse_type_attribute(value string) HTMLInputTypeState 
 
 pub fn html_input_value_attribute_mode_for_type_state(state HTMLInputTypeState) HTMLInputValueAttributeMode {
 	return match state {
-		.text, .search, .telephone, .url, .email, .password, .date, .month, .week, .time, .local_date_and_time, .number, .range, .color {
+		.text, .search, .telephone, .url, .email, .password, .date, .month, .week, .time,
+		.local_date_and_time, .number, .range, .color {
 			.value
 		}
 		.hidden, .submit_button, .image_button, .reset_button, .button { .default_ }
@@ -430,7 +433,7 @@ pub fn (mut model HTMLInputElementModel) type_attribute_changed(old_state HTMLIn
 		model.dirty_value_ = false
 	} else if old_mode != .filename && new_mode == .filename {
 		model.value_ = ''
-		model.selected_files_.clear()
+		model.selected_files_ = none
 	}
 	previously_selectable := html_input_selection_or_range_applies_for_type_state(old_state)
 	model.type_state_ = new_state
@@ -441,7 +444,7 @@ pub fn (mut model HTMLInputElementModel) type_attribute_changed(old_state HTMLIn
 	model.value_ = model.value_sanitization_algorithm(model.value_)
 	model.text_control.set_relevant_value(model.value_)
 	if new_state != .file_upload {
-		model.selected_files_.clear()
+		model.selected_files_ = none
 	}
 	if !previously_selectable && model.selection_or_range_applies() {
 		model.text_control.set_the_selection_range(0, 0, .none, .dom)
@@ -562,10 +565,14 @@ pub fn (model &HTMLInputElementModel) value() string {
 			}
 		}
 		.file_upload {
-			if model.selected_files_.len == 0 {
-				''
+			if files := model.selected_files_ {
+				if file := files.item(0) {
+					'C:\\fakepath\\${file.name()}'
+				} else {
+					''
+				}
 			} else {
-				'C:\\fakepath\\${model.selected_files_[0].name}'
+				''
 			}
 		}
 		.submit_button, .image_button, .reset_button, .button, .hidden {
@@ -593,7 +600,7 @@ pub fn (mut model HTMLInputElementModel) set_value(value string) ! {
 		if value != '' {
 			return error('InvalidStateError: file input value can only be set to the empty string')
 		}
-		model.selected_files_.clear()
+		model.selected_files_ = none
 		model.update_file_input_shadow_tree()
 		return
 	}
@@ -1004,10 +1011,11 @@ pub fn (mut model HTMLInputElementModel) update_file_input_shadow_tree() {
 	mut label := model.file_label_ or { return }
 	files_label := if input_element(&model).has_attribute('multiple') { 'files' } else { 'file' }
 	replace_element_text(button, 'Select ${files_label}...')
-	label_text := if model.selected_files_.len == 1 {
-		model.selected_files_[0].name
-	} else if model.selected_files_.len > 1 {
-		'${model.selected_files_.len} files selected.'
+	files := model.selected_files_ or { fileapi.FileList.create() }
+	label_text := if files.length() == 1 {
+		files.item(0) or { panic('missing selected file') }.name()
+	} else if files.length() > 1 {
+		'${files.length()} files selected.'
 	} else {
 		'No ${files_label} selected.'
 	}
@@ -1408,10 +1416,18 @@ pub fn (mut model HTMLInputElementModel) did_select_files(files []SelectedFile, 
 		model.fire_event('cancel')
 		return
 	}
-	if handling == .replace || !input_element(&model).has_attribute('multiple') {
-		model.selected_files_ = files.clone()
+	selected := input_file_list_from_picker(files)
+	if old_files := model.selected_files_ {
+		if handling == .append && input_element(&model).has_attribute('multiple') {
+			mut list := unsafe { &fileapi.FileList(old_files) }
+			for file in selected.files() {
+				list.add_file(file)
+			}
+		} else {
+			model.selected_files_ = selected
+		}
 	} else {
-		model.selected_files_ << files
+		model.selected_files_ = selected
 	}
 	model.fire_event('input')
 	model.fire_event('change')
@@ -1424,7 +1440,7 @@ pub fn (mut model HTMLInputElementModel) set_files(files ?[]SelectedFile) {
 		return
 	}
 	if replacement := files {
-		model.selected_files_ = replacement.clone()
+		model.set_file_list(input_file_list_from_picker(replacement))
 	}
 }
 
@@ -1439,7 +1455,52 @@ pub fn (model &HTMLInputElementModel) files() ?[]SelectedFile {
 	if model.type_state_ != .file_upload {
 		return none
 	}
-	return model.selected_files_.clone()
+	mut result := []SelectedFile{}
+	if files := model.selected_files_ {
+		for file in files.files() {
+			result << SelectedFile.from_contents(file.name(), file.raw_bytes().clone())
+		}
+	}
+	return result
+}
+
+// HTMLInputElement::did_select_files(), the picker/IPC boundary. SelectedFile
+// descriptors have already been materialized by IPC upstream; the V in-process
+// boundary also accepts them and uses the existing IPC byte snapshot helper.
+fn input_file_list_from_picker(selected_files []SelectedFile) &fileapi.FileList {
+	mut files := fileapi.FileList.create()
+	for selected_file in selected_files {
+		contents, _ := selected_file_contents(&selected_file) or { panic(err) }
+		mime_type := mimesniff.Resource.sniff(contents, mimesniff.SniffingConfiguration{})
+		files.add_file(fileapi.File.construct([fileapi.BlobPart.from_bytes(contents)], selected_file.name,
+			fileapi.FilePropertyBag{
+				type_: mime_type.essence()
+			}))
+	}
+	return files
+}
+
+// HTMLInputElement::files()/set_files(). Unlike the legacy SelectedFile array
+// adapter, these expose the source FileList and preserve File object identity.
+pub fn (mut model HTMLInputElementModel) file_list() ?&fileapi.FileList {
+	if model.type_state_ != .file_upload {
+		return none
+	}
+	if files := model.selected_files_ {
+		return files
+	}
+	files := fileapi.FileList.create()
+	model.selected_files_ = files
+	return files
+}
+
+pub fn (mut model HTMLInputElementModel) set_file_list(files ?&fileapi.FileList) {
+	if model.type_state_ != .file_upload {
+		return
+	}
+	if selected := files {
+		model.selected_files_ = selected
+	}
 }
 
 pub fn (model &HTMLInputElementModel) max_length() i32 {
@@ -1719,11 +1780,11 @@ fn (mut model HTMLInputElementModel) show_the_picker_if_applicable() {
 		return
 	}
 	hook.request(hook.target, InputPickerRequest{
-		element: model.element
-		kind: if model.type_state_ == .file_upload { .file } else { .color }
-		file_filter: model.parse_accept_attribute()
+		element:        model.element
+		kind:           if model.type_state_ == .file_upload { .file } else { .color }
+		file_filter:    model.parse_accept_attribute()
 		allow_multiple: element.has_attribute('multiple')
-		initial_color: model.value()
+		initial_color:  model.value()
 	})
 }
 
@@ -2497,7 +2558,7 @@ pub fn (mut model HTMLInputElementModel) update_validity() {
 	} else if element.has_attribute('required') && model.required_applies() {
 		model.control.missing_ = match model.type_state_ {
 			.checkbox { !model.checked() }
-			.file_upload { model.selected_files_.len == 0 }
+			.file_upload { (model.selected_files_ or { fileapi.FileList.create() }).length() == 0 }
 			else { model.value() == '' }
 		}
 	}
@@ -2555,7 +2616,9 @@ pub fn (mut model HTMLInputElementModel) reset() {
 	model.value_ = model.sanitize_value(input_element(&model).get_attribute_value('value'))
 	mut input := unsafe { &dom.HTMLInputElement(model.element) }
 	input.set_checkedness(input_element(&model).has_attribute('checked'), false)
-	model.selected_files_.clear()
+	if model.selected_files_ != none {
+		model.selected_files_ = fileapi.FileList.create()
+	}
 	model.text_control.set_relevant_value(model.value_)
 	model.update_validity()
 	model.update_shadow_tree()
@@ -2570,7 +2633,9 @@ pub fn (mut model HTMLInputElementModel) clear() {
 	model.value_ = model.sanitize_value('')
 	mut input := unsafe { &dom.HTMLInputElement(model.element) }
 	input.set_checkedness(input_element(&model).has_attribute('checked'), false)
-	model.selected_files_.clear()
+	if model.selected_files_ != none {
+		model.selected_files_ = fileapi.FileList.create()
+	}
 	model.text_control.set_relevant_value(model.value_)
 	model.fire_event('input')
 	model.update_validity()
