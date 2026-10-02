@@ -1,4 +1,7 @@
 // Copyright (c) 2026, Ladybird contributors
+// Copyright (c) 2024-2025, Aliaksandr Kalenik <kalenik.aliaksandr@gmail.com>
+// Copyright (c) 2024-2025, Luke Wilde <luke@ladybird.org>
+// Copyright (c) 2025, Undefine <undefine@undefine.pl>
 // SPDX-License-Identifier: BSD-2-Clause
 
 // WebGLRenderingContextBase/Impl/Overloads entry points. Ladybird's six C++
@@ -746,33 +749,23 @@ pub fn (mut context WebGLRenderingContext) get_program_info_log(program &WebGLPr
 }
 
 pub fn (mut context WebGLRenderingContext) get_program_parameter(program &WebGLProgram, pname GLenum) WebGLParameterValue {
+	context.native.make_current()
 	if !context.owns(&program.object) {
 		context.set_error(invalid_operation)
 		return WebGLParameterValue{}
 	}
+	result := context.native.native_program_parameter(program.object.native_handle_, pname)
 	return match pname {
-		attached_shaders {
-			WebGLParameterValue{
-				kind: .integer
-				integer: context.native.native_program_parameter(program.object.native_handle_, pname)
-			}
-		}
-		active_attributes, active_uniforms {
-			WebGLParameterValue{ kind: .integer, integer: context.native.native_program_parameter(program.object.native_handle_, pname) }
-		}
+		attached_shaders, active_attributes, active_uniforms { integer_parameter(result) }
 		transform_feedback_buffer_mode, transform_feedback_varyings, active_uniform_blocks {
 			if context.version != .webgl2 {
 				context.set_error(invalid_enum)
 				WebGLParameterValue{}
 			} else {
-				WebGLParameterValue{ kind: .integer, integer: context.native.native_program_parameter(program.object.native_handle_, pname) }
+				integer_parameter(result)
 			}
 		}
-		delete_status {
-			WebGLParameterValue{ kind: .boolean, boolean: program.object.invalidated_ }
-		}
-		link_status { WebGLParameterValue{ kind: .boolean, boolean: context.native.native_program_parameter(program.object.native_handle_, pname) != 0 } }
-		validate_status { WebGLParameterValue{ kind: .boolean, boolean: context.native.native_program_parameter(program.object.native_handle_, pname) != 0 } }
+		delete_status, link_status, validate_status { boolean_parameter(result == 1) }
 		else {
 			context.set_error(invalid_enum)
 			WebGLParameterValue{}
@@ -781,14 +774,15 @@ pub fn (mut context WebGLRenderingContext) get_program_parameter(program &WebGLP
 }
 
 pub fn (mut context WebGLRenderingContext) get_shader_parameter(shader &WebGLShader, pname GLenum) WebGLParameterValue {
+	context.native.make_current()
 	if !context.owns(&shader.object) {
 		context.set_error(invalid_operation)
 		return WebGLParameterValue{}
 	}
+	result := context.native.native_shader_parameter(shader.object.native_handle_, pname)
 	return match pname {
-		shader_type { WebGLParameterValue{ kind: .integer, integer: context.native.native_shader_parameter(shader.object.native_handle_, pname) } }
-		delete_status { WebGLParameterValue{ kind: .boolean, boolean: shader.object.invalidated_ } }
-		compile_status { WebGLParameterValue{ kind: .boolean, boolean: context.native.native_shader_parameter(shader.object.native_handle_, pname) != 0 } }
+		shader_type { integer_parameter(result) }
+		delete_status, compile_status { boolean_parameter(result == 1) }
 		else {
 			context.set_error(invalid_enum)
 			WebGLParameterValue{}
