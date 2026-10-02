@@ -67,6 +67,7 @@ pub mut:
 	global_definitions []BinaryGlobalDefinition
 	function_bodies []BinaryFunctionBody
 	table_definitions []BinaryTableDefinition
+	data_segments []BinaryDataSegment
 }
 
 pub struct SerializedModule {
@@ -140,6 +141,7 @@ pub fn (mut compiled Module) deserialization_steps(serialized SerializedModule) 
 	compiled.global_definitions = restored.global_definitions.clone()
 	compiled.function_bodies = restored.function_bodies.clone()
 	compiled.table_definitions = restored.table_definitions.clone()
+	compiled.data_segments = restored.data_segments.clone()
 }
 
 struct Decoder {
@@ -210,6 +212,7 @@ fn compile_module(bytes []u8) !&Module {
 	mut global_definitions := []BinaryGlobalDefinition{}
 	mut function_bodies := []BinaryFunctionBody{}
 	mut table_definitions := []BinaryTableDefinition{}
+	mut data_segments := []BinaryDataSegment{}
 	mut last_non_custom_rank := 0
 	mut seen := map[u8]bool{}
 	for decoder.offset < bytes.len {
@@ -247,6 +250,7 @@ fn compile_module(bytes []u8) !&Module {
 			// machine's invocation and signature validation are separate work.
 			8 { start_function_index = section.u32_leb()! }
 			10 { function_bodies = parse_code_section(mut section)! }
+			11 { data_segments = parse_data_section(mut section)! }
 			12 {
 				count_section := parse_data_count_section(mut section)!
 				data_count = count_section.count
@@ -277,6 +281,7 @@ fn compile_module(bytes []u8) !&Module {
 		global_definitions: global_definitions
 		function_bodies: function_bodies
 		table_definitions: table_definitions
+		data_segments: data_segments
 	}
 }
 
