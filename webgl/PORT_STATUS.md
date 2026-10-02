@@ -209,7 +209,20 @@ per-query identity, and constructor errors from generated bindings and
 `-gc none`, querying actual linked shader attributes/uniforms and driver
 precision and checking readonly access, forgery rejection, and allowed own
 property shadows. This is a reflection-wrapper interop adaptation; the remaining
-compact context/resource prototype and full WrapperWorld graph remain open.
+compact extension/resource prototype and full WrapperWorld graph remain open.
+
+Concrete context interface methods/constants/readonly getters now reside on
+the corresponding WebGLRenderingContext or WebGL2RenderingContext prototype,
+following `Meta/Generators/libweb_bindings/interfaces.py:399-435`, `:470-520`
+and `operations.py:164-203`, `:450-480`. Captured engine receiver records reject
+forged or wrong-interface receivers before argument getters; borrowed methods
+dispatch to their actual receiver's native context. Method names, lengths,
+nonconstructibility, source arity/constructor errors, constant descriptors,
+tags and shared method identity follow the source generated bindings. Native
+two-canvas prototype/receiver tests plus public host and extension execution
+neighbors pass with `-gc none`. Global constructor replacement does not alter
+the cached native interface prototype used for subsequently created contexts.
+Cross-realm WrapperWorld and extension/resource prototype work remain open.
 
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
