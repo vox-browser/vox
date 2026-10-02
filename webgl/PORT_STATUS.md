@@ -208,8 +208,8 @@ per-query identity, and constructor errors from generated bindings and
 `Bindings/InterfaceObject.cpp:61-64`. A focused native host case passes with
 `-gc none`, querying actual linked shader attributes/uniforms and driver
 precision and checking readonly access, forgery rejection, and allowed own
-property shadows. This is a reflection-wrapper interop adaptation; the remaining
-compact extension prototype and full WrapperWorld graph remain open.
+property shadows. This is a reflection-wrapper interop adaptation; the full
+cross-realm WrapperWorld graph remains open.
 
 Concrete context interface methods/constants/readonly getters now reside on
 the corresponding WebGLRenderingContext or WebGL2RenderingContext prototype,
@@ -222,7 +222,7 @@ tags and shared method identity follow the source generated bindings. Native
 two-canvas prototype/receiver tests plus public host and extension execution
 neighbors pass with `-gc none`. Global constructor replacement does not alter
 the cached native interface prototype used for subsequently created contexts.
-Cross-realm WrapperWorld and extension prototype work remain open.
+Cross-realm WrapperWorld work remains open.
 
 Typed query result selection uses the once-converted unsigned enum, matching
 the source get_parameter/get_vertex_attrib/get_active_uniform_block_parameter
@@ -248,6 +248,18 @@ Reflection getters also preserve generated native-function nonconstructibility:
 they have no own prototype and construction raises TypeError without running
 the getter. The actual reflection query test passes with `-gc none` after this
 focused correction.
+
+The thirteen implemented extension factories now create their source internal
+interface prototypes, tags, constant descriptors and shared native-function
+methods (`WebGLRenderingContextBase.cpp:67-124`, `Extensions/*.idl`). Each retains
+LegacyNoInterfaceObject behavior. Method receivers are checked before argument
+conversion, following the generated `operations.py:450-480` binding steps, and
+borrowed ANGLE/OES methods use the receiving extension's actual native context.
+The focused native two-context interface test and existing extension execution
+test pass with `-gc none`, including cache aliases, forged receivers, arity,
+method identity and real divisor/vertex-array queries. This remains an actual
+JavaScriptCore interop adaptation rather than a complete cross-realm
+WrapperWorld implementation.
 
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
