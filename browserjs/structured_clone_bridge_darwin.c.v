@@ -107,6 +107,7 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 		14 { kind = .set }
 		16 { kind = .error_object }
 		22 { kind = .array_buffer }
+		23 { kind = .array_buffer_view }
 		17 {
 			// C API checks the actual JSArray record. Array.isArray would also
 			// accept Proxy(Array), unlike source is<JS::Array>.
@@ -140,6 +141,10 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 	}
 	if kind == .array_buffer {
 		projection.project_array_buffer(value, mut object)!
+		return &result
+	}
+	if kind == .array_buffer_view {
+		projection.project_array_buffer_view(value, mut object)!
 		return &result
 	}
 	if kind == .map || kind == .set {
@@ -196,6 +201,11 @@ fn (mut projection NativeCloneProjection) reconstruct(value dom.JSValue) !voidpt
 	}
 	if object.kind == .array_buffer {
 		actual := projection.reconstruct_array_buffer(object)!
+		projection.output_memory[identity] = actual
+		return actual
+	}
+	if object.kind == .array_buffer_view {
+		actual := projection.reconstruct_array_buffer_view(object)!
 		projection.output_memory[identity] = actual
 		return actual
 	}
@@ -278,6 +288,9 @@ const structured_clone_projection_intrinsic = r'(function(){
  const dateValue=Date.prototype.getTime,regexSource=getOwn(RegExp.prototype,"source").get;
  const AB=ArrayBuffer,bufferLength=getOwn(AB.prototype,"byteLength").get,isView=AB.isView;
  const bufferDetached=getOwn(AB.prototype,"detached"),bufferResizable=getOwn(AB.prototype,"resizable"),bufferMaximum=getOwn(AB.prototype,"maxByteLength");
+ const typedPrototype=Object.getPrototypeOf(Int8Array.prototype),typedBuffer=getOwn(typedPrototype,"buffer").get,typedLength=getOwn(typedPrototype,"byteLength").get,typedOffset=getOwn(typedPrototype,"byteOffset").get,typedCount=getOwn(typedPrototype,"length").get,typedName=getOwn(typedPrototype,Symbol.toStringTag).get,typedValues=typedPrototype.values;
+ const DV=DataView,dataBuffer=getOwn(DV.prototype,"buffer").get,dataLength=getOwn(DV.prototype,"byteLength").get,dataOffset=getOwn(DV.prototype,"byteOffset").get;
+ const viewConstructors={DataView:DV,Int8Array,Uint8Array,Uint8ClampedArray,Int16Array,Uint16Array,Int32Array,Uint32Array,Float16Array:typeof Float16Array==="function"?Float16Array:undefined,Float32Array,Float64Array,BigInt64Array,BigUint64Array};
  const mapSize=getOwn(M.prototype,"size").get,setSize=getOwn(T.prototype,"size").get;
  const mapEach=M.prototype.forEach,setEach=T.prototype.forEach,mapSet=M.prototype.set,setAdd=T.prototype.add,isError=Error.isError;
  const errorConstructors=[Error,EvalError,undefined,RangeError,ReferenceError,SyntaxError,TypeError,URIError],concat=S.prototype.concat;
@@ -307,6 +320,8 @@ const structured_clone_projection_intrinsic = r'(function(){
   create_error(type,message,cause){const constructor=errorConstructors[type];if(constructor===undefined)return undefined;const value=new constructor();if(message!==undefined)define(value,"message",{value:message,writable:true,enumerable:false,configurable:true});if(cause!==undefined)define(value,"cause",{value:cause,writable:true,enumerable:false,configurable:true});return value},
   buffer_metadata(value){if(bufferDetached===undefined||bufferResizable===undefined||bufferMaximum===undefined)return undefined;const detached=apply(bufferDetached.get,value,[]);if(detached)return [true,false,undefined];const resizable=apply(bufferResizable.get,value,[]);return [false,resizable,resizable?apply(bufferMaximum.get,value,[]):undefined]},
   create_buffer(length,maximum){return maximum===undefined?new AB(length):new AB(length,{maxByteLength:maximum})},
+  view_metadata(value){let buffer;try{buffer=apply(typedBuffer,value,[])}catch(ignore){try{return [apply(dataBuffer,value,[]),"DataView",apply(dataLength,value,[]),apply(dataOffset,value,[]),undefined]}catch(outOfBounds){return null}}try{apply(typedValues,value,[]);return [buffer,apply(typedName,value,[]),apply(typedLength,value,[]),apply(typedOffset,value,[]),apply(typedCount,value,[])]}catch(outOfBounds){return null}},
+  create_view(buffer,name,offset,length){const constructor=viewConstructors[name];return constructor===undefined?undefined:new constructor(buffer,offset,length)},
   map_snapshot(value){const list=[];apply(mapEach,value,[function(item,key){append(list,[key,item])}]);return list},
   set_snapshot(value){const list=[];apply(setEach,value,[function(item){append(list,item)}]);return list},
   enumerable_keys(value){const list=[],keys=ownKeys(value);for(let index=0;index<keys.length;++index){const key=keys[index];if(typeof key==="string"){const descriptor=getOwn(value,key);if(descriptor!==undefined&&descriptor.enumerable)append(list,key)}}return list},
