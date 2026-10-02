@@ -287,7 +287,7 @@ pub fn (mut pending PendingResponse) run_callback() {
 	response := pending.response_ or { return }
 	callback := pending.callback_ or { return }
 	pending_pointer := unsafe { &PendingResponse(pending) }
-	queue_fetch_task(fn [pending_pointer, response, callback] () {
+	deferred_invoke_for_request(pending_pointer.request, fn [pending_pointer, response, callback] () {
 		callback(response)
 		mut request := pending_pointer.request
 		request.remove_pending_response(pending_pointer)
