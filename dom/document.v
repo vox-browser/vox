@@ -29,6 +29,8 @@ pub type CustomElementRegistryIsScopedCallback = fn (voidptr) bool
 
 pub type CustomElementRegistryAppendDocumentCallback = fn (voidptr, &Document)
 
+pub type GlobalCustomElementRegistryFactory = fn (&Document) voidptr
+
 pub struct XPathBridge {
 pub:
 	create_expression XPathCreateExpressionCallback = unsafe { nil }
@@ -42,6 +44,7 @@ __global (
 	dom_custom_element_definition_lookup        CustomElementDefinitionLookupCallback
 	dom_custom_element_registry_is_scoped       CustomElementRegistryIsScopedCallback
 	dom_custom_element_registry_append_document CustomElementRegistryAppendDocumentCallback
+	dom_global_custom_element_registry_factory GlobalCustomElementRegistryFactory
 	dom_element_activation_behavior_hooks       ElementActivationBehaviorHooks
 	dom_style_sheet_scope_hooks                 StyleSheetScopeHooks
 	dom_run_focusing_steps                      RunFocusingStepsCallback
@@ -5286,6 +5289,11 @@ pub fn Document.create_and_initialize(type_ DocumentType_, content_type string, 
 		false)
 	doc.html_fragment_parsing_hook_ = navigation_params.html_fragment_parsing_hook
 	doc.initialize()
+	// The HTML package owns the registry type and supplies its actual factory
+	// through the same dependency-cycle boundary as registry lookup/adoption.
+	if dom_global_custom_element_registry_factory != unsafe { nil } {
+		doc.set_custom_element_registry(dom_global_custom_element_registry_factory(doc))
+	}
 	// 11. Run CSP initialization for the newly-created Document.
 	doc.run_csp_initialization()
 	return doc
@@ -11813,6 +11821,10 @@ pub fn install_custom_element_definition_lookup(callback CustomElementDefinition
 pub fn install_custom_element_registry_hooks(is_scoped CustomElementRegistryIsScopedCallback, append_document CustomElementRegistryAppendDocumentCallback) {
 	dom_custom_element_registry_is_scoped = is_scoped
 	dom_custom_element_registry_append_document = append_document
+}
+
+pub fn install_global_custom_element_registry_factory(factory GlobalCustomElementRegistryFactory) {
+	dom_global_custom_element_registry_factory = factory
 }
 
 pub fn custom_element_registry_is_scoped(registry voidptr) bool {

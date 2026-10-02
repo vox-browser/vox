@@ -89,6 +89,11 @@ fn custom_element_registry_append_document(registry_handle voidptr, document &do
 fn install_custom_element_registry_dom_hooks() {
 	dom.install_custom_element_definition_lookup(custom_element_definition_lookup)
 	dom.install_custom_element_registry_hooks(custom_element_registry_is_scoped, custom_element_registry_append_document)
+	dom.install_global_custom_element_registry_factory(create_global_custom_element_registry_for_dom)
+}
+
+fn create_global_custom_element_registry_for_dom(document &dom.Document) voidptr {
+	return voidptr(CustomElementRegistry.create(document))
 }
 
 pub fn CustomElementRegistry.create(document &dom.Document) &CustomElementRegistry {
