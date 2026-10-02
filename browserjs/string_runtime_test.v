@@ -23,20 +23,27 @@ fn install_string_test_host(mut runtime Runtime) {
 		libjs.string_prototype_italics, libjs.string_prototype_link, libjs.string_prototype_small,
 		libjs.string_prototype_strike, libjs.string_prototype_sub, libjs.string_prototype_sup,
 		libjs.string_prototype_to_lowercase, libjs.string_prototype_to_uppercase,
-		libjs.string_prototype_normalize]
+		libjs.string_prototype_normalize, libjs.string_prototype_replace]
 	names := ['at', 'charAt', 'charCodeAt', 'codePointAt', 'concat', 'indexOf', 'lastIndexOf',
 		'slice', 'substring', 'substr', 'toString', 'valueOf', 'isWellFormed', 'toWellFormed',
 		'trim', 'trimStart', 'trimEnd', 'repeat', 'padStart', 'padEnd', 'anchor', 'big', 'blink',
 		'bold', 'fixed', 'fontcolor', 'fontsize', 'italics', 'link', 'small', 'strike', 'sub',
-		'sup', 'toLowerCase', 'toUpperCase', 'normalize']
+		'sup', 'toLowerCase', 'toUpperCase', 'normalize', 'replace']
 	lengths := [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
-		0, 1, 0, 0, 0, 0, 0, 0, 0]
+		0, 1, 0, 0, 0, 0, 0, 0, 0, 2]
 	for index, name in names {
 		method := libjs.NativeFunction.create_raw(mut vm, realm, realm.function_prototype,
 			behaviours[index], lengths[index], libjs.PropertyName.from_str(name), none)
 		prototype.define_direct_property(libjs.PropertyName.from_str(name),
 			libjs.Value.from_object(method.object), 5)
 	}
+	// Array intrinsics are pending; split receives an explicit prototype fixture.
+	array_prototype := libjs.Object.create(realm, parent)
+	split_method := libjs.NativeFunction.create(mut vm, realm, realm.function_prototype, fn [array_prototype] (mut vm libjs.VM) !libjs.Value {
+		return libjs.string_prototype_split(mut vm, array_prototype)
+	}, 2, libjs.PropertyName.from_str('split'), none)
+	prototype.define_direct_property(libjs.PropertyName.from_str('split'),
+		libjs.Value.from_object(split_method.object), 5)
 	iterator := libjs.StringIteratorPrototype.create(mut vm, realm, parent).object
 	getter := fn [iterator] (realm &libjs.Realm) &libjs.Object {
 		return iterator
@@ -72,6 +79,65 @@ fn install_string_test_host(mut runtime Runtime) {
 		libjs.Value.from_string(vm.create_string_from_str('AB')), 7)
 	global.define_direct_property(libjs.PropertyName.from_str('HostTemplate'),
 		libjs.Value.from_object(template), 7)
+	// Native callback and symbol-hook fixtures exercise the real call boundary
+	// while ECMAScript functions and object-literal generation remain pending.
+	replacement := libjs.NativeFunction.create(mut vm, realm, realm.function_prototype, fn (mut vm libjs.VM) !libjs.Value {
+		assert vm.this_value().is_undefined() && vm.argument_count() == 3
+		assert vm.argument(0).as_string().str() == 'b' && vm.argument(1).number == 2
+		assert vm.argument(2).as_string().str() == '😀b-tail'
+		return libjs.Value.from_string(vm.create_string_from_str('$&'))
+	}, 3, libjs.PropertyName.from_str('replacement'), none)
+	global.define_direct_property(libjs.PropertyName.from_str('HostReplacement'),
+		libjs.Value.from_object(replacement.object), 7)
+	mut hooks := libjs.Object.create(realm, none)
+	for symbol in [vm.well_known_symbol_replace(), vm.well_known_symbol_split()] {
+		hook := libjs.NativeFunction.create(mut vm, realm, realm.function_prototype, fn [hooks] (mut vm libjs.VM) !libjs.Value {
+			assert vm.this_value().as_object() == hooks && vm.argument_count() == 2
+			assert vm.argument(0).is_symbol() && vm.argument(1).is_symbol()
+			return vm.argument(1)
+		}, 2, libjs.PropertyName.from_symbol(symbol), none)
+		hooks.define_direct_property(libjs.PropertyName.from_symbol(symbol),
+			libjs.Value.from_object(hook.object), 7)
+	}
+	global.define_direct_property(libjs.PropertyName.from_str('HostStringHooks'),
+		libjs.Value.from_object(hooks), 7)
+}
+
+fn test_browser_string_replace_and_split_execute_substitution_callbacks_and_symbol_dispatch() {
+	mut runtime := Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	install_string_test_host(mut runtime)
+	assert runtime.evaluate('var text=new HostString("abc"); text.replace("b","$$")==="a$c" && text.replace("b","$&")==="abc" && text.replace("b","$`")==="aac" && text.replace("b","$0/$99/$<g>")==="a$0/$99/$<g>c";')! == 'true'
+	assert runtime.evaluate('var replaced=new HostString("😀b-tail"); replaced.replace("b",HostReplacement)==="😀$&-tail" && replaced.replace("missing",HostReplacement)==="😀b-tail";')! == 'true'
+	assert runtime.evaluate('var bound=text.replace.bind(text,"b","X"); bound()==="aXc" && text.replace.length===2 && text.split.length===2;')! == 'true'
+	assert runtime.evaluate('var fields=(new HostString(",a,,b,")).split(","); fields.length===5 && fields[0]==="" && fields[1]==="a" && fields[2]==="" && fields[3]==="b" && fields[4]==="";')! == 'true'
+	assert runtime.evaluate('var pair=new HostString("😀"); var units=pair.split(""); units.length===2 && units[0]==="\\ud83d" && units[1]==="\\ude00" && pair.split("\\ud83d")[1]==="\\ude00" && pair.split("",1)[0]==="\\ud83d";')! == 'true'
+	assert runtime.evaluate('var comma=new HostString("a,b,c"); comma.split(",",4294967296).length===0 && comma.split(",",4294967297).length===1 && comma.split(",",-1).length===3 && comma.split()[0]==="a,b,c";')! == 'true'
+	assert runtime.evaluate('var splitBound=comma.split.bind(comma,",",2); splitBound().length===2 && splitBound()[1]==="b";')! == 'true'
+	assert runtime.evaluate('var original=Symbol("original"), result=Symbol("result"); HostString.prototype.replace.call(original,HostStringHooks,result)===result && HostString.prototype.split.call(original,HostStringHooks,result)===result;')! == 'true'
+	errors := runtime.run_document_scripts_collect_errors([
+		ScriptSource{ code: 'text.replace("absent",Symbol("x"));', url: 'replace-no-match-symbol.js' },
+		ScriptSource{ code: 'text.split(Symbol("x"),0);', url: 'split-zero-symbol.js' },
+		ScriptSource{ code: 'text.split(",",Symbol("x"));', url: 'split-limit-symbol.js' },
+		ScriptSource{
+			code: 'HostString.prototype.replace.call(null,HostStringHooks,result);'
+			url:  'replace-null.js'
+		},
+		ScriptSource{
+			code: 'HostString.prototype.split.call(undefined,HostStringHooks,result);'
+			url:  'split-undefined.js'
+		},
+	])
+	assert errors.len == 5
+	for index, message in ['Cannot convert symbol to string', 'Cannot convert symbol to string',
+		'Cannot convert symbol to number', 'null cannot be converted to an object',
+		'undefined cannot be converted to an object'] {
+		assert errors[index].contains(message)
+	}
+	assert runtime.evaluate('text.replace("b","X")==="aXc" && comma.split(",")[2]==="c";')! == 'true'
+	assert runtime.context == unsafe { nil }
+	vm := runtime.libjs_vm()
+	assert vm.execution_context_stack().len == 1 && vm.interpreter_stack().depth() == 0
 }
 
 fn test_browser_string_constructor_static_methods_and_exotic_wrappers_execute_native_records() {
