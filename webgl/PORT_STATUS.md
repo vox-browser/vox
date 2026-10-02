@@ -287,6 +287,14 @@ cases pass with `-gc none`, including foreign/deleted objects, empty values,
 resource identity and a native source mutation outside the V cache. Existing
 native shader compile/link/reflection tests also pass with `-gc none`.
 
+getError now queries the current native driver's error after pending local
+errors and before stored translation errors, matching
+`WebGLRenderingContextImpl.cpp:1720-1724` and
+`WebGLRenderingContextBase.cpp:315-332`. Its focused native two-version test and
+existing native object-query file pass with `-gc none`, including driver errors
+raised outside translated calls, context switching, exact precedence and the
+source one-time context-loss error branch.
+
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
