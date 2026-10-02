@@ -10542,6 +10542,7 @@ pub fn PendingHasInvalidationMutationFeatures.new() &PendingHasInvalidationMutat
 	}
 }
 
+@[heap]
 pub struct StyleScope {
 pub mut:
 	rule_cache                                                  ?&StyleCache
@@ -10574,6 +10575,7 @@ pub mut:
 @[heap]
 pub struct StyleCache {
 pub mut:
+	function_rules_by_name         map[string][]CachedFunctionDefinition
 	qualified_layer_names_in_order []string
 	selector_insights              &SelectorInsights = unsafe { nil }
 	pseudo_class_rule_cache        map[PseudoClass]&RuleCache

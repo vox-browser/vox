@@ -437,6 +437,10 @@ pub fn (mut scope StyleScope) populate_new_rule_cache() &StyleCache {
 		user_agent_rule_cache: scope.user_agent_rule_cache or { RuleCaches.new() }
 		has_size_container_queries: scope.has_size_container_queries
 	}
+	mut function_cache := unsafe { &StyleCache(cache) }
+	for origin in [CascadeOrigin.author, .user, .user_agent] {
+		scope.cache_function_definitions(mut function_cache, origin)
+	}
 	scope.rule_cache = cache
 	return cache
 }

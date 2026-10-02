@@ -3696,6 +3696,7 @@ pub struct GuardedSubstitutionContexts {
 pub mut:
 	contexts              []SubstitutionContext
 	function_local_scopes []&FunctionLocalScope
+	function_definition_scopes map[u64]&StyleScope
 }
 
 pub fn (mut contexts GuardedSubstitutionContexts) guard(mut context SubstitutionContext) {

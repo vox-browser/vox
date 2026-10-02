@@ -192,24 +192,19 @@ fn resolve_custom_property_for_function_scope(element ?dom.AbstractElement, name
 	return result
 }
 
-fn resolve_custom_function_definition(element ?dom.AbstractElement, name string) ?&CSSRule {
+fn resolve_custom_function_definition(element ?dom.AbstractElement, name string, guarded_contexts GuardedSubstitutionContexts) ?FunctionDefinitionAndScope {
 	el := element or { return none }
-	scope := css_style_scope_for(el)
-	mut found := &CSSRule(unsafe { nil })
-	found_ptr := &found
-	for sheet in scope.stylesheets_for_cascade_origin(.author) {
-		sheet.for_each_effective_rule(.preorder, fn [name, found_ptr] (rule &CSSRule) {
-			if rule.type_ == .function_rule && rule.function_name == name {
-				unsafe {
-					*found_ptr = rule
-				}
+	// Rust custom_properties.rs resolves nested names where the calling
+	// function was defined. Top-level names use the element's style scope.
+	for index := guarded_contexts.contexts.len - 1; index >= 0; index-- {
+		context := guarded_contexts.contexts[index]
+		if context.dependency_type == .function {
+			if scope := guarded_contexts.function_definition_scopes[context.function_identity] {
+				return scope.get_function_definition(name)
 			}
-		})
+		}
 	}
-	if found == unsafe { nil } {
-		return none
-	}
-	return found
+	return css_style_scope_for(el).get_function_definition(name)
 }
 
 fn split_custom_function_arguments(values []ComponentValue) [][]ComponentValue {
@@ -273,7 +268,8 @@ fn collect_custom_function_body(rule &CSSRule) (map[string]FunctionLocalValue, [
 	return values, names
 }
 
-fn evaluate_a_custom_function(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, rule &CSSRule, arguments [][]ComponentValue) []ComponentValue {
+fn evaluate_a_custom_function(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, definition FunctionDefinitionAndScope, arguments [][]ComponentValue) []ComponentValue {
+	rule := definition.function
 	identity := u64(voidptr(rule))
 	mut function_context := SubstitutionContext{
 		dependency_type: .function
@@ -284,6 +280,7 @@ fn evaluate_a_custom_function(element ?dom.AbstractElement, mut guarded_contexts
 	if function_context.is_cyclic {
 		return arbitrary_substitution_guaranteed_invalid_value()
 	}
+	guarded_contexts.function_definition_scopes[identity] = definition.scope
 
 	if arguments.len > rule.function_parameters.len {
 		guarded_contexts.unguard(function_context)
@@ -388,7 +385,7 @@ fn evaluate_a_custom_function(element ?dom.AbstractElement, mut guarded_contexts
 
 // https://drafts.csswg.org/css-mixins/#replace-a-dashed-function
 fn replace_a_dashed_function(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, name string, raw_arguments []ComponentValue) []ComponentValue {
-	rule := resolve_custom_function_definition(element, name) or {
+	definition := resolve_custom_function_definition(element, name, guarded_contexts) or {
 		return arbitrary_substitution_guaranteed_invalid_value()
 	}
 	argument_slices := split_custom_function_arguments(raw_arguments)
@@ -399,5 +396,5 @@ fn replace_a_dashed_function(element ?dom.AbstractElement, mut guarded_contexts 
 		contents := custom_function_argument_contents(argument)
 		arguments << substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, contents, none)
 	}
-	return evaluate_a_custom_function(element, mut guarded_contexts, rule, arguments)
+	return evaluate_a_custom_function(element, mut guarded_contexts, definition, arguments)
 }
