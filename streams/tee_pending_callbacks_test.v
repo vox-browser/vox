@@ -40,11 +40,11 @@ fn test_tee_branch_cancels_adopt_the_shared_pending_source_cancel_promise() {
 	pair := source.tee() or { panic(err) }
 	mut first := pair.first
 	mut second := pair.second
-	assert first.tee_cancel_promise_ == second.tee_cancel_promise_
+	assert voidptr(first.tee_cancel_promise_) == voidptr(second.tee_cancel_promise_)
 	jobs.drain()
 	first_cancel := first.cancel(string_value('first'))
 	second_cancel := second.cancel(string_value('second'))
-	assert first_cancel != second_cancel
+	assert voidptr(first_cancel) != voidptr(second_cancel)
 	assert first_cancel.state() == .pending && second_cancel.state() == .pending
 	assert jobs.reasons == ['first', 'second']
 	cancel.reject(webidl.string_value('source cancel failed'))
@@ -52,6 +52,24 @@ fn test_tee_branch_cancels_adopt_the_shared_pending_source_cancel_promise() {
 	jobs.drain()
 	assert first_cancel.reason() == 'source cancel failed'
 	assert second_cancel.reason() == 'source cancel failed'
+}
+
+fn test_tee_closed_reaction_ignores_distinct_replaced_reader_with_equal_promise_fields() {
+	mut jobs := &TeeCallbackJobs{}
+	realm := jobs.realm(746)
+	mut source := ReadableStream.create(realm, UnderlyingSource{}, QueuingStrategy{ high_water_mark: 0 }) or { panic(err) }
+	pair := source.tee() or { panic(err) }
+	jobs.drain()
+	stale_closed := VoidPromise.rejected_in(realm, 'equal reader rejection')
+	current_closed := VoidPromise.rejected_in(realm, 'equal reader rejection')
+	assert voidptr(stale_closed) != voidptr(current_closed)
+	mut reader := source.default_reader_
+	reader.closed_ = current_closed
+	source.state_ = .errored
+	observe_tee_reader_closed(mut source, stale_closed)
+	jobs.drain()
+	assert pair.first.state() == .readable
+	assert pair.second.state() == .readable
 }
 
 fn test_byte_tee_cancels_wait_for_the_pending_source_cancel_to_fulfill() {
