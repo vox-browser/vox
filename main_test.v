@@ -342,7 +342,7 @@ fn test_javascript_bridge_exposes_completed_images_and_delivers_late_load_listen
 
 fn test_javascript_bridge_resolves_detached_image_decode_promises() {
 	$if darwin {
-		document := html.parse_document('<!doctype html><div id="target"></div>')
+		mut document := html.parse_document('<!doctype html><div id="target"></div>')
 		mut runtime := browserjs.Runtime.create()
 		defer {
 			runtime.close()
@@ -353,6 +353,11 @@ fn test_javascript_bridge_resolves_detached_image_decode_promises() {
 		], runtime, mut messages)
 		assert messages == []
 		target := document.get_element_by_id('target') or { panic('missing target') }
+		assert target.get_attribute_value('class') == ''
+		mut loop := html.main_thread_event_loop()
+		for loop.task_queue().has_runnable_tasks() { loop.process() }
+		mut app := BrowserApp{document: document, js_runtime: runtime, layout_tree_only: true}
+		app.poll_javascript_tasks()
 		assert target.get_attribute_value('class') == 'decoded'
 	}
 }
