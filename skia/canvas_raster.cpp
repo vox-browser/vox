@@ -176,3 +176,13 @@ extern "C" bool vox_skia_canvas_path(uint8_t* pixels, int width, int height, int
     canvas->drawPath(make_path(command->path), paint);
     return surface->readPixels(source_info, pixels, pitch, 0, 0);
 }
+
+extern "C" bool vox_skia_canvas_read_pixels(uint8_t const* source, int width, int height, int pitch, int alpha_type, uint8_t* destination, int destination_width, int destination_height, int destination_pitch, int x, int y)
+{
+    auto source_info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, alpha_type == 2 ? kPremul_SkAlphaType : kUnpremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto destination_info = SkImageInfo::Make(destination_width, destination_height, kRGBA_8888_SkColorType, kUnpremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    SkBitmap bitmap;
+    if (!bitmap.installPixels(source_info, const_cast<uint8_t*>(source), pitch))
+        return false;
+    return bitmap.readPixels(destination_info, destination, destination_pitch, x, y);
+}

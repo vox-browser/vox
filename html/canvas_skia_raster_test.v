@@ -223,3 +223,18 @@ fn test_canvas_raster_executes_each_source_color_filter_and_chain_order() {
 		assert canvas_raster_pixel(mut context, 0, 0) == expected[i], filter
 	}
 }
+
+fn test_canvas_readback_unpremultiplies_native_pixels_and_image_data_write_keeps_straight_alpha() {
+	mut canvas := OffscreenCanvas.create(2, 1) or { panic(err) }
+	mut context := canvas.get_context(.canvas_2d, none) or { panic(err) }
+	mut bitmap := canvas.bitmap() or { panic('missing bitmap') }
+	bitmap.alpha_type = 2
+	bitmap.data = [u8(128), 0, 0, 128, 0, 64, 0, 128]
+	assert canvas_raster_pixel(mut context, 0, 0) == [u8(255), 0, 0, 128]
+	assert canvas_raster_pixel(mut context, 1, 0) == [u8(0), 128, 0, 128]
+	image := ImageData.create_with_data([u8(0), 0, 255, 64], 1, 1, none) or { panic(err) }
+	context.put_image_data(image, 0, 0)
+	assert bitmap.alpha_type == 1
+	assert canvas_raster_pixel(mut context, 0, 0) == [u8(0), 0, 255, 64]
+	assert canvas_raster_pixel(mut context, 1, 0) == [u8(0), 128, 0, 128]
+}

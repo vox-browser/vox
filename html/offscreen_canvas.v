@@ -10,6 +10,7 @@ module html
 
 import dom
 import math
+import skia
 
 pub enum OffscreenRenderingContextID {
 	canvas_2d
@@ -573,6 +574,11 @@ pub fn (context &OffscreenCanvasRenderingContext2D) get_image_data(x int, y int,
 	mut result := ImageData.create(u32(actual_width), u32(actual_height), settings)!
 	bitmap := context.canvas_.bitmap() or { return result }
 	mut result_pixels := result.data()
+	// Canvas2DContextBase.cpp: ImageData receives unpremultiplied pixels.
+	if bitmap.alpha_type == 2 {
+		skia.read_pixels(bitmap.data, bitmap.width, bitmap.height, bitmap.pitch, int(bitmap.alpha_type), mut result_pixels, actual_width, actual_height, actual_width * 4, actual_x, actual_y)
+		return result
+	}
 	for row := 0; row < actual_height; row++ {
 		for column := 0; column < actual_width; column++ {
 			source_x := actual_x + column
@@ -597,6 +603,13 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) put_image_data(image_data
 pub fn (mut context OffscreenCanvasRenderingContext2D) put_image_data_dirty(image_data &ImageData, x int, y int, dirty_x int, dirty_y int, dirty_width int, dirty_height int) {
 	bitmap := context.canvas_.bitmap() or { return }
 	mut mutable_bitmap := unsafe { &dom.Bitmap_(bitmap) }
+	if mutable_bitmap.alpha_type == 2 {
+		mut straight_pixels := []u8{len: mutable_bitmap.data.len}
+		if skia.read_pixels(mutable_bitmap.data, mutable_bitmap.width, mutable_bitmap.height, mutable_bitmap.pitch, 2, mut straight_pixels, mutable_bitmap.width, mutable_bitmap.height, mutable_bitmap.pitch, 0, 0) {
+			mutable_bitmap.data = straight_pixels
+			mutable_bitmap.alpha_type = 1
+		}
+	}
 	source := image_data.data()
 	left, top, right, bottom := canvas_clamped_rectangle(f64(dirty_x), f64(dirty_y), f64(dirty_width), f64(dirty_height), int(image_data.width()), int(image_data.height()))
 	for source_y := top; source_y < bottom; source_y++ {
