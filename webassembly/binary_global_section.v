@@ -5,6 +5,7 @@ module webassembly
 pub struct BinaryGlobalDefinition {
 pub:
 	type_ BinaryGlobalType
+pub mut:
 	initializer BinaryExpression
 }
 

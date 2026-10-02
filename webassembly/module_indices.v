@@ -14,6 +14,7 @@ pub mut:
 	tables                  []BinaryTableType
 	memories                []WasmLimits
 	globals                 []BinaryGlobalType
+	globals_without_internal_globals []BinaryGlobalType
 	locals                  []BinaryValueType
 	elements                []BinaryValueType
 	datas                   []bool
@@ -90,7 +91,9 @@ fn build_binary_validation_context(compiled &Module) !BinaryValidationContext {
 			}
 			.memory { context.memories << entry.memory_type }
 			.global {
-				context.globals << (entry.global_type or { panic('missing parsed global import type') })
+				type_ := entry.global_type or { panic('missing parsed global import type') }
+				context.globals_without_internal_globals << type_
+				context.globals << type_
 			}
 		}
 	}
@@ -168,9 +171,6 @@ fn validate_binary_module_indices(compiled &Module) !BinaryValidationContext {
 	}
 	for entry in compiled.table_definitions {
 		validate_binary_table_type(entry.type_, context.types)!
-	}
-	for entry in compiled.global_definitions {
-		validate_binary_value_type(entry.type_.type_, context.types)!
 	}
 	for entry in compiled.tag_types { validate_binary_tag_type(entry, context.types)! }
 	return context
