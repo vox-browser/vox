@@ -83,7 +83,7 @@ pub mut:
 	cause               string
 	bytes               []u8
 	shared_backing_store ?&StructuredSharedArrayBufferBackingStore
-	max_byte_length      ?u32
+	max_byte_length      ?u64
 	viewed_array_buffer ?&StructuredObject
 	byte_length         ?u32
 	byte_offset         u32
@@ -100,7 +100,7 @@ pub fn StructuredObject.create(kind StructuredObjectKind) &StructuredObject {
 	}
 }
 
-pub fn StructuredObject.create_shared_array_buffer(bytes []u8, max_byte_length ?u32) &StructuredObject {
+pub fn StructuredObject.create_shared_array_buffer(bytes []u8, max_byte_length ?u64) &StructuredObject {
 	return &StructuredObject{
 		kind: .shared_array_buffer
 		shared_backing_store: &StructuredSharedArrayBufferBackingStore{
@@ -252,12 +252,13 @@ fn (mut serializer StructuredSerializer) write_tag(tag StructuredSerializeValueT
 	serializer.write_u8(u8(tag))
 }
 
-fn (mut serializer StructuredSerializer) write_optional_u32(value ?u32) {
+fn (mut serializer StructuredSerializer) write_byte_length(value ?u32) {
+	// JS::ByteLength's source boolean means is_auto, not optional presence.
 	if actual := value {
-		serializer.write_u8(1)
+		serializer.write_u8(0)
 		serializer.write_u32(actual)
 	} else {
-		serializer.write_u8(0)
+		serializer.write_u8(1)
 	}
 }
 
@@ -276,7 +277,7 @@ fn serialize_array_buffer(mut serializer StructuredSerializer, array_buffer &Str
 			return error('DataCloneError: SharedArrayBuffer has no backing store')
 		}
 		if max_byte_length := array_buffer.max_byte_length {
-			if max_byte_length < u32(store.bytes.len) {
+			if max_byte_length < u64(store.bytes.len) {
 				return error('DataCloneError: SharedArrayBuffer maximum length is smaller than its byte length')
 			}
 			serializer.write_tag(.growable_shared_array_buffer)
@@ -290,7 +291,7 @@ fn serialize_array_buffer(mut serializer StructuredSerializer, array_buffer &Str
 		serializer.shared_array_buffers << array_buffer
 		serializer.write_bytes(store.bytes)!
 		if max_byte_length := array_buffer.max_byte_length {
-			serializer.write_u32(max_byte_length)
+			serializer.write_u64(max_byte_length)
 		}
 		return
 	}
@@ -298,12 +299,12 @@ fn serialize_array_buffer(mut serializer StructuredSerializer, array_buffer &Str
 	// Presence of [[ArrayBufferMaxByteLength]] distinguishes a resizable buffer,
 	// including an empty buffer whose maximum is zero.
 	if max_byte_length := array_buffer.max_byte_length {
-		if max_byte_length < u32(array_buffer.bytes.len) {
+		if max_byte_length < u64(array_buffer.bytes.len) {
 			return error('DataCloneError: ArrayBuffer maximum length is smaller than its byte length')
 		}
 		serializer.write_tag(.resizable_array_buffer)
 		serializer.write_bytes(array_buffer.bytes)!
-		serializer.write_u32(max_byte_length)
+		serializer.write_u64(max_byte_length)
 	} else {
 		serializer.write_tag(.array_buffer)
 		serializer.write_bytes(array_buffer.bytes)!
@@ -320,12 +321,58 @@ fn serialize_viewed_array_buffer(mut serializer StructuredSerializer, view &Stru
 	if buffer.kind != .array_buffer && buffer.kind != .shared_array_buffer {
 		return error('DataCloneError: ArrayBuffer view has an invalid viewed buffer')
 	}
+	validate_array_buffer_view(view, buffer)!
 	serializer.write_tag(.array_buffer_view)
 	serializer.serialize_value(structured_object_value(buffer), for_storage, allow_shared_array_buffers)!
 	serializer.write_string(view.string_data)!
-	serializer.write_optional_u32(view.byte_length)
+	serializer.write_byte_length(view.byte_length)
 	serializer.write_u32(view.byte_offset)
-	serializer.write_optional_u32(view.array_length)
+	if view.string_data != 'DataView' {
+		serializer.write_byte_length(view.array_length)
+	}
+}
+
+fn structured_typed_array_element_size(constructor_name string) !u64 {
+	// JS_ENUMERATE_TYPED_ARRAYS in the pinned LibJS Forward.h.
+	return match constructor_name {
+		'Uint8Array', 'Uint8ClampedArray', 'Int8Array' { u64(1) }
+		'Uint16Array', 'Int16Array', 'Float16Array' { u64(2) }
+		'Uint32Array', 'Int32Array', 'Float32Array' { u64(4) }
+		'BigUint64Array', 'BigInt64Array', 'Float64Array' { u64(8) }
+		else { return error('DataCloneError: Unknown ArrayBufferView constructor') }
+	}
+}
+
+fn structured_view_length_fits_buffer(length ?u32, element_size u64, byte_offset u32, buffer &StructuredObject) bool {
+	buffer_length := u64(buffer.array_buffer_bytes().len)
+	if actual := length {
+		// Source validates u32 slots in u64, before the engine element check.
+		return u64(actual) * element_size + u64(byte_offset) <= buffer_length
+	}
+	return buffer.max_byte_length != none && u64(byte_offset) <= buffer_length
+}
+
+fn validate_array_buffer_view(view &StructuredObject, buffer &StructuredObject) ! {
+	// StructuredSerialize.cpp's decoder rejects slot combinations that no
+	// actual source view can produce. The DTO applies that same source gate.
+	if view.string_data == 'DataView' {
+		if !structured_view_length_fits_buffer(view.byte_length, 1, view.byte_offset, buffer) {
+			return error('DataCloneError: DataView does not fit its ArrayBuffer')
+		}
+		return
+	}
+	element_size := structured_typed_array_element_size(view.string_data)!
+	mut consistent := (view.byte_length == none) == (view.array_length == none)
+		&& u64(view.byte_offset) % element_size == 0
+	if consistent {
+		if array_length := view.array_length {
+			byte_length := view.byte_length or { return error('DataCloneError: inconsistent view lengths') }
+			consistent = u64(byte_length) == u64(array_length) * element_size
+		}
+	}
+	if !consistent || !structured_view_length_fits_buffer(view.array_length, element_size, view.byte_offset, buffer) {
+		return error('DataCloneError: ArrayBufferView does not fit its ArrayBuffer')
+	}
 }
 
 fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_storage bool, allow_shared_array_buffers AllowSharedArrayBuffers) ! {
@@ -377,7 +424,11 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 		serializer.write_u32(id)
 		return
 	}
-	serializer.memory[identity] = u32(serializer.memory.len)
+	// Source registration follows non-deep serialization. A view's nested
+	// buffer may claim an earlier id before the view itself is registered.
+	if object.kind != .array_buffer_view {
+		serializer.memory[identity] = u32(serializer.memory.len)
+	}
 
 	match object.kind {
 		.boolean_object {
@@ -459,6 +510,7 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 		}
 		.array_buffer_view {
 			serialize_viewed_array_buffer(mut serializer, object, for_storage, allow_shared_array_buffers)!
+			serializer.memory[identity] = u32(serializer.memory.len)
 		}
 		.shared_array_buffer {
 			serialize_array_buffer(mut serializer, object, for_storage, allow_shared_array_buffers)!
@@ -586,12 +638,12 @@ struct DecodedOptionalU32 {
 	value ?u32
 }
 
-fn (mut decoder StructuredDecoder) read_optional_u32() !DecodedOptionalU32 {
-	present := decoder.read_u8()!
-	if present > 1 {
-		return error('DataCloneError: invalid optional integer encoding')
+fn (mut decoder StructuredDecoder) read_byte_length() !DecodedOptionalU32 {
+	is_auto := decoder.read_u8()!
+	if is_auto > 1 {
+		return error('DataCloneError: invalid byte-length auto encoding')
 	}
-	if present == 0 {
+	if is_auto == 1 {
 		return DecodedOptionalU32{}
 	}
 	return DecodedOptionalU32{
@@ -771,8 +823,8 @@ fn (mut decoder StructuredDecoder) decode_value_with_tag(tag_byte u8) !&dom.JSVa
 			value := decoder.register_object(object)
 			object.bytes = decoder.read_bytes()!
 			if tag == .resizable_array_buffer {
-				max_byte_length := decoder.read_u32()!
-				if max_byte_length < u32(object.bytes.len) {
+				max_byte_length := decoder.read_u64()!
+				if max_byte_length < u64(object.bytes.len) {
 					return error('DataCloneError: ArrayBuffer maximum length is smaller than its byte length')
 				}
 				object.max_byte_length = max_byte_length
@@ -782,10 +834,10 @@ fn (mut decoder StructuredDecoder) decode_value_with_tag(tag_byte u8) !&dom.JSVa
 		.shared_array_buffer, .growable_shared_array_buffer {
 			side_table_index := int(decoder.read_u32()!)
 			bytes := decoder.read_bytes()!
-			mut max_byte_length := ?u32(none)
+			mut max_byte_length := ?u64(none)
 			if tag == .growable_shared_array_buffer {
-				actual_max_byte_length := decoder.read_u32()!
-				if actual_max_byte_length < u32(bytes.len) {
+				actual_max_byte_length := decoder.read_u64()!
+				if actual_max_byte_length < u64(bytes.len) {
 					return error('DataCloneError: SharedArrayBuffer maximum length is smaller than its byte length')
 				}
 				max_byte_length = actual_max_byte_length
@@ -804,7 +856,6 @@ fn (mut decoder StructuredDecoder) decode_value_with_tag(tag_byte u8) !&dom.JSVa
 		}
 		.array_buffer_view {
 			mut object := StructuredObject.create(.array_buffer_view)
-			value := decoder.register_object(object)
 			buffer_value := decoder.decode_value()!
 			buffer := structured_object_from_value(*buffer_value)!
 			if buffer.kind != .array_buffer && buffer.kind != .shared_array_buffer {
@@ -812,10 +863,13 @@ fn (mut decoder StructuredDecoder) decode_value_with_tag(tag_byte u8) !&dom.JSVa
 			}
 			object.viewed_array_buffer = buffer
 			object.string_data = decoder.read_string()!
-			object.byte_length = decoder.read_optional_u32()!.value
+			object.byte_length = decoder.read_byte_length()!.value
 			object.byte_offset = decoder.read_u32()!
-			object.array_length = decoder.read_optional_u32()!.value
-			return value
+			if object.string_data != 'DataView' {
+				object.array_length = decoder.read_byte_length()!.value
+			}
+			validate_array_buffer_view(object, buffer)!
+			return decoder.register_object(object)
 		}
 		.empty, .serializable_object, .end_object {
 			return error('DataCloneError: unsupported structured serialization tag')

@@ -98,14 +98,14 @@ fn test_structured_serialize_array_buffer_view_and_error_names() {
 	view.viewed_array_buffer = buffer
 	view.string_data = 'Uint16Array'
 	view.byte_length = 2
-	view.byte_offset = 1
+	view.byte_offset = 2
 	view.array_length = 1
 	decoded_value := structured_deserialize(structured_serialize(structured_object_value(view))!)!
 	decoded := structured_object_from_value(decoded_value)!
 	assert decoded.kind == .array_buffer_view
 	assert decoded.string_data == 'Uint16Array'
 	assert decoded.byte_length? == 2
-	assert decoded.byte_offset == 1
+	assert decoded.byte_offset == 2
 	assert decoded.array_length? == 1
 	assert decoded.viewed_array_buffer?.bytes == [u8(10), 20, 30, 40]
 	assert error_name_to_type('TypeError') == .type_error
@@ -209,7 +209,7 @@ fn test_structured_serialize_shared_array_buffer_cross_process_falls_back_to_cop
 }
 
 fn test_structured_serialize_growable_shared_array_buffer_preserves_maximum() {
-	mut source := StructuredObject.create_shared_array_buffer('growable'.bytes(), u32(128))
+	mut source := StructuredObject.create_shared_array_buffer('growable'.bytes(), u64(128))
 	record := structured_serialize_with_shared_array_buffers(structured_object_value(source), .same_agent_always)!
 	clone := structured_object_from_value(structured_deserialize(record)!)!
 	assert clone.max_byte_length? == 128
