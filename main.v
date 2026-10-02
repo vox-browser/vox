@@ -2557,11 +2557,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	}
 	sources := script_sources(app.document, resource_base_url, preloaded_resources, mut app.js_messages)
 	javascript_navigation := if sources.len > 0 {
-		app.js_runtime = browserjs.Runtime.create_with_engine(app.js_engine)
-		if app.js_engine == .libjs {
-			mut agent_event_loop := html.main_thread_event_loop()
-			agent_event_loop.bind_vm(app.js_runtime.libjs_vm())
-		}
+		app.js_runtime = create_browser_script_runtime(app.js_engine)
 		run_document_script_sources(app.document, loaded.url, sources, app.js_runtime, mut app.js_messages)
 	} else {
 		none
@@ -2595,6 +2591,15 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 			app.navigate(resolve_document_reference(destination, loaded.url), true)
 		}
 	}
+}
+
+fn create_browser_script_runtime(engine browserjs.Engine) &browserjs.Runtime {
+	runtime := browserjs.Runtime.create_with_engine(engine)
+	if engine == .libjs {
+		mut agent_event_loop := html.main_thread_event_loop()
+		agent_event_loop.bind_vm(runtime.libjs_vm())
+	}
+	return runtime
 }
 
 fn error_markup(address string, message string) string {
