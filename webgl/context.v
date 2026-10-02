@@ -704,6 +704,7 @@ pub fn (mut context WebGLRenderingContext) set_uniform(location ?&WebGLUniformLo
 }
 
 pub fn (mut context WebGLRenderingContext) pixel_storei(pname GLenum, parameter int) {
+	context.native.make_current()
 	match pname {
 		pack_alignment, unpack_alignment {
 			if parameter !in [1, 2, 4, 8] {
@@ -728,10 +729,7 @@ pub fn (mut context WebGLRenderingContext) pixel_storei(pname GLenum, parameter 
 			context.unpack_premultiply_alpha_ = parameter != 0
 		}
 		unpack_colorspace_conversion_webgl {
-			if GLenum(parameter) !in [browser_default_webgl, GLenum(0)] {
-				context.set_error(invalid_value)
-				return
-			}
+			// The pinned source stores this browser-only state without enum validation.
 			context.unpack_colorspace_conversion_ = GLenum(parameter)
 		}
 		pack_row_length, pack_skip_rows, pack_skip_pixels, unpack_row_length, unpack_skip_rows, unpack_skip_pixels, unpack_skip_images, unpack_image_height {
