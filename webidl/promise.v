@@ -41,6 +41,7 @@ mut:
 	job_scheduler ?PromiseJobScheduler
 	reactions []PromiseReaction
 	observers []PromiseObserver
+	already_resolved bool
 }
 
 // PromiseContext is the standalone boundary for the relevant Realm obtained
@@ -109,11 +110,45 @@ pub fn reject_promise(mut promise Promise, reason Value) {
 }
 
 pub fn (mut promise Promise) resolve(value Value) {
-	promise.settle(.fulfilled, value)
+	if promise.already_resolved { return }
+	promise.already_resolved = true
+	promise.resolve_value(value)
 }
 
 pub fn (mut promise Promise) reject(reason Value) {
+	if promise.already_resolved { return }
+	promise.already_resolved = true
 	promise.settle(.rejected, reason)
+}
+
+// WebIDL::create_resolved_promise calls its capability's Resolve function.
+// This translates the native-Promise branch of LibJS Promise Resolve Functions
+// and NewPromiseResolveThenableJob. Arbitrary JS object getters/thenables still
+// belong to the JS object runtime; an actual Promise is retained by identity.
+fn (mut promise Promise) resolve_value(value Value) {
+	if promise.state != .pending { return }
+	if value.kind == .promise {
+		mut source := value.promise_value_ or {
+			promise.settle(.rejected, string_value('TypeError: Missing native Promise value'))
+			return
+		}
+		if source == &promise {
+			promise.settle(.rejected, string_value('TypeError: Cannot resolve promise with itself'))
+			return
+		}
+		// The builtin then callback belongs to the source Promise's realm.
+		source.enqueue_job(fn [mut promise, mut source] () {
+			source.observe(fn [mut promise] (result Value) !Value {
+				promise.resolve_value(result)
+				return undefined_value()
+			}, fn [mut promise] (reason Value) !Value {
+				promise.settle(.rejected, reason)
+				return undefined_value()
+			})
+		})
+		return
+	}
+	promise.settle(.fulfilled, value)
 }
 
 fn (mut promise Promise) settle(state PromiseState, value Value) {
@@ -164,6 +199,7 @@ fn absent_reaction(value Value) !Value {
 }
 
 fn (mut promise Promise) react(on_fulfilled ReactionSteps, has_on_fulfilled bool, on_rejected ReactionSteps, has_on_rejected bool) &Promise {
+	promise.mark_as_handled()
 	mut child := create_promise_for(PromiseContext{ realm_id: promise.realm_id, job_scheduler: promise.job_scheduler })
 	reaction := PromiseReaction{
 		on_fulfilled: on_fulfilled
@@ -191,6 +227,7 @@ pub fn (mut promise Promise) upon_rejection(steps ReactionSteps) &Promise {
 }
 
 fn (mut promise Promise) observe(on_fulfilled ReactionSteps, on_rejected ReactionSteps) {
+	promise.mark_as_handled()
 	if promise.state == .pending {
 		promise.observers << PromiseObserver{
 			on_fulfilled: on_fulfilled
@@ -303,11 +340,17 @@ pub struct CallbackType {
 pub:
 	callback                  CallbackOperation @[required]
 	operation_returns_promise OperationReturnsPromise
+	promise_context           ?PromiseContext
 }
 
 pub fn call_user_object_operation(callback CallbackType, this_argument ?Value, arguments []Value) !Value {
 	this_value := this_argument or { undefined_value() }
-	return callback.callback(this_value, arguments)
+	return callback.callback(this_value, arguments) or {
+		if callback.operation_returns_promise == .yes {
+			return promise_value(create_rejected_promise_for(callback.promise_context or { PromiseContext{} }, string_value(err.msg())))
+		}
+		return err
+	}
 }
 
 pub fn invoke_callback(callback CallbackType, this_argument ?Value, arguments []Value) !Value {

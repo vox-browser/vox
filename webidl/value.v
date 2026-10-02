@@ -17,6 +17,7 @@ pub enum ValueKind {
 	buffer_source
 	callback
 	platform_object
+	promise
 }
 
 pub struct Value {
@@ -33,12 +34,17 @@ pub:
 	platform_interfaces []string
 	opaque_id           u64
 	frozen              bool
+	promise_value_      ?&Promise
 }
 
 pub fn undefined_value() Value {
 	return Value{
 		kind: .undefined
 	}
+}
+
+pub fn promise_value(promise &Promise) Value {
+	return Value{ kind: .promise, promise_value_: promise }
 }
 
 pub fn null_value() Value {
@@ -212,6 +218,7 @@ pub fn to_string(value Value) !string {
 		.buffer_source {
 			'[object ArrayBuffer]'
 		}
+		.promise { '[object Promise]' }
 	}
 }
 

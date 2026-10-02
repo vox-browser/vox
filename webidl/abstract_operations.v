@@ -57,10 +57,12 @@ pub fn invoke_callback_impl(callback CallbackType, this_argument ?Value, argumen
 }
 
 pub fn invoke_promise_callback(callback CallbackType, this_argument ?Value, arguments []Value) &Promise {
+	assert callback.operation_returns_promise == .yes
+	context := callback.promise_context or { PromiseContext{} }
 	result := invoke_callback_impl(callback, this_argument, arguments) or {
-		return create_rejected_promise(string_value(err.msg()))
+		return create_rejected_promise_for(context, string_value(err.msg()))
 	}
-	return create_resolved_promise(result)
+	return create_resolved_promise_for(context, result)
 }
 
 pub fn integer_part(number f64) f64 {
