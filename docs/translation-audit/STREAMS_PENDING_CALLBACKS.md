@@ -475,3 +475,19 @@ browserjs/stream_constructor_metadata_test.v + readable conversion/writable
   prototypes, four illegal-controller lookup-order checks and native
   subclass behavior; 4/4 files passed with -gc none.
 ```
+
+Cached queuing-strategy size functions now use actual JavaScriptCore native
+functions for the source `CreateBuiltinFunction` surface. Their `name` and
+`length` descriptors, Function prototype, lack of construction/prototype and
+native source text follow the source callback contract. The byte-size callback
+performs actual engine GetV, preserving primitive getter receivers and original
+values/errors without numeric coercion. The exact function-reference registry
+retains its owning Runtime's callback record and is cleared on Runtime close;
+it does not claim source wrapper GC reclamation before that boundary.
+
+```text
+browserjs/native_value_host_function_test.v + queuing_strategy_builtin_test.v
+  + queuing_strategy_host_test.v: native function metadata, actual owner
+  identity, per-owner cleanup, stable global cache, primitive GetV receivers,
+  original getter completions and queue/factory neighbors; 3/3 with -gc none.
+```
