@@ -167,9 +167,20 @@ the source does. Tests use four source CBC fixtures, nine source CTR fixtures,
 failure cases, every supported key width/format, copied deferred parameters,
 and source metadata/error ordering.
 
-Further source review remains for ChaCha20-Poly1305 and common parameter/typed
-boundary conversions. Native backend availability alone does not establish
-complete WebCrypto/VM parity.
+ChaCha20-Poly1305 now translates the source encrypt/decrypt/generate/import/
+export/get-length bodies through `LibCrypto/Cipher/ChaCha.cpp` EVP calls. IV,
+tag, short ciphertext, usage, JWK, and raw-secret checks retain source order and
+errors. Provider failures carry the same operation expression text as upstream.
+Its JWK branch admits decoded keys of any width, as the pinned source does;
+actual encryption/decryption then reports the native 32-byte-key requirement.
+Tests replay all 12 upstream WPT data/AAD fixtures and cover authentication,
+empty data, copied deferred buffers, JWK ordering, and common metadata slots.
+The earlier typed V `raw` import/export convenience alias remains explicitly
+supported; source AlgorithmMethods and asynchronous import/export/wrap reject
+that alias and accept raw-secret or JWK.
+
+Common parameter/typed boundary conversions remain under source review.
+Native backend availability does not establish complete WebCrypto/VM parity.
 
 `SubtleCryptoBinding` implements the asynchronous WebIDL operation boundary.
 It copies input data and registered algorithm BufferSource fields before
