@@ -200,8 +200,21 @@ fn normalize_binding_algorithm(algorithm webidl.Value, operation string) !Normal
 	// through get_buffer_source_copy, including offset DataView/TypedArray views.
 	mut object := map[string]json2.Any{}
 	for field in binding_algorithm_fields(name, operation) {
-		property := value.object_value[field] or { continue }
-        aes_field := name.starts_with('AES-') || name == 'ChaCha20-Poly1305'
+        property := value.object_value[field] or {
+            if (name in ['Argon2d', 'Argon2i', 'Argon2id'] && field in ['nonce', 'parallelism', 'memory', 'passes']) || field == 'outputLength' {
+                return error('TypeError: Required property ${field} is missing or undefined')
+            }
+            continue
+        }
+        if field in ['parallelism', 'memory', 'passes', 'version', 'outputLength'] {
+            if property.kind !in [.undefined, .null_, .boolean, .number, .string_, .bigint] {
+                return error('TypeError: ${field} cannot be converted to a number by this value boundary')
+            }
+            converted := json2.Any(webidl.value_to_number(property)!)
+            width := if field == 'version' { 8 } else { 32 }
+            object[field] = i64(algorithm_enforce_uint({field: converted}, field, width)!)
+            continue
+        }
         if field in ['length', 'tagLength', 'modulusLength', 'saltLength', 'iterations'] {
             if property.kind !in [.undefined, .null_, .boolean, .number, .string_, .bigint] {
                 return error('TypeError: ${field} cannot be converted to a number by this value boundary')
@@ -211,7 +224,7 @@ fn normalize_binding_algorithm(algorithm webidl.Value, operation string) !Normal
             object[field] = i64(algorithm_js_uint({field: converted}, field, width)!)
             continue
         }
-        if property.kind == .undefined && aes_field && field in ['iv', 'counter', 'additionalData'] {
+        if property.kind == .undefined && field in ['iv', 'counter', 'additionalData', 'nonce', 'secretValue', 'associatedData', 'functionName', 'customization'] {
             return error('TypeError: ${field} must be a buffer source')
         }
 		if property.kind == .undefined || property.kind == .platform_object { continue }

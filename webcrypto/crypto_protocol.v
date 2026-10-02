@@ -61,40 +61,33 @@ fn required_algorithm_string(object map[string]json2.Any, key string) !string {
 	}
 }
 
-fn optional_algorithm_u32(object map[string]json2.Any, key string) ?u32 {
-	value := object[key] or { return none }
-	if value is i64 {
-		if value >= 0 && value <= i64(0xffff_ffff) {
-			return u32(value)
-		}
-	}
-	if value is f64 {
-		if value >= 0 && value <= f64(0xffff_ffff) && value == math_floor(value) {
-			return u32(value)
-		}
-	}
-	return none
-}
-
-fn required_algorithm_u32(object map[string]json2.Any, key string) !u32 {
-	return optional_algorithm_u32(object, key) or {
-		error('TypeError: ${key} must be an unsigned integer')
-	}
-}
-
 // CryptoAlgorithms.cpp uses JS::Value::to_u8/to_u16/to_u32. Reuse the translated
 // StringToNumber and WebIDL modulo-integer operations for primitive values.
 // The json2 host boundary cannot execute an arbitrary object's ToPrimitive.
-fn algorithm_js_uint(object map[string]json2.Any, key string, width int) !u32 {
+fn algorithm_primitive_number(object map[string]json2.Any, key string) !f64 {
     value := object[key] or { json2.Any(json2.Null{}) }
-    number := match value {
+    return match value {
         i8, i16, i32, int, i64, u8, u16, u32, u64, f32, f64 { f64(value) }
         bool { if value { f64(1) } else { f64(0) } }
         string { libjs.string_to_number(libjs.utf16_string(value)) }
         json2.Null { f64(0) }
         else { return error('TypeError: ${key} cannot be converted to a number by this value boundary') }
     }
+}
+
+fn algorithm_js_uint(object map[string]json2.Any, key string, width int) !u32 {
+    number := algorithm_primitive_number(object, key)!
     return u32(webidl.convert_to_int(webidl.number_value(number), width, false, .no, .no)!)
+}
+
+fn algorithm_enforce_uint(object map[string]json2.Any, key string, width int) !u32 {
+    number := algorithm_primitive_number(object, key)!
+    return u32(webidl.convert_to_int(webidl.number_value(number), width, false, .yes, .no)!)
+}
+
+fn required_algorithm_enforce_uint(object map[string]json2.Any, key string, width int) !u32 {
+    if key !in object { return error('TypeError: Required property ${key} is missing or undefined') }
+    return algorithm_enforce_uint(object, key, width)
 }
 
 fn math_floor(value f64) f64 {
@@ -307,52 +300,37 @@ pub fn Ed448Params.from_value(value json2.Any) !Ed448Params {
 }
 
 pub fn Argon2Params.from_value(value json2.Any) !Argon2Params {
-	object := algorithm_object(value)!
-	mut version := ?u8(none)
-	if 'version' in object {
-		actual := required_algorithm_u32(object, 'version')!
-		if actual > 255 {
-			return error('TypeError: version is outside the octet range')
-		}
-		version = u8(actual)
-	}
-	mut secret_value := ?[]u8(none)
-	if 'secretValue' in object {
-		secret_value = required_algorithm_bytes(object, 'secretValue')!
-	}
-	mut associated_data := ?[]u8(none)
-	if 'associatedData' in object {
-		associated_data = required_algorithm_bytes(object, 'associatedData')!
-	}
-	return Argon2Params{
-		name: ''
-		nonce: required_algorithm_bytes(object, 'nonce')!
-		parallelism: required_algorithm_u32(object, 'parallelism')!
-		memory: required_algorithm_u32(object, 'memory')!
-		passes: required_algorithm_u32(object, 'passes')!
-		version: version
-		secret_value: secret_value
-		associated_data: associated_data
-	}
+    object := algorithm_object(value)!
+    if 'nonce' !in object { return error('TypeError: Required property nonce is missing or undefined') }
+    nonce := required_algorithm_bytes(object, 'nonce')!
+    parallelism := required_algorithm_enforce_uint(object, 'parallelism', 32)!
+    memory := required_algorithm_enforce_uint(object, 'memory', 32)!
+    passes := required_algorithm_enforce_uint(object, 'passes', 32)!
+    mut version := ?u8(none)
+    if 'version' in object { version = u8(algorithm_enforce_uint(object, 'version', 8)!) }
+    mut secret_value := ?[]u8(none)
+    if 'secretValue' in object { secret_value = required_algorithm_bytes(object, 'secretValue')! }
+    mut associated_data := ?[]u8(none)
+    if 'associatedData' in object { associated_data = required_algorithm_bytes(object, 'associatedData')! }
+    return Argon2Params{ name: '', nonce: nonce, parallelism: parallelism, memory: memory, passes: passes, version: version, secret_value: secret_value, associated_data: associated_data }
 }
 
 pub fn CShakeParams.from_value(value json2.Any) !CShakeParams {
-	object := algorithm_object(value)!
-	return CShakeParams{
-		name: ''
-		output_length: required_algorithm_u32(object, 'outputLength')!
-		function_name: optional_algorithm_bytes(object, 'functionName')
-		customization: optional_algorithm_bytes(object, 'customization')
-	}
+    object := algorithm_object(value)!
+    output_length := required_algorithm_enforce_uint(object, 'outputLength', 32)!
+    mut function_name := ?[]u8(none)
+    if 'functionName' in object { function_name = required_algorithm_bytes(object, 'functionName')! }
+    mut customization := ?[]u8(none)
+    if 'customization' in object { customization = required_algorithm_bytes(object, 'customization')! }
+    return CShakeParams{ name: '', output_length: output_length, function_name: function_name, customization: customization }
 }
 
 pub fn KmacParams.from_value(value json2.Any) !KmacParams {
-	object := algorithm_object(value)!
-	return KmacParams{
-		name: ''
-		output_length: required_algorithm_u32(object, 'outputLength')!
-		customization: optional_algorithm_bytes(object, 'customization')
-	}
+    object := algorithm_object(value)!
+    output_length := required_algorithm_enforce_uint(object, 'outputLength', 32)!
+    mut customization := ?[]u8(none)
+    if 'customization' in object { customization = required_algorithm_bytes(object, 'customization')! }
+    return KmacParams{ name: '', output_length: output_length, customization: customization }
 }
 
 pub fn KmacKeyGenParams.from_value(value json2.Any) !KmacKeyGenParams {
