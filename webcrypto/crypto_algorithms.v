@@ -7,7 +7,6 @@
 // Registry and WebCrypto access checks live in subtle_crypto.v.
 module webcrypto
 
-import crypto.aes
 import crypto.rand
 import crypto.sha1
 import crypto.sha256
@@ -454,65 +453,6 @@ pub fn export_raw_key(key &CryptoKey) ![]u8 {
 		return error('InvalidAccessError: Key is not extractable')
 	}
 	return key.handle()
-}
-
-fn xor_wrap_counter(mut block []u8, counter u64) {
-	for byte_index in 0 .. 8 {
-		block[7 - byte_index] ^= u8(counter >> (byte_index * 8))
-	}
-}
-
-// RFC 3394 AES Key Wrap, used by the WebCrypto AES-KW algorithm.
-pub fn aes_key_wrap(key &CryptoKey, plaintext []u8) ![]u8 {
-	key_bytes := valid_aes_key(key, 'AES-KW')!
-	if plaintext.len < 16 || plaintext.len % 8 != 0 {
-		return error('OperationError: AES-KW input must be at least 16 bytes and a multiple of 8')
-	}
-	n := plaintext.len / 8
-	mut a := []u8{len: 8, init: 0xa6}
-	mut r := plaintext.clone()
-	block_cipher := aes.new_cipher(key_bytes)
-	for round in 0 .. 6 {
-		for index in 0 .. n {
-			mut input := a.clone()
-			input << r[index * 8..index * 8 + 8]
-			mut output := []u8{len: 16}
-			block_cipher.encrypt(mut output, input)
-			a = output[..8].clone()
-			xor_wrap_counter(mut a, u64(round * n + index + 1))
-			copy(mut r[index * 8..index * 8 + 8], output[8..])
-		}
-	}
-	mut wrapped := a.clone()
-	wrapped << r
-	return wrapped
-}
-
-pub fn aes_key_unwrap(key &CryptoKey, ciphertext []u8) ![]u8 {
-	key_bytes := valid_aes_key(key, 'AES-KW')!
-	if ciphertext.len < 24 || ciphertext.len % 8 != 0 {
-		return error('OperationError: Invalid AES-KW ciphertext length')
-	}
-	n := ciphertext.len / 8 - 1
-	mut a := ciphertext[..8].clone()
-	mut r := ciphertext[8..].clone()
-	block_cipher := aes.new_cipher(key_bytes)
-	for round := 5; round >= 0; round-- {
-		for index := n - 1; index >= 0; index-- {
-			mut first := a.clone()
-			xor_wrap_counter(mut first, u64(round * n + index + 1))
-			mut input := first.clone()
-			input << r[index * 8..index * 8 + 8]
-			mut output := []u8{len: 16}
-			block_cipher.decrypt(mut output, input)
-			a = output[..8].clone()
-			copy(mut r[index * 8..index * 8 + 8], output[8..])
-		}
-	}
-	if subtle.constant_time_compare(a, []u8{len: 8, init: 0xa6}) != 1 {
-		return error('OperationError: AES-KW integrity check failed')
-	}
-	return r
 }
 
 fn validate_usages(usages []KeyUsage, allowed []KeyUsage) ! {

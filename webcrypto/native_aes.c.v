@@ -39,3 +39,15 @@ fn native_aes_gcm(decrypt bool, key []u8, input []u8, iv []u8, aad []u8, tag []u
     }
     return output[..int(size)].clone()
 }
+
+fn C.vox_aes_kw(int, &u8, usize, &u8, usize, &u8, &usize) int
+
+fn native_aes_kw(decrypt bool, key []u8, input []u8) ![]u8 {
+    mut output := []u8{len: input.len + 8}
+    mut size := usize(output.len)
+    if C.vox_aes_kw(int(decrypt), key.data, usize(key.len), input.data, usize(input.len), output.data, &size) != 1 {
+        action := if decrypt { 'unwrap' } else { 'wrap' }
+        return error('OperationError: Key ${action} failed')
+    }
+    return output[..int(size)].clone()
+}

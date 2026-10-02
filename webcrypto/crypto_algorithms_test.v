@@ -212,7 +212,7 @@ fn test_aes_kw_rfc_3394_vector_and_integrity_check() {
 	{
 		assert false
 	} else {
-		assert err.msg().contains('integrity')
+		assert err.msg() == 'OperationError: Key unwrap failed'
 	}
 }
 
