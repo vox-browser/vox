@@ -130,16 +130,16 @@ fn import_mlkem_key(params AlgorithmParams, format KeyFormat, material []u8, ext
 			parsed_name := mlkem_name_from_oid(info.oid)!
 			handle := parse_mlkem_private(parsed_name, info.material)!
 			if info.oid != mlkem_oid(name)! { return error('DataError: Invalid algorithm') }
-			return mlkem_private_key(name, handle, extractable, usages)
+			return mlkem_private_key(name, handle, false, [])
 		}
 		.raw_public {
 			validate_mlkem_usages(usages, false)!
-			return mlkem_public_key(name, material, extractable, usages)
+			return mlkem_public_key(name, material, false, [])
 		}
 		.raw_seed {
 			validate_mlkem_usages(usages, true)!
 			if material.len != 64 { return error('DataError: Invalid key format') }
-			return mlkem_private_key(name, native_mlkem_generate(name, material)!, extractable, usages)
+			return mlkem_private_key(name, native_mlkem_generate(name, material)!, false, [])
 		}
 		// Upstream explicitly leaves JWK import unimplemented.
 		else { return error('NotSupportedError: Invalid key format') }
