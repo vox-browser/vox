@@ -227,6 +227,12 @@ realm objects, or TemporaryExecutionContext; that runtime integration remains
 dependent on unfinished LibJS work. Synchronous typed `SubtleCrypto` operations
 remain available below the binding.
 
+Shared JWK validation now retains the pinned helper's duplicate, unrelated
+operation, use-category, and first missing-usage diagnostics. Focused tests
+exercise optional/unknown operations, source validation precedence, and the
+actual AES, HMAC, and EC import paths. The helper intentionally preserves the
+source's rejection of mixed encryption/wrapping operation groups.
+
 ## Verification
 
 The 34 WebCrypto test files and all six WebIDL test files passed using direct
