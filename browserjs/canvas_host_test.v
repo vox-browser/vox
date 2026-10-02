@@ -143,3 +143,22 @@ fn test_canvas_host_keeps_created_canvas_dom_identity_for_replay() {
 		panic('created canvas surface is missing')
 	}
 }
+
+fn test_canvas_host_resizes_existing_dom_canvas_and_retains_the_native_context() {
+	$if !darwin { return }
+	mut document := html.parse_document('<canvas width="50" height="50"></canvas>')
+	mut host := CanvasHost.create(document)
+	mut runtime := Runtime.create_with_engine(.javascriptcore)
+	defer { runtime.close() }
+	host.install(mut runtime)!
+	key := host.elements.keys().filter(host.elements[it].local_name() == 'canvas')[0]
+	runtime.evaluate_host('const __canvases=Object.create(null);const state={bridgeKey:"${key}",tagName:"canvas",width:50,height:50};function __canvasDimension(s,name){return +s[name];}function __element(s){return {__state:s};}' + canvas_bootstrap())!
+	assert runtime.evaluate_host('const context=__canvasContext(state);context.fillStyle="red";context.fillRect(0,0,50,50);state.width=100;__canvasResize(state);state.height=100;__canvasResize(state);context.fillStyle="lime";context.fillRect(0,0,100,100);JSON.stringify(Array.from(context.getImageData(99,99,1,1).data));')! == '[0,255,0,255]'
+	element := host.elements[key] or { panic('owner missing') }
+	canvas := unsafe { &dom.HTMLCanvasElement(element) }
+	assert html.html_canvas_element_width(canvas) == 100
+	assert html.html_canvas_element_height(canvas) == 100
+	bitmap := html.html_canvas_element_get_bitmap_from_surface(canvas) or { panic('bitmap') }
+	assert bitmap.width == 100
+	assert bitmap.height == 100
+}
