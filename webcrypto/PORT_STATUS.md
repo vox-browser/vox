@@ -233,6 +233,13 @@ include copied native Argon2 RFC9106 output through fractional/string inputs,
 range limits, required-member precedence, explicit undefined members, and
 zero-length cSHAKE settlement.
 
+X25519/X448 class imports now leave extractable/usages at the source defaults
+for raw, raw-public where supported, SPKI, PKCS8, and JWK. The common typed and
+asynchronous import boundaries install the final metadata and check requested
+private usages after the source import body. Focused tests cover every source
+format, class versus public slots, duplicate usages, and copied deferred DER
+imports for both curves.
+
 Common parameter/typed boundary conversions remain under source review.
 Native backend availability does not establish complete WebCrypto/VM parity.
 
