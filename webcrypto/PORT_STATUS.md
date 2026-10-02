@@ -261,6 +261,15 @@ tests cover brands, offset views, optional/required presence, and earlier
 buffer errors before invalid numeric fields. The native RSA generation test
 now supplies and mutates an actual offset Uint8Array view.
 
+EC namedCurve dictionaries now use source primitive ToString, including
+omitted/undefined, null, boolean, numeric and BigInt binding inputs. Unsupported
+curves reject during the actual deferred operation. Nested hash identifiers
+normalize at their source read position, preserve source name diagnostics, and
+validate cSHAKE parameters before discarding them for the hash-name record.
+Focused tests cover primitive names, omitted curves, immediate nested errors
+before later fields, and deferred curve failures. Arbitrary object ToPrimitive
+and accessor execution remains an explicit typed host/VM boundary.
+
 Common parameter/typed boundary conversions remain under source review.
 Native backend availability does not establish complete WebCrypto/VM parity.
 
