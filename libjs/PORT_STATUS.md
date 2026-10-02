@@ -2169,3 +2169,15 @@ slices above; they are not an ECMAScript runtime conformance suite.
 The LibWeb symbol audit excludes this separate package (`db4e4fc`), so matching
 LibJS runtime names cannot satisfy LibWeb coverage or alter its review queues.
 All 46 translation-tool Python tests pass, including that scope regression.
+
+## Production operation preservation
+
+The audit corrections `c68c8bf2`, `2110fc6c`, `61c817f4`, `fbcccad2`, and
+`172482b3` move source-required operations outside V assertions: ArrayCreate
+length/list initialization, String split result properties, FromPropertyDescriptor
+field creation, Uint8Array decoder metadata, and ICU string-property extraction.
+FromPropertyDescriptor now invokes the source CreateDataPropertyOrThrow operation.
+Their ordinary-statement focused checks run with `-prod -gc none`, so production
+assertion elimination cannot erase the checks themselves. The complete package
+passes 227 test files with default GC and with `-gc none`. These supporting
+corrections do not install missing intrinsic records or complete regex execution.

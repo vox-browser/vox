@@ -65,3 +65,13 @@ recursive type canonicalization/subtyping, the instruction decoder/validator,
 function execution, or table/global instantiation. Other core sections remain
 explicit pending translation work; `validate()` still does not establish full
 LibWasm module validity.
+
+The additional function/start/data-count/tag slices translate their pinned
+`Parser/Parser.cpp` records and preserve them through module serialization.
+The function section retains defined-function type indices separately from
+imports; a zero start index remains distinct from no start. Data-count retains
+the source EOF read-error branch. Tag flags/type indices/imports/exports are
+retained, while `LibWeb/WebAssembly/Module.cpp` still logs and omits tags from
+its current JS reflection API. All 12 package test files pass. Start-function
+invocation, tag store/exception execution, function/code-count checks and full
+module validation remain pending with the other machine work.
