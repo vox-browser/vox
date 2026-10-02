@@ -459,12 +459,13 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 	}
 }
 
-pub type ImportKeyParams = KmacImportParams | RsaHashedImportParams | string
+pub type ImportKeyParams = EcKeyImportParams | KmacImportParams | RsaHashedImportParams | string
 
 fn import_algorithm_name(algorithm ImportKeyParams) string {
 	return match algorithm {
 		KmacImportParams { algorithm.name }
 		RsaHashedImportParams { algorithm.name }
+		EcKeyImportParams { algorithm.name }
 		string { algorithm }
 	}
 }
@@ -478,6 +479,15 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(import_algorithm_name(algorithm), 'importKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
+    if normalized in ['ECDSA', 'ECDH'] {
+        if algorithm !is EcKeyImportParams { return error('TypeError: namedCurve is required') }
+        params := algorithm as EcKeyImportParams
+        mut key := import_ec_key(EcKeyImportParams{ ...params, name: normalized }, format, material, extractable, normalized_usages)!
+        if key.type_ == .private_key && normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+        key.set_extractable(extractable)
+        key.set_usages(normalized_usages)
+        return key
+    }
     if normalized in ['RSA-OAEP', 'RSA-PSS', 'RSASSA-PKCS1-v1_5'] {
         hash := normalize_an_algorithm(if algorithm is RsaHashedImportParams { algorithm.hash } else { hash_name }, 'digest')!
         mut key := import_rsa_key(RsaHashedImportParams{ name: normalized, hash: hash }, format, material, extractable, normalized_usages)!
@@ -537,6 +547,7 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(import_algorithm_name(algorithm), 'importKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
+	if normalized in ['ECDSA', 'ECDH'] { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
 	if normalized in ['RSA-OAEP', 'RSA-PSS', 'RSASSA-PKCS1-v1_5'] { return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name) }
 	if normalized == 'AES-OCB' {
 		return subtle_crypto.import_key(.jwk, jwk.to_json().bytes(), algorithm, extractable, normalized_usages, hash_name)
@@ -609,6 +620,10 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 pub fn (subtle_crypto &SubtleCrypto) export_key(format KeyFormat, key &CryptoKey) ![]u8 {
 	_ = subtle_crypto
 	normalize_an_algorithm(key.algorithm_name(), 'exportKey')!
+	if key.algorithm_name() in ['ECDSA', 'ECDH'] {
+		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
+		return export_ec_key(format, key)
+	}
 	if key.algorithm_name() in ['RSA-OAEP', 'RSA-PSS', 'RSASSA-PKCS1-v1_5'] {
 		if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
 		return export_rsa_key(format, key)
@@ -655,6 +670,7 @@ pub fn (subtle_crypto &SubtleCrypto) export_jwk(key &CryptoKey) !JsonWebKey {
 	if !key.extractable {
 		return error('InvalidAccessError: Key is not extractable')
 	}
+	if key.algorithm_name() in ['ECDSA', 'ECDH'] { return export_ec_jwk(key) }
 	if key.algorithm_name() in ['RSA-OAEP', 'RSA-PSS', 'RSASSA-PKCS1-v1_5'] { return export_rsa_jwk(key) }
 	if key.algorithm_name() in ['KMAC128', 'KMAC256'] {
 		return JsonWebKey.parse(KMAC.create().export_key(.jwk, key)!)

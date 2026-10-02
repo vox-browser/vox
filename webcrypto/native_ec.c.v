@@ -81,3 +81,21 @@ fn native_ec_coordinate(curve string, d []u8, point EcPublicKeyHandle) !EcPublic
 	}
 	return EcPublicKeyHandle{ x: x, y: y }
 }
+
+fn C.vox_ec_decompress(&char, &u8, usize, &u8, &u8, usize) int
+
+fn native_ec_decompress(bytes []u8) !EcPublicKeyHandle {
+	size := bytes.len - 1
+	curve := match size {
+		32 { 'P-256' }
+		48 { 'P-384' }
+		66 { 'P-521' }
+		else { return error('DataError: Unsupported curve for compressed EC point') }
+	}
+	mut x := []u8{len: size}
+	mut y := []u8{len: size}
+	if C.vox_ec_decompress(curve.str, bytes.data, usize(bytes.len), x.data, y.data, usize(size)) != 1 {
+		return error('DataError: Failed to decompress EC point')
+	}
+	return EcPublicKeyHandle{ x: x, y: y }
+}

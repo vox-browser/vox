@@ -63,6 +63,24 @@ cleanup:
     EC_POINT_free(expected); EC_POINT_free(point); EC_GROUP_free(group);
     return result;
 }
+
+/* SECPxxxr1Point::from_compressed selects its curve from the encoded size. */
+static int vox_ec_decompress(const char* curve, const unsigned char* bytes, size_t length,
+    unsigned char* x_out, unsigned char* y_out, size_t size)
+{
+    int success = 0;
+    EC_GROUP* group = EC_GROUP_new_by_curve_name(EC_curve_nist2nid(curve));
+    EC_POINT* point = group ? EC_POINT_new(group) : NULL;
+    BIGNUM* x = BN_new();
+    BIGNUM* y = BN_new();
+    if (!group || !point || !x || !y) goto cleanup;
+    if (EC_POINT_oct2point(group, point, bytes, length, NULL) != 1
+        || EC_POINT_get_affine_coordinates(group, point, x, y, NULL) != 1) goto cleanup;
+    success = BN_bn2binpad(x, x_out, size) == (int)size && BN_bn2binpad(y, y_out, size) == (int)size;
+cleanup:
+    BN_free(y); BN_free(x); EC_POINT_free(point); EC_GROUP_free(group);
+    return success;
+}
 /* sign/verify import the same group-name and scalar/point parameters upstream uses. */
 static const char* vox_ec_import(const char* curve, const unsigned char* bytes, size_t size, int private_key, EVP_PKEY** key)
 {

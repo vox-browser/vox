@@ -6,10 +6,6 @@
 // SubtleCrypto.
 module webcrypto
 
-fn backend_unavailable[T](algorithm string, operation string) !T {
-	return error('NotSupportedError: ${algorithm} ${operation} backend is unavailable')
-}
-
 fn import_secret_algorithm(name string, format KeyFormat, material []u8, extractable bool,
 	usages []KeyUsage, hash_name string) !&CryptoKey {
 	return SubtleCrypto.create().import_key(format, material, name, extractable, usages,
@@ -148,15 +144,15 @@ pub fn ECDSA.create() ECDSA { return ECDSA{} }
 pub fn (_ ECDSA) generate_key(params EcKeyGenParams, extractable bool, usages []KeyUsage) !GeneratedKey { return generate_ec_key(EcKeyGenParams{ ...params, name: 'ECDSA' }, extractable, usages) }
 pub fn (_ ECDSA) sign(params EcdsaParams, key &CryptoKey, message []u8) ![]u8 { return ecdsa_sign(params, key, message) }
 pub fn (_ ECDSA) verify(params EcdsaParams, key &CryptoKey, signature []u8, message []u8) !bool { return ecdsa_verify(params, key, signature, message) }
-pub fn (_ ECDSA) import_key(_ EcKeyImportParams, _ KeyFormat, _ []u8, _ bool, _ []KeyUsage) !&CryptoKey { return backend_unavailable[&CryptoKey]('ECDSA', 'key import') }
-pub fn (_ ECDSA) export_key(_ KeyFormat, _ &CryptoKey) ![]u8 { return backend_unavailable[[]u8]('ECDSA', 'key export') }
+pub fn (_ ECDSA) import_key(params EcKeyImportParams, format KeyFormat, bytes []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_ec_key(EcKeyImportParams{ ...params, name: 'ECDSA' }, format, bytes, extractable, usages) }
+pub fn (_ ECDSA) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_ec_key(format, key) }
 
 pub struct ECDH {}
 pub fn ECDH.create() ECDH { return ECDH{} }
 pub fn (_ ECDH) generate_key(params EcKeyGenParams, extractable bool, usages []KeyUsage) !GeneratedKey { return generate_ec_key(EcKeyGenParams{ ...params, name: 'ECDH' }, extractable, usages) }
 pub fn (_ ECDH) derive_bits(params EcdhKeyDeriveParams, key &CryptoKey, length ?u32) ![]u8 { return ecdh_derive_bits(params, key, length) }
-pub fn (_ ECDH) import_key(_ EcKeyImportParams, _ KeyFormat, _ []u8, _ bool, _ []KeyUsage) !&CryptoKey { return backend_unavailable[&CryptoKey]('ECDH', 'key import') }
-pub fn (_ ECDH) export_key(_ KeyFormat, _ &CryptoKey) ![]u8 { return backend_unavailable[[]u8]('ECDH', 'key export') }
+pub fn (_ ECDH) import_key(params EcKeyImportParams, format KeyFormat, bytes []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_ec_key(EcKeyImportParams{ ...params, name: 'ECDH' }, format, bytes, extractable, usages) }
+pub fn (_ ECDH) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_ec_key(format, key) }
 
 pub struct X25519 {}
 pub fn X25519.create() X25519 { return X25519{} }
