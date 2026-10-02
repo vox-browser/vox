@@ -41,6 +41,7 @@ mut:
 	define_data         voidptr
 	freeze_object       voidptr
 	object_wrappers     map[u64]voidptr
+	usage_sequence      voidptr
 	closed              bool
 }
 
