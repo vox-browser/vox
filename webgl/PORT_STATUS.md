@@ -304,6 +304,19 @@ browser-only boolean flags and preserved native unpack-alignment errors. This
 preserves the pinned source behavior even where it accepts state beyond the
 usual NONE/BROWSER_DEFAULT_WEBGL values.
 
+Program operations preserve pinned source state ordering. useProgram validates
+only its owned live handle, calls the driver and then writes its retained current
+program; getUniformLocation likewise lets the driver determine link validity.
+detachShader calls the driver before clearing the corresponding retained shader
+slot (`WebGLRenderingContextImpl.cpp:651-680`, `:2003-2023`, `:2468-2485`).
+Focused typed and actual JavaScriptCore cases pass with `-gc none`, including a
+program linked outside the V status cache and native rejection paths. These
+preserve two upstream cache limitations: rejecting an unlinked useProgram can
+leave the retained program different from the actual driver binding; rejecting
+an unattached detachShader can clear a retained slot while the actual shader
+remains attached. The source cache queries and driver parameter queries expose
+those distinct results.
+
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
