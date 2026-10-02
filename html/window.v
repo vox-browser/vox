@@ -742,15 +742,9 @@ pub fn (mut window WindowModel) visual_viewport() ?&css.VisualViewport {
 	if !window.associated_document().is_fully_active() {
 		return none
 	}
-	if viewport := window.visual_viewport_ {
-		return viewport
-	}
-	rect := window.associated_document().viewport_rect()
-	mut viewport := css.VisualViewport.create(window.associated_document())
-	viewport.viewport_rect_ = css.CSSPixelRect.new(rect.x, rect.y, rect.width, rect.height)
-	viewport.initialize()
-	window.visual_viewport_ = viewport
-	return viewport
+	mut document := unsafe { &dom.Document(window.associated_document()) }
+	viewport := document.visual_viewport()
+	return unsafe { &css.VisualViewport(viewport.visual_viewport_record()) }
 }
 
 // https://w3c.github.io/csswg-drafts/cssom-view/#dom-window-innerwidth

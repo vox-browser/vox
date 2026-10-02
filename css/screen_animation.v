@@ -301,8 +301,20 @@ pub fn (mut viewport VisualViewport) visit_edges(mut visitor dom.CellVisitor) {
 	}
 }
 
-fn (viewport &VisualViewport) event_target() &dom.EventTarget {
+pub fn (viewport &VisualViewport) event_target() &dom.EventTarget {
 	return unsafe { &dom.EventTarget(viewport) }
+}
+
+pub fn (viewport &VisualViewport) document() &dom.Document {
+	return viewport.document_ or { panic('VERIFY(VisualViewport document)') }
+}
+
+pub fn (viewport &VisualViewport) relevant_global_impl() ?&dom.Window {
+	return viewport.document().get_window()
+}
+
+pub fn (viewport &VisualViewport) visual_viewport_record() voidptr {
+	return voidptr(viewport)
 }
 
 pub fn (viewport &VisualViewport) offset() CSSPixelPoint {

@@ -1575,8 +1575,34 @@ pub fn install_document_font_face_set_factory(factory DocumentFontFaceSetFactory
 	document_font_face_set_factory_ = factory
 }
 
-@[heap]
-pub struct VisualViewport {}
+// CSS owns the concrete VisualViewport. Retain its actual source record and
+// EventTarget through the DOM/CSS module boundary instead of an empty facade.
+pub interface VisualViewport {
+	document() &Document
+	event_target() &EventTarget
+	visual_viewport_record() voidptr
+	offset_left() f64
+	offset_top() f64
+	page_left() f64
+	page_top() f64
+	width() f64
+	height() f64
+	scale() f64
+	set_onresize(?&CallbackType)
+	onresize() ?&CallbackType
+	set_onscroll(?&CallbackType)
+	onscroll() ?&CallbackType
+	set_onscrollend(?&CallbackType)
+	onscrollend() ?&CallbackType
+}
+
+pub type DocumentVisualViewportFactory = fn (&Document) VisualViewport
+
+__global document_visual_viewport_factory_ ?DocumentVisualViewportFactory
+
+pub fn install_document_visual_viewport_factory(factory DocumentVisualViewportFactory) {
+	document_visual_viewport_factory_ = factory
+}
 
 pub type MediaQueryListBoolCallback = fn (voidptr) bool
 
@@ -5296,7 +5322,7 @@ pub mut:
 	update_callback_queue               []&ViewTransition
 
 	// Visual viewport
-	visual_viewport_           &VisualViewport = unsafe { nil }
+	visual_viewport_           ?VisualViewport
 	last_viewport_size         ?[2]f64
 	last_visual_viewport_state ?VisualViewportState
 
@@ -5621,7 +5647,9 @@ pub fn (mut d Document) visit_edges(mut visitor CellVisitor) {
 	visitor.visit(d.first_base_element_with_target_in_tree_order)
 	visitor.visit(d.parser)
 	visitor.visit(d.lazy_load_intersection_observer)
-	visitor.visit(d.visual_viewport_)
+	if viewport := d.visual_viewport_ {
+		visitor.visit(viewport.visual_viewport_record())
+	}
 	visitor.visit(d.latest_entry)
 	visitor.visit(d.default_timeline)
 	for timeline in d.associated_animation_timelines {
@@ -10029,11 +10057,16 @@ pub fn (mut d Document) set_adopted_style_sheets(value []&CSSStyleSheet) ! {
 }
 
 // --- Visual viewport ---
-pub fn (mut d Document) visual_viewport() &VisualViewport {
-	if d.visual_viewport_ == unsafe { nil } {
-		d.visual_viewport_ = &VisualViewport{}
+pub fn (mut d Document) visual_viewport() VisualViewport {
+	if viewport := d.visual_viewport_ {
+		return viewport
 	}
-	return d.visual_viewport_
+	if factory := document_visual_viewport_factory_ {
+		viewport := factory(&d)
+		d.visual_viewport_ = viewport
+		return viewport
+	}
+	panic('Document.visual_viewport requires the CSS VisualViewport implementation')
 }
 
 pub fn (mut d Document) register_viewport_client(client ViewportClient) {

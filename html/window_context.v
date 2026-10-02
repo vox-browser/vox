@@ -1187,7 +1187,6 @@ mut:
 	close_watcher_manager_model_              &CloseWatcherManager = unsafe { nil }
 	global_scope_                             &WindowOrWorkerGlobalScopeMixin = unsafe { nil }
 	screen_                                   ?&css.Screen
-	visual_viewport_                          ?&css.VisualViewport
 	speech_synthesis_                         ?&speech.SpeechSynthesis
 	external_                                 ?&External
 	local_storage_                            ?&Storage
