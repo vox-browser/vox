@@ -170,6 +170,11 @@ union failures retain source union selection while exact typed members keep
 their operation-body copy point. All three focused sequence cases and the
 existing native Crypto generation/import files passed with `-gc none`.
 
+DOMString arguments use the source ToString string primitive hint, preserving
+Symbol TypeErrors and original conversion exceptions. The focused native host
+case passed with `-gc none`, checking real compiled shader source, ordinary
+toString/valueOf ordering, extension names, and sequence string-item failures.
+
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
