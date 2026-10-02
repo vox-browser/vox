@@ -58,6 +58,7 @@ pub mut:
 	custom_sections_ []CustomSection
 	memory_types     []WasmLimits
 	types            []BinaryDefinedType
+	function_type_indices []u32
 }
 
 pub struct SerializedModule {
@@ -120,6 +121,7 @@ pub fn (mut compiled Module) deserialization_steps(serialized SerializedModule) 
 	compiled.custom_sections_ = restored.custom_sections_.clone()
 	compiled.memory_types = restored.memory_types.clone()
 	compiled.types = restored.types.clone()
+	compiled.function_type_indices = restored.function_type_indices.clone()
 }
 
 struct Decoder {
@@ -186,6 +188,7 @@ fn compile_module(bytes []u8) !&Module {
 	mut custom := []CustomSection{}
 	mut memory_types := []WasmLimits{}
 	mut types := []BinaryDefinedType{}
+	mut function_type_indices := []u32{}
 	mut last_non_custom_rank := 0
 	mut seen := map[u8]bool{}
 	for decoder.offset < bytes.len {
@@ -214,6 +217,7 @@ fn compile_module(bytes []u8) !&Module {
 			0 { parse_custom_section(mut section, mut custom)! }
 			1 { types = parse_type_section(mut section)! }
 			2 { parse_import_section(mut section, mut imports)! }
+			3 { function_type_indices = parse_function_section(mut section)! }
 			5 { parse_memory_section(mut section, mut memory_types)! }
 			7 { parse_export_section(mut section, mut exports)! }
 			else {
@@ -232,6 +236,7 @@ fn compile_module(bytes []u8) !&Module {
 		custom_sections_: custom
 		memory_types:     memory_types
 		types:            types
+		function_type_indices: function_type_indices
 	}
 }
 
