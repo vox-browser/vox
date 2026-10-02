@@ -37,6 +37,17 @@ rules update only their selector; animation activity remains false. The
 synthetic transition tree is retained, matching upstream, whose tree has no
 layout/painting consumer at this revision.
 
-The compact JavaScriptCore browser bridge still needs bindings for
-`Document.startViewTransition()` and the returned `ViewTransition` object.
-The live tests exercise the translated typed DOM/HTML API directly.
+The compact JavaScriptCore browser bridge exposes `Document.startViewTransition()`,
+the direct `activeViewTransition` getter, the returned object's three stable
+Promise attributes and `skipTransition()`. `../browserjs/view_transition_host.v`
+retains actual DOM transitions and observes their source promises;
+`../browserjs/view_transition_bootstrap.v` performs IDL conversion and preserves
+JavaScript callback rejection identity. The browser replays callback mutations
+into the actual document before new-state capture resumes. Skip and visibility
+failures use the translated native WebIDL `DOMException` binding.
+
+Four fixtures in `../main_view_transition_test.v` exercise those public JSC APIs,
+including a pending callback, cyclic rejection values, callback throws, receiver
+branding, source property descriptors, hidden documents, omitted callbacks and
+transitions first started through the typed DOM API. These bindings preserve the
+upstream capture and rendering limitations listed above.
