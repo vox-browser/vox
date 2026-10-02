@@ -270,6 +270,13 @@ Focused tests cover primitive names, omitted curves, immediate nested errors
 before later fields, and deferred curve failures. Arbitrary object ToPrimitive
 and accessor execution remains an explicit typed host/VM boundary.
 
+The synchronous typed generation boundary now performs the actual operation
+before its common empty-usage check, including HMAC, RSA, EC, Ed/ML families,
+exchange curves, and ChaCha20-Poly1305. Class methods still permit empty usages;
+public generation rejects successful empty secret/private results. Focused
+tests verify HMAC length/hash, EC curve, and native RSA generation errors win
+before the common check, while successful empty generation remains rejected.
+
 Common parameter/typed boundary conversions remain under source review.
 Native backend availability does not establish complete WebCrypto/VM parity.
 
