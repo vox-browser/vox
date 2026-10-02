@@ -86,6 +86,61 @@ fn (mut request XMLHttpRequest) start_async_fetch_if_bound() ! {
 	}
 }
 
+@[heap]
+struct SynchronousFetchState {
+mut:
+	processed_response bool
+	did_time_out bool
+}
+
+// XMLHttpRequest.cpp: send, synchronous branch. The host still performs the
+// network operation asynchronously; response consumption uses a parallel
+// queue while send pauses in the main HTML loop, as in upstream.
+fn (mut request XMLHttpRequest) start_synchronous_fetch_if_bound() ! {
+	host := request.global_object_.fetch_host or { return }
+	_ := request.global_object_.fetch_client or {
+		return error('XMLHttpRequest Fetch binding requires its relevant settings object')
+	}
+	fetch_request := request.create_fetch_request()
+	request.fetch_request_ = fetch_request
+	state := &SynchronousFetchState{}
+	algorithms := fetch.FetchAlgorithms.create(fetch.FetchAlgorithmsInput{
+		process_response_consume_body: fn [mut request, state] (response &fetch.Response, result fetch.BodyBytes) {
+			if result.kind != .failure {
+				request.fetch_response_ = response
+				request.response_ = project_fetch_response(response)
+			}
+			if result.kind == .bytes { request.received_bytes << result.bytes }
+			mut observation := unsafe { &SynchronousFetchState(state) }
+			observation.processed_response = true
+		}
+	})
+	request.fetch_controller_ = fetch.fetch_with_parallel_queue(fetch_request, algorithms, host, .yes, .no)
+	if request.timeout_ms != 0 {
+		request.stop_timeout_timer()
+		mut timer := platform.Timer.create_single_shot(int(request.timeout_ms), fn [mut request, state] () {
+			mut observation := unsafe { &SynchronousFetchState(state) }
+			observation.did_time_out = true
+			request.stop_timeout_timer()
+		})
+		request.timeout_timer_ = timer
+		request.timeout_timer_active = true
+		timer.start()
+	}
+	// Preserve upstream's FIXME: this pause permits ordinary HTML tasks too.
+	mut event_loop := html.main_thread_event_loop()
+	event_loop.spin_until(fn [state] () bool {
+		return state.processed_response || state.did_time_out
+	})
+	request.stop_timeout_timer()
+	if !state.processed_response {
+		request.timed_out = true
+		request.fetch_controller_.terminate()
+	}
+	request.fetch_controller_.report_timing()
+	request.handle_response_end_of_body()!
+}
+
 fn project_fetch_response(response &fetch.Response) MockResponse {
 	return MockResponse{
 		url: if final_url := response.url() { final_url.serialize() } else { '' }

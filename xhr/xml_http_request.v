@@ -425,6 +425,8 @@ fn (mut request XMLHttpRequest) send_bytes(body []u8, content_type ?string, body
 		}
 		if request.state != .opened || !request.send_flag { return }
 		request.start_async_fetch_if_bound()!
+	} else {
+		request.start_synchronous_fetch_if_bound()!
 	}
 }
 
