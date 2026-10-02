@@ -267,6 +267,12 @@ const demo_markup = '<!doctype html>
 </body>
 </html>'
 
+struct PortableShadowImage {
+	image_id int
+	width int
+	height int
+}
+
 struct BrowserApp {
 mut:
 	ctx                                 &gg.Context = unsafe { nil }
@@ -301,6 +307,8 @@ mut:
 	force_dark_image_states             map[string]int
 	force_dark_image_bitmaps            map[string]&dom.Bitmap_
 	force_dark_images                   map[string]&gg.Image
+	portable_shadow_images              []PortableShadowImage
+	portable_shadow_image_index         int
 	resource_cache                      map[string]PreloadedResource
 	background_resource_results         chan PreloadedResource
 	background_resource_pending         map[string]bool
@@ -2849,6 +2857,35 @@ fn paint_color(serialized string, opacity f64) gg.Color {
 	return gg.rgba(parsed.r, parsed.g, parsed.b, u8(int(alpha + 0.5)))
 }
 
+fn (mut app BrowserApp) draw_portable_shadow(command layout.PaintCommand, page_x f32, page_y f32, scroll_y f64) {
+	bitmap := layout.rasterize_portable_shadow(command, f64(app.ctx.scale)) or {
+		app.js_messages << 'Shadow replay: ${err.msg()}'
+		return
+	}
+	index := app.portable_shadow_image_index
+	app.portable_shadow_image_index++
+	mut slot := if index < app.portable_shadow_images.len {
+		app.portable_shadow_images[index]
+	} else {
+		PortableShadowImage{ image_id: -1 }
+	}
+	if slot.image_id < 0 || slot.width != bitmap.width || slot.height != bitmap.height {
+		if slot.image_id >= 0 { app.ctx.remove_cached_image_by_idx(slot.image_id) }
+		slot = PortableShadowImage{
+			image_id: app.ctx.new_streaming_image(bitmap.width, bitmap.height, 4, min_filter: .nearest, mag_filter: .nearest)
+			width: bitmap.width
+			height: bitmap.height
+		}
+	}
+	if index < app.portable_shadow_images.len {
+		app.portable_shadow_images[index] = slot
+	} else {
+		app.portable_shadow_images << slot
+	}
+	app.ctx.update_pixel_data(slot.image_id, bitmap.pixels.data)
+	app.ctx.draw_image_by_id(bitmap.x + page_x, bitmap.y + page_y - f32(scroll_y), f32(bitmap.width) / app.ctx.scale, f32(bitmap.height) / app.ctx.scale, slot.image_id)
+}
+
 fn native_draw_retained_glyph_run(command layout.PaintCommand, page_x f32, page_y f32,
 	scroll_y f64, canvas_width f32, canvas_height f32, glyph_color gg.Color, blur f32, shadow_only bool) bool {
 	$if macos {
@@ -4285,36 +4322,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					return
 				}
 			}
-			// The portable immediate backend has no path-difference clip or blur.
-			// Preserve the visible outside region without painting over the box.
-			if !non_axis_aligned {
-				content_command := layout.PaintCommand{
-					x: command.shadow_content_x
-					y: command.shadow_content_y
-					width: command.shadow_content_width
-					height: command.shadow_content_height
-					transform: command.transform
-				}
-				content_points := transformed_rect_points(content_command, page_x, page_y, scroll_y)
-				content_left := math.min(content_points[0], content_points[4])
-				content_top := math.min(content_points[1], content_points[5])
-				content_right := math.max(content_points[0], content_points[4])
-				content_bottom := math.max(content_points[1], content_points[5])
-				if content_top > y { draw_srgb_rect(app.ctx, x, y, w, content_top - y, fill) }
-				if content_bottom < y + h {
-					draw_srgb_rect(app.ctx, x, content_bottom, w, y + h - content_bottom, fill)
-				}
-				middle_top := math.max(y, content_top)
-				middle_bottom := math.min(y + h, content_bottom)
-				if middle_bottom > middle_top {
-					if content_left > x {
-						draw_srgb_rect(app.ctx, x, middle_top, content_left - x, middle_bottom - middle_top, fill)
-					}
-					if content_right < x + w {
-						draw_srgb_rect(app.ctx, content_right, middle_top, x + w - content_right, middle_bottom - middle_top, fill)
-					}
-				}
-			}
+			app.draw_portable_shadow(command, page_x, page_y, scroll_y)
 		}
 		'paint_inner_box_shadow' {
 			fill := paint_color(command.color, command.opacity)
@@ -4331,46 +4339,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					return
 				}
 			}
-			// Approximate the source outer-minus-inner path for the immediate
-			// backend, clipped to the padding box.
-			if !non_axis_aligned {
-				inner_command := layout.PaintCommand{
-					x: command.shadow_inner_x
-					y: command.shadow_inner_y
-					width: command.shadow_inner_width
-					height: command.shadow_inner_height
-					transform: command.transform
-				}
-				content_command := layout.PaintCommand{
-					x: command.shadow_content_x
-					y: command.shadow_content_y
-					width: command.shadow_content_width
-					height: command.shadow_content_height
-					transform: command.transform
-				}
-				inner_points := transformed_rect_points(inner_command, page_x, page_y, scroll_y)
-				content_points := transformed_rect_points(content_command, page_x, page_y, scroll_y)
-				left := math.min(content_points[0], content_points[4])
-				top := math.min(content_points[1], content_points[5])
-				right := math.max(content_points[0], content_points[4])
-				bottom := math.max(content_points[1], content_points[5])
-				inner_left := math.max(left, math.min(math.min(inner_points[0], inner_points[4]), right))
-				inner_top := math.max(top, math.min(math.min(inner_points[1], inner_points[5]), bottom))
-				inner_right := math.max(left, math.min(math.max(inner_points[0], inner_points[4]), right))
-				inner_bottom := math.max(top, math.min(math.max(inner_points[1], inner_points[5]), bottom))
-				if inner_top > top { draw_srgb_rect(app.ctx, left, top, right - left, inner_top - top, fill) }
-				if inner_bottom < bottom {
-					draw_srgb_rect(app.ctx, left, inner_bottom, right - left, bottom - inner_bottom, fill)
-				}
-				if inner_bottom > inner_top {
-					if inner_left > left {
-						draw_srgb_rect(app.ctx, left, inner_top, inner_left - left, inner_bottom - inner_top, fill)
-					}
-					if inner_right < right {
-						draw_srgb_rect(app.ctx, inner_right, inner_top, right - inner_right, inner_bottom - inner_top, fill)
-					}
-				}
-			}
+			app.draw_portable_shadow(command, page_x, page_y, scroll_y)
 		}
 		'fill_rect' {
 			fill := paint_color(command.color, command.opacity)
@@ -5252,15 +5221,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 						}
 					}
 				}
-				// Portable backends have no blurred glyph primitive; retain the
-				// translated layer order and offset with a sharp shadow.
-				app.ctx.draw_text(int(x), int(text_y), command.text,
-					color: shadow_color
-					size: font_size
-					bold: command.bold
-					italic: command.italic
-					mono: command.mono
-				)
+				app.draw_portable_shadow(command, page_x, page_y, scroll_y)
 			}
 		}
 		else {}
@@ -5336,6 +5297,7 @@ fn (mut app BrowserApp) draw() {
 			app.paint_commands_have_backdrop_filter = paint_commands_contain_backdrop_filter(app.paint_commands)
 		}
 	}
+	app.portable_shadow_image_index = 0
 	app.ctx.begin()
 	$if macos {
 		if app.ctx.native_rendering
@@ -5350,6 +5312,10 @@ fn (mut app BrowserApp) draw() {
 	for command in app.paint_commands {
 		app.draw_command(command, 0, page_y, window.height)
 	}
+	for index in app.portable_shadow_image_index .. app.portable_shadow_images.len {
+		app.ctx.remove_cached_image_by_idx(app.portable_shadow_images[index].image_id)
+	}
+	app.portable_shadow_images = app.portable_shadow_images[..app.portable_shadow_image_index].clone()
 	if report_first_paint {
 		paint_checkpoint = debug_timing_checkpoint('first_paint_replay (${app.paint_commands.len} commands)', paint_checkpoint)
 	}
