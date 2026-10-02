@@ -230,3 +230,21 @@ operations, real key/byte results, JWK round trips, fallback/copy getter order,
 binding versus deferred validation, and unwrap JSON parse precedence.
 The four KEM native methods remain pending; documented VM, DTO, host scheduling,
 assertion, and wrapper ownership limits continue to apply.
+
+Native encapsulateBits/encapsulateKey/decapsulateBits/decapsulateKey now connect
+actual generated argument conversions to the source owning ML-KEM service.
+Decapsulation copies ciphertext before either algorithm normalization. Key
+methods normalize the shared-key import algorithm once, import the actual
+32-byte shared secret with raw-secret format, and preserve source empty-usage
+behavior. Actual results contain source-ordered sharedKey/ciphertext properties,
+real ArrayBuffers or CryptoKey wrappers, and settle through work then crypto
+tasks before the existing owner Promise relay.
+
+All four focused KEM host cases pass with `-gc none`, exercising all three
+ML-KEM families, bilateral secret agreement, native key import/export agreement,
+valid-length corrupted ciphertext implicit rejection, source getter/copy order,
+original thrown values, argument/brand failures, and deferred usage validation.
+All 16 pinned SubtleCrypto methods now have actual native browser bindings.
+This completes native method exposure, not the documented LibJS VM, wrapper GC,
+UTF-8 DTO, assertion, or platform scheduler boundaries; upstream ML-KEM JWK
+TODOs remain unsupported as in the pinned source.

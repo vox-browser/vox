@@ -393,3 +393,12 @@ cases pass with `-gc none`, covering RFC 3394 and all seven supported wrapping
 operations, real CryptoKey results, JWK round trips, source getter/error order,
 and mandatory-kty unwrap parsing. The four KEM native bindings remain pending;
 source FIXME task behavior and documented host/VM/DTO/wrapper limits are retained.
+
+All four modern KEM methods now expose the actual owning source operations to
+native browser scripts. Four focused host cases pass with `-gc none` across
+ML-KEM-512/768/1024, real byte/key results, implicit rejection, ciphertext copy
+before normalization, generated argument conversion, source usage validation,
+and work/crypto settlement. All 16 pinned SubtleCrypto method bindings are now
+present. Complete LibJS VM/WrapperWorld parity, arbitrary UTF-16 DTO strings,
+and the documented host scheduler/GC boundaries remain separate limitations;
+pinned ML-KEM JWK source TODOs are preserved.
