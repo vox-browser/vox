@@ -113,7 +113,10 @@ abort algorithms, dependencies, trusted abort events, registration removal and
 writable reentrant abort state checks execute on that native record. PipeTo
 shutdown retains the original arbitrary reason while pending abort/cancel/write
 operations settle; a later shutdown action rejection replaces it in the source
-order. Public tee rejection propagation still needs a separate review.
+order. Native default/byte tee branch errors, reader-closed reactions and pending
+shared source cancellation also retain arbitrary original values. Actual-engine
+tee tests preserve object and Symbol identity without invoking string conversion.
+The public compact tee method and opaque chunk-cloning boundary remain unbound.
 
 `html.Timer` now delegates to the actual native timer host, preserving the source
 constructor, fractional deadline, class and restart semantics. Global-scope
@@ -130,10 +133,32 @@ before queuing the owning TimerTask; that task creates the retained TimeoutError
 and runs native abort steps. Abort events use the caller-global relative clock
 for the source and each dependent signal. Standalone DOM `timeout()` retains an
 explicit realm-less native-clock compatibility adapter. The public JSC
-AbortSignal/AbortController factories are still pending. Full timer string/CSP
-binding and source GC finalization integration are not established by this
-scheduler slice. The pinned upstream also retains its fully-active/worker
-suspension elapsed-time, ordering-identifier and additional-wait FIXMEs.
+`AbortController` and `AbortSignal.abort/any/timeout` factories now wrap these
+same native records. Native EventTarget/Event bindings supply listeners,
+handler attributes, authentic trusted events and source dependent-signal
+ordering; factory iteration and thrown conversions execute the actual engine.
+
+`browserjs/timer_host{,_darwin.c}.v` installs real public
+`setTimeout/setInterval/clearTimeout/clearInterval` methods after the compact
+document bootstrap and before author sources. The native owner performs source
+timer initialization, nesting, throttling, task queuing, repeat and cancellation.
+Callbacks receive the actual owning global and original arguments, retain stored
+incumbent settings and prepare/clean up the source realm. Their return value is
+ignored without Promise Resolve or then access. Engine ToString/ToNumber and
+WebIDL signed-long conversion preserve original conversion exceptions.
+
+String tasks check the current source CSP policy, create the actual ClassicScript
+with the initiating script's base URL, and report the original engine completion
+before source context cleanup. The engine adapter creates a real captured
+intrinsic EvalError for CSP refusal. The native fallback retains the caught
+completion before optional converter selection, avoiding V's optional-branch
+error shadowing. Closing a runtime cancels its public handles without cancelling
+other native owner timers such as `AbortSignal.timeout`.
+
+The pinned upstream still retains its TrustedScript sink conversion and
+initiating fetch-options, fully-active/worker suspension elapsed-time,
+ordering-identifier and additional-wait FIXMEs. Full source timer/host GC
+finalization and generated compact Window error-handler exposure remain open.
 
 The following boundaries are still open and are not counted as full parity:
 
@@ -144,10 +169,11 @@ The following boundaries are still open and are not counted as full parity:
 - Generic JavaScript iterator acquisition and structured cloning of opaque
   chunks (including a public tee's cloning branch) remain unbound. Typed byte
   conversion does not provide JSC BYOB ArrayBuffer transfer/detachment or shared
-  native view ownership. Public tee arbitrary rejection-value propagation still
-  needs its own source review; PipeTo original-value propagation is completed.
+  native view ownership. Native tee and PipeTo original-value propagation is
+  completed; public compact pipe/tee methods remain unbound.
 - Actual DOM signals and timeout tasks are connected to native Streams records.
-  Public JSC AbortSignal/AbortController/EventTarget bindings remain pending.
+  Public JSC AbortSignal/AbortController/EventTarget bindings use those same
+  actual native records; complete generated wrapper worlds remain separate.
 - Native readable wrappers/prototypes retain actual model identity. Source GC
   tracing and wrapper reclamation still require integration; native wrappers,
   callback records, chunks and settled Promise roots live until Runtime.close.
@@ -212,4 +238,24 @@ html/abort_signal_timeout_test.v + dom/abort_signal_test.v: Window/Worker owning
   standalone native-clock compatibility cases; passed.
 html/native_event_loop_scheduling_test.v + script_cleanup_checkpoint_test.v
   + streams/dom_abort_signal_test.v: final neighboring source checks 3/3 passed.
+streams/callback_abrupt_values_test.v + bindings_callback_abrupt_test.v:
+  native start/pull/cancel/write/close/abort/size and transform/flush abrupt
+  completions retain the actual WebIDL value and retained DOMException record.
+streams/tee_reason_values_test.v + browserjs/tee_rejection_values_test.v:
+  default/byte native branch errors and shared pending cancellation retain
+  original object/Symbol reasons; actual engine cases passed with -gc none.
+browserjs/abort_signal_host_test.v: four actual native factory/dependency,
+  EventTarget/handler, original conversion/throw, timeout and closed-owner cases
+  passed with -gc none; focused main native signal DOM replay also passed.
+html/classic_script_abrupt_value_test.v: actual owner reporting before context
+  cleanup and original rethrow identity passed with scripting runtime neighbor.
+html/timer_source_task_test.v: source callback receiver/args/throw, initiating
+  script URL and current enforce/report-only CSP completion cases passed.
+browserjs/timer_host_test.v: five actual timer task/context/arguments,
+  queued cancellation/repeat, engine conversion/string-script, original throw/
+  current CSP, and close/AbortSignal.timeout cases passed with -gc none.
+main_test.v, focused native timer startup: asynchronous owner task changes reach
+  actual BrowserApp.poll_javascript_tasks DOM replay; passed with -gc none.
+streams/writable_writer_desired_size_test.v + writable_test.v: released getter
+  TypeError versus errored nullable and closed zero desired size; 2/2 passed.
 ```
