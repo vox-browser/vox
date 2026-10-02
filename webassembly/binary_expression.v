@@ -11,8 +11,13 @@ pub:
 // instruction pointers; the outer end is replaced by the source synthetic
 // expression-end instruction. Type/control validation is a later source pass.
 fn parse_binary_expression(mut decoder Decoder) !BinaryExpression {
+	return parse_binary_expression_with_hint(mut decoder, none)
+}
+
+fn parse_binary_expression_with_hint(mut decoder Decoder, size_hint ?u32) !BinaryExpression {
 	mut stack := []int{}
-	mut instructions := []BinaryInstruction{}
+	capacity := size_hint or { u32(0) }
+	mut instructions := []BinaryInstruction{ cap: int(capacity) }
 	for {
 		instruction := parse_binary_instruction(mut decoder)!
 		ip := u32(instructions.len)

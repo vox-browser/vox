@@ -1,0 +1,50 @@
+// Copyright (c) 2021, Ali Mohammad Pur <mpfard@serenityos.org>
+// SPDX-License-Identifier: BSD-2-Clause
+module webassembly
+
+// Constants.h's per-local-type parser allocation limit.
+const binary_max_function_locals_per_type = u32(42069)
+
+pub struct BinaryLocals {
+pub:
+	count u32
+	type_ BinaryValueType
+}
+
+pub struct BinaryFunctionBody {
+pub:
+	declared_size u32
+	locals []BinaryLocals
+	body BinaryExpression
+}
+
+// Parser.cpp::Locals::parse and CodeSection::{Func,Code,parse}. A function
+// body is constrained to its declared byte size before its local declarations
+// and expression are consumed, and must consume that complete slice.
+fn parse_code_section(mut decoder Decoder) ![]BinaryFunctionBody {
+	count := decoder.u32_leb()!
+	mut functions := []BinaryFunctionBody{}
+	for _ in 0 .. count {
+		size := decoder.u32_leb()!
+		if u64(size) > u64(decoder.bytes.len - decoder.offset) {
+			return error('CompileError: function body extends beyond code section')
+		}
+		mut body_decoder := Decoder{ bytes: decoder.bytes[decoder.offset..decoder.offset + int(size)] }
+		local_groups := body_decoder.u32_leb()!
+		mut locals := []BinaryLocals{}
+		for _ in 0 .. local_groups {
+			local_count := body_decoder.u32_leb()!
+			if local_count > binary_max_function_locals_per_type {
+				return error('CompileError: function local count exceeds source allocation limit')
+			}
+			locals << BinaryLocals{ count: local_count, type_: parse_binary_value_type(mut body_decoder)! }
+		}
+		body := parse_binary_expression_with_hint(mut body_decoder, size / 2)!
+		if body_decoder.offset != body_decoder.bytes.len {
+			return error('CompileError: function body size mismatch')
+		}
+		decoder.offset += int(size)
+		functions << BinaryFunctionBody{ declared_size: size, locals: locals, body: body }
+	}
+	return functions
+}
