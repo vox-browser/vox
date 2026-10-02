@@ -44,7 +44,7 @@ fn observe_tee_reader_closed(mut source ReadableStream, closed &VoidPromise) {
 		// A reader replaced by the byte tee rejects its closed Promise during
 		// release; that old reader's rejection does not error the branches.
 		if voidptr(current_closed) == voidptr(closed) && source.state_ == .errored {
-			error_tee_branches(mut source, callback_reason(reason))
+			error_tee_branches(mut source, reason)
 		}
 		return webidl.undefined_value()
 	})
@@ -56,7 +56,7 @@ fn adopt_tee_cancel_result(mut source ReadableStream, result &VoidPromise) {
 		settle_tee_cancel_promises(mut source, none)
 		return webidl.undefined_value()
 	}, fn [mut source] (reason webidl.Value) !webidl.Value {
-		settle_tee_cancel_promises(mut source, callback_reason(reason))
+		settle_tee_cancel_promises(mut source, reason)
 		return webidl.undefined_value()
 	})
 }

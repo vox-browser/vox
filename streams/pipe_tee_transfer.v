@@ -6,6 +6,7 @@
 // streams from AbstractOperations, ReadableStream, and WritableStream.
 module streams
 
+import webidl
 
 pub struct StreamPipeOptions {
 pub:
@@ -120,12 +121,12 @@ pub fn (mut source ReadableStream) pipe_through(pair ReadableWritablePair, optio
 	return pair.readable
 }
 
-fn settle_tee_cancel_promises(mut source ReadableStream, reason ?string) {
+fn settle_tee_cancel_promises(mut source ReadableStream, reason ?webidl.Value) {
 	for mut branch in source.tee_branches_ {
 		if !isnil(branch.tee_cancel_promise_) && branch.tee_cancel_promise_.state() == .pending {
 			mut promise := branch.tee_cancel_promise_
 			if error_reason := reason {
-				promise.reject(error_reason)
+				promise.reject_value(error_reason)
 			} else {
 				promise.resolve()
 			}
@@ -147,10 +148,10 @@ fn close_tee_branches(mut source ReadableStream) {
 	}
 }
 
-fn error_tee_branches(mut source ReadableStream, reason string) {
+fn error_tee_branches(mut source ReadableStream, reason webidl.Value) {
 	for mut branch in source.tee_branches_ {
 		if !branch.tee_cancelled_ {
-			branch.error(reason)
+			branch.error_value(reason)
 		}
 	}
 	if source.tee_branches_.any(!it.tee_cancelled_) {
@@ -174,12 +175,12 @@ fn close_byte_tee_branches_after_byob_read(mut source ReadableStream, byob_branc
 	if !byob_branch.tee_cancelled_ {
 		mut controller := byob_branch.byte_controller_
 		readable_byte_stream_controller_close(mut controller) or {
-			error_tee_branches(mut source, err.msg())
+			error_tee_branches(mut source, webidl.exception_value(err))
 			return
 		}
 		if controller.pending_pull_intos_.len > 0 {
 			readable_byte_stream_controller_respond(mut controller, 0) or {
-				error_tee_branches(mut source, err.msg())
+				error_tee_branches(mut source, webidl.exception_value(err))
 				return
 			}
 		}
@@ -187,12 +188,12 @@ fn close_byte_tee_branches_after_byob_read(mut source ReadableStream, byob_branc
 	if !other_branch.tee_cancelled_ {
 		mut controller := other_branch.byte_controller_
 		readable_byte_stream_controller_close(mut controller) or {
-			error_tee_branches(mut source, err.msg())
+			error_tee_branches(mut source, webidl.exception_value(err))
 			return
 		}
 		if controller.pending_pull_intos_.len > 0 {
 			readable_byte_stream_controller_respond(mut controller, 0) or {
-				error_tee_branches(mut source, err.msg())
+				error_tee_branches(mut source, webidl.exception_value(err))
 				return
 			}
 		}
@@ -216,7 +217,7 @@ fn deliver_readable_byte_tee_source(mut source ReadableStream) {
 		source.tee_byob_branch_ = 0
 		if request.state() == .rejected {
 			source.tee_reading_ = false
-			error_tee_branches(mut source, request.reason())
+			error_tee_branches(mut source, request.as_webidl_promise().result)
 			return
 		}
 		source.tee_read_again_1_ = false
@@ -243,7 +244,7 @@ fn deliver_readable_byte_tee_source(mut source ReadableStream) {
 			mut controller := byob_branch.byte_controller_
 			readable_byte_stream_controller_respond(mut controller, u64(result.value.len)) or {
 				source.tee_reading_ = false
-				error_tee_branches(mut source, err.msg())
+				error_tee_branches(mut source, webidl.exception_value(err))
 				return
 			}
 		}
@@ -251,7 +252,7 @@ fn deliver_readable_byte_tee_source(mut source ReadableStream) {
 			mut controller := other_branch.byte_controller_
 			controller.enqueue(cloned_chunk) or {
 				source.tee_reading_ = false
-				error_tee_branches(mut source, err.msg())
+				error_tee_branches(mut source, webidl.exception_value(err))
 				return
 			}
 		}
@@ -270,7 +271,7 @@ fn deliver_readable_byte_tee_source(mut source ReadableStream) {
 	if request.state() == .rejected {
 		source.tee_reading_ = false
 		if source.realm_.promise_context().job_scheduler == none {
-			error_tee_branches(mut source, request.reason())
+			error_tee_branches(mut source, request.as_webidl_promise().result)
 		}
 		return
 	}
@@ -284,7 +285,7 @@ fn deliver_readable_byte_tee_source(mut source ReadableStream) {
 	}
 	if result.value.kind != .bytes {
 		source.tee_reading_ = false
-		error_tee_branches(mut source, 'TypeError: byte tee received a non-byte chunk')
+		error_tee_branches(mut source, webidl.string_value('TypeError: byte tee received a non-byte chunk'))
 		return
 	}
 	branch1_cancelled := source.tee_branches_[0].tee_cancelled_
@@ -297,7 +298,7 @@ fn deliver_readable_byte_tee_source(mut source ReadableStream) {
 		mut controller := source.tee_branches_[0].byte_controller_
 		controller.enqueue(result.value.bytes_) or {
 			source.tee_reading_ = false
-			error_tee_branches(mut source, err.msg())
+			error_tee_branches(mut source, webidl.exception_value(err))
 			return
 		}
 	}
@@ -305,7 +306,7 @@ fn deliver_readable_byte_tee_source(mut source ReadableStream) {
 		mut controller := source.tee_branches_[1].byte_controller_
 		controller.enqueue(chunk2) or {
 			source.tee_reading_ = false
-			error_tee_branches(mut source, err.msg())
+			error_tee_branches(mut source, webidl.exception_value(err))
 			return
 		}
 	}
@@ -328,7 +329,7 @@ fn deliver_readable_tee_source(mut source ReadableStream) {
 	if request.state() == .rejected {
 		source.tee_reading_ = false
 		if source.realm_.promise_context().job_scheduler == none {
-			error_tee_branches(mut source, request.reason())
+			error_tee_branches(mut source, request.as_webidl_promise().result)
 		}
 		return
 	}
@@ -355,10 +356,10 @@ fn deliver_readable_tee_source(mut source ReadableStream) {
 			}
 			controller.enqueue(chunk) or {
 				source.tee_reading_ = false
-				error_tee_branches(mut source, err.msg())
-				cancel_result := source.cancel_internal(string_value(err.msg()))
+				error_tee_branches(mut source, webidl.exception_value(err))
+				cancel_result := source.cancel_internal(stream_value_from_webidl(webidl.exception_value(err)))
 				if cancel_result.state() == .rejected {
-					settle_tee_cancel_promises(mut source, cancel_result.reason())
+					settle_tee_cancel_promises(mut source, cancel_result.as_webidl_promise().result)
 				}
 				return
 			}
@@ -371,10 +372,10 @@ fn deliver_readable_tee_source(mut source ReadableStream) {
 			mut controller := branch.default_controller_
 			controller.enqueue(chunk) or {
 				source.tee_reading_ = false
-				error_tee_branches(mut source, err.msg())
-				cancel_result := source.cancel_internal(string_value(err.msg()))
+				error_tee_branches(mut source, webidl.exception_value(err))
+				cancel_result := source.cancel_internal(stream_value_from_webidl(webidl.exception_value(err)))
 				if cancel_result.state() == .rejected {
-					settle_tee_cancel_promises(mut source, cancel_result.reason())
+					settle_tee_cancel_promises(mut source, cancel_result.as_webidl_promise().result)
 				}
 				return
 			}
@@ -428,12 +429,12 @@ fn pump_readable_byte_tee_branch(mut branch ReadableStream, mut source ReadableS
 	if byob_request := readable_byte_stream_controller_get_byob_request(mut controller) {
 		view := byob_request.view() or {
 			source.tee_reading_ = false
-			error_tee_branches(mut source, 'TypeError: Byte tee BYOB request has no view')
+			error_tee_branches(mut source, webidl.string_value('TypeError: Byte tee BYOB request has no view'))
 			return
 		}
 		switch_byte_tee_to_byob_reader(mut source) or {
 			source.tee_reading_ = false
-			error_tee_branches(mut source, err.msg())
+			error_tee_branches(mut source, webidl.exception_value(err))
 			return
 		}
 		source.tee_byob_branch_ = branch.tee_branch_index_
@@ -442,7 +443,7 @@ fn pump_readable_byte_tee_branch(mut branch ReadableStream, mut source ReadableS
 	} else {
 		switch_byte_tee_to_default_reader(mut source) or {
 			source.tee_reading_ = false
-			error_tee_branches(mut source, err.msg())
+			error_tee_branches(mut source, webidl.exception_value(err))
 			return
 		}
 		mut reader := source.default_reader_
@@ -502,7 +503,7 @@ fn (mut source ReadableStream) tee_with_clone(clone_for_branch2 bool) !ReadableS
 	branch2.tee_cancel_promise_ = cancel_promise
 	observe_tee_reader_closed(mut source, reader.closed())
 	if source.state_ == .errored && source.realm_.promise_context().job_scheduler == none {
-		error_tee_branches(mut source, source.stored_error_)
+		error_tee_branches(mut source, source.stored_error_value())
 	} else {
 		branch1.call_pull_if_needed()
 		branch2.call_pull_if_needed()
