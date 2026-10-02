@@ -84,9 +84,31 @@ Native RegExp remains explicit: JSC's public source getter escapes source text
 and its flags getter normalizes order. These cannot recover arbitrary original
 constructor source/flags, so the bridge uses a captured getter only for a genuine
 brand check and rejects that unsupported native family without serializing the
-normalized getter values as the source internal records. Date, Error, buffers,
+normalized getter values as the source internal records. Buffers,
 platform registration and source serialization hooks remain subsequent slices;
 public native tee still requires those complete source family bindings.
+
+The actual Date projection reads the captured intrinsic Date value, preserves
+aliases and invalid-date NaN, and ignores author conversion methods and custom
+properties. Reconstruction uses the captured owning-engine Date constructor.
+IPC and LBSC goldens include the source double payload. The two Date cases and
+the collection neighbor passed two files with GC disabled. Untrusted serialized
+Date doubles outside the native constructor's TimeClip domain remain a JSC
+record-construction boundary; this evidence covers actual source native Dates.
+
+Native Error serialization follows Get(name), the own message descriptor and
+its data-value ToString, then the own cause descriptor and its data-value
+ToString. Captured String concatenation performs actual ToString with string
+hint, including Symbol rejection and original abrupt identity. Accessor
+descriptors are skipped. Actual native Error brands and captured constructors
+preserve source subtype prototypes; reconstruction defines only present
+message/cause fields with writable/configurable, non-enumerable attributes.
+IPC/LBSC preserve aliases, lone surrogates and the source cause string rather
+than recursively cloning it. Four native Error cases passed with GC disabled;
+Date and collection neighbors passed before the final fixture-only correction.
+This JSC has no actual InternalError constructor. Source codec records still
+support that pinned subtype; native reconstruction explicitly rejects it with
+DataCloneError instead of substituting a generic Error with a different name.
 
 The native projection must retain actual JSC object identity and cycle memory,
 source key/enumerability/Get order and original completions, and captured
