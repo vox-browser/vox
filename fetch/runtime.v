@@ -102,7 +102,14 @@ pub enum UseParallelQueue {
 
 pub type FetchParallelQueueFactory = fn () FetchTaskDestinationProvider
 
-pub type ReportTimingSteps = fn (&FetchTimingInfo)
+// Fetch cannot import HTML, so the actual Window/Worker global owns creation,
+// queuing and buffering of the source PerformanceResourceTiming object.
+pub interface FetchTimingReportDestination {
+	fetch_timing_global_identity() voidptr
+	fetch_mark_resource_timing(&FetchTimingInfo, string, string, ?CacheState, BodyInfo, u16)
+}
+
+pub type ReportTimingSteps = fn (?FetchTimingReportDestination)
 
 pub type ManualRedirectSteps = fn ()
 
@@ -148,17 +155,15 @@ pub fn (controller &FetchController) report_timing() {
 	callback := controller.report_timing_steps_ or {
 		panic('FetchController.report_timing called without report timing steps')
 	}
-	// FetchController.cpp invokes the installed reporting closure. Its timing
-	// record belongs to FetchParams; full timing info is a navigation-only
-	// export and is not a prerequisite for subresource reporting.
-	info := if params := controller.fetch_params_ {
-		params.timing_info
-	} else {
-		controller.full_timing_info_ or {
-			panic('FetchController report callback has no timing record')
-		}
+	global := if params := controller.fetch_params_ { params.reporting_global } else { ?FetchTimingReportDestination(none) }
+	callback(global)
+}
+
+pub fn (controller &FetchController) report_timing_with_global(global FetchTimingReportDestination) {
+	callback := controller.report_timing_steps_ or {
+		panic('FetchController.report_timing called without report timing steps')
 	}
-	callback(info)
+	callback(global)
 }
 
 pub fn (controller &FetchController) process_next_manual_redirect() {
@@ -285,6 +290,8 @@ pub fn create_opaque_timing_info(info &FetchTimingInfo) &FetchTimingInfo {
 	return &FetchTimingInfo{
 		start_time:               info.start_time
 		post_redirect_start_time: info.start_time
+		end_time:                 info.end_time
+		render_blocking:          info.render_blocking
 	}
 }
 
@@ -309,6 +316,8 @@ pub mut:
 	timing_info                      &FetchTimingInfo = unsafe { nil }
 	task_destination                 string
 	task_destination_provider        ?FetchTaskDestinationProvider
+	task_destination_global_identity voidptr
+	reporting_global                 ?FetchTimingReportDestination
 	cross_origin_isolated            bool
 	preloaded_response_candidate     PreloadedResponseCandidateKind
 	preloaded_response               ?&Response
@@ -325,6 +334,10 @@ pub fn FetchParams.create(request &Request, timing_info &FetchTimingInfo) &Fetch
 	}
 	if client := request.client {
 		if client is FetchTaskDestinationProvider { params.task_destination_provider = client }
+		if client is FetchTimingReportDestination {
+			params.reporting_global = client
+			params.task_destination_global_identity = client.fetch_timing_global_identity()
+		}
 	}
 	controller.set_fetch_params(params)
 	return params
@@ -338,6 +351,8 @@ pub fn (params &FetchParams) copy() &FetchParams {
 		timing_info:                      params.timing_info
 		task_destination:                 params.task_destination
 		task_destination_provider:        params.task_destination_provider
+		task_destination_global_identity: params.task_destination_global_identity
+		reporting_global:                 params.reporting_global
 		cross_origin_isolated:            params.cross_origin_isolated
 		preloaded_response_candidate:     params.preloaded_response_candidate
 		preloaded_response:               params.preloaded_response
@@ -1460,6 +1475,7 @@ pub fn fetch_with_parallel_queue(request &Request, algorithms &FetchAlgorithms, 
 	if use_parallel_queue == .yes {
 		assert fetch_parallel_queue_factory != unsafe { nil }
 		params.task_destination_provider = fetch_parallel_queue_factory()
+		params.task_destination_global_identity = unsafe { nil }
 	}
 	params.algorithms = algorithms
 	params.cross_origin_isolated = cross_origin_isolated

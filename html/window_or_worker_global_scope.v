@@ -14,6 +14,7 @@ import performancetimeline
 import indexeddb
 import serviceworker
 import storageapi
+import resourcetiming
 import time
 import trustedtypes
 import webcrypto
@@ -150,6 +151,7 @@ mut:
 	error_reporting_realm_          ?&ScriptingRealm
 	dedicated_worker_               ?&DedicatedWorkerGlobalScope
 	performance_                    ?&GlobalScopePerformance
+	resource_timing_context_        ?&resourcetiming.ResourceTimingContext
 	indexed_db_                     ?&GlobalScopeIndexedDBFactory
 	crypto_                         ?&GlobalScopeCrypto
 	caches_                         ?&GlobalScopeCacheStorage

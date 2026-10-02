@@ -6,7 +6,6 @@
 module resourcetiming
 
 import fetch
-import highresolutiontime
 import performancetimeline
 
 pub enum RenderBlockingStatusType {
@@ -58,6 +57,7 @@ pub struct ResourceTimingContext {
 pub:
 	time_origin                      f64
 	cross_origin_isolated_capability bool
+	queue_and_buffer_entry           ?fn (&performancetimeline.PerformanceEntry)
 pub mut:
 	timeline         &performancetimeline.PerformanceTimeline = performancetimeline.PerformanceTimeline.new(performancetimeline.supported_entry_types)
 	resource_entries []&PerformanceResourceTiming
@@ -67,13 +67,13 @@ pub fn convert_fetch_timestamp(time_stamp f64, context &ResourceTimingContext) f
 	if time_stamp == 0 {
 		return 0
 	}
-	return highresolutiontime.coarsen_time(time_stamp - context.time_origin, context.cross_origin_isolated_capability)
+	return time_stamp - context.time_origin
 }
 
 @[heap]
 pub struct PerformanceResourceTiming {
+	performancetimeline.PerformanceEntry
 mut:
-	performance_entry_  &performancetimeline.PerformanceEntry = unsafe { nil }
 	timing_info_        FetchTimingInfo
 	initiator_type_     string
 	requested_url_      string
@@ -86,7 +86,7 @@ mut:
 
 pub fn PerformanceResourceTiming.create(name string, start_time f64, duration f64, timing_info FetchTimingInfo, context &ResourceTimingContext) &PerformanceResourceTiming {
 	return &PerformanceResourceTiming{
-		performance_entry_: &performancetimeline.PerformanceEntry{
+		PerformanceEntry: performancetimeline.PerformanceEntry{
 			name: name
 			entry_type: 'resource'
 			start_time: start_time
@@ -104,8 +104,12 @@ pub fn PerformanceResourceTiming.mark_resource_timing(mut context ResourceTiming
 	converted_end := convert_fetch_timestamp(timing_info.end_time, context)
 	mut entry := PerformanceResourceTiming.create(requested_url, converted_start, converted_end - converted_start, timing_info, context)
 	entry.setup_the_resource_timing_entry(initiator_type, requested_url, timing_info, cache_mode, body_info, response_status, delivery_type)
-	context.timeline.add_entry(entry.performance_entry_)
-	context.resource_entries << entry
+	if destination := context.queue_and_buffer_entry {
+		destination(entry.performance_entry())
+	} else {
+		context.timeline.add_entry(entry.performance_entry())
+		context.resource_entries << entry
+	}
 	return entry
 }
 
@@ -124,7 +128,7 @@ fn (mut entry PerformanceResourceTiming) setup_the_resource_timing_entry(initiat
 }
 
 pub fn (entry &PerformanceResourceTiming) performance_entry() &performancetimeline.PerformanceEntry {
-	return entry.performance_entry_
+	return unsafe { &performancetimeline.PerformanceEntry(entry) }
 }
 
 pub fn (entry &PerformanceResourceTiming) entry_type() string {
@@ -305,7 +309,7 @@ pub:
 }
 
 pub fn (entry &PerformanceResourceTiming) to_json() PerformanceResourceTimingJSON {
-	base := entry.performance_entry_
+	base := entry.performance_entry()
 	return PerformanceResourceTimingJSON{
 		name: base.name
 		entry_type: entry.entry_type()

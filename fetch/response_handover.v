@@ -4,6 +4,7 @@
 module fetch
 
 import highresolutiontime
+import mimesniff
 import streams
 
 @[heap]
@@ -12,23 +13,49 @@ mut:
 	bytes []u8
 }
 
-fn setup_response_report_timing(params &FetchParams) {
+fn setup_response_report_timing(params &FetchParams, response &Response) {
 	unsafe_end_time := highresolutiontime.unsafe_shared_current_time()
 	mut controller := params.controller
-	controller.set_report_timing_steps(fn [unsafe_end_time] (timing_info &FetchTimingInfo) {
-		mut timing := unsafe { &FetchTimingInfo(timing_info) }
+	controller.set_report_timing_steps(fn [params, response, unsafe_end_time] (global ?FetchTimingReportDestination) {
+		if !is_http_or_https_scheme(params.request.url().scheme()) { return }
+		mut timing := params.timing_info
 		timing.end_time = unsafe_end_time
+		mut cache_state := response.fetch_response_cache_state()
+		mut body_info := response.fetch_response_body_info()
+		if !response.fetch_response_timing_allow_passed() {
+			timing = create_opaque_timing_info(timing)
+			cache_state = none
+		}
+		mut response_status := u16(0)
+		if params.request.mode != .navigate || response.fetch_response_redirect_taint() == .same_origin {
+			response_status = response.status
+			if mime := extract_mime_type(response.header_list) {
+				body_info.content_type = mimesniff.minimise_a_supported_mime_type(&mime)
+			}
+		}
+		if initiator := params.request.initiator_type {
+			if destination := global {
+				destination.fetch_mark_resource_timing(timing, params.request.url().serialize(), initiator_type_to_string(initiator), cache_state, body_info, response_status)
+			}
+		}
 	})
 }
 
 fn response_end_of_body(params &FetchParams, response &Response) {
-	setup_response_report_timing(params)
+	setup_response_report_timing(params, response)
 	mut controller := params.controller
 	queue_fetch_task_for_controller(mut controller, fn [params, response] () {
 		mut request := params.request
 		request.done = true
 		if callback := params.algorithms.input.process_response_end_of_body {
 			callback(response)
+		}
+		if params.request.initiator_type != none {
+			if global := params.reporting_global {
+				if params.task_destination_global_identity == global.fetch_timing_global_identity() {
+					params.controller.report_timing_with_global(global)
+				}
+			}
 		}
 	})
 }
@@ -87,7 +114,7 @@ pub fn fetch_response_handover(params &FetchParams, response &Response) {
 			} else { accumulator.bytes.clone() }
 			queue_response_body_consumed(params, response, BodyBytes{ kind: .bytes, bytes: bytes })
 		}, fn [params, response] (_ string) {
-			setup_response_report_timing(params)
+			setup_response_report_timing(params, response)
 			queue_response_body_consumed(params, response, BodyBytes{ kind: .failure })
 		})
 	} else {

@@ -2,6 +2,12 @@ module resourcetiming
 
 import fetch
 
+fn test_fetch_timestamp_conversion_does_not_coarsen_again() {
+	context := ResourceTimingContext{ time_origin: 1000 }
+	assert convert_fetch_timestamp(1000.123, &context) == 1000.123 - 1000
+	assert convert_fetch_timestamp(0, &context) == 0
+}
+
 fn timing_info() FetchTimingInfo {
 	return FetchTimingInfo{
 		start_time: 1010
