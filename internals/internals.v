@@ -10,9 +10,11 @@ import bindings
 import compositor
 import css
 import dom
+import dump as tree_dump
 import gamepad
 import html
 import loader
+import layout
 import page
 import painting
 import xhr
@@ -1418,7 +1420,14 @@ pub fn (api &Internals) dump_display_list() string {
 }
 
 pub fn (api &Internals) dump_layout_tree(node ?&dom.Node) string {
-	return if node == none { '(no layout node)' } else { '(layout tree host boundary)' }
+	target := node or { return '(no layout node)' }
+	mut document := target.document()
+	document.update_layout(.debugging)
+	layout_node := target.layout_node() or { return '(no layout node)' }
+	if layout_node.layout_handle == unsafe { nil } {
+		return '(no layout node)'
+	}
+	return tree_dump.layout_tree(unsafe { &layout.Node(layout_node.layout_handle) })
 }
 
 pub fn (api &Internals) dump_paintable_tree(node ?&dom.Node) string {
