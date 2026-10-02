@@ -115,6 +115,16 @@ bufferData overload still converts ordinary objects through ToNumber. Both
 focused effective-overload cases and all three adjacent public host, nullable
 texture, and source-span files pass with `-gc none`.
 
+Uniform reflection now preserves the implemented source result distinctions
+(`WebGL2RenderingContextImpl.cpp:1121-1193`): getUniformIndices returns null for
+an invalid program, getActiveUniforms returns undefined for an invalid program,
+and an empty uniform-index vector returns an empty Array after the native
+query even when pname is unsupported. Native and local errors retain separate
+source getError precedence. The old typed nonnullable index getter remains a
+convenience adapter; public bindings use the new source nullable getter. New
+native/public result-shape cases and the existing native uniform-block file
+pass with `-gc none`.
+
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
