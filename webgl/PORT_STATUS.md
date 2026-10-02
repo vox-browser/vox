@@ -277,6 +277,16 @@ capability cache. Its focused native two-version case and public host neighbor
 pass with `-gc none`, including out-of-cache driver mutations, context switching
 and native INVALID_ENUM for non-capability pnames.
 
+Shader source, shader/program info logs and attached-shader queries validate
+their context-owned live handles and return nullable failures with
+INVALID_OPERATION, as in `WebGLRenderingContextImpl.cpp:867-890`, `:1817-1836`
+and `:1900-1940`. getAttachedShaders retains the source vertex/fragment wrapper
+order; getShaderSource reads actual GL_SHADER_SOURCE_LENGTH and glGetShaderSource
+instead of the retained source cache. Typed and actual JavaScriptCore focused
+cases pass with `-gc none`, including foreign/deleted objects, empty values,
+resource identity and a native source mutation outside the V cache. Existing
+native shader compile/link/reflection tests also pass with `-gc none`.
+
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
