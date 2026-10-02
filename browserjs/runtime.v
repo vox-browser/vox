@@ -61,6 +61,8 @@ mut:
 	closed                    bool
 	host_functions_           []&HostFunctionRecord
 	canvas_element_providers_ []CanvasElementProvider
+	close_handlers_ []fn ()
+	document_state_dirty_ bool
 }
 
 pub fn Runtime.create() &Runtime {
@@ -228,6 +230,9 @@ pub fn (mut runtime Runtime) close() {
 	if runtime.closed {
 		return
 	}
+	runtime.closed = true
+	for handler in runtime.close_handlers_ { handler() }
+	runtime.close_handlers_.clear()
 	$if darwin {
 		if runtime.context != unsafe { nil } {
 			release_javascript_core_context(runtime.context)
@@ -239,4 +244,12 @@ pub fn (mut runtime Runtime) close() {
 	runtime.host_functions_.clear()
 	runtime.canvas_element_providers_.clear()
 	runtime.closed = true
+}
+
+pub fn (mut runtime Runtime) add_close_handler(handler fn ()) { runtime.close_handlers_ << handler }
+pub fn (mut runtime Runtime) mark_document_state_dirty() { runtime.document_state_dirty_ = true }
+pub fn (mut runtime Runtime) take_document_state_dirty() bool {
+	dirty := runtime.document_state_dirty_
+	runtime.document_state_dirty_ = false
+	return dirty
 }

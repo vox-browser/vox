@@ -1494,6 +1494,7 @@ fn javascript_bootstrap(state map[string]json2.Any) string {
 		'function __canvasDimension(s, name) { const fallback=name === "width" ? 300 : 150; if(s[name]===undefined||s[name]===null||String(s[name])==="")return fallback; const value=Number(s[name]); return Number.isFinite(value) && value >= 0 && value <= 2147483647 ? Math.trunc(value) : fallback; }',
 		browserjs.canvas_bootstrap(),
 		browserjs.webgl_bootstrap(),
+		browserjs.xhr_bootstrap(),
 		'function __decodeBase64(input) { const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"; const clean=String(input||"").replace(/[^A-Za-z0-9+/]/g,""); const output=new Uint8ClampedArray(Math.floor(clean.length*3/4)); let bits=0,value=0,index=0; for(const ch of clean){const digit=alphabet.indexOf(ch);if(digit<0)continue;value=(value<<6)|digit;bits+=6;if(bits>=8){bits-=8;output[index++]=(value>>bits)&255;}} return index===output.length?output:output.slice(0,index); }',
 		'function __videoFor(s) { if(s.__videoFrame)return s.__videoFrame; if(!s.videoPixels)return null; return s.__videoFrame={width:+s.videoWidth||0,height:+s.videoHeight||0,data:__decodeBase64(s.videoPixels)}; }',
 		'function __setElementSource(s,value) { __setAttribute(s,"src",value); if(s.tagName==="video"){const frame=__state.videoSources[s.src];if(frame){s.readyState=2;s.videoWidth=frame.width;s.videoHeight=frame.height;s.videoPixels=frame.pixels;s.__videoFrame=null;}} if(s.tagName==="img"){s.complete=true;const target=__element(s),event={type:"load",target:target};for(const listener of (__listeners[__listenerKey(s,"load")]||[]))listener.call(target,event);} }',
@@ -2235,6 +2236,14 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript WebGL bindings: ${err.msg()}'
 		return none
 	}
+	mut xhr_host := browserjs.XMLHttpRequestHost.create_native(document) or {
+		messages << 'JavaScript XMLHttpRequest bindings: ${err.msg()}'
+		return none
+	}
+	xhr_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript XMLHttpRequest bindings: ${err.msg()}'
+		return none
+	}
 	runtime.evaluate_host(javascript_bootstrap(javascript_initial_state(document, current_url, sources.map(it.code)))) or {
 		messages << 'JavaScript: ${err.msg()}'
 		return none
@@ -2257,7 +2266,30 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 	}
 	navigation := apply_javascript_state(document, result, runtime.canvas_elements_for_binding(), mut messages)
 	runtime.evaluate_host('__ladybirdClearLogs()') or {}
+	mutable_runtime.take_document_state_dirty()
 	return navigation
+}
+
+// Native XHR callbacks run on the owning HTML networking task. Their compact
+// JS mutations reach the live document before the next retained paint replay.
+fn (mut app BrowserApp) poll_javascript_tasks() {
+	if app.document == unsafe { nil } || app.js_runtime == unsafe { nil } { return }
+	mut runtime := app.js_runtime
+	if !runtime.take_document_state_dirty() { return }
+	state := runtime.evaluate_host('__ladybirdFinalize()') or {
+		app.js_messages << 'JavaScript asynchronous callback: ${err.msg()}'
+		return
+	}
+	navigation := apply_javascript_state(app.document, state, runtime.canvas_elements_for_binding(), mut app.js_messages)
+	runtime.evaluate_host('__ladybirdClearLogs()') or {}
+	app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
+	if app.ctx != unsafe { nil } {
+		title := document_title(app.document)
+		gg.set_window_title(if title != '' { '${title} — vox' } else { 'vox' })
+	}
+	if destination := navigation {
+		if destination != '' { app.navigate(resolve_document_reference(destination, app.document.url.serialize()), true) }
+	}
 }
 
 fn javascript_default_prevented(encoded string) bool {
@@ -5261,6 +5293,7 @@ fn address_for_display(address string, cursor int, active bool, max_characters i
 }
 
 fn (mut app BrowserApp) draw() {
+	app.poll_javascript_tasks()
 	if app.initial_window_frame_presented && app.document == unsafe { nil }
 		&& app.pending_cached_page != none {
 		app.install_pending_cached_page()
