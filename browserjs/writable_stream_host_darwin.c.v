@@ -5,7 +5,6 @@
 @[has_globals]
 module browserjs
 
-import math
 import streams
 import webidl
 
@@ -92,30 +91,22 @@ fn (mut host WritableStreamHost) strategy(object voidptr) !streams.QueuingStrate
 	mut high_water_mark := ?f64(none)
 	if !C.JSValueIsUndefined(host.runtime.context, hwm_value) { high_water_mark = host.number(hwm_value)! }
 	size := host.runtime.binding_property(object, 'size')!
-	mut size_algorithm := ?streams.SizeAlgorithm(none)
+	mut size_algorithm := ?streams.ValueSizeAlgorithm(none)
 	if !C.JSValueIsUndefined(host.runtime.context, size) {
 		if !C.JSValueIsObject(host.runtime.context, size) || !C.JSObjectIsFunction(host.runtime.context, size) { return error('TypeError: size must be callable') }
-		host.runtime.retain_javascript_value(size)!
 		host_handle := voidptr(&host)
-		stored_settings := host.runtime.callback_settings()
-		size_algorithm = fn [host_handle, size, stored_settings] (chunk streams.Value) !f64 {
+		callback := host.runtime.webidl_callback(size, fn [host_handle] (value webidl.Value) !voidptr {
 			mut host := unsafe { &WritableStreamHost(host_handle) }
-			if host.closed { return math.nan() }
-			host.runtime.prepare_html_callback(stored_settings)
-			defer { host.runtime.clean_up_html_callback(stored_settings) }
-			defer { host.runtime.mark_document_state_dirty() }
+			return host.value(value)
+		})!
+		size_algorithm = fn [host_handle, callback] (chunk streams.Value) !webidl.Value {
+			mut host := unsafe { &WritableStreamHost(host_handle) }
+			if host.closed { return webidl.undefined_value() }
 			actual := host.stream_value(chunk)!
-			result := host.runtime.call_javascript_function(size, C.JSValueMakeUndefined(host.runtime.context), [actual]) or {
-				if err is JavaScriptValueException { return webidl.throw_value(host.runtime.webidl_value(err.value)!) }
-				return err
-			}
-			return host.number(result) or {
-				if err is JavaScriptValueException { return webidl.throw_value(host.runtime.webidl_value(err.value)!) }
-				return err
-			}
+			return webidl.invoke_callback(callback, webidl.undefined_value(), [host.runtime.webidl_value(actual)!])
 		}
 	}
-	return streams.QueuingStrategy{high_water_mark: high_water_mark, size: size_algorithm}
+	return streams.QueuingStrategy{high_water_mark: high_water_mark, size_value: size_algorithm}
 }
 
 fn (mut host WritableStreamHost) construct(args []voidptr) !voidptr {
@@ -205,6 +196,7 @@ fn (mut host WritableStreamHost) promise(native &webidl.Promise) !voidptr {
 
 fn (mut host WritableStreamHost) value(value webidl.Value) !voidptr {
 	if value.dom_exception_ != none { return host.runtime.javascript_dom_exception(value) }
+	if value.simple_exception_ != none { return host.runtime.javascript_simple_exception(value) }
 	return match value.kind {
 		.runtime_value { host.runtime.actual_webidl_value(value)! }
 		.undefined { C.JSValueMakeUndefined(host.runtime.context) }

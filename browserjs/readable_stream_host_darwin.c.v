@@ -155,25 +155,22 @@ fn (mut host ReadableStreamHost) construct(args []voidptr) !voidptr {
 		mut high_water_mark := ?f64(none)
 		if !C.JSValueIsUndefined(host.runtime.context, hwm) { high_water_mark = host.number(hwm)! }
 		size := host.property(strategy_value, 'size')!
-		mut size_algorithm := ?streams.SizeAlgorithm(none)
+		mut size_algorithm := ?streams.ValueSizeAlgorithm(none)
 		if !C.JSValueIsUndefined(host.runtime.context, size) {
 			if !C.JSValueIsObject(host.runtime.context, size) || !C.JSObjectIsFunction(host.runtime.context, size) { return error('TypeError: size must be callable') }
-			host.runtime.retain_javascript_value(size)!
 			host_handle := voidptr(&host)
-			size_algorithm = fn [host_handle, size] (chunk streams.Value) !f64 {
+			callback := host.runtime.webidl_callback(size, fn [host_handle] (value webidl.Value) !voidptr {
 				mut host := unsafe { &ReadableStreamHost(host_handle) }
+				return host.value(value)
+			})!
+			size_algorithm = fn [host_handle, callback] (chunk streams.Value) !webidl.Value {
+				mut host := unsafe { &ReadableStreamHost(host_handle) }
+				if host.closed { return webidl.undefined_value() }
 				value := host.stream_value(chunk)!
-				result := host.runtime.call_javascript_function(size, C.JSValueMakeUndefined(host.runtime.context), [value]) or {
-					if err is JavaScriptValueException { return webidl.throw_value(host.runtime.webidl_value(err.value)!) }
-					return err
-				}
-				return host.number(result) or {
-					if err is JavaScriptValueException { return webidl.throw_value(host.runtime.webidl_value(err.value)!) }
-					return err
-				}
+				return webidl.invoke_callback(callback, webidl.undefined_value(), [host.runtime.webidl_value(value)!])
 			}
 		}
-		strategy = streams.QueuingStrategy{ high_water_mark: high_water_mark, size: size_algorithm }
+		strategy = streams.QueuingStrategy{ high_water_mark: high_water_mark, size_value: size_algorithm }
 	}
 	stream := host.settings.create_readable_stream(source, strategy)!
 	return host.wrap(.stream, voidptr(stream))
@@ -218,6 +215,7 @@ fn (mut host ReadableStreamHost) promise(native &webidl.Promise) !voidptr {
 }
 
 fn (mut host ReadableStreamHost) value(value webidl.Value) !voidptr {
+	if value.simple_exception_ != none { return host.runtime.javascript_simple_exception(value) }
 	context := host.runtime.context
 	match value.kind {
 		.runtime_value { return host.runtime.actual_webidl_value(value) }

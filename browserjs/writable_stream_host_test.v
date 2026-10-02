@@ -90,10 +90,10 @@ fn test_native_writable_callback_size_and_thenable_abrupt_values_keep_engine_ide
 ')! == 'true'
 	assert runtime.evaluate_host('nativeWriteError&&nativeWriteClosedError&&nativeThrowWriter.desiredSize===null')! == 'true'
 	runtime.evaluate_host(r'
- globalThis.nativeSizeReason=Symbol("size numeric conversion throw");globalThis.nativeSizeWrites=0;globalThis.nativeSizeError=false,nativeSizeClosedError=false;
- globalThis.nativeSizeStream=new WritableStream({write(){nativeSizeWrites++}},{size(chunk){return {[Symbol.toPrimitive](hint){if(hint!=="number")throw "wrong numeric hint";throw nativeSizeReason}}}});globalThis.nativeSizeWriter=nativeSizeStream.getWriter();nativeSizeWriter.closed.catch(reason=>nativeSizeClosedError=reason===nativeSizeReason);nativeSizeWriter.write(nativeWritableReason).catch(reason=>nativeSizeError=reason===nativeSizeReason);
+ globalThis.nativeSizeReason=Symbol("must not convert size result");globalThis.nativeSizeWrites=0,nativeSizeConversions=0;globalThis.nativeSizeError=false,nativeSizeClosedError=false;
+ globalThis.nativeSizeStream=new WritableStream({write(){nativeSizeWrites++}},{size(chunk){return {[Symbol.toPrimitive](){nativeSizeConversions++;throw nativeSizeReason}}}});globalThis.nativeSizeWriter=nativeSizeStream.getWriter();nativeSizeWriter.closed.catch(reason=>nativeSizeClosedError=reason instanceof RangeError);nativeSizeWriter.write(nativeWritableReason).catch(reason=>nativeSizeError=reason instanceof RangeError);
 ')!
-	assert runtime.evaluate_host('nativeSizeError&&nativeSizeClosedError&&nativeSizeWrites===0')! == 'true'
+	assert runtime.evaluate_host('nativeSizeError&&nativeSizeClosedError&&nativeSizeWrites===0&&nativeSizeConversions===0')! == 'true'
 	runtime.evaluate_host(r'
  globalThis.nativeThenableError=false,nativeThenableClosedError=false;globalThis.nativeThenableStream=new WritableStream({write(){return {get then(){throw nativeWritableReason}}}});globalThis.nativeThenableWriter=nativeThenableStream.getWriter();nativeThenableWriter.closed.catch(reason=>nativeThenableClosedError=reason===nativeWritableReason);nativeThenableWriter.write().catch(reason=>nativeThenableError=reason===nativeWritableReason);
  globalThis.nativeStringReason="TypeError: author string reason";globalThis.nativeStringIdentity=false;new WritableStream({write(){return Promise.reject(nativeStringReason)}}).getWriter().write().catch(reason=>nativeStringIdentity=reason===nativeStringReason);
