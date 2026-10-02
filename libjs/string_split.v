@@ -29,8 +29,9 @@ pub fn string_prototype_split(mut vm VM, array_prototype &Object) !Value {
 	if limit == 0 { return Value.from_object(object) }
 	string_length := text.utf16.len()
 	if separator_argument.is_undefined() {
-		assert object.create_data_property_or_throw(mut vm, PropertyName.from_number(0),
+		defined := object.create_data_property_or_throw(mut vm, PropertyName.from_number(0),
 			Value.from_string(text))!
+		assert defined
 		return Value.from_object(object)
 	}
 	separator_length := separator.len()
@@ -38,14 +39,16 @@ pub fn string_prototype_split(mut vm VM, array_prototype &Object) !Value {
 		out_length := if limit < u32(string_length) { int(limit) } else { string_length }
 		for index in 0 .. out_length {
 			unit := vm.create_string(Utf16String.from_slice(text.utf16.data[index..index + 1]))
-			assert object.create_data_property_or_throw(mut vm,
+			defined := object.create_data_property_or_throw(mut vm,
 				PropertyName.from_number(u32(index)), Value.from_string(unit))!
+			assert defined
 		}
 		return Value.from_object(object)
 	}
 	if string_length == 0 {
-		assert object.create_data_property_or_throw(mut vm, PropertyName.from_number(0),
+		defined := object.create_data_property_or_throw(mut vm, PropertyName.from_number(0),
 			Value.from_string(text))!
+		assert defined
 		return Value.from_object(object)
 	}
 	mut search_start := 0
@@ -54,15 +57,17 @@ pub fn string_prototype_split(mut vm VM, array_prototype &Object) !Value {
 		index := match_index or { break }
 		substring :=
 			vm.create_string(Utf16String.from_slice(text.utf16.data[search_start..int(index)]))
-		assert object.create_data_property_or_throw(mut vm, PropertyName.from_number(array_length),
+		defined := object.create_data_property_or_throw(mut vm, PropertyName.from_number(array_length),
 			Value.from_string(substring))!
+		assert defined
 		array_length++
 		if array_length == limit { return Value.from_object(object) }
 		search_start = int(index) + separator_length
 		match_index = string_index_of(text.utf16, separator, usize(search_start))
 	}
 	substring := vm.create_string(Utf16String.from_slice(text.utf16.data[search_start..]))
-	assert object.create_data_property_or_throw(mut vm, PropertyName.from_number(array_length),
+	defined := object.create_data_property_or_throw(mut vm, PropertyName.from_number(array_length),
 		Value.from_string(substring))!
+	assert defined
 	return Value.from_object(object)
 }
