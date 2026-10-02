@@ -56,7 +56,7 @@ abort signals, backpressure records, and underlying sink algorithms; identity
 and custom transform/flush/cancel algorithms; ordered pipe shutdown and
 prevention flags; live abort signals; demand-driven default and byte tee
 branches with composite cancellation; lazy iterable streams; async iteration;
-structured cloning; moving ArrayBuffer transfer and view validation; message
+typed structured cloning; moving ArrayBuffer transfer and view validation; message
 packing and pull handshakes; and readable/writable transferred proxies built
 through the cross-realm transforms.
 
@@ -109,12 +109,15 @@ Ladybird represents chunks as arbitrary LibJS values. The V package now also
 carries real owning JSC value references through its WebIDL/Streams boundary;
 actual cyclic object/function/symbol chunks and readable/writable/transform
 rejection values preserve identity. Wrapper worlds, GC tracing/reclamation,
-JavaScript iterator acquisition, opaque structured cloning, JSC BYOB view
-transfer/detachment, actual DOM AbortSignal ownership, and compact writable and
-transform factories remain open runtime boundaries. The native browser exposes
-an owning-record default-readable constructor/reader/controller subset; public
-pipe/tee/from/iterator, byte enqueue, BYOB JS operations and complete generated
-constructor/wrapper behavior remain unbound.
+JavaScript iterator acquisition, opaque structured cloning and JSC BYOB view
+transfer/detachment remain open runtime boundaries. The native browser exposes
+owning-record default ReadableStream/reader/controller, WritableStream/writer/
+controller and TransformStream/component/controller factories. Public pipeTo
+and pipeThrough invoke the real model with actual DOM AbortSignal records,
+options and Promise identities. Factory prototype lookup occurs once before
+source argument/dictionary conversion and preserves actual subclasses. Public
+tee/from/iterator, byte enqueue, BYOB JS operations and complete generated
+wrapper worlds remain unbound.
 
 Underlying source, sink, and transformer dictionaries now retain native
 WebIDL `CallbackType` values, the actual receiver, and the actual controller
@@ -138,9 +141,13 @@ their Promise root and bridge record until Runtime.close. Browser script cleanup
 drains the actual owning loop after popping author/realm VM contexts. Shared
 loops track all actual per-Runtime embedding VMs without replacing the primary
 source VM; this does not establish a shared complete LibJS browser agent.
-Module execution-
-context capture, complete generated Stream bindings, pipe/tee arbitrary reason
-values, and source host-object GC reclamation remain open. See
+Full LibJS module execution-context capture, complete generated Stream bindings
+and source host-object GC reclamation remain open. Native pipe/tee original
+rejection values and later action reasons are retained. Default tee clones
+before either branch enqueue and uses actual one-shot WebIDL Resolve to adopt
+pending cancellation; clone failure errors both controllers with the original
+completion. The owning-realm clone provider is fallible; opaque engine chunks
+without an actual codec throw DataCloneError instead of fabricating an alias. See
 [`STREAMS_PENDING_CALLBACKS.md`](../docs/translation-audit/STREAMS_PENDING_CALLBACKS.md).
 
 The original symbol audit found no Streams bodies in an

@@ -157,6 +157,35 @@ read/write/closed rejections. Captured engine constructors preserve the source
 exception type after author replacement. Descriptor/wrapper records and roots
 remain retained until Runtime.close, with full wrapper GC reclamation pending.
 
+## Public native pipes and generated constructor ordering
+
+`browserjs/readable_stream_pipe_darwin.c.v` exposes public `pipeTo` and
+`pipeThrough` through the actual native source/destination records. Destination
+and pair conversion, alphabetic pipe-option reads, engine ToBoolean and actual
+DOM AbortSignal conversion retain original getter exceptions. `pipeTo` returns
+the same native-capability/engine Promise; `pipeThrough` returns the exact
+transform readable, permits that returned readable to be locked, and marks the
+internal pipe capability handled even when it rejects immediately. Default
+abort retains one real AbortError object across signal, cancel, abort and pipe
+rejection.
+
+Readable/default-reader, Writable/writer and Transform factories use captured
+engine construct traps to perform the source new-target prototype Get exactly
+once before argument/dictionary conversion. Constructor subclasses and thrown
+prototype getters retain actual engine identity. Readable conversion validates
+the source before the strategy, then reads strategy members before underlying
+source members, matching the pinned generated constructor.
+
+Default tee chunk steps now clone before either branch receives its chunk.
+Clone failure errors both controllers with the original completion and resolves
+the shared cancellation capability with the real pending source cancellation.
+One-shot Resolve begins immediately; a later close or reentrant clone/cancel
+attempt cannot overtake pending adoption. Cancellation of the second branch
+skips its clone. The owning-realm clone provider supplies the actual serialize/
+deserialize boundary; standalone typed arrays recursively clone, and unsupported
+opaque values throw a retained DataCloneError. The compact JSC opaque-object
+codec and public tee remain unbound.
+
 ## Actual DOM abort reasons and owning timeout delivery
 
 `dom.JSValue` now carries the actual WebIDL/engine value for arbitrary reasons.
@@ -216,14 +245,15 @@ finalization and generated compact Window error-handler exposure remain open.
 
 The following boundaries are still open and are not counted as full parity:
 
-- The readable binding does not expose public pipe/tee/from/iterator operations,
-  BYOB reader constructors/read operations, byte-controller enqueue/BYOBRequest,
-  subclass constructor prototype selection, or full generated wrapper worlds.
+- The readable binding does not expose public tee/from/iterator operations,
+  BYOB reader constructors/read operations, byte-controller enqueue/BYOBRequest
+  or full generated wrapper worlds. Public pipes and constructor subclass
+  prototype selection are implemented on actual engine/native records.
 - Generic JavaScript iterator acquisition and structured cloning of opaque
   chunks (including a public tee's cloning branch) remain unbound. Typed byte
   conversion does not provide JSC BYOB ArrayBuffer transfer/detachment or shared
   native view ownership. Native tee and PipeTo original-value propagation is
-  completed; public compact pipe/tee methods remain unbound.
+  completed; public compact pipe methods are bound, while public tee is unbound.
 - Actual DOM signals and timeout tasks are connected to native Streams records.
   Public JSC AbortSignal/AbortController/EventTarget bindings use those same
   actual native records; complete generated wrapper worlds remain separate.
@@ -344,4 +374,27 @@ browserjs/webidl_callback_order_test.v: generic callback and actual stream size
 streams/pipe_through_entry_test.v + pipe/tee/pending neighbors: source/writable
   lock ordering, allowed locked returned readable, handled internal rejection
   and returned actual stream identity; 3/3 passed.
+```
+
+Focused follow-up verification (all native checks use `-gc none`):
+
+```text
+browserjs/readable_stream_pipe_test.v: actual pending pipe writes/close,
+  source/destination brands and dictionary order, exact pipeThrough return,
+  original arbitrary abort and default native AbortError identity; passed.
+browserjs/readable_constructor_conversion_test.v + readable/pipe neighbors: source
+  constructor conversion, genuine ToNumber and one prototype lookup; passed.
+browserjs/writable_constructor_prototype_test.v + writable host: writer/stream
+  prototype lookup before argument and dictionary conversion; passed.
+browserjs/transform_constructor_prototype_test.v + transform host: prototype
+  lookup before component strategies and transformer conversion; passed.
+webidl/promise_iterator_test.v + simple exception neighbor: source
+  rejected-promise helpers retain the typed native descriptor; passed.
+streams/void_promise_adoption_test.v + tee pending/pipe neighbors: actual
+  one-shot pending adoption, source owner jobs, rejection identity and lazy
+  public heap-record construction; passed.
+streams/tee_clone_order_test.v + tee/pending/pipe neighbors: clone before either
+  read fulfillment, original abrupt value, pending cancellation adoption,
+  cancelled-branch skip, nested opaque boundary rejection and reentrant clone
+  cancellation preserving the first Resolve call; passed.
 ```
