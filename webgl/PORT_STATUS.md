@@ -271,6 +271,12 @@ with `-gc none`, covering support filtering, alias identity, per-context object
 identity, ordinary extensible objects and native extension enabling. These two
 objects retain the host cache lifetime boundary documented above.
 
+isEnabled now makes its owning context current and calls actual glIsEnabled,
+matching `WebGLRenderingContextImpl.cpp:2131-2135`, instead of reading a V
+capability cache. Its focused native two-version case and public host neighbor
+pass with `-gc none`, including out-of-cache driver mutations, context switching
+and native INVALID_ENUM for non-capability pnames.
+
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
