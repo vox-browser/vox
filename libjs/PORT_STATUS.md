@@ -519,6 +519,18 @@ SameValue key checks before detaching or taking the backing block. Host-backed
 records share bytes and keep their captured size; detaching one record does not
 detach another record that references the same host buffer.
 
+`primitive_backing_store.v` (`5865d48a`) directly translates the source
+`DataBlock::OwnedBackingStore` through the actual LibGC PrimitiveStorage
+allocator. Zeroed/uninitialized/capacity constructors, move ownership,
+size/capacity/offset/handle access, resizing and capacity reservation use the
+source storage operations. Focused tests pass with default GC and `-gc none`,
+including slab reuse, released/stale handles, byte-preserving reallocation and
+zero-filled growth. Native storage lifetime currently ends through explicit
+`destroy()` calls. The existing DataBlock still uses its flat storage adapter;
+wiring this owner and external primitive-storage variants into DataBlock, VM
+collection and source automatic destruction remains pending. See
+[LibGC storage status](../libgc/PORT_STATUS.md).
+
 SpeciesConstructor (`39e1cc2`) reads the constructor and @@species in order,
 uses the default for undefined/null species, and accepts native or bound
 constructors. DataView records and witnesses (`c928179`) cache numeric or detached
