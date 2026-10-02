@@ -97,10 +97,12 @@ pub fn uint8_array_prototype_set_from_base64(mut vm VM, primitives PrimitiveObje
 	set_uint8_array_bytes(mut vm, mut into, result.bytes)
 	if error := result.error { return error.release_error() }
 	mut object := Object.create(realm, object_prototype)
-	assert object.create_data_property(mut vm, PropertyName.from_str('read'),
+	read_defined := object.create_data_property(mut vm, PropertyName.from_str('read'),
 		Value.from_f64(f64(result.read)))!
-	assert object.create_data_property(mut vm, PropertyName.from_str('written'),
+	assert read_defined
+	written_defined := object.create_data_property(mut vm, PropertyName.from_str('written'),
 		Value.from_f64(f64(result.bytes.len)))!
+	assert written_defined
 	return Value.from_object(object)
 }
 
