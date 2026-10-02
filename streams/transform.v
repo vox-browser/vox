@@ -107,15 +107,9 @@ pub fn (stream &TransformStream) backpressure_change_promise_realm() StreamRealm
 }
 
 fn (mut stream TransformStream) update_backpressure() {
-	desired := stream.readable_.desired_size() or { 0.0 }
-	new_backpressure := desired <= 0
+	new_backpressure := readable_stream_default_controller_has_backpressure(stream.readable_.default_controller_)
 	if stream.backpressure_ != new_backpressure {
-		if !isnil(stream.backpressure_change_promise_) {
-			mut changed := stream.backpressure_change_promise_
-			changed.resolve()
-		}
-		stream.backpressure_change_promise_ = VoidPromise.pending_in(stream.realm_)
-		stream.backpressure_ = new_backpressure
+		stream.set_backpressure(new_backpressure)
 	}
 }
 

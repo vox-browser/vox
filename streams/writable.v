@@ -285,14 +285,16 @@ fn (mut stream WritableStream) process_queue() {
 		stream.finish_erroring()
 		return
 	}
-	if stream.owner_kind_ == .transform {
+	value := stream.queue_.peek_queue_value() or { return }
+	is_close := stream.queue_.first_is_close_sentinel()
+	// TransformStream's sink write algorithm waits for backpressure. Its
+	// sink close algorithm runs the flush algorithm without that wait.
+	if !is_close && stream.owner_kind_ == .transform {
 		mut transform := unsafe { &TransformStream(stream.owner_) }
 		if transform.backpressure_ {
 			return
 		}
 	}
-	value := stream.queue_.peek_queue_value() or { return }
-	is_close := stream.queue_.first_is_close_sentinel()
 	if stream.owner_kind_ == .message_port && !is_close && !stream.message_backpressure_ {
 		return
 	}
