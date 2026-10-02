@@ -209,7 +209,7 @@ per-query identity, and constructor errors from generated bindings and
 `-gc none`, querying actual linked shader attributes/uniforms and driver
 precision and checking readonly access, forgery rejection, and allowed own
 property shadows. This is a reflection-wrapper interop adaptation; the remaining
-compact extension/resource prototype and full WrapperWorld graph remain open.
+compact extension prototype and full WrapperWorld graph remain open.
 
 Concrete context interface methods/constants/readonly getters now reside on
 the corresponding WebGLRenderingContext or WebGL2RenderingContext prototype,
@@ -222,7 +222,7 @@ tags and shared method identity follow the source generated bindings. Native
 two-canvas prototype/receiver tests plus public host and extension execution
 neighbors pass with `-gc none`. Global constructor replacement does not alter
 the cached native interface prototype used for subsequently created contexts.
-Cross-realm WrapperWorld and extension/resource prototype work remain open.
+Cross-realm WrapperWorld and extension prototype work remain open.
 
 Typed query result selection uses the once-converted unsigned enum, matching
 the source get_parameter/get_vertex_attrib/get_active_uniform_block_parameter
@@ -230,6 +230,19 @@ switches. It no longer converts the author pname object again after native GL
 execution, and values wrapping modulo 2^32 select the same typed result as the
 source. The focused native host case passes with `-gc none` for viewport,
 constant vertex attributes and an actual linked uniform block's indices.
+
+Resource interfaces now follow the source WebGLObject prototype/constructor
+inheritance, brands, tags and constructor errors. Uniform locations retain their
+separate interface; WebGLVertexArrayObjectOES has its source internal prototype
+without an exposed LegacyNoInterfaceObject constructor. WebGLObject.label gets
+and sets the actual V resource record (`WebGLObject.h:25-26`); it remains usable
+after handle deletion and uses source USVString conversion through captured
+engine ToString/toWellFormed operations (`WebIDL/AbstractOperations.cpp:262-265`).
+The focused native resource case and public host neighbor pass with `-gc none`,
+covering all twelve labelled resource families, actual V field changes,
+getter/setter brand validation, Unicode replacement, deletion, cache identity, and constructor
+or intrinsic replacement. Full cross-realm/WrapperWorld cache lifetime remains
+an explicit boundary.
 
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
