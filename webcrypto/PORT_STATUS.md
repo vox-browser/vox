@@ -207,6 +207,14 @@ malformed optional curve tag that the source recognizes and rejects when it
 contradicts the outer curve, avoiding the earlier skipped-validation behavior.
 EC, Ed25519, Ed448 import, and X25519 format regression files pass.
 
+KMAC import leaves usages/extractable at their source defaults until the
+common public import or KEM boundary installs them. KEM imports invoke the
+algorithm body directly and permit empty shared-key usages, including KMAC
+and AES-OCB. Generation/import preserve quoted invalid-usage diagnostics and
+source generation-before-common-empty-usage order. Focused tests cover bit
+slicing, wrapped u16 generation sizes, class versus common metadata, copied
+deferred imports, and real ML-KEM encapsulation/decapsulation.
+
 Common parameter/typed boundary conversions remain under source review.
 Native backend availability does not establish complete WebCrypto/VM parity.
 
