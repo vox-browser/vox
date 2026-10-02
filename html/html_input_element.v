@@ -15,7 +15,8 @@ import dom
 import fileapi
 import math
 import mimesniff
-import regex
+import libregex
+import libjs
 
 const max_ecmascript_time_value = 8.64e15
 
@@ -752,12 +753,14 @@ pub fn (model &HTMLInputElementModel) list() ?&dom.HTMLDataListElement {
 }
 
 // https://html.spec.whatwg.org/multipage/input.html#compiled-pattern-regular-expression
-pub fn (model &HTMLInputElementModel) compiled_pattern_regular_expression() ?regex.RE {
+pub fn (model &HTMLInputElementModel) compiled_pattern_regular_expression() ?&libregex.ECMAScriptRegex {
 	pattern := input_element(model).get_attribute('pattern') or { return none }
-	// V's regexp engine has no ECMAScript UnicodeSets flag, but compiling the
-	// same source and anchoring it preserves the observable HTML validation
-	// contract for the supported regexp grammar.
-	return regex.regex_opt('^(${pattern})\$') or { return none }
+	flags := libregex.ECMAScriptCompileFlags{ unicode_sets: true }
+	// HTMLInputElement.cpp:303–335 validates the original pattern before
+	// adding a noncapturing anchor. A capturing wrapper changes backreferences.
+	mut original := libregex.ECMAScriptRegex.compile(libjs.utf16_string(pattern), flags) or { return none }
+	defer { original.destroy() }
+	return libregex.ECMAScriptRegex.compile(libjs.utf16_string('^(?:' + pattern + ')$'), flags) or { return none }
 }
 
 pub fn (model &HTMLInputElementModel) placeholder() string {
@@ -2423,7 +2426,22 @@ pub fn (model &HTMLInputElementModel) suffering_from_a_type_mismatch() bool {
 }
 
 pub fn (model &HTMLInputElementModel) suffering_from_a_pattern_mismatch() bool {
-	return model.control.suffering_from_a_pattern_mismatch()
+	if !model.pattern_applies() { return false }
+	value := model.value()
+	if value == '' { return false }
+	mut expression := model.compiled_pattern_regular_expression() or { return false }
+	defer { expression.destroy() }
+	if input_element(model).has_attribute('multiple') && model.multiple_applies() {
+		assert model.type_state_ == .email
+		// AK::Utf16View::for_each_split_view(..., SplitBehavior::Nothing)
+		// excludes empty views, preserving the pinned email-list behavior.
+		for part in value.split(',') {
+			if part == '' { continue }
+			if expression.exec(libjs.utf16_string(part), 0) != .match_ { return true }
+		}
+		return false
+	}
+	return expression.exec(libjs.utf16_string(value), 0) != .match_
 }
 
 pub fn (model &HTMLInputElementModel) suffering_from_an_underflow() bool {
@@ -2575,17 +2593,7 @@ pub fn (mut model HTMLInputElementModel) update_validity() {
 	} else if model.value() != '' && model.type_state_ == .url {
 		model.control.type_mismatch_ = !model.value().contains(':')
 	}
-	model.control.pattern_mismatch_ = false
-	if model.pattern_applies() && model.value() != '' {
-		if expression := model.compiled_pattern_regular_expression() {
-			values := if element.has_attribute('multiple') && model.multiple_applies() {
-				model.value().split(',')
-			} else {
-				[model.value()]
-			}
-			model.control.pattern_mismatch_ = values.any(!expression.matches_string(it))
-		}
-	}
+	model.control.pattern_mismatch_ = model.suffering_from_a_pattern_mismatch()
 	number := model.convert_string_to_number(model.value())
 	model.control.underflow_ = false
 	model.control.overflow_ = false
