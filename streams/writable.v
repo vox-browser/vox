@@ -31,6 +31,8 @@ pub:
 	close_callback ?webidl.CallbackType
 	abort_callback ?webidl.CallbackType
 	type_ ?string
+	// UnderlyingSink.idl reserves an any-valued key; its value is never coerced.
+	type_value ?webidl.Value
 }
 
 enum WritableOwnerKind {
@@ -75,6 +77,7 @@ mut:
 }
 
 pub fn WritableStream.construct_impl(sink UnderlyingSink, strategy QueuingStrategy) !&WritableStream {
+	if sink.type_value != none { return error("RangeError: Invalid use of reserved key 'type'") }
 	if type_ := sink.type_ {
 		return error('RangeError: Unsupported underlying sink type ${type_}')
 	}
@@ -82,8 +85,8 @@ pub fn WritableStream.construct_impl(sink UnderlyingSink, strategy QueuingStrate
 }
 
 pub fn WritableStream.create_for_constructor(realm StreamRealm, sink UnderlyingSink, strategy QueuingStrategy) !&WritableStream {
-	if type_ := sink.type_ {
-		return error("RangeError: Invalid use of reserved key 'type' (${type_})")
+	if sink.type_ != none || sink.type_value != none {
+		return error("RangeError: Invalid use of reserved key 'type'")
 	}
 	return WritableStream.create(realm, sink, strategy)
 }
