@@ -103,6 +103,33 @@ without replacing their primary source VM. Checkpoints wait for all attached
 outer contexts and advance each distinct VM's execution generation once.
 This remains a compact JSC embedding boundary, not a shared complete LibJS agent.
 
+## Native compact WritableStream binding
+
+`browserjs/writable_stream_host{,_darwin.c}.v` exposes actual owning native
+WritableStream/default writer/controller records. Pending startup, writes,
+backpressure, close and abort execute the existing source algorithms. Writer
+`closed`/`ready` wrap the same native Promise capabilities; source backpressure
+replacement changes the ready capability at the source transition. Actual
+cyclic object and Symbol chunks retain identity, and callback/size/thenable
+abrupt completions preserve their original values.
+
+Generated constructor conversion visits the strategy before converting the
+underlying sink dictionary. The reserved any-valued `type` key stays an actual
+WebIDL value and is rejected without string coercion. Engine numeric conversion
+uses actual ECMAScript ToNumber, including BigInt/Symbol rejection. The writer
+getter distinguishes a released writer's TypeError from an errored stream's
+null desired size and a closed stream's zero size. Constructor subclasses keep
+their actual prototype while native receiver brands remain independent of it.
+
+The controller's `signal` wraps the same source DOM AbortSignal and EventTarget.
+Abort while a write is in flight dispatches the source trusted abort event
+immediately, waits for that write and the actual sink abort Promise, and retains
+the original or later rejection according to source ordering. Native wrappers
+and settled Promise roots retain the previously documented Runtime.close GC
+boundary. The transform source now accepts actual reserved any keys and an
+owning wrapper-preparation hook before `start`; its public engine factory is
+the next unbound adapter.
+
 ## Actual DOM abort reasons and owning timeout delivery
 
 `dom.JSValue` now carries the actual WebIDL/engine value for arbitrary reasons.
@@ -162,7 +189,7 @@ finalization and generated compact Window error-handler exposure remain open.
 
 The following boundaries are still open and are not counted as full parity:
 
-- `WritableStream` and `TransformStream` JSC factories remain unbound. The
+- `TransformStream` JSC factories remain unbound. The
   readable binding does not expose public pipe/tee/from/iterator operations,
   BYOB reader constructors/read operations, byte-controller enqueue/BYOBRequest,
   subclass constructor prototype selection, or full generated wrapper worlds.
@@ -258,4 +285,13 @@ main_test.v, focused native timer startup: asynchronous owner task changes reach
   actual BrowserApp.poll_javascript_tasks DOM replay; passed with -gc none.
 streams/writable_writer_desired_size_test.v + writable_test.v: released getter
   TypeError versus errored nullable and closed zero desired size; 2/2 passed.
+streams/writable_sink_reserved_type_test.v + writable_webidl_callbacks_test.v:
+  actual any-valued reserved key rejection before source start; 2/2 passed.
+browserjs/writable_stream_host_test.v: four actual pending operation/backpressure,
+  owner context/Promise identity, in-flight abort/signal/later reason, original
+  callback/size/thenable reason and generated-conversion/brand/subclass cases
+  passed with -gc none; focused main source sink DOM replay also passed.
+streams/transform_reserved_type_test.v + transform_wrapper_preparation_test.v:
+  actual reserved any keys and initialized component wrapper preparation before
+  start passed; transform and typed callback neighbors passed.
 ```
