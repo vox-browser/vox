@@ -572,16 +572,17 @@ pub fn BrowsingContextModel.create_a_new_browsing_context_and_document(_ &dom.Pa
 	mut mutable_context := unsafe { &BrowsingContextModel(context) }
 	mutable_context.set_container(embedder)
 	sandbox_flags := determine_the_creation_sandboxing_flags(context, embedder)
-	mut document := dom.Document.create(dom.url_about_blank())
+	origin := if creator_document := creator {
+		determine_the_origin(dom.url_about_blank(), sandbox_flags, creator_document.origin())
+	} else {
+		determine_the_origin(dom.url_about_blank(), sandbox_flags, none)
+	}
+	// Source steps 10–15 construct the Window realm and settings first. The
+	// actual Document constructor then allocates fonts in that owning realm.
+	mut document := create_initial_document(context, origin, embedder)!
 	document.set_document_type(.html)
 	document.set_content_type('text/html')
 	document.set_quirks_mode(.yes)
-	if creator_document := creator {
-		document.set_origin(determine_the_origin(dom.url_about_blank(), sandbox_flags,
-			creator_document.origin()))
-	} else {
-		document.set_origin(determine_the_origin(dom.url_about_blank(), sandbox_flags, none))
-	}
 	document.set_active_sandboxing_flag_bits(sandbox_flags.bits)
 
 	// 14. Let loadTimingInfo be a new document load timing info with its navigation start time set to the result of
@@ -600,7 +601,6 @@ pub fn BrowsingContextModel.create_a_new_browsing_context_and_document(_ &dom.Pa
 	mutable_context.set_active_document(document)
 	mut mutable_group := unsafe { &BrowsingContextGroup(group) }
 	mutable_group.append_model(context)
-	_ = WindowModel.create(document, context)!
 	return BrowsingContextAndDocument{
 		browsing_context: context
 		document: document
@@ -1414,6 +1414,10 @@ fn document_timer_audio_play_state_changed(target voidptr, _ &dom.Document) {
 }
 
 pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel) !&WindowModel {
+	return WindowModel.create_with_global(document, context, none)
+}
+
+fn WindowModel.create_with_global(document &dom.Document, context &BrowsingContextModel, existing_global ?&WindowModel) !&WindowModel {
 	mut document_with_html_hooks := unsafe { &dom.Document(document) }
 	if document.get_browsing_context() == none {
 		mut mutable_document := unsafe { &dom.Document(document) }
@@ -1454,23 +1458,25 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 	}
 	mut document_with_registry := unsafe { &dom.Document(document) }
 	document_with_registry.set_custom_element_registry(voidptr(custom_element_registry))
-	mut window := &WindowModel{
-		Window: dom.Window{
-			associated_document_: document
-			close_watcher_manager_: unsafe { &dom.CloseWatcherManager(close_watcher_manager) }
+	window_pointer := existing_global or {
+		&WindowModel{
+			animation_driver_: &AnimationFrameCallbackDriver{}
+			global_scope_: WindowOrWorkerGlobalScopeMixin.create(document.origin(), false, false)
+			scripting_realm_: &ScriptingRealm{}
 		}
-		document_: document
-		browsing_context_: context
-		history_: history
-		navigation_: navigation
-		navigator_: Navigator.create(NavigatorHostConfiguration{
-			associated_document: document
-		})
-		animation_driver_: &AnimationFrameCallbackDriver{}
-		close_watcher_manager_model_: close_watcher_manager
-		global_scope_: WindowOrWorkerGlobalScopeMixin.create(document.origin(), false, false)
-		scripting_realm_: &ScriptingRealm{}
 	}
+	mut window := unsafe { &WindowModel(window_pointer) }
+	window.document_ = document
+	window.Window.set_associated_document(document)
+	window.Window.close_watcher_manager_ = unsafe { &dom.CloseWatcherManager(close_watcher_manager) }
+	window.browsing_context_ = context
+	window.history_ = history
+	window.navigation_ = navigation
+	window.navigator_ = Navigator.create(NavigatorHostConfiguration{
+		associated_document: document
+	})
+	window.close_watcher_manager_model_ = close_watcher_manager
+	window.global_scope_.origin_ = document.origin()
 	document_with_html_hooks.set_html_navigation_hook(dom.DocumentHTMLNavigationHook{
 		target:                    voidptr(window)
 		entry_associated_document: document_entry_associated_document
@@ -1496,9 +1502,16 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 			}
 		}
 	}
-	mut window_realm := window.scripting_realm_
-	_ = WindowEnvironmentSettingsObject.setup(window, document.url, mut window_realm, none,
-		top_level_creation_url, top_level_origin)
+	if window.environment_settings_ == unsafe { nil } {
+		mut window_realm := window.scripting_realm_
+		_ = WindowEnvironmentSettingsObject.setup(window, document.url, mut window_realm, none,
+			top_level_creation_url, top_level_origin)
+	} else {
+		// Associate the genuine pre-created global without replacing its realm,
+		// settings, or any Promise capability exposed during construction.
+		mut scope := unsafe { &UniversalGlobalScopeMixin(window.environment_settings_.settings.universal_global_scope_) }
+		scope.document_ = document
+	}
 	install_view_transition_promise_context(document, window)
 	mut timer_scope := window.global_scope_
 	timer_scope.associated_window_ = window
@@ -1507,26 +1520,11 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 		begin:  document_begin_temporary_execution_context
 		end:    document_end_temporary_execution_context
 	})
-	document_with_html_hooks.set_lifecycle_hook(dom.DocumentLifecycleHook{
-		target:                           voidptr(window)
-		register_document:                document_register_with_event_loop
-		unregister_document:              document_unregister_from_event_loop
-		document_navigable_did_change:     document_navigable_did_change
-		remove_tasks_for_document:        document_remove_tasks_from_event_loop
-		increment_termination_nesting:    document_increment_event_loop_termination_nesting
-		decrement_termination_nesting:    document_decrement_event_loop_termination_nesting
-		set_execution_ready:              document_set_execution_ready
-		relevant_settings_object:         document_relevant_settings_object
-		structured_deserialize:           document_structured_deserialize
-		queue_intersection_observer_task: document_queue_intersection_observer_task
-		queue_selectionchange_event_task: document_queue_selectionchange_event_task
-		queue_an_element_task:            document_queue_an_element_task
-		run_unloading_cleanup_steps:      document_run_unloading_cleanup_steps
-		timer_visibility_state_changed:   document_timer_visibility_state_changed
-		timer_audio_play_state_changed:   document_timer_audio_play_state_changed
-	})
+	document_with_html_hooks.set_lifecycle_hook(document_lifecycle_hook(window))
 	timer_scope.document_visibility_state_changed()
-	proxy := WindowProxyModel.create(window)
+	proxy := context.window_proxy() or { WindowProxyModel.create(window) }
+	mut mutable_proxy := unsafe { &WindowProxyModel(proxy) }
+	mutable_proxy.set_window(window)
 	location := LocationModel.create(document, document.origin())
 	window.window_proxy_ = proxy
 	window.location_ = location

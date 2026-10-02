@@ -5465,6 +5465,33 @@ pub fn Document.create(url URL) &Document {
 	return doc
 }
 
+// Source Document::create(Page&, relevant_global_event_target, URL). HTML
+// supplies the already-created actual Window and its module-cycle callbacks.
+// Unlike the standalone constructor above, native document construction can
+// eagerly allocate its FontFaceSet in the existing owner's realm.
+pub fn Document.create_with_relevant_global(url URL, relevant_window &Window, lifecycle_hook DocumentLifecycleHook, temporary_context_hook DocumentTemporaryExecutionContextHook) &Document {
+	mut doc := &Document{}
+	doc.data.kind = .node
+	doc.unique_id_ = allocate_unique_id(unsafe { &Node(doc) })
+	doc.node_type = .document_node
+	doc.document_ = doc
+	doc.is_connected_ = true
+	doc.url = url
+	doc.window = relevant_window
+	doc.lifecycle_hook_ = lifecycle_hook
+	doc.temporary_execution_context_hook_ = temporary_context_hook
+	assert doc.relevant_settings_object() != unsafe { nil }
+	if factory := document_font_face_set_factory_ {
+		context := doc.begin_temporary_execution_context()
+		doc.fonts_ = factory(doc)
+		doc.end_temporary_execution_context(context)
+	} else {
+		panic('Native Document construction requires the CSS FontFaceSet implementation')
+	}
+	doc.initialize()
+	return doc
+}
+
 // create_for_fragment_parsing corresponds to Document::create_for_fragment_parsing
 pub fn Document.create_for_fragment_parsing() &Document {
 	mut doc := &Document{}

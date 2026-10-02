@@ -267,6 +267,7 @@ pub fn (settings &EnvironmentSettingsObject) script_bytecode_cache_store_hook() 
 
 pub fn (settings &EnvironmentSettingsObject) responsible_document() ?&dom.Document {
 	window := settings.window_ or { return none }
+	if window.document_ == unsafe { nil } { return none }
 	return window.associated_document()
 }
 
@@ -487,6 +488,9 @@ pub fn (settings &EnvironmentSettingsObject) cross_origin_isolated_capability() 
 }
 
 pub fn (settings &EnvironmentSettingsObject) time_origin() f64 {
+	if window := settings.window_ {
+		return window.associated_document().load_timing_info.navigation_start_time
+	}
 	return settings.time_origin_
 }
 
@@ -831,9 +835,15 @@ pub fn WindowEnvironmentSettingsObject.setup(window &WindowModel, creation_url d
 		mutable_window.global_scope_.error_reporting_realm_ = realm
 	}
 	settings.global_object_ = unsafe { &dom.EventTarget(window) }
-	settings.universal_global_scope_ = UniversalGlobalScopeMixin.create(settings.global_object_, realm, window.associated_document())
-	settings.origin_ = window.associated_document().origin()
-	settings.time_origin_ = window.associated_document().load_timing_info.navigation_start_time
+	// Window settings precede Document construction in BrowsingContext.cpp
+	// and Document::create_and_initialize. These algorithms read the associated
+	// document only after that actual Window has acquired one.
+	document := if window.document_ == unsafe { nil } { ?&dom.Document(none) } else { window.document_ }
+	settings.universal_global_scope_ = UniversalGlobalScopeMixin.create(settings.global_object_, realm, document)
+	if associated := document {
+		settings.origin_ = associated.origin()
+		settings.time_origin_ = associated.load_timing_info.navigation_start_time
+	}
 	object := &WindowEnvironmentSettingsObject{
 		settings: settings
 		window: window

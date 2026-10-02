@@ -2623,11 +2623,12 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	install_start := checkpoint
 	app.animation_epoch_ns = install_start
 	initiator_origin := if app.document != unsafe { nil } { ?dom.Origin(app.document.origin()) } else { none }
+	previous_document := if app.document != unsafe { nil } { ?&dom.Document(app.document) } else { ?&dom.Document(none) }
 	app.document = if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(),
 		'UTF-8') {
-		parse_browser_navigation_document(loaded.markup, document_url, initiator_origin)
+		parse_browser_navigation_document_with_previous(loaded.markup, document_url, initiator_origin, previous_document)
 	} else {
-		parse_browser_navigation_document(loaded.markup, dom.url_about_blank(), initiator_origin)
+		parse_browser_navigation_document_with_previous(loaded.markup, dom.url_about_blank(), initiator_origin, previous_document)
 	}
 	app.document.set_page(unsafe { &dom.Page(app.page_model) })
 	checkpoint = debug_timing_checkpoint('parse_document', checkpoint)
