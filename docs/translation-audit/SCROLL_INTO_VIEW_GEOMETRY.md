@@ -18,6 +18,6 @@ Validation: five actual committed-layout position cases pass with default GC and
 
 ## Remaining DN-15 boundaries
 
-The ancestor-scroll caller still needs source element scrolling, a single target rectangle projected and clipped outward after each intended scroll, behavior forwarding, container stopping and owning-realm ancestor Promise aggregation. The public typed API still needs the full options/boolean overloads and temporary execution context; the compact JavaScript scrolling interface remains separate. Compositor transport and user-gesture settlement also remain open.
+The [typed ancestor-scroll caller](SCROLL_INTO_VIEW_CALLER.md) now forwards actual element and viewport operations, projects and clips a single target rectangle outward, preserves behavior/container handling and aggregates actual owning-realm Promises. Its options/boolean overloads use the source temporary execution context. The compact JavaScript scrolling interface remains separate. Compositor transport and user-input settlement also remain open.
 
 The pinned source itself retains FIXMEs for other block/inline directions, target scroll-snap position selection in this helper, and optional attention actions. This slice preserves those source limitations. The source VisualViewport class is currently retained by the owning translated Window; replacing the old empty DOM VisualViewport facade with centralized source ownership is separate work.
