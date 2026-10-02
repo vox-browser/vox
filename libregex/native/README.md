@@ -6,10 +6,12 @@ unchanged, as upstream's C++ LibRegex wrappers do. `unicode.rs` supplies crate
 wiring for the unchanged Unicode character wrappers; their C ABI calls reach
 the existing translated V Unicode helpers and ICU.
 
-Run `python3 tools/build_regex_backend.py --verify-only` to check the copied
-sources, or omit the option to build the repository-owned static archive under
-`Build/libregex/`. This requires a Rust compiler supporting edition 2024 and
-does not read or link the upstream checkout. `RUSTC` selects the compiler.
+The browser build script builds this dependency before invoking V. Before
+running V tests in a fresh checkout, run `python3 tools/build_regex_backend.py`.
+Concurrent builders share a locked, atomic output under `Build/libregex/`.
+Use `--verify-only` to check the copied sources without building. The build
+requires a Rust compiler supporting edition 2024 and does not read or link the
+upstream checkout. `RUSTC` selects the compiler.
 
 These native dependency assets do not claim the Rust parser, compiler or
 instruction loop has been translated to V. The V C++ wrapper and HTML caller
