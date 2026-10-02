@@ -31,6 +31,24 @@ fn test_coarsen_time_zero_and_exact_multiples() {
 	assert near(coarsen_time(0.025, true), 0.025)
 }
 
+fn test_coarsening_preserves_the_selected_bucket_after_inexact_division() {
+	for timestamp in [0.146, -40.949] {
+		bucket := math.floor(timestamp * 200)
+		coarse := coarsen_time(timestamp, true)
+		assert math.floor(coarse * 200) == bucket
+		assert coarsen_time(coarse, true) == coarse
+	}
+}
+
+fn test_repeated_coarsening_does_not_drift_across_buckets() {
+	for isolated in [false, true] {
+		for tick in -10000 .. 10000 {
+			coarse := coarsen_time(f64(tick) / 173, isolated)
+			assert coarsen_time(coarse, isolated) == coarse
+		}
+	}
+}
+
 fn test_time_sources_are_positive() {
 	// The wall and monotonic clocks return positive millisecond counts.
 	assert wall_clock_unsafe_current_time() > 0.0

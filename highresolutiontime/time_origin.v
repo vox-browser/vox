@@ -28,13 +28,20 @@ pub:
 // (0.005 ms) when the cross-origin isolated capability is set (HTML::CanUseCrossOriginIsolatedAPIs::Yes).
 pub fn coarsen_time(timestamp DOMHighResTimeStamp, cross_origin_isolated_capability bool) DOMHighResTimeStamp {
 	// 1. Time resolution is 100 microseconds.
-	mut time_resolution_milliseconds := 0.1
+	mut coarsening_factor := i64(10)
 	// 2. If cross-origin isolated, time resolution is 5 microseconds.
 	if cross_origin_isolated_capability {
-		time_resolution_milliseconds = 0.005
+		coarsening_factor = 200
 	}
 	// 3. Coarsen timestamp so its resolution will not exceed time resolution.
-	return math.floor(f64(timestamp) / time_resolution_milliseconds) * time_resolution_milliseconds
+	bucket := i64(math.floor(f64(timestamp) * f64(coarsening_factor)))
+	mut coarse := f64(bucket) / f64(coarsening_factor)
+	// The source avoids selecting the previous bucket when a representable
+	// division result lies immediately below its intended bucket boundary.
+	if math.floor(coarse * f64(coarsening_factor)) < f64(bucket) {
+		coarse = math.nextafter(coarse, math.inf(1))
+	}
+	return coarse
 }
 
 // https://w3c.github.io/hr-time/#wall-clock-unsafe-current-time — the wall clock's time in milliseconds
