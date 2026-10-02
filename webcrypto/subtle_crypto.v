@@ -479,6 +479,12 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(import_algorithm_name(algorithm), 'importKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
+    if normalized in ['Argon2d', 'Argon2i', 'Argon2id'] {
+        mut key := import_argon2_key(normalized, format, material, extractable, normalized_usages)!
+        if normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+        key.set_usages(normalized_usages)
+        return key
+    }
     if normalized in ['HKDF', 'PBKDF2'] {
         mut key := import_kdf_key(normalized, format, material, extractable, normalized_usages)!
         if normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
@@ -740,6 +746,10 @@ pub fn (subtle_crypto &SubtleCrypto) derive_bits(params DeriveParams, base_key &
 		EcdhKeyDeriveParams { params.name }
 	}
 	normalized := normalize_an_algorithm(name, 'deriveBits')!
+	if params is Argon2Params {
+		validate_operation_key(base_key, normalized, .derive_bits)!
+		return argon2_derive_bits(Argon2Params{ ...params, name: normalized }, base_key, length_bits)
+	}
 	if params is HkdfParams {
 		hash := normalize_an_algorithm(params.hash, 'digest')!
 		validate_operation_key(base_key, normalized, .derive_bits)!

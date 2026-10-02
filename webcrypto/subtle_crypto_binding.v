@@ -501,6 +501,7 @@ fn normalized_import(algorithm NormalizedCryptoAlgorithm, format KeyFormat, byte
 		return MLKEM.create().import_key(basic, format, bytes, extractable, usages)
 	}
 	if algorithm.name in ['HKDF', 'PBKDF2'] { return import_kdf_key(algorithm.name, format, bytes, extractable, usages) }
+	if algorithm.name in ['Argon2d', 'Argon2i', 'Argon2id'] { return import_argon2_key(algorithm.name, format, bytes, extractable, usages) }
 	mut import_params := ImportKeyParams(algorithm.name)
 	mut hash_name := ''
 	if params is KmacImportParams { import_params = params }
@@ -528,7 +529,7 @@ fn normalized_derive(algorithm NormalizedCryptoAlgorithm, key &CryptoKey, length
 			pbkdf2_derive_bits(params, key, length)!
 		}
 		Argon2Params {
-			derive_bits_bytes_for_usage(params, key, length or { return error('OperationError: length is required') }, usage)!
+			argon2_derive_bits(params, key, length)!
 		}
 		EcdhKeyDeriveParams {
 			match algorithm.name {

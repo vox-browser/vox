@@ -8,7 +8,6 @@
 module webcrypto
 
 import crypto.aes
-import crypto.argon2
 import crypto.cipher
 import crypto.ed25519
 import crypto.hmac
@@ -602,29 +601,6 @@ fn xor_into(mut target []u8, source []u8) {
 	for index, byte in source { target[index] ^= byte }
 }
 
-fn argon2_derive(params Argon2Params, password []u8, length_bytes int) ![]u8 {
-	if params.secret_value != none || params.associated_data != none {
-		return error('NotSupportedError: The pure-V Argon2 backend has no secret/associated-data input')
-	}
-	if params.parallelism == 0 || params.parallelism > 255 || params.passes == 0 {
-		return error('OperationError: Invalid Argon2 cost parameters')
-	}
-	return match params.name {
-		'Argon2d' {
-			argon2.d_key(password, params.nonce, params.passes, params.memory, u8(params.parallelism), u32(length_bytes))!
-		}
-		'Argon2i' {
-			argon2.key(password, params.nonce, params.passes, params.memory, u8(params.parallelism), u32(length_bytes))!
-		}
-		'Argon2id' {
-			argon2.id_key(password, params.nonce, params.passes, params.memory, u8(params.parallelism), u32(length_bytes))!
-		}
-		else {
-			error('NotSupportedError: Unsupported Argon2 variant')
-		}
-	}
-}
-
 fn derive_bits_bytes_for_usage(params DeriveParams, base_key &CryptoKey, length_bits u32, required_usage KeyUsage) ![]u8 {
 	if !base_key.permits(required_usage) {
 		return error('InvalidAccessError: Key does not permit derivation')
@@ -640,6 +616,11 @@ fn derive_bits_bytes_for_usage(params DeriveParams, base_key &CryptoKey, length_
 		if normalize_an_algorithm(params.name, 'deriveBits')! != base_key.algorithm_name() { return error('InvalidAccessError: Key algorithm mismatch') }
 		return hkdf_derive_bits(HkdfParams{ ...params, hash: normalize_an_algorithm(params.hash, 'digest')! }, base_key, length_bits)
 	}
+	if params is Argon2Params {
+		normalized := normalize_an_algorithm(params.name, 'deriveBits')!
+		if normalized != base_key.algorithm_name() { return error('InvalidAccessError: Key algorithm mismatch') }
+		return argon2_derive_bits(Argon2Params{ ...params, name: normalized }, base_key, length_bits)
+	}
 	if params is Pbkdf2Params {
 		if normalize_an_algorithm(params.name, 'deriveBits')! != base_key.algorithm_name() { return error('InvalidAccessError: Key algorithm mismatch') }
 		return pbkdf2_derive_bits(Pbkdf2Params{ ...params, hash: normalize_an_algorithm(params.hash, 'digest')! }, base_key, length_bits)
@@ -650,11 +631,10 @@ fn derive_bits_bytes_for_usage(params DeriveParams, base_key &CryptoKey, length_
 	if params.name != base_key.algorithm_name() {
 		return error('InvalidAccessError: Key algorithm mismatch')
 	}
-	length_bytes := int(length_bits / 8)
 	return match params {
 		HkdfParams { hkdf_derive_bits(params, base_key, length_bits)! }
 		Pbkdf2Params { pbkdf2_derive_bits(params, base_key, length_bits)! }
-		Argon2Params { argon2_derive(params, base_key.handle_, length_bytes)! }
+		Argon2Params { argon2_derive_bits(params, base_key, length_bits)! }
 		EcdhKeyDeriveParams { error('NotSupportedError: Unexpected derivation parameters') }
 	}
 }

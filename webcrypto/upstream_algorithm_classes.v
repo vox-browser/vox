@@ -107,13 +107,11 @@ pub fn (_ PBKDF2) get_key_length(_ AlgorithmParams) !KeyLengthResult { return Ke
 
 pub struct Argon2 {}
 pub fn Argon2.create() Argon2 { return Argon2{} }
-pub fn (_ Argon2) import_key(params AlgorithmParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_secret_algorithm(params.name, format, material, extractable, usages, '') }
-pub fn (_ Argon2) derive_bits(params Argon2Params, key &CryptoKey, length ?u32) ![]u8 { return derive_bits_bytes(params, key, length or { return error('OperationError: length is required') }) }
+pub fn (_ Argon2) import_key(params AlgorithmParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_argon2_key(params.name, format, material, extractable, usages) }
+pub fn (_ Argon2) derive_bits(params Argon2Params, key &CryptoKey, length ?u32) ![]u8 { return argon2_derive_bits(params, key, length) }
 pub fn (_ Argon2) get_key_length(_ AlgorithmParams) !KeyLengthResult { return KeyLengthResult{} }
 
-// Algorithms whose low-level primitives are not provided by this V runtime.
-// Their typed dispatch and error behavior remain concrete rather than being
-// silently substituted with a different cryptosystem.
+// Asymmetric operations use the same OpenSSL primitives as upstream LibCrypto.
 
 pub struct RSAOAEP {}
 pub fn RSAOAEP.create() RSAOAEP { return RSAOAEP{} }
