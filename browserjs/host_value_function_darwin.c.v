@@ -86,6 +86,9 @@ fn (mut runtime Runtime) initialize_javascript_value_intrinsics() ! {
 	runtime.promise_observe_intrinsic_ = runtime.evaluate_host_value('(function(){const apply=Reflect.apply,then=Promise.prototype.then;return function(promise,fulfilled,rejected){return apply(then,promise,[fulfilled,rejected])}})()')!
 	runtime.value_error_intrinsic_ = runtime.evaluate_host_value('(function(){const E=Error,T=TypeError,R=RangeError,V=EvalError,F=ReferenceError,U=URIError;return function(kind,message){return new (kind==="TypeError"?T:kind==="RangeError"?R:kind==="EvalError"?V:kind==="ReferenceError"?F:kind==="URIError"?U:E)(message)}})()')!
 	runtime.value_same_intrinsic_ = runtime.evaluate_host_value('Object.is')!
+	// JSC's C JSValueToNumber accepts BigInt. Unary plus performs genuine
+	// ECMAScript ToNumber before the C API reads the resulting Number.
+	runtime.value_number_intrinsic_ = runtime.evaluate_host_value('(function(value){return +value})')!
 }
 
 fn (runtime &Runtime) actual_javascript_exception(value voidptr) IError {

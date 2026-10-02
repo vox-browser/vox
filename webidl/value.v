@@ -53,6 +53,8 @@ pub:
 	is_undefined bool
 	// Genuine engine number projection; this never performs ToNumber on objects.
 	number_primitive ?f64
+	// Actual engine ToNumber, separate from the non-coercing number brand.
+	number_conversion ?fn () !f64
 	boolean_conversion ?fn () !bool
 	same_value ?fn (RuntimeValue) !bool
 	string_conversion fn () !string @[required]

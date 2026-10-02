@@ -73,11 +73,18 @@ pub fn integer_part(number f64) f64 {
 pub fn value_to_number(value Value) !f64 {
 	return match value.kind {
 		.number { value.number_value }
-		.boolean { if value.boolean_value { f64(1) } else { f64(0) } }
+		.boolean {
+			if value.boolean_value { f64(1) } else { f64(0) }
+		}
 		.null_ { f64(0) }
 		.undefined { math.nan() }
 		.string_ { libjs.string_to_number(libjs.utf16_string(value.string_value)) }
 		.bigint { return error('TypeError: Cannot convert BigInt to number') }
+		.runtime_value {
+			actual := value.runtime_value_ or { return error('TypeError: value has no runtime reference') }
+			conversion := actual.number_conversion or { return error('TypeError: runtime value has no ToNumber operation') }
+			conversion()!
+		}
 		else { return error('TypeError: value cannot be converted to a number') }
 	}
 }

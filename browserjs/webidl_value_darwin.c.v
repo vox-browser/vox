@@ -24,6 +24,15 @@ pub fn (mut runtime Runtime) webidl_value(value voidptr) !webidl.Value {
 		value: value
 		is_undefined: C.JSValueIsUndefined(runtime.context, value)
 		number_primitive: number_primitive
+		number_conversion: fn [owner_handle, value] () !f64 {
+			owner := unsafe { &Runtime(owner_handle) }
+			owner.require_javascript_value_context()!
+			converted := owner.call_engine_function(owner.value_number_intrinsic_, [value])!
+			mut exception := unsafe { nil }
+			number := C.JSValueToNumber(owner.context, converted, &exception)
+			if exception != unsafe { nil } { return owner.actual_javascript_exception(exception) }
+			return number
+		}
 		boolean_conversion: fn [owner_handle, value] () !bool {
 			owner := unsafe { &Runtime(owner_handle) }
 			owner.require_javascript_value_context()!
