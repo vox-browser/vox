@@ -142,11 +142,7 @@ fn test_table64_address_values_and_binding_conversions() {
 	} else {
 		assert err.msg().contains('non-negative')
 	}
-	if _ := address_value_to_u64(webidl.number_value(1.5), .i32) {
-		assert false
-	} else {
-		assert err.msg().contains('unsigned 32-bit')
-	}
+	assert address_value_to_u64(webidl.number_value(1.5), .i32)! == 1
 }
 
 fn test_table_keeps_the_cache_that_owns_its_address() {

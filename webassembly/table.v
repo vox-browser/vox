@@ -1,3 +1,5 @@
+// Copyright (c) 2021, Ali Mohammad Pur <mpfard@serenityos.org>
+// Copyright (c) 2023, Tim Flynn <trflynn89@serenityos.org>
 // Copyright (c) 2026, Ladybird contributors
 //
 // SPDX-License-Identifier: BSD-2-Clause
@@ -6,7 +8,6 @@
 module webassembly
 
 import webidl
-import math
 
 pub enum AddressType {
 	i32
@@ -188,19 +189,17 @@ pub fn address_value_to_u64(value webidl.Value, address_type AddressType) !u64 {
 		}
 		return u64(value.bigint_value)
 	}
-	if value.kind != .number || math.is_nan(value.number_value)
-		|| math.is_inf(value.number_value, 0) || value.number_value < 0
-		|| value.number_value > f64(max_u32) || value.number_value != math.trunc(value.number_value) {
-		return error('TypeError: Table size must be an unsigned 32-bit integer')
-	}
-	return u64(value.number_value)
+	// Table.cpp::AddressValueToU64 delegates i32 addresses to the unsigned-long
+	// EnforceRange conversion, including ToNumber and truncation before bounds.
+	number := webidl.convert_to_int(value, 32, false, .yes, .no)!
+	return u64(number)
 }
 
 pub fn table_limit_to_js_value(value u64, address_type AddressType) webidl.Value {
 	if address_type == .i64 {
 		return webidl.bigint_value(i64(value))
 	}
-	return webidl.number_value(f64(value))
+	return webidl.number_value(f64(u32(value)))
 }
 
 pub fn construct_table(descriptor TableDescriptor, value ?webidl.Value) !&Table {
