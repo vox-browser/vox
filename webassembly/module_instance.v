@@ -298,6 +298,7 @@ fn compile_module(bytes []u8) !&Module {
 	context := validate_binary_module_indices(compiled)!
 	mut validator := &BinaryInstructionValidator{context: context}
 	validator.validate_data_section(mut compiled.data_segments)!
+	validator.validate_element_section(mut compiled.element_segments)!
 	return compiled
 }
 

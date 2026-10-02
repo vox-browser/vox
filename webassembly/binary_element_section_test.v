@@ -26,9 +26,12 @@ fn test_element_section_retains_all_eight_modes_types_and_expressions() {
 			payload << [u8(0xd0), if tag == 4 { u8(0x70) } else { u8(0x6f) }, 0x0b]
 		}
 	}
-	compiled := compile_module(element_section_binary(payload))!
-	assert compiled.element_segments.len == 8
-	for tag, segment in compiled.element_segments {
+	// The parser fixture intentionally uses undeclared function/table indices
+	// and both heap families for table 128. Inspect it before module validation.
+	mut decoder := Decoder{ bytes: payload }
+	segments := parse_element_section(mut decoder)!
+	assert segments.len == 8 && decoder.offset == payload.len
+	for tag, segment in segments {
 		if tag & 1 == 0 {
 			assert segment.mode == .active
 			index := segment.table_index?
@@ -61,9 +64,6 @@ fn test_element_section_retains_all_eight_modes_types_and_expressions() {
 			assert (segment.items[0].instructions[0].arguments as BinaryValueType) == segment.element_type
 		}
 	}
-	mut restored := Module.create_for_serialization()
-	restored.deserialization_steps(compiled.serialization_steps(false)!)!
-	assert restored.element_segments == compiled.element_segments
 }
 
 fn test_element_section_parser_defers_reference_type_validation_to_validator() {

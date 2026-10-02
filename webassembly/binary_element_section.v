@@ -11,10 +11,11 @@ pub enum BinaryElementMode {
 pub struct BinaryElementSegment {
 pub:
 	element_type BinaryValueType
-	items        []BinaryExpression
 	mode         BinaryElementMode
 	table_index  ?u32
-	offset       ?BinaryExpression
+pub mut:
+	items  []BinaryExpression
+	offset ?BinaryExpression
 }
 
 // Parser.cpp::ElementSection::Element::parse: all eight source tag forms,

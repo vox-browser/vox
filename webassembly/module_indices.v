@@ -172,9 +172,6 @@ fn validate_binary_module_indices(compiled &Module) !BinaryValidationContext {
 	for entry in compiled.global_definitions {
 		validate_binary_value_type(entry.type_.type_, context.types)!
 	}
-	for segment in compiled.element_segments {
-		validate_binary_value_type(segment.element_type, context.types)!
-	}
 	for entry in compiled.tag_types { validate_binary_tag_type(entry, context.types)! }
 	return context
 }
