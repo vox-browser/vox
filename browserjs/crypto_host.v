@@ -42,6 +42,9 @@ mut:
 	freeze_object       voidptr
 	object_wrappers     map[u64]voidptr
 	usage_sequence      voidptr
+	string_sequence     voidptr
+	prime_sequence      voidptr
+	buffer_is_array     voidptr
 	closed              bool
 }
 
