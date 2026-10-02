@@ -82,14 +82,38 @@ remain audit gaps independently of the production direct native path.
 
 Source TODOs remain visible. Upstream `get_uniform` returns zero with a FIXME;
 its V cached-value model does not establish a translated native getter. Upstream
-WebGL2 IDL still marks numeric pixel-unpack-buffer texture/compressed uploads,
-copyTexSubImage3D, getFragDataLocation, isQuery/isSampler/isSync/
-isTransformFeedback, and several indexed/transform-feedback getter bindings as
-FIXME, without operation bodies. Some internal native getters exist, but the
-missing source bodies and public binding behavior are not completed translation
-claims. Numeric pixel-unpack texture overloads must not be confused with the
-implemented pixel-pack readPixels overload. Source reset_to_default_state bodies
-are empty in both context classes and remain empty in the translation.
+WebGL2 declarations below are explicitly `[FIXME]` at pinned commit
+`963d46a829f3e1b79f44dba9d02afb70654300fa`, with no matching operation bodies in
+`WebGL2RenderingContextImpl.{h,cpp}` or `WebGL2RenderingContextOverloads.{h,cpp}`.
+They are upstream unavailable operations, distinct from remaining translation
+work on implemented source bodies.
+
+| Upstream unavailable operation | Source declaration under `Libraries/LibWeb/WebGL/` |
+| --- | --- |
+| Numeric PBO texImage2D / texSubImage2D | `WebGL2RenderingContextOverloads.idl:24`, `:31` |
+| Numeric PBO compressedTexImage2D / compressedTexSubImage2D | `WebGL2RenderingContextOverloads.idl:37`, `:40` |
+| Numeric PBO texImage3D / texSubImage3D | `WebGL2RenderingContextBase.idl:296`, `:304` |
+| Numeric PBO compressedTexImage3D / compressedTexSubImage3D | `WebGL2RenderingContextBase.idl:313`, `:316` |
+| copyTexSubImage3D / getFragDataLocation | `WebGL2RenderingContextBase.idl:311`, `:320` |
+| isQuery / isSampler / isSync / isTransformFeedback | `WebGL2RenderingContextBase.idl:366`, `:375`, `:383`, `:392` |
+| getSamplerParameter / getTransformFeedbackVarying / getIndexedParameter | `WebGL2RenderingContextBase.idl:379`, `:397`, `:404` |
+
+The pinned binding generator excludes `[FIXME]` declarations from operation
+overload sets (`Meta/Generators/libweb_bindings/overload_resolution.py:542-549`).
+Wholly unimplemented operation names receive only the source unimplemented
+property marker (`operations.py:185-203`); some V internal native getter helpers
+do not imply completed public source operation bindings. Numeric pixel-unpack
+texture overloads must not be confused with the implemented numeric pixel-pack
+readPixels overload. Source reset_to_default_state bodies are empty in both
+context classes and remain empty in the translation.
+
+The compact public binding now applies that source `[FIXME]` exclusion before
+overload resolution. Unsupported numeric unpack calls raise TypeError without
+issuing an empty-byte native upload. Failed ambiguous resolution retains the
+source "Overload resolution failed" diagnostic, while the supported numeric
+bufferData overload still converts ordinary objects through ToNumber. Both
+focused effective-overload cases and all three adjacent public host, nullable
+texture, and source-span files pass with `-gc none`.
 
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
