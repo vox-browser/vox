@@ -46,6 +46,11 @@ pub fn (mut controller FetchController) set_pending_request(request ?&Request) {
 	controller.has_started_request_ = controller.has_started_request_ || request != none
 }
 
+// FetchController.cpp: retain the actual Requests::Request stop boundary.
+pub fn (mut controller FetchController) set_pending_network_request(request ?RequestServerRequest) {
+	controller.pending_network_request_ = request
+}
+
 pub fn (controller &FetchController) timing_info() ?&FetchTimingInfo {
 	params := controller.fetch_params_ or { return none }
 	return params.timing_info

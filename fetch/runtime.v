@@ -126,6 +126,7 @@ mut:
 	next_fetch_task_id_         u64
 	fetch_params_               ?&FetchParams
 	pending_request_            ?&Request
+	pending_network_request_    ?RequestServerRequest
 	pending_preloaded_response_ ?&PendingResponse
 	requires_network_           bool
 	has_started_request_        bool
@@ -219,6 +220,10 @@ pub fn (mut controller FetchController) stop_fetch() {
 
 pub fn (mut controller FetchController) stop_request() {
 	assert controller.state_ == .stopped
+	if request := controller.pending_network_request_ {
+		if stop := request.stop { stop() }
+		controller.pending_network_request_ = none
+	}
 	controller.pending_request_stopped_ = true
 	controller.pending_request_ = none
 }
@@ -709,13 +714,26 @@ pub fn determine_the_network_partition_key(origin ?dom.Origin) ?NetworkPartition
 
 pub type FetchHostHook = fn (&Request) !&Response
 
+pub type FetchHostParamsHook = fn (&FetchParams, &Request) &PendingResponse
+
 pub type FetchAsyncHostHook = fn (&Request) &PendingResponse
 
 pub struct FetchHost {
 pub:
 	perform             FetchHostHook @[required]
+	// The real ResourceLoader callbacks need the shared controller, timing info
+	// and FetchedDataReceiver task destination, not a detached request shadow.
+	perform_async_with_params ?FetchHostParamsHook
 	perform_async       ?FetchAsyncHostHook
 	preferred_languages []string = ['en-US']
+}
+
+fn perform_host_fetch(params &FetchParams, request &Request, host &FetchHost) &PendingResponse {
+	if perform := host.perform_async_with_params { return perform(params, request) }
+	if perform := host.perform_async { return perform(request) }
+	mut mutable_request := unsafe { &Request(request) }
+	response := host.perform(request) or { Response.network_error(err.msg()) }
+	return PendingResponse.create(mut mutable_request, response)
 }
 
 pub fn scheme_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
@@ -1123,8 +1141,8 @@ pub fn http_network_or_cache_fetch(params &FetchParams, host &FetchHost) &Pendin
 				controller.requires_network_ = true
 			}
 		}
-		if async_perform := host.perform_async {
-			mut pending := async_perform(http_request)
+		{
+			mut pending := perform_host_fetch(params, http_request, host)
 			if forward_response := pending.response() {
 				return finish_http_network_or_cache_fetch(params, http_request, forward_response, include_credentials, true)
 			}
@@ -1135,8 +1153,6 @@ pub fn http_network_or_cache_fetch(params &FetchParams, host &FetchHost) &Pendin
 			})
 			return result
 		}
-		forward_response := host.perform(http_request) or { Response.network_error(err.msg()) }
-		return finish_http_network_or_cache_fetch(params, http_request, forward_response, include_credentials, true)
 	}
 	return finish_http_network_or_cache_fetch(params, http_request, response or { Response.network_error('HTTP fetch produced no response') }, include_credentials, false)
 }
@@ -1169,10 +1185,7 @@ fn finish_http_network_or_cache_fetch(params &FetchParams, http_request &Request
 }
 
 pub fn nonstandard_resource_loader_file_or_http_network_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
-	mut request := params.request
-	if async_perform := host.perform_async { return async_perform(request) }
-	response := host.perform(request) or { Response.network_error(err.msg()) }
-	return PendingResponse.create(mut request, response)
+	return perform_host_fetch(params, params.request, host)
 }
 
 pub fn cors_preflight_fetch(mut request Request, host &FetchHost) &PendingResponse {
@@ -1200,8 +1213,8 @@ pub fn cors_preflight_fetch(mut request Request, host &FetchHost) &PendingRespon
 			value: unsafe_names.join(',')
 		})
 	}
-	if async_perform := host.perform_async {
-		mut pending := async_perform(preflight)
+	{
+		mut pending := perform_host_fetch(FetchParams.create(preflight, FetchTimingInfo.create()), preflight, host)
 		if response := pending.response() {
 			return finish_cors_preflight_fetch(mut request, response, unsafe_names)
 		}
@@ -1213,8 +1226,6 @@ pub fn cors_preflight_fetch(mut request Request, host &FetchHost) &PendingRespon
 		})
 		return result
 	}
-	response := host.perform(preflight) or { Response.network_error(err.msg()) }
-	return finish_cors_preflight_fetch(mut request, response, unsafe_names)
 }
 
 fn finish_cors_preflight_fetch(mut request Request, response &Response, unsafe_names []string) &PendingResponse {
