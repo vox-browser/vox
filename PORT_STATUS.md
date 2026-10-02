@@ -930,12 +930,15 @@ creating a JavaScriptCore context.
 Host-created String exotic objects preserve fixed UTF-16 character descriptors,
 definition compatibility, and virtual-index key order. String's complete constructor
 record retains call/construct, raw templates, character creation, source metadata
-and explicit prototype/boxing dependencies. Thirty-four prototype native bodies
+and explicit prototype/boxing dependencies. Thirty-seven prototype native bodies
 translate branding, UTF-16 access/slicing/search, concatenation, exact whitespace
-trimming, well-formed repair, iterator creation, repetition, padding and all 13
-legacy HTML wrappers. Validation and repair match 2,388 pinned simdutf cases.
+trimming, well-formed repair, iterator creation, repetition, padding, all 13
+legacy HTML wrappers, Unicode casing and all four normalization forms. The UTF-16
+casing/normalization helpers retain upstream's native ICU dependency, ASCII casing
+shortcut and failure behavior. Intl locale casing/collation remain pending.
+Validation and repair match 2,388 pinned simdutf cases.
 fromCodePoint retains the pinned source's integral
-ToInt32 wraparound before its range check. The remaining 15 prototype native
+ToInt32 wraparound before its range check. The remaining 12 prototype native
 bodies, initialization/aliases, bytecode builtin shortcuts, production String
 installation and primitive Reference integration remain pending.
 Array exotic records retain sparse, nonconfigurable length descriptors, grow
@@ -990,9 +993,9 @@ SharedArrayBuffer allocation reserves the maximum capacity while exposing the
 initial length. Its constructor, three accessors, growth hook and species-aware
 slicing are installed and tested with live DataView witnesses. Cross-agent
 shared-memory ordering remains pending, as in the pinned upstream active bodies.
-The LibJS package's 176 test files pass in both GC and no-GC mode, and all 100
+The LibJS package's 178 test files pass in both GC and no-GC mode, and all 100
 upstream AST fixtures match exactly with no case overrides. The complete repository suite passes all
-848 test files, including the native bridge and eighteen browser integration files.
+850 test files, including the native bridge and eighteen browser integration files.
 The native browser and inline-document layout bridge now prepare page scripts
 through LibJS and associate classic execution with translated Script, Realm,
 and VM embedding contexts. Sources retain their URLs and parse goals; syntax

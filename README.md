@@ -32,10 +32,11 @@ backend, and Intl formatting remain explicit dependencies; global installation
 and Number primitive Reference integration are pending.
 Host-created Array records implement sparse length/property behavior, and the
 runtime provides the upstream sorting helpers. String's complete constructor
-record and thirty-four prototype native bodies now cover character creation,
+record and thirty-seven prototype native bodies now cover character creation,
 raw templates, branding, UTF-16 access/slicing/search, concatenation, trimming,
-well-formed repair, iterator creation, repetition, padding and all 13 legacy
-HTML wrappers. Its remaining prototype methods, initialization and production
+well-formed repair, iterator creation, repetition, padding, all 13 legacy HTML
+wrappers, Unicode casing and normalization through ICU. Its remaining prototype
+methods, including Intl locale casing/collation, initialization and production
 installation remain pending; dependencies stay explicit. String exotic objects
 expose fixed UTF-16 character descriptors.
 Synchronous iterator operations and String/ordinary-Array iterator records

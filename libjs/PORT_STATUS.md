@@ -19,7 +19,9 @@ Number conversion also follows LibCrypto's signed/unsigned double-rounding bodie
 Number's scientific helpers retain AK's fmt/Dragonbox decimal backend as an
 explicit untranslated dependency.
 String UTF-16 helpers also follow `AK/{UnicodeUtils.h,Utf16View.cpp,Utf16String.cpp}`
-and simdutf 7.4.0's scalar `utf16.h` validation and repair bodies.
+and simdutf 7.4.0's scalar `utf16.h` validation and repair bodies. Unicode casing
+and normalization follow `LibUnicode/{Utf16String.cpp,Normalize.{h,cpp},ICU.{h,cpp}}`
+and retain ICU as the native algorithm and Unicode-data dependency.
 All refreshed V code and tests live here; the upstream checkout and the original
 `libjs_v` checkout are references. The upstream BSD-2-Clause notice is retained
 in [`LICENSE`](LICENSE).
@@ -77,6 +79,8 @@ creates a realm with a global environment and pushes its execution context.
 | `string_character_access.v`, `string_slicing.v`, `string_search.v`, `string_concat.v` | String branding/value extraction, CodePointAt, at/charAt/charCodeAt/codePointAt, slice/substring/substr, indexOf/lastIndexOf and concatenation |
 | `string_trim.v`, `string_well_formed.v`, `string_prototype_iterator.v` | Exact upstream whitespace trimming, simdutf UTF-16 validation/repair and String @@iterator creation; remaining prototype bodies and initialization pending |
 | `string_repeat.v`, `string_padding.v`, `string_html.v` | Ordered repeat validation and checked UTF-16 assembly, StringPad early returns and filler truncation, and all thirteen Annex B HTML wrappers with exact attribute-quote replacement |
+| `string_case.v`, `unicode_transform.c.v`, `unicode_transform.h` | Generic toLowerCase/toUpperCase conversion, source ASCII shortcut and native UTF-16 ICU casing; header contains ABI declarations only |
+| `string_normalize.v`, `unicode_normalize.c.v` | normalize form validation and conversion order, all four native UTF-16 ICU normalization forms and original-input failure fallback |
 | `number_object.v`, `bigint_object.v`, `value_boxing.v` | NumberData/BigIntData wrapper records and all primitive ToObject cases with explicit Number/BigInt/String prototype dependencies |
 | `value_property_access.v` | GetV's direct primitive-prototype lookup, GetMethod's nullish/callable checks and Invoke with the original primitive receiver and explicit intrinsic dependencies |
 | `iterator.v`, `iterator_values.v` | Synchronous iterator acquisition for object receivers, IteratorNext/Step/StepValue, completion-preserving close/close-all, result records, list/callback collection, and SetterThatIgnoresPrototypeProperties |
@@ -107,8 +111,8 @@ creates a realm with a global environment and pushes its execution context.
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 170 implementation files contain **28,791 physical V LOC**. The 176 test
-files contain **22,674 physical V LOC** and **609 test functions**. Physical LOC
+The 174 implementation files contain **28,932 physical V LOC**. The 178 test
+files contain **22,929 physical V LOC** and **615 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -356,7 +360,7 @@ shared by realms, and all 16 pinned well-known symbols have fixed static descrip
 The pinned source gives Symbol a constructor internal method that always throws
 without converting its argument; this behavior is preserved. String's full
 prototype record and the Object prototype graph remain pending; its constructor
-and thirty-four prototype native bodies are translated below.
+and thirty-seven prototype native bodies are translated below.
 Number/BigInt wrappers and constructor/prototype records are translated with
 explicit Object/Intl dependencies, plus Number's decimal backend and parse-function
 intrinsics, rather than production globals.
@@ -858,7 +862,7 @@ case and conversion before newTarget.prototype lookup during construction.
 Prototype and primitive-boxing dependencies remain explicit. StringObject's
 diagnostic class name now follows its source GC_CELL record (`9d0c7e6`).
 
-Thirty-four StringPrototype native bodies are translated, without installing a
+Thirty-seven StringPrototype native bodies are translated, without installing a
 partial prototype record. Branding and character access (`381ecb8`) retain own
 StringData checks, generic receiver coercion, code-unit indices and CodePointAt's
 paired/unpaired surrogate distinction. Slicing (`0451d1d`) preserves the separate
@@ -888,9 +892,26 @@ replacement follows AK's UTF-16 replace-all body; only attribute U+0022 units
 become `&quot;`. Text content, ampersands, angle brackets, apostrophes, NUL and
 unpaired surrogates remain verbatim.
 
-StringPrototype initialization, the remaining 15 native bodies (RegExp-related
-search/replacement/splitting and prefix/suffix/membership checks, Intl collation,
-normalization and Unicode/locale case conversion), trimLeft/trimRight aliases,
+Unicode casing (`64008dc`) translates toLowerCase/toUpperCase receiver conversion
+and the LibUnicode UTF-16 helpers. The ASCII path follows AK directly; non-ASCII
+input uses ICU, preserving expanding mappings, contextual Greek sigma,
+supplementary characters, NUL and unpaired surrogates. The pinned source bypasses
+ICU for ASCII strings but uses ICU's process default locale for non-ASCII input.
+A Turkish-default-locale test preserves this distinction and restores the locale.
+ICU's failed/bogus casing result remains empty, following the pinned dependency's
+`UnicodeString::caseMap` body.
+
+Normalization (`eb50321`) translates all four forms: NFC, NFD, NFKC and NFKD.
+Receiver conversion precedes form conversion; undefined selects NFC, while invalid
+forms throw even for an empty receiver. UTF-16 passes directly to ICU without
+repairing lone surrogates or truncating at NUL. LibUnicode's original-input
+fallback is retained when the native normalizer reports failure. Tests cover
+canonical/compatibility composition and decomposition, Hangul, conversion order,
+abrupt completion, empty input and invalid forms.
+
+StringPrototype initialization, the remaining 12 native bodies (RegExp-related
+search/replacement/splitting and prefix/suffix/membership checks, Intl collation
+and locale case conversion), trimLeft/trimRight aliases,
 bytecode builtin optimization metadata, production String installation and
 primitive Reference integration remain pending.
 
@@ -1012,10 +1033,10 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 176 passed, 176 total
+# 178 passed, 178 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 176 passed, 176 total
+# 178 passed, 178 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
@@ -1030,7 +1051,7 @@ v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
 
 v -old-compiler -enable-globals test .
-# 848 passed, 848 total
+# 850 passed, 850 total
 
 ./build_ladybird.sh
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
@@ -1044,7 +1065,7 @@ scope flags and source positions. Only trailing CR/LF characters are ignored;
 there are no case overrides. Actual dumps are written to `Build/libjs-ast/`.
 Pass fixture stems to select cases, `--upstream PATH` to choose a checkout, or
 set `LADYBIRD_SOURCE_DIR`. ICU headers and `libicucore` on macOS or `libicuuc` on
-Linux are required for the identifier predicates.
+Linux are required for identifier predicates, Unicode casing and normalization.
 
 The VM tests exercise the runtime records directly and through compiled scripts.
 Translated native functions cover call frames, arguments, receiver/realm state,
@@ -1054,11 +1075,11 @@ fixtures; separate tests exercise translated NativeFunction and ArrayBufferObjec
 records. Module-loading tests write temporary module files. The preceding LibWeb
 work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 176 libjs files are verified separately in both GC modes.
-There are now 848 repository test files.
+this package; the 178 libjs files are verified separately in both GC modes.
+There are now 850 repository test files.
 
-The complete 848-file repository suite passes, including the native bridge,
-eighteen browser integration files and all 176 LibJS files. The dedicated LibJS and
+The complete 850-file repository suite passes, including the native bridge,
+eighteen browser integration files and all 178 LibJS files. The dedicated LibJS and
 browser suites also pass in no-GC mode, exercising the retained storage and
 buffer ownership independently of the collector.
 
@@ -1171,8 +1192,8 @@ noncoercing predicates, ties-to-even BigInt conversion, wrappers, bound calls an
 construction, fixed/scientific/radix methods, locale plumbing and recovery from
 brand/range/conversion failures. AK decimal forms and the Intl marker are test-only
 dependencies; no JavaScriptCore context or partial production Number global is used.
-String browser integration (`e84decb`, `74c9839`) supplies the complete constructor under
-HostString and attaches the thirty-four translated prototype bodies to a test-only
+String browser integration (`e84decb`, `74c9839`, `9c8a27d`) supplies the complete constructor under
+HostString and attaches the thirty-seven translated prototype bodies to a test-only
 String exotic record. Compiled scripts exercise static character/raw creation,
 UTF-16 wrappers, slicing/search, branding, concatenation, trimming, well-formed
 repair, iterator exhaustion, bound calls/construction and recovery after seven
@@ -1182,6 +1203,9 @@ is created.
 The expanded browser checks (`74c9839`) also exercise repetition, bound repeat
 calls, padding through surrogate halves, filler/empty-receiver shortcuts, all
 thirteen HTML wrappers and recovery after five additional count/attribute errors.
+Unicode checks (`9c8a27d`) exercise casing expansions, contextual sigma, all four
+normalization forms, raw UTF-16/NUL preservation, bound methods, zero-length
+metadata and recovery after five form/receiver errors through browser bytecode.
 The rebuilt native bundle passes both engine smoke checks and a buffer-regression
 document covering shared BigInt storage, growth, slicing and transferred Float16
 bytes without script errors.
@@ -1309,6 +1333,16 @@ the same-size SVG source switch with zero differing pixels.
   checked after length/filler conversion and the source early returns, so huge
   lengths with an empty filler still preserve identity and filler errors still
   win. Allocations within the representable range retain V's allocation behavior.
+- Unicode casing and normalization retain the native ICU algorithm/data backend.
+  V implements the source receiver/form control flow, ASCII casing and failure
+  policy; UTF-16 C API capacity preflight replaces C++ UnicodeString allocation.
+  The native header supplies ABI declarations only. The verified macOS system
+  library is ICU 78.1.0 and upstream's pinned dependency is ICU 78.2.0; both report
+  Unicode 17.0.0. This version check and the focused output tests do not establish
+  full ICU backend/data parity. Linux uses its installed libicuuc and data.
+  Flat V string lengths and allocation remain the existing storage boundary;
+  upstream's storage tiers and its ICU C++ buffer management are not translated.
+  Intl locale canonicalization/matching and collation remain pending.
 - Checked string length sum/product retain upstream's 2^32-1 code-unit maximum.
   TypedArray join and toLocaleString assemble flat V UTF-16 arrays instead of
   AK's builder and throw the same string-size RangeError above V's 2^31-1 array
@@ -1438,8 +1472,8 @@ complete LibJS runtime migration.
   prototype records and all native bodies likewise exist with explicit Object,
   retained parse-function, decimal-form and Intl dependencies; AK/fmt Dragonbox,
   production Number installation and primitive Reference integration remain pending.
-  String's complete constructor and thirty-four prototype native bodies exist with
-  explicit dependencies; its remaining 15 native bodies, full prototype
+  String's complete constructor and thirty-seven prototype native bodies exist with
+  explicit dependencies; its remaining 12 native bodies, full prototype
   initialization, aliases and production installation remain pending.
   String exotic records, synchronous iterator operations, and
   String/Array iterator next prototypes exist with explicit intrinsic
