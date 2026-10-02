@@ -325,6 +325,14 @@ wrappers sharing one driver location, use of both wrappers, fresh queries after
 relink, missing names and a native failed relink outside the V status cache.
 The host's resource wrapper lifetime boundary remains unchanged.
 
+drawBuffers and drawBuffersWEBGL no longer dirty CPU canvas presentation merely
+because their dispatch names begin with draw. Their pinned source bodies only
+change native draw-buffer state (`WebGL2RenderingContextImpl.cpp:568-573`,
+`Extensions/WebGLDrawBuffers.cpp:36-40`). Focused two-version native presentation
+and framebuffer-transfer tests pass with `-gc none`, covering unchanged retained
+pixels/presentation state and subsequent actual clearing. The existing native
+CPU presentation adaptation for rendering commands remains explicit.
+
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
