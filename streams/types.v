@@ -195,17 +195,17 @@ pub fn (promise &VoidPromise) realm() StreamRealm {
 
 pub fn (mut promise VoidPromise) resolve() {
 	if promise.state_ == .pending {
+		mut native := promise.ensure_native_promise()
 		promise.state_ = .fulfilled
-		mut native := promise.native_promise_
 		native.resolve(webidl.undefined_value())
 	}
 }
 
 pub fn (mut promise VoidPromise) reject(reason string) {
 	if promise.state_ == .pending {
+		mut native := promise.ensure_native_promise()
 		promise.state_ = .rejected
 		promise.reason_ = reason
-		mut native := promise.native_promise_
 		native.reject(webidl.string_value(reason))
 	}
 }
@@ -214,6 +214,20 @@ pub fn (mut promise VoidPromise) reject(reason string) {
 // scheduler. Controllers attach source reactions to this object rather than
 // polling a callback's state or treating a pending callback as fulfilled.
 pub fn (promise &VoidPromise) as_webidl_promise() &webidl.Promise {
+	mut owner := unsafe { &VoidPromise(promise) }
+	return owner.ensure_native_promise()
+}
+
+fn (mut promise VoidPromise) ensure_native_promise() &webidl.Promise {
+	if isnil(promise.native_promise_) {
+		mut native := webidl.create_promise_for(promise.realm_.promise_context())
+		promise.native_promise_ = native
+		match promise.state_ {
+			.pending {}
+			.fulfilled { native.resolve(webidl.undefined_value()) }
+			.rejected { native.reject(webidl.string_value(promise.reason_)) }
+		}
+	}
 	return promise.native_promise_
 }
 
