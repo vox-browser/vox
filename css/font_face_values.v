@@ -1467,7 +1467,7 @@ pub fn (mut rule CSSFontFaceRule) handle_src_descriptor_change() {
 
 	rule.disconnect_font_face()
 
-	new_font_face := FontFaceObject.create_css_connected(rule)
+	new_font_face := create_connected_font_face(old_font_face.environment_font_computer_, rule)
 	rule.css_connected_font_face = new_font_face
 
 	for set in containing_sets {
@@ -1899,6 +1899,9 @@ pub mut:
 	font_display_failed_ bool
 	font_download_completed_ bool
 
+	// The relevant global owns loading tasks and Promise creation, independently of set membership.
+	environment_font_computer_ ?&FontComputer
+	load_error_ ?webidl.Value
 	css_font_face_rule ?&CSSFontFaceRule
 	containing_sets    []&FontFaceSet
 }
@@ -1914,10 +1917,19 @@ pub fn (face &FontFaceObject) font_display_time_for_testing() ?u32 {
 
 // https://drafts.csswg.org/css-font-loading/#font-face-constructor
 pub fn FontFaceObject.construct_impl(family string, source FontFaceSource, descriptors FontFaceDescriptors) &FontFaceObject {
+	return construct_font_face(none, family, source, descriptors)
+}
+
+pub fn FontFaceObject.construct_impl_for_font_computer(computer &FontComputer, family string, source FontFaceSource, descriptors FontFaceDescriptors) &FontFaceObject {
+	return construct_font_face(computer, family, source, descriptors)
+}
+
+fn construct_font_face(computer ?&FontComputer, family string, source FontFaceSource, descriptors FontFaceDescriptors) &FontFaceObject {
 	// 1. Let font face be a fresh FontFace object. Set font face's status attribute to "unloaded",
 	//    Set its internal [[FontStatusPromise]] slot to a fresh pending Promise object.
 	mut font_face := &FontFaceObject{
-		font_status_promise: webidl.create_promise()
+		font_status_promise: webidl.create_promise_for(font_loading_promise_context(computer))
+		environment_font_computer_: computer
 	}
 
 	//    Parse the family argument, and the members of the descriptors argument,
@@ -1978,16 +1990,32 @@ pub fn FontFaceObject.construct_impl(family string, source FontFaceSource, descr
 		return font_face
 	}
 
-	// The C++ queues a font-loading task and parses bytes asynchronously. In this V port, binary data crosses the
-	// explicit platform font-decoding boundary synchronously while preserving the same status/list transitions.
-	font_face.start_binary_load()
+	if computer != none {
+		queue_font_loading_task(computer, true, fn [font_face] () {
+			mut face := unsafe { &FontFaceObject(font_face) }
+			face.start_owned_binary_load()
+		})
+	} else {
+		// The standalone CSS adapter has no relevant global or owning task queue.
+		font_face.start_binary_load()
+	}
 	return font_face
 }
 
 // https://drafts.csswg.org/css-font-loading/#font-face-css-connection
 pub fn FontFaceObject.create_css_connected(rule &CSSFontFaceRule) &FontFaceObject {
+	return create_connected_font_face(none, rule)
+}
+
+pub fn FontFaceObject.create_css_connected_for_font_computer(computer &FontComputer, rule &CSSFontFaceRule) &FontFaceObject {
+	return create_connected_font_face(computer, rule)
+}
+
+fn create_connected_font_face(computer ?&FontComputer, rule &CSSFontFaceRule) &FontFaceObject {
 	mut font_face := &FontFaceObject{
-		font_status_promise: webidl.create_promise()
+		// CSS-connected source states materialize their Promise only when exposed.
+		font_status_promise: if computer == none { webidl.create_promise() } else { unsafe { &webidl.Promise(nil) } }
+		environment_font_computer_: computer
 		css_font_face_rule: rule
 	}
 
@@ -2176,7 +2204,7 @@ fn (mut face FontFaceObject) resolve_for_rendering() PendingFontState {
 		}
 		face.update_font_display_period()
 	}
-	face.load()
+	face.load_for_style()
 	if mut loader := face.font_loader_ {
 		loader.did_request_for_rendering()
 	}
@@ -2292,11 +2320,25 @@ pub fn (face &FontFaceObject) status() FontFaceLoadStatus {
 }
 
 pub fn (face &FontFaceObject) loaded() &webidl.Promise {
+	if face.font_status_promise == unsafe { nil } {
+		mut mutable_face := unsafe { &FontFaceObject(face) }
+		mutable_face.font_status_promise = webidl.create_promise_for(font_loading_promise_context(face.environment_font_computer_))
+		if face.status_ == .loaded {
+			mutable_face.font_status_promise.resolve(face.binding_value())
+		} else if face.status_ == .error {
+			mutable_face.font_status_promise.reject(face.load_error_ or { panic('missing font load error') })
+			webidl.mark_promise_as_handled(mut mutable_face.font_status_promise)
+		}
+	}
 	return face.font_status_promise
 }
 
 pub fn (face &FontFaceObject) font_status_promise_ref() &webidl.Promise {
-	return face.font_status_promise
+	return face.loaded()
+}
+
+fn (face &FontFaceObject) binding_value() webidl.Value {
+	return webidl.Value{ kind: .platform_object, opaque_id: u64(voidptr(face)), platform_interfaces: ['FontFace'] }
 }
 
 pub fn (mut face FontFaceObject) set_family(value string) ! {
@@ -2526,24 +2568,30 @@ pub fn (mut face FontFaceObject) set_line_gap_override_impl(value string) {
 
 // https://drafts.csswg.org/css-font-loading/#dom-fontface-load
 pub fn (mut face FontFaceObject) load() &webidl.Promise {
+	face.load_for_style()
+	return face.loaded()
+}
+
+pub fn (mut face FontFaceObject) load_for_style() {
 	//  1. Let font face be the FontFace object on which this method was called.
 
 	// 2. If font face's [[Urls]] slot is null, or its status attribute is anything other than "unloaded",
 	//    return font face's [[FontStatusPromise]] and abort these steps.
 	if !face.begin_url_load() {
-		return face.loaded()
+		return
 	}
 
 	// 3. Otherwise, set font face's status attribute to "loading", return font face's [[FontStatusPromise]],
 	//    and continue executing the rest of this algorithm asynchronously.
 	// The source starts the request in this task; its completion is a separate
 	// font-loading task. FontLoader's transport remains an explicit boundary.
-	if mut computer := face.font_computer() {
+	if mut computer := face.environment_font_computer_ {
+		face.continue_url_load_with_font_computer(mut computer)
+	} else if mut computer := face.font_computer() {
 		face.continue_url_load_with_font_computer(mut computer)
 	} else {
 		face.finish_loading_from_typeface(face.load_first_available_url())
 	}
-	return face.loaded()
 }
 
 pub fn (mut face FontFaceObject) load_with_font_computer(font_computer &FontComputer) &webidl.Promise {
@@ -2589,10 +2637,21 @@ pub fn (mut face FontFaceObject) remove_from_set(set &FontFaceSet) {
 }
 
 fn (mut face FontFaceObject) reject_status_promise(reason string) {
-	if face.status_ != .error {
-		face.font_status_promise.reject(webidl.string_value(reason))
-		face.status_ = .error
+	face.reject_status_exception('SyntaxError', reason)
+}
+
+fn (mut face FontFaceObject) reject_status_exception(name string, reason string) {
+	if face.status_ == .error { return }
+	value := if face.environment_font_computer_ != none {
+		webidl.dom_exception_value(webidl.DOMException.create(name, reason))
+	} else { webidl.string_value(reason) }
+	if face.font_status_promise != unsafe { nil } {
+		face.font_status_promise.reject(value)
+		webidl.mark_promise_as_handled(mut face.font_status_promise)
+	} else {
+		face.load_error_ = value
 	}
+	face.status_ = .error
 }
 
 fn (mut face FontFaceObject) begin_url_load() bool {
@@ -2628,6 +2687,46 @@ fn (face &FontFaceObject) load_first_available_url() &PlatformTypeface {
 	return unsafe { nil }
 }
 
+// FontFaceState::create_for_constructor: both publication paths are separate
+// global font-loading tasks, including immediately decoded sfnt/WOFF data.
+fn (mut face FontFaceObject) start_owned_binary_load() {
+	face.status_ = .loading
+	for mut set in face.containing_sets {
+		if set.loading_fonts_.len == 0 { set.switch_to_loading() }
+		set.loading_fonts_ << face
+	}
+	data := face.binary_data
+	face.binary_data = []u8{}
+	handle := voidptr(&face)
+	if requires_off_thread_vector_font_preparation(data, none) {
+		if prepare_vector_font_data_off_thread(data, fn [handle] (prepared PreparedVectorFontData) {
+			mut owner := unsafe { &FontFaceObject(handle) }
+			if message := prepared.error_message {
+				owner.queue_binary_completion(unsafe { nil }, message)
+			} else {
+				typeface := font_typeface_from_prepared_bytes(prepared.data, owner.family_) or {
+					owner.queue_binary_completion(unsafe { nil }, err.msg())
+					return
+				}
+				owner.queue_binary_completion(typeface, '')
+			}
+		}) { return }
+	}
+	typeface := try_load_vector_font(data, none, face.family_) or {
+		face.queue_binary_completion(unsafe { nil }, err.msg())
+		return
+	}
+	face.queue_binary_completion(typeface, '')
+}
+
+fn (mut face FontFaceObject) queue_binary_completion(typeface &PlatformTypeface, message string) {
+	face_pointer := unsafe { &FontFaceObject(face) }
+	queue_font_loading_task(face.environment_font_computer_, true, fn [face_pointer, typeface, message] () {
+		mut face := unsafe { &FontFaceObject(face_pointer) }
+		face.finish_loading_with_error(typeface, 'SyntaxError', 'Failed to load font: ${message}')
+	})
+}
+
 fn (mut face FontFaceObject) start_binary_load() {
 	face.status_ = .loading
 	for mut font_face_set in face.containing_sets {
@@ -2646,12 +2745,17 @@ fn (mut face FontFaceObject) finish_loading_from_typeface(typeface &PlatformType
 	if mut timer := face.font_download_timer_ {
 		timer.stop()
 	}
+	face.finish_loading_with_error(typeface, 'NetworkError', 'Failed to load font')
+	face.font_loader_ = none
+}
+
+fn (mut face FontFaceObject) finish_loading_with_error(typeface &PlatformTypeface, error_name string, message string) {
 	if typeface != unsafe { nil } {
 		// 1. If the load was successful, font face now represents the parsed font;
 		//    fulfill font face's [[FontStatusPromise]] with font face, and set its status attribute to "loaded".
 		face.parsed_font = owned_platform_typeface(typeface)
 		face.status_ = .loaded
-		face.font_status_promise.resolve(webidl.platform_object_value())
+		if face.font_status_promise != unsafe { nil } { face.font_status_promise.resolve(face.binding_value()) }
 		if mut computer := face.font_computer() {
 			computer.register_font_face(face)
 		}
@@ -2671,8 +2775,8 @@ fn (mut face FontFaceObject) finish_loading_from_typeface(typeface &PlatformType
 	} else {
 		// 2. Otherwise, reject font face's [[FontStatusPromise]] with a DOMException named "SyntaxError"/"NetworkError"
 		//    and set font face's status attribute to "error".
-		face.reject_status_promise('Failed to load font')
-		face.invalidate_font_display()
+		face.reject_status_exception(error_name, message)
+		if error_name == 'NetworkError' { face.invalidate_font_display() }
 
 		for mut font_face_set in face.containing_sets {
 			font_face_set.failed_fonts_ << face
@@ -2792,8 +2896,11 @@ pub fn FontFaceSet.create() &FontFaceSet {
 }
 
 pub fn FontFaceSet.create_for_font_computer(font_computer &FontComputer) &FontFaceSet {
-	mut set := FontFaceSet.create()
-	set.font_computer_ = font_computer
+	mut set := &FontFaceSet{
+		font_computer_: font_computer
+		ready_promise: webidl.create_promise_for(font_loading_promise_context(font_computer))
+	}
+	set.initialize()
 	return set
 }
 
@@ -3213,7 +3320,7 @@ pub fn (mut set FontFaceSet) switch_to_loading() {
 	// 3. If font face set's [[ReadyPromise]] slot currently holds a fulfilled promise, replace it with a fresh pending
 	//    promise.
 	if set.ready_promise.state == .fulfilled {
-		set.ready_promise = webidl.create_promise()
+		set.ready_promise = webidl.create_promise_for(font_loading_promise_context(set.font_computer_))
 	}
 
 	// 4. Queue a task to fire a font load event named loading at font face set.
@@ -3237,7 +3344,7 @@ pub fn (mut set FontFaceSet) switch_to_loaded() {
 	set.status_ = .loaded
 
 	// 4. Fulfill font face set's [[ReadyPromise]] attribute's value with font face set.
-	set.ready_promise.resolve(webidl.platform_object_value())
+	set.ready_promise.resolve(webidl.Value{ kind: .platform_object, opaque_id: u64(voidptr(&set)), platform_interfaces: ['FontFaceSet'] })
 
 	// 5. Queue a task to perform the following steps synchronously:
 	set_pointer := unsafe { &FontFaceSet(set) }
@@ -4139,7 +4246,7 @@ pub fn (mut computer FontComputer) load_fonts_from_font_face_rules(rules []&CSSF
 		if !rule.is_valid() {
 			continue
 		}
-		font_face := FontFaceObject.create_css_connected(rule)
+		font_face := FontFaceObject.create_css_connected_for_font_computer(computer, rule)
 		mut mutable_set := unsafe { &FontFaceSet(font_face_set) }
 		mutable_set.add_css_connected_font(font_face)
 
@@ -4167,7 +4274,7 @@ pub fn (mut computer FontComputer) synchronize_fonts_from_css_rules(rules []&CSS
 						associated_set.add_css_connected_font(connected_face)
 					}
 				} else {
-					font_face := FontFaceObject.create_css_connected(font_face_rule)
+					font_face := FontFaceObject.create_css_connected_for_font_computer(computer, font_face_rule)
 					associated_set.add_css_connected_font(font_face)
 				}
 			} else if font_face_rule.css_connected_font_face_ref() != none {
