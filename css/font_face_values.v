@@ -2866,6 +2866,7 @@ pub struct FontFaceSet {
 pub mut:
 	set_entries_   []&FontFaceObject
 	font_computer_ ?&FontComputer
+	setlike_binding_hooks_ []FontFaceSetBindingHooks
 
 	ready_promise &webidl.Promise = unsafe { nil }
 
@@ -2879,6 +2880,24 @@ pub mut:
 	// https://drafts.csswg.org/css-font-loading/#fontfaceset-stuck-on-the-environment
 	is_stuck_on_the_environment bool
 	fired_events                []FontFaceSetLoadEventRecord
+}
+
+// FontFaceSet.cpp Bindings::{did_add,did_remove,did_reorder}_font_face(s).
+pub struct FontFaceSetBindingHooks {
+pub:
+	owner voidptr
+	did_add fn (&FontFaceObject) @[required]
+	did_remove fn (&FontFaceObject) @[required]
+	did_reorder fn () @[required]
+}
+
+pub fn (mut set FontFaceSet) install_setlike_binding_hooks(hooks FontFaceSetBindingHooks) {
+	set.setlike_binding_hooks_ = set.setlike_binding_hooks_.filter(it.owner != hooks.owner)
+	set.setlike_binding_hooks_ << hooks
+}
+
+pub fn (mut set FontFaceSet) clear_setlike_binding_hooks(owner voidptr) {
+	set.setlike_binding_hooks_ = set.setlike_binding_hooks_.filter(it.owner != owner)
 }
 
 pub struct FontFaceSetLoadEventRecord {
@@ -3000,9 +3019,9 @@ pub fn (mut set FontFaceSet) add(face &FontFaceObject) !&FontFaceSet {
 // https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-add
 pub fn (mut set FontFaceSet) add_css_connected_font(face &FontFaceObject) {
 	// 3. Add the font argument to the FontFaceSet's set entries.
-	if !font_face_object_array_contains(set.set_entries_, face) {
-		set.set_entries_ << face
-	}
+	if font_face_object_array_contains(set.set_entries_, face) { return }
+	set.set_entries_ << face
+	for hooks in set.setlike_binding_hooks_ { hooks.did_add(face) }
 	mut mutable_face := unsafe { &FontFaceObject(face) }
 	mutable_face.add_to_set(set)
 	if face.should_be_registered_with_font_computer() {
@@ -3056,6 +3075,7 @@ pub fn (mut set FontFaceSet) synchronize_css_connected_font_order(ordered_connec
 	}
 
 	set.set_entries_ = ordered_faces
+	for hooks in set.setlike_binding_hooks_ { hooks.did_reorder() }
 	if mut computer := set.font_computer_ {
 		computer.synchronize_font_face_order(set.set_entries_)
 	}
@@ -3109,6 +3129,7 @@ pub fn (mut set FontFaceSet) clear() {
 			}
 			mut mutable_face := unsafe { &FontFaceObject(face) }
 			mutable_face.remove_from_set(set)
+			for hooks in set.setlike_binding_hooks_ { hooks.did_remove(face) }
 		}
 	}
 	set.set_entries_ = kept_entries
@@ -3388,6 +3409,7 @@ fn (mut set FontFaceSet) remove_set_entry(face &FontFaceObject) bool {
 		kept << existing
 	}
 	set.set_entries_ = kept
+	if did_remove { for hooks in set.setlike_binding_hooks_ { hooks.did_remove(face) } }
 	return did_remove
 }
 
