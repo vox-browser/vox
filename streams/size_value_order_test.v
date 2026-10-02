@@ -109,3 +109,19 @@ fn test_transform_installs_actual_component_size_callbacks_before_transformer_st
 	assert transform.readable().queue_.total_size() == 2
 	assert transform.writable().queue_total_size() == 0
 }
+
+fn test_queue_range_exception_is_one_retained_value_for_write_and_closed_requests() {
+	mut stream := WritableStream.create(StreamRealm{}, UnderlyingSink{}, QueuingStrategy{
+		size_value: fn (_ Value) !webidl.Value { return webidl.object_value({}) }
+	})!
+	mut writer := stream.get_writer()!
+	request := writer.write(string_value('invalid size'))
+	assert request.state() == .rejected && writer.closed().state() == .rejected
+	written := request.as_webidl_promise().result
+	closed := writer.closed().as_webidl_promise().result
+	stored := stream.stored_error_value()
+	exception := written.simple_exception_ or { panic('missing original typed queue RangeError') }
+	assert exception.type_ == .range_error
+	assert written.opaque_id == closed.opaque_id && written.opaque_id == stored.opaque_id
+	assert voidptr(exception) == voidptr(closed.simple_exception_ or { panic('missing closed RangeError') })
+}

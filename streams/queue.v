@@ -106,10 +106,10 @@ pub fn (queue &QueueWithSizes) is_empty() bool {
 
 pub fn (mut queue QueueWithSizes) enqueue_value_with_size(value Value, size f64) ! {
 	if size < 0 || math.is_nan(size) {
-		return error('RangeError: Chunk size must be a non-negative number')
+		return webidl.throw_value(webidl.simple_exception_value(webidl.SimpleException{type_: .range_error, message: 'Chunk size must be a non-negative number'}))
 	}
 	if math.is_inf(size, 1) {
-		return error('RangeError: Chunk size must be finite')
+		return webidl.throw_value(webidl.simple_exception_value(webidl.SimpleException{type_: .range_error, message: 'Chunk size must be finite'}))
 	}
 	queue.queue_.append(ValueWithSize{
 		value: value
@@ -121,7 +121,7 @@ pub fn (mut queue QueueWithSizes) enqueue_value_with_size(value Value, size f64)
 // AbstractOperations.h receives JS::Value and checks its genuine number brand
 // before reading the double. It does not perform ToNumber on a callback result.
 pub fn (mut queue QueueWithSizes) enqueue_value_with_size_value(value Value, size webidl.Value) ! {
-	number := size.number_primitive() or { return error('RangeError: Chunk size must be a non-negative number') }
+	number := size.number_primitive() or { return webidl.throw_value(webidl.simple_exception_value(webidl.SimpleException{type_: .range_error, message: 'Chunk size must be a non-negative number'})) }
 	queue.enqueue_value_with_size(value, number)!
 }
 
