@@ -160,6 +160,16 @@ resolution error before reading earlier numeric argument getters. The focused
 effective-overload file passed with `-gc none`, including supported numeric
 buffer allocation and nullable/typed-view texture uploads.
 
+Generic sequence arguments now translate the pinned generated
+GetIteratorFromMethod/IteratorStepValue loop
+(`Meta/Generators/libweb_bindings/to_idl_value.py:824-871`), sharing the existing
+Crypto sequence conversion factory. They get Symbol.iterator and iterator.next
+once, convert each item before later argument getters, and preserve original
+exceptions without IteratorClose, as the source loop does. Float/Int/Uint list
+union failures retain source union selection while exact typed members keep
+their operation-body copy point. All three focused sequence cases and the
+existing native Crypto generation/import files passed with `-gc none`.
+
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
