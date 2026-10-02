@@ -240,7 +240,7 @@ pub fn (mut host CanvasWebGLHost) call(input string) !string {
 fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any {
 	method := wg_string(request['method'] or { json2.Any('') })
 	key := wg_string(request['key'] or { json2.Any('') })
-	args := wg_array(request['args'] or { json2.Any([]json2.Any{}) })
+	original_args := wg_array(request['args'] or { json2.Any([]json2.Any{}) })
 	if method == 'getContext' {
 		element := host.elements[key] or {
 			if !key.starts_with('__created_') { return json2.Any(json2.Null{}) }
@@ -280,6 +280,11 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 			}
 		}
 	}
+	if method.starts_with('uniform') && method.ends_with('v') {
+		host.validate_resource(wg_arg(original_args,0),'uniform_location',true)!
+		if !context.validate_uniform_upload_location(host.uniform_locations[wg_handle(wg_arg(original_args,0))] or {none}) {return json2.Any(json2.Null{})}
+	}
+	args:=wg_normalize_source_spans(mut context,method,original_args,request) or {return json2.Any(json2.Null{})}
 	match method {
 		'resize' { return json2.Any(json2.Null{}) }
 		'drawingBufferWidth' { return json2.Any(context.drawing_buffer_width()) }
@@ -310,7 +315,7 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 		}
 		'getBufferSubData' {
 			mut bytes := wg_array(wg_arg(args, 2)).map(u8(wg_u32(it)))
-			context.get_buffer_sub_data(wg_u32(wg_arg(args, 0)), wg_i64(wg_arg(args, 1)), mut bytes, wg_int(wg_arg(args, 3)), wg_int(wg_arg(args, 4)))
+			context.get_buffer_sub_data_into(wg_u32(wg_arg(args, 0)), wg_i64(wg_arg(args, 1)), mut bytes, wg_u64(wg_arg(args, 3)), wg_u32(wg_arg(args, 4)),u64(wg_buffer_witness(request,2,bytes).element_size))
 			return json2.Any(bytes.map(json2.Any(int(it))))
 		}
 		'getError' {

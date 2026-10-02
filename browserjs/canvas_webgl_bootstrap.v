@@ -30,9 +30,16 @@ function __webglBytes(value,nullable) {
  if(!ArrayBuffer.isView(value))throw new TypeError("Expected an ArrayBufferView");
  return Array.from(new Uint8Array(value.buffer,value.byteOffset,value.byteLength));
 }
+function __webglBufferWitness(value) {
+ const view=ArrayBuffer.isView(value),buffer=view?value.buffer:value;
+ const state={elementSize: view?(value.BYTES_PER_ELEMENT||1):1,detached:false,outOfBounds:false};
+ try {new Uint8Array(buffer);}catch(error){state.detached=true;return state;}
+ if(view)try {if(value instanceof DataView){void value.byteLength;}else{value.values().next();}}catch(error){state.outOfBounds=true;}
+ return state;
+}
 function __webglTextureSource(value) {
  if(value&&value.__state){const state=value.__state;if(!["canvas","img","video"].includes(state.tagName))throw new TypeError("Expected a TexImageSource");return {source:state.bridgeKey||state.id};}
- if(value&&value.data instanceof Uint8ClampedArray)return {kind:"image_data",width:value.width,height:value.height,data:__webglBytes(value.data,false),colorSpace:value.colorSpace};
+ if(value&&value.data instanceof Uint8ClampedArray){const witness=__webglBufferWitness(value.data);return {kind:"image_data",width:value.width,height:value.height,data:witness.detached||witness.outOfBounds?[]:__webglBytes(value.data,false),colorSpace:value.colorSpace};}
  throw new TypeError("Expected a TexImageSource");
 }
 function __webglOverload(overloads,values) {
@@ -62,9 +69,15 @@ function __webglArgument(value,type) {
 }
 function __webglMethod(s,name,overloads) {
  return function(){const values=Array.from(arguments);const min=Math.min(...overloads.map(function(entry){return entry[0];}));if(values.length<min)throw new TypeError(name+" has too few arguments");const signature=__webglOverload(overloads,values);
- const args=values.map(function(value,index){return index<signature[1].length?__webglArgument(value,signature[1][index]):value;});const extra={};
- if(name==="readPixels"){const destination=values[6];if(destination!==null&&destination!==undefined){if(!ArrayBuffer.isView(destination))throw new TypeError("Expected an ArrayBufferView");extra.elementSize=destination.BYTES_PER_ELEMENT||1;}const result=__webglCall(s,name,args,extra);if(result!==null&&destination!=null)new Uint8Array(destination.buffer,destination.byteOffset,destination.byteLength).set(result);return;}
- if(name==="getBufferSubData"){const destination=values[2];if(!ArrayBuffer.isView(destination))throw new TypeError("Expected an ArrayBufferView");const size=destination.BYTES_PER_ELEMENT||1;if(args.length>3)args[3]=+values[3]*size;if(args.length>4)args[4]=+values[4]*size;const result=__webglCall(s,name,args);new Uint8Array(destination.buffer,destination.byteOffset,destination.byteLength).set(result);return;}
+ const extra={bufferStates:{}};const args=values.map(function(value,index){
+ const type=signature[1][index];if(!type)return value;
+ if(value!=null&&(type.startsWith("BufferSource")||type.startsWith("ArrayBufferView")||((type==="Float32List"&&value instanceof Float32Array)||(type==="Int32List"&&value instanceof Int32Array)||(type==="Uint32List"&&value instanceof Uint32Array)))){
+ const witness=__webglBufferWitness(value);extra.bufferStates[index]=witness;
+ if(witness.detached||witness.outOfBounds)return [];
+ }return __webglArgument(value,type);
+ });
+ if(name==="readPixels"){const destination=values[6];if(destination!==null&&destination!==undefined){if(!ArrayBuffer.isView(destination))throw new TypeError("Expected an ArrayBufferView");extra.elementSize=destination.BYTES_PER_ELEMENT||1;}const result=__webglCall(s,name,args,extra);if(result!==null&&destination!=null&&!extra.bufferStates[6].detached&&!extra.bufferStates[6].outOfBounds)new Uint8Array(destination.buffer,destination.byteOffset,destination.byteLength).set(result);return;}
+ if(name==="getBufferSubData"){const destination=values[2];if(!ArrayBuffer.isView(destination))throw new TypeError("Expected an ArrayBufferView");const result=__webglCall(s,name,args,extra);const witness=extra.bufferStates[2];if(result!==null&&!witness.detached&&!witness.outOfBounds)new Uint8Array(destination.buffer,destination.byteOffset,destination.byteLength).set(result);return;}
  const result=__webglCall(s,name,args,extra);if(signature[2].endsWith("undefined"))return;
  if(Array.isArray(result)&&name==="getParameter"){const pname=+values[0];if([0x846e,0x846d,0x8005,0x0c22,0x0b70].includes(pname))return new Float32Array(result);if([0x0d3a,0x0c10,0x0ba2].includes(pname))return new Int32Array(result);if(pname===0x86a3)return new Uint32Array(result);}
  if(Array.isArray(result)&&name==="getInternalformatParameter")return new Int32Array(result);

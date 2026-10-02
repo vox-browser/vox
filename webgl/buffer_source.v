@@ -75,12 +75,26 @@ fn checked_buffer_source_range(source WebGLBufferSource, source_offset u64, sour
 	return int(absolute_offset), int(byte_length)
 }
 
+// Readonly view adapter for synchronous host dispatch. It uses the same
+// checked witness/range as with_buffer_source_bytes without callback capture.
+pub fn buffer_source_bytes(source WebGLBufferSource, source_offset u64, source_length_override u32) ![]u8 {
+    offset,length:=checked_buffer_source_range(source,source_offset,source_length_override)!
+    return source.buffer[offset..offset+length]
+}
+
 pub fn with_buffer_source_bytes(source WebGLBufferSource, source_offset u64, source_length_override u32, callback fn ([]u8) !) ! {
 	offset, length := checked_buffer_source_range(source, source_offset, source_length_override)!
 	callback(source.buffer[offset..offset + length])!
 }
 
 pub fn span_from_typed_array(source WebGLBufferSource, source_offset u64, source_length_override u32) !SpanWithStorage {
+	// A detached typed array is an out-of-bounds witness too. The typed-list
+	// helper accepts an empty default range; BufferSource byte access rejects
+	// detachment independently in checked_buffer_source_range above.
+	if source.detached || source.out_of_bounds {
+		if source_offset != 0 || source_length_override != 0 {return error('TypedArray is out of bounds')}
+		return SpanWithStorage{element_size:source.element_size}
+	}
 	offset, length := checked_buffer_source_range(source, source_offset, source_length_override)!
 	return SpanWithStorage{
 		storage_: source.buffer[offset..offset + length].clone()

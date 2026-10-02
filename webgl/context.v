@@ -115,7 +115,7 @@ fn (mut context WebGLRenderingContext) allocate_handle() GLuint {
 	return handle
 }
 
-fn (mut context WebGLRenderingContext) set_error(error_value GLenum) {
+pub fn (mut context WebGLRenderingContext) set_error(error_value GLenum) {
 	if context.error_ == no_error {
 		context.error_ = error_value
 	}
