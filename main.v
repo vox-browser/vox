@@ -1529,8 +1529,8 @@ fn javascript_bootstrap(state map[string]json2.Any) string {
 		'const window = globalThis; window.window = window; window.document = document; window.console = console; window.location = location; window.alert = function (v) { console.log(v); }; window.addEventListener = document.addEventListener; window.getSelection=function(){return __selection;}; window.Image=function(){return document.createElement("img");}; window.HTMLMediaElement={HAVE_NOTHING:0,HAVE_METADATA:1,HAVE_CURRENT_DATA:2,HAVE_FUTURE_DATA:3,HAVE_ENOUGH_DATA:4}; window.internals={imageAnimationStateForURL:function(){return{timerActive:true,frameIndex:1};},signalTestIsDone:function(){},spoofCurrentURL:function(){},setForceDarkEnabled:function(value){__state.forceDarkEnabled=!!value;},setForceDarkThresholds:function(foreground,background){__state.forceDarkForegroundThreshold=Math.trunc(Number(foreground));__state.forceDarkBackgroundThreshold=Math.trunc(Number(background));},setShowLineBoxBorders:function(value){__state.showLineBoxBorders=!!value;}}; if(!Promise.withResolvers)Promise.withResolvers=function(){let resolve,reject;const promise=new Promise(function(a,b){resolve=a;reject=b;});return{promise:promise,resolve:resolve,reject:reject};};',
 		'for (const s of __elementStates()) { if(!s.id)continue; try { window[s.id] = document.getElementById(s.id); } catch (_) {} }',
 		'window.__ladybirdSnapshot = function () { return JSON.stringify(__state); };',
-		'window.__ladybirdFinalize = function () { for (const key of Object.keys(__canvases)) { const c=__canvases[key],s=c.state;if(!c.context||c.kind!=="2d")continue;const snapshot=__canvasCall(s,"snapshot");s.canvasPixels=snapshot.pixels;s.canvasWidth=__canvasDimension(s,"width");s.canvasHeight=__canvasDimension(s,"height");s.canvasPixelsPremultiplied=snapshot.premultiplied;s.canvasPixelsTopDown=snapshot.topDown;s.canvasNative=true; } return window.__ladybirdSnapshot(); };',
-		'window.__ladybirdClearLogs = function () { __state.logs = []; __state.bodyHTMLDirty = false; __state.bodyTextDirty = false; for(const s of __elementStates()){s.innerHTMLDirty=false;s.textContentDirty=false;} };',
+		'window.__ladybirdFinalize = function () { for (const key of Object.keys(__canvases)) { const c=__canvases[key],s=c.state;if(!c.context||c.kind!=="2d")continue;const snapshot=__canvasCall(s,"snapshot");s.canvasPixels=snapshot.pixels;s.canvasWidth=__canvasDimension(s,"width");s.canvasHeight=__canvasDimension(s,"height");s.canvasPixelsPremultiplied=snapshot.premultiplied;s.canvasPixelsTopDown=snapshot.topDown;s.canvasNative=true; } const snapshot=window.__ladybirdSnapshot(); __state.operations=[]; return snapshot; };',
+		'window.__ladybirdClearLogs = function () { __state.logs = []; __state.operations=[]; __state.bodyHTMLDirty = false; __state.bodyTextDirty = false; for(const s of __elementStates()){s.innerHTMLDirty=false;s.textContentDirty=false;} };',
 		'window.__ladybirdDispatch = function (name, id) { const s = String(id)===""?null:(__elementStates().find(function(item){return item.id===String(id);}) || null); const target = s ? __element(s) : document; const event = { type: name, target: target, defaultPrevented: false, preventDefault: function () { this.defaultPrevented = true; } }; for (const listener of (__listeners[__listenerKey(s, name)] || [])) { try { listener.call(target, event); } catch (e) { console.error(e); } } if (!s && typeof window["on" + name] === "function") { try { window["on" + name].call(window, event); } catch (e) { console.error(e); } } if (s && name === "click" && s.onclick) { try { Function("event", s.onclick).call(target, event); } catch (e) { console.error(e); } } __state.defaultPrevented = event.defaultPrevented; return window.__ladybirdSnapshot(); };',
 		'return window.__ladybirdSnapshot();',
 		'})()',
@@ -1984,14 +1984,16 @@ fn apply_javascript_state(document &dom.Document, encoded string, canvas_element
 					continue
 				}
 				element_state := item as map[string]json2.Any
-				element_index := json_int_property(element_state, 'elementIndex') or { continue }
-				if element_index < 0 || element_index >= initial_elements.len {
-					continue
+				bridge_key := json_string_property(element_state, 'bridgeKey') or { continue }
+				// A source DOM wrapper keeps its original element after removal or
+				// reordering. The host already retains that actual identity; the
+				// original tree index only seeds callers without a native binding.
+				mut element := element_by_bridge_key[bridge_key] or {
+					element_index := json_int_property(element_state, 'elementIndex') or { continue }
+					if element_index < 0 || element_index >= initial_elements.len { continue }
+					initial_elements[element_index]
 				}
-				mut element := initial_elements[element_index]
-				if bridge_key := json_string_property(element_state, 'bridgeKey') {
-					element_by_bridge_key[bridge_key] = element
-				}
+				element_by_bridge_key[bridge_key] = element
 				if json_bool_property(element_state, 'attributesDirty') {
 					if attribute_values := element_state['attributes'] {
 						if attribute_values is map[string]json2.Any {
