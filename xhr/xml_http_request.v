@@ -379,7 +379,8 @@ pub fn (mut request XMLHttpRequest) send_text(body string) ! {
 }
 
 pub fn (mut request XMLHttpRequest) send_blob(blob &fileapi.Blob) ! {
-	request.send_bytes(blob.raw_bytes(), if blob.type_() == '' { none } else { blob.type_() },
+	content_type := blob.type_()
+	request.send_bytes(blob.raw_bytes(), if content_type == '' { none } else { ?string(content_type) },
 		true, false)!
 }
 
