@@ -43,6 +43,18 @@ pub mut:
 }
 
 @[heap]
+pub struct TransitionGroupStyleRule {
+pub mut:
+	selector_text string
+pub:
+	declarations string
+}
+
+pub fn (rule &TransitionGroupStyleRule) css_text() string {
+	return '${rule.selector_text} { ${rule.declarations} }'
+}
+
+@[heap]
 pub struct CapturedElement {
 pub mut:
 	old_image                 ?string
@@ -58,7 +70,7 @@ pub mut:
 	style_rules               []string
 	group_keyframes           ?string
 	group_animation_name_rule ?string
-	group_styles_rule         ?string
+	group_styles_rule         ?&TransitionGroupStyleRule
 	image_pair_isolation_rule ?string
 	image_animation_name_rule ?string
 }
@@ -382,31 +394,41 @@ pub fn (mut transition ViewTransition) update_pseudo_element_styles() ! {
 		}
 		// The current C++ keeps these CSSOM serialization operands as literal
 		// placeholders while width and height are serialized values.
-		rule := ':root::view-transition-group(${name}) { width: ${width}px; height: ${height}px; transform: transform; writing-mode: writing_mode; direction: direction; text-orientation: text_orientation; mix-blend-mode: mix_blend_mode; backdrop-filter: backdrop_filter; color-scheme: color_scheme; }'
+		selector_text := ':root::view-transition-group(${name})'
 		mut mutable_capture := unsafe { &CapturedElement(capture) }
 		if old_rule := capture.group_styles_rule {
-			// Rules are represented by CSS text at this platform boundary. Search
-			// from the end because transition-owned rules are appended after any
-			// pre-existing identical rule.
+			// ViewTransition.cpp: update_pseudo_element_styles, step 4. The current
+			// source updates only the existing rule's selector, retaining its
+			// identity and declarations even when the element's dimensions change.
+			previous_text := old_rule.css_text()
+			mut mutable_rule := unsafe { &TransitionGroupStyleRule(old_rule) }
+			mutable_rule.selector_text = selector_text
+			rule_text := mutable_rule.css_text()
+			// Serialized paint input remains a derived copy of the retained rule.
+			// Search from the end to leave identical pre-existing rules alone.
 			for offset in 0 .. document.dynamic_style_rules.len {
 				index := document.dynamic_style_rules.len - 1 - offset
 				existing := document.dynamic_style_rules[index]
-				if existing == old_rule {
-					document.dynamic_style_rules[index] = rule
+				if existing == previous_text {
+					document.dynamic_style_rules[index] = rule_text
 					break
 				}
 			}
 			for index, existing in capture.style_rules {
-				if existing == old_rule {
-					mutable_capture.style_rules[index] = rule
+				if existing == previous_text {
+					mutable_capture.style_rules[index] = rule_text
 					break
 				}
 			}
 		} else {
-			mutable_capture.style_rules << rule
-			document.dynamic_style_rules << rule
+			rule := &TransitionGroupStyleRule{
+				selector_text: selector_text
+				declarations: 'width: ${width}px; height: ${height}px; transform: transform; writing-mode: writing_mode; direction: direction; text-orientation: text_orientation; mix-blend-mode: mix_blend_mode; backdrop-filter: backdrop_filter; color-scheme: color_scheme;'
+			}
+			mutable_capture.group_styles_rule = rule
+			mutable_capture.style_rules << rule.css_text()
+			document.dynamic_style_rules << rule.css_text()
 		}
-		mutable_capture.group_styles_rule = rule
 	}
 }
 

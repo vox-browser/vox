@@ -247,18 +247,19 @@ fn test_pseudo_rules_update_in_place_and_clear_only_owned_rules() {
 	assert capture.image_animation_name_rule != none
 	assert capture.style_rules.len == 5
 	assert document.dynamic_style_rules.len == 7
-	first_group_rule := capture.group_styles_rule or { '' }
-	assert first_group_rule.contains('width: 30.0px')
+	first_group_rule := capture.group_styles_rule or { panic('missing group style rule') }
+	assert first_group_rule.css_text().contains('width: 30.0px')
 
 	new_element.width = 55
 	new_element.height = 66
 	transition.handle_transition_frame(true)
 	assert capture.style_rules.len == 5
 	assert document.dynamic_style_rules.len == 7
-	second_group_rule := capture.group_styles_rule or { '' }
-	assert second_group_rule != first_group_rule
-	assert second_group_rule.contains('width: 55.0px')
-	assert document.dynamic_style_rules.filter(it == first_group_rule).len == 1
+	second_group_rule := capture.group_styles_rule or { panic('missing group style rule') }
+	assert second_group_rule == first_group_rule
+	assert second_group_rule.css_text().contains('width: 30.0px')
+	assert second_group_rule.css_text().contains('height: 40.0px')
+	assert document.dynamic_style_rules.filter(it == first_group_rule.css_text()).len == 2
 
 	transition.handle_transition_frame(false)
 	assert document.dynamic_style_rules == ['unrelated author/platform rule', preexisting_group_rule]
