@@ -514,8 +514,10 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
 		return key
 	}
 	if normalized in ['X25519', 'X448'] {
-		key := import_exchange_key(normalized, format, material, extractable, normalized_usages)!
-		if key.type_ == .private_key && key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+		mut key := import_exchange_key(normalized, format, material, extractable, normalized_usages)!
+		if key.type_ == .private_key && normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+        key.set_extractable(extractable)
+        key.set_usages(normalized_usages)
 		return key
 	}
     if normalized == 'Ed25519' {

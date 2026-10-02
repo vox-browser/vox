@@ -85,20 +85,20 @@ fn import_exchange_jwk(name string, jwk JsonWebKey, extractable bool, usages []K
 		if native_edwards_public(name, private_bytes)! != public_bytes {
 			return error('DataError: Invalid key pair')
 		}
-		return exchange_key(name, true, private_bytes, extractable, usages)
+		return exchange_key(name, true, private_bytes, false, [])
 	}
-	return exchange_key(name, false, public_bytes, extractable, usages)
+	return exchange_key(name, false, public_bytes, false, [])
 }
 
 fn import_exchange_key(name string, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey {
 	match format {
 		.spki {
 			if usages.len != 0 { return error('SyntaxError: Usages must be empty') }
-			return exchange_key(name, false, parse_okp_der(name, material, false)!, extractable, usages)
+			return exchange_key(name, false, parse_okp_der(name, material, false)!, false, [])
 		}
 		.pkcs8 {
 			validate_exchange_usages(usages)!
-			return exchange_key(name, true, parse_okp_der(name, material, true)!, extractable, usages)
+			return exchange_key(name, true, parse_okp_der(name, material, true)!, false, [])
 		}
 		.jwk { return import_exchange_jwk(name, JsonWebKey.parse(material)!, extractable, usages) }
 		.raw, .raw_public {
@@ -110,7 +110,7 @@ fn import_exchange_key(name string, format KeyFormat, material []u8, extractable
 			if material.len != exchange_key_size(name) {
 				return error('DataError: Invalid key length')
 			}
-			return exchange_key(name, false, material, extractable, usages)
+			return exchange_key(name, false, material, false, [])
 		}
 		else { return error('NotSupportedError: Invalid key format') }
 	}
