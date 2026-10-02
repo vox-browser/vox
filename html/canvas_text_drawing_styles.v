@@ -74,6 +74,7 @@ pub fn (mut styles CanvasTextDrawingStyles) set_font(font string) {
 		}
 	}
 	styles.state.drawing_state.font_string = trimmed
+	styles.state.drawing_state.font_style_value = parsed
 	styles.state.drawing_state.current_font_cascade_list = none
 	styles.state.drawing_state.font_environment_generation = 0
 	refresh_canvas_font_cascade(mut styles.state)

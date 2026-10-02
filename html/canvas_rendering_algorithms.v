@@ -635,15 +635,133 @@ pub fn (context &OffscreenCanvasRenderingContext2D) filter() string {
 	return context.drawing_state.filter_string or { 'none' }
 }
 
-pub fn (mut context OffscreenCanvasRenderingContext2D) set_filter(value string) {
+fn canvas_filter_font(state DrawingState) &platform.Font {
+	if state.font_style_value == none {
+		// CanvasState.cpp lazily uses default_font(8) metrics for the initial 10px font.
+		if platform.FontPlugin.is_initialized() {
+			if font := platform.FontPlugin.the().default_font(8) {
+				return &platform.Font{ ...font }
+			}
+		}
+		return &platform.Font{ family: 'sans-serif', point_size: 8 }
+	}
+	if cascade := state.current_font_cascade_list {
+		// FontCascadeList.cpp::first_available_font tests U+0020 unicode-range membership.
+		for entry in cascade.fonts {
+			if entry.unicode_ranges.len == 0 || entry.unicode_ranges.any(it.start <= 0x20 && 0x20 <= it.end) {
+				return &platform.Font{ family: entry.font.typeface.family_name, point_size: entry.font.point_size / .75, weight: int(entry.font.variations.weight), source_path: entry.font.typeface.source_path }
+			}
+		}
+		if cascade.last_resort_font != unsafe { nil } {
+			font := cascade.last_resort_font
+			return &platform.Font{ family: font.typeface.family_name, point_size: font.point_size / .75, weight: int(font.variations.weight), source_path: font.typeface.source_path }
+		}
+	}
+	return canvas_font_for_drawing_state(state, u32(` `))
+}
+
+// CanvasState.cpp: font and root metrics both belong to the current canvas font.
+fn (context &OffscreenCanvasRenderingContext2D) filter_computation_context(element ?&dom.Element) css.ComputationContext {
+	state := context.drawing_state
+	font := canvas_filter_font(state)
+	metrics := font.pixel_metrics()
+	font_metrics := css.LengthFontMetrics{
+		font_size:    css.CSSPixels.nearest_value_for(state.font_size_px)
+		x_height:     css.CSSPixels.nearest_value_for(metrics.x_height)
+		cap_height:   css.CSSPixels.nearest_value_for(metrics.ascent)
+		zero_advance: css.CSSPixels.nearest_value_for(metrics.advance_of_ascii_zero)
+		// InitialValues::line_height() is zero (ComputedValues.h).
+		line_height:  css.CSSPixels.new(0)
+	}
+	mut viewport := css.CSSPixelRect.new(0, 0, 0, 0)
+	if canvas_element := element {
+		if _ := canvas_element.navigable() {
+			rect := canvas_element.document().viewport_rect()
+			viewport = css.CSSPixelRect.new(rect.x, rect.y, rect.width, rect.height)
+		}
+	}
+	return css.ComputationContext{
+		length_resolution_context: css.LengthResolutionContext{
+			viewport_rect:     viewport
+			font_metrics:      font_metrics
+			root_font_metrics: font_metrics
+		}
+		color_scheme:              css.PreferredColorScheme.light
+	}
+}
+
+fn (mut context OffscreenCanvasRenderingContext2D) set_filter_internal(value string, element ?&dom.Element) {
+	// Source clears the resolved filter before parsing, even when parsing fails.
+	context.drawing_state.filter_functions = []
 	if value == 'none' {
 		context.drawing_state.filter_string = none
 		return
 	}
-	parsed := css.parse_css_value_logic(.filter, value) or { return }
-	if parsed is css.FilterValueListStyleValue {
-		context.drawing_state.filter_string = value
+	mut parser := css.Parser.with_context(css.ParsingParams{
+		value_context: [css.ValueParsingContext(css.SpecialContext.canvas_context_generic_value)]
+	}, value)
+	parsed := parser.parse_css_value(.filter) or { return }
+	if parsed !is css.FilterValueListStyleValue { return }
+	computation := context.filter_computation_context(element)
+	absolutized := parsed.absolutized(computation)
+	filter_list := if absolutized is css.FilterValueListStyleValue { absolutized } else { return }
+	mut functions := []CanvasFilterFunction{}
+	for item in filter_list.filter_value_list() {
+		functions << match item {
+			css.FilterOperationBlur {
+				CanvasFilterFunction{ kind: .blur, amount: f32(item.resolved_radius()) }
+			}
+			css.FilterOperationColor {
+				CanvasFilterFunction{ kind: .color, color_operation: item.operation, amount: f32(item.resolved_amount()) }
+			}
+			css.FilterOperationHueRotate {
+				CanvasFilterFunction{ kind: .hue_rotate, amount: f32(item.angle_degrees()) }
+			}
+			css.FilterOperationDropShadow {
+				mut color := canvas_color_black()
+				if color_value := item.color {
+					mut color_context := css.ColorResolutionContext{}
+					mut can_resolve_color := true
+					if canvas_element := element {
+						can_resolve_color = false
+						canvas_element.document().update_style_for_element(canvas_element, false)
+						if canvas_element.el_computed_properties() != none {
+							can_resolve_color = true
+							abstract_element := dom.AbstractElement.new(canvas_element, none)
+							color_context = css.ColorResolutionContext.for_element(&abstract_element)
+						}
+					}
+					if can_resolve_color {
+						if resolved := color_value.to_color(color_context) {
+							color = dom.Color{resolved.r, resolved.g, resolved.b, resolved.a}
+						}
+					}
+				}
+				radius := if radius_value := item.radius {
+					css.Length.from_style_value_logic(radius_value, none).absolute_length_to_px_without_rounding()
+				} else {
+					f64(0)
+				}
+				CanvasFilterFunction{
+					kind:     .drop_shadow
+					offset_x: f32(css.Length.from_style_value_logic(item.offset_x, none).absolute_length_to_px_without_rounding())
+					offset_y: f32(css.Length.from_style_value_logic(item.offset_y, none).absolute_length_to_px_without_rounding())
+					amount:   f32(radius)
+					color:    color
+				}
+			}
+			css.URL {
+				// Canvas2DContextBase.cpp explicitly leaves SVG URL filters unresolved.
+				continue
+			}
+		}
 	}
+	context.drawing_state.filter_functions = functions
+	context.drawing_state.filter_string = value
+}
+
+pub fn (mut context OffscreenCanvasRenderingContext2D) set_filter(value string) {
+	context.set_filter_internal(value, none)
 }
 
 pub fn (context &OffscreenCanvasRenderingContext2D) rect_path(x f64, y f64, width f64, height f64) CanvasGfxPath {
@@ -656,91 +774,57 @@ pub fn (context &OffscreenCanvasRenderingContext2D) rect_path(x f64, y f64, widt
 	return path
 }
 
-fn (mut context OffscreenCanvasRenderingContext2D) paint_path_fill(path CanvasGfxPath, color dom.Color, fill_rule string) {
-	bitmap := context.canvas_.bitmap() or { return }
-	transformed_path := path.copy_transformed(context.drawing_state.transform)
-	bounds := canvas_path_bounds(transformed_path) or { return }
-	mut mutable_bitmap := unsafe { &dom.Bitmap_(bitmap) }
-	left := int(math.max(0.0, math.floor(bounds.x)))
-	top := int(math.max(0.0, math.floor(bounds.y)))
-	right := int(math.min(f64(bitmap.width), math.ceil(bounds.x + bounds.width)))
-	bottom := int(math.min(f64(bitmap.height), math.ceil(bounds.y + bounds.height)))
-	for y := top; y < bottom; y++ {
-		for x := left; x < right; x++ {
-			point := FloatPoint{f64(x) + 0.5, f64(y) + 0.5}
-			if canvas_point_is_inside_clip(context.drawing_state, point) && is_point_in_path_internal(transformed_path, CanvasAffineTransform{}, point.x, point.y, fill_rule) {
-				canvas_composite_pixel(mut mutable_bitmap.data, y * mutable_bitmap.pitch + x * 4, color, context.drawing_state.global_alpha, context.drawing_state.current_compositing_and_blending_operator)
-			}
-		}
-	}
-}
-
-fn canvas_distance_to_segment(point FloatPoint, start FloatPoint, end FloatPoint) f64 {
-	dx := end.x - start.x
-	dy := end.y - start.y
-	if dx == 0 && dy == 0 {
-		return math.sqrt((point.x - start.x) * (point.x - start.x) + (point.y - start.y) * (point.y - start.y))
-	}
-	t := math.max(0.0, math.min(1.0, ((point.x - start.x) * dx + (point.y - start.y) * dy) / (dx * dx + dy * dy)))
-	nearest := FloatPoint{start.x + t * dx, start.y + t * dy}
-	return math.sqrt((point.x - nearest.x) * (point.x - nearest.x) + (point.y - nearest.y) * (point.y - nearest.y))
-}
-
-fn (mut context OffscreenCanvasRenderingContext2D) paint_path_stroke(path CanvasGfxPath, color dom.Color) {
-	bitmap := context.canvas_.bitmap() or { return }
-	mut mutable_bitmap := unsafe { &dom.Bitmap_(bitmap) }
-	half_width := context.drawing_state.line_width / 2.0
-	if half_width <= 0 {
+pub fn (mut context OffscreenCanvasRenderingContext2D) fill_internal(path CanvasGfxPath, fill_rule string) {
+	state := context.drawing_state
+	style := state.fill_style.to_gfx_paint_style()
+	if !style.is_visible() && state.current_compositing_and_blending_operator == .source_over {
 		return
 	}
-	for polygon in canvas_path_polygons(path) {
-		for index := 1; index < polygon.len; index++ {
-			start := context.drawing_state.transform.map(polygon[index - 1])
-			end := context.drawing_state.transform.map(polygon[index])
-			left := int(math.max(0.0, math.floor(math.min(start.x, end.x) - half_width)))
-			top := int(math.max(0.0, math.floor(math.min(start.y, end.y) - half_width)))
-			right := int(math.min(f64(bitmap.width), math.ceil(math.max(start.x, end.x) + half_width)))
-			bottom := int(math.min(f64(bitmap.height), math.ceil(math.max(start.y, end.y) + half_width)))
-			for y := top; y < bottom; y++ {
-				for x := left; x < right; x++ {
-					point := FloatPoint{f64(x) + 0.5, f64(y) + 0.5}
-					if canvas_point_is_inside_clip(context.drawing_state, point) && canvas_distance_to_segment(point, start, end) <= half_width {
-						canvas_composite_pixel(mut mutable_bitmap.data, y * mutable_bitmap.pitch + x * 4, color, context.drawing_state.global_alpha, context.drawing_state.current_compositing_and_blending_operator)
-					}
-				}
-			}
-		}
-	}
-}
-
-pub fn (mut context OffscreenCanvasRenderingContext2D) fill_internal(path CanvasGfxPath, fill_rule string) {
 	context.paint_shadow_for_fill_internal(path, fill_rule)
-	context.paint_path_fill(path, context.drawing_state.fill_style.to_color_but_fixme_should_accept_any_paint_style(), fill_rule)
+	context.paint_canvas_path(path, style, fill_rule, false, 0, state.global_alpha, state.transform)
 }
 
 pub fn (mut context OffscreenCanvasRenderingContext2D) stroke_internal(path CanvasGfxPath) {
+	state := context.drawing_state
+	style := state.stroke_style.to_gfx_paint_style()
+	if !style.is_visible() && state.current_compositing_and_blending_operator == .source_over {
+		return
+	}
 	context.paint_shadow_for_stroke_internal(path)
-	context.paint_path_stroke(path, context.drawing_state.stroke_style.to_color_but_fixme_should_accept_any_paint_style())
+	context.paint_canvas_path(path, style, 'nonzero', true, 0, state.global_alpha, state.transform)
+}
+
+fn canvas_shadow_alpha(state DrawingState) f32 {
+	mut alpha := f32(state.global_alpha) * (f32(state.shadow_color.a) / 255)
+	// Upstream intentionally reads fill_style even while stroking a shadow.
+	if color := state.fill_style.as_color() {
+		if color.a > 0 { alpha = (f32(color.a) / 255) * f32(state.global_alpha) }
+	}
+	return alpha
 }
 
 pub fn (mut context OffscreenCanvasRenderingContext2D) paint_shadow_for_fill_internal(path CanvasGfxPath, fill_rule string) {
 	state := context.drawing_state
-	if (state.shadow_blur == 0 && state.shadow_offset_x == 0 && state.shadow_offset_y == 0) || state.shadow_color.a == 0 || state.current_compositing_and_blending_operator == .copy {
-		return
-	}
-	translated := path.copy_transformed(CanvasAffineTransform{ e: state.shadow_offset_x, f: state.shadow_offset_y })
-	context.paint_path_fill(translated, state.shadow_color, fill_rule)
+	if state.shadow_blur == 0 && state.shadow_offset_x == 0 && state.shadow_offset_y == 0 { return }
+	if state.current_compositing_and_blending_operator == .copy { return }
+	alpha := canvas_shadow_alpha(state)
+	if alpha == 0 { return }
+	shadow := dom.Color{state.shadow_color.r, state.shadow_color.g, state.shadow_color.b, u8(math.round(f32(state.shadow_color.a) * alpha))}
+	// Translate in output space, then multiply by the drawing-state transform.
+	transform := canvas_transform_multiply(CanvasAffineTransform{ e: state.shadow_offset_x, f: state.shadow_offset_y }, state.transform)
+	context.paint_canvas_path(path, FillOrStrokeStyle.from_color(shadow).to_gfx_paint_style(), fill_rule, false, state.shadow_blur, 1, transform)
 }
 
 pub fn (mut context OffscreenCanvasRenderingContext2D) paint_shadow_for_stroke_internal(path CanvasGfxPath) {
 	state := context.drawing_state
-	if (state.shadow_blur == 0 && state.shadow_offset_x == 0 && state.shadow_offset_y == 0) || state.shadow_color.a == 0 || state.current_compositing_and_blending_operator == .copy {
-		return
-	}
-	translated := path.copy_transformed(CanvasAffineTransform{ e: state.shadow_offset_x, f: state.shadow_offset_y })
-	context.paint_path_stroke(translated, state.shadow_color)
+	if state.current_compositing_and_blending_operator == .copy { return }
+	if state.shadow_blur == 0 && state.shadow_offset_x == 0 && state.shadow_offset_y == 0 { return }
+	alpha := canvas_shadow_alpha(state)
+	if alpha == 0 { return }
+	shadow := dom.Color{state.shadow_color.r, state.shadow_color.g, state.shadow_color.b, u8(math.round(f32(state.shadow_color.a) * alpha))}
+	transform := canvas_transform_multiply(CanvasAffineTransform{ e: state.shadow_offset_x, f: state.shadow_offset_y }, state.transform)
+	context.paint_canvas_path(path, FillOrStrokeStyle.from_color(shadow).to_gfx_paint_style(), 'nonzero', true, state.shadow_blur, 1, transform)
 }
-
 pub fn (mut context OffscreenCanvasRenderingContext2D) stroke() {
 	context.stroke_internal(context.CanvasPath.path())
 }
@@ -1104,7 +1188,7 @@ pub fn (context &CanvasRenderingContext2D) filter() string {
 }
 
 pub fn (mut context CanvasRenderingContext2D) set_filter(value string) {
-	context.OffscreenCanvasRenderingContext2D.set_filter(value)
+	context.OffscreenCanvasRenderingContext2D.set_filter_internal(value,unsafe { &dom.Element(context.element) })
 }
 
 pub fn (mut context CanvasRenderingContext2D) draw_image_internal(request CanvasDrawImageRequest) ! {

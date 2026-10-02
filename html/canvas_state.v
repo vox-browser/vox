@@ -222,6 +222,24 @@ pub:
 }
 
 // https://html.spec.whatwg.org/multipage/canvas.html#drawing-state
+pub enum CanvasFilterKind {
+	blur
+	color
+	hue_rotate
+	drop_shadow
+}
+
+// Layout::RustFFI::FfiFilterFunction, resolved by Canvas2DContextBase::set_filter.
+pub struct CanvasFilterFunction {
+pub:
+	kind            CanvasFilterKind
+	amount          f32
+	color_operation css.ColorFilterType
+	offset_x        f32
+	offset_y        f32
+	color           dom.Color
+}
+
 pub struct DrawingState {
 pub mut:
 	transform                                 CanvasAffineTransform
@@ -232,6 +250,7 @@ pub mut:
 	shadow_blur                               f64
 	shadow_color                              dom.Color = canvas_color_transparent()
 	filter_string                             ?string
+	filter_functions                          []CanvasFilterFunction
 	line_width                                f64 = 1.0
 	line_cap                                  CanvasLineCap = .butt
 	line_join                                 CanvasLineJoin = .miter
@@ -249,11 +268,12 @@ pub mut:
 	letter_spacing_px     f64
 	letter_spacing_string string = '0px'
 	font_string                 string = '10px sans-serif'
+	font_style_value            ?css.StyleValue
 	font_size_px                f64 = 10.0
 	current_font_cascade_list   ?&css.FontCascadeList
 	font_environment_generation u64
 	clip_paths                  []CanvasClipPath
-	// Opaque Gfx handles (out of scope for this port): Gfx::Filter and CSS::StyleValue font.
+	// Font style values are resolved through current_font_cascade_list.
 }
 
 // https://html.spec.whatwg.org/multipage/canvas.html#canvasstate
@@ -287,6 +307,7 @@ pub fn (mut state CanvasState) save() {
 	mut drawing_state_copy := state.drawing_state
 	drawing_state_copy.dash_list = state.drawing_state.dash_list.clone()
 	drawing_state_copy.clip_paths = state.drawing_state.clip_paths.clone()
+	drawing_state_copy.filter_functions = state.drawing_state.filter_functions.clone()
 	state.drawing_state_stack << drawing_state_copy
 	// NOTE: the C++ also calls painter_for_canvas_state()->save(); no painter in this port.
 }

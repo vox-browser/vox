@@ -1,0 +1,178 @@
+// Native ABI adaptation of LibGfx/CanvasCommandPlayer.cpp, PainterSkia.cpp,
+// PathSkia.cpp and SkiaUtils.cpp. The source command construction remains V.
+#include "canvas_raster.h"
+#include "include/core/SkBitmap.h"
+#include "include/core/SkBlender.h"
+#include "include/core/SkCanvas.h"
+#include "include/core/SkColorFilter.h"
+#include "include/core/SkColorSpace.h"
+#include "include/core/SkImage.h"
+#include "include/core/SkMatrix.h"
+#include "include/core/SkPaint.h"
+#include "include/core/SkPath.h"
+#include "include/core/SkShader.h"
+#include "include/core/SkSurface.h"
+#include "include/effects/SkBlurMaskFilter.h"
+#include "include/effects/SkDashPathEffect.h"
+#include "include/effects/SkGradientShader.h"
+#include "include/effects/SkImageFilters.h"
+#include "include/effects/SkRuntimeEffect.h"
+#include <cmath>
+#include <vector>
+
+static SkPath make_path(VoxCanvasPath const& input)
+{
+    SkPath path;
+    for (int i = 0; i < input.count; ++i) {
+        auto const* segment = input.segments + i * 12;
+        switch (int(segment[0])) {
+        case 0:
+            path.moveTo(segment[1], segment[2]);
+            break;
+        case 1:
+            path.lineTo(segment[1], segment[2]);
+            break;
+        case 2:
+            path.quadTo(segment[3], segment[4], segment[1], segment[2]);
+            break;
+        case 3:
+            path.cubicTo(segment[3], segment[4], segment[5], segment[6], segment[1], segment[2]);
+            break;
+        case 4:
+            path.arcTo(segment[7], segment[8], segment[9] * 180.0f / float(M_PI), segment[10] ? SkPath::kLarge_ArcSize : SkPath::kSmall_ArcSize,
+                segment[11] ? SkPathDirection::kCW : SkPathDirection::kCCW, segment[1], segment[2]);
+            break;
+        case 5:
+            path.close();
+            break;
+        }
+    }
+    path.setFillType(input.even_odd ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
+    return path;
+}
+
+static SkMatrix make_matrix(float const* v) { return SkMatrix::MakeAll(v[0], v[2], v[4], v[1], v[3], v[5], 0, 0, 1); }
+
+static sk_sp<SkBlender> make_blender(int operation)
+{
+    static SkBlendMode const modes[] = { SkBlendMode::kSrcOver, SkBlendMode::kSrcIn, SkBlendMode::kSrcOut, SkBlendMode::kSrcATop, SkBlendMode::kDstOver,
+        SkBlendMode::kDstIn, SkBlendMode::kDstOut, SkBlendMode::kDstATop, SkBlendMode::kPlus, SkBlendMode::kSrc, SkBlendMode::kXor, SkBlendMode::kMultiply,
+        SkBlendMode::kScreen, SkBlendMode::kOverlay, SkBlendMode::kDarken, SkBlendMode::kLighten, SkBlendMode::kColorDodge, SkBlendMode::kColorBurn,
+        SkBlendMode::kHardLight, SkBlendMode::kSoftLight, SkBlendMode::kDifference, SkBlendMode::kExclusion, SkBlendMode::kHue, SkBlendMode::kSaturation,
+        SkBlendMode::kColor, SkBlendMode::kLuminosity };
+    if (operation >= 0 && operation < 26)
+        return SkBlender::Mode(modes[operation]);
+    // SkiaUtils.cpp retains the upstream Safari-compatible plus-darker rule.
+    auto result = SkRuntimeEffect::MakeForBlender(
+        SkString(operation == 26 ? "vec4 main(vec4 source,vec4 destination){return "
+                                   "saturate(saturate(destination.a+source.a)-saturate(destination.a-destination)-saturate(source.a-source));}"
+                                 : "vec4 main(vec4 source,vec4 destination){return saturate(source+destination);}"));
+    return result.effect ? result.effect->makeBlender(nullptr) : nullptr;
+}
+
+static bool apply_style(SkPaint& paint, VoxCanvasStyle const& style)
+{
+    if (style.kind == 0) {
+        paint.setColor(style.color);
+        return true;
+    }
+    if (style.kind == 4) {
+        auto space = SkColorSpace::MakeSRGB();
+        if (style.pattern_color_space == 1)
+            space = SkColorSpace::MakeRGB(SkNamedTransferFn::kSRGB, SkNamedGamut::kDisplayP3);
+        auto info = SkImageInfo::Make(
+            style.pattern_width, style.pattern_height, kRGBA_8888_SkColorType, style.pattern_alpha == 2 ? kPremul_SkAlphaType : kUnpremul_SkAlphaType, space);
+        SkBitmap bitmap;
+        if (!bitmap.installPixels(info, const_cast<uint8_t*>(style.pattern), style.pattern_pitch))
+            return false;
+        bitmap.setImmutable();
+        auto image = bitmap.asImage();
+        if (!image)
+            return false;
+        auto matrix = make_matrix(style.pattern_transform);
+        bool repeat_x = style.repetition == 0 || style.repetition == 1;
+        bool repeat_y = style.repetition == 0 || style.repetition == 2;
+        paint.setShader(image->makeShader(repeat_x ? SkTileMode::kRepeat : SkTileMode::kDecal, repeat_y ? SkTileMode::kRepeat : SkTileMode::kDecal,
+            SkSamplingOptions(SkFilterMode::kLinear), &matrix));
+        return true;
+    }
+    std::vector<SkColor4f> colors;
+    std::vector<float> positions;
+    for (int i = 0; i < style.stop_count; ++i) {
+        auto const* stop = style.stops + i * 5;
+        positions.push_back(stop[0]);
+        colors.push_back({ stop[1], stop[2], stop[3], stop[4] });
+    }
+    SkGradientShader::Interpolation interpolation;
+    sk_sp<SkShader> shader;
+    auto matrix = SkMatrix::I();
+    if (style.kind == 1) {
+        SkPoint points[2] = { { style.x0, style.y0 }, { style.x1, style.y1 } };
+        shader = SkGradientShader::MakeLinear(points, colors.data(), nullptr, positions.data(), int(colors.size()), SkTileMode::kClamp, interpolation, &matrix);
+    } else if (style.kind == 2) {
+        shader = SkGradientShader::MakeTwoPointConical({ style.x0, style.y0 }, style.r0, { style.x1, style.y1 }, style.r1, colors.data(), nullptr,
+            positions.data(), int(colors.size()), SkTileMode::kClamp, interpolation, &matrix);
+    } else if (style.kind == 3) {
+        float degrees = style.angle * 180.0f / float(M_PI);
+        shader = SkGradientShader::MakeSweep(style.x0, style.y0, colors.data(), nullptr, positions.data(), int(colors.size()), SkTileMode::kClamp, degrees,
+            degrees + 360.0f, interpolation, &matrix);
+    }
+    // Preserve PainterSkia: a failed/empty shader is installed as returned.
+    paint.setShader(shader);
+    return true;
+}
+
+static sk_sp<SkImageFilter> make_filter(VoxCanvasCommand const& command)
+{
+    sk_sp<SkImageFilter> input;
+    for (int i = 0; i < command.filter_count; ++i) {
+        auto const& filter = command.filters[i];
+        if (filter.kind == 0)
+            input = SkImageFilters::Blur(filter.radius, filter.radius, input);
+        else if (filter.kind == 1)
+            input = SkImageFilters::DropShadow(filter.offset_x, filter.offset_y, filter.radius, filter.radius, filter.color, input);
+        else
+            input = SkImageFilters::ColorFilter(
+                SkColorFilters::Matrix(filter.matrix, filter.clamp ? SkColorFilters::Clamp::kYes : SkColorFilters::Clamp::kNo), input);
+    }
+    return input;
+}
+
+extern "C" bool vox_skia_canvas_path(uint8_t* pixels, int width, int height, int pitch, int alpha_type, VoxCanvasCommand const* command)
+{
+    auto source_info
+        = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, alpha_type == 2 ? kPremul_SkAlphaType : kUnpremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto info = source_info.makeAlphaType(kPremul_SkAlphaType);
+    auto surface = SkSurfaces::Raster(info);
+    if (!surface || !surface->getCanvas()->writePixels(source_info, pixels, pitch, 0, 0))
+        return false;
+    auto* canvas = surface->getCanvas();
+    // Clips were captured in device space by Canvas2DContextBase::clip.
+    for (int i = 0; i < command->clip_count; ++i)
+        canvas->clipPath(make_path(command->clips[i]), SkClipOp::kIntersect, true);
+    canvas->setMatrix(make_matrix(command->transform));
+    SkPaint paint;
+    if (!apply_style(paint, command->style))
+        return false;
+    paint.setAntiAlias(true);
+    // CanvasCommandPlayer selects the blurred solid-color overload for shadows.
+    if (command->blur > 0 && command->style.kind == 0)
+        paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, command->blur / 2));
+    else {
+        paint.setAlphaf(paint.getAlphaf() * command->global_alpha);
+        paint.setImageFilter(make_filter(*command));
+    }
+    paint.setBlender(make_blender(command->composite));
+    if (command->stroke) {
+        if (command->width <= 0)
+            return true;
+        paint.setStyle(SkPaint::kStroke_Style);
+        paint.setStrokeWidth(command->width);
+        paint.setStrokeCap(command->cap == 0 ? SkPaint::kButt_Cap : command->cap == 1 ? SkPaint::kRound_Cap : SkPaint::kSquare_Cap);
+        paint.setStrokeJoin(command->join == 0 ? SkPaint::kRound_Join : command->join == 1 ? SkPaint::kBevel_Join : SkPaint::kMiter_Join);
+        paint.setStrokeMiter(command->miter);
+        paint.setPathEffect(SkDashPathEffect::Make({ command->dashes, size_t(command->dash_count) }, command->dash_offset));
+    }
+    canvas->drawPath(make_path(command->path), paint);
+    return surface->readPixels(source_info, pixels, pitch, 0, 0);
+}

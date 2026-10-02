@@ -114,7 +114,7 @@ fn (parser Parser) context_allows_tree_counting_functions() bool {
 				return false
 			}
 			SpecialContext {
-				if context in [.dom_matrix_init_string, .media_condition] {
+				if context in [.canvas_context_generic_value, .dom_matrix_init_string, .media_condition] {
 					return false
 				}
 			}
@@ -125,6 +125,13 @@ fn (parser Parser) context_allows_tree_counting_functions() bool {
 }
 
 fn (parser Parser) context_allows_random_functions() bool {
+	// Rust value_parser.rs: CanvasContextGenericValue forbids random().
+	if parser.value_context.len > 0 {
+		first := parser.value_context[0]
+		if first is SpecialContext && first == .canvas_context_generic_value {
+			return false
+		}
+	}
 	for context in parser.value_context {
 		if context is PropertyID {
 			return true

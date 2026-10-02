@@ -52,6 +52,7 @@ pub:
 }
 
 pub enum SpecialContext {
+	canvas_context_generic_value
 	angular_color_stop_list
 	border_radius
 	cubic_bezier_function_x_coordinate
