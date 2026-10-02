@@ -5,9 +5,30 @@ import dom
 @[heap]
 struct XHRDOMEventObservation {
 mut:
+	retained_events []&dom.Event
 	types []string
 	loaded []f64
 	timestamps []f64
+}
+
+fn test_progress_dispatch_retains_distinct_heap_events_for_native_js_wrappers() {
+	mut request := XMLHttpRequest.construct(.window, 'https://example.test/')
+	state := &XHRDOMEventObservation{}
+	listener := xhr_dom_listener(fn [state] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+		mut observation := unsafe { &XHRDOMEventObservation(state) }
+		observation.retained_events << event
+		return dom.js_undefined()
+	})
+	request.as_event_target().add_event_listener_without_options('progress', listener)
+	request.dispatch('progress', 1, 5)
+	request.dispatch('progress', 5, 5)
+	assert state.retained_events.len == 2
+	assert state.retained_events[0] != state.retained_events[1]
+	first := unsafe { &ProgressEvent(state.retained_events[0]) }
+	second := unsafe { &ProgressEvent(state.retained_events[1]) }
+	assert first.loaded() == 1 && second.loaded() == 5
+	assert first.target()? == request.as_event_target()
+	assert first.is_trusted() && second.is_trusted()
 }
 
 fn xhr_dom_listener(callback fn (&dom.Event, ?&dom.EventTarget) dom.JSValue) &dom.IDLEventListener {

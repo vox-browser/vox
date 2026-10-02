@@ -60,15 +60,16 @@ pub fn ProgressEvent.construct_impl(type_ string, init ProgressEventInit) Progre
 }
 
 pub fn fire_progress_event(mut target XMLHttpRequestEventTarget, event_name string, transmitted u64, length u64) {
-	mut event := ProgressEvent.create(event_name, ProgressEventInit{
+	event_value := ProgressEvent.create(event_name, ProgressEventInit{
 		length_computable: length != 0
 		loaded:            f64(transmitted)
 		total:             f64(length)
 	})
+	mut event := &ProgressEvent{ ...event_value }
 	event.time_stamp_ = target.event_timestamp()
 	event.set_is_trusted(true)
-	target.events << event
-	target.as_event_target().dispatch_event(unsafe { &dom.Event(&event) })
+	target.events << *event
+	target.as_event_target().dispatch_event(unsafe { &dom.Event(event) })
 }
 
 pub fn (event &ProgressEvent) length_computable() bool {
