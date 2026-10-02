@@ -35,11 +35,11 @@ and response-body buffer extraction.
 
 The V decoder parses every core binary section and all pinned instruction
 operands. Source recursive type canonicalization/matching, type-section checks,
-module indices, tag/start signatures and section counts now run during parsing.
-Instruction validation is being translated into the same package; the completed
-handlers are not yet connected to the module expression-validation pass.
-Full LibWasm validity, native compilation, instruction execution, store addresses
-and JS realm/promise integration remain open. `MemoryBuffer` models
+module indices, tag/start signatures, section counts and expression validation
+now run in the module path. All 500 pinned instruction-validation specializations
+have translated handlers and complete dispatch. Native compilation, instruction
+execution, store addresses and JS realm/promise integration remain open.
+`MemoryBuffer` models
 realm identity, detachment, and resizable refreshes over backing-store snapshots;
 native ArrayBuffer detach keys and shared DataBlock ownership remain embedding
 responsibilities. Streaming accepts a completed response body rather than
@@ -138,7 +138,39 @@ local-initialization rollback. Real parsed-expression tests exercise constant
 flags, SIMD scalar/vector operand order, unreachable polymorphism, implicit
 else validation, loop labels and outer catch-label scope.
 
-All **29 WebAssembly test files pass** in the canonical checkout. Remaining
-instruction families, the module expression/constant pass and compilation/
-execution are still open; these supporting handlers do not make the current
-public `validate()` a complete LibWasm validator.
+At the control-handler stage, all **29 WebAssembly test files passed** in the
+canonical checkout; those handlers were not yet wired to expressions.
+
+The remaining call, table, memory, SIMD lane/memory and GC reference/aggregate
+families now translate every pinned validator specialization. The strict
+`tools/generate_wasm_validation_dispatch.py` inventory rejects missing, duplicate
+and non-source routes before emitting `instruction_validation.v`. Its 500 routes
+connect those actual bodies without inferring effects from opcode names.
+
+`expression_validation.v` executes each handler even after a nonconstant
+instruction, retains branch/structured metadata in the original instructions,
+checks and re-appends required result types, releases the function frame and
+stores the peak stack hint. Module validation now checks active data/table
+offsets against the selected address kind, element initializers, ordered global
+initializers, table initializers with only imported globals visible, and all
+function bodies. Functions retain signature parameters and expanded local types,
+initialize defaultable locals and roll back nonnullable-local initialization at
+the source control boundaries. Surplus result values are checked by each section
+caller, rather than discarded by the expression pass.
+
+Source behavior is retained even where it differs from newer specifications:
+tail indirect calls take an i32 table address; several SIMD memory handlers take
+i32 addresses for memory64; passive numeric element types receive the pinned
+ValueType check; and singleton canonicalization keeps the source assertion.
+Parser fixtures containing invalid module indices or initializer types are
+tested directly at the parser boundary. Valid modules regenerate validator
+metadata and stack hints during serialization round trips.
+
+The complete expression/module stage passed **42/42 files** with default GC.
+The additional source-order regression passed with its count/limits neighbors,
+and the current package passes **43/43 files with `-gc none`**. The module driver
+keeps the source order for data, elements, globals, memories, tables, code and
+tags instead of pre-validating defined memory/global/table types. Pinned
+`try_compile_instructions`, Cranelift eligibility/compilation, compiled call-record
+allocation and actual machine execution remain untranslated. These tests are
+focused source regressions, not a full WebAssembly conformance corpus.
