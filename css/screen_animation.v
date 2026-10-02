@@ -424,7 +424,21 @@ pub fn (viewport &VisualViewport) onscrollend() ?&dom.CallbackType {
 }
 
 pub fn (mut viewport VisualViewport) scroll_by(delta CSSPixelPoint) {
+	if delta.x().to_double() == 0 && delta.y().to_double() == 0 { return }
 	viewport.offset_ = viewport.offset_.plus(delta)
+	viewport.did_scroll()
+	viewport.needs_contexts = true
+	viewport.needs_repaint = true
+	if mut document := viewport.document_ { document.set_needs_repaint() }
+}
+
+fn (mut viewport VisualViewport) did_scroll() {
+	if mut document := viewport.document_ {
+		document.append_pending_scroll_event(dom.PendingScrollEvent{
+			event_target: viewport.event_target()
+			type_: 'scroll'
+		})
+	}
 }
 
 pub fn (viewport &VisualViewport) transform() AffineTransform {
@@ -455,7 +469,9 @@ pub fn (mut viewport VisualViewport) zoom(position CSSPixelPoint, scale_delta f6
 	new_offset_y = screen_animation_clamp_f64(new_offset_y, 0.0, max_y_offset)
 
 	viewport.scale_ = new_scale
+	old_offset := viewport.offset_
 	viewport.offset_ = CSSPixelPoint.from_values(new_offset_x / viewport.scale_, new_offset_y / viewport.scale_)
+	if old_offset != viewport.offset_ { viewport.did_scroll() }
 	viewport.needs_contexts = true
 	viewport.needs_repaint = true
 }
@@ -466,7 +482,14 @@ pub fn (viewport &VisualViewport) map_to_layout_viewport(position CSSPixelPoint)
 
 pub fn (mut viewport VisualViewport) reset() {
 	viewport.scale_ = 1.0
+	old_offset := viewport.offset_
 	viewport.offset_ = CSSPixelPoint.from_values(0, 0)
+	if old_offset != viewport.offset_ {
+		viewport.did_scroll()
+		if mut document := viewport.document_ {
+			document.append_pending_scroll_event(dom.PendingScrollEvent{event_target: viewport.event_target(), type_: 'scrollend'})
+		}
+	}
 	viewport.needs_contexts = true
 	viewport.needs_repaint = true
 }

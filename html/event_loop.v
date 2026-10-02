@@ -657,6 +657,12 @@ pub fn (mut event_loop EventLoop) update_the_rendering() {
 	}
 	for document in documents {
 		mut mutable_document := unsafe { &dom.Document(document) }
+		if navigable := document.navigable() {
+			if model := navigable_model_for_host(navigable) {
+				mut mutable_model := unsafe { &NavigableModel(model) }
+				mutable_model.process_main_thread_smooth_scrolls()
+			}
+		}
 		mutable_document.run_the_scroll_steps()
 	}
 	for document in documents {

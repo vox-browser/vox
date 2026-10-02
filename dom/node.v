@@ -374,6 +374,8 @@ pub mut:
 	wheel_scrolls_vertical_   bool
 	scroll_offset_            CSSPixelPoint_
 	scrollable_overflow_rect_ ?CSSPixelRect_
+	padding_box_x_            f64
+	padding_box_y_            f64
 	padding_box_width_        f64
 	padding_box_height_       f64
 	dom_node_                 &Node = unsafe { nil }
@@ -441,24 +443,47 @@ pub fn (mut p PaintableBox) set_scroll_offset(requested_offset CSSPixelPoint_) b
 	return p.set_scroll_offset_with_snap_strategy(requested_offset, ScrollSnapSelectionStrategy_{})
 }
 
+// Rust painting/chrome_geometry.rs: scroll_offset_bounds(). Overflow and
+// scrollport share document coordinates, including reverse writing modes.
+pub fn (p &PaintableBox) minimum_scroll_offset() CSSPixelPoint_ {
+	overflow := p.scrollable_overflow_rect_ or { return CSSPixelPoint_{} }
+	return CSSPixelPoint_{x_: math.min(overflow.x_ - p.padding_box_x_, 0), y_: math.min(overflow.y_ - p.padding_box_y_, 0)}
+}
+
+pub fn (p &PaintableBox) maximum_scroll_offset() CSSPixelPoint_ {
+	overflow := p.scrollable_overflow_rect_ or { return CSSPixelPoint_{} }
+	return CSSPixelPoint_{x_: math.max(overflow.x_ + overflow.width() - p.padding_box_x_ - p.padding_box_width_, 0), y_: math.max(overflow.y_ + overflow.height() - p.padding_box_y_ - p.padding_box_height_, 0)}
+}
+
+pub fn (p &PaintableBox) clamp_scroll_offset(offset CSSPixelPoint_) CSSPixelPoint_ {
+	if p.scrollable_overflow_rect_ == none { return offset }
+	minimum := p.minimum_scroll_offset()
+	maximum := p.maximum_scroll_offset()
+	return CSSPixelPoint_{x_: math.max(minimum.x(), math.min(maximum.x(), offset.x())), y_: math.max(minimum.y(), math.min(maximum.y(), offset.y()))}
+}
+
+pub fn (mut p PaintableBox) set_scroll_offset_without_snapping(requested_offset CSSPixelPoint_) bool {
+	if p.scrollable_overflow_rect_ == none { return false }
+	return p.commit_scroll_offset(p.clamp_scroll_offset(requested_offset))
+}
+
 pub fn (mut p PaintableBox) set_scroll_offset_with_snap_strategy(requested_offset CSSPixelPoint_, strategy ScrollSnapSelectionStrategy_) bool {
-	overflow := p.scrollable_overflow_rect_ or { return false }
-	max_x_offset := math.max(overflow.width() - p.padding_box_width_, 0)
-	max_y_offset := math.max(overflow.height() - p.padding_box_height_, 0)
-	offset := CSSPixelPoint_{
-		x_: math.max(f64(0), math.min(max_x_offset, requested_offset.x()))
-		y_: math.max(f64(0), math.min(max_y_offset, requested_offset.y()))
-	}
+	return p.apply_scroll_snap_destination(p.select_scroll_snap_destination(requested_offset, strategy))
+}
+
+pub fn (p &PaintableBox) select_scroll_snap_destination(requested_offset CSSPixelPoint_, strategy ScrollSnapSelectionStrategy_) ScrollSnapDestination_ {
+	if p.scrollable_overflow_rect_ == none { return ScrollSnapDestination_{position: p.scroll_offset()} }
+	offset := p.clamp_scroll_offset(requested_offset)
 	if p.repaint_callback_target != unsafe { nil }
 		&& p.adjust_scroll_destination_callback != unsafe { nil } {
 		destination := p.adjust_scroll_destination_callback(p.repaint_callback_target, p.layout_handle, offset,
 			strategy)
-		return p.apply_scroll_snap_destination(destination)
+		return destination
 	}
-	return p.commit_scroll_offset(offset)
+	return ScrollSnapDestination_{position: offset}
 }
 
-pub fn (mut p PaintableBox) apply_scroll_snap_destination(destination ScrollSnapDestination_) bool {
+pub fn (mut p PaintableBox) record_scroll_snap_destination(destination ScrollSnapDestination_) {
 	if destination.evaluated_x {
 		p.snapped_areas_x_ = destination.snapped_areas_x.clone()
 	}
@@ -470,13 +495,11 @@ pub fn (mut p PaintableBox) apply_scroll_snap_destination(destination ScrollSnap
 			element.set_snapped_scroll_areas(p.snapped_areas_x_, p.snapped_areas_y_)
 		}
 	}
-	overflow := p.scrollable_overflow_rect_ or { return false }
-	max_x_offset := math.max(overflow.width() - p.padding_box_width_, 0)
-	max_y_offset := math.max(overflow.height() - p.padding_box_height_, 0)
-	return p.commit_scroll_offset(CSSPixelPoint_{
-		x_: math.max(f64(0), math.min(max_x_offset, destination.position.x()))
-		y_: math.max(f64(0), math.min(max_y_offset, destination.position.y()))
-	})
+}
+
+pub fn (mut p PaintableBox) apply_scroll_snap_destination(destination ScrollSnapDestination_) bool {
+	p.record_scroll_snap_destination(destination)
+	return p.set_scroll_offset_without_snapping(destination.position)
 }
 
 fn (mut p PaintableBox) commit_scroll_offset(offset CSSPixelPoint_) bool {
@@ -491,19 +514,7 @@ fn (mut p PaintableBox) commit_scroll_offset(offset CSSPixelPoint_) bool {
 		}
 		mut document := unsafe { &Document(p.dom_node_.document()) }
 		if document != unsafe { nil } {
-			mut already_pending := false
-			for pending in document.pending_scroll_events {
-				if pending.target == p.dom_node_ && pending.type_ == 'scroll' {
-					already_pending = true
-					break
-				}
-			}
-			if !already_pending {
-				document.pending_scroll_events << PendingScrollEvent{
-					target: p.dom_node_
-					type_: 'scroll'
-				}
-			}
+			document.append_pending_scroll_event(PendingScrollEvent{target: p.dom_node_, type_: 'scroll'})
 		}
 	}
 	p.set_needs_repaint(.no)

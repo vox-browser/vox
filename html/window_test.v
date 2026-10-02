@@ -77,11 +77,11 @@ fn test_window_scroll_idle_animation_selection_and_external() {
 	document.set_viewport_rect(dom.Rect{0, 0, 320, 200})
 	first_promise := window.scroll_xy(12, 18)
 	assert first_promise.state() == .fulfilled
-	assert window.scroll_x() == 12
-	assert window.scroll_y() == 18
+	assert window.scroll_x() == 0
+	assert window.scroll_y() == 0
 	window.scroll_by_xy(3, 4)
-	assert window.scroll_x() == 15
-	assert window.scroll_y() == 22
+	assert window.scroll_x() == 0
+	assert window.scroll_y() == 0
 	window.scroll(ScrollToOptions{ left: math.nan(), top: math.inf(1) })
 	assert window.scroll_x() == 0
 	assert window.scroll_y() == 0

@@ -446,6 +446,9 @@ fn materialize_dom_paintables(box &Node, state &LayoutState, mut placeholder dom
 			if styled := box.as_node_with_style() {
 				if used := state.try_get(styled) {
 					paintable_box.has_scrollable_overflow_ = used.has_scrollable_overflow()
+					position := layout_offset_in_svg_user_space(box, state, used)
+					paintable_box.padding_box_x_ = position.x().minus(used.padding_left).to_double()
+					paintable_box.padding_box_y_ = position.y().minus(used.padding_top).to_double()
 					paintable_box.padding_box_width_ = used.content_width().to_double() + used.padding_left.to_double() + used.padding_right.to_double()
 					paintable_box.padding_box_height_ = used.content_height().to_double() + used.padding_top.to_double() + used.padding_bottom.to_double()
 					if overflow := used.scrollable_overflow_rect() {

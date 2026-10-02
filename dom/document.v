@@ -2241,6 +2241,10 @@ pub type NavigableViewportScrollCallback = fn (voidptr, CSSPixelPoint_)
 
 pub type NavigablePerformScrollCallback = fn (voidptr, CSSPixelPoint_) &Promise
 
+pub type NavigablePerformScrollOptionsCallback = fn (voidptr, CSSPixelPoint_, ScrollBehavior, ScrollSnapSelectionStrategy_) &Promise
+
+pub type NavigablePerformElementScrollCallback = fn (voidptr, &Element, CSSPixelPoint_, ScrollBehavior, ScrollSnapSelectionStrategy_) &Promise
+
 pub type NavigableIsFocusedCallback = fn (voidptr) bool
 
 pub type NavigableActiveDocumentChangedCallback = fn (voidptr, ?&Document)
@@ -2294,6 +2298,8 @@ pub mut:
 	html_model_handle_          voidptr = unsafe { nil }
 	viewport_scroll_callback_   NavigableViewportScrollCallback = unsafe { nil }
 	perform_scroll_callback_    NavigablePerformScrollCallback = unsafe { nil }
+	perform_scroll_options_callback_ NavigablePerformScrollOptionsCallback = unsafe { nil }
+	perform_element_scroll_callback_ NavigablePerformElementScrollCallback = unsafe { nil }
 	is_focused_callback_        NavigableIsFocusedCallback = unsafe { nil }
 	active_document_changed_              NavigableActiveDocumentChangedCallback = unsafe { nil }
 	set_needs_repaint_callback_           NavigableSetNeedsRepaintCallback = unsafe { nil }
@@ -2322,6 +2328,20 @@ pub fn (n &Navigable) perform_scroll_of_viewport_scrolling_box(position CSSPixel
 pub fn (n &Navigable) perform_a_scroll_of_the_viewport(position CSSPixelPoint_) &Promise {
 	if n.html_model_handle_ != unsafe { nil } && n.perform_scroll_callback_ != unsafe { nil } {
 		return n.perform_scroll_callback_(n.html_model_handle_, position)
+	}
+	return Promise.resolved(js_undefined())
+}
+
+pub fn (n &Navigable) perform_a_scroll_of_the_viewport_with_options(position CSSPixelPoint_, behavior ScrollBehavior, strategy ScrollSnapSelectionStrategy_) &Promise {
+	if n.html_model_handle_ != unsafe { nil } && n.perform_scroll_options_callback_ != unsafe { nil } {
+		return n.perform_scroll_options_callback_(n.html_model_handle_, position, behavior, strategy)
+	}
+	return n.perform_a_scroll_of_the_viewport(position)
+}
+
+pub fn (n &Navigable) perform_a_scroll_of_an_element(element &Element, position CSSPixelPoint_, behavior ScrollBehavior, strategy ScrollSnapSelectionStrategy_) &Promise {
+	if n.html_model_handle_ != unsafe { nil } && n.perform_element_scroll_callback_ != unsafe { nil } {
+		return n.perform_element_scroll_callback_(n.html_model_handle_, element, position, behavior, strategy)
 	}
 	return Promise.resolved(js_undefined())
 }
@@ -3441,14 +3461,43 @@ pub fn (manager &CloseWatcherManager) notify_about_user_activation() {
 }
 
 pub fn (w &Window) scroll_x() f64 {
+	if w.associated_document_ != unsafe { nil } && w.associated_document_.cached_navigable() != none {
+		return w.associated_document_.viewport_rect().x
+	}
 	return w.scroll_x_
 }
 
 pub fn (w &Window) scroll_y() f64 {
+	if w.associated_document_ != unsafe { nil } && w.associated_document_.cached_navigable() != none {
+		return w.associated_document_.viewport_rect().y
+	}
 	return w.scroll_y_
 }
 
 pub fn (mut w Window) scroll(x f64, y f64) &Promise {
+	return w.scroll_with_options(x, y, .auto_, ScrollSnapSelectionStrategy_{})
+}
+
+pub fn (mut w Window) scroll_with_options(x f64, y f64, behavior ScrollBehavior, strategy ScrollSnapSelectionStrategy_) &Promise {
+	if w.associated_document_ != unsafe { nil } {
+		if navigable := w.associated_document_.cached_navigable() {
+			mut document := w.associated_document_
+			mut position := CSSPixelPoint_{x_: normalize_non_finite(x), y_: normalize_non_finite(y)}
+			if position.x() != 0 || position.y() != 0 {
+				document.update_layout(.window_scroll)
+				paintable := document.as_node().paintable_box() or { return Promise.resolved(js_undefined()) }
+				position = paintable.clamp_scroll_offset(position)
+			}
+			viewport := document.viewport_rect()
+			// Window.cpp currently returns here even if a smooth operation is
+			// in progress. Keep this pinned-source early return.
+			if position.x() == viewport.x && position.y() == viewport.y {
+				return Promise.resolved(js_undefined())
+			}
+			return navigable.perform_a_scroll_of_the_viewport_with_options(position, behavior, strategy)
+		}
+	}
+	// Legacy detached DOM Window records carry no HTML navigable identity.
 	w.scroll_x_ = x
 	w.scroll_y_ = y
 	return Promise.resolved(js_undefined())
@@ -4817,8 +4866,14 @@ pub enum PendingFullscreenEventType {
 pub struct PendingScrollEvent {
 pub mut:
 	target  &Node = unsafe { nil }
+	event_target ?&EventTarget
 	type_   string
 	bubbles bool
+}
+
+fn (event PendingScrollEvent) target_identity() voidptr {
+	if target := event.event_target { return voidptr(target) }
+	return voidptr(event.target)
 }
 
 pub struct PendingAnimationEvent {
@@ -8535,15 +8590,30 @@ pub fn (mut d Document) run_the_resize_steps() {
 	}
 }
 
+pub fn (mut d Document) append_pending_scroll_event(event PendingScrollEvent) bool {
+	for pending in d.pending_scroll_events {
+		if pending.type_ == event.type_ && pending.target_identity() == event.target_identity() {
+			return false
+		}
+	}
+	d.pending_scroll_events << event
+	return true
+}
+
 // https://drafts.csswg.org/cssom-view-1/#document-run-the-scroll-steps
 pub fn (mut d Document) run_the_scroll_steps() {
 	// Process pending scroll events
 	pending_scroll_events := d.pending_scroll_events.clone()
 	d.pending_scroll_events.clear()
 	for pse in pending_scroll_events {
-		// Fire scroll events at targets
+		if mut event_target := pse.event_target {
+			mut event := Event.create(pse.type_, EventInit{})
+			event_target.dispatch_event(event)
+			continue
+		}
 		if pse.target != unsafe { nil } {
-			pse.target.dispatch_event_simple(pse.type_, pse.bubbles)
+			pse.target.dispatch_event_simple(pse.type_, pse.bubbles
+				|| (pse.target.is_document() && pse.type_ in ['scroll', 'scrollend']))
 		}
 	}
 }

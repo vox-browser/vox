@@ -59,6 +59,8 @@ fn computed_properties_to_dom(computed &ComputedProperties) &dom.CSSComputedProp
 		client_border_left_width_: computed_values_border_data(computed, .border_left_width, .border_left_style).width.to_double()
 		overflow_x_: overflow_to_dom(computed.overflow_x())
 		overflow_y_: overflow_to_dom(computed.overflow_y())
+		scroll_behavior_: if computed.scroll_behavior() == .smooth { dom.ScrollBehavior.smooth } else { dom.ScrollBehavior.auto_ }
+		scroll_snap_strictness_none_: computed.scroll_snap_type().strictness == .none_
 		content_visibility_: content_visibility_to_dom(computed.content_visibility())
 		opacity_: computed.opacity()
 		visibility_: visibility_to_dom(computed.visibility())

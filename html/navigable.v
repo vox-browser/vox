@@ -9,6 +9,7 @@
 module html
 
 import css
+import compositor
 import dom
 import editing
 import fetch
@@ -148,6 +149,7 @@ mut:
 	event_handler_                       &page.EventHandler = unsafe { nil }
 	rendering_thread_                    &RenderingThread = unsafe { nil }
 	is_svg_page_                         bool
+	main_thread_smooth_scrolls_          []MainThreadSmoothScroll
 }
 
 fn navigable_backing_store_shrink_callback(target voidptr) {
@@ -272,6 +274,8 @@ fn connect_navigable_model_to_host(model &NavigableModel) {
 	host.html_model_handle_ = voidptr(model)
 	host.viewport_scroll_callback_ = navigable_model_scroll_viewport_box
 	host.perform_scroll_callback_ = navigable_model_perform_viewport_scroll
+	host.perform_scroll_options_callback_ = navigable_model_perform_viewport_scroll_options
+	host.perform_element_scroll_callback_ = navigable_model_perform_element_scroll
 	host.is_focused_callback_ = navigable_model_is_focused
 	host.active_document_changed_ = navigable_model_active_document_changed
 	host.set_needs_repaint_callback_ = navigable_model_set_needs_repaint
@@ -1794,9 +1798,10 @@ fn (mut model NavigableModel) resize_backing_stores_if_needed(resizing bool) boo
 
 fn (mut model NavigableModel) scroll_offset_did_change() {
 	if mut document := model.active_document() {
-		// DOM currently exposes dispatch rather than the pending-scroll-event
-		// list; dispatching here preserves observable scrolling behavior.
-		document.dispatch_event_simple('scroll', false)
+		document.append_pending_scroll_event(dom.PendingScrollEvent{
+			target: document.as_node()
+			type_: 'scroll'
+		})
 	}
 }
 
@@ -1846,14 +1851,11 @@ pub fn (mut model NavigableModel) clamp_viewport_scroll_offset() {
 		return
 	}
 	viewport := document.viewport_rect()
-	mut maximum_x := 0.0
-	mut maximum_y := 0.0
-	if root := document.document_element() {
-		mut mutable_root := unsafe { &dom.Element(root) }
-		maximum_x = math.max(0.0, f64(mutable_root.scroll_width()) - viewport.width)
-		maximum_y = math.max(0.0, f64(mutable_root.scroll_height()) - viewport.height)
+	paintable := document.as_node().paintable_box() or { return }
+	clamped := paintable.clamp_scroll_offset(dom.CSSPixelPoint_{x_: viewport.x, y_: viewport.y})
+	if clamped.x() != viewport.x || clamped.y() != viewport.y {
+		model.perform_scroll_of_viewport_scrolling_box(css.CSSPixelPoint.from_values(clamped.x(), clamped.y()))
 	}
-	model.perform_scroll_of_viewport_scrolling_box(css.CSSPixelPoint.from_values(math.max(0.0, math.min(viewport.x, maximum_x)), math.max(0.0, math.min(viewport.y, maximum_y))))
 }
 
 pub fn (mut model NavigableModel) perform_scroll_of_viewport_scrolling_box(position css.CSSPixelPoint) {
@@ -1862,14 +1864,19 @@ pub fn (mut model NavigableModel) perform_scroll_of_viewport_scrolling_box(posit
 	x := position.x().to_double()
 	y := position.y().to_double()
 	if x == viewport.x && y == viewport.y {
+		mut loop := main_thread_event_loop()
+		loop.schedule()
 		return
 	}
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_viewport_rect(dom.Rect{x, y, viewport.width, viewport.height})
 	model.scroll_offset_did_change()
 	mutable_document.set_needs_repaint()
+	mutable_document.invalidate_scroll_state()
 	mutable_document.inform_all_viewport_clients_about_the_current_viewport_rect()
 	model.needs_repaint_ = true
+	mut loop := main_thread_event_loop()
+	loop.schedule()
 }
 
 pub fn (model &NavigableModel) has_a_rendering_opportunity() bool {
@@ -2099,27 +2106,42 @@ pub fn (mut model NavigableModel) perform_a_scroll_of_the_viewport(position css.
 
 fn (mut model NavigableModel) perform_a_scroll_of_the_viewport_with_snap_strategy(position css.CSSPixelPoint,
 	strategy dom.ScrollSnapSelectionStrategy_) &dom.Promise {
+	return model.perform_a_scroll_of_the_viewport_with_options(position, .auto_, strategy)
+}
+
+pub fn (mut model NavigableModel) perform_a_scroll_of_the_viewport_with_options(position css.CSSPixelPoint,
+	behavior dom.ScrollBehavior, strategy dom.ScrollSnapSelectionStrategy_) &dom.Promise {
 	document := model.active_document() or {
 		return dom.Promise.resolved(dom.js_undefined())
 	}
-	viewport := document.viewport_rect()
-	mut maximum_x := 0.0
-	mut maximum_y := 0.0
-	if root := document.document_element() {
-		mut mutable_root := unsafe { &dom.Element(root) }
-		maximum_x = math.max(0.0, f64(mutable_root.scroll_width()) - viewport.width)
-		maximum_y = math.max(0.0, f64(mutable_root.scroll_height()) - viewport.height)
-	}
-	clamped := dom.CSSPixelPoint_{
-		x_: math.max(0.0, math.min(position.x().to_double(), maximum_x))
-		y_: math.max(0.0, math.min(position.y().to_double(), maximum_y))
-	}
 	mut mutable_document := unsafe { &dom.Document(document) }
+	viewport := document.viewport_rect()
+	mut layout_delta := dom.CSSPixelPoint_{x_: position.x().to_double() - viewport.x, y_: position.y().to_double() - viewport.y}
+	if mut window := model.active_window() {
+		if mut visual := window.visual_viewport() {
+			dx := position.x().to_double() - visual.page_left()
+			dy := position.y().to_double() - visual.page_top()
+			visual_dx := math.min(viewport.width - visual.width(), math.max(0.0, visual.offset_left() + dx)) - visual.offset_left()
+			visual_dy := math.min(viewport.height - visual.height(), math.max(0.0, visual.offset_top() + dy)) - visual.offset_top()
+			layout_delta = dom.CSSPixelPoint_{x_: dx - visual_dx, y_: dy - visual_dy}
+			visual_delta := css.CSSPixelPoint.from_values(visual_dx, visual_dy)
+			visual.scroll_by(visual_delta)
+			if visual_dx == 0 && visual_dy == 0 {
+				mutable_document.set_needs_repaint()
+			} else {
+				mutable_document.append_pending_scroll_event(dom.PendingScrollEvent{event_target: unsafe { &dom.EventTarget(visual) }, type_: 'scrollend'})
+			}
+		}
+	}
+	mutable_document.update_layout(.navigable_viewport_scroll)
+	requested := dom.CSSPixelPoint_{x_: viewport.x + layout_delta.x(), y_: viewport.y + layout_delta.y()}
+	paintable := document.as_node().paintable_box() or { return dom.Promise.resolved(dom.js_undefined()) }
+	clamped := paintable.clamp_scroll_offset(requested)
 	destination := mutable_document.adjust_viewport_scroll_destination(clamped, strategy)
-	model.perform_scroll_of_viewport_scrolling_box(css.CSSPixelPoint.from_values(
-		math.max(0.0, math.min(destination.position.x(), maximum_x)),
-		math.max(0.0, math.min(destination.position.y(), maximum_y))))
-	return dom.Promise.resolved(dom.js_undefined())
+	return model.perform_main_thread_scroll(compositor.AsyncScrollNodeStableId{
+		node_id: u64(document.as_node().unique_id())
+		kind: .viewport
+	}, paintable.clamp_scroll_offset(destination.position), behavior, document.document_element())
 }
 
 pub fn (mut model NavigableModel) reset_zoom() {
@@ -2151,10 +2173,12 @@ pub fn (model &NavigableModel) has_pending_navigations() bool {
 
 pub fn (mut model NavigableModel) set_has_been_destroyed() {
 	model.has_been_destroyed_ = true
+	model.resolve_all_pending_main_thread_scrolls()
 	model.inform_the_navigation_api_about_child_navigable_destruction()
 }
 
 pub fn (mut model NavigableModel) remove_from_all_navigables() {
+	model.resolve_all_pending_main_thread_scrolls()
 	model.set_active_document(none)
 	html_all_navigable_models = html_all_navigable_models.filter(voidptr(it) != voidptr(&model))
 }

@@ -471,6 +471,17 @@ fn test_navigable_sandbox_viewport_selection_observers_and_rendering() {
 	model.set_viewport_size(css.CSSPixelSize.from_values(640, 480))
 	assert model.viewport_size().width().to_double() == 640
 	assert model.viewport_size().height().to_double() == 480
+	// This model fixture has no layout host. Install the committed viewport
+	// mirror used by the source scroll operation before exercising its bounds.
+	mut document_node := document.as_node()
+	viewport_paintable := &dom.PaintableBox{
+		is_box: true
+		dom_node_: document_node
+		padding_box_width_: 640
+		padding_box_height_: 480
+		scrollable_overflow_rect_: dom.CSSPixelRect_{width_: 1000, height_: 1000}
+	}
+	document_node.set_paintable(unsafe { &dom.Paintable(viewport_paintable) })
 	model.perform_scroll_of_viewport_scrolling_box(css.CSSPixelPoint.from_values(12, 18))
 	assert model.viewport_scroll_offset().to_double_pair() == [12.0, 18.0]!
 	assert model.snapshot_containing_block().left_value() == 12

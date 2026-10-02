@@ -50,6 +50,7 @@ pub:
 pub enum WindowScrollBehavior {
 	auto_
 	smooth
+	instant
 }
 
 pub struct ScrollToOptions {
@@ -810,28 +811,13 @@ fn (mut window WindowModel) scroll_with_snap_strategy(options ScrollToOptions,
 	if window.associated_document().cached_navigable() == none {
 		return dom.Promise.resolved(dom.js_undefined())
 	}
-	mut document := unsafe { &dom.Document(window.associated_document()) }
-	viewport := document.viewport_rect()
-	mut x := normalize_window_scroll_value(options.left or { viewport.x })
-	mut y := normalize_window_scroll_value(options.top or { viewport.y })
-	mut maximum_x := x
-	mut maximum_y := y
-	if root := document.document_element() {
-		mut mutable_root := unsafe { &dom.Element(root) }
-		maximum_x = math.max(0.0, f64(mutable_root.scroll_width()) - viewport.width)
-		maximum_y = math.max(0.0, f64(mutable_root.scroll_height()) - viewport.height)
-	}
-	x = math.max(0.0, math.min(x, maximum_x))
-	y = math.max(0.0, math.min(y, maximum_y))
-	destination := document.adjust_viewport_scroll_destination(dom.CSSPixelPoint_{ x_: x, y_: y },
-		strategy or { dom.ScrollSnapSelectionStrategy_{} })
-	x = math.max(0.0, math.min(destination.position.x(), maximum_x))
-	y = math.max(0.0, math.min(destination.position.y(), maximum_y))
-	if x != viewport.x || y != viewport.y {
-		document.set_viewport_rect(dom.Rect{x, y, viewport.width, viewport.height})
-		document.inform_all_viewport_clients_about_the_current_viewport_rect()
-	}
-	return dom.Promise.resolved(dom.js_undefined())
+	viewport := window.associated_document().viewport_rect()
+	x := normalize_window_scroll_value(options.left or { viewport.x })
+	y := normalize_window_scroll_value(options.top or { viewport.y })
+	mut host := unsafe { &dom.Window(window.associated_document().window) }
+	behavior := match options.behavior { .auto_ { dom.ScrollBehavior.auto_ } .smooth { dom.ScrollBehavior.smooth } .instant { dom.ScrollBehavior.instant } }
+	selection_strategy := strategy or { dom.ScrollSnapSelectionStrategy_{} }
+	return host.scroll_with_options(x, y, behavior, selection_strategy)
 }
 
 pub fn (mut window WindowModel) scroll_xy(x f64, y f64) &dom.Promise {

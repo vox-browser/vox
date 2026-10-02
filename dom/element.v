@@ -234,6 +234,13 @@ pub enum ScrollLogicalPosition {
 	nearest
 }
 
+pub struct ScrollToOptions_ {
+pub:
+	left ?f64
+	top ?f64
+	behavior ScrollBehavior = .auto_
+}
+
 pub enum ScrollBehavior {
 	auto_
 	smooth
@@ -491,6 +498,8 @@ pub mut:
 	visibility_                     CSSVisibility_ = .visible
 	font_weight_                    f64 = 400
 	scrollbar_width_                string = 'auto'
+	scroll_behavior_                ScrollBehavior = .auto_
+	scroll_snap_strictness_none_ bool = true
 	client_border_top_width_        f64
 	client_border_left_width_       f64
 	math_depth_                     int
@@ -3679,11 +3688,11 @@ pub fn (mut e Element) set_scroll_left(x_ f64) {
 
 		// FIXME: or the element has no overflow.
 
-		// 11. Scroll the element to x,scrollTop, with the scroll behavior being "auto".
-		// FIXME: Implement this in terms of calling "scroll the element".
 		mut offset := pb.scroll_offset()
 		offset.set_x(x)
-		pb.set_scroll_offset(offset)
+		if navigable := doc.cached_navigable() {
+			navigable.perform_a_scroll_of_an_element(&e, offset, .auto_, ScrollSnapSelectionStrategy_{})
+		} else { pb.set_scroll_offset(offset) }
 	}
 }
 
@@ -3735,11 +3744,11 @@ pub fn (mut e Element) set_scroll_top(y_ f64) {
 
 		// FIXME: or the element has no overflow.
 
-		// 11. Scroll the element to scrollLeft,y, with the scroll behavior being "auto".
-		// FIXME: Implement this in terms of calling "scroll the element".
 		mut offset := pb.scroll_offset()
 		offset.set_y(y)
-		pb.set_scroll_offset(offset)
+		if navigable := doc.cached_navigable() {
+			navigable.perform_a_scroll_of_an_element(&e, offset, .auto_, ScrollSnapSelectionStrategy_{})
+		} else { pb.set_scroll_offset(offset) }
 	}
 }
 
@@ -3790,10 +3799,14 @@ fn normalize_non_finite(v f64) f64 {
 
 // https://drafts.csswg.org/cssom-view/#dom-element-scroll
 pub fn (mut e Element) el_scroll(x_ f64, y_ f64) &Promise {
-	return e.el_scroll_with_snap_strategy(x_, y_, none)
+	return e.el_scroll_with_options(ScrollToOptions_{left: x_, top: y_})
 }
 
-fn (mut e Element) el_scroll_with_snap_strategy(x_ f64, y_ f64,
+pub fn (mut e Element) el_scroll_with_options(options ScrollToOptions_) &Promise {
+	return e.el_scroll_with_snap_strategy(options.left or { e.scroll_left() }, options.top or { e.scroll_top() }, options.behavior, none)
+}
+
+fn (mut e Element) el_scroll_with_snap_strategy(x_ f64, y_ f64, behavior ScrollBehavior,
 	snap_strategy ?ScrollSnapSelectionStrategy_) &Promise {
 	x := normalize_non_finite(x_)
 	y := normalize_non_finite(y_)
@@ -3807,16 +3820,26 @@ fn (mut e Element) el_scroll_with_snap_strategy(x_ f64, y_ f64,
 	}
 	if x == 0 && y == 0 && e.el_scroll_offset().is_zero() && !e.is_document_body_element(doc)
 		&& !e.is_document_element() {
-		return Promise.resolved(js_undefined())
+		mut document := unsafe { &Document(doc) }
+		document.update_style()
+		if computed := e.el_computed_properties() {
+			if computed.scroll_snap_strictness_none_ { return Promise.resolved(js_undefined()) }
+		} else { return Promise.resolved(js_undefined()) }
 	}
 	mut document := unsafe { &Document(doc) }
 	document.update_layout(.element_scroll)
 	if e.is_document_element() {
-		return window.scroll(window.scroll_x(), y)
+		return window.scroll_with_options(x, y, .auto_, snap_strategy or { ScrollSnapSelectionStrategy_{} })
 	}
 	if e.is_document_body_element(doc) && doc.in_quirks_mode() && !e.is_potentially_scrollable() {
-		return window.scroll(x, y)
+		return window.scroll_with_options(x, y, .auto_, snap_strategy or { ScrollSnapSelectionStrategy_{} })
 	}
+	layout_node := e.as_node().layout_node() or { return Promise.resolved(js_undefined()) }
+	if !layout_node.is_scroll_container_ { return Promise.resolved(js_undefined()) }
+	if navigable := doc.cached_navigable() {
+		return navigable.perform_a_scroll_of_an_element(&e, CSSPixelPoint_{x_: x, y_: y}, behavior, snap_strategy or { ScrollSnapSelectionStrategy_{} })
+	}
+	// Detached translated DOM fixtures use their retained paintable directly.
 	if mut pb := e.paintable_box() {
 		mut offset := pb.scroll_offset()
 		offset.set_x(x)
@@ -3831,10 +3854,14 @@ fn (mut e Element) el_scroll_with_snap_strategy(x_ f64, y_ f64,
 }
 
 pub fn (mut e Element) scroll_by(x_ f64, y_ f64) &Promise {
-	x := normalize_non_finite(x_)
-	y := normalize_non_finite(y_)
+	return e.scroll_by_with_options(ScrollToOptions_{left: x_, top: y_})
+}
+
+pub fn (mut e Element) scroll_by_with_options(options ScrollToOptions_) &Promise {
+	x := normalize_non_finite(options.left or { 0 })
+	y := normalize_non_finite(options.top or { 0 })
 	start := CSSPixelPoint_{ x_: e.scroll_left(), y_: e.scroll_top() }
-	return e.el_scroll_with_snap_strategy(start.x() + x, start.y() + y,
+	return e.el_scroll_with_snap_strategy(start.x() + x, start.y() + y, options.behavior,
 		ScrollSnapSelectionStrategy_{
 			type_: .end_position_and_direction
 			start_offset: start
