@@ -4,12 +4,15 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Streams`
 
 Translation workspace: `~/code/vox2/streams`
 Audited: 2026-09-12
+Pending callback re-audit: 2026-10-02
 
 All 22 upstream Streams `.cpp` implementation units have audited V mappings.
 The 25 headers and 20 WebIDL definitions were cross-audited as well; their
-observable types, dictionaries, mixins, state machines, controller operations,
-reader/writer operations, and transfer algorithms are represented by the typed
-V package.
+types, dictionaries, mixins, state machines, controller operations,
+reader/writer operations, and transfer algorithms have typed V mappings.
+These mappings do not establish complete browser or JavaScript runtime parity.
+The pending-callback re-audit and remaining boundaries are recorded in
+[`STREAMS_PENDING_CALLBACKS.md`](../docs/translation-audit/STREAMS_PENDING_CALLBACKS.md).
 
 | Upstream implementation units | V implementation |
 | --- | --- |
@@ -27,6 +30,13 @@ V package.
 | `UnderlyingSink.cpp` | `writable.v`, `writable_operations.v` |
 | `UnderlyingSource.cpp` | `readable.v`, `readable_operations.v` |
 | `WritableStream.cpp`, `WritableStreamDefaultController.cpp`, `WritableStreamDefaultWriter.cpp`, `WritableStreamOperations.cpp` | `writable.v`, `writable_operations.v`, `transfer_bindings.v` |
+
+The 2026-10-02 pending-callback translation additionally maps source Promise
+reactions to `promise_callbacks.v`, `webidl_callbacks.v`,
+`readable_pipe_operations.v`, `readable_tee_promise_operations.v`, and
+`transform_promise_operations.v`; owning HTML constructors and job dispatch are
+in `html/stream_operations.v`. The following size metrics are the original
+2026-09-12 audit snapshot.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
@@ -95,32 +105,41 @@ those interfaces.
 
 ## Boundary
 
-Ladybird represents stream chunks as arbitrary LibJS values and schedules real
-WebIDL promise reactions on the JavaScript job queue. The standalone V package
-uses a recursively cloneable typed `Value` and observable synchronous promise
-records; callbacks run synchronously, while pending read, pipe, close, error,
-abort, and BYOB settlement is retained. Generated bindings and GC tracing,
-JavaScript iterator acquisition, and HTML `MessagePort` event dispatch remain
-owned by the bindings, LibJS, and HTML translations. The package models the
-Streams-specific algorithms and transfer endpoints without claiming those
-runtime integration layers. Realm identity and promise/result-realm selection
-are represented explicitly even though JavaScript execution remains outside
-this standalone package.
+Ladybird represents chunks as arbitrary LibJS values. The V package still uses
+a recursively cloneable typed `Value`; arbitrary JS objects, wrapper worlds,
+GC tracing, JavaScript iterator acquisition, and the compact browser's JSC
+Stream factories remain open runtime boundaries.
 
-No Streams implementation remains in an `upstream_*_entry_points.v` quarantine
-file. The strict symbol audit reports 0 unmatched Streams bodies: private C++
-pipe, tee, and read-request callback classes are explicitly mapped to the
-reviewed V pumps that consolidate them, and `Transformer`, `UnderlyingSource`,
-and `UnderlyingSink` JavaScript-object conversion is classified as a typed
-bindings boundary. The suspicious-trivial queue contains only verified value
-constructors, controller release/no-op algorithms, and default sink callbacks.
+Underlying source, sink, and transformer dictionaries now retain native
+WebIDL `CallbackType` values, the actual receiver, and the actual controller
+address. The source start callback may return a pending Promise value; pull,
+write, close, abort, cancel, transform, and flush use WebIDL Promise callback
+conversion. `VoidPromise` retains an actual native WebIDL Promise backend.
+The controller flags, in-flight requests, backpressure, pipe shutdown, tee
+cancel/delivery, and shared transform startup remain pending until the source
+fulfillment/rejection jobs run.
+
+`EnvironmentSettingsObject` Stream factories attach that backend to their
+actual Window/Worker loop and realm. Promise jobs capture the active classic
+script and implied document, prepare the source script/callback context, and
+clean it up after execution. Native standalone callers without a scheduler
+keep the explicit direct job adapter. This adapter is not a browser Promise
+job queue. Generic JavaScript thenables, Promise objects from JSC, arbitrary
+rejection values, module execution-context capture, and complete generated
+Stream bindings are not implemented by the typed native Promise bridge.
+
+The original symbol audit found no Streams bodies in an
+`upstream_*_entry_points.v` quarantine file. Symbol coverage did not detect the
+omitted pending underlying-callback Promise semantics reported as WA-09.
+The source reactions and retained callback operation records above replace
+those omissions; JavaScript object conversion remains a typed boundary.
 
 ## Verification
 
 ```text
-$ /Users/alex/code/v/v -enable-globals test streams
-Summary for all V _test.v files: 12 passed, 12 total.
+$ /Users/alex/code/v/v -old-compiler -enable-globals test streams compression encoding
+Summary for all V _test.v files: 27 passed, 27 total.
 
-$ python3 tools/upstream_function_delta.py [...] --json
-Streams added/unmatched: 0
+$ /Users/alex/code/v/v -old-compiler -enable-globals test html/stream_operations_test.v
+Summary for all V _test.v files: 1 passed, 1 total.
 ```
