@@ -52,14 +52,20 @@ pub fn (mut stream TransformStream) set_writable(mut writable WritableStream) {
 }
 
 pub fn (mut stream TransformStream) set_backpressure(value bool) {
-	if stream.backpressure_ == value { return }
+	stream.set_backpressure_and_return_change_promise(value)
+}
+
+fn (mut stream TransformStream) set_backpressure_and_return_change_promise(value bool) &VoidPromise {
+	if stream.backpressure_ == value { return stream.backpressure_change_promise_ }
 	mut changed := stream.backpressure_change_promise_
-	stream.backpressure_change_promise_ = VoidPromise.pending_in(stream.realm_)
+	new_promise := VoidPromise.pending_in(stream.realm_)
+	stream.backpressure_change_promise_ = new_promise
 	stream.backpressure_ = value
 	// Upstream resolves the old Promise before assigning these slots. Its jobs
 	// run after the operation returns; installing the slots first preserves
 	// that same visible state for the direct standalone reaction adapter.
 	if !isnil(changed) { changed.resolve() }
+	return new_promise
 }
 
 pub fn (stream &TransformStream) backpressure_change_promise() &VoidPromise {
@@ -270,6 +276,7 @@ pub fn transform_stream_default_source_cancel_algorithm(mut stream TransformStre
 
 pub fn transform_stream_default_source_pull_algorithm(mut stream TransformStream) &VoidPromise {
 	assert stream.backpressure_
-	stream.set_backpressure(false)
-	return stream.backpressure_change_promise_
+	// Source Promise jobs run after this pull returns. Retain the newly created
+	// change Promise before direct standalone reactions can replace its slot.
+	return stream.set_backpressure_and_return_change_promise(false)
 }

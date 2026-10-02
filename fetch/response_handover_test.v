@@ -107,3 +107,50 @@ fn test_consume_body_reports_late_stream_failure_without_a_successful_eof() {
 	params.controller.report_timing()
 	assert params.timing_info.end_time > 0
 }
+
+fn test_consume_body_collects_multiple_network_deliveries_and_eof() {
+	state := &ResponseHandoverObservation{}
+	mut params := handover_test_params(state)
+	params.algorithms = FetchAlgorithms.create(FetchAlgorithmsInput{
+		process_response_consume_body: fn [state] (_ &Response, result BodyBytes) {
+			mut observation := unsafe { &ResponseHandoverObservation(state) }
+			observation.results << result
+		}
+	})
+	mut response := Response.create()
+	body := Body.streaming()
+	mut receiver := FetchedDataReceiver.create(params, body.stream())
+	receiver.set_body(body)
+	response.body = body
+	fetch_response_handover(params, response)
+	receiver.handle_network_data(NetworkResponseData.from_bytes('first'.bytes()), .ongoing)
+	assert !receiver.delivery_task_queued_
+	receiver.handle_network_data(NetworkResponseData.from_bytes('second'.bytes()), .ongoing)
+	receiver.handle_network_data(NetworkResponseData.from_bytes([]u8{}), .complete)
+	assert state.results.len == 1
+	assert state.results[0].bytes == 'firstsecond'.bytes()
+	assert params.request.done
+}
+
+fn test_consume_body_collects_network_bytes_and_eof_buffered_before_handover() {
+	state := &ResponseHandoverObservation{}
+	mut params := handover_test_params(state)
+	params.algorithms = FetchAlgorithms.create(FetchAlgorithmsInput{
+		process_response_consume_body: fn [state] (_ &Response, result BodyBytes) {
+			mut observation := unsafe { &ResponseHandoverObservation(state) }
+			observation.results << result
+		}
+	})
+	mut response := Response.create()
+	body := Body.streaming()
+	mut receiver := FetchedDataReceiver.create(params, body.stream())
+	receiver.set_body(body)
+	response.body = body
+	receiver.handle_network_data(NetworkResponseData.from_bytes('first'.bytes()), .ongoing)
+	receiver.handle_network_data(NetworkResponseData.from_bytes('second'.bytes()), .ongoing)
+	receiver.handle_network_data(NetworkResponseData.from_bytes([]u8{}), .complete)
+	fetch_response_handover(params, response)
+	assert state.results.len == 1
+	assert state.results[0].bytes == 'firstsecond'.bytes()
+	assert params.request.done
+}

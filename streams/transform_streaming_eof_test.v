@@ -78,3 +78,25 @@ fn test_identity_transform_restarts_pull_for_each_future_chunk_and_flushes_at_eo
 	assert end.result().done
 	assert state.flushed
 }
+
+fn test_identity_transform_drains_prebuffered_bytes_then_future_bytes_and_eof() {
+	state := &StreamingTransformObservation{}
+	mut source := ReadableStream.construct_impl(UnderlyingSource{ type_: .bytes }, QueuingStrategy{})!
+	source.enqueue(bytes_value('buffered'.bytes()))!
+	mut transform := TransformStream.construct_impl(Transformer{
+		flush: fn [state] () ![]Value {
+			mut observation := unsafe { &StreamingTransformObservation(state) }
+			observation.flushed = true
+			return []Value{}
+		}
+	}, QueuingStrategy{}, QueuingStrategy{})!
+	mut readable := source.piped_through(mut transform, false, false, false, none)
+	reader := readable.get_default_reader()!
+	continue_streaming_transform_read(reader, state)
+	assert state.chunks == ['buffered']
+	source.enqueue(bytes_value('future'.bytes()))!
+	assert state.chunks == ['buffered', 'future']
+	source.close()
+	assert state.ended
+	assert state.flushed
+}
