@@ -10,7 +10,7 @@ module referrerpolicy
 
 import dom
 import fetch
-import securecontexts
+import referrerpolicy.algorithm
 
 // https://w3c.github.io/webappsec-referrer-policy/#enumdef-referrerpolicy
 pub enum ReferrerPolicy {
@@ -103,128 +103,18 @@ pub enum OriginOnly {
 
 // https://w3c.github.io/webappsec-referrer-policy/#strip-url
 pub fn strip_url_for_use_as_referrer(input ?dom.URL, origin_only OriginOnly) ?dom.URL {
-	mut url := input or { return none }
-	if url.scheme() in ['about', 'blob', 'data'] {
-		return none
-	}
-	url = url.with_username('').with_password('')
-	url.set_fragment(none)
-	if origin_only == .yes {
-		url = url.with_pathname('/')
-		url = url.with_query(none)
-	}
-	return url
-}
-
-fn is_downgrade(source dom.URL, destination dom.URL) bool {
-	return securecontexts.is_url_potentially_trustworthy(source) == .potentially_trustworthy
-		&& securecontexts.is_url_potentially_trustworthy(destination) == .not_trustworthy
-}
-
-fn same_origin(a dom.URL, b dom.URL) bool {
-	left := a.origin()
-	right := b.origin()
-	return left.value != 'opaque' && left.value != '' && left.value == right.value
-}
-
-// https://w3c.github.io/webappsec-referrer-policy/#determine-requests-referrer
-pub fn determine_requests_referrer(request &fetch.Request) ?dom.URL {
-	policy := from_string(request.referrer_policy) or { panic('invalid request referrer policy') }
-	if policy == .empty_string || request.referrer.sentinel == .no_referrer {
-		return none
-	}
-	mut source := dom.URL{}
-	if explicit := request.referrer.url {
-		source = explicit
+	return algorithm.strip_url_for_use_as_referrer(input, if origin_only == .yes {
+		algorithm.OriginOnly.yes
 	} else {
-		if request.client_origin_opaque {
-			return none
-		}
-		if request.client_is_window {
-			source = request.client_document_url or { return none }
-		} else {
-			source = request.client_creation_url or { return none }
-		}
-	}
-	mut referrer_url := strip_url_for_use_as_referrer(source, .no)
-	referrer_origin := strip_url_for_use_as_referrer(source, .yes)
-	if url := referrer_url {
-		if url.serialize().len > 4096 {
-			referrer_url = referrer_origin
-		}
-	}
-	destination := request.current_url()
-	return match policy {
-		.no_referrer {
-			none
-		}
-		.origin {
-			referrer_origin
-		}
-		.unsafe_url {
-			referrer_url
-		}
-		.strict_origin {
-			if url := referrer_url {
-				if is_downgrade(url, destination) {
-					none
-				} else {
-					referrer_origin
-				}
-			} else {
-				none
-			}
-		}
-		.strict_origin_when_cross_origin {
-			if url := referrer_url {
-				if same_origin(url, destination) {
-					referrer_url
-				} else if is_downgrade(url, destination) {
-					none
-				} else {
-					referrer_origin
-				}
-			} else {
-				none
-			}
-		}
-		.same_origin {
-			if url := referrer_url {
-				if same_origin(url, destination) {
-					referrer_url
-				} else {
-					none
-				}
-			} else {
-				none
-			}
-		}
-		.origin_when_cross_origin {
-			if url := referrer_url {
-				if same_origin(url, destination) {
-					referrer_url
-				} else {
-					referrer_origin
-				}
-			} else {
-				none
-			}
-		}
-		.no_referrer_when_downgrade {
-			if url := referrer_url {
-				if is_downgrade(url, destination) {
-					none
-				} else {
-					referrer_url
-				}
-			} else {
-				none
-			}
-		}
-		.empty_string {
-			none
-		}
-	}
+		algorithm.OriginOnly.no
+	})
+}
+
+// The independent core is also called by Fetch's main-fetch step. Keeping the
+// request projection here avoids a Fetch -> ReferrerPolicy -> Fetch cycle.
+pub fn determine_requests_referrer(request &fetch.Request) ?dom.URL {
+	return algorithm.determine_requests_referrer(request.referrer_policy,
+		request.referrer_source(), request.current_url())
 }
 
 // ASCII-lowercase a string (matching equals_ignoring_ascii_case for the known tokens).

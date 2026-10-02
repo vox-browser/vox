@@ -609,3 +609,18 @@ pub fn request_priority_from_string(value string) ?Priority {
 		else { none }
 	}
 }
+
+// ReferrerPolicy/AbstractOperations.cpp, determine request's referrer steps
+// 2-3: explicit URL, no-referrer, or the Window/Worker client source.
+pub fn (request &Request) referrer_source() ?dom.URL {
+	if explicit := request.referrer.url {
+		return explicit
+	}
+	if request.referrer.sentinel == .no_referrer || request.client_origin_opaque {
+		return none
+	}
+	if request.client_is_window {
+		return request.client_document_url
+	}
+	return request.client_creation_url
+}
