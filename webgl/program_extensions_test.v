@@ -4,8 +4,8 @@ fn test_shader_program_and_uniform_parent_validation() {
 	mut context := WebGLRenderingContext.new(.webgl1, WebGLContextAttributes{}, [])
 	mut vertex := context.create_shader(vertex_shader) or { panic('vertex shader') }
 	mut fragment := context.create_shader(fragment_shader) or { panic('fragment shader') }
-	context.shader_source(mut vertex, 'void main() {}')
-	context.shader_source(mut fragment, 'void main() {}')
+	context.shader_source(mut vertex, 'uniform vec4 color; void main() { gl_Position = color; }')
+	context.shader_source(mut fragment, 'precision mediump float; void main() { gl_FragColor = vec4(1.0); }')
 	context.compile_shader(mut vertex)
 	context.compile_shader(mut fragment)
 	mut program := context.create_program()

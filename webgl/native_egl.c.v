@@ -15,6 +15,26 @@ fn C.vox_gl_wait_sync(voidptr, u32, u64)
 fn C.vox_gl_delete_sync(voidptr)
 fn C.vox_gl_get_sync_parameter(voidptr, u32) int
 fn C.vox_gl_get_error() u32
+fn C.vox_gl_create_shader(u32) u32
+fn C.vox_gl_create_program() u32
+fn C.vox_gl_shader_source(u32, &char, int)
+fn C.vox_gl_compile_shader(u32)
+fn C.vox_gl_attach_shader(u32, u32)
+fn C.vox_gl_detach_shader(u32, u32)
+fn C.vox_gl_link_program(u32)
+fn C.vox_gl_use_program(u32)
+fn C.vox_gl_validate_program(u32)
+fn C.vox_gl_delete_shader(u32)
+fn C.vox_gl_delete_program(u32)
+fn C.vox_gl_shader_parameter(u32, u32) int
+fn C.vox_gl_program_parameter(u32, u32) int
+fn C.vox_gl_shader_log(u32, int, &u8)
+fn C.vox_gl_program_log(u32, int, &u8)
+fn C.vox_gl_uniform_location(u32, &char) int
+fn C.vox_gl_attrib_location(u32, &char) int
+fn C.vox_gl_bind_attrib_location(u32, u32, &char)
+fn C.vox_gl_active_info(u32, u32, int, int, &u8, &int, &u32) int
+fn C.vox_gl_shader_precision(u32, u32, &int, &int)
 
 fn (mut context OpenGLContext) collect_native_error() {
 	error_value := GLenum(C.vox_gl_get_error())
@@ -57,4 +77,52 @@ fn (mut context OpenGLContext) native_sync_parameter(handle voidptr, pname GLenu
 	result := C.vox_gl_get_sync_parameter(handle, pname)
 	context.collect_native_error()
 	return result
+}
+
+fn (mut context OpenGLContext) native_shader_parameter(handle GLuint, pname GLenum) int {
+	context.make_current()
+	result := C.vox_gl_shader_parameter(handle, pname)
+	context.collect_native_error()
+	return result
+}
+
+fn (mut context OpenGLContext) native_program_parameter(handle GLuint, pname GLenum) int {
+	context.make_current()
+	result := C.vox_gl_program_parameter(handle, pname)
+	context.collect_native_error()
+	return result
+}
+
+fn (mut context OpenGLContext) native_shader_log(handle GLuint) string {
+	length := context.native_shader_parameter(handle, GLenum(0x8b84))
+	if length <= 0 { return '' }
+	mut output := []u8{len: length}
+	C.vox_gl_shader_log(handle, length, output.data)
+	context.collect_native_error()
+	return output[..length - 1].bytestr()
+}
+
+fn (mut context OpenGLContext) native_program_log(handle GLuint) string {
+	length := context.native_program_parameter(handle, GLenum(0x8b84))
+	if length <= 0 { return '' }
+	mut output := []u8{len: length}
+	C.vox_gl_program_log(handle, length, output.data)
+	context.collect_native_error()
+	return output[..length - 1].bytestr()
+}
+
+fn (mut context OpenGLContext) native_active_info(handle GLuint, index GLuint, uniform bool) ?WebGLActiveInfo {
+	maximum := context.native_program_parameter(handle, if uniform {
+		GLenum(0x8b87)
+	} else {
+		GLenum(0x8b8a)
+	})
+	capacity := if maximum > 0 { maximum } else { 1 }
+	mut name := []u8{len: capacity}
+	mut size := 0
+	mut type_ := u32(0)
+	length := C.vox_gl_active_info(handle, index, int(uniform), capacity, name.data, &size, &type_)
+	context.collect_native_error()
+	if length <= 0 { return none }
+	return WebGLActiveInfo.create(name[..length].bytestr(), GLenum(type_), size)
 }

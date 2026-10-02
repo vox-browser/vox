@@ -72,8 +72,8 @@ fn test_upstream_uniform_vectors_matrices_and_webgl2_validation() {
 	mut context := WebGLRenderingContext.create(.webgl2, WebGLContextAttributes{}, [])
 	mut vertex := WebGLShader.create(mut context, vertex_shader) or { panic('vertex shader') }
 	mut fragment := WebGLShader.create(mut context, fragment_shader) or { panic('fragment shader') }
-	context.shader_source(mut vertex, 'void main() {}')
-	context.shader_source(mut fragment, 'void main() {}')
+	context.shader_source(mut vertex, 'uniform vec4 u_color; void main() { gl_Position = u_color; }')
+	context.shader_source(mut fragment, 'precision mediump float; void main() { gl_FragColor = vec4(1.0); }')
 	context.compile_shader(mut vertex)
 	context.compile_shader(mut fragment)
 	mut program := WebGLProgram.create(mut context)

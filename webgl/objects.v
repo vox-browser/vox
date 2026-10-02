@@ -12,6 +12,7 @@ pub:
 	context_generation u64
 mut:
 	handle_      GLuint
+	native_handle_ GLuint
 	invalidated_ bool
 	label_       string
 }

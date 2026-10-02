@@ -377,8 +377,12 @@ pub fn (mut context WebGLRenderingContext) create_shader(type_ GLenum) ?&WebGLSh
 		return none
 	}
 	handle := context.allocate_handle()
+	context.native.make_current()
+	native_handle := C.vox_gl_create_shader(type_)
+	context.native.collect_native_error()
+	if native_handle == 0 { return none }
 	shader := &WebGLShader{
-		object: new_object(context.identity(), context.context_generation_, handle)
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
 		type_: type_
 	}
 	unsafe {
@@ -389,8 +393,11 @@ pub fn (mut context WebGLRenderingContext) create_shader(type_ GLenum) ?&WebGLSh
 
 pub fn (mut context WebGLRenderingContext) create_program() &WebGLProgram {
 	handle := context.allocate_handle()
+	context.native.make_current()
+	native_handle := C.vox_gl_create_program()
+	context.native.collect_native_error()
 	program := &WebGLProgram{
-		object: new_object(context.identity(), context.context_generation_, handle)
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
 	}
 	unsafe {
 		context.programs[handle] = program
@@ -517,7 +524,9 @@ pub fn (mut context WebGLRenderingContext) shader_source(mut shader WebGLShader,
 		return
 	}
 	shader.source_ = source
-	shader.compiled_ = false
+	context.native.make_current()
+	C.vox_gl_shader_source(shader.object.native_handle_, source.str, source.len)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) compile_shader(mut shader WebGLShader) {
@@ -525,8 +534,10 @@ pub fn (mut context WebGLRenderingContext) compile_shader(mut shader WebGLShader
 		context.set_error(invalid_operation)
 		return
 	}
-	shader.compiled_ = shader.source_.trim_space() != ''
-	shader.info_log_ = if shader.compiled_ { '' } else { 'Shader source is empty' }
+	context.native.make_current()
+	C.vox_gl_compile_shader(shader.object.native_handle_)
+	shader.compiled_ = context.native.native_shader_parameter(shader.object.native_handle_, compile_status) != 0
+	shader.info_log_ = context.native.native_shader_log(shader.object.native_handle_)
 	context.native.dispatch('compile_shader', shader.object.handle_)
 }
 
@@ -537,11 +548,11 @@ pub fn (context &WebGLRenderingContext) get_shader_source(shader &WebGLShader) ?
 	return shader.source_
 }
 
-pub fn (context &WebGLRenderingContext) get_shader_info_log(shader &WebGLShader) ?string {
+pub fn (mut context WebGLRenderingContext) get_shader_info_log(shader &WebGLShader) ?string {
 	if !context.owns(&shader.object) {
 		return none
 	}
-	return shader.info_log_
+	return context.native.native_shader_log(shader.object.native_handle_)
 }
 
 pub fn (mut context WebGLRenderingContext) attach_shader(mut program WebGLProgram, shader &WebGLShader) {
@@ -562,6 +573,9 @@ pub fn (mut context WebGLRenderingContext) attach_shader(mut program WebGLProgra
 		}
 		program.attached_fragment_shader = shader
 	}
+	context.native.make_current()
+	C.vox_gl_attach_shader(program.object.native_handle_, shader.object.native_handle_)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) detach_shader(mut program WebGLProgram, shader &WebGLShader) {
@@ -592,6 +606,9 @@ pub fn (mut context WebGLRenderingContext) detach_shader(mut program WebGLProgra
 		}
 		program.attached_fragment_shader = none
 	}
+	context.native.make_current()
+	C.vox_gl_detach_shader(program.object.native_handle_, shader.object.native_handle_)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) link_program(mut program WebGLProgram) {
@@ -599,20 +616,11 @@ pub fn (mut context WebGLRenderingContext) link_program(mut program WebGLProgram
 		context.set_error(invalid_operation)
 		return
 	}
-	vertex := program.attached_vertex_shader or {
-		program.linked_ = false
-		program.info_log_ = 'Missing vertex shader'
-		return
-	}
-
-	fragment := program.attached_fragment_shader or {
-		program.linked_ = false
-		program.info_log_ = 'Missing fragment shader'
-		return
-	}
-
-	program.linked_ = vertex.compiled_ && fragment.compiled_
-	program.info_log_ = if program.linked_ { '' } else { 'Attached shader did not compile' }
+	context.native.make_current()
+	C.vox_gl_link_program(program.object.native_handle_)
+	program.linked_ = context.native.native_program_parameter(program.object.native_handle_, link_status) != 0
+	program.info_log_ = context.native.native_program_log(program.object.native_handle_)
+	program.uniform_locations.clear()
 	context.native.dispatch('link_program', program.object.handle_)
 }
 
@@ -624,6 +632,9 @@ pub fn (mut context WebGLRenderingContext) use_program(program ?&WebGLProgram) {
 		}
 	}
 	context.current_program = program
+	context.native.make_current()
+	C.vox_gl_use_program(if value := program { value.object.native_handle_ } else { 0 })
+	context.native.collect_native_error()
 	context.native.dispatch('use_program', if value := program { value.object.handle_ } else { 0 })
 }
 
@@ -632,7 +643,9 @@ pub fn (mut context WebGLRenderingContext) validate_program(mut program WebGLPro
 		context.set_error(invalid_operation)
 		return
 	}
-	program.validated_ = program.linked_
+	context.native.make_current()
+	C.vox_gl_validate_program(program.object.native_handle_)
+	program.validated_ = context.native.native_program_parameter(program.object.native_handle_, validate_status) != 0
 }
 
 pub fn (mut context WebGLRenderingContext) get_uniform_location(mut program WebGLProgram, name string) ?&WebGLUniformLocation {
@@ -640,14 +653,15 @@ pub fn (mut context WebGLRenderingContext) get_uniform_location(mut program WebG
 		context.set_error(invalid_operation)
 		return none
 	}
-	if name.contains('[') && !name.ends_with('[0]') {
-		return none
-	}
 	if existing := program.uniform_locations[name] {
 		return existing
 	}
+	context.native.make_current()
+	native_location := C.vox_gl_uniform_location(program.object.native_handle_, name.str)
+	context.native.collect_native_error()
+	if native_location < 0 { return none }
 	location := &WebGLUniformLocation{
-		handle_: GLuint(program.uniform_locations.len)
+		handle_: GLuint(native_location)
 		parent_program: program
 	}
 	unsafe {

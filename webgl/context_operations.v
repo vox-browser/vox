@@ -275,6 +275,9 @@ pub fn (mut context WebGLRenderingContext) bind_attrib_location(program &WebGLPr
 		return
 	}
 	context.command('bind_attrib_location', program.object.handle_, index, name.len)
+	context.native.make_current()
+	C.vox_gl_bind_attrib_location(program.object.native_handle_, index, name.str)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) bind_framebuffer(target GLenum, framebuffer_object ?&WebGLFramebuffer) {
@@ -505,6 +508,9 @@ pub fn (mut context WebGLRenderingContext) delete_shader(object ?&WebGLShader) {
 		}
 		handle := handle_result.value
 		context.shaders.delete(handle)
+		context.native.make_current()
+		C.vox_gl_delete_shader(value.object.native_handle_)
+		context.native.collect_native_error()
 		context.command('delete_shader', handle)
 	}
 }
@@ -521,6 +527,9 @@ pub fn (mut context WebGLRenderingContext) delete_program(object ?&WebGLProgram)
 		}
 		handle := handle_result.value
 		context.programs.delete(handle)
+		context.native.make_current()
+		C.vox_gl_delete_program(value.object.native_handle_)
+		context.native.collect_native_error()
 		if current := context.current_program {
 			if current.object.handle_ == handle {
 				context.current_program = none
@@ -723,11 +732,11 @@ pub fn (context &WebGLRenderingContext) get_attached_shaders(program &WebGLProgr
 	return result
 }
 
-pub fn (context &WebGLRenderingContext) get_program_info_log(program &WebGLProgram) ?string {
+pub fn (mut context WebGLRenderingContext) get_program_info_log(program &WebGLProgram) ?string {
 	if !context.owns(&program.object) {
 		return none
 	}
-	return program.info_log_
+	return context.native.native_program_log(program.object.native_handle_)
 }
 
 pub fn (mut context WebGLRenderingContext) get_program_parameter(program &WebGLProgram, pname GLenum) WebGLParameterValue {
@@ -739,26 +748,25 @@ pub fn (mut context WebGLRenderingContext) get_program_parameter(program &WebGLP
 		attached_shaders {
 			WebGLParameterValue{
 				kind: .integer
-				integer: i64(program.attached_vertex_shader != none) + i64(program.attached_fragment_shader != none)
+				integer: context.native.native_program_parameter(program.object.native_handle_, pname)
 			}
 		}
 		active_attributes, active_uniforms {
-			// Native shader reflection supplies these counts in upstream.
-			WebGLParameterValue{ kind: .integer }
+			WebGLParameterValue{ kind: .integer, integer: context.native.native_program_parameter(program.object.native_handle_, pname) }
 		}
 		transform_feedback_buffer_mode, transform_feedback_varyings, active_uniform_blocks {
 			if context.version != .webgl2 {
 				context.set_error(invalid_enum)
 				WebGLParameterValue{}
 			} else {
-				WebGLParameterValue{ kind: .integer }
+				WebGLParameterValue{ kind: .integer, integer: context.native.native_program_parameter(program.object.native_handle_, pname) }
 			}
 		}
 		delete_status {
 			WebGLParameterValue{ kind: .boolean, boolean: program.object.invalidated_ }
 		}
-		link_status { WebGLParameterValue{ kind: .boolean, boolean: program.linked_ } }
-		validate_status { WebGLParameterValue{ kind: .boolean, boolean: program.validated_ } }
+		link_status { WebGLParameterValue{ kind: .boolean, boolean: context.native.native_program_parameter(program.object.native_handle_, pname) != 0 } }
+		validate_status { WebGLParameterValue{ kind: .boolean, boolean: context.native.native_program_parameter(program.object.native_handle_, pname) != 0 } }
 		else {
 			context.set_error(invalid_enum)
 			WebGLParameterValue{}
@@ -772,9 +780,9 @@ pub fn (mut context WebGLRenderingContext) get_shader_parameter(shader &WebGLSha
 		return WebGLParameterValue{}
 	}
 	return match pname {
-		shader_type { WebGLParameterValue{ kind: .integer, integer: shader.type_ } }
+		shader_type { WebGLParameterValue{ kind: .integer, integer: context.native.native_shader_parameter(shader.object.native_handle_, pname) } }
 		delete_status { WebGLParameterValue{ kind: .boolean, boolean: shader.object.invalidated_ } }
-		compile_status { WebGLParameterValue{ kind: .boolean, boolean: shader.compiled_ } }
+		compile_status { WebGLParameterValue{ kind: .boolean, boolean: context.native.native_shader_parameter(shader.object.native_handle_, pname) != 0 } }
 		else {
 			context.set_error(invalid_enum)
 			WebGLParameterValue{}
@@ -782,9 +790,13 @@ pub fn (mut context WebGLRenderingContext) get_shader_parameter(shader &WebGLSha
 	}
 }
 
-pub fn (mut context WebGLRenderingContext) get_shader_precision_format(_ GLenum, _ GLenum) WebGLShaderPrecisionFormat {
+pub fn (mut context WebGLRenderingContext) get_shader_precision_format(shader GLenum, precision GLenum) WebGLShaderPrecisionFormat {
 	context.command('get_shader_precision_format')
-	return WebGLShaderPrecisionFormat.create(127, 127, 23)
+	mut range := [0, 0]!
+	mut bits := 0
+	C.vox_gl_shader_precision(shader, precision, &range[0], &bits)
+	context.native.collect_native_error()
+	return WebGLShaderPrecisionFormat.create(range[0], range[1], bits)
 }
 
 pub fn (mut context WebGLRenderingContext) get_buffer_parameter(target GLenum, pname GLenum) WebGLParameterValue {
@@ -1001,16 +1013,22 @@ pub fn (context &WebGLRenderingContext) get_uniform(_ &WebGLProgram, location ?&
 	return WebGLParameterValue{ kind: .numbers, numbers: values.map(f64(it)) }
 }
 
-pub fn (context &WebGLRenderingContext) get_active_attrib(_ &WebGLProgram, index GLuint) ?WebGLActiveInfo {
-	return WebGLActiveInfo.create('attribute_${index}', GLenum(0x1406), 1)
+pub fn (mut context WebGLRenderingContext) get_active_attrib(program &WebGLProgram, index GLuint) ?WebGLActiveInfo {
+	if !context.owns(&program.object) { context.set_error(invalid_operation); return none }
+	return context.native.native_active_info(program.object.native_handle_, index, false)
 }
 
-pub fn (context &WebGLRenderingContext) get_active_uniform(_ &WebGLProgram, index GLuint) ?WebGLActiveInfo {
-	return WebGLActiveInfo.create('uniform_${index}', GLenum(0x1406), 1)
+pub fn (mut context WebGLRenderingContext) get_active_uniform(program &WebGLProgram, index GLuint) ?WebGLActiveInfo {
+	if !context.owns(&program.object) { context.set_error(invalid_operation); return none }
+	return context.native.native_active_info(program.object.native_handle_, index, true)
 }
 
-pub fn (context &WebGLRenderingContext) get_attrib_location(_ &WebGLProgram, name string) int {
-	return if name == '' || name.starts_with('gl_') { -1 } else { int(name.hash() & 0x7fff) }
+pub fn (mut context WebGLRenderingContext) get_attrib_location(program &WebGLProgram, name string) int {
+	if !context.owns(&program.object) { context.set_error(invalid_operation); return -1 }
+	context.native.make_current()
+	result := C.vox_gl_attrib_location(program.object.native_handle_, name.str)
+	context.native.collect_native_error()
+	return result
 }
 
 pub fn (mut context WebGLRenderingContext) get_vertex_attrib(index GLuint, pname GLenum) WebGLParameterValue {

@@ -94,4 +94,32 @@ static int vox_gl_get_sync_parameter(void* sync, unsigned pname)
     return result;
 }
 static unsigned vox_gl_get_error(void) { return glGetError(); }
+static unsigned vox_gl_create_shader(unsigned type) { return glCreateShader(type); }
+static unsigned vox_gl_create_program(void) { return glCreateProgram(); }
+static void vox_gl_shader_source(unsigned shader, char const* source, int length) { glShaderSource(shader, 1, &source, &length); }
+static void vox_gl_compile_shader(unsigned shader) { glCompileShader(shader); }
+static void vox_gl_attach_shader(unsigned program, unsigned shader) { glAttachShader(program, shader); }
+static void vox_gl_detach_shader(unsigned program, unsigned shader) { glDetachShader(program, shader); }
+static void vox_gl_link_program(unsigned program) { glLinkProgram(program); }
+static void vox_gl_use_program(unsigned program) { glUseProgram(program); }
+static void vox_gl_validate_program(unsigned program) { glValidateProgram(program); }
+static void vox_gl_delete_shader(unsigned shader) { glDeleteShader(shader); }
+static void vox_gl_delete_program(unsigned program) { glDeleteProgram(program); }
+static int vox_gl_shader_parameter(unsigned shader, unsigned pname) { GLint value = 0; glGetShaderiv(shader, pname, &value); return value; }
+static int vox_gl_program_parameter(unsigned program, unsigned pname) { GLint value = 0; glGetProgramiv(program, pname, &value); return value; }
+static void vox_gl_shader_log(unsigned shader, int size, char* output) { glGetShaderInfoLog(shader, size, NULL, output); }
+static void vox_gl_program_log(unsigned program, int size, char* output) { glGetProgramInfoLog(program, size, NULL, output); }
+static int vox_gl_uniform_location(unsigned program, char const* name) { return glGetUniformLocation(program, name); }
+static int vox_gl_attrib_location(unsigned program, char const* name) { return glGetAttribLocation(program, name); }
+static void vox_gl_bind_attrib_location(unsigned program, unsigned index, char const* name) { glBindAttribLocation(program, index, name); }
+static int vox_gl_active_info(unsigned program, unsigned index, int uniform, int capacity, char* name, int* size, unsigned* type)
+{
+    GLsizei length = 0;
+    if (uniform)
+        glGetActiveUniform(program, index, capacity, &length, size, type, name);
+    else
+        glGetActiveAttrib(program, index, capacity, &length, size, type, name);
+    return length;
+}
+static void vox_gl_shader_precision(unsigned shader, unsigned precision, int* range, int* bits) { glGetShaderPrecisionFormat(shader, precision, range, bits); }
 #endif
