@@ -239,10 +239,18 @@ pub enum StructuredSerializeValueTag {
 	end_object = 0xff
 }
 
+// Source IPCSerializationRecord and StorageSerializationRecord share this DTO
+// boundary, but retain their distinct source wire codecs.
+pub enum SerializationType {
+	ipc
+	storage
+}
+
 pub struct SerializationRecord {
 pub:
 	data                 []u8
 	shared_array_buffers []&StructuredObject
+	type_                SerializationType
 }
 
 fn serialized_undefined() SerializationRecord {

@@ -189,11 +189,25 @@ fn error_name_to_type(name string) StructuredErrorType {
 	}
 }
 
+fn structured_error_type_name(error_type StructuredErrorType) string {
+	return match error_type {
+		.error { 'Error' }
+		.eval_error { 'EvalError' }
+		.internal_error { 'InternalError' }
+		.range_error { 'RangeError' }
+		.reference_error { 'ReferenceError' }
+		.syntax_error { 'SyntaxError' }
+		.type_error { 'TypeError' }
+		.uri_error { 'URIError' }
+	}
+}
+
 struct StructuredSerializer {
 mut:
 	data                 []u8
 	memory               map[u64]u32
 	shared_array_buffers []&StructuredObject
+	type_                SerializationType
 }
 
 fn (mut serializer StructuredSerializer) write_u8(value u8) {
@@ -201,6 +215,10 @@ fn (mut serializer StructuredSerializer) write_u8(value u8) {
 }
 
 fn (mut serializer StructuredSerializer) write_u32(value u32) {
+	if serializer.type_ == .storage {
+		serializer.write_unsigned_leb128(u64(value))
+		return
+	}
 	serializer.data << u8(value)
 	serializer.data << u8(value >> 8)
 	serializer.data << u8(value >> 16)
@@ -208,20 +226,63 @@ fn (mut serializer StructuredSerializer) write_u32(value u32) {
 }
 
 fn (mut serializer StructuredSerializer) write_u64(value u64) {
+	if serializer.type_ == .storage {
+		serializer.write_unsigned_leb128(value)
+		return
+	}
+	serializer.write_fixed_u64(value)
+}
+
+fn (mut serializer StructuredSerializer) write_fixed_u64(value u64) {
 	for shift in 0 .. 8 {
 		serializer.data << u8(value >> (shift * 8))
 	}
 }
 
 fn (mut serializer StructuredSerializer) write_f64(value f64) {
-	serializer.write_u64(math.f64_bits(value))
+	serializer.write_fixed_u64(math.f64_bits(value))
+}
+
+fn (mut serializer StructuredSerializer) write_unsigned_leb128(input u64) {
+	// AK/LEB128.h::for_each_leb128_byte (Unsigned).
+	mut value := input
+	for {
+		mut byte := u8(value & 0x7f)
+		value >>= 7
+		if value != 0 { byte |= 0x80 }
+		serializer.write_u8(byte)
+		if value == 0 { return }
+	}
+}
+
+fn (mut serializer StructuredSerializer) write_i32(input i32) {
+	if serializer.type_ == .ipc {
+		serializer.write_u32(u32(input))
+		return
+	}
+	// AK/LEB128.h::for_each_leb128_byte (Signed).
+	mut value := input
+	for {
+		byte := u8(value & 0x7f)
+		value >>= 7
+		sign_bit_set := (byte & 0x40) != 0
+		if (value == 0 && !sign_bit_set) || (value == -1 && sign_bit_set) {
+			serializer.write_u8(byte)
+			return
+		}
+		serializer.write_u8(byte | 0x80)
+	}
 }
 
 fn (mut serializer StructuredSerializer) write_bytes(value []u8) ! {
 	if u64(value.len) > u64(4294967295) {
 		return error('DataCloneError: byte sequence is too large')
 	}
-	serializer.write_u32(u32(value.len))
+	if serializer.type_ == .storage {
+		serializer.write_u64(u64(value.len))
+	} else {
+		serializer.write_u32(u32(value.len))
+	}
 	serializer.data << value
 }
 
@@ -234,8 +295,12 @@ fn (mut serializer StructuredSerializer) write_utf16_string(value libjs.Utf16Str
 	// count, then ASCII bytes or raw host-endian UTF-16 (pinned little endian).
 	units := value.code_units()
 	ascii := value.has_ascii_storage()
-	serializer.write_u8(if ascii { u8(1) } else { u8(0) })
-	serializer.write_u32(u32(units.len))
+	if serializer.type_ == .storage {
+		serializer.write_u64((u64(units.len) << 1) | if ascii { u64(1) } else { u64(0) })
+	} else {
+		serializer.write_u8(if ascii { u8(1) } else { u8(0) })
+		serializer.write_u32(u32(units.len))
+	}
 	for unit in units {
 		serializer.write_u8(u8(unit))
 		if !ascii { serializer.write_u8(u8(unit >> 8)) }
@@ -398,7 +463,7 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 		.number {
 			if libjs.Value.from_f64(value.number_data).is_int32() {
 				serializer.write_tag(.int32_primitive)
-				serializer.write_u32(u32(i32(value.number_data)))
+				serializer.write_i32(i32(value.number_data))
 			} else {
 				serializer.write_tag(.number_primitive)
 				serializer.write_f64(value.number_data)
@@ -499,7 +564,11 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 		}
 		.error_object {
 			serializer.write_tag(.error_object)
-			serializer.write_u8(u8(object.error_type))
+			if serializer.type_ == .storage {
+				serializer.write_string(structured_error_type_name(object.error_type))!
+			} else {
+				serializer.write_u8(u8(object.error_type))
+			}
 			// Source message/cause are optional UTF16 descriptor values, not
 			// a mandatory message or a recursively cloned cause object.
 			// Nonempty compatibility text projects a present message.
@@ -560,16 +629,19 @@ pub fn structured_serialize_for_storage(value dom.JSValue) !SerializationRecord 
 }
 
 fn structured_serialize_for_storage_with_shared_array_buffers(value dom.JSValue, allow_shared_array_buffers AllowSharedArrayBuffers) !SerializationRecord {
-	mut serializer := StructuredSerializer{}
+	// StorageStructuredSerializeDataEncoder's pinned LBSC envelope.
+	mut serializer := StructuredSerializer{type_: .storage, data: [u8(76), 66, 83, 67, 1, 0]}
 	serializer.serialize_value(value, true, allow_shared_array_buffers)!
 	return SerializationRecord{
 		data: serializer.data
+		type_: .storage
 	}
 }
 
 struct StructuredDecoder {
 	data                 []u8
 	shared_array_buffers []&StructuredObject
+	type_                SerializationType
 mut:
 	offset int
 	memory []&dom.JSValue
@@ -585,6 +657,7 @@ fn (mut decoder StructuredDecoder) read_u8() !u8 {
 }
 
 fn (mut decoder StructuredDecoder) read_u32() !u32 {
+	if decoder.type_ == .storage { return u32(decoder.read_unsigned_leb128(32)!) }
 	if decoder.offset + 4 > decoder.data.len {
 		return error('DataCloneError: truncated serialization record')
 	}
@@ -594,6 +667,11 @@ fn (mut decoder StructuredDecoder) read_u32() !u32 {
 }
 
 fn (mut decoder StructuredDecoder) read_u64() !u64 {
+	if decoder.type_ == .storage { return decoder.read_unsigned_leb128(64) }
+	return decoder.read_fixed_u64()
+}
+
+fn (mut decoder StructuredDecoder) read_fixed_u64() !u64 {
 	if decoder.offset + 8 > decoder.data.len {
 		return error('DataCloneError: truncated serialization record')
 	}
@@ -606,14 +684,56 @@ fn (mut decoder StructuredDecoder) read_u64() !u64 {
 }
 
 fn (mut decoder StructuredDecoder) read_f64() !f64 {
-	return math.f64_from_bits(decoder.read_u64()!)
+	return math.f64_from_bits(decoder.read_fixed_u64()!)
+}
+
+fn (mut decoder StructuredDecoder) read_unsigned_leb128(bits int) !u64 {
+	// AK/LEB128.h::read_from_stream (Unsigned), preserving its overflow gate.
+	mut result := u64(0)
+	mut shift := 0
+	for shift < bits {
+		byte := decoder.read_u8()!
+		masked := u64(byte & 0x7f)
+		if shift >= bits - 7 && (u64(byte) >> (bits - shift)) != 0 {
+			return error('DataCloneError: LEB128 value does not fit its source integer type')
+		}
+		result |= masked << shift
+		if (byte & 0x80) == 0 { return result }
+		shift += 7
+	}
+	return error('DataCloneError: LEB128 value exceeds its source integer width')
+}
+
+fn (mut decoder StructuredDecoder) read_i32() !i32 {
+	if decoder.type_ == .ipc { return i32(decoder.read_u32()!) }
+	// AK/LEB128.h::read_from_stream (Signed), with source i32 sign extension.
+	mut result := i32(0)
+	mut shift := 0
+	for shift < 32 {
+		byte := decoder.read_u8()!
+		result |= i32(byte & 0x7f) << shift
+		if shift >= 25 {
+			sign_and_unused := i8(byte << 1) >> (32 - shift)
+			if (byte & 0x80) != 0 || (sign_and_unused != 0 && sign_and_unused != -1) {
+				return error('DataCloneError: LEB128 value does not fit its source signed integer type')
+			}
+			return result
+		}
+		shift += 7
+		if (byte & 0x80) == 0 {
+			if shift < 32 && (byte & 0x40) != 0 { result |= ~i32(0) << shift }
+			return result
+		}
+	}
+	return error('DataCloneError: LEB128 value exceeds its source signed integer width')
 }
 
 fn (mut decoder StructuredDecoder) read_bytes() ![]u8 {
-	length := int(decoder.read_u32()!)
-	if length < 0 || length > decoder.data.len - decoder.offset {
+	raw_length := if decoder.type_ == .storage { decoder.read_u64()! } else { u64(decoder.read_u32()!) }
+	if raw_length > u64(decoder.data.len - decoder.offset) {
 		return error('DataCloneError: truncated serialization record')
 	}
+	length := int(raw_length)
 	value := decoder.data[decoder.offset..decoder.offset + length].clone()
 	decoder.offset += length
 	return value
@@ -624,17 +744,29 @@ fn (mut decoder StructuredDecoder) read_string() !string {
 }
 
 fn (mut decoder StructuredDecoder) read_utf16_string() !libjs.Utf16String {
-	flag := decoder.read_u8()!
-	if flag > 1 { return error('DataCloneError: invalid UTF-16 storage flag') }
-	count := u64(decoder.read_u32()!)
-	size := count * if flag == 1 { u64(1) } else { u64(2) }
-	if size > u64(decoder.data.len - decoder.offset) { return error('DataCloneError: truncated UTF-16 string') }
+	mut flag := u8(0)
+	mut count := u64(0)
+	if decoder.type_ == .storage {
+		header := decoder.read_u64()!
+		flag = u8(header & 1)
+		count = header >> 1
+	} else {
+		flag = decoder.read_u8()!
+		if flag > 1 { return error('DataCloneError: invalid UTF-16 storage flag') }
+		count = u64(decoder.read_u32()!)
+	}
+	unit_bytes := if flag == 1 { u64(1) } else { u64(2) }
+	if count > u64(decoder.data.len - decoder.offset) / unit_bytes { return error('DataCloneError: truncated UTF-16 string') }
 	mut units := []u16{cap: int(count)}
 	for _ in 0 .. int(count) {
 		mut unit := u16(decoder.read_u8()!)
 		if flag == 0 { unit |= u16(decoder.read_u8()!) << 8 }
 		if flag == 1 && unit >= 128 { return error('DataCloneError: invalid ASCII string storage') }
 		units << unit
+	}
+	if decoder.type_ == .storage {
+		// Unlike from_ipc_stream, source Storage decode constructs from_utf16.
+		return libjs.utf16_string_from_code_units(units)
 	}
 	return libjs.utf16_string_from_code_units_with_storage(units, flag == 1) or {
 		return error('DataCloneError: invalid ASCII string storage')
@@ -709,7 +841,7 @@ fn (mut decoder StructuredDecoder) decode_value_with_tag(tag_byte u8) !&dom.JSVa
 			}
 		}
 		.int32_primitive {
-			return &dom.JSValue{kind: .number, number_data: f64(i32(decoder.read_u32()!))}
+			return &dom.JSValue{kind: .number, number_data: f64(decoder.read_i32()!)}
 		}
 		.string_primitive {
 			value := dom.js_utf16_string(decoder.read_utf16_string()!)
@@ -813,11 +945,15 @@ fn (mut decoder StructuredDecoder) decode_value_with_tag(tag_byte u8) !&dom.JSVa
 		.error_object {
 			mut object := StructuredObject.create(.error_object)
 			value := decoder.register_object(object)
-			error_type := decoder.read_u8()!
-			if error_type > u8(StructuredErrorType.uri_error) {
-				return error('DataCloneError: invalid Error type')
+			if decoder.type_ == .storage {
+				object.error_type = error_name_to_type(decoder.read_string()!)
+			} else {
+				error_type := decoder.read_u8()!
+				if error_type > u8(StructuredErrorType.uri_error) {
+					return error('DataCloneError: invalid Error type')
+				}
+				object.error_type = unsafe { StructuredErrorType(error_type) }
 			}
-			object.error_type = unsafe { StructuredErrorType(error_type) }
 			has_message := decoder.read_u8()!
 			if has_message > 1 { return error('DataCloneError: invalid Error message encoding') }
 			object.has_message = has_message == 1
@@ -929,15 +1065,35 @@ fn decode_object_properties(mut decoder StructuredDecoder, mut object Structured
 }
 
 pub fn structured_deserialize(record SerializationRecord) !dom.JSValue {
+	// Retain the standalone translation's fully-consumed convenience API.
+	return structured_deserialize_record(record, true)
+}
+
+// Source IPC structured_deserialize has no full-consumption check; Storage
+// always requires one. Keep it separate from the older strict convenience API.
+pub fn structured_deserialize_ipc(record SerializationRecord) !dom.JSValue {
+	if record.type_ != .ipc { return error('DataCloneError: expected IPC serialization record') }
+	return structured_deserialize_record(record, false)
+}
+
+fn structured_deserialize_record(record SerializationRecord, fully_consumed bool) !dom.JSValue {
 	if record.data.len == 0 {
 		return error('DataCloneError: empty serialization record')
 	}
 	mut decoder := StructuredDecoder{
 		data: record.data
 		shared_array_buffers: record.shared_array_buffers
+		type_: record.type_
+	}
+	if record.type_ == .storage {
+		for byte in [u8(76), 66, 83, 67] {
+			if decoder.read_u8()! != byte { return error('DataCloneError: Invalid structured serialize storage magic') }
+		}
+		if decoder.read_u64()! != 1 { return error('DataCloneError: Unsupported structured serialize storage version') }
+		if decoder.read_u64()! != 0 { return error('DataCloneError: Unsupported structured serialize storage flags') }
 	}
 	value := decoder.decode_value()!
-	if decoder.offset != decoder.data.len {
+	if (fully_consumed || record.type_ == .storage) && decoder.offset != decoder.data.len {
 		return error('DataCloneError: trailing structured serialization data')
 	}
 	return *value

@@ -13,7 +13,7 @@ fn test_resizable_array_buffer_clones_preserve_capacity_and_copy_bytes() {
 		} else {
 			structured_serialize(value)!
 		}
-		assert record.data[0] == u8(StructuredSerializeValueTag.resizable_array_buffer)
+		assert record.data[if for_storage { 6 } else { 0 }] == u8(StructuredSerializeValueTag.resizable_array_buffer)
 		mut cloned := structured_object_from_value(structured_deserialize(record)!)!
 		assert cloned.kind == .array_buffer
 		assert cloned.max_byte_length? == 12
