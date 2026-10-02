@@ -333,6 +333,7 @@ mut:
 	rendering_scheduler_counters_         RenderingSchedulerCounters
 	idle_period_timer_                    ?&platform.Timer
 	vm_                                  ?&libjs.VM
+	system_event_loop_timer_              ?&platform.Timer
 }
 
 pub fn EventLoop.create(type_ EventLoopType) &EventLoop {
@@ -381,6 +382,13 @@ pub fn (mut event_loop EventLoop) run_upon_reaching_step_1(steps fn()) {
 
 pub fn (mut event_loop EventLoop) schedule() {
 	event_loop.scheduled = true
+	if event_loop.system_event_loop_timer_ == none {
+		event_loop.system_event_loop_timer_ = platform.Timer.create_single_shot(0, fn [mut event_loop] () {
+			event_loop.process()
+		})
+	}
+	mut timer := event_loop.system_event_loop_timer_ or { return }
+	if !timer.is_active() { timer.restart() }
 }
 
 pub fn (mut event_loop EventLoop) enqueue_microtask(task &Task) {
@@ -433,7 +441,13 @@ pub fn (mut event_loop EventLoop) spin_until(goal_condition fn() bool) {
 	event_loop.perform_a_microtask_checkpoint()
 	for !goal_condition() {
 		mut queue := event_loop.task_queue_
-		task := queue.take_first_runnable() or { break }
+		task := queue.take_first_runnable() or {
+			if platform.native_timer_scheduling_available() {
+				platform.pump_native_events(0.05)
+				continue
+			}
+			break
+		}
 		event_loop.currently_running_task_ = task
 		task.execute()
 		event_loop.currently_running_task_ = none
@@ -444,6 +458,7 @@ pub fn (mut event_loop EventLoop) spin_until(goal_condition fn() bool) {
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#event-loop-processing-model
 pub fn (mut event_loop EventLoop) process() {
+	if mut timer := event_loop.system_event_loop_timer_ { timer.stop() }
 	event_loop.task_generation_++
 	event_loop.scheduled = false
 	reached_step_1_tasks := event_loop.reached_step_1_tasks.clone()
