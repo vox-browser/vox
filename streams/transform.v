@@ -25,6 +25,8 @@ pub:
 	cancel_callback ?webidl.CallbackType
 	readable_type ?string
 	writable_type ?string
+	readable_type_value ?webidl.Value
+	writable_type_value ?webidl.Value
 }
 
 @[heap]
@@ -48,6 +50,8 @@ mut:
 }
 
 pub fn TransformStream.construct_impl(transformer Transformer, writable_strategy QueuingStrategy, readable_strategy QueuingStrategy) !&TransformStream {
+	if transformer.readable_type_value != none { return error("RangeError: Invalid use of reserved key 'readableType'") }
+	if transformer.writable_type_value != none { return error("RangeError: Invalid use of reserved key 'writableType'") }
 	if type_ := transformer.readable_type {
 		return error('RangeError: Unsupported transformer readableType ${type_}')
 	}
@@ -58,10 +62,10 @@ pub fn TransformStream.construct_impl(transformer Transformer, writable_strategy
 }
 
 pub fn TransformStream.create_for_constructor(realm StreamRealm, transformer Transformer, writable_strategy QueuingStrategy, readable_strategy QueuingStrategy) !&TransformStream {
-	if transformer.readable_type != none {
+	if transformer.readable_type != none || transformer.readable_type_value != none {
 		return error("RangeError: Invalid use of reserved key 'readableType'")
 	}
-	if transformer.writable_type != none {
+	if transformer.writable_type != none || transformer.writable_type_value != none {
 		return error("RangeError: Invalid use of reserved key 'writableType'")
 	}
 	return TransformStream.create(realm, transformer, writable_strategy, readable_strategy)
