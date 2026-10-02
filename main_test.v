@@ -139,6 +139,20 @@ fn test_native_browser_writable_sink_uses_source_controller_before_replaying_aut
 	assert !runtime.libjs_vm().has_running_execution_context()
 }
 
+fn test_native_browser_transform_pipeline_replays_actual_chunk_identity_to_author_dom() {
+	$if !darwin { return }
+	document := html.parse_document('<div id="result">pending</div>')
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close() }
+	mut messages := []string{}
+	run_document_javascript(document, 'https://example.test/transform.html', [
+		'globalThis.nativeTransformer={transform(value,controller){controller.enqueue(value)}};const stream=new TransformStream(nativeTransformer);stream.readable.getReader().read().then(value=>result.textContent=value.value===result&&!value.done?"source transform":"wrong chunk");stream.writable.getWriter().write(result);',
+	], runtime, mut messages)
+	assert messages == []
+	assert document.get_element_by_id('result')?.as_node().text_content()? == 'source transform'
+	assert !runtime.libjs_vm().has_running_execution_context()
+}
+
 fn test_native_browser_script_sources_keep_urls_and_module_parse_goal() {
 	document := html.parse_document_with_url('<script>const inline=1;</script><script src="app.js"></script><script type="module">export default 42;</script><script type="application/json">{}</script>', dom.URL{value: 'https://example.test/page.html'})
 	mut messages := []string{}

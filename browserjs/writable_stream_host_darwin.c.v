@@ -187,6 +187,10 @@ pub fn (mut runtime Runtime) javascript_writable_stream(stream &streams.Writable
 	return host.wrap(.stream, voidptr(stream), unsafe { nil })
 }
 
+fn (runtime &Runtime) writable_stream_host() ?&WritableStreamHost {
+	return writable_stream_bindings_[voidptr(runtime)] or { return none }
+}
+
 fn (mut host WritableStreamHost) promise(native &webidl.Promise) !voidptr {
 	host_handle := voidptr(&host)
 	return host.runtime.javascript_webidl_promise_with_converters(native, fn [host_handle] (value webidl.Value) !voidptr {

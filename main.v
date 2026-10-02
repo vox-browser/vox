@@ -2262,6 +2262,14 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript WritableStream bindings: ${err.msg()}'
 		return none
 	}
+	mut transform_host := browserjs.TransformStreamHost.create(document) or {
+		messages << 'JavaScript TransformStream bindings: ${err.msg()}'
+		return none
+	}
+	transform_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript TransformStream bindings: ${err.msg()}'
+		return none
+	}
 	mut xhr_host := browserjs.XMLHttpRequestHost.create_native(document) or {
 		messages << 'JavaScript XMLHttpRequest bindings: ${err.msg()}'
 		return none

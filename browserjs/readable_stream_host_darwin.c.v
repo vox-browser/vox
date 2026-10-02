@@ -71,6 +71,10 @@ pub fn (mut runtime Runtime) javascript_readable_stream(stream &streams.Readable
 	return host.wrap(.stream, voidptr(stream))
 }
 
+fn (runtime &Runtime) readable_stream_host() ?&ReadableStreamHost {
+	return readable_stream_bindings_[voidptr(runtime)] or { return none }
+}
+
 pub fn (runtime &Runtime) native_readable_stream(value voidptr) !&streams.ReadableStream {
 	host := readable_stream_bindings_[voidptr(runtime)] or { return error('ReadableStream binding is unavailable') }
 	return unsafe { &streams.ReadableStream(host.record(value, .stream)!.native) }
