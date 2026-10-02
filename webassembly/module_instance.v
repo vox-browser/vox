@@ -302,6 +302,8 @@ fn compile_module(bytes []u8) !&Module {
 	validator.validate_global_section(mut compiled.global_definitions)!
 	for memory in compiled.memory_types { validate_memory_type(memory)! }
 	validator.validate_table_section(mut compiled.table_definitions)!
+	validator.validate_code_section(mut compiled.function_bodies)!
+	for tag in compiled.tag_types { validate_binary_tag_type(tag, context.types)! }
 	return compiled
 }
 

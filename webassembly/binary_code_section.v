@@ -14,7 +14,8 @@ pub:
 pub struct BinaryFunctionBody {
 pub:
 	declared_size u32
-	locals []BinaryLocals
+	locals        []BinaryLocals
+pub mut:
 	body BinaryExpression
 }
 

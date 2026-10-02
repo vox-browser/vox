@@ -16,6 +16,7 @@ pub mut:
 	globals                 []BinaryGlobalType
 	globals_without_internal_globals []BinaryGlobalType
 	locals                  []BinaryValueType
+	current_function_parameter_count int
 	elements                []BinaryValueType
 	datas                   []bool
 	tags                    []BinaryTagType
@@ -169,6 +170,5 @@ fn validate_binary_module_indices(compiled &Module) !BinaryValidationContext {
 			return error('CompileError: invalid start function signature')
 		}
 	}
-	for entry in compiled.tag_types { validate_binary_tag_type(entry, context.types)! }
 	return context
 }
