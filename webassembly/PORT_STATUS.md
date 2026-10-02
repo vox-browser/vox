@@ -287,3 +287,16 @@ uses the source unsigned-long EnforceRange operation: primitive ToNumber and
 fraction truncation precede bounds checks, and output conversion casts to u32.
 Its two focused/neighbor files pass in both GC modes. Actual VM ToPrimitive and
 the full-width unsigned i64 BigInt binding remain pending.
+
+`value_global.v` (`d17cceac`) now follows the source numeric conversion branches:
+i32 performs ToNumber and wrapping ToInt32, while f32/f64 perform ToNumber before
+narrowing. Primitive strings/booleans/null, fractions, nonfinite values, signed
+wrapping and float rounding retain source behavior in globals and host-result
+adapters. `webidl.RuntimeValue.number_conversion` (`80fc58b9`) carries actual
+owning-engine ToNumber, including the number-hint primitive hook and original
+thrown values, independently of the non-coercing number-brand projection used
+by Streams. Native BigInt/Symbol rejection, replaced author Number constructors
+and closed-owner checks pass. This supplies the native JSC value boundary; it
+does not complete LibJS realm/value integration, arbitrary-width BigInt/table64
+conversion or source function reference branding. The current complete package
+passes a clean **57/57 files in each GC mode**.
