@@ -85,6 +85,15 @@ the subsequent source INVALID_ENUM fallback. The two-version typed case, actual
 public Boolean/error case, and program-extension neighbor passed with GC disabled
 (three focused files).
 
+`get_buffer_parameter` follows `WebGLRenderingContextImpl.cpp:906-928` without
+an invented retained-buffer prerequisite. The source selects the pname, queries
+a zero-initialized GLint with `glGetBufferParameterivRobustANGLE`, and returns a
+numeric result even when the driver reports an invalid target or missing
+binding; only unsupported pnames return null with source INVALID_ENUM. Actual
+native bindings and usage/size changes are visible independently of V maps.
+The two-version typed source case, public numeric/error case, and native draw
+neighbor passed with GC disabled (three focused files).
+
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
 ANGLE builds lacking compressed robust entry points use the matching GLES call
