@@ -1254,18 +1254,12 @@ pub fn (et &EventTarget) set_event_handler_attribute(name string, value ?&Callba
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#activate-an-event-handler
-pub fn (et &EventTarget) activate_event_handler(name string, event_handler EventHandler_) {
+pub fn (et &EventTarget) activate_event_handler(name string, event_handler &EventHandler_) {
 	// 1. Let handlerMap be eventTarget's event handler map.
 	// 2. Let eventHandler be handlerMap[name].
+	// Upstream's optimization uses the actual passed-in EventHandler identity.
 	// 3. If eventHandler's listener is not null, then return.
-	mut target := unsafe { &EventTarget(et) }
-	mut handler := target.data.event_handler_map[name] or {
-		new_handler := &EventHandler_{
-			value: event_handler.value
-		}
-		target.data.event_handler_map[name] = new_handler
-		new_handler
-	}
+	mut handler := unsafe { &EventHandler_(event_handler) }
 	if handler.listener != none {
 		return
 	}
