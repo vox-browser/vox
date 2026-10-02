@@ -333,6 +333,16 @@ and framebuffer-transfer tests pass with `-gc none`, covering unchanged retained
 pixels/presentation state and subsequent actual clearing. The existing native
 CPU presentation adaptation for rendering commands remains explicit.
 
+Wholly upstream-unavailable operation names now retain absent JavaScript
+property descriptors instead of gaining fabricated functions with empty
+overload sets. The source `operations.py:185-203` uses engine-private
+unimplemented markers; `LibJS/Runtime/Object.cpp:1605-1618` records those names
+without creating properties. The focused actual JavaScriptCore case and existing
+effective-overload test pass with `-gc none`, including nine unavailable names
+and all mixed implemented texture/readPixels overload families. Source engine
+diagnostics for the private markers remain a LibJS boundary; JavaScriptCore
+exposes the same absent property/function behavior without that private flag.
+
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
