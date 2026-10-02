@@ -39,10 +39,11 @@ module indices, tag/start signatures, section counts and expression validation
 now run in the module path. All 500 pinned instruction-validation specializations
 have translated handlers and complete dispatch. Native compilation, instruction
 execution, complete Store integration and JS realm/promise integration remain open.
-`MemoryBuffer` models
-realm identity, detachment, and resizable refreshes over backing-store snapshots;
-native ArrayBuffer detach keys and shared DataBlock ownership remain embedding
-responsibilities. Streaming accepts a completed response body rather than
+`Memory` wrappers now use actual indexed Store instances and primitive-storage
+handles. Realm-specific buffers share live storage instead of copied byte
+snapshots, retain fixed or dynamic lengths, and follow the source refresh and
+detachment branches. Native JS ArrayBuffer objects, detach keys and the full
+GC owner graph remain embedding responsibilities. Streaming accepts a completed response body rather than
 driving Fetch and its promise/event-loop machinery.
 
 ## Completed binary-parser slices
@@ -225,9 +226,34 @@ at vector-index addresses and retries failed creation only after collection
 through its installed Heap interface. The LibGC collector implementation is
 still pending; the interface has no substitute collector.
 
-The current package passes **52/52 files with default GC and 52/52 with
+The machine-foundation stage passed **52/52 files with default GC and 52/52 with
 `-gc none`**. Explicit `destroy()` operations release native storage; complete
 automatic owner lifetime, roots and active configurations remain open. These
-foundations are not yet wired to instruction execution or the existing WebIDL
-instance facade, whose synthetic function/global/table exports and copied
-memory buffers remain open under WA-12.
+foundations are not yet wired to instruction execution. The WebIDL memory
+facade now uses them as described below; its synthetic function/global/table
+exports remain open under WA-12.
+
+## Actual memory wrapper storage
+
+`memory.v` and `cache.v` bind each memory to its owning machine Store and actual
+vector-index address. Constructor validation preserves the source maximum,
+shared-limit and allocation-error order. Memory32 and Memory64 allocations use
+the real MemoryInstance, including its declared limits and source growth modes.
+Public growth inhibits the native hook and refreshes once; machine growth
+refreshes through that hook before updating the type minimum.
+
+Buffer caches key the actual Memory object, so identical addresses in different
+Stores cannot alias. Each buffer retains that owner and its PrimitiveStorage
+handle. `bytes()` exposes a live size_t span; fixed shared buffers retain their
+captured length, and dynamic buffers follow reallocation through the handle.
+Nonshared detached buffers expose no bytes. The pinned shared
+`toFixedLengthBuffer()` branch returns the existing canonical buffer, including
+when it is resizable. Frozen state and detach keys are retained as typed metadata;
+they are not yet native JS object operations.
+
+Imported memory exports retain the actual supplied wrapper instead of installing
+a foreign Store address into the importing cache. This preserves the existing
+typed cross-realm import adapter; full machine linking, active initialization and
+the source JS/GC realm graph remain pending. Current memory identity, import,
+growth and source-validation checks pass in the complete **53/53-file package
+with default GC and 53/53 with `-gc none`**.
