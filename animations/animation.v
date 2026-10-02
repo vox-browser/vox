@@ -32,6 +32,11 @@ pub enum AnimationClass {
 	none_
 }
 
+pub enum ShouldInvalidate {
+	yes
+	no
+}
+
 @[heap]
 pub struct Animation {
 	dom.Animation
@@ -586,6 +591,12 @@ pub fn (mut animation Animation) set_replace_state(value AnimationReplaceState) 
 }
 
 pub fn (mut animation Animation) cancel() {
+	animation.cancel_with_invalidation(.yes)
+}
+
+// Animation::cancel(ShouldInvalidate). CSS cascade cancellation already updates
+// the effect stack and can suppress a redundant style reaction.
+pub fn (mut animation Animation) cancel_with_invalidation(should_invalidate ShouldInvalidate) {
 	if animation.play_state() != .idle {
 		animation.reset_pending_tasks()
 		animation.current_finished_promise_.reject(dom.js_string('AbortError: Animation was cancelled'))
@@ -596,9 +607,12 @@ pub fn (mut animation Animation) cancel() {
 	}
 	animation.hold_time_ = none
 	animation.start_time_ = none
-	animation.pending_playback_rate_ = none
-	animation.auto_align_start_time_ = false
-	animation.previous_current_time_ = none
+	if effect := animation.effect_ {
+		animation.saved_cancel_time_ = effect.active_time_using_fill(.both)
+	}
+	if should_invalidate == .yes {
+		animation.invalidate_effect()
+	}
 }
 
 pub fn (mut animation Animation) finish() ! {
