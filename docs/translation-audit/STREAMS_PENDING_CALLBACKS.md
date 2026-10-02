@@ -103,6 +103,38 @@ without replacing their primary source VM. Checkpoints wait for all attached
 outer contexts and advance each distinct VM's execution generation once.
 This remains a compact JSC embedding boundary, not a shared complete LibJS agent.
 
+## Actual DOM abort reasons and owning timeout delivery
+
+`dom.JSValue` now carries the actual WebIDL/engine value for arbitrary reasons.
+Object, symbol and scalar reasons keep identity; `throwIfAborted()` throws the
+original value. Undefined chooses a retained native `DOMException` record.
+`streams.AbortSignal` delegates to the actual `dom.AbortSignal`: source ordered
+abort algorithms, dependencies, trusted abort events, registration removal and
+writable reentrant abort state checks execute on that native record. PipeTo
+shutdown retains the original arbitrary reason while pending abort/cancel/write
+operations settle; a later shutdown action rejection replaces it in the source
+order. Public tee rejection propagation still needs a separate review.
+
+`html.Timer` now delegates to the actual native timer host, preserving the source
+constructor, fractional deadline, class and restart semantics. Global-scope
+clock completion queues the actual owner's TimerTask and document with its
+source nesting level and temporary execution context. Repeating timers reuse
+the same clock; cancellation also prevents already queued handlers. Visibility,
+audio and intensive-grace changes rearm actual native registrations. The old
+`process_timers()` entry is an explicit deterministic clock adapter, not the
+production scheduler.
+
+`html.abort_signal_timeout()` supplies the real Window/Worker scope to
+`dom.AbortSignal.timeout_in_context()`. Clock expiry removes the source timer
+before queuing the owning TimerTask; that task creates the retained TimeoutError
+and runs native abort steps. Abort events use the caller-global relative clock
+for the source and each dependent signal. Standalone DOM `timeout()` retains an
+explicit realm-less native-clock compatibility adapter. The public JSC
+AbortSignal/AbortController factories are still pending. Full timer string/CSP
+binding and source GC finalization integration are not established by this
+scheduler slice. The pinned upstream also retains its fully-active/worker
+suspension elapsed-time, ordering-identifier and additional-wait FIXMEs.
+
 The following boundaries are still open and are not counted as full parity:
 
 - `WritableStream` and `TransformStream` JSC factories remain unbound. The
@@ -112,11 +144,10 @@ The following boundaries are still open and are not counted as full parity:
 - Generic JavaScript iterator acquisition and structured cloning of opaque
   chunks (including a public tee's cloning branch) remain unbound. Typed byte
   conversion does not provide JSC BYOB ArrayBuffer transfer/detachment or shared
-  native view ownership. Pipe/tee arbitrary rejection-value propagation still
-  needs the same original-value conversion used by readable/writable/transform.
-- Writable controllers still select the reduced `streams.AbortSignal` record;
-  the upstream `DOM::AbortSignal` event target, abort event, and undefined-reason
-  `AbortError` path require the actual DOM signal bridge.
+  native view ownership. Public tee arbitrary rejection-value propagation still
+  needs its own source review; PipeTo original-value propagation is completed.
+- Actual DOM signals and timeout tasks are connected to native Streams records.
+  Public JSC AbortSignal/AbortController/EventTarget bindings remain pending.
 - Native readable wrappers/prototypes retain actual model identity. Source GC
   tracing and wrapper reclamation still require integration; native wrappers,
   callback records, chunks and settled Promise roots live until Runtime.close.
@@ -160,4 +191,25 @@ browserjs/readable_stream_host_test.v: three actual native default-reader,
   pending callback, dictionary/size conversion, original reason and brand cases.
 main_test.v, focused native readable startup: source read reached actual DOM
   replay and readiness ordering; passed.
+```
+
+Actual DOM/pipe and native clock verification:
+
+```text
+browserjs/dom_abort_signal_values_test.v: actual object/scalar/default reason,
+  trusted native abort/dependencies, original throw and engine conversion cases.
+streams/dom_abort_signal_test.v: actual DOM source algorithms, reentrant writable
+  abort, pipe registration removal and public-record compatibility cases.
+browserjs/pipe_rejection_values_test.v: three actual object/symbol original or
+  later rejection cases, pending shutdown actions, lock and algorithm removal.
+html/native_timer_test.v + timer_test.v: actual clock lifecycle, changed interval,
+  source constructor and fractional deadline; passed.
+html/global_scope_native_timeout_test.v + window_or_worker_global_scope_test.v
+  + event_loop_test.v: owner task/cancellation/nesting/repeating/source clock
+  and legacy adapter neighbors; passed.
+html/abort_signal_timeout_test.v + dom/abort_signal_test.v: Window/Worker owning
+  TimerTask, actual TimeoutError identity, source/dependent event clock and
+  standalone native-clock compatibility cases; passed.
+html/native_event_loop_scheduling_test.v + script_cleanup_checkpoint_test.v
+  + streams/dom_abort_signal_test.v: final neighboring source checks 3/3 passed.
 ```
