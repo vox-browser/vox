@@ -37,12 +37,8 @@ pub:
 @[heap]
 pub struct Table {
 pub:
-	element       TableKind
-	maximum       ?u64
-	address_type_ AddressType
-	cache_        &WebAssemblyCache
-mut:
-	elements []webidl.Value
+	cache_   &WebAssemblyCache
+	address_ u64
 }
 
 pub fn Table.construct(descriptor TableDescriptor, initial ?webidl.Value) !&Table {
@@ -51,6 +47,8 @@ pub fn Table.construct(descriptor TableDescriptor, initial ?webidl.Value) !&Tabl
 
 fn table_construct_with_cache(cache &WebAssemblyCache, descriptor TableDescriptor, initial ?webidl.Value) !&Table {
 	address_type := descriptor.address or { AddressType.i32 }
+	// The typed descriptor already contains converted u64 limits. Retain the
+	// i32 binding range gate before converting its optional reference value.
 	if address_type == .i32 && descriptor.initial > u64(max_u32) {
 		return error('TypeError: Table size is too large')
 	}
@@ -58,121 +56,162 @@ fn table_construct_with_cache(cache &WebAssemblyCache, descriptor TableDescripto
 		if address_type == .i32 && maximum > u64(max_u32) {
 			return error('TypeError: Table size is too large')
 		}
-		if maximum < descriptor.initial {
+	}
+	element_type := table_kind_to_value_type(descriptor.element)
+	value := if supplied := initial {
+		to_webassembly_value(supplied, element_type)!
+	} else {
+		default_webassembly_value(element_type)!
+	}
+	reference := machine_global_value_from_binding(cache, value)!.to_reference()
+	return Table.create_machine(cache, binary_type_for_global_binding(element_type), address_type,
+		descriptor.initial, descriptor.maximum, reference)
+}
+
+// Table.cpp's source factory allocates and fills the actual Store table.
+pub fn Table.create_machine(cache &WebAssemblyCache, element_type BinaryValueType, address_type AddressType, initial u64, maximum ?u64, reference BinaryMachineReference) !&Table {
+	if limit := maximum {
+		if limit < initial {
 			return error('RangeError: Maximum should not be less than initial in table type')
 		}
 	}
-	if descriptor.initial > u64(max_int) {
-		return error('RangeError: Wasm Table allocation failed')
+	mut store := cache.abstract_machine_.store()
+	address := store.allocate_table(BinaryTableType{
+		element_type: element_type
+		limits:       WasmLimits{ address_type: address_type, minimum: initial, maximum: maximum }
+	}) or { return error('RangeError: Wasm Table allocation failed') }
+	mut instance := store.get_table(address) or { panic('allocated table missing from Store') }
+	for index in 0 .. instance.elements().values.len {
+		instance.set_element(usize(index), reference, unsafe { nil })
 	}
-	default_value := if descriptor.element == .externref {
-		webidl.undefined_value()
-	} else {
-		webidl.null_value()
-	}
-	value := validate_table_value(descriptor.element, initial or { default_value })!
-	table_ := &Table{
-		element: descriptor.element
-		maximum: descriptor.maximum
-		address_type_: address_type
-		cache_: cache
-		elements: []webidl.Value{len: int(descriptor.initial), init: value}
-	}
-	unsafe {
-		cache.add_table_instance(table_.address(), table_)
-	}
+	return Table.create_for_store_address(cache, address)
+}
+
+pub fn Table.create_for_store_address(cache &WebAssemblyCache, address u64) &Table {
+	if cache.get_table_instance(address) != none { panic('Table address already has a wrapper') }
+	table_ := &Table{ cache_: cache, address_: address }
+	unsafe { cache.add_table_instance(address, table_) }
 	return table_
 }
 
 pub fn Table.create(element_type ValueType, address_type AddressType, initial u64, maximum ?u64, reference webidl.Value) !&Table {
-	return table_create_with_cache(get_cache(), element_type, address_type, initial, maximum, reference)
-}
-
-fn table_create_with_cache(cache &WebAssemblyCache, element_type ValueType, address_type AddressType, initial u64, maximum ?u64, reference webidl.Value) !&Table {
-	element := match element_type {
-		.externref { TableKind.externref }
-		.anyfunc { TableKind.anyfunc }
-		else {
-			return error('TypeError: Table element type must be a reference type')
-		}
+	if element_type !in [.externref, .anyfunc] {
+		return error('TypeError: Table element type must be a reference type')
 	}
-	return table_construct_with_cache(cache, TableDescriptor{
-		element: element
-		initial: initial
-		maximum: maximum
-		address: address_type
-	}, reference)
+	cache := get_cache()
+	value := to_webassembly_value(reference, element_type)!
+	machine_reference := machine_global_value_from_binding(cache, value)!.to_reference()
+	return Table.create_machine(cache, binary_type_for_global_binding(element_type), address_type,
+		initial, maximum, machine_reference)
 }
 
 pub fn Table.construct_impl(descriptor TableDescriptor, initial ?webidl.Value) !&Table {
 	return Table.construct(descriptor, initial)
 }
 
-pub fn (table &Table) address() u64 {
-	return u64(voidptr(table))
+pub fn (table &Table) address() u64 { return table.address_ }
+
+pub fn (table &Table) cache() &WebAssemblyCache { return table.cache_ }
+
+pub fn (table &Table) machine_instance() !&BinaryMachineTableInstance {
+	return table.cache_.abstract_machine_.store().get_table(table.address()) or {
+		return error('RangeError: Could not find the memory table')
+	}
 }
 
-pub fn (table &Table) cache() &WebAssemblyCache {
-	return table.cache_
-}
-
-fn validate_table_value(kind TableKind, value webidl.Value) !webidl.Value {
-	if kind == .anyfunc && value.kind !in [.null_, .callback] {
-		return error('TypeError: anyfunc table values must be null or exported functions')
+pub fn (table &Table) grow_reference(delta u64, reference BinaryMachineReference) !u64 {
+	mut instance := table.cache_.abstract_machine_.store().get_table(table.address()) or {
+		return error('RangeError: Could not find the memory table to grow')
 	}
-	return value
-}
-
-pub fn (mut table Table) grow(delta u64, initial ?webidl.Value) !u64 {
-	previous := table.length()
-	if delta > u64(max_int) || previous > u64(max_int) - delta {
-		return error('RangeError: Failed to grow table')
-	}
-	new_length := previous + delta
-	if maximum := table.maximum {
-		if new_length > maximum {
-			return error('RangeError: Failed to grow table')
-		}
-	}
-	default_value := if table.element == .externref {
-		webidl.undefined_value()
-	} else {
-		webidl.null_value()
-	}
-	value := validate_table_value(table.element, initial or { default_value })!
-	table.elements << []webidl.Value{len: int(delta), init: value}
+	previous := u64(instance.elements().values.len)
+	// Pinned Table::grow(u64) calls TableInstance::grow(u32). Preserve its
+	// narrowing, including a 2^32 delta becoming zero, rather than changing it.
+	grew := instance.grow(u32(delta), reference, unsafe { nil })
+	if !grew { return error('RangeError: Failed to grow table') }
 	return previous
 }
 
+pub fn (table &Table) get_reference(index u64) !BinaryMachineReference {
+	mut instance := table.machine_instance()!
+	if instance.type_().element_type.kind == .exception_reference {
+		return error('TypeError: Cannot get an exnref table element')
+	}
+	if u64(instance.elements().values.len) <= index {
+		return error('RangeError: Table element index out of range')
+	}
+	return instance.elements().values[int(index)]
+}
+
+pub fn (table &Table) set_reference(index u64, reference BinaryMachineReference) ! {
+	mut instance := table.machine_instance()!
+	if instance.type_().element_type.kind == .exception_reference {
+		return error('TypeError: Cannot set an exnref table element')
+	}
+	if u64(instance.elements().values.len) <= index {
+		return error('RangeError: Table element index out of range')
+	}
+	instance.set_element(usize(index), reference, unsafe { nil })
+}
+
+pub fn (table &Table) grow(delta u64, initial ?webidl.Value) !u64 {
+	reference := value_to_table_reference(table, initial)!
+	return table.grow_reference(delta, reference)!
+}
+
 pub fn (table &Table) get(index u64) !webidl.Value {
-	if index >= u64(table.elements.len) {
-		return error('RangeError: Table element index out of range')
-	}
-	return table.elements[int(index)]
+	reference := table.get_reference(index)!
+	element_type := table.element_type()!
+	return machine_global_value_to_binding(table.cache_, BinaryMachineValue.from_reference(reference), element_type)!
 }
 
-pub fn (mut table Table) set(index u64, value ?webidl.Value) ! {
-	if index >= u64(table.elements.len) {
-		return error('RangeError: Table element index out of range')
-	}
-	default_value := if table.element == .externref {
-		webidl.undefined_value()
-	} else {
-		webidl.null_value()
-	}
-	table.elements[int(index)] = validate_table_value(table.element, value or { default_value })!
+pub fn (table &Table) set(index u64, value ?webidl.Value) ! {
+	reference := value_to_table_reference(table, value)!
+	table.set_reference(index, reference)!
 }
 
-pub fn (table &Table) length() u64 {
-	return u64(table.elements.len)
+pub fn (table &Table) length() !u64 {
+	mut instance := table.machine_instance()!
+	return u64(instance.elements().values.len)
 }
 
-pub fn (table &Table) address_type() AddressType {
-	return table.address_type_
+pub fn (table &Table) address_type() !AddressType {
+	instance := table.machine_instance()!
+	return instance.type_().limits.address_type
 }
 
-pub fn (table &Table) element_type() ValueType {
-	return table_kind_to_value_type(table.element)
+pub fn (table &Table) element_type() !BinaryValueType {
+	instance := table.machine_instance()!
+	return instance.type_().element_type
+}
+
+// The actual JS binding order is address type, address conversion, reference
+// conversion and finally the Store operation. The typed u64 methods above
+// remain useful once an embedding has performed address conversion already.
+pub fn (table &Table) grow_from_bindings(delta webidl.Value, initial ?webidl.Value) !webidl.Value {
+	address_type := table.address_type()!
+	converted_delta := address_value_to_u64(delta, address_type)!
+	reference := value_to_table_reference(table, initial)!
+	previous := table.grow_reference(converted_delta, reference)!
+	return table_limit_to_js_value(previous, address_type)
+}
+
+pub fn (table &Table) get_from_bindings(index webidl.Value) !webidl.Value {
+	address_type := table.address_type()!
+	converted_index := address_value_to_u64(index, address_type)!
+	return table.get(converted_index)!
+}
+
+pub fn (table &Table) set_from_bindings(index webidl.Value, value ?webidl.Value) ! {
+	address_type := table.address_type()!
+	converted_index := address_value_to_u64(index, address_type)!
+	reference := value_to_table_reference(table, value)!
+	table.set_reference(converted_index, reference)!
+}
+
+pub fn (table &Table) length_from_bindings() !webidl.Value {
+	address_type := table.address_type()!
+	length := table.length()!
+	return table_limit_to_js_value(length, address_type)
 }
 
 pub fn address_type_from_bindings(address_type AddressType) AddressType {
@@ -214,11 +253,18 @@ pub fn table(table_ &Table) &Table {
 	return table_
 }
 
-pub fn value_to_table_reference(table_ &Table, value ?webidl.Value) !webidl.Value {
-	default_value := if table_.element == .externref {
-		webidl.undefined_value()
-	} else {
-		webidl.null_value()
+pub fn value_to_table_reference(table_ &Table, value ?webidl.Value) !BinaryMachineReference {
+	element_type := table_.element_type()!
+	// Detail::to_webassembly_value ignores the given JS value for exnref and
+	// returns its typed null. The actual get/set operation rejects this type.
+	if element_type.kind == .exception_reference {
+		return BinaryNullReference{ type_: element_type }
 	}
-	return validate_table_value(table_.element, value or { default_value })
+	binding_type := global_binding_type(element_type)!
+	converted := if supplied := value {
+		to_webassembly_value(supplied, binding_type)!
+	} else {
+		default_webassembly_value(binding_type)!
+	}
+	return machine_global_value_from_binding(table_.cache_, converted)!.to_reference()
 }
