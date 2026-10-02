@@ -188,7 +188,13 @@ fn extern_value_key(value webidl.Value) ?string {
 				'number:${math.f64_bits(value.number_value)}'
 			}
 		}
-		.bigint { '${value.kind}:${value.bigint_value}' }
+		.bigint {
+			if integer := value.bigint_record_ {
+				'${value.kind}:${integer.big_integer.str()}'
+			} else {
+				'${value.kind}:${value.bigint_value}'
+			}
+		}
 		.string_ { '${value.kind}:${value.string_value}' }
 		.object, .sequence, .buffer_source, .callback, .platform_object {
 			if value.opaque_id == 0 { return none }

@@ -73,3 +73,17 @@ fn test_unboxed_typed_dictionary_values_are_retained_without_fabricated_identity
 	assert cache.get_extern_address(first) == none
 	assert cache.get_extern_address(second) == none
 }
+
+fn test_full_width_external_bigints_do_not_alias_their_signed_projection() {
+	mut cache := WebAssemblyCache.create()
+	zero := webidl.bigint_value(0)
+	wide := webidl.bigint_value_for_record(webidl.value_to_bigint(webidl.string_value('18446744073709551616'))!)
+	assert wide.bigint_value == 0
+	cache.add_extern_value(0, zero)
+	cache.add_extern_value(1, wide)
+	assert cache.get_extern_address(zero)? == 0
+	assert cache.get_extern_address(wide)? == 1
+	equal_wide := webidl.bigint_value_for_record(webidl.value_to_bigint(webidl.string_value('0x10000000000000000'))!)
+	assert cache.get_extern_address(equal_wide)? == 1
+	assert webidl.to_string(cache.get_extern_value(1)?)! == '18446744073709551616'
+}
