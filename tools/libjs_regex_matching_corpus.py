@@ -137,6 +137,43 @@ def cases():
             yield 'named',f'{storage}:{flags}',encoded(data),0,pos,backward,f'{groups}!{text}!{rng.choice(["same","Same","β","absent"])}'
 
 
+def native_outputs(upstream,build,prefix,simdutf,jobs,cpp,wrappers,driver,records,invalid_probe=None):
+    with tempfile.TemporaryDirectory(prefix='vox2-regex-matching-') as directory:
+        temporary=Path(directory); source=temporary/'oracle.cpp'; source.write_text(cpp)
+        compiler=[os.environ.get('CXX','c++'),'-w','-std=c++23','-DLAGOM','-fsanitize=address',
+                  '-I'+str(simdutf/'include'),'-I'+str(upstream),'-I'+str(upstream/'Libraries'),
+                  '-I'+str(build/'Lagom'),'-I'+str(build/'Lagom/Libraries'),'-I'+str(prefix/'include')]
+        if sys.platform!='darwin': compiler += ['-fPIC']
+        native=temporary/'oracle-cpp.o'; subprocess.run(compiler+['-c',str(source),'-o',str(native)],capture_output=True,text=True,check=True)
+        names=re.findall(r'^    (\w+\.cpp)$',(upstream/'AK/CMakeLists.txt').read_text().split('if (WIN32)')[0],re.M)
+        names.remove('FFIHelpers.cpp'); names.append('LexicalPathWindows.cpp' if sys.platform=='win32' else 'LexicalPath.cpp')
+        def compile_ak(name):
+            output=temporary/(name+'.o')
+            subprocess.run(compiler+['-c',str(upstream/'AK'/name),'-o',str(output)],capture_output=True,text=True,check=True)
+            return str(output)
+        with ThreadPoolExecutor(max_workers=jobs) as pool: objects=list(pool.map(compile_ak,names))
+        library=temporary/('libvox2_regex_case_oracle.dylib' if sys.platform=='darwin' else 'libvox2_regex_case_oracle.so')
+        link=compiler+['-dynamiclib' if sys.platform=='darwin' else '-shared',str(native)]+objects
+        if sys.platform=='darwin': link += ['-Wl,-U,_ak_assertion_handler']
+        for dependency in [simdutf,prefix]: link += ['-L'+str(dependency/'lib'),'-Wl,-rpath,'+str(dependency/'lib')]
+        link += ['-lsimdutf','-lfmt','-licuuc','-licui18n','-o',str(library)]
+        subprocess.run(link,check=True,capture_output=True,text=True)
+        def rust_string(path): return '"'+str(path).replace('\\','\\\\').replace('"','\\"')+'"'
+        imports='#![allow(dead_code,unused_imports)]\nextern crate self as libunicode_rust;\n'
+        imports+='#[path='+rust_string(upstream/'Libraries/LibUnicode/Rust/src/character_types.rs')+'] pub mod character_types;\n'
+        for module in ['ast','bytecode']: imports+='#[path='+rust_string(upstream/'Libraries/LibRegex/Rust/src'/(module+'.rs'))+'] mod '+module+';\n'
+        rust_source=temporary/'oracle.rs'; binary=temporary/'oracle'
+        rust_source.write_text(imports+hints.RECORDS+'mod oracle_vm {\n'+(upstream/'Libraries/LibRegex/Rust/src/vm.rs').read_text()+wrappers+'\n}\n'+driver)
+        command=[core.rustc_path(),'--edition=2024','-O',str(rust_source),'-o',str(binary),'-L','native='+str(temporary),'-l','dylib=vox2_regex_case_oracle','-C','link-arg=-Wl,-rpath,'+str(temporary)]
+        subprocess.run(command,check=True,capture_output=True,text=True)
+        result=subprocess.run([str(binary)],input='\n'.join(records)+'\n',capture_output=True,text=True,timeout=120)
+        if result.returncode: raise RuntimeError(result.stderr)
+        if invalid_probe is not None:
+            invalid=subprocess.run([str(binary)],input=invalid_probe,capture_output=True,text=True)
+            assert invalid.returncode!=0 and 'is_unicode(code_point)' in invalid.stderr,invalid.stderr
+    return result.stdout.splitlines()
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--upstream',type=Path,default=Path.home()/'code/3rd/ladybird')
@@ -152,39 +189,9 @@ def main():
     prefix=(args.dependency_prefix or build/'vcpkg_installed/arm64-osx-dynamic').resolve()
     simdutf=args.simdutf_prefix.resolve()
     records=list(dict.fromkeys('\t'.join(map(str,row)) for row in cases()))
-    with tempfile.TemporaryDirectory(prefix='vox2-regex-matching-') as directory:
-        temporary=Path(directory); source=temporary/'oracle.cpp'; source.write_text(cpp_source(upstream))
-        compiler=[os.environ.get('CXX','c++'),'-w','-std=c++23','-DLAGOM','-fsanitize=address',
-                  '-I'+str(simdutf/'include'),'-I'+str(upstream),'-I'+str(upstream/'Libraries'),
-                  '-I'+str(build/'Lagom'),'-I'+str(build/'Lagom/Libraries'),'-I'+str(prefix/'include')]
-        if sys.platform!='darwin': compiler += ['-fPIC']
-        native=temporary/'oracle-cpp.o'; subprocess.run(compiler+['-c',str(source),'-o',str(native)],capture_output=True,text=True,check=True)
-        names=re.findall(r'^    (\w+\.cpp)$',(upstream/'AK/CMakeLists.txt').read_text().split('if (WIN32)')[0],re.M)
-        names.remove('FFIHelpers.cpp'); names.append('LexicalPathWindows.cpp' if sys.platform=='win32' else 'LexicalPath.cpp')
-        def compile_ak(name):
-            output=temporary/(name+'.o')
-            subprocess.run(compiler+['-c',str(upstream/'AK'/name),'-o',str(output)],capture_output=True,text=True,check=True)
-            return str(output)
-        with ThreadPoolExecutor(max_workers=args.jobs) as pool: objects=list(pool.map(compile_ak,names))
-        library=temporary/('libvox2_regex_case_oracle.dylib' if sys.platform=='darwin' else 'libvox2_regex_case_oracle.so')
-        link=compiler+['-dynamiclib' if sys.platform=='darwin' else '-shared',str(native)]+objects
-        if sys.platform=='darwin': link += ['-Wl,-U,_ak_assertion_handler']
-        for dependency in [simdutf,prefix]: link += ['-L'+str(dependency/'lib'),'-Wl,-rpath,'+str(dependency/'lib')]
-        link += ['-lsimdutf','-lfmt','-licuuc','-licui18n','-o',str(library)]
-        subprocess.run(link,check=True,capture_output=True,text=True)
-        def rust_string(path): return '"'+str(path).replace('\\','\\\\').replace('"','\\"')+'"'
-        imports='#![allow(dead_code,unused_imports)]\nextern crate self as libunicode_rust;\n'
-        imports+='#[path='+rust_string(upstream/'Libraries/LibUnicode/Rust/src/character_types.rs')+'] pub mod character_types;\n'
-        for module in ['ast','bytecode']: imports+='#[path='+rust_string(upstream/'Libraries/LibRegex/Rust/src'/(module+'.rs'))+'] mod '+module+';\n'
-        rust_source=temporary/'oracle.rs'; binary=temporary/'oracle'
-        rust_source.write_text(imports+hints.RECORDS+'mod oracle_vm {\n'+(upstream/'Libraries/LibRegex/Rust/src/vm.rs').read_text()+WRAPPERS+'\n}\n'+DRIVER)
-        command=[core.rustc_path(),'--edition=2024','-O',str(rust_source),'-o',str(binary),'-L','native='+str(temporary),'-l','dylib=vox2_regex_case_oracle','-C','link-arg=-Wl,-rpath,'+str(temporary)]
-        subprocess.run(command,check=True,capture_output=True,text=True)
-        result=subprocess.run([str(binary)],input='\n'.join(records)+'\n',capture_output=True,text=True,timeout=120)
-        if result.returncode: raise RuntimeError(result.stderr)
-        invalid=subprocess.run([str(binary)],input='fold\t-\t-\t1114112\t0\t0\t-\n',capture_output=True,text=True)
-        assert invalid.returncode!=0 and 'is_unicode(code_point)' in invalid.stderr,invalid.stderr
-    answers=result.stdout.splitlines(); assert len(answers)==len(records)
+    answers=native_outputs(upstream,build,prefix,simdutf,args.jobs,cpp_source(upstream),WRAPPERS,DRIVER,records,
+                           'fold\t-\t-\t1114112\t0\t0\t-\n')
+    assert len(answers)==len(records)
     assert all(answer.startswith(record+'\t') for answer,record in zip(answers,records))
     header=f'# LibRegex/LibUnicode/AK {revision}; native exact matching helpers; locale en_US_POSIX\n'
     header+='# operation, storage:flags, input, a, b, c, extra, result\n'
