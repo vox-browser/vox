@@ -157,6 +157,7 @@ fn C.vox_gl_int_parameter(u32,&int)
 fn C.vox_gl_create_shader(u32) u32
 fn C.vox_gl_create_program() u32
 fn C.vox_gl_shader_source(u32, &char, int)
+fn C.vox_gl_get_shader_source(u32, int, &char)
 fn C.vox_gl_compile_shader(u32)
 fn C.vox_gl_attach_shader(u32, u32)
 fn C.vox_gl_detach_shader(u32, u32)
@@ -252,6 +253,17 @@ fn (mut context OpenGLContext) native_shader_log(handle GLuint) string {
 	if length <= 0 { return '' }
 	mut output := []u8{len: length}
 	C.vox_gl_shader_log(handle, length, output.data)
+	context.collect_native_error()
+	return output[..length - 1].bytestr()
+}
+
+// WebGLRenderingContextImpl::get_shader_source first queries the native
+// GL_SHADER_SOURCE_LENGTH, including its terminator, then excludes that byte.
+fn (mut context OpenGLContext) native_shader_source(handle GLuint) string {
+	length := context.native_shader_parameter(handle, GLenum(0x8b88))
+	if length <= 0 { return '' }
+	mut output := []u8{len: length}
+	C.vox_gl_get_shader_source(handle, length, output.data)
 	context.collect_native_error()
 	return output[..length - 1].bytestr()
 }

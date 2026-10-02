@@ -554,15 +554,19 @@ pub fn (mut context WebGLRenderingContext) compile_shader(mut shader WebGLShader
 	context.native.dispatch('compile_shader', shader.object.handle_)
 }
 
-pub fn (context &WebGLRenderingContext) get_shader_source(shader &WebGLShader) ?string {
+pub fn (mut context WebGLRenderingContext) get_shader_source(shader &WebGLShader) ?string {
+	context.native.make_current()
 	if !context.owns(&shader.object) {
+		context.set_error(invalid_operation)
 		return none
 	}
-	return shader.source_
+	return context.native.native_shader_source(shader.object.native_handle_)
 }
 
 pub fn (mut context WebGLRenderingContext) get_shader_info_log(shader &WebGLShader) ?string {
+	context.native.make_current()
 	if !context.owns(&shader.object) {
+		context.set_error(invalid_operation)
 		return none
 	}
 	return context.native.native_shader_log(shader.object.native_handle_)

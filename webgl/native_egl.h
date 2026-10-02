@@ -401,6 +401,7 @@ static void vox_gl_delete_program(unsigned program) { glDeleteProgram(program); 
 static int vox_gl_shader_parameter(unsigned shader, unsigned pname) { GLint value = 0; glGetShaderiv(shader, pname, &value); return value; }
 static int vox_gl_program_parameter(unsigned program, unsigned pname) { GLint value = 0; glGetProgramiv(program, pname, &value); return value; }
 static void vox_gl_shader_log(unsigned shader, int size, char* output) { glGetShaderInfoLog(shader, size, NULL, output); }
+static void vox_gl_get_shader_source(unsigned shader, int size, char* output) { glGetShaderSource(shader, size, NULL, output); }
 static void vox_gl_program_log(unsigned program, int size, char* output) { glGetProgramInfoLog(program, size, NULL, output); }
 static int vox_gl_uniform_location(unsigned program, char const* name) { return glGetUniformLocation(program, name); }
 static int vox_gl_attrib_location(unsigned program, char const* name) { return glGetAttribLocation(program, name); }

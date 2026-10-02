@@ -724,7 +724,12 @@ pub fn (mut context WebGLRenderingContext) get_framebuffer_attachment_parameter(
 	return WebGLParameterValue{}
 }
 
-pub fn (context &WebGLRenderingContext) get_attached_shaders(program &WebGLProgram) []&WebGLShader {
+pub fn (mut context WebGLRenderingContext) get_attached_shaders(program &WebGLProgram) ?[]&WebGLShader {
+	context.native.make_current()
+	if !context.owns(&program.object) {
+		context.set_error(invalid_operation)
+		return none
+	}
 	mut result := []&WebGLShader{}
 	if shader := program.attached_vertex_shader { result << shader }
 	if shader := program.attached_fragment_shader { result << shader }
@@ -732,7 +737,9 @@ pub fn (context &WebGLRenderingContext) get_attached_shaders(program &WebGLProgr
 }
 
 pub fn (mut context WebGLRenderingContext) get_program_info_log(program &WebGLProgram) ?string {
+	context.native.make_current()
 	if !context.owns(&program.object) {
+		context.set_error(invalid_operation)
 		return none
 	}
 	return context.native.native_program_log(program.object.native_handle_)

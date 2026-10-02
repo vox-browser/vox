@@ -796,7 +796,7 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 		}
 		'getAttachedShaders' {
 			host.validate_resource(wg_arg(args, 0), 'program', false)!
-			values := context.get_attached_shaders(host.programs[wg_handle(wg_arg(args, 0))] or { return error('TypeError: expected program') })
+			values := context.get_attached_shaders(host.programs[wg_handle(wg_arg(args, 0))] or { return error('TypeError: expected program') }) or { return json2.Any(json2.Null{}) }
 			mut result := []json2.Any{}
 			for value in values { result << host.object_reply(context, &value.object) }
 			return json2.Any(result)
