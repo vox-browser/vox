@@ -35,8 +35,9 @@ and response-body buffer extraction.
 
 LibWasm validation, compilation, instruction execution, store addresses,
 JS realm/promise integration are the explicit native boundary. The V decoder
-validates the binary envelope and the sections needed by the JS API facade; it
-does not replace LibWasm's full instruction validator. `MemoryBuffer` models
+parses every core binary section and all pinned instruction operands. It also
+checks defined-function/body and data-segment counts, but does not replace
+LibWasm's full instruction validator. `MemoryBuffer` models
 realm identity, detachment, and resizable refreshes over backing-store snapshots;
 native ArrayBuffer detach keys and shared DataBlock ownership remain embedding
 responsibilities. Streaming accepts a completed response body rather than
@@ -75,3 +76,31 @@ retained, while `LibWeb/WebAssembly/Module.cpp` still logs and omits tags from
 its current JS reflection API. All 12 package test files pass. Start-function
 invocation, tag store/exception execution, function/code-count checks and full
 module validation remain pending with the other machine work.
+
+The instruction and expression slices now cover all 499 pinned
+`Instruction::parse` case labels. The checked-in opcode constants and
+no-immediate case inventory are copied from that source by
+`tools/generate_wasm_opcodes.py`; decoding algorithms are direct translations.
+Typed structured/catch/index/memory/GC/SIMD arguments, raw float bits, source
+local-index storage and synthetic expression endings are retained. Expression
+parsing patches actual nested end/else instruction positions. Source parser
+acceptance that is rejected by the later validator is preserved at the parser
+boundary.
+
+Global definitions and table definitions retain their real initializer
+expressions; implicit table initializers use the source nullable `ref.null`.
+Code bodies use declared-size constrained decoding, source local groups and
+the 42,069 per-group local limit. Data segments retain all three source modes
+and owned initialization bytes; element segments retain all eight source tags,
+reference types, active offsets and synthetic function-index expressions.
+The source byte-vector 500 MiB limit and UTF-8 name check are enforced. Every
+core section is parsed; there is no skip fallback.
+
+`binary_module_counts.v` translates the function/code count check and the
+optional data-count/segment check from `AbstractMachine/Validator.cpp`.
+Parser range fixtures use direct section decoders when their indices/counts
+cannot describe a valid module; serialization fixtures retain matching counts.
+All **21 WebAssembly test files pass** in the canonical checkout. Recursive
+canonicalization/subtyping, expression stack and constant validation, the
+remaining module checks and actual compilation/execution remain open. No full
+`WebAssembly.validate()` conformance claim is made.
