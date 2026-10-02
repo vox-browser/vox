@@ -6,6 +6,9 @@
 module webgl
 
 pub fn get_egl_config() bool {
+	context := C.vox_egl_create(2)
+	if context == unsafe { nil } { return false }
+	C.vox_egl_destroy(context)
 	return true
 }
 
@@ -26,12 +29,14 @@ pub fn (context &OpenGLContext) canvas_id() ?u64 {
 	return u64(voidptr(context))
 }
 
-pub fn (mut context OpenGLContext) present_canvas_for_compositing(_ bool) bool {
-	return context.present()
+pub fn (mut context OpenGLContext) present_canvas_for_compositing(preserve_drawing_buffer bool) bool {
+	return context.present_with_preserved_buffer(preserve_drawing_buffer)
 }
 
 pub fn (mut context OpenGLContext) clear_buffer_to_default_values() {
 	context.dispatch('clear_buffer_to_default_values')
+	C.vox_egl_clear_drawing_buffer(context.backend_)
+	context.collect_native_error()
 }
 
 pub fn (mut context OpenGLContext) allocate_iosurface_painting_surface() {

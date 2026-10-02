@@ -18,6 +18,14 @@ pub:
 	args []i64
 }
 
+pub struct WebGLPaintingSurface {
+pub:
+	width int
+	height int
+	// Source CPU surface readback is RGBA8888, premultiplied, with the top row first.
+	pixels []u8
+}
+
 @[heap]
 pub struct OpenGLContext {
 pub:
@@ -37,6 +45,7 @@ mut:
 	requested_extensions_ []string
 	record_native_calls_  bool
 	native_calls_         []NativeCall
+	painting_pixels_      []u8
 	viewport_             [4]int
 }
 
@@ -85,6 +94,7 @@ pub fn (mut context OpenGLContext) restore(supported []string) {
 	context.supported_extensions_ = if supported.len > 0 { supported.clone() } else if !context.lost_ { native_gl_extensions() } else { []string{} }
 	context.requested_extensions_.clear()
 	context.native_calls_.clear()
+	context.painting_pixels_.clear()
 	context.viewport_ = [0, 0, 0, 0]!
 }
 
@@ -110,6 +120,7 @@ pub fn (mut context OpenGLContext) set_size(width int, height int) {
 	context.width_ = if width < 0 { 0 } else { width }
 	context.height_ = if height < 0 { 0 } else { height }
 	context.surface_allocated_ = false
+	context.painting_pixels_.clear()
 }
 
 pub fn (context &OpenGLContext) size() (int, int) {
@@ -141,6 +152,10 @@ pub fn (mut context OpenGLContext) notify_content_will_change() {
 }
 
 pub fn (mut context OpenGLContext) present() bool {
+	return context.present_with_preserved_buffer(false)
+}
+
+pub fn (mut context OpenGLContext) present_with_preserved_buffer(preserve_drawing_buffer bool) bool {
 	if context.lost_ {
 		return false
 	}
@@ -148,9 +163,30 @@ pub fn (mut context OpenGLContext) present() bool {
 	if !context.surface_allocated_ {
 		return false
 	}
+	// Upstream CPU painting surfaces wait for GPU writes before reading the rows.
+	C.vox_gl_finish()
+	frame := context.read_back_drawing_buffer() or { return false }
+	context.painting_pixels_ = frame.pixels
+	if !preserve_drawing_buffer { context.clear_buffer_to_default_values() }
 	context.needs_to_present_ = false
 	context.content_will_change_ = false
 	return true
+}
+
+pub fn (mut context OpenGLContext) read_back_drawing_buffer() ?WebGLPaintingSurface {
+	context.make_current()
+	if !context.surface_allocated_ { return none }
+	length := u64(context.width_) * u64(context.height_) * 4
+	if length > u64(max_int) { context.set_pending_local_error(out_of_memory); return none }
+	mut pixels := []u8{len:int(length)}
+	if C.vox_egl_copy_drawing_buffer(context.backend_,context.width_,context.height_,pixels.data) != 1 { return none }
+	if !context.collect_native_error() { return none }
+	return WebGLPaintingSurface{width:context.width_,height:context.height_,pixels:pixels}
+}
+
+pub fn (context &OpenGLContext) painting_surface() ?WebGLPaintingSurface {
+	if !context.surface_allocated_ || context.painting_pixels_.len == 0 { return none }
+	return WebGLPaintingSurface{width:context.width_,height:context.height_,pixels:context.painting_pixels_.clone()}
 }
 
 pub fn (context &OpenGLContext) needs_to_present() bool {

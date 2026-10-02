@@ -239,7 +239,7 @@ pub fn (context &WebGLRenderingContext) needs_to_present() bool {
 }
 
 pub fn (mut context WebGLRenderingContext) present() bool {
-	return context.native.present()
+	return context.native.present_with_preserved_buffer(context.attributes.preserve_drawing_buffer)
 }
 
 pub fn (mut context WebGLRenderingContext) prepare_for_compositing() bool {

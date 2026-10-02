@@ -150,6 +150,66 @@ static int vox_egl_allocate_surface(void* handle, int width, int height, int dep
 }
 static unsigned vox_egl_default_framebuffer(void* handle) { return handle ? ((VoxEGLContext*)handle)->framebuffer : 0; }
 static unsigned vox_egl_default_renderbuffer(void* handle) { return handle ? ((VoxEGLContext*)handle)->depth_buffer : 0; }
+/* OpenGLContext::copy_default_framebuffer_to_cpu_painting_surface. */
+static int vox_egl_copy_drawing_buffer(void* handle, int width, int height, unsigned char* pixels)
+{
+    VoxEGLContext* context = handle;
+    if (!vox_egl_make_current(handle) || !context->framebuffer || !pixels) return 0;
+    GLenum target = context->version == 3 ? GL_READ_FRAMEBUFFER : GL_FRAMEBUFFER;
+    GLenum binding = context->version == 3 ? GL_READ_FRAMEBUFFER_BINDING : GL_FRAMEBUFFER_BINDING;
+    GLint original_framebuffer, original_read_buffer = GL_COLOR_ATTACHMENT0, original_alignment;
+    glGetIntegerv(binding, &original_framebuffer);
+    if (context->version == 3) glGetIntegerv(GL_READ_BUFFER, &original_read_buffer);
+    glBindFramebuffer(target,context->framebuffer);
+    if (context->version == 3) glReadBuffer(GL_COLOR_ATTACHMENT0);
+    glGetIntegerv(GL_PACK_ALIGNMENT,&original_alignment);
+    glPixelStorei(GL_PACK_ALIGNMENT,4);
+    GLint original_buffer = 0, original_row_length = 0, original_skip_pixels = 0, original_skip_rows = 0;
+    if (context->version == 3) {
+        glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING,&original_buffer);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER,0);
+        glGetIntegerv(GL_PACK_ROW_LENGTH,&original_row_length);
+        glGetIntegerv(GL_PACK_SKIP_PIXELS,&original_skip_pixels);
+        glGetIntegerv(GL_PACK_SKIP_ROWS,&original_skip_rows);
+        glPixelStorei(GL_PACK_ROW_LENGTH,0);
+        glPixelStorei(GL_PACK_SKIP_PIXELS,0);
+        glPixelStorei(GL_PACK_SKIP_ROWS,0);
+    }
+    for (int source_y = 0; source_y < height; ++source_y)
+        glReadPixels(0,source_y,width,1,GL_RGBA,GL_UNSIGNED_BYTE,pixels+(size_t)(height-source_y-1)*width*4);
+    if (context->version == 3) {
+        glPixelStorei(GL_PACK_ROW_LENGTH,original_row_length);
+        glPixelStorei(GL_PACK_SKIP_PIXELS,original_skip_pixels);
+        glPixelStorei(GL_PACK_SKIP_ROWS,original_skip_rows);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER,original_buffer);
+    }
+    glPixelStorei(GL_PACK_ALIGNMENT,original_alignment);
+    glBindFramebuffer(target,original_framebuffer);
+    if (context->version == 3) glReadBuffer(original_read_buffer);
+    return 1;
+}
+/* OpenGLContext::clear_buffer_to_default_values. */
+static void vox_egl_clear_drawing_buffer(void* handle)
+{
+    VoxEGLContext* context = handle;
+    if (!vox_egl_make_current(handle) || !context->framebuffer) return;
+    GLenum target = context->version == 3 ? GL_DRAW_FRAMEBUFFER : GL_FRAMEBUFFER;
+    GLenum binding = context->version == 3 ? GL_DRAW_FRAMEBUFFER_BINDING : GL_FRAMEBUFFER_BINDING;
+    GLint original_framebuffer, original_renderbuffer, stencil;
+    GLfloat color[4], depth;
+    glGetIntegerv(binding,&original_framebuffer);
+    glGetIntegerv(GL_RENDERBUFFER_BINDING,&original_renderbuffer);
+    glBindFramebuffer(target,context->framebuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER,context->depth_buffer);
+    glGetFloatv(GL_COLOR_CLEAR_VALUE,color);
+    glGetFloatv(GL_DEPTH_CLEAR_VALUE,&depth);
+    glGetIntegerv(GL_STENCIL_CLEAR_VALUE,&stencil);
+    glClearColor(0,0,0,0); glClearDepthf(1); glClearStencil(0);
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+    glClearColor(color[0],color[1],color[2],color[3]); glClearDepthf(depth); glClearStencil(stencil);
+    glBindFramebuffer(target,original_framebuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER,original_renderbuffer);
+}
 static unsigned vox_gl_gen_object(int kind)
 {
     GLuint result = 0;

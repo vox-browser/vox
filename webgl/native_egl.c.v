@@ -33,6 +33,8 @@ fn C.vox_egl_free_surface(voidptr)
 fn C.vox_egl_allocate_surface(voidptr, int, int, int, int) int
 fn C.vox_egl_default_framebuffer(voidptr) u32
 fn C.vox_egl_default_renderbuffer(voidptr) u32
+fn C.vox_egl_copy_drawing_buffer(voidptr,int,int,&u8) int
+fn C.vox_egl_clear_drawing_buffer(voidptr)
 fn C.vox_gl_gen_object(int) u32
 fn C.vox_gl_delete_object(int, u32)
 fn C.vox_gl_begin_query(u32, u32)
