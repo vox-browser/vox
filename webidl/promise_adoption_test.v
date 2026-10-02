@@ -30,7 +30,7 @@ fn test_webidl_resolved_promise_adopts_actual_pending_promise_and_resolves_only_
 	context := jobs.context(811)
 	mut source := create_promise_for(context)
 	mut adopted := create_resolved_promise_for(context, promise_value(source))
-	assert adopted != source
+	assert voidptr(adopted) != voidptr(source)
 	assert adopted.state == .pending
 	assert promise_realm(adopted) == 811
 	adopted.reject(string_value('ignored late rejection'))
@@ -42,6 +42,22 @@ fn test_webidl_resolved_promise_adopts_actual_pending_promise_and_resolves_only_
 	assert adopted.state == .fulfilled
 	assert adopted.result.string_value == 'actual source result'
 	assert source.is_handled
+}
+
+fn test_webidl_distinct_pending_promises_with_equal_fields_adopt_by_identity() {
+	mut jobs := &PromiseAdoptionJobs{}
+	context := jobs.context(816)
+	mut leaf := create_promise_for(context)
+	source := create_resolved_promise_for(context, promise_value(leaf))
+	target := create_resolved_promise_for(context, promise_value(source))
+	assert voidptr(target) != voidptr(source)
+	assert source.state == .pending
+	assert target.state == .pending
+	leaf.resolve(string_value('distinct pending source result'))
+	jobs.drain()
+	assert source.state == .fulfilled
+	assert target.state == .fulfilled
+	assert target.result.string_value == 'distinct pending source result'
 }
 
 fn test_webidl_promise_adoption_preserves_target_realm_and_source_then_job_realm() {

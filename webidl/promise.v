@@ -132,7 +132,7 @@ fn (mut promise Promise) resolve_value(value Value) {
 			promise.settle(.rejected, string_value('TypeError: Missing native Promise value'))
 			return
 		}
-		if source == &promise {
+		if voidptr(source) == voidptr(&promise) {
 			promise.settle(.rejected, string_value('TypeError: Cannot resolve promise with itself'))
 			return
 		}
