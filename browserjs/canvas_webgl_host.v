@@ -187,7 +187,12 @@ fn (host &CanvasWebGLHost) object_reply(context &webgl.WebGLRenderingContext, ob
 	return host.resource_reply(handle)
 }
 
-fn (host &CanvasWebGLHost) parameter(context &webgl.WebGLRenderingContext, value webgl.WebGLParameterValue) json2.Any {
+fn (mut host CanvasWebGLHost) parameter(context &webgl.WebGLRenderingContext, value webgl.WebGLParameterValue) json2.Any {
+ if sampler:=value.sampler {
+  handle:=host.register(context,'sampler',&sampler.object)
+  host.samplers[handle]=sampler
+  return host.resource_reply(handle)
+ }
 	return match value.kind {
 		.none { json2.Any(json2.Null{}) }
 		.integer { json2.Any(value.integer) }

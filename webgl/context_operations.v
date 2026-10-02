@@ -29,6 +29,7 @@ pub:
 	numbers  []f64
 	booleans []bool
 	object   GLuint
+	sampler ?&WebGLSampler
 }
 
 fn integer_parameter(value i64) WebGLParameterValue {
@@ -838,201 +839,121 @@ pub fn (mut context WebGLRenderingContext) get_buffer_parameter(target GLenum, p
 }
 
 pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLParameterValue {
-	match pname {
-		active_texture {
-			return WebGLParameterValue{ kind: .integer, integer: context.active_texture_ }
-		}
-		array_buffer_binding, element_array_buffer_binding {
-			target := if pname == array_buffer_binding {
-				array_buffer
-			} else {
-				element_array_buffer
-			}
-			handle := context.bound_buffers[target] or { return WebGLParameterValue{} }
-			return WebGLParameterValue{ kind: .object, object: handle }
-		}
-		framebuffer_binding {
-			return if context.bound_framebuffer == 0 {
-				WebGLParameterValue{}
-			} else {
-				WebGLParameterValue{ kind: .object, object: context.bound_framebuffer }
-			}
-		}
-		renderbuffer_binding {
-			return if context.bound_renderbuffer == 0 {
-				WebGLParameterValue{}
-			} else {
-				WebGLParameterValue{ kind: .object, object: context.bound_renderbuffer }
-			}
-		}
-		texture_binding_2d, texture_binding_cube_map {
-			target := if pname == texture_binding_2d { texture_2d } else { texture_cube_map }
-			handle := context.bound_textures[target] or { return WebGLParameterValue{} }
-			return WebGLParameterValue{ kind: .object, object: handle }
-		}
-		current_program {
-			program := context.current_program or { return WebGLParameterValue{} }
-			return WebGLParameterValue{ kind: .object, object: program.object.handle_ }
-		}
-		blend, cull_face, depth_test, dither, polygon_offset_fill, sample_alpha_to_coverage, sample_coverage, scissor_test, stencil_test {
-			return WebGLParameterValue{ kind: .boolean, boolean: context.is_enabled(pname) }
-		}
-		blend_color {
-			return WebGLParameterValue{ kind: .numbers, numbers: context.blend_color_[..].map(f64(it)) }
-		}
-		color_clear_value {
-			return WebGLParameterValue{ kind: .numbers, numbers: context.clear_color_[..].map(f64(it)) }
-		}
-		color_writemask {
-			return WebGLParameterValue{ kind: .booleans, booleans: context.color_mask_[..].clone() }
-		}
-		depth_clear_value {
-			return WebGLParameterValue{ kind: .number, number: context.clear_depth_ }
-		}
-		depth_range {
-			return WebGLParameterValue{ kind: .numbers, numbers: context.depth_range_[..].clone() }
-		}
-		depth_writemask {
-			return WebGLParameterValue{ kind: .boolean, boolean: context.depth_mask_ }
-		}
-		line_width {
-			return WebGLParameterValue{ kind: .number, number: context.line_width_ }
-		}
-		scissor_box {
-			return WebGLParameterValue{ kind: .integers, integers: context.scissor_[..].map(i64(it)) }
-		}
-		viewport {
-			return WebGLParameterValue{ kind: .integers, integers: context.viewport_[..].map(i64(it)) }
-		}
-		stencil_clear_value {
-			return WebGLParameterValue{ kind: .integer, integer: context.clear_stencil_ }
-		}
-		pack_alignment {
-			return WebGLParameterValue{ kind: .integer, integer: context.pack_alignment_ }
-		}
-		unpack_alignment {
-			return WebGLParameterValue{ kind: .integer, integer: context.unpack_alignment_ }
-		}
-		compressed_texture_formats {
-			return WebGLParameterValue{ kind: .integers, integers: context.enabled_compressed_texture_formats_.map(i64(it)) }
-		}
-		unpack_flip_y_webgl {
-			return WebGLParameterValue{ kind: .boolean, boolean: context.unpack_flip_y_ }
-		}
-		unpack_premultiply_alpha_webgl {
-			return WebGLParameterValue{ kind: .boolean, boolean: context.unpack_premultiply_alpha_ }
-		}
-		unpack_colorspace_conversion_webgl {
-			return WebGLParameterValue{ kind: .integer, integer: context.unpack_colorspace_conversion_ }
-		}
-		unmasked_vendor_webgl, unmasked_renderer_webgl {
-			if !context.extension_enabled('WEBGL_debug_renderer_info') {
-				context.set_error(invalid_enum)
-				return WebGLParameterValue{}
-			}
-			return WebGLParameterValue{
-				kind: .string_
-				text: if pname == unmasked_vendor_webgl {
-					context.native.vendor()
-				} else {
-					context.native.renderer()
-				}
-			}
-		}
-		else {}
-	}
-	if context.version == .webgl2 {
-		match pname {
-			texture_binding_3d, texture_binding_2d_array {
-				target := if pname == texture_binding_3d { texture_3d } else { texture_2d_array }
-				handle := context.bound_textures[target] or { return WebGLParameterValue{} }
-				return WebGLParameterValue{ kind: .object, object: handle }
-			}
-			pack_row_length, pack_skip_rows, pack_skip_pixels, unpack_row_length, unpack_skip_rows, unpack_skip_pixels, unpack_skip_images, unpack_image_height {
-				return context.generic_parameters_[pname] or { integer_parameter(0) }
-			}
-			copy_read_buffer, copy_write_buffer, pixel_pack_buffer_binding, pixel_unpack_buffer_binding, uniform_buffer_binding, transform_feedback_buffer_binding {
-				target := match pname {
-					copy_read_buffer { copy_read_buffer }
-					copy_write_buffer { copy_write_buffer }
-					pixel_pack_buffer_binding { pixel_pack_buffer }
-					pixel_unpack_buffer_binding { pixel_unpack_buffer }
-					uniform_buffer_binding { uniform_buffer }
-					else { transform_feedback_buffer }
-				}
-				handle := context.bound_buffers[target] or { return WebGLParameterValue{} }
-				return WebGLParameterValue{ kind: .object, object: handle }
-			}
-			transform_feedback_binding {
-				feedback := context.current_transform_feedback or { return WebGLParameterValue{} }
-				return WebGLParameterValue{ kind: .object, object: feedback.object.handle_ }
-			}
-			transform_feedback_active {
-				context.native.make_current()
-				mut value := 0
-				C.vox_gl_int_parameter(pname,&value)
-				context.native.collect_native_error()
-				return WebGLParameterValue{kind:.boolean,boolean:value == 1}
-			}
-			transform_feedback_paused {
-				context.native.make_current()
-				mut value := 0
-				C.vox_gl_int_parameter(pname,&value)
-				context.native.collect_native_error()
-				return WebGLParameterValue{kind:.boolean,boolean:value == 1}
-			}
-			rasterizer_discard {
-				return WebGLParameterValue{ kind: .boolean, boolean: context.is_enabled(pname) }
-			}
-			sampler_binding {
-				unit := GLuint(context.active_texture_ - texture0)
-				handle := context.bound_samplers[unit] or { return WebGLParameterValue{} }
-				return WebGLParameterValue{ kind: .object, object: handle }
-			}
-			vertex_array_binding {
-				array := context.current_vertex_array or { return WebGLParameterValue{} }
-				return WebGLParameterValue{ kind: .object, object: array.object.handle_ }
-			}
-			else {}
-		}
-	}
-	if pname == fragment_shader_derivative_hint
-		&& (context.version == .webgl2 || context.extension_enabled('OES_standard_derivatives')) {
-		return context.generic_parameters_[pname] or { integer_parameter(dont_care) }
-	}
-	if value := context.generic_parameters_[pname] {
-		return value
-	}
-	context.set_error(invalid_enum)
-	return WebGLParameterValue{}
-}
-
-pub fn (mut context WebGLRenderingContext) get_renderbuffer_parameter(_ GLenum, pname GLenum) WebGLParameterValue {
-	buffer := context.renderbuffers[context.bound_renderbuffer] or {
-		context.set_error(invalid_operation)
+	if (pname == fragment_shader_derivative_hint && context.version != .webgl2 && !context.extension_enabled('OES_standard_derivatives'))
+		|| (pname == GLenum(0x8cdf) && context.version != .webgl2 && !context.extension_enabled('WEBGL_draw_buffers'))
+		|| (pname == GLenum(0x8824) && context.version != .webgl2)
+		|| (pname == GLenum(0x84ff) && !context.extension_enabled('EXT_texture_filter_anisotropic')) {
+		context.set_error(invalid_enum)
 		return WebGLParameterValue{}
 	}
-	value := match pname {
-		0x8d42 { i64(buffer.width_) }
-		0x8d43 { i64(buffer.height_) }
-		else { i64(buffer.internal_format_) }
+	shape := C.vox_gl_parameter_shape(pname,if context.version == .webgl2 {3} else {2})
+	if shape != 0 {
+		context.native.make_current()
+		if shape == 51 { return WebGLParameterValue{kind:.string_,text:native_gl_string(pname)} }
+		mut values := [f64(0),0,0,0]!
+		C.vox_gl_parameter(pname,shape,&values[0])
+		context.native.collect_native_error()
+		count := shape % 10
+		return match shape / 10 {
+			1 { if count == 1 { integer_parameter(i64(values[0])) } else { WebGLParameterValue{kind:.integers,integers:values[..count].map(i64(it))} } }
+			2,4 { if count == 1 { WebGLParameterValue{kind:.number,number:values[0]} } else { WebGLParameterValue{kind:.numbers,numbers:values[..count].clone()} } }
+			else { if count == 1 { WebGLParameterValue{kind:.boolean,boolean:values[0]==1} } else { WebGLParameterValue{kind:.booleans,booleans:values[..count].map(it==1)} } }
+		}
 	}
-	return WebGLParameterValue{ kind: .integer, integer: value }
+	if pname == vertex_array_binding && context.version != .webgl2 {
+		if !context.extension_enabled('OES_vertex_array_object') { context.set_error(invalid_enum);return WebGLParameterValue{} }
+		array := context.current_vertex_array_oes or { return WebGLParameterValue{} }
+		return WebGLParameterValue{kind:.object,object:array.object.handle_}
+	}
+ match pname {
+  array_buffer_binding,element_array_buffer_binding {
+   target:=if pname==array_buffer_binding {array_buffer} else {element_array_buffer}
+   handle:=context.bound_buffers[target] or {return WebGLParameterValue{}}
+   return WebGLParameterValue{kind:.object,object:handle}
+  }
+  framebuffer_binding {return if context.bound_framebuffer==0 {WebGLParameterValue{}} else {WebGLParameterValue{kind:.object,object:context.bound_framebuffer}}}
+  renderbuffer_binding {return if context.bound_renderbuffer==0 {WebGLParameterValue{}} else {WebGLParameterValue{kind:.object,object:context.bound_renderbuffer}}}
+  current_program {program:=context.current_program or {return WebGLParameterValue{}};return WebGLParameterValue{kind:.object,object:program.object.handle_}}
+  texture_binding_2d,texture_binding_cube_map {
+   target:=if pname==texture_binding_2d {texture_2d} else {texture_cube_map}
+   handle:=context.bound_textures[target] or {return WebGLParameterValue{}}
+   return WebGLParameterValue{kind:.object,object:handle}
+  }
+  compressed_texture_formats {return WebGLParameterValue{kind:.integers,integers:context.enabled_compressed_texture_formats_.map(i64(it))}}
+  unpack_flip_y_webgl {return boolean_parameter(context.unpack_flip_y_)}
+  unpack_premultiply_alpha_webgl {return boolean_parameter(context.unpack_premultiply_alpha_)}
+  unpack_colorspace_conversion_webgl {return integer_parameter(context.unpack_colorspace_conversion_)}
+  unmasked_vendor_webgl,unmasked_renderer_webgl {
+   if !context.extension_enabled('WEBGL_debug_renderer_info') {context.set_error(invalid_enum);return WebGLParameterValue{}}
+   return WebGLParameterValue{kind:.string_,text:if pname==unmasked_vendor_webgl {context.native.vendor()} else {context.native.renderer()}}
+  }
+  else {}
+ }
+ if context.version==.webgl2 {
+  match pname {
+   texture_binding_3d,texture_binding_2d_array {
+    target:=if pname==texture_binding_3d {texture_3d} else {texture_2d_array}
+    handle:=context.bound_textures[target] or {return WebGLParameterValue{}}
+    return WebGLParameterValue{kind:.object,object:handle}
+   }
+   copy_read_buffer,copy_write_buffer,pixel_pack_buffer_binding,pixel_unpack_buffer_binding,uniform_buffer_binding,transform_feedback_buffer_binding {
+    target:=match pname {copy_read_buffer {copy_read_buffer} copy_write_buffer {copy_write_buffer} pixel_pack_buffer_binding {pixel_pack_buffer} pixel_unpack_buffer_binding {pixel_unpack_buffer} uniform_buffer_binding {uniform_buffer} else {transform_feedback_buffer}}
+    handle:=context.bound_buffers[target] or {return WebGLParameterValue{}}
+    return WebGLParameterValue{kind:.object,object:handle}
+   }
+   transform_feedback_binding {feedback:=context.current_transform_feedback or {return WebGLParameterValue{}};return WebGLParameterValue{kind:.object,object:feedback.object.handle_}}
+   vertex_array_binding {array:=context.current_vertex_array or {return WebGLParameterValue{}};return WebGLParameterValue{kind:.object,object:array.object.handle_}}
+   sampler_binding {
+    context.native.make_current()
+    mut handle:=0
+    C.vox_gl_int_parameter(pname,&handle)
+    context.native.collect_native_error()
+    logical:=context.allocate_handle()
+    sampler:=&WebGLSampler{object:WebGLObject{...new_object(context.identity(),context.context_generation_,logical),native_handle_:GLuint(handle)}}
+    unsafe {context.samplers[logical]=sampler}
+    return WebGLParameterValue{kind:.object,object:logical,sampler:sampler}
+   }
+   else {}
+  }
+ }
+ context.set_error(invalid_enum)
+ return WebGLParameterValue{}
+}
+
+pub fn (mut context WebGLRenderingContext) get_renderbuffer_parameter(target GLenum, pname GLenum) WebGLParameterValue {
+ if pname !in [GLenum(0x8d42),0x8d43,0x8d44,0x8d50,0x8d51,0x8d52,0x8d53,0x8d54,0x8cab,0x8d55] {
+  context.set_error(invalid_enum); return WebGLParameterValue{}
+ }
+ context.native.make_current()
+ result:=C.vox_gl_renderbuffer_parameter(target,pname)
+ context.native.collect_native_error()
+ return integer_parameter(result)
 }
 
 pub fn (mut context WebGLRenderingContext) get_tex_parameter(target GLenum, pname GLenum) WebGLParameterValue {
-	handle := context.bound_textures[target] or {
-		context.set_error(invalid_operation)
-		return WebGLParameterValue{}
-	}
-	texture := context.textures[handle] or { return WebGLParameterValue{} }
-	if value := texture.parameters_i_[pname] {
-		return WebGLParameterValue{ kind: .integer, integer: value }
-	}
-	if value := texture.parameters_f_[pname] {
-		return WebGLParameterValue{ kind: .number, number: value }
-	}
-	return WebGLParameterValue{}
+ mut queried_name:=pname
+ mut boolean_result:=false
+ mut float_result:=false
+ match pname {
+  texture_mag_filter,texture_min_filter,texture_wrap_s,texture_wrap_t {}
+  GLenum(0x84fe) {
+   if !context.extension_enabled('EXT_texture_filter_anisotropic') {context.set_error(invalid_enum);return WebGLParameterValue{}}
+  }
+  else {
+   if context.version!=.webgl2 {context.set_error(invalid_enum);return WebGLParameterValue{}}
+   match pname {
+    GLenum(0x813c),0x884d,0x884c,0x82df,0x813d,0x8072 {}
+    GLenum(0x912f) {boolean_result=true}
+    // Preserve the current source's LOD query (IMMUTABLE_FORMAT -> Boolean).
+    GLenum(0x813b),0x813a {queried_name=GLenum(0x912f);boolean_result=true;float_result=true}
+    else {context.set_error(invalid_enum);return WebGLParameterValue{}}
+   }
+  }
+ }
+ context.native.make_current()
+ result:=if float_result {f64(C.vox_gl_tex_float_parameter(target,queried_name))} else {f64(C.vox_gl_tex_parameter(target,queried_name))}
+ context.native.collect_native_error()
+ return if boolean_result {WebGLParameterValue{kind:.boolean,boolean:result==1}} else {integer_parameter(i64(result))}
 }
 
 pub fn (context &WebGLRenderingContext) get_uniform(_ &WebGLProgram, location ?&WebGLUniformLocation) WebGLParameterValue {

@@ -298,6 +298,9 @@ static void vox_gl_tex_image2d(unsigned target, int level, int format, int width
 static void vox_gl_tex_sub_image2d(unsigned target, int level, int x, int y, int width, int height, unsigned format, unsigned type, int capacity, void const* data) { glTexSubImage2DRobustANGLE(target, level, x, y, width, height, format, type, capacity, data); }
 static void vox_gl_tex_parameteri(unsigned target, unsigned pname, int value) { glTexParameteri(target, pname, value); }
 static void vox_gl_tex_parameterf(unsigned target, unsigned pname, float value) { glTexParameterf(target, pname, value); }
+static int vox_gl_tex_parameter(unsigned target, unsigned pname) { GLint value = 0; glGetTexParameterivRobustANGLE(target, pname, 1, NULL, &value); return value; }
+static float vox_gl_tex_float_parameter(unsigned target, unsigned pname) { GLfloat value = 0; glGetTexParameterfvRobustANGLE(target, pname, 1, NULL, &value); return value; }
+static int vox_gl_renderbuffer_parameter(unsigned target, unsigned pname) { GLint value = 0; glGetRenderbufferParameterivRobustANGLE(target, pname, 1, NULL, &value); return value; }
 static int vox_gl_read_pixels(int x, int y, int width, int height, unsigned format, unsigned type, int capacity, void* data)
 {
     GLsizei written = 0;
@@ -426,3 +429,153 @@ static void vox_gl_get_uniform_floats(unsigned program, int location, float* dat
 static void vox_gl_get_uniform_ints(unsigned program, int location, int* data) { glGetUniformiv(program, location, data); }
 static void vox_gl_get_uniform_uints(unsigned program, int location, unsigned* data) { glGetUniformuiv(program, location, data); }
 #endif
+
+// Source WebGLRenderingContextImpl::get_parameter native result types/counts.
+static int vox_gl_parameter_shape(unsigned pname, int version) {
+    switch (pname) {
+    case GL_ACTIVE_TEXTURE:
+    case GL_ALPHA_BITS:
+    case GL_BLEND_DST_ALPHA:
+    case GL_BLEND_DST_RGB:
+    case GL_BLEND_EQUATION_ALPHA:
+    case GL_BLEND_EQUATION_RGB:
+    case GL_BLEND_SRC_ALPHA:
+    case GL_BLEND_SRC_RGB:
+    case GL_BLUE_BITS:
+    case GL_CULL_FACE_MODE:
+    case GL_DEPTH_BITS:
+    case GL_DEPTH_FUNC:
+    case GL_FRONT_FACE:
+    case GL_GENERATE_MIPMAP_HINT:
+    case GL_GREEN_BITS:
+    case GL_IMPLEMENTATION_COLOR_READ_FORMAT:
+    case GL_IMPLEMENTATION_COLOR_READ_TYPE:
+    case GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS:
+    case GL_MAX_CUBE_MAP_TEXTURE_SIZE:
+    case GL_MAX_FRAGMENT_UNIFORM_VECTORS:
+    case GL_MAX_RENDERBUFFER_SIZE:
+    case GL_MAX_TEXTURE_IMAGE_UNITS:
+    case GL_MAX_TEXTURE_SIZE:
+    case GL_MAX_VARYING_VECTORS:
+    case GL_MAX_VERTEX_ATTRIBS:
+    case GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS:
+    case GL_MAX_VERTEX_UNIFORM_VECTORS:
+    case GL_PACK_ALIGNMENT:
+    case GL_RED_BITS:
+    case GL_SAMPLE_BUFFERS:
+    case GL_SAMPLES:
+    case GL_STENCIL_BACK_FAIL:
+    case GL_STENCIL_BACK_FUNC:
+    case GL_STENCIL_BACK_PASS_DEPTH_FAIL:
+    case GL_STENCIL_BACK_PASS_DEPTH_PASS:
+    case GL_STENCIL_BACK_REF:
+    case GL_STENCIL_BACK_VALUE_MASK:
+    case GL_STENCIL_BACK_WRITEMASK:
+    case GL_STENCIL_BITS:
+    case GL_STENCIL_CLEAR_VALUE:
+    case GL_STENCIL_FAIL:
+    case GL_STENCIL_FUNC:
+    case GL_STENCIL_PASS_DEPTH_FAIL:
+    case GL_STENCIL_PASS_DEPTH_PASS:
+    case GL_STENCIL_REF:
+    case GL_STENCIL_VALUE_MASK:
+    case GL_STENCIL_WRITEMASK:
+    case GL_SUBPIXEL_BITS:
+    case GL_UNPACK_ALIGNMENT:
+    case GL_FRAGMENT_SHADER_DERIVATIVE_HINT:
+    case GL_MAX_COLOR_ATTACHMENTS:
+    case GL_MAX_DRAW_BUFFERS:
+        return 11;
+    case GL_ALIASED_LINE_WIDTH_RANGE:
+    case GL_ALIASED_POINT_SIZE_RANGE:
+    case GL_DEPTH_RANGE:
+        return 22;
+    case GL_BLEND:
+    case GL_CULL_FACE:
+    case GL_DEPTH_TEST:
+    case GL_DEPTH_WRITEMASK:
+    case GL_DITHER:
+    case GL_POLYGON_OFFSET_FILL:
+    case GL_SAMPLE_ALPHA_TO_COVERAGE:
+    case GL_SAMPLE_COVERAGE:
+    case GL_SAMPLE_COVERAGE_INVERT:
+    case GL_SCISSOR_TEST:
+    case GL_STENCIL_TEST:
+        return 31;
+    case GL_BLEND_COLOR:
+    case GL_COLOR_CLEAR_VALUE:
+        return 24;
+    case GL_COLOR_WRITEMASK:
+        return 34;
+    case GL_DEPTH_CLEAR_VALUE:
+    case GL_LINE_WIDTH:
+    case GL_POLYGON_OFFSET_FACTOR:
+    case GL_POLYGON_OFFSET_UNITS:
+    case GL_SAMPLE_COVERAGE_VALUE:
+    case GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT:
+        return 21;
+    case GL_MAX_VIEWPORT_DIMS:
+        return 12;
+    case GL_RENDERER:
+    case GL_SHADING_LANGUAGE_VERSION:
+    case GL_VENDOR:
+    case GL_VERSION:
+        return 51;
+    case GL_SCISSOR_BOX:
+    case GL_VIEWPORT:
+        return 14;
+    case GL_MAX_SAMPLES:
+    case GL_MAX_3D_TEXTURE_SIZE:
+    case GL_MAX_ARRAY_TEXTURE_LAYERS:
+    case GL_MAX_VERTEX_UNIFORM_COMPONENTS:
+    case GL_MAX_UNIFORM_BUFFER_BINDINGS:
+    case GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT:
+    case GL_MAX_VERTEX_UNIFORM_BLOCKS:
+    case GL_MAX_FRAGMENT_INPUT_COMPONENTS:
+    case GL_MAX_FRAGMENT_UNIFORM_COMPONENTS:
+    case GL_MAX_COMBINED_UNIFORM_BLOCKS:
+    case GL_MAX_FRAGMENT_UNIFORM_BLOCKS:
+    case GL_MAX_VARYING_COMPONENTS:
+    case GL_MAX_ELEMENTS_INDICES:
+    case GL_MAX_ELEMENTS_VERTICES:
+    case GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS:
+    case GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS:
+    case GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS:
+    case GL_MIN_PROGRAM_TEXEL_OFFSET:
+    case GL_MAX_PROGRAM_TEXEL_OFFSET:
+    case GL_MAX_VERTEX_OUTPUT_COMPONENTS:
+    case GL_PACK_ROW_LENGTH:
+    case GL_PACK_SKIP_ROWS:
+    case GL_PACK_SKIP_PIXELS:
+    case GL_UNPACK_IMAGE_HEIGHT:
+    case GL_UNPACK_ROW_LENGTH:
+    case GL_UNPACK_SKIP_IMAGES:
+    case GL_UNPACK_SKIP_PIXELS:
+    case GL_UNPACK_SKIP_ROWS:
+        return version == 3 ? 11 : 0;
+    case GL_MAX_UNIFORM_BLOCK_SIZE:
+    case GL_MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS:
+    case GL_MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS:
+    case GL_MAX_ELEMENT_INDEX:
+    case GL_MAX_SERVER_WAIT_TIMEOUT:
+        return version == 3 ? 41 : 0;
+    case GL_MAX_TEXTURE_LOD_BIAS:
+        return version == 3 ? 21 : 0;
+    case GL_TRANSFORM_FEEDBACK_ACTIVE:
+    case GL_TRANSFORM_FEEDBACK_PAUSED:
+    case GL_RASTERIZER_DISCARD:
+        return version == 3 ? 31 : 0;
+    default: return 0;
+    }
+}
+static void vox_gl_parameter(unsigned pname, int shape, double* output)
+{
+    int count = shape % 10;
+    GLsizei written = 0;
+    switch (shape / 10) {
+    case 1: { GLint values[4] = {0}; glGetIntegervRobustANGLE(pname, count, &written, values); for (int i = 0; i < count; ++i) output[i] = values[i]; break; }
+    case 2: { GLfloat values[4] = {0}; glGetFloatvRobustANGLE(pname, count, &written, values); for (int i = 0; i < count; ++i) output[i] = values[i]; break; }
+    case 3: { GLboolean values[4] = {0}; glGetBooleanvRobustANGLE(pname, count, &written, values); for (int i = 0; i < count; ++i) output[i] = values[i] == GL_TRUE; break; }
+    case 4: { GLint64 value = 0; glGetInteger64vRobustANGLE(pname, 1, &written, &value); output[0] = (double)value; break; }
+    }
+}

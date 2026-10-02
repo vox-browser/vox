@@ -46,7 +46,12 @@ function __webglMethod(s,name,overloads) {
  const args=values.map(function(value,index){return index<signature[1].length?__webglArgument(value,signature[1][index]):value;});const extra={};
  if(name==="readPixels"){const destination=values[6];if(destination!==null&&destination!==undefined){if(!ArrayBuffer.isView(destination))throw new TypeError("Expected an ArrayBufferView");extra.elementSize=destination.BYTES_PER_ELEMENT||1;}const result=__webglCall(s,name,args,extra);if(result!==null&&destination!=null)new Uint8Array(destination.buffer,destination.byteOffset,destination.byteLength).set(result);return;}
  if(name==="getBufferSubData"){const destination=values[2];if(!ArrayBuffer.isView(destination))throw new TypeError("Expected an ArrayBufferView");const size=destination.BYTES_PER_ELEMENT||1;if(args.length>3)args[3]=+values[3]*size;if(args.length>4)args[4]=+values[4]*size;const result=__webglCall(s,name,args);new Uint8Array(destination.buffer,destination.byteOffset,destination.byteLength).set(result);return;}
- const result=__webglCall(s,name,args,extra);if(signature[2].endsWith("undefined"))return;return __webglReply(result);
+ const result=__webglCall(s,name,args,extra);if(signature[2].endsWith("undefined"))return;
+ if(Array.isArray(result)&&name==="getParameter"){const pname=+values[0];if([0x846e,0x846d,0x8005,0x0c22,0x0b70].includes(pname))return new Float32Array(result);if([0x0d3a,0x0c10,0x0ba2].includes(pname))return new Int32Array(result);if(pname===0x86a3)return new Uint32Array(result);}
+ if(Array.isArray(result)&&name==="getInternalformatParameter")return new Int32Array(result);
+ if(Array.isArray(result)&&name==="getActiveUniformBlockParameter"&&+values[2]===0x8a43)return new Uint32Array(result);
+ if(Array.isArray(result)&&name==="getVertexAttrib"&&+values[1]===0x8626)return new Float32Array(result);
+ return __webglReply(result);
  };
 }
 function __webglContext(s,kind,options) {

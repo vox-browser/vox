@@ -270,6 +270,10 @@ fn initial_drawing_buffer_size(width int, height int) (int, int) {
 }
 
 pub fn (mut context WebGLRenderingContext) reset_to_default_state() {
+ // Both current upstream WebGL context reset implementations are empty.
+}
+
+fn (mut context WebGLRenderingContext) initialize_restored_client_state() {
 	context.error_ = no_error
 	context.bound_buffers.clear()
 	context.bound_framebuffer = 0
@@ -302,7 +306,7 @@ pub fn (mut context WebGLRenderingContext) reset_to_default_state() {
 // confusing it with an object explicitly deleted by script.
 pub fn (mut context WebGLRenderingContext) reset_context_state_after_loss() {
 	context.context_generation_++
-	context.reset_to_default_state()
+	context.initialize_restored_client_state()
 	context.reset_client_side_webgl_state()
 	context.bound_samplers.clear()
 	context.current_transform_feedback = none

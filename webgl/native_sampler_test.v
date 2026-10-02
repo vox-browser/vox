@@ -17,12 +17,12 @@ fn test_native_sampler_parameters_preserve_floats_and_driver_validation() {
 	context.sampler_parameterf(mut sampler, 0xbad, 1.25)
 	assert context.get_error() == invalid_enum
 	context.bind_sampler(0, sampler)
-	assert context.get_parameter(sampler_binding).object == sampler.object.handle_
+	assert (context.get_parameter(sampler_binding).sampler or {panic("sampler")}).object.native_handle_ == sampler.object.native_handle_
 	context.bind_sampler(0xffffffff, sampler)
 	assert context.get_error() == invalid_value
 	assert context.bound_samplers.len == 1
 	context.delete_sampler(mut sampler)
-	assert context.get_parameter(sampler_binding).kind == .none
+	assert (context.get_parameter(sampler_binding).sampler or {panic("unbound sampler")}).object.native_handle_ == 0
 	context.bind_sampler(0, sampler)
 	assert context.get_error() == invalid_operation
 }

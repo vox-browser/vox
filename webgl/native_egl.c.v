@@ -16,6 +16,8 @@ fn C.vox_gl_delete_sync(voidptr)
 fn C.vox_gl_get_sync_parameter(voidptr, u32) int
 fn C.vox_gl_get_error() u32
 fn C.vox_gl_string(u32) &char
+fn C.vox_gl_parameter_shape(u32,int) int
+fn C.vox_gl_parameter(u32,int,&f64)
 fn C.vox_gl_request_extension(&char)
 
 fn native_gl_string(name GLenum) string {
@@ -84,6 +86,9 @@ fn C.vox_gl_tex_image2d(u32, int, int, int, int, int, u32, u32, int, voidptr)
 fn C.vox_gl_tex_sub_image2d(u32, int, int, int, int, int, u32, u32, int, voidptr)
 fn C.vox_gl_tex_parameteri(u32, u32, int)
 fn C.vox_gl_tex_parameterf(u32, u32, f32)
+fn C.vox_gl_tex_parameter(u32,u32) int
+fn C.vox_gl_tex_float_parameter(u32,u32) f32
+fn C.vox_gl_renderbuffer_parameter(u32,u32) int
 fn C.vox_gl_read_pixels(int, int, int, int, u32, u32, int, voidptr) int
 fn C.vox_gl_clear_color(f32, f32, f32, f32)
 fn C.vox_gl_clear_depth(f32)
