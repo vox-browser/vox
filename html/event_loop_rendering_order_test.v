@@ -97,12 +97,9 @@ fn test_animation_frame_timestamps_use_each_document_time_origin_and_clamp_befor
 		first.finalize()
 		second.finalize()
 	}
-	first_settings := first.relevant_settings_object()
-	second_settings := second.relevant_settings_object()
-	mut settings1 := unsafe { &EnvironmentSettingsObject(first_settings) }
-	mut settings2 := unsafe { &EnvironmentSettingsObject(second_settings) }
-	settings1.time_origin_ = 100
-	settings2.time_origin_ = 200
+	// Window's time origin follows its current associated Document.
+	first.load_timing_info.navigation_start_time = 100
+	second.load_timing_info.navigation_start_time = 200
 	event_loop.register_document(first)
 	event_loop.register_document(second)
 	first_window.request_animation_frame(fn [mut log] (now f64) { log.times << now })
@@ -112,4 +109,16 @@ fn test_animation_frame_timestamps_use_each_document_time_origin_and_clamp_befor
 	assert log.times == [50.5, 0.0]
 	assert first.last_animation_frame_timestamp? == 50.5
 	assert second.last_animation_frame_timestamp? == 0
+}
+
+fn test_display_opportunity_timestamps_reject_future_frames_and_preserve_monotonicity() {
+	mut event_loop := EventLoop.create(.window)
+	before := unsafe_shared_current_time_ms()
+	event_loop.rendering_opportunity(before + 100_000, false)
+	after := unsafe_shared_current_time_ms()
+	assert event_loop.last_render_opportunity_time_ >= before
+	assert event_loop.last_render_opportunity_time_ <= after
+	clamped := event_loop.last_render_opportunity_time_
+	event_loop.rendering_opportunity(before - 100, false)
+	assert event_loop.last_render_opportunity_time_ == clamped
 }

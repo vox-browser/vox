@@ -621,11 +621,10 @@ pub fn (mut event_loop EventLoop) rendering_opportunity(frame_time f64, watchdog
 	if watchdog {
 		event_loop.rendering_scheduler_counters_.watchdog_opportunities++
 	}
-	event_loop.last_render_opportunity_time_ = if frame_time > event_loop.last_render_opportunity_time_ {
-		frame_time
-	} else {
-		event_loop.last_render_opportunity_time_
-	}
+	// EventLoop.cpp: delayed display delivery stays monotonic and cannot
+	// publish a timestamp later than the actual shared monotonic clock.
+	event_loop.last_render_opportunity_time_ = math.max(event_loop.last_render_opportunity_time_,
+		math.min(frame_time, unsafe_shared_current_time_ms()))
 	if event_loop.running_rendering_task {
 		return false
 	}
