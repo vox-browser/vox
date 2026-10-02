@@ -1,4 +1,4 @@
-# XHR module V translation — complete
+# XHR module V translation status
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/XHR`
 
@@ -18,20 +18,30 @@ iterators, and the XMLHttpRequest state machine.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `XHR/` | 7 | 1,855 | 1,329 | 455 | Complete |
+| `XHR/` | 7 | 1,855 | 1,329 | 455 | Historical core mapping; runtime follow-up below |
 
 Associated declarations comprise 8 headers / 512 LOC and 5 IDL files / 99
 LOC. Mapping completeness is 7/7 implementation units, 8/8 headers, and 5/5
 IDL definitions audited.
 
-The port covers method/header validation, URL and credential parsing,
-sync/window restrictions, all response types, MIME override and document rules,
-response-header combination, request/response/upload progress, abort/network/
-timeout paths, response caching, and GC liveness. Fetching, timers, text-codec
-selection, and HTML/XML document construction remain explicit host boundaries.
-Form construction crosses the translated HTML form model, request and response
-chunks enter through typed callbacks, and parsed document content is exposed as
-source text. The global boundary owns live-request tracking, timeout state, and
-activity roots for requests with relevant event listeners.
+The core covers method/header validation, URL and credential parsing,
+sync/window restrictions, response types, MIME override and document rules,
+response-header combination, progress, abort/network/timeout paths and caching.
+Bound requests use their actual HTML settings, Fetch controller, streamed body,
+native timers and DOM event targets/listeners/handlers. Document responses retain
+actual parsed HTML/XML Documents; Document requests use the actual serializer
+and source MIME/charset rules. Blob requests use their real bytes and MIME.
 
-Verification: `v -enable-globals test xhr` passes 3/3; scoped diff checks pass.
+The macOS compact browser now installs an owning-document XMLHttpRequest factory
+and an in-process curl socket/timer transport. Asynchronous native callbacks
+reach the live DOM replay before painting. This does not establish full
+RequestServer, generic browser IDL or GC parity: source IPC/DNS/cache/cookie/lease
+states, complete wrappers and non-macOS transport remain open. Upstream Fetch's
+upload callback FIXME is retained rather than producing invented progress.
+See [native transport follow-up](../docs/translation-audit/NATIVE_XHR_TRANSPORT.md)
+for exact source mappings, validation and remaining boundaries.
+
+Historical verification at the original mapping checkpoint:
+`v -enable-globals test xhr` passed 3/3. The follow-up includes focused model,
+actual loopback transport, compact native host, DOM replay and production-build
+smoke checks.
