@@ -34,6 +34,8 @@ pub:
 	callback_operation  ?CallbackOperation
 	platform_interfaces []string
 	opaque_id           u64
+	// Retain the actual native exception record across Promise/callback boundaries.
+	dom_exception_      ?&DOMException
 	frozen              bool
 	promise_value_      ?&Promise
 	runtime_value_      ?RuntimeValue

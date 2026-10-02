@@ -19,6 +19,7 @@ pub:
 	message string
 }
 
+@[heap]
 pub struct DOMException {
 mut:
 	name_    string = 'Error'
@@ -30,6 +31,10 @@ pub fn DOMException.create(name string, message string) DOMException {
 		name_:    name
 		message_: message
 	}
+}
+
+pub fn DOMException.create_record(name string, message string) &DOMException {
+	return &DOMException{ name_: name, message_: message }
 }
 
 // The JS constructor intentionally takes message before name.
@@ -93,8 +98,15 @@ pub fn (exception DOMException) str() string {
 // Keep its observable properties on the typed value so promise rejection
 // reasons retain the exception instead of degrading to a message string.
 pub fn dom_exception_value(exception DOMException) Value {
+	native := &DOMException{ name_: exception.name(), message_: exception.message() }
+	return dom_exception_value_for_record(native)
+}
+
+pub fn dom_exception_value_for_record(exception &DOMException) Value {
 	return Value{
 		kind: .platform_object
+		dom_exception_: exception
+		opaque_id: u64(voidptr(exception))
 		platform_interfaces: ['DOMException']
 		object_value: {
 			'name':    string_value(exception.name())
@@ -111,6 +123,7 @@ pub:
 }
 
 pub fn dom_exception_from_object(object Value) ?DOMException {
+	if native := object.dom_exception_ { return *native }
 	if object.kind != .platform_object || 'DOMException' !in object.platform_interfaces {
 		return none
 	}
