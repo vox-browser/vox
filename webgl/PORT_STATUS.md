@@ -98,10 +98,12 @@ The source platform deferred invocation is adapted to an owning-loop task;
 Promise reactions remain owning-loop microtasks. The two focused owning-loop
 cases passed with GC disabled. Permissions policy and immersive-device
 selection remain the pinned source TODOs; its assumed compatible adapter is
-preserved and does not establish WebXR device support. The synchronous
-`context.v` compatibility helper remains a DTO API; it does not supply the
-asynchronous public operation. The actual JavaScript Promise binding is still
-pending for this operation.
+preserved and does not establish WebXR device support. The synchronous bool
+helper has been removed; its existing context-loss caller now runs the actual
+`make_xr_compatible` deferred and settlement steps and inspects the resulting
+Promise. Both that focused file and the HTML ownership file passed with GC
+disabled. The actual JavaScript Promise binding is still pending for this
+operation.
 
 | Upstream unavailable operation | Source declaration under `Libraries/LibWeb/WebGL/` |
 | --- | --- |
