@@ -99,6 +99,7 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 		else {}
 	}
 	mut kind := html.StructuredObjectKind.object
+	mut native_exception := ?&webidl.DOMException(none)
 	match tag {
 		7 { kind = .boolean_object }
 		8 { kind = .number_object }
@@ -113,13 +114,26 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 		17 {
 			// C API checks the actual JSArray record. Array.isArray would also
 			// accept Proxy(Array), unlike source is<JS::Array>.
-			if C.JSValueIsArray(bridge.runtime.context, value) { kind = .array }
+			if C.JSValueIsArray(bridge.runtime.context, value) {
+				kind = .array
+			} else {
+				candidate := bridge.runtime.native_clone_dom_exception(value)!
+				if exception := candidate.value {
+					kind = .serializable_object
+					native_exception = exception
+				}
+			}
 		}
 		else { return native_clone_unsupported('Source native projection for this JavaScript family is not yet bound') }
 	}
 	mut object := html.StructuredObject.create(kind)
 	result := html.structured_object_value(object)
 	projection.input_memory[identity] = &result
+	if exception := native_exception {
+		object.serializable_interface_ = .dom_exception
+		object.dom_exception_ = exception
+		return &result
+	}
 	if tag >= 7 && tag <= 10 {
 		internal := projection.root(bridge.engine('boxed_value', [value, C.JSValueMakeNumber(bridge.runtime.context, f64(tag))])!)!
 		match kind {
@@ -196,6 +210,16 @@ fn (mut projection NativeCloneProjection) reconstruct(value dom.JSValue) !voidpt
 	object := html.structured_object_from_value(value)!
 	identity := u64(voidptr(object))
 	if existing := projection.output_memory[identity] { return existing }
+	if object.kind == .serializable_object {
+		interface_name := object.serializable_interface_ or { return native_clone_unsupported('Source native serializable object has no primary interface') }
+		if interface_name != .dom_exception {
+			return native_clone_unsupported('Source native primary serializable interface is not yet bound')
+		}
+		exception := object.dom_exception_ or { return native_clone_unsupported('Source DOMException has no native payload record') }
+		actual := projection.root(owner.javascript_dom_exception(webidl.dom_exception_value_for_record(exception))!)!
+		projection.output_memory[identity] = actual
+		return actual
+	}
 	if object.kind == .error_object {
 		actual := projection.root(projection.reconstruct_error(object)!)!
 		projection.output_memory[identity] = actual
@@ -279,7 +303,12 @@ pub fn (bridge &StructuredCloneBridge) deserialize(record html.SerializationReco
 	// TemporaryExecutionContext with callbacks disabled.
 	bridge.runtime.prepare_html_script()
 	defer { bridge.runtime.clean_up_html_script() }
-	source_value := if record.type_ == .ipc { html.structured_deserialize_ipc(record)! } else { html.structured_deserialize(record)! }
+	context := bridge.runtime.native_clone_deserialization_context()
+	source_value := if record.type_ == .ipc {
+		html.structured_deserialize_ipc_with_context(record, context) or { return native_clone_unsupported(err.msg()) }
+	} else {
+		html.structured_deserialize_with_context(record, context) or { return native_clone_unsupported(err.msg()) }
+	}
 	mut projection := NativeCloneProjection{bridge: bridge}
 	defer { projection.release_roots() }
 	actual := projection.reconstruct(source_value)!
