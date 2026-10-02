@@ -4275,20 +4275,22 @@ fn (mut computer FontComputer) font_matching_algorithm(family_name string, weigh
 			}
 		}
 	}
-	for typeface in platform_typefaces_with_family_name_boundary(family_name) {
-		matching_family_fonts << MatchingFontCandidate{
-			key: FontFaceKey{
-				family_name: typeface.family_name
-				// FIXME: Support system fonts that have a range of weights, etc.
-				weight: FontWeightRange{
-					min: typeface.weight_
-					max: typeface.weight_
+	if matching_family_fonts.len == 0 {
+		for typeface in platform_typefaces_with_family_name_boundary(family_name) {
+			matching_family_fonts << MatchingFontCandidate{
+				key: FontFaceKey{
+					family_name: typeface.family_name
+					// FIXME: Support system fonts that have a range of weights, etc.
+					weight: FontWeightRange{
+						min: typeface.weight_
+						max: typeface.weight_
+					}
+					slope: typeface.slope_
 				}
-				slope: typeface.slope_
+				width: font_width_bucket_from_percentage(typeface.width_)
+				typeface: typeface
+				is_platform_font: true
 			}
-			width: font_width_bucket_from_percentage(typeface.width_)
-			typeface: typeface
-			is_platform_font: true
 		}
 	}
 
