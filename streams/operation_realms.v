@@ -4,8 +4,8 @@
 
 // Promise-owning stream operations use the promise's realm when they run
 // queued work. These compact records mirror the ownership-bearing portions of
-// Ladybird's pipe and tee request classes; the synchronous V pumps keep their
-// state on ReadableStream itself.
+// Ladybird's pipe and tee request classes. Pipe state and reactions belong to
+// the retained operation; tee reader state belongs to its source stream.
 module streams
 
 pub fn promise_realm(promise &VoidPromise) StreamRealm {
@@ -31,6 +31,18 @@ pub fn (reader &ReadableStreamGenericReaderMixin) closed_promise_realm() StreamR
 pub struct ReadableStreamPipeTo {
 mut:
 	promise_ &VoidPromise = unsafe { nil }
+	source_ &ReadableStream = unsafe { nil }
+	destination_ &WritableStream = unsafe { nil }
+	reader_ &ReadableStreamDefaultReader = unsafe { nil }
+	writer_ &WritableStreamDefaultWriter = unsafe { nil }
+	last_write_promise_ &VoidPromise = unsafe { nil }
+	unwritten_chunks_ []Value
+	shutting_down_ bool
+	finished_ bool
+	reading_ bool
+	waiting_ready_ bool
+	processing_ bool
+	standalone_jobs_ []fn ()
 }
 
 pub fn ReadableStreamPipeTo.from_promise(promise &VoidPromise) &ReadableStreamPipeTo {

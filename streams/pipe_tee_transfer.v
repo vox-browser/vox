@@ -43,175 +43,25 @@ fn unlock_pipe(mut source ReadableStream, mut destination WritableStream) {
 			}
 		}
 	}
+	if !isnil(destination.writer_) {
+		mut writer := destination.writer_
+		writer.release_lock()
+	}
 	if !isnil(source.default_reader_) {
 		mut reader := source.default_reader_
 		reader.release_lock() or {}
 	} else if source.reader_kind_ == .pipe {
 		source.reader_kind_ = .none
 	}
-	if !isnil(destination.writer_) {
-		mut writer := destination.writer_
-		writer.release_lock()
-	}
 	source.pipe_destination_ = unsafe { nil }
 	source.pipe_operation_ = unsafe { nil }
 	destination.pipe_source_ = unsafe { nil }
 }
 
-fn pipe_result_error(result &VoidPromise, original string) string {
-	return if result.state() == .rejected { result.reason() } else { original }
-}
-
-fn abort_pipe(mut source ReadableStream, mut destination WritableStream, reason Value) string {
-	mut final_reason := reason.description()
-	if !source.pipe_options_.prevent_abort && destination.state_ == .writable {
-		abort_result := destination.abort_internal(reason)
-		final_reason = pipe_result_error(abort_result, final_reason)
-	}
-	if !source.pipe_options_.prevent_cancel && source.state_ == .readable {
-		cancel_result := source.cancel_internal(reason)
-		if cancel_result.state() == .rejected {
-			final_reason = cancel_result.reason()
-		}
-	}
-	return final_reason
-}
-
-fn fail_pipe(mut source ReadableStream, reason string) {
-	if isnil(source.pipe_promise_) || source.pipe_promise_.state() != .pending {
-		return
-	}
-	mut promise := source.pipe_promise_
-	promise.reject(reason)
-	mut destination := source.pipe_destination_
-	unlock_pipe(mut source, mut destination)
-}
-
-fn finish_pipe(mut source ReadableStream) {
-	if isnil(source.pipe_promise_) || source.pipe_promise_.state() != .pending {
-		return
-	}
-	mut promise := source.pipe_promise_
-	promise.resolve()
-	mut destination := source.pipe_destination_
-	unlock_pipe(mut source, mut destination)
-}
-
 fn pump_readable_pipe(mut source ReadableStream) {
-	if isnil(source.pipe_destination_) || isnil(source.pipe_promise_) || source.pipe_promise_.state() != .pending || source.pipe_pumping_ {
-		return
-	}
-	source.pipe_pumping_ = true
-	defer {
-		source.pipe_pumping_ = false
-	}
-	mut destination := source.pipe_destination_
-	if signal := source.pipe_options_.signal {
-		if signal.aborted() {
-			reason := signal.reason()
-			final_reason := abort_pipe(mut source, mut destination, reason)
-			fail_pipe(mut source, final_reason)
-			return
-		}
-	}
-	if source.state_ == .errored {
-		mut reason := source.stored_error_
-		if !source.pipe_options_.prevent_abort && destination.state_ == .writable {
-			result := destination.abort_internal(string_value(reason))
-			reason = pipe_result_error(result, reason)
-		}
-		fail_pipe(mut source, reason)
-		return
-	}
-	if destination.state_ == .errored || destination.state_ == .erroring {
-		mut reason := destination.stored_error_
-		if !source.pipe_options_.prevent_cancel {
-			result := source.cancel_internal(string_value(reason))
-			reason = pipe_result_error(result, reason)
-		}
-		fail_pipe(mut source, reason)
-		return
-	}
-	if writable_stream_close_queued_or_in_flight(destination) || destination.state_ == .closed {
-		destination_closed := 'TypeError: Destination stream was closed during piping operation'
-		mut reason := destination_closed
-		if !source.pipe_options_.prevent_cancel && source.state_ == .readable {
-			result := source.cancel_internal(string_value(destination_closed))
-			reason = pipe_result_error(result, reason)
-		}
-		fail_pipe(mut source, reason)
-		return
-	}
-	for {
-		if !isnil(source.pipe_read_request_) {
-			request := source.pipe_read_request_
-			if request.state() == .pending {
-				return
-			}
-			source.pipe_read_request_ = unsafe { nil }
-			if request.state() == .rejected {
-				mut reason := request.reason()
-				if !source.pipe_options_.prevent_abort && destination.state_ == .writable {
-					result := destination.abort_internal(string_value(reason))
-					reason = pipe_result_error(result, reason)
-				}
-				fail_pipe(mut source, reason)
-				return
-			}
-			read_result := request.result()
-			if read_result.done {
-				if !source.pipe_options_.prevent_close {
-					closed := destination.close_internal()
-					if closed.state() == .rejected {
-						fail_pipe(mut source, closed.reason())
-						return
-					}
-				}
-				finish_pipe(mut source)
-				return
-			}
-			write := destination.write_internal(read_result.value)
-			if write.state() == .rejected {
-				mut reason := write.reason()
-				if !source.pipe_options_.prevent_cancel && source.state_ == .readable {
-					result := source.cancel_internal(string_value(reason))
-					reason = pipe_result_error(result, reason)
-				}
-				fail_pipe(mut source, reason)
-				return
-			}
-			continue
-		}
-		if source.state_ == .closed {
-			if !source.pipe_options_.prevent_close {
-				closed := destination.close_internal()
-				if closed.state() == .rejected {
-					fail_pipe(mut source, closed.reason())
-					return
-				}
-			}
-			finish_pipe(mut source)
-			return
-		}
-		if !isnil(destination.writer_) {
-			ready := destination.writer_.ready()
-			if ready.state() == .pending {
-				return
-			}
-			if ready.state() == .rejected {
-				mut reason := ready.reason()
-				if !source.pipe_options_.prevent_cancel && source.state_ == .readable {
-					result := source.cancel_internal(string_value(reason))
-					reason = pipe_result_error(result, reason)
-				}
-				fail_pipe(mut source, reason)
-				return
-			}
-		}
-		source.pipe_read_request_ = source.read_internal()
-		if source.pipe_read_request_.state() == .pending {
-			return
-		}
+	if !isnil(source.pipe_operation_) {
+		mut operation := source.pipe_operation_
+		operation.process()
 	}
 }
 
@@ -232,7 +82,6 @@ pub fn (mut source ReadableStream) pipe_to(mut destination WritableStream, optio
 		reader.release_lock() or {}
 		return VoidPromise.rejected_in(source.realm_, err.msg())
 	}
-	_ = writer
 	source.disturbed_ = true
 	source.pipe_destination_ = &destination
 	destination.pipe_source_ = &source
@@ -240,6 +89,8 @@ pub fn (mut source ReadableStream) pipe_to(mut destination WritableStream, optio
 	source.pipe_promise_ = VoidPromise.pending_in(source.realm_)
 	source.pipe_operation_ = ReadableStreamPipeTo.from_promise(source.pipe_promise_)
 	reader.set_readable_stream_pipe_to_operation(source.pipe_operation_)
+	mut operation := source.pipe_operation_
+	operation.bind(mut source, mut destination, reader, writer)
 	if mut signal := options.signal {
 		signal.pipes_ << &source
 	}
