@@ -287,7 +287,7 @@ fn test_element_scroll_routes_viewport_branches_and_resolves_promises() {
 	assert initial_scroll.state() == .fulfilled
 	root_scroll := root.el_scroll(17, 23)
 	assert root_scroll.state() == .fulfilled
-	assert window.scroll_x() == 4
+	assert window.scroll_x() == 17
 	assert window.scroll_y() == 23
 
 	document.set_quirks_mode(.yes)
