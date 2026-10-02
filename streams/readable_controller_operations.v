@@ -11,10 +11,8 @@ module streams
 pub fn (mut controller ReadableStreamDefaultController) cancel_steps(reason Value) &VoidPromise {
 	mut stream := controller.stream_
 	stream.queue_.reset()
-	mut result := VoidPromise.fulfilled_in(stream.realm_)
-	if algorithm := stream.cancel_algorithm_ {
-		algorithm(reason) or { result = VoidPromise.rejected_in(stream.realm_, err.msg()) }
-	}
+	mut cancel_promise := stream.invoke_cancel_algorithm(reason)
+	result := void_promise_from_webidl(stream.realm_, mut cancel_promise)
 	readable_stream_default_controller_clear_algorithms(mut controller)
 	return result
 }
@@ -131,10 +129,8 @@ pub fn (mut controller ReadableByteStreamController) cancel_steps(reason Value) 
 	mut stream := controller.stream_
 	readable_byte_stream_controller_clear_pending_pull_intos(mut controller)
 	controller.reset_byte_queue()
-	mut result := VoidPromise.fulfilled_in(stream.realm_)
-	if algorithm := stream.cancel_algorithm_ {
-		algorithm(reason) or { result = VoidPromise.rejected_in(stream.realm_, err.msg()) }
-	}
+	mut cancel_promise := stream.invoke_cancel_algorithm(reason)
+	result := void_promise_from_webidl(stream.realm_, mut cancel_promise)
 	readable_byte_stream_controller_clear_algorithms(mut controller)
 	return result
 }
@@ -272,6 +268,8 @@ pub fn readable_stream_default_controller_should_call_pull(controller &ReadableS
 pub fn readable_stream_default_controller_clear_algorithms(mut controller ReadableStreamDefaultController) {
 	controller.stream_.pull_algorithm_ = none
 	controller.stream_.cancel_algorithm_ = none
+	controller.stream_.promise_pull_algorithm_ = none
+	controller.stream_.promise_cancel_algorithm_ = none
 	controller.stream_.size_algorithm_ = default_size_algorithm
 }
 
@@ -337,6 +335,11 @@ pub fn readable_stream_default_controller_can_close_or_enqueue(controller &Reada
 }
 
 pub fn set_up_readable_stream_default_controller(mut stream ReadableStream, mut controller ReadableStreamDefaultController, start StartAlgorithm, pull PullAlgorithm, cancel CancelAlgorithm, high_water_mark f64, size SizeAlgorithm) ! {
+	set_up_readable_stream_default_controller_slots(mut stream, mut controller, pull, cancel, high_water_mark, size)!
+	stream.start_underlying_source(UnderlyingSource{ start: start })!
+}
+
+fn set_up_readable_stream_default_controller_slots(mut stream ReadableStream, mut controller ReadableStreamDefaultController, pull PullAlgorithm, cancel CancelAlgorithm, high_water_mark f64, size SizeAlgorithm) ! {
 	if high_water_mark < 0 {
 		return error('RangeError: highWaterMark must be non-negative')
 	}
@@ -353,16 +356,14 @@ pub fn set_up_readable_stream_default_controller(mut stream ReadableStream, mut 
 	stream.size_algorithm_ = size
 	stream.pull_algorithm_ = pull
 	stream.cancel_algorithm_ = cancel
-	start()!
-	stream.started_ = true
-	stream.call_pull_if_needed()
 }
 
 pub fn set_up_readable_stream_default_controller_from_underlying_source(mut stream ReadableStream, source UnderlyingSource, high_water_mark f64, size SizeAlgorithm) ! {
 	mut controller := ReadableStreamDefaultController{
 		stream_: &stream
 	}
-	set_up_readable_stream_default_controller(mut stream, mut controller, source.start or { no_op_start_algorithm }, source.pull or { no_op_pull_algorithm }, source.cancel or { no_op_cancel_algorithm }, high_water_mark, size)!
+	set_up_readable_stream_default_controller_slots(mut stream, mut controller, source.pull or { no_op_pull_algorithm }, source.cancel or { no_op_cancel_algorithm }, high_water_mark, size)!
+	stream.start_underlying_source(source)!
 }
 
 fn no_op_start_algorithm() ! {}
@@ -378,6 +379,8 @@ pub fn readable_byte_stream_controller_call_pull_if_needed(mut controller Readab
 pub fn readable_byte_stream_controller_clear_algorithms(mut controller ReadableByteStreamController) {
 	controller.stream_.pull_algorithm_ = none
 	controller.stream_.cancel_algorithm_ = none
+	controller.stream_.promise_pull_algorithm_ = none
+	controller.stream_.promise_cancel_algorithm_ = none
 }
 
 pub fn readable_byte_stream_controller_clear_pending_pull_intos(mut controller ReadableByteStreamController) {
@@ -615,8 +618,8 @@ pub fn readable_byte_stream_controller_get_byob_request(mut controller ReadableB
 		view := unsafe { descriptor.buffer.data_[start..start + length] }
 		stream.byob_request_ = &ReadableStreamBYOBRequest{
 			controller_: &controller
-			view_: view
-			active_: true
+			view_:       view
+			active_:     true
 		}
 	}
 	if isnil(stream.byob_request_) {
@@ -824,6 +827,11 @@ pub fn readable_byte_stream_controller_should_call_pull(controller &ReadableByte
 }
 
 pub fn set_up_readable_byte_stream_controller(mut stream ReadableStream, mut controller ReadableByteStreamController, start StartAlgorithm, pull PullAlgorithm, cancel CancelAlgorithm, high_water_mark f64, auto_allocate_chunk_size ?u64) ! {
+	set_up_readable_byte_stream_controller_slots(mut stream, mut controller, pull, cancel, high_water_mark, auto_allocate_chunk_size)!
+	stream.start_underlying_source(UnderlyingSource{ start: start })!
+}
+
+fn set_up_readable_byte_stream_controller_slots(mut stream ReadableStream, mut controller ReadableByteStreamController, pull PullAlgorithm, cancel CancelAlgorithm, high_water_mark f64, auto_allocate_chunk_size ?u64) ! {
 	if high_water_mark < 0 {
 		return error('RangeError: highWaterMark must be non-negative')
 	}
@@ -848,14 +856,12 @@ pub fn set_up_readable_byte_stream_controller(mut stream ReadableStream, mut con
 	stream.auto_allocate_size_ = auto_allocate_chunk_size
 	stream.pull_algorithm_ = pull
 	stream.cancel_algorithm_ = cancel
-	start()!
-	stream.started_ = true
-	readable_byte_stream_controller_call_pull_if_needed(mut controller)
 }
 
 pub fn set_up_readable_byte_stream_controller_from_underlying_source(mut stream ReadableStream, source UnderlyingSource, high_water_mark f64) ! {
 	mut controller := ReadableByteStreamController{
 		stream_: &stream
 	}
-	set_up_readable_byte_stream_controller(mut stream, mut controller, source.start or { no_op_start_algorithm }, source.pull or { no_op_pull_algorithm }, source.cancel or { no_op_cancel_algorithm }, high_water_mark, source.auto_allocate_chunk_size)!
+	set_up_readable_byte_stream_controller_slots(mut stream, mut controller, source.pull or { no_op_pull_algorithm }, source.cancel or { no_op_cancel_algorithm }, high_water_mark, source.auto_allocate_chunk_size)!
+	stream.start_underlying_source(source)!
 }

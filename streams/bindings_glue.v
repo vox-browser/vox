@@ -13,20 +13,26 @@ pub:
 	start                    ?StartAlgorithm
 	pull                     ?PullAlgorithm
 	cancel                   ?CancelAlgorithm
+	start_promise            ?PromiseStartAlgorithm
+	pull_promise             ?PromisePullAlgorithm
+	cancel_promise           ?PromiseCancelAlgorithm
 	auto_allocate_chunk_size ?u64
 }
 
 pub fn underlying_source_from_bindings(source BindingsUnderlyingSource) UnderlyingSource {
 	source_type := source.type_ or { UnderlyingSourceType.default_source }
 	return UnderlyingSource{
-		type_: if source_type == .bytes {
+		type_:                    if source_type == .bytes {
 			UnderlyingSourceType.bytes
 		} else {
 			UnderlyingSourceType.default_source
 		}
-		start: source.start
-		pull: source.pull
-		cancel: source.cancel
+		start:                    source.start
+		pull:                     source.pull
+		cancel:                   source.cancel
+		start_promise:            source.start_promise
+		pull_promise:             source.pull_promise
+		cancel_promise:           source.cancel_promise
 		auto_allocate_chunk_size: source.auto_allocate_chunk_size
 	}
 }

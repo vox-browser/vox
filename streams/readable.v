@@ -6,6 +6,8 @@
 // ReadableStreamAsyncIterator, and the corresponding abstract operations.
 module streams
 
+import webidl
+
 pub enum ReadableStreamState {
 	readable
 	closed
@@ -33,7 +35,7 @@ pub struct ReadableStreamReader {
 pub:
 	kind           ReaderKind
 	default_reader &ReadableStreamDefaultReader = unsafe { nil }
-	byob_reader    &ReadableStreamBYOBReader = unsafe { nil }
+	byob_reader    &ReadableStreamBYOBReader    = unsafe { nil }
 }
 
 pub enum UnderlyingSourceType {
@@ -54,60 +56,65 @@ pub:
 	start                    ?StartAlgorithm
 	pull                     ?PullAlgorithm
 	cancel                   ?CancelAlgorithm
+	start_promise            ?PromiseStartAlgorithm
+	pull_promise             ?PromisePullAlgorithm
+	cancel_promise           ?PromiseCancelAlgorithm
 	auto_allocate_chunk_size ?u64
 }
 
 @[heap]
 pub struct ReadableStream {
 mut:
-	realm_              StreamRealm
-	result_realm_       ?StreamRealm
-	state_              ReadableStreamState
-	stored_error_       string
-	disturbed_          bool
-	reader_kind_        ReaderKind
-	queue_              QueueWithSizes
-	high_water_mark_    f64
-	size_algorithm_     SizeAlgorithm = default_size_algorithm
-	pull_algorithm_     ?PullAlgorithm
-	cancel_algorithm_   ?CancelAlgorithm
-	close_requested_    bool
-	pulling_            bool
-	pull_again_         bool
-	started_            bool
-	byte_stream_        bool
-	auto_allocate_size_ ?u64
-	default_controller_ &ReadableStreamDefaultController = unsafe { nil }
-	byte_controller_    &ReadableByteStreamController = unsafe { nil }
-	default_reader_     &ReadableStreamDefaultReader = unsafe { nil }
-	byob_reader_        &ReadableStreamBYOBReader = unsafe { nil }
-	pending_reads_      ReadPromiseList
-	byob_request_       &ReadableStreamBYOBRequest = unsafe { nil }
-	tee_branches_       []&ReadableStream
-	tee_source_         &ReadableStream = unsafe { nil }
-	tee_branch_index_   int
-	tee_cancel_reason_  Value
-	tee_cancel_promise_ &VoidPromise = unsafe { nil }
-	tee_cancelled_      bool
-	tee_read_request_   &ReadPromise = unsafe { nil }
-	tee_byob_request_   &BYOBReadPromise = unsafe { nil }
-	tee_byob_branch_    int
-	tee_reading_        bool
-	tee_read_again_     bool
-	tee_read_again_1_   bool
-	tee_read_again_2_   bool
-	tee_clone_branch2_  bool
-	pipe_destination_   &WritableStream = unsafe { nil }
-	pipe_promise_       &VoidPromise = unsafe { nil }
-	pipe_operation_     &ReadableStreamPipeTo = unsafe { nil }
-	pipe_read_request_  &ReadPromise = unsafe { nil }
-	pipe_pumping_       bool
-	pipe_options_       StreamPipeOptions
-	owner_kind_         ReadableOwnerKind
-	owner_              voidptr
-	message_port_       &MessagePort = unsafe { nil }
-	from_values_        []Value
-	from_index_         int
+	realm_                    StreamRealm
+	result_realm_             ?StreamRealm
+	state_                    ReadableStreamState
+	stored_error_             string
+	disturbed_                bool
+	reader_kind_              ReaderKind
+	queue_                    QueueWithSizes
+	high_water_mark_          f64
+	size_algorithm_           SizeAlgorithm = default_size_algorithm
+	pull_algorithm_           ?PullAlgorithm
+	cancel_algorithm_         ?CancelAlgorithm
+	promise_pull_algorithm_   ?PromisePullAlgorithm
+	promise_cancel_algorithm_ ?PromiseCancelAlgorithm
+	close_requested_          bool
+	pulling_                  bool
+	pull_again_               bool
+	started_                  bool
+	byte_stream_              bool
+	auto_allocate_size_       ?u64
+	default_controller_       &ReadableStreamDefaultController = unsafe { nil }
+	byte_controller_          &ReadableByteStreamController    = unsafe { nil }
+	default_reader_           &ReadableStreamDefaultReader     = unsafe { nil }
+	byob_reader_              &ReadableStreamBYOBReader        = unsafe { nil }
+	pending_reads_            ReadPromiseList
+	byob_request_             &ReadableStreamBYOBRequest = unsafe { nil }
+	tee_branches_             []&ReadableStream
+	tee_source_               &ReadableStream = unsafe { nil }
+	tee_branch_index_         int
+	tee_cancel_reason_        Value
+	tee_cancel_promise_       &VoidPromise = unsafe { nil }
+	tee_cancelled_            bool
+	tee_read_request_         &ReadPromise     = unsafe { nil }
+	tee_byob_request_         &BYOBReadPromise = unsafe { nil }
+	tee_byob_branch_          int
+	tee_reading_              bool
+	tee_read_again_           bool
+	tee_read_again_1_         bool
+	tee_read_again_2_         bool
+	tee_clone_branch2_        bool
+	pipe_destination_         &WritableStream       = unsafe { nil }
+	pipe_promise_             &VoidPromise          = unsafe { nil }
+	pipe_operation_           &ReadableStreamPipeTo = unsafe { nil }
+	pipe_read_request_        &ReadPromise          = unsafe { nil }
+	pipe_pumping_             bool
+	pipe_options_             StreamPipeOptions
+	owner_kind_               ReadableOwnerKind
+	owner_                    voidptr
+	message_port_             &MessagePort = unsafe { nil }
+	from_values_              []Value
+	from_index_               int
 }
 
 pub fn ReadableStream.construct_impl(source UnderlyingSource, strategy QueuingStrategy) !&ReadableStream {
@@ -253,12 +260,12 @@ pub fn (stream &ReadableStream) byte_controller() !&ReadableByteStreamController
 pub fn (mut stream ReadableStream) get_reader(options ReadableStreamGetReaderOptions) !ReadableStreamReader {
 	if _ := options.mode {
 		return ReadableStreamReader{
-			kind: .byob
+			kind:        .byob
 			byob_reader: stream.get_byob_reader()!
 		}
 	}
 	return ReadableStreamReader{
-		kind: .default_reader
+		kind:           .default_reader
 		default_reader: stream.get_default_reader()!
 	}
 }
@@ -324,10 +331,10 @@ pub fn (mut stream ReadableStream) current_byob_request_view() ?[]u8 {
 pub fn (mut stream ReadableStream) piped_through(mut transform TransformStream, prevent_close bool, prevent_abort bool, prevent_cancel bool, signal ?&AbortSignal) &ReadableStream {
 	mut writable := transform.writable_
 	stream.pipe_to(mut writable, StreamPipeOptions{
-		prevent_close: prevent_close
-		prevent_abort: prevent_abort
+		prevent_close:  prevent_close
+		prevent_abort:  prevent_abort
 		prevent_cancel: prevent_cancel
-		signal: signal
+		signal:         signal
 	})
 	return transform.readable_
 }
@@ -374,21 +381,20 @@ fn (mut stream ReadableStream) call_pull_if_needed() {
 		stream.pull_again_ = true
 		return
 	}
-	algorithm := stream.pull_algorithm_ or { return }
+	if stream.pull_algorithm_ == none && stream.promise_pull_algorithm_ == none { return }
 	stream.pulling_ = true
-	algorithm() or {
-		if stream.byte_stream_ && !isnil(stream.byte_controller_) {
-			mut controller := stream.byte_controller_
-			readable_byte_stream_controller_error(mut controller, string_value(err.msg()))
-		} else {
-			stream.error(err.msg())
+	mut pull_promise := stream.invoke_pull_algorithm()
+	webidl.react_to_promise(mut pull_promise, fn [mut stream] (_ webidl.Value) !webidl.Value {
+		stream.pulling_ = false
+		if stream.pull_again_ {
+			stream.pull_again_ = false
+			stream.call_pull_if_needed()
 		}
-	}
-	stream.pulling_ = false
-	if stream.pull_again_ {
-		stream.pull_again_ = false
-		stream.call_pull_if_needed()
-	}
+		return webidl.undefined_value()
+	}, fn [mut stream] (reason webidl.Value) !webidl.Value {
+		stream.error(callback_reason(reason))
+		return webidl.undefined_value()
+	})
 }
 
 fn (mut stream ReadableStream) enqueue_internal(value Value, size f64) ! {
@@ -612,7 +618,7 @@ pub fn (mut controller ReadableStreamDefaultController) error(reason string) {
 pub struct ReadableStreamDefaultReader {
 mut:
 	stream_            &ReadableStream = unsafe { nil }
-	closed_            &VoidPromise = unsafe { nil }
+	closed_            &VoidPromise    = unsafe { nil }
 	released_          bool
 	pipe_to_operation_ &ReadableStreamPipeTo = unsafe { nil }
 }
@@ -721,7 +727,7 @@ mut:
 pub fn ReadableStreamAsyncIterator.create(mut stream ReadableStream, options ReadableStreamIteratorOptions) !&ReadableStreamAsyncIterator {
 	reader := stream.get_default_reader()!
 	mut iterator := &ReadableStreamAsyncIterator{
-		reader_: reader
+		reader_:         reader
 		prevent_cancel_: options.prevent_cancel
 	}
 	set_readable_stream_async_iterator_prototype(mut iterator)

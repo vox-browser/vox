@@ -2,10 +2,12 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Shared typed values and synchronous promise records used by the standalone
+// Shared typed values and promise records used by the standalone
 // Streams translation. LibWeb stores arbitrary JS values and WebIDL promises;
 // this package preserves their state transitions without depending on LibJS.
 module streams
+
+import webidl
 
 pub enum ValueKind {
 	undefined
@@ -39,14 +41,14 @@ pub fn null_value() Value {
 
 pub fn bool_value(value bool) Value {
 	return Value{
-		kind: .boolean
+		kind:    .boolean
 		boolean: value
 	}
 }
 
 pub fn number_value(value f64) Value {
 	return Value{
-		kind: .number
+		kind:   .number
 		number: value
 	}
 }
@@ -60,14 +62,14 @@ pub fn string_value(value string) Value {
 
 pub fn bytes_value(value []u8) Value {
 	return Value{
-		kind: .bytes
+		kind:   .bytes
 		bytes_: value
 	}
 }
 
 pub fn array_value(value []Value) Value {
 	return Value{
-		kind: .array
+		kind:  .array
 		items: value.clone()
 	}
 }
@@ -78,12 +80,12 @@ pub fn (value Value) clone() Value {
 		items << item.clone()
 	}
 	return Value{
-		kind: value.kind
+		kind:    value.kind
 		boolean: value.boolean
-		number: value.number
-		text: value.text
-		bytes_: value.bytes_.clone()
-		items: items
+		number:  value.number
+		text:    value.text
+		bytes_:  value.bytes_.clone()
+		items:   items
 	}
 }
 
@@ -116,7 +118,20 @@ pub enum PromiseState {
 // not depend on LibJS.
 pub struct StreamRealm {
 pub:
-	id u64
+	id               u64
+	promise_context_ ?&webidl.PromiseContext
+}
+
+pub fn StreamRealm.create_with_promise_context(context webidl.PromiseContext) StreamRealm {
+	return StreamRealm{
+		id:               context.realm_id
+		promise_context_: &webidl.PromiseContext{ ...context }
+	}
+}
+
+pub fn (realm StreamRealm) promise_context() webidl.PromiseContext {
+	if context := realm.promise_context_ { return *context }
+	return webidl.PromiseContext{ realm_id: realm.id }
 }
 
 pub fn StreamRealm.create(id u64) StreamRealm {
@@ -131,6 +146,8 @@ pub mut:
 	state_  PromiseState
 	reason_ string
 	realm_  StreamRealm
+mut:
+	native_promise_ &webidl.Promise = unsafe { nil }
 }
 
 pub fn VoidPromise.pending() &VoidPromise {
@@ -139,7 +156,8 @@ pub fn VoidPromise.pending() &VoidPromise {
 
 pub fn VoidPromise.pending_in(realm StreamRealm) &VoidPromise {
 	return &VoidPromise{
-		realm_: realm
+		realm_:          realm
+		native_promise_: webidl.create_promise_for(realm.promise_context())
 	}
 }
 
@@ -148,10 +166,9 @@ pub fn VoidPromise.fulfilled() &VoidPromise {
 }
 
 pub fn VoidPromise.fulfilled_in(realm StreamRealm) &VoidPromise {
-	return &VoidPromise{
-		state_: .fulfilled
-		realm_: realm
-	}
+	mut promise := VoidPromise.pending_in(realm)
+	promise.resolve()
+	return promise
 }
 
 pub fn VoidPromise.rejected(reason string) &VoidPromise {
@@ -159,11 +176,9 @@ pub fn VoidPromise.rejected(reason string) &VoidPromise {
 }
 
 pub fn VoidPromise.rejected_in(realm StreamRealm, reason string) &VoidPromise {
-	return &VoidPromise{
-		state_: .rejected
-		reason_: reason
-		realm_: realm
-	}
+	mut promise := VoidPromise.pending_in(realm)
+	promise.reject(reason)
+	return promise
 }
 
 pub fn (promise &VoidPromise) state() PromiseState {
@@ -181,6 +196,8 @@ pub fn (promise &VoidPromise) realm() StreamRealm {
 pub fn (mut promise VoidPromise) resolve() {
 	if promise.state_ == .pending {
 		promise.state_ = .fulfilled
+		mut native := promise.native_promise_
+		native.resolve(webidl.undefined_value())
 	}
 }
 
@@ -188,7 +205,16 @@ pub fn (mut promise VoidPromise) reject(reason string) {
 	if promise.state_ == .pending {
 		promise.state_ = .rejected
 		promise.reason_ = reason
+		mut native := promise.native_promise_
+		native.reject(webidl.string_value(reason))
 	}
+}
+
+// The public typed promise keeps the actual WebIDL promise identity and job
+// scheduler. Controllers attach source reactions to this object rather than
+// polling a callback's state or treating a pending callback as fulfilled.
+pub fn (promise &VoidPromise) as_webidl_promise() &webidl.Promise {
+	return promise.native_promise_
 }
 
 @[heap]
@@ -280,7 +306,7 @@ pub fn ReadPromise.pending() &ReadPromise {
 
 pub fn ReadPromise.pending_in(realm StreamRealm, result_realm ?StreamRealm) &ReadPromise {
 	return &ReadPromise{
-		realm_: realm
+		realm_:        realm
 		result_realm_: result_realm
 	}
 }
@@ -291,12 +317,12 @@ pub fn ReadPromise.fulfilled(value Value, done bool) &ReadPromise {
 
 pub fn ReadPromise.fulfilled_in(realm StreamRealm, result_realm ?StreamRealm, value Value, done bool) &ReadPromise {
 	return &ReadPromise{
-		state_: .fulfilled
-		realm_: realm
+		state_:        .fulfilled
+		realm_:        realm
 		result_realm_: result_realm
-		result_: ReadResult{
+		result_:       ReadResult{
 			value: value
-			done: done
+			done:  done
 		}
 	}
 }
@@ -307,9 +333,9 @@ pub fn ReadPromise.rejected(reason string) &ReadPromise {
 
 pub fn ReadPromise.rejected_in(realm StreamRealm, result_realm ?StreamRealm, reason string) &ReadPromise {
 	return &ReadPromise{
-		state_: .rejected
-		reason_: reason
-		realm_: realm
+		state_:        .rejected
+		reason_:       reason
+		realm_:        realm
 		result_realm_: result_realm
 	}
 }
@@ -354,7 +380,7 @@ fn (mut promise ReadPromise) resolve(value Value, done bool) {
 		promise.state_ = .fulfilled
 		promise.result_ = ReadResult{
 			value: value
-			done: done
+			done:  done
 		}
 		if callback := promise.fulfilled_callback_ {
 			promise.fulfilled_callback_ = none
@@ -491,11 +517,11 @@ pub fn BYOBReadPromise.fulfilled(value []u8, done bool) &BYOBReadPromise {
 
 pub fn BYOBReadPromise.fulfilled_in(realm StreamRealm, value []u8, done bool) &BYOBReadPromise {
 	return &BYOBReadPromise{
-		state_: .fulfilled
-		realm_: realm
+		state_:  .fulfilled
+		realm_:  realm
 		result_: BYOBReadResult{
 			value: value
-			done: done
+			done:  done
 		}
 	}
 }
@@ -506,9 +532,9 @@ pub fn BYOBReadPromise.rejected(reason string) &BYOBReadPromise {
 
 pub fn BYOBReadPromise.rejected_in(realm StreamRealm, reason string) &BYOBReadPromise {
 	return &BYOBReadPromise{
-		state_: .rejected
+		state_:  .rejected
 		reason_: reason
-		realm_: realm
+		realm_:  realm
 	}
 }
 
@@ -533,7 +559,7 @@ fn (mut promise BYOBReadPromise) resolve(value []u8, done bool) {
 		promise.state_ = .fulfilled
 		promise.result_ = BYOBReadResult{
 			value: value
-			done: done
+			done:  done
 		}
 	}
 }
