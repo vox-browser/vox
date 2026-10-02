@@ -154,14 +154,14 @@ fn wg_attributes(value webgl.WebGLContextAttributes) json2.Any {
 	}
 	return json2.Any({
 		'alpha':                        json2.Any(value.alpha)
-		'depth':                        json2.Any(value.depth)
-		'stencil':                      json2.Any(value.stencil)
 		'antialias':                    json2.Any(value.antialias)
+		'depth':                        json2.Any(value.depth)
+		'desynchronized':               json2.Any(value.desynchronized)
+		'failIfMajorPerformanceCaveat': json2.Any(value.fail_if_major_performance_caveat)
+		'powerPreference':              json2.Any(power)
 		'premultipliedAlpha':           json2.Any(value.premultiplied_alpha)
 		'preserveDrawingBuffer':        json2.Any(value.preserve_drawing_buffer)
-		'powerPreference':              json2.Any(power)
-		'failIfMajorPerformanceCaveat': json2.Any(value.fail_if_major_performance_caveat)
-		'desynchronized':               json2.Any(value.desynchronized)
+		'stencil':                      json2.Any(value.stencil)
 		'xrCompatible':                 json2.Any(value.xr_compatible)
 	})
 }
