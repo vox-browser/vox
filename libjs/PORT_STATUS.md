@@ -22,7 +22,8 @@ String UTF-16 helpers also follow `AK/{UnicodeUtils.h,Utf16View.cpp,Utf16String.
 and simdutf 7.4.0's scalar `utf16.h` validation and repair bodies. Unicode casing
 and normalization follow `LibUnicode/{Utf16String.cpp,Normalize.{h,cpp},ICU.{h,cpp}}`
 and retain ICU as the native algorithm and Unicode-data dependency.
-Regex records and input primitives follow `LibRegex/Rust/src/{ast,bytecode,vm}.rs`
+Regex records, input primitives, pattern analysis and literal prefilters follow
+`LibRegex/Rust/src/{ast,bytecode,vm}.rs`
 at the same upstream revision. Property-kind and resolved-property records follow
 `LibUnicode/Rust/src/character_types.rs`; Unicode property resolution and regex
 execution remain pending.
@@ -93,6 +94,8 @@ creates a realm with a global environment and pushes its execution context.
 | `regex_ast.v` | Complete LibRegex AST records, all atom/class/set variants, flags, quantifier factories, builtin-class complements and recursive value cloning |
 | `regex_bytecode.v` | All 29 regex instructions and seven simple-matcher variants, program records/emission/jump patching, owned matcher cloning, WTF-16 append and Unicode property metadata |
 | `regex_input.v` | ASCII/WTF-16 input views, search/comparison operations, code-point decoding/width, clipped capture copying, search advancement, character predicates and VM result/limit metadata; execution pending |
+| `regex_hint_analysis.v` | Complete PatternHints analysis: control-flow successors and linear tails, first-character/first-filter metadata, leading anchors, alternative start hints, trailing/required literals and all simple-scan variants |
+| `regex_literal_search.v` | Exact and ASCII-insensitive literal searches, trailing/required-literal rejection and one/two-code-unit start-position scans; regex matching pending |
 | `number_object.v`, `bigint_object.v`, `value_boxing.v` | NumberData/BigIntData wrapper records and all primitive ToObject cases with explicit Number/BigInt/String prototype dependencies |
 | `value_property_access.v` | GetV's direct primitive-prototype lookup, GetMethod's nullish/callable checks and Invoke with the original primitive receiver and explicit intrinsic dependencies |
 | `iterator.v`, `iterator_values.v` | Synchronous iterator acquisition for object receivers, IteratorNext/Step/StepValue, completion-preserving close/close-all, result records, list/callback collection, and SetterThatIgnoresPrototypeProperties |
@@ -123,8 +126,8 @@ creates a realm with a global environment and pushes its execution context.
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 183 implementation files contain **30,440 physical V LOC**. The 189 test
-files contain **24,471 physical V LOC** and **651 test functions**. Physical LOC
+The 185 implementation files contain **30,938 physical V LOC**. The 192 test
+files contain **25,272 physical V LOC** and **662 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -1010,7 +1013,32 @@ Whitespace and line-terminator predicates, the tri-state VM result and the
 invalid ranges remains true; ASCII searches/needles reject non-ASCII values,
 while raw code-unit reads and range comparisons retain byte values. These
 records and helpers do not execute regex bytecode. Parser/compiler translation,
-VM hints, scratch storage, backtracking and matching remain pending.
+scratch storage, backtracking and matching remain pending.
+
+LibRegex pattern analysis (`0f50cf23`) translates the complete current
+`PatternHints`/`analyze_pattern` path. Control-flow successors preserve order and
+duplicate edges, and literal suffixes require a single linear predecessor chain.
+Capture/modifier bookkeeping is skipped exactly as upstream before WTF-16 suffix
+assembly. Analysis retains first-character and class/greedy-loop filters, leading
+anchors through positive lookahead, one/two-literal alternative start hints,
+trailing and required literals, all four simple-scan variants and the supplied
+empty-match flag. Filters and scans own independently cloned arrays/union boxes.
+The optional AST required literal is copied where Rust moves its vector.
+Common-first-character analysis compares code points only and keeps the preferred
+branch's case flag. The broad `Save(1), Match` required-literal arm also wins
+before the later end-anchor arm: an intervening `AssertEnd` blocks bytecode
+required-literal extraction even when a trailing hint is available. Both source
+behaviors are preserved and tested.
+
+LibRegex literal prefilters (`464daa72`) translate exact substring search,
+ASCII-only insensitive search/comparison, the complete UTF-16 ASCII folding
+helper, optional trailing/required-literal rejection, and start-position scans.
+Empty substring needles succeed even beyond input length; direct comparisons
+still require a valid position. Start hints give input position zero priority,
+then search one or two units. The one-unit ASCII path rejects a non-ASCII needle,
+while the two-unit path compares raw input units. These are candidate rejection
+helpers; candidate matching, simple-scan execution, the regex VM loops and
+backtracking remain pending.
 
 Reflect property bodies (`5f4813e`) translate defineProperty/deleteProperty/get,
 getOwnPropertyDescriptor/has/set. Target-object validation precedes key conversion;
@@ -1130,10 +1158,10 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 189 passed, 189 total
+# 192 passed, 192 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 189 passed, 189 total
+# 192 passed, 192 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
@@ -1148,7 +1176,7 @@ v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
 
 v -old-compiler -enable-globals test .
-# 861 passed, 861 total
+# 864 passed, 864 total
 
 ./build_ladybird.sh
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
@@ -1172,11 +1200,11 @@ fixtures; separate tests exercise translated NativeFunction and ArrayBufferObjec
 records. Module-loading tests write temporary module files. The preceding LibWeb
 work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 189 libjs files are verified separately in both GC modes.
-There are now 861 repository test files.
+this package; the 192 libjs files are verified separately in both GC modes.
+There are now 864 repository test files.
 
-The complete 861-file repository suite passes, including the native bridge,
-eighteen browser integration files and all 189 LibJS files. The dedicated LibJS and
+The complete 864-file repository suite passes, including the native bridge,
+eighteen browser integration files and all 192 LibJS files. The dedicated LibJS and
 browser suites also pass in no-GC mode, exercising the retained storage and
 buffer ownership independently of the collector.
 
@@ -1216,6 +1244,19 @@ module unchanged, and appends access wrappers for three private helpers. It
 requires Rust edition 2024 (`RUSTC` selects the compiler), but no Cargo build or
 native Unicode libraries: parser, compiler, matcher and Unicode FFI functions
 are never invoked. There are no case overrides, and regeneration is byte-exact.
+
+Pattern analysis and literal prefilters match another 112,458 exact native Rust
+cases in both GC modes (`e22e2738`), including 19,208 complete hint records,
+control-flow/suffix checks and all 65,536 UTF-16 units for ASCII folding.
+`tools/libjs_regex_hints_corpus.py` imports the same unchanged record modules and
+complete VM source, adding access/serialization wrappers for private metadata
+and helpers. It never invokes parser/compiler, VM execution or Unicode FFI.
+Regenerate with
+`python3 tools/libjs_regex_hints_corpus.py --output /tmp/regex-hints.tsv`
+and compare both `/tmp/regex-hints.tsv` and `/tmp/regex-hints-fold.tsv` with
+their counterparts under `libjs/testdata/`. Folding cases are a separate asset
+to keep each V embedded fixture below 5 MB. Every output field compares exactly,
+there are no case overrides, and both regenerated files are byte-exact.
 
 Browser integration checks pass the eighteen `browserjs` test files in both GC modes,
 the native `main_test.v` bridge and flag tests, the production bundle build,
@@ -1506,6 +1547,15 @@ the same-size SVG source switch with zero differing pixels.
   panics retain the source conditions but use V record dumps instead of Rust's
   Debug text. The native corpus validates helper values and does not establish
   parser, compiler, Unicode-property or matcher conformance.
+- Pattern-hint tuple and enum payloads use named V records. Supplied AST
+  required literals are cloned instead of moved, because V callers can retain
+  their argument after analysis. Source bytecode filters/simple scans likewise
+  retain independent mutable storage. Literal search uses the same
+  subtraction-based bounds adaptation as the input primitives for overflowing
+  invalid caller positions. Split-chain analysis retains upstream's expectation
+  of compiler-generated acyclic leading alternatives; recursive anchor/first
+  probes advance through the supplied instruction vector. No parser or matcher
+  implementation is substituted for these prefilters.
 - Checked string length sum/product retain upstream's 2^32-1 code-unit maximum.
   TypedArray join and toLocaleString assemble flat V UTF-16 arrays instead of
   AK's builder and throw the same string-size RangeError above V's 2^31-1 array
@@ -1615,9 +1665,10 @@ complete LibJS runtime migration.
 
 - RegExp flags, named-group surrogate checks, ParsePattern preprocessing and
   source escaping are translated, but `compile_regex_pattern()` still has no
-  backend. LibRegex's complete AST/bytecode models and input/capture primitives
-  are translated. Its `parser.rs`, `compiler.rs`, VM pattern hints/optimizations,
-  scratch storage, backtracking/execution, `regex.rs`/FFI, Unicode property
+  backend. LibRegex's complete AST/bytecode models, input/capture primitives,
+  pattern-hint analysis and literal prefilters are translated. Its `parser.rs`,
+  `compiler.rs`, candidate matcher filters, simple-scan execution, scratch
+  storage, backtracking/execution, `regex.rs`/FFI, Unicode property
   resolution, case folding and string-property backend remain pending. The
   RegExp object, allocation/initialization, constructor/prototype methods and
   matching depend on those remaining slices. Neither the JavaScript AST corpus,
