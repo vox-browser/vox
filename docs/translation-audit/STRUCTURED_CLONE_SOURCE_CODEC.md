@@ -84,8 +84,8 @@ Native RegExp remains explicit: JSC's public source getter escapes source text
 and its flags getter normalizes order. These cannot recover arbitrary original
 constructor source/flags, so the bridge uses a captured getter only for a genuine
 brand check and rejects that unsupported native family without serializing the
-normalized getter values as the source internal records. Buffer views,
-platform registration and source serialization hooks remain subsequent slices;
+normalized getter values as the source internal records. Original resizable-view
+slots, platform registration and source serialization hooks remain subsequent slices;
 public native tee still requires those complete source family bindings.
 
 The actual Date projection reads the captured intrinsic Date value, preserves
@@ -124,6 +124,18 @@ constructor's exact Number capacity remain explicit checked limits; untrusted
 u64 capacity is never rounded into a different native record. Resizable view
 automatic-length slots, SharedArrayBuffer native availability and cross-process
 sharing remain separate boundaries.
+
+Fixed-backed native DataView and all twelve source TypedArray constructors now
+read genuine view slots through captured intrinsic getters. Their source witness
+check rejects detached/out-of-bounds views before serializing the backing buffer;
+own buffer/length getters, forged toStringTag and custom properties do not enter
+that path. Source records create actual target views with the captured constructor
+and retain buffer-before-view identity across aliases and sibling views. The
+DataView IPC golden verifies the absent ArrayLength field. Three native view
+cases and the buffer neighbor passed two files with GC disabled. Author-created
+resizable views still reject explicitly: public getters materialize current
+lengths and cannot recover their original automatic/fixed slots, including a
+fixed view that temporarily became out of bounds after resize.
 
 The native projection must retain actual JSC object identity and cycle memory,
 source key/enumerability/Get order and original completions, and captured
