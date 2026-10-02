@@ -105,6 +105,7 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 		11 { kind = .date }
 		13 { kind = .map }
 		14 { kind = .set }
+		16 { kind = .error_object }
 		17 {
 			// C API checks the actual JSArray record. Array.isArray would also
 			// accept Proxy(Array), unlike source is<JS::Array>.
@@ -130,6 +131,10 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 	}
 	if kind == .date {
 		object.number_data = bridge.number(bridge.engine('date_value', [value])!)!
+		return &result
+	}
+	if kind == .error_object {
+		projection.project_error(value, mut object)!
 		return &result
 	}
 	if kind == .map || kind == .set {
@@ -179,6 +184,11 @@ fn (mut projection NativeCloneProjection) reconstruct(value dom.JSValue) !voidpt
 	object := html.structured_object_from_value(value)!
 	identity := u64(voidptr(object))
 	if existing := projection.output_memory[identity] { return existing }
+	if object.kind == .error_object {
+		actual := projection.root(projection.reconstruct_error(object)!)!
+		projection.output_memory[identity] = actual
+		return actual
+	}
 	mut data := C.JSValueMakeUndefined(owner.context)
 	mut tag := 17
 	match object.kind {
@@ -259,6 +269,7 @@ const structured_clone_projection_intrinsic = r'(function(){
  const bufferLength=getOwn(ArrayBuffer.prototype,"byteLength").get,isView=ArrayBuffer.isView;
  const mapSize=getOwn(M.prototype,"size").get,setSize=getOwn(T.prototype,"size").get;
  const mapEach=M.prototype.forEach,setEach=T.prototype.forEach,mapSet=M.prototype.set,setAdd=T.prototype.add,isError=Error.isError;
+ const errorConstructors=[Error,EvalError,undefined,RangeError,ReferenceError,SyntaxError,TypeError,URIError],concat=S.prototype.concat;
  if(typeof isError!=="function")throw new TypeError("Exact native Error brand predicate is unavailable");
  const append=(array,value)=>define(array,array.length,{value,writable:true,enumerable:true,configurable:true});
  return {
@@ -281,6 +292,8 @@ const structured_clone_projection_intrinsic = r'(function(){
   boxed_value(value,tag){return apply(tag===7?bv:tag===8?nv:tag===9?sv:iv,value,[])},
   bigint_text(value){return apply(integerText,value,[])},
   date_value(value){return apply(dateValue,value,[])},
+  error_metadata(value){const name=get(value,"name",value);let message,cause;const messageDescriptor=getOwn(value,"message");if(messageDescriptor!==undefined&&getOwn(messageDescriptor,"value")!==undefined)message=apply(concat,"",[messageDescriptor.value]);const causeDescriptor=getOwn(value,"cause");if(causeDescriptor!==undefined&&getOwn(causeDescriptor,"value")!==undefined)cause=apply(concat,"",[causeDescriptor.value]);return [name,message,cause]},
+  create_error(type,message,cause){const constructor=errorConstructors[type];if(constructor===undefined)return undefined;const value=new constructor();if(message!==undefined)define(value,"message",{value:message,writable:true,enumerable:false,configurable:true});if(cause!==undefined)define(value,"cause",{value:cause,writable:true,enumerable:false,configurable:true});return value},
   map_snapshot(value){const list=[];apply(mapEach,value,[function(item,key){append(list,[key,item])}]);return list},
   set_snapshot(value){const list=[];apply(setEach,value,[function(item){append(list,item)}]);return list},
   enumerable_keys(value){const list=[],keys=ownKeys(value);for(let index=0;index<keys.length;++index){const key=keys[index];if(typeof key==="string"){const descriptor=getOwn(value,key);if(descriptor!==undefined&&descriptor.enumerable)append(list,key)}}return list},
