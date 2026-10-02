@@ -38,7 +38,7 @@ fn test_native_crypto_actual_view_brands_error_types_and_quota_subclass() {
 	host.install(mut runtime)!
 	assert runtime.evaluate_host(r'(function(){
  const invalid=[undefined,null,{},new ArrayBuffer(8),new Proxy(new Uint8Array(8),{})];
- const brands=invalid.every(value=>{try{crypto.getRandomValues(value);return false}catch(error){return error instanceof TypeError}});
+ const brands=invalid.every(value=>{try{crypto.getRandomValues(value);return false}catch(error){return error instanceof TypeError&&error.message==="No union types matched"}});
  const floats=[new Float32Array(8),new Float64Array(8),new DataView(new ArrayBuffer(8))];
  const kinds=floats.every(view=>{try{crypto.getRandomValues(view);return false}catch(error){return error instanceof DOMException&&error.name==="TypeMismatchError"&&error.code===17&&error.message==="array must be one of Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array, Int32Array, Uint32Array, BigInt64Array, or BigUint64Array"}});
  let quota;try{crypto.getRandomValues(new Uint32Array(20000))}catch(error){quota=error}
@@ -81,4 +81,23 @@ fn test_native_crypto_secure_context_exposure_and_independent_global_objects() {
 	assert voidptr(secure_host.service.crypto()) != voidptr(insecure_host.service.crypto())
 	assert secure.evaluate_host('typeof crypto.randomUUID==="function"&&crypto.subtle instanceof SubtleCrypto')! == 'true'
 	assert insecure.evaluate_host('!("subtle" in crypto)&&!("randomUUID" in crypto)&&typeof SubtleCrypto==="undefined"&&crypto.getRandomValues(new Uint8Array(8)).byteLength===8')! == 'true'
+}
+
+fn test_native_random_binding_does_not_iterate_arguments_or_consult_author_view_metadata() {
+	$if !darwin {
+		return
+	}
+	mut runtime := Runtime.create()
+	defer { runtime.close() }
+	url := dom.URL{'https://random-intrinsics.example/'}
+	mut host := CryptoHost.create(&dom.Document{ url: url, origin_: url.origin() })!
+	host.install(mut runtime)!
+	assert runtime.evaluate_host(r'(function(){
+ const input=new Uint8Array(32),iterator=Array.prototype[Symbol.iterator],isView=ArrayBuffer.isView;let calls=0;let same;
+ Object.defineProperty(input,"buffer",{get(){calls++;throw "author buffer"}});Object.defineProperty(input,"byteOffset",{get(){calls++;throw "author offset"}});
+ Array.prototype[Symbol.iterator]=function(){calls++;throw "author arguments iterator"};ArrayBuffer.isView=function(){calls++;throw "author view brand"};
+ try{same=crypto.getRandomValues(input,"ignored extra argument")===input}finally{Array.prototype[Symbol.iterator]=iterator;ArrayBuffer.isView=isView}
+ let count;try{crypto.getRandomValues()}catch(error){count=error}
+ return same&&calls===0&&input.some(value=>value!==0)&&count instanceof TypeError&&count.message==="getRandomValues() needs one argument";
+ })()')! == 'true'
 }

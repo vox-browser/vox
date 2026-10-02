@@ -145,7 +145,8 @@ fn (mut host CryptoHost) random_values(value voidptr) !voidptr {
 	runtime := host.runtime
 	is_view := runtime.call_javascript_function(host.array_is_view, C.JSValueMakeUndefined(runtime.context), [value])!
 	if !C.JSValueToBoolean(runtime.context, is_view) {
-		return error('TypeError: Not an object of type ArrayBufferView')
+		// The pinned union conversion has no matching concrete view branch.
+		return error('TypeError: No union types matched')
 	}
 	validation := runtime.call_javascript_function(host.view_validation, C.JSValueMakeUndefined(runtime.context), [value])!
 	validation_error := runtime.binding_dom_string(validation)!
@@ -181,7 +182,7 @@ const crypto_native_bootstrap = r'(function(operate,secure){
  function Crypto(){throw new T("Illegal constructor")}
  function SubtleCrypto(){throw new T("Illegal constructor")}
  define(Crypto.prototype,Symbol.toStringTag,{value:"Crypto",configurable:true});define(SubtleCrypto.prototype,Symbol.toStringTag,{value:"SubtleCrypto",configurable:true});
- define(Crypto.prototype,"getRandomValues",{value:function getRandomValues(array){return operate("random",this,...arguments)},writable:true,enumerable:true,configurable:true});
+ define(Crypto.prototype,"getRandomValues",{value:function getRandomValues(array){return arguments.length===0?operate("random",this):operate("random",this,array)},writable:true,enumerable:true,configurable:true});
  if(secure){define(Crypto.prototype,"randomUUID",{value:function randomUUID(){return operate("uuid",this)},writable:true,enumerable:true,configurable:true});define(Crypto.prototype,"subtle",{get:function(){return operate("subtle",this)},enumerable:true,configurable:true});define(globalThis,"SubtleCrypto",{value:SubtleCrypto,writable:true,configurable:true})}
  define(Crypto,"prototype",{writable:false});define(SubtleCrypto,"prototype",{writable:false});define(globalThis,"Crypto",{value:Crypto,writable:true,configurable:true});
  define(globalThis,"crypto",{get:function(){return operate("global",this)},enumerable:true,configurable:true});
