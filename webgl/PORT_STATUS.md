@@ -75,6 +75,16 @@ color-space, and alpha conversion. ImageBitmap and OffscreenCanvas objects
 still require complete script object bindings. The upstream OffscreenCanvas
 WebGL getter itself remains explicitly unimplemented.
 
+`get_program_parameter` and `get_shader_parameter` now follow
+`WebGLRenderingContextImpl.cpp:1778-1817` and `:1859-1888`: make the context
+current, validate the source object handle, query the actual driver, then
+interpret the source pname table. DELETE_STATUS uses the native flag, including
+deferred GL deletions of current programs and attached shaders, rather than V
+wrapper invalidation. Unknown native pnames preserve both the driver error and
+the subsequent source INVALID_ENUM fallback. The two-version typed case, actual
+public Boolean/error case, and program-extension neighbor passed with GC disabled
+(three focused files).
+
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
 ANGLE builds lacking compressed robust entry points use the matching GLES call
