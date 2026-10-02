@@ -24,6 +24,7 @@ fn test_window_environment_settings_setup_urls_security_and_serialization() {
 	assert settings.realm() == realm
 	assert settings.global_object() == unsafe { &dom.EventTarget(window) }
 	assert settings.universal_global_scope().realm == realm
+	assert window.window_or_worker_global_scope().responsible_event_loop() == settings.responsible_event_loop()
 	assert settings.responsible_document() or { panic('missing document') } == document
 	assert settings.api_base_url().serialize() == document.base_url().serialize()
 	assert settings.parse_url('../asset.js') or { panic('parse failed') }.serialize() == 'https://example.test/asset.js'
@@ -96,6 +97,8 @@ fn test_worker_environment_uses_outside_origin_except_for_data_urls() {
 	mut worker_realm := &ScriptingRealm{}
 	scope := WorkerGlobalScope.create(dom.URL{'https://example.test/worker.js'}, .classic, '', worker_realm)
 	worker := WorkerEnvironmentSettingsObject.setup(scope, mut worker_realm, outside, 44.456)
+	assert scope.window_or_worker_global_scope().responsible_event_loop() == scope.event_loop
+	assert scope.event_loop != main_thread_event_loop()
 	assert worker.origin().serialize() == 'https://example.test'
 	assert worker.api_base_url().serialize() == 'https://example.test/worker.js'
 	assert worker.time_origin() == 44.4

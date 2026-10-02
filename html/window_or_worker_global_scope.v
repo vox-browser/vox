@@ -133,6 +133,7 @@ mut:
 	trusted_types_                  ?&GlobalScopeTrustedTypePolicyFactory
 	fetch_host_                     voidptr
 	associated_window_                         ?&WindowModel
+	responsible_event_loop_                    ?&EventLoop
 	hidden_timer_wake_up_interval_             i64 = 1_000
 	intensive_timer_wake_up_interval_          i64 = 60_000
 	intensive_timer_grace_loaded_ms_            i64 = 60_000
@@ -160,6 +161,10 @@ pub fn (scope &WindowOrWorkerGlobalScopeMixin) is_secure_context() bool {
 
 pub fn (scope &WindowOrWorkerGlobalScopeMixin) cross_origin_isolated() bool {
 	return scope.cross_origin_isolated_
+}
+
+pub fn (scope &WindowOrWorkerGlobalScopeMixin) responsible_event_loop() &EventLoop {
+	return scope.responsible_event_loop_ or { main_thread_event_loop() }
 }
 
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) set_resource_timing_buffer_size_limit(limit u32) {
