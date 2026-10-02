@@ -130,12 +130,19 @@ pub:
 	id               u64
 	promise_context_ ?&webidl.PromiseContext
 	transform_wrapper_preparer ?fn (&TransformStream)
+	structured_clone_algorithm ?fn (Value) !Value
 }
 
 // Bindings::prepare_transform_stream_readable_writable_wrappers wraps both
 // native components in the owning wrapper world before the start callback.
 pub fn (realm StreamRealm) with_transform_wrapper_preparer(prepare fn (&TransformStream)) StreamRealm {
 	return StreamRealm{...realm, transform_wrapper_preparer: prepare}
+}
+
+// AbstractOperations.cpp StructuredClone selects the operation's owning realm
+// for StructuredSerialize/StructuredDeserialize at the actual engine boundary.
+pub fn (realm StreamRealm) with_structured_clone_algorithm(clone fn (Value) !Value) StreamRealm {
+	return StreamRealm{...realm, structured_clone_algorithm: clone}
 }
 
 pub fn StreamRealm.create_with_promise_context(context webidl.PromiseContext) StreamRealm {

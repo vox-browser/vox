@@ -230,3 +230,16 @@ pub fn can_copy_data_block_bytes_buffer(to &ArrayBuffer, to_index int, from &Arr
 pub fn structured_clone(value Value) Value {
 	return value.clone()
 }
+
+pub fn structured_clone_in(realm StreamRealm, value Value) !Value {
+	if clone := realm.structured_clone_algorithm { return clone(value) }
+	if value.kind == .runtime_value {
+		return webidl.throw_value(webidl.dom_exception_value_for_record(webidl.DOMException.create_record('DataCloneError', 'Runtime value requires its owning StructuredSerialize/StructuredDeserialize binding')))
+	}
+	if value.kind == .array {
+		mut items := []Value{cap: value.items.len}
+		for item in value.items { items << structured_clone_in(realm, item)! }
+		return array_value(items)
+	}
+	return structured_clone(value)
+}

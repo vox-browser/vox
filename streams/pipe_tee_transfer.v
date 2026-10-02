@@ -345,6 +345,19 @@ fn deliver_readable_tee_source(mut source ReadableStream) {
 	// Tee read-request chunk steps clear readAgain before enqueueing. A branch
 	// which still desires data sets it again through its pull algorithm.
 	source.tee_read_again_ = false
+	mut second_chunk := result.value
+	if !source.byte_stream_ && source.tee_clone_branch2_ && !source.tee_branches_[1].tee_cancelled_ {
+		second_chunk = structured_clone_in(source.tee_branches_[1].tee_cancel_promise_.realm(), result.value) or {
+			failure := webidl.exception_value(err)
+			// ReadableStreamTeeReadRequest clones before either enqueue. A clone
+			// failure errors both controllers and adopts pending source cancel;
+			// it does not use the reader-closed path's fulfilled cancel shortcut.
+			for mut branch in source.tee_branches_ { branch.error_value(failure) }
+			cancel_result := source.cancel_internal(stream_value_from_webidl(failure))
+			adopt_tee_cancel_result(mut source, cancel_result)
+			return
+		}
+	}
 	for mut branch in source.tee_branches_ {
 		if branch.tee_cancelled_ || branch.state_ != .readable {
 			continue
@@ -366,8 +379,8 @@ fn deliver_readable_tee_source(mut source ReadableStream) {
 				return
 			}
 		} else {
-			chunk := if branch.tee_branch_index_ == 2 && source.tee_clone_branch2_ {
-				structured_clone(result.value)
+			chunk := if branch.tee_branch_index_ == 2 {
+				second_chunk
 			} else {
 				result.value
 			}
