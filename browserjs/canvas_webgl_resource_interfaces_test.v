@@ -1,0 +1,29 @@
+// Copyright (c) 2024, Jelle Raaijmakers <jelle@ladybird.org>
+// SPDX-License-Identifier: BSD-2-Clause
+module browserjs
+
+import html
+
+fn test_public_webgl_resources_inherit_source_object_and_use_native_label_records() {
+	$if !darwin {
+		return
+	}
+	mut document := html.parse_document('<canvas></canvas>')
+	mut host := CanvasWebGLHost.create(document)
+	mut runtime := Runtime.create()
+	defer { runtime.close() }
+	host.install(mut runtime)!
+	runtime.evaluate_host('const __canvases=Object.create(null);function __canvasFor(s){return __canvases[s.bridgeKey]||(__canvases[s.bridgeKey]={state:s});}function __canvasDimension(s,key){return s[key];}function __element(s){return {state:s};}')!
+	runtime.evaluate_host(webgl_bootstrap())!
+	runtime.evaluate_host(r'const gl=__webglContext({bridgeKey:"__created_resource_interfaces",width:2,height:2},"webgl2",{preserveDrawingBuffer:true}),one=__webglContext({bridgeKey:"__created_resource_interfaces_one",width:2,height:2},"webgl",null),oes=one.getExtension("OES_vertex_array_object");const resources=[[gl.createBuffer(),WebGLBuffer],[gl.createFramebuffer(),WebGLFramebuffer],[gl.createRenderbuffer(),WebGLRenderbuffer],[gl.createTexture(),WebGLTexture],[gl.createShader(gl.VERTEX_SHADER),WebGLShader],[gl.createProgram(),WebGLProgram],[gl.createQuery(),WebGLQuery],[gl.createSampler(),WebGLSampler],[gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE,0),WebGLSync],[gl.createTransformFeedback(),WebGLTransformFeedback],[gl.createVertexArray(),WebGLVertexArrayObject]];')!
+	assert runtime.evaluate_host(r'(function(){return resources.every(([object,Constructor],index)=>{if(!(object instanceof Constructor)||!(object instanceof WebGLObject)||Object.getPrototypeOf(Constructor)!==WebGLObject||Object.getPrototypeOf(Constructor.prototype)!==WebGLObject.prototype||Object.prototype.toString.call(object)!=="[object "+Constructor.name+"]"||object.label!=="")return false;object.label="native-label-"+index;return object.label==="native-label-"+index&&Object.keys(object).length===0})&&gl.getError()===gl.NO_ERROR})()')! == 'true'
+	assert runtime.evaluate_host(r'(function(){if(typeof WebGLVertexArrayObjectOES!=="undefined"||oes===null)return false;const object=oes.createVertexArrayOES();object.label="OES label";return object instanceof WebGLObject&&object.label==="OES label"&&Object.getPrototypeOf(Object.getPrototypeOf(object))===WebGLObject.prototype&&Object.prototype.toString.call(object)==="[object WebGLVertexArrayObjectOES]"&&one.getError()===one.NO_ERROR})()')! == 'true'
+	assert runtime.evaluate_host(r'(function(){const descriptor=Object.getOwnPropertyDescriptor(WebGLObject.prototype,"label"),buffer=resources[0][0],hints=[];if(!descriptor.enumerable||!descriptor.configurable||descriptor.get.name!=="get label"||descriptor.get.length!==0||descriptor.set.name!=="set label"||descriptor.set.length!==1||Object.prototype.hasOwnProperty.call(descriptor.get,"prototype")||Object.prototype.hasOwnProperty.call(descriptor.set,"prototype"))return false;buffer.label={ [Symbol.toPrimitive](hint){hints.push(hint);return "\ud800A\udc00-\ud83d\ude00"}};if(buffer.label!=="\ufffdA\ufffd-\ud83d\ude00"||hints.join(",")!=="string")return false;gl.deleteBuffer(buffer);buffer.label="deleted native label";return buffer.label==="deleted native label"&&gl.getError()===gl.NO_ERROR})()')! == 'true'
+	assert host.buffers.values().any(it.object.label() == 'deleted native label')
+	assert host.shaders.values().any(it.object.label() == 'native-label-4')
+	assert host.vertex_arrays_oes.values().any(it.object.label() == 'OES label')
+	assert runtime.evaluate_host(r'(function(){const descriptor=Object.getOwnPropertyDescriptor(WebGLObject.prototype,"label"),marker={};let converted=0;for(const receiver of [{},Object.create(WebGLBuffer.prototype),null]){try{descriptor.set.call(receiver,{toString(){converted++;return "label"}});return false}catch(error){if(error.message!=="Not an object of type WebGLObject")return false}try{descriptor.get.call(receiver);return false}catch(error){if(error.message!=="Not an object of type WebGLObject")return false}}if(converted!==0)return false;try{resources[1][0].label=Symbol("label");return false}catch(error){if(!(error instanceof TypeError))return false}try{resources[1][0].label={toString(){throw marker}};return false}catch(error){return error===marker&&resources[1][0].label==="native-label-1"&&gl.getError()===gl.NO_ERROR}})()')! == 'true'
+	runtime.evaluate_host(r'const vertex=gl.createShader(gl.VERTEX_SHADER),fragment=gl.createShader(gl.FRAGMENT_SHADER),program=gl.createProgram();gl.shaderSource(vertex,"#version 300 es\nvoid main(){gl_Position=vec4(0,0,0,1);}");gl.shaderSource(fragment,"#version 300 es\nprecision mediump float;uniform vec4 tint;out vec4 color;void main(){color=tint;}");gl.compileShader(vertex);gl.compileShader(fragment);gl.attachShader(program,vertex);gl.attachShader(program,fragment);gl.linkProgram(program);')!
+	assert runtime.evaluate_host(r'(function(){const location=gl.getUniformLocation(program,"tint"),descriptor=Object.getOwnPropertyDescriptor(WebGLObject.prototype,"label");if(!(location instanceof WebGLUniformLocation)||location instanceof WebGLObject||"label" in location||Object.getPrototypeOf(WebGLUniformLocation.prototype)!==Object.prototype)return false;try{descriptor.get.call(location);return false}catch(error){return error.message==="Not an object of type WebGLObject"&&gl.getError()===gl.NO_ERROR}})()')! == 'true'
+	assert runtime.evaluate_host(r'(function(){const Constructor=WebGLBuffer;globalThis.WebGLBuffer=function AuthorBuffer(){};String.prototype.toWellFormed=function(){throw "author intrinsic"};const object=gl.createBuffer();object.label="\ud800";gl.bindBuffer(gl.ARRAY_BUFFER,object);return object instanceof Constructor&&gl.getParameter(gl.ARRAY_BUFFER_BINDING)===object&&object.label==="\ufffd"&&gl.getError()===gl.NO_ERROR})()')! == 'true'
+}

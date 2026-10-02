@@ -297,6 +297,14 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 	}
 	args := wg_normalize_source_spans(mut context, method, original_args, request) or { return json2.Any(json2.Null{}) }
 	match method {
+		'__getObjectLabel' {
+			object := host.label_object(wg_arg(args, 0))!
+			return json2.Any(object.label())
+		}
+		'__setObjectLabel' {
+			mut object := host.label_object(wg_arg(args, 0))!
+			object.set_label(wg_string(wg_arg(args, 1)))
+		}
 		'resize' { return json2.Any(json2.Null{}) }
 		'drawingBufferWidth' { return json2.Any(context.drawing_buffer_width()) }
 		'drawingBufferHeight' { return json2.Any(context.drawing_buffer_height()) }
