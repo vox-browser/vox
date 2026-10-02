@@ -240,6 +240,11 @@ private usages after the source import body. Focused tests cover every source
 format, class versus public slots, duplicate usages, and copied deferred DER
 imports for both curves.
 
+Ed448 raw/SPKI/PKCS8/JWK class imports likewise retain default metadata until
+the outer SubtleCrypto import boundary installs it. Normalized asynchronous
+import now invokes Ed448's class body directly. Focused tests cover all formats,
+empty private usage checks, duplicate common usages, and native DER key handles.
+
 Common parameter/typed boundary conversions remain under source review.
 Native backend availability does not establish complete WebCrypto/VM parity.
 
