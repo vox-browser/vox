@@ -176,3 +176,19 @@ and source immediate/deferred algorithm/usage/authentication error precedence.
 Signing, derivation, wrapping, and KEM native method bindings remain pending.
 Documented native task/Promise, UTF-8 DTO, assertion, and wrapper GC boundaries
 continue to apply; no JavaScript substitute cryptography is introduced.
+
+Native SubtleCrypto.sign/verify now convert actual key/buffer brands and source
+RSA-PSS, ECDSA, Ed448/ML-DSA context, and KMAC parameter getters before copying
+inputs. Verify copies the signature before the message, matching the pinned
+body; the typed service copy order is corrected as well. Results settle through
+the owning work/crypto tasks as actual ArrayBuffers or boolean Promise values.
+KMAC output length uses required-member presence and EnforceRange conversion;
+context/customization buffers retain source presence/copy semantics.
+
+All three focused signature cases pass with `-gc none`, covering upstream HMAC
+and NIST KMAC vectors, source getter/copy timing, explicit crypto settlement,
+original thrown values, generated argument error order, and deferred key/usage
+validation. All 11 registered signature names produce real native signatures,
+verify successfully, and reject modified signatures with false. Derivation,
+wrapping, and KEM native method bindings remain pending. Existing host/VM,
+string DTO, assertion, and wrapper GC limits remain documented.

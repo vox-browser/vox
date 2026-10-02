@@ -369,3 +369,11 @@ real buffers, and immediate/deferred validation are exercised. All three focused
 cipher host cases pass with `-gc none`, including an AES-GCM known vector and
 native AES-CBC/CTR/GCM/OCB, ChaCha20-Poly1305, and RSA-OAEP round trips. Remaining
 native methods include signing, derivation, wrapping, and KEM operations.
+
+Native sign/verify bindings now use source parameter conversion and the actual
+owning work/crypto Promise path. All three focused signature host cases pass
+with `-gc none`, including upstream HMAC/NIST KMAC vectors and valid/tampered
+verification for all 11 registered names. Source key/argument/parameter error
+order, required KMAC EnforceRange length, context copying, and signature-before-
+message copy order are retained. Derivation, wrapping, and KEM native methods
+remain pending alongside documented host/VM/DTO/wrapper boundaries.
