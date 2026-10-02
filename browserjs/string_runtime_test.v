@@ -16,11 +16,19 @@ fn install_string_test_host(mut runtime Runtime) {
 		libjs.string_prototype_substring, libjs.string_prototype_substr, libjs.string_prototype_to_string,
 		libjs.string_prototype_value_of, libjs.string_prototype_is_well_formed,
 		libjs.string_prototype_to_well_formed, libjs.string_prototype_trim,
-		libjs.string_prototype_trim_start, libjs.string_prototype_trim_end]
+		libjs.string_prototype_trim_start, libjs.string_prototype_trim_end, libjs.string_prototype_repeat,
+		libjs.string_prototype_pad_start, libjs.string_prototype_pad_end, libjs.string_prototype_anchor,
+		libjs.string_prototype_big, libjs.string_prototype_blink, libjs.string_prototype_bold,
+		libjs.string_prototype_fixed, libjs.string_prototype_fontcolor, libjs.string_prototype_fontsize,
+		libjs.string_prototype_italics, libjs.string_prototype_link, libjs.string_prototype_small,
+		libjs.string_prototype_strike, libjs.string_prototype_sub, libjs.string_prototype_sup]
 	names := ['at', 'charAt', 'charCodeAt', 'codePointAt', 'concat', 'indexOf', 'lastIndexOf',
 		'slice', 'substring', 'substr', 'toString', 'valueOf', 'isWellFormed', 'toWellFormed',
-		'trim', 'trimStart', 'trimEnd']
-	lengths := [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0]
+		'trim', 'trimStart', 'trimEnd', 'repeat', 'padStart', 'padEnd', 'anchor', 'big', 'blink',
+		'bold', 'fixed', 'fontcolor', 'fontsize', 'italics', 'link', 'small', 'strike', 'sub',
+		'sup']
+	lengths := [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
+		0, 1, 0, 0, 0, 0]
 	for index, name in names {
 		method := libjs.NativeFunction.create_raw(mut vm, realm, realm.function_prototype,
 			behaviours[index], lengths[index], libjs.PropertyName.from_str(name), none)
@@ -118,6 +126,39 @@ fn test_browser_string_conversion_brand_and_range_errors_restore_later_script_ex
 	assert errors[0].contains('string-symbol.js')
 	assert runtime.evaluate('HostString.fromCodePoint(4294967296).length===1 && HostString.fromCodePoint(4294967361)==="A";')! == 'true'
 	assert runtime.evaluate('HostString(42);')! == '42'
+	assert runtime.context == unsafe { nil }
+	vm := runtime.libjs_vm()
+	assert vm.execution_context_stack().len == 1 && vm.interpreter_stack().depth() == 0
+}
+
+fn test_browser_string_repeat_padding_and_legacy_html_execute_translated_native_bodies() {
+	mut runtime := Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	install_string_test_host(mut runtime)
+	assert runtime.evaluate('var text=new HostString("😀"); text.repeat(2)==="😀😀" && text.padStart(3,"😀")==="\\ud83d😀" && text.padEnd(5,"😀")==="😀😀\\ud83d";')! == 'true'
+	assert runtime.evaluate('var repeat=text.repeat.bind(text,2); repeat()==="😀😀" && text.repeat.length===1 && text.padStart.length===1 && text.padEnd.length===1;')! == 'true'
+	assert runtime.evaluate('text.padStart(2,Symbol("ignored"))==="😀" && text.padEnd(Infinity,"")==="😀" && HostString.prototype.repeat.call("",1e300)==="";')! == 'true'
+	assert runtime.evaluate('var quote=HostString.fromCharCode(34); var legacy=new HostString("x"); legacy.anchor(quote)==="<a name="+quote+"&quot;"+quote+">x</a>" && legacy.link("&<")==="<a href="+quote+"&<"+quote+">x</a>";')! == 'true'
+	assert runtime.evaluate('legacy.fontcolor("red")==="<font color="+quote+"red"+quote+">x</font>" && legacy.fontsize(3)==="<font size="+quote+"3"+quote+">x</font>";')! == 'true'
+	for index, method in ['big', 'blink', 'bold', 'fixed', 'italics', 'small', 'strike', 'sub',
+		'sup'] {
+		tag := ['big', 'blink', 'b', 'tt', 'i', 'small', 'strike', 'sub', 'sup'][index]
+		assert runtime.evaluate('legacy.${method}(Symbol("ignored"))==="<${tag}>x</${tag}>" && legacy.${method}.length===0;')! == 'true'
+	}
+	errors := runtime.run_document_scripts_collect_errors([
+		ScriptSource{ code: 'text.repeat(-1);', url: 'string-repeat-negative.js' },
+		ScriptSource{ code: 'text.repeat(Infinity);', url: 'string-repeat-infinite.js' },
+		ScriptSource{ code: 'text.repeat(1099511627775);', url: 'string-repeat-overflow.js' },
+		ScriptSource{ code: 'text.padEnd(5,Symbol("x"));', url: 'string-padding-symbol.js' },
+		ScriptSource{ code: 'legacy.anchor(Symbol("x"));', url: 'string-html-symbol.js' },
+	])
+	assert errors.len == 5
+	for index, message in ['repeat count must be a positive number',
+		'repeat count must be a finite number', 'repeat count must not overflow',
+		'Cannot convert symbol to string', 'Cannot convert symbol to string'] {
+		assert errors[index].contains(message)
+	}
+	assert runtime.evaluate('legacy.bold()==="<b>x</b>" && text.repeat(1)==="😀";')! == 'true'
 	assert runtime.context == unsafe { nil }
 	vm := runtime.libjs_vm()
 	assert vm.execution_context_stack().len == 1 && vm.interpreter_stack().depth() == 0
