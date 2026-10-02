@@ -128,7 +128,26 @@ the original or later rejection according to source ordering. Native wrappers
 and settled Promise roots retain the previously documented Runtime.close GC
 boundary. The transform source now accepts actual reserved any keys and an
 owning wrapper-preparation hook before `start`; its public engine factory is
-the next unbound adapter.
+now installed as described below.
+
+## Native compact TransformStream binding
+
+`browserjs/transform_stream_host{,_darwin.c}.v` exposes the source factory,
+actual readable/writable components, and the default controller. The owning
+binding calls the source wrapper-preparation hook immediately after component
+initialization and before `start`. Both component engine wrappers retain the
+same native records and remain identical on subsequent getters. Startup,
+backpressure, transform, flush, cancel, error and termination delegate to the
+existing source model and actual owner Promise jobs. Constructor conversion
+preserves writable/readable strategy order, transformer member order, actual
+reserved any values, native receiver brands and constructor subclasses.
+
+The typed scalar `SizeAlgorithm !f64` boundary still converts a callback result
+earlier than upstream's JS::Value path: source queue insertion performs ToNumber
+after writer stream/state checks. Preserving an arbitrary size result until that
+point, including reentrant writer release or mutation during conversion, needs
+a separate source slice. Generic callback invocation conditions also need their
+own source-order check; EventTarget's caller gate must remain distinct.
 
 ## Actual DOM abort reasons and owning timeout delivery
 
@@ -189,8 +208,7 @@ finalization and generated compact Window error-handler exposure remain open.
 
 The following boundaries are still open and are not counted as full parity:
 
-- `TransformStream` JSC factories remain unbound. The
-  readable binding does not expose public pipe/tee/from/iterator operations,
+- The readable binding does not expose public pipe/tee/from/iterator operations,
   BYOB reader constructors/read operations, byte-controller enqueue/BYOBRequest,
   subclass constructor prototype selection, or full generated wrapper worlds.
 - Generic JavaScript iterator acquisition and structured cloning of opaque
@@ -294,4 +312,10 @@ browserjs/writable_stream_host_test.v: four actual pending operation/backpressur
 streams/transform_reserved_type_test.v + transform_wrapper_preparation_test.v:
   actual reserved any keys and initialized component wrapper preparation before
   start passed; transform and typed callback neighbors passed.
+browserjs/readable_stream_host_test.v: original three readable cases plus actual
+  readable/writable native component wrapping identity passed with -gc none.
+browserjs/transform_stream_host_test.v: four actual source component/startup/
+  transform/flush, identity/backpressure/controller error, pending rejection/
+  cancellation and generated-conversion/brand/subclass/termination cases passed
+  with -gc none; focused main transformed chunk DOM replay also passed.
 ```
