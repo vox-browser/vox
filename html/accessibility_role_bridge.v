@@ -253,29 +253,41 @@ fn dom_csp_initialize_document(_ voidptr, document &dom.Document) {
 }
 
 fn trusted_types_factory_for_document(document &dom.Document) &trustedtypes.TrustedTypePolicyFactory {
+	settings_pointer := document.relevant_settings_object()
+	if settings_pointer != unsafe { nil } {
+		settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }
+		if window := settings.window_ {
+			mut services := window.window_or_worker_global_scope()
+			return unsafe { &trustedtypes.TrustedTypePolicyFactory(services.trusted_types()) }
+		}
+	}
 	mut factory := trustedtypes.TrustedTypePolicyFactory.create()
+	factory.csp_policies = trusted_types_meta_policies(document)
+	return factory
+}
+
+fn trusted_types_meta_policies(document &dom.Document) []trustedtypes.TrustedTypesCSPPolicy {
+	mut policies := []trustedtypes.TrustedTypesCSPPolicy{}
 	for policy in document_csp_policies(document) {
-		trusted_types_directive := policy.get_directive_by_name(contentsecuritypolicy.trusted_types)
-		require_directive := policy.get_directive_by_name(contentsecuritypolicy.require_trusted_types_for)
-		factory.csp_policies << trustedtypes.TrustedTypesCSPPolicy{
-			disposition: if policy.disposition() == .enforce {
+		mut names := ?[]string(none)
+		if directive := policy.get_directive_by_name(contentsecuritypolicy.trusted_types) {
+			names = directive.value()
+		}
+		mut sinks := []string{}
+		if directive := policy.get_directive_by_name(contentsecuritypolicy.require_trusted_types_for) {
+			sinks = directive.value()
+		}
+		policies << trustedtypes.TrustedTypesCSPPolicy{
+			disposition:               if policy.disposition() == .enforce {
 				trustedtypes.CSPDisposition.enforce
 			} else {
 				trustedtypes.CSPDisposition.report_only
 			}
-			trusted_types: if directive := trusted_types_directive {
-				directive.value()
-			} else {
-				none
-			}
-			require_trusted_types_for: if directive := require_directive {
-				directive.value()
-			} else {
-				[]string{}
-			}
+			trusted_types:             names
+			require_trusted_types_for: sinks
 		}
 	}
-	return factory
+	return policies
 }
 
 fn trusted_types_injection_sink(sink string) !trustedtypes.InjectionSink {

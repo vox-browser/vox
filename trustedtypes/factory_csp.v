@@ -219,6 +219,7 @@ pub struct TrustedTypesGlobalContext {
 pub:
 	global voidptr
 	realm  voidptr
+	current_csp_policies ?fn () []TrustedTypesCSPPolicy
 }
 
 @[heap]
@@ -254,6 +255,13 @@ pub fn (factory &TrustedTypePolicyFactory) relevant_realm() voidptr {
 	return context.realm
 }
 
+fn (factory &TrustedTypePolicyFactory) current_csp_policies() []TrustedTypesCSPPolicy {
+	if context := factory.global_context_ {
+		if current := context.current_csp_policies { return current() }
+	}
+	return factory.csp_policies.clone()
+}
+
 pub fn TrustedTypePolicyFactory.default_policy_offset() usize {
 	return usize(__offsetof(TrustedTypePolicyFactory, default_policy_))
 }
@@ -285,7 +293,7 @@ pub fn (mut factory TrustedTypePolicyFactory) create_a_trusted_type_policy(name 
 // https://www.w3.org/TR/trusted-types/#should-block-create-policy
 pub fn (mut factory TrustedTypePolicyFactory) should_trusted_type_policy_be_blocked_by_content_security_policy(name string, created_policy_names []string) bool {
 	mut blocked := false
-	for policy in factory.csp_policies {
+	for policy in factory.current_csp_policies() {
 		values := policy.trusted_types or { continue }
 		lower := values.map(it.to_lower())
 		mut violation := lower == ["'none'"]
@@ -357,7 +365,7 @@ pub fn sink_group_matches(directive_value string, sink_group string) bool {
 }
 
 pub fn (factory &TrustedTypePolicyFactory) does_sink_require_trusted_types(sink_group string, include_report_only bool) bool {
-	for policy in factory.csp_policies {
+	for policy in factory.current_csp_policies() {
 		if !policy.require_trusted_types_for.any(sink_group_matches(it, sink_group)) {
 			continue
 		}
@@ -385,7 +393,7 @@ pub fn should_sink_type_mismatch_violation_be_blocked_by_content_security_policy
 		}
 	}
 	mut blocked := false
-	for policy in factory.csp_policies {
+	for policy in factory.current_csp_policies() {
 		if !policy.require_trusted_types_for.any(sink_group_matches(it, sink_group)) {
 			continue
 		}
@@ -403,7 +411,7 @@ pub fn should_sink_type_mismatch_violation_be_blocked_by_content_security_policy
 }
 
 pub fn (factory &TrustedTypePolicyFactory) sink_type_mismatch_would_be_blocked(sink_group string) bool {
-	for policy in factory.csp_policies {
+	for policy in factory.current_csp_policies() {
 		if policy.disposition == .enforce
 			&& policy.require_trusted_types_for.any(sink_group_matches(it, sink_group)) {
 			return true

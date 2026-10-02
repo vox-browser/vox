@@ -13,6 +13,7 @@ import indexeddb
 import serviceworker
 import storageapi
 import time
+import trustedtypes
 import webcrypto
 
 pub type TimerScriptEvaluator = fn (string) !
@@ -106,7 +107,9 @@ pub struct GlobalScopeCacheStorage {
 }
 
 @[heap]
-pub struct GlobalScopeTrustedTypePolicyFactory {}
+pub struct GlobalScopeTrustedTypePolicyFactory {
+	trustedtypes.TrustedTypePolicyFactory
+}
 
 pub struct ImageBitmapSource {
 pub:
@@ -910,7 +913,18 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) trusted_types() &GlobalScopeTr
 	if value := scope.trusted_types_ {
 		return value
 	}
-	value := &GlobalScopeTrustedTypePolicyFactory{}
+	target := scope.error_reporting_target_ or { unsafe { &dom.EventTarget(scope) } }
+	mut realm_handle := voidptr(unsafe { nil })
+	if realm := scope.error_reporting_realm_ { realm_handle = voidptr(realm) }
+	scope_pointer := voidptr(&scope)
+	factory := trustedtypes.TrustedTypePolicyFactory.create_for_global(&trustedtypes.TrustedTypesGlobalContext{
+		global:               voidptr(target)
+		realm:                realm_handle
+		current_csp_policies: fn [scope_pointer] () []trustedtypes.TrustedTypesCSPPolicy {
+			return global_scope_trusted_types_policies(unsafe { &WindowOrWorkerGlobalScopeMixin(scope_pointer) })
+		}
+	})
+	value := &GlobalScopeTrustedTypePolicyFactory{ TrustedTypePolicyFactory: *factory }
 	scope.trusted_types_ = value
 	return value
 }
