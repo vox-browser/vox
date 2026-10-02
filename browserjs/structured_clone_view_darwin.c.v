@@ -25,8 +25,19 @@ fn (mut projection NativeCloneProjection) project_array_buffer_view(value voidpt
 	}
 	resizable := bridge.engine('list_item', [buffer_metadata, C.JSValueMakeNumber(owner.context, 1)])!
 	if C.JSValueToBoolean(owner.context, resizable) {
-		// Materialized getters cannot reveal original automatic/fixed lengths.
-		return native_clone_unsupported('Original native resizable-view length slots are not yet owned')
+		// These immutable original slots belong to actual views constructed
+		// from source records, never inferred from a current materialized length.
+		slots := owner.native_clone_view_slots(value) or {
+			return native_clone_unsupported('Original native resizable-view length slots are not yet owned')
+		}
+		if slots.buffer != buffer { return native_clone_unsupported('Source view backing identity changed') }
+		buffer_value := projection.project(buffer)!
+		object.viewed_array_buffer = html.structured_object_from_value(*buffer_value)!
+		object.string_data = slots.constructor_name
+		object.byte_length = slots.byte_length
+		object.byte_offset = slots.byte_offset
+		object.array_length = slots.array_length
+		return
 	}
 	buffer_value := projection.project(buffer)!
 	object.viewed_array_buffer = html.structured_object_from_value(*buffer_value)!
@@ -51,20 +62,25 @@ fn (mut projection NativeCloneProjection) reconstruct_array_buffer_view(object &
 	if buffer.kind != .array_buffer {
 		return native_clone_unsupported('Native SharedArrayBuffer views are unavailable')
 	}
-	if buffer.max_byte_length != none {
-		return native_clone_unsupported('Original native resizable-view length slots are not yet owned')
-	}
 	actual_buffer := projection.reconstruct(html.structured_object_value(buffer))!
 	// Source constructor names are the validated ASCII TypedArray/DataView set.
 	actual_name := projection.adopt_root(owner.javascript_utf16_string(libjs.utf16_string(object.string_data))!)
-	length := if object.string_data == 'DataView' {
-		object.byte_length or { return native_clone_unsupported('Source fixed DataView has no byte length') }
-	} else {
-		object.array_length or { return native_clone_unsupported('Source fixed TypedArray has no array length') }
-	}
-	actual := bridge.engine('create_view', [actual_buffer, actual_name, C.JSValueMakeNumber(owner.context, f64(object.byte_offset)), C.JSValueMakeNumber(owner.context, f64(length))])!
+	length := if object.string_data == 'DataView' { object.byte_length } else { object.array_length }
+	mut actual_length := C.JSValueMakeUndefined(owner.context)
+	if fixed_length := length { actual_length = C.JSValueMakeNumber(owner.context, f64(fixed_length)) }
+	actual := bridge.engine('create_view', [actual_buffer, actual_name, C.JSValueMakeNumber(owner.context, f64(object.byte_offset)), actual_length])!
 	if C.JSValueIsUndefined(owner.context, actual) {
 		return native_clone_unsupported('Source view constructor is unavailable in this native engine')
 	}
-	return projection.root(actual)
+	projection.root(actual)!
+	if buffer.max_byte_length != none {
+		owner.retain_native_clone_view_slots(actual, NativeCloneViewSlots{
+			buffer: actual_buffer
+			constructor_name: object.string_data
+			byte_length: object.byte_length
+			byte_offset: object.byte_offset
+			array_length: object.array_length
+		})!
+	}
+	return actual
 }
