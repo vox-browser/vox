@@ -273,10 +273,12 @@ fn (mut host WritableStreamHost) operate(args []voidptr) !voidptr {
 }
 
 const writable_stream_native_bootstrap = r'(function(create,operate){
- const define=Object.defineProperty,Type=TypeError,Reject=Promise.reject.bind(Promise);
+ const define=Object.defineProperty,Type=TypeError,Reject=Promise.reject.bind(Promise),ConstructProxy=Proxy;
  const promiseOperation=(self,name,args)=>{try{return operate(self,name,...args)}catch(reason){return Reject(reason)}};
- function WritableStream(sink=undefined,strategy=undefined){if(!new.target)throw new Type("WritableStream requires new");return create(sink,strategy,new.target.prototype)}
- function WritableStreamDefaultWriter(stream){if(!new.target)throw new Type("WritableStreamDefaultWriter requires new");if(arguments.length<1)throw new Type("WritableStreamDefaultWriter requires 1 argument");return operate(stream,"stream.writerConstructor",new.target.prototype)}
+ const WritableStream=new ConstructProxy(function WritableStream(){throw new Type("WritableStream requires new")},{construct(target,args,newTarget){const prototype=newTarget.prototype;return create(args[0],args[1],prototype)}});
+ const WritableStreamDefaultWriter=new ConstructProxy(function WritableStreamDefaultWriter(stream){throw new Type("WritableStreamDefaultWriter requires new")},{construct(target,args,newTarget){const prototype=newTarget.prototype;if(args.length<1)throw new Type("WritableStreamDefaultWriter requires 1 argument");return operate(args[0],"stream.writerConstructor",prototype)}});
+ define(WritableStream.prototype,"constructor",{value:WritableStream,writable:true,configurable:true});
+ define(WritableStreamDefaultWriter.prototype,"constructor",{value:WritableStreamDefaultWriter,writable:true,configurable:true});
  function WritableStreamDefaultController(){throw new Type("Illegal constructor")}
  const attribute=(prototype,name,operation)=>define(prototype,name,{enumerable:true,configurable:true,get(){return operate(this,operation)}});
  const method=(prototype,name,value)=>define(prototype,name,{value,writable:true,enumerable:true,configurable:true});
