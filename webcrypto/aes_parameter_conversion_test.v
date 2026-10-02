@@ -50,7 +50,7 @@ fn test_aes_source_buffer_reads_precede_numeric_fields() {
 	{
 		assert false
 	} else {
-		assert err.msg() == 'TypeError: counter must be a buffer source'
+		assert err.msg() == 'TypeError: Not an object of type BufferSource'
 	}
 	if _ := AesGcmParams.from_value(json2.Any({
 		'tagLength': json2.Any(map[string]json2.Any{})
@@ -58,7 +58,7 @@ fn test_aes_source_buffer_reads_precede_numeric_fields() {
 	{
 		assert false
 	} else {
-		assert err.msg() == 'TypeError: iv must be a buffer source'
+		assert err.msg() == 'TypeError: Not an object of type BufferSource'
 	}
 	if _ := AeadParams.from_value(json2.Any({
 		'tagLength': json2.Any(map[string]json2.Any{})
@@ -66,7 +66,7 @@ fn test_aes_source_buffer_reads_precede_numeric_fields() {
 	{
 		assert false
 	} else {
-		assert err.msg() == 'TypeError: iv must be a buffer source'
+		assert err.msg() == 'TypeError: Not an object of type BufferSource'
 	}
 	if _ := AesGcmParams.from_value(json2.Any({
 		'iv':             json2.Any([]json2.Any{})
@@ -76,7 +76,7 @@ fn test_aes_source_buffer_reads_precede_numeric_fields() {
 	{
 		assert false
 	} else {
-		assert err.msg() == 'TypeError: additionalData must be a buffer source'
+		assert err.msg() == 'TypeError: Not an object of type BufferSource'
 	}
 }
 

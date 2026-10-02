@@ -108,7 +108,7 @@ fn test_source_enforced_parameters_required_members_and_validation_order() {
 	})) {
 		assert false
 	} else {
-		assert err.msg() == 'TypeError: functionName must be a buffer source'
+		assert err.msg() == 'TypeError: Not an object of type BufferSource'
 	}
 	if _ := KmacParams.from_value(json2.Any({
 		'outputLength':  json2.Any(256)
@@ -116,7 +116,7 @@ fn test_source_enforced_parameters_required_members_and_validation_order() {
 	})) {
 		assert false
 	} else {
-		assert err.msg() == 'TypeError: customization must be a buffer source'
+		assert err.msg() == 'TypeError: Not an object of type BufferSource'
 	}
 }
 
@@ -161,7 +161,7 @@ fn test_source_enforced_binding_real_argon2_output_and_explicit_undefined_member
 		changed[field] = webidl.undefined_value()
 		failed := binding.derive_bits(webidl.object_value(changed), key, 256)
 		assert failed.state == .rejected
-		assert failed.result.object_value['message'].string_value == '${field} must be a buffer source'
+		assert failed.result.object_value['message'].string_value == 'Not an object of type BufferSource'
 	}
 	for field in ['outputLength', 'functionName', 'customization'] {
 		mut changed := {
@@ -174,7 +174,7 @@ fn test_source_enforced_binding_real_argon2_output_and_explicit_undefined_member
 		assert failed.result.object_value['message'].string_value == if field == 'outputLength' {
 			'Number must not be NaN or Infinity'
 		} else {
-			'${field} must be a buffer source'
+			'Not an object of type BufferSource'
 		}
 	}
 	assert host.work.len == 1

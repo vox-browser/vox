@@ -117,8 +117,12 @@ fn optional_algorithm_bytes(object map[string]json2.Any, key string) ?[]u8 {
 
 fn required_algorithm_bytes(object map[string]json2.Any, key string) ![]u8 {
 	return optional_algorithm_bytes(object, key) or {
-		error('TypeError: ${key} must be a buffer source')
+		error('TypeError: Not an object of type BufferSource')
 	}
+}
+
+fn required_api_big_integer_bytes(object map[string]json2.Any, key string) ![]u8 {
+    return optional_algorithm_bytes(object, key) or { error('TypeError: Not an object of type Uint8Array') }
 }
 
 pub fn AlgorithmParams.from_value(value json2.Any) !AlgorithmParams {
@@ -185,14 +189,14 @@ pub fn AesDerivedKeyParams.from_value(value json2.Any) !AesDerivedKeyParams {
 pub fn RsaKeyGenParams.from_value(value json2.Any) !RsaKeyGenParams {
     object := algorithm_object(value)!
     modulus_length := algorithm_js_uint(object, 'modulusLength', 32)!
-    public_exponent := big_integer_from_api_big_integer(required_algorithm_bytes(object, 'publicExponent')!)
+    public_exponent := big_integer_from_api_big_integer(required_api_big_integer_bytes(object, 'publicExponent')!)
     return RsaKeyGenParams{ name: '', modulus_length: modulus_length, public_exponent: public_exponent }
 }
 
 pub fn RsaHashedKeyGenParams.from_value(value json2.Any) !RsaHashedKeyGenParams {
     object := algorithm_object(value)!
     modulus_length := algorithm_js_uint(object, 'modulusLength', 32)!
-    public_exponent := big_integer_from_api_big_integer(required_algorithm_bytes(object, 'publicExponent')!)
+    public_exponent := big_integer_from_api_big_integer(required_api_big_integer_bytes(object, 'publicExponent')!)
     hash := hash_algorithm_identifier_from_value(object['hash'] or { return error('TypeError: hash is required') })!
     return RsaHashedKeyGenParams{ name: '', modulus_length: modulus_length, public_exponent: public_exponent, hash: hash.name()! }
 }
@@ -209,11 +213,12 @@ pub fn RsaHashedImportParams.from_value(value json2.Any) !RsaHashedImportParams 
 }
 
 pub fn RsaOaepParams.from_value(value json2.Any) !RsaOaepParams {
-	object := algorithm_object(value)!
-	return RsaOaepParams{
-		name: ''
-		label: optional_algorithm_bytes(object, 'label') or { []u8{} }
-	}
+    object := algorithm_object(value)!
+    mut label := []u8{}
+    if label_value := object['label'] {
+        if label_value !is json2.Null { label = required_algorithm_bytes(object, 'label')! }
+    }
+    return RsaOaepParams{ name: '', label: label }
 }
 
 pub fn RsaPssParams.from_value(value json2.Any) !RsaPssParams {
@@ -292,11 +297,10 @@ pub fn EcdhKeyDeriveParams.from_value(value json2.Any, public_key &CryptoKey) !E
 }
 
 pub fn Ed448Params.from_value(value json2.Any) !Ed448Params {
-	object := algorithm_object(value)!
-	return Ed448Params{
-		name: ''
-		context: optional_algorithm_bytes(object, 'context')
-	}
+    object := algorithm_object(value)!
+    mut context := ?[]u8(none)
+    if 'context' in object { context = required_algorithm_bytes(object, 'context')! }
+    return Ed448Params{ name: '', context: context }
 }
 
 pub fn Argon2Params.from_value(value json2.Any) !Argon2Params {

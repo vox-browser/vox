@@ -80,7 +80,7 @@ fn test_source_unsigned_long_parameters_retain_read_order() {
 	})) {
 		assert false
 	} else {
-		assert err.msg() == 'TypeError: salt must be a buffer source'
+		assert err.msg() == 'TypeError: Not an object of type BufferSource'
 	}
 	if _ := PBKDF2Params.from_value(json2.Any({
 		'salt':       json2.Any([]json2.Any{})
@@ -105,7 +105,7 @@ fn test_source_unsigned_long_parameters_retain_read_order() {
 	})) {
 		assert false
 	} else {
-		assert err.msg() == 'TypeError: publicExponent must be a buffer source'
+		assert err.msg() == 'TypeError: Not an object of type Uint8Array'
 	}
 }
 

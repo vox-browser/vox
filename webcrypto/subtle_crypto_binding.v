@@ -204,6 +204,8 @@ fn normalize_binding_algorithm(algorithm webidl.Value, operation string) !Normal
             if (name in ['Argon2d', 'Argon2i', 'Argon2id'] && field in ['nonce', 'parallelism', 'memory', 'passes']) || field == 'outputLength' {
                 return error('TypeError: Required property ${field} is missing or undefined')
             }
+            if field == 'publicExponent' { return error('TypeError: Not an object of type Uint8Array') }
+            if field in ['iv', 'counter', 'salt', 'info'] { return error('TypeError: Not an object of type BufferSource') }
             continue
         }
         if field in ['parallelism', 'memory', 'passes', 'version', 'outputLength'] {
@@ -224,15 +226,20 @@ fn normalize_binding_algorithm(algorithm webidl.Value, operation string) !Normal
             object[field] = i64(algorithm_js_uint({field: converted}, field, width)!)
             continue
         }
-        if property.kind == .undefined && field in ['iv', 'counter', 'additionalData', 'nonce', 'secretValue', 'associatedData', 'functionName', 'customization'] {
-            return error('TypeError: ${field} must be a buffer source')
+        if name == 'RSA-OAEP' && field == 'label' && property.kind in [.null_, .undefined] { continue }
+        if field == 'publicExponent' {
+            source := property.buffer_value or { return error('TypeError: Not an object of type Uint8Array') }
+            if property.kind != .buffer_source || source.kind != .uint8_array { return error('TypeError: Not an object of type Uint8Array') }
+            object[field] = binding_value_to_json(property)!
+            continue
         }
-		if property.kind == .undefined || property.kind == .platform_object { continue }
-		if field in ['iv', 'counter', 'salt', 'info', 'nonce', 'additionalData', 'functionName',
-			'customization', 'context', 'label', 'secretValue', 'associatedData', 'publicExponent']
-			&& property.kind != .buffer_source {
-			return error('TypeError: ${field} must be a buffer source')
-		}
+        if field in ['iv', 'counter', 'salt', 'info', 'nonce', 'additionalData', 'functionName',
+            'customization', 'context', 'label', 'secretValue', 'associatedData'] {
+            if property.kind != .buffer_source { return error('TypeError: Not an object of type BufferSource') }
+            object[field] = binding_value_to_json(property)!
+            continue
+        }
+        if property.kind == .undefined || property.kind == .platform_object { continue }
 		object[field] = binding_value_to_json(property)!
 	}
 	input := json2.Any(object)

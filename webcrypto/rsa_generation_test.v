@@ -90,7 +90,7 @@ fn test_rsa_promise_generation_copies_exponent_and_settles_in_deferred_work() {
 	binding := SubtleCryptoBinding.create(SubtleCrypto.create(), webidl.PromiseContext{}, fn [mut host] (task fn ()) {
 		host.work << task
 	}, fn [mut host] (task fn ()) { host.settle << task })
-	mut exponent := webidl.BufferSource.array_buffer([u8(1), 0, 1])
+	mut exponent := webidl.BufferSource.view(.uint8_array, [u8(0xff), 1, 0, 1, 0xff], 1, 3)!
 	algorithm := webidl.object_value({
 		'name':           webidl.string_value('RSA-PSS')
 		'modulusLength':  webidl.number_value(1024)
