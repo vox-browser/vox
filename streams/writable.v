@@ -496,6 +496,21 @@ pub fn (writer &WritableStreamDefaultWriter) desired_size() ?f64 {
 	return writer.stream_.desired_size_internal()
 }
 
+// WritableStreamDefaultWriter.cpp's getter returns ExceptionOr<Optional<double>>.
+// Keep the nullable scalar in a record because V cannot combine ! and ? return
+// wrappers; released writers throw, while an errored stream returns null.
+pub struct WritableStreamDesiredSize {
+pub:
+	value ?f64
+}
+
+pub fn (writer &WritableStreamDefaultWriter) desired_size_for_bindings() !WritableStreamDesiredSize {
+	if writer.released_ || isnil(writer.stream_) {
+		return error('TypeError: Cannot get desired size of writer that has no locked stream')
+	}
+	return WritableStreamDesiredSize{value: writable_stream_default_writer_get_desired_size(writer)}
+}
+
 pub fn (writer &WritableStreamDefaultWriter) ready() &VoidPromise {
 	return writer.ready_
 }
