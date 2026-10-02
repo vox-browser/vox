@@ -38,7 +38,7 @@ operands. Source recursive type canonicalization/matching, type-section checks,
 module indices, tag/start signatures, section counts and expression validation
 now run in the module path. All 500 pinned instruction-validation specializations
 have translated handlers and complete dispatch. Native compilation, instruction
-execution, store addresses and JS realm/promise integration remain open.
+execution, complete Store integration and JS realm/promise integration remain open.
 `MemoryBuffer` models
 realm identity, detachment, and resizable refreshes over backing-store snapshots;
 native ArrayBuffer detach keys and shared DataBlock ownership remain embedding
@@ -202,8 +202,32 @@ remain at stable addresses when the pointer vector grows. Mutability checks and
 the compiled-code value offset use the real value storage. Other Store families,
 active configurations and the source Heap/RootsProvider are still pending.
 
-The machine value/stack stage passes **45/45 package files with default GC**;
-both focused files also pass with `-gc none`. The later result and global-store
-files pass individually in both GC modes. These foundations are not yet wired
-to instruction execution or the existing WebIDL instance facade, whose
-synthetic function/global/table exports remain open under WA-12.
+`machine_segments.v` and `machine_exceptions.v` translate data, element, tag and
+exception records and their Store allocation/getter families. Data and element
+drop operations replace the actual owned vectors. Tags retain their canonical
+type pointer and exceptions retain their actual tag address and untyped values.
+These Store vectors contain values, as upstream does; getters must be queried
+again after vector growth.
+
+`machine_memory_buffer.v` translates the complete source buffer operations
+through actual [LibGC primitive storage](../libgc/PORT_STATUS.md). Handles,
+move ownership, capacity, storage offsets, cage-boundary chunking, zero fill,
+bulk copy and overlapping move operations use the source algorithms.
+
+`machine_memory.v` translates MemoryInstance creation and growth. Memory32
+reserves its full supported capacity plus the source 8 GiB + 64 KiB guarded
+span, keeping its base stable. Memory64 uses the source dynamic reservation
+growth and retains the pinned 65,536-page implementation cap. Checked page
+sizes, limits, initialization growth, callback inhibition and the callback
+before type-minimum update follow source order. ABI offsets describe actual V
+record members. `machine_memory_store.v` retains stable owned instance pointers
+at vector-index addresses and retries failed creation only after collection
+through its installed Heap interface. The LibGC collector implementation is
+still pending; the interface has no substitute collector.
+
+The current package passes **52/52 files with default GC and 52/52 with
+`-gc none`**. Explicit `destroy()` operations release native storage; complete
+automatic owner lifetime, roots and active configurations remain open. These
+foundations are not yet wired to instruction execution or the existing WebIDL
+instance facade, whose synthetic function/global/table exports and copied
+memory buffers remain open under WA-12.

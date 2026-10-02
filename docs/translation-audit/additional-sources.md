@@ -102,8 +102,14 @@ of gg/Cocoa; it establishes that no complete source mapping was found.
 
 Upstream Heap gathers explicit/cross-heap roots and conservative roots
 (`Libraries/LibGC/Heap.cpp:783`, `:798`, `:853`). This bundle is built with `-gc none`; the
-translated VM tracks roots but does not supply a LibGC collector. V ownership
-adaptation and a complete resource-lifetime/collection audit are separate work.
+translated VM tracks roots but does not supply a LibGC collector. Subsequent
+fixes directly translate ExternalEntityTable and the full PrimitiveStorage
+allocator/public API, including the actual POSIX 4 TiB cage, slab classes,
+guarded reservations, source free-range handling and handle generations. Wasm
+MemoryBuffer/MemoryInstance use that storage and pass focused ownership and
+growth tests in both GC modes. See [storage status](../../libgc/PORT_STATUS.md).
+This does not provide Heap roots, cross-heap members or collection. V ownership
+adaptation and the complete resource-lifetime/collection audit remain open.
 
 `main.v:1203` uses stbi for image decode. Native video decode calls
 `avformat_open_input` (`native_capture_darwin.m:159`). These do not translate
