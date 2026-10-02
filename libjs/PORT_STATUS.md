@@ -526,9 +526,20 @@ size/capacity/offset/handle access, resizing and capacity reservation use the
 source storage operations. Focused tests pass with default GC and `-gc none`,
 including slab reuse, released/stale handles, byte-preserving reallocation and
 zero-filled growth. Native storage lifetime currently ends through explicit
-`destroy()` calls. The existing DataBlock still uses its flat storage adapter;
-wiring this owner and external primitive-storage variants into DataBlock, VM
-collection and source automatic destruction remains pending. See
+`destroy()` calls. `data_block.v` (`c679a29d`) now uses this owner for actual
+ArrayBuffer and SharedArrayBuffer allocations, and translates external
+primitive storage with actual owner addresses and fixed or dynamic lengths.
+Cage-masked addresses, chunked copies, both overlapping move directions and
+readonly-byte callbacks follow `ArrayBuffer.h`. Reservations retain size_t
+capacity, including values beyond V's signed vector limit, without committing
+the reserved bytes. Detachment frees owned storage; taking a block transfers its
+owner, and external/borrowed blocks leave their owner's storage intact.
+Five focused files pass with default GC and `-gc none`; the actual storage
+regression also passes `-prod -gc none`. VM collection, automatic cell destruction,
+external-memory accounting and cached TypedArray offset invalidation remain
+pending. Source GC::Ref<Cell> is an actual owner pointer at that unfinished cell
+boundary. V's by-value DataBlock accessors provide borrowed aliases; only the
+owning block may destroy storage. See
 [LibGC storage status](../libgc/PORT_STATUS.md).
 
 SpeciesConstructor (`39e1cc2`) reads the constructor and @@species in order,
@@ -2000,14 +2011,15 @@ the same-size SVG source switch with zero differing pixels.
   String iteration uses code-unit offsets over the retained flat string rather
   than AK iterator pointers. Array key/entry indices preserve the pinned source's
   i32 conversion, including its wraparound for indices at or above 2^31.
-- DataBlock uses flat V byte arrays, heap-owned storage records and the non-caged
-  copy/move algorithms in place of GC::PrimitiveStorage handles. Array lengths
-  and capacities are limited to 2^31-1; larger requests report the upstream
-  allocation RangeError before narrowing. Capacity reservation is eager, and
-  small allocation failures still follow V's allocator failure behavior rather
-  than a recoverable C++ ErrorOr. ExternalPrimitiveStorage, cage offsets, GC
-  external-memory accounting and cached TypedArray offset invalidation remain
-  untranslated. Explicit prototypes select host-created buffer/view records;
+- Owned DataBlock allocation and external storage use actual PrimitiveStorage
+  handles, size_t lengths/capacities, cage offsets and source chunked copy/move
+  operations. Native storage errors reach the allocation RangeError. Borrowed
+  ByteBufferStorage and byte-vector copy results retain V's signed-int length
+  limit and allocation-panic boundary; readonly callbacks can consume the actual
+  native span without a vector copy. External owners retain actual pointers,
+  while source GC cell visitation, automatic owner destruction, external-memory
+  accounting and cached TypedArray offset invalidation remain untranslated.
+  Explicit prototypes select host-created buffer/view records;
   the ArrayBuffer, DataView and SharedArrayBuffer constructors use the realm graph.
   Object.prototype remains pending, so all three installed prototypes currently
   have a null parent.

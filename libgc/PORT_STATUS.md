@@ -34,7 +34,8 @@ verified on macOS; the Windows LibCore mapping backend is not implemented.
 Wasm `MemoryBuffer` and `MemoryInstance` now use these actual handles. Their
 WebIDL memory wrappers and realm-specific buffer views also resolve this live
 storage without byte snapshots. LibJS's translated `OwnedPrimitiveBackingStore`
-uses the same allocator; its DataBlock integration is a separate pending slice.
+uses the same allocator. Its DataBlock and ArrayBuffer owned allocations now
+use those handles; external DataBlocks resolve actual fixed or dynamic views.
 Native-storage lifetime ends through explicit `destroy()` calls. Source
 automatic owner destruction, `Heap`, roots, cross-heap members, collection and
 the complete runtime lifetime graph are still open. This storage translation
