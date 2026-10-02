@@ -59,6 +59,10 @@ pub:
 	start_promise            ?PromiseStartAlgorithm
 	pull_promise             ?PromisePullAlgorithm
 	cancel_promise           ?PromiseCancelAlgorithm
+	underlying_source_value  webidl.Value
+	start_callback           ?webidl.CallbackType
+	pull_callback            ?webidl.CallbackType
+	cancel_callback          ?webidl.CallbackType
 	auto_allocate_chunk_size ?u64
 }
 

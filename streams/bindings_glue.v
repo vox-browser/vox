@@ -7,6 +7,8 @@
 // value; the standalone V boundary passes those values explicitly.
 module streams
 
+import webidl
+
 pub struct BindingsUnderlyingSource {
 pub:
 	type_                    ?UnderlyingSourceType
@@ -16,6 +18,10 @@ pub:
 	start_promise            ?PromiseStartAlgorithm
 	pull_promise             ?PromisePullAlgorithm
 	cancel_promise           ?PromiseCancelAlgorithm
+	underlying_source_value  webidl.Value
+	start_callback           ?webidl.CallbackType
+	pull_callback            ?webidl.CallbackType
+	cancel_callback          ?webidl.CallbackType
 	auto_allocate_chunk_size ?u64
 }
 
@@ -33,6 +39,10 @@ pub fn underlying_source_from_bindings(source BindingsUnderlyingSource) Underlyi
 		start_promise:            source.start_promise
 		pull_promise:             source.pull_promise
 		cancel_promise:           source.cancel_promise
+		underlying_source_value:  source.underlying_source_value
+		start_callback:           source.start_callback
+		pull_callback:            source.pull_callback
+		cancel_callback:          source.cancel_callback
 		auto_allocate_chunk_size: source.auto_allocate_chunk_size
 	}
 }

@@ -82,7 +82,29 @@ fn (mut stream ReadableStream) react_to_start(mut start_promise webidl.Promise) 
 fn (mut stream ReadableStream) start_underlying_source(source UnderlyingSource) ! {
 	stream.promise_pull_algorithm_ = source.pull_promise
 	stream.promise_cancel_algorithm_ = source.cancel_promise
-	mut start_promise := if algorithm := source.start_promise {
+	controller_value := if stream.byte_stream_ {
+		stream_controller_callback_value(voidptr(stream.byte_controller_), 'ReadableByteStreamController')
+	} else {
+		stream_controller_callback_value(voidptr(stream.default_controller_), 'ReadableStreamDefaultController')
+	}
+	receiver := source.underlying_source_value
+	if callback := source.pull_callback {
+		bound := stream_webidl_callback(callback, stream.realm_, .yes)
+		stream.promise_pull_algorithm_ = fn [bound, receiver, controller_value] () !&webidl.Promise {
+			return webidl.invoke_promise_callback(bound, receiver, [controller_value])
+		}
+	}
+	if callback := source.cancel_callback {
+		bound := stream_webidl_callback(callback, stream.realm_, .yes)
+		stream.promise_cancel_algorithm_ = fn [bound, receiver] (reason Value) !&webidl.Promise {
+			return webidl.invoke_promise_callback(bound, receiver, [stream_value_to_webidl(reason)])
+		}
+	}
+	mut start_promise := if callback := source.start_callback {
+		bound := stream_webidl_callback(callback, stream.realm_, .no)
+		result := webidl.invoke_callback(bound, receiver, [controller_value])!
+		webidl.create_resolved_promise_for(stream.realm_.promise_context(), result)
+	} else if algorithm := source.start_promise {
 		algorithm()!
 	} else {
 		if algorithm := source.start { algorithm()! }
