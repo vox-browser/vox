@@ -12,6 +12,7 @@ import fetch
 import indexeddb
 import storageapi
 import time
+import webcrypto
 
 pub type TimerScriptEvaluator = fn (string) !
 
@@ -93,7 +94,10 @@ pub struct GlobalScopeIndexedDBFactory {
 }
 
 @[heap]
-pub struct GlobalScopeCrypto {}
+pub struct GlobalScopeCrypto {
+	implementation &webcrypto.Crypto @[required]
+	subtle_ &webcrypto.SubtleCryptoBinding @[required]
+}
 
 @[heap]
 pub struct GlobalScopeCacheStorage {}
@@ -884,7 +888,7 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) crypto() &GlobalScopeCrypto {
 	if value := scope.crypto_ {
 		return value
 	}
-	value := &GlobalScopeCrypto{}
+	value := GlobalScopeCrypto.create(scope.responsible_event_loop(), u64(voidptr(scope)))
 	scope.crypto_ = value
 	return value
 }
