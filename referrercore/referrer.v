@@ -6,7 +6,7 @@
 // AbstractOperations.cpp — the ReferrerPolicy enum, its string conversions, the default policy, and the
 // policy-selection and request integration algorithms.
 // https://w3c.github.io/webappsec-referrer-policy/
-module algorithm
+module referrercore
 
 import dom
 import securecontexts

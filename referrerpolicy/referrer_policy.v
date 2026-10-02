@@ -10,7 +10,7 @@ module referrerpolicy
 
 import dom
 import fetch
-import referrerpolicy.algorithm
+import referrercore
 
 // https://w3c.github.io/webappsec-referrer-policy/#enumdef-referrerpolicy
 pub enum ReferrerPolicy {
@@ -103,17 +103,17 @@ pub enum OriginOnly {
 
 // https://w3c.github.io/webappsec-referrer-policy/#strip-url
 pub fn strip_url_for_use_as_referrer(input ?dom.URL, origin_only OriginOnly) ?dom.URL {
-	return algorithm.strip_url_for_use_as_referrer(input, if origin_only == .yes {
-		algorithm.OriginOnly.yes
+	return referrercore.strip_url_for_use_as_referrer(input, if origin_only == .yes {
+		referrercore.OriginOnly.yes
 	} else {
-		algorithm.OriginOnly.no
+		referrercore.OriginOnly.no
 	})
 }
 
 // The independent core is also called by Fetch's main-fetch step. Keeping the
 // request projection here avoids a Fetch -> ReferrerPolicy -> Fetch cycle.
 pub fn determine_requests_referrer(request &fetch.Request) ?dom.URL {
-	return algorithm.determine_requests_referrer(request.referrer_policy,
+	return referrercore.determine_requests_referrer(request.referrer_policy,
 		request.referrer_source(), request.current_url())
 }
 

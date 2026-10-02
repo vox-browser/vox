@@ -13,7 +13,7 @@ import fileapi
 import highresolutiontime
 import http
 import securecontexts
-import referrerpolicy.algorithm as referrer_algorithm
+import referrercore
 import sri
 import streams
 import strconv
@@ -845,7 +845,7 @@ pub fn main_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 	// Fetching.cpp main fetch step 9. Redirects re-enter this step with the
 	// response-selected policy, so an already reduced referrer never expands.
 	if request.referrer.url != none || request.referrer.sentinel != .no_referrer {
-		request.referrer = if determined := referrer_algorithm.determine_requests_referrer(request.referrer_policy,
+		request.referrer = if determined := referrercore.determine_requests_referrer(request.referrer_policy,
 			request.referrer_source(), request.current_url())
 		{
 			Referrer{
