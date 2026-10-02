@@ -224,6 +224,13 @@ neighbors pass with `-gc none`. Global constructor replacement does not alter
 the cached native interface prototype used for subsequently created contexts.
 Cross-realm WrapperWorld and extension/resource prototype work remain open.
 
+Typed query result selection uses the once-converted unsigned enum, matching
+the source get_parameter/get_vertex_attrib/get_active_uniform_block_parameter
+switches. It no longer converts the author pname object again after native GL
+execution, and values wrapping modulo 2^32 select the same typed result as the
+source. The focused native host case passes with `-gc none` for viewport,
+constant vertex attributes and an actual linked uniform block's indices.
+
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
