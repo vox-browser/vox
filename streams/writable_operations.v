@@ -5,6 +5,8 @@
 // Direct translations of writable-stream object slots and abstract operations.
 module streams
 
+import webidl
+
 pub fn (mut stream WritableStream) transfer_steps() !&WritableStream {
 	return stream.transfer()
 }
@@ -90,6 +92,11 @@ pub fn (_ &WritableStream) primary_interface() string {
 }
 
 pub fn (mut controller WritableStreamDefaultController) abort_steps(reason Value) &VoidPromise {
+	mut native := controller.abort_steps_promise(reason)
+	return void_promise_from_webidl(controller.stream_.realm_, mut native)
+}
+
+fn (mut controller WritableStreamDefaultController) abort_steps_promise(reason Value) &webidl.Promise {
 	mut stream := controller.stream_
 	result := stream.perform_abort(reason)
 	writable_stream_default_controller_clear_algorithms(mut controller)
@@ -347,6 +354,12 @@ pub fn writable_stream_reject_close_and_closed_promise_if_needed(mut stream Writ
 	if !isnil(stream.writer_) {
 		mut closed := stream.writer_.closed_
 		closed.reject(stream.stored_error_)
+		mut native_closed := closed.as_webidl_promise()
+		webidl.mark_promise_as_handled(mut native_closed)
+	}
+	if !isnil(stream.pipe_source_) {
+		mut source := stream.pipe_source_
+		pump_readable_pipe(mut source)
 	}
 }
 
@@ -424,6 +437,11 @@ pub fn writable_stream_default_writer_write(mut writer WritableStreamDefaultWrit
 }
 
 pub fn set_up_writable_stream_default_controller(mut stream WritableStream, mut controller WritableStreamDefaultController, start StartAlgorithm, write WriteAlgorithm, close CloseAlgorithm, abort AbortAlgorithm, high_water_mark f64, size SizeAlgorithm) ! {
+	set_up_writable_stream_default_controller_slots(mut stream, mut controller, write, close, abort, high_water_mark, size)!
+	stream.start_underlying_sink(UnderlyingSink{ start: start })!
+}
+
+fn set_up_writable_stream_default_controller_slots(mut stream WritableStream, mut controller WritableStreamDefaultController, write WriteAlgorithm, close CloseAlgorithm, abort AbortAlgorithm, high_water_mark f64, size SizeAlgorithm) ! {
 	if high_water_mark < 0 {
 		return error('RangeError: highWaterMark must be non-negative')
 	}
@@ -439,9 +457,7 @@ pub fn set_up_writable_stream_default_controller(mut stream WritableStream, mut 
 	stream.abort_algorithm_ = abort
 	backpressure := writable_stream_default_controller_get_backpressure(controller)
 	writable_stream_update_backpressure(mut stream, backpressure)
-	start()!
-	stream.started_ = true
-	writable_stream_default_controller_advance_queue_if_needed(mut controller)
+
 }
 
 pub fn set_up_writable_stream_default_controller_from_underlying_sink(mut stream WritableStream, sink UnderlyingSink, high_water_mark f64, size SizeAlgorithm) ! {
@@ -449,7 +465,8 @@ pub fn set_up_writable_stream_default_controller_from_underlying_sink(mut stream
 		stream_: &stream
 		signal_: AbortSignal.create()
 	}
-	set_up_writable_stream_default_controller(mut stream, mut controller, sink.start or { no_op_start_algorithm }, sink.write or { no_op_write_algorithm }, sink.close or { no_op_close_algorithm }, sink.abort or { no_op_abort_algorithm }, high_water_mark, size)!
+	set_up_writable_stream_default_controller_slots(mut stream, mut controller, sink.write or { no_op_write_algorithm }, sink.close or { no_op_close_algorithm }, sink.abort or { no_op_abort_algorithm }, high_water_mark, size)!
+	stream.start_underlying_sink(sink)!
 }
 
 fn no_op_write_algorithm(_ Value) ! {}
@@ -466,6 +483,9 @@ pub fn writable_stream_default_controller_clear_algorithms(mut controller Writab
 	controller.stream_.write_algorithm_ = none
 	controller.stream_.close_algorithm_ = none
 	controller.stream_.abort_algorithm_ = none
+	controller.stream_.promise_write_algorithm_ = none
+	controller.stream_.promise_close_algorithm_ = none
+	controller.stream_.promise_abort_algorithm_ = none
 	controller.stream_.size_algorithm_ = default_size_algorithm
 }
 
@@ -510,35 +530,47 @@ pub fn writable_stream_default_controller_process_close(mut controller WritableS
 		writable_stream_finish_in_flight_close_with_error(mut stream, string_value(err.msg()))
 		return
 	}
-	close_result := stream.perform_close()
+	assert stream.queue_.is_empty()
+	mut close_result := stream.perform_close()
 	writable_stream_default_controller_clear_algorithms(mut controller)
-	if close_result.state() == .rejected {
-		writable_stream_finish_in_flight_close_with_error(mut stream, string_value(close_result.reason()))
-	} else if close_result.state() == .fulfilled {
+	webidl.react_to_promise(mut close_result, fn [mut stream] (_ webidl.Value) !webidl.Value {
 		writable_stream_finish_in_flight_close(mut stream)
-	}
+		return webidl.undefined_value()
+	}, fn [mut stream] (reason webidl.Value) !webidl.Value {
+		writable_stream_finish_in_flight_close_with_error(mut stream, string_value(callback_reason(reason)))
+		return webidl.undefined_value()
+	})
 }
 
 pub fn writable_stream_default_controller_process_write(mut controller WritableStreamDefaultController, chunk Value) {
 	mut stream := controller.stream_
 	writable_stream_mark_first_write_request_in_flight(mut stream)
-	stream.perform_write(chunk) or {
+	mut write_result := stream.perform_write(chunk)
+	webidl.react_to_promise(mut write_result, fn [mut stream, chunk] (_ webidl.Value) !webidl.Value {
+		stream.written_values_ << chunk
+		writable_stream_finish_in_flight_write(mut stream)
+		_ = stream.queue_.dequeue_value() or {
+			mut controller := stream.controller_
+			writable_stream_default_controller_error_if_needed(mut controller, string_value(err.msg()))
+			return webidl.undefined_value()
+		}
+		if !writable_stream_close_queued_or_in_flight(stream) && stream.state_ == .writable {
+			stream.update_backpressure()
+		}
+		stream.process_queue()
+		if !isnil(stream.pipe_source_) {
+			mut source := stream.pipe_source_
+			pump_readable_pipe(mut source)
+		}
+		return webidl.undefined_value()
+	}, fn [mut stream] (reason webidl.Value) !webidl.Value {
 		if stream.state_ == .writable {
+			mut controller := stream.controller_
 			writable_stream_default_controller_clear_algorithms(mut controller)
 		}
-		writable_stream_finish_in_flight_write_with_error(mut stream, string_value(err.msg()))
-		return
-	}
-	stream.written_values_ << chunk
-	writable_stream_finish_in_flight_write(mut stream)
-	_ = stream.queue_.dequeue_value() or {
-		writable_stream_default_controller_error_if_needed(mut controller, string_value(err.msg()))
-		return
-	}
-	if !writable_stream_close_queued_or_in_flight(stream) && stream.state_ == .writable {
-		stream.update_backpressure()
-	}
-	stream.process_queue()
+		writable_stream_finish_in_flight_write_with_error(mut stream, string_value(callback_reason(reason)))
+		return webidl.undefined_value()
+	})
 }
 
 pub fn writable_stream_default_controller_write(mut controller WritableStreamDefaultController, chunk Value, chunk_size f64) ! {

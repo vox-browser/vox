@@ -84,3 +84,26 @@ fn (mut stream ReadableStream) start_underlying_source(source UnderlyingSource) 
 	}
 	stream.react_to_start(mut start_promise)
 }
+
+fn (mut stream WritableStream) start_underlying_sink(sink UnderlyingSink) ! {
+	stream.promise_write_algorithm_ = sink.write_promise
+	stream.promise_close_algorithm_ = sink.close_promise
+	stream.promise_abort_algorithm_ = sink.abort_promise
+	mut start_promise := if algorithm := sink.start_promise {
+		algorithm()!
+	} else {
+		if algorithm := sink.start { algorithm()! }
+		resolved_callback_promise(stream.realm_)
+	}
+	webidl.react_to_promise(mut start_promise, fn [mut stream] (_ webidl.Value) !webidl.Value {
+		assert stream.state_ in [.writable, .erroring]
+		stream.started_ = true
+		stream.process_queue()
+		return webidl.undefined_value()
+	}, fn [mut stream] (reason webidl.Value) !webidl.Value {
+		assert stream.state_ in [.writable, .erroring]
+		stream.started_ = true
+		writable_stream_deal_with_rejection(mut stream, string_value(callback_reason(reason)))
+		return webidl.undefined_value()
+	})
+}

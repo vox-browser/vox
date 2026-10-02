@@ -6,6 +6,8 @@
 // WritableStreamDefaultWriter, UnderlyingSink, and writable abstract ops.
 module streams
 
+import webidl
+
 pub enum WritableStreamState {
 	writable
 	erroring
@@ -19,6 +21,10 @@ pub:
 	write ?WriteAlgorithm
 	close ?CloseAlgorithm
 	abort ?AbortAlgorithm
+	start_promise ?PromiseStartAlgorithm
+	write_promise ?PromiseWriteAlgorithm
+	close_promise ?PromiseCloseAlgorithm
+	abort_promise ?PromiseAbortAlgorithm
 	type_ ?string
 }
 
@@ -42,6 +48,9 @@ mut:
 	write_algorithm_         ?WriteAlgorithm
 	close_algorithm_         ?CloseAlgorithm
 	abort_algorithm_         ?AbortAlgorithm
+	promise_write_algorithm_ ?PromiseWriteAlgorithm
+	promise_close_algorithm_ ?PromiseCloseAlgorithm
+	promise_abort_algorithm_ ?PromiseAbortAlgorithm
 	started_                 bool
 	backpressure_            bool
 	owner_kind_              WritableOwnerKind
@@ -171,106 +180,110 @@ fn (mut stream WritableStream) finish_erroring() {
 		request.reject(stream.stored_error_)
 	}
 	stream.write_requests_.clear()
-	if !isnil(stream.pending_abort_request_) {
-		mut abort_request := stream.pending_abort_request_
-		was_already_erroring := stream.pending_abort_erroring_
-		reason := stream.pending_abort_reason_
-		stream.pending_abort_request_ = unsafe { nil }
-		stream.pending_abort_reason_ = undefined_value()
-		stream.pending_abort_erroring_ = false
-		if was_already_erroring {
-			abort_request.reject(stream.stored_error_)
-		} else {
-			mut controller := stream.controller_
-			abort_result := controller.abort_steps(reason)
-			if abort_result.state() == .rejected {
-				abort_request.reject(abort_result.reason())
-			} else if abort_result.state() == .fulfilled {
-				abort_request.resolve()
-			}
-		}
+	if isnil(stream.pending_abort_request_) {
+		writable_stream_reject_close_and_closed_promise_if_needed(mut stream)
+		return
 	}
-	if !isnil(stream.close_request_) {
-		mut close_request := stream.close_request_
-		close_request.reject(stream.stored_error_)
-		stream.close_request_ = unsafe { nil }
+	mut abort_request := stream.pending_abort_request_
+	was_already_erroring := stream.pending_abort_erroring_
+	reason := stream.pending_abort_reason_
+	stream.pending_abort_request_ = unsafe { nil }
+	stream.pending_abort_reason_ = undefined_value()
+	stream.pending_abort_erroring_ = false
+	if was_already_erroring {
+		abort_request.reject(stream.stored_error_)
+		writable_stream_reject_close_and_closed_promise_if_needed(mut stream)
+		return
 	}
-	if !isnil(stream.writer_) {
-		mut closed := stream.writer_.closed_
-		closed.reject(stream.stored_error_)
-	}
-	if !isnil(stream.pipe_source_) {
-		mut source := stream.pipe_source_
-		pump_readable_pipe(mut source)
-	}
+	mut controller := stream.controller_
+	mut abort_result := controller.abort_steps_promise(reason)
+	webidl.react_to_promise(mut abort_result, fn [mut stream, mut abort_request] (_ webidl.Value) !webidl.Value {
+		abort_request.resolve()
+		writable_stream_reject_close_and_closed_promise_if_needed(mut stream)
+		return webidl.undefined_value()
+	}, fn [mut stream, mut abort_request] (error webidl.Value) !webidl.Value {
+		abort_request.reject(callback_reason(error))
+		writable_stream_reject_close_and_closed_promise_if_needed(mut stream)
+		return webidl.undefined_value()
+	})
 }
 
-fn (mut stream WritableStream) perform_write(value Value) ! {
+fn (mut stream WritableStream) perform_write(value Value) &webidl.Promise {
 	match stream.owner_kind_ {
 		.regular {
+			if algorithm := stream.promise_write_algorithm_ {
+				return algorithm(value) or { rejected_callback_promise(stream.realm_, err.msg()) }
+			}
 			if algorithm := stream.write_algorithm_ {
-				algorithm(value)!
+				algorithm(value) or { return rejected_callback_promise(stream.realm_, err.msg()) }
 			}
 		}
 		.transform {
 			mut transform := unsafe { &TransformStream(stream.owner_) }
-			transform.write_chunk(value)!
+			transform.write_chunk(value) or { return rejected_callback_promise(stream.realm_, err.msg()) }
 		}
 		.message_port {
 			if isnil(stream.message_port_) {
-				return error('DataCloneError: Cross-realm writable endpoint is unavailable')
+				return rejected_callback_promise(stream.realm_, 'DataCloneError: Cross-realm writable endpoint is unavailable')
 			}
 			mut port := stream.message_port_
-			pack_and_post_message(mut port, 'chunk', value)!
+			pack_and_post_message(mut port, 'chunk', value) or { return rejected_callback_promise(stream.realm_, err.msg()) }
 			stream.message_backpressure_ = false
 		}
 	}
+	return resolved_callback_promise(stream.realm_)
 }
 
-fn (mut stream WritableStream) perform_close() &VoidPromise {
+fn (mut stream WritableStream) perform_close() &webidl.Promise {
 	match stream.owner_kind_ {
 		.regular {
+			if algorithm := stream.promise_close_algorithm_ {
+				return algorithm() or { rejected_callback_promise(stream.realm_, err.msg()) }
+			}
 			if algorithm := stream.close_algorithm_ {
-				algorithm() or { return VoidPromise.rejected_in(stream.realm_, err.msg()) }
+				algorithm() or { return rejected_callback_promise(stream.realm_, err.msg()) }
 			}
 		}
 		.transform {
 			mut transform := unsafe { &TransformStream(stream.owner_) }
-			return transform.close_writable()
+			return transform.close_writable().as_webidl_promise()
 		}
 		.message_port {
 			if !isnil(stream.message_port_) {
 				mut port := stream.message_port_
 				pack_and_post_message(mut port, 'close', undefined_value()) or {
-					return VoidPromise.rejected_in(stream.realm_, err.msg())
+					return rejected_callback_promise(stream.realm_, err.msg())
 				}
 			}
 		}
 	}
-	return VoidPromise.fulfilled_in(stream.realm_)
+	return resolved_callback_promise(stream.realm_)
 }
 
-fn (mut stream WritableStream) perform_abort(reason Value) &VoidPromise {
+fn (mut stream WritableStream) perform_abort(reason Value) &webidl.Promise {
 	match stream.owner_kind_ {
 		.regular {
+			if algorithm := stream.promise_abort_algorithm_ {
+				return algorithm(reason) or { rejected_callback_promise(stream.realm_, err.msg()) }
+			}
 			if algorithm := stream.abort_algorithm_ {
-				algorithm(reason) or { return VoidPromise.rejected_in(stream.realm_, err.msg()) }
+				algorithm(reason) or { return rejected_callback_promise(stream.realm_, err.msg()) }
 			}
 		}
 		.transform {
 			mut transform := unsafe { &TransformStream(stream.owner_) }
-			return transform.abort_writable(reason)
+			return transform.abort_writable(reason).as_webidl_promise()
 		}
 		.message_port {
 			if !isnil(stream.message_port_) {
 				mut port := stream.message_port_
 				pack_and_post_message(mut port, 'error', reason) or {
-					return VoidPromise.rejected_in(stream.realm_, err.msg())
+					return rejected_callback_promise(stream.realm_, err.msg())
 				}
 			}
 		}
 	}
-	return VoidPromise.fulfilled_in(stream.realm_)
+	return resolved_callback_promise(stream.realm_)
 }
 
 fn (mut stream WritableStream) process_queue() {
