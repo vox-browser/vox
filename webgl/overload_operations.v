@@ -84,6 +84,8 @@ pub fn (mut context WebGLRenderingContext) tex_image2d(target GLenum, level int,
 		texture.internal_format_ = internal_format
 	}
 	context.command('tex_image2d', target, level, internal_format, width, height, border, format, type_, texture_data.len)
+	C.vox_gl_tex_image2d(target, level, internal_format, width, height, border, format, type_, texture_data.len, texture_data.data)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) tex_sub_image2d(target GLenum, level int, x_offset int, y_offset int, width int, height int, format GLenum, type_ GLenum, pixels []u8) {
@@ -100,6 +102,8 @@ pub fn (mut context WebGLRenderingContext) tex_sub_image2d(target GLenum, level 
 		return
 	}
 	context.command('tex_sub_image2d', target, level, x_offset, y_offset, width, height, format, type_, texture_data.len)
+	C.vox_gl_tex_sub_image2d(target, level, x_offset, y_offset, width, height, format, type_, texture_data.len, texture_data.data)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) read_pixels(x int, y int, width int, height int, format GLenum, type_ GLenum) []u8 {
@@ -108,7 +112,15 @@ pub fn (mut context WebGLRenderingContext) read_pixels(x int, y int, width int, 
 		return []u8{}
 	}
 	context.command('read_pixels', x, y, width, height, format, type_)
-	return []u8{len: width * height * 4}
+	capacity := required_2d_texture_data_size(width, height, format, type_, PixelUnpackState{alignment: u64(context.pack_alignment_)}) or {
+ context.set_error(invalid_enum); return []u8{}
+ }
+ if capacity > u64(max_int) { context.set_error(out_of_memory); return []u8{} }
+ mut data := []u8{len: int(capacity)}
+ written := C.vox_gl_read_pixels(x, y, width, height, format, type_, data.len, data.data)
+ context.native.collect_native_error()
+ if written <= 0 { return []u8{} }
+ return data[..written].clone()
 }
 
 fn ints_to_floats(values []int) []f32 {

@@ -340,8 +340,11 @@ pub fn (mut context WebGLRenderingContext) create_buffer() &WebGLBuffer {
 
 pub fn (mut context WebGLRenderingContext) create_framebuffer() &WebGLFramebuffer {
 	handle := context.allocate_handle()
+	context.native.make_current()
+	native_handle := C.vox_gl_gen_object(1)
+	context.native.collect_native_error()
 	framebuffer_object := &WebGLFramebuffer{
-		object: new_object(context.identity(), context.context_generation_, handle)
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
 	}
 	unsafe {
 		context.framebuffers[handle] = framebuffer_object
@@ -351,8 +354,11 @@ pub fn (mut context WebGLRenderingContext) create_framebuffer() &WebGLFramebuffe
 
 pub fn (mut context WebGLRenderingContext) create_renderbuffer() &WebGLRenderbuffer {
 	handle := context.allocate_handle()
+	context.native.make_current()
+	native_handle := C.vox_gl_gen_object(2)
+	context.native.collect_native_error()
 	renderbuffer_object := &WebGLRenderbuffer{
-		object: new_object(context.identity(), context.context_generation_, handle)
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
 	}
 	unsafe {
 		context.renderbuffers[handle] = renderbuffer_object
@@ -362,8 +368,11 @@ pub fn (mut context WebGLRenderingContext) create_renderbuffer() &WebGLRenderbuf
 
 pub fn (mut context WebGLRenderingContext) create_texture() &WebGLTexture {
 	handle := context.allocate_handle()
+	context.native.make_current()
+	native_handle := C.vox_gl_gen_object(3)
+	context.native.collect_native_error()
 	texture := &WebGLTexture{
-		object: new_object(context.identity(), context.context_generation_, handle)
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
 	}
 	unsafe {
 		context.textures[handle] = texture
@@ -777,7 +786,9 @@ pub fn (mut context WebGLRenderingContext) disable_vertex_attrib_array(index GLu
 
 pub fn (mut context WebGLRenderingContext) clear_color(red f32, green f32, blue f32, alpha f32) {
 	context.clear_color_ = [clamp_unit(red), clamp_unit(green), clamp_unit(blue), clamp_unit(alpha)]!
-	context.native.dispatch('clear_color', i64(red), i64(green), i64(blue), i64(alpha))
+	context.native.make_current()
+	C.vox_gl_clear_color(red, green, blue, alpha)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) clear_depth(depth f64) {
@@ -788,20 +799,30 @@ pub fn (mut context WebGLRenderingContext) clear_depth(depth f64) {
 	} else {
 		depth
 	}
-	context.native.dispatch('clear_depth', i64(context.clear_depth_))
+	context.native.make_current()
+	C.vox_gl_clear_depth(f32(depth))
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) clear_stencil(stencil int) {
 	context.clear_stencil_ = stencil
-	context.native.dispatch('clear_stencil', stencil)
+	context.native.make_current()
+	C.vox_gl_clear_stencil(stencil)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) color_mask(red bool, green bool, blue bool, alpha bool) {
 	context.color_mask_ = [red, green, blue, alpha]!
+	context.native.make_current()
+	C.vox_gl_color_mask(int(red), int(green), int(blue), int(alpha))
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) depth_mask(flag bool) {
 	context.depth_mask_ = flag
+	context.native.make_current()
+	C.vox_gl_depth_mask(int(flag))
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) clear(mask GLenum) {

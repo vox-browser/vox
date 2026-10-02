@@ -15,6 +15,35 @@ fn C.vox_gl_wait_sync(voidptr, u32, u64)
 fn C.vox_gl_delete_sync(voidptr)
 fn C.vox_gl_get_sync_parameter(voidptr, u32) int
 fn C.vox_gl_get_error() u32
+fn C.vox_egl_free_surface(voidptr)
+fn C.vox_egl_allocate_surface(voidptr, int, int, int, int) int
+fn C.vox_egl_default_framebuffer(voidptr) u32
+fn C.vox_egl_default_renderbuffer(voidptr) u32
+fn C.vox_gl_gen_object(int) u32
+fn C.vox_gl_delete_object(int, u32)
+fn C.vox_gl_bind_framebuffer(u32, u32)
+fn C.vox_gl_bind_renderbuffer(u32, u32)
+fn C.vox_gl_bind_texture(u32, u32)
+fn C.vox_gl_framebuffer_status(u32) u32
+fn C.vox_gl_framebuffer_texture(u32, u32, u32, u32, int)
+fn C.vox_gl_framebuffer_renderbuffer(u32, u32, u32, u32)
+fn C.vox_gl_renderbuffer_storage(u32, u32, int, int)
+fn C.vox_gl_tex_image2d(u32, int, int, int, int, int, u32, u32, int, voidptr)
+fn C.vox_gl_tex_sub_image2d(u32, int, int, int, int, int, u32, u32, int, voidptr)
+fn C.vox_gl_tex_parameteri(u32, u32, int)
+fn C.vox_gl_tex_parameterf(u32, u32, f32)
+fn C.vox_gl_read_pixels(int, int, int, int, u32, u32, int, voidptr) int
+fn C.vox_gl_clear_color(f32, f32, f32, f32)
+fn C.vox_gl_clear_depth(f32)
+fn C.vox_gl_clear_stencil(int)
+fn C.vox_gl_color_mask(int, int, int, int)
+fn C.vox_gl_depth_mask(int)
+fn C.vox_gl_clear(u32)
+fn C.vox_gl_viewport(int, int, int, int)
+fn C.vox_gl_scissor(int, int, int, int)
+fn C.vox_gl_enable(u32)
+fn C.vox_gl_disable(u32)
+fn C.vox_gl_pixel_storei(u32, int)
 fn C.vox_gl_create_shader(u32) u32
 fn C.vox_gl_create_program() u32
 fn C.vox_gl_shader_source(u32, &char, int)

@@ -48,6 +48,8 @@ pub fn OpenGLContext.new(version WebGLVersion, options DrawingBufferOptions, sup
 		version: version
 		drawing_buffer_options: options
 		supported_extensions_: supported.clone()
+		width_: 1
+		height_: 1
 		backend_: backend
 		lost_: backend == unsafe { nil }
 	}
@@ -59,6 +61,7 @@ pub fn (mut context OpenGLContext) make_current() {
 	}
 	context.current_ = C.vox_egl_make_current(context.backend_) == 1
 	if !context.current_ { context.lost_ = true }
+	if context.current_ { context.allocate_painting_surface_if_needed() }
 }
 
 pub fn (mut context OpenGLContext) set_lost() {
@@ -119,7 +122,11 @@ pub fn (mut context OpenGLContext) allocate_painting_surface_if_needed() {
 	if context.lost_ || context.surface_allocated_ || context.width_ <= 0 || context.height_ <= 0 {
 		return
 	}
-	context.surface_allocated_ = true
+	context.current_ = C.vox_egl_make_current(context.backend_) == 1
+	if !context.current_ { context.lost_ = true; return }
+	context.surface_allocated_ = C.vox_egl_allocate_surface(context.backend_, context.width_, context.height_, int(context.drawing_buffer_options.depth), int(context.drawing_buffer_options.stencil)) == 1
+	context.collect_native_error()
+	if !context.surface_allocated_ { return }
 	context.viewport_ = [0, 0, context.width_, context.height_]!
 }
 
@@ -179,6 +186,17 @@ pub fn (mut context OpenGLContext) dispatch(name string, args ...i64) {
 		return
 	}
 	context.make_current()
+	if !context.current_ { return }
+	match name {
+		'clear' { C.vox_gl_clear(u32(args[0])) }
+		'viewport' { C.vox_gl_viewport(int(args[0]), int(args[1]), int(args[2]), int(args[3])) }
+		'scissor' { C.vox_gl_scissor(int(args[0]), int(args[1]), int(args[2]), int(args[3])) }
+		'enable' { C.vox_gl_enable(u32(args[0])) }
+		'disable' { C.vox_gl_disable(u32(args[0])) }
+		'pixel_storei' { C.vox_gl_pixel_storei(u32(args[0]), int(args[1])) }
+		else {}
+	}
+	context.collect_native_error()
 	if name == 'viewport' && args.len == 4 {
 		context.viewport_ = [int(args[0]), int(args[1]), int(args[2]), int(args[3])]!
 	}

@@ -14,6 +14,7 @@ pub fn OpenGLContext.create(version WebGLVersion, options DrawingBufferOptions, 
 }
 
 pub fn (mut context OpenGLContext) free_surface_resources() {
+	C.vox_egl_free_surface(context.backend_)
 	context.surface_allocated_ = false
 	context.current_ = false
 }
@@ -46,15 +47,11 @@ pub fn (context &OpenGLContext) surface() bool {
 }
 
 pub fn (context &OpenGLContext) default_renderbuffer() GLuint {
-	return if context.drawing_buffer_options.depth || context.drawing_buffer_options.stencil {
-		GLuint(2)
-	} else {
-		GLuint(0)
-	}
+	return GLuint(C.vox_egl_default_renderbuffer(context.backend_))
 }
 
 pub fn (context &OpenGLContext) default_framebuffer() GLuint {
-	return if context.surface_allocated_ { GLuint(1) } else { GLuint(0) }
+	return GLuint(C.vox_egl_default_framebuffer(context.backend_))
 }
 
 pub fn (context &OpenGLContext) webgl_version() WebGLVersion {

@@ -296,6 +296,8 @@ pub fn (mut context WebGLRenderingContext) bind_framebuffer(target GLenum, frame
 	}
 	context.bound_framebuffer = handle
 	context.command('bind_framebuffer', target, handle)
+	C.vox_gl_bind_framebuffer(target, if value := framebuffer_object { value.object.native_handle_ } else { context.native.default_framebuffer() })
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) bind_renderbuffer(target GLenum, renderbuffer_object ?&WebGLRenderbuffer) {
@@ -314,6 +316,8 @@ pub fn (mut context WebGLRenderingContext) bind_renderbuffer(target GLenum, rend
 	}
 	context.bound_renderbuffer = handle
 	context.command('bind_renderbuffer', target, handle)
+	C.vox_gl_bind_renderbuffer(target, if value := renderbuffer_object { value.object.native_handle_ } else { context.native.default_renderbuffer() })
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) bind_texture(target GLenum, texture ?&WebGLTexture) {
@@ -347,6 +351,8 @@ pub fn (mut context WebGLRenderingContext) bind_texture(target GLenum, texture ?
 		context.bound_textures[target] = handle
 	}
 	context.command('bind_texture', target, handle)
+	C.vox_gl_bind_texture(target, if value := texture { value.object.native_handle_ } else { 0 })
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) blend_color(red f32, green f32, blue f32, alpha f32) {
@@ -411,7 +417,9 @@ pub fn (mut context WebGLRenderingContext) blend_func_separate(source_rgb GLenum
 
 pub fn (mut context WebGLRenderingContext) check_framebuffer_status(target GLenum) GLenum {
 	context.command('check_framebuffer_status', target)
-	return GLenum(0x8cd5)
+	result := GLenum(C.vox_gl_framebuffer_status(target))
+	context.native.collect_native_error()
+	return result
 }
 
 pub fn (mut context WebGLRenderingContext) copy_tex_image2d(target GLenum, level int, internal_format GLenum, x int, y int, width int, height int, border int) {
@@ -455,6 +463,8 @@ pub fn (mut context WebGLRenderingContext) delete_framebuffer(object ?&WebGLFram
 			context.bound_framebuffer = 0
 		}
 		context.command('delete_framebuffer', handle)
+		C.vox_gl_delete_object(1, value.object.native_handle_)
+		context.native.collect_native_error()
 	}
 }
 
@@ -474,6 +484,8 @@ pub fn (mut context WebGLRenderingContext) delete_renderbuffer(object ?&WebGLRen
 			context.bound_renderbuffer = 0
 		}
 		context.command('delete_renderbuffer', handle)
+		C.vox_gl_delete_object(2, value.object.native_handle_)
+		context.native.collect_native_error()
 	}
 }
 
@@ -493,6 +505,8 @@ pub fn (mut context WebGLRenderingContext) delete_texture(object ?&WebGLTexture)
 			if bound == handle { context.bound_textures.delete(target) }
 		}
 		context.command('delete_texture', handle)
+		C.vox_gl_delete_object(3, value.object.native_handle_)
+		context.native.collect_native_error()
 	}
 }
 
@@ -618,6 +632,8 @@ pub fn (mut context WebGLRenderingContext) framebuffer_renderbuffer(target GLenu
 		mutable.set_renderbuffer_attachment(attachment, object)
 	}
 	context.command('framebuffer_renderbuffer', target, attachment, renderbuffer_target, handle)
+	C.vox_gl_framebuffer_renderbuffer(target, attachment, renderbuffer_target, if value := object { value.object.native_handle_ } else { 0 })
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) framebuffer_texture2d(target GLenum, attachment GLenum, texture_target GLenum, object ?&WebGLTexture, level int) {
@@ -649,6 +665,8 @@ pub fn (mut context WebGLRenderingContext) framebuffer_texture2d(target GLenum, 
 		mutable.set_texture_attachment(attachment, object, texture_target, level)
 	}
 	context.command('framebuffer_texture2d', target, attachment, texture_target, handle, level)
+	C.vox_gl_framebuffer_texture(target, attachment, texture_target, if value := object { value.object.native_handle_ } else { 0 }, level)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) get_framebuffer_attachment_parameter(target GLenum, attachment GLenum, pname GLenum) WebGLParameterValue {
@@ -1146,6 +1164,8 @@ pub fn (mut context WebGLRenderingContext) renderbuffer_storage(target GLenum, i
 	buffer.width_ = width
 	buffer.height_ = height
 	context.command('renderbuffer_storage', target, internal_format, width, height)
+	C.vox_gl_renderbuffer_storage(target, internal_format, width, height)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) sample_coverage(value f32, invert bool) {
@@ -1248,6 +1268,8 @@ pub fn (mut context WebGLRenderingContext) tex_parameteri(target GLenum, pname G
 	mut texture := context.textures[handle] or { return }
 	texture.parameters_i_[pname] = parameter
 	context.command('tex_parameteri', target, pname, parameter)
+	C.vox_gl_tex_parameteri(target, pname, parameter)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) tex_parameterf(target GLenum, pname GLenum, parameter f32) {
@@ -1258,6 +1280,8 @@ pub fn (mut context WebGLRenderingContext) tex_parameterf(target GLenum, pname G
 	mut texture := context.textures[handle] or { return }
 	texture.parameters_f_[pname] = parameter
 	context.command('tex_parameterf', target, pname, i64(parameter))
+	C.vox_gl_tex_parameterf(target, pname, parameter)
+	context.native.collect_native_error()
 }
 
 fn (mut context WebGLRenderingContext) uniform_floats(location ?&WebGLUniformLocation, values []f32, width int) {

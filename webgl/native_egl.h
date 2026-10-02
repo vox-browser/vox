@@ -8,11 +8,18 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <EGL/eglext_angle.h>
+#define GL_GLEXT_PROTOTYPES 1
 #include <GLES3/gl3.h>
+#include <GLES2/gl2ext.h>
+#include <GLES2/gl2ext_angle.h>
 
 typedef struct {
     EGLDisplay display;
     EGLContext context;
+    int version;
+    GLuint framebuffer;
+    GLuint color_buffer;
+    GLuint depth_buffer;
 } VoxEGLContext;
 
 static void* vox_egl_create(int version)
@@ -56,7 +63,7 @@ static void* vox_egl_create(int version)
         eglDestroyContext(display, context);
         return NULL;
     }
-    VoxEGLContext* result = malloc(sizeof(VoxEGLContext));
+    VoxEGLContext* result = calloc(1, sizeof(VoxEGLContext));
     if (!result) {
         eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
         eglDestroyContext(display, context);
@@ -64,6 +71,7 @@ static void* vox_egl_create(int version)
     }
     result->display = display;
     result->context = context;
+    result->version = version;
     return result;
 }
 
@@ -94,6 +102,98 @@ static int vox_gl_get_sync_parameter(void* sync, unsigned pname)
     return result;
 }
 static unsigned vox_gl_get_error(void) { return glGetError(); }
+static void vox_egl_free_surface(void* handle)
+{
+    VoxEGLContext* context = handle;
+    if (!vox_egl_make_current(handle)) return;
+    if (context->framebuffer) glDeleteFramebuffers(1, &context->framebuffer);
+    if (context->color_buffer) glDeleteTextures(1, &context->color_buffer);
+    if (context->depth_buffer) glDeleteRenderbuffers(1, &context->depth_buffer);
+    context->framebuffer = context->color_buffer = context->depth_buffer = 0;
+}
+static int vox_egl_allocate_surface(void* handle, int width, int height, int depth, int stencil)
+{
+    VoxEGLContext* context = handle;
+    if (!vox_egl_make_current(handle)) return 0;
+    vox_egl_free_surface(handle);
+    glGenTextures(1, &context->color_buffer);
+    glBindTexture(GL_TEXTURE_2D, context->color_buffer);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    GLint original_pixel_unpack_buffer = 0;
+    if (context->version == 3) {
+        glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &original_pixel_unpack_buffer);
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+    }
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    if (context->version == 3)
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, original_pixel_unpack_buffer);
+    glViewport(0, 0, width, height);
+    glGenFramebuffers(1, &context->framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, context->framebuffer);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, context->color_buffer, 0);
+    if (depth || stencil) {
+        glGenRenderbuffers(1, &context->depth_buffer);
+        glBindRenderbuffer(GL_RENDERBUFFER, context->depth_buffer);
+        GLenum format = depth && stencil ? GL_DEPTH24_STENCIL8 : depth ? GL_DEPTH_COMPONENT24 : GL_STENCIL_INDEX8;
+        GLenum attachment = depth && stencil ? GL_DEPTH_STENCIL_ATTACHMENT : depth ? GL_DEPTH_ATTACHMENT : GL_STENCIL_ATTACHMENT;
+        glRenderbufferStorage(GL_RENDERBUFFER, format, width, height);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, context->depth_buffer);
+    }
+    return glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+}
+static unsigned vox_egl_default_framebuffer(void* handle) { return handle ? ((VoxEGLContext*)handle)->framebuffer : 0; }
+static unsigned vox_egl_default_renderbuffer(void* handle) { return handle ? ((VoxEGLContext*)handle)->depth_buffer : 0; }
+static unsigned vox_gl_gen_object(int kind)
+{
+    GLuint result = 0;
+    switch (kind) {
+    case 0: glGenBuffers(1, &result); break;
+    case 1: glGenFramebuffers(1, &result); break;
+    case 2: glGenRenderbuffers(1, &result); break;
+    case 3: glGenTextures(1, &result); break;
+    }
+    return result;
+}
+static void vox_gl_delete_object(int kind, unsigned handle)
+{
+    switch (kind) {
+    case 0: glDeleteBuffers(1, &handle); break;
+    case 1: glDeleteFramebuffers(1, &handle); break;
+    case 2: glDeleteRenderbuffers(1, &handle); break;
+    case 3: glDeleteTextures(1, &handle); break;
+    }
+}
+static void vox_gl_bind_framebuffer(unsigned target, unsigned handle) { glBindFramebuffer(target, handle); }
+static void vox_gl_bind_renderbuffer(unsigned target, unsigned handle) { glBindRenderbuffer(target, handle); }
+static void vox_gl_bind_texture(unsigned target, unsigned handle) { glBindTexture(target, handle); }
+static unsigned vox_gl_framebuffer_status(unsigned target) { return glCheckFramebufferStatus(target); }
+static void vox_gl_framebuffer_texture(unsigned target, unsigned attachment, unsigned texture_target, unsigned texture, int level) { glFramebufferTexture2D(target, attachment, texture_target, texture, level); }
+static void vox_gl_framebuffer_renderbuffer(unsigned target, unsigned attachment, unsigned renderbuffer_target, unsigned renderbuffer) { glFramebufferRenderbuffer(target, attachment, renderbuffer_target, renderbuffer); }
+static void vox_gl_renderbuffer_storage(unsigned target, unsigned format, int width, int height) { glRenderbufferStorage(target, format, width, height); }
+static void vox_gl_tex_image2d(unsigned target, int level, int format, int width, int height, int border, unsigned pixel_format, unsigned type, int capacity, void const* data) { glTexImage2DRobustANGLE(target, level, format, width, height, border, pixel_format, type, capacity, data); }
+static void vox_gl_tex_sub_image2d(unsigned target, int level, int x, int y, int width, int height, unsigned format, unsigned type, int capacity, void const* data) { glTexSubImage2DRobustANGLE(target, level, x, y, width, height, format, type, capacity, data); }
+static void vox_gl_tex_parameteri(unsigned target, unsigned pname, int value) { glTexParameteri(target, pname, value); }
+static void vox_gl_tex_parameterf(unsigned target, unsigned pname, float value) { glTexParameterf(target, pname, value); }
+static int vox_gl_read_pixels(int x, int y, int width, int height, unsigned format, unsigned type, int capacity, void* data)
+{
+    GLsizei written = 0;
+    glReadPixelsRobustANGLE(x, y, width, height, format, type, capacity, &written, NULL, NULL, data);
+    return written;
+}
+static void vox_gl_clear_color(float r, float g, float b, float a) { glClearColor(r, g, b, a); }
+static void vox_gl_clear_depth(float value) { glClearDepthf(value); }
+static void vox_gl_clear_stencil(int value) { glClearStencil(value); }
+static void vox_gl_color_mask(int r, int g, int b, int a) { glColorMask(r, g, b, a); }
+static void vox_gl_depth_mask(int value) { glDepthMask(value); }
+static void vox_gl_clear(unsigned mask) { glClear(mask); }
+static void vox_gl_viewport(int x, int y, int w, int h) { glViewport(x, y, w, h); }
+static void vox_gl_scissor(int x, int y, int w, int h) { glScissor(x, y, w, h); }
+static void vox_gl_enable(unsigned cap) { glEnable(cap); }
+static void vox_gl_disable(unsigned cap) { glDisable(cap); }
+static void vox_gl_pixel_storei(unsigned pname, int value) { glPixelStorei(pname, value); }
 static unsigned vox_gl_create_shader(unsigned type) { return glCreateShader(type); }
 static unsigned vox_gl_create_program(void) { return glCreateProgram(); }
 static void vox_gl_shader_source(unsigned shader, char const* source, int length) { glShaderSource(shader, 1, &source, &length); }

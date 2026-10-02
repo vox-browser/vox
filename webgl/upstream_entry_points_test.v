@@ -8,8 +8,8 @@ fn test_upstream_value_factories_and_native_surface_slots() {
 	context.allocate_painting_surface_if_needed()
 	assert context.surface()
 	assert context.native.viewport() == [0, 0, 8, 6]!
-	assert context.native.default_framebuffer() == 1
-	assert context.native.default_renderbuffer() == 2
+	assert context.native.default_framebuffer() != 0
+	assert context.native.default_renderbuffer() != 0
 	context.viewport(1, 2, 3, 4)
 	context.allocate_painting_surface_if_needed()
 	assert context.native.viewport() == [1, 2, 3, 4]!
