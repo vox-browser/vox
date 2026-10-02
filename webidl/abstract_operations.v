@@ -68,7 +68,7 @@ pub fn integer_part(number f64) f64 {
 	return if number < 0 { -result } else { result }
 }
 
-fn value_to_number(value Value) !f64 {
+pub fn value_to_number(value Value) !f64 {
 	return match value.kind {
 		.number { value.number_value }
 		.boolean { if value.boolean_value { f64(1) } else { f64(0) } }
