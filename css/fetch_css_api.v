@@ -1,3 +1,4 @@
+@[has_globals]
 module css
 
 import dom
@@ -11,10 +12,19 @@ pub mut:
 	url   string
 }
 
+pub type CSSFetchClientProvider = fn (&dom.Document) ?fetch.RequestClient
+
+__global css_fetch_client_provider_ ?CSSFetchClientProvider
+
+pub fn install_css_fetch_client_provider(provider CSSFetchClientProvider) {
+	css_fetch_client_provider_ = provider
+}
+
 pub struct CSSFetchEnvironmentSettings {
 pub mut:
 	api_base_url string
 	origin       string
+	client ?fetch.RequestClient
 }
 
 pub fn CSSFetchEnvironmentSettings.from_document(document &dom.Document) CSSFetchEnvironmentSettings {
@@ -22,6 +32,7 @@ pub fn CSSFetchEnvironmentSettings.from_document(document &dom.Document) CSSFetc
 	return CSSFetchEnvironmentSettings{
 		api_base_url: base_url
 		origin: document.origin().serialize()
+		client: if provider := css_fetch_client_provider_ { provider(document) } else { none }
 	}
 }
 
@@ -155,6 +166,7 @@ fn fetch_a_style_resource_impl(url_value StyleResourceURL, css_rule_or_declarati
 		credentials_mode: .same_origin
 		use_url_credentials: true
 		client_base_url: environment_settings.api_base_url
+		client: environment_settings.client
 		referrer: environment_settings.api_base_url
 	}
 
@@ -196,6 +208,7 @@ fn fetch_a_style_resource_impl(url_value StyleResourceURL, css_rule_or_declarati
 
 fn css_request_to_fetch_request(request CSSRequest) &fetch.Request {
 	mut fetch_request := fetch.Request.create()
+	if client := request.client { fetch_request.set_client(client) }
 	fetch_request.url_list = [dom.URL{ value: request.url }]
 	fetch_request.mode = match request.mode or { CSSRequestMode.no_cors } {
 		.cors { .cors }

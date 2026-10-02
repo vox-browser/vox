@@ -9,6 +9,8 @@
 // - Libraries/LibWeb/CSS/URL.cpp/.h
 module css
 
+import fetch
+
 // https://www.w3.org/TR/css-color-4/#css-system-colors
 pub struct SystemColor {}
 
@@ -220,6 +222,7 @@ pub mut:
 	origin              string
 	use_url_credentials bool
 	client_base_url     string
+	client ?fetch.RequestClient
 	referrer            string
 	initiator_type      ?CSSRequestInitiatorType
 }

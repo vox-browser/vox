@@ -9,6 +9,7 @@ module html
 
 import css
 import dom
+import fetch
 import platform
 import time
 
@@ -84,6 +85,7 @@ __global (
 fn init() {
 	html_main_thread_event_loop = EventLoop.create(.window)
 	html_broadcast_channel_repository = BroadcastChannelRepository.create()
+	css.install_css_fetch_client_provider(css_fetch_client_for_document)
 	install_html_element_activation_behavior()
 	install_custom_element_registry_dom_hooks()
 	dom.install_run_focusing_steps(dom_run_focusing_steps_callback)
@@ -883,4 +885,10 @@ pub fn queue_a_microtask(document ?&dom.Document, steps fn()) {
 pub fn perform_a_microtask_checkpoint() {
 	mut event_loop := main_thread_event_loop()
 	event_loop.perform_a_microtask_checkpoint()
+}
+
+fn css_fetch_client_for_document(document &dom.Document) ?fetch.RequestClient {
+	settings := document.relevant_settings_object()
+	if settings == unsafe { nil } { return none }
+	return fetch.RequestClient(unsafe { &EnvironmentSettingsObject(settings) })
 }

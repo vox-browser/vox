@@ -11,6 +11,10 @@
 module html
 
 import dom
+import contentsecuritypolicy as csp
+import mixedcontentcore
+import securecontexts
+import url as liburl
 import fetch
 import math
 import storageapi
@@ -286,6 +290,105 @@ pub fn (settings &EnvironmentSettingsObject) origin() dom.Origin {
 pub fn (settings &EnvironmentSettingsObject) fetch_request_client_policy_container() fetch.RequestPolicyContainer {
 	return fetch.RequestPolicyContainer{
 		referrer_policy: settings.policy_container_.referrer_policy.to_string()
+		csp_list: fetch_csp_policy_list(settings.policy_container_.csp_list)
+		integrity_policy: fetch_integrity_policy(settings.policy_container_.integrity_policy)
+		report_only_integrity_policy: fetch_integrity_policy(settings.policy_container_.report_only_integrity_policy)
+	}
+}
+
+fn fetch_csp_policy_list(policies []SerializedCSPPolicy) &csp.PolicyList {
+	mut converted := []csp.SerializedPolicy{}
+	for policy in policies {
+		mut directives := []csp.SerializedDirective{}
+		for directive in policy.directives {
+			directives << csp.SerializedDirective{ name: directive.name, value: directive.value.clone() }
+		}
+		origin := if policy.self_origin.is_opaque() {
+			liburl.Origin.opaque([16]u8{}, .standard)
+		} else {
+			(liburl.parse(policy.self_origin.serialize()) or { panic('invalid CSP origin') }).origin()
+		}
+		converted << csp.SerializedPolicy{
+			directives: directives
+			disposition: if policy.disposition == .enforce { .enforce } else { .report }
+			source: if policy.source == .header { .header } else { .meta }
+			self_origin: origin
+			pre_parsed_policy_string: policy.pre_parsed_policy_string
+		}
+	}
+	return csp.PolicyList.create_from_serialized_policies(converted)
+}
+
+fn fetch_integrity_policy(policy IntegrityPolicy) csp.IntegrityPolicy {
+	mut destinations := []csp.RequestDestination{}
+	for destination in policy.blocked_destinations {
+		destinations << match destination {
+			.audio { csp.RequestDestination.audio }
+			.audio_worklet { csp.RequestDestination.audio_worklet }
+			.document { csp.RequestDestination.document }
+			.embed { csp.RequestDestination.embed }
+			.font { csp.RequestDestination.font }
+			.frame { csp.RequestDestination.frame }
+			.iframe { csp.RequestDestination.iframe }
+			.image { csp.RequestDestination.image }
+			.json { csp.RequestDestination.json }
+			.manifest { csp.RequestDestination.manifest }
+			.object { csp.RequestDestination.object }
+			.paint_worklet { csp.RequestDestination.paint_worklet }
+			.report { csp.RequestDestination.report }
+			.script { csp.RequestDestination.script }
+			.service_worker { csp.RequestDestination.service_worker }
+			.shared_worker { csp.RequestDestination.shared_worker }
+			.style { csp.RequestDestination.style }
+			.track { csp.RequestDestination.track }
+			.video { csp.RequestDestination.video }
+			.web_identity { csp.RequestDestination.web_identity }
+			.worker { csp.RequestDestination.worker }
+			.xslt { csp.RequestDestination.xslt }
+			.text { csp.RequestDestination.other }
+		}
+	}
+	return csp.IntegrityPolicy{ sources: policy.sources.clone(), blocked_destinations: destinations }
+}
+
+// MixedContent/AbstractOperations.cpp: inspect the real client origin and its
+// logical ancestor navigables, including remote-safe active origin replicas.
+pub fn (settings &EnvironmentSettingsObject) fetch_request_client_mixed_security_context() mixedcontentcore.EnvironmentSettings {
+	mut ancestors := []bool{}
+	if document := settings.responsible_document() {
+		for ancestor in document.ancestor_navigables() {
+			if origin := ancestor.active_document_origin() {
+				ancestors << (securecontexts.is_origin_potentially_trustworthy(origin) == .potentially_trustworthy)
+			}
+		}
+	}
+	top_level := if target := settings.environment_.target_browsing_context {
+		target.is_top_level()
+	} else { false }
+	return mixedcontentcore.EnvironmentSettings{
+		origin_potentially_trustworthy: securecontexts.is_origin_potentially_trustworthy(settings.origin()) == .potentially_trustworthy
+		global_kind: if settings.global_kind_ == .window { .window } else { .worker }
+		ancestor_origins_potentially_trustworthy: ancestors
+		target_browsing_context_is_top_level: top_level
+	}
+}
+
+pub fn (settings &EnvironmentSettingsObject) fetch_request_client_csp_global() &csp.GlobalContext {
+	global_url := if document := settings.responsible_document() { document.url } else { settings.environment_.creation_url }
+	target := if document := settings.responsible_document() {
+		unsafe { &dom.EventTarget(document) }
+	} else { settings.global_object_ }
+	loop := settings.responsible_event_loop_
+	return &csp.GlobalContext{
+		url: liburl.parse(global_url.serialize()) or { panic('invalid CSP global URL') }
+		policy_list: fetch_csp_policy_list(settings.policy_container_.csp_list)
+		dispatch_violation_event: fn [target, loop] (event &csp.SecurityPolicyViolationEvent) {
+			queue_a_task(.unspecified, loop, none, fn [target, event] () {
+				if target != unsafe { nil } {
+					target.dispatch_event(unsafe { &dom.Event(event) })
+				}
+			})
+		}
 	}
 }
 

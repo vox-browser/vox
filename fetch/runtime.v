@@ -820,20 +820,11 @@ pub fn scheme_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 
 pub fn main_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 	mut request := params.request
-	if params.preloaded_response_candidate == .pending {
-		mut controller := params.controller
-		if pending := controller.pending_preloaded_response() {
-			return pending
-		}
-		pending := PendingResponse.create(mut request, none)
-		controller.set_pending_preloaded_response(pending)
-		return pending
-	}
 	mut response := ?&Response(none)
 	if request.local_urls_only && !is_local_url(request.current_url()) {
 		response = Response.network_error('Request with local-URLs-only flag must have a local URL')
 	}
-	if block_bad_port(request) == .blocked {
+	if apply_request_security_policies(mut request) {
 		response = Response.network_error('Request was blocked')
 	}
 	// 8. If request's referrer policy is the empty string, then set request's referrer policy to request's policy
@@ -856,6 +847,15 @@ pub fn main_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 				sentinel: .no_referrer
 			}
 		}
+	}
+	if response == none && params.preloaded_response_candidate == .pending {
+		mut controller := params.controller
+		if pending := controller.pending_preloaded_response() {
+			return pending
+		}
+		pending := PendingResponse.create(mut request, none)
+		controller.set_pending_preloaded_response(pending)
+		return pending
 	}
 	if response == none {
 		if preloaded := params.preloaded_response {
@@ -933,7 +933,7 @@ pub fn main_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 	if !request.timing_allow_failed {
 		internal.timing_allow_passed = true
 	}
-	if !resolved.is_network_error() && (should_response_to_request_be_blocked_due_to_its_mime_type(internal, request) == .blocked || should_response_to_request_be_blocked_due_to_nosniff(internal, request) == .blocked) {
+	if !resolved.is_network_error() && (response_blocked_by_security_policy(mut request, internal) || should_response_to_request_be_blocked_due_to_its_mime_type(internal, request) == .blocked || should_response_to_request_be_blocked_due_to_nosniff(internal, request) == .blocked) {
 		resolved = Response.network_error('Response was blocked')
 		internal = resolved
 	}

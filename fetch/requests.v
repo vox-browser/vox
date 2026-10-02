@@ -9,6 +9,7 @@
 module fetch
 
 import dom
+import contentsecuritypolicy
 import http
 import time
 
@@ -106,6 +107,9 @@ pub enum PolicyContainerSentinel {
 pub struct RequestPolicyContainer {
 pub:
 	referrer_policy string = 'strict-origin-when-cross-origin'
+	csp_list &contentsecuritypolicy.PolicyList = contentsecuritypolicy.PolicyList.create([]&contentsecuritypolicy.Policy{})
+	integrity_policy contentsecuritypolicy.IntegrityPolicy
+	report_only_integrity_policy contentsecuritypolicy.IntegrityPolicy
 }
 
 // https://fetch.spec.whatwg.org/#concept-request-redirect-mode
@@ -251,6 +255,7 @@ pub mut:
 	// The policy container that populate-from-client resolves "client" to. HTML owns PolicyContainer, which Fetch
 	// cannot import; fetching reads only its referrer policy.
 	resolved_policy_container ?RequestPolicyContainer
+	csp_global ?&contentsecuritypolicy.GlobalContext
 	// https://fetch.spec.whatwg.org/#concept-request-referrer
 	referrer Referrer
 	// https://fetch.spec.whatwg.org/#concept-request-referrer-policy

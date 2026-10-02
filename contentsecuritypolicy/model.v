@@ -182,6 +182,8 @@ pub fn (context NavigableContext) active_ancestor_origins() []url.Origin {
 	return origins
 }
 
+pub type ViolationEventDispatcher = fn (&SecurityPolicyViolationEvent)
+
 pub struct GlobalContext {
 pub mut:
 	url             url.URL
@@ -190,6 +192,7 @@ pub mut:
 	reports         []ViolationReport
 	events          []SecurityPolicyViolationEvent
 	report_requests []CSPReportRequest
+	dispatch_violation_event ?ViolationEventDispatcher
 }
 
 pub enum CompilationType {

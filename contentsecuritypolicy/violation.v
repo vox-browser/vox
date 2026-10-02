@@ -319,6 +319,9 @@ pub fn (violation &Violation) report_a_violation(mut global GlobalContext) {
 	mut event := SecurityPolicyViolationEvent.create('securitypolicyviolation', init)
 	event.set_is_trusted(true)
 	global.events << *event
+	if dispatch := global.dispatch_violation_event {
+		dispatch(event)
+	}
 	if report_uris := violation.policy_.get_directive_by_name(report_uri) {
 		if !violation.policy_.contains_directive_with_name(report_to) {
 			for token in report_uris.value() {
