@@ -31,6 +31,7 @@ pub enum StructuredObjectKind {
 	array_buffer
 	array_buffer_view
 	shared_array_buffer
+	serializable_object
 }
 
 pub enum AllowSharedArrayBuffers {
@@ -96,12 +97,18 @@ pub mut:
 	values              []&dom.JSValue
 	entries             []StructuredMapEntry
 	properties          []StructuredProperty
+	serializable_interface_ ?StructuredSerializableInterface
+	dom_exception_      ?&webidl.DOMException
 }
 
 pub fn StructuredObject.create(kind StructuredObjectKind) &StructuredObject {
 	return &StructuredObject{
 		kind: kind
 	}
+}
+
+pub fn StructuredObject.create_dom_exception(exception &webidl.DOMException) &StructuredObject {
+	return &StructuredObject{kind: .serializable_object, serializable_interface_: .dom_exception, dom_exception_: exception}
 }
 
 pub fn StructuredObject.create_shared_array_buffer(bytes []u8, max_byte_length ?u64) &StructuredObject {
@@ -212,6 +219,15 @@ mut:
 
 fn (mut serializer StructuredSerializer) write_u8(value u8) {
 	serializer.data << value
+}
+
+fn (mut serializer StructuredSerializer) write_serializable_interface(value StructuredSerializableInterface) ! {
+	if serializer.type_ == .storage {
+		serializer.write_string(structured_serializable_interface_name(value))!
+	} else {
+		serializer.write_u8(u8(u16(value)))
+		serializer.write_u8(u8(u16(value) >> 8))
+	}
 }
 
 fn (mut serializer StructuredSerializer) write_u32(value u32) {
@@ -597,6 +613,15 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 		.shared_array_buffer {
 			serialize_array_buffer(mut serializer, object, for_storage, allow_shared_array_buffers)!
 		}
+		.serializable_object {
+			interface_name := object.serializable_interface_ or { return error('DataCloneError: serializable object has no primary interface') }
+			if interface_name != .dom_exception { return error('DataCloneError: source serializable payload is not yet translated for ${structured_serializable_interface_name(interface_name)}') }
+			exception := object.dom_exception_ or { return error('DataCloneError: serializable DOMException has no native record') }
+			serializer.write_tag(.serializable_object)
+			serializer.write_serializable_interface(interface_name)!
+			if serializer.type_ == .storage { serializer.write_u64(structured_serializable_payload_version) }
+			for field in exception.serialization_steps_utf16() { serializer.write_utf16_string(field)! }
+		}
 	}
 }
 
@@ -638,10 +663,18 @@ fn structured_serialize_for_storage_with_shared_array_buffers(value dom.JSValue,
 	}
 }
 
+pub struct StructuredDeserializationContext {
+pub:
+	// Actual target realm's source is_exposed boundary. Standalone convenience
+	// decoders have no browser realm and do not invent platform exposure.
+	is_exposed ?fn (StructuredSerializableInterface) bool
+}
+
 struct StructuredDecoder {
 	data                 []u8
 	shared_array_buffers []&StructuredObject
 	type_                SerializationType
+	context              StructuredDeserializationContext
 mut:
 	offset int
 	memory []&dom.JSValue
@@ -654,6 +687,13 @@ fn (mut decoder StructuredDecoder) read_u8() !u8 {
 	value := decoder.data[decoder.offset]
 	decoder.offset++
 	return value
+}
+
+fn (mut decoder StructuredDecoder) read_serializable_interface() !StructuredSerializableInterface {
+	if decoder.type_ == .storage { return structured_serializable_interface_from_name(decoder.read_string()!) }
+	low := decoder.read_u8()!
+	high := decoder.read_u8()!
+	return structured_serializable_interface_from_u16(u16(low) | (u16(high) << 8))
 }
 
 fn (mut decoder StructuredDecoder) read_u32() !u32 {
@@ -1033,7 +1073,26 @@ fn (mut decoder StructuredDecoder) decode_value_with_tag(tag_byte u8) !&dom.JSVa
 			validate_array_buffer_view(object, buffer)!
 			return decoder.register_object(object)
 		}
-		.empty, .serializable_object, .end_object {
+		.serializable_object {
+			interface_name := decoder.read_serializable_interface()!
+			mut version := ?u64(none)
+			if decoder.type_ == .storage { version = decoder.read_u64()! }
+			is_exposed := decoder.context.is_exposed or { return error('DataCloneError: unsupported type in target realm') }
+			if !is_exposed(interface_name) { return error('DataCloneError: unsupported type in target realm') }
+			if interface_name != .dom_exception { return error('DataCloneError: source serializable payload is not yet translated for ${structured_serializable_interface_name(interface_name)}') }
+			mut exception := webidl.DOMException.create_utf16_record(libjs.utf16_string(''), libjs.utf16_string(''))
+			if payload_version := version {
+				if payload_version != structured_serializable_payload_version { return error('DataCloneError: unsupported serializable payload version') }
+			}
+			object := StructuredObject.create_dom_exception(exception)
+			value := decoder.register_object(object)
+			// Source creates/registers the target before its interface payload.
+			name := decoder.read_utf16_string()!
+			message := decoder.read_utf16_string()!
+			exception.deserialization_steps_utf16([name, message])!
+			return value
+		}
+		.empty, .end_object {
 			return error('DataCloneError: unsupported structured serialization tag')
 		}
 	}
@@ -1066,17 +1125,26 @@ fn decode_object_properties(mut decoder StructuredDecoder, mut object Structured
 
 pub fn structured_deserialize(record SerializationRecord) !dom.JSValue {
 	// Retain the standalone translation's fully-consumed convenience API.
-	return structured_deserialize_record(record, true)
+	return structured_deserialize_record(record, true, StructuredDeserializationContext{})
+}
+
+pub fn structured_deserialize_with_context(record SerializationRecord, context StructuredDeserializationContext) !dom.JSValue {
+	return structured_deserialize_record(record, true, context)
 }
 
 // Source IPC structured_deserialize has no full-consumption check; Storage
 // always requires one. Keep it separate from the older strict convenience API.
 pub fn structured_deserialize_ipc(record SerializationRecord) !dom.JSValue {
 	if record.type_ != .ipc { return error('DataCloneError: expected IPC serialization record') }
-	return structured_deserialize_record(record, false)
+	return structured_deserialize_record(record, false, StructuredDeserializationContext{})
 }
 
-fn structured_deserialize_record(record SerializationRecord, fully_consumed bool) !dom.JSValue {
+pub fn structured_deserialize_ipc_with_context(record SerializationRecord, context StructuredDeserializationContext) !dom.JSValue {
+	if record.type_ != .ipc { return error('DataCloneError: expected IPC serialization record') }
+	return structured_deserialize_record(record, false, context)
+}
+
+fn structured_deserialize_record(record SerializationRecord, fully_consumed bool, context StructuredDeserializationContext) !dom.JSValue {
 	if record.data.len == 0 {
 		return error('DataCloneError: empty serialization record')
 	}
@@ -1084,6 +1152,7 @@ fn structured_deserialize_record(record SerializationRecord, fully_consumed bool
 		data: record.data
 		shared_array_buffers: record.shared_array_buffers
 		type_: record.type_
+		context: context
 	}
 	if record.type_ == .storage {
 		for byte in [u8(76), 66, 83, 67] {
