@@ -123,3 +123,8 @@ pub fn (gradient &CanvasGradient) color_stops_for_painting() []CanvasColorStop {
 	}
 	return gradient.color_stops.clone()
 }
+
+// GC::CanvasGradient identity survives value transport through the host bridge.
+pub fn (gradient CanvasGradient) is_same_gradient(other CanvasGradient) bool {
+	return gradient.color_stops_record_ != unsafe { nil } && gradient.color_stops_record_ == other.color_stops_record_
+}
