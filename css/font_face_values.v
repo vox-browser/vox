@@ -2,11 +2,10 @@ module css
 
 import dom
 import fetch
+import gfxfont
 import math
 import mimesniff
-import os
 import platform
-import skia
 import strconv
 import strings
 import time
@@ -3842,28 +3841,21 @@ pub fn (loader &FontLoader) family_name() string {
 }
 
 pub fn (loader &FontLoader) try_load_font(response &fetch.Response, bytes []u8) !&PlatformTypeface {
-	_ = loader
-	// Match FontComputer.cpp: trust a font MIME type, otherwise sniff in the font context,
-	// then dispatch only the TTF/OTF, WOFF, and WOFF2 families to the platform decoder.
-	mut mime_type := fetch.extract_mime_type(response.header_list) or {
-		mimesniff.Resource.sniff(bytes, mimesniff.SniffingConfiguration{
-			sniffing_context: .font
-		})
+	mime := loader.try_load_font_mime_type_essence(response, bytes)
+	if requires_off_thread_vector_font_preparation(bytes, mime) {
+		return font_typeface_from_prepared_bytes(gfxfont.convert_woff2_to_sfnt(bytes)!, loader.family_name_)
 	}
-	if !mime_type.is_font() {
-		mime_type = mimesniff.Resource.sniff(bytes, mimesniff.SniffingConfiguration{
-			sniffing_context: .font
-		})
+	return try_load_vector_font(bytes, mime, loader.family_name_)
+}
+
+pub fn (_ &FontLoader) try_load_font_mime_type_essence(response &fetch.Response, bytes []u8) ?string {
+	if mime := fetch.extract_mime_type(response.header_list) {
+		if mime.is_font() { return mime.essence() }
 	}
-	if mime_type.essence() in ['font/ttf', 'application/x-font-ttf', 'font/otf', 'font/woff', 'font/x-woff',
-		'application/font-woff', 'font/woff2', 'application/font-woff2'] {
-		typeface := platform_load_font_from_bytes_boundary(bytes, loader.family_name_)
-		if typeface != unsafe { nil } {
-			prepared := os.read_bytes(typeface.source_path) or { return error('Failed to read prepared font') }
-			if skia.font_typeface_is_valid(prepared, 0) { return typeface }
-		}
-	}
-	return error('Automatic format detection failed')
+	// Resource::sniff in the font context with no supplied MIME returns the
+	// font-pattern match, including null when no font pattern matches.
+	if mime := mimesniff.match_a_font_type_pattern(bytes) { return mime.essence() }
+	return none
 }
 
 fn (mut loader FontLoader) font_did_load_or_fail(typeface &PlatformTypeface) {
