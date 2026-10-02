@@ -165,6 +165,7 @@ pub mut:
 mut:
 	native_promise_ &webidl.Promise = unsafe { nil }
 	reason_value_ ?webidl.Value
+	resolution_started_ bool
 }
 
 pub fn VoidPromise.pending() &VoidPromise {
@@ -199,10 +200,21 @@ pub fn VoidPromise.rejected_in(realm StreamRealm, reason string) &VoidPromise {
 }
 
 pub fn (promise &VoidPromise) state() PromiseState {
+	if promise.resolution_started_ && !isnil(promise.native_promise_) {
+		return match promise.native_promise_.state {
+			.pending { PromiseState.pending }
+			.fulfilled { PromiseState.fulfilled }
+			.rejected { PromiseState.rejected }
+		}
+	}
 	return promise.state_
 }
 
 pub fn (promise &VoidPromise) reason() string {
+	if promise.resolution_started_ && !isnil(promise.native_promise_)
+		&& promise.native_promise_.state == .rejected {
+		return callback_reason(promise.native_promise_.result)
+	}
 	return promise.reason_
 }
 
@@ -211,11 +223,22 @@ pub fn (promise &VoidPromise) realm() StreamRealm {
 }
 
 pub fn (mut promise VoidPromise) resolve() {
-	if promise.state_ == .pending {
+	if promise.state_ == .pending && !promise.resolution_started_ {
 		mut native := promise.ensure_native_promise()
+		promise.resolution_started_ = true
 		promise.state_ = .fulfilled
 		native.resolve(webidl.undefined_value())
 	}
+}
+
+// WebIDL::resolve_promise calls the retained capability's actual Resolve
+// function with the source Promise. Resolution begins immediately, even while
+// adoption stays pending; subsequent Resolve/Reject calls cannot overtake it.
+pub fn (mut promise VoidPromise) resolve_with_promise(result &webidl.Promise) {
+	if promise.state_ != .pending || promise.resolution_started_ { return }
+	mut native := promise.ensure_native_promise()
+	promise.resolution_started_ = true
+	native.resolve(webidl.promise_value(result))
 }
 
 pub fn (mut promise VoidPromise) reject(reason string) {
@@ -223,8 +246,9 @@ pub fn (mut promise VoidPromise) reject(reason string) {
 }
 
 pub fn (mut promise VoidPromise) reject_value(reason webidl.Value) {
-	if promise.state_ == .pending {
+	if promise.state_ == .pending && !promise.resolution_started_ {
 		mut native := promise.ensure_native_promise()
+		promise.resolution_started_ = true
 		promise.state_ = .rejected
 		promise.reason_ = callback_reason(reason)
 		promise.reason_value_ = reason

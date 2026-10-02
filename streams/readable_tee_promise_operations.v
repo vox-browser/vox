@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // ReadableStreamTee.cpp and ReadableStreamOperations.cpp: chunk microtasks,
-// the current reader's closed reaction, and adoption of the shared cancel
+// the current reader's closed reaction, and adoption of the capability cancel
 // Promise. Chunk/body state remains in the canonical retained tee records.
 module streams
 
@@ -51,12 +51,10 @@ fn observe_tee_reader_closed(mut source ReadableStream, closed &VoidPromise) {
 }
 
 fn adopt_tee_cancel_result(mut source ReadableStream, result &VoidPromise) {
-	mut native := result.as_webidl_promise()
-	webidl.react_to_promise(mut native, fn [mut source] (_ webidl.Value) !webidl.Value {
-		settle_tee_cancel_promises(mut source, none)
-		return webidl.undefined_value()
-	}, fn [mut source] (reason webidl.Value) !webidl.Value {
-		settle_tee_cancel_promises(mut source, reason)
-		return webidl.undefined_value()
-	})
+	for mut branch in source.tee_branches_ {
+		if !isnil(branch.tee_cancel_promise_) {
+			mut capability := branch.tee_cancel_promise_
+			capability.resolve_with_promise(result.as_webidl_promise())
+		}
+	}
 }
