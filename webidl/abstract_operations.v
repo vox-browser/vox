@@ -7,6 +7,7 @@
 // transformations are preserved at this typed boundary.
 module webidl
 
+import libjs
 import math
 import strconv
 
@@ -120,11 +121,17 @@ pub fn convert_to_int(value Value, bit_length int, is_signed bool, enforce_range
 	}
 	if enforce_range == .yes {
 		if math.is_nan(number) || math.is_inf(number, 0) {
-			return error('TypeError: Number is NaN or Infinity')
+			return error('TypeError: Number must not be NaN or Infinity')
 		}
 		number = integer_part(number)
 		if number < lower_bound || number > upper_bound {
-			return error('TypeError: Number is outside the allowed range')
+			// AK::Formatter<double> uses the same decimal/exponent thresholds
+			// as the translated numeric formatter. Retain the truncated value
+			// and the concrete target bounds in the source diagnostic.
+			actual := libjs.Value.from_f64(number).str()
+			lower := libjs.Value.from_f64(lower_bound).str()
+			upper := libjs.Value.from_f64(upper_bound).str()
+			return error("TypeError: Number '${actual}' is outside of allowed range of ${lower} to ${upper}")
 		}
 		return number
 	}
