@@ -63,7 +63,7 @@ pub fn invoke_readable_byte_stream_start_algorithm_callback(callback ReadableByt
 
 pub fn invoke_readable_byte_stream_pull_algorithm_callback(realm StreamRealm, callback ReadableByteStreamPullCallback, underlying_source Value, controller &ReadableByteStreamController) &VoidPromise {
 	callback(underlying_source, controller) or {
-		return VoidPromise.rejected_in(realm, err.msg())
+		return VoidPromise.rejected_value_in(realm, webidl.exception_value(err))
 	}
 	return VoidPromise.fulfilled_in(realm)
 }
@@ -74,7 +74,7 @@ pub fn invoke_readable_stream_start_algorithm_callback(callback ReadableStreamSt
 
 pub fn invoke_readable_stream_pull_algorithm_callback(realm StreamRealm, callback ReadableStreamPullCallback, underlying_source Value, controller &ReadableStreamDefaultController) &VoidPromise {
 	callback(underlying_source, controller) or {
-		return VoidPromise.rejected_in(realm, err.msg())
+		return VoidPromise.rejected_value_in(realm, webidl.exception_value(err))
 	}
 	return VoidPromise.fulfilled_in(realm)
 }
@@ -85,7 +85,7 @@ pub fn invoke_writable_stream_start_algorithm_callback(callback WritableStreamSt
 
 pub fn invoke_writable_stream_write_algorithm_callback(realm StreamRealm, callback WritableStreamWriteCallback, underlying_sink Value, chunk Value, controller &WritableStreamDefaultController) &VoidPromise {
 	callback(underlying_sink, chunk, controller) or {
-		return VoidPromise.rejected_in(realm, err.msg())
+		return VoidPromise.rejected_value_in(realm, webidl.exception_value(err))
 	}
 	return VoidPromise.fulfilled_in(realm)
 }
