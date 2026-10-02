@@ -1,5 +1,7 @@
 module libjs
 
+import libgc
+
 fn test_data_blocks_zero_initial_allocation_and_resized_bytes_with_retained_capacity() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
@@ -18,14 +20,15 @@ fn test_data_blocks_zero_initial_allocation_and_resized_bytes_with_retained_capa
 	assert block.read_bytes(0, 0).len == 0
 	assert block.try_resize(5, true)
 	assert block.read_bytes(0, 5) == [u8(0), 0, 0, 0, 0]
-	assert !block.try_resize(usize(0x80000000), true)
-	assert !block.try_ensure_capacity(usize(0x80000000))
+	unallocatable := libgc.primitive_storage_default_cage_size + 65536
+	assert !block.try_resize(unallocatable, true)
+	assert !block.try_ensure_capacity(unallocatable)
 	assert block.size() == 5
-	for size in [usize(0x80000000), usize(9007199254740992)] {
+	for size in [unallocatable, usize(9007199254740992)] {
 		if _ := create_byte_data_block(mut vm, size, none) { assert false } else {
 			assert thrown_value(err).as_object().error_kind()? == .range_error
 			message := thrown_value(err).as_object().error_message()?.str()
-			assert message.contains(if size == 0x80000000 { 'Not enough memory' } else { 'Invalid array buffer length' })
+			assert message.contains(if size == unallocatable { 'Not enough memory' } else { 'Invalid array buffer length' })
 		}
 	}
 	if _ := create_byte_data_block(mut vm, 0, usize(9007199254740992)) { assert false } else {

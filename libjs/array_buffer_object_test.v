@@ -1,6 +1,7 @@
 module libjs
 
 import math
+import libgc
 
 fn test_array_buffer_records_keep_slots_and_empty_storage_distinct_from_detachment() {
 	mut vm := VM.create()
@@ -36,7 +37,7 @@ fn test_array_buffer_host_resize_zero_fills_truncated_data_and_retains_maximum_s
 	assert buffer.read_bytes(0, 6) == [u8(1), 2, 0, 0, 0, 0]
 	assert buffer.try_ensure_capacity(16)
 	assert buffer.byte_length() == 6 && buffer.external_memory_size() >= 16
-	if _ := vm.host_resize_array_buffer(mut buffer, usize(0x80000000)) { assert false } else {
+	if _ := vm.host_resize_array_buffer(mut buffer, libgc.primitive_storage_default_cage_size + 65536) { assert false } else {
 		assert thrown_value(err).as_object().error_kind()? == .range_error
 	}
 	assert buffer.byte_length() == 6

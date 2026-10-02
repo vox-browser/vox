@@ -1,5 +1,7 @@
 module libjs
 
+import libgc
+
 fn test_shared_byte_data_block_preserves_zero_length_attachment_and_reserved_capacity() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
@@ -23,7 +25,7 @@ fn test_shared_byte_data_block_allocation_errors_use_the_requested_capacity() {
 	mut vm := VM.create()
 	base := create_simple_execution_context(mut vm)
 	for capacity in [?usize(none), ?usize(9007199254740992)] {
-		size := if capacity == none { usize(0x80000000) } else { usize(0) }
+		size := if capacity == none { libgc.primitive_storage_default_cage_size + 65536 } else { usize(0) }
 		if _ := create_shared_byte_data_block(mut vm, size, capacity) {
 			assert false
 		} else {

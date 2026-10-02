@@ -21,7 +21,10 @@ pub mut:
 }
 
 pub fn ArrayBufferObject.create(mut vm VM, realm &Realm, size usize, prototype &Object) !&ArrayBufferObject {
-	block := create_zeroed_owned_data_block(mut vm, size, size)!
+	owner := OwnedPrimitiveBackingStore.create_zeroed(size) or {
+		return vm.throw_error_type(.range_error, .not_enough_memory_to_allocate, size.str())
+	}
+	block := DataBlock.from_owned_store(owner, false)
 	return ArrayBufferObject.create_with_data_block(realm, block, prototype)
 }
 
@@ -59,7 +62,10 @@ pub fn (buffer &ArrayBufferObject) is_shared_array_buffer() bool {
 
 pub fn (buffer &ArrayBufferObject) data_block() DataBlock { return buffer.block }
 
-pub fn (mut buffer ArrayBufferObject) set_data_block(block DataBlock) { buffer.block = block }
+pub fn (mut buffer ArrayBufferObject) set_data_block(block DataBlock) {
+	buffer.block.destroy()
+	buffer.block = block
+}
 
 pub fn (mut buffer ArrayBufferObject) try_resize(size usize, zero_fill_new_bytes bool) bool {
 	return buffer.block.try_resize(size, zero_fill_new_bytes)
@@ -91,7 +97,7 @@ pub fn (buffer &ArrayBufferObject) copy_data_to(mut destination ArrayBufferObjec
 }
 
 pub fn (mut buffer ArrayBufferObject) detach_buffer() {
-	buffer.block = DataBlock{is_shared: buffer.block.is_shared}
+	buffer.block.destroy()
 }
 
 pub fn (mut buffer ArrayBufferObject) detach_and_take_data_block(mut vm VM) !DataBlock {
@@ -100,7 +106,8 @@ pub fn (mut buffer ArrayBufferObject) detach_and_take_data_block(mut vm VM) !Dat
 		return vm.throw_error_type(.type_error, .detach_key_mismatch, js_undefined().str(), buffer.detach_key.str())
 	}
 	block := buffer.block
-	buffer.detach_buffer()
+	// Source move(m_data_block) transfers its owner before clearing the variant.
+	buffer.block = DataBlock{is_shared: block.is_shared}
 	return block
 }
 

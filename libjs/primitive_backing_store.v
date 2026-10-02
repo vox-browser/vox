@@ -6,8 +6,8 @@ module libjs
 import libgc
 
 // The source move-only owner keeps one actual PrimitiveStorage handle. V
-// owners call destroy at their native-storage lifetime boundary; the existing
-// flat DataBlock path is replaced in a separate translation slice.
+// owners call destroy at their native-storage lifetime boundary. DataBlock's
+// owned variant and ArrayBuffer allocations use this actual store.
 @[heap]
 pub struct OwnedPrimitiveBackingStore {
 mut:

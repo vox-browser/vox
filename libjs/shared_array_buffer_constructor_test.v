@@ -186,10 +186,10 @@ fn test_shared_array_buffer_allocation_reserves_maximum_and_uses_new_target_real
 		assert thrown_value(err).as_object().error_kind()? == .range_error
 	}
 	assert log.events.len == 0
-	if _ := allocate_shared_array_buffer(mut vm, object, 0, usize(0x80000000)) {
+	if _ := allocate_shared_array_buffer(mut vm, object, 0, usize(9007199254740992)) {
 		assert false
 	} else {
-		assert thrown_value(err).as_object().error_message()?.str() == 'Not enough memory to allocate 2147483648 bytes'
+		assert thrown_value(err).as_object().error_message()?.str() == 'Not enough memory to allocate 9007199254740992 bytes'
 	}
 	assert log.events == ['prototype']
 	assert vm.running_execution_context() == base && voidptr(vm.realm()) == voidptr(local)
