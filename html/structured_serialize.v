@@ -9,6 +9,7 @@ module html
 
 import dom
 import math
+import libjs
 
 // StructuredObject is the small host-independent object model used until the
 // LibJS VM is translated. Its address is the object identity used by the
@@ -313,8 +314,13 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 			return
 		}
 		.number {
-			serializer.write_tag(.number_primitive)
-			serializer.write_f64(value.number_data)
+			if libjs.Value.from_f64(value.number_data).is_int32() {
+				serializer.write_tag(.int32_primitive)
+				serializer.write_u32(u32(i32(value.number_data)))
+			} else {
+				serializer.write_tag(.number_primitive)
+				serializer.write_f64(value.number_data)
+			}
 			return
 		}
 		.string {
@@ -534,7 +540,7 @@ fn (mut decoder StructuredDecoder) register_object(object &StructuredObject) &do
 
 fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 	tag_byte := decoder.read_u8()!
-	if tag_byte > u8(StructuredSerializeValueTag.resizable_array_buffer) {
+	if tag_byte == 0 || tag_byte > u8(StructuredSerializeValueTag.int32_primitive) {
 		return error('DataCloneError: invalid structured serialization tag')
 	}
 	tag := unsafe { StructuredSerializeValueTag(tag_byte) }
@@ -562,6 +568,9 @@ fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 				kind: .number
 				number_data: decoder.read_f64()!
 			}
+		}
+		.int32_primitive {
+			return &dom.JSValue{kind: .number, number_data: f64(i32(decoder.read_u32()!))}
 		}
 		.string_primitive {
 			return &dom.JSValue{
@@ -723,7 +732,7 @@ fn (mut decoder StructuredDecoder) decode_value() !&dom.JSValue {
 			object.array_length = decoder.read_optional_u32()!.value
 			return value
 		}
-		.empty, .big_int_primitive {
+		.empty, .big_int_primitive, .serializable_object, .end_object {
 			return error('DataCloneError: unsupported structured serialization tag')
 		}
 	}

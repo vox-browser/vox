@@ -228,11 +228,15 @@ pub enum StructuredSerializeValueTag {
 	error_object
 	object
 	object_reference
-	array_buffer
-	array_buffer_view
-	shared_array_buffer
-	growable_shared_array_buffer
-	resizable_array_buffer
+	// StructuredSerializeTypes.h stable serialization values; never reorder.
+	growable_shared_array_buffer = 19
+	shared_array_buffer = 20
+	resizable_array_buffer = 21
+	array_buffer = 22
+	array_buffer_view = 23
+	serializable_object = 24
+	int32_primitive = 25
+	end_object = 0xff
 }
 
 pub struct SerializationRecord {
