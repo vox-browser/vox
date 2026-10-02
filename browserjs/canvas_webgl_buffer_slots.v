@@ -17,14 +17,15 @@ const __webglBufferSlots=(function(){
  function describe(value){try{return {buffer:apply(tb,value,[]),type:apply(tag,value,[])}}catch(error){}try{return {buffer:apply(db,value,[]),type:"DataView"}}catch(error){}try{apply(ab,value,[]);return {buffer:value,type:"ArrayBuffer"}}catch(error){}return null;}
  function shared(buffer){if(!sab)return false;try{apply(sab,buffer,[]);return true}catch(error){return false}}
  function validate(value,type){const nullable=type.endsWith("?");if(value==null&&nullable)return;const d=describe(value);if(!d||(type.startsWith("ArrayBufferView")&&d.type==="ArrayBuffer"))throw new T("No union types matched");const isShared=shared(d.buffer);if(isShared&&!type.startsWith("ArrayBufferView"))throw new T("The array buffer object cannot be a SharedArrayBuffer");const adjustable=isShared?(growable&&apply(growable.get,d.buffer,[])):(resizable&&apply(resizable.get,d.buffer,[]));if(adjustable)throw new T("Not an object of type fixed-length "+d.type);}
- function isBuffer(value){return apply(isView,ArrayBuffer,[value])||describe(value)!==null;}
+ function isActualView(value){return apply(isView,ArrayBuffer,[value]);}
+ function isBuffer(value){return isActualView(value)||describe(value)!==null;}
  function typedList(value,type){let name;try{name=apply(tag,value,[])}catch(error){return false}return type==="Float32List"?name==="Float32Array":type==="Int32List"?name==="Int32Array":type==="Uint32List"?name==="Uint32Array":false;}
  function witness(value){const d=describe(value);if(!d)throw new T("No union types matched");const state={elementSize:sizes[d.type]||1,detached:false,outOfBounds:false};try{new U8(d.buffer)}catch(error){state.detached=true;return state}if(d.type!=="ArrayBuffer")try{if(d.type==="DataView")apply(dl,value,[]);else apply(values,value,[])}catch(error){state.outOfBounds=true}return state;}
  function span(value){const d=describe(value),state=witness(value);if(state.detached||state.outOfBounds)return {state,buffer:d.buffer,offset:0,length:0};if(d.type==="ArrayBuffer")return {state,buffer:d.buffer,offset:0,length:apply(ab,d.buffer,[])};return {state,buffer:d.buffer,offset:apply(d.type==="DataView"?doff:offset,value,[]),length:apply(d.type==="DataView"?dl:length,value,[])};}
  function bytes(value){const d=span(value),result=[];if(d.state.detached||d.state.outOfBounds)return result;const view=new U8(d.buffer,d.offset,d.length);for(let i=0;i<d.length;i++)own(result,i,view[i]);return result;}
  function list(value,type){const d=span(value),result=[];if(d.state.detached||d.state.outOfBounds)return result;const Constructor=type==="Float32List"?F32:type==="Int32List"?I32:U32,view=new Constructor(d.buffer,d.offset,d.length/4);for(let i=0;i<d.length/4;i++)own(result,i,__webglNumber(view[i]));return result;}
  function write(value,data){const d=span(value);if(d.state.detached||d.state.outOfBounds)return;apply(set,new U8(d.buffer,d.offset,d.length),[data]);}
- return {validate,isBuffer,typedList,witness,bytes,list,write};
+ return {validate,isBuffer,isView:isActualView,typedList,witness,bytes,list,write};
 })();
 '
 }

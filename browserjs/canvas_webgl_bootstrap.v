@@ -48,7 +48,7 @@ function __webglOverload(overloads,values) {
  for(const entry of candidates){let matches=true;for(let index=0;index<count;index++){
  const type=entry[1][index],value=values[index];if(!candidates.some(function(other){return other[1][index]!==type;}))continue;
  const buffer=__webglBufferSlots.isBuffer(value);
- if(type.startsWith("BufferSource")||type.startsWith("ArrayBufferView")){if(!(buffer||(type.endsWith("?")&&value==null)))matches=false;}
+ if(type.startsWith("BufferSource")||type.startsWith("ArrayBufferView")){const brand=type.startsWith("ArrayBufferView")?__webglBufferSlots.isView(value):buffer;if(!(brand||(type.endsWith("?")&&value==null)))matches=false;}
  else if(type==="TexImageSource"){if(!(value&&typeof value==="object"&&!buffer))matches=false;}
  else if(type==="GLintptr"||type==="GLsizeiptr"){if(buffer||value==null)matches=false;}
  }if(matches)return entry;}

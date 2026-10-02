@@ -25,6 +25,10 @@ fn test_public_webgl_excludes_source_fixme_numeric_unpack_overloads_without_exec
 	// a FIXME: a failed ambiguous selection reads no numeric argument getters.
 	assert runtime.evaluate_host(r'(function(){let converted=0;const target={valueOf(){converted++;return gl.TEXTURE_2D}};try{gl.texImage2D(target,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,0);return false}catch(error){return error instanceof TypeError&&error.message==="Overload resolution failed"&&converted===0}})()')! == 'true'
 	assert context.native.native_calls().len == 0
+	// ArrayBufferData distinguishes BufferSource, not ArrayBufferView. A raw
+	// buffer therefore fails this ambiguous view/source selection before ToNumber.
+	assert runtime.evaluate_host(r'(function(){let converted=0;const target={valueOf(){converted++;return gl.TEXTURE_2D}};try{gl.texImage2D(target,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new ArrayBuffer(4));return false}catch(error){return error instanceof TypeError&&error.message==="Overload resolution failed"&&converted===0}})()')! == 'true'
+	assert context.native.native_calls().len == 0
 }
 
 fn test_public_webgl_numeric_buffer_data_object_and_supported_nullable_view_overloads() {
