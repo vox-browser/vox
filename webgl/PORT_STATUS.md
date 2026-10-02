@@ -175,6 +175,17 @@ Symbol TypeErrors and original conversion exceptions. The focused native host
 case passed with `-gc none`, checking real compiled shader source, ordinary
 toString/valueOf ordering, extension names, and sequence string-item failures.
 
+Context creation follows `HTML/HTMLCanvasElement.cpp:282-310` and the actual
+hand-written `WebGLContextAttributes.cpp:14-160` converter used by both context
+classes. Nonobject options become null/defaults; the nine implemented getters
+run once in source order and powerPreference validates before later getters.
+The source converter omits xrCompatible, leaving it false even though the IDL
+declares it. Public native and typed HTML creation now preserve that omission.
+The generic typed ContextAttributeInput convenience converter still accepts the
+full IDL record; the source-named creation converter leaves xrCompatible false.
+Existing contexts return before option getters run. Native public, typed HTML,
+and typed attribute focused files passed with `-gc none`.
+
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
