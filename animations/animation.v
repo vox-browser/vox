@@ -68,6 +68,7 @@ pub mut:
 	environment_                             ?&html.EnvironmentSettingsObject
 	css_cancellation_disassociation_pending_ bool
 	needs_target_reassociation_              bool
+	pending_finish_microtask_id_             ?u64
 }
 
 pub fn Animation.create(effect ?&AnimationEffect, timeline ?&AnimationTimeline) &Animation {
@@ -505,7 +506,7 @@ pub fn (mut animation Animation) finished_for_bindings() &dom.Promise {
 			previous_override := timeline.current_time_override_for_style_sampling_
 			had_previous_override := timeline.has_current_time_override_for_style_sampling_
 			timeline.set_current_time_override_for_style_sampling(observed_timeline_time)
-			animation.update_finished_state(false)
+			animation.update_finished_state_with_notification(false, true, .no, observed_current_time)
 			timeline.current_time_override_for_style_sampling_ = previous_override
 			timeline.has_current_time_override_for_style_sampling_ = had_previous_override
 		}
@@ -636,7 +637,7 @@ pub fn (mut animation Animation) finish() ! {
 	animation.pending_play_task_ = false
 	animation.pending_pause_task_ = false
 	resolve_animation_promise(animation.current_ready_promise_, animation)
-	animation.update_finished_state(true)
+	animation.update_finished_state_with_notification(true, true, .yes, none)
 }
 
 pub fn (mut animation Animation) play() ! {
@@ -812,11 +813,11 @@ pub fn (mut animation Animation) update() {
 		animation.pending_pause_task_ = false
 		animation.run_pending_pause_task()
 	}
-	animation.update_finished_state(false)
+	animation.update_finished_state_with_notification(false, true, .no, none)
 }
 
 pub fn (mut animation Animation) effect_timing_changed() {
-	animation.update_finished_state(false)
+	animation.update_finished_state_with_notification(false, true, .yes, none)
 }
 
 pub fn (animation &Animation) associated_effect_end() TimeValue {
@@ -1032,12 +1033,21 @@ pub fn (mut animation Animation) set_last_css_animation_play_state(value css.Ani
 }
 
 fn (mut animation Animation) update_finished_state(did_seek bool) {
-	mut unconstrained := animation.current_time()
-	if !did_seek && animation.hold_time_ != none {
+	animation.update_finished_state_with_notification(did_seek, false, .yes, none)
+}
+
+// Animation::update_finished_state. The current C++ implementation enqueues
+// DOMManipulation Task objects for the notification despite its specification
+// comments referring to microtasks; retain that observable queue ordering.
+fn (mut animation Animation) update_finished_state_with_notification(did_seek bool, synchronously_notify bool, should_invalidate ShouldInvalidate, observed_current_time ?TimeValue) {
+	mut unconstrained := observed_current_time
+	if unconstrained == none && !did_seek {
 		hold := animation.hold_time_
 		animation.hold_time_ = none
 		unconstrained = animation.current_time()
 		animation.hold_time_ = hold
+	} else if unconstrained == none {
+		unconstrained = animation.current_time()
 	}
 	if current := unconstrained {
 		if animation.start_time_ != none && !animation.pending() {
@@ -1076,35 +1086,93 @@ fn (mut animation Animation) update_finished_state(did_seek bool) {
 	animation.previous_current_time_ = animation.current_time()
 	finished_now := animation.play_state() == .finished
 	if finished_now && !animation.is_finished_ {
-		resolve_animation_promise(animation.current_finished_promise_, animation)
-		animation.is_finished_ = true
-		animation.emit_playback_event('finish', animation.current_time())
-	} else if !finished_now && animation.is_finished_ {
+		if synchronously_notify {
+			if id := animation.pending_finish_microtask_id_ {
+				animation.pending_finish_microtask_id_ = none
+				mut event_loop := html.main_thread_event_loop()
+				mut queue := event_loop.task_queue()
+				queue.remove_tasks_matching(fn [id] (task &html.Task) bool {
+					return task.id() == id
+				})
+			}
+			animation.run_finish_notification_steps()
+		} else if animation.pending_finish_microtask_id_ == none {
+			animation.pending_finish_microtask_id_ = animation.queue_dom_manipulation_task(fn [mut animation] () {
+				animation.run_finish_notification_steps()
+			})
+		}
+	}
+	if !finished_now && animation.is_finished_ {
 		animation.current_finished_promise_ = dom.Promise.create()
 		animation.is_finished_ = false
 	}
+	if should_invalidate == .yes {
+		animation.invalidate_effect()
+	}
+}
+
+fn (mut animation Animation) run_finish_notification_steps() {
+	if animation.play_state() != .finished {
+		return
+	}
+	resolve_animation_promise(animation.current_finished_promise_, animation)
+	animation.is_finished_ = true
+	event := animation.create_playback_event('finish', animation.current_time())
+	if document := animation.document_for_timing() {
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.append_pending_animation_event(dom.PendingAnimationEvent{
+			event: unsafe { &dom.Event(event) }
+			animation: &animation.Animation
+			target: &animation.EventTarget
+			scheduled_event_time: animation.convert_a_timeline_time_to_an_origin_relative_time(animation.associated_effect_end())
+		})
+	} else {
+		animation.pending_finish_microtask_id_ = animation.queue_dom_manipulation_task(fn [mut animation, event] () {
+			animation.EventTarget.dispatch_event(unsafe { &dom.Event(event) })
+		})
+	}
+}
+
+fn (animation &Animation) queue_dom_manipulation_task(steps fn ()) u64 {
+	settings := animation.relevant_settings_object()
+	document := if environment := settings {
+		environment.responsible_document()
+	} else {
+		animation.document_for_timing()
+	}
+	return html.queue_a_task(.dom_manipulation, html.main_thread_event_loop(), document, steps)
+}
+
+fn (mut animation Animation) create_playback_event(name string, current ?TimeValue) &AnimationPlaybackEvent {
+	event := AnimationPlaybackEvent.create(name, AnimationPlaybackEventInit{
+		current_time: optional_css_numberish(current)
+		timeline_time: optional_css_numberish(animation.active_timeline_time())
+	})
+	animation.emitted_events_ << event
+	return event
 }
 
 fn (mut animation Animation) emit_playback_event(name string, current ?TimeValue) {
 	timeline_time := animation.active_timeline_time()
-	event := AnimationPlaybackEvent.create(name, AnimationPlaybackEventInit{
-		current_time:  optional_css_numberish(current)
-		timeline_time: optional_css_numberish(timeline_time)
-	})
-	animation.emitted_events_ << event
+	event := animation.create_playback_event(name, current)
 	if document := animation.document_for_timing() {
-		timeline := animation.timeline_ or {
-			animation.EventTarget.dispatch_event(unsafe { &dom.Event(event) })
-			return
+		scheduled_time := if timeline := animation.timeline_ {
+			if !timeline.is_inactive() && timeline.can_convert_a_timeline_time_to_an_origin_relative_time() {
+				timeline.convert_a_timeline_time_to_an_origin_relative_time(timeline_time)
+			} else { ?f64(none) }
+		} else {
+			?f64(none)
 		}
 		mut mutable_document := unsafe { &dom.Document(document) }
 		mutable_document.append_pending_animation_event(dom.PendingAnimationEvent{
 			event:                unsafe { &dom.Event(event) }
 			animation:            &animation.Animation
 			target:               &animation.EventTarget
-			scheduled_event_time: timeline.convert_a_timeline_time_to_an_origin_relative_time(timeline_time)
+			scheduled_event_time: scheduled_time
 		})
 		return
 	}
-	animation.EventTarget.dispatch_event(unsafe { &dom.Event(event) })
+	animation.queue_dom_manipulation_task(fn [mut animation, event] () {
+		animation.EventTarget.dispatch_event(unsafe { &dom.Event(event) })
+	})
 }
