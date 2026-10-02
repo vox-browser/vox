@@ -255,6 +255,14 @@ fn test_media_element_state_controls_use_live_media_model() {
 	platform.page_media_elements << media
 	mut mutable_media := unsafe { &html.HTMLMediaElement(media) }
 	mutable_media.process_media_data(.ongoing)
+	assert !api.media_element_is_fetching(media)
+	mut media_tasks := html.main_thread_event_loop().task_queue()
+	for {
+		task := media_tasks.take_first_runnable_matching(fn [media] (task &html.Task) bool {
+			return task.source == media.media_element_event_task_source()
+		}) or { break }
+		task.execute()
+	}
 	assert api.media_element_is_fetching(media)
 	mutable_media.on_audio_track_added(html.MediaTrackMetadata{ identifier: 1 })
 	api.set_media_element_ready_state(media, u16(html.MediaReadyState.have_future_data))
