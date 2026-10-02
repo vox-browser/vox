@@ -1302,14 +1302,24 @@ pub fn (et &EventTarget) activate_event_handler(name string, event_handler &Even
 	// 6. Add an event listener with eventTarget and listener.
 	// 7. Set eventHandler's listener to listener.
 	event_target := unsafe { &EventTarget(et) }
-	callback := &CallbackType{
-		associated_window: event_target_relevant_window(event_target)
+	mut listener_window := event_target_relevant_window(event_target)
+	mut report_exception := ?EventCallbackExceptionReporter(none)
+	// event_handler_listener_realm first uses the handler callback's Realm.
+	// Keep that Realm on the existing listener when its handler is replaced.
+	if handler.value.kind == .object && handler.value.object_data != unsafe { nil } {
+		handler_callback := unsafe { &CallbackType(handler.value.object_data) }
+		listener_window = handler_callback.associated_window
+		report_exception = handler_callback.report_exception
+	}
+	mut callback := &CallbackType{
+		associated_window: listener_window
 		handle_event_with_exception: fn [event_target, name] (event &Event, current_target ?&EventTarget) !JSValue {
 			_ = current_target
 			event_target.process_event_handler_for_event(name, event)!
 			return js_undefined()
 		}
 	}
+	callback.report_exception = report_exception
 	listener := &DOMEventListener{
 		type_:    name
 		callback: IDLEventListener.new(callback)
@@ -1343,11 +1353,7 @@ pub fn (et &EventTarget) process_event_handler_for_event(name string, event &Eve
 	// 2. If callback is null, then return.
 
 	// 3. Let special error event handling be true if event is an ErrorEvent object, event's type is error, and event's currentTarget implements the WindowOrWorkerGlobalScope mixin.
-	special_error_event_handling := event_is_error_event(event) && event.type_ == 'error' && if current_target := event.current_target() {
-		event_target_as_window(current_target) != none
-	} else {
-		false
-	}
+	special_error_event_handling := event_uses_special_error_event_handling(event)
 
 	// 4. Process the Event object event by invoking the callback.
 	mut return_value := js_undefined()
@@ -1368,7 +1374,7 @@ pub fn (et &EventTarget) process_event_handler_for_event(name string, event &Eve
 			// If returnValue is still empty, convert and retain the callback's return value.
 			mut before_unload_event := unsafe { &BeforeUnloadEvent(event) }
 			if before_unload_event.return_value().len == 0 {
-				before_unload_event.set_return_value(return_value.to_string_value())
+				before_unload_event.set_return_value(webidl.to_string(return_value.as_webidl_value()!)!)
 			}
 		}
 	}
@@ -1385,6 +1391,16 @@ pub fn (et &EventTarget) process_event_handler_for_event(name string, event &Eve
 			mut mutable_event := unsafe { &Event(event) }
 			mutable_event.set_cancelled(true)
 		}
+	}
+}
+
+// EventTarget::process_event_handler_for_event and Bindings::invoke_event_handler
+// share this source predicate. Ordinary listeners always receive one Event.
+pub fn event_uses_special_error_event_handling(event &Event) bool {
+	return event_is_error_event(event) && event.type_ == 'error' && if current_target := event.current_target() {
+		event_target_as_window(current_target) != none
+	} else {
+		false
 	}
 }
 
@@ -1729,6 +1745,7 @@ pub fn EventDispatcher.inner_invoke(event &Event, listeners []&DOMEventListener,
 			callback := idle_listener.callback()
 			if handle_event := callback.handle_event_with_exception {
 				handle_event(event, event.current_target_for_bindings()) or {
+					if report_exception := callback.report_exception { report_exception(err) }
 					legacy_output.did_listeners_throw = true
 				}
 			} else if handle_event := callback.handle_event {

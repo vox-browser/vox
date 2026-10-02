@@ -139,7 +139,7 @@ pub fn (mut runtime Runtime) javascript_event(event &dom.Event) !voidptr {
 	}
 	wrapper := runtime.call_javascript_function(binding.factory,
 		C.JSValueMakeUndefined(runtime.context), [
-		runtime.binding_string('event'),
+		runtime.binding_string(if event.interface_ == .before_unload_event { 'beforeunload' } else { 'event' }),
 		C.JSValueMakeNull(runtime.context),
 	])!
 	runtime.bind_event(wrapper, event)!
@@ -244,6 +244,11 @@ fn (mut runtime Runtime) event_callback(value voidptr, handler bool) !&dom.Callb
 	callback := &dom.CallbackType{
 		callback_identity_:          value
 		associated_window:           window
+		report_exception: fn [owner, binding] (exception IError) {
+			if binding.closed { return }
+			mut runtime := unsafe { &Runtime(owner) }
+			runtime.report_event_callback_exception(exception)
+		}
 		handle_event_with_exception: fn [owner, value, handler, stored_settings, binding] (event &dom.Event, current_target ?&dom.EventTarget) !dom.JSValue {
 			if binding.closed { return dom.js_undefined() }
 			mut runtime := unsafe { &Runtime(owner) }
@@ -255,10 +260,7 @@ fn (mut runtime Runtime) event_callback(value voidptr, handler bool) !&dom.Callb
 			runtime.prepare_html_callback(stored_settings)
 			defer { runtime.clean_up_html_callback(stored_settings) }
 			defer { runtime.mark_document_state_dirty() }
-			return runtime.invoke_event_callback(value, handler, event, current_target) or {
-				runtime.report_event_callback_exception(err)
-				return err
-			}
+			return runtime.invoke_event_callback(value, handler, event, current_target)
 		}
 	}
 	mut mutable_binding := unsafe { &EventTargetBinding(binding) }
@@ -279,11 +281,35 @@ fn (mut runtime Runtime) invoke_event_callback(value voidptr, handler bool, even
 		}
 		receiver = value
 	}
-	_ = handler
-	result := runtime.call_javascript_function(function, receiver, [
-		runtime.javascript_event(event)!,
-	])!
+	mut arguments := []voidptr{}
+	if handler && dom.event_uses_special_error_event_handling(event) {
+		error_event := unsafe { &dom.ErrorEvent(event) }
+		arguments = [
+			runtime.binding_string(error_event.message()),
+			runtime.binding_string(error_event.filename()),
+			C.JSValueMakeNumber(runtime.context, error_event.lineno()),
+			C.JSValueMakeNumber(runtime.context, error_event.colno()),
+			runtime.event_callback_argument(error_event.error())!,
+		]
+	} else {
+		arguments = [runtime.javascript_event(event)!]
+	}
+	result := runtime.call_javascript_function(function, receiver, arguments)!
 	return runtime.event_callback_result(result)
+}
+
+fn (mut runtime Runtime) event_callback_argument(value dom.JSValue) !voidptr {
+	native := value.as_webidl_value()!
+	if native.dom_exception_ != none { return runtime.javascript_dom_exception(native) }
+	return match native.kind {
+		.undefined { C.JSValueMakeUndefined(runtime.context) }
+		.null_ { C.JSValueMakeNull(runtime.context) }
+		.boolean { C.JSValueMakeBoolean(runtime.context, native.boolean_value) }
+		.number { C.JSValueMakeNumber(runtime.context, native.number_value) }
+		.string_ { runtime.binding_string(native.string_value) }
+		.runtime_value { runtime.actual_webidl_value(native)! }
+		else { return error('Event value has no owning JavaScript object') }
+	}
 }
 
 pub fn (runtime &Runtime) javascript_event_handler(target &dom.EventTarget, name string) !voidptr {
@@ -358,6 +384,17 @@ fn (mut runtime Runtime) event_binding_call(method string, receiver voidptr, arg
 		return C.JSValueMakeUndefined(context)
 	}
 	mut event := runtime.native_event(receiver)!
+	if method in ['getBeforeUnloadReturnValue', 'setBeforeUnloadReturnValue'] {
+		if event.interface_ != .before_unload_event {
+			return runtime.event_binding_type_error('Illegal BeforeUnloadEvent receiver')
+		}
+		mut before_unload := unsafe { &dom.BeforeUnloadEvent(event) }
+		if method == 'getBeforeUnloadReturnValue' {
+			return runtime.binding_string(before_unload.return_value())
+		}
+		before_unload.set_return_value(runtime.binding_dom_string(args[0])!)
+		return C.JSValueMakeUndefined(context)
+	}
 	if method == 'getEvent' {
 		property := runtime.binding_dom_string(args[0])!
 		return match property {

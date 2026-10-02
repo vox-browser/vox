@@ -3021,11 +3021,16 @@ pub mut:
 	offset_ int
 }
 
+pub type EventCallbackExceptionReporter = fn (IError)
+
 @[heap]
 pub struct CallbackType {
 pub mut:
 	handle_event          ?fn (&Event, ?&EventTarget) JSValue
 	handle_event_with_exception ?fn (&Event, ?&EventTarget) !JSValue
+	// Bindings::report_exception_for_callback reports the original completion
+	// through the callback object's associated Realm after invocation returns.
+	report_exception      ?EventCallbackExceptionReporter
 	// WebIDL::CallbackType.callback is the actual JavaScript object. Distinct
 	// callback records can reference that same object with different incumbents.
 	callback_identity_ voidptr
