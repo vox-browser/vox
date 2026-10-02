@@ -56,6 +56,7 @@ fn test_object_store_add_put_get_delete_and_key_generator() {
 	store.delete(IDBKeyRange.only(number_key(2))!)!
 	assert store.count(none)!.count == 2
 	transaction.commit()!
+	run_database_tasks()
 }
 
 fn test_out_of_line_keys_ranges_order_and_structured_clone() {
@@ -106,6 +107,7 @@ fn test_transaction_state_and_schema_constraints() {
 	}
 	readonly.activate()
 	readonly.commit()!
+	run_database_tasks()
 	if _ := readonly.commit() {
 		assert false
 	} else {

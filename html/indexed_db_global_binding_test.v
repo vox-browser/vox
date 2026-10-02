@@ -44,6 +44,9 @@ fn test_indexed_db_global_returns_real_factory_and_queues_connection_work() {
 	request.finish_upgrade()!
 	assert request.request.ready_state == .pending
 	run_binding_database_task(mut loop)
+	assert request.upgrade_transaction.state == .finished
+	assert request.request.ready_state == .pending
+	run_binding_database_task(mut loop)
 	assert request.request.ready_state == .done
 	assert request.request.events == ['upgradeneeded', 'success']
 	assert factory.database_infos().any(it.name == 'source-owner-binding')
@@ -66,6 +69,9 @@ fn test_worker_database_tasks_use_worker_loop_and_do_not_enter_window_queue() {
 	run_binding_tasks_until_upgrade(mut loop, request)
 	assert request.request.events == ['upgradeneeded']
 	request.finish_upgrade()!
+	run_binding_database_task(mut loop)
+	assert request.upgrade_transaction.state == .finished
+	assert request.request.ready_state == .pending
 	run_binding_database_task(mut loop)
 	assert request.request.ready_state == .done
 	assert request.connection.relevant_global_scope() == request.request.relevant_global_scope()

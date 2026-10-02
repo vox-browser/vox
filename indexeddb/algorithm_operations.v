@@ -109,7 +109,42 @@ pub fn create_a_sorted_name_list(names []string) []string {
 }
 
 pub fn commit_a_transaction(mut transaction IDBTransaction) ! {
-	transaction.commit()!
+	transaction.state = .committing
+	transaction.set_cleanup_event_loop(unsafe { nil })
+	transaction_pointer := voidptr(&transaction)
+	mut list := transaction.request_list_
+	list.set_on_all_processed(fn [transaction_pointer] () {
+		pending := unsafe { &IDBTransaction(transaction_pointer) }
+		if pending.state != .committing {
+			return
+		}
+		queue_a_database_task_for_global_scope(pending.relevant_global_scope(), fn [transaction_pointer] () {
+			mut transaction := unsafe { &IDBTransaction(transaction_pointer) }
+			if transaction.mode == .versionchange {
+				transaction.database.data.upgrade_transaction = none
+			}
+			transaction.notify_devtools_of_committed_changes()
+			transaction.discard_mutation_logs()
+			transaction.state = .finished
+			transaction.events << 'complete'
+			if callback := transaction.oncomplete_ {
+				callback()
+			}
+			if transaction.mode == .versionchange {
+				if mut request := transaction.associated_request_ {
+					request.transaction_ = none
+				}
+				transaction.associated_request_ = none
+			}
+			// Pending upgrade completion is notified after the complete event,
+			// preserving tasks queued by that event before the open success task.
+			if callback := transaction.committed_callback_ {
+				transaction.committed_callback_ = none
+				callback()
+			}
+			transaction.finish_connection_if_needed()
+		})
+	})
 }
 
 pub fn clone_in_realm(value Value) Value {

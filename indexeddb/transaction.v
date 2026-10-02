@@ -42,12 +42,13 @@ pub mut:
 	state                TransactionState = .active
 	error_message        string
 	events               []string
-	requests             []&IDBRequest
+	request_list_        &RequestList = &RequestList{}
 	store_mutation_logs  []StoreMutationLogEntry
 	original_version     u64
 	associated_request_  ?&IDBRequest
 	aborted_             bool
-	cleanup_event_loop_  string
+	cleanup_event_loop_  voidptr
+	committed_callback_  ?fn ()
 	object_store_handles map[string]IDBObjectStore
 	index_handles_       []IDBIndex
 	onabort_             ?IDBEventHandler
@@ -65,6 +66,9 @@ pub fn IDBTransaction.create(database &IDBDatabase, mode IDBTransactionMode, dur
 	}
 	if mode != .readonly {
 		transaction.set_up_mutation_logs()
+	}
+	unsafe {
+		database.transactions << transaction
 	}
 	return transaction
 }
@@ -124,15 +128,7 @@ pub fn (mut transaction IDBTransaction) commit() ! {
 	if transaction.state != .active {
 		return error('InvalidStateError: transaction is not active')
 	}
-	transaction.state = .committing
-	transaction.notify_devtools_of_committed_changes()
-	transaction.discard_mutation_logs()
-	transaction.state = .finished
-	transaction.events << 'complete'
-	if callback := transaction.oncomplete_ {
-		callback()
-	}
-	transaction.finish_connection_if_needed()
+	commit_a_transaction(mut transaction)!
 }
 
 pub fn (mut transaction IDBTransaction) abort(reason string) ! {
@@ -145,12 +141,13 @@ pub fn (mut transaction IDBTransaction) abort(reason string) ! {
 	}
 	transaction.error_message = reason
 	transaction.aborted_ = true
+	transaction.cleanup_event_loop_ = unsafe { nil }
 	transaction.state = .aborted
 	transaction.events << 'abort'
 	if callback := transaction.onabort_ {
 		callback()
 	}
-	for mut request in transaction.requests {
+	for mut request in transaction.request_list_.requests() {
 		if request.ready_state == .pending {
 			request.aborted = true
 			request.fail('AbortError: transaction aborted')

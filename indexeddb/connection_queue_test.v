@@ -104,6 +104,7 @@ fn test_close_waits_for_active_transactions_before_unblocking_upgrade() {
 	assert old.state == .closing
 	assert upgrade.request.events == ['blocked']
 	transaction.commit()!
+	run_database_tasks()
 	assert old.state == .closed
 	run_database_tasks()
 	assert upgrade.request.events == ['blocked', 'upgradeneeded']

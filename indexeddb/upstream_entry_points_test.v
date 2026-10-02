@@ -92,6 +92,10 @@ fn test_database_registry_connections_and_transaction_handle_identity() {
 	cached := transaction.object_store_handle_for('items')?
 	assert cached.name() == 'items'
 	connection.close()
+	assert !data.wait_for_connections_to_close()
+	transaction.commit()!
+	assert !data.wait_for_connections_to_close()
+	run_database_tasks()
 	assert data.wait_for_connections_to_close()
 	DatabaseData.delete_for_key_and_name('storage', 'db')
 }

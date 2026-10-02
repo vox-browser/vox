@@ -208,6 +208,6 @@ pub fn (mut database IDBDatabase) transaction(store_names []string, mode IDBTran
 		return error('TypeError: versionchange transactions cannot be created directly')
 	}
 	mut transaction := IDBTransaction.create(&database, mode, options.durability, normalized)
-	database.transactions << transaction
+	transaction.set_cleanup_event_loop(database.global_scope.event_loop_handle)
 	return transaction
 }

@@ -39,11 +39,11 @@ fn test_commit_reports_changes_before_discarding_mutation_logs() {
 	mut transaction := IDBTransaction.create(connection, .readwrite, .default_, [
 		'items',
 	])
-	connection.transactions << transaction
 	mut handle := transaction.object_store('items')!
 	handle.put(string_value('value'), number_key(7))!
 
 	transaction.commit()!
+	run_database_tasks()
 
 	assert connection.devtools_notifications.len == 1
 	assert connection.devtools_notifications[0].document_url == 'https://example.test/'
@@ -66,6 +66,7 @@ fn test_commit_skips_empty_or_inactive_devtools_notifications() {
 		'items',
 	])
 	empty_transaction.commit()!
+	run_database_tasks()
 	assert connection.devtools_notifications.len == 0
 
 	connection.set_devtools_inspection_context('https://example.test/', false)
@@ -75,6 +76,7 @@ fn test_commit_skips_empty_or_inactive_devtools_notifications() {
 	mut handle := transaction.object_store('items')!
 	handle.put(string_value('hidden'), number_key(1))!
 	transaction.commit()!
+	run_database_tasks()
 	assert connection.devtools_notifications.len == 0
 	connection.close()
 }

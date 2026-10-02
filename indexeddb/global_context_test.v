@@ -45,6 +45,7 @@ fn test_relevant_global_context_propagates_through_indexeddb_handles() {
 	value_cursor := IDBCursorWithValue.from_cursor(cursor)!
 	assert value_cursor.current_value()?.fields['name'].text == 'first'
 	transaction.commit()!
+	run_database_tasks()
 	connection.close()
 }
 
@@ -74,5 +75,6 @@ fn test_object_store_without_key_path_exposes_null_binding_value() {
 	store := transaction.object_store('store')!
 	assert store.key_path_value().kind == .null_
 	transaction.commit()!
+	run_database_tasks()
 	connection.close()
 }

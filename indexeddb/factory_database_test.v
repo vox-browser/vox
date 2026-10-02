@@ -109,6 +109,7 @@ fn test_aborting_initial_upgrade_removes_database_and_scope_names_are_deduplicat
 	mut transaction := reopened_connection.transaction(['items', 'items', 'items'], .readonly, IDBTransactionOptions{})!
 	assert transaction.object_store_names() == ['items']
 	transaction.commit()!
+	run_database_tasks()
 }
 
 fn test_schema_name_lists_use_utf16_code_unit_order() {

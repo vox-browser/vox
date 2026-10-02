@@ -72,6 +72,7 @@ fn test_index_queries_unique_multi_entry_and_rename() {
 	assert tags.count(IDBKeyRange.only(string_key('sf'))!)!.count == 3
 	assert tags.count(IDBKeyRange.only(string_key('classic'))!)!.count == 1
 	write.commit()!
+	run_database_tasks()
 }
 
 fn test_cursor_iteration_advance_update_delete_and_primary_key() {
@@ -95,6 +96,7 @@ fn test_cursor_iteration_advance_update_delete_and_primary_key() {
 	cursor.delete()!
 	assert store.count(none)!.count == 2
 	write.commit()!
+	run_database_tasks()
 }
 
 fn test_cursor_continuation_reads_the_live_sorted_source() {
@@ -166,6 +168,7 @@ fn test_cursor_validation_continue_primary_key_and_key_only_mutations() {
 		assert err.msg().contains('InvalidStateError')
 	}
 	write.commit()!
+	run_database_tasks()
 }
 
 fn test_cursor_rejects_deleted_source() {

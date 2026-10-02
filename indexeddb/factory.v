@@ -145,7 +145,6 @@ fn (mut request IDBOpenDBRequest) begin_upgrade() {
 	mut connection := request.connection
 	mut data := connection.data
 	mut upgrade := IDBTransaction.create(connection, .versionchange, .default_, data.stores.keys())
-	connection.transactions << upgrade
 	connection.upgrade_active = true
 	data.upgrade_transaction = upgrade
 	data.version = request.new_version or { data.version }
@@ -171,20 +170,21 @@ pub fn (mut request IDBOpenDBRequest) finish_upgrade() ! {
 		return error('InvalidStateError: request has no upgrade transaction')
 	}
 	mut upgrade := request.upgrade_transaction
+	upgrade.associated_request_ = request.request
+	upgrade.committed_callback_ = fn [request_ptr] () {
+		mut pending := unsafe { &IDBOpenDBRequest(request_ptr) }
+		pending.connection.upgrade_active = false
+		queue_a_database_task_for_global_scope(pending.request.global_scope, fn [request_ptr] () {
+			mut completed := unsafe { &IDBOpenDBRequest(request_ptr) }
+			if completed.connection.state == .closed {
+				completed.request.fail('AbortError: Connection was closed')
+			} else {
+				completed.request.succeed(.database)
+			}
+			completed.complete_connection_request()
+		})
+	}
 	upgrade.commit()!
-	mut connection := request.connection
-	connection.upgrade_active = false
-	connection.data.upgrade_transaction = none
-	request.request.transaction_ = none
-	queue_a_database_task_for_global_scope(request.request.global_scope, fn [request_ptr] () {
-		mut completed := unsafe { &IDBOpenDBRequest(request_ptr) }
-		if completed.connection.state == .closed {
-			completed.request.fail('AbortError: Connection was closed')
-		} else {
-			completed.request.succeed(.database)
-		}
-		completed.complete_connection_request()
-	})
 }
 
 pub fn (mut request IDBOpenDBRequest) abort_upgrade(reason string) ! {

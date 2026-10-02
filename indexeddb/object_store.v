@@ -189,7 +189,7 @@ fn completed_error_request(mut store IDBObjectStore, message string) &IDBRequest
 fn (mut store IDBObjectStore) new_request() &IDBRequest {
 	mut request := IDBRequest.create_for_global_scope(store.relevant_global_object(), store.name_)
 	request.transaction_ = store.transaction
-	store.transaction.requests << request
+	store.transaction.request_list_.append(request)
 	return request
 }
 

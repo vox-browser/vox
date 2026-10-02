@@ -276,8 +276,8 @@ pub fn (transaction &IDBTransaction) transaction_aborted() bool {
 	return transaction.aborted_
 }
 
-pub fn (transaction &IDBTransaction) request_list() []&IDBRequest {
-	return transaction.requests.clone()
+pub fn (transaction &IDBTransaction) request_list() &RequestList {
+	return transaction.request_list_
 }
 
 pub fn (transaction &IDBTransaction) transaction_scope() []string {
@@ -288,7 +288,7 @@ pub fn (transaction &IDBTransaction) transaction_uuid() string {
 	return '${transaction.database.data.storage_key}:${transaction.database.data.name}:${transaction.mode}'
 }
 
-pub fn (transaction &IDBTransaction) cleanup_event_loop() string {
+pub fn (transaction &IDBTransaction) cleanup_event_loop() voidptr {
 	return transaction.cleanup_event_loop_
 }
 
@@ -308,8 +308,8 @@ pub fn (mut transaction IDBTransaction) set_aborted(aborted bool) {
 	transaction.aborted_ = aborted
 }
 
-pub fn (mut transaction IDBTransaction) set_cleanup_event_loop(name string) {
-	transaction.cleanup_event_loop_ = name
+pub fn (mut transaction IDBTransaction) set_cleanup_event_loop(event_loop voidptr) {
+	transaction.cleanup_event_loop_ = event_loop
 }
 
 pub fn (transaction &IDBTransaction) is_upgrade_transaction() bool {

@@ -90,6 +90,7 @@ fn (mut request IDBRequest) succeed(kind RequestResultKind) {
 	if callback := request.onsucceed_ {
 		callback()
 	}
+	request.finish_transaction_request()
 }
 
 fn (mut request IDBRequest) fail(message string) {
@@ -99,6 +100,16 @@ fn (mut request IDBRequest) fail(message string) {
 	request.events << 'error'
 	if callback := request.onerror_ {
 		callback()
+	}
+	request.finish_transaction_request()
+}
+
+fn (request &IDBRequest) finish_transaction_request() {
+	if transaction := request.transaction_ {
+		mut list := transaction.request_list_
+		list.remove(request)
+		list.on_request_processed()
+		list.check_all_processed()
 	}
 }
 

@@ -88,7 +88,7 @@ pub fn (mut index IDBIndex) rename(name string) ! {
 fn (mut index IDBIndex) new_request() &IDBRequest {
 	mut request := IDBRequest.create_for_global_scope(index.relevant_global_object(), index.name_)
 	request.transaction_ = index.transaction
-	index.transaction.requests << request
+	index.transaction.request_list_.append(request)
 	return request
 }
 
