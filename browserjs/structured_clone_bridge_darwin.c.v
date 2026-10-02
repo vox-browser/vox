@@ -106,6 +106,7 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 		13 { kind = .map }
 		14 { kind = .set }
 		16 { kind = .error_object }
+		22 { kind = .array_buffer }
 		17 {
 			// C API checks the actual JSArray record. Array.isArray would also
 			// accept Proxy(Array), unlike source is<JS::Array>.
@@ -135,6 +136,10 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 	}
 	if kind == .error_object {
 		projection.project_error(value, mut object)!
+		return &result
+	}
+	if kind == .array_buffer {
+		projection.project_array_buffer(value, mut object)!
 		return &result
 	}
 	if kind == .map || kind == .set {
@@ -186,6 +191,11 @@ fn (mut projection NativeCloneProjection) reconstruct(value dom.JSValue) !voidpt
 	if existing := projection.output_memory[identity] { return existing }
 	if object.kind == .error_object {
 		actual := projection.root(projection.reconstruct_error(object)!)!
+		projection.output_memory[identity] = actual
+		return actual
+	}
+	if object.kind == .array_buffer {
+		actual := projection.reconstruct_array_buffer(object)!
 		projection.output_memory[identity] = actual
 		return actual
 	}
@@ -266,7 +276,8 @@ const structured_clone_projection_intrinsic = r'(function(){
  const O=Object,A=Array,B=Boolean,N=Number,S=String,M=Map,T=Set,D=Date;
  const bv=B.prototype.valueOf,nv=N.prototype.valueOf,sv=S.prototype.valueOf,iv=BigInt.prototype.valueOf,integerText=BigInt.prototype.toString;
  const dateValue=Date.prototype.getTime,regexSource=getOwn(RegExp.prototype,"source").get;
- const bufferLength=getOwn(ArrayBuffer.prototype,"byteLength").get,isView=ArrayBuffer.isView;
+ const AB=ArrayBuffer,bufferLength=getOwn(AB.prototype,"byteLength").get,isView=AB.isView;
+ const bufferDetached=getOwn(AB.prototype,"detached"),bufferResizable=getOwn(AB.prototype,"resizable"),bufferMaximum=getOwn(AB.prototype,"maxByteLength");
  const mapSize=getOwn(M.prototype,"size").get,setSize=getOwn(T.prototype,"size").get;
  const mapEach=M.prototype.forEach,setEach=T.prototype.forEach,mapSet=M.prototype.set,setAdd=T.prototype.add,isError=Error.isError;
  const errorConstructors=[Error,EvalError,undefined,RangeError,ReferenceError,SyntaxError,TypeError,URIError],concat=S.prototype.concat;
@@ -294,6 +305,8 @@ const structured_clone_projection_intrinsic = r'(function(){
   date_value(value){return apply(dateValue,value,[])},
   error_metadata(value){const name=get(value,"name",value);let message,cause;const messageDescriptor=getOwn(value,"message");if(messageDescriptor!==undefined&&getOwn(messageDescriptor,"value")!==undefined)message=apply(concat,"",[messageDescriptor.value]);const causeDescriptor=getOwn(value,"cause");if(causeDescriptor!==undefined&&getOwn(causeDescriptor,"value")!==undefined)cause=apply(concat,"",[causeDescriptor.value]);return [name,message,cause]},
   create_error(type,message,cause){const constructor=errorConstructors[type];if(constructor===undefined)return undefined;const value=new constructor();if(message!==undefined)define(value,"message",{value:message,writable:true,enumerable:false,configurable:true});if(cause!==undefined)define(value,"cause",{value:cause,writable:true,enumerable:false,configurable:true});return value},
+  buffer_metadata(value){if(bufferDetached===undefined||bufferResizable===undefined||bufferMaximum===undefined)return undefined;const detached=apply(bufferDetached.get,value,[]);if(detached)return [true,false,undefined];const resizable=apply(bufferResizable.get,value,[]);return [false,resizable,resizable?apply(bufferMaximum.get,value,[]):undefined]},
+  create_buffer(length,maximum){return maximum===undefined?new AB(length):new AB(length,{maxByteLength:maximum})},
   map_snapshot(value){const list=[];apply(mapEach,value,[function(item,key){append(list,[key,item])}]);return list},
   set_snapshot(value){const list=[];apply(setEach,value,[function(item){append(list,item)}]);return list},
   enumerable_keys(value){const list=[],keys=ownKeys(value);for(let index=0;index<keys.length;++index){const key=keys[index];if(typeof key==="string"){const descriptor=getOwn(value,key);if(descriptor!==undefined&&descriptor.enumerable)append(list,key)}}return list},
