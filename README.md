@@ -44,6 +44,10 @@ RegExp preparation translates flag validation, named-group surrogate checks,
 Unicode escape normalization and source escaping, with 9,202 exact native
 LibJS/AK comparisons. RegExp objects, constructors/prototypes and the regex
 compiler/matcher remain pending.
+LibRegex's complete AST and bytecode records, owned cloning and input/capture
+primitives are translated, with 36,166 exact native Rust helper comparisons.
+The regex parser, compiler, Unicode property backend and VM execution remain
+pending.
 Synchronous iterator operations and String/ordinary-Array iterator records
 support stepping, collection, and closing.
 Their intrinsic prototypes are supplied explicitly; Array literals and methods,
