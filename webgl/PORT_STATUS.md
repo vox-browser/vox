@@ -261,6 +261,16 @@ method identity and real divisor/vertex-array queries. This remains an actual
 JavaScriptCore interop adaptation rather than a complete cross-realm
 WrapperWorld implementation.
 
+The registry retains the source creates_empty_object flags for
+OES_texture_float_linear and EXT_float_blend. Native support enables them in
+both versions without the experimental flag; getExtension requests their native
+extensions and returns a cached ordinary empty object, matching
+`WebGLRenderingContextBase.cpp:128-208`. The source non-ASCII name rejection also
+runs before lookup. Focused typed and actual native JavaScriptCore cases pass
+with `-gc none`, covering support filtering, alias identity, per-context object
+identity, ordinary extensible objects and native extension enabling. These two
+objects retain the host cache lifetime boundary documented above.
+
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
