@@ -184,7 +184,7 @@ fn test_css_image_updates_only_observing_layout_nodes() {
 
 	target.apply_style(target_style)
 	assert target.image_observers_.len == 1
-	image := target.image_observers_[0]
+	image := target.image_observers_[0].image
 	image.notify_clients()
 	assert target_paintable.needs_repaint
 	assert !other_paintable.needs_repaint

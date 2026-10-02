@@ -1035,7 +1035,7 @@ pub struct NodeWithStyle {
 pub mut:
 	computed_values_  &css.ComputedValues = unsafe { nil }
 	list_style_image_ ?css.StyleValue
-	image_observers_  []css.ImageStyleValue
+	image_observers_  []&ImageObserver
 	layout_index_     u32
 }
 
@@ -1119,8 +1119,27 @@ pub fn (mut n NodeWithStyle) apply_style(computed_style &css.ComputedProperties)
 }
 
 fn image_style_value_layout_did_update(target voidptr) {
-	mut owner := unsafe { &NodeWithStyle(target) }
+	observer := unsafe { &ImageObserver(target) }
+	mut owner := observer.owner
 	owner.image_style_value_did_update()
+}
+
+// Layout::NodeWithStyle::ImageObserver has its own registration identity.
+// Replacing a slot must not unregister the new slot for the same image.
+@[heap]
+pub struct ImageObserver {
+pub:
+	owner &NodeWithStyle
+	image css.ImageStyleValue
+}
+
+fn ImageObserver.create(owner &NodeWithStyle, image css.ImageStyleValue) &ImageObserver {
+	observer := &ImageObserver{owner: owner, image: image}
+	image.register_client(css.ImageStyleValueClient{
+		target: voidptr(observer)
+		did_update: image_style_value_layout_did_update
+	})
+	return observer
 }
 
 fn (mut n NodeWithStyle) image_style_value_did_update() {
@@ -1160,11 +1179,7 @@ fn (n &NodeWithStyle) body_background_is_propagated_to_root() bool {
 }
 
 fn (mut n NodeWithStyle) add_image_observer(image css.ImageStyleValue) {
-	image.register_client(css.ImageStyleValueClient{
-		target: voidptr(n)
-		did_update: image_style_value_layout_did_update
-	})
-	n.image_observers_ << image
+	n.image_observers_ << ImageObserver.create(&n, image)
 }
 
 fn (mut n NodeWithStyle) add_image_observer_for_style_value(value css.StyleValue) {
@@ -1183,10 +1198,8 @@ fn (mut n NodeWithStyle) add_image_observer_for_style_value(value css.StyleValue
 }
 
 fn (mut n NodeWithStyle) rebuild_image_observers() {
-	for image in n.image_observers_ {
-		image.unregister_client(voidptr(n))
-	}
-	n.image_observers_.clear()
+	old_observers := n.image_observers_
+	n.image_observers_ = []&ImageObserver{}
 
 	if background := n.computed_values_.typed_property_value(.background_image) {
 		if list := background.as_value_list() {
@@ -1197,9 +1210,6 @@ fn (mut n NodeWithStyle) rebuild_image_observers() {
 			n.add_image_observer_for_style_value(background)
 		}
 	}
-	if list_style_image := n.list_style_image_ {
-		n.add_image_observer_for_style_value(list_style_image)
-	}
 	if mask := n.computed_values_.typed_property_value(.mask_image) {
 		if list := mask.as_value_list() {
 			for value in list.values() {
@@ -1209,6 +1219,40 @@ fn (mut n NodeWithStyle) rebuild_image_observers() {
 			n.add_image_observer_for_style_value(mask)
 		}
 	}
+	if cursor := n.computed_values_.typed_property_value(.cursor) {
+		if list := cursor.as_value_list() {
+			for value in list.values() { n.add_cursor_image_observer(value) }
+		} else { n.add_cursor_image_observer(cursor) }
+	}
+	if border_image := n.computed_values_.typed_property_value(.border_image_source) {
+		n.add_image_observer_for_style_value(border_image)
+	}
+	if list_style_image := n.list_style_image_ {
+		n.add_image_observer_for_style_value(list_style_image)
+	}
+	// New clients are registered before any old client is released, preserving
+	// the resource when the old and new style share the same underlying image.
+	for observer in old_observers {
+		observer.image.unregister_client(voidptr(observer))
+	}
+}
+
+fn (mut n NodeWithStyle) add_cursor_image_observer(value css.StyleValue) {
+	if value is css.CursorStyleValue {
+		image := value.image().value
+		match image {
+			css.ImageStyleValue { n.add_image_observer(image) }
+			css.ImageSetStyleValue { n.add_image_observer_for_style_value(css.StyleValue(image)) }
+			else {}
+		}
+	}
+}
+
+pub fn (mut n NodeWithStyle) clear_image_observers() {
+	for observer in n.image_observers_ {
+		observer.image.unregister_client(voidptr(observer))
+	}
+	n.image_observers_ = []&ImageObserver{}
 }
 
 fn (mut n NodeWithStyle) propagate_style_to_anonymous_wrappers() {

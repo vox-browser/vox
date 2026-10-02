@@ -268,6 +268,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		white_space_collapse_is_not_collapse_: box.computed_values().white_space_collapse() != .collapse
 		layout_handle: voidptr(box)
 		apply_style_callback: apply_style_to_layout_node
+		clear_image_observers_callback: clear_layout_image_observers
 		set_needs_layout_update_callback: set_layout_node_needs_layout_update
 		invalidate_text_for_rendering_callback: invalidate_layout_text_for_rendering
 		refresh_empty_text_fragment_callback: refresh_layout_empty_text_fragment
@@ -443,6 +444,15 @@ fn apply_style_to_layout_node(layout_handle voidptr, css_computed_properties_han
 	computed := unsafe { &css.ComputedProperties(css_computed_properties_handle) }
 	mut mutable_styled := unsafe { &NodeWithStyle(styled) }
 	mutable_styled.apply_style(computed)
+}
+
+fn clear_layout_image_observers(layout_handle voidptr) {
+	if layout_handle == unsafe { nil } { return }
+	node := unsafe { &Node(layout_handle) }
+	if styled := node.as_node_with_style() {
+		mut mutable_styled := unsafe { &NodeWithStyle(styled) }
+		mutable_styled.clear_image_observers()
+	}
 }
 
 fn set_layout_node_needs_layout_update(layout_handle voidptr, needs_layout_update bool) {

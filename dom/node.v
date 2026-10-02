@@ -3071,6 +3071,11 @@ pub fn (mut n Node) set_layout_node(layout_node &LayoutNode) {
 }
 
 pub fn (mut n Node) detach_layout_node() {
+	if n.layout_node_ != unsafe { nil } {
+		if n.layout_node_.clear_image_observers_callback != unsafe { nil } {
+			n.layout_node_.clear_image_observers_callback(n.layout_node_.layout_handle)
+		}
+	}
 	n.layout_node_ = unsafe { nil }
 	if element := n.as_element() {
 		unsafe {

@@ -1415,6 +1415,7 @@ pub mut:
 	// name the layout type). The layout module attaches these via attach_layout_nodes. See layout/dom_layout_bridge.v.
 	layout_handle                    voidptr = unsafe { nil }
 	apply_style_callback             LayoutApplyStyleCallback = unsafe { nil }
+	clear_image_observers_callback   fn (voidptr) = unsafe { nil }
 	set_needs_layout_update_callback LayoutSetNeedsLayoutUpdateCallback = unsafe { nil }
 	invalidate_text_for_rendering_callback LayoutInvalidateTextForRenderingCallback = unsafe { nil }
 	refresh_empty_text_fragment_callback fn (voidptr) bool = unsafe { nil }
