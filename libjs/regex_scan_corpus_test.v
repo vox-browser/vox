@@ -97,10 +97,13 @@ fn regex_scan_fixture_scanners() []RegexSimpleScan {
 		assert row.len == 2 && row[0].int() == scans.len
 		fields := row[1].split(':')
 		scan := match fields[0] {
-			'literal' { RegexSimpleScan(RegexLiteral{
+			'literal' {
+				RegexSimpleScan(RegexLiteral{
 					code_point: fields[1].u32()
-				}) }
-			'class' { RegexSimpleScan(RegexBytecodeCharClass{
+				})
+			}
+			'class' {
+				RegexSimpleScan(RegexBytecodeCharClass{
 					ranges:  [
 						RegexCharRange{
 							start: fields[2].u32()
@@ -108,21 +111,28 @@ fn regex_scan_fixture_scanners() []RegexSimpleScan {
 						},
 					]
 					negated: fields[1] == '1'
-				}) }
-			'builtin' { RegexSimpleScan(RegexBuiltinCharacterClass.from_string([
+				})
+			}
+			'builtin' {
+				RegexSimpleScan(RegexBuiltinCharacterClass.from_string([
 					'digit',
 					'non_digit',
 					'word',
 					'non_word',
 					'whitespace',
 					'non_whitespace',
-				][fields[1].int()]) or { panic(err) }) }
-			'greedy' { RegexSimpleScan(RegexGreedyLoop{
+				][fields[1].int()]) or { panic(err) })
+			}
+			'greedy' {
+				RegexSimpleScan(RegexGreedyLoop{
 					matcher: regex_scan_fixture_matcher(fields[1].int())
 					min:     fields[2].u32()
 					max:     if fields[3] == '-' { ?u32(none) } else { ?u32(fields[3].u32()) }
-				}) }
-			else { panic('unknown native scanner fixture') }
+				})
+			}
+			else {
+				panic('unknown native scanner fixture')
+			}
 		}
 
 		scans << scan
