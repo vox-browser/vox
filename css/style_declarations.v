@@ -896,10 +896,24 @@ pub fn (properties &CSSStyleProperties) get_property(property_id PropertyID) ?St
 	return properties.get_property_internal(PropertyNameAndID.from_id(property_id))
 }
 
+fn computed_custom_property_for_cssom(owner dom.AbstractElement, name string) ?&dom.CSSStyleValue_ {
+	if value := owner.get_custom_property(name) {
+		return value
+	}
+	// A pseudo without its own custom-property data still inherits from its
+	// originating element (including values supplied through ::slotted()).
+	if owner.pseudo_element() != none {
+		if inherit_from := owner.element_to_inherit_style_from() {
+			return inherit_from.get_custom_property(name)
+		}
+	}
+	return none
+}
+
 pub fn (properties &CSSStyleProperties) custom_property(custom_property_name string) ?StyleProperty {
 	if properties.is_computed() {
 		owner := properties.owner_node or { return none }
-		value := owner.get_custom_property(custom_property_name) or {
+		value := computed_custom_property_for_cssom(owner, custom_property_name) or {
 			initial_value := owner.document().custom_property_initial_value(custom_property_name) or {
 				return none
 			}
