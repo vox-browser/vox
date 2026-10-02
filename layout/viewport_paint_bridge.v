@@ -799,6 +799,11 @@ fn viewport_assign_accumulated_visual_contexts(target voidptr) {
 	mut result := viewport_layout_result(target)
 	mut boxes_by_layout := map[u64]&BlockBox{}
 	collect_compatibility_boxes(mut result.paint_tree, mut boxes_by_layout)
+	// The renderer transport omits the typed Viewport itself and puts its
+	// mandatory scroll frame on the root box. Keep its real layout identity in
+	// the lookup too: absolute descendants can have that Viewport, rather than
+	// the document element, as their containing block.
+	boxes_by_layout[u64(voidptr(result.root))] = unsafe { &result.paint_tree }
 	result.scroll_state = painting.ScrollState{}
 	mut boxes_by_scroll_frame := map[int]&BlockBox{}
 	assign_compatibility_scroll_frames(mut result.paint_tree, boxes_by_layout, mut boxes_by_scroll_frame, mut result.scroll_state)
