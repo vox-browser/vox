@@ -1805,6 +1805,10 @@ pub fn (window &WindowModel) has_animation_frame_callbacks() bool {
 	return window.animation_driver_.has_callbacks()
 }
 
+pub fn (window &WindowModel) has_pending_animation_frame_callback(handle u32) bool {
+	return window.animation_driver_.has_pending_callback(handle)
+}
+
 pub fn (mut window WindowModel) window_post_message_steps(message dom.JSValue, source_origin dom.Origin, options WindowPostMessageOptions) ! {
 	mut target_origin := options.target_origin
 	if target_origin == '/' {

@@ -39,6 +39,12 @@ pub fn (driver &AnimationFrameCallbackDriver) has_callbacks() bool {
 	return driver.callbacks_.len > 0
 }
 
+// Native binding retention follows the source pending map, independently of
+// the moved executing snapshot. Cancelling an executing entry cannot remove it.
+pub fn (driver &AnimationFrameCallbackDriver) has_pending_callback(id u32) bool {
+	return id in driver.callbacks_
+}
+
 pub fn (mut driver AnimationFrameCallbackDriver) run(now f64) {
 	// Move the pending callbacks into m_executing_callbacks so that callbacks scheduled from within
 	// a callback are deferred to the next frame; clear the executing set afterwards (the C++
