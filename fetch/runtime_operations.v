@@ -182,16 +182,21 @@ pub fn (mut timing FetchTimingInfo) set_render_blocking(render_blocking bool) {
 }
 
 pub fn (mut timing FetchTimingInfo) update_final_timings(final RequestTimingInfo, cross_origin_isolated bool) {
-	coarsened := fn [timing, cross_origin_isolated] (microseconds i64) f64 {
-		milliseconds := timing.start_time + f64(microseconds) / 1000.0
+	// RequestServer's offsets belong to the final hop, after any redirects.
+	final_request_start_time := timing.post_redirect_start_time
+	coarsened := fn [final_request_start_time, cross_origin_isolated] (microseconds i64) f64 {
+		milliseconds := final_request_start_time + f64(microseconds) / 1000.0
 		return highresolutiontime.coarsen_time(milliseconds, cross_origin_isolated)
 	}
+	secure_connection_start := if final.secure_connect_start_microseconds != 0 {
+		coarsened(final.secure_connect_start_microseconds)
+	} else { f64(0) }
 	timing.final_connection_timing_info = ConnectionTimingInfo{
 		domain_lookup_start: coarsened(final.domain_lookup_start_microseconds)
 		domain_lookup_end: coarsened(final.domain_lookup_end_microseconds)
 		connect_start: coarsened(final.connect_start_microseconds)
 		connect_end: coarsened(final.connect_end_microseconds)
-		secure_connection_start: coarsened(final.secure_connect_start_microseconds)
+		secure_connection_start: secure_connection_start
 		alpn_negotiated_protocol: final.http_version_alpn_identifier
 	}
 	timing.final_network_request_start_time = coarsened(final.request_start_microseconds)

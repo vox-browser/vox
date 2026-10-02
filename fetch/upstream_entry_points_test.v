@@ -99,6 +99,7 @@ fn test_filtered_response_accessors_delegate_to_internal_response() {
 fn test_fetch_timing_update_and_opaque_projection_match_upstream() {
 	mut timing := FetchTimingInfo.create()
 	timing.set_start_time(10)
+	timing.set_post_redirect_start_time(10)
 	timing.update_final_timings(RequestTimingInfo{
 		domain_lookup_start_microseconds: 1000
 		domain_lookup_end_microseconds: 2000
