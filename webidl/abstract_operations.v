@@ -9,7 +9,6 @@ module webidl
 
 import libjs
 import math
-import strconv
 
 pub enum EnforceRange {
 	no
@@ -77,7 +76,8 @@ pub fn value_to_number(value Value) !f64 {
 		.boolean { if value.boolean_value { f64(1) } else { f64(0) } }
 		.null_ { f64(0) }
 		.undefined { math.nan() }
-		.string_ { strconv.atof64(value.string_value.trim_space()) or { math.nan() } }
+		.string_ { libjs.string_to_number(libjs.utf16_string(value.string_value)) }
+		.bigint { return error('TypeError: Cannot convert BigInt to number') }
 		else { return error('TypeError: value cannot be converted to a number') }
 	}
 }

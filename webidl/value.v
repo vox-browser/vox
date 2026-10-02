@@ -5,6 +5,8 @@
 // Typed boundary used by the WebIDL translation in place of LibJS::Value.
 module webidl
 
+import libjs
+
 pub enum ValueKind {
 	undefined
 	null_
@@ -247,10 +249,7 @@ pub fn to_string(value Value) !string {
 }
 
 fn format_number(value f64) string {
-	if value == f64(int(value)) {
-		return int(value).str()
-	}
-	return value.str()
+	return libjs.Value.from_f64(value).str()
 }
 
 // V strings are well-formed UTF-8. Invalid scalar input is represented by the
