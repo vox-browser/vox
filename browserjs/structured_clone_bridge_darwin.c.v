@@ -5,6 +5,7 @@ module browserjs
 import dom
 import html
 import libjs
+import math
 import webidl
 
 fn C.JSValueIsArray(context voidptr, value voidptr) bool
@@ -220,7 +221,17 @@ fn (mut projection NativeCloneProjection) reconstruct(value dom.JSValue) !voidpt
 			integer := object.bigint_data or { return native_clone_unsupported('Missing source boxed BigInt record') }
 			data = projection.adopt_root(owner.javascript_bigint(webidl.bigint_value_for_record(integer))!)
 		}
-		.date { tag = 11; data = C.JSValueMakeNumber(owner.context, object.number_data) }
+		.date {
+			// Source Date::create installs the raw decoded double. JSC's native
+			// constructor TimeClips it; reject values that would silently change.
+			date := object.number_data
+			if !math.is_nan(date) && (math.is_inf(date, 0) || math.abs(date) > 8640000000000000.0
+				|| math.trunc(date) != date || (date == 0 && math.signbit(date))) {
+				return native_clone_unsupported('Source Date value cannot be installed exactly by this native constructor')
+			}
+			tag = 11
+			data = C.JSValueMakeNumber(owner.context, date)
+		}
 		.map { tag = 13 }
 		.set { tag = 14 }
 		.array { tag = 15; data = C.JSValueMakeNumber(owner.context, f64(object.array_length or { u32(object.values.len) })) }
