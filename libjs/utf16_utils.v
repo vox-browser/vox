@@ -5,6 +5,9 @@ module libjs
 pub struct Utf16String {
 mut:
 	data []u16
+	// IPC strings retain their actual ASCII/UTF16 storage form even when all
+	// units happen to be ASCII. Ordinary standalone strings infer the form.
+	ascii_storage_ ?bool
 }
 
 fn Utf16String.new() Utf16String {
@@ -20,11 +23,31 @@ fn Utf16String.from_slice(s []u16) Utf16String {
 // AK/Utf16String's unvalidated code-unit construction/span at the embedding
 // boundary. Preserve unpaired surrogates and give callers an owned slice.
 pub fn utf16_string_from_code_units(units []u16) Utf16String {
-	return Utf16String.from_slice(units)
+	// AK/Utf16String::from_utf16 compresses only short ASCII input; longer
+	// raw UTF16 input retains that storage representation.
+	mut text := Utf16String.from_slice(units)
+	text.ascii_storage_ = units.len <= int(sizeof(voidptr)) - 1 && text.has_ascii_storage()
+	return text
 }
 
 pub fn (text Utf16String) code_units() []u16 {
 	return text.data.clone()
+}
+
+// AK/Utf16String{,Data}::from_ipc_stream retains the encoded storage form.
+pub fn utf16_string_from_code_units_with_storage(units []u16, ascii bool) !Utf16String {
+	if ascii {
+		for unit in units {
+			if unit >= 128 { return error('Stream contains invalid ASCII data') }
+		}
+	}
+	return Utf16String{data: units.clone(), ascii_storage_: ascii}
+}
+
+pub fn (text Utf16String) has_ascii_storage() bool {
+	if storage := text.ascii_storage_ { return storage }
+	for unit in text.data { if unit >= 128 { return false } }
+	return true
 }
 
 fn (u Utf16String) len() int {
@@ -42,6 +65,7 @@ fn (u Utf16String) as_slice() []u16 {
 fn (u Utf16String) clone() Utf16String {
 	return Utf16String{
 		data: u.data.clone()
+		ascii_storage_: u.ascii_storage_
 	}
 }
 

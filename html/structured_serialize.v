@@ -226,8 +226,7 @@ fn (mut serializer StructuredSerializer) write_utf16_string(value libjs.Utf16Str
 	// LibIPC/Encoder.cpp::encode(Utf16View): ASCII storage, u32 code-unit
 	// count, then ASCII bytes or raw host-endian UTF-16 (pinned little endian).
 	units := value.code_units()
-	mut ascii := true
-	for unit in units { if unit >= 128 { ascii = false; break } }
+	ascii := value.has_ascii_storage()
 	serializer.write_u8(if ascii { u8(1) } else { u8(0) })
 	serializer.write_u32(u32(units.len))
 	for unit in units {
@@ -237,7 +236,8 @@ fn (mut serializer StructuredSerializer) write_utf16_string(value libjs.Utf16Str
 }
 
 fn (mut serializer StructuredSerializer) write_bigint(integer &libjs.BigInt) ! {
-	// StructuredSerialize.cpp::encode_signed_big_integer -> mp_to_sbin:
+	// StructuredSerialize.cpp::encode_signed_big_integer delegates to
+	// Crypto::SignedBigInteger::export_data:
 	// one sign byte followed by the big-endian unsigned magnitude.
 	magnitude, _ := integer.big_integer.bytes()
 	mut bytes := []u8{cap: magnitude.len + 1}
@@ -563,7 +563,9 @@ fn (mut decoder StructuredDecoder) read_utf16_string() !libjs.Utf16String {
 		if flag == 1 && unit >= 128 { return error('DataCloneError: invalid ASCII string storage') }
 		units << unit
 	}
-	return libjs.utf16_string_from_code_units(units)
+	return libjs.utf16_string_from_code_units_with_storage(units, flag == 1) or {
+		return error('DataCloneError: invalid ASCII string storage')
+	}
 }
 
 fn (mut decoder StructuredDecoder) read_bigint() !&libjs.BigInt {
