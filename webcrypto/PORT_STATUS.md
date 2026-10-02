@@ -188,6 +188,18 @@ key size where upstream GET_CIPHER asserts; it does not accept or operate on
 that invalid key. Existing 18 source vectors and focused format/error/binding
 checks pass.
 
+AES CTR width, AES generation/derivation lengths, and AES-GCM/AEAD tag lengths
+now use the translated LibJS StringToNumber and WebIDL integer operations for
+primitive values, matching source wrapping/truncation/NaN/infinity handling.
+Buffer reads retain source counter/IV/AAD-before-integer order. Explicitly
+present undefined tagLength converts to zero, and undefined additionalData
+fails BufferSource conversion instead of being omitted. Focused tests cover
+negative/fractional/modulo values, boolean/null/string numeric inputs (including
+radix literals and Unicode whitespace), omitted lengths, field presence, and
+immediate/deferred error boundaries. Arbitrary JS object ToPrimitive/accessors
+remain outside the json2/WebIDL typed host boundary pending the VM binding;
+this change does not fabricate their execution.
+
 Common parameter/typed boundary conversions remain under source review.
 Native backend availability does not establish complete WebCrypto/VM parity.
 
