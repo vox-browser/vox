@@ -121,6 +121,7 @@ pub:
 mut:
 	steps     fn() @[required]
 	document_ ?&dom.Document
+	timer_nesting_level_ u32
 }
 
 pub fn Task.create(source TaskSource, document ?&dom.Document, steps fn()) &Task {
@@ -143,6 +144,9 @@ pub fn (task &Task) id() u64 {
 pub fn (task &Task) source() TaskSource {
 	return task.source
 }
+
+pub fn (task &Task) timer_nesting_level() u32 { return task.timer_nesting_level_ }
+pub fn (mut task Task) set_timer_nesting_level(level u32) { task.timer_nesting_level_ = level }
 
 pub fn (task &Task) document() ?&dom.Document {
 	return task.document_

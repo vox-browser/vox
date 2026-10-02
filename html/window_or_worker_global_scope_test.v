@@ -2,6 +2,7 @@
 module html
 
 import dom
+import math
 import page
 
 __global (
@@ -90,9 +91,9 @@ fn test_hidden_document_delayed_timers_share_aligned_wakeups() {
 	assert immediate.due_time_ms == immediate.deadline_ms
 	assert delayed.throttling_class == .delayed
 	assert delayed.due_time_ms >= delayed.deadline_ms
-	assert (delayed.due_time_ms - origin) % 1_000 == 0
+	assert math.fmod(delayed.due_time_ms - origin, 1_000) == 0
 	assert specification_timeout.due_time_ms >= specification_timeout.deadline_ms
-	assert (specification_timeout.due_time_ms - origin) % 1_000 == 0
+	assert math.fmod(specification_timeout.due_time_ms - origin, 1_000) == 0
 
 	document.set_initial_visibility_state(.visible)
 	visible_delayed := scope.active_timers_[delayed_id] or { panic('missing visible timer') }
@@ -100,7 +101,7 @@ fn test_hidden_document_delayed_timers_share_aligned_wakeups() {
 	document.update_the_visibility_state(.hidden)
 	hidden_again := scope.active_timers_[delayed_id] or { panic('missing hidden timer') }
 	assert hidden_again.due_time_ms >= hidden_again.deadline_ms
-	assert (hidden_again.due_time_ms - origin) % 1_000 == 0
+	assert math.fmod(hidden_again.due_time_ms - origin, 1_000) == 0
 }
 
 fn test_hidden_document_short_interval_fires_once_per_wakeup() {
@@ -167,9 +168,9 @@ fn test_hidden_document_intensively_throttles_chained_timers_after_grace() {
 	delayed := scope.active_timers_[delayed_id] or { panic('missing delayed timer') }
 	origin := scope.hidden_timer_grid_origin_ms()
 	assert chained.throttling_class == .chained
-	assert (chained.due_time_ms - origin) % 1_000 == 0
+	assert math.fmod(chained.due_time_ms - origin, 1_000) == 0
 	assert delayed.throttling_class == .delayed
-	assert (delayed.due_time_ms - origin) % 100 == 0
+	assert math.fmod(delayed.due_time_ms - origin, 100) == 0
 }
 
 fn test_intensive_throttling_allows_a_rare_chained_timer_at_an_ordinary_wakeup() {
@@ -222,7 +223,12 @@ fn test_intensive_throttling_grace_depends_on_readiness_when_document_hides() {
 
 fn test_deeply_nested_timer_is_chained_and_clamped() {
 	mut scope := WindowOrWorkerGlobalScopeMixin.create(dom.Origin{}, false, false)
-	scope.currently_running_timer_nesting = 6
+	mut owner := scope.responsible_event_loop()
+	previous_task := owner.currently_running_task_
+	mut task := Task.create(.timer_task, none, fn () {})
+	task.set_timer_nesting_level(6)
+	owner.currently_running_task_ = task
+	defer { owner.currently_running_task_ = previous_task }
 	id := scope.set_timeout(timer_source_handler('nested'), 0, [])
 	timer := scope.active_timers_[id] or { panic('missing nested timer') }
 	assert timer.nesting_level == 7
@@ -264,7 +270,7 @@ fn test_hidden_audible_document_keeps_timers_on_their_deadlines() {
 	timer_id := scope.set_timeout(timer_source_handler('audible'), 25, [])
 	hidden_timer := scope.active_timers_[timer_id] or { panic('missing hidden timer') }
 	assert hidden_timer.due_time_ms >= hidden_timer.deadline_ms
-	assert (hidden_timer.due_time_ms - scope.hidden_timer_grid_origin_ms()) % 1_000 == 0
+	assert math.fmod(hidden_timer.due_time_ms - scope.hidden_timer_grid_origin_ms(), 1_000) == 0
 
 	media_id := dom.UniqueNodeID(987)
 	document.media_element_audio_play_state_changed(media_id, true)
@@ -275,7 +281,7 @@ fn test_hidden_audible_document_keeps_timers_on_their_deadlines() {
 	page_model.set_page_mute_state(.muted)
 	assert !document.is_playing_audio()
 	page_muted_timer := scope.active_timers_[timer_id] or { panic('missing page-muted timer') }
-	assert (page_muted_timer.due_time_ms - scope.hidden_timer_grid_origin_ms()) % 1_000 == 0
+	assert math.fmod(page_muted_timer.due_time_ms - scope.hidden_timer_grid_origin_ms(), 1_000) == 0
 	page_model.set_page_mute_state(.unmuted)
 	assert document.is_playing_audio()
 	page_unmuted_timer := scope.active_timers_[timer_id] or { panic('missing page-unmuted timer') }
@@ -285,7 +291,7 @@ fn test_hidden_audible_document_keeps_timers_on_their_deadlines() {
 	assert !document.is_playing_audio()
 	silent_timer := scope.active_timers_[timer_id] or { panic('missing silent timer') }
 	assert silent_timer.due_time_ms >= silent_timer.deadline_ms
-	assert (silent_timer.due_time_ms - scope.hidden_timer_grid_origin_ms()) % 1_000 == 0
+	assert math.fmod(silent_timer.due_time_ms - scope.hidden_timer_grid_origin_ms(), 1_000) == 0
 	assert scope.intensive_timer_grace_deadline_ms_ == grace_deadline
 }
 
