@@ -830,6 +830,7 @@ pub enum EventTargetKind {
 	generic
 	node
 	window
+	abort_signal
 }
 
 pub struct EventTargetData {
@@ -2198,11 +2199,11 @@ pub mut:
 }
 
 pub fn AbortSignal.construct_impl() !&AbortSignal {
-	return &AbortSignal{}
+	return AbortSignal.new()
 }
 
 pub fn AbortSignal.new() &AbortSignal {
-	return &AbortSignal{}
+	return &AbortSignal{EventTarget: EventTarget{data: EventTargetData{kind: .abort_signal}}}
 }
 
 pub fn (mut signal AbortSignal) initialize() {

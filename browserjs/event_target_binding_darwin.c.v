@@ -1,0 +1,452 @@
+// DOM native records and WebIDL callback objects stay in their owning JSC realm.
+@[has_globals]
+module browserjs
+
+import dom
+import html
+import highresolutiontime
+import webidl
+
+fn C.JSValueIsBoolean(context voidptr, value voidptr) bool
+fn C.JSValueIsNumber(context voidptr, value voidptr) bool
+fn C.JSValueToNumber(context voidptr, value voidptr, exception &voidptr) f64
+
+pub struct EventWrapperProvider {
+pub:
+	owner  voidptr
+	create fn (&dom.Event) !voidptr
+}
+
+@[heap]
+struct EventTargetBinding {
+mut:
+	targets         map[voidptr]&dom.EventTarget
+	target_wrappers map[voidptr]voidptr
+	events          map[voidptr]&dom.Event
+	event_wrappers  map[voidptr]voidptr
+	callbacks       map[voidptr]voidptr
+	providers       []EventWrapperProvider
+	factory         voidptr
+	define_trusted  voidptr
+	closed          bool
+}
+
+__global event_target_bindings_ = map[voidptr]&EventTargetBinding{}
+
+fn (runtime &Runtime) event_binding() !&EventTargetBinding {
+	return event_target_bindings_[voidptr(runtime)] or {
+		return error('Native EventTarget binding is not installed')
+	}
+}
+
+fn (runtime &Runtime) event_binding_type_error(message string) IError {
+	return runtime.actual_javascript_exception(runtime.binding_exception_value(error(
+		'TypeError: ' + message)))
+}
+
+pub fn (mut runtime Runtime) install_event_target_binding() ! {
+	runtime.require_javascript_value_context()!
+	owner := voidptr(&runtime)
+	if _ := event_target_bindings_[owner] { return }
+	runtime.install_dom_exception_binding()!
+	mut binding := &EventTargetBinding{}
+	event_target_bindings_[owner] = binding
+	runtime.define_value_host_function('__ladybirdEvent', fn [owner] (_ voidptr, args []voidptr) !voidptr {
+		mut runtime := unsafe { &Runtime(owner) }
+		if args.len < 2 {
+			return runtime.event_binding_type_error('Missing internal Event binding arguments')
+		}
+		method := runtime.binding_dom_string(args[0])!
+		return runtime.event_binding_call(method, args[1], args[2..])
+	})!
+	runtime.evaluate_host(event_target_bootstrap())!
+	binding.factory = runtime.evaluate_host_value('__ladybirdEventFactory')!
+	binding.define_trusted = runtime.evaluate_host_value('__ladybirdEventDefineTrusted')!
+	runtime.retain_javascript_value(binding.factory)!
+	runtime.retain_javascript_value(binding.define_trusted)!
+	runtime.add_close_handler(fn [owner, mut binding] () {
+		binding.closed = true
+		event_target_bindings_.delete(owner)
+	})
+}
+
+pub fn (mut runtime Runtime) bind_event_target(wrapper voidptr, target &dom.EventTarget) ! {
+	mut binding := runtime.event_binding()!
+	if !C.JSValueIsObject(runtime.context, wrapper) {
+		return runtime.event_binding_type_error('EventTarget wrapper is not an object')
+	}
+	if existing := binding.target_wrappers[voidptr(target)] {
+		if existing != wrapper {
+			return runtime.event_binding_type_error('EventTarget already has an owning wrapper')
+		}
+	}
+	binding.targets[wrapper] = target
+	binding.target_wrappers[voidptr(target)] = wrapper
+	runtime.retain_javascript_value(wrapper)!
+}
+
+pub fn (mut runtime Runtime) javascript_event_target(target &dom.EventTarget, prototype ?voidptr) !voidptr {
+	binding := runtime.event_binding()!
+	if wrapper := binding.target_wrappers[voidptr(target)] { return wrapper }
+	wrapper := runtime.call_javascript_function(binding.factory,
+		C.JSValueMakeUndefined(runtime.context), [
+		runtime.binding_string('target'),
+		prototype or { C.JSValueMakeNull(runtime.context) },
+	])!
+	runtime.bind_event_target(wrapper, target)!
+	return wrapper
+}
+
+pub fn (runtime &Runtime) native_event_target(wrapper voidptr) !&dom.EventTarget {
+	binding := runtime.event_binding()!
+	return binding.targets[wrapper] or {
+		return runtime.event_binding_type_error('Illegal EventTarget receiver')
+	}
+}
+
+pub fn (mut runtime Runtime) bind_event(wrapper voidptr, event &dom.Event) ! {
+	mut binding := runtime.event_binding()!
+	if !C.JSValueIsObject(runtime.context, wrapper) {
+		return runtime.event_binding_type_error('Event wrapper is not an object')
+	}
+	if existing := binding.event_wrappers[voidptr(event)] {
+		if existing != wrapper {
+			return runtime.event_binding_type_error('Event already has an owning wrapper')
+		}
+		return
+	}
+	runtime.retain_javascript_value(wrapper)!
+	runtime.call_javascript_function(binding.define_trusted, C.JSValueMakeUndefined(runtime.context), [wrapper])!
+	binding.events[wrapper] = event
+	binding.event_wrappers[voidptr(event)] = wrapper
+}
+
+pub fn (mut runtime Runtime) install_event_wrapper_provider(provider EventWrapperProvider) ! {
+	mut binding := runtime.event_binding()!
+	binding.providers = binding.providers.filter(it.owner != provider.owner)
+	binding.providers << provider
+}
+
+pub fn (mut runtime Runtime) javascript_event(event &dom.Event) !voidptr {
+	binding := runtime.event_binding()!
+	if wrapper := binding.event_wrappers[voidptr(event)] { return wrapper }
+	for provider in binding.providers {
+		wrapper := provider.create(event)!
+		if wrapper != unsafe { nil } {
+			runtime.bind_event(wrapper, event)!
+			return wrapper
+		}
+	}
+	wrapper := runtime.call_javascript_function(binding.factory,
+		C.JSValueMakeUndefined(runtime.context), [
+		runtime.binding_string('event'),
+		C.JSValueMakeNull(runtime.context),
+	])!
+	runtime.bind_event(wrapper, event)!
+	return wrapper
+}
+
+pub fn (runtime &Runtime) native_event(wrapper voidptr) !&dom.Event {
+	binding := runtime.event_binding()!
+	return binding.events[wrapper] or {
+		return runtime.event_binding_type_error('Illegal Event receiver')
+	}
+}
+
+fn (runtime &Runtime) event_binding_bool_property(value voidptr, property string, fallback bool) !bool {
+	if C.JSValueIsUndefined(runtime.context, value) || C.JSValueIsNull(runtime.context, value) {
+		return fallback
+	}
+	if !C.JSValueIsObject(runtime.context, value) {
+		return runtime.event_binding_type_error('Event options must be a dictionary')
+	}
+	member := runtime.binding_property(value, property)!
+	return if C.JSValueIsUndefined(runtime.context, member) {
+		fallback
+	} else {
+		C.JSValueToBoolean(runtime.context, member)
+	}
+}
+
+fn (runtime &Runtime) event_binding_options(value voidptr, add bool) !dom.AddEventListenerOptions {
+	if !C.JSValueIsObject(runtime.context, value) && !C.JSValueIsUndefined(runtime.context, value)
+		&& !C.JSValueIsNull(runtime.context, value) {
+		return dom.AddEventListenerOptions{
+			capture: C.JSValueToBoolean(runtime.context, value)
+		}
+	}
+	mut options := dom.AddEventListenerOptions{}
+	// Dictionary members are converted in lexicographic order by WebIDL.
+	options.capture = runtime.event_binding_bool_property(value, 'capture', false)!
+	if !add { return options }
+	options.once = runtime.event_binding_bool_property(value, 'once', false)!
+	if C.JSValueIsObject(runtime.context, value) {
+		passive := runtime.binding_property(value, 'passive')!
+		if !C.JSValueIsUndefined(runtime.context, passive) {
+			options.passive = C.JSValueToBoolean(runtime.context, passive)
+		}
+		signal := runtime.binding_property(value, 'signal')!
+		if !C.JSValueIsUndefined(runtime.context, signal) {
+			if !C.JSValueIsObject(runtime.context, signal) {
+				return runtime.event_binding_type_error('signal must be an AbortSignal')
+			}
+			target := runtime.native_event_target(signal)!
+			if target.data.kind != .abort_signal {
+				return runtime.event_binding_type_error('signal must be an AbortSignal')
+			}
+			options.signal = unsafe { &dom.AbortSignal(target) }
+		}
+	}
+	return options
+}
+
+fn (mut runtime Runtime) event_callback_result(value voidptr) !dom.JSValue {
+	if C.JSValueIsUndefined(runtime.context, value) { return dom.js_undefined() }
+	if C.JSValueIsNull(runtime.context, value) { return dom.js_null() }
+	if C.JSValueIsBoolean(runtime.context, value) {
+		return dom.js_bool(C.JSValueToBoolean(runtime.context, value))
+	}
+	return dom.js_webidl_value(runtime.webidl_value(value)!)
+}
+
+fn (mut runtime Runtime) report_event_callback_exception(exception IError) {
+	if settings := runtime.scripting_settings_ {
+		mut actual := unsafe { nil }
+		if exception is JavaScriptValueException {
+			actual = exception.value
+		} else {
+			actual = runtime.binding_exception_value(exception)
+		}
+		value := runtime.webidl_value(actual) or { return }
+		settings.report_an_exception(dom.js_webidl_value(value), false)
+	}
+}
+
+fn (mut runtime Runtime) event_callback(value voidptr, handler bool) !&dom.CallbackType {
+	if C.JSValueIsUndefined(runtime.context, value) || C.JSValueIsNull(runtime.context, value) {
+		return unsafe { nil }
+	}
+	if !C.JSValueIsObject(runtime.context, value) {
+		if handler { return unsafe { nil } }
+		return runtime.event_binding_type_error('EventListener must be an object')
+	}
+	if handler && !C.JSObjectIsFunction(runtime.context, value) {
+		return runtime.event_binding_type_error('Event handler is not callable')
+	}
+	runtime.retain_javascript_value(value)!
+	owner := voidptr(&runtime)
+	stored_settings := runtime.callback_settings()
+	binding := runtime.event_binding()!
+	mut window := ?&dom.Window(none)
+	if settings := runtime.scripting_settings_ {
+		if document := settings.responsible_document() { window = document.get_window() }
+	}
+	callback := &dom.CallbackType{
+		callback_identity_:          value
+		associated_window:           window
+		handle_event_with_exception: fn [owner, value, handler, stored_settings, binding] (event &dom.Event, current_target ?&dom.EventTarget) !dom.JSValue {
+			if binding.closed { return dom.js_undefined() }
+			mut runtime := unsafe { &Runtime(owner) }
+			if settings := runtime.scripting_settings_ {
+				if html.can_run_script_for_settings(settings) == .do_not_run {
+					return dom.js_undefined()
+				}
+			}
+			runtime.prepare_html_callback(stored_settings)
+			defer { runtime.clean_up_html_callback(stored_settings) }
+			defer { runtime.mark_document_state_dirty() }
+			return runtime.invoke_event_callback(value, handler, event, current_target) or {
+				runtime.report_event_callback_exception(err)
+				return err
+			}
+		}
+	}
+	mut mutable_binding := unsafe { &EventTargetBinding(binding) }
+	mutable_binding.callbacks[voidptr(callback)] = value
+	return callback
+}
+
+fn (mut runtime Runtime) invoke_event_callback(value voidptr, handler bool, event &dom.Event, current_target ?&dom.EventTarget) !dom.JSValue {
+	mut function := value
+	mut receiver := C.JSValueMakeUndefined(runtime.context)
+	if C.JSObjectIsFunction(runtime.context, value) {
+		if target := current_target { receiver = runtime.javascript_event_target(target, none)! }
+	} else {
+		function = runtime.binding_property(value, 'handleEvent')!
+		if !C.JSValueIsObject(runtime.context, function)
+			|| !C.JSObjectIsFunction(runtime.context, function) {
+			return runtime.event_binding_type_error('EventListener.handleEvent is not callable')
+		}
+		receiver = value
+	}
+	_ = handler
+	result := runtime.call_javascript_function(function, receiver, [
+		runtime.javascript_event(event)!,
+	])!
+	return runtime.event_callback_result(result)
+}
+
+pub fn (runtime &Runtime) javascript_event_handler(target &dom.EventTarget, name string) !voidptr {
+	binding := runtime.event_binding()!
+	callback := target.event_handler_attribute(name) or {
+		return C.JSValueMakeNull(runtime.context)
+	}
+	return binding.callbacks[voidptr(callback)] or {
+		return runtime.event_binding_type_error('Event handler has no owning JavaScript callback')
+	}
+}
+
+pub fn (mut runtime Runtime) set_javascript_event_handler(target &dom.EventTarget, name string, value voidptr) ! {
+	callback := runtime.event_callback(value, true)!
+	target.set_event_handler_attribute(name, if callback != unsafe { nil } {
+		?&dom.CallbackType(callback)
+	} else {
+		none
+	})
+}
+
+fn (mut runtime Runtime) event_binding_call(method string, receiver voidptr, args []voidptr) !voidptr {
+	context := runtime.context
+	if method == 'constructTarget' {
+		target := dom.EventTarget.construct_impl()!
+		runtime.bind_event_target(receiver, target)!
+		return C.JSValueMakeUndefined(context)
+	}
+	if method == 'constructEvent' {
+		type_ := runtime.binding_dom_string(args[0])!
+		init := dom.EventInit{
+			bubbles:    runtime.event_binding_bool_property(args[1], 'bubbles', false)!
+			cancelable: runtime.event_binding_bool_property(args[1], 'cancelable', false)!
+			composed:   runtime.event_binding_bool_property(args[1], 'composed', false)!
+		}
+		mut event := dom.Event.construct_impl(type_, init)!
+		if settings := runtime.scripting_settings_ {
+			event.set_time_stamp(highresolutiontime.current_high_resolution_time(highresolutiontime.TimeOriginContext{
+				time_origin:                      settings.time_origin()
+				cross_origin_isolated_capability: settings.cross_origin_isolated_capability() == .yes
+			}))
+		}
+		runtime.bind_event(receiver, event)!
+		return C.JSValueMakeUndefined(context)
+	}
+	if method in ['add', 'remove', 'dispatch'] {
+		target := runtime.native_event_target(receiver)!
+		if method == 'dispatch' {
+			event := runtime.native_event(args[0])!
+			result := target.dispatch_event_binding(event) or {
+				if err.msg().starts_with('InvalidStateError:') {
+					actual := runtime.javascript_dom_exception(webidl.dom_exception_value(webidl.DOMException.create('InvalidStateError',
+						err.msg().all_after('InvalidStateError: '))))!
+					return runtime.actual_javascript_exception(actual)
+				}
+				return err
+			}
+			return C.JSValueMakeBoolean(context, result)
+		}
+		type_ := runtime.binding_dom_string(args[0])!
+		callback := runtime.event_callback(args[1], false)!
+		mut listener := ?&dom.IDLEventListener(none)
+		if callback != unsafe { nil } { listener = dom.IDLEventListener.create(callback) }
+		options := runtime.event_binding_options(args[2], method == 'add')!
+		if method == 'add' {
+			target.add_event_listener(type_, listener, options)
+		} else {
+			target.remove_event_listener(type_, listener, dom.EventListenerOptions{
+				capture: options.capture
+			})
+		}
+		return C.JSValueMakeUndefined(context)
+	}
+	mut event := runtime.native_event(receiver)!
+	if method == 'getEvent' {
+		property := runtime.binding_dom_string(args[0])!
+		return match property {
+			'type' {
+				runtime.binding_string(event.type_name())
+			}
+			'target', 'srcElement', 'currentTarget' {
+				target := if property == 'currentTarget' {
+					event.current_target_for_bindings()
+				} else {
+					event.target()
+				}
+				if native := target {
+					runtime.javascript_event_target(native, none)!
+				} else {
+					C.JSValueMakeNull(context)
+				}
+			}
+			'eventPhase' {
+				C.JSValueMakeNumber(context, event.event_phase())
+			}
+			'timeStamp' {
+				C.JSValueMakeNumber(context, event.time_stamp())
+			}
+			'bubbles' {
+				C.JSValueMakeBoolean(context, event.bubbles())
+			}
+			'cancelable' {
+				C.JSValueMakeBoolean(context, event.cancelable())
+			}
+			'composed' {
+				C.JSValueMakeBoolean(context, event.composed())
+			}
+			'isTrusted' {
+				C.JSValueMakeBoolean(context, event.is_trusted())
+			}
+			'defaultPrevented' {
+				C.JSValueMakeBoolean(context, event.default_prevented())
+			}
+			'cancelBubble' {
+				C.JSValueMakeBoolean(context, event.cancel_bubble())
+			}
+			'returnValue' {
+				C.JSValueMakeBoolean(context, event.return_value())
+			}
+			else {
+				return runtime.event_binding_type_error('Unknown Event attribute')
+			}
+		}
+	}
+	match method {
+		'setEvent' {
+			property := runtime.binding_dom_string(args[0])!
+			value := C.JSValueToBoolean(context, args[1])
+			if property == 'cancelBubble' {
+				event.set_cancel_bubble(value)
+			} else if property == 'returnValue' {
+				event.set_return_value(value)
+			} else {
+				return runtime.event_binding_type_error('Unknown Event setter')
+			}
+		}
+		'stopPropagation' {
+			event.stop_propagation()
+		}
+		'stopImmediatePropagation' {
+			event.stop_immediate_propagation()
+		}
+		'preventDefault' {
+			event.prevent_default()
+		}
+		'initEvent' {
+			event.init_event(runtime.binding_dom_string(args[0])!, C.JSValueToBoolean(context,
+				args[1]), C.JSValueToBoolean(context, args[2]))
+		}
+		'composedPath' {
+			mut values := []voidptr{}
+			for target in event.composed_path() {
+				values << runtime.javascript_event_target(target, none)!
+			}
+			mut exception := unsafe { nil }
+			array := C.JSObjectMakeArray(context, usize(values.len), values.data, &exception)
+			if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+			return array
+		}
+		else {
+			return runtime.event_binding_type_error('Unknown Event operation')
+		}
+	}
+
+	return C.JSValueMakeUndefined(context)
+}
