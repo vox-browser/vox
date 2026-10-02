@@ -102,8 +102,19 @@ preserved and does not establish WebXR device support. The synchronous bool
 helper has been removed; its existing context-loss caller now runs the actual
 `make_xr_compatible` deferred and settlement steps and inspects the resulting
 Promise. Both that focused file and the HTML ownership file passed with GC
-disabled. The actual JavaScript Promise binding is still pending for this
-operation.
+disabled.
+
+The public `makeXRCompatible()` method now uses
+`browserjs/canvas_webgl_xr_host_darwin.c.v` to invoke that same owning operation
+and wrap its native capability in an actual JavaScriptCore Promise. Both
+context prototypes expose the source zero-argument, nonconstructible operation;
+receiver errors produce rejected Promises carrying their original engine values.
+Context loss becomes an actual DOMException after the source settlement task.
+The four public ownership/rejection/close cases and the context-interface
+neighbor passed with GC disabled. The existing Promise bridge retains the
+engine Promise until runtime closure and releases settlement roots when used;
+full engine wrapper collection and translated VM Promise parity remain separate
+boundaries.
 
 | Upstream unavailable operation | Source declaration under `Libraries/LibWeb/WebGL/` |
 | --- | --- |
