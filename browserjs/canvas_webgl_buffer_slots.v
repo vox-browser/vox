@@ -12,7 +12,7 @@ const __webglBufferSlots=(function(){
  const apply=Reflect.apply,get=Object.getOwnPropertyDescriptor,define=Object.defineProperty,T=TypeError,U8=Uint8Array,F32=Float32Array,I32=Int32Array,U32=Uint32Array,isView=ArrayBuffer.isView;
  const ab=get(ArrayBuffer.prototype,"byteLength").get,resizable=get(ArrayBuffer.prototype,"resizable"),tp=Object.getPrototypeOf(U8.prototype),tb=get(tp,"buffer").get,offset=get(tp,"byteOffset").get,length=get(tp,"byteLength").get,tag=get(tp,Symbol.toStringTag).get,values=tp.values,set=tp.set;
  const db=get(DataView.prototype,"buffer").get,doff=get(DataView.prototype,"byteOffset").get,dl=get(DataView.prototype,"byteLength").get,sab=typeof SharedArrayBuffer==="function"?get(SharedArrayBuffer.prototype,"byteLength").get:null,growable=typeof SharedArrayBuffer==="function"?get(SharedArrayBuffer.prototype,"growable"):null;
- const sizes={Int8Array:1,Uint8Array:1,Uint8ClampedArray:1,Int16Array:2,Uint16Array:2,Int32Array:4,Uint32Array:4,Float32Array:4,Float64Array:8,BigInt64Array:8,BigUint64Array:8};
+ const sizes={Int8Array:1,Uint8Array:1,Uint8ClampedArray:1,Int16Array:2,Uint16Array:2,Float16Array:2,Int32Array:4,Uint32Array:4,Float32Array:4,Float64Array:8,BigInt64Array:8,BigUint64Array:8};
  function own(array,index,value){apply(define,Object,[array,index,{value,writable:true,enumerable:true,configurable:true}]);}
  function describe(value){try{return {buffer:apply(tb,value,[]),type:apply(tag,value,[])}}catch(error){}try{return {buffer:apply(db,value,[]),type:"DataView"}}catch(error){}try{apply(ab,value,[]);return {buffer:value,type:"ArrayBuffer"}}catch(error){}return null;}
  function shared(buffer){if(!sab)return false;try{apply(sab,buffer,[]);return true}catch(error){return false}}
