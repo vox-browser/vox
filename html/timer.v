@@ -21,19 +21,31 @@ pub:
 mut:
 	timer_            &platform.Timer @[required]
 	throttling_class_ TimerThrottlingClass = .delayed
-	deadline_         i64
+	deadline_         f64
 }
 
 pub fn Timer.create(window_or_worker_global_scope voidptr, milliseconds i32, callback fn (), id i32, repeating TimerRepeating) &Timer {
+	return create_html_timer(window_or_worker_global_scope, milliseconds, callback, id, repeating, .delayed, 0)
+}
+
+// The source constructor carries the deadline on the shared high-resolution
+// monotonic clock without losing its fractional milliseconds.
+pub fn Timer.create_with_parameters(milliseconds i32, callback fn (), id i32, repeating TimerRepeating, throttling_class TimerThrottlingClass, deadline f64) &Timer {
+	return create_html_timer(unsafe { nil }, milliseconds, callback, id, repeating, throttling_class, deadline)
+}
+
+fn create_html_timer(scope voidptr, milliseconds i32, callback fn (), id i32, repeating TimerRepeating, throttling_class TimerThrottlingClass, deadline f64) &Timer {
 	core_timer := if repeating == .yes {
 		platform.Timer.create_repeating(int(milliseconds), callback)
 	} else {
 		platform.Timer.create_single_shot(int(milliseconds), callback)
 	}
 	return &Timer{
-		window_or_worker_global_scope: window_or_worker_global_scope
+		window_or_worker_global_scope: scope
 		id: id
 		timer_: core_timer
+		throttling_class_: throttling_class
+		deadline_: deadline
 	}
 }
 
@@ -53,5 +65,9 @@ pub fn (timer &Timer) is_active() bool { return timer.timer_.is_active() }
 pub fn (timer &Timer) interval() i32 { return i32(timer.timer_.interval()) }
 pub fn (timer &Timer) throttling_class() TimerThrottlingClass { return timer.throttling_class_ }
 pub fn (mut timer Timer) set_throttling_class(class TimerThrottlingClass) { timer.throttling_class_ = class }
-pub fn (timer &Timer) deadline() i64 { return timer.deadline_ }
-pub fn (mut timer Timer) set_deadline(deadline i64) { timer.deadline_ = deadline }
+pub fn (timer &Timer) deadline() f64 { return timer.deadline_ }
+pub fn (mut timer Timer) set_deadline(deadline f64) { timer.deadline_ = deadline }
+
+// GC finalization is still an embedding boundary; explicit owner lifecycle
+// uses the same source invariant and must stop the native clock first.
+pub fn (timer &Timer) finalize() { assert !timer.is_active() }

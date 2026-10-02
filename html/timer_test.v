@@ -26,3 +26,16 @@ fn test_timer_exact_lifecycle_and_mutation() {
 	timer.fire()
 	assert state.calls == 1
 }
+
+fn test_timer_source_constructor_retains_fractional_deadline_and_throttling_class() {
+	mut timer := Timer.create_with_parameters(10, fn () {}, 11, .no, .chained, 42.125)
+	assert timer.deadline() == 42.125
+	assert timer.throttling_class() == .chained
+	timer.set_deadline(42.625)
+	timer.set_throttling_class(.delayed)
+	assert timer.deadline() == 42.625
+	assert timer.throttling_class() == .delayed
+	timer.start()
+	timer.stop()
+	timer.finalize()
+}
