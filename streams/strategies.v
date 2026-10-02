@@ -21,6 +21,14 @@ pub:
 	high_water_mark f64
 }
 
+// HTML relevant_window_or_worker_global_scope supplies retained builtin
+// CallbackType records without introducing a Streams -> HTML import cycle.
+pub interface QueuingStrategyGlobalScope {
+mut:
+	count_queuing_strategy_size_callback() !&webidl.CallbackType
+	byte_length_queuing_strategy_size_callback() !&webidl.CallbackType
+}
+
 pub fn extract_high_water_mark(strategy QueuingStrategy, default_hwm f64) !f64 {
 	value := strategy.high_water_mark or { return default_hwm }
 	if math.is_nan(value) || value < 0 {
@@ -66,6 +74,13 @@ pub fn (strategy &ByteLengthQueuingStrategy) high_water_mark() f64 {
 	return strategy.high_water_mark_
 }
 
+// ByteLengthQueuingStrategy.cpp::size returns the relevant global's cached
+// function. It does not read/coerce a chunk at this getter.
+pub fn (_ &ByteLengthQueuingStrategy) size_callback(mut global QueuingStrategyGlobalScope) !&webidl.CallbackType {
+	return global.byte_length_queuing_strategy_size_callback()
+}
+
+// Compatibility adapter for existing standalone typed-byte callers.
 pub fn (_ &ByteLengthQueuingStrategy) size(value Value) f64 {
 	return f64(value.byte_length())
 }
@@ -92,6 +107,11 @@ pub fn (strategy &CountQueuingStrategy) high_water_mark() f64 {
 	return strategy.high_water_mark_
 }
 
+pub fn (_ &CountQueuingStrategy) size_callback(mut global QueuingStrategyGlobalScope) !&webidl.CallbackType {
+	return global.count_queuing_strategy_size_callback()
+}
+
+// Compatibility adapter for existing standalone scalar callers.
 pub fn (_ &CountQueuingStrategy) size(_ Value) f64 {
 	return 1.0
 }
