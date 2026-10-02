@@ -48,7 +48,7 @@ fn test_factory_open_upgrade_reopen_and_database_listing() {
 	connection.close()
 	assert connection.state == .closed
 
-	deleted := factory.delete_database('people-db')
+	deleted := factory.delete_database('people-db')!
 	run_database_tasks()
 	assert deleted.request.ready_state == .done
 	assert factory.database_infos().len == 0
@@ -149,6 +149,6 @@ fn test_factories_for_the_same_storage_key_share_the_database_registry() {
 	first_connection.close()
 	mut second_connection := reopened.connection
 	second_connection.close()
-	second_factory.delete_database('shared')
+	second_factory.delete_database('shared')!
 	run_database_tasks()
 }

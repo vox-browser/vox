@@ -12,6 +12,8 @@ pub struct IndexedDBGlobalScope {
 pub:
 	storage_key string
 	identifier  string
+	event_loop_handle voidptr
+	queue_database_task ?fn (DatabaseTask)
 }
 
 pub fn IndexedDBGlobalScope.create(storage_key string) &IndexedDBGlobalScope {
@@ -22,9 +24,8 @@ pub fn IndexedDBGlobalScope.create(storage_key string) &IndexedDBGlobalScope {
 }
 
 pub fn IDBFactory.create_for_global_scope(global_scope &IndexedDBGlobalScope) !&IDBFactory {
-	if global_scope.storage_key == '' {
-		return error('SecurityError: failed to obtain a storage key')
-	}
+	// Like the WebIDL getter, creating the factory does not access storage.
+	// Operations obtain the key and perform the SecurityError check.
 	return &IDBFactory{
 		storage_key: global_scope.storage_key
 		global_scope: global_scope

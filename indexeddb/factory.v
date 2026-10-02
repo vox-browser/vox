@@ -23,6 +23,9 @@ pub mut:
 }
 
 pub fn IDBFactory.create(storage_key string) !&IDBFactory {
+	if storage_key == '' {
+		return error('SecurityError: failed to obtain a storage key')
+	}
 	return IDBFactory.create_for_global_scope(IndexedDBGlobalScope.create(storage_key))
 }
 
@@ -39,6 +42,9 @@ pub fn (mut factory IDBFactory) open(name string, requested_version ?u64) !&IDBO
 		if version == 0 {
 			return error('TypeError: version must not be zero')
 		}
+	}
+	if factory.storage_key == '' {
+		return error('SecurityError: failed to obtain a storage key')
 	}
 	mut queue := ConnectionQueueHandler.the().for_key_and_name(factory.storage_key, name)
 	request := &IDBOpenDBRequest{
@@ -95,10 +101,11 @@ mut:
 // Internal/Algorithms.cpp:TaskCounterState and open/delete coordination.
 fn (mut request IDBOpenDBRequest) notify_connections_then_wait(connections []&IDBDatabase, completion DatabaseTask) {
 	request_ptr := voidptr(&request)
+	global_scope := request.request.global_scope
 	mut data := DatabaseData.for_key_and_name(request.factory.storage_key, request.database_name) or { return }
-	after_all := fn [request_ptr, connections, data, completion] () {
+	after_all := fn [request_ptr, connections, data, completion, global_scope] () {
 		if !connections.all(it.state == .closed) {
-			queue_a_database_task(fn [request_ptr] () {
+			queue_a_database_task_for_global_scope(global_scope, fn [request_ptr] () {
 				mut blocked := unsafe { &IDBOpenDBRequest(request_ptr) }
 				blocked.request.events << 'blocked'
 				blocked.version_change_events << IDBVersionChangeEvent.create('blocked', blocked.old_version, blocked.new_version)
@@ -106,7 +113,7 @@ fn (mut request IDBOpenDBRequest) notify_connections_then_wait(connections []&ID
 			})
 		}
 		mut database := unsafe { &DatabaseData(data) }
-		database.wait_for_connection_set_to_close(connections, completion)
+		database.wait_for_connection_set_to_close(connections, global_scope, completion)
 	}
 	old_version := request.old_version
 	new_version := request.new_version
@@ -117,18 +124,18 @@ fn (mut request IDBOpenDBRequest) notify_connections_then_wait(connections []&ID
 		}
 	}
 	if counter.remaining == 0 {
-		queue_a_database_task(after_all)
+		queue_a_database_task_for_global_scope(global_scope, after_all)
 		return
 	}
 	for connection in connections {
 		if connection.state != .open { continue }
-		queue_a_database_task(fn [old_version, new_version, connection, counter] () {
+		queue_a_database_task_for_global_scope(global_scope, fn [old_version, new_version, connection, counter, global_scope] () {
 			mut old_connection := unsafe { &IDBDatabase(connection) }
 			fire_a_version_change_event(mut old_connection, old_version, new_version)
 			mut task_counter := unsafe { &VersionChangeTaskCounter(counter) }
 			task_counter.remaining--
 			if task_counter.remaining == 0 {
-				queue_a_database_task(task_counter.after_all)
+				queue_a_database_task_for_global_scope(global_scope, task_counter.after_all)
 			}
 		})
 	}
@@ -169,7 +176,7 @@ pub fn (mut request IDBOpenDBRequest) finish_upgrade() ! {
 	connection.upgrade_active = false
 	connection.data.upgrade_transaction = none
 	request.request.transaction_ = none
-	queue_a_database_task(fn [request_ptr] () {
+	queue_a_database_task_for_global_scope(request.request.global_scope, fn [request_ptr] () {
 		mut completed := unsafe { &IDBOpenDBRequest(request_ptr) }
 		if completed.connection.state == .closed {
 			completed.request.fail('AbortError: Connection was closed')
@@ -197,7 +204,7 @@ pub fn (mut request IDBOpenDBRequest) abort_upgrade(reason string) ! {
 		DatabaseData.delete_for_key_and_name(request.factory.storage_key, request.database_name)
 	}
 	request.request.transaction_ = none
-	queue_a_database_task(fn [request_ptr, reason] () {
+	queue_a_database_task_for_global_scope(request.request.global_scope, fn [request_ptr, reason] () {
 		mut completed := unsafe { &IDBOpenDBRequest(request_ptr) }
 		completed.request.fail(if reason == '' { 'AbortError: upgrade aborted' } else { reason })
 		completed.complete_connection_request()
@@ -205,7 +212,10 @@ pub fn (mut request IDBOpenDBRequest) abort_upgrade(reason string) ! {
 }
 
 // Internal/Algorithms.cpp:delete_a_database shares the open connection queue.
-pub fn (mut factory IDBFactory) delete_database(name string) &IDBOpenDBRequest {
+pub fn (mut factory IDBFactory) delete_database(name string) !&IDBOpenDBRequest {
+	if factory.storage_key == '' {
+		return error('SecurityError: failed to obtain a storage key')
+	}
 	mut queue := ConnectionQueueHandler.the().for_key_and_name(factory.storage_key, name)
 	request := &IDBOpenDBRequest{
 		request:       IDBRequest.create_for_global_scope(factory.global_scope, 'factory')

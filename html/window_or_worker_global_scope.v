@@ -9,6 +9,8 @@ module html
 
 import dom
 import fetch
+import indexeddb
+import storageapi
 import time
 
 pub type TimerScriptEvaluator = fn (string) !
@@ -86,7 +88,9 @@ pub struct GlobalScopePerformance {
 }
 
 @[heap]
-pub struct GlobalScopeIndexedDBFactory {}
+pub struct GlobalScopeIndexedDBFactory {
+	indexeddb.IDBFactory
+}
 
 @[heap]
 pub struct GlobalScopeCrypto {}
@@ -806,7 +810,32 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) indexed_db() &GlobalScopeIndex
 	if value := scope.indexed_db_ {
 		return value
 	}
-	value := &GlobalScopeIndexedDBFactory{}
+	origin := if window := scope.associated_window_ {
+		window.associated_document().origin()
+	} else {
+		scope.origin_
+	}
+	storage_key := storageapi.obtain_a_storage_key(storageapi.StorageEnvironment{
+		origin: storageapi.StorageOrigin{
+			serialized: origin.serialize()
+			opaque: origin.is_opaque()
+			opaque_file: origin.is_opaque_file_origin()
+		}
+	})
+	loop := scope.responsible_event_loop()
+	mut document := ?&dom.Document(none)
+	if window := scope.associated_window_ {
+		document = window.associated_document()
+	}
+	global_scope := &indexeddb.IndexedDBGlobalScope{
+		storage_key: if key := storage_key { key.to_string() } else { '' }
+		event_loop_handle: voidptr(loop)
+		queue_database_task: fn [loop, document] (task indexeddb.DatabaseTask) {
+			queue_a_task(.database_access, loop, document, task)
+		}
+	}
+	factory := indexeddb.IDBFactory.create_for_global_scope(global_scope) or { panic(err) }
+	value := &GlobalScopeIndexedDBFactory{IDBFactory: *factory}
 	scope.indexed_db_ = value
 	return value
 }

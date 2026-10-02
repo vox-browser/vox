@@ -47,7 +47,7 @@ fn test_delete_notifies_connections_and_resumes_automatically_before_queued_open
 	initial.finish_upgrade()!
 	run_database_tasks()
 	mut old := initial.connection
-	deleted := second_factory.delete_database('db')
+	deleted := second_factory.delete_database('db')!
 	mut reopened := first_factory.open('db', none)!
 	run_database_tasks()
 	assert old.events == ['versionchange']

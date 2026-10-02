@@ -93,18 +93,19 @@ pub fn (mut database DatabaseData) check_pending_connection_wait() bool {
 		return false
 	}
 	database.pending_connection_wait_ = none
-	queue_a_database_task(wait.callback)
+	queue_a_database_task_for_global_scope(wait.global_scope, wait.callback)
 	return true
 }
 
-fn (mut database DatabaseData) wait_for_connection_set_to_close(connections []&IDBDatabase, callback DatabaseTask) {
+fn (mut database DatabaseData) wait_for_connection_set_to_close(connections []&IDBDatabase, global_scope &IndexedDBGlobalScope, callback DatabaseTask) {
 	if connections.all(it.state == .closed) {
-		queue_a_database_task(callback)
+		queue_a_database_task_for_global_scope(global_scope, callback)
 		return
 	}
 	assert database.pending_connection_wait_ == none
 	database.pending_connection_wait_ = PendingConnectionWait{
 		connections: connections.clone()
+		global_scope: global_scope
 		callback:    callback
 	}
 }

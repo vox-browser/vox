@@ -14,6 +14,7 @@ pub enum ConnectionState {
 
 struct PendingConnectionWait {
 	connections []&IDBDatabase
+	global_scope &IndexedDBGlobalScope
 	callback    DatabaseTask = unsafe { nil }
 }
 

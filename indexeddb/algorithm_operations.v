@@ -64,7 +64,7 @@ pub fn upgrade_a_database(mut request IDBOpenDBRequest) ! {
 	}
 }
 
-pub fn delete_a_database(mut factory IDBFactory, name string) &IDBOpenDBRequest {
+pub fn delete_a_database(mut factory IDBFactory, name string) !&IDBOpenDBRequest {
 	return factory.delete_database(name)
 }
 
@@ -311,6 +311,14 @@ __global (
 
 pub fn queue_a_database_task(task DatabaseTask) {
 	indexeddb_database_tasks << task
+}
+
+pub fn queue_a_database_task_for_global_scope(global_scope &IndexedDBGlobalScope, task DatabaseTask) {
+	if dispatch := global_scope.queue_database_task {
+		dispatch(task)
+		return
+	}
+	queue_a_database_task(task)
 }
 
 // One database task, corresponding to an event-loop task-source dispatch.

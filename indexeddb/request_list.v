@@ -69,7 +69,7 @@ pub fn (mut list RequestList) maybe_process_next_request() {
 		entry.steps = none
 		entry.dispatched = true
 		mut request := unsafe { &IDBRequest(entry.request) }
-		queue_a_database_task(fn [steps, request] () {
+		queue_a_database_task_for_global_scope(request.global_scope, fn [steps, request] () {
 			mut queued_request := unsafe { &IDBRequest(request) }
 			steps(mut queued_request)
 		})
