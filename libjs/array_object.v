@@ -22,12 +22,15 @@ pub fn ArrayObject.create(mut vm VM, realm &Realm, length u64, prototype &Object
 		realm:  realm
 	}
 	object.array_object = array
-	assert object.internal_define_own_property(mut vm, PropertyName.from_str('length'), PropertyDescriptor{
+	// Array.cpp uses MUST here: defining length is an operation, even when
+	// production builds omit assertions.
+	length_defined := object.internal_define_own_property(mut vm, PropertyName.from_str('length'), PropertyDescriptor{
 		value:        Value.from_f64(f64(length))
 		writable:     true
 		enumerable:   false
 		configurable: false
 	})!
+	assert length_defined
 	return array
 }
 
@@ -35,8 +38,9 @@ pub fn ArrayObject.create_from(mut vm VM, realm &Realm, elements []Value, protot
 	array := ArrayObject.create(mut vm, realm, 0, prototype)!
 	mut object := array.object
 	for index, element in elements {
-		assert object.create_data_property_or_throw(mut vm, PropertyName.from_number(u32(index)),
+		defined := object.create_data_property_or_throw(mut vm, PropertyName.from_number(u32(index)),
 			element)!
+		assert defined
 	}
 	return array
 }
