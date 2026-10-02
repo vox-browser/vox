@@ -8,6 +8,9 @@
 module webassembly
 
 import webidl
+import libjs
+import math.big
+import strconv
 
 pub enum AddressType {
 	i32
@@ -220,13 +223,15 @@ pub fn address_type_from_bindings(address_type AddressType) AddressType {
 
 pub fn address_value_to_u64(value webidl.Value, address_type AddressType) !u64 {
 	if address_type == .i64 {
-		if value.kind != .bigint {
-			return error('TypeError: Table size requires a BigInt')
-		}
-		if value.bigint_value < 0 {
+		integer := webidl.value_to_bigint(value)!
+		if integer.big_integer.signum < 0 {
 			return error('TypeError: Table size must be non-negative')
 		}
-		return u64(value.bigint_value)
+		// Table.cpp converts the complete base-10 integer into u64 after
+		// checking its sign. Never wrap modulo 2^64 before the bound check.
+		return strconv.parse_uint(integer.big_integer.str(), 10, 64) or {
+			return error('TypeError: Table size is too large')
+		}
 	}
 	// Table.cpp::AddressValueToU64 delegates i32 addresses to the unsigned-long
 	// EnforceRange conversion, including ToNumber and truncation before bounds.
@@ -236,7 +241,7 @@ pub fn address_value_to_u64(value webidl.Value, address_type AddressType) !u64 {
 
 pub fn table_limit_to_js_value(value u64, address_type AddressType) webidl.Value {
 	if address_type == .i64 {
-		return webidl.bigint_value(i64(value))
+		return webidl.bigint_value_for_record(libjs.BigInt.create(big.integer_from_u64(value)))
 	}
 	return webidl.number_value(f64(u32(value)))
 }
