@@ -244,6 +244,11 @@ getter/setter brand validation, Unicode replacement, deletion, cache identity, a
 or intrinsic replacement. Full cross-realm/WrapperWorld cache lifetime remains
 an explicit boundary.
 
+Reflection getters also preserve generated native-function nonconstructibility:
+they have no own prototype and construction raises TypeError without running
+the getter. The actual reflection query test passes with `-gc none` after this
+focused correction.
+
 The browser continues to use JavaScriptCore. Compact wrappers and typed V
 WebIDL values do not provide the unfinished LibJS VM's Promise/builtin object
 graph or full WebIDL brand/prototype parity.
