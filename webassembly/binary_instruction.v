@@ -11,6 +11,7 @@ pub enum BinaryBlockKind {
 	value_type
 	type_index
 }
+
 pub struct BinaryBlockType {
 pub:
 	kind       BinaryBlockKind
@@ -75,6 +76,7 @@ pub enum BinaryIndexKind {
 	data
 	element
 }
+
 pub struct BinaryIndexArgument {
 pub:
 	kind  BinaryIndexKind
@@ -186,9 +188,10 @@ pub:
 
 pub struct BinaryBranchCastArguments {
 pub:
-	branch      BinaryBranchArguments
 	source_type BinaryValueType
 	target_type BinaryValueType
+pub mut:
+	branch BinaryBranchArguments
 }
 
 pub struct BinaryVectorConstant {
