@@ -28,6 +28,7 @@ pub struct Reference {
 pub:
 	base_type              ReferenceBaseType = .unresolvable
 	name                   PropertyName // [[ReferencedName]]
+	private_name           ?PrivateName // Private Name alternative of [[ReferencedName]]
 	strict                 bool         // [[Strict]]
 	base_value             Value        // [[Base]] for property references
 	this_value             ?Value       // [[ThisValue]]
@@ -65,6 +66,27 @@ pub fn Reference.for_value(base Value, name PropertyName, this_value ?Value, str
 		base_value: base
 		this_value: this_value
 	}
+}
+
+pub fn Reference.for_private(base Value, name PrivateName) Reference {
+	return Reference{
+		base_type: .value
+		base_value: base
+		private_name: name
+		strict: true
+	}
+}
+
+// Reference.cpp::MakePrivateReference.
+pub fn make_private_reference(vm &VM, base Value, identifier Utf16String) Reference {
+	environment := vm.running_execution_context().private_environment or {
+		panic('MakePrivateReference requires a private environment')
+	}
+	return Reference.for_private(base, environment.resolve_private_identifier(identifier))
+}
+
+pub fn (reference Reference) is_private_reference() bool {
+	return reference.private_name != none
 }
 
 pub fn (reference Reference) base() Value {
@@ -142,6 +164,9 @@ fn (reference Reference) base_object(mut vm VM) !&Object {
 	// 7.1.18 ToObject ( argument ) throws for undefined and null; primitive
 	// wrappers belong to the pending object-model translation.
 	if reference.base_value.is_nullish() {
+		if reference.is_private_reference() {
+			return vm.throw_error_type(.type_error, .to_object_null_or_undefined)
+		}
 		return vm.throw_error_type(.type_error, .to_object_null_or_undefined_with_property,
 			reference.name.str(), reference.base_value.str())
 	}
@@ -159,6 +184,9 @@ pub fn (reference Reference) get_value(mut vm VM) !Value {
 	if reference.is_property_reference() {
 		// a. Let baseObj be ? ToObject(V.[[Base]]).
 		base_obj := reference.base_object(mut vm)!
+		if private_name := reference.private_name {
+			return base_obj.private_get(mut vm, private_name)
+		}
 		// c. Return ? baseObj.[[Get]](V.[[ReferencedName]], GetThisValue(V)).
 		return base_obj.internal_get(mut vm, reference.name, reference.get_this_value())!
 	}
@@ -188,6 +216,9 @@ pub fn (reference Reference) put_value(mut vm VM, value Value) ! {
 	if reference.is_property_reference() {
 		// a. Let baseObj be ? ToObject(V.[[Base]]).
 		mut base_obj := reference.base_object(mut vm)!
+		if private_name := reference.private_name {
+			return base_obj.private_set(mut vm, private_name, value)
+		}
 		// c. Let succeeded be ? baseObj.[[Set]](V.[[ReferencedName]], W, GetThisValue(V)).
 		succeeded := base_obj.internal_set(mut vm, reference.name, value, reference.get_this_value())!
 		// d. If succeeded is false and V.[[Strict]] is true, throw a TypeError exception.
@@ -208,6 +239,7 @@ pub fn (reference Reference) put_value(mut vm VM, value Value) ! {
 
 // 13.5.1.2 Runtime Semantics: Evaluation, https://tc39.es/ecma262/#sec-delete-operator-runtime-semantics-evaluation
 pub fn (reference Reference) delete_(mut vm VM) !bool {
+	assert !reference.is_private_reference()
 	// 4. If IsUnresolvableReference(ref) is true, then
 	if reference.is_unresolvable() {
 		// a. Assert: ref.[[Strict]] is false.

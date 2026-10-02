@@ -135,6 +135,7 @@ pub struct Object {
 pub mut:
 	prototype  ?&Object
 	properties []OwnProperty
+	private_elements []PrivateElement // [[PrivateElements]], separate from own properties
 	extensible bool   = true
 	class_name string = 'Object'
 	// ObjectPrototype's immutable-prototype exotic [[SetPrototypeOf]] override.
