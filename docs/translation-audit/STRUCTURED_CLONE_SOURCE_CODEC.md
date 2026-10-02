@@ -190,6 +190,20 @@ passed two files with GC disabled. The registry retains all sixteen source
 identifiers for validation; other platform payload implementations and actual
 native exposure bindings remain explicit subsequent slices.
 
+The native DOMException clone now uses its actual native record/wrapper cache
+and original captured platform factory. It serializes internal name/message
+fields, ignoring author-shadowed getters and custom properties, and preserves
+aliases plus UTF-16 strings through both source record forms. Target exposure
+comes from the actual installed binding instead of an author-visible global
+property; a fresh unexposed Runtime rejects before creation, and an exposed
+target receives a new owning record/wrapper. Codec parse failures become actual
+DataCloneError values at this native boundary. Primary QuotaExceededError is
+recognized before its genuine DOMException base and remains explicitly
+unsupported until its extra payload is translated. Three native cases and the
+Error neighbor passed two files with GC disabled. Actual wrapper caches retain
+their native objects until Runtime.close; complete wrapper GC and the other
+platform registries/payloads remain separate work.
+
 The native brand classifier captures a genuine SharedArrayBuffer byte-length
 getter when the engine exposes it. A shared buffer cannot fall through as an
 ordinary empty object, and a shared-backed view rejects before ArrayBuffer-only
