@@ -76,6 +76,7 @@ creates a realm with a global environment and pushes its execution context.
 | `string_constructor.v`, `string_code_units.v`, `string_raw.v` | Complete String constructor initialization, call/construct, fromCharCode/fromCodePoint and raw with explicit prototype/boxing dependencies |
 | `string_character_access.v`, `string_slicing.v`, `string_search.v`, `string_concat.v` | String branding/value extraction, CodePointAt, at/charAt/charCodeAt/codePointAt, slice/substring/substr, indexOf/lastIndexOf and concatenation |
 | `string_trim.v`, `string_well_formed.v`, `string_prototype_iterator.v` | Exact upstream whitespace trimming, simdutf UTF-16 validation/repair and String @@iterator creation; remaining prototype bodies and initialization pending |
+| `string_repeat.v`, `string_padding.v`, `string_html.v` | Ordered repeat validation and checked UTF-16 assembly, StringPad early returns and filler truncation, and all thirteen Annex B HTML wrappers with exact attribute-quote replacement |
 | `number_object.v`, `bigint_object.v`, `value_boxing.v` | NumberData/BigIntData wrapper records and all primitive ToObject cases with explicit Number/BigInt/String prototype dependencies |
 | `value_property_access.v` | GetV's direct primitive-prototype lookup, GetMethod's nullish/callable checks and Invoke with the original primitive receiver and explicit intrinsic dependencies |
 | `iterator.v`, `iterator_values.v` | Synchronous iterator acquisition for object receivers, IteratorNext/Step/StepValue, completion-preserving close/close-all, result records, list/callback collection, and SetterThatIgnoresPrototypeProperties |
@@ -106,8 +107,8 @@ creates a realm with a global environment and pushes its execution context.
 | `operand.v`, `instruction.v`, `interpreter.v` | Operand encoding, checked instruction/value layouts, V dispatch loop, bindings, branches, exception dispatch and instruction budgets |
 | `bytecode_generator.v`, `script_evaluation.v` | Supported expression/statement code generation, cached executables, global declaration instantiation and ScriptEvaluation |
 
-The 167 implementation files contain **28,609 physical V LOC**. The 173 test
-files contain **22,231 physical V LOC** and **603 test functions**. Physical LOC
+The 170 implementation files contain **28,791 physical V LOC**. The 176 test
+files contain **22,674 physical V LOC** and **609 test functions**. Physical LOC
 includes comments and blank lines. This package is counted separately from the
 78-package LibWeb inventory.
 
@@ -355,7 +356,7 @@ shared by realms, and all 16 pinned well-known symbols have fixed static descrip
 The pinned source gives Symbol a constructor internal method that always throws
 without converting its argument; this behavior is preserved. String's full
 prototype record and the Object prototype graph remain pending; its constructor
-and eighteen prototype native bodies are translated below.
+and thirty-four prototype native bodies are translated below.
 Number/BigInt wrappers and constructor/prototype records are translated with
 explicit Object/Intl dependencies, plus Number's decimal backend and parse-function
 intrinsics, rather than production globals.
@@ -857,7 +858,7 @@ case and conversion before newTarget.prototype lookup during construction.
 Prototype and primitive-boxing dependencies remain explicit. StringObject's
 diagnostic class name now follows its source GC_CELL record (`9d0c7e6`).
 
-Eighteen StringPrototype native bodies are translated, without installing a
+Thirty-four StringPrototype native bodies are translated, without installing a
 partial prototype record. Branding and character access (`381ecb8`) retain own
 StringData checks, generic receiver coercion, code-unit indices and CodePointAt's
 paired/unpaired surrogate distinction. Slicing (`0451d1d`) preserves the separate
@@ -871,9 +872,27 @@ scalar control flow and AK's already-valid fast path. All 2,388 corpus cases
 compare exactly against the pinned native backend; the regeneration tool
 (`5bc7fae`) reproduces the checked-in corpus byte for byte. The @@iterator body
 (`342d7f8`) creates fresh StringIterator records using an explicit current-realm
-prototype dependency. StringPrototype initialization, the remaining 31 native
-bodies, trimLeft/trimRight aliases, bytecode builtin optimization metadata,
-production String installation and primitive Reference integration remain pending.
+prototype dependency.
+
+Repetition (`f334976`) retains receiver/count conversion, the negative/finite
+error distinction, empty-result shortcuts before large-count validation and
+the checked source string-length product. UTF-16 assembly follows AK's repeated
+append loop. Padding (`bbdef03`) translates StringPad and both native wrappers:
+ToLength precedes the no-padding identity return, filler conversion is skipped
+on that path, an empty converted filler also returns the original primitive,
+and filler repetition truncates at a code-unit boundary, including surrogate
+halves. The existing V storage limit is checked after these observable steps.
+All thirteen Annex B HTML wrappers (`e221011`) translate CreateHTML with its
+receiver-before-attribute conversion and unused-argument behavior. Quotation
+replacement follows AK's UTF-16 replace-all body; only attribute U+0022 units
+become `&quot;`. Text content, ampersands, angle brackets, apostrophes, NUL and
+unpaired surrogates remain verbatim.
+
+StringPrototype initialization, the remaining 15 native bodies (RegExp-related
+search/replacement/splitting and prefix/suffix/membership checks, Intl collation,
+normalization and Unicode/locale case conversion), trimLeft/trimRight aliases,
+bytecode builtin optimization metadata, production String installation and
+primitive Reference integration remain pending.
 
 Reflect property bodies (`5f4813e`) translate defineProperty/deleteProperty/get,
 getOwnPropertyDescriptor/has/set. Target-object validation precedes key conversion;
@@ -993,10 +1012,10 @@ The repository's current V checkout requires its old compiler frontend:
 
 ```sh
 v -old-compiler -enable-globals test libjs
-# 173 passed, 173 total
+# 176 passed, 176 total
 
 v -old-compiler -enable-globals -gc none test libjs
-# 173 passed, 173 total
+# 176 passed, 176 total
 
 v -old-compiler -enable-globals run tools/libjs_ast_corpus.v --all
 # LibJS AST corpus: 100 passed, 0 failed, 100 total
@@ -1011,7 +1030,7 @@ v -old-compiler -enable-globals test main_test.v
 # 1 passed, 1 total
 
 v -old-compiler -enable-globals test .
-# 845 passed, 845 total
+# 848 passed, 848 total
 
 ./build_ladybird.sh
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
@@ -1035,11 +1054,11 @@ fixtures; separate tests exercise translated NativeFunction and ArrayBufferObjec
 records. Module-loading tests write temporary module files. The preceding LibWeb
 work passed its complete 656-file
 suite, native headless smoke, and all 11 default screenshot comparisons before
-this package; the 173 libjs files are verified separately in both GC modes.
-There are now 845 repository test files.
+this package; the 176 libjs files are verified separately in both GC modes.
+There are now 848 repository test files.
 
-The complete 845-file repository suite passes, including the native bridge,
-eighteen browser integration files and all 173 LibJS files. The dedicated LibJS and
+The complete 848-file repository suite passes, including the native bridge,
+eighteen browser integration files and all 176 LibJS files. The dedicated LibJS and
 browser suites also pass in no-GC mode, exercising the retained storage and
 buffer ownership independently of the collector.
 
@@ -1152,14 +1171,17 @@ noncoercing predicates, ties-to-even BigInt conversion, wrappers, bound calls an
 construction, fixed/scientific/radix methods, locale plumbing and recovery from
 brand/range/conversion failures. AK decimal forms and the Intl marker are test-only
 dependencies; no JavaScriptCore context or partial production Number global is used.
-String browser integration (`e84decb`) supplies the complete constructor under
-HostString and attaches the eighteen translated prototype bodies to a test-only
+String browser integration (`e84decb`, `74c9839`) supplies the complete constructor under
+HostString and attaches the thirty-four translated prototype bodies to a test-only
 String exotic record. Compiled scripts exercise static character/raw creation,
 UTF-16 wrappers, slicing/search, branding, concatenation, trimming, well-formed
 repair, iterator exhaustion, bound calls/construction and recovery after seven
 conversion/brand/range errors. The fixture does not implement StringPrototype
 initialization or install a production String global; no JavaScriptCore context
 is created.
+The expanded browser checks (`74c9839`) also exercise repetition, bound repeat
+calls, padding through surrogate halves, filler/empty-receiver shortcuts, all
+thirteen HTML wrappers and recovery after five additional count/attribute errors.
 The rebuilt native bundle passes both engine smoke checks and a buffer-regression
 document covering shared BigInt storage, growth, slicing and transferred Float16
 bytes without script errors.
@@ -1280,6 +1302,13 @@ the same-size SVG source switch with zero differing pixels.
   explicit until the complete intrinsic graph exists. fromCodePoint retains
   the pinned body's ToInt32-before-range-check wraparound. StringFromCharCode,
   StringCharAt and StringCharCodeAt bytecode builtin shortcuts remain pending.
+- repeat retains source checked-product RangeErrors and reports the same overflow
+  error above V's 2^31-1 code-unit capacity. StringPad has no corresponding source
+  length RangeError; the V body uses the existing string-size RangeError when a
+  nonempty padded result would exceed that capacity. This storage deviation is
+  checked after length/filler conversion and the source early returns, so huge
+  lengths with an empty filler still preserve identity and filler errors still
+  win. Allocations within the representable range retain V's allocation behavior.
 - Checked string length sum/product retain upstream's 2^32-1 code-unit maximum.
   TypedArray join and toLocaleString assemble flat V UTF-16 arrays instead of
   AK's builder and throw the same string-size RangeError above V's 2^31-1 array
@@ -1409,8 +1438,8 @@ complete LibJS runtime migration.
   prototype records and all native bodies likewise exist with explicit Object,
   retained parse-function, decimal-form and Intl dependencies; AK/fmt Dragonbox,
   production Number installation and primitive Reference integration remain pending.
-  String's complete constructor and eighteen prototype native bodies exist with
-  explicit dependencies; its remaining 31 native bodies, full prototype
+  String's complete constructor and thirty-four prototype native bodies exist with
+  explicit dependencies; its remaining 15 native bodies, full prototype
   initialization, aliases and production installation remain pending.
   String exotic records, synchronous iterator operations, and
   String/Array iterator next prototypes exist with explicit intrinsic
