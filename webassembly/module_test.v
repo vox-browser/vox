@@ -54,7 +54,8 @@ fn wasm_export_only_bytes(name string, kind u8) []u8 {
 	payload << name.bytes()
 	payload << kind
 	payload << u8(0)
-	mut bytes := [u8(0), 0x61, 0x73, 0x6d, 1, 0, 0, 0, 7, u8(payload.len)]
+	mut bytes := [u8(0), 0x61, 0x73, 0x6d, 1, 0, 0, 0, 1, 4, 1, 0x60, 0, 0,
+		2, 5, 1, 0, 0, kind, 0, 7, u8(payload.len)]
 	bytes << payload
 	return bytes
 }
@@ -66,7 +67,7 @@ fn wasm_import_only_bytes(module_name string, name string, kind u8) []u8 {
 	payload << name.bytes()
 	payload << kind
 	payload << u8(0)
-	mut bytes := [u8(0), 0x61, 0x73, 0x6d, 1, 0, 0, 0, 2, u8(payload.len)]
+	mut bytes := [u8(0), 0x61, 0x73, 0x6d, 1, 0, 0, 0, 1, 4, 1, 0x60, 0, 0, 2, u8(payload.len)]
 	bytes << payload
 	return bytes
 }

@@ -12,14 +12,12 @@ fn test_binary_tags_retain_definitions_imports_exports_and_source_reflection_bou
 	// Import a tag and function; declare another tag; export both tag and
 	// function. Binary tags are retained even though pinned Module.cpp omits
 	// them from its JS imports()/exports() descriptors.
-	mut bytes := [u8(0), 0x61, 0x73, 0x6d, 1, 0, 0, 0,
-		2, 19, 2, 3, `e`, `n`, `v`, 1, `t`, 4, 0, 0x80, 1,
-		3, `e`, `n`, `v`, 1, `f`, 0, 0,
-		13, 4, 1, 0, 0x80, 1,
-		7, 9, 2, 1, `t`, 4, 0, 1, `f`, 0, 0]
+	mut bytes := [u8(0), 0x61, 0x73, 0x6d, 1, 0, 0, 0, 1, 4, 1, 0x60, 0, 0, 2, 18, 2, 3, `e`, `n`,
+		`v`, 1, `t`, 4, 0, 0, 3, `e`, `n`, `v`, 1, `f`, 0, 0, 13, 3, 1, 0, 0, 7, 9, 2, 1, `t`,
+		4, 0, 1, `f`, 0, 0]
 	compiled := compile_module(bytes)!
-	assert compiled.tag_types == [BinaryTagType{ type_index: 128 }]
-	assert compiled.tag_import_entries == [BinaryTagImport{ module: 'env', name: 't', type_: BinaryTagType{ type_index: 128 } }]
+	assert compiled.tag_types == [BinaryTagType{ type_index: 0 }]
+	assert compiled.tag_import_entries == [BinaryTagImport{ module: 'env', name: 't', type_: BinaryTagType{ type_index: 0 } }]
 	assert compiled.tag_export_entries == [BinaryTagExport{ name: 't', index: 0 }]
 	assert compiled.imports().map(it.name) == ['f']
 	assert compiled.exports().map(it.name) == ['f']

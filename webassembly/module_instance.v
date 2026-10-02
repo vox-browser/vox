@@ -270,11 +270,12 @@ fn compile_module(bytes []u8) !&Module {
 			return error('CompileError: trailing bytes in section ${section_id}')
 		}
 	}
+	validate_binary_export_names(exports, tag_export_entries)!
 	canonical_types := canonicalize_binary_module_types(types)!
 	validate_binary_type_section(types, canonical_types)!
 	validate_module_counts(function_type_indices, function_bodies, data_count, data_segments)!
 	validate_module_memories(imports, memory_types, exports)!
-	return &Module{
+	compiled := &Module{
 		bytes:            bytes.clone()
 		import_entries:   imports
 		export_entries:   exports
@@ -294,6 +295,8 @@ fn compile_module(bytes []u8) !&Module {
 		data_segments: data_segments
 		element_segments: element_segments
 	}
+	validate_binary_module_indices(compiled)!
+	return compiled
 }
 
 // Binary section identifiers are not their semantic order: tag (13) belongs
@@ -381,13 +384,8 @@ fn parse_import_section(mut decoder Decoder, mut result []ModuleImportDescriptor
 
 fn parse_export_section(mut decoder Decoder, mut result []ModuleExportDescriptor, mut tag_result []BinaryTagExport) ! {
 	count := decoder.u32_leb()!
-	mut names := map[string]bool{}
 	for _ in 0 .. count {
 		name := decoder.name()!
-		if names[name] {
-			return error('CompileError: duplicate export name')
-		}
-		names[name] = true
 		kind_byte := decoder.byte()!
 		if kind_byte == 4 {
 			tag_result << BinaryTagExport{ name: name, index: decoder.u32_leb()! }
