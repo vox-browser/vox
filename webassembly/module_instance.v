@@ -27,15 +27,17 @@ pub fn import_export_kind_string(kind ImportExportKind) string {
 
 pub struct ModuleExportDescriptor {
 pub:
-	name string
-	kind ImportExportKind
+	name  string
+	kind  ImportExportKind
+	index u32
 }
 
 pub struct ModuleImportDescriptor {
 pub:
-	module string
-	name   string
-	kind   ImportExportKind
+	module      string
+	name        string
+	kind        ImportExportKind
+	memory_type WasmLimits
 }
 
 pub struct CustomSection {
@@ -51,6 +53,7 @@ pub mut:
 	import_entries   []ModuleImportDescriptor
 	export_entries   []ModuleExportDescriptor
 	custom_sections_ []CustomSection
+	memory_types     []WasmLimits
 }
 
 pub struct SerializedModule {
@@ -111,6 +114,7 @@ pub fn (mut compiled Module) deserialization_steps(serialized SerializedModule) 
 	compiled.import_entries = restored.import_entries.clone()
 	compiled.export_entries = restored.export_entries.clone()
 	compiled.custom_sections_ = restored.custom_sections_.clone()
+	compiled.memory_types = restored.memory_types.clone()
 }
 
 struct Decoder {
@@ -169,12 +173,13 @@ fn compile_module(bytes []u8) !&Module {
 		return error('CompileError: invalid WebAssembly magic or version')
 	}
 	mut decoder := Decoder{
-		bytes: bytes
+		bytes:  bytes
 		offset: 8
 	}
 	mut imports := []ModuleImportDescriptor{}
 	mut exports := []ModuleExportDescriptor{}
 	mut custom := []CustomSection{}
+	mut memory_types := []WasmLimits{}
 	mut last_non_custom_rank := 0
 	mut seen := map[u8]bool{}
 	for decoder.offset < bytes.len {
@@ -202,6 +207,7 @@ fn compile_module(bytes []u8) !&Module {
 		match section_id {
 			0 { parse_custom_section(mut section, mut custom)! }
 			2 { parse_import_section(mut section, mut imports)! }
+			5 { parse_memory_section(mut section, mut memory_types)! }
 			7 { parse_export_section(mut section, mut exports)! }
 			else {
 				section.offset = section.bytes.len
@@ -211,11 +217,13 @@ fn compile_module(bytes []u8) !&Module {
 			return error('CompileError: trailing bytes in section ${section_id}')
 		}
 	}
+	validate_module_memories(imports, memory_types, exports)!
 	return &Module{
-		bytes: bytes.clone()
-		import_entries: imports
-		export_entries: exports
+		bytes:            bytes.clone()
+		import_entries:   imports
+		export_entries:   exports
 		custom_sections_: custom
+		memory_types:     memory_types
 	}
 }
 
@@ -243,7 +251,7 @@ fn parse_custom_section(mut decoder Decoder, mut result []CustomSection) ! {
 	contents := decoder.bytes[decoder.offset..].clone()
 	decoder.offset = decoder.bytes.len
 	result << CustomSection{
-		name: name
+		name:     name
 		contents: contents
 	}
 }
@@ -270,11 +278,17 @@ fn parse_import_section(mut decoder Decoder, mut result []ModuleImportDescriptor
 		name := decoder.name()!
 		kind_byte := decoder.byte()!
 		kind := external_kind(kind_byte)!
-		skip_import_description(mut decoder, kind)!
+		mut memory_type := WasmLimits{}
+		if kind == .memory {
+			memory_type = parse_limits(mut decoder)!
+		} else {
+			skip_import_description(mut decoder, kind)!
+		}
 		result << ModuleImportDescriptor{
-			module: module_name
-			name: name
-			kind: kind
+			module:      module_name
+			name:        name
+			kind:        kind
+			memory_type: memory_type
 		}
 	}
 }
@@ -286,10 +300,15 @@ fn skip_import_description(mut decoder Decoder, kind ImportExportKind) ! {
 		}
 		.table {
 			decoder.byte()!
-			skip_limits(mut decoder)!
+			limits := parse_limits(mut decoder)!
+			validate_limits(limits, if limits.address_type == .i64 {
+				none
+			} else {
+				?u64(u64(max_u32))
+			})!
 		}
 		.memory {
-			skip_limits(mut decoder)!
+			parse_limits(mut decoder)!
 		}
 		.global {
 			decoder.byte()!
@@ -298,17 +317,6 @@ fn skip_import_description(mut decoder Decoder, kind ImportExportKind) ! {
 				return error('CompileError: invalid global mutability')
 			}
 		}
-	}
-}
-
-fn skip_limits(mut decoder Decoder) ! {
-	flags := decoder.u32_leb()!
-	if flags > 3 {
-		return error('CompileError: invalid limits flags')
-	}
-	decoder.u32_leb()!
-	if flags & 1 != 0 {
-		decoder.u32_leb()!
 	}
 }
 
@@ -322,10 +330,11 @@ fn parse_export_section(mut decoder Decoder, mut result []ModuleExportDescriptor
 		}
 		names[name] = true
 		kind := external_kind(decoder.byte()!)!
-		decoder.u32_leb()!
+		index := decoder.u32_leb()!
 		result << ModuleExportDescriptor{
-			name: name
-			kind: kind
+			name:  name
+			kind:  kind
+			index: index
 		}
 	}
 }
