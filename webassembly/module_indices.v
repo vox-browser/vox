@@ -14,6 +14,7 @@ pub mut:
 	tables                  []BinaryTableType
 	memories                []WasmLimits
 	globals                 []BinaryGlobalType
+	locals                  []BinaryValueType
 	elements                []BinaryValueType
 	datas                   []bool
 	tags                    []BinaryTagType
