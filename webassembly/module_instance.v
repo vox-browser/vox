@@ -176,12 +176,7 @@ fn (mut decoder Decoder) u32_leb() !u32 {
 }
 
 fn (mut decoder Decoder) name() !string {
-	length := int(decoder.u32_leb()!)
-	if length < 0 || decoder.offset + length > decoder.bytes.len {
-		return error('CompileError: name extends beyond section')
-	}
-	bytes := decoder.bytes[decoder.offset..decoder.offset + length].clone()
-	decoder.offset += length
+	bytes := decoder.byte_vector()!
 	if bytes.len > 0 && !utf8.validate(bytes.data, bytes.len) {
 		return error('CompileError: name is not valid UTF-8')
 	}
