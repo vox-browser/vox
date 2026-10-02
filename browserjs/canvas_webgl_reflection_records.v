@@ -16,7 +16,7 @@ const __webglReflectionRecord=(function(){
   apply(define,O,[Constructor,"name",{value:name,configurable:true}]);
   const prototype=Constructor.prototype;apply(define,O,[Constructor,"prototype",{writable:false}]);
   apply(define,O,[prototype,tag,{value:name,configurable:true}]);
-  for(const field of specs[name]){const getter=function(){const value=apply(get,store,[this]);if(value===undefined)throw new T("Not an object of type "+name);return value[field];};
+  for(const field of specs[name]){const getter=({[field](){const value=apply(get,store,[this]);if(value===undefined)throw new T("Not an object of type "+name);return value[field];}})[field];
    apply(define,O,[getter,"name",{value:"get "+field,configurable:true}]);
    apply(define,O,[prototype,field,{get:getter,enumerable:true,configurable:true}]);
   }
