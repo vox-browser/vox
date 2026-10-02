@@ -99,6 +99,7 @@ fn build_binary_validation_context(compiled &Module) !BinaryValidationContext {
 		}
 	}
 	for entry in compiled.tag_import_entries { context.tags << entry.type_ }
+	validate_module_function_count(compiled.function_type_indices, compiled.function_bodies)!
 	for index in compiled.function_type_indices {
 		validate_binary_type_index(index, context.types)!
 		if context.types[index].kind != .function_ {

@@ -273,8 +273,6 @@ fn compile_module(bytes []u8) !&Module {
 	validate_binary_export_names(exports, tag_export_entries)!
 	canonical_types := canonicalize_binary_module_types(types)!
 	validate_binary_type_section(types, canonical_types)!
-	validate_module_counts(function_type_indices, function_bodies, data_count, data_segments)!
-	validate_module_memories(imports, memory_types, exports)!
 	mut compiled := &Module{
 		bytes:            bytes.clone()
 		import_entries:   imports

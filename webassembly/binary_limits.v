@@ -78,21 +78,3 @@ fn parse_memory_section(mut decoder Decoder, mut result []WasmLimits) ! {
 		result << parse_limits(mut decoder)!
 	}
 }
-
-fn validate_module_memories(imports []ModuleImportDescriptor, memories []WasmLimits, exports []ModuleExportDescriptor) ! {
-	mut count := u64(memories.len)
-	for entry in imports {
-		if entry.kind == .memory {
-			validate_memory_type(entry.memory_type)!
-			count++
-		}
-	}
-	for memory in memories {
-		validate_memory_type(memory)!
-	}
-	for entry in exports {
-		if entry.kind == .memory && u64(entry.index) >= count {
-			return error('CompileError: invalid MemoryIndex')
-		}
-	}
-}
