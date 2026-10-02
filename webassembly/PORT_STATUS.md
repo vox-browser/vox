@@ -390,5 +390,7 @@ invalid-address and memory-detachment regressions pass with their module and
 memory neighbors: **3/3 default-GC files**, **2/2 GC-disabled files**.
 The legacy Instance instantiation path still fabricates global/table/function
 exports rather than executing source module initialization. The completed
-wrapper lookup does not close WA-12; function Store/branding, full unsigned
-Table64 and native WebAssembly/LibJS wrappers remain open.
+wrapper lookup does not close WA-12; function Store/branding and native
+WebAssembly/LibJS wrappers remain open. Full unsigned Table64 conversion is
+completed above; the current complete package passes **63/63 files with default
+GC and 63/63 with `-gc none`**.
