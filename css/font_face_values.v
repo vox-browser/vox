@@ -4,7 +4,9 @@ import dom
 import fetch
 import math
 import mimesniff
+import os
 import platform
+import skia
 import strconv
 import strings
 import time
@@ -2176,6 +2178,9 @@ fn (mut face FontFaceObject) resolve_for_rendering() PendingFontState {
 		face.update_font_display_period()
 	}
 	face.load()
+	if mut loader := face.font_loader_ {
+		loader.did_request_for_rendering()
+	}
 	if face.status_ == .loaded {
 		return .visible
 	}
@@ -3686,6 +3691,9 @@ pub mut:
 	has_started_request_ bool
 	has_received_font_data_ bool
 	requires_network_ bool
+	fetch_controller_ ?&fetch.FetchController
+	rule_or_declaration_ RuleOrDeclaration
+	document_load_event_delayer_ ?dom.DocumentLoadEventDelayer
 }
 
 pub fn FontLoader.create(font_computer &FontComputer, family_name string, unicode_ranges []UnicodeRange, urls []URL, on_load ?fn (&PlatformTypeface)) &FontLoader {
@@ -3694,6 +3702,7 @@ pub fn FontLoader.create(font_computer &FontComputer, family_name string, unicod
 		family_name_: family_name
 		unicode_ranges_: unicode_ranges.clone()
 		urls: urls.clone()
+		rule_or_declaration_: font_rule_or_declaration(font_computer, none)
 	}
 	if callback := on_load {
 		loader.subscribers << callback
@@ -3744,8 +3753,9 @@ pub fn (mut loader FontLoader) start_loading_next_url() {
 		return
 	}
 	// FIXME: Load local() fonts somehow.
-	// Boundary: C++ tracks an ongoing FetchController and returns early if a fetch is already in progress. This
-	// synchronous boundary has no fetch-controller state, so each call consumes at most one pending URL chain.
+	if controller := loader.fetch_controller_ {
+		if controller.state() == .ongoing { return }
+	}
 	if loader.urls.len == 0 {
 		return
 	}
@@ -3756,6 +3766,28 @@ pub fn (mut loader FontLoader) start_loading_next_url() {
 	// failure or a byte stream stream:
 	url := loader.urls[0]
 	loader.urls.delete(0)
+	loader.has_received_font_data_ = false
+	if host := loader.font_computer.font_fetch_host() {
+		loader_handle := voidptr(&loader)
+		loader.fetch_controller_ = fetch_a_style_resource(url, loader.rule_or_declaration_, .font, .cors,
+			fn [loader_handle] (response &fetch.Response, body fetch.BodyBytes) {
+				mut current := unsafe { &FontLoader(loader_handle) }
+				if body.kind != .bytes {
+					current.try_next_url_or_fail()
+					return
+				}
+				current.has_received_font_data_ = true
+				typeface := current.try_load_font(response, body.bytes) or {
+					current.try_next_url_or_fail()
+					return
+				}
+				current.font_did_load_or_fail(typeface)
+			}, host)
+		if loader.fetch_controller_ == none { loader.font_did_load_or_fail(unsafe { nil }) }
+		return
+	}
+	// Frozen standalone callers without an installed RequestServer retain the
+	// file-font adapter. Document/native callers use the Fetch path above.
 	loader.has_started_request_ = true
 	loader.requires_network_ = !url.url().starts_with('file:')
 
@@ -3770,15 +3802,38 @@ pub fn (mut loader FontLoader) start_loading_next_url() {
 	loader.font_did_load_or_fail(typeface)
 }
 
+fn (mut loader FontLoader) try_next_url_or_fail() {
+	if loader.urls.len == 0 {
+		loader.font_did_load_or_fail(unsafe { nil })
+	} else {
+		loader.fetch_controller_ = none
+		loader.start_loading_next_url()
+	}
+}
+
 pub fn (loader &FontLoader) is_loading() bool {
+	if loader.fetch_controller_ != none {
+		return loader.typeface == unsafe { nil }
+	}
 	return loader.urls.len != 0 && loader.typeface == unsafe { nil }
 }
 
+pub fn (mut loader FontLoader) did_request_for_rendering() {
+	if loader.is_loading() && loader.document_load_event_delayer_ == none {
+		if document := loader.font_computer.document_ {
+			mut mutable_document := unsafe { &dom.Document(document) }
+			loader.document_load_event_delayer_ = dom.DocumentLoadEventDelayer.new(mut mutable_document)
+		}
+	}
+}
+
 pub fn (loader &FontLoader) may_finish_from_cache() bool {
+	if controller := loader.fetch_controller_ { return !controller.requires_network() }
 	return !loader.has_started_request_ || !loader.requires_network_
 }
 
 pub fn (loader &FontLoader) has_started_request() bool {
+	if controller := loader.fetch_controller_ { return controller.has_started_request() }
 	return loader.has_started_request_
 }
 
@@ -3800,11 +3855,12 @@ pub fn (loader &FontLoader) try_load_font(response &fetch.Response, bytes []u8) 
 			sniffing_context: .font
 		})
 	}
-	if mime_type.essence() in ['font/ttf', 'application/x-font-ttf', 'font/otf', 'font/woff',
+	if mime_type.essence() in ['font/ttf', 'application/x-font-ttf', 'font/otf', 'font/woff', 'font/x-woff',
 		'application/font-woff', 'font/woff2', 'application/font-woff2'] {
 		typeface := platform_load_font_from_bytes_boundary(bytes, loader.family_name_)
 		if typeface != unsafe { nil } {
-			return typeface
+			prepared := os.read_bytes(typeface.source_path) or { return error('Failed to read prepared font') }
+			if skia.font_typeface_is_valid(prepared, 0) { return typeface }
 		}
 	}
 	return error('Automatic format detection failed')
@@ -3813,14 +3869,15 @@ pub fn (loader &FontLoader) try_load_font(response &fetch.Response, bytes []u8) 
 fn (mut loader FontLoader) font_did_load_or_fail(typeface &PlatformTypeface) {
 	if typeface != unsafe { nil } {
 		loader.typeface = owned_platform_typeface(typeface)
-		mut mutable_computer := unsafe { &FontComputer(loader.font_computer) }
-		mutable_computer.clear_computed_font_cache(loader.family_name_)
 	}
 	loader.has_completed = true
+	if mut delayer := loader.document_load_event_delayer_ { delayer.finish() }
+	loader.document_load_event_delayer_ = none
 	for callback in loader.subscribers {
 		callback(loader.typeface)
 	}
 	loader.subscribers.clear()
+	loader.fetch_controller_ = none
 }
 
 struct MatchingFontCandidate {
@@ -3865,6 +3922,7 @@ fn (mut candidate MatchingFontCandidate) font_with_point_size(point_size f32, va
 pub struct FontComputer {
 pub mut:
 	document_                 ?&dom.Document
+	fetch_host_               ?&fetch.FetchHost
 	font_faces                map[string][]&FontFaceObject
 	loaders_by_url            map[string]&FontLoader
 	computed_font_cache              map[string]&FontCascadeList
@@ -4057,6 +4115,8 @@ pub fn (mut computer FontComputer) load_font_face(font_face ParsedFontFace, on_l
 	}
 
 	loader := FontLoader.create(computer, font_face.font_family(), font_face.unicode_ranges(), urls, on_load)
+	mut mutable_loader := unsafe { &FontLoader(loader) }
+	mutable_loader.rule_or_declaration_ = font_rule_or_declaration(computer, font_face.parent_rule_ref())
 	computer.loaders_by_url[key] = loader
 	return loader
 }
