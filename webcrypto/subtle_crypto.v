@@ -338,9 +338,6 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
         return generated
     }
 
-	if normalized_usages.len == 0 {
-		return error('SyntaxError: usages must not be empty')
-	}
 	return match params {
         EcKeyGenParams {
             generated := generate_ec_key(EcKeyGenParams{ ...params, name: normalized }, extractable, normalized_usages)!
@@ -367,9 +364,9 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 			}
 		}
 		HmacKeyGenParams {
-			GeneratedKey{
-				key: generate_hmac_key(HmacKeyGenParams{ ...params, hash: normalize_an_algorithm(params.hash, 'digest')! }, extractable, normalized_usages)!
-			}
+			key := generate_hmac_key(HmacKeyGenParams{ ...params, hash: normalize_an_algorithm(params.hash, 'digest')! }, extractable, normalized_usages)!
+			if normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+			GeneratedKey{ key: key }
 		}
 		AlgorithmParams {
 			if normalized == 'Ed25519' {
@@ -396,13 +393,18 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 				return generated
 			}
             if normalized in ['X25519', 'X448'] {
-				return generate_exchange_key(normalized, extractable, normalized_usages)
+				generated := generate_exchange_key(normalized, extractable, normalized_usages)!
+				pair := generated.pair or { return error('OperationError: Missing key pair') }
+				if pair.private_key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+				return generated
 			}
             if normalized in ['KMAC128', 'KMAC256'] {
 				return KMAC.create().generate_key(KmacKeyGenParams{ name: normalized }, extractable, normalized_usages)
 			}
             if normalized == 'ChaCha20-Poly1305' {
-                return generate_chacha_key(extractable, normalized_usages)
+                generated := generate_chacha_key(extractable, normalized_usages)!
+                if normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+                return generated
 			}
             return error('NotSupportedError: ${normalized} key generation backend is unavailable')
 		}
