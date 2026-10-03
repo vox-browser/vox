@@ -261,4 +261,15 @@ Four focused source/native files pass with default GC and six with GC disabled;
 see `source-crypto-key-utf16-projection-{default,gc-none}.log` in assignment 7's
 private `Build/audit-fixes/`. Other JSON DTO/runtime-string boundaries and full
 wrapper GC remain open. Source CryptoKey IPC/LBSC payloads are translated and
-verified separately; actual native clone projection/exposure is the next slice.
+verified separately; actual native clone projection/exposure is completed below.
+
+
+Genuine native CryptoKey structured clones now use primary source interface 21
+and the actual source IPC/LBSC payloads. Installed secure target prototypes
+provide exposure independently of author constructor globals. Source internal
+slots survive author getters and cache mutation, aliases share the recreated
+wrapper, and each target receives a new native key record. Three focused native
+clone cases and the platform gate neighbor pass two files with GC disabled;
+a real imported non-extractable HMAC key retains its native sign/verify behavior
+after clone. Logs and remaining platform/GC limits are recorded in
+[the source clone status](STRUCTURED_CLONE_SOURCE_CODEC.md).

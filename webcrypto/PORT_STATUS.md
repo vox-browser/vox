@@ -412,7 +412,14 @@ padding have exact byte goldens in both GC modes. Actual native algorithm
 getters preserve raw UTF-16 name/hash/curve strings and cached mutable object
 identity. Four focused files pass with default GC and six source/native
 neighbors pass with GC disabled. Actual native clone projection and exposure
-are the next source slice; full LibJS WrapperWorld/GC, JSON DTO strings and the
+now use genuine owning wrapper records and secure installed target prototypes; full LibJS WrapperWorld/GC, JSON DTO strings and the
 other documented assertion/scheduler boundaries remain open. Detailed source
 locations, evidence and limits are recorded in
 [the clone codec status](../docs/translation-audit/STRUCTURED_CLONE_SOURCE_CODEC.md).
+
+
+The HMAC plain algorithm record and legacy binding constructor now retain the
+source empty name default. Generation and import explicitly assign `HMAC` at
+the source steps, so actual operation keys remain unchanged. The default-record,
+HMAC source-vector and core test files pass 3/3 in both GC modes; no implicit
+algorithm name is introduced into an otherwise empty source record.

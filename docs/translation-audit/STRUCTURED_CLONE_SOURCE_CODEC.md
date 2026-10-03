@@ -262,7 +262,7 @@ FontFace lookup retains its installed host per actual Runtime and removes that
 ownership at Runtime.close. FontFaceSet and font load events already use the
 actual event binding cache. Genuine CryptoKey remains a distinct step 19
 SerializableObject whose source payload is translated below. Its actual native
-projection remains a subsequent slice at this snapshot; genuine keys are never
+projection is now translated below; genuine keys are never
 downgraded to ordinary objects or rejected as nonserializable platforms.
 
 The three focused cases cover twenty genuine wrapper variants in IPC and LBSC,
@@ -336,7 +336,37 @@ pass with GC disabled. Logs are
 of the existing LibJS well-formed method changed; its implementation did not.
 Full LibJS/AST verification is queued on the canonical integrated snapshot.
 
-Actual native CryptoKey clone projection and secure target exposure remain
-pending at this documentation snapshot. Unbound platform families, original
+Actual native CryptoKey clone projection and secure target exposure are now
+translated as described below. Unbound platform families, original
 native RegExp metadata, untracked resizable view slots, native shared ownership,
 transfers and complete public tee coverage remain separate work.
+
+
+The native CryptoKey clone projection now recognizes only the actual installed
+host's wrapper record and enters its primary SerializableObject branch before
+the nonserializable-platform gate. Internal algorithm, type, extractability,
+usages and handle slots feed the source codec; author-shadowed getters and
+modified cached algorithm objects are not read. Reconstruction allocates a new
+actual target key/wrapper with its captured original CryptoKey prototype.
+Secure target exposure is determined by the installed native prototype, not
+by an author global, so absent/insecure targets reject and deleting/replacing
+an exposed constructor does not change that target's source exposure.
+
+The three native cases preserve duplicate aliases, source ordered usages,
+non-extractability, raw UTF-16 names/hash, independent target identity and
+original factory ownership in IPC and LBSC. A real imported HMAC key signs and
+verifies identically after clone; changing its encoded key material changes the
+actual native MAC. These cases and the migrated platform gate file pass
+**2/2 files** with GC disabled in
+`source-native-crypto-key-clone-gc-none.log` in assignment 7's private
+`Build/audit-fixes/`. Other platform payloads, source wrapper GC, shared ownership,
+original native RegExp metadata, untracked resizable views and transfers remain
+open. This does not establish complete native public tee coverage.
+
+A separate source-record correction removes the invented `HMAC` default name
+from `HmacKeyAlgorithm`. Both source plain-data records and the source legacy
+binding object start with an empty name. HMAC generation/import now assign the
+name explicitly at the pinned operation steps (`CryptoAlgorithms.cpp:8016`
+and `:8175`), preserving real operation behavior. The focused default-record,
+HMAC source-vector and core files pass **3/3 in both GC modes** in
+`source-hmac-record-defaults-{default,gc-none}.log`.
