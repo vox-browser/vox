@@ -23,7 +23,9 @@ fn test_webgl2_copy_sync_transform_feedback_and_offsets() {
 	context.bind_buffer(copy_write_buffer, destination)
 	context.buffer_data(copy_write_buffer, [u8(0), 0, 0, 0], 0x88e4)
 	context.copy_buffer_sub_data(copy_read_buffer, copy_write_buffer, 1, 0, 3)
-	assert destination.bytes() == [u8(2), 3, 4, 0]
+	mut copied := []u8{len: 4}
+	context.get_buffer_sub_data(copy_write_buffer, 0, mut copied, 0, 0)
+	assert copied == [u8(2), 3, 4, 0]
 	assert offset_span([u8(1), 2, 3], 1, 0)! == [u8(2), 3]
 	mut sync := context.fence_sync(sync_gpu_commands_complete, 0) or { panic('sync') }
 	assert context.client_wait_sync(mut sync, 0, 0) in [timeout_expired, already_signaled, condition_satisfied]

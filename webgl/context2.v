@@ -22,17 +22,7 @@ pub fn (mut context WebGLRenderingContext) copy_buffer_sub_data(read_target GLen
     if !context.require_webgl2() { return }
     context.native.dispatch('copy_buffer_sub_data', read_target, write_target, read_offset, write_offset, size)
     C.vox_gl_copy_buffer_sub_data(read_target, write_target, read_offset, write_offset, size)
-    if !context.native.collect_native_error() { return }
-    read_handle := context.bound_buffers[read_target] or { return }
-    write_handle := context.bound_buffers[write_target] or { return }
-    read_buffer := context.buffers[read_handle] or { return }
-    write_buffer := context.buffers[write_handle] or { return }
-    mut mutable_write := unsafe { &WebGLBuffer(write_buffer) }
-    if read_offset >= 0 && write_offset >= 0 && size >= 0
-        && read_offset <= read_buffer.data_.len && size <= read_buffer.data_.len - read_offset
-        && write_offset <= mutable_write.data_.len && size <= mutable_write.data_.len - write_offset {
-        copy(mut mutable_write.data_[int(write_offset)..int(write_offset + size)], read_buffer.data_[int(read_offset)..int(read_offset + size)])
-    }
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) get_buffer_sub_data(target GLenum, source_offset i64, mut destination []u8, destination_offset int, length int) {

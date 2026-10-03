@@ -101,8 +101,6 @@ pub mut:
 	object WebGLObject
 mut:
 	target_ ?GLenum
-	data_   []u8
-	usage_  GLenum
 }
 
 pub fn (mut buffer WebGLBuffer) is_compatible_with(target GLenum) bool {
@@ -114,10 +112,6 @@ pub fn (mut buffer WebGLBuffer) is_compatible_with(target GLenum) bool {
 	}
 	buffer.target_ = target
 	return true
-}
-
-pub fn (buffer &WebGLBuffer) bytes() []u8 {
-	return buffer.data_.clone()
 }
 
 @[heap]

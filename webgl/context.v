@@ -471,39 +471,24 @@ pub fn (mut context WebGLRenderingContext) bind_buffer(target GLenum, buffer ?&W
 }
 
 pub fn (mut context WebGLRenderingContext) buffer_data(target GLenum, data []u8, usage GLenum) {
-    handle := context.bound_buffers[target] or { context.set_error(invalid_operation); return }
-    buffer := context.buffers[handle] or { context.set_error(invalid_operation); return }
+    context.native.make_current()
     context.native.dispatch('buffer_data', target, data.len, usage)
     C.vox_gl_buffer_data(target, data.len, data.data, usage)
-    if !context.native.collect_native_error() { return }
-    mut mutable_buffer := unsafe { &WebGLBuffer(buffer) }
-    mutable_buffer.data_ = data.clone()
-    mutable_buffer.usage_ = usage
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) buffer_data_size(target GLenum, size i64, usage GLenum) {
-    if size < 0 { context.set_error(invalid_value); return }
-    handle := context.bound_buffers[target] or { context.set_error(invalid_operation); return }
-    buffer := context.buffers[handle] or { context.set_error(invalid_operation); return }
+    context.native.make_current()
     context.native.dispatch('buffer_data', target, size, usage)
     C.vox_gl_buffer_data(target, size, unsafe { nil }, usage)
-    if !context.native.collect_native_error() { return }
-    mut mutable_buffer := unsafe { &WebGLBuffer(buffer) }
-    mutable_buffer.data_ = if size <= max_int { []u8{len: int(size)} } else { []u8{} }
-    mutable_buffer.usage_ = usage
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) buffer_sub_data(target GLenum, offset i64, data []u8) {
-    if offset < 0 { context.set_error(invalid_value); return }
-    handle := context.bound_buffers[target] or { context.set_error(invalid_operation); return }
-    buffer := context.buffers[handle] or { context.set_error(invalid_operation); return }
+    context.native.make_current()
     context.native.dispatch('buffer_sub_data', target, offset, data.len)
     C.vox_gl_buffer_sub_data(target, offset, data.len, data.data)
-    if !context.native.collect_native_error() { return }
-    mut mutable_buffer := unsafe { &WebGLBuffer(buffer) }
-    if offset <= mutable_buffer.data_.len && data.len <= mutable_buffer.data_.len - offset {
-        copy(mut mutable_buffer.data_[int(offset)..int(offset) + data.len], data)
-    }
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) delete_buffer(buffer ?&WebGLBuffer) {

@@ -319,6 +319,11 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 			return json2.Any(json2.Null{})
 		}
 	}
+	// Both source overload classes select the context before nullable data or
+	// buffer-witness validation can set an error and return.
+	if method in ['bufferData', 'bufferSubData'] {
+		context.native.make_current()
+	}
 	args := wg_normalize_source_spans(mut context, method, original_args, request) or { return json2.Any(json2.Null{}) }
 	match method {
 		'__getObjectLabel' {

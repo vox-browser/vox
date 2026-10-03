@@ -60,8 +60,6 @@ fn test_native_buffers_are_uploaded_copied_mapped_and_validate_real_ranges() {
 	context.buffer_data_size(copy_write_buffer, 100, 0)
 	assert context.get_error() == invalid_enum
 	assert context.get_buffer_parameter(copy_write_buffer, buffer_size).integer == 6
-	mut mutable_destination := unsafe { &WebGLBuffer(destination) }
-	mutable_destination.data_ = []u8{len: 6, init: 99}
 	context.get_buffer_sub_data(copy_write_buffer, 0, mut bytes, 1, 6)
 	assert bytes == [u8(255), 9, 8, 2, 3, 4, 0, 255]
 	context.get_buffer_sub_data(copy_write_buffer, 6, mut bytes, 0, 1)

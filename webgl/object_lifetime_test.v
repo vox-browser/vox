@@ -14,7 +14,9 @@ fn test_object_context_identity_buffer_compatibility_and_deletion() {
 	first.bind_buffer(array_buffer, buffer)
 	first.buffer_data(array_buffer, [u8(1), 2, 3, 4], 0x88e4)
 	first.buffer_sub_data(array_buffer, 1, [u8(9), 8])
-	assert buffer.bytes() == [u8(1), 9, 8, 4]
+	mut uploaded := []u8{len: 4}
+	first.get_buffer_sub_data(array_buffer, 0, mut uploaded, 0, 0)
+	assert uploaded == [u8(1), 9, 8, 4]
 	first.delete_buffer(buffer)
 	assert !first.is_buffer(buffer)
 	assert buffer.object.invalidated()
