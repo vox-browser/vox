@@ -71,6 +71,8 @@ pub mut:
 	table_definitions []BinaryTableDefinition
 	data_segments []BinaryDataSegment
 	element_segments []BinaryElementSegment
+mut:
+	cranelift_compilation_ &BinaryModuleCompilationControl = BinaryModuleCompilationControl.create()
 }
 
 pub struct SerializedModule {
@@ -129,6 +131,9 @@ pub fn (compiled &Module) serialization_steps(for_storage bool) !SerializedModul
 
 pub fn (mut compiled Module) deserialization_steps(serialized SerializedModule) ! {
 	restored := compile_a_webassembly_module(serialized.bytes)!
+	// Source deserialization installs a newly parsed Module, including its new
+	// compilation state. Automatic ref-counted release remains an owner boundary.
+	compiled.cranelift_compilation_ = restored.cranelift_compilation_
 	compiled.bytes = restored.bytes.clone()
 	compiled.import_entries = restored.import_entries.clone()
 	compiled.binary_import_entries = restored.binary_import_entries.clone()
