@@ -204,6 +204,25 @@ identity alongside different real GL bindings in both versions. These tests
 preserve source behavior rather than claiming specification correction; OES
 foreign-object silent returns retain the source FIXME.
 
+Framebuffer/renderbuffer binding follows `WebGLRenderingContextImpl.cpp:263-299`:
+select the owner, validate the actual object's handle, call GL, then assign the
+retained source slot. Extra target prevalidation was removed. An invalid driver
+target or unrelated pending GL error therefore still updates an owned slot;
+a foreign/deleted handle returns INVALID_OPERATION first. The framebuffer slot
+now owns the actual platform record (`WebGLRenderingContextImpl.h:157` and its
+`visit_edges()` entry), carries that record through attachment/query paths, and
+creates or reuses one branded host wrapper on first exposure. Source framebuffer
+deletion clears the matching pointer after GL (`:523-542`); native restoration
+adapters clear the new owner together with their existing numeric state.
+WebGL2 `READ_FRAMEBUFFER` binding still changes the source's single retained
+framebuffer slot even when the real draw binding differs. The new typed source
+case and attachment/native-framebuffer/transfer/parameter-state neighbors passed
+with GC disabled (five files, `source-framebuffer-binding-gc-none.log`). The
+actual public invalid-target/foreign-handle/first-exposure case passed in
+`source-framebuffer-binding-public-gc-none.log`. This translates those source
+owning slots; complete LibJS tracing, cross-realm WrapperWorld behavior, and
+remaining resource graph owners are still open.
+
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
 ANGLE builds lacking compressed robust entry points use the matching GLES call
