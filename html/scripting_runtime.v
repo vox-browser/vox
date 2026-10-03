@@ -472,7 +472,12 @@ pub mut:
 }
 
 pub fn JavaScriptModuleScript.create(filename string, source string, realm &ScriptingRealm, base_url dom.URL) &JavaScriptModuleScript {
-	actual_source := if realm.scripting_enabled { source } else { '' }
+	actual_source := if is_scripting_enabled(realm) { source } else { '' }
+	return create_javascript_module_script_record(filename, actual_source, realm, base_url)
+}
+
+// ModuleScript.cpp's pre-parsed/compiled/cache paths retain their source code.
+fn create_javascript_module_script_record(filename string, source string, realm &ScriptingRealm, base_url dom.URL) &JavaScriptModuleScript {
 	return &JavaScriptModuleScript{
 		ModuleScript: ModuleScript{
 			Script: Script{
@@ -482,13 +487,13 @@ pub fn JavaScriptModuleScript.create(filename string, source string, realm &Scri
 			}
 			kind: .javascript
 		}
-		source: actual_source
-		requested_modules: parse_module_requests(actual_source)
+		source: source
+		requested_modules: parse_module_requests(source)
 	}
 }
 
 pub fn JavaScriptModuleScript.create_from_pre_parsed(filename string, source_code string, realm &ScriptingRealm, base_url dom.URL, parsed ScriptParseHook) &JavaScriptModuleScript {
-	mut script := JavaScriptModuleScript.create(filename, source_code, realm, base_url)
+	mut script := create_javascript_module_script_record(filename, source_code, realm, base_url)
 	parsed(script.source, filename, 1) or {
 		script.parse_error = err.msg()
 	}
@@ -496,7 +501,7 @@ pub fn JavaScriptModuleScript.create_from_pre_parsed(filename string, source_cod
 }
 
 pub fn JavaScriptModuleScript.create_from_parsed_program(filename string, source_code string, realm &ScriptingRealm, base_url dom.URL, parsed ParsedProgram) &JavaScriptModuleScript {
-	mut script := JavaScriptModuleScript.create(filename, source_code, realm, base_url)
+	mut script := create_javascript_module_script_record(filename, source_code, realm, base_url)
 	if parse_error := parsed.error {
 		script.parse_error = parse_error
 	}
@@ -504,7 +509,6 @@ pub fn JavaScriptModuleScript.create_from_parsed_program(filename string, source
 }
 
 pub fn JavaScriptModuleScript.create_from_pre_compiled(filename string, source_code string, realm &ScriptingRealm, base_url dom.URL, compiled CompiledProgram) &JavaScriptModuleScript {
-	actual_source := if realm.scripting_enabled { source_code } else { '' }
 	return &JavaScriptModuleScript{
 		ModuleScript: ModuleScript{
 			Script: Script{
@@ -514,15 +518,15 @@ pub fn JavaScriptModuleScript.create_from_pre_compiled(filename string, source_c
 			}
 			kind: .javascript
 		}
-		source: actual_source
+		source: source_code
 		compiled_program: compiled
-		requested_modules: parse_module_requests(actual_source)
+		requested_modules: parse_module_requests(source_code)
 	}
 }
 
 pub fn JavaScriptModuleScript.create_from_bytecode_cache(filename string, source_code string, realm &ScriptingRealm, base_url dom.URL, bytecode_cache []u8, materializer ScriptBytecodeCacheMaterializeHook) &JavaScriptModuleScript {
 	executable := materializer(bytecode_cache, source_code, filename, 0, .module) or {
-		mut script := JavaScriptModuleScript.create(filename, source_code, realm, base_url)
+		mut script := create_javascript_module_script_record(filename, source_code, realm, base_url)
 		script.parse_error = err.msg()
 		return script
 	}
@@ -558,7 +562,7 @@ pub fn (script &JavaScriptModuleScript) is_linked() bool {
 
 pub fn (mut script JavaScriptModuleScript) run(prevent_error_reporting PreventErrorReporting) ModuleEvaluation {
 	mut realm := script.realm
-	if !realm.can_run {
+	if can_run_script(realm) == .do_not_run {
 		return ModuleEvaluation{
 			state: .fulfilled
 			value: dom.js_undefined()
