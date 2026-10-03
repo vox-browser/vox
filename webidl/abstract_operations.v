@@ -26,6 +26,7 @@ pub fn clean_up_on_return(value Value) Value {
 }
 
 pub fn to_utf16_string(value Value) ![]u16 {
+	if value.kind == .string_ { return value.string_utf16().code_units() }
 	text := to_string(value)!
 	mut result := []u16{}
 	for code_point in text.runes() {
@@ -42,9 +43,10 @@ pub fn to_utf16_string(value Value) ![]u16 {
 }
 
 pub fn to_utf16_usv_string(value Value) ![]u16 {
-	// V strings contain Unicode scalar values, so to_utf16_string necessarily
-	// produces a well-formed UTF-16 sequence.
-	return to_utf16_string(value)
+	// Source to_utf16_usv_string converts the actual primitive code units once,
+	// then calls AK::Utf16String::to_well_formed.
+	text := libjs.utf16_string_from_code_units(to_utf16_string(value)!)
+	return text.to_well_formed().code_units()
 }
 
 // V strings already are the primitive string representation used at this

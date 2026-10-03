@@ -33,6 +33,7 @@ pub:
 	// low signed-64-bit compatibility projection when this record is present.
 	bigint_record_      ?&libjs.BigInt
 	string_value        string
+	string_utf16_       ?libjs.Utf16String
 	object_value        map[string]Value
 	sequence_value      []Value
 	buffer_value        ?BufferSource
@@ -126,6 +127,19 @@ pub fn string_value(value string) Value {
 		kind:         .string_
 		string_value: value
 	}
+}
+
+// Actual JS primitive strings own UTF-16 code units, including lone surrogates.
+// string_value remains the compatibility text used by existing typed adapters.
+pub fn string_utf16_value(value libjs.Utf16String) Value {
+	return Value{kind: .string_, string_value: value.str(), string_utf16_: value}
+}
+
+pub fn (value Value) string_utf16() libjs.Utf16String {
+	if original := value.string_utf16_ {
+		if original.str() == value.string_value { return original }
+	}
+	return libjs.utf16_string(value.string_value)
 }
 
 pub fn object_value(value map[string]Value) Value {
@@ -277,10 +291,9 @@ fn format_number(value f64) string {
 	return libjs.Value.from_f64(value).str()
 }
 
-// V strings are well-formed UTF-8. Invalid scalar input is represented by the
-// replacement character before this boundary, matching USVString conversion.
+// WebIDL/AbstractOperations.cpp uses the primitive's Utf16String::to_well_formed.
 pub fn to_usv_string(value Value) !string {
-	return to_string(value)
+	return libjs.utf16_string_from_code_units(to_utf16_usv_string(value)!).str()
 }
 
 pub type Boolean = bool

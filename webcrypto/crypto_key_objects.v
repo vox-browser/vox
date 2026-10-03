@@ -7,6 +7,7 @@
 module webcrypto
 
 import webidl
+import libjs
 
 @[heap]
 struct CryptoKeyCacheEntry {
@@ -60,15 +61,15 @@ fn create_uint8_array_from_bytes(_ string, bytes []u8) !webidl.Value {
 	return webidl.buffer_source_value_with_id(array, next_crypto_key_object_id())
 }
 
-fn create_key_algorithm_object(_ string, name string) webidl.Value {
+fn create_key_algorithm_object(_ string, name libjs.Utf16String) webidl.Value {
 	return webidl.object_value_with_id({
-		'name': webidl.string_value(name)
+		'name': webidl.string_utf16_value(name)
 	}, next_crypto_key_object_id())
 }
 
 fn create_algorithm_object(realm string, algorithm CryptoKeyAlgorithm) !webidl.Value {
 	mut properties := {
-		'name': webidl.string_value(algorithm.name())
+		'name': webidl.string_utf16_value(algorithm.name_utf16())
 	}
 	match algorithm {
 		RsaKeyAlgorithm {
@@ -78,16 +79,16 @@ fn create_algorithm_object(realm string, algorithm CryptoKeyAlgorithm) !webidl.V
 		RsaHashedKeyAlgorithm {
 			properties['modulusLength'] = webidl.number_value(algorithm.modulus_length)
 			properties['publicExponent'] = create_uint8_array_from_bytes(realm, algorithm.public_exponent)!
-			properties['hash'] = create_key_algorithm_object(realm, algorithm.hash)
+			properties['hash'] = create_key_algorithm_object(realm, algorithm.hash_utf16())
 		}
 		EcKeyAlgorithm {
-			properties['namedCurve'] = webidl.string_value(algorithm.named_curve)
+			properties['namedCurve'] = webidl.string_utf16_value(algorithm.named_curve_utf16())
 		}
 		AesKeyAlgorithm {
 			properties['length'] = webidl.number_value(algorithm.length)
 		}
 		HmacKeyAlgorithm {
-			properties['hash'] = create_key_algorithm_object(realm, algorithm.hash)
+			properties['hash'] = create_key_algorithm_object(realm, algorithm.hash_utf16())
 			properties['length'] = webidl.number_value(algorithm.length)
 		}
 		KmacKeyAlgorithm {

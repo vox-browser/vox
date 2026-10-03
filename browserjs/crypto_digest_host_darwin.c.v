@@ -164,7 +164,7 @@ fn (mut host CryptoHost) crypto_value(value webidl.Value) !voidptr {
 	if value.kind == .null_ { return C.JSValueMakeNull(runtime.context) }
 	if value.kind == .boolean { return C.JSValueMakeBoolean(runtime.context, value.boolean_value) }
 	if value.kind == .number { return C.JSValueMakeNumber(runtime.context, value.number_value) }
-	if value.kind == .string_ { return runtime.binding_string(value.string_value) }
+	if value.kind == .string_ { return runtime.binding_utf16_string(value.string_utf16()) }
 	if _ := value.dom_exception_ { return runtime.javascript_dom_exception(value) }
 	if value.kind == .platform_object { return host.wrap_crypto_key(webcrypto.crypto_key_from_value(value)!) }
 	if value.kind == .buffer_source {

@@ -22,7 +22,7 @@ fn (text Utf16String) is_well_formed() bool {
 	return true
 }
 
-fn (text Utf16String) to_well_formed() Utf16String {
+pub fn (text Utf16String) to_well_formed() Utf16String {
 	// AK::Utf16String::to_well_formed retains already-valid storage.
 	if text.is_well_formed() { return text }
 	mut units := []u16{len: text.len()}
