@@ -23,7 +23,10 @@ function __webglReply(result,state) {
  if(result&&result.handle)return __webglResources.wrap(result,state);
  return result;
 }
-function __webglNumber(value){const number=+value;return Number.isFinite(number)?number:String(number);}
+// Source conversions and typed results use engine intrinsics, independently
+// of author changes to the corresponding global properties.
+const __webglNumber=(function(){const finite=Number.isFinite,string=String;return function(value){const number=+value;return finite(number)?number:string(number);};})();
+const __webglTypedReply=(function(){const F=Float32Array,I=Int32Array,U=Uint32Array;return function(values,kind){const Constructor=kind==="float"?F:kind==="int"?I:U,result=new Constructor(values.length);for(let i=0;i<values.length;i++)result[i]=values[i];return result;};})();
 function __webglString(value){return `${value}`;}
 const __webglNumberSequence=__webglSequenceFactory(__webglNumber),__webglStringSequence=__webglSequenceFactory(__webglString),__webglListSequence=__webglSequenceFactory(__webglNumber,true);
 // HTML get_context coerces nonobjects to null before the hand-written
@@ -92,10 +95,10 @@ function __webglMethod(s,name,overloads,version) {
  if(name==="getBufferSubData"){const destination=values[2],result=__webglCall(state,name,args,extra);if(result!==null)__webglBufferSlots.write(destination,result);return;}
 	const result=__webglCall(state,name,args,extra);if(signature[2].endsWith("undefined"))return;
  if(signature[2]==="WebGLActiveInfo?"||signature[2]==="WebGLShaderPrecisionFormat?")return __webglReflectionRecord(result,signature[2].slice(0,-1));
- if(Array.isArray(result)&&name==="getParameter"){const pname=(+args[0])>>>0;if([0x846e,0x846d,0x8005,0x0c22,0x0b70].includes(pname))return new Float32Array(result);if([0x0d3a,0x0c10,0x0ba2].includes(pname))return new Int32Array(result);if(pname===0x86a3)return new Uint32Array(result);}
- if(Array.isArray(result)&&name==="getInternalformatParameter")return new Int32Array(result);
- if(Array.isArray(result)&&name==="getActiveUniformBlockParameter"&&((+args[2])>>>0)===0x8a43)return new Uint32Array(result);
- if(Array.isArray(result)&&name==="getVertexAttrib"&&((+args[1])>>>0)===0x8626)return new Float32Array(result);
+ if(Array.isArray(result)&&name==="getParameter"){const pname=(+args[0])>>>0;if([0x846e,0x846d,0x8005,0x0c22,0x0b70].includes(pname))return __webglTypedReply(result,"float");if([0x0d3a,0x0c10,0x0ba2].includes(pname))return __webglTypedReply(result,"int");if(pname===0x86a3)return __webglTypedReply(result,"uint");}
+ if(Array.isArray(result)&&name==="getInternalformatParameter")return __webglTypedReply(result,"int");
+ if(Array.isArray(result)&&name==="getActiveUniformBlockParameter"&&((+args[2])>>>0)===0x8a43)return __webglTypedReply(result,"uint");
+ if(Array.isArray(result)&&name==="getVertexAttrib"&&((+args[1])>>>0)===0x8626)return __webglTypedReply(result,"float");
  return __webglReply(result,state);
  }})[name];
  return __webglContextSlots.metadata(operation,name,min);
