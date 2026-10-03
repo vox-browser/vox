@@ -206,6 +206,14 @@ fn (host &CanvasWebGLHost) object_reply(context &webgl.WebGLRenderingContext, ob
 }
 
 fn (mut host CanvasWebGLHost) parameter(context &webgl.WebGLRenderingContext, value webgl.WebGLParameterValue) json2.Any {
+	if framebuffer := value.framebuffer {
+		if handle := host.platform_objects[voidptr(&framebuffer.object)] {
+			return host.resource_reply(handle)
+		}
+		handle := host.register(context, 'framebuffer', &framebuffer.object)
+		host.framebuffers[handle] = framebuffer
+		return host.resource_reply(handle)
+	}
 	if buffer := value.buffer {
 		if handle := host.platform_objects[voidptr(&buffer.object)] {
 			return host.resource_reply(handle)

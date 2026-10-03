@@ -36,6 +36,7 @@ pub:
 	sampler ?&WebGLSampler
 	buffer  ?&WebGLBuffer
 	renderbuffer ?&WebGLRenderbuffer
+	framebuffer ?&WebGLFramebuffer
 }
 
 fn integer_parameter(value i64) WebGLParameterValue {
@@ -270,10 +271,7 @@ pub fn (mut context WebGLRenderingContext) bind_attrib_location(program &WebGLPr
 }
 
 pub fn (mut context WebGLRenderingContext) bind_framebuffer(target GLenum, framebuffer_object ?&WebGLFramebuffer) {
-	if !is_valid_framebuffer_binding_target(context.version, target) {
-		context.set_error(invalid_enum)
-		return
-	}
+	context.native.make_current()
 	handle := if value := framebuffer_object {
 		if !context.owns(&value.object) {
 			context.set_error(invalid_operation)
@@ -283,17 +281,15 @@ pub fn (mut context WebGLRenderingContext) bind_framebuffer(target GLenum, frame
 	} else {
 		GLuint(0)
 	}
-	context.bound_framebuffer = handle
 	context.command('bind_framebuffer', target, handle)
 	C.vox_gl_bind_framebuffer(target, if value := framebuffer_object { value.object.native_handle_ } else { context.native.default_framebuffer() })
 	context.native.collect_native_error()
+	context.bound_framebuffer = handle
+	context.bound_framebuffer_object = framebuffer_object
 }
 
 pub fn (mut context WebGLRenderingContext) bind_renderbuffer(target GLenum, renderbuffer_object ?&WebGLRenderbuffer) {
-	if target != renderbuffer {
-		context.set_error(invalid_enum)
-		return
-	}
+	context.native.make_current()
 	handle := if value := renderbuffer_object {
 		if !context.owns(&value.object) {
 			context.set_error(invalid_operation)
@@ -303,11 +299,11 @@ pub fn (mut context WebGLRenderingContext) bind_renderbuffer(target GLenum, rend
 	} else {
 		GLuint(0)
 	}
-	context.bound_renderbuffer = handle
-	context.bound_renderbuffer_object = renderbuffer_object
 	context.command('bind_renderbuffer', target, handle)
 	C.vox_gl_bind_renderbuffer(target, if value := renderbuffer_object { value.object.native_handle_ } else { context.native.default_renderbuffer() })
 	context.native.collect_native_error()
+	context.bound_renderbuffer = handle
+	context.bound_renderbuffer_object = renderbuffer_object
 }
 
 pub fn (mut context WebGLRenderingContext) bind_texture(target GLenum, texture ?&WebGLTexture) {
@@ -440,6 +436,7 @@ pub fn (mut context WebGLRenderingContext) cull_face(mode GLenum) {
 }
 
 pub fn (mut context WebGLRenderingContext) delete_framebuffer(object ?&WebGLFramebuffer) {
+	context.native.make_current()
 	if value := object {
 		mut mutable_value := unsafe { &WebGLFramebuffer(value) }
 		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
@@ -451,12 +448,15 @@ pub fn (mut context WebGLRenderingContext) delete_framebuffer(object ?&WebGLFram
 		}
 		handle := handle_result.value
 		context.framebuffers.delete(handle)
-		if context.bound_framebuffer == handle {
-			context.bound_framebuffer = 0
-		}
 		context.command('delete_framebuffer', handle)
 		C.vox_gl_delete_object(1, value.object.native_handle_)
 		context.native.collect_native_error()
+		if bound := context.bound_framebuffer_object {
+			if bound == value {
+				context.bound_framebuffer = 0
+				context.bound_framebuffer_object = none
+			}
+		}
 	}
 }
 
@@ -619,7 +619,7 @@ pub fn (mut context WebGLRenderingContext) framebuffer_renderbuffer(target GLenu
 	} else {
 		GLuint(0)
 	}
-	if framebuffer_object := context.framebuffers[context.bound_framebuffer] {
+	if framebuffer_object := context.bound_framebuffer_object {
 		mut mutable := unsafe { &WebGLFramebuffer(framebuffer_object) }
 		mutable.set_renderbuffer_attachment(attachment, object)
 	}
@@ -652,7 +652,7 @@ pub fn (mut context WebGLRenderingContext) framebuffer_texture2d(target GLenum, 
 	} else {
 		GLuint(0)
 	}
-	if framebuffer_object := context.framebuffers[context.bound_framebuffer] {
+	if framebuffer_object := context.bound_framebuffer_object {
 		mut mutable := unsafe { &WebGLFramebuffer(framebuffer_object) }
 		mutable.set_texture_attachment(attachment, object, texture_target, level)
 	}
@@ -676,7 +676,7 @@ pub fn (mut context WebGLRenderingContext) get_framebuffer_attachment_parameter(
 		return WebGLParameterValue{}
 	}
 
-	framebuffer_object := context.framebuffers[context.bound_framebuffer] or {
+	framebuffer_object := context.bound_framebuffer_object or {
 		context.set_error(invalid_operation)
 		return WebGLParameterValue{}
 	}
@@ -850,7 +850,7 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
    handle:=context.bound_buffers[target] or {return WebGLParameterValue{}}
    return WebGLParameterValue{kind:.object,object:handle,buffer:context.retained_buffer_binding(target)}
   }
-  framebuffer_binding {return if context.bound_framebuffer==0 {WebGLParameterValue{}} else {WebGLParameterValue{kind:.object,object:context.bound_framebuffer}}}
+  framebuffer_binding {return if context.bound_framebuffer==0 {WebGLParameterValue{}} else {WebGLParameterValue{kind:.object,object:context.bound_framebuffer,framebuffer:context.bound_framebuffer_object}}}
   renderbuffer_binding {return if context.bound_renderbuffer==0 {WebGLParameterValue{}} else {WebGLParameterValue{kind:.object,object:context.bound_renderbuffer,renderbuffer:context.bound_renderbuffer_object}}}
   current_program {program:=context.current_program or {return WebGLParameterValue{}};return WebGLParameterValue{kind:.object,object:program.object.handle_}}
   texture_binding_2d,texture_binding_cube_map {

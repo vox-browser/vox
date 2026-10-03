@@ -43,6 +43,7 @@ mut:
 	bound_buffers                       map[GLenum]GLuint
 	bound_buffer_objects                map[GLenum]&WebGLBuffer
 	bound_framebuffer                   GLuint
+	bound_framebuffer_object            ?&WebGLFramebuffer
 	bound_renderbuffer                  GLuint
 	bound_renderbuffer_object           ?&WebGLRenderbuffer
 	bound_textures                      map[GLenum]GLuint
@@ -279,6 +280,7 @@ fn (mut context WebGLRenderingContext) initialize_restored_client_state() {
 	context.bound_buffers.clear()
 	context.bound_buffer_objects.clear()
 	context.bound_framebuffer = 0
+	context.bound_framebuffer_object = none
 	context.bound_renderbuffer = 0
 	context.bound_renderbuffer_object = none
 	context.bound_textures.clear()
@@ -319,6 +321,7 @@ pub fn (mut context WebGLRenderingContext) reset_client_side_webgl_state() {
 	context.bound_buffers.clear()
 	context.bound_buffer_objects.clear()
 	context.bound_framebuffer = 0
+	context.bound_framebuffer_object = none
 	context.bound_renderbuffer = 0
 	context.bound_renderbuffer_object = none
 	context.bound_textures.clear()
