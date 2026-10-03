@@ -155,6 +155,18 @@ by two-version typed and actual JavaScriptCore identity/error tests; those files
 the migrated native draw fixture, and the lifetime neighbor passed with GC
 disabled (four focused files).
 
+The retained buffer and renderbuffer slots now also own their actual typed
+platform records, translating `WebGLRenderingContextImpl.h:154-174` and the
+`visit_edges()` entries at `WebGLRenderingContextImpl.cpp:2594-2615`. Removing
+the live native-name lookup entry no longer leaves only a numeric identifier.
+Binding query results carry that same record through the host, whose wrapper
+cache keys the actual platform-object address and reuses an existing wrapper
+even after invalidation. A typed object first exposed after deletion receives
+one wrapper rather than a fabricated null. The two ownership files passed
+with default GC; those files plus deletion, native draw and lifetime neighbors
+passed with GC disabled (five files). This translates the ownership graph of
+these slots; full LibJS tracing and caller WrapperWorld ownership remain open.
+
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
 ANGLE builds lacking compressed robust entry points use the matching GLES call
