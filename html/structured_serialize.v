@@ -11,6 +11,7 @@ import dom
 import math
 import libjs
 import webidl
+import webcrypto
 import math.big
 
 // StructuredObject is the small host-independent object model used until the
@@ -100,6 +101,7 @@ pub mut:
 	serializable_interface_ ?StructuredSerializableInterface
 	dom_exception_      ?&webidl.DOMException
 	quota_exceeded_error_ ?&webidl.QuotaExceededError
+	crypto_key_         ?&webcrypto.CryptoKey
 }
 
 pub fn StructuredObject.create(kind StructuredObjectKind) &StructuredObject {
@@ -114,6 +116,10 @@ pub fn StructuredObject.create_dom_exception(exception &webidl.DOMException) &St
 
 pub fn StructuredObject.create_quota_exceeded_error(exception &webidl.QuotaExceededError) &StructuredObject {
 	return &StructuredObject{kind: .serializable_object, serializable_interface_: .quota_exceeded_error, quota_exceeded_error_: exception}
+}
+
+pub fn StructuredObject.create_crypto_key(key &webcrypto.CryptoKey) &StructuredObject {
+	return &StructuredObject{ kind: .serializable_object, serializable_interface_: .crypto_key, crypto_key_: key }
 }
 
 pub fn StructuredObject.create_shared_array_buffer(bytes []u8, max_byte_length ?u64) &StructuredObject {
@@ -625,11 +631,14 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 		}
 		.serializable_object {
 			interface_name := object.serializable_interface_ or { return error('DataCloneError: serializable object has no primary interface') }
-			if interface_name != .dom_exception && interface_name != .quota_exceeded_error { return error('DataCloneError: source serializable payload is not yet translated for ${structured_serializable_interface_name(interface_name)}') }
+			if interface_name != .dom_exception && interface_name != .quota_exceeded_error && interface_name != .crypto_key { return error('DataCloneError: source serializable payload is not yet translated for ${structured_serializable_interface_name(interface_name)}') }
 			serializer.write_tag(.serializable_object)
 			serializer.write_serializable_interface(interface_name)!
 			if serializer.type_ == .storage { serializer.write_u64(structured_serializable_payload_version) }
-			if interface_name == .dom_exception {
+			if interface_name == .crypto_key {
+				key := object.crypto_key_ or { return error('DataCloneError: serializable CryptoKey has no native record') }
+				serializer.write_crypto_key_payload(key)!
+			} else if interface_name == .dom_exception {
 				exception := object.dom_exception_ or { return error('DataCloneError: serializable DOMException has no native record') }
 				for field in exception.serialization_steps_utf16() { serializer.write_utf16_string(field)! }
 			} else {
@@ -1112,8 +1121,10 @@ fn (mut decoder StructuredDecoder) decode_value_with_tag(tag_byte u8) !&dom.JSVa
 			if decoder.type_ == .storage { version = decoder.read_u64()! }
 			is_exposed := decoder.context.is_exposed or { return error('DataCloneError: unsupported type in target realm') }
 			if !is_exposed(interface_name) { return error('DataCloneError: unsupported type in target realm') }
-			if interface_name != .dom_exception && interface_name != .quota_exceeded_error { return error('DataCloneError: source serializable payload is not yet translated for ${structured_serializable_interface_name(interface_name)}') }
-			mut object := if interface_name == .dom_exception {
+			if interface_name != .dom_exception && interface_name != .quota_exceeded_error && interface_name != .crypto_key { return error('DataCloneError: source serializable payload is not yet translated for ${structured_serializable_interface_name(interface_name)}') }
+			mut object := if interface_name == .crypto_key {
+				StructuredObject.create_crypto_key(webcrypto.CryptoKey.create_empty())
+			} else if interface_name == .dom_exception {
 				StructuredObject.create_dom_exception(webidl.DOMException.create_utf16_record(libjs.utf16_string(''), libjs.utf16_string('')))
 			} else {
 				StructuredObject.create_quota_exceeded_error(&webidl.QuotaExceededError{})
@@ -1123,6 +1134,11 @@ fn (mut decoder StructuredDecoder) decode_value_with_tag(tag_byte u8) !&dom.JSVa
 			}
 			value := decoder.register_object(object)
 			// Source creates/registers the target before its interface payload.
+			if interface_name == .crypto_key {
+				mut key := object.crypto_key_ or { return error('DataCloneError: missing CryptoKey target record') }
+				decoder.read_crypto_key_payload(mut key)!
+				return value
+			}
 			name := decoder.read_utf16_string()!
 			message := decoder.read_utf16_string()!
 			if interface_name == .dom_exception {

@@ -162,12 +162,25 @@ pub fn (key &CryptoKey) internal_handle() CryptoKeyInternalHandle {
 	return key.internal_handle_
 }
 
+// CryptoKey.cpp::deserialization_steps assigns its actual InternalKeyData.
+// HTML's source wire decoder passes the decoded record here rather than the
+// earlier standalone big-endian/UTF-8 serialization adapter.
+pub fn (mut key CryptoKey) install_deserialized_internal_handle(handle CryptoKeyInternalHandle) {
+	key.internal_handle_ = clone_internal_handle(handle)
+	key.handle_ = raw_bytes_for_internal_handle(key.internal_handle_)
+	key.jwk_handle_ = none
+	key.destroyed_ = false
+}
+
 pub fn (key &CryptoKey) algorithm_name() string {
 	return key.algorithm.name()
 }
 
 pub fn (key &CryptoKey) bindings_type() KeyType {
-	return key.type_
+	if key.type_ == .public_key { return .public_key }
+	if key.type_ == .private_key { return .private_key }
+	if key.type_ == .secret { return .secret }
+	panic('Source VERIFY_NOT_REACHED: invalid CryptoKey type')
 }
 
 pub fn (key &CryptoKey) permits(usage KeyUsage) bool {
