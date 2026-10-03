@@ -494,6 +494,9 @@ pub mut:
 	active_window_proxy_hook_ ?NodeActiveWindowProxyHook
 	adopted_from_hook_        ?NodeAdoptedFromHook
 	lifecycle_hook_           ?NodeLifecycleHook
+	relevant_scripting_environment_ ?NodeScriptingEnvironment
+	// Explicit late-Window adapter for the older standalone constructors.
+	relevant_scripting_document_ &Document = unsafe { nil }
 }
 
 // Translation of the ParentNode mixin; its algorithms live in
@@ -1690,6 +1693,8 @@ pub type DocumentLifecycleCallback = fn (voidptr, &Document)
 
 pub type DocumentLifecycleObjectCallback = fn (voidptr, &Document) voidptr
 
+pub type DocumentSettingsScriptingEnabledCallback = fn (voidptr) bool
+
 pub type DocumentStructuredDeserializeCallback = fn (voidptr, DOMSerializationRecord) ?JSValue
 
 pub type DocumentQueueIntersectionObserverTaskCallback = fn (voidptr, &Document)
@@ -1709,6 +1714,7 @@ pub:
 	decrement_termination_nesting    DocumentLifecycleCallback = unsafe { nil }
 	set_execution_ready              DocumentLifecycleCallback = unsafe { nil }
 	relevant_settings_object         DocumentLifecycleObjectCallback = unsafe { nil }
+	settings_scripting_enabled       DocumentSettingsScriptingEnabledCallback = unsafe { nil }
 	structured_deserialize           DocumentStructuredDeserializeCallback = unsafe { nil }
 	queue_intersection_observer_task DocumentQueueIntersectionObserverTaskCallback = unsafe { nil }
 	queue_selectionchange_event_task DocumentQueueSelectionchangeEventTaskCallback = unsafe { nil }
@@ -3110,6 +3116,7 @@ pub:
 	did_request_color_picker_callback    fn (voidptr, string, string) = unsafe { nil }
 	did_request_file_picker_callback     fn (voidptr, string, string, bool) = unsafe { nil }
 	did_request_external_url_callback    fn (voidptr, string, string, bool) = unsafe { nil }
+	is_scripting_enabled_callback       fn (voidptr) bool = unsafe { nil }
 mut:
 	last_changed_title_ string
 	title_change_count_ int
@@ -5556,6 +5563,8 @@ pub fn Document.create_with_relevant_global(url URL, relevant_window &Window, li
 	doc.lifecycle_hook_ = lifecycle_hook
 	doc.temporary_execution_context_hook_ = temporary_context_hook
 	assert doc.relevant_settings_object() != unsafe { nil }
+	mut document_node := unsafe { &Node(doc) }
+	document_node.initialize_relevant_scripting_environment()
 	if factory := document_font_face_set_factory_ {
 		context := doc.begin_temporary_execution_context()
 		doc.fonts_ = factory(doc)

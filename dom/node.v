@@ -774,6 +774,7 @@ fn assign_unique_node_id[T](node &T) &T {
 		mut n := &Node(node)
 		n.EventTarget.data.kind = .node
 		n.unique_id_ = UniqueNodeID(i64(voidptr(node)))
+		n.initialize_relevant_scripting_environment()
 	}
 	return node
 }
@@ -799,6 +800,7 @@ pub fn Node.new_with_realm(realm voidptr, document &Document, node_type NodeType
 	}
 	node.EventTarget.data.kind = .node
 	node.unique_id_ = allocate_unique_id(node)
+	node.initialize_relevant_scripting_environment()
 	return node
 }
 
@@ -813,6 +815,8 @@ pub fn (mut n Node) finalize() {
 pub fn (mut n Node) visit_edges(mut visitor CellVisitor) {
 	n.EventTarget.visit_edges(mut visitor)
 	visitor.visit(n.document_)
+	if environment := n.relevant_scripting_environment_ { visitor.visit(environment.settings) }
+	visitor.visit(n.relevant_scripting_document_)
 	visitor.visit(n.child_nodes_)
 	visitor.visit(n.layout_node_)
 	visitor.visit(n.paintable_)
@@ -2893,6 +2897,7 @@ pub fn (mut n Node) set_document_from_named_node_map(document &Document) {
 }
 
 pub fn (mut n Node) set_document(document &Document) {
+	n.initialize_relevant_scripting_environment()
 	if n.document_ == document {
 		return
 	}
@@ -3698,16 +3703,14 @@ fn json_quote(value string) string {
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#concept-n-script
 pub fn (n &Node) is_scripting_enabled() bool {
-	// Scripting is enabled for a node node if node's node document's browsing context is non-null,
-	// and scripting is enabled for node's relevant realm.
-	doc := n.document()
-	return doc != unsafe { nil } && doc.browsing_context != unsafe { nil }
+	return !n.is_scripting_disabled()
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#concept-n-noscript
 pub fn (n &Node) is_scripting_disabled() bool {
-	// Scripting is disabled for a node when scripting is not enabled.
-	return !n.is_scripting_enabled()
+	document := n.document()
+	return document == unsafe { nil } || document.browsing_context == unsafe { nil }
+		|| !n.relevant_settings_scripting_enabled()
 }
 
 // https://dom.spec.whatwg.org/#concept-shadow-including-descendant

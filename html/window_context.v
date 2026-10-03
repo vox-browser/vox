@@ -1343,6 +1343,10 @@ fn document_relevant_settings_object(target voidptr, _ &dom.Document) voidptr {
 	return voidptr(window.environment_settings_.settings)
 }
 
+fn document_settings_scripting_enabled(settings_pointer voidptr) bool {
+	return is_scripting_enabled_for_settings(unsafe { &EnvironmentSettingsObject(settings_pointer) })
+}
+
 fn document_structured_deserialize(_ voidptr, record dom.DOMSerializationRecord) ?dom.JSValue {
 	return structured_deserialize(SerializationRecord{
 		data: record.data.clone()

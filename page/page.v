@@ -248,6 +248,10 @@ fn page_did_create_document_callback(target voidptr, document &dom.Document) {
 	model.client_.page_did_create_new_document(document.url_string())
 }
 
+fn page_is_scripting_enabled_callback(target voidptr) bool {
+	return unsafe { &Page(target) }.is_scripting_enabled()
+}
+
 fn page_has_media_element_playing_audio_callback(target voidptr, document &dom.Document) bool {
 	model := unsafe { &Page(target) }
 	return model.has_media_element_playing_audio(document)
@@ -524,6 +528,7 @@ pub fn Page.create(device_scale f64) !&Page {
 		did_request_color_picker_callback: page_did_request_color_picker_callback
 		did_request_file_picker_callback: page_did_request_file_picker_callback
 		did_request_external_url_callback: page_did_request_external_url_callback
+		is_scripting_enabled_callback: page_is_scripting_enabled_callback
 	}
 	return model
 }

@@ -15,6 +15,7 @@ fn document_lifecycle_hook(window &WindowModel) dom.DocumentLifecycleHook {
 		decrement_termination_nesting:    document_decrement_event_loop_termination_nesting
 		set_execution_ready:              document_set_execution_ready
 		relevant_settings_object:         document_relevant_settings_object
+		settings_scripting_enabled:       document_settings_scripting_enabled
 		structured_deserialize:           document_structured_deserialize
 		queue_intersection_observer_task: document_queue_intersection_observer_task
 		queue_selectionchange_event_task: document_queue_selectionchange_event_task

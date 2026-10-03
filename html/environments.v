@@ -781,12 +781,24 @@ pub fn is_non_secure_context(environment &Environment) bool {
 
 pub fn can_run_script_for_settings(settings &EnvironmentSettingsObject) RunScriptDecision {
 	if window := settings.window_ {
-		if !window.browsing_context().is_fully_active() {
+		document := window.associated_document()
+		if document.has_page() && document.page().has_scripting_enabled_owner() {
+			if !document.is_fully_active() { return .do_not_run }
+		} else if !window.browsing_context().is_fully_active() {
+			// The standalone Window constructor retains its explicit context
+			// activity adapter. Actual Page-backed settings ask their Document.
 			return .do_not_run
 		}
 	}
-	if !settings.realm().scripting_enabled || !settings.realm().can_run {
+	if is_scripting_disabled_for_settings(settings) {
 		return .do_not_run
+	}
+	if window := settings.window_ {
+		document := window.associated_document()
+		if (!document.has_page() || !document.page().has_scripting_enabled_owner())
+			&& !settings.realm().can_run {
+			return .do_not_run
+		}
 	}
 	return .run
 }
@@ -799,7 +811,10 @@ pub fn can_run_script(realm &ScriptingRealm) RunScriptDecision {
 }
 
 pub fn is_scripting_enabled(realm &ScriptingRealm) bool {
-	return can_run_script(realm) == .run
+	if settings := settings_object_of_realm(realm) {
+		return is_scripting_enabled_for_settings(settings)
+	}
+	return realm.scripting_enabled
 }
 
 pub fn is_scripting_disabled(realm &ScriptingRealm) bool {
