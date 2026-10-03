@@ -411,9 +411,8 @@ in the module's function vector, including imported functions, rather than an
 export label or Store address.
 
 The new source-record cases plus module/global ownership neighbors pass
-**3/3 files with default GC and 3/3 with `-gc none`**. The host callable retains
-an opaque Configuration ABI input; no replacement Configuration or execution
-result is supplied. V currently retains module/code pointer aliases rather than
+**3/3 files with default GC and 3/3 with `-gc none`**. The host callable now takes the actual mutable Configuration described below.
+The Store foundation still does not supply instruction execution. V currently retains module/code pointer aliases rather than
 the source weak/ref-counted lifetime graph, so weak expiration and strong module
 promotion remain open. The legacy Instance initialization and exported-function
 facades are not yet connected to these actual function records; this foundation
@@ -434,9 +433,9 @@ Source alias and control-flow tests plus the function/module owner neighbors
 pass **3/3 files with default GC and 3/3 with `-gc none`**. The borrowed locals
 pointer follows the source contract: Configuration must rederive it when its
 own locals storage moves. V does not enforce the C++ deleted copy operations.
-Configuration, compiled-function-table construction, call-record allocation
-and interpreter execution remain unimplemented; these records do not supply
-an executor or fabricated results.
+The Configuration ownership and call-record allocation foundations are now
+translated below. Compiled-function-table construction and interpreter execution
+remain open; the frame records do not supply an executor.
 
 ## Source import records and linker
 
@@ -467,6 +466,48 @@ complete current package passes **67/67 files with default GC and 67/67 with
 
 This source linker resolves existing addresses. The legacy browser Instance
 initialization is not yet routed through source `AbstractMachine::instantiate`;
-Configuration, compiled instructions, constant-expression execution, native
-compilation, interpreter invocation and the full lifetime/root graph remain
-open. No fabricated machine execution or export result is supplied by this slice.
+Configuration and compiled-instruction records are now translated below.
+Constant-expression execution, native compilation, interpreter invocation and
+the full lifetime/root graph remain open. No fabricated machine execution or export result is supplied by this slice.
+
+
+## Instruction storage and optional expression hints
+
+`681b49d4` translates Source InstructionStorage's actual stable chunk slots,
+empty-opcode sentinel, indexed access, allocation sequence and move behavior.
+`e92e01ed` preserves the optional expression stack hint: absent metadata stays
+distinct from a validated zero, parser allocation hints retain their source
+width, successful validation publishes the peak, and failure leaves the prior
+optional value. The complete optional-hint snapshot passes **69/69 files in each
+GC mode**. See [storage mapping](../docs/translation-audit/WASM_INSTRUCTION_STORAGE.md).
+
+## Actual compiled records and Configuration foundations
+
+`2c0fbf21` translates CompiledInstructions fields and native unions, register
+markers, actual Instruction pointers, trap records, owned auxiliary storage,
+code entry metadata and source atomic acquire/release publication. A native
+reader checks publication of real metadata; it does not execute a fabricated
+compiled function. See [record mapping](../docs/translation-audit/WASM_COMPILED_INSTRUCTIONS.md).
+
+`eb880f08` constructs the actual Configuration with its two existing native
+ValueStacks, registers, frame/label/locals/freelist vectors and owning Store.
+The exact pointer is registered and explicitly unregistered on destruction.
+Source operand modes borrow actual register/call-record/stack slots; taking a
+stack operand pops one value. Call records allocate from the actual second
+stack. Reset preserves source capacity, scan slack, instruction-count limit and
+Store registration while clearing the source-owned state. HostFunction callbacks
+receive this actual mutable record. The seven field-offset methods describe
+the V record consumed by future native compilation paths.
+
+Four focused cases cover owner identity/destruction/region reuse, all operand
+modes and mutable aliases, reset behavior, and real field-offset consumers.
+The complete Configuration snapshot passes **71/71 files with GC disabled** in
+its isolated worktree and **71/71 files with default GC** in the canonical
+checkout (`source-configuration-full-canonical-default-recheck.log`).
+
+Frame installation, argument-allocation reuse, unwind/CallFrameHandle,
+prepare/call/execute functions, module compilation coordination, compiled-function
+tables and complete collector roots remain open. Explicit V destruction and
+heap-vector storage are documented adaptations; C++ automatic ownership,
+noncopyability and inline-vector layout are not implied. No complete Wasm
+execution, source instantiation or browser realm parity is claimed.
