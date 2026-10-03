@@ -5,10 +5,13 @@
 // Translation of Crypto/KeyAlgorithms.{h,cpp}.
 module webcrypto
 
+import libjs
+
 pub struct KeyAlgorithm {
 pub mut:
-	name     string
-	realm_id u64
+	name        string
+	name_utf16_ ?libjs.Utf16String
+	realm_id    u64
 }
 
 pub fn KeyAlgorithm.create() &KeyAlgorithm {
@@ -17,6 +20,7 @@ pub fn KeyAlgorithm.create() &KeyAlgorithm {
 
 pub fn (mut algorithm KeyAlgorithm) set_name(name string) {
 	algorithm.name = name
+	algorithm.name_utf16_ = none
 }
 
 pub fn (algorithm &KeyAlgorithm) name() string {
@@ -26,6 +30,7 @@ pub fn (algorithm &KeyAlgorithm) name() string {
 pub struct RsaKeyAlgorithm {
 pub mut:
 	name            string
+	name_utf16_     ?libjs.Utf16String
 	modulus_length  u32
 	public_exponent []u8
 }
@@ -36,6 +41,7 @@ pub fn RsaKeyAlgorithm.create() &RsaKeyAlgorithm {
 
 pub fn (mut algorithm RsaKeyAlgorithm) set_name(name string) {
 	algorithm.name = name
+	algorithm.name_utf16_ = none
 }
 
 pub fn (mut algorithm RsaKeyAlgorithm) set_modulus_length(modulus_length u32) {
@@ -75,9 +81,11 @@ pub fn (algorithm &RsaKeyAlgorithm) public_exponent() []u8 {
 pub struct RsaHashedKeyAlgorithm {
 pub mut:
 	name            string
+	name_utf16_     ?libjs.Utf16String
 	modulus_length  u32
 	public_exponent []u8
 	hash            string
+	hash_utf16_     ?libjs.Utf16String
 }
 
 pub fn RsaHashedKeyAlgorithm.create() &RsaHashedKeyAlgorithm {
@@ -86,6 +94,7 @@ pub fn RsaHashedKeyAlgorithm.create() &RsaHashedKeyAlgorithm {
 
 pub fn (mut algorithm RsaHashedKeyAlgorithm) set_name(name string) {
 	algorithm.name = name
+	algorithm.name_utf16_ = none
 }
 
 pub fn (mut algorithm RsaHashedKeyAlgorithm) set_modulus_length(modulus_length u32) {
@@ -98,11 +107,13 @@ pub fn (mut algorithm RsaHashedKeyAlgorithm) set_public_exponent(exponent []u8) 
 
 pub fn (mut algorithm RsaHashedKeyAlgorithm) set_hash(hash string) {
 	algorithm.hash = hash
+	algorithm.hash_utf16_ = none
 }
 
 pub fn (algorithm &RsaHashedKeyAlgorithm) hash_algorithm() KeyAlgorithm {
 	return KeyAlgorithm{
-		name: algorithm.hash
+		name:        algorithm.hash
+		name_utf16_: algorithm.hash_utf16_
 	}
 }
 
@@ -124,8 +135,10 @@ pub fn (algorithm &RsaHashedKeyAlgorithm) hash() string {
 
 pub struct EcKeyAlgorithm {
 pub mut:
-	name        string
-	named_curve string
+	name               string
+	name_utf16_        ?libjs.Utf16String
+	named_curve        string
+	named_curve_utf16_ ?libjs.Utf16String
 }
 
 pub fn EcKeyAlgorithm.create() &EcKeyAlgorithm {
@@ -134,10 +147,12 @@ pub fn EcKeyAlgorithm.create() &EcKeyAlgorithm {
 
 pub fn (mut algorithm EcKeyAlgorithm) set_name(name string) {
 	algorithm.name = name
+	algorithm.name_utf16_ = none
 }
 
 pub fn (mut algorithm EcKeyAlgorithm) set_named_curve(named_curve string) {
 	algorithm.named_curve = named_curve
+	algorithm.named_curve_utf16_ = none
 }
 
 pub fn (algorithm &EcKeyAlgorithm) name() string {
@@ -150,8 +165,9 @@ pub fn (algorithm &EcKeyAlgorithm) named_curve() string {
 
 pub struct AesKeyAlgorithm {
 pub mut:
-	name   string
-	length u16
+	name        string
+	name_utf16_ ?libjs.Utf16String
+	length      u16
 }
 
 pub fn AesKeyAlgorithm.create() &AesKeyAlgorithm {
@@ -160,6 +176,7 @@ pub fn AesKeyAlgorithm.create() &AesKeyAlgorithm {
 
 pub fn (mut algorithm AesKeyAlgorithm) set_name(name string) {
 	algorithm.name = name
+	algorithm.name_utf16_ = none
 }
 
 pub fn (mut algorithm AesKeyAlgorithm) set_length(length u16) {
@@ -176,9 +193,11 @@ pub fn (algorithm &AesKeyAlgorithm) length() u16 {
 
 pub struct HmacKeyAlgorithm {
 pub mut:
-	name   string = 'HMAC'
-	hash   string
-	length u32
+	name        string = 'HMAC'
+	name_utf16_ ?libjs.Utf16String
+	hash        string
+	hash_utf16_ ?libjs.Utf16String
+	length      u32
 }
 
 pub fn HmacKeyAlgorithm.create() &HmacKeyAlgorithm {
@@ -187,10 +206,12 @@ pub fn HmacKeyAlgorithm.create() &HmacKeyAlgorithm {
 
 pub fn (mut algorithm HmacKeyAlgorithm) set_name(name string) {
 	algorithm.name = name
+	algorithm.name_utf16_ = none
 }
 
 pub fn (mut algorithm HmacKeyAlgorithm) set_hash(hash string) {
 	algorithm.hash = hash
+	algorithm.hash_utf16_ = none
 }
 
 pub fn (mut algorithm HmacKeyAlgorithm) set_length(length u32) {
@@ -199,7 +220,8 @@ pub fn (mut algorithm HmacKeyAlgorithm) set_length(length u32) {
 
 pub fn (algorithm &HmacKeyAlgorithm) hash_algorithm() KeyAlgorithm {
 	return KeyAlgorithm{
-		name: algorithm.hash
+		name:        algorithm.hash
+		name_utf16_: algorithm.hash_utf16_
 	}
 }
 
@@ -217,8 +239,9 @@ pub fn (algorithm &HmacKeyAlgorithm) length() u32 {
 
 pub struct KmacKeyAlgorithm {
 pub mut:
-	name   string
-	length u32
+	name        string
+	name_utf16_ ?libjs.Utf16String
+	length      u32
 }
 
 pub fn KmacKeyAlgorithm.create() &KmacKeyAlgorithm {
@@ -227,6 +250,7 @@ pub fn KmacKeyAlgorithm.create() &KmacKeyAlgorithm {
 
 pub fn (mut algorithm KmacKeyAlgorithm) set_name(name string) {
 	algorithm.name = name
+	algorithm.name_utf16_ = none
 }
 
 pub fn (mut algorithm KmacKeyAlgorithm) set_length(length u32) {
@@ -350,45 +374,55 @@ pub fn clone_key_algorithm(algorithm CryptoKeyAlgorithm) CryptoKeyAlgorithm {
 	return match algorithm {
 		AesKeyAlgorithm {
 			CryptoKeyAlgorithm(AesKeyAlgorithm{
-				name:   algorithm.name
-				length: algorithm.length
+				name:        algorithm.name
+				name_utf16_: algorithm.name_utf16_
+				length:      algorithm.length
 			})
 		}
 		EcKeyAlgorithm {
 			CryptoKeyAlgorithm(EcKeyAlgorithm{
-				name:        algorithm.name
-				named_curve: algorithm.named_curve
+				name:               algorithm.name
+				name_utf16_:        algorithm.name_utf16_
+				named_curve:        algorithm.named_curve
+				named_curve_utf16_: algorithm.named_curve_utf16_
 			})
 		}
 		HmacKeyAlgorithm {
 			CryptoKeyAlgorithm(HmacKeyAlgorithm{
-				name:   algorithm.name
-				hash:   algorithm.hash
-				length: algorithm.length
+				name:        algorithm.name
+				name_utf16_: algorithm.name_utf16_
+				hash:        algorithm.hash
+				hash_utf16_: algorithm.hash_utf16_
+				length:      algorithm.length
 			})
 		}
 		KeyAlgorithm {
 			CryptoKeyAlgorithm(KeyAlgorithm{
-				name: algorithm.name
+				name:        algorithm.name
+				name_utf16_: algorithm.name_utf16_
 			})
 		}
 		KmacKeyAlgorithm {
 			CryptoKeyAlgorithm(KmacKeyAlgorithm{
-				name:   algorithm.name
-				length: algorithm.length
+				name:        algorithm.name
+				name_utf16_: algorithm.name_utf16_
+				length:      algorithm.length
 			})
 		}
 		RsaHashedKeyAlgorithm {
 			CryptoKeyAlgorithm(RsaHashedKeyAlgorithm{
 				name:            algorithm.name
+				name_utf16_:     algorithm.name_utf16_
 				modulus_length:  algorithm.modulus_length
 				public_exponent: algorithm.public_exponent.clone()
 				hash:            algorithm.hash
+				hash_utf16_:     algorithm.hash_utf16_
 			})
 		}
 		RsaKeyAlgorithm {
 			CryptoKeyAlgorithm(RsaKeyAlgorithm{
 				name:            algorithm.name
+				name_utf16_:     algorithm.name_utf16_
 				modulus_length:  algorithm.modulus_length
 				public_exponent: algorithm.public_exponent.clone()
 			})
