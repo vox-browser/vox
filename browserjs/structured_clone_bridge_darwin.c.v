@@ -100,6 +100,7 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 	}
 	mut kind := html.StructuredObjectKind.object
 	mut native_exception := ?&webidl.DOMException(none)
+	mut native_quota := ?&webidl.QuotaExceededError(none)
 	match tag {
 		7 { kind = .boolean_object }
 		8 { kind = .number_object }
@@ -118,7 +119,10 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 				kind = .array
 			} else {
 				candidate := bridge.runtime.native_clone_dom_exception(value)!
-				if exception := candidate.value {
+				if quota := candidate.quota {
+					kind = .serializable_object
+					native_quota = quota
+				} else if exception := candidate.value {
 					kind = .serializable_object
 					native_exception = exception
 				}
@@ -129,6 +133,11 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 	mut object := html.StructuredObject.create(kind)
 	result := html.structured_object_value(object)
 	projection.input_memory[identity] = &result
+	if quota := native_quota {
+		object.serializable_interface_ = .quota_exceeded_error
+		object.quota_exceeded_error_ = quota
+		return &result
+	}
 	if exception := native_exception {
 		object.serializable_interface_ = .dom_exception
 		object.dom_exception_ = exception
@@ -212,11 +221,16 @@ fn (mut projection NativeCloneProjection) reconstruct(value dom.JSValue) !voidpt
 	if existing := projection.output_memory[identity] { return existing }
 	if object.kind == .serializable_object {
 		interface_name := object.serializable_interface_ or { return native_clone_unsupported('Source native serializable object has no primary interface') }
-		if interface_name != .dom_exception {
+		mut actual := unsafe { nil }
+		if interface_name == .dom_exception {
+			exception := object.dom_exception_ or { return native_clone_unsupported('Source DOMException has no native payload record') }
+			actual = projection.root(owner.javascript_dom_exception(webidl.dom_exception_value_for_record(exception))!)!
+		} else if interface_name == .quota_exceeded_error {
+			exception := object.quota_exceeded_error_ or { return native_clone_unsupported('Source QuotaExceededError has no native payload record') }
+			actual = projection.root(owner.javascript_quota_exceeded_error(exception)!)!
+		} else {
 			return native_clone_unsupported('Source native primary serializable interface is not yet bound')
 		}
-		exception := object.dom_exception_ or { return native_clone_unsupported('Source DOMException has no native payload record') }
-		actual := projection.root(owner.javascript_dom_exception(webidl.dom_exception_value_for_record(exception))!)!
 		projection.output_memory[identity] = actual
 		return actual
 	}

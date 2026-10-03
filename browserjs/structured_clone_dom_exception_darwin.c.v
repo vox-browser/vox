@@ -8,6 +8,7 @@ import webidl
 
 struct NativeCloneDOMException {
 	value ?&webidl.DOMException
+	quota ?&webidl.QuotaExceededError
 }
 
 fn (runtime &Runtime) native_clone_dom_exception(value voidptr) !NativeCloneDOMException {
@@ -15,8 +16,8 @@ fn (runtime &Runtime) native_clone_dom_exception(value voidptr) !NativeCloneDOME
 	// interface. A QuotaExceededError also has a genuine DOMException base,
 	// but its extra payload must never be silently serialized as that base.
 	if quota := quota_exceeded_error_bindings_[voidptr(runtime)] {
-		if _ := quota.by_wrapper[value] {
-			return native_clone_unsupported('Source native QuotaExceededError payload is not yet bound')
+		if native := quota.by_wrapper[value] {
+			return NativeCloneDOMException{quota: native}
 		}
 	}
 	binding := dom_exception_bindings_[voidptr(runtime)] or { return NativeCloneDOMException{} }
@@ -29,10 +30,14 @@ fn (runtime &Runtime) native_clone_deserialization_context() html.StructuredDese
 	return html.StructuredDeserializationContext{
 		is_exposed: fn [owner] (interface_name html.StructuredSerializableInterface) bool {
 			runtime := unsafe { &Runtime(owner) }
-			if runtime.closed || interface_name != .dom_exception { return false }
+			if runtime.closed { return false }
 			// Actual installed platform exposure, independent of author-mutated
 			// globals/prototypes. The native factory owns its original prototype.
-			if _ := dom_exception_bindings_[owner] { return true }
+			if interface_name == .dom_exception {
+				if _ := dom_exception_bindings_[owner] { return true }
+			} else if interface_name == .quota_exceeded_error {
+				if _ := quota_exceeded_error_bindings_[owner] { return true }
+			}
 			return false
 		}
 	}

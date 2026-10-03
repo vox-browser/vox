@@ -53,7 +53,9 @@ fn test_native_source_primary_derived_exception_is_never_cloned_as_base_dom_exce
 	bridge := StructuredCloneBridge.create(runtime)!
 	actual := runtime.evaluate_host_value('new QuotaExceededError("quota",{quota:4,requested:6})')!
 	assert runtime.native_dom_exception(actual)!.dom_exception_?.name() == 'QuotaExceededError'
-	if _ := bridge.serialize(actual, false) { assert false } else {
-		assert webidl.exception_value(err).dom_exception_?.name() == 'DataCloneError'
-	}
+	record := bridge.serialize(actual, false)!
+	assert record.data[..3] == [u8(24), 57, 2]
+	cloned := bridge.deserialize(record)!
+	runtime.define_value_host_function('__clonedPrimaryQuota', fn [cloned] (_ voidptr, _ []voidptr) !voidptr { return cloned })!
+	assert runtime.evaluate_host('__clonedPrimaryQuota() instanceof QuotaExceededError && __clonedPrimaryQuota().quota===4 && __clonedPrimaryQuota().requested===6')! == 'true'
 }
