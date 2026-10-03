@@ -2696,11 +2696,10 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	previous_document := if app.document != unsafe { nil } { ?&dom.Document(app.document) } else { ?&dom.Document(none) }
 	app.document = if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(),
 		'UTF-8') {
-		parse_browser_navigation_document_with_response_time(loaded.markup, document_url, initiator_origin, previous_document, loaded.monotonic_response_time_ns)
+		parse_browser_navigation_document_for_page_with_response_time(loaded.markup, document_url, initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, loaded.monotonic_response_time_ns)
 	} else {
-		parse_browser_navigation_document_with_response_time(loaded.markup, dom.url_about_blank(), initiator_origin, previous_document, loaded.monotonic_response_time_ns)
+		parse_browser_navigation_document_for_page_with_response_time(loaded.markup, dom.url_about_blank(), initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, loaded.monotonic_response_time_ns)
 	}
-	app.document.set_page(unsafe { &dom.Page(app.page_model) })
 	if app.page_model != unsafe { nil } && !app.page_model.has_local_root_navigable() {
 		if navigable := app.document.navigable() {
 			mut page_model := app.page_model

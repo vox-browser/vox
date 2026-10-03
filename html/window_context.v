@@ -489,6 +489,7 @@ pub fn (location &LocationModel) reload_count() u32 {
 @[heap]
 pub struct BrowsingContextModel {
 mut:
+	page_                      ?&dom.Page
 	document_                  ?&dom.Document
 	window_                    ?&WindowModel
 	window_proxy_              ?&WindowProxyModel
@@ -552,10 +553,15 @@ pub fn determine_the_creation_sandboxing_flags(context &BrowsingContextModel, em
 }
 
 pub fn BrowsingContextModel.create(document ?&dom.Document, parent ?&BrowsingContextModel, target_name string) &BrowsingContextModel {
-	context := &BrowsingContextModel{
-		document_: document
-		parent_: parent
+	mut context := &BrowsingContextModel{
+		document_:    document
+		parent_:      parent
 		target_name_: target_name
+	}
+	if active := document {
+		if active.has_page() { context.page_ = active.page() }
+	} else if ancestor := parent {
+		context.page_ = ancestor.page()
 	}
 	if mut parent_context := parent {
 		parent_context.children_ << context
@@ -563,8 +569,15 @@ pub fn BrowsingContextModel.create(document ?&dom.Document, parent ?&BrowsingCon
 	return context
 }
 
-pub fn BrowsingContextModel.create_a_new_browsing_context_and_document(_ &dom.Page, creator ?&dom.Document, embedder ?&dom.Element, group &BrowsingContextGroup) !BrowsingContextAndDocument {
-	context := BrowsingContextModel.create(none, none, '')
+// BrowsingContext.cpp constructor m_page precedes the initial Window/Document.
+pub fn BrowsingContextModel.create_for_page(page &dom.Page, parent ?&BrowsingContextModel, target_name string) &BrowsingContextModel {
+	mut context := BrowsingContextModel.create(none, parent, target_name)
+	context.page_ = page
+	return context
+}
+
+pub fn BrowsingContextModel.create_a_new_browsing_context_and_document(page &dom.Page, creator ?&dom.Document, embedder ?&dom.Element, group &BrowsingContextGroup) !BrowsingContextAndDocument {
+	context := BrowsingContextModel.create_for_page(page, none, '')
 
 	// 2. Let unsafeContextCreationTime be the unsafe shared current time.
 	unsafe_context_creation_time := highresolutiontime.unsafe_shared_current_time()
@@ -651,6 +664,11 @@ pub fn (context &BrowsingContextModel) group() ?&BrowsingContextGroup {
 }
 
 pub fn (context &BrowsingContextModel) page() ?&dom.Page {
+	if owner := context.page_ { return owner }
+	if document := context.active_document() {
+		if document.has_page() { return document.page() }
+	}
+	// Existing standalone context/group constructors predate explicit ownership.
 	group := context.group_ or { return none }
 	return group.page()
 }

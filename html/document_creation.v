@@ -41,12 +41,18 @@ fn create_window_global_before_document(context &BrowsingContextModel, creation_
 }
 
 fn construct_document_in_global(window &WindowModel, context &BrowsingContextModel, creation_url dom.URL, origin dom.Origin) !&dom.Document {
-	mut document := dom.Document.create_with_relevant_global(creation_url,
-		unsafe { &dom.Window(window) }, document_lifecycle_hook(window), dom.DocumentTemporaryExecutionContextHook{
+	temporary_context := dom.DocumentTemporaryExecutionContextHook{
 		target: voidptr(window)
 		begin:  document_begin_temporary_execution_context
 		end:    document_end_temporary_execution_context
-	})
+	}
+	mut document := if owner := context.page() {
+		dom.Document.create_with_page_and_relevant_global(owner, creation_url,
+			unsafe { &dom.Window(window) }, document_lifecycle_hook(window), temporary_context)
+	} else {
+		dom.Document.create_with_relevant_global(creation_url,
+			unsafe { &dom.Window(window) }, document_lifecycle_hook(window), temporary_context)
+	}
 	document.set_origin(origin)
 	// A navigation retains its actual browsing-context and navigable identities.
 	// Source association occurs after construction, without changing the new
@@ -71,18 +77,35 @@ fn construct_document_in_global(window &WindowModel, context &BrowsingContextMod
 // existing boundary. The initial same-origin about:blank document retains its
 // actual Window; other replacement documents acquire a fresh owner realm.
 pub fn create_navigation_document(creation_url dom.URL, origin dom.Origin, previous ?&dom.Document) !&dom.Document {
+	return create_navigation_document_with_optional_page(creation_url, origin, previous, none)
+}
+
+pub fn create_navigation_document_for_page(creation_url dom.URL, origin dom.Origin, previous ?&dom.Document, page &dom.Page) !&dom.Document {
+	return create_navigation_document_with_optional_page(creation_url, origin, previous, page)
+}
+
+fn create_navigation_context(page ?&dom.Page) &BrowsingContextModel {
+	if owner := page { return BrowsingContextModel.create_for_page(owner, none, '') }
+	return BrowsingContextModel.create(none, none, '')
+}
+
+fn create_navigation_document_with_optional_page(creation_url dom.URL, origin dom.Origin, previous ?&dom.Document, page ?&dom.Page) !&dom.Document {
+	mut owner := page
+	if prior := previous {
+		if prior.has_page() { owner = prior.page() }
+	}
 	context := if prior := previous {
 		if host := prior.cached_navigable() {
 			if model := navigable_model_for_host(host) {
-				model.active_browsing_context() or { BrowsingContextModel.create(none, none, '') }
+				model.active_browsing_context() or { create_navigation_context(owner) }
 			} else {
-				BrowsingContextModel.create(none, none, '')
+				create_navigation_context(owner)
 			}
 		} else {
-			BrowsingContextModel.create(none, none, '')
+			create_navigation_context(owner)
 		}
 	} else {
-		BrowsingContextModel.create(none, none, '')
+		create_navigation_context(owner)
 	}
 	if active := context.active_document() {
 		if active.get_is_initial_about_blank() && active.origin().is_same_origin_domain(origin) {

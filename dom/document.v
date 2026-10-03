@@ -5552,6 +5552,16 @@ pub fn Document.create(url URL) &Document {
 // Unlike the standalone constructor above, native document construction can
 // eagerly allocate its FontFaceSet in the existing owner's realm.
 pub fn Document.create_with_relevant_global(url URL, relevant_window &Window, lifecycle_hook DocumentLifecycleHook, temporary_context_hook DocumentTemporaryExecutionContextHook) &Document {
+	return Document.create_with_optional_page_and_relevant_global(none, url, relevant_window, lifecycle_hook, temporary_context_hook)
+}
+
+// Source Document constructor retains its owning Page before fonts or DOM
+// initialization run. The no-Page entry above is a standalone host adapter.
+pub fn Document.create_with_page_and_relevant_global(page &Page, url URL, relevant_window &Window, lifecycle_hook DocumentLifecycleHook, temporary_context_hook DocumentTemporaryExecutionContextHook) &Document {
+	return Document.create_with_optional_page_and_relevant_global(page, url, relevant_window, lifecycle_hook, temporary_context_hook)
+}
+
+fn Document.create_with_optional_page_and_relevant_global(page ?&Page, url URL, relevant_window &Window, lifecycle_hook DocumentLifecycleHook, temporary_context_hook DocumentTemporaryExecutionContextHook) &Document {
 	mut doc := &Document{}
 	doc.data.kind = .node
 	doc.unique_id_ = allocate_unique_id(unsafe { &Node(doc) })
@@ -5559,6 +5569,7 @@ pub fn Document.create_with_relevant_global(url URL, relevant_window &Window, li
 	doc.document_ = doc
 	doc.is_connected_ = true
 	doc.url = url
+	if owner := page { doc.page_ = owner }
 	doc.window = relevant_window
 	doc.lifecycle_hook_ = lifecycle_hook
 	doc.temporary_execution_context_hook_ = temporary_context_hook
