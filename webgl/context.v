@@ -41,8 +41,10 @@ mut:
 	vertex_arrays                       map[GLuint]&WebGLVertexArrayObject
 	vertex_arrays_oes                   map[GLuint]&WebGLVertexArrayObjectOES
 	bound_buffers                       map[GLenum]GLuint
+	bound_buffer_objects                map[GLenum]&WebGLBuffer
 	bound_framebuffer                   GLuint
 	bound_renderbuffer                  GLuint
+	bound_renderbuffer_object           ?&WebGLRenderbuffer
 	bound_textures                      map[GLenum]GLuint
 	current_program                     ?&WebGLProgram
 	current_queries                     map[GLenum]&WebGLQuery
@@ -275,8 +277,10 @@ pub fn (mut context WebGLRenderingContext) reset_to_default_state() {
 fn (mut context WebGLRenderingContext) initialize_restored_client_state() {
 	context.error_ = no_error
 	context.bound_buffers.clear()
+	context.bound_buffer_objects.clear()
 	context.bound_framebuffer = 0
 	context.bound_renderbuffer = 0
+	context.bound_renderbuffer_object = none
 	context.bound_textures.clear()
 	context.current_program = none
 	context.enabled_capabilities.clear()
@@ -313,8 +317,10 @@ pub fn (mut context WebGLRenderingContext) reset_context_state_after_loss() {
 
 pub fn (mut context WebGLRenderingContext) reset_client_side_webgl_state() {
 	context.bound_buffers.clear()
+	context.bound_buffer_objects.clear()
 	context.bound_framebuffer = 0
 	context.bound_renderbuffer = 0
+	context.bound_renderbuffer_object = none
 	context.bound_textures.clear()
 	context.current_program = none
 	context.current_queries.clear()
@@ -452,8 +458,13 @@ pub fn (mut context WebGLRenderingContext) bind_buffer(target GLenum, buffer ?&W
         context.set_error(invalid_enum)
         return
     }
-    if value := buffer { context.bound_buffers[target] = value.object.handle_ }
-    else { context.bound_buffers.delete(target) }
+    if value := buffer {
+        context.bound_buffers[target] = value.object.handle_
+        unsafe { context.bound_buffer_objects[target] = value }
+    } else {
+        context.bound_buffers.delete(target)
+        context.bound_buffer_objects.delete(target)
+    }
     context.native.dispatch('bind_buffer', target, if value := buffer { value.object.handle_ } else { 0 })
     C.vox_gl_bind_buffer(target, if value := buffer { value.object.native_handle_ } else { 0 })
     context.native.collect_native_error()

@@ -35,6 +35,7 @@ pub:
 	object   GLuint
 	sampler ?&WebGLSampler
 	buffer  ?&WebGLBuffer
+	renderbuffer ?&WebGLRenderbuffer
 }
 
 fn integer_parameter(value i64) WebGLParameterValue {
@@ -47,6 +48,13 @@ fn number_parameter(value f64) WebGLParameterValue {
 
 fn boolean_parameter(value bool) WebGLParameterValue {
 	return WebGLParameterValue{ kind: .boolean, boolean: value }
+}
+
+fn (context &WebGLRenderingContext) retained_buffer_binding(target GLenum) ?&WebGLBuffer {
+	if buffer := context.bound_buffer_objects[target] {
+		return buffer
+	}
+	return none
 }
 
 fn default_webgl_parameters() map[GLenum]WebGLParameterValue {
@@ -296,6 +304,7 @@ pub fn (mut context WebGLRenderingContext) bind_renderbuffer(target GLenum, rend
 		GLuint(0)
 	}
 	context.bound_renderbuffer = handle
+	context.bound_renderbuffer_object = renderbuffer_object
 	context.command('bind_renderbuffer', target, handle)
 	C.vox_gl_bind_renderbuffer(target, if value := renderbuffer_object { value.object.native_handle_ } else { context.native.default_renderbuffer() })
 	context.native.collect_native_error()
@@ -839,10 +848,10 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
   array_buffer_binding,element_array_buffer_binding {
    target:=if pname==array_buffer_binding {array_buffer} else {element_array_buffer}
    handle:=context.bound_buffers[target] or {return WebGLParameterValue{}}
-   return WebGLParameterValue{kind:.object,object:handle}
+   return WebGLParameterValue{kind:.object,object:handle,buffer:context.retained_buffer_binding(target)}
   }
   framebuffer_binding {return if context.bound_framebuffer==0 {WebGLParameterValue{}} else {WebGLParameterValue{kind:.object,object:context.bound_framebuffer}}}
-  renderbuffer_binding {return if context.bound_renderbuffer==0 {WebGLParameterValue{}} else {WebGLParameterValue{kind:.object,object:context.bound_renderbuffer}}}
+  renderbuffer_binding {return if context.bound_renderbuffer==0 {WebGLParameterValue{}} else {WebGLParameterValue{kind:.object,object:context.bound_renderbuffer,renderbuffer:context.bound_renderbuffer_object}}}
   current_program {program:=context.current_program or {return WebGLParameterValue{}};return WebGLParameterValue{kind:.object,object:program.object.handle_}}
   texture_binding_2d,texture_binding_cube_map {
    target:=if pname==texture_binding_2d {texture_2d} else {texture_cube_map}
@@ -869,7 +878,7 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
    copy_read_buffer,copy_write_buffer,pixel_pack_buffer_binding,pixel_unpack_buffer_binding,uniform_buffer_binding,transform_feedback_buffer_binding {
     target:=match pname {copy_read_buffer {copy_read_buffer} copy_write_buffer {copy_write_buffer} pixel_pack_buffer_binding {pixel_pack_buffer} pixel_unpack_buffer_binding {pixel_unpack_buffer} uniform_buffer_binding {uniform_buffer} else {transform_feedback_buffer}}
     handle:=context.bound_buffers[target] or {return WebGLParameterValue{}}
-    return WebGLParameterValue{kind:.object,object:handle}
+    return WebGLParameterValue{kind:.object,object:handle,buffer:context.retained_buffer_binding(target)}
    }
    transform_feedback_binding {feedback:=context.current_transform_feedback or {return WebGLParameterValue{}};return WebGLParameterValue{kind:.object,object:feedback.object.handle_}}
    vertex_array_binding {array:=context.current_vertex_array or {return WebGLParameterValue{}};return WebGLParameterValue{kind:.object,object:array.object.handle_}}
@@ -965,8 +974,17 @@ fn (mut context WebGLRenderingContext) refresh_element_array_buffer_binding() {
     mut native_handle := 0
     C.vox_gl_int_parameter(element_array_buffer_binding,&native_handle)
     handle := context.buffer_handle_for_native(u32(native_handle))
-    if handle == 0 { context.bound_buffers.delete(element_array_buffer) }
-    else { context.bound_buffers[element_array_buffer] = handle }
+    if handle == 0 {
+        context.bound_buffers.delete(element_array_buffer)
+        context.bound_buffer_objects.delete(element_array_buffer)
+    } else {
+        context.bound_buffers[element_array_buffer] = handle
+        if buffer := context.buffers[handle] {
+            unsafe { context.bound_buffer_objects[element_array_buffer] = buffer }
+        } else {
+            context.bound_buffer_objects.delete(element_array_buffer)
+        }
+    }
 }
 
 pub fn (mut context WebGLRenderingContext) get_vertex_attrib(index GLuint, pname GLenum) WebGLParameterValue {

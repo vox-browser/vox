@@ -3,6 +3,38 @@
 module browserjs
 
 import html
+import webgl
+import x.json2
+
+fn test_retained_typed_objects_receive_one_host_wrapper_after_deletion() {
+	mut document := html.parse_document('<canvas></canvas>')
+	mut host := CanvasWebGLHost.create(document)
+	mut context := webgl.WebGLRenderingContext.new(.webgl2, webgl.WebGLContextAttributes{}, [])
+	buffer := context.create_buffer()
+	context.bind_buffer(webgl.array_buffer, buffer)
+	context.delete_buffer(buffer)
+	rbo := context.create_renderbuffer()
+	context.bind_renderbuffer(webgl.renderbuffer, rbo)
+	context.delete_renderbuffer(rbo)
+	for pname in [webgl.array_buffer_binding, webgl.renderbuffer_binding] {
+		value := context.get_parameter(pname)
+		first := host.parameter(context, value)
+		second := host.parameter(context, value)
+		assert first is map[string]json2.Any
+		assert second is map[string]json2.Any
+		assert wg_handle(first) == wg_handle(second)
+		assert wg_handle(first) != ''
+		if pname == webgl.array_buffer_binding {
+			retained := host.buffers[wg_handle(first)] or { panic('owned buffer wrapper') }
+			assert voidptr(retained) == voidptr(buffer)
+		} else {
+			retained := host.renderbuffers[wg_handle(first)] or { panic('owned renderbuffer wrapper') }
+			assert voidptr(retained) == voidptr(rbo)
+		}
+	}
+	assert host.next_handle == 2
+	assert context.get_error() == webgl.no_error
+}
 
 fn test_actual_deleted_buffers_and_renderbuffers_retain_source_binding_identity() {
 	$if !darwin {

@@ -20,6 +20,7 @@ mut:
 	contexts            map[string]&webgl.WebGLRenderingContext
 	resource_kinds      map[string]string
 	logical_objects     map[string]string
+	platform_objects    map[voidptr]string
 	next_handle         int
 	buffers             map[string]&webgl.WebGLBuffer
 	framebuffers        map[string]&webgl.WebGLFramebuffer
@@ -181,8 +182,12 @@ fn (mut host CanvasWebGLHost) register(context &webgl.WebGLRenderingContext, kin
 	handle := host.next_handle.str()
 	host.resource_kinds[handle] = kind
 	if value := object {
-		logical := value.handle(context.identity(), context.context_generation()) or { 0 }
-		host.logical_objects['${context.identity()}/${logical}'] = handle
+		// Wrapper identity follows the actual retained platform object, including
+		// invalidated objects that remain in the source's traced binding slots.
+		host.platform_objects[voidptr(value)] = handle
+		if logical := value.handle(context.identity(), context.context_generation()) {
+			host.logical_objects['${context.identity()}/${logical}'] = handle
+		}
 	}
 	return handle
 }
@@ -202,8 +207,19 @@ fn (host &CanvasWebGLHost) object_reply(context &webgl.WebGLRenderingContext, ob
 
 fn (mut host CanvasWebGLHost) parameter(context &webgl.WebGLRenderingContext, value webgl.WebGLParameterValue) json2.Any {
 	if buffer := value.buffer {
+		if handle := host.platform_objects[voidptr(&buffer.object)] {
+			return host.resource_reply(handle)
+		}
 		handle := host.register(context, 'buffer', &buffer.object)
 		host.buffers[handle] = buffer
+		return host.resource_reply(handle)
+	}
+	if renderbuffer := value.renderbuffer {
+		if handle := host.platform_objects[voidptr(&renderbuffer.object)] {
+			return host.resource_reply(handle)
+		}
+		handle := host.register(context, 'renderbuffer', &renderbuffer.object)
+		host.renderbuffers[handle] = renderbuffer
 		return host.resource_reply(handle)
 	}
 	if sampler := value.sampler {
