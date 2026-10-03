@@ -103,7 +103,7 @@ mut:
 	resolved_memories_built_ bool
 	resolved_globals_        []&BinaryMachineGlobalInstance
 	resolved_globals_built_  bool
-	compiled_fn_table_       []BinaryMachineCompiledFunctionEntry
+	compiled_fn_table_       BinaryMachineCompiledFunctionTable
 	compiled_fn_table_built_ bool
 }
 
