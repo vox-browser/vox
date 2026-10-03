@@ -4,7 +4,7 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Crypto`
 
 Translation workspace: `~/code/vox2/webcrypto`
 Reference: Ladybird `963d46a829f3e1b79f44dba9d02afb70654300fa`
-Latest focused verification: 2026-10-02
+Latest focused verification: 2026-10-04
 
 All six upstream Crypto `.cpp` implementation units have an audited V
 implementation mapping. The V package is named `webcrypto` so that it can
@@ -15,7 +15,7 @@ import V's standard `crypto.*` primitives without shadowing that namespace.
 | `Crypto.cpp` | `crypto.v` |
 | `CryptoAlgorithms.cpp` | `crypto_algorithms.v`, `hmac.v`, `kdf.v`, `argon2.v`, `native_kdf.c.v`, `native_kdf.h`, `aes_ocb.v`, `cshake.v`, `kmac.v`, `native_crypto.c.v`, `native_crypto.h`, `exchange_curves.v`, `ed25519.v`, `ed448.v`, `native_edwards.c.v`, `native_edwards.h`, `mldsa.v`, `mlkem.v`, `native_ml.c.v`, `native_ml.h`, `rsa.v`, `rsa_key_formats.v`, `native_rsa.c.v`, `native_rsa.h`, `ec.v`, `ec_key_formats.v`, `native_ec.c.v`, `native_ec.h`, `okp_der.v` |
 | `CryptoBindings.cpp` | `crypto_bindings.v` |
-| `CryptoKey.cpp` | `crypto_key.v`, `crypto_key_objects.v`, `crypto_key_serialization.v` |
+| `CryptoKey.cpp` | `crypto_key.v`, `crypto_key_objects.v`, `crypto_key_utf16.v`, `crypto_key_serialization.v`, `html/structured_crypto_key_codec.v` |
 | `KeyAlgorithms.cpp` | `key_algorithms.v` |
 | `SubtleCrypto.cpp` | `subtle_crypto.v`, `subtle_crypto_binding.v`, `html/crypto_operations.v` |
 | concrete `AlgorithmMethods` subclasses | `upstream_algorithm_classes.v` |
@@ -402,3 +402,17 @@ and work/crypto settlement. All 16 pinned SubtleCrypto method bindings are now
 present. Complete LibJS VM/WrapperWorld parity, arbitrary UTF-16 DTO strings,
 and the documented host scheduler/GC boundaries remain separate limitations;
 pinned ML-KEM JWK source TODOs are preserved.
+
+
+The source CryptoKey HTML IPC/storage payload now uses its own translated HTML
+encoder rather than the standalone compatibility codec. Seven algorithm and
+eleven handle tags, raw UTF-16 strings, stable storage enum identifiers, source
+integer/vector sizes, optional EC fields, RSA numeric zero and EC scalar-width
+padding have exact byte goldens in both GC modes. Actual native algorithm
+getters preserve raw UTF-16 name/hash/curve strings and cached mutable object
+identity. Four focused files pass with default GC and six source/native
+neighbors pass with GC disabled. Actual native clone projection and exposure
+are the next source slice; full LibJS WrapperWorld/GC, JSON DTO strings and the
+other documented assertion/scheduler boundaries remain open. Detailed source
+locations, evidence and limits are recorded in
+[the clone codec status](../docs/translation-audit/STRUCTURED_CLONE_SOURCE_CODEC.md).

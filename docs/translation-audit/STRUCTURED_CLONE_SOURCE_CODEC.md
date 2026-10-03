@@ -261,8 +261,9 @@ no prototype chain or author-visible tag establishes a platform brand. The
 FontFace lookup retains its installed host per actual Runtime and removes that
 ownership at Runtime.close. FontFaceSet and font load events already use the
 actual event binding cache. Genuine CryptoKey remains a distinct step 19
-SerializableObject whose source payload is a subsequent slice, rather than
-being downgraded to an ordinary object or rejected as a nonserializable platform.
+SerializableObject whose source payload is translated below. Its actual native
+projection remains a subsequent slice at this snapshot; genuine keys are never
+downgraded to ordinary objects or rejected as nonserializable platforms.
 
 The three focused cases cover twenty genuine wrapper variants in IPC and LBSC,
 including every currently bound stream controller and the BYOB reader, author
@@ -275,3 +276,67 @@ passed three files. Logs are `native-platform-clone-complete-default.log`,
 `Build/audit-fixes/` directory. Compact XHR/Canvas facades without actual cached
 platform wrappers and the other unbound platform families remain explicit
 binding boundaries; this gate does not establish complete public tee coverage.
+
+
+CryptoKey payload and primitive-string prerequisites (2026-10-04)
+
+`CryptoKey.h::InternalAlgorithmData` owns UTF-16 strings. All seven translated
+algorithm records now retain the actual name units; RSA-hashed/HMAC hash and EC
+named-curve units survive record copies and key copies. Compatibility string
+setters clear old raw metadata, and direct compatibility-text changes cannot
+reuse a stale raw slot. The UTF-16 source case passed in both GC modes; the
+three UTF-16/algorithm-object/legacy-codec files passed with GC disabled.
+
+`html/structured_crypto_key_codec.v` translates `CryptoKey.cpp` serialization
+and deserialization through the existing HTML source encoder. IPC uses primary
+interface 21, native int key type, bool extractability, all seven u8 algorithm
+tags, source UTF-16/integers/buffers, a u64 usages count and validated u8 usage
+ordinals, then all eleven u8 handle tags. Storage uses the `CryptoKey` interface
+identifier and payload version 1, stable type/usage identifiers and the source
+LBSC primitive encodings. Duplicated usages remain duplicated. Target exposure
+is required before allocating/registering the actual typed key record, and
+alias memory remains source-owned. The earlier standalone WebCrypto codec's
+big-endian integers and UTF-8 fields are compatibility transport; they are not
+reused as source IPC or storage bytes.
+
+RSA numeric handles use source `UnsignedBigInteger::byte_length/export_data`:
+leading zero octets are removed and zero exports an empty buffer. This is
+separate from the older WebIDL BigInteger binding's one-byte zero. EC public
+handles retain scalar width from the decoded X buffer; source `EC.h` and
+`SECPxxxr1.h::scalar_to_bytes` pad both coordinate exports to that width.
+Optional EC parameter vectors distinguish absence from a present empty vector;
+vector counts use u64 and int elements use source i32/SLEB128. Algorithm-tag
+`VERIFY_NOT_REACHED` and oversized-coordinate `MUST` edges remain fatal V panic
+boundaries, rather than becoming author DataCloneErrors. Handle-tag validation
+and storage enum/bool validation retain the source DataCloneError path. Invalid
+raw IPC bool representations have no portable C++ behavior; only canonical
+source bool records establish parity.
+
+Full IPC/LBSC byte goldens, seven algorithm goldens and eleven handle goldens,
+raw lone surrogates, alias memory, exposure, truncation, duplicate usages,
+optional EC fields and raw IPC type casts pass in both GC modes. Source
+DOMException/Quota codec neighbors also passed in a three-file GC-disabled
+snapshot. Final payload logs are `source-crypto-key-codec-default.log` and
+`source-crypto-key-codec-final-gc-none.log` in assignment 7's private
+`Build/audit-fixes/`; the earlier neighbor log is
+`source-crypto-key-codec-gc-none.log`.
+
+Actual CryptoKey algorithm getters now create native name/hash/curve string
+primitives from raw UTF-16. Immutable `webidl.Value` string records keep their
+owned raw units while compatibility text remains available. WebIDL UTF-16 and
+USV conversions use those units and the existing translated
+`Utf16String::to_well_formed` operation; ByteString rejects units above 255.
+The owning native Crypto bridge uses its existing unrooted string factory, so
+getters add no persistent temporary roots. Cached mutable algorithm objects
+retain actual JS identity until source algorithm assignment invalidates them;
+author cache edits do not alter internal source slots. Four focused files pass
+with default GC, and six raw-string/LibJS/typed/native key/DOMException files
+pass with GC disabled. Logs are
+`source-crypto-key-utf16-projection-{default,gc-none}.log`. Only the visibility
+of the existing LibJS well-formed method changed; its implementation did not.
+Full LibJS/AST verification is queued on the canonical integrated snapshot.
+
+Actual native CryptoKey clone projection and secure target exposure remain
+pending at this documentation snapshot. Unbound platform families, original
+native RegExp metadata, untracked resizable view slots, native shared ownership,
+transfers and complete public tee coverage remain separate work.

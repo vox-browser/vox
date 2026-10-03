@@ -248,3 +248,17 @@ All 16 pinned SubtleCrypto methods now have actual native browser bindings.
 This completes native method exposure, not the documented LibJS VM, wrapper GC,
 UTF-8 DTO, assertion, or platform scheduler boundaries; upstream ML-KEM JWK
 TODOs remain unsupported as in the pinned source.
+
+
+CryptoKey algorithm primitive strings now preserve the source UTF-16 name,
+RSA/HMAC hash and EC named-curve slots, including lone surrogates and NUL.
+Source cached mutable algorithm objects keep actual engine identity, and
+internal algorithm assignment invalidates that cache. Author changes to the
+returned name/hash do not alter source slots. The binding uses the existing
+unrooted native UTF-16 primitive factory, while `webidl.Value` retains immutable
+raw units and applies the existing source well-formed operation for USVString.
+Four focused source/native files pass with default GC and six with GC disabled;
+see `source-crypto-key-utf16-projection-{default,gc-none}.log` in assignment 7's
+private `Build/audit-fixes/`. Other JSON DTO/runtime-string boundaries and full
+wrapper GC remain open. Source CryptoKey IPC/LBSC payloads are translated and
+verified separately; actual native clone projection/exposure is the next slice.
