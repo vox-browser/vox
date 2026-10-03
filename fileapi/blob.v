@@ -181,7 +181,7 @@ pub fn Blob.construct(blob_parts ?[]BlobPart, options ?BlobPropertyBag) &Blob {
 	mut type_ := ''
 	// 3. If the type member is non-empty, normalize it via the MIME type parser.
 	if opts := options {
-		if opts.type_.len != 0 {
+		if opts.type_.len != 0 && is_basic_latin(opts.type_) {
 			if parsed_type := mimesniff.MimeType.parse(opts.type_) {
 				type_ = parsed_type.serialized()
 			}

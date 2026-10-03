@@ -56,8 +56,10 @@ pub fn File.construct(file_bits []BlobPart, file_name string, options ?FilePrope
 	if opts := options {
 		// The spec is out of date: the type is normalized through the MimeType parser (an
 		// unparseable, e.g. empty, type leaves the type as the empty string).
-		if parsed_type := mimesniff.MimeType.parse(opts.type_) {
-			type_ = parsed_type.serialized()
+		if is_basic_latin(opts.type_) {
+			if parsed_type := mimesniff.MimeType.parse(opts.type_) {
+				type_ = parsed_type.serialized()
+			}
 		}
 		// lastModified defaults to the current time in ms since the Unix epoch when not provided.
 		last_modified = opts.last_modified or { time.now().unix_milli() }
