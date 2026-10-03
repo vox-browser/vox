@@ -5,6 +5,13 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/WebGL`
 Reference audit: 2026-09-12
 Latest native focused verification: 2026-10-03
 
+After the shared native query/reflection repairs, the full typed package passed
+58/58 files and the complete public/mixed canvas group passed 29/29 files with
+GC disabled against snapshot `69881821`. Exact manifests, results, and per-file
+logs are under `Build/audit-fixes/webgl-final-69881821/`. The sweep required no
+further fixture changes; the deliberate source migrations described below are
+included in that snapshot.
+
 After the XR Promise/owning-context installation changes, all 24 public
 `browserjs/canvas_webgl*_test.v` files plus the mixed 2D/WebGL context file
 passed with GC disabled against snapshot `70dbaa51` (25/25 files). The exact
