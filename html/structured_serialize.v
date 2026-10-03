@@ -753,7 +753,8 @@ struct DecodedOptionalF64 {
 fn (mut decoder StructuredDecoder) read_optional_f64() !DecodedOptionalF64 {
 	present := decoder.read_u8()!
 	// Source storage bool decoding explicitly rejects noncanonical bytes.
-	// IPC reads its native bool storage directly; nonzero means present here.
+	// IPC source records write native bool bytes 0/1. This adapter makes no
+	// portable source-parity claim for noncanonical raw IPC bool storage.
 	if decoder.type_ == .storage && present > 1 { return error('DataCloneError: Invalid structured serialize bool') }
 	if present == 0 { return DecodedOptionalF64{} }
 	return DecodedOptionalF64{value: decoder.read_f64()!}

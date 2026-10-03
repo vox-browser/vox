@@ -198,8 +198,8 @@ comes from the actual installed binding instead of an author-visible global
 property; a fresh unexposed Runtime rejects before creation, and an exposed
 target receives a new owning record/wrapper. Codec parse failures become actual
 DataCloneError values at this native boundary. Primary QuotaExceededError is
-recognized before its genuine DOMException base and remains explicitly
-unsupported until its extra payload is translated. Three native cases and the
+recognized before its genuine DOMException base; its separate source payload
+and native factory are now translated as described below. Three native cases and the
 Error neighbor passed two files with GC disabled. Actual wrapper caches retain
 their native objects until Runtime.close; complete wrapper GC and the other
 platform registries/payloads remain separate work.
@@ -221,3 +221,35 @@ intrinsic brands for each supported JavaScript family. Public native `tee()`
 remains absent until that clone hook covers the source JavaScript families.
 Unsupported platform objects must use the source DataCloneError boundary.
 Full wrapper GC and source LibJS browser execution remain separate work.
+
+QuotaExceededError now preserves the source UTF-16 message at both typed and
+native constructor boundaries. The constructor allocates the named base,
+assigns each present option in source order and checks requested against quota;
+actual native IDL conversion keeps message string-hint ToString before the
+quota/requested number conversions and retains original thrown values. The
+typed constructor, existing core and native binding files passed three files
+with GC disabled, including lone surrogates, NUL, zero and nullable fields.
+
+Its primary serializable interface is fresh pinned-source id 569, distinct from
+DOMException 568. The source payload writes DOMException name/message followed
+by quota and requested Optional<double>: each has a source bool presence byte,
+then a fixed little-endian double when present. Both IPC and LBSC goldens are
+covered; storage validates canonical bool bytes. Valid source IPC bool storage
+is 0/1; noncanonical raw native bool representations have no portable C++
+semantic guarantee, so this adapter does not claim malformed IPC bool parity.
+Decoding preserves raw double bits and assigns slots without repeating public
+constructor validation. Absent versus zero, signed zero, NaN payload, negative
+values, infinity, alias identity, exposure and truncation passed three focused
+source/neighbor files with GC disabled.
+
+Native clone projection obtains the actual QuotaExceededError record from its
+wrapper cache before testing the embedded DOMException base. It emits the real
+primary source payload and recreates the target through the captured native
+Quota factory/prototype, preserving aliases, inherited exception behavior and
+all extra slots. Shadowed name/message/quota/requested getters and custom own
+properties are ignored. Target exposure requires the actual installed Quota
+binding even when DOMException is already exposed; author-mutated constructor
+globals do not replace the captured factory. Three native Quota clone/DOM clone/
+constructor files passed with GC disabled. Source caches still retain wrappers
+until Runtime.close; original native RegExp metadata, untracked resizable view
+slots and the remaining platform payloads/exposure remain separate boundaries.
