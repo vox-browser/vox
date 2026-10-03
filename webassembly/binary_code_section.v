@@ -12,11 +12,29 @@ pub:
 }
 
 pub struct BinaryFunctionBody {
+	total_local_count_ usize
 pub:
 	declared_size u32
 	locals        []BinaryLocals
 pub mut:
 	body BinaryExpression
+}
+
+// CodeSection::Func constructor caches the sum once, before publishing Code.
+// This combines the source Code(size, Func(locals, body)) record construction.
+pub fn BinaryFunctionBody.create(size u32, locals []BinaryLocals, body BinaryExpression) BinaryFunctionBody {
+	mut total := usize(0)
+	for local in locals { total += usize(local.count) }
+	return BinaryFunctionBody{
+		declared_size: size
+		locals: locals
+		body: body
+		total_local_count_: total
+	}
+}
+
+pub fn (function &BinaryFunctionBody) total_local_count() usize {
+	return function.total_local_count_
 }
 
 // Parser.cpp::Locals::parse and CodeSection::{Func,Code,parse}. A function
@@ -45,7 +63,7 @@ fn parse_code_section(mut decoder Decoder) ![]BinaryFunctionBody {
 			return error('CompileError: function body size mismatch')
 		}
 		decoder.offset += int(size)
-		functions << BinaryFunctionBody{ declared_size: size, locals: locals, body: body }
+		functions << BinaryFunctionBody.create(size, locals, body)
 	}
 	return functions
 }

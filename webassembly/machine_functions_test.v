@@ -7,7 +7,8 @@ fn test_machine_function_store_retains_actual_type_module_code_and_indexed_addre
 	mut contents := instance.contents()
 	contents.canonical_types << canonical
 	module_ := &Module{}
-	mut code := &BinaryFunctionBody{ locals: [BinaryLocals{ count: 2, type_: BinaryValueType{ kind: .i32 } }] }
+	mut code_value := BinaryFunctionBody.create(0, [BinaryLocals{ count: 2, type_: BinaryValueType{ kind: .i32 } }], BinaryExpression{})
+	mut code := &code_value
 	mut store := BinaryMachineStore.create()
 	assert store.allocate_function(instance, module_, code, 1) == none
 	address := store.allocate_function(instance, module_, code, 0)?
