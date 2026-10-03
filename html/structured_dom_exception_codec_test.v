@@ -54,5 +54,5 @@ fn test_source_serializable_registry_validation_exposure_and_primary_subtype_are
 	// The primary derived interface must not become a base DOMException payload.
 	mut object := StructuredObject.create_dom_exception(webidl.DOMException.create_record('QuotaExceededError', 'quota'))
 	object.serializable_interface_ = .quota_exceeded_error
-	if _ := structured_serialize(structured_object_value(object)) { assert false } else { assert err.msg().contains('QuotaExceededError') }
+	if _ := structured_serialize(structured_object_value(object)) { assert false } else { assert err.msg().contains('has no native record') }
 }

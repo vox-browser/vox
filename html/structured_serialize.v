@@ -99,6 +99,7 @@ pub mut:
 	properties          []StructuredProperty
 	serializable_interface_ ?StructuredSerializableInterface
 	dom_exception_      ?&webidl.DOMException
+	quota_exceeded_error_ ?&webidl.QuotaExceededError
 }
 
 pub fn StructuredObject.create(kind StructuredObjectKind) &StructuredObject {
@@ -109,6 +110,10 @@ pub fn StructuredObject.create(kind StructuredObjectKind) &StructuredObject {
 
 pub fn StructuredObject.create_dom_exception(exception &webidl.DOMException) &StructuredObject {
 	return &StructuredObject{kind: .serializable_object, serializable_interface_: .dom_exception, dom_exception_: exception}
+}
+
+pub fn StructuredObject.create_quota_exceeded_error(exception &webidl.QuotaExceededError) &StructuredObject {
+	return &StructuredObject{kind: .serializable_object, serializable_interface_: .quota_exceeded_error, quota_exceeded_error_: exception}
 }
 
 pub fn StructuredObject.create_shared_array_buffer(bytes []u8, max_byte_length ?u64) &StructuredObject {
@@ -257,6 +262,11 @@ fn (mut serializer StructuredSerializer) write_fixed_u64(value u64) {
 
 fn (mut serializer StructuredSerializer) write_f64(value f64) {
 	serializer.write_fixed_u64(math.f64_bits(value))
+}
+
+fn (mut serializer StructuredSerializer) write_optional_f64(value ?f64) {
+	serializer.write_u8(if value != none { u8(1) } else { u8(0) })
+	if number := value { serializer.write_f64(number) }
 }
 
 fn (mut serializer StructuredSerializer) write_unsigned_leb128(input u64) {
@@ -615,12 +625,21 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 		}
 		.serializable_object {
 			interface_name := object.serializable_interface_ or { return error('DataCloneError: serializable object has no primary interface') }
-			if interface_name != .dom_exception { return error('DataCloneError: source serializable payload is not yet translated for ${structured_serializable_interface_name(interface_name)}') }
-			exception := object.dom_exception_ or { return error('DataCloneError: serializable DOMException has no native record') }
+			if interface_name != .dom_exception && interface_name != .quota_exceeded_error { return error('DataCloneError: source serializable payload is not yet translated for ${structured_serializable_interface_name(interface_name)}') }
 			serializer.write_tag(.serializable_object)
 			serializer.write_serializable_interface(interface_name)!
 			if serializer.type_ == .storage { serializer.write_u64(structured_serializable_payload_version) }
-			for field in exception.serialization_steps_utf16() { serializer.write_utf16_string(field)! }
+			if interface_name == .dom_exception {
+				exception := object.dom_exception_ or { return error('DataCloneError: serializable DOMException has no native record') }
+				for field in exception.serialization_steps_utf16() { serializer.write_utf16_string(field)! }
+			} else {
+				exception := object.quota_exceeded_error_ or { return error('DataCloneError: serializable QuotaExceededError has no native record') }
+				fields := exception.serialization_steps_utf16()
+				serializer.write_utf16_string(fields.name)!
+				serializer.write_utf16_string(fields.message)!
+				serializer.write_optional_f64(fields.quota)
+				serializer.write_optional_f64(fields.requested)
+			}
 		}
 	}
 }
@@ -725,6 +744,19 @@ fn (mut decoder StructuredDecoder) read_fixed_u64() !u64 {
 
 fn (mut decoder StructuredDecoder) read_f64() !f64 {
 	return math.f64_from_bits(decoder.read_fixed_u64()!)
+}
+
+struct DecodedOptionalF64 {
+	value ?f64
+}
+
+fn (mut decoder StructuredDecoder) read_optional_f64() !DecodedOptionalF64 {
+	present := decoder.read_u8()!
+	// Source storage bool decoding explicitly rejects noncanonical bytes.
+	// IPC reads its native bool storage directly; nonzero means present here.
+	if decoder.type_ == .storage && present > 1 { return error('DataCloneError: Invalid structured serialize bool') }
+	if present == 0 { return DecodedOptionalF64{} }
+	return DecodedOptionalF64{value: decoder.read_f64()!}
 }
 
 fn (mut decoder StructuredDecoder) read_unsigned_leb128(bits int) !u64 {
@@ -1079,17 +1111,28 @@ fn (mut decoder StructuredDecoder) decode_value_with_tag(tag_byte u8) !&dom.JSVa
 			if decoder.type_ == .storage { version = decoder.read_u64()! }
 			is_exposed := decoder.context.is_exposed or { return error('DataCloneError: unsupported type in target realm') }
 			if !is_exposed(interface_name) { return error('DataCloneError: unsupported type in target realm') }
-			if interface_name != .dom_exception { return error('DataCloneError: source serializable payload is not yet translated for ${structured_serializable_interface_name(interface_name)}') }
-			mut exception := webidl.DOMException.create_utf16_record(libjs.utf16_string(''), libjs.utf16_string(''))
+			if interface_name != .dom_exception && interface_name != .quota_exceeded_error { return error('DataCloneError: source serializable payload is not yet translated for ${structured_serializable_interface_name(interface_name)}') }
+			mut object := if interface_name == .dom_exception {
+				StructuredObject.create_dom_exception(webidl.DOMException.create_utf16_record(libjs.utf16_string(''), libjs.utf16_string('')))
+			} else {
+				StructuredObject.create_quota_exceeded_error(&webidl.QuotaExceededError{})
+			}
 			if payload_version := version {
 				if payload_version != structured_serializable_payload_version { return error('DataCloneError: unsupported serializable payload version') }
 			}
-			object := StructuredObject.create_dom_exception(exception)
 			value := decoder.register_object(object)
 			// Source creates/registers the target before its interface payload.
 			name := decoder.read_utf16_string()!
 			message := decoder.read_utf16_string()!
-			exception.deserialization_steps_utf16([name, message])!
+			if interface_name == .dom_exception {
+				mut exception := object.dom_exception_ or { return error('DataCloneError: missing DOMException target record') }
+				exception.deserialization_steps_utf16([name, message])!
+			} else {
+				quota := decoder.read_optional_f64()!.value
+				requested := decoder.read_optional_f64()!.value
+				mut exception := object.quota_exceeded_error_ or { return error('DataCloneError: missing QuotaExceededError target record') }
+				exception.deserialization_steps_utf16(webidl.SerializedQuotaExceededErrorUTF16{name: name, message: message, quota: quota, requested: requested})
+			}
 			return value
 		}
 		.empty, .end_object {

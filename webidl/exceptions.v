@@ -338,3 +338,29 @@ pub fn (mut exception QuotaExceededError) deserialization_steps(value Serialized
 	exception.quota_ = value.quota
 	exception.requested_ = value.requested
 }
+
+// Source interface payload retains DOMException UTF16 fields followed by the
+// two Optional<double> slots. Deserialization assigns raw slots and does not
+// repeat the public constructor's option validation.
+pub struct SerializedQuotaExceededErrorUTF16 {
+pub:
+	name libjs.Utf16String
+	message libjs.Utf16String
+	quota ?f64
+	requested ?f64
+}
+
+pub fn (exception QuotaExceededError) serialization_steps_utf16() SerializedQuotaExceededErrorUTF16 {
+	return SerializedQuotaExceededErrorUTF16{
+		name: exception.base.name_utf16()
+		message: exception.base.message_utf16()
+		quota: exception.quota_
+		requested: exception.requested_
+	}
+}
+
+pub fn (mut exception QuotaExceededError) deserialization_steps_utf16(value SerializedQuotaExceededErrorUTF16) {
+	exception.base = *DOMException.create_utf16_record(value.name, value.message)
+	exception.quota_ = value.quota
+	exception.requested_ = value.requested
+}
