@@ -47,6 +47,7 @@ mut:
 	bound_renderbuffer                  GLuint
 	bound_renderbuffer_object           ?&WebGLRenderbuffer
 	bound_textures                      map[GLenum]GLuint
+	bound_texture_objects               map[GLenum]&WebGLTexture
 	current_program                     ?&WebGLProgram
 	current_queries                     map[GLenum]&WebGLQuery
 	bound_samplers                      map[GLuint]GLuint
@@ -284,6 +285,7 @@ fn (mut context WebGLRenderingContext) initialize_restored_client_state() {
 	context.bound_renderbuffer = 0
 	context.bound_renderbuffer_object = none
 	context.bound_textures.clear()
+	context.bound_texture_objects.clear()
 	context.current_program = none
 	context.enabled_capabilities.clear()
 	context.enabled_capabilities[dither] = true
@@ -325,6 +327,7 @@ pub fn (mut context WebGLRenderingContext) reset_client_side_webgl_state() {
 	context.bound_renderbuffer = 0
 	context.bound_renderbuffer_object = none
 	context.bound_textures.clear()
+	context.bound_texture_objects.clear()
 	context.current_program = none
 	context.current_queries.clear()
 	context.current_vertex_array = none

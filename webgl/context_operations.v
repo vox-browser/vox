@@ -37,6 +37,7 @@ pub:
 	buffer  ?&WebGLBuffer
 	renderbuffer ?&WebGLRenderbuffer
 	framebuffer ?&WebGLFramebuffer
+	texture ?&WebGLTexture
 }
 
 fn integer_parameter(value i64) WebGLParameterValue {
@@ -54,6 +55,13 @@ fn boolean_parameter(value bool) WebGLParameterValue {
 fn (context &WebGLRenderingContext) retained_buffer_binding(target GLenum) ?&WebGLBuffer {
 	if buffer := context.bound_buffer_objects[target] {
 		return buffer
+	}
+	return none
+}
+
+fn (context &WebGLRenderingContext) retained_texture_binding(target GLenum) ?&WebGLTexture {
+	if texture := context.bound_texture_objects[target] {
+		return texture
 	}
 	return none
 }
@@ -307,6 +315,16 @@ pub fn (mut context WebGLRenderingContext) bind_renderbuffer(target GLenum, rend
 }
 
 pub fn (mut context WebGLRenderingContext) bind_texture(target GLenum, texture ?&WebGLTexture) {
+	context.native.make_current()
+	handle := if value := texture {
+		if !context.owns(&value.object) {
+			context.set_error(invalid_operation)
+			return
+		}
+		value.object.handle_
+	} else {
+		GLuint(0)
+	}
 	if target !in [texture_2d, texture_cube_map, texture_3d, texture_2d_array] || (target in [
 		texture_3d,
 		texture_2d_array,
@@ -314,27 +332,12 @@ pub fn (mut context WebGLRenderingContext) bind_texture(target GLenum, texture ?
 		context.set_error(invalid_enum)
 		return
 	}
-	handle := if value := texture {
-		mut mutable_texture := unsafe { &WebGLTexture(value) }
-		if !context.owns(&value.object) {
-			context.set_error(invalid_operation)
-			return
-		}
-		if original_target := mutable_texture.target_ {
-			if original_target != target {
-				context.set_error(invalid_operation)
-				return
-			}
-		}
-		mutable_texture.target_ = target
-		value.object.handle_
-	} else {
-		GLuint(0)
-	}
 	if handle == 0 {
 		context.bound_textures.delete(target)
+		context.bound_texture_objects.delete(target)
 	} else {
 		context.bound_textures[target] = handle
+		if value := texture { unsafe { context.bound_texture_objects[target] = value } }
 	}
 	context.command('bind_texture', target, handle)
 	C.vox_gl_bind_texture(target, if value := texture { value.object.native_handle_ } else { 0 })
@@ -480,6 +483,7 @@ pub fn (mut context WebGLRenderingContext) delete_renderbuffer(object ?&WebGLRen
 }
 
 pub fn (mut context WebGLRenderingContext) delete_texture(object ?&WebGLTexture) {
+	context.native.make_current()
 	if value := object {
 		mut mutable_value := unsafe { &WebGLTexture(value) }
 		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
@@ -491,12 +495,15 @@ pub fn (mut context WebGLRenderingContext) delete_texture(object ?&WebGLTexture)
 		}
 		handle := handle_result.value
 		context.textures.delete(handle)
-		for target, bound in context.bound_textures {
-			if bound == handle { context.bound_textures.delete(target) }
-		}
 		context.command('delete_texture', handle)
 		C.vox_gl_delete_object(3, value.object.native_handle_)
 		context.native.collect_native_error()
+		for target, bound in context.bound_texture_objects {
+			if bound == value {
+				context.bound_textures.delete(target)
+				context.bound_texture_objects.delete(target)
+			}
+		}
 	}
 }
 
@@ -856,7 +863,7 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
   texture_binding_2d,texture_binding_cube_map {
    target:=if pname==texture_binding_2d {texture_2d} else {texture_cube_map}
    handle:=context.bound_textures[target] or {return WebGLParameterValue{}}
-   return WebGLParameterValue{kind:.object,object:handle}
+   return WebGLParameterValue{kind:.object,object:handle,texture:context.retained_texture_binding(target)}
   }
   compressed_texture_formats {return WebGLParameterValue{kind:.integers,integers:context.enabled_compressed_texture_formats_.map(i64(it))}}
   unpack_flip_y_webgl {return boolean_parameter(context.unpack_flip_y_)}
@@ -873,7 +880,7 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
    texture_binding_3d,texture_binding_2d_array {
     target:=if pname==texture_binding_3d {texture_3d} else {texture_2d_array}
     handle:=context.bound_textures[target] or {return WebGLParameterValue{}}
-    return WebGLParameterValue{kind:.object,object:handle}
+    return WebGLParameterValue{kind:.object,object:handle,texture:context.retained_texture_binding(target)}
    }
    copy_read_buffer,copy_write_buffer,pixel_pack_buffer_binding,pixel_unpack_buffer_binding,uniform_buffer_binding,transform_feedback_buffer_binding {
     target:=match pname {copy_read_buffer {copy_read_buffer} copy_write_buffer {copy_write_buffer} pixel_pack_buffer_binding {pixel_pack_buffer} pixel_unpack_buffer_binding {pixel_unpack_buffer} uniform_buffer_binding {uniform_buffer} else {transform_feedback_buffer}}

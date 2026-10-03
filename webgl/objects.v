@@ -172,7 +172,6 @@ pub struct WebGLTexture {
 pub mut:
 	object WebGLObject
 mut:
-	target_          ?GLenum
 	parameters_i_    map[GLenum]int
 	parameters_f_    map[GLenum]f32
 	width_           int
