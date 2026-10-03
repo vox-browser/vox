@@ -67,7 +67,7 @@ fn test_native_buffers_are_uploaded_copied_mapped_and_validate_real_ranges() {
 	context.get_buffer_sub_data(copy_write_buffer, 6, mut bytes, 0, 1)
 	assert context.get_error() == invalid_value
 	context.delete_buffer(destination)
-	assert context.get_parameter(copy_write_buffer).object == 0
+	assert context.get_parameter(copy_write_buffer).object == destination.object.handle_
 	assert context.get_error() == no_error
 }
 

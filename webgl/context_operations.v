@@ -452,6 +452,7 @@ pub fn (mut context WebGLRenderingContext) delete_framebuffer(object ?&WebGLFram
 }
 
 pub fn (mut context WebGLRenderingContext) delete_renderbuffer(object ?&WebGLRenderbuffer) {
+	context.native.make_current()
 	if value := object {
 		mut mutable_value := unsafe { &WebGLRenderbuffer(value) }
 		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
@@ -463,9 +464,6 @@ pub fn (mut context WebGLRenderingContext) delete_renderbuffer(object ?&WebGLRen
 		}
 		handle := handle_result.value
 		context.renderbuffers.delete(handle)
-		if context.bound_renderbuffer == handle {
-			context.bound_renderbuffer = 0
-		}
 		context.command('delete_renderbuffer', handle)
 		C.vox_gl_delete_object(2, value.object.native_handle_)
 		context.native.collect_native_error()

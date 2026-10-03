@@ -496,6 +496,7 @@ pub fn (mut context WebGLRenderingContext) buffer_sub_data(target GLenum, offset
 }
 
 pub fn (mut context WebGLRenderingContext) delete_buffer(buffer ?&WebGLBuffer) {
+	context.native.make_current()
 	if value := buffer {
 		mut mutable_value := unsafe { &WebGLBuffer(value) }
 		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
@@ -507,17 +508,6 @@ pub fn (mut context WebGLRenderingContext) delete_buffer(buffer ?&WebGLBuffer) {
 		}
 		handle := handle_result.value
 		context.buffers.delete(handle)
-		for target, bound in context.bound_buffers {
-			if bound == handle { context.bound_buffers.delete(target) }
-		}
-		for index, state in context.vertex_attrib_states_ {
-			if state.buffer_handle == handle {
-				context.vertex_attrib_states_[index] = VertexAttribState{
-					...state
-					buffer_handle: 0
-				}
-			}
-		}
 		context.native.dispatch('delete_buffer', handle)
 		C.vox_gl_delete_object(0, value.object.native_handle_)
 		context.native.collect_native_error()
