@@ -218,23 +218,21 @@ fn (mut context WebGLRenderingContext) indexed_buffer_handle(target GLenum, buff
 }
 
 pub fn (mut context WebGLRenderingContext) bind_buffer_base(target GLenum, index GLuint, buffer ?&WebGLBuffer) {
+    context.native.make_current()
     if !context.require_webgl2() { return }
     native_handle := context.indexed_buffer_handle(target,buffer) or { return }
     context.command('bind_buffer_base',target,index,if value := buffer { value.object.handle_ } else { 0 })
     C.vox_gl_bind_buffer_base(target,index,native_handle)
-    if !context.native.collect_native_error() { return }
-    if value := buffer { context.bound_buffers[target] = value.object.handle_ }
-    else { context.bound_buffers.delete(target) }
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) bind_buffer_range(target GLenum, index GLuint, buffer ?&WebGLBuffer, offset i64, size i64) {
+    context.native.make_current()
     if !context.require_webgl2() { return }
     native_handle := context.indexed_buffer_handle(target,buffer) or { return }
     context.webgl2_command('bind_buffer_range',target,index,if value := buffer { value.object.handle_ } else { 0 },offset,size)
     C.vox_gl_bind_buffer_range(target,index,native_handle,offset,size)
-    if !context.native.collect_native_error() { return }
-    if value := buffer { context.bound_buffers[target] = value.object.handle_ }
-    else { context.bound_buffers.delete(target) }
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) blit_framebuffer(source_x0 int, source_y0 int, source_x1 int, source_y1 int, destination_x0 int, destination_y0 int, destination_x1 int, destination_y1 int, mask GLenum, filter GLenum) {

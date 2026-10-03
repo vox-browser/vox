@@ -960,33 +960,6 @@ pub fn (mut context WebGLRenderingContext) get_attrib_location(program &WebGLPro
 	return result
 }
 
-// Translate native buffer handles back to retained binding records when
-// refreshing a VAO's element-array slot; getVertexAttrib creates fresh records.
-fn (context &WebGLRenderingContext) buffer_handle_for_native(native_handle GLuint) GLuint {
-    if native_handle == 0 { return 0 }
-    for handle, buffer in context.buffers {
-        if buffer.object.native_handle_ == native_handle { return handle }
-    }
-    return native_handle
-}
-
-fn (mut context WebGLRenderingContext) refresh_element_array_buffer_binding() {
-    mut native_handle := 0
-    C.vox_gl_int_parameter(element_array_buffer_binding,&native_handle)
-    handle := context.buffer_handle_for_native(u32(native_handle))
-    if handle == 0 {
-        context.bound_buffers.delete(element_array_buffer)
-        context.bound_buffer_objects.delete(element_array_buffer)
-    } else {
-        context.bound_buffers[element_array_buffer] = handle
-        if buffer := context.buffers[handle] {
-            unsafe { context.bound_buffer_objects[element_array_buffer] = buffer }
-        } else {
-            context.bound_buffer_objects.delete(element_array_buffer)
-        }
-    }
-}
-
 pub fn (mut context WebGLRenderingContext) get_vertex_attrib(index GLuint, pname GLenum) WebGLParameterValue {
     context.native.make_current()
     if pname == current_vertex_attrib {

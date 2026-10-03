@@ -347,6 +347,7 @@ pub fn (mut context WebGLRenderingContext) create_vertex_array() &WebGLVertexArr
 }
 
 pub fn (mut context WebGLRenderingContext) bind_vertex_array(array ?&WebGLVertexArrayObject) {
+	context.native.make_current()
 	if !context.require_webgl2() { return }
 	if value := array {
 		if !context.owns(&value.object) {
@@ -356,8 +357,7 @@ pub fn (mut context WebGLRenderingContext) bind_vertex_array(array ?&WebGLVertex
 	}
 	context.native.dispatch('bind_vertex_array', if value := array { value.object.handle_ } else { 0 })
 	C.vox_gl_bind_vertex_array(if value := array { value.object.native_handle_ } else { 0 },0)
-	if !context.native.collect_native_error() { return }
-	context.refresh_element_array_buffer_binding()
+	context.native.collect_native_error()
 	context.current_vertex_array = array
 	if value := array {
 		context.set_current_vertex_array_binding(&value.object)
@@ -374,6 +374,7 @@ pub fn (mut context WebGLRenderingContext) is_vertex_array(array ?&WebGLVertexAr
 }
 
 pub fn (mut context WebGLRenderingContext) delete_vertex_array(mut array ?&WebGLVertexArrayObject) {
+	context.native.make_current()
 	if mut value := array {
 		handle_result := value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
 			context.set_error(invalid_operation)
@@ -384,16 +385,15 @@ pub fn (mut context WebGLRenderingContext) delete_vertex_array(mut array ?&WebGL
 		}
 		handle := handle_result.value
 		context.vertex_arrays.delete(handle)
+		context.native.dispatch('delete_vertex_array', handle)
+		C.vox_gl_delete_object(6,value.object.native_handle_)
+		context.native.collect_native_error()
 		if current := context.current_vertex_array {
 			if current == value {
 				context.current_vertex_array = none
 				context.set_current_vertex_array_binding(none)
 			}
 		}
-		context.native.dispatch('delete_vertex_array', handle)
-		C.vox_gl_delete_object(6,value.object.native_handle_)
-		context.native.collect_native_error()
-		context.refresh_element_array_buffer_binding()
 	}
 }
 
@@ -413,6 +413,7 @@ pub fn (mut context WebGLRenderingContext) create_vertex_array_oes() &WebGLVerte
 }
 
 pub fn (mut context WebGLRenderingContext) bind_vertex_array_oes(array ?&WebGLVertexArrayObjectOES) {
+	context.native.make_current()
 	if value := array {
 		if !context.owns(&value.object) {
 			return
@@ -420,8 +421,7 @@ pub fn (mut context WebGLRenderingContext) bind_vertex_array_oes(array ?&WebGLVe
 	}
 	context.native.dispatch('bind_vertex_array_oes', if value := array { value.object.handle_ } else { 0 })
 	C.vox_gl_bind_vertex_array(if value := array { value.object.native_handle_ } else { 0 },1)
-	if !context.native.collect_native_error() { return }
-	context.refresh_element_array_buffer_binding()
+	context.native.collect_native_error()
 	context.current_vertex_array_oes = array
 	if value := array {
 		context.set_current_vertex_array_binding(&value.object)
@@ -443,6 +443,7 @@ pub fn (mut context WebGLRenderingContext) is_vertex_array_oes(array ?&WebGLVert
 }
 
 pub fn (mut context WebGLRenderingContext) delete_vertex_array_oes(array ?&WebGLVertexArrayObjectOES) {
+	context.native.make_current()
 	if value := array {
 		mut mutable_value := unsafe { &WebGLVertexArrayObjectOES(value) }
 		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
@@ -454,16 +455,15 @@ pub fn (mut context WebGLRenderingContext) delete_vertex_array_oes(array ?&WebGL
 		}
 		handle := handle_result.value
 		context.vertex_arrays_oes.delete(handle)
+		context.native.dispatch('delete_vertex_array_oes', handle)
+		C.vox_gl_delete_object(7,value.object.native_handle_)
+		context.native.collect_native_error()
 		if current := context.current_vertex_array_oes {
 			if current == value {
 				context.current_vertex_array_oes = none
 				context.set_current_vertex_array_binding(none)
 			}
 		}
-		context.native.dispatch('delete_vertex_array_oes', handle)
-		C.vox_gl_delete_object(7,value.object.native_handle_)
-		context.native.collect_native_error()
-		context.refresh_element_array_buffer_binding()
 	}
 }
 

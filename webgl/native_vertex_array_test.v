@@ -43,7 +43,7 @@ fn test_native_vertex_arrays_retain_attribute_and_element_buffer_state() {
 	assert context.get_vertex_attrib(0, vertex_attrib_array_size).integer == 4
 	empty_buffer := context.get_vertex_attrib(0, vertex_attrib_array_buffer_binding).buffer or { panic('source empty buffer wrapper') }
 	assert empty_buffer.object.native_handle_ == 0
-	assert context.get_parameter(element_array_buffer_binding).kind == .none
+	assert context.get_parameter(element_array_buffer_binding).object == indices.object.handle_
 	assert context.get_vertex_attrib_offset(0, vertex_attrib_array_pointer) == 0
 	context.bind_vertex_array(triangle)
 	assert context.get_vertex_attrib(0, vertex_attrib_array_enabled).boolean
@@ -61,7 +61,7 @@ fn test_native_vertex_arrays_retain_attribute_and_element_buffer_state() {
 	context.delete_vertex_array(mut triangle)
 	assert !context.is_vertex_array(triangle)
 	assert context.get_parameter(vertex_array_binding).kind == .none
-	assert context.get_parameter(element_array_buffer_binding).kind == .none
+	assert context.get_parameter(element_array_buffer_binding).object == indices.object.handle_
 	context.get_vertex_attrib(0xffffffff, vertex_attrib_array_size)
 	assert context.get_error() == invalid_value
 }
