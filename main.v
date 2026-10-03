@@ -2233,10 +2233,14 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		})
 	}
 	ensure_compact_browser_navigable(document) or { return none }
+	if !compact_document_can_run_script(document) { return none }
 	if runtime.engine == .libjs {
 		messages << 'LibJS DOM bindings are not translated yet; page scripts use the supported standalone runtime.'
-		for diagnostic in runtime.run_document_scripts_collect_errors(sources) {
-			messages << 'JavaScript (LibJS): ${diagnostic}'
+		for source in sources {
+			if !compact_document_can_run_script(document) { continue }
+			for diagnostic in runtime.run_document_scripts_collect_errors([source]) {
+				messages << 'JavaScript (LibJS): ${diagnostic}'
+			}
 		}
 		return none
 	}
@@ -2364,13 +2368,19 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript animation-frame bindings: ${err.msg()}'
 		return none
 	}
-	runtime.run_document_scripts(sources) or {
-		messages << 'JavaScript: ${err.msg()}'
-		return none
+	for source in sources {
+		if !compact_document_can_run_script(document) { continue }
+		runtime.run_document_scripts([source]) or {
+			messages << 'JavaScript: ${err.msg()}'
+			return none
+		}
 	}
-	runtime.evaluate_host('for (const name of ["DOMContentLoaded", "load"]) __ladybirdDispatch(name, "");') or {
-		messages << 'JavaScript: ${err.msg()}'
-		return none
+	for name in ['DOMContentLoaded', 'load'] {
+		if !compact_document_can_run_script(document) { continue }
+		runtime.evaluate_host('__ladybirdDispatch(${json2.encode(name)}, "");') or {
+			messages << 'JavaScript: ${err.msg()}'
+			return none
+		}
 	}
 	// JavaScriptCore drains queued Promise jobs between evaluations. This initial
 	// snapshot captures current script effects; later timer/Promise effects reach
@@ -2383,6 +2393,15 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 	runtime.evaluate_host('__ladybirdClearLogs()') or {}
 	mutable_runtime.take_document_state_dirty()
 	return navigation
+}
+
+// ClassicScript.cpp::run step 2 checks the owning settings before each script.
+// The legacy Document constructor has no settings until native bindings attach;
+// it remains the explicit standalone host adapter.
+fn compact_document_can_run_script(document &dom.Document) bool {
+	if document.relevant_settings_object() == unsafe { nil } { return true }
+	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
+	return html.can_run_script_for_settings(settings) == .run
 }
 
 // Native XHR callbacks run on the owning HTML networking task. Their compact
