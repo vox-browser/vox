@@ -253,32 +253,43 @@ mut:
 }
 
 pub fn QuotaExceededError.create(message string) QuotaExceededError {
+	return QuotaExceededError.create_utf16(libjs.utf16_string(message))
+}
+
+pub fn QuotaExceededError.create_utf16(message libjs.Utf16String) QuotaExceededError {
 	return QuotaExceededError{
-		base: DOMException.create('QuotaExceededError', message)
+		base: *DOMException.create_utf16_record(libjs.utf16_string('QuotaExceededError'), message)
 	}
 }
 
 pub fn QuotaExceededError.construct(message string, options QuotaExceededErrorOptions) !QuotaExceededError {
+	return QuotaExceededError.construct_utf16(libjs.utf16_string(message), options)
+}
+
+// QuotaExceededError.cpp allocates the named DOMException first, then sets
+// each present option in order and finally checks requested against quota.
+pub fn QuotaExceededError.construct_utf16(message libjs.Utf16String, options QuotaExceededErrorOptions) !QuotaExceededError {
+	mut exception := QuotaExceededError.create_utf16(message)
 	if quota := options.quota {
 		if quota < 0 {
 			return error('RangeError: Quota cannot be less than 0')
 		}
+		exception.quota_ = quota
 	}
 	if requested := options.requested {
 		if requested < 0 {
 			return error('RangeError: Requested cannot be less than 0')
 		}
-		if quota := options.quota {
+		exception.requested_ = requested
+	}
+	if requested := exception.requested_ {
+		if quota := exception.quota_ {
 			if requested < quota {
 				return error('RangeError: Requested cannot be less than quota')
 			}
 		}
 	}
-	return QuotaExceededError{
-		base:      DOMException.create('QuotaExceededError', message)
-		quota_:     options.quota
-		requested_: options.requested
-	}
+	return exception
 }
 
 pub fn QuotaExceededError.construct_impl(message string, options QuotaExceededErrorOptions) !QuotaExceededError {
@@ -316,14 +327,14 @@ pub fn (exception QuotaExceededError) serialization_steps() SerializedQuotaExcee
 
 pub fn QuotaExceededError.deserialize(value SerializedQuotaExceededError) QuotaExceededError {
 	return QuotaExceededError{
-		base:      DOMException.create(value.name, value.message)
+		base:      *DOMException.create_utf16_record(libjs.utf16_string(value.name), libjs.utf16_string(value.message))
 		quota_:     value.quota
 		requested_: value.requested
 	}
 }
 
 pub fn (mut exception QuotaExceededError) deserialization_steps(value SerializedQuotaExceededError) {
-	exception.base = DOMException.create(value.name, value.message)
+	exception.base = *DOMException.create_utf16_record(libjs.utf16_string(value.name), libjs.utf16_string(value.message))
 	exception.quota_ = value.quota
 	exception.requested_ = value.requested
 }

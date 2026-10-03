@@ -5,6 +5,7 @@
 @[has_globals]
 module browserjs
 
+import libjs
 import math
 import webidl
 
@@ -78,15 +79,15 @@ fn (runtime &Runtime) quota_option(options voidptr, name string) !QuotaOptionalD
 
 fn (mut runtime Runtime) construct_quota_exceeded_error(args []voidptr) !voidptr {
 	message := if args.len > 0 && !C.JSValueIsUndefined(runtime.context, args[0]) {
-		runtime.binding_dom_string(args[0])!
+		runtime.binding_dom_utf16(args[0])!
 	} else {
-		''
+		libjs.utf16_string('')
 	}
 	mut options := C.JSValueMakeUndefined(runtime.context)
 	if args.len > 1 { options = args[1] }
 	quota := runtime.quota_option(options, 'quota')!
 	requested := runtime.quota_option(options, 'requested')!
-	native := webidl.QuotaExceededError.construct(message, webidl.QuotaExceededErrorOptions{ quota: quota.value, requested: requested.value })!
+	native := webidl.QuotaExceededError.construct_utf16(message, webidl.QuotaExceededErrorOptions{ quota: quota.value, requested: requested.value })!
 	object := runtime.javascript_quota_exceeded_error(&native)!
 	if args.len > 2 && C.JSValueIsObject(runtime.context, args[2]) {
 		C.JSObjectSetPrototype(runtime.context, object, args[2])

@@ -31,3 +31,17 @@ fn test_native_quota_exceeded_error_source_fields_conversion_order_and_identity(
 	actual := runtime.native_dom_exception(first)!.dom_exception_ or { panic('missing DOMException source record') }
 	assert voidptr(actual) == voidptr(&native.base)
 }
+
+fn test_native_quota_constructor_keeps_utf16_tostring_order_and_original_throws() {
+	$if !darwin { return }
+	mut runtime := Runtime.create()
+	defer { runtime.close() }
+	runtime.install_quota_exceeded_error_binding()!
+	actual := runtime.evaluate_host_value(r'new QuotaExceededError(String.fromCharCode(0xd800,0,0xdc00),{quota:0,requested:0.5})')!
+	native := runtime.native_dom_exception(actual)!.dom_exception_?
+	assert native.message_utf16().code_units() == [u16(0xd800), 0, 0xdc00]
+	runtime.define_value_host_function('__quotaUTF16Record', fn [actual] (_ voidptr, _ []voidptr) !voidptr { return actual })!
+	assert runtime.evaluate_host(r'__quotaUTF16Record().message===String.fromCharCode(0xd800,0,0xdc00)&&__quotaUTF16Record().quota===0&&__quotaUTF16Record().requested===0.5')! == 'true'
+	assert runtime.evaluate_host(r'{const trace=[];const value=new QuotaExceededError({[Symbol.toPrimitive](hint){trace.push("message:"+hint);return String.fromCharCode(0xd800)}},{get quota(){trace.push("quota");return {[Symbol.toPrimitive](hint){trace.push("quota:"+hint);return 1}}},get requested(){trace.push("requested");return 2}});value.message===String.fromCharCode(0xd800)&&trace.join("|")==="message:string|quota|quota:number|requested"}')! == 'true'
+	assert runtime.evaluate_host(r'{const marker={};let same=false;try{new QuotaExceededError({toString(){throw marker}},{get quota(){throw "wrong order"}})}catch(error){same=error===marker}let symbol=false;try{new QuotaExceededError(Symbol())}catch(error){symbol=error instanceof TypeError}same&&symbol}')! == 'true'
+}
