@@ -38,6 +38,7 @@ pub fn (mut host FontFaceHost) install(mut runtime Runtime) ! {
 	host.font_event_freeze = runtime.evaluate_host_value('__ladybirdFontLoadEventFreeze')!
 	runtime.bind_event_target(host.set_wrapper, unsafe { &dom.EventTarget(host.set) })!
 	handle := voidptr(&host)
+	runtime.register_native_clone_font_face_host(&host)!
 	runtime.install_event_wrapper_provider(EventWrapperProvider{
 		owner: handle
 		create: fn [handle, owner] (event &dom.Event) !voidptr {

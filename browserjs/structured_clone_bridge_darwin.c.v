@@ -125,6 +125,8 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 				} else if exception := candidate.value {
 					kind = .serializable_object
 					native_exception = exception
+				} else {
+					bridge.runtime.require_native_clone_non_platform(value)!
 				}
 			}
 		}
