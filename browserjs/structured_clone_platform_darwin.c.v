@@ -41,12 +41,7 @@ fn (runtime &Runtime) require_native_clone_non_platform(value voidptr) ! {
 		}
 	}
 	if host := crypto_bindings_[owner] {
-		if record := host.by_wrapper[value] {
-			if record.kind == .key {
-				// CryptoKey is source Serializable (step 19), so do not silently
-				// downgrade it to an ordinary object or claim step 20 rejected it.
-				return native_clone_unsupported('Source native serializable CryptoKey payload is not yet bound')
-			}
+		if _ := host.by_wrapper[value] {
 			return native_clone_unsupported('Cannot serialize platform objects')
 		}
 	}

@@ -54,21 +54,22 @@ fn test_native_clone_source_platform_gate_precedes_enumerable_gets_for_actual_wr
 	}
 }
 
-fn test_native_clone_actual_serializable_crypto_key_has_explicit_primary_payload_boundary() {
-	$if !darwin {
-		return
-	}
+fn test_native_clone_actual_serializable_crypto_key_enters_primary_payload_before_platform_rejection() {
+	$if !darwin { return }
 	mut runtime, _ := source_platform_clone_fixture()
 	defer { runtime.close() }
 	bridge := StructuredCloneBridge.create(runtime)!
-	key := webcrypto.CryptoKey.create(.secret, true, webcrypto.AesKeyAlgorithm{ name: 'AES-GCM', length: 128 }, [.encrypt], []u8{len: 16})
+	key := webcrypto.CryptoKey.create(.secret, true, webcrypto.AesKeyAlgorithm{name: 'AES-GCM', length: 128}, [.encrypt], []u8{len: 16})
 	actual := runtime.javascript_crypto_key(key)!
-	if _ := bridge.serialize(actual, false) {
-		assert false
-	} else {
-		exception := webidl.exception_value(err).dom_exception_?
-		assert exception.name() == 'DataCloneError'
-		assert exception.message().contains('serializable CryptoKey payload')
+	for for_storage in [false, true] {
+		record := bridge.serialize(actual, for_storage)!
+		cloned := bridge.deserialize(record)!
+		native := runtime.native_crypto_key(cloned)!
+		assert cloned != actual
+		assert voidptr(native) != voidptr(key)
+		assert native.algorithm_name() == 'AES-GCM'
+		assert native.internal_usages() == [.encrypt]
+		assert native.handle() == key.handle()
 	}
 }
 

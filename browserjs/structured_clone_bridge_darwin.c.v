@@ -7,6 +7,7 @@ import html
 import libjs
 import math
 import webidl
+import webcrypto
 
 fn C.JSValueIsArray(context voidptr, value voidptr) bool
 
@@ -101,6 +102,7 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 	mut kind := html.StructuredObjectKind.object
 	mut native_exception := ?&webidl.DOMException(none)
 	mut native_quota := ?&webidl.QuotaExceededError(none)
+	mut native_key := ?&webcrypto.CryptoKey(none)
 	match tag {
 		7 { kind = .boolean_object }
 		8 { kind = .number_object }
@@ -125,6 +127,9 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 				} else if exception := candidate.value {
 					kind = .serializable_object
 					native_exception = exception
+				} else if key := bridge.runtime.native_clone_crypto_key(value) {
+					kind = .serializable_object
+					native_key = key
 				} else {
 					bridge.runtime.require_native_clone_non_platform(value)!
 				}
@@ -135,6 +140,11 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 	mut object := html.StructuredObject.create(kind)
 	result := html.structured_object_value(object)
 	projection.input_memory[identity] = &result
+	if key := native_key {
+		object.serializable_interface_ = .crypto_key
+		object.crypto_key_ = key
+		return &result
+	}
 	if quota := native_quota {
 		object.serializable_interface_ = .quota_exceeded_error
 		object.quota_exceeded_error_ = quota
@@ -230,6 +240,9 @@ fn (mut projection NativeCloneProjection) reconstruct(value dom.JSValue) !voidpt
 		} else if interface_name == .quota_exceeded_error {
 			exception := object.quota_exceeded_error_ or { return native_clone_unsupported('Source QuotaExceededError has no native payload record') }
 			actual = projection.root(owner.javascript_quota_exceeded_error(exception)!)!
+		} else if interface_name == .crypto_key {
+			key := object.crypto_key_ or { return native_clone_unsupported('Source CryptoKey has no native payload record') }
+			actual = projection.root(owner.javascript_crypto_key(key)!)!
 		} else {
 			return native_clone_unsupported('Source native primary serializable interface is not yet bound')
 		}

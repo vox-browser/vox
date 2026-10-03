@@ -37,6 +37,11 @@ fn (runtime &Runtime) native_clone_deserialization_context() html.StructuredDese
 				if _ := dom_exception_bindings_[owner] { return true }
 			} else if interface_name == .quota_exceeded_error {
 				if _ := quota_exceeded_error_bindings_[owner] { return true }
+			} else if interface_name == .crypto_key {
+				if host := crypto_bindings_[owner] {
+					if host.closed { return false }
+					if _ := host.prototypes[.key] { return true }
+				}
 			}
 			return false
 		}
