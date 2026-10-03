@@ -253,3 +253,25 @@ globals do not replace the captured factory. Three native Quota clone/DOM clone/
 constructor files passed with GC disabled. Source caches still retain wrappers
 until Runtime.close; original native RegExp metadata, untracked resizable view
 slots and the remaining platform payloads/exposure remain separate boundaries.
+
+Source step 20 now rejects genuine native platform objects before the ordinary
+enumerable-property branch. It uses actual EventTarget/Event, stream/controller/
+reader/writer, queuing-strategy, Abort, Crypto/SubtleCrypto and FontFace caches;
+no prototype chain or author-visible tag establishes a platform brand. The
+FontFace lookup retains its installed host per actual Runtime and removes that
+ownership at Runtime.close. FontFaceSet and font load events already use the
+actual event binding cache. Genuine CryptoKey remains a distinct step 19
+SerializableObject whose source payload is a subsequent slice, rather than
+being downgraded to an ordinary object or rejected as a nonserializable platform.
+
+The three focused cases cover twenty genuine wrapper variants in IPC and LBSC,
+including every currently bound stream controller and the BYOB reader, author
+getters that must remain unread, forged prototypes/tags, and host cleanup.
+The platform file passed with both GC modes; the FontFace ownership neighbor
+also passed with GC disabled. The earlier platform, Quota and DOM clone batch
+passed three files. Logs are `native-platform-clone-complete-default.log`,
+`native-platform-clone-complete-gc-none.log` and
+`native-platform-clone-recovered-gc-none.log` under the assignment 7 private
+`Build/audit-fixes/` directory. Compact XHR/Canvas facades without actual cached
+platform wrappers and the other unbound platform families remain explicit
+binding boundaries; this gate does not establish complete public tee coverage.
