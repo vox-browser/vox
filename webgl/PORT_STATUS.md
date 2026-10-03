@@ -241,6 +241,23 @@ GL and the pinned source generator; implementation behavior was preserved.
 This covers those intrinsics, not all compact transport JSON/Array machinery or
 full LibJS realm/builtin ownership.
 
+Texture binding now follows `WebGLRenderingContextImpl.cpp:301-344`: select
+the owner, validate the actual handle before the version-specific target table,
+assign the retained slot, then call GL. `WebGLTexture.h` has no target-compatibility
+field; V's invented `target_` gate was removed. Binding an actual 2D-native name
+to a cube/3D/array target can therefore retain that same source record alongside
+GL_INVALID_OPERATION, just as the pinned source does. Each slot owns its actual
+texture record, supplies it to parameter queries, and reuses or first-exposes
+one branded host wrapper. Deletion selects the owner, deletes the native name,
+then clears every matching retained object pointer (`:603-632`). The two-version
+typed source case and compressed/layer/nullable-upload neighbors passed with GC
+disabled (four files, `source-texture-binding-gc-none.log`); the public first-
+exposure/cross-target/identity/deletion case passed in
+`source-texture-binding-public-gc-none.log`. These translate the texture binding
+owners and source error ordering. The existing texture parameter/size caches
+and their extra retained-name prerequisites remain identified for separate source
+translation; full LibJS tracing and caller WrapperWorld ownership remain open.
+
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
 ANGLE builds lacking compressed robust entry points use the matching GLES call
