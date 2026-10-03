@@ -83,8 +83,8 @@ fn test_source_configuration_reset_retains_stack_addresses_vector_capacity_and_c
 	configuration.enable_instruction_count_limit()
 	configuration.compiled_call_result_scratch_ = BinaryMachineValue.from_i64(121)
 	configuration.label_stack_ << BinaryMachineLabel.create(1, 2, 3, unsafe { nil })
-	configuration.owned_locals_stack_ << locals
-	configuration.call_argument_freelist_ << locals.clone()
+	configuration.owned_locals_stack_ << BinaryMachineArguments.from_values(locals)
+	configuration.call_argument_freelist_ << BinaryMachineArguments.from_values(locals)
 	label_capacity := configuration.label_stack_.cap
 	freelist_capacity := configuration.call_argument_freelist_.cap
 	configuration.reset_after_invoke()

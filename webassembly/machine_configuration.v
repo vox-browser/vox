@@ -27,8 +27,8 @@ mut:
 	call_record_stack_              BinaryMachineValueStack
 	label_stack_                    []BinaryMachineLabel
 	frame_stack_                    []BinaryMachineFrame
-	owned_locals_stack_             [][]BinaryMachineValue
-	call_argument_freelist_         [][]BinaryMachineValue
+	owned_locals_stack_             []BinaryMachineArguments
+	call_argument_freelist_         []BinaryMachineArguments
 	depth_                          usize
 	ip_                             u64
 	should_limit_instruction_count_ bool
@@ -45,7 +45,7 @@ pub fn BinaryMachineConfiguration.create(mut store BinaryMachineStore) &BinaryMa
 		value_stack_:            *BinaryMachineValueStack.create()
 		call_record_stack_:      *BinaryMachineValueStack.create()
 		label_stack_:            []BinaryMachineLabel{cap: 64}
-		call_argument_freelist_: [][]BinaryMachineValue{cap: 16}
+		call_argument_freelist_: []BinaryMachineArguments{cap: 16}
 	}
 	store.register_configuration(configuration)
 	return configuration
@@ -56,11 +56,11 @@ pub fn BinaryMachineConfiguration.create(mut store BinaryMachineStore) &BinaryMa
 pub fn (mut configuration BinaryMachineConfiguration) destroy() {
 	configuration.store_.unregister_configuration(&configuration)
 	// C++ destroys each owned inner Vector before releasing the outer storage.
-	for values in configuration.call_argument_freelist_ {
-		unsafe { values.free() }
+	for index in 0 .. configuration.call_argument_freelist_.len {
+		configuration.call_argument_freelist_[index].destroy()
 	}
-	for values in configuration.owned_locals_stack_ {
-		unsafe { values.free() }
+	for index in 0 .. configuration.owned_locals_stack_.len {
+		configuration.owned_locals_stack_[index].destroy()
 	}
 	unsafe {
 		configuration.call_argument_freelist_.free()
@@ -253,11 +253,11 @@ pub fn (mut configuration BinaryMachineConfiguration) reset_after_invoke() {
 	configuration.call_record_stack_.reset_and_clear()
 	configuration.label_stack_.clear()
 	configuration.frame_stack_.clear()
-	for values in configuration.owned_locals_stack_ {
-		unsafe { values.free() }
+	for index in 0 .. configuration.owned_locals_stack_.len {
+		configuration.owned_locals_stack_[index].destroy()
 	}
-	for values in configuration.call_argument_freelist_ {
-		unsafe { values.free() }
+	for index in 0 .. configuration.call_argument_freelist_.len {
+		configuration.call_argument_freelist_[index].destroy()
 	}
 	configuration.owned_locals_stack_.clear()
 	configuration.call_argument_freelist_.clear()
