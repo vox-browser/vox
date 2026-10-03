@@ -193,7 +193,7 @@ pub fn (algorithm &AesKeyAlgorithm) length() u16 {
 
 pub struct HmacKeyAlgorithm {
 pub mut:
-	name        string = 'HMAC'
+	name        string
 	name_utf16_ ?libjs.Utf16String
 	hash        string
 	hash_utf16_ ?libjs.Utf16String

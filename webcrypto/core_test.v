@@ -209,6 +209,8 @@ fn test_key_algorithm_records_setters_and_big_endian_exponent() {
 	mut hmac := HmacKeyAlgorithm.create()
 	hmac.set_hash('SHA-512')
 	hmac.set_length(1024)
+	assert hmac.name == ''
+	hmac.set_name('HMAC')
 	assert hmac.name == 'HMAC'
 	assert hmac.hash_algorithm().name == 'SHA-512'
 	assert hmac.name() == 'HMAC'

@@ -18,7 +18,7 @@ pub fn generate_hmac_key(params HmacKeyGenParams, extractable bool, usages []Key
 	if length == 0 { return error('OperationError: Invalid length') }
 	// The source generate_random_key helper takes u16 and floors bits to bytes.
 	material := rand.bytes(int(u16(length) / 8)) or { return error('OperationError: Key generation failed: ${err}') }
-	return CryptoKey.create(.secret, extractable, HmacKeyAlgorithm{ hash: params.hash, length: length }, usages, material)
+	return CryptoKey.create(.secret, extractable, HmacKeyAlgorithm{ name: 'HMAC', hash: params.hash, length: length }, usages, material)
 }
 
 fn hmac_jwk_algorithm(hash string) !string {
@@ -64,7 +64,7 @@ fn import_hmac_key(params HmacImportParams, format KeyFormat, material []u8, ext
 	}
 	// Upstream slices whole bytes; it drops the trailing fractional byte.
 	if data.len > int(length / 8) { data = data[..int(length / 8)].clone() }
-	return CryptoKey.create(.secret, false, HmacKeyAlgorithm{ hash: params.hash, length: length }, [], data)
+	return CryptoKey.create(.secret, false, HmacKeyAlgorithm{ name: 'HMAC', hash: params.hash, length: length }, [], data)
 }
 
 fn export_hmac_jwk(key &CryptoKey) !JsonWebKey {
