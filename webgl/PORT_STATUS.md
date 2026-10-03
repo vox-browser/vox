@@ -186,6 +186,24 @@ public tests retain that behavior and use -4096 for negative driver inputs.
 Source ByteBuffer/LibJS ownership and remote command transport remain separate
 boundaries; the native GL storage is the actual storage for this adapter.
 
+Indexed buffer and VAO binds now preserve the pinned source's retained-slot
+behavior. `WebGL2RenderingContextImpl.cpp:1079-1119` forwards `bindBufferBase`
+and `bindBufferRange` after handle/compatibility checks without assigning the
+generic retained buffer slots, even though GL updates its generic binding.
+`WebGL2RenderingContextImpl.cpp:1294-1349` and
+`Extensions/OESVertexArrayObject.cpp:45-106` change only the retained VAO slot;
+they never refresh the retained element-buffer slot from native GL. The extra
+V driver-to-wrapper refresh and indexed cache writes were removed. Every bind
+and delete selects its owner before source early returns, and an unrelated
+pending GL error cannot prevent the VAO slot assignment after the driver call.
+The typed retained-state case, migrated VAO fixture, transform-feedback and
+upstream-entry neighbors passed with GC disabled (four files,
+`source-retained-indexed-vao-gc-none.log`). Two actual public cases passed in
+`source-retained-indexed-vao-public-gc-none.log`, verifying original wrapper
+identity alongside different real GL bindings in both versions. These tests
+preserve source behavior rather than claiming specification correction; OES
+foreign-object silent returns retain the source FIXME.
+
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
 ANGLE builds lacking compressed robust entry points use the matching GLES call
