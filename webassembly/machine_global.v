@@ -38,15 +38,16 @@ pub fn BinaryMachineGlobalInstance.value_offset() usize {
 @[heap]
 pub struct BinaryMachineStore {
 mut:
-	functions_  []BinaryMachineFunctionInstance
-	memories_   []&BinaryMachineMemoryInstance
-	tables_     []BinaryMachineTableInstance
-	globals_    []&BinaryMachineGlobalInstance
-	datas_      []BinaryMachineDataInstance
-	elements_   []BinaryMachineElementInstance
-	tags_       []BinaryMachineTagInstance
-	exceptions_ []BinaryMachineExceptionInstance
-	heap_       ?BinaryMachineHeap
+	functions_             []BinaryMachineFunctionInstance
+	memories_              []&BinaryMachineMemoryInstance
+	tables_                []BinaryMachineTableInstance
+	globals_               []&BinaryMachineGlobalInstance
+	datas_                 []BinaryMachineDataInstance
+	elements_              []BinaryMachineElementInstance
+	tags_                  []BinaryMachineTagInstance
+	exceptions_            []BinaryMachineExceptionInstance
+	heap_                  ?BinaryMachineHeap
+	active_configurations_ BinaryMachineActiveConfigurations
 }
 
 pub fn BinaryMachineStore.create() &BinaryMachineStore { return &BinaryMachineStore{} }

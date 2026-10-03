@@ -43,7 +43,8 @@ fn test_machine_function_store_retains_actual_type_module_code_and_indexed_addre
 
 fn test_machine_host_functions_intern_actual_types_preserve_supplied_type_and_invoke_stored_callable() {
 	type_ := BinaryMachineFunctionType{ parameters: [BinaryValueType{ kind: .i32 }], results: [BinaryValueType{ kind: .i64 }] }
-	callable := fn (_ voidptr, arguments []BinaryMachineValue) BinaryMachineResult {
+	callable := fn (mut configuration BinaryMachineConfiguration, arguments []BinaryMachineValue) BinaryMachineResult {
+		configuration.regs[0] = arguments[0]
 		return BinaryMachineResult.from_values([BinaryMachineValue.from_i64(i64(arguments[0].to_i32()))])
 	}
 	mut store := BinaryMachineStore.create()
@@ -68,8 +69,11 @@ fn test_machine_host_functions_intern_actual_types_preserve_supplied_type_and_in
 		if second_entry is BinaryMachineHostFunction {
 			assert voidptr(second_entry.defined_type()) == voidptr(actual_type)
 		}
-		mut result := first_entry.function()(unsafe { nil }, [BinaryMachineValue.from_i32(-17)])
+		mut configuration := BinaryMachineConfiguration.create(mut store)
+		defer { configuration.destroy() }
+		mut result := first_entry.function()(mut configuration, [BinaryMachineValue.from_i32(-17)])
 		assert !result.is_trap() && result.values().values[0].to_i64() == -17
+		assert configuration.regs[0].to_i32() == -17
 	}
 	if third_entry is BinaryMachineHostFunction {
 		assert voidptr(third_entry.defined_type()) == voidptr(provided)
@@ -80,7 +84,7 @@ fn test_machine_host_functions_intern_actual_types_preserve_supplied_type_and_in
 
 fn test_machine_function_name_uses_module_function_order_including_host_imports() {
 	mut store := BinaryMachineStore.create()
-	callable := fn (_ voidptr, _ []BinaryMachineValue) BinaryMachineResult {
+	callable := fn (mut _ BinaryMachineConfiguration, _ []BinaryMachineValue) BinaryMachineResult {
 		return BinaryMachineResult.from_values([])
 	}
 	// Unrelated functions already occupy this owning Store.

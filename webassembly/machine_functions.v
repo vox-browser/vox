@@ -6,9 +6,9 @@ module webassembly
 
 import strconv
 
-// Configuration remains an opaque ABI input until its source record is
-// translated. This is the stored host callable, not an instruction executor.
-pub type BinaryMachineHostCallable = fn (voidptr, []BinaryMachineValue) BinaryMachineResult
+// The host callable receives the actual source-owned Configuration record.
+// This is the stored callable; instruction execution remains a separate slice.
+pub type BinaryMachineHostCallable = fn (mut BinaryMachineConfiguration, []BinaryMachineValue) BinaryMachineResult
 
 pub struct BinaryMachineWasmFunction {
 	type_            BinaryMachineFunctionType
