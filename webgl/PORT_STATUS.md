@@ -167,6 +167,25 @@ with default GC; those files plus deletion, native draw and lifetime neighbors
 passed with GC disabled (five files). This translates the ownership graph of
 these slots; full LibJS tracing and caller WrapperWorld ownership remain open.
 
+Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
+`WebGL2RenderingContextOverloads.cpp:33-85`, and
+`WebGL2RenderingContextImpl.cpp:46-50`: select the owner, validate nullable data
+or a source buffer witness, then forward to GL. No source upload requires a
+retained binding lookup or maintains a CPU buffer-byte/usage mirror. Those
+invented fields and the typed `bytes()` facade were removed; three legacy
+fixtures now verify real GL readback. Actual driver bindings created outside
+the retained source slots accept uploads, subrange writes, and copies. Both
+versions preserve native enum/value/binding errors; public null and out-of-range
+span failures select the owner before returning. The typed/public upload files
+passed with GC disabled in `source-buffer-upload-final-gc-none.log`; the three
+migrated neighbors passed in `source-buffer-upload-gc-none.log`. Initial runs
+exposed and corrected test expectations and a private-field test access.
+The pinned source's double-based 64-bit WebIDL conversion maps -1 to zero
+(`WebIDL/AbstractOperations.cpp:553-558`, `LibJS/Runtime/AbstractOperations.h:314-324`);
+public tests retain that behavior and use -4096 for negative driver inputs.
+Source ByteBuffer/LibJS ownership and remote command transport remain separate
+boundaries; the native GL storage is the actual storage for this adapter.
+
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
 ANGLE builds lacking compressed robust entry points use the matching GLES call
