@@ -252,15 +252,21 @@ pub mut:
 }
 
 pub fn ClassicScript.create(filename string, source string, realm &ScriptingRealm, base_url dom.URL, source_line_number usize, muted_errors MutedErrors) &ClassicScript {
+	actual_source := if is_scripting_enabled(realm) { source } else { '' }
+	return create_classic_script_record(filename, actual_source, realm, base_url, source_line_number, muted_errors)
+}
+
+// Source's pre-parsed and compiled constructors retain their existing source;
+// disabled-source substitution belongs only to ClassicScript::create.
+fn create_classic_script_record(filename string, source string, realm &ScriptingRealm, base_url dom.URL, source_line_number usize, muted_errors MutedErrors) &ClassicScript {
 	actual_url := if muted_errors == .yes { dom.url_about_blank() } else { base_url }
-	actual_source := if realm.scripting_enabled { source } else { '' }
 	return &ClassicScript{
 		Script: Script{
 			base_url: actual_url
 			filename: filename
 			realm: realm
 		}
-		source: actual_source
+		source: source
 		source_line_number: source_line_number
 		muted_errors: muted_errors
 	}
@@ -276,7 +282,7 @@ pub fn ClassicScript.create_with_parser(filename string, source string, realm &S
 }
 
 pub fn ClassicScript.create_from_pre_parsed(filename string, source_code string, realm &ScriptingRealm, base_url dom.URL, parsed ScriptParseHook, muted_errors MutedErrors) &ClassicScript {
-	mut script := ClassicScript.create(filename, source_code, realm, base_url, 1, muted_errors)
+	mut script := create_classic_script_record(filename, source_code, realm, base_url, 1, muted_errors)
 	parsed(script.source, filename, 1) or {
 		script.parse_error = err.msg()
 		script.error_to_rethrow = err.msg()
@@ -285,7 +291,7 @@ pub fn ClassicScript.create_from_pre_parsed(filename string, source_code string,
 }
 
 pub fn ClassicScript.create_from_parsed_program(filename string, source_code string, realm &ScriptingRealm, base_url dom.URL, parsed ParsedProgram, muted_errors MutedErrors) &ClassicScript {
-	mut script := ClassicScript.create(filename, source_code, realm, base_url, 1, muted_errors)
+	mut script := create_classic_script_record(filename, source_code, realm, base_url, 1, muted_errors)
 	if parse_error := parsed.error {
 		script.parse_error = parse_error
 		script.error_to_rethrow = parse_error
@@ -295,14 +301,13 @@ pub fn ClassicScript.create_from_parsed_program(filename string, source_code str
 
 pub fn ClassicScript.create_from_pre_compiled(filename string, source_code string, realm &ScriptingRealm, base_url dom.URL, compiled CompiledProgram, muted_errors MutedErrors) &ClassicScript {
 	actual_url := if muted_errors == .yes { dom.url_about_blank() } else { base_url }
-	actual_source := if realm.scripting_enabled { source_code } else { '' }
 	return &ClassicScript{
 		Script: Script{
 			base_url: actual_url
 			filename: filename
 			realm: realm
 		}
-		source: actual_source
+		source: source_code
 		source_line_number: 1
 		compiled_program: compiled
 		muted_errors: muted_errors
@@ -311,7 +316,7 @@ pub fn ClassicScript.create_from_pre_compiled(filename string, source_code strin
 
 pub fn ClassicScript.create_from_bytecode_cache(filename string, source_code string, realm &ScriptingRealm, base_url dom.URL, bytecode_cache []u8, materializer ScriptBytecodeCacheMaterializeHook, muted_errors MutedErrors) &ClassicScript {
 	executable := materializer(bytecode_cache, source_code, filename, 1, .script) or {
-		mut script := ClassicScript.create(filename, source_code, realm, base_url, 1, muted_errors)
+		mut script := create_classic_script_record(filename, source_code, realm, base_url, 1, muted_errors)
 		script.parse_error = err.msg()
 		script.error_to_rethrow = err.msg()
 		return script
@@ -356,7 +361,7 @@ fn report_classic_script_exception(value dom.JSValue, mut realm ScriptingRealm) 
 
 pub fn (mut script ClassicScript) run(rethrow_errors RethrowErrors) !dom.JSValue {
 	mut realm := script.realm
-	if !realm.can_run {
+	if can_run_script(realm) == .do_not_run {
 		return dom.js_undefined()
 	}
 	previous_script := realm.active_classic_script_
