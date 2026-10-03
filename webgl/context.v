@@ -438,12 +438,7 @@ fn (mut context WebGLRenderingContext) object_handle_for_query(object &WebGLObje
 }
 
 pub fn (mut context WebGLRenderingContext) bind_buffer(target GLenum, buffer ?&WebGLBuffer) {
-    if target !in [array_buffer, element_array_buffer, copy_read_buffer, copy_write_buffer,
-        pixel_pack_buffer, pixel_unpack_buffer, transform_feedback_buffer, uniform_buffer]
-        || (context.version == .webgl1 && target !in [array_buffer, element_array_buffer]) {
-        context.set_error(invalid_enum)
-        return
-    }
+    context.native.make_current()
     if value := buffer {
         mut mutable_value := unsafe { &WebGLBuffer(value) }
         if !context.owns(&value.object) || !mutable_value.is_compatible_with(target) {
@@ -451,11 +446,17 @@ pub fn (mut context WebGLRenderingContext) bind_buffer(target GLenum, buffer ?&W
             return
         }
     }
-    context.native.dispatch('bind_buffer', target, if value := buffer { value.object.handle_ } else { 0 })
-    C.vox_gl_bind_buffer(target, if value := buffer { value.object.native_handle_ } else { 0 })
-    if !context.native.collect_native_error() { return }
+    if target !in [array_buffer, element_array_buffer, copy_read_buffer, copy_write_buffer,
+        pixel_pack_buffer, pixel_unpack_buffer, transform_feedback_buffer, uniform_buffer]
+        || (context.version == .webgl1 && target !in [array_buffer, element_array_buffer]) {
+        context.set_error(invalid_enum)
+        return
+    }
     if value := buffer { context.bound_buffers[target] = value.object.handle_ }
     else { context.bound_buffers.delete(target) }
+    context.native.dispatch('bind_buffer', target, if value := buffer { value.object.handle_ } else { 0 })
+    C.vox_gl_bind_buffer(target, if value := buffer { value.object.native_handle_ } else { 0 })
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) buffer_data(target GLenum, data []u8, usage GLenum) {
