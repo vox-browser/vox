@@ -134,6 +134,16 @@ calls can change it. The OES foreign-array branch preserves the source's
 false-without-error behavior. That file and object/uniform-block/public-resource
 neighbors passed with GC disabled (four focused files).
 
+`bind_buffer` now follows `WebGLRenderingContextImpl.cpp:195-260`: select the
+owner, validate the object handle and mutate its target compatibility, then
+validate the version-specific target table and write the retained slot before
+GL. An invalid first target therefore affects the source's later element-buffer
+compatibility check; a foreign object takes INVALID_OPERATION precedence over
+invalid-target INVALID_ENUM. A pre-existing real driver error cannot prevent
+the retained slot from updating after a successful GL bind. The two-version
+typed cases, public owner/target/driver-error case, lifetime and native draw
+neighbors passed with GC disabled (four focused files).
+
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
 ANGLE builds lacking compressed robust entry points use the matching GLES call
