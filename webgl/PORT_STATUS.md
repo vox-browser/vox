@@ -223,6 +223,24 @@ actual public invalid-target/foreign-handle/first-exposure case passed in
 owning slots; complete LibJS tracing, cross-realm WrapperWorld behavior, and
 remaining resource graph owners are still open.
 
+Actual WebGL numeric conversion and typed query results now use captured
+owning-runtime intrinsics. The source converts through engine `ToNumber`/
+`ToString` and creates native `Float32Array`, `Int32Array`, and `Uint32Array`
+records directly (`WebGLRenderingContextImpl.cpp:939-1466`, `:2027-2036`;
+`WebGL2RenderingContextImpl.cpp:162-183`, `:1228-1236`). The compact adapter no
+longer rereads mutable `Number.isFinite`, global `String`, or those global
+constructors. Result arrays allocate by length and fill numeric elements without
+iterating the private transport array. Original author ToPrimitive/iterator
+hooks still run in source conversion order, and item errors retain the pinned
+generator's no-IteratorClose path (`to_idl_value.py:845-869`). The poisoning/
+brand/hook case passed with GC disabled in
+`source-webgl-intrinsics-final-gc-none.log`; query-enum and buffer-slot neighbors
+passed in `source-webgl-intrinsics-gc-none.log`. Initial new-fixture assumptions
+about default-FBO draw errors and iterator closing were corrected against actual
+GL and the pinned source generator; implementation behavior was preserved.
+This covers those intrinsics, not all compact transport JSON/Array machinery or
+full LibJS realm/builtin ownership.
+
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
 ANGLE builds lacking compressed robust entry points use the matching GLES call
