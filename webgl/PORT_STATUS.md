@@ -144,6 +144,17 @@ the retained slot from updating after a successful GL bind. The two-version
 typed cases, public owner/target/driver-error case, lifetime and native draw
 neighbors passed with GC disabled (four focused files).
 
+`delete_buffer` and `delete_renderbuffer` now follow
+`WebGLRenderingContextImpl.cpp:501-521` and `:571-592`: select the owner before
+early returns, invalidate the source wrapper, and delete its native name without
+clearing retained binding slots or vertex-buffer metadata. Binding queries keep
+returning the original deleted wrapper until an explicit bind changes the slot,
+even though native GL has unbound that deleted name. The deleted wrapper remains
+invalid for subsequent binds. This deliberate pinned-source behavior is covered
+by two-version typed and actual JavaScriptCore identity/error tests; those files,
+the migrated native draw fixture, and the lifetime neighbor passed with GC
+disabled (four focused files).
+
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
 ANGLE builds lacking compressed robust entry points use the matching GLES call
