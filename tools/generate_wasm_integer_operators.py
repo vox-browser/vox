@@ -21,6 +21,7 @@ INTEGER_WIDTH_NAMES = ("Wrap", "Extend", "SignExtend")
 REINTERPRET_NAMES = ("Reinterpret",)
 INTEGER_FLOAT_NAMES = ("Convert",)
 FLOAT_TRUNCATE_NAMES = ("CheckedTruncate",)
+SATURATING_TRUNCATE_NAMES = ("SaturatingTruncate",)
 
 BINARY_DRIVER = r"""
 #include <bit>
@@ -741,13 +742,88 @@ int main()
 """
 
 
+SATURATING_TRUNCATE_DRIVER = r"""
+#include <bit>
+#include <stdio.h>
+#include <stdint.h>
+#include <math.h>
+#include <fenv.h>
+#pragma STDC FENV_ACCESS ON
+static char const* current_rounding;
+
+template<typename T> void truncation_result(char const* name, u64 input, T value)
+{
+    printf("%s/%s\t%016llx\t%016llx\n", current_rounding, name,
+        (unsigned long long)input, (unsigned long long)value);
+}
+void run_truncation(float value)
+{
+    using namespace Wasm::Operators;
+    u64 bits=std::bit_cast<u32>(value);
+    truncation_result("saturating_f32_i32", bits, SaturatingTruncate<i32>{}(value));
+    truncation_result("saturating_f32_u32", bits, SaturatingTruncate<u32>{}(value));
+    truncation_result("saturating_f32_i64", bits, SaturatingTruncate<i64>{}(value));
+    truncation_result("saturating_f32_u64", bits, SaturatingTruncate<u64>{}(value));
+}
+void run_truncation(double value)
+{
+    using namespace Wasm::Operators;
+    u64 bits=std::bit_cast<u64>(value);
+    truncation_result("saturating_f64_i32", bits, SaturatingTruncate<i32>{}(value));
+    truncation_result("saturating_f64_u32", bits, SaturatingTruncate<u32>{}(value));
+    truncation_result("saturating_f64_i64", bits, SaturatingTruncate<i64>{}(value));
+    truncation_result("saturating_f64_u64", bits, SaturatingTruncate<u64>{}(value));
+}
+void run_saturation_cases()
+{
+    u32 const f32_inputs[] = {0,0x80000000,1,0x80000001,0x3f000000,0xbf000000,
+        0x7f7fffff,0xff7fffff,0x7f800000,0xff800000,0x7fc54321,0xffc54321,
+        0x7f854321,0xff854321};
+    u64 const f64_inputs[] = {0,0x8000000000000000ULL,1,0x8000000000000001ULL,
+        0x3fe0000000000000ULL,0xbfe0000000000000ULL,0x3fffffffffffffffULL,
+        0xbfffffffffffffffULL,0x7fefffffffffffffULL,0xffefffffffffffffULL,
+        0x7ff0000000000000ULL,0xfff0000000000000ULL,0x7ff8000000004321ULL,
+        0xfff8000000004321ULL,0x7ff0000000004321ULL,0xfff0000000004321ULL,
+        0x3ff0000000000000ULL,0xbff0000000000000ULL};
+    for (auto bits : f32_inputs) run_truncation(std::bit_cast<float>(bits));
+    for (auto bits : f64_inputs) run_truncation(std::bit_cast<double>(bits));
+    double const bounds[]={0,-2147483648.0,2147483648.0,4294967296.0,
+        -9223372036854775808.0,9223372036854775808.0,18446744073709551616.0};
+    for (auto bound : bounds) {
+        float f=(float)bound;
+        run_truncation(nextafterf(f,-INFINITY));
+        run_truncation(f);
+        run_truncation(nextafterf(f,INFINITY));
+        run_truncation(nextafter(bound,-INFINITY));
+        run_truncation(bound);
+        run_truncation(nextafter(bound,INFINITY));
+    }
+    for (auto value : {-1.9,-0.9,0.9,1.9}) {
+        run_truncation((float)value);
+        run_truncation(value);
+    }
+}
+int main()
+{
+    int const modes[] = {FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO};
+    char const* names[] = {"nearest", "down", "up", "zero"};
+    for (unsigned mode = 0; mode < 4; ++mode) {
+        if (fesetround(modes[mode])) return 1;
+        current_rounding = names[mode];
+        run_saturation_cases();
+    }
+    return fesetround(FE_TONEAREST);
+}
+"""
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--upstream", type=Path, default=Path.home() / "code/3rd/ladybird")
     parser.add_argument("--build-dir", type=Path)
     parser.add_argument("--compiler", default="clang++")
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--family", choices=("binary", "unary", "shift", "comparison", "arithmetic", "floating", "float_arithmetic", "float_extrema", "float_unary", "float_width", "integer_width", "reinterpret", "integer_float", "float_truncate"), default="binary")
+    parser.add_argument("--family", choices=("binary", "unary", "shift", "comparison", "arithmetic", "floating", "float_arithmetic", "float_extrema", "float_unary", "float_width", "integer_width", "reinterpret", "integer_float", "float_truncate", "saturating_truncate"), default="binary")
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
     upstream = args.upstream.resolve()
@@ -773,6 +849,7 @@ def main():
         "reinterpret": (REINTERPRET_NAMES, REINTERPRET_DRIVER, 576, "reinterpret_operators.tsv"),
         "integer_float": (INTEGER_FLOAT_NAMES, INTEGER_FLOAT_DRIVER, 8512, "convert_integer_float_operators.tsv"),
         "float_truncate": (FLOAT_TRUNCATE_NAMES, FLOAT_TRUNCATE_DRIVER, 328, "checked_truncate_operators.tsv"),
+        "saturating_truncate": (SATURATING_TRUNCATE_NAMES, SATURATING_TRUNCATE_DRIVER, 1312, "saturating_truncate_operators.tsv"),
     }
     names, driver, expected_count, filename = families[args.family]
     if args.family in ("comparison", "arithmetic", "floating", "float_arithmetic"):
@@ -784,7 +861,7 @@ def main():
     for name in names:
         expression = (r"^DEFINE_BINARY_OPERATOR\(" + name + r", .*?\);" if name != "Divide" and args.family in ("comparison", "arithmetic", "floating", "float_arithmetic")
                       else r"^struct " + name + r" \{.*?^};")
-        if args.family in ("integer_width", "reinterpret", "integer_float", "float_truncate"):
+        if args.family in ("integer_width", "reinterpret", "integer_float", "float_truncate", "saturating_truncate"):
             expression = r"^template<typename [^\n]+>\nstruct " + name + r" \{.*?^};"
         match = re.search(expression, source, re.MULTILINE | re.DOTALL)
         if match is None:
@@ -794,13 +871,13 @@ def main():
         hashes.append(f"# {name} sha256={hashlib.sha256(text.encode()).hexdigest()}")
     if args.family in ("comparison", "arithmetic", "floating", "float_arithmetic"):
         excerpts.append("#undef DEFINE_BINARY_OPERATOR")
-    if args.family == "float_truncate":
+    if args.family in ("float_truncate", "saturating_truncate"):
         checked_header = (upstream / "AK/Checked.h").read_bytes()
         hashes.append(f"# AK/Checked.h sha256={hashlib.sha256(checked_header).hexdigest()}")
     # Only the selected verbatim Source records are needed. This avoids unrelated
     # LibWasm Types/LibSync generated exports; AK headers remain the actual source.
     generated = "#include <limits.h>\n#include <AK/Checked.h>\n#include <AK/BuiltinWrappers.h>\n#include <AK/Error.h>\n#include <AK/StringView.h>\n"
-    if args.family in ("float_extrema", "float_unary", "float_width", "float_truncate"):
+    if args.family in ("float_extrema", "float_unary", "float_width", "float_truncate", "saturating_truncate"):
         generated += "#include <AK/Math.h>\n#include <math.h>\n"
     generated += "namespace Wasm::Operators {\n" + "\n\n".join(excerpts) + "\n}\n" + driver
     work = repo / "Build/audit-fixes" / ("wasm-integer-operators" if args.family == "binary"
