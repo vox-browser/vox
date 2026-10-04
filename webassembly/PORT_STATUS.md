@@ -595,3 +595,17 @@ preceding clean full 80-file sweeps predate these two new files. Enabled
 Source operator-name tracing, remaining operators, opcode dispatch and the
 production machine/collector boundaries above remain open.
 See [numeric helper source mapping](../docs/translation-audit/WASM_NUMERIC_OPERATIONS.md).
+
+
+## Source unary integer operators
+
+`7d0af709` translates EqualsZero, CountLeadingZeros, CountTrailingZeros and
+PopCount with exact unsigned conversion, zero guards, result widths and
+AK builtin-selection branches. All ten scalar specializations match **1,656
+exact pinned C++ cases** produced by the separate `bd231130` tooling update.
+Actual unary helper tests verify i64 count and i32 predicate Value writes.
+Default and GC-disabled private checks pass; canonical unary/helper/native
+Blob-global checks pass **3/3** with GC disabled. The package now has **83**
+test files; the earlier full 80-file sweeps predate these added slices.
+Remaining scalar/SIMD coverage and the production opcode/instantiation/root
+boundaries remain open. See [unary source mapping](../docs/translation-audit/WASM_UNARY_INTEGER_OPERATORS.md).
