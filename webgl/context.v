@@ -526,10 +526,22 @@ pub fn (mut context WebGLRenderingContext) get_shader_info_log(shader &WebGLShad
 }
 
 pub fn (mut context WebGLRenderingContext) attach_shader(mut program WebGLProgram, shader &WebGLShader) {
-	context.native.make_current()
 	if !context.owns(&program.object) || !context.owns(&shader.object) {
 		context.set_error(invalid_operation)
 		return
+	}
+	// Source compares actual retained pointers before the per-type occupied slot.
+	if attached := program.attached_vertex_shader {
+		if attached == shader {
+			context.set_error(invalid_operation)
+			return
+		}
+	}
+	if attached := program.attached_fragment_shader {
+		if attached == shader {
+			context.set_error(invalid_operation)
+			return
+		}
 	}
 	if shader.type_ == vertex_shader {
 		if program.attached_vertex_shader != none {
@@ -542,6 +554,7 @@ pub fn (mut context WebGLRenderingContext) attach_shader(mut program WebGLProgra
 			return
 		}
 	}
+	context.native.make_current()
 	C.vox_gl_attach_shader(program.object.native_handle_, shader.object.native_handle_)
 	match shader.type_ {
 		vertex_shader { program.attached_vertex_shader = shader }
