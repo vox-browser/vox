@@ -96,8 +96,12 @@ fn test_upstream_uniform_vectors_matrices_and_webgl2_validation() {
 	C.vox_gl_get_uniform_floats(program.object.native_handle_, int(matrix.handle_), &actual_matrix[0])
 	assert actual_matrix == [f32(1), 0, 0, 1, 2, 3]!
 	assert context.get_error() == no_error
-	context.uniform_matrix2fv(location, true, [f32(1), 0, 0, 1])
-	assert context.get_error() == invalid_value
+	wrong_type_matrix := [f32(1), 0, 0, 1]!
+	C.vox_gl_uniform_matrix(int(location.handle_), 2, 2, 1, 1, &wrong_type_matrix[0])
+	expected_matrix_error := C.vox_gl_get_error()
+	context.uniform_matrix2fv(location, true, wrong_type_matrix[..])
+	actual_matrix_error := context.get_error()
+	assert actual_matrix_error == expected_matrix_error
 
 	mut buffer := WebGLBuffer.create(mut context)
 	context.bind_buffer(uniform_buffer, buffer)

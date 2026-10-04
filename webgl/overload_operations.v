@@ -163,12 +163,12 @@ pub fn (mut context WebGLRenderingContext) uniform4iv(location ?&WebGLUniformLoc
 }
 
 fn (mut context WebGLRenderingContext) uniform_matrix(location ?&WebGLUniformLocation, transpose bool, values []f32, columns int, rows int) {
+ context.native.make_current()
  value := location or { return }
  value.handle(context.current_program) or { context.set_error(invalid_operation); return }
- if transpose || values.len % (columns * rows) != 0 { context.set_error(invalid_value); return }
+ if values.len % (columns * rows) != 0 { context.set_error(invalid_value); return }
  if columns != rows && !context.require_webgl2() { return }
- context.native.make_current()
-	C.vox_gl_uniform_matrix(int(value.handle_), columns, rows, values.len / (columns * rows), values.data)
+	C.vox_gl_uniform_matrix(int(value.handle_), columns, rows, values.len / (columns * rows), int(transpose), values.data)
 	error_value := GLenum(C.vox_gl_get_error())
 	if error_value != no_error { context.native.set_pending_local_error(error_value); return }
 }

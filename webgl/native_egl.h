@@ -463,17 +463,17 @@ static void vox_gl_uniform_uints(int location, int width, int count, unsigned co
     case 4: glUniform4uiv(location, count, data); break;
     }
 }
-static void vox_gl_uniform_matrix(int location, int columns, int rows, int count, float const* data)
+static void vox_gl_uniform_matrix(int location, int columns, int rows, int count, int transpose, float const* data)
 {
-    if (columns == 2 && rows == 2) glUniformMatrix2fv(location, count, GL_FALSE, data);
-    else if (columns == 3 && rows == 3) glUniformMatrix3fv(location, count, GL_FALSE, data);
-    else if (columns == 4 && rows == 4) glUniformMatrix4fv(location, count, GL_FALSE, data);
-    else if (columns == 2 && rows == 3) glUniformMatrix2x3fv(location, count, GL_FALSE, data);
-    else if (columns == 3 && rows == 2) glUniformMatrix3x2fv(location, count, GL_FALSE, data);
-    else if (columns == 2 && rows == 4) glUniformMatrix2x4fv(location, count, GL_FALSE, data);
-    else if (columns == 4 && rows == 2) glUniformMatrix4x2fv(location, count, GL_FALSE, data);
-    else if (columns == 3 && rows == 4) glUniformMatrix3x4fv(location, count, GL_FALSE, data);
-    else if (columns == 4 && rows == 3) glUniformMatrix4x3fv(location, count, GL_FALSE, data);
+    if (columns == 2 && rows == 2) glUniformMatrix2fv(location, count, transpose, data);
+    else if (columns == 3 && rows == 3) glUniformMatrix3fv(location, count, transpose, data);
+    else if (columns == 4 && rows == 4) glUniformMatrix4fv(location, count, transpose, data);
+    else if (columns == 2 && rows == 3) glUniformMatrix2x3fv(location, count, transpose, data);
+    else if (columns == 3 && rows == 2) glUniformMatrix3x2fv(location, count, transpose, data);
+    else if (columns == 2 && rows == 4) glUniformMatrix2x4fv(location, count, transpose, data);
+    else if (columns == 4 && rows == 2) glUniformMatrix4x2fv(location, count, transpose, data);
+    else if (columns == 3 && rows == 4) glUniformMatrix3x4fv(location, count, transpose, data);
+    else if (columns == 4 && rows == 3) glUniformMatrix4x3fv(location, count, transpose, data);
 }
 static void vox_gl_get_uniform_floats(unsigned program, int location, float* data) { glGetUniformfv(program, location, data); }
 static void vox_gl_get_uniform_ints(unsigned program, int location, int* data) { glGetUniformiv(program, location, data); }
