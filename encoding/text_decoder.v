@@ -6,6 +6,7 @@
 module encoding
 
 import encoding.iconv as viconv
+import libjs
 
 pub struct TextDecoderOptions {
 pub:
@@ -222,6 +223,25 @@ pub fn (decoder &TextDecoder) ignore_bom() bool {
 pub fn (decoder &TextDecoder) decode(input ?[]u8, options TextDecodeOptions) !string {
 	bytes := input or { []u8{} }
 	mut mutable_decoder := unsafe { &TextDecoder(decoder) }
+	if mutable_decoder.encoding_ == 'utf-8' {
+		if !mutable_decoder.utf8_decoder_present_ {
+			panic('Source VERIFY: TextDecoderCommon owns its StreamingDecoder')
+		}
+		// TextDecoder calls its actual owner's UTF16 destination, while
+		// Common/Stream call to_utf8. Preserve reset before exposing the
+		// saved result; failed fatal callback units stay internal.
+		ok, units := mutable_decoder.utf8_decoder_.decode_owned_utf16(bytes, !options.stream, mutable_decoder.fatal_)
+		if !options.stream {
+			mutable_decoder.set_decoder_to_new_instance_of_encoding_decoder()
+		}
+		if !ok {
+			return error('TypeError: Decoding failed')
+		}
+		owned_result := libjs.utf16_string_from_code_units(units)
+		// Retain the existing public string projection. Validated UTF8
+		// decoding produces only well-formed UTF16 units here.
+		return owned_result.str()
+	}
 	mut output := TextDecoderOutputQueue{}
 	mutable_decoder.process_an_item(bytes, !options.stream, mut output) or {
 		// TextDecoder.cpp replaces a flushed decoder before exposing its
