@@ -134,9 +134,10 @@ the FileReader caller feature.
 
 FileReader's Source DataURL arm calls this helper, serializes it, then invokes
 `Infra/SerializedURL.h:16`'s `Utf16String::from_ascii_without_validation`.
-The V Infra function is currently a compatibility string identity. Source's
-unchecked ASCII storage retains raw byte metadata and its raw code-unit/native
-primitive access is a separate boundary. Its UTF8 projection returns those
+The original V Infra function remains a compatibility string identity for
+older consumers. The separate owned-record caller below now retains Source's
+unchecked ASCII bytes and code-unit/storage metadata; native primitive access
+is a distinct adapter. Its UTF8 projection returns those
 same bytes without decoding (`AK/Utf16View.cpp:17`), so direct V concatenation
 already matches compatibility bytes. This does not justify replacing that
 Source ASCII record with UTF8 decoding, arbitrary byte widening or new escaping.
@@ -236,9 +237,9 @@ that operation's loadend while retaining the new operation's tasks.
 This body operates through the existing real Streams/Promise owner records
 and their typed result-object/fixed Uint8Array projection. It does not establish
 native result-object Get operations, genuine native/auto-length SeqCst
-witnesses, public FileReader bindings, raw unchecked-ASCII result metadata or
-per-wrapper-world ArrayBuffer identity. Those remain separate native runtime
-prerequisites. Standalone `FileReader.create()` and its explicit manual task
+witnesses, public FileReader bindings or per-wrapper-world ArrayBuffer identity. Those
+remain separate native runtime prerequisites; the later bounded DataURL owner
+slice supplies raw unchecked-ASCII result metadata. Standalone `FileReader.create()` and its explicit manual task
 adapter retain their existing compatibility behavior.
 
 New actual read-operation, existing owner-task, monotonic-threshold and
@@ -290,9 +291,9 @@ HostDefined/world selection and actual weak engine/GC ownership before it can
 reuse Source's cache. A new Runtime-context-ID map or a manufactured world
 would change the Source identity/lifetime model and is not implemented here.
 
-Raw result strings also need their genuine Source storage before native
-projection, including the separate DataURL unchecked-ASCII metadata boundary
-described above. These findings are dependencies for a subsequent result
+Raw result strings retain their genuine Source storage through the separate
+BinaryString/Text and DataURL owned-slot prerequisites below. Native result
+projection and the actual world/weak-cache dependency remain separate. These findings are dependencies for a subsequent result
 wrapper feature, not a claim that the newly completed owner read loop or Sync
 allocation has provided public FileReader/native-world parity.
 
@@ -310,9 +311,9 @@ LibJS implementation change and no scalar string iterator substitution.
 Clone, `set_result` and `result` retain those exact units and storage metadata.
 The typed raw-record getter returns them only for a string result whose
 compatibility text still agrees; stale DTO edits cannot reuse old metadata.
-Loading/abort/null and byte results return no string record. DataURL still
-returns no raw slot here because inventing UTF16 units from its unchecked
-ASCII bytes would change the unresolved Source storage boundary.
+Loading/abort/null and byte results return no string record. This initial
+BinaryString/Text slice left DataURL behind its genuine unchecked-ASCII
+prerequisite; the separate owner slice below now retains that Source record.
 
 New raw result, existing BinaryString/Text BOM and actual owner-operation files
 pass **4/4 in both GC modes**, recorded in
@@ -339,3 +340,32 @@ strings, poisoned String/globalThis aliases and two actual target Runtimes.
 There is no partial async native `result()` implementation here. Its bytes
 variant remains behind the actual Source world/weak-cache dependency; no fresh
 buffer fallback or invented author-visible unsupported-result error is added.
+
+
+## DataURL unchecked ASCII result owner
+
+The actual `Infra/SerializedURL.h:16–24` helper delegates to
+`Utf16String::from_ascii_without_validation` without decoding its bytes.
+The separate `infra.utf16_string_record_from_url_ascii` returns that genuine
+translated owned record to the DataURL package arm. FileReader stores it through
+the same immutable slot and clone/set/get path as BinaryString and Text. The
+legacy Infra string helper remains a compatibility projection for its older
+callers. Source default/literal MIME selection, URL creation/serialization and
+UTF8 compatibility bytes remain the established call chain.
+
+Feature `62d3111996cbb0a08e9f5376b8cf64d30f9d9a5b` depends on the independently
+completed unchecked-ASCII record `f25db8a4ee368ff03692f76c55371f0d752600ca`.
+[AK source mappings and native probe limits](UTF16_UNCHECKED_ASCII_SOURCE.md)
+explain why raw non-ASCII bytes use the target ABI's plain-char unit projection
+and retain their original byte projection. New Infra/owned DataURL and existing
+DataURL/raw-slot fixtures pass **4/4 with default GC and 4/4 with GC-none** in
+`source-file-reader-data-url-raw-{default,gc-none}.log`. They check raw
+WTF8/non-ASCII/NUL MIME bytes, exact unit/storage metadata, empty/default MIME,
+actual Sync packaging, cloned/retained ownership and stale DTO rejection.
+No native facade, async partial getter or new ArrayBuffer cache is introduced.
+
+The separate tooling followup `d84c28095593428c5324fbdc21fca4ab5253b1ae` now
+requires the exact pinned Source HEAD before reading headers or generating
+probe artifacts. Its positive -O0/-O2 probe passes in
+`source-utf16-ascii-probe-pinned.log`; a temporary wrong-HEAD checkout is
+rejected before header access in `source-utf16-ascii-probe-wrong-pin.log`.
