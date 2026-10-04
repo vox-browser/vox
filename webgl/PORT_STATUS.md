@@ -162,6 +162,35 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+shaderSource now suppresses only its actual custom driver command after loss.
+Impl.cpp:2312-2330 preserves its owned handle gate and explicit UTF-8 string
+length. The custom ProxyBase.cpp:332-343 packs one source payload and records
+ShaderSource; record_bytes:57-60 drops that record after loss. Its compositor
+receiver (HostWebGLContext.cpp:243-250) then has no command to replay. V now
+returns after unavailable actual current selection before the C shaderSource
+call, preserving the existing CPU validation and live one-string/length call.
+Public DOMString conversion remains before Source body entry.
+
+A genuine pre-fix EGL probe overwrote Other's matching native shader with a
+lost Owner's replacement source, retained in
+source-shader-source-lost-unfixed-probe-gc-none.log and its test source. The
+corrected native/public two-version cases retain an original record and owned
+SourceID2/native0 record after loss. Other's actual shader text and successful
+compile status remain unchanged, its viewport stays current and its pending
+INVALID_ENUM survives without an extra zero-name driver error. Public ToString
+runs once or throws before dispatch; nonnullable/forged-brand and foreign
+handle gates retain their Source behavior. One-shot loss reporting is preserved.
+
+Two typed files pass in
+`Build/audit-fixes/source-shader-source-lost-native-gc-none.log`; two public
+files pass in
+`Build/audit-fixes/source-shader-source-lost-public-gc-none.log`, including the
+existing source/compile CPU-owner neighbors. All use GC disabled and explicit
+private paths. This is the shaderSource method alone; compileShader, deletion,
+program mutations and other lost commands remain separate reviewed features.
+No fake driver or Source algorithm supplies this command drop, and no full
+regression, remote map/GC/WrapperWorld or canonical bundle claim is added.
+
 Program diagnostic/parameter queries now retain their initialized Source
 outputs after loss. Impl.cpp:1789 initializes the robust parameter result to
 zero; :1828 initializes regular log length to zero. The exact generated void
