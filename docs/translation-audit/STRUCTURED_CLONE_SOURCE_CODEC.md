@@ -370,3 +370,31 @@ name explicitly at the pinned operation steps (`CryptoAlgorithms.cpp:8016`
 and `:8175`), preserving real operation behavior. The focused default-record,
 HMAC source-vector and core files pass **3/3 in both GC modes** in
 `source-hmac-record-defaults-{default,gc-none}.log`.
+
+Blob, File and FileList source records and HTML payloads now preserve their
+actual fields in `fileapi/{blob,file,utf16_records}.v` and
+`html/structured_fileapi_codec.v`. Public Blob/File construction first applies
+the pinned basic-Latin gate before MIME parsing; direct internal construction
+and deserialization retain arbitrary raw UTF-16 type/name units. Source
+`Blob.cpp:154-178` writes type then bytes; `File.cpp:92-133` adds name and signed
+i64 lastModified. IPC retains native little-endian i64; LBSC instantiates
+`AK/LEB128.h` signed encode/decode with its exact sign extension and overflow
+gate. SnapshotState remains the pinned upstream FIXME.
+
+The primary Blob/File/FileList ordinals are 143/144/145. Source
+`FileList.cpp:32-69` writes a u64 count, then each File's SerializableObject
+tag/interface, storage version when applicable, and direct File payload.
+Repeated nested File identities are serialized again and reconstructed as
+distinct records; inner entries do not enter general clone memory or consult
+the File exposure gate. The FileList itself and externally serialized Files
+retain ordinary source alias memory and primary-interface exposure.
+
+The constructor gate passes three focused files in both GC modes in
+`source-fileapi-type-gate-{default,gc-none}.log`. Raw ownership passes its final
+focused file in both modes, following passing Blob/File/FileList neighbors,
+in `source-fileapi-utf16-{default,gc-none}-final.log`. The wire payload test
+passes default GC, and the new codec plus Blob/File/FileList/Crypto neighbors
+pass **5/5** with GC disabled in `source-fileapi-codec-{default,gc-none}.log`.
+These are private assignment 7 logs. Native Blob/File/FileList wrappers and
+owning FileReading tasks/Promises remain separate prerequisites; the existing
+compact XHR Blob facade does not establish these native source bindings.

@@ -1,60 +1,56 @@
-# FileAPI module V translation — complete
+# FileAPI translation status
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/FileAPI`
+Source pin: `963d46a829f3e1b79f44dba9d02afb70654300fa`
+Translation workspace: `~/code/vox2/fileapi`
+Source records and clone payloads reviewed: 2026-10-04
 
-Translation workspace: `~/code/libweb_v/fileapi`
-Audited: 2026-08-17
+| Upstream source | V mapping |
+| --- | --- |
+| `Blob.cpp` | `blob.v`, `utf16_records.v`, `../html/structured_fileapi_codec.v` |
+| `BlobURLStore.cpp` | `blob_url_store.v` |
+| `File.cpp` | `file.v`, `utf16_records.v`, `../html/structured_fileapi_codec.v` |
+| `FileList.cpp` | `filelist.v`, `../html/structured_fileapi_codec.v` |
+| `FileReader.cpp` | `file_reader.v` |
+| `FileReaderSync.cpp` | `file_reader.v` |
 
-| Upstream `.cpp` | LOC | V mapping |
-| --- | ---: | --- |
-| `Blob.cpp` | 457 | `blob.v`, `file_reader.v` |
-| `BlobURLStore.cpp` | 161 | `blob_url_store.v` |
-| `File.cpp` | 133 | `file.v` |
-| `FileList.cpp` | 81 | `filelist.v` |
-| `FileReader.cpp` | 421 | `file_reader.v` |
-| `FileReaderSync.cpp` | 106 | `file_reader.v` |
+The existing typed package covers immutable owned Blob bytes, blob parts and
+line endings, MIME normalization, slicing, byte streams, UTF-8 decoding, File
+state, FileList ordering, blob URL partition checks and environment cleanup,
+and reader state transitions. FileReader read generations protect event-driven
+abort/replacement at both loadstart and progress. This inventory does not
+establish full source runtime or generated WebIDL binding parity.
 
-- Upstream inventory: **6 `.cpp` / 1,359 LOC**, **6 `.h` / 391 LOC**,
-  **5 `.idl` / 99 LOC**.
-- V implementation: **943 LOC** in 5 `.v` files.
-- Focused tests: **448 LOC** in 5 `_test.v` files (37 tests).
-- Mapping completeness: **6/6 implementation units**, **6/6 headers**, and
-  **5/5 IDL definitions** audited.
+Blob/File public constructor MIME parsing now retains the source basic-Latin
+gate, including non-ASCII quoted parameters, tab and DEL rejection. Internal
+ByteBuffer/Utf16String constructors and deserialization preserve arbitrary raw
+UTF-16 type/name units, immutable storage flags and independently owned bytes.
+Compatibility serialization DTO updates check stale raw metadata before reuse.
 
-The port covers immutable owned Blob bytes, MIME normalization, line-ending and
-blob-part processing, slicing, byte streams, UTF-8 text, fresh ArrayBuffer and
-Uint8Array-equivalent byte results, typed structured serialization, File name /
-type / last-modified state, FileList ordering and indexed access, UUID blob URL
-generation, partition authorization, fragment-insensitive resolution, removal
-and environment cleanup, all four FileReader packaging modes, encoding-label /
-MIME-charset/BOM handling, queued state transitions, abort semantics and event
-ordering, handler attributes, and all four synchronous reader methods.
+HTML IPC/LBSC serialization now implements the exact primary Blob/File/FileList
+payloads. Blob writes type then ByteBuffer; File also writes name and signed i64
+lastModified. The FileList nested path writes each complete File payload with
+its tag/interface/storage version, bypassing general inner object memory and
+inner File exposure exactly as pinned upstream. Repeated nested Files therefore
+become distinct records. Ordinary outer alias memory and interface exposure
+remain intact. SnapshotState retains the source FIXME.
 
-The independent cross-audit added read-generation checks after `loadstart` and
-`progress` dispatch. If an event handler aborts or replaces a read, the stale
-read now terminates without firing progress/load/loadend for the old operation;
-both re-entrant abort points have focused regressions.
+The constructor gate passes three files in both GC modes; raw ownership passes
+its final focused file in both modes with Blob/File/FileList neighbors passing
+in the preceding runs. Exact IPC/LBSC payload goldens, raw lone UTF-16,
+truncation, nested aliases/exposure/version checks and all signed i64 edges pass
+the default focused codec test and **5/5 GC-disabled** codec/Blob/File/FileList/
+Crypto neighbors. Private logs are under assignment 7's `Build/audit-fixes/`:
+`source-fileapi-type-gate-{default,gc-none}.log`,
+`source-fileapi-utf16-{default,gc-none}-final.log`, and
+`source-fileapi-codec-{default,gc-none}.log`.
 
-## Boundaries
-
-WebIDL Promise and JavaScript ArrayBuffer/Uint8Array wrappers are LibJS-owned;
-Blob's standalone accessors return the same deterministically settled text or a
-fresh typed byte buffer. `process_pending_tasks()` is the explicit HTML file-
-reading task-source boundary, allowing callers to observe LOADING and abort a
-pending read before completion. It dispatches trusted FileReader events through
-the inherited DOM EventTarget in spec order. The browser owns the process-wide
-Blob URL store and current settings
-object, so V exposes an owned `BlobURLStore` and requires a typed environment.
-MediaSource storage uses its stable host identity until that external object is
-wired. HTML owns the final structured-serialization wire encoder; the complete
-FileAPI payload fields and reconstruction steps are typed here.
-
-## Verification
-
-```text
-$ /Users/alex/code/v/v test fileapi
-Summary for all V _test.v files: 5 passed, 5 total.
-
-$ /Users/alex/code/v/v fmt -verify fileapi
-(no output; exit status 0)
-```
+Source Blob operations queue an owning global FileReading task and return
+actual relevant-realm ReadableStream and Promise records. The existing
+standalone text/array_buffer/bytes facade settles synchronously; it does not
+establish the source task/Promise owner path. The default reader's deprecated
+read-all-byte facade likewise remains a synchronous adapter pending the actual
+source aggregation request. Genuine native Blob/File/FileList constructors,
+getters, methods and clone exposure remain open. The compact XHR Blob object is
+a separate compatibility facade. FileReader owner tasks, blob URL process
+ownership and complete generated bindings still need runtime validation.
