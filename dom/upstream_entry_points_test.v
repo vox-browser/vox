@@ -277,6 +277,18 @@ fn test_element_scroll_routes_viewport_branches_and_resolves_promises() {
 	document.set_browsing_context(&BrowsingContext{
 		active_document_: document
 	})
+	document.set_navigable(&Navigable{
+		active_document_: document
+		html_model_handle_: voidptr(document)
+		perform_scroll_callback_: fn (owner voidptr, position CSSPixelPoint_) &Promise {
+			mut actual_document := unsafe { &Document(owner) }
+			viewport := actual_document.viewport_rect()
+			actual_document.set_viewport_rect(Rect{position.x(), position.y(), viewport.width, viewport.height})
+			return Promise.resolved(js_undefined())
+		}
+	})
+	mut viewport_node := document.as_node()
+	viewport_node.set_paintable(unsafe { &Paintable(&PaintableBox{Paintable: Paintable{is_box: true}}) })
 	mut window := &Window{
 		associated_document_: document
 	}

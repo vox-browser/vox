@@ -23,6 +23,7 @@ fn test_source_raw_attribute_hook_maps_full_names_and_vendor_event_case() {
 fn test_source_html_attribute_dispatch_distinguishes_global_and_body_frameset_sets() {
 	mut document := Document.create(url_about_blank())
 	document.browsing_context = &BrowsingContext{ active_document_: document }
+	document.set_navigable(&Navigable{ active_document_: document })
 	mut window := &Window{}
 	document.set_window(window)
 	window_target := unsafe { &EventTarget(window) }

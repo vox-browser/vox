@@ -9272,7 +9272,8 @@ pub fn (d &Document) is_fully_active() bool {
 }
 
 pub fn (d &Document) is_active() bool {
-	return d.browsing_context != unsafe { nil }
+	navigable := d.navigable() or { return false }
+	return navigable.active_document_is(d)
 }
 
 pub fn (d &Document) script_blocking_style_sheet_set_contains(element &Element) bool {
