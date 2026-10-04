@@ -9,26 +9,17 @@
 module referrercore
 
 import dom
+import http
 import securecontexts
 
 // https://w3c.github.io/webappsec-referrer-policy/#enumdef-referrerpolicy
-pub enum ReferrerPolicy {
-	empty_string
-	no_referrer
-	no_referrer_when_downgrade
-	same_origin
-	origin
-	strict_origin
-	origin_when_cross_origin
-	strict_origin_when_cross_origin
-	unsafe_url
-}
+pub type ReferrerPolicy = dom.ReferrerPolicy
 
 // https://w3c.github.io/webappsec-referrer-policy/#default-referrer-policy
-pub const default_referrer_policy = ReferrerPolicy.strict_origin_when_cross_origin
+pub const default_referrer_policy = dom.ReferrerPolicy.strict_origin_when_cross_origin
 
 // The token for a referrer policy ("" for the empty-string policy).
-pub fn to_string(referrer_policy ReferrerPolicy) string {
+pub fn to_string(referrer_policy dom.ReferrerPolicy) string {
 	return match referrer_policy {
 		.empty_string { '' }
 		.no_referrer { 'no-referrer' }
@@ -44,7 +35,7 @@ pub fn to_string(referrer_policy ReferrerPolicy) string {
 
 // The referrer policy for a token: the empty string maps to the empty-string policy, a known token
 // (matched ASCII case-insensitively) to that policy, and anything else to none.
-pub fn from_string(input string) ?ReferrerPolicy {
+pub fn from_string(input string) ?dom.ReferrerPolicy {
 	if input == '' {
 		return ReferrerPolicy.empty_string
 	}
@@ -59,6 +50,29 @@ pub fn from_string(input string) ?ReferrerPolicy {
 		'unsafe-url' { ReferrerPolicy.unsafe_url }
 		else { none }
 	}
+}
+
+// AbstractOperations.cpp:28–41. This existing Source token loop is shared
+// by the Response wrapper and Fetch's acyclic HTTP redirect caller.
+pub fn parse_a_referrer_policy_from_header_tokens(policy_tokens []string) ReferrerPolicy {
+	mut policy := ReferrerPolicy.empty_string
+	for token in policy_tokens {
+		if referrer_policy := from_string(token) {
+			if referrer_policy != .empty_string {
+				policy = referrer_policy
+			}
+		}
+	}
+	return policy
+}
+
+// AbstractOperations.cpp:23–41 reads only Response's actual HeaderList.
+// The owning Response passes that same list across V's acyclic module graph.
+pub fn parse_a_referrer_policy_from_header_list(list &http.HeaderList) ReferrerPolicy {
+	policy_tokens := list.extract_header_list_values('Referrer-Policy') or {
+		return .empty_string
+	}
+	return parse_a_referrer_policy_from_header_tokens(policy_tokens)
 }
 
 pub enum OriginOnly {

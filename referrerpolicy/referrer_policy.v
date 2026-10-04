@@ -13,23 +13,13 @@ import fetch
 import referrercore
 
 // https://w3c.github.io/webappsec-referrer-policy/#enumdef-referrerpolicy
-pub enum ReferrerPolicy {
-	empty_string
-	no_referrer
-	no_referrer_when_downgrade
-	same_origin
-	origin
-	strict_origin
-	origin_when_cross_origin
-	strict_origin_when_cross_origin
-	unsafe_url
-}
+pub type ReferrerPolicy = dom.ReferrerPolicy
 
 // https://w3c.github.io/webappsec-referrer-policy/#default-referrer-policy
-pub const default_referrer_policy = ReferrerPolicy.strict_origin_when_cross_origin
+pub const default_referrer_policy = dom.ReferrerPolicy.strict_origin_when_cross_origin
 
 // The token for a referrer policy ("" for the empty-string policy).
-pub fn to_string(referrer_policy ReferrerPolicy) string {
+pub fn to_string(referrer_policy dom.ReferrerPolicy) string {
 	return match referrer_policy {
 		.empty_string { '' }
 		.no_referrer { 'no-referrer' }
@@ -66,28 +56,12 @@ pub fn from_string(input string) ?ReferrerPolicy {
 // Steps 2-4: given the tokens extracted from the `Referrer-Policy` header list, return the last token
 // that is a referrer policy other than the empty string, or the empty-string policy if there is none.
 pub fn parse_a_referrer_policy_from_header_tokens(policy_tokens []string) ReferrerPolicy {
-	// 2. Let policy be the empty string.
-	mut policy := ReferrerPolicy.empty_string
-	// 3. For each token: if it is a (non-empty-string) referrer policy, set policy to it.
-	for token in policy_tokens {
-		if referrer_policy := from_string(token) {
-			if referrer_policy != .empty_string {
-				policy = referrer_policy
-			}
-		}
-	}
-	// 4. Return policy.
-	return policy
+	return referrercore.parse_a_referrer_policy_from_header_tokens(policy_tokens)
 }
 
 // https://w3c.github.io/webappsec-referrer-policy/#parse-referrer-policy-from-header
 pub fn parse_a_referrer_policy_from_a_referrer_policy_header(response &fetch.Response) ReferrerPolicy {
-	// AbstractOperations.cpp:26 uses actual extraction. Pinned LibHTTP keeps
-	// one whole raw value per Referrer-Policy header, including its FIXME.
-	policy_tokens := response.header_list.extract_header_list_values('Referrer-Policy') or {
-		return .empty_string
-	}
-	return parse_a_referrer_policy_from_header_tokens(policy_tokens)
+	return referrercore.parse_a_referrer_policy_from_header_list(response.header_list)
 }
 
 // https://w3c.github.io/webappsec-referrer-policy/#set-requests-referrer-policy-on-redirect
