@@ -27,8 +27,10 @@ input element. That overload reads `node.document().relevant_settings_object()`;
 `relevant_realm(Node)` and `relevant_global_object(Node)` flow through it. Thus
 adoption changes this picker's settings/global along with its current Document.
 The separate `JS::Object` overload reads the object's creation Realm. Substituting
-the V node's retained `NodeScriptingEnvironment` here would translate that other
-overload instead of the actual pinned input call path.
+a retained node creation-settings cache here would translate that other
+overload instead of the actual pinned input call path. The separate
+[Node scripting correction](NODE_SCRIPTING_CURRENT_DOCUMENT.md) removes that
+unsupported cache from its scripting gate too.
 
 Four cases in `html/input_picker_owner_test.v` use navigation-created Documents,
 actual parser-created controls, genuine Windows/settings, and actual Page
