@@ -97,3 +97,51 @@ Source data was altered to pass it.
 All implementation changes are outside LibJS. The earlier clean frozen LibJS
 and exact AST proof checkout remains unchanged and is not a verification claim
 for these later Encoding changes.
+
+## Separate Source UserDefined raw decoder
+
+Feature `e80fb587a8a02b1b0a4e69b5a9acc2e46c6c5166` replaces the old hand-written
+`decode_x_user_defined` codepoint loop with the actual
+`encoding_rs/src/x_user_defined.rs:35–80` UserDefinedDecoder body and
+`src/macros.rs:10–72`'s `decoder_function!` expansion. Its empty preamble,
+loop preamble and EOF body introduce no additional state. The control order is
+Source's input availability check, three-byte `check_space_bmp` reservation,
+single-byte read/commit, then ASCII write or
+`write_upper_bmp(u16::from(byte) + 0xF700)`. This raw Source decoder deliberately
+does not accelerate ASCII runs; even an ASCII byte requires three available
+destination bytes before consumption. The V record shares the existing
+translated underlying DecoderResult DTO, not the SingleByte table algorithm.
+
+`encoding/user_defined_decoder.v` retains that empty actual decoder, input and
+destination positions, raw consumed/written results and the exact BMP bit
+writes. Its whole-input owner allocates Source's maximum `3 * byte_length` and
+returns the produced explicit byte slice, including NUL. All bytes are defined,
+so fatal/replacement have identical successful output. As above, V's signed
+32-bit array capacity is narrower than Source's checked `usize` multiplication;
+physical allocation/lifecycle, UTF16 output and encoder paths remain separate.
+The existing x-user-defined consumer label and byte behavior are preserved;
+no new unrelated decoder algorithm is introduced.
+
+Tooling-only `fdceef6b6923a054ee50f6683583cd454be4d5f0` adds
+`tools/source_user_defined_decoder_probe.py` with the same exact Source HEAD,
+lock/archive-file validation and unmodified native Rust bridge. The Source
+probe passes **2/2 debug and 2/2 release**, validating all 256 byte/unit results,
+fatal/BOM flags, NUL and empty output, and **114 raw capacity/status/read/write/
+output cases**, including Source's reservation before ASCII. Its native raw
+calls use `last=true`; V also checks `last=false` against the same goldens,
+consistent with Source's empty EOF body.
+
+| Artifact | SHA256 |
+| --- | --- |
+| `encoding/fixtures/user_defined_all-bytes.json` | `6563306861ac8907265a72af8ef1a10012564a822e878d211c84505fe7af7f31` |
+| `encoding/fixtures/user_defined_raw-capacities.json` | `1f92b647f5d3a8993672b01ae244991057b86811d2c2cefdfc2d43f60dce0c4d` |
+| `source-user-defined-decoder-probe.log` | `8893fcee6869575d0759646b285f17fe6f9c8f67107b43c41d8cd6c50be71d8e` |
+
+The feature's new native-golden comparison fixture and complete Encoding
+package pass **9/9 with default GC and 9/9 with GC-none** in
+`source-user-defined-encoding-{default,gc-none}.log`. Its focused production
+GC-none file passes **1/1** in
+`source-user-defined-production-gc-none.log`. These checks preserve the earlier
+SingleByte and Windows1252 cases while testing exact x-user-defined bytes,
+streamed consumer segments, both error modes and destination accounting.
+No LibJS code, frozen proof checkout or native browser bundle is changed.
