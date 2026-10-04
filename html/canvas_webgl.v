@@ -111,5 +111,5 @@ fn html_webgl_canvas_content_changed(owner voidptr) {
 	mut state := html_canvas_element_states[html_canvas_element_key(canvas)] or { return }
 	state.dirty = true
 	mut node := unsafe { &dom.Node(canvas) }
-	node.set_needs_repaint(.paint_commands)
+	node.set_needs_repaint(.no)
 }
