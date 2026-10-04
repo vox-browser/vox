@@ -979,7 +979,12 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 		}
 		'isShader' {
 			host.validate_resource(wg_arg(args, 0), 'shader', true)!
-			return json2.Any(context.is_shader(host.shaders[wg_handle(wg_arg(args, 0))] or { none }))
+			// Keep the nullable call explicit: the compatibility compiler otherwise
+			// propagates inline map `none` as this enclosing Result's error.
+			shader := host.shaders[wg_handle(wg_arg(args, 0))] or {
+				return json2.Any(context.is_shader(none))
+			}
+			return json2.Any(context.is_shader(shader))
 		}
 		'isProgram' {
 			host.validate_resource(wg_arg(args, 0), 'program', true)!
