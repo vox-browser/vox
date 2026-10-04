@@ -19,8 +19,12 @@ pub fn user_agent_top_level_traversable_set() []&TraversableNavigable {
 	return html_user_agent_top_level_traversables.clone()
 }
 
-pub fn create_a_new_top_level_browsing_context_and_document(page &dom.Page) !BrowsingContextGroupAndDocument {
-	return BrowsingContextGroup.create_a_new_browsing_context_group_and_document(page)
+pub fn create_a_new_top_level_browsing_context_and_document(page &dom.Page) !BrowsingContextAndDocument {
+	created := BrowsingContextGroup.create_a_new_browsing_context_group_and_document(page)!
+	return BrowsingContextAndDocument{
+		browsing_context: browsing_context_model_for_native(created.browsing_context_group.browsing_context_set()[0])
+		document: created.document
+	}
 }
 
 pub enum HistoryStepResult {
