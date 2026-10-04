@@ -6,10 +6,13 @@ pub fn xhr_bootstrap() string {
 const __xhrObjects=new Map(),__xhrNodes=new Map(),__xhrEvents=new Map();
 let __xhrNextCallback=0;
 const __xhrConstructionToken={};
+const __xhrBlobNative=__ladybirdXHRBlob;
+function __xhrThrow(error){const match=/^([A-Za-z]+Error):\s*(.*)/.exec(error.message);if(match){error.name=match[1];error.message=match[2];}throw error;}
 function __xhrCall(key,method,args,extra){
  try{return JSON.parse(__ladybirdXHR(JSON.stringify(Object.assign({key:key,method:method,args:args||[]},extra||{}))));}
- catch(error){const match=/^([A-Za-z]+Error):\s*(.*)/.exec(error.message);if(match){error.name=match[1];error.message=match[2];}throw error;}
+ catch(error){__xhrThrow(error);}
 }
+function __xhrBlobCall(action,key,value){try{return action==="send"?__xhrBlobNative(action,key,value):__xhrBlobNative(action,key);}catch(error){__xhrThrow(error);}}
 function __xhrNode(value){
  if(value===null)return null;
  const identity=value.kind+value.key;if(__xhrNodes.has(identity))return __xhrNodes.get(identity);
@@ -23,12 +26,12 @@ function __xhrNode(value){
  object.querySelectorAll=function(selector){return call("querySelectorAll",[String(selector)]).map(__xhrNode);};
  return object;
 }
-function __xhrResponse(value){
+function __xhrResponse(value,key){
  if(!value||!value.kind)return value;
  if(value.kind==="document")return __xhrNode(value);
  if(value.kind==="arraybuffer")return new Uint8Array(value.bytes).buffer;
- // FileAPI owns decoding and NewObject byte buffers for this real native Blob.
- return Object.freeze({__xhrBlobKey:value.key,size:value.size,type:value.type,arrayBuffer:function(){return Promise.resolve(new Uint8Array(__xhrCall(value.key,"blob",[],{action:"arrayBuffer"})).buffer);},text:function(){return Promise.resolve(__xhrCall(value.key,"blob",[],{action:"text"}));}});
+ if(value.kind==="blob")return __xhrBlobCall("response",key);
+ return value;
 }
 function __xhrEvent(payload,target){
  let event=__xhrEvents.get(payload.key);
@@ -81,8 +84,8 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
  setRequestHeader(name,value){if(arguments.length<2)throw new TypeError("setRequestHeader requires two arguments");__xhrCall(this.__key,"setRequestHeader",[String(name),String(value)]);}
  send(body){
   if(body==null)return __xhrCall(this.__key,"send");
+  if(__xhrBlobCall("send",this.__key,body))return;
   if(body.__xhrDocumentKey||(typeof document!=="undefined"&&body===document))return __xhrCall(this.__key,"send",[],{document:body.__xhrDocumentKey||"owner"});
-  if(body.__xhrBlobKey)return __xhrCall(this.__key,"send",[],{blob:body.__xhrBlobKey});
   if(body instanceof ArrayBuffer)return __xhrCall(this.__key,"send",[Array.from(new Uint8Array(body))]);
   if(ArrayBuffer.isView(body))return __xhrCall(this.__key,"send",[Array.from(new Uint8Array(body.buffer,body.byteOffset,body.byteLength))]);
   return __xhrCall(this.__key,"send",[String(body)]);
@@ -95,7 +98,7 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
 for(const name of ["readyState","responseURL","status","statusText","responseText","responseXML","response"]){
  Object.defineProperty(XMLHttpRequest.prototype,name,{enumerable:true,configurable:true,get:function(){
   if(name==="response"&&this.responseType!==""&&this.responseType!=="text"&&this.__responseCache!==undefined)return this.__responseCache;
-  const value=__xhrCall(this.__key,"get",[],{property:name}),result=__xhrResponse(value);
+  const value=__xhrCall(this.__key,"get",[],{property:name}),result=__xhrResponse(value,this.__key);
   if(name==="response"&&result!==null&&this.responseType!==""&&this.responseType!=="text")this.__responseCache=result;
   return result;
  }});

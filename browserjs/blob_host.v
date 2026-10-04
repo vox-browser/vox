@@ -16,7 +16,7 @@ mut:
 }
 
 // Actual immutable FileAPI records retain their owning relevant HTML realm.
-// The compact XMLHttpRequest Blob facade does not enter this wrapper table.
+// Author-created compatibility objects do not enter this wrapper table.
 @[heap]
 pub struct BlobHost {
 	settings &html.EnvironmentSettingsObject

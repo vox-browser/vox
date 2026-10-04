@@ -5,7 +5,6 @@ module browserjs
 import css
 import dom
 import fetch
-import fileapi
 import html
 import requestserver
 import xhr
@@ -28,7 +27,6 @@ mut:
 	events map[string]&dom.Event
 	documents map[string]&dom.Document
 	elements map[string]&dom.Element
-	blobs map[string]&fileapi.Blob
 	connection ?&requestserver.CurlConnection
 	next_id int
 	closed bool
@@ -58,6 +56,7 @@ pub fn (mut host XMLHttpRequestHost) install(mut runtime Runtime) ! {
 	runtime.define_host_function('__ladybirdXHR', fn [mut host, mut runtime] (input string) !string {
 		return host.call(input, runtime)
 	})!
+	$if darwin { host.install_native_blob_transport(mut runtime)! }
 	runtime.add_close_handler(fn [mut host] () { host.close() })
 }
 
@@ -74,7 +73,6 @@ pub fn (mut host XMLHttpRequestHost) close() {
 	host.events.clear()
 	host.documents.clear()
 	host.elements.clear()
-	host.blobs.clear()
 }
 
 fn xhr_host_optional_string(value json2.Any) ?string {
@@ -162,12 +160,7 @@ fn (mut host XMLHttpRequestHost) response_value(mut request xhr.XMLHttpRequest) 
 		.json { return if value := response.json_text { json2.decode[json2.Any](value) or { json2.Null{} } } else { json2.Null{} } }
 		.arraybuffer { return if request.state == .done { json2.Any({ 'kind': json2.Any('arraybuffer'), 'bytes': json2.Any(response.bytes.map(json2.Any(int(it)))) }) } else { json2.Null{} } }
 		.blob {
-			if blob := response.blob {
-				key := '${usize(voidptr(blob))}'
-				host.blobs[key] = blob
-				return json2.Any({ 'kind': json2.Any('blob'), 'key': json2.Any(key), 'size': json2.Any(blob.size()), 'type': json2.Any(blob.type_()) })
-			}
-			return json2.Null{}
+			return if response.blob != none { json2.Any({ 'kind': json2.Any('blob') }) } else { json2.Null{} }
 		}
 		.document { return host.document_value(response.document) }
 	}
@@ -182,11 +175,6 @@ fn (mut host XMLHttpRequestHost) call(input string, runtime &Runtime) !string {
 		host.next_id++
 		host.requests[host.next_id] = &XHRHostRecord{ request: xhr.XMLHttpRequest.construct_in_settings(host.settings, host.fetch_host) }
 		return json2.encode(host.next_id)
-	}
-	if method == 'blob' {
-		blob := host.blobs[canvas_host_string(object['key'] or { json2.Any('') })] or { return error('InvalidStateError: unknown response Blob') }
-		if canvas_host_string(object['action'] or { json2.Any('') }) == 'text' { return json2.encode(blob.text()!) }
-		return json2.encode(blob.array_buffer().map(json2.Any(int(it))))
 	}
 	if method == 'event' {
 		event := host.events[canvas_host_string(object['event'] or { json2.Any('') })] or { return error('InvalidStateError: unknown native event') }
@@ -240,9 +228,6 @@ fn (mut host XMLHttpRequestHost) call(input string, runtime &Runtime) !string {
 				document_key := canvas_host_string(document_input)
 				document := if document_key == 'owner' { host.document } else { host.documents[document_key] or { return error('InvalidStateError: unknown request Document') } }
 				request.send_document(document)!
-			} else if blob_input := object['blob'] {
-				blob := host.blobs[canvas_host_string(blob_input)] or { return error('InvalidStateError: unknown request Blob') }
-				request.send_blob(blob)!
 			} else if args.len == 0 || args[0] is json2.Null { request.send()! }
 			else if args[0] is string { request.send_text(canvas_host_string(args[0]))! }
 			else { request.send_raw(canvas_host_bytes(args[0]))! }
