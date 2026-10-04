@@ -249,3 +249,23 @@ empty-chunk progress suppression, early/late abort, load-handler reentrance,
 the Source shared-abort-Boolean edge, rejected-stream FIXME behavior and actual
 Worker/null-Document routing. The separate threshold test covers no previous
 time, exact 50ms and both adjacent nanosecond boundaries.
+
+## FileReaderSync actual ArrayBuffer allocation
+
+Source `FileReaderSync.cpp:31–35` obtains the supplied relevant global's Realm,
+copies bytes through `read_as_array_buffer_impl`, then creates a new actual
+ArrayBuffer in that Realm. The separate bounded native adapter
+`Runtime.source_file_reader_sync_array_buffer` now follows that call chain
+using the real supplied FileReaderSync/Blob records and existing genuine
+`Runtime.source_array_buffer` engine factory. The Runtime's actual JS context
+is the explicit target Realm; no author-visible global alias or constructor
+is consulted and no Promise/task path is added.
+
+New Sync allocation and existing genuine buffer files pass **2/2 in both GC
+modes**, recorded in `source-file-reader-sync-array-buffer-{default,gc-none}.log`.
+Tests verify actual ArrayBuffer identities/prototypes, independently owned
+copies after byte mutation, fresh repeated/empty results, the same reader/Blob
+in two actual engine Realms and poisoned author ArrayBuffer/globalThis aliases.
+Source IDL exposes FileReaderSync only in DedicatedWorker/SharedWorker. This
+typed native adapter introduces no Window interface or placeholder constructor;
+actual public Worker receiver/constructor bindings remain open.

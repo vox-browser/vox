@@ -12,7 +12,7 @@ Source records and clone payloads reviewed: 2026-10-04
 | `File.cpp` | `file.v`, `utf16_records.v`, `../html/structured_fileapi_codec.v` |
 | `FileList.cpp` | `filelist.v`, `../html/structured_fileapi_codec.v` |
 | `FileReader.cpp` | `file_reader.v`, `file_reader_global_context.v`, `file_reader_stream_operation.v`, `../html/file_reader_operations.v` |
-| `FileReaderSync.cpp` | `file_reader.v` |
+| `FileReaderSync.cpp` | `file_reader.v`, `../browserjs/file_reader_sync_array_buffer_darwin.c.v` |
 
 The existing typed package covers immutable owned Blob bytes, blob parts and
 line endings, MIME normalization, slicing, byte streams, BOM-aware decoding, File
@@ -96,6 +96,13 @@ override after explicit-label/MIME/default selection. Focused packaging,
 existing reader and decoder files pass **3/3 in both GC modes**. Pinned repeated
 BOM behavior, source mapping and actual FileReader owner boundaries are recorded in
 [`FILEREADER_TEXT_SOURCE.md`](../docs/translation-audit/FILEREADER_TEXT_SOURCE.md).
+
+The bounded native FileReaderSync ArrayBuffer body now copies through its
+actual implementation and allocates a genuine fresh ArrayBuffer in the supplied
+Runtime's actual target Realm. Identity, mutation, empty, two-Realm and poisoned
+author alias/constructor checks pass **2/2 focused files in both GC modes**.
+DedicatedWorker/SharedWorker public receiver/constructor exposure remains open;
+no Window interface is installed.
 The separate internal replacement decoder now preserves Source's empty-input,
 single-U+FFFD and Unicode-BOM override behavior for FileReader labels, while
 public TextDecoder retains its required rejection. **5/5** focused files pass
