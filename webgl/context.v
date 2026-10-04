@@ -586,7 +586,10 @@ pub fn (mut context WebGLRenderingContext) use_program(program ?&WebGLProgram) {
 		}
 	}
 	context.native.make_current()
-	C.vox_gl_use_program(if value := program { value.object.native_handle_ } else { 0 })
+	// Lost Source recording drops GL use, then still assigns its retained program.
+	if context.native.current_ {
+		C.vox_gl_use_program(if value := program { value.object.native_handle_ } else { 0 })
+	}
 	context.current_program = program
 	context.native.dispatch('use_program', if value := program { value.object.handle_ } else { 0 })
 }
