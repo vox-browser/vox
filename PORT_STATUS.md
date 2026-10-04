@@ -785,10 +785,10 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 1,059 | 482 | Complete |
 | `CredentialManagement` | 6 | 382 | 420 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 7,957 | 7,989 | Complete |
-| `DOM` | 59 | 34,859 | 42,999 | 4,549 | Complete |
+| `DOM` | 59 | 34,859 | 43,359 | 4,626 | Complete |
 | `DOMURL` | 4 | 1,039 | 825 | 363 | Complete |
 | `Editing` | 26 | 12,720 | 13,938 | 226 | Complete |
-| `Encoding` | 6 | 769 | 2,117 | 969 | Complete |
+| `Encoding` | 6 | 769 | 3,531 | 2,581 | Complete |
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
 | `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
 | `EventTiming` | 1 | 122 | 153 | 95 | Complete |
@@ -799,13 +799,13 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 860 | 323 | Complete |
 | `Geolocation` | 4 | 643 | 535 | 224 | Complete |
 | `Geometry` | 8 | 2,078 | 2,121 | 1,041 | Complete |
-| `HTML` | 286 | 83,853 | 69,287 | 33,515 | Complete |
+| `HTML` | 286 | 83,853 | 69,169 | 34,479 | Complete |
 | `HighResolutionTime` | 2 | 516 | 500 | 213 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,455 | 1,388 | Complete |
 | `Infra` | 3 | 385 | 548 | 102 | Complete |
 | `Internals` | 7 | 2,583 | 2,337 | 1,067 | Complete |
 | `IntersectionObserver` | 2 | 528 | 668 | 413 | Complete |
-| `Layout` | 9 | 4,001 | 44,740 | 18,025 | Present |
+| `Layout` | 9 | 4,001 | 44,740 | 18,157 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 653 | 162 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 657 | 129 | Complete |
@@ -838,10 +838,10 @@ from the current-module totals.
 | `URLPattern` | 1 | 223 | 1,703 | 257 | Complete |
 | `UserTiming` | 2 | 160 | 119 | 35 | Complete |
 | `ViewTransition` | 1 | 1,054 | 743 | 349 | Complete |
-| `WebAssembly` | 7 | 3,441 | 10,828 | 8,541 | Complete |
+| `WebAssembly` | 7 | 3,441 | 11,004 | 9,056 | Complete |
 | `WebAudio` | 47 | 8,256 | 8,682 | 3,247 | Complete |
 | `WebDriver` | 16 | 5,321 | 3,934 | 862 | Complete |
-| `WebGL` | 42 | 7,846 | 6,541 | 9,074 | Complete |
+| `WebGL` | 42 | 7,846 | 6,569 | 10,037 | Complete |
 | `WebIDL` | 10 | 2,466 | 2,551 | 1,299 | Complete |
 | `WebLocks` | 5 | 647 | 701 | 169 | Complete |
 | `WebSockets` | 1 | 476 | 409 | 156 | Complete |
@@ -852,7 +852,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **427,950** | **142,414** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **429,810** | **146,677** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
