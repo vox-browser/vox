@@ -115,6 +115,25 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+Depth-range, line-width, polygon-offset and sample-coverage setters now follow
+the unrestricted float calls in
+`WebGLRenderingContextImpl.cpp:645-649,2227-2231,2284-2288,2300-2304`.
+The fabricated line-width early error, retained line/depth fields, CPU cache
+clamps and generic polygon/sample writes were removed. Floats pass directly
+to the native ABI without integer logging conversions; `depth_range` and its
+public bridge now use the source float type. The now-unused CPU clamp helper
+was removed. Seventeen native cases use independent identical driver baselines
+before direct and translated commands, covering fractional and invalid sizes,
+reversed depth endpoints, NaN and both infinities, native clamp/state/error
+results, two owners and native-before-source error priority. Public non-finite
+oracles and throwing numeric conversions retain source ordering, and sample
+coverage's boolean argument does not invoke an author numeric hook. The initial
+line-width owner failure remains in
+`source-raster-float-reproduction-gc-none.log`. All three typed
+new/rendering/state files passed in `source-raster-float-gc-none.log`; both
+public new/host files passed in `source-raster-float-public-gc-none.log`.
+These focused checks supplement the unchanged frozen 101/70 sweep.
+
 Cull-face, depth-function, front-face and hint setters now follow the plain GL
 calls in `WebGLRenderingContextImpl.cpp:495-499,633-637,813-817,2107-2111`.
 Their invented CPU enum/extension gates and generic scalar-cache writes were
@@ -128,7 +147,10 @@ owner failure remains in `source-raster-enum-reproduction-gc-none.log`. All
 three typed new/rendering/state files passed in `source-raster-enum-gc-none.log`;
 both public new/extension files passed in
 `source-raster-enum-public-gc-none.log`. This focused slice follows the frozen
-101/70 sweep and adds no new driver-validation algorithm.
+101/70 sweep and adds no new driver-validation algorithm. A subsequent focused
+fixture improvement resets both direct and translated enum commands to
+independent identical driver baselines; the strengthened file passed in
+`source-raster-enum-baseline-final-gc-none.log`.
 
 The clear-color/depth/stencil and color/depth-mask setters now contain the
 source GL calls without five invented retained scalar fields, CPU cache clamps
