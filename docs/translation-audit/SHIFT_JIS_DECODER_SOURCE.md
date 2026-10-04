@@ -319,3 +319,60 @@ bridge and direct TextDecoder caller remain subsequent features. The preceding
 cover this implementation. Raw logical output does not claim Source SIMD
 trailing garbage, Rust Vec allocator/OOM or public native owner parity. No
 LibJS code or native browser bundle changes.
+
+## Same streaming owner's UTF16 lifecycle and genuine owning u16 bridge
+
+Feature `a5308f3c96cc9ce99e6dc0c8e650c55c15d53c2d` adds the selected direct
+UTF16 outer operation to the existing Shift_JIS streaming owner. Both
+UTF8/UTF16 methods consume the same real normalized lead and Converting /
+Finished lifecycle. Source's shared `public_decode_function!` calls the variant
+then finishes only on last/InputEmpty (`macros.rs:1311–1312,1616–1630`). The
+UTF16 maximum query delegates directly to that variant for Converting and
+keeps the Source Finished panic. No independent decoder lifetime or conversion
+of intermediate UTF8 output is introduced.
+
+The replacement loop translates `encoding_rs lib.rs:4357–4400`: aggregate
+actual remaining-owner offsets, append one U+FFFD after malformed, and retain
+actual returned counters/error flag. A genuine held lead at EOF can produce
+malformed with zero output space; the explicit production guard retains the
+Source's indexing panic after the lead is cleared. Raw failures do not finish
+the owner. The genuine Source Rust u16 bridge (`LibTextCodec/Rust/src/lib.rs`
+streaming decode_to_utf16 body) queries its actual maximum, initializes a u16
+Vec, chooses fatal/raw or replacement decoding, calls back only for reported
+nonempty units and returns the success flag. V preserves these logical units
+and failed partial callbacks internally until the caller checks that flag.
+
+Tool `cc3a6047` includes the original Source bridge verbatim after validating
+Source pin/archive/configuration and preceding UTF8 probes. Debug/release
+produce identical 1,704 UTF16 sequences / 5,112 calls with capacities 0–4,
+both actual BOM constructors, all cuts of 21 inputs, raw/replacement/owning
+modes and eight failed nonempty u16 callbacks. Four direct native fatal
+witnesses cover the zero-unit replacement and Finished query/decode boundaries.
+The same tool creates 568 genuine Box-backed original FFI owners with
+alternating UTF8/UTF16 calls: 1,704 calls and 16 failed nonempty callbacks.
+Actual normalized lead, lifecycle, maximum capacity and callback absence are
+observed after each operation; no decoder body is modified in Source/cache.
+
+Default, GC-none and production GC-none each pass the feature's 1/1 focused
+check in `source-shift-jis-streaming-utf16-focused-*.log`. All returned raw
+counters and owned units match native records exactly. Raw replacement calls
+also execute with nonzero offsets on original input/output owners. Mixed
+actual destination calls retain one lead/lifecycle, and compiled children
+preserve zero-output and Finished fatal boundaries under production.
+
+- `shift_jis_streaming_utf16_sequences.json` SHA256:
+  `8568ca2abd085b1340cb3b94c1494db9b389bb5aa9511064431d1e80fabda2d5`.
+- `shift_jis_streaming_utf16_fatal.json`:
+  `a5aa0f1926eaeaee9e0a03d1796d18cdd84b52ca5f02a84d64fb62e37c028ee8`.
+- `shift_jis_mixed_owned_destinations.json`:
+  `361eb074f5382e27746afd884708698e797f6e4d25cb298ef8782ace3d37be21`.
+- Final actual native probe log:
+  `3e1ee8c5afa8da72fdd80ce92b9f2aa960dc09fa4bcba187f195e738ffe35379`.
+
+The V u16 array is a logical lowering of Source Vec/FFI ownership; its signed
+int allocation capacity limit is explicit after the Source usize query.
+Physical allocation/OOM, original Rust Box/C ABI and native public TextDecoder
+holder remain boundaries. The direct TextDecoder caller is the next feature;
+Common/Stream retain their actual UTF8 destination. No LibJS implementation or
+native browser bundle changes, and the preceding 29-file frozen sweep remains
+scoped to its earlier snapshot.
