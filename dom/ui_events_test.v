@@ -451,7 +451,7 @@ fn test_inline_event_handler_source_uses_on_prefixed_function_name() {
 	document.browsing_context = &BrowsingContext{}
 	mut element := document.create_element('button')!
 	event_target := unsafe { &EventTarget(element.as_node()) }
-	event_target.element_event_handler_attribute_changed('click', 'return 42;')
+	event_target.element_event_handler_attribute_changed('onclick', 'return 42;')
 
 	assert inline_event_handler_function_source(event_target, 'click', 'return 42;') == 'function onclick(event) {\nreturn 42;\n}'
 	// A DOM-only document has no actual engine compiler and keeps the raw body.

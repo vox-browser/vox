@@ -57,10 +57,6 @@ pub fn html_element_attribute_changed(element &dom.HTMLElement, name string, old
 	if name == 'inert' {
 		mutable_element.set_subtree_inertness(value != none)
 	}
-	if namespace_ == none && name.starts_with('on') && name.len > 2 && name in html_attribute_names() {
-		event_target := unsafe { &dom.EventTarget(dom_element.as_node()) }
-		event_target.element_event_handler_attribute_changed(name[2..], value)
-	}
 	if namespace_ == none && name == 'popover' && mutable_element.popover_visibility_state() == .showing && !popover_optional_string_equal(html_element_popover_value_to_state(old_value), html_element_popover_value_to_state(value)) {
 		html_element_hide_popover(element, .yes, .yes, .no, .yes, none) or {}
 	}

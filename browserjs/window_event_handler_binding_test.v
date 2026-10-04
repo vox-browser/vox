@@ -68,7 +68,7 @@ fn test_public_window_raw_getter_compiles_lazily_in_actual_global_and_preserves_
 	mut runtime, mut owner, target, _ := public_window_handler_fixture()!
 	defer { runtime.close() }
 	runtime.evaluate_host('globalThis.rawEntries=[];')!
-	target.element_event_handler_attribute_changed('load', 'rawEntries.push(this===window&&onload===window.onload&&event.target===actualWindowDocument);return false;')
+	target.element_event_handler_attribute_changed('onload', 'rawEntries.push(this===window&&onload===window.onload&&event.target===actualWindowDocument);return false;')
 	owner.set_is_scripting_enabled(false)
 	assert runtime.evaluate_host('window.onload===null')! == 'true'
 	assert target.data.event_handler_map['load'].value.kind == .string
@@ -76,7 +76,7 @@ fn test_public_window_raw_getter_compiles_lazily_in_actual_global_and_preserves_
 	assert runtime.evaluate_host('typeof window.onload==="function"&&window.onload.name==="onload"&&window.onload.length===1&&window.onload===window.onload')! == 'true'
 	assert !target.dispatch_event(dom.Event.create('load', dom.EventInit{ cancelable: true }))
 	assert runtime.evaluate_host('rawEntries.length===1&&rawEntries[0]')! == 'true'
-	target.element_event_handler_attribute_changed('load', 'let broken;let broken;')
+	target.element_event_handler_attribute_changed('onload', 'let broken;let broken;')
 	assert runtime.evaluate_host('window.onload===null')! == 'true'
 	assert target.data.event_handler_map['load'].value.kind == .null_
 	assert target.event_listener_list().len == 1

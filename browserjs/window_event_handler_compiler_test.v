@@ -32,7 +32,7 @@ fn test_raw_window_handler_compiles_lazily_to_actual_global_function_and_same_ca
 	defer { runtime.close() }
 	runtime.evaluate_host('globalThis.rawCount=0;globalThis.onload=123;')!
 	body := 'globalThis.rawCount++;globalThis.rawValid=this===__rawWindow()&&event===__rawExpectedEvent()&&__rawContext();globalThis.rawNameBinding=onload;return false;'
-	target.element_event_handler_attribute_changed('load', body)
+	target.element_event_handler_attribute_changed('onload', body)
 	checkpoint_count := settings.realm().microtask_checkpoint_count
 	assert runtime.libjs_vm().execution_context_stack().len == 0
 	callback := target.get_current_value_of_event_handler('load') or { panic('actual raw compilation') }
@@ -62,7 +62,7 @@ fn test_raw_window_syntax_and_early_errors_null_only_value_without_reporting_or_
 	mut runtime, settings, _, target := raw_window_handler_fixture()
 	defer { runtime.close() }
 	for body in ['return (', '"use strict";let event;'] {
-		target.element_event_handler_attribute_changed('load', body)
+		target.element_event_handler_attribute_changed('onload', body)
 		handler := target.data.event_handler_map['load'] or { panic('handler') }
 		listener := handler.listener or { panic('listener') }
 		checkpoint_count := settings.realm().microtask_checkpoint_count
@@ -74,7 +74,7 @@ fn test_raw_window_syntax_and_early_errors_null_only_value_without_reporting_or_
 		assert settings.realm().reported_exceptions.len == 0
 		assert settings.realm().microtask_checkpoint_count == checkpoint_count
 		assert runtime.libjs_vm().execution_context_stack().len == 0
-		target.element_event_handler_attribute_changed('load', 'return false;')
+		target.element_event_handler_attribute_changed('onload', 'return false;')
 		assert target.get_current_value_of_event_handler('load') != none
 		assert voidptr(handler.listener or { panic('listener') }) == voidptr(listener)
 	}
@@ -86,7 +86,7 @@ fn test_raw_window_script_gate_and_unsupported_element_preserve_raw_source() {
 	}
 	mut runtime, settings, document, target := raw_window_handler_fixture()
 	defer { runtime.close() }
-	target.element_event_handler_attribute_changed('load', 'return false;')
+	target.element_event_handler_attribute_changed('onload', 'return false;')
 	handler := target.data.event_handler_map['load'] or { panic('handler') }
 	mut realm := unsafe { &html.ScriptingRealm(settings.realm()) }
 	realm.scripting_enabled = false
@@ -96,7 +96,7 @@ fn test_raw_window_script_gate_and_unsupported_element_preserve_raw_source() {
 	assert target.get_current_value_of_event_handler('load') != none
 	element := document.create_element('button')!
 	element_target := unsafe { &dom.EventTarget(element) }
-	element_target.element_event_handler_attribute_changed('click', 'return false;')
+	element_target.element_event_handler_attribute_changed('onclick', 'return false;')
 	assert element_target.get_current_value_of_event_handler('click') == none
 	assert (element_target.data.event_handler_map['click'] or { panic('element handler') }).value.kind == .string
 }
@@ -108,7 +108,7 @@ fn test_raw_window_error_handler_uses_source_five_arguments_and_original_reason(
 	mut runtime, _, _, target := raw_window_handler_fixture()
 	defer { runtime.close() }
 	runtime.evaluate_host('globalThis.rawReason={identity:true};')!
-	target.element_event_handler_attribute_changed('error', 'globalThis.rawErrorValid=arguments.length===5&&event==="failure"&&source==="owner.js"&&lineno===17&&colno===23&&error===rawReason&&this===__rawWindow()&&__rawContext();return true;')
+	target.element_event_handler_attribute_changed('onerror', 'globalThis.rawErrorValid=arguments.length===5&&event==="failure"&&source==="owner.js"&&lineno===17&&colno===23&&error===rawReason&&this===__rawWindow()&&__rawContext();return true;')
 	callback := target.get_current_value_of_event_handler('error') or { panic('onerror') }
 	assert callback.compiled_source_text_.starts_with('function onerror(event, source, lineno, colno, error)')
 	event := dom.ErrorEvent.create('error', dom.ErrorEventInit{
@@ -131,7 +131,7 @@ fn test_raw_body_handler_csp_precedes_window_value_replacement_and_syntax_compil
 	defer { runtime.close() }
 	body := document.body() or { panic('body') }
 	body_target := unsafe { &dom.EventTarget(body) }
-	body_target.element_event_handler_attribute_changed('load', 'return false;')
+	body_target.element_event_handler_attribute_changed('onload', 'return false;')
 	callback := target.get_current_value_of_event_handler('load') or { panic('Window-reflecting handler') }
 	assert voidptr(body_target.event_handler_attribute('load') or { panic('body handler') }) == voidptr(callback)
 	document.set_csp_hook(dom.DocumentCSPHook{
@@ -140,12 +140,12 @@ fn test_raw_body_handler_csp_precedes_window_value_replacement_and_syntax_compil
 			return true
 		}
 	})
-	body_target.element_event_handler_attribute_changed('load', 'return (')
+	body_target.element_event_handler_attribute_changed('onload', 'return (')
 	assert voidptr(target.get_current_value_of_event_handler('load') or { panic('existing callback') }) == voidptr(callback)
 	document.set_csp_hook(dom.DocumentCSPHook{
 		inline_check: fn (_ voidptr, _ &dom.Element, _ string, _ string) bool { return false }
 	})
-	body_target.element_event_handler_attribute_changed('load', 'return (')
+	body_target.element_event_handler_attribute_changed('onload', 'return (')
 	assert target.get_current_value_of_event_handler('load') == none
 	assert (target.data.event_handler_map['load'] or { panic('handler') }).value.kind == .null_
 }
@@ -157,12 +157,12 @@ fn test_raw_window_exceptions_use_original_activation_owner_and_beforeunload_con
 	mut runtime, settings, _, target := raw_window_handler_fixture()
 	defer { runtime.close() }
 	runtime.evaluate_host('globalThis.rawThrown={identity:true};')!
-	target.element_event_handler_attribute_changed('load', 'throw globalThis.rawThrown;')
+	target.element_event_handler_attribute_changed('onload', 'throw globalThis.rawThrown;')
 	assert target.dispatch_event(dom.Event.create('load', dom.EventInit{}))
 	assert settings.realm().reported_exceptions.len == 1
 	reported := settings.realm().reported_exceptions[0].value.as_webidl_value()!
 	assert runtime.actual_webidl_value(reported)! == runtime.evaluate_host_value('rawThrown')!
-	target.element_event_handler_attribute_changed('beforeunload', 'return {toString(){throw globalThis.rawThrown}};')
+	target.element_event_handler_attribute_changed('onbeforeunload', 'return {toString(){throw globalThis.rawThrown}};')
 	event := dom.BeforeUnloadEvent.create('beforeunload', dom.EventInit{ cancelable: true })
 	assert !target.dispatch_event(unsafe { &dom.Event(event) })
 	assert event.return_value() == ''

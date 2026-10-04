@@ -492,32 +492,6 @@ pub fn html_body_presentational_hints(attributes map[string]string, inherited_fr
 	return hints
 }
 
-fn window_event_name_for_attribute(attribute_name string) ?string {
-	return match attribute_name {
-		'onafterprint' { 'afterprint' }
-		'onbeforeprint' { 'beforeprint' }
-		'onbeforeunload' { 'beforeunload' }
-		'ongamepadconnected' { 'gamepadconnected' }
-		'ongamepaddisconnected' { 'gamepaddisconnected' }
-		'onhashchange' { 'hashchange' }
-		'onlanguagechange' { 'languagechange' }
-		'onmessage' { 'message' }
-		'onmessageerror' { 'messageerror' }
-		'onoffline' { 'offline' }
-		'ononline' { 'online' }
-		'onpagehide' { 'pagehide' }
-		'onpagereveal' { 'pagereveal' }
-		'onpageshow' { 'pageshow' }
-		'onpageswap' { 'pageswap' }
-		'onpopstate' { 'popstate' }
-		'onrejectionhandled' { 'rejectionhandled' }
-		'onstorage' { 'storage' }
-		'onunhandledrejection' { 'unhandledrejection' }
-		'onunload' { 'unload' }
-		else { none }
-	}
-}
-
 pub fn html_body_element_attribute_changed(body &dom.HTMLBodyElement, name string, old_value ?string, value ?string, namespace_ ?string) {
 	mut element := unsafe { &dom.Element(body) }
 	element.attribute_changed(name, old_value, value, namespace_)
@@ -536,10 +510,6 @@ pub fn html_body_element_attribute_changed(body &dom.HTMLBodyElement, name strin
 	} else if name == 'background' {
 		mut mutable_body := unsafe { &dom.HTMLBodyElement(body) }
 		mutable_body.background_url_ = document.encoding_parse_url(value or { '' })
-	}
-	if event_name := window_event_name_for_attribute(name) {
-		event_target := unsafe { &dom.EventTarget(element.as_node()) }
-		event_target.element_event_handler_attribute_changed(event_name, value)
 	}
 }
 

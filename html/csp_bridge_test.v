@@ -24,13 +24,13 @@ fn test_dom_inline_style_and_event_handler_call_sites_use_csp_hook() {
 	assert style_base.sheet() == unsafe { nil }
 
 	event_target := unsafe { &dom.EventTarget(button.as_node()) }
-	event_target.element_event_handler_attribute_changed('click', 'alert(1)')
+	event_target.element_event_handler_attribute_changed('onclick', 'alert(1)')
 	assert !event_target.has_event_listener('click')
 
 	allowed_document := parse_document('<!doctype html><button id="allowed"></button>')
 	allowed_button := allowed_document.get_element_by_id('allowed') or { panic('missing allowed button') }
 	allowed_target := unsafe { &dom.EventTarget(allowed_button.as_node()) }
-	allowed_target.element_event_handler_attribute_changed('click', 'alert(1)')
+	allowed_target.element_event_handler_attribute_changed('onclick', 'alert(1)')
 	assert allowed_target.has_event_listener('click')
 }
 

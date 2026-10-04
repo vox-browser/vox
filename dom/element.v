@@ -5528,6 +5528,15 @@ pub fn (e &Element) is_connected() bool {
 
 // https://dom.spec.whatwg.org/#concept-element-attributes-change-ext
 pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, value ?string, namespace_ ?string) {
+	// HTMLElement's base hook and body/frameset WindowEventHandlers run after
+	// Element's attribute steps, including the pinned source namespace FIXME.
+	defer {
+		if e.is_html_element() && (is_global_event_handler_content_attribute(local_name)
+			|| (e.local_name() in ['body', 'frameset']
+				&& is_window_event_handler_content_attribute(local_name))) {
+			unsafe { &EventTarget(&e) }.element_event_handler_attribute_changed(local_name, value)
+		}
+	}
 	// HTMLStyleElement::attribute_changed() and SVGStyleElement::attribute_changed() run
 	// style_element_attribute_changed() after the base Element steps.
 	defer {

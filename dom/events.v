@@ -1452,13 +1452,15 @@ fn should_inline_script_attribute_be_blocked_by_content_security_policy(element 
 pub fn (et &EventTarget) element_event_handler_attribute_changed(local_name string, value ?string) {
 	// NOTE: Step 1 of this algorithm was handled in HTMLElement::attribute_changed.
 
+	event_name := event_name_from_event_handler_attribute_local_name(local_name) or { return }
+
 	// 2. Let eventTarget be the result of determining the target of an event handler given element and localName.
-	event_target := determine_target_of_event_handler(et, local_name) or { return }
+	event_target := determine_target_of_event_handler(et, event_name) or { return }
 
 	// 3. If eventTarget is null, then return.
 	// 4. If value is null, then deactivate an event handler given eventTarget and localName.
 	if value == none {
-		event_target.deactivate_event_handler(local_name)
+		event_target.deactivate_event_handler(event_name)
 		return
 	}
 
@@ -1481,16 +1483,16 @@ pub fn (et &EventTarget) element_event_handler_attribute_changed(local_name stri
 	//  5. Set eventHandler's value to the internal raw uncompiled handler value/location.
 	//  6. Activate an event handler given eventTarget and name.
 	mut target := unsafe { &EventTarget(event_target) }
-	if mut handler := target.data.event_handler_map[local_name] {
+	if mut handler := target.data.event_handler_map[event_name] {
 		handler.value = js_string(script_attribute)
-		event_target.activate_event_handler(local_name, handler)
+		event_target.activate_event_handler(event_name, handler)
 		return
 	}
 	handler := &EventHandler_{
 		value: js_string(script_attribute)
 	}
-	event_target.activate_event_handler(local_name, handler)
-	target.data.event_handler_map[local_name] = handler
+	event_target.activate_event_handler(event_name, handler)
+	target.data.event_handler_map[event_name] = handler
 }
 
 // document.v already defines EventTarget.dispatch_event(event &Event) bool. This helper carries the translated EventTarget.cpp dispatch body

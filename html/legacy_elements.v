@@ -499,15 +499,9 @@ pub fn html_frame_element_model_for_testing(frame &dom.HTMLFrameElement) &HTMLFr
 }
 
 pub fn html_frame_set_element_attribute_changed(frameset &dom.HTMLFrameSetElement, name string, old_value ?string, value ?string, namespace_ ?string) {
+	// DOM's tag dispatch runs the base global and frameset Window handler hooks.
 	mut element := unsafe { &dom.Element(frameset) }
 	element.attribute_changed(name, old_value, value, namespace_)
-	if namespace_ != none {
-		return
-	}
-	if event_name := window_event_name_for_attribute(name) {
-		event_target := unsafe { &dom.EventTarget(element.as_node()) }
-		event_target.element_event_handler_attribute_changed(event_name, value)
-	}
 }
 
 pub fn html_frame_set_element_global_event_handlers_to_event_target(frameset &dom.HTMLFrameSetElement, event_name string) ?&dom.EventTarget {
