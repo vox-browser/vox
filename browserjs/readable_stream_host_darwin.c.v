@@ -34,6 +34,7 @@ pub fn (mut host ReadableStreamHost) install(mut runtime Runtime) ! {
 		return error('ReadableStream binding already belongs to this runtime')
 	}
 	host.runtime = &runtime
+	host.read_loop_byte_copy = runtime.evaluate_host_value(read_loop_byte_copy_intrinsic)!
 	host_handle := voidptr(&host)
 	create := runtime.make_value_host_function(fn [host_handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &ReadableStreamHost(host_handle) }
@@ -166,7 +167,7 @@ fn (mut host ReadableStreamHost) construct(args []voidptr) !voidptr {
 			type_: type_
 		}
 	}
-	stream := host.settings.create_readable_stream(source, strategy)!
+	stream := streams.ReadableStream.create_for_constructor(host.read_loop_realm(), source, strategy)!
 	return host.wrap_with_prototype(.stream, voidptr(stream), host.argument(args, 2))
 }
 

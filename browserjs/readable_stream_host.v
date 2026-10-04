@@ -33,6 +33,7 @@ mut:
 	runtime &Runtime = unsafe { nil }
 	records map[voidptr]&ReadableStreamHostRecord
 	prototypes map[ReadableStreamHostKind]voidptr
+	read_loop_byte_copy voidptr
 	closed bool
 }
 
