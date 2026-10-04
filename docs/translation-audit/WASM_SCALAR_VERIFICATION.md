@@ -1,6 +1,39 @@
 # Frozen scalar WebAssembly verification
 
-## Latest frozen exception-unwind snapshot: 98 files
+## Latest frozen branch-helper snapshot: 99 files
+
+Detached canonical `b7e1b970429055e97046e221e182e93714549cb2`, in
+`Build/audit-fixes/worktrees/root-wasm99-final`, passes **99/99 files in each
+GC mode**, default in 645.3s and GC-none in 630.2s. Commands are
+`/Users/alex/code/v/v -old-compiler -enable-globals test webassembly` and the
+same with `-gc none`, each with `VJOBS=2`; both exit 0.
+
+All 4,528 tracked path/content entries, HEAD and clean tracked status remain
+identical before/after. Its 215 non-Markdown Wasm files and 490 non-Markdown
+LibJS files match canonical at recording. This includes the complete Source
+branch-to-label helper and prior throw-handler/cache/memory slices. Other
+dependencies are the files of this exact snapshot; subsequent changes remain
+outside the frozen whole-checkout proof.
+
+Artifacts under that snapshot's `Build/audit-fixes/` are:
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `source-branch-to-label-wasm99-manifest.json` | `37be3fe3fdbdd1d9cec28a43589fb8ee0c80b0881c3de5e7adea6f399dba3d7c` |
+| Whole sorted tracked path/content manifest | `7394fe9b22ee7b90116140220b1ad1a71bf11c62a3b0cb8c79b5a02b608660e2` |
+| WebAssembly package manifest | `9adf12039ae6d2a6736f5c01aaf9b5586cb1ebd0aed7d3533e804930d6a7aa4e` |
+| LibJS package manifest | `d55fd6a720b1bc274039393b94776fb27f7e946d61d51adfb0ce0c229bfef4c9` |
+| `source-branch-to-label-wasm99-default.log` | `9b38ac98ffc3f77702e6ba8f24bdd4564864fdc60c1a283061c23d791fec1435` |
+| `source-branch-to-label-wasm99-gc-none.log` | `3552c58c6bf15b2015dda90821c04ecdde29dddd3624acc4a52dfc6ae1c8ff98` |
+
+The initial copied runner stopped at its previous snapshot's HEAD guard before
+any tests. That diagnostic remains `source-branch-to-label-wasm99-original-head-guard.log`;
+the corrected exact-HEAD runner produced this complete clean proof. Upstream
+remained `963d46a829f3e1b79f44dba9d02afb70654300fa`. Actual opcode/compiled
+execution, cross-frame re-dispatch, full instantiation and collector/realm
+ownership remain unfinished.
+
+## Historical frozen exception-unwind snapshot: 98 files
 
 Detached canonical snapshot `221fe60c3b1f6220a23488774f8a0626c3d9d3ad`, in
 `Build/audit-fixes/worktrees/root-wasm98-final`, passes **98/98 test files in

@@ -816,3 +816,10 @@ focused cases pass privately; canonical branch/exception/frame owners pass
 retains untaken/zero-arity/raw-value and actual owner evidence. Real branch
 opcode dispatch remains unfinished; this new 99th file is outside the older
 98-file immutable sweep.
+
+Frozen exact canonical `b7e1b970` now passes **99/99 files in both GC modes**
+(645.3s default /630.2s GC-none), with all 4,528 tracked contents unchanged.
+Its 215 Wasm and 490 LibJS non-Markdown files match canonical at recording.
+[Exact proof](../docs/translation-audit/WASM_SCALAR_VERIFICATION.md) records
+source revision, manifests, log hashes and later-change scope; no opcode or
+complete runtime parity follows.
