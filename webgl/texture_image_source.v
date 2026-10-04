@@ -98,9 +98,7 @@ pub fn (mut context WebGLRenderingContext) tex_image2d_source(target GLenum, lev
 	}
 	frame := context.read_texture_image_source(source, format, type_) or { return }
 	converted := convert_bitmap_for_upload(frame, format, type_, destination_size)!
-	if !context.command('tex_image2d_from_bitmap', target, level, internal_format, converted.width, converted.height, format, type_) {
-		return
-	}
+	context.command('tex_image2d_from_bitmap', target, level, internal_format, converted.width, converted.height, format, type_)
 	C.vox_gl_tex_image2d(target, level, internal_format, converted.width, converted.height, 0, format, type_, converted.pixels.len, converted.pixels.data)
 	context.native.collect_native_error()
 }
@@ -109,9 +107,7 @@ pub fn (mut context WebGLRenderingContext) tex_sub_image2d_source(target GLenum,
 	context.native.make_current()
 	frame := context.read_texture_image_source(source, format, type_) or { return }
 	converted := convert_bitmap_for_upload(frame, format, type_, destination_size)!
-	if !context.command('tex_sub_image2d_from_bitmap', target, level, x_offset, y_offset, converted.width, converted.height, format, type_) {
-		return
-	}
+	context.command('tex_sub_image2d_from_bitmap', target, level, x_offset, y_offset, converted.width, converted.height, format, type_)
 	C.vox_gl_tex_sub_image2d(target, level, x_offset, y_offset, converted.width, converted.height, format, type_, converted.pixels.len, converted.pixels.data)
 	context.native.collect_native_error()
 }
@@ -125,9 +121,7 @@ pub fn (mut context WebGLRenderingContext) tex_image3d_source(target GLenum, lev
 	}
 	frame := context.read_texture_image_source(source, format, type_) or { return }
 	converted := convert_bitmap_for_upload(frame, format, type_, destination_size)!
-	if !context.command('tex_image3d_from_bitmap', target, level, internal_format, converted.width, converted.height, depth, format, type_) {
-		return
-	}
+	context.command('tex_image3d_from_bitmap', target, level, internal_format, converted.width, converted.height, depth, format, type_)
 	C.vox_gl_tex_image3d(target, level, internal_format, converted.width, converted.height, depth, 0, format, type_, converted.pixels.len, converted.pixels.data)
 	context.native.collect_native_error()
 }
@@ -137,9 +131,7 @@ pub fn (mut context WebGLRenderingContext) tex_sub_image3d_source(target GLenum,
 	if !context.require_webgl2() { return }
 	frame := context.read_texture_image_source(source, format, type_) or { return }
 	converted := convert_bitmap_for_upload(frame, format, type_, destination_size)!
-	if !context.command('tex_sub_image3d_from_bitmap', target, level, x_offset, y_offset, z_offset, converted.width, converted.height, depth, format, type_) {
-		return
-	}
+	context.command('tex_sub_image3d_from_bitmap', target, level, x_offset, y_offset, z_offset, converted.width, converted.height, depth, format, type_)
 	C.vox_gl_tex_sub_image3d(target, level, x_offset, y_offset, z_offset, converted.width, converted.height, depth, format, type_, converted.pixels.len, converted.pixels.data)
 	context.native.collect_native_error()
 }
