@@ -807,3 +807,12 @@ files match canonical at recording. This includes the current-frame unwind
 helper and preserves the unfinished execution/instantiation/collector scope
 above. [Complete proof](../docs/translation-audit/WASM_SCALAR_VERIFICATION.md)
 records immutable manifests, exact commands, log hashes and later-change scope.
+
+The complete Source `branch_to_label<NeedsStackAdjustment>` helper now
+translates actual label trimming, selected-branch stack arity and u32
+continuation-minus-one behavior (`c8219046`). Default and production GC-none
+focused cases pass privately; canonical branch/exception/frame owners pass
+**3/3 GC-none**. [Mapping](../docs/translation-audit/WASM_BRANCH_TO_LABEL_SOURCE.md)
+retains untaken/zero-arity/raw-value and actual owner evidence. Real branch
+opcode dispatch remains unfinished; this new 99th file is outside the older
+98-file immutable sweep.

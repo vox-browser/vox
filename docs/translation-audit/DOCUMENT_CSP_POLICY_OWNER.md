@@ -59,7 +59,8 @@ This is the single-owner projection prerequisite, not complete native policy
 container translation. `dom.Document.policy_container()` remains a placeholder;
 initialization obtains the available actual settings projection at that
 boundary. HTML still stores serialized policy records and materializes CSP
-engine lists for consumers, and its existing opaque-origin conversion does not
-retain nonce identity. Inline violation reporting/global context fields and
+engine lists for consumers. The subsequent [Source origin-copy correction](CSP_ORIGIN_COPY_SOURCE.md)
+retains actual opaque nonce/file identity and explicit tuple fields without URL
+reparsing. Inline violation reporting/global context fields and
 the existing initialization directive representation remain open. Concrete
 Meta insertion into that actual container is a separate feature.
