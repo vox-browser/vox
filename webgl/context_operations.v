@@ -444,10 +444,10 @@ pub fn (mut context WebGLRenderingContext) delete_framebuffer(object ?&WebGLFram
 		if !handle_result.has_value {
 			return
 		}
-		handle := handle_result.value
+		handle := value.object.bookkeeping_id()
 		context.framebuffers.delete(handle)
 		context.command('delete_framebuffer', handle)
-		C.vox_gl_delete_object(1, value.object.native_handle_)
+		C.vox_gl_delete_object(1, handle_result.value)
 		context.native.collect_native_error()
 		if bound := context.bound_framebuffer_object {
 			if bound == value {
@@ -469,10 +469,10 @@ pub fn (mut context WebGLRenderingContext) delete_renderbuffer(object ?&WebGLRen
 		if !handle_result.has_value {
 			return
 		}
-		handle := handle_result.value
+		handle := value.object.bookkeeping_id()
 		context.renderbuffers.delete(handle)
 		context.command('delete_renderbuffer', handle)
-		C.vox_gl_delete_object(2, value.object.native_handle_)
+		C.vox_gl_delete_object(2, handle_result.value)
 		context.native.collect_native_error()
 	}
 }
@@ -488,10 +488,10 @@ pub fn (mut context WebGLRenderingContext) delete_texture(object ?&WebGLTexture)
 		if !handle_result.has_value {
 			return
 		}
-		handle := handle_result.value
+		handle := value.object.bookkeeping_id()
 		context.textures.delete(handle)
 		context.command('delete_texture', handle)
-		C.vox_gl_delete_object(3, value.object.native_handle_)
+		C.vox_gl_delete_object(3, handle_result.value)
 		context.native.collect_native_error()
 		for target, bound in context.bound_texture_objects {
 			if bound == value {
@@ -513,9 +513,9 @@ pub fn (mut context WebGLRenderingContext) delete_shader(object ?&WebGLShader) {
 		if !handle_result.has_value {
 			return
 		}
-		handle := handle_result.value
+		handle := value.object.bookkeeping_id()
 		context.shaders.delete(handle)
-		C.vox_gl_delete_shader(value.object.native_handle_)
+		C.vox_gl_delete_shader(handle_result.value)
 		context.native.collect_native_error()
 		context.command('delete_shader', handle)
 	}
@@ -532,9 +532,9 @@ pub fn (mut context WebGLRenderingContext) delete_program(object ?&WebGLProgram)
 		if !handle_result.has_value {
 			return
 		}
-		handle := handle_result.value
+		handle := value.object.bookkeeping_id()
 		context.programs.delete(handle)
-		C.vox_gl_delete_program(value.object.native_handle_)
+		C.vox_gl_delete_program(handle_result.value)
 		context.native.collect_native_error()
 		if current := context.current_program {
 			if current == value {

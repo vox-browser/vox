@@ -506,10 +506,10 @@ pub fn (mut context WebGLRenderingContext) delete_buffer(buffer ?&WebGLBuffer) {
 		if !handle_result.has_value {
 			return
 		}
-		handle := handle_result.value
+		handle := value.object.bookkeeping_id()
 		context.buffers.delete(handle)
 		context.native.dispatch('delete_buffer', handle)
-		C.vox_gl_delete_object(0, value.object.native_handle_)
+		C.vox_gl_delete_object(0, handle_result.value)
 		context.native.collect_native_error()
 	}
 }

@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // Translation of WebGLObject and all WebGL resource wrapper implementation
-// units. Context identity checks substitute for native handle ownership checks.
+// units. native_handle_ is the source GLuint m_handle; handle_ is a distinct
+// compact-adapter bookkeeping ID. Context identity adapts the source GC owner.
 module webgl
 
 @[heap]
@@ -47,7 +48,7 @@ pub fn (object &WebGLObject) handle(context_id u64, context_generation u64) !GLu
 	if object.invalidated_for_context(context_generation) {
 		return error('GL_INVALID_OPERATION')
 	}
-	return object.handle_
+	return object.native_handle_
 }
 
 pub fn (mut object WebGLObject) handle_for_deletion(context_id u64, context_generation u64) !WebGLOptionalHandle {
@@ -58,7 +59,7 @@ pub fn (mut object WebGLObject) handle_for_deletion(context_id u64, context_gene
 	object.invalidated_ = true
 	return WebGLOptionalHandle{
 		has_value: true
-		value: object.handle_
+		value: object.native_handle_
 	}
 }
 
@@ -69,8 +70,13 @@ pub fn (object &WebGLObject) handle_for_query(context_id u64, context_generation
 	}
 	return WebGLOptionalHandle{
 		has_value: true
-		value: object.handle_
+		value: object.native_handle_
 	}
+}
+
+// Compact-host lookup IDs are separate from the source GLuint handle APIs.
+pub fn (object &WebGLObject) bookkeeping_id() GLuint {
+	return object.handle_
 }
 
 // The V translation uses context identity as its standalone relevant-global

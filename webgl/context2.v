@@ -123,10 +123,10 @@ pub fn (mut context WebGLRenderingContext) delete_query(mut query ?&WebGLQuery) 
 		if !handle_result.has_value {
 			return
 		}
-		handle := handle_result.value
+		handle := value.object.bookkeeping_id()
 		context.queries.delete(handle)
 		context.native.dispatch('delete_query', handle)
-		C.vox_gl_delete_object(4, value.object.native_handle_)
+		C.vox_gl_delete_object(4, handle_result.value)
 		context.native.collect_native_error()
 	}
 }
@@ -206,13 +206,13 @@ pub fn (mut context WebGLRenderingContext) delete_sampler(mut sampler ?&WebGLSam
 		if !handle_result.has_value {
 			return
 		}
-		handle := handle_result.value
+		handle := value.object.bookkeeping_id()
 		context.samplers.delete(handle)
 		for unit, bound in context.bound_samplers {
 			if bound == handle { context.bound_samplers.delete(unit) }
 		}
 		context.native.dispatch('delete_sampler', handle)
-		C.vox_gl_delete_object(5, value.object.native_handle_)
+		C.vox_gl_delete_object(5, handle_result.value)
 		context.native.collect_native_error()
 	}
 }
@@ -262,7 +262,7 @@ pub fn (mut context WebGLRenderingContext) delete_sync(mut sync ?&WebGLSync) {
 		if !handle_result.has_value {
 			return
 		}
-		handle := value.object.handle_
+		handle := value.object.bookkeeping_id()
 		context.syncs.delete(handle)
 		context.native.native_delete_sync(handle_result.value)
 		context.native.dispatch('delete_sync', handle)
@@ -370,10 +370,10 @@ pub fn (mut context WebGLRenderingContext) delete_vertex_array(mut array ?&WebGL
 		if !handle_result.has_value {
 			return
 		}
-		handle := handle_result.value
+		handle := value.object.bookkeeping_id()
 		context.vertex_arrays.delete(handle)
 		context.native.dispatch('delete_vertex_array', handle)
-		C.vox_gl_delete_object(6,value.object.native_handle_)
+		C.vox_gl_delete_object(6,handle_result.value)
 		context.native.collect_native_error()
 		if current := context.current_vertex_array {
 			if current == value {
@@ -440,10 +440,10 @@ pub fn (mut context WebGLRenderingContext) delete_vertex_array_oes(array ?&WebGL
 		if !handle_result.has_value {
 			return
 		}
-		handle := handle_result.value
+		handle := value.object.bookkeeping_id()
 		context.vertex_arrays_oes.delete(handle)
 		context.native.dispatch('delete_vertex_array_oes', handle)
-		C.vox_gl_delete_object(7,value.object.native_handle_)
+		C.vox_gl_delete_object(7,handle_result.value)
 		context.native.collect_native_error()
 		if current := context.current_vertex_array_oes {
 			if current == value {

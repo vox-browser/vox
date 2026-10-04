@@ -21,10 +21,14 @@ fn test_source_shader_creation_retains_owned_record_for_actual_native_zero() {
 			assert context.owns(&shader.object)
 			assert !shader.object.invalidated()
 			assert context.shaders[shader.object.handle_] == shader
-			logical_handle := shader.object.handle(context.identity(), context.context_generation()) or {
+			source_handle := shader.object.handle(context.identity(), context.context_generation()) or {
 				panic(err)
 			}
-			assert logical_handle == shader.object.handle_
+			assert source_handle == 0
+			assert shader.object.bookkeeping_id() > 0
+			query_handle := shader.object.handle_for_query(context.identity(), context.context_generation())!
+			assert query_handle.has_value
+			assert query_handle.value == 0
 			zero_shaders << shader
 		}
 		first_error := context.get_error()

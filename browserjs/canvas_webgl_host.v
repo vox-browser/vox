@@ -185,8 +185,8 @@ fn (mut host CanvasWebGLHost) register(context &webgl.WebGLRenderingContext, kin
 		// Wrapper identity follows the actual retained platform object, including
 		// invalidated objects that remain in the source's traced binding slots.
 		host.platform_objects[voidptr(value)] = handle
-		if logical := value.handle(context.identity(), context.context_generation()) {
-			host.logical_objects['${context.identity()}/${logical}'] = handle
+		if _ := value.handle(context.identity(), context.context_generation()) {
+			host.logical_objects['${context.identity()}/${value.bookkeeping_id()}'] = handle
 		}
 	}
 	return handle
@@ -200,7 +200,8 @@ fn (host &CanvasWebGLHost) resource_reply(handle string) json2.Any {
 }
 
 fn (host &CanvasWebGLHost) object_reply(context &webgl.WebGLRenderingContext, object &webgl.WebGLObject) json2.Any {
-	logical := object.handle(context.identity(), context.context_generation()) or { return json2.Any(json2.Null{}) }
+	object.handle(context.identity(), context.context_generation()) or { return json2.Any(json2.Null{}) }
+	logical := object.bookkeeping_id()
 	handle := host.logical_objects['${context.identity()}/${logical}'] or { return json2.Any(json2.Null{}) }
 	return host.resource_reply(handle)
 }
