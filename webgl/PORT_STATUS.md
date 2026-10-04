@@ -162,6 +162,34 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+getShaderParameter now invokes the exact Source ANGLE robust query.
+WebGLRenderingContextImpl.cpp:1877 initializes GLint result to 0, then calls
+get_shaderiv_robust_angle(shader,pname,1,nullptr,&result) before its pname switch.
+The native C bridge now forwards that exact one-element call through a separate
+robust helper. getShaderSource/getShaderInfoLog length queries retain regular
+get_shaderiv, matching their distinct Source bodies; no broad helper replacement
+changes those diagnostics. Actual native names remain separate from Source IDs.
+
+Focused native/public cases compare values and errors against direct actual
+glGetShaderivRobustANGLE calls with capacity 1 and a null length pointer. They
+cover Source number/boolean/null shapes, real compiler failure, unsupported
+Source/native names and native driver rejection after outside deletion of a
+shader whose Source record remains owned/live. Owner selection and driver-before-
+Source-fallback order remain intact, and no status cache supplies a result.
+Three typed files pass in
+`Build/audit-fixes/source-shader-parameter-robust-native-gc-none.log`; three
+public files pass in
+`Build/audit-fixes/source-shader-parameter-robust-public-gc-none.log`, including
+CPU-owner and existing parameter regressions. All use GC disabled and explicit
+private paths.
+
+The exact regular/robust proxy and compositor snippets are generated read-only
+into `Build/audit-fixes/source-shader-query-generated-boundary.txt` (SHA-256
+`864ec67312c6b7d0de9231d0db6dc4816e25092d2d3bd4a6015d0887709e73a5`).
+Lost shader sync suppression and the separately regular-versus-robust program
+getter helper remain independent Source repairs; this ABI feature adds no loss
+policy or full remote transport/map/GC/WrapperWorld claim.
+
 getShaderParameter now validates its Source handle before actual native sync
 owner selection. WebGLRenderingContextImpl.cpp:1864-1889 returns a nullable
 failure for foreign/deleted records before its native query. Its empty Source
@@ -183,10 +211,10 @@ files pass in
 the existing actual shader/program parameter tests. All use GC disabled and
 explicit private module paths.
 
-This is only the Source CPU-owner correction. The separately identified exact
-ANGLE robust query ABI (Source uses get_shaderiv_robust_angle with capacity 1,
-while the existing V helper uses regular shaderiv), lost-sync output suppression,
-program methods, full remote maps and GC/WrapperWorld remain separate scopes.
+This is only the Source CPU-owner correction. The exact ANGLE robust query ABI
+is corrected by the subsequent independent feature above; lost-sync output
+suppression, program methods, full remote maps and GC/WrapperWorld remain
+separate scopes.
 
 deleteShader now leaves actual native owner selection after Source nullable
 and optional-handle deletion gates. WebGLRenderingContextImpl.cpp:585-603
