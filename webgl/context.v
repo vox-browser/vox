@@ -567,11 +567,11 @@ pub fn (mut context WebGLRenderingContext) attach_shader(mut program WebGLProgra
 }
 
 pub fn (mut context WebGLRenderingContext) detach_shader(mut program WebGLProgram, shader &WebGLShader) {
-	context.native.make_current()
 	if !context.owns(&program.object) || !context.owns(&shader.object) {
 		context.set_error(invalid_operation)
 		return
 	}
+	context.native.make_current()
 	C.vox_gl_detach_shader(program.object.native_handle_, shader.object.native_handle_)
 	// The pinned source clears the typed retained slot after the driver call,
 	// including when GL rejects an owned shader that was never attached.
