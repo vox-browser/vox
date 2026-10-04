@@ -12,15 +12,7 @@ import dom
 pub fn parse_html_from_a_string(document &dom.Document, markup string) {
 	install_document_fragment_parsing_hook(document)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	old_base_url := document.base_url()
 	mutable_document.parse_html_from_a_string(markup)
-	// Parser-created elements currently enter through DOM's generic lifecycle
-	// hook. Complete HTMLBaseElement's insertion steps once tree construction
-	// has established tree order and the document URL is already final.
-	mutable_document.update_base_element()
-	if first_base := document.first_base_element_with_href_in_tree_order() {
-		html_base_element_set_the_frozen_base_url(first_base, old_base_url)
-	}
 	// Parser-created HTML elements currently enter the tree through DOM's base
 	// lifecycle hook. Refresh document metadata once tree construction has
 	// completed so an initial color-scheme meta element takes effect just as a
