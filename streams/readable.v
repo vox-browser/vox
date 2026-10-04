@@ -280,15 +280,17 @@ pub fn (mut stream ReadableStream) get_reader(options ReadableStreamGetReaderOpt
 
 pub fn (mut stream ReadableStream) enqueue(value Value) ! {
 	if stream.byte_stream_ {
-		if value.kind != .bytes {
-			return error('TypeError: A readable byte stream requires a byte chunk')
-		}
+		assert value.kind == .bytes, 'Source VERIFY: internal byte stream enqueue requires an ArrayBufferView'
 		mut controller := stream.byte_controller_
-		controller.enqueue(value.bytes_)!
+		// ReadableStream.cpp invokes the abstract operation directly. Public
+		// controller enqueue has an additional zero-byte rejection gate.
+		readable_byte_stream_controller_enqueue(mut controller, value)!
 		return
 	}
 	mut controller := stream.default_controller_
-	controller.enqueue(value)!
+	readable_stream_default_controller_enqueue(mut controller, value) or {
+		panic('Source MUST: internal default stream enqueue failed: ${err.msg()}')
+	}
 }
 
 pub fn (mut stream ReadableStream) pull_from_bytes(bytes []u8) ! {
