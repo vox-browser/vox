@@ -149,3 +149,73 @@ consumers remain separate. The observed public split-lead defect stays open
 until the real consumer is connected. Physical native storage/OOM, public
 holder/realm/wrapper/TransformStream ownership and other codecs remain scoped
 as above. No LibJS implementation or native browser bundle changed privately.
+
+## Actual selected UTF8 streaming owner and original owning bridge
+
+Feature `2d8143f49440dc92d728cf076b1e62b4b330092f` retains the real selected
+`VariantDecoder::ShiftJis` record inside a `Decoder` lifecycle owner. Source
+`encoding_rs lib.rs:3764–3783` selects Converting for both Off and Remove
+constructors of this non-Unicode encoding. The selected reachable decode arm
+is `macros.rs:1311–1312`, with its exact last/InputEmpty transition to Finished
+at `:1616–1630`. Malformed and OutputFull retain Converting and the raw lead.
+Source maximum queries delegate to the retained variant; Finished misuse
+keeps an explicit fatal guard under V production compilation.
+
+The UTF8 replacement loop follows `lib.rs:3992–4031`, retaining the original
+source/destination owners and lowering remaining Rust slices to V base
+indices. U+FFFD is written in the Source's three separate byte operations.
+When a genuine held lead reaches EOF with zero, one or two output bytes,
+Source clears the lead, then panics after respectively zero, one or two
+replacement bytes. The V guard preserves the same write order and fatal
+category. It does not turn Source misuse into a decode error.
+
+The bounded owning UTF8 call follows original Source Rust
+`Libraries/LibTextCodec/Rust/src/lib.rs:161–216`: choose the actual fatal or
+replacement maximum capacity, perform one raw owner operation, and retain its
+success flag and internal partial bytes. Source invokes its byte callback only
+for a nonempty output. A failed fatal call can provide partial callback bytes;
+the caller must examine success before appending them. The actual Common
+caller is the next slice, so this prerequisite does not itself repair public
+chunk decoding yet. The raw UTF16 destination remains untranslated here.
+
+Tool `87c58181` first validates the pinned archive/configuration and existing
+exact raw data/decoder probes. It includes the unmodified original Source
+bridge and links it to the validated ignored copy of encoding_rs, adding only
+read-only lead/lifecycle observers. It creates one genuine Box-backed owner
+per owning sequence. Source/cache files and original decoder bodies remain
+unchanged. Debug and release reproduce the same 1,988 sequences / 5,964 calls,
+including 284 owning sequences / 852 genuine FFI calls, all split points of
+21 inputs, capacities 0/1/2/3/4/8, both BOM flags, NUL and UTF8/UTF16 byte
+prefixes. Eight failed owning calls provide genuine nonempty partial callbacks.
+
+The capacity-limited natural sequences have **zero** native fatal calls:
+short output prevents their prefix from consuming the lead. The initial probe
+incorrectly expected a panic from those sequences; its failure is retained in
+`source-shift-jis-streaming-probe.log` and the diagnostic log. Seven separate
+native witnesses first create an actual held lead with enough output space or
+finish the actual owner, then directly observe Source short-output and Finished
+panics, including the partial replacement bytes and post-panic lead/lifecycle.
+The earlier unlinked copied-dependency harness failure is retained in
+`source-shift-jis-streaming-before-copied-dependency.log`.
+
+Focused default, GC-none and production GC-none checks each pass 1/1 in
+`source-shift-jis-streaming-focused-{default,final-gc-none,production-gc-none}.log`.
+They compare every native returned counter, output, normalized lead and
+lifecycle; raw outer calls also run against original input/output owners with
+nonzero offsets and preserve prefix bytes. Compiled child tests preserve the
+fatal boundaries under production compilation.
+
+- `shift_jis_streaming_sequences.json` SHA256:
+  `32a7713b96e276bc8ced9a996bc20c2c4ceb8ba113538cdefa524dfa50a112fb`.
+- `shift_jis_streaming_fatal.json`:
+  `e0f091a64547c429622bbbc4c4662863d4cddc32216b5a5c168ef573bba53eed`.
+- Final actual Source probe log:
+  `65d071d9a17a7e01189a671da77055cd83ff22ee09abac1eadfca19bf5a745fb`.
+
+Physical Rust String/Vec/Box allocation, C ABI, allocator/OOM and native public
+holder ownership are not reproduced by V value flattening. Source's usize
+capacity is queried first; V then has a separately named existing signed-int
+array allocation limit. Other decoder variants, the raw UTF16 destination,
+TextDecoder's direct UTF16 destination and actual TransformStream/controller
+ownership remain separate work. No LibJS implementation or native browser
+bundle is changed by this feature.
