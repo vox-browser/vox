@@ -192,3 +192,11 @@ retained-length witness parity.
 The new stream-context, existing FileReader owner and owning Blob files pass
 **3/3 in both GC modes**, recorded in
 `source-file-reader-stream-context-{default,gc-none}.log`.
+
+
+The separate owning-Realm check uses an unconditional mismatch guard and
+Source VERIFY panic before context/Blob/task construction, so `-prod` cannot
+remove the verification. An actual wrong-Realm subprocess checks the fatal
+diagnostic rather than an author-visible error. The stream-context file passes
+**1/1 in both GC modes**, and its production-valid fixture passes **1/1 with
+`-prod -gc none`**, recorded in `source-file-reader-owner-verify-*` logs.
