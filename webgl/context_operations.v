@@ -1036,35 +1036,47 @@ pub fn (mut context WebGLRenderingContext) vertex_attrib4f(index GLuint, x f32, 
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib1fv(index GLuint, values []f32) {
-	if values.len >= 1 {
-		context.vertex_attrib1f(index, values[0])
-	} else {
-		context.set_error(invalid_value)
-	}
+    // The Source proxy make_current prefix is empty; a short span returns
+    // before the actual driver command selects its owner.
+    if values.len < 1 {
+        context.set_error(invalid_value)
+        return
+    }
+    context.native.make_current()
+    C.vox_gl_vertex_attrib1fv(index, values.data)
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib2fv(index GLuint, values []f32) {
-	if values.len >= 2 {
-		context.vertex_attrib2f(index, values[0], values[1])
-	} else {
-		context.set_error(invalid_value)
-	}
+    // The Source proxy make_current prefix is empty; a short span returns
+    // before the actual driver command selects its owner.
+    if values.len < 2 {
+        context.set_error(invalid_value)
+        return
+    }
+    context.native.make_current()
+    C.vox_gl_vertex_attrib2fv(index, values.data)
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib3fv(index GLuint, values []f32) {
-	if values.len >= 3 {
-		context.vertex_attrib3f(index, values[0], values[1], values[2])
-	} else {
-		context.set_error(invalid_value)
-	}
+    // The Source proxy make_current prefix is empty; a short span returns
+    // before the actual driver command selects its owner.
+    if values.len < 3 {
+        context.set_error(invalid_value)
+        return
+    }
+    context.native.make_current()
+    C.vox_gl_vertex_attrib3fv(index, values.data)
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib4fv(index GLuint, values []f32) {
-	if values.len >= 4 {
-		context.vertex_attrib4f(index, values[0], values[1], values[2], values[3])
-	} else {
-		context.set_error(invalid_value)
-	}
+    // The Source proxy make_current prefix is empty; a short span returns
+    // before the actual driver command selects its owner.
+    if values.len < 4 {
+        context.set_error(invalid_value)
+        return
+    }
+    context.native.make_current()
+    C.vox_gl_vertex_attrib_floats(index, values.data)
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib_pointer(index GLuint, size int, type_ GLenum, normalized bool, stride int, offset i64) {
