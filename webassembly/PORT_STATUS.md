@@ -643,6 +643,18 @@ Source binary macro records. All match **2,880 exact native C++ cases** from
 Actual Configuration regressions verify signedness, cleared result high bits
 and retained trap/source/destination state. The file passes default GC
 privately and canonically; comparison/shift/helper files pass **3/3** privately
-and canonically with GC disabled. The package has 85 test files; no full
+and canonically with GC disabled. That comparison snapshot has 85 test files; no full
 85-file sweep is claimed. Floating/SIMD comparisons and production dispatch
 remain untranslated. See [Source mapping](../docs/translation-audit/WASM_INTEGER_COMPARISONS.md).
+
+## Source wrapping arithmetic and bitwise operators
+
+`54308045` translates twelve concrete scalar Add/Subtract/Multiply and
+BitAnd/BitOr/BitXor functions using Source unsigned arithmetic and signed
+bitwise operand types. All match **1,728 exact native C++ cases** from
+`8eca94c1`; actual numeric-helper regressions verify signed PushType writes,
+wrapping and cleared high bits. The new file passes default GC privately;
+arithmetic/comparison/helper files pass **3/3** privately and canonically
+with GC disabled. The package has 86 test files, without a full 86-file
+sweep claim. Production dispatch and floating/SIMD operations remain pending.
+See [Source arithmetic mapping](../docs/translation-audit/WASM_INTEGER_ARITHMETIC.md).
