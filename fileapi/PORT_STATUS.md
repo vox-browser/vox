@@ -11,14 +11,15 @@ Source records and clone payloads reviewed: 2026-10-04
 | `BlobURLStore.cpp` | `blob_url_store.v` |
 | `File.cpp` | `file.v`, `utf16_records.v`, `../html/structured_fileapi_codec.v` |
 | `FileList.cpp` | `filelist.v`, `../html/structured_fileapi_codec.v` |
-| `FileReader.cpp` | `file_reader.v` |
+| `FileReader.cpp` | `file_reader.v`, `file_reader_global_context.v`, `file_reader_stream_operation.v`, `../html/file_reader_operations.v` |
 | `FileReaderSync.cpp` | `file_reader.v` |
 
 The existing typed package covers immutable owned Blob bytes, blob parts and
 line endings, MIME normalization, slicing, byte streams, BOM-aware decoding, File
 state, FileList ordering, blob URL partition checks and environment cleanup,
-and reader state transitions. FileReader read generations protect event-driven
-abort/replacement at both loadstart and progress. This inventory does not
+and reader state transitions. Standalone FileReader read generations protect
+its compatibility abort/replacement adapter at loadstart and progress. Actual
+Window/Worker readers preserve Source's shared abort Boolean instead. This inventory does not
 establish full source runtime or generated WebIDL binding parity.
 
 Blob/File public constructor MIME parsing now retains the source basic-Latin
@@ -105,9 +106,8 @@ settings, relevant agent/Realm and EventTarget. Its FileReading tasks capture
 the associated Document at queue time, track actual TaskIDs through callback
 return/abort, and create trusted events using the actual global-relative clock.
 Actual owner/standalone reader/owning Blob files pass **3/3 in both GC modes**.
-This is an owner prerequisite: the asynchronous read operation still needs the
-Source default-reader/Promise/ReadOperationState path, followed by native
-FileReader wrappers and its per-world result cache.
+This owner prerequisite was committed before the Source read-operation body
+below. Native FileReader wrappers and its per-world result cache remain open.
 
 BinaryString packaging now follows Source's byte-to-UTF16-code-unit builder
 through the existing owned Source string record, replacing the independent
@@ -128,3 +128,21 @@ context runner. Its realm identity is checked against the actual settings;
 explicit native allocation/data hooks can be retained without changing owner
 task/microtask routing. This separate prerequisite does not yet replace the
 asynchronous compatibility body or supply native read-result wrappers.
+
+Actual Window/Worker readers now use Source `ReadOperationState` with a real
+Blob stream/default reader, per-chunk retained WebIDL Promise reactions, empty
+byte accumulation, first-chunk flag and monotonic progress timer. The initial
+setup task is untracked; loadstart/progress/completion/error tasks use the
+reader's actual affiliated TaskIDs. Abort preserves Source's shared Boolean
+and task-removal semantics. Completion and rejection retain Source's two error
+setter FIXMEs and reentrant loadend suppression. The old manual pending-byte
+path is limited to standalone compatibility construction. Streams' typed
+result-object/Uint8Array projection, genuine native witnesses and FileReader
+result wrappers remain separate runtime boundaries.
+
+New read-operation, existing owner-task, monotonic-threshold and standalone
+reader files pass **4/4 in both GC modes**, including all package types, empty
+chunks, immutable Blob snapshot, actual InvalidStateError record, Worker
+ownership, early/late abort, reentrant loadend and the pinned shared-abort flag
+edge. Source mappings and explicit native boundaries are in
+[`FILEREADER_TEXT_SOURCE.md`](../docs/translation-audit/FILEREADER_TEXT_SOURCE.md).

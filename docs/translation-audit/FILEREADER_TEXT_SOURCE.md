@@ -200,3 +200,52 @@ remove the verification. An actual wrong-Realm subprocess checks the fatal
 diagnostic rather than an author-visible error. The stream-context file passes
 **1/1 in both GC modes**, and its production-valid fixture passes **1/1 with
 `-prod -gc none`**, recorded in `source-file-reader-owner-verify-*` logs.
+
+## Actual owning asynchronous read operation
+
+`fileapi/file_reader_stream_operation.v` now translates Source
+`ReadOperationState` and `FileReader.cpp:215–375` through the established
+creation-global owner context. It snapshots the Blob type, throws the actual
+typed InvalidStateError record while loading, resets result/error/abort state,
+obtains the genuine owning Blob stream and its default reader, initiates a
+chunk read, then retains the actual reader, empty bytes, first-chunk flag,
+optional monotonic timer and recursive Promise-processing closure.
+
+The setup task is queued directly on the actual global's FileReading queue,
+outside the reader's affiliated TaskID set exactly as Source. Each chunk uses
+the retained `ReadPromise.as_webidl_promise()` capability and real owning
+microtask scheduler with Source temporary contexts. Fulfillment queues
+loadstart once, reads the existing typed default-reader value/done result,
+appends the represented fixed Uint8Array bytes, throttles progress at exactly
+50ms using the independent retained ArrayLength slot, and reads the next
+actual chunk Promise. Completion moves the accumulated bytes into a tracked
+FileReading task before packaging and dispatching load/error/loadend.
+Rejection uses the corresponding tracked error task. No aggregation read-loop
+shortcut or manual pending-byte completion is used for actual owner readers.
+
+Both upstream `FIXME: Set fr's error` omissions remain unchanged: package
+errors and rejected chunks fire error but do not manufacture a stored error.
+The initial Blob/setup tasks survive abort; already queued affiliated event
+tasks are removed. Source uses the shared `m_is_aborted` Boolean rather than
+an operation generation. Thus a new read started by an early abort handler can
+reset that flag before the old untracked setup callback; the translated body
+retains the pinned source behavior. A read started by a load handler suppresses
+that operation's loadend while retaining the new operation's tasks.
+
+This body operates through the existing real Streams/Promise owner records
+and their typed result-object/fixed Uint8Array projection. It does not establish
+native result-object Get operations, genuine native/auto-length SeqCst
+witnesses, public FileReader bindings, raw unchecked-ASCII result metadata or
+per-wrapper-world ArrayBuffer identity. Those remain separate native runtime
+prerequisites. Standalone `FileReader.create()` and its explicit manual task
+adapter retain their existing compatibility behavior.
+
+New actual read-operation, existing owner-task, monotonic-threshold and
+standalone reader files pass **4/4 in both GC modes**, recorded in
+`source-file-reader-stream-operation-{default,gc-none}.log`. Seven actual owner
+cases cover pending Blob/setup/event phases, immutable queued bytes and Blob
+type snapshot, actual InvalidStateError identity, all four package types,
+empty-chunk progress suppression, early/late abort, load-handler reentrance,
+the Source shared-abort-Boolean edge, rejected-stream FIXME behavior and actual
+Worker/null-Document routing. The separate threshold test covers no previous
+time, exact 50ms and both adjacent nanosecond boundaries.
