@@ -162,6 +162,27 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+The isProgram nullable host adapter now explicitly invokes is_program(None)
+for an absent nullable map entry. Base.idl:132 accepts WebGLProgram?, and
+Impl.cpp:2159-2160 returns false without a native sync request. Actual pre-fix
+host null calls returned empty-message TypeError because the compatibility
+compiler propagated inline map none into the enclosing Result. As for the
+separate isShader adapter correction, the explicit arm preserves the translated
+Source call rather than fabricating a Boolean or changing validation order.
+The fixed emitted C in source-is-program-nullable-fixed-generated.c constructs
+optional none, calls the typed method and returns successful json2 Boolean;
+valid host records still forward their actual retained pointer.
+
+The actual JavaScriptCore two-version nullable test and program CPU-owner
+neighbor pass with GC disabled and explicit private paths in
+`Build/audit-fixes/source-is-program-nullable-public-gc-none.log` (two files).
+They cover public null/undefined false, preserved Other viewport and pending
+driver error, direct host null false, valid native program true and unchanged
+brand/arity TypeErrors. The prior raw host failure remains in the pre-fix
+observational log. Other is-object nullable adapters, generated program loss,
+remote maps and GC/WrapperWorld remain separate scopes. No new full regression
+or canonical browser build is claimed by this compatibility repair.
+
 isProgram now preserves Source CPU optional-query gates before actual owner
 selection. Impl.cpp:2155-2170 returns false for null and absent invalidated or
 stale optional handles; foreign records report INVALID_OPERATION after context
@@ -192,8 +213,9 @@ paths. Public null/undefined are excluded from this CPU feature: the separate
 raw host probe returned an empty-message TypeError from its inline map-or-none
 compatibility expression, before reaching the Source nullable method.
 
-That nullable host adapter repair, generated Boolean lost default and generated
-creation loss suppression remain separate features. A real observational EGL
+The subsequent nullable host adapter repair is documented above. Generated
+Boolean lost default and generated creation loss suppression remain separate
+features. A real observational EGL
 loss probe already confirms lost isProgram true and lost createProgram creating
 an actual native program in Other; its source/log are retained under
 source-program-lost-unfixed-probe*. These are unwanted direct-driver evidence,
