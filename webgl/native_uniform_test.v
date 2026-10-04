@@ -40,8 +40,18 @@ fn test_uniform_uploads_preserve_float_integer_unsigned_and_matrix_types() {
 	assert context.get_error() == no_error
 	context.uniform4iv(colors, [1, 2, 3, 4])
 	assert context.get_error() == invalid_operation
+	zero_matrix := []f32{len: 6}
+	C.vox_gl_uniform_matrix(int(matrix.handle_), 3, 2, 1, 0, zero_matrix.data)
+	C.vox_gl_uniform_matrix(int(matrix.handle_), 3, 2, 1, 1, matrix_data.data)
+	expected_transpose_error := C.vox_gl_get_error()
+	mut expected_matrix := []f32{len: 6}
+	C.vox_gl_get_uniform_floats(program.object.native_handle_, int(matrix.handle_), expected_matrix.data)
+	C.vox_gl_uniform_matrix(int(matrix.handle_), 3, 2, 1, 0, zero_matrix.data)
 	context.uniform_matrix3x2fv(matrix, true, matrix_data)
-	assert context.get_error() == invalid_value
+	actual_transpose_error := context.get_error()
+	C.vox_gl_get_uniform_floats(program.object.native_handle_, int(matrix.handle_), read_matrix.data)
+	assert actual_transpose_error == expected_transpose_error
+	assert read_matrix == expected_matrix
 	context.uniform4fv(colors, [f32(1), 2, 3])
 	assert context.get_error() == invalid_value
 	context.uniform4fv(none, [f32(1), 2, 3])
