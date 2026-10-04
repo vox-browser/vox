@@ -31,3 +31,13 @@ pub fn (mut runtime Runtime) javascript_file_reader_sync_data_url(reader &fileap
 	raw := result.string_utf16_record() or { panic('Source VERIFY: FileReaderSync DataURL requires its UTF16 result') }
 	return runtime.javascript_utf16_string(raw)
 }
+
+// Source's Text method returns its owning read_as<Utf16String> result. The
+// encoding label stays the existing typed UTF8 compatibility input boundary;
+// generated optional DOMString conversion belongs to the public Worker binding.
+pub fn (mut runtime Runtime) javascript_file_reader_sync_text(reader &fileapi.FileReaderSync, blob &fileapi.Blob, encoding_name ?string) !voidptr {
+	runtime.require_javascript_value_context()!
+	result := reader.read_as(blob, .text, encoding_name)!
+	raw := result.string_utf16_record() or { panic('Source VERIFY: FileReaderSync Text requires its UTF16 result') }
+	return runtime.javascript_utf16_string(raw)
+}
