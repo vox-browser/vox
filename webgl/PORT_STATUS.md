@@ -133,7 +133,7 @@ in that log is retained, and both actual integration/host neighbors passed in
 `source-viewport-scissor-public-neighbors-final-gc-none.log`. This subsequent
 focused slice supplements the unchanged frozen 101/70 sweep.
 
-Actual GL errors now remain in the real ANGLE driver until `get_error()` asks
+Actual GL errors now remain in the real ANGLE driver until `get_error_value()` asks
 for them, following `WebGLRenderingContextBase.cpp:315-332` and
 `WebGLRenderingContextImpl.cpp:1720-1724`. The eager collection helper and all
 its call sites, four separate uniform/vector/matrix error queries, and the
@@ -157,9 +157,40 @@ compilation diagnostic remain in the focused logs. Corrected focused native,
 public and matrix checks passed; the final implementation then passed the
 complete frozen 101-file typed and 70-file public sweeps above. No fake backend,
 driver-error sorting, reinjection or new uniform read algorithm was supplied.
-The unused V `get_error_value()` peek still needs a separate exact named-body
-translation; the existing public `get_error()` already runs the complete source
-priority body verified here.
+The named `get_error_value()` body was completed in a subsequent focused slice:
+its former unused read-only peek was replaced by the exact mutable base body.
+The initial focused named-body checks passed in
+`source-base-error-value-gc-none.log` (three files) and
+`source-base-error-value-public-gc-none.log` (two files), but subsequent review
+identified the missing concrete proxy/host receiver boundary. Those checks did
+not establish final receiver parity.
+
+Pinned `WebGLRenderingContextBase.h:53` returns a `WebGLContextProxy`;
+`WebGLContextProxyBase.h:44` defines its `make_current()` as empty. `glGetError`
+is a sync operation in `GLFunctions.json:2008-2011`: the proxy generator sends
+`SyncCalls::GetError`, `send_sync_call()` flushes and calls its transport, and
+`HostWebGLContext.cpp:147-150` selects the owning actual GL context before the
+generated replayer invokes `gl.get_error()`. The V native error receiver now
+models that actual synchronous boundary. The base loss/local-error returns
+precede it; `get_error()` delegates without an earlier native owner switch.
+The source's lost-proxy zero result remains distinct from a live driver query.
+No remote transport implementation is claimed for the direct native adapter.
+
+Genuine two-owner witnesses seed independent INVALID_ENUM and INVALID_VALUE
+flags, query the correct owning driver without consuming the other's flag,
+retain source-error priority, and verify that public and standalone local/loss
+early returns leave the other driver selected. The public local-error witness
+failed before the repair, selecting viewport `[1,2,3,4]` instead of the other
+driver's `[9,10,11,12]`; the diagnostic remains in
+`source-error-receiver-public-reproduction-gc-none.log`. Generated source
+GetError proxy/replayer evidence is recorded in
+`source-get-error-generated-boundary.txt`. The corrected native helper and
+driver neighbor passed in `source-error-receiver-gc-none.log`; that log also
+retains an incorrect priority-neighbor filename diagnostic. The actual priority
+neighbor passed separately in `source-error-receiver-priority-final-gc-none.log`.
+All three public receiver/driver/host files passed in
+`source-error-receiver-public-gc-none.log`. These checks supplement the unchanged
+frozen 101/70 sweep; this subsequent receiver repair was not in that snapshot.
 
 Destination-view and numeric pixel-pack `read_pixels` bodies now select their
 owner before source range/binding errors and issue their actual GL calls
