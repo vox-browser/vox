@@ -47,8 +47,9 @@ queue coverage. Commands use `v -old-compiler -enable-globals test`, with
 
 This slice translates the current-entry/origin branch and its event selection.
 Selecting the current active Window's Navigation object and actual phase-one
-global task owner remains a separate source fix; production still retains its
-older optional Navigation and Document snapshots there. Bare-host creation,
+global task owner was a separate source fix at this gate's completion. It is
+subsequently translated in [the active Window ownership slice](UNLOAD_CHECK_ACTIVE_WINDOW_OWNERSHIP.md).
+Bare-host creation,
 session-history graph/current-step protocol, source timeout timer, Page history
 executor and remote transport remain separate boundaries. It does not claim
 full Window.close or native JavaScriptCore BeforeUnloadEvent bindings.
