@@ -2268,3 +2268,10 @@ rejection. The actual pinned AK constructor/header probe passes at -O0/-O2;
 three focused files pass in both GC modes. Source mappings and exact native
 probe limits are in
 [`UTF16_UNCHECKED_ASCII_SOURCE.md`](../docs/translation-audit/UTF16_UNCHECKED_ASCII_SOURCE.md).
+
+The complete unchecked-ASCII snapshot passes **233/233** LibJS files with
+default GC and GC-none and **100/100 exact --all AST cases** in a separate
+entirely frozen clean checkout. All 4027 tracked files remained unchanged and
+all 487 non-Markdown LibJS files matched canonical after the sweeps. Exact
+heads, manifests, log hashes and supplemental-run limits are recorded in
+[`LIBJS_UNCHECKED_ASCII_VERIFICATION.md`](../docs/translation-audit/LIBJS_UNCHECKED_ASCII_VERIFICATION.md).
