@@ -106,6 +106,7 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 	mut native_key := ?&webcrypto.CryptoKey(none)
 	mut native_blob := ?&fileapi.Blob(none)
 	mut native_file := ?&fileapi.File(none)
+	mut native_file_list := ?&fileapi.FileList(none)
 	match tag {
 		7 { kind = .boolean_object }
 		8 { kind = .number_object }
@@ -133,6 +134,9 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 				} else if key := bridge.runtime.native_clone_crypto_key(value) {
 					kind = .serializable_object
 					native_key = key
+				} else if list := bridge.runtime.native_clone_file_list(value) {
+					kind = .serializable_object
+					native_file_list = list
 				} else if file := bridge.runtime.native_clone_file(value) {
 					kind = .serializable_object
 					native_file = file
@@ -149,6 +153,11 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 	mut object := html.StructuredObject.create(kind)
 	result := html.structured_object_value(object)
 	projection.input_memory[identity] = &result
+	if list := native_file_list {
+		object.serializable_interface_ = .file_list
+		object.file_list_ = list
+		return &result
+	}
 	if file := native_file {
 		object.serializable_interface_ = .file
 		object.file_ = file
@@ -262,6 +271,9 @@ fn (mut projection NativeCloneProjection) reconstruct(value dom.JSValue) !voidpt
 		} else if interface_name == .crypto_key {
 			key := object.crypto_key_ or { return native_clone_unsupported('Source CryptoKey has no native payload record') }
 			actual = projection.root(owner.javascript_crypto_key(key)!)!
+		} else if interface_name == .file_list {
+			list := object.file_list_ or { return native_clone_unsupported('Source FileList has no native payload record') }
+			actual = projection.root(owner.javascript_file_list(list)!)!
 		} else if interface_name == .file {
 			file := object.file_ or { return native_clone_unsupported('Source File has no native payload record') }
 			actual = projection.root(owner.javascript_file(file)!)!
