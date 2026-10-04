@@ -18,7 +18,7 @@ fn test_native_uniform_reflection_invalid_program_and_empty_result_shapes() {
 	context.attach_shader(mut program, vertex)
 	context.attach_shader(mut program, fragment)
 	context.link_program(mut program)
-	assert program.linked_
+	assert context.get_program_parameter(program, link_status).boolean
 	assert context.get_uniform_indices_nullable(program, [])? == []GLuint{}
 	assert context.get_error() == no_error
 	assert foreign.get_uniform_indices_nullable(program, ['tint']) == none

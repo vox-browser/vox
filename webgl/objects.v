@@ -174,10 +174,6 @@ pub mut:
 	object WebGLObject
 pub:
 	type_ GLenum
-mut:
-	source_   string
-	compiled_ bool
-	info_log_ string
 }
 
 @[heap]
@@ -187,9 +183,6 @@ pub mut:
 mut:
 	attached_vertex_shader   ?&WebGLShader
 	attached_fragment_shader ?&WebGLShader
-	linked_                  bool
-	validated_               bool
-	info_log_                string
 }
 
 @[heap]

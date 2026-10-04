@@ -529,7 +529,6 @@ pub fn (mut context WebGLRenderingContext) shader_source(mut shader WebGLShader,
 		context.set_error(invalid_operation)
 		return
 	}
-	shader.source_ = source
 	C.vox_gl_shader_source(shader.object.native_handle_, source.str, source.len)
 	context.native.collect_native_error()
 }
@@ -541,8 +540,6 @@ pub fn (mut context WebGLRenderingContext) compile_shader(mut shader WebGLShader
 		return
 	}
 	C.vox_gl_compile_shader(shader.object.native_handle_)
-	shader.compiled_ = context.native.native_shader_parameter(shader.object.native_handle_, compile_status) != 0
-	shader.info_log_ = context.native.native_shader_log(shader.object.native_handle_)
 	context.native.dispatch('compile_shader', shader.object.handle_)
 }
 
@@ -614,8 +611,6 @@ pub fn (mut context WebGLRenderingContext) link_program(mut program WebGLProgram
 		return
 	}
 	C.vox_gl_link_program(program.object.native_handle_)
-	program.linked_ = context.native.native_program_parameter(program.object.native_handle_, link_status) != 0
-	program.info_log_ = context.native.native_program_log(program.object.native_handle_)
 	context.native.dispatch('link_program', program.object.handle_)
 }
 
@@ -640,7 +635,7 @@ pub fn (mut context WebGLRenderingContext) validate_program(mut program WebGLPro
 		return
 	}
 	C.vox_gl_validate_program(program.object.native_handle_)
-	program.validated_ = context.native.native_program_parameter(program.object.native_handle_, validate_status) != 0
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) get_uniform_location(mut program WebGLProgram, name string) ?&WebGLUniformLocation {

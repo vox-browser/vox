@@ -64,3 +64,23 @@ fn test_nonempty_invalid_shader_and_varying_link_failure_are_native_results() {
 	context.use_program(program)
 	assert context.get_error() == invalid_operation
 }
+
+fn test_source_program_validation_uses_driver_status_and_owned_native_errors() {
+	for version in [WebGLVersion.webgl1, .webgl2] {
+		mut context := WebGLRenderingContext.new(version, WebGLContextAttributes{}, [])
+		mut program := context.create_program()
+		C.vox_gl_validate_program(program.object.native_handle_)
+		expected_error := C.vox_gl_get_error()
+		expected_status := C.vox_gl_program_parameter(program.object.native_handle_, validate_status)
+		context.validate_program(mut program)
+		actual_error := context.get_error()
+		assert actual_error == expected_error
+		assert context.get_program_parameter(program, validate_status).boolean == (expected_status != 0)
+		C.vox_gl_delete_program(program.object.native_handle_)
+		C.vox_gl_validate_program(program.object.native_handle_)
+		expected_deleted_error := C.vox_gl_get_error()
+		context.validate_program(mut program)
+		actual_deleted_error := context.get_error()
+		assert actual_deleted_error == expected_deleted_error
+	}
+}

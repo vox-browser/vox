@@ -12,7 +12,7 @@ fn native_tf_program(mut context WebGLRenderingContext) &WebGLProgram {
 	context.attach_shader(mut program, fragment)
 	context.transform_feedback_varyings(program, ['doubled'], 0x8c8c)
 	context.link_program(mut program)
-	assert program.linked_
+	assert context.get_program_parameter(program, link_status).boolean
 	context.use_program(program)
 	return program
 }

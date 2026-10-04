@@ -7,13 +7,13 @@ fn native_query_program(mut context WebGLRenderingContext) {
 	context.shader_source(mut fragment, '#version 300 es\nprecision mediump float; out vec4 color; void main() { color=vec4(1.0); }')
 	context.compile_shader(mut vertex)
 	context.compile_shader(mut fragment)
-	assert vertex.compiled_
-	assert fragment.compiled_
+	assert context.get_shader_parameter(vertex, compile_status).boolean
+	assert context.get_shader_parameter(fragment, compile_status).boolean
 	mut program := context.create_program()
 	context.attach_shader(mut program, vertex)
 	context.attach_shader(mut program, fragment)
 	context.link_program(mut program)
-	assert program.linked_
+	assert context.get_program_parameter(program, link_status).boolean
 	context.use_program(program)
 }
 

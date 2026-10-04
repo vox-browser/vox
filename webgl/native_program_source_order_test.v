@@ -13,9 +13,9 @@ fn test_owned_program_use_and_uniform_location_rely_on_native_link_status() {
 	mut program := context.create_program()
 	context.attach_shader(mut program, vertex)
 	context.attach_shader(mut program, fragment)
+	assert !context.get_program_parameter(program, link_status).boolean
 	context.native.make_current()
 	C.vox_gl_link_program(program.object.native_handle_)
-	assert !program.linked_
 	assert context.get_program_parameter(program, link_status).boolean
 	context.use_program(program)
 	assert context.get_error() == no_error

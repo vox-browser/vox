@@ -11,7 +11,7 @@ fn uniform_blocks_program(mut context WebGLRenderingContext) &WebGLProgram {
 	context.attach_shader(mut program, vertex)
 	context.attach_shader(mut program, fragment)
 	context.link_program(mut program)
-	assert program.linked_
+	assert context.get_program_parameter(program, link_status).boolean
 	return program
 }
 

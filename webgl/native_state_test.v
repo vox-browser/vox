@@ -12,7 +12,7 @@ fn state_native_program(mut context WebGLRenderingContext) {
 	context.attach_shader(mut program, fragment)
 	context.bind_attrib_location(program, 0, 'position')
 	context.link_program(mut program)
-	assert program.linked_
+	assert context.get_program_parameter(program, link_status).boolean
 	context.use_program(program)
 	buffer := context.create_buffer()
 	context.bind_buffer(array_buffer, buffer)

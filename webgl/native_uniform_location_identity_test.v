@@ -27,11 +27,11 @@ fn test_source_uniform_location_queries_create_fresh_records_and_requery_native_
 	assert context.get_uniform_location(mut program, 'missing') == none
 	assert context.get_error() == no_error
 	// Native link changes cannot be hidden by a retained per-name location map.
+	assert context.get_program_parameter(program, link_status).boolean
 	context.native.make_current()
 	C.vox_gl_detach_shader(program.object.native_handle_, vertex.object.native_handle_)
 	C.vox_gl_detach_shader(program.object.native_handle_, fragment.object.native_handle_)
 	C.vox_gl_link_program(program.object.native_handle_)
-	assert program.linked_
 	assert !context.get_program_parameter(program, link_status).boolean
 	assert context.get_uniform_location(mut program, 'position') == none
 	assert context.get_error() == invalid_operation

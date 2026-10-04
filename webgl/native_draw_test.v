@@ -11,14 +11,14 @@ fn native_draw_program(mut context WebGLRenderingContext, vertex_source string, 
 	context.shader_source(mut fragment, fragment_source)
 	context.compile_shader(mut vertex)
 	context.compile_shader(mut fragment)
-	assert vertex.compiled_
-	assert fragment.compiled_
+	assert context.get_shader_parameter(vertex, compile_status).boolean
+	assert context.get_shader_parameter(fragment, compile_status).boolean
 	mut program := context.create_program()
 	context.attach_shader(mut program, vertex)
 	context.attach_shader(mut program, fragment)
 	context.bind_attrib_location(program, 0, 'position')
 	context.link_program(mut program)
-	assert program.linked_
+	assert context.get_program_parameter(program, link_status).boolean
 	context.use_program(program)
 	return program
 }

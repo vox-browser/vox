@@ -21,11 +21,11 @@ fn test_source_shader_and_program_queries_validate_owner_and_nullable_result() {
 	assert other.get_error() == invalid_operation
 	assert other.get_shader_info_log(vertex) == none
 	assert other.get_error() == invalid_operation
-	owner.shader_source(mut vertex, 'cached source')
+	owner.shader_source(mut vertex, 'initial source')
+	assert owner.get_shader_source(vertex) or { panic('initial driver source') } == 'initial source'
 	owner.native.make_current()
 	actual := 'void main(){gl_Position=vec4(0.0);}'
 	C.vox_gl_shader_source(vertex.object.native_handle_, actual.str, actual.len)
-	assert vertex.source_ == 'cached source'
 	assert owner.get_shader_source(vertex) or { panic('driver source') } == actual
 	assert owner.get_shader_info_log(vertex) or { panic('log') } == ''
 	assert owner.get_program_info_log(program) or { panic('log') } == ''
