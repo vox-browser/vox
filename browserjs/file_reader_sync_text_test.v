@@ -92,3 +92,17 @@ fn test_source_sync_text_uses_selected_shift_jis_whole_decoder_for_owned_native_
 	bom := runtime.javascript_file_reader_sync_text(reader, unicode, 'Shift_JIS')!
 	assert runtime.native_utf16_string(bom)!.code_units() == [u16(0x41)]
 }
+
+fn test_source_sync_text_uses_whole_utf8_bom_order_for_owned_native_primitive() {
+	$if !darwin {
+		return
+	}
+	mut runtime := Runtime.create()
+	defer { runtime.close() }
+	reader := fileapi.FileReaderSync.create()
+	// After initial sniffing, the remaining two-BOM span/output is witnessed
+	// by the actual whole UTF8 FFI with matching-BOM removal enabled.
+	blob := fileapi.Blob.create([u8(0xef), 0xbb, 0xbf, 0xef, 0xbb, 0xbf, 0xef, 0xbb, 0xbf, `Z`], '')
+	actual := runtime.javascript_file_reader_sync_text(reader, blob, 'Shift_JIS')!
+	assert runtime.native_utf16_string(actual)!.code_units() == [u16(0xfeff), u16(`Z`)]
+}

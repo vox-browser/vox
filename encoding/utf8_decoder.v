@@ -303,3 +303,14 @@ fn decode_source_utf8_without_bom_handling(input []u8) (string, bool) {
 	}
 	return '', false
 }
+
+// Source's original whole Rust bridge selects matching-BOM removal before
+// constructing the actual Off owner, then withholds the complete fatal output.
+fn decode_source_utf8_whole_to_utf8(input []u8, remove_bom bool, fatal bool) !string {
+	span := if remove_bom && input.len >= 3 && input[..3] == [u8(0xef), 0xbb, 0xbf] {
+		input[3..]
+	} else {
+		input
+	}
+	return decode_utf8(span, fatal)
+}
