@@ -12,6 +12,11 @@ pub fn convert_input_to_utf8_using_given_decoder_unless_there_is_a_byte_order_ma
 		actual_encoding = bom_encoding
 		bytes = input[if bom_encoding == 'UTF-8' { 3 } else { 2 }..].clone()
 	}
+	if registered_encoding := get_an_encoding(actual_encoding) {
+		if registered_encoding == 'replacement' {
+			return decode_replacement_to_utf8(bytes)
+		}
+	}
 	// Source passes IgnoreBOM::No and Replacement to the chosen decoder.
 	// Its Rust decode_with_bom_removal strips one further same-encoding BOM;
 	// it does not sniff a second BOM to replace the selected encoding.
