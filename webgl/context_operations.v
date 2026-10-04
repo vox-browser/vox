@@ -414,18 +414,12 @@ pub fn (mut context WebGLRenderingContext) check_framebuffer_status(target GLenu
 }
 
 pub fn (mut context WebGLRenderingContext) copy_tex_image2d(target GLenum, level int, internal_format GLenum, x int, y int, width int, height int, border int) {
-	if width < 0 || height < 0 || border != 0 {
-		context.set_error(invalid_value)
-		return
-	}
+	context.native.make_current()
 	context.command('copy_tex_image2d', target, level, internal_format, x, y, width, height, border)
 }
 
 pub fn (mut context WebGLRenderingContext) copy_tex_sub_image2d(target GLenum, level int, x_offset int, y_offset int, x int, y int, width int, height int) {
-	if width < 0 || height < 0 {
-		context.set_error(invalid_value)
-		return
-	}
+	context.native.make_current()
 	context.command('copy_tex_sub_image2d', target, level, x_offset, y_offset, x, y, width, height)
 }
 
