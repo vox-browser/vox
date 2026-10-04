@@ -821,23 +821,17 @@ pub fn (mut context WebGLRenderingContext) scissor(x int, y int, width int, heig
 }
 
 pub fn (mut context WebGLRenderingContext) draw_arrays(mode GLenum, first int, count int) {
-	if first < 0 || count < 0 {
-		context.set_error(invalid_value)
-		return
-	}
+	context.native.make_current()
+	context.native.notify_painting_surface_content_will_change()
+	context.native.did_update_canvas_content()
 	context.native.dispatch('draw_arrays', mode, first, count)
 }
 
 pub fn (mut context WebGLRenderingContext) draw_elements(mode GLenum, count int, type_ GLenum, offset i64) {
-	if count < 0 || offset < 0 {
-		context.set_error(invalid_value)
-		return
-	}
-	if element_array_buffer !in context.bound_buffers {
-		context.set_error(invalid_operation)
-		return
-	}
+	context.native.make_current()
+	context.native.notify_painting_surface_content_will_change()
 	context.native.dispatch('draw_elements', mode, count, type_, offset)
+	context.native.did_update_canvas_content()
 }
 
 // Native passthrough state commands retain ordering at the platform boundary.
