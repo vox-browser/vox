@@ -625,13 +625,13 @@ pub fn (mut context WebGLRenderingContext) validate_program(mut program WebGLPro
 }
 
 pub fn (mut context WebGLRenderingContext) get_uniform_location(mut program WebGLProgram, name string) ?&WebGLUniformLocation {
-	context.native.make_current()
 	if !context.owns(&program.object) {
 		context.set_error(invalid_operation)
 		return none
 	}
+	context.native.make_current()
 	native_location := C.vox_gl_uniform_location(program.object.native_handle_, name.str)
-	if native_location < 0 { return none }
+	if native_location == -1 { return none }
 	location := &WebGLUniformLocation{
 		handle_: GLuint(native_location)
 		parent_program: program
