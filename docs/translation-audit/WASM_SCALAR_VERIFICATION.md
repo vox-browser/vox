@@ -1,6 +1,41 @@
 # Frozen scalar WebAssembly verification
 
-## Latest frozen checked-memory/cache snapshot: 97 files
+## Latest frozen exception-unwind snapshot: 98 files
+
+Detached canonical snapshot `221fe60c3b1f6220a23488774f8a0626c3d9d3ad`, in
+`Build/audit-fixes/worktrees/root-wasm98-final`, passes **98/98 test files in
+each GC mode**, default in 328.4 seconds and GC-none in 326.2 seconds. Both
+commands exit 0: `/Users/alex/code/v/v -old-compiler -enable-globals test
+webassembly` and the same with `-gc none`, with `VJOBS=2` per run.
+
+All 4,496 tracked paths/contents, HEAD and clean tracked status remained
+identical throughout both full runs. The 213-file non-Markdown Wasm manifest
+and 490-file non-Markdown LibJS manifest match canonical at recording. This
+includes the complete current-frame throw-handler unwind helper and its
+focused exception/tag/branch tests, alongside the earlier checked-memory and
+optional extern-cache slices. Dependencies outside these packages are the
+files of this exact snapshot; later shader, Encoding and DOM changes are
+outside this frozen whole-checkout proof.
+
+Artifacts under the detached snapshot's `Build/audit-fixes/` are:
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `source-exception-unwind-wasm98-manifest.json` | `086263d58becf279f5d0ac65dfdb84eea83bd4b14baec909ed272e11cd32dfdd` |
+| Whole sorted tracked path/content manifest | `b854df761fb30ab59590e6022868318e845d923a4fd1bcd9d457a960af1b3125` |
+| WebAssembly package manifest | `f134740f8318dc1473d6a815f39509f912105e094879e9f22a96d1d646b072a8` |
+| LibJS package manifest | `d55fd6a720b1bc274039393b94776fb27f7e946d61d51adfb0ce0c229bfef4c9` |
+| `source-exception-unwind-wasm98-default.log` | `6f6cec16e5c3c5d651bf1a7a9df01267926fefe0258c1ae487b0aa52cd91174a` |
+| `source-exception-unwind-wasm98-gc-none.log` | `66fb818f2d7e420d722fbb8f1f66a4651fede7b19eddcc42b34877cb047d28b0` |
+
+Upstream remained `963d46a829f3e1b79f44dba9d02afb70654300fa`. The proof retains
+both complete before/after manifests and exact commands/results. Actual opcode
+and cross-frame unwind callers, typed stores/loads, SIMD execution, full
+instantiation, native compilation and collector/realm ownership remain
+unfinished. Passing the helper package does not establish browser runtime
+parity.
+
+## Historical frozen checked-memory/cache snapshot: 97 files
 
 Detached canonical snapshot `b6a80afd0288b09d9fa6db393dd6243a8cb5f626`, in
 `Build/audit-fixes/worktrees/root-wasm97-final`, passes **97/97 test files in

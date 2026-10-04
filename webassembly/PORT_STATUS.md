@@ -799,3 +799,11 @@ unwind and frame-owner files pass **3/3 GC-none**. See
 Throw/rethrow opcode dispatch, cross-frame re-dispatch, full instantiation and
 collector/realm ownership remain unfinished. The new 98th file is outside the
 historical frozen 97-file sweep.
+
+The newer detached exact canonical `221fe60c` snapshot now passes **98/98
+WebAssembly files in each GC mode** (328.4 s default /326.2 s GC-none), with
+all 4,496 tracked contents unchanged. Its 213 Wasm and 490 LibJS non-Markdown
+files match canonical at recording. This includes the current-frame unwind
+helper and preserves the unfinished execution/instantiation/collector scope
+above. [Complete proof](../docs/translation-audit/WASM_SCALAR_VERIFICATION.md)
+records immutable manifests, exact commands, log hashes and later-change scope.
