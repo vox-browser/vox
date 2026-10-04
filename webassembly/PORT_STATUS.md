@@ -673,3 +673,24 @@ The package now has 87 test files, without a full 87-file sweep claim.
 Remaining scalar/SIMD operators, production opcode dispatch, instantiation and
 collector/realm ownership remain open.
 See [Source comparison mapping](../docs/translation-audit/WASM_FLOAT_COMPARISONS.md).
+
+## Source scalar floating arithmetic
+
+`aa474918` translates eight float/double Add/Subtract/Multiply/Divide
+specializations, matching **2,048 exact native C++ result-bit cases** from
+`5ab129c2`. Actual Configuration/helper checks preserve floating zero-divisor
+behavior, result widths and slot/trap ordering. Default GC passes privately;
+arithmetic/comparison/helper files pass **3/3** privately and canonically with
+GC disabled. This arithmetic snapshot has 88 test files.
+See [Source arithmetic mapping](../docs/translation-audit/WASM_FLOAT_ARITHMETIC.md).
+
+## Source scalar floating extrema and sign copying
+
+`b10f59ce` translates six float/double Minimum/Maximum/CopySign specializations,
+matching **1,536 exact native C++ result-bit cases** from `ebe9af38`. Source
+canonical NaN, signed-zero branches and width-specific libm calls retain their
+exact bits. Default GC passes privately; extrema/arithmetic/helper files pass
+**3/3** privately and canonically with GC disabled. The package now has 89 test
+files. Its full sweep is pending; remaining scalar/SIMD operators, production
+opcode dispatch, instantiation and collector/realm ownership remain open.
+See [Source extrema mapping](../docs/translation-audit/WASM_FLOAT_EXTREMA.md).
