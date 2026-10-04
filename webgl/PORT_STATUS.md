@@ -137,6 +137,28 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+createShader now preserves the genuine invalid-type return from pinned
+WebGLRenderingContextImpl.cpp:472-485 before actual native selection. Four
+invalid GLuint type cases return null/INVALID_ENUM without changing the other
+driver or allocating a shader record; V had selected its native context before
+this CPU gate. Valid vertex/fragment types still reach the original native
+createShader synchronous boundary (GLFunctions.json:945), select the owner and
+retain the supplied native result, including a real zero name. The existing
+valid-type zero-name ownership logic is unchanged by this focused gate repair.
+
+Both-version typed/public cases verify invalid/valid type owners, real shader
+type readback, native-before-Source pending errors and author conversion throws
+before entry. Existing genuine ANGLE-zero loss/restore and public record-brand
+fixtures remain intact. Only the invalid-type branch in the historical native/
+public shader mutation owner fixtures was migrated to leave the other context
+current; other mutation gates remain distinct pending Source reviews. All
+three native shader-creation/mutation-owner/shader and three public shader-
+creation/mutation-owner/host files passed with GC disabled. Logs are
+`Build/audit-fixes/source-shader-create-owner-gc-none.log` and
+`Build/audit-fixes/source-shader-create-owner-public/` in the second private
+worktree. The former blanket native-before-body owner claim below is
+superseded for this gate; no general prefix or loss-boundary parity is claimed.
+
 getAttribLocation now preserves the handle-error return from pinned
 WebGLRenderingContextImpl.cpp:891-904 before actual native selection. Foreign
 or invalidated program handles report INVALID_OPERATION and return -1 while
@@ -1485,10 +1507,15 @@ passed in `source-texture-copy-public-gc-none.log`. Competing invalid targets,
 dimensions and borders preserve actual driver error order and select the owner
 before returning. Remote transport and full LibJS ownership remain separate.
 
-Shader/program creation, mutation and deletion now select their owner before
-source handle, shader-type, duplicate-slot, null and repeated-deletion returns.
-This matches `WebGLRenderingContextImpl.cpp:129-193`, `:414-426`, `:474-489`,
-`:544-570`, `:583-602`, `:2233-2246`, `:2312-2330`, and `:2486-2500`.
+The earlier shader/program creation, mutation and deletion repair translated
+Source handle/type/slot gates and actual driver operations from
+`WebGLRenderingContextImpl.cpp:129-193`, `:414-426`, `:472-485`, `:544-570`,
+`:583-602`, `:2233-2246`, `:2312-2330`, and `:2486-2500`. Its original owner
+fixtures assumed that every Source make_current prefix selected a native
+driver. Subsequent concrete Proxy/Host review established that the prefix is
+empty: only an actual dispatched GL command/query selects its owner. The
+createShader type gate is corrected and its fixture expectation superseded
+above; other mutation handle/null/slot gates require independent Source slices.
 attachShader assigns its actual retained shader pointer after GL, including
 owned native rejection, and deleteProgram clears the current source pointer by
 actual object identity. The invented bindAttribLocation `gl_` name gate was
@@ -1496,7 +1523,8 @@ removed: the driver decides competing index/name errors after source ownership
 validation. Native owner, actual shader compilation/reflection and source
 program-order files passed with GC disabled (three files,
 `source-shader-program-owner-gc-none.log`); the actual public two-version owner
-case passed in `source-shader-program-owner-public-gc-none.log`. The following
+case passed in `source-shader-program-owner-public-gc-none.log`. Those historical
+passes do not establish final driver owner order for the remaining gates. The following
 record slices remove source shader/program mirrors, eager queries and the
 extra native-zero null substitution. Full LibJS tracing and WrapperWorld
 ownership remain open.
