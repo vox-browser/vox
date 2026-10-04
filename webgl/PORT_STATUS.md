@@ -162,6 +162,35 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+clientWaitSync, waitSync, deleteSync and getSyncParameter now preserve the
+Source CPU early-return ownership boundary. WebGL2RenderingContextImpl.cpp:920-
+980 validates context/generation/invalidation before reaching any native sync
+query/command; nullable or repeated deletion also returns early. The Source
+make_current prefix is empty (ProxyBase.h:44). Actual commands/sync calls select
+their host in HostWebGLContext.cpp:54-56 and :145-150, so the V methods no longer
+select a native owner before these CPU gates. Existing dispatch/native helpers
+select the actual owner only after Source validation succeeds. Stored Source
+proxy pointers, real native mappings and Source return/error shapes stay intact.
+
+Native tests cover foreign, null and deleted branches with the other context
+current; pending actual errors from both driver owners; genuine native wait,
+query and deletion; and owned records whose actual native fence result is null.
+Both Source and native pointers remain retained after deletion. Four typed
+owner/pointer/GPU/query-owner files pass in
+`source-sync-owner-boundary-native-gc-none.log`. Three public owner/creation/host
+files pass in `source-sync-owner-boundary-public-gc-none.log`, including public
+brand/conversion throws before body entry and actual owner selection on valid
+dispatch. Only getSyncParameter(foreign) was added to the separately reviewed
+early-return branches in the historical aggregate query-owner fixture. All
+checks use GC disabled and explicit private module paths.
+
+This supersedes the earlier sync owner fixture's unconditional prefix assumption.
+The genuine earlier driver/pointer/retention evidence remains, but its early
+branch owner assertions do not describe the empty Source proxy. The generated
+clientWaitSync lost default0 and compositor timeout override0 remain separately
+reviewed, pending corrections; this owner slice does not supply those behaviors.
+Full remote transport/map execution and GC/WrapperWorld remain open.
+
 WebGLSync sync_handle and sync_handle_for_deletion now retain the Source
 m_sync_handle independently of the actual native GLsync mapping. At this pin,
 GLFunctions.json:1492-1504 categorizes fenceSync as `gen`;
@@ -197,8 +226,9 @@ and driver errors. All use GC disabled and explicit private module paths.
 This supersedes historical descriptions of sync_handle as returning the actual
 native pointer, and of a rejected fence supplying a Source null proxy pointer.
 Those earlier real native-pointer/error observations remain driver evidence.
-Per-method actual-owner early-return order, loss command/sync suppression, full
-remote map/transport execution and full GC/WrapperWorld remain separate scopes.
+The separate later actual-owner early-return correction is recorded above.
+Loss command/sync suppression, full remote map/transport execution and full
+GC/WrapperWorld remain separate scopes.
 
 WebGLObject handle, handle_for_query and handle_for_deletion now preserve the
 exact Source m_handle independently of native driver names and compact wrapper
