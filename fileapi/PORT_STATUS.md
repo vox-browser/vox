@@ -111,6 +111,13 @@ DTOs, loading/abort/null/bytes and the unresolved unchecked-ASCII DataURL arm
 do not expose a raw record. New result/BinaryString/Text BOM/actual owner
 files pass **4/4 in both GC modes**. LibJS implementation and its frozen full
 suite/corpus proof are unchanged; native primitive/world-cache work remains open.
+
+The bounded native Sync BinaryString method now projects its actual owned UTF16
+record through the genuine target Runtime string ABI. All 256 units, NUL,
+empty, copied ownership, two Runtimes and poisoned String/global aliases pass
+**2/2 focused files in both GC modes**. Public Worker receivers and the complete
+async native result/world/weak-cache body remain open; no partial public getter
+or fresh ArrayBuffer fallback is provided.
 The separate internal replacement decoder now preserves Source's empty-input,
 single-U+FFFD and Unicode-BOM override behavior for FileReader labels, while
 public TextDecoder retains its required rejection. **5/5** focused files pass

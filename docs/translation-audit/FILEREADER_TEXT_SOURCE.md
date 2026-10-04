@@ -322,3 +322,20 @@ surrogates, original wide-ASCII storage, copied input/access ownership,
 clone/set/access lifetimes, loading/abort clearing and stale DTO rejection.
 Native primitive projection and genuine per-world weak ArrayBuffer caching
 remain separate prerequisites.
+
+## FileReaderSync native BinaryString return
+
+The separate bounded native BinaryString adapter follows Source
+`FileReaderSync.cpp:46–49`'s `read_as<Utf16String>(Blob, BinaryString)` call, then
+passes that exact owned record to the existing genuine
+`Runtime.javascript_utf16_string` primitive ABI. This uses the actual supplied
+target Runtime and source Sync/Blob records; it does not reconstruct units from
+UTF8 diagnostics, consult an author String/global alias or install a public
+Worker receiver. New BinaryString and existing Sync buffer files pass **2/2 in
+both GC modes** in `source-file-reader-sync-binary-string-{default,gc-none}.log`.
+Native tests retain all 256 units, embedded NULs, copied input ownership, empty
+strings, poisoned String/globalThis aliases and two actual target Runtimes.
+
+There is no partial async native `result()` implementation here. Its bytes
+variant remains behind the actual Source world/weak-cache dependency; no fresh
+buffer fallback or invented author-visible unsupported-result error is added.
