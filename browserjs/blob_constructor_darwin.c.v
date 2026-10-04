@@ -39,6 +39,7 @@ pub fn (mut host BlobHost) install_constructor() ! {
 	host.constructor = runtime.retain_javascript_value(runtime.call_javascript_function(installer, C.JSValueMakeUndefined(runtime.context), [
 		host.prototype,
 		construct,
+		C.JSContextGetGlobalObject(runtime.context),
 	])!)!
 }
 
@@ -164,12 +165,12 @@ const blob_part_buffer_kind_intrinsic = r'(function(){
  return function(value){if(isView(value))return true;try{apply(length,value,[]);return true}catch(ignore){return false}};
 })()'
 
-const blob_native_constructor_factory = r'(function(prototype,construct){
+const blob_native_constructor_factory = r'(function(prototype,construct,global){
  "use strict";
  const define=Object.defineProperty,T=TypeError,P=Proxy;
  const Blob=new P(function Blob(){throw new T("Blob constructor must be called with \u0027new\u0027")},{construct(target,args,newTarget){let selected=newTarget.prototype;if(selected===null||(typeof selected!=="object"&&typeof selected!=="function"))selected=prototype;return construct(selected,args[0],args[1])}});
  define(Blob,"prototype",{value:prototype,writable:false});
  define(prototype,"constructor",{value:Blob,writable:true,configurable:true});
- define(globalThis,"Blob",{value:Blob,writable:true,configurable:true});
+ define(global,"Blob",{value:Blob,writable:true,configurable:true});
  return Blob;
 })'
