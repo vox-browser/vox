@@ -41,6 +41,9 @@ separate consumption report.
 The final GC-none batch passed 5/5 files, covering proxy identity, activation
 consumption, activation-owner identity, CloseWatcher, and existing context/proxy
 property tests: `source-window-proxy-consumption-complete-gc-none.log`.
+Existing Window, context/proxy, actual navigation/Page-owner, and
+associated-document files also passed 4/4 with GC none in
+`source-window-proxy-navigation-neighbors-gc-none.log`.
 Commands used `v -old-compiler -enable-globals test`, adding `-gc none` for
 the corresponding batch.
 

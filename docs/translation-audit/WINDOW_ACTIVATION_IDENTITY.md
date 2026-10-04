@@ -39,8 +39,9 @@ the corresponding batch.
 
 This feature unifies the activation owner and checks. The separate
 [trusted activation notification slice](TRUSTED_ACTIVATION_CLOCK.md) fixes the
-native EventTarget notification clock. The existing typed consumption methods still walk cached
-BrowsingContext descendants rather than the source top-level traversable's
-active-document inclusive descendant navigables. Input and select picker models
+native EventTarget notification clock. The separate
+[logical navigable consumption slice](WINDOW_ACTIVATION_CONSUMPTION.md) replaces
+the cached BrowsingContext traversal with the source active-document inclusive
+descendant navigables and actual WindowProxy Window lookup. Input and select picker models
 also retain explicitly supplied activation/security state. These remaining
 paths are not certified by the timestamp-identity regressions.

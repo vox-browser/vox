@@ -43,7 +43,7 @@ that batch.
 The pinned EventTarget source still marks full ancestor/descendant activation
 notification as FIXME and performs its local relevant-Window notification;
 this translation preserves that algorithm. General Event construction still
-has a separate relevant-global timestamp boundary. Logical navigable traversal
-for activation consumption and picker-model activation ownership remain
-separate slices, as described in
-[Window activation identity](WINDOW_ACTIVATION_IDENTITY.md).
+has a separate relevant-global timestamp boundary. The separate
+[logical navigable consumption slice](WINDOW_ACTIVATION_CONSUMPTION.md) translates
+that traversal. Picker-model activation ownership remains a distinct boundary,
+as described in [Window activation identity](WINDOW_ACTIVATION_IDENTITY.md).
