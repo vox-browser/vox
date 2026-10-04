@@ -89,3 +89,10 @@ producers and neighbors pass **5/5** both modes in
 `source-data-transfer-fileapi-{default,gc-none}.log`. Native actual-header
 -O0/-O2 decoder evidence is in `tools/source_drag_wtf8_probe.py` and the audit
 source mapping. This does not broaden the generic LibJS scalar string adapter.
+
+FileReader's typed Text packaging now applies Source's given-decoder BOM
+override after explicit-label/MIME/default selection. Focused packaging,
+existing reader and decoder files pass **3/3 in both GC modes**. Pinned repeated
+BOM behavior, source mapping and remaining replacement-decoder/actual
+FileReader owner boundaries are recorded in
+[`FILEREADER_TEXT_SOURCE.md`](../docs/translation-audit/FILEREADER_TEXT_SOURCE.md).
