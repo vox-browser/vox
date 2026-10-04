@@ -359,6 +359,16 @@ and WebGL2 bitmap-border checks retain their errors before any GL call.
 Upstream ImageBitmap/origin-clean TODOs and complete DOM/LibJS source bindings
 remain explicit boundaries.
 
+Framebuffer-to-texture copy now follows
+`WebGLRenderingContextImpl.cpp:427-437`: select the owning driver and forward
+every argument to GL. Extra V dimension/border prevalidation was removed from
+both copy bodies. The two-version native source case and genuine texture
+copy/layer pixel neighbor passed with GC disabled in
+`source-texture-copy-gc-none.log` (two files); the actual public source case
+passed in `source-texture-copy-public-gc-none.log`. Competing invalid targets,
+dimensions and borders preserve actual driver error order and select the owner
+before returning. Remote transport and full LibJS ownership remain separate.
+
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
 ANGLE builds lacking compressed robust entry points use the matching GLES call
