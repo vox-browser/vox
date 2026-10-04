@@ -1164,3 +1164,71 @@ while these focused checks cover the later caller feature. No native browser
 bundle or LibJS implementation changed privately. The fallback label/string,
 physical allocation/OOM, remaining other-codec and native public-owner
 boundaries described above remain explicit.
+
+## Genuine UTF8 whole Off owner, lifecycle and reserve witnesses
+
+`encoding/utf8_decoder.v` now creates the existing actual
+`SourceUtf8StreamingDecoder.create(false)` in the selected UTF8
+potentially-borrowable whole path. Source encoding_rs `lib.rs:3134–3202`
+creates `new_decoder_without_bom_handling()` (`lib.rs:3422–3424`), retaining
+the actual Decoder lifecycle around its original UTF8 variant. The previous
+whole translation directly instantiated that raw variant; its existing
+outputs and capacity/reserve logic worked, but omitted this Source owner.
+This is an ownership correction, with no newly asserted observable value
+regression.
+
+The whole caller's remaining input/String spans require the outer owner's
+existing replacement loop with retained base positions. The new
+`decode_to_utf8_at` lowers those Source slices onto their original arrays;
+the existing zero-base entry delegates to it. Source `lib.rs:3985–4031`
+replacement order, raw variant, counters and malformed-length handling stay
+the same. Each EF/BF/BD write keeps a separate fatal guard for production
+builds, retaining preceding writes and original state before a Source short
+indexed-write failure. No new decoder algorithm or output-conversion path is
+introduced.
+
+Tool `tools/source_utf8_whole_owner_probe.py` is independently committed as
+`24eecbbb`. It first validates the pinned Source HEAD and archive through the
+existing original whole-input bridge probe. Only the ignored copied package
+receives a separately named copy of the exact whole Source method with local
+capacity/lifecycle observations; the original method remains unchanged, and
+every copied-method output/error is compared with the actual original Rust
+FFI. The existing isolated AArch64 default-alloc dependency manifest is
+reused, with the outer probe project explicitly selecting that validated
+copy. Source/cache implementation files remain untouched.
+
+Debug/release match exactly on **2,170 genuine whole FFI cases**, covering
+both matching-BOM flags, ASCII/Unicode valid prefixes, malformed tails, NUL,
+capacity thresholds and repeated UTF8 BOMs. Source observes **282 actual
+UTF8 Cow borrows**, **620 natural reserve calls**, and **1,888 entire fatal
+callback withholdings**. Successful whole callbacks include empty output;
+fatal malformed output produces no callback. Actual lifecycle stays
+Converting on OutputFull and reaches Finished on flushed InputEmpty.
+
+Implementation/tests are together in `fc6b1a6c`. Focused default passes 1/1,
+GC-none whole/previous-whole/outer-owner batch passes 3/3, and production
+GC-none whole/outer-owner batch passes 2/2 in
+`Build/audit-fixes/source-utf8-whole-owner-focused-*.log`. The owner tests
+compare actual native capacities/counters/lifecycle and additional reserve
+requests, including nonzero input/output bases and retained valid prefixes.
+Native physical Vec capacity is replayed only for those direct owner-call
+witnesses. The production V String/array retains its existing logical
+requested allocation rather than Rust's amortized physical capacity; physical
+Cow/Vec/Box/allocator/OOM remain explicit boundaries. The signed-int V array
+limit is separately named after Source usize capacity queries. Initial
+compile logs are retained separately; they recorded the required missing
+outer base-position entry and a fixture helper unavailable across separately
+compiled test files. Final checks pass after implementing the actual entry
+and making the fixture independent.
+
+- `utf8_whole_owner.json` SHA256:
+  `e50b0f9ef9ba01841c406b8b2928087c460412388637820c2860dc78c0a5023e`.
+- Actual native debug/release probe log SHA256:
+  `8073d5386e5912a096f327d624221b2fe9ddcb5eed7609882f0df533d2fe723d`.
+
+The prior full Encoding34 snapshot predates this owner feature; the focused
+checks cover it. Selected-UTF8 given-decoder hookup is the next separate
+caller feature. Native public TextDecoder holders/Realm/wrappers, branded
+BufferSource/shared-copy paths, other codecs, and actual TransformStream
+ownership remain separate. No LibJS implementation or private native bundle
+changes.
