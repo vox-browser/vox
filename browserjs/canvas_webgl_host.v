@@ -199,13 +199,6 @@ fn (host &CanvasWebGLHost) resource_reply(handle string) json2.Any {
 	})
 }
 
-fn (host &CanvasWebGLHost) object_reply(context &webgl.WebGLRenderingContext, object &webgl.WebGLObject) json2.Any {
-	object.handle(context.identity(), context.context_generation()) or { return json2.Any(json2.Null{}) }
-	logical := object.bookkeeping_id()
-	handle := host.logical_objects['${context.identity()}/${logical}'] or { return json2.Any(json2.Null{}) }
-	return host.resource_reply(handle)
-}
-
 fn (mut host CanvasWebGLHost) parameter(context &webgl.WebGLRenderingContext, value webgl.WebGLParameterValue) json2.Any {
 	if texture := value.texture {
 		if handle := host.platform_objects[voidptr(&texture.object)] {
@@ -250,6 +243,14 @@ fn (mut host CanvasWebGLHost) parameter(context &webgl.WebGLRenderingContext, va
 		}
 		handle := host.register(context, 'query', &query.object)
 		host.queries[handle] = query
+		return host.resource_reply(handle)
+	}
+	if shader := value.shader {
+		if handle := host.platform_objects[voidptr(&shader.object)] {
+			return host.resource_reply(handle)
+		}
+		handle := host.register(context, 'shader', &shader.object)
+		host.shaders[handle] = shader
 		return host.resource_reply(handle)
 	}
 	return match value.kind {
@@ -853,7 +854,7 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 			host.validate_resource(wg_arg(args, 0), 'program', false)!
 			values := context.get_attached_shaders(host.programs[wg_handle(wg_arg(args, 0))] or { return error('TypeError: expected program') }) or { return json2.Any(json2.Null{}) }
 			mut result := []json2.Any{}
-			for value in values { result << host.object_reply(context, &value.object) }
+			for value in values { result << host.parameter(context, webgl.WebGLParameterValue{shader: value}) }
 			return json2.Any(result)
 		}
 		'getProgramInfoLog' {
