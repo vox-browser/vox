@@ -382,3 +382,26 @@ Blob construction normalizes its type to ASCII; the source internal
 explicit supplied type. Native Sync DataURL raw-output fixtures keep this typed
 compatibility input boundary explicit; ordinary normalized ASCII/default-type
 Blob owners validate its direct native return path.
+
+## FileReaderSync native DataURL return
+
+The separate bounded native DataURL adapter follows
+`FileReaderSync.cpp:58–61`'s `read_as<Utf16String>(Blob, DataURL)` call and passes
+that exact owned result to `Runtime.javascript_utf16_string`. It uses the
+actual supplied target Runtime and Sync/Blob records and preserves the
+unchecked ASCII output's code units. Feature
+`ff136bce0f1a45b24eaa158f286b3f3ec150c89e` includes its native fixture; that
+file passes **1/1 with default GC and 1/1 with GC-none** in
+`source-file-reader-sync-data-url-{corrected-default,gc-none}.log`.
+
+Tests check genuine primitive identity/type and unit access, empty/default and
+normalized ASCII Blob types, actual target Runtimes and poisoned String/global
+aliases. Raw MIME-output cases are supplied compatibility-byte inputs, with the
+native MIME conversion boundary above kept explicit. An initial test-only JS
+index assertion used positions 7/10 for bytes actually at 6/9; its failing log
+`source-file-reader-sync-data-url-default.log` is retained. The direct native
+unit-array checks already passed, the fixture positions were corrected, and
+both final mode checks passed without production changes.
+
+This supplies no public Worker receiver/constructor or asynchronous result
+wrapper. The genuine HostDefined/world weak ArrayBuffer cache remains open.
