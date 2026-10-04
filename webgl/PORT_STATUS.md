@@ -5,6 +5,17 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/WebGL`
 Reference audit: 2026-09-12
 Latest native focused verification: 2026-10-04
 
+After source buffer/retained-slot/intrinsic and texture repairs, frozen private
+snapshot `13d3c7d3` passed all 73 typed WebGL files and all 43 public/mixed canvas
+files with GC disabled and explicit private module paths on 2026-10-04.
+The exact manifests, TSV results and per-file logs are under
+`Build/audit-fixes/webgl-final-13d3c7d3/`. No obsolete fixture failures occurred.
+The initial V test runner removed shell quoting from the module path's pipe
+separators and failed before compilation; its diagnostic is preserved there.
+The completed sweeps use direct per-file argument-vector invocations, keeping
+module-path separators out of shell interpretation. These tests preserve the
+remaining source TODO, remote transport and full VM/WrapperWorld boundaries.
+
 After the shared native query/reflection repairs, the full typed package passed
 58/58 files and the complete public/mixed canvas group passed 29/29 files with
 GC disabled against snapshot `69881821`. Exact manifests, results, and per-file
