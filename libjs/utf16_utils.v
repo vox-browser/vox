@@ -3,6 +3,9 @@ module libjs
 // Utf16String wraps []u16 to provide UTF-16 string functionality. Public
 // intrinsic-operation dependencies can return it without exposing its storage.
 pub struct Utf16String {
+	// AK's unchecked ASCII constructor owns bytes independently of their
+	// code-unit projection. Utf16View::to_utf8 returns these bytes verbatim.
+	ascii_bytes_ ?[]u8
 mut:
 	data []u16
 	// IPC strings retain their actual ASCII/UTF16 storage form even when all
@@ -45,7 +48,9 @@ pub fn utf16_string_from_code_units_with_storage(units []u16, ascii bool) !Utf16
 }
 
 pub fn (text Utf16String) has_ascii_storage() bool {
-	if storage := text.ascii_storage_ { return storage }
+	if text.ascii_bytes_ != none {
+		if _ := text.retained_ascii_bytes() { return true }
+	} else if storage := text.ascii_storage_ { return storage }
 	for unit in text.data { if unit >= 128 { return false } }
 	return true
 }
@@ -69,14 +74,20 @@ fn (u Utf16String) as_slice() []u16 {
 }
 
 fn (u Utf16String) clone() Utf16String {
+	mut ascii_bytes := ?[]u8(none)
+	if bytes := u.retained_ascii_bytes() { ascii_bytes = bytes.clone() }
+	mut storage := u.ascii_storage_
+	if u.ascii_bytes_ != none { storage = u.has_ascii_storage() }
 	return Utf16String{
 		data: u.data.clone()
-		ascii_storage_: u.ascii_storage_
+		ascii_storage_: storage
+		ascii_bytes_: ascii_bytes
 	}
 }
 
 // WTF-8 preserves even unpaired UTF-16 surrogates in internal map keys.
 pub fn (u Utf16String) str() string {
+	if bytes := u.retained_ascii_bytes() { return bytes.bytestr() }
 	return encode_utf16(u.data, false)
 }
 
