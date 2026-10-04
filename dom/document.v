@@ -495,9 +495,6 @@ pub mut:
 	active_window_proxy_hook_ ?NodeActiveWindowProxyHook
 	adopted_from_hook_        ?NodeAdoptedFromHook
 	lifecycle_hook_           ?NodeLifecycleHook
-	relevant_scripting_environment_ ?NodeScriptingEnvironment
-	// Explicit late-Window adapter for the older standalone constructors.
-	relevant_scripting_document_ &Document = unsafe { nil }
 }
 
 // Translation of the ParentNode mixin; its algorithms live in
@@ -5590,8 +5587,6 @@ fn Document.create_with_optional_page_and_relevant_global(page ?&Page, url URL, 
 	doc.lifecycle_hook_ = lifecycle_hook
 	doc.temporary_execution_context_hook_ = temporary_context_hook
 	assert doc.relevant_settings_object() != unsafe { nil }
-	mut document_node := unsafe { &Node(doc) }
-	document_node.initialize_relevant_scripting_environment()
 	if factory := document_font_face_set_factory_ {
 		context := doc.begin_temporary_execution_context()
 		doc.fonts_ = factory(doc)

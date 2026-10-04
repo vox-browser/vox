@@ -774,7 +774,6 @@ fn assign_unique_node_id[T](node &T) &T {
 		mut n := &Node(node)
 		n.EventTarget.data.kind = .node
 		n.unique_id_ = UniqueNodeID(i64(voidptr(node)))
-		n.initialize_relevant_scripting_environment()
 	}
 	return node
 }
@@ -800,7 +799,6 @@ pub fn Node.new_with_realm(realm voidptr, document &Document, node_type NodeType
 	}
 	node.EventTarget.data.kind = .node
 	node.unique_id_ = allocate_unique_id(node)
-	node.initialize_relevant_scripting_environment()
 	return node
 }
 
@@ -815,8 +813,6 @@ pub fn (mut n Node) finalize() {
 pub fn (mut n Node) visit_edges(mut visitor CellVisitor) {
 	n.EventTarget.visit_edges(mut visitor)
 	visitor.visit(n.document_)
-	if environment := n.relevant_scripting_environment_ { visitor.visit(environment.settings) }
-	visitor.visit(n.relevant_scripting_document_)
 	visitor.visit(n.child_nodes_)
 	visitor.visit(n.layout_node_)
 	visitor.visit(n.paintable_)
@@ -2897,7 +2893,6 @@ pub fn (mut n Node) set_document_from_named_node_map(document &Document) {
 }
 
 pub fn (mut n Node) set_document(document &Document) {
-	n.initialize_relevant_scripting_environment()
 	if n.document_ == document {
 		return
 	}

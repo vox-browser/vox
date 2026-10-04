@@ -16,8 +16,7 @@ fn test_source_node_gate_reads_actual_page_preference_and_sandbox_for_own_settin
 	mut owner, mut document, settings := scripting_owner_fixture('https://scripting.example/')!
 	node := document.create_element('button')!.as_node()
 	assert document.page().has_scripting_enabled_owner()
-	assert node.relevant_scripting_environment_ != none
-	assert node.relevant_scripting_document_ == unsafe { nil }
+	assert document.relevant_settings_object() == voidptr(settings)
 	assert node.is_scripting_enabled() && is_scripting_enabled_for_settings(settings)
 	owner.set_is_scripting_enabled(false)
 	assert node.is_scripting_disabled() && is_scripting_disabled_for_settings(settings)
@@ -58,7 +57,7 @@ fn test_source_scripting_enabled_does_not_include_fully_active_or_standalone_rea
 	assert can_run_script_for_settings(settings) == .run
 }
 
-fn test_source_adopted_nodes_use_new_document_context_and_original_settings_identity() {
+fn test_source_adopted_nodes_use_current_document_context_and_settings() {
 	mut source_owner, mut source, source_settings := scripting_owner_fixture('https://first.example/')!
 	mut target_owner, mut target, target_settings := scripting_owner_fixture('https://second.example/')!
 	root := source.create_element('div')!
@@ -66,32 +65,52 @@ fn test_source_adopted_nodes_use_new_document_context_and_original_settings_iden
 	mut root_node := root.as_node()
 	root_node.append_child(child.as_node())!
 	root_node.append_child(source.create_text_node('owned text').as_node())!
-	source_environment := root.as_node().relevant_scripting_environment_ or { panic('settings') }
-	assert source_environment.settings == voidptr(source_settings)
+	assert root_node.is_scripting_enabled()
+	assert source.relevant_settings_object() == voidptr(source_settings)
 	target_owner.set_is_scripting_enabled(false)
-	target.adopt_node(root.as_node())
+	target.adopt_node(root_node)
 	assert voidptr(root.document()) == voidptr(target)
-	assert root.as_node().is_scripting_enabled() && child.as_node().is_scripting_enabled()
-	assert root.as_node().children[1].is_scripting_enabled()
-	assert (root.as_node().relevant_scripting_environment_ or { panic('settings') }).settings == voidptr(source_settings)
-	assert root.as_node().relevant_scripting_document_ == unsafe { nil }
-	copy := root.as_node().clone_single_node(target)!
-	assert (copy.relevant_scripting_environment_ or { panic('clone settings') }).settings == voidptr(target_settings)
+	assert target.relevant_settings_object() == voidptr(target_settings)
+	assert root_node.is_scripting_disabled() && child.as_node().is_scripting_disabled()
+	assert root_node.children[1].is_scripting_disabled()
+	copy := root_node.clone_single_node(target)!
 	assert copy.is_scripting_disabled()
 	source_owner.set_is_scripting_enabled(false)
 	target_owner.set_is_scripting_enabled(true)
-	assert root.as_node().is_scripting_disabled()
+	assert root_node.is_scripting_enabled() && child.as_node().is_scripting_enabled()
+	assert root_node.children[1].is_scripting_enabled() && copy.is_scripting_enabled()
+	target.set_active_sandboxing_flag_bits(u32(SandboxingFlag.sandboxed_scripts))
+	assert root_node.is_scripting_disabled() && child.as_node().is_scripting_disabled()
+	assert root_node.children[1].is_scripting_disabled()
+	target.set_active_sandboxing_flag_bits(0)
+	assert root_node.is_scripting_enabled()
+	source.adopt_node(root_node)
+	assert root_node.is_scripting_disabled() && child.as_node().is_scripting_disabled()
 	source_owner.set_is_scripting_enabled(true)
+	assert root_node.is_scripting_enabled() && child.as_node().is_scripting_enabled()
 	mut detached := dom.Document.create(dom.url_about_blank())
-	detached.adopt_node(root.as_node())
-	assert root.as_node().is_scripting_disabled()
+	detached.adopt_node(root_node)
+	assert root_node.is_scripting_disabled()
 }
 
-fn test_source_document_constructor_binds_actual_setting_identity_eagerly() {
+fn test_source_document_constructor_exposes_actual_settings_before_node_scripting_checks() {
 	_, document, settings := scripting_owner_fixture('https://scripting.example/')!
-	node := document.as_node()
-	assert (node.relevant_scripting_environment_ or { panic('eager Document realm') }).settings == voidptr(settings)
-	assert node.relevant_scripting_document_ == unsafe { nil }
+	assert document.relevant_settings_object() == voidptr(settings)
+	assert document.as_node().is_scripting_enabled()
+}
+
+fn test_source_node_created_before_window_reads_the_current_installed_settings() {
+	mut owner := page.Page.create(1)!
+	mut document := dom.Document.create(dom.URL{'https://late-scripting-owner.example/'})
+	document.set_page(unsafe { &dom.Page(owner) })
+	node := document.create_element('button')!.as_node()
+	assert node.is_scripting_disabled()
+	_ = WindowModel.create_top_level(document, none, '')!
+	assert node.is_scripting_enabled()
+	owner.set_is_scripting_enabled(false)
+	assert node.is_scripting_disabled()
+	owner.set_is_scripting_enabled(true)
+	assert node.is_scripting_enabled()
 }
 
 fn test_source_owned_parser_noscript_mode_reads_page_preference_and_sandbox() {

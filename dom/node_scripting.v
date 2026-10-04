@@ -1,44 +1,16 @@
-// DOM/Node.cpp::is_scripting_disabled(), retaining the actual relevant settings
-// across node adoption through the DOM/HTML module-cycle boundary.
+// DOM/Node.cpp::is_scripting_disabled(), using the actual current Document
+// settings through the DOM/HTML module-cycle boundary.
 module dom
 
-pub struct NodeScriptingEnvironment {
-pub:
-	settings voidptr
-	enabled  DocumentSettingsScriptingEnabledCallback
-}
-
-fn (document &Document) node_scripting_environment() ?NodeScriptingEnvironment {
-	hook := document.lifecycle_hook_ or { return none }
-	if hook.settings_scripting_enabled == unsafe { nil } { return none }
-	settings := document.relevant_settings_object()
-	if settings == unsafe { nil } { return none }
-	return NodeScriptingEnvironment{ settings: settings, enabled: hook.settings_scripting_enabled }
-}
-
-fn (mut node Node) initialize_relevant_scripting_environment() {
-	if node.relevant_scripting_environment_ != none { return }
-	if node.relevant_scripting_document_ == unsafe { nil } {
-		node.relevant_scripting_document_ = node.document()
-	}
-	if node.relevant_scripting_document_ != unsafe { nil } {
-		node.relevant_scripting_environment_ = node.relevant_scripting_document_.node_scripting_environment()
-		if node.relevant_scripting_environment_ != none {
-			// The actual settings own their Realm/global. A native node does not
-			// retain an additional obsolete creation Document after adoption.
-			node.relevant_scripting_document_ = unsafe { nil }
-		}
-	}
-}
-
 fn (node &Node) relevant_settings_scripting_enabled() bool {
-	mut mutable_node := unsafe { &Node(node) }
-	mutable_node.initialize_relevant_scripting_environment()
-	if environment := node.relevant_scripting_environment_ {
-		return environment.enabled(environment.settings)
-	}
-	// DOM-only and late-Window standalone adapters have no settings predicate.
-	return true
+	// Environments.cpp::relevant_settings_object(DOM::Node const&) reads
+	// the current node Document, including after adoption.
+	document := node.document()
+	hook := document.lifecycle_hook_ or { return true }
+	if hook.settings_scripting_enabled == unsafe { nil } { return true }
+	settings := document.relevant_settings_object()
+	if settings == unsafe { nil } { return true }
+	return hook.settings_scripting_enabled(settings)
 }
 
 pub fn (page &Page) has_scripting_enabled_owner() bool {
