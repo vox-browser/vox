@@ -137,6 +137,29 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+WebGL2 integer scalar attributes now call exact glVertexAttribI4i and
+glVertexAttribI4ui delegates from pinned WebGL2RenderingContextImpl.cpp:496-501
+and 513-518. Native C signed int and unsigned GLuint widths are preserved
+without float conversion or vector-entry-point substitution. The two final
+write-only vertex-value map updates are removed, together with the unused
+context field. The unified V context's existing WebGL2 availability gate is
+unchanged; public WebGL1 exposes neither scalar method, matching the Source
+class/IDL boundary. Integer list minimum gates and vector delegation remain a
+separate scope, as do pointer/divisor state mirrors.
+
+Focused typed checks compare exact signed INT_MIN/INT_MAX and large signed
+values, UINT_MAX/high-bit unsigned values, independent driver resets, last
+valid/first invalid real attribute slots, owner selection and native-before-
+Source error order. Public native readback verifies the same complete values,
+including WebIDL unsigned wrapping of -1, actual throw-before-entry behavior,
+argument conversion order and WebGL1 method absence. All three native integer-scalar/
+state/float-scalar and all three public integer-scalar/float-scalar/vector files
+passed with GC disabled. Results are under `Build/audit-fixes/source-vertex-integer-scalar-gc-none.log` and
+`Build/audit-fixes/source-vertex-integer-scalar-public/` in the second private
+worktree. Actual native integer queries are driver witnesses; this supplies no
+invented public integer CURRENT_VERTEX_ATTRIB getter. The pinned Source
+Float32Array getter and full runtime/WrapperWorld boundaries remain unchanged.
+
 The four floating vertex-vector methods now forward their span pointer to
 exact glVertexAttrib1fv/2fv/3fv/4fv entry points, matching pinned
 WebGLRenderingContextImpl.cpp:2523-2569. They preserve the actual Source
