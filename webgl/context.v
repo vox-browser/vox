@@ -382,8 +382,15 @@ pub fn (mut context WebGLRenderingContext) create_shader(type_ GLenum) ?&WebGLSh
 pub fn (mut context WebGLRenderingContext) create_program() &WebGLProgram {
 	handle := context.allocate_handle()
 	source_handle := context.allocate_object_id()
-	context.native.make_current()
-	native_handle := C.vox_gl_create_program()
+	// Source's generated gen call still allocates its ID after loss, but
+	// record_bytes suppresses creation, leaving the native mapping absent.
+	mut native_handle := GLuint(0)
+	if !context.native.is_lost() {
+		context.native.make_current()
+		if !context.native.is_lost() {
+			native_handle = C.vox_gl_create_program()
+		}
+	}
 	program := &WebGLProgram{
 		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle, source_handle), native_handle_: native_handle}
 	}
