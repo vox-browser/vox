@@ -378,7 +378,7 @@ pub fn (o Origin) serialize_for_ipc() string {
 	return o.value
 }
 
-fn (o Origin) liburl_origin() ?liburl.Origin {
+pub fn (o Origin) liburl_origin() ?liburl.Origin {
 	if typed := o.typed {
 		return typed
 	}

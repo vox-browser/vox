@@ -303,10 +303,14 @@ fn fetch_csp_policy_list(policies []SerializedCSPPolicy) &csp.PolicyList {
 		for directive in policy.directives {
 			directives << csp.SerializedDirective{ name: directive.name, value: directive.value.clone() }
 		}
-		origin := if policy.self_origin.is_opaque() {
+		// Policy::create_from_serialized_policy copies the real Origin record.
+		// Serializing and reparsing loses opaque identity and tuple fields.
+		origin := policy.self_origin.liburl_origin() or {
+			if !policy.self_origin.is_opaque() {
+				panic('invalid CSP origin')
+			}
+			// Preserve the explicit legacy adapter when it has no typed origin.
 			liburl.Origin.opaque([16]u8{}, .standard)
-		} else {
-			(liburl.parse(policy.self_origin.serialize()) or { panic('invalid CSP origin') }).origin()
 		}
 		converted << csp.SerializedPolicy{
 			directives: directives
