@@ -5,6 +5,7 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Streams`
 Translation workspace: `~/code/vox2/streams`
 Audited: 2026-09-12
 Pending callback re-audit: 2026-10-02
+Read-loop and byte-reading owner prerequisites: 2026-10-04
 
 All 22 upstream Streams `.cpp` implementation units have audited V mappings.
 The 25 headers and 20 WebIDL definitions were cross-audited as well; their
@@ -163,6 +164,28 @@ The source reactions and retained callback operation records above replace
 those omissions; JavaScript object conversion remains a typed boundary.
 
 ## Verification
+
+Source `ReadableStreamDefaultReader.cpp::ReadLoopReadRequest` now retains the
+same request across pending chunks in the actual FIFO read-request list.
+Callbacks receive the original stored error value. Its deprecated wrapper
+creates an owning-realm WebIDL Promise and resolves an ArrayBuffer on close;
+it no longer calls the synchronous standalone `read_all_bytes()` facade.
+Public default reads and internal aggregation share the source request and
+controller pull paths. Default-reader release creates one shared TypeError
+record for every rejected pending request.
+
+Source `ReadableStream.cpp::set_up_with_byte_reading_support` now initializes
+the relevant realm, stream and byte controller, schedules its owning start
+reaction, and forwards actual pending pull/cancel Promises with original
+rejection values. The earlier controller-only swap omitted these steps.
+Pinned fatal `MUST` setup failures remain V panic boundaries.
+
+The source read loop passes **3/3 default** and **10/10 GC-disabled** focused
+read/controller/pipe/tee/native-host files. Full byte-reading setup passes the
+final default focused file and **3/3 GC-disabled** setup/read-loop/byte-reader
+files. Evidence and the still-pending native Uint8Array witness and Blob task
+bindings are recorded in
+[`READ_LOOP_BLOB_SOURCE.md`](../docs/translation-audit/READ_LOOP_BLOB_SOURCE.md).
 
 ```text
 $ /Users/alex/code/v/v -old-compiler -enable-globals test streams compression encoding
