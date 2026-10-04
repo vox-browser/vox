@@ -162,6 +162,43 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+getUniformLocation now preserves its Source owned-program handle gate before
+actual native owner selection, with the exact location == -1 null-return gate.
+Impl.cpp:2003-2023 has an empty Proxy make_current prefix, validates the handle,
+then obtains the exact native location and creates a fresh record for any
+result other than -1. V moves native selection below that handle gate and
+matches the exact comparison while keeping native-name forwarding and existing
+actual parent-program/fresh-record construction. UniformLocation.cpp:21-35
+and :41-51 retain the parent and derive the relevant global/handle validation
+from that actual pointer; no link-status, current-binding or name cache gate
+is added.
+
+The genuine pre-fix foreign-program probe selected Owner rather than current
+Other, retained in source-uniform-location-unfixed-probe_test.v and
+source-uniform-location-unfixed-probe-gc-none.log. New two-version typed/public
+cases preserve Other's selected viewport and pending INVALID_ENUM on foreign/
+invalidated program gates. Public arity/nonnullable/forged-brand/Symbol errors
+stay before body dispatch; name author conversion still occurs before a valid
+foreign wrapper's Source handle gate. Real compiled programs supply exact
+active uniform locations, including embedded-NUL name truncation. Repeated
+queries yield different actual records/public wrappers sharing the driver
+value and actual owning parent/global. Missing and reserved names return null
+through the real -1 result, while a directly queried unlinked program supplies
+an independent driver-error baseline; no invented eager link check is used.
+
+The initial typed attempt failed before execution on an immutable V array
+literal in the new fixture; its complete log remains in
+`Build/audit-fixes/source-uniform-location-owner-native-gc-none.log`.
+After correcting only that fixture declaration, both typed files pass in
+`Build/audit-fixes/source-uniform-location-owner-native-corrected-gc-none.log`.
+Both public files pass unchanged in
+`Build/audit-fixes/source-uniform-location-owner-public-gc-none.log`, with GC
+disabled and explicit private paths, including existing fresh location/link
+neighbors. No historical owner assertion required migration. Generated lost
+scalar/default and fresh location construction are a separate reviewed slice;
+retained getter order, other families, full remote transport and GC/WrapperWorld
+remain boundaries. Frozen full-sweep and canonical bundle evidence are unchanged.
+
 bindAttribLocation now suppresses its generated native command after loss,
 separately from the program-handle CPU gate repair. Impl.cpp:180-192 and
 GLFunctions.json:58-76 record the actual index/null-terminated name and Source
