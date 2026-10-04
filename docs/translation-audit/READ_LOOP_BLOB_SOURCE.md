@@ -577,3 +577,11 @@ close precedes document finalization, leaving no running Source VM context.
 This is a bounded typed adapter; public DataTransfer/Item/List wrappers,
 complete overloaded add dispatch, foreign-world associations, native Worker
 startup and BodyInit source/stream ownership remain explicit open dependencies.
+
+
+The frozen explicit byte-helper snapshot subsequently passed required full
+LibJS **232/232 default**, **232/232 GC-none** and exact **100/100 AST**.
+Private/canonical implementation hashes remained identical throughout;
+[`LIBJS_BYTE_BOUNDARY_VERIFICATION.md`](LIBJS_BYTE_BOUNDARY_VERIFICATION.md)
+records exact heads, commands, manifest and log hashes. These finite sweeps do
+not broaden the stated native-wrapper or general LibJS parity boundaries.

@@ -2253,5 +2253,9 @@ GC-none (`source-utf16-byte-boundary-{default,gc-none}.log`). The separate
 UnicodeUtils and CharacterTypes header algorithms at native -O0 and -O2. Its
 WTF8, malformed/truncated, overlong and raw ASCII results match the V fixtures.
 It probes those actual decoder helpers, not a complete C++ File/LibWeb object.
-The required full two-mode LibJS suites and exact AST comparison are queued
-for the integrated frozen helper snapshot; focused results do not replace them.
+The frozen integrated helper snapshot passes the required full **232/232**
+LibJS files with default GC and with GC-none, and exact **100/100** upstream
+AST comparisons. All 485 non-Markdown LibJS implementation/test/assets remained
+byte-identical to canonical before and after the sweeps. Manifest/hash/log
+evidence is in
+[`LIBJS_BYTE_BOUNDARY_VERIFICATION.md`](../docs/translation-audit/LIBJS_BYTE_BOUNDARY_VERIFICATION.md).
