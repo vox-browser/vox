@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // Translation of FileAPI/FileReader.{h,cpp} and FileReaderSync.{h,cpp}.
-// File reading task scheduling is exposed through process_pending_tasks(); this
-// preserves the observable loading/abort/event state machine without hiding a
-// browser event loop behind synchronous callbacks.
+// Actual Window/Worker readers use the owning Blob stream/default reader,
+// WebIDL Promise reactions and FileReading tasks. Standalone construction
+// retains its explicit process_pending_tasks() compatibility adapter.
 module fileapi
 
 import dom
@@ -225,6 +225,10 @@ pub fn (reader &FileReader) event_log() []string {
 }
 
 fn (mut reader FileReader) read_operation(blob &Blob, type_ FileReaderType, encoding_name ?string) ! {
+	if context := reader.global_context_ {
+		reader.read_owned_operation(context, blob, type_, encoding_name)!
+		return
+	}
 	if reader.state_ == .loading {
 		return error('InvalidStateError: Read already in progress')
 	}
@@ -281,7 +285,8 @@ pub fn (mut reader FileReader) process_queued_tasks() {
 	}
 }
 
-// Runs the queued file-reading work at the explicit HTML event-loop boundary.
+// Standalone compatibility completion; actual owner reads use Stream promises
+// and the creation global's FileReading tasks instead of this byte adapter.
 pub fn (mut reader FileReader) process_pending_tasks() {
 	pending := reader.pending_read_ or { return }
 	if reader.state_ != .loading || reader.is_aborted_ {

@@ -104,8 +104,8 @@ fn test_source_file_reader_abort_removes_only_affiliated_task_ids_and_reentrant_
 	mut reader := settings.create_file_reader()!
 	mut other := settings.create_file_reader()!
 	observation := &FileReaderOwnerObservation{}
-	// This establishes the existing typed loading state; the real Stream read
-	// operation remains a separate feature. These tests exercise owned tasks.
+	// The Source read starts its own Blob/setup tasks. The manually queued
+	// callbacks below still retain their actual affiliated task ownership.
 	reader.read_as_text(fileapi.Blob.create('pending'.bytes(), ''), none)!
 	reader.queue_a_task(fn [observation] (mut actual fileapi.FileReader) {
 		mut seen := unsafe { &FileReaderOwnerObservation(observation) }
