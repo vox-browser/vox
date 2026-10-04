@@ -98,6 +98,23 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+Destination-view and numeric pixel-pack `read_pixels` bodies now select their
+owner before source range/binding errors and issue their actual GL calls
+without the V dispatcher's invented boolean success gate. This follows
+`WebGLRenderingContextOverloads.cpp:93-123` and
+`WebGL2RenderingContextOverloads.cpp:426-487`. Public live buffer-witness
+validation likewise follows source owner selection after IDL conversion.
+The nullable WebGL1 body selects the owner before INVALID_VALUE; the distinct
+WebGL2 nullable Empty branch at `:413-423` still returns before owner selection.
+Real driver readback after an earlier GL_INVALID_ENUM verifies destination
+bytes and a genuine pixel-pack buffer, preserving surrounding sentinel bytes.
+Two-version owner witnesses cover range/binding errors, null-overload order,
+public detached storage where the host supports transfer, and author numeric
+exceptions before source entry. All three typed files passed in
+`source-read-pixels-order-gc-none.log`; all three public files passed in
+`source-read-pixels-order-public-gc-none.log`. The genuine robust GL byte count
+continues to govern readback; no GL-error queue or new read algorithm is added.
+
 `active_texture` now follows `WebGLRenderingContextImpl.cpp:123-127` directly:
 select its owning context and issue GL's void command. The V-only
 `active_texture_` slot, reset write and conditional success write were removed;
