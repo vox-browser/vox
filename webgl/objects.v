@@ -205,12 +205,27 @@ mut:
 	native_handle_ voidptr
 }
 
-pub fn (sync &WebGLSync) sync_handle(context_id u64, context_generation u64) !GLuint {
-	return sync.object.handle(context_id, context_generation)
+pub struct WebGLOptionalSyncHandle {
+pub:
+	has_value bool
+	value voidptr
 }
 
-pub fn (mut sync WebGLSync) sync_handle_for_deletion(context_id u64, context_generation u64) !WebGLOptionalHandle {
-	return sync.object.handle_for_deletion(context_id, context_generation)
+pub fn (sync &WebGLSync) sync_handle(context_id u64, context_generation u64) !voidptr {
+	sync.object.validate_context(context_id)!
+	if sync.object.invalidated_for_context(context_generation) {
+		return error('GL_INVALID_OPERATION')
+	}
+	return sync.native_handle_
+}
+
+pub fn (mut sync WebGLSync) sync_handle_for_deletion(context_id u64, context_generation u64) !WebGLOptionalSyncHandle {
+	sync.object.validate_context(context_id)!
+	if sync.object.invalidated_for_context(context_generation) {
+		return WebGLOptionalSyncHandle{}
+	}
+	sync.object.invalidate()
+	return WebGLOptionalSyncHandle{has_value: true, value: sync.native_handle_}
 }
 
 @[heap]

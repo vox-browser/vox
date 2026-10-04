@@ -78,7 +78,8 @@ fn test_object_deletion_is_idempotent_but_foreign_context_is_an_error() {
 fn test_sync_deletion_uses_generation_aware_sync_handle() {
 	mut context := WebGLRenderingContext.new(.webgl2, WebGLContextAttributes{}, [])
 	mut sync := context.fence_sync(sync_gpu_commands_complete, 0) or { panic('missing sync') }
-	assert sync.sync_handle(context.identity(), context.context_generation())! != 0
+	assert sync.sync_handle(context.identity(), context.context_generation())! == sync.native_handle_
+	assert sync.native_handle_ != unsafe { nil }
 	context.reset_context_state_after_loss()
 	sync.sync_handle(context.identity(), context.context_generation()) or {
 		assert err.msg() == 'GL_INVALID_OPERATION'
