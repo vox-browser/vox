@@ -265,6 +265,7 @@ fn (mut context OpenGLContext) native_shader_parameter_robust(handle GLuint, pna
 
 fn (mut context OpenGLContext) native_program_parameter(handle GLuint, pname GLenum) int {
 	context.make_current()
+	if !context.current_ { return 0 }
 	result := C.vox_gl_program_parameter(handle, pname)
 	return result
 }
@@ -273,6 +274,7 @@ fn (mut context OpenGLContext) native_program_parameter(handle GLuint, pname GLe
 // diagnostic log length retains the regular programiv method above.
 fn (mut context OpenGLContext) native_program_parameter_robust(handle GLuint, pname GLenum) int {
 	context.make_current()
+	if !context.current_ { return 0 }
 	return C.vox_gl_program_parameter_robust(handle, pname)
 }
 
