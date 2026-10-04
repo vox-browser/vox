@@ -162,6 +162,38 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+bindAttribLocation now preserves its Source owned-program handle gate before
+actual native owner selection. Impl.cpp:180-192 begins with an empty Proxy
+make_current, validates the handle, converts its already-converted name to
+null-terminated UTF-8, and records the exact GLuint-index/name command. V moves
+only native selection below the Source gate and retains native-name forwarding
+and the actual driver call, without adding a reserved-name or index-error gate.
+
+The genuine pre-fix foreign-program probe switched current Other to Owner,
+retained in source-bind-attrib-unfixed-probe_test.v and
+source-bind-attrib-unfixed-probe-gc-none.log. New two-version typed/public
+cases keep Other selected and preserve pending INVALID_ENUM on foreign/deleted
+programs. Public arity, nonnullable, forged-brand and Symbol conversion errors
+stay before body dispatch; actual index/name author conversions remain ordered
+before a valid wrapper's foreign-handle body gate. Compiled shader programs
+linked in the real driver expose requested attribute locations 3 and 5,
+including a name truncated at its embedded NUL exactly as the Source C string.
+Direct driver calls supply independent invalid-index/reserved-name errors;
+translated valid-handle calls select Owner and preserve those actual errors,
+with retained shader identities unchanged.
+
+Only one typed and one public historical foreign binding owner expectation
+were migrated. The typed independent baseline now explicitly selects its
+actual owner before its direct GL call instead of depending on that incorrect
+foreign-gate side effect. Two typed files pass in
+`Build/audit-fixes/source-bind-attrib-owner-native-gc-none.log`; two public
+files pass in
+`Build/audit-fixes/source-bind-attrib-owner-public-gc-none.log`, with GC disabled
+and explicit private paths, including the aggregate shader/program neighbors.
+Lost binding is separately reviewed next; location/retained getter and other
+object families, full remote transport and GC/WrapperWorld remain distinct
+scopes. Historical full-sweep and canonical bundle evidence are unchanged.
+
 detachShader now drops its generated native command after loss and still
 clears Source's corresponding actual retained shader slot. Impl.cpp:669-679
 performs that CPU clear after the proxy call, even when record_bytes:57-60
