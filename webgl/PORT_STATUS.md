@@ -162,6 +162,43 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+useProgram now drops its native command after loss while still assigning
+Source's retained current-program pointer. Impl.cpp:2482-2483 calls the proxy
+and then assigns m_current_program even when record_bytes:57-60 drops that
+command. GLFunctions.json:4393-4402 and generated proxy/replay resolve the
+Source object ID for the live call. V conditionally executes only the C call
+when actual owner selection succeeds, then performs its existing retained
+assignment/metadata path. An early function return would lose the required
+null and owned-record assignments after a dropped command. CPU invalid-handle
+gates remain before that path. The exact read-only generated witness is
+`Build/audit-fixes/source-use-program-generated-boundary.txt`, SHA-256
+`dc4975d70715f0350249e56581443e2e42c752c00f6373ab036315d530638289`.
+
+A genuine pre-fix EGL probe unbound Other's active native program through a
+lost Owner's useProgram(null), retained in
+source-use-program-lost-unfixed-probe_test.v and
+source-use-program-lost-unfixed-probe-gc-none.log. New two-version typed/public
+cases check Other's real CURRENT_PROGRAM, viewport, linked/live state and
+DELETE_STATUS after every lost call so a later rebind cannot hide transient
+wrong driver work. Null/undefined still assign Source null; original and owned
+SourceID2/native0 records still become Source current records. Foreign,
+invalidated, public arity and forged-brand gates preserve the prior retained
+record. Public CURRENT_PROGRAM returns the same actual wrapper identities
+through the pinned CPU retained-pointer branch. Other's pending INVALID_ENUM
+survives without additional native errors, public setters stay undefined and
+loss reporting remains one-shot.
+
+Two typed files pass in
+`Build/audit-fixes/source-use-program-lost-native-gc-none.log`; two public
+files pass in
+`Build/audit-fixes/source-use-program-lost-public-gc-none.log`, using GC disabled
+and explicit private paths, including the live/CPU-order/driver-rejection
+neighbors. Source identity and zero native mapping stay distinct. This is only
+useProgram's loss/retained-assignment boundary; attach/detach/bind/location,
+other object families, retained getter owner order, full remote transport and
+GC/WrapperWorld remain separate. Frozen full-sweep and canonical bundle
+evidence are unchanged.
+
 useProgram now keeps its optional Source owned-handle validation ahead of
 actual native owner selection. Pinned Impl.cpp:2468-2484 prefixes the body
 with an empty Proxy make_current, validates a present program, then records
@@ -188,7 +225,7 @@ Two typed files pass in
 files pass in
 `Build/audit-fixes/source-use-program-owner-public-gc-none.log`, using GC disabled
 and explicit private paths, including existing retained-current-program
-neighbors. No legacy assertion required migration in this slice. Lost use,
+neighbors. No legacy assertion required migration in this slice. Lost use is separately reviewed above;
 other program bodies/object families, the separate retained getter's native
 owner order, full remote transport and GC/WrapperWorld remain distinct scopes.
 Historical full regressions and canonical bundle evidence remain unchanged.
