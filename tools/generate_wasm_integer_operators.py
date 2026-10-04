@@ -11,6 +11,7 @@ SOURCE_PIN = "963d46a829f3e1b79f44dba9d02afb70654300fa"
 BINARY_NAMES = ("Divide", "Modulo", "BitRotateLeft", "BitRotateRight")
 UNARY_NAMES = ("EqualsZero", "CountLeadingZeros", "CountTrailingZeros", "PopCount")
 SHIFT_NAMES = ("BitShiftLeft", "BitShiftRight")
+COMPARISON_NAMES = ("Equals", "NotEquals", "LessThan", "GreaterThan", "LessThanOrEquals", "GreaterThanOrEquals")
 
 BINARY_DRIVER = r"""
 #include <bit>
@@ -156,13 +157,62 @@ int main()
 """
 
 
+COMPARISON_DRIVER = r"""
+#include <bit>
+#include <stdio.h>
+#include <stdint.h>
+
+template<typename T> void comparison_result(char const* name, u64 lhs, u64 rhs, T value)
+{
+    printf("%s\t%016llx\t%016llx\t%016llx\n", name,
+        (unsigned long long)lhs, (unsigned long long)rhs, (unsigned long long)value);
+}
+int main()
+{
+    using namespace Wasm::Operators;
+    u64 const inputs[] = {0, 1, 2, 7, 0xfffffffffffffff9ULL,
+        0x7fffffffULL, 0x80000000ULL, 0xffffffffULL,
+        0x7fffffffffffffffULL, 0x8000000000000000ULL,
+        0xfffffffffffffffeULL, 0xffffffffffffffffULL};
+    for (auto lhs : inputs) {
+        for (auto rhs : inputs) {
+            auto sl32 = std::bit_cast<i32>((u32)lhs);
+            auto sr32 = std::bit_cast<i32>((u32)rhs);
+            auto sl64 = std::bit_cast<i64>(lhs);
+            auto sr64 = std::bit_cast<i64>(rhs);
+            comparison_result("eq_i32", lhs, rhs, Equals{}(sl32, sr32));
+            comparison_result("eq_i64", lhs, rhs, Equals{}(sl64, sr64));
+            comparison_result("ne_i32", lhs, rhs, NotEquals{}(sl32, sr32));
+            comparison_result("ne_i64", lhs, rhs, NotEquals{}(sl64, sr64));
+            comparison_result("lt_i32", lhs, rhs, LessThan{}(sl32, sr32));
+            comparison_result("lt_u32", lhs, rhs, LessThan{}((u32)lhs, (u32)rhs));
+            comparison_result("lt_i64", lhs, rhs, LessThan{}(sl64, sr64));
+            comparison_result("lt_u64", lhs, rhs, LessThan{}(lhs, rhs));
+            comparison_result("gt_i32", lhs, rhs, GreaterThan{}(sl32, sr32));
+            comparison_result("gt_u32", lhs, rhs, GreaterThan{}((u32)lhs, (u32)rhs));
+            comparison_result("gt_i64", lhs, rhs, GreaterThan{}(sl64, sr64));
+            comparison_result("gt_u64", lhs, rhs, GreaterThan{}(lhs, rhs));
+            comparison_result("le_i32", lhs, rhs, LessThanOrEquals{}(sl32, sr32));
+            comparison_result("le_u32", lhs, rhs, LessThanOrEquals{}((u32)lhs, (u32)rhs));
+            comparison_result("le_i64", lhs, rhs, LessThanOrEquals{}(sl64, sr64));
+            comparison_result("le_u64", lhs, rhs, LessThanOrEquals{}(lhs, rhs));
+            comparison_result("ge_i32", lhs, rhs, GreaterThanOrEquals{}(sl32, sr32));
+            comparison_result("ge_u32", lhs, rhs, GreaterThanOrEquals{}((u32)lhs, (u32)rhs));
+            comparison_result("ge_i64", lhs, rhs, GreaterThanOrEquals{}(sl64, sr64));
+            comparison_result("ge_u64", lhs, rhs, GreaterThanOrEquals{}(lhs, rhs));
+        }
+    }
+}
+"""
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--upstream", type=Path, default=Path.home() / "code/3rd/ladybird")
     parser.add_argument("--build-dir", type=Path)
     parser.add_argument("--compiler", default="clang++")
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--family", choices=("binary", "unary", "shift"), default="binary")
+    parser.add_argument("--family", choices=("binary", "unary", "shift", "comparison"), default="binary")
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
     upstream = args.upstream.resolve()
@@ -177,15 +227,26 @@ def main():
         "binary": (BINARY_NAMES, BINARY_DRIVER, 3264, "integer_operators.tsv"),
         "unary": (UNARY_NAMES, UNARY_DRIVER, 1656, "unary_integer_operators.tsv"),
         "shift": (SHIFT_NAMES, SHIFT_DRIVER, 5760, "shift_integer_operators.tsv"),
+        "comparison": (COMPARISON_NAMES, COMPARISON_DRIVER, 2880, "comparison_integer_operators.tsv"),
     }
     names, driver, expected_count, filename = families[args.family]
+    if args.family == "comparison":
+        macro = re.search(r"^#define DEFINE_BINARY_OPERATOR\(Name, operation\).*?(?=^DEFINE_BINARY_OPERATOR\(Equals)", source, re.MULTILINE | re.DOTALL)
+        if macro is None:
+            parser.error("Missing exact Source binary operator macro")
+        excerpts.append(macro.group(0))
+        hashes.append(f"# DEFINE_BINARY_OPERATOR sha256={hashlib.sha256(macro.group(0).encode()).hexdigest()}")
     for name in names:
-        match = re.search(r"^struct " + name + r" \{.*?^};", source, re.MULTILINE | re.DOTALL)
+        expression = (r"^DEFINE_BINARY_OPERATOR\(" + name + r", .*?\);" if args.family == "comparison"
+                      else r"^struct " + name + r" \{.*?^};")
+        match = re.search(expression, source, re.MULTILINE | re.DOTALL)
         if match is None:
             parser.error(f"Missing exact Source operator record: {name}")
         text = match.group(0)
         excerpts.append(text)
         hashes.append(f"# {name} sha256={hashlib.sha256(text.encode()).hexdigest()}")
+    if args.family == "comparison":
+        excerpts.append("#undef DEFINE_BINARY_OPERATOR")
     # Only the selected verbatim Source records are needed. This avoids unrelated
     # LibWasm Types/LibSync generated exports; AK headers remain the actual source.
     generated = "#include <limits.h>\n#include <AK/Checked.h>\n#include <AK/BuiltinWrappers.h>\n#include <AK/Error.h>\n#include <AK/StringView.h>\n"
