@@ -95,3 +95,29 @@ this new 101st file and the separately translated 100th load file.
 Actual opcode/native dispatch, SIMD lane stores, complete module instantiation,
 JS realm integration and collector roots remain unfinished. The typed helpers
 do not establish a working complete Wasm interpreter.
+
+## Fixed local raw temporary owner
+
+Follow-up `81a727ba` uses existing endian put primitives to fill a fixed
+16-byte local owner and passes only sizeof(StoreT) through the immediate
+ReadonlyBytes borrow. Source's ConvertToRaw temporary has that same call-scoped
+lifetime. This replaces the initial get-helper slice projection, whose V
+standard implementations return a view of a fixed union buffer. No heap byte
+array, deferred release or new encoding algorithm is needed in this final path.
+Unused local bytes are never part of the store.
+
+An uncommitted release candidate exited 5 in production GC-none, with no test
+diagnostic, after attempting to free those get-helper views; its failed log
+`source-memory-store-temporary-production-gc-none.log` is retained. It was
+discarded before integration. The final fixed-owner file passes 1/1 default
+(5.77 seconds) and 1/1 production GC-none (9.60 seconds), including all 1,800
+actual native golden writes and the production fatal-argument child, in
+`source-memory-store-fixed-temporary-{default,production-gc-none}.log`.
+A new genuine direct store_value case also selects address source2, preserves
+sources0/1, consumes only the requested stack address, and proves that later
+mutation of the borrowed payload cannot change the copied memory bytes.
+
+The full 101-file b822d7f4 snapshot proof predates this temporary-owner follow-up
+and its additional direct-caller case; it is not relabeled as a sweep of this
+later implementation. Existing primitive memory ownership and physical ABI/
+full runtime boundaries remain as stated above.
