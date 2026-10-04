@@ -39,7 +39,12 @@ as runner diagnostics; the corrected fixtures use actual StackInfo and Trap
 APIs.
 
 The preceding full **80/80** Wasm sweeps predate the integer operator and
-numeric helper test files. The package now has 82 files; no complete 82-file
-sweep is claimed here. Full scalar/SIMD operator coverage, production opcode
+numeric helper test files. That numeric-helper snapshot has 82 files; no
+complete 82-file sweep is claimed. The subsequent unary-operator slice adds
+the 83rd file, and frozen assignment-9 `f28d34eb` passes **83/83 in each GC
+mode** with exact manifest and snapshot logs. Canonical WebAssembly
+implementation/tests match that snapshot; dependencies outside the package
+are the private snapshot, which predates the later LibJS string Reference
+change. Full scalar/SIMD operator coverage, production opcode
 dispatch, constant-expression execution, native compilation/fault recovery,
 complete instantiation and collector roots remain open.

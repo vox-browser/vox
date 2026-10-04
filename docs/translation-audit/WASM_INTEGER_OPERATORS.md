@@ -42,4 +42,7 @@ full instruction dispatch remain pending. The subsequent
 [numeric helper slice](WASM_NUMERIC_OPERATIONS.md) translates operand routing
 and trap propagation with a supplied concrete operator adapter.
 The preceding clean 80-file Wasm sweep predates this added operator test;
-it is not a claimed full sweep of the subsequent 82-file package.
+it is not a claimed full sweep of the subsequent 82-file numeric-helper
+snapshot. The later unary slice brings the package to 83 files; frozen
+assignment-9 `f28d34eb` passes all 83 in each GC mode, with exact manifest
+and snapshot evidence described in the [unary mapping](WASM_UNARY_INTEGER_OPERATORS.md).

@@ -590,7 +590,7 @@ the actual input slot, and retain Source trap reasons and return values.
 Concrete Value callbacks adapt C++ operator/type templates; no instruction
 execution loop is added. Four source-order regressions pass privately in
 both GC modes, and the helper plus 3,264-case integer oracle pass **2/2**
-canonically with GC disabled. The package now has **82** test files; the
+canonically with GC disabled. That numeric-helper snapshot has **82** test files; the
 preceding clean full 80-file sweeps predate these two new files. Enabled
 Source operator-name tracing, remaining operators, opcode dispatch and the
 production machine/collector boundaries above remain open.
@@ -616,6 +616,8 @@ default GC and 83/83 with GC disabled**. Logs are
 `Build/audit-fixes/source-numeric-operators-full-private-{default,gc-none}.log`
 in that private worktree, alongside its exact manifest and snapshot hash.
 Canonical WebAssembly implementation and tests match that snapshot byte-for-byte;
-canonical LibJS additionally exposes the unchanged `to_well_formed` function.
+At integration, canonical LibJS additionally exposed the unchanged
+`to_well_formed` function. Later canonical LibJS adds the Source string
+Reference fast path (`bfc616a2`); the frozen Wasm sweep predates that change.
 These are private full-suite results and canonical focused integration results,
 not a claimed canonical full-suite run or complete interpreter/runtime parity.
