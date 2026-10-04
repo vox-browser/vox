@@ -430,6 +430,15 @@ Source's maximum `3 * byte_length` UTF8 capacity and returns the produced slice
 with its explicit byte length. Physical Rust Cow borrowing/Vec allocation is
 not reproduced by the flattened V owned buffer.
 
+Source's maximum-capacity multiplication is checked in `usize`; the current V
+byte-array owner uses signed 32-bit `int` lengths. Its allocation guard therefore
+rejects input lengths above `INT_MAX / 3`, even where Source's `usize` capacity
+could represent the product. This is the existing flattened V allocation
+boundary, not Source's exact overflow or allocation-failure behavior. The
+independent diagnostic/comment correction
+`5b00cae4f609e43f687d1d71eef2ac1549133975` names this boundary explicitly;
+it does not change the decoder or its successful byte/capacity results.
+
 `TextDecoder` now selects this translated path for standardized
 `windows-1252` (including its existing latin1/ISO-8859-1/ASCII aliases). Other
 legacy codecs still use their existing iconv compatibility backend, including
