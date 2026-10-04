@@ -193,6 +193,23 @@ with default GC; those files plus deletion, native draw and lifetime neighbors
 passed with GC disabled (five files). This translates the ownership graph of
 these slots; full LibJS tracing and caller WrapperWorld ownership remain open.
 
+Framebuffer attachment setters now follow
+`WebGLRenderingContextImpl.cpp:734-809`: select their owner before all source
+enum, level, binding and object-handle validation; issue the actual GL call;
+then mutate the actual retained framebuffer's attachment map, including after
+a driver error. The source's validation gates and its traced attachment map
+remain intact. Tests exercise both context versions, foreign objects with
+competing invalid inputs, missing bindings, differing driver/source framebuffer
+bindings, real attachment-name queries, and mutation/removal after genuine
+default-framebuffer driver errors. Four typed files passed with GC disabled in
+`source-framebuffer-attachment-order-gc-none.log`. The public binding neighbor
+passed in `source-framebuffer-attachment-order-public-gc-none.log`; the new
+public owner/IDL-order/error case passed after its test-only private native-name
+access was replaced with genuine GL binding queries, in
+`source-framebuffer-attachment-order-public-final-gc-none.log`. This supplies
+source method order and direct-driver behavior; full GC tracing, caller
+WrapperWorld and remote transport remain separate boundaries.
+
 Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
 `WebGL2RenderingContextOverloads.cpp:33-85`, and
 `WebGL2RenderingContextImpl.cpp:46-50`: select the owner, validate nullable data
