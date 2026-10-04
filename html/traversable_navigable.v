@@ -436,10 +436,18 @@ fn history_origins_differ(first ?dom.Origin, second ?dom.Origin) bool {
 	return false
 }
 
-fn history_entry_origins_differ(first &SessionHistoryEntry, second &SessionHistoryEntry) bool {
-	first_state := first.document_state or { return false }
-	second_state := second.document_state or { return false }
-	return history_origins_differ(first_state.origin, second_state.origin)
+fn history_entry_origins_are_equal(first &SessionHistoryEntry, second &SessionHistoryEntry) bool {
+	first_state := first.document_state or { panic('Source history entry requires its DocumentState') }
+	second_state := second.document_state or { panic('Source history entry requires its DocumentState') }
+	// URL::Origin::operator== calls is_same_origin. Optional equality also
+	// distinguishes one absent origin from two absent origins.
+	if left := first_state.origin {
+		if right := second_state.origin {
+			return left.is_same_origin(right)
+		}
+		return false
+	}
+	return second_state.origin == none
 }
 
 fn collect_documents_that_will_unload(entries []&SessionHistoryEntry, active &SessionHistoryEntry, target &SessionHistoryEntry) []&dom.Document {
@@ -562,11 +570,11 @@ fn (traversable &TraversableNavigable) check_if_unloading_is_canceled_for_histor
 		})
 		return
 	}
-	active := traversable.active_session_history_entry() or {
+	current := traversable.current_session_history_entry() or {
 		state.start_document_tasks()
 		return
 	}
-	if voidptr(target) != voidptr(active) && history_entry_origins_differ(target, active) {
+	if voidptr(target) != voidptr(current) && history_entry_origins_are_equal(target, current) {
 		if active_document := traversable.active_document_ {
 			for index, document in state.documents {
 				if voidptr(document) == voidptr(active_document) {

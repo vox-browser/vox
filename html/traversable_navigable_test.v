@@ -26,6 +26,15 @@ fn traversable_deactivation_completion() {
 	traversable_deactivation_completed = true
 }
 
+fn process_traversable_events_until_complete(goal fn () bool) {
+	mut event_loop := main_thread_event_loop()
+	for _ in 0 .. 16 {
+		if goal() { return }
+		event_loop.process()
+	}
+	assert goal(), 'queued traversal must reach its semantic completion'
+}
+
 fn traversal_entry(step int, url string, document &dom.Document) &SessionHistoryEntry {
 	return &SessionHistoryEntry{
 		step: step
@@ -73,9 +82,9 @@ fn test_traversable_used_steps_length_index_and_delta() {
 	assert traversable.current_session_history_step() == 0
 	traversable.process_session_history_traversal_queue()
 	assert traversable.current_session_history_step() == 0
-	mut traversal_event_loop := main_thread_event_loop()
-	traversal_event_loop.process()
-	traversal_event_loop.process()
+	process_traversable_events_until_complete(fn [traversable] () bool {
+		return traversable.current_session_history_step() == 2
+	})
 	assert traversable.current_session_history_step() == 2
 	assert traversable.active_session_history_entry()? == second
 	mut mutable_document := unsafe { &dom.Document(document) }
@@ -103,9 +112,12 @@ fn test_synchronous_navigation_steps_jump_the_queue_while_history_application_is
 	})
 	mut event_loop := main_thread_event_loop()
 	event_loop.process()
+	process_traversable_events_until_complete(fn [sync_observation] () bool {
+		return sync_observation.ran_while_outer_step_was_paused
+	})
 	assert sync_observation.ran_while_outer_step_was_paused
 	assert !completion.completed
-	event_loop.process()
+	process_traversable_events_until_complete(fn [completion] () bool { return completion.completed })
 	assert completion.completed
 	assert completion.result == .applied
 }
@@ -158,7 +170,7 @@ fn test_traversable_clear_forward_and_finalize_navigation() {
 	mut event_loop := main_thread_event_loop()
 	event_loop.process()
 	assert !observation.completed
-	event_loop.process()
+	process_traversable_events_until_complete(fn [observation] () bool { return observation.completed })
 	assert observation.completed
 	assert observation.result == .applied
 	traversable.clear_the_forward_session_history()
@@ -172,8 +184,7 @@ fn test_traversable_clear_forward_and_finalize_navigation() {
 		replacement_observation.complete(result)
 	})
 	assert !replacement_observation.completed
-	event_loop.process()
-	event_loop.process()
+	process_traversable_events_until_complete(fn [replacement_observation] () bool { return replacement_observation.completed })
 	assert replacement_observation.completed
 	assert traversable.current_session_history_step() == 1
 	assert traversable.active_session_history_entry()? == replacement
@@ -240,8 +251,7 @@ fn test_traversable_cancellation_visibility_focus_and_close() {
 	assert !application.completed
 	event_loop.process()
 	assert !application.completed
-	event_loop.process()
-	event_loop.process()
+	process_traversable_events_until_complete(fn [application] () bool { return application.completed })
 	assert application.completed
 	assert application.result == .applied
 	traversable.set_system_visibility_state(.visible)
