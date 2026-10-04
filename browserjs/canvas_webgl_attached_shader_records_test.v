@@ -27,6 +27,11 @@ fn test_public_get_attached_shaders_wraps_retained_deleted_and_first_exposed_rec
 		runtime.evaluate_host('globalThis.typedRecordProgram=recordShaderGL.createProgram();')!
 		mut context := host.contexts[key] or { panic('shader record context') }
 		mut other := host.contexts[other_key] or { panic('other shader context') }
+		other.native.make_current()
+		assert runtime.evaluate_host('recordShaderGL.getAttachedShaders(typedRecordProgram).length===0')! == 'true'
+		mut selected := [0, 0, 0, 0]!
+		C.vox_gl_int_parameter(0x0ba2, &selected[0])
+		assert selected == [9, 10, 11, 12]!
 		// The last registered program belongs to the public wrapper above.
 		program_wrapper := host.next_handle.str()
 		mut program := host.programs[program_wrapper] or { panic('typed record program') }
@@ -53,9 +58,8 @@ fn test_public_get_attached_shaders_wraps_retained_deleted_and_first_exposed_rec
 		assert C.glIsShader(fragment_native) == 1
 		other.native.make_current()
 		assert runtime.evaluate_host(r'(function(){globalThis.firstTypedShaders=recordShaderGL.getAttachedShaders(typedRecordProgram);const second=recordShaderGL.getAttachedShaders(typedRecordProgram);return firstTypedShaders.length===2&&firstTypedShaders!==second&&firstTypedShaders.every((shader,index)=>shader instanceof WebGLShader&&shader===second[index])})()')! == 'true'
-		mut selected := [0, 0, 0, 0]!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [9, 10, 11, 12]!
 		vertex_wrapper := host.platform_objects[voidptr(&vertex.object)] or { panic('vertex wrapper') }
 		fragment_wrapper := host.platform_objects[voidptr(&fragment.object)] or { panic('fragment wrapper') }
 		registered_vertex := host.shaders[vertex_wrapper] or { panic('vertex record') }
@@ -68,6 +72,16 @@ fn test_public_get_attached_shaders_wraps_retained_deleted_and_first_exposed_rec
 		context.delete_program(program)
 		assert C.glIsShader(vertex_native) == 0
 		assert C.glIsShader(fragment_native) == 0
-		assert runtime.evaluate_host('recordShaderGL.getAttachedShaders(typedRecordProgram)===null&&recordShaderGL.getError()===recordShaderGL.INVALID_OPERATION')! == 'true'
+		other.native.make_current()
+		assert runtime.evaluate_host('recordShaderGL.getAttachedShaders(typedRecordProgram)===null')! == 'true'
+		C.vox_gl_int_parameter(0x0ba2, &selected[0])
+		assert selected == [9, 10, 11, 12]!
+		assert runtime.evaluate_host('recordShaderGL.getError()===recordShaderGL.INVALID_OPERATION')! == 'true'
+		runtime.evaluate_host('globalThis.foreignAttachedProgram=recordShaderOther.createProgram();')!
+		other.native.make_current()
+		assert runtime.evaluate_host('recordShaderGL.getAttachedShaders(foreignAttachedProgram)===null')! == 'true'
+		C.vox_gl_int_parameter(0x0ba2, &selected[0])
+		assert selected == [9, 10, 11, 12]!
+		assert runtime.evaluate_host('recordShaderGL.getError()===recordShaderGL.INVALID_OPERATION')! == 'true'
 	}
 }

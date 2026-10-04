@@ -594,7 +594,6 @@ pub fn (mut context WebGLRenderingContext) get_framebuffer_attachment_parameter(
 }
 
 pub fn (mut context WebGLRenderingContext) get_attached_shaders(program &WebGLProgram) ?[]&WebGLShader {
-	context.native.make_current()
 	if !context.owns(&program.object) {
 		context.set_error(invalid_operation)
 		return none
