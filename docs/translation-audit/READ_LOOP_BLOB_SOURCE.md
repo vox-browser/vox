@@ -585,3 +585,15 @@ Private/canonical implementation hashes remained identical throughout;
 [`LIBJS_BYTE_BOUNDARY_VERIFICATION.md`](LIBJS_BYTE_BOUNDARY_VERIFICATION.md)
 records exact heads, commands, manifest and log hashes. These finite sweeps do
 not broaden the stated native-wrapper or general LibJS parity boundaries.
+
+
+A separate compatibility-view correction uses the frozen explicit Source byte
+decoder for legacy or structurally updated drag-store type/text/name views.
+This prevents V's scalar iterator from losing raw surrogate bytes when no raw
+slot is present or an old slot becomes stale. It preserves the raw factory's
+immutable ownership and ordinary string callers. Raw drag-slot plus actual
+producer fixtures pass **2/2** both modes in
+`source-drag-store-byte-boundary-{default,gc-none}.log`, including legacy raw
+lone/null/supplementary views, stale-slot replacements, and native Source
+truncated byte-name rules. This changes only consumers outside LibJS; the full
+verified LibJS helper snapshot remains unchanged.
