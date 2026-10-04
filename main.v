@@ -2341,6 +2341,10 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript Document event bindings: ${err.msg()}'
 		return none
 	}
+	mutable_runtime.install_window_current_event_binding() or {
+		messages << 'JavaScript Window.event bindings: ${err.msg()}'
+		return none
+	}
 	layout.install_document_layout_hook(document)
 	mutable_runtime.install_window_find_binding(fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
