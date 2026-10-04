@@ -162,3 +162,33 @@ so FileReader's `contained_data` check need not infer the original length from
 copied witness bytes. New slot and existing buffer files pass **2/2 in both GC
 modes** in `source-fixed-array-length-{default,gc-none}.log`. Native arrays and
 auto-length views remain outside this fixed typed record; no LibJS code changed.
+
+
+## FileReader stream and callback-context owner prerequisite
+
+Source `FileReader.cpp:215` obtains the reader's creation relevant Realm, then
+calls `Blob::get_stream(realm)` and `get_a_reader()`. Its setup task and both
+Promise callbacks enter `TemporaryExecutionContext(realm, Yes)`. The separate
+owner prerequisite extends the genuine FileReader global context with that
+`StreamRealm`, the actual settings' existing Blob stream supplier, and a runner
+which enters and closes the existing Source temporary execution context. No
+standalone byte aggregation callback or newly fabricated global is supplied.
+
+`create_file_reader_in_realm` retains explicitly supplied creation-Realm hooks;
+the realm ID must equal the actual settings' Realm. The ordinary owner entry
+point uses `settings.stream_realm()`. Both continue to use the same actual
+Window/Worker FileReading queue, microtask jobs and associated global. This
+owner bridge alone does not change the compatibility asynchronous read body.
+
+The context regression retains an actual pending Blob stream default reader
+and its existing WebIDL Promise, observes settlement through the owning
+microtask queue, enters the reader's exact principal/incumbent settings, and
+checks cleanup of nested script/callback contexts. The existing typed
+`DefaultReaderReadRequest` result-object projection remains a typed boundary;
+this prerequisite does not claim genuine native result objects, native
+FileReader exposure, per-world ArrayBuffer caching or native Uint8Array
+retained-length witness parity.
+
+The new stream-context, existing FileReader owner and owning Blob files pass
+**3/3 in both GC modes**, recorded in
+`source-file-reader-stream-context-{default,gc-none}.log`.

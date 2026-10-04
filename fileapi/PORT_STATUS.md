@@ -121,3 +121,10 @@ constructing the final URL directly. Literal supplied MIME and raw serialized
 WTF8/non-ASCII/NUL compatibility bytes remain unchanged. The Source unchecked
 ASCII string metadata/native primitive boundary remains open. Focused DataURL,
 existing reader and genuine URL helper files pass **3/3 in both GC modes**.
+
+The FileReader owner context now also retains the actual creation StreamRealm,
+existing settings-owned Blob stream supplier and Source temporary execution
+context runner. Its realm identity is checked against the actual settings;
+explicit native allocation/data hooks can be retained without changing owner
+task/microtask routing. This separate prerequisite does not yet replace the
+asynchronous compatibility body or supply native read-result wrappers.
