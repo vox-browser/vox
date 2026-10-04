@@ -54,8 +54,6 @@ mut:
 	current_vertex_array                ?&WebGLVertexArrayObject
 	current_vertex_array_oes            ?&WebGLVertexArrayObjectOES
 	current_vertex_array_binding_       ?&WebGLObject
-	enabled_capabilities                map[GLenum]bool
-	enabled_vertex_attributes           map[GLuint]bool
 	unpack_flip_y_                      bool
 	unpack_premultiply_alpha_           bool
 	unpack_colorspace_conversion_       GLenum = browser_default_webgl
@@ -74,9 +72,6 @@ pub fn WebGLRenderingContext.new(version WebGLVersion, attributes WebGLContextAt
 		version: version
 		attributes: attributes
 		native: native
-		enabled_capabilities: {
-			dither: true
-		}
 		xr_compatible_: attributes.xr_compatible
 	}
 }
@@ -254,9 +249,6 @@ fn (mut context WebGLRenderingContext) initialize_restored_client_state() {
 	context.bound_textures.clear()
 	context.bound_texture_objects.clear()
 	context.current_program = none
-	context.enabled_capabilities.clear()
-	context.enabled_capabilities[dither] = true
-	context.enabled_vertex_attributes.clear()
 	context.unpack_flip_y_ = false
 	context.unpack_premultiply_alpha_ = false
 	context.unpack_colorspace_conversion_ = browser_default_webgl
@@ -658,12 +650,10 @@ pub fn (mut context WebGLRenderingContext) pixel_storei(pname GLenum, parameter 
 }
 
 pub fn (mut context WebGLRenderingContext) enable(capability GLenum) {
-	context.enabled_capabilities[capability] = true
 	context.native.dispatch('enable', capability)
 }
 
 pub fn (mut context WebGLRenderingContext) disable(capability GLenum) {
-	context.enabled_capabilities.delete(capability)
 	context.native.dispatch('disable', capability)
 }
 
@@ -675,12 +665,10 @@ pub fn (mut context WebGLRenderingContext) is_enabled(capability GLenum) bool {
 }
 
 pub fn (mut context WebGLRenderingContext) enable_vertex_attrib_array(index GLuint) {
-	context.enabled_vertex_attributes[index] = true
 	context.native.dispatch('enable_vertex_attrib_array', index)
 }
 
 pub fn (mut context WebGLRenderingContext) disable_vertex_attrib_array(index GLuint) {
-	context.enabled_vertex_attributes.delete(index)
 	context.native.dispatch('disable_vertex_attrib_array', index)
 }
 
