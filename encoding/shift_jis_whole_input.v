@@ -23,7 +23,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 // IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
-// Source encoding_rs Utf8Decoder and decoder_functions! control expansion.
+// Source Encoding::decode_without_bom_handling and ASCII scalar fallback.
 // Selected Source Shift_JIS ASCII-borrow/Off whole-input owner and UTF8 FFI.
 module encoding
 
