@@ -2158,7 +2158,8 @@ pub mut:
 	html_model_handle_                  voidptr = unsafe { nil }
 	group_handle                       voidptr
 	is_top_level_                      bool = true
-	virtual_browsing_context_group_id_ string
+	virtual_browsing_context_group_id_ u64
+	opener_origin_at_creation_         ?Origin
 	popup_sandboxing_flag_bits_        u32
 }
 

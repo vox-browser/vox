@@ -628,20 +628,34 @@ pub fn BrowsingContextModel.create_a_new_browsing_context_and_document(page &dom
 }
 
 pub fn BrowsingContextModel.create_a_new_auxiliary_browsing_context_and_document(page &dom.Page, opener &BrowsingContextModel) !BrowsingContextAndDocument {
-	top := opener.top_level_browsing_context() or {
+	opener_document := opener.active_document() or {
+		return error('InvalidStateError: opener has no active Document')
+	}
+	opener_navigable := opener_document.navigable() or {
+		return error('InvalidStateError: opener active Document has no node navigable')
+	}
+	top_level_traversable := opener_navigable.top_level_traversable()
+	if !top_level_traversable.is_top_level_traversable() {
+		return error('InvalidStateError: opener logical top-level navigable is not a traversable')
+	}
+	top_native := top_level_traversable.active_browsing_context() or {
 		return error('InvalidStateError: opener has no active top-level browsing context')
 	}
+	top := browsing_context_model_for_native(top_native)
 	group := top.group_ or {
 		return error('InvalidStateError: opener top-level browsing context has no group')
 	}
-	result := BrowsingContextModel.create_a_new_browsing_context_and_document(page, opener.active_document(), none)!
+	result := BrowsingContextModel.create_a_new_browsing_context_and_document(page, opener_document, none)!
 	mut context := result.browsing_context
 	context.is_auxiliary_ = true
-	mut mutable_group := unsafe { &BrowsingContextGroup(group) }
-	mutable_group.append(result.document.get_browsing_context() or {
+	mut native := result.document.get_browsing_context() or {
 		panic('Source auxiliary Document requires its actual BrowsingContext')
-	})
+	}
+	mut mutable_group := unsafe { &BrowsingContextGroup(group) }
+	mutable_group.append(native)
 	context.set_opener(opener)
+	native.virtual_browsing_context_group_id_ = top_native.virtual_browsing_context_group_id_
+	native.opener_origin_at_creation_ = opener_document.origin()
 	context.top_level_traversable_ = top.top_level_traversable_
 	return result
 }
@@ -750,9 +764,14 @@ pub fn (context &BrowsingContextModel) page() ?&dom.Page {
 	return group.page()
 }
 
-pub fn (context &BrowsingContextModel) virtual_browsing_context_group_id() string {
-	group := context.group_ or { return '' }
-	return '${u64(voidptr(group))}'
+pub fn (context &BrowsingContextModel) virtual_browsing_context_group_id() u64 {
+	native := context.native_browsing_context_ or { return 0 }
+	return native.virtual_browsing_context_group_id_
+}
+
+pub fn (context &BrowsingContextModel) opener_origin_at_creation() ?dom.Origin {
+	native := context.native_browsing_context_ or { return none }
+	return native.opener_origin_at_creation_
 }
 
 pub fn (mut context BrowsingContextModel) set_group(group ?&BrowsingContextGroup) {

@@ -173,7 +173,8 @@ fn test_browsing_context_exact_creation_and_traversable_access() {
 	assert created.document.is_html_document()
 	assert created.document.origin().is_same_origin(creator.origin())
 	assert created.document.document_element() != none
-	traversable := TraversableNavigable.create_a_new_top_level_traversable('')!
+	mut traversable := TraversableNavigable.new()
+	traversable.set_host_navigable(created.document.navigable()?)
 	mut created_context := created.browsing_context
 	created_context.set_top_level_traversable(traversable)
 	assert created_context.top_level_traversable()? == traversable

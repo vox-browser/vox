@@ -26,7 +26,7 @@ fn test_obtain_navigation_response_browsing_context_keeps_child_context() {
 fn test_obtain_navigation_response_browsing_context_keeps_top_level_without_group_switch() {
 	context := &BrowsingContext{
 		is_top_level_: true
-		virtual_browsing_context_group_id_: 'existing-group'
+		virtual_browsing_context_group_id_: u64(0x1020304050607080)
 	}
 	params := &NavigationParams{
 		browsing_context: context
@@ -34,7 +34,7 @@ fn test_obtain_navigation_response_browsing_context_keeps_top_level_without_grou
 	}
 	assert obtain_a_browsing_context_to_use_for_a_navigation_response(params) == context
 	// The corresponding C++ substep remains a FIXME and does not mutate this.
-	assert context.virtual_browsing_context_group_id_ == 'existing-group'
+	assert context.virtual_browsing_context_group_id_ == u64(0x1020304050607080)
 }
 
 fn test_obtain_navigation_response_browsing_context_switches_and_propagates_sandbox_flags() {
