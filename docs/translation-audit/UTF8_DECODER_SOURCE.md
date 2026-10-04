@@ -1066,3 +1066,68 @@ Promise/realm/public-wrapper ownership and native bindings remain open.
 Physical Rust String/Vec/Box allocation and Source OOM behavior remain explicit.
 Generic whole-input UTF16 wrappers and other codecs remain separate features.
 No LibJS implementation or native browser bundle was changed or built privately.
+
+
+## Selected UTF16 whole-input UTF8 owner
+
+Feature `c17074565927c68877c4d104a2fb24d5c795aa82` translates the UTF16-selected
+non-potentially-borrowable branch of `Encoding::decode_without_bom_handling`
+(`encoding_rs lib.rs:3134–3202`). Source excludes UTF16LE/BE from borrowing
+(`:2980–2982`), constructs an Off decoder and an empty owned String, chooses
+min(next-power-of-two(max-without-replacement), max-with-replacement), then
+calls `decode_to_string` with true flush until InputEmpty. Its OutputFull arm
+requests the remaining maximum additional capacity from current produced
+length and preserves aggregate had_errors. V retains that exact arm and
+lowers logical String/spare-capacity writes to original byte-owner offsets;
+source-native physical reserve/allocator behavior is a separate boundary.
+
+The Source UTF16 maximum formulas are identical with/without replacement.
+For allocating input sizes, their initial minimum is therefore the actual
+maximum: selected UTF16 naturally completes in one call. The native body
+probe confirms ZERO natural OutputFull/reserve calls; no forced lower initial
+capacity or invented source expectation was introduced. The owning replacement
+loop remains present even though its reserve arm is unreachable within this
+selected scope. Source general other-codec growth is not claimed.
+
+The private selected whole-input bridge follows original Rust
+`textcodec_rust_decode_to_utf8` (`Rust/src/lib.rs:81–117`). Its matching-BOM
+removal is `Encoding::decode_with_bom_removal` (`lib.rs:3086–3097`): discard one
+matching leading two-byte BOM, then call the Off whole-input decoder. It always
+decodes replacement output first; fatal mode withholds the entire result when
+had_errors is true. This is distinct from streaming FFI partial callbacks.
+The existing public BOM override caller is not yet changed in this feature.
+
+Tool `4d302860d17a0f8ae544b6bc5e71fd143d841a46` reuses the validated copied
+package and genuine unmodified original bridge. Its original whole-input
+method remains unchanged. A separately named copy of the exact original
+method adds only local capacity/read/write/error/reserve observations; every
+observed output is compared to the actual original FFI. Debug/release each
+pass 1/1 and regenerate byte-identical goldens for 1,504 cases, both byte orders,
+BOM flags, NUL, malformed surrogate/odd tails, capacity thresholds and 984
+whole-result fatal withholdings. No upstream or package-cache files changed.
+
+Focused V default, GC-none and production GC-none each pass 1/1 in
+`source-utf16-whole-focused-{default,gc-none,production-gc-none}.log`. The tests
+compare every whole result/error and each genuine initial capacity/counter,
+including output writes at nonzero original-owner offsets with intact prefixes.
+Full Encoding passes 25/25 in both modes in
+`source-utf16-whole-full-{default,gc-none}.log` at immutable feature `c1707456`.
+All 4,133 tracked files and HEAD remained unchanged for both runs; matching
+before/after manifests under `Build/audit-fixes/source-utf16-whole-frozen/`
+hash to `b7dab07af931c8ade8d3e976a03e15a9f4d42a45712d10a2cfa3ee26eea4a110`.
+
+The native byte and callback comparisons establish the logical selected path.
+Physical Cow/String/Vec allocation and native OOM/abort are not reproduced;
+V guards its narrower int-array allocation limit separately from Source usize
+overflow. Native public holders/realms/wrappers, other selected codecs and
+complete TransformStream ownership remain open. No LibJS code or native browser
+bundle changed or was built privately.
+
+
+- `utf16_whole_input.json` and regenerated native `whole.json`:
+  `fc8a1c1ec7291d6bc3b87607d28bb7fc49ef694d99c98afd57b41f1d70416d99`.
+- `source-utf16-whole-input-probe.log`:
+  `59ab1ac391810d8c7c87195e42b6c957330287512deaf66d8bb5adc42d700ba0`.
+- Full default / GC-none logs respectively:
+  `3a266e1a0d5a59cba5d879c9425723015d37bdb6b2726c9ed1ad8aa075b40757` /
+  `1f605e9be5726d99c5e70e45ce571edcb0606518595fbc60ee196fddde9972e3`.
