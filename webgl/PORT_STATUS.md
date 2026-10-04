@@ -162,6 +162,35 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+shaderSource and compileShader now keep Source handle validation ahead of
+actual native owner selection. WebGLRenderingContextImpl.cpp:414-426 and
+:2312-2330 validate each shader before recording its command. The preceding
+ProxyBase.h:44 make_current is empty; HostWebGLContext.cpp:54-56 selects the
+actual driver when a recorded command executes. The V direct adapter therefore
+leaves an already-current other context unchanged on foreign/deleted handle
+returns and selects its real owner only before a valid native command. Shader
+Source proxy IDs, separate native names, exact UTF-8 byte lengths and actual
+compilation remain intact.
+
+The new native two-version case preserves genuine foreign source/compile state,
+checks Source local errors after a pending owner-driver error, then reads actual
+owned source and successful driver compilation. The public case additionally
+checks once-only DOMString conversion and an author conversion throw before body
+entry. Only the shaderSource/compileShader cases in the historical aggregate
+mutation fixtures were migrated; the remaining methods await their own reviews.
+Three typed files pass in
+`Build/audit-fixes/source-shader-command-owner-native-corrected-gc-none.log`;
+three public files pass in
+`Build/audit-fixes/source-shader-command-owner-public-corrected-gc-none.log`.
+Initial fixture-only failures (unsupported V default parameter syntax and an
+unescaped JavaScript string newline) remain in the corresponding logs without
+`-corrected`. All checks use GC disabled and explicit private module paths.
+
+This supersedes historical unconditional owner-prefix assertions only for
+these two Source commands. General lost-command suppression, shader diagnostic
+getters/deletion, full remote transport/maps and GC/WrapperWorld remain separate
+scopes. No native-driver shader algorithm was replaced by a V mirror.
+
 clientWaitSync now applies the exact generated compositor timeout override.
 GLFunctions.json:595-597 gives the wire timeout `host_override: "0"`, and
 generate_compositor_webgl_replayer.py:185-188 substitutes that literal in the
