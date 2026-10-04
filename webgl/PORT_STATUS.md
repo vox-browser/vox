@@ -137,6 +137,36 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+A separate compact-adapter followup now checks every protocol discriminator
+(error, undefined, numeric and resource handle) with captured native own-property
+intrinsics before reading it. Primitive replies never undergo an inherited
+property lookup through boxing. This removes author Object.prototype/Number
+prototype getter calls that the source's direct JS::Value or Float32Array
+wrapping does not perform. Actual error records, Source undefined replies and
+retained platform-resource identity still take their existing adapter paths.
+The check captures hasOwnProperty and Reflect.apply before author replacement.
+No WebGL source body, driver validation or source conversion order changed.
+
+The genuine prior failure witness is retained in the first private checkout at
+`Build/audit-fixes/source-number-discriminator-probe.{v,log}`. In both WebGL
+versions inherited error and webglUndefined getters intercepted finite/infinite
+polygon-offset scalars and actual NaN attribute arrays; inherited handle also
+intercepted the finite scalar. The followup's real-driver regression installs
+all four inherited getters on Object and Number prototypes, checks NaN, both
+infinities, negative zero, fresh Float32Array buffers and retained buffer
+identity, and verifies the actual foreign-program getActiveUniforms WebGL2 undefined/error branch.
+It also replaces the captured helper properties themselves. Initial validation
+passed; the final numeric/intrinsic/host neighbors passed under the separate
+`08-protocol-followup/Build/audit-fixes/source-reply-discriminator-final/`
+private worktree. The new fixture initially used the wrong foreign-program
+API (getActiveUniformBlockParameter returns null). After comparison with pinned
+WebGL2RenderingContextImpl.cpp:1151-1161, it uses the actual getActiveUniforms
+undefined branch and passed separately in
+`source-reply-discriminator-corrected-final-gc-none.log`. The original fixture
+failure is retained; this is three neighbor passes plus the corrected new file,
+not a claim of a rerun clean four-file group. The first worktree's 4ef932b1 full sweep stays immutable and
+has its original revision scope; this followup is separate focused coverage.
+
 The compact JSON compatibility adapter now preserves exceptional numeric
 values in both directions. Pinned `WebGLRenderingContextImpl.cpp:1194-1207`
 returns queried polygon-offset GLfloat values through `JS::Value`, and
