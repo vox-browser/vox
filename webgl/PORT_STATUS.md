@@ -392,9 +392,9 @@ validation. Native owner, actual shader compilation/reflection and source
 program-order files passed with GC disabled (three files,
 `source-shader-program-owner-gc-none.log`); the actual public two-version owner
 case passed in `source-shader-program-owner-public-gc-none.log`. The following
-record slice removes source shader/program mirrors and eager queries;
-createShader's extra native-zero null substitution remains a separate source
-record boundary. Full LibJS tracing and WrapperWorld ownership remain open.
+record slices remove source shader/program mirrors, eager queries and the
+extra native-zero null substitution. Full LibJS tracing and WrapperWorld
+ownership remain open.
 
 Shader/program records now translate `WebGLShader.h` and `WebGLProgram.h`
 directly: shader type and the two actual attached-shader pointers supplement
@@ -412,8 +412,38 @@ status/error case and source owner regression passed in
 `source-shader-program-records-validation-gc-none.log` (two files), covering
 unlinked status and owned native-name rejection. Public diagnostic/status
 cases passed in `source-shader-program-records-public-gc-none.log` (two files).
-createShader's native-zero record projection, other remaining context caches,
-remote transport and complete LibJS ownership remain separate source slices.
+Other remaining context caches, remote transport and complete LibJS ownership
+remain separate source slices.
+
+createShader now preserves the source's unconditional owned-record creation
+after a valid shader type, even when actual glCreateShader returns zero
+(`WebGLRenderingContextImpl.cpp:474-489`). The source invalid-type null return
+and INVALID_ENUM remain. The genuine ANGLE test uses the existing production
+context-loss path, which destroys EGL and unbinds its current context, verifies
+that raw glCreateShader returns zero, and checks both shader types' retained
+records, context identity, type and generation invalidation after restoration.
+No substitute backend supplies that zero. The focused native creation/owner/
+loss files passed with GC disabled in `source-shader-creation-gc-none.log`
+(three files); the final restoration fixture passed in
+`source-shader-creation-final-gc-none.log`. Actual JavaScriptCore zero-name
+creation and owner cases passed in `source-shader-creation-public-gc-none.log`
+(two files), including distinct branded shader wrappers and the one-shot
+context-loss error. This covers source record projection; remote execution and
+complete native command suppression after loss remain separate boundaries.
+
+The creation-return inventory against the pinned source is:
+
+| Creation family | Source reference | Native-zero return projection |
+| --- | --- | --- |
+| Buffer, framebuffer, program, renderbuffer, texture | `WebGLRenderingContextImpl.cpp:438-498` | Owned records retained; no V zero/null gate |
+| Shader | `WebGLRenderingContextImpl.cpp:474-489` | Valid types retain owned records after this repair |
+| Query, sampler, transform feedback, vertex array | `WebGL2RenderingContextImpl.cpp:675-683`, `:793-801`, `:983-991`, `:1285-1293` | Owned records retained; no V zero/null gate |
+| OES vertex array | `Extensions/OESVertexArrayObject.cpp:33-39` | Owned record retained; no V zero/null gate |
+| Sync | `WebGL2RenderingContextImpl.cpp:912-918`, `WebGLSync.cpp:19-30` | V still substitutes null for a native null GLsync; separate pending repair |
+
+Logical resource IDs in the JavaScriptCore bridge remain distinct from driver
+handles, including zero; full source GC context edges and WrapperWorld
+ownership are not supplied by those transport IDs.
 
 Immutable texture storage now follows
 `WebGL2RenderingContextImpl.cpp:198-209`: select the owning driver and forward
