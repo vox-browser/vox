@@ -314,3 +314,67 @@ general BOM sniffing/morphing and genuine TransformStream/realm/binding graphs
 remain separate. The existing compatibility pending-input/chunks path is not
 claimed as those Source owners. LibJS and the frozen proof checkout are
 unchanged; no native browser bundle build or capture was run.
+
+
+## Retained UTF8 Common consumer
+
+Feature `7915051dca6ed4d571c9bc77e0d51c200552097f` installs the proven actual
+UTF8-selected streaming decoder into the existing V TextDecoderCommon object.
+Source `TextDecoderCommon.h:50–89` owns a mutable
+OwnPtr<TextCodec::StreamingDecoder>; its setter (`TextDecoderCommon.cpp:51–54`)
+constructs that owner from encoding, ignore-BOM and error-mode fields. The two
+Source process forms (`Common.cpp:67–77`) call `to_utf8(item)` with last=false
+or `finish()` with empty input and last=true, then append only successful output
+to the existing queue. `TextDecoderStream.cpp:160–211` uses those forms for
+chunks and flush. The existing output queue keeps single output/builder storage
+and Source's later UTF8-to-UTF16 serialization boundary.
+
+The V Common embeds the actual selected decoder record directly and represents
+the Source OwnPtr's null/VERIFY boundary with a private presence flag. It mutates
+that retained record in place, instead of copying an unwrapped optional value
+or allocating a separate unmanaged heap owner. This is a flattened owning-field
+representation, not the physical OwnPtr/Rust Box ABI. The real TextDecoder
+constructor now invokes the same Source setter as the existing stream
+constructor. UTF8 item processing uses the actual per-call maximum-capacity
+owner with the supplied last flag; its private Source BOM/lifecycle/five-slot
+state persists across calls. UTF8 no longer feeds the old pending-input/bom-seen
+compatibility fields or prematurely decodes a chosen boundary as a complete
+stream. Failed fatal bridge output is withheld from the Common output queue,
+matching `append_decoded_output` (`Common.cpp:57–65`).
+
+The bounded public model entry points for UTF8 streams now reach that actual
+owner, including split UTF8 BOMs, preserved BOMs, incomplete scalar prefixes,
+invalid-continuation reprocessing, NUL and real empty-input flush. This is not
+new JavaScript interface exposure. Other encoding labels keep their prior
+adapter paths. The public stream model's primitive-byte input and observable
+chunks array retain the earlier compatibility boundary: Source's actual
+AllowSharedBufferSource conversion, TransformStream/controller/realm/Promise
+and native interface wrappers are not implemented by this slice.
+
+Source TextDecoder.decode instead calls the same owner's native UTF16
+destination (`TextDecoder.cpp:106–129`); the V TextDecoder still projects its
+flattened public strings through the UTF8 destination. UTF16 capacity, native
+buffer ownership and destination behavior are explicitly not inferred from
+UTF8 goldens. Its separate Source non-streaming reset-before-error correction
+remains pending at this feature. The combined typed input/end-of-queue adapter
+remains that public TextDecoder compatibility path; the source-faithful Common
+stream calls use item/no-flush and empty-input/end-of-queue.
+
+The new fixture compares **1,876 actual native owned calls** from the earlier
+5000-sequence golden through the Common queue, fatal-output withholding and all
+retained lifecycle/variant slots. It also verifies actual stream constructors,
+split BOM/scalar state in the Common field, no use of old UTF8 pending bytes,
+flush-to-Finished and a genuine compiled-child Source VERIFY failure before
+owner initialization. Focused checks pass **1/1 default, 1/1 GC-none and 1/1
+production GC-none** in
+`source-text-decoder-common-utf8-{focused-default,focused-gc-none,production-gc-none}.log`.
+The implementation passes complete Encoding **14/14 in both GC modes** in
+`source-text-decoder-common-utf8-full-{default,gc-none}.log`; after that sweep,
+only the focused test was strengthened with its exact count and cold-owner
+fatal case, and all three focused checks were rerun. The genuine native Sync
+Text fixture passes **1/1 GC-none** in
+`source-text-decoder-common-utf8-native-gc-none.log`. Initial test compilation
+failures caused by cross-test-only DTO references are retained in
+`source-text-decoder-common-utf8-before-fixture-dto-*.log`; the corrected focused
+file declares its own native JSON observation DTOs. No expected Source result
+was changed. LibJS and native browser bundle/captures are unchanged.
