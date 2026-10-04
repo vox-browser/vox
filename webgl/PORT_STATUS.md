@@ -281,10 +281,25 @@ and owner selection for every early return. Public fixtures check the same
 ownership ordering and generated IDL type/numeric conversion before body
 entry. Four typed files passed in `source-sync-owner-gc-none.log`; two public
 files passed in `source-sync-owner-public-gc-none.log`, all with GC disabled.
-The standalone sync_handle/sync_handle_for_deletion APIs still carry logical
-transport identifiers instead of the source GLsync pointer; that record API
-parity remains a separate slice. Context-loss transport and full GC ownership
-remain open.
+The standalone pointer API repair below completes that record API; context-loss
+transport and full GC ownership remain open.
+
+WebGLSync sync_handle and sync_handle_for_deletion now translate
+`WebGLSync.cpp:39-58` directly: validate context first, reject an invalid read,
+return an absent deletion handle for invalidated generations, or invalidate
+once and return the exact stored GLsync pointer. The explicit optional-pointer
+record preserves a present native null pointer separately from an absent handle.
+Waits, deletion and parameter queries pass that validated pointer to GL;
+logical identifiers remain only for adapter lookup/removal and debug recording.
+Five typed files passed with GC disabled in `source-sync-pointer-gc-none.log`;
+three actual public neighbors passed in
+`source-sync-pointer-public-gc-none.log`. The new fixture uses only genuine
+successful/rejected native fences, checks present-null versus repeated deletion,
+foreign context ordering, generation rejection without record mutation, and
+preserved pointers. The legacy generation fixture now compares the actual
+pointer. Shared WebGLObject GLuint handle APIs and adapter bookkeeping remain
+the next separately scoped audit; no full source GC/WrapperWorld parity is
+claimed.
 
 Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
 `WebGL2RenderingContextOverloads.cpp:33-85`, and
