@@ -89,7 +89,9 @@ pub fn (mut context WebGLRenderingContext) read_pixels(x int, y int, width int, 
 		return []u8{}
 	}
 	context.command('read_pixels', x, y, width, height, format, type_)
-	capacity := required_2d_texture_data_size(width, height, format, type_, PixelUnpackState{alignment: u64(context.pack_alignment_)}) or {
+	mut alignment := 0
+	C.vox_gl_int_parameter(pack_alignment, &alignment)
+	capacity := required_2d_texture_data_size(width, height, format, type_, PixelUnpackState{alignment: u64(alignment)}) or {
  context.set_error(invalid_enum); return []u8{}
  }
  if capacity > u64(max_int) { context.set_error(out_of_memory); return []u8{} }

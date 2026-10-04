@@ -11,7 +11,8 @@ fn test_source_browser_pixel_store_state_keeps_values_without_forwarding_to_gl()
 		context.pixel_storei(unpack_colorspace_conversion_webgl, -1)
 		mut texture := 0
 		C.vox_gl_int_parameter(active_texture, &texture)
-		assert texture == int(texture0 + 1)
+		// Source's empty Proxy::make_current and client-only return issue no GL work.
+		assert texture == int(texture0)
 		assert context.get_parameter(unpack_colorspace_conversion_webgl).integer == 4294967295
 		assert context.get_error() == no_error
 		context.pixel_storei(unpack_colorspace_conversion_webgl, 1234)

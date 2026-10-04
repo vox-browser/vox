@@ -59,8 +59,6 @@ mut:
 	unpack_flip_y_                      bool
 	unpack_premultiply_alpha_           bool
 	unpack_colorspace_conversion_       GLenum = browser_default_webgl
-	pack_alignment_                     int = 4
-	unpack_alignment_                   int = 4
 	unpack_state_                       PixelUnpackState = PixelUnpackState{}
 	vertex_attrib_values_               map[GLuint][]f32
 	vertex_attrib_states_               map[GLuint]VertexAttribState
@@ -262,8 +260,6 @@ fn (mut context WebGLRenderingContext) initialize_restored_client_state() {
 	context.unpack_flip_y_ = false
 	context.unpack_premultiply_alpha_ = false
 	context.unpack_colorspace_conversion_ = browser_default_webgl
-	context.pack_alignment_ = 4
-	context.unpack_alignment_ = 4
 	context.unpack_state_ = PixelUnpackState{}
 }
 
@@ -606,70 +602,59 @@ pub fn (mut context WebGLRenderingContext) set_uniform(location ?&WebGLUniformLo
 }
 
 pub fn (mut context WebGLRenderingContext) pixel_storei(pname GLenum, parameter int) {
-	context.native.make_current()
+	// Source Proxy::make_current is empty; client-only returns issue no GL command.
 	match pname {
-		pack_alignment, unpack_alignment {
+		unpack_alignment {
 			if parameter !in [1, 2, 4, 8] {
 				context.set_error(invalid_value)
 				return
 			}
-			if pname == pack_alignment {
-				context.pack_alignment_ = parameter
-			} else {
-				context.unpack_alignment_ = parameter
-				context.unpack_state_ = PixelUnpackState{
-					...context.unpack_state_
-					alignment: u64(parameter)
-				}
+			context.unpack_state_ = PixelUnpackState{
+				...context.unpack_state_
+				alignment: u64(parameter)
 			}
-			context.native.dispatch('pixel_storei', pname, parameter)
 		}
 		unpack_flip_y_webgl {
 			context.unpack_flip_y_ = parameter != 0
+			return
 		}
 		unpack_premultiply_alpha_webgl {
 			context.unpack_premultiply_alpha_ = parameter != 0
+			return
 		}
 		unpack_colorspace_conversion_webgl {
 			// The pinned source stores this browser-only state without enum validation.
 			context.unpack_colorspace_conversion_ = GLenum(parameter)
+			return
 		}
-		pack_row_length, pack_skip_rows, pack_skip_pixels, unpack_row_length, unpack_skip_rows, unpack_skip_pixels, unpack_skip_images, unpack_image_height {
-			if context.version != .webgl2 {
-				context.set_error(invalid_enum)
-				return
-			}
-			if parameter < 0 {
-				context.set_error(invalid_value)
-				return
-			}
-			match pname {
-				unpack_row_length {
-					context.unpack_state_ = PixelUnpackState{
-						...context.unpack_state_
-						row_length: u64(parameter)
+		unpack_row_length, unpack_skip_rows, unpack_skip_pixels {
+			if context.version == .webgl2 && parameter >= 0 {
+				match pname {
+					unpack_row_length {
+						context.unpack_state_ = PixelUnpackState{
+							...context.unpack_state_
+							row_length: u64(parameter)
+						}
 					}
-				}
-				unpack_skip_rows {
-					context.unpack_state_ = PixelUnpackState{
-						...context.unpack_state_
-						skip_rows: u64(parameter)
+					unpack_skip_rows {
+						context.unpack_state_ = PixelUnpackState{
+							...context.unpack_state_
+							skip_rows: u64(parameter)
+						}
 					}
-				}
-				unpack_skip_pixels {
-					context.unpack_state_ = PixelUnpackState{
-						...context.unpack_state_
-						skip_pixels: u64(parameter)
+					unpack_skip_pixels {
+						context.unpack_state_ = PixelUnpackState{
+							...context.unpack_state_
+							skip_pixels: u64(parameter)
+						}
 					}
+					else {}
 				}
-				else {}
 			}
-			context.native.dispatch('pixel_storei', pname, parameter)
 		}
-		else {
-			context.set_error(invalid_enum)
-		}
+		else {}
 	}
+	context.native.dispatch('pixel_storei', pname, parameter)
 }
 
 pub fn (mut context WebGLRenderingContext) enable(capability GLenum) {
