@@ -522,3 +522,13 @@ overlong slash/null, out-of-range consumption, and raw lowercase retention.
 This is a native helper probe, not a full C++ File object executable. The
 focused LibJS new/existing Unicode batch passes **2/2** in both modes; full
 LibJS/AST checks remain root-owned on the integrated frozen helper snapshot.
+
+
+The separate File byte-name feature wires its existing string compatibility
+factory through the explicit Source unvalidated byte decoder, preserving the
+exact UTF16 slots when parts-based File creation reaches `File.create`. The
+focus fixture covers a raw name `[006e,d800,0000,dc00,d83d,de00]`, raw type,
+parts/MIME processing, raw signed timestamps and typed serialization. Native
+AK malformed/truncated, out-of-range and overlong rules are also retained.
+New File boundary plus raw File/DataTransfer/drag-store neighbors pass **5/5**
+both modes in `source-data-transfer-fileapi-{default,gc-none}.log`.

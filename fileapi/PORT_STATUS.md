@@ -76,3 +76,16 @@ the exact primary codec and retained target factory; its focused file passes
 both modes. The compact XHR Blob object is
 a separate compatibility facade. FileReader owner tasks, blob URL process
 ownership and complete generated bindings still need runtime validation.
+
+
+The File byte-name compatibility boundary now uses the explicit Source
+`Utf16String::from_utf8_without_validation` adapter instead of V's scalar
+string iterator. This maps the `File.h` line 23 String-name overload before the
+actual UTF16 core constructor. Direct raw names/types and parts-based File
+construction retain lone surrogates, null and supplementary pairs; malformed
+input follows the pinned AK iterator's exact replacement and advance rules.
+The focused new File boundary, existing raw File records, actual DataTransfer
+producers and neighbors pass **5/5** both modes in
+`source-data-transfer-fileapi-{default,gc-none}.log`. Native actual-header
+-O0/-O2 decoder evidence is in `tools/source_drag_wtf8_probe.py` and the audit
+source mapping. This does not broaden the generic LibJS scalar string adapter.
