@@ -61,6 +61,16 @@ pub fn Policy.parse_a_serialized_csp(serialized string, source PolicySource, dis
 	return parse_a_serialized_csp(serialized, source, disposition)
 }
 
+pub fn parse_a_serialized_csp_bytes(serialized []u8, source PolicySource, disposition Disposition) &Policy {
+	// Policy.cpp:32–35 selects LibTextCodec's isomorphic byte decoding.
+	// Decoder.cpp:584–596 appends each byte as the same-valued code point.
+	return parse_a_serialized_csp(serialized.map(rune(it)).string(), source, disposition)
+}
+
+pub fn Policy.parse_a_serialized_csp_bytes(serialized []u8, source PolicySource, disposition Disposition) &Policy {
+	return parse_a_serialized_csp_bytes(serialized, source, disposition)
+}
+
 pub fn parse_a_responses_content_security_policies(response &Response) &PolicyList {
 	mut policies := []&Policy{}
 	for key, values in response.headers {
