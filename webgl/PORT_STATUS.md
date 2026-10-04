@@ -162,13 +162,49 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+attachShader now suppresses its generated native command after context loss
+while still assigning the actual retained shader slot after that command.
+Impl.cpp:166-177 calls the proxy and then writes the type-specific actual
+pointer. GLFunctions.json:14-28 and generated proxy/replay carry separate
+Source program/shader object IDs; record_bytes:57-60 drops the record after
+loss. V conditionally performs only its native C attach call, then runs the
+existing exact retained assignment. It must not return early after detecting
+lost native selection. The generated read-only witness is
+`Build/audit-fixes/source-attach-shader-generated-boundary.txt`, SHA-256
+`e4fa7cb703222b0336371c32a543ca72911bf81e99c62bb6e37824b39753e652`.
+
+A genuine pre-fix EGL probe attached Other's shader to Other's program through
+a lost Owner with coinciding native names (actual count zero to one), retained
+in source-attach-shader-lost-unfixed-probe_test.v and
+source-attach-shader-lost-unfixed-probe-gc-none.log. New two-version typed/
+public cases check Other's actual ATTACHED_SHADERS, zero current program,
+viewport, shader compile/delete state and program delete state after every
+lost call. Original and owned unmapped SourceID4/5/6 records retain ordered
+actual shader pointers and public wrapper identities after the dropped calls;
+Source IDs remain distinct from native zero mapping. Duplicate/type-slot,
+foreign/deleted-handle and public arity/nonnullable/forged-brand gates remain
+before dispatch. Deleting a retained shader after loss still leaves its actual
+reference and public wrapper accessible through the retained collection.
+Other's pending INVALID_ENUM survives without an extra native error, setters
+remain undefined, and context-loss reporting stays one-shot.
+
+Two typed files pass in
+`Build/audit-fixes/source-attach-shader-lost-native-gc-none.log`; two public
+files pass in
+`Build/audit-fixes/source-attach-shader-lost-public-gc-none.log`, with GC disabled
+and explicit private paths, including the preceding live CPU-order/native
+rejection neighbors. This is attachShader's exact command-drop/retention
+slice. Detach/bind/location and other program bodies, object families, full
+remote transport and GC/WrapperWorld remain separately source-reviewed work.
+Historical full sweeps and canonical bundle evidence remain unchanged.
+
 attachShader now preserves the exact Source program/shader handle, actual
 retained-pointer duplicate, and occupied shader-type gates before selecting
 its native owner. Impl.cpp:129-178 begins with an empty Proxy make_current;
 only the generated attachment command reaches the actual owning host driver.
 The previously missing actual duplicate-pointer gate is restored in its
-Source position before the per-type occupied-slot checks. Program.h:26-30
-retains actual shader pointers, Program.cpp:38-43 visits both slots, and
+Source position before the per-type occupied-slot checks. Program.h:25-29
+retains actual shader pointers, Program.cpp:32-37 visits both slots, and
 Impl.cpp:867-888 returns a fresh rooted vector in vertex/fragment order.
 Existing V actual references and public pointer-to-wrapper identity are
 preserved; no fabricated attachment cache or native success gate is added.
@@ -194,7 +230,7 @@ files pass in
 and explicit private paths, including existing actual retained/deleted shader
 and wrapper identity neighbors. This supersedes only the reviewed owner
 assumptions and does not replace frozen full-sweep evidence. Lost attachment
-is the next separately reviewed command/retained-assignment slice; other
+is separately reviewed above; other
 program bodies, object families, full remote transport and GC/WrapperWorld
 remain separate. Canonical bundle evidence is unchanged.
 
