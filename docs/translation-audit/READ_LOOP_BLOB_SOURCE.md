@@ -407,3 +407,21 @@ native primary clone projection, actual DOM producer exposure and Worker startup
 remain separate work. Importing the older `bindings` package also exposed its
 existing non-exhaustive DOM-runtime-value matches; this slice avoids that
 unrelated package and does not claim to fix those older matches.
+
+The separate generated FileList interface constructor now follows fresh
+`FileListConstructor::initialize/construct` and
+`Bindings/InterfaceObject.cpp::InterfaceConstructor::call` (lines 61–70).
+It has the Source name/arity/descriptors and is a genuine constructible
+interface object: calling it without new throws the Source constructor-without-
+new error, while its own construction always throws `FileList is not a
+constructor`. The latter performs no `newTarget.prototype` read or argument
+conversion. Existing actual FileLists acquire this retained interface's
+prototype without author construction. Installation targets the actual engine
+global, even when the author-visible globalThis alias is poisoned.
+
+Constructor plus owner fixtures pass **2/2** both modes in
+`source-native-file-list-constructor-{default,gc-none}.log`, including exact
+interface/prototype/global flags, own keys, call/new errors, subclass failure,
+Proxy newTarget getter suppression, use as a valid newTarget for another
+constructor, repeated installation, and forged global independence. Actual DOM
+FileList producers, native clone projection and main/Worker startup remain open.
