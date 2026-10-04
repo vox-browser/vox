@@ -5,6 +5,21 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/WebGL`
 Reference audit: 2026-09-12
 Latest native focused verification: 2026-10-04
 
+After the shader/resource/uniform repairs, frozen private snapshot `ea1e2287`
+passed all 50 public/mixed canvas files with GC disabled and explicit private
+module paths. Its typed sweep passed 80/81 files; `native_uniform_test.v` alone
+retained an obsolete assertion that transpose=true must report INVALID_VALUE.
+The actual ANGLE command returned NO_ERROR, as permitted by the pinned source's
+unconditional transpose forwarding. That fixture was migrated in a separate
+test-only commit to compare the direct driver's error and matrix readback after
+resetting both paths to zero. The failed file and new source matrix neighbor
+then passed in `source-matrix-legacy-readback-gc-none.log` (two files). This is
+the frozen 80-file pass plus the corrected focused file, not a new clean
+81-file sweep. Original manifests, TSV results, per-file logs and the initial
+failure remain under `Build/audit-fixes/webgl-final-ea1e2287/`; the public
+50-file sweep used the unchanged implementation. Source TODO, remote transport
+and full VM/WrapperWorld boundaries remain.
+
 After source buffer/retained-slot/intrinsic and texture repairs, frozen private
 snapshot `13d3c7d3` passed all 73 typed WebGL files and all 43 public/mixed canvas
 files with GC disabled and explicit private module paths on 2026-10-04.
