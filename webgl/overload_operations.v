@@ -474,22 +474,16 @@ pub fn (mut context WebGLRenderingContext) tex_storage3d(target GLenum, levels i
 }
 
 pub fn (mut context WebGLRenderingContext) tex_image3d(target GLenum, level int, internal_format GLenum, width int, height int, depth int, border int, format GLenum, type_ GLenum, pixels []u8) {
+	context.native.make_current()
 	if !context.require_webgl2() { return }
-	if width < 0 || height < 0 || depth < 0 || border != 0 {
-		context.set_error(invalid_value)
-		return
-	}
 	context.webgl2_command('tex_image3d', target, level, internal_format, width, height, depth, border, format, type_, pixels.len)
 	C.vox_gl_tex_image3d(target,level,int(internal_format),width,height,depth,border,format,type_,pixels.len,pixels.data)
 	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) tex_sub_image3d(target GLenum, level int, x_offset int, y_offset int, z_offset int, width int, height int, depth int, format GLenum, type_ GLenum, pixels []u8) {
+	context.native.make_current()
 	if !context.require_webgl2() { return }
-	if width < 0 || height < 0 || depth < 0 {
-		context.set_error(invalid_value)
-		return
-	}
 	context.webgl2_command('tex_sub_image3d', target, level, x_offset, y_offset, z_offset, width, height, depth, format, type_, pixels.len)
 	C.vox_gl_tex_sub_image3d(target,level,x_offset,y_offset,z_offset,width,height,depth,format,type_,pixels.len,pixels.data)
 	context.native.collect_native_error()

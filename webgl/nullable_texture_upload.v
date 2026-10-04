@@ -86,6 +86,7 @@ pub fn (mut context WebGLRenderingContext) tex_sub_image2d_null(target GLenum, l
 }
 
 pub fn (mut context WebGLRenderingContext) tex_image3d_null(target GLenum, level int, internal_format int, width int, height int, depth int, border int, format GLenum, type_ GLenum) {
+	context.native.make_current()
 	if !context.require_webgl2() { return }
 	if !context.command('tex_image3d', target, level, internal_format, width, height, depth, border, format, type_, 0) {
 		return
@@ -95,6 +96,7 @@ pub fn (mut context WebGLRenderingContext) tex_image3d_null(target GLenum, level
 }
 
 pub fn (mut context WebGLRenderingContext) tex_sub_image3d_null(target GLenum, level int, x_offset int, y_offset int, z_offset int, width int, height int, depth int, format GLenum, type_ GLenum) {
+	context.native.make_current()
 	if !context.require_webgl2() { return }
 	if !context.command('tex_sub_image3d', target, level, x_offset, y_offset, z_offset, width, height, depth, format, type_, 0) {
 		return

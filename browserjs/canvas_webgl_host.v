@@ -337,7 +337,7 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 	}
 	// Source upload bodies select the context before nullable data or
 	// buffer-witness validation can set an error and return.
-	if method in ['bufferData', 'bufferSubData', 'texImage2D', 'texSubImage2D']
+	if method in ['bufferData', 'bufferSubData', 'texImage2D', 'texSubImage2D', 'texImage3D', 'texSubImage3D']
 		|| method.starts_with('compressedTex') {
 		context.native.make_current()
 	}
