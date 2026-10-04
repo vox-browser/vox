@@ -242,9 +242,12 @@ pub:
 }
 
 pub fn (location &WebGLUniformLocation) handle(current_program ?&WebGLProgram) !GLuint {
-	program := current_program or { return error('GL_INVALID_OPERATION') }
-	parent := location.parent_program or { return error('GL_INVALID_OPERATION') }
-	if program != parent {
+	if program := current_program {
+		parent := location.parent_program or { return error('GL_INVALID_OPERATION') }
+		if program != parent {
+			return error('GL_INVALID_OPERATION')
+		}
+	} else if location.parent_program != none {
 		return error('GL_INVALID_OPERATION')
 	}
 	return location.handle_
