@@ -357,6 +357,23 @@ in `source-current-program-record-gc-none.log`; three public files passed in
 preserves the pinned source retention order and does not invent a driver-success
 gate. Full source GC and caller WrapperWorld ownership remain open.
 
+getParameter(VERTEX_ARRAY_BINDING) now returns and wraps the actual retained
+WebGL2 or OES vertex-array record (`WebGLRenderingContextImpl.cpp:1451-1462`).
+It reuses existing public wrappers and first-exposes typed records through the
+actual platform-object cache. Source extension/version gates and OES's
+LegacyNoInterfaceObject behavior remain intact. Genuine direct GL deletion
+resets the native binding to zero while the source retained slot still returns
+the exact record; subsequent source deletion clears the slot and invalidates
+that record. Typed cases verify both kinds, native/source distinction and the
+OES gate. Public cases verify pointer/label identity, brands, repeated identity,
+owner selection, and source WebGL2-error versus OES-silent rejection after
+deletion. Three typed files passed in `source-vertex-array-record-gc-none.log`.
+The two public neighbors passed in `source-vertex-array-record-public-gc-none.log`;
+the new public file passed in `source-vertex-array-record-public-final-gc-none.log`
+after its initial fixture incorrectly assumed an OES global constructor.
+That initial ReferenceError remains in the first log. All checks use GC disabled;
+full source GC and caller WrapperWorld ownership remain open.
+
 Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
 `WebGL2RenderingContextOverloads.cpp:33-85`, and
 `WebGL2RenderingContextImpl.cpp:46-50`: select the owner, validate nullable data
