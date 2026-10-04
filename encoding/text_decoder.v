@@ -282,6 +282,18 @@ pub fn (decoder &TextDecoder) decode(input ?[]u8, options TextDecodeOptions) !st
 		owned_result := libjs.utf16_string_from_code_units(units)
 		return owned_result.str()
 	}
+	if mutable_decoder.encoding_ == 'shift_jis' {
+		if !mutable_decoder.shift_jis_decoder_present_ {
+			panic('Source VERIFY: TextDecoderCommon owns its StreamingDecoder')
+		}
+		// Source TextDecoder consumes the actual owner's direct UTF16
+		// destination; Common/Stream retain the same owner's UTF8 method.
+		ok, units := mutable_decoder.shift_jis_decoder_.decode_owned_utf16(bytes, !options.stream, mutable_decoder.fatal_)
+		if !options.stream { mutable_decoder.set_decoder_to_new_instance_of_encoding_decoder() }
+		if !ok { return error('TypeError: Decoding failed') }
+		owned_result := libjs.utf16_string_from_code_units(units)
+		return owned_result.str()
+	}
 	mut output := TextDecoderOutputQueue{}
 	mutable_decoder.process_an_item(bytes, !options.stream, mut output) or {
 		// TextDecoder.cpp replaces a flushed decoder before exposing its
