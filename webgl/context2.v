@@ -233,6 +233,7 @@ pub fn (mut context WebGLRenderingContext) fence_sync(condition GLenum, flags GL
 }
 
 pub fn (mut context WebGLRenderingContext) client_wait_sync(mut sync WebGLSync, flags GLenum, timeout u64) GLenum {
+	context.native.make_current()
 	if !context.owns(&sync.object) {
 		context.set_error(invalid_operation)
 		return wait_failed
@@ -242,6 +243,7 @@ pub fn (mut context WebGLRenderingContext) client_wait_sync(mut sync WebGLSync, 
 }
 
 pub fn (mut context WebGLRenderingContext) wait_sync(mut sync WebGLSync, flags GLenum, timeout u64) {
+	context.native.make_current()
 	if !context.owns(&sync.object) {
 		context.set_error(invalid_operation)
 		return
@@ -251,6 +253,7 @@ pub fn (mut context WebGLRenderingContext) wait_sync(mut sync WebGLSync, flags G
 }
 
 pub fn (mut context WebGLRenderingContext) delete_sync(mut sync ?&WebGLSync) {
+	context.native.make_current()
 	if mut value := sync {
 		handle_result := value.sync_handle_for_deletion(context.identity(), context.context_generation_) or {
 			context.set_error(invalid_operation)
@@ -262,7 +265,6 @@ pub fn (mut context WebGLRenderingContext) delete_sync(mut sync ?&WebGLSync) {
 		handle := handle_result.value
 		context.syncs.delete(handle)
 		context.native.native_delete_sync(value.native_handle_)
-		value.native_handle_ = unsafe { nil }
 		context.native.dispatch('delete_sync', handle)
 	}
 }
