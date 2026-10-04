@@ -137,6 +137,30 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+getAttachedShaders now preserves the complete absence of a driver operation
+in pinned WebGLRenderingContextImpl.cpp:867-889. After validating only the
+program's Source handle, it returns the actual retained vertex/fragment shader
+records; empty, populated, foreign-program and deleted-program paths all leave
+the actual current driver unchanged. The non-source native selection prefix
+is removed. Public wrapping still returns fresh arrays, reuses actual shader
+identity through the platform cache and first-exposes invalidated typed shader
+records. No retained record, cache, resource lifetime or return algorithm is
+changed by this correction.
+
+The prior retained-record fixture expected an owner switch after a successful
+retained-only call. That historical assumption is superseded by the concrete
+empty WebGLContextProxyBase.h:44 prefix and this Source body's lack of any
+query; its assertion now checks that the other driver remains current. Added
+both-version witnesses cover empty results, retained deleted shader identity,
+foreign/deleted-program errors and a pre-existing native error without an
+implicit query. All three native attached-owner/diagnostic/program-order and
+all three public attached-record/diagnostic/program-order files passed with
+GC disabled. Logs are `Build/audit-fixes/source-attached-shader-owner-gc-none.log`
+and `Build/audit-fixes/source-attached-shader-owner-public/` in the second private
+worktree. These passes correct owner evidence from the historical attached-
+record checks below; their retained identity/deferred-deletion evidence remains
+valid. Other resource handle early returns remain separate Source slices.
+
 getTexParameter now preserves every early extension/version/pname return in
 pinned WebGLRenderingContextImpl.cpp:1942-1995 before actual native owner
 selection. Unknown names, disabled anisotropy and WebGL1's unsupported names
@@ -1020,7 +1044,10 @@ confirm native deferred shader deletion while attached and final deletion after
 the program is deleted. Four public files passed in
 `source-attached-shader-record-public-gc-none.log`; three typed source neighbors
 passed in `source-attached-shader-record-gc-none.log`, all with GC disabled.
-Full source GC rooting and caller WrapperWorld ownership remain open.
+The successful retained-only owner-switch assertion in that historical fixture
+was subsequently corrected by the separate getAttachedShaders owner slice
+above after reviewing the actual empty Proxy boundary. Full Source GC rooting
+and caller WrapperWorld ownership remain open.
 
 getParameter(CURRENT_PROGRAM) now returns and wraps the actual retained program
 record from `WebGLRenderingContextImpl.cpp:1046-1050`, including first exposure
