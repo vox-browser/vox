@@ -13,7 +13,9 @@ pub:
 }
 
 pub fn (bytes BinaryMachineBytes) at(index usize) &u8 {
-	assert index < bytes.size
+	if index >= bytes.size {
+		panic('Source VERIFY: Span::at index < m_size')
+	}
 	return unsafe { bytes.data + index }
 }
 
