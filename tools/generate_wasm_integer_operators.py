@@ -13,6 +13,7 @@ UNARY_NAMES = ("EqualsZero", "CountLeadingZeros", "CountTrailingZeros", "PopCoun
 SHIFT_NAMES = ("BitShiftLeft", "BitShiftRight")
 COMPARISON_NAMES = ("Equals", "NotEquals", "LessThan", "GreaterThan", "LessThanOrEquals", "GreaterThanOrEquals")
 ARITHMETIC_NAMES = ("Add", "Subtract", "Multiply", "BitAnd", "BitOr", "BitXor")
+FLOAT_ARITHMETIC_NAMES = ("Add", "Subtract", "Multiply", "Divide")
 
 BINARY_DRIVER = r"""
 #include <bit>
@@ -294,13 +295,64 @@ int main()
 """
 
 
+FLOAT_ARITHMETIC_DRIVER = r"""
+#include <bit>
+#include <stdio.h>
+#include <stdint.h>
+
+template<typename T> void float_arithmetic_result(char const* name, u64 lhs, u64 rhs, T value)
+{
+    u64 bits;
+    if constexpr (sizeof(T) == sizeof(u32))
+        bits = std::bit_cast<u32>(value);
+    else
+        bits = std::bit_cast<u64>(value);
+    printf("%s\t%016llx\t%016llx\t%016llx\n", name,
+        (unsigned long long)lhs, (unsigned long long)rhs, (unsigned long long)bits);
+}
+int main()
+{
+    using namespace Wasm::Operators;
+    u32 const inputs32[] = {0, 0x80000000U, 0x3f800000U, 0xbf800000U,
+        1, 0x007fffffU, 0x00800000U, 0x7f7fffffU, 0x7f800000U, 0xff800000U,
+        0x7fc12345U, 0xffc54321U, 0x7f812345U, 0xff854321U, 0x3f000000U, 0xbf000000U};
+    u64 const inputs64[] = {0, 0x8000000000000000ULL, 0x3ff0000000000000ULL,
+        0xbff0000000000000ULL, 1, 0x000fffffffffffffULL, 0x0010000000000000ULL,
+        0x7fefffffffffffffULL, 0x7ff0000000000000ULL, 0xfff0000000000000ULL,
+        0x7ff8123456789abcULL, 0xfff8543210abcdefULL,
+        0x7ff0123456789abcULL, 0xfff0543210abcdefULL,
+        0x3fe0000000000000ULL, 0xbfe0000000000000ULL};
+    for (auto lhs : inputs32) {
+        for (auto rhs : inputs32) {
+            auto left = std::bit_cast<float>(lhs);
+            auto right = std::bit_cast<float>(rhs);
+            float_arithmetic_result("add_f32", lhs, rhs, Add{}(left, right));
+            float_arithmetic_result("sub_f32", lhs, rhs, Subtract{}(left, right));
+            float_arithmetic_result("mul_f32", lhs, rhs, Multiply{}(left, right));
+            float_arithmetic_result("div_f32", lhs, rhs, Divide{}(left, right));
+        }
+    }
+    for (auto lhs : inputs64) {
+        for (auto rhs : inputs64) {
+            auto left = std::bit_cast<double>(lhs);
+            auto right = std::bit_cast<double>(rhs);
+            float_arithmetic_result("add_f64", lhs, rhs, Add{}(left, right));
+            float_arithmetic_result("sub_f64", lhs, rhs, Subtract{}(left, right));
+            float_arithmetic_result("mul_f64", lhs, rhs, Multiply{}(left, right));
+            float_arithmetic_result("div_f64", lhs, rhs, Divide{}(left, right));
+        }
+    }
+}
+"""
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--upstream", type=Path, default=Path.home() / "code/3rd/ladybird")
     parser.add_argument("--build-dir", type=Path)
     parser.add_argument("--compiler", default="clang++")
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--family", choices=("binary", "unary", "shift", "comparison", "arithmetic", "floating"), default="binary")
+    parser.add_argument("--family", choices=("binary", "unary", "shift", "comparison", "arithmetic", "floating", "float_arithmetic"), default="binary")
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
     upstream = args.upstream.resolve()
@@ -318,16 +370,17 @@ def main():
         "comparison": (COMPARISON_NAMES, COMPARISON_DRIVER, 2880, "comparison_integer_operators.tsv"),
         "arithmetic": (ARITHMETIC_NAMES, ARITHMETIC_DRIVER, 1728, "arithmetic_integer_operators.tsv"),
         "floating": (COMPARISON_NAMES, FLOAT_COMPARISON_DRIVER, 3072, "comparison_float_operators.tsv"),
+        "float_arithmetic": (FLOAT_ARITHMETIC_NAMES, FLOAT_ARITHMETIC_DRIVER, 2048, "arithmetic_float_operators.tsv"),
     }
     names, driver, expected_count, filename = families[args.family]
-    if args.family in ("comparison", "arithmetic", "floating"):
+    if args.family in ("comparison", "arithmetic", "floating", "float_arithmetic"):
         macro = re.search(r"^#define DEFINE_BINARY_OPERATOR\(Name, operation\).*?(?=^DEFINE_BINARY_OPERATOR\(Equals)", source, re.MULTILINE | re.DOTALL)
         if macro is None:
             parser.error("Missing exact Source binary operator macro")
         excerpts.append(macro.group(0))
         hashes.append(f"# DEFINE_BINARY_OPERATOR sha256={hashlib.sha256(macro.group(0).encode()).hexdigest()}")
     for name in names:
-        expression = (r"^DEFINE_BINARY_OPERATOR\(" + name + r", .*?\);" if args.family in ("comparison", "arithmetic", "floating")
+        expression = (r"^DEFINE_BINARY_OPERATOR\(" + name + r", .*?\);" if name != "Divide" and args.family in ("comparison", "arithmetic", "floating", "float_arithmetic")
                       else r"^struct " + name + r" \{.*?^};")
         match = re.search(expression, source, re.MULTILINE | re.DOTALL)
         if match is None:
@@ -335,7 +388,7 @@ def main():
         text = match.group(0)
         excerpts.append(text)
         hashes.append(f"# {name} sha256={hashlib.sha256(text.encode()).hexdigest()}")
-    if args.family in ("comparison", "arithmetic", "floating"):
+    if args.family in ("comparison", "arithmetic", "floating", "float_arithmetic"):
         excerpts.append("#undef DEFINE_BINARY_OPERATOR")
     # Only the selected verbatim Source records are needed. This avoids unrelated
     # LibWasm Types/LibSync generated exports; AK headers remain the actual source.
@@ -343,6 +396,7 @@ def main():
     generated += "namespace Wasm::Operators {\n" + "\n\n".join(excerpts) + "\n}\n" + driver
     work = repo / "Build/audit-fixes" / ("wasm-integer-operators" if args.family == "binary"
                                        else "wasm-floating-comparison-operators" if args.family == "floating"
+                                       else "wasm-floating-arithmetic-operators" if args.family == "float_arithmetic"
                                        else "wasm-" + args.family + "-integer-operators")
     work.mkdir(parents=True, exist_ok=True)
     cpp = work / "source.cpp"
@@ -360,7 +414,7 @@ def main():
     output = args.output or repo / "webassembly/fixtures" / filename
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(f"# Source {SOURCE_PIN}\n" + "\n".join(hashes) + "\n" + results)
-    print(f"Generated {expected_count} exact Source {args.family} integer operator cases: {output}")
+    print(f"Generated {expected_count} exact Source {args.family} operator cases: {output}")
 
 
 if __name__ == "__main__":
