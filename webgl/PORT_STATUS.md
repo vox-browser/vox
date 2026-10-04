@@ -137,6 +137,33 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+getTexParameter now preserves every early extension/version/pname return in
+pinned WebGLRenderingContextImpl.cpp:1942-1995 before actual native owner
+selection. Unknown names, disabled anisotropy and WebGL1's unsupported names
+return null/INVALID_ENUM without issuing a driver query. Accepted names still
+select the owning driver and use the original robust integer/float ANGLE
+queries with initialized output, preserving target validation and return
+shapes. In particular, the pinned MAX_LOD/MIN_LOD cases query IMMUTABLE_FORMAT
+through the float getter and return a Boolean; that Source behavior is retained
+exactly. GLFunctions.json:2455/2485 synchronous dispatch and the actual Host
+receiver supply native selection, rather than the empty Proxy prefix.
+
+Both-version typed/public witnesses cover thirteen genuine early branches and
+thirty-eight actual valid/invalid-target query comparisons, including real
+enabled anisotropy in both ANGLE contexts, native-only texture bindings and an
+immutable texture with independently set LOD values. They preserve integer/
+Boolean/null shapes, pending Source versus genuine driver error order, actual
+owner selection and public author throws before entry. Both public getter/
+setter files passed under `Build/audit-fixes/source-texture-getter-owner-public/`.
+The typed setter neighbor passed in `source-texture-getter-owner-gc-none.log`,
+which also retains the new fixture's missing experimental-flag argument compile
+diagnostic. After correcting only that test call, the new typed getter passed
+in `source-texture-getter-owner-corrected-gc-none.log`; both logs explicitly
+record real enabled anisotropy. These focused checks used GC disabled in the
+second private worktree; this is a clean two-file public group plus native
+neighbor/corrected-file passes, not a new clean full sweep. Other resource
+handle early-return owners and retained-only getters remain separate scopes.
+
 getRenderbufferParameter now keeps the ten accepted Source pname cases from
 pinned WebGLRenderingContextImpl.cpp:1838-1862 ahead of native owner selection.
 Unknown names return null/INVALID_ENUM before a query, even with an invalid
@@ -156,7 +183,7 @@ The two native renderbuffer getter/storage and two corresponding public files
 passed with GC disabled. Logs are
 `Build/audit-fixes/source-renderbuffer-getter-owner-gc-none.log` and
 `Build/audit-fixes/source-renderbuffer-getter-owner-public/` in the second
-private worktree. The texture extension/version gates remain a separate slice.
+private worktree. Texture extension/version gates are verified above.
 
 getBufferParameter now preserves the genuine pname gate in pinned
 WebGLRenderingContextImpl.cpp:906-930 before actual driver selection. Unknown
@@ -175,8 +202,7 @@ entry. The two native buffer/vertex-getter and two corresponding public files
 passed with GC disabled. Logs are
 `Build/audit-fixes/source-buffer-getter-owner-gc-none.log` and
 `Build/audit-fixes/source-buffer-getter-owner-public/` in the second private
-worktree. Renderbuffer query gates are verified above; texture gates remain a
-separate Source slice.
+worktree. Renderbuffer and texture query gates are verified above.
 
 getVertexAttrib now preserves the absence of a context-selection prefix in
 pinned WebGLRenderingContextImpl.cpp:2026-2098. Unknown names, WebGL1's integer
