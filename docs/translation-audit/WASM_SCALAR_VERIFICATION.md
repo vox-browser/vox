@@ -1,6 +1,40 @@
 # Frozen scalar WebAssembly verification
 
-## Latest frozen branch-helper snapshot: 99 files
+## Latest frozen load/typed-store snapshot: 101 files
+
+Detached canonical `b822d7f4a35a9c95fc512442d46778bf96bf03de`, in
+`Build/audit-fixes/worktrees/root-wasm101-final`, passes **101/101 test files
+in each GC mode**, default in 357.1s and GC-none in 355.0s. Both commands exit
+0: `/Users/alex/code/v/v -old-compiler -enable-globals test webassembly` and
+the same with `-gc none`, each with `VJOBS=2`.
+
+All 4,593 tracked paths/contents, HEAD and clean tracked status remain
+identical before/after. Its 221 non-Markdown Wasm files match canonical at that
+revision; its 490-file LibJS manifest remains unchanged. The snapshot includes
+the actual checked load and typed pop-and-store helpers and their native
+goldens. The subsequent fixed store-temporary owner `2747b573` and added direct
+address-source case are outside this full sweep. Their default and production
+GC-none focused checks are recorded in [store evidence](WASM_MEMORY_STORE_SOURCE.md);
+the canonical production file also passes in 12.93s. No later implementation
+is relabeled as this immutable snapshot.
+
+Artifacts under the detached snapshot's `Build/audit-fixes/` are:
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `source-memory-store-wasm101-manifest.json` | `b2b8a8264616c194a657ce6d9d70baede6e74043cb45149fd365111ba843227f` |
+| Whole sorted tracked path/content manifest | `898da7955e867e7bee0523942eccdc789915df433cc68273c36412b8c25fc586` |
+| WebAssembly package manifest | `cdf1053d311d468abe1a37971aeddb30dbd928148f62e80e3ac72d2e5b4cc204` |
+| LibJS package manifest | `d55fd6a720b1bc274039393b94776fb27f7e946d61d51adfb0ce0c229bfef4c9` |
+| `source-memory-store-wasm101-default.log` | `a62aea21d5b785293a041a92b79222de06404d1eb82e16a30d15d9075e0995fd` |
+| `source-memory-store-wasm101-gc-none.log` | `4f47adcc5061f099d48c2991ee2bb3c643599bc7c96097dd448f849a36848f90` |
+
+Upstream remains `963d46a829f3e1b79f44dba9d02afb70654300fa`.
+Actual opcode/compiled execution, remaining SIMD, full instantiation and
+collector/realm ownership remain unfinished; these helper tests do not
+establish a complete browser Wasm runtime.
+
+## Historical frozen branch-helper snapshot: 99 files
 
 Detached canonical `b7e1b970429055e97046e221e182e93714549cb2`, in
 `Build/audit-fixes/worktrees/root-wasm99-final`, passes **99/99 files in each

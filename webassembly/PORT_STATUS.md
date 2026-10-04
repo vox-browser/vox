@@ -837,3 +837,20 @@ existing V endian primitive, physical alignment and verified target scope.
 Real opcode dispatch, SIMD widening/lane/splat loads, typed stores, native fault
 recovery and the complete instantiation/collector graph remain separate. This
 new 100th file is outside the frozen 99-file proof.
+
+The actual typed pop-and-store consumers now translate all ten Source numeric
+and u128 instantiations (`a592d492`), preserve value-before-address consumption
+and delegate to actual checked Store memory. Original ConvertToRaw bodies with
+real AK headers produce 200 exact byte layouts in both native optimization
+profiles; all nine operand-source combinations match those bytes. Canonical
+typed/load/store/Configuration checks pass 4/4 GC-none. The subsequent fixed
+local temporary owner (`2747b573`) passes its canonical production GC-none file,
+including the genuine direct address-source2/copy case and fatal-argument child.
+[Mapping](../docs/translation-audit/WASM_MEMORY_STORE_SOURCE.md) retains the
+rejected private release candidate and physical byte-view boundary.
+
+Frozen `b822d7f4` passes 101/101 files in both GC modes with all 4,593 tracked
+contents unchanged; it includes the new typed/store and load files, but predates
+the fixed local owner follow-up. [Full proof](../docs/translation-audit/WASM_SCALAR_VERIFICATION.md)
+records exact hashes and dependency scope. Actual opcode dispatch, remaining
+SIMD consumers, complete instantiation and collector/realm roots remain open.
