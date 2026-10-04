@@ -51,6 +51,18 @@ file passes both GC modes in `source-native-read-loop-default.log` and
 `source-native-read-loop-gc-none-final.log`; the existing native ReadableStream
 host neighbor passed the preceding two-file GC-disabled run.
 
+`ReadableStream.cpp:395-435` maps to the internal enqueue adapter in
+`streams/readable.v`, commit `1a0778f6`. Byte streams call the abstract
+controller operation, preserving the Source empty-chunk behavior used by Blob,
+and default streams retain Source's fatal `MUST` boundary. Both abstract
+operations preserve the closed-stream no-op gate. The public byte-controller
+zero-length rejection remains separate. Default **2/2** and GC-disabled **3/3**
+focused files pass in `source-internal-stream-enqueue-{default,gc-none}.log`.
+The typed bytes carrier has no backing-store identity; the Source special case
+for a chunk sharing the current BYOB view's buffer remains a native boundary
+prerequisite. Blob's newly allocated chunk always takes the distinct-buffer
+abstract enqueue path translated here.
+
 Blob's
 actual FileReading task, TemporaryExecutionContext and relevant-realm
 Promise/stream path still need translation. The synchronous standalone Blob
