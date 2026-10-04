@@ -267,8 +267,7 @@ pub fn (settings &EnvironmentSettingsObject) script_bytecode_cache_store_hook() 
 
 pub fn (settings &EnvironmentSettingsObject) responsible_document() ?&dom.Document {
 	window := settings.window_ or { return none }
-	if window.document_ == unsafe { nil } { return none }
-	return window.associated_document()
+	return window.Window.associated_document()
 }
 
 pub fn (settings &EnvironmentSettingsObject) api_base_url() dom.URL {
@@ -853,7 +852,7 @@ pub fn WindowEnvironmentSettingsObject.setup(window &WindowModel, creation_url d
 	// Window settings precede Document construction in BrowsingContext.cpp
 	// and Document::create_and_initialize. These algorithms read the associated
 	// document only after that actual Window has acquired one.
-	document := if window.document_ == unsafe { nil } { ?&dom.Document(none) } else { window.document_ }
+	document := window.Window.associated_document()
 	settings.universal_global_scope_ = UniversalGlobalScopeMixin.create(settings.global_object_, realm, document)
 	if associated := document {
 		settings.origin_ = associated.origin()

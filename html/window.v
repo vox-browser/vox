@@ -191,7 +191,7 @@ pub fn (window &WindowModel) host_configuration() WindowHostConfiguration {
 
 // Window::set_associated_document
 pub fn (mut window WindowModel) set_associated_document(document &dom.Document) {
-	window.document_ = document
+	window.Window.set_associated_document(document)
 }
 
 // Window::set_current_event

@@ -1194,7 +1194,6 @@ pub:
 pub struct WindowModel {
 	dom.Window
 mut:
-	document_                                 &dom.Document = unsafe { nil }
 	browsing_context_                         &BrowsingContextModel = unsafe { nil }
 	window_proxy_                             &WindowProxyModel = unsafe { nil }
 	location_                                 &LocationModel = unsafe { nil }
@@ -1486,8 +1485,7 @@ fn WindowModel.create_with_global(document &dom.Document, context &BrowsingConte
 		}
 	}
 	mut window := unsafe { &WindowModel(window_pointer) }
-	window.document_ = document
-	window.Window.set_associated_document(document)
+	window.set_associated_document(document)
 	window.Window.close_watcher_manager_ = unsafe { &dom.CloseWatcherManager(close_watcher_manager) }
 	window.browsing_context_ = context
 	window.history_ = history
@@ -1567,7 +1565,7 @@ pub fn WindowModel.create_top_level(document &dom.Document, group ?&BrowsingCont
 }
 
 pub fn (window &WindowModel) associated_document() &dom.Document {
-	return window.document_
+	return window.Window.associated_document() or { panic('Window has no associated Document') }
 }
 
 pub fn (window &WindowModel) window_or_worker_global_scope() &WindowOrWorkerGlobalScopeMixin {
@@ -1579,7 +1577,7 @@ pub fn (window &WindowModel) this_impl() &dom.EventTarget {
 }
 
 pub fn (window &WindowModel) extract_an_origin() ?dom.Origin {
-	origin := window.document_.origin()
+	origin := window.associated_document().origin()
 	return if origin.is_opaque() { none } else { origin }
 }
 
@@ -1711,7 +1709,7 @@ pub fn (mut window WindowModel) set_status(value string) {
 }
 
 pub fn (window &WindowModel) same_origin(origin dom.Origin) bool {
-	return window.document_.origin().is_same_origin(origin)
+	return window.associated_document().origin().is_same_origin(origin)
 }
 
 pub fn (mut window WindowModel) close() {
@@ -1809,7 +1807,7 @@ pub fn (window &WindowModel) toolbar() &BarProp {
 
 pub fn (mut window WindowModel) request_animation_frame(callback AnimationFrameCallback) u32 {
 	handle := window.animation_driver_.add(callback)
-	window.document_.request_frame()
+	window.associated_document().request_frame()
 	return handle
 }
 
@@ -1839,7 +1837,7 @@ pub fn (mut window WindowModel) window_post_message_steps(message dom.JSValue, s
 		}
 		target_origin = parsed.origin().serialize()
 	}
-	if target_origin != '*' && target_origin != window.document_.origin().serialize() {
+	if target_origin != '*' && target_origin != window.associated_document().origin().serialize() {
 		return
 	}
 	mut transfer := []StructuredTransfer{cap: options.transfer.len}

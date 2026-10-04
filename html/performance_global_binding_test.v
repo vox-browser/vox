@@ -14,13 +14,13 @@ mut:
 
 fn performance_window_fixture() (&dom.Document, &WindowModel, &EventLoop) {
 	mut document := parse_document_with_url('<!doctype html><body>Performance fixture</body>', dom.URL{ value: 'https://performance.example/' })
+	document.load_timing_info.navigation_start_time = highresolutiontime.coarsened_shared_current_time(false) - 50
 	window := WindowModel.create_top_level(document, none, 'performance') or { panic(err) }
 	mut settings := window.environment_settings_.settings
 	owner := EventLoop.create(.window)
 	settings.responsible_event_loop_ = owner
 	mut services := window.window_or_worker_global_scope()
 	services.responsible_event_loop_ = owner
-	settings.time_origin_ = highresolutiontime.coarsened_shared_current_time(false) - 50
 	return document, window, owner
 }
 
