@@ -137,6 +137,28 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+getActiveAttrib/getActiveUniform now preserve the actual Source handle-error
+boundary from pinned WebGLRenderingContextImpl.cpp:825-865. Foreign or
+invalidated program handles return null/INVALID_OPERATION before selecting a
+native driver. The existing native_active_info helper selects the owner at
+the original query, preserving the fixed 256-byte name capacity, initialized
+size/type/length and a fresh WebGLActiveInfo even when the driver rejects an
+index. The removed V prefixes had treated the empty Proxy make_current as a
+native switch. Source GLFunctions.json:1756/1797 synchronous operations and
+the concrete Host receiver provide the actual owner selection. Both classes
+keep the same required program/GLuint conversions through their shared IDL.
+
+Extended both-version typed/public witnesses preserve early owners for
+foreign/deleted handles, genuine query owners and pre-existing driver errors
+before pending Source errors. Existing long-name, record identity and invalid-
+index empty-record checks remain. Public author index conversions occur before
+entry and keep the other driver current on a throw. The two native active-info/
+attached-owner and two public active-info/attached-record files passed with
+GC disabled. Logs are `Build/audit-fixes/source-active-info-owner-gc-none.log`
+and `Build/audit-fixes/source-active-info-owner-public/` in the second private
+worktree. Other program/shader handle gates and getAttribLocation remain
+separate Source slices; no general prefix rewrite is claimed.
+
 getAttachedShaders now preserves the complete absence of a driver operation
 in pinned WebGLRenderingContextImpl.cpp:867-889. After validating only the
 program's Source handle, it returns the actual retained vertex/fragment shader
