@@ -137,6 +137,31 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+The write-only capability and enabled-vertex-attribute maps are removed.
+Pinned WebGLRenderingContextImpl.cpp:681-692, 715-725 and 2131-2134 forwards
+enable/disable/isEnabled operations to GL; no capability-state map exists in
+the Source context declarations. The V constructor/restore dither-map writes
+and four setter mirror writes had no production readers. Actual GL supplies
+defaults, state and validation throughout these unchanged native entry points.
+The two obsolete capability fixture cache assertions now compare genuine
+native glIsEnabled state after direct driver commands.
+
+The extended capability fixture compares attribute enable/disable at zero,
+the real maximum's last valid slot, the first invalid slot and UINT_MAX with
+independently reset direct driver baselines. Both versions retain actual owner
+selection, native-before-Source error priority and real enabled attribute
+readback; no hardcoded index bound or CPU cache is introduced. State and
+actual parameter-query neighbors and the public host fixture also pass. The
+initial native group had two neighbor passes and a new-fixture compile error
+for a nonexistent V constant; the corrected direct GL_MAX_VERTEX_ATTRIBS enum
+fixture passed separately. Logs are
+`Build/audit-fixes/source-capability-maps-gc-none.log`,
+`source-capability-maps-corrected-final-gc-none.log` and
+`source-capability-maps-public-gc-none.log` in the second private worktree.
+This bounded cleanup is focused coverage after the original frozen 109/79
+snapshot; vertex value/pointer mirrors and other Source-body comparisons remain
+separate slices.
+
 A separate compact-adapter followup now checks every protocol discriminator
 (error, undefined, numeric and resource handle) with captured native own-property
 intrinsics before reading it. Primitive replies never undergo an inherited
