@@ -40,6 +40,7 @@ pub:
 	texture ?&WebGLTexture
 	query ?&WebGLQuery
 	shader ?&WebGLShader
+	program ?&WebGLProgram
 }
 
 fn integer_parameter(value i64) WebGLParameterValue {
@@ -855,7 +856,7 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
   }
   framebuffer_binding {return if context.bound_framebuffer==0 {WebGLParameterValue{}} else {WebGLParameterValue{kind:.object,object:context.bound_framebuffer,framebuffer:context.bound_framebuffer_object}}}
   renderbuffer_binding {return if context.bound_renderbuffer==0 {WebGLParameterValue{}} else {WebGLParameterValue{kind:.object,object:context.bound_renderbuffer,renderbuffer:context.bound_renderbuffer_object}}}
-  current_program {program:=context.current_program or {return WebGLParameterValue{}};return WebGLParameterValue{kind:.object,object:program.object.handle_}}
+  current_program {program:=context.current_program or {return WebGLParameterValue{}};return WebGLParameterValue{kind:.object,object:program.object.handle_,program:program}}
   texture_binding_2d,texture_binding_cube_map {
    target:=if pname==texture_binding_2d {texture_2d} else {texture_cube_map}
    handle:=context.bound_textures[target] or {return WebGLParameterValue{}}

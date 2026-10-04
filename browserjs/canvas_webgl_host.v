@@ -253,6 +253,14 @@ fn (mut host CanvasWebGLHost) parameter(context &webgl.WebGLRenderingContext, va
 		host.shaders[handle] = shader
 		return host.resource_reply(handle)
 	}
+	if program := value.program {
+		if handle := host.platform_objects[voidptr(&program.object)] {
+			return host.resource_reply(handle)
+		}
+		handle := host.register(context, 'program', &program.object)
+		host.programs[handle] = program
+		return host.resource_reply(handle)
+	}
 	return match value.kind {
 		.none { json2.Any(json2.Null{}) }
 		.undefined_ { json2.Any({'webglUndefined': json2.Any(true)}) }
