@@ -13,6 +13,7 @@ module fileapi
 import mimesniff
 import encoding
 import streams
+import libjs
 
 // Bindings::EndingType.
 pub enum EndingType {
@@ -157,14 +158,18 @@ pub struct Blob {
 mut:
 	byte_buffer []u8
 	type_       string
+	type_utf16_ ?libjs.Utf16String
 }
 
 // https://w3c.github.io/FileAPI/#ref-for-dom-blob-blob②
 pub fn Blob.create(byte_buffer []u8, type_ string) &Blob {
-	return &Blob{
-		byte_buffer: byte_buffer.clone()
-		type_: type_
-	}
+	return Blob.create_utf16(byte_buffer, libjs.utf16_string(type_))
+}
+
+// Blob.cpp's actual ByteBuffer/Utf16String internal constructor. Public
+// constructor normalization happens before this source record is allocated.
+pub fn Blob.create_utf16(byte_buffer []u8, type_ libjs.Utf16String) &Blob {
+	return &Blob{byte_buffer: byte_buffer.clone(), type_: type_.str(), type_utf16_: type_}
 }
 
 // https://w3c.github.io/FileAPI/#constructorBlob
@@ -203,6 +208,10 @@ pub fn (blob &Blob) size() u64 {
 // https://w3c.github.io/FileAPI/#dfn-type
 pub fn (blob &Blob) type_() string {
 	return blob.type_
+}
+
+pub fn (blob &Blob) type_utf16() libjs.Utf16String {
+	return fileapi_preserved_utf16(blob.type_, blob.type_utf16_)
 }
 
 pub fn (blob &Blob) raw_bytes() []u8 {
@@ -300,6 +309,7 @@ pub fn (blob &Blob) bytes() []u8 {
 pub struct SerializedBlob {
 pub:
 	type_ string
+	type_utf16_ ?libjs.Utf16String
 	bytes []u8
 }
 
@@ -307,10 +317,11 @@ pub:
 pub fn (blob &Blob) serialization_steps() SerializedBlob {
 	return SerializedBlob{
 		type_: blob.type_
+		type_utf16_: blob.type_utf16()
 		bytes: blob.byte_buffer.clone()
 	}
 }
 
 pub fn Blob.deserialization_steps(serialized SerializedBlob) &Blob {
-	return Blob.create(serialized.bytes, serialized.type_)
+	return Blob.create_utf16(serialized.bytes, fileapi_preserved_utf16(serialized.type_, serialized.type_utf16_))
 }

@@ -12,6 +12,7 @@ module fileapi
 
 import mimesniff
 import time
+import libjs
 
 // https://w3c.github.io/FileAPI/#dfn-FilePropertyBag
 // FilePropertyBag : BlobPropertyBag { long long lastModified; }
@@ -26,18 +27,23 @@ pub mut:
 pub struct File {
 	Blob
 	name_          string
+	name_utf16_    ?libjs.Utf16String
 	last_modified_ i64
 }
 
 // The private `File(realm, byte_buffer, file_name, type, last_modified)` constructor: build a File
 // directly from its byte sequence, name, type and lastModified time.
 pub fn File.create(byte_buffer []u8, file_name string, type_ string, last_modified i64) &File {
+	return File.create_utf16(byte_buffer, libjs.utf16_string(file_name), libjs.utf16_string(type_), last_modified)
+}
+
+// File.cpp's direct source field constructor and deserialization own actual
+// Utf16String name/type slots; public USVString/normalization stays separate.
+pub fn File.create_utf16(byte_buffer []u8, file_name libjs.Utf16String, type_ libjs.Utf16String, last_modified i64) &File {
 	return &File{
-		Blob:           Blob{
-			byte_buffer: byte_buffer.clone()
-			type_:       type_
-		}
-		name_:          file_name
+		Blob: Blob{byte_buffer: byte_buffer.clone(), type_: type_.str(), type_utf16_: type_}
+		name_: file_name.str()
+		name_utf16_: file_name
 		last_modified_: last_modified
 	}
 }
@@ -77,6 +83,10 @@ pub fn (file &File) name() string {
 	return file.name_
 }
 
+pub fn (file &File) name_utf16() libjs.Utf16String {
+	return fileapi_preserved_utf16(file.name_, file.name_utf16_)
+}
+
 // https://w3c.github.io/FileAPI/#dfn-lastModified
 pub fn (file &File) last_modified() i64 {
 	return file.last_modified_
@@ -85,6 +95,8 @@ pub fn (file &File) last_modified() i64 {
 pub struct SerializedFile {
 pub:
 	type_         string
+	type_utf16_   ?libjs.Utf16String
+	name_utf16_   ?libjs.Utf16String
 	bytes         []u8
 	name          string
 	last_modified i64
@@ -93,6 +105,8 @@ pub:
 pub fn (file &File) serialization_steps() SerializedFile {
 	return SerializedFile{
 		type_:         file.type_()
+		type_utf16_:   file.type_utf16()
+		name_utf16_:   file.name_utf16()
 		bytes:         file.raw_bytes()
 		name:          file.name_
 		last_modified: file.last_modified_
@@ -100,6 +114,5 @@ pub fn (file &File) serialization_steps() SerializedFile {
 }
 
 pub fn File.deserialization_steps(serialized SerializedFile) &File {
-	return File.create(serialized.bytes, serialized.name, serialized.type_,
-		serialized.last_modified)
+	return File.create_utf16(serialized.bytes, fileapi_preserved_utf16(serialized.name, serialized.name_utf16_), fileapi_preserved_utf16(serialized.type_, serialized.type_utf16_), serialized.last_modified)
 }
