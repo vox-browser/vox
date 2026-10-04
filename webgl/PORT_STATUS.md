@@ -380,6 +380,23 @@ passed in `source-texture-copy-public-gc-none.log`. Competing invalid targets,
 dimensions and borders preserve actual driver error order and select the owner
 before returning. Remote transport and full LibJS ownership remain separate.
 
+Shader/program creation, mutation and deletion now select their owner before
+source handle, shader-type, duplicate-slot, null and repeated-deletion returns.
+This matches `WebGLRenderingContextImpl.cpp:129-193`, `:414-426`, `:474-489`,
+`:544-570`, `:583-602`, `:2233-2246`, `:2312-2330`, and `:2486-2500`.
+attachShader assigns its actual retained shader pointer after GL, including
+owned native rejection, and deleteProgram clears the current source pointer by
+actual object identity. The invented bindAttribLocation `gl_` name gate was
+removed: the driver decides competing index/name errors after source ownership
+validation. Native owner, actual shader compilation/reflection and source
+program-order files passed with GC disabled (three files,
+`source-shader-program-owner-gc-none.log`); the actual public two-version owner
+case passed in `source-shader-program-owner-public-gc-none.log`. Source shader/
+program mirrors and eager status/log queries remain identified for the separate
+record slice; createShader's extra native-zero null substitution remains a
+separate source record boundary. Full LibJS tracing and WrapperWorld ownership
+remain open.
+
 Immutable texture storage now follows
 `WebGL2RenderingContextImpl.cpp:198-209`: select the owning driver and forward
 levels, formats and dimensions without extra V prevalidation. The native source
