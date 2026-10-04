@@ -770,6 +770,16 @@ wrappers sharing one driver location, use of both wrappers, fresh queries after
 relink, missing names and a native failed relink outside the V status cache.
 The host's resource wrapper lifetime boundary remains unchanged.
 
+WebGLUniformLocation handle validation now compares optional current/parent
+program pointers exactly (`WebGLUniformLocation.cpp:48-53`), including the
+source factory's valid both-null case. A present mismatch still reports
+INVALID_OPERATION; matching pointer identity remains valid after native/source
+program deletion, without an added link/deletion query. The focused typed
+factory/pointer case and actual native location-identity neighbor passed with
+GC disabled in `source-uniform-location-handle-gc-none.log` (two files). This
+translates the source record validator; it does not add a public constructor or
+complete the remaining WrapperWorld lifetime boundary.
+
 drawBuffers and drawBuffersWEBGL no longer dirty CPU canvas presentation merely
 because their dispatch names begin with draw. Their pinned source bodies only
 change native draw-buffer state (`WebGL2RenderingContextImpl.cpp:568-573`,
