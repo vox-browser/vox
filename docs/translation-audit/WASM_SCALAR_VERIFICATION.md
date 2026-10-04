@@ -1,6 +1,35 @@
 # Frozen scalar WebAssembly verification
 
-## Latest frozen load/typed-store snapshot: 101 files
+## Latest frozen fixed-temporary snapshot: 101 files
+
+Detached canonical `9a749e4ad6c29ef73ce1c83901eb89726df4abcf`, in
+`Build/audit-fixes/worktrees/root-wasm101-fixed-final`, passes **101/101 files
+in each GC mode**, default in 420.9s and GC-none in 414.6s. Commands are
+`/Users/alex/code/v/v -old-compiler -enable-globals test webassembly` and
+the same with `-gc none`, each with `VJOBS=2`; both exit 0.
+
+All 4,612 tracked paths/contents, HEAD and clean status remain unchanged.
+Its 221 non-Markdown Wasm and 490 LibJS files match canonical at that exact
+revision. This includes fixed local raw temporaries and the genuine direct
+store_value source2/copied-payload case. The native browser verification uses
+the same [frozen revision](NATIVE_FROZEN_9A749E4A.md).
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `source-fixed-memory-store-wasm101-manifest.json` | `a74c2b004bcb810fc0f4ba44fec3c2e7dd415bc2ecfc390c3434dac9d66991f0` |
+| Whole sorted tracked manifest | `d6a4fd05d1eedf1c528153f62cb3f537b38c9d8fb3774506eae22e2bb84cefe3` |
+| WebAssembly manifest | `34625bdb888ef3c3c02fbb93e5ec513bc405d4847bf030dd083adccf709d22f6` |
+| LibJS manifest | `d55fd6a720b1bc274039393b94776fb27f7e946d61d51adfb0ce0c229bfef4c9` |
+| `source-fixed-memory-store-wasm101-default.log` | `18a43fd4bfc016a99aa098172582852536fbb3b95e804eca8466c9cde0c18f6d` |
+| `source-fixed-memory-store-wasm101-gc-none.log` | `25f21ade956d108eed386521d4c102ad531095612bb8b3567746f6ee13b488ca` |
+
+Artifacts are under the detached snapshot's `Build/audit-fixes/`.
+Upstream stays `963d46a829f3e1b79f44dba9d02afb70654300fa`.
+Later lane-store and other helpers are outside this immutable proof.
+Actual opcode/compiled execution, remaining SIMD, full instantiation and
+collector/realm ownership remain unfinished.
+
+## Historical frozen load/typed-store snapshot: 101 files
 
 Detached canonical `b822d7f4a35a9c95fc512442d46778bf96bf03de`, in
 `Build/audit-fixes/worktrees/root-wasm101-final`, passes **101/101 test files
