@@ -86,9 +86,15 @@ fn test_upstream_uniform_vectors_matrices_and_webgl2_validation() {
 	context.use_program(program)
 	location := context.get_uniform_location(mut program, 'u_color') or { panic('uniform') }
 	context.uniform4fv(location, [f32(1), 0.5, 0.25, 1])
-	assert context.get_uniform(program, location).numbers == [f64(1), 0.5, 0.25, 1]
+	mut actual_color := [f32(0), 0, 0, 0]!
+	C.vox_gl_get_uniform_floats(program.object.native_handle_, int(location.handle_), &actual_color[0])
+	assert actual_color == [f32(1), 0.5, 0.25, 1]!
+	assert context.get_uniform(program, location).integer == 0
 	matrix := context.get_uniform_location(mut program, 'u_matrix') or { panic('matrix uniform') }
 	context.uniform_matrix3x2fv(matrix, false, [f32(1), 0, 0, 1, 2, 3])
+	mut actual_matrix := [f32(0), 0, 0, 0, 0, 0]!
+	C.vox_gl_get_uniform_floats(program.object.native_handle_, int(matrix.handle_), &actual_matrix[0])
+	assert actual_matrix == [f32(1), 0, 0, 1, 2, 3]!
 	assert context.get_error() == no_error
 	context.uniform_matrix2fv(location, true, [f32(1), 0, 0, 1])
 	assert context.get_error() == invalid_value

@@ -75,7 +75,6 @@ mut:
 	unpack_alignment_                   int = 4
 	unpack_state_                       PixelUnpackState = PixelUnpackState{}
 	generic_parameters_                 map[GLenum]WebGLParameterValue
-	uniform_values_                     map[GLuint][]f32
 	vertex_attrib_values_               map[GLuint][]f32
 	vertex_attrib_states_               map[GLuint]VertexAttribState
 }

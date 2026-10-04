@@ -884,7 +884,7 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 		}
 		'getUniform' {
 			host.validate_resource(wg_arg(args, 0), 'program', false)!
-			host.validate_resource(wg_arg(args, 1), 'uniform_location', true)!
+			host.validate_resource(wg_arg(args, 1), 'uniform_location', false)!
 			return host.parameter(context, context.get_uniform(host.programs[wg_handle(wg_arg(args, 0))] or { return error('TypeError: expected program') }, host.uniform_locations[wg_handle(wg_arg(args, 1))] or { none }))
 		}
 		'getActiveAttrib' {

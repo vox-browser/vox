@@ -171,7 +171,6 @@ fn (mut context WebGLRenderingContext) uniform_matrix(location ?&WebGLUniformLoc
 	C.vox_gl_uniform_matrix(int(value.handle_), columns, rows, values.len / (columns * rows), values.data)
 	error_value := GLenum(C.vox_gl_get_error())
 	if error_value != no_error { context.native.set_pending_local_error(error_value); return }
-	context.uniform_values_[value.handle_] = values.clone()
 }
 
 pub fn (mut context WebGLRenderingContext) uniform_matrix2fv(location ?&WebGLUniformLocation, transpose bool, values []f32) {

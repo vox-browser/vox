@@ -935,10 +935,9 @@ pub fn (mut context WebGLRenderingContext) get_tex_parameter(target GLenum, pnam
  return if boolean_result {WebGLParameterValue{kind:.boolean,boolean:result==1}} else {integer_parameter(i64(result))}
 }
 
-pub fn (context &WebGLRenderingContext) get_uniform(_ &WebGLProgram, location ?&WebGLUniformLocation) WebGLParameterValue {
-	value := location or { return WebGLParameterValue{} }
-	values := context.uniform_values_[value.handle_] or { return WebGLParameterValue{} }
-	return WebGLParameterValue{ kind: .numbers, numbers: values.map(f64(it)) }
+pub fn (context &WebGLRenderingContext) get_uniform(_ &WebGLProgram, _ ?&WebGLUniformLocation) WebGLParameterValue {
+	// WebGLRenderingContextImpl.cpp:1997-2001 returns JS number zero with a FIXME.
+	return integer_parameter(0)
 }
 
 pub fn (mut context WebGLRenderingContext) get_active_attrib(program &WebGLProgram, index GLuint) ?WebGLActiveInfo {
@@ -1178,7 +1177,6 @@ fn (mut context WebGLRenderingContext) uniform_floats(location ?&WebGLUniformLoc
  C.vox_gl_uniform_floats(int(value.handle_), width, values.len / width, values.data)
  error_value := GLenum(C.vox_gl_get_error())
  if error_value != no_error { context.native.set_pending_local_error(error_value); return }
- context.uniform_values_[value.handle_] = values.clone()
 }
 
 fn (mut context WebGLRenderingContext) uniform_ints(location ?&WebGLUniformLocation, values []int, width int) {
@@ -1190,7 +1188,6 @@ fn (mut context WebGLRenderingContext) uniform_ints(location ?&WebGLUniformLocat
  C.vox_gl_uniform_ints(int(value.handle_), width, values.len / width, values.data)
  error_value := GLenum(C.vox_gl_get_error())
  if error_value != no_error { context.native.set_pending_local_error(error_value); return }
- context.uniform_values_[value.handle_] = values.map(f32(it))
 }
 
 fn (mut context WebGLRenderingContext) uniform_uints(location ?&WebGLUniformLocation, values []u32, width int) {
@@ -1202,7 +1199,6 @@ fn (mut context WebGLRenderingContext) uniform_uints(location ?&WebGLUniformLoca
  C.vox_gl_uniform_uints(int(value.handle_), width, values.len / width, values.data)
  error_value := GLenum(C.vox_gl_get_error())
  if error_value != no_error { context.native.set_pending_local_error(error_value); return }
- context.uniform_values_[value.handle_] = values.map(f32(it))
 }
 
 pub fn (mut context WebGLRenderingContext) uniform1f(location ?&WebGLUniformLocation, x f32) {
