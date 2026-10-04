@@ -2275,6 +2275,18 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript Blob constructor: ${err.msg()}'
 		return none
 	}
+	mut file_host := browserjs.FileHost.create(document) or {
+		messages << 'JavaScript File bindings: ${err.msg()}'
+		return none
+	}
+	file_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript File bindings: ${err.msg()}'
+		return none
+	}
+	file_host.install_constructor() or {
+		messages << 'JavaScript File constructor: ${err.msg()}'
+		return none
+	}
 	mut abort_host := browserjs.AbortSignalHost.create(document) or {
 		messages << 'JavaScript AbortSignal bindings: ${err.msg()}'
 		return none
