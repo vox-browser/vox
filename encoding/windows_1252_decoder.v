@@ -115,8 +115,10 @@ fn (_ Windows1252Decoder) decode_to_utf8_raw(input []u8, mut output []u8, last b
 // replacement mode encounters a malformed byte. Preserve Source's produced
 // byte length at the owning UTF8 string boundary, including every NUL.
 fn decode_windows_1252_to_utf8(input []u8) string {
+	// Source checks a usize multiplication. Flattened V byte arrays use
+	// int lengths, so this existing allocation model has a narrower bound.
 	if input.len > int(0x7fffffff) / 3 {
-		panic('Source checked Windows1252 UTF8 output capacity overflow')
+		panic('Windows1252 UTF8 output exceeds flattened V int array capacity')
 	}
 	decoder := Windows1252Decoder{}
 	mut output := []u8{len: input.len * 3}
