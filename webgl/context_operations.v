@@ -665,8 +665,8 @@ pub fn (mut context WebGLRenderingContext) get_shader_precision_format(shader GL
 }
 
 pub fn (mut context WebGLRenderingContext) get_buffer_parameter(target GLenum, pname GLenum) WebGLParameterValue {
-	context.native.make_current()
     if pname !in [buffer_size, buffer_usage] { context.set_error(invalid_enum); return WebGLParameterValue{} }
+    context.native.make_current()
     result := C.vox_gl_buffer_parameter(target, pname)
     return integer_parameter(result)
 }
