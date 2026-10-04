@@ -1435,20 +1435,23 @@ cases pass with `-gc none`, including foreign/deleted objects, empty values,
 resource identity and a native source mutation outside the V cache. Existing
 native shader compile/link/reflection tests also pass with `-gc none`.
 
-getError now queries the current native driver's error after pending local
-errors and before stored translation errors, matching
+getError now queries its owning native driver's error at the synchronous
+receiver boundary, after pending local errors and before stored translation errors, matching
 `WebGLRenderingContextImpl.cpp:1720-1724` and
 `WebGLRenderingContextBase.cpp:315-332`. Its focused native two-version test and
 existing native object-query file pass with `-gc none`, including driver errors
 raised outside translated calls, context switching, exact precedence and the
 source one-time context-loss error branch.
 
-Browser-only pixelStorei state makes its owning context current, and
+Browser-only pixelStorei state returns before issuing native GL commands, and
 UNPACK_COLORSPACE_CONVERSION_WEBGL stores the converted GLint as GLenum without
 extra enum validation, matching `WebGLRenderingContextImpl.cpp:2246-2282`.
-The focused native two-version test and existing texture-source file pass with
-`-gc none`, including context switching, negative/arbitrary color-space state,
-browser-only boolean flags and preserved native unpack-alignment errors. This
+The earlier focused two-version fixture assumed native selection from the
+source's empty Proxy::make_current prefix. The subsequent source pixel-store
+slice above corrects that fixture and preserves the already-current other
+driver on browser-only and invalid UNPACK_ALIGNMENT returns. Focused native
+and public checks pass with `-gc none`, including negative/arbitrary
+color-space state, browser-only boolean flags and preserved unpack errors. This
 preserves the pinned source behavior even where it accepts state beyond the
 usual NONE/BROWSER_DEFAULT_WEBGL values.
 
