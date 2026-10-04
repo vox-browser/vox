@@ -781,18 +781,18 @@ from the current-module totals.
 | `Clipboard` | 4 | 1,009 | 1,123 | 409 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 471 | 143 | Complete |
-| `ContentSecurityPolicy` | 37 | 4,725 | 2,784 | 442 | Complete |
+| `ContentSecurityPolicy` | 37 | 4,725 | 2,799 | 514 | Complete |
 | `CookieStore` | 2 | 850 | 1,059 | 482 | Complete |
 | `CredentialManagement` | 6 | 382 | 420 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 7,957 | 7,989 | Complete |
 | `DOM` | 59 | 34,859 | 43,359 | 4,626 | Complete |
 | `DOMURL` | 4 | 1,039 | 825 | 363 | Complete |
 | `Editing` | 26 | 12,720 | 13,938 | 226 | Complete |
-| `Encoding` | 6 | 769 | 3,531 | 2,581 | Complete |
+| `Encoding` | 6 | 769 | 4,523 | 3,163 | Complete |
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
 | `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
 | `EventTiming` | 1 | 122 | 153 | 95 | Complete |
-| `Fetch` | 33 | 8,493 | 6,588 | 2,918 | Complete |
+| `Fetch` | 33 | 8,493 | 6,585 | 3,015 | Complete |
 | `FileAPI` | 6 | 1,357 | 1,340 | 858 | Complete |
 | `Fullscreen` | 0 | 0 | 93 | 177 | Complete |
 | `GPC` | 1 | 21 | 16 | 13 | Complete |
@@ -820,7 +820,7 @@ from the current-module totals.
 | `PerformanceTimeline` | 5 | 476 | 502 | 154 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
 | `Platform` | 4 | 431 | 2,824 | 649 | Complete |
-| `ReferrerPolicy` | 2 | 341 | 129 | 123 | Complete |
+| `ReferrerPolicy` | 2 | 341 | 105 | 223 | Complete |
 | `RequestIdleCallback` | 1 | 52 | 59 | 18 | Complete |
 | `ResizeObserver` | 4 | 424 | 605 | 231 | Complete |
 | `ResourceTiming` | 1 | 357 | 342 | 90 | Complete |
@@ -838,10 +838,10 @@ from the current-module totals.
 | `URLPattern` | 1 | 223 | 1,703 | 257 | Complete |
 | `UserTiming` | 2 | 160 | 119 | 35 | Complete |
 | `ViewTransition` | 1 | 1,054 | 743 | 349 | Complete |
-| `WebAssembly` | 7 | 3,441 | 11,004 | 9,056 | Complete |
+| `WebAssembly` | 7 | 3,441 | 11,064 | 9,435 | Complete |
 | `WebAudio` | 47 | 8,256 | 8,682 | 3,247 | Complete |
 | `WebDriver` | 16 | 5,321 | 3,934 | 862 | Complete |
-| `WebGL` | 42 | 7,846 | 6,569 | 10,037 | Complete |
+| `WebGL` | 42 | 7,846 | 6,581 | 10,502 | Complete |
 | `WebIDL` | 10 | 2,466 | 2,551 | 1,299 | Complete |
 | `WebLocks` | 5 | 647 | 701 | 169 | Complete |
 | `WebSockets` | 1 | 476 | 409 | 156 | Complete |
@@ -852,7 +852,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **429,810** | **146,677** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **430,862** | **148,372** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 

@@ -693,7 +693,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-10-04, the tracked module
-packages contain 429,810 implementation V LOC and 146,677 test V LOC.
+packages contain 430,862 implementation V LOC and 148,372 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. Package counts include generated V assets and
 supporting translations; WebAssembly includes the separately audited LibWasm
@@ -706,13 +706,13 @@ their shared DOM test files are counted under the corresponding owner once.
 | ARIA | 2,574 | Animations | 4,254 |
 | Bindings | 2,718 | CSS | 114,903 |
 | Clipboard | 1,123 | Compositor | 2,403 |
-| Compression | 471 | ContentSecurityPolicy | 2,784 |
+| Compression | 471 | ContentSecurityPolicy | 2,799 |
 | CookieStore | 1,059 | CredentialManagement | 420 |
 | Crypto (`webcrypto/`) | 7,957 | DOM | 43,359 |
 | DOMURL | 825 | Editing | 13,938 |
-| Encoding | 3,531 | EncryptedMediaExtensions | 572 |
+| Encoding | 4,523 | EncryptedMediaExtensions | 572 |
 | EntriesAPI | 44 | EventTiming | 153 |
-| Fetch | 6,588 | FileAPI | 1,340 |
+| Fetch | 6,585 | FileAPI | 1,340 |
 | Fullscreen | 93 | GPC | 16 |
 | Gamepad | 860 | Geolocation | 535 |
 | Geometry | 2,121 | HTML | 69,169 |
@@ -726,7 +726,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | NotificationsAPI | 370 | Page | 6,772 |
 | Painting | 7,979 | PerformanceTimeline | 502 |
 | PermissionsAPI | 239 | Platform | 2,824 |
-| ReferrerPolicy | 129 | RequestIdleCallback | 59 |
+| ReferrerPolicy | 105 | RequestIdleCallback | 59 |
 | ResizeObserver | 605 | ResourceTiming | 342 |
 | SRI | 156 | SVG | 6,747 |
 | SecureContexts | 59 | Selection | 1,479 |
@@ -735,14 +735,14 @@ their shared DOM test files are counted under the corresponding owner once.
 | Streams | 7,421 | TrustedTypes | 863 |
 | UIEvents | 1,490 | URLPattern | 1,703 |
 | UserTiming | 119 | ViewTransition | 743 |
-| WebAssembly | 11,004 | WebAudio | 8,682 |
-| WebDriver | 3,934 | WebGL | 6,569 |
+| WebAssembly | 11,064 | WebAudio | 8,682 |
+| WebDriver | 3,934 | WebGL | 6,581 |
 | WebIDL | 2,551 | WebLocks | 701 |
 | WebSockets | 409 | WebVTT | 464 |
 | WebXR | 411 | Worker | 142 |
 | XHR | 1,695 | XLink | 13 |
 | XML | 477 | XPath | 672 |
-| **Total** | **429,810** |  |  |
+| **Total** | **430,862** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
