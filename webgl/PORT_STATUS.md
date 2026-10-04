@@ -162,6 +162,43 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+Shader diagnostic/parameter sync queries now preserve exact initialized Source
+outputs after loss. GLFunctions.json:2348-2400 classifies regular/robust shaderiv
+as void sync. generate_libweb_webgl_proxy.py:153-158 returns before copying any
+output once is_lost, and ProxyBase.cpp:168-176 skips dispatch when already lost.
+Source Impl.cpp:1877/:1911/:1931 initializes result and diagnostic lengths to 0.
+Thus getShaderSource/getShaderInfoLog return empty strings, shader type returns
+numeric 0, and compile/delete status return false for an otherwise owned/live
+record after loss. The two direct native helpers now stop at unavailable actual
+current selection, retaining those Source outputs without querying Other.
+Live owner selection and exact regular/robust Driver calls are unchanged.
+
+The real unfixed probe had owner/Other native names both 1: a lost Source getter
+returned Other's shader text, type 35633 and successful compilation. That unwanted
+actual driver evidence remains in
+`Build/audit-fixes/source-shader-query-lost-unfixed-probe-gc-none.log`.
+The corrected native/public two-version tests lose genuine EGL, retain two
+original records and create a third owned proxy record after loss. They verify
+15 Source queries per version beside Other's actual successful shader and
+nonempty failing compiler log, with untouched viewport and pending native
+error. Public conversions still run once or throw before body entry; Source
+one-shot context-loss reporting stays intact. No fake backend supplies a result.
+
+Three typed files pass in
+`Build/audit-fixes/source-shader-query-lost-native-gc-none.log`; three public
+files pass in
+`Build/audit-fixes/source-shader-query-lost-public-final-gc-none.log`, including
+live diagnostic and robust query neighbors. The initial public GLSL newline
+literal failure and subsequent formatter-added JSON option incompatibility are
+preserved in the logs without `-final`. All checks use GC disabled and explicit
+private paths. Exact generated regular/robust proxy/compositor evidence remains
+in source-shader-query-generated-boundary.txt with the SHA-256 recorded below.
+
+This repairs only these shader sync outputs. isShader Boolean sync and broader
+lost commands, program queries, actual bundle/capture validation, full remote
+maps and GC/WrapperWorld remain independent scopes. These focused private native
+and JavaScriptCore checks make no claim about a newly built canonical bundle.
+
 getShaderParameter now invokes the exact Source ANGLE robust query.
 WebGLRenderingContextImpl.cpp:1877 initializes GLint result to 0, then calls
 get_shaderiv_robust_angle(shader,pname,1,nullptr,&result) before its pname switch.
@@ -186,9 +223,10 @@ private paths.
 The exact regular/robust proxy and compositor snippets are generated read-only
 into `Build/audit-fixes/source-shader-query-generated-boundary.txt` (SHA-256
 `864ec67312c6b7d0de9231d0db6dc4816e25092d2d3bd4a6015d0887709e73a5`).
-Lost shader sync suppression and the separately regular-versus-robust program
-getter helper remain independent Source repairs; this ABI feature adds no loss
-policy or full remote transport/map/GC/WrapperWorld claim.
+Lost shader sync suppression is supplied by the subsequent independent feature
+above. The separately regular-versus-robust program getter helper remains open;
+this ABI feature adds no loss policy or full remote transport/map/GC/WrapperWorld
+claim.
 
 getShaderParameter now validates its Source handle before actual native sync
 owner selection. WebGLRenderingContextImpl.cpp:1864-1889 returns a nullable
@@ -212,9 +250,9 @@ the existing actual shader/program parameter tests. All use GC disabled and
 explicit private module paths.
 
 This is only the Source CPU-owner correction. The exact ANGLE robust query ABI
-is corrected by the subsequent independent feature above; lost-sync output
-suppression, program methods, full remote maps and GC/WrapperWorld remain
-separate scopes.
+is corrected by its subsequent independent feature above, as is shader sync
+lost-output suppression. Program methods, full remote maps and GC/WrapperWorld
+remain separate scopes.
 
 deleteShader now leaves actual native owner selection after Source nullable
 and optional-handle deletion gates. WebGLRenderingContextImpl.cpp:585-603
@@ -266,9 +304,10 @@ the existing diagnostic result/identity neighbors. All use GC disabled and
 explicit private paths.
 
 This supersedes earlier unconditional owner-prefix descriptions specifically
-for these two getters. Their native helper's separately identified lost-query
-suppression, shader parameter getter order, program diagnostics/deletion, full
-remote maps and GC/WrapperWorld remain independent Source slices. Native source
+for these two getters. Their native helper's subsequent lost-query suppression
+and shader parameter getter owner/ABI order are recorded above; program
+diagnostics/deletion, full remote maps and GC/WrapperWorld remain independent
+Source slices. Native source
 and log lengths, terminator exclusion and public nullable/string shapes remain
 as translated from the pinned source.
 
