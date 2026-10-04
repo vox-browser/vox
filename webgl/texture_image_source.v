@@ -91,6 +91,7 @@ fn convert_bitmap_for_upload(source TexImageSourceFrame, format GLenum, type_ GL
 // WebGLRenderingContextOverloads and WebGL2RenderingContextOverloads bitmap
 // variants, followed by HostWebGLContext's robust native upload operation.
 pub fn (mut context WebGLRenderingContext) tex_image2d_source(target GLenum, level int, internal_format int, format GLenum, type_ GLenum, source WebGLTextureImageSource, destination_size ?WebGLIntSize, border int) ! {
+	context.native.make_current()
 	if border != 0 {
 		context.set_error(invalid_value)
 		return
@@ -105,6 +106,7 @@ pub fn (mut context WebGLRenderingContext) tex_image2d_source(target GLenum, lev
 }
 
 pub fn (mut context WebGLRenderingContext) tex_sub_image2d_source(target GLenum, level int, x_offset int, y_offset int, format GLenum, type_ GLenum, source WebGLTextureImageSource, destination_size ?WebGLIntSize) ! {
+	context.native.make_current()
 	frame := context.read_texture_image_source(source, format, type_) or { return }
 	converted := convert_bitmap_for_upload(frame, format, type_, destination_size)!
 	if !context.command('tex_sub_image2d_from_bitmap', target, level, x_offset, y_offset, converted.width, converted.height, format, type_) {
@@ -115,6 +117,7 @@ pub fn (mut context WebGLRenderingContext) tex_sub_image2d_source(target GLenum,
 }
 
 pub fn (mut context WebGLRenderingContext) tex_image3d_source(target GLenum, level int, internal_format int, depth int, format GLenum, type_ GLenum, source WebGLTextureImageSource, destination_size WebGLIntSize, border int) ! {
+	context.native.make_current()
 	if !context.require_webgl2() { return }
 	if border != 0 {
 		context.set_error(invalid_value)
@@ -130,6 +133,7 @@ pub fn (mut context WebGLRenderingContext) tex_image3d_source(target GLenum, lev
 }
 
 pub fn (mut context WebGLRenderingContext) tex_sub_image3d_source(target GLenum, level int, x_offset int, y_offset int, z_offset int, depth int, format GLenum, type_ GLenum, source WebGLTextureImageSource, destination_size WebGLIntSize) ! {
+	context.native.make_current()
 	if !context.require_webgl2() { return }
 	frame := context.read_texture_image_source(source, format, type_) or { return }
 	converted := convert_bitmap_for_upload(frame, format, type_, destination_size)!
