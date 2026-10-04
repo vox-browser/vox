@@ -798,7 +798,7 @@ was changed or built privately.
 Feature `f8a77f36e362a9a8ea41b76084e62331a5519d04` connects UTF16LE/BE branches of
 the existing TextDecoder to the proven real UTF16 destination. The selected
 variant belongs to the Source Common record's owning StreamingDecoder
-(`TextDecoderCommon.cpp:61–65`), with the existing OwnPtr presence/VERIFY boundary
+(`TextDecoderCommon.cpp:48–51`), with the existing OwnPtr presence/VERIFY boundary
 retained. `TextDecoder.cpp:71–96` calls that owner's `to_utf16`, retaining its
 four variant slots and BOM lifecycle for streaming calls. A non-streaming call
 saves the result, resets the configured owner, then exposes success or the
@@ -844,3 +844,37 @@ Common/Stream still require the same actual variant's Source UTF8 destination;
 this caller does not convert its UTF16 output to substitute for those owners.
 The generic whole-input UTF16-to-UTF8 decoder and other codecs remain separate
 translation bodies. No native browser bundle was built or captured privately.
+
+## Independently witnessed post-BOM UTF16 UTF8 output correction
+
+The initial caller sweeps exposed `decode_with_bom_override_test.v:31` expecting
+two replacements for bytes `fe ff d8 00 61`. Source's actual given-decoder helper
+(`Decoder.cpp:382–402`) selects UTF16BE, discards the first two bytes, then calls
+that selected decoder's `to_utf8` with IgnoreBOM::No and Replacement. Its UTF16
+method (`Decoder.cpp:558–561,573–576`) delegates through the original whole-input UTF8
+FFI (`Rust/src/lib.rs:81–117`). A UTF16-destination result alone was not used as
+proof of this destination's bytes.
+
+Tooling `b0891b5dd3c67ab269ed0000e9b887d7c2a43154` includes and calls that original
+whole-input UTF8 FFI after Source pin/archive validation. Actual native debug
+and release each pass 1/1 for eight post-sniff BE/LE cases: `d8 00 61` / `00 d8 61`
+produce exactly `ef bf bd` in replacement mode, whether BOM removal is enabled
+or disabled. Fatal mode fails without a callback result. The native profile
+artifacts agree byte for byte. `source-utf16-bom-override-probe.log` SHA256 is
+`197c4ff1ce6d125c13c94adf0b5d93c62b17d3646f969c8548e0f50c41c1c8e7`.
+
+Focused fixture correction `de622687b564885d7c3dd41c2324d64c490b794f` updates that
+stale expected output and compares the two actual given-decoder flag cases
+against the checked-in native UTF8 golden. Its other six flag cases remain
+native evidence without pretending the given-decoder helper exposes those
+flags. `post_sniff_utf16_utf8.json` SHA256 is
+`a37e37460b7a240759e518a7959a6fcd35cc4d1becf54d3fb23a2fce7dea44d6`.
+Focused checks pass 1/1 in both modes in
+`source-utf16-bom-override-focused-{default,gc-none}.log`; the complete final
+21/21 proof is recorded above, with the initial 20/21 logs retained.
+
+This is a genuine output-fixture correction. The existing V BOM-override helper
+still projects through TextDecoder, while Source directly uses its whole-input
+UTF8 destination; that destination/owning caller remains pending. These eight
+native bytes do not close the broader representation, reserve/capacity or
+whole-input allocation boundary and are not generalized to other codecs.
