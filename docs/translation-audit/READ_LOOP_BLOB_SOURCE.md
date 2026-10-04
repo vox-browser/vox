@@ -310,3 +310,35 @@ slice creates a Blob, while inherited bytes retains a genuine Uint8Array
 Promise result and the actual document's FileReading task. This prerequisite
 does not expose a public File constructor. Generated construction, File-before-
 Blob dynamic clone classification and browser startup follow separately.
+
+The generated File constructor now converts required sequence parts, then its
+USVString filename, then inherited BlobPropertyBag endings/type and derived
+optional signed lastModified. Source File::create copies retained buffer parts
+after these conversions, preserving filename/option mutation and detachment.
+It uses the existing Source MIME/basic-Latin body and actual clock default,
+without reading author Date.now. Its constructor/prototype/global descriptor
+flags, name/arity two, original Blob constructor inheritance, called-without-
+new and required-argument diagnostics follow the fresh pinned generator.
+The actual owning global is passed explicitly. Single newTarget.prototype Get
+precedes conversion; same-runtime fallback is retained, while foreign
+GetFunctionRealm fallback remains explicitly open as for Blob.
+
+Constructor plus owner fixtures pass **2/2** both modes in
+`source-native-file-constructor-{default,gc-none}.log`. The final extended
+constructor fixture passes both modes in
+`source-native-file-constructor-{default,gc-none}-final.log`, including original
+Proxy/iterator/name/dictionary/numeric thrown values, absent/null options,
+actual object metadata, buffer copy timing and raw malformed EndingType units.
+The pinned no-EnforceRange/no-Clamp LongLong helper's small-negative behavior
+is confirmed by `tools/source_webidl_int64_probe.py`: it copies the exact
+numeric steps 8–12, integer_part and floating JS::modulo and uses actual AK
+types/bounds plus a native signed return cast. Both clang -O0 and -O2 produce
+-7 to 0 and -4096 to -4096 (`source-webidl-int64-native-probe.log`), while
+direct raw File timestamp slots retain negative values independently.
+
+The exact ±2^63 numeric boundary is a separate Source limitation: its rounded
+double comparison permits an out-of-range signed cast. A supplementary native
+probe gives different results with -O0/-O2, so compiler-dependent behavior at
+that boundary is not claimed as parity with V's defined conversion. Actual
+File clone projection, main browser File exposure and native Worker/FileList
+ownership remain separate work.
