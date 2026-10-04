@@ -741,3 +741,12 @@ checked-truncation/helper neighbors pass **3/3 with GC disabled** privately.
 See [Source mapping and validation](../docs/translation-audit/WASM_SATURATING_TRUNCATE.md).
 This 96th file is outside the historical frozen 94-file sweep; production
 opcode dispatch and the remaining runtime/collector boundaries remain open.
+
+The frozen exact canonical `a7e4319a` checkout now passes a clean **96/96
+WebAssembly files in each GC mode** (177.9 s default /176.2 s GC disabled),
+including checked and saturating truncation. Its 209 WebAssembly and 485 LibJS
+non-Markdown files remain byte-identical throughout both runs and match
+canonical at recording. Exact commands/manifest/log hashes and subsequent
+change boundaries are in [frozen proof](../docs/translation-audit/WASM_SCALAR_VERIFICATION.md).
+Production opcode/SIMD execution, complete instantiation and collector/realm
+ownership remain open.

@@ -1,5 +1,34 @@
 # Frozen scalar WebAssembly verification
 
+## Latest frozen 96-file snapshot
+
+Snapshot: `a7e4319a7eb3fca6f47d55ff24d47398164b1351`, an isolated checkout of
+that exact canonical commit in `Build/audit-fixes/worktrees/09-compiled-records`.
+Both full runs pass **96/96 test files**, with two jobs per run:
+
+| GC mode | Result | Elapsed | Log SHA-256 |
+| --- | --- | ---: | --- |
+| Default | PASS, exit 0 | 177.9s | `1e5cf216393b4204a3a9238d440ab9d12ce8f25ee320302e9571112fa65e031c` |
+| None | PASS, exit 0 | 176.2s | `3cf1a668e0880035feec032b5c7a536a2cddcf9c2dae6724b47bf75aaa5f4408` |
+
+Commands were `/Users/alex/code/v/v -old-compiler -enable-globals test webassembly`
+and the same command with `-gc none`, with `VJOBS=2`. Logs use
+`source-scalar-wasm96-full-{default,gc-none}.log` under the snapshot's
+`Build/audit-fixes/`. This includes both checked and saturating truncation.
+
+The manifest `source-scalar-wasm96-manifest.json` records commands/results and
+before/after digests for **209 non-Markdown WebAssembly files and 485
+non-Markdown LibJS files**. Its SHA-256 is
+`c796ede331a201b575c57845e614db2ab63ea340620208494e7bf60d1ca7041e`.
+Both sets stayed byte-identical, the tracked checkout stayed clean at the exact
+revision, and both sets matched canonical at recording. Dependencies outside
+those packages remain the files of this exact snapshot; subsequent code and
+LibJS dependency changes are outside this proof. Production opcode dispatch,
+remaining scalar/SIMD operations, complete execution/instantiation and native
+collector/realm ownership remain unfinished.
+
+## Historical frozen 94-file snapshot
+
 Snapshot: `e86c54a7b3749a8bbaa6e31a6b10ba0f8d0c7f77`, an isolated checkout of that exact canonical
 commit in `Build/audit-fixes/worktrees/09-compiled-records`.
 Upstream: `963d46a829f3e1b79f44dba9d02afb70654300fa`.
