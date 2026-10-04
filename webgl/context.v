@@ -498,7 +498,6 @@ pub fn (mut context WebGLRenderingContext) compile_shader(mut shader WebGLShader
 }
 
 pub fn (mut context WebGLRenderingContext) get_shader_source(shader &WebGLShader) ?string {
-	context.native.make_current()
 	if !context.owns(&shader.object) {
 		context.set_error(invalid_operation)
 		return none
@@ -507,7 +506,6 @@ pub fn (mut context WebGLRenderingContext) get_shader_source(shader &WebGLShader
 }
 
 pub fn (mut context WebGLRenderingContext) get_shader_info_log(shader &WebGLShader) ?string {
-	context.native.make_current()
 	if !context.owns(&shader.object) {
 		context.set_error(invalid_operation)
 		return none
