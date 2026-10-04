@@ -484,3 +484,21 @@ This installs the actual FileList interface; public HTMLInputElement receiver
 and prototype binding, foreign-world wrapper ownership and native Worker startup
 remain explicit separate dependencies. No public input receiver was inferred
 from author-visible DOM IDs or copied metadata.
+
+
+The drag-data prerequisite maps pinned `HTML/DragDataStore.h` lines 20–34:
+the actual item's type, text data and file name retain immutable UTF16 owners,
+separate from copied file bytes. Existing translated string/byte fields remain
+compatibility views. Their getters check those views before reusing a raw slot,
+so structural updates cannot retain stale raw values. No author property or
+public facade supplies these records. This prerequisite preserves code units;
+AK Utf16FlyString interning identity is not represented by the typed V record.
+
+Raw-slot plus existing DataTransfer fixtures pass **2/2** in both default and
+GC-none modes: `source-drag-store-utf16-{default,gc-none}.log`. They cover raw
+lone surrogates, supplementary pairs, embedded null, input/returned slice
+ownership, copied file bytes, raw storage retention, compatibility replacements,
+and existing text-item lookup/removal. Actual File/FileList DataTransfer
+producers and strongly typed native owner adapters are separate subsequent
+features. Public DataTransfer/Item wrappers and BodyInit source/stream ownership
+remain open; no such parity is claimed by this prerequisite.
