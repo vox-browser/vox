@@ -717,3 +717,16 @@ The frozen isolated checkout of canonical `bbb7d72944f17772af8f1096bcb3225f4b3d8
 
 
 `2a00c71d` translates four Source scalar reinterpret forms with 576 exact native bit patterns; `e2f5d37c` translates eight integer-to-float forms with 8,512 exact native cases across all four rounding modes. Their actual helper regressions preserve original interpretation, result representation and selected slots without changing destination/stack/prior traps. Both new files pass default GC privately and canonical GC-disabled integration in the eight-file pixel/destroyed/bitcast/cast batch. See [reinterpret](../docs/translation-audit/WASM_SCALAR_REINTERPRET.md) and [casts](../docs/translation-audit/WASM_INTEGER_FLOAT_CONVERT.md). A fresh isolated canonical `e86c54a7` snapshot passes **94/94 in each GC mode**; package/LibJS files stay byte-identical and match canonical at recording. Outside dependencies and later changes are scoped to that snapshot. See [manifest/log evidence](../docs/translation-audit/WASM_SCALAR_VERIFICATION.md).
+
+## Source checked floating-to-integer truncation
+
+`operators_checked_truncate.c.v` translates all eight Source CheckedTruncate
+specializations and their actual AK safe-cast/round-trip checks, preserving
+original-width classification/truncation and exact error strings. All **328
+pinned C++ results/errors** match; fixture regeneration is byte-exact. The new
+file passes default GC, and it plus conversion/numeric-helper neighbors pass
+**3/3 with GC disabled** privately. See [Source mapping and bounded floating
+precision argument](../docs/translation-audit/WASM_CHECKED_TRUNCATE.md). This
+95th test file follows the historical frozen 94-file sweep; production opcode
+dispatch, remaining operations, complete instantiation and native roots remain
+open.
