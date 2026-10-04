@@ -96,3 +96,31 @@ fn test_source_bom_override_utf16_odd_byte_eof_matches_original_utf8_ffi() {
 	}
 	assert observed == 2
 }
+
+pub struct BomOverrideWholeUtf16SourceCase {
+pub:
+	be         bool
+	remove_bom bool
+	input_hex  string
+	utf8_hex   string
+}
+
+fn test_selected_utf16_bom_override_reaches_actual_source_whole_utf8_owner() {
+	cases := json2.decode[[]BomOverrideWholeUtf16SourceCase](os.read_file('${@VMODROOT}/encoding/fixtures/utf16_whole_input.json')!)!
+	assert cases.len == 1504
+	mut checked := 0
+	for item in cases {
+		if !item.remove_bom { continue }
+		mut input := if item.be { [u8(0xfe), 0xff] } else { [u8(0xff), 0xfe] }
+		input << hex.decode(item.input_hex)!
+		expected := hex.decode(item.utf8_hex)!
+		// The prepended BOM is consumed by Source sniffing. The original
+		// whole-input FFI golden then witnesses exactly the remaining
+		// selected UTF16 call with one matching-BOM removal enabled.
+		for fallback in ['UTF-8', 'replacement', 'UTF-16LE', 'UTF-16BE'] {
+			assert convert_input_to_utf8_using_given_decoder_unless_there_is_a_byte_order_mark(fallback, input)!.bytes() == expected
+		}
+		checked++
+	}
+	assert checked == 752
+}

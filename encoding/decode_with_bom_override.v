@@ -16,6 +16,12 @@ pub fn convert_input_to_utf8_using_given_decoder_unless_there_is_a_byte_order_ma
 		if registered_encoding == 'replacement' {
 			return decode_replacement_to_utf8(bytes)
 		}
+		if registered_encoding == 'UTF-16LE' || registered_encoding == 'UTF-16BE' {
+			// Source calls the selected Decoder's whole-input UTF8 operation.
+			// Sniffing already discarded the first BOM; this call removes
+			// one further matching BOM with IgnoreBOM::No/Replacement.
+			return decode_source_utf16_whole_to_utf8(bytes, registered_encoding == 'UTF-16BE', true, false)
+		}
 	}
 	// Source passes IgnoreBOM::No and Replacement to the chosen decoder.
 	// Its Rust decode_with_bom_removal strips one further same-encoding BOM;
