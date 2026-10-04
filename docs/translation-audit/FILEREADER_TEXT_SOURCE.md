@@ -405,3 +405,50 @@ both final mode checks passed without production changes.
 
 This supplies no public Worker receiver/constructor or asynchronous result
 wrapper. The genuine HostDefined/world weak ArrayBuffer cache remains open.
+
+## Source Windows-1252 decoder prerequisite
+
+Native Sync Text checking exposed a concrete existing dependency: V stdlib
+`encoding.iconv.encoding_to_vstring` appends a zero then constructs with
+`cstring_to_vstring`, truncating decoded output at its first NUL. Source
+`LibTextCodec/Decoder.cpp:131–147` forwards its Rust bridge output through
+`append_decoded_bytes` with the explicit length (`Decoder.cpp:115–123`). The
+Rust bridge (`Rust/src/lib.rs:81–118`) likewise invokes its byte callback with
+`output.len()`. Source therefore preserves leading, interior and trailing NUL.
+
+The separately completed Windows-1252 prerequisite
+`65a64f68039d5f091f2c530839facd1ff0d68a78` translates pinned
+`encoding_rs 0.8.40`'s `SingleByteDecoder::decode_to_utf8_raw`, scalar
+`ByteSource`/`Utf8Destination` positions, ASCII copy, BMP capacity checks and
+UTF8 writes (`src/single_byte.rs`, `src/handles.rs`) with its exact
+`src/data.rs::SINGLE_BYTE_DATA.windows_1252` table. The flattened phase follows
+Source's ASCII acceleration versus inner punctuation loop and its three-byte
+BMP reservation; consumed/written counts match the native decoder. All 128
+high-byte entries are defined, including C1 controls, so replacement and fatal
+modes both accept every Windows-1252 input byte. The whole-input owner uses
+Source's maximum `3 * byte_length` UTF8 capacity and returns the produced slice
+with its explicit byte length. Physical Rust Cow borrowing/Vec allocation is
+not reproduced by the flattened V owned buffer.
+
+`TextDecoder` now selects this translated path for standardized
+`windows-1252` (including its existing latin1/ISO-8859-1/ASCII aliases). Other
+legacy codecs still use their existing iconv compatibility backend, including
+its NUL truncation dependency; this feature claims no complete Rust codec or
+legacy-decoder parity. UTF8, UTF16, user-defined and replacement paths retain
+their existing separately scoped implementations.
+
+The independent tool `26f5d795ac82edc814afb9735b69f81293ba93cc`,
+`tools/source_windows_1252_probe.py`, reuses the existing exact Cargo.lock and
+archive-file validation and includes the unmodified pinned Source Rust bridge.
+The required Source HEAD is checked before probing. Its **2/2 debug and 2/2
+release tests pass** in `source-windows-1252-probe.log`: all 256 bytes, aliases,
+fatal/BOM flags, empty input, leading/interior/trailing NUL and 65 raw capacity,
+status/read/write/output cases. The committed golden JSON assets are emitted
+by those actual Source decoder calls, independently of V's translated table.
+MIT and WHATWG notices are retained with the translated algorithm/data.
+
+New golden comparison, existing streaming TextDecoder and given-decoder BOM
+files pass **3/3 with default GC and 3/3 with GC-none** in
+`source-windows-1252-focused-{default,gc-none}.log`. Native Sync Text remains a
+separate consumer feature, rerun after this actual decoder prerequisite.
+No LibJS implementation or frozen full-proof checkout is changed here.
