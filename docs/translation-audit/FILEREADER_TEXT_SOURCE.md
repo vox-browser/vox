@@ -99,3 +99,20 @@ removal, reentrant abort-handler tasks, trusted Window/Worker clock values and
 the loadend suppression after a reentrant read. Test loading state still uses
 the existing compatibility read entry point; the Source Stream read operation,
 native FileReader wrapper/bindings and wrapper-world result cache remain open.
+
+## BinaryString byte/code-unit packaging
+
+`FileReader.cpp:181` uses `Utf16StringBuilder(bytes.size())`, appends each byte
+as one code unit, and returns the resulting UTF16 string. The former V helper
+manually emitted UTF8 bytes. `file_reader_binary_string` now appends exactly
+those u16 values to the code-unit buffer and constructs the existing owned
+Source `libjs.Utf16String` record. Its existing UTF8 projection supplies the
+standalone result's compatibility string. No byte decoder or independent
+UTF8 encoder is used; every input byte maps to the identical value in 0–255.
+
+The focused BinaryString and existing reader files pass **2/2 in both GC modes**
+in `source-file-reader-binary-string-{default,gc-none}.log`. Tests cover all
+256 values, embedded NULs, BOM byte sequences retained verbatim, ASCII versus
+UTF16 storage, immutable input ownership and FileReaderSync's same package.
+This feature changes no LibJS implementation and supplies no native result
+wrapper or per-world cache.

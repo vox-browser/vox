@@ -108,3 +108,9 @@ Actual owner/standalone reader/owning Blob files pass **3/3 in both GC modes**.
 This is an owner prerequisite: the asynchronous read operation still needs the
 Source default-reader/Promise/ReadOperationState path, followed by native
 FileReader wrappers and its per-world result cache.
+
+BinaryString packaging now follows Source's byte-to-UTF16-code-unit builder
+through the existing owned Source string record, replacing the independent
+UTF8 byte encoder. Every byte 0–255, embedded NULs, verbatim BOM bytes, storage
+and synchronous packaging pass **2/2 focused files in both GC modes**. Native
+result wrappers/caching remain separate.
