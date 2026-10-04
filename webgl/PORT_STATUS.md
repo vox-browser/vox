@@ -162,6 +162,33 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+validateProgram now keeps its Source owned-handle gate before actual native
+owner selection. Impl.cpp:2486-2497 has an empty proxy make_current prefix,
+then validates program->handle(this) before the exact validate command.
+V now selects its actual owner only after that gate, retaining the original
+unsigned native name ABI and direct driver validation operation. Foreign and
+invalidated records do not switch current Other or consume its pending errors.
+Public arity, nonnullable and forged-brand errors remain before Source entry.
+
+New two-version typed/public checks compare a separately linked actual program
+validated directly through C with the translated program's genuine
+VALIDATE_STATUS=0 to 1 transition. Successful Source calls select Owner and
+match that independent driver baseline. A native program deleted outside V
+also confirms valid Source records still select Owner, forward the actual
+native name, and preserve the real driver rejection. No fabricated CPU
+validation status or eager cache supplies these results.
+
+Only the old typed foreign validateProgram owner expectation and its matching
+public aggregate entry were migrated. Two typed files pass in
+`Build/audit-fixes/source-validate-program-owner-native-gc-none.log`; two public
+files pass in
+`Build/audit-fixes/source-validate-program-owner-public-gc-none.log`, using
+GC disabled and explicit private paths. This supersedes only those historical
+owner assumptions and does not replace frozen full regression evidence.
+Lost validation, use/attach/detach/bind/location and other program bodies,
+other object families and full remote transport/GC/WrapperWorld remain
+independent source-reviewed scopes.
+
 linkProgram now drops its generated native command after loss, separately
 from its CPU owned-handle ordering correction. Pinned Impl.cpp:2233-2244
 records only the exact link command; GLFunctions.json:2885-2894 identifies
@@ -2499,8 +2526,8 @@ fixtures assumed that every Source make_current prefix selected a native
 driver. Subsequent concrete Proxy/Host review established that the prefix is
 empty: only an actual dispatched GL command/query selects its owner. The
 createShader type gate, shader command/deletion gates and deleteProgram CPU
-and linkProgram gates are corrected with separately recorded source evidence
-above; remaining
+and linkProgram/validateProgram gates are corrected with separately recorded
+source evidence above; remaining
 mutation handle/null/slot gates require independent Source slices.
 attachShader assigns its actual retained shader pointer after GL, including
 owned native rejection, and deleteProgram clears the current source pointer by
