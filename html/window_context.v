@@ -492,7 +492,6 @@ pub struct BrowsingContextModel {
 mut:
 	page_                      ?&dom.Page
 	document_                  ?&dom.Document
-	window_                    ?&WindowModel
 	window_proxy_              ?&WindowProxyModel
 	group_                     ?&BrowsingContextGroup
 	parent_                    ?&BrowsingContextModel
@@ -641,7 +640,8 @@ pub fn (context &BrowsingContextModel) active_document() ?&dom.Document {
 }
 
 pub fn (context &BrowsingContextModel) active_window() ?&WindowModel {
-	return context.window_
+	proxy := context.window_proxy() or { return none }
+	return proxy.window()
 }
 
 pub fn (context &BrowsingContextModel) window_proxy() ?&WindowProxyModel {
@@ -650,14 +650,30 @@ pub fn (context &BrowsingContextModel) window_proxy() ?&WindowProxyModel {
 
 pub fn (mut context BrowsingContextModel) set_active_document(document ?&dom.Document) {
 	context.document_ = document
+	context.update_native_context_window_proxy()
 }
 
-pub fn (mut context BrowsingContextModel) set_active_window(window ?&WindowModel) {
-	context.window_ = window
+pub fn (mut context BrowsingContextModel) set_active_window(window &WindowModel) {
+	mut proxy := context.window_proxy() or { panic('Source active Window requires a WindowProxy') }
+	proxy.set_window(window)
 }
 
 pub fn (mut context BrowsingContextModel) set_window_proxy(proxy ?&WindowProxyModel) {
 	context.window_proxy_ = proxy
+	context.update_native_context_window_proxy()
+}
+
+// The typed context and Document's native context describe the same source
+// BrowsingContext. Keep its actual WindowProxy identity at this bridge.
+fn (context &BrowsingContextModel) update_native_context_window_proxy() {
+	document := context.active_document() or { return }
+	mut native := document.get_browsing_context() or { return }
+	native.active_document_ = document
+	if proxy := context.window_proxy() {
+		native.window_proxy_ = proxy.dom_proxy()
+	} else {
+		native.window_proxy_ = none
+	}
 }
 
 pub fn (context &BrowsingContextModel) group() ?&BrowsingContextGroup {
@@ -884,7 +900,6 @@ pub fn (mut context BrowsingContextModel) remove() {
 	}
 	context.group_ = none
 	context.parent_ = none
-	context.window_ = none
 	context.window_proxy_ = none
 	context.discarded_ = true
 }
@@ -953,7 +968,6 @@ fn window_property_array_index(key string) ?int {
 @[heap]
 pub struct WindowProxyModel {
 mut:
-	window_    &WindowModel = unsafe { nil }
 	dom_proxy_ &dom.WindowProxy = unsafe { nil }
 }
 
@@ -961,7 +975,6 @@ pub fn WindowProxyModel.create(window &WindowModel) &WindowProxyModel {
 	dom_proxy := &dom.WindowProxy{}
 	dom_proxy.set_window(unsafe { &dom.Window(window) })
 	return &WindowProxyModel{
-		window_: window
 		dom_proxy_: dom_proxy
 	}
 }
@@ -971,7 +984,13 @@ pub fn (proxy &WindowProxyModel) dom_proxy() &dom.WindowProxy {
 }
 
 pub fn (proxy &WindowProxyModel) window() &WindowModel {
-	return proxy.window_
+	native := proxy.dom_proxy_.window() or { panic('Source WindowProxy requires an associated Window') }
+	for window in all_windows() {
+		if voidptr(window) == voidptr(native) {
+			return window
+		}
+	}
+	panic('WindowProxy Window has no actual HTML model identity')
 }
 
 pub fn (proxy &WindowProxyModel) is_universal_global_scope_mixin() bool {
@@ -985,12 +1004,11 @@ pub fn (proxy &WindowProxyModel) is_html_window_proxy() bool {
 }
 
 pub fn (mut proxy WindowProxyModel) set_window(window &WindowModel) {
-	proxy.window_ = window
 	proxy.dom_proxy_.set_window(unsafe { &dom.Window(window) })
 }
 
 pub fn (proxy &WindowProxyModel) associated_browsing_context() &BrowsingContextModel {
-	return proxy.window_.browsing_context()
+	return proxy.window().browsing_context()
 }
 
 pub fn (proxy &WindowProxyModel) is_extensible() bool {
@@ -1003,15 +1021,15 @@ pub fn (proxy &WindowProxyModel) prevent_extensions() bool {
 
 // 7.4.1 [[GetPrototypeOf]]. The caller origin is explicit in the V model.
 pub fn (proxy &WindowProxyModel) internal_get_prototype_of(caller_origin dom.Origin) dom.JSValue {
-	if proxy.window_.same_origin(caller_origin) {
-		return proxy.window_.prototype()
+	if proxy.window().same_origin(caller_origin) {
+		return proxy.window().prototype()
 	}
 	return dom.js_null()
 }
 
 // 7.4.2 [[SetPrototypeOf]].
 pub fn (mut proxy WindowProxyModel) internal_set_prototype_of(prototype dom.JSValue) bool {
-	return js_values_are_same(proxy.window_.prototype(), prototype)
+	return js_values_are_same(proxy.window().prototype(), prototype)
 }
 
 // 7.4.3 [[IsExtensible]].
@@ -1026,7 +1044,7 @@ pub fn (mut proxy WindowProxyModel) internal_prevent_extensions() bool {
 
 pub fn (proxy &WindowProxyModel) get_own_property(caller_origin dom.Origin, key string) !WindowProxyPropertyResult {
 	if index := window_property_array_index(key) {
-		children := proxy.window_.browsing_context().children()
+		children := proxy.window().browsing_context().children()
 		if index < children.len {
 			child_proxy := children[index].window_proxy() or { return WindowProxyPropertyResult{} }
 			return WindowProxyPropertyResult{
@@ -1038,13 +1056,13 @@ pub fn (proxy &WindowProxyModel) get_own_property(caller_origin dom.Origin, key 
 				}
 			}
 		}
-		if proxy.window_.same_origin(caller_origin) {
+		if proxy.window().same_origin(caller_origin) {
 			return WindowProxyPropertyResult{}
 		}
 		return error("SecurityError: cannot access indexed property '${key}' on cross-origin WindowProxy")
 	}
-	if proxy.window_.same_origin(caller_origin) {
-		value := proxy.window_.named_property(key)
+	if proxy.window().same_origin(caller_origin) {
+		value := proxy.window().named_property(key)
 		if value.is_undefined() {
 			return WindowProxyPropertyResult{}
 		}
@@ -1062,12 +1080,12 @@ pub fn (proxy &WindowProxyModel) get_own_property(caller_origin dom.Origin, key 
 		return WindowProxyPropertyResult{
 			found: true
 			descriptor: WindowProxyProperty{
-				value: proxy.window_.named_property(key)
+				value: proxy.window().named_property(key)
 				configurable: true
 			}
 		}
 	}
-	if child := proxy.window_.named_child(key) {
+	if child := proxy.window().named_child(key) {
 		child_proxy := child.window_proxy() or { return WindowProxyPropertyResult{} }
 		return WindowProxyPropertyResult{
 			found: true
@@ -1081,28 +1099,28 @@ pub fn (proxy &WindowProxyModel) get_own_property(caller_origin dom.Origin, key 
 }
 
 pub fn (proxy &WindowProxyModel) define_own_property(caller_origin dom.Origin, key string, value dom.JSValue) !bool {
-	if !proxy.window_.same_origin(caller_origin) {
+	if !proxy.window().same_origin(caller_origin) {
 		return error("SecurityError: cannot define property '${key}' on cross-origin WindowProxy")
 	}
 	if _ := window_property_array_index(key) {
 		return false
 	}
-	mut window := unsafe { &WindowModel(proxy.window_) }
+	mut window := unsafe { &WindowModel(proxy.window()) }
 	window.set_named_property(key, value)
 	return true
 }
 
 pub fn (proxy &WindowProxyModel) set(caller_origin dom.Origin, key string, value dom.JSValue) !bool {
-	if proxy.window_.same_origin(caller_origin) {
+	if proxy.window().same_origin(caller_origin) {
 		if _ := window_property_array_index(key) {
 			return false
 		}
-		mut window := unsafe { &WindowModel(proxy.window_) }
+		mut window := unsafe { &WindowModel(proxy.window()) }
 		window.set_named_property(key, value)
 		return true
 	}
 	if key == 'location' && value.kind == .string {
-		mut location := unsafe { &LocationModel(proxy.window_.location()) }
+		mut location := unsafe { &LocationModel(proxy.window().location()) }
 		location.set_href(value.string_data)!
 		return true
 	}
@@ -1110,24 +1128,24 @@ pub fn (proxy &WindowProxyModel) set(caller_origin dom.Origin, key string, value
 }
 
 pub fn (proxy &WindowProxyModel) delete(caller_origin dom.Origin, key string) !bool {
-	if !proxy.window_.same_origin(caller_origin) {
+	if !proxy.window().same_origin(caller_origin) {
 		return error("SecurityError: cannot delete property '${key}' on cross-origin WindowProxy")
 	}
 	if index := window_property_array_index(key) {
-		return index >= proxy.window_.length()
+		return index >= proxy.window().length()
 	}
-	mut window := unsafe { &WindowModel(proxy.window_) }
+	mut window := unsafe { &WindowModel(proxy.window()) }
 	return window.delete_named_property(key)
 }
 
 pub fn (proxy &WindowProxyModel) own_property_keys(caller_origin dom.Origin) []string {
-	mut keys := []string{cap: proxy.window_.length() + 16}
-	for index in 0 .. proxy.window_.length() {
+	mut keys := []string{cap: proxy.window().length() + 16}
+	for index in 0 .. proxy.window().length() {
 		keys << index.str()
 	}
-	if proxy.window_.same_origin(caller_origin) {
-		keys << proxy.window_.supported_property_names()
-		keys << proxy.window_.ordinary_property_names()
+	if proxy.window().same_origin(caller_origin) {
+		keys << proxy.window().supported_property_names()
+		keys << proxy.window().ordinary_property_names()
 	} else {
 		keys << window_cross_origin_property_names
 	}
@@ -1545,8 +1563,8 @@ fn WindowModel.create_with_global(document &dom.Document, context &BrowsingConte
 	document_with_html_hooks.set_window(unsafe { &dom.Window(window) })
 	mut mutable_context := unsafe { &BrowsingContextModel(context) }
 	mutable_context.set_active_document(document)
-	mutable_context.set_active_window(window)
 	mutable_context.set_window_proxy(proxy)
+	mutable_context.set_active_window(window)
 	register_window_model(window)
 	return window
 }
