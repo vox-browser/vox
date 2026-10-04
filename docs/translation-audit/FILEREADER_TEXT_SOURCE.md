@@ -494,3 +494,11 @@ open. This feature covers the owned-result native primitive projection and the
 tested decoder paths; other legacy iconv codecs retain their limits above.
 It adds no asynchronous result wrapper or replacement for Source's genuine
 HostDefined/world weak ArrayBuffer cache.
+
+The subsequent [Source SingleByte UTF8 decoder slice](SINGLE_BYTE_DECODER_SOURCE.md)
+replaces the remaining single-byte iconv paths with all 27 pinned Source
+tables and the actual malformed/replacement loop. Its exact native bridge
+goldens and both-mode/production checks establish that bounded decoder path.
+The earlier Windows1252/Text statements about other legacy codecs describe
+their scope at that stage; multibyte iconv compatibility and public owner/label
+conversion limits remain open after the SingleByte feature.
