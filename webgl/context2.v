@@ -169,6 +169,7 @@ fn valid_sampler_parameter(pname GLenum) bool {
 }
 
 pub fn (mut context WebGLRenderingContext) sampler_parameteri(mut sampler WebGLSampler, pname GLenum, parameter int) {
+	context.native.make_current()
 	if !context.owns(&sampler.object) {
 		context.set_error(invalid_operation)
 		return
@@ -183,6 +184,7 @@ pub fn (mut context WebGLRenderingContext) sampler_parameteri(mut sampler WebGLS
 }
 
 pub fn (mut context WebGLRenderingContext) sampler_parameterf(mut sampler WebGLSampler, pname GLenum, parameter f32) {
+	context.native.make_current()
 	if !context.owns(&sampler.object) {
 		context.set_error(invalid_operation)
 		return
