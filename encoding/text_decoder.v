@@ -62,6 +62,10 @@ pub:
 mut:
 	pending_input []u8
 	bom_seen      bool
+	// Flatten Source's owned UTF8-selected StreamingDecoder into this real
+	// Common record; presence retains its OwnPtr null/VERIFY boundary.
+	utf8_decoder_         SourceUtf8StreamingDecoder
+	utf8_decoder_present_ bool
 }
 
 fn new_text_decoder_common(encoding_name string, options TextDecoderOptions) TextDecoderCommonMixin {
@@ -87,6 +91,10 @@ pub fn (decoder &TextDecoderCommonMixin) ignore_bom() bool {
 pub fn (mut decoder TextDecoderCommonMixin) set_decoder_to_new_instance_of_encoding_decoder() {
 	decoder.pending_input.clear()
 	decoder.bom_seen = false
+	if decoder.encoding_ == 'utf-8' {
+		decoder.utf8_decoder_ = SourceUtf8StreamingDecoder.create(!decoder.ignore_bom_)
+		decoder.utf8_decoder_present_ = true
+	}
 }
 
 pub fn append_decoded_output(mut output TextDecoderOutputQueue, decoded string) ! {
@@ -130,6 +138,16 @@ fn decode_bytes_for_encoding(bytes []u8, encoding_name string, fatal bool) !stri
 }
 
 fn (mut decoder TextDecoderCommonMixin) decode_item(input []u8, end_of_queue bool) !string {
+	if decoder.encoding_ == 'utf-8' {
+		if !decoder.utf8_decoder_present_ {
+			panic('Source VERIFY: TextDecoderCommon owns its StreamingDecoder')
+		}
+		ok, decoded := decoder.utf8_decoder_.decode_owned_utf8(input, end_of_queue, decoder.fatal_)
+		if !ok {
+			return error('TypeError: Decoding failed')
+		}
+		return decoded
+	}
 	mut bytes := decoder.pending_input.clone()
 	bytes << input
 	mut boundary := bytes.len
@@ -177,10 +195,12 @@ pub fn TextDecoder.construct_impl(label string, options TextDecoderOptions) !&Te
 	if encoding_ascii_lowercase(canonical) == 'replacement' {
 		return error('RangeError: Invalid encoding ${label}')
 	}
-	return &TextDecoder{
+	mut decoder := &TextDecoder{
 		TextDecoderCommonMixin: new_text_decoder_common(encoding_ascii_lowercase(canonical),
 			options)
 	}
+	decoder.set_decoder_to_new_instance_of_encoding_decoder()
+	return decoder
 }
 
 pub fn TextDecoder.create() &TextDecoder {
