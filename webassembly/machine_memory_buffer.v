@@ -75,7 +75,9 @@ pub fn (mut buffer BinaryMachineMemoryBuffer) try_reserve(capacity usize, guard_
 }
 
 pub fn (mut buffer BinaryMachineMemoryBuffer) try_resize(new_size usize) ! {
-	assert new_size >= buffer.size_
+	if new_size < buffer.size_ {
+		panic('Source VERIFY: MemoryBuffer::try_resize new_size >= m_size')
+	}
 	mut storage := libgc.PrimitiveStorage.the()
 	if buffer.handle_.is_valid() {
 		storage.try_resize(buffer.handle_, new_size, .yes)!
