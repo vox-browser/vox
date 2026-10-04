@@ -64,7 +64,6 @@ fn test_source_file_reader_tasks_use_creation_global_loop_and_queue_time_documen
 	defer { later_document.finalize() }
 	// The actual creation Window/Realm stays fixed. Its current associated
 	// Document is read when each task is queued, not at reader construction.
-	window.document_ = later_document
 	window.Window.set_associated_document(later_document)
 	reader.queue_a_task(fn [settings, observation, later_document] (mut _ fileapi.FileReader) {
 		task := settings.responsible_event_loop().currently_running_task() or {
@@ -82,7 +81,6 @@ fn test_source_file_reader_tasks_use_creation_global_loop_and_queue_time_documen
 	assert observation.steps.len == 0
 	// Restore the creation Window's actual active document. The second task
 	// keeps the inactive document it captured at queue time and stays queued.
-	window.document_ = creation_document
 	window.Window.set_associated_document(creation_document)
 	drive_file_reader_owner_steps(mut loop, observation, 1)
 	assert observation.steps == ['creation document']
