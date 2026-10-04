@@ -555,7 +555,10 @@ pub fn (mut context WebGLRenderingContext) attach_shader(mut program WebGLProgra
 		}
 	}
 	context.native.make_current()
-	C.vox_gl_attach_shader(program.object.native_handle_, shader.object.native_handle_)
+	// Source drops the generated command after loss, then still retains the shader.
+	if context.native.current_ {
+		C.vox_gl_attach_shader(program.object.native_handle_, shader.object.native_handle_)
+	}
 	match shader.type_ {
 		vertex_shader { program.attached_vertex_shader = shader }
 		fragment_shader { program.attached_fragment_shader = shader }
