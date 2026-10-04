@@ -18,7 +18,7 @@ coarsening algorithm. Notification and CloseWatcher updates still run before
 listeners. The source trusted-event/type filters and the Window virtual
 dispatch bypass remain the existing translations.
 
-Three cases in `html/window_activation_notification_test.v` verify:
+The initial three cases in `html/window_activation_notification_test.v` verify:
 
 - A real connected button, actual trusted mousedown, and a canceled listener
   that observes native/typed/UserActivation state and CloseWatcher notification
@@ -47,3 +47,13 @@ has a separate relevant-global timestamp boundary. The separate
 [logical navigable consumption slice](WINDOW_ACTIVATION_CONSUMPTION.md) translates
 that traversal. Picker-model activation ownership remains a distinct boundary,
 as described in [Window activation identity](WINDOW_ACTIVATION_IDENTITY.md).
+
+A later adopted-element case pins the actual Source owner selection at
+`EventTarget.cpp:1041–1062`: the ad-hoc notification reads
+`Element.document().window()`, rather than the listener callback's Realm or
+node's original scripting environment. Its original-Window listener observes
+the replacement Window activated before callback execution, with a distinct
+30-second replacement-document time origin, while the original Window retains
+its never-activated sentinel. The three-file adopted picker/notification batch
+passed both GC modes in `source-adopted-picker-node-overload-default.log` and
+`source-adopted-picker-node-overload-gc-none.log`.
