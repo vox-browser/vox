@@ -118,35 +118,6 @@ fn valid_stencil_operation(value GLenum) bool {
 	return value in [keep, gl_zero, replace, incr, incr_wrap, decr, decr_wrap, invert]
 }
 
-fn (context &WebGLRenderingContext) valid_blend_equation(value GLenum) bool {
-	return value in [func_add, func_subtract, func_reverse_subtract]
-		|| (value in [gl_min, gl_max]
-			&& (context.version == .webgl2 || context.extension_enabled('EXT_blend_minmax')))
-}
-
-fn valid_blend_source_factor(value GLenum) bool {
-	return value in [gl_zero, gl_one, src_color, one_minus_src_color, src_alpha, one_minus_src_alpha,
-		dst_alpha, one_minus_dst_alpha, dst_color, one_minus_dst_color, src_alpha_saturate,
-		constant_color, one_minus_constant_color, constant_alpha, one_minus_constant_alpha]
-}
-
-fn valid_blend_destination_factor(value GLenum) bool {
-	return value != src_alpha_saturate && valid_blend_source_factor(value)
-}
-
-fn uses_constant_color(value GLenum) bool {
-	return value in [constant_color, one_minus_constant_color]
-}
-
-fn uses_constant_alpha(value GLenum) bool {
-	return value in [constant_alpha, one_minus_constant_alpha]
-}
-
-fn incompatible_constant_blend_factors(source GLenum, destination GLenum) bool {
-	return (uses_constant_color(source) && uses_constant_alpha(destination))
-		|| (uses_constant_alpha(source) && uses_constant_color(destination))
-}
-
 fn is_valid_framebuffer_binding_target(version WebGLVersion, target GLenum) bool {
 	return target == framebuffer
 		|| (version == .webgl2 && target in [read_framebuffer, draw_framebuffer])
@@ -362,63 +333,23 @@ pub fn (mut context WebGLRenderingContext) bind_texture(target GLenum, texture ?
 }
 
 pub fn (mut context WebGLRenderingContext) blend_color(red f32, green f32, blue f32, alpha f32) {
-	context.blend_color_ = [clamp_unit(red), clamp_unit(green), clamp_unit(blue), clamp_unit(alpha)]!
-	context.command('blend_color', i64(red), i64(green), i64(blue), i64(alpha))
-    C.vox_gl_blend_color(red,green,blue,alpha)
+	context.native.make_current()
+	C.vox_gl_blend_color(red, green, blue, alpha)
 }
 
 pub fn (mut context WebGLRenderingContext) blend_equation(mode GLenum) {
-	if !context.valid_blend_equation(mode) {
-		context.set_error(invalid_enum)
-		return
-	}
-	context.generic_parameters_[blend_equation_rgb] = integer_parameter(mode)
-	context.generic_parameters_[blend_equation_alpha] = integer_parameter(mode)
 	context.command('blend_equation', mode)
 }
 
 pub fn (mut context WebGLRenderingContext) blend_equation_separate(rgb GLenum, alpha GLenum) {
-	if !context.valid_blend_equation(rgb) || !context.valid_blend_equation(alpha) {
-		context.set_error(invalid_enum)
-		return
-	}
-	context.generic_parameters_[blend_equation_rgb] = integer_parameter(rgb)
-	context.generic_parameters_[blend_equation_alpha] = integer_parameter(alpha)
 	context.command('blend_equation_separate', rgb, alpha)
 }
 
 pub fn (mut context WebGLRenderingContext) blend_func(source GLenum, destination GLenum) {
-	if !valid_blend_source_factor(source) || !valid_blend_destination_factor(destination) {
-		context.set_error(invalid_enum)
-		return
-	}
-	if incompatible_constant_blend_factors(source, destination) {
-		context.set_error(invalid_operation)
-		return
-	}
-	context.generic_parameters_[blend_src_rgb] = integer_parameter(source)
-	context.generic_parameters_[blend_src_alpha] = integer_parameter(source)
-	context.generic_parameters_[blend_dst_rgb] = integer_parameter(destination)
-	context.generic_parameters_[blend_dst_alpha] = integer_parameter(destination)
 	context.command('blend_func', source, destination)
 }
 
 pub fn (mut context WebGLRenderingContext) blend_func_separate(source_rgb GLenum, destination_rgb GLenum, source_alpha GLenum, destination_alpha GLenum) {
-	if !valid_blend_source_factor(source_rgb) || !valid_blend_destination_factor(destination_rgb)
-		|| !valid_blend_source_factor(source_alpha)
-		|| !valid_blend_destination_factor(destination_alpha) {
-		context.set_error(invalid_enum)
-		return
-	}
-	if incompatible_constant_blend_factors(source_rgb, destination_rgb)
-		|| incompatible_constant_blend_factors(source_alpha, destination_alpha) {
-		context.set_error(invalid_operation)
-		return
-	}
-	context.generic_parameters_[blend_src_rgb] = integer_parameter(source_rgb)
-	context.generic_parameters_[blend_dst_rgb] = integer_parameter(destination_rgb)
-	context.generic_parameters_[blend_src_alpha] = integer_parameter(source_alpha)
-	context.generic_parameters_[blend_dst_alpha] = integer_parameter(destination_alpha)
 	context.command('blend_func_separate', source_rgb, destination_rgb, source_alpha, destination_alpha)
 }
 

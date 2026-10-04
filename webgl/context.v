@@ -64,7 +64,6 @@ mut:
 	unpack_flip_y_                      bool
 	unpack_premultiply_alpha_           bool
 	unpack_colorspace_conversion_       GLenum = browser_default_webgl
-	blend_color_                        [4]f32
 	line_width_                         f32 = 1.0
 	depth_range_                        [2]f64 = [f64(0), 1]!
 	pack_alignment_                     int = 4
@@ -280,7 +279,6 @@ fn (mut context WebGLRenderingContext) initialize_restored_client_state() {
 	context.pack_alignment_ = 4
 	context.unpack_alignment_ = 4
 	context.unpack_state_ = PixelUnpackState{}
-	context.blend_color_ = [f32(0), 0, 0, 0]!
 	context.line_width_ = 1
 	context.depth_range_ = [f64(0), 1]!
 	context.generic_parameters_ = default_webgl_parameters()
