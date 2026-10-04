@@ -162,9 +162,41 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+isProgram now preserves the generated GLboolean false default after loss.
+GLFunctions.json:2802-2813 classifies glIsProgram as sync; its exact generated
+Proxy sends the request then returns {} if lost before decoding the return
+value. ProxyBase.cpp:168-176 skips an already-lost transport call. The direct
+adapter now stops after unavailable actual owner selection, after the unchanged
+nullable/context/optional gates, rather than querying Other's current driver.
+Live queries still select Owner and call glIsProgram with the stored native
+name; no CPU program status cache supplies a result.
+
+The genuine earlier EGL loss probe returned true for Owner's old native name
+from Other's live program, retained in source-program-lost-unfixed-probe-gc-none.log.
+Corrected two-version native/public cases match the actual Owner/Other program
+names, retain an original record and create a new owned proxy program after
+loss, then require both Source queries to return false. Other's real program,
+viewport and pending native error survive; null/foreign early gates and public
+brand/arity checks remain Source ordered. Live external native deletion still
+changes the query to false while its Source record remains owned. One-shot
+context-loss reporting is retained. No fake backend supplies the lost return.
+
+Three typed files pass in
+`Build/audit-fixes/source-is-program-lost-native-gc-none.log`; two public files
+pass in
+`Build/audit-fixes/source-is-program-lost-public-gc-none.log`, including CPU-owner,
+lost program creation and nullable adapter neighbors. All use GC disabled and
+explicit private paths. The exact generated program gen/sync/compositor witness
+is source-program-generated-boundary.txt (SHA-256
+`f95243942ce74f2665121b832e129fc382858e88fe92e869decfac6ce234b2dd`).
+Program diagnostic/parameter owner gates, robust ABI and lost initialized outputs,
+other Boolean queries and broader commands remain separate features. Remote
+transport/maps, GC/WrapperWorld, full regression and production bundle evidence
+remain distinct from these focused native/JSC checks.
+
 createProgram now suppresses its actual native creation command after loss
 while retaining the Source-owned program record and allocated proxy ID.
-Impl.cpp:458-462 returns WebGLProgram::create for the generated create_program
+Impl.cpp:457-461 returns WebGLProgram::create for the generated create_program
 result. GLFunctions.json:939-943 marks this call gen; the actual generator
 allocates an ID, records CreateProgram and returns that ID. ProxyBase.cpp:57-60
 drops record_bytes after loss, so the compositor cannot create a native program
@@ -192,8 +224,9 @@ shader creation and actual resource-handle neighbors. All use GC disabled and
 explicit private paths. Exact generated program proxy/compositor bodies are
 retained in source-program-generated-boundary.txt (SHA-256
 `f95243942ce74f2665121b832e129fc382858e88fe92e869decfac6ce234b2dd`).
-The generated isProgram Boolean loss query, other creation families and broader
-lost commands remain separate features, alongside remote maps and GC/WrapperWorld.
+The separate generated isProgram Boolean loss repair is documented above.
+Other creation families and broader lost commands remain separate features,
+alongside remote maps and GC/WrapperWorld.
 This is focused native/JSC evidence, not a full sweep or canonical bundle build.
 
 The isProgram nullable host adapter now explicitly invokes is_program(None)
@@ -213,8 +246,9 @@ neighbor pass with GC disabled and explicit private paths in
 They cover public null/undefined false, preserved Other viewport and pending
 driver error, direct host null false, valid native program true and unchanged
 brand/arity TypeErrors. The prior raw host failure remains in the pre-fix
-observational log. Other is-object nullable adapters, generated program loss,
-remote maps and GC/WrapperWorld remain separate scopes. No new full regression
+observational log. The subsequent separate program gen and Boolean loss
+repairs are documented above. Other is-object nullable adapters, remote maps
+and GC/WrapperWorld remain separate scopes. No new full regression
 or canonical browser build is claimed by this compatibility repair.
 
 isProgram now preserves Source CPU optional-query gates before actual owner
@@ -247,10 +281,9 @@ paths. Public null/undefined are excluded from this CPU feature: the separate
 raw host probe returned an empty-message TypeError from its inline map-or-none
 compatibility expression, before reaching the Source nullable method.
 
-The subsequent nullable host adapter repair is documented above. Generated
-creation loss suppression is also documented above. Generated Boolean lost
-default remains separate. A real observational EGL
-loss probe already confirms lost isProgram true and lost createProgram creating
+The subsequent nullable host adapter, generated creation loss suppression and
+Boolean lost default repairs are documented above. A real observational EGL
+loss probe confirmed lost isProgram true and lost createProgram creating
 an actual native program in Other; its source/log are retained under
 source-program-lost-unfixed-probe*. These are unwanted direct-driver evidence,
 not parity. Remote maps, GC/WrapperWorld and a newly built canonical bundle
