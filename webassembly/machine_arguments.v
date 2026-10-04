@@ -50,7 +50,7 @@ pub fn (mut arguments BinaryMachineArguments) ensure_capacity(needed usize) {
 	if needed > ~usize(0) / usize(sizeof(BinaryMachineValue)) {
 		panic('Source MUST: argument allocation size overflow')
 	}
-	allocation := C.malloc(needed * usize(sizeof(BinaryMachineValue)))
+	allocation := unsafe { C.malloc(needed * usize(sizeof(BinaryMachineValue))) }
 	if allocation == unsafe { nil } { panic('Source MUST: argument allocation failed') }
 	mut next := unsafe { &BinaryMachineValue(allocation) }
 	previous := arguments.data()

@@ -489,7 +489,7 @@ fn instance_create_with_cache(cache &WebAssemblyCache, compiled &Module, imports
 		if required.module !in imports {
 			return error('LinkError: Import module=${required.module} is not an object')
 		}
-		namespace := imports[required.module].clone()
+		namespace := unsafe { imports[required.module].clone() }
 		value := namespace[required.name] or {
 			return error('LinkError: Import ${required.module}.${required.name} is missing')
 		}

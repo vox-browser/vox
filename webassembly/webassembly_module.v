@@ -199,7 +199,7 @@ pub fn (mut record WebAssemblyModule) execute_module() ! {
 		if entry.module !in imports {
 			imports[entry.module] = map[string]ExternalValue{}
 		}
-		mut namespace := imports[entry.module].clone()
+		mut namespace := unsafe { imports[entry.module].clone() }
 		namespace[entry.name] = record.resolve_import(entry)!
 		imports[entry.module] = namespace.clone()
 	}
