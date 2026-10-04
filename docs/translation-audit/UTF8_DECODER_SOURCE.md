@@ -225,3 +225,92 @@ failure from an omitted u16 literal cast is retained in
 `source-utf8-whole-input-native-before-u16-cast-{default,gc-none}.log`; no Source
 expected output was changed. LibJS, the frozen whole-checkout proof and native
 browser bundle remain unchanged.
+
+
+## Actual UTF8-selected outer streaming owner prerequisite
+
+Feature `6548c0f6e1d22ff41f32202e0717572e8ba62037` translates the Source
+UTF8-selected outer Decoder for the actual `BomHandling::Off` and
+`BomHandling::Remove` constructors. It owns the existing five-slot UTF8 variant
+and Source's reachable lifecycle: AtUtf8Start, SeenUtf8First, SeenUtf8Second,
+Converting and Finished (`lib.rs:3565–3587,3763–3784`). This fixed-UTF8
+specialization does not accept Source's general BOM-sniffing constructor or
+other encoding variants. Encoding pointer/VariantDecoder Rust physical layout
+is not reproduced, and foreign UTF16-start/BOM-morphing cases are outside its
+typed scope.
+
+`encoding/utf8_streaming_decoder.v` lowers the reachable branches of
+`public_decode_function!` (`macros.rs:1292–1631`), including replay of one or two
+previous BOM bytes into the actual variant, source-offset accounting, original
+destination ownership and the delegate's finalization check. Source's
+ConvertingWithPendingBB arm follows a malformed EF in a foreign encoding;
+EF BB with last=false cannot be malformed in this actual UTF8 variant, so that
+foreign lifecycle is absent from the specialized record. A complete UTF8 BOM
+is omitted once; an incomplete or nonmatching prefix is replayed for actual
+UTF8 decoding. Source's empty AtUtf8Start input returns InputEmpty without
+marking Finished even when last=true. Converting marks Finished only after a
+last=true delegate result of InputEmpty; a raw EOF Malformed result leaves
+Converting until the replacement loop's subsequent call finishes it.
+
+Both maximum UTF8 capacities follow Source's actual lifecycle arms
+(`lib.rs:3806–3978`), including two added bytes for either partial-BOM state and
+checked 64-bit usize results. The replacement loop retains exact original
+indexed writes. Reusing Finished or replaying previously seen BOM bytes into
+an insufficient destination preserves Source's fatal panic messages and order;
+these are explicit V panic guards, not production-disabled asserts or public
+decoding errors.
+
+The private `decode_owned_utf8` operation translates the actual Rust streaming
+bridge's String maximum-capacity owner (`LibTextCodec/Rust/src/lib.rs:164–214`):
+query the fatal/nonfatal capacity from the retained outer record, allocate the
+bounded output, invoke the actual decoder with the supplied last flag, expose
+exact produced bytes before returning its InputEmpty success flag. Fatal raw
+Malformed can therefore produce partial callback bytes while returning false;
+the existing C++ typed caller subsequently discards those bytes on its error.
+This prerequisite returns those two internal outcomes directly and does not
+install a new public partially implemented API. Source String/Vec physical
+allocation and narrower flattened V INT_MAX capacity limits retain the scope
+from the whole-input section.
+
+Tooling-only `dde8e75a031ac717d2fe7cda782c258e575e0f7b` adds
+`tools/source_utf8_streaming_decoder_probe.py`. It reruns the validated pinned
+Source/helper/raw prerequisite probes, then appends only a probe observation
+export for the original native outer record's actual lifecycle. Source's
+private Debug value is formatted using the actual no-std package's alloc macro.
+All original implementation bytes remain intact. The probe constructs the
+actual `UTF_8.new_decoder_with_bom_removal()` or
+`new_decoder_without_bom_handling()` records, calls raw/replacement operations,
+and invokes actual `decode_to_string`/without-replacement methods using Source's
+requested maximum capacities. Only the observation exports and isolated
+AArch64 manifest described earlier differ from the copied package.
+
+Native debug and release each pass **5,000 sequences**, **12 actual observed
+lifecycle/variant states with eight checked capacity lengths**, and **144
+genuine fatal calls**. The sequences cover every two split positions for
+thirteen empty/ASCII/NUL/BOM/malformed/astral inputs, Off/Remove, seven raw
+capacities, both error modes and actual owned String calls. Explicit
+post-conversion-EOF calls establish Finished's fatal boundary. Harness-only
+catch_unwind records actual post-panic slots but invents no returned counters.
+Both profile artifacts match byte for byte; fixture line breaks are formatting
+only and their JSON values equal native output exactly.
+
+| Artifact | SHA256 |
+| --- | --- |
+| `encoding/fixtures/utf8_streaming_sequences.json` | `c1a2b28bf2ec73f103e3b859cf4f1f78920a50bc9d392d003c733cb62a036c52` |
+| `encoding/fixtures/utf8_streaming_capacities.json` | `880c9405f827f6ac9e41315998f25ea3ea3b98aafe0d101a06b3358e998686e0` |
+| `source-utf8-streaming-probe.log` | `5abc19026158df3b0b11f5cc0f148ec54ac16249b8e82f220648326786751826` |
+
+Focused V tests pass **1/1 default, 1/1 GC-none and 1/1 production GC-none**,
+including genuine compiled-child Finished capacity/decode and short-BOM-replay
+fatal calls. Complete Encoding passes **13/13 in both modes**, in
+`source-utf8-streaming-{focused-default,focused-gc-none,production-gc-none,full-default,full-gc-none}.log`.
+Initial tooling no-std format-macro and V conditional-option syntax failures
+remain in `source-utf8-streaming-probe-before-alloc-macro.log` and
+`source-utf8-streaming-before-option-guard.log`.
+
+The record is still a private prerequisite. Actual TextDecoderCommon ownership
+and public stream hookup, UTF16 destination operations, other selected codecs,
+general BOM sniffing/morphing and genuine TransformStream/realm/binding graphs
+remain separate. The existing compatibility pending-input/chunks path is not
+claimed as those Source owners. LibJS and the frozen proof checkout are
+unchanged; no native browser bundle build or capture was run.
