@@ -288,11 +288,12 @@ pub fn (settings &EnvironmentSettingsObject) origin() dom.Origin {
 }
 
 pub fn (settings &EnvironmentSettingsObject) fetch_request_client_policy_container() fetch.RequestPolicyContainer {
+	container := settings.policy_container()
 	return fetch.RequestPolicyContainer{
-		referrer_policy: settings.policy_container_.referrer_policy.to_string()
-		csp_list: fetch_csp_policy_list(settings.policy_container_.csp_list)
-		integrity_policy: fetch_integrity_policy(settings.policy_container_.integrity_policy)
-		report_only_integrity_policy: fetch_integrity_policy(settings.policy_container_.report_only_integrity_policy)
+		referrer_policy: container.referrer_policy.to_string()
+		csp_list: fetch_csp_policy_list(container.csp_list)
+		integrity_policy: fetch_integrity_policy(container.integrity_policy)
+		report_only_integrity_policy: fetch_integrity_policy(container.report_only_integrity_policy)
 	}
 }
 
@@ -384,7 +385,7 @@ pub fn (settings &EnvironmentSettingsObject) fetch_request_client_csp_global() &
 	loop := settings.responsible_event_loop_
 	return &csp.GlobalContext{
 		url: liburl.parse(global_url.serialize()) or { panic('invalid CSP global URL') }
-		policy_list: fetch_csp_policy_list(settings.policy_container_.csp_list)
+		policy_list: fetch_csp_policy_list(settings.policy_container().csp_list)
 		dispatch_violation_event: fn [global_object, is_window, loop] (event &csp.SecurityPolicyViolationEvent) {
 			queue_a_task(.unspecified, loop, none, fn [global_object, is_window, event] () {
 				// Violation.cpp:301–305 selects the actual global at execution,
@@ -434,7 +435,7 @@ pub fn (settings &EnvironmentSettingsObject) fetch_request_client_creation_url()
 }
 
 pub fn (settings &EnvironmentSettingsObject) fetch_request_client_embedder_policy_credentialless() bool {
-	return settings.policy_container_.embedder_policy.value == .credentialless
+	return settings.policy_container().embedder_policy.value == .credentialless
 }
 
 pub fn (settings &EnvironmentSettingsObject) fetch_request_client_top_level_origin() ?dom.Origin {
@@ -483,10 +484,32 @@ pub fn (settings &EnvironmentSettingsObject) has_cross_site_ancestor() bool {
 }
 
 pub fn (settings &EnvironmentSettingsObject) policy_container() &PolicyContainer {
+	// WindowEnvironmentSettingsObject.cpp:134–138 and
+	// WorkerEnvironmentSettingsObject.cpp:103–107 read the current actual owner.
+	if window := settings.window_ {
+		return window.associated_document().policy_container()
+	}
+	if worker := settings.worker_ {
+		mut mutable_worker := unsafe { &WorkerGlobalScope(worker) }
+		return mutable_worker.policy_container()
+	}
+	// Explicit standalone settings have no Window or Worker owner.
 	return &settings.policy_container_
 }
 
-pub fn (mut settings EnvironmentSettingsObject) set_policy_container(container &PolicyContainer) {
+// Compatibility installation routes to the actual Source container owner.
+// Source defines its setter on Document and assigns WorkerGlobalScope's field.
+pub fn (mut settings EnvironmentSettingsObject) set_policy_container(container &dom.PolicyContainer) {
+	if window := settings.window_ {
+		mut document := unsafe { &dom.Document(window.associated_document()) }
+		document.set_policy_container(container)
+		return
+	}
+	if worker := settings.worker_ {
+		mut mutable_worker := unsafe { &WorkerGlobalScope(worker) }
+		mutable_worker.policy_container_ = container
+		return
+	}
 	settings.policy_container_ = container.clone()
 }
 
@@ -577,7 +600,7 @@ pub fn (settings &EnvironmentSettingsObject) serialize() SerializedEnvironmentSe
 		api_base_url: settings.api_base_url()
 		origin: settings.origin()
 		has_cross_site_ancestor: settings.has_cross_site_ancestor()
-		policy_container: settings.policy_container_.serialize()
+		policy_container: settings.policy_container().serialize()
 		cross_origin_isolated_capability: settings.cross_origin_isolated_capability()
 		time_origin: settings.time_origin()
 		global: global
@@ -937,7 +960,6 @@ pub fn WorkerEnvironmentSettingsObject.setup(global_scope &WorkerGlobalScope, mu
 	settings.origin_ = origin
 	settings.outside_has_cross_site_ancestor_ = outside_settings.has_cross_site_ancestor
 	settings.worker_owner_secure_context_ = serialized_global_is_secure_context(outside_settings.global)
-	settings.policy_container_ = create_a_policy_container_from_serialized_policy_container(outside_settings.policy_container)
 	settings.time_origin_ = coarsen_worker_time(unsafe_worker_creation_time)
 	return &WorkerEnvironmentSettingsObject{
 		settings: settings
