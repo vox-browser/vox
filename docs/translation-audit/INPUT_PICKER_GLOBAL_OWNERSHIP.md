@@ -43,5 +43,6 @@ The shared picker owner helper reads genuine translated global/settings
 records. A bare DOM-only fixture without a relevant global is not promoted to
 a fabricated Window. Complete JavaScript `showPicker` generated binding
 exposure, platform dialog completion, and WebDriver BiDi file-dialog handling
-remain separate native/embedding boundaries. Select picker permission still
-uses its independent snapshot until the corresponding select owner slice.
+remain separate native/embedding boundaries. The separate
+[select picker owner slice](SELECT_PICKER_GLOBAL_OWNERSHIP.md) removes its
+corresponding permission snapshot.

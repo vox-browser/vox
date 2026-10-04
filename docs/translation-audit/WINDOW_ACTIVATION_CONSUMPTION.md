@@ -62,5 +62,6 @@ fallback for that cast. Active-Window lookup is exposed through the navigable
 interface rather than requiring its callers to dereference local documents.
 The in-process backend still does not implement full remote Window/proxy
 transport. The separate [input picker owner slice](INPUT_PICKER_GLOBAL_OWNERSHIP.md)
-uses these native consumption methods; select retains separately supplied
-activation/security state until its corresponding owner slice.
+and [select picker owner slice](SELECT_PICKER_GLOBAL_OWNERSHIP.md) use these
+native consumption methods. Their reports retain the explicit binding and
+embedding boundaries.

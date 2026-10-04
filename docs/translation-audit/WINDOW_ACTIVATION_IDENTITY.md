@@ -44,5 +44,7 @@ native EventTarget notification clock. The separate
 the cached BrowsingContext traversal with the source active-document inclusive
 descendant navigables and actual WindowProxy Window lookup. The separate
 [input picker ownership slice](INPUT_PICKER_GLOBAL_OWNERSHIP.md) removes its
-control snapshots. Select still retains supplied activation/security state;
-that remaining path is not certified by the timestamp-identity regressions.
+control snapshots, and the separate
+[select picker owner slice](SELECT_PICKER_GLOBAL_OWNERSHIP.md) removes the
+corresponding select snapshots. Full picker binding/embedding boundaries remain
+explicit in those reports.
