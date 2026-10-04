@@ -721,6 +721,28 @@ and WebGL2 bitmap-border checks retain their errors before any GL call.
 Upstream ImageBitmap/origin-clean TODOs and complete DOM/LibJS source bindings
 remain explicit boundaries.
 
+Nullable and bitmap uploads now issue their actual native texture calls after
+the source's own gates, without conditioning them on the adapter's preceding
+command logger/dispatcher error query. The pinned nullable bodies in
+`WebGLRenderingContextOverloads.cpp:125-194`,
+`WebGL2RenderingContextOverloads.cpp:87-130` and
+`WebGL2RenderingContextImpl.cpp:211-275`, and all four bitmap native uploads in
+`Services/Compositor/HostWebGLContext.cpp:119-145`, have no such success gate.
+Before this repair an earlier genuine GL_INVALID_ENUM left an existing red
+texture unchanged after a nullable zero upload, and prevented a bitmap image
+from allocating at all. Actual 2D/array-layer pixels now verify all nine upload
+bodies, including WebGL2 null pointers addressing a real pixel-unpack buffer.
+Both versions retain the prior error while still issuing the command. Source
+format/unpack/border/frame and bitmap-conversion gates remain intact.
+`source-texture-prior-error-gc-none.log` passed four typed files;
+`source-texture-prior-error-public-gc-none.log` passed three public files, and
+the strengthened new public file passed separately in
+`source-texture-prior-error-public-final-gc-none.log`. Original compilation
+diagnostics and the meaningful failing pixel reproduction remain under
+`Build/audit-fixes/source-texture-prior-error-*.log`. This slice removes the
+upload cancellation gates; the separate actual-driver error-retention repair
+remains pending and is not supplied by these tests.
+
 Framebuffer-to-texture copy now follows
 `WebGLRenderingContextImpl.cpp:427-437`: select the owning driver and forward
 every argument to GL. Extra V dimension/border prevalidation was removed from
