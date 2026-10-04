@@ -45,7 +45,8 @@ current-entry/origin gates, phase-two tasks, complete Traversable,
 prompted-close, beforeunload and event-loop coverage. Commands use
 `v -old-compiler -enable-globals test`, adding `-gc none` for that batch.
 
-The native-Navigable-vector owner is a following feature. Current wrappers
+The native-Navigable-vector owner is subsequently translated in
+[its separate source slice](UNLOAD_CHECK_NAVIGABLE_VECTOR.md). Existing wrappers
 still accept a local Document list, and the older history step gathers only its
 translated top-level displayed-document transition. Source instead collects
 the active Document of each supplied LocalNavigable before partitioning phases.
