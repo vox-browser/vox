@@ -254,9 +254,9 @@ typed source case and compressed/layer/nullable-upload neighbors passed with GC
 disabled (four files, `source-texture-binding-gc-none.log`); the public first-
 exposure/cross-target/identity/deletion case passed in
 `source-texture-binding-public-gc-none.log`. These translate the texture binding
-owners and source error ordering. The existing texture size/upload caches
-and their extra retained-name prerequisites remain identified for separate source
-translation; full LibJS tracing and caller WrapperWorld ownership remain open.
+owners and source error ordering. Later source setter/upload slices remove the
+invented texture parameter and geometry mirrors; full LibJS tracing and caller
+WrapperWorld ownership remain open.
 
 Renderbuffer storage now directly translates
 `WebGLRenderingContextImpl.cpp:2290-2298` and
@@ -289,8 +289,29 @@ disabled (`source-texture-parameter-final-gc-none.log` and
 in `source-texture-parameter-gc-none.log`; the initial new fixture used unexposed
 V constant names and was corrected to the source GL enumerants. Cases use genuine
 bindings outside retained source slots and compare competing invalid inputs with
-actual driver error order. Texture size/upload mirrors, remote transport and
-complete LibJS ownership remain separate source slices.
+actual driver error order. Other upload overloads, remote transport and complete
+LibJS ownership remain separate source slices.
+
+The 2D byte-view upload bodies now follow
+`WebGLRenderingContextOverloads.cpp:121-237` and
+`WebGL2RenderingContextOverloads.cpp:87-197`: select the owner, validate source
+buffer witnesses and unpack state, then pass exact arguments and bounded bytes
+to robust GL entry points. Extra V dimension/border prevalidation and the
+subimage retained-name prerequisite were removed. The existing source
+`texture_data_for_2d_upload` helper remains unchanged: invalid unpack state is a
+source INVALID_OPERATION, while dimensions, borders, actual bindings and short
+input storage reach GL. Nullable bodies and compact host span failures now
+select the owning context before early returns. The remaining invented texture
+geometry/format fields were removed (`WebGLTexture.h` owns only its WebGLObject
+base); the legacy geometry fixture now verifies framebuffer completeness and
+actual pixel readback. The two-version typed source case, migrated entry-point
+fixture and nullable neighbor passed with GC disabled (three files,
+`source-texture-upload-gc-none.log`). The actual public upload, element-span and
+nullable cases passed in `source-texture-upload-public-gc-none.log` (three
+files), including real driver bindings absent from retained source slots and
+owner selection before a failed source span. Other upload overloads, upstream
+TexImageSource TODOs, remote transport and complete LibJS ownership remain
+separate boundaries.
 
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
