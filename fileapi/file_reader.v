@@ -10,8 +10,10 @@ module fileapi
 import dom
 import encoding
 import encoding.base64
+import infra
 import libjs
 import mimesniff
+import url
 
 pub enum FileReaderState {
 	empty
@@ -105,7 +107,8 @@ pub fn blob_package_data(bytes []u8, type_ FileReaderType, mime_type ?string, en
 					mime = supplied
 				}
 			}
-			file_reader_string_result('data:${mime};base64,${base64.encode(bytes)}')
+			record := url.create_with_data(mime, base64.encode(bytes), true)
+			file_reader_string_result(infra.utf16_string_from_url_ascii(record.serialize(false)))
 		}
 		.text {
 			file_reader_string_result(encoding.convert_input_to_utf8_using_given_decoder_unless_there_is_a_byte_order_mark(
