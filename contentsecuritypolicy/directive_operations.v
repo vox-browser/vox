@@ -236,7 +236,7 @@ pub fn does_url_match_expression_in_origin_with_redirect_count(record url.URL, e
 		return .matches
 	}
 	if expression.to_lower() == keyword_self {
-		if origin.is_same_origin(origin_from_url(record)) {
+		if origin.is_same_origin(record.origin()) {
 			return .matches
 		}
 		origin_default_port := url.default_port_for_scheme(base_scheme)

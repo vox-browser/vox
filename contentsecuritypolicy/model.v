@@ -216,11 +216,6 @@ pub:
 	trusted_types_failed       bool
 }
 
-pub fn origin_from_url(record url.URL) url.Origin {
-	host := record.host or { url.Host.from_string('') }
-	return url.Origin.tuple(record.scheme, host, record.port, none)
-}
-
 fn origin_scheme(origin url.Origin) string {
 	if origin is url.OriginTuple {
 		return origin.scheme or { '' }
