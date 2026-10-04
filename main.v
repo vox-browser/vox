@@ -2341,6 +2341,15 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript Document event bindings: ${err.msg()}'
 		return none
 	}
+	layout.install_document_layout_hook(document)
+	mutable_runtime.install_window_find_binding(fn [document] (callback_runtime &browserjs.Runtime) ! {
+		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
+		mut replay_messages := []string{}
+		apply_javascript_state(document, state, callback_runtime.canvas_elements_for_binding(), mut replay_messages)
+	}) or {
+		messages << 'JavaScript Window.find bindings: ${err.msg()}'
+		return none
+	}
 	mut font_host := browserjs.FontFaceHost.create(document)
 	font_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript font bindings: ${err.msg()}'
