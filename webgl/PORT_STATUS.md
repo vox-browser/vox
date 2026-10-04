@@ -244,9 +244,8 @@ GL current-query/error results with deliberately different retained slots after
 duplicate begin, missing end, target reuse and unrelated pending errors. They
 also cover all three targets, owner selection before invalid handles/targets,
 and public IDL conversion before body entry. getQuery keeps the source's absence
-of owner selection. Its host wrapping of retained deleted/first-exposed query
-records remains for a separate slice;
-full GC tracing and remote transport remain open.
+of owner selection. The retained-record host wrapping described below preserves
+that same body behavior; full GC tracing and remote transport remain open.
 
 deleteQuery now selects its owner before nullable, foreign and already-invalid
 resource returns, matching `WebGL2RenderingContextImpl.cpp:685-702`. Source
@@ -256,8 +255,21 @@ and retained pointer identity after deletion, including a driver-rejected
 retarget; public cases verify owner selection before all early returns and
 IDL type rejection before body entry. Three typed files passed in
 `source-query-deletion-gc-none.log` and two public files passed in
-`source-query-deletion-public-gc-none.log`, all with GC disabled. Host wrapping
-of those retained invalidated records remains a separate change.
+`source-query-deletion-public-gc-none.log`, all with GC disabled.
+
+getQuery now wraps its actual retained query record, matching
+`WebGL2RenderingContextImpl.cpp:749-770` and its generated nullable WebGLQuery
+return conversion. A logical live-name lookup no longer substitutes null for
+an invalidated query still held by a source slot. The existing platform-object
+cache reuses one actual wrapper or first-exposes a deleted typed record, without
+adding owner selection or body handle validation. The public fixture verifies
+all three slots, genuine independent native query end/deletion, first exposure,
+brand, pointer/label retention, repeated identity, rejected parameter queries,
+repeated deletion and later slot clearing. Three public files passed in
+`source-query-record-public-gc-none.log` and two typed source neighbors passed
+in `source-query-record-gc-none.log`, all with GC disabled. This translates
+the source ownership relationship through the compact host; full LibJS tracing
+and caller WrapperWorld ownership remain open.
 
 Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
 `WebGL2RenderingContextOverloads.cpp:33-85`, and
