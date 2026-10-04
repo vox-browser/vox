@@ -488,3 +488,52 @@ allocation behavior is unobserved/unreachable in this selected whole path.
 The given-decoder BOM override is the next actual caller slice. The preceding
 32/32 snapshot predates this prerequisite; its focused checks cover this new
 code. No LibJS implementation or native browser bundle changes.
+
+## Selected Shift_JIS given-decoder caller and clean Encoding34 snapshot
+
+`encoding/decode_with_bom_override.v` now routes the actually selected
+Shift_JIS label to its genuine whole-input UTF8 owner. Source
+`Libraries/LibTextCodec/Decoder.cpp:382–402` first sniffs/discards one Unicode
+BOM, then invokes the selected `Decoder::to_utf8` with `IgnoreBOM::No` and
+Replacement. Shift_JIS's selected matching-BOM removal keeps this non-Unicode
+byte span unchanged. The initial Unicode sniff still replaces the fallback
+before this branch. The Source I/O-queue FIXME is retained by the existing
+byte-array boundary. This corrects the missing selected whole-owner/call
+contract; the previously translated direct-UTF16 TextDecoder route already
+produced the working public values, so no new observable pre-fix defect is
+claimed.
+
+Implementation and focused tests are committed together as
+`a205292db816966217898417a106e76905693033`. The tests compare 4,130 reachable
+non-BOM cases from the original Source whole Shift_JIS FFI, each under
+`Shift_JIS`, `sjis` and `windows-31j`. They also compare 752 genuine Unicode
+whole-decoder cases with a prepended sniffed BOM: the selected Unicode decoder
+removes one further matching BOM, preserving pinned removal order. The
+existing actual FileReaderSync/Blob/native target-primitive adapter witnesses
+explicit-label precedence, MIME-label fallback, malformed bytes with NUL,
+and Unicode BOM precedence. It projects owned UTF16 results through the
+existing genuine Runtime primitive conversion; no public reader facade or
+new native wrapper/realm/cache is introduced.
+
+Final focused default, GC-none and production GC-none each pass 1/1 in
+`Build/audit-fixes/source-given-shift-jis-final-*.log`. The actual
+FileReader/package/native primitive integration batch passes 4/4 GC-none in
+`source-given-shift-jis-final-native-integration-gc-none.log`.
+
+The complete tracked checkout was clean and immutable at the implementation
+hash during both full Encoding runs: **34/34 pass in default GC and GC-none**.
+All 4,174 tracked files have the same before/after manifest; proof files are
+under `Build/audit-fixes/source-given-decoder-shift-jis-frozen/`.
+
+- Complete tracked manifest SHA256:
+  `dab50a3fcfff88c6558c1b4dca384df356e8c352e76a5ef2b8e7058687e0c3b8`.
+- Full default log SHA256:
+  `a38e720e67de210a9c300b62174894d10420461f5de7b8862e1855a87dd8dc10`.
+- Full GC-none log SHA256:
+  `96c6905ff9a317e247d7605b4882dbe6b8a3f1c0748dea723fad14adb9713e9e`.
+
+Source remains pinned at `963d46a829f3e1b79f44dba9d02afb70654300fa` with
+encoding_rs 0.8.40. Physical Cow/Vec/Box/allocator/OOM, native public
+TextDecoder ownership and other-codec whole adapters remain separately
+bounded. No LibJS implementation or native bundle changes are covered by
+this Encoding snapshot.
