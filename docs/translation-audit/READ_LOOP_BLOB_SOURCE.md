@@ -113,3 +113,17 @@ Blob text/standalone decoder/codec files pass in
 Worker ownership, empty and malformed bytes, UTF-16 BOMs and MIME independence.
 Blob.arrayBuffer/bytes fulfillment, actual native buffer/view ownership and
 generated native Blob/File/FileList methods are still separate work.
+
+`LibJS/Runtime/ArrayBuffer.cpp:34-42` and `TypedArray.cpp:486-489` map to the
+native buffer ABI in `browserjs/source_array_buffer_darwin.c.v` and its backing
+store helper, commit `83bafcde`. The ByteBuffer overload allocates independently
+owned storage and copies into it; allocation failure keeps Source's fatal
+`MUST` boundary. A real engine ArrayBuffer owns that store and its deallocator.
+Source Uint8 creation allocates a genuine view over the exact existing engine
+buffer, preserving `view.buffer === buffer` and shared mutations. Slot reads
+use the C API and intrinsic engine record allocation, so author byteLength
+properties, prototype getters and replaced constructors cannot substitute for
+the original slots or constructors. The focused native test passes both GC
+modes in `source-native-array-buffer-{default,gc-none}.log`, including distinct
+empty records. These helpers cover Source's internal fixed ByteBuffer-backed
+buffers; they do not establish the still-open native author Shared/RAB paths.
