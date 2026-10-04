@@ -162,6 +162,40 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+bindAttribLocation now suppresses its generated native command after loss,
+separately from the program-handle CPU gate repair. Impl.cpp:180-192 and
+GLFunctions.json:58-76 record the actual index/null-terminated name and Source
+program ID; record_bytes:57-60 drops the generated record after loss. V keeps
+its handle gate, then returns before its direct C command when native owner
+selection is unavailable. The exact read-only generated proxy/replay witness
+is `Build/audit-fixes/source-bind-attrib-generated-boundary.txt`, SHA-256
+`3a2f81f6ed8eaf6ff3c56adf3f8e4f8954583351a34ec328a65c34fe65b414ea`.
+
+The genuine pre-fix EGL probe changed Other's pending attribute binding from
+2 to 6 through a lost Owner with coinciding native program names, retained in
+source-bind-attrib-unfixed-probe_test.v and
+source-bind-attrib-unfixed-probe-gc-none.log. New two-version typed/public
+cases relink Other's genuinely compiled program after every lost binding and
+query its actual location, so a later rebind cannot hide transient wrong GL
+work. The location remains 2, both real attachments remain and the actual
+program stays linked/live in Other's unchanged viewport. Original and owned
+SourceID2/native0 records retain identity; foreign/deleted handles and public
+arity/nonnullable/forged-brand/Symbol gates retain Source behavior. Public
+index/name author conversions still execute in order before the dropped body
+command. Embedded-NUL and reserved-prefix names cannot mutate Other; its
+pending INVALID_ENUM survives without extra native errors, public setters
+remain undefined, and context-loss reporting remains one-shot.
+
+Two typed files pass in
+`Build/audit-fixes/source-bind-attrib-lost-native-gc-none.log`; two public
+files pass in
+`Build/audit-fixes/source-bind-attrib-lost-public-gc-none.log`, with GC disabled
+and explicit private paths, including the prior live/CPU-order/actual driver
+location neighbors. This is only the reviewed bindAttribLocation loss slice;
+getUniformLocation and retained getter owner order, other families, full
+remote transport and GC/WrapperWorld remain separate. Frozen full-sweep and
+canonical bundle evidence remain unchanged.
+
 bindAttribLocation now preserves its Source owned-program handle gate before
 actual native owner selection. Impl.cpp:180-192 begins with an empty Proxy
 make_current, validates the handle, converts its already-converted name to
@@ -190,7 +224,7 @@ foreign-gate side effect. Two typed files pass in
 files pass in
 `Build/audit-fixes/source-bind-attrib-owner-public-gc-none.log`, with GC disabled
 and explicit private paths, including the aggregate shader/program neighbors.
-Lost binding is separately reviewed next; location/retained getter and other
+Lost binding is separately reviewed above; location/retained getter and other
 object families, full remote transport and GC/WrapperWorld remain distinct
 scopes. Historical full-sweep and canonical bundle evidence are unchanged.
 
