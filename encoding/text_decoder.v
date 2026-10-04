@@ -70,6 +70,9 @@ mut:
 	// Source selected UTF16 variant belongs to the same Common owning record.
 	utf16_decoder_         SourceUtf16StreamingDecoder
 	utf16_decoder_present_ bool
+	// Source selected Shift_JIS retains its genuine lead in this Common owner.
+	shift_jis_decoder_         SourceShiftJisStreamingDecoder
+	shift_jis_decoder_present_ bool
 }
 
 fn new_text_decoder_common(encoding_name string, options TextDecoderOptions) TextDecoderCommonMixin {
@@ -101,6 +104,9 @@ pub fn (mut decoder TextDecoderCommonMixin) set_decoder_to_new_instance_of_encod
 	} else if decoder.encoding_ == 'utf-16le' || decoder.encoding_ == 'utf-16be' {
 		decoder.utf16_decoder_ = SourceUtf16StreamingDecoder.create(decoder.encoding_ == 'utf-16be', !decoder.ignore_bom_)
 		decoder.utf16_decoder_present_ = true
+	} else if decoder.encoding_ == 'shift_jis' {
+		decoder.shift_jis_decoder_ = SourceShiftJisStreamingDecoder.create()
+		decoder.shift_jis_decoder_present_ = true
 	}
 }
 
@@ -160,6 +166,14 @@ fn (mut decoder TextDecoderCommonMixin) decode_item(input []u8, end_of_queue boo
 			panic('Source VERIFY: TextDecoderCommon owns its StreamingDecoder')
 		}
 		ok, decoded := decoder.utf16_decoder_.decode_owned_utf8(input, end_of_queue, decoder.fatal_)
+		if !ok { return error('TypeError: Decoding failed') }
+		return decoded
+	}
+	if decoder.encoding_ == 'shift_jis' {
+		if !decoder.shift_jis_decoder_present_ {
+			panic('Source VERIFY: TextDecoderCommon owns its StreamingDecoder')
+		}
+		ok, decoded := decoder.shift_jis_decoder_.decode_owned_utf8(input, end_of_queue, decoder.fatal_)
 		if !ok { return error('TypeError: Decoding failed') }
 		return decoded
 	}
