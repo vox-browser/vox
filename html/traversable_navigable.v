@@ -1239,19 +1239,8 @@ pub fn (mut traversable TraversableNavigable) close_top_level_traversable() {
 
 pub fn (mut traversable TraversableNavigable) definitely_close_top_level_traversable() {
 	assert traversable.is_top_level_traversable()
-	documents := if document := traversable.active_document_ {
-		mut result := []&dom.Document{}
-		for navigable in document.inclusive_descendant_navigables() {
-			if active := navigable.active_document() {
-				result << active
-			}
-		}
-		result
-	} else {
-		[]&dom.Document{}
-	}
 	traversable_pointer := voidptr(traversable)
-	traversable.check_if_unloading_is_canceled(documents, fn [traversable_pointer] (result CheckIfUnloadingIsCanceledResult) {
+	completion := fn [traversable_pointer] (result CheckIfUnloadingIsCanceledResult) {
 		mut mutable_traversable := unsafe { &TraversableNavigable(traversable_pointer) }
 		if result != .continue_ {
 			// A canceled prompted close may be retried unless another close has
@@ -1274,7 +1263,30 @@ pub fn (mut traversable TraversableNavigable) definitely_close_top_level_travers
 			mutable_traversable.destroy_top_level_traversable()
 			signal.resolve()
 		})
-	})
+	}
+	if traversable.local_navigable_model() != none {
+		// Source collects the actual active Document's local native Navigables
+		// and calls the result-only overload, whose projection initializes No.
+		document := traversable.active_document() or {
+			panic('Source prompted close requires its active Document')
+		}
+		check_if_unloading_is_canceled_for_navigables(document.inclusive_descendant_navigables(), completion)
+		return
+	}
+	// Older bare-host constructors lack real local models/Window/Page owners.
+	// Preserve their existing Document-list and hook compatibility path.
+	documents := if document := traversable.active_document_ {
+		mut result := []&dom.Document{}
+		for navigable in document.inclusive_descendant_navigables() {
+			if active := navigable.active_document() {
+				result << active
+			}
+		}
+		result
+	} else {
+		[]&dom.Document{}
+	}
+	traversable.check_if_unloading_is_canceled(documents, completion)
 }
 
 pub fn (mut traversable TraversableNavigable) destroy_top_level_traversable() {
