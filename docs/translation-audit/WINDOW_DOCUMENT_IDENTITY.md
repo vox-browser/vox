@@ -60,6 +60,7 @@ cache invalidation in `Window::set_associated_document()` requires that pending
 wrapper-world accessor cache; this slice does not fabricate a cache or replace
 that facade with an incomplete wrapper. The SVG regression verifies the real
 association and restoration primitives, without claiming completion of the
-entire ScopedSVGImageDocument/PageClient renderer path. UniversalGlobalScope
-still retains a separate document snapshot for task association; its source
-queue-time owner lookup is a separate remaining slice.
+entire ScopedSVGImageDocument/PageClient renderer path. The separate
+[UniversalGlobalScope queue-time ownership slice](UNIVERSAL_SCOPE_DOCUMENT_OWNERSHIP.md)
+removes its document snapshot and captures the actual Window association when
+queuing microtasks and rejected-promise notification tasks.
