@@ -162,6 +162,44 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+WebGLSync sync_handle and sync_handle_for_deletion now retain the Source
+m_sync_handle independently of the actual native GLsync mapping. At this pin,
+GLFunctions.json:1492-1504 categorizes fenceSync as `gen`;
+generate_libweb_webgl_proxy.py:94-99 returns its allocated u32 ID through
+uintptr_t and reinterpret_cast<GLsync>. WebGLSync.cpp:26-29 stores that proxy
+pointer, with base GLuint 0, and cpp:39-58 returns it after context validation
+and generation/invalidation handling. The V source_handle_ stores the same
+pointer-width conversion. The first deletion invalidates once and preserves
+both stored Source and native values; repeats return an absent optional.
+
+The compositor generator separately add_sync maps the ID to the actual
+fence result and lookup_sync/take_sync resolves it for queries/commands. The
+four actual direct wait/get/delete bridges therefore validate Source handles
+but pass the separate native_handle_ to the driver. Typed native_pointer() is
+an explicit adapter accessor and adds no public WebGL IDL operation. Genuine
+invalid-condition/flag fences can have a nonzero Source proxy pointer and a
+null native mapping; no null-driver result is substituted into Source storage.
+
+The first native fixture incorrectly assumed that different identity domains
+always have unequal numeric values. Actual ANGLE returned native GLsync 1,
+which coincided with the first Source ID. The corrected fixture reserves eight
+real driver fences before Source creation, forcing tested proxy/native values
+apart and verifying those independent fences survive native deletion. It also
+covers the real null driver result, optional deletion, foreign owner checks
+before invalidation, stale-generation returns and retained values. Six typed
+files pass in `source-sync-proxy-pointer-native-corrected-gc-none.log`; the
+initial assertion remains in `source-sync-proxy-pointer-native-gc-none.log`.
+Three public creation/owner/host files pass in
+`source-sync-proxy-pointer-public-gc-none.log`, checking Source ID values beside
+actual null/successful native mappings, native queries/waits/deletion, brands
+and driver errors. All use GC disabled and explicit private module paths.
+
+This supersedes historical descriptions of sync_handle as returning the actual
+native pointer, and of a rejected fence supplying a Source null proxy pointer.
+Those earlier real native-pointer/error observations remain driver evidence.
+Per-method actual-owner early-return order, loss command/sync suppression, full
+remote map/transport execution and full GC/WrapperWorld remain separate scopes.
+
 WebGLObject handle, handle_for_query and handle_for_deletion now preserve the
 exact Source m_handle independently of native driver names and compact wrapper
 IDs. WebGLObject.cpp:38-66 validates context before generation/invalidation and
@@ -178,8 +216,8 @@ zero/collision/exhaustion policy; unsigned wrap follows the Source type.
 ProxyBase.restore() at cpp:29-38 does not reset this counter, and neither does
 this adaptation. Every generated GLuint family and GLsync uses the same
 counter. Sync consumes/stores its generated proxy ID while retaining the exact
-Source base GLuint 0 (WebGLSync.cpp:26-29); its standalone sync pointer APIs
-remain a subsequent separate repair, not completed by this GLuint slice.
+Source base GLuint 0 (WebGLSync.cpp:26-29). The separate subsequent GLsync proxy
+pointer API repair is documented above.
 
 Fresh getVertexAttrib buffer and getParameter sampler records are different:
 Source Impl.cpp:2061-2066 and :1673-1677 passes the actual numeric query reply
@@ -1165,21 +1203,14 @@ files passed in `source-sync-owner-public-gc-none.log`, all with GC disabled.
 The standalone pointer API repair below completes that record API; context-loss
 transport and full GC ownership remain open.
 
-WebGLSync sync_handle and sync_handle_for_deletion now translate
-`WebGLSync.cpp:39-58` directly: validate context first, reject an invalid read,
-return an absent deletion handle for invalidated generations, or invalidate
-once and return the exact stored GLsync pointer. The explicit optional-pointer
-record preserves a present native null pointer separately from an absent handle.
-Waits, deletion and parameter queries pass that validated pointer to GL;
-logical identifiers remain only for adapter lookup/removal and debug recording.
-Five typed files passed with GC disabled in `source-sync-pointer-gc-none.log`;
-three actual public neighbors passed in
-`source-sync-pointer-public-gc-none.log`. The new fixture uses only genuine
-successful/rejected native fences, checks present-null versus repeated deletion,
-foreign context ordering, generation rejection without record mutation, and
-preserved pointers. The legacy generation fixture now compares the actual
-pointer. The separately scoped shared WebGLObject GLuint repair follows; no
-full source GC/WrapperWorld parity is claimed.
+The historical WebGLSync accessor slice separated actual native pointer
+retention from compact wrapper IDs and preserved genuine driver query/deletion
+behavior. Its five typed and two public files passed in
+`source-sync-pointer-gc-none.log` and `source-sync-pointer-public-gc-none.log`.
+That slice had not traced the generated fenceSync proxy-ID return, so the later
+Source proxy-pointer storage/API repair above supersedes its handle-value
+assertions. The actual native null/successful results and validation ordering
+remain evidence for the direct adapter; they do not identify Source m_sync_handle.
 
 The historical WebGLObject repair separated compact wrapper IDs from native
 GLuint names and preserved actual native deletion/identity. Its eleven typed
