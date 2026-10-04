@@ -115,6 +115,23 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+All six stencil setters now follow the plain GL calls in
+`WebGLRenderingContextImpl.cpp:2332-2378`. Invented comparison/operation/face
+prevalidation and retained scalar-map writes were removed, together with the
+two validation helpers that then had no callers. Twenty direct-driver cases
+start both commands from independent identical baselines and compare the real
+front/back functions, signed reference clamps, full-width masks and operations.
+Both versions cover two owners and native error flags before source `m_error`.
+Real point draws verify that a zero write mask prevents a failed stencil test
+from replacing the stored reference, while enabling the mask and fail-replace
+operation allows the next equal-reference draw to change blue pixels to red.
+Public witnesses cover all six IDL conversion paths, real getter state, and
+Driver validation priority. The pre-fix owner failure remains in
+`source-stencil-reproduction-gc-none.log`. All three native new/masked-rendering/
+state files passed in `source-stencil-gc-none.log`; both public new/masked-
+rendering files passed in `source-stencil-public-gc-none.log`. This subsequent
+source slice supplements the unchanged frozen 101/70 sweep.
+
 Depth-range, line-width, polygon-offset and sample-coverage setters now follow
 the unrestricted float calls in
 `WebGLRenderingContextImpl.cpp:645-649,2227-2231,2284-2288,2300-2304`.
