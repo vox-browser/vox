@@ -705,3 +705,9 @@ outside that package remain the private snapshot. This sweep predates the
 new explicit LibJS UTF8 byte-boundary helper (`68deba04`). Canonical focused
 arithmetic/extrema/helper checks pass separately. These results do not supply
 an opcode interpreter, instantiation or complete collector/realm graph.
+
+## Source scalar floating unary operators
+
+`ab928857` translates fourteen float/double Absolute/Negate/Ceil/Floor/Truncate/NearbyIntegral/SquareRoot specializations, matching **1,568 exact pinned C++ result-bit cases across four native rounding modes** from `32893ab4`. Source NaN branches, compiler fabs builtins, original operand widths and native math calls are retained. Real unary-helper checks preserve selected slot writes, Source float-bit sign extension, destination/stack and earlier trap state. Focused default GC passes privately; the canonical unary/extrema/helper and FileReader BOM integration batch passes **6/6 with GC disabled**. See [Source unary mapping](../docs/translation-audit/WASM_FLOAT_UNARY.md).
+
+The frozen isolated checkout of canonical `bbb7d72944f17772af8f1096bcb3225f4b3d8f88` passes a fresh clean **90/90 WebAssembly files in each GC mode**, with no tracked changes during either sweep. It includes the explicit Source LibJS byte helper. Exact manifest/commands/result and log hashes are in `Build/audit-fixes/worktrees/09-compiled-records/Build/audit-fixes/source-unary-wasm90-manifest.json`; logs use `source-unary-wasm90-full-{default,gc-none}.log`. Current package/LibJS implementations and tests match, while later changes outside those packages remain outside this snapshot. Remaining numeric/SIMD operators, production opcode dispatch, execution/instantiation and full collector/realm roots remain open.
