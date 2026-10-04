@@ -178,6 +178,7 @@ fn C.vox_gl_delete_program(u32)
 fn C.vox_gl_shader_parameter(u32, u32) int
 fn C.vox_gl_shader_parameter_robust(u32, u32) int
 fn C.vox_gl_program_parameter(u32, u32) int
+fn C.vox_gl_program_parameter_robust(u32, u32) int
 fn C.vox_gl_shader_log(u32, int, &u8)
 fn C.vox_gl_program_log(u32, int, &u8)
 fn C.vox_gl_uniform_location(u32, &char) int
@@ -266,6 +267,13 @@ fn (mut context OpenGLContext) native_program_parameter(handle GLuint, pname GLe
 	context.make_current()
 	result := C.vox_gl_program_parameter(handle, pname)
 	return result
+}
+
+// Source get_program_parameter uses this robust one-element query; its
+// diagnostic log length retains the regular programiv method above.
+fn (mut context OpenGLContext) native_program_parameter_robust(handle GLuint, pname GLenum) int {
+	context.make_current()
+	return C.vox_gl_program_parameter_robust(handle, pname)
 }
 
 fn (mut context OpenGLContext) native_shader_log(handle GLuint) string {

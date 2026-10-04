@@ -617,7 +617,7 @@ pub fn (mut context WebGLRenderingContext) get_program_parameter(program &WebGLP
 		context.set_error(invalid_operation)
 		return WebGLParameterValue{}
 	}
-	result := context.native.native_program_parameter(program.object.native_handle_, pname)
+	result := context.native.native_program_parameter_robust(program.object.native_handle_, pname)
 	return match pname {
 		attached_shaders, active_attributes, active_uniforms { integer_parameter(result) }
 		transform_feedback_buffer_mode, transform_feedback_varyings, active_uniform_blocks {
