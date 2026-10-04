@@ -94,7 +94,7 @@ mut:
 	has_system_focus_             bool
 	window_handle_                string
 	active_document_              ?&dom.Document
-	navigation_                   ?&Navigation
+	legacy_navigation_            ?&Navigation
 	host_navigable_               ?&dom.Navigable
 	traversal_queue_              &SessionHistoryTraversalQueue = unsafe { nil }
 	storage_shed_                 &TraversableStorageShed = unsafe { nil }
@@ -230,12 +230,23 @@ pub fn (mut traversable TraversableNavigable) set_active_session_history_entry(e
 }
 
 pub fn (traversable &TraversableNavigable) active_document() ?&dom.Document {
+	if host := traversable.host_navigable_ {
+		return host.active_document()
+	}
 	return traversable.active_document_
 }
 
 pub fn (traversable &TraversableNavigable) active_document_id() ?dom.UniqueNodeID {
-	document := traversable.active_document_ or { return none }
+	document := traversable.active_document() or { return none }
 	return document.unique_id()
+}
+
+// LocalTraversable inherits LocalNavigable's actual active WindowProxy slot.
+// The proxy and Window must be existing registered HTML identities.
+pub fn (traversable &TraversableNavigable) active_window() ?&WindowModel {
+	host := traversable.host_navigable_ or { return none }
+	proxy := host.active_window_proxy() or { return none }
+	return window_proxy_model_for_native(proxy).window()
 }
 
 pub fn (traversable &TraversableNavigable) running_nested_apply_history_step() bool {
@@ -263,7 +274,8 @@ pub fn (mut traversable TraversableNavigable) set_window_handle(value string) {
 }
 
 pub fn (mut traversable TraversableNavigable) set_navigation(navigation ?&Navigation) {
-	traversable.navigation_ = navigation
+	// Retain the old bare-host adapter. Actual Window owners supply Navigation.
+	traversable.legacy_navigation_ = navigation
 }
 
 pub fn (mut traversable TraversableNavigable) set_host_navigable(navigable ?&dom.Navigable) {
@@ -525,35 +537,62 @@ fn (mut state CheckUnloadingCanceledState) start_document_tasks() {
 }
 
 fn (mut state CheckUnloadingCanceledState) start_traverse_event_task() {
-	active_document := state.traversable.active_document_ or {
+	if window := state.traversable.active_window() {
+		// The task keeps this global's queue-time associated Document. Its
+		// steps re-read the inherited active Document and Window separately.
+		queue_global_task(.navigation_and_traversal, unsafe { &dom.Window(window) }, fn [mut state] () {
+			state.run_traverse_event_task(true)
+		})
+		return
+	}
+	// Existing bare-host constructors have no actual Window/global yet.
+	active_document := state.traversable.active_document() or {
 		state.start_document_tasks()
 		return
 	}
 	queue_a_task(.navigation_and_traversal, main_thread_event_loop(), active_document, fn [mut state] () {
-		if state.needs_before_unload {
-			if current_active_document := state.traversable.active_document_ {
-				mut mutable_document := unsafe { &dom.Document(current_active_document) }
-				result := mutable_document.steps_to_fire_beforeunload(false)
-				if result.unload_prompt_shown {
-					state.unload_prompt_shown = true
-				}
-				if result.unload_prompt_canceled {
-					state.finish(.canceled_by_before_unload)
-					return
-				}
-			}
-		}
-		if navigation := state.traversable.navigation_ {
-			if target := state.target_entry {
-				mut mutable_navigation := unsafe { &Navigation(navigation) }
-				if !mutable_navigation.fire_a_traverse_navigate_event(target, state.user_involvement) {
-					state.finish(.canceled_by_navigate)
-					return
-				}
-			}
-		}
-		state.start_document_tasks()
+		state.run_traverse_event_task(false)
 	})
+}
+
+fn (mut state CheckUnloadingCanceledState) run_traverse_event_task(actual_window_task bool) {
+	if state.needs_before_unload {
+		if current_active_document := state.traversable.active_document() {
+			mut mutable_document := unsafe { &dom.Document(current_active_document) }
+			result := mutable_document.steps_to_fire_beforeunload(false)
+			if result.unload_prompt_shown {
+				state.unload_prompt_shown = true
+			}
+			if result.unload_prompt_canceled {
+				state.finish(.canceled_by_before_unload)
+				return
+			}
+		} else if actual_window_task {
+			panic('Source beforeunload phase requires its active Document')
+		}
+	}
+	// Source reads the active Window again after beforeunload dispatch, whose
+	// callbacks can change the actual WindowProxy's [[Window]].
+	navigation := if actual_window_task {
+		window := state.traversable.active_window() or {
+			panic('Source traverse event phase requires its active Window')
+		}
+		?&Navigation(window.navigation())
+	} else {
+		state.traversable.legacy_navigation_
+	}
+	if owner := navigation {
+		if target := state.target_entry {
+			mut mutable_navigation := unsafe { &Navigation(owner) }
+			if !mutable_navigation.fire_a_traverse_navigate_event(target, state.user_involvement) {
+				state.finish(.canceled_by_navigate)
+				return
+			}
+		} else if actual_window_task {
+			panic('Source traverse event phase requires its target entry')
+		}
+	}
+	state.start_document_tasks()
 }
 
 fn (traversable &TraversableNavigable) check_if_unloading_is_canceled_for_history_step(documents []&dom.Document, target &SessionHistoryEntry, user_involvement UserNavigationInvolvement, callback TraversableUnloadCompletion) {
@@ -575,7 +614,7 @@ fn (traversable &TraversableNavigable) check_if_unloading_is_canceled_for_histor
 		return
 	}
 	if voidptr(target) != voidptr(current) && history_entry_origins_are_equal(target, current) {
-		if active_document := traversable.active_document_ {
+		if active_document := traversable.active_document() {
 			for index, document in state.documents {
 				if voidptr(document) == voidptr(active_document) {
 					state.documents.delete(index)
