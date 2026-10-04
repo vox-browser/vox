@@ -225,3 +225,18 @@ foreign `newTarget` fallback via Source GetFunctionRealm remains open because
 this engine ABI does not expose the owning function realm. Native Worker
 ReadableStream host construction and public browser installation are separate
 work. The compact XHR facade remains outside this actual Blob owner table.
+
+The native Blob clone projection maps Source StructuredSerialize.cpp step 19
+(`1510-1527`) and target exposure/allocation (`2030-2044`) to the actual
+BlobHost wrapper table and immutable Blob payload record. IPC and storage use
+the exact existing primary Blob codec, including arbitrary raw UTF-16 type
+units. Deserialization requires the target's actual installed constructor and
+original prototype, independent of author globals; insecure Window exposure is
+valid for Blob. Output aliases share one newly deserialized target wrapper and
+record. Author-own Blob getters and custom properties are not read or copied.
+The focused file passes both modes in
+`source-native-blob-clone-{default,gc-none}.log`, comparing native payload bytes
+with the primary Source codec and checking raw units, aliases, distinct Source
+records, forged absent exposure and deleted target globals. XHR compatibility
+objects remain outside the actual Blob owner table. File/FileList native
+projection and public browser installation remain separate work.

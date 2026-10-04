@@ -70,7 +70,9 @@ generated constructor now preserves original records, sequence/USVString and
 dictionary conversion order, post-option buffer copies, Source descriptor
 flags and original error values. The focused constructor file passes both
 modes. Foreign-newTarget prototype fallback, native Worker stream ownership,
-public browser installation, native clone projection and File/FileList native
-bindings remain open. The compact XHR Blob object is
+public browser installation and File/FileList native bindings remain open.
+Native Blob clone projection/exposure now uses actual source/target records,
+the exact primary codec and retained target factory; its focused file passes
+both modes. The compact XHR Blob object is
 a separate compatibility facade. FileReader owner tasks, blob URL process
 ownership and complete generated bindings still need runtime validation.
