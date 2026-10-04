@@ -93,7 +93,10 @@ fn test_worker_blob_reading_tasks_and_promises_use_the_actual_worker_owner_loop(
 	mut seen := &BlobTaskObservations{}
 	child := promise.upon_fulfillment(fn [settings, mut seen] (value webidl.Value) !webidl.Value {
 		assert settings.realm().script_execution_depth == 1
-		assert settings.realm().callback_execution_depth == 1
+		// Source closes the Blob task's script context before its callback
+		// context. That checkpoint nests the Promise callback inside the
+		// still-retained outer FileReading callback.
+		assert settings.realm().callback_execution_depth == 2
 		assert voidptr(incumbent_settings_object()) == voidptr(settings)
 		buffer := value.buffer_value or { panic('missing Source read-all ArrayBuffer') }
 		seen.bytes = webidl.get_buffer_source_copy(buffer)
@@ -108,6 +111,8 @@ fn test_worker_blob_reading_tasks_and_promises_use_the_actual_worker_owner_loop(
 	worker_loop.perform_a_microtask_checkpoint()
 	assert promise.state == .fulfilled && child.state == .fulfilled
 	assert seen.completed && seen.bytes == [u8(8), 9]
+	assert settings.realm().script_execution_depth == 0
+	assert settings.realm().callback_execution_depth == 0
 }
 
 fn test_queued_blob_task_preserves_closed_and_errored_stream_gates_and_original_reason() {
