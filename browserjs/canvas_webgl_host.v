@@ -988,7 +988,12 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 		}
 		'isProgram' {
 			host.validate_resource(wg_arg(args, 0), 'program', true)!
-			return json2.Any(context.is_program(host.programs[wg_handle(wg_arg(args, 0))] or { none }))
+			// Preserve the actual nullable Source call without inline map-option
+			// propagation into this host Result under the compatibility compiler.
+			program := host.programs[wg_handle(wg_arg(args, 0))] or {
+				return json2.Any(context.is_program(none))
+			}
+			return json2.Any(context.is_program(program))
 		}
 		'lineWidth' {
 			context.line_width(f32(wg_number(wg_arg(args, 0))))
