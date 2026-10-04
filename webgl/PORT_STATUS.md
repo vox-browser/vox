@@ -411,8 +411,24 @@ fixture now queries GL after the rejected bind instead of inspecting the removed
 map. Four typed files passed in `source-sampler-binding-gc-none.log`; three
 public files passed in `source-sampler-binding-public-gc-none.log`, all with GC
 disabled and no fixture failure. The separate source sampler parameter-name
-switches remain; their owner-first correction follows separately. Full source
+switches remain, with the owner-first correction described below. Full source
 GC, caller WrapperWorld ownership and remote transport remain open.
+
+samplerParameteri and samplerParameterf now select the owning context before
+source handle validation and the exact source parameter-name switches
+(`WebGL2RenderingContextImpl.cpp:835-910`). All nine standard pnames and the
+EXT_texture_filter_anisotropic enablement gate remain; no extra native value
+validation was added. Genuine driver tests first obtain the result, reset each
+parameter to a different valid baseline, then verify the translated integer or
+float setter changes it to that exact value. Other typed cases cover foreign
+and deleted handle precedence, blocked/enabled extension names, valid native
+zero records reaching GL, fractional LOD readback and real invalid-value errors.
+Public cases preserve generated IDL brand/null/numeric conversion before owner
+selection and verify source gate/error order plus actual float readback. Three
+typed files passed in `source-sampler-parameter-gc-none.log`; three public files
+passed in `source-sampler-parameter-public-gc-none.log`, all with GC disabled
+and no fixture failure. Source engine diagnostic logging and full GC/caller
+WrapperWorld ownership remain separate boundaries.
 
 Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
 `WebGL2RenderingContextOverloads.cpp:33-85`, and
