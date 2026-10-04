@@ -57,7 +57,9 @@ adapter are preserved as that boundary; actual Window owners never select it.
 Other history/close phases still contain retained Traversable Document slots and
 are separate source ownership work. Input remains the translated local
 Document list rather than Source's complete native Navigable vector. The
-15-second Source timeout, session-history graph/current-step protocol, Page
+15-second Source timeout was subsequently translated in
+[the state deadline slice](UNLOAD_CHECK_TIMEOUT_OWNERSHIP.md). The
+session-history graph/current-step protocol, Page
 history executor, remote transport and native JavaScriptCore BeforeUnloadEvent
 binding remain separate boundaries. This slice does not claim full traversal
 or Window.close parity.
