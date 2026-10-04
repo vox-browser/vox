@@ -72,20 +72,10 @@ pub fn (mut context WebGLRenderingContext) compressed_tex_sub_image2d(target GLe
 }
 
 pub fn (mut context WebGLRenderingContext) tex_image2d(target GLenum, level int, internal_format GLenum, width int, height int, border int, format GLenum, type_ GLenum, pixels []u8) {
-	if width < 0 || height < 0 || border != 0 {
-		context.set_error(invalid_value)
-		return
-	}
+	context.native.make_current()
 	texture_data := context.texture_data_for_2d_upload(pixels, width, height, format, type_) or {
 		context.set_error(invalid_operation)
 		return
-	}
-	if handle := context.bound_textures[target] {
-		mut texture := context.textures[handle] or { return }
-		texture.width_ = width
-		texture.height_ = height
-		texture.depth_ = 1
-		texture.internal_format_ = internal_format
 	}
 	context.command('tex_image2d', target, level, internal_format, width, height, border, format, type_, texture_data.len)
 	C.vox_gl_tex_image2d(target, level, internal_format, width, height, border, format, type_, texture_data.len, texture_data.data)
@@ -93,14 +83,7 @@ pub fn (mut context WebGLRenderingContext) tex_image2d(target GLenum, level int,
 }
 
 pub fn (mut context WebGLRenderingContext) tex_sub_image2d(target GLenum, level int, x_offset int, y_offset int, width int, height int, format GLenum, type_ GLenum, pixels []u8) {
-	if width < 0 || height < 0 {
-		context.set_error(invalid_value)
-		return
-	}
-	if target !in context.bound_textures {
-		context.set_error(invalid_operation)
-		return
-	}
+	context.native.make_current()
 	texture_data := context.texture_data_for_2d_upload(pixels, width, height, format, type_) or {
 		context.set_error(invalid_operation)
 		return

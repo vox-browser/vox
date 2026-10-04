@@ -48,8 +48,11 @@ fn test_upstream_texture_renderbuffer_and_framebuffer_state() {
 	context.bind_texture(texture_2d, texture)
 	context.tex_parameteri(texture_2d, texture_min_filter, 0x2601)
 	context.tex_image2d(texture_2d, 0, 0x1908, 2, 3, 0, 0x1908, 0x1401, []u8{len: 24})
-	assert texture.width_ == 2
-	assert texture.height_ == 3
+	image_framebuffer := context.create_framebuffer()
+	context.bind_framebuffer(framebuffer, image_framebuffer)
+	context.framebuffer_texture2d(framebuffer, color_attachment0, texture_2d, texture, 0)
+	assert context.check_framebuffer_status(framebuffer) == 0x8cd5
+	assert context.read_pixels(0, 0, 2, 3, rgba, unsigned_byte) == []u8{len: 24}
 	assert context.get_tex_parameter(texture_2d, texture_min_filter).integer == 0x2601
 
 	mut renderbuffer_object := WebGLRenderbuffer.create(mut context)

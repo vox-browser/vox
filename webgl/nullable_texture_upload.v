@@ -3,6 +3,7 @@
 module webgl
 
 pub fn (mut context WebGLRenderingContext) tex_image2d_null(target GLenum, level int, internal_format int, width int, height int, border int, format GLenum, type_ GLenum) {
+	context.native.make_current()
 	if context.version == .webgl2 {
 		if !context.command('tex_image2d', target, level, internal_format, width, height, border, format, type_, 0) {
 			return
@@ -68,6 +69,7 @@ pub fn (mut context WebGLRenderingContext) tex_image2d_null(target GLenum, level
 }
 
 pub fn (mut context WebGLRenderingContext) tex_sub_image2d_null(target GLenum, level int, x_offset int, y_offset int, width int, height int, format GLenum, type_ GLenum) {
+	context.native.make_current()
 	if context.version == .webgl1 {
 		context.set_error(invalid_value)
 		return

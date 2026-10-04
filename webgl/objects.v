@@ -166,11 +166,6 @@ pub mut:
 pub struct WebGLTexture {
 pub mut:
 	object WebGLObject
-mut:
-	width_           int
-	height_          int
-	depth_           int
-	internal_format_ GLenum
 }
 
 @[heap]
