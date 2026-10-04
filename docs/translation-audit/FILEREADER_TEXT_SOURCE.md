@@ -116,3 +116,25 @@ in `source-file-reader-binary-string-{default,gc-none}.log`. Tests cover all
 UTF16 storage, immutable input ownership and FileReaderSync's same package.
 This feature changes no LibJS implementation and supplies no native result
 wrapper or per-world cache.
+
+## Data URL record prerequisite
+
+Source `LibURL/URL.cpp:167` constructs a genuine URL record: scheme `data`, an
+opaque path and exactly one path string built from MIME, optional `;base64`,
+a comma and payload. It does not parse either input or percent-escape spaces,
+query/fragment punctuation, NUL or non-ASCII bytes. `url/data_url.v` now
+translates that helper and uses the existing translated URL serializer.
+
+The new data URL record and existing URL record files pass **2/2 in both GC
+modes** in `source-data-url-record-{default,gc-none}.log`, covering record fields,
+both base64 modes, opaque literal byte preservation, empty inputs and separate
+record/path ownership. This prerequisite changes no FileReader packaging yet.
+
+FileReader's Source DataURL arm calls this helper, serializes it, then invokes
+`Infra/SerializedURL.h:16`'s `Utf16String::from_ascii_without_validation`.
+The V Infra function is currently a compatibility string identity. Source's
+unchecked ASCII storage retains raw byte metadata and its raw code-unit/native
+primitive access is a separate boundary. Its UTF8 projection returns those
+same bytes without decoding (`AK/Utf16View.cpp:17`), so direct V concatenation
+already matches compatibility bytes. This does not justify replacing that
+Source ASCII record with UTF8 decoding, arbitrary byte widening or new escaping.
