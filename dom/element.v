@@ -2594,6 +2594,9 @@ pub fn (mut e Element) run_attribute_change_steps(local_name string, old_value ?
 	if e.as_node().is_html_base_element() {
 		mut base := unsafe { &HTMLBaseElement(&e) }
 		base.attribute_changed(local_name, old_value, value, namespace_)
+	} else if e.as_node().is_html_meta_element() {
+		mut meta := unsafe { &HTMLMetaElement(&e) }
+		meta.attribute_changed(local_name, old_value, value, namespace_)
 	} else {
 		e.attribute_changed(local_name, old_value, value, namespace_)
 	}

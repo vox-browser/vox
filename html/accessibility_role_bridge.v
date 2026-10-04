@@ -264,6 +264,39 @@ fn dom_base_csp_check(document &dom.Document, base dom.URL) bool {
 	return contentsecuritypolicy.is_base_allowed_for_document(mut global, base_url) == .allowed
 }
 
+// HTMLMetaElement.cpp:209–223 and PolicyList.cpp:105–109. Parse and filter
+// with the actual translated CSP engine, then append to the same settings
+// container consumed by Fetch, Base and inline checks.
+fn dom_meta_csp_enforce(document &dom.Document, input string) string {
+	mut policy := contentsecuritypolicy.parse_a_serialized_csp(input, .meta, .enforce)
+	policy.remove_directive(contentsecuritypolicy.report_uri)
+	policy.remove_directive(contentsecuritypolicy.frame_ancestors)
+	policy.remove_directive(contentsecuritypolicy.sandbox)
+	policy.set_self_origin(document.origin().liburl_origin() or {
+		panic('Meta CSP requires the actual Document origin')
+	})
+	serialized := policy.serialize() or { panic(err) }
+	mut directives := []SerializedCSPDirective{}
+	for directive in serialized.directives {
+		directives << SerializedCSPDirective{ name: directive.name, value: directive.value.clone() }
+	}
+	settings_pointer := document.relevant_settings_object()
+	if settings_pointer != unsafe { nil } {
+		settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }
+		mut container := unsafe { &PolicyContainer(settings.policy_container()) }
+		container.csp_list << SerializedCSPPolicy{
+			directives: directives
+			disposition: .enforce
+			source: .meta
+			self_origin: document.origin()
+			pre_parsed_policy_string: serialized.pre_parsed_policy_string
+		}
+	}
+	// This string is only the standalone adapter. Genuine settings owners read
+	// the parsed list above, retaining its original unfiltered input separately.
+	return directives.map('${it.name} ${it.value.join(' ')}'.trim_space()).join('; ')
+}
+
 fn dom_csp_initialize_document(_ voidptr, document &dom.Document) {
 	for policy in document_csp_policies(document) {
 		for directive in policy.directives() {
@@ -351,7 +384,9 @@ pub fn install_document_csp_hook(document &dom.Document) {
 		inline_check: dom_inline_csp_check
 		initialize:   dom_csp_initialize_document
 		base_check:   dom_base_csp_check
+		meta_enforce: dom_meta_csp_enforce
 	})
+	mutable_document.set_meta_element_metadata_callback(html_meta_element_update_metadata)
 	mutable_document.set_trusted_types_hook(dom.DocumentTrustedTypesHook{
 		target:              voidptr(document)
 		compliant_html:      dom_trusted_types_compliant_html

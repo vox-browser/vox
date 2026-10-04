@@ -131,6 +131,10 @@ pub fn (n &Node) is_html_base_element() bool {
 	return n.is_html_element_with_any_local_name(['base'])
 }
 
+pub fn (n &Node) is_html_meta_element() bool {
+	return n.is_html_element_with_any_local_name(['meta'])
+}
+
 pub fn (n &Node) is_html_body_element() bool {
 	return n.is_html_element_with_any_local_name(['body'])
 }

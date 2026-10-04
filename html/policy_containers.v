@@ -114,8 +114,9 @@ pub:
 
 @[heap]
 pub struct PolicyContainer {
-pub:
+pub mut:
 	csp_list                     []SerializedCSPPolicy
+pub:
 	embedder_policy              EmbedderPolicy
 	referrer_policy              ReferrerPolicy = .strict_origin_when_cross_origin
 	integrity_policy             IntegrityPolicy

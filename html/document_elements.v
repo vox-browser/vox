@@ -101,27 +101,10 @@ pub fn set_html_base_element_href(base &dom.HTMLBaseElement, href string) {
 	element.set_attribute_value('href', href)
 }
 
-pub enum MetaHttpEquivState {
-	encoding_declaration
-	refresh
-	set_cookie
-	x_ua_compatible
-	content_language
-	content_security_policy
-	default_style
-}
+pub type MetaHttpEquivState = dom.MetaHttpEquivState
 
 pub fn meta_http_equiv_state(value string) ?MetaHttpEquivState {
-	return match ascii_lowercase_string(value.trim_space()) {
-		'content-type' { .encoding_declaration }
-		'refresh' { .refresh }
-		'set-cookie' { .set_cookie }
-		'x-ua-compatible' { .x_ua_compatible }
-		'content-language' { .content_language }
-		'content-security-policy' { .content_security_policy }
-		'default-style' { .default_style }
-		else { none }
-	}
+	return dom.meta_http_equiv_state(value)
 }
 
 pub struct MetaDocumentState {
@@ -295,12 +278,12 @@ pub fn (mut meta HTMLMetaElementModel) removed() {
 }
 
 pub fn html_meta_element_http_equiv_state(meta &dom.HTMLMetaElement) ?MetaHttpEquivState {
-	return meta_http_equiv_state(unsafe { &dom.Element(meta) }.get_attribute_value('http-equiv'))
+	return meta.http_equiv_state()
 }
 
 fn html_meta_element_update_referrer_policy(meta &dom.HTMLMetaElement) {
 	element := unsafe { &dom.Element(meta) }
-	if !element.as_node().is_connected() {
+	if !element.as_node().in_a_document_tree() {
 		return
 	}
 	content := element.get_attribute('content') or { return }
@@ -340,52 +323,18 @@ pub fn html_meta_element_update_metadata(meta &dom.HTMLMetaElement, old_name ?st
 }
 
 pub fn html_meta_element_inserted(meta &dom.HTMLMetaElement) {
-	mut element := unsafe { &dom.Element(meta) }
-	element.inserted()
-	html_meta_element_update_metadata(meta, none)
-	state := html_meta_element_http_equiv_state(meta) or { return }
-	content := element.get_attribute('content') or { return }
-	mut document := unsafe { &dom.Document(element.document()) }
-	match state {
-		.refresh {
-			if content != '' {
-				document.shared_declarative_refresh_steps_for_meta(content)
-			}
-		}
-		.content_language {
-			if !content.contains(',') {
-				candidate := content.trim_left(' \t\n\r\v\f').fields()[0] or { return }
-				if candidate != '' {
-					document.set_pragma_set_default_language(candidate)
-				}
-			}
-		}
-		.content_security_policy {
-			parent := element.as_node().parent_element() or { return }
-			if parent.local_name() == 'head' && content != '' {
-				policy := parse_meta_csp(content)
-				serialized := policy.directives.map('${it.name} ${it.value.join(' ')}'.trim_space()).join('; ')
-				document.enforce_meta_csp(serialized)
-			}
-		}
-		else {}
-	}
+	mut mutable_meta := unsafe { &dom.HTMLMetaElement(meta) }
+	mutable_meta.inserted()
 }
 
 pub fn html_meta_element_removed_from(meta &dom.HTMLMetaElement, old_parent ?&dom.Node, old_root &dom.Node) {
-	mut element := unsafe { &dom.Element(meta) }
-	element.removed_from(old_parent, old_root)
-	html_meta_element_update_metadata(meta, none)
+	mut mutable_meta := unsafe { &dom.HTMLMetaElement(meta) }
+	mutable_meta.removed_from_with_context(.yes, old_parent, old_root)
 }
 
 pub fn html_meta_element_attribute_changed(meta &dom.HTMLMetaElement, local_name string, old_value ?string, value ?string, namespace_ ?string) {
-	mut element := unsafe { &dom.Element(meta) }
-	element.attribute_changed(local_name, old_value, value, namespace_)
-	if local_name == 'name' {
-		html_meta_element_update_metadata(meta, old_value)
-	} else {
-		html_meta_element_update_metadata(meta, none)
-	}
+	mut mutable_meta := unsafe { &dom.HTMLMetaElement(meta) }
+	mutable_meta.attribute_changed(local_name, old_value, value, namespace_)
 }
 
 pub struct BodyPresentationalHints {

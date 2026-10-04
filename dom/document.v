@@ -1841,12 +1841,17 @@ pub type DocumentCSPInitializationCallback = fn (voidptr, &Document)
 
 pub type DocumentBaseCSPCheckCallback = fn (&Document, URL) bool
 
+pub type DocumentMetaCSPEnforceCallback = fn (&Document, string) string
+
+pub type DocumentMetaElementMetadataCallback = fn (&HTMLMetaElement, ?string)
+
 pub struct DocumentCSPHook {
 pub:
 	target       voidptr = unsafe { nil }
 	inline_check DocumentInlineCSPCheckCallback = unsafe { nil }
 	initialize   DocumentCSPInitializationCallback = unsafe { nil }
 	base_check   DocumentBaseCSPCheckCallback = unsafe { nil }
+	meta_enforce DocumentMetaCSPEnforceCallback = unsafe { nil }
 }
 
 // TrustedTypes depends on WebIDL and CSP, while DOM owns the injection sinks.
@@ -5201,6 +5206,7 @@ pub mut:
 	rendered_text_hook_                            ?DocumentRenderedTextHook
 	accessibility_role_hook_                       ?DocumentAccessibilityRoleHook
 	csp_hook_                                      ?DocumentCSPHook
+	meta_element_metadata_callback_                DocumentMetaElementMetadataCallback = unsafe { nil }
 	trusted_types_hook_                            ?DocumentTrustedTypesHook
 	html_navigation_hook_                          ?DocumentHTMLNavigationHook
 	fullscreen_hook_                               ?DocumentFullscreenHook
@@ -6863,6 +6869,26 @@ pub fn (mut d Document) enforce_meta_csp(policy string) {
 	d.enforced_meta_csp_policies_ << policy
 }
 
+// HTMLMetaElement's actual inserted() method supplies unparsed Source input.
+// HTML installs the translated parser/settings append across the module cycle.
+pub fn (mut d Document) enforce_meta_csp_from_element(input string) {
+	hook := d.csp_hook_ or { return }
+	if hook.meta_enforce == unsafe { nil } {
+		return
+	}
+	d.enforce_meta_csp(hook.meta_enforce(&d, input))
+}
+
+pub fn (mut d Document) set_meta_element_metadata_callback(callback DocumentMetaElementMetadataCallback) {
+	d.meta_element_metadata_callback_ = callback
+}
+
+pub fn (d &Document) update_meta_element_metadata(meta &HTMLMetaElement, old_name ?string) {
+	if d.meta_element_metadata_callback_ != unsafe { nil } {
+		d.meta_element_metadata_callback_(meta, old_name)
+	}
+}
+
 pub fn (d &Document) enforced_meta_csp_policies() []string {
 	return d.enforced_meta_csp_policies_.clone()
 }
@@ -7363,6 +7389,14 @@ pub fn (mut d Document) set_base_csp_check(callback DocumentBaseCSPCheckCallback
 	d.csp_hook_ = DocumentCSPHook{
 		...hook
 		base_check: callback
+	}
+}
+
+pub fn (mut d Document) set_meta_csp_enforce(callback DocumentMetaCSPEnforceCallback) {
+	hook := d.csp_hook_ or { DocumentCSPHook{} }
+	d.csp_hook_ = DocumentCSPHook{
+		...hook
+		meta_enforce: callback
 	}
 }
 

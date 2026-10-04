@@ -3307,6 +3307,11 @@ pub fn (mut n Node) inserted() {
 			base.inserted()
 			return
 		}
+		if n.is_html_meta_element() {
+			mut meta := unsafe { &HTMLMetaElement(element) }
+			meta.inserted()
+			return
+		}
 		mut mutable_element := unsafe { &Element(element) }
 		mutable_element.inserted()
 		return
@@ -3331,6 +3336,11 @@ pub fn (mut n Node) removed_from_with_context(is_subtree_root NodeIsSubtreeRoot,
 		if n.is_html_base_element() {
 			mut base := unsafe { &HTMLBaseElement(element) }
 			base.removed_from_with_context(is_subtree_root, old_ancestor, old_root)
+			return
+		}
+		if n.is_html_meta_element() {
+			mut meta := unsafe { &HTMLMetaElement(element) }
+			meta.removed_from_with_context(is_subtree_root, old_ancestor, old_root)
 			return
 		}
 		mut mutable_element := unsafe { &Element(element) }

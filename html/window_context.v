@@ -1652,6 +1652,8 @@ fn WindowModel.create_with_global(document &dom.Document, context &BrowsingConte
 	})
 	document_with_html_hooks.set_lifecycle_hook(document_lifecycle_hook(window))
 	document_with_html_hooks.set_base_csp_check(dom_base_csp_check)
+	document_with_html_hooks.set_meta_csp_enforce(dom_meta_csp_enforce)
+	document_with_html_hooks.set_meta_element_metadata_callback(html_meta_element_update_metadata)
 	timer_scope.document_visibility_state_changed()
 	proxy := context.window_proxy() or { WindowProxyModel.create(window) }
 	mut mutable_proxy := unsafe { &WindowProxyModel(proxy) }
