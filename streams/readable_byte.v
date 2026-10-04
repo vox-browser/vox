@@ -288,24 +288,29 @@ fn (mut stream ReadableStream) byte_controller_pull_steps() &ReadPromise {
 }
 
 fn (mut stream ReadableStream) byte_controller_pull_steps_in(promise_realm StreamRealm) &ReadPromise {
+	mut promise := ReadPromise.pending_in(promise_realm, stream.result_realm_)
+	stream.byte_controller_pull_steps_request(mut promise)
+	return promise
+}
+
+fn (mut stream ReadableStream) byte_controller_pull_steps_request(mut request ReadRequest) {
 	mut controller := stream.byte_controller_
 	if controller.queue_total_size_ > 0 {
 		entry := controller.take_first_byte_queue_entry() or {
-			return ReadPromise.rejected_in(promise_realm, stream.result_realm_, err.msg())
+			panic('Source MUST: nonempty byte queue dequeue failed')
 		}
 		value := bytes_value(unsafe {
 			entry.buffer.data_[entry.byte_offset..entry.byte_offset + entry.byte_length]
 		})
 		readable_byte_stream_controller_handle_queue_drain(mut controller)
-		return ReadPromise.fulfilled_in(promise_realm, stream.result_realm_, value, false)
+		request.on_chunk(value)
+		return
 	}
 	if size := stream.auto_allocate_size_ {
 		controller.pending_pull_intos_.append(new_pull_into_descriptor(int(size), 1, 1, .default_reader))
 	}
-	promise := ReadPromise.pending_in(promise_realm, stream.result_realm_)
-	stream.pending_reads_.append(promise)
+	stream.pending_reads_.append(request)
 	readable_byte_stream_controller_call_pull_if_needed(mut controller)
-	return promise
 }
 
 fn readable_byte_stream_controller_pull_into_descriptor(mut controller ReadableByteStreamController, descriptor PullIntoDescriptor, mut promise BYOBReadPromise) {

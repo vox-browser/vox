@@ -24,21 +24,26 @@ pub fn (mut controller ReadableStreamDefaultController) pull_steps() &ReadPromis
 }
 
 fn (mut controller ReadableStreamDefaultController) pull_steps_in(promise_realm StreamRealm) &ReadPromise {
+	mut promise := ReadPromise.pending_in(promise_realm, controller.stream_.result_realm_)
+	controller.pull_steps_request(mut promise)
+	return promise
+}
+
+fn (mut controller ReadableStreamDefaultController) pull_steps_request(mut request ReadRequest) {
 	mut stream := controller.stream_
 	if !stream.queue_.is_empty() {
-		value := stream.queue_.dequeue_value() or { return ReadPromise.rejected_in(promise_realm, stream.result_realm_, err.msg()) }
+		value := stream.queue_.dequeue_value() or { panic('Source MUST: nonempty readable queue dequeue failed') }
 		if stream.close_requested_ && stream.queue_.is_empty() {
 			readable_stream_default_controller_clear_algorithms(mut controller)
 			stream.close_internal()
 		} else {
 			readable_stream_default_controller_call_pull_if_needed(mut controller)
 		}
-		return ReadPromise.fulfilled_in(promise_realm, stream.result_realm_, value, false)
+		request.on_chunk(value)
+		return
 	}
-	promise := ReadPromise.pending_in(promise_realm, stream.result_realm_)
-	readable_stream_add_read_request(mut stream, promise)
+	readable_stream_add_read_request(mut stream, request)
 	readable_stream_default_controller_call_pull_if_needed(mut controller)
-	return promise
 }
 
 pub fn (_ &ReadableStreamDefaultController) release_steps() {}
@@ -602,7 +607,7 @@ pub fn readable_byte_stream_controller_fill_read_request_from_queue(mut controll
 	// before its chunk steps run.
 	mut request := controller.stream_.pending_reads_.shift() or { return }
 	entry := controller.take_first_byte_queue_entry() or {
-		request.reject(err.msg())
+		request.on_error(webidl.exception_value(err))
 		readable_byte_stream_controller_error(mut controller, string_value(err.msg()))
 		return
 	}
@@ -610,7 +615,7 @@ pub fn readable_byte_stream_controller_fill_read_request_from_queue(mut controll
 		entry.buffer.data_[entry.byte_offset..entry.byte_offset + entry.byte_length]
 	})
 	readable_byte_stream_controller_handle_queue_drain(mut controller)
-	request.resolve(value, false)
+	request.on_chunk(value)
 }
 
 pub fn readable_byte_stream_controller_get_byob_request(mut controller ReadableByteStreamController) ?&ReadableStreamBYOBRequest {

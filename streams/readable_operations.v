@@ -105,16 +105,11 @@ pub fn (mut reader ReadableStreamDefaultReader) set_closed_promise_capability(pr
 	reader.closed_ = promise
 }
 
-pub fn (reader &ReadableStreamDefaultReader) read_requests() []&ReadPromise {
+pub fn (reader &ReadableStreamDefaultReader) read_requests() []ReadRequest {
 	if reader.released_ || isnil(reader.stream_) {
-		return []&ReadPromise{}
+		return []ReadRequest{}
 	}
 	return reader.stream_.pending_reads_.values()
-}
-
-pub fn (mut reader ReadableStreamDefaultReader) read_all_bytes_deprecated() &ReadPromise {
-	bytes := reader.read_all_bytes() or { return ReadPromise.rejected(err.msg()) }
-	return ReadPromise.fulfilled(bytes_value(bytes), false)
 }
 
 pub fn (mut reader ReadableStreamDefaultReader) set_readable_stream_pipe_to_operation(operation &ReadableStreamPipeTo) {
@@ -264,7 +259,7 @@ pub fn readable_stream_add_read_into_request(mut stream ReadableStream, request 
 	}
 }
 
-pub fn readable_stream_add_read_request(mut stream ReadableStream, request &ReadPromise) {
+pub fn readable_stream_add_read_request(mut stream ReadableStream, request ReadRequest) {
 	stream.pending_reads_.append(request)
 }
 
@@ -294,7 +289,7 @@ pub fn readable_stream_fulfill_read_request(mut stream ReadableStream, chunk Val
 		return
 	}
 	mut request := stream.pending_reads_.shift() or { return }
-	request.resolve(chunk, done)
+	if done { request.on_close() } else { request.on_chunk(chunk) }
 }
 
 pub fn readable_stream_get_num_read_into_requests(stream &ReadableStream) int {
@@ -366,7 +361,7 @@ pub fn readable_stream_default_reader_error_read_requests(mut reader ReadableStr
 		return
 	}
 	for mut request in reader.stream_.pending_reads_.values() {
-		request.reject(reason.description())
+		request.on_error(stream_value_to_webidl(reason))
 	}
 	reader.stream_.pending_reads_.clear()
 }

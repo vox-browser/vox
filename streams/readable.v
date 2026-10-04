@@ -402,7 +402,7 @@ fn (mut stream ReadableStream) enqueue_internal(value Value, size f64) ! {
 	}
 	if stream.pending_reads_.len > 0 {
 		mut promise := stream.pending_reads_.shift()!
-		promise.resolve(value, false)
+		promise.on_chunk(value)
 	} else {
 		stream.queue_.enqueue_value_with_size(value, size)!
 	}
@@ -415,7 +415,7 @@ fn (mut stream ReadableStream) close_internal() {
 	}
 	stream.state_ = .closed
 	for mut promise in stream.pending_reads_.values() {
-		promise.resolve(undefined_value(), true)
+		promise.on_close()
 	}
 	stream.pending_reads_.clear()
 	if !isnil(stream.default_reader_) {
@@ -457,7 +457,7 @@ fn (mut stream ReadableStream) error_internal_value(reason webidl.Value, descrip
 	stream.stored_error_ = description
 	stream.stored_error_value_ = reason
 	for mut promise in stream.pending_reads_.values() {
-		promise.reject_value(reason)
+		promise.on_error(reason)
 	}
 	stream.pending_reads_.clear()
 	if !isnil(stream.default_reader_) {
@@ -636,7 +636,9 @@ pub fn (mut reader ReadableStreamDefaultReader) read() &ReadPromise {
 		return ReadPromise.rejected_in(reader.closed_promise_realm(), none, 'TypeError: Reader has no associated stream')
 	}
 	mut stream := reader.stream_
-	return stream.read_internal_in(reader.closed_promise_realm())
+	mut promise := ReadPromise.pending_in(reader.closed_promise_realm(), stream.result_realm_)
+	readable_stream_default_reader_read_request(mut reader, mut promise)
+	return promise
 }
 
 pub fn (mut reader ReadableStreamDefaultReader) cancel(reason Value) &VoidPromise {
@@ -656,8 +658,9 @@ pub fn (mut reader ReadableStreamDefaultReader) release_lock() ! {
 	}
 	mut stream := reader.stream_
 	readable_stream_default_reader_generic_release(mut reader)
+	reason := webidl.simple_exception_value(webidl.SimpleException{type_: .type_error, message: 'Reader has been released'})
 	for mut promise in stream.pending_reads_.values() {
-		promise.reject('TypeError: Reader has been released')
+		promise.on_error(reason)
 	}
 	stream.pending_reads_.clear()
 }

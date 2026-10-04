@@ -131,6 +131,7 @@ pub:
 	promise_context_ ?&webidl.PromiseContext
 	transform_wrapper_preparer ?fn (&TransformStream)
 	structured_clone_algorithm ?fn (Value) !Value
+	uint8_array_bytes ?fn (webidl.Value) !ReadLoopChunkBytes
 }
 
 // Bindings::prepare_transform_stream_readable_writable_wrappers wraps both
@@ -475,7 +476,7 @@ pub fn (mut promise ReadPromise) reject_value(reason webidl.Value) {
 @[heap]
 struct ReadPromiseEntry {
 mut:
-	value &ReadPromise
+	value ReadRequest
 	next_ &ReadPromiseEntry = unsafe { nil }
 }
 
@@ -489,7 +490,7 @@ pub mut:
 	len int
 }
 
-fn (mut list ReadPromiseList) append(value &ReadPromise) {
+fn (mut list ReadPromiseList) append(value ReadRequest) {
 	entry := &ReadPromiseEntry{
 		value: value
 	}
@@ -503,7 +504,7 @@ fn (mut list ReadPromiseList) append(value &ReadPromise) {
 	list.len++
 }
 
-fn (mut list ReadPromiseList) shift() !&ReadPromise {
+fn (mut list ReadPromiseList) shift() !ReadRequest {
 	if isnil(list.head_) {
 		return error('InternalError: No pending read request')
 	}
@@ -517,7 +518,7 @@ fn (mut list ReadPromiseList) shift() !&ReadPromise {
 	return entry.value
 }
 
-fn (mut list ReadPromiseList) remove(value &ReadPromise) bool {
+fn (mut list ReadPromiseList) remove(value ReadRequest) bool {
 	mut previous := &ReadPromiseEntry(unsafe { nil })
 	mut entry := list.head_
 	for !isnil(entry) {
@@ -546,8 +547,8 @@ fn (mut list ReadPromiseList) clear() {
 	list.len = 0
 }
 
-fn (list &ReadPromiseList) values() []&ReadPromise {
-	mut values := []&ReadPromise{cap: list.len}
+fn (list &ReadPromiseList) values() []ReadRequest {
+	mut values := []ReadRequest{cap: list.len}
 	mut entry := list.head_
 	for !isnil(entry) {
 		values << entry.value

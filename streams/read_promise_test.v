@@ -64,14 +64,17 @@ fn test_default_read_close_and_reader_release_settle_native_capabilities_with_so
 	read := reader.read()
 	mut native := read.as_webidl_promise()
 	_ := native.upon_rejection(fn [mut jobs] (reason webidl.Value) !webidl.Value {
-		jobs.reasons << reason.string_value
+		jobs.values << reason
 		return webidl.undefined_value()
 	})
 	reader.release_lock() or { panic(err) }
 	assert native.state == .rejected
-	assert jobs.reasons.len == 0
+	assert jobs.values.len == 0
 	jobs.drain()
-	assert jobs.reasons == [read.reason()]
+	assert jobs.values.len == 1
+	assert jobs.values[0].simple_exception_? == native.result.simple_exception_?
+	assert jobs.values[0].simple_exception_?.type_ == .type_error
+	assert jobs.values[0].simple_exception_?.message == 'Reader has been released'
 	mut replacement := stream.get_default_reader() or { panic(err) }
 	closed := replacement.read()
 	stream.close()
