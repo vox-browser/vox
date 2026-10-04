@@ -488,6 +488,19 @@ Generated IDL conversion exceptions still precede Source method entry. The
 direct CPU presentation adapter, full source GC/caller WrapperWorld ownership
 and remote GPU transport remain explicit boundaries.
 
+The concrete owning-canvas update callback now sets canvas dirty and requests
+repaint with InvalidateDisplayList::No, matching both source concrete contexts
+(`WebGLRenderingContext.cpp:165-173`, `WebGL2RenderingContext.cpp:77-85`). It no
+longer requests .paint_commands from the DOM bridge. The native source fixture
+uses actual canvas/context records and retained paintable callbacks to verify
+the precise No invalidation, then confirms genuine red/blue GL surface changes
+reach the existing external-content frame registry. Actual EGL loss still
+reaches that canvas hook through a Source draw body. Three HTML files passed
+in `source-canvas-webgl-repaint-gc-none.log` with GC disabled and no failures.
+This preserves source retained-canvas repaint behavior; full source display-list
+ownership, remote GPU surfaces and full GC/WrapperWorld integration remain
+separate boundaries.
+
 Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
 `WebGL2RenderingContextOverloads.cpp:33-85`, and
 `WebGL2RenderingContextImpl.cpp:46-50`: select the owner, validate nullable data
