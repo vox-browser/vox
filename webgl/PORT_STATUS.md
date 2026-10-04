@@ -162,6 +162,37 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+useProgram now keeps its optional Source owned-handle validation ahead of
+actual native owner selection. Pinned Impl.cpp:2468-2484 prefixes the body
+with an empty Proxy make_current, validates a present program, then records
+use_program and assigns its retained current pointer. Null has no early body
+return: it dispatches native program zero and clears the retained slot. V now
+selects its native owner only after validating a present handle, preserving
+that exact null/live order, native-name forwarding and post-command assignment.
+
+The genuine pre-fix foreign-program probe switched current Other to Owner,
+retained in source-use-program-owner-unfixed-probe_test.v and
+source-use-program-owner-unfixed-probe-gc-none.log. New two-version typed/public
+cases preserve Other's current viewport and pending actual INVALID_ENUM for
+foreign and invalidated records, while Source's prior current pointer remains
+unchanged. Public arity/forged-brand errors remain before dispatch. Actual
+null/undefined calls still select Owner, unbind its real current program and
+return a null retained query. Live linked programs still bind their actual
+native names. A directly rejected unlinked driver program supplies an
+independent error baseline: the translated call preserves that real error and
+actual previous native binding, yet assigns Source's rejected record exactly
+as pinned. No fabricated link-status success gate is added.
+
+Two typed files pass in
+`Build/audit-fixes/source-use-program-owner-native-gc-none.log`; two public
+files pass in
+`Build/audit-fixes/source-use-program-owner-public-gc-none.log`, using GC disabled
+and explicit private paths, including existing retained-current-program
+neighbors. No legacy assertion required migration in this slice. Lost use,
+other program bodies/object families, the separate retained getter's native
+owner order, full remote transport and GC/WrapperWorld remain distinct scopes.
+Historical full regressions and canonical bundle evidence remain unchanged.
+
 validateProgram now suppresses its generated native command after loss,
 separately from the CPU owned-handle order repair. Impl.cpp:2486-2497 and
 GLFunctions.json:4405-4414 record ValidateProgram with its Source object ID;
@@ -218,8 +249,8 @@ files pass in
 `Build/audit-fixes/source-validate-program-owner-public-gc-none.log`, using
 GC disabled and explicit private paths. This supersedes only those historical
 owner assumptions and does not replace frozen full regression evidence.
-Lost validation is separately reviewed above; use/attach/detach/bind/location
-and other program bodies, object families and full remote transport/
+Lost validation and useProgram CPU gates are separately reviewed above;
+attach/detach/bind/location and other program bodies, object families and full remote transport/
 GC/WrapperWorld remain independent source-reviewed scopes.
 
 linkProgram now drops its generated native command after loss, separately
