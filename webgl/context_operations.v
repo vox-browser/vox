@@ -104,14 +104,6 @@ fn default_webgl_parameters() map[GLenum]WebGLParameterValue {
 	return parameters
 }
 
-fn valid_comparison_function(value GLenum) bool {
-	return value in [never, less, equal, lequal, greater, notequal, gequal, always]
-}
-
-fn valid_stencil_operation(value GLenum) bool {
-	return value in [keep, gl_zero, replace, incr, incr_wrap, decr, decr_wrap, invert]
-}
-
 fn is_valid_framebuffer_binding_target(version WebGLVersion, target GLenum) bool {
 	return target == framebuffer
 		|| (version == .webgl2 && target in [read_framebuffer, draw_framebuffer])
@@ -949,88 +941,26 @@ pub fn (mut context WebGLRenderingContext) sample_coverage(value f32, invert boo
 }
 
 pub fn (mut context WebGLRenderingContext) stencil_func(function GLenum, reference int, mask GLuint) {
-	if !valid_comparison_function(function) {
-		context.set_error(invalid_enum)
-		return
-	}
-	context.generic_parameters_[stencil_func] = integer_parameter(function)
-	context.generic_parameters_[stencil_back_func] = integer_parameter(function)
-	context.generic_parameters_[stencil_ref] = integer_parameter(reference)
-	context.generic_parameters_[stencil_back_ref] = integer_parameter(reference)
-	context.generic_parameters_[stencil_value_mask] = integer_parameter(i64(i32(mask)))
-	context.generic_parameters_[stencil_back_value_mask] = integer_parameter(i64(i32(mask)))
 	context.command('stencil_func', function, reference, mask)
 }
 
 pub fn (mut context WebGLRenderingContext) stencil_func_separate(face GLenum, function GLenum, reference int, mask GLuint) {
-	if face !in [front, back, front_and_back] || !valid_comparison_function(function) {
-		context.set_error(invalid_enum)
-		return
-	}
-	if face in [front, front_and_back] {
-		context.generic_parameters_[stencil_func] = integer_parameter(function)
-		context.generic_parameters_[stencil_ref] = integer_parameter(reference)
-		context.generic_parameters_[stencil_value_mask] = integer_parameter(i64(i32(mask)))
-	}
-	if face in [back, front_and_back] {
-		context.generic_parameters_[stencil_back_func] = integer_parameter(function)
-		context.generic_parameters_[stencil_back_ref] = integer_parameter(reference)
-		context.generic_parameters_[stencil_back_value_mask] = integer_parameter(i64(i32(mask)))
-	}
 	context.command('stencil_func_separate', face, function, reference, mask)
 }
 
 pub fn (mut context WebGLRenderingContext) stencil_mask(mask GLuint) {
-	context.generic_parameters_[stencil_writemask] = integer_parameter(i64(i32(mask)))
-	context.generic_parameters_[stencil_back_writemask] = integer_parameter(i64(i32(mask)))
 	context.command('stencil_mask', mask)
 }
 
 pub fn (mut context WebGLRenderingContext) stencil_mask_separate(face GLenum, mask GLuint) {
-	if face !in [front, back, front_and_back] {
-		context.set_error(invalid_enum)
-		return
-	}
-	if face in [front, front_and_back] {
-		context.generic_parameters_[stencil_writemask] = integer_parameter(i64(i32(mask)))
-	}
-	if face in [back, front_and_back] {
-		context.generic_parameters_[stencil_back_writemask] = integer_parameter(i64(i32(mask)))
-	}
 	context.command('stencil_mask_separate', face, mask)
 }
 
 pub fn (mut context WebGLRenderingContext) stencil_op(fail GLenum, depth_fail GLenum, pass GLenum) {
-	if !valid_stencil_operation(fail) || !valid_stencil_operation(depth_fail)
-		|| !valid_stencil_operation(pass) {
-		context.set_error(invalid_enum)
-		return
-	}
-	context.generic_parameters_[stencil_fail] = integer_parameter(fail)
-	context.generic_parameters_[stencil_back_fail] = integer_parameter(fail)
-	context.generic_parameters_[stencil_pass_depth_fail] = integer_parameter(depth_fail)
-	context.generic_parameters_[stencil_back_pass_depth_fail] = integer_parameter(depth_fail)
-	context.generic_parameters_[stencil_pass_depth_pass] = integer_parameter(pass)
-	context.generic_parameters_[stencil_back_pass_depth_pass] = integer_parameter(pass)
 	context.command('stencil_op', fail, depth_fail, pass)
 }
 
 pub fn (mut context WebGLRenderingContext) stencil_op_separate(face GLenum, fail GLenum, depth_fail GLenum, pass GLenum) {
-	if face !in [front, back, front_and_back] || !valid_stencil_operation(fail)
-		|| !valid_stencil_operation(depth_fail) || !valid_stencil_operation(pass) {
-		context.set_error(invalid_enum)
-		return
-	}
-	if face in [front, front_and_back] {
-		context.generic_parameters_[stencil_fail] = integer_parameter(fail)
-		context.generic_parameters_[stencil_pass_depth_fail] = integer_parameter(depth_fail)
-		context.generic_parameters_[stencil_pass_depth_pass] = integer_parameter(pass)
-	}
-	if face in [back, front_and_back] {
-		context.generic_parameters_[stencil_back_fail] = integer_parameter(fail)
-		context.generic_parameters_[stencil_back_pass_depth_fail] = integer_parameter(depth_fail)
-		context.generic_parameters_[stencil_back_pass_depth_pass] = integer_parameter(pass)
-	}
 	context.command('stencil_op_separate', face, fail, depth_fail, pass)
 }
 
