@@ -446,6 +446,30 @@ The initial compiler diagnostic is preserved. Both public files passed in
 `source-framebuffer-layer-public-gc-none.log`. All checks use GC disabled;
 full source GC, caller WrapperWorld ownership and remote transport remain open.
 
+The three WebGL2 draw bodies now select the owner, mark the direct native
+painting surface before GL, and run the concrete source canvas update hook in
+its exact position (`WebGL2RenderingContextImpl.cpp:543-566`): before GL for
+drawArraysInstanced/drawRangeElements, after GL for drawElementsInstanced. The
+V-only negative count/offset/instance and start/end gates were removed; GL owns
+those errors. The direct CPU presentation marker is now separate from
+WebGL2RenderingContext::did_update_canvas_content's owning-canvas callback
+(`WebGL2RenderingContext.cpp:77-85`); these three names no longer also invoke the
+generic post-dispatch notification. Existing generic and ANGLE rendering
+presentation adaptation remains. Real one-pixel draws verify exactly one
+callback sees the pre-draw black pixel or post-draw red pixel according to the
+source method, followed by actual red readback. Invalid-argument tests compare
+direct driver results and retain owner selection and presentation notification;
+actual EGL context loss still invokes the unconditional source canvas hook.
+Six typed/HTML files passed in `source-webgl2-draw-order-gc-none.log`; the new
+file passed again after adding the lost-context case in
+`source-webgl2-draw-loss-gc-none.log`. Three public files passed in
+`source-webgl2-draw-order-public-gc-none.log`, including IDL exceptions before
+entry and actual ANGLE extension rendering. All checks use GC disabled with
+no failures. The source proxy's make_current/notify hooks are currently empty
+transport hooks (`WebGLContextProxyBase.h:44-45`); the direct GL/CPU surface
+adapter remains explicit. Full source GC, caller WrapperWorld, remote GPU
+transport and other draw/raster body comparisons remain separate work.
+
 Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
 `WebGL2RenderingContextOverloads.cpp:33-85`, and
 `WebGL2RenderingContextImpl.cpp:46-50`: select the owner, validate nullable data
