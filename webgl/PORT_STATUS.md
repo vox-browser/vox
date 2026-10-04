@@ -115,6 +115,33 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+`pixel_storei` now follows the exact switch and final GL call in
+`WebGLRenderingContextImpl.cpp:2246-2282`. Only UNPACK_ALIGNMENT has source
+early validation; nonnegative WebGL2 unpack row/skip values update the real
+client bitmap-unpack state, while all remaining GL names/values reach the
+driver. Browser-only flip/premultiply/colorspace branches return without a GL
+command. The source prefix is the empty `WebGLContextProxyBase::make_current`,
+so those returns and invalid UNPACK_ALIGNMENT leave the other actual driver
+selected. Actual owner selection occurs at the final command. This corrects
+the earlier browser-field fixture's assumed unconditional native switch.
+The unused duplicate unpack alignment and fabricated pack-alignment cache were
+removed. The latter's sole consumer was the existing non-IDL convenience
+readback allocator; it now queries actual GL_PACK_ALIGNMENT and uses the same
+unchanged allocation-size helper. The public source readback body remains
+destination-view-length and robust-byte-count based; no new allocation
+algorithm is claimed for it.
+
+Both-version genuine Source early-return witnesses and thirty-one actual
+driver name/value cases preserve native-before-source error priority. Real
+1x2 RGBA readback after a direct Driver pack-alignment8 write verifies both
+rows and the required padded capacity. Public author conversion precedes entry.
+Original failures remain in `source-pixel-store-reproduction-gc-none.log`:
+an early branch changed the actual owner, and invented pack validation returned
+1282 instead of the driver's 1281. All four native new/browser/query/readback
+files passed in `source-pixel-store-gc-none.log`; both public new/host files
+passed in `source-pixel-store-public-gc-none.log`. This later source slice
+supplements the unchanged frozen 101/70 sweep.
+
 The unused generic parameter map, its invented default-state table, constructor
 and restoration writes, final pixel-store write, and newly unused scalar
 factory were removed in a separate bounded cleanup. Repository-wide references
