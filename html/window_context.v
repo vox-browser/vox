@@ -1379,6 +1379,10 @@ fn document_settings_scripting_enabled(settings_pointer voidptr) bool {
 	return is_scripting_enabled_for_settings(unsafe { &EnvironmentSettingsObject(settings_pointer) })
 }
 
+fn document_settings_has_cross_site_ancestor(settings_pointer voidptr) bool {
+	return unsafe { &EnvironmentSettingsObject(settings_pointer) }.has_cross_site_ancestor()
+}
+
 fn document_structured_deserialize(_ voidptr, record dom.DOMSerializationRecord) ?dom.JSValue {
 	return structured_deserialize(SerializationRecord{
 		data: record.data.clone()

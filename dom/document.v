@@ -1696,6 +1696,8 @@ pub type DocumentLifecycleObjectCallback = fn (voidptr, &Document) voidptr
 
 pub type DocumentSettingsScriptingEnabledCallback = fn (voidptr) bool
 
+pub type DocumentSettingsHasCrossSiteAncestorCallback = fn (voidptr) bool
+
 pub type DocumentStructuredDeserializeCallback = fn (voidptr, DOMSerializationRecord) ?JSValue
 
 pub type DocumentQueueIntersectionObserverTaskCallback = fn (voidptr, &Document)
@@ -1716,6 +1718,7 @@ pub:
 	set_execution_ready              DocumentLifecycleCallback = unsafe { nil }
 	relevant_settings_object         DocumentLifecycleObjectCallback = unsafe { nil }
 	settings_scripting_enabled       DocumentSettingsScriptingEnabledCallback = unsafe { nil }
+	settings_has_cross_site_ancestor  DocumentSettingsHasCrossSiteAncestorCallback = unsafe { nil }
 	structured_deserialize           DocumentStructuredDeserializeCallback = unsafe { nil }
 	queue_intersection_observer_task DocumentQueueIntersectionObserverTaskCallback = unsafe { nil }
 	queue_selectionchange_event_task DocumentQueueSelectionchangeEventTaskCallback = unsafe { nil }
@@ -3655,6 +3658,17 @@ pub fn (n &Navigable) active_document_url() ?URL {
 pub fn (n &Navigable) active_document_origin() ?Origin {
 	document := n.active_document() or { return none }
 	return document.origin()
+}
+
+// LocalNavigable::active_document_has_cross_site_ancestor. HTML owns the actual
+// relevant settings, reached through the same Document lifecycle bridge.
+pub fn (n &Navigable) active_document_has_cross_site_ancestor() bool {
+	document := n.active_document() or { panic('Source active cross-site ancestor requires an active Document') }
+	hook := document.lifecycle_hook_ or { panic('Source active cross-site ancestor requires Document settings') }
+	assert hook.settings_has_cross_site_ancestor != unsafe { nil }
+	settings := document.relevant_settings_object()
+	assert settings != unsafe { nil }
+	return hook.settings_has_cross_site_ancestor(settings)
 }
 
 pub fn (n &Navigable) active_document_is_fully_active() bool {

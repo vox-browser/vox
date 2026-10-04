@@ -453,18 +453,13 @@ pub fn (settings &EnvironmentSettingsObject) has_transient_activation() bool {
 
 pub fn (settings &EnvironmentSettingsObject) has_cross_site_ancestor() bool {
 	if window := settings.window_ {
-		context := window.browsing_context()
-		mut ancestor := context.parent()
-		for ancestor != none {
-			candidate := ancestor or { break }
-			if document := candidate.active_document() {
-				if !document.origin().is_same_site(window.associated_document().origin()) {
-					return true
-				}
-			}
-			ancestor = candidate.parent()
-		}
-		return false
+		// WindowEnvironmentSettingsObject.cpp asks the logical parent Navigable
+		// for its active settings/origin, including non-local parent ownership.
+		navigable := window.Window.navigable() or { panic('Source cross-site ancestor requires a Window navigable') }
+		parent := navigable.parent() or { return false }
+		if parent.active_document_has_cross_site_ancestor() { return true }
+		origin := parent.active_document_origin() or { panic('Source parent navigable requires an active origin') }
+		return !origin.is_same_site(window.associated_document().origin())
 	}
 	if worker := settings.worker_ {
 		return settings.outside_has_cross_site_ancestor_ || worker.url().scheme() == 'data'

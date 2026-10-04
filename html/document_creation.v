@@ -16,6 +16,7 @@ fn document_lifecycle_hook(window &WindowModel) dom.DocumentLifecycleHook {
 		set_execution_ready:              document_set_execution_ready
 		relevant_settings_object:         document_relevant_settings_object
 		settings_scripting_enabled:       document_settings_scripting_enabled
+		settings_has_cross_site_ancestor:  document_settings_has_cross_site_ancestor
 		structured_deserialize:           document_structured_deserialize
 		queue_intersection_observer_task: document_queue_intersection_observer_task
 		queue_selectionchange_event_task: document_queue_selectionchange_event_task
