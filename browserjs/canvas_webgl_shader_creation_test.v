@@ -74,3 +74,43 @@ fn test_public_source_shader_creation_exposes_records_for_actual_native_zero() {
 		assert host.shaders.len == previous_shader_count + 2
 	}
 }
+
+fn test_public_lost_shader_creation_retains_owned_ids_and_other_driver_untouched() {
+	$if !darwin {
+		return
+	}
+	for kind in ['webgl', 'webgl2'] {
+		mut document := html.parse_document('<canvas></canvas>')
+		mut host := CanvasWebGLHost.create(document)
+		mut runtime := Runtime.create()
+		defer { runtime.close() }
+		host.install(mut runtime)!
+		runtime.evaluate_host('const __canvases=Object.create(null);function __canvasFor(s){return __canvases[s.bridgeKey]||(__canvases[s.bridgeKey]={state:s});}function __canvasDimension(s,key){return s[key];}function __element(s){return {state:s};}')!
+		runtime.evaluate_host(webgl_bootstrap())!
+		runtime.evaluate_host('globalThis.gl=__webglContext({bridgeKey:"__created_lost_shader",width:1,height:1},"${kind}",null);globalThis.other=__webglContext({bridgeKey:"__created_lost_shader_other",width:1,height:1},"${kind}",null);other.viewport(9,10,11,12);globalThis.sentinel=other.createShader(other.VERTEX_SHADER);other.shaderSource(sentinel,"void main(){gl_Position=vec4(0);}");')!
+		mut context := host.contexts['__created_lost_shader'] or { panic('lost shader owner') }
+		mut other := host.contexts['__created_lost_shader_other'] or { panic('lost shader other') }
+		context.lose_context_from_compositor_loss()
+		other.native.make_current()
+		C.vox_gl_vertex_attrib_enable(0xffff_ffff, 1)
+		previous_records := host.shaders.len
+		assert runtime.evaluate_host('globalThis.zeroVertex=gl.createShader(gl.VERTEX_SHADER);globalThis.zeroFragment=gl.createShader(gl.FRAGMENT_SHADER);zeroVertex instanceof WebGLShader&&zeroFragment instanceof WebGLShader&&zeroVertex!==zeroFragment')! == 'true'
+		assert host.shaders.len == previous_records + 2
+		mut retained_ids := []webgl.GLuint{}
+		for _, shader in host.shaders {
+			if shader.object.context_id != context.identity() { continue }
+			assert shader.object.bookkeeping_id() != 0
+			assert context.owns(&shader.object)
+			retained_ids << shader.object.bookkeeping_id()
+		}
+		assert retained_ids[0] != retained_ids[1]
+		mut selected := [0, 0, 0, 0]!
+		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
+		assert selected == [9, 10, 11, 12]!
+		assert C.vox_gl_get_error() == webgl.invalid_value
+		assert C.vox_gl_get_error() == webgl.no_error
+		assert runtime.evaluate_host('other.getShaderSource(sentinel)==="void main(){gl_Position=vec4(0);}"&&other.getError()===other.NO_ERROR&&gl.isContextLost()&&gl.getError()===gl.CONTEXT_LOST_WEBGL&&gl.getError()===gl.NO_ERROR')! == 'true'
+		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
+		assert selected == [9, 10, 11, 12]!
+	}
+}

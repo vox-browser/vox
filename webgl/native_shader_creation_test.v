@@ -80,3 +80,42 @@ fn test_source_shader_creation_retains_owned_record_for_actual_native_zero() {
 		assert context.context_generation() == 1
 	}
 }
+
+fn test_source_lost_shader_creation_retains_owned_ids_without_touching_other_driver() {
+	for version in [WebGLVersion.webgl1, .webgl2] {
+		mut context := WebGLRenderingContext.new(version, WebGLContextAttributes{}, [])
+		mut other := WebGLRenderingContext.new(version, WebGLContextAttributes{}, [])
+		other.viewport(9, 10, 11, 12)
+		mut sentinel := other.create_shader(vertex_shader) or { panic('other driver sentinel') }
+		sentinel_source := 'void main(){gl_Position=vec4(0);}'
+		other.shader_source(mut sentinel, sentinel_source)
+		context.lose_context_from_compositor_loss()
+		other.native.make_current()
+		C.vox_gl_vertex_attrib_enable(0xffff_ffff, 1)
+		previous_records := context.shaders.len
+		first_proxy_id := context.next_handle
+		mut creation_index := GLuint(0)
+		for type_ in [vertex_shader, fragment_shader] {
+			shader := context.create_shader(type_) or { panic('lost source shader record') }
+			assert shader.type_ == type_
+			assert shader.object.native_handle_ == 0
+			assert context.owns(&shader.object)
+			assert shader.object.bookkeeping_id() == first_proxy_id + creation_index
+			assert shader.object.bookkeeping_id() != 0
+			creation_index++
+			assert context.shaders[shader.object.bookkeeping_id()] == shader
+		}
+		assert context.shaders.len == previous_records + 2
+		mut selected := [0, 0, 0, 0]!
+		C.vox_gl_int_parameter(viewport, &selected[0])
+		assert selected == [9, 10, 11, 12]!
+		assert C.vox_gl_is_object(9, sentinel.object.native_handle_) == 1
+		assert C.vox_gl_get_error() == invalid_value
+		assert C.vox_gl_get_error() == no_error
+		assert other.get_shader_source(sentinel) or { panic('other retained driver source') } == sentinel_source
+		assert context.get_error() == context_lost_webgl
+		assert context.get_error() == no_error
+		C.vox_gl_int_parameter(viewport, &selected[0])
+		assert selected == [9, 10, 11, 12]!
+	}
+}

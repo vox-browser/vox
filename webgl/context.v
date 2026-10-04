@@ -345,8 +345,16 @@ pub fn (mut context WebGLRenderingContext) create_shader(type_ GLenum) ?&WebGLSh
 		return none
 	}
 	handle := context.allocate_handle()
-	context.native.make_current()
-	native_handle := C.vox_gl_create_shader(type_)
+	// Source generated creation allocates a proxy ID even after loss, while
+	// record_bytes drops its command. Zero here is the absent native mapping,
+	// not the Source proxy ID retained in the owned wrapper.
+	mut native_handle := GLuint(0)
+	if !context.native.is_lost() {
+		context.native.make_current()
+		if !context.native.is_lost() {
+			native_handle = C.vox_gl_create_shader(type_)
+		}
+	}
 	shader := &WebGLShader{
 		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
 		type_: type_
