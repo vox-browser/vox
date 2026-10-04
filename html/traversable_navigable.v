@@ -1288,6 +1288,19 @@ pub fn (mut traversable TraversableNavigable) definitely_close_top_level_travers
 	traversable.check_if_unloading_is_canceled(documents, completion)
 }
 
+// LocalTraversableNavigable.cpp: the UI has already unloaded descendants.
+pub fn (mut traversable TraversableNavigable) run_ui_traversable_close_unload_task() {
+	traversable_pointer := voidptr(traversable)
+	queue_a_task(.navigation_and_traversal, none, none, fn [traversable_pointer] () {
+		mut mutable_traversable := unsafe { &TraversableNavigable(traversable_pointer) }
+		if document := mutable_traversable.active_document() {
+			mut mutable_document := unsafe { &dom.Document(document) }
+			mutable_document.unload()
+		}
+		mutable_traversable.destroy_top_level_traversable()
+	})
+}
+
 pub fn (mut traversable TraversableNavigable) destroy_top_level_traversable() {
 	if traversable.has_been_destroyed() {
 		return
