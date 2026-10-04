@@ -107,6 +107,7 @@ pub fn (mut context WebGLRenderingContext) read_pixels(x int, y int, width int, 
 // WebGL{,2}RenderingContextOverloads::read_pixels: the destination view's
 // capacity and element offset reach ANGLE's robust read, before any write-back.
 pub fn (mut context WebGLRenderingContext) read_pixels_into(x int, y int, width int, height int, format GLenum, type_ GLenum, mut pixels []u8, dst_offset u64, element_size u64) {
+	context.native.make_current()
 	if context.version == .webgl2 && pixel_pack_buffer in context.bound_buffers {
 		context.set_error(invalid_operation)
 		return
@@ -116,13 +117,15 @@ pub fn (mut context WebGLRenderingContext) read_pixels_into(x int, y int, width 
 		return
 	}
 	byte_offset := int(dst_offset * element_size)
-	if !context.command('read_pixels', x, y, width, height, format, type_) { return }
+	context.command('read_pixels', x, y, width, height, format, type_)
 	written := C.vox_gl_read_pixels(x, y, width, height, format, type_, pixels.len - byte_offset, unsafe { &u8(pixels.data) + byte_offset })
 	context.native.collect_native_error()
 	if written < 0 || written > pixels.len - byte_offset { context.set_error(invalid_operation) }
 }
 
 pub fn (mut context WebGLRenderingContext) read_pixels_null() {
+	// The WebGL2 nullable overload returns before delegating to its view body.
+	if context.version == .webgl1 { context.native.make_current() }
 	context.set_error(invalid_value)
 }
 
@@ -648,9 +651,10 @@ pub fn (mut context WebGLRenderingContext) vertex_attrib_divisor(index GLuint, d
 // host-side ReadPixelsIntoPixelPackBuffer command. GL retains packing and
 // destination-buffer range validation.
 pub fn (mut context WebGLRenderingContext) read_pixels_into_pixel_pack_buffer(x int, y int, width int, height int, format GLenum, type_ GLenum, offset i64) {
+    context.native.make_current()
     if !context.require_webgl2() {return}
     if pixel_pack_buffer !in context.bound_buffers {context.set_error(invalid_operation);return}
-    if !context.command('read_pixels_into_pixel_pack_buffer',x,y,width,height,format,type_,offset) {return}
+    context.command('read_pixels_into_pixel_pack_buffer',x,y,width,height,format,type_,offset)
     C.vox_gl_read_pixels_to_buffer(x,y,width,height,format,type_,offset)
     context.native.collect_native_error()
 }

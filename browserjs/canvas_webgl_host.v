@@ -372,7 +372,8 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 	// Source upload bodies select the context before nullable data or
 	// buffer-witness validation can set an error and return.
 	if method in ['bufferData', 'bufferSubData', 'texImage2D', 'texSubImage2D', 'texImage3D', 'texSubImage3D']
-		|| method.starts_with('compressedTex') {
+		|| method.starts_with('compressedTex')
+		|| (method == 'readPixels' && (context.version == .webgl1 || wg_arg(original_args, 6) !is json2.Null)) {
 		context.native.make_current()
 	}
 	args := wg_normalize_source_spans(mut context, method, original_args, request) or { return json2.Any(json2.Null{}) }
