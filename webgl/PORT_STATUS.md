@@ -210,6 +210,25 @@ access was replaced with genuine GL binding queries, in
 source method order and direct-driver behavior; full GC tracing, caller
 WrapperWorld and remote transport remain separate boundaries.
 
+Attachment OBJECT_NAME results now carry the actual retained texture or
+renderbuffer, translating `WebGLRenderingContextImpl.cpp:1726-1776` and
+`WebGLFramebuffer.{h,cpp}`. The existing host platform-object cache wraps that
+record directly and reuses its wrapper; first exposure after native deletion
+works after the live lookup entry has gone. The source intentionally keeps the
+attachment record and reports its type/name even when GL has detached the
+deleted native resource. The typed fixture compares the native NONE attachment
+with that retained source identity. The public fixture checks first exposure,
+brands, repeated wrapper identity, actual pointer/label retention, rejected
+rebinding and repeated deletion in both context versions. Three typed files
+passed in `source-framebuffer-attachment-record-gc-none.log`; the public source
+ordering neighbor passed in `source-framebuffer-attachment-record-public-gc-none.log`
+and the new public record fixture passed in
+`source-framebuffer-attachment-record-public-final-gc-none.log`. The initial
+public test used obsolete map-index option syntax; its compiler diagnostic is
+preserved, and explicit map lookup corrected the fixture. All checks used GC
+disabled. This preserves the source attachment graph without claiming full
+LibJS tracing or caller WrapperWorld ownership.
+
 Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
 `WebGL2RenderingContextOverloads.cpp:33-85`, and
 `WebGL2RenderingContextImpl.cpp:46-50`: select the owner, validate nullable data
