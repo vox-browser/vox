@@ -447,3 +447,80 @@ ownership or general UTF16/multibyte codec parity. Actual native
 AllowSharedBufferSource conversion, engine allocation/OOM mapping and public
 TextDecoder/TransformStream wrappers remain separate dependencies. No native
 browser bundle build or capture was run privately.
+
+
+## Raw UTF16 destination of the retained UTF8 variant
+
+Feature `0a8802ca16ec3d115d591a42058d5afbeaccdc89` adds the actual UTF8
+variant's raw UTF16 destination to the same five-slot SourceUtf8Decoder record.
+The new prefix helper translates
+`encoding_rs-0.8.40/src/utf_8.rs:334–549`:
+`convert_utf8_to_utf16_up_to_invalid` copies an ASCII prefix, validates complete
+2/3/4-byte sequences with the existing exact Source mask table and stops before
+invalid, incomplete or non-fitting input. Its output positions count UTF16
+code units. The full lookahead requires two output units for an astral value;
+BMP prefix values fit in one. The shorter tail excludes four-byte leads and
+returns immediately after its final complete three-byte value. Source's
+manually inlined next-lead continuations return to the same outer iteration
+here, preserving the exact masks, bounds, written units and stopping positions.
+
+The raw method expands the existing `decoder_functions!` five-slot body
+(`utf_8.rs:611–708`, `macros.rs:10–122`) with `Utf16Destination`.
+`copy_utf8_up_to_invalid_from` (`handles.rs:737–744`) invokes the prefix helper
+only in neutral state. The subsequent Source macro checks input availability
+before its two-unit astral destination check (`handles.rs:598–605`), then
+consumes a byte. It preserves malformed lengths, invalid-continuation unread,
+the exact lower/upper-bound updates and pending EOF slot clearing without
+resetting those bounds. Source destination writes emit ASCII/BMP units or the
+actual surrogate-pair formulas (`handles.rs:616–639`). Base offsets lower
+remaining slices into the original input and mutable output owners; V's mutable
+slice-copy behavior does not supply substitute destination storage.
+
+The separate UTF16 replacement loop translates `lib.rs:4355–4400` over that
+raw variant, appending one `0xfffd` unit after every malformed return and
+accumulating counters. As with the UTF8 destination, pending malformed EOF is
+checked before output space. The actual Source indexed replacement therefore
+panics on a zero-capacity destination; V preserves that fatal write boundary.
+It does not convert this condition into an author-visible decoding error.
+
+Tool `4f3245fd76751965c9870264f462dfc36d5b5472` validates the pinned Source
+checkout and locked archive using the existing probe workflow. It appends only
+snapshot/helper exports in an ignored copied package and calls the actual
+prefix function and actual raw/replacement decoders. Original implementation
+bodies, upstream and package-cache files remain unchanged. Native debug and
+release produce byte-identical artifacts for all 65,536 byte pairs at both
+one- and two-unit capacities, 3,024 longer prefix cases and 11,932 raw/replacement
+sequences. These include every byte at multiple capacities, retained partial
+prefixes, restricted continuations, invalid-byte reprocessing, NUL, BOM bytes
+and astral pairs. Nine native zero-capacity EOF calls panic; their actual
+post-panic slots are recorded without inventing return counters.
+
+The binary pair fixture records, in ascending first/second byte order and then
+capacities one/two, the returned u8 read/written counters followed by that
+capacity's little-endian u16 units. Only committed units are observed; remaining
+slots are zero placeholders in the fixture. It contains 655,360 bytes. The JSON
+fixtures retain the exact native values, with per-record line breaks added.
+
+| Artifact | SHA256 |
+| --- | --- |
+| `encoding/fixtures/utf8_utf16_prefix_pairs.bin` | `8f1c27d377305b26bc71ebdc79c29400846b94e66f69fee549b15ecd59b54be2` |
+| `encoding/fixtures/utf8_utf16_prefix_edges.json` | `04833671347607447559d2b3b1fd269cb64fdc1dc73354b14f1ec9f1c2b08e5b` |
+| `encoding/fixtures/utf8_utf16_decoder_sequences.json` | `36446b59b6718a9d977c336a9e612c946967483c3cc31e08ce188818fa798a30` |
+| `source-utf8-utf16-decoder-probe.log` | `1cb1f7af9883762d0a9a25b6c142c38f06a3ab5b5cc96f5839c88ada0a728f2f` |
+
+Focused V checks pass 1/1 in both GC modes. The final fixture also verifies
+explicit input/output positions against all longer native prefix cases and
+preserves the original destination's leading guard units. Complete Encoding
+passes 16/16 in both modes, and the final focused production GC-none check
+passes 1/1, including the genuine compiled-child fatal replacement write.
+Evidence is retained in
+`source-utf8-utf16-decoder-{focused-default,focused-gc-none,full-default,full-gc-none,production-gc-none}.log`.
+
+This establishes the variant's logical UTF16 destination. ASCII acceleration
+is represented by Source's scalar prefix writes; uncommitted SIMD slack writes,
+native alignment and physical slice/Vec allocation are not claimed. V array
+lengths remain int-sized, while capacity arithmetic retains the prior checked
+64-bit Source model. The actual Off/Remove outer UTF16 lifecycle expansion,
+maximum-capacity Rust bridge owner and Source TextDecoder UTF16 caller remain
+subsequent features. Other selected codec variants and BOM morphing remain
+separate. LibJS and native browser bundle/captures are unchanged.
