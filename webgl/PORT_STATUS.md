@@ -214,6 +214,14 @@ timeout valueOf runs exactly once before actual owner selection and throws befor
 body entry, along with real native result/error and lost-default neighbors.
 All checks use GC disabled and explicit private module paths.
 
+A separately discovered affected legacy case in webgl2_state_test.v also
+assumed a nonzero clientWaitSync request guarantees completion. Its test-only
+migration accepts the actual timeout-0 completion statuses and calls genuine
+finish() before the signaled assertion. The complete affected file passes with
+GC disabled in `Build/audit-fixes/source-sync-host-timeout-legacy-state-gc-none.log`.
+This supplements the focused timeout feature evidence; it does not reclassify
+any earlier frozen full sweep or add a production behavior change.
+
 The complete actual generated proxy and compositor snippets remain in
 `Build/audit-fixes/source-client-wait-generated-boundary.txt`. No fake driver or
 inferred timer policy supplies this override. Broader method loss suppression,
