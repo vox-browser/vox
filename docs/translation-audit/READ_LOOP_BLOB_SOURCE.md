@@ -69,3 +69,16 @@ Promise/stream path still need translation. The synchronous standalone Blob
 accessors and compact XHR facade do not establish those owner semantics.
 Complete native Blob/File/FileList bindings and source host-object GC remain
 open.
+
+`LibTextCodec/Decoder.cpp:382-405` maps to
+`encoding/decode_with_bom_override.v`, commit `5c941d64`, for Blob's text decoder
+prerequisite. It chooses the supplied fallback encoding unless the first BOM
+selects UTF-8, UTF-16LE or UTF-16BE, then consumes that BOM before replacement
+decoding. The pinned Rust implementation (`Rust/src/lib.rs:79-112`) invokes
+`decode_with_bom_removal`, which removes one further BOM only for the already
+selected encoding. The focused tests deliberately preserve the resulting
+two-BOM removal, third-BOM retention, and opposing second-BOM behavior instead
+of substituting a general second sniff. Default and GC-disabled **3/3** focused
+decoder/BOM/TextDecoder files pass in `source-decoder-bom-default-final.log`
+and `source-decoder-bom-gc-none.log`. Blob's existing synchronous text accessor
+has not yet been moved to this helper in this snapshot.
