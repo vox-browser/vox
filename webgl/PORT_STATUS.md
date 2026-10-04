@@ -162,6 +162,37 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+isShader now preserves the generated GLboolean default after actual owner loss.
+GLFunctions.json:2826-2837 classifies glIsShader as sync; the pinned generated
+Proxy sends the request, then returns {} if lost before decoding a reply.
+ProxyBase.cpp:168-176 suppresses an already-lost send. The direct adapter now
+returns false if actual current selection is unavailable, after the unchanged
+Source nullable/optional handle gates, without querying Other's current driver.
+Live calls still query the stored native shader name, independently of wrapper
+state. Exact generated proxy/compositor evidence is retained in
+`Build/audit-fixes/source-is-shader-generated-boundary.txt` (SHA-256
+`33f79cbda7aa087b1ccf3c965ab0b62267cfa776065d564137774ea41204fda8`).
+
+A genuine unfixed EGL probe returned true for a lost owner's shader whose native
+name equaled Other's live shader name; the actual evidence remains in
+source-is-shader-lost-unfixed-probe-gc-none.log. The corrected two-version
+native/public cases retain an original owned shader, lose real EGL and create
+another owned proxy shader with absent native mapping. Both queries return
+false beside Other's live matching shader, unchanged viewport and pending
+native error. Null/foreign gates, public nullable and brand/arity conversion,
+and one-shot Source loss reporting remain intact. A live shader deleted outside
+V still queries the actual driver and returns false without invalidating its
+owned Source record. No fabricated backend supplies loss or native-name results.
+
+Three typed files pass in
+`Build/audit-fixes/source-is-shader-lost-native-gc-none.log`; three public files
+pass in
+`Build/audit-fixes/source-is-shader-lost-public-gc-none.log`, including the CPU
+owner and nullable adapter neighbors. All checks use GC disabled and explicit
+private paths. Program and other GLboolean queries, broader lost commands,
+remote transport/maps and GC/WrapperWorld remain separate features. This is
+focused native/JSC evidence, not a new full sweep or canonical bundle build.
+
 The nullable isShader public host call now explicitly invokes the translated
 optional-none method when no host shader record exists. Source Base.idl:134
 accepts WebGLShader?, and Impl.cpp:2195-2196 returns false for null before a
@@ -182,8 +213,9 @@ with GC disabled and explicit private paths in
 `Build/audit-fixes/source-is-shader-nullable-public-gc-none.log` (two files).
 The earlier public null failure remains historical evidence rather than a
 passing CPU-fixture claim. Other is-object host branches still use the same
-inline optional expression and require separate Source/adapter review; Boolean
-lost sync, remote maps and GC/WrapperWorld also remain independent scopes.
+inline optional expression and require separate Source/adapter review; the
+subsequent isShader Boolean lost sync feature is recorded above. Remote maps
+and GC/WrapperWorld remain independent scopes.
 This is focused compatibility adapter evidence, not a native bundle build.
 
 isShader now keeps Source optional handle gates before actual driver owner
@@ -218,8 +250,8 @@ inline return-sumtype argument expression, before invoking is_shader(None).
 Direct host.call([null]) returned TypeError with an empty message, preserved in
 source-is-shader-owner-public-host-diagnostic-gc-none.log; the initial/diagnostic
 public failures are retained. The subsequent separate explicit null host-call
-adapter repair is documented above; the generated Boolean lost result remains
-a followup. Other is-object families,
+adapter repair and generated Boolean lost result are documented above. Other
+is-object families,
 remote maps, GC/WrapperWorld and current bundle/captures remain independently
 scoped; this is no clean full-sweep or production-bundle claim.
 
@@ -255,8 +287,9 @@ preserved in the logs without `-final`. All checks use GC disabled and explicit
 private paths. Exact generated regular/robust proxy/compositor evidence remains
 in source-shader-query-generated-boundary.txt with the SHA-256 recorded below.
 
-This repairs only these shader sync outputs. isShader Boolean sync and broader
-lost commands, program queries, actual bundle/capture validation, full remote
+This repairs only these shader sync outputs. The separate isShader Boolean
+sync repair is documented above. Broader lost commands, program queries, actual
+bundle/capture validation, full remote
 maps and GC/WrapperWorld remain independent scopes. These focused private native
 and JavaScriptCore checks make no claim about a newly built canonical bundle.
 
