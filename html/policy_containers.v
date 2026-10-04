@@ -11,6 +11,7 @@ module html
 import dom
 import fetch
 import contentsecuritypolicy
+import referrercore
 
 pub type ReferrerPolicy = dom.ReferrerPolicy
 
@@ -79,29 +80,38 @@ fn parse_response_csp_policy(value string, disposition CSPPolicyDisposition, ori
 	}
 }
 
-pub fn create_a_policy_container_from_fetch_response(response &fetch.Response) &PolicyContainer {
-	origin := if url := response.url() { url.origin() } else { dom.origin_create_opaque() }
-	mut csp_list := []SerializedCSPPolicy{}
-	if value := response.header_list.get('Content-Security-Policy') {
-		csp_list << parse_response_csp_policy(value, .enforce, origin)
-	}
-	if value := response.header_list.get('Content-Security-Policy-Report-Only') {
-		csp_list << parse_response_csp_policy(value, .report, origin)
-	}
-	mut referrer_policy := ReferrerPolicy.strict_origin_when_cross_origin
-	if value := response.header_list.get('Referrer-Policy') {
-		for token in value.split(',') {
-			if parsed := referrer_policy_from_string(token.trim_space()) {
-				if parsed != .empty_string {
-					referrer_policy = parsed
-				}
-			}
+fn source_serialized_csp_policy_for_dom(policy contentsecuritypolicy.SerializedPolicy) SerializedCSPPolicy {
+	mut directives := []SerializedCSPDirective{cap: policy.directives.len}
+	for directive in policy.directives {
+		directives << SerializedCSPDirective{
+			name: directive.name
+			value: directive.value.clone()
 		}
 	}
-	return &PolicyContainer{
-		csp_list: csp_list
-		referrer_policy: referrer_policy
+	// This is the explicit serialized DOM/native PolicyList representation
+	// boundary; copy Policy::serialize fields and the actual typed Origin.
+	return SerializedCSPPolicy{
+		directives: directives
+		disposition: if policy.disposition == .enforce { .enforce } else { .report }
+		source: if policy.source == .header { .header } else { .meta }
+		self_origin: dom.origin_from_liburl(policy.self_origin)
+		pre_parsed_policy_string: policy.pre_parsed_policy_string
 	}
+}
+
+pub fn create_a_policy_container_from_fetch_response(response &fetch.Response) &PolicyContainer {
+	// PolicyContainers.cpp:38–75. Preserve Source's blob/environment,
+	// embedder-policy and integrity-policy FIXMEs; all actual defaults remain.
+	mut result := &PolicyContainer{}
+	policies := contentsecuritypolicy.parse_a_responses_content_security_policies(fetch.csp_response(response))
+	for policy in policies.serialize() or { panic(err) } {
+		result.csp_list << source_serialized_csp_policy_for_dom(policy)
+	}
+	parsed_referrer_policy := referrercore.parse_a_referrer_policy_from_header_list(response.header_list)
+	if parsed_referrer_policy != .empty_string {
+		result.referrer_policy = parsed_referrer_policy
+	}
+	return result
 }
 
 pub fn create_a_policy_container_from_a_fetch_response(response &fetch.Response, _ &EnvironmentSettingsObject) &PolicyContainer {

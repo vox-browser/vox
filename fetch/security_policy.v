@@ -89,7 +89,7 @@ fn csp_request(request &Request) csp.Request {
 	}
 }
 
-fn csp_response(response &Response) csp.Response {
+pub fn csp_response(response &Response) csp.Response {
 	return csp.Response{
 		url:         if value := response.url() { value.parsed() } else { none }
 		status:      response.status

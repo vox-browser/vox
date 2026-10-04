@@ -59,7 +59,8 @@ fn test_create_policy_container_from_fetch_response() {
 	mut response := fetch.Response.create()
 	response.url_list = [dom.URL{ value: 'https://example.test/resource' }]
 	response.header_list.append(http.Header{'Content-Security-Policy', "default-src 'self'; sandbox"})
-	response.header_list.append(http.Header{'Referrer-Policy', 'bogus, origin'})
+	response.header_list.append(http.Header{'Referrer-Policy', 'bogus'})
+	response.header_list.append(http.Header{'Referrer-Policy', 'origin'})
 	container := create_a_policy_container_from_a_fetch_response(response, settings)
 	assert container.csp_list.len == 1
 	assert container.csp_list[0].directives.len == 2
