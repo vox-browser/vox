@@ -39,6 +39,7 @@ pub enum FileReaderResultKind {
 }
 
 pub struct FileReaderResult {
+	text_utf16_ ?libjs.Utf16String
 pub:
 	kind  FileReaderResultKind
 	text  string
@@ -47,9 +48,29 @@ pub:
 
 pub fn (result FileReaderResult) clone() FileReaderResult {
 	return FileReaderResult{
+		text_utf16_: result.text_utf16_
 		kind: result.kind
 		text: result.text
 		bytes: result.bytes.clone()
+	}
+}
+
+// Native string projection must consume the actual immutable Source slot.
+// Compatibility DTO edits cannot reuse stale raw units/storage metadata.
+// DataURL's unchecked ASCII record remains a separate prerequisite.
+pub fn (result FileReaderResult) string_utf16_record() ?libjs.Utf16String {
+	if result.kind != .string_ { return none }
+	if raw := result.text_utf16_ {
+		if raw.str() == result.text { return raw }
+	}
+	return none
+}
+
+fn file_reader_utf16_result(value libjs.Utf16String) FileReaderResult {
+	return FileReaderResult{
+		kind: .string_
+		text: value.str()
+		text_utf16_: value
 	}
 }
 
@@ -111,14 +132,17 @@ pub fn blob_package_data(bytes []u8, type_ FileReaderType, mime_type ?string, en
 			file_reader_string_result(infra.utf16_string_from_url_ascii(record.serialize(false)))
 		}
 		.text {
-			file_reader_string_result(encoding.convert_input_to_utf8_using_given_decoder_unless_there_is_a_byte_order_mark(
-				encoding_for_blob(mime_type, encoding_name), bytes)!)
+			// Source Utf16String::from_utf8(String const&) delegates to the
+			// actual from_utf8_without_validation owner construction.
+			decoded := encoding.convert_input_to_utf8_using_given_decoder_unless_there_is_a_byte_order_mark(
+				encoding_for_blob(mime_type, encoding_name), bytes)!
+			file_reader_utf16_result(libjs.utf16_string_from_utf8_without_validation(decoded))
 		}
 		.array_buffer {
 			file_reader_bytes_result(bytes)
 		}
 		.binary_string {
-			file_reader_string_result(file_reader_binary_string(bytes).str())
+			file_reader_utf16_result(file_reader_binary_string(bytes))
 		}
 	}
 }
