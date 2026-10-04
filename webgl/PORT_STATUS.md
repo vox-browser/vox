@@ -98,6 +98,20 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+`active_texture` now follows `WebGLRenderingContextImpl.cpp:123-127` directly:
+select its owning context and issue GL's void command. The V-only
+`active_texture_` slot, reset write and conditional success write were removed;
+neither the source method nor its retained context state defines that cache.
+Both versions verify actual native texture-unit selection, invalid-enum driver
+behavior, a valid selection despite an earlier driver error, owner switching
+and the real `ACTIVE_TEXTURE` query. Public numeric conversion still precedes
+source body selection, including a throwing author `valueOf()` witness.
+Two native binding neighbors passed in `source-active-texture-gc-none.log`;
+the new native file passed after fixing its test field spelling in
+`source-active-texture-final-gc-none.log`. All three public files passed in
+`source-active-texture-public-gc-none.log`. This removes source-body cache/gates;
+the actual-driver error-retention boundary is a separate pending slice.
+
 `native_egl.h`/`native_egl.c.v` create real EGL/ANGLE contexts using the Metal
 backend on macOS and the source compositor configuration. `pkg-config egl
 glesv2` resolves those libraries. Context loss destroys the native namespace;
