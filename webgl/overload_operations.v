@@ -552,11 +552,15 @@ pub fn (mut context WebGLRenderingContext) vertex_attrib_i4i(index GLuint, x int
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib_i4iv(index GLuint, values []int) {
-	if values.len >= 4 {
-		context.vertex_attrib_i4i(index, values[0], values[1], values[2], values[3])
-	} else {
+	if values.len < 4 {
 		context.set_error(invalid_value)
+		return
 	}
+	if !context.require_webgl2() {
+		return
+	}
+	context.native.make_current()
+	C.vox_gl_vertex_attrib_ints(index, values.data)
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib_i4ui(index GLuint, x u32, y u32, z u32, w u32) {
@@ -566,11 +570,15 @@ pub fn (mut context WebGLRenderingContext) vertex_attrib_i4ui(index GLuint, x u3
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib_i4uiv(index GLuint, values []u32) {
-	if values.len >= 4 {
-		context.vertex_attrib_i4ui(index, values[0], values[1], values[2], values[3])
-	} else {
+	if values.len < 4 {
 		context.set_error(invalid_value)
+		return
 	}
+	if !context.require_webgl2() {
+		return
+	}
+	context.native.make_current()
+	C.vox_gl_vertex_attrib_uints(index, values.data)
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib_i_pointer(index GLuint, size int, type_ GLenum, stride int, offset i64) {
