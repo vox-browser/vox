@@ -2351,6 +2351,8 @@ pub mut:
 	container_                  ?&Node
 	container_document_         ?&Document
 	is_top_level_traversable_   bool
+	// LocalNavigable::m_closing, inherited by LocalTraversableNavigable.
+	is_closing_                 bool
 	html_model_handle_          voidptr = unsafe { nil }
 	viewport_scroll_callback_   NavigableViewportScrollCallback = unsafe { nil }
 	perform_scroll_callback_    NavigablePerformScrollCallback = unsafe { nil }

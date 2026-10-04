@@ -125,7 +125,6 @@ mut:
 	pending_navigations_                 []NavigableNavigateParams
 	delaying_load_events_                bool
 	navigation_load_event_guard_         ?dom.DocumentLoadEventDelayer
-	is_closing_                          bool
 	is_created_by_web_content_           bool
 	has_been_destroyed_                  bool
 	has_session_history_entry_and_ready_ bool
@@ -542,11 +541,11 @@ pub fn (mut model NavigableModel) set_is_created_by_web_content(value bool) {
 }
 
 pub fn (mut model NavigableModel) set_closing(value bool) {
-	model.is_closing_ = value
+	model.host_.set_closing(value)
 }
 
 pub fn (model &NavigableModel) is_closing() bool {
-	return model.is_closing_
+	return model.host_.is_closing()
 }
 
 pub fn (mut model NavigableModel) set_delaying_load_events(value bool) {

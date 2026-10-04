@@ -88,7 +88,6 @@ mut:
 	apply_history_step_state_     ?&ApplyHistoryStepState
 	system_visibility_state_      dom.VisibilityState = .hidden
 	is_created_by_web_content_    bool
-	is_closing_                   bool
 	has_been_destroyed_           bool
 	has_system_focus_             bool
 	window_handle_                string
@@ -1040,16 +1039,16 @@ pub fn (mut traversable TraversableNavigable) process_session_history_traversal_
 }
 
 pub fn (mut traversable TraversableNavigable) close_top_level_traversable() {
-	if traversable.is_closing_ {
+	if traversable.is_closing() {
 		return
 	}
 	// Prevent re-entrant close requests from scheduling duplicate destruction work.
-	traversable.is_closing_ = true
+	traversable.set_closing(true)
 	traversable.definitely_close_top_level_traversable()
 }
 
 pub fn (mut traversable TraversableNavigable) definitely_close_top_level_traversable() {
-	traversable.is_closing_ = true
+	traversable.set_closing(true)
 	documents := if document := traversable.active_document_ {
 		mut result := []&dom.Document{}
 		for navigable in document.inclusive_descendant_navigables() {
@@ -1102,7 +1101,13 @@ pub fn (traversable &TraversableNavigable) has_been_destroyed() bool {
 }
 
 pub fn (traversable &TraversableNavigable) is_closing() bool {
-	return traversable.is_closing_
+	host := traversable.host_navigable_ or { panic('Source local traversable requires its native Navigable') }
+	return host.is_closing()
+}
+
+pub fn (mut traversable TraversableNavigable) set_closing(value bool) {
+	mut host := traversable.host_navigable_ or { panic('Source local traversable requires its native Navigable') }
+	host.set_closing(value)
 }
 
 pub fn (mut traversable TraversableNavigable) set_has_system_focus(value bool) {

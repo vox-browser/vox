@@ -1264,7 +1264,6 @@ mut:
 	device_pixel_ratio_                       f64 = 1.0
 	name_                                     string
 	status_                                   string
-	closed_                                   bool
 	opener_disowned_                          bool
 	prototype_                                dom.JSValue = dom.JSValue{ kind: .null_ }
 	named_properties_                         map[string]dom.JSValue
@@ -1733,7 +1732,7 @@ pub fn (window &WindowModel) same_origin(origin dom.Origin) bool {
 }
 
 pub fn (mut window WindowModel) close() {
-	if window.closed_ {
+	if window.closed() {
 		return
 	}
 	context := window.browsing_context_
@@ -1741,13 +1740,14 @@ pub fn (mut window WindowModel) close() {
 	if !context.is_top_level() || !script_closable {
 		return
 	}
-	window.closed_ = true
+	mut navigable := window.Window.navigable() or { return }
+	navigable.set_closing(true)
 	mut mutable_context := unsafe { &BrowsingContextModel(context) }
 	mutable_context.remove()
 }
 
 pub fn (window &WindowModel) closed() bool {
-	return window.closed_ || window.browsing_context_.has_navigable_been_destroyed()
+	return window.Window.closed()
 }
 
 pub fn (mut window WindowModel) stop() {
