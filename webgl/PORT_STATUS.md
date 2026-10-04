@@ -115,6 +115,21 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+The unused generic parameter map, its invented default-state table, constructor
+and restoration writes, final pixel-store write, and newly unused scalar
+factory were removed in a separate bounded cleanup. Repository-wide references
+showed initialization/write sites only; `get_parameter` already reads actual GL
+or the distinct source retained-object/browser-only slots. The source Base/Impl
+headers contain no such generic map. The source's real bitmap-unpack state
+remains: focused witnesses write actual GL state independently and query those
+driver values, while preserving the separately retained client alignment and
+row length used by bitmap conversion, following source
+`WebGLRenderingContextImpl.cpp:2246-2282`. The native query/browser-pixel-store/
+state trio passed in `source-generic-state-map-gc-none.log`; both public stencil/
+host neighbors passed in `source-generic-state-map-public-gc-none.log`. This
+cleanup supplements the frozen 101/70 sweep without adding new reset/default
+behavior or modifying the remaining pixel-store validation branches.
+
 All six stencil setters now follow the plain GL calls in
 `WebGLRenderingContextImpl.cpp:2332-2378`. Invented comparison/operation/face
 prevalidation and retained scalar-map writes were removed, together with the
