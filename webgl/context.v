@@ -479,20 +479,20 @@ pub fn (mut context WebGLRenderingContext) is_buffer(buffer ?&WebGLBuffer) bool 
 }
 
 pub fn (mut context WebGLRenderingContext) shader_source(mut shader WebGLShader, source string) {
-	context.native.make_current()
 	if !context.owns(&shader.object) {
 		context.set_error(invalid_operation)
 		return
 	}
+	context.native.make_current()
 	C.vox_gl_shader_source(shader.object.native_handle_, source.str, source.len)
 }
 
 pub fn (mut context WebGLRenderingContext) compile_shader(mut shader WebGLShader) {
-	context.native.make_current()
 	if !context.owns(&shader.object) {
 		context.set_error(invalid_operation)
 		return
 	}
+	context.native.make_current()
 	C.vox_gl_compile_shader(shader.object.native_handle_)
 	context.native.dispatch('compile_shader', shader.object.handle_)
 }

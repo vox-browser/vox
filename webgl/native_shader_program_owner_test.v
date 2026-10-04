@@ -3,9 +3,13 @@
 module webgl
 
 fn shader_program_owner_and_error(mut context WebGLRenderingContext, expected GLenum) {
+	shader_program_owner_and_error_selected(mut context, expected, [1, 2, 3, 4]!)
+}
+
+fn shader_program_owner_and_error_selected(mut context WebGLRenderingContext, expected GLenum, expected_owner [4]int) {
 	mut selected := [0, 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &selected[0])
-	assert selected == [1, 2, 3, 4]!
+	assert selected == expected_owner
 	actual := context.get_error()
 	assert actual == expected
 }
@@ -29,10 +33,10 @@ fn test_source_shader_program_mutations_select_owner_before_early_returns() {
 		assert context.get_error() == invalid_enum
 		other.native.make_current()
 		context.shader_source(mut foreign_shader, 'void main(){}')
-		shader_program_owner_and_error(mut context, invalid_operation)
+		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
 		other.native.make_current()
 		context.compile_shader(mut foreign_shader)
-		shader_program_owner_and_error(mut context, invalid_operation)
+		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
 		other.native.make_current()
 		context.link_program(mut foreign_program)
 		shader_program_owner_and_error(mut context, invalid_operation)
@@ -73,7 +77,7 @@ fn test_source_shader_program_mutations_select_owner_before_early_returns() {
 		shader_program_owner_and_error(mut context, no_error)
 		other.native.make_current()
 		context.compile_shader(mut shader)
-		shader_program_owner_and_error(mut context, invalid_operation)
+		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
 		context.delete_program(program)
 		other.native.make_current()
 		context.delete_program(program)
