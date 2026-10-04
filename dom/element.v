@@ -5524,6 +5524,43 @@ fn schedule_has_invalidation_for_inherited_attribute_change(element &Element, ps
 	})
 }
 
+// CSS/Invalidation/LanguageInvalidator.cpp:22–61. Keep the existing V
+// publication bridge shared by attribute changes and Source Meta pragmas.
+pub fn (mut e Element) invalidate_style_after_language_change() {
+	e.publish_language_and_directionality(false)
+}
+
+fn (mut e Element) publish_language_and_directionality(is_directionality_change bool) {
+	e.as_node().for_each_shadow_including_inclusive_descendant(fn [is_directionality_change] (node &Node) TraversalDecision {
+		if element := node.as_element() {
+			mut mutable_element := unsafe { &Element(element) }
+			if !is_directionality_change {
+				mutable_element.invalidate_lang_value()
+			}
+			mutable_element.set_needs_style_update(true)
+			return .@continue
+		}
+		if is_directionality_change {
+			return .@continue
+		}
+		layout_node := node.unsafe_layout_node() or { return .@continue }
+		parent_element := node.parent_or_shadow_host_element() or { return .@continue }
+		computed := parent_element.el_computed_properties() or { return .@continue }
+		if !computed.has_casing_text_transform() {
+			return .@continue
+		}
+		mut mutable_layout_node := unsafe { &LayoutNode(layout_node) }
+		mutable_layout_node.invalidate_text_for_rendering()
+		mutable_layout_node.set_needs_layout_update(.language_change_under_casing_text_transform)
+		return .@continue
+	})
+	schedule_has_invalidation_for_inherited_attribute_change(&e, if is_directionality_change {
+		'dir'
+	} else {
+		'lang'
+	})
+}
+
 // --- is_connected ---
 pub fn (e &Element) is_connected() bool {
 	return e.as_node().is_connected()
@@ -5666,34 +5703,11 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 				e.dir__ = none
 			}
 		}
-		e.as_node().for_each_shadow_including_inclusive_descendant(fn [is_dir] (node &Node) TraversalDecision {
-			if element := node.as_element() {
-				mut mutable_element := unsafe { &Element(element) }
-				if !is_dir {
-					mutable_element.invalidate_lang_value()
-				}
-				mutable_element.set_needs_style_update(true)
-				return .@continue
-			}
-			if is_dir {
-				return .@continue
-			}
-			layout_node := node.unsafe_layout_node() or { return .@continue }
-			parent_element := node.parent_or_shadow_host_element() or { return .@continue }
-			computed := parent_element.el_computed_properties() or { return .@continue }
-			if !computed.has_casing_text_transform() {
-				return .@continue
-			}
-			mut mutable_layout_node := unsafe { &LayoutNode(layout_node) }
-			mutable_layout_node.invalidate_text_for_rendering()
-			mutable_layout_node.set_needs_layout_update(.language_change_under_casing_text_transform)
-			return .@continue
-		})
-		schedule_has_invalidation_for_inherited_attribute_change(&e, if is_dir {
-			'dir'
+		if is_dir {
+			e.publish_language_and_directionality(true)
 		} else {
-			'lang'
-		})
+			e.invalidate_style_after_language_change()
+		}
 	} else if local_name == 'part' {
 		e.parts.clear()
 		if value_or_empty.len > 0 {
