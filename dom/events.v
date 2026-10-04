@@ -1506,8 +1506,8 @@ pub fn event_target_dispatch_event(target &EventTarget, event &Event) bool {
 	// https://html.spec.whatwg.org/multipage/interaction.html#activation-triggering-input-event
 	// https://html.spec.whatwg.org/multipage/interaction.html#user-activation-processing-model
 	if is_activation_triggering_input_event(event) {
-		current_time := current_event_timestamp()
 		if mut window := event_target_relevant_window(target) {
+			current_time := current_high_resolution_time(window)
 			window.set_last_activation_timestamp(current_time)
 			window.close_watcher_manager().notify_about_user_activation()
 		}
