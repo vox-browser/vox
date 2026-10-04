@@ -374,6 +374,29 @@ after its initial fixture incorrectly assumed an OES global constructor.
 That initial ReferenceError remains in the first log. All checks use GC disabled;
 full source GC and caller WrapperWorld ownership remain open.
 
+Transform-feedback creation, bind/delete, varying selection and lifecycle
+commands now select their owning context before source body gates, matching
+`WebGL2RenderingContextImpl.cpp:983-1082`. The pinned source declares, traces and
+resets m_transform_feedback_binding but never assigns it from bind or clears
+it from deletion. The V-only binding/deletion writes and native-success gate
+were removed; the existing optional source slot remains and is reset by
+reset_client_side_webgl_state (`WebGLRenderingContextImpl.cpp:116`). Consequently
+getParameter(TRANSFORM_FEEDBACK_BINDING) remains null while actual native binding
+and capture work, preserving this upstream limitation without filling it with
+a driver query or an invented retained algorithm. The old parameter fixture
+now checks source null plus the actual driver's nonzero binding. Source owner,
+foreign/deleted/null order, invalid-target driver errors and varying-program
+validation pass in the new typed/public cases. Five typed neighbors, including
+actual GPU capture/query counts, and the resource-interface public neighbor
+passed in `source-transform-feedback-gc-none.log` and
+`source-transform-feedback-public-gc-none.log`. The two new cases passed in
+`source-transform-feedback-final-gc-none.log` and
+`source-transform-feedback-public-final-gc-none.log` after their initial native
+predicate incorrectly used an unsupported adapter kind; they now call genuine
+glIsTransformFeedback directly. Initial diagnostics are preserved. All checks
+use GC disabled; source TODOs, remote transport and full GC/WrapperWorld
+ownership remain open.
+
 Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
 `WebGL2RenderingContextOverloads.cpp:33-85`, and
 `WebGL2RenderingContextImpl.cpp:46-50`: select the owner, validate nullable data
