@@ -1,0 +1,7 @@
+# Source memory span access invariant in production
+
+MemoryBuffer exposes actual AK byte spans (`AbstractMachine.h:624–627`). `AK/Span.h:253–263` verifies index < m_size before returning either const or mutable access. The translated BinaryMachineBytes.at used an ordinary assertion, removed in production. Calling at0 on an actual empty buffer span returned without the required fatal check; the returned pointer was never dereferenced. `Build/audit-fixes/source-memory-span-guard-original-production-gc-none.log` preserves1/1 FAIL7.224s and its return marker.
+
+The Source predicate is now an explicit fatal guard before unchanged pointer arithmetic. Subprocesses verify empty and allocated exact-end rejection. Actual spans borrow live cage bytes, preserve every in-range pointer identity and expose writes through the same buffer. An initial test attempted assignment through a function-call dereference, which this older V compiler rejects; compile-only diagnostics are retained in `source-memory-span-guard-initial-{production-gc-none,gc-none}.log`. Binding the actual pointer before assignment fixed the test syntax.
+
+Corrected private production GC-none1/1 PASS8.013s and ordinary GC-none span/buffer2/2 PASS6.072s are recorded in `source-memory-span-guard-production-gc-none.log` and `source-memory-span-guard-gc-none.log`. This adds the113th Wasm test file outside frozen103-file/native evidence. The cage-base invariant and complete runtime/collector graph remain separate work.
