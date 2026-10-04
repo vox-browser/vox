@@ -158,6 +158,7 @@ mut:
 	queued_tasks_           []QueuedFileReaderTask
 	pending_task_ids_       []u64
 	next_task_id_           u64
+	global_context_         ?FileReaderGlobalContext
 }
 
 pub fn FileReader.create() &FileReader {
@@ -205,7 +206,11 @@ pub fn (mut reader FileReader) set_result(result FileReaderResult) {
 }
 
 pub fn (reader &FileReader) create_associated_event(event_name string) &dom.Event {
-	return dom.Event.create(event_name, dom.EventInit{})
+	mut event := dom.Event.create(event_name, dom.EventInit{})
+	if context := reader.global_context_ {
+		event.set_time_stamp(context.event_timestamp())
+	}
+	return event
 }
 
 pub fn (reader &FileReader) error() ?string {
@@ -255,6 +260,10 @@ pub fn (mut reader FileReader) read_as_data_url(blob &Blob) ! {
 }
 
 pub fn (mut reader FileReader) queue_a_task(task FileReaderTask) {
+	if context := reader.global_context_ {
+		reader.queue_owned_file_reading_task(context, task)
+		return
+	}
 	reader.next_task_id_++
 	reader.pending_task_ids_ << reader.next_task_id_
 	reader.queued_tasks_ << QueuedFileReaderTask{
@@ -326,9 +335,13 @@ pub fn (mut reader FileReader) abort() {
 	reader.state_ = .done
 	reader.set_result(FileReaderResult{})
 	reader.pending_read_ = none
-	reader.is_aborted_ = true
-	reader.queued_tasks_.clear()
+	if context := reader.global_context_ {
+		context.remove_affiliated_tasks(reader.pending_task_ids_)
+	} else {
+		reader.queued_tasks_.clear()
+	}
 	reader.pending_task_ids_.clear()
+	reader.is_aborted_ = true
 	reader.fire_event('abort')
 	if reader.state_ != .loading {
 		reader.fire_event('loadend')
