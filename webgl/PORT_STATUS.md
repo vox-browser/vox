@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/WebGL`
 
 Reference audit: 2026-09-12
-Latest native focused verification: 2026-10-03
+Latest native focused verification: 2026-10-04
 
 After the shared native query/reflection repairs, the full typed package passed
 58/58 files and the complete public/mixed canvas group passed 29/29 files with
@@ -257,6 +257,25 @@ exposure/cross-target/identity/deletion case passed in
 owners and source error ordering. The existing texture parameter/size caches
 and their extra retained-name prerequisites remain identified for separate source
 translation; full LibJS tracing and caller WrapperWorld ownership remain open.
+
+Renderbuffer storage now directly translates
+`WebGLRenderingContextImpl.cpp:2290-2298` and
+`WebGL2RenderingContextImpl.cpp:192-196`. The source selects the owner, maps
+`GL_DEPTH_STENCIL` to `GL_DEPTH24_STENCIL8` for ordinary storage, and delegates
+validation/allocation to the actual driver. V's invented retained-name gate,
+size/sample prevalidation, and CPU format/size/sample record fields were removed
+(`WebGLRenderbuffer.h` retains only its WebGLObject base). Driver bindings outside
+the retained slot work for both ordinary and multisample storage. Actual packed
+storage provides 24 depth bits and 8 stencil bits; ES2 may report its internal
+format back through the unsized alias, which tests compare with actual mapped
+driver allocation instead of a fabricated cache value. The new typed case passed
+with GC disabled in `source-renderbuffer-storage-final-gc-none.log`, and the
+framebuffer/transfer neighbors passed in `source-renderbuffer-storage-gc-none.log`.
+The actual public two-version case passed in
+`source-renderbuffer-storage-public-final-gc-none.log`. Initial new-fixture sized-
+format expectations were corrected against real driver alias behavior. Remote
+transport, full LibJS tracing and other remaining resource caches remain separate
+boundaries.
 
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
