@@ -38,6 +38,8 @@ recorded in the aggregate ledger.
 
 This slice does not supply a production `interpret()` method or a substitute
 Wasm execution loop. Floating Divide, other scalar operators, SIMD operators,
-numeric template invocation and full instruction dispatch remain pending.
+full instruction dispatch remain pending. The subsequent
+[numeric helper slice](WASM_NUMERIC_OPERATIONS.md) translates operand routing
+and trap propagation with a supplied concrete operator adapter.
 The preceding clean 80-file Wasm sweep predates this added operator test;
-it is not a claimed full 81-file sweep.
+it is not a claimed full sweep of the subsequent 82-file package.
