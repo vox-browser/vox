@@ -6,6 +6,8 @@ fn test_source_active_info_preserves_fixed_name_span_empty_driver_records_and_ow
 	for version in [WebGLVersion.webgl1, .webgl2] {
 		mut owner := WebGLRenderingContext.new(version, WebGLContextAttributes{}, [])
 		mut other := WebGLRenderingContext.new(version, WebGLContextAttributes{}, [])
+		owner.viewport(1, 2, 3, 4)
+		other.viewport(9, 10, 11, 12)
 		mut vertex := owner.create_shader(vertex_shader) or { panic('vertex') }
 		mut fragment := owner.create_shader(fragment_shader) or { panic('fragment') }
 		// Keep the ES 1.00 fixture within its compiler's identifier range.
@@ -31,8 +33,15 @@ fn test_source_active_info_preserves_fixed_name_span_empty_driver_records_and_ow
 		owner.attach_shader(mut program, fragment)
 		owner.link_program(mut program)
 		assert owner.get_program_parameter(program, link_status).boolean
+		other.native.make_current()
 		attrib := owner.get_active_attrib(program, 0) or { panic('source attribute') }
+		mut selected := [0, 0, 0, 0]!
+		C.vox_gl_int_parameter(viewport, &selected[0])
+		assert selected == [1, 2, 3, 4]!
+		other.native.make_current()
 		active := owner.get_active_uniform(program, 0) or { panic('source uniform') }
+		C.vox_gl_int_parameter(viewport, &selected[0])
+		assert selected == [1, 2, 3, 4]!
 		assert attrib.name == attribute[..if attribute.len < 255 { attribute.len } else { 255 }]
 		assert attrib.size == 1 && attrib.type_ == 0x8b50
 		assert active.name == uniform[..if uniform.len < 255 { uniform.len } else { 255 }]
@@ -45,9 +54,29 @@ fn test_source_active_info_preserves_fixed_name_span_empty_driver_records_and_ow
 		assert invalid_uniform.name == '' && invalid_uniform.size == 0 && invalid_uniform.type_ == 0
 		assert owner.get_error() == invalid_value
 		foreign := other.create_program()
+		owner.native.make_current()
+		C.vox_gl_vertex_attrib_enable(0xffff_ffff, 1)
+		other.native.make_current()
 		assert owner.get_active_attrib(foreign, 0) == none
+		C.vox_gl_int_parameter(viewport, &selected[0])
+		assert selected == [9, 10, 11, 12]!
+		assert owner.get_error() == invalid_value
 		assert owner.get_error() == invalid_operation
+		other.native.make_current()
 		assert owner.get_active_uniform(foreign, 0) == none
+		C.vox_gl_int_parameter(viewport, &selected[0])
+		assert selected == [9, 10, 11, 12]!
+		assert owner.get_error() == invalid_operation
+		owner.delete_program(program)
+		other.native.make_current()
+		assert owner.get_active_attrib(program, 0) == none
+		C.vox_gl_int_parameter(viewport, &selected[0])
+		assert selected == [9, 10, 11, 12]!
+		assert owner.get_error() == invalid_operation
+		other.native.make_current()
+		assert owner.get_active_uniform(program, 0) == none
+		C.vox_gl_int_parameter(viewport, &selected[0])
+		assert selected == [9, 10, 11, 12]!
 		assert owner.get_error() == invalid_operation
 		assert owner.get_error() == no_error
 	}
