@@ -52,7 +52,7 @@ pub fn (item DragDataStoreItem) type_utf16() libjs.Utf16String {
 			return text
 		}
 	}
-	return libjs.utf16_string(item.type_string)
+	return libjs.utf16_string_from_utf8_without_validation(item.type_string)
 }
 
 pub fn (item DragDataStoreItem) text_data_utf16() libjs.Utf16String {
@@ -62,7 +62,7 @@ pub fn (item DragDataStoreItem) text_data_utf16() libjs.Utf16String {
 				return text
 			}
 		}
-		return libjs.utf16_string(item.data.bytestr())
+		return libjs.utf16_string_from_utf8_without_validation(item.data.bytestr())
 	}
 	return libjs.Utf16String{}
 }
@@ -73,7 +73,7 @@ pub fn (item DragDataStoreItem) file_name_utf16() libjs.Utf16String {
 			return text
 		}
 	}
-	return libjs.utf16_string(item.file_name)
+	return libjs.utf16_string_from_utf8_without_validation(item.file_name)
 }
 
 pub enum DragDataStoreMode {

@@ -73,3 +73,28 @@ fn test_drag_data_store_preserves_raw_utf16_storage_and_existing_text_lookup() {
 	store.remove_item_at(0)
 	assert !store.has_text_item()
 }
+
+fn test_drag_data_store_compatibility_byte_boundaries_use_source_unvalidated_utf8_slots() {
+	units := [u16(`T`), 0xd800, 0, 0xdc00, 0xd83d, 0xde00]
+	bytes := libjs.utf16_string_from_code_units(units).str()
+	legacy := DragDataStoreItem{
+		type_string: bytes
+		data:        bytes.bytes()
+		file_name:   bytes
+	}
+	assert legacy.type_utf16().code_units() == units
+	assert legacy.text_data_utf16().code_units() == units
+	assert legacy.file_name_utf16().code_units() == units
+	raw := DragDataStoreItem.text_utf16(libjs.utf16_string('original'), libjs.utf16_string('original'))
+	changed := DragDataStoreItem{
+		...raw
+		type_string: bytes
+		data:        bytes.bytes()
+	}
+	assert changed.type_utf16().code_units() == units
+	assert changed.text_data_utf16().code_units() == units
+	truncated := DragDataStoreItem{
+		file_name: [u8(0xe2), 0x82].bytestr()
+	}
+	assert truncated.file_name_utf16().code_units() == [u16(0xfffd), 0xfffd]
+}
