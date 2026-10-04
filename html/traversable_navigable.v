@@ -98,7 +98,6 @@ mut:
 	apply_history_step_state_     ?&ApplyHistoryStepState
 	system_visibility_state_      dom.VisibilityState = .hidden
 	is_created_by_web_content_    bool
-	has_been_destroyed_           bool
 	close_steps_have_been_appended_ bool
 	has_system_focus_             bool
 	window_handle_                string
@@ -1052,7 +1051,7 @@ fn (mut traversable TraversableNavigable) apply_the_history_step_after_unload_ch
 }
 
 fn (mut traversable TraversableNavigable) apply_the_history_step(step int, check_for_cancellation bool, source_snapshot_params ?&SourceSnapshotParams, initiator_to_check ?&dom.Navigable, user_involvement UserNavigationInvolvement, navigation_type dom.NavigationType, synchronous_navigation SynchronousNavigation, on_complete ?TraversableHistoryStepCompletion) {
-	if traversable.has_been_destroyed_ {
+	if traversable.has_been_destroyed() {
 		complete_history_step(on_complete, .initiator_disallowed)
 		return
 	}
@@ -1290,10 +1289,13 @@ pub fn (mut traversable TraversableNavigable) definitely_close_top_level_travers
 }
 
 pub fn (mut traversable TraversableNavigable) destroy_top_level_traversable() {
-	if traversable.has_been_destroyed_ {
+	if traversable.has_been_destroyed() {
 		return
 	}
-	traversable.has_been_destroyed_ = true
+	mut native := traversable.host_navigable_ or {
+		panic('Source local Traversable requires its native Navigable')
+	}
+	native.set_has_been_destroyed()
 	if host := traversable.host_navigable_ {
 		if model := navigable_model_for_host(host) {
 			mut mutable_model := unsafe { &NavigableModel(model) }
@@ -1308,7 +1310,10 @@ pub fn (mut traversable TraversableNavigable) destroy_top_level_traversable() {
 }
 
 pub fn (traversable &TraversableNavigable) has_been_destroyed() bool {
-	return traversable.has_been_destroyed_
+	host := traversable.host_navigable_ or {
+		panic('Source local Traversable requires its native Navigable')
+	}
+	return host.has_been_destroyed()
 }
 
 pub fn (traversable &TraversableNavigable) is_closing() bool {
@@ -1401,7 +1406,7 @@ fn deactivate_a_document_for_cross_document_navigation(displayed_document &dom.D
 }
 
 pub fn finalize_a_same_document_navigation(mut traversable TraversableNavigable, target_entry &SessionHistoryEntry, entry_to_replace ?&SessionHistoryEntry, history_handling HistoryHandlingBehavior, user_involvement UserNavigationInvolvement, on_complete ?TraversableHistoryStepCompletion) {
-	if traversable.has_been_destroyed_ {
+	if traversable.has_been_destroyed() {
 		complete_history_step(on_complete, .applied)
 		return
 	}

@@ -126,7 +126,6 @@ mut:
 	delaying_load_events_                bool
 	navigation_load_event_guard_         ?dom.DocumentLoadEventDelayer
 	is_created_by_web_content_           bool
-	has_been_destroyed_                  bool
 	has_session_history_entry_and_ready_ bool
 	focused_                             bool
 	needs_repaint_                       bool = true
@@ -1328,7 +1327,7 @@ pub fn navigation_must_be_a_replace(url dom.URL, document &dom.Document) bool {
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate
 pub fn (mut model NavigableModel) navigate(params NavigableNavigateParams) ! {
-	if model.has_been_destroyed_ {
+	if model.has_been_destroyed() {
 		return
 	}
 	if !model.has_session_history_entry_and_ready_ {
@@ -1361,7 +1360,7 @@ pub fn (mut model NavigableModel) navigate(params NavigableNavigateParams) ! {
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#beginning-navigation
 fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
-	if model.has_been_destroyed_ {
+	if model.has_been_destroyed() {
 		return
 	}
 	navigation_id := params.navigation_id or { rand.uuid_v4() }
@@ -1413,7 +1412,7 @@ fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
 		}
 		// The fetch callback can spin the event loop and destroy this navigable before
 		// response bytes are ready. Do not install a document into a dead context.
-		if model.has_been_destroyed_ || model.active_browsing_context() == none {
+		if model.has_been_destroyed() || model.active_browsing_context() == none {
 			model.set_ongoing_navigation(NavigableOngoingNavigation{})
 			return
 		}
@@ -1489,7 +1488,7 @@ fn (mut model NavigableModel) commit_navigation_entry(entry &SessionHistoryEntry
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#finalize-a-cross-document-navigation
 pub fn finalize_a_cross_document_navigation(navigable &NavigableModel, history_handling HistoryHandlingBehavior, user_involvement dom.UserNavigationInvolvement, history_entry &SessionHistoryEntry, pending_document ?&dom.Document, on_complete ?TraversableHistoryStepCompletion) {
 	_ = user_involvement
-	if navigable.has_been_destroyed_ {
+	if navigable.has_been_destroyed() {
 		complete_history_step(on_complete, .applied)
 		return
 	}
@@ -2171,7 +2170,8 @@ pub fn (model &NavigableModel) has_pending_navigations() bool {
 }
 
 pub fn (mut model NavigableModel) set_has_been_destroyed() {
-	model.has_been_destroyed_ = true
+	mut host := unsafe { &dom.Navigable(model.host_) }
+	host.set_has_been_destroyed()
 	model.resolve_all_pending_main_thread_scrolls()
 	model.inform_the_navigation_api_about_child_navigable_destruction()
 }
@@ -2183,7 +2183,7 @@ pub fn (mut model NavigableModel) remove_from_all_navigables() {
 }
 
 pub fn (model &NavigableModel) has_been_destroyed() bool {
-	return model.has_been_destroyed_
+	return model.host_.has_been_destroyed()
 }
 
 pub fn (mut model NavigableModel) set_pending_set_browser_zoom_request(value bool) {

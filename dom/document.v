@@ -2354,6 +2354,8 @@ pub mut:
 	is_top_level_traversable_   bool
 	// LocalNavigable::m_closing, inherited by LocalTraversableNavigable.
 	is_closing_                 bool
+	// LocalNavigable::m_has_been_destroyed, shared by its native/model owners.
+	has_been_destroyed_          bool
 	html_model_handle_          voidptr = unsafe { nil }
 	viewport_scroll_callback_   NavigableViewportScrollCallback = unsafe { nil }
 	perform_scroll_callback_    NavigablePerformScrollCallback = unsafe { nil }
@@ -3854,6 +3856,17 @@ pub fn (n &Navigable) is_focused() bool {
 		return n.is_focused_callback_(n.html_model_handle_)
 	}
 	return false
+}
+
+// Navigable's virtual destroyed-state query on the actual local identity.
+pub fn (n &Navigable) has_been_destroyed() bool {
+	return n.has_been_destroyed_
+}
+
+// The flag assignment from LocalNavigable::set_has_been_destroyed. Its other
+// scroll/hover/compositor teardown steps belong to the local HTML owner.
+pub fn (mut n Navigable) set_has_been_destroyed() {
+	n.has_been_destroyed_ = true
 }
 
 pub fn (n &Navigable) system_visibility_state() VisibilityState {
