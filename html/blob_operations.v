@@ -10,8 +10,15 @@ import streams
 import webidl
 
 pub fn (settings &EnvironmentSettingsObject) get_blob_stream(blob &fileapi.Blob) &streams.ReadableStream {
+	return settings.get_blob_stream_in_realm(blob, settings.stream_realm())
+}
+
+// Native bindings pass the actual relevant JS Realm's allocation/data hooks.
+// Its Promise jobs still belong to these real Window/Worker settings.
+pub fn (settings &EnvironmentSettingsObject) get_blob_stream_in_realm(blob &fileapi.Blob, realm streams.StreamRealm) &streams.ReadableStream {
+	assert realm.id == u64(voidptr(settings.realm())), 'Source Blob relevant Realm must belong to its settings'
 	mut stream := streams.ReadableStream.create_for_internal()
-	stream.set_up_with_byte_reading_support_in_realm(settings.stream_realm(), none, none, 0)
+	stream.set_up_with_byte_reading_support_in_realm(realm, none, none, 0)
 	// Source currently queues one copied whole-buffer chunk, including empty
 	// blobs. The copy belongs to the task before any read or callback runs.
 	bytes := blob.raw_bytes()
@@ -31,9 +38,13 @@ pub fn (settings &EnvironmentSettingsObject) get_blob_stream(blob &fileapi.Blob)
 }
 
 pub fn (settings &EnvironmentSettingsObject) read_all_blob_bytes(blob &fileapi.Blob) &webidl.Promise {
-	mut stream := settings.get_blob_stream(blob)
+	return settings.read_all_blob_bytes_in_realm(blob, settings.stream_realm())
+}
+
+pub fn (settings &EnvironmentSettingsObject) read_all_blob_bytes_in_realm(blob &fileapi.Blob, realm streams.StreamRealm) &webidl.Promise {
+	mut stream := settings.get_blob_stream_in_realm(blob, realm)
 	mut reader := stream.get_default_reader() or {
-		return webidl.create_rejected_promise_for(settings.stream_promise_context(), blob_operation_exception_value(err))
+		return webidl.create_rejected_promise_for(realm.promise_context(), blob_operation_exception_value(err))
 	}
 	return reader.read_all_bytes_deprecated()
 }
