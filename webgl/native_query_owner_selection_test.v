@@ -13,10 +13,10 @@ fn run_query_owner_selection_case(mut owner WebGLRenderingContext, mut other Web
 	test_case.steps()
 	mut viewport_state := [0, 0, 0, 0]!
 	C.vox_gl_int_parameter(viewport, &viewport_state[0])
-	// These three Source bodies return before issuing a sync query. Other
+	// These reviewed Source bodies return before issuing a sync query. Other
 	// historical cases stay scoped to their separate implementation reviews.
 	expected_owner := if test_case.name in ['getRenderbufferParameter(unknown)',
-		'getTexParameter(unknown)', 'getAttribLocation(foreign)'] {
+		'getTexParameter(unknown)', 'getAttribLocation(foreign)', 'getSyncParameter(foreign)'] {
 		[9, 10, 11, 12]!
 	} else {
 		[1, 2, 3, 4]!

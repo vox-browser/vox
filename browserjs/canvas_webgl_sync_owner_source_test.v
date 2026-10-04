@@ -10,7 +10,7 @@ fn public_sync_source_owner(expected [4]int) {
 	assert selected == expected
 }
 
-fn test_public_sync_source_owner_precedes_foreign_null_and_deleted_returns() {
+fn test_public_sync_source_cpu_returns_preserve_other_and_native_dispatch_selects_owner() {
 	$if !darwin {
 		return
 	}
@@ -24,18 +24,20 @@ fn test_public_sync_source_owner_precedes_foreign_null_and_deleted_returns() {
 	runtime.evaluate_host('globalThis.syncBodyOwner=__webglContext({bridgeKey:"__created_sync_owner_source",width:2,height:2},"webgl2",null);globalThis.syncBodyOther=__webglContext({bridgeKey:"__created_sync_other_source",width:2,height:2},"webgl2",null);globalThis.ownedBodySync=syncBodyOwner.fenceSync(37143,0);globalThis.foreignBodySync=syncBodyOther.fenceSync(37143,0);syncBodyOwner.viewport(1,2,3,4);syncBodyOther.viewport(9,10,11,12);')!
 	mut other := host.contexts['__created_sync_other_source'] or { panic('other sync context') }
 	for pair in [
-		['clientWaitSync(foreignBodySync,2,0)', '1282'],
-		['waitSync(foreignBodySync,2,0)', '1282'],
-		['deleteSync(foreignBodySync)', '1282'],
-		['deleteSync(null)', '0'],
-		['deleteSync(ownedBodySync)', '0'],
-		['deleteSync(ownedBodySync)', '0'],
-		['clientWaitSync(ownedBodySync,2,0)', '1282'],
-		['waitSync(ownedBodySync,2,0)', '1282'],
+		['clientWaitSync(foreignBodySync,2,0)', '1282', 'early'],
+		['waitSync(foreignBodySync,2,0)', '1282', 'early'],
+		['deleteSync(foreignBodySync)', '1282', 'early'],
+		['getSyncParameter(foreignBodySync,37139)', '1282', 'early'],
+		['deleteSync(null)', '0', 'early'],
+		['deleteSync(ownedBodySync)', '0', 'driver'],
+		['deleteSync(ownedBodySync)', '0', 'early'],
+		['clientWaitSync(ownedBodySync,2,0)', '1282', 'early'],
+		['waitSync(ownedBodySync,2,0)', '1282', 'early'],
+		['getSyncParameter(ownedBodySync,37139)', '1282', 'early'],
 	] {
 		other.native.make_current()
 		runtime.evaluate_host('syncBodyOwner.${pair[0]};')!
-		public_sync_source_owner([1, 2, 3, 4]!)
+		public_sync_source_owner(if pair[2] == 'driver' { [1, 2, 3, 4]! } else { [9, 10, 11, 12]! })
 		assert runtime.evaluate_host('syncBodyOwner.getError()')! == pair[1]
 	}
 	for expression in ['clientWaitSync(null,0,0)', 'waitSync(null,0,0)', 'deleteSync({})'] {

@@ -320,7 +320,6 @@ pub fn (mut context WebGLRenderingContext) get_internalformat_parameter(target G
 }
 
 pub fn (mut context WebGLRenderingContext) get_sync_parameter(sync &WebGLSync, pname GLenum) WebGLParameterValue {
-	context.native.make_current()
 	sync.sync_handle(context.identity(), context.context_generation_) or {
 		context.set_error(invalid_operation)
 		return WebGLParameterValue{}
