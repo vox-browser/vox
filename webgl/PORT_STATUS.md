@@ -137,6 +137,30 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+The four floating vertex-vector methods now forward their span pointer to
+exact glVertexAttrib1fv/2fv/3fv/4fv entry points, matching pinned
+WebGLRenderingContextImpl.cpp:2523-2569. They preserve the actual Source
+minimum lengths 1/2/3/4 and error-before-command returns. Source
+WebGLContextProxyBase::make_current is empty; short spans leave the other
+actual driver selected, while a dispatched GL command selects its owner.
+The former vector-to-scalar method substitution is removed. The existing
+native glVertexAttrib4fv helper is reused and three thin ABI delegates supply
+the remaining Source calls. No synthesized default vector or CPU index gate
+is added; GL reads only the Source operation's components from a longer span.
+Integer vector and pointer/divisor bodies remain distinct Source scopes.
+
+Both-version native witnesses cover every below-minimum length, including an
+invalid index that must still take the genuine Source minimum gate; direct
+driver comparisons cover valid and invalid indices, trailing values, NaN,
+both infinities and signed zero. Independent reset baselines preserve owner
+selection, driver-before-Source error priority and actual Float32 readback.
+Public sequence and native Float32Array paths retain all four short-span
+returns, longer-input component behavior and index/iterator/item conversion
+order. All three native vector/scalar/state and all three public vector/scalar/numeric
+files passed with GC disabled. Their results are under `Build/audit-fixes/source-vertex-vector-gc-none.log` and
+`Build/audit-fixes/source-vertex-vector-public/` in the second private worktree.
+These focused tests supplement the earlier frozen 109/79 revision only.
+
 The four scalar floating vertex-attribute bodies now call the exact
 native glVertexAttrib1f/2f/3f/4f entry points from pinned
 WebGLRenderingContextImpl.cpp:2499-2521. The previous implementation fabricated
