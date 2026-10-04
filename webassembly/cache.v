@@ -241,7 +241,7 @@ pub fn (cache &WebAssemblyCache) get_function_instance(address u64) ?&ExportedWa
 }
 
 pub fn (cache &WebAssemblyCache) get_extern_value(address u64) ?webidl.Value {
-	return cache.extern_values_[address]
+	return cache.extern_values_[address] or { return none }
 }
 
 pub fn (cache &WebAssemblyCache) get_global_instance(address u64) ?&Global {

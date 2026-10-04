@@ -3,6 +3,19 @@ module webassembly
 import math
 import webidl
 
+fn test_source_extern_cache_optional_lookup_distinguishes_absence_from_cached_undefined() {
+	mut cache := WebAssemblyCache.create()
+	assert cache.get_extern_value(17) == none
+	cache.add_extern_value(17, webidl.undefined_value())
+	assert cache.get_extern_value(17)? == webidl.undefined_value()
+	assert cache.get_extern_value(18) == none
+	value := webidl.platform_object_value_with_id(71)
+	cache.add_extern_value(17, value)
+	assert cache.get_extern_value(17)? == value
+	assert cache.get_extern_address(value)? == 17
+	assert cache.get_extern_value(u64(-1)) == none
+}
+
 fn test_external_cache_keys_actual_records_without_platform_or_property_aliasing() {
 	mut cache := WebAssemblyCache.create()
 	first := webidl.platform_object_value_with_id(11)
