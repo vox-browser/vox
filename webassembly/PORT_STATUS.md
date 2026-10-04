@@ -621,3 +621,16 @@ At integration, canonical LibJS additionally exposed the unchanged
 Reference fast path (`bfc616a2`); the frozen Wasm sweep predates that change.
 These are private full-suite results and canonical focused integration results,
 not a claimed canonical full-suite run or complete interpreter/runtime parity.
+
+## Source scalar shifts
+
+`1897fa01` translates the six i32/i64 scalar BitShiftLeft/BitShiftRight
+specializations with Source argument types and unsigned count promotion.
+All six match **5,760 exact native C++ cases** from `0e4a83df`, including
+negative signed counts, every bit position and wrap boundaries. Actual
+Configuration writes retain Source i32/i64 PushType results and clear high
+bits. The new file passes default GC privately; operator/helper neighbors
+pass **3/3** privately and canonically with GC disabled. The package has
+84 test files; the preceding clean 83-file private sweep predates this file.
+Production dispatch and remaining scalar/SIMD execution are still pending.
+See [Source shift mapping](../docs/translation-audit/WASM_SCALAR_SHIFTS.md).
