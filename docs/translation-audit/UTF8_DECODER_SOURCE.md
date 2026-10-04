@@ -942,3 +942,54 @@ reproduces its old defect until that consumer is hooked. Generic whole-input
 UTF16 wrappers, real TransformStream/controller/native bindings, other codecs
 and physical allocation/OOM remain explicit. No LibJS implementation or native
 browser bundle was changed or built privately.
+
+## Same UTF16 owning Decoder's UTF8 lifecycle and bridge
+
+Feature `3b5f14c7f0ab70b116ada03a9fc6aa4bba9bb8c5` adds the actual UTF8 destination
+methods to the SAME SourceUtf16StreamingDecoder, retaining its existing
+variant and lifecycle. Source `public_decode_function!` expands the same
+reachable Off/Remove UTF16 BOM arms for a UTF8 output buffer. Matching BOMs,
+split rejected first-byte replay, consumed offsets and Finished transition use
+that actual UTF8 variant body. Both UTF8 capacity queries follow the selected
+UTF16 variant or Source seen-first-BOM checked formula (`lib.rs:3799–3981`),
+without introducing general sniffing/morphing branches.
+
+The owning UTF8 path follows the original Rust streaming bridge
+(`Rust/src/lib.rs:161–216`): choose the fatal/nonfatal maximum, allocate output,
+decode through the actual destination, retain produced partial callback bytes
+and return success only for InputEmpty. Original Rust uses String/spare Vec
+capacity; V lowers the logical requested output limit to its existing byte
+array and UTF8 string projection. The real native FFI observes the genuine
+String result and owner slots; physical String/Vec capacity, allocator/Box ABI,
+C++ builder and OOM are separate boundaries. Checked native usize capacities
+remain distinct from the narrower V int-array allocation guard.
+
+Tool `8ace9af19746b102d1e5da4fca58e3dafa222959` reuses the validated original Source
+package and includes the original bridge verbatim. Native debug/release each
+pass 3/3, with byte-identical artifacts for 13,840 sequences, 28 checked-capacity
+states, 48 actual fatal calls, 32 failed nonempty byte callbacks, and 768 genuine
+mixed-destination FFI sequences/2,304 calls. Mixed sequences use ONE real
+Box-backed native owner and alternate original UTF8/UTF16 FFI calls, including
+fatal partial state, held bytes/surrogates and matching BOMs. The FFI fixture
+records its real bool, output and retained slots; discarded raw counters are
+not invented. Fixture SHA256 values are:
+
+- `utf16_utf8_streaming_sequences.json`: `65bb03cf8ffdfd90dceab2c22339fa0f4aabcf369c578b9bd3c9e2b4ef9f3814`.
+- `utf16_utf8_streaming_capacities.json`: `7ec51649e5f9e51ceb4ebd41bc894f73808512d643da2251f47e1138e7925825`.
+- `utf16_utf8_partial_callbacks.json`: `ac930ab7c9d3a8bcb26440da9a185b1be0d1a1961c0ebcaff4a5bedc7d208b03`.
+- `utf16_utf8_mixed_owners.json`: `34ab7a87193d1df50bd3e9217cb8b515834a19c26f2f2ba371f416eff57f7000`.
+
+The final native log `source-utf16-utf8-streaming-probe-final.log` hashes to
+`8ae3cd1c15e118f4e9092166a22aa8e16a6fff89ab88d9314bbddb78d160952a`.
+Focused V checks pass 1/1 in default, GC-none and production GC-none in
+`source-utf16-utf8-streaming-focused-{default,gc-none,production-gc-none}.log`.
+Every nonpanic native result, both capacity queries and all mixed owning calls
+are compared exactly. Ten compiled children preserve both endian variants'
+short-BOM replay and Finished capacity/raw/owning fatal boundaries.
+
+This completes the bounded retained UTF16 owner's two output destinations. The
+actual Common UTF8 consumer remains the next separate change; the old Stream
+EOF defect is still reproducible until then. Generic whole-input UTF16 decode,
+native public holder construction/reset, actual TransformStream/controllers,
+other codecs and Source OOM remain separate. No LibJS implementation or native
+bundle was changed or built privately.
