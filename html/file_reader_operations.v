@@ -22,7 +22,9 @@ pub fn (settings &EnvironmentSettingsObject) file_reader_global_context_in_realm
 	settings.window_or_worker_global_scope() or {
 		panic('Source VERIFY: FileReader requires a Window or Worker global')
 	}
-	assert realm.id == u64(voidptr(settings.realm())), 'Source FileReader relevant Realm must belong to its settings'
+	if realm.id != u64(voidptr(settings.realm())) {
+		panic('Source VERIFY: FileReader relevant Realm must belong to its settings')
+	}
 	return fileapi.FileReaderGlobalContext{
 		global_object:             settings.global_object()
 		queue_file_reading_task:   fn [settings] (steps fn ()) u64 {

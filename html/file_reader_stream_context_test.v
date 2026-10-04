@@ -2,6 +2,7 @@ module html
 
 import dom
 import fileapi
+import os
 import streams
 import webidl
 
@@ -92,4 +93,27 @@ fn test_source_file_reader_callback_context_preserves_creation_realm_and_capture
 	})
 	assert settings.realm().script_execution_depth == 0 && settings.realm().callback_execution_depth == 0
 	assert loop.is_backup_incumbent_realm_stack_empty()
+}
+
+fn test_source_file_reader_wrong_owner_realm_preserves_fatal_verification_before_blob_work() {
+	if os.getenv('VOX2_FILEREADER_REALM_MISMATCH_PROBE') == '1' {
+		window, settings, loop := file_reader_stream_context_owner()
+		mut document := window.associated_document()
+		defer { document.finalize() }
+		assert loop.task_queue().is_empty()
+		settings.create_file_reader_in_realm(streams.StreamRealm.create(u64(voidptr(settings.realm())) + 1)) or {
+			panic('wrong owner became author-visible error: ${err.msg()}')
+		}
+		panic('wrong owner passed Source verification')
+	}
+	mut environment := os.environ()
+	environment['VOX2_FILEREADER_REALM_MISMATCH_PROBE'] = '1'
+	mut process := os.new_process(os.executable())
+	process.set_environment(environment)
+	process.set_redirect_stdio()
+	process.run()
+	process.wait()
+	output := process.stdout_slurp() + process.stderr_slurp()
+	assert process.code != 0 && output.contains('Source VERIFY: FileReader relevant Realm must belong to its settings'), output
+	process.close()
 }
