@@ -706,12 +706,14 @@ pub fn (mut context WebGLRenderingContext) get_framebuffer_attachment_parameter(
 				return WebGLParameterValue{
 					kind: .object
 					object: texture_object.object.handle_
+					texture: texture_object
 				}
 			}
 			if renderbuffer_object := framebuffer_attachment.renderbuffer {
 				return WebGLParameterValue{
 					kind: .object
 					object: renderbuffer_object.object.handle_
+					renderbuffer: renderbuffer_object
 				}
 			}
 		}
