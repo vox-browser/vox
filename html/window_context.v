@@ -1214,7 +1214,6 @@ mut:
 	storage_hub_                              ?&StorageHub
 	cookie_store_                             voidptr = unsafe { nil }
 	cookie_store_created_                     bool
-	current_event_                            ?&dom.Event
 	idle_request_callbacks_                   map[u32]&WindowIdleCallback
 	idle_request_callback_order_              []u32
 	runnable_idle_callbacks_                  map[u32]&WindowIdleCallback

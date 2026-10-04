@@ -196,11 +196,11 @@ pub fn (mut window WindowModel) set_associated_document(document &dom.Document) 
 
 // Window::set_current_event
 pub fn (mut window WindowModel) set_current_event(event ?&dom.Event) {
-	window.current_event_ = event
+	window.Window.set_current_event(event)
 }
 
 pub fn (window &WindowModel) current_event() ?&dom.Event {
-	return window.current_event_
+	return window.Window.current_event()
 }
 
 // https://dom.spec.whatwg.org/#dom-window-event
