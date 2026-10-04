@@ -13,7 +13,7 @@ fn test_source_buffer_and_renderbuffer_deletion_preserve_retained_binding_slots(
 		owner.delete_buffer(buffer)
 		assert buffer.object.invalidated()
 		assert owner.get_parameter(array_buffer_binding).object == buffer.object.handle_
-		assert owner.vertex_attrib_states_[0].buffer_handle == buffer.object.handle_
+		assert C.vox_gl_vertex_attrib_parameter(0, vertex_attrib_array_buffer_binding) == 0
 		mut actual_buffer := -1
 		C.vox_gl_int_parameter(array_buffer_binding, &actual_buffer)
 		assert actual_buffer == 0

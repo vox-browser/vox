@@ -1080,21 +1080,12 @@ pub fn (mut context WebGLRenderingContext) vertex_attrib4fv(index GLuint, values
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib_pointer(index GLuint, size int, type_ GLenum, normalized bool, stride int, offset i64) {
-	if size < 1 || size > 4 || stride < 0 || offset < 0 {
-		context.set_error(invalid_value)
-		return
-	}
-	buffer_handle := context.bound_buffers[array_buffer] or {
-		context.set_error(invalid_operation)
-		return
-	}
-	context.vertex_attrib_states_[index] = VertexAttribState{
-		buffer_handle: buffer_handle
-		size: size
-		type_: type_
-		normalized: normalized
-		stride: stride
-		offset: offset
-	}
-	context.command('vertex_attrib_pointer', index, size, type_, i64(normalized), stride, offset)
+    // Source make_current is an empty proxy prefix. Only this retained-slot
+    // check returns before the actual driver command selects its owner.
+    has_array_buffer := if _ := context.retained_buffer_binding(array_buffer) { true } else { false }
+    if !has_array_buffer && offset != 0 {
+        context.set_error(invalid_operation)
+        return
+    }
+    context.command('vertex_attrib_pointer', index, size, type_, i64(normalized), stride, offset)
 }
