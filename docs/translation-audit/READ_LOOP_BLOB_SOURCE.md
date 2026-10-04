@@ -40,8 +40,18 @@ Private verification logs under this assignment's `Build/audit-fixes/`:
 - `source-byte-reading-gc-none.log`: **3/3 PASS** (setup, retained read loop,
   byte-reader neighbor).
 
-Native Uint8Array slot/witness projection is a separate pending prerequisite;
-unprojected opaque engine values are not accepted as typed Uint8Arrays. Blob's
+Native Uint8Array slot/witness projection is implemented separately in commit
+`1dad2782`. The actual installed ReadableStream realm captures the engine brand
+and typed-array getters before author code runs. Read loops use the real
+Uint8Array class, buffer/offset/length and witness validity: author properties,
+replaced constructors, clamped arrays, spoofs and Proxy wrappers do not
+substitute for those slots. Detached or out-of-bounds genuine Uint8Arrays
+produce zero bytes, preserving the source witness behavior. The native focused
+file passes both GC modes in `source-native-read-loop-default.log` and
+`source-native-read-loop-gc-none-final.log`; the existing native ReadableStream
+host neighbor passed the preceding two-file GC-disabled run.
+
+Blob's
 actual FileReading task, TemporaryExecutionContext and relevant-realm
 Promise/stream path still need translation. The synchronous standalone Blob
 accessors and compact XHR facade do not establish those owner semantics.
