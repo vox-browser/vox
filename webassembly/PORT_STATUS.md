@@ -757,3 +757,26 @@ tracked file contents unchanged. The same 209 WebAssembly files now run against
 the updated 490-file LibJS dependency package. Exact commands, whole-checkout
 and package manifests, log hashes and later-change boundaries are recorded in
 [the frozen verification](../docs/translation-audit/WASM_SCALAR_VERIFICATION.md).
+
+## Checked interpreter memory-store helpers and optional extern lookup
+
+`146b783d` translates Source's memory-address projection and both raw-byte
+`store_to_memory` overloads. The current frame resolves its actual module
+memory through the Store; memory32 narrows sign-extended operands, memory64
+retains its full address, and both checked additions trap before any write.
+The byte span reaches live primitive storage without a snapshot copy. Focused
+tests cover memory growth/edges, zero-byte stores, both overflow stages,
+complete unchanged bytes after rejection, actual frame indices and retained
+trap/IP/stack state. See [Source mapping](../docs/translation-audit/WASM_MEMORY_STORE_SOURCE.md).
+Typed stores, reads, opcode execution and the remaining runtime graph are open.
+
+`6a713b3d` preserves the Source optional extern-cache lookup: an absent entry
+returns none while a cached undefined value remains present. The new absence
+regression fails before correction and passes afterward. Separate production
+allocation/import annotations and test-only map guards preserve existing
+operations. Canonical memory/cache/module files pass **3/3 production GC-none**
+(`source-memory-cache-canonical-prod-gc-none.log`); the parser/Base/creator plus
+memory/cache/module integration batch passes **7/7 GC-none**
+(`source-parser-memory-cache-canonical-gc-none.log`). See
+[cache evidence](../docs/translation-audit/WASM_EXTERN_CACHE_OPTIONAL.md).
+The frozen 96-file snapshot predates this new 97th file and cache correction.
