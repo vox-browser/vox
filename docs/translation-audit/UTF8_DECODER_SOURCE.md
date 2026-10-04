@@ -1131,3 +1131,36 @@ bundle changed or was built privately.
 - Full default / GC-none logs respectively:
   `3a266e1a0d5a59cba5d879c9425723015d37bdb6b2726c9ed1ad8aa075b40757` /
   `1f605e9be5726d99c5e70e45ce571edcb0606518595fbc60ee196fddde9972e3`.
+
+
+## Given-decoder selected UTF16 whole-input caller
+
+Feature `e3218e7a6bb0b519395df1eaddcefd9b709f8350` changes the selected UTF16LE/BE
+branches of the existing given-decoder BOM override helper to their genuine
+whole-input UTF8 path. Source `LibTextCodec/Decoder.cpp:382–402` sniffs a Unicode
+BOM, replaces the selected decoder and discards that initial two/three-byte
+marker, then calls `actual_decoder->to_utf8` with IgnoreBOM::No/Replacement.
+The original Rust whole-input FFI subsequently removes ONE further matching
+selected-encoding BOM. The V call now preserves that exact path and order,
+without going through TextDecoder's UTF16 destination or reset semantics.
+Existing UTF8/replacement/other-label adapter paths remain separately scoped.
+
+The focused test reuses the independently observed actual whole-input FFI
+artifact for every remove-BOM scenario: 752 UTF16 calls, each tested with four
+fallback labels after prepending the actual sniffed BOM. The discarded prefix
+selects the owner; the remaining bytes/flags/output are exactly those native
+FFI records, including NUL, malformed surrogates/odd tails and matching/opposing
+BOMs. Existing two/three-BOM and independently witnessed post-sniff EOF tests
+remain unchanged.
+
+Focused default, GC-none and production GC-none each pass 1/1 in
+`source-bom-override-utf16-caller-focused-{default,gc-none,production-gc-none}.log`.
+The FileReader text BOM/replacement tests and native Sync Text primitive/realm
+test pass 3/3 GC-none in
+`source-bom-override-utf16-caller-filereader-gc-none.log` (SHA256
+`7c928cd29877dfdcb1d08f09a965c02846dfb0bd542ad90c92458406e75ddf87`).
+The preceding complete 25/25 two-mode proof is scoped to immutable `c1707456`,
+while these focused checks cover the later caller feature. No native browser
+bundle or LibJS implementation changed privately. The fallback label/string,
+physical allocation/OOM, remaining other-codec and native public-owner
+boundaries described above remain explicit.
