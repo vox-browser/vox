@@ -597,6 +597,8 @@ pub fn (mut context WebGLRenderingContext) validate_program(mut program WebGLPro
 		return
 	}
 	context.native.make_current()
+	// Source record_bytes drops the generated ValidateProgram command after loss.
+	if !context.native.current_ { return }
 	C.vox_gl_validate_program(program.object.native_handle_)
 }
 
