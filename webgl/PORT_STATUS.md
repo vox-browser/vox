@@ -162,6 +162,35 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+getProgramParameter now uses the Source one-element ANGLE robust ABI through
+a separate native helper. Impl.cpp:1789-1790 initializes GLint result to zero
+and invokes get_programiv_robust_angle(program,pname,1,nullptr,&result) before
+its return switch. The new C/V bridge forwards that operation; regular
+programiv remains separate for getProgramInfoLog length, matching its distinct
+Source body. Existing actual owner selection, native names, eager query and
+pname/error ordering are preserved. This ABI feature adds no lost-output rule.
+
+Focused two-version native/public cases compare all Source numeric/Boolean
+pname categories and unsupported values with independent real
+GLGetProgramivRobustANGLE calls using capacity1 and null length. A failed actual
+link outside V supplies a genuine nonempty diagnostic. WebGL1 rejection of
+WebGL2 pnames retains its fallback after the actual native query. A Source-owned
+record whose program is deleted directly through GL still reaches the robust
+driver query and matches its rejected result/error, without a CPU mirror.
+
+Three typed files pass in
+`Build/audit-fixes/source-program-parameter-robust-native-gc-none.log`; two
+public files pass in
+`Build/audit-fixes/source-program-parameter-robust-public-gc-none.log`, including
+CPU-owner and existing shader/program parameter neighbors. All use GC disabled
+and explicit private paths. Exact generated regular/robust/log proxy and
+compositor evidence is retained in
+`Build/audit-fixes/source-program-query-generated-boundary.txt` (SHA-256
+`d1b6674386836dc479f96872545624f4412bef63303a50b8c5328201d41eede3`).
+Initialized lost program outputs, mutations, remote maps and GC/WrapperWorld
+remain separate features. No full regression or canonical bundle evidence is
+claimed by this focused actual native/JSC ABI result.
+
 getProgramParameter now validates its Source handle before selecting the
 actual sync driver. Impl.cpp:1781-1815 returns null and INVALID_OPERATION for
 foreign/deleted programs before any native query. Its Proxy prefix is empty;
@@ -193,8 +222,9 @@ typed failure remains in the native log without -corrected. Implementation was
 unchanged after the public proof. All checks use GC disabled and explicit
 private paths; this is corrected focused evidence, not a relabeled full sweep.
 
-Program robust ABI, initialized lost outputs, other mutations, remote maps and
-GC/WrapperWorld remain separate scopes. No canonical bundle claim follows from
+The subsequent separate program robust ABI is documented above. Initialized
+lost outputs, other mutations, remote maps and GC/WrapperWorld remain separate
+scopes. No canonical bundle claim follows from
 these focused actual native/JSC tests.
 
 getProgramInfoLog now keeps actual owner selection after its Source handle
