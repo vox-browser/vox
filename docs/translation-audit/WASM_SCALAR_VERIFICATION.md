@@ -1,6 +1,37 @@
 # Frozen scalar WebAssembly verification
 
-## Latest frozen 96-file snapshot
+## Latest frozen dependency refresh: 96 files
+
+Canonical revision `e93aaa7b72e56a90f71636efb2be6c3c58113b56` passes
+**96/96 WebAssembly test files in each GC mode**, default in 130.6 seconds and
+GC-none in 128.5 seconds. Commands are `/Users/alex/code/v/v -old-compiler
+-enable-globals test webassembly` and the same with `-gc none`, using `VJOBS=2`.
+Both exit 0. All 4,444 tracked paths and contents, HEAD and clean tracked status
+stayed unchanged before and after both runs. Upstream remained pinned at
+`963d46a829f3e1b79f44dba9d02afb70654300fa`.
+
+The 209 non-Markdown WebAssembly files are unchanged from the previous 96-file
+proof. This refresh verifies them with the newer 490-file non-Markdown LibJS
+dependency snapshot, including owned raw ASCII strings and Source Math entropy.
+It adds no Wasm implementation or execution-parity claim.
+
+Artifacts are under canonical `Build/audit-fixes/`:
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `source-current-dependency-wasm96-manifest.json` | `6b434dbc722e35fcde7c30d63e742203f44e5ed997b9efbc8524d2a96014e171` |
+| Whole sorted tracked path/content manifest | `abdcc05ab7164b1974bdf90416fdf8d05a59b16d082a625e9d546206841d5808` |
+| WebAssembly package manifest | `52b93b2bd838f29a6c4a07a54c43af5794e5944743c4118070d0bd399e530da4` |
+| LibJS package manifest | `d55fd6a720b1bc274039393b94776fb27f7e946d61d51adfb0ce0c229bfef4c9` |
+| `source-current-dependency-wasm96-default.log` | `1a927512b604498c0c7e89aa835949e631e7815b801d93552448a713b0750d8d` |
+| `source-current-dependency-wasm96-gc-none.log` | `dfbc9783eaf41f8bfa65c3e50374ae112f9a520180b1ebdc2a61db97aa79b36e` |
+
+Manifest entries retain exact commands, before/after file digests and results.
+Later Base/CSP, expanded single-byte codecs and shader-gate changes are outside
+this frozen whole-checkout proof. Production opcode/SIMD execution, complete
+instantiation and collector/realm ownership remain unfinished.
+
+## Historical frozen 96-file snapshot
 
 Snapshot: `a7e4319a7eb3fca6f47d55ff24d47398164b1351`, an isolated checkout of
 that exact canonical commit in `Build/audit-fixes/worktrees/09-compiled-records`.

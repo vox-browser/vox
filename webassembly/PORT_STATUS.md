@@ -750,3 +750,10 @@ canonical at recording. Exact commands/manifest/log hashes and subsequent
 change boundaries are in [frozen proof](../docs/translation-audit/WASM_SCALAR_VERIFICATION.md).
 Production opcode/SIMD execution, complete instantiation and collector/realm
 ownership remain open.
+
+The newer frozen canonical `e93aaa7b` dependency refresh also passes **96/96
+files in each GC mode** (130.6 s default /128.5 s GC-none), with all 4,444
+tracked file contents unchanged. The same 209 WebAssembly files now run against
+the updated 490-file LibJS dependency package. Exact commands, whole-checkout
+and package manifests, log hashes and later-change boundaries are recorded in
+[the frozen verification](../docs/translation-audit/WASM_SCALAR_VERIFICATION.md).
