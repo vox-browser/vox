@@ -121,7 +121,11 @@ pub fn (record &URL) origin() Origin {
 		host := record.host or { return Origin.create_opaque(.standard) }
 		return Origin.tuple(record.scheme, host, record.port, none)
 	}
-	if record.scheme in ['file', 'resource'] {
+	// URL.cpp:381–384 gives internal resources one shared empty-host tuple.
+	if record.scheme == 'resource' {
+		return Origin.tuple(record.scheme, Host.from_string(''), none, none)
+	}
+	if record.scheme == 'file' {
 		return Origin.create_opaque(.file)
 	}
 	return Origin.create_opaque(.standard)
