@@ -162,6 +162,59 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+WebGLObject handle, handle_for_query and handle_for_deletion now preserve the
+exact Source m_handle independently of native driver names and compact wrapper
+IDs. WebGLObject.cpp:38-66 validates context before generation/invalidation and
+returns m_handle, or its optional form; that order remains unchanged. For
+normal named-resource creation, the generated proxy returns a WebGLObjectId,
+not the compositor GLuint. The eleven named resource families now retain that
+proxy ID in source_handle_. The compositor-side native_handle_ continues to
+store the actual driver name. Typed native_name() is an explicit direct-adapter
+accessor for genuine GL verification; it is not exposed in JavaScript WebGL IDL.
+
+The creation-only allocator translates ProxyBase.h:74/111 and Types.h:32: an
+unsigned 32-bit counter starts at 1 and returns then increments. It adds no
+zero/collision/exhaustion policy; unsigned wrap follows the Source type.
+ProxyBase.restore() at cpp:29-38 does not reset this counter, and neither does
+this adaptation. Every generated GLuint family and GLsync uses the same
+counter. Sync consumes/stores its generated proxy ID while retaining the exact
+Source base GLuint 0 (WebGLSync.cpp:26-29); its standalone sync pointer APIs
+remain a subsequent separate repair, not completed by this GLuint slice.
+
+Fresh getVertexAttrib buffer and getParameter sampler records are different:
+Source Impl.cpp:2061-2066 and :1673-1677 passes the actual numeric query reply
+directly into the wrapper, including 0. They preserve that raw Source handle
+without advancing the generated creation allocator. Compact wrappers still
+receive unique independent IDs for host identity and registry removal. Named
+resource deleters validate the optional Source handle, then use the separately
+stored native name at the direct driver boundary and the wrapper ID for adapter
+map removal. This preserves actual deletion and retained/public identity while
+correcting the Source handle API value.
+
+Genuine driver preallocation and three fresh binding queries force all three
+identities apart, check Source creation ID 1, and verify the intended native
+buffer is deleted while independent native buffers survive. Further cases
+cover eleven named-resource families, raw 0/nonzero getter-created records,
+Sync consuming the shared counter with base handle 0, and shader IDs continuing
+through real loss/restoration. Driver-only fixtures now pass native_name() to
+GL rather than interpreting a Source proxy ID as a native name. Nine typed
+files pass in `source-object-proxy-id-native-corrected-gc-none.log` and seven
+public files pass in `source-object-proxy-id-public-gc-none.log`. An initial
+new-fixture compile error used `float` instead of the existing `gl_float`
+constant; that diagnostic remains in `source-object-proxy-id-native-gc-none.log`.
+The exact allocate-before-native-fence ordering then passed both affected
+object/sync files in `source-object-proxy-id-sync-order-gc-none.log`. All use GC
+disabled and explicit private module paths.
+
+This Source record/allocator repair supersedes the historical native-name
+interpretation of m_handle and lost-shader present-zero handle assertions.
+The actual compositor replayer resolves object arguments through
+WebGLObjectMap, including raw getter-created numeric handles. The current direct
+adapter preserves its existing genuine native behavior and does not establish
+full remote ID-map/command-dispatch equivalence, including that unusual getter
+case. Broader lost dispatch suppression, GLsync API values, remote transport
+and full GC/WrapperWorld remain independent scopes.
+
 createShader now follows the generated command suppression boundary after real
 context loss. GLFunctions.json:945 categorizes glCreateShader as `gen`, not
 `sync`. generate_libweb_webgl_proxy.py:89-104 allocates a WebGLObjectId, records
@@ -1128,31 +1181,18 @@ preserved pointers. The legacy generation fixture now compares the actual
 pointer. The separately scoped shared WebGLObject GLuint repair follows; no
 full source GC/WrapperWorld parity is claimed.
 
-WebGLObject handle, handle_for_query and handle_for_deletion now return the
-actual source GLuint name (`WebGLObject.cpp:38-66`), including a present zero
-name. Their context/generation/invalidation ordering remains the source order.
-The private `native_handle_` stores source m_handle; the existing private
-`handle_` remains a distinct adapter lookup ID exposed only through the typed
-bookkeeping_id accessor. Every named-resource deleter uses the source optional
-GLuint for GL and its separate bookkeeping ID for adapter map removal/debug
-recording. Host registration validates the source handle but keys its logical
-wrapper map only by bookkeeping IDs; logical parameter fallbacks use those
-same separate IDs. A genuine driver
-preallocation test forces these IDs to differ and confirms source deletion
-deletes the intended native buffer and lookup entry while independent driver
-buffers survive. Other cases cover all eleven named resource kinds, actual
-zero-name shaders produced by EGL loss, present-zero query/deletion results,
-and Sync's source base GLuint zero alongside its distinct GLsync pointer
-(`WebGLSync.cpp:26-29`). The earlier zero-shader fixture now checks the exact
-source zero handle. Eleven typed files passed in
-`source-object-handle-final-gc-none.log`; nine public files passed in
-`source-object-handle-public-gc-none.log`, all with GC disabled. The initial
-native manifest used a nonexistent VAO fixture path after ten files passed;
-that diagnostic remains in `source-object-handle-gc-none.log`, and the corrected
-eleven-file manifest passed in full. Public cases verify genuine differing
-driver/wrapper IDs, shader/program reply identity and retained/deleted/zero
-resource neighbors. Source GC owner references, remote transport and full
-WrapperWorld ownership remain separate boundaries.
+The historical WebGLObject repair separated compact wrapper IDs from native
+GLuint names and preserved actual native deletion/identity. Its eleven typed
+and nine public files passed with GC disabled in
+`source-object-handle-final-gc-none.log` and
+`source-object-handle-public-gc-none.log`. Those driver observations remain
+valid evidence for genuine native names and deletion, but its interpretation
+of native_handle_ as Source m_handle was incomplete: it had not traced the
+actual generated proxy-ID return and compositor map. The later Source proxy-ID
+record/allocator repair above supersedes those handle-value assertions, while
+preserving native driver names separately. The initial nonexistent VAO fixture
+path diagnostic remains in `source-object-handle-gc-none.log`. Remote transport
+and full GC/WrapperWorld still remain separate boundaries.
 
 getAttachedShaders now wraps the actual retained shader records from
 `WebGLRenderingContextImpl.cpp:867-889` and the generated
@@ -1609,8 +1649,10 @@ Other remaining context caches, remote transport and complete LibJS ownership
 remain separate source slices.
 
 createShader now preserves the source's unconditional owned-record creation
-after a valid shader type, even when actual glCreateShader returns zero
-(`WebGLRenderingContextImpl.cpp:474-489`). The source invalid-type null return
+after a valid shader type, retaining a separate actual native adapter name
+(`WebGLRenderingContextImpl.cpp:472-485`). The subsequent generated-boundary
+review above establishes that Source m_handle is the returned proxy ID, even
+when the command is dropped after loss; it is not that native name. The source invalid-type null return
 and INVALID_ENUM remain. The genuine ANGLE test uses the existing production
 context-loss path, which destroys EGL and unbinds its current context, verifies
 that raw glCreateShader returns zero, and checks both shader types' retained
