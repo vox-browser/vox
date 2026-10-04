@@ -501,6 +501,17 @@ This preserves source retained-canvas repaint behavior; full source display-list
 ownership, remote GPU surfaces and full GC/WrapperWorld integration remain
 separate boundaries.
 
+clear now selects the owner, marks the direct painting surface and invokes the
+concrete Source canvas hook before GL (`WebGLRenderingContextImpl.cpp:382-389`).
+The generic post-dispatch clear notification was removed to avoid duplicates.
+Real one-pixel tests verify exactly one callback sees the old black pixel before
+the translated clear writes red; actual driver errors retain owner selection
+and dirty notification. Genuine EGL loss still reaches the source canvas hook.
+Four typed/HTML files passed in `source-clear-order-gc-none.log`; two actual
+public rendering neighbors passed in `source-clear-order-public-gc-none.log`,
+all with GC disabled and no failures. The direct CPU surface adapter and full
+source GC/caller WrapperWorld/remote transport boundaries remain explicit.
+
 Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
 `WebGL2RenderingContextOverloads.cpp:33-85`, and
 `WebGL2RenderingContextImpl.cpp:46-50`: select the owner, validate nullable data
