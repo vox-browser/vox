@@ -115,6 +115,23 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+The clear-color/depth/stencil and color/depth-mask setters now contain the
+source GL calls without five invented retained scalar fields, CPU cache clamps
+or restoration writes. `clear_depth` and its public bridge now use the source
+float ABI, following `WebGLRenderingContextImpl.cpp:390-412,639-643`,
+`WebGLRenderingContextBase.idl:54` and unrestricted `GLclampf`. Actual getter
+queries reflect direct driver writes. Two-version float/color/depth oracles
+cover finite values, NaN and both infinities with native clamp/error behavior.
+Real native and public point rendering verifies `[255,0,255,255]`: masked depth
+and stencil clears preserve the values required by the draw tests, while the
+color mask preserves the existing blue channel. Prior native errors remain
+available after the actual native setters/clear/draw/readback. Public numeric
+exceptions precede body entry, and boolean mask conversion does not invoke
+author numeric hooks. The four native new/callback/framebuffer/state files
+passed in `source-clear-setters-gc-none.log`; the public new/host pair passed in
+`source-clear-setters-public-gc-none.log`. These checks supplement the frozen
+101/70 sweep; the separately translated clear callback ordering remains intact.
+
 All five blend setters now match the unconditional GL bodies in
 `WebGLRenderingContextImpl.cpp:345-373`. Extra enum/extension/factor predicates,
 the unused retained blend-color field and generic blend-cache writes were
