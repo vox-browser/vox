@@ -174,8 +174,18 @@ pub fn (buffer &BinaryMachineMemoryBuffer) copy_to(offset usize, destination Bin
 }
 
 pub fn (mut buffer BinaryMachineMemoryBuffer) copy_from(source &BinaryMachineMemoryBuffer, source_offset usize, destination_offset usize, count usize) {
-	assert source_offset <= source.size() && count <= source.size() - source_offset
-	assert destination_offset <= buffer.size() && count <= buffer.size() - destination_offset
+	if source_offset > source.size() {
+		panic('Source VERIFY: MemoryBuffer::copy_from source_offset <= source.size()')
+	}
+	if count > source.size() - source_offset {
+		panic('Source VERIFY: MemoryBuffer::copy_from count <= source.size() - source_offset')
+	}
+	if destination_offset > buffer.size() {
+		panic('Source VERIFY: MemoryBuffer::copy_from destination_offset <= size()')
+	}
+	if count > buffer.size() - destination_offset {
+		panic('Source VERIFY: MemoryBuffer::copy_from count <= size() - destination_offset')
+	}
 	if voidptr(source) == voidptr(&buffer) {
 		buffer.move_data(destination_offset, source_offset, count)
 		return
