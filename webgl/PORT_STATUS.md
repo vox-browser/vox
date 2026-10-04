@@ -137,6 +137,27 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+The new full typed regression at frozen canonical snapshot
+`e93aaa7b72e56a90f71636efb2be6c3c58113b56` passed 120/121 tracked WebGL files
+in 238.198 seconds with GC disabled and explicit frozen module paths. All
+4,444 tracked files, HEAD/tree, index records, content/modes and diffs were
+hashed before/after and unchanged. Exact manifest, per-file logs, TSV results,
+snapshots and summary are under `Build/audit-fixes/webgl-final-e93aaa7b/` in
+the separate clean `08-webgl-e93aaa7b` checkout. The sole failure was the old
+native_query_owner_selection fixture's blanket native-owner expectation after
+getRenderbufferParameter's correct unknown-name early return. The same fixture
+also held that obsolete expectation for getTexParameter(unknown) and
+getAttribLocation(foreign).
+
+Only those three separately Source-reviewed expectations were migrated in a
+test-only commit in `08-protocol-followup`; the failed file then passed with
+GC disabled in `Build/audit-fixes/source-query-owner-legacy-reviewed-gc-none.log`
+(2.2 seconds). Other historical cases remain scoped to their separate Source
+method reviews. This is frozen 120/121 plus one corrected focused file; the
+original sweep remains 120/121 and is not relabeled a clean 121-file pass.
+The separate frozen public sweep and its eventual evidence retain their exact
+canonical revision regardless of subsequent private fixes.
+
 createShader now preserves the genuine invalid-type return from pinned
 WebGLRenderingContextImpl.cpp:472-485 before actual native selection. Four
 invalid GLuint type cases return null/INVALID_ENUM without changing the other
