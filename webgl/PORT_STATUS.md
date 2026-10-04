@@ -137,6 +137,32 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+The four scalar floating vertex-attribute bodies now call the exact
+native glVertexAttrib1f/2f/3f/4f entry points from pinned
+WebGLRenderingContextImpl.cpp:2499-2521. The previous implementation fabricated
+four-component defaults in a CPU map and delegated every scalar operation to
+glVertexAttrib4fv. Those scalar mirror writes and default-value construction
+are removed; GL supplies its own scalar defaults. Four thin native ABI
+wrappers carry the original f32 arguments directly. No scalar CPU index gate,
+float-to-integer logger conversion or substitute default algorithm is added.
+The genuine Source list minimum-length gates and current list entry points
+remain a separate scope. Integer attribute and pointer-state mirrors also
+remain separate slices.
+
+Both versions are checked against independently reset direct-driver scalar
+baselines at slot zero, the real maximum's last valid slot and its first invalid
+slot for all four component counts. NaN, positive/negative infinity, signed
+zero and finite fractions preserve actual driver readback, owner selection and
+native-before-Source error priority. Public tests compare real driver results,
+preserve all four argument-conversion/throw paths, and verify index-before-x/y/
+z/w conversion order and genuine Float32Array replies. All three native scalar/state/
+capability files and all three public scalar/numeric/protocol files passed with
+GC disabled. Their focused results are under
+`Build/audit-fixes/source-vertex-scalar-gc-none.log` and
+`Build/audit-fixes/source-vertex-scalar-public/` in the second private worktree.
+These focused checks supplement the original frozen 109/79 result; no new
+full-package or native-bundle claim is made.
+
 The write-only capability and enabled-vertex-attribute maps are removed.
 Pinned WebGLRenderingContextImpl.cpp:681-692, 715-725 and 2131-2134 forwards
 enable/disable/isEnabled operations to GL; no capability-state map exists in
