@@ -605,7 +605,6 @@ pub fn (mut context WebGLRenderingContext) get_attached_shaders(program &WebGLPr
 }
 
 pub fn (mut context WebGLRenderingContext) get_program_info_log(program &WebGLProgram) ?string {
-	context.native.make_current()
 	if !context.owns(&program.object) {
 		context.set_error(invalid_operation)
 		return none
