@@ -297,10 +297,19 @@ fn dom_meta_csp_enforce(document &dom.Document, input string) string {
 	return directives.map('${it.name} ${it.value.join(' ')}'.trim_space()).join('; ')
 }
 
+fn document_csp_initialization_policies(document &dom.Document) []&contentsecuritypolicy.Policy {
+	// Document.cpp:10720 reads the Document's own list. Inline/global checks
+	// use relevant settings instead, which may currently name another Document.
+	return fetch_csp_policy_list(document.policy_container().csp_list).policies
+}
+
 fn dom_csp_initialize_document(_ voidptr, document &dom.Document) {
-	for policy in document_csp_policies(document) {
+	for policy in document_csp_initialization_policies(document) {
 		for directive in policy.directives() {
-			assert directive.initialization(false, policy) == .allowed
+			// Source VERIFY remains active in production builds.
+			if directive.initialization(false, policy) != .allowed {
+				panic('CSP Document initialization must return Allowed')
+			}
 		}
 	}
 }
