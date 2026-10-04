@@ -2137,6 +2137,7 @@ pub mut:
 	scroll_y_                 f64
 	current_event_            &Event = unsafe { nil }
 	last_activation_timestamp DOMHighResTimeStamp = math.inf(1)
+	last_history_action_activation_timestamp DOMHighResTimeStamp = math.inf(1)
 	close_watcher_manager_    &CloseWatcherManager = unsafe { nil }
 }
 

@@ -12,7 +12,6 @@ import css
 import dom
 import fileapi
 import highresolutiontime
-import math
 import speech
 
 pub struct LocationNavigation {
@@ -1257,7 +1256,6 @@ mut:
 	posted_messages_                          []PostedWindowMessage
 	stop_count_                               u32
 	focus_count_                              u32
-	last_history_action_activation_timestamp_ dom.DOMHighResTimeStamp = math.inf(1)
 	scripting_realm_                          &ScriptingRealm = unsafe { nil }
 	environment_settings_                    &WindowEnvironmentSettingsObject = unsafe { nil }
 }
@@ -1669,7 +1667,7 @@ pub fn (window &WindowModel) close_watcher_manager() &CloseWatcherManager {
 
 // https://html.spec.whatwg.org/multipage/interaction.html#history-action-activation
 pub fn (window &WindowModel) has_history_action_activation() bool {
-	return window.last_history_action_activation_timestamp_ != window.last_activation_timestamp()
+	return window.Window.has_history_action_activation()
 }
 
 pub fn (mut window WindowModel) set_last_activation_timestamp(timestamp dom.DOMHighResTimeStamp) {
@@ -1681,27 +1679,16 @@ pub fn (window &WindowModel) last_activation_timestamp() dom.DOMHighResTimeStamp
 }
 
 pub fn (mut window WindowModel) set_last_history_action_activation_timestamp(timestamp dom.DOMHighResTimeStamp) {
-	window.last_history_action_activation_timestamp_ = timestamp
+	window.Window.set_last_history_action_activation_timestamp(timestamp)
 }
 
 pub fn (window &WindowModel) last_history_action_activation_timestamp() dom.DOMHighResTimeStamp {
-	return window.last_history_action_activation_timestamp_
-}
-
-fn consume_history_action_activation_in_context(context &BrowsingContextModel) {
-	if active_window := context.active_window() {
-		mut mutable_window := unsafe { &WindowModel(active_window) }
-		mutable_window.set_last_history_action_activation_timestamp(active_window.last_activation_timestamp())
-	}
-	for child in context.children() {
-		consume_history_action_activation_in_context(child)
-	}
+	return window.Window.last_history_action_activation_timestamp
 }
 
 // https://html.spec.whatwg.org/multipage/interaction.html#consume-history-action-user-activation
 pub fn (mut window WindowModel) consume_history_action_user_activation() {
-	top := window.browsing_context_.top_level_browsing_context() or { return }
-	consume_history_action_activation_in_context(top)
+	window.Window.consume_history_action_user_activation()
 }
 
 pub fn (window &WindowModel) name() string {

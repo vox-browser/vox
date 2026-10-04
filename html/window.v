@@ -463,22 +463,9 @@ pub fn (window &WindowModel) has_transient_activation() bool {
 	return window.Window.has_transient_activation()
 }
 
-fn consume_activation_in_context(context &BrowsingContextModel) {
-	if active_window := context.active_window() {
-		if active_window.last_activation_timestamp() != math.inf(1) {
-			mut mutable_window := unsafe { &WindowModel(active_window) }
-			mutable_window.set_last_activation_timestamp(math.inf(-1))
-		}
-	}
-	for child in context.children() {
-		consume_activation_in_context(child)
-	}
-}
-
 // https://html.spec.whatwg.org/multipage/interaction.html#consume-user-activation
 pub fn (mut window WindowModel) consume_user_activation() {
-	top := window.browsing_context().top_level_browsing_context() or { return }
-	consume_activation_in_context(top)
+	window.Window.consume_user_activation()
 }
 
 // https://w3c.github.io/requestidlecallback/#start-an-idle-period-algorithm
