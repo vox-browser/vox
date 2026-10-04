@@ -2,6 +2,25 @@ module browserjs
 
 import fileapi
 
+fn test_source_sync_text_reprocesses_malformed_utf8_prefix_into_actual_owned_primitive() {
+	$if !darwin {
+		return
+	}
+	mut runtime := Runtime.create()
+	defer { runtime.close() }
+	reader := fileapi.FileReaderSync.create()
+	for input in [[u8(0xe1), `A`, 0], [u8(0xe1), 0x80, `A`, 0]] {
+		blob := fileapi.Blob.create(input, '')
+		actual := runtime.javascript_file_reader_sync_text(reader, blob, none)!
+		assert runtime.native_utf16_string(actual)!.code_units() == [u16(0xfffd), u16(`A`), 0]
+	}
+	final_partial := runtime.javascript_file_reader_sync_text(reader, fileapi.Blob.create([
+		u8(0xe1),
+		0x80,
+	], ''), none)!
+	assert runtime.native_utf16_string(final_partial)!.code_units() == [u16(0xfffd)]
+}
+
 fn test_source_sync_text_projects_owned_bom_decoding_units_to_native_primitive() {
 	$if !darwin {
 		return

@@ -234,61 +234,13 @@ fn append_replacement(mut output []u8) {
 }
 
 fn decode_utf8(input []u8, fatal bool) !string {
-	mut output := []u8{}
-	mut i := 0
-	for i < input.len {
-		first := input[i]
-		if first <= 0x7f {
-			output << first
-			i++
-			continue
-		}
-		mut needed := 0
-		mut code_point := u32(0)
-		mut minimum := u32(0)
-		if first >= 0xc2 && first <= 0xdf {
-			needed = 1
-			code_point = u32(first & 0x1f)
-			minimum = 0x80
-		} else if first >= 0xe0 && first <= 0xef {
-			needed = 2
-			code_point = u32(first & 0x0f)
-			minimum = 0x800
-		} else if first >= 0xf0 && first <= 0xf4 {
-			needed = 3
-			code_point = u32(first & 0x07)
-			minimum = 0x10000
-		} else {
-			if fatal { return error('TypeError: Decoding failed') }
-			append_replacement(mut output)
-			i++
-			continue
-		}
-		if i + needed >= input.len {
-			if fatal { return error('TypeError: Decoding failed') }
-			append_replacement(mut output)
-			break
-		}
-		mut valid := true
-		for offset in 1 .. needed + 1 {
-			continuation := input[i + offset]
-			if continuation & 0xc0 != 0x80 {
-				valid = false
-				break
-			}
-			code_point = (code_point << 6) | u32(continuation & 0x3f)
-		}
-		if !valid || code_point < minimum || code_point > 0x10ffff
-			|| (code_point >= 0xd800 && code_point <= 0xdfff) {
-			if fatal { return error('TypeError: Decoding failed') }
-			append_replacement(mut output)
-			i++
-			continue
-		}
-		append_utf8_code_point(mut output, code_point)
-		i += needed + 1
+	output, had_errors := decode_source_utf8_without_bom_handling(input)
+	// The actual Rust bridge replaces first and withholds callback output
+	// in fatal mode when the Source whole-input decoder reports errors.
+	if fatal && had_errors {
+		return error('TypeError: Decoding failed')
 	}
-	return output.bytestr()
+	return output
 }
 
 fn decode_utf16(input []u8, big_endian bool, fatal bool) !string {

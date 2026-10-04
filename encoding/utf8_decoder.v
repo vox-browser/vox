@@ -206,16 +206,20 @@ fn (mut decoder SourceUtf8Decoder) decode_to_utf8_raw_at(input []u8, input_start
 
 // Source Decoder::decode_to_utf8 replacement loop over the actual UTF8 variant.
 fn (mut decoder SourceUtf8Decoder) decode_to_utf8(input []u8, mut output []u8, last bool) (SingleByteDecoderResult, int, int, bool) {
+	return decoder.decode_to_utf8_at(input, 0, mut output, 0, last)
+}
+
+fn (mut decoder SourceUtf8Decoder) decode_to_utf8_at(input []u8, input_start int, mut output []u8, output_start int, last bool) (SingleByteDecoderResult, int, int, bool) {
 	mut had_errors := false
-	mut total_read := 0
-	mut total_written := 0
+	mut total_read := input_start
+	mut total_written := output_start
 	for {
 		result, read, written := decoder.decode_to_utf8_raw_at(input, total_read, mut output, total_written, last)
 		total_read += read
 		total_written += written
 		match result.status {
 			.input_empty, .output_full {
-				return result, total_read, total_written, had_errors
+				return result, total_read - input_start, total_written - output_start, had_errors
 			}
 			.malformed {
 				had_errors = true
@@ -230,5 +234,71 @@ fn (mut decoder SourceUtf8Decoder) decode_to_utf8(input []u8, mut output []u8, l
 			}
 		}
 	}
-	return SingleByteDecoderResult{ status: .input_empty }, total_read, total_written, had_errors
+	return SingleByteDecoderResult{ status: .input_empty }, total_read - input_start, total_written - output_start, had_errors
+}
+
+// Source Encoding::decode_without_bom_handling's UTF8 potentially-borrowable
+// branch. The compatibility string owns copied bytes; logical spare capacity
+// and reserve requests retain Source's actual control path.
+fn decode_source_utf8_without_bom_handling(input []u8) (string, bool) {
+	valid_up_to := source_utf8_valid_up_to(input)
+	if valid_up_to == input.len {
+		return input.bytestr(), false
+	}
+	mut decoder := SourceUtf8Decoder.new_inner()
+	remaining := u64(input.len - valid_up_to)
+	without_replacement := u64(valid_up_to) + decoder.max_utf8_buffer_length_without_replacement(remaining) or {
+		panic('Source UTF8 maximum capacity overflow')
+	}
+	mut rounded_without_replacement := u64(1)
+	for rounded_without_replacement < without_replacement {
+		rounded_without_replacement *= 2
+	}
+	with_replacement := u64(valid_up_to) + decoder.max_utf8_buffer_length(remaining) or {
+		panic('Source UTF8 maximum capacity overflow')
+	}
+	capacity := if rounded_without_replacement < with_replacement {
+		rounded_without_replacement
+	} else {
+		with_replacement
+	}
+	if capacity > u64(0x7fffffff) {
+		panic('UTF8 output exceeds flattened V int array capacity')
+	}
+	mut output := []u8{len: int(capacity)}
+	for index in 0 .. valid_up_to {
+		output[index] = input[index]
+	}
+	mut total_read := valid_up_to
+	mut total_written := valid_up_to
+	mut total_had_errors := false
+	for {
+		result, read, written, had_errors := decoder.decode_to_utf8_at(input, total_read, mut output, total_written, true)
+		total_read += read
+		total_written += written
+		total_had_errors = total_had_errors || had_errors
+		match result.status {
+			.input_empty {
+				return output[..total_written].bytestr(), total_had_errors
+			}
+			.output_full {
+				// String::reserve requests this many additional bytes from
+				// its current produced length, including pending decoder state.
+				needed := decoder.max_utf8_buffer_length(u64(input.len - total_read)) or {
+					panic('Source UTF8 maximum capacity overflow')
+				}
+				new_capacity := u64(total_written) + needed
+				if new_capacity > u64(0x7fffffff) {
+					panic('UTF8 output exceeds flattened V int array capacity')
+				}
+				if new_capacity > u64(output.len) {
+					output << []u8{len: int(new_capacity) - output.len}
+				}
+			}
+			.malformed {
+				panic('Source UTF8 replacement wrapper returned raw malformed status')
+			}
+		}
+	}
+	return '', false
 }
