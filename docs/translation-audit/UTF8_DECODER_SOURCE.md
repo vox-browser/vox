@@ -731,3 +731,64 @@ Common/Stream's UTF8 destination, generic whole-input UTF16-to-UTF8 wrappers,
 other codec families, native WebIDL wrappers and Source physical allocation/OOM
 behavior remain separate work. No LibJS implementation or native bundle was
 changed or built privately.
+
+## UTF16 owning Off/Remove lifecycle and original FFI output
+
+Feature `2d3b444ab8fdb76f14ff2e1db84ae87b205fa02d` owns the proven UTF16 variant
+inside the actual selected Decoder lifecycle. It translates Source's Off/Remove
+constructor states and the reachable UTF16 arms of `public_decode_function!`
+(`macros.rs:1292–1631`), together with the actual UTF16 maximum-capacity query
+(`lib.rs:4276–4350`) and original streaming bridge (`Rust/src/lib.rs:218–262`).
+The retained BE/LE start and seen-first-BOM states select only their matching
+fixed encoding. Opposite BOMs are ordinary code units; general BOM-sniffing
+morphs and foreign encoding variants are unreachable through these constructors.
+An empty start returns InputEmpty before the Finished transition, as Source does.
+
+A rejected split BOM replays its original first byte into the actual variant;
+Source's zero/one-unit replay output buffers remain fatal. Matching BOM offsets
+count consumed bytes correctly. The actual raw variant retains odd bytes,
+surrogates and pending BMP across calls; Finished occurs only after a last raw
+InputEmpty result. Replacement repeatedly delegates through that owning
+lifecycle. Its maximum-capacity u16 owner returns actual internal callback units
+and success, including produced partial units on fatal failure. The C++ caller's
+failure withholding remains separate. V int-array allocation is explicitly
+narrower than Source checked usize capacity, and physical Vec/Box/C++ builder
+representation and OOM remain distinct boundaries.
+
+Tool `c0637ce9ae1c8098cdaeea9285edb0a2e51c699b` includes the original read-only
+Source Rust bridge verbatim and uses genuine new/decode/free Box-backed records
+for owned modes. It reuses the validated raw prerequisite dependency copy with
+only a lifecycle observation export added. Its temporary parent workspace
+explicitly excludes that dependency's isolated workspace and retains the same
+locked Source AArch64 default-alloc package configuration. Raw modes observe
+real returned counters; FFI modes record only the genuine max capacity, success,
+callback units and actual retained slots. No discarded FFI counter is fabricated.
+
+Actual debug/release both pass 2/2 and produce byte-identical artifacts:
+13,840 split-input sequences, 28 distinct checked-capacity states and 32 native
+fatal calls. The sequence fixture includes 5,192 genuine nonpanic owning FFI
+calls. A separate fixture observes 32 actual nonempty fatal callback results
+before the bridge returns false. Source body/EOF malformed lengths, replay,
+NUL, paired/unpaired/consecutive surrogates, matching/opposite/repeated BOMs and
+all capacities from zero through 32 are included. Fixture SHA256 values are:
+
+- `utf16_streaming_sequences.json`: `7cf8f3d07fadd4fb9528ff53076587b6eeb5c5362e775f93cfc8837082cd36fa`.
+- `utf16_streaming_capacities.json`: `48c172d4b6a9a47b1fdad43a9ecd2b244f83f7901fff31e6f4f2f05ad84beee1`.
+- `utf16_partial_callbacks.json`: `6b3e68a50b0c459935a0c69b54245528ee89fcf7a0f97318053d17456f33b5eb`.
+
+The final native log `source-utf16-streaming-probe-final.log` hashes to
+`3500c15c4757a1f5bd7ca54d521b58d48939ac0ab6d4d4cf0c4a5888abc3f71e`.
+Focused V checks pass 1/1 in default, GC-none and production GC-none in
+`source-utf16-streaming-focused-final-{default,gc-none,production-gc-none}.log`.
+Every nonfatal native observation is compared exactly; ten compiled children
+exercise BE/LE zero/one-unit BOM replay and Finished capacity/decode/owning calls.
+Initial focused compilation exposed a test helper isolated in another `_test.v`
+file; the fixture now owns its own slot assertion helper, with those initial
+logs retained. No native expected value was changed.
+
+The public TextDecoder caller remains unchanged in this prerequisite. Source
+Common/Stream's UTF8 destination and generic whole-input UTF16-to-UTF8 wrappers
+still require their actual destination bodies; this owner does not replace them
+with a conversion workaround. Native public interfaces, BufferSource conversion
+and other codecs remain explicit. No LibJS implementation or native bundle
+was changed or built privately.
