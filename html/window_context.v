@@ -1778,13 +1778,13 @@ pub fn (window &WindowModel) length() int {
 }
 
 pub fn (window &WindowModel) top() ?&WindowProxyModel {
-	top_context := window.browsing_context_.top_level_browsing_context() or { return none }
-	return top_context.window_proxy()
+	native := window.Window.top() or { return none }
+	return window_proxy_model_for_native(native)
 }
 
 pub fn (window &WindowModel) parent() ?&WindowProxyModel {
-	parent_context := window.browsing_context_.parent() or { return window.window_proxy_ }
-	return parent_context.window_proxy()
+	native := window.Window.parent() or { return none }
+	return window_proxy_model_for_native(native)
 }
 
 pub fn (window &WindowModel) opener() ?&WindowProxyModel {
