@@ -37,10 +37,9 @@ Window virtual-dispatch override:
 Commands used `v -old-compiler -enable-globals test`, adding `-gc none` for
 the corresponding batch.
 
-This feature unifies the activation owner and checks. The native EventTarget
-notification path still writes an absolute event-construction timestamp rather
-than the pinned source's relative high-resolution time; that is a separate
-notification slice. The existing typed consumption methods still walk cached
+This feature unifies the activation owner and checks. The separate
+[trusted activation notification slice](TRUSTED_ACTIVATION_CLOCK.md) fixes the
+native EventTarget notification clock. The existing typed consumption methods still walk cached
 BrowsingContext descendants rather than the source top-level traversable's
 active-document inclusive descendant navigables. Input and select picker models
 also retain explicitly supplied activation/security state. These remaining
