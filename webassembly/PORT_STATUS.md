@@ -691,6 +691,17 @@ matching **1,536 exact native C++ result-bit cases** from `ebe9af38`. Source
 canonical NaN, signed-zero branches and width-specific libm calls retain their
 exact bits. Default GC passes privately; extrema/arithmetic/helper files pass
 **3/3** privately and canonically with GC disabled. The package now has 89 test
-files. Its full sweep is pending; remaining scalar/SIMD operators, production
-opcode dispatch, instantiation and collector/realm ownership remain open.
+files. The frozen full-suite evidence below is scoped to that private snapshot;
+remaining scalar/SIMD operators, production opcode dispatch, instantiation and
+collector/realm ownership remain open.
 See [Source extrema mapping](../docs/translation-audit/WASM_FLOAT_EXTREMA.md).
+
+
+The frozen assignment-9 `e1f41d8e` snapshot passes a fresh clean **89/89 files
+in each GC mode**. Logs, exact manifest, snapshot hash and exit codes use
+`source-floating-extrema-full-private-` under its private `Build/audit-fixes/`.
+Canonical WebAssembly implementation/tests match byte-for-byte; dependencies
+outside that package remain the private snapshot. This sweep predates the
+new explicit LibJS UTF8 byte-boundary helper (`68deba04`). Canonical focused
+arithmetic/extrema/helper checks pass separately. These results do not supply
+an opcode interpreter, instantiation or complete collector/realm graph.
