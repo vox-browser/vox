@@ -1524,11 +1524,6 @@ fn WindowModel.create_with_global(document &dom.Document, context &BrowsingConte
 		mut window_realm := window.scripting_realm_
 		_ = WindowEnvironmentSettingsObject.setup(window, document.url, mut window_realm, none,
 			top_level_creation_url, top_level_origin)
-	} else {
-		// Associate the genuine pre-created global without replacing its realm,
-		// settings, or any Promise capability exposed during construction.
-		mut scope := unsafe { &UniversalGlobalScopeMixin(window.environment_settings_.settings.universal_global_scope_) }
-		scope.document_ = document
 	}
 	install_view_transition_promise_context(document, window)
 	mut timer_scope := window.global_scope_

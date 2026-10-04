@@ -7,7 +7,7 @@ fn rejected_promise_settings(event_loop &EventLoop) (&EnvironmentSettingsObject,
 	environment := Environment.create('checkpoint-test', dom.url_about_blank(), none, none, none)
 	mut settings := create_environment_settings(realm, environment, .snapshot, event_loop)
 	target := &dom.EventTarget{}
-	scope := UniversalGlobalScopeMixin.create(target, realm, none)
+	scope := UniversalGlobalScopeMixin.create(target, realm)
 	settings.global_object_ = target
 	settings.universal_global_scope_ = scope
 	return settings, scope

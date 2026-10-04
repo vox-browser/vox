@@ -853,7 +853,7 @@ pub fn WindowEnvironmentSettingsObject.setup(window &WindowModel, creation_url d
 	// and Document::create_and_initialize. These algorithms read the associated
 	// document only after that actual Window has acquired one.
 	document := window.Window.associated_document()
-	settings.universal_global_scope_ = UniversalGlobalScopeMixin.create(settings.global_object_, realm, document)
+	settings.universal_global_scope_ = UniversalGlobalScopeMixin.create(settings.global_object_, realm)
 	if associated := document {
 		settings.origin_ = associated.origin()
 		settings.time_origin_ = associated.load_timing_info.navigation_start_time
@@ -923,7 +923,7 @@ pub fn WorkerEnvironmentSettingsObject.setup(global_scope &WorkerGlobalScope, mu
 	worker_services.error_reporting_target_ = unsafe { &dom.EventTarget(global_scope) }
 	worker_services.error_reporting_realm_ = realm
 	settings.global_object_ = unsafe { &dom.EventTarget(global_scope) }
-	settings.universal_global_scope_ = UniversalGlobalScopeMixin.create(settings.global_object_, realm, none)
+	settings.universal_global_scope_ = UniversalGlobalScopeMixin.create(settings.global_object_, realm)
 	settings.origin_ = origin
 	settings.outside_has_cross_site_ancestor_ = outside_settings.has_cross_site_ancestor
 	settings.worker_owner_secure_context_ = serialized_global_is_secure_context(outside_settings.global)

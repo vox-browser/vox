@@ -91,7 +91,7 @@ fn test_checkpoint_queues_rejection_notification_before_commit_and_finishes_vm_g
 	realm := &ScriptingRealm{}
 	environment := Environment.create('checkpoint-order', dom.url_about_blank(), none, none, none)
 	mut settings := create_environment_settings(realm, environment, .snapshot, loop)
-	mut scope := UniversalGlobalScopeMixin.create(&dom.EventTarget{}, realm, none)
+	mut scope := UniversalGlobalScopeMixin.create(&dom.EventTarget{}, realm)
 	settings.universal_global_scope_ = scope
 	scope.push_onto_about_to_be_notified_rejected_promises_list(dom.Promise.rejected(dom.js_string('rejection')))
 	loop.perform_a_microtask_checkpoint()

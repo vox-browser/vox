@@ -10,7 +10,7 @@ mut:
 fn test_universal_global_scope_base64_and_clone() {
 	target := &dom.EventTarget{}
 	realm := &ScriptingRealm{}
-	scope := UniversalGlobalScopeMixin.create(target, realm, none)
+	scope := UniversalGlobalScopeMixin.create(target, realm)
 	assert scope.btoa('hello')! == 'aGVsbG8='
 	assert scope.atob(' aGVs\nbG8= ')! == 'hello'
 	if _ := scope.btoa('€') {
@@ -31,7 +31,7 @@ fn test_universal_global_scope_base64_and_clone() {
 fn test_universal_global_scope_microtasks_and_rejected_promises() {
 	target := &dom.EventTarget{}
 	mut realm := &ScriptingRealm{}
-	mut scope := UniversalGlobalScopeMixin.create(target, realm, none)
+	mut scope := UniversalGlobalScopeMixin.create(target, realm)
 	state := &UniversalGlobalScopeTestState{}
 	scope.queue_microtask(fn [state] () {
 		mut mutable_state := unsafe { &UniversalGlobalScopeTestState(state) }
@@ -59,7 +59,7 @@ fn test_universal_global_scope_microtasks_and_rejected_promises() {
 }
 
 fn test_universal_global_scope_import_map_and_experimental_flag() {
-	mut scope := UniversalGlobalScopeMixin.create(&dom.EventTarget{}, &ScriptingRealm{}, none)
+	mut scope := UniversalGlobalScopeMixin.create(&dom.EventTarget{}, &ScriptingRealm{})
 	import_map :=
 		parse_import_map_string('{"imports":{"x":"/x.js"}}', dom.URL{'https://example.test/'})!
 	scope.set_import_map(import_map)

@@ -40,8 +40,8 @@ fn test_source_owner_global_retains_distinct_cached_size_callback_records() {
 fn test_universal_source_scope_uses_same_lazy_callback_contract_and_separate_global_identity() {
 	mut calls := &StrategyBuiltinCalls{}
 	realm := &ScriptingRealm{}
-	mut one := UniversalGlobalScopeMixin.create(&dom.EventTarget{}, realm, none)
-	mut two := UniversalGlobalScopeMixin.create(&dom.EventTarget{}, realm, none)
+	mut one := UniversalGlobalScopeMixin.create(&dom.EventTarget{}, realm)
+	mut two := UniversalGlobalScopeMixin.create(&dom.EventTarget{}, realm)
 	one.install_queuing_strategy_function_creator(strategy_test_creator(mut calls))!
 	two.install_queuing_strategy_function_creator(strategy_test_creator(mut calls))!
 	first := one.byte_length_queuing_strategy_size_callback()!

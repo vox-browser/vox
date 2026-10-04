@@ -17,7 +17,6 @@ pub:
 	event_target &dom.EventTarget
 	realm        &ScriptingRealm
 mut:
-	document_                               ?&dom.Document
 	import_map_                             ImportMap
 	outstanding_rejected_promises_weak_set_ []&dom.Promise
 	about_to_be_notified_rejected_promises_ []&dom.Promise
@@ -31,11 +30,10 @@ pub:
 
 pub type QueuingStrategySizeFunction = fn (QueuingStrategyChunk) f64
 
-pub fn UniversalGlobalScopeMixin.create(event_target &dom.EventTarget, realm &ScriptingRealm, document ?&dom.Document) &UniversalGlobalScopeMixin {
+pub fn UniversalGlobalScopeMixin.create(event_target &dom.EventTarget, realm &ScriptingRealm) &UniversalGlobalScopeMixin {
 	return &UniversalGlobalScopeMixin{
 		event_target: event_target
 		realm:        realm
-		document_:    document
 	}
 }
 
@@ -75,8 +73,18 @@ pub fn (scope &UniversalGlobalScopeMixin) atob(data string) !string {
 	return output.string()
 }
 
+// Source Window globals use their current associated Document; worker and
+// other globals have no document. Tasks capture this association when queued.
+fn (scope &UniversalGlobalScopeMixin) task_document() ?&dom.Document {
+	if scope.event_target.data.kind != .window {
+		return none
+	}
+	window := unsafe { &dom.Window(scope.event_target) }
+	return window.associated_document()
+}
+
 pub fn (scope &UniversalGlobalScopeMixin) queue_microtask(callback fn ()) {
-	queue_a_microtask(scope.document_, callback)
+	queue_a_microtask(scope.task_document(), callback)
 }
 
 pub fn (scope &UniversalGlobalScopeMixin) structured_clone(value dom.JSValue, options StructuredSerializeOptions) !dom.JSValue {
@@ -150,7 +158,7 @@ pub fn (mut scope UniversalGlobalScopeMixin) notify_about_rejected_promises() {
 	} else {
 		main_thread_event_loop()
 	}
-	queue_a_task(.dom_manipulation, responsible_event_loop, scope.document_, fn [scope_pointer, list] () {
+	queue_a_task(.dom_manipulation, responsible_event_loop, scope.task_document(), fn [scope_pointer, list] () {
 		mut scope := unsafe { &UniversalGlobalScopeMixin(scope_pointer) }
 		for promise in list {
 			if promise.is_handled() {
