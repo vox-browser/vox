@@ -132,15 +132,21 @@ fn (mut decoder SourceUtf16StreamingDecoder) checking_end_utf8(input []u8, input
 }
 
 fn (mut decoder SourceUtf16StreamingDecoder) decode_to_utf8(input []u8, mut output []u8, last bool) (SingleByteDecoderResult, int, int, bool) {
+	return decoder.decode_to_utf8_at(input, 0, mut output, 0, last)
+}
+
+fn (mut decoder SourceUtf16StreamingDecoder) decode_to_utf8_at(input []u8, input_start int, mut output []u8, output_start int, last bool) (SingleByteDecoderResult, int, int, bool) {
 	mut had_errors := false
-	mut total_read := 0
-	mut total_written := 0
+	mut total_read := input_start
+	mut total_written := output_start
 	for {
 		result, read, written := decoder.decode_to_utf8_without_replacement_at(input, total_read, mut output, total_written, last)
 		total_read += read
 		total_written += written
 		match result.status {
-			.input_empty, .output_full { return result, total_read, total_written, had_errors }
+			.input_empty, .output_full {
+				return result, total_read - input_start, total_written - output_start, had_errors
+			}
 			.malformed {
 				had_errors = true
 				output[total_written] = 0xef
@@ -152,7 +158,7 @@ fn (mut decoder SourceUtf16StreamingDecoder) decode_to_utf8(input []u8, mut outp
 			}
 		}
 	}
-	return SingleByteDecoderResult{ status: .input_empty }, total_read, total_written, had_errors
+	return SingleByteDecoderResult{ status: .input_empty }, total_read - input_start, total_written - output_start, had_errors
 }
 
 // Original Rust streaming-to-UTF8 owns its maximum-capacity String buffer.
