@@ -491,6 +491,9 @@ pub fn (mut context WebGLRenderingContext) shader_source(mut shader WebGLShader,
 		return
 	}
 	context.native.make_current()
+	// Source records its custom ShaderSource payload, but lost record_bytes
+	// suppresses the driver command rather than changing another current owner.
+	if !context.native.current_ { return }
 	C.vox_gl_shader_source(shader.object.native_handle_, source.str, source.len)
 }
 
