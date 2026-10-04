@@ -16,6 +16,11 @@ pub fn convert_input_to_utf8_using_given_decoder_unless_there_is_a_byte_order_ma
 		if registered_encoding == 'replacement' {
 			return decode_replacement_to_utf8(bytes)
 		}
+		if registered_encoding == 'Shift_JIS' {
+			// Source invokes the selected decoder's complete UTF8 operation.
+			// Matching-BOM removal leaves this non-Unicode selected span intact.
+			return decode_source_shift_jis_whole_to_utf8(bytes, false)
+		}
 		if registered_encoding == 'UTF-16LE' || registered_encoding == 'UTF-16BE' {
 			// Source calls the selected Decoder's whole-input UTF8 operation.
 			// Sniffing already discarded the first BOM; this call removes
