@@ -370,11 +370,6 @@ pub fn (mut context WebGLRenderingContext) copy_tex_sub_image2d(target GLenum, l
 }
 
 pub fn (mut context WebGLRenderingContext) cull_face(mode GLenum) {
-	if mode !in [front, back, front_and_back] {
-		context.set_error(invalid_enum)
-		return
-	}
-	context.generic_parameters_[cull_face_mode] = integer_parameter(mode)
 	context.command('cull_face', mode)
 }
 
@@ -486,11 +481,6 @@ pub fn (mut context WebGLRenderingContext) delete_program(object ?&WebGLProgram)
 }
 
 pub fn (mut context WebGLRenderingContext) depth_func(function GLenum) {
-	if !valid_comparison_function(function) {
-		context.set_error(invalid_enum)
-		return
-	}
-	context.generic_parameters_[depth_func] = integer_parameter(function)
 	context.command('depth_func', function)
 }
 
@@ -516,11 +506,6 @@ pub fn (mut context WebGLRenderingContext) flush() {
 }
 
 pub fn (mut context WebGLRenderingContext) front_face(mode GLenum) {
-	if mode !in [cw, ccw] {
-		context.set_error(invalid_enum)
-		return
-	}
-	context.generic_parameters_[front_face] = integer_parameter(mode)
 	context.command('front_face', mode)
 }
 
@@ -529,14 +514,6 @@ pub fn (mut context WebGLRenderingContext) generate_mipmap(target GLenum) {
 }
 
 pub fn (mut context WebGLRenderingContext) hint(target GLenum, mode GLenum) {
-	valid_target := target == generate_mipmap_hint
-		|| (target == fragment_shader_derivative_hint
-			&& (context.version == .webgl2 || context.extension_enabled('OES_standard_derivatives')))
-	if !valid_target || mode !in [dont_care, fastest, nicest] {
-		context.set_error(invalid_enum)
-		return
-	}
-	context.generic_parameters_[target] = integer_parameter(mode)
 	context.command('hint', target, mode)
 }
 
