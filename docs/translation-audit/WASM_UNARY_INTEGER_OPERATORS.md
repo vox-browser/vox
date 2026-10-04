@@ -41,4 +41,7 @@ cleared high bits, unchanged separate destinations and no stack consumption.
 
 These are operator/helper translations. Production instruction dispatch and
 SIMD execution remain pending. The preceding 80-file full Wasm sweeps predate
-all three added integer/helper files in the subsequent **83-file** package.
+all three added integer/helper files. The subsequent frozen `f28d34eb` private
+snapshot passes a clean **83/83 in each GC mode**; exact manifests, snapshot
+and logs use `source-numeric-operators-full-private-` in assignment 9. This
+private proof does not establish a complete interpreter or canonical full run.

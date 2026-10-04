@@ -609,3 +609,13 @@ Blob-global checks pass **3/3** with GC disabled. The package now has **83**
 test files; the earlier full 80-file sweeps predate these added slices.
 Remaining scalar/SIMD coverage and the production opcode/instantiation/root
 boundaries remain open. See [unary source mapping](../docs/translation-audit/WASM_UNARY_INTEGER_OPERATORS.md).
+
+
+The frozen assignment-9 `f28d34eb` snapshot passes a clean **83/83 files with
+default GC and 83/83 with GC disabled**. Logs are
+`Build/audit-fixes/source-numeric-operators-full-private-{default,gc-none}.log`
+in that private worktree, alongside its exact manifest and snapshot hash.
+Canonical WebAssembly implementation and tests match that snapshot byte-for-byte;
+canonical LibJS additionally exposes the unchanged `to_well_formed` function.
+These are private full-suite results and canonical focused integration results,
+not a claimed canonical full-suite run or complete interpreter/runtime parity.
