@@ -297,9 +297,33 @@ three actual public neighbors passed in
 successful/rejected native fences, checks present-null versus repeated deletion,
 foreign context ordering, generation rejection without record mutation, and
 preserved pointers. The legacy generation fixture now compares the actual
-pointer. Shared WebGLObject GLuint handle APIs and adapter bookkeeping remain
-the next separately scoped audit; no full source GC/WrapperWorld parity is
-claimed.
+pointer. The separately scoped shared WebGLObject GLuint repair follows; no
+full source GC/WrapperWorld parity is claimed.
+
+WebGLObject handle, handle_for_query and handle_for_deletion now return the
+actual source GLuint name (`WebGLObject.cpp:38-66`), including a present zero
+name. Their context/generation/invalidation ordering remains the source order.
+The private `native_handle_` stores source m_handle; the existing private
+`handle_` remains a distinct adapter lookup ID exposed only through the typed
+bookkeeping_id accessor. Every named-resource deleter uses the source optional
+GLuint for GL and its separate bookkeeping ID for adapter map removal/debug
+recording. Host registration and logical fallback replies validate the source
+handle but key their wrapper maps only by bookkeeping IDs. A genuine driver
+preallocation test forces these IDs to differ and confirms source deletion
+deletes the intended native buffer and lookup entry while independent driver
+buffers survive. Other cases cover all eleven named resource kinds, actual
+zero-name shaders produced by EGL loss, present-zero query/deletion results,
+and Sync's source base GLuint zero alongside its distinct GLsync pointer
+(`WebGLSync.cpp:26-29`). The earlier zero-shader fixture now checks the exact
+source zero handle. Eleven typed files passed in
+`source-object-handle-final-gc-none.log`; nine public files passed in
+`source-object-handle-public-gc-none.log`, all with GC disabled. The initial
+native manifest used a nonexistent VAO fixture path after ten files passed;
+that diagnostic remains in `source-object-handle-gc-none.log`, and the corrected
+eleven-file manifest passed in full. Public cases verify genuine differing
+driver/wrapper IDs, shader/program reply identity and retained/deleted/zero
+resource neighbors. Source GC owner references, remote transport and full
+WrapperWorld ownership remain separate boundaries.
 
 Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
 `WebGL2RenderingContextOverloads.cpp:33-85`, and
