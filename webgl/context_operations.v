@@ -269,7 +269,8 @@ pub fn null_terminated_string(bytes []u8) string {
 }
 
 pub fn (mut context WebGLRenderingContext) active_texture(texture GLenum) {
-	if context.command('active_texture', texture) { context.active_texture_ = texture }
+	context.native.make_current()
+	context.command('active_texture', texture)
 }
 
 pub fn (mut context WebGLRenderingContext) bind_attrib_location(program &WebGLProgram, index GLuint, name string) {
