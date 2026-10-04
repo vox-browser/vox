@@ -105,6 +105,7 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 	mut native_quota := ?&webidl.QuotaExceededError(none)
 	mut native_key := ?&webcrypto.CryptoKey(none)
 	mut native_blob := ?&fileapi.Blob(none)
+	mut native_file := ?&fileapi.File(none)
 	match tag {
 		7 { kind = .boolean_object }
 		8 { kind = .number_object }
@@ -132,6 +133,9 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 				} else if key := bridge.runtime.native_clone_crypto_key(value) {
 					kind = .serializable_object
 					native_key = key
+				} else if file := bridge.runtime.native_clone_file(value) {
+					kind = .serializable_object
+					native_file = file
 				} else if blob := bridge.runtime.native_clone_blob(value) {
 					kind = .serializable_object
 					native_blob = blob
@@ -145,6 +149,11 @@ fn (mut projection NativeCloneProjection) project(value voidptr) !&dom.JSValue {
 	mut object := html.StructuredObject.create(kind)
 	result := html.structured_object_value(object)
 	projection.input_memory[identity] = &result
+	if file := native_file {
+		object.serializable_interface_ = .file
+		object.file_ = file
+		return &result
+	}
 	if blob := native_blob {
 		object.serializable_interface_ = .blob
 		object.blob_ = blob
@@ -253,6 +262,9 @@ fn (mut projection NativeCloneProjection) reconstruct(value dom.JSValue) !voidpt
 		} else if interface_name == .crypto_key {
 			key := object.crypto_key_ or { return native_clone_unsupported('Source CryptoKey has no native payload record') }
 			actual = projection.root(owner.javascript_crypto_key(key)!)!
+		} else if interface_name == .file {
+			file := object.file_ or { return native_clone_unsupported('Source File has no native payload record') }
+			actual = projection.root(owner.javascript_file(file)!)!
 		} else if interface_name == .blob {
 			blob := object.blob_ or { return native_clone_unsupported('Source Blob has no native payload record') }
 			actual = projection.root(owner.javascript_blob(blob)!)!
