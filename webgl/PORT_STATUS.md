@@ -439,11 +439,25 @@ The creation-return inventory against the pinned source is:
 | Shader | `WebGLRenderingContextImpl.cpp:474-489` | Valid types retain owned records after this repair |
 | Query, sampler, transform feedback, vertex array | `WebGL2RenderingContextImpl.cpp:675-683`, `:793-801`, `:983-991`, `:1285-1293` | Owned records retained; no V zero/null gate |
 | OES vertex array | `Extensions/OESVertexArrayObject.cpp:33-39` | Owned record retained; no V zero/null gate |
-| Sync | `WebGL2RenderingContextImpl.cpp:912-918`, `WebGLSync.cpp:19-30` | V still substitutes null for a native null GLsync; separate pending repair |
+| Sync | `WebGL2RenderingContextImpl.cpp:912-918`, `WebGLSync.cpp:19-30` | Owned record retained after actual driver rejection; no V null gate |
 
 Logical resource IDs in the JavaScriptCore bridge remain distinct from driver
 handles, including zero; full source GC context edges and WrapperWorld
 ownership are not supplied by those transport IDs.
+
+fenceSync now returns the source owned WebGLSync record even when actual
+glFenceSync returns a null GLsync. The driver still determines invalid-condition,
+invalid-flag and competing-argument errors; no substituted success value or
+backend supplies the result. Native creation, real GPU fence/wait/query and
+object-lifetime cases passed with GC disabled in
+`source-sync-creation-gc-none.log` (three files). The two old null-return fixtures
+now assert an owned record with a null native handle and the same driver error.
+The actual JavaScriptCore source creation and resource-interface cases passed
+in `source-sync-creation-public-gc-none.log` (two files), covering retained
+branded wrappers, native label storage, owner selection, genuine null-handle
+query results/errors and source invalidation after deletion. This preserves the
+pinned implementation even where the driver rejects fence creation; it does not
+claim a completed remote transport or full WrapperWorld lifetime implementation.
 
 Immutable texture storage now follows
 `WebGL2RenderingContextImpl.cpp:198-209`: select the owning driver and forward
