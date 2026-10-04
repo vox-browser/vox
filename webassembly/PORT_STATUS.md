@@ -786,3 +786,16 @@ WebAssembly files in each GC mode** (151.6 s default /150.3 s GC-none), with all
 4,479 tracked contents unchanged. Its 211 Wasm and 490 LibJS non-Markdown files
 match canonical. [Frozen evidence](../docs/translation-audit/WASM_SCALAR_VERIFICATION.md)
 records the full manifests, log hashes, dependency scope and later changes.
+
+The complete Source `unwind_to_throw_handler` helper is translated in
+`machine_exception_unwind.v` (`4cf4a00c`). It searches only the current frame,
+resolves actual module tag addresses, preserves catch order, installs tagged
+fields and optional exception references, and retains the branch target's
+arity. Current-frame failure removes its labels without searching the caller.
+The helper leaves frame removal, IP and previous traps to its real caller.
+Default and production GC-none checks pass privately; canonical exception,
+unwind and frame-owner files pass **3/3 GC-none**. See
+[Source mapping and exact boundaries](../docs/translation-audit/WASM_EXCEPTION_UNWIND_SOURCE.md).
+Throw/rethrow opcode dispatch, cross-frame re-dispatch, full instantiation and
+collector/realm ownership remain unfinished. The new 98th file is outside the
+historical frozen 97-file sweep.
