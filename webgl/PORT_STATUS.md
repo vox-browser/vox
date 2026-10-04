@@ -245,8 +245,19 @@ duplicate begin, missing end, target reuse and unrelated pending errors. They
 also cover all three targets, owner selection before invalid handles/targets,
 and public IDL conversion before body entry. getQuery keeps the source's absence
 of owner selection. Its host wrapping of retained deleted/first-exposed query
-records and deleteQuery early owner selection remain for a separate slice;
+records remains for a separate slice;
 full GC tracing and remote transport remain open.
+
+deleteQuery now selects its owner before nullable, foreign and already-invalid
+resource returns, matching `WebGL2RenderingContextImpl.cpp:685-702`. Source
+deletion invalidates the wrapper and deletes its native name while preserving
+all three retained query slots. The typed case verifies actual glIsQuery state
+and retained pointer identity after deletion, including a driver-rejected
+retarget; public cases verify owner selection before all early returns and
+IDL type rejection before body entry. Three typed files passed in
+`source-query-deletion-gc-none.log` and two public files passed in
+`source-query-deletion-public-gc-none.log`, all with GC disabled. Host wrapping
+of those retained invalidated records remains a separate change.
 
 Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
 `WebGL2RenderingContextOverloads.cpp:33-85`, and
