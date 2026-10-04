@@ -240,3 +240,12 @@ with the primary Source codec and checking raw units, aliases, distinct Source
 records, forged absent exposure and deleted target globals. XHR compatibility
 objects remain outside the actual Blob owner table. File/FileList native
 projection and public browser installation remain separate work.
+
+The follow-up constructor exposure fix passes
+`JSContextGetGlobalObject(runtime.context)` into the installer explicitly.
+It defines Blob on that actual owning global instead of trusting the
+author-visible `globalThis` alias, matching Source exposed-interface setup.
+The focused fixture replaces `globalThis` with a throwing Proxy before
+installation and verifies the actual global's constructor/descriptor and
+Source construction. It passes both modes in
+`source-blob-global-{default,gc-none}.log`.
