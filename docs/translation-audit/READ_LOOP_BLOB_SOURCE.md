@@ -361,3 +361,16 @@ with File.prototype remains ordinary. Forged absent File exposure rejects,
 while deleted target globals and insecure Window exposure retain the actual
 installed factory. Public main startup and FileList/native Worker ownership
 remain separate work.
+
+The following main startup feature installs the actual File owner and generated
+constructor after their actual Blob prerequisites, before document scripts.
+`main_file_test.v` calls `run_document_script_sources` with genuine File parts,
+USVString name and options; it checks actual File/Blob base pointer identity,
+native primary File cloning, three pending read Promises and precisely three
+owning-document FileReading tasks. Genuine Uint8Array and independent copied
+ArrayBuffer results reach the live document through the real browser task
+poll/replay. Main File plus Blob startup fixtures pass **2/2** both modes in
+`source-main-file-{default,gc-none}.log`. The fixture closes the actual Runtime
+before document finalization. Canonical native bundle/capture verification is
+root-owned; FileList/native Worker and the previously recorded Source limits
+remain open.
