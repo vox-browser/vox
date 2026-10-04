@@ -556,3 +556,24 @@ CachedAttribute/reflected frozen arrays and invokes files() on each getter;
 this translation preserves Source's fresh list behavior rather than inventing
 a cache. Public DataTransfer/Item wrappers, full overload dispatch and owning
 BodyInit streams remain separate unresolved boundaries.
+
+
+The subsequent bounded native adapter accepts actual typed DataTransfer,
+DataTransferItem and DataTransferItemList implementations. Source files and
+getAsFile results enter the existing genuine FileList/File/Blob owner factories
+of the supplied actual Runtime. The generated add(File) branch requires genuine
+native File identity before read/write applicability; its nullable output uses
+the existing typed DataTransferItemAddResult pending actual Item wrappers. No
+public DataTransfer receiver is reconstructed from DOM IDs, properties or keys.
+Fresh Source result identity is retained, including fresh empty protected lists.
+
+Native DataTransfer and actual input-producer neighbors pass **2/2** in both
+modes (`source-native-data-transfer-fileapi-{default,gc-none}.log`). They verify
+fresh native/typed list/File identity, raw engine name code units and embedded
+Blob base pointer, readonly/protected/removed/disassociated gates, native
+add(File) branding before mode, ignored poisoned instance getters and globals,
+and the actual document's pending File.text Promise/FileReading task. Runtime
+close precedes document finalization, leaving no running Source VM context.
+This is a bounded typed adapter; public DataTransfer/Item/List wrappers,
+complete overloaded add dispatch, foreign-world associations, native Worker
+startup and BodyInit source/stream ownership remain explicit open dependencies.
