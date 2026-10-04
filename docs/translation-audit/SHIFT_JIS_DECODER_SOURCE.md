@@ -79,3 +79,73 @@ Common/TextDecoder consumers remain separate required slices. Native public
 holders, real TransformStream/controller/realm ownership and physical
 allocation/OOM remain explicit. No LibJS implementation or native browser
 bundle changed or was built privately.
+
+
+## Actual raw UTF8 variant and retained normalized lead
+
+Feature `d5b2cc6a2a4be7f2649f9e858cf0c0e4bd5f65de` translates the complete selected
+Shift_JIS raw UTF8 decode body (`shift_jis.rs:18–178`) and its exact reachable
+`ascii_compatible_two_byte_decoder_function!` expansion (`macros.rs:131–289`).
+Its actual optional lead stores the normalized offset, not the original input
+byte. Source neutral-state and checked additional/max-capacity methods retain
+that slot. V preserves the actual retained-lead prolog before ASCII copying,
+three-byte BMP reservation before consuming a trail, EOF lead clearing and
+one-byte malformed return, and inner/outer ASCII-copy transition order.
+
+The complete trail lookup retains Source's fast Hiragana/Katakana checks,
+then level-one Kanji, level-two/additional Kanji, upper IBM, lower IBM,
+EUDC, symbol and range priority. Invalid/unmapped ASCII trails are unread and
+return Malformed(1,0), whereas non-ASCII trails stay consumed and return
+Malformed(2,0). Standalone 0x80 and half-width Katakana return to the outer
+ASCII-copy loop. No mapping or replacement algorithm is invented. Wrapping
+range tests are lowered to equivalent closed ranges, independently witnessed
+for every two-byte input.
+
+Source ByteSource/Utf8Destination positions are lowered to offsets within
+original owning buffers. The existing exact BMP-to-UTF8 writer is reused;
+only Source SIMD ASCII copying is flattened to a scalar copy with the same
+minimum-length, stop status and space checks. In particular, the retained-lead
+prolog's return to ASCII copying stays distinct from the main pair body's
+BMP-guarded next read. The raw feature does not add a replacement wrapper or
+owning outer lifecycle yet.
+
+Tool `0b0d1542443d279fcd55398902fe05e2edabc118` reuses the validated locked copied
+package, exports the actual original constructor and a read-only normalized
+lead observer, and directly calls unchanged native raw methods. Debug/release
+both compare identical artifacts for ALL 65,536 byte pairs at two capacities,
+whole and three retained split calls: 524,288 exact raw records. The records
+contain returned status/read/written/malformed/bytes-after, actual lead presence
+and value, and only committed output. Unused zero padding is not an output
+claim; the fixed 15-byte fixture layout reserves eight payload bytes per record.
+
+The native probe additionally observes three genuinely constructed/held-lead
+states for 27 checked-capacity results and 522 zero/short-output/malformed/
+ASCII-unread/EOF edge sequences (1,566 calls), using original methods and
+actual retained records. Source files are hashed before adding observation
+exports. Original package/cache files and all raw/macro/helper bodies stay
+unchanged. Debug/release reproduction remains exact for all three artifacts.
+
+Focused V default, GC-none and production GC-none each pass 1/1 in
+`source-shift-jis-raw-focused-{default,gc-none,production-gc-none}.log`. Every
+native raw record is also exercised at nonzero input/output owner offsets,
+including preserved destination prefixes. Tests compare all native maximums,
+Some/None boundaries and short-output slot/error ordering. The initial
+compilation log retains a test-only invalid mutable integer position argument;
+it was changed to a returned fixture offset without changing any native result.
+
+- `shift_jis_raw_pairs.bin` SHA256:
+  `4aad41e9d86f198fd75eac200f32bb91b3393f21d75f8ca6defdf5c8b3c311d7`.
+- `shift_jis_raw_capacities.json`:
+  `972b6a6fd3d6e0789373d00fdfe590d2f374c12a81fbaef372816ceb40f94120`.
+- `shift_jis_raw_edges.json`:
+  `b88d41cb045e7bf60b9d89972957e3ea190d262042151c1d62f18c3390e29484`.
+- `source-shift-jis-raw-probe-complete.log`:
+  `4b663484e141f1537a20e400a4395515b0d1aa69ac67f4b392b570647182f385`.
+
+This completes only the logical raw UTF8 destination and its genuine lead
+ownership/capacity prerequisite. Raw UTF16, actual outer Converting/Finished
+owner and replacement loop, original String bridge and Common/TextDecoder
+consumers remain separate. The observed public split-lead defect stays open
+until the real consumer is connected. Physical native storage/OOM, public
+holder/realm/wrapper/TransformStream ownership and other codecs remain scoped
+as above. No LibJS implementation or native browser bundle changed privately.
