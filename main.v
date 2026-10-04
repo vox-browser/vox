@@ -2333,6 +2333,14 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript: ${err.msg()}'
 		return none
 	}
+	document_wrapper := runtime.evaluate_host_value('document') or {
+		messages << 'JavaScript Document event bindings: ${err.msg()}'
+		return none
+	}
+	mutable_runtime.install_document_window_event_binding(document, document_wrapper) or {
+		messages << 'JavaScript Document event bindings: ${err.msg()}'
+		return none
+	}
 	mut font_host := browserjs.FontFaceHost.create(document)
 	font_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript font bindings: ${err.msg()}'
@@ -2377,7 +2385,7 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 	}
 	for name in ['DOMContentLoaded', 'load'] {
 		if !compact_document_can_run_script(document) { continue }
-		runtime.evaluate_host('__ladybirdDispatch(${json2.encode(name)}, "");') or {
+		runtime.dispatch_document_readiness_event(name) or {
 			messages << 'JavaScript: ${err.msg()}'
 			return none
 		}

@@ -1,0 +1,13 @@
+module browserjs
+
+import dom
+
+$if !darwin {
+	pub fn (mut runtime Runtime) install_document_window_event_binding(_ &dom.Document, _ voidptr) ! {
+		return error('Document/Window JavaScriptCore event bindings are available on macOS only')
+	}
+
+	pub fn (runtime &Runtime) dispatch_document_readiness_event(_ string) ! {
+		return error('Document/Window JavaScriptCore event bindings are available on macOS only')
+	}
+}
