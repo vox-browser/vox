@@ -249,3 +249,16 @@ The focused fixture replaces `globalThis` with a throwing Proxy before
 installation and verifies the actual global's constructor/descriptor and
 Source construction. It passes both modes in
 `source-blob-global-{default,gc-none}.log`.
+
+The browser startup installs the actual relevant-realm Blob owner and generated
+constructor after its ReadableStream prerequisites and before document scripts.
+`main_blob_test.v` uses `run_document_script_sources` to construct a Blob from a
+string and a genuine Uint8Array, observes three distinct pending Promise reads,
+runs exactly three FileReading tasks owned by the actual document, and verifies
+text, genuine bytes/ArrayBuffer objects and live DOM replay. The arrayBuffer
+copy is independent of the bytes view's backing buffer. The fixture closes its
+Runtime before finalizing the actual document, and both GC modes pass in
+`source-main-blob-{default,gc-none}.log`. Native bundle/capture verification is
+performed separately by the canonical integration owner. Native Worker
+ReadableStream construction and the XHR response facade replacement remain
+separate work at this checkpoint.
