@@ -162,6 +162,42 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+isShader now keeps Source optional handle gates before actual driver owner
+selection. WebGLRenderingContextImpl.cpp:2191-2208 returns false for null or an
+absent invalidated/generation-stale optional; a foreign-context query returns
+false with INVALID_OPERATION after context validation. The empty Proxy prefix
+selects no driver. V now selects its actual owner only before a valid live GL
+query, preserving the Source optional validator and separate native name.
+
+The typed two-version case checks null/foreign/deleted-foreign and repeated
+query returns with Other current. An attached shader remains a genuine live GL
+shader after Source deletion while isShader returns false before querying it.
+Real native shaders reserve eight names; deleting native name 1 before Source
+ID 1's live query verifies that the separate stored native name supplies GL,
+not the Source ID. Public foreign/deleted/valid and brand cases preserve actual
+owner/error/identity evidence. Only isShader(null) was migrated in the existing
+aggregate query-owner fixture; other historical methods retain their separate
+review boundaries.
+
+Three typed files pass in
+`Build/audit-fixes/source-is-shader-owner-native-gc-none.log`; two public files
+pass in
+`Build/audit-fixes/source-is-shader-owner-public-final-gc-none.log`, including
+aggregate/object and Source ID/native-name regressions. All use GC disabled
+and explicit private paths. The public null/undefined case is explicitly not
+part of this CPU feature's final public scope: it exposed a compatibility C
+adapter issue, independently of the correct typed Source body.
+
+The generated old-compiler C in source-is-shader-public-generated.c emits an
+early error result with err:_const_none__ for an absent map entry in the host's
+inline return-sumtype argument expression, before invoking is_shader(None).
+Direct host.call([null]) returned TypeError with an empty message, preserved in
+source-is-shader-owner-public-host-diagnostic-gc-none.log; the initial/diagnostic
+public failures are retained. A separate explicit null host-call adapter repair
+and the generated Boolean lost result remain followups. Other is-object families,
+remote maps, GC/WrapperWorld and current bundle/captures remain independently
+scoped; this is no clean full-sweep or production-bundle claim.
+
 Shader diagnostic/parameter sync queries now preserve exact initialized Source
 outputs after loss. GLFunctions.json:2348-2400 classifies regular/robust shaderiv
 as void sync. generate_libweb_webgl_proxy.py:153-158 returns before copying any
