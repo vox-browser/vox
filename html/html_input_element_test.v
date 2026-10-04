@@ -2,6 +2,7 @@ module html
 
 import css
 import dom
+import highresolutiontime
 import math
 import page
 
@@ -337,8 +338,15 @@ fn test_input_validation_picker_and_legacy_activation() {
 	assert patterned.suffering_from_a_pattern_mismatch()
 
 	mut file := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[3]) })
+	file_document := elements[3].document()
+	window := WindowModel.create_top_level(file_document, none, 'picker-validation')!
 	file.show_picker() or { assert err.msg().starts_with('NotAllowedError:') }
-	file.set_picker_security_state(true, false)
+	mut settings := window.environment_settings_.settings
+	settings.environment_.top_level_origin = dom.URL{'https://cross-origin-picker.example/'}.origin()
+	mut native := file_document.get_window()?
+	native.set_last_activation_timestamp(highresolutiontime.current_high_resolution_time(highresolutiontime.TimeOriginContext{
+		time_origin: file_document.load_timing_info.navigation_start_time
+	}))
 	file.show_picker()!
 	assert file.is_open()
 	file.did_select_files([], .replace)
@@ -361,10 +369,14 @@ fn test_input_pickers_use_the_owning_documents_page() {
 	document := parse_document('<input id="color" type="color" value="#123456"><input id="file" type="file" accept=".png" multiple>')
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_page(unsafe { &dom.Page(owner_page) })
+	_ = WindowModel.create_top_level(document, none, 'owning-page-picker')!
+	mut native := document.get_window()?
 
 	color_element := document.get_element_by_id('color') or { panic('missing color input') }
 	mut color := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(color_element) })
-	color.set_picker_security_state(true, true)
+	native.set_last_activation_timestamp(highresolutiontime.current_high_resolution_time(highresolutiontime.TimeOriginContext{
+		time_origin: document.load_timing_info.navigation_start_time
+	}))
 	color.show_picker() or { panic(err) }
 	assert owner_page.client().events.last().name == 'request-color-picker'
 	assert owner_page.client().events.last().text == '#123456'
@@ -373,7 +385,9 @@ fn test_input_pickers_use_the_owning_documents_page() {
 
 	file_element := document.get_element_by_id('file') or { panic('missing file input') }
 	mut file := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(file_element) })
-	file.set_picker_security_state(true, true)
+	native.set_last_activation_timestamp(highresolutiontime.current_high_resolution_time(highresolutiontime.TimeOriginContext{
+		time_origin: document.load_timing_info.navigation_start_time
+	}))
 	file.show_picker() or { panic(err) }
 	assert owner_page.client().events.last().name == 'request-file-picker'
 	assert owner_page.client().events.last().text == '.png:true'

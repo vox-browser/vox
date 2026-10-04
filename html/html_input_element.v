@@ -117,8 +117,6 @@ pub mut:
 	selected_x_                      int
 	selected_y_                      int
 	is_open_                         bool
-	has_transient_activation         bool
-	same_origin_with_top_            bool = true
 	picker_hook_                     ?InputPickerHook
 	inner_text_element_              ?&dom.Element
 	text_node_                       ?&dom.Text
@@ -1738,11 +1736,6 @@ pub fn (mut model HTMLInputElementModel) set_visible_in_viewport(visible bool) {
 	model.visible_in_viewport_ = visible
 }
 
-pub fn (mut model HTMLInputElementModel) set_picker_security_state(has_transient_activation bool, same_origin_with_top bool) {
-	model.has_transient_activation = has_transient_activation
-	model.same_origin_with_top_ = same_origin_with_top
-}
-
 pub fn (model &HTMLInputElementModel) supports_a_picker() bool {
 	return model.type_state_ in [.file_upload, .color]
 }
@@ -1758,15 +1751,16 @@ pub fn (model &HTMLInputElementModel) is_open() bool {
 }
 
 fn (mut model HTMLInputElementModel) show_the_picker_if_applicable() {
-	if !model.has_transient_activation || !model.is_mutable() {
+	element := input_element(&model)
+	window := picker_relevant_window(element) or { return }
+	if !window.has_transient_activation() || !model.is_mutable() {
 		return
 	}
-	model.has_transient_activation = false
+	window.consume_user_activation()
 	if !model.supports_a_picker() {
 		return
 	}
 	model.set_is_open(true)
-	element := input_element(&model)
 	document := element.document()
 	if document.has_page() {
 		input_target := element.as_node().unique_id().value().str()
@@ -1796,10 +1790,14 @@ pub fn (mut model HTMLInputElementModel) show_picker() ! {
 	if !model.is_mutable() {
 		return error('InvalidStateError: element is not mutable')
 	}
-	if !model.same_origin_with_top_ && model.type_state_ !in [.file_upload, .color] {
+	element := input_element(&model)
+	if !picker_origin_is_same_as_top_level(element) && model.type_state_ !in [.file_upload, .color] {
 		return error('SecurityError: cross-origin pickers are not allowed')
 	}
-	if !model.has_transient_activation {
+	window := picker_relevant_window(element) or {
+		return error('NotAllowedError: no transient user activation')
+	}
+	if !window.has_transient_activation() {
 		return error('NotAllowedError: no transient user activation')
 	}
 	model.show_the_picker_if_applicable()
