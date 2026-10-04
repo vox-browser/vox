@@ -2287,6 +2287,18 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript File constructor: ${err.msg()}'
 		return none
 	}
+	mut file_list_host := browserjs.FileListHost.create(document) or {
+		messages << 'JavaScript FileList bindings: ${err.msg()}'
+		return none
+	}
+	file_list_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript FileList bindings: ${err.msg()}'
+		return none
+	}
+	file_list_host.install_constructor() or {
+		messages << 'JavaScript FileList constructor: ${err.msg()}'
+		return none
+	}
 	mut abort_host := browserjs.AbortSignalHost.create(document) or {
 		messages << 'JavaScript AbortSignal bindings: ${err.msg()}'
 		return none
