@@ -137,6 +137,25 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+getBufferParameter now preserves the genuine pname gate in pinned
+WebGLRenderingContextImpl.cpp:906-930 before actual driver selection. Unknown
+names return null/INVALID_ENUM with another actual context still current,
+even when target is also invalid. SIZE/USAGE still reach the existing
+glGetBufferParameterivRobustANGLE delegate with its initialized GLint output;
+native binding/target errors retain their Source numeric zero return and
+driver ownership. The empty Proxy prefix, generated sync operation at
+GLFunctions.json:1978 and Host execute_sync_call select the owning driver only
+on these real query branches. No target/binding gate or value cache is added.
+
+Both-version typed/public witnesses verify early versus driver owner order,
+driver-error priority over pending Source INVALID_ENUM, actual native-only
+buffer bindings, integer/null shapes and public conversion throws before
+entry. The two native buffer/vertex-getter and two corresponding public files
+passed with GC disabled. Logs are
+`Build/audit-fixes/source-buffer-getter-owner-gc-none.log` and
+`Build/audit-fixes/source-buffer-getter-owner-public/` in the second private
+worktree. Renderbuffer and texture query gates remain separate Source slices.
+
 getVertexAttrib now preserves the absence of a context-selection prefix in
 pinned WebGLRenderingContextImpl.cpp:2026-2098. Unknown names, WebGL1's integer
 attribute name and a WebGL1 divisor query without ANGLE_instanced_arrays return
