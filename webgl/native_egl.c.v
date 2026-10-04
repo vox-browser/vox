@@ -68,6 +68,10 @@ fn C.vox_gl_read_buffer_sub_data(u32, i64, i64, voidptr) int
 fn C.vox_gl_buffer_parameter(u32, u32) int
 fn C.vox_gl_vertex_attrib_pointer(u32, int, u32, int, int, i64)
 fn C.vox_gl_vertex_attrib_i_pointer(u32, int, u32, int, i64)
+fn C.vox_gl_vertex_attrib1f(u32, f32)
+fn C.vox_gl_vertex_attrib2f(u32, f32, f32)
+fn C.vox_gl_vertex_attrib3f(u32, f32, f32, f32)
+fn C.vox_gl_vertex_attrib4f(u32, f32, f32, f32, f32)
 fn C.vox_gl_vertex_attrib_floats(u32, &f32)
 fn C.vox_gl_vertex_attrib_enable(u32, int)
 fn C.vox_gl_vertex_attrib_divisor(u32, u32, int)

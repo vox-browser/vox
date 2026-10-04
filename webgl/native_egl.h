@@ -291,6 +291,10 @@ static int vox_gl_buffer_parameter(unsigned target, unsigned pname) {
 }
 static void vox_gl_vertex_attrib_pointer(unsigned index, int size, unsigned type, int normalized, int stride, long long offset) { glVertexAttribPointer(index, size, type, normalized, stride, (void const*)(intptr_t)offset); }
 static void vox_gl_vertex_attrib_i_pointer(unsigned index, int size, unsigned type, int stride, long long offset) { glVertexAttribIPointer(index, size, type, stride, (void const*)(intptr_t)offset); }
+static void vox_gl_vertex_attrib1f(unsigned index, float x) { glVertexAttrib1f(index, x); }
+static void vox_gl_vertex_attrib2f(unsigned index, float x, float y) { glVertexAttrib2f(index, x, y); }
+static void vox_gl_vertex_attrib3f(unsigned index, float x, float y, float z) { glVertexAttrib3f(index, x, y, z); }
+static void vox_gl_vertex_attrib4f(unsigned index, float x, float y, float z, float w) { glVertexAttrib4f(index, x, y, z, w); }
 static void vox_gl_vertex_attrib_floats(unsigned index, float const* data) { glVertexAttrib4fv(index, data); }
 static void vox_gl_vertex_attrib_enable(unsigned index, int enabled) { if (enabled) glEnableVertexAttribArray(index); else glDisableVertexAttribArray(index); }
 static void vox_gl_vertex_attrib_divisor(unsigned index, unsigned divisor, int version) { if (version == 3) glVertexAttribDivisor(index, divisor); else glVertexAttribDivisorANGLE(index, divisor); }

@@ -1016,27 +1016,23 @@ pub fn (mut context WebGLRenderingContext) uniform4i(location ?&WebGLUniformLoca
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib1f(index GLuint, x f32) {
-	context.vertex_attrib_values_[index] = [x, f32(0), 0, 1]
     context.native.make_current()
-    C.vox_gl_vertex_attrib_floats(index, context.vertex_attrib_values_[index].data)
+    C.vox_gl_vertex_attrib1f(index, x)
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib2f(index GLuint, x f32, y f32) {
-	context.vertex_attrib_values_[index] = [x, y, f32(0), 1]
     context.native.make_current()
-    C.vox_gl_vertex_attrib_floats(index, context.vertex_attrib_values_[index].data)
+    C.vox_gl_vertex_attrib2f(index, x, y)
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib3f(index GLuint, x f32, y f32, z f32) {
-	context.vertex_attrib_values_[index] = [x, y, z, f32(1)]
     context.native.make_current()
-    C.vox_gl_vertex_attrib_floats(index, context.vertex_attrib_values_[index].data)
+    C.vox_gl_vertex_attrib3f(index, x, y, z)
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib4f(index GLuint, x f32, y f32, z f32, w f32) {
-	context.vertex_attrib_values_[index] = [x, y, z, w]
     context.native.make_current()
-    C.vox_gl_vertex_attrib_floats(index, context.vertex_attrib_values_[index].data)
+    C.vox_gl_vertex_attrib4f(index, x, y, z, w)
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib1fv(index GLuint, values []f32) {
