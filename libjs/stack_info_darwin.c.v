@@ -1,14 +1,12 @@
 module libjs
 
 #include <pthread.h>
-#include <alloca.h>
 #include <sys/resource.h>
 
 fn C.pthread_self() voidptr
 fn C.pthread_get_stackaddr_np(thread voidptr) voidptr
 fn C.pthread_get_stacksize_np(thread voidptr) usize
 fn C.pthread_main_np() int
-fn C.alloca(size usize) voidptr
 
 struct C.rlimit {
 	rlim_cur u64
@@ -34,11 +32,4 @@ fn native_stack_bounds() (usize, usize) {
 		}
 	}
 	return top_of_stack - size, size
-}
-
-// A fresh alloca block lives in the caller's frame, which keeps V from moving
-// the marker to the heap.
-@[noinline]
-fn current_stack_pointer() usize {
-	return usize(C.alloca(1))
 }
