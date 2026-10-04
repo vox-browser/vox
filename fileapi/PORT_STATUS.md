@@ -114,3 +114,10 @@ through the existing owned Source string record, replacing the independent
 UTF8 byte encoder. Every byte 0–255, embedded NULs, verbatim BOM bytes, storage
 and synchronous packaging pass **2/2 focused files in both GC modes**. Native
 result wrappers/caching remain separate.
+
+DataURL packaging now follows Source's genuine `url.create_with_data` opaque
+record, existing URL serializer and Infra compatibility projection instead of
+constructing the final URL directly. Literal supplied MIME and raw serialized
+WTF8/non-ASCII/NUL compatibility bytes remain unchanged. The Source unchecked
+ASCII string metadata/native primitive boundary remains open. Focused DataURL,
+existing reader and genuine URL helper files pass **3/3 in both GC modes**.

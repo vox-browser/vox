@@ -128,7 +128,8 @@ translates that helper and uses the existing translated URL serializer.
 The new data URL record and existing URL record files pass **2/2 in both GC
 modes** in `source-data-url-record-{default,gc-none}.log`, covering record fields,
 both base64 modes, opaque literal byte preservation, empty inputs and separate
-record/path ownership. This prerequisite changes no FileReader packaging yet.
+record/path ownership. The helper prerequisite is committed separately from
+the FileReader caller feature.
 
 FileReader's Source DataURL arm calls this helper, serializes it, then invokes
 `Infra/SerializedURL.h:16`'s `Utf16String::from_ascii_without_validation`.
@@ -138,3 +139,14 @@ primitive access is a separate boundary. Its UTF8 projection returns those
 same bytes without decoding (`AK/Utf16View.cpp:17`), so direct V concatenation
 already matches compatibility bytes. This does not justify replacing that
 Source ASCII record with UTF8 decoding, arbitrary byte widening or new escaping.
+
+The separate `blob_package_data` caller feature now follows that Source call
+chain through the genuine `url.create_with_data` record, its existing serializer
+and Infra's existing UTF8 compatibility projection. FileReader DataURL,
+existing reader and URL helper files pass **3/3 in both GC modes**, recorded in
+`source-file-reader-data-url-{default,gc-none}.log`. Tests retain default MIME
+selection, literal supplied MIME without parsing/escaping, empty payloads,
+UTF16-label irrelevance and raw WTF8/non-ASCII/NUL serialized compatibility
+bytes, including the actual internal Blob/FileReaderSync caller. These byte
+checks do not establish Source's unchecked ASCII storage or native primitive
+code-unit projection.
