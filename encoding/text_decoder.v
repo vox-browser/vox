@@ -110,12 +110,14 @@ fn utf16_safe_decode_boundary(bytes []u8, big_endian bool) int {
 }
 
 fn decode_bytes_for_encoding(bytes []u8, encoding_name string, fatal bool) !string {
+	if table := source_single_byte_table(encoding_name) {
+		return decode_source_single_byte_to_utf8(bytes, table, fatal)
+	}
 	return match encoding_name {
 		'utf-8' { decode_utf8(bytes, fatal)! }
 		'utf-16le' { decode_utf16(bytes, false, fatal)! }
 		'utf-16be' { decode_utf16(bytes, true, fatal)! }
 		'x-user-defined' { decode_x_user_defined(bytes) }
-		'windows-1252' { decode_windows_1252_to_utf8(bytes) }
 		else {
 			viconv.encoding_to_vstring(bytes, encoding_name) or {
 				if fatal {
