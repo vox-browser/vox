@@ -269,3 +269,28 @@ in two actual engine Realms and poisoned author ArrayBuffer/globalThis aliases.
 Source IDL exposes FileReaderSync only in DedicatedWorker/SharedWorker. This
 typed native adapter introduces no Window interface or placeholder constructor;
 actual public Worker receiver/constructor bindings remain open.
+
+## Remaining result-world and weak-cache dependency
+
+Source `FileReader.cpp:99–128` selects the relevant target Realm, obtains its
+actual `HostDefined.wrapper_world`, and caches a lazily created ArrayBuffer in
+`WrapperWorldWeakValueCache<JS::ArrayBuffer>`. Source `FileReader.h:123` and
+`Bindings/WrapperWorld.h:100` require both world keys and buffer values to be
+weak; `set_result` clears that cache while already handed-out buffers retain
+their own storage. Main worlds are agent-owned and can span multiple Realms;
+non-main worlds are Realm-local.
+
+The current `bindings/wrapper_world.v` cache is a typed `map[u64]&T`. Its keys
+are pointer identities and its values are strong V references, with no weak
+key/value pruning. It therefore cannot establish the required weak lifetime
+behavior. Native Runtime already retains actual HTML settings through
+`bind_scripting_environment`; the result boundary still needs genuine target
+HostDefined/world selection and actual weak engine/GC ownership before it can
+reuse Source's cache. A new Runtime-context-ID map or a manufactured world
+would change the Source identity/lifetime model and is not implemented here.
+
+Raw result strings also need their genuine Source storage before native
+projection, including the separate DataURL unchecked-ASCII metadata boundary
+described above. These findings are dependencies for a subsequent result
+wrapper feature, not a claim that the newly completed owner read loop or Sync
+allocation has provided public FileReader/native-world parity.
