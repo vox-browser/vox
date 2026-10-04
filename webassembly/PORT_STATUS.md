@@ -631,6 +631,18 @@ negative signed counts, every bit position and wrap boundaries. Actual
 Configuration writes retain Source i32/i64 PushType results and clear high
 bits. The new file passes default GC privately; operator/helper neighbors
 pass **3/3** privately and canonically with GC disabled. The package has
-84 test files; the preceding clean 83-file private sweep predates this file.
+84 test files at that shift snapshot; the preceding clean 83-file private sweep predates this file.
 Production dispatch and remaining scalar/SIMD execution are still pending.
 See [Source shift mapping](../docs/translation-audit/WASM_SCALAR_SHIFTS.md).
+
+## Source integer comparisons
+
+`38052bee` translates twenty scalar comparison specializations from the six
+Source binary macro records. All match **2,880 exact native C++ cases** from
+`eae0d685`, preserving signed/unsigned PopType and i32 PushType behavior.
+Actual Configuration regressions verify signedness, cleared result high bits
+and retained trap/source/destination state. The file passes default GC
+privately and canonically; comparison/shift/helper files pass **3/3** privately
+and canonically with GC disabled. The package has 85 test files; no full
+85-file sweep is claimed. Floating/SIMD comparisons and production dispatch
+remain untranslated. See [Source mapping](../docs/translation-audit/WASM_INTEGER_COMPARISONS.md).
