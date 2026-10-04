@@ -189,7 +189,12 @@ pub fn (mut buffer BinaryMachineMemoryBuffer) copy_from(source &BinaryMachineMem
 }
 
 pub fn (mut buffer BinaryMachineMemoryBuffer) fill(offset usize, value u8, count usize) {
-	assert offset <= buffer.size() && count <= buffer.size() - offset
+	if offset > buffer.size() {
+		panic('Source VERIFY: MemoryBuffer::fill offset <= size()')
+	}
+	if count > buffer.size() - offset {
+		panic('Source VERIFY: MemoryBuffer::fill count <= size() - offset')
+	}
 	mut filled := usize(0)
 	for filled < count {
 		chunk_size := buffer.contiguous_bytes_from(offset + filled, count - filled)
