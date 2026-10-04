@@ -810,8 +810,8 @@ pub fn (mut context WebGLRenderingContext) get_attrib_location(program &WebGLPro
 }
 
 pub fn (mut context WebGLRenderingContext) get_vertex_attrib(index GLuint, pname GLenum) WebGLParameterValue {
-    context.native.make_current()
     if pname == current_vertex_attrib {
+        context.native.make_current()
         mut values := []f32{len:4}
         C.vox_gl_vertex_attrib_float_parameter(index,values.data)
         return WebGLParameterValue{kind:.numbers,numbers:values.map(f64(it))}
@@ -825,6 +825,7 @@ pub fn (mut context WebGLRenderingContext) get_vertex_attrib(index GLuint, pname
     if pname !in [vertex_attrib_array_buffer_binding,vertex_attrib_array_divisor,vertex_attrib_array_enabled,vertex_attrib_array_integer,vertex_attrib_array_normalized,vertex_attrib_array_size,vertex_attrib_array_stride,vertex_attrib_array_type] {
         context.set_error(invalid_enum); return WebGLParameterValue{}
     }
+    context.native.make_current()
     value := C.vox_gl_vertex_attrib_parameter(index,pname)
     if pname == vertex_attrib_array_buffer_binding {
         handle := context.allocate_handle()
