@@ -162,6 +162,38 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+deleteProgram now preserves Source CPU gates before actual native owner
+selection. Impl.cpp:544-563 handles null, owner errors and an absent deletion
+handle before the generated command; the source Proxy make_current prefix is
+empty. V selects its actual driver only after those gates, preserving record
+invalidation, native-name forwarding and the current retained program pointer
+clear after the call. The genuine pre-fix two-owner null/foreign probe selected
+Owner instead of current Other, archived as
+source-delete-program-owner-unfixed-probe_test.v and
+source-delete-program-owner-unfixed-probe-gc-none.log.
+
+New two-version native/public cases preserve Other's current viewport and
+pending actual INVALID_ENUM for nullable, foreign, repeat and public arity/
+forged-brand returns. Actual linked/current program deletion still selects
+Owner, invalidates its record and preserves Source/native identity fields.
+GL keeps the deleted active program live with DELETE_STATUS=1 and the same
+native CURRENT_PROGRAM until an actual unbind retires it; Source independently
+clears its current pointer by actual record identity. A real program removed
+outside V confirms record invalidation still precedes driver rejection and
+retains the genuine driver error.
+
+Only the three old typed deleteProgram null/foreign/repeat owner assertions
+and the two corresponding public aggregate entries were migrated; all other
+method assumptions await separate source review. Three typed files pass in
+`Build/audit-fixes/source-delete-program-owner-native-gc-none.log`; three public
+files pass in
+`Build/audit-fixes/source-delete-program-owner-public-gc-none.log`, including
+aggregate and current-record neighbors. All use GC disabled and explicit
+private paths. These independently replace the old deletion owner evidence;
+they do not relabel either frozen full sweep. Lost program deletion, remaining
+program mutations, other object families, full remote transport and
+GC/WrapperWorld remain separate boundaries.
+
 deleteShader now retains Source CPU record invalidation while dropping its
 native command after loss. Impl.cpp:585-602 handles null, owner errors and an
 absent deletion handle before dispatch. WebGLObject.cpp:50-59 invalidates the
@@ -2366,8 +2398,9 @@ Source handle/type/slot gates and actual driver operations from
 fixtures assumed that every Source make_current prefix selected a native
 driver. Subsequent concrete Proxy/Host review established that the prefix is
 empty: only an actual dispatched GL command/query selects its owner. The
-createShader type gate is corrected and its fixture expectation superseded
-above; other mutation handle/null/slot gates require independent Source slices.
+createShader type gate, shader command/deletion gates and deleteProgram CPU
+gates are corrected with separately recorded source evidence above; remaining
+mutation handle/null/slot gates require independent Source slices.
 attachShader assigns its actual retained shader pointer after GL, including
 owned native rejection, and deleteProgram clears the current source pointer by
 actual object identity. The invented bindAttribLocation `gl_` name gate was
