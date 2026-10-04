@@ -13,9 +13,24 @@ fn (host &ReadableStreamHost) read_loop_realm() streams.StreamRealm {
 	owner := voidptr(host)
 	return streams.StreamRealm{
 		...host.settings.stream_realm()
-		uint8_array_bytes: fn [owner] (value webidl.Value) !streams.ReadLoopChunkBytes {
+		uint8_array_bytes:   fn [owner] (value webidl.Value) !streams.ReadLoopChunkBytes {
 			host := unsafe { &ReadableStreamHost(owner) }
 			return host.read_loop_bytes(value)
+		}
+		array_buffer_create: fn [owner] (bytes []u8) !webidl.Value {
+			host := unsafe { &ReadableStreamHost(owner) }
+			mut runtime := unsafe { &Runtime(host.runtime) }
+			return runtime.source_array_buffer(bytes)
+		}
+		array_buffer_copy:   fn [owner] (value webidl.Value) ![]u8 {
+			host := unsafe { &ReadableStreamHost(owner) }
+			mut runtime := unsafe { &Runtime(host.runtime) }
+			return runtime.source_array_buffer_bytes(value)
+		}
+		uint8_array_create:  fn [owner] (buffer webidl.Value) !webidl.Value {
+			host := unsafe { &ReadableStreamHost(owner) }
+			mut runtime := unsafe { &Runtime(host.runtime) }
+			return runtime.source_uint8_array(buffer)
 		}
 	}
 }

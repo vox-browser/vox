@@ -28,7 +28,18 @@ fn test_native_read_loop_uses_actual_uint8_slots_and_captured_intrinsics() {
 	assert result.state == .pending
 	runtime.evaluate_host('controller.enqueue(bytes);controller.close()')!
 	assert result.state == .fulfilled
-	assert webidl.get_buffer_source_copy(result.result.buffer_value?) == [u8(1), 2]
+	assert result.result.kind == .runtime_value
+	assert host.read_loop_realm().array_buffer_bytes(result.result)! == [u8(1), 2]
+	actual_buffer := runtime.actual_webidl_value(result.result)!
+	view := host.read_loop_realm().uint8_array_value(result.result)!
+	actual_view := runtime.actual_webidl_value(view)!
+	runtime.define_value_host_function('__readAllBuffer', fn [actual_buffer] (_ voidptr, _ []voidptr) !voidptr {
+		return actual_buffer
+	})!
+	runtime.define_value_host_function('__readAllView', fn [actual_view] (_ voidptr, _ []voidptr) !voidptr {
+		return actual_view
+	})!
+	assert runtime.evaluate_host('__readAllView().buffer===__readAllBuffer()&&__readAllView()[0]===1&&__readAllView()[1]===2')! == 'true'
 }
 
 fn test_native_read_loop_rejects_spoofs_clamped_arrays_and_proxies_with_actual_typeerror() {
@@ -69,6 +80,7 @@ fn test_native_read_loop_typed_array_witness_preserves_detached_and_oob_zero_len
 		result := native_read_loop_result(mut runtime)!
 		runtime.evaluate_host('controller.enqueue(bytes);controller.close()')!
 		assert result.state == .fulfilled
-		assert webidl.get_buffer_source_copy(result.result.buffer_value?).len == 0
+		assert result.result.kind == .runtime_value
+		assert host.read_loop_realm().array_buffer_bytes(result.result)!.len == 0
 	}
 }

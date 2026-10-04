@@ -117,8 +117,11 @@ pub fn (mut reader ReadableStreamDefaultReader) read_all_bytes_with_steps(succes
 pub fn (mut reader ReadableStreamDefaultReader) read_all_bytes_deprecated() &webidl.Promise {
 	realm := reader.closed_promise_realm()
 	mut promise := webidl.create_promise_for(realm.promise_context())
-	reader.read_all_bytes_with_steps(fn [mut promise] (bytes []u8) {
-		promise.resolve(webidl.buffer_source_value(webidl.BufferSource.array_buffer(bytes)))
+	reader.read_all_bytes_with_steps(fn [mut promise, realm] (bytes []u8) {
+		// Source's ByteBuffer ArrayBuffer overload has a fatal MUST allocation
+		// boundary and resolves the actual owning-realm object before reactions.
+		buffer := realm.array_buffer_value(bytes) or { panic('Source MUST: read-loop ArrayBuffer allocation failed: ${err.msg()}') }
+		promise.resolve(buffer)
 	}, fn [mut promise] (reason webidl.Value) {
 		promise.reject(reason)
 	})

@@ -132,6 +132,9 @@ pub:
 	transform_wrapper_preparer ?fn (&TransformStream)
 	structured_clone_algorithm ?fn (Value) !Value
 	uint8_array_bytes ?fn (webidl.Value) !ReadLoopChunkBytes
+	array_buffer_create ?fn ([]u8) !webidl.Value
+	array_buffer_copy ?fn (webidl.Value) ![]u8
+	uint8_array_create ?fn (webidl.Value) !webidl.Value
 }
 
 // Bindings::prepare_transform_stream_readable_writable_wrappers wraps both
