@@ -658,3 +658,76 @@ allocation/OOM exceptions, physical C++ builder/Box/Vec representation, native
 TextDecoder wrappers and other codec owners remain explicit dependencies.
 The existing Utf16String code is unchanged; no additional LibJS code was
 introduced. No native browser bundle build or capture was run privately.
+
+## UTF16 variant and raw UTF16 destination
+
+The next concrete mismatch is independently witnessed through the original
+Source Rust streaming-to-UTF16 FFI: UTF16LE `00 d8 00`, or UTF16BE `d8 00 00`,
+retains a high surrogate and one trailing byte until EOF, reports one
+`Malformed(3,0)` sequence and emits one U+FFFD in replacement mode. Before this
+translation, the existing TextDecoder model returns two replacement units for
+both byte orders. `source-utf16-eof-both-before-owner-gc-none.log` retains that
+failing comparison. The original-FFI native probe passes debug/release for
+32 scenarios and 64 calls, covering each split, Off/Remove and fatal/replacement
+mode. Fatal calls fail without a produced callback result. Its native log is
+`source-utf16-eof-probe.log` (SHA256
+`adb3269c1d1bfbdc678fc544cb2c1c6962a35d6fa0b6f2aa5f613c8c6b24ebfc`).
+
+Feature `6007017086b8978da0a53ac8d7cc1fbf5e44ddfe` translates the actual four slots
+from encoding_rs `utf_16.rs:14–197`: retained surrogate, optional lead byte,
+endianness and pending-BMP flag. The raw UTF16 destination expands the actual
+`decoder_functions!` control order, including the pending-BMP preamble, two-unit
+astral check before body byte consumption, EOF BMP-space check before retained
+slots are cleared, exact malformed lengths/bytes-after and the Source EOF Full
+arm's literal zero counters. Consecutive high surrogates retain the second one;
+a BMP after a high surrogate remains in the actual pending-BMP slot.
+
+`handles.rs:746–804` supplies the fast prefix's exact input/output minimum,
+last-high-surrogate exclusion, speculative first-surrogate write, paired-low
+check and committed positions. Unaligned code-unit loads and the Endian swap
+are lowered to explicit byte reads on the original input owner; the ordinary
+scalar `copy_bmp_to` body at `handles.rs:182–194` supplies the copy loop. SIMD
+acceleration and its uncommitted slack writes are not represented as a physical
+ABI guarantee. Original-owner base offsets preserve Source remaining slices
+without V's mutable-slice storage copy. Source checked 64-bit usize capacities
+are translated independently; V int-array allocation remains a narrower owner
+boundary. The replacement loop follows Source Decoder's indexed U+FFFD write.
+The UTF8 destination is deliberately absent from this bounded variant feature.
+
+Tooling commit `cf133f1123424da9de83711c6aa4e534ef8758be` contains the native EOF,
+existing-model reproduction and raw-slot probes. It enforces Source HEAD
+`963d46a829f3e1b79f44dba9d02afb70654300fa`, validates all registry implementation
+files against the exact Cargo.lock archive checksum, and appends only genuine
+constructor/snapshot exports to an ignored dependency copy. Decoder/destination
+implementation bodies stay unchanged. The existing helper harness's isolated
+AArch64 default-alloc manifest and locked dependencies are retained; this uses
+normal Cargo test allocation/panic behavior rather than the production C ABI's
+physical allocator/Box layout. The reused UTF8 validator/bridge checks also run
+before the UTF16 driver; they do not substitute for the UTF16 observations.
+
+Actual native debug and release produce identical artifacts: 262,144 exhaustive
+unit/capacity records (all 65,536 units in both byte orders, capacities 1/2),
+15,248 raw/replacement retained sequences and 14 checked-capacity states. The
+binary record excludes uncommitted output slots and fixes their bytes to zero;
+JSON includes genuine returned counters, output and all four actual slots.
+Their SHA256 values are:
+
+- `utf16_raw_units.bin`: `91a06ee524347865a719de11021d9f611849bebbb77f689798f2e72323fd32ec`.
+- `utf16_raw_sequences.json`: `be0b000b810bb5186286f537b588c499c271d38d00584cade40e0a8a160725e2`.
+- `utf16_raw_capacities.json`: `87ab7b5b709596b3e0023a0367fcdc9727c264ab0f6eb928718da5379448b690`.
+
+The final native log `source-utf16-decoder-probe-final.log` hashes to
+`c12d0520ee2aa825b2151ec6e3b5ed996621e2ac06b49a239a81105c5120610c`.
+Focused V tests pass 1/1 default, GC-none and production GC-none in
+`source-utf16-raw-focused-final-{default,gc-none,production-gc-none}.log`.
+They compare every native observation and repeat retained sequence calls with
+guarded original-owner offsets. An initial test launch before fixture copying
+failed only to open the three fixture files; that log is retained separately.
+
+The existing public TextDecoder UTF16-selected branch has not yet been changed
+by this prerequisite. The native EOF mismatch therefore remains visible there
+until the actual outer Off/Remove owning lifecycle and caller are translated.
+Common/Stream's UTF8 destination, generic whole-input UTF16-to-UTF8 wrappers,
+other codec families, native WebIDL wrappers and Source physical allocation/OOM
+behavior remain separate work. No LibJS implementation or native bundle was
+changed or built privately.
