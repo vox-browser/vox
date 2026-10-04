@@ -47,6 +47,20 @@ Window/context suites, actual proxy identity, current-history ownership, the UI
 close task and the event loop. Its log is
 `Build/audit-fixes/source-navigable-active-context-owner-gc-none.log`.
 
+The native-to-typed wrapper identity invariant was initially a debug assertion.
+It now rejects an existing foreign constructor identity with an unconditional
+panic, so production builds cannot overwrite a native context's owner. A sixth
+regression launches the current test executable in a subprocess and attempts a
+second actual Window constructor over the same already-owned native context.
+The expected bridge diagnostic and nonzero exit prove rejection; the other five
+cases retain valid creation and reassociation behavior. The focused default
+file passed in 19.9 seconds in
+`Build/audit-fixes/source-native-context-identity-invariant-default.log`.
+The same six-case file passed under `-prod -gc none` in 103.5 seconds in
+`Build/audit-fixes/source-native-context-identity-invariant-prod-gc-none.log`.
+This change enforces the native/typed representation invariant; it does not add
+a new HTML algorithm guard or change valid Source ownership selection.
+
 This is the local active-owner getter and identity prerequisite. Other uses of
 the retained model context, the native/typed context's remaining split fields,
 complete Source context construction and group/lifetime teardown, wrapper-world
