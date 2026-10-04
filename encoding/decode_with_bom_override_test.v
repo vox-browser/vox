@@ -1,5 +1,9 @@
 module encoding
 
+import encoding.hex
+import json2
+import os
+
 fn test_source_bom_override_selects_utf8_utf16_and_keeps_fallback_replacement_behavior() {
 	assert convert_input_to_utf8_using_given_decoder_unless_there_is_a_byte_order_mark('UTF-8', 'héllo'.bytes())! == 'héllo'
 	assert convert_input_to_utf8_using_given_decoder_unless_there_is_a_byte_order_mark('UTF-8', [
@@ -34,7 +38,7 @@ fn test_source_bom_override_selects_utf8_utf16_and_keeps_fallback_replacement_be
 		0xD8,
 		0,
 		0x61,
-	])! == '\ufffd\ufffd'
+	])! == '\ufffd'
 }
 
 fn test_pinned_source_removes_two_same_encoding_boms_but_keeps_a_third_and_opposing_bom() {
@@ -58,4 +62,37 @@ fn test_pinned_source_removes_two_same_encoding_boms_but_keeps_a_third_and_oppos
 		0xFF,
 		0xFE,
 	])! == '\ufffe'
+}
+
+pub struct BomOverrideUtf16NativeSourceCase {
+pub:
+	label      string
+	input_hex  string
+	remove_bom bool
+	fatal      bool
+	ok         bool
+	utf8_hex   string
+}
+
+fn test_source_bom_override_utf16_odd_byte_eof_matches_original_utf8_ffi() {
+	cases := json2.decode[[]BomOverrideUtf16NativeSourceCase](os.read_file('${@VMODROOT}/encoding/fixtures/post_sniff_utf16_utf8.json')!)!
+	assert cases.len == 8
+	mut observed := 0
+	for item in cases {
+		// The actual given-decoder helper invokes IgnoreBOM::No/Replacement
+		// after discarding the selected BOM. Other original-FFI flags remain
+		// recorded independently by the native probe.
+		if !item.remove_bom || item.fatal { continue }
+		assert item.ok
+		mut input := if item.label == 'UTF-16BE' {
+			[u8(0xfe), 0xff]
+		} else {
+			[u8(0xff), 0xfe]
+		}
+		input << hex.decode(item.input_hex)!
+		expected := hex.decode(item.utf8_hex)!.bytestr()
+		assert convert_input_to_utf8_using_given_decoder_unless_there_is_a_byte_order_mark('UTF-8', input)! == expected
+		observed++
+	}
+	assert observed == 2
 }
