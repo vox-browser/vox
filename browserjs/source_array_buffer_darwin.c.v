@@ -7,7 +7,7 @@ module browserjs
 
 import webidl
 
-#include "source_array_buffer_darwin.h"
+#include "@DIR/source_array_buffer_darwin.h"
 
 fn C.vox_make_source_array_buffer_copy(context voidptr, bytes voidptr, length usize, exception &voidptr) voidptr
 fn C.JSObjectMakeTypedArrayWithArrayBuffer(context voidptr, type_ int, buffer voidptr, exception &voidptr) voidptr
