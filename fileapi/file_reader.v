@@ -10,6 +10,7 @@ module fileapi
 import dom
 import encoding
 import encoding.base64
+import libjs
 import mimesniff
 
 pub enum FileReaderState {
@@ -64,20 +65,15 @@ fn file_reader_bytes_result(value []u8) FileReaderResult {
 	}
 }
 
-fn decode_binary_string(bytes []u8) string {
-	mut output := []u8{}
+// Source appends every byte as one UTF16 code unit. The existing owned Source
+// Utf16String record supplies its UTF8 compatibility projection; this operation
+// does not decode the bytes or encode Unicode itself.
+fn file_reader_binary_string(bytes []u8) libjs.Utf16String {
+	mut code_units := []u16{cap: bytes.len}
 	for byte in bytes {
-		if byte < 0x80 {
-			output << byte
-		} else if byte < 0xc0 {
-			output << u8(0xc2)
-			output << byte
-		} else {
-			output << u8(0xc3)
-			output << byte - 0x40
-		}
+		code_units << u16(byte)
 	}
-	return output.bytestr()
+	return libjs.utf16_string_from_code_units(code_units)
 }
 
 fn encoding_for_blob(mime_type ?string, encoding_name ?string) string {
@@ -119,7 +115,7 @@ pub fn blob_package_data(bytes []u8, type_ FileReaderType, mime_type ?string, en
 			file_reader_bytes_result(bytes)
 		}
 		.binary_string {
-			file_reader_string_result(decode_binary_string(bytes))
+			file_reader_string_result(file_reader_binary_string(bytes).str())
 		}
 	}
 }
