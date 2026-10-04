@@ -158,7 +158,13 @@ pub fn (buffer &BinaryMachineMemoryBuffer) contiguous_bytes_before(offset usize,
 }
 
 pub fn (buffer &BinaryMachineMemoryBuffer) copy_to(offset usize, destination BinaryMachineBytes) {
-	assert offset <= buffer.size() && destination.size <= buffer.size() - offset
+	// Source VERIFY remains active when ordinary V asserts are stripped.
+	if offset > buffer.size() {
+		panic('Source VERIFY: MemoryBuffer::copy_to offset <= size()')
+	}
+	if destination.size > buffer.size() - offset {
+		panic('Source VERIFY: MemoryBuffer::copy_to destination.size() <= size() - offset')
+	}
 	mut copied := usize(0)
 	for copied < destination.size {
 		chunk_size := buffer.contiguous_bytes_from(offset + copied, destination.size - copied)
