@@ -55,3 +55,9 @@ the next slices. Existing standalone StorageEnvironment/SessionStorageBottle
 construction adapters, browser host proxy/IPC/storage-jar behavior and the full
 Source Environment/Page/GC graph remain separate. This prerequisite does not
 claim complete Blob partition, StorageAPI or native IPC parity.
+
+Subsequent Source review found that the quota-only SessionStorageBottle adapter
+still constructed an invented empty-scheme typed key. The separate
+[hostless-adapter correction](STORAGE_BOTTLE_HOSTLESS_OWNER.md) removes that
+owner and records its focused checks. The earlier key-operation results above
+are retained without claiming they proved the adapter's ownership.
