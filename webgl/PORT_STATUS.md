@@ -397,6 +397,23 @@ glIsTransformFeedback directly. Initial diagnostics are preserved. All checks
 use GC disabled; source TODOs, remote transport and full GC/WrapperWorld
 ownership remain open.
 
+Sampler bind/delete now select the owning context before nullable, foreign or
+invalidated record gates and delegate to GL after the source handle validation
+(`WebGL2RenderingContextImpl.cpp:803-833`). The V-only bound_samplers map, its
+bind/deletion writes and restoration clearing were removed; the source has no
+retained sampler binding slots. Existing getParameter(SAMPLER_BINDING) still
+queries real GL and creates a fresh source sampler record every time, including
+native name zero (`WebGLRenderingContextImpl.cpp:1673-1677`). Typed/public cases
+verify shared driver binding across two units, fresh record/wrapper identity,
+foreign/deleted/null owner order, real invalid-unit errors, actual driver
+unbinding after deletion and preserved present-zero returns. The legacy sampler
+fixture now queries GL after the rejected bind instead of inspecting the removed
+map. Four typed files passed in `source-sampler-binding-gc-none.log`; three
+public files passed in `source-sampler-binding-public-gc-none.log`, all with GC
+disabled and no fixture failure. The separate source sampler parameter-name
+switches remain; their owner-first correction follows separately. Full source
+GC, caller WrapperWorld ownership and remote transport remain open.
+
 Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
 `WebGL2RenderingContextOverloads.cpp:33-85`, and
 `WebGL2RenderingContextImpl.cpp:46-50`: select the owner, validate nullable data
