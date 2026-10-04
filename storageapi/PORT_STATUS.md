@@ -1,6 +1,9 @@
 # Storage API translation status
 
-Complete, independently audited translation of `Libraries/LibWeb/StorageAPI`.
+The canonical V workspace is `~/code/vox2`. The original inventory below is
+retained as historical status; it does not establish complete Source parity.
+The October 4, 2026 review identified actual origin ownership and native
+Environment/Page/IPC boundaries in the earlier standalone model.
 
 | Upstream `.cpp` | V implementation |
 | --- | --- |
@@ -12,11 +15,20 @@ Complete, independently audited translation of `Libraries/LibWeb/StorageAPI`.
 | `StorageShed.cpp` | `storage_models.v` |
 | `StorageShelf.cpp` | `storage_models.v` |
 
-The storage key/bottle/bucket/shelf/shed model, endpoint registry, quota
-handling and Navigator `[SameObject]` manager are typed V code. Local-storage
-persistence is exposed through `StorageHost` callbacks corresponding to
-Ladybird's PageClient boundary; session storage remains in the translated
-storage shed with upstream `OrderedHashMap` key ordering.
+The bounded [actual StorageKey origin proof](../docs/translation-audit/STORAGE_KEY_ACTUAL_ORIGIN_OWNER.md)
+maps typed origin retention, same-origin equality, both non-storage key overloads,
+the file override, opaque rejection and the disabled-storage FIXME. It identifies
+the captured-value Environment and quota-only SessionStorageBottle adapters.
+The legacy string/flag byte codec is isolated from that actual record and is
+not native Source IPC.
+
+StorageHost callbacks and the standalone in-memory shed remain explicit
+compatibility boundaries. Actual native Page/Environment/GC ownership,
+browser storage-jar proxies, persistence and complete Source IPC require further
+translation and verification. Existing endpoint/quota/Navigator behavior is
+preserved without a new blanket parity claim.
+
+Original inventory and verification:
 
 - Upstream: 7 `.cpp` files, 381 LOC; all 8 adjacent headers and 2 IDLs audited.
 - V implementation: 342 LOC in 2 files.
