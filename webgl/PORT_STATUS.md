@@ -254,7 +254,7 @@ typed source case and compressed/layer/nullable-upload neighbors passed with GC
 disabled (four files, `source-texture-binding-gc-none.log`); the public first-
 exposure/cross-target/identity/deletion case passed in
 `source-texture-binding-public-gc-none.log`. These translate the texture binding
-owners and source error ordering. The existing texture parameter/size caches
+owners and source error ordering. The existing texture size/upload caches
 and their extra retained-name prerequisites remain identified for separate source
 translation; full LibJS tracing and caller WrapperWorld ownership remain open.
 
@@ -276,6 +276,21 @@ The actual public two-version case passed in
 format expectations were corrected against real driver alias behavior. Remote
 transport, full LibJS tracing and other remaining resource caches remain separate
 boundaries.
+
+Texture parameter setters now directly translate
+`WebGLRenderingContextImpl.cpp:2368-2378`: select the owning driver, then forward
+the exact integer/float parameter without a retained texture-name prerequisite.
+The invented parameter maps were removed from the V texture record; queries
+continue to inspect actual driver state. The unused integer conversion of float
+command metadata was also removed, preserving the source float argument directly.
+The new typed source case and actual public two-version case passed with GC
+disabled (`source-texture-parameter-final-gc-none.log` and
+`source-texture-parameter-public-gc-none.log`). Compressed/layer neighbors passed
+in `source-texture-parameter-gc-none.log`; the initial new fixture used unexposed
+V constant names and was corrected to the source GL enumerants. Cases use genuine
+bindings outside retained source slots and compare competing invalid inputs with
+actual driver error order. Texture size/upload mirrors, remote transport and
+complete LibJS ownership remain separate source slices.
 
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
