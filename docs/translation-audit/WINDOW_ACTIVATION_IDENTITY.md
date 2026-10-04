@@ -42,6 +42,7 @@ This feature unifies the activation owner and checks. The separate
 native EventTarget notification clock. The separate
 [logical navigable consumption slice](WINDOW_ACTIVATION_CONSUMPTION.md) replaces
 the cached BrowsingContext traversal with the source active-document inclusive
-descendant navigables and actual WindowProxy Window lookup. Input and select picker models
-also retain explicitly supplied activation/security state. These remaining
-paths are not certified by the timestamp-identity regressions.
+descendant navigables and actual WindowProxy Window lookup. The separate
+[input picker ownership slice](INPUT_PICKER_GLOBAL_OWNERSHIP.md) removes its
+control snapshots. Select still retains supplied activation/security state;
+that remaining path is not certified by the timestamp-identity regressions.
