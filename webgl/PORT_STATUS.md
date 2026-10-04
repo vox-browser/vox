@@ -307,8 +307,9 @@ The private `native_handle_` stores source m_handle; the existing private
 `handle_` remains a distinct adapter lookup ID exposed only through the typed
 bookkeeping_id accessor. Every named-resource deleter uses the source optional
 GLuint for GL and its separate bookkeeping ID for adapter map removal/debug
-recording. Host registration and logical fallback replies validate the source
-handle but key their wrapper maps only by bookkeeping IDs. A genuine driver
+recording. Host registration validates the source handle but keys its logical
+wrapper map only by bookkeeping IDs; logical parameter fallbacks use those
+same separate IDs. A genuine driver
 preallocation test forces these IDs to differ and confirms source deletion
 deletes the intended native buffer and lookup entry while independent driver
 buffers survive. Other cases cover all eleven named resource kinds, actual
@@ -324,6 +325,23 @@ eleven-file manifest passed in full. Public cases verify genuine differing
 driver/wrapper IDs, shader/program reply identity and retained/deleted/zero
 resource neighbors. Source GC owner references, remote transport and full
 WrapperWorld ownership remain separate boundaries.
+
+getAttachedShaders now wraps the actual retained shader records from
+`WebGLRenderingContextImpl.cpp:867-889` and the generated
+`sequence<WebGLShader>?` return. The source only validates the program; it
+returns vertex then fragment pointers even after shader deletion. The host
+no longer validates each shader's live handle or requires a live-name lookup.
+Its platform-object cache reuses the existing branded shader or first-exposes
+an invalidated typed shader directly; the obsolete live-only reply helper was
+removed. The public fixture exercises both versions and both exposure paths,
+checks distinct returned arrays with shared shader identity, source slot order,
+actual pointer/label retention, invalidated shader operation rejection, and
+program-deletion rejection. Genuine glGetAttachedShaders/glIsShader observations
+confirm native deferred shader deletion while attached and final deletion after
+the program is deleted. Four public files passed in
+`source-attached-shader-record-public-gc-none.log`; three typed source neighbors
+passed in `source-attached-shader-record-gc-none.log`, all with GC disabled.
+Full source GC rooting and caller WrapperWorld ownership remain open.
 
 Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
 `WebGL2RenderingContextOverloads.cpp:33-85`, and
