@@ -408,7 +408,6 @@ pub fn (mut context WebGLRenderingContext) create_shader(type_ GLenum) ?&WebGLSh
 	handle := context.allocate_handle()
 	native_handle := C.vox_gl_create_shader(type_)
 	context.native.collect_native_error()
-	if native_handle == 0 { return none }
 	shader := &WebGLShader{
 		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
 		type_: type_
