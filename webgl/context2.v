@@ -61,50 +61,35 @@ fn valid_query_target(target GLenum) bool {
 }
 
 pub fn (mut context WebGLRenderingContext) begin_query(target GLenum, mut query WebGLQuery) {
+	context.native.make_current()
 	if !context.require_webgl2() {
 		return
 	}
-	if !valid_query_target(target) {
-		context.set_error(invalid_enum)
-		return
-	}
-	if !context.owns(&query.object) || target in context.current_queries || query.active_ {
+	if !context.owns(&query.object) {
 		context.set_error(invalid_operation)
 		return
 	}
-	if existing_target := query.target_ {
-		if existing_target != target {
-			context.set_error(invalid_operation)
-			return
+	if valid_query_target(target) {
+		unsafe {
+			context.current_queries[target] = query
 		}
 	}
 	context.native.dispatch('begin_query', target, query.object.handle_)
 	C.vox_gl_begin_query(target, query.object.native_handle_)
-	if !context.native.collect_native_error() { return }
-	query.target_ = target
-	query.active_ = true
-	unsafe {
-		context.current_queries[target] = query
-	}
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) end_query(target GLenum) {
+	context.native.make_current()
 	if !context.require_webgl2() {
 		return
 	}
-	if !valid_query_target(target) {
-		context.set_error(invalid_enum)
-		return
-	}
-	mut query := context.current_queries[target] or {
-		context.set_error(invalid_operation)
-		return
+	if valid_query_target(target) {
+		context.current_queries.delete(target)
 	}
 	context.native.dispatch('end_query', target)
 	C.vox_gl_end_query(target)
-	if !context.native.collect_native_error() { return }
-	query.active_ = false
-	context.current_queries.delete(target)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) get_query(target GLenum, pname GLenum) ?&WebGLQuery {

@@ -189,9 +189,6 @@ mut:
 pub struct WebGLQuery {
 pub mut:
 	object WebGLObject
-mut:
-	target_    ?GLenum
-	active_    bool
 }
 
 @[heap]
