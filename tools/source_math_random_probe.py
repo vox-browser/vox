@@ -21,6 +21,7 @@ def main():
     parser.add_argument("--source", type=Path, default=Path.home() / "code/3rd/ladybird")
     parser.add_argument("--output", type=Path, default=Path("Build/audit-fixes/source-math-random-probe"))
     parser.add_argument("--fixture", type=Path)
+    parser.add_argument("--entropy-header", type=Path, help="Check the translated native entropy ABI on this host")
     args = parser.parse_args()
     source = args.source.resolve()
     head = subprocess.check_output(["git", "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
@@ -98,7 +99,45 @@ int main() {
     if results[0] != results[1]:
         raise SystemExit("optimization outputs differ")
     if args.fixture:
-        args.fixture.write_text(json.dumps(results[0], indent=2) + "\n")
+        # Preserve all 64 bits independently of JSON consumer number precision.
+        fixture = [{key: [str(value) for value in values] for key, values in case.items()}
+                   for case in results[0]]
+        args.fixture.write_text(json.dumps(fixture, indent=2) + "\n")
+    if args.entropy_header:
+        header = args.entropy_header.resolve()
+        print("translated native entropy ABI", hashlib.sha256(header.read_bytes()).hexdigest(), flush=True)
+        # Both the unchanged Source CSPRNG body and native ABI call the same
+        # test-only external OS entry point. No generator algorithm is copied.
+        native_unit = output / "entropy-abi.cpp"
+        native_unit.write_text(r'''#include <AK/Error.h>
+#include <AK/Platform.h>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+static size_t draws;
+static uint64_t seeds[] = {0x0123456789abcdefULL, 0xfedcba9876543210ULL};
+static void test_arc4random_buf(void* buffer, size_t size) {
+    if (size != sizeof(uint64_t) || draws >= 2) std::abort();
+    std::memcpy(buffer, &seeds[draws++], size);
+}
+#define arc4random_buf test_arc4random_buf
+''' + extract("static inline ErrorOr<void> csprng(") + '\n#include "' + str(header) + r'''"
+int main() {
+    uint64_t first, second;
+    if (csprng(&first, sizeof(first)).is_error() || csprng(&second, sizeof(second)).is_error()) std::abort();
+    if (draws != 2 || first != seeds[0] || second != seeds[1]) std::abort();
+    draws = 0;
+    first = vox_ak_random_seed_u64(); second = vox_ak_random_seed_u64();
+    if (draws != 2 || first != seeds[0] || second != seeds[1]) std::abort();
+}
+''')
+        for optimize in ["-O0", "-O2"]:
+            executable = output / ("entropy-abi" + optimize)
+            subprocess.run(["clang++", "-std=c++23", optimize, "-Wno-user-defined-literals",
+                            "-Wno-unqualified-std-cast-call", "-I" + str(source), str(native_unit),
+                            str(library), "-Wl,-rpath," + str(library.parent), "-o", str(executable)], check=True)
+            subprocess.run([str(executable)], check=True)
+            print(optimize, "native Source/ABI two-draw byte representation PASS", flush=True)
 
 
 if __name__ == "__main__":
