@@ -22,7 +22,6 @@ pub fn (mut context WebGLRenderingContext) copy_buffer_sub_data(read_target GLen
     if !context.require_webgl2() { return }
     context.native.dispatch('copy_buffer_sub_data', read_target, write_target, read_offset, write_offset, size)
     C.vox_gl_copy_buffer_sub_data(read_target, write_target, read_offset, write_offset, size)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) get_buffer_sub_data(target GLenum, source_offset i64, mut destination []u8, destination_offset int, length int) {
@@ -37,7 +36,6 @@ pub fn (mut context WebGLRenderingContext) get_buffer_sub_data(target GLenum, so
     context.native.dispatch('get_buffer_sub_data', target, source_offset, destination_offset, copy_length)
     mut bytes := []u8{len: copy_length}
     success := C.vox_gl_read_buffer_sub_data(target, source_offset, copy_length, bytes.data) == 1
-    context.native.collect_native_error()
     if success { copy(mut destination[destination_offset..destination_offset + copy_length], bytes) }
 }
 
@@ -48,7 +46,6 @@ pub fn (mut context WebGLRenderingContext) create_query() &WebGLQuery {
 	query := &WebGLQuery{
 		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: C.vox_gl_gen_object(4)}
 	}
-	context.native.collect_native_error()
 	unsafe {
 		context.queries[handle] = query
 	}
@@ -76,7 +73,6 @@ pub fn (mut context WebGLRenderingContext) begin_query(target GLenum, mut query 
 	}
 	context.native.dispatch('begin_query', target, query.object.handle_)
 	C.vox_gl_begin_query(target, query.object.native_handle_)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) end_query(target GLenum) {
@@ -89,7 +85,6 @@ pub fn (mut context WebGLRenderingContext) end_query(target GLenum) {
 	}
 	context.native.dispatch('end_query', target)
 	C.vox_gl_end_query(target)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) get_query(target GLenum, pname GLenum) ?&WebGLQuery {
@@ -108,7 +103,6 @@ pub fn (mut context WebGLRenderingContext) get_query_parameter(query &WebGLQuery
 		return none
 	}
 	result := C.vox_gl_query_parameter(query.object.native_handle_, pname)
-	context.native.collect_native_error()
 	if pname !in [query_result, query_result_available] { return none }
 	return u64(result)
 }
@@ -127,7 +121,6 @@ pub fn (mut context WebGLRenderingContext) delete_query(mut query ?&WebGLQuery) 
 		context.queries.delete(handle)
 		context.native.dispatch('delete_query', handle)
 		C.vox_gl_delete_object(4, handle_result.value)
-		context.native.collect_native_error()
 	}
 }
 
@@ -138,7 +131,6 @@ pub fn (mut context WebGLRenderingContext) create_sampler() &WebGLSampler {
 	sampler := &WebGLSampler{
 		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: C.vox_gl_gen_object(5)}
 	}
-	context.native.collect_native_error()
 	unsafe {
 		context.samplers[handle] = sampler
 	}
@@ -160,7 +152,6 @@ pub fn (mut context WebGLRenderingContext) bind_sampler(unit GLuint, sampler ?&W
 		0
 	})
 	C.vox_gl_bind_sampler(unit, if value := sampler { value.object.native_handle_ } else { 0 })
-	context.native.collect_native_error()
 }
 
 fn valid_sampler_parameter(pname GLenum) bool {
@@ -180,7 +171,6 @@ pub fn (mut context WebGLRenderingContext) sampler_parameteri(mut sampler WebGLS
 	}
 	context.native.dispatch('sampler_parameteri', sampler.object.handle_, pname, parameter)
 	C.vox_gl_sampler_parameteri(sampler.object.native_handle_, pname, parameter)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) sampler_parameterf(mut sampler WebGLSampler, pname GLenum, parameter f32) {
@@ -195,7 +185,6 @@ pub fn (mut context WebGLRenderingContext) sampler_parameterf(mut sampler WebGLS
 	}
 	context.native.dispatch('sampler_parameterf', sampler.object.handle_, pname, i64(parameter))
 	C.vox_gl_sampler_parameterf(sampler.object.native_handle_, pname, parameter)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) delete_sampler(mut sampler ?&WebGLSampler) {
@@ -212,7 +201,6 @@ pub fn (mut context WebGLRenderingContext) delete_sampler(mut sampler ?&WebGLSam
 		context.samplers.delete(handle)
 		context.native.dispatch('delete_sampler', handle)
 		C.vox_gl_delete_object(5, handle_result.value)
-		context.native.collect_native_error()
 	}
 }
 
@@ -275,7 +263,6 @@ pub fn (mut context WebGLRenderingContext) create_transform_feedback() &WebGLTra
 	feedback := &WebGLTransformFeedback{
 		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: C.vox_gl_gen_object(8)}
 	}
-	context.native.collect_native_error()
 	unsafe {
 		context.transform_feedbacks[handle] = feedback
 	}
@@ -288,7 +275,6 @@ pub fn (mut context WebGLRenderingContext) bind_transform_feedback(target GLenum
     if value := feedback { if !context.owns(&value.object) { context.set_error(invalid_operation); return } }
     context.native.dispatch('bind_transform_feedback',target,if value := feedback { value.object.handle_ } else { 0 })
     C.vox_gl_bind_transform_feedback(target,if value := feedback { value.object.native_handle_ } else { 0 })
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) begin_transform_feedback(primitive_mode GLenum) {
@@ -296,7 +282,6 @@ pub fn (mut context WebGLRenderingContext) begin_transform_feedback(primitive_mo
     if !context.require_webgl2() { return }
     context.native.dispatch('begin_transform_feedback',primitive_mode)
     C.vox_gl_begin_transform_feedback(primitive_mode)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) end_transform_feedback() {
@@ -304,7 +289,6 @@ pub fn (mut context WebGLRenderingContext) end_transform_feedback() {
     if !context.require_webgl2() { return }
     context.native.dispatch('end_transform_feedback')
     C.vox_gl_end_transform_feedback()
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) pause_transform_feedback() {
@@ -312,7 +296,6 @@ pub fn (mut context WebGLRenderingContext) pause_transform_feedback() {
     if !context.require_webgl2() { return }
     context.native.dispatch('pause_transform_feedback')
     C.vox_gl_pause_transform_feedback()
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) resume_transform_feedback() {
@@ -320,7 +303,6 @@ pub fn (mut context WebGLRenderingContext) resume_transform_feedback() {
     if !context.require_webgl2() { return }
     context.native.dispatch('resume_transform_feedback')
     C.vox_gl_resume_transform_feedback()
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) create_vertex_array() &WebGLVertexArrayObject {
@@ -330,7 +312,6 @@ pub fn (mut context WebGLRenderingContext) create_vertex_array() &WebGLVertexArr
 	array := &WebGLVertexArrayObject{
 		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: C.vox_gl_gen_object(6)}
 	}
-	context.native.collect_native_error()
 	unsafe {
 		context.vertex_arrays[handle] = array
 	}
@@ -348,7 +329,6 @@ pub fn (mut context WebGLRenderingContext) bind_vertex_array(array ?&WebGLVertex
 	}
 	context.native.dispatch('bind_vertex_array', if value := array { value.object.handle_ } else { 0 })
 	C.vox_gl_bind_vertex_array(if value := array { value.object.native_handle_ } else { 0 },0)
-	context.native.collect_native_error()
 	context.current_vertex_array = array
 	if value := array {
 		context.set_current_vertex_array_binding(&value.object)
@@ -378,7 +358,6 @@ pub fn (mut context WebGLRenderingContext) delete_vertex_array(mut array ?&WebGL
 		context.vertex_arrays.delete(handle)
 		context.native.dispatch('delete_vertex_array', handle)
 		C.vox_gl_delete_object(6,handle_result.value)
-		context.native.collect_native_error()
 		if current := context.current_vertex_array {
 			if current == value {
 				context.current_vertex_array = none
@@ -396,7 +375,6 @@ pub fn (mut context WebGLRenderingContext) create_vertex_array_oes() &WebGLVerte
 	array := &WebGLVertexArrayObjectOES{
 		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: C.vox_gl_gen_object(7)}
 	}
-	context.native.collect_native_error()
 	unsafe {
 		context.vertex_arrays_oes[handle] = array
 	}
@@ -412,7 +390,6 @@ pub fn (mut context WebGLRenderingContext) bind_vertex_array_oes(array ?&WebGLVe
 	}
 	context.native.dispatch('bind_vertex_array_oes', if value := array { value.object.handle_ } else { 0 })
 	C.vox_gl_bind_vertex_array(if value := array { value.object.native_handle_ } else { 0 },1)
-	context.native.collect_native_error()
 	context.current_vertex_array_oes = array
 	if value := array {
 		context.set_current_vertex_array_binding(&value.object)
@@ -448,7 +425,6 @@ pub fn (mut context WebGLRenderingContext) delete_vertex_array_oes(array ?&WebGL
 		context.vertex_arrays_oes.delete(handle)
 		context.native.dispatch('delete_vertex_array_oes', handle)
 		C.vox_gl_delete_object(7,handle_result.value)
-		context.native.collect_native_error()
 		if current := context.current_vertex_array_oes {
 			if current == value {
 				context.current_vertex_array_oes = none
@@ -485,7 +461,6 @@ pub fn (mut context WebGLRenderingContext) compressed_tex_image3d(target GLenum,
 	}
 	context.native.dispatch('compressed_tex_image3d', target, level, internal_format, width, height, depth, border, pixels.len)
 	C.vox_gl_compressed_tex_image3d(target,level,internal_format,width,height,depth,border,pixels.len,pixels.data)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) draw_arrays_instanced(mode GLenum, first int, count int, instance_count int) {

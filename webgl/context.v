@@ -342,7 +342,6 @@ pub fn (mut context WebGLRenderingContext) create_buffer() &WebGLBuffer {
 	handle := context.allocate_handle()
 	context.native.make_current()
 	native_handle := C.vox_gl_gen_object(0)
-	context.native.collect_native_error()
 	buffer := &WebGLBuffer{
 		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
 	}
@@ -356,7 +355,6 @@ pub fn (mut context WebGLRenderingContext) create_framebuffer() &WebGLFramebuffe
 	handle := context.allocate_handle()
 	context.native.make_current()
 	native_handle := C.vox_gl_gen_object(1)
-	context.native.collect_native_error()
 	framebuffer_object := &WebGLFramebuffer{
 		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
 	}
@@ -370,7 +368,6 @@ pub fn (mut context WebGLRenderingContext) create_renderbuffer() &WebGLRenderbuf
 	handle := context.allocate_handle()
 	context.native.make_current()
 	native_handle := C.vox_gl_gen_object(2)
-	context.native.collect_native_error()
 	renderbuffer_object := &WebGLRenderbuffer{
 		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
 	}
@@ -384,7 +381,6 @@ pub fn (mut context WebGLRenderingContext) create_texture() &WebGLTexture {
 	handle := context.allocate_handle()
 	context.native.make_current()
 	native_handle := C.vox_gl_gen_object(3)
-	context.native.collect_native_error()
 	texture := &WebGLTexture{
 		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
 	}
@@ -402,7 +398,6 @@ pub fn (mut context WebGLRenderingContext) create_shader(type_ GLenum) ?&WebGLSh
 	}
 	handle := context.allocate_handle()
 	native_handle := C.vox_gl_create_shader(type_)
-	context.native.collect_native_error()
 	shader := &WebGLShader{
 		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
 		type_: type_
@@ -417,7 +412,6 @@ pub fn (mut context WebGLRenderingContext) create_program() &WebGLProgram {
 	handle := context.allocate_handle()
 	context.native.make_current()
 	native_handle := C.vox_gl_create_program()
-	context.native.collect_native_error()
 	program := &WebGLProgram{
 		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
 	}
@@ -467,28 +461,24 @@ pub fn (mut context WebGLRenderingContext) bind_buffer(target GLenum, buffer ?&W
     }
     context.native.dispatch('bind_buffer', target, if value := buffer { value.object.handle_ } else { 0 })
     C.vox_gl_bind_buffer(target, if value := buffer { value.object.native_handle_ } else { 0 })
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) buffer_data(target GLenum, data []u8, usage GLenum) {
     context.native.make_current()
     context.native.dispatch('buffer_data', target, data.len, usage)
     C.vox_gl_buffer_data(target, data.len, data.data, usage)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) buffer_data_size(target GLenum, size i64, usage GLenum) {
     context.native.make_current()
     context.native.dispatch('buffer_data', target, size, usage)
     C.vox_gl_buffer_data(target, size, unsafe { nil }, usage)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) buffer_sub_data(target GLenum, offset i64, data []u8) {
     context.native.make_current()
     context.native.dispatch('buffer_sub_data', target, offset, data.len)
     C.vox_gl_buffer_sub_data(target, offset, data.len, data.data)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) delete_buffer(buffer ?&WebGLBuffer) {
@@ -506,7 +496,6 @@ pub fn (mut context WebGLRenderingContext) delete_buffer(buffer ?&WebGLBuffer) {
 		context.buffers.delete(handle)
 		context.native.dispatch('delete_buffer', handle)
 		C.vox_gl_delete_object(0, handle_result.value)
-		context.native.collect_native_error()
 	}
 }
 
@@ -524,7 +513,6 @@ pub fn (mut context WebGLRenderingContext) shader_source(mut shader WebGLShader,
 		return
 	}
 	C.vox_gl_shader_source(shader.object.native_handle_, source.str, source.len)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) compile_shader(mut shader WebGLShader) {
@@ -573,7 +561,6 @@ pub fn (mut context WebGLRenderingContext) attach_shader(mut program WebGLProgra
 		}
 	}
 	C.vox_gl_attach_shader(program.object.native_handle_, shader.object.native_handle_)
-	context.native.collect_native_error()
 	match shader.type_ {
 		vertex_shader { program.attached_vertex_shader = shader }
 		fragment_shader { program.attached_fragment_shader = shader }
@@ -588,7 +575,6 @@ pub fn (mut context WebGLRenderingContext) detach_shader(mut program WebGLProgra
 		return
 	}
 	C.vox_gl_detach_shader(program.object.native_handle_, shader.object.native_handle_)
-	context.native.collect_native_error()
 	// The pinned source clears the typed retained slot after the driver call,
 	// including when GL rejects an owned shader that was never attached.
 	if shader.type_ == vertex_shader {
@@ -617,7 +603,6 @@ pub fn (mut context WebGLRenderingContext) use_program(program ?&WebGLProgram) {
 		}
 	}
 	C.vox_gl_use_program(if value := program { value.object.native_handle_ } else { 0 })
-	context.native.collect_native_error()
 	context.current_program = program
 	context.native.dispatch('use_program', if value := program { value.object.handle_ } else { 0 })
 }
@@ -629,7 +614,6 @@ pub fn (mut context WebGLRenderingContext) validate_program(mut program WebGLPro
 		return
 	}
 	C.vox_gl_validate_program(program.object.native_handle_)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) get_uniform_location(mut program WebGLProgram, name string) ?&WebGLUniformLocation {
@@ -639,7 +623,6 @@ pub fn (mut context WebGLRenderingContext) get_uniform_location(mut program WebG
 		return none
 	}
 	native_location := C.vox_gl_uniform_location(program.object.native_handle_, name.str)
-	context.native.collect_native_error()
 	if native_location < 0 { return none }
 	location := &WebGLUniformLocation{
 		handle_: GLuint(native_location)
@@ -741,7 +724,6 @@ pub fn (mut context WebGLRenderingContext) is_enabled(capability GLenum) bool {
 	// WebGLRenderingContextImpl::is_enabled forwards to the current GL context.
 	context.native.make_current()
 	result := C.vox_gl_is_enabled(capability) != 0
-	context.native.collect_native_error()
 	return result
 }
 
@@ -759,7 +741,6 @@ pub fn (mut context WebGLRenderingContext) clear_color(red f32, green f32, blue 
 	context.clear_color_ = [clamp_unit(red), clamp_unit(green), clamp_unit(blue), clamp_unit(alpha)]!
 	context.native.make_current()
 	C.vox_gl_clear_color(red, green, blue, alpha)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) clear_depth(depth f64) {
@@ -772,28 +753,24 @@ pub fn (mut context WebGLRenderingContext) clear_depth(depth f64) {
 	}
 	context.native.make_current()
 	C.vox_gl_clear_depth(f32(depth))
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) clear_stencil(stencil int) {
 	context.clear_stencil_ = stencil
 	context.native.make_current()
 	C.vox_gl_clear_stencil(stencil)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) color_mask(red bool, green bool, blue bool, alpha bool) {
 	context.color_mask_ = [red, green, blue, alpha]!
 	context.native.make_current()
 	C.vox_gl_color_mask(int(red), int(green), int(blue), int(alpha))
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) depth_mask(flag bool) {
 	context.depth_mask_ = flag
 	context.native.make_current()
 	C.vox_gl_depth_mask(int(flag))
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) clear(mask GLenum) {
@@ -836,6 +813,6 @@ pub fn (mut context WebGLRenderingContext) draw_elements(mode GLenum, count int,
 }
 
 // Native passthrough state commands retain ordering at the platform boundary.
-pub fn (mut context WebGLRenderingContext) command(name string, args ...i64) bool {
-	return context.native.dispatch(name, ...args)
+pub fn (mut context WebGLRenderingContext) command(name string, args ...i64) {
+	context.native.dispatch(name, ...args)
 }

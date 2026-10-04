@@ -202,17 +202,10 @@ fn C.vox_gl_get_uniform_floats(u32, int, &f32)
 fn C.vox_gl_get_uniform_ints(u32, int, &int)
 fn C.vox_gl_get_uniform_uints(u32, int, &u32)
 
-fn (mut context OpenGLContext) collect_native_error() bool {
-	error_value := GLenum(C.vox_gl_get_error())
-	if error_value != no_error { context.set_pending_local_error(error_value) }
-	return error_value == no_error
-}
-
 fn (mut context OpenGLContext) native_fence_sync(condition GLenum, flags GLenum) voidptr {
 	context.make_current()
 	if !context.current_ { return unsafe { nil } }
 	handle := C.vox_gl_fence_sync(condition, flags)
-	context.collect_native_error()
 	return handle
 }
 
@@ -220,7 +213,6 @@ fn (mut context OpenGLContext) native_client_wait_sync(handle voidptr, flags GLe
 	context.make_current()
 	if !context.current_ { return wait_failed }
 	result := GLenum(C.vox_gl_client_wait_sync(handle, flags, timeout))
-	context.collect_native_error()
 	return result
 }
 
@@ -228,35 +220,30 @@ fn (mut context OpenGLContext) native_wait_sync(handle voidptr, flags GLenum, ti
 	context.make_current()
 	if !context.current_ { return }
 	C.vox_gl_wait_sync(handle, flags, timeout)
-	context.collect_native_error()
 }
 
 fn (mut context OpenGLContext) native_delete_sync(handle voidptr) {
 	context.make_current()
 	if !context.current_ { return }
 	C.vox_gl_delete_sync(handle)
-	context.collect_native_error()
 }
 
 fn (mut context OpenGLContext) native_sync_parameter(handle voidptr, pname GLenum) int {
 	context.make_current()
 	if !context.current_ { return 0 }
 	result := C.vox_gl_get_sync_parameter(handle, pname)
-	context.collect_native_error()
 	return result
 }
 
 fn (mut context OpenGLContext) native_shader_parameter(handle GLuint, pname GLenum) int {
 	context.make_current()
 	result := C.vox_gl_shader_parameter(handle, pname)
-	context.collect_native_error()
 	return result
 }
 
 fn (mut context OpenGLContext) native_program_parameter(handle GLuint, pname GLenum) int {
 	context.make_current()
 	result := C.vox_gl_program_parameter(handle, pname)
-	context.collect_native_error()
 	return result
 }
 
@@ -265,7 +252,6 @@ fn (mut context OpenGLContext) native_shader_log(handle GLuint) string {
 	if length <= 0 { return '' }
 	mut output := []u8{len: length}
 	C.vox_gl_shader_log(handle, length, output.data)
-	context.collect_native_error()
 	return output[..length - 1].bytestr()
 }
 
@@ -276,7 +262,6 @@ fn (mut context OpenGLContext) native_shader_source(handle GLuint) string {
 	if length <= 0 { return '' }
 	mut output := []u8{len: length}
 	C.vox_gl_get_shader_source(handle, length, output.data)
-	context.collect_native_error()
 	return output[..length - 1].bytestr()
 }
 
@@ -285,7 +270,6 @@ fn (mut context OpenGLContext) native_program_log(handle GLuint) string {
 	if length <= 0 { return '' }
 	mut output := []u8{len: length}
 	C.vox_gl_program_log(handle, length, output.data)
-	context.collect_native_error()
 	return output[..length - 1].bytestr()
 }
 
@@ -295,6 +279,5 @@ fn (mut context OpenGLContext) native_active_info(handle GLuint, index GLuint, u
 	mut size := 0
 	mut type_ := u32(0)
 	length := C.vox_gl_active_info(handle, index, int(uniform), name.len, name.data, &size, &type_)
-	context.collect_native_error()
 	return WebGLActiveInfo.create(name[..length].bytestr(), GLenum(type_), size)
 }

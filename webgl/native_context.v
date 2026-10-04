@@ -138,7 +138,6 @@ pub fn (mut context OpenGLContext) allocate_painting_surface_if_needed() {
 	context.current_ = C.vox_egl_make_current(context.backend_) == 1
 	if !context.current_ { context.lost_ = true; return }
 	context.surface_allocated_ = C.vox_egl_allocate_surface(context.backend_, context.width_, context.height_, int(context.drawing_buffer_options.depth), int(context.drawing_buffer_options.stencil)) == 1
-	context.collect_native_error()
 	if !context.surface_allocated_ { return }
 	context.viewport_ = [0, 0, context.width_, context.height_]!
 }
@@ -203,7 +202,6 @@ pub fn (mut context OpenGLContext) read_back_drawing_buffer() ?WebGLPaintingSurf
 	if length > u64(max_int) { context.set_pending_local_error(out_of_memory); return none }
 	mut pixels := []u8{len:int(length)}
 	if C.vox_egl_copy_drawing_buffer(context.backend_,context.width_,context.height_,pixels.data) != 1 { return none }
-	if !context.collect_native_error() { return none }
 	return WebGLPaintingSurface{width:context.width_,height:context.height_,pixels:pixels}
 }
 
@@ -238,17 +236,16 @@ pub fn (mut context OpenGLContext) request_extension(extension string) {
 	if extension in context.supported_extensions_ && extension !in context.requested_extensions_ {
 		context.make_current()
 		C.vox_gl_request_extension(extension.str)
-		if !context.collect_native_error() { return }
 		context.requested_extensions_ << extension
 	}
 }
 
-pub fn (mut context OpenGLContext) dispatch(name string, args ...i64) bool {
+pub fn (mut context OpenGLContext) dispatch(name string, args ...i64) {
 	if context.lost_ {
-		return false
+		return
 	}
 	context.make_current()
-	if !context.current_ { return false }
+	if !context.current_ { return }
 	match name {
 		'copy_tex_image2d' { C.vox_gl_copy_tex_image2d(u32(args[0]),int(args[1]),u32(args[2]),int(args[3]),int(args[4]),int(args[5]),int(args[6]),int(args[7])) }
 		'copy_tex_sub_image2d' { C.vox_gl_copy_tex_sub_image2d(u32(args[0]),int(args[1]),int(args[2]),int(args[3]),int(args[4]),int(args[5]),int(args[6]),int(args[7])) }
@@ -294,7 +291,6 @@ pub fn (mut context OpenGLContext) dispatch(name string, args ...i64) bool {
 		'pixel_storei' { C.vox_gl_pixel_storei(u32(args[0]), int(args[1])) }
 		else {}
 	}
-	success := context.collect_native_error()
 	if name == 'viewport' && args.len == 4 {
 		context.viewport_ = [int(args[0]), int(args[1]), int(args[2]), int(args[3])]!
 	}
@@ -310,7 +306,6 @@ pub fn (mut context OpenGLContext) dispatch(name string, args ...i64) bool {
 		'draw_arrays', 'draw_elements', 'draw_arrays_instanced', 'draw_elements_instanced',
 		'draw_range_elements'])
 		|| name == 'blit_framebuffer' { context.notify_content_will_change() }
-	return success
 }
 
 // Native-call recording is a test/debug hook. Upstream dispatches directly to

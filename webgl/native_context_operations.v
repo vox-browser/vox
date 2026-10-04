@@ -36,7 +36,6 @@ pub fn (mut context OpenGLContext) present_canvas_for_compositing(preserve_drawi
 pub fn (mut context OpenGLContext) clear_buffer_to_default_values() {
 	context.dispatch('clear_buffer_to_default_values')
 	C.vox_egl_clear_drawing_buffer(context.backend_)
-	context.collect_native_error()
 }
 
 pub fn (mut context OpenGLContext) allocate_iosurface_painting_surface() {

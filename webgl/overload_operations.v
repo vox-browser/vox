@@ -51,7 +51,6 @@ pub fn (mut context WebGLRenderingContext) compressed_tex_image2d(target GLenum,
 	}
 	context.command('compressed_tex_image2d', target, level, internal_format, width, height, border, data.len)
 	C.vox_gl_compressed_tex_image2d(target,level,internal_format,width,height,border,data.len,data.data)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) compressed_tex_sub_image2d(target GLenum, level int, x_offset int, y_offset int, width int, height int, format GLenum, data []u8) {
@@ -62,7 +61,6 @@ pub fn (mut context WebGLRenderingContext) compressed_tex_sub_image2d(target GLe
 	}
 	context.command('compressed_tex_sub_image2d', target, level, x_offset, y_offset, width, height, format, data.len)
 	C.vox_gl_compressed_tex_sub_image2d(target,level,x_offset,y_offset,width,height,format,data.len,data.data)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) tex_image2d(target GLenum, level int, internal_format GLenum, width int, height int, border int, format GLenum, type_ GLenum, pixels []u8) {
@@ -73,7 +71,6 @@ pub fn (mut context WebGLRenderingContext) tex_image2d(target GLenum, level int,
 	}
 	context.command('tex_image2d', target, level, internal_format, width, height, border, format, type_, texture_data.len)
 	C.vox_gl_tex_image2d(target, level, internal_format, width, height, border, format, type_, texture_data.len, texture_data.data)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) tex_sub_image2d(target GLenum, level int, x_offset int, y_offset int, width int, height int, format GLenum, type_ GLenum, pixels []u8) {
@@ -84,7 +81,6 @@ pub fn (mut context WebGLRenderingContext) tex_sub_image2d(target GLenum, level 
 	}
 	context.command('tex_sub_image2d', target, level, x_offset, y_offset, width, height, format, type_, texture_data.len)
 	C.vox_gl_tex_sub_image2d(target, level, x_offset, y_offset, width, height, format, type_, texture_data.len, texture_data.data)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) read_pixels(x int, y int, width int, height int, format GLenum, type_ GLenum) []u8 {
@@ -99,7 +95,6 @@ pub fn (mut context WebGLRenderingContext) read_pixels(x int, y int, width int, 
  if capacity > u64(max_int) { context.set_error(out_of_memory); return []u8{} }
  mut data := []u8{len: int(capacity)}
  written := C.vox_gl_read_pixels(x, y, width, height, format, type_, data.len, data.data)
- context.native.collect_native_error()
  if written <= 0 { return []u8{} }
  return data[..written].clone()
 }
@@ -119,7 +114,6 @@ pub fn (mut context WebGLRenderingContext) read_pixels_into(x int, y int, width 
 	byte_offset := int(dst_offset * element_size)
 	context.command('read_pixels', x, y, width, height, format, type_)
 	written := C.vox_gl_read_pixels(x, y, width, height, format, type_, pixels.len - byte_offset, unsafe { &u8(pixels.data) + byte_offset })
-	context.native.collect_native_error()
 	if written < 0 || written > pixels.len - byte_offset { context.set_error(invalid_operation) }
 }
 
@@ -172,8 +166,6 @@ fn (mut context WebGLRenderingContext) uniform_matrix(location ?&WebGLUniformLoc
  if values.len % (columns * rows) != 0 { context.set_error(invalid_value); return }
  if columns != rows && !context.require_webgl2() { return }
 	C.vox_gl_uniform_matrix(int(value.handle_), columns, rows, values.len / (columns * rows), int(transpose), values.data)
-	error_value := GLenum(C.vox_gl_get_error())
-	if error_value != no_error { context.native.set_pending_local_error(error_value); return }
 }
 
 pub fn (mut context WebGLRenderingContext) uniform_matrix2fv(location ?&WebGLUniformLocation, transpose bool, values []f32) {
@@ -202,7 +194,6 @@ pub fn (mut context WebGLRenderingContext) bind_buffer_base(target GLenum, index
     native_handle := context.indexed_buffer_handle(target,buffer) or { return }
     context.command('bind_buffer_base',target,index,if value := buffer { value.object.handle_ } else { 0 })
     C.vox_gl_bind_buffer_base(target,index,native_handle)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) bind_buffer_range(target GLenum, index GLuint, buffer ?&WebGLBuffer, offset i64, size i64) {
@@ -211,7 +202,6 @@ pub fn (mut context WebGLRenderingContext) bind_buffer_range(target GLenum, inde
     native_handle := context.indexed_buffer_handle(target,buffer) or { return }
     context.webgl2_command('bind_buffer_range',target,index,if value := buffer { value.object.handle_ } else { 0 },offset,size)
     C.vox_gl_bind_buffer_range(target,index,native_handle,offset,size)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) blit_framebuffer(source_x0 int, source_y0 int, source_x1 int, source_y1 int, destination_x0 int, destination_y0 int, destination_x1 int, destination_y1 int, mask GLenum, filter GLenum) {
@@ -234,21 +224,18 @@ pub fn (mut context WebGLRenderingContext) clear_bufferfv(buffer GLenum, draw_bu
     if !context.validate_clear_buffer_values(buffer,values.len) { return }
     context.webgl2_command('clear_bufferfv',buffer,draw_buffer,values.len)
     C.vox_gl_clear_buffer_floats(buffer,draw_buffer,values.data)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) clear_bufferiv(buffer GLenum, draw_buffer int, values []int) {
     if !context.validate_clear_buffer_values(buffer,values.len) { return }
     context.webgl2_command('clear_bufferiv',buffer,draw_buffer,values.len)
     C.vox_gl_clear_buffer_ints(buffer,draw_buffer,values.data)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) clear_bufferuiv(buffer GLenum, draw_buffer int, values []u32) {
     if !context.validate_clear_buffer_values(buffer,values.len) { return }
     context.webgl2_command('clear_bufferuiv',buffer,draw_buffer,values.len)
     C.vox_gl_clear_buffer_uints(buffer,draw_buffer,values.data)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) clear_bufferfi(buffer GLenum, draw_buffer int, depth f32, stencil int) {
@@ -256,7 +243,6 @@ pub fn (mut context WebGLRenderingContext) clear_bufferfi(buffer GLenum, draw_bu
     context.webgl2_command('clear_bufferfi',buffer,draw_buffer,i64(depth),stencil)
     context.native.notify_content_will_change()
     C.vox_gl_clear_buffer_depth_stencil(buffer,draw_buffer,depth,stencil)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) compressed_tex_sub_image3d(target GLenum, level int, x_offset int, y_offset int, z_offset int, width int, height int, depth int, format GLenum, data []u8, source_offset u64, length_override u32) {
@@ -271,7 +257,6 @@ pub fn (mut context WebGLRenderingContext) compressed_tex_sub_image3d(target GLe
 	}
 	context.webgl2_command('compressed_tex_sub_image3d', target, level, x_offset, y_offset, z_offset, width, height, depth, format, pixels.len)
 	C.vox_gl_compressed_tex_sub_image3d(target,level,x_offset,y_offset,z_offset,width,height,depth,format,pixels.len,pixels.data)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) delete_transform_feedback(feedback ?&WebGLTransformFeedback) {
@@ -289,7 +274,6 @@ pub fn (mut context WebGLRenderingContext) delete_transform_feedback(feedback ?&
 		context.transform_feedbacks.delete(handle)
 		context.webgl2_command('delete_transform_feedback', handle)
 		C.vox_gl_delete_object(8,handle_result.value)
-		context.native.collect_native_error()
 	}
 }
 
@@ -320,7 +304,6 @@ pub fn (mut context WebGLRenderingContext) framebuffer_texture_layer(target GLen
 	}
 	context.webgl2_command('framebuffer_texture_layer', target, attachment, handle, level, layer)
 	C.vox_gl_framebuffer_texture_layer(target,attachment,if value:=texture {value.object.native_handle_} else {0},level,layer)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) get_internalformat_parameter(target GLenum, internal_format GLenum, pname GLenum) WebGLParameterValue {
@@ -329,10 +312,8 @@ pub fn (mut context WebGLRenderingContext) get_internalformat_parameter(target G
     if pname != samples { context.set_error(invalid_enum); return WebGLParameterValue{} }
     mut count := 0
     C.vox_gl_internalformat_parameter(target,internal_format,num_sample_counts,1,&count)
-    context.native.collect_native_error()
     mut values := []int{len: if count > 0 { count } else { 0 }}
     C.vox_gl_internalformat_parameter(target,internal_format,samples,values.len,values.data)
-    context.native.collect_native_error()
     return WebGLParameterValue{kind:.integers, integers:values.map(i64(it))}
 }
 
@@ -360,7 +341,6 @@ pub fn (mut context WebGLRenderingContext) get_uniform_indices_nullable(program 
     pointers := names.map(it.str)
     mut result := []GLuint{len:names.len}
     C.vox_gl_uniform_indices(program.object.native_handle_,names.len,pointers.data,result.data)
-    context.native.collect_native_error()
     return result
 }
 
@@ -370,7 +350,6 @@ pub fn (mut context WebGLRenderingContext) get_active_uniforms(program &WebGLPro
     if !context.owns(&program.object) { context.set_error(invalid_operation); return WebGLParameterValue{kind:.undefined_} }
     mut result := []int{len:indices.len}
     C.vox_gl_active_uniforms(program.object.native_handle_,indices.len,indices.data,pname,result.data)
-    context.native.collect_native_error()
     // Source validates pname in its per-element result loop, after GL. An
     // empty index vector skips that switch and still creates an empty Array.
     if indices.len == 0 { return WebGLParameterValue{kind:.integers} }
@@ -387,14 +366,12 @@ pub fn (mut context WebGLRenderingContext) get_uniform_block_index(program &WebG
     if !context.require_webgl2() { return GLuint(0xffff_ffff) }
     if !context.owns(&program.object) { context.set_error(invalid_operation); return GLuint(0xffff_ffff) }
     result := C.vox_gl_uniform_block_index(program.object.native_handle_,name.str)
-    context.native.collect_native_error()
     return result
 }
 
 fn (mut context WebGLRenderingContext) uniform_block_parameter(program &WebGLProgram, index GLuint, pname GLenum) int {
     mut result := 0
     C.vox_gl_uniform_block_parameter(program.object.native_handle_,index,pname,1,&result)
-    context.native.collect_native_error()
     return result
 }
 
@@ -412,7 +389,6 @@ pub fn (mut context WebGLRenderingContext) get_active_uniform_block_parameter(pr
         count := context.uniform_block_parameter(program,index,uniform_block_active_uniforms)
         mut indices := []int{len: if count>0 { count } else { 0 }}
         C.vox_gl_uniform_block_parameter(program.object.native_handle_,index,pname,indices.len,indices.data)
-        context.native.collect_native_error()
         return WebGLParameterValue{kind:.integers,integers:indices.map(i64(it))}
     }
     context.set_error(invalid_enum)
@@ -427,7 +403,6 @@ pub fn (mut context WebGLRenderingContext) get_active_uniform_block_name(program
     if length<=0 { return '' }
     mut name := []u8{len:length}
     C.vox_gl_uniform_block_name(program.object.native_handle_,index,length,name.data)
-    context.native.collect_native_error()
     return null_terminated_string(name)
 }
 
@@ -436,7 +411,6 @@ pub fn (mut context WebGLRenderingContext) invalidate_framebuffer(target GLenum,
 	context.webgl2_command('invalidate_framebuffer', target, attachments.len)
 	context.native.notify_content_will_change()
 	C.vox_gl_invalidate_framebuffer(target,attachments.len,attachments.data)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) invalidate_sub_framebuffer(target GLenum, attachments []GLenum, x int, y int, width int, height int) {
@@ -444,7 +418,6 @@ pub fn (mut context WebGLRenderingContext) invalidate_sub_framebuffer(target GLe
 	context.webgl2_command('invalidate_sub_framebuffer', target, attachments.len, x, y, width, height)
 	context.native.notify_content_will_change()
 	C.vox_gl_invalidate_sub_framebuffer(target,attachments.len,attachments.data,x,y,width,height)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) read_buffer(source GLenum) {
@@ -471,7 +444,6 @@ pub fn (mut context WebGLRenderingContext) tex_image3d(target GLenum, level int,
 	if !context.require_webgl2() { return }
 	context.webgl2_command('tex_image3d', target, level, internal_format, width, height, depth, border, format, type_, pixels.len)
 	C.vox_gl_tex_image3d(target,level,int(internal_format),width,height,depth,border,format,type_,pixels.len,pixels.data)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) tex_sub_image3d(target GLenum, level int, x_offset int, y_offset int, z_offset int, width int, height int, depth int, format GLenum, type_ GLenum, pixels []u8) {
@@ -479,7 +451,6 @@ pub fn (mut context WebGLRenderingContext) tex_sub_image3d(target GLenum, level 
 	if !context.require_webgl2() { return }
 	context.webgl2_command('tex_sub_image3d', target, level, x_offset, y_offset, z_offset, width, height, depth, format, type_, pixels.len)
 	C.vox_gl_tex_sub_image3d(target,level,x_offset,y_offset,z_offset,width,height,depth,format,type_,pixels.len,pixels.data)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) transform_feedback_varyings(program &WebGLProgram, varyings []string, buffer_mode GLenum) {
@@ -492,7 +463,6 @@ pub fn (mut context WebGLRenderingContext) transform_feedback_varyings(program &
 	context.webgl2_command('transform_feedback_varyings', program.object.handle_, varyings.len, buffer_mode)
 	names := varyings.map(voidptr(it.str))
 	C.vox_gl_transform_feedback_varyings(program.object.native_handle_,names.len,names.data,buffer_mode)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) uniform_block_binding(program &WebGLProgram, block_index GLuint, binding GLuint) {
@@ -503,7 +473,6 @@ pub fn (mut context WebGLRenderingContext) uniform_block_binding(program &WebGLP
 	if !context.require_webgl2() { return }
 	context.webgl2_command('uniform_block_binding', program.object.handle_, block_index, binding)
 	C.vox_gl_uniform_block_binding(program.object.native_handle_,block_index,binding)
-	context.native.collect_native_error()
 }
 
 fn uints_to_floats(values []u32) []f32 {
@@ -514,28 +483,24 @@ pub fn (mut context WebGLRenderingContext) uniform1ui(location ?&WebGLUniformLoc
 	handle := context.scalar_uniform_location(location) or { return }
 	if !context.require_webgl2() { return }
 	C.vox_gl_uniform1ui(int(handle), x)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) uniform2ui(location ?&WebGLUniformLocation, x u32, y u32) {
 	handle := context.scalar_uniform_location(location) or { return }
 	if !context.require_webgl2() { return }
 	C.vox_gl_uniform2ui(int(handle), x, y)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) uniform3ui(location ?&WebGLUniformLocation, x u32, y u32, z u32) {
 	handle := context.scalar_uniform_location(location) or { return }
 	if !context.require_webgl2() { return }
 	C.vox_gl_uniform3ui(int(handle), x, y, z)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) uniform4ui(location ?&WebGLUniformLocation, x u32, y u32, z u32, w u32) {
 	handle := context.scalar_uniform_location(location) or { return }
 	if !context.require_webgl2() { return }
 	C.vox_gl_uniform4ui(int(handle), x, y, z, w)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) uniform1uiv(location ?&WebGLUniformLocation, values []u32) {
@@ -584,7 +549,6 @@ pub fn (mut context WebGLRenderingContext) vertex_attrib_i4i(index GLuint, x int
     values := [x,y,z,w]
     context.native.make_current()
     C.vox_gl_vertex_attrib_ints(index,values.data)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib_i4iv(index GLuint, values []int) {
@@ -601,7 +565,6 @@ pub fn (mut context WebGLRenderingContext) vertex_attrib_i4ui(index GLuint, x u3
     values := [x,y,z,w]
     context.native.make_current()
     C.vox_gl_vertex_attrib_uints(index,values.data)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib_i4uiv(index GLuint, values []u32) {
@@ -656,5 +619,4 @@ pub fn (mut context WebGLRenderingContext) read_pixels_into_pixel_pack_buffer(x 
     if pixel_pack_buffer !in context.bound_buffers {context.set_error(invalid_operation);return}
     context.command('read_pixels_into_pixel_pack_buffer',x,y,width,height,format,type_,offset)
     C.vox_gl_read_pixels_to_buffer(x,y,width,height,format,type_,offset)
-    context.native.collect_native_error()
 }

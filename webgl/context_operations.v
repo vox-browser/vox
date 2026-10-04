@@ -281,7 +281,6 @@ pub fn (mut context WebGLRenderingContext) bind_attrib_location(program &WebGLPr
 	}
 	context.command('bind_attrib_location', program.object.handle_, index, name.len)
 	C.vox_gl_bind_attrib_location(program.object.native_handle_, index, name.str)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) bind_framebuffer(target GLenum, framebuffer_object ?&WebGLFramebuffer) {
@@ -297,7 +296,6 @@ pub fn (mut context WebGLRenderingContext) bind_framebuffer(target GLenum, frame
 	}
 	context.command('bind_framebuffer', target, handle)
 	C.vox_gl_bind_framebuffer(target, if value := framebuffer_object { value.object.native_handle_ } else { context.native.default_framebuffer() })
-	context.native.collect_native_error()
 	context.bound_framebuffer = handle
 	context.bound_framebuffer_object = framebuffer_object
 }
@@ -315,7 +313,6 @@ pub fn (mut context WebGLRenderingContext) bind_renderbuffer(target GLenum, rend
 	}
 	context.command('bind_renderbuffer', target, handle)
 	C.vox_gl_bind_renderbuffer(target, if value := renderbuffer_object { value.object.native_handle_ } else { context.native.default_renderbuffer() })
-	context.native.collect_native_error()
 	context.bound_renderbuffer = handle
 	context.bound_renderbuffer_object = renderbuffer_object
 }
@@ -347,14 +344,12 @@ pub fn (mut context WebGLRenderingContext) bind_texture(target GLenum, texture ?
 	}
 	context.command('bind_texture', target, handle)
 	C.vox_gl_bind_texture(target, if value := texture { value.object.native_handle_ } else { 0 })
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) blend_color(red f32, green f32, blue f32, alpha f32) {
 	context.blend_color_ = [clamp_unit(red), clamp_unit(green), clamp_unit(blue), clamp_unit(alpha)]!
 	context.command('blend_color', i64(red), i64(green), i64(blue), i64(alpha))
     C.vox_gl_blend_color(red,green,blue,alpha)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) blend_equation(mode GLenum) {
@@ -415,7 +410,6 @@ pub fn (mut context WebGLRenderingContext) blend_func_separate(source_rgb GLenum
 pub fn (mut context WebGLRenderingContext) check_framebuffer_status(target GLenum) GLenum {
 	context.command('check_framebuffer_status', target)
 	result := GLenum(C.vox_gl_framebuffer_status(target))
-	context.native.collect_native_error()
 	return result
 }
 
@@ -453,7 +447,6 @@ pub fn (mut context WebGLRenderingContext) delete_framebuffer(object ?&WebGLFram
 		context.framebuffers.delete(handle)
 		context.command('delete_framebuffer', handle)
 		C.vox_gl_delete_object(1, handle_result.value)
-		context.native.collect_native_error()
 		if bound := context.bound_framebuffer_object {
 			if bound == value {
 				context.bound_framebuffer = 0
@@ -478,7 +471,6 @@ pub fn (mut context WebGLRenderingContext) delete_renderbuffer(object ?&WebGLRen
 		context.renderbuffers.delete(handle)
 		context.command('delete_renderbuffer', handle)
 		C.vox_gl_delete_object(2, handle_result.value)
-		context.native.collect_native_error()
 	}
 }
 
@@ -497,7 +489,6 @@ pub fn (mut context WebGLRenderingContext) delete_texture(object ?&WebGLTexture)
 		context.textures.delete(handle)
 		context.command('delete_texture', handle)
 		C.vox_gl_delete_object(3, handle_result.value)
-		context.native.collect_native_error()
 		for target, bound in context.bound_texture_objects {
 			if bound == value {
 				context.bound_textures.delete(target)
@@ -521,7 +512,6 @@ pub fn (mut context WebGLRenderingContext) delete_shader(object ?&WebGLShader) {
 		handle := value.object.bookkeeping_id()
 		context.shaders.delete(handle)
 		C.vox_gl_delete_shader(handle_result.value)
-		context.native.collect_native_error()
 		context.command('delete_shader', handle)
 	}
 }
@@ -540,7 +530,6 @@ pub fn (mut context WebGLRenderingContext) delete_program(object ?&WebGLProgram)
 		handle := value.object.bookkeeping_id()
 		context.programs.delete(handle)
 		C.vox_gl_delete_program(handle_result.value)
-		context.native.collect_native_error()
 		if current := context.current_program {
 			if current == value {
 				context.current_program = none
@@ -570,7 +559,6 @@ pub fn (mut context WebGLRenderingContext) depth_range(near f64, far f64) {
 	]!
 	context.command('depth_range', i64(context.depth_range_[0]), i64(context.depth_range_[1]))
     C.vox_gl_depth_range(f32(near),f32(far))
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) finish() {
@@ -629,7 +617,6 @@ pub fn (mut context WebGLRenderingContext) framebuffer_renderbuffer(target GLenu
 	}
 	context.command('framebuffer_renderbuffer', target, attachment, renderbuffer_target, handle)
 	C.vox_gl_framebuffer_renderbuffer(target, attachment, renderbuffer_target, if value := object { value.object.native_handle_ } else { 0 })
-	context.native.collect_native_error()
 	mut mutable := unsafe { &WebGLFramebuffer(framebuffer_object) }
 	mutable.set_renderbuffer_attachment(attachment, object)
 }
@@ -661,7 +648,6 @@ pub fn (mut context WebGLRenderingContext) framebuffer_texture2d(target GLenum, 
 	}
 	context.command('framebuffer_texture2d', target, attachment, texture_target, handle, level)
 	C.vox_gl_framebuffer_texture(target, attachment, texture_target, if value := object { value.object.native_handle_ } else { 0 }, level)
-	context.native.collect_native_error()
 	mut mutable := unsafe { &WebGLFramebuffer(framebuffer_object) }
 	mutable.set_texture_attachment(attachment, object, texture_target, level)
 }
@@ -811,7 +797,6 @@ pub fn (mut context WebGLRenderingContext) get_shader_precision_format(shader GL
 	mut range := [0, 0]!
 	mut bits := 0
 	C.vox_gl_shader_precision(shader, precision, &range[0], &bits)
-	context.native.collect_native_error()
 	return WebGLShaderPrecisionFormat.create(range[0], range[1], bits)
 }
 
@@ -819,7 +804,6 @@ pub fn (mut context WebGLRenderingContext) get_buffer_parameter(target GLenum, p
 	context.native.make_current()
     if pname !in [buffer_size, buffer_usage] { context.set_error(invalid_enum); return WebGLParameterValue{} }
     result := C.vox_gl_buffer_parameter(target, pname)
-    context.native.collect_native_error()
     return integer_parameter(result)
 }
 
@@ -838,7 +822,6 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
 		if shape == 51 { return WebGLParameterValue{kind:.string_,text:native_gl_string(pname)} }
 		mut values := [f64(0),0,0,0]!
 		C.vox_gl_parameter(pname,shape,&values[0])
-		context.native.collect_native_error()
 		count := shape % 10
 		return match shape / 10 {
 			1 { if count == 1 { integer_parameter(i64(values[0])) } else { WebGLParameterValue{kind:.integers,integers:values[..count].map(i64(it))} } }
@@ -892,7 +875,6 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
    sampler_binding {
     mut handle:=0
     C.vox_gl_int_parameter(pname,&handle)
-    context.native.collect_native_error()
     logical:=context.allocate_handle()
     sampler:=&WebGLSampler{object:WebGLObject{...new_object(context.identity(),context.context_generation_,logical),native_handle_:GLuint(handle)}}
     unsafe {context.samplers[logical]=sampler}
@@ -911,7 +893,6 @@ pub fn (mut context WebGLRenderingContext) get_renderbuffer_parameter(target GLe
   context.set_error(invalid_enum); return WebGLParameterValue{}
  }
  result:=C.vox_gl_renderbuffer_parameter(target,pname)
- context.native.collect_native_error()
  return integer_parameter(result)
 }
 
@@ -937,7 +918,6 @@ pub fn (mut context WebGLRenderingContext) get_tex_parameter(target GLenum, pnam
   }
  }
  result:=if float_result {f64(C.vox_gl_tex_float_parameter(target,queried_name))} else {f64(C.vox_gl_tex_parameter(target,queried_name))}
- context.native.collect_native_error()
  return if boolean_result {WebGLParameterValue{kind:.boolean,boolean:result==1}} else {integer_parameter(i64(result))}
 }
 
@@ -962,7 +942,6 @@ pub fn (mut context WebGLRenderingContext) get_attrib_location(program &WebGLPro
 	context.native.make_current()
 	if !context.owns(&program.object) { context.set_error(invalid_operation); return -1 }
 	result := C.vox_gl_attrib_location(program.object.native_handle_, name.str)
-	context.native.collect_native_error()
 	return result
 }
 
@@ -971,7 +950,6 @@ pub fn (mut context WebGLRenderingContext) get_vertex_attrib(index GLuint, pname
     if pname == current_vertex_attrib {
         mut values := []f32{len:4}
         C.vox_gl_vertex_attrib_float_parameter(index,values.data)
-        context.native.collect_native_error()
         return WebGLParameterValue{kind:.numbers,numbers:values.map(f64(it))}
     }
     if pname == vertex_attrib_array_divisor && context.version != .webgl2 && !context.extension_enabled('ANGLE_instanced_arrays') {
@@ -984,7 +962,6 @@ pub fn (mut context WebGLRenderingContext) get_vertex_attrib(index GLuint, pname
         context.set_error(invalid_enum); return WebGLParameterValue{}
     }
     value := C.vox_gl_vertex_attrib_parameter(index,pname)
-    context.native.collect_native_error()
     if pname == vertex_attrib_array_buffer_binding {
         handle := context.allocate_handle()
         buffer := &WebGLBuffer{object: WebGLObject{...new_object(context.identity(),context.context_generation_,handle),native_handle_:GLuint(value)}}
@@ -1001,7 +978,6 @@ pub fn (mut context WebGLRenderingContext) get_vertex_attrib_offset(index GLuint
     if pname != vertex_attrib_array_pointer { context.set_error(invalid_enum); return 0 }
     context.native.make_current()
     result := C.vox_gl_vertex_attrib_offset(index)
-    context.native.collect_native_error()
     return result
 }
 
@@ -1048,7 +1024,6 @@ pub fn (mut context WebGLRenderingContext) line_width(width f32) {
 	context.line_width_ = width
 	context.command('line_width', i64(width))
     C.vox_gl_line_width(width)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) polygon_offset(factor f32, units f32) {
@@ -1056,7 +1031,6 @@ pub fn (mut context WebGLRenderingContext) polygon_offset(factor f32, units f32)
 	context.generic_parameters_[polygon_offset_units] = number_parameter(units)
 	context.command('polygon_offset', i64(factor), i64(units))
     C.vox_gl_polygon_offset(factor,units)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) renderbuffer_storage(target GLenum, internal_format GLenum, width int, height int) {
@@ -1065,7 +1039,6 @@ pub fn (mut context WebGLRenderingContext) renderbuffer_storage(target GLenum, i
 	format := if internal_format == GLenum(0x84f9) { GLenum(0x88f0) } else { internal_format }
 	context.command('renderbuffer_storage', target, format, width, height)
 	C.vox_gl_renderbuffer_storage(target, format, width, height)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) sample_coverage(value f32, invert bool) {
@@ -1073,7 +1046,6 @@ pub fn (mut context WebGLRenderingContext) sample_coverage(value f32, invert boo
 	context.generic_parameters_[sample_coverage_invert] = boolean_parameter(invert)
 	context.command('sample_coverage', i64(value), i64(invert))
     C.vox_gl_sample_coverage(value,int(invert))
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) stencil_func(function GLenum, reference int, mask GLuint) {
@@ -1165,13 +1137,11 @@ pub fn (mut context WebGLRenderingContext) stencil_op_separate(face GLenum, fail
 pub fn (mut context WebGLRenderingContext) tex_parameteri(target GLenum, pname GLenum, parameter int) {
 	context.native.make_current()
 	C.vox_gl_tex_parameteri(target, pname, parameter)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) tex_parameterf(target GLenum, pname GLenum, parameter f32) {
 	context.native.make_current()
 	C.vox_gl_tex_parameterf(target, pname, parameter)
-	context.native.collect_native_error()
 }
 
 fn (mut context WebGLRenderingContext) uniform_floats(location ?&WebGLUniformLocation, values []f32, width int) {
@@ -1181,8 +1151,6 @@ fn (mut context WebGLRenderingContext) uniform_floats(location ?&WebGLUniformLoc
 
  if values.len % width != 0 { context.set_error(invalid_value); return }
  C.vox_gl_uniform_floats(int(value.handle_), width, values.len / width, values.data)
- error_value := GLenum(C.vox_gl_get_error())
- if error_value != no_error { context.native.set_pending_local_error(error_value); return }
 }
 
 fn (mut context WebGLRenderingContext) uniform_ints(location ?&WebGLUniformLocation, values []int, width int) {
@@ -1192,8 +1160,6 @@ fn (mut context WebGLRenderingContext) uniform_ints(location ?&WebGLUniformLocat
 
  if values.len % width != 0 { context.set_error(invalid_value); return }
  C.vox_gl_uniform_ints(int(value.handle_), width, values.len / width, values.data)
- error_value := GLenum(C.vox_gl_get_error())
- if error_value != no_error { context.native.set_pending_local_error(error_value); return }
 }
 
 fn (mut context WebGLRenderingContext) uniform_uints(location ?&WebGLUniformLocation, values []u32, width int) {
@@ -1203,8 +1169,6 @@ fn (mut context WebGLRenderingContext) uniform_uints(location ?&WebGLUniformLoca
  if !context.require_webgl2() { return }
  if values.len % width != 0 { context.set_error(invalid_value); return }
  C.vox_gl_uniform_uints(int(value.handle_), width, values.len / width, values.data)
- error_value := GLenum(C.vox_gl_get_error())
- if error_value != no_error { context.native.set_pending_local_error(error_value); return }
 }
 
 fn (mut context WebGLRenderingContext) scalar_uniform_location(location ?&WebGLUniformLocation) ?GLuint {
@@ -1221,77 +1185,65 @@ fn (mut context WebGLRenderingContext) scalar_uniform_location(location ?&WebGLU
 pub fn (mut context WebGLRenderingContext) uniform1f(location ?&WebGLUniformLocation, x f32) {
 	handle := context.scalar_uniform_location(location) or { return }
 	C.vox_gl_uniform1f(int(handle), x)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) uniform2f(location ?&WebGLUniformLocation, x f32, y f32) {
 	handle := context.scalar_uniform_location(location) or { return }
 	C.vox_gl_uniform2f(int(handle), x, y)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) uniform3f(location ?&WebGLUniformLocation, x f32, y f32, z f32) {
 	handle := context.scalar_uniform_location(location) or { return }
 	C.vox_gl_uniform3f(int(handle), x, y, z)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) uniform4f(location ?&WebGLUniformLocation, x f32, y f32, z f32, w f32) {
 	handle := context.scalar_uniform_location(location) or { return }
 	C.vox_gl_uniform4f(int(handle), x, y, z, w)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) uniform1i(location ?&WebGLUniformLocation, x int) {
 	handle := context.scalar_uniform_location(location) or { return }
 	C.vox_gl_uniform1i(int(handle), x)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) uniform2i(location ?&WebGLUniformLocation, x int, y int) {
 	handle := context.scalar_uniform_location(location) or { return }
 	C.vox_gl_uniform2i(int(handle), x, y)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) uniform3i(location ?&WebGLUniformLocation, x int, y int, z int) {
 	handle := context.scalar_uniform_location(location) or { return }
 	C.vox_gl_uniform3i(int(handle), x, y, z)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) uniform4i(location ?&WebGLUniformLocation, x int, y int, z int, w int) {
 	handle := context.scalar_uniform_location(location) or { return }
 	C.vox_gl_uniform4i(int(handle), x, y, z, w)
-	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib1f(index GLuint, x f32) {
 	context.vertex_attrib_values_[index] = [x, f32(0), 0, 1]
     context.native.make_current()
     C.vox_gl_vertex_attrib_floats(index, context.vertex_attrib_values_[index].data)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib2f(index GLuint, x f32, y f32) {
 	context.vertex_attrib_values_[index] = [x, y, f32(0), 1]
     context.native.make_current()
     C.vox_gl_vertex_attrib_floats(index, context.vertex_attrib_values_[index].data)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib3f(index GLuint, x f32, y f32, z f32) {
 	context.vertex_attrib_values_[index] = [x, y, z, f32(1)]
     context.native.make_current()
     C.vox_gl_vertex_attrib_floats(index, context.vertex_attrib_values_[index].data)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib4f(index GLuint, x f32, y f32, z f32, w f32) {
 	context.vertex_attrib_values_[index] = [x, y, z, w]
     context.native.make_current()
     C.vox_gl_vertex_attrib_floats(index, context.vertex_attrib_values_[index].data)
-    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib1fv(index GLuint, values []f32) {
