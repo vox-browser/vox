@@ -482,8 +482,25 @@ fixture-supplied synchronous replies/readback. It has no real remote WebGL
 transport/command processor. Its wait-success and next-reply fields therefore
 remain audit gaps independently of the production direct native path.
 
-Source TODOs remain visible. Upstream `get_uniform` returns zero with a FIXME;
-its V cached-value model does not establish a translated native getter. Upstream
+Source TODOs remain visible. `get_uniform` now translates the pinned source's
+exact integer-zero result and absence of body handle checks, native queries or
+owner selection (`WebGLRenderingContextImpl.cpp:1997-2001`). The invented
+uniform-value cache and all four setter-family writes were removed. Public
+arguments still undergo source nonnullable WebGLProgram/WebGLUniformLocation
+IDL conversion (`WebGLRenderingContextBase.idl:120`), including wrong-brand,
+null and missing-argument rejection. Genuine uploaded vector/matrix values in
+the legacy fixture now use driver queries; the focused native source getter,
+legacy entry-point, real draw and location-identity cases passed with GC
+disabled in `source-uniform-getter-gc-none.log` (four files). Actual public source
+getter and rendered Canvas/WebGL host cases passed in
+`source-uniform-getter-public-gc-none.log` (two files). Cases verify real uniform
+uploads independently, exact zero for foreign/deleted records, unchanged native
+context selection and preserved unrelated driver errors. This matches an
+upstream FIXME and supplies no invented uniform-read algorithm. The V typed
+signature retains its existing optional-location convenience; the public IDL
+argument remains nonnullable.
+
+Upstream
 WebGL2 declarations below are explicitly `[FIXME]` at pinned commit
 `963d46a829f3e1b79f44dba9d02afb70654300fa`, with no matching operation bodies in
 `WebGL2RenderingContextImpl.{h,cpp}` or `WebGL2RenderingContextOverloads.{h,cpp}`.
