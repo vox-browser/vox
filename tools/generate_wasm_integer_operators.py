@@ -17,6 +17,7 @@ FLOAT_ARITHMETIC_NAMES = ("Add", "Subtract", "Multiply", "Divide")
 FLOAT_EXTREMA_NAMES = ("Minimum", "Maximum", "CopySign")
 FLOAT_UNARY_NAMES = ("Absolute", "Negate", "Ceil", "Floor", "Truncate", "NearbyIntegral", "SquareRoot")
 FLOAT_WIDTH_NAMES = ("Promote", "Demote")
+INTEGER_WIDTH_NAMES = ("Wrap", "Extend", "SignExtend")
 
 BINARY_DRIVER = r"""
 #include <bit>
@@ -527,13 +528,57 @@ int main()
 """
 
 
+INTEGER_WIDTH_DRIVER = r"""
+#include <bit>
+#include <stdio.h>
+#include <stdint.h>
+
+template<typename T> void integer_width_result(char const* name, u64 input, T value)
+{
+    printf("%s\t%016llx\t%016llx\n", name, (unsigned long long)input,
+        (unsigned long long)value);
+}
+void run_integer_width(u64 bits)
+{
+    using namespace Wasm::Operators;
+    auto lhs32 = std::bit_cast<i32>((u32)bits);
+    auto lhs64 = std::bit_cast<i64>(bits);
+    integer_width_result("wrap_i64_i32", bits, Wrap<i32>{}(lhs64));
+    integer_width_result("extend_i32_i64", bits, Extend<i64>{}(lhs32));
+    integer_width_result("extend_u32_i64", bits, Extend<i64>{}((u32)bits));
+    integer_width_result("sign_i8_i32", bits, SignExtend<i8>{}(lhs32));
+    integer_width_result("sign_i16_i32", bits, SignExtend<i16>{}(lhs32));
+    integer_width_result("sign_i8_i64", bits, SignExtend<i8>{}(lhs64));
+    integer_width_result("sign_i16_i64", bits, SignExtend<i16>{}(lhs64));
+    integer_width_result("sign_i32_i64", bits, SignExtend<i32>{}(lhs64));
+}
+int main()
+{
+    u64 const inputs[] = {0, 1, 2, 7, 0xfffffffffffffff9ULL,
+        0x7fffffffULL, 0x80000000ULL, 0xffffffffULL,
+        0x7fffffffffffffffULL, 0x8000000000000000ULL,
+        0xfffffffffffffffeULL, 0xffffffffffffffffULL,
+        0x7f, 0x80, 0xff, 0x7fff, 0x8000, 0xffff};
+    for (auto bits : inputs)
+        run_integer_width(bits);
+    for (unsigned bit = 0; bit < 64; ++bit) {
+        u64 single = u64(1) << bit;
+        run_integer_width(single);
+        run_integer_width(~single);
+    }
+    for (unsigned bits = 0; bits < 256; ++bits)
+        run_integer_width(0xa5a5deadbeef0000ULL | bits);
+}
+"""
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--upstream", type=Path, default=Path.home() / "code/3rd/ladybird")
     parser.add_argument("--build-dir", type=Path)
     parser.add_argument("--compiler", default="clang++")
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--family", choices=("binary", "unary", "shift", "comparison", "arithmetic", "floating", "float_arithmetic", "float_extrema", "float_unary", "float_width"), default="binary")
+    parser.add_argument("--family", choices=("binary", "unary", "shift", "comparison", "arithmetic", "floating", "float_arithmetic", "float_extrema", "float_unary", "float_width", "integer_width"), default="binary")
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
     upstream = args.upstream.resolve()
@@ -555,6 +600,7 @@ def main():
         "float_extrema": (FLOAT_EXTREMA_NAMES, FLOAT_EXTREMA_DRIVER, 1536, "extrema_float_operators.tsv"),
         "float_unary": (FLOAT_UNARY_NAMES, FLOAT_UNARY_DRIVER, 1568, "unary_float_operators.tsv"),
         "float_width": (FLOAT_WIDTH_NAMES, FLOAT_WIDTH_DRIVER, 272, "width_float_operators.tsv"),
+        "integer_width": (INTEGER_WIDTH_NAMES, INTEGER_WIDTH_DRIVER, 3216, "width_integer_operators.tsv"),
     }
     names, driver, expected_count, filename = families[args.family]
     if args.family in ("comparison", "arithmetic", "floating", "float_arithmetic"):
@@ -566,6 +612,8 @@ def main():
     for name in names:
         expression = (r"^DEFINE_BINARY_OPERATOR\(" + name + r", .*?\);" if name != "Divide" and args.family in ("comparison", "arithmetic", "floating", "float_arithmetic")
                       else r"^struct " + name + r" \{.*?^};")
+        if args.family == "integer_width":
+            expression = r"^template<typename [^\n]+>\nstruct " + name + r" \{.*?^};"
         match = re.search(expression, source, re.MULTILINE | re.DOTALL)
         if match is None:
             parser.error(f"Missing exact Source operator record: {name}")
