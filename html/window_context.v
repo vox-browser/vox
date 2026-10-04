@@ -1400,7 +1400,10 @@ fn document_settings_has_cross_site_ancestor(settings_pointer voidptr) bool {
 
 fn document_structured_deserialize(_ voidptr, record dom.DOMSerializationRecord) ?dom.JSValue {
 	return structured_deserialize(SerializationRecord{
-		data: record.data.clone()
+		// SessionHistoryEntry::classic_history_api_state is always a
+		// StorageSerializationRecord, including across the DOM cycle boundary.
+		type_: .storage
+		data:  record.data.clone()
 	}) or { return none }
 }
 
