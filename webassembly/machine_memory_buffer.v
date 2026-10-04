@@ -141,7 +141,9 @@ pub fn (buffer &BinaryMachineMemoryBuffer) span() BinaryMachineBytes { return bu
 pub fn (buffer &BinaryMachineMemoryBuffer) offset_pointer(offset usize) &u8 {
 	if buffer.storage_offset_ == libgc.primitive_storage_invalid_offset { return unsafe { nil } }
 	cage_base := libgc.PrimitiveStorage.the().cage_base()
-	assert cage_base != unsafe { nil }
+	if cage_base == unsafe { nil } {
+		panic('Source VERIFY: MemoryBuffer::offset_pointer cage_base')
+	}
 	return unsafe { cage_base + libgc.mask_primitive_storage_offset(buffer.storage_offset_ + offset) }
 }
 
