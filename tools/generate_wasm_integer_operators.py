@@ -18,6 +18,7 @@ FLOAT_EXTREMA_NAMES = ("Minimum", "Maximum", "CopySign")
 FLOAT_UNARY_NAMES = ("Absolute", "Negate", "Ceil", "Floor", "Truncate", "NearbyIntegral", "SquareRoot")
 FLOAT_WIDTH_NAMES = ("Promote", "Demote")
 INTEGER_WIDTH_NAMES = ("Wrap", "Extend", "SignExtend")
+REINTERPRET_NAMES = ("Reinterpret",)
 
 BINARY_DRIVER = r"""
 #include <bit>
@@ -572,13 +573,56 @@ int main()
 """
 
 
+REINTERPRET_DRIVER = r"""
+#include <bit>
+#include <stdio.h>
+#include <stdint.h>
+
+template<typename T> void reinterpret_result(char const* name, u64 input, T value)
+{
+    u64 output;
+    if constexpr (IsSame<T, float>)
+        output = std::bit_cast<u32>(value);
+    else if constexpr (IsSame<T, double>)
+        output = std::bit_cast<u64>(value);
+    else
+        output = (u64)value;
+    printf("%s\t%016llx\t%016llx\n", name, (unsigned long long)input,
+        (unsigned long long)output);
+}
+void run_reinterpret(u64 bits)
+{
+    using namespace Wasm::Operators;
+    reinterpret_result("reinterpret_f32_i32", bits, Reinterpret<i32>{}(std::bit_cast<float>((u32)bits)));
+    reinterpret_result("reinterpret_f64_i64", bits, Reinterpret<i64>{}(std::bit_cast<double>(bits)));
+    reinterpret_result("reinterpret_i32_f32", bits, Reinterpret<float>{}(std::bit_cast<i32>((u32)bits)));
+    reinterpret_result("reinterpret_i64_f64", bits, Reinterpret<double>{}(std::bit_cast<i64>(bits)));
+}
+int main()
+{
+    u64 const inputs[] = {0, 1, 0x7fffff, 0x800000, 0x80000000,
+        0x7f800000, 0x7fc54321, 0x7f854321, 0xff854321,
+        0x7ff0000000000000ULL, 0xfff0000000000000ULL,
+        0x7ff8000000004321ULL, 0x7ff0000000004321ULL,
+        0xfff0000000004321ULL, 0xffffffffffffffffULL, 0x8000000000000000ULL};
+    for (auto bits : inputs)
+        run_reinterpret(bits);
+    for (unsigned bit = 0; bit < 64; ++bit) {
+        u64 single = u64(1) << bit;
+        run_reinterpret(single);
+        run_reinterpret(~single);
+    }
+}
+"""
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--upstream", type=Path, default=Path.home() / "code/3rd/ladybird")
     parser.add_argument("--build-dir", type=Path)
     parser.add_argument("--compiler", default="clang++")
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--family", choices=("binary", "unary", "shift", "comparison", "arithmetic", "floating", "float_arithmetic", "float_extrema", "float_unary", "float_width", "integer_width"), default="binary")
+    parser.add_argument("--family", choices=("binary", "unary", "shift", "comparison", "arithmetic", "floating", "float_arithmetic", "float_extrema", "float_unary", "float_width", "integer_width", "reinterpret"), default="binary")
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
     upstream = args.upstream.resolve()
@@ -601,6 +645,7 @@ def main():
         "float_unary": (FLOAT_UNARY_NAMES, FLOAT_UNARY_DRIVER, 1568, "unary_float_operators.tsv"),
         "float_width": (FLOAT_WIDTH_NAMES, FLOAT_WIDTH_DRIVER, 272, "width_float_operators.tsv"),
         "integer_width": (INTEGER_WIDTH_NAMES, INTEGER_WIDTH_DRIVER, 3216, "width_integer_operators.tsv"),
+        "reinterpret": (REINTERPRET_NAMES, REINTERPRET_DRIVER, 576, "reinterpret_operators.tsv"),
     }
     names, driver, expected_count, filename = families[args.family]
     if args.family in ("comparison", "arithmetic", "floating", "float_arithmetic"):
@@ -612,7 +657,7 @@ def main():
     for name in names:
         expression = (r"^DEFINE_BINARY_OPERATOR\(" + name + r", .*?\);" if name != "Divide" and args.family in ("comparison", "arithmetic", "floating", "float_arithmetic")
                       else r"^struct " + name + r" \{.*?^};")
-        if args.family == "integer_width":
+        if args.family in ("integer_width", "reinterpret"):
             expression = r"^template<typename [^\n]+>\nstruct " + name + r" \{.*?^};"
         match = re.search(expression, source, re.MULTILINE | re.DOTALL)
         if match is None:
