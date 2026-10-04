@@ -271,6 +271,21 @@ in `source-query-record-gc-none.log`, all with GC disabled. This translates
 the source ownership relationship through the compact host; full LibJS tracing
 and caller WrapperWorld ownership remain open.
 
+Sync waits/deletion now follow `WebGL2RenderingContextImpl.cpp:919-965`:
+select the owner before foreign, null or already-invalid resource returns and
+retain the native sync pointer after deletion, as `WebGLSync.cpp:39-58` does.
+Source invalidation prevents later driver use; no extra null assignment mutates
+the record. The native fixture verifies real glIsSync deletion while the exact
+pointer remains retained, actual wait flag/timeout/null-handle driver errors,
+and owner selection for every early return. Public fixtures check the same
+ownership ordering and generated IDL type/numeric conversion before body
+entry. Four typed files passed in `source-sync-owner-gc-none.log`; two public
+files passed in `source-sync-owner-public-gc-none.log`, all with GC disabled.
+The standalone sync_handle/sync_handle_for_deletion APIs still carry logical
+transport identifiers instead of the source GLsync pointer; that record API
+parity remains a separate slice. Context-loss transport and full GC ownership
+remain open.
+
 Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
 `WebGL2RenderingContextOverloads.cpp:33-85`, and
 `WebGL2RenderingContextImpl.cpp:46-50`: select the owner, validate nullable data
