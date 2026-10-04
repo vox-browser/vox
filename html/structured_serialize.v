@@ -12,6 +12,7 @@ import math
 import libjs
 import webidl
 import webcrypto
+import fileapi
 import math.big
 
 // StructuredObject is the small host-independent object model used until the
@@ -102,6 +103,9 @@ pub mut:
 	dom_exception_      ?&webidl.DOMException
 	quota_exceeded_error_ ?&webidl.QuotaExceededError
 	crypto_key_         ?&webcrypto.CryptoKey
+	blob_               ?&fileapi.Blob
+	file_               ?&fileapi.File
+	file_list_          ?&fileapi.FileList
 }
 
 pub fn StructuredObject.create(kind StructuredObjectKind) &StructuredObject {
@@ -120,6 +124,18 @@ pub fn StructuredObject.create_quota_exceeded_error(exception &webidl.QuotaExcee
 
 pub fn StructuredObject.create_crypto_key(key &webcrypto.CryptoKey) &StructuredObject {
 	return &StructuredObject{ kind: .serializable_object, serializable_interface_: .crypto_key, crypto_key_: key }
+}
+
+pub fn StructuredObject.create_blob(blob &fileapi.Blob) &StructuredObject {
+	return &StructuredObject{kind: .serializable_object, serializable_interface_: .blob, blob_: blob}
+}
+
+pub fn StructuredObject.create_file(file &fileapi.File) &StructuredObject {
+	return &StructuredObject{kind: .serializable_object, serializable_interface_: .file, file_: file}
+}
+
+pub fn StructuredObject.create_file_list(list &fileapi.FileList) &StructuredObject {
+	return &StructuredObject{kind: .serializable_object, serializable_interface_: .file_list, file_list_: list}
 }
 
 pub fn StructuredObject.create_shared_array_buffer(bytes []u8, max_byte_length ?u64) &StructuredObject {
@@ -631,11 +647,13 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 		}
 		.serializable_object {
 			interface_name := object.serializable_interface_ or { return error('DataCloneError: serializable object has no primary interface') }
-			if interface_name != .dom_exception && interface_name != .quota_exceeded_error && interface_name != .crypto_key { return error('DataCloneError: source serializable payload is not yet translated for ${structured_serializable_interface_name(interface_name)}') }
+			if interface_name !in [.dom_exception, .quota_exceeded_error, .crypto_key, .blob, .file, .file_list] { return error('DataCloneError: source serializable payload is not yet translated for ${structured_serializable_interface_name(interface_name)}') }
 			serializer.write_tag(.serializable_object)
 			serializer.write_serializable_interface(interface_name)!
 			if serializer.type_ == .storage { serializer.write_u64(structured_serializable_payload_version) }
-			if interface_name == .crypto_key {
+			if interface_name in [.blob, .file, .file_list] {
+				serializer.write_fileapi_payload(object)!
+			} else if interface_name == .crypto_key {
 				key := object.crypto_key_ or { return error('DataCloneError: serializable CryptoKey has no native record') }
 				serializer.write_crypto_key_payload(key)!
 			} else if interface_name == .dom_exception {
@@ -1121,8 +1139,14 @@ fn (mut decoder StructuredDecoder) decode_value_with_tag(tag_byte u8) !&dom.JSVa
 			if decoder.type_ == .storage { version = decoder.read_u64()! }
 			is_exposed := decoder.context.is_exposed or { return error('DataCloneError: unsupported type in target realm') }
 			if !is_exposed(interface_name) { return error('DataCloneError: unsupported type in target realm') }
-			if interface_name != .dom_exception && interface_name != .quota_exceeded_error && interface_name != .crypto_key { return error('DataCloneError: source serializable payload is not yet translated for ${structured_serializable_interface_name(interface_name)}') }
-			mut object := if interface_name == .crypto_key {
+			if interface_name !in [.dom_exception, .quota_exceeded_error, .crypto_key, .blob, .file, .file_list] { return error('DataCloneError: source serializable payload is not yet translated for ${structured_serializable_interface_name(interface_name)}') }
+			mut object := if interface_name == .blob {
+				StructuredObject.create_blob(fileapi.Blob.create([], ''))
+			} else if interface_name == .file {
+				StructuredObject.create_file(fileapi.File.create([], '', '', 0))
+			} else if interface_name == .file_list {
+				StructuredObject.create_file_list(fileapi.FileList.create())
+			} else if interface_name == .crypto_key {
 				StructuredObject.create_crypto_key(webcrypto.CryptoKey.create_empty())
 			} else if interface_name == .dom_exception {
 				StructuredObject.create_dom_exception(webidl.DOMException.create_utf16_record(libjs.utf16_string(''), libjs.utf16_string('')))
@@ -1134,6 +1158,10 @@ fn (mut decoder StructuredDecoder) decode_value_with_tag(tag_byte u8) !&dom.JSVa
 			}
 			value := decoder.register_object(object)
 			// Source creates/registers the target before its interface payload.
+			if interface_name in [.blob, .file, .file_list] {
+				decoder.read_fileapi_payload(mut object)!
+				return value
+			}
 			if interface_name == .crypto_key {
 				mut key := object.crypto_key_ or { return error('DataCloneError: missing CryptoKey target record') }
 				decoder.read_crypto_key_payload(mut key)!

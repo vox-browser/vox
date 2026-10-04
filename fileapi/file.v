@@ -26,6 +26,7 @@ pub mut:
 @[heap]
 pub struct File {
 	Blob
+mut:
 	name_          string
 	name_utf16_    ?libjs.Utf16String
 	last_modified_ i64
@@ -115,4 +116,11 @@ pub fn (file &File) serialization_steps() SerializedFile {
 
 pub fn File.deserialization_steps(serialized SerializedFile) &File {
 	return File.create_utf16(serialized.bytes, fileapi_preserved_utf16(serialized.name, serialized.name_utf16_), fileapi_preserved_utf16(serialized.type_, serialized.type_utf16_), serialized.last_modified)
+}
+
+pub fn (mut file File) deserialization_steps_utf16(type_ libjs.Utf16String, bytes []u8, name libjs.Utf16String, last_modified i64) {
+	file.Blob.deserialization_steps_utf16(type_, bytes)
+	file.name_ = name.str()
+	file.name_utf16_ = name
+	file.last_modified_ = last_modified
 }

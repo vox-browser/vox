@@ -325,3 +325,10 @@ pub fn (blob &Blob) serialization_steps() SerializedBlob {
 pub fn Blob.deserialization_steps(serialized SerializedBlob) &Blob {
 	return Blob.create_utf16(serialized.bytes, fileapi_preserved_utf16(serialized.type_, serialized.type_utf16_))
 }
+
+// Source deserialization mutates the record created before its payload is read.
+pub fn (mut blob Blob) deserialization_steps_utf16(type_ libjs.Utf16String, bytes []u8) {
+	blob.type_ = type_.str()
+	blob.type_utf16_ = type_
+	blob.byte_buffer = bytes.clone()
+}
