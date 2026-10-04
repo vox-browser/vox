@@ -230,8 +230,18 @@ pub fn (mut buffer BinaryMachineMemoryBuffer) overwrite(offset usize, source voi
 }
 
 pub fn (mut buffer BinaryMachineMemoryBuffer) move_data(destination_offset usize, source_offset usize, count usize) {
-	assert destination_offset <= buffer.size() && count <= buffer.size() - destination_offset
-	assert source_offset <= buffer.size() && count <= buffer.size() - source_offset
+	if destination_offset > buffer.size() {
+		panic('Source VERIFY: MemoryBuffer::move_data destination_offset <= size()')
+	}
+	if count > buffer.size() - destination_offset {
+		panic('Source VERIFY: MemoryBuffer::move_data count <= size() - destination_offset')
+	}
+	if source_offset > buffer.size() {
+		panic('Source VERIFY: MemoryBuffer::move_data source_offset <= size()')
+	}
+	if count > buffer.size() - source_offset {
+		panic('Source VERIFY: MemoryBuffer::move_data count <= size() - source_offset')
+	}
 	if count == 0 || destination_offset == source_offset { return }
 	if source_offset < destination_offset && destination_offset < source_offset + count {
 		mut remaining := count
