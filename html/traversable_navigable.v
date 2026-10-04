@@ -460,7 +460,13 @@ fn (mut state CheckUnloadingCanceledState) start_document_tasks() {
 	}
 	state.remaining_documents = state.documents.len
 	for document in state.documents {
-		queue_a_task(.navigation_and_traversal, main_thread_event_loop(), document, fn [mut state, document] () {
+		// Source's async state machine uses an always-runnable null-document
+		// task and checks the retained Document's validity inside it.
+		queue_a_task(.navigation_and_traversal, main_thread_event_loop(), none, fn [mut state, document] () {
+			if document.has_been_destroyed() || !document.is_fully_active() {
+				state.document_task_completed()
+				return
+			}
 			mut mutable_document := unsafe { &dom.Document(document) }
 			result := mutable_document.steps_to_fire_beforeunload(state.unload_prompt_shown)
 			if result.unload_prompt_shown {
