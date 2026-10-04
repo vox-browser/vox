@@ -613,7 +613,6 @@ pub fn (mut context WebGLRenderingContext) get_program_info_log(program &WebGLPr
 }
 
 pub fn (mut context WebGLRenderingContext) get_program_parameter(program &WebGLProgram, pname GLenum) WebGLParameterValue {
-	context.native.make_current()
 	if !context.owns(&program.object) {
 		context.set_error(invalid_operation)
 		return WebGLParameterValue{}
