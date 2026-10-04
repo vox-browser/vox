@@ -547,10 +547,8 @@ pub fn (mut context WebGLRenderingContext) uniform_matrix3x4fv(location ?&WebGLU
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib_i4i(index GLuint, x int, y int, z int, w int) {
     if !context.require_webgl2() { return }
-	context.vertex_attrib_values_[index] = [f32(x), f32(y), f32(z), f32(w)]
-    values := [x,y,z,w]
     context.native.make_current()
-    C.vox_gl_vertex_attrib_ints(index,values.data)
+    C.vox_gl_vertex_attrib_i4i(index, x, y, z, w)
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib_i4iv(index GLuint, values []int) {
@@ -563,10 +561,8 @@ pub fn (mut context WebGLRenderingContext) vertex_attrib_i4iv(index GLuint, valu
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib_i4ui(index GLuint, x u32, y u32, z u32, w u32) {
     if !context.require_webgl2() { return }
-	context.vertex_attrib_values_[index] = [f32(x), f32(y), f32(z), f32(w)]
-    values := [x,y,z,w]
     context.native.make_current()
-    C.vox_gl_vertex_attrib_uints(index,values.data)
+    C.vox_gl_vertex_attrib_i4ui(index, x, y, z, w)
 }
 
 pub fn (mut context WebGLRenderingContext) vertex_attrib_i4uiv(index GLuint, values []u32) {

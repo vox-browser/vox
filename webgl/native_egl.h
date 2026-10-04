@@ -389,6 +389,8 @@ static void vox_gl_clear_buffer_floats(unsigned buffer, int draw_buffer, float c
 static void vox_gl_clear_buffer_ints(unsigned buffer, int draw_buffer, int const* values) { glClearBufferiv(buffer,draw_buffer,values); }
 static void vox_gl_clear_buffer_uints(unsigned buffer, int draw_buffer, unsigned const* values) { glClearBufferuiv(buffer,draw_buffer,values); }
 static void vox_gl_clear_buffer_depth_stencil(unsigned buffer, int draw_buffer, float depth, int stencil) { glClearBufferfi(buffer,draw_buffer,depth,stencil); }
+static void vox_gl_vertex_attrib_i4i(unsigned index, int x, int y, int z, int w) { glVertexAttribI4i(index, x, y, z, w); }
+static void vox_gl_vertex_attrib_i4ui(unsigned index, unsigned x, unsigned y, unsigned z, unsigned w) { glVertexAttribI4ui(index, x, y, z, w); }
 static void vox_gl_vertex_attrib_ints(unsigned index, int const* values) { glVertexAttribI4iv(index,values); }
 static void vox_gl_vertex_attrib_uints(unsigned index, unsigned const* values) { glVertexAttribI4uiv(index,values); }
 static void vox_gl_vertex_attrib_int_parameter(unsigned index, int* values) { glGetVertexAttribIiv(index,GL_CURRENT_VERTEX_ATTRIB,values); }
