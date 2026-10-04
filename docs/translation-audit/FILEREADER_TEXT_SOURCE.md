@@ -369,3 +369,16 @@ requires the exact pinned Source HEAD before reading headers or generating
 probe artifacts. Its positive -O0/-O2 probe passes in
 `source-utf16-ascii-probe-pinned.log`; a temporary wrong-HEAD checkout is
 rejected before header access in `source-utf16-ascii-probe-wrong-pin.log`.
+
+The malformed/non-ASCII MIME cases above establish output ownership for supplied
+UTF8 compatibility bytes. `blob_package_data` still accepts `mime_type ?string`,
+where Source accepts `Optional<Utf16String>` and invokes its `to_utf8()`.
+`AK/Utf16StringBase.h:60` declares that operation's default as
+`AllowLonelySurrogates::Yes`, but the current probe does not execute the full
+native UTF16 MIME-to-UTF8 call chain. Manually deriving compatibility bytes from
+a raw V UTF16 record is not additional native MIME-conversion proof. Public
+Blob construction normalizes its type to ASCII; the source internal
+`Blob::create(ByteBuffer, Utf16String)` (`Blob.cpp:31–35,139–144`) preserves an
+explicit supplied type. Native Sync DataURL raw-output fixtures keep this typed
+compatibility input boundary explicit; ordinary normalized ASCII/default-type
+Blob owners validate its direct native return path.
