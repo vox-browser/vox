@@ -2259,3 +2259,12 @@ AST comparisons. All 485 non-Markdown LibJS implementation/test/assets remained
 byte-identical to canonical before and after the sweeps. Manifest/hash/log
 evidence is in
 [`LIBJS_BYTE_BOUNDARY_VERIFICATION.md`](../docs/translation-audit/LIBJS_BYTE_BOUNDARY_VERIFICATION.md).
+
+The explicit `utf16_string_from_ascii_without_validation` owner now translates
+AK's unchecked ASCII byte allocation and native plain-char unit projection.
+It preserves raw bytes independently of the code-unit projection and retains
+short/long storage metadata, with copied input/access ownership and stale-slot
+rejection. The actual pinned AK constructor/header probe passes at -O0/-O2;
+three focused files pass in both GC modes. Source mappings and exact native
+probe limits are in
+[`UTF16_UNCHECKED_ASCII_SOURCE.md`](../docs/translation-audit/UTF16_UNCHECKED_ASCII_SOURCE.md).
