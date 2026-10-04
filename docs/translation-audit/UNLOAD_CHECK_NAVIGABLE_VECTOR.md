@@ -53,8 +53,10 @@ ownership batch.
 
 Existing Document-list methods and their hook remain separate compatibility
 adapters. The older history continuation still gathers only its translated
-top-level document transition. Routing actual prompted-close/native history-job
-callers through this full owner API is a following feature; this commit does not
-pretend those adapters supply Source's complete vector. Full UI history jobs,
+top-level document transition. Actual prompted-close input collection
+subsequently uses this API in
+[its separate caller slice](TRAVERSABLE_PROMPTED_CLOSE_OWNERSHIP.md). Native
+history-job integration remains separate; this commit does not pretend those
+adapters supply Source's complete vector. Full UI history jobs,
 Page history executor, session-history graph/current-step protocol, remote
 transport and native JavaScriptCore bindings remain separate boundaries.
