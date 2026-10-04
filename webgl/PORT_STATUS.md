@@ -162,6 +162,44 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+isProgram now preserves Source CPU optional-query gates before actual owner
+selection. Impl.cpp:2155-2170 returns false for null and absent invalidated or
+stale optional handles; foreign records report INVALID_OPERATION after context
+validation. ProxyBase.h:44's prefix is empty. The V adapter now selects its real
+driver only once a live owned optional handle reaches glIsProgram, using the
+separate stored native name. This changes no Source handle validator or native
+program query algorithm.
+
+The actual unfixed two-version native probe selected Owner's viewport for null
+and foreign queries with Other already current; a host foreign query did the
+same. Its observational assertions and log are retained as
+`Build/audit-fixes/source-is-program-unfixed-probe_test.v` and
+source-is-program-unfixed-probe-gc-none.log. The focused corrected native/public
+cases preserve Other's viewport and pending native error on early returns.
+Eight actual program names are reserved, then native name1 deleted, so Source
+ID1's valid query demonstrably uses native name9. A genuinely compiled, linked
+and current program remains a live GL object after Source deletion, while
+isProgram returns false from its invalidated optional before selecting Other.
+The existing aggregate fixture migrates only the reviewed isProgram(null)
+expectation; other historical method assumptions remain independently scoped.
+
+Three typed files pass in
+`Build/audit-fixes/source-is-program-owner-native-gc-none.log`; two public files
+pass in
+`Build/audit-fixes/source-is-program-owner-public-gc-none.log`, including aggregate
+and actual object-handle regressions. All use GC disabled and explicit private
+paths. Public null/undefined are excluded from this CPU feature: the separate
+raw host probe returned an empty-message TypeError from its inline map-or-none
+compatibility expression, before reaching the Source nullable method.
+
+That nullable host adapter repair, generated Boolean lost default and generated
+creation loss suppression remain separate features. A real observational EGL
+loss probe already confirms lost isProgram true and lost createProgram creating
+an actual native program in Other; its source/log are retained under
+source-program-lost-unfixed-probe*. These are unwanted direct-driver evidence,
+not parity. Remote maps, GC/WrapperWorld and a newly built canonical bundle
+remain outside this focused CPU-owner result.
+
 isShader now preserves the generated GLboolean default after actual owner loss.
 GLFunctions.json:2826-2837 classifies glIsShader as sync; the pinned generated
 Proxy sends the request, then returns {} if lost before decoding a reply.
