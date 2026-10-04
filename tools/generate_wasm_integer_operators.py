@@ -10,6 +10,7 @@ import subprocess
 SOURCE_PIN = "963d46a829f3e1b79f44dba9d02afb70654300fa"
 BINARY_NAMES = ("Divide", "Modulo", "BitRotateLeft", "BitRotateRight")
 UNARY_NAMES = ("EqualsZero", "CountLeadingZeros", "CountTrailingZeros", "PopCount")
+SHIFT_NAMES = ("BitShiftLeft", "BitShiftRight")
 
 BINARY_DRIVER = r"""
 #include <bit>
@@ -115,13 +116,53 @@ int main()
 """
 
 
+SHIFT_DRIVER = r"""
+#include <bit>
+#include <stdio.h>
+#include <stdint.h>
+
+template<typename T> void shift_result(char const* name, u64 lhs, u64 rhs, T value)
+{
+    printf("%s\t%016llx\t%016llx\t%016llx\n", name,
+        (unsigned long long)lhs, (unsigned long long)rhs, (unsigned long long)value);
+}
+void run(u64 rhs)
+{
+    using namespace Wasm::Operators;
+    u64 const inputs[] = {0, 1, 2, 7, 0xfffffffffffffff9ULL,
+        0x7fffffffULL, 0x80000000ULL, 0xffffffffULL,
+        0x7fffffffffffffffULL, 0x8000000000000000ULL,
+        0xfffffffffffffffeULL, 0xffffffffffffffffULL};
+    for (auto lhs : inputs) {
+        shift_result("shl_u32", lhs, rhs, BitShiftLeft{}((u32)lhs, (u32)rhs));
+        shift_result("shl_u64", lhs, rhs, BitShiftLeft{}(lhs, rhs));
+        shift_result("shr_i32", lhs, rhs, BitShiftRight{}(std::bit_cast<i32>((u32)lhs), std::bit_cast<i32>((u32)rhs)));
+        shift_result("shr_u32", lhs, rhs, BitShiftRight{}((u32)lhs, (u32)rhs));
+        shift_result("shr_i64", lhs, rhs, BitShiftRight{}(std::bit_cast<i64>(lhs), std::bit_cast<i64>(rhs)));
+        shift_result("shr_u64", lhs, rhs, BitShiftRight{}(lhs, rhs));
+    }
+}
+int main()
+{
+    for (u64 rhs = 0; rhs <= 65; ++rhs)
+        run(rhs);
+    u64 const extra[] = {127, 128, 129, 255, 256, 0x7fffffffULL,
+        0x80000000ULL, 0xffffffffULL, 0x100000000ULL,
+        0x7fffffffffffffffULL, 0x8000000000000000ULL,
+        0xfffffffffffffffeULL, 0xfffffffffffffff9ULL, 0xffffffffffffffffULL};
+    for (auto rhs : extra)
+        run(rhs);
+}
+"""
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--upstream", type=Path, default=Path.home() / "code/3rd/ladybird")
     parser.add_argument("--build-dir", type=Path)
     parser.add_argument("--compiler", default="clang++")
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--family", choices=("binary", "unary"), default="binary")
+    parser.add_argument("--family", choices=("binary", "unary", "shift"), default="binary")
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
     upstream = args.upstream.resolve()
@@ -132,9 +173,12 @@ def main():
     source = header.read_text()
     excerpts = []
     hashes = []
-    names = BINARY_NAMES if args.family == "binary" else UNARY_NAMES
-    driver = BINARY_DRIVER if args.family == "binary" else UNARY_DRIVER
-    expected_count = 3264 if args.family == "binary" else 1656
+    families = {
+        "binary": (BINARY_NAMES, BINARY_DRIVER, 3264, "integer_operators.tsv"),
+        "unary": (UNARY_NAMES, UNARY_DRIVER, 1656, "unary_integer_operators.tsv"),
+        "shift": (SHIFT_NAMES, SHIFT_DRIVER, 5760, "shift_integer_operators.tsv"),
+    }
+    names, driver, expected_count, filename = families[args.family]
     for name in names:
         match = re.search(r"^struct " + name + r" \{.*?^};", source, re.MULTILINE | re.DOTALL)
         if match is None:
@@ -146,8 +190,8 @@ def main():
     # LibWasm Types/LibSync generated exports; AK headers remain the actual source.
     generated = "#include <limits.h>\n#include <AK/Checked.h>\n#include <AK/BuiltinWrappers.h>\n#include <AK/Error.h>\n#include <AK/StringView.h>\n"
     generated += "namespace Wasm::Operators {\n" + "\n\n".join(excerpts) + "\n}\n" + driver
-    work = repo / ("Build/audit-fixes/wasm-integer-operators" if args.family == "binary"
-                   else "Build/audit-fixes/wasm-unary-integer-operators")
+    work = repo / "Build/audit-fixes" / ("wasm-integer-operators" if args.family == "binary"
+                                       else "wasm-" + args.family + "-integer-operators")
     work.mkdir(parents=True, exist_ok=True)
     cpp = work / "source.cpp"
     binary = work / "source"
@@ -161,7 +205,6 @@ def main():
     subprocess.run(command, check=True)
     results = subprocess.check_output([str(binary)], text=True)
     assert len(results.splitlines()) == expected_count
-    filename = "integer_operators.tsv" if args.family == "binary" else "unary_integer_operators.tsv"
     output = args.output or repo / "webassembly/fixtures" / filename
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(f"# Source {SOURCE_PIN}\n" + "\n".join(hashes) + "\n" + results)
