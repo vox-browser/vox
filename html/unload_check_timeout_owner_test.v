@@ -29,7 +29,7 @@ fn unload_timeout_traversable(document &dom.Document) &TraversableNavigable {
 }
 
 fn unload_timeout_state(traversable &TraversableNavigable, documents []&dom.Document, target ?&SessionHistoryEntry, observation &UnloadTimeoutObservation) &CheckUnloadingCanceledState {
-	state := CheckUnloadingCanceledState.create(traversable, documents, target, .none_, fn [observation] (result CheckIfUnloadingIsCanceledResult) {
+	state := CheckUnloadingCanceledState.create(traversable, documents, target, .none_, .no, fn [observation] (result CheckIfUnloadingIsCanceledResult, _ UnloadPromptShown) {
 		mut observed := unsafe { &UnloadTimeoutObservation(observation) }
 		assert observed.owner.completed
 		assert !observed.owner.timeout_.is_active()
@@ -172,11 +172,11 @@ fn test_unload_check_timeout_returns_source_continue_during_partial_canceled_pha
 	state.start_document_tasks()
 	mut event_loop := main_thread_event_loop()
 	event_loop.process()
-	assert state.final_status == .canceled_by_before_unload && state.unload_prompt_shown
+	assert state.final_status == .canceled_by_before_unload && state.unload_prompt_shown == .yes
 	assert state.remaining_documents == 1 && observation.completions == 0
 	state.timeout_.fire()
 	assert observation.completions == 1 && observation.result == .continue_
-	assert state.unload_prompt_shown
+	assert state.unload_prompt_shown == .yes
 	event_loop.process()
 	assert state.remaining_documents == 0 && observation.before_unloads == 2
 	assert observation.completions == 1 && observation.result == .continue_

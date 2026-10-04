@@ -41,6 +41,12 @@ pub enum CheckIfUnloadingIsCanceledResult {
 	continue_
 }
 
+// HTML/ApplyHistoryStep.h: UnloadPromptShown.
+pub enum UnloadPromptShown {
+	no
+	yes
+}
+
 pub struct HistoryObjectLengthAndIndex {
 pub:
 	script_history_length u64
@@ -76,6 +82,8 @@ pub type TraversableAppliedHook = fn(int, dom.NavigationType)
 pub type TraversableScreenshotHook = fn(?u64)
 
 pub type TraversableUnloadCompletion = fn (CheckIfUnloadingIsCanceledResult)
+
+pub type TraversableUnloadCheckCompletion = fn (CheckIfUnloadingIsCanceledResult, UnloadPromptShown)
 
 pub type TraversableHistoryStepCompletion = fn (HistoryStepResult)
 
@@ -487,9 +495,9 @@ mut:
 	documents           []&dom.Document
 	target_entry        ?&SessionHistoryEntry
 	user_involvement    UserNavigationInvolvement
-	callback            TraversableUnloadCompletion = unsafe { nil }
+	callback            TraversableUnloadCheckCompletion = unsafe { nil }
 	final_status        CheckIfUnloadingIsCanceledResult = .continue_
-	unload_prompt_shown bool
+	unload_prompt_shown UnloadPromptShown = .no
 	needs_before_unload bool
 	remaining_documents int
 	completed           bool
@@ -498,12 +506,13 @@ mut:
 
 // CheckUnloadingCanceledState's Source constructor starts the deadline before
 // either phase is queued. Platform.Timer owns the callback while active.
-fn CheckUnloadingCanceledState.create(traversable &TraversableNavigable, documents []&dom.Document, target_entry ?&SessionHistoryEntry, user_involvement UserNavigationInvolvement, callback TraversableUnloadCompletion) &CheckUnloadingCanceledState {
+fn CheckUnloadingCanceledState.create(traversable &TraversableNavigable, documents []&dom.Document, target_entry ?&SessionHistoryEntry, user_involvement UserNavigationInvolvement, unload_prompt_shown UnloadPromptShown, callback TraversableUnloadCheckCompletion) &CheckUnloadingCanceledState {
 	mut state := &CheckUnloadingCanceledState{
 		traversable: traversable
 		documents: documents.clone()
 		target_entry: target_entry
 		user_involvement: user_involvement
+		unload_prompt_shown: unload_prompt_shown
 		callback: callback
 	}
 	state.timeout_ = platform.Timer.create_single_shot(15000, fn [mut state] () {
@@ -522,7 +531,7 @@ fn (mut state CheckUnloadingCanceledState) finish(result CheckIfUnloadingIsCance
 	}
 	state.completed = true
 	state.timeout_.stop()
-	state.callback(result)
+	state.callback(result, state.unload_prompt_shown)
 }
 
 fn (mut state CheckUnloadingCanceledState) document_task_completed() {
@@ -547,9 +556,9 @@ fn (mut state CheckUnloadingCanceledState) start_document_tasks() {
 				return
 			}
 			mut mutable_document := unsafe { &dom.Document(document) }
-			result := mutable_document.steps_to_fire_beforeunload(state.unload_prompt_shown)
+			result := mutable_document.steps_to_fire_beforeunload(state.unload_prompt_shown == .yes)
 			if result.unload_prompt_shown {
-				state.unload_prompt_shown = true
+				state.unload_prompt_shown = .yes
 			}
 			if result.unload_prompt_canceled {
 				state.final_status = .canceled_by_before_unload
@@ -584,7 +593,7 @@ fn (mut state CheckUnloadingCanceledState) run_traverse_event_task(actual_window
 			mut mutable_document := unsafe { &dom.Document(current_active_document) }
 			result := mutable_document.steps_to_fire_beforeunload(false)
 			if result.unload_prompt_shown {
-				state.unload_prompt_shown = true
+				state.unload_prompt_shown = .yes
 			}
 			if result.unload_prompt_canceled {
 				state.finish(.canceled_by_before_unload)
@@ -619,7 +628,15 @@ fn (mut state CheckUnloadingCanceledState) run_traverse_event_task(actual_window
 }
 
 fn (traversable &TraversableNavigable) check_if_unloading_is_canceled_for_history_step(documents []&dom.Document, target &SessionHistoryEntry, user_involvement UserNavigationInvolvement, callback TraversableUnloadCompletion) {
-	mut state := CheckUnloadingCanceledState.create(traversable, documents, target, user_involvement, callback)
+	// Compatibility projection for the older local history-step continuation.
+	// Source's actual UI history job carries the prompt flag separately.
+	traversable.check_if_unloading_is_canceled_for_history_step_with_prompt(documents, target, user_involvement, .no, fn [callback] (result CheckIfUnloadingIsCanceledResult, _ UnloadPromptShown) {
+		callback(result)
+	})
+}
+
+fn (traversable &TraversableNavigable) check_if_unloading_is_canceled_for_history_step_with_prompt(documents []&dom.Document, target &SessionHistoryEntry, user_involvement UserNavigationInvolvement, unload_prompt_shown UnloadPromptShown, callback TraversableUnloadCheckCompletion) {
+	mut state := CheckUnloadingCanceledState.create(traversable, documents, target, user_involvement, unload_prompt_shown, callback)
 	if hook := traversable.before_unload_hook_ {
 		queue_a_task(.navigation_and_traversal, main_thread_event_loop(), none, fn [hook, mut state] () {
 			state.finish(hook(state.documents))
@@ -647,7 +664,11 @@ fn (traversable &TraversableNavigable) check_if_unloading_is_canceled_for_histor
 }
 
 pub fn (traversable &TraversableNavigable) check_if_unloading_is_canceled(documents []&dom.Document, callback TraversableUnloadCompletion) {
-	mut state := CheckUnloadingCanceledState.create(traversable, documents, none, .none_, callback)
+	// Source LocalNavigable.cpp's result-only overload initializes No and
+	// explicitly projects the full completion pair to its first value.
+	mut state := CheckUnloadingCanceledState.create(traversable, documents, none, .none_, .no, fn [callback] (result CheckIfUnloadingIsCanceledResult, _ UnloadPromptShown) {
+		callback(result)
+	})
 	if hook := traversable.before_unload_hook_ {
 		queue_a_task(.navigation_and_traversal, main_thread_event_loop(), none, fn [hook, mut state] () {
 			state.finish(hook(state.documents))
