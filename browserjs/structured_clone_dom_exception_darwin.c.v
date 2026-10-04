@@ -42,6 +42,10 @@ fn (runtime &Runtime) native_clone_deserialization_context() html.StructuredDese
 					if host.closed { return false }
 					if _ := host.prototypes[.key] { return true }
 				}
+			} else if interface_name == .blob {
+				if host := blob_bindings_[owner] {
+					return !host.closed && host.constructor != unsafe { nil } && host.prototype != unsafe { nil }
+				}
 			}
 			return false
 		}
