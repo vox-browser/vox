@@ -229,6 +229,25 @@ preserved, and explicit map lookup corrected the fixture. All checks used GC
 disabled. This preserves the source attachment graph without claiming full
 LibJS tracing or caller WrapperWorld ownership.
 
+Query begin/end now follow `WebGL2RenderingContextImpl.cpp:704-747`: select
+the owner, validate only begin's source object handle, update the three actual
+retained query slots before GL, and let the driver validate targets, active
+queries and target compatibility. The invented `WebGLQuery.target_`/`active_`
+fields and driver-success gates were removed; `WebGLQuery.{h,cpp}` only owns
+its base resource record. The restricted retained map translates the three
+source traced pointers (`WebGLRenderingContextImpl.h:172-174` and
+`WebGLRenderingContextImpl.cpp:2611-2613`), and reset clears them as upstream.
+Five typed files passed with GC disabled in `source-query-retained-gc-none.log`;
+the new public source case and query enum neighbor passed in
+`source-query-retained-public-gc-none.log` (two files). Cases compare genuine
+GL current-query/error results with deliberately different retained slots after
+duplicate begin, missing end, target reuse and unrelated pending errors. They
+also cover all three targets, owner selection before invalid handles/targets,
+and public IDL conversion before body entry. getQuery keeps the source's absence
+of owner selection. Its host wrapping of retained deleted/first-exposed query
+records and deleteQuery early owner selection remain for a separate slice;
+full GC tracing and remote transport remain open.
+
 Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
 `WebGL2RenderingContextOverloads.cpp:33-85`, and
 `WebGL2RenderingContextImpl.cpp:46-50`: select the owner, validate nullable data
