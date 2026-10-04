@@ -391,11 +391,29 @@ removed: the driver decides competing index/name errors after source ownership
 validation. Native owner, actual shader compilation/reflection and source
 program-order files passed with GC disabled (three files,
 `source-shader-program-owner-gc-none.log`); the actual public two-version owner
-case passed in `source-shader-program-owner-public-gc-none.log`. Source shader/
-program mirrors and eager status/log queries remain identified for the separate
-record slice; createShader's extra native-zero null substitution remains a
-separate source record boundary. Full LibJS tracing and WrapperWorld ownership
-remain open.
+case passed in `source-shader-program-owner-public-gc-none.log`. The following
+record slice removes source shader/program mirrors and eager queries;
+createShader's extra native-zero null substitution remains a separate source
+record boundary. Full LibJS tracing and WrapperWorld ownership remain open.
+
+Shader/program records now translate `WebGLShader.h` and `WebGLProgram.h`
+directly: shader type and the two actual attached-shader pointers supplement
+their WebGLObject base. All six invented source/compile/link/validate/log fields
+and the eager status/log queries were removed. shaderSource, compileShader,
+linkProgram and validateProgram forward only the source driver operations
+(`WebGLRenderingContextImpl.cpp:414-426`, `:2233-2246`, `:2312-2330`,
+`:2486-2500`); parameter/source/log APIs query GL when requested. Eleven legacy
+fixtures now verify actual driver status/source instead of CPU mirrors,
+including initial source before external mutation and successful link status
+before a native failed relink. Those files plus actual shader compilation and
+status neighbors passed with GC disabled (13 files,
+`source-shader-program-records-gc-none.log`). The final actual validateProgram
+status/error case and source owner regression passed in
+`source-shader-program-records-validation-gc-none.log` (two files), covering
+unlinked status and owned native-name rejection. Public diagnostic/status
+cases passed in `source-shader-program-records-public-gc-none.log` (two files).
+createShader's native-zero record projection, other remaining context caches,
+remote transport and complete LibJS ownership remain separate source slices.
 
 Immutable texture storage now follows
 `WebGL2RenderingContextImpl.cpp:198-209`: select the owning driver and forward
