@@ -150,3 +150,15 @@ UTF16-label irrelevance and raw WTF8/non-ASCII/NUL serialized compatibility
 bytes, including the actual internal Blob/FileReaderSync caller. These byte
 checks do not establish Source's unchecked ASCII storage or native primitive
 code-unit projection.
+
+
+## Fixed typed-array length prerequisite
+
+The separate typed fixed-view prerequisite retains `BufferSource.array_length_`
+at view construction, using Source `TypedArray.cpp:116`'s original byte length
+divided by element size. The optional getter is available only for typed
+arrays. This slot stays unchanged after detachment or an out-of-bounds witness,
+so FileReader's `contained_data` check need not infer the original length from
+copied witness bytes. New slot and existing buffer files pass **2/2 in both GC
+modes** in `source-fixed-array-length-{default,gc-none}.log`. Native arrays and
+auto-length views remain outside this fixed typed record; no LibJS code changed.
