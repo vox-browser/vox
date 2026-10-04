@@ -45,9 +45,12 @@ fn test_source_file_reader_context_retains_actual_blob_stream_default_reader_and
 		context.run_callback_steps(fn [settings, seen, value] () {
 			assert voidptr(current_principal_settings_object()) == voidptr(settings)
 			assert voidptr(incumbent_settings_object()) == voidptr(settings)
-			assert value.kind == .object && !value.object_value['done'].boolean_value
+			assert value.kind == .object
+			done := value.object_value['done'] or { panic('missing actual done field') }
+			assert !done.boolean_value
 			mut observation := unsafe { &FileReaderStreamContextObservation(seen) }
-			buffer := value.object_value['value'].buffer_value or { panic('missing actual Blob chunk') }
+			chunk := value.object_value['value'] or { panic('missing actual value field') }
+			buffer := chunk.buffer_value or { panic('missing actual Blob chunk') }
 			observation.bytes = webidl.get_buffer_source_copy(buffer)
 			observation.settled = true
 			observation.script_depth = settings.realm().script_execution_depth
