@@ -162,6 +162,40 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+createProgram now suppresses its actual native creation command after loss
+while retaining the Source-owned program record and allocated proxy ID.
+Impl.cpp:458-462 returns WebGLProgram::create for the generated create_program
+result. GLFunctions.json:939-943 marks this call gen; the actual generator
+allocates an ID, records CreateProgram and returns that ID. ProxyBase.cpp:57-60
+drops record_bytes after loss, so the compositor cannot create a native program
+mapping. The direct V adapter now skips native selection/creation once lost
+and keeps native_name zero as the absent mapping, separately from the Source
+u32 ID and compact wrapper key. It preserves live creation and never turns
+this non-null Source record into null or invents a zero Source proxy ID.
+
+The genuine unfixed two-version EGL probe created native name2 in Other after
+Owner loss; its actual driver isProgram query returned true. That unwanted
+creation evidence is retained in source-program-lost-unfixed-probe-gc-none.log.
+Corrected native/public cases preserve Other's live program, viewport and
+pending error while returning three distinct owned lost records with Source
+IDs2-4 and native mapping0. Restoration invalidates the old generation and
+resumes actual driver creation with Source ID5. This matches the allocator's
+postincrement and the pinned Proxy restore body, which does not reset its
+counter (ProxyBase.h:74, ProxyBase.cpp:31-40). No fake backend or fabricated
+native-name sequence supplies the result.
+
+Three typed files pass in
+`Build/audit-fixes/source-program-creation-lost-native-gc-none.log`; two public
+files pass in
+`Build/audit-fixes/source-program-creation-lost-public-gc-none.log`, including
+shader creation and actual resource-handle neighbors. All use GC disabled and
+explicit private paths. Exact generated program proxy/compositor bodies are
+retained in source-program-generated-boundary.txt (SHA-256
+`f95243942ce74f2665121b832e129fc382858e88fe92e869decfac6ce234b2dd`).
+The generated isProgram Boolean loss query, other creation families and broader
+lost commands remain separate features, alongside remote maps and GC/WrapperWorld.
+This is focused native/JSC evidence, not a full sweep or canonical bundle build.
+
 The isProgram nullable host adapter now explicitly invokes is_program(None)
 for an absent nullable map entry. Base.idl:132 accepts WebGLProgram?, and
 Impl.cpp:2159-2160 returns false without a native sync request. Actual pre-fix
@@ -214,8 +248,8 @@ raw host probe returned an empty-message TypeError from its inline map-or-none
 compatibility expression, before reaching the Source nullable method.
 
 The subsequent nullable host adapter repair is documented above. Generated
-Boolean lost default and generated creation loss suppression remain separate
-features. A real observational EGL
+creation loss suppression is also documented above. Generated Boolean lost
+default remains separate. A real observational EGL
 loss probe already confirms lost isProgram true and lost createProgram creating
 an actual native program in Other; its source/log are retained under
 source-program-lost-unfixed-probe*. These are unwanted direct-driver evidence,
