@@ -190,3 +190,10 @@ genuine stream chunks, slice and forged receiver rejection. The existing XHR
 object cannot enter the genuine Blob wrapper table. This prerequisite retains
 an internal Source prototype; the public generated constructor and native
 clone exposure are separate subsequent slices, with no placeholder constructor.
+
+The follow-up prototype metadata fix uses actual accessor/method descriptor
+extraction instead of ordinary constructible functions. Its focused checks
+cover `get size`/`get type`, every method's Source name and zero IDL arity,
+absence of own `prototype`, failed construction, getter/method descriptor
+flags and the Blob tag flags. Metadata plus constructor files pass **2/2** in
+both GC modes in `source-blob-metadata-constructor-{default,gc-none}.log`.
