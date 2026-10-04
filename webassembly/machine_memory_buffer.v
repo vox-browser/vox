@@ -214,7 +214,12 @@ pub fn (mut buffer BinaryMachineMemoryBuffer) fill(offset usize, value u8, count
 }
 
 pub fn (mut buffer BinaryMachineMemoryBuffer) overwrite(offset usize, source voidptr, count usize) {
-	assert offset <= buffer.size() && count <= buffer.size() - offset
+	if offset > buffer.size() {
+		panic('Source VERIFY: MemoryBuffer::overwrite offset <= size()')
+	}
+	if count > buffer.size() - offset {
+		panic('Source VERIFY: MemoryBuffer::overwrite count <= size() - offset')
+	}
 	source_bytes := unsafe { &u8(source) }
 	mut copied := usize(0)
 	for copied < count {
