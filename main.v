@@ -2706,6 +2706,13 @@ fn (mut app BrowserApp) update_current_history_entry(loaded LoadedPage) {
 	}
 }
 
+// Source Window owns its realm before parsing. The deferred JavaScriptCore
+// facade must also initialize for raw Window handlers without script elements.
+fn document_has_window_event_handlers(document &dom.Document) bool {
+	window := document.get_window() or { return false }
+	return window.data.event_handler_map.len > 0
+}
+
 fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool) {
 	app.markup = loaded.markup
 	app.source_label = loaded.url
@@ -2761,7 +2768,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		app.js_runtime = unsafe { nil }
 	}
 	sources := script_sources(app.document, resource_base_url, preloaded_resources, mut app.js_messages)
-	javascript_navigation := if sources.len > 0 {
+	javascript_navigation := if sources.len > 0 || document_has_window_event_handlers(app.document) {
 		app.js_runtime = create_browser_script_runtime(app.js_engine)
 		run_document_script_sources(app.document, loaded.url, sources, app.js_runtime, mut app.js_messages)
 	} else {
