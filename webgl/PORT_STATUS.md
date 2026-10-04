@@ -137,6 +137,45 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+Base vertexAttribPointer now preserves exactly the retained ARRAY_BUFFER
+reference/nonzero-offset gate from pinned WebGLRenderingContextImpl.cpp:2571-
+2581. An absent actual Source reference returns INVALID_OPERATION before any
+GL command. Deleted but retained actual records still count as present. The
+extra V size/stride/negative-offset validation and pointer-state map write are
+removed; all remaining arguments reach the original native pointer call.
+The legacy deletion fixture's CPU map assertion now checks the real driver's
+attribute-buffer binding after deletion instead.
+
+Owner order follows the concrete seam: ProxyBase.h:44 has an empty make_current
+prefix, GLFunctions.json:4709 classifies this call as a command, generated
+Proxy code records the offset as GLintptr from uintptr_t, generated replay
+restores the pointer bits, and HostWebGLContext.cpp:54-83 selects the actual
+owning driver before replay. Read-only generated evidence is retained in
+`Build/audit-fixes/source-vertex-pointer-generated-boundary.txt`; Python bytecode
+writing was disabled in the readonly upstream checkout. The existing Native
+dispatch/C intptr_t delegate supplies that real command boundary; no remote
+transport or new pointer algorithm is claimed.
+
+Both-version witnesses compare eleven valid/invalid index, size, type, stride,
+alignment and signed-offset cases with independent actual driver state/error
+baselines, including both present and absent retained slots. Genuine Source
+early returns keep the other actual driver selected and precede conflicting
+size/stride validation. A deleted retained buffer still reaches GL. Public
+checks preserve the same early-versus-driver distinction, numeric argument
+order, hook-free Boolean conversion, actual pointer state and throw-before-
+entry owner selection. The three public pointer/host/vector files passed under
+`Build/audit-fixes/source-vertex-pointer-public/`. Native deletion/state
+neighbors passed in `source-vertex-pointer-gc-none.log`; the new fixture's
+initial optional-expression C compiler failure is retained there. Its explicit
+branch correction is recorded in `source-vertex-pointer-final-gc-none.log`,
+which then exposed a test-only assumed deleted-buffer error: the actual driver
+returned NO_ERROR. The final fixture now uses independently reset real driver
+error evidence for that retained-deleted-object command and passed in
+`source-vertex-pointer-driver-oracle-final-gc-none.log`; the implementation did
+not change during either fixture correction. This is two native neighbor passes
+plus the corrected new file, not a rerun clean three-file native group.
+Integer-pointer/divisor bodies and their remaining mirror are separate scopes.
+
 WebGL2 integer scalar attributes now call exact glVertexAttribI4i and
 glVertexAttribI4ui delegates from pinned WebGL2RenderingContextImpl.cpp:496-501
 and 513-518. Native C signed int and unsigned GLuint widths are preserved
