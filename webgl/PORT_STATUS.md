@@ -344,6 +344,21 @@ offsets, genuine layer pixels and owner selection on invalid spans. Bitmap
 source TODOs, remote transport and complete LibJS ownership remain separate
 boundaries.
 
+Bitmap upload bodies now select their owning driver before missing-frame,
+ImageData-witness and bitmap-border returns, as in
+`WebGLRenderingContextOverloads.cpp:196-213`, `:238-250`,
+`WebGL2RenderingContextOverloads.cpp:121-160`, and
+`WebGL2RenderingContextImpl.cpp:226-242`, `:254-263`. Their source frame,
+conversion, alpha/flip/scaling and border logic remains unchanged. The new
+two-version owner case and actual bitmap/layer pixel neighbor passed with GC
+disabled in `source-bitmap-upload-owner-gc-none.log` (two files); the actual
+public texture-source neighbor passed in
+`source-bitmap-upload-owner-public-gc-none.log`. Missing image frames remain
+silent while selecting the owner, and the existing source ImageData witness
+and WebGL2 bitmap-border checks retain their errors before any GL call.
+Upstream ImageBitmap/origin-clean TODOs and complete DOM/LibJS source bindings
+remain explicit boundaries.
+
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
 ANGLE builds lacking compressed robust entry points use the matching GLES call
