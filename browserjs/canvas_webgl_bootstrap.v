@@ -17,16 +17,18 @@ function __webglCall(s,method,args,extra) {
  if(result&&result.error){const Constructor=globalThis[result.error.name];const error=new (typeof Constructor==="function"?Constructor:Error)(result.error.message);error.name=result.error.name;throw error;}
  return result;
 }
+const __webglOwnNumberTag=(function(){const own=Object.prototype.hasOwnProperty,apply=Reflect.apply;return function(result){return apply(own,result,["webglNumber"]);};})();
 function __webglReply(result,state) {
  if(result&&result.webglUndefined===true)return undefined;
+ if(result&&typeof result==="object"&&__webglOwnNumberTag(result))return +result.webglNumber;
  if(Array.isArray(result))return result.map(function(value){return __webglReply(value,state)});
  if(result&&result.handle)return __webglResources.wrap(result,state);
  return result;
 }
 // Source conversions and typed results use engine intrinsics, independently
 // of author changes to the corresponding global properties.
-const __webglNumber=(function(){const finite=Number.isFinite,string=String;return function(value){const number=+value;return finite(number)?number:string(number);};})();
-const __webglTypedReply=(function(){const F=Float32Array,I=Int32Array,U=Uint32Array;return function(values,kind){const Constructor=kind==="float"?F:kind==="int"?I:U,result=new Constructor(values.length);for(let i=0;i<values.length;i++)result[i]=values[i];return result;};})();
+const __webglNumber=(function(){const finite=Number.isFinite,string=String;return function(value){const number=+value;return number===0&&1/number<0?"-0":finite(number)?number:string(number);};})();
+const __webglTypedReply=(function(){const F=Float32Array,I=Int32Array,U=Uint32Array;return function(values,kind){const Constructor=kind==="float"?F:kind==="int"?I:U,result=new Constructor(values.length);for(let i=0;i<values.length;i++)result[i]=__webglReply(values[i]);return result;};})();
 function __webglString(value){return `${value}`;}
 const __webglNumberSequence=__webglSequenceFactory(__webglNumber),__webglStringSequence=__webglSequenceFactory(__webglString),__webglListSequence=__webglSequenceFactory(__webglNumber,true);
 // HTML get_context coerces nonobjects to null before the hand-written

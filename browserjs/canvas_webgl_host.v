@@ -199,6 +199,17 @@ fn (host &CanvasWebGLHost) resource_reply(handle string) json2.Any {
 	})
 }
 
+// JSON has no representation for non-finite numbers or negative zero. Keep the
+// source numeric value across this compatibility transport; JavaScript performs
+// primitive numeric conversion when decoding the tag.
+fn wg_reply_number(value f64) json2.Any {
+	if math.is_nan(value) || math.is_inf(value, 0) || (value == 0 && math.signbit(value)) {
+		text := if value == 0 { '-0' } else { webidl.to_string(webidl.number_value(value)) or { panic(err) } }
+		return json2.Any({'webglNumber': json2.Any(text)})
+	}
+	return json2.Any(value)
+}
+
 fn (mut host CanvasWebGLHost) parameter(context &webgl.WebGLRenderingContext, value webgl.WebGLParameterValue) json2.Any {
 	if texture := value.texture {
 		if handle := host.platform_objects[voidptr(&texture.object)] {
@@ -281,11 +292,11 @@ fn (mut host CanvasWebGLHost) parameter(context &webgl.WebGLRenderingContext, va
 		.none { json2.Any(json2.Null{}) }
 		.undefined_ { json2.Any({'webglUndefined': json2.Any(true)}) }
 		.integer { json2.Any(value.integer) }
-		.number { json2.Any(value.number) }
+		.number { wg_reply_number(value.number) }
 		.boolean { json2.Any(value.boolean) }
 		.string_ { json2.Any(value.text) }
 		.integers { json2.Any(value.integers.map(json2.Any(it))) }
-		.numbers { json2.Any(value.numbers.map(json2.Any(it))) }
+		.numbers { json2.Any(value.numbers.map(wg_reply_number(it))) }
 		.booleans { json2.Any(value.booleans.map(json2.Any(it))) }
 		.object {
 			if handle := host.logical_objects['${context.identity()}/${value.object}'] {
