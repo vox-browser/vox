@@ -162,6 +162,34 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+getShaderSource and getShaderInfoLog now preserve Source handle validation
+before actual sync owner selection. WebGLRenderingContextImpl.cpp:1900-1940
+returns a nullable failure for foreign/deleted records before issuing any
+get_shaderiv operation. ProxyBase.h:44 leaves the current owner untouched;
+HostWebGLContext.cpp:145-150 selects the actual owner only when the valid query
+reaches the sync receiver. The V native length/readback helpers already select
+that owner, so the two invented unconditional entry prefixes were removed.
+Valid empty strings still require the genuine owning driver's length query.
+
+Focused two-version native/public tests distinguish nullable failures from
+owned empty strings, preserve the current other driver and its pending error
+on CPU returns, and verify valid owner selection. Both compare exact shader
+source and compiler-log bytes after direct native mutation, without relying on
+a V shader cache; public brand failures likewise occur before native dispatch.
+Two typed files pass in
+`Build/audit-fixes/source-shader-diagnostic-owner-native-gc-none.log` and two
+public files pass in
+`Build/audit-fixes/source-shader-diagnostic-owner-public-gc-none.log`, including
+the existing diagnostic result/identity neighbors. All use GC disabled and
+explicit private paths.
+
+This supersedes earlier unconditional owner-prefix descriptions specifically
+for these two getters. Their native helper's separately identified lost-query
+suppression, shader parameter getter order, program diagnostics/deletion, full
+remote maps and GC/WrapperWorld remain independent Source slices. Native source
+and log lengths, terminator exclusion and public nullable/string shapes remain
+as translated from the pinned source.
+
 shaderSource and compileShader now keep Source handle validation ahead of
 actual native owner selection. WebGLRenderingContextImpl.cpp:414-426 and
 :2312-2330 validate each shader before recording its command. The preceding
