@@ -424,6 +424,14 @@ static void vox_gl_uniform_block_name(unsigned program, unsigned index, int capa
 static void vox_gl_uniform_block_binding(unsigned program, unsigned index, unsigned binding) { glUniformBlockBinding(program,index,binding); }
 static void vox_gl_internalformat_parameter(unsigned target, unsigned format, unsigned pname, int capacity, int* result) { glGetInternalformativRobustANGLE(target,format,pname,capacity,NULL,result); }
 static void vox_gl_shader_precision(unsigned shader, unsigned precision, int* range, int* bits) { glGetShaderPrecisionFormat(shader, precision, range, bits); }
+static void vox_gl_uniform1f(int location, float x) { glUniform1f(location, x); }
+static void vox_gl_uniform2f(int location, float x, float y) { glUniform2f(location, x, y); }
+static void vox_gl_uniform3f(int location, float x, float y, float z) { glUniform3f(location, x, y, z); }
+static void vox_gl_uniform4f(int location, float x, float y, float z, float w) { glUniform4f(location, x, y, z, w); }
+static void vox_gl_uniform1i(int location, int x) { glUniform1i(location, x); }
+static void vox_gl_uniform2i(int location, int x, int y) { glUniform2i(location, x, y); }
+static void vox_gl_uniform3i(int location, int x, int y, int z) { glUniform3i(location, x, y, z); }
+static void vox_gl_uniform4i(int location, int x, int y, int z, int w) { glUniform4i(location, x, y, z, w); }
 static void vox_gl_uniform_floats(int location, int width, int count, float const* data)
 {
     switch (width) {
