@@ -42,7 +42,7 @@ fn test_source_shader_program_mutations_select_owner_before_early_returns() {
 		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
 		other.native.make_current()
 		context.validate_program(mut foreign_program)
-		shader_program_owner_and_error(mut context, invalid_operation)
+		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
 		other.native.make_current()
 		context.attach_shader(mut program, foreign_shader)
 		shader_program_owner_and_error(mut context, invalid_operation)

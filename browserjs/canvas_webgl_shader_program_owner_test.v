@@ -36,7 +36,7 @@ fn test_public_shader_program_mutations_select_source_owner_and_native_error_ord
 			runtime.evaluate_host(call)!
 			mut selected := [0, 0, 0, 0]!
 			C.vox_gl_int_parameter(0x0ba2, &selected[0])
-			assert selected == if index in [0, 1, 2, 3, 7, 8, 9, 10] { [9, 10, 11, 12]! } else { [1, 2, 3, 4]! }
+			assert selected == if index in [0, 1, 2, 3, 4, 7, 8, 9, 10] { [9, 10, 11, 12]! } else { [1, 2, 3, 4]! }
 			assert runtime.evaluate_host('shaderOwner.getError()')! == expected[index]
 		}
 		context.native.make_current()

@@ -592,11 +592,11 @@ pub fn (mut context WebGLRenderingContext) use_program(program ?&WebGLProgram) {
 }
 
 pub fn (mut context WebGLRenderingContext) validate_program(mut program WebGLProgram) {
-	context.native.make_current()
 	if !context.owns(&program.object) {
 		context.set_error(invalid_operation)
 		return
 	}
+	context.native.make_current()
 	C.vox_gl_validate_program(program.object.native_handle_)
 }
 
