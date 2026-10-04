@@ -2,6 +2,7 @@
 module html
 
 import dom
+import highresolutiontime
 
 fn test_snapshot_source_snapshot_params_copies_live_document_state() {
 	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/source' })
@@ -10,7 +11,9 @@ fn test_snapshot_source_snapshot_params_copies_live_document_state() {
 		u32(SandboxingFlag.sandboxed_downloads))
 	window := WindowModel.create_top_level(document, none, 'source-snapshot')!
 	mut mutable_window := unsafe { &WindowModel(window) }
-	mutable_window.set_last_activation_timestamp(window_current_time_ms())
+	mutable_window.set_last_activation_timestamp(highresolutiontime.current_high_resolution_time(highresolutiontime.TimeOriginContext{
+		time_origin: document.load_timing_info.navigation_start_time
+	}))
 
 	settings_pointer := document.relevant_settings_object()
 	assert settings_pointer != unsafe { nil }

@@ -12,6 +12,7 @@ import css
 import dom
 import fileapi
 import highresolutiontime
+import math
 import speech
 
 pub struct LocationNavigation {
@@ -1238,8 +1239,7 @@ mut:
 	posted_messages_                          []PostedWindowMessage
 	stop_count_                               u32
 	focus_count_                              u32
-	last_activation_timestamp_                dom.DOMHighResTimeStamp = 1e308
-	last_history_action_activation_timestamp_ dom.DOMHighResTimeStamp = 1e308
+	last_history_action_activation_timestamp_ dom.DOMHighResTimeStamp = math.inf(1)
 	scripting_realm_                          &ScriptingRealm = unsafe { nil }
 	environment_settings_                    &WindowEnvironmentSettingsObject = unsafe { nil }
 }
@@ -1651,15 +1651,15 @@ pub fn (window &WindowModel) close_watcher_manager() &CloseWatcherManager {
 
 // https://html.spec.whatwg.org/multipage/interaction.html#history-action-activation
 pub fn (window &WindowModel) has_history_action_activation() bool {
-	return window.last_history_action_activation_timestamp_ != window.last_activation_timestamp_
+	return window.last_history_action_activation_timestamp_ != window.last_activation_timestamp()
 }
 
 pub fn (mut window WindowModel) set_last_activation_timestamp(timestamp dom.DOMHighResTimeStamp) {
-	window.last_activation_timestamp_ = timestamp
+	window.Window.set_last_activation_timestamp(timestamp)
 }
 
 pub fn (window &WindowModel) last_activation_timestamp() dom.DOMHighResTimeStamp {
-	return window.last_activation_timestamp_
+	return window.Window.last_activation_timestamp
 }
 
 pub fn (mut window WindowModel) set_last_history_action_activation_timestamp(timestamp dom.DOMHighResTimeStamp) {

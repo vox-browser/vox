@@ -11,6 +11,7 @@
 module dom
 
 import rand
+import math
 import strings
 import time as vtime
 import highresolutiontime
@@ -2135,7 +2136,7 @@ pub mut:
 	scroll_x_                 f64
 	scroll_y_                 f64
 	current_event_            &Event = unsafe { nil }
-	last_activation_timestamp DOMHighResTimeStamp = 1e308
+	last_activation_timestamp DOMHighResTimeStamp = math.inf(1)
 	close_watcher_manager_    &CloseWatcherManager = unsafe { nil }
 }
 

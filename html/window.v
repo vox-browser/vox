@@ -456,12 +456,11 @@ fn (window &WindowModel) storage_traversable_id() string {
 }
 
 pub fn (window &WindowModel) has_sticky_activation() bool {
-	return window_current_time_ms() >= window.last_activation_timestamp_
+	return window.Window.has_sticky_activation()
 }
 
 pub fn (window &WindowModel) has_transient_activation() bool {
-	now := window_current_time_ms()
-	return now >= window.last_activation_timestamp_ && now < window.last_activation_timestamp_ + 5000
+	return window.Window.has_transient_activation()
 }
 
 fn consume_activation_in_context(context &BrowsingContextModel) {

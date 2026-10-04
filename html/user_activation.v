@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of the executable getter logic in UserActivation.cpp. Window
-// activation state is supplied by the caller until Window is translated.
+// Translation of the executable getter logic in UserActivation.cpp. Both
+// getters read the actual native Window's activation record.
 module html
 
 import dom
