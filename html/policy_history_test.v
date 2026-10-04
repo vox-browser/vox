@@ -101,10 +101,12 @@ fn test_document_state_and_session_history_entry_clone() {
 	assert cloned.scroll_position_data.viewport_scroll_position?.x() == 7
 	assert cloned.scroll_position_data.viewport_scroll_position?.y() == 11
 	assert cloned.navigation_api_key.len == 36
-	assert cloned.classic_history_api_state.data == [
-		u8(StructuredSerializeValueTag.null_primitive),
-	]
-	assert cloned.navigation_api_state.data == [
-		u8(StructuredSerializeValueTag.undefined_primitive),
-	]
+	// Source SessionHistoryEntry constructs StorageSerializationRecords,
+	// whose envelope is distinct from a bare IPC primitive tag.
+	assert cloned.classic_history_api_state.type_ == .storage
+	assert cloned.classic_history_api_state.data == entry.classic_history_api_state.data
+	assert structured_deserialize(cloned.classic_history_api_state)!.kind == .null_
+	assert cloned.navigation_api_state.type_ == .storage
+	assert cloned.navigation_api_state.data == entry.navigation_api_state.data
+	assert structured_deserialize(cloned.navigation_api_state)!.kind == .undefined
 }
