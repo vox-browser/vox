@@ -173,10 +173,12 @@ pub fn (mut context TemporaryExecutionContext) close() {
 		return
 	}
 	mut realm := context.realm
+	// The source destructor checkpoints script cleanup while the callback's
+	// backup incumbent realm remains installed, then cleans up that callback.
+	clean_up_after_running_script(mut realm)
 	if context.callbacks_enabled == .yes {
 		clean_up_after_running_callback(mut realm)
 	}
-	clean_up_after_running_script(mut realm)
 	context.closed = true
 }
 
