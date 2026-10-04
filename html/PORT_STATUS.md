@@ -1,21 +1,25 @@
-# HTML module V translation — complete
+# HTML V translation status
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/HTML`
 
-Translation workspace: `~/code/libweb_v/html`
-Audited: 2026-09-08
+Translation workspace: `~/code/vox2/html`
+Source pin: `963d46a829f3e1b79f44dba9d02afb70654300fa`
+Historical mapping inventory: 2026-09-08
+Selected Source owner slices reviewed: 2026-10-04
 
-All 261 upstream HTML `.cpp` implementation units have a V implementation
-mapping. The audit deliberately ignores this status file when checking mappings,
-so documentation cannot make an unimplemented source unit appear translated.
+The historical inventory below found candidate V mappings for 261 HTML source
+files. Its file/symbol/LOC counts and 107-file test result describe that earlier
+inventory, not current logic, generated-binding or browser parity. The current
+audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
+a runtime hook does not establish that its complete logic was translated.
 
-## Remaining modules
+## Historical unmapped-file inventory
 
 | Remaining upstream module | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC |
 | --- | ---: | ---: | ---: |
 | None | 0 | 0 | 0 |
 
-## Upstream coverage
+## Historical source-file inventory
 
 LOC is physical line count (`wc -l`), including comments and blank lines. V
 implementation and test columns are disjoint. Shared support added to `dom` is
@@ -24,15 +28,15 @@ itself.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Status |
 | --- | ---: | ---: | --- |
-| `HTML/` top level | 218 | 57,313 | Complete |
-| `HTML/Canvas` | 7 | 1,101 | Complete |
-| `HTML/CrossOrigin` | 2 | 358 | Complete |
-| `HTML/CustomElements` | 5 | 587 | Complete |
-| `HTML/EventLoop` | 3 | 1,017 | Complete |
-| `HTML/Parser` | 7 | 9,635 | Complete |
-| `HTML/Scripting` | 18 | 3,217 | Complete |
-| `HTML/SyntaxHighlighter` | 1 | 206 | Complete |
-| **Total** | **261** | **73,434** | **Complete** |
+| `HTML/` top level | 218 | 57,313 | Mapped |
+| `HTML/Canvas` | 7 | 1,101 | Mapped |
+| `HTML/CrossOrigin` | 2 | 358 | Mapped |
+| `HTML/CustomElements` | 5 | 587 | Mapped |
+| `HTML/EventLoop` | 3 | 1,017 | Mapped |
+| `HTML/Parser` | 7 | 9,635 | Mapped |
+| `HTML/Scripting` | 18 | 3,217 | Mapped |
+| `HTML/SyntaxHighlighter` | 1 | 206 | Mapped |
+| **Total** | **261** | **73,434** | **Mapped** |
 
 The translated module contains 147 implementation files (56,368 LOC) and 107
 test files (11,937 LOC), containing 545 V test functions. Several V files
@@ -40,8 +44,8 @@ consolidate tightly coupled C++ classes, while parser and state-machine code is
 split by responsibility; file and test counts are therefore not expected to
 match one-to-one with the upstream layout.
 
-The symbol audit inventories 3,985 upstream implementations from both `.cpp`
-and inline header definitions. Its current result has zero unmatched entries:
+The historical symbol audit inventories 3,985 upstream implementations from both `.cpp`
+and inline header definitions. That run reported zero unmatched entries:
 3,313 direct candidate matches, 53 reviewed consolidated matches, 317 GC or
 binding-runtime hooks, 229 language constructors/destructors, 62 namespace
 template specializations, nine language template traits, and two language
@@ -49,9 +53,9 @@ operators. It also inventories 1,067 upstream HTML/WPT test inputs so changes to
 the upstream corpus remain visible even though those JavaScript/browser tests
 do not map one-to-one to V test functions.
 
-## Verification
+## Historical module verification
 
-HTML verification:
+Recorded inventory/module verification:
 
 ```text
 $ python3 tools/html_translation_audit.py
@@ -156,4 +160,25 @@ pretending that the C++ LibJS, LibGfx, network, or embedder runtimes are V code.
 - HTML event subclasses live in `dom/html_events.v` when dispatch identity must
   be shared with the DOM module.
 - Translation implementation, tests, and status documentation live only in
-  `~/code/libweb_v`; the Ladybird checkout remains the upstream reference.
+  `~/code/vox2`; the Ladybird checkout remains the upstream reference.
+
+
+## Actual drag FileAPI producer boundary
+
+`DragDataStoreItem` now owns raw UTF16 type/text/name slots with copied file
+bytes and checks stale compatibility views. `data_transfer_fileapi.v` maps
+pinned DataTransfer::files, DataTransferItem::get_as_file and the add(File)
+branch to genuine FileList/File/Blob records. Results are fresh Source owners,
+respect protected/disabled/removed gates, preserve raw file names, and use
+Source File MIME processing/default-clock options while retaining upstream
+other-field TODOs. Older FormDataFile snapshot entry points remain compatibility
+APIs. The native adapter accepts actual typed implementations and the actual
+Runtime's FileAPI owners; it does not manufacture a public DataTransfer receiver.
+
+Current producer/File/raw-slot neighbors pass **5/5** both modes; native
+DataTransfer/input neighbors pass **2/2** both modes. Source mapping, native AK
+byte-decoder proof and exact focused log names are in
+[`READ_LOOP_BLOB_SOURCE.md`](../docs/translation-audit/READ_LOOP_BLOB_SOURCE.md).
+Public DataTransfer/Item/List and HTMLInputElement wrappers, complete overload
+dispatch, foreign-world/native Worker ownership, and BodyInit source/stream
+records remain open. These finite results do not establish complete HTML parity.
