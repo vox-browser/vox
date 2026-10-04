@@ -218,7 +218,7 @@ pub mut:
 	object WebGLObject
 mut:
 	native_handle_ voidptr
-	proxy_handle_ GLuint
+	source_handle_ voidptr
 }
 
 pub struct WebGLOptionalSyncHandle {
@@ -232,7 +232,7 @@ pub fn (sync &WebGLSync) sync_handle(context_id u64, context_generation u64) !vo
 	if sync.object.invalidated_for_context(context_generation) {
 		return error('GL_INVALID_OPERATION')
 	}
-	return sync.native_handle_
+	return sync.source_handle_
 }
 
 pub fn (mut sync WebGLSync) sync_handle_for_deletion(context_id u64, context_generation u64) !WebGLOptionalSyncHandle {
@@ -241,7 +241,13 @@ pub fn (mut sync WebGLSync) sync_handle_for_deletion(context_id u64, context_gen
 		return WebGLOptionalSyncHandle{}
 	}
 	sync.object.invalidate()
-	return WebGLOptionalSyncHandle{has_value: true, value: sync.native_handle_}
+	return WebGLOptionalSyncHandle{has_value: true, value: sync.source_handle_}
+}
+
+// The compositor-side GLsync pointer stays separate from the Source proxy
+// pointer. This accessor is only the direct native adapter boundary.
+pub fn (sync &WebGLSync) native_pointer() voidptr {
+	return sync.native_handle_
 }
 
 @[heap]

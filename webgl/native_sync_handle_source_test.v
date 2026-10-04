@@ -2,15 +2,31 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-fn test_source_sync_handle_returns_actual_pointer_and_present_null_deletion_handle() {
+fn test_source_sync_handle_returns_proxy_pointer_with_separate_actual_driver_mapping() {
 	mut context := WebGLRenderingContext.new(.webgl2, WebGLContextAttributes{}, [])
 	mut other := WebGLRenderingContext.new(.webgl2, WebGLContextAttributes{}, [])
+	// ANGLE can use small integer native GLsync values, so independent real
+	// driver fences force the tested Source IDs away from their native mapping.
+	context.native.make_current()
+	mut reserved := []voidptr{}
+	for _ in 0 .. 8 {
+		pointer := C.vox_gl_fence_sync(sync_gpu_commands_complete, 0)
+		assert pointer != unsafe { nil }
+		reserved << pointer
+	}
 	for condition in [sync_gpu_commands_complete, GLenum(0)] {
 		mut sync := context.fence_sync(condition, 0) or { panic('source sync record') }
 		actual := sync.native_handle_
+		source := sync.source_handle_
+		assert usize(source) == if condition == sync_gpu_commands_complete {
+			usize(1)
+		} else {
+			usize(2)
+		}
+		assert source != actual
 		assert (actual == unsafe { nil }) == (condition == 0)
 		assert context.get_error() == if condition == 0 { invalid_enum } else { no_error }
-		assert sync.sync_handle(context.identity(), context.context_generation())! == actual
+		assert sync.sync_handle(context.identity(), context.context_generation())! == source
 		// Context validation runs before invalidation in both source handle APIs.
 		mut rejected := false
 		sync.sync_handle(other.identity(), other.context_generation()) or {
@@ -27,7 +43,7 @@ fn test_source_sync_handle_returns_actual_pointer_and_present_null_deletion_hand
 		assert !sync.object.invalidated()
 		first := sync.sync_handle_for_deletion(context.identity(), context.context_generation())!
 		assert first.has_value
-		assert first.value == actual
+		assert first.value == source
 		assert sync.object.invalidated()
 		assert sync.native_handle_ == actual
 		repeat := sync.sync_handle_for_deletion(context.identity(), context.context_generation())!
@@ -44,11 +60,18 @@ fn test_source_sync_handle_returns_actual_pointer_and_present_null_deletion_hand
 			rejected = true
 		}
 		assert rejected
-		// Complete the same source split: returned pointer then genuine GL delete.
+		// Source returns the proxy pointer; the actual compositor mapping supplies
+		// the distinct native pointer for the genuine GL deletion.
 		context.native.make_current()
-		C.vox_gl_delete_sync(first.value)
+		C.vox_gl_delete_sync(sync.native_pointer())
 		assert C.vox_gl_get_error() == no_error
+		for pointer in reserved {
+			assert C.vox_gl_get_sync_parameter(pointer, sync_condition) == int(sync_gpu_commands_complete)
+			assert C.vox_gl_get_error() == no_error
+		}
 	}
+	for pointer in reserved { C.vox_gl_delete_sync(pointer) }
+	assert C.vox_gl_get_error() == no_error
 }
 
 fn test_source_sync_pointer_generation_validation_ignores_native_pointer_value() {
@@ -57,6 +80,7 @@ fn test_source_sync_pointer_generation_validation_ignores_native_pointer_value()
 		mut sync := context.fence_sync(condition, 0) or { panic('source generation sync') }
 		context.get_error()
 		actual := sync.native_handle_
+		source := sync.source_handle_
 		stale_generation := context.context_generation() + 1
 		mut rejected := false
 		sync.sync_handle(context.identity(), stale_generation) or {
@@ -68,7 +92,7 @@ fn test_source_sync_pointer_generation_validation_ignores_native_pointer_value()
 		assert !absent.has_value
 		assert !sync.object.invalidated()
 		assert sync.native_handle_ == actual
-		assert sync.sync_handle(context.identity(), context.context_generation())! == actual
+		assert sync.sync_handle(context.identity(), context.context_generation())! == source
 		context.delete_sync(mut sync)
 		assert sync.object.invalidated()
 		assert sync.native_handle_ == actual

@@ -38,9 +38,22 @@ fn test_public_source_sync_creation_exposes_records_after_actual_driver_rejectio
 		assert actual_query == 'true'
 		runtime.evaluate_host('zeroSync.label="null-sync-${index}";')!
 		assert host.syncs.values().any(it.object.label() == 'null-sync-${index}')
+		for _, sync in host.syncs {
+			if sync.object.label() != 'null-sync-${index}' { continue }
+			assert sync.native_pointer() == unsafe { nil }
+			assert usize(sync.sync_handle(context.identity(), context.context_generation())!) == usize(index + 1)
+		}
 		C.vox_gl_delete_sync(expected_handle)
 		expected_delete_error := C.vox_gl_get_error()
 		actual_delete := runtime.evaluate_host('syncOwner.deleteSync(zeroSync);syncOwner.getError()===${expected_delete_error}&&syncOwner.getSyncParameter(zeroSync,syncOwner.SYNC_CONDITION)===null&&syncOwner.getError()===syncOwner.INVALID_OPERATION;')!
 		assert actual_delete == 'true'
 	}
+	assert runtime.evaluate_host('globalThis.realSync=syncOwner.fenceSync(syncOwner.SYNC_GPU_COMMANDS_COMPLETE,0);realSync.label="mapped-real-sync";syncOwner.getSyncParameter(realSync,syncOwner.SYNC_CONDITION)===syncOwner.SYNC_GPU_COMMANDS_COMPLETE&&syncOwner.getError()===syncOwner.NO_ERROR')! == 'true'
+	for _, sync in host.syncs {
+		if sync.object.label() != 'mapped-real-sync' { continue }
+		assert usize(sync.sync_handle(context.identity(), context.context_generation())!) == 4
+		assert sync.native_pointer() != unsafe { nil }
+		assert sync.sync_handle(context.identity(), context.context_generation())! != sync.native_pointer()
+	}
+	assert runtime.evaluate_host('(function(){const result=syncOwner.clientWaitSync(realSync,0,0);if(result!==syncOwner.TIMEOUT_EXPIRED&&result!==syncOwner.CONDITION_SATISFIED&&result!==syncOwner.ALREADY_SIGNALED)return false;syncOwner.deleteSync(realSync);return syncOwner.getError()===syncOwner.NO_ERROR&&syncOwner.getSyncParameter(realSync,syncOwner.SYNC_CONDITION)===null&&syncOwner.getError()===syncOwner.INVALID_OPERATION})()')! == 'true'
 }

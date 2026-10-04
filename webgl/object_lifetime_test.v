@@ -55,7 +55,7 @@ fn test_object_generation_invalidates_pre_loss_wrappers() {
 	assert new_buffer.object.context_generation == 1
 	assert new_buffer.object.handle_ != old_handle
 	assert !context.is_buffer(new_buffer)
-	context.bind_buffer(array_buffer,new_buffer)
+	context.bind_buffer(array_buffer, new_buffer)
 	assert context.is_buffer(new_buffer)
 }
 
@@ -78,7 +78,8 @@ fn test_object_deletion_is_idempotent_but_foreign_context_is_an_error() {
 fn test_sync_deletion_uses_generation_aware_sync_handle() {
 	mut context := WebGLRenderingContext.new(.webgl2, WebGLContextAttributes{}, [])
 	mut sync := context.fence_sync(sync_gpu_commands_complete, 0) or { panic('missing sync') }
-	assert sync.sync_handle(context.identity(), context.context_generation())! == sync.native_handle_
+	assert sync.sync_handle(context.identity(), context.context_generation())! == sync.source_handle_
+	assert usize(sync.source_handle_) == 1
 	assert sync.native_handle_ != unsafe { nil }
 	context.reset_context_state_after_loss()
 	sync.sync_handle(context.identity(), context.context_generation()) or {

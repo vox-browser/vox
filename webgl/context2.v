@@ -214,7 +214,7 @@ pub fn (mut context WebGLRenderingContext) fence_sync(condition GLenum, flags GL
 	sync := &WebGLSync{
 		object: new_object(context.identity(), context.context_generation_, handle, 0)
 		native_handle_: native_handle
-		proxy_handle_: source_handle
+		source_handle_: unsafe { voidptr(usize(source_handle)) }
 	}
 	unsafe {
 		context.syncs[handle] = sync
@@ -225,22 +225,22 @@ pub fn (mut context WebGLRenderingContext) fence_sync(condition GLenum, flags GL
 
 pub fn (mut context WebGLRenderingContext) client_wait_sync(mut sync WebGLSync, flags GLenum, timeout u64) GLenum {
 	context.native.make_current()
-	handle := sync.sync_handle(context.identity(), context.context_generation_) or {
+	sync.sync_handle(context.identity(), context.context_generation_) or {
 		context.set_error(invalid_operation)
 		return wait_failed
 	}
 	context.native.dispatch('client_wait_sync', sync.object.handle_, flags, i64(timeout))
-	return context.native.native_client_wait_sync(handle, flags, timeout)
+	return context.native.native_client_wait_sync(sync.native_handle_, flags, timeout)
 }
 
 pub fn (mut context WebGLRenderingContext) wait_sync(mut sync WebGLSync, flags GLenum, timeout u64) {
 	context.native.make_current()
-	handle := sync.sync_handle(context.identity(), context.context_generation_) or {
+	sync.sync_handle(context.identity(), context.context_generation_) or {
 		context.set_error(invalid_operation)
 		return
 	}
 	context.native.dispatch('wait_sync', sync.object.handle_, flags, i64(timeout))
-	context.native.native_wait_sync(handle, flags, timeout)
+	context.native.native_wait_sync(sync.native_handle_, flags, timeout)
 }
 
 pub fn (mut context WebGLRenderingContext) delete_sync(mut sync ?&WebGLSync) {
@@ -255,7 +255,7 @@ pub fn (mut context WebGLRenderingContext) delete_sync(mut sync ?&WebGLSync) {
 		}
 		handle := value.object.bookkeeping_id()
 		context.syncs.delete(handle)
-		context.native.native_delete_sync(handle_result.value)
+		context.native.native_delete_sync(value.native_handle_)
 		context.native.dispatch('delete_sync', handle)
 	}
 }
