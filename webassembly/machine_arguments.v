@@ -39,6 +39,12 @@ pub fn (mut arguments BinaryMachineArguments) at(index usize) &BinaryMachineValu
 	return unsafe { arguments.data() + index }
 }
 
+// HostFunction receives the source Span<Value>: borrow the actual inline or
+// outline slots, preserving size_t length without a V array copy or header.
+pub fn (mut arguments BinaryMachineArguments) span() BinaryMachineValueSpan {
+	return BinaryMachineValueSpan{ data: arguments.data(), size: arguments.size_ }
+}
+
 pub fn (mut arguments BinaryMachineArguments) ensure_capacity(needed usize) {
 	if arguments.capacity_ >= needed { return }
 	if needed > ~usize(0) / usize(sizeof(BinaryMachineValue)) {

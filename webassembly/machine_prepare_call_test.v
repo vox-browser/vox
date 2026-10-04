@@ -65,9 +65,9 @@ fn test_source_prepare_host_preserves_owning_record_arguments_and_state_and_miss
 	mut store := BinaryMachineStore.create()
 	mut configuration := BinaryMachineConfiguration.create(mut store)
 	defer { configuration.destroy() }
-	callback := fn (mut current BinaryMachineConfiguration, values []BinaryMachineValue) BinaryMachineResult {
-		current.regs[0] = values[0]
-		return BinaryMachineResult.from_values([values[0]])
+	callback := fn (mut current BinaryMachineConfiguration, values BinaryMachineValueSpan) BinaryMachineResult {
+		current.regs[0] = *values.at(0)
+		return BinaryMachineResult.from_values([*values.at(0)])
 	}
 	address := store.allocate_host_function(BinaryMachineHostFunction.create(callback, BinaryMachineFunctionType{}, 'actual'))?
 	mut arguments := BinaryMachineArguments.from_values([BinaryMachineValue.from_i32(41)])

@@ -1,6 +1,6 @@
 module webassembly
 
-fn source_compiled_table_host(mut _ BinaryMachineConfiguration, _ []BinaryMachineValue) BinaryMachineResult {
+fn source_compiled_table_host(mut _ BinaryMachineConfiguration, _ BinaryMachineValueSpan) BinaryMachineResult {
 	return BinaryMachineResult.from_values([])
 }
 

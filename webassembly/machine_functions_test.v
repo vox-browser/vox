@@ -44,9 +44,9 @@ fn test_machine_function_store_retains_actual_type_module_code_and_indexed_addre
 
 fn test_machine_host_functions_intern_actual_types_preserve_supplied_type_and_invoke_stored_callable() {
 	type_ := BinaryMachineFunctionType{ parameters: [BinaryValueType{ kind: .i32 }], results: [BinaryValueType{ kind: .i64 }] }
-	callable := fn (mut configuration BinaryMachineConfiguration, arguments []BinaryMachineValue) BinaryMachineResult {
-		configuration.regs[0] = arguments[0]
-		return BinaryMachineResult.from_values([BinaryMachineValue.from_i64(i64(arguments[0].to_i32()))])
+	callable := fn (mut configuration BinaryMachineConfiguration, arguments BinaryMachineValueSpan) BinaryMachineResult {
+		configuration.regs[0] = *arguments.at(0)
+		return BinaryMachineResult.from_values([BinaryMachineValue.from_i64(i64(arguments.at(0).to_i32()))])
 	}
 	mut store := BinaryMachineStore.create()
 	first := store.allocate_host_function(BinaryMachineHostFunction.create(callable, type_, '0'))?
@@ -72,7 +72,8 @@ fn test_machine_host_functions_intern_actual_types_preserve_supplied_type_and_in
 		}
 		mut configuration := BinaryMachineConfiguration.create(mut store)
 		defer { configuration.destroy() }
-		mut result := first_entry.function()(mut configuration, [BinaryMachineValue.from_i32(-17)])
+		mut supplied := BinaryMachineArguments.from_values([BinaryMachineValue.from_i32(-17)])
+		mut result := first_entry.invoke(mut configuration, supplied.span())
 		assert !result.is_trap() && result.values().values[0].to_i64() == -17
 		assert configuration.regs[0].to_i32() == -17
 	}
@@ -85,7 +86,7 @@ fn test_machine_host_functions_intern_actual_types_preserve_supplied_type_and_in
 
 fn test_machine_function_name_uses_module_function_order_including_host_imports() {
 	mut store := BinaryMachineStore.create()
-	callable := fn (mut _ BinaryMachineConfiguration, _ []BinaryMachineValue) BinaryMachineResult {
+	callable := fn (mut _ BinaryMachineConfiguration, _ BinaryMachineValueSpan) BinaryMachineResult {
 		return BinaryMachineResult.from_values([])
 	}
 	// Unrelated functions already occupy this owning Store.

@@ -20,7 +20,7 @@ fn test_source_linker_reads_actual_binary_tag_order_and_retains_real_store_addre
 	mut memory_instance := store.get_memory(memory)?
 	defer { memory_instance.destroy() }
 	tag := store.allocate_tag(BinaryMachineFunctionType{}, module_.canonical_types[0], 0)?
-	callable := fn (mut _ BinaryMachineConfiguration, _ []BinaryMachineValue) BinaryMachineResult {
+	callable := fn (mut _ BinaryMachineConfiguration, _ BinaryMachineValueSpan) BinaryMachineResult {
 		return BinaryMachineResult.from_values([])
 	}
 	_ := store.allocate_host_function(BinaryMachineHostFunction.create(callable, BinaryMachineFunctionType{}, 'unrelated'))?

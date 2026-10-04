@@ -8,7 +8,7 @@ import strconv
 
 // The host callable receives the actual source-owned Configuration record.
 // This is the stored callable; instruction execution remains a separate slice.
-pub type BinaryMachineHostCallable = fn (mut BinaryMachineConfiguration, []BinaryMachineValue) BinaryMachineResult
+pub type BinaryMachineHostCallable = fn (mut BinaryMachineConfiguration, BinaryMachineValueSpan) BinaryMachineResult
 
 pub struct BinaryMachineWasmFunction {
 	type_            BinaryMachineFunctionType
@@ -69,8 +69,10 @@ pub fn BinaryMachineHostFunction.create(function BinaryMachineHostCallable, type
 	return BinaryMachineHostFunction{ function_: function, type_: type_, name_: name }
 }
 
-pub fn (function &BinaryMachineHostFunction) function() BinaryMachineHostCallable {
-	return function.function_
+// Source function() borrows AK::Function by reference. Invoke the retained
+// field directly: returning a V closure as a temporary transfers its lifetime.
+pub fn (function &BinaryMachineHostFunction) invoke(mut configuration BinaryMachineConfiguration, arguments BinaryMachineValueSpan) BinaryMachineResult {
+	return function.function_(mut configuration, arguments)
 }
 
 pub fn (function &BinaryMachineHostFunction) type_() BinaryMachineFunctionType {
