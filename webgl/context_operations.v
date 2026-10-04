@@ -1164,25 +1164,13 @@ pub fn (mut context WebGLRenderingContext) stencil_op_separate(face GLenum, fail
 }
 
 pub fn (mut context WebGLRenderingContext) tex_parameteri(target GLenum, pname GLenum, parameter int) {
-	handle := context.bound_textures[target] or {
-		context.set_error(invalid_operation)
-		return
-	}
-	mut texture := context.textures[handle] or { return }
-	texture.parameters_i_[pname] = parameter
-	context.command('tex_parameteri', target, pname, parameter)
+	context.native.make_current()
 	C.vox_gl_tex_parameteri(target, pname, parameter)
 	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) tex_parameterf(target GLenum, pname GLenum, parameter f32) {
-	handle := context.bound_textures[target] or {
-		context.set_error(invalid_operation)
-		return
-	}
-	mut texture := context.textures[handle] or { return }
-	texture.parameters_f_[pname] = parameter
-	context.command('tex_parameterf', target, pname, i64(parameter))
+	context.native.make_current()
 	C.vox_gl_tex_parameterf(target, pname, parameter)
 	context.native.collect_native_error()
 }
