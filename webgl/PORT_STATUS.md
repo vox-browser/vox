@@ -162,6 +162,48 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+getUniformLocation now suppresses its generated synchronous driver call after
+loss and preserves the exact Source scalar default and fresh owned record.
+GLFunctions.json:2576-2590 identifies a GLint sync return; generated proxy
+calls send_sync_call, then returns GLint{} when is_lost. ProxyBase.cpp:168-176
+does not send while lost. Impl.cpp:2018-2023 tests only location == -1, so that
+generated zero produces a new actual parent-program location record even for
+missing/reserved names after loss. V guards only the C query and chooses zero
+on the lost branch, then runs that existing exact null gate/fresh constructor.
+The read-only generated sync witness is
+`Build/audit-fixes/source-uniform-location-generated-boundary.txt`, SHA-256
+`5e7d412496bb517eb5d4e31f7999dd873b9f2ab0da9c09c64d1721cda21e55e7`.
+This matches the pinned upstream boundary; null or -1 would invent a loss rule.
+
+The genuine pre-fix EGL probe queried Other's coinciding native program and
+returned its actual positive location 1 through lost Owner, retained in
+source-uniform-location-unfixed-probe_test.v and
+source-uniform-location-unfixed-probe-gc-none.log. New two-version typed/public
+cases use independently queried active locations and actual uniform values in
+Other's compiled/bound program. Original and owned SourceID2/native0 programs
+now yield different records/public wrappers storing zero for active, missing
+and reserved names, with the actual parent retained. Existing context-identity
+relevant-global adaptation continues through that actual parent. Deleting
+that parent still leaves earlier location records retaining its pointer and
+exact optional-pointer handle validation. Foreign/deleted program gates and
+public arity/nonnullable/forged-brand/Symbol errors still return before the
+sync/factory path; name author conversion still executes before the body.
+These records consume compact host wrapper IDs and do not consume Source proxy
+object IDs: the next generated owned program remains SourceID3/native0.
+
+Two typed files pass in
+`Build/audit-fixes/source-uniform-location-lost-native-gc-none.log`; two public
+files pass in
+`Build/audit-fixes/source-uniform-location-lost-public-gc-none.log`, with GC
+disabled and explicit private paths, including live/CPU-order/driver-location
+neighbors. Other's actual current binding, viewport, linked/live/attachment
+state, uniform values and pending INVALID_ENUM remain intact, with no extra
+zero-name native error; context-loss reporting stays one-shot. This is only
+the Source getter/default/record boundary, not a new uniform-read algorithm.
+Other getter and uniform-setter lost outputs, retained getter owner order,
+other families, full remote transport and GC/WrapperWorld remain separate.
+Historical full-sweep and canonical bundle evidence are unchanged.
+
 getUniformLocation now preserves its Source owned-program handle gate before
 actual native owner selection, with the exact location == -1 null-return gate.
 Impl.cpp:2003-2023 has an empty Proxy make_current prefix, validates the handle,
@@ -195,7 +237,7 @@ Both public files pass unchanged in
 `Build/audit-fixes/source-uniform-location-owner-public-gc-none.log`, with GC
 disabled and explicit private paths, including existing fresh location/link
 neighbors. No historical owner assertion required migration. Generated lost
-scalar/default and fresh location construction are a separate reviewed slice;
+scalar/default and fresh location construction are separately reviewed above;
 retained getter order, other families, full remote transport and GC/WrapperWorld
 remain boundaries. Frozen full-sweep and canonical bundle evidence are unchanged.
 
