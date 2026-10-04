@@ -70,74 +70,23 @@ pub fn (base &HTMLBaseElementModel) frozen_base_url() dom.URL {
 
 pub fn html_base_element_set_the_frozen_base_url(base &dom.HTMLBaseElement,
 	old_base_url dom.URL) {
-	element := unsafe { &dom.Element(base) }
-	document := element.document()
-	fallback := document.fallback_base_url()
-	href := element.get_attribute_value('href')
-	frozen := dom.dom_url_parse(href, fallback, document.encoding_or_default()) or {
-		mut mutable_base := unsafe { &dom.HTMLBaseElement(base) }
-		mutable_base.frozen_base_url_ = fallback
-		mutable_base.frozen_base_url_initialized_ = true
-		return
-	}
-	if frozen.scheme() in ['data', 'javascript'] {
-		mut mutable_base := unsafe { &dom.HTMLBaseElement(base) }
-		mutable_base.frozen_base_url_ = fallback
-		mutable_base.frozen_base_url_initialized_ = true
-		return
-	}
 	mut mutable_base := unsafe { &dom.HTMLBaseElement(base) }
-	mutable_base.frozen_base_url_ = frozen
-	mutable_base.frozen_base_url_initialized_ = true
-	mut mutable_document := unsafe { &dom.Document(document) }
-	mutable_document.respond_to_base_url_changes(document.url, old_base_url)
+	mutable_base.set_the_frozen_base_url(old_base_url)
 }
 
 pub fn html_base_element_inserted(base &dom.HTMLBaseElement) {
-	mut element := unsafe { &dom.Element(base) }
-	element.inserted()
-	mut document := unsafe { &dom.Document(element.document()) }
-	old_base_url := document.base_url()
-	document.update_base_element()
-	if first := document.first_base_element_with_href_in_tree_order() {
-		if first == base {
-			html_base_element_set_the_frozen_base_url(base, old_base_url)
-		}
-	}
+	mut mutable_base := unsafe { &dom.HTMLBaseElement(base) }
+	mutable_base.inserted()
 }
 
 pub fn html_base_element_removed_from(base &dom.HTMLBaseElement, old_parent ?&dom.Node, old_root &dom.Node) {
-	mut element := unsafe { &dom.Element(base) }
-	element.removed_from(old_parent, old_root)
-	mut document := unsafe { &dom.Document(element.document()) }
-	old_first := document.first_base_element_with_href_in_tree_order()
-	old_base_url := document.base_url()
-	document.update_base_element()
-	if first := document.first_base_element_with_href_in_tree_order() {
-		if old := old_first {
-			if first != old {
-				html_base_element_set_the_frozen_base_url(first, old_base_url)
-			}
-		} else {
-			html_base_element_set_the_frozen_base_url(first, old_base_url)
-		}
-	}
+	mut mutable_base := unsafe { &dom.HTMLBaseElement(base) }
+	mutable_base.removed_from_with_context(.yes, old_parent, old_root)
 }
 
 pub fn html_base_element_attribute_changed(base &dom.HTMLBaseElement, name string, old_value ?string, value ?string, namespace_ ?string) {
-	mut element := unsafe { &dom.Element(base) }
-	element.attribute_changed(name, old_value, value, namespace_)
-	if name != 'href' {
-		return
-	}
-	mut document := unsafe { &dom.Document(element.document()) }
-	old_base_url := document.base_url()
-	document.update_base_element()
-	if first := document.first_base_element_with_href_in_tree_order() {
-		if first == base {
-			html_base_element_set_the_frozen_base_url(base, old_base_url)
-		}
-	}
+	mut mutable_base := unsafe { &dom.HTMLBaseElement(base) }
+	mutable_base.attribute_changed(name, old_value, value, namespace_)
 }
 
 pub fn html_base_element_href(base &dom.HTMLBaseElement) string {

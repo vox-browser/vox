@@ -3302,6 +3302,11 @@ pub fn (mut n Node) inserted() {
 		n.is_connected_ = parent.is_connected()
 	}
 	if element := n.as_element() {
+		if n.is_html_base_element() {
+			mut base := unsafe { &HTMLBaseElement(element) }
+			base.inserted()
+			return
+		}
 		mut mutable_element := unsafe { &Element(element) }
 		mutable_element.inserted()
 		return
@@ -3323,6 +3328,11 @@ pub fn (mut n Node) removed_from(old_parent ?&Node, old_root &Node) {
 pub fn (mut n Node) removed_from_with_context(is_subtree_root NodeIsSubtreeRoot, old_ancestor ?&Node, old_root &Node) {
 	n.is_connected_ = false
 	if element := n.as_element() {
+		if n.is_html_base_element() {
+			mut base := unsafe { &HTMLBaseElement(element) }
+			base.removed_from_with_context(is_subtree_root, old_ancestor, old_root)
+			return
+		}
 		mut mutable_element := unsafe { &Element(element) }
 		mutable_element.removed_from_with_context(is_subtree_root, old_ancestor, old_root)
 		return
