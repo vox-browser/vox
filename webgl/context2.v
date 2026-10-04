@@ -234,7 +234,6 @@ pub fn (mut context WebGLRenderingContext) delete_sampler(mut sampler ?&WebGLSam
 pub fn (mut context WebGLRenderingContext) fence_sync(condition GLenum, flags GLenum) ?&WebGLSync {
 	if !context.require_webgl2() { return none }
 	native_handle := context.native.native_fence_sync(condition, flags)
-	if native_handle == unsafe { nil } { return none }
 	handle := context.allocate_handle()
 	sync := &WebGLSync{
 		object: new_object(context.identity(), context.context_generation_, handle)

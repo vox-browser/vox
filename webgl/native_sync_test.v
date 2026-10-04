@@ -27,9 +27,13 @@ fn test_webgl_sync_wait_and_queries_use_actual_angle_gpu_results() {
 
 fn test_webgl_sync_errors_come_from_native_gl_and_context_ownership() {
 	mut context := WebGLRenderingContext.new(.webgl2, WebGLContextAttributes{}, [])
-	assert context.fence_sync(sync_gpu_commands_complete, 1) == none
+	invalid_flags := context.fence_sync(sync_gpu_commands_complete, 1) or { panic('source sync record') }
+	assert invalid_flags.native_handle_ == unsafe { nil }
+	assert context.owns(&invalid_flags.object)
 	assert context.get_error() == invalid_value
-	assert context.fence_sync(0, 0) == none
+	invalid_condition := context.fence_sync(0, 0) or { panic('source sync record') }
+	assert invalid_condition.native_handle_ == unsafe { nil }
+	assert context.owns(&invalid_condition.object)
 	assert context.get_error() == invalid_enum
 	mut sync := context.fence_sync(sync_gpu_commands_complete, 0) or { panic('native fence failed') }
 	assert context.client_wait_sync(mut sync, 2, 0) == wait_failed
