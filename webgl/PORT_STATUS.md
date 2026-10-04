@@ -516,8 +516,8 @@ Foreign-parent rejection selects the owner before returning. Public wrong-brand
 conversion precedes numeric hooks, and all scalar numeric hooks finish before
 body parent validation. The source null-location behavior can update native
 location zero; this preserves the pin rather than supplying a specification
-correction. Vector/matrix overload ordering and transpose forwarding remain
-separate source slices.
+correction. The following slices complete vector/matrix owner ordering and
+matrix transpose forwarding.
 
 The four WebGL2 unsigned scalar setters likewise follow
 `WebGL2RenderingContextImpl.cpp:280-322`, using the source scalar owner/optional
@@ -550,8 +550,28 @@ cases passed with GC disabled in `source-vector-uniform-owner-gc-none.log`
 conversion cases passed in `source-vector-uniform-owner-public-gc-none.log`
 (three files), covering all 12 applicable vector names, parent-before-span/size
 errors, null-before-offset returns and an IDL numeric hook failure that leaves
-the previously current driver untouched. Typed matrix owner/transpose behavior
-remains a separate source slice.
+the previously current driver untouched. The following matrix slice completes
+the typed owner prelude and native transpose forwarding.
+
+All nine matrix uniform bodies now preserve owner selection before
+null/parent/list-size returns and forward the caller's transpose flag to the
+matching glUniformMatrix entry point. The invented early transpose rejection
+and native ABI's hardcoded GL_FALSE were removed, following
+`WebGLRenderingContextOverloads.cpp:364-416`,
+`WebGL2RenderingContextOverloads.cpp:358-410`, and
+`WebGL2RenderingContextImpl.cpp:388-494`. The existing shared typed adapter keeps
+its nonsquare WebGL2 gate; public WebGL1 retains only its three square methods.
+Native source matrix, migrated legacy entry-point and real draw files passed
+with GC disabled in `source-matrix-uniform-gc-none.log` (three files). Actual
+public matrix and source-span/rendering cases passed in
+`source-matrix-uniform-public-gc-none.log` (two files). Both versions cover every
+applicable shape, genuine false-flag uploads, true-flag driver results after
+resetting the native values, and competing transpose/unbound-program errors
+with the source program pointer retained. Public null/foreign records precede
+source span/size errors. The old wrong-type/true fixture now compares the actual
+driver error instead of assuming an invented transpose priority. No matrix
+read/transposition algorithm is supplied by the translation; the actual driver
+owns execution and the source getter retains its separate upstream FIXME.
 
 Upstream
 WebGL2 declarations below are explicitly `[FIXME]` at pinned commit
