@@ -137,6 +137,27 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+getAttribLocation now preserves the handle-error return from pinned
+WebGLRenderingContextImpl.cpp:891-904 before actual native selection. Foreign
+or invalidated program handles report INVALID_OPERATION and return -1 while
+the other driver remains current. Owned handles reach the existing original
+glGetAttribLocation call with the null-terminated name; synchronous dispatch
+at GLFunctions.json:1935 and the actual Host receiver select its owner. No
+name/index validation or query result cache is introduced. Both public classes
+keep the Source required program plus DOMString conversions before body entry.
+
+Both-version native witnesses compare real unlinked-program results/errors,
+successful/missing/reserved and embedded-NUL names, early foreign/deleted
+handles and native-before-Source pending errors. Public tests verify linked
+attribute results, the original C-string embedded-NUL boundary, distinct early
+and driver owners, and DOMString conversion/author throws before the program
+handle check. The two native attribute-location/active-info and corresponding
+two public files passed with GC disabled. Logs are
+`Build/audit-fixes/source-attrib-location-owner-gc-none.log` and
+`Build/audit-fixes/source-attrib-location-owner-public/` in the second private
+worktree. Other resource mutation/diagnostic handle gates remain separate
+Source scopes; this does not claim complete string binding or remote parity.
+
 getActiveAttrib/getActiveUniform now preserve the actual Source handle-error
 boundary from pinned WebGLRenderingContextImpl.cpp:825-865. Foreign or
 invalidated program handles return null/INVALID_OPERATION before selecting a
@@ -156,8 +177,8 @@ entry and keep the other driver current on a throw. The two native active-info/
 attached-owner and two public active-info/attached-record files passed with
 GC disabled. Logs are `Build/audit-fixes/source-active-info-owner-gc-none.log`
 and `Build/audit-fixes/source-active-info-owner-public/` in the second private
-worktree. Other program/shader handle gates and getAttribLocation remain
-separate Source slices; no general prefix rewrite is claimed.
+worktree. getAttribLocation is verified above; other program/shader handle gates
+remain separate Source slices and no general prefix rewrite is claimed.
 
 getAttachedShaders now preserves the complete absence of a driver operation
 in pinned WebGLRenderingContextImpl.cpp:867-889. After validating only the
