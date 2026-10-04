@@ -60,10 +60,12 @@ also passed during the initial GC-none run.
 
 This completes the actual native `Window.find` exposure missing from DN-18; it
 does not complete the Window/WindowProxy binding graph. The compact bridge
-places the method on its actual global facade rather than a complete generated
-Window prototype, and its JavaScript `getSelection()` facade does not yet read
-back the actual Range selected by the native search. The actual document's
-selection and rendered geometry are updated correctly and checked directly.
+places the method on its actual global facade, matching the Source
+`Meta/Generators/libweb_bindings/global_mixins.py:110–121` regular-operation
+initializer. The complete generated WindowPrototype/WindowProxy graph remains
+incomplete. Its JavaScript `getSelection()` facade also does not yet read back the
+actual Range selected by the native search. The actual document's selection and
+rendered geometry are updated correctly and checked directly.
 
 DOMString transport still uses the repository's UTF-8 compatibility strings;
 the supplementary-character case is covered, but full upstream UTF-16 storage,
