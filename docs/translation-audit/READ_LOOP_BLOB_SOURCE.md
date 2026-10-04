@@ -262,3 +262,31 @@ Runtime before finalizing the actual document, and both GC modes pass in
 performed separately by the canonical integration owner. Native Worker
 ReadableStream construction and the XHR response facade replacement remain
 separate work at this checkpoint.
+
+The subsequent XHR native Blob bridge replaces the frozen response facade with
+the actual immutable record created and cached by `XMLHttpRequest::response()`
+(`XMLHttpRequest.cpp:269-294`). Blob bytes, size, type and read results no longer
+cross the JSON carrier, and the Blob pointer/key lookup map and synchronous
+Promise.resolve read facade are removed. The response uses the actual BlobHost
+wrapper and original prototype; repeated reads retain that wrapper identity.
+Source Blob methods, FileReading tasks and dynamic primary clone payloads now
+apply to these actual XHR-produced records too.
+
+`send()` recognizes that same actual Blob owner table before reading any
+author-visible metadata and delegates to the existing typed `send_blob` body.
+It retains immutable bytes, the Blob Content-Type, author header overrides,
+empty type and GET/HEAD body suppression. Forged `__xhrBlobKey` properties do
+not establish Blob identity. The existing typed request transport still uses
+its byte-body carrier; full `Fetch/BodyInit.cpp` Blob stream/source ownership is
+a separate core translation boundary.
+
+The real Curl response fixture checks actual cached record identity, metadata,
+three pending genuine read Promises and owning tasks, direct clone payloads,
+poisoned own getters and re-sending the received Blob after `open()` resets the
+XHR cache. The body fixture checks genuine constructor-produced Blobs, captured
+native operation ownership, forged ordinary values and body/header semantics.
+The new file plus existing XHR host regressions pass **2/2** in both modes in
+`source-xhr-native-blob-{default,gc-none}.log`; the final extended focused file
+passes both modes in `source-xhr-native-blob-{default,gc-none}-final.log`.
+Native Worker ownership, File/FileList native wrappers and the remaining typed
+BodyInit source carrier remain explicit open work.
