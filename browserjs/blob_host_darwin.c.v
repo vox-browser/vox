@@ -150,10 +150,11 @@ fn (mut host BlobHost) promise(promise &webidl.Promise) !voidptr {
 }
 
 const blob_native_prototype_factory = r'(function(operate){
- const define=Object.defineProperty,create=Object.create;
+ const define=Object.defineProperty,create=Object.create,get=Object.getOwnPropertyDescriptor;
  const prototype=create(Object.prototype);
- for(const name of ["size","type"])define(prototype,name,{get:function(){return operate(name,this)},enumerable:true,configurable:true});
- define(prototype,"slice",{value:function slice(){return operate("slice",this,arguments[0],arguments[1],arguments[2])},writable:true,enumerable:true,configurable:true});
+ for(const name of ["size","type"]){const getter=get({get [name](){return operate(name,this)}},name).get;define(prototype,name,{get:getter,enumerable:true,configurable:true})}
+ const slice=({slice(){return operate("slice",this,arguments[0],arguments[1],arguments[2])}}).slice;
+ define(prototype,"slice",{value:slice,writable:true,enumerable:true,configurable:true});
  for(const name of ["stream","text","arrayBuffer","bytes"]){const method=({[name](){return operate(name,this)}})[name];define(prototype,name,{value:method,writable:true,enumerable:true,configurable:true})}
  define(prototype,Symbol.toStringTag,{value:"Blob",configurable:true});
  return prototype;
