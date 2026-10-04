@@ -352,7 +352,7 @@ AllowSharedBufferSource conversion, TransformStream/controller/realm/Promise
 and native interface wrappers are not implemented by this slice.
 
 Source TextDecoder.decode instead calls the same owner's native UTF16
-destination (`TextDecoder.cpp:106–129`); the V TextDecoder still projects its
+destination (`TextDecoder.cpp:71–96`); the V TextDecoder still projects its
 flattened public strings through the UTF8 destination. UTF16 capacity, native
 buffer ownership and destination behavior are explicitly not inferred from
 UTF8 goldens. Its separate Source non-streaming reset-before-error correction
@@ -378,3 +378,72 @@ failures caused by cross-test-only DTO references are retained in
 `source-text-decoder-common-utf8-before-fixture-dto-*.log`; the corrected focused
 file declares its own native JSON observation DTOs. No expected Source result
 was changed. LibJS and native browser bundle/captures are unchanged.
+
+
+## TextDecoder non-streaming reset before errors
+
+Feature `140699036a3d62474347cc3b64a6dccec2f2fe8d` fixes the existing
+TextDecoder model's non-streaming reset order. At the pinned Source revision
+`963d46a829f3e1b79f44dba9d02afb70654300fa`, `TextDecoder.cpp:87–96` keeps the
+owner for streaming calls, but saves the result of a non-streaming
+`to_utf16(..., Flush::Yes)` call, invokes the Common setter and only then maps
+the saved result to output or an exception. This ordering applies to failed
+decoding too. The V model previously returned directly on a decoding error,
+leaving its actual UTF8-selected owner and BOM/variant slots in their old state.
+It now invokes the existing Source setter before returning that error; successful
+non-streaming calls also reset before queue serialization. Streaming errors
+continue to retain the owner. The existing decoding-error message is preserved.
+
+The focused pre-fix regression demonstrates the actual retained ED-prefix
+upper boundary `0x9f` instead of the fresh owner's `0xbf`, in
+`source-text-decoder-reset-before-feature-gc-none-regression.log`. Earlier
+fixture compilation failures caused by selecting a nonexistent Utf16String
+factory are retained separately in the two `before-feature` logs; the corrected
+fixture uses the existing public `utf16_string_from_utf8_without_validation`
+projection on the decoder's valid UTF8 result. No LibJS implementation changed.
+
+Tool `eb77527501ff86ab69a493003ccbd81ea76567f6` invokes the actual pinned
+Rust `textcodec_rust_streaming_decoder_new`,
+`textcodec_rust_streaming_decoder_decode_to_utf16` and free functions, with real
+Box-backed decoder records. Source's C++ wrapper passes its flush flag through
+`StreamingDecoder::to_utf16` (`LibTextCodec/Decoder.cpp:523–526`); the Rust FFI
+uses the real UTF16 maximum-capacity owner, u16 destination and fatal/replacement
+paths (`Rust/src/lib.rs:218–262`). The probe creates a fresh actual owner before
+freeing the old one after each non-streaming attempt, mapping the reviewed C++
+setter order without claiming that its VM/GC class was compiled by this probe.
+It verifies 16 real-owner scenarios, 64 observed calls and eight fatal failures,
+covering retained partial 2/3/4-byte prefixes, ED's restricted continuation
+boundary, remove/preserve BOM, NUL and astral output. Two additional native
+retained-versus-fresh witnesses verify that a failed owner retains a consumed
+BOM while a fresh owner applies its configured BOM handling.
+
+Actual native debug and release checks pass 1/1 each and compare their artifact
+bytes exactly. The checked-in fixture has the same JSON values, with only
+per-record line breaks added. The tool reuses the existing validated Source
+pin, Cargo.lock/archive checks and actual original Rust bridge, with the earlier
+isolated AArch64 default-alloc validity-probe configuration documented above.
+No upstream or package-cache file was modified.
+
+| Artifact | SHA256 |
+| --- | --- |
+| Native `utf16_reset.json` | `58154ba4eab312b1fc61cbe20e26ae765567496bca48871137ccb70d7e023c81` |
+| `encoding/fixtures/text_decoder_utf16_reset.json` | `79df1ea735f95f8dbc5ec79d36514ebdf5e18d1849bd97d1a32daacc7f9188a7` |
+| `source-text-decoder-utf16-reset-final-probe.log` | `260083935755eff9e412532b098699d43797735381b7033e1f6e0c771617e2a9` |
+
+The fixture compares the V public result's logical UTF16 units with those
+native UTF16 observations, and verifies fresh lifecycle/five-slot state after
+every non-streaming result or error. Its second test verifies owner retention
+after a streaming error, followed by explicit flush/reset and fresh BOM handling.
+Focused checks pass 1/1 in both GC modes in
+`source-text-decoder-reset-focused-{default,gc-none}.log`; complete Encoding
+passes 15/15 in both modes in
+`source-text-decoder-reset-full-{default,gc-none}.log`.
+
+This is the actual reset-order correction through the model's existing typed
+input/string boundary. V TextDecoder still uses the proven UTF8 destination;
+the native UTF16 witnesses establish returned logical units and retained/reset
+behavior for these cases, not V UTF16 destination capacity, physical buffer
+ownership or general UTF16/multibyte codec parity. Actual native
+AllowSharedBufferSource conversion, engine allocation/OOM mapping and public
+TextDecoder/TransformStream wrappers remain separate dependencies. No native
+browser bundle build or capture was run privately.
