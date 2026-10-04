@@ -1,6 +1,7 @@
 module html
 
 import dom
+import highresolutiontime
 
 fn select_test_element(node &dom.Node, local_name string) ?&dom.Element {
 	if element := node.as_element() {
@@ -248,6 +249,8 @@ fn select_test_make_document_fully_active(mut document dom.Document) {
 fn test_select_model_options_picker_notifications_and_shadow_tree() {
 	mut document := parse_document('<select><option value="a">Alpha</option><optgroup label="Group"><option selected value="b"> Beta </option></optgroup><hr></select>')
 	select_test_make_document_fully_active(mut document)
+	_ = WindowModel.create_top_level(document, none, 'select-picker-options')!
+	mut native := document.get_window()?
 	select_element := select_test_element(unsafe { &dom.Node(document) }, 'select') or {
 		panic('missing select')
 	}
@@ -280,14 +283,15 @@ fn test_select_model_options_picker_notifications_and_shadow_tree() {
 	assert chevron.get_attribute_value('style').contains('display:block')
 	assert inner.get_attribute_value('style').contains('margin-inline-end:20px')
 
-	model.set_picker_security_state(false, true)
 	mut rejected := false
 	model.show_picker() or {
 		rejected = true
 		assert err.msg().starts_with('NotAllowedError:')
 	}
 	assert rejected
-	model.set_picker_security_state(true, true)
+	native.set_last_activation_timestamp(highresolutiontime.current_high_resolution_time(highresolutiontime.TimeOriginContext{
+		time_origin: document.load_timing_info.navigation_start_time
+	}))
 	model.show_picker()!
 	assert model.is_open_
 	assert model.select_items_.len == 3

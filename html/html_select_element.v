@@ -79,8 +79,6 @@ pub mut:
 	select_items_                     []SelectItem
 	is_open_                          bool
 	user_validity_                    bool
-	has_transient_activation_         bool
-	same_origin_with_top_             bool = true
 	picker_hook_                      ?SelectPickerHook
 mut:
 	options_ ?&HTMLOptionsCollection
@@ -101,11 +99,6 @@ pub fn HTMLSelectElementModel.create(element &dom.HTMLSelectElement) &HTMLSelect
 
 pub fn (mut model HTMLSelectElementModel) set_picker_hook(hook ?SelectPickerHook) {
 	model.picker_hook_ = hook
-}
-
-pub fn (mut model HTMLSelectElementModel) set_picker_security_state(has_transient_activation bool, same_origin_with_top bool) {
-	model.has_transient_activation_ = has_transient_activation
-	model.same_origin_with_top_ = same_origin_with_top
 }
 
 pub fn (mut model HTMLSelectElementModel) options() &HTMLOptionsCollection {
@@ -332,10 +325,13 @@ fn html_select_element_visible_picker_items(select_element &dom.HTMLSelectElemen
 }
 
 pub fn (mut model HTMLSelectElementModel) show_the_picker_if_applicable() {
-	if !model.has_transient_activation_ || !model.is_mutable() {
+	window := picker_relevant_window(select_dom_element(model.element)) or {
+		panic('Source select picker requires a Window global')
+	}
+	if !window.has_transient_activation() || !model.is_mutable() {
 		return
 	}
-	model.has_transient_activation_ = false
+	window.consume_user_activation()
 	model.select_items_ = html_select_element_visible_picker_items(model.element)
 	if hook := model.picker_hook_ {
 		hook(model.select_items_.clone())
@@ -347,10 +343,14 @@ pub fn (mut model HTMLSelectElementModel) show_picker() ! {
 	if !model.is_mutable() {
 		return error('InvalidStateError: element is not mutable')
 	}
-	if !model.same_origin_with_top_ {
+	element := select_dom_element(model.element)
+	if !picker_origin_is_same_as_top_level(element) {
 		return error('SecurityError: cross-origin pickers are not allowed')
 	}
-	if !model.has_transient_activation_ {
+	window := picker_relevant_window(element) or {
+		return error('NotAllowedError: too long since user activation to show picker')
+	}
+	if !window.has_transient_activation() {
 		return error('NotAllowedError: too long since user activation to show picker')
 	}
 	model.show_the_picker_if_applicable()

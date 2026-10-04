@@ -50,7 +50,9 @@ fn test_open_selector_tracks_input_and_select_pickers() {
 	mut select_control := HTMLSelectElementModel.create(unsafe { &dom.HTMLSelectElement(select_element) })
 	assert !css.element_matches_selector(select_element, ':open')
 	assert css.element_matches_selector(select_element, ':closed')
-	select_control.set_picker_security_state(true, true)
+	native.set_last_activation_timestamp(highresolutiontime.current_high_resolution_time(highresolutiontime.TimeOriginContext{
+		time_origin: document.load_timing_info.navigation_start_time
+	}))
 	select_control.show_picker() or { panic(err) }
 	assert select_control.is_open()
 	assert css.element_matches_selector(select_element, ':open')
