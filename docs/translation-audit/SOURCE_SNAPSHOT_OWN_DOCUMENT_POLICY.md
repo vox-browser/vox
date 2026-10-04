@@ -1,9 +1,9 @@
 # SourceSnapshot clones the source Document's own policy container
 
 Upstream reference: Ladybird `963d46a829f3e1b79f44dba9d02afb70654300fa`,
-`Libraries/LibWeb/HTML/SourceSnapshotParams.cpp:18–58`,
+`Libraries/LibWeb/HTML/SourceSnapshotParams.cpp:18–64`,
 `HTML/SourceSnapshotParams.h:18–46`, and
-`HTML/PolicyContainers.cpp:91–112`.
+`HTML/PolicyContainers.cpp:80–100`.
 
 SourceSnapshot reads activation and the fetch client through the source
 Document's relevant Window/settings, but explicitly clones that Document's

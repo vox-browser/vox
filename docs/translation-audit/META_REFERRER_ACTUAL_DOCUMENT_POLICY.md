@@ -57,4 +57,4 @@ SourceSnapshot cloning and Document CSP initialization still require their
 separate own-Document caller corrections for temporary Window reassociation.
 Those callers are not closed by this referrer fix. Meta CSP append intentionally
 uses the relevant settings container, as explicitly required by
-`HTMLMetaElement.cpp:222`; it has a different owner from the referrer write.
+`HTMLMetaElement.cpp:221`; it has a different owner from the referrer write.

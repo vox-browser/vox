@@ -54,7 +54,7 @@ pub fn snapshot_source_snapshot_params(source_document &dom.Document) SourceSnap
 		sandboxing_flags: flags
 		allows_downloading: !flags.contains(.sandboxed_downloads)
 		fetch_client: settings
-		// SourceSnapshotParams.cpp:58 clones this Document's own container;
+		// SourceSnapshotParams.cpp:63 clones this Document's own container;
 		// its relevant Window/settings may currently name another Document.
 		source_policy_container: source_document.policy_container().clone()
 	}

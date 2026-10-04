@@ -298,7 +298,7 @@ fn html_meta_element_update_referrer_policy(meta &dom.HTMLMetaElement) {
 		else { referrer_policy_from_string(content) or { return } }
 	}
 	mut document := unsafe { &dom.Document(element.document()) }
-	// HTMLMetaElement.cpp:110 writes the element's own current Document,
+	// HTMLMetaElement.cpp:109 writes the element's own current Document,
 	// independently of any temporary Window associated-document replacement.
 	mut container := document.policy_container()
 	container.referrer_policy = policy
