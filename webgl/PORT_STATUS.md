@@ -162,6 +162,30 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+The nullable isShader public host call now explicitly invokes the translated
+optional-none method when no host shader record exists. Source Base.idl:134
+accepts WebGLShader?, and Impl.cpp:2195-2196 returns false for null before a
+sync query. The old compatibility compiler instead emitted an enclosing Result
+error for the inline map-or-none argument; an actual host.call([null]) produced
+an empty-message TypeError. The explicit map arm fixes that adapter expression
+without substituting a fabricated Boolean or changing Source logic. Generated
+C now constructs an optional-none value, calls is_shader and returns a successful
+Boolean result. The before/after emitted C is retained privately as
+source-is-shader-public-generated.c and
+source-is-shader-nullable-fixed-generated.c.
+
+The actual native JavaScriptCore two-version nullable case checks null and
+undefined false returns, preserved Other viewport and pending driver error,
+the direct host null request, valid native shader success, and unchanged
+missing-argument/forged-brand TypeErrors. It and the CPU-owner neighbor pass
+with GC disabled and explicit private paths in
+`Build/audit-fixes/source-is-shader-nullable-public-gc-none.log` (two files).
+The earlier public null failure remains historical evidence rather than a
+passing CPU-fixture claim. Other is-object host branches still use the same
+inline optional expression and require separate Source/adapter review; Boolean
+lost sync, remote maps and GC/WrapperWorld also remain independent scopes.
+This is focused compatibility adapter evidence, not a native bundle build.
+
 isShader now keeps Source optional handle gates before actual driver owner
 selection. WebGLRenderingContextImpl.cpp:2191-2208 returns false for null or an
 absent invalidated/generation-stale optional; a foreign-context query returns
@@ -193,8 +217,9 @@ early error result with err:_const_none__ for an absent map entry in the host's
 inline return-sumtype argument expression, before invoking is_shader(None).
 Direct host.call([null]) returned TypeError with an empty message, preserved in
 source-is-shader-owner-public-host-diagnostic-gc-none.log; the initial/diagnostic
-public failures are retained. A separate explicit null host-call adapter repair
-and the generated Boolean lost result remain followups. Other is-object families,
+public failures are retained. The subsequent separate explicit null host-call
+adapter repair is documented above; the generated Boolean lost result remains
+a followup. Other is-object families,
 remote maps, GC/WrapperWorld and current bundle/captures remain independently
 scoped; this is no clean full-sweep or production-bundle claim.
 
