@@ -375,15 +375,26 @@ pub fn (settings &EnvironmentSettingsObject) fetch_request_client_mixed_security
 
 pub fn (settings &EnvironmentSettingsObject) fetch_request_client_csp_global() &csp.GlobalContext {
 	global_url := if document := settings.responsible_document() { document.url } else { settings.environment_.creation_url }
-	target := if document := settings.responsible_document() {
-		unsafe { &dom.EventTarget(document) }
-	} else { settings.global_object_ }
+	global_object := settings.global_object_
+	is_window := settings.global_kind_ == .window
 	loop := settings.responsible_event_loop_
 	return &csp.GlobalContext{
 		url: liburl.parse(global_url.serialize()) or { panic('invalid CSP global URL') }
 		policy_list: fetch_csp_policy_list(settings.policy_container_.csp_list)
-		dispatch_violation_event: fn [target, loop] (event &csp.SecurityPolicyViolationEvent) {
-			queue_a_task(.unspecified, loop, none, fn [target, event] () {
+		dispatch_violation_event: fn [global_object, is_window, loop] (event &csp.SecurityPolicyViolationEvent) {
+			queue_a_task(.unspecified, loop, none, fn [global_object, is_window, event] () {
+				// Violation.cpp:301–305 selects the actual global at execution,
+				// then reads a Window's current associated Document.
+				mut target := global_object
+				if is_window {
+					target = unsafe { nil }
+					if global_object != unsafe { nil } {
+						window := unsafe { &dom.Window(global_object) }
+						if document := window.associated_document() {
+							target = unsafe { &dom.EventTarget(document) }
+						}
+					}
+				}
 				if target != unsafe { nil } {
 					target.dispatch_event(unsafe { &dom.Event(event) })
 				}
