@@ -5,6 +5,27 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/WebGL`
 Reference audit: 2026-09-12
 Latest native focused verification: 2026-10-04
 
+After the Source viewport/scissor, driver-receiver, blend/clear/raster/stencil,
+generic-map and pixel-store slices, plus exceptional-number compatibility
+transport, frozen private snapshot `4ef932b1ba72801a4eeec6102ccd97258552bf92`
+passed all 109 tracked typed WebGL files (131.6 seconds) and all 79 tracked
+public/mixed canvas files (713.0 seconds), with zero failures, GC disabled and
+explicit private module paths. Both exact manifests, snapshot, TSV results,
+sweep logs and individual logs are under
+`Build/audit-fixes/webgl-final-4ef932b1/`. The public manifest includes every
+browserjs/canvas_webgl test plus canvas_context_integration. Both groups checked
+the clean tracked revision before and after execution, and no tracked state
+changed while either ran.
+
+This clean frozen result does not establish unexamined Source parity. The
+read-only genuine inherited-discriminator probe after that snapshot reproduced
+a further numeric adapter defect; it remains in
+`Build/audit-fixes/source-number-discriminator-probe.{v,log}`. Its separately
+reviewed followup is developed and focused-tested in another private worktree,
+so the 109/79 sweep has only the original snapshot's scope. Other non-Source
+vertex/capability mirrors, unexamined entry-point bodies, full Source GC and
+WrapperWorld, remote transport and pinned Source TODOs remain explicit work.
+
 After nullable/bitmap/readback continuation and actual-driver error-retention
 repairs, frozen private snapshot `2355ee46` passed all 101 tracked typed WebGL
 files (132.5 seconds) and all 70 public/mixed canvas files (1006.2 seconds) with
@@ -13,12 +34,13 @@ snapshot, manifests, TSV results and per-file logs are under
 `Build/audit-fixes/webgl-final-2355ee46/`. The public manifest contains every
 browserjs/canvas_webgl test and canvas_context_integration. No tracked state
 changed while either sweep ran. These passes cover the driver repair below;
-they do not establish unexamined source-body parity. A separate read-only
-viewport/scissor probe still observed wrong owner selection on negative sizes
+they do not establish unexamined source-body parity. At that snapshot, a separate read-only
+viewport/scissor probe observed wrong owner selection on negative sizes
 and a native viewport cache retaining rejected dimensions. Its genuine-driver
 source/log are `Build/audit-fixes/source-viewport-scissor-owner-probe.{v,log}`;
-that raster state, the named base error helper, other unused raster caches,
-full GC/WrapperWorld and remote transport remain separate work.
+the subsequently completed Source raster slices below are covered by the
+newer 4ef932b1 sweep. Full GC/WrapperWorld and remote transport remain separate
+work.
 
 After framebuffer/query/sync/actual-record and source draw/canvas callback
 repairs, frozen private snapshot `2ad0138f` passed all 97 tracked typed WebGL
