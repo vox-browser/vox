@@ -432,6 +432,10 @@ static void vox_gl_uniform1i(int location, int x) { glUniform1i(location, x); }
 static void vox_gl_uniform2i(int location, int x, int y) { glUniform2i(location, x, y); }
 static void vox_gl_uniform3i(int location, int x, int y, int z) { glUniform3i(location, x, y, z); }
 static void vox_gl_uniform4i(int location, int x, int y, int z, int w) { glUniform4i(location, x, y, z, w); }
+static void vox_gl_uniform1ui(int location, unsigned x) { glUniform1ui(location, x); }
+static void vox_gl_uniform2ui(int location, unsigned x, unsigned y) { glUniform2ui(location, x, y); }
+static void vox_gl_uniform3ui(int location, unsigned x, unsigned y, unsigned z) { glUniform3ui(location, x, y, z); }
+static void vox_gl_uniform4ui(int location, unsigned x, unsigned y, unsigned z, unsigned w) { glUniform4ui(location, x, y, z, w); }
 static void vox_gl_uniform_floats(int location, int width, int count, float const* data)
 {
     switch (width) {

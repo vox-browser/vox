@@ -7,6 +7,11 @@ import html
 fn public_scalar_uniform_source_driver(index int, zero bool) {
 	floats := if zero { [f32(0), 0, 0, 0]! } else { [f32(0.25), 0.5, 0.75, 1]! }
 	ints := if zero { [0, 0, 0, 0]! } else { [1, 2, 3, 4]! }
+	uints := if zero {
+		[u32(0), 0, 0, 0]!
+	} else {
+		[u32(0xffffffff), 0x80000000, 0x10000001, 0x7fffffff]!
+	}
 	match index {
 		0 { C.vox_gl_uniform1f(0, floats[0]) }
 		1 { C.vox_gl_uniform2f(0, floats[0], floats[1]) }
@@ -16,6 +21,10 @@ fn public_scalar_uniform_source_driver(index int, zero bool) {
 		5 { C.vox_gl_uniform2i(0, ints[0], ints[1]) }
 		6 { C.vox_gl_uniform3i(0, ints[0], ints[1], ints[2]) }
 		7 { C.vox_gl_uniform4i(0, ints[0], ints[1], ints[2], ints[3]) }
+		8 { C.vox_gl_uniform1ui(0, uints[0]) }
+		9 { C.vox_gl_uniform2ui(0, uints[0], uints[1]) }
+		10 { C.vox_gl_uniform3ui(0, uints[0], uints[1], uints[2]) }
+		11 { C.vox_gl_uniform4ui(0, uints[0], uints[1], uints[2], uints[3]) }
 		else { panic('scalar operation') }
 	}
 }
@@ -44,11 +53,13 @@ fn test_public_source_scalar_uniforms_preserve_nullable_zero_owner_and_idl_order
 	runtime.evaluate_host('const __canvases=Object.create(null);function __canvasFor(s){return __canvases[s.bridgeKey]||(__canvases[s.bridgeKey]={state:s});}function __canvasDimension(s,key){return s[key];}function __element(s){return {state:s};}')!
 	runtime.evaluate_host(webgl_bootstrap())!
 	runtime.evaluate_host(r'function __scalarSourceProgram(gl,type,expression){const two=gl instanceof WebGL2RenderingContext,prefix=two?"#version 300 es\n":"",vertex=gl.createShader(gl.VERTEX_SHADER),fragment=gl.createShader(gl.FRAGMENT_SHADER);gl.shaderSource(vertex,prefix+"void main(){gl_Position=vec4(0,0,0,1);}");gl.shaderSource(fragment,prefix+"precision mediump float;uniform "+type+" value;"+(two?"out vec4 color;":"")+"void main(){"+(two?"color":"gl_FragColor")+"="+expression+";}");gl.compileShader(vertex);gl.compileShader(fragment);const program=gl.createProgram();gl.attachShader(program,vertex);gl.attachShader(program,fragment);gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw gl.getProgramInfoLog(program);return {program,location:gl.getUniformLocation(program,"value")};}')!
-	types := ['float', 'vec2', 'vec3', 'vec4', 'int', 'ivec2', 'ivec3', 'ivec4']
+	types := ['float', 'vec2', 'vec3', 'vec4', 'int', 'ivec2', 'ivec3', 'ivec4', 'uint', 'uvec2',
+		'uvec3', 'uvec4']
 	expressions := ['vec4(value)', 'vec4(value,0.0,1.0)', 'vec4(value,1.0)', 'value',
+		'vec4(float(value))', 'vec4(vec2(value),0.0,1.0)', 'vec4(vec3(value),1.0)', 'vec4(value)',
 		'vec4(float(value))', 'vec4(vec2(value),0.0,1.0)', 'vec4(vec3(value),1.0)', 'vec4(value)']
 	methods := ['uniform1f', 'uniform2f', 'uniform3f', 'uniform4f', 'uniform1i', 'uniform2i',
-		'uniform3i', 'uniform4i']
+		'uniform3i', 'uniform4i', 'uniform1ui', 'uniform2ui', 'uniform3ui', 'uniform4ui']
 	for kind in ['webgl', 'webgl2'] {
 		key := '__created_scalar_source_${kind}'
 		other_key := '__created_scalar_other_${kind}'
@@ -56,8 +67,15 @@ fn test_public_source_scalar_uniforms_preserve_nullable_zero_owner_and_idl_order
 		mut context := host.contexts[key] or { panic('scalar owner context') }
 		mut other := host.contexts[other_key] or { panic('other scalar context') }
 		for index, method in methods {
+			if kind == 'webgl' && index >= 8 { continue }
 			width := index % 4 + 1
-			values := if index < 4 { ['0.25', '0.5', '0.75', '1'] } else { ['1', '2', '3', '4'] }
+			values := if index < 4 {
+				['0.25', '0.5', '0.75', '1']
+			} else if index < 8 {
+				['1', '2', '3', '4']
+			} else {
+				['4294967295', '2147483648', '268435457', '2147483647']
+			}
 			args := values[..width].join(',')
 			runtime.evaluate_host('globalThis.scalarOwned=__scalarSourceProgram(scalarOwner,"${types[index]}","${expressions[index]}");globalThis.scalarForeign=__scalarSourceProgram(scalarOther,"${types[index]}","${expressions[index]}");scalarOwner.useProgram(scalarOwned.program);')!
 			context.native.make_current()
@@ -76,6 +94,12 @@ fn test_public_source_scalar_uniforms_preserve_nullable_zero_owner_and_idl_order
 			public_scalar_uniform_source_owner()
 			assert runtime.evaluate_host('scalarOwner.getError()')! == expected_error.str()
 			assert public_scalar_uniform_source_query(u32(native_program), width) == expected_values
+			if index >= 8 {
+				mut actual_uints := [u32(0), 0, 0, 0]!
+				C.vox_gl_get_uniform_uints(u32(native_program), 0, &actual_uints[0])
+				expected_uints := [u32(0xffffffff), 0x80000000, 0x10000001, 0x7fffffff]!
+				assert actual_uints[..width] == expected_uints[..width]
+			}
 			other.native.make_current()
 			runtime.evaluate_host('scalarOwner.${method}(scalarForeign.location,${args});')!
 			public_scalar_uniform_source_owner()

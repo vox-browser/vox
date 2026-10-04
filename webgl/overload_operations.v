@@ -510,19 +510,31 @@ fn uints_to_floats(values []u32) []f32 {
 }
 
 pub fn (mut context WebGLRenderingContext) uniform1ui(location ?&WebGLUniformLocation, x u32) {
- context.uniform_uints(location, [x], 1)
+	handle := context.scalar_uniform_location(location) or { return }
+	if !context.require_webgl2() { return }
+	C.vox_gl_uniform1ui(int(handle), x)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) uniform2ui(location ?&WebGLUniformLocation, x u32, y u32) {
- context.uniform_uints(location, [x, y], 2)
+	handle := context.scalar_uniform_location(location) or { return }
+	if !context.require_webgl2() { return }
+	C.vox_gl_uniform2ui(int(handle), x, y)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) uniform3ui(location ?&WebGLUniformLocation, x u32, y u32, z u32) {
- context.uniform_uints(location, [x, y, z], 3)
+	handle := context.scalar_uniform_location(location) or { return }
+	if !context.require_webgl2() { return }
+	C.vox_gl_uniform3ui(int(handle), x, y, z)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) uniform4ui(location ?&WebGLUniformLocation, x u32, y u32, z u32, w u32) {
- context.uniform_uints(location, [x, y, z, w], 4)
+	handle := context.scalar_uniform_location(location) or { return }
+	if !context.require_webgl2() { return }
+	C.vox_gl_uniform4ui(int(handle), x, y, z, w)
+	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) uniform1uiv(location ?&WebGLUniformLocation, values []u32) {

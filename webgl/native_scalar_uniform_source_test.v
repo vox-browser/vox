@@ -3,8 +3,10 @@
 module webgl
 
 fn scalar_uniform_source_program(mut context WebGLRenderingContext, index int) (&WebGLProgram, &WebGLUniformLocation) {
-	types := ['float', 'vec2', 'vec3', 'vec4', 'int', 'ivec2', 'ivec3', 'ivec4']
+	types := ['float', 'vec2', 'vec3', 'vec4', 'int', 'ivec2', 'ivec3', 'ivec4', 'uint', 'uvec2',
+		'uvec3', 'uvec4']
 	expressions := ['vec4(value)', 'vec4(value,0.0,1.0)', 'vec4(value,1.0)', 'value',
+		'vec4(float(value))', 'vec4(vec2(value),0.0,1.0)', 'vec4(vec3(value),1.0)', 'vec4(value)',
 		'vec4(float(value))', 'vec4(vec2(value),0.0,1.0)', 'vec4(vec3(value),1.0)', 'vec4(value)']
 	prefix := if context.version == .webgl2 { '#version 300 es\n' } else { '' }
 	mut vertex := context.create_shader(vertex_shader) or { panic('vertex') }
@@ -28,6 +30,11 @@ fn scalar_uniform_source_program(mut context WebGLRenderingContext, index int) (
 fn scalar_uniform_source_driver(index int, zero bool) {
 	floats := if zero { [f32(0), 0, 0, 0]! } else { [f32(0.25), 0.5, 0.75, 1]! }
 	ints := if zero { [0, 0, 0, 0]! } else { [1, 2, 3, 4]! }
+	uints := if zero {
+		[u32(0), 0, 0, 0]!
+	} else {
+		[u32(0xffffffff), 0x80000000, 0x10000001, 0x7fffffff]!
+	}
 	match index {
 		0 { C.vox_gl_uniform1f(0, floats[0]) }
 		1 { C.vox_gl_uniform2f(0, floats[0], floats[1]) }
@@ -37,6 +44,10 @@ fn scalar_uniform_source_driver(index int, zero bool) {
 		5 { C.vox_gl_uniform2i(0, ints[0], ints[1]) }
 		6 { C.vox_gl_uniform3i(0, ints[0], ints[1], ints[2]) }
 		7 { C.vox_gl_uniform4i(0, ints[0], ints[1], ints[2], ints[3]) }
+		8 { C.vox_gl_uniform1ui(0, uints[0]) }
+		9 { C.vox_gl_uniform2ui(0, uints[0], uints[1]) }
+		10 { C.vox_gl_uniform3ui(0, uints[0], uints[1], uints[2]) }
+		11 { C.vox_gl_uniform4ui(0, uints[0], uints[1], uints[2], uints[3]) }
 		else { panic('scalar operation') }
 	}
 }
@@ -44,6 +55,11 @@ fn scalar_uniform_source_driver(index int, zero bool) {
 fn scalar_uniform_source_call(mut context WebGLRenderingContext, index int, location ?&WebGLUniformLocation, zero bool) {
 	floats := if zero { [f32(0), 0, 0, 0]! } else { [f32(0.25), 0.5, 0.75, 1]! }
 	ints := if zero { [0, 0, 0, 0]! } else { [1, 2, 3, 4]! }
+	uints := if zero {
+		[u32(0), 0, 0, 0]!
+	} else {
+		[u32(0xffffffff), 0x80000000, 0x10000001, 0x7fffffff]!
+	}
 	match index {
 		0 { context.uniform1f(location, floats[0]) }
 		1 { context.uniform2f(location, floats[0], floats[1]) }
@@ -53,6 +69,10 @@ fn scalar_uniform_source_call(mut context WebGLRenderingContext, index int, loca
 		5 { context.uniform2i(location, ints[0], ints[1]) }
 		6 { context.uniform3i(location, ints[0], ints[1], ints[2]) }
 		7 { context.uniform4i(location, ints[0], ints[1], ints[2], ints[3]) }
+		8 { context.uniform1ui(location, uints[0]) }
+		9 { context.uniform2ui(location, uints[0], uints[1]) }
+		10 { context.uniform3ui(location, uints[0], uints[1], uints[2]) }
+		11 { context.uniform4ui(location, uints[0], uints[1], uints[2], uints[3]) }
 		else { panic('scalar operation') }
 	}
 }
@@ -75,7 +95,8 @@ fn test_source_scalar_uniforms_use_owner_nullable_zero_and_exact_driver_operatio
 		mut other := WebGLRenderingContext.new(version, WebGLContextAttributes{}, [])
 		context.viewport(1, 2, 3, 4)
 		other.viewport(9, 10, 11, 12)
-		for index in 0 .. 8 {
+		operation_count := if version == .webgl2 { 12 } else { 8 }
+		for index in 0 .. operation_count {
 			program, location := scalar_uniform_source_program(mut context, index)
 			_, foreign_location := scalar_uniform_source_program(mut other, index)
 			context.use_program(program)
@@ -92,6 +113,12 @@ fn test_source_scalar_uniforms_use_owner_nullable_zero_and_exact_driver_operatio
 			actual_error := context.get_error()
 			assert actual_error == expected_error
 			assert scalar_uniform_source_query(program, width) == expected_values
+			if index >= 8 {
+				mut actual_uints := [u32(0), 0, 0, 0]!
+				C.vox_gl_get_uniform_uints(program.object.native_handle_, 0, &actual_uints[0])
+				expected_uints := [u32(0xffffffff), 0x80000000, 0x10000001, 0x7fffffff]!
+				assert actual_uints[..width] == expected_uints[..width]
+			}
 			// A present record still uses its native location after pointer validation.
 			other.native.make_current()
 			scalar_uniform_source_call(mut context, index, location, true)
