@@ -425,3 +425,20 @@ interface/prototype/global flags, own keys, call/new errors, subclass failure,
 Proxy newTarget getter suppression, use as a valid newTarget for another
 constructor, repeated installation, and forged global independence. Actual DOM
 FileList producers, native clone projection and main/Worker startup remain open.
+
+The next native clone feature projects genuine FileList owner identity to the
+existing exact Source primary IPC/storage FileList payload. Reconstruction uses
+the target realm's actual FileList factory/exposure, independent of author
+globals, prototypes or throwing instance fields. Source FileList.cpp calls the
+nested File serializer/deserializer directly; repeated inner File entries become
+distinct new Files and do not alias an independently serialized outer File.
+The direct nested path also bypasses the general inner File exposure gate.
+
+FileList plus File clone fixtures pass **2/2** both modes in
+`source-native-file-list-clone-{default,gc-none}.log`. They compare the native
+wire bytes with the primary encoder, retain raw lone/nul names and types and
+negative raw timestamps, preserve the outer list alias, verify each embedded
+Blob base's actual pointer, cover the direct nested File exposure/memory rules,
+and reject forged absent FileList exposure. Deleted actual target globals still
+allow reconstruction; forged FileList-prototype author objects stay ordinary.
+Main/Worker FileList startup and actual DOM producer bindings remain separate.
