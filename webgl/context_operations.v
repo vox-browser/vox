@@ -421,7 +421,10 @@ pub fn (mut context WebGLRenderingContext) delete_program(object ?&WebGLProgram)
 		handle := value.object.bookkeeping_id()
 		context.programs.delete(handle)
 		context.native.make_current()
-		C.vox_gl_delete_program(value.object.native_handle_)
+		// Lost Source recording drops GL deletion, but still clears its retained slot.
+		if context.native.current_ {
+			C.vox_gl_delete_program(value.object.native_handle_)
+		}
 		if current := context.current_program {
 			if current == value {
 				context.current_program = none
