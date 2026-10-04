@@ -10,6 +10,7 @@
 module html
 
 import dom
+import platform
 import rand
 
 __global html_user_agent_top_level_traversables = []&TraversableNavigable{}
@@ -492,6 +493,27 @@ mut:
 	needs_before_unload bool
 	remaining_documents int
 	completed           bool
+	timeout_            &platform.Timer = unsafe { nil }
+}
+
+// CheckUnloadingCanceledState's Source constructor starts the deadline before
+// either phase is queued. Platform.Timer owns the callback while active.
+fn CheckUnloadingCanceledState.create(traversable &TraversableNavigable, documents []&dom.Document, target_entry ?&SessionHistoryEntry, user_involvement UserNavigationInvolvement, callback TraversableUnloadCompletion) &CheckUnloadingCanceledState {
+	mut state := &CheckUnloadingCanceledState{
+		traversable: traversable
+		documents: documents.clone()
+		target_entry: target_entry
+		user_involvement: user_involvement
+		callback: callback
+	}
+	state.timeout_ = platform.Timer.create_single_shot(15000, fn [mut state] () {
+		if !state.completed {
+			eprintln('FIXME: check_if_unloading_is_canceled timed out')
+			state.finish(.continue_)
+		}
+	})
+	state.timeout_.start()
+	return state
 }
 
 fn (mut state CheckUnloadingCanceledState) finish(result CheckIfUnloadingIsCanceledResult) {
@@ -499,6 +521,7 @@ fn (mut state CheckUnloadingCanceledState) finish(result CheckIfUnloadingIsCance
 		return
 	}
 	state.completed = true
+	state.timeout_.stop()
 	state.callback(result)
 }
 
@@ -596,13 +619,7 @@ fn (mut state CheckUnloadingCanceledState) run_traverse_event_task(actual_window
 }
 
 fn (traversable &TraversableNavigable) check_if_unloading_is_canceled_for_history_step(documents []&dom.Document, target &SessionHistoryEntry, user_involvement UserNavigationInvolvement, callback TraversableUnloadCompletion) {
-	mut state := &CheckUnloadingCanceledState{
-		traversable: traversable
-		documents: documents.clone()
-		target_entry: target
-		user_involvement: user_involvement
-		callback: callback
-	}
+	mut state := CheckUnloadingCanceledState.create(traversable, documents, target, user_involvement, callback)
 	if hook := traversable.before_unload_hook_ {
 		queue_a_task(.navigation_and_traversal, main_thread_event_loop(), none, fn [hook, mut state] () {
 			state.finish(hook(state.documents))
@@ -630,11 +647,7 @@ fn (traversable &TraversableNavigable) check_if_unloading_is_canceled_for_histor
 }
 
 pub fn (traversable &TraversableNavigable) check_if_unloading_is_canceled(documents []&dom.Document, callback TraversableUnloadCompletion) {
-	mut state := &CheckUnloadingCanceledState{
-		traversable: traversable
-		documents: documents.clone()
-		callback: callback
-	}
+	mut state := CheckUnloadingCanceledState.create(traversable, documents, none, .none_, callback)
 	if hook := traversable.before_unload_hook_ {
 		queue_a_task(.navigation_and_traversal, main_thread_event_loop(), none, fn [hook, mut state] () {
 			state.finish(hook(state.documents))
