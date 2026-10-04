@@ -137,6 +137,42 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+getVertexAttrib now preserves the absence of a context-selection prefix in
+pinned WebGLRenderingContextImpl.cpp:2026-2098. Unknown names, WebGL1's integer
+attribute name and a WebGL1 divisor query without ANGLE_instanced_arrays return
+null with INVALID_ENUM before any actual driver selection. Selection now
+occurs only on the float or integer driver-query branches. All original Source
+return shapes and resource creation are retained, including fresh Float32Array
+storage and a new WebGLBuffer record for each queried native binding name.
+The unchanged getVertexAttribOffset invalid-name branch likewise precedes its
+actual query. Both public classes include these methods through the original
+WebGLRenderingContextBase IDL; the genuine pname version/extension gates remain.
+
+The receiver boundary is concrete: GLFunctions.json:2636/2666 classifies the
+robust float/integer getters as synchronous calls; the generator emits
+send_sync_call, ProxyBase.cpp:168-176 flushes pending commands and invokes the
+transport, and HostWebGLContext.cpp:145-150 selects the owning native context
+before executing that query. The pointer getter's custom sync path is retained
+in ProxyBase.cpp:409-422. The existing C delegates already use the original
+robust ANGLE calls and output sizes. This fix changes only the early-versus-
+query native selection order, adding no new getter rule or remote transport.
+
+Both-version native/public witnesses use another actual context current for
+every genuine early branch and real queries. Native checks also preserve a
+pre-existing driver error ahead of the Source INVALID_ENUM, actual boolean/
+integer/vector/pointer state, and repeated binding records' distinct identity
+with the same native name. Public checks retain null/zero, fresh typed-array
+buffer identity, distinct WebGLBuffer wrappers, booleans and numeric results,
+and author conversion throws before entry. The native divisor neighbor passed
+in `Build/audit-fixes/source-vertex-getter-owner-gc-none.log`; that initial run
+also records a new-fixture compile error from using the byte-data helper for a
+size allocation. After correcting the fixture to buffer_data_size, the new
+getter file and object-lifetime neighbor passed in
+`source-vertex-getter-owner-corrected-gc-none.log`. All three public getter/host/
+captured-intrinsic files passed under `source-vertex-getter-owner-public/` in
+the second private worktree. These are focused native passes plus a clean
+three-file public group, not a new full-module sweep.
+
 Signed and unsigned integer vertex vectors now call exact glVertexAttribI4iv
 and glVertexAttribI4uiv span-pointer delegates, matching pinned
 WebGL2RenderingContextImpl.cpp:503-511 and 520-528. Existing native signed int
