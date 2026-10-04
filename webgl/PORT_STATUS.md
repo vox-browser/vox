@@ -162,6 +162,32 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+getShaderParameter now validates its Source handle before actual native sync
+owner selection. WebGLRenderingContextImpl.cpp:1864-1889 returns a nullable
+failure for foreign/deleted records before its native query. Its empty Source
+Proxy make_current supplies no owner switch; the V native parameter helper
+selects the driver only after the handle passes. The valid-handle driver query
+still precedes the Source pname switch, including unsupported names. This
+Source eager query is genuine and must not be removed.
+
+Two-version native/public cases distinguish foreign/deleted early returns
+(Other current) from valid and unknown-pname queries (Owner current). They
+verify a genuine pending Other error remains untouched, native unsupported-name
+errors precede the Source fallback, and a valid native pname outside Source's
+return switch adds only the local fallback. Public pname conversion runs once
+before the Source handle gate; conversion and brand throws precede body entry.
+Two typed files pass in
+`Build/audit-fixes/source-shader-parameter-owner-native-gc-none.log`; two public
+files pass in
+`Build/audit-fixes/source-shader-parameter-owner-public-gc-none.log`, including
+the existing actual shader/program parameter tests. All use GC disabled and
+explicit private module paths.
+
+This is only the Source CPU-owner correction. The separately identified exact
+ANGLE robust query ABI (Source uses get_shaderiv_robust_angle with capacity 1,
+while the existing V helper uses regular shaderiv), lost-sync output suppression,
+program methods, full remote maps and GC/WrapperWorld remain separate scopes.
+
 deleteShader now leaves actual native owner selection after Source nullable
 and optional-handle deletion gates. WebGLRenderingContextImpl.cpp:585-603
 returns for null, foreign handle errors and absent repeated/stale deletion
