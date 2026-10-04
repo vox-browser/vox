@@ -878,3 +878,67 @@ still projects through TextDecoder, while Source directly uses its whole-input
 UTF8 destination; that destination/owning caller remains pending. These eight
 native bytes do not close the broader representation, reserve/capacity or
 whole-input allocation boundary and are not generalized to other codecs.
+
+## Same UTF16 variant's actual UTF8 destination
+
+The existing Common/Stream model independently reproduces the three-byte EOF
+defect: UTF16LE `00 d8 00` and UTF16BE `d8 00 00` produce two replacement units
+on flush in `source-utf16-stream-eof-before-owner-gc-none.log`. The original
+Source streaming-to-UTF8 FFI verifies one `ef bf bd`, or fatal failure without
+output, in both native profiles for 32 scenarios/64 calls. This witnesses the
+actual UTF8 destination, separately from prior UTF16-destination observations.
+
+Feature `9837129a6eeb8fc0088d77835feb5a9b7bddfc82` adds the actual UTF8 methods to
+the SAME SourceUtf16Decoder four-slot record. It expands the UTF8
+`decoder_functions!` instantiation from `utf_16.rs:14–197`, with Source
+`Utf8Destination` BMP/pair writes, three-byte BMP-space checks and four-byte
+astral checks. Body/EOF malformed lengths, retained lead byte/surrogate and
+pending-BMP behavior are shared with the actual UTF16 destination through their
+original owned slots. No intermediate UTF16 output is decoded/converted to
+substitute for the Source UTF8 body.
+
+The genuine fast prefix follows `handles.rs:1105–1144` and its scalar
+`convert_unaligned_utf16_to_utf8`/ASCII copy helpers at `handles.rs:199–378`.
+It retains the last-high-surrogate exclusion, the initial four-byte destination
+requirement even for ASCII, exact ASCII minimum, commit-before-surrogate-error
+positions, non-ASCII inner loop and remaining-four-byte checks. Endian loads
+and UnalignedU16Slice tail offsets are lowered directly onto original byte
+owners. Source wrapping-range tests are lowered to their equivalent closed
+surrogate ranges. SIMD acceleration/physical slack writes remain a separate
+representation boundary. Replacement delegates to that actual variant and
+writes the three Source U+FFFD UTF8 bytes.
+
+Tooling `61f481b60c2820f85f18064297ac8a6b48f9a8a5` contains the independent original
+UTF8 EOF witness, model reproduction and actual raw/prefix probe. Source pin,
+archive validation, isolated AArch64 default-alloc package configuration and
+snapshot-only exports follow the existing raw prerequisite. The prefix export
+calls the genuine Utf8Destination copy method with real ByteSource positions.
+Native debug/release produce exactly matching artifacts: 262,144 exhaustive
+unit/capacity records (all units, both byte orders, capacities 3/4), 15,248
+raw/replacement sequences, 14 checked-capacity states, 3,168 prefix edges and
+672 mixed-destination sequences. Every mixed sequence alternates actual raw
+UTF8/UTF16 calls on ONE native variant and observes all four original slots.
+Fixture SHA256 values are:
+
+- `utf16_utf8_raw_units.bin`: `7259f3136785174389cec28b6ca67adf1e22a00813918de62d467b406b4d6045`.
+- `utf16_utf8_raw_sequences.json`: `ed3322e7ef7622bce1b09a9bc40568aae940c127c8d4718cfc9f4b8dfc53689e`.
+- `utf16_utf8_raw_capacities.json`: `87ab7b5b709596b3e0023a0367fcdc9727c264ab0f6eb928718da5379448b690`.
+- `utf16_utf8_prefix_edges.json`: `c0918bd43423675f6f725369cc828f7ff366b0bb0ce435e7e2fc4fee1d77e2bb`.
+- `utf16_utf8_mixed_sequences.json`: `5e19dbabd698c825e712a7abc572b1b631a3b730ec293a607beda1499f778737`.
+
+The final raw native log `source-utf16-utf8-decoder-probe-final.log` hashes to
+`ad9b8568e4bdc70aedc4999414390aa1b1194e202b4cb36f4107a35247422e29`.
+The capacity artifact happens to match the prior native raw UTF16 artifact for
+these fourteen actual states; it was produced again from the actual UTF8 calls.
+Focused V checks pass 1/1 default, GC-none and production GC-none in
+`source-utf16-utf8-raw-focused-final-{default,gc-none,production-gc-none}.log`.
+All native observations are exact, including guarded original-owner offset
+calls and mixed destinations. Initial compilation logs retain a test-only
+copied method-name typo; no native expected value changed.
+
+The owning outer UTF8 Off/Remove methods, maximum-capacity bridge and actual
+Common consumer remain the next separate slices. The public Stream still
+reproduces its old defect until that consumer is hooked. Generic whole-input
+UTF16 wrappers, real TransformStream/controller/native bindings, other codecs
+and physical allocation/OOM remain explicit. No LibJS implementation or native
+browser bundle was changed or built privately.
