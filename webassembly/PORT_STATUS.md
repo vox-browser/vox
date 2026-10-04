@@ -780,3 +780,9 @@ memory/cache/module integration batch passes **7/7 GC-none**
 (`source-parser-memory-cache-canonical-gc-none.log`). See
 [cache evidence](../docs/translation-audit/WASM_EXTERN_CACHE_OPTIONAL.md).
 The frozen 96-file snapshot predates this new 97th file and cache correction.
+
+The subsequent exact canonical `b6a80afd` snapshot passes a clean **97/97
+WebAssembly files in each GC mode** (151.6 s default /150.3 s GC-none), with all
+4,479 tracked contents unchanged. Its 211 Wasm and 490 LibJS non-Markdown files
+match canonical. [Frozen evidence](../docs/translation-audit/WASM_SCALAR_VERIFICATION.md)
+records the full manifests, log hashes, dependency scope and later changes.

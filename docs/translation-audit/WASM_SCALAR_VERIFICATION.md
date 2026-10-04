@@ -1,6 +1,38 @@
 # Frozen scalar WebAssembly verification
 
-## Latest frozen dependency refresh: 96 files
+## Latest frozen checked-memory/cache snapshot: 97 files
+
+Detached canonical snapshot `b6a80afd0288b09d9fa6db393dd6243a8cb5f626`, in
+`Build/audit-fixes/worktrees/root-wasm97-final`, passes **97/97 test files in
+each GC mode**, default in 151.6 seconds and GC-none in 150.3 seconds. Both
+commands exit 0: `/Users/alex/code/v/v -old-compiler -enable-globals test
+webassembly` and the same with `-gc none`, with `VJOBS=2` per run.
+
+All 4,479 tracked paths/contents, HEAD and clean tracked status remained
+identical throughout both full runs. The 211-file non-Markdown Wasm manifest
+and 490-file non-Markdown LibJS manifest also match canonical at recording.
+This includes the checked raw-byte store helper, corrected optional extern
+lookup, production allocation/import annotations and test map guards. The
+later GLsync proxy-pointer slice and subsequent changes outside the package
+are not part of this frozen whole-checkout proof.
+
+Artifacts under the detached snapshot's `Build/audit-fixes/` are:
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `source-checked-memory-wasm97-manifest.json` | `ccfb27f356231014888033fece18187d809351fc0fae38130481a64f4bdcad04` |
+| Whole sorted tracked path/content manifest | `b3b13925c1b00cc707271c0377e6d6f734328e3b3c78646783c7a051d4602ed7` |
+| WebAssembly package manifest | `6c508f06202f3f64aa1fb64d635ecc8310a2e6817bdf8b5c994c118ee4e20fa9` |
+| LibJS package manifest | `d55fd6a720b1bc274039393b94776fb27f7e946d61d51adfb0ce0c229bfef4c9` |
+| `source-checked-memory-wasm97-default.log` | `757ee76ecf0f43f2b761e255c7975471f0566a6da76ce132e6a769d781b8405f` |
+| `source-checked-memory-wasm97-gc-none.log` | `55e26c368b7c4119f57df128c386e3f302cef78caee04a91d612900a16a9847f` |
+
+Upstream remained `963d46a829f3e1b79f44dba9d02afb70654300fa`. The proof records
+both complete before/after manifests and exact commands/results. Source typed
+stores/loads, opcode/SIMD execution, full instantiation, native compilation and
+collector/realm ownership remain unfinished.
+
+## Historical frozen dependency refresh: 96 files
 
 Canonical revision `e93aaa7b72e56a90f71636efb2be6c3c58113b56` passes
 **96/96 WebAssembly test files in each GC mode**, default in 130.6 seconds and
