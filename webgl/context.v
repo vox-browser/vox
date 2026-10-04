@@ -400,12 +400,12 @@ pub fn (mut context WebGLRenderingContext) create_texture() &WebGLTexture {
 }
 
 pub fn (mut context WebGLRenderingContext) create_shader(type_ GLenum) ?&WebGLShader {
+	context.native.make_current()
 	if type_ !in [vertex_shader, fragment_shader] {
 		context.set_error(invalid_enum)
 		return none
 	}
 	handle := context.allocate_handle()
-	context.native.make_current()
 	native_handle := C.vox_gl_create_shader(type_)
 	context.native.collect_native_error()
 	if native_handle == 0 { return none }
@@ -524,22 +524,22 @@ pub fn (mut context WebGLRenderingContext) is_buffer(buffer ?&WebGLBuffer) bool 
 }
 
 pub fn (mut context WebGLRenderingContext) shader_source(mut shader WebGLShader, source string) {
+	context.native.make_current()
 	if !context.owns(&shader.object) {
 		context.set_error(invalid_operation)
 		return
 	}
 	shader.source_ = source
-	context.native.make_current()
 	C.vox_gl_shader_source(shader.object.native_handle_, source.str, source.len)
 	context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) compile_shader(mut shader WebGLShader) {
+	context.native.make_current()
 	if !context.owns(&shader.object) {
 		context.set_error(invalid_operation)
 		return
 	}
-	context.native.make_current()
 	C.vox_gl_compile_shader(shader.object.native_handle_)
 	shader.compiled_ = context.native.native_shader_parameter(shader.object.native_handle_, compile_status) != 0
 	shader.info_log_ = context.native.native_shader_log(shader.object.native_handle_)
@@ -565,6 +565,7 @@ pub fn (mut context WebGLRenderingContext) get_shader_info_log(shader &WebGLShad
 }
 
 pub fn (mut context WebGLRenderingContext) attach_shader(mut program WebGLProgram, shader &WebGLShader) {
+	context.native.make_current()
 	if !context.owns(&program.object) || !context.owns(&shader.object) {
 		context.set_error(invalid_operation)
 		return
@@ -574,17 +575,19 @@ pub fn (mut context WebGLRenderingContext) attach_shader(mut program WebGLProgra
 			context.set_error(invalid_operation)
 			return
 		}
-		program.attached_vertex_shader = shader
-	} else {
+	} else if shader.type_ == fragment_shader {
 		if program.attached_fragment_shader != none {
 			context.set_error(invalid_operation)
 			return
 		}
-		program.attached_fragment_shader = shader
 	}
-	context.native.make_current()
 	C.vox_gl_attach_shader(program.object.native_handle_, shader.object.native_handle_)
 	context.native.collect_native_error()
+	match shader.type_ {
+		vertex_shader { program.attached_vertex_shader = shader }
+		fragment_shader { program.attached_fragment_shader = shader }
+		else { panic('unreachable shader type') }
+	}
 }
 
 pub fn (mut context WebGLRenderingContext) detach_shader(mut program WebGLProgram, shader &WebGLShader) {
@@ -605,11 +608,11 @@ pub fn (mut context WebGLRenderingContext) detach_shader(mut program WebGLProgra
 }
 
 pub fn (mut context WebGLRenderingContext) link_program(mut program WebGLProgram) {
+	context.native.make_current()
 	if !context.owns(&program.object) {
 		context.set_error(invalid_operation)
 		return
 	}
-	context.native.make_current()
 	C.vox_gl_link_program(program.object.native_handle_)
 	program.linked_ = context.native.native_program_parameter(program.object.native_handle_, link_status) != 0
 	program.info_log_ = context.native.native_program_log(program.object.native_handle_)
@@ -631,11 +634,11 @@ pub fn (mut context WebGLRenderingContext) use_program(program ?&WebGLProgram) {
 }
 
 pub fn (mut context WebGLRenderingContext) validate_program(mut program WebGLProgram) {
+	context.native.make_current()
 	if !context.owns(&program.object) {
 		context.set_error(invalid_operation)
 		return
 	}
-	context.native.make_current()
 	C.vox_gl_validate_program(program.object.native_handle_)
 	program.validated_ = context.native.native_program_parameter(program.object.native_handle_, validate_status) != 0
 }

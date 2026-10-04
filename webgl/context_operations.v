@@ -268,12 +268,12 @@ pub fn (mut context WebGLRenderingContext) active_texture(texture GLenum) {
 }
 
 pub fn (mut context WebGLRenderingContext) bind_attrib_location(program &WebGLProgram, index GLuint, name string) {
-	if !context.owns(&program.object) || name.starts_with('gl_') {
+	context.native.make_current()
+	if !context.owns(&program.object) {
 		context.set_error(invalid_operation)
 		return
 	}
 	context.command('bind_attrib_location', program.object.handle_, index, name.len)
-	context.native.make_current()
 	C.vox_gl_bind_attrib_location(program.object.native_handle_, index, name.str)
 	context.native.collect_native_error()
 }
@@ -502,6 +502,7 @@ pub fn (mut context WebGLRenderingContext) delete_texture(object ?&WebGLTexture)
 }
 
 pub fn (mut context WebGLRenderingContext) delete_shader(object ?&WebGLShader) {
+	context.native.make_current()
 	if value := object {
 		mut mutable_value := unsafe { &WebGLShader(value) }
 		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
@@ -513,7 +514,6 @@ pub fn (mut context WebGLRenderingContext) delete_shader(object ?&WebGLShader) {
 		}
 		handle := handle_result.value
 		context.shaders.delete(handle)
-		context.native.make_current()
 		C.vox_gl_delete_shader(value.object.native_handle_)
 		context.native.collect_native_error()
 		context.command('delete_shader', handle)
@@ -521,6 +521,7 @@ pub fn (mut context WebGLRenderingContext) delete_shader(object ?&WebGLShader) {
 }
 
 pub fn (mut context WebGLRenderingContext) delete_program(object ?&WebGLProgram) {
+	context.native.make_current()
 	if value := object {
 		mut mutable_value := unsafe { &WebGLProgram(value) }
 		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
@@ -532,11 +533,10 @@ pub fn (mut context WebGLRenderingContext) delete_program(object ?&WebGLProgram)
 		}
 		handle := handle_result.value
 		context.programs.delete(handle)
-		context.native.make_current()
 		C.vox_gl_delete_program(value.object.native_handle_)
 		context.native.collect_native_error()
 		if current := context.current_program {
-			if current.object.handle_ == handle {
+			if current == value {
 				context.current_program = none
 			}
 		}
