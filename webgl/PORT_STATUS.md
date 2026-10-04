@@ -115,6 +115,42 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+The compact JSON compatibility adapter now preserves exceptional numeric
+values in both directions. Pinned `WebGLRenderingContextImpl.cpp:1194-1207`
+returns queried polygon-offset GLfloat values through `JS::Value`, and
+`:2026-2036` copies four actual CURRENT_VERTEX_ATTRIB floats into a new
+`JS::Float32Array`. Those source algorithms are unchanged. Previously the
+JSON encoder emitted invalid `nan`/`+inf` tokens for real driver replies, and
+JSON.stringify converted scalar/list input negative zero to positive zero.
+Actual failures are retained in
+`Build/audit-fixes/source-nonfinite-parameter-probe.{v,log}` and
+`source-nonfinite-vertex-probe.{v,log}`; both WebGL versions threw real JSC
+JSON parse errors.
+
+The adapter tags only NaN, positive/negative infinity and negative zero.
+Canonical exceptional strings reuse the translated WebIDL/LibJS number
+formatter; negative zero has an explicit transport spelling because Source
+Number::toString intentionally returns "0". Reply decoding uses the engine's
+unary-plus conversion of that primitive string, and captured Float32Array
+construction receives the decoded numeric primitive. Scalar/list input keeps
+negative zero before JSON serialization. The captured native own-property
+check avoids author prototype getters when recognizing internal number tags.
+No fabricated GL backend, getter clamping, alternate source getter algorithm,
+or complete generated-wrapper/WrapperWorld parity is introduced.
+
+`canvas_webgl_number_transport_test.v` first writes and reads real driver
+vertex attributes containing NaN, both infinities and negative zero, then
+checks the public fresh Float32Array/prototype/backing-buffer identities.
+Scalar, sequence and native typed-array inputs preserve the same driver
+values. Scalar polygon-offset replies are compared with direct driver queries,
+including the driver's own NaN normalization. Replaced Number.isFinite,
+String and Float32Array globals and an inherited number-tag getter are never
+invoked. Initial focused validation passed; all four final new/intrinsic/raster/host
+files passed with GC disabled, recorded under
+`Build/audit-fixes/source-number-transport-final/`. This is a numeric
+compatibility boundary repair, not a change to the GL Source implementation
+or a claim about arbitrary NaN payload bits or full source runtime ownership.
+
 `pixel_storei` now follows the exact switch and final GL call in
 `WebGLRenderingContextImpl.cpp:2246-2282`. Only UNPACK_ALIGNMENT has source
 early validation; nonnegative WebGL2 unpack row/skip values update the real
