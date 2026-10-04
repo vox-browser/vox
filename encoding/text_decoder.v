@@ -155,6 +155,14 @@ fn (mut decoder TextDecoderCommonMixin) decode_item(input []u8, end_of_queue boo
 		}
 		return decoded
 	}
+	if decoder.encoding_ == 'utf-16le' || decoder.encoding_ == 'utf-16be' {
+		if !decoder.utf16_decoder_present_ {
+			panic('Source VERIFY: TextDecoderCommon owns its StreamingDecoder')
+		}
+		ok, decoded := decoder.utf16_decoder_.decode_owned_utf8(input, end_of_queue, decoder.fatal_)
+		if !ok { return error('TypeError: Decoding failed') }
+		return decoded
+	}
 	mut bytes := decoder.pending_input.clone()
 	bytes << input
 	mut boundary := bytes.len
