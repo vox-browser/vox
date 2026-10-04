@@ -162,6 +162,34 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+deleteShader now leaves actual native owner selection after Source nullable
+and optional-handle deletion gates. WebGLRenderingContextImpl.cpp:585-603
+returns for null, foreign handle errors and absent repeated/stale deletion
+handles before recording any driver command; ProxyBase.h:44 supplies no native
+prefix selection. The direct V adapter therefore selects its owner only before
+a valid actual deletion. Context validation still precedes invalidation, and
+the first owned deletion retains Source proxy ID/native name while invalidating
+exactly once. Compact registry removal remains separate bookkeeping.
+
+The native two-version case verifies null/foreign/repeated returns with Other
+current and checks a real pending Other driver error. An attached shader stays
+alive in GL with DELETE_STATUS true and remains the same actual Source retained
+attachment record. A separately externally deleted native shader verifies
+Source invalidation remains after genuine native driver rejection. Public cases
+cover null/undefined, brand errors, foreign/repeated/deleted-foreign paths,
+actual GL deletion status and retained wrapper identity. Only deleteShader
+expectations in the historical mutation fixtures were migrated.
+
+Three typed files pass in
+`Build/audit-fixes/source-shader-delete-owner-native-gc-none.log`; three public
+files pass in
+`Build/audit-fixes/source-shader-delete-owner-public-gc-none.log`, including
+Source handle/registry and public label/interface neighbors. All use GC
+disabled and explicit private module paths. This supersedes historical
+unconditional shader deletion owner-prefix assertions; broader lost-command
+suppression, program methods, full remote transport/maps and GC/WrapperWorld
+remain separately scoped Source work.
+
 getShaderSource and getShaderInfoLog now preserve Source handle validation
 before actual sync owner selection. WebGLRenderingContextImpl.cpp:1900-1940
 returns a nullable failure for foreign/deleted records before issuing any
