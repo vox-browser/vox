@@ -103,6 +103,14 @@ Runtime's actual target Realm. Identity, mutation, empty, two-Realm and poisoned
 author alias/constructor checks pass **2/2 focused files in both GC modes**.
 DedicatedWorker/SharedWorker public receiver/constructor exposure remains open;
 no Window interface is installed.
+
+BinaryString and Text results now retain their actual immutable Source UTF16
+records through clone/set/access, including raw lone units and storage form.
+Text uses Source's actual String-to-UTF16 constructor path. Stale compatibility
+DTOs, loading/abort/null/bytes and the unresolved unchecked-ASCII DataURL arm
+do not expose a raw record. New result/BinaryString/Text BOM/actual owner
+files pass **4/4 in both GC modes**. LibJS implementation and its frozen full
+suite/corpus proof are unchanged; native primitive/world-cache work remains open.
 The separate internal replacement decoder now preserves Source's empty-input,
 single-U+FFFD and Unicode-BOM override behavior for FileReader labels, while
 public TextDecoder retains its required rejection. **5/5** focused files pass

@@ -294,3 +294,30 @@ projection, including the separate DataURL unchecked-ASCII metadata boundary
 described above. These findings are dependencies for a subsequent result
 wrapper feature, not a claim that the newly completed owner read loop or Sync
 allocation has provided public FileReader/native-world parity.
+
+## Owned BinaryString and Text result slots
+
+The separate result prerequisite now carries an immutable private
+`Utf16String` in `FileReaderResult` for BinaryString and Text. BinaryString
+retains the actual byte/code-unit builder record rather than discarding it
+through `.str()`. Source Text `FileReader.cpp:174` calls
+`Utf16String::from_utf8(utf8_result)`; its actual `String const&` overload in
+`AK/Utf16String.h:49` delegates to `from_utf8_without_validation`. The existing
+explicit Source LibJS helper supplies this owned record directly, with no
+LibJS implementation change and no scalar string iterator substitution.
+
+Clone, `set_result` and `result` retain those exact units and storage metadata.
+The typed raw-record getter returns them only for a string result whose
+compatibility text still agrees; stale DTO edits cannot reuse old metadata.
+Loading/abort/null and byte results return no string record. DataURL still
+returns no raw slot here because inventing UTF16 units from its unchecked
+ASCII bytes would change the unresolved Source storage boundary.
+
+New raw result, existing BinaryString/Text BOM and actual owner-operation files
+pass **4/4 in both GC modes**, recorded in
+`source-file-reader-raw-result-{default,gc-none}.log`. Cases retain all 256 byte
+units, NUL, supplementary text, decoding replacement and BOM behavior, lone
+surrogates, original wide-ASCII storage, copied input/access ownership,
+clone/set/access lifetimes, loading/abort clearing and stale DTO rejection.
+Native primitive projection and genuine per-world weak ArrayBuffer caching
+remain separate prerequisites.
