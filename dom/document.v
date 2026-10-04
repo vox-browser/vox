@@ -180,7 +180,7 @@ fn url_from_record(record liburl.URL) URL {
 
 // DOM keeps the serialized URL at its module boundary; the cache retains the
 // typed LibURL record so repeated component access does not re-run the parser.
-fn (u URL) parsed() ?liburl.URL {
+pub fn (u URL) parsed() ?liburl.URL {
 	if cached := dom_url_record_cache[u.value] {
 		return cached
 	}

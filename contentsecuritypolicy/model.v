@@ -9,6 +9,7 @@
 module contentsecuritypolicy
 
 import dom
+import http
 import url
 
 pub enum Result {
@@ -126,10 +127,12 @@ pub fn (request &Request) destination_is_script_like() bool {
 
 pub struct Response {
 pub mut:
-	url      ?url.URL
-	status   u16
-	headers  map[string][]string
-	is_local bool
+	url         ?url.URL
+	status      u16
+	header_list ?&http.HeaderList
+	// Standalone compatibility input; genuine Fetch projections retain header_list.
+	headers     map[string][]string
+	is_local    bool
 }
 
 pub struct ElementContext {

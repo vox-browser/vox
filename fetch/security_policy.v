@@ -90,14 +90,10 @@ fn csp_request(request &Request) csp.Request {
 }
 
 fn csp_response(response &Response) csp.Response {
-	mut headers := map[string][]string{}
-	for header in response.header_list.headers() {
-		headers[header.name] << header.value
-	}
 	return csp.Response{
-		url:     if value := response.url() { url.parse(value.serialize()) } else { none }
-		status:  response.status
-		headers: headers
+		url:         if value := response.url() { value.parsed() } else { none }
+		status:      response.status
+		header_list: response.header_list
 	}
 }
 

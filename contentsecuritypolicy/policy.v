@@ -5,6 +5,7 @@
 module contentsecuritypolicy
 
 import url
+import http
 
 pub enum Disposition {
 	enforce
@@ -71,30 +72,48 @@ pub fn Policy.parse_a_serialized_csp_bytes(serialized []u8, source PolicySource,
 	return parse_a_serialized_csp_bytes(serialized, source, disposition)
 }
 
-pub fn parse_a_responses_content_security_policies(response &Response) &PolicyList {
-	mut policies := []&Policy{}
-	for key, values in response.headers {
-		if key.to_lower() == 'content-security-policy' {
-			for value in values {
-				policy := parse_a_serialized_csp(value, .header, .enforce)
-				if policy.directives_.len > 0 {
-					policies << policy
-				}
-			}
+fn response_csp_header_list(response &Response) &http.HeaderList {
+	if actual := response.header_list {
+		return actual
+	}
+	// Explicit adapter for standalone records predating the native HeaderList
+	// projection. Genuine Fetch owners never merge this compatibility map.
+	mut list := http.HeaderList.create()
+	for name, values in response.headers {
+		for value in values {
+			list.append(http.Header{name, value})
 		}
-		if key.to_lower() == 'content-security-policy-report-only' {
-			for value in values {
-				policy := parse_a_serialized_csp(value, .header, .report)
-				if policy.directives_.len > 0 {
-					policies << policy
-				}
+	}
+	return list
+}
+
+pub fn parse_a_responses_content_security_policies(response &Response) &PolicyList {
+	// Policy.cpp:98–145 extracts enforced values first, then report-only
+	// values. Each extracted raw Header ByteString uses isomorphic decoding.
+	list := response_csp_header_list(response)
+	mut policies := []&Policy{}
+	if values := list.extract_header_list_values('Content-Security-Policy') {
+		for value in values {
+			policy := parse_a_serialized_csp_bytes(value.bytes(), .header, .enforce)
+			if policy.directives_.len > 0 {
+				policies << policy
 			}
 		}
 	}
-	if response_url := response.url {
-		origin := origin_from_url(response_url)
-		for mut policy in policies {
-			policy.self_origin = origin
+	if values := list.extract_header_list_values('Content-Security-Policy-Report-Only') {
+		for value in values {
+			policy := parse_a_serialized_csp_bytes(value.bytes(), .header, .report)
+			if policy.directives_.len > 0 {
+				policies << policy
+			}
+		}
+	}
+	for mut policy in policies {
+		if response_url := response.url {
+			policy.self_origin = response_url.origin()
+		} else if response.header_list != none {
+			// Source's actual Response URL dereference is required here.
+			panic('CSP response policy requires the actual Response URL')
 		}
 	}
 	return PolicyList.create(policies)
