@@ -67,6 +67,9 @@ mut:
 	// Common record; presence retains its OwnPtr null/VERIFY boundary.
 	utf8_decoder_         SourceUtf8StreamingDecoder
 	utf8_decoder_present_ bool
+	// Source selected UTF16 variant belongs to the same Common owning record.
+	utf16_decoder_         SourceUtf16StreamingDecoder
+	utf16_decoder_present_ bool
 }
 
 fn new_text_decoder_common(encoding_name string, options TextDecoderOptions) TextDecoderCommonMixin {
@@ -95,6 +98,9 @@ pub fn (mut decoder TextDecoderCommonMixin) set_decoder_to_new_instance_of_encod
 	if decoder.encoding_ == 'utf-8' {
 		decoder.utf8_decoder_ = SourceUtf8StreamingDecoder.create(!decoder.ignore_bom_)
 		decoder.utf8_decoder_present_ = true
+	} else if decoder.encoding_ == 'utf-16le' || decoder.encoding_ == 'utf-16be' {
+		decoder.utf16_decoder_ = SourceUtf16StreamingDecoder.create(decoder.encoding_ == 'utf-16be', !decoder.ignore_bom_)
+		decoder.utf16_decoder_present_ = true
 	}
 }
 
@@ -240,6 +246,18 @@ pub fn (decoder &TextDecoder) decode(input ?[]u8, options TextDecodeOptions) !st
 		owned_result := libjs.utf16_string_from_code_units(units)
 		// Retain the existing public string projection. Validated UTF8
 		// decoding produces only well-formed UTF16 units here.
+		return owned_result.str()
+	}
+	if mutable_decoder.encoding_ == 'utf-16le' || mutable_decoder.encoding_ == 'utf-16be' {
+		if !mutable_decoder.utf16_decoder_present_ {
+			panic('Source VERIFY: TextDecoderCommon owns its StreamingDecoder')
+		}
+		ok, units := mutable_decoder.utf16_decoder_.decode_owned_utf16(bytes, !options.stream, mutable_decoder.fatal_)
+		// Source resets a flushed owner before exposing its saved success or
+		// error, preserving retained variant/BOM slots only for streaming.
+		if !options.stream { mutable_decoder.set_decoder_to_new_instance_of_encoding_decoder() }
+		if !ok { return error('TypeError: Decoding failed') }
+		owned_result := libjs.utf16_string_from_code_units(units)
 		return owned_result.str()
 	}
 	mut output := TextDecoderOutputQueue{}
