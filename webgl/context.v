@@ -61,8 +61,6 @@ mut:
 	clear_stencil_                      int
 	color_mask_                         [4]bool = [true, true, true, true]!
 	depth_mask_                         bool = true
-	viewport_                           [4]int
-	scissor_                            [4]int
 	unpack_flip_y_                      bool
 	unpack_premultiply_alpha_           bool
 	unpack_colorspace_conversion_       GLenum = browser_default_webgl
@@ -221,8 +219,6 @@ pub fn (mut context WebGLRenderingContext) take_context_events() []WebGLContextE
 pub fn (mut context WebGLRenderingContext) set_size(width int, height int) {
 	final_width, final_height := initial_drawing_buffer_size(width, height)
 	context.native.set_size(final_width, final_height)
-	context.viewport_ = [0, 0, final_width, final_height]!
-	context.scissor_ = [0, 0, final_width, final_height]!
 }
 
 pub fn (context &WebGLRenderingContext) drawing_buffer_width() int {
@@ -781,20 +777,12 @@ pub fn (mut context WebGLRenderingContext) clear(mask GLenum) {
 }
 
 pub fn (mut context WebGLRenderingContext) viewport(x int, y int, width int, height int) {
-	if width < 0 || height < 0 {
-		context.set_error(invalid_value)
-		return
-	}
-	context.viewport_ = [x, y, width, height]!
+	context.native.make_current()
 	context.native.dispatch('viewport', x, y, width, height)
 }
 
 pub fn (mut context WebGLRenderingContext) scissor(x int, y int, width int, height int) {
-	if width < 0 || height < 0 {
-		context.set_error(invalid_value)
-		return
-	}
-	context.scissor_ = [x, y, width, height]!
+	context.native.make_current()
 	context.native.dispatch('scissor', x, y, width, height)
 }
 
