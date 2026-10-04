@@ -219,3 +219,51 @@ array allocation limit. Other decoder variants, the raw UTF16 destination,
 TextDecoder's direct UTF16 destination and actual TransformStream/controller
 ownership remain separate work. No LibJS implementation or native browser
 bundle is changed by this feature.
+
+## Actual Common UTF8 consumer and split-lead repair
+
+Feature `b49176d2e4db40916c966c995ab0941bb57845b9` installs the real selected
+Shift_JIS streaming owner in the existing Common record. Source
+`TextDecoderCommon.cpp:48–51` replaces its OwnPtr with a new StreamingDecoder;
+the V setter replaces the actual retained lead/lifecycle and keeps the presence
+VERIFY. Source item processing at `:63–67` calls to_utf8 without flushing, and
+EndOfQueue at `:69–73` calls finish with an empty input. The consumer uses those
+same genuine owning bridge operations. Fatal failure is checked before the
+existing output queue is modified, matching `:53–61`. Serialization retains
+the existing UTF8-to-string compatibility projection; no invented pending-byte
+aggregation or per-chunk iconv call remains on the selected Shift_JIS path.
+
+The focused native-backed test checks 852 Common calls against the exact
+original Source owning FFI records and every normalized lead/lifecycle after
+each call. It checks 742 typed Stream calls through their first failed
+algorithm, all eight withheld nonempty failed callbacks, preservation of a
+preexisting output queue, real owner replacement and compiled cold-owner
+VERIFY children. The typed Stream still lacks the actual TransformStream
+controller/error/Promise graph; tests stop at its first failed callback rather
+than inventing a controller state. Default, GC-none and production GC-none
+each pass 1/1 in `source-common-shift-jis-focused-*.log`.
+
+The retained before/after probe proves the original split-lead defect is fixed:
+`82` succeeds with no output, `a0` emits U+3042 and the empty flush emits no
+output, in both fatal and replacement modes. Its after log is
+`source-shift-jis-after-common-gc-none.log`. BOM flags retain their actual
+non-Unicode Source behavior; UTF8/UTF16-looking byte prefixes do not trigger
+Unicode sniffing on this selected owner.
+
+Full Encoding checks run at exactly feature `b49176d2` and pass **29/29 in both
+GC modes**. The entire tracked checkout, not only Encoding, remains clean and
+byte-identical throughout both parallel sweeps: 4,154 files with whole-manifest
+SHA256 `a961d62bf1cbf25ff975d87e5c914b6b708b294b37f766cb0318f7e9cb934936`.
+Before/after manifests, HEAD and status are retained under
+`Build/audit-fixes/source-common-shift-jis-frozen/`. Independent ignored native
+probe preparation only reads original Source methods; no tracked file or
+translation dependency is mutated during these checks.
+
+The existing flattened TextDecoder generic path also consumes Common for
+Shift_JIS. Source TextDecoder.cpp directly calls to_utf16, so its precise
+raw/outer UTF16 destination, maximum-capacity owner and caller remain required
+separate slices despite this repaired typed output behavior. This feature does
+not claim native TextDecoder holders, branded BufferSource/shared copies,
+actual realm/string wrappers, physical allocator/OOM parity or real
+TransformStream/controller ownership. Other multibyte labels retain their
+previous compatibility adapter. No LibJS code or native browser bundle changes.
