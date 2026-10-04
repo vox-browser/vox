@@ -254,15 +254,13 @@ pub:
 }
 
 fn serialized_undefined() SerializationRecord {
-	return SerializationRecord{
-		data: [u8(StructuredSerializeValueTag.undefined_primitive)]
-	}
+	// SessionHistoryEntry.cpp constructs the owning StorageSerializationRecord.
+	return structured_serialize_for_storage(dom.js_undefined()) or { panic(err.msg()) }
 }
 
 fn serialized_null() SerializationRecord {
-	return SerializationRecord{
-		data: [u8(StructuredSerializeValueTag.null_primitive)]
-	}
+	// SessionHistoryEntry.cpp constructs the owning StorageSerializationRecord.
+	return structured_serialize_for_storage(dom.js_null()) or { panic(err.msg()) }
 }
 
 pub enum SessionHistoryEntryPending {
@@ -310,10 +308,14 @@ pub fn (entry &SessionHistoryEntry) clone() &SessionHistoryEntry {
 		url: entry.url
 		document_state: document_state.clone()
 		classic_history_api_state: SerializationRecord{
-			data: entry.classic_history_api_state.data.clone()
+			type_:                entry.classic_history_api_state.type_
+			data:                 entry.classic_history_api_state.data.clone()
+			shared_array_buffers: entry.classic_history_api_state.shared_array_buffers.clone()
 		}
 		navigation_api_state: SerializationRecord{
-			data: entry.navigation_api_state.data.clone()
+			type_:                entry.navigation_api_state.type_
+			data:                 entry.navigation_api_state.data.clone()
+			shared_array_buffers: entry.navigation_api_state.shared_array_buffers.clone()
 		}
 		navigation_api_key: entry.navigation_api_key
 		navigation_api_id: entry.navigation_api_id

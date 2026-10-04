@@ -134,10 +134,14 @@ pub fn create_navigation_population_request(start_request NavigationStartRequest
 		url: start_request.url
 		document_state: document_state
 		classic_history_api_state: SerializationRecord{
-			data: start_request.classic_history_api_state.data.clone()
+			type_:                start_request.classic_history_api_state.type_
+			data:                 start_request.classic_history_api_state.data.clone()
+			shared_array_buffers: start_request.classic_history_api_state.shared_array_buffers.clone()
 		}
 		navigation_api_state: SerializationRecord{
-			data: start_request.navigation_api_state.data.clone()
+			type_:                start_request.navigation_api_state.type_
+			data:                 start_request.navigation_api_state.data.clone()
+			shared_array_buffers: start_request.navigation_api_state.shared_array_buffers.clone()
 		}
 		navigation_api_key: start_request.navigation_api_key
 		navigation_api_id: start_request.navigation_api_id
@@ -164,7 +168,9 @@ pub fn apply_navigation_population_result(mut request NavigationPopulationReques
 	}
 	if state := result.classic_history_api_state {
 		request.history_entry.classic_history_api_state = SerializationRecord{
-			data: state.data.clone()
+			type_:                state.type_
+			data:                 state.data.clone()
+			shared_array_buffers: state.shared_array_buffers.clone()
 		}
 	}
 	if result.resource_cleared {

@@ -178,7 +178,9 @@ pub fn (mut destination NavigationDestination) set_entry(entry ?&NavigationHisto
 
 pub fn (mut destination NavigationDestination) set_state(state SerializationRecord) {
 	destination.state_ = SerializationRecord{
-		data: state.data.clone()
+		type_:                state.type_
+		data:                 state.data.clone()
+		shared_array_buffers: state.shared_array_buffers.clone()
 	}
 }
 
