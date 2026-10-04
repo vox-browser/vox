@@ -7,7 +7,7 @@ Source records and clone payloads reviewed: 2026-10-04
 
 | Upstream source | V mapping |
 | --- | --- |
-| `Blob.cpp` | `blob.v`, `utf16_records.v`, `../html/structured_fileapi_codec.v` |
+| `Blob.cpp` | `blob.v`, `utf16_records.v`, `../html/blob_operations.v`, `../html/structured_fileapi_codec.v` |
 | `BlobURLStore.cpp` | `blob_url_store.v` |
 | `File.cpp` | `file.v`, `utf16_records.v`, `../html/structured_fileapi_codec.v` |
 | `FileList.cpp` | `filelist.v`, `../html/structured_fileapi_codec.v` |
@@ -45,12 +45,15 @@ Crypto neighbors. Private logs are under assignment 7's `Build/audit-fixes/`:
 `source-fileapi-utf16-{default,gc-none}-final.log`, and
 `source-fileapi-codec-{default,gc-none}.log`.
 
-Source Blob operations queue an owning global FileReading task and return
-actual relevant-realm ReadableStream and Promise records. The existing
-standalone text/array_buffer/bytes facade settles synchronously; it does not
-establish the source task/Promise owner path. The default reader's deprecated
-read-all-byte facade likewise remains a synchronous adapter pending the actual
-source aggregation request. Genuine native Blob/File/FileList constructors,
+Blob's owning HTML path now queues an actual Window/Worker FileReading task
+and returns relevant-realm Source ReadableStream/default-reader/WebIDL Promise
+records. The retained aggregation request stays pending before delivery,
+includes the Source empty chunk, and preserves original error values. Default
+focused and **4/4 GC-disabled** owner/StreamRealm/enqueue/read-loop files pass;
+source mappings and logs are recorded in
+[`READ_LOOP_BLOB_SOURCE.md`](../docs/translation-audit/READ_LOOP_BLOB_SOURCE.md).
+The existing standalone text/array_buffer/bytes facade settles synchronously;
+it does not establish the source task/Promise owner path. Genuine native Blob/File/FileList constructors,
 getters, methods and clone exposure remain open. The compact XHR Blob object is
 a separate compatibility facade. FileReader owner tasks, blob URL process
 ownership and complete generated bindings still need runtime validation.

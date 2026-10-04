@@ -183,8 +183,12 @@ Pinned fatal `MUST` setup failures remain V panic boundaries.
 The source read loop passes **3/3 default** and **10/10 GC-disabled** focused
 read/controller/pipe/tee/native-host files. Full byte-reading setup passes the
 final default focused file and **3/3 GC-disabled** setup/read-loop/byte-reader
-files. Evidence and the still-pending native Uint8Array witness and Blob task
-bindings are recorded in
+files. The native Uint8Array witness now uses actual engine slots and passes
+both GC modes; Blob's owning FileReading task and pending byte Promise path
+passes default and a **4/4 GC-disabled** owner/stream neighbor batch. Internal
+enqueue preserves Source empty byte chunks separately from the public
+controller's rejection gate. Native Blob/File bindings and same-buffer BYOB
+internal-enqueue identity remain open. Evidence is recorded in
 [`READ_LOOP_BLOB_SOURCE.md`](../docs/translation-audit/READ_LOOP_BLOB_SOURCE.md).
 
 ```text

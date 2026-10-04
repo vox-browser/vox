@@ -63,12 +63,26 @@ for a chunk sharing the current BYOB view's buffer remains a native boundary
 prerequisite. Blob's newly allocated chunk always takes the distinct-buffer
 abstract enqueue path translated here.
 
-Blob's
-actual FileReading task, TemporaryExecutionContext and relevant-realm
-Promise/stream path still need translation. The synchronous standalone Blob
-accessors and compact XHR facade do not establish those owner semantics.
-Complete native Blob/File/FileList bindings and source host-object GC remain
-open.
+`FileAPI/Blob.cpp:320-384` maps to `html/blob_operations.v`, commit `8149aa16`.
+The owning settings object allocates the actual Source ReadableStream, performs
+full byte-reading setup in its realm, and retains a whole-buffer copy in a
+FileReading task on that Window or Worker's responsible event loop. Window
+tasks retain the responsible document; Worker tasks have no Window document.
+The task enters the shared callback-enabled TemporaryExecutionContext, enqueues
+the Source chunk even when empty, preserves a thrown value when erroring the
+stream, then closes it. `read_all_blob_bytes` obtains the actual default reader
+and returns its pending relevant-realm WebIDL aggregation Promise.
+
+The focused owner test passes default, and **4/4 GC-disabled** owner/StreamRealm/
+internal-enqueue/read-loop files pass in `source-blob-owner-default-final.log`
+and `source-blob-owner-gc-none-final.log`. Cases verify pending ownership before
+the task, actual callback realm, copied bytes, empty chunks before close,
+independent Worker delivery, cancellation and original error identity. The
+shared TemporaryExecutionContext cleanup ordering is owned by assignment 2;
+this feature uses that helper and does not substitute a local implementation.
+Native Blob/File/FileList bindings and source host-object GC remain open. The
+synchronous standalone Blob accessors and compact XHR facade do not establish
+these owner semantics.
 
 `LibTextCodec/Decoder.cpp:382-405` maps to
 `encoding/decode_with_bom_override.v`, commit `5c941d64`, for Blob's text decoder
