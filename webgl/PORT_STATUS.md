@@ -369,6 +369,16 @@ passed in `source-texture-copy-public-gc-none.log`. Competing invalid targets,
 dimensions and borders preserve actual driver error order and select the owner
 before returning. Remote transport and full LibJS ownership remain separate.
 
+Immutable texture storage now follows
+`WebGL2RenderingContextImpl.cpp:198-209`: select the owning driver and forward
+levels, formats and dimensions without extra V prevalidation. The native source
+case and real texture-layer/storage neighbor passed with GC disabled in
+`source-texture-storage-gc-none.log` (two files); the actual public source case
+passed in `source-texture-storage-public-gc-none.log`. Cases inspect genuine
+immutable-format/level query results, verify pixels in an allocated 3D layer,
+use actual bindings absent from retained slots, and preserve the driver's
+competing error order. Remote transport and full LibJS ownership remain separate.
+
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
 ANGLE builds lacking compressed robust entry points use the matching GLES call
