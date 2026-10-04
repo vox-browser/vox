@@ -524,3 +524,82 @@ lengths remain int-sized, while capacity arithmetic retains the prior checked
 maximum-capacity Rust bridge owner and Source TextDecoder UTF16 caller remain
 subsequent features. Other selected codec variants and BOM morphing remain
 separate. LibJS and native browser bundle/captures are unchanged.
+
+
+## Outer UTF16 destination and owning bridge buffer
+
+Feature `0f6be173ae533f830c49469e882ee486eccc0e66` translates the UTF16
+destination of the existing actual UTF8-selected outer decoder. It adds
+methods to that same SourceUtf8StreamingDecoder and mutates the same lifecycle
+and five-slot variant already used by Common's UTF8 destination. The
+`public_decode_function!` expansion (`macros.rs:1292–1631`) retains the reachable
+Off/Remove constructor arms: AtUtf8Start, SeenUtf8First, SeenUtf8Second,
+Converting and Finished. Potential BOM bytes are either consumed as a complete
+BOM or replayed through the actual raw UTF16 variant with Source's offset and
+write-counter ordering. Replay with fewer than two output units preserves the
+Source fatal condition. Only last=true plus InputEmpty marks a converting owner
+Finished; empty input at AtUtf8Start keeps Source's existing early-return state.
+Finished capacity/decode/owning calls fail fatally. The foreign-codec pending-BB
+arm remains unreachable for this actual selected variant, as in the UTF8 slice.
+
+`max_utf16_buffer_length` translates `lib.rs:4276–4350` for those actual
+constructors. Converting/AtUtf8Start delegate to the retained variant; partial
+BOM states perform checked `byte_length + 2`, then checked `+ 1`. The Source
+result applies to fatal and replacement output alike. The UTF16 replacement
+loop retains `lib.rs:4355–4400` and its actual indexed one-unit replacement write.
+The owning method follows the original Rust bridge (`Rust/src/lib.rs:218–262`):
+query that retained owner's maximum, allocate its u16 destination, decode with
+the actual last/fatal flags and retain produced callback units before returning
+the success bool. A failed call may produce partial callback units; the C++
+typed caller (`Decoder.cpp:149–162`) subsequently withholds its failed result.
+This prerequisite exposes those internal callback units only to its private
+translated caller, not as a new author-visible result.
+
+Tool `02b128327db3eb71fec40d5b7170a1a52a8f9f2d` invokes actual Source outer
+decoders and, for owning modes, includes the original Rust bridge verbatim and
+calls its original new/decode/free functions on genuine Box records. Snapshot
+exports observe the actual Box's retained Decoder; no synthetic owner or FFI
+read/status counters are supplied. Debug and release each pass 2/2 native tests
+and compare all output artifacts byte exactly: 5,000 sequences, 12 actual
+lifecycle/variant capacity states at ten checked lengths, 76 direct native
+fatal calls, and 16 additional failed calls with nonempty partial callbacks.
+The owning sequences include 1,876 observed successful/failed FFI calls.
+The extra cases prepend ASCII, NUL or BOM before malformed input and vary
+Off/Remove and flush/no-flush, proving the callback-before-false behavior that
+the initial split vectors did not exercise.
+
+The probe retains the validated original dependency bodies and Source pin.
+Its isolated bridge test crate selects the already validated copied
+default-alloc AArch64 dependency through a path dependency, with explicit
+workspace exclusion for that dependency's own isolated workspace. The original
+bridge is compiled under its normal native test configuration, including
+Source's test allocator/panic setup; its production allocator/abort ABI and
+physical Box/Vec layout are not inferred from the V arrays. Direct Source
+decoder/max-capacity panics are caught only by the harness to record absence
+of return data. Initial workspace-root and callback-type inference failures
+are retained in `source-utf8-utf16-streaming-probe.log` and
+`source-utf8-utf16-streaming-partial-callback-probe.log`.
+
+| Artifact | SHA256 |
+| --- | --- |
+| `encoding/fixtures/utf8_utf16_streaming_sequences.json` | `85b8668b0792660827cdb55dc18b73fe8174460db0c3556520af4bba1f42a6e0` |
+| `encoding/fixtures/utf8_utf16_streaming_capacities.json` | `ab64a8ce9eaa488b49578cac0bfac43edde60282ac410518e36d9413abbc6184` |
+| `encoding/fixtures/utf8_utf16_partial_callbacks.json` | `01961169596d6ca6a5c4f663c0ff63d67ae50deffecea6c234cba6ad7ad30ba2` |
+| `source-utf8-utf16-streaming-final-partial-probe.log` | `1386dceb56462d2bfd5bbbc3fcdc4df64d02af9338bb45082b3c281f081eb4fe` |
+
+Focused V checks pass 1/1 in both GC modes. After the partial-callback fixture
+was added, final complete Encoding passes 17/17 in both modes and final
+focused production GC-none passes 1/1 in
+`source-utf8-utf16-streaming-final-{full-default,full-gc-none,production-gc-none}.log`.
+The actual compiled children cover zero/one-unit BOM replay failures and
+Finished decode, capacity and owning calls. Existing raw UTF16 tests separately
+retain the zero-capacity malformed-EOF replacement fatal write. Both destinations
+keep their actual shared retained slots. No expected Source output was changed.
+
+The owner is a logical translation of the Source UTF8-selected UTF16 path.
+V's narrower int array capacity has an explicit separate guard; a failed Source
+checked-usize maximum query still returns failure. Native allocation/OOM,
+physical Box/Vec buffers, SIMD slack and other selected codec variants remain
+bounded as described above. TextDecoder's Source UTF16 caller is the next
+separate consumer feature; Common/Stream continue to use their existing Source
+UTF8 destination. LibJS and native browser bundle/captures are unchanged.
