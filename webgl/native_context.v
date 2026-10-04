@@ -151,8 +151,21 @@ pub fn (mut context OpenGLContext) notify_content_will_change() {
 	if context.lost_ {
 		return
 	}
+	context.notify_painting_surface_content_will_change()
+	context.did_update_canvas_content()
+}
+
+// Direct CPU painting-surface adaptation of the source context notification.
+// Concrete WebGLRenderingContext::did_update_canvas_content is ordered separately.
+pub fn (mut context OpenGLContext) notify_painting_surface_content_will_change() {
+	if context.lost_ {
+		return
+	}
 	context.content_will_change_ = true
 	context.needs_to_present_ = true
+}
+
+pub fn (mut context OpenGLContext) did_update_canvas_content() {
 	if callback := context.canvas_content_changed_ { callback(context.canvas_content_owner_) }
 }
 
@@ -293,7 +306,8 @@ pub fn (mut context OpenGLContext) dispatch(name string, args ...i64) bool {
 	}
 	// Source drawBuffers / WEBGL_draw_buffers only update GL draw-buffer state.
 	// CPU presentation is invalidated by actual rendering commands.
-	if (name.starts_with('draw') && name !in ['draw_buffers', 'draw_buffers_webgl'])
+	if (name.starts_with('draw') && name !in ['draw_buffers', 'draw_buffers_webgl',
+		'draw_arrays_instanced', 'draw_elements_instanced', 'draw_range_elements'])
 		|| name in ['clear', 'blit_framebuffer'] { context.notify_content_will_change() }
 	return success
 }

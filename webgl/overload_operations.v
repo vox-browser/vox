@@ -296,11 +296,11 @@ pub fn (mut context WebGLRenderingContext) draw_buffers(buffers []GLenum) {
 }
 
 pub fn (mut context WebGLRenderingContext) draw_range_elements(mode GLenum, start GLuint, end GLuint, count int, type_ GLenum, offset i64) {
-	if count < 0 || offset < 0 || start > end {
-		context.set_error(invalid_value)
-		return
-	}
-	context.webgl2_command('draw_range_elements', mode, start, end, count, type_, offset)
+	context.native.make_current()
+	if !context.require_webgl2() { return }
+	context.native.notify_painting_surface_content_will_change()
+	context.native.did_update_canvas_content()
+	context.native.dispatch('draw_range_elements', mode, start, end, count, type_, offset)
 }
 
 pub fn (mut context WebGLRenderingContext) framebuffer_texture_layer(target GLenum, attachment GLenum, texture ?&WebGLTexture, level int, layer int) {

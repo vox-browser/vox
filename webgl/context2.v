@@ -489,19 +489,17 @@ pub fn (mut context WebGLRenderingContext) compressed_tex_image3d(target GLenum,
 }
 
 pub fn (mut context WebGLRenderingContext) draw_arrays_instanced(mode GLenum, first int, count int, instance_count int) {
-	if first < 0 || count < 0 || instance_count < 0 {
-		context.set_error(invalid_value)
-		return
-	}
+	context.native.make_current()
+	context.native.notify_painting_surface_content_will_change()
+	context.native.did_update_canvas_content()
 	context.native.dispatch('draw_arrays_instanced', mode, first, count, instance_count)
 }
 
 pub fn (mut context WebGLRenderingContext) draw_elements_instanced(mode GLenum, count int, type_ GLenum, offset i64, instance_count int) {
-	if count < 0 || offset < 0 || instance_count < 0 {
-		context.set_error(invalid_value)
-		return
-	}
+	context.native.make_current()
+	context.native.notify_painting_surface_content_will_change()
 	context.native.dispatch('draw_elements_instanced', mode, count, type_, offset, instance_count)
+	context.native.did_update_canvas_content()
 }
 
 // Remaining WebGL2 pixel, texture, uniform matrix and reflection entry points
