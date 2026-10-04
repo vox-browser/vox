@@ -23,11 +23,11 @@ explicit/MIME/default selection, UTF-8 and both UTF-16 override directions,
 repeated and opposing BOMs, synchronous readAsText and the existing asynchronous
 compatibility adapter's resulting text/events.
 
-The asynchronous compatibility adapter retains copied pending bytes and an
-explicit `process_pending_tasks()` call. This feature does not provide Source's
-owning Window/Worker FileReading tasks, ReadOperationState/default-reader graph,
-Promise callbacks, native FileReader wrapper-world ArrayBuffer result cache or
-relevant-global event timestamps.
+The asynchronous compatibility read adapter retains copied pending bytes and an
+explicit `process_pending_tasks()` call. Packaging does not provide Source's
+ReadOperationState/default-reader graph, Promise callbacks or native FileReader
+wrapper-world ArrayBuffer result cache. The independent global/task/event owner
+prerequisite below supplies actual owners for those operations.
 
 ## Internal replacement decoder
 
@@ -64,3 +64,38 @@ The actual bridge's labels/one-shot/replacement/fatal behavior and the actual
 raw decoder's state/capacity behavior pass **2/2 in debug and 2/2 in release**,
 recorded in `source-replacement-decoder-probe.log`. This probe does not compile
 the C++ FileReader owner or establish legacy iconv decoder parity.
+
+## FileReader global/task/event owner prerequisite
+
+`fileapi/file_reader_global_context.v` retains the real creation global
+EventTarget and its HTML owner operations. `html/file_reader_operations.v`
+creates this context from genuine Window/Worker settings and preserves Source
+`FileReader.cpp:95`'s WindowOrWorkerGlobalScope verification with a fatal boundary.
+Every closure retains those settings and therefore their creation Realm and
+relevant agent; no author property/ID or newly manufactured global is consulted.
+
+The queue hook translates `HTML/EventLoop/EventLoop.cpp:774`'s JS::Object
+`queue_global_task` overload: it uses the creation settings' event loop and
+reads their current associated Window Document at queue time; Worker tasks have
+no Document. It does not call the DOM::Node/current-Document overload or capture
+the Document at FileReader construction. `FileReader.cpp:193`'s wrapper obtains
+the actual currently running TaskID, invokes its callback, then removes only
+that ID from the reader's pending set. Source `abort()` removes matching IDs
+from the genuine affiliated queue, clears the set, sets the abort flag, and
+fires the trusted events. Reentrant work queued by an abort handler retains its
+new IDs when the old executing wrapper returns.
+
+`create_associated_event` uses the existing HTML global-relative high-resolution
+clock (`global_relative_event_timestamp`) for the actual settings and keeps
+ordinary trusted, non-bubbling/non-cancelable Event records. Standalone reader
+construction/manual task processing stays a separate compatibility path.
+
+The focused actual-owner, existing standalone reader and existing owning Blob
+files pass **3/3 in both GC modes**, recorded in
+`source-file-reader-owner-{default,gc-none}.log`. Actual event-loop processing
+tests cover creation-global identity, Document capture at queue time, inactive
+queued Document retention, Worker loop/null Document, affiliated-only task
+removal, reentrant abort-handler tasks, trusted Window/Worker clock values and
+the loadend suppression after a reentrant read. Test loading state still uses
+the existing compatibility read entry point; the Source Stream read operation,
+native FileReader wrapper/bindings and wrapper-world result cache remain open.

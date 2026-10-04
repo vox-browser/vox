@@ -99,3 +99,12 @@ The separate internal replacement decoder now preserves Source's empty-input,
 single-U+FFFD and Unicode-BOM override behavior for FileReader labels, while
 public TextDecoder retains its required rejection. **5/5** focused files pass
 in both GC modes; actual Source Rust bridge probes pass **2/2** debug and release.
+
+The separate FileReader global context now retains actual creation Window/Worker
+settings, relevant agent/Realm and EventTarget. Its FileReading tasks capture
+the associated Document at queue time, track actual TaskIDs through callback
+return/abort, and create trusted events using the actual global-relative clock.
+Actual owner/standalone reader/owning Blob files pass **3/3 in both GC modes**.
+This is an owner prerequisite: the asynchronous read operation still needs the
+Source default-reader/Promise/ReadOperationState path, followed by native
+FileReader wrappers and its per-world result cache.
