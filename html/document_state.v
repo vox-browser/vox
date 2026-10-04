@@ -36,7 +36,7 @@ pub enum DocumentStateClient {
 	client
 }
 
-pub type HistoryPolicyContainer = DocumentStateClient | PolicyContainer
+pub type HistoryPolicyContainer = DocumentStateClient | dom.PolicyContainer
 
 pub enum RequestReferrerClient {
 	client
@@ -405,7 +405,7 @@ pub fn (entry &SessionHistoryEntry) policy_container() ?&PolicyContainer {
 	return entry.policy_container
 }
 
-pub fn (mut entry SessionHistoryEntry) set_policy_container(value ?&PolicyContainer) {
+pub fn (mut entry SessionHistoryEntry) set_policy_container(value ?&dom.PolicyContainer) {
 	entry.policy_container = value
 }
 

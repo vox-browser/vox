@@ -862,7 +862,7 @@ fn cloned_policy_container(container &PolicyContainer) &PolicyContainer {
 
 fn history_policy_container_value(value HistoryPolicyContainer) ?&PolicyContainer {
 	match value {
-		PolicyContainer {
+		dom.PolicyContainer {
 			return cloned_policy_container(&value)
 		}
 		DocumentStateClient {

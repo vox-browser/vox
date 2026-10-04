@@ -2300,9 +2300,6 @@ mut:
 pub struct ListOfAvailableImages {}
 
 @[heap]
-pub struct PolicyContainer {}
-
-@[heap]
 pub struct Storage {}
 
 pub type NavigableViewportScrollCallback = fn (voidptr, CSSPixelPoint_)
@@ -9456,9 +9453,11 @@ pub fn (mut d Document) set_active_sandboxing_flag_bits(bits u32) {
 	}
 }
 
+// Document.cpp:5508–5518 retains its lazily allocated actual container.
 pub fn (d &Document) policy_container() &PolicyContainer {
 	if d.policy_container_ == unsafe { nil } {
-		return &PolicyContainer{}
+		mut mutable_document := unsafe { &Document(d) }
+		mutable_document.policy_container_ = &PolicyContainer{}
 	}
 	return d.policy_container_
 }

@@ -11,31 +11,7 @@ module html
 import dom
 import fetch
 
-pub enum ReferrerPolicy {
-	empty_string
-	no_referrer
-	no_referrer_when_downgrade
-	same_origin
-	origin
-	strict_origin
-	origin_when_cross_origin
-	strict_origin_when_cross_origin
-	unsafe_url
-}
-
-pub fn (policy ReferrerPolicy) to_string() string {
-	return match policy {
-		.empty_string { '' }
-		.no_referrer { 'no-referrer' }
-		.no_referrer_when_downgrade { 'no-referrer-when-downgrade' }
-		.same_origin { 'same-origin' }
-		.origin { 'origin' }
-		.strict_origin { 'strict-origin' }
-		.origin_when_cross_origin { 'origin-when-cross-origin' }
-		.strict_origin_when_cross_origin { 'strict-origin-when-cross-origin' }
-		.unsafe_url { 'unsafe-url' }
-	}
-}
+pub type ReferrerPolicy = dom.ReferrerPolicy
 
 pub fn referrer_policy_from_string(value string) ?ReferrerPolicy {
 	return match ascii_lowercase_string(value) {
@@ -52,102 +28,19 @@ pub fn referrer_policy_from_string(value string) ?ReferrerPolicy {
 	}
 }
 
-pub enum CSPPolicyDisposition {
-	enforce
-	report
-}
+pub type CSPPolicyDisposition = dom.CSPPolicyDisposition
 
-pub enum CSPPolicySource {
-	header
-	meta
-}
+pub type CSPPolicySource = dom.CSPPolicySource
 
-pub struct SerializedCSPDirective {
-pub:
-	name  string
-	value []string
-}
+pub type SerializedCSPDirective = dom.SerializedCSPDirective
 
-pub struct SerializedCSPPolicy {
-pub:
-	directives               []SerializedCSPDirective
-	disposition              CSPPolicyDisposition
-	source                   CSPPolicySource
-	self_origin              dom.Origin
-	pre_parsed_policy_string string
-}
+pub type SerializedCSPPolicy = dom.SerializedCSPPolicy
 
-fn (policy SerializedCSPPolicy) clone() SerializedCSPPolicy {
-	mut directives := []SerializedCSPDirective{cap: policy.directives.len}
-	for directive in policy.directives {
-		directives << SerializedCSPDirective{
-			name: directive.name
-			value: directive.value.clone()
-		}
-	}
-	return SerializedCSPPolicy{
-		directives: directives
-		disposition: policy.disposition
-		source: policy.source
-		self_origin: policy.self_origin
-		pre_parsed_policy_string: policy.pre_parsed_policy_string
-	}
-}
+pub type IntegrityPolicy = dom.IntegrityPolicy
 
-pub struct IntegrityPolicy {
-pub:
-	sources              []string
-	blocked_destinations []RequestDestination
-	endpoints            []string
-}
+pub type SerializedPolicyContainer = dom.SerializedPolicyContainer
 
-pub fn (policy &IntegrityPolicy) is_empty() bool {
-	return policy.sources.len == 0 && policy.blocked_destinations.len == 0 && policy.endpoints.len == 0
-}
-
-pub struct SerializedPolicyContainer {
-pub:
-	csp_list        []SerializedCSPPolicy
-	embedder_policy EmbedderPolicy
-	referrer_policy ReferrerPolicy
-}
-
-@[heap]
-pub struct PolicyContainer {
-pub mut:
-	csp_list                     []SerializedCSPPolicy
-pub:
-	embedder_policy              EmbedderPolicy
-	referrer_policy              ReferrerPolicy = .strict_origin_when_cross_origin
-	integrity_policy             IntegrityPolicy
-	report_only_integrity_policy IntegrityPolicy
-}
-
-// https://html.spec.whatwg.org/multipage/browsers.html#clone-a-policy-container
-pub fn (container &PolicyContainer) clone() PolicyContainer {
-	mut csp_list := []SerializedCSPPolicy{cap: container.csp_list.len}
-	for policy in container.csp_list {
-		csp_list << policy.clone()
-	}
-	return PolicyContainer{
-		csp_list: csp_list
-		embedder_policy: container.embedder_policy
-		referrer_policy: container.referrer_policy
-		integrity_policy: container.integrity_policy
-	}
-}
-
-pub fn (container &PolicyContainer) serialize() SerializedPolicyContainer {
-	mut csp_list := []SerializedCSPPolicy{cap: container.csp_list.len}
-	for policy in container.csp_list {
-		csp_list << policy.clone()
-	}
-	return SerializedPolicyContainer{
-		csp_list: csp_list
-		embedder_policy: container.embedder_policy
-		referrer_policy: container.referrer_policy
-	}
-}
+pub type PolicyContainer = dom.PolicyContainer
 
 pub fn create_a_policy_container_from_serialized_policy_container(serialized SerializedPolicyContainer) PolicyContainer {
 	mut csp_list := []SerializedCSPPolicy{cap: serialized.csp_list.len}

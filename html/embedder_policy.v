@@ -6,19 +6,9 @@
 // Translation of Libraries/LibWeb/HTML/EmbedderPolicy.cpp.
 module html
 
-pub enum EmbedderPolicyValue {
-	unsafe_none
-	require_corp
-	credentialless
-}
+import dom
 
-pub fn (value EmbedderPolicyValue) to_string() string {
-	return match value {
-		.unsafe_none { 'unsafe-none' }
-		.require_corp { 'require-corp' }
-		.credentialless { 'credentialless' }
-	}
-}
+pub type EmbedderPolicyValue = dom.EmbedderPolicyValue
 
 pub fn embedder_policy_value_from_string(value string) ?EmbedderPolicyValue {
 	return match ascii_lowercase_string(value) {
@@ -29,10 +19,4 @@ pub fn embedder_policy_value_from_string(value string) ?EmbedderPolicyValue {
 	}
 }
 
-pub struct EmbedderPolicy {
-pub mut:
-	value                          EmbedderPolicyValue = .unsafe_none
-	report_only_value              EmbedderPolicyValue = .unsafe_none
-	reporting_endpoint             string
-	report_only_reporting_endpoint string
-}
+pub type EmbedderPolicy = dom.EmbedderPolicy

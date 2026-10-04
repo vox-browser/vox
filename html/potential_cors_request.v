@@ -19,31 +19,7 @@ pub enum PotentialCORSRequestMode {
 	no_cors
 }
 
-pub enum RequestDestination {
-	audio
-	audio_worklet
-	document
-	embed
-	font
-	frame
-	iframe
-	image
-	json
-	manifest
-	object
-	paint_worklet
-	report
-	script
-	service_worker
-	shared_worker
-	style
-	text
-	track
-	video
-	web_identity
-	worker
-	xslt
-}
+pub type RequestDestination = dom.RequestDestination
 
 // This is the subset of Fetch::Infrastructure::Request initialized by the
 // create-a-potential-CORS-request algorithm.

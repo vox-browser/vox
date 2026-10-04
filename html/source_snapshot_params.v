@@ -10,6 +10,8 @@ module html
 
 import dom
 
+// SourceSnapshotParams.h stores this pointer-retained record as a GC::Cell.
+@[heap]
 pub struct SourceSnapshotParams {
 pub:
 	// a boolean
