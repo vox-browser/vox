@@ -162,6 +162,37 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+linkProgram now drops its generated native command after loss, separately
+from its CPU owned-handle ordering correction. Pinned Impl.cpp:2233-2244
+records only the exact link command; GLFunctions.json:2885-2894 identifies
+its program object ID, generated proxy record and compositor native lookup.
+record_bytes:57-60 suppresses that command after loss. V retains CPU validation,
+then returns before C linking/metadata dispatch when actual owner selection is
+unavailable. No fabricated link status/cache or error algorithm is introduced.
+The read-only generated proxy/replay witness is
+`Build/audit-fixes/source-link-program-generated-boundary.txt`, SHA-256
+`a2a5fdf5c191288f7bc5df30f2d2fb5e480c69814877e9dd3a05200a8d21739a`.
+
+A genuine pre-fix EGL probe linked Other's matching native program through a
+lost Owner (LINK_STATUS=0 to 1), retained in
+source-link-program-lost-unfixed-probe_test.v and
+source-link-program-lost-unfixed-probe-gc-none.log. Corrected two-version typed/
+public tests keep Other's program genuinely unlinked, while its two compiled
+attachments remain intact. Lost Owner's original and owned SourceID2/native0
+records stay valid with their identity fields unchanged; foreign handle and
+public arity/nonnullable/forged-brand gates stay effective. Other's native
+CURRENT_PROGRAM=0, viewport and pending INVALID_ENUM survive without an extra
+zero-name error; loss reporting remains one-shot and public setters undefined.
+
+Two typed files pass in
+`Build/audit-fixes/source-link-program-lost-native-gc-none.log`; two public
+files pass in
+`Build/audit-fixes/source-link-program-lost-public-gc-none.log`, with GC disabled
+and explicit private paths. Existing live linking, CPU-order and actual native
+rejection neighbors remain included. This method-specific command drop does
+not establish remaining program mutation/is-object/getParameter parity, full
+remote transport or GC/WrapperWorld, and does not replace frozen sweep proof.
+
 linkProgram now keeps its Source owned-handle gate ahead of actual native
 owner selection. Impl.cpp:2233-2244 prefixes the body with an empty proxy
 make_current, validates program->handle(this), and only then records its GL
@@ -185,8 +216,8 @@ files pass in
 `Build/audit-fixes/source-link-program-owner-public-gc-none.log`, with GC disabled
 and explicit private paths. This focused evidence supersedes only those
 historical owner assumptions and is not a clean replacement full sweep.
-Lost linking, other program mutations/object families, full remote transport
-and GC/WrapperWorld remain separate source-reviewed work.
+Lost linking is separately reviewed above; other program mutations/object
+families, full remote transport and GC/WrapperWorld remain separate work.
 
 deleteProgram now drops its native deletion command after loss while still
 clearing the Source current-program slot by actual record identity. Pinned
