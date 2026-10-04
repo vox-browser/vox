@@ -1,6 +1,8 @@
 # Encoding translation status
 
-Complete, independently audited translation of `Libraries/LibWeb/Encoding`.
+Typed translation of `Libraries/LibWeb/Encoding`, with internal LibTextCodec
+helpers used by Blob and FileReader. This inventory does not establish complete
+Source runtime, generated native bindings or legacy decoder parity.
 
 | Upstream `.cpp` | V implementation |
 | --- | --- |
@@ -8,13 +10,25 @@ Complete, independently audited translation of `Libraries/LibWeb/Encoding`.
 | `TextEncoder.cpp` | `text_encoder.v` |
 | `TextEncoderCommon.cpp` | `text_encoder.v` |
 | `TextEncoderStream.cpp` | `text_encoder_stream.v` |
+| `LibTextCodec/Decoder.cpp` given-decoder BOM helper | `decode_with_bom_override.v` |
+| pinned `encoding_rs` 0.8.40 replacement decoder | `replacement_decoder.v` |
 
 The implementation also covers the label and BOM helpers used by the four
 translation units. The V boundary uses `iconv` for legacy encodings not
 provided by V's standard library; UTF-8, UTF-16 and `x-user-defined` retain
 typed streaming, fatal-error, BOM and surrogate state locally.
 
-- Upstream: 4 `.cpp` files, 438 LOC; all 4 adjacent headers and 4 IDLs audited.
-- V implementation: 668 LOC in 5 files.
-- V tests: 235 LOC in 4 files (26 test functions).
-- Verification: `v test encoding` and `v fmt -verify encoding`.
+The original 4-source/438-LOC, 668-V-LOC and 26-test-function counts are a
+historical inventory, not a current completeness measurement. Legacy encodings
+still use iconv and its compatibility error fallback; that boundary does not
+reproduce Source's full Rust decoder state and malformed-input behavior.
+
+The internal replacement decoder now translates the Source dependency's actual
+emitted/capacity/malformed state and replacement wrapper. The given-decoder
+helper routes replacement after Unicode BOM selection; public TextDecoder
+continues to reject it. Focused raw decoder, internal helper, public decoder
+stream and FileReader packaging tests pass **5/5 in both GC modes**. Native
+probes compile the actual pinned Rust bridge and dependency and pass **2/2 in
+debug and release**. Source mapping, exact dependency checksum and remaining
+FileReader owner boundaries are recorded in
+[`FILEREADER_TEXT_SOURCE.md`](../docs/translation-audit/FILEREADER_TEXT_SOURCE.md).

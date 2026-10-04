@@ -93,6 +93,9 @@ source mapping. This does not broaden the generic LibJS scalar string adapter.
 FileReader's typed Text packaging now applies Source's given-decoder BOM
 override after explicit-label/MIME/default selection. Focused packaging,
 existing reader and decoder files pass **3/3 in both GC modes**. Pinned repeated
-BOM behavior, source mapping and remaining replacement-decoder/actual
-FileReader owner boundaries are recorded in
+BOM behavior, source mapping and actual FileReader owner boundaries are recorded in
 [`FILEREADER_TEXT_SOURCE.md`](../docs/translation-audit/FILEREADER_TEXT_SOURCE.md).
+The separate internal replacement decoder now preserves Source's empty-input,
+single-U+FFFD and Unicode-BOM override behavior for FileReader labels, while
+public TextDecoder retains its required rejection. **5/5** focused files pass
+in both GC modes; actual Source Rust bridge probes pass **2/2** debug and release.

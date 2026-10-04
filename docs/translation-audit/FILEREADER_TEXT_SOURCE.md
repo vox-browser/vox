@@ -29,10 +29,38 @@ owning Window/Worker FileReading tasks, ReadOperationState/default-reader graph,
 Promise callbacks, native FileReader wrapper-world ArrayBuffer result cache or
 relevant-global event timestamps.
 
-The Source replacement decoder is a separate missing dependency: standardized
-labels such as `iso-2022-kr` select `replacement`, which LibTextCodec supports,
-but the existing V helper delegates to public TextDecoder and rejects it. A
-Unicode BOM bypasses that fallback, while no-BOM replacement remains open here.
-The exact pinned dependency is `encoding_rs` 0.8.40, recorded in Source's Cargo
-manifest/lock; its `src/replacement.rs` and LibTextCodec Rust bridge provide the
-body for the separate internal-decoder follow-up.
+## Internal replacement decoder
+
+Source `LibTextCodec/Decoder.cpp:283` and `:476` select a RustDecoder for the
+standardized `replacement` encoding. Its Rust bridge (`Rust/src/lib.rs:81`)
+accepts the label and invokes `decode_with_bom_removal` in replacement mode.
+Source's public Encoding/TextDecoder constructor separately rejects this
+encoding. The prior V helper incorrectly shared that constructor rejection
+with its internal decoder path.
+
+`encoding/replacement_decoder.v` translates the exact pinned `encoding_rs`
+0.8.40 dependency's `src/replacement.rs::decode_to_utf8_raw` and
+`src/lib.rs::Decoder::decode_to_utf8` replacement wrapper. The actual `emitted`
+slot remains false after empty input or output capacity below three bytes.
+The first malformed result consumes one byte; the wrapper emits one U+FFFD;
+subsequent input is consumed without output. The one-shot adapter allocates the
+Source decoder's three-byte maximum output. Replacement itself removes no BOM;
+the existing Source helper's prior Unicode sniff still overrides it.
+
+FileReader explicit/MIME replacement labels now return empty text for empty
+input and one U+FFFD for any nonempty input without a Unicode BOM. Public
+TextDecoder still reports RangeError for every replacement label.
+Raw decoder/capacity state, emission across chunks, labels, internal BOM
+override, explicit/MIME ordering and synchronous FileReader tests pass with
+the existing BOM and public decoder-stream neighbors: **5/5 in both GC modes**
+in `source-replacement-decoder-{default,gc-none}.log`.
+
+`tools/source_replacement_decoder_probe.py` includes the unmodified Source
+LibTextCodec Rust bridge in a temporary test crate. It copies Source's Cargo
+lock, pins encoding_rs 0.8.40 and checks the cached package's SHA256 against the
+locked checksum (`2a7a45518d2863d18aa47f4a0cf9faec2aa4304cc09df5e41299f276b3ad135e`).
+Every cached package file is checked against that archive before compilation.
+The actual bridge's labels/one-shot/replacement/fatal behavior and the actual
+raw decoder's state/capacity behavior pass **2/2 in debug and 2/2 in release**,
+recorded in `source-replacement-decoder-probe.log`. This probe does not compile
+the C++ FileReader owner or establish legacy iconv decoder parity.
