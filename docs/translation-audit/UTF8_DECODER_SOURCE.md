@@ -83,3 +83,73 @@ GC-none and 1/1 with production GC-none**, in
 It checks those exact native returned lengths, NUL, astral sequences, malformed
 continuations and incomplete tails. No native browser bundle/capture or frozen
 LibJS proof checkout is changed.
+
+
+## Actual five-slot decoder and replacement prerequisite
+
+Tooling-only `a827ff78` and feature `561ab5e830e73f73ba4531eac981de06f21cd3e2`
+add the actual Source Utf8Decoder translation and focused native-golden tests.
+`encoding/utf8_decoder.v` translates `utf_8.rs:551–708`: constructor,
+`in_neutral_state`, `extra_from_state`, all three checked maximum capacities,
+and the UTF8 raw decoder body. Its five retained slots are Source's code point,
+continuation count, continuation requirement, lower boundary and upper boundary.
+`macros.rs:10–72` checks input availability before destination space and commits
+the byte only after four-byte astral space is available. The destination valid
+prefix copy (`handles.rs:1093–1103`) uses the prior actual Source scalar validator.
+ASCII, two-/three-/four-byte starts, constrained second bytes, invalid-continuation
+unread, partial input and final incomplete input keep Source's exact branch and
+slot-update order. In particular, final incomplete input clears code point and
+counts without clearing the two boundary slots; an invalid continuation clears
+both boundaries and leaves that byte for the caller to reprocess.
+
+The UTF8 replacement wrapper lowers the actual `Decoder::decode_to_utf8`
+`lib.rs:3985–4031` loop, including original indexed U+FFFD writes. Source's
+replacement loop can panic at EOF when a pending sequence is finalized into a
+zero-/one-/two-byte destination: the raw EOF arm reports Malformed before a
+space check, and replacement writes exceed the destination. The first native
+failure at `src/lib.rs:4025` remains in
+`source-utf8-decoder-probe-source-eof-panic.log`. This feature preserves the fatal
+outcome, including production V bounds checks; it does not convert it into an
+author-visible decoding error. Actual owner calls must use Source's maximum
+capacity path. Checked capacities model the pinned native 64-bit `usize`; V's
+signed-int array allocation bound remains a separate narrower boundary.
+
+The probe first reruns the Source bridge and validated private-helper setup
+above. It appends probe-only private slot snapshots and the actual UTF8 variant
+reference export to ignored copied modules, leaving every original Source body
+intact. Raw calls invoke that actual private decoder; replacement calls invoke
+Source's actual `UTF_8.new_decoder_without_bom_handling()` record. Harness-only
+`catch_unwind` records 27 genuine fatal calls without fabricating returned
+counters. Other observed results provide exact consumed/written counts, malformed
+lengths, output bytes, error flags and all five slots. The capacity fixture
+contains 60 deduplicated actual observed native states, each queried at eight
+small/large 64-bit input lengths; decimal strings preserve large exact values.
+
+Both native debug and release runs pass **11,932 sequences**, **60 observed
+states with all three maximum capacities**, and **27 fatal short-EOF calls**.
+Their generated artifacts match byte for byte across the two profiles. The
+checked-in JSON files add only line breaks between complete native records;
+parsed JSON values compare exactly to the generated native artifacts.
+
+| Artifact | SHA256 |
+| --- | --- |
+| `encoding/fixtures/utf8_decoder_sequences.json` | `8ed113ce52351ea206488c905dd7eaef2466e7bc8fb513205f75e734b72fd7b4` |
+| `encoding/fixtures/utf8_decoder_capacities.json` | `53a49283dbd79da7fec941df93bd540ddbb2aaadbc4192295ee47c0b3b0ef2ce` |
+| `source-utf8-decoder-probe.log` | `50329478344c58da76a7bb02695bc4949bf9c960f481bbe0c9a03b79557a4033` |
+
+The focused V file passes **1/1 default GC, 1/1 GC-none and 1/1 production
+GC-none**, including actual compiled-child fatal calls at all three short
+capacities. Complete Encoding passes **11/11 in both GC modes**, in
+`source-utf8-decoder-full-{default,gc-none}.log`. Initial fixture failures
+(`source-utf8-decoder-focused-before-fatal-{output,diagnostic}.log`) preserve the
+incorrect diagnostic assumptions; the actual V panic is `array.set: index out
+of range` and the source decoder function is on the native stack. A temporary
+probe count-assertion placement compile failure is retained in
+`source-utf8-decoder-probe-before-count-placement.log`.
+
+This is a private decoder prerequisite. The existing whole-input consumer and
+stream boundary buffering have not yet been routed through it. Rust outer
+lifecycle/BOM bookkeeping, UTF16 destination conversion, encoder operations,
+physical String/Cow/Vec allocation and native SIMD ownership remain outside
+this feature. LibJS and the frozen proof checkout are unchanged; no browser
+bundle build or capture was run privately.
