@@ -162,6 +162,37 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+detachShader now keeps its exact Source program/shader handle gates ahead of
+actual native owner selection. Impl.cpp:651-680 prefixes the body with an
+empty Proxy make_current, validates both handles, records the command, and
+then clears the shader-type retained slot unconditionally. V now selects the
+owner only at that genuine command boundary. Native-name forwarding, lack of
+an added retained-slot/attachment success gate, and the post-command clear
+remain unchanged.
+
+The genuine pre-fix foreign-shader probe selected Owner rather than current
+Other, retained in source-detach-shader-unfixed-probe_test.v and
+source-detach-shader-unfixed-probe-gc-none.log. New two-version typed/public
+cases keep Other selected with its pending INVALID_ENUM on foreign/deleted
+shader and foreign/deleted program gates. Public arity, nonnullable and
+forged-brand conversion errors likewise stay before body dispatch. An owned
+unattached shader supplies an independent actual driver rejection baseline:
+translated detach selects Owner, preserves that driver error and actual two
+attachments, yet clears Source's corresponding vertex slot. The genuinely
+attached vertex can subsequently detach despite that already-cleared Source
+slot. Successful calls preserve actual attachment counts and the remaining
+fragment's public wrapper identity until both attachments are removed.
+
+Two typed files pass in
+`Build/audit-fixes/source-detach-shader-owner-native-gc-none.log`; two public
+files pass in
+`Build/audit-fixes/source-detach-shader-owner-public-gc-none.log`, with GC disabled
+and explicit private paths, including existing rejection/order neighbors.
+No historical fixture required migration. Lost detachment is a separate
+command-drop/retained-clear slice; bind/location, other bodies/object families,
+full remote transport and GC/WrapperWorld remain source-reviewed scopes.
+Frozen full-sweep and canonical bundle evidence remain unchanged.
+
 attachShader now suppresses its generated native command after context loss
 while still assigning the actual retained shader slot after that command.
 Impl.cpp:166-177 calls the proxy and then writes the type-specific actual
