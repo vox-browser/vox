@@ -197,3 +197,31 @@ cover `get size`/`get type`, every method's Source name and zero IDL arity,
 absence of own `prototype`, failed construction, getter/method descriptor
 flags and the Blob tag flags. Metadata plus constructor files pass **2/2** in
 both GC modes in `source-blob-metadata-constructor-{default,gc-none}.log`.
+
+`browserjs/blob_constructor_darwin.c.v` translates the pinned Python binding
+generator's Blob constructor/argument/sequence/union/dictionary conversions
+and calls the existing Source Blob body. The fresh generator was run against
+the pinned IDL inputs into the V workspace's ignored
+`Build/audit-fixes/blob-source-bindings/{Blob,File,FileList}.cpp` reference
+files; older upstream Build constructor outputs use stale String/realm APIs.
+The constructor reads `newTarget.prototype` once before conversions, preserves
+actual Blob/BufferSource union records, converts other parts to well-formed
+USVString, and copies buffer data only after the endings/type option getters.
+This retains option mutations and detachment. Shared/resizable concrete view
+restrictions follow the generator, and raw SharedArrayBuffer uses the pinned
+union's USVString fallback. The direct sequence loop retains original thrown
+values and the source absence of IteratorClose on conversion failure.
+
+The native constructor uses a captured construct hook to avoid an ordinary JS
+function's extra implicit prototype lookup. It preserves Source constructor,
+global and prototype descriptor flags, name/zero IDL arity and the exact
+called-without-new error. Invalid EndingType messages retain original raw
+UTF-16 units. The focused constructor file passes both modes in
+`source-blob-constructor-{default,gc-none}-final.log`, including default/null
+handling, copied parts, string conversion, mutations, detachment, raw error
+units, Proxy/iterator/property error identity and derived prototypes.
+Same-runtime primitive-prototype fallback uses the actual original prototype;
+foreign `newTarget` fallback via Source GetFunctionRealm remains open because
+this engine ABI does not expose the owning function realm. Native Worker
+ReadableStream host construction and public browser installation are separate
+work. The compact XHR facade remains outside this actual Blob owner table.

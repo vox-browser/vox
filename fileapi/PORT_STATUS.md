@@ -63,11 +63,14 @@ Blob.bytes fulfillment constructs a genuine Uint8Array over exactly the
 read-all buffer without a second buffer allocation; its native identity,
 mutation and empty NewObject file passes both GC modes. The standalone
 text/array_buffer/bytes facade settles synchronously;
-it does not establish the source task/Promise owner path. Genuine native Blob/File/FileList constructors,
-constructor and clone exposure remain open. A genuine native Blob record host
+it does not establish the source task/Promise owner path. A genuine native Blob record host
 now binds raw getters, slice and owning stream/text/arrayBuffer/bytes methods;
 its focused owner/identity/receiver file passes both GC modes. Its public
-generated constructor is a separate slice. File/FileList native bindings
-remain open. The compact XHR Blob object is
+generated constructor now preserves original records, sequence/USVString and
+dictionary conversion order, post-option buffer copies, Source descriptor
+flags and original error values. The focused constructor file passes both
+modes. Foreign-newTarget prototype fallback, native Worker stream ownership,
+public browser installation, native clone projection and File/FileList native
+bindings remain open. The compact XHR Blob object is
 a separate compatibility facade. FileReader owner tasks, blob URL process
 ownership and complete generated bindings still need runtime validation.
