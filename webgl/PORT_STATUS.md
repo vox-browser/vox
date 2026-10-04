@@ -328,6 +328,22 @@ The installed ANGLE compressed ABI adaptation below remains unchanged; this
 slice translates source validation/delegation and does not claim unavailable
 robust entry points or remote command transport.
 
+WebGL2 3D byte-view and nullable uploads now directly follow
+`WebGL2RenderingContextImpl.cpp:208-225`, `:244-252`, and `:265-279`:
+select the owning driver, validate a non-null input witness/span, and forward
+the exact dimensions, border and bytes to robust GL. Extra V geometry/border
+checks were removed from the byte bodies; the separate bitmap overload's
+source border check remains intact. Compact 3D span errors select the owner
+before returning. The new typed source, actual texture-layer and nullable files
+passed with GC disabled in `source-3d-upload-gc-none.log` (three files), including
+layered readback through an actual texture binding absent from the retained
+source slots and original driver error order for byte/null inputs. The actual
+public source and effective-overload files passed in
+`source-3d-upload-public-gc-none.log` (two files), preserving source element
+offsets, genuine layer pixels and owner selection on invalid spans. Bitmap
+source TODOs, remote transport and complete LibJS ownership remain separate
+boundaries.
+
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
 ANGLE builds lacking compressed robust entry points use the matching GLES call
