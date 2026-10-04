@@ -4,6 +4,7 @@
 module fileapi
 
 import dom
+import streams
 
 pub struct FileReaderGlobalContext {
 pub:
@@ -12,6 +13,9 @@ pub:
 	currently_running_task_id fn () u64        @[required]
 	remove_affiliated_tasks   fn ([]u64)       @[required]
 	event_timestamp           fn () f64        @[required]
+	stream_realm              streams.StreamRealm
+	get_blob_stream           fn (&Blob) &streams.ReadableStream @[required]
+	run_callback_steps        fn (fn ())                         @[required]
 }
 
 // The context retains the real creation global and its Realm/settings hooks.

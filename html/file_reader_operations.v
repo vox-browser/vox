@@ -5,13 +5,25 @@
 module html
 
 import fileapi
+import streams
 
 pub fn (settings &EnvironmentSettingsObject) create_file_reader() !&fileapi.FileReader {
+	return settings.create_file_reader_in_realm(settings.stream_realm())
+}
+
+// Native bindings may supply the actual creation Realm's intrinsic hooks.
+// Task/microtask ownership continues to belong to these actual settings.
+pub fn (settings &EnvironmentSettingsObject) create_file_reader_in_realm(realm streams.StreamRealm) !&fileapi.FileReader {
+	return fileapi.FileReader.create_in_global_context(settings.file_reader_global_context_in_realm(realm))
+}
+
+pub fn (settings &EnvironmentSettingsObject) file_reader_global_context_in_realm(realm streams.StreamRealm) fileapi.FileReaderGlobalContext {
 	// Source constructor verifies its global is a WindowOrWorkerGlobalScope.
 	settings.window_or_worker_global_scope() or {
 		panic('Source VERIFY: FileReader requires a Window or Worker global')
 	}
-	context := fileapi.FileReaderGlobalContext{
+	assert realm.id == u64(voidptr(settings.realm())), 'Source FileReader relevant Realm must belong to its settings'
+	return fileapi.FileReaderGlobalContext{
 		global_object:             settings.global_object()
 		queue_file_reading_task:   fn [settings] (steps fn ()) u64 {
 			// Source queue_global_task reads the global's associated Document at
@@ -34,6 +46,15 @@ pub fn (settings &EnvironmentSettingsObject) create_file_reader() !&fileapi.File
 		event_timestamp:           fn [settings] () f64 {
 			return settings.global_relative_event_timestamp()
 		}
+		stream_realm:              realm
+		get_blob_stream:           fn [settings, realm] (blob &fileapi.Blob) &streams.ReadableStream {
+			return settings.get_blob_stream_in_realm(blob, realm)
+		}
+		run_callback_steps:        fn [settings] (steps fn ()) {
+			mut realm := unsafe { &ScriptingRealm(settings.realm()) }
+			mut context := TemporaryExecutionContext.create(mut realm, .yes)
+			defer { context.close() }
+			steps()
+		}
 	}
-	return fileapi.FileReader.create_in_global_context(context)
 }
