@@ -500,6 +500,25 @@ upstream FIXME and supplies no invented uniform-read algorithm. The V typed
 signature retains its existing optional-location convenience; the public IDL
 argument remains nonnullable.
 
+All eight scalar uniform setters now translate
+`WebGLRenderingContextImpl.cpp:2380-2465`: select the owning context, use native
+location zero for a null record, validate the parent-program pointer only for a
+present record, then call the exact glUniform1f–4f or glUniform1i–4i operation.
+They no longer inherit the vector helper's null no-op or late owner selection.
+Direct native ABI forwards preserve the source scalar commands and actual
+driver errors. Native source, source getter, real draw and location-identity
+cases passed with GC disabled in `source-scalar-uniform-gc-none.log` (four files).
+The actual public source and rendered host cases passed in
+`source-scalar-uniform-public-gc-none.log` (two files). Both versions exercise
+all eight matching uniform types, reset driver values before each null-location
+call, verify genuine uploads, and compare unbound-program driver errors.
+Foreign-parent rejection selects the owner before returning. Public wrong-brand
+conversion precedes numeric hooks, and all scalar numeric hooks finish before
+body parent validation. The source null-location behavior can update native
+location zero; this preserves the pin rather than supplying a specification
+correction. Vector/matrix overload ordering and transpose forwarding remain
+separate source slices.
+
 Upstream
 WebGL2 declarations below are explicitly `[FIXME]` at pinned commit
 `963d46a829f3e1b79f44dba9d02afb70654300fa`, with no matching operation bodies in
