@@ -19,6 +19,7 @@ import httpcookie
 import url as liburl
 import viewtransition
 import webidl
+import webdriver
 
 pub type XPathCreateExpressionCallback = fn (string, ?&XPathNSResolver) !&XPathExpression
 
@@ -11117,6 +11118,7 @@ pub fn (mut d Document) word_segmenter() &Segmenter {
 pub fn (mut d Document) steps_to_fire_beforeunload(unload_prompt_shown bool) StepsToFireBeforeunloadResult {
 	// 1. Let unloadPromptCanceled be false.
 	mut unload_prompt_canceled := false
+	mut prompt_shown := unload_prompt_shown
 
 	// 2. Increase the document's unload counter by 1.
 	d.unload_counter++
@@ -11127,26 +11129,46 @@ pub fn (mut d Document) steps_to_fire_beforeunload(unload_prompt_shown bool) Ste
 	// 4. Let eventFiringResult be the result of firing an event named beforeunload at document's relevant global object,
 	//    using BeforeUnloadEvent, with the cancelable attribute initialized to true.
 	mut event_firing_result := true
-	if d.window != unsafe { nil } {
-		beforeunload_event := BeforeUnloadEvent.create('beforeunload', EventInit{
-			cancelable: true
-		})
-		event_firing_result = EventDispatcher.dispatch(unsafe { &EventTarget(d.window) }, unsafe { &Event(beforeunload_event) }, false)
+	mut beforeunload_event := unsafe { &BeforeUnloadEvent(nil) }
+	window := d.get_window()
+	if relevant_window := window {
+		beforeunload_event = BeforeUnloadEvent.create('beforeunload', EventInit{})
+		beforeunload_event.time_stamp_ = current_high_resolution_time(relevant_window)
+		beforeunload_event.set_cancelable(true)
+		event_firing_result = relevant_window.dispatch_event(unsafe { &Event(beforeunload_event) })
 	}
 
 	// 5. Decrease document's relevant agent's event loop's termination nesting level by 1.
 	d.decrement_termination_nesting_level()
 
-	// FIXME: 6. If all of the following are true:
-	_ = event_firing_result
+	// 6. If all of the following are true:
+	if relevant_window := window {
+		if !prompt_shown
+			// HTML::SandboxingFlagSet::SandboxedModals is bit 12 at the DOM/HTML boundary.
+			&& d.active_sandboxing_flag_bits() & u32(1 << 12) == 0
+			&& relevant_window.has_sticky_activation()
+			&& (!event_firing_result || beforeunload_event.return_value() != '') {
+			// FIXME: Showing an unload prompt is unlikely to be annoying, deceptive, or pointless.
+			// 1. Set unloadPromptShown to true.
+			prompt_shown = true
+
+			// FIXME: 2. Invoke WebDriver BiDi user prompt opened.
+			// FIXME: 3. Ask the user to confirm unloading and pause for the response.
+			user_prompt_handler := webdriver.get_the_prompt_handler(.before_unload)
+			// 4. If the user did not confirm the page navigation, set unloadPromptCanceled to true.
+			if user_prompt_handler.handler == .dismiss {
+				unload_prompt_canceled = true
+			}
+			// FIXME: 5. Invoke WebDriver BiDi user prompt closed.
+		}
+	}
 
 	// 7. Decrease document's unload counter by 1.
 	d.unload_counter--
 
 	// 8. Return (unloadPromptShown, unloadPromptCanceled).
-	_ = unload_prompt_canceled
 	return StepsToFireBeforeunloadResult{
-		unload_prompt_shown: unload_prompt_shown
+		unload_prompt_shown: prompt_shown
 		unload_prompt_canceled: unload_prompt_canceled
 	}
 }
