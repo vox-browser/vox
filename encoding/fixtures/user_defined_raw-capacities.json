@@ -1,0 +1,914 @@
+[
+  {
+    "input_hex": "",
+    "capacity": 0,
+    "status": "input_empty",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "",
+    "capacity": 1,
+    "status": "input_empty",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "",
+    "capacity": 2,
+    "status": "input_empty",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "",
+    "capacity": 3,
+    "status": "input_empty",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "",
+    "capacity": 4,
+    "status": "input_empty",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "",
+    "capacity": 5,
+    "status": "input_empty",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "",
+    "capacity": 6,
+    "status": "input_empty",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "",
+    "capacity": 7,
+    "status": "input_empty",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "",
+    "capacity": 8,
+    "status": "input_empty",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "",
+    "capacity": 9,
+    "status": "input_empty",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "",
+    "capacity": 10,
+    "status": "input_empty",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "",
+    "capacity": 11,
+    "status": "input_empty",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "",
+    "capacity": 12,
+    "status": "input_empty",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "",
+    "capacity": 13,
+    "status": "input_empty",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "",
+    "capacity": 14,
+    "status": "input_empty",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "",
+    "capacity": 15,
+    "status": "input_empty",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "",
+    "capacity": 16,
+    "status": "input_empty",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "",
+    "capacity": 17,
+    "status": "input_empty",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "",
+    "capacity": 18,
+    "status": "input_empty",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "41",
+    "capacity": 0,
+    "status": "output_full",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "41",
+    "capacity": 1,
+    "status": "output_full",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "41",
+    "capacity": 2,
+    "status": "output_full",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "41",
+    "capacity": 3,
+    "status": "input_empty",
+    "read": 1,
+    "written": 1,
+    "output_hex": "41"
+  },
+  {
+    "input_hex": "41",
+    "capacity": 4,
+    "status": "input_empty",
+    "read": 1,
+    "written": 1,
+    "output_hex": "41"
+  },
+  {
+    "input_hex": "41",
+    "capacity": 5,
+    "status": "input_empty",
+    "read": 1,
+    "written": 1,
+    "output_hex": "41"
+  },
+  {
+    "input_hex": "41",
+    "capacity": 6,
+    "status": "input_empty",
+    "read": 1,
+    "written": 1,
+    "output_hex": "41"
+  },
+  {
+    "input_hex": "41",
+    "capacity": 7,
+    "status": "input_empty",
+    "read": 1,
+    "written": 1,
+    "output_hex": "41"
+  },
+  {
+    "input_hex": "41",
+    "capacity": 8,
+    "status": "input_empty",
+    "read": 1,
+    "written": 1,
+    "output_hex": "41"
+  },
+  {
+    "input_hex": "41",
+    "capacity": 9,
+    "status": "input_empty",
+    "read": 1,
+    "written": 1,
+    "output_hex": "41"
+  },
+  {
+    "input_hex": "41",
+    "capacity": 10,
+    "status": "input_empty",
+    "read": 1,
+    "written": 1,
+    "output_hex": "41"
+  },
+  {
+    "input_hex": "41",
+    "capacity": 11,
+    "status": "input_empty",
+    "read": 1,
+    "written": 1,
+    "output_hex": "41"
+  },
+  {
+    "input_hex": "41",
+    "capacity": 12,
+    "status": "input_empty",
+    "read": 1,
+    "written": 1,
+    "output_hex": "41"
+  },
+  {
+    "input_hex": "41",
+    "capacity": 13,
+    "status": "input_empty",
+    "read": 1,
+    "written": 1,
+    "output_hex": "41"
+  },
+  {
+    "input_hex": "41",
+    "capacity": 14,
+    "status": "input_empty",
+    "read": 1,
+    "written": 1,
+    "output_hex": "41"
+  },
+  {
+    "input_hex": "41",
+    "capacity": 15,
+    "status": "input_empty",
+    "read": 1,
+    "written": 1,
+    "output_hex": "41"
+  },
+  {
+    "input_hex": "41",
+    "capacity": 16,
+    "status": "input_empty",
+    "read": 1,
+    "written": 1,
+    "output_hex": "41"
+  },
+  {
+    "input_hex": "41",
+    "capacity": 17,
+    "status": "input_empty",
+    "read": 1,
+    "written": 1,
+    "output_hex": "41"
+  },
+  {
+    "input_hex": "41",
+    "capacity": 18,
+    "status": "input_empty",
+    "read": 1,
+    "written": 1,
+    "output_hex": "41"
+  },
+  {
+    "input_hex": "414243",
+    "capacity": 0,
+    "status": "output_full",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "414243",
+    "capacity": 1,
+    "status": "output_full",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "414243",
+    "capacity": 2,
+    "status": "output_full",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "414243",
+    "capacity": 3,
+    "status": "output_full",
+    "read": 1,
+    "written": 1,
+    "output_hex": "41"
+  },
+  {
+    "input_hex": "414243",
+    "capacity": 4,
+    "status": "output_full",
+    "read": 2,
+    "written": 2,
+    "output_hex": "4142"
+  },
+  {
+    "input_hex": "414243",
+    "capacity": 5,
+    "status": "input_empty",
+    "read": 3,
+    "written": 3,
+    "output_hex": "414243"
+  },
+  {
+    "input_hex": "414243",
+    "capacity": 6,
+    "status": "input_empty",
+    "read": 3,
+    "written": 3,
+    "output_hex": "414243"
+  },
+  {
+    "input_hex": "414243",
+    "capacity": 7,
+    "status": "input_empty",
+    "read": 3,
+    "written": 3,
+    "output_hex": "414243"
+  },
+  {
+    "input_hex": "414243",
+    "capacity": 8,
+    "status": "input_empty",
+    "read": 3,
+    "written": 3,
+    "output_hex": "414243"
+  },
+  {
+    "input_hex": "414243",
+    "capacity": 9,
+    "status": "input_empty",
+    "read": 3,
+    "written": 3,
+    "output_hex": "414243"
+  },
+  {
+    "input_hex": "414243",
+    "capacity": 10,
+    "status": "input_empty",
+    "read": 3,
+    "written": 3,
+    "output_hex": "414243"
+  },
+  {
+    "input_hex": "414243",
+    "capacity": 11,
+    "status": "input_empty",
+    "read": 3,
+    "written": 3,
+    "output_hex": "414243"
+  },
+  {
+    "input_hex": "414243",
+    "capacity": 12,
+    "status": "input_empty",
+    "read": 3,
+    "written": 3,
+    "output_hex": "414243"
+  },
+  {
+    "input_hex": "414243",
+    "capacity": 13,
+    "status": "input_empty",
+    "read": 3,
+    "written": 3,
+    "output_hex": "414243"
+  },
+  {
+    "input_hex": "414243",
+    "capacity": 14,
+    "status": "input_empty",
+    "read": 3,
+    "written": 3,
+    "output_hex": "414243"
+  },
+  {
+    "input_hex": "414243",
+    "capacity": 15,
+    "status": "input_empty",
+    "read": 3,
+    "written": 3,
+    "output_hex": "414243"
+  },
+  {
+    "input_hex": "414243",
+    "capacity": 16,
+    "status": "input_empty",
+    "read": 3,
+    "written": 3,
+    "output_hex": "414243"
+  },
+  {
+    "input_hex": "414243",
+    "capacity": 17,
+    "status": "input_empty",
+    "read": 3,
+    "written": 3,
+    "output_hex": "414243"
+  },
+  {
+    "input_hex": "414243",
+    "capacity": 18,
+    "status": "input_empty",
+    "read": 3,
+    "written": 3,
+    "output_hex": "414243"
+  },
+  {
+    "input_hex": "41008042ff005a",
+    "capacity": 0,
+    "status": "output_full",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "41008042ff005a",
+    "capacity": 1,
+    "status": "output_full",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "41008042ff005a",
+    "capacity": 2,
+    "status": "output_full",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "41008042ff005a",
+    "capacity": 3,
+    "status": "output_full",
+    "read": 1,
+    "written": 1,
+    "output_hex": "41"
+  },
+  {
+    "input_hex": "41008042ff005a",
+    "capacity": 4,
+    "status": "output_full",
+    "read": 2,
+    "written": 2,
+    "output_hex": "4100"
+  },
+  {
+    "input_hex": "41008042ff005a",
+    "capacity": 5,
+    "status": "output_full",
+    "read": 3,
+    "written": 5,
+    "output_hex": "4100ef9e80"
+  },
+  {
+    "input_hex": "41008042ff005a",
+    "capacity": 6,
+    "status": "output_full",
+    "read": 3,
+    "written": 5,
+    "output_hex": "4100ef9e80"
+  },
+  {
+    "input_hex": "41008042ff005a",
+    "capacity": 7,
+    "status": "output_full",
+    "read": 3,
+    "written": 5,
+    "output_hex": "4100ef9e80"
+  },
+  {
+    "input_hex": "41008042ff005a",
+    "capacity": 8,
+    "status": "output_full",
+    "read": 4,
+    "written": 6,
+    "output_hex": "4100ef9e8042"
+  },
+  {
+    "input_hex": "41008042ff005a",
+    "capacity": 9,
+    "status": "output_full",
+    "read": 5,
+    "written": 9,
+    "output_hex": "4100ef9e8042ef9fbf"
+  },
+  {
+    "input_hex": "41008042ff005a",
+    "capacity": 10,
+    "status": "output_full",
+    "read": 5,
+    "written": 9,
+    "output_hex": "4100ef9e8042ef9fbf"
+  },
+  {
+    "input_hex": "41008042ff005a",
+    "capacity": 11,
+    "status": "output_full",
+    "read": 5,
+    "written": 9,
+    "output_hex": "4100ef9e8042ef9fbf"
+  },
+  {
+    "input_hex": "41008042ff005a",
+    "capacity": 12,
+    "status": "output_full",
+    "read": 6,
+    "written": 10,
+    "output_hex": "4100ef9e8042ef9fbf00"
+  },
+  {
+    "input_hex": "41008042ff005a",
+    "capacity": 13,
+    "status": "input_empty",
+    "read": 7,
+    "written": 11,
+    "output_hex": "4100ef9e8042ef9fbf005a"
+  },
+  {
+    "input_hex": "41008042ff005a",
+    "capacity": 14,
+    "status": "input_empty",
+    "read": 7,
+    "written": 11,
+    "output_hex": "4100ef9e8042ef9fbf005a"
+  },
+  {
+    "input_hex": "41008042ff005a",
+    "capacity": 15,
+    "status": "input_empty",
+    "read": 7,
+    "written": 11,
+    "output_hex": "4100ef9e8042ef9fbf005a"
+  },
+  {
+    "input_hex": "41008042ff005a",
+    "capacity": 16,
+    "status": "input_empty",
+    "read": 7,
+    "written": 11,
+    "output_hex": "4100ef9e8042ef9fbf005a"
+  },
+  {
+    "input_hex": "41008042ff005a",
+    "capacity": 17,
+    "status": "input_empty",
+    "read": 7,
+    "written": 11,
+    "output_hex": "4100ef9e8042ef9fbf005a"
+  },
+  {
+    "input_hex": "41008042ff005a",
+    "capacity": 18,
+    "status": "input_empty",
+    "read": 7,
+    "written": 11,
+    "output_hex": "4100ef9e8042ef9fbf005a"
+  },
+  {
+    "input_hex": "0000",
+    "capacity": 0,
+    "status": "output_full",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "0000",
+    "capacity": 1,
+    "status": "output_full",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "0000",
+    "capacity": 2,
+    "status": "output_full",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "0000",
+    "capacity": 3,
+    "status": "output_full",
+    "read": 1,
+    "written": 1,
+    "output_hex": "00"
+  },
+  {
+    "input_hex": "0000",
+    "capacity": 4,
+    "status": "input_empty",
+    "read": 2,
+    "written": 2,
+    "output_hex": "0000"
+  },
+  {
+    "input_hex": "0000",
+    "capacity": 5,
+    "status": "input_empty",
+    "read": 2,
+    "written": 2,
+    "output_hex": "0000"
+  },
+  {
+    "input_hex": "0000",
+    "capacity": 6,
+    "status": "input_empty",
+    "read": 2,
+    "written": 2,
+    "output_hex": "0000"
+  },
+  {
+    "input_hex": "0000",
+    "capacity": 7,
+    "status": "input_empty",
+    "read": 2,
+    "written": 2,
+    "output_hex": "0000"
+  },
+  {
+    "input_hex": "0000",
+    "capacity": 8,
+    "status": "input_empty",
+    "read": 2,
+    "written": 2,
+    "output_hex": "0000"
+  },
+  {
+    "input_hex": "0000",
+    "capacity": 9,
+    "status": "input_empty",
+    "read": 2,
+    "written": 2,
+    "output_hex": "0000"
+  },
+  {
+    "input_hex": "0000",
+    "capacity": 10,
+    "status": "input_empty",
+    "read": 2,
+    "written": 2,
+    "output_hex": "0000"
+  },
+  {
+    "input_hex": "0000",
+    "capacity": 11,
+    "status": "input_empty",
+    "read": 2,
+    "written": 2,
+    "output_hex": "0000"
+  },
+  {
+    "input_hex": "0000",
+    "capacity": 12,
+    "status": "input_empty",
+    "read": 2,
+    "written": 2,
+    "output_hex": "0000"
+  },
+  {
+    "input_hex": "0000",
+    "capacity": 13,
+    "status": "input_empty",
+    "read": 2,
+    "written": 2,
+    "output_hex": "0000"
+  },
+  {
+    "input_hex": "0000",
+    "capacity": 14,
+    "status": "input_empty",
+    "read": 2,
+    "written": 2,
+    "output_hex": "0000"
+  },
+  {
+    "input_hex": "0000",
+    "capacity": 15,
+    "status": "input_empty",
+    "read": 2,
+    "written": 2,
+    "output_hex": "0000"
+  },
+  {
+    "input_hex": "0000",
+    "capacity": 16,
+    "status": "input_empty",
+    "read": 2,
+    "written": 2,
+    "output_hex": "0000"
+  },
+  {
+    "input_hex": "0000",
+    "capacity": 17,
+    "status": "input_empty",
+    "read": 2,
+    "written": 2,
+    "output_hex": "0000"
+  },
+  {
+    "input_hex": "0000",
+    "capacity": 18,
+    "status": "input_empty",
+    "read": 2,
+    "written": 2,
+    "output_hex": "0000"
+  },
+  {
+    "input_hex": "ff41424344",
+    "capacity": 0,
+    "status": "output_full",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "ff41424344",
+    "capacity": 1,
+    "status": "output_full",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "ff41424344",
+    "capacity": 2,
+    "status": "output_full",
+    "read": 0,
+    "written": 0,
+    "output_hex": ""
+  },
+  {
+    "input_hex": "ff41424344",
+    "capacity": 3,
+    "status": "output_full",
+    "read": 1,
+    "written": 3,
+    "output_hex": "ef9fbf"
+  },
+  {
+    "input_hex": "ff41424344",
+    "capacity": 4,
+    "status": "output_full",
+    "read": 1,
+    "written": 3,
+    "output_hex": "ef9fbf"
+  },
+  {
+    "input_hex": "ff41424344",
+    "capacity": 5,
+    "status": "output_full",
+    "read": 1,
+    "written": 3,
+    "output_hex": "ef9fbf"
+  },
+  {
+    "input_hex": "ff41424344",
+    "capacity": 6,
+    "status": "output_full",
+    "read": 2,
+    "written": 4,
+    "output_hex": "ef9fbf41"
+  },
+  {
+    "input_hex": "ff41424344",
+    "capacity": 7,
+    "status": "output_full",
+    "read": 3,
+    "written": 5,
+    "output_hex": "ef9fbf4142"
+  },
+  {
+    "input_hex": "ff41424344",
+    "capacity": 8,
+    "status": "output_full",
+    "read": 4,
+    "written": 6,
+    "output_hex": "ef9fbf414243"
+  },
+  {
+    "input_hex": "ff41424344",
+    "capacity": 9,
+    "status": "input_empty",
+    "read": 5,
+    "written": 7,
+    "output_hex": "ef9fbf41424344"
+  },
+  {
+    "input_hex": "ff41424344",
+    "capacity": 10,
+    "status": "input_empty",
+    "read": 5,
+    "written": 7,
+    "output_hex": "ef9fbf41424344"
+  },
+  {
+    "input_hex": "ff41424344",
+    "capacity": 11,
+    "status": "input_empty",
+    "read": 5,
+    "written": 7,
+    "output_hex": "ef9fbf41424344"
+  },
+  {
+    "input_hex": "ff41424344",
+    "capacity": 12,
+    "status": "input_empty",
+    "read": 5,
+    "written": 7,
+    "output_hex": "ef9fbf41424344"
+  },
+  {
+    "input_hex": "ff41424344",
+    "capacity": 13,
+    "status": "input_empty",
+    "read": 5,
+    "written": 7,
+    "output_hex": "ef9fbf41424344"
+  },
+  {
+    "input_hex": "ff41424344",
+    "capacity": 14,
+    "status": "input_empty",
+    "read": 5,
+    "written": 7,
+    "output_hex": "ef9fbf41424344"
+  },
+  {
+    "input_hex": "ff41424344",
+    "capacity": 15,
+    "status": "input_empty",
+    "read": 5,
+    "written": 7,
+    "output_hex": "ef9fbf41424344"
+  },
+  {
+    "input_hex": "ff41424344",
+    "capacity": 16,
+    "status": "input_empty",
+    "read": 5,
+    "written": 7,
+    "output_hex": "ef9fbf41424344"
+  },
+  {
+    "input_hex": "ff41424344",
+    "capacity": 17,
+    "status": "input_empty",
+    "read": 5,
+    "written": 7,
+    "output_hex": "ef9fbf41424344"
+  },
+  {
+    "input_hex": "ff41424344",
+    "capacity": 18,
+    "status": "input_empty",
+    "read": 5,
+    "written": 7,
+    "output_hex": "ef9fbf41424344"
+  }
+]

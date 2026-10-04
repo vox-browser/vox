@@ -331,18 +331,6 @@ fn decode_utf16(input []u8, big_endian bool, fatal bool) !string {
 	return output.bytestr()
 }
 
-fn decode_x_user_defined(input []u8) string {
-	mut output := []u8{}
-	for byte in input {
-		if byte <= 0x7f {
-			output << byte
-		} else {
-			append_utf8_code_point(mut output, 0xf780 + u32(byte - 0x80))
-		}
-	}
-	return output.bytestr()
-}
-
 fn decode_single_byte_replacing(input []u8) string {
 	mut output := []u8{}
 	for byte in input {
