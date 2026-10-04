@@ -572,7 +572,10 @@ pub fn (mut context WebGLRenderingContext) detach_shader(mut program WebGLProgra
 		return
 	}
 	context.native.make_current()
-	C.vox_gl_detach_shader(program.object.native_handle_, shader.object.native_handle_)
+	// Source drops the lost command, then still clears the shader-type retained slot.
+	if context.native.current_ {
+		C.vox_gl_detach_shader(program.object.native_handle_, shader.object.native_handle_)
+	}
 	// The pinned source clears the typed retained slot after the driver call,
 	// including when GL rejects an owned shader that was never attached.
 	if shader.type_ == vertex_shader {
