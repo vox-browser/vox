@@ -1,9 +1,9 @@
 module libjs
 
 // Translated from LibJS/Runtime/Reference.{h,cpp} and EnvironmentCoordinate.h.
-// Boolean and Symbol primitive bases use the translated ToObject wrapper paths. Other
-// primitive wrappers and their prototypes remain pending; object bases and
-// environment references use the ordinary internal methods.
+// Boolean and Symbol bases use translated ToObject wrappers. String references
+// first use the Source virtual length/index lookup; remaining primitive wrappers
+// and prototypes are pending. Objects/environments use ordinary internal methods.
 
 pub const environment_coordinate_invalid_marker = u32(0xfffffffe)
 
@@ -182,11 +182,18 @@ pub fn (reference Reference) get_value(mut vm VM) !Value {
 	}
 	// 4. If IsPropertyReference(V) is true, then
 	if reference.is_property_reference() {
-		// a. Let baseObj be ? ToObject(V.[[Base]]).
-		base_obj := reference.base_object(mut vm)!
 		if private_name := reference.private_name {
+			base_obj := reference.base_object(mut vm)!
 			return base_obj.private_get(mut vm, private_name)
 		}
+		// Reference.cpp defers ToObject and first asks the actual string cell
+		// for its virtual length/index property. Prototype lookup remains below.
+		if reference.base_value.is_string() {
+			if value := reference.base_value.as_string().get_own_property(mut vm, reference.name) {
+				return value
+			}
+		}
+		base_obj := reference.base_object(mut vm)!
 		// c. Return ? baseObj.[[Get]](V.[[ReferencedName]], GetThisValue(V)).
 		return base_obj.internal_get(mut vm, reference.name, reference.get_this_value())!
 	}
