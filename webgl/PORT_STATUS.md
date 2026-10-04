@@ -155,8 +155,12 @@ GC disabled in `Build/audit-fixes/source-query-owner-legacy-reviewed-gc-none.log
 (2.2 seconds). Other historical cases remain scoped to their separate Source
 method reviews. This is frozen 120/121 plus one corrected focused file; the
 original sweep remains 120/121 and is not relabeled a clean 121-file pass.
-The separate frozen public sweep and its eventual evidence retain their exact
-canonical revision regardless of subsequent private fixes.
+The same unchanged frozen checkout passed all 91 public/mixed canvas files in
+720.444 seconds. Exact manifests, result/log hashes, whole-checkout identity,
+the archived missing-libregex attempt and copied dependency provenance are
+recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZEN_E93AAA7B.md).
+This public pass retains the frozen canonical revision regardless of subsequent
+private fixes.
 
 createShader now preserves the genuine invalid-type return from pinned
 WebGLRenderingContextImpl.cpp:472-485 before actual native selection. Four
