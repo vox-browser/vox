@@ -519,6 +519,22 @@ location zero; this preserves the pin rather than supplying a specification
 correction. Vector/matrix overload ordering and transpose forwarding remain
 separate source slices.
 
+The four WebGL2 unsigned scalar setters likewise follow
+`WebGL2RenderingContextImpl.cpp:280-322`, using the source scalar owner/optional
+parent prelude and exact glUniform1ui–4ui calls instead of the unsigned-vector
+helper's null no-op. The existing shared typed adapter retains its WebGL2 gate;
+public WebGL1 exposes none of these operations. Extended native scalar/source
+getter/draw cases passed with GC disabled in
+`source-unsigned-scalar-uniform-final-gc-none.log` (three files); actual public
+scalar and rendered host cases passed in
+`source-unsigned-scalar-uniform-public-gc-none.log` (two files). Native unsigned
+queries verify every bit of 0xffffffff, 0x80000000, 0x10000001 and 0x7fffffff,
+alongside reset-before-null uploads, selected-owner rejection and genuine
+unbound-program driver errors. The initial test-only conditional range-bound
+syntax was replaced with an explicit operation count for the repository's
+compiler; the earlier failed compilation is retained in
+`source-unsigned-scalar-uniform-gc-none.log`.
+
 Upstream
 WebGL2 declarations below are explicitly `[FIXME]` at pinned commit
 `963d46a829f3e1b79f44dba9d02afb70654300fa`, with no matching operation bodies in
