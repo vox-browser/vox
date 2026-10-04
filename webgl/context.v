@@ -503,6 +503,8 @@ pub fn (mut context WebGLRenderingContext) compile_shader(mut shader WebGLShader
 		return
 	}
 	context.native.make_current()
+	// Source record_bytes drops the generated CompileShader command after loss.
+	if !context.native.current_ { return }
 	C.vox_gl_compile_shader(shader.object.native_handle_)
 	context.native.dispatch('compile_shader', shader.object.handle_)
 }
