@@ -465,3 +465,22 @@ strongly typed input implementation; it does not invent a public input receiver
 from author-visible DOM IDs. Public HTMLInputElement wrapper/prototype bindings
 and foreign-world ownership remain explicit boundaries. Main FileList interface
 startup is the next independent feature; native Worker exposure remains open.
+
+The following main startup feature installs the actual FileList owner and exact
+generated interface constructor after the actual File prerequisites and before
+document scripts. The focused main regression enters `run_document_script_sources`
+to check Source interface/iterator exposure and the rejected author constructor.
+It then executes a document script with the genuine typed input's selected list
+supplied through a private test-only value callback, preserving live append and
+the exact actual selected File/Blob base identities. Native primary cloning
+uses the actual target FileList factory. Reading the selected File returns a
+genuine pending text Promise; precisely one owning-document FileReading task
+resolves it and the browser task poll/replay updates the live document.
+
+Main FileList, File and Blob startup fixtures pass **3/3** both modes in
+`source-main-file-list-{default,gc-none}.log`. Runtime cleanup precedes actual
+document finalization. Bundle/headless/capture verification remains root-owned.
+This installs the actual FileList interface; public HTMLInputElement receiver
+and prototype binding, foreign-world wrapper ownership and native Worker startup
+remain explicit separate dependencies. No public input receiver was inferred
+from author-visible DOM IDs or copied metadata.
