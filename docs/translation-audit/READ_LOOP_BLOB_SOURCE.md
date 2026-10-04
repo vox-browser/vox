@@ -442,3 +442,26 @@ Blob base's actual pointer, cover the direct nested File exposure/memory rules,
 and reject forged absent FileList exposure. Deleted actual target globals still
 allow reconstruction; forged FileList-prototype author objects stay ordinary.
 Main/Worker FileList startup and actual DOM producer bindings remain separate.
+
+The strongly typed actual input producer is now adapted directly to the native
+FileList owner. This maps Source HTMLInputElement.cpp lines 337–360 and the
+existing translated `HTMLInputElementModel.file_list/set_file_list`. The getter
+retains the cached actual selected list, returns null for non-file state, and
+wraps each actual selected File through the same File/Blob owner. Setter input
+matches pinned `to_idl_value.py::nullable_to_idl_value/interface_to_idl_value`:
+null or undefined becomes null, every other value requires actual native
+FileList identity, and failures create the Source actual TypeError before the
+model's applicability check. The model retains the supplied list itself and
+ignores null/non-file state without synthesizing selection events.
+
+Native producer plus existing typed input identity fixtures pass **2/2** both
+modes in `source-native-input-file-list-{default,gc-none}.log`. They cover cached
+empty list, picker replace/live append/cancel, exact selected File pointer,
+reset preserving the old native list, type transition, native setter identity,
+nullable no-op, and forged-brand rejection before applicability. A File read
+from the actual input list produces a genuine pending Promise and runs through
+the actual document's FileReading task. This prerequisite accepts an actual
+strongly typed input implementation; it does not invent a public input receiver
+from author-visible DOM IDs. Public HTMLInputElement wrapper/prototype bindings
+and foreign-world ownership remain explicit boundaries. Main FileList interface
+startup is the next independent feature; native Worker exposure remains open.
