@@ -290,3 +290,23 @@ The new file plus existing XHR host regressions pass **2/2** in both modes in
 passes both modes in `source-xhr-native-blob-{default,gc-none}-final.log`.
 Native Worker ownership, File/FileList native wrappers and the remaining typed
 BodyInit source carrier remain explicit open work.
+
+The File owner prerequisite follows `File.h`'s `File : Blob` and the pinned
+generator's `FileWrapper : BlobWrapper`: it registers the actual File together
+with its exact embedded Blob base under one wrapper. Inherited Blob methods
+therefore use the same immutable byte/type record and owning relevant realm.
+The actual File prototype inherits the retained actual Blob prototype and has
+Source DOMString name and signed lastModified getters plus the File tag.
+Getters retain raw UTF-16 name units and exact native accessor names, zero
+arity, nonconstructibility and descriptor flags. Author-created carriers do
+not establish File identity.
+
+`source-native-file-owner-{default,gc-none}.log` passes in both modes. Its
+focused fixtures check original File/base Blob pointer and wrapper identity,
+raw lone surrogate/nul name/type, direct negative timestamp slots, native
+getter metadata and rejection of a Blob receiver. Blob construction and
+slice read the actual File base without invoking poisoned own properties;
+slice creates a Blob, while inherited bytes retains a genuine Uint8Array
+Promise result and the actual document's FileReading task. This prerequisite
+does not expose a public File constructor. Generated construction, File-before-
+Blob dynamic clone classification and browser startup follow separately.
