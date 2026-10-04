@@ -639,7 +639,6 @@ pub fn (mut context WebGLRenderingContext) get_program_parameter(program &WebGLP
 }
 
 pub fn (mut context WebGLRenderingContext) get_shader_parameter(shader &WebGLShader, pname GLenum) WebGLParameterValue {
-	context.native.make_current()
 	if !context.owns(&shader.object) {
 		context.set_error(invalid_operation)
 		return WebGLParameterValue{}
