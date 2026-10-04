@@ -376,3 +376,56 @@ holder remain boundaries. The direct TextDecoder caller is the next feature;
 Common/Stream retain their actual UTF8 destination. No LibJS implementation or
 native browser bundle changes, and the preceding 29-file frozen sweep remains
 scoped to its earlier snapshot.
+
+## Direct TextDecoder UTF16 caller and final retained-owner snapshot
+
+Feature `2c231324b05215efda4140c4f4887898c422cd6b` replaces Shift_JIS's generic
+Common route in the existing typed TextDecoder with the actual retained
+owner's direct UTF16 destination. Source `TextDecoder.cpp:87–96` retains the
+owner when streaming; a non-streaming call flushes and replaces that owner
+before converting the saved success/error. The V caller preserves exactly
+that order, withholds failed partial units and constructs the existing owned
+Utf16String from the actual validated output units before its existing string
+projection. It does not recover units by decoding intermediate UTF8 output.
+Common/Stream continue to use that same actual owner's UTF8 destination.
+
+Tool `5ae13de5` runs the unchanged original Source u16 FFI through the pinned
+caller schedules: retained streaming items plus empty flush, a retained item
+followed by a nonempty flush, and independent whole-input flushes, followed by
+reuse. Decoder creation/free/reset in this harness mirrors the inspected
+Source caller around the genuine FFI; it is not execution of the C++ public
+binding/VM. Debug/release reproduce 852 scenarios / 3,124 native calls and 38
+failed nonempty partial callbacks. Exact native units, maximum capacity,
+callback presence and actual before/after reset lead/lifecycle are retained.
+The native bridge/package and Source checkout are not modified.
+
+The focused feature tests compare all 3,124 calls, actual retained/reset owner
+state, both Source BOM flags/error modes, and absence versus explicitly empty
+ReadonlyBytes input. A missing owning decoder has an explicit production
+fatal guard. Default, GC-none and production GC-none each pass 1/1 in
+`source-text-decoder-shift-jis-focused-*.log`. The initial fixture used a
+nonexistent UTF8 helper name; its compile-only failure is retained in
+`source-text-decoder-shift-jis-focused-initial-gc-none.log`, then corrected to
+the existing validated-output Utf16String helper without LibJS edits.
+
+- `text_decoder_shift_jis_schedules.json` SHA256:
+  `020cd5138f967ef4175a7c8df77a63d64828a0406b887ccc21ed2bf26b212e1b`.
+- Final original FFI/caller-schedule log:
+  `510a320593e36946c9f6ea5ebeaa04713714f9b7d02d5f5368f248011acdd602`.
+
+Full Encoding checks at exact feature `2c231324` pass **32/32 in both GC
+modes**, including both raw destinations, both shared streaming destinations
+and the actual Common/TextDecoder consumers. The entire 4,169 tracked files
+remain clean and byte-identical throughout both sweeps; whole-manifest SHA256
+is `e2d683f8490f18f6099fa91fa04ec4b2b1b6ea0e3e616ee74d0359ee0e928b5f`.
+Before/after manifests, status and HEAD are retained under
+`Build/audit-fixes/source-text-decoder-shift-jis-frozen/`.
+
+The native public TextDecoder holder/constructor, branded BufferSource/shared
+copy path, actual Realm/string-wrapper integration, physical allocator/OOM and
+real TransformStream controller/Promise graph remain explicit. The typed
+public string projects well-formed units from this decoder. Selected whole
+Shift_JIS UTF8/Cow ownership and the given-decoder BOM override still use the
+older compatibility caller and remain separate required slices. Other
+multibyte codecs are not generalized by this proof. No LibJS implementation or
+native browser bundle changes.
