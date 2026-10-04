@@ -115,6 +115,25 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+All five blend setters now match the unconditional GL bodies in
+`WebGLRenderingContextImpl.cpp:345-373`. Extra enum/extension/factor predicates,
+the unused retained blend-color field and generic blend-cache writes were
+removed. Unrestricted float colors reach the actual GLfloat ABI without a
+fabricated integer logging conversion or CPU clamp, following
+`Types.idl:10-11` and `GLFunctions.json:249-333`. Getter state remains the real GL
+state; genuine extension/query gates elsewhere are unchanged. Direct-driver
+oracles cover sixteen valid/invalid enum and factor cases in both versions,
+before and after a real WebGL1 extension request, including independent RGB
+and alpha factors, constant-factor errors, native-before-source error priority
+and two owners. NaN and both infinities use actual driver color/error oracles.
+Native and public real point draws verify the additive `[64,0,64,255]` pixel,
+including native commands after a prior actual GL error. Public throwing IDL
+conversion remains before all five source bodies. The meaningful pre-fix owner
+failure remains in `source-blend-reproduction-gc-none.log`. All four native
+new/state/parameter/extension files passed in `source-blend-gc-none.log`; all
+three public new/extension/host files passed in `source-blend-public-gc-none.log`.
+This later focused slice supplements the unchanged frozen 101/70 sweep.
+
 Viewport and scissor now follow the actual GL commands in
 `WebGLRenderingContextImpl.cpp:2306-2310,2584-2588`, without invented CPU
 dimension rejection or retained scalar fields. The native viewport mirror and
