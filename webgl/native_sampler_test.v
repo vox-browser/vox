@@ -20,7 +20,9 @@ fn test_native_sampler_parameters_preserve_floats_and_driver_validation() {
 	assert (context.get_parameter(sampler_binding).sampler or {panic("sampler")}).object.native_handle_ == sampler.object.native_handle_
 	context.bind_sampler(0xffffffff, sampler)
 	assert context.get_error() == invalid_value
-	assert context.bound_samplers.len == 1
+	mut actual_sampler := 0
+	C.vox_gl_int_parameter(sampler_binding, &actual_sampler)
+	assert GLuint(actual_sampler) == sampler.object.native_handle_
 	context.delete_sampler(mut sampler)
 	assert (context.get_parameter(sampler_binding).sampler or {panic("unbound sampler")}).object.native_handle_ == 0
 	context.bind_sampler(0, sampler)

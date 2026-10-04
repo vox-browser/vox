@@ -146,6 +146,7 @@ pub fn (mut context WebGLRenderingContext) create_sampler() &WebGLSampler {
 }
 
 pub fn (mut context WebGLRenderingContext) bind_sampler(unit GLuint, sampler ?&WebGLSampler) {
+	context.native.make_current()
 	if !context.require_webgl2() { return }
 	if value := sampler {
 		if !context.owns(&value.object) {
@@ -159,9 +160,7 @@ pub fn (mut context WebGLRenderingContext) bind_sampler(unit GLuint, sampler ?&W
 		0
 	})
 	C.vox_gl_bind_sampler(unit, if value := sampler { value.object.native_handle_ } else { 0 })
-	if !context.native.collect_native_error() { return }
-	if value := sampler { context.bound_samplers[unit] = value.object.handle_ }
-	else { context.bound_samplers.delete(unit) }
+	context.native.collect_native_error()
 }
 
 fn valid_sampler_parameter(pname GLenum) bool {
@@ -198,6 +197,7 @@ pub fn (mut context WebGLRenderingContext) sampler_parameterf(mut sampler WebGLS
 }
 
 pub fn (mut context WebGLRenderingContext) delete_sampler(mut sampler ?&WebGLSampler) {
+	context.native.make_current()
 	if mut value := sampler {
 		handle_result := value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
 			context.set_error(invalid_operation)
@@ -208,9 +208,6 @@ pub fn (mut context WebGLRenderingContext) delete_sampler(mut sampler ?&WebGLSam
 		}
 		handle := value.object.bookkeeping_id()
 		context.samplers.delete(handle)
-		for unit, bound in context.bound_samplers {
-			if bound == handle { context.bound_samplers.delete(unit) }
-		}
 		context.native.dispatch('delete_sampler', handle)
 		C.vox_gl_delete_object(5, handle_result.value)
 		context.native.collect_native_error()

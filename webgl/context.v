@@ -50,7 +50,6 @@ mut:
 	bound_texture_objects               map[GLenum]&WebGLTexture
 	current_program                     ?&WebGLProgram
 	current_queries                     map[GLenum]&WebGLQuery
-	bound_samplers                      map[GLuint]GLuint
 	current_transform_feedback          ?&WebGLTransformFeedback
 	current_vertex_array                ?&WebGLVertexArrayObject
 	current_vertex_array_oes            ?&WebGLVertexArrayObjectOES
@@ -314,7 +313,6 @@ pub fn (mut context WebGLRenderingContext) reset_context_state_after_loss() {
 	context.context_generation_++
 	context.initialize_restored_client_state()
 	context.reset_client_side_webgl_state()
-	context.bound_samplers.clear()
 }
 
 pub fn (mut context WebGLRenderingContext) reset_client_side_webgl_state() {
