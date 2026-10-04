@@ -792,3 +792,55 @@ still require their actual destination bodies; this owner does not replace them
 with a conversion workaround. Native public interfaces, BufferSource conversion
 and other codecs remain explicit. No LibJS implementation or native bundle
 was changed or built privately.
+
+## TextDecoder UTF16-selected actual owner caller
+
+Feature `f8a77f36e362a9a8ea41b76084e62331a5519d04` connects UTF16LE/BE branches of
+the existing TextDecoder to the proven real UTF16 destination. The selected
+variant belongs to the Source Common record's owning StreamingDecoder
+(`TextDecoderCommon.cpp:61–65`), with the existing OwnPtr presence/VERIFY boundary
+retained. `TextDecoder.cpp:71–96` calls that owner's `to_utf16`, retaining its
+four variant slots and BOM lifecycle for streaming calls. A non-streaming call
+saves the result, resets the configured owner, then exposes success or the
+existing TypeError. The caller follows that exact order, withholding every
+fatal partial callback result.
+
+Successful units construct the existing genuine Utf16String unit-owner and
+use its existing `.str()` compatibility projection. Actual decoded output is
+well-formed UTF16: paired surrogates are emitted together and malformed input
+is replaced or withheld. This adds no Unicode representation or replacement
+policy. LibJS implementation code is unchanged. Public BufferSource input and
+returned model strings remain typed compatibility boundaries; native interface
+exposure, actual engine allocation/OOM and physical C++/Box/Vec ownership are
+not claimed by this caller.
+
+Focused tests compare all 5,192 real owning FFI calls in the prior sequence
+fixture through this existing entry point, excluding deliberate internal
+post-Finished misuse that Source TextDecoder prevents by resetting. They check
+actual retained BE/LE slots and fresh reset owners on every streaming/flushed
+success or error. All 32 genuine failed nonempty callback cases throw without
+returning their units. The original-FFI EOF fixture covers 32 cases/64 calls
+across both byte orders, every split, BOM setting and fatal option; both
+three-byte input cases now return one U+FFFD. Reuse after fatal EOF and absent
+input are checked, and two compiled child calls preserve the production
+missing-owner fatal guard. `utf16_eof.json` SHA256 is
+`1cbebd070be955f3402eaca4e85d515b877f52be28fe035fb877baab01443365`.
+
+Focused checks pass 1/1 default, GC-none and production GC-none in
+`source-text-decoder-utf16-variant-focused-{default,gc-none,production-gc-none}.log`.
+The original model reproduction now passes for both byte orders in
+`source-utf16-eof-after-owner-gc-none.log`; the original failing logs are retained.
+The genuine native Sync Text check passes 1/1 GC-none at the clean caller snapshot
+in `source-text-decoder-utf16-variant-native-sync-text-gc-none.log`.
+
+Initial full sweeps at caller snapshot f8a77f36 passed 20/21 in both modes and
+identified the old BOM-override fixture described below. After its independently
+witnessed correction, complete Encoding passes **21/21 in both modes** at clean
+snapshot `de622687b564885d7c3dd41c2324d64c490b794f`; tracked files remained
+unchanged throughout those sweeps. Final logs are
+`source-text-decoder-utf16-variant-final-full-{default,gc-none}.log`.
+
+Common/Stream still require the same actual variant's Source UTF8 destination;
+this caller does not convert its UTF16 output to substitute for those owners.
+The generic whole-input UTF16-to-UTF8 decoder and other codecs remain separate
+translation bodies. No native browser bundle was built or captured privately.
