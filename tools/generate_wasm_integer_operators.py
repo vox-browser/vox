@@ -12,6 +12,7 @@ BINARY_NAMES = ("Divide", "Modulo", "BitRotateLeft", "BitRotateRight")
 UNARY_NAMES = ("EqualsZero", "CountLeadingZeros", "CountTrailingZeros", "PopCount")
 SHIFT_NAMES = ("BitShiftLeft", "BitShiftRight")
 COMPARISON_NAMES = ("Equals", "NotEquals", "LessThan", "GreaterThan", "LessThanOrEquals", "GreaterThanOrEquals")
+ARITHMETIC_NAMES = ("Add", "Subtract", "Multiply", "BitAnd", "BitOr", "BitXor")
 
 BINARY_DRIVER = r"""
 #include <bit>
@@ -206,13 +207,50 @@ int main()
 """
 
 
+ARITHMETIC_DRIVER = r"""
+#include <bit>
+#include <stdio.h>
+#include <stdint.h>
+
+template<typename T> void arithmetic_result(char const* name, u64 lhs, u64 rhs, T value)
+{
+    printf("%s\t%016llx\t%016llx\t%016llx\n", name,
+        (unsigned long long)lhs, (unsigned long long)rhs, (unsigned long long)value);
+}
+int main()
+{
+    using namespace Wasm::Operators;
+    u64 const inputs[] = {0, 1, 2, 7, 0xfffffffffffffff9ULL,
+        0x7fffffffULL, 0x80000000ULL, 0xffffffffULL,
+        0x7fffffffffffffffULL, 0x8000000000000000ULL,
+        0xfffffffffffffffeULL, 0xffffffffffffffffULL};
+    for (auto lhs : inputs) {
+        for (auto rhs : inputs) {
+            arithmetic_result("add_u32", lhs, rhs, Add{}((u32)lhs, (u32)rhs));
+            arithmetic_result("add_u64", lhs, rhs, Add{}((u64)lhs, (u64)rhs));
+            arithmetic_result("sub_u32", lhs, rhs, Subtract{}((u32)lhs, (u32)rhs));
+            arithmetic_result("sub_u64", lhs, rhs, Subtract{}((u64)lhs, (u64)rhs));
+            arithmetic_result("mul_u32", lhs, rhs, Multiply{}((u32)lhs, (u32)rhs));
+            arithmetic_result("mul_u64", lhs, rhs, Multiply{}((u64)lhs, (u64)rhs));
+            arithmetic_result("and_i32", lhs, rhs, BitAnd{}(std::bit_cast<i32>((u32)lhs), std::bit_cast<i32>((u32)rhs)));
+            arithmetic_result("and_i64", lhs, rhs, BitAnd{}(std::bit_cast<i64>((u64)lhs), std::bit_cast<i64>((u64)rhs)));
+            arithmetic_result("or_i32", lhs, rhs, BitOr{}(std::bit_cast<i32>((u32)lhs), std::bit_cast<i32>((u32)rhs)));
+            arithmetic_result("or_i64", lhs, rhs, BitOr{}(std::bit_cast<i64>((u64)lhs), std::bit_cast<i64>((u64)rhs)));
+            arithmetic_result("xor_i32", lhs, rhs, BitXor{}(std::bit_cast<i32>((u32)lhs), std::bit_cast<i32>((u32)rhs)));
+            arithmetic_result("xor_i64", lhs, rhs, BitXor{}(std::bit_cast<i64>((u64)lhs), std::bit_cast<i64>((u64)rhs)));
+        }
+    }
+}
+"""
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--upstream", type=Path, default=Path.home() / "code/3rd/ladybird")
     parser.add_argument("--build-dir", type=Path)
     parser.add_argument("--compiler", default="clang++")
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--family", choices=("binary", "unary", "shift", "comparison"), default="binary")
+    parser.add_argument("--family", choices=("binary", "unary", "shift", "comparison", "arithmetic"), default="binary")
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
     upstream = args.upstream.resolve()
@@ -228,16 +266,17 @@ def main():
         "unary": (UNARY_NAMES, UNARY_DRIVER, 1656, "unary_integer_operators.tsv"),
         "shift": (SHIFT_NAMES, SHIFT_DRIVER, 5760, "shift_integer_operators.tsv"),
         "comparison": (COMPARISON_NAMES, COMPARISON_DRIVER, 2880, "comparison_integer_operators.tsv"),
+        "arithmetic": (ARITHMETIC_NAMES, ARITHMETIC_DRIVER, 1728, "arithmetic_integer_operators.tsv"),
     }
     names, driver, expected_count, filename = families[args.family]
-    if args.family == "comparison":
+    if args.family in ("comparison", "arithmetic"):
         macro = re.search(r"^#define DEFINE_BINARY_OPERATOR\(Name, operation\).*?(?=^DEFINE_BINARY_OPERATOR\(Equals)", source, re.MULTILINE | re.DOTALL)
         if macro is None:
             parser.error("Missing exact Source binary operator macro")
         excerpts.append(macro.group(0))
         hashes.append(f"# DEFINE_BINARY_OPERATOR sha256={hashlib.sha256(macro.group(0).encode()).hexdigest()}")
     for name in names:
-        expression = (r"^DEFINE_BINARY_OPERATOR\(" + name + r", .*?\);" if args.family == "comparison"
+        expression = (r"^DEFINE_BINARY_OPERATOR\(" + name + r", .*?\);" if args.family in ("comparison", "arithmetic")
                       else r"^struct " + name + r" \{.*?^};")
         match = re.search(expression, source, re.MULTILINE | re.DOTALL)
         if match is None:
@@ -245,7 +284,7 @@ def main():
         text = match.group(0)
         excerpts.append(text)
         hashes.append(f"# {name} sha256={hashlib.sha256(text.encode()).hexdigest()}")
-    if args.family == "comparison":
+    if args.family in ("comparison", "arithmetic"):
         excerpts.append("#undef DEFINE_BINARY_OPERATOR")
     # Only the selected verbatim Source records are needed. This avoids unrelated
     # LibWasm Types/LibSync generated exports; AK headers remain the actual source.
