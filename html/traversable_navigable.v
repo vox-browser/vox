@@ -491,10 +491,10 @@ fn collect_documents_that_will_unload(entries []&SessionHistoryEntry, active &Se
 @[heap]
 struct CheckUnloadingCanceledState {
 mut:
-	traversable         &TraversableNavigable = unsafe { nil }
+	traversable         ?&TraversableNavigable
 	documents           []&dom.Document
 	target_entry        ?&SessionHistoryEntry
-	user_involvement    UserNavigationInvolvement
+	user_involvement    ?UserNavigationInvolvement
 	callback            TraversableUnloadCheckCompletion = unsafe { nil }
 	final_status        CheckIfUnloadingIsCanceledResult = .continue_
 	unload_prompt_shown UnloadPromptShown = .no
@@ -506,7 +506,7 @@ mut:
 
 // CheckUnloadingCanceledState's Source constructor starts the deadline before
 // either phase is queued. Platform.Timer owns the callback while active.
-fn CheckUnloadingCanceledState.create(traversable &TraversableNavigable, documents []&dom.Document, target_entry ?&SessionHistoryEntry, user_involvement UserNavigationInvolvement, unload_prompt_shown UnloadPromptShown, callback TraversableUnloadCheckCompletion) &CheckUnloadingCanceledState {
+fn CheckUnloadingCanceledState.create(traversable ?&TraversableNavigable, documents []&dom.Document, target_entry ?&SessionHistoryEntry, user_involvement ?UserNavigationInvolvement, unload_prompt_shown UnloadPromptShown, callback TraversableUnloadCheckCompletion) &CheckUnloadingCanceledState {
 	mut state := &CheckUnloadingCanceledState{
 		traversable: traversable
 		documents: documents.clone()
@@ -523,6 +523,66 @@ fn CheckUnloadingCanceledState.create(traversable &TraversableNavigable, documen
 	})
 	state.timeout_.start()
 	return state
+}
+
+// LocalNavigable.cpp's actual local-Navigable input owner. The Document list
+// is captured from each supplied native host when the check starts.
+fn (mut state CheckUnloadingCanceledState) start_navigable_check(navigables []&dom.Navigable, target_entry ?&SessionHistoryEntry) {
+	for navigable in navigables {
+		if navigable_model_for_host(navigable) == none {
+			panic('Source unload checks require actual local Navigable identities')
+		}
+		state.documents << navigable.active_document() or {
+			panic('Source unload-check input requires its active Document')
+		}
+	}
+	if traversable := state.traversable {
+		if state.user_involvement == none {
+			panic('Source traversable unload check requires user involvement')
+		}
+		target := target_entry or { panic('Source traversable unload check requires a target entry') }
+		state.target_entry = target
+		current := traversable.current_session_history_entry() or {
+			panic('Source traversable unload check requires its current entry')
+		}
+		if voidptr(target) != voidptr(current) && history_entry_origins_are_equal(target, current) {
+			host := traversable.host_navigable_ or {
+				panic('Source local Traversable requires its native Navigable')
+			}
+			state.needs_before_unload = navigables.any(voidptr(it) == voidptr(host))
+			if state.needs_before_unload {
+				active := traversable.active_document()
+				for index, document in state.documents {
+					if current_document := active {
+						if voidptr(document) == voidptr(current_document) {
+							state.documents.delete(index)
+							break
+						}
+					}
+				}
+			}
+			if traversable.active_window() == none {
+				panic('Source native Traversable phase requires its active Window')
+			}
+			state.start_traverse_event_task()
+			return
+		}
+	}
+	state.start_document_tasks()
+}
+
+// Source's full check_if_unloading_is_canceled overload. Native hosts must
+// belong to existing local NavigableModels; remote selection is caller-owned.
+pub fn check_if_unloading_is_canceled(navigables []&dom.Navigable, traversable ?&TraversableNavigable, target_entry ?&SessionHistoryEntry, user_involvement ?UserNavigationInvolvement, unload_prompt_shown UnloadPromptShown, callback TraversableUnloadCheckCompletion) {
+	mut state := CheckUnloadingCanceledState.create(traversable, [], none, user_involvement, unload_prompt_shown, callback)
+	state.start_navigable_check(navigables, target_entry)
+}
+
+// V uses a distinct name for Source's result-only overload.
+pub fn check_if_unloading_is_canceled_for_navigables(navigables []&dom.Navigable, callback TraversableUnloadCompletion) {
+	check_if_unloading_is_canceled(navigables, none, none, none, .no, fn [callback] (result CheckIfUnloadingIsCanceledResult, _ UnloadPromptShown) {
+		callback(result)
+	})
 }
 
 fn (mut state CheckUnloadingCanceledState) finish(result CheckIfUnloadingIsCanceledResult) {
@@ -569,7 +629,8 @@ fn (mut state CheckUnloadingCanceledState) start_document_tasks() {
 }
 
 fn (mut state CheckUnloadingCanceledState) start_traverse_event_task() {
-	if window := state.traversable.active_window() {
+	traversable := state.traversable or { panic('Source phase one requires its Traversable') }
+	if window := traversable.active_window() {
 		// The task keeps this global's queue-time associated Document. Its
 		// steps re-read the inherited active Document and Window separately.
 		queue_global_task(.navigation_and_traversal, unsafe { &dom.Window(window) }, fn [mut state] () {
@@ -578,7 +639,7 @@ fn (mut state CheckUnloadingCanceledState) start_traverse_event_task() {
 		return
 	}
 	// Existing bare-host constructors have no actual Window/global yet.
-	active_document := state.traversable.active_document() or {
+	active_document := traversable.active_document() or {
 		state.start_document_tasks()
 		return
 	}
@@ -588,8 +649,9 @@ fn (mut state CheckUnloadingCanceledState) start_traverse_event_task() {
 }
 
 fn (mut state CheckUnloadingCanceledState) run_traverse_event_task(actual_window_task bool) {
+	traversable := state.traversable or { panic('Source phase one requires its Traversable') }
 	if state.needs_before_unload {
-		if current_active_document := state.traversable.active_document() {
+		if current_active_document := traversable.active_document() {
 			mut mutable_document := unsafe { &dom.Document(current_active_document) }
 			result := mutable_document.steps_to_fire_beforeunload(false)
 			if result.unload_prompt_shown {
@@ -606,17 +668,20 @@ fn (mut state CheckUnloadingCanceledState) run_traverse_event_task(actual_window
 	// Source reads the active Window again after beforeunload dispatch, whose
 	// callbacks can change the actual WindowProxy's [[Window]].
 	navigation := if actual_window_task {
-		window := state.traversable.active_window() or {
+		window := traversable.active_window() or {
 			panic('Source traverse event phase requires its active Window')
 		}
 		?&Navigation(window.navigation())
 	} else {
-		state.traversable.legacy_navigation_
+		traversable.legacy_navigation_
 	}
 	if owner := navigation {
 		if target := state.target_entry {
 			mut mutable_navigation := unsafe { &Navigation(owner) }
-			if !mutable_navigation.fire_a_traverse_navigate_event(target, state.user_involvement) {
+			user_involvement := state.user_involvement or {
+				panic('Source traverse event phase requires user involvement')
+			}
+			if !mutable_navigation.fire_a_traverse_navigate_event(target, user_involvement) {
 				state.finish(.canceled_by_navigate)
 				return
 			}
