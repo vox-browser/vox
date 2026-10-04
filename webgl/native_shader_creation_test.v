@@ -58,11 +58,12 @@ fn test_source_shader_creation_retains_owned_record_for_actual_native_zero() {
 			source_handle := shader.object.handle(context.identity(), context.context_generation()) or {
 				panic(err)
 			}
-			assert source_handle == 0
+			assert source_handle > 0
+			assert source_handle == shader.object.source_handle_
 			assert shader.object.bookkeeping_id() > 0
 			query_handle := shader.object.handle_for_query(context.identity(), context.context_generation())!
 			assert query_handle.has_value
-			assert query_handle.value == 0
+			assert query_handle.value == source_handle
 			zero_shaders << shader
 		}
 		first_error := context.get_error()
@@ -78,6 +79,9 @@ fn test_source_shader_creation_retains_owned_record_for_actual_native_zero() {
 			assert shader.object.invalidated_for_context(context.context_generation())
 		}
 		assert context.context_generation() == 1
+		assert context.next_object_id == 4
+		restored_shader := context.create_shader(vertex_shader) or { panic('source ID after restoration') }
+		assert restored_shader.object.handle(context.identity(), context.context_generation())! == 4
 	}
 }
 
@@ -93,14 +97,14 @@ fn test_source_lost_shader_creation_retains_owned_ids_without_touching_other_dri
 		other.native.make_current()
 		C.vox_gl_vertex_attrib_enable(0xffff_ffff, 1)
 		previous_records := context.shaders.len
-		first_proxy_id := context.next_handle
+		first_proxy_id := context.next_object_id
 		mut creation_index := GLuint(0)
 		for type_ in [vertex_shader, fragment_shader] {
 			shader := context.create_shader(type_) or { panic('lost source shader record') }
 			assert shader.type_ == type_
 			assert shader.object.native_handle_ == 0
 			assert context.owns(&shader.object)
-			assert shader.object.bookkeeping_id() == first_proxy_id + creation_index
+			assert shader.object.handle(context.identity(), context.context_generation())! == first_proxy_id + creation_index
 			assert shader.object.bookkeeping_id() != 0
 			creation_index++
 			assert context.shaders[shader.object.bookkeeping_id()] == shader

@@ -19,6 +19,7 @@ pub mut:
 	native &OpenGLContext
 mut:
 	next_handle                         GLuint = 1
+	next_object_id                      GLuint = 1
 	context_generation_                 u64
 	error_                              GLenum
 	context_lost_                       bool
@@ -96,6 +97,14 @@ fn (mut context WebGLRenderingContext) allocate_handle() GLuint {
 	handle := context.next_handle
 	context.next_handle++
 	return handle
+}
+
+// Source WebGLContextProxyBase allocates one u32 ID per generated creation.
+// Compact getter wrappers do not participate in this counter.
+fn (mut context WebGLRenderingContext) allocate_object_id() GLuint {
+	id := context.next_object_id
+	context.next_object_id++
+	return id
 }
 
 pub fn (mut context WebGLRenderingContext) set_error(error_value GLenum) {
@@ -289,10 +298,11 @@ pub fn (mut context WebGLRenderingContext) set_current_vertex_array_binding(vert
 
 pub fn (mut context WebGLRenderingContext) create_buffer() &WebGLBuffer {
 	handle := context.allocate_handle()
+	source_handle := context.allocate_object_id()
 	context.native.make_current()
 	native_handle := C.vox_gl_gen_object(0)
 	buffer := &WebGLBuffer{
-		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle, source_handle), native_handle_: native_handle}
 	}
 	unsafe {
 		context.buffers[handle] = buffer
@@ -302,10 +312,11 @@ pub fn (mut context WebGLRenderingContext) create_buffer() &WebGLBuffer {
 
 pub fn (mut context WebGLRenderingContext) create_framebuffer() &WebGLFramebuffer {
 	handle := context.allocate_handle()
+	source_handle := context.allocate_object_id()
 	context.native.make_current()
 	native_handle := C.vox_gl_gen_object(1)
 	framebuffer_object := &WebGLFramebuffer{
-		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle, source_handle), native_handle_: native_handle}
 	}
 	unsafe {
 		context.framebuffers[handle] = framebuffer_object
@@ -315,10 +326,11 @@ pub fn (mut context WebGLRenderingContext) create_framebuffer() &WebGLFramebuffe
 
 pub fn (mut context WebGLRenderingContext) create_renderbuffer() &WebGLRenderbuffer {
 	handle := context.allocate_handle()
+	source_handle := context.allocate_object_id()
 	context.native.make_current()
 	native_handle := C.vox_gl_gen_object(2)
 	renderbuffer_object := &WebGLRenderbuffer{
-		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle, source_handle), native_handle_: native_handle}
 	}
 	unsafe {
 		context.renderbuffers[handle] = renderbuffer_object
@@ -328,10 +340,11 @@ pub fn (mut context WebGLRenderingContext) create_renderbuffer() &WebGLRenderbuf
 
 pub fn (mut context WebGLRenderingContext) create_texture() &WebGLTexture {
 	handle := context.allocate_handle()
+	source_handle := context.allocate_object_id()
 	context.native.make_current()
 	native_handle := C.vox_gl_gen_object(3)
 	texture := &WebGLTexture{
-		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle, source_handle), native_handle_: native_handle}
 	}
 	unsafe {
 		context.textures[handle] = texture
@@ -345,6 +358,7 @@ pub fn (mut context WebGLRenderingContext) create_shader(type_ GLenum) ?&WebGLSh
 		return none
 	}
 	handle := context.allocate_handle()
+	source_handle := context.allocate_object_id()
 	// Source generated creation allocates a proxy ID even after loss, while
 	// record_bytes drops its command. Zero here is the absent native mapping,
 	// not the Source proxy ID retained in the owned wrapper.
@@ -356,7 +370,7 @@ pub fn (mut context WebGLRenderingContext) create_shader(type_ GLenum) ?&WebGLSh
 		}
 	}
 	shader := &WebGLShader{
-		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle, source_handle), native_handle_: native_handle}
 		type_: type_
 	}
 	unsafe {
@@ -367,10 +381,11 @@ pub fn (mut context WebGLRenderingContext) create_shader(type_ GLenum) ?&WebGLSh
 
 pub fn (mut context WebGLRenderingContext) create_program() &WebGLProgram {
 	handle := context.allocate_handle()
+	source_handle := context.allocate_object_id()
 	context.native.make_current()
 	native_handle := C.vox_gl_create_program()
 	program := &WebGLProgram{
-		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle, source_handle), native_handle_: native_handle}
 	}
 	unsafe {
 		context.programs[handle] = program
@@ -452,7 +467,7 @@ pub fn (mut context WebGLRenderingContext) delete_buffer(buffer ?&WebGLBuffer) {
 		handle := value.object.bookkeeping_id()
 		context.buffers.delete(handle)
 		context.native.dispatch('delete_buffer', handle)
-		C.vox_gl_delete_object(0, handle_result.value)
+		C.vox_gl_delete_object(0, value.object.native_handle_)
 	}
 }
 

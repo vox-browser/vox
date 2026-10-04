@@ -5,7 +5,7 @@ module browserjs
 import html
 import webgl
 
-fn test_public_source_native_names_do_not_replace_compact_wrapper_lookup_ids() {
+fn test_public_source_proxy_ids_and_native_names_preserve_compact_wrapper_identity() {
 	$if !darwin {
 		return
 	}
@@ -31,7 +31,8 @@ fn test_public_source_native_names_do_not_replace_compact_wrapper_lookup_ids() {
 	assert u32(actual) !in reserved
 	for _, buffer in host.buffers {
 		if buffer.object.context_id != context.identity() { continue }
-		assert buffer.object.handle(context.identity(), context.context_generation())! == u32(actual)
+		assert buffer.object.handle(context.identity(), context.context_generation())! == 1
+		assert buffer.object.native_name() == u32(actual)
 		assert buffer.object.bookkeeping_id() != u32(actual)
 	}
 	assert runtime.evaluate_host(r'(function(){handleGL.deleteBuffer(handleBuffer);if(handleGL.getParameter(handleGL.ARRAY_BUFFER_BINDING)!==handleBuffer)return false;handleGL.bindBuffer(handleGL.ARRAY_BUFFER,handleBuffer);return handleGL.getError()===handleGL.INVALID_OPERATION})()')! == 'true'

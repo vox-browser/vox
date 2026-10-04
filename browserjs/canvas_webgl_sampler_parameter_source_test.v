@@ -49,7 +49,7 @@ fn test_public_sampler_parameter_owner_and_source_name_gates_follow_idl_conversi
 	runtime.evaluate_host('samplerParamGL.samplerParameterf(ownedParamSampler,samplerParamGL.TEXTURE_MIN_LOD,-2.75);samplerParamGL.samplerParameterf(ownedParamSampler,samplerParamGL.TEXTURE_MAX_LOD,4.5)')!
 	for _, sampler in host.samplers {
 		if sampler.object.context_id != context.identity() { continue }
-		name := sampler.object.handle(context.identity(), context.context_generation())!
+		name := sampler.object.native_name()
 		assert C.vox_gl_sampler_parameter(name, webgl.texture_min_lod) == -2.75
 		assert C.vox_gl_sampler_parameter(name, webgl.texture_max_lod) == 4.5
 	}

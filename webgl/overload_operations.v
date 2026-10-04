@@ -275,7 +275,7 @@ pub fn (mut context WebGLRenderingContext) delete_transform_feedback(feedback ?&
 		handle := value.object.bookkeeping_id()
 		context.transform_feedbacks.delete(handle)
 		context.webgl2_command('delete_transform_feedback', handle)
-		C.vox_gl_delete_object(8,handle_result.value)
+		C.vox_gl_delete_object(8,value.object.native_handle_)
 	}
 }
 

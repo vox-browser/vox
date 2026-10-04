@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // Translation of WebGLObject and all WebGL resource wrapper implementation
-// units. native_handle_ is the source GLuint m_handle; handle_ is a distinct
-// compact-adapter bookkeeping ID. Context identity adapts the source GC owner.
+// units. source_handle_ stores Source m_handle (usually a generated proxy ID).
+// native_handle_ stores the mapped driver name; handle_ keys compact wrappers.
+// Context identity adapts the source GC owner.
 module webgl
 
 @[heap]
@@ -13,16 +14,18 @@ pub:
 	context_generation u64
 mut:
 	handle_      GLuint
+	source_handle_ GLuint
 	native_handle_ GLuint
 	invalidated_ bool
 	label_       string
 }
 
-fn new_object(context_id u64, context_generation u64, handle GLuint) WebGLObject {
+fn new_object(context_id u64, context_generation u64, handle GLuint, source_handle GLuint) WebGLObject {
 	return WebGLObject{
 		context_id: context_id
 		context_generation: context_generation
 		handle_: handle
+		source_handle_: source_handle
 	}
 }
 
@@ -48,7 +51,7 @@ pub fn (object &WebGLObject) handle(context_id u64, context_generation u64) !GLu
 	if object.invalidated_for_context(context_generation) {
 		return error('GL_INVALID_OPERATION')
 	}
-	return object.native_handle_
+	return object.source_handle_
 }
 
 pub fn (mut object WebGLObject) handle_for_deletion(context_id u64, context_generation u64) !WebGLOptionalHandle {
@@ -59,7 +62,7 @@ pub fn (mut object WebGLObject) handle_for_deletion(context_id u64, context_gene
 	object.invalidated_ = true
 	return WebGLOptionalHandle{
 		has_value: true
-		value: object.native_handle_
+		value: object.source_handle_
 	}
 }
 
@@ -70,8 +73,14 @@ pub fn (object &WebGLObject) handle_for_query(context_id u64, context_generation
 	}
 	return WebGLOptionalHandle{
 		has_value: true
-		value: object.native_handle_
+		value: object.source_handle_
 	}
+}
+
+// The direct native adapter stores the compositor-side GLuint separately.
+// Driver verification uses this name, rather than passing a Source proxy ID.
+pub fn (object &WebGLObject) native_name() GLuint {
+	return object.native_handle_
 }
 
 // Compact-host lookup IDs are separate from the source GLuint handle APIs.
@@ -209,6 +218,7 @@ pub mut:
 	object WebGLObject
 mut:
 	native_handle_ voidptr
+	proxy_handle_ GLuint
 }
 
 pub struct WebGLOptionalSyncHandle {

@@ -336,7 +336,7 @@ pub fn (mut context WebGLRenderingContext) delete_framebuffer(object ?&WebGLFram
 		handle := value.object.bookkeeping_id()
 		context.framebuffers.delete(handle)
 		context.command('delete_framebuffer', handle)
-		C.vox_gl_delete_object(1, handle_result.value)
+		C.vox_gl_delete_object(1, value.object.native_handle_)
 		if bound := context.bound_framebuffer_object {
 			if bound == value {
 				context.bound_framebuffer = 0
@@ -360,7 +360,7 @@ pub fn (mut context WebGLRenderingContext) delete_renderbuffer(object ?&WebGLRen
 		handle := value.object.bookkeeping_id()
 		context.renderbuffers.delete(handle)
 		context.command('delete_renderbuffer', handle)
-		C.vox_gl_delete_object(2, handle_result.value)
+		C.vox_gl_delete_object(2, value.object.native_handle_)
 	}
 }
 
@@ -378,7 +378,7 @@ pub fn (mut context WebGLRenderingContext) delete_texture(object ?&WebGLTexture)
 		handle := value.object.bookkeeping_id()
 		context.textures.delete(handle)
 		context.command('delete_texture', handle)
-		C.vox_gl_delete_object(3, handle_result.value)
+		C.vox_gl_delete_object(3, value.object.native_handle_)
 		for target, bound in context.bound_texture_objects {
 			if bound == value {
 				context.bound_textures.delete(target)
@@ -401,7 +401,7 @@ pub fn (mut context WebGLRenderingContext) delete_shader(object ?&WebGLShader) {
 		}
 		handle := value.object.bookkeeping_id()
 		context.shaders.delete(handle)
-		C.vox_gl_delete_shader(handle_result.value)
+		C.vox_gl_delete_shader(value.object.native_handle_)
 		context.command('delete_shader', handle)
 	}
 }
@@ -419,7 +419,7 @@ pub fn (mut context WebGLRenderingContext) delete_program(object ?&WebGLProgram)
 		}
 		handle := value.object.bookkeeping_id()
 		context.programs.delete(handle)
-		C.vox_gl_delete_program(handle_result.value)
+		C.vox_gl_delete_program(value.object.native_handle_)
 		if current := context.current_program {
 			if current == value {
 				context.current_program = none
@@ -739,7 +739,7 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
     mut handle:=0
     C.vox_gl_int_parameter(pname,&handle)
     logical:=context.allocate_handle()
-    sampler:=&WebGLSampler{object:WebGLObject{...new_object(context.identity(),context.context_generation_,logical),native_handle_:GLuint(handle)}}
+    sampler:=&WebGLSampler{object:WebGLObject{...new_object(context.identity(),context.context_generation_,logical,GLuint(handle)),native_handle_:GLuint(handle)}}
     unsafe {context.samplers[logical]=sampler}
     return WebGLParameterValue{kind:.object,object:logical,sampler:sampler}
    }
@@ -826,7 +826,7 @@ pub fn (mut context WebGLRenderingContext) get_vertex_attrib(index GLuint, pname
     value := C.vox_gl_vertex_attrib_parameter(index,pname)
     if pname == vertex_attrib_array_buffer_binding {
         handle := context.allocate_handle()
-        buffer := &WebGLBuffer{object: WebGLObject{...new_object(context.identity(),context.context_generation_,handle),native_handle_:GLuint(value)}}
+        buffer := &WebGLBuffer{object: WebGLObject{...new_object(context.identity(),context.context_generation_,handle,GLuint(value)),native_handle_:GLuint(value)}}
         unsafe { context.buffers[handle] = buffer }
         return WebGLParameterValue{kind:.object,object:handle,buffer:buffer}
     }

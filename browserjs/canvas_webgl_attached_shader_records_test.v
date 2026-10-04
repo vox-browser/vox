@@ -41,15 +41,15 @@ fn test_public_get_attached_shaders_wraps_retained_deleted_and_first_exposed_rec
 		fragment.object.set_label('retained deleted fragment')
 		context.attach_shader(mut program, fragment)
 		context.attach_shader(mut program, vertex)
-		vertex_native := vertex.object.handle(context.identity(), context.context_generation())!
-		fragment_native := fragment.object.handle(context.identity(), context.context_generation())!
+		vertex_native := vertex.object.native_name()
+		fragment_native := fragment.object.native_name()
 		context.delete_shader(vertex)
 		context.delete_shader(fragment)
 		assert voidptr(&vertex.object) !in host.platform_objects
 		assert voidptr(&fragment.object) !in host.platform_objects
 		mut count := 0
 		mut native_names := [u32(0), 0]!
-		C.glGetAttachedShaders(program.object.handle(context.identity(), context.context_generation())!,
+		C.glGetAttachedShaders(program.object.native_name(),
 			2, &count, &native_names[0])
 		assert count == 2
 		assert vertex_native in native_names

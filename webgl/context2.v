@@ -43,8 +43,9 @@ pub fn (mut context WebGLRenderingContext) create_query() &WebGLQuery {
 	context.require_webgl2()
 	context.native.make_current()
 	handle := context.allocate_handle()
+	source_handle := context.allocate_object_id()
 	query := &WebGLQuery{
-		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: C.vox_gl_gen_object(4)}
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle, source_handle), native_handle_: C.vox_gl_gen_object(4)}
 	}
 	unsafe {
 		context.queries[handle] = query
@@ -120,7 +121,7 @@ pub fn (mut context WebGLRenderingContext) delete_query(mut query ?&WebGLQuery) 
 		handle := value.object.bookkeeping_id()
 		context.queries.delete(handle)
 		context.native.dispatch('delete_query', handle)
-		C.vox_gl_delete_object(4, handle_result.value)
+		C.vox_gl_delete_object(4, value.object.native_handle_)
 	}
 }
 
@@ -128,8 +129,9 @@ pub fn (mut context WebGLRenderingContext) create_sampler() &WebGLSampler {
 	context.require_webgl2()
 	context.native.make_current()
 	handle := context.allocate_handle()
+	source_handle := context.allocate_object_id()
 	sampler := &WebGLSampler{
-		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: C.vox_gl_gen_object(5)}
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle, source_handle), native_handle_: C.vox_gl_gen_object(5)}
 	}
 	unsafe {
 		context.samplers[handle] = sampler
@@ -200,17 +202,19 @@ pub fn (mut context WebGLRenderingContext) delete_sampler(mut sampler ?&WebGLSam
 		handle := value.object.bookkeeping_id()
 		context.samplers.delete(handle)
 		context.native.dispatch('delete_sampler', handle)
-		C.vox_gl_delete_object(5, handle_result.value)
+		C.vox_gl_delete_object(5, value.object.native_handle_)
 	}
 }
 
 pub fn (mut context WebGLRenderingContext) fence_sync(condition GLenum, flags GLenum) ?&WebGLSync {
 	if !context.require_webgl2() { return none }
-	native_handle := context.native.native_fence_sync(condition, flags)
 	handle := context.allocate_handle()
+	source_handle := context.allocate_object_id()
+	native_handle := context.native.native_fence_sync(condition, flags)
 	sync := &WebGLSync{
-		object: new_object(context.identity(), context.context_generation_, handle)
+		object: new_object(context.identity(), context.context_generation_, handle, 0)
 		native_handle_: native_handle
+		proxy_handle_: source_handle
 	}
 	unsafe {
 		context.syncs[handle] = sync
@@ -260,8 +264,9 @@ pub fn (mut context WebGLRenderingContext) create_transform_feedback() &WebGLTra
 	context.native.make_current()
 	context.require_webgl2()
 	handle := context.allocate_handle()
+	source_handle := context.allocate_object_id()
 	feedback := &WebGLTransformFeedback{
-		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: C.vox_gl_gen_object(8)}
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle, source_handle), native_handle_: C.vox_gl_gen_object(8)}
 	}
 	unsafe {
 		context.transform_feedbacks[handle] = feedback
@@ -309,8 +314,9 @@ pub fn (mut context WebGLRenderingContext) create_vertex_array() &WebGLVertexArr
 	context.require_webgl2()
 	context.native.make_current()
 	handle := context.allocate_handle()
+	source_handle := context.allocate_object_id()
 	array := &WebGLVertexArrayObject{
-		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: C.vox_gl_gen_object(6)}
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle, source_handle), native_handle_: C.vox_gl_gen_object(6)}
 	}
 	unsafe {
 		context.vertex_arrays[handle] = array
@@ -357,7 +363,7 @@ pub fn (mut context WebGLRenderingContext) delete_vertex_array(mut array ?&WebGL
 		handle := value.object.bookkeeping_id()
 		context.vertex_arrays.delete(handle)
 		context.native.dispatch('delete_vertex_array', handle)
-		C.vox_gl_delete_object(6,handle_result.value)
+		C.vox_gl_delete_object(6,value.object.native_handle_)
 		if current := context.current_vertex_array {
 			if current == value {
 				context.current_vertex_array = none
@@ -372,8 +378,9 @@ pub fn (mut context WebGLRenderingContext) delete_vertex_array(mut array ?&WebGL
 pub fn (mut context WebGLRenderingContext) create_vertex_array_oes() &WebGLVertexArrayObjectOES {
 	context.native.make_current()
 	handle := context.allocate_handle()
+	source_handle := context.allocate_object_id()
 	array := &WebGLVertexArrayObjectOES{
-		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: C.vox_gl_gen_object(7)}
+		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle, source_handle), native_handle_: C.vox_gl_gen_object(7)}
 	}
 	unsafe {
 		context.vertex_arrays_oes[handle] = array
@@ -424,7 +431,7 @@ pub fn (mut context WebGLRenderingContext) delete_vertex_array_oes(array ?&WebGL
 		handle := value.object.bookkeeping_id()
 		context.vertex_arrays_oes.delete(handle)
 		context.native.dispatch('delete_vertex_array_oes', handle)
-		C.vox_gl_delete_object(7,handle_result.value)
+		C.vox_gl_delete_object(7,value.object.native_handle_)
 		if current := context.current_vertex_array_oes {
 			if current == value {
 				context.current_vertex_array_oes = none

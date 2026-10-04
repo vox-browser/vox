@@ -24,7 +24,7 @@ fn test_public_get_error_queries_actual_driver_flags_without_eager_consumption()
 		context.native.make_current()
 		if kind == 'webgl' {
 			C.vox_gl_active_texture(0xbad)
-			C.vox_gl_bind_attrib_location(program.object.handle(context.identity(), context.context_generation())!, u32(-1), c'position')
+			C.vox_gl_bind_attrib_location(program.object.native_name(), u32(-1), c'position')
 		} else {
 			C.vox_gl_bind_sampler(u32(-1), 0)
 			C.vox_gl_bind_transform_feedback(0xbad, 0)

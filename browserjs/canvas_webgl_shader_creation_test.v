@@ -100,6 +100,8 @@ fn test_public_lost_shader_creation_retains_owned_ids_and_other_driver_untouched
 		for _, shader in host.shaders {
 			if shader.object.context_id != context.identity() { continue }
 			assert shader.object.bookkeeping_id() != 0
+			assert shader.object.handle(context.identity(), context.context_generation())! != 0
+			assert shader.object.native_name() == 0
 			assert context.owns(&shader.object)
 			retained_ids << shader.object.bookkeeping_id()
 		}

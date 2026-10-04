@@ -71,7 +71,7 @@ fn test_public_vertex_array_binding_wraps_first_exposed_actual_record_and_reuses
 			object = &array.object
 		}
 		assert voidptr(object) !in host.platform_objects
-		name := object.handle(context.identity(), context.context_generation())!
+		name := object.native_name()
 		context.native.make_current()
 		assert C.vox_gl_is_vertex_array(name, if kind == 'webgl' { 1 } else { 0 }) == 1
 		C.vox_gl_delete_object(if kind == 'webgl' { 7 } else { 6 }, name)
