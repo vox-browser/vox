@@ -535,6 +535,24 @@ syntax was replaced with an explicit operation count for the repository's
 compiler; the earlier failed compilation is retained in
 `source-unsigned-scalar-uniform-gc-none.log`.
 
+Float, signed and unsigned vector uniform bodies select their owner before
+nullable-location, parent-pointer and list-size returns, matching
+`WebGLRenderingContextOverloads.cpp:236-362`,
+`WebGL2RenderingContextOverloads.cpp:224-356`, and
+`WebGL2RenderingContextImpl.cpp:324-386`. The public list-uniform prelude also
+selects the owner before source buffer-witness/offset handling; its shared
+matrix entry likewise gains that source prelude. JavaScriptCore still finishes
+all generated IDL argument conversions before entering it. Null vector
+locations remain source no-ops after selecting the owner, distinct from the
+scalar native-zero behavior. Native early-owner, real draw and scalar regression
+cases passed with GC disabled in `source-vector-uniform-owner-gc-none.log`
+(three files). Actual public owner, real source-span/rendering and sequence
+conversion cases passed in `source-vector-uniform-owner-public-gc-none.log`
+(three files), covering all 12 applicable vector names, parent-before-span/size
+errors, null-before-offset returns and an IDL numeric hook failure that leaves
+the previously current driver untouched. Typed matrix owner/transpose behavior
+remains a separate source slice.
+
 Upstream
 WebGL2 declarations below are explicitly `[FIXME]` at pinned commit
 `963d46a829f3e1b79f44dba9d02afb70654300fa`, with no matching operation bodies in
