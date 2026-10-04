@@ -5,6 +5,23 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/WebGL`
 Reference audit: 2026-09-12
 Latest native focused verification: 2026-10-04
 
+After framebuffer/query/sync/actual-record and source draw/canvas callback
+repairs, frozen private snapshot `2ad0138f` passed all 97 tracked typed WebGL
+files (58.0 seconds) and all 66 public/mixed canvas files (353.4 seconds) with
+GC disabled and explicit private module paths on 2026-10-04. The latter manifest
+contains every browserjs/canvas_webgl test plus canvas_context_integration.
+Exact manifests, snapshot hash, TSV results and per-file logs are under
+`Build/audit-fixes/webgl-final-2ad0138f/`; no fixtures failed in either sweep.
+Separate focused HTML canvas repaint/surface checks are documented below.
+These complete test passes do not establish unexamined source-body parity.
+A separate genuine two-native-error probe after the freeze reproduced a
+remaining adapter error loss/order mismatch: direct driver errors [1280,1281,0]
+versus translated [1281,0,0]. Its source/log are retained as
+`Build/audit-fixes/source-native-error-retention-probe.{v,log}`. The actual driver
+error boundary, non-source raster caches/gates, full GC/WrapperWorld and remote
+transport remain work; the pinned source's single m_error TODO is distinct from
+this loss of actual GL errors.
+
 After the shader/resource/uniform repairs, frozen private snapshot `ea1e2287`
 passed all 50 public/mixed canvas files with GC disabled and explicit private
 module paths. Its typed sweep passed 80/81 files; `native_uniform_test.v` alone
