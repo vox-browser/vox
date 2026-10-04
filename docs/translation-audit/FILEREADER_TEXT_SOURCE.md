@@ -461,3 +461,36 @@ files pass **3/3 with default GC and 3/3 with GC-none** in
 `source-windows-1252-focused-{default,gc-none}.log`. Native Sync Text remains a
 separate consumer feature, rerun after this actual decoder prerequisite.
 No LibJS implementation or frozen full-proof checkout is changed here.
+
+## FileReaderSync native Text return
+
+The separate native Text adapter follows Source
+`FileReaderSync.cpp:51–54`'s `read_as<Utf16String>(Blob, Text, encoding)` call.
+Source's template (`FileReaderSync.cpp:64–70`) copies the actual Blob bytes and
+passes its type and encoding to `FileReader::blob_package_data`; the translated
+Sync owner already follows that chain. The new adapter takes the resulting
+owned raw UTF16 slot directly to the existing
+`Runtime.javascript_utf16_string` native primitive ABI. Its supplied Runtime,
+FileReaderSync and Blob are actual owning records. Author-visible String and
+globalThis aliases do not select the string construction path.
+
+Feature `79ec0465a76f4c73521a6ed2bc5431821a32f526` includes the native fixture.
+It passes **1/1 with default GC and 1/1 with GC-none** in
+`source-file-reader-sync-text-{default,gc-none}.log` after the separate
+Windows-1252 prerequisite above. Tests cover copied input ownership, embedded
+and trailing NUL, supplementary units, UTF8/UTF16 BOM overrides, malformed UTF8
+replacement, empty output, invalid-label MIME fallback, explicit-label
+precedence, poisoned author aliases and two actual target Runtimes. The original
+NUL failure logs are retained as
+`source-file-reader-sync-text-before-windows1252-{default,gc-none}.log`.
+Their expected NUL units were preserved; the separately translated decoder
+fixed the underlying output-length dependency.
+
+The adapter's `encoding_name ?string` remains the established typed UTF8
+compatibility boundary. Source accepts `Optional<Utf16String>`; generated
+optional DOMString conversion and public DedicatedWorker/SharedWorker
+FileReaderSync receiver/interface exposure (`FileReaderSync.idl:2–11`) remain
+open. This feature covers the owned-result native primitive projection and the
+tested decoder paths; other legacy iconv codecs retain their limits above.
+It adds no asynchronous result wrapper or replacement for Source's genuine
+HostDefined/world weak ArrayBuffer cache.
