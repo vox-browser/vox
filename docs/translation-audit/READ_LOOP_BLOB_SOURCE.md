@@ -78,8 +78,13 @@ internal-enqueue/read-loop files pass in `source-blob-owner-default-final.log`
 and `source-blob-owner-gc-none-final.log`. Cases verify pending ownership before
 the task, actual callback realm, copied bytes, empty chunks before close,
 independent Worker delivery, cancellation and original error identity. The
-shared TemporaryExecutionContext cleanup ordering is owned by assignment 2;
-this feature uses that helper and does not substitute a local implementation.
+shared TemporaryExecutionContext now uses Source cleanup order, commit
+`c33d3317`: script cleanup checkpoints microtasks while the outer callback is
+still retained, then callback cleanup pops it. The corrected owner fixture,
+commit `0a437c78`, expects callback depth 2 for the nested Worker Promise job and
+depth 1 for the immediate Blob read-loop steps, then verifies depths return to
+zero. Owner/text/context-order **3/3** files pass in both modes in
+`source-blob-context-{default,gc-none}.log`.
 Native Blob/File/FileList bindings and source host-object GC remain open. The
 synchronous standalone Blob accessors and compact XHR facade do not establish
 these owner semantics.
