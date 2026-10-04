@@ -847,7 +847,7 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 			context.depth_func(wg_u32(wg_arg(args, 0)))
 		}
 		'depthRange' {
-			context.depth_range(wg_number(wg_arg(args, 0)), wg_number(wg_arg(args, 1)))
+			context.depth_range(f32(wg_number(wg_arg(args, 0))), f32(wg_number(wg_arg(args, 1))))
 		}
 		'finish' {
 			context.finish()
