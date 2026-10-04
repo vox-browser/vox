@@ -112,9 +112,8 @@ pub fn blob_package_data(bytes []u8, type_ FileReaderType, mime_type ?string, en
 			file_reader_string_result('data:${mime};base64,${base64.encode(bytes)}')
 		}
 		.text {
-			decoder :=
-				encoding.TextDecoder.construct(encoding_for_blob(mime_type, encoding_name), encoding.TextDecoderOptions{})!
-			file_reader_string_result(decoder.decode(bytes, encoding.TextDecodeOptions{})!)
+			file_reader_string_result(encoding.convert_input_to_utf8_using_given_decoder_unless_there_is_a_byte_order_mark(
+				encoding_for_blob(mime_type, encoding_name), bytes)!)
 		}
 		.array_buffer {
 			file_reader_bytes_result(bytes)
