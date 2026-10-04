@@ -162,6 +162,42 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+detachShader now drops its generated native command after loss and still
+clears Source's corresponding actual retained shader slot. Impl.cpp:669-679
+performs that CPU clear after the proxy call, even when record_bytes:57-60
+discards the command. GLFunctions.json:1205-1219 and generated proxy/replay
+carry program/shader Source IDs and resolve both live native names. V guards
+only the C detach call after valid CPU gates/owner selection, then always
+performs the pinned type-slot clear. The exact generated read-only witness is
+`Build/audit-fixes/source-detach-shader-generated-boundary.txt`, SHA-256
+`feab6f1218c40c338b562dd5dc27ce0515ab0b0d2151d88d932afdd9f215b072`.
+
+The genuine pre-fix EGL probe removed Other's actual shader attachment through
+a lost Owner (one to zero attachments), retained in
+source-detach-shader-unfixed-probe_test.v and
+source-detach-shader-unfixed-probe-gc-none.log. New two-version typed/public
+cases preserve both of Other's real attachments, viewport, shader compile/
+delete state, program delete state and pending INVALID_ENUM after every call.
+Original and post-loss SourceID5/6/7-native0 records retain their actual identity;
+valid dropped detach commands clear only the matching Source slot, including
+an owned shader that was never attached and repeated calls on empty slots.
+Foreign/invalidated handles and public arity/nonnullable/forged-brand gates
+keep prior slots unchanged. In particular, invalidating a retained shader
+keeps its actual reference/wrapper in the Source collection until a different
+valid typed shader clears that slot. Public arrays remain fresh and retain the
+remaining fragment wrapper. No invented driver-success or retained-slot gate
+is added; context-loss reporting stays one-shot without extra native errors.
+
+Two typed files pass in
+`Build/audit-fixes/source-detach-shader-lost-native-gc-none.log`; two public
+files pass in
+`Build/audit-fixes/source-detach-shader-lost-public-gc-none.log`, with GC disabled
+and explicit private paths, including the prior live/CPU-order/native rejection
+neighbors. This is detachShader's exact command-drop/retained-clear boundary;
+bind/location, other bodies/object families, full remote transport and
+GC/WrapperWorld remain independent scopes. Frozen full-sweep and canonical
+bundle verification are unchanged.
+
 detachShader now keeps its exact Source program/shader handle gates ahead of
 actual native owner selection. Impl.cpp:651-680 prefixes the body with an
 empty Proxy make_current, validates both handles, records the command, and
@@ -188,8 +224,8 @@ Two typed files pass in
 files pass in
 `Build/audit-fixes/source-detach-shader-owner-public-gc-none.log`, with GC disabled
 and explicit private paths, including existing rejection/order neighbors.
-No historical fixture required migration. Lost detachment is a separate
-command-drop/retained-clear slice; bind/location, other bodies/object families,
+No historical fixture required migration. Lost detachment is separately reviewed
+above; bind/location, other bodies/object families,
 full remote transport and GC/WrapperWorld remain source-reviewed scopes.
 Frozen full-sweep and canonical bundle evidence remain unchanged.
 
