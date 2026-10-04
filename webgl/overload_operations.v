@@ -44,12 +44,9 @@ pub fn (context &WebGLRenderingContext) texture_data_for_2d_upload(bytes []u8, w
 }
 
 pub fn (mut context WebGLRenderingContext) compressed_tex_image2d(target GLenum, level int, internal_format GLenum, width int, height int, border int, data []u8) {
+	context.native.make_current()
 	if internal_format !in context.enabled_compressed_texture_formats_ {
 		context.set_error(invalid_enum)
-		return
-	}
-	if width < 0 || height < 0 || border != 0 {
-		context.set_error(invalid_value)
 		return
 	}
 	context.command('compressed_tex_image2d', target, level, internal_format, width, height, border, data.len)
@@ -58,12 +55,9 @@ pub fn (mut context WebGLRenderingContext) compressed_tex_image2d(target GLenum,
 }
 
 pub fn (mut context WebGLRenderingContext) compressed_tex_sub_image2d(target GLenum, level int, x_offset int, y_offset int, width int, height int, format GLenum, data []u8) {
+	context.native.make_current()
 	if format !in context.enabled_compressed_texture_formats_ {
 		context.set_error(invalid_enum)
-		return
-	}
-	if width < 0 || height < 0 {
-		context.set_error(invalid_value)
 		return
 	}
 	context.command('compressed_tex_sub_image2d', target, level, x_offset, y_offset, width, height, format, data.len)
@@ -264,6 +258,7 @@ pub fn (mut context WebGLRenderingContext) clear_bufferfi(buffer GLenum, draw_bu
 }
 
 pub fn (mut context WebGLRenderingContext) compressed_tex_sub_image3d(target GLenum, level int, x_offset int, y_offset int, z_offset int, width int, height int, depth int, format GLenum, data []u8, source_offset u64, length_override u32) {
+	context.native.make_current()
 	if format !in context.enabled_compressed_texture_formats_ {
 		context.set_error(invalid_enum)
 		return

@@ -483,6 +483,7 @@ pub fn offset_span(bytes []u8, source_offset u64, length_override u32) ![]u8 {
 }
 
 pub fn (mut context WebGLRenderingContext) compressed_tex_image3d(target GLenum, level int, internal_format GLenum, width int, height int, depth int, border int, source []u8, source_offset u64, length_override u32) {
+	context.native.make_current()
 	if internal_format !in context.enabled_compressed_texture_formats_ {
 		context.set_error(invalid_enum)
 		return
