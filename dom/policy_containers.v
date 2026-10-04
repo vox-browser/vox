@@ -147,10 +147,10 @@ pub:
 @[heap]
 pub struct PolicyContainer {
 pub mut:
-	csp_list []SerializedCSPPolicy
+	csp_list        []SerializedCSPPolicy
+	referrer_policy ReferrerPolicy = .strict_origin_when_cross_origin
 pub:
 	embedder_policy              EmbedderPolicy
-	referrer_policy              ReferrerPolicy = .strict_origin_when_cross_origin
 	integrity_policy             IntegrityPolicy
 	report_only_integrity_policy IntegrityPolicy
 }
