@@ -752,10 +752,10 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
 }
 
 pub fn (mut context WebGLRenderingContext) get_renderbuffer_parameter(target GLenum, pname GLenum) WebGLParameterValue {
-	context.native.make_current()
  if pname !in [GLenum(0x8d42),0x8d43,0x8d44,0x8d50,0x8d51,0x8d52,0x8d53,0x8d54,0x8cab,0x8d55] {
   context.set_error(invalid_enum); return WebGLParameterValue{}
  }
+ context.native.make_current()
  result:=C.vox_gl_renderbuffer_parameter(target,pname)
  return integer_parameter(result)
 }
