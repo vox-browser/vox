@@ -26,6 +26,14 @@ fn raster_enum_source_direct(operation RasterEnumSourceCase) {
 	}
 }
 
+fn raster_enum_source_reset() {
+	C.vox_gl_cull_face(back)
+	C.vox_gl_depth_func(less)
+	C.vox_gl_front_face(ccw)
+	C.vox_gl_hint(generate_mipmap_hint, dont_care)
+	assert C.vox_gl_get_error() == no_error
+}
+
 fn test_source_raster_enum_setters_delegate_actual_driver_state_errors_and_owner() {
 	operations := [
 		RasterEnumSourceCase{'cull', [GLenum(0xbad)]},
@@ -55,9 +63,11 @@ fn test_source_raster_enum_setters_delegate_actual_driver_state_errors_and_owner
 			}
 			for operation in operations {
 				context.native.make_current()
+				raster_enum_source_reset()
 				raster_enum_source_direct(operation)
 				expected_error := C.vox_gl_get_error()
 				expected_state := raster_enum_source_state()
+				raster_enum_source_reset()
 				context.set_error(invalid_value)
 				other.native.make_current()
 				match operation.method {
