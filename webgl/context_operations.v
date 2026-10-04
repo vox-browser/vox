@@ -409,7 +409,6 @@ pub fn (mut context WebGLRenderingContext) delete_shader(object ?&WebGLShader) {
 }
 
 pub fn (mut context WebGLRenderingContext) delete_program(object ?&WebGLProgram) {
-	context.native.make_current()
 	if value := object {
 		mut mutable_value := unsafe { &WebGLProgram(value) }
 		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
@@ -421,6 +420,7 @@ pub fn (mut context WebGLRenderingContext) delete_program(object ?&WebGLProgram)
 		}
 		handle := value.object.bookkeeping_id()
 		context.programs.delete(handle)
+		context.native.make_current()
 		C.vox_gl_delete_program(value.object.native_handle_)
 		if current := context.current_program {
 			if current == value {
