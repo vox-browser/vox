@@ -19,6 +19,7 @@ FLOAT_UNARY_NAMES = ("Absolute", "Negate", "Ceil", "Floor", "Truncate", "NearbyI
 FLOAT_WIDTH_NAMES = ("Promote", "Demote")
 INTEGER_WIDTH_NAMES = ("Wrap", "Extend", "SignExtend")
 REINTERPRET_NAMES = ("Reinterpret",)
+INTEGER_FLOAT_NAMES = ("Convert",)
 
 BINARY_DRIVER = r"""
 #include <bit>
@@ -616,13 +617,69 @@ int main()
 """
 
 
+INTEGER_FLOAT_DRIVER = r"""
+#include <bit>
+#include <stdio.h>
+#include <stdint.h>
+#include <fenv.h>
+#pragma STDC FENV_ACCESS ON
+
+template<typename T> void integer_float_result(char const* mode, char const* name, u64 input, T value)
+{
+    u64 output;
+    if constexpr (IsSame<T, float>)
+        output = std::bit_cast<u32>(value);
+    else
+        output = std::bit_cast<u64>(value);
+    printf("%s/%s\t%016llx\t%016llx\n", mode, name,
+        (unsigned long long)input, (unsigned long long)output);
+}
+void run_integer_float(char const* mode, u64 bits)
+{
+    using namespace Wasm::Operators;
+    auto lhs32 = std::bit_cast<i32>((u32)bits);
+    auto lhs64 = std::bit_cast<i64>(bits);
+    integer_float_result(mode, "convert_i32_f32", bits, Convert<float>{}(lhs32));
+    integer_float_result(mode, "convert_u32_f32", bits, Convert<float>{}((u32)bits));
+    integer_float_result(mode, "convert_i64_f32", bits, Convert<float>{}(lhs64));
+    integer_float_result(mode, "convert_u64_f32", bits, Convert<float>{}(bits));
+    integer_float_result(mode, "convert_i32_f64", bits, Convert<double>{}(lhs32));
+    integer_float_result(mode, "convert_u32_f64", bits, Convert<double>{}((u32)bits));
+    integer_float_result(mode, "convert_i64_f64", bits, Convert<double>{}(lhs64));
+    integer_float_result(mode, "convert_u64_f64", bits, Convert<double>{}(bits));
+}
+int main()
+{
+    int const modes[] = {FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO};
+    char const* names[] = {"nearest", "down", "up", "zero"};
+    u64 const inputs[] = {0, 1, 2, 0x7fffffff, 0x80000000, 0xffffffff,
+        0x7fffffffffffffffULL, 0x8000000000000000ULL,
+        0xffffffffffffffffULL, 0xfffffffffffffffeULL};
+    for (unsigned mode = 0; mode < 4; ++mode) {
+        if (fesetround(modes[mode]))
+            return 1;
+        for (auto bits : inputs)
+            run_integer_float(names[mode], bits);
+        for (unsigned bit = 0; bit < 64; ++bit) {
+            u64 single = u64(1) << bit;
+            run_integer_float(names[mode], single);
+            run_integer_float(names[mode], single - 1);
+            run_integer_float(names[mode], single + 1);
+            run_integer_float(names[mode], ~single);
+        }
+    }
+    return fesetround(FE_TONEAREST);
+}
+"""
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--upstream", type=Path, default=Path.home() / "code/3rd/ladybird")
     parser.add_argument("--build-dir", type=Path)
     parser.add_argument("--compiler", default="clang++")
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--family", choices=("binary", "unary", "shift", "comparison", "arithmetic", "floating", "float_arithmetic", "float_extrema", "float_unary", "float_width", "integer_width", "reinterpret"), default="binary")
+    parser.add_argument("--family", choices=("binary", "unary", "shift", "comparison", "arithmetic", "floating", "float_arithmetic", "float_extrema", "float_unary", "float_width", "integer_width", "reinterpret", "integer_float"), default="binary")
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
     upstream = args.upstream.resolve()
@@ -646,6 +703,7 @@ def main():
         "float_width": (FLOAT_WIDTH_NAMES, FLOAT_WIDTH_DRIVER, 272, "width_float_operators.tsv"),
         "integer_width": (INTEGER_WIDTH_NAMES, INTEGER_WIDTH_DRIVER, 3216, "width_integer_operators.tsv"),
         "reinterpret": (REINTERPRET_NAMES, REINTERPRET_DRIVER, 576, "reinterpret_operators.tsv"),
+        "integer_float": (INTEGER_FLOAT_NAMES, INTEGER_FLOAT_DRIVER, 8512, "convert_integer_float_operators.tsv"),
     }
     names, driver, expected_count, filename = families[args.family]
     if args.family in ("comparison", "arithmetic", "floating", "float_arithmetic"):
@@ -657,7 +715,7 @@ def main():
     for name in names:
         expression = (r"^DEFINE_BINARY_OPERATOR\(" + name + r", .*?\);" if name != "Divide" and args.family in ("comparison", "arithmetic", "floating", "float_arithmetic")
                       else r"^struct " + name + r" \{.*?^};")
-        if args.family in ("integer_width", "reinterpret"):
+        if args.family in ("integer_width", "reinterpret", "integer_float"):
             expression = r"^template<typename [^\n]+>\nstruct " + name + r" \{.*?^};"
         match = re.search(expression, source, re.MULTILINE | re.DOTALL)
         if match is None:
