@@ -39,7 +39,7 @@ fn test_source_shader_program_mutations_select_owner_before_early_returns() {
 		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
 		other.native.make_current()
 		context.link_program(mut foreign_program)
-		shader_program_owner_and_error(mut context, invalid_operation)
+		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
 		other.native.make_current()
 		context.validate_program(mut foreign_program)
 		shader_program_owner_and_error(mut context, invalid_operation)
@@ -84,7 +84,7 @@ fn test_source_shader_program_mutations_select_owner_before_early_returns() {
 		shader_program_owner_and_error_selected(mut context, no_error, [9, 10, 11, 12]!)
 		other.native.make_current()
 		context.link_program(mut program)
-		shader_program_owner_and_error(mut context, invalid_operation)
+		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
 	}
 }
 

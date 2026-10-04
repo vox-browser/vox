@@ -567,11 +567,11 @@ pub fn (mut context WebGLRenderingContext) detach_shader(mut program WebGLProgra
 }
 
 pub fn (mut context WebGLRenderingContext) link_program(mut program WebGLProgram) {
-	context.native.make_current()
 	if !context.owns(&program.object) {
 		context.set_error(invalid_operation)
 		return
 	}
+	context.native.make_current()
 	C.vox_gl_link_program(program.object.native_handle_)
 	context.native.dispatch('link_program', program.object.handle_)
 }
