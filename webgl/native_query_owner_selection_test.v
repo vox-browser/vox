@@ -16,7 +16,7 @@ fn run_query_owner_selection_case(mut owner WebGLRenderingContext, mut other Web
 	// These reviewed Source bodies return before issuing a sync query. Other
 	// historical cases stay scoped to their separate implementation reviews.
 	expected_owner := if test_case.name in ['getRenderbufferParameter(unknown)',
-		'getTexParameter(unknown)', 'getAttribLocation(foreign)', 'getSyncParameter(foreign)'] {
+		'getTexParameter(unknown)', 'getAttribLocation(foreign)', 'getSyncParameter(foreign)', 'isShader(null)'] {
 		[9, 10, 11, 12]!
 	} else {
 		[1, 2, 3, 4]!

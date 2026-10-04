@@ -864,9 +864,9 @@ pub fn (mut context WebGLRenderingContext) is_texture(value ?&WebGLTexture) bool
 }
 
 pub fn (mut context WebGLRenderingContext) is_shader(value ?&WebGLShader) bool {
-	context.native.make_current()
 	object := value or { return false }
 	context.object_handle_for_query(&object.object) or { return false }
+	context.native.make_current()
 	return C.vox_gl_is_object(9,object.object.native_handle_) == 1
 }
 
