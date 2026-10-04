@@ -21,13 +21,18 @@ mut:
 pub struct BlobHost {
 	settings &html.EnvironmentSettingsObject
 mut:
-	runtime       &Runtime            = unsafe { nil }
-	readable      &ReadableStreamHost = unsafe { nil }
-	prototype     voidptr
-	records       map[voidptr]&BlobHostRecord
-	by_wrapper    map[voidptr]&BlobHostRecord
-	to_dom_string voidptr
-	closed        bool
+	runtime           &Runtime            = unsafe { nil }
+	readable          &ReadableStreamHost = unsafe { nil }
+	prototype         voidptr
+	records           map[voidptr]&BlobHostRecord
+	by_wrapper        map[voidptr]&BlobHostRecord
+	to_dom_string     voidptr
+	constructor       voidptr
+	parts_sequence    voidptr
+	buffer_kind       voidptr
+	buffer_validation voidptr
+	buffer_copy       voidptr
+	closed            bool
 }
 
 pub fn BlobHost.create(document &dom.Document) !&BlobHost {
