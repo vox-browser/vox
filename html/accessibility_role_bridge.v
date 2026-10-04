@@ -207,6 +207,13 @@ pub fn install_document_accessibility_role_hook(document &dom.Document) {
 }
 
 fn document_csp_policies(document &dom.Document) []&contentsecuritypolicy.Policy {
+	settings_pointer := document.relevant_settings_object()
+	if settings_pointer != unsafe { nil } {
+		// BlockingAlgorithms.cpp:414–416. The actual settings container is the
+		// sole policy owner; standalone Meta-string storage is not another list.
+		settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }
+		return fetch_csp_policy_list(settings.policy_container().csp_list).policies
+	}
 	mut policies := []&contentsecuritypolicy.Policy{}
 	for serialized in document.enforced_meta_csp_policies() {
 		policy := contentsecuritypolicy.parse_a_serialized_csp(serialized, .meta, .enforce)

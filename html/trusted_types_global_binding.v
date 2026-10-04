@@ -28,6 +28,8 @@ fn global_scope_trusted_types_policies(scope &WindowOrWorkerGlobalScopeMixin) []
 					require_trusted_types_for: sinks
 				}
 			}
+			// TrustedTypePolicyFactory.cpp:245–246 uses this one actual list.
+			return result
 		}
 	}
 	if window := scope.associated_window_ {

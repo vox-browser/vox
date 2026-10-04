@@ -1,12 +1,23 @@
 module html
 
 import dom
+import fetch
+import http
 import trustedtypes
 import webidl
 
 fn trusted_global_window() &WindowModel {
 	document := parse_document_with_url('<!doctype html><div id="target"></div>', dom.URL{ value: 'https://trusted-global.example/' })
 	return WindowModel.create_top_level(document, none, 'trusted-global') or { panic(err) }
+}
+
+fn trusted_global_header_policy(window &WindowModel, policy string) {
+	document := window.associated_document()
+	mut response := fetch.Response.create()
+	response.url_list = [document.url]
+	response.header_list.append(http.Header{ name: 'Content-Security-Policy', value: policy })
+	mut settings := window.environment_settings_.settings
+	settings.set_policy_container(create_a_policy_container_from_fetch_response(response))
 }
 
 fn test_global_trusted_types_getter_exposes_the_real_factory_and_retains_global_and_realm() {
@@ -29,7 +40,7 @@ fn test_global_trusted_types_getter_exposes_the_real_factory_and_retains_global_
 fn test_global_default_policy_is_used_by_real_document_html_mutation_sinks() {
 	window := trusted_global_window()
 	mut document := window.associated_document()
-	document.enforce_meta_csp("require-trusted-types-for 'script'; trusted-types default")
+	trusted_global_header_policy(window, "require-trusted-types-for 'script'; trusted-types default")
 	mut services := window.window_or_worker_global_scope()
 	mut factory := services.trusted_types()
 	policy := factory.create_policy('default', trustedtypes.TrustedTypePolicyOptions{
@@ -53,8 +64,7 @@ fn test_cached_global_factory_reads_csp_added_after_the_getter_was_accessed() {
 	mut services := window.window_or_worker_global_scope()
 	mut factory := services.trusted_types()
 	factory.create_policy('before', trustedtypes.TrustedTypePolicyOptions{}) or { panic(err) }
-	mut document := window.associated_document()
-	document.enforce_meta_csp('trusted-types allowed')
+	trusted_global_header_policy(window, 'trusted-types allowed')
 	factory.create_policy('allowed', trustedtypes.TrustedTypePolicyOptions{}) or { panic(err) }
 	if _ := factory.create_policy('blocked', trustedtypes.TrustedTypePolicyOptions{}) {
 		assert false
