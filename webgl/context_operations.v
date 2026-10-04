@@ -800,8 +800,8 @@ pub fn (mut context WebGLRenderingContext) get_active_uniform(program &WebGLProg
 }
 
 pub fn (mut context WebGLRenderingContext) get_attrib_location(program &WebGLProgram, name string) int {
-	context.native.make_current()
 	if !context.owns(&program.object) { context.set_error(invalid_operation); return -1 }
+	context.native.make_current()
 	result := C.vox_gl_attrib_location(program.object.native_handle_, name.str)
 	return result
 }
