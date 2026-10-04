@@ -115,6 +115,24 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+Viewport and scissor now follow the actual GL commands in
+`WebGLRenderingContextImpl.cpp:2306-2310,2584-2588`, without invented CPU
+dimension rejection or retained scalar fields. The native viewport mirror and
+its non-source getter were removed; the five surface-allocation fixtures now
+query the actual GL viewport. Real allocation still sets the driver viewport,
+while a size change alone does not fabricate new state. Direct-driver oracles
+cover zero, negative and maximum dimensions in both versions, two owners,
+native-error priority over source `m_error`, and the actual clear pixels after
+a rejected scissor. Public witnesses also preserve throwing IDL conversion
+before body entry. The initial oracle used different valid baselines and
+failed; that diagnostic remains in `source-viewport-scissor-gc-none.log`, whose
+three neighbors passed. The corrected new test and migrated surface fixture
+passed in `source-viewport-scissor-final-gc-none.log`. The new public file passed
+in `source-viewport-scissor-public-gc-none.log`; an incorrect neighbor filename
+in that log is retained, and both actual integration/host neighbors passed in
+`source-viewport-scissor-public-neighbors-final-gc-none.log`. This subsequent
+focused slice supplements the unchanged frozen 101/70 sweep.
+
 Actual GL errors now remain in the real ANGLE driver until `get_error()` asks
 for them, following `WebGLRenderingContextBase.cpp:315-332` and
 `WebGLRenderingContextImpl.cpp:1720-1724`. The eager collection helper and all
