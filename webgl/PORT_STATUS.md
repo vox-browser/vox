@@ -162,6 +162,36 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+clientWaitSync now preserves the actual generated sync loss result.
+WebGL2RenderingContextImpl.cpp:939-950 first validates its owned sync record,
+then invokes the proxy operation. generate_libweb_webgl_proxy.py:153-158 returns
+a default GLenum (0) after send_sync_call if the proxy is lost;
+ProxyBase.cpp:168-176 skips transport dispatch when already lost. V previously
+substituted WAIT_FAILED at its unavailable native receiver guard. That guard now
+returns the Source default 0, preserving WAIT_FAILED for genuine Source handle
+errors and live native-driver failures. No native query runs against an already
+current other owner after actual loss.
+
+The focused native case loses real EGL, retains an earlier owned sync, creates
+a second Source proxy record after loss, and keeps another context's real fence,
+viewport and pending driver error untouched through 18 lost waits. The existing
+native fence helper already suppresses creation after real loss; its owned
+post-loss proxy ID and absent native mapping are now witnessed directly. A live
+rejected native fence still has a nonzero Source proxy pointer and the real
+native WAIT_FAILED/error result, verified against direct driver calls. Three
+typed loss/GPU/owner files pass in
+`source-sync-lost-default-native-gc-none.log`. Two public loss/creation files
+pass in `source-sync-lost-default-public-gc-none.log`, covering original and
+post-loss branded records, varied converted flags/timeouts, Source one-shot
+context-loss error and untouched other driver state. All use GC disabled.
+
+Exact generated proxy/compositor snippets are preserved in
+`Build/audit-fixes/source-client-wait-generated-boundary.txt`, produced read-only
+from the pinned generators without writing upstream. The compositor's separate
+clientWaitSync host timeout override0 remains the next independently scoped
+correction. This default-result repair does not change general resource loss
+policy or claim full remote transport/map, GC or WrapperWorld execution.
+
 clientWaitSync, waitSync, deleteSync and getSyncParameter now preserve the
 Source CPU early-return ownership boundary. WebGL2RenderingContextImpl.cpp:920-
 980 validates context/generation/invalidation before reaching any native sync
@@ -186,9 +216,9 @@ checks use GC disabled and explicit private module paths.
 
 This supersedes the earlier sync owner fixture's unconditional prefix assumption.
 The genuine earlier driver/pointer/retention evidence remains, but its early
-branch owner assertions do not describe the empty Source proxy. The generated
-clientWaitSync lost default0 and compositor timeout override0 remain separately
-reviewed, pending corrections; this owner slice does not supply those behaviors.
+branch owner assertions do not describe the empty Source proxy. The separately generated clientWaitSync lost default0 is corrected in the later
+slice above; compositor timeout override0 remains pending. This owner slice
+does not supply either behavior.
 Full remote transport/map execution and GC/WrapperWorld remain open.
 
 WebGLSync sync_handle and sync_handle_for_deletion now retain the Source
