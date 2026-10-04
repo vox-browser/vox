@@ -115,6 +115,21 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+Cull-face, depth-function, front-face and hint setters now follow the plain GL
+calls in `WebGLRenderingContextImpl.cpp:495-499,633-637,813-817,2107-2111`.
+Their invented CPU enum/extension gates and generic scalar-cache writes were
+removed. Actual driver state and error flags own validation; the distinct
+source derivative-hint getter gate remains intact. Fifteen direct-driver
+oracles cover valid/invalid enum combinations in both versions, before and
+after an actual WebGL1 derivative extension request, two owners and native
+error priority over retained source errors. Public numeric conversion still
+precedes body entry, and valid getters query actual driver state. The initial
+owner failure remains in `source-raster-enum-reproduction-gc-none.log`. All
+three typed new/rendering/state files passed in `source-raster-enum-gc-none.log`;
+both public new/extension files passed in
+`source-raster-enum-public-gc-none.log`. This focused slice follows the frozen
+101/70 sweep and adds no new driver-validation algorithm.
+
 The clear-color/depth/stencil and color/depth-mask setters now contain the
 source GL calls without five invented retained scalar fields, CPU cache clamps
 or restoration writes. `clear_depth` and its public bridge now use the source
