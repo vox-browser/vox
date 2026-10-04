@@ -8,26 +8,28 @@ import math
 
 // Source's LittleEndian temporaries use the existing standard endian primitive
 // at the V byte-view boundary. Float specializations preserve raw IEEE bits.
-fn binary_machine_store_bytes[T](value T) []u8 {
+fn binary_machine_store_bytes[T](value T) [16]u8 {
+	mut bytes := [16]u8{}
+	mut view := unsafe { (&bytes[0]).vbytes(16) }
 	$if T is i8 {
-		return [u8(value)]
+		bytes[0] = u8(value)
 	} $else $if T is i16 {
-		return binary.little_endian_get_u16(u16(value))
+		binary.little_endian_put_u16(mut view, u16(value))
 	} $else $if T is i32 {
-		return binary.little_endian_get_u32(u32(value))
+		binary.little_endian_put_u32(mut view, u32(value))
 	} $else $if T is i64 {
-		return binary.little_endian_get_u64(u64(value))
+		binary.little_endian_put_u64(mut view, u64(value))
 	} $else $if T is f32 {
-		return binary.little_endian_get_u32(math.f32_bits(value))
+		binary.little_endian_put_u32(mut view, math.f32_bits(value))
 	} $else $if T is f64 {
-		return binary.little_endian_get_u64(math.f64_bits(value))
+		binary.little_endian_put_u64(mut view, math.f64_bits(value))
 	} $else $if T is BinaryMachineValue {
-		mut bytes := binary.little_endian_get_u64(value.low)
-		bytes << binary.little_endian_get_u64(value.high)
-		return bytes
+		binary.little_endian_put_u64(mut view, value.low)
+		binary.little_endian_put_u64_at(mut view, value.high, 8)
 	} $else {
 		$compile_error('Source typed stores require a translated numeric memory type')
 	}
+	return bytes
 }
 
 // Lower the Source StoreT temporary to its original bytes and width. It remains
@@ -45,7 +47,7 @@ pub fn (mut interpreter BinaryMachineBytecodeInterpreter) store_value(mut config
 pub fn (mut interpreter BinaryMachineBytecodeInterpreter) pop_and_store[P, S](mut configuration BinaryMachineConfiguration, instruction &BinaryInstruction, addresses &BinarySourcesAndDestination) bool {
 	sources := unsafe { &addresses.operands.sources[0] }
 	entry := configuration.take_source(.any, 0, sources)
-	mut bytes := []u8{}
+	mut bytes := [16]u8{}
 	// Source extracts PopT first, then narrows to the ConvertToRaw StoreT
 	// argument. Its store_value call consumes address operand1 afterward.
 	$if P is i32 {
@@ -61,8 +63,10 @@ pub fn (mut interpreter BinaryMachineBytecodeInterpreter) pop_and_store[P, S](mu
 	} $else {
 		$compile_error('Source pop_and_store requires a translated machine operand type')
 	}
+	// The fixed owner remains live while store_value copies sizeof(StoreT)
+	// bytes, matching the original temporary's immediate borrow boundary.
 	return interpreter.store_value(mut configuration, instruction, BinaryMachineBytes{
-		data: bytes.data
-		size: usize(bytes.len)
+		data: unsafe { &bytes[0] }
+		size: usize(sizeof(S))
 	}, 1, addresses)
 }

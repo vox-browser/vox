@@ -186,11 +186,15 @@ fn test_source_typed_store_memory_argument_guard_survives_production() {
 		mut configuration := BinaryMachineConfiguration.create(mut store)
 		configuration.value_stack_.append(BinaryMachineValue.from_i64(2))
 		configuration.value_stack_.append(BinaryMachineValue.from_i64(9))
-		addresses := &BinarySourcesAndDestination{ operands: BinarySourcesAndDestinationFields{ sources: [
-			BinaryRegisterOrStack.stack,
-			.stack,
-			.r0,
-		]! } }
+		addresses := &BinarySourcesAndDestination{
+			operands: BinarySourcesAndDestinationFields{
+				sources: [
+					BinaryRegisterOrStack.stack,
+					.stack,
+					.r0,
+				]!
+			}
+		}
 		interpreter.pop_and_store[i64, i64](mut configuration, &BinaryInstruction{}, addresses)
 		panic('Source unsafe_get guard unexpectedly returned')
 	}
@@ -204,4 +208,44 @@ fn test_source_typed_store_memory_argument_guard_survives_production() {
 	process.wait()
 	output := process.stdout_slurp() + process.stderr_slurp()
 	assert process.code != 0 && output.contains('Source unsafe_get: store_value requires MemoryArgument'), output
+}
+
+fn test_source_store_value_routes_requested_address_operand_and_copies_borrowed_bytes() {
+	stack_info := libjs.StackInfo.new()
+	mut interpreter := BinaryMachineBytecodeInterpreter.create(&stack_info)
+	mut store := BinaryMachineStore.create()
+	address := store.allocate_memory(WasmLimits{ minimum: 1, maximum: u64(1) })?
+	mut memory := store.unsafe_get_memory(address)
+	mut configuration := BinaryMachineConfiguration.create(mut store)
+	defer {
+		configuration.destroy()
+		memory.destroy()
+	}
+	owner := BinaryMachineModuleInstance.create_with_contents(BinaryMachineModuleConstruction{ memories: [address] })
+	expression := &BinaryExpression{ instructions: [BinaryInstruction{ opcode: binary_op_synthetic_end_expression }] }
+	configuration.set_frame_lightweight(owner, unsafe { nil }, expression, 0, 0)
+	configuration.value_stack_.append(BinaryMachineValue.from_i64(91))
+	configuration.value_stack_.append(BinaryMachineValue.from_i64(7))
+	configuration.regs[0] = BinaryMachineValue.from_i64(19)
+	configuration.regs[1] = BinaryMachineValue.from_i64(31)
+	addresses := &BinarySourcesAndDestination{
+		operands: BinarySourcesAndDestinationFields{
+			sources:     [
+				BinaryRegisterOrStack.r0,
+				.r1,
+				.stack,
+			]!
+			destination: .stack
+		}
+	}
+	mut borrowed := [u8(0x80), 0, 0xff, 0x41]
+	instruction := &BinaryInstruction{ arguments: BinaryMemoryArgument{ offset: 3 } }
+	assert !interpreter.store_value(mut configuration, instruction, BinaryMachineBytes{ data: borrowed.data, size: usize(borrowed.len) }, 2, addresses)
+	borrowed[0] = 0x11
+	assert unsafe { memory.data().data()[10] } == 0x80
+	assert unsafe { memory.data().data()[11] } == 0
+	assert unsafe { memory.data().data()[12] } == 0xff
+	assert unsafe { memory.data().data()[13] } == 0x41
+	assert configuration.value_stack_.size() == 1 && configuration.value_stack_.last().to_i64() == 91
+	assert configuration.regs[0].to_i64() == 19 && configuration.regs[1].to_i64() == 31
 }
