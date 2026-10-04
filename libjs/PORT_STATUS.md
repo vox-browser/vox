@@ -672,6 +672,16 @@ prototype optimization, accessor receivers and call arguments through those
 dependencies. StringPrototype initialization and Number/BigInt/String primitive
 Reference integration remain pending; Number/BigInt records and String's constructor
 now exist with explicit intrinsic dependencies.
+`bfc616a2` adds Reference.cpp's preceding PrimitiveString virtual-property
+fast path. Actual parsed VM execution reads string length and UTF-16 indices,
+including astral halves, without a wrapper; raw-unit tests retain lone
+surrogates and NUL and ignore the supplied receiver for those own properties.
+StringPrototype fallback and primitive private-reference boxing remain pending.
+The new file and existing Boolean/string-cell neighbors pass 3/3 canonically
+with GC disabled. Frozen assignment-9 `32b8d45e` passes **231/231 LibJS files
+in each GC mode** and **100/100 exact AST fixtures**. Its LibJS implementation
+and tests match canonical integration; dependencies outside LibJS are that
+private snapshot. See [Source mapping and exact evidence](../docs/translation-audit/STRING_REFERENCE_SOURCE_PROPERTIES.md).
 GetMethod (`9bfb266`) now follows that same primitive boundary, preserving
 getter receivers, nullish missing methods, callable native/bound identities and
 NotAFunction errors. String iteration still needs production builtin installation;
