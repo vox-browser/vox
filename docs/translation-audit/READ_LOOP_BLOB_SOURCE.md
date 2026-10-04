@@ -502,3 +502,23 @@ and existing text-item lookup/removal. Actual File/FileList DataTransfer
 producers and strongly typed native owner adapters are separate subsequent
 features. Public DataTransfer/Item wrappers and BodyInit source/stream ownership
 remain open; no such parity is claimed by this prerequisite.
+
+
+Producer inspection confirmed the pinned `File.h` line 23 explicit String
+name overload; there is no missing implicit conversion. It calls
+`Utf16String::from_utf8(String const&)` after the DataTransfer getters' `to_utf8`
+boundary. `Utf16StringData.cpp` lines 75–97 falls back to the actual
+`Utf8View` iterator and `UnicodeUtils::code_point_to_utf16` for WTF8. The
+unmatched-surrogate encoding is in `StringBuilder.cpp` lines 524–572. V's
+existing generic `utf16()` scalar adapter lost those bytes, so a separate
+explicit Source unvalidated decoder and raw ASCII-lowercase prerequisite now
+supplies the exact boundary. No generic V string conversion was broadened.
+
+`tools/source_drag_wtf8_probe.py` reports source hashes and compiles the actual
+AK header decoder/ASCII helpers at -O0 and -O2. `source-drag-wtf8-probe.log`
+confirms preserved name units `[006e,d800,0000,dc00,d83d,de00,0078]`, malformed
+leading/continuation and truncated-input replacement/advance, retained
+overlong slash/null, out-of-range consumption, and raw lowercase retention.
+This is a native helper probe, not a full C++ File object executable. The
+focused LibJS new/existing Unicode batch passes **2/2** in both modes; full
+LibJS/AST checks remain root-owned on the integrated frozen helper snapshot.

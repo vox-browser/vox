@@ -2236,3 +2236,22 @@ Their ordinary-statement focused checks run with `-prod -gc none`, so production
 assertion elimination cannot erase the checks themselves. The complete package
 passes 227 test files with default GC and with `-gc none`. These supporting
 corrections do not install missing intrinsic records or complete regex execution.
+
+
+The explicit byte boundary `utf16_string_from_utf8_without_validation` follows
+pinned `AK/Utf16String{,Data}` and `AK/Utf8View.h` rather than V's Unicode scalar
+iterator. It retains Source WTF8 surrogate and overlong code points, advances
+truncated or structurally invalid input one byte, and replaces an out-of-range
+point while consuming its structurally valid byte length. It retains the
+Source ASCII versus UTF16 storage choice. `Utf16String.to_ascii_lowercase`
+translates `AK/Utf16View.cpp` over raw code units. Existing generic `utf16()`
+behavior stays unchanged; callers must choose the explicit Source byte helper.
+
+The new helper and existing Unicode fixture pass **2/2** with default GC and
+GC-none (`source-utf16-byte-boundary-{default,gc-none}.log`). The separate
+`tools/source_drag_wtf8_probe.py` compiles actual pinned AK Utf8View,
+UnicodeUtils and CharacterTypes header algorithms at native -O0 and -O2. Its
+WTF8, malformed/truncated, overlong and raw ASCII results match the V fixtures.
+It probes those actual decoder helpers, not a complete C++ File/LibWeb object.
+The required full two-mode LibJS suites and exact AST comparison are queued
+for the integrated frozen helper snapshot; focused results do not replace them.
