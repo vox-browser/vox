@@ -137,6 +137,31 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+WebGL2 vertexAttribIPointer now matches the pure driver forwarding body in
+pinned WebGL2RenderingContextImpl.cpp:530-535. The extra V size, stride,
+negative-offset and absent-buffer gates and integer-pointer state-map write
+are removed. Unlike the base pointer method, this Source body has no retained
+ARRAY_BUFFER gate. The existing native dispatch preserves the signed size and
+stride, GLenum and intptr_t offset without changing the original GL entry
+point. Empty Proxy make_current plus the generated command and owning Host
+replay boundary select the actual driver for every forwarded call. The unified
+typed V context retains its WebGL2 availability guard; the public WebGL1 class
+does not expose this method, preserving the existing class/IDL distinction.
+
+Eleven valid/invalid index, size, type, stride and offset cases, each with and
+without a bound buffer, compare independent real driver state and error
+baselines, actual owner selection and native-before-Source pending errors.
+Public tests cover conflicting invalid arguments with no buffer, actual
+integer flag/stride/offset state, numeric conversion order and an author
+conversion throw before driver selection. All three native integer-pointer/
+base-pointer/state and all three public integer-pointer/base-pointer/host
+files passed with GC disabled. Logs are
+`Build/audit-fixes/source-vertex-integer-pointer-gc-none.log` and
+`Build/audit-fixes/source-vertex-integer-pointer-public/` in the second private
+worktree. Divisor state-map cleanup and integer vector entry points remain
+separate Source slices; no full generated wrapper or remote driver parity is
+claimed by these focused witnesses.
+
 Base vertexAttribPointer now preserves exactly the retained ARRAY_BUFFER
 reference/nonzero-offset gate from pinned WebGLRenderingContextImpl.cpp:2571-
 2581. An absent actual Source reference returns INVALID_OPERATION before any
@@ -174,7 +199,8 @@ error evidence for that retained-deleted-object command and passed in
 `source-vertex-pointer-driver-oracle-final-gc-none.log`; the implementation did
 not change during either fixture correction. This is two native neighbor passes
 plus the corrected new file, not a rerun clean three-file native group.
-Integer-pointer/divisor bodies and their remaining mirror are separate scopes.
+The integer-pointer body is verified above; the remaining divisor mirror is a
+separate scope.
 
 WebGL2 integer scalar attributes now call exact glVertexAttribI4i and
 glVertexAttribI4ui delegates from pinned WebGL2RenderingContextImpl.cpp:496-501
@@ -184,7 +210,7 @@ write-only vertex-value map updates are removed, together with the unused
 context field. The unified V context's existing WebGL2 availability gate is
 unchanged; public WebGL1 exposes neither scalar method, matching the Source
 class/IDL boundary. Integer list minimum gates and vector delegation remain a
-separate scope, as do pointer/divisor state mirrors.
+separate scope, as does the remaining divisor state mirror.
 
 Focused typed checks compare exact signed INT_MIN/INT_MAX and large signed
 values, UINT_MAX/high-bit unsigned values, independent driver resets, last
@@ -209,7 +235,7 @@ The former vector-to-scalar method substitution is removed. The existing
 native glVertexAttrib4fv helper is reused and three thin ABI delegates supply
 the remaining Source calls. No synthesized default vector or CPU index gate
 is added; GL reads only the Source operation's components from a longer span.
-Integer vector and pointer/divisor bodies remain distinct Source scopes.
+Integer vectors and the divisor body remain distinct Source scopes.
 
 Both-version native witnesses cover every below-minimum length, including an
 invalid index that must still take the genuine Source minimum gate; direct
