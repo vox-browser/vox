@@ -603,3 +603,58 @@ physical Box/Vec buffers, SIMD slack and other selected codec variants remain
 bounded as described above. TextDecoder's Source UTF16 caller is the next
 separate consumer feature; Common/Stream continue to use their existing Source
 UTF8 destination. LibJS and native browser bundle/captures are unchanged.
+
+
+## TextDecoder's actual UTF16 owner caller
+
+Feature `6abe845ec9beaa6377b13a8272f3cd07074ace26` connects the UTF8-selected
+branch of the existing TextDecoder.decode model to the proven actual retained
+UTF16 destination. Source `TextDecoder.cpp:71–96` calls the retained
+StreamingDecoder's `to_utf16`, passing Flush::Yes only for non-streaming calls.
+Its C++ bridge (`LibTextCodec/Decoder.cpp:149–162,523–526`) builds an owned UTF16
+result from the real callback units and withholds that result if decoding fails.
+The V caller now invokes the same logical owning path with the exact last/fatal
+flags, saves its units/success, resets a non-streaming owner before examining
+that saved result, and returns the existing decoding error on failure. Produced
+fatal callback units remain internal. A streaming call retains the actual
+lifecycle/variant slots, including after a decoding error.
+
+Successful output constructs the existing genuine Utf16String unit-owner
+record using `libjs.utf16_string_from_code_units`. Its `.str()` projection retains
+the model's previous public string return. The validated UTF8 decoder only
+emits well-formed UTF16 units here, so this projection requires no new
+replacement policy, representation rule or LibJS implementation change.
+TextDecoder no longer decodes through the Common UTF8 output queue for this
+selected encoding. Common/Stream continue to call their Source UTF8 destination,
+and the other-label adapter remains separate. The existing presence/owner guard
+is preserved before touching the retained decoder.
+
+The new focused test compares all 1,876 observed native owning calls from the
+actual original-FFI UTF16 golden through the existing TextDecoder entry point,
+including BOM splits, incomplete scalar prefixes, NUL, astral units, successful
+flushes and fatal errors. It checks the actual retained slots for streaming
+calls and the Source fresh owner for every non-streaming result or error.
+Deliberate post-Finished native decoder calls are excluded from the public
+caller comparison: Source TextDecoder replaces that owner before returning.
+All 16 genuine failed nonempty partial-callback cases throw the existing error
+without returning their units; subsequent calls verify the already witnessed
+fresh/retained BOM distinction. A genuine compiled child verifies that the
+missing-owner guard remains fatal in production.
+
+Focused checks pass 1/1 default, 1/1 GC-none and 1/1 production GC-none in
+`source-text-decoder-utf16-owner-{focused-default,focused-gc-none,production-gc-none}.log`.
+Complete Encoding passes 18/18 in both modes in
+`source-text-decoder-utf16-owner-full-{default,gc-none}.log`, with the tracked
+implementation/tests unchanged during those sweeps. The genuine native Sync
+Text regression passes 1/1 GC-none in
+`source-text-decoder-utf16-owner-native-sync-text-gc-none.log`. No expected
+native Source value was changed.
+
+This closes the selected UTF8 TextDecoder UTF16 destination/caller gap described
+in the earlier prerequisite sections. The public input and returned-string
+projections are still typed model boundaries, not native JavaScript interface
+exposure. Actual BufferSource copying/detachment conversion, Source engine
+allocation/OOM exceptions, physical C++ builder/Box/Vec representation, native
+TextDecoder wrappers and other codec owners remain explicit dependencies.
+The existing Utf16String code is unchanged; no additional LibJS code was
+introduced. No native browser bundle build or capture was run privately.
