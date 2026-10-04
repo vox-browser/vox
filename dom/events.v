@@ -1496,6 +1496,11 @@ pub fn (et &EventTarget) element_event_handler_attribute_changed(local_name stri
 // document.v already defines EventTarget.dispatch_event(event &Event) bool. This helper carries the translated EventTarget.cpp dispatch body
 // without redefining that existing method from outside the assigned write set.
 pub fn event_target_dispatch_event(target &EventTarget, event &Event) bool {
+	// Window.cpp overrides this virtual method: its associated Document is the
+	// legacy target override, and EventTarget's activation path is bypassed.
+	if event_target_as_window(target) != none {
+		return EventDispatcher.dispatch(target, event, true)
+	}
 	// https://html.spec.whatwg.org/multipage/interaction.html#activation-triggering-input-event
 	// https://html.spec.whatwg.org/multipage/interaction.html#user-activation-processing-model
 	if is_activation_triggering_input_event(event) {
