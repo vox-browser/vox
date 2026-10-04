@@ -140,8 +140,9 @@ fn test_instance_import_linking_and_export_shape() {
 	}
 	instance := Instance.construct(compiled, imports)!
 	exports := instance.exports()
-	assert exports['f'].kind == .function_
-	assert exports['f'].value.kind == .callback
+	exported_function := exports['f'] or { panic('missing exported function') }
+	assert exported_function.kind == .function_
+	assert exported_function.value.kind == .callback
 }
 
 fn test_instance_retains_owner_cache_and_caches_exports_per_realm() {
@@ -174,7 +175,8 @@ fn test_instance_retains_owner_cache_and_caches_exports_per_realm() {
 
 	mut environment := map[string]ExternalValue{}
 	initialize_webassembly_export_binding('instance-export-realm-b', mut environment, 'f', instance)!
-	assert environment['f'].kind == .function_
+	exported_function := environment['f'] or { panic('missing export environment binding') }
+	assert exported_function.kind == .function_
 	assert instance_exports_caches().len > 0
 }
 

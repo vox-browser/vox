@@ -81,8 +81,10 @@ fn test_unboxed_typed_dictionary_values_are_retained_without_fabricated_identity
 	})
 	cache.add_extern_value(0, first)
 	cache.add_extern_value(1, second)
-	assert cache.get_extern_value(0)?.object_value['name'].string_value == 'first'
-	assert cache.get_extern_value(1)?.object_value['name'].string_value == 'second'
+	first_name := cache.get_extern_value(0)?.object_value['name'] or { panic('missing retained first name') }
+	second_name := cache.get_extern_value(1)?.object_value['name'] or { panic('missing retained second name') }
+	assert first_name.string_value == 'first'
+	assert second_name.string_value == 'second'
 	assert cache.get_extern_address(first) == none
 	assert cache.get_extern_address(second) == none
 }
