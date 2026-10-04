@@ -374,3 +374,36 @@ poll/replay. Main File plus Blob startup fixtures pass **2/2** both modes in
 before document finalization. Canonical native bundle/capture verification is
 root-owned; FileList/native Worker and the previously recorded Source limits
 remain open.
+
+### Actual FileList owner and live indexed properties
+
+`FileListHost` now retains the genuine ordered `FileAPI::FileList` and uses the
+same relevant-realm File owner for each indexed value. The fresh pinned Python
+generator's `FileListWrapper`, `FileListPrototype::length_getter` and `item`
+map directly to the native owner, generated getter/method metadata and existing
+WebIDL unsigned-long conversion. Indexed-key classification reuses the existing
+LibJS `PropertyName.from_utf16` translation, preserving the actual raw key.
+
+The captured native Proxy implements precisely FileList's indexed-only branches
+of Source `Bindings/PlatformObject.cpp`: get-own-property at line 171, set at
+321, define at 360, delete at 429, prevent-extensions at 508 and own-keys at 526.
+Its hidden engine target retains ordinary properties and prototype behavior;
+the Proxy obtains every indexed File from the live actual owner. There is no
+snapshot of the indexed values. Supported indices have read-only, enumerable,
+configurable descriptors; all index definitions fail without an IDL setter,
+supported index deletion fails, and prevent-extensions always fails. Ordinary
+receiver/prototype handling remains with the engine's captured Reflect methods.
+The iterator is the original realm's actual `Array.prototype.values` function.
+
+The owner fixture passes **1/1** both modes in
+`source-native-file-list-owner-{default,gc-none}.log`. It exercises live append
+through an already-created iterator, exact File identity, native metadata and
+descriptor flags, chronological strings followed by symbols, strict assignment,
+unsupported indices and prototype setters, derived receivers, freeze failure,
+original numeric-conversion exceptions, receiver branding before conversion,
+and poisoned author intrinsics. No public FileList interface constructor is
+installed by this prerequisite. Its exact throwing interface constructor,
+native primary clone projection, actual DOM producer exposure and Worker startup
+remain separate work. Importing the older `bindings` package also exposed its
+existing non-exhaustive DOM-runtime-value matches; this slice avoids that
+unrelated package and does not claim to fix those older matches.
