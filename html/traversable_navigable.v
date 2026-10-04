@@ -84,6 +84,7 @@ mut:
 	current_session_history_step_ int
 	session_history_entries_      []&SessionHistoryEntry
 	active_session_history_entry_ ?&SessionHistoryEntry
+	legacy_current_session_history_entry_ ?&SessionHistoryEntry
 	paused_apply_history_step_    ?&ApplyHistoryStepState
 	apply_history_step_state_     ?&ApplyHistoryStepState
 	system_visibility_state_      dom.VisibilityState = .hidden
@@ -137,6 +138,7 @@ pub fn TraversableNavigable.create_a_new_top_level_traversable(target_name strin
 	mut traversable := TraversableNavigable.new()
 	traversable.session_history_entries_ = [entry]
 	traversable.active_session_history_entry_ = entry
+	traversable.legacy_current_session_history_entry_ = entry
 	traversable.active_document_ = document
 	mut host_navigable := &dom.Navigable{
 		is_top_level_traversable_: true
@@ -166,6 +168,7 @@ pub fn TraversableNavigable.create_a_fresh_top_level_traversable(initial_navigat
 	}
 	traversable.session_history_entries_ = [entry]
 	traversable.active_session_history_entry_ = entry
+	traversable.legacy_current_session_history_entry_ = entry
 	traversable.active_document_ = document
 	mut host_navigable := &dom.Navigable{
 		is_top_level_traversable_: true
@@ -190,7 +193,40 @@ pub fn (traversable &TraversableNavigable) session_history_entries() []&SessionH
 }
 
 pub fn (traversable &TraversableNavigable) active_session_history_entry() ?&SessionHistoryEntry {
+	if model := traversable.local_navigable_model() {
+		return model.active_session_history_entry()
+	}
 	return traversable.active_session_history_entry_
+}
+
+fn (traversable &TraversableNavigable) local_navigable_model() ?&NavigableModel {
+	host := traversable.host_navigable_ or { return none }
+	return navigable_model_for_host(host)
+}
+
+// Source LocalTraversable inherits the same current/active entry owner from
+// LocalNavigable. Only the older bare-host constructors use these local slots.
+pub fn (traversable &TraversableNavigable) current_session_history_entry() ?&SessionHistoryEntry {
+	if model := traversable.local_navigable_model() {
+		return model.current_session_history_entry()
+	}
+	return traversable.legacy_current_session_history_entry_
+}
+
+pub fn (mut traversable TraversableNavigable) set_current_session_history_entry(entry ?&SessionHistoryEntry) {
+	if mut model := traversable.local_navigable_model() {
+		model.set_current_session_history_entry(entry)
+		return
+	}
+	traversable.legacy_current_session_history_entry_ = entry
+}
+
+pub fn (mut traversable TraversableNavigable) set_active_session_history_entry(entry ?&SessionHistoryEntry) {
+	if mut model := traversable.local_navigable_model() {
+		model.set_active_session_history_entry(entry)
+		return
+	}
+	traversable.active_session_history_entry_ = entry
 }
 
 pub fn (traversable &TraversableNavigable) active_document() ?&dom.Document {
@@ -313,7 +349,7 @@ pub fn (traversable &TraversableNavigable) get_all_navigables_whose_current_sess
 	target := target_history_entry(traversable.session_history_entries_, target_step) or {
 		return []&dom.Navigable{}
 	}
-	current := traversable.active_session_history_entry_ or { target }
+	current := traversable.active_session_history_entry() or { target }
 	reload_pending := if state := target.document_state { state.reload_pending } else { false }
 	if voidptr(target) != voidptr(current) || reload_pending {
 		return [host]
@@ -326,7 +362,7 @@ pub fn (traversable &TraversableNavigable) get_all_navigables_that_only_need_his
 	target := target_history_entry(traversable.session_history_entries_, target_step) or {
 		return []&dom.Navigable{}
 	}
-	current := traversable.active_session_history_entry_ or { target }
+	current := traversable.active_session_history_entry() or { target }
 	reload_pending := if state := target.document_state { state.reload_pending } else { false }
 	if voidptr(target) == voidptr(current) && !reload_pending {
 		return [host]
@@ -526,7 +562,7 @@ fn (traversable &TraversableNavigable) check_if_unloading_is_canceled_for_histor
 		})
 		return
 	}
-	active := traversable.active_session_history_entry_ or {
+	active := traversable.active_session_history_entry() or {
 		state.start_document_tasks()
 		return
 	}
@@ -651,9 +687,10 @@ fn (mut state ApplyHistoryStepState) start() {
 		return
 	}
 	if host := state.traversable.host_navigable_ {
+		mut mutable_traversable := unsafe { &TraversableNavigable(state.traversable) }
+		mutable_traversable.set_current_session_history_entry(state.target)
 		if model := navigable_model_for_host(host) {
 			mut mutable_model := unsafe { &NavigableModel(model) }
-			mutable_model.set_current_session_history_entry(state.target)
 			mutable_model.set_ongoing_navigation(NavigableOngoingNavigation{
 				kind: .traversal
 			})
@@ -911,7 +948,7 @@ fn (mut traversable TraversableNavigable) apply_the_history_step(step int, check
 		complete_history_step(on_complete, .initiator_disallowed)
 		return
 	}
-	active := traversable.active_session_history_entry_ or { target }
+	active := traversable.active_session_history_entry() or { target }
 	if check_for_cancellation {
 		documents := collect_documents_that_will_unload(traversable.session_history_entries_, active, target)
 		mut continuation := &HistoryStepContinuationState{
@@ -1210,7 +1247,7 @@ pub fn finalize_a_same_document_navigation(mut traversable TraversableNavigable,
 		complete_history_step(on_complete, .applied)
 		return
 	}
-	active_entry := traversable.active_session_history_entry_ or {
+	active_entry := traversable.active_session_history_entry() or {
 		if replaced := entry_to_replace {
 			index := traversable.session_history_entries_.index(replaced)
 			if index >= 0 {

@@ -114,13 +114,15 @@ fn test_synchronous_history_step_does_not_strand_a_fresh_navigation() {
 	mut traversable := TraversableNavigable.create_a_fresh_top_level_traversable(dom.URL{
 		value: 'https://example.test/current'
 	}, EmptyDocumentResource{})!
-	current := traversable.active_session_history_entry() or { panic('missing current entry') }
 	target := traversal_entry(1, 'https://example.test/replaced', traversable.active_document() or {
 		panic('missing active document')
 	})
 	traversable.append_session_history_entry(target)
 	host := traversable.host_navigable_ or { panic('missing host navigable') }
 	mut model := NavigableModel.create(host, none)!
+	// Once the bare host has a local model, that initialized inherited record
+	// owns the actual active entry; the earlier constructor slot is an adapter.
+	current := model.active_session_history_entry() or { panic('missing actual active entry') }
 	model.set_ongoing_navigation(NavigableOngoingNavigation{
 		kind: .navigation
 		id: 'fresh-navigation'
