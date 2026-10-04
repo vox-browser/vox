@@ -15,6 +15,7 @@ COMPARISON_NAMES = ("Equals", "NotEquals", "LessThan", "GreaterThan", "LessThanO
 ARITHMETIC_NAMES = ("Add", "Subtract", "Multiply", "BitAnd", "BitOr", "BitXor")
 FLOAT_ARITHMETIC_NAMES = ("Add", "Subtract", "Multiply", "Divide")
 FLOAT_EXTREMA_NAMES = ("Minimum", "Maximum", "CopySign")
+FLOAT_UNARY_NAMES = ("Absolute", "Negate", "Ceil", "Floor", "Truncate", "NearbyIntegral", "SquareRoot")
 
 BINARY_DRIVER = r"""
 #include <bit>
@@ -394,6 +395,74 @@ int main()
 }
 """
 
+FLOAT_UNARY_DRIVER = r"""
+#include <bit>
+#include <fenv.h>
+#include <stdio.h>
+#include <stdint.h>
+
+template<typename T> void float_unary_result(char const* mode, char const* name, u64 input, T value)
+{
+    u64 bits;
+    if constexpr (sizeof(T) == sizeof(u32))
+        bits = std::bit_cast<u32>(value);
+    else
+        bits = std::bit_cast<u64>(value);
+    printf("%s/%s\t%016llx\t%016llx\n", mode, name,
+        (unsigned long long)input, (unsigned long long)bits);
+}
+int main()
+{
+    using namespace Wasm::Operators;
+    u32 const inputs32[] = {0, 0x80000000U, 0x3f800000U, 0xbf800000U,
+        1, 0x007fffffU, 0x00800000U, 0x7f7fffffU, 0x7f800000U, 0xff800000U,
+        0x7fc12345U, 0xffc54321U, 0x7f812345U, 0xff854321U, 0x3f000000U, 0xbf000000U,
+        0x3fc00000U, 0xbfc00000U, 0x40200000U, 0xc0200000U, 0x40600000U, 0xc0600000U,
+        0x40800000U, 0xc0800000U, 0xff7fffffU, 0x80000001U, 0x4b000001U, 0xcb000001U};
+    u64 const inputs64[] = {0, 0x8000000000000000ULL, 0x3ff0000000000000ULL,
+        0xbff0000000000000ULL, 1, 0x000fffffffffffffULL, 0x0010000000000000ULL,
+        0x7fefffffffffffffULL, 0x7ff0000000000000ULL, 0xfff0000000000000ULL,
+        0x7ff8123456789abcULL, 0xfff8543210abcdefULL,
+        0x7ff0123456789abcULL, 0xfff0543210abcdefULL,
+        0x3fe0000000000000ULL, 0xbfe0000000000000ULL,
+        0x3ff8000000000000ULL, 0xbff8000000000000ULL,
+        0x4004000000000000ULL, 0xc004000000000000ULL,
+        0x400c000000000000ULL, 0xc00c000000000000ULL,
+        0x4010000000000000ULL, 0xc010000000000000ULL,
+        0xffefffffffffffffULL, 0x8000000000000001ULL,
+        0x4330000000000001ULL, 0xc330000000000001ULL};
+    char const* const names[] = {"nearest", "down", "up", "zero"};
+    int const modes[] = {FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO};
+    auto old_rounding = fegetround();
+    for (unsigned mode = 0; mode < 4; ++mode) {
+        if (fesetround(modes[mode]))
+            return 1;
+        for (auto bits : inputs32) {
+            auto value = std::bit_cast<float>(bits);
+            float_unary_result(names[mode], "abs_f32", bits, Absolute{}(value));
+            float_unary_result(names[mode], "neg_f32", bits, Negate{}(value));
+            float_unary_result(names[mode], "ceil_f32", bits, Ceil{}(value));
+            float_unary_result(names[mode], "floor_f32", bits, Floor{}(value));
+            float_unary_result(names[mode], "trunc_f32", bits, Truncate{}(value));
+            float_unary_result(names[mode], "nearest_f32", bits, NearbyIntegral{}(value));
+            float_unary_result(names[mode], "sqrt_f32", bits, SquareRoot{}(value));
+        }
+        for (auto bits : inputs64) {
+            auto value = std::bit_cast<double>(bits);
+            float_unary_result(names[mode], "abs_f64", bits, Absolute{}(value));
+            float_unary_result(names[mode], "neg_f64", bits, Negate{}(value));
+            float_unary_result(names[mode], "ceil_f64", bits, Ceil{}(value));
+            float_unary_result(names[mode], "floor_f64", bits, Floor{}(value));
+            float_unary_result(names[mode], "trunc_f64", bits, Truncate{}(value));
+            float_unary_result(names[mode], "nearest_f64", bits, NearbyIntegral{}(value));
+            float_unary_result(names[mode], "sqrt_f64", bits, SquareRoot{}(value));
+        }
+    }
+    return fesetround(old_rounding);
+}
+"""
+
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -401,7 +470,7 @@ def main():
     parser.add_argument("--build-dir", type=Path)
     parser.add_argument("--compiler", default="clang++")
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--family", choices=("binary", "unary", "shift", "comparison", "arithmetic", "floating", "float_arithmetic", "float_extrema"), default="binary")
+    parser.add_argument("--family", choices=("binary", "unary", "shift", "comparison", "arithmetic", "floating", "float_arithmetic", "float_extrema", "float_unary"), default="binary")
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
     upstream = args.upstream.resolve()
@@ -421,6 +490,7 @@ def main():
         "floating": (COMPARISON_NAMES, FLOAT_COMPARISON_DRIVER, 3072, "comparison_float_operators.tsv"),
         "float_arithmetic": (FLOAT_ARITHMETIC_NAMES, FLOAT_ARITHMETIC_DRIVER, 2048, "arithmetic_float_operators.tsv"),
         "float_extrema": (FLOAT_EXTREMA_NAMES, FLOAT_EXTREMA_DRIVER, 1536, "extrema_float_operators.tsv"),
+        "float_unary": (FLOAT_UNARY_NAMES, FLOAT_UNARY_DRIVER, 1568, "unary_float_operators.tsv"),
     }
     names, driver, expected_count, filename = families[args.family]
     if args.family in ("comparison", "arithmetic", "floating", "float_arithmetic"):
@@ -443,13 +513,14 @@ def main():
     # Only the selected verbatim Source records are needed. This avoids unrelated
     # LibWasm Types/LibSync generated exports; AK headers remain the actual source.
     generated = "#include <limits.h>\n#include <AK/Checked.h>\n#include <AK/BuiltinWrappers.h>\n#include <AK/Error.h>\n#include <AK/StringView.h>\n"
-    if args.family == "float_extrema":
+    if args.family in ("float_extrema", "float_unary"):
         generated += "#include <AK/Math.h>\n#include <math.h>\n"
     generated += "namespace Wasm::Operators {\n" + "\n\n".join(excerpts) + "\n}\n" + driver
     work = repo / "Build/audit-fixes" / ("wasm-integer-operators" if args.family == "binary"
                                        else "wasm-floating-comparison-operators" if args.family == "floating"
                                        else "wasm-floating-arithmetic-operators" if args.family == "float_arithmetic"
                                        else "wasm-floating-extrema-operators" if args.family == "float_extrema"
+                                       else "wasm-floating-unary-operators" if args.family == "float_unary"
                                        else "wasm-" + args.family + "-integer-operators")
     work.mkdir(parents=True, exist_ok=True)
     cpp = work / "source.cpp"
