@@ -42,14 +42,14 @@ fn test_source_reader_result_clone_set_and_access_preserve_lone_units_and_origin
 	assert reader.result().kind == .null_ && reader.result().string_utf16_record() == none
 }
 
-fn test_source_reader_raw_result_slot_rejects_stale_compatibility_dtos_and_leaves_data_url_boundary_absent() {
+fn test_source_reader_raw_result_slot_rejects_stale_compatibility_dtos_and_non_string_variants() {
 	value := file_reader_utf16_result(libjs.utf16_string_from_code_units([u16(0xd800)]))
 	stale := FileReaderResult{ ...value, text: 'updated' }
 	assert stale.string_utf16_record() == none && stale.clone().string_utf16_record() == none
 	non_string := FileReaderResult{ ...value, kind: .bytes }
 	assert non_string.string_utf16_record() == none
 	assert file_reader_string_result('compatibility').string_utf16_record() == none
-	assert blob_package_data([u8(0)], .data_url, 'text/plain', none)!.string_utf16_record() == none
+	assert blob_package_data([u8(0)], .data_url, 'text/plain', none)!.string_utf16_record()?.str() == 'data:text/plain;base64,AA=='
 	assert blob_package_data([u8(0)], .array_buffer, none, none)!.string_utf16_record() == none
 	mut reader := FileReader.create()
 	reader.read_as_binary_string(Blob.create([u8(0), 255], ''))!

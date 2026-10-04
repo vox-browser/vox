@@ -13,8 +13,8 @@ fn test_source_file_reader_data_url_package_uses_default_and_literal_supplied_mi
 
 fn test_source_file_reader_data_url_compatibility_projection_retains_raw_serialized_bytes() {
 	// Source's unchecked ASCII record converts to UTF8 by retaining its bytes.
-	// This checks only that compatibility projection, not raw ASCII code-unit
-	// metadata or its native PrimitiveString exposure.
+	// The genuine unchecked ASCII owner also retains these bytes; native
+	// PrimitiveString exposure remains a separate typed adapter.
 	mime := libjs.utf16_string_from_code_units([u16(`x`), 0xd800, 0, 0x00e9]).str()
 	result := blob_package_data([u8(0xff), 0], .data_url, mime, none)!
 	assert result.kind == .string_

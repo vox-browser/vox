@@ -57,7 +57,6 @@ pub fn (result FileReaderResult) clone() FileReaderResult {
 
 // Native string projection must consume the actual immutable Source slot.
 // Compatibility DTO edits cannot reuse stale raw units/storage metadata.
-// DataURL's unchecked ASCII record remains a separate prerequisite.
 pub fn (result FileReaderResult) string_utf16_record() ?libjs.Utf16String {
 	if result.kind != .string_ { return none }
 	if raw := result.text_utf16_ {
@@ -129,7 +128,7 @@ pub fn blob_package_data(bytes []u8, type_ FileReaderType, mime_type ?string, en
 				}
 			}
 			record := url.create_with_data(mime, base64.encode(bytes), true)
-			file_reader_string_result(infra.utf16_string_from_url_ascii(record.serialize(false)))
+			file_reader_utf16_result(infra.utf16_string_record_from_url_ascii(record.serialize(false)))
 		}
 		.text {
 			// Source Utf16String::from_utf8(String const&) delegates to the
