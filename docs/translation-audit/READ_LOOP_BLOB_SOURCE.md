@@ -127,3 +127,17 @@ the original slots or constructors. The focused native test passes both GC
 modes in `source-native-array-buffer-{default,gc-none}.log`, including distinct
 empty records. These helpers cover Source's internal fixed ByteBuffer-backed
 buffers; they do not establish the still-open native author Shared/RAB paths.
+
+Commit `3f0cf6ee` wires actual owning-realm ArrayBuffer allocation into
+`ReadLoopReadRequest`'s deprecated Promise wrapper before resolution. Installed
+native read loops therefore fulfill with the real engine ArrayBuffer record;
+its relevant-realm data/view hooks read raw slots and construct a genuine
+Uint8Array sharing exactly that buffer. The standalone typed boundary retains
+its owned ArrayBuffer descriptor. Uint8Array creation has no copied-view
+fallback: it requires the actual engine realm hook. Source ByteBuffer-overload
+allocation failures keep their fatal boundary. Native witness tests verify
+the actual fulfilled buffer/view identity, including empty detached/OOB input.
+Default **2/2** and GC-disabled **4/4** native witness/allocation/native host/
+core aggregation files pass in `source-read-loop-array-buffer-default-final.log`
+and `source-read-loop-array-buffer-gc-none.log`. The native compilation also
+covers the module-relative header correction `de70507b`.
