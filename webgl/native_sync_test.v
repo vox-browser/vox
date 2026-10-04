@@ -10,11 +10,14 @@ fn test_webgl_sync_wait_and_queries_use_actual_angle_gpu_results() {
 	assert context.get_sync_parameter(sync, sync_status).integer in [i64(unsignaled), i64(signaled)]
 	assert context.client_wait_sync(mut sync, 0, 0) in [timeout_expired, condition_satisfied,
 		already_signaled]
-	// The flush bit is valid: it submits the real pending GPU fence.
+	// The flush bit is valid; the Source compositor uses timeout 0 even when
+	// the original wire request supplied a nonzero timeout.
 	assert context.client_wait_sync(mut sync, sync_flush_commands_bit, 1_000_000_000) in [
+		timeout_expired,
 		condition_satisfied,
 		already_signaled,
 	]
+	context.finish()
 	assert context.get_sync_parameter(sync, sync_status).integer == signaled
 	assert context.client_wait_sync(mut sync, 0, 0) == already_signaled
 	context.wait_sync(mut sync, 0, u64(-1))

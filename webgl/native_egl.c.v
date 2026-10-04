@@ -218,11 +218,12 @@ fn (mut context OpenGLContext) native_fence_sync(condition GLenum, flags GLenum)
 	return handle
 }
 
-fn (mut context OpenGLContext) native_client_wait_sync(handle voidptr, flags GLenum, timeout u64) GLenum {
+fn (mut context OpenGLContext) native_client_wait_sync(handle voidptr, flags GLenum, _requested_timeout u64) GLenum {
 	context.make_current()
 	// Generated Source sync calls return a default GLenum after proxy loss.
 	if !context.current_ { return GLenum(0) }
-	result := GLenum(C.vox_gl_client_wait_sync(handle, flags, timeout))
+	// The actual Source compositor sync receiver overrides the wire timeout to 0.
+	result := GLenum(C.vox_gl_client_wait_sync(handle, flags, 0))
 	return result
 }
 
