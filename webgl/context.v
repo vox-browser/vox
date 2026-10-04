@@ -62,7 +62,6 @@ mut:
 	pack_alignment_                     int = 4
 	unpack_alignment_                   int = 4
 	unpack_state_                       PixelUnpackState = PixelUnpackState{}
-	generic_parameters_                 map[GLenum]WebGLParameterValue
 	vertex_attrib_values_               map[GLuint][]f32
 	vertex_attrib_states_               map[GLuint]VertexAttribState
 }
@@ -80,7 +79,6 @@ pub fn WebGLRenderingContext.new(version WebGLVersion, attributes WebGLContextAt
 		enabled_capabilities: {
 			dither: true
 		}
-		generic_parameters_: default_webgl_parameters()
 		xr_compatible_: attributes.xr_compatible
 	}
 }
@@ -267,7 +265,6 @@ fn (mut context WebGLRenderingContext) initialize_restored_client_state() {
 	context.pack_alignment_ = 4
 	context.unpack_alignment_ = 4
 	context.unpack_state_ = PixelUnpackState{}
-	context.generic_parameters_ = default_webgl_parameters()
 }
 
 // A restored compositor context owns a fresh GL object namespace. Advancing
@@ -646,7 +643,6 @@ pub fn (mut context WebGLRenderingContext) pixel_storei(pname GLenum, parameter 
 				context.set_error(invalid_value)
 				return
 			}
-			context.generic_parameters_[pname] = integer_parameter(parameter)
 			match pname {
 				unpack_row_length {
 					context.unpack_state_ = PixelUnpackState{

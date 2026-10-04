@@ -1,5 +1,34 @@
 module webgl
 
+fn test_source_parameter_queries_use_actual_driver_and_preserve_real_client_unpack_state() {
+	for version in [WebGLVersion.webgl1, .webgl2] {
+		mut context := WebGLRenderingContext.new(version, WebGLContextAttributes{stencil: true}, [])
+		context.pixel_storei(unpack_alignment, 1)
+		C.vox_gl_pixel_storei(unpack_alignment, 8)
+		C.vox_gl_pixel_storei(pack_alignment, 2)
+		C.vox_gl_cull_face(front)
+		C.vox_gl_depth_func(gequal)
+		C.vox_gl_stencil_func(equal, 8, 0xf0)
+		assert context.get_parameter(unpack_alignment).integer == 8
+		assert context.get_parameter(pack_alignment).integer == 2
+		assert context.get_parameter(cull_face_mode).integer == front
+		assert context.get_parameter(depth_func).integer == gequal
+		assert context.get_parameter(stencil_ref).integer == 8
+		// Source retains its client bitmap-unpack state separately from GL queries.
+		assert context.unpack_state_.alignment == 1
+		if version == .webgl2 {
+			context.pixel_storei(pack_row_length, 5)
+			context.pixel_storei(unpack_row_length, 2)
+			C.vox_gl_pixel_storei(pack_row_length, 7)
+			C.vox_gl_pixel_storei(unpack_row_length, 4)
+			assert context.get_parameter(pack_row_length).integer == 7
+			assert context.get_parameter(unpack_row_length).integer == 4
+			assert context.unpack_state_.row_length == 2
+		}
+		assert context.get_error() == no_error
+	}
+}
+
 fn test_driver_parameter_queries_include_capabilities_types_and_actual_state() {
 	mut context := WebGLRenderingContext.new(.webgl2, WebGLContextAttributes{}, [])
 	assert context.get_parameter(GLenum(0x0d33)).integer >= 64 // MAX_TEXTURE_SIZE

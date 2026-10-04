@@ -49,10 +49,6 @@ fn integer_parameter(value i64) WebGLParameterValue {
 	return WebGLParameterValue{ kind: .integer, integer: value }
 }
 
-fn number_parameter(value f64) WebGLParameterValue {
-	return WebGLParameterValue{ kind: .number, number: value }
-}
-
 fn boolean_parameter(value bool) WebGLParameterValue {
 	return WebGLParameterValue{ kind: .boolean, boolean: value }
 }
@@ -69,39 +65,6 @@ fn (context &WebGLRenderingContext) retained_texture_binding(target GLenum) ?&We
 		return texture
 	}
 	return none
-}
-
-fn default_webgl_parameters() map[GLenum]WebGLParameterValue {
-	mut parameters := map[GLenum]WebGLParameterValue{}
-	parameters[blend_dst_alpha] = integer_parameter(gl_zero)
-	parameters[blend_dst_rgb] = integer_parameter(gl_zero)
-	parameters[blend_equation_alpha] = integer_parameter(func_add)
-	parameters[blend_equation_rgb] = integer_parameter(func_add)
-	parameters[blend_src_alpha] = integer_parameter(gl_one)
-	parameters[blend_src_rgb] = integer_parameter(gl_one)
-	parameters[cull_face_mode] = integer_parameter(back)
-	parameters[depth_func] = integer_parameter(less)
-	parameters[front_face] = integer_parameter(ccw)
-	parameters[generate_mipmap_hint] = integer_parameter(dont_care)
-	parameters[polygon_offset_factor] = number_parameter(0)
-	parameters[polygon_offset_units] = number_parameter(0)
-	parameters[sample_coverage_value] = number_parameter(1)
-	parameters[sample_coverage_invert] = boolean_parameter(false)
-	parameters[stencil_func] = integer_parameter(always)
-	parameters[stencil_value_mask] = integer_parameter(-1)
-	parameters[stencil_fail] = integer_parameter(keep)
-	parameters[stencil_pass_depth_fail] = integer_parameter(keep)
-	parameters[stencil_pass_depth_pass] = integer_parameter(keep)
-	parameters[stencil_ref] = integer_parameter(0)
-	parameters[stencil_writemask] = integer_parameter(-1)
-	parameters[stencil_back_func] = integer_parameter(always)
-	parameters[stencil_back_value_mask] = integer_parameter(-1)
-	parameters[stencil_back_fail] = integer_parameter(keep)
-	parameters[stencil_back_pass_depth_fail] = integer_parameter(keep)
-	parameters[stencil_back_pass_depth_pass] = integer_parameter(keep)
-	parameters[stencil_back_ref] = integer_parameter(0)
-	parameters[stencil_back_writemask] = integer_parameter(-1)
-	return parameters
 }
 
 fn is_valid_framebuffer_binding_target(version WebGLVersion, target GLenum) bool {
