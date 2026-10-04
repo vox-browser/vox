@@ -470,6 +470,24 @@ transport hooks (`WebGLContextProxyBase.h:44-45`); the direct GL/CPU surface
 adapter remains explicit. Full source GC, caller WrapperWorld, remote GPU
 transport and other draw/raster body comparisons remain separate work.
 
+Ordinary drawArrays and drawElements now follow the same exact source body
+order for both versions (`WebGLRenderingContextImpl.cpp:693-708`): owner and
+native painting-surface marker first, canvas hook before array GL calls and
+after element GL calls. The V-only negative count/offset gates and retained
+ELEMENT_ARRAY_BUFFER-presence gate were removed; native validation and native
+bindings govern drawing. These two names no longer receive a duplicate generic
+post-dispatch canvas notification. Genuine shaders, triangle data and a
+native-only element buffer produce red pixels while the source retained EAB
+getter stays null. A one-call canvas witness observes black before array draws
+and red after indexed draws. Actual driver error comparisons, owner selection,
+notification despite rejected arguments and unconditional hooks after genuine
+EGL loss pass for both versions. Six typed/HTML files passed in
+`source-base-draw-gc-none.log`; three public files passed in
+`source-base-draw-public-gc-none.log`, all with GC disabled and no failures.
+Generated IDL conversion exceptions still precede Source method entry. The
+direct CPU presentation adapter, full source GC/caller WrapperWorld ownership
+and remote GPU transport remain explicit boundaries.
+
 Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
 `WebGL2RenderingContextOverloads.cpp:33-85`, and
 `WebGL2RenderingContextImpl.cpp:46-50`: select the owner, validate nullable data
