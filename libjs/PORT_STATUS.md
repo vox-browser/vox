@@ -2275,3 +2275,5 @@ entirely frozen clean checkout. All 4027 tracked files remained unchanged and
 all 487 non-Markdown LibJS files matched canonical after the sweeps. Exact
 heads, manifests, log hashes and supplemental-run limits are recorded in
 [`LIBJS_UNCHECKED_ASCII_VERIFICATION.md`](../docs/translation-audit/LIBJS_UNCHECKED_ASCII_VERIFICATION.md).
+
+Math.random now obtains its two constructor seeds from the Source operating-system CSPRNG rather than the default V PRNG (`ce231a42`). Existing splitmix/xorshift and 53-bit projection remain Source translations. The unchanged pinned native bodies match 48 exact outputs and the native two-draw ABI at both optimization levels; focused default and production GC-none Math checks pass. Platform execution and static-initialization limits are recorded in [Math Source entropy](../docs/translation-audit/MATH_RANDOM_SOURCE_ENTROPY.md).
