@@ -730,3 +730,14 @@ precision argument](../docs/translation-audit/WASM_CHECKED_TRUNCATE.md). This
 95th test file follows the historical frozen 94-file sweep; production opcode
 dispatch, remaining operations, complete instantiation and native roots remain
 open.
+
+## Source saturating floating-to-integer truncation
+
+All eight Source SaturatingTruncate forms preserve original-width math,
+NaN/infinity branches, exact limit comparisons and the upstream i64 edge
+FIXME. They match **1,312 compiled pinned C++ records across four native
+rounding modes**. The corrected new file passes default GC, and it plus
+checked-truncation/helper neighbors pass **3/3 with GC disabled** privately.
+See [Source mapping and validation](../docs/translation-audit/WASM_SATURATING_TRUNCATE.md).
+This 96th file is outside the historical frozen 94-file sweep; production
+opcode dispatch and the remaining runtime/collector boundaries remain open.
