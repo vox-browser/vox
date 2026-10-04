@@ -750,16 +750,21 @@ behavioral verification. Full coverage must not be inferred from the `Complete`
 filename-mapping label.
 
 LOC is physical line count (`wc -l`), including comments and blank lines.
-Implementation and test V counts are disjoint. `Selection` includes its shared
-`dom/selection.v` implementation, and `UIEvents` includes its shared
-`dom/ui_events.v` implementation. Root support and non-LibWeb support modules
+Implementation and test V counts are disjoint. The V columns count all tracked
+package `.v` files, including generated V assets and supporting translations.
+The WebAssembly package also contains its separately audited LibWasm core; its
+V LOC is not a count of LibWeb WebAssembly source equivalence. `Selection`
+includes its shared `dom/selection.v` implementation, and `UIEvents` includes
+its shared `dom/ui_events.v` implementation. Their shared DOM test files are
+counted under the corresponding owner once. Root support and other support modules
 are documented separately in `ROOT_SUPPORT.md` and are not included below.
 The upstream `Crypto` module maps to the `webcrypto/` V package so it can use
 V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The table below is the refreshed 2026-09-26 inventory. It covers 76 current
+The table below refreshes tracked package V LOC on 2026-10-04; upstream counts
+and structural mapping labels retain the pinned inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
 implementation units. Root-level LibWeb `.cpp` support units are mapped
@@ -769,85 +774,85 @@ from the current-module totals.
 
 | Upstream module | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
-| `Animations` | 10 | 5,187 | 3,981 | 1,041 | Complete |
-| `Bindings` | 11 | 2,501 | 2,679 | 918 | Complete |
-| `CSS` | 215 | 47,722 | 103,997 | 8,755 | Present |
-| `Clipboard` | 4 | 1,009 | 1,037 | 383 | Complete |
+| `ARIA` | 6 | 1,955 | 2,574 | 410 | Complete |
+| `Animations` | 10 | 5,187 | 4,254 | 1,420 | Complete |
+| `Bindings` | 11 | 2,501 | 2,718 | 1,116 | Complete |
+| `CSS` | 215 | 47,722 | 114,903 | 17,633 | Present |
+| `Clipboard` | 4 | 1,009 | 1,123 | 409 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
-| `Compression` | 2 | 348 | 424 | 138 | Complete |
-| `ContentSecurityPolicy` | 37 | 4,725 | 2,740 | 427 | Complete |
-| `CookieStore` | 2 | 850 | 859 | 434 | Complete |
-| `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
-| `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
-| `DOM` | 59 | 34,859 | 36,776 | 2,205 | Complete |
-| `DOMURL` | 4 | 1,039 | 758 | 336 | Complete |
-| `Editing` | 26 | 12,720 | 13,918 | 226 | Complete |
-| `Encoding` | 6 | 769 | 705 | 244 | Complete |
+| `Compression` | 2 | 348 | 471 | 143 | Complete |
+| `ContentSecurityPolicy` | 37 | 4,725 | 2,784 | 442 | Complete |
+| `CookieStore` | 2 | 850 | 1,059 | 482 | Complete |
+| `CredentialManagement` | 6 | 382 | 420 | 301 | Complete |
+| `Crypto` | 6 | 13,412 | 7,957 | 7,989 | Complete |
+| `DOM` | 59 | 34,859 | 42,999 | 4,549 | Complete |
+| `DOMURL` | 4 | 1,039 | 825 | 363 | Complete |
+| `Editing` | 26 | 12,720 | 13,938 | 226 | Complete |
+| `Encoding` | 6 | 769 | 2,117 | 969 | Complete |
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
 | `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
 | `EventTiming` | 1 | 122 | 153 | 95 | Complete |
-| `Fetch` | 33 | 8,493 | 5,193 | 1,365 | Complete |
-| `FileAPI` | 6 | 1,357 | 1,018 | 499 | Complete |
+| `Fetch` | 33 | 8,493 | 6,588 | 2,918 | Complete |
+| `FileAPI` | 6 | 1,357 | 1,340 | 858 | Complete |
 | `Fullscreen` | 0 | 0 | 93 | 177 | Complete |
 | `GPC` | 1 | 21 | 16 | 13 | Complete |
-| `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
-| `Geolocation` | 4 | 643 | 416 | 176 | Complete |
-| `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
-| `HTML` | 286 | 83,853 | 58,131 | 15,244 | Complete |
-| `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
-| `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
-| `Infra` | 3 | 385 | 207 | 63 | Complete |
-| `Internals` | 7 | 2,583 | 861 | 231 | Complete |
-| `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
-| `Layout` | 9 | 4,001 | 37,944 | 11,639 | Present |
+| `Gamepad` | 6 | 1,351 | 860 | 323 | Complete |
+| `Geolocation` | 4 | 643 | 535 | 224 | Complete |
+| `Geometry` | 8 | 2,078 | 2,121 | 1,041 | Complete |
+| `HTML` | 286 | 83,853 | 69,287 | 33,515 | Complete |
+| `HighResolutionTime` | 2 | 516 | 500 | 213 | Complete |
+| `IndexedDB` | 19 | 6,991 | 5,455 | 1,388 | Complete |
+| `Infra` | 3 | 385 | 548 | 102 | Complete |
+| `Internals` | 7 | 2,583 | 2,337 | 1,067 | Complete |
+| `IntersectionObserver` | 2 | 528 | 668 | 413 | Complete |
+| `Layout` | 9 | 4,001 | 44,740 | 18,025 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
-| `MathML` | 6 | 369 | 411 | 97 | Complete |
-| `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
-| `MediaCapture` | 5 | 1,475 | 1,212 | 205 | Complete |
-| `MediaSourceExtensions` | 13 | 4,094 | 361 | 110 | Complete |
+| `MathML` | 6 | 369 | 653 | 162 | Complete |
+| `MediaCapabilitiesAPI` | 1 | 345 | 657 | 129 | Complete |
+| `MediaCapture` | 5 | 1,475 | 1,240 | 247 | Complete |
+| `MediaSourceExtensions` | 13 | 4,094 | 4,065 | 1,653 | Complete |
 | `MimeSniff` | 2 | 1,607 | 1,108 | 308 | Complete |
-| `MixedContent` | 1 | 127 | 125 | 105 | Complete |
-| `NavigationTiming` | 4 | 497 | 291 | 45 | Complete |
-| `NotificationsAPI` | 1 | 301 | 290 | 68 | Complete |
-| `Page` | 8 | 6,450 | 2,985 | 886 | Complete |
-| `Painting` | 22 | 8,227 | 7,609 | 2,357 | Present |
-| `PerformanceTimeline` | 5 | 476 | 447 | 130 | Complete |
+| `MixedContent` | 1 | 127 | 93 | 105 | Complete |
+| `NavigationTiming` | 4 | 497 | 645 | 130 | Complete |
+| `NotificationsAPI` | 1 | 301 | 370 | 101 | Complete |
+| `Page` | 8 | 6,450 | 6,772 | 2,687 | Complete |
+| `Painting` | 22 | 8,227 | 7,979 | 2,585 | Present |
+| `PerformanceTimeline` | 5 | 476 | 502 | 154 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
-| `Platform` | 4 | 431 | 2,330 | 405 | Complete |
-| `ReferrerPolicy` | 2 | 341 | 239 | 123 | Complete |
+| `Platform` | 4 | 431 | 2,824 | 649 | Complete |
+| `ReferrerPolicy` | 2 | 341 | 129 | 123 | Complete |
 | `RequestIdleCallback` | 1 | 52 | 59 | 18 | Complete |
-| `ResizeObserver` | 4 | 424 | 420 | 152 | Complete |
-| `ResourceTiming` | 1 | 357 | 338 | 84 | Complete |
+| `ResizeObserver` | 4 | 424 | 605 | 231 | Complete |
+| `ResourceTiming` | 1 | 357 | 342 | 90 | Complete |
 | `SRI` | 1 | 198 | 156 | 100 | Complete |
-| `SVG` | 82 | 9,020 | 5,184 | 1,222 | Complete |
+| `SVG` | 82 | 9,020 | 6,747 | 1,708 | Complete |
 | `SecureContexts` | 1 | 76 | 59 | 13 | Complete |
 | `Selection` | 3 | 1,470 | 1,479 | 332 | Present |
 | `Serial` | 2 | 366 | 243 | 35 | Complete |
 | `ServiceWorker` | 11 | 2,608 | 1,573 | 513 | Complete |
-| `Speech` | 11 | 421 | 624 | 111 | Complete |
-| `StorageAPI` | 6 | 433 | 444 | 235 | Complete |
-| `Streams` | 22 | 8,789 | 6,290 | 1,972 | Complete |
-| `TrustedTypes` | 7 | 1,175 | 756 | 185 | Complete |
-| `UIEvents` | 12 | 1,871 | 1,359 | 378 | Complete |
-| `URLPattern` | 1 | 223 | 1,632 | 214 | Complete |
+| `Speech` | 11 | 421 | 668 | 130 | Complete |
+| `StorageAPI` | 6 | 433 | 561 | 327 | Complete |
+| `Streams` | 22 | 8,789 | 7,421 | 4,888 | Complete |
+| `TrustedTypes` | 7 | 1,175 | 863 | 222 | Complete |
+| `UIEvents` | 12 | 1,871 | 1,490 | 474 | Complete |
+| `URLPattern` | 1 | 223 | 1,703 | 257 | Complete |
 | `UserTiming` | 2 | 160 | 119 | 35 | Complete |
-| `ViewTransition` | 1 | 1,054 | 598 | 324 | Complete |
-| `WebAssembly` | 7 | 3,441 | 2,065 | 702 | Complete |
-| `WebAudio` | 47 | 8,256 | 2,649 | 444 | Complete |
-| `WebDriver` | 16 | 5,321 | 3,451 | 638 | Complete |
-| `WebGL` | 42 | 7,846 | 6,205 | 1,470 | Complete |
-| `WebIDL` | 10 | 2,466 | 2,162 | 613 | Complete |
+| `ViewTransition` | 1 | 1,054 | 743 | 349 | Complete |
+| `WebAssembly` | 7 | 3,441 | 10,828 | 8,541 | Complete |
+| `WebAudio` | 47 | 8,256 | 8,682 | 3,247 | Complete |
+| `WebDriver` | 16 | 5,321 | 3,934 | 862 | Complete |
+| `WebGL` | 42 | 7,846 | 6,541 | 9,074 | Complete |
+| `WebIDL` | 10 | 2,466 | 2,551 | 1,299 | Complete |
 | `WebLocks` | 5 | 647 | 701 | 169 | Complete |
-| `WebSockets` | 1 | 476 | 316 | 115 | Complete |
+| `WebSockets` | 1 | 476 | 409 | 156 | Complete |
 | `WebVTT` | 2 | 378 | 464 | 232 | Complete |
-| `WebXR` | 6 | 492 | 312 | 90 | Complete |
-| `Worker` | 0 | 0 | 81 | 33 | Complete |
-| `XHR` | 7 | 1,855 | 1,131 | 343 | Complete |
+| `WebXR` | 6 | 492 | 411 | 139 | Complete |
+| `Worker` | 0 | 0 | 142 | 75 | Complete |
+| `XHR` | 7 | 1,855 | 1,695 | 1,197 | Complete |
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
-| `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **353,611** | **67,210** | **74 complete, 4 present, 0 untranslated** |
+| `XPath` | 5 | 435 | 672 | 210 | Complete |
+| **Total** | **1,193** | **329,970** | **427,950** | **142,414** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 

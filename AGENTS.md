@@ -692,54 +692,57 @@
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
-implementation units have audited V mappings. As of 2026-09-24, the module
-translations contain 353,673 implementation V LOC and 72,775 test V LOC.
+implementation units have audited V mappings. As of 2026-10-04, the tracked module
+packages contain 427,950 implementation V LOC and 142,414 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
-integration code are excluded. `Selection` includes `dom/selection.v`, and
-`UIEvents` includes `dom/ui_events.v`.
+integration code are excluded. Package counts include generated V assets and
+supporting translations; WebAssembly includes the separately audited LibWasm
+core. LOC and source-unit mappings do not establish behavioral equivalence.
+`Selection` includes `dom/selection.v`, and `UIEvents` includes `dom/ui_events.v`;
+their shared DOM test files are counted under the corresponding owner once.
 
 | Module | Implementation V LOC | Module | Implementation V LOC |
 | --- | ---: | --- | ---: |
-| ARIA | 2,535 | Animations | 3,981 |
-| Bindings | 2,679 | CSS | 104,834 |
-| Clipboard | 1,037 | Compositor | 2,403 |
-| Compression | 424 | ContentSecurityPolicy | 2,740 |
-| CookieStore | 859 | CredentialManagement | 418 |
-| Crypto (`webcrypto/`) | 4,472 | DOM | 36,735 |
-| DOMURL | 758 | Editing | 8,515 |
-| Encoding | 705 | EncryptedMediaExtensions | 572 |
+| ARIA | 2,574 | Animations | 4,254 |
+| Bindings | 2,718 | CSS | 114,903 |
+| Clipboard | 1,123 | Compositor | 2,403 |
+| Compression | 471 | ContentSecurityPolicy | 2,784 |
+| CookieStore | 1,059 | CredentialManagement | 420 |
+| Crypto (`webcrypto/`) | 7,957 | DOM | 42,999 |
+| DOMURL | 825 | Editing | 13,938 |
+| Encoding | 2,117 | EncryptedMediaExtensions | 572 |
 | EntriesAPI | 44 | EventTiming | 153 |
-| Fetch | 5,192 | FileAPI | 1,018 |
+| Fetch | 6,588 | FileAPI | 1,340 |
 | Fullscreen | 93 | GPC | 16 |
-| Gamepad | 760 | Geolocation | 416 |
-| Geometry | 2,062 | HTML | 57,756 |
-| HighResolutionTime | 442 | IndexedDB | 5,211 |
-| Infra | 207 | Internals | 861 |
-| IntersectionObserver | 569 | Layout | 43,820 |
-| Loader | 1,921 | MathML | 411 |
-| MediaCapabilitiesAPI | 676 | MediaCapture | 1,212 |
-| MediaSourceExtensions | 361 | MimeSniff | 1,108 |
-| MixedContent | 125 | NavigationTiming | 291 |
-| NotificationsAPI | 290 | Page | 2,985 |
-| Painting | 7,609 | PerformanceTimeline | 447 |
-| PermissionsAPI | 239 | Platform | 2,330 |
-| ReferrerPolicy | 239 | RequestIdleCallback | 59 |
-| ResizeObserver | 420 | ResourceTiming | 338 |
-| SRI | 156 | SVG | 5,184 |
-| SecureContexts | 59 | Selection | 648 |
+| Gamepad | 860 | Geolocation | 535 |
+| Geometry | 2,121 | HTML | 69,287 |
+| HighResolutionTime | 500 | IndexedDB | 5,455 |
+| Infra | 548 | Internals | 2,337 |
+| IntersectionObserver | 668 | Layout | 44,740 |
+| Loader | 1,921 | MathML | 653 |
+| MediaCapabilitiesAPI | 657 | MediaCapture | 1,240 |
+| MediaSourceExtensions | 4,065 | MimeSniff | 1,108 |
+| MixedContent | 93 | NavigationTiming | 645 |
+| NotificationsAPI | 370 | Page | 6,772 |
+| Painting | 7,979 | PerformanceTimeline | 502 |
+| PermissionsAPI | 239 | Platform | 2,824 |
+| ReferrerPolicy | 129 | RequestIdleCallback | 59 |
+| ResizeObserver | 605 | ResourceTiming | 342 |
+| SRI | 156 | SVG | 6,747 |
+| SecureContexts | 59 | Selection | 1,479 |
 | Serial | 243 | ServiceWorker | 1,573 |
-| Speech | 624 | StorageAPI | 444 |
-| Streams | 6,290 | TrustedTypes | 756 |
-| UIEvents | 1,359 | URLPattern | 1,632 |
-| UserTiming | 119 | ViewTransition | 598 |
-| WebAssembly | 2,065 | WebAudio | 2,649 |
-| WebDriver | 3,451 | WebGL | 6,205 |
-| WebIDL | 2,162 | WebLocks | 701 |
-| WebSockets | 316 | WebVTT | 464 |
-| WebXR | 312 | Worker | 81 |
-| XHR | 1,131 | XLink | 13 |
-| XML | 477 | XPath | 613 |
-| **Total** | **353,673** |  |  |
+| Speech | 668 | StorageAPI | 561 |
+| Streams | 7,421 | TrustedTypes | 863 |
+| UIEvents | 1,490 | URLPattern | 1,703 |
+| UserTiming | 119 | ViewTransition | 743 |
+| WebAssembly | 10,828 | WebAudio | 8,682 |
+| WebDriver | 3,934 | WebGL | 6,541 |
+| WebIDL | 2,551 | WebLocks | 701 |
+| WebSockets | 409 | WebVTT | 464 |
+| WebXR | 411 | Worker | 142 |
+| XHR | 1,695 | XLink | 13 |
+| XML | 477 | XPath | 672 |
+| **Total** | **427,950** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
