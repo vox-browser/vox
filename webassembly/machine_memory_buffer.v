@@ -159,7 +159,9 @@ pub fn (buffer &BinaryMachineMemoryBuffer) contiguous_bytes_before(offset usize,
 	if count == 0 || buffer.storage_offset_ == libgc.primitive_storage_invalid_offset {
 		return count
 	}
-	assert offset > 0
+	if offset == 0 {
+		panic('Source VERIFY: MemoryBuffer::contiguous_bytes_before offset > 0')
+	}
 	caged_offset := libgc.mask_primitive_storage_offset(buffer.storage_offset_ + offset - 1)
 	return math.min(count, caged_offset + 1)
 }
