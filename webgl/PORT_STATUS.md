@@ -162,6 +162,49 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+deleteProgram now drops its native deletion command after loss while still
+clearing the Source current-program slot by actual record identity. Pinned
+Impl.cpp:560-562 executes that CPU clear after calling the proxy, even when
+record_bytes:57-60 drops the generated DeleteProgram command. V conditionally
+calls C deletion only after actual owner selection succeeds, then always
+performs the existing retained-slot clear. An early function return at the
+lost driver boundary would leave that Source slot incorrect. Record
+invalidation and compact bookkeeping removal still precede dispatch; Source
+proxy ID and native name stay separate.
+
+The genuine pre-fix EGL probe deleted Other's matching native program through
+a lost Owner (glIsProgram 1 to 0), retained in
+source-delete-program-lost-unfixed-probe_test.v and
+source-delete-program-lost-unfixed-probe-gc-none.log. A read-only generated
+command/replay witness records objects.take followed by live GL deletion:
+`Build/audit-fixes/source-delete-program-generated-boundary.txt`, SHA-256
+`bceeff669d0701f016cbc1b524e00d3ba276807daa3e2686ccb999e5f36f5c96`.
+
+New two-version native/public tests retain an original Source current-program
+record, then invalidate that record and an owned SourceID2/native0 record
+after genuine EGL loss. Null/foreign/distinct-record deletion keeps the
+original slot; deleting its actual record clears it even though GL dispatch
+is dropped. Source/native identity fields survive, and Other's genuinely
+linked/current program remains live with DELETE_STATUS=0, two attachments,
+unchanged native CURRENT_PROGRAM/viewport and pending INVALID_ENUM. Public
+nullable, arity, brand, repeat and foreign cases retain undefined results and
+one-shot loss reporting. CURRENT_PROGRAM's Source retained pointer branch
+(Impl.cpp:1046-1050) provides public identity verification without reading
+private V fields.
+
+Two typed files pass in
+`Build/audit-fixes/source-delete-program-lost-native-gc-none.log`. An initial
+public-only fixture compile failed on private current_program access; its
+log remains `source-delete-program-lost-public-gc-none.log`. After replacing
+only that fixture access with existing Source parameter queries, two public
+files pass in
+`Build/audit-fixes/source-delete-program-lost-public-corrected-gc-none.log`.
+Implementation and typed tests were unchanged between these public attempts;
+all checks use GC disabled and explicit private paths. This is method-specific
+Source loss ordering, not a generic driver suppression policy or a new clean
+full sweep. Remaining program mutations/object families and full remote
+transport/GC/WrapperWorld remain separate work.
+
 deleteProgram now preserves Source CPU gates before actual native owner
 selection. Impl.cpp:544-563 handles null, owner errors and an absent deletion
 handle before the generated command; the source Proxy make_current prefix is
@@ -190,8 +233,8 @@ files pass in
 `Build/audit-fixes/source-delete-program-owner-public-gc-none.log`, including
 aggregate and current-record neighbors. All use GC disabled and explicit
 private paths. These independently replace the old deletion owner evidence;
-they do not relabel either frozen full sweep. Lost program deletion, remaining
-program mutations, other object families, full remote transport and
+they do not relabel either frozen full sweep. Lost deletion is separately
+reviewed above; remaining program mutations, other object families, full remote transport and
 GC/WrapperWorld remain separate boundaries.
 
 deleteShader now retains Source CPU record invalidation while dropping its
