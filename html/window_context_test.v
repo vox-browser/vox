@@ -204,13 +204,20 @@ fn test_new_browsing_context_propagates_embedder_sandbox_flags() {
 }
 
 fn test_window_proxy_indexed_and_cross_origin_access() {
-	top_document := window_test_document('https://top.test/')
+	mut top_document := dom.Document.create(dom.URL{'https://top.test/'})
+	top_document.set_origin(top_document.url.origin())
 	mut top := WindowModel.create_top_level(top_document, none, 'top')!
-	child_document := window_test_document('https://child.test/')
+	mut child_document := dom.Document.create(dom.URL{'https://child.test/'})
+	child_document.set_origin(child_document.url.origin())
 	child_context := BrowsingContextModel.create(child_document, top.browsing_context(),
 		'childFrame')
-	child := WindowModel.create(child_document, child_context)!
-	_ = child
+	mut parent_document := unsafe { &dom.Document(top_document) }
+	container := parent_document.create_element_ns(namespace_html, 'iframe')!
+	mut parent_node := parent_document.as_node()
+	parent_node.append_child(container.as_node())!
+	mut mutable_child_context := unsafe { &BrowsingContextModel(child_context) }
+	mutable_child_context.set_container(container)
+	_ = WindowModel.create(child_document, child_context)!
 	proxy := top.window()
 
 	indexed := proxy.get_own_property(dom.Origin{ value: 'https://elsewhere.test' }, '0')!

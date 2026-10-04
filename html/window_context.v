@@ -982,6 +982,19 @@ pub fn (proxy &WindowProxyModel) dom_proxy() &dom.WindowProxy {
 	return proxy.dom_proxy_
 }
 
+// The native and typed records are the same Source WindowProxy identity.
+// Resolve only actual registered proxy records, without casting a bare DOM
+// proxy to a larger HTML object.
+fn window_proxy_model_for_native(native &dom.WindowProxy) &WindowProxyModel {
+	for window in all_windows() {
+		proxy := window.window_proxy_
+		if proxy != unsafe { nil } && voidptr(proxy.dom_proxy()) == voidptr(native) {
+			return proxy
+		}
+	}
+	panic('Native WindowProxy has no actual HTML model identity')
+}
+
 pub fn (proxy &WindowProxyModel) window() &WindowModel {
 	native := proxy.dom_proxy_.window() or { panic('Source WindowProxy requires an associated Window') }
 	for window in all_windows() {
@@ -1043,13 +1056,16 @@ pub fn (mut proxy WindowProxyModel) internal_prevent_extensions() bool {
 
 pub fn (proxy &WindowProxyModel) get_own_property(caller_origin dom.Origin, key string) !WindowProxyPropertyResult {
 	if index := window_property_array_index(key) {
-		children := proxy.window().browsing_context().children()
+		children := proxy.window().associated_document().document_tree_child_navigables()
 		if index < children.len {
-			child_proxy := children[index].window_proxy() or { return WindowProxyPropertyResult{} }
+			mut value := dom.js_null()
+			if native := children[index].active_window_proxy() {
+				value = dom.js_object(voidptr(window_proxy_model_for_native(native)))
+			}
 			return WindowProxyPropertyResult{
 				found: true
 				descriptor: WindowProxyProperty{
-					value: dom.js_object(voidptr(child_proxy))
+					value: value
 					enumerable: true
 					configurable: true
 				}
@@ -1758,7 +1774,7 @@ pub fn (window &WindowModel) focus_count() u32 {
 }
 
 pub fn (window &WindowModel) length() int {
-	return window.browsing_context_.length()
+	return int(window.Window.length())
 }
 
 pub fn (window &WindowModel) top() ?&WindowProxyModel {
