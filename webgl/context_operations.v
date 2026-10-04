@@ -643,7 +643,7 @@ pub fn (mut context WebGLRenderingContext) get_shader_parameter(shader &WebGLSha
 		context.set_error(invalid_operation)
 		return WebGLParameterValue{}
 	}
-	result := context.native.native_shader_parameter(shader.object.native_handle_, pname)
+	result := context.native.native_shader_parameter_robust(shader.object.native_handle_, pname)
 	return match pname {
 		shader_type { integer_parameter(result) }
 		delete_status, compile_status { boolean_parameter(result == 1) }
