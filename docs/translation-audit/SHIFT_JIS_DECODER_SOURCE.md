@@ -429,3 +429,62 @@ Shift_JIS UTF8/Cow ownership and the given-decoder BOM override still use the
 older compatibility caller and remain separate required slices. Other
 multibyte codecs are not generalized by this proof. No LibJS implementation or
 native browser bundle changes.
+
+## Whole-input Shift_JIS UTF8/Cow control and original whole FFI
+
+Feature `7660d43d9da31d60d152427c1a087a8815813c9b` translates Source's selected
+potentially-borrowable whole UTF8 path (`encoding_rs lib.rs:3134–3202`).
+Shift_JIS first calls the actual ASCII-prefix validator, returns ASCII-only
+input through the logical borrow branch, otherwise creates an Off owner,
+copies the ASCII prefix and allocates the minimum of rounded nonreplacement
+capacity and replacement capacity. The actual retained owner then decodes the
+remaining input with last=true and aggregates malformed replacement errors.
+The Source reserve arm retains its remaining-owner maximum query and output
+length-relative request. Shift_JIS's two maxima are identical, so its initial
+maximum is sufficient: **zero naturally executed reserve calls**, without
+synthetic growth tests or fabricated expected values.
+
+The ASCII helper follows Source's non-SIMD scalar configuration:
+`ascii.rs` is_ascii/validate_ascii_stride_tail, the 16-unit stride loop at
+`:372–390` and ascii_valid_up_to at `:470–474`. It preserves the ordered full
+stride checks and final tail, including all ASCII bytes/NUL. This logical
+helper does not claim Source SIMD/native pointer acceleration parity.
+
+The selected whole Rust bridge (`LibTextCodec/Rust/src/lib.rs:81–117`)
+decodes in replacement mode first and withholds the entire result in fatal
+mode when errors were reported. Its callback is invoked even for a successful
+empty result, unlike the streaming bridge's nonempty-only callback. Matching
+BOM removal (`encoding_rs lib.rs:3086–3097`) leaves the selected non-Unicode
+Shift_JIS span intact in both flag modes; it does not sniff another encoding.
+
+Tool `f9c3a7ab` validates the Source pin/archive/configuration, preserves the
+original whole method and includes the genuine original FFI. A separately
+named copy of the exact Source method adds only local read/write/capacity /
+reserve observations; every copied-method output is compared with original
+FFI output, fatal success/absence and error flags. A read-only export observes
+the actual original ASCII prefix. Debug/release reproduce 4,140 cases,
+including 938 actual Cow ASCII borrows, zero natural reserves and 1,780 entire
+fatal callback withholdings. Inputs cover byte classifications, split-pair
+malformed EOF/ASCII unread, BOM-looking bytes, ASCII prefix/stride thresholds,
+NUL, repeated Kanji and half-width Katakana, and both BOM flags.
+
+Default, GC-none and production GC-none each pass 1/1 in
+`source-shift-jis-whole-input-focused-*.log`. Tests compare actual full bytes,
+error flags and fatal withholding, all native ASCII prefixes and borrow
+branches, and exact initial capacities/raw owner events. Nonzero source and
+destination base offsets preserve original prefix bytes while the actual
+remaining-owner operation matches native counters/output.
+
+- `shift_jis_whole_input.json` SHA256:
+  `d752c191d77074db5ff209fd920a9f61185da092e7a50d139feffad49399a80f`.
+- Original native whole FFI/local-event log:
+  `922f713890c6542e7afcb729aa57af955fdf37caa4b0fc323aff4515883c0f6f`.
+
+The existing V string copies bytes on the Source logical borrow branch;
+physical Cow/String/Vec/Box/C ABI ownership and allocator/OOM are explicit
+boundaries. The signed-int V array limit is named separately after Source's
+usize capacity query. The reserve arm is retained but its physical amortized
+allocation behavior is unobserved/unreachable in this selected whole path.
+The given-decoder BOM override is the next actual caller slice. The preceding
+32/32 snapshot predates this prerequisite; its focused checks cover this new
+code. No LibJS implementation or native browser bundle changes.
