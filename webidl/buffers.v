@@ -29,6 +29,9 @@ pub:
 mut:
 	byte_offset_   u32
 	byte_length_   u32
+	// This typed boundary represents fixed views. Source initializes the
+	// retained [[ArrayLength]] separately from the buffer witness length.
+	array_length_  u32
 	detached_      bool
 	out_of_bounds_ bool
 	bytes_         []u8
@@ -57,8 +60,17 @@ pub fn BufferSource.view(kind BufferSourceKind, bytes []u8, offset u32, length u
 		kind: kind
 		byte_offset_: offset
 		byte_length_: length
+		array_length_: if kind == .data_view { u32(0) } else { length / element_size }
 		bytes_: bytes.clone()
 	}
+}
+
+// TypedArray.h::array_length and TypedArray.cpp's fixed-view initialization.
+// Detachment/OOB changes the witness, not this retained fixed slot. Native
+// auto-length arrays require the actual JS TypedArray record instead.
+pub fn (source &BufferSource) fixed_array_length() ?u32 {
+	if !source.is_typed_array() { return none }
+	return source.array_length_
 }
 
 // from_object is the typed V boundary corresponding to conversion from a JS
