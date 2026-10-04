@@ -536,7 +536,32 @@ frame, preparation and Configuration files pass with GC disabled in the
 
 See [source mapping and validation](../docs/translation-audit/WASM_COMPILATION_AND_FRAMES.md)
 for explicit V destruction, vector layout, system-allocator capacity and native
-synchronization boundaries. Constant-expression execution, interpreter
-invocation, native compilation, complete AbstractMachine instantiation and the
+synchronization boundaries. Constant-expression execution, native instruction
+compilation, complete AbstractMachine instantiation and the
 collector/ref-counted root graph remain unfinished. The browser's legacy
 Instance facade is still not routed through that complete machine pipeline.
+
+## Source host calls, interpreter invocation and bytecode state
+
+`d513a2d3` passes the actual writable argument span to retained HostFunction
+callbacks. It removes the copied-array adapter and invokes the stored callable
+directly, preserving captured owners across repeated calls in both GC modes.
+`1abb2982` translates the Source Interpreter interface and Configuration
+call/execute/compiled-call branches: preparation traps, host versus Wasm routing,
+instruction-pointer reset, actual result copying/reversal and label cleanup.
+Focused recording interpreters are explicit test doubles; they supply no
+production opcode implementation.
+
+`09de70ed` restores AK/StackInfo's exact unsigned frame-address subtraction.
+`9ec83ed2` translates BytecodeInterpreter's owned trap variant, actual external
+resource visitation and native-stack guard using that retained StackInfo owner.
+The visitor receives and can mutate the actual stored external payload; the
+guard retains the Source two-MiB default and `STACK-EXHAUSTION` reason.
+
+The integrated package passes **80/80 canonical files in each GC mode**:
+`Build/audit-fixes/source-bytecode-state-full-{canonical-default,canonical-gc-none}.log`.
+See [host calls and invocation](../docs/translation-audit/WASM_HOST_CALL_AND_EXECUTION.md)
+and [bytecode state and stack calculation](../docs/translation-audit/WASM_BYTECODE_STATE_AND_STACK.md).
+BytecodeInterpreter still has no production `interpret()` method. Full opcode
+dispatch, constant-expression execution, native compilation/fault recovery,
+complete machine instantiation and collector roots remain open.

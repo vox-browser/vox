@@ -219,6 +219,18 @@ includes comments and blank lines. This package is counted separately from the
 - `push_execution_context_checked()` enforces the 32 KiB native stack reserve
   through `StackInfo`, which mirrors `AK/StackInfo.cpp` on macOS (main-thread
   size from `getrlimit`) and Linux (`pthread_getattr_np`).
+  `09de70ed` translates `AK/StackInfo.h::size_free` as the exact unsigned
+  subtraction of the retained base from `__builtin_frame_address(0)`, removing
+  the invented top/base clamp and approximate alloca marker. A genuine other-thread
+  stack snapshot and existing recursive VM context cases pass both GC modes.
+  The isolated Source StackInfo snapshot passes **230/230 files in each GC mode**
+  and **100/100 exact AST fixtures**; logs are
+  `Build/audit-fixes/worktrees/09-compiled-records/Build/audit-fixes/source-stack-info-libjs-full-{default,gc-none}.log`
+  and `source-stack-info-libjs-ast.log` in the same directory. Canonical LibJS
+  additionally exposes the unchanged `to_well_formed` body publicly, a preceding
+  change with clean canonical 229-file and exact 100-fixture evidence. Focused
+  merged StackInfo/context checks pass canonically with GC disabled. Other
+  platform and full musl constructor paths remain translation boundaries.
 - Throw completions create `Error` objects in the current realm, or in the
   `TypeErrorRealmScope` override only at the stack depth the scope was created
   at, and capture the execution-context traceback used by

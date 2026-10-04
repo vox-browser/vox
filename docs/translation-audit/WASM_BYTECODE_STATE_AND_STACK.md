@@ -43,7 +43,12 @@ entry/fault recovery, formatted diagnostic overloads, exception unwinding and
 complete machine instantiation remain pending. It cannot satisfy the production
 Interpreter interface until that actual execution body is translated.
 
-The preceding host-call/invocation snapshot passes **79/79 Wasm files in each
-GC mode**, recorded in `source-machine-call-full-{default,gc-none}.log`. That
-full run predates this stack-space and bytecode-state slice. Logs are retained
-in assignment 9's private worktree.
+The integrated stack-space and bytecode-state snapshot now passes a clean
+**80/80 canonical Wasm files in each GC mode**, recorded in
+`Build/audit-fixes/source-bytecode-state-full-canonical-{default,gc-none}.log`.
+The preceding private host-call/invocation snapshot passed 79/79 in each mode.
+The private Source StackInfo LibJS snapshot also passes **230/230 files in each
+GC mode**, plus **100/100 exact AST fixtures**. Its only implementation
+difference from canonical LibJS is the canonical public visibility of the
+unchanged existing `to_well_formed` function, which has separate preceding
+canonical evidence. These results do not complete the pending opcode backend.
