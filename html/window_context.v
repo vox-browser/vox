@@ -584,14 +584,17 @@ pub fn BrowsingContextModel.create_a_new_browsing_context_and_document(page &dom
 	// 2. Let unsafeContextCreationTime be the unsafe shared current time.
 	unsafe_context_creation_time := highresolutiontime.unsafe_shared_current_time()
 
+	// Steps 3–5 snapshot the supplied creator's origin and document base URL.
+	mut creator_origin := ?dom.Origin(none)
+	mut creator_base_url := ?dom.URL(none)
+	if creator_document := creator {
+		creator_origin = creator_document.origin()
+		creator_base_url = creator_document.base_url()
+	}
 	mut mutable_context := unsafe { &BrowsingContextModel(context) }
 	mutable_context.set_container(embedder)
 	sandbox_flags := determine_the_creation_sandboxing_flags(context, embedder)
-	origin := if creator_document := creator {
-		determine_the_origin(dom.url_about_blank(), sandbox_flags, creator_document.origin())
-	} else {
-		determine_the_origin(dom.url_about_blank(), sandbox_flags, none)
-	}
+	origin := determine_the_origin(dom.url_about_blank(), sandbox_flags, creator_origin)
 	// Source steps 10–15 construct the Window realm and settings first. The
 	// actual Document constructor then allocates fonts in that owning realm.
 	mut document := create_initial_document(context, origin, embedder)!
@@ -608,6 +611,7 @@ pub fn BrowsingContextModel.create_a_new_browsing_context_and_document(page &dom
 		navigation_start_time: highresolutiontime.coarsen_time(unsafe_context_creation_time, false)
 	})
 	document.set_is_initial_about_blank(true)
+	document.set_about_base_url(creator_base_url)
 	document.set_allow_declarative_shadow_roots(true)
 	if creator_document := creator {
 		document.set_referrer(creator_document.url_string())
