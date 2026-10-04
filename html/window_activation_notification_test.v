@@ -114,3 +114,41 @@ fn test_trusted_pointer_activation_uses_actual_reassociated_window_document_cloc
 	assert window.has_transient_activation() && native.has_transient_activation()
 	window.set_associated_document(original)
 }
+
+fn test_adopted_element_trusted_activation_uses_current_document_window_and_clock() {
+	mut original, original_window := activation_notification_document('https://activation-adoption.example/original')!
+	mut replacement, replacement_window := activation_notification_document('https://activation-adoption.example/replacement')!
+	defer {
+		original.finalize()
+		replacement.finalize()
+	}
+	element := original.create_element('button')!
+	_ = replacement.adopt_node_binding(element.as_node())!
+	assert element.document() == replacement
+	replacement.load_timing_info.navigation_start_time = highresolutiontime.coarsened_shared_current_time(false) - 30000
+	context := highresolutiontime.TimeOriginContext{
+		time_origin: replacement.load_timing_info.navigation_start_time
+	}
+	native_original := original.get_window()?
+	target := unsafe { &dom.EventTarget(element) }
+	state := &ActivationNotificationObservation{}
+	target.add_event_listener_without_options('mousedown', dom.IDLEventListener.create(&dom.CallbackType{
+		associated_window: native_original
+		handle_event:      fn [original_window, replacement_window, state] (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			assert math.is_inf(original_window.last_activation_timestamp(), 1)
+			assert !original_window.has_transient_activation()
+			assert replacement_window.has_transient_activation()
+			assert replacement_window.last_activation_timestamp() >= 30000
+			mut observation := unsafe { &ActivationNotificationObservation(state) }
+			observation.calls++
+			return dom.js_undefined()
+		}
+	}))
+	before := highresolutiontime.current_high_resolution_time(context)
+	assert target.dispatch_event(dom.Event.create('mousedown', dom.EventInit{}))
+	after := highresolutiontime.current_high_resolution_time(context)
+	assert state.calls == 1
+	assert replacement_window.last_activation_timestamp() >= before
+	assert replacement_window.last_activation_timestamp() <= after
+	assert math.is_inf(original_window.last_activation_timestamp(), 1)
+}

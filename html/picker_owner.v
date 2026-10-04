@@ -1,5 +1,8 @@
 // HTMLInputElement.cpp and HTMLSelectElement.cpp obtain picker permission from
 // the element's actual relevant settings/global, rather than per-control state.
+// Source Environments.cpp::relevant_settings_object(DOM::Node const&) reads
+// node.document(); relevant_realm(Node) and relevant_global_object(Node) use
+// that overload. The JS::Object overload reads the wrapper Realm separately.
 module html
 
 import dom

@@ -105,7 +105,12 @@ fn test_select_picker_adoption_and_trusted_activation_behavior_use_actual_curren
 		replacement.finalize()
 	}
 	mut model := select_picker_owner_model(original)!
+	mut original_settings := original_window.environment_settings_.settings
+	original_settings.environment_.top_level_origin = dom.URL{'https://foreign-original-select-top.example/'}.origin()
 	select_picker_owner_activate(original)
+	mut rejection := ''
+	model.show_picker() or { rejection = err.msg() }
+	assert rejection.starts_with('SecurityError:')
 	_ = replacement.adopt_node_binding(unsafe { &dom.Node(model.element) })!
 	host := replacement.get_element_by_id('host')?
 	mut host_node := host.as_node()
@@ -116,7 +121,10 @@ fn test_select_picker_adoption_and_trusted_activation_behavior_use_actual_curren
 		assert err.msg().starts_with('NotAllowedError:')
 	}
 	assert rejected && original_window.has_transient_activation() && !model.is_open()
-	select_picker_owner_activate(replacement)
+	target := unsafe { &dom.EventTarget(model.element) }
+	assert target.dispatch_event(dom.Event.create('mousedown', dom.EventInit{}))
+	assert replacement_window.has_transient_activation()
+	assert original_window.has_transient_activation()
 	untrusted := dom.Event.construct_impl('click', dom.EventInit{})!
 	model.activation_behavior(untrusted)
 	assert !model.is_open() && replacement_window.has_transient_activation()

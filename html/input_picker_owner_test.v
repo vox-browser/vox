@@ -104,19 +104,29 @@ fn test_input_picker_preserves_source_error_order_origin_exemptions_and_unsuppor
 }
 
 fn test_input_picker_adoption_reads_new_native_global_and_actual_page() {
-	mut original, original_window, original_owner := input_picker_owner_document('https://input-picker-adoption.example/', '<input id=file type=file>')!
+	mut original, original_window, original_owner := input_picker_owner_document('https://input-picker-adoption.example/', '<input id=file type=file><input id=text>')!
 	mut replacement, replacement_window, replacement_owner := input_picker_owner_document('https://adopted-picker.example/', '<main id=host></main>')!
 	defer {
 		original.finalize()
 		replacement.finalize()
 	}
 	mut file := input_picker_owner_model(original, 'file')!
+	mut text := input_picker_owner_model(original, 'text')!
+	mut original_settings := original_window.environment_settings_.settings
+	original_settings.environment_.top_level_origin = dom.URL{'https://foreign-original-picker-top.example/'}.origin()
 	input_picker_owner_activate(original)
+	mut rejection := ''
+	text.show_picker() or { rejection = err.msg() }
+	assert rejection.starts_with('SecurityError:')
 	_ = replacement.adopt_node_binding(unsafe { &dom.Node(file.element) })!
 	host := replacement.get_element_by_id('host')?
 	mut host_node := host.as_node()
 	host_node.append_child(unsafe { &dom.Node(file.element) })!
+	_ = replacement.adopt_node_binding(unsafe { &dom.Node(text.element) })!
+	host_node.append_child(unsafe { &dom.Node(text.element) })!
 	assert unsafe { &dom.Element(file.element) }.document() == replacement
+	text.show_picker() or { rejection = err.msg() }
+	assert rejection.starts_with('NotAllowedError:')
 	mut rejected := false
 	file.show_picker() or {
 		rejected = true
@@ -125,7 +135,10 @@ fn test_input_picker_adoption_reads_new_native_global_and_actual_page() {
 	assert rejected && original_window.has_transient_activation()
 	before_original := original_owner.client().events.len
 	before_replacement := replacement_owner.client().events.len
-	input_picker_owner_activate(replacement)
+	target := unsafe { &dom.EventTarget(file.element) }
+	assert target.dispatch_event(dom.Event.create('mousedown', dom.EventInit{}))
+	assert replacement_window.has_transient_activation()
+	assert original_window.has_transient_activation()
 	file.show_picker()!
 	assert replacement_owner.client().events.len == before_replacement + 1
 	assert replacement_owner.client().events.last().name == 'request-file-picker'
