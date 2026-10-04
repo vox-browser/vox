@@ -112,6 +112,15 @@ pub fn (mut context OpenGLContext) take_pending_local_error() GLenum {
 	return error_value
 }
 
+pub fn (mut context OpenGLContext) get_error() GLenum {
+	// Generated Proxy::get_error is synchronous. HostWebGLContext's sync
+	// receiver selects its own GL context before executing the native query.
+	if context.lost_ { return no_error }
+	context.make_current()
+	if context.lost_ { return no_error }
+	return GLenum(C.vox_gl_get_error())
+}
+
 pub fn (mut context OpenGLContext) set_size(width int, height int) {
 	if context.lost_ {
 		return

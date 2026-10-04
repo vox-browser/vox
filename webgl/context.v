@@ -124,7 +124,8 @@ pub fn (mut context WebGLRenderingContext) set_error(error_value GLenum) {
 }
 
 pub fn (mut context WebGLRenderingContext) get_error() GLenum {
-	context.native.make_current()
+	// Source WebGLContextProxy::make_current() is empty. Its GetError sync call
+	// selects the owning host only if the base body reaches the driver query.
 	return context.get_error_value()
 }
 

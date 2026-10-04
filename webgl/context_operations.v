@@ -219,7 +219,7 @@ pub fn (mut context WebGLRenderingContext) get_error_value() GLenum {
 	if local_error != no_error {
 		return local_error
 	}
-	context_error := GLenum(C.vox_gl_get_error())
+	context_error := context.native.get_error()
 	if context_error != no_error {
 		return context_error
 	}
