@@ -1839,11 +1839,14 @@ pub type DocumentInlineCSPCheckCallback = fn (voidptr, &Element, string, string)
 
 pub type DocumentCSPInitializationCallback = fn (voidptr, &Document)
 
+pub type DocumentBaseCSPCheckCallback = fn (&Document, URL) bool
+
 pub struct DocumentCSPHook {
 pub:
 	target       voidptr = unsafe { nil }
 	inline_check DocumentInlineCSPCheckCallback = unsafe { nil }
 	initialize   DocumentCSPInitializationCallback = unsafe { nil }
+	base_check   DocumentBaseCSPCheckCallback = unsafe { nil }
 }
 
 // TrustedTypes depends on WebIDL and CSP, while DOM owns the injection sinks.
@@ -7351,6 +7354,24 @@ pub fn (mut d Document) set_accessibility_role_hook(hook DocumentAccessibilityRo
 
 pub fn (mut d Document) set_csp_hook(hook DocumentCSPHook) {
 	d.csp_hook_ = hook
+}
+
+// The real Window/Document/settings constructor supplies the Source CSP call
+// before parsing. Preserve the independently installed inline/init callbacks.
+pub fn (mut d Document) set_base_csp_check(callback DocumentBaseCSPCheckCallback) {
+	hook := d.csp_hook_ or { DocumentCSPHook{} }
+	d.csp_hook_ = DocumentCSPHook{
+		...hook
+		base_check: callback
+	}
+}
+
+pub fn (d &Document) is_base_allowed_by_csp(base URL) bool {
+	hook := d.csp_hook_ or { return true }
+	if hook.base_check == unsafe { nil } {
+		return true
+	}
+	return hook.base_check(d, base)
 }
 
 pub fn (mut d Document) set_trusted_types_hook(hook DocumentTrustedTypesHook) {

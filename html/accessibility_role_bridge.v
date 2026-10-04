@@ -8,6 +8,7 @@ import contentsecuritypolicy
 import dom
 import strings
 import trustedtypes
+import url as liburl
 
 // ARIAMixin is owned by Element in C++. V keeps the module dependency in the
 // same direction (HTML/ARIA -> DOM) and exposes the result to DOM through a
@@ -244,6 +245,18 @@ fn dom_inline_csp_check(_ voidptr, element &dom.Element, inline_type string, sou
 		global, element_context, type_, source) == .blocked
 }
 
+fn dom_base_csp_check(document &dom.Document, base dom.URL) bool {
+	settings_pointer := document.relevant_settings_object()
+	if settings_pointer == unsafe { nil } {
+		// Standalone DOM construction has no actual HTML settings owner.
+		return true
+	}
+	settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }
+	mut global := settings.fetch_request_client_csp_global()
+	base_url := liburl.parse(base.serialize()) or { panic('Invalid parsed Base URL') }
+	return contentsecuritypolicy.is_base_allowed_for_document(mut global, base_url) == .allowed
+}
+
 fn dom_csp_initialize_document(_ voidptr, document &dom.Document) {
 	for policy in document_csp_policies(document) {
 		for directive in policy.directives() {
@@ -330,6 +343,7 @@ pub fn install_document_csp_hook(document &dom.Document) {
 		target:       voidptr(document)
 		inline_check: dom_inline_csp_check
 		initialize:   dom_csp_initialize_document
+		base_check:   dom_base_csp_check
 	})
 	mutable_document.set_trusted_types_hook(dom.DocumentTrustedTypesHook{
 		target:              voidptr(document)

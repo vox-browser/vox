@@ -55,8 +55,8 @@ pub fn (mut base HTMLBaseElement) attribute_changed(name string, old_value ?stri
 	}
 }
 
-// HTML/HTMLBaseElement.cpp:77–110. The existing CSP policy-owner bridge is a
-// separate translation boundary; retain the already translated URL branches.
+// HTML/HTMLBaseElement.cpp:77–110. HTML supplies the actual settings-owned CSP
+// call through the existing Document module boundary.
 pub fn (mut base HTMLBaseElement) set_the_frozen_base_url(old_base_url URL) {
 	element := unsafe { &Element(&base) }
 	document := element.document()
@@ -66,7 +66,7 @@ pub fn (mut base HTMLBaseElement) set_the_frozen_base_url(old_base_url URL) {
 		base.frozen_base_url_initialized_ = true
 		return
 	}
-	if frozen.scheme() in ['data', 'javascript'] {
+	if frozen.scheme() in ['data', 'javascript'] || !document.is_base_allowed_by_csp(frozen) {
 		base.frozen_base_url_ = fallback
 		base.frozen_base_url_initialized_ = true
 		return
