@@ -321,9 +321,9 @@ unchanged; no native browser bundle build or capture was run.
 Feature `7915051dca6ed4d571c9bc77e0d51c200552097f` installs the proven actual
 UTF8-selected streaming decoder into the existing V TextDecoderCommon object.
 Source `TextDecoderCommon.h:50–89` owns a mutable
-OwnPtr<TextCodec::StreamingDecoder>; its setter (`TextDecoderCommon.cpp:51–54`)
+OwnPtr<TextCodec::StreamingDecoder>; its setter (`TextDecoderCommon.cpp:48–51`)
 constructs that owner from encoding, ignore-BOM and error-mode fields. The two
-Source process forms (`Common.cpp:67–77`) call `to_utf8(item)` with last=false
+Source process forms (`TextDecoderCommon.cpp:63–73`) call `to_utf8(item)` with last=false
 or `finish()` with empty input and last=true, then append only successful output
 to the existing queue. `TextDecoderStream.cpp:160–211` uses those forms for
 chunks and flush. The existing output queue keeps single output/builder storage
@@ -340,7 +340,7 @@ owner with the supplied last flag; its private Source BOM/lifecycle/five-slot
 state persists across calls. UTF8 no longer feeds the old pending-input/bom-seen
 compatibility fields or prematurely decodes a chosen boundary as a complete
 stream. Failed fatal bridge output is withheld from the Common output queue,
-matching `append_decoded_output` (`Common.cpp:57–65`).
+matching `append_decoded_output` (`TextDecoderCommon.cpp:53–61`).
 
 The bounded public model entry points for UTF8 streams now reach that actual
 owner, including split UTF8 BOMs, preserved BOMs, incomplete scalar prefixes,
@@ -993,3 +993,76 @@ EOF defect is still reproducible until then. Generic whole-input UTF16 decode,
 native public holder construction/reset, actual TransformStream/controllers,
 other codecs and Source OOM remain separate. No LibJS implementation or native
 bundle was changed or built privately.
+
+
+## Actual UTF16 Common and Stream UTF8 consumer
+
+Feature `1e7534779f2170e38deb83a57a3ee78e377e1602` routes the existing Common
+UTF16LE/BE branch through the SAME genuine selected StreamingDecoder owner.
+Source `TextDecoderCommon.cpp:48–51` constructs that owner. Its ordinary item
+form (`:63–67`) calls `to_utf8(item)` without flushing; EndOfQueue (`:69–73`)
+calls `finish()`, which supplies empty input with flush enabled. The V Common
+now calls the corresponding proven actual UTF8 destination and retained four
+variant slots/BOM lifecycle, instead of buffering complete units into the old
+standalone decoder. TextDecoder itself continues to call the owner's actual
+UTF16 destination. Other-label compatibility adapters remain separately scoped.
+
+Source `append_decoded_output` (`:53–61`) examines a failed bridge result before
+pushing it. The existing V error path retains this order: failed fatal partial
+bytes stay internal, any earlier Common output remains intact, and no failed
+chunk reaches the typed Stream queue. Common serializes successfully produced
+well-formed UTF8 through its existing string compatibility projection; Source
+instead creates Utf16String at `:75–79`. Source UTF16 units and engine primitive
+ownership at that serialization boundary are not inferred from byte results.
+
+Tool `2ae4ac6226d4037fa7bceb907a021bb56a059e07` includes the pinned original Rust
+FFI verbatim and observes ONE real Box-backed owner for each sequence. Both
+native debug and release pass 1/1 dedicated Common tests and reproduce the
+artifact exactly: 1,728 sequences / 6,912 calls, each consisting of three
+ordinary no-flush items followed by an empty EndOfQueue. Sixty failed calls
+produce genuine nonempty internal callbacks. These exact reachable calls are
+kept separate from earlier valid FFI scenarios whose final input was nonempty.
+The copied-package observation exports, default alloc configuration, manifest
+and source validation reuse the documented predecessor probe; upstream and
+package-cache files remain unchanged.
+
+`text_decoder_common_utf16_owner_test.v` compares every Common call, error,
+output and actual retained slot against that native artifact. It exercises
+6,372 existing typed Stream calls through each sequence's first failure and
+preserves previous chunks. It does not continue a rejected Stream algorithm
+as if it had a genuine controller lifecycle. A seeded Common queue verifies
+all sixty failed partial callbacks are withheld; four compiled child processes
+verify cold Common/Stream owner guards for both byte orders survive `-prod`.
+Focused default, GC-none and production GC-none each pass 1/1 in
+`source-common-utf16-owner-focused-{default,gc-none,production-gc-none}.log`.
+The first compilation log retains a test-only Result-expression syntax error
+in `source-common-utf16-owner-before-result-syntax.log`; no native expected
+result changed.
+
+The complete Encoding suite passes 24/24 in both modes in
+`source-common-utf16-owner-full-{default,gc-none}.log`. All 4,129 tracked files
+were immutable throughout both runs at feature `1e753477`; matching whole-tree
+before/after JSON manifests are under
+`Build/audit-fixes/source-common-utf16-owner-frozen/` with SHA256
+`d77189339575d8ea97b8bdbc45182b16c8603ebe054c1e6dff4ccb7aae7fcb02`.
+The Stream EOF reproduction now emits one U+FFFD for UTF16LE `00 d8 00` and
+UTF16BE `d8 00 00`, matching the independently observed original Source UTF8
+bridge. Its initial two-replacement reproduction remains retained separately.
+
+- `utf16_common_owners.json` and regenerated native `common.json`:
+  `3b2db266cd5eb502fcfa3ba6956f9636a0a0e72cc9c627a50494ee155bf892c2`.
+- `source-utf16-common-probe-final.log`:
+  `b68b01d89cdd837c470fc42a5f817c938228f6e27dd0ccfc6735737ea54d178a`.
+- Full default / GC-none logs respectively:
+  `f425da9d71ad7af46fb4e99d3f93e2b6507d50af696abdf1d5dd9c2359d7b386` /
+  `d14a607f0dcb523ae1d5f39b7ad7d98ac6ec718728619e24b063e0c025863167`.
+- `source-utf16-stream-eof-after-owner-gc-none.log`:
+  `379e8d9fc5317dd3b7adeb54ea226967fee5dda23c42b0aa59ca4f465698270b`.
+
+This closes the bounded selected UTF16 Common decoder call gap. The existing
+Stream model still accepts flattened bytes and stores observable chunks;
+genuine BufferSource branding/shared copies, TransformStream/controller,
+Promise/realm/public-wrapper ownership and native bindings remain open.
+Physical Rust String/Vec/Box allocation and Source OOM behavior remain explicit.
+Generic whole-input UTF16 wrappers and other codecs remain separate features.
+No LibJS implementation or native browser bundle was changed or built privately.
