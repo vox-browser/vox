@@ -162,6 +162,42 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+attachShader now preserves the exact Source program/shader handle, actual
+retained-pointer duplicate, and occupied shader-type gates before selecting
+its native owner. Impl.cpp:129-178 begins with an empty Proxy make_current;
+only the generated attachment command reaches the actual owning host driver.
+The previously missing actual duplicate-pointer gate is restored in its
+Source position before the per-type occupied-slot checks. Program.h:26-30
+retains actual shader pointers, Program.cpp:38-43 visits both slots, and
+Impl.cpp:867-888 returns a fresh rooted vector in vertex/fragment order.
+Existing V actual references and public pointer-to-wrapper identity are
+preserved; no fabricated attachment cache or native success gate is added.
+
+The genuine pre-fix duplicate attachment probe switched current Other to
+Owner, retained in source-attach-shader-owner-unfixed-probe_test.v and
+source-attach-shader-owner-unfixed-probe-gc-none.log. New two-version typed/
+public cases preserve Other and its pending INVALID_ENUM on foreign/deleted
+handles, duplicate pointers and occupied shader types. Public arity, nonnullable
+and forged-brand errors remain before body dispatch. Live calls select Owner
+and produce two actual glGetAttachedShaders names while Source returns fresh
+arrays of the original ordered shader wrappers. A real Program.h setter record
+retaining a fragment pointer in the vertex slot checks the distinct duplicate
+gate against an actual driver with zero attachments. Native program deletion
+outside V supplies an independent driver rejection baseline: Source still
+retains the actual shader after that rejected attachment command.
+
+Only two typed and two public historical attachment-owner assertions were
+migrated. Three typed files pass in
+`Build/audit-fixes/source-attach-shader-owner-native-gc-none.log`; three public
+files pass in
+`Build/audit-fixes/source-attach-shader-owner-public-gc-none.log`, with GC disabled
+and explicit private paths, including existing actual retained/deleted shader
+and wrapper identity neighbors. This supersedes only the reviewed owner
+assumptions and does not replace frozen full-sweep evidence. Lost attachment
+is the next separately reviewed command/retained-assignment slice; other
+program bodies, object families, full remote transport and GC/WrapperWorld
+remain separate. Canonical bundle evidence is unchanged.
+
 useProgram now drops its native command after loss while still assigning
 Source's retained current-program pointer. Impl.cpp:2482-2483 calls the proxy
 and then assigns m_current_program even when record_bytes:57-60 drops that
