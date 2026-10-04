@@ -272,6 +272,7 @@ pub fn (mut context WebGLRenderingContext) compressed_tex_sub_image3d(target GLe
 }
 
 pub fn (mut context WebGLRenderingContext) delete_transform_feedback(feedback ?&WebGLTransformFeedback) {
+	context.native.make_current()
 	if value := feedback {
 		mut mutable_value := unsafe { &WebGLTransformFeedback(value) }
 		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
@@ -283,11 +284,6 @@ pub fn (mut context WebGLRenderingContext) delete_transform_feedback(feedback ?&
 		}
 		handle := value.object.bookkeeping_id()
 		context.transform_feedbacks.delete(handle)
-		if current := context.current_transform_feedback {
-			if current.object.handle_ == handle {
-				context.current_transform_feedback = none
-			}
-		}
 		context.webgl2_command('delete_transform_feedback', handle)
 		C.vox_gl_delete_object(8,handle_result.value)
 		context.native.collect_native_error()
@@ -483,6 +479,7 @@ pub fn (mut context WebGLRenderingContext) tex_sub_image3d(target GLenum, level 
 }
 
 pub fn (mut context WebGLRenderingContext) transform_feedback_varyings(program &WebGLProgram, varyings []string, buffer_mode GLenum) {
+	context.native.make_current()
 	if !context.owns(&program.object) {
 		context.set_error(invalid_operation)
 		return

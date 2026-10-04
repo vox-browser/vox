@@ -270,8 +270,8 @@ pub fn (mut context WebGLRenderingContext) delete_sync(mut sync ?&WebGLSync) {
 }
 
 pub fn (mut context WebGLRenderingContext) create_transform_feedback() &WebGLTransformFeedback {
-	context.require_webgl2()
 	context.native.make_current()
+	context.require_webgl2()
 	handle := context.allocate_handle()
 	feedback := &WebGLTransformFeedback{
 		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: C.vox_gl_gen_object(8)}
@@ -284,14 +284,16 @@ pub fn (mut context WebGLRenderingContext) create_transform_feedback() &WebGLTra
 }
 
 pub fn (mut context WebGLRenderingContext) bind_transform_feedback(target GLenum, feedback ?&WebGLTransformFeedback) {
+	context.native.make_current()
     if !context.require_webgl2() { return }
     if value := feedback { if !context.owns(&value.object) { context.set_error(invalid_operation); return } }
     context.native.dispatch('bind_transform_feedback',target,if value := feedback { value.object.handle_ } else { 0 })
     C.vox_gl_bind_transform_feedback(target,if value := feedback { value.object.native_handle_ } else { 0 })
-    if context.native.collect_native_error() { context.current_transform_feedback = feedback }
+    context.native.collect_native_error()
 }
 
 pub fn (mut context WebGLRenderingContext) begin_transform_feedback(primitive_mode GLenum) {
+	context.native.make_current()
     if !context.require_webgl2() { return }
     context.native.dispatch('begin_transform_feedback',primitive_mode)
     C.vox_gl_begin_transform_feedback(primitive_mode)
@@ -299,6 +301,7 @@ pub fn (mut context WebGLRenderingContext) begin_transform_feedback(primitive_mo
 }
 
 pub fn (mut context WebGLRenderingContext) end_transform_feedback() {
+	context.native.make_current()
     if !context.require_webgl2() { return }
     context.native.dispatch('end_transform_feedback')
     C.vox_gl_end_transform_feedback()
@@ -306,6 +309,7 @@ pub fn (mut context WebGLRenderingContext) end_transform_feedback() {
 }
 
 pub fn (mut context WebGLRenderingContext) pause_transform_feedback() {
+	context.native.make_current()
     if !context.require_webgl2() { return }
     context.native.dispatch('pause_transform_feedback')
     C.vox_gl_pause_transform_feedback()
@@ -313,6 +317,7 @@ pub fn (mut context WebGLRenderingContext) pause_transform_feedback() {
 }
 
 pub fn (mut context WebGLRenderingContext) resume_transform_feedback() {
+	context.native.make_current()
     if !context.require_webgl2() { return }
     context.native.dispatch('resume_transform_feedback')
     C.vox_gl_resume_transform_feedback()

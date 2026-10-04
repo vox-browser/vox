@@ -315,7 +315,6 @@ pub fn (mut context WebGLRenderingContext) reset_context_state_after_loss() {
 	context.initialize_restored_client_state()
 	context.reset_client_side_webgl_state()
 	context.bound_samplers.clear()
-	context.current_transform_feedback = none
 }
 
 pub fn (mut context WebGLRenderingContext) reset_client_side_webgl_state() {
@@ -329,6 +328,7 @@ pub fn (mut context WebGLRenderingContext) reset_client_side_webgl_state() {
 	context.bound_texture_objects.clear()
 	context.current_program = none
 	context.current_queries.clear()
+	context.current_transform_feedback = none
 	context.current_vertex_array = none
 	context.current_vertex_array_oes = none
 	context.current_vertex_array_binding_ = none

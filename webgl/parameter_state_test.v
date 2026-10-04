@@ -183,7 +183,11 @@ fn test_get_parameter_exposes_webgl2_bindings_and_transform_feedback_state() {
 	assert context.get_parameter(pixel_pack_buffer_binding).object == pack_buffer.object.handle_
 	assert context.get_parameter(uniform_buffer_binding).object == uniform_buffer_object.object.handle_
 	assert context.get_parameter(transform_feedback_buffer_binding).object == feedback_buffer.object.handle_
-	assert context.get_parameter(transform_feedback_binding).object == feedback.object.handle_
+	// The source declares this retained slot but never fills it on bind.
+	assert context.get_parameter(transform_feedback_binding).kind == .none
+	mut native_feedback := 0
+	C.vox_gl_int_parameter(transform_feedback_binding, &native_feedback)
+	assert GLuint(native_feedback) == feedback.object.native_handle_
 	assert !context.get_parameter(transform_feedback_active).boolean
 	assert !context.get_parameter(transform_feedback_paused).boolean
 	assert (context.get_parameter(sampler_binding).sampler or {panic("sampler")}).object.native_handle_ == sampler.object.native_handle_
