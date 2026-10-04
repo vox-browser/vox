@@ -125,22 +125,7 @@ pub fn (mut context WebGLRenderingContext) set_error(error_value GLenum) {
 
 pub fn (mut context WebGLRenderingContext) get_error() GLenum {
 	context.native.make_current()
-	if context.context_lost_ {
-		error_value := context.error_
-		context.error_ = no_error
-		return error_value
-	}
-	local_error := context.native.take_pending_local_error()
-	if local_error != no_error {
-		return local_error
-	}
-	context_error := GLenum(C.vox_gl_get_error())
-	if context_error != no_error {
-		return context_error
-	}
-	error_value := context.error_
-	context.error_ = no_error
-	return error_value
+	return context.get_error_value()
 }
 
 pub fn (context &WebGLRenderingContext) get_context_attributes() ?WebGLContextAttributes {
