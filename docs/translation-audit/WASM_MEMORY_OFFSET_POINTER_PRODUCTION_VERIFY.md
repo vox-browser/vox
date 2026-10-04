@@ -1,0 +1,7 @@
+# Source memory cage-base invariant in production
+
+Pinned `AbstractMachine.h:628–634` first returns null for invalid storage offset, then obtains the actual cage base, executes VERIFY(cage_base) and returns its masked offset pointer. The V cage-base assertion was removed by production compilation. It is now an explicit fatal guard in exactly that position, preserving the null-owner shortcut and pointer-mask expression.
+
+Unlike the preceding memory-method repairs, valid naturally allocated owners do not provide a genuine null-cage witness: successful allocation initializes their owning cage. No fake buffer offset, injected allocator or fabricated failing owner was used. Focused tests therefore cover actual reachable behavior: empty and destroyed owners return null even for the largest offset; real allocations preserve base/offset pointer identity and mask full-cage aliases; growth refreshes the storage address while preserving old bytes and zeroing its new tail. These tests do not claim to execute the fatal null-cage branch or prove allocator/OOM parity.
+
+Private production GC-none1/1 PASS16.098s and ordinary GC-none cage/buffer/span3/3 PASS16.699s are recorded in `Build/audit-fixes/source-memory-offset-pointer-guard-{production-gc-none,gc-none}.log`. This adds the114th Wasm test file outside frozen103-file/native evidence. All VERIFY sites in this translated MemoryBuffer/byte-span file now remain explicit in production; complete PrimitiveStorage invariants, native allocator ownership, runtime dispatch and collector graph still need their own review.
