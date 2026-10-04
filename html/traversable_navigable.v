@@ -89,6 +89,7 @@ mut:
 	system_visibility_state_      dom.VisibilityState = .hidden
 	is_created_by_web_content_    bool
 	has_been_destroyed_           bool
+	close_steps_have_been_appended_ bool
 	has_system_focus_             bool
 	window_handle_                string
 	active_document_              ?&dom.Document
@@ -1048,7 +1049,7 @@ pub fn (mut traversable TraversableNavigable) close_top_level_traversable() {
 }
 
 pub fn (mut traversable TraversableNavigable) definitely_close_top_level_traversable() {
-	traversable.set_closing(true)
+	assert traversable.is_top_level_traversable()
 	documents := if document := traversable.active_document_ {
 		mut result := []&dom.Document{}
 		for navigable in document.inclusive_descendant_navigables() {
@@ -1062,10 +1063,19 @@ pub fn (mut traversable TraversableNavigable) definitely_close_top_level_travers
 	}
 	traversable_pointer := voidptr(traversable)
 	traversable.check_if_unloading_is_canceled(documents, fn [traversable_pointer] (result CheckIfUnloadingIsCanceledResult) {
+		mut mutable_traversable := unsafe { &TraversableNavigable(traversable_pointer) }
 		if result != .continue_ {
+			// A canceled prompted close may be retried unless another close has
+			// already reached the history queue (LocalTraversableNavigable.cpp).
+			if !mutable_traversable.close_steps_have_been_appended_ {
+				mutable_traversable.set_closing(false)
+			}
 			return
 		}
-		mut mutable_traversable := unsafe { &TraversableNavigable(traversable_pointer) }
+		if mutable_traversable.close_steps_have_been_appended_ {
+			return
+		}
+		mutable_traversable.close_steps_have_been_appended_ = true
 		mutable_traversable.append_session_history_traversal_steps(fn [traversable_pointer] (signal &TraversalPromiseState) {
 			mut mutable_traversable := unsafe { &TraversableNavigable(traversable_pointer) }
 			if document := mutable_traversable.active_document_ {
