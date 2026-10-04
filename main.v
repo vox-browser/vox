@@ -2263,6 +2263,18 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript ReadableStream bindings: ${err.msg()}'
 		return none
 	}
+	mut blob_host := browserjs.BlobHost.create(document) or {
+		messages << 'JavaScript Blob bindings: ${err.msg()}'
+		return none
+	}
+	blob_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript Blob bindings: ${err.msg()}'
+		return none
+	}
+	blob_host.install_constructor() or {
+		messages << 'JavaScript Blob constructor: ${err.msg()}'
+		return none
+	}
 	mut abort_host := browserjs.AbortSignalHost.create(document) or {
 		messages << 'JavaScript AbortSignal bindings: ${err.msg()}'
 		return none
