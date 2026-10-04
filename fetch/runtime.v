@@ -1443,14 +1443,11 @@ pub fn http_redirect_fetch(params &FetchParams, response &Response, host &FetchH
 		timing_info.redirect_start_time = timing_info.start_time
 	}
 	request.url_list << location
-	if policies := internal.header_list.get_decode_and_split('Referrer-Policy') {
-		for policy in policies {
-			if policy in ['no-referrer', 'no-referrer-when-downgrade', 'same-origin', 'origin',
-				'strict-origin', 'origin-when-cross-origin', 'strict-origin-when-cross-origin',
-				'unsafe-url'] {
-				request.referrer_policy = policy
-			}
-		}
+	// Fetching.cpp:1605–1606 / AbstractOperations.cpp:45–54 uses the
+	// internal Response's actual HeaderList and preserves an empty result.
+	policy := referrercore.parse_a_referrer_policy_from_header_list(internal.header_list)
+	if policy != .empty_string {
+		request.referrer_policy = referrercore.to_string(policy)
 	}
 	return main_fetch(params, host)
 }
