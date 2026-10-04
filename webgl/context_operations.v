@@ -389,7 +389,6 @@ pub fn (mut context WebGLRenderingContext) delete_texture(object ?&WebGLTexture)
 }
 
 pub fn (mut context WebGLRenderingContext) delete_shader(object ?&WebGLShader) {
-	context.native.make_current()
 	if value := object {
 		mut mutable_value := unsafe { &WebGLShader(value) }
 		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
@@ -401,6 +400,7 @@ pub fn (mut context WebGLRenderingContext) delete_shader(object ?&WebGLShader) {
 		}
 		handle := value.object.bookkeeping_id()
 		context.shaders.delete(handle)
+		context.native.make_current()
 		C.vox_gl_delete_shader(value.object.native_handle_)
 		context.command('delete_shader', handle)
 	}
