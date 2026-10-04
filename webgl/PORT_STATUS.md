@@ -162,6 +162,39 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+validateProgram now suppresses its generated native command after loss,
+separately from the CPU owned-handle order repair. Impl.cpp:2486-2497 and
+GLFunctions.json:4405-4414 record ValidateProgram with its Source object ID;
+record_bytes:57-60 drops the command after loss. V preserves validation,
+then returns before direct C work when actual owner selection is unavailable.
+The exact live call and native-name ABI remain unchanged. The read-only
+generated proxy/replay witness is
+`Build/audit-fixes/source-validate-program-generated-boundary.txt`, SHA-256
+`a653eb475a7e05b71ee91098eaa52882d8f09a5bd77abebec4dcbfe7c9843f0a`.
+
+A genuine pre-fix EGL probe validated Other's matching native program through
+a lost Owner (VALIDATE_STATUS=0 to 1), retained in
+source-validate-program-lost-unfixed-probe_test.v and
+source-validate-program-lost-unfixed-probe-gc-none.log. New two-version native/
+public tests use a separate actual program validated directly in the driver
+as a working baseline, while Other's sentinel remains unvalidated after loss.
+Other keeps LINK_STATUS=1, its two compiled attachments, native current program
+zero, current viewport and pending INVALID_ENUM without an extra zero-name
+error. Owner's original and owned SourceID2/native0 records stay valid with
+identity fields unchanged. Public arity/nonnullable/forged-brand and foreign
+handle gates retain their Source behavior, setters stay undefined, and loss
+reporting remains one-shot.
+
+Two typed files pass in
+`Build/audit-fixes/source-validate-program-lost-native-gc-none.log`; two public
+files pass in
+`Build/audit-fixes/source-validate-program-lost-public-gc-none.log`, using GC
+disabled and explicit private paths, including the independent live/CPU-order
+neighbors. This is validateProgram's reviewed command-drop boundary, not an
+invented validation algorithm or broader generic loss policy. Other program
+bodies, object families, full remote transport and GC/WrapperWorld remain
+separate scopes; no frozen full-sweep or canonical bundle claim is added.
+
 validateProgram now keeps its Source owned-handle gate before actual native
 owner selection. Impl.cpp:2486-2497 has an empty proxy make_current prefix,
 then validates program->handle(this) before the exact validate command.
@@ -185,9 +218,9 @@ files pass in
 `Build/audit-fixes/source-validate-program-owner-public-gc-none.log`, using
 GC disabled and explicit private paths. This supersedes only those historical
 owner assumptions and does not replace frozen full regression evidence.
-Lost validation, use/attach/detach/bind/location and other program bodies,
-other object families and full remote transport/GC/WrapperWorld remain
-independent source-reviewed scopes.
+Lost validation is separately reviewed above; use/attach/detach/bind/location
+and other program bodies, object families and full remote transport/
+GC/WrapperWorld remain independent source-reviewed scopes.
 
 linkProgram now drops its generated native command after loss, separately
 from its CPU owned-handle ordering correction. Pinned Impl.cpp:2233-2244
