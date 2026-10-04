@@ -15,6 +15,7 @@ import hashlib
 import pathlib
 import subprocess
 
+SOURCE_PIN = "963d46a829f3e1b79f44dba9d02afb70654300fa"
 
 CPP = r"""#include <AK/Utf16String.h>
 #include <cstdio>
@@ -70,6 +71,10 @@ def main():
     parser.add_argument("--output", type=pathlib.Path, default=pathlib.Path("Build/audit-fixes/source-utf16-ascii-probe"))
     args = parser.parse_args()
     source = args.source.resolve()
+    source_head = subprocess.check_output(["git", "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
+    if source_head != SOURCE_PIN:
+        raise SystemExit(f"Source HEAD {source_head} differs from required pin {SOURCE_PIN}")
+    print("Source HEAD", source_head, flush=True)
     source_build = (args.source_build or source / "Build/release").resolve()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
