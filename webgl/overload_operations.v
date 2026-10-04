@@ -304,6 +304,7 @@ pub fn (mut context WebGLRenderingContext) draw_range_elements(mode GLenum, star
 }
 
 pub fn (mut context WebGLRenderingContext) framebuffer_texture_layer(target GLenum, attachment GLenum, texture ?&WebGLTexture, level int, layer int) {
+	context.native.make_current()
 	if !context.require_webgl2() { return }
 	handle := if value := texture {
 		if !context.owns(&value.object) {
