@@ -609,7 +609,14 @@ pub fn BrowsingContextModel.create_a_new_browsing_context_and_document(page &dom
 	if creator_document := creator {
 		document.set_referrer(creator_document.url_string())
 	}
+	// BrowsingContext.cpp steps 21–24 complete the initial about:blank.
+	document.set_ready_for_post_load_tasks(true)
 	document.populate_with_html_head_and_body()!
+	if embedder == none {
+		document.set_supported_color_schemes(['light', 'dark'], false)
+	}
+	document.make_active()
+	document.completely_finish_loading()
 	mutable_context.set_active_document(document)
 	mut mutable_group := unsafe { &BrowsingContextGroup(group) }
 	mutable_group.append_model(context)
