@@ -1169,33 +1169,33 @@ pub fn (mut context WebGLRenderingContext) tex_parameterf(target GLenum, pname G
 }
 
 fn (mut context WebGLRenderingContext) uniform_floats(location ?&WebGLUniformLocation, values []f32, width int) {
+ context.native.make_current()
  value := location or { return }
  value.handle(context.current_program) or { context.set_error(invalid_operation); return }
 
  if values.len % width != 0 { context.set_error(invalid_value); return }
- context.native.make_current()
  C.vox_gl_uniform_floats(int(value.handle_), width, values.len / width, values.data)
  error_value := GLenum(C.vox_gl_get_error())
  if error_value != no_error { context.native.set_pending_local_error(error_value); return }
 }
 
 fn (mut context WebGLRenderingContext) uniform_ints(location ?&WebGLUniformLocation, values []int, width int) {
+ context.native.make_current()
  value := location or { return }
  value.handle(context.current_program) or { context.set_error(invalid_operation); return }
 
  if values.len % width != 0 { context.set_error(invalid_value); return }
- context.native.make_current()
  C.vox_gl_uniform_ints(int(value.handle_), width, values.len / width, values.data)
  error_value := GLenum(C.vox_gl_get_error())
  if error_value != no_error { context.native.set_pending_local_error(error_value); return }
 }
 
 fn (mut context WebGLRenderingContext) uniform_uints(location ?&WebGLUniformLocation, values []u32, width int) {
+ context.native.make_current()
  value := location or { return }
  value.handle(context.current_program) or { context.set_error(invalid_operation); return }
  if !context.require_webgl2() { return }
  if values.len % width != 0 { context.set_error(invalid_value); return }
- context.native.make_current()
  C.vox_gl_uniform_uints(int(value.handle_), width, values.len / width, values.data)
  error_value := GLenum(C.vox_gl_get_error())
  if error_value != no_error { context.native.set_pending_local_error(error_value); return }

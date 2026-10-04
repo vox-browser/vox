@@ -1,7 +1,9 @@
 module webgl
 
-// Source uniform methods validate their nullable location before reading spans.
+// Source list-uniform bodies select their owner, then validate their nullable
+// location before reading spans. Public IDL conversions have already finished.
 pub fn (mut context WebGLRenderingContext) validate_uniform_upload_location(location ?&WebGLUniformLocation) bool {
+	context.native.make_current()
 	value := location or { return false }
 	value.handle(context.current_program) or {
 		context.set_error(invalid_operation)
