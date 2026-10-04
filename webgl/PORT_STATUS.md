@@ -5,6 +5,21 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/WebGL`
 Reference audit: 2026-09-12
 Latest native focused verification: 2026-10-04
 
+After nullable/bitmap/readback continuation and actual-driver error-retention
+repairs, frozen private snapshot `2355ee46` passed all 101 tracked typed WebGL
+files (132.5 seconds) and all 70 public/mixed canvas files (1006.2 seconds) with
+GC disabled and explicit private module paths. Both sweeps were clean; exact
+snapshot, manifests, TSV results and per-file logs are under
+`Build/audit-fixes/webgl-final-2355ee46/`. The public manifest contains every
+browserjs/canvas_webgl test and canvas_context_integration. No tracked state
+changed while either sweep ran. These passes cover the driver repair below;
+they do not establish unexamined source-body parity. A separate read-only
+viewport/scissor probe still observed wrong owner selection on negative sizes
+and a native viewport cache retaining rejected dimensions. Its genuine-driver
+source/log are `Build/audit-fixes/source-viewport-scissor-owner-probe.{v,log}`;
+that raster state, the named base error helper, other unused raster caches,
+full GC/WrapperWorld and remote transport remain separate work.
+
 After framebuffer/query/sync/actual-record and source draw/canvas callback
 repairs, frozen private snapshot `2ad0138f` passed all 97 tracked typed WebGL
 files (58.0 seconds) and all 66 public/mixed canvas files (353.4 seconds) with
@@ -15,12 +30,14 @@ Exact manifests, snapshot hash, TSV results and per-file logs are under
 Separate focused HTML canvas repaint/surface checks are documented below.
 These complete test passes do not establish unexamined source-body parity.
 A separate genuine two-native-error probe after the freeze reproduced a
-remaining adapter error loss/order mismatch: direct driver errors [1280,1281,0]
+adapter error loss/order mismatch: direct driver errors [1280,1281,0]
 versus translated [1281,0,0]. Its source/log are retained as
 `Build/audit-fixes/source-native-error-retention-probe.{v,log}`. The actual driver
-error boundary, non-source raster caches/gates, full GC/WrapperWorld and remote
-transport remain work; the pinned source's single m_error TODO is distinct from
-this loss of actual GL errors.
+error boundary was subsequently repaired at `2355ee46`: the identical probe
+now returns [1280,1281,0] through both paths, recorded in
+`source-native-error-retention-probe-fixed.log`. Non-source raster caches/gates,
+full GC/WrapperWorld and remote transport remain work; the pinned source's
+single m_error TODO is distinct from this repaired loss of actual GL errors.
 
 After the shader/resource/uniform repairs, frozen private snapshot `ea1e2287`
 passed all 50 public/mixed canvas files with GC disabled and explicit private
@@ -98,6 +115,34 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+Actual GL errors now remain in the real ANGLE driver until `get_error()` asks
+for them, following `WebGLRenderingContextBase.cpp:315-332` and
+`WebGLRenderingContextImpl.cpp:1720-1724`. The eager collection helper and all
+its call sites, four separate uniform/vector/matrix error queries, and the
+dispatcher's fabricated boolean success facade were removed. GL's actual
+native names, sync pointers, reflection values, robust read counts and surface
+status results remain the source results. CPU presentation/readback retains
+its actual allocation/backend/surface guards and no longer fails solely on an
+unrelated earlier GL error, matching
+`Services/Compositor/OpenGLContext.cpp:478-542` and
+`HostWebGLContext.cpp:178-198`. The extension request is a void GL command in
+`GLFunctions.json:3068`; it likewise has no source driver-error success gate.
+
+Source local transport/allocation errors retain their separate pending slot
+and priority. Actual GL flags are returned next in the driver's own order,
+followed by the first source `m_error`; the source's one-error TODO is preserved
+without an invented V queue. Genuine two-error direct-driver oracles cover both
+versions, successful intervening queries/resource/log reads, extension
+requests, real CPU pixels/presentation and public foreign-buffer validation
+priority. The original failing native reproduction and public field-access
+compilation diagnostic remain in the focused logs. Corrected focused native,
+public and matrix checks passed; the final implementation then passed the
+complete frozen 101-file typed and 70-file public sweeps above. No fake backend,
+driver-error sorting, reinjection or new uniform read algorithm was supplied.
+The unused V `get_error_value()` peek still needs a separate exact named-body
+translation; the existing public `get_error()` already runs the complete source
+priority body verified here.
+
 Destination-view and numeric pixel-pack `read_pixels` bodies now select their
 owner before source range/binding errors and issue their actual GL calls
 without the V dispatcher's invented boolean success gate. This follows
@@ -127,7 +172,7 @@ Two native binding neighbors passed in `source-active-texture-gc-none.log`;
 the new native file passed after fixing its test field spelling in
 `source-active-texture-final-gc-none.log`. All three public files passed in
 `source-active-texture-public-gc-none.log`. This removes source-body cache/gates;
-the actual-driver error-retention boundary is a separate pending slice.
+the actual-driver error-retention boundary is recorded separately above.
 
 `native_egl.h`/`native_egl.c.v` create real EGL/ANGLE contexts using the Metal
 backend on macOS and the source compositor configuration. `pkg-config egl
@@ -772,7 +817,7 @@ the strengthened new public file passed separately in
 diagnostics and the meaningful failing pixel reproduction remain under
 `Build/audit-fixes/source-texture-prior-error-*.log`. This slice removes the
 upload cancellation gates; the separate actual-driver error-retention repair
-remains pending and is not supplied by these tests.
+is recorded above and is not supplied by these tests alone.
 
 Framebuffer-to-texture copy now follows
 `WebGLRenderingContextImpl.cpp:427-437`: select the owning driver and forward
