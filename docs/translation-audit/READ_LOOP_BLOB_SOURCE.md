@@ -63,7 +63,7 @@ for a chunk sharing the current BYOB view's buffer remains a native boundary
 prerequisite. Blob's newly allocated chunk always takes the distinct-buffer
 abstract enqueue path translated here.
 
-`FileAPI/Blob.cpp:320-384` maps to `html/blob_operations.v`, commit `8149aa16`.
+`FileAPI/Blob.cpp:320-374` maps to `html/blob_operations.v`, commit `8149aa16`.
 The owning settings object allocates the actual Source ReadableStream, performs
 full byte-reading setup in its realm, and retains a whole-buffer copy in a
 FileReading task on that Window or Worker's responsible event loop. Window
@@ -101,7 +101,7 @@ of substituting a general second sniff. Default and GC-disabled **3/3** focused
 decoder/BOM/TextDecoder files pass in `source-decoder-bom-default-final.log`
 and `source-decoder-bom-gc-none.log`.
 
-`FileAPI/Blob.cpp:386-405` maps to `html/blob_text.v`, commit `c9b91f1e`.
+`FileAPI/Blob.cpp:377-392` maps to `html/blob_text.v`, commit `c9b91f1e`.
 Each call obtains a distinct actual owning byte Promise and returns its Source
 fulfillment capability. The reaction asserts an ArrayBuffer result, uses UTF-8
 fallback with the pinned decoder above, and returns owned UTF-16 primitive
@@ -141,3 +141,16 @@ Default **2/2** and GC-disabled **4/4** native witness/allocation/native host/
 core aggregation files pass in `source-read-loop-array-buffer-default-final.log`
 and `source-read-loop-array-buffer-gc-none.log`. The native compilation also
 covers the module-relative header correction `de70507b`.
+
+Commit `0e7cfafb` carries that explicit actual relevant engine realm through
+Blob get-stream/read-all/text. The stream, default reader and Promise retain
+its allocation/data hooks and the owning HTML settings' task/job queue. Native
+Promise fulfillment delivers exactly the allocated engine ArrayBuffer, and
+text reads its actual slots instead of a projected byte descriptor or author
+properties. Native tests exercise a real Source stream/Uint8 read chunk and
+BOM-aware text with poisoned ArrayBuffer byteLength getters and constructor.
+The final native default file passes after the preceding run passed both HTML
+owner/text neighbors; GC-disabled **3/3** native realm/HTML owner/text files pass
+in `source-blob-native-realm-default-final.log` and
+`source-blob-native-realm-gc-none.log`. Public native Blob constructors and
+clone projection remain separate work.
