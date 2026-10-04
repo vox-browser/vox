@@ -313,18 +313,7 @@ pub fn (mut stream ReadableStream) pull_from_bytes(bytes []u8) ! {
 }
 
 pub fn (mut stream ReadableStream) set_up_with_byte_reading_support(high_water_mark f64) ! {
-	if stream.locked() || stream.disturbed_ || !stream.queue_.is_empty() || (!isnil(stream.byte_controller_) && !stream.byte_controller_.byte_queue_is_empty()) {
-		return error('TypeError: Cannot replace an active ReadableStream controller')
-	}
-	if high_water_mark < 0 {
-		return error('RangeError: highWaterMark must be non-negative')
-	}
-	stream.byte_stream_ = true
-	stream.high_water_mark_ = high_water_mark
-	stream.default_controller_ = unsafe { nil }
-	stream.byte_controller_ = &ReadableByteStreamController{
-		stream_: &stream
-	}
+	stream.set_up_with_byte_reading_support_in_realm(stream.realm_, none, none, high_water_mark)
 }
 
 pub fn (mut stream ReadableStream) current_byob_request_view() ?[]u8 {
