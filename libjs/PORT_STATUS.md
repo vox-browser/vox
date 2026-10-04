@@ -540,7 +540,11 @@ evidence in both GC modes: full sweeps passed 226 and 227 files respectively;
 three default-GC and two GC-disabled compilation failures reported disk-space
 exhaustion, and all affected files passed exact reruns after space became
 available. This is combined sweep/rerun evidence, not a clean single 229-file
-run. The exact upstream AST corpus remains 100/100. VM collection, automatic cell destruction,
+run. A later clean canonical snapshot passes **229/229 files in each GC mode**
+after `a9c7b67b` exposes the existing source `Utf16String::to_well_formed` body
+for raw WebIDL/CryptoKey string conversion. Exact upstream AST comparison also
+passes **100/100**. Logs are `source-utf16-projection-libjs-{default,gc-none}.log`
+and `source-utf16-projection-libjs-ast.log` under `Build/audit-fixes/`. VM collection, automatic cell destruction,
 external-memory accounting and cached TypedArray offset invalidation remain
 pending. Source GC::Ref<Cell> is an actual owner pointer at that unfinished cell
 boundary. V's by-value DataBlock accessors provide borrowed aliases; only the

@@ -507,7 +507,36 @@ checkout (`source-configuration-full-canonical-default-recheck.log`).
 
 Frame installation, argument-allocation reuse, unwind/CallFrameHandle,
 prepare/call/execute functions, module compilation coordination, compiled-function
-tables and complete collector roots remain open. Explicit V destruction and
+tables and complete collector roots were open at this Configuration snapshot;
+the subsequent completed records are listed below. Explicit V destruction and
 heap-vector storage are documented adaptations; C++ automatic ownership,
 noncopyability and inline-vector layout are not implied. No complete Wasm
 execution, source instantiation or browser realm parity is claimed.
+
+## Compilation coordination, compiled tables and call preparation
+
+`c22bd999` translates Module compilation coordination with a construction-owned
+state and native mutex/condition adapter. `34fd14b4` retains CodeSection::Func's
+constructor-cached total local count, including source-width sums. `f6e43133`
+builds the actual ModuleInstance compiled-function table from Store records,
+retains publication metadata and rebuilds until all source Modules have
+attempted native compilation. The canonical snapshot passes **74/74 files in
+each GC mode**.
+
+`48b3ce4a` translates actual inline argument ownership and source freelist reuse.
+`3f686bf8` installs owned and lightweight frames, resolves actual module/Store
+tables, preserves label and call-record ordering, restores relocated caller
+locals and translates the call handle's unwind. `6353f74d` prepares actual
+HostFunction/Wasm Store records, source-typed zero locals and inlined locals,
+including tail replacement and the source no-wait compilation policy. Invalid
+addresses retain an actual Trap. The completed snapshot passes **77/77 files
+in each GC mode** in its isolated worktree; four merged canonical argument,
+frame, preparation and Configuration files pass with GC disabled in the
+22-file integration batch.
+
+See [source mapping and validation](../docs/translation-audit/WASM_COMPILATION_AND_FRAMES.md)
+for explicit V destruction, vector layout, system-allocator capacity and native
+synchronization boundaries. Constant-expression execution, interpreter
+invocation, native compilation, complete AbstractMachine instantiation and the
+collector/ref-counted root graph remain unfinished. The browser's legacy
+Instance facade is still not routed through that complete machine pipeline.
