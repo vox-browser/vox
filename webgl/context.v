@@ -799,6 +799,9 @@ pub fn (mut context WebGLRenderingContext) depth_mask(flag bool) {
 }
 
 pub fn (mut context WebGLRenderingContext) clear(mask GLenum) {
+	context.native.make_current()
+	context.native.notify_painting_surface_content_will_change()
+	context.native.did_update_canvas_content()
 	context.native.dispatch('clear', mask)
 }
 

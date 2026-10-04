@@ -309,7 +309,7 @@ pub fn (mut context OpenGLContext) dispatch(name string, args ...i64) bool {
 	if (name.starts_with('draw') && name !in ['draw_buffers', 'draw_buffers_webgl',
 		'draw_arrays', 'draw_elements', 'draw_arrays_instanced', 'draw_elements_instanced',
 		'draw_range_elements'])
-		|| name in ['clear', 'blit_framebuffer'] { context.notify_content_will_change() }
+		|| name == 'blit_framebuffer' { context.notify_content_will_change() }
 	return success
 }
 
