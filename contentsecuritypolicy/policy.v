@@ -35,7 +35,8 @@ pub fn parse_a_serialized_csp(serialized string, source PolicySource, dispositio
 	}
 	for raw_token in serialized.split(';') {
 		token := raw_token.trim(' \t\n\r\f')
-		if token == '' || !token.is_ascii() {
+		// Source StringView::is_ascii() accepts the complete 0x00–0x7F range.
+		if token == '' || token.bytes().any(it >= 0x80) {
 			continue
 		}
 		mut split_at := 0
@@ -46,7 +47,11 @@ pub fn parse_a_serialized_csp(serialized string, source PolicySource, dispositio
 		if policy.contains_directive_with_name(name) {
 			continue
 		}
-		value := if split_at < token.len { token[split_at..].fields() } else { []string{} }
+		value := if split_at < token.len {
+			token[split_at..].split_any(' \t\n\r\f').filter(it != '')
+		} else {
+			[]string{}
+		}
 		policy.directives_ << create_directive(name, value)
 	}
 	return policy
