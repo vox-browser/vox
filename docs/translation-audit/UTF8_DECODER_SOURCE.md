@@ -6,9 +6,9 @@ Source is Ladybird `963d46a829f3e1b79f44dba9d02afb70654300fa` and its locked
 The existing hand-written `decode_utf8` has concrete malformed-prefix defects:
 `E1 41` drops ASCII A after a prematurely classified truncated sequence, and
 `E1 80 41` emits an extra replacement. Actual Source Rust bridge calls produce
-U+FFFD followed by A for both inputs. These consumer defects remain open at
-the initial validity-only prerequisite below; no decoder-state/consumer fix is
-claimed by an otherwise unused private helper.
+U+FFFD followed by A for both inputs. These consumer defects were open at
+the initial validity-only prerequisite below and are fixed by the separate
+whole-input consumer feature recorded later in this document.
 
 ## Scalar valid-prefix prerequisite
 
@@ -153,3 +153,75 @@ lifecycle/BOM bookkeeping, UTF16 destination conversion, encoder operations,
 physical String/Cow/Vec allocation and native SIMD ownership remain outside
 this feature. LibJS and the frozen proof checkout are unchanged; no browser
 bundle build or capture was run privately.
+
+
+## Whole-input Source consumer and owning output
+
+Feature `9c256f3c6be6b6b6a0ed440f0548ce44294860dc` replaces the defective
+hand-written `decode_utf8` with the UTF8 branch of Source's
+`Encoding::decode_without_bom_handling` (`encoding_rs/src/lib.rs:3134–3200`).
+`UTF8Decoder::to_utf8` (`LibTextCodec/Decoder.cpp:543–546`) calls
+`rust_decode_to_utf8` (`Decoder.cpp:129–147`); the actual Rust bridge
+(`Rust/src/lib.rs:81–118`) selects this whole-input operation when BOM handling
+is disabled and checks fatal only after the replacement result.
+
+The translated operation validates the initial prefix and returns it directly
+when every byte is valid. For malformed input it creates the actual five-slot
+decoder, rounds the Source without-replacement capacity to a power of two,
+selects the minimum of that capacity and Source's replacement maximum, copies
+the valid prefix, and calls the replacement decoder into the remaining owning
+output. It accumulates consumed/produced counts and error flags. OutputFull
+requests Source's maximum capacity for the remaining input from the produced
+string length, retaining pending decoder state before the next call. Source
+`decode_to_string`'s spare-capacity writes (`lib.rs:4108–4141`) are lowered to
+base offsets into the original output array, preserving earlier prefix and
+replacement bytes. Fatal checks then withhold the compatibility return value
+on malformed input, matching the bridge's withheld callback.
+
+This fixes `E1 41` and `E1 80 41` to one U+FFFD followed by A, including after a
+valid prefix and before embedded NUL. Partial final sequences, invalid second
+bytes, supplementary scalars, a literal U+FFFD and repeated malformed input
+retain exact Source output and error flags. Existing given-decoder BOM handling
+continues to own BOM removal. TextDecoder still uses its existing compatibility
+stream-boundary mechanism until the separate actual StreamingDecoder owner
+slice; this feature does not claim that mechanism is Source's retained runtime
+state or that UTF8 output replaces Source's native UTF16 destination operation.
+
+Rust physical Cow borrowing and String/Vec ABI are not reproduced. The V return
+value owns copied bytes; the output array models logical spare capacity and
+reserve requests without claiming Rust allocator over-allocation, uninitialized
+spare memory or allocation-failure behavior. Source capacity arithmetic uses
+64-bit `usize`; the V array rejects capacities exceeding INT_MAX before
+allocation. Power-of-two rounding here operates within these bounded supplied
+V input lengths; Source's behavior for enormous usize arguments is not claimed.
+No public constructor/wrapper or alternate reader cache is added.
+
+Tooling-only `0be2960629105e88aa3a2fe1dd3460404aa52f67` adds
+`tools/source_utf8_whole_input_probe.py`. It validates the same exact Source pin,
+locked archive and every registry file, then compiles the unmodified actual
+LibTextCodec Rust bridge. Both native debug/release filtered tests pass **903
+inputs**: every byte, incomplete/malformed multi-byte prefixes, sixteen valid
+prefix lengths, twelve repeated-malformed lengths, NUL and astral suffixes.
+Actual bridge outputs equal Source's direct whole-input outputs; fatal success
+and withheld output equal Source's actual error flag. Debug and release golden
+artifacts compare byte for byte. Checked-in record line breaks are formatting
+only, and their JSON values equal the native artifact exactly.
+
+| Artifact | SHA256 |
+| --- | --- |
+| `encoding/fixtures/utf8_whole_input.json` | `0d81cb6eb0fd9cd8a3af6bb24e6b3d0d94cfe8e59c6220a8b2067297852e0327` |
+| `source-utf8-whole-input-probe.log` | `8f2ac2a49f9a469be10d99137ed74d839a52c8a9a42352156b01f69136b224d8` |
+
+The focused V golden file passes **1/1 default, 1/1 GC-none and 1/1 production
+GC-none**; complete Encoding passes **12/12 in both GC modes**, in
+`source-utf8-whole-input-{focused-default,focused-gc-none,production-gc-none,full-default,full-gc-none}.log`.
+The genuine existing FileReaderSync Text adapter passes **1/1 in both modes**,
+including new actual Blob→owned Text→target JSC primitive regressions for both
+malformed-prefix cases and final incomplete input. The existing FileReader Text
+BOM fixture passes **1/1 GC-none**. Logs are
+`source-utf8-whole-input-native-{default,gc-none}.log` and
+`source-utf8-whole-input-fileapi-gc-none.log`. The initial native fixture compile
+failure from an omitted u16 literal cast is retained in
+`source-utf8-whole-input-native-before-u16-cast-{default,gc-none}.log`; no Source
+expected output was changed. LibJS, the frozen whole-checkout proof and native
+browser bundle remain unchanged.
