@@ -238,14 +238,15 @@ fn (mut decoder SourceUtf8Decoder) decode_to_utf8_at(input []u8, input_start int
 }
 
 // Source Encoding::decode_without_bom_handling's UTF8 potentially-borrowable
-// branch. The compatibility string owns copied bytes; logical spare capacity
+// branch owns the genuine Off Decoder and its existing raw UTF8 variant.
+// The compatibility string owns copied bytes; logical spare capacity
 // and reserve requests retain Source's actual control path.
 fn decode_source_utf8_without_bom_handling(input []u8) (string, bool) {
 	valid_up_to := source_utf8_valid_up_to(input)
 	if valid_up_to == input.len {
 		return input.bytestr(), false
 	}
-	mut decoder := SourceUtf8Decoder.new_inner()
+	mut decoder := SourceUtf8StreamingDecoder.create(false)
 	remaining := u64(input.len - valid_up_to)
 	without_replacement := u64(valid_up_to) + decoder.max_utf8_buffer_length_without_replacement(remaining) or {
 		panic('Source UTF8 maximum capacity overflow')
