@@ -1,6 +1,7 @@
 module html
 
 import dom
+import os
 import page
 
 fn navigable_active_context_fixture(address string) !(&dom.Document, &WindowModel, &NavigableModel, &dom.Navigable) {
@@ -113,4 +114,26 @@ fn test_retained_native_context_identity_survives_local_model_registry_removal()
 	assert model.active_browsing_context() == none && model.active_window_proxy() == none && model.active_window() == none
 	assert voidptr(browsing_context_model_for_native(native_context)) == voidptr(context)
 	assert voidptr(context.page()?) == voidptr(document.page())
+}
+
+fn test_actual_native_context_rejects_a_second_constructor_owner_in_every_build_mode() {
+	if os.getenv('VOX2_NATIVE_CONTEXT_IDENTITY_CONFLICT') == '1' {
+		mut document, _, _, _ := navigable_active_context_fixture('https://active-context-owner.example/identity-conflict')!
+		defer { document.finalize() }
+		// This constructor would give an already-owned native BrowsingContext a
+		// distinct typed identity. The bridge must reject it even under -prod.
+		_ = WindowModel.create_top_level(document, none, 'foreign-owner')!
+		assert false, 'actual native identity was overwritten'
+		return
+	}
+	mut environment := os.environ()
+	environment['VOX2_NATIVE_CONTEXT_IDENTITY_CONFLICT'] = '1'
+	mut process := os.new_process(os.executable())
+	process.set_environment(environment)
+	process.set_redirect_stdio()
+	process.run()
+	process.wait()
+	output := process.stdout_slurp() + process.stderr_slurp()
+	assert process.code != 0 && output.contains('Native BrowsingContext belongs to another actual HTML model identity'), output
+	process.close()
 }

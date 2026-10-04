@@ -666,8 +666,9 @@ pub fn (mut context BrowsingContextModel) set_window_proxy(proxy ?&WindowProxyMo
 // Source BrowsingContext. Keep identity independent of its current Window.
 fn (context &BrowsingContextModel) register_native_identity(native &dom.BrowsingContext) {
 	mut mutable_native := unsafe { &dom.BrowsingContext(native) }
-	if mutable_native.html_model_handle_ != unsafe { nil } {
-		assert mutable_native.html_model_handle_ == voidptr(context)
+	if mutable_native.html_model_handle_ != unsafe { nil }
+		&& mutable_native.html_model_handle_ != voidptr(context) {
+		panic('Native BrowsingContext belongs to another actual HTML model identity')
 	}
 	mutable_native.html_model_handle_ = voidptr(context)
 }
