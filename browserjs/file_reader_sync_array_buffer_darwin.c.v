@@ -13,3 +13,12 @@ pub fn (mut runtime Runtime) source_file_reader_sync_array_buffer(reader &fileap
 	bytes := reader.read_as_array_buffer_impl(blob)!
 	return runtime.source_array_buffer(bytes)
 }
+
+// Source's BinaryString method returns read_as<Utf16String>; the generated
+// binding consumes that owned record at the target VM's primitive-string ABI.
+pub fn (mut runtime Runtime) javascript_file_reader_sync_binary_string(reader &fileapi.FileReaderSync, blob &fileapi.Blob) !voidptr {
+	runtime.require_javascript_value_context()!
+	result := reader.read_as(blob, .binary_string, none)!
+	raw := result.string_utf16_record() or { panic('Source VERIFY: FileReaderSync BinaryString requires its UTF16 result') }
+	return runtime.javascript_utf16_string(raw)
+}
