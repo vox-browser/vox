@@ -94,5 +94,17 @@ selected encoding. The focused tests deliberately preserve the resulting
 two-BOM removal, third-BOM retention, and opposing second-BOM behavior instead
 of substituting a general second sniff. Default and GC-disabled **3/3** focused
 decoder/BOM/TextDecoder files pass in `source-decoder-bom-default-final.log`
-and `source-decoder-bom-gc-none.log`. Blob's existing synchronous text accessor
-has not yet been moved to this helper in this snapshot.
+and `source-decoder-bom-gc-none.log`.
+
+`FileAPI/Blob.cpp:386-405` maps to `html/blob_text.v`, commit `c9b91f1e`.
+Each call obtains a distinct actual owning byte Promise and returns its Source
+fulfillment capability. The reaction asserts an ArrayBuffer result, uses UTF-8
+fallback with the pinned decoder above, and returns owned UTF-16 primitive
+string units. MIME charset parameters do not select this decoder. The existing
+synchronous Blob.text adapter now calls the same decoder; its synchronization
+does not become the owning native Promise path. Default and GC-disabled **3/3**
+Blob text/standalone decoder/codec files pass in
+`source-blob-text-{default,gc-none}.log`, covering pending NewObject identity,
+Worker ownership, empty and malformed bytes, UTF-16 BOMs and MIME independence.
+Blob.arrayBuffer/bytes fulfillment, actual native buffer/view ownership and
+generated native Blob/File/FileList methods are still separate work.

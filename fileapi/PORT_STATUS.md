@@ -15,7 +15,7 @@ Source records and clone payloads reviewed: 2026-10-04
 | `FileReaderSync.cpp` | `file_reader.v` |
 
 The existing typed package covers immutable owned Blob bytes, blob parts and
-line endings, MIME normalization, slicing, byte streams, UTF-8 decoding, File
+line endings, MIME normalization, slicing, byte streams, BOM-aware decoding, File
 state, FileList ordering, blob URL partition checks and environment cleanup,
 and reader state transitions. FileReader read generations protect event-driven
 abort/replacement at both loadstart and progress. This inventory does not
@@ -52,7 +52,11 @@ includes the Source empty chunk, and preserves original error values. Default
 focused and **4/4 GC-disabled** owner/StreamRealm/enqueue/read-loop files pass;
 source mappings and logs are recorded in
 [`READ_LOOP_BLOB_SOURCE.md`](../docs/translation-audit/READ_LOOP_BLOB_SOURCE.md).
-The existing standalone text/array_buffer/bytes facade settles synchronously;
+Blob.text now returns the Source fulfillment of that owning byte Promise and
+uses UTF-8 fallback with the exact pinned BOM override, ignoring MIME charset.
+Its Source primitive-string result preserves owned UTF-16 units. The existing
+standalone text adapter uses the same decoder; default and GC-disabled **3/3**
+focused text/decoder files pass. The standalone text/array_buffer/bytes facade settles synchronously;
 it does not establish the source task/Promise owner path. Genuine native Blob/File/FileList constructors,
 getters, methods and clone exposure remain open. The compact XHR Blob object is
 a separate compatibility facade. FileReader owner tasks, blob URL process
