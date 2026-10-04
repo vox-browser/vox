@@ -586,7 +586,7 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 			context.clear_color(f32(wg_number(wg_arg(args, 0))), f32(wg_number(wg_arg(args, 1))), f32(wg_number(wg_arg(args, 2))), f32(wg_number(wg_arg(args, 3))))
 		}
 		'clearDepth' {
-			context.clear_depth(wg_number(wg_arg(args, 0)))
+			context.clear_depth(f32(wg_number(wg_arg(args, 0))))
 		}
 		'clearStencil' {
 			context.clear_stencil(wg_int(wg_arg(args, 0)))

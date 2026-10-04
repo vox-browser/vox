@@ -56,11 +56,6 @@ mut:
 	current_vertex_array_binding_       ?&WebGLObject
 	enabled_capabilities                map[GLenum]bool
 	enabled_vertex_attributes           map[GLuint]bool
-	clear_color_                        [4]f32
-	clear_depth_                        f64 = 1.0
-	clear_stencil_                      int
-	color_mask_                         [4]bool = [true, true, true, true]!
-	depth_mask_                         bool = true
 	unpack_flip_y_                      bool
 	unpack_premultiply_alpha_           bool
 	unpack_colorspace_conversion_       GLenum = browser_default_webgl
@@ -268,11 +263,6 @@ fn (mut context WebGLRenderingContext) initialize_restored_client_state() {
 	context.enabled_capabilities.clear()
 	context.enabled_capabilities[dither] = true
 	context.enabled_vertex_attributes.clear()
-	context.clear_color_ = [f32(0), 0, 0, 0]!
-	context.clear_depth_ = 1
-	context.clear_stencil_ = 0
-	context.color_mask_ = [true, true, true, true]!
-	context.depth_mask_ = true
 	context.unpack_flip_y_ = false
 	context.unpack_premultiply_alpha_ = false
 	context.unpack_colorspace_conversion_ = browser_default_webgl
@@ -718,37 +708,26 @@ pub fn (mut context WebGLRenderingContext) disable_vertex_attrib_array(index GLu
 }
 
 pub fn (mut context WebGLRenderingContext) clear_color(red f32, green f32, blue f32, alpha f32) {
-	context.clear_color_ = [clamp_unit(red), clamp_unit(green), clamp_unit(blue), clamp_unit(alpha)]!
 	context.native.make_current()
 	C.vox_gl_clear_color(red, green, blue, alpha)
 }
 
-pub fn (mut context WebGLRenderingContext) clear_depth(depth f64) {
-	context.clear_depth_ = if depth < 0 {
-		0
-	} else if depth > 1 {
-		1
-	} else {
-		depth
-	}
+pub fn (mut context WebGLRenderingContext) clear_depth(depth f32) {
 	context.native.make_current()
-	C.vox_gl_clear_depth(f32(depth))
+	C.vox_gl_clear_depth(depth)
 }
 
 pub fn (mut context WebGLRenderingContext) clear_stencil(stencil int) {
-	context.clear_stencil_ = stencil
 	context.native.make_current()
 	C.vox_gl_clear_stencil(stencil)
 }
 
 pub fn (mut context WebGLRenderingContext) color_mask(red bool, green bool, blue bool, alpha bool) {
-	context.color_mask_ = [red, green, blue, alpha]!
 	context.native.make_current()
 	C.vox_gl_color_mask(int(red), int(green), int(blue), int(alpha))
 }
 
 pub fn (mut context WebGLRenderingContext) depth_mask(flag bool) {
-	context.depth_mask_ = flag
 	context.native.make_current()
 	C.vox_gl_depth_mask(int(flag))
 }
