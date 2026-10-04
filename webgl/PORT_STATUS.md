@@ -430,6 +430,22 @@ passed in `source-sampler-parameter-public-gc-none.log`, all with GC disabled
 and no fixture failure. Source engine diagnostic logging and full GC/caller
 WrapperWorld ownership remain separate boundaries.
 
+framebufferTextureLayer now selects the owning context before optional texture
+handle validation, matching `WebGL2RenderingContextImpl.cpp:131-145`. The source
+body delegates target/attachment/level/layer validation to GL and does not
+update the retained framebuffer attachment map; those existing boundaries stay
+intact. Genuine driver cases compare all four error paths, read actual pixels
+from the selected texture-array layer, detach through the nullable call and
+verify source handle validation precedes driver errors after deletion or for a
+foreign texture. Public cases verify the same actual layer pixels and owner
+order while IDL brand/numeric exceptions still occur before method entry.
+Two native neighbors passed in `source-framebuffer-layer-gc-none.log`; the new
+native case passed in `source-framebuffer-layer-final-gc-none.log` after its
+initial fixture supplied an extra argument to the typed convenience upload.
+The initial compiler diagnostic is preserved. Both public files passed in
+`source-framebuffer-layer-public-gc-none.log`. All checks use GC disabled;
+full source GC, caller WrapperWorld ownership and remote transport remain open.
+
 Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
 `WebGL2RenderingContextOverloads.cpp:33-85`, and
 `WebGL2RenderingContextImpl.cpp:46-50`: select the owner, validate nullable data
