@@ -162,6 +162,37 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+compileShader now drops only its generated native command after loss. Pinned
+Impl.cpp:414-426 keeps the owned shader handle gate; GLFunctions.json:626-635
+marks glCompileShader as a command carrying an object ID. The source generator
+records CompileShader, record_bytes:57-60 suppresses its bytes after loss,
+and the compositor resolves objects.lookup(command.shader) before its live
+GL call. V now returns after unavailable actual owner selection and before
+its direct C call/metadata dispatch. Valid live compilation and CPU invalid
+handle order remain unchanged. The read-only generated proxy/replay witness is
+`Build/audit-fixes/source-compile-shader-generated-boundary.txt`, SHA-256
+`f4c43883d03a737888bf5a13f2b2f32d75ae805552cabb7427ef685dba272016`.
+
+The genuine pre-fix EGL probe compiled Other's matching native shader from
+GL_COMPILE_STATUS=0 to 1 through a lost Owner, recorded in
+source-shader-compile-lost-unfixed-probe-gc-none.log and its ignored test source.
+New two-version native/public cases retain Owner's original and owned
+SourceID2/native0 records while Other remains current. Other's valid shader
+source stays uncompiled, its text and viewport remain intact, and its pending
+INVALID_ENUM survives without an extra zero-name error. Public arity,
+nonnullable, forged-brand and foreign handle gates remain effective after loss;
+setter results stay undefined and loss reporting remains one-shot.
+
+Two typed files pass in
+`Build/audit-fixes/source-compile-shader-lost-native-gc-none.log`; two public
+files pass in
+`Build/audit-fixes/source-compile-shader-lost-public-gc-none.log`, including
+existing genuine live/CPU-order neighbors. All use GC disabled and explicit
+private paths. This feature is only compileShader's reviewed command drop;
+other lost commands, remote transport, full GC/WrapperWorld and unrelated
+creation/query output rules remain separate. No new full-sweep or canonical
+browser bundle claim is added.
+
 shaderSource now suppresses only its actual custom driver command after loss.
 Impl.cpp:2312-2330 preserves its owned handle gate and explicit UTF-8 string
 length. The custom ProxyBase.cpp:332-343 packs one source payload and records
@@ -186,8 +217,8 @@ Two typed files pass in
 files pass in
 `Build/audit-fixes/source-shader-source-lost-public-gc-none.log`, including the
 existing source/compile CPU-owner neighbors. All use GC disabled and explicit
-private paths. This is the shaderSource method alone; compileShader, deletion,
-program mutations and other lost commands remain separate reviewed features.
+private paths. This is the shaderSource method alone; compileShader is separately reviewed
+below, while deletion, program mutations and other lost commands remain work.
 No fake driver or Source algorithm supplies this command drop, and no full
 regression, remote map/GC/WrapperWorld or canonical bundle claim is added.
 
