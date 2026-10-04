@@ -30,5 +30,5 @@ parser end-state task scheduling, timing-field updates, and parser-blocking scri
 execution are not completed by this binding slice. The JavaScriptCore Window
 and Document remain host facades; their complete prototype/WindowProxy graph,
 element/form raw-handler environments, and LibJS browser execution remain separate
-audit work. Static pages with no script sources also need a separate startup fix
-to create a runtime when they carry a raw Window handler.
+audit work. Static pages with raw Window handlers are covered by the separate
+[static handler startup slice](STATIC_WINDOW_HANDLER_STARTUP.md).
