@@ -261,6 +261,22 @@ fn (mut host CanvasWebGLHost) parameter(context &webgl.WebGLRenderingContext, va
 		host.programs[handle] = program
 		return host.resource_reply(handle)
 	}
+	if array := value.vertex_array {
+		if handle := host.platform_objects[voidptr(&array.object)] {
+			return host.resource_reply(handle)
+		}
+		handle := host.register(context, 'vertex_array', &array.object)
+		host.vertex_arrays[handle] = array
+		return host.resource_reply(handle)
+	}
+	if array := value.vertex_array_oes {
+		if handle := host.platform_objects[voidptr(&array.object)] {
+			return host.resource_reply(handle)
+		}
+		handle := host.register(context, 'vertex_array_oes', &array.object)
+		host.vertex_arrays_oes[handle] = array
+		return host.resource_reply(handle)
+	}
 	return match value.kind {
 		.none { json2.Any(json2.Null{}) }
 		.undefined_ { json2.Any({'webglUndefined': json2.Any(true)}) }

@@ -41,6 +41,8 @@ pub:
 	query ?&WebGLQuery
 	shader ?&WebGLShader
 	program ?&WebGLProgram
+	vertex_array ?&WebGLVertexArrayObject
+	vertex_array_oes ?&WebGLVertexArrayObjectOES
 }
 
 fn integer_parameter(value i64) WebGLParameterValue {
@@ -846,7 +848,7 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
 	if pname == vertex_array_binding && context.version != .webgl2 {
 		if !context.extension_enabled('OES_vertex_array_object') { context.set_error(invalid_enum);return WebGLParameterValue{} }
 		array := context.current_vertex_array_oes or { return WebGLParameterValue{} }
-		return WebGLParameterValue{kind:.object,object:array.object.handle_}
+		return WebGLParameterValue{kind:.object,object:array.object.handle_,vertex_array_oes:array}
 	}
  match pname {
   array_buffer_binding,element_array_buffer_binding {
@@ -885,7 +887,7 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
     return WebGLParameterValue{kind:.object,object:handle,buffer:context.retained_buffer_binding(target)}
    }
    transform_feedback_binding {feedback:=context.current_transform_feedback or {return WebGLParameterValue{}};return WebGLParameterValue{kind:.object,object:feedback.object.handle_}}
-   vertex_array_binding {array:=context.current_vertex_array or {return WebGLParameterValue{}};return WebGLParameterValue{kind:.object,object:array.object.handle_}}
+   vertex_array_binding {array:=context.current_vertex_array or {return WebGLParameterValue{}};return WebGLParameterValue{kind:.object,object:array.object.handle_,vertex_array:array}}
    sampler_binding {
     mut handle:=0
     C.vox_gl_int_parameter(pname,&handle)
