@@ -761,7 +761,6 @@ pub fn (mut context WebGLRenderingContext) get_renderbuffer_parameter(target GLe
 }
 
 pub fn (mut context WebGLRenderingContext) get_tex_parameter(target GLenum, pname GLenum) WebGLParameterValue {
-	context.native.make_current()
  mut queried_name:=pname
  mut boolean_result:=false
  mut float_result:=false
@@ -781,6 +780,7 @@ pub fn (mut context WebGLRenderingContext) get_tex_parameter(target GLenum, pnam
    }
   }
  }
+ context.native.make_current()
  result:=if float_result {f64(C.vox_gl_tex_float_parameter(target,queried_name))} else {f64(C.vox_gl_tex_parameter(target,queried_name))}
  return if boolean_result {WebGLParameterValue{kind:.boolean,boolean:result==1}} else {integer_parameter(i64(result))}
 }
