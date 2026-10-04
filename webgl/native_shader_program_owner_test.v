@@ -23,7 +23,10 @@ fn test_source_shader_program_mutations_select_owner_before_early_returns() {
 		other.native.make_current()
 		invalid_shader := context.create_shader(0xbad)
 		assert invalid_shader == none
-		shader_program_owner_and_error(mut context, invalid_enum)
+		mut invalid_type_owner := [0, 0, 0, 0]!
+		C.vox_gl_int_parameter(viewport, &invalid_type_owner[0])
+		assert invalid_type_owner == [9, 10, 11, 12]!
+		assert context.get_error() == invalid_enum
 		other.native.make_current()
 		context.shader_source(mut foreign_shader, 'void main(){}')
 		shader_program_owner_and_error(mut context, invalid_operation)

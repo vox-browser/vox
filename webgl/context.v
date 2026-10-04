@@ -340,12 +340,12 @@ pub fn (mut context WebGLRenderingContext) create_texture() &WebGLTexture {
 }
 
 pub fn (mut context WebGLRenderingContext) create_shader(type_ GLenum) ?&WebGLShader {
-	context.native.make_current()
 	if type_ !in [vertex_shader, fragment_shader] {
 		context.set_error(invalid_enum)
 		return none
 	}
 	handle := context.allocate_handle()
+	context.native.make_current()
 	native_handle := C.vox_gl_create_shader(type_)
 	shader := &WebGLShader{
 		object: WebGLObject{...new_object(context.identity(), context.context_generation_, handle), native_handle_: native_handle}

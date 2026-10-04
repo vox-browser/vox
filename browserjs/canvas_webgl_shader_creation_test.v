@@ -3,6 +3,45 @@
 module browserjs
 
 import html
+import webgl
+
+fn test_public_shader_creation_source_type_gate_and_conversion_precede_driver_owner() {
+	$if !darwin {
+		return
+	}
+	for kind in ['webgl', 'webgl2'] {
+		mut document := html.parse_document('<canvas></canvas>')
+		mut host := CanvasWebGLHost.create(document)
+		mut runtime := Runtime.create()
+		defer { runtime.close() }
+		host.install(mut runtime)!
+		runtime.evaluate_host('const __canvases=Object.create(null);function __canvasFor(s){return __canvases[s.bridgeKey]||(__canvases[s.bridgeKey]={state:s});}function __canvasDimension(s,key){return s[key];}function __element(s){return {state:s};}')!
+		runtime.evaluate_host(webgl_bootstrap())!
+		runtime.evaluate_host('globalThis.gl=__webglContext({bridgeKey:"__created_shader_type",width:1,height:1},"${kind}",null);globalThis.other=__webglContext({bridgeKey:"__created_shader_type_other",width:1,height:1},"${kind}",null);gl.viewport(1,2,3,4);other.viewport(9,10,11,12);')!
+		mut other := host.contexts['__created_shader_type_other'] or { panic('shader type other') }
+		for type_ in ['0', '0xbad', '0xffff', '-1'] {
+			other.native.make_current()
+			assert runtime.evaluate_host('gl.createShader(${type_})===null')! == 'true'
+			mut selected := [0, 0, 0, 0]!
+			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
+			assert selected == [9, 10, 11, 12]!
+			assert runtime.evaluate_host('gl.getError()===gl.INVALID_ENUM&&gl.getError()===gl.NO_ERROR')! == 'true'
+		}
+		other.native.make_current()
+		assert runtime.evaluate_host('(function(){const marker={};try{gl.createShader({valueOf(){throw marker}});return false}catch(error){return error===marker}})()')! == 'true'
+		mut selected := [0, 0, 0, 0]!
+		C.vox_gl_int_parameter(webgl.viewport, &selected[0])
+		assert selected == [9, 10, 11, 12]!
+		assert runtime.evaluate_host('gl.getError()===gl.NO_ERROR')! == 'true'
+		for type_ in ['gl.VERTEX_SHADER', 'gl.FRAGMENT_SHADER'] {
+			other.native.make_current()
+			assert runtime.evaluate_host('gl.createShader(${type_}) instanceof WebGLShader')! == 'true'
+			C.vox_gl_int_parameter(webgl.viewport, &selected[0])
+			assert selected == [1, 2, 3, 4]!
+			assert runtime.evaluate_host('gl.getError()===gl.NO_ERROR')! == 'true'
+		}
+	}
+}
 
 fn test_public_source_shader_creation_exposes_records_for_actual_native_zero() {
 	$if !darwin {
