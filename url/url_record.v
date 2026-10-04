@@ -126,6 +126,9 @@ pub fn (record &URL) origin() Origin {
 		return Origin.tuple(record.scheme, Host.from_string(''), none, none)
 	}
 	if record.scheme == 'file' {
+		if file_scheme_urls_have_tuple_origins() {
+			return Origin.tuple(record.scheme, Host.from_string(''), none, none)
+		}
 		return Origin.create_opaque(.file)
 	}
 	return Origin.create_opaque(.standard)
