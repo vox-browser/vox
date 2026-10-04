@@ -343,6 +343,20 @@ the program is deleted. Four public files passed in
 passed in `source-attached-shader-record-gc-none.log`, all with GC disabled.
 Full source GC rooting and caller WrapperWorld ownership remain open.
 
+getParameter(CURRENT_PROGRAM) now returns and wraps the actual retained program
+record from `WebGLRenderingContextImpl.cpp:1046-1050`, including first exposure
+of a typed record. The source useProgram body retains the supplied program after
+the driver call even when the native call rejects an unlinked program; the
+getter therefore preserves that exact source record while a direct driver
+query still reports native binding zero. Focused typed and public cases cover
+both versions, actual pointer/label identity, repeated wrapper identity, owner
+selection, use of the first-exposed wrapper, source slot clearing on deletion,
+and rejection of later use of the invalidated record. Three typed files passed
+in `source-current-program-record-gc-none.log`; three public files passed in
+`source-current-program-record-public-gc-none.log`, all with GC disabled. This
+preserves the pinned source retention order and does not invent a driver-success
+gate. Full source GC and caller WrapperWorld ownership remain open.
+
 Buffer uploads now follow `WebGLRenderingContextOverloads.cpp:29-62`,
 `WebGL2RenderingContextOverloads.cpp:33-85`, and
 `WebGL2RenderingContextImpl.cpp:46-50`: select the owner, validate nullable data
