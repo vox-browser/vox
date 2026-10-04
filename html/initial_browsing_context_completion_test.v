@@ -6,7 +6,8 @@ import page
 fn test_source_initial_top_level_context_finishes_about_blank_and_marks_actual_settings_execution_ready() {
 	owner := page.Page.create(1)!
 	mut group := BrowsingContextGroup.create(unsafe { &dom.Page(owner) })
-	created := BrowsingContextModel.create_a_new_browsing_context_and_document(unsafe { &dom.Page(owner) }, none, none, group)!
+	created := BrowsingContextModel.create_a_new_browsing_context_and_document(unsafe { &dom.Page(owner) }, none, none)!
+	group.append(created.document.get_browsing_context()?)
 	mut document := created.document
 	defer {
 		document.finalize()
@@ -36,7 +37,8 @@ fn test_source_embedded_initial_context_finishes_without_top_level_supported_col
 	mut body_node := body.as_node()
 	body_node.append_child(iframe.as_node())!
 	mut group := BrowsingContextGroup.create(unsafe { &dom.Page(owner) })
-	created := BrowsingContextModel.create_a_new_browsing_context_and_document(unsafe { &dom.Page(owner) }, parent, iframe, group)!
+	created := BrowsingContextModel.create_a_new_browsing_context_and_document(unsafe { &dom.Page(owner) }, parent, iframe)!
+	group.append(created.document.get_browsing_context()?)
 	mut document := created.document
 	defer {
 		parent.finalize()

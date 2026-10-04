@@ -23,7 +23,9 @@ pub struct BrowsingContextGroup {
 mut:
 	page_                       &dom.Page
 	browsing_context_set_       []&dom.BrowsingContext
-	model_browsing_context_set_ []&BrowsingContextModel
+	// Older typed constructors can be appended before their native Window/BC
+	// exists. Actual initialized members live only in browsing_context_set_.
+	legacy_pending_model_members_ []&BrowsingContextModel
 	registered_                 bool
 }
 
@@ -38,15 +40,13 @@ pub fn BrowsingContextGroup.create(page &dom.Page) &BrowsingContextGroup {
 
 pub fn BrowsingContextGroup.create_a_new_browsing_context_group_and_document(page &dom.Page) !BrowsingContextGroupAndDocument {
 	mut group := BrowsingContextGroup.create(page)
-	mut document := &dom.Document{}
-	mut browsing_context := &dom.BrowsingContext{
-		active_document_: document
-	}
-	document.set_browsing_context(browsing_context)
-	group.append(browsing_context)
+	created := BrowsingContextModel.create_a_new_browsing_context_and_document(page, none, none)!
+	group.append(created.document.get_browsing_context() or {
+		panic('Source initial Document requires its actual BrowsingContext')
+	})
 	return BrowsingContextGroupAndDocument{
 		browsing_context_group: group
-		document: document
+		document: created.document
 	}
 }
 
@@ -59,33 +59,76 @@ pub fn (group &BrowsingContextGroup) browsing_context_set() []&dom.BrowsingConte
 }
 
 pub fn (group &BrowsingContextGroup) model_browsing_context_set() []&BrowsingContextModel {
-	return group.model_browsing_context_set_.clone()
+	mut result := []&BrowsingContextModel{}
+	for native in group.browsing_context_set_ {
+		if native.html_model_handle_ != unsafe { nil } {
+			result << browsing_context_model_for_native(native)
+		}
+	}
+	result << group.legacy_pending_model_members_
+	return result
 }
 
 pub fn (mut group BrowsingContextGroup) append(browsing_context &dom.BrowsingContext) {
+	mut present := false
 	for existing in group.browsing_context_set_ {
 		if voidptr(existing) == voidptr(browsing_context) {
-			return
+			present = true
+			break
 		}
 	}
-	group.browsing_context_set_ << browsing_context
+	if !present {
+		group.browsing_context_set_ << browsing_context
+	}
 	mut mutable_context := unsafe { &dom.BrowsingContext(browsing_context) }
 	mutable_context.group_handle = voidptr(&group)
+	group.synchronize_typed_member(browsing_context)
+}
+
+fn (mut group BrowsingContextGroup) synchronize_typed_member(native &dom.BrowsingContext) {
+	if native.html_model_handle_ == unsafe { nil } {
+		return
+	}
+	mut context := browsing_context_model_for_native(native)
+	context.group_ = &group
+	group.legacy_pending_model_members_ = group.legacy_pending_model_members_.filter(voidptr(it) != voidptr(context))
 }
 
 pub fn (mut group BrowsingContextGroup) append_model(browsing_context &BrowsingContextModel) {
-	for existing in group.model_browsing_context_set_ {
+	if document := browsing_context.active_document() {
+		if native := document.get_browsing_context() {
+			if native.html_model_handle_ == voidptr(browsing_context) {
+				group.append(native)
+				return
+			}
+		}
+	}
+	// Explicit compatibility for pre-native context assembly. Registration of
+	// its actual Window/native identity promotes this member into the Source set.
+	for existing in group.legacy_pending_model_members_ {
 		if voidptr(existing) == voidptr(browsing_context) {
 			return
 		}
 	}
-	group.model_browsing_context_set_ << browsing_context
+	group.legacy_pending_model_members_ << browsing_context
 	mut mutable_context := unsafe { &BrowsingContextModel(browsing_context) }
 	mutable_context.group_ = &group
 }
 
 pub fn (mut group BrowsingContextGroup) remove_model(browsing_context &BrowsingContextModel) {
-	group.model_browsing_context_set_ = group.model_browsing_context_set_.filter(voidptr(it) != voidptr(browsing_context))
+	mut index := 0
+	for index < group.browsing_context_set_.len {
+		mut native := group.browsing_context_set_[index]
+		if native.html_model_handle_ == voidptr(browsing_context) {
+			if native.group_handle == voidptr(&group) {
+				native.group_handle = unsafe { nil }
+			}
+			group.browsing_context_set_.delete(index)
+		} else {
+			index++
+		}
+	}
+	group.legacy_pending_model_members_ = group.legacy_pending_model_members_.filter(voidptr(it) != voidptr(browsing_context))
 }
 
 pub fn (mut group BrowsingContextGroup) finalize() {
@@ -98,7 +141,7 @@ pub fn (mut group BrowsingContextGroup) finalize() {
 			mutable_context.group_handle = unsafe { nil }
 		}
 	}
-	for context in group.model_browsing_context_set_ {
+	for context in group.model_browsing_context_set() {
 		mut mutable_context := unsafe { &BrowsingContextModel(context) }
 		if current_group := mutable_context.group_ {
 			if voidptr(current_group) == voidptr(&group) {
@@ -106,7 +149,8 @@ pub fn (mut group BrowsingContextGroup) finalize() {
 			}
 		}
 	}
-	group.model_browsing_context_set_.clear()
+	group.browsing_context_set_.clear()
+	group.legacy_pending_model_members_.clear()
 	html_user_agent_browsing_context_groups = html_user_agent_browsing_context_groups.filter(voidptr(it) != voidptr(&group))
 	group.registered_ = false
 }

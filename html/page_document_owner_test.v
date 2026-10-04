@@ -7,8 +7,9 @@ fn test_source_browsing_context_constructor_retains_its_own_page_before_initial_
 	mut owner := page.Page.create(1)!
 	owner.set_is_scripting_enabled(false)
 	other := page.Page.create(1)!
-	group := BrowsingContextGroup.create(unsafe { &dom.Page(other) })
-	created := BrowsingContextModel.create_a_new_browsing_context_and_document(unsafe { &dom.Page(owner) }, none, none, group)!
+	mut group := BrowsingContextGroup.create(unsafe { &dom.Page(other) })
+	created := BrowsingContextModel.create_a_new_browsing_context_and_document(unsafe { &dom.Page(owner) }, none, none)!
+	group.append(created.document.get_browsing_context()?)
 	assert voidptr(created.browsing_context.page()?) == voidptr(owner)
 	assert voidptr(created.document.page()) == voidptr(owner)
 	assert created.document.as_node().is_scripting_disabled()
@@ -19,8 +20,9 @@ fn test_source_browsing_context_constructor_retains_its_own_page_before_initial_
 fn test_source_navigation_preserves_previous_context_page_when_group_and_requested_owner_differ() {
 	mut nested_owner := page.Page.create(1)!
 	top_owner := page.Page.create(1)!
-	group := BrowsingContextGroup.create(unsafe { &dom.Page(top_owner) })
-	created := BrowsingContextModel.create_a_new_browsing_context_and_document(unsafe { &dom.Page(nested_owner) }, none, none, group)!
+	mut group := BrowsingContextGroup.create(unsafe { &dom.Page(top_owner) })
+	created := BrowsingContextModel.create_a_new_browsing_context_and_document(unsafe { &dom.Page(nested_owner) }, none, none)!
+	group.append(created.document.get_browsing_context()?)
 	nested_owner.set_is_scripting_enabled(false)
 	url := dom.URL{'https://nested.example/next'}
 	replacement := create_navigation_document_for_page(url, url.origin(), created.document, unsafe { &dom.Page(top_owner) })!

@@ -168,7 +168,8 @@ fn test_browsing_context_exact_creation_and_traversable_access() {
 	mut group := BrowsingContextGroup.create(page)
 	creator := dom.Document.create(dom.URL{ value: 'https://example.test/creator' })
 	created := BrowsingContextModel.create_a_new_browsing_context_and_document(page, creator,
-		none, group)!
+		none)!
+	group.append(created.document.get_browsing_context()?)
 	assert created.document.is_html_document()
 	assert created.document.origin().is_same_origin(creator.origin())
 	assert created.document.document_element() != none
@@ -194,7 +195,8 @@ fn test_new_browsing_context_propagates_embedder_sandbox_flags() {
 	mut iframe_element := creator.create_element_ns(namespace_html, 'iframe') or { panic(err) }
 	iframe_element.set_attribute_value('sandbox', 'allow-scripts')
 	created := BrowsingContextModel.create_a_new_browsing_context_and_document(page, creator,
-		iframe_element, group)!
+		iframe_element)!
+	group.append(created.document.get_browsing_context()?)
 	assert created.document.active_sandboxing_flag_bits() & u32(SandboxingFlag.sandboxed_origin) != 0
 	assert created.document.active_sandboxing_flag_bits() & u32(SandboxingFlag.sandboxed_scripts) == 0
 	assert !created.document.origin().is_same_origin(creator.origin())
@@ -286,10 +288,10 @@ fn test_window_core_relations_close_animation_and_post_message() {
 
 fn test_new_browsing_context_document_records_its_navigation_start_as_the_time_origin() {
 	page_ := &dom.Page{}
-	group := BrowsingContextGroup.create(page_)
+	mut group := BrowsingContextGroup.create(page_)
 	before := highresolutiontime.unsafe_shared_current_time()
-	created := BrowsingContextModel.create_a_new_browsing_context_and_document(page_, none, none,
-		group)!
+	created := BrowsingContextModel.create_a_new_browsing_context_and_document(page_, none, none)!
+	group.append(created.document.get_browsing_context()?)
 	after := highresolutiontime.unsafe_shared_current_time()
 	navigation_start := created.document.load_timing_info.navigation_start_time
 	assert navigation_start >= highresolutiontime.coarsen_time(before, false)

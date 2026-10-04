@@ -575,7 +575,7 @@ pub fn BrowsingContextModel.create_for_page(page &dom.Page, parent ?&BrowsingCon
 	return context
 }
 
-pub fn BrowsingContextModel.create_a_new_browsing_context_and_document(page &dom.Page, creator ?&dom.Document, embedder ?&dom.Element, group &BrowsingContextGroup) !BrowsingContextAndDocument {
+pub fn BrowsingContextModel.create_a_new_browsing_context_and_document(page &dom.Page, creator ?&dom.Document, embedder ?&dom.Element) !BrowsingContextAndDocument {
 	context := BrowsingContextModel.create_for_page(page, none, '')
 
 	// 2. Let unsafeContextCreationTime be the unsafe shared current time.
@@ -618,8 +618,6 @@ pub fn BrowsingContextModel.create_a_new_browsing_context_and_document(page &dom
 	document.make_active()
 	document.completely_finish_loading()
 	mutable_context.set_active_document(document)
-	mut mutable_group := unsafe { &BrowsingContextGroup(group) }
-	mutable_group.append_model(context)
 	return BrowsingContextAndDocument{
 		browsing_context: context
 		document: document
@@ -633,10 +631,14 @@ pub fn BrowsingContextModel.create_a_new_auxiliary_browsing_context_and_document
 	group := top.group_ or {
 		return error('InvalidStateError: opener top-level browsing context has no group')
 	}
-	result := BrowsingContextModel.create_a_new_browsing_context_and_document(page, opener.active_document(), none, group)!
+	result := BrowsingContextModel.create_a_new_browsing_context_and_document(page, opener.active_document(), none)!
 	mut context := result.browsing_context
-	context.set_opener(opener)
 	context.is_auxiliary_ = true
+	mut mutable_group := unsafe { &BrowsingContextGroup(group) }
+	mutable_group.append(result.document.get_browsing_context() or {
+		panic('Source auxiliary Document requires its actual BrowsingContext')
+	})
+	context.set_opener(opener)
 	context.top_level_traversable_ = top.top_level_traversable_
 	return result
 }
@@ -678,6 +680,10 @@ fn (context &BrowsingContextModel) register_native_identity(native &dom.Browsing
 		panic('Native BrowsingContext belongs to another actual HTML model identity')
 	}
 	mutable_native.html_model_handle_ = voidptr(context)
+	if group := context.group_ {
+		mut mutable_group := unsafe { &BrowsingContextGroup(group) }
+		mutable_group.append(native)
+	}
 }
 
 fn browsing_context_model_for_native(native &dom.BrowsingContext) &BrowsingContextModel {
