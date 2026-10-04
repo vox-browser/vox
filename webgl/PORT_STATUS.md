@@ -162,6 +162,32 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+getProgramInfoLog now keeps actual owner selection after its Source handle
+gate. Impl.cpp:1817-1836 validates the program handle and returns nullable
+failure with INVALID_OPERATION before issuing a query. Its Proxy prefix is
+empty; the V regular native programiv length/log helper already selects its
+actual driver at sync dispatch. The unconditional native prefix is removed,
+while the existing regular length query, empty-string return, bytes excluding
+the terminating null, and stored native name remain unchanged.
+
+The two-version native/public cases preserve Other's viewport and pending
+native error for foreign/deleted early returns, distinguish null failure from
+an owned empty string, and validate public nonnullable/forged-brand TypeErrors
+before any owner change. A failed native link outside V supplies a nonempty
+actual program log, read independently through direct driver calls and matched
+exactly by the Source getter. Thus this owner repair retains real diagnostic
+readback rather than a status/log mirror.
+
+Two typed files pass in
+`Build/audit-fixes/source-program-diagnostic-owner-native-gc-none.log`; two
+public files pass in
+`Build/audit-fixes/source-program-diagnostic-owner-public-gc-none.log`, including
+existing shader/program diagnostic neighbors. All use GC disabled and explicit
+private paths. Program parameter CPU gates, its distinct robust ABI and lost
+initialized program outputs remain separate features. The regular diagnostic
+query is deliberately preserved. Remote maps, GC/WrapperWorld and canonical
+bundle/full-sweep evidence remain outside this focused native/JSC result.
+
 isProgram now preserves the generated GLboolean false default after loss.
 GLFunctions.json:2802-2813 classifies glIsProgram as sync; its exact generated
 Proxy sends the request then returns {} if lost before decoding the return
