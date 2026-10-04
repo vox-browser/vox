@@ -249,6 +249,7 @@ fn (mut context OpenGLContext) native_sync_parameter(handle voidptr, pname GLenu
 
 fn (mut context OpenGLContext) native_shader_parameter(handle GLuint, pname GLenum) int {
 	context.make_current()
+	if !context.current_ { return 0 }
 	result := C.vox_gl_shader_parameter(handle, pname)
 	return result
 }
@@ -257,6 +258,7 @@ fn (mut context OpenGLContext) native_shader_parameter(handle GLuint, pname GLen
 // its source/log length queries retain regular get_shaderiv separately.
 fn (mut context OpenGLContext) native_shader_parameter_robust(handle GLuint, pname GLenum) int {
 	context.make_current()
+	if !context.current_ { return 0 }
 	return C.vox_gl_shader_parameter_robust(handle, pname)
 }
 
