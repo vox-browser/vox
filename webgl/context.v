@@ -630,7 +630,10 @@ pub fn (mut context WebGLRenderingContext) get_uniform_location(mut program WebG
 		return none
 	}
 	context.native.make_current()
-	native_location := C.vox_gl_uniform_location(program.object.native_handle_, name.str)
+	// Generated Source sync returns GLint{} after loss, then constructs the owned record.
+	native_location := if context.native.current_ {
+		C.vox_gl_uniform_location(program.object.native_handle_, name.str)
+	} else { 0 }
 	if native_location == -1 { return none }
 	location := &WebGLUniformLocation{
 		handle_: GLuint(native_location)
