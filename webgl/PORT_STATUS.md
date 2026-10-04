@@ -313,6 +313,21 @@ owner selection before a failed source span. Other upload overloads, upstream
 TexImageSource TODOs, remote transport and complete LibJS ownership remain
 separate boundaries.
 
+Compressed uploads now preserve the initial owning-context selection and exact
+source validation order in `WebGLRenderingContextOverloads.cpp:64-96`,
+`WebGL2RenderingContextOverloads.cpp:200-229`, and
+`WebGL2RenderingContextImpl.cpp:1352-1380`: reject disabled formats, validate
+the input witness/span, then delegate geometry and target errors to GL. The
+invented 2D dimension/border checks were removed; all four compact methods
+select the owner before host-side format/span failures. The new typed source
+file and existing native compressed sampling/layer file passed with GC disabled
+in `source-compressed-upload-gc-none.log` (two files). The actual public source
+case passed in `source-compressed-upload-public-gc-none.log`, including source
+format-before-span precedence, owner selection and competing native errors.
+The installed ANGLE compressed ABI adaptation below remains unchanged; this
+slice translates source validation/delegation and does not claim unavailable
+robust entry points or remote command transport.
+
 Material platform adaptations are explicit: painting uses CPU readback into the
 retained bitmap instead of upstream IOSurface/Vulkan shared-image handoff;
 ANGLE builds lacking compressed robust entry points use the matching GLES call
