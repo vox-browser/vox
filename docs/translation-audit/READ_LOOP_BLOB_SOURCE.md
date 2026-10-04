@@ -163,3 +163,15 @@ test verifies actual engine record identity and independent mutation of the
 returned buffer, original read-all buffer and immutable Blob bytes. The focused
 file passes both GC modes in `source-blob-array-buffer-{default,gc-none}.log`.
 This owning algorithm does not install a native public Blob method by itself.
+
+`FileAPI/Blob.cpp:409-419` maps to `html/blob_bytes.v`. The Source fulfillment
+reaction constructs a genuine relevant-realm Uint8Array over the exact
+read-all ArrayBuffer; it performs no second buffer allocation or copy. This
+path requires the actual engine Realm hook, which asserts the ArrayBuffer
+class and uses the engine intrinsic view allocator. The focused native test
+verifies one buffer allocation, exact `.buffer` identity, shared mutation,
+immutable Blob bytes and distinct empty NewObject results even after author
+constructor/getter replacement. It passes both GC modes in
+`source-blob-bytes-default-final.log` and `source-blob-bytes-gc-none.log`.
+Native public Blob/File/FileList methods and complete byte-controller backing
+identity remain separate work.
