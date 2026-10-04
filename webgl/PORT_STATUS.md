@@ -137,6 +137,27 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+getRenderbufferParameter now keeps the ten accepted Source pname cases from
+pinned WebGLRenderingContextImpl.cpp:1838-1862 ahead of native owner selection.
+Unknown names return null/INVALID_ENUM before a query, even with an invalid
+target. Accepted names still select the actual owning driver and forward the
+original target to glGetRenderbufferParameterivRobustANGLE, preserving the
+initialized GLint result and native target/binding error. Source RENDERBUFFER_
+SAMPLES remains accepted by this body in both versions; GL owns any underlying
+version error. Its generated sync operation is GLFunctions.json:2237 and
+Host execute_sync_call supplies the actual native owner, not the empty Proxy
+make_current prefix. No retained binding validation or numeric cache is added.
+
+Both-version native/public witnesses compare all ten names for valid and
+invalid targets using actual driver-only renderbuffer bindings and output/error
+baselines, early owner preservation and genuine driver error priority. Native
+checks also compare an unbound query; public conversion throws precede entry.
+The two native renderbuffer getter/storage and two corresponding public files
+passed with GC disabled. Logs are
+`Build/audit-fixes/source-renderbuffer-getter-owner-gc-none.log` and
+`Build/audit-fixes/source-renderbuffer-getter-owner-public/` in the second
+private worktree. The texture extension/version gates remain a separate slice.
+
 getBufferParameter now preserves the genuine pname gate in pinned
 WebGLRenderingContextImpl.cpp:906-930 before actual driver selection. Unknown
 names return null/INVALID_ENUM with another actual context still current,
@@ -154,7 +175,8 @@ entry. The two native buffer/vertex-getter and two corresponding public files
 passed with GC disabled. Logs are
 `Build/audit-fixes/source-buffer-getter-owner-gc-none.log` and
 `Build/audit-fixes/source-buffer-getter-owner-public/` in the second private
-worktree. Renderbuffer and texture query gates remain separate Source slices.
+worktree. Renderbuffer query gates are verified above; texture gates remain a
+separate Source slice.
 
 getVertexAttrib now preserves the absence of a context-selection prefix in
 pinned WebGLRenderingContextImpl.cpp:2026-2098. Unknown names, WebGL1's integer
