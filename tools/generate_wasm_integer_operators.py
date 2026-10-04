@@ -14,6 +14,7 @@ SHIFT_NAMES = ("BitShiftLeft", "BitShiftRight")
 COMPARISON_NAMES = ("Equals", "NotEquals", "LessThan", "GreaterThan", "LessThanOrEquals", "GreaterThanOrEquals")
 ARITHMETIC_NAMES = ("Add", "Subtract", "Multiply", "BitAnd", "BitOr", "BitXor")
 FLOAT_ARITHMETIC_NAMES = ("Add", "Subtract", "Multiply", "Divide")
+FLOAT_EXTREMA_NAMES = ("Minimum", "Maximum", "CopySign")
 
 BINARY_DRIVER = r"""
 #include <bit>
@@ -345,6 +346,54 @@ int main()
 }
 """
 
+FLOAT_EXTREMA_DRIVER = r"""
+#include <bit>
+#include <stdio.h>
+#include <stdint.h>
+
+template<typename T> void float_extrema_result(char const* name, u64 lhs, u64 rhs, T value)
+{
+    u64 bits;
+    if constexpr (sizeof(T) == sizeof(u32))
+        bits = std::bit_cast<u32>(value);
+    else
+        bits = std::bit_cast<u64>(value);
+    printf("%s\t%016llx\t%016llx\t%016llx\n", name,
+        (unsigned long long)lhs, (unsigned long long)rhs, (unsigned long long)bits);
+}
+int main()
+{
+    using namespace Wasm::Operators;
+    u32 const inputs32[] = {0, 0x80000000U, 0x3f800000U, 0xbf800000U,
+        1, 0x007fffffU, 0x00800000U, 0x7f7fffffU, 0x7f800000U, 0xff800000U,
+        0x7fc12345U, 0xffc54321U, 0x7f812345U, 0xff854321U, 0x3f000000U, 0xbf000000U};
+    u64 const inputs64[] = {0, 0x8000000000000000ULL, 0x3ff0000000000000ULL,
+        0xbff0000000000000ULL, 1, 0x000fffffffffffffULL, 0x0010000000000000ULL,
+        0x7fefffffffffffffULL, 0x7ff0000000000000ULL, 0xfff0000000000000ULL,
+        0x7ff8123456789abcULL, 0xfff8543210abcdefULL,
+        0x7ff0123456789abcULL, 0xfff0543210abcdefULL,
+        0x3fe0000000000000ULL, 0xbfe0000000000000ULL};
+    for (auto lhs : inputs32) {
+        for (auto rhs : inputs32) {
+            auto left = std::bit_cast<float>(lhs);
+            auto right = std::bit_cast<float>(rhs);
+            float_extrema_result("min_f32", lhs, rhs, Minimum{}(left, right));
+            float_extrema_result("max_f32", lhs, rhs, Maximum{}(left, right));
+            float_extrema_result("copysign_f32", lhs, rhs, CopySign{}(left, right));
+        }
+    }
+    for (auto lhs : inputs64) {
+        for (auto rhs : inputs64) {
+            auto left = std::bit_cast<double>(lhs);
+            auto right = std::bit_cast<double>(rhs);
+            float_extrema_result("min_f64", lhs, rhs, Minimum{}(left, right));
+            float_extrema_result("max_f64", lhs, rhs, Maximum{}(left, right));
+            float_extrema_result("copysign_f64", lhs, rhs, CopySign{}(left, right));
+        }
+    }
+}
+"""
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -352,7 +401,7 @@ def main():
     parser.add_argument("--build-dir", type=Path)
     parser.add_argument("--compiler", default="clang++")
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--family", choices=("binary", "unary", "shift", "comparison", "arithmetic", "floating", "float_arithmetic"), default="binary")
+    parser.add_argument("--family", choices=("binary", "unary", "shift", "comparison", "arithmetic", "floating", "float_arithmetic", "float_extrema"), default="binary")
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
     upstream = args.upstream.resolve()
@@ -371,6 +420,7 @@ def main():
         "arithmetic": (ARITHMETIC_NAMES, ARITHMETIC_DRIVER, 1728, "arithmetic_integer_operators.tsv"),
         "floating": (COMPARISON_NAMES, FLOAT_COMPARISON_DRIVER, 3072, "comparison_float_operators.tsv"),
         "float_arithmetic": (FLOAT_ARITHMETIC_NAMES, FLOAT_ARITHMETIC_DRIVER, 2048, "arithmetic_float_operators.tsv"),
+        "float_extrema": (FLOAT_EXTREMA_NAMES, FLOAT_EXTREMA_DRIVER, 1536, "extrema_float_operators.tsv"),
     }
     names, driver, expected_count, filename = families[args.family]
     if args.family in ("comparison", "arithmetic", "floating", "float_arithmetic"):
@@ -393,10 +443,13 @@ def main():
     # Only the selected verbatim Source records are needed. This avoids unrelated
     # LibWasm Types/LibSync generated exports; AK headers remain the actual source.
     generated = "#include <limits.h>\n#include <AK/Checked.h>\n#include <AK/BuiltinWrappers.h>\n#include <AK/Error.h>\n#include <AK/StringView.h>\n"
+    if args.family == "float_extrema":
+        generated += "#include <AK/Math.h>\n#include <math.h>\n"
     generated += "namespace Wasm::Operators {\n" + "\n\n".join(excerpts) + "\n}\n" + driver
     work = repo / "Build/audit-fixes" / ("wasm-integer-operators" if args.family == "binary"
                                        else "wasm-floating-comparison-operators" if args.family == "floating"
                                        else "wasm-floating-arithmetic-operators" if args.family == "float_arithmetic"
+                                       else "wasm-floating-extrema-operators" if args.family == "float_extrema"
                                        else "wasm-" + args.family + "-integer-operators")
     work.mkdir(parents=True, exist_ok=True)
     cpp = work / "source.cpp"
