@@ -458,18 +458,12 @@ pub fn (mut context WebGLRenderingContext) renderbuffer_storage_multisample(targ
 }
 
 pub fn (mut context WebGLRenderingContext) tex_storage2d(target GLenum, levels int, internal_format GLenum, width int, height int) {
-	if levels <= 0 || width <= 0 || height <= 0 {
-		context.set_error(invalid_value)
-		return
-	}
+	context.native.make_current()
 	context.webgl2_command('tex_storage2d', target, levels, internal_format, width, height)
 }
 
 pub fn (mut context WebGLRenderingContext) tex_storage3d(target GLenum, levels int, internal_format GLenum, width int, height int, depth int) {
-	if levels <= 0 || width <= 0 || height <= 0 || depth <= 0 {
-		context.set_error(invalid_value)
-		return
-	}
+	context.native.make_current()
 	context.webgl2_command('tex_storage3d', target, levels, internal_format, width, height, depth)
 }
 
