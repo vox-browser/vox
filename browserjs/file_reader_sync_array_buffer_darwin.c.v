@@ -22,3 +22,12 @@ pub fn (mut runtime Runtime) javascript_file_reader_sync_binary_string(reader &f
 	raw := result.string_utf16_record() or { panic('Source VERIFY: FileReaderSync BinaryString requires its UTF16 result') }
 	return runtime.javascript_utf16_string(raw)
 }
+
+// Source's DataURL return retains the unchecked ASCII owner's code units at
+// the primitive ABI, independently of its diagnostic/raw UTF8 byte projection.
+pub fn (mut runtime Runtime) javascript_file_reader_sync_data_url(reader &fileapi.FileReaderSync, blob &fileapi.Blob) !voidptr {
+	runtime.require_javascript_value_context()!
+	result := reader.read_as(blob, .data_url, none)!
+	raw := result.string_utf16_record() or { panic('Source VERIFY: FileReaderSync DataURL requires its UTF16 result') }
+	return runtime.javascript_utf16_string(raw)
+}
