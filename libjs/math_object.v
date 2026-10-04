@@ -1,7 +1,10 @@
 module libjs
 
 import math
-import rand
+
+#include "@DIR/math_random_entropy.h"
+
+fn C.vox_ak_random_seed_u64() u64
 
 // Runtime/MathObject.{h,cpp}. Native numeric approximations use the same libm
 // operations as upstream; coercion, signed-zero and exceptional branches stay
@@ -44,6 +47,14 @@ mut:
 __global math_random_generator = &MathXorShift128Plus{}
 __global math_random_initialized bool
 
+// AK/Random.cpp's constructor obtains two independent native CSPRNG draws.
+fn (mut rng MathXorShift128Plus) initialize() {
+	first := C.vox_ak_random_seed_u64()
+	rng.low = math_splitmix64(first)
+	second := C.vox_ak_random_seed_u64()
+	rng.high = math_splitmix64(second)
+}
+
 fn math_splitmix64(value u64) u64 {
 	mut z := value + u64(0x9e3779b97f4a7c15)
 	z = (z ^ (z >> 30)) * u64(0xbf58476d1ce4e5b9)
@@ -65,8 +76,7 @@ fn (mut rng MathXorShift128Plus) advance() u64 {
 
 fn math_random() Value {
 	if !math_random_initialized {
-		math_random_generator.low = math_splitmix64(rand.u64())
-		math_random_generator.high = math_splitmix64(rand.u64())
+		math_random_generator.initialize()
 		math_random_initialized = true
 	}
 	value := math_random_generator.advance() & ((u64(1) << 53) - 1)
