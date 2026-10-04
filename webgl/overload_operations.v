@@ -584,11 +584,6 @@ pub fn (mut context WebGLRenderingContext) vertex_attrib_divisor(index GLuint, d
 	if !context.require_webgl2() {
 		return
 	}
-	state := context.vertex_attrib_states_[index] or { VertexAttribState{} }
-	context.vertex_attrib_states_[index] = VertexAttribState{
-		...state
-		divisor: divisor
-	}
 	context.command('vertex_attrib_divisor', index, divisor)
 }
 

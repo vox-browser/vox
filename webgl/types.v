@@ -408,18 +408,6 @@ pub:
 	precision int
 }
 
-pub struct VertexAttribState {
-pub:
-	buffer_handle GLuint
-	size          int = 4
-	type_         GLenum = gl_float
-	normalized    bool
-	stride        int
-	offset        i64
-	integer       bool
-	divisor       GLuint
-}
-
 // WebGL2 uniform/block reflection enums from WebGL2RenderingContext.idl.
 pub const uniform_type = GLenum(0x8a37)
 pub const uniform_size = GLenum(0x8a38)

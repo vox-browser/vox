@@ -58,7 +58,6 @@ mut:
 	unpack_premultiply_alpha_           bool
 	unpack_colorspace_conversion_       GLenum = browser_default_webgl
 	unpack_state_                       PixelUnpackState = PixelUnpackState{}
-	vertex_attrib_states_               map[GLuint]VertexAttribState
 }
 
 pub fn WebGLRenderingContext.new(version WebGLVersion, attributes WebGLContextAttributes, supported_native_extensions []string) &WebGLRenderingContext {
