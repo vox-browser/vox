@@ -10,6 +10,7 @@ module bindings
 
 import dom
 import html
+import libjs
 
 pub enum PropertyKeyKind {
 	string
@@ -311,9 +312,14 @@ fn js_values_same(left dom.JSValue, right dom.JSValue) bool {
 	return match left.kind {
 		.undefined, .null_ { true }
 		.boolean { left.boolean_data == right.boolean_data }
-		.number { left.number_data == right.number_data }
-		.string { left.string_data == right.string_data }
+		.number { libjs.same_value(libjs.Value.from_f64(left.number_data), libjs.Value.from_f64(right.number_data)) }
+		.string { (left.string_utf16_ or { libjs.utf16_string(left.string_data) }) == (right.string_utf16_ or { libjs.utf16_string(right.string_data) }) }
 		.object { left.object_data == right.object_data }
+		.runtime_value {
+			// Source SameValue cannot run author code or throw. Missing owner
+			// hooks are an internal invariant failure, never invented equality.
+			left.native_same_value(right) or { panic(err) }
+		}
 	}
 }
 
