@@ -1235,11 +1235,7 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 		}
 		state.set_document(document)
 		if context := model.context_ {
-			if document.get_browsing_context() == none {
-				document.set_browsing_context(&dom.BrowsingContext{
-					active_document_: document
-				})
-			}
+			context.associate_native_identity_with_document(document)
 			mut mutable_context := unsafe { &BrowsingContextModel(context) }
 			mutable_context.set_active_document(document)
 			// Upstream creates the Window and its environment settings before
@@ -1280,13 +1276,8 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 		state.ever_populated = true
 	}
 	document := state.document or { return }
-	mut mutable_document := unsafe { &dom.Document(document) }
 	if context := model.context_ {
-		if document.get_browsing_context() == none {
-			mutable_document.set_browsing_context(&dom.BrowsingContext{
-				active_document_: document
-			})
-		}
+		context.associate_native_identity_with_document(document)
 		mut mutable_context := unsafe { &BrowsingContextModel(context) }
 		mutable_context.set_active_document(document)
 		if !installed_window_before_load {

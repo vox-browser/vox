@@ -490,6 +490,9 @@ pub fn (location &LocationModel) reload_count() u32 {
 pub struct BrowsingContextModel {
 mut:
 	page_                      ?&dom.Page
+	// Retain the same actual native identity independently of the active
+	// Document slot. Source BC-owned metadata lives on this native owner.
+	native_browsing_context_    ?&dom.BrowsingContext
 	document_                  ?&dom.Document
 	window_proxy_              ?&WindowProxyModel
 	group_                     ?&BrowsingContextGroup
@@ -679,6 +682,13 @@ fn (context &BrowsingContextModel) register_native_identity(native &dom.Browsing
 		&& mutable_native.html_model_handle_ != voidptr(context) {
 		panic('Native BrowsingContext belongs to another actual HTML model identity')
 	}
+	if existing := context.native_browsing_context_ {
+		if voidptr(existing) != voidptr(native) {
+			panic('HTML BrowsingContext already owns another actual native identity')
+		}
+	}
+	mut mutable_context := unsafe { &BrowsingContextModel(context) }
+	mutable_context.native_browsing_context_ = native
 	mutable_native.html_model_handle_ = voidptr(context)
 	if group := context.group_ {
 		mut mutable_group := unsafe { &BrowsingContextGroup(group) }
@@ -691,6 +701,25 @@ fn browsing_context_model_for_native(native &dom.BrowsingContext) &BrowsingConte
 		panic('Native BrowsingContext has no actual HTML model identity')
 	}
 	return unsafe { &BrowsingContextModel(native.html_model_handle_) }
+}
+
+// Document.cpp create_and_initialize and initial BC construction associate
+// the Document with the supplied actual context. Missing per-Document slots
+// reuse its retained owner; only the explicit first-construction adapter
+// allocates the native representation of this already-created typed context.
+fn (context &BrowsingContextModel) associate_native_identity_with_document(document &dom.Document) {
+	mut mutable_document := unsafe { &dom.Document(document) }
+	if document.get_browsing_context() == none {
+		native := context.native_browsing_context_ or {
+			&dom.BrowsingContext{
+				active_document_: document
+			}
+		}
+		mutable_document.set_browsing_context(native)
+	}
+	context.register_native_identity(document.get_browsing_context() or {
+		panic('Source Window construction requires its native BrowsingContext')
+	})
 }
 
 // The typed context and Document's native context describe the same source
@@ -1508,15 +1537,7 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 
 fn WindowModel.create_with_global(document &dom.Document, context &BrowsingContextModel, existing_global ?&WindowModel) !&WindowModel {
 	mut document_with_html_hooks := unsafe { &dom.Document(document) }
-	if document.get_browsing_context() == none {
-		mut mutable_document := unsafe { &dom.Document(document) }
-		mutable_document.set_browsing_context(&dom.BrowsingContext{
-			active_document_: document
-		})
-	}
-	context.register_native_identity(document.get_browsing_context() or {
-		panic('Source Window construction requires its native BrowsingContext')
-	})
+	context.associate_native_identity_with_document(document)
 	if document.cached_navigable() == none {
 		mut node_navigable := &dom.Navigable{
 			active_document_: document

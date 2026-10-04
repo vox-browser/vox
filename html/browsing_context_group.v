@@ -95,6 +95,10 @@ fn (mut group BrowsingContextGroup) synchronize_typed_member(native &dom.Browsin
 }
 
 pub fn (mut group BrowsingContextGroup) append_model(browsing_context &BrowsingContextModel) {
+	if native := browsing_context.native_browsing_context_ {
+		group.append(native)
+		return
+	}
 	if document := browsing_context.active_document() {
 		if native := document.get_browsing_context() {
 			if native.html_model_handle_ == voidptr(browsing_context) {
