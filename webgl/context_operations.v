@@ -877,6 +877,9 @@ pub fn (mut context WebGLRenderingContext) is_program(value ?&WebGLProgram) bool
 	object := value or { return false }
 	context.object_handle_for_query(&object.object) or { return false }
 	context.native.make_current()
+	// Source's generated Boolean sync query returns its initialized default
+	// when lost, without dispatching to any other current native context.
+	if !context.native.current_ { return false }
 	return C.vox_gl_is_object(10,object.object.native_handle_) == 1
 }
 
