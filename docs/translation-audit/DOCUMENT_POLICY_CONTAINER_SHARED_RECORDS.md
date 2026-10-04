@@ -76,3 +76,16 @@ initialization and SourceSnapshot policy cloning also still use the existing
 settings-based helper rather than Source's own Document container; their exact
 own-Document caller fixes will follow the settings routing feature. No complete
 policy-container or document initialization parity is claimed.
+
+Canonical integration (`3006c89b`) passes the new Document owner, native
+navigation initialization, retained SourceSnapshot, environment serialization
+and actual Meta files with GC disabled. The six-file run retained an independent
+failure in the old history clone fixture: it expected bare IPC null/undefined
+tags although canonical `528ae74e` had already translated Source's owning storage
+defaults. Source `SessionHistoryEntry.cpp:42–44` constructs the distinct
+StorageSerializationRecords. The separate fixture commit `30e5d944` checks
+cloned storage kinds, exact retained bytes and decoded null/undefined values.
+It and the existing storage-record neighbor pass 2/2 GC-none. Original and
+corrected logs are `source-document-policy-owner-canonical-gc-none.log` and
+`source-policy-history-storage-default-canonical-gc-none.log`; the first is
+5/6 rather than a clean six-file sweep.
