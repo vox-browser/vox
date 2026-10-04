@@ -644,8 +644,9 @@ Actual Configuration regressions verify signedness, cleared result high bits
 and retained trap/source/destination state. The file passes default GC
 privately and canonically; comparison/shift/helper files pass **3/3** privately
 and canonically with GC disabled. That comparison snapshot has 85 test files; no full
-85-file sweep is claimed. Floating/SIMD comparisons and production dispatch
-remain untranslated. See [Source mapping](../docs/translation-audit/WASM_INTEGER_COMPARISONS.md).
+85-file sweep is claimed. The later floating comparison slice is recorded
+below; SIMD comparisons and production dispatch remain untranslated.
+See [Source mapping](../docs/translation-audit/WASM_INTEGER_COMPARISONS.md).
 
 ## Source wrapping arithmetic and bitwise operators
 
@@ -655,6 +656,20 @@ bitwise operand types. All match **1,728 exact native C++ cases** from
 `8eca94c1`; actual numeric-helper regressions verify signed PushType writes,
 wrapping and cleared high bits. The new file passes default GC privately;
 arithmetic/comparison/helper files pass **3/3** privately and canonically
-with GC disabled. The package has 86 test files, without a full 86-file
-sweep claim. Production dispatch and floating/SIMD operations remain pending.
+with GC disabled. That arithmetic snapshot has 86 test files, without a full
+86-file sweep claim. Production dispatch and remaining floating/SIMD operations
+remain pending.
 See [Source arithmetic mapping](../docs/translation-audit/WASM_INTEGER_ARITHMETIC.md).
+
+## Source scalar floating comparisons
+
+`a1cf813d` translates twelve float/double comparison specializations from the
+six Source macro records. All match **3,072 exact native C++ cases** from
+`606791b9`, retaining NaN, signed-zero, infinity and subnormal behavior.
+Actual numeric-helper regressions write Source i32 results and preserve
+operand/trap state. Default GC passes privately; floating/integer comparison
+and helper files pass **3/3** privately and canonically with GC disabled.
+The package now has 87 test files, without a full 87-file sweep claim.
+Remaining scalar/SIMD operators, production opcode dispatch, instantiation and
+collector/realm ownership remain open.
+See [Source comparison mapping](../docs/translation-audit/WASM_FLOAT_COMPARISONS.md).

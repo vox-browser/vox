@@ -27,6 +27,7 @@ i32 result records with cleared high bits, preserved RHS/destination, empty
 operand stack and unchanged pre-existing trap.
 
 These are operator/helper translations, with no substitute instruction
-dispatcher. Floating comparisons, remaining scalar/SIMD operations, complete
-opcode execution, instantiation and roots stay open. This adds the 85th test
+dispatcher. Floating comparisons were subsequently translated in `a1cf813d`;
+remaining scalar/SIMD operations, complete opcode execution, instantiation and
+roots stay open. This adds the 85th test
 file; the earlier clean 83-file private sweep predates shifts and comparisons.
