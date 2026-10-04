@@ -35,7 +35,8 @@ mut:
 // The private `File(realm, byte_buffer, file_name, type, last_modified)` constructor: build a File
 // directly from its byte sequence, name, type and lastModified time.
 pub fn File.create(byte_buffer []u8, file_name string, type_ string, last_modified i64) &File {
-	return File.create_utf16(byte_buffer, libjs.utf16_string(file_name), libjs.utf16_string(type_), last_modified)
+	return File.create_utf16(byte_buffer, libjs.utf16_string_from_utf8_without_validation(file_name),
+		libjs.utf16_string_from_utf8_without_validation(type_), last_modified)
 }
 
 // File.cpp's direct source field constructor and deserialization own actual
