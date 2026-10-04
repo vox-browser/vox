@@ -267,3 +267,55 @@ not claim native TextDecoder holders, branded BufferSource/shared copies,
 actual realm/string wrappers, physical allocator/OOM parity or real
 TransformStream/controller ownership. Other multibyte labels retain their
 previous compatibility adapter. No LibJS code or native browser bundle changes.
+
+## Same raw variant's direct UTF16 destination
+
+Feature `4c22c75ab9c03262298e5dc4a1109303b5a623c3` translates the second actual
+expansion of Source's shared Shift_JIS decoder body, `macros.rs:324–340`, using
+`Utf16Destination` with the **same** `ShiftJisDecoder.lead` record. Source's
+trail/table priority and ASCII unread/malformed ordering remain the actual
+`shift_jis.rs:51–172` body already mapped above. Source's destination checks
+one available BMP code unit (`handles.rs:590–596`), writes exactly that unit
+(`:612–640`) and widens ASCII through its basic-Latin copying loop
+(`:660–697`). The V method preserves those checks and direct unit writes.
+It does not decode to UTF8 first or construct a second independent lead slot.
+
+The pre-implementation native probe observes the actual missing destination:
+a whole `82 a0` can fit U+3042 in one UTF16 output unit, while the UTF8 body
+requires its original three-byte BMP handle. This is a missing destination
+body/capacity contract; the preceding Common repair already gives the correct
+basic typed string and is not presented as a new public value defect.
+`source-shift-jis-utf16-raw-before-implementation.log` retains that native run.
+
+Tool `50de2abb` validates the original Source pin/archive/configuration and
+prior raw prerequisites, then calls unchanged original raw UTF16 and UTF8
+methods on genuine retained records. Debug/release each observe all 65,536
+byte pairs with capacities 1/4, whole and three retained split calls: 524,288
+exact result/counter/lead/code-unit records. The little-endian binary fixture
+stores seven header bytes plus four padded u16 payload units; assertions only
+compare the genuinely reported written units. It additionally observes 290
+short-output sequences / 870 calls (capacities 0–4) and 232 alternating UTF8 /
+UTF16 sequences / 696 calls on the same actual decoder. The original three
+state / 27 capacity fixture is reproduced identically and is not duplicated.
+
+Focused default, GC-none and production GC-none each pass 1/1 in
+`source-shift-jis-utf16-raw-focused-*.log`. Every native record also executes
+with nonzero input/output base offsets on the original V owners and preserves
+prefix units. Mixed destination tests compare genuine counters, normalized
+lead and native UTF8 bytes or direct UTF16 units after every call.
+
+- `shift_jis_utf16_raw_pairs.bin` SHA256:
+  `445a0b517f7f11dd1ae44b5cc4f6a24496679d07161fe67d3eabc1d226372d62`.
+- `shift_jis_utf16_raw_edges.json`:
+  `d7d0b7c95e23b2620b8bb957557b6af320b80afe82e855cb32081a7c5cbf7563`.
+- `shift_jis_raw_mixed_destinations.json`:
+  `ffc37a07cdeb4e7d67827e20626ae26382298ed629acd61bd186e4b947841d84`.
+- Final actual Source native probe log:
+  `c96078691568c300764ee46f58863d379265db835ec9b354274f45b91863173a`.
+
+The outer UTF16 replacement/capacity/lifecycle owner, original owned u16 FFI
+bridge and direct TextDecoder caller remain subsequent features. The preceding
+29/29 frozen whole-checkout proof predates this slice; its three focused checks
+cover this implementation. Raw logical output does not claim Source SIMD
+trailing garbage, Rust Vec allocator/OOM or public native owner parity. No
+LibJS code or native browser bundle changes.
