@@ -22,7 +22,8 @@ WebAssembly files and 485 non-Markdown LibJS files. Its SHA-256 is
 `e461541e742ad59ec62a3e0504b7084993033102aadfcec62ad57b91ccef3a38`. Both sets stayed byte-identical throughout both sweeps,
 the worktree stayed clean, and they match canonical at recording. Dependencies
 outside those packages remain the files of this exact snapshot; subsequent
-FileReader/fixed-view/HTML changes are not included in the sweep.
+FileReader/fixed-view/HTML changes are not included in the sweep. The subsequent
+95th checked-truncation file is also outside this frozen package manifest.
 
 This snapshot includes Source floating unary, float/integer widths, scalar
 reinterpret and integer-to-floating conversions, their exact pinned C++

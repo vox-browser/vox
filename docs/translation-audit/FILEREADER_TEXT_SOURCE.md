@@ -1,7 +1,8 @@
 # FileReader text package source mapping
 
 Source: Ladybird `963d46a829f3e1b79f44dba9d02afb70654300fa`.
-This document covers the typed text package, not the complete FileReader owner.
+This document maps the completed package/read-operation slices and their
+remaining native receiver, witness and wrapper-world boundaries.
 
 `FileAPI/FileReader.cpp:137` selects an explicit encoding label, otherwise a
 parsed MIME charset, otherwise UTF-8. Its Text arm then calls
@@ -24,9 +25,9 @@ repeated and opposing BOMs, synchronous readAsText and the existing asynchronous
 compatibility adapter's resulting text/events.
 
 The asynchronous compatibility read adapter retains copied pending bytes and an
-explicit `process_pending_tasks()` call. Packaging does not provide Source's
-ReadOperationState/default-reader graph, Promise callbacks or native FileReader
-wrapper-world ArrayBuffer result cache. The independent global/task/event owner
+explicit `process_pending_tasks()` call. That compatibility path is distinct from the subsequently translated actual
+ReadOperationState/default-reader/Promise owner graph described below. Neither
+path supplies the native FileReader wrapper-world ArrayBuffer result cache. The independent global/task/event owner
 prerequisite below supplies actual owners for those operations.
 
 ## Internal replacement decoder
