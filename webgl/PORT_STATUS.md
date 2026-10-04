@@ -162,6 +162,42 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+Program diagnostic/parameter queries now retain their initialized Source
+outputs after loss. Impl.cpp:1789 initializes the robust parameter result to
+zero; :1828 initializes regular log length to zero. The exact generated void
+sync proxies return immediately when lost, before copying any output, and
+ProxyBase.cpp:168-176 suppresses an already-lost send. The direct regular and
+robust programiv helpers now return zero after unavailable current selection,
+preventing queries into Other's current driver. This yields an empty owned
+program log, zero supported numeric results and false supported Boolean results.
+CPU handle gates, eager pname switch order, live regular/robust ABIs and actual
+native names remain unchanged; no fallback algorithm supplies these values.
+
+A genuine EGL pre-fix probe returned Other's linked=true and its 21-byte failed
+program log after Owner loss. Source and output are retained as
+`Build/audit-fixes/source-program-query-lost-unfixed-probe_test.v` and
+source-program-query-lost-unfixed-probe-gc-none.log. Corrected two-version
+native/public cases match actual program names in independent EGL contexts,
+retain two original records and create a third owned SourceID3/native0 record.
+They verify 21 WebGL1 and 30 WebGL2 supported getter calls over those records,
+while Other's actual linked program, failed-link diagnostic, viewport and
+pending native error stay intact. Public pname conversion still runs once or
+throws before the body; Source one-shot context-loss reporting is preserved.
+These are real driver witnesses, without a substitute backend.
+
+Three typed files pass in
+`Build/audit-fixes/source-program-query-lost-native-gc-none.log`; two public
+files pass in
+`Build/audit-fixes/source-program-query-lost-public-gc-none.log`, including regular
+diagnostic CPU-owner and robust parameter comparisons. All use GC disabled and
+explicit private paths. Exact generated regular/robust/log proxy/compositor
+bodies remain in source-program-query-generated-boundary.txt (SHA-256
+`d1b6674386836dc479f96872545624f4412bef63303a50b8c5328201d41eede3`).
+Broader loss command suppression, program mutation CPU gates, other getters,
+remote transport/maps and GC/WrapperWorld remain separate Source-reviewed
+features. This focused native/JSC result supplies no new full regression or
+canonical production-bundle/capture claim.
+
 getProgramParameter now uses the Source one-element ANGLE robust ABI through
 a separate native helper. Impl.cpp:1789-1790 initializes GLint result to zero
 and invokes get_programiv_robust_angle(program,pname,1,nullptr,&result) before
@@ -172,7 +208,7 @@ pname/error ordering are preserved. This ABI feature adds no lost-output rule.
 
 Focused two-version native/public cases compare all Source numeric/Boolean
 pname categories and unsupported values with independent real
-GLGetProgramivRobustANGLE calls using capacity1 and null length. A failed actual
+glGetProgramivRobustANGLE calls using capacity1 and null length. A failed actual
 link outside V supplies a genuine nonempty diagnostic. WebGL1 rejection of
 WebGL2 pnames retains its fallback after the actual native query. A Source-owned
 record whose program is deleted directly through GL still reaches the robust
@@ -187,8 +223,9 @@ and explicit private paths. Exact generated regular/robust/log proxy and
 compositor evidence is retained in
 `Build/audit-fixes/source-program-query-generated-boundary.txt` (SHA-256
 `d1b6674386836dc479f96872545624f4412bef63303a50b8c5328201d41eede3`).
-Initialized lost program outputs, mutations, remote maps and GC/WrapperWorld
-remain separate features. No full regression or canonical bundle evidence is
+The subsequent initialized lost program output repair is documented above.
+Mutations, remote maps and GC/WrapperWorld remain separate features. No full
+regression or canonical bundle evidence is
 claimed by this focused actual native/JSC ABI result.
 
 getProgramParameter now validates its Source handle before selecting the
@@ -222,9 +259,9 @@ typed failure remains in the native log without -corrected. Implementation was
 unchanged after the public proof. All checks use GC disabled and explicit
 private paths; this is corrected focused evidence, not a relabeled full sweep.
 
-The subsequent separate program robust ABI is documented above. Initialized
-lost outputs, other mutations, remote maps and GC/WrapperWorld remain separate
-scopes. No canonical bundle claim follows from
+The subsequent separate program robust ABI and initialized lost-output repairs
+are documented above. Other mutations, remote maps and GC/WrapperWorld remain
+separate scopes. No canonical bundle claim follows from
 these focused actual native/JSC tests.
 
 getProgramInfoLog now keeps actual owner selection after its Source handle
@@ -248,8 +285,8 @@ Two typed files pass in
 public files pass in
 `Build/audit-fixes/source-program-diagnostic-owner-public-gc-none.log`, including
 existing shader/program diagnostic neighbors. All use GC disabled and explicit
-private paths. Program parameter CPU gates, its distinct robust ABI and lost
-initialized program outputs remain separate features. The regular diagnostic
+private paths. The subsequent parameter CPU gates, distinct robust ABI and
+lost initialized program outputs are documented above. The regular diagnostic
 query is deliberately preserved. Remote maps, GC/WrapperWorld and canonical
 bundle/full-sweep evidence remain outside this focused native/JSC result.
 
