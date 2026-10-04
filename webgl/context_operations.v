@@ -401,6 +401,8 @@ pub fn (mut context WebGLRenderingContext) delete_shader(object ?&WebGLShader) {
 		handle := value.object.bookkeeping_id()
 		context.shaders.delete(handle)
 		context.native.make_current()
+		// Source invalidates the record, then lost record_bytes drops native deletion.
+		if !context.native.current_ { return }
 		C.vox_gl_delete_shader(value.object.native_handle_)
 		context.command('delete_shader', handle)
 	}
