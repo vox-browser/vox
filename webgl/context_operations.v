@@ -209,11 +209,11 @@ pub fn (mut context WebGLRenderingContext) active_texture(texture GLenum) {
 }
 
 pub fn (mut context WebGLRenderingContext) bind_attrib_location(program &WebGLProgram, index GLuint, name string) {
-	context.native.make_current()
 	if !context.owns(&program.object) {
 		context.set_error(invalid_operation)
 		return
 	}
+	context.native.make_current()
 	context.command('bind_attrib_location', program.object.handle_, index, name.len)
 	C.vox_gl_bind_attrib_location(program.object.native_handle_, index, name.str)
 }

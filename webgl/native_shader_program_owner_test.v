@@ -52,8 +52,9 @@ fn test_source_shader_program_mutations_select_owner_before_early_returns() {
 		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
 		other.native.make_current()
 		context.bind_attrib_location(foreign_program, 0xffffffff, 'gl_reserved')
-		shader_program_owner_and_error(mut context, invalid_operation)
+		shader_program_owner_and_error_selected(mut context, invalid_operation, [9, 10, 11, 12]!)
 		name := 'gl_reserved'
+		context.native.make_current()
 		C.vox_gl_bind_attrib_location(program.object.native_handle_, 0xffffffff, name.str)
 		expected_binding_error := C.vox_gl_get_error()
 		other.native.make_current()
