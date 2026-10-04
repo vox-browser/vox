@@ -10,6 +10,7 @@ module html
 
 import dom
 import fetch
+import contentsecuritypolicy
 
 pub type ReferrerPolicy = dom.ReferrerPolicy
 
@@ -55,15 +56,18 @@ pub fn create_a_policy_container_from_serialized_policy_container(serialized Ser
 }
 
 fn parse_response_csp_policy(value string, disposition CSPPolicyDisposition, origin dom.Origin) SerializedCSPPolicy {
+	// Compatibility String-input adapter. Genuine Response headers use the
+	// Source response/ByteString parser at the factory caller separately.
+	parsed := contentsecuritypolicy.parse_a_serialized_csp(value, .header, if disposition == .enforce {
+		.enforce
+	} else {
+		.report
+	})
 	mut directives := []SerializedCSPDirective{}
-	for raw_directive in value.split(';') {
-		parts := raw_directive.trim_space().fields()
-		if parts.len == 0 {
-			continue
-		}
+	for directive in parsed.directives() {
 		directives << SerializedCSPDirective{
-			name: ascii_lowercase_string(parts[0])
-			value: parts[1..].clone()
+			name: directive.name()
+			value: directive.value()
 		}
 	}
 	return SerializedCSPPolicy{
@@ -71,7 +75,7 @@ fn parse_response_csp_policy(value string, disposition CSPPolicyDisposition, ori
 		disposition: disposition
 		source: .header
 		self_origin: origin
-		pre_parsed_policy_string: value
+		pre_parsed_policy_string: parsed.pre_parsed_policy_string()
 	}
 }
 
