@@ -475,18 +475,7 @@ pub fn (mut context WebGLRenderingContext) read_buffer(source GLenum) {
 }
 
 pub fn (mut context WebGLRenderingContext) renderbuffer_storage_multisample(target GLenum, samples int, internal_format GLenum, width int, height int) {
-	if samples < 0 || width < 0 || height < 0 {
-		context.set_error(invalid_value)
-		return
-	}
-	mut buffer := context.renderbuffers[context.bound_renderbuffer] or {
-		context.set_error(invalid_operation)
-		return
-	}
-	buffer.samples_ = samples
-	buffer.internal_format_ = internal_format
-	buffer.width_ = width
-	buffer.height_ = height
+	context.native.make_current()
 	context.webgl2_command('renderbuffer_storage_multisample', target, samples, internal_format, width, height)
 }
 

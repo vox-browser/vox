@@ -1061,19 +1061,11 @@ pub fn (mut context WebGLRenderingContext) polygon_offset(factor f32, units f32)
 }
 
 pub fn (mut context WebGLRenderingContext) renderbuffer_storage(target GLenum, internal_format GLenum, width int, height int) {
-	if width < 0 || height < 0 {
-		context.set_error(invalid_value)
-		return
-	}
-	mut buffer := context.renderbuffers[context.bound_renderbuffer] or {
-		context.set_error(invalid_operation)
-		return
-	}
-	buffer.internal_format_ = internal_format
-	buffer.width_ = width
-	buffer.height_ = height
-	context.command('renderbuffer_storage', target, internal_format, width, height)
-	C.vox_gl_renderbuffer_storage(target, internal_format, width, height)
+	context.native.make_current()
+	// Source GL_DEPTH_STENCIL is stored as GL_DEPTH24_STENCIL8.
+	format := if internal_format == GLenum(0x84f9) { GLenum(0x88f0) } else { internal_format }
+	context.command('renderbuffer_storage', target, format, width, height)
+	C.vox_gl_renderbuffer_storage(target, format, width, height)
 	context.native.collect_native_error()
 }
 

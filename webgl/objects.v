@@ -160,11 +160,6 @@ pub fn (mut framebuffer_object WebGLFramebuffer) set_texture_attachment(attachme
 pub struct WebGLRenderbuffer {
 pub mut:
 	object WebGLObject
-mut:
-	internal_format_ GLenum
-	width_           int
-	height_          int
-	samples_         int
 }
 
 @[heap]
