@@ -38,6 +38,7 @@ pub:
 	renderbuffer ?&WebGLRenderbuffer
 	framebuffer ?&WebGLFramebuffer
 	texture ?&WebGLTexture
+	query ?&WebGLQuery
 }
 
 fn integer_parameter(value i64) WebGLParameterValue {

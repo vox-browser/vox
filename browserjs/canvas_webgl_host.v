@@ -243,6 +243,14 @@ fn (mut host CanvasWebGLHost) parameter(context &webgl.WebGLRenderingContext, va
 		host.samplers[handle] = sampler
 		return host.resource_reply(handle)
 	}
+	if query := value.query {
+		if handle := host.platform_objects[voidptr(&query.object)] {
+			return host.resource_reply(handle)
+		}
+		handle := host.register(context, 'query', &query.object)
+		host.queries[handle] = query
+		return host.resource_reply(handle)
+	}
 	return match value.kind {
 		.none { json2.Any(json2.Null{}) }
 		.undefined_ { json2.Any({'webglUndefined': json2.Any(true)}) }
@@ -598,7 +606,7 @@ fn (mut host CanvasWebGLHost) dispatch(request map[string]json2.Any) !json2.Any 
 		}
 		'getQuery' {
 			if value := context.get_query(wg_u32(wg_arg(args, 0)), wg_u32(wg_arg(args, 1))) {
-				return host.object_reply(context, &value.object)
+				return host.parameter(context, webgl.WebGLParameterValue{query: value})
 			}
 			return json2.Any(json2.Null{})
 		}
