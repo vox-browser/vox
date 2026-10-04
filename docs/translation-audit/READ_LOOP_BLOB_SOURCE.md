@@ -175,3 +175,18 @@ constructor/getter replacement. It passes both GC modes in
 `source-blob-bytes-default-final.log` and `source-blob-bytes-gc-none.log`.
 Native public Blob/File/FileList methods and complete byte-controller backing
 identity remain separate work.
+
+The native `BlobHost` prerequisite maps `Blob.h`'s immutable size/type slots,
+`Blob.cpp:238-317` slice/stream and the owning text/arrayBuffer/bytes methods to
+genuine wrappers in `browserjs/blob_host*.v`. Wrapper identity is keyed by the
+actual V Blob record and retains its owning HTML settings and original
+prototype. Type getters return arbitrary raw UTF-16 units; slice arguments use
+the Source optional Clamp conversions. Read methods use the actual owner task,
+reader and Promise paths above. Promise-returning receiver failures reject
+with the real engine exception; stream and ordinary getters throw. The focused
+file passes both GC modes in `source-blob-host-{default,gc-none}.log`, covering
+actual record/cached wrapper identity, raw type, pending NewObject methods,
+genuine stream chunks, slice and forged receiver rejection. The existing XHR
+object cannot enter the genuine Blob wrapper table. This prerequisite retains
+an internal Source prototype; the public generated constructor and native
+clone exposure are separate subsequent slices, with no placeholder constructor.
