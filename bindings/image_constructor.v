@@ -7,6 +7,7 @@ module bindings
 
 import dom
 import math
+import webidl
 
 @[heap]
 pub struct ImageConstructor {
@@ -36,7 +37,7 @@ pub fn (_ &ImageConstructor) call() !dom.JSValue {
 	return error("TypeError: Constructor Image requires 'new'")
 }
 
-fn js_value_to_number(value dom.JSValue) f64 {
+fn js_value_to_number(value dom.JSValue) !f64 {
 	return match value.kind {
 		.undefined {
 			math.nan()
@@ -60,12 +61,15 @@ fn js_value_to_number(value dom.JSValue) f64 {
 		.object {
 			math.nan()
 		}
+		.runtime_value {
+			webidl.value_to_number(value.as_webidl_value()!)!
+		}
 	}
 }
 
 // ECMAScript ToUint32, used by the Image(width, height) constructor.
-fn js_value_to_u32(value dom.JSValue) u32 {
-	number := js_value_to_number(value)
+fn js_value_to_u32(value dom.JSValue) !u32 {
+	number := js_value_to_number(value)!
 	if math.is_nan(number) || math.is_inf(number, 0) || number == 0 {
 		return 0
 	}
@@ -82,10 +86,10 @@ pub fn (constructor &ImageConstructor) construct(width ?dom.JSValue, height ?dom
 	mut element := dom.create_element(constructor.document, 'img', html_namespace, none, none,
 		false)!
 	if width_value := width {
-		element.set_attribute_value('width', js_value_to_u32(width_value).str())
+		element.set_attribute_value('width', js_value_to_u32(width_value)!.str())
 	}
 	if height_value := height {
-		element.set_attribute_value('height', js_value_to_u32(height_value).str())
+		element.set_attribute_value('height', js_value_to_u32(height_value)!.str())
 	}
 	return unsafe { &dom.HTMLImageElement(element) }
 }
