@@ -162,6 +162,41 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+getProgramParameter now validates its Source handle before selecting the
+actual sync driver. Impl.cpp:1781-1815 returns null and INVALID_OPERATION for
+foreign/deleted programs before any native query. Its Proxy prefix is empty;
+V now relies on the native parameter helper's valid-handle current selection
+rather than an unconditional prefix. The genuine eager driver query remains
+before Source's pname switch, including unsupported and WebGL1-only rejection
+paths. Return shapes, stored native name and actual-error-before-local-fallback
+order are preserved. This CPU feature does not yet change the helper's regular
+versus Source robust ABI or lost outputs.
+
+The two-version native/public cases verify Other viewport/error preservation
+on early returns, valid queries selecting Owner, public pname conversion once
+before the foreign gate and conversion throws before any native selection.
+Unknown native pnames retain driver plus local INVALID_ENUM; a valid native
+pname outside Source's switch retains only the local fallback after a pending
+actual driver error. An owned record whose native program was deleted outside
+V still reaches the driver and retains its actual failure/Boolean return.
+
+The initial typed group had a new-test enum spelling error and a legacy
+foreign-program owner expectation. The corrected test uses existing .none,
+and only that Source-reviewed legacy assertion now compares Other's actual
+GL_CURRENT_PROGRAM before/after the early return. Its real live retained
+program/delete-status and eager-query assertions remain intact. Two corrected
+typed files pass in
+`Build/audit-fixes/source-program-parameter-owner-native-corrected-gc-none.log`;
+two unchanged public files pass in
+`Build/audit-fixes/source-program-parameter-owner-public-gc-none.log`. The initial
+typed failure remains in the native log without -corrected. Implementation was
+unchanged after the public proof. All checks use GC disabled and explicit
+private paths; this is corrected focused evidence, not a relabeled full sweep.
+
+Program robust ABI, initialized lost outputs, other mutations, remote maps and
+GC/WrapperWorld remain separate scopes. No canonical bundle claim follows from
+these focused actual native/JSC tests.
+
 getProgramInfoLog now keeps actual owner selection after its Source handle
 gate. Impl.cpp:1817-1836 validates the program handle and returns nullable
 failure with INVALID_OPERATION before issuing a query. Its Proxy prefix is
