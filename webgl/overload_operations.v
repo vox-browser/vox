@@ -577,22 +577,6 @@ pub fn (mut context WebGLRenderingContext) vertex_attrib_i_pointer(index GLuint,
 	if !context.require_webgl2() {
 		return
 	}
-	if size < 1 || size > 4 || stride < 0 || offset < 0 {
-		context.set_error(invalid_value)
-		return
-	}
-	buffer_handle := context.bound_buffers[array_buffer] or {
-		context.set_error(invalid_operation)
-		return
-	}
-	context.vertex_attrib_states_[index] = VertexAttribState{
-		buffer_handle: buffer_handle
-		size: size
-		type_: type_
-		stride: stride
-		offset: offset
-		integer: true
-	}
 	context.command('vertex_attrib_i_pointer', index, size, type_, stride, offset)
 }
 
