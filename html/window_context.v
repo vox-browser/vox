@@ -662,11 +662,29 @@ pub fn (mut context BrowsingContextModel) set_window_proxy(proxy ?&WindowProxyMo
 	context.update_native_context_window_proxy()
 }
 
+// This native record and the actual typed constructor represent the same
+// Source BrowsingContext. Keep identity independent of its current Window.
+fn (context &BrowsingContextModel) register_native_identity(native &dom.BrowsingContext) {
+	mut mutable_native := unsafe { &dom.BrowsingContext(native) }
+	if mutable_native.html_model_handle_ != unsafe { nil } {
+		assert mutable_native.html_model_handle_ == voidptr(context)
+	}
+	mutable_native.html_model_handle_ = voidptr(context)
+}
+
+fn browsing_context_model_for_native(native &dom.BrowsingContext) &BrowsingContextModel {
+	if native.html_model_handle_ == unsafe { nil } {
+		panic('Native BrowsingContext has no actual HTML model identity')
+	}
+	return unsafe { &BrowsingContextModel(native.html_model_handle_) }
+}
+
 // The typed context and Document's native context describe the same source
 // BrowsingContext. Keep its actual WindowProxy identity at this bridge.
 fn (context &BrowsingContextModel) update_native_context_window_proxy() {
 	document := context.active_document() or { return }
 	mut native := document.get_browsing_context() or { return }
+	context.register_native_identity(native)
 	native.active_document_ = document
 	if proxy := context.window_proxy() {
 		native.window_proxy_ = proxy.dom_proxy()
@@ -1482,6 +1500,9 @@ fn WindowModel.create_with_global(document &dom.Document, context &BrowsingConte
 			active_document_: document
 		})
 	}
+	context.register_native_identity(document.get_browsing_context() or {
+		panic('Source Window construction requires its native BrowsingContext')
+	})
 	if document.cached_navigable() == none {
 		mut node_navigable := &dom.Navigable{
 			active_document_: document

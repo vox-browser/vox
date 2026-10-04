@@ -2154,6 +2154,8 @@ pub struct BrowsingContext {
 pub mut:
 	window_proxy_                      ?&WindowProxy
 	active_document_                   ?&Document
+	// Identity bridge to the actual HTML BrowsingContext representation.
+	html_model_handle_                  voidptr = unsafe { nil }
 	group_handle                       voidptr
 	is_top_level_                      bool = true
 	virtual_browsing_context_group_id_ string

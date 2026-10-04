@@ -708,17 +708,19 @@ pub fn (mut model NavigableModel) set_active_document(document ?&dom.Document) {
 }
 
 pub fn (model &NavigableModel) active_browsing_context() ?&BrowsingContextModel {
-	return model.context_
+	document := model.active_document() or { return none }
+	native := document.get_browsing_context() or { return none }
+	return browsing_context_model_for_native(native)
 }
 
 pub fn (model &NavigableModel) active_window_proxy() ?&WindowProxyModel {
-	context := model.context_ or { return none }
-	return context.window_proxy()
+	native := model.host_.active_window_proxy() or { return none }
+	return window_proxy_model_for_native(native)
 }
 
 pub fn (model &NavigableModel) active_window() ?&WindowModel {
-	context := model.context_ or { return none }
-	return context.active_window()
+	proxy := model.active_window_proxy() or { return none }
+	return proxy.window()
 }
 
 pub fn (model &NavigableModel) target_name() string {
