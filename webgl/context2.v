@@ -114,6 +114,7 @@ pub fn (mut context WebGLRenderingContext) get_query_parameter(query &WebGLQuery
 }
 
 pub fn (mut context WebGLRenderingContext) delete_query(mut query ?&WebGLQuery) {
+	context.native.make_current()
 	if mut value := query {
 		handle_result := value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
 			context.set_error(invalid_operation)
