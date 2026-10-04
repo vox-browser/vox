@@ -82,7 +82,9 @@ pub fn parse_a_referrer_policy_from_header_tokens(policy_tokens []string) Referr
 
 // https://w3c.github.io/webappsec-referrer-policy/#parse-referrer-policy-from-header
 pub fn parse_a_referrer_policy_from_a_referrer_policy_header(response &fetch.Response) ReferrerPolicy {
-	policy_tokens := response.header_list.get_decode_and_split('Referrer-Policy') or {
+	// AbstractOperations.cpp:26 uses actual extraction. Pinned LibHTTP keeps
+	// one whole raw value per Referrer-Policy header, including its FIXME.
+	policy_tokens := response.header_list.extract_header_list_values('Referrer-Policy') or {
 		return .empty_string
 	}
 	return parse_a_referrer_policy_from_header_tokens(policy_tokens)

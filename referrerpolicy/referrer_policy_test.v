@@ -71,7 +71,8 @@ fn test_parse_from_header_tokens_defaults_to_empty_string() {
 
 fn test_parse_header_and_redirect_update() {
 	mut response := fetch.Response.create()
-	response.header_list.append(http.Header{ name: 'Referrer-Policy', value: 'origin, no-referrer' })
+	response.header_list.append(http.Header{ name: 'Referrer-Policy', value: 'origin' })
+	response.header_list.append(http.Header{ name: 'Referrer-Policy', value: 'no-referrer' })
 	assert parse_a_referrer_policy_from_a_referrer_policy_header(response) == .no_referrer
 	mut request := fetch.Request.create()
 	set_request_referrer_policy_on_redirect(mut request, response)
