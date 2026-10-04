@@ -601,13 +601,14 @@ pub fn (mut context WebGLRenderingContext) hint(target GLenum, mode GLenum) {
 }
 
 pub fn (mut context WebGLRenderingContext) framebuffer_renderbuffer(target GLenum, attachment GLenum, renderbuffer_target GLenum, object ?&WebGLRenderbuffer) {
+	context.native.make_current()
 	if !is_valid_framebuffer_binding_target(context.version, target)
 		|| !is_valid_framebuffer_attachment(context.version, context.extension_enabled('WEBGL_draw_buffers'), attachment)
 		|| renderbuffer_target != renderbuffer {
 		context.set_error(invalid_enum)
 		return
 	}
-	if context.bound_framebuffer == 0 {
+	framebuffer_object := context.bound_framebuffer_object or {
 		context.set_error(invalid_operation)
 		return
 	}
@@ -620,16 +621,15 @@ pub fn (mut context WebGLRenderingContext) framebuffer_renderbuffer(target GLenu
 	} else {
 		GLuint(0)
 	}
-	if framebuffer_object := context.bound_framebuffer_object {
-		mut mutable := unsafe { &WebGLFramebuffer(framebuffer_object) }
-		mutable.set_renderbuffer_attachment(attachment, object)
-	}
 	context.command('framebuffer_renderbuffer', target, attachment, renderbuffer_target, handle)
 	C.vox_gl_framebuffer_renderbuffer(target, attachment, renderbuffer_target, if value := object { value.object.native_handle_ } else { 0 })
 	context.native.collect_native_error()
+	mut mutable := unsafe { &WebGLFramebuffer(framebuffer_object) }
+	mutable.set_renderbuffer_attachment(attachment, object)
 }
 
 pub fn (mut context WebGLRenderingContext) framebuffer_texture2d(target GLenum, attachment GLenum, texture_target GLenum, object ?&WebGLTexture, level int) {
+	context.native.make_current()
 	if !is_valid_framebuffer_binding_target(context.version, target)
 		|| !is_valid_framebuffer_attachment(context.version, context.extension_enabled('WEBGL_draw_buffers'), attachment)
 		|| !is_valid_framebuffer_texture_2d_target(texture_target) {
@@ -640,7 +640,7 @@ pub fn (mut context WebGLRenderingContext) framebuffer_texture2d(target GLenum, 
 		context.set_error(invalid_value)
 		return
 	}
-	if context.bound_framebuffer == 0 {
+	framebuffer_object := context.bound_framebuffer_object or {
 		context.set_error(invalid_operation)
 		return
 	}
@@ -653,13 +653,11 @@ pub fn (mut context WebGLRenderingContext) framebuffer_texture2d(target GLenum, 
 	} else {
 		GLuint(0)
 	}
-	if framebuffer_object := context.bound_framebuffer_object {
-		mut mutable := unsafe { &WebGLFramebuffer(framebuffer_object) }
-		mutable.set_texture_attachment(attachment, object, texture_target, level)
-	}
 	context.command('framebuffer_texture2d', target, attachment, texture_target, handle, level)
 	C.vox_gl_framebuffer_texture(target, attachment, texture_target, if value := object { value.object.native_handle_ } else { 0 }, level)
 	context.native.collect_native_error()
+	mut mutable := unsafe { &WebGLFramebuffer(framebuffer_object) }
+	mutable.set_texture_attachment(attachment, object, texture_target, level)
 }
 
 pub fn (mut context WebGLRenderingContext) get_framebuffer_attachment_parameter(target GLenum, attachment GLenum, pname GLenum) WebGLParameterValue {
