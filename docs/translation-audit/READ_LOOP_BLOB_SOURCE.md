@@ -532,3 +532,27 @@ parts/MIME processing, raw signed timestamps and typed serialization. Native
 AK malformed/truncated, out-of-range and overlong rules are also retained.
 New File boundary plus raw File/DataTransfer/drag-store neighbors pass **5/5**
 both modes in `source-data-transfer-fileapi-{default,gc-none}.log`.
+
+
+Actual DataTransfer producers now translate `DataTransfer.cpp` lines 283–318,
+`DataTransferItem.cpp` lines 124–152, and `DataTransferItemList.cpp` lines
+83–106. They construct genuine new FileLists and Files through the actual Blob
+and File core owners, copy stored bytes, retain raw name/type slots, apply the
+Source File constructor's basic-Latin/MIME normalization, and preserve the
+pinned other-fields/lastModified FIXME. A present default FilePropertyBag uses
+the current clock; no stored original timestamp is invented. Adding an actual
+File copies its internal name/type/bytes and applies raw ASCII lowercase before
+later getters create new records. The older FormDataFile snapshots remain
+compatibility entry points and do not supply primary native ownership.
+
+The focused five-file batch passes **5/5** both modes in
+`source-data-transfer-fileapi-{default,gc-none}.log`: fresh ordered identity,
+immutable bytes, raw lone/null/supplementary names, non-basic-Latin MIME gate,
+Source clock interval, read-only/protected/removed/disassociated gates,
+actual File snapshot copies and legacy snapshot compatibility. Fresh pinned
+DataTransfer/Item/List generated bindings were inspected separately. Despite
+the IDL files [SameObject] annotation, the pinned generator caches only
+CachedAttribute/reflected frozen arrays and invokes files() on each getter;
+this translation preserves Source's fresh list behavior rather than inventing
+a cache. Public DataTransfer/Item wrappers, full overload dispatch and owning
+BodyInit streams remain separate unresolved boundaries.
