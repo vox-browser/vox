@@ -572,6 +572,8 @@ pub fn (mut context WebGLRenderingContext) link_program(mut program WebGLProgram
 		return
 	}
 	context.native.make_current()
+	// Source record_bytes drops the generated LinkProgram command after loss.
+	if !context.native.current_ { return }
 	C.vox_gl_link_program(program.object.native_handle_)
 	context.native.dispatch('link_program', program.object.handle_)
 }
