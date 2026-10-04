@@ -20,6 +20,8 @@ pub mut:
 	query              ?string
 	fragment           ?string
 	has_an_opaque_path bool
+mut:
+	blob_url_entry_ ?BlobURLEntry
 }
 
 // https://url.spec.whatwg.org/#special-scheme — the schemes with special parsing rules.
@@ -106,11 +108,13 @@ pub fn (record &URL) equals(other &URL, exclude_fragment bool) bool {
 	return record.serialize(exclude_fragment) == other.serialize(exclude_fragment)
 }
 
-// https://url.spec.whatwg.org/#concept-url-origin. Blob URL entry lookup is an
-// HTML/Blob-store concern; when no entry is installed, upstream falls back to
-// parsing the blob URL's serialized path, which is what this record performs.
+// https://url.spec.whatwg.org/#concept-url-origin. Blob entry installation is a
+// DOMURL/FileAPI concern; this record consumes the entry snapshot when present.
 pub fn (record &URL) origin() Origin {
 	if record.scheme == 'blob' {
+		if entry := record.blob_url_entry_ {
+			return entry.environment.origin
+		}
 		path_url := parse(record.serialize_path()) or { return Origin.create_opaque(.standard) }
 		if path_url.scheme in ['http', 'https', 'file'] {
 			return path_url.origin()

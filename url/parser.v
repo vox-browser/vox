@@ -66,6 +66,7 @@ fn parser_copy_url(source &URL) URL {
 		query: source.query
 		fragment: source.fragment
 		has_an_opaque_path: source.has_an_opaque_path
+		blob_url_entry_: source.blob_url_entry()
 	}
 }
 
