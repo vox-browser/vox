@@ -256,3 +256,14 @@ remaining scalar/SIMD operations, native compilation and full collector/realm
 roots remain unfinished. No complete browser WebAssembly runtime parity is
 inferred from these tests. The separate historical LibJS 232-file/100-AST proof
 retains its own earlier snapshot and dependency scope.
+
+## Frozen full SIMD lane snapshot
+
+Exact detached `a85c3b9224641a439e14b1d6131e9f8b80855a9f` passes **103/103 Wasm files in each GC mode**, with all 4,671 tracked contents unchanged. Commands are the old V compiler with globals enabled, plus `-gc none` for the second run; both use VJOBS=2. The default run takes 673.357s and the GC-disabled run 660.806s. Both interpreter lane helpers and their tests are included.
+
+Manifest `Build/audit-fixes/worktrees/root-wasm103-final/Build/audit-fixes/source-simd-lanes-wasm103-manifest.json` SHA256 is `158864776c3992ecfb8694b5e0f090c909406aa638c7388402cee74f6666467f`; whole tracked hash `c100657ceffbb1c27cf3127d6831b4747a1d830d2b71c4f35e1bbe5ddc10bb14`. All 227 non-Markdown Wasm files and 490 non-Markdown LibJS files match canonical bytes at recording. Wasm package hash `814ebc31efcd3ee58956cb01c220276c978daadce8e8c3edbaded37035b61204`; LibJS package hash `d55fd6a720b1bc274039393b94776fb27f7e946d61d51adfb0ce0c229bfef4c9`.
+
+- `default` log SHA256: `47ad7feff3a2e6ce6a8e3bfe5982b3be3ae87604f10f7db59d1b08a580d2e74c`.
+- `gc-none` log SHA256: `a1898363f7ca8897703d6922aeb854b2236f5bbfa29d7e0cdf003f12dfebd5ae`.
+
+The frozen snapshot predates the 104th zero-load file and 105th MemoryBuffer guard file, which have separate focused checks. Actual opcode/interpreter/native dispatch, remaining SIMD, instantiation and collector graph remain unported; passing helper/package tests do not close those findings.
