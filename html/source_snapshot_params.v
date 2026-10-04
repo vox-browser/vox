@@ -27,9 +27,8 @@ pub:
 }
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#snapshotting-source-snapshot-params
-// Translation of DOM::Document::snapshot_source_snapshot_params(). The C++
-// method returns an HTML type directly. V's acyclic module graph places the
-// implementation on the HTML side of the DOM/HTML bridge instead.
+// Translation of HTML::snapshot_source_snapshot_params(Document*).
+// The HTML side reads the actual DOM Document through V's acyclic module graph.
 pub fn snapshot_source_snapshot_params(source_document &dom.Document) SourceSnapshotParams {
 	if source_document == unsafe { nil } {
 		return SourceSnapshotParams{
@@ -55,6 +54,8 @@ pub fn snapshot_source_snapshot_params(source_document &dom.Document) SourceSnap
 		sandboxing_flags: flags
 		allows_downloading: !flags.contains(.sandboxed_downloads)
 		fetch_client: settings
-		source_policy_container: settings.policy_container().clone()
+		// SourceSnapshotParams.cpp:58 clones this Document's own container;
+		// its relevant Window/settings may currently name another Document.
+		source_policy_container: source_document.policy_container().clone()
 	}
 }
