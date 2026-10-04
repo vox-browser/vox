@@ -56,7 +56,10 @@ Blob.text now returns the Source fulfillment of that owning byte Promise and
 uses UTF-8 fallback with the exact pinned BOM override, ignoring MIME charset.
 Its Source primitive-string result preserves owned UTF-16 units. The existing
 standalone text adapter uses the same decoder; default and GC-disabled **3/3**
-focused text/decoder files pass. The standalone text/array_buffer/bytes facade settles synchronously;
+focused text/decoder files pass. Owning Blob.arrayBuffer fulfillment copies the
+actual read-all buffer into a second independently owned relevant-realm buffer;
+its focused native identity/mutation file passes both GC modes. The standalone
+text/array_buffer/bytes facade settles synchronously;
 it does not establish the source task/Promise owner path. Genuine native Blob/File/FileList constructors,
 getters, methods and clone exposure remain open. The compact XHR Blob object is
 a separate compatibility facade. FileReader owner tasks, blob URL process

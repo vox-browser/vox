@@ -111,8 +111,8 @@ does not become the owning native Promise path. Default and GC-disabled **3/3**
 Blob text/standalone decoder/codec files pass in
 `source-blob-text-{default,gc-none}.log`, covering pending NewObject identity,
 Worker ownership, empty and malformed bytes, UTF-16 BOMs and MIME independence.
-Blob.arrayBuffer/bytes fulfillment, actual native buffer/view ownership and
-generated native Blob/File/FileList methods are still separate work.
+Blob.arrayBuffer/bytes fulfillment and generated native Blob/File/FileList
+methods are tracked separately below.
 
 `LibJS/Runtime/ArrayBuffer.cpp:34-42` and `TypedArray.cpp:486-489` map to the
 native buffer ABI in `browserjs/source_array_buffer_darwin.c.v` and its backing
@@ -154,3 +154,12 @@ owner/text neighbors; GC-disabled **3/3** native realm/HTML owner/text files pas
 in `source-blob-native-realm-default-final.log` and
 `source-blob-native-realm-gc-none.log`. Public native Blob constructors and
 clone projection remain separate work.
+
+`FileAPI/Blob.cpp:395-406` maps to `html/blob_array_buffer.v`, commit
+`696005ac`. Its Source fulfillment reaction asserts the read-all ArrayBuffer,
+copies its complete raw data into a second independently owned relevant-realm
+ArrayBuffer, and retains Source's fatal `MUST` allocation boundary. The native
+test verifies actual engine record identity and independent mutation of the
+returned buffer, original read-all buffer and immutable Blob bytes. The focused
+file passes both GC modes in `source-blob-array-buffer-{default,gc-none}.log`.
+This owning algorithm does not install a native public Blob method by itself.
