@@ -823,3 +823,17 @@ Its 215 Wasm and 490 LibJS non-Markdown files match canonical at recording.
 [Exact proof](../docs/translation-audit/WASM_SCALAR_VERIFICATION.md) records
 source revision, manifests, log hashes and later-change scope; no opcode or
 complete runtime parity follows.
+
+Source `load_and_push` and its numeric `read_value` prerequisite are now
+translated in `machine_memory_load.v` (`8c1d625f`), including all 14 scalar
+combinations and the full u128 load. Actual frame/module/Store memory ownership,
+Memory32 versus Memory64 addresses, both checked additions, borrowed operand
+replacement and retained trap/stack/IP behavior follow Source. The canonical
+load/store/Configuration batch passes **3/3 GC-none**; a pinned original-C++
+probe passes 3,520 aligned/unaligned numeric reads and both actual short-span
+VERIFY calls in -O0/-O2, reproducing the canonical TSV exactly.
+[Mapping](../docs/translation-audit/WASM_MEMORY_LOAD_SOURCE.md) documents the
+existing V endian primitive, physical alignment and verified target scope.
+Real opcode dispatch, SIMD widening/lane/splat loads, typed stores, native fault
+recovery and the complete instantiation/collector graph remain separate. This
+new 100th file is outside the frozen 99-file proof.
