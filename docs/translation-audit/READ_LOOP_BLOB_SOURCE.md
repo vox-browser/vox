@@ -342,3 +342,22 @@ probe gives different results with -O0/-O2, so compiler-dependent behavior at
 that boundary is not claimed as parity with V's defined conversion. Actual
 File clone projection, main browser File exposure and native Worker/FileList
 ownership remain separate work.
+
+The native clone projection now discriminates genuine File before its genuine
+Blob base, matching Source primary SerializablePlatformObject identity and
+File's virtual serialization override. It passes the actual File to the
+existing exact primary IPC/storage codec. Target reconstruction requires the
+actual installed File interface and uses its retained prototype/owner, without
+reading the author-visible File global. Raw UTF-16 type/name and signed raw
+timestamp fields survive, output aliases share one newly deserialized File,
+and the wrapper's inherited Blob owner aliases that same embedded base.
+
+File plus Blob clone fixtures pass **2/2** in both modes in
+`source-native-file-clone-{default,gc-none}.log`. They compare native wire bytes
+with the primary Source encoder, preserve raw lone/nul units and negative raw
+time, ignore throwing author fields and changed prototypes, and verify that a
+genuine Blob with File.prototype remains a Blob. An ordinary author object
+with File.prototype remains ordinary. Forged absent File exposure rejects,
+while deleted target globals and insecure Window exposure retain the actual
+installed factory. Public main startup and FileList/native Worker ownership
+remain separate work.
