@@ -223,12 +223,18 @@ pub fn (decoder &TextDecoder) decode(input ?[]u8, options TextDecodeOptions) !st
 	bytes := input or { []u8{} }
 	mut mutable_decoder := unsafe { &TextDecoder(decoder) }
 	mut output := TextDecoderOutputQueue{}
-	mutable_decoder.process_an_item(bytes, !options.stream, mut output)!
-	result := mutable_decoder.serialize_io_queue(mut output)!
+	mutable_decoder.process_an_item(bytes, !options.stream, mut output) or {
+		// TextDecoder.cpp replaces a flushed decoder before exposing its
+		// result, including a decoding error. Streaming errors retain it.
+		if !options.stream {
+			mutable_decoder.set_decoder_to_new_instance_of_encoding_decoder()
+		}
+		return err
+	}
 	if !options.stream {
 		mutable_decoder.set_decoder_to_new_instance_of_encoding_decoder()
 	}
-	return result
+	return mutable_decoder.serialize_io_queue(mut output)
 }
 
 fn append_utf8_code_point(mut output []u8, code_point u32) {
