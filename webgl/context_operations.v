@@ -214,6 +214,8 @@ pub fn (mut context WebGLRenderingContext) bind_attrib_location(program &WebGLPr
 		return
 	}
 	context.native.make_current()
+	// Source record_bytes drops this generated command after loss.
+	if !context.native.current_ { return }
 	context.command('bind_attrib_location', program.object.handle_, index, name.len)
 	C.vox_gl_bind_attrib_location(program.object.native_handle_, index, name.str)
 }
