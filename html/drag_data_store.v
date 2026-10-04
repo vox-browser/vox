@@ -5,17 +5,75 @@
 // Translation of Libraries/LibWeb/HTML/DragDataStore.cpp.
 module html
 
+import libjs
+
 pub enum DragDataStoreItemKind {
 	text
 	file
 }
 
 pub struct DragDataStoreItem {
+	// DragDataStore.h owns UTF-16 type/text/name slots separately from file bytes.
+	// Retain the existing string/byte views for translated compatibility callers.
+	type_utf16_      ?libjs.Utf16String
+	text_data_utf16_ ?libjs.Utf16String
+	file_name_utf16_ ?libjs.Utf16String
 pub:
 	kind        DragDataStoreItemKind = .text
 	type_string string
 	data        []u8
 	file_name   string
+}
+
+pub fn DragDataStoreItem.text_utf16(type_string libjs.Utf16String, data libjs.Utf16String) DragDataStoreItem {
+	return DragDataStoreItem{
+		kind:             .text
+		type_string:      type_string.str()
+		data:             data.str().bytes()
+		type_utf16_:      type_string
+		text_data_utf16_: data
+	}
+}
+
+pub fn DragDataStoreItem.file_utf16(type_string libjs.Utf16String, file_data []u8, file_name libjs.Utf16String) DragDataStoreItem {
+	return DragDataStoreItem{
+		kind:             .file
+		type_string:      type_string.str()
+		data:             file_data.clone()
+		file_name:        file_name.str()
+		type_utf16_:      type_string
+		file_name_utf16_: file_name
+	}
+}
+
+pub fn (item DragDataStoreItem) type_utf16() libjs.Utf16String {
+	if text := item.type_utf16_ {
+		if text.str() == item.type_string {
+			return text
+		}
+	}
+	return libjs.utf16_string(item.type_string)
+}
+
+pub fn (item DragDataStoreItem) text_data_utf16() libjs.Utf16String {
+	if item.kind == .text {
+		if text := item.text_data_utf16_ {
+			if text.str().bytes() == item.data {
+				return text
+			}
+		}
+		return libjs.utf16_string(item.data.bytestr())
+	}
+	return libjs.Utf16String{}
+}
+
+pub fn (item DragDataStoreItem) file_name_utf16() libjs.Utf16String {
+	if text := item.file_name_utf16_ {
+		if text.str() == item.file_name {
+			return text
+		}
+	}
+	return libjs.utf16_string(item.file_name)
 }
 
 pub enum DragDataStoreMode {
