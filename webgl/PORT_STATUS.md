@@ -162,13 +162,48 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+createShader now follows the generated command suppression boundary after real
+context loss. GLFunctions.json:945 categorizes glCreateShader as `gen`, not
+`sync`. generate_libweb_webgl_proxy.py:89-104 allocates a WebGLObjectId, records
+CreateShader and returns that ID; ProxyBase.h:74 unconditionally increments
+m_next_object_id, starting at 1. ProxyBase.cpp:57-60 discards the command when
+lost. WebGLRenderingContextImpl.cpp:472-485 therefore still constructs its owned
+shader record, with a nonzero proxy ID after the tested losses, while no host
+shader creation runs. The V direct adapter now preserves its allocated ID and
+owned record but skips native selection/creation when lost. Its native name 0
+represents the absent compositor mapping, not a Source proxy ID of 0.
+
+The compositor generator's emit_gen_body maps command.id independently to the
+actual glCreateShader result; WebGLObjectMap.cpp:32-46 returns native 0 for an
+absent map entry. This review supersedes the earlier description of
+createShader as a synchronous lost-default0 operation and the probe's assumed
+Source expected native name. The genuine earlier probe did demonstrate an
+unwanted shader allocation in the already-current other context. Its corrected
+Source scope is generated into
+`Build/audit-fixes/source-create-shader-generated-boundary.txt` without changing
+upstream files. The separate Source WebGLObject handle API repair must preserve
+this proxy-ID/native-name distinction; existing historical zero-handle assertions
+are not evidence for a Source proxy ID of 0.
+
+Both-version native and public cases lose the real EGL owner, make another
+actual context current, preserve its shader/source, viewport and pending driver
+error, and check two new distinct owned IDs/brands. Three native creation/owner/
+shader files pass in `source-shader-lost-command-native-gc-none.log`. The first
+public attempt failed at compilation because my new fixture read a private
+context registry; only the fixture was corrected to inspect the actual host
+registry. All three public creation/owner/host files then pass in
+`source-shader-lost-command-public-corrected-gc-none.log`, with the initial
+compile diagnostic retained separately. All checks use GC disabled. Broader
+lost dispatch suppression, GLsync proxy handles, remote command transport and
+full GC/WrapperWorld remain separately scoped.
+
 createShader now preserves the genuine invalid-type return from pinned
 WebGLRenderingContextImpl.cpp:472-485 before actual native selection. Four
 invalid GLuint type cases return null/INVALID_ENUM without changing the other
 driver or allocating a shader record; V had selected its native context before
 this CPU gate. Valid vertex/fragment types still reach the original native
-createShader synchronous boundary (GLFunctions.json:945), select the owner and
-retain the supplied native result, including a real zero name. The existing
+createShader generated command boundary (GLFunctions.json:945), select the
+actual host owner on dispatch and retain the native adapter result. The existing
 valid-type zero-name ownership logic is unchanged by this focused gate repair.
 
 Both-version typed/public cases verify invalid/valid type owners, real shader
