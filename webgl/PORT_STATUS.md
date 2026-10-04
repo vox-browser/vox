@@ -162,6 +162,44 @@ recorded in [the frozen regression record](../docs/translation-audit/WEBGL_FROZE
 This public pass retains the frozen canonical revision regardless of subsequent
 private fixes.
 
+deleteShader now retains Source CPU record invalidation while dropping its
+native command after loss. Impl.cpp:585-602 handles null, owner errors and an
+absent deletion handle before dispatch. WebGLObject.cpp:50-59 invalidates the
+owned record before returning its Source proxy ID. GLFunctions.json:1070-1080
+records an object-deleting command; lost record_bytes:57-60 drops that command,
+so the compositor performs neither objects.take nor its native deleteShader.
+V keeps existing invalidation/bookkeeping removal and retained attachments,
+then returns after unavailable actual current selection before direct C work.
+Its live deletion and nullable/invalid-handle CPU order remain unchanged.
+
+A genuine EGL pre-fix probe deleted Other's matching native shader through a
+lost Owner (actual glIsShader 1 to 0). Its corrected observational source/log
+are source-delete-shader-lost-unfixed-real-probe_test.v and
+source-delete-shader-lost-unfixed-real-probe-gc-none.log; two preceding ignored
+probe attempts retain only V Result-propagation compile failures and provide
+no runtime evidence. The read-only generated proxy/replay witness is
+`Build/audit-fixes/source-delete-shader-generated-boundary.txt`, SHA-256
+`ac1ed0daf3bb1090627c07da268889a5bbe4587845ec7b8617236e308a128835`.
+
+New two-version typed/public cases invalidate Owner's original and owned
+SourceID3/native0 shader records after loss, preserve Source/native identity
+fields and retain the deleted original through its program attachment.
+Other's actual shader stays live with DELETE_STATUS=0 and unchanged compiled
+source, viewport and pending INVALID_ENUM. Nullable, repeat, foreign and public
+arity/forged-brand cases preserve their Source behavior; public deletion stays
+undefined, retained attachment wrapper identity survives, and loss reporting
+remains one-shot. Existing live deletion tests retain deferred actual shader
+lifetime while attached and genuine driver rejection order.
+
+Two typed files pass in
+`Build/audit-fixes/source-delete-shader-lost-native-gc-none.log`; two public
+files pass in
+`Build/audit-fixes/source-delete-shader-lost-public-gc-none.log`, with GC disabled
+and explicit private paths. This method-specific loss correction supplies no
+invented driver or algorithm; program mutation/loss, other is-object methods,
+remote transport and full GC/WrapperWorld remain separately reviewed work.
+Historical full-sweep evidence and canonical bundle claims are unchanged.
+
 compileShader now drops only its generated native command after loss. Pinned
 Impl.cpp:414-426 keeps the owned shader handle gate; GLFunctions.json:626-635
 marks glCompileShader as a command carrying an object ID. The source generator
@@ -218,7 +256,7 @@ files pass in
 `Build/audit-fixes/source-shader-source-lost-public-gc-none.log`, including the
 existing source/compile CPU-owner neighbors. All use GC disabled and explicit
 private paths. This is the shaderSource method alone; compileShader is separately reviewed
-below, while deletion, program mutations and other lost commands remain work.
+below, while program mutations and other lost commands remain work.
 No fake driver or Source algorithm supplies this command drop, and no full
 regression, remote map/GC/WrapperWorld or canonical bundle claim is added.
 
