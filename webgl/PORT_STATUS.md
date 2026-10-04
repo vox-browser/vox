@@ -137,6 +137,32 @@ and 37/37 IDL definitions audited.
 
 ## Native backend and remaining work
 
+Signed and unsigned integer vertex vectors now call exact glVertexAttribI4iv
+and glVertexAttribI4uiv span-pointer delegates, matching pinned
+WebGL2RenderingContextImpl.cpp:503-511 and 520-528. Existing native signed int
+and unsigned GLuint pointer helpers are reused; scalar entry-point
+substitution is removed. Both genuine four-element minimum gates still report
+INVALID_VALUE before a native command, including a conflicting invalid index.
+Empty Source Proxy make_current leaves another actual driver selected on these
+short-span returns; a forwarded command selects its owning driver. GL reads
+exactly four original integer components from longer spans, as specified by
+GLFunctions.json's four-element command payloads. The unified typed V context's
+existing WebGL2 availability behavior and public WebGL1 method absence remain.
+
+Native witnesses cover all eight signed/unsigned below-minimum lengths and
+sixteen four/longer-span driver cases with independently reset exact signed
+INT_MIN/INT_MAX and unsigned high-bit/UINT_MAX readbacks, valid/invalid indices,
+owner selection and native-before-Source pending errors. Public tests cover
+every short ordinary/typed-array list, exact full-width native readback,
+unsigned wrapping, conversion of trailing sequence values, iterator/index/item
+order, author throws before entry and WebGL1 method absence. All three native
+integer-vector/integer-scalar/float-vector and all three corresponding public
+files passed with GC disabled. Exact logs are
+`Build/audit-fixes/source-vertex-integer-vector-gc-none.log` and
+`Build/audit-fixes/source-vertex-integer-vector-public/` in the second private
+worktree. Native integer getters supply driver witnesses; no public integer
+CURRENT_VERTEX_ATTRIB algorithm or complete generated-binding claim is added.
+
 WebGL2 vertexAttribDivisor now follows the pure command body in pinned
 WebGL2RenderingContextImpl.cpp:537-541. Its final fabricated vertex-attribute
 state-map write is removed. Every repository reference was reviewed: after
@@ -159,8 +185,8 @@ integer-pointer and all three public divisor/host/integer-pointer files passed
 with GC disabled. Exact logs are
 `Build/audit-fixes/source-vertex-divisor-gc-none.log` and
 `Build/audit-fixes/source-vertex-divisor-public/` in the second private
-worktree. Integer vector entry-point translation remains separate; no new
-public getter algorithm or full generated binding parity is claimed.
+worktree. Integer vector entry points are verified above; no new public getter
+algorithm or full generated binding parity is claimed.
 
 WebGL2 vertexAttribIPointer now matches the pure driver forwarding body in
 pinned WebGL2RenderingContextImpl.cpp:530-535. The extra V size, stride,
@@ -183,8 +209,8 @@ base-pointer/state and all three public integer-pointer/base-pointer/host
 files passed with GC disabled. Logs are
 `Build/audit-fixes/source-vertex-integer-pointer-gc-none.log` and
 `Build/audit-fixes/source-vertex-integer-pointer-public/` in the second private
-worktree. Divisor state-map cleanup is verified above; integer vector entry
-points remain a separate Source slice. No full generated wrapper or remote driver parity is
+worktree. Divisor state-map cleanup and integer vector entry points are verified
+above. No full generated wrapper or remote driver parity is
 claimed by these focused witnesses.
 
 Base vertexAttribPointer now preserves exactly the retained ARRAY_BUFFER
@@ -234,8 +260,8 @@ without float conversion or vector-entry-point substitution. The two final
 write-only vertex-value map updates are removed, together with the unused
 context field. The unified V context's existing WebGL2 availability gate is
 unchanged; public WebGL1 exposes neither scalar method, matching the Source
-class/IDL boundary. Integer list minimum gates and vector delegation remain a
-separate scope; the former pointer/divisor state mirror is removed above.
+class/IDL boundary. Integer list minimum gates and vector pointer calls are
+verified above; the former pointer/divisor state mirror is removed above.
 
 Focused typed checks compare exact signed INT_MIN/INT_MAX and large signed
 values, UINT_MAX/high-bit unsigned values, independent driver resets, last
@@ -260,7 +286,7 @@ The former vector-to-scalar method substitution is removed. The existing
 native glVertexAttrib4fv helper is reused and three thin ABI delegates supply
 the remaining Source calls. No synthesized default vector or CPU index gate
 is added; GL reads only the Source operation's components from a longer span.
-Integer vectors remain a distinct Source scope; divisor parity is verified above.
+Integer vector and divisor parity are verified above.
 
 Both-version native witnesses cover every below-minimum length, including an
 invalid index that must still take the genuine Source minimum gate; direct
