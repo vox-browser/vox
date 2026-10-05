@@ -197,10 +197,12 @@ pub fn (u URL) parsed() ?liburl.URL {
 		if record.serialize(false) == u.value { return record.copy() }
 	}
 	if cached := dom_url_record_cache[u.value] {
-		return cached
+		return cached.copy()
 	}
 	parsed := liburl.parse(u.value) or { return none }
-	dom_url_record_cache[u.value] = parsed
+	// Source URL's copy-on-write data keeps a mutable value copy independent.
+	// Neither the first caller nor a cache lookup may share its path array.
+	dom_url_record_cache[u.value] = parsed.copy()
 	return parsed
 }
 
