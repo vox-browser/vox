@@ -693,7 +693,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-10-05, the tracked module
-packages contain 431,834 implementation V LOC and 152,487 test V LOC.
+packages contain 432,055 implementation V LOC and 152,777 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. Package counts include generated V assets and
 supporting translations; WebAssembly includes the separately audited LibWasm
@@ -709,13 +709,13 @@ their shared DOM test files are counted under the corresponding owner once.
 | Compression | 471 | ContentSecurityPolicy | 2,816 |
 | CookieStore | 1,059 | CredentialManagement | 420 |
 | Crypto (`webcrypto/`) | 7,957 | DOM | 43,359 |
-| DOMURL | 825 | Editing | 13,938 |
+| DOMURL | 840 | Editing | 13,938 |
 | Encoding | 5,320 | EncryptedMediaExtensions | 572 |
 | EntriesAPI | 44 | EventTiming | 153 |
-| Fetch | 6,581 | FileAPI | 1,340 |
+| Fetch | 6,581 | FileAPI | 1,493 |
 | Fullscreen | 93 | GPC | 16 |
 | Gamepad | 860 | Geolocation | 535 |
-| Geometry | 2,121 | HTML | 69,183 |
+| Geometry | 2,121 | HTML | 69,236 |
 | HighResolutionTime | 500 | IndexedDB | 5,455 |
 | Infra | 548 | Internals | 2,337 |
 | IntersectionObserver | 668 | Layout | 44,740 |
@@ -742,7 +742,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | WebXR | 411 | Worker | 142 |
 | XHR | 1,695 | XLink | 13 |
 | XML | 477 | XPath | 672 |
-| **Total** | **431,834** |  |  |
+| **Total** | **432,055** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
