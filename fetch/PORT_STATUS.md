@@ -62,3 +62,15 @@ candidate-name matches, 88 consolidated-name matches, 45 language/runtime
 dispositions, and 0 unmatched. No Fetch implementation file remains in audit
 quarantine. Verification uses `/Users/alex/code/v/v -enable-globals test fetch`;
 all 11 test files pass at this checkpoint.
+
+Actual Blob scheme requests now consume their copied URL entries (`08d65915`)
+and query genuine client/reserved Environment owners for partition and
+self-fetch (`reserved` priority, current creation URL and logical navigable).
+Parsed requests/clones retain independent bytes/type after revocation, while
+new parses fail; MediaSource tags do not become Blob responses. The actual
+Fetch/media callers pass **2/2 default and 5/5 GC-none** files with existing
+MediaSource/settings and main neighbors. [Owner evidence](../docs/translation-audit/BLOB_URL_FETCH_ACTUAL_REQUEST.md)
+retains original and diagnostic outcomes. Raw standalone strings keep their
+Legacy boundary; Source isomorphic header encoding is a separate follow-up.
+Native bindings, remote transport, physical allocation and full GC ownership
+remain separate. This does not establish complete Fetch parity.
