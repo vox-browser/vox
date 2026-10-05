@@ -144,3 +144,9 @@ and [SourceBufferList task correction](SOURCE_BUFFER_LIST_TASK_OWNER.md)
 provide prerequisites for live native buffer exposure. Their full module and
 native-neighbor checks postdate the frozen production bundle above; native
 buffer/list wrappers and physical collector ownership remain separate.
+
+The subsequent [native buffer owner feature](NATIVE_MEDIA_SOURCE_BUFFER_OWNER.md)
+now exposes the core buffer/list methods and live indices through the actual
+Window and media owner. Its frozen `1b436216` production page verifies queued
+append/remove events and matches a zero-tolerance green viewport. Caller-realm
+TimeRanges, upstream FIXME members and physical collector ownership remain open.

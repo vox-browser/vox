@@ -56,10 +56,20 @@ All 15 module files and three native/browser neighbors pass in each GC mode,
 including the 66-case main regression. Physical weak/strong collector edges
 remain separate from these task identity and ordering checks.
 
-Native SourceBuffer/SourceBufferList wrappers and addSourceBuffer exposure,
-DedicatedWorker startup, foreign realm/world wrappers, physical GC edges and
-IPC remain separate. The worker capability flag is false, as in the pinned
-Source; exposing that flag does not establish a worker runtime. Source event
+Native Window callers now expose the actual source/active lists and buffers,
+addSourceBuffer, mode/updating/timestampOffset, buffer and list handlers, and
+append/abort/changeType/remove. Indexed list access stays live through media
+detachment. [Native buffer evidence](../docs/translation-audit/NATIVE_MEDIA_SOURCE_BUFFER_OWNER.md)
+records seven host cases and an actual sourceopen page caller, plus a frozen
+signed production bundle whose public append/remove viewport is pixel-exact.
+The broad 23-file checks pass in both modes before a supporting
+[captured error-brand correction](../docs/translation-audit/BUFFER_SOURCE_ERROR_BRAND_OWNER.md);
+the four affected files pass afterward in both modes. These are separate snapshots.
+
+Caller-realm buffered TimeRanges, DedicatedWorker startup, foreign realm/world
+wrappers, physical GC edges and IPC remain separate. The worker capability
+flag is false, as in the pinned Source; exposing that flag does not establish
+a worker runtime. Source event
 clock integration and complete decoder/playback behavior remain separate.
 Upstream IDL FIXMEs for handle, removeSourceBuffer, seekable-range mutation and
 ManagedMediaSource streaming are distinct from these translation boundaries.
@@ -71,5 +81,6 @@ events, with a pixel-exact viewport and explicit zero-tolerance comparison.
 The same bundle passes signature/startup checks and standard smoke screenshots;
 the first targeted animation capture fails and a complete nine-case retry is
 pixel-exact. The whole-module and native-neighbor checks above postdate this
-bundle; no rebuilt production or screenshot proof is claimed for the buffer
-task corrections.
+bundle. The later frozen `1b436216` public buffer page includes those task
+corrections and the new native callers; it does not repeat the earlier smoke
+screenshot or Wasm/DOMURL sweeps.

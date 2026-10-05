@@ -90,3 +90,8 @@ The [buffer event-owner fix](SOURCE_BUFFER_EVENT_TASK_OWNER.md) is independently
 committed. The [last frozen production bundle](FROZEN_E385AC31_NATIVE_URL_MEDIA.md)
 predates these features; no current rebuilt bundle or screenshot verification
 is claimed. The audit stays **32 fixed / 25 partial / 9 open**.
+
+The subsequent [native buffer feature](NATIVE_MEDIA_SOURCE_BUFFER_OWNER.md)
+exposes live list indexing and public additions in the frozen `1b436216`
+production page. It includes this task correction while preserving the open
+physical weak-reference and caller-realm boundaries.

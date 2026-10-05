@@ -427,3 +427,23 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   `Build/audit-fixes/source-current-module-loc-a7d2561f.json` has SHA256
   `2651d60ec90e9af49ca7e99d65e41fcf6df9edc5a71332ce16d27fee58f61497`.
   Physical counts and structural mappings do not establish parity.
+
+- Native MediaSource buffer owners (`1b436216`) now expose source/active lists,
+  live indexed buffers, addSourceBuffer and core buffer operations through the
+  actual Window and DOM media. Seven host cases and a real sourceopen page
+  caller pass. A separate shared copier correction (`5846bfd3`) captures the
+  intrinsic TypeError brand check; its original Crypto counter baseline records
+  one author hook call, and corrected Crypto/SourceBuffer checks record zero.
+  [Native buffer evidence](NATIVE_MEDIA_SOURCE_BUFFER_OWNER.md) and
+  [error-brand evidence](BUFFER_SOURCE_ERROR_BRAND_OWNER.md) distinguish the
+  **23/23 files in each GC mode before the brand fix** from the final affected
+  **4/4 files in each mode afterward**. Unrelated Crypto formatting is restored
+  with identical non-whitespace tokens and string literals. The signed frozen
+  `1b436216` bundle passes startup and its public append/remove page matches
+  **480,000 pixels exactly**, using explicit zero tolerances. The production
+  snapshot records **4,853 files**, 16 selected Source references and two
+  compiler executables unchanged. No current full screenshot/Wasm/LibJS sweep
+  is claimed. Caller-realm TimeRanges and physical GC ownership remain open;
+  the ledger stays **32 fixed / 25 partial / 9 open**. The refreshed module
+  inventory remains **432,276 implementation / 153,754 test V LOC** across 78
+  owners because these additions belong to browser/root support.

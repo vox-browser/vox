@@ -84,3 +84,7 @@ observable checks, not collector equivalence. The
 own ordering correction. The [last frozen production bundle](FROZEN_E385AC31_NATIVE_URL_MEDIA.md)
 predates these two task features; no rebuilt production or screenshot proof
 is claimed here. The audit stays **32 fixed / 25 partial / 9 open**.
+
+The subsequent [native buffer feature](NATIVE_MEDIA_SOURCE_BUFFER_OWNER.md)
+adds public callers and frozen `1b436216` production verification that includes
+this task correction. Its proof keeps TimeRanges and physical GC boundaries open.
