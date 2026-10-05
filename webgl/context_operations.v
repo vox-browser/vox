@@ -726,6 +726,8 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
  }
  if context.version==.webgl2 {
   match pname {
+   // Source get_parameter returns zero without issuing a compositor query.
+   max_client_wait_timeout_webgl {return integer_parameter(0)}
    texture_binding_3d,texture_binding_2d_array {
     target:=if pname==texture_binding_3d {texture_3d} else {texture_2d_array}
     handle:=context.bound_textures[target] or {return WebGLParameterValue{}}
