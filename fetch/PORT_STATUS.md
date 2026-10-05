@@ -71,6 +71,10 @@ new parses fail; MediaSource tags do not become Blob responses. The actual
 Fetch/media callers pass **2/2 default and 5/5 GC-none** files with existing
 MediaSource/settings and main neighbors. [Owner evidence](../docs/translation-audit/BLOB_URL_FETCH_ACTUAL_REQUEST.md)
 retains original and diagnostic outcomes. Raw standalone strings keep their
-Legacy boundary; Source isomorphic header encoding is a separate follow-up.
+Legacy boundary. Source isomorphic type-header encoding now has a separate
+completed slice (`242a95de`), with **3/3 default and 5/5 GC-none** focused
+encoder/HTTP/actual Fetch files; [header evidence](../docs/translation-audit/BLOB_URL_HEADER_ISOMORPHIC_ENCODING.md)
+records the executed original UTF8-byte mismatch and retained metadata/range
+proof.
 Native bindings, remote transport, physical allocation and full GC ownership
 remain separate. This does not establish complete Fetch parity.

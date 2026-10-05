@@ -32,3 +32,11 @@ probes compile the actual pinned Rust bridge and dependency and pass **2/2 in
 debug and release**. Source mapping, exact dependency checksum and remaining
 FileReader owner boundaries are recorded in
 [`FILEREADER_TEXT_SOURCE.md`](../docs/translation-audit/FILEREADER_TEXT_SOURCE.md).
+
+Pinned LibTextCodec isomorphic UTF8/UTF16 encoding (`242a95de`) now uses
+Source code-point iteration and byte truncation, retaining its diagnostic
+above U+00FF and its commented-out range VERIFY. The HTTP Header overloads
+and genuine Blob scheme caller consume those bytes. [Source header evidence](../docs/translation-audit/BLOB_URL_HEADER_ISOMORPHIC_ENCODING.md)
+records the executed original byte mismatch, pairs/lone surrogates and
+**3/3 default / 5/5 GC-none** focused caller/neighbor files. Physical
+allocation, OOM and other encoder/binding boundaries remain separate.
