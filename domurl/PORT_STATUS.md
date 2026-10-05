@@ -70,7 +70,7 @@ two exact unmodified Source sort outputs per GC mode and the 66-case main
 regression. Browser/root binding support remains outside the 78-owner LOC total.
 
 Native public URL WebIDL conversion and exposure, foreign realm/world
-identity, source UTF16 parser/encoding boundaries, OOM/allocation handling and
+identity, source UTF16 parser/encoding boundaries, OOM/allocation handling,
 Worker startup exposure, generated diagnostic text and complete GC/IPC ownership
-remain separate. The existing structural inventory
-must not be read as full DOMURL parity.
+remain separate. The existing structural inventory must not be read as full
+DOMURL parity.

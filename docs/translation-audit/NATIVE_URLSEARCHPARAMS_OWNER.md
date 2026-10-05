@@ -75,4 +75,5 @@ receiver behavior, Worker startup exposure, full WrapperWorld/GC edge ownership,
 allocation limits and complete generated diagnostic text remain separate.
 Pair-length errors preserve the pinned Source message; general binding failures
 currently preserve the TypeError class rather than every Source diagnostic.
-The [previous frozen production bundle](FROZEN_F273F1EF_BLOB_URL_CONTINUATION.md)+predates these changes. The audit remains **32 fixed / 25 partial / 9 open**.
+The [previous frozen production bundle](FROZEN_F273F1EF_BLOB_URL_CONTINUATION.md)
+predates these changes. The audit remains **32 fixed / 25 partial / 9 open**.
