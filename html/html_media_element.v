@@ -974,12 +974,12 @@ fn (mut element HTMLMediaElement) load_media_source_from_blob_url(url dom.URL) !
 	if url.scheme() != 'blob' {
 		return false
 	}
-	entry := fileapi.resolve_a_blob_url(url.serialize()) or { return false }
+	entry := fileapi.resolve_a_legacy_blob_url(url.serialize()) or { return false }
 	if entry.object.kind != .media_source {
 		return false
 	}
 
-	mut access := fileapi.BlobURLObtainEnvironment(fileapi.BlobURLEnvironment{})
+	mut access := fileapi.LegacyBlobURLObtainEnvironment(fileapi.LegacyBlobURLEnvironment{})
 	if html_element := element.associated_element_ {
 		document := unsafe { &dom.Element(html_element) }.document()
 		document_url := dom.URL{document.url_string()}
@@ -989,10 +989,10 @@ fn (mut element HTMLMediaElement) load_media_source_from_blob_url(url dom.URL) !
 			false
 		}
 		if is_top_level_self_fetch {
-			access = fileapi.BlobURLObtainEnvironment(fileapi.TopLevelSelfFetch{})
+			access = fileapi.LegacyBlobURLObtainEnvironment(fileapi.TopLevelSelfFetch{})
 		} else {
 			origin := document.origin()
-			access = fileapi.BlobURLObtainEnvironment(fileapi.BlobURLEnvironment{
+			access = fileapi.LegacyBlobURLObtainEnvironment(fileapi.LegacyBlobURLEnvironment{
 				id: document_url.serialize()
 				origin: origin.serialize()
 				storage_key: origin.serialize_for_ipc()
@@ -1000,13 +1000,13 @@ fn (mut element HTMLMediaElement) load_media_source_from_blob_url(url dom.URL) !
 		}
 	} else {
 		origin := element.base_url_.origin()
-		access = fileapi.BlobURLObtainEnvironment(fileapi.BlobURLEnvironment{
+		access = fileapi.LegacyBlobURLObtainEnvironment(fileapi.LegacyBlobURLEnvironment{
 			id: element.base_url_.serialize()
 			origin: origin.serialize()
 			storage_key: origin.serialize_for_ipc()
 		})
 	}
-	object := fileapi.obtain_a_blob_object(entry, access) or {
+	object := fileapi.obtain_a_legacy_blob_object(entry, access) or {
 		return error('MediaSource blob URL is not authorized for this document')
 	}
 	attach := object.media_source_attach or { return error('MediaSource blob URL is detached') }

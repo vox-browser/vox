@@ -1530,7 +1530,8 @@ fn document_run_unloading_cleanup_steps(target voidptr, document &dom.Document) 
 		}
 	}
 	if window.environment_settings_ != unsafe { nil } {
-		mut store := fileapi.blob_url_store()
+		run_blob_url_unloading_cleanup_steps(document)
+		mut store := fileapi.legacy_blob_url_store()
 		store.run_unloading_cleanup_steps(window.environment_settings_.settings.environment().id)
 	}
 	mutable_document.fully_exit_fullscreen()

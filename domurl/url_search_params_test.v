@@ -258,24 +258,24 @@ fn test_dom_url_origin_same_site_uses_the_public_suffix_list() {
 
 fn test_blob_url_origin_and_store_integration() {
 	blob := fileapi.Blob.create('payload'.bytes(), 'text/plain')
-	mut store := fileapi.BlobURLStore.create()
-	environment := fileapi.BlobURLEnvironment{
+	mut store := fileapi.LegacyBlobURLStore.create()
+	environment := fileapi.LegacyBlobURLEnvironment{
 		id: 'document'
 		origin: 'https://example.com'
 		storage_key: 'partition'
 	}
-	value := DOMURL.create_object_url_for_blob(blob, environment, mut store)!
+	value := DOMURL.create_legacy_object_url_for_blob(blob, environment, mut store)!
 	url := DOMURL.construct_impl(value, none)!
 	assert url.origin() == 'https://example.com'
 	assert store.resolve(value) != none
-	unauthorized := fileapi.BlobURLEnvironment{
+	unauthorized := fileapi.LegacyBlobURLEnvironment{
 		id: 'other'
 		origin: 'https://example.com'
 		storage_key: 'other-partition'
 	}
-	DOMURL.revoke_object_url_from_store(value, unauthorized, mut store)
+	DOMURL.revoke_legacy_object_url_from_store(value, unauthorized, mut store)
 	assert store.resolve(value) != none
-	DOMURL.revoke_object_url_from_store(value, environment, mut store)
+	DOMURL.revoke_legacy_object_url_from_store(value, environment, mut store)
 	assert store.resolve(value) == none
 }
 

@@ -367,13 +367,13 @@ fn (_ &BlobFetchTestClient) fetch_request_client_cross_origin_isolated_capabilit
 fn test_blob_scheme_fetch_authorizes_navigation_partition_and_top_level_self_fetch() {
 	owner_origin := dom.Origin{ value: 'https://owner.test' }
 	blob := fileapi.Blob.create('blob payload'.bytes(), 'text/plain')
-	blob_url := fileapi.add_entry_to_blob_url_store(fileapi.BlobURLObject.from_blob(blob), fileapi.BlobURLEnvironment{
+	blob_url := fileapi.add_legacy_entry_to_blob_url_store(fileapi.BlobURLObject.from_blob(blob), fileapi.LegacyBlobURLEnvironment{
 		id: 'blob-fetch-test'
 		origin: owner_origin.serialize()
 		storage_key: owner_origin.serialize_for_ipc()
 	})!
 	defer {
-		fileapi.remove_entry_from_blob_url_store(blob_url)
+		fileapi.remove_legacy_entry_from_blob_url_store(blob_url)
 	}
 	host := FetchHost{ perform: host_fetch }
 

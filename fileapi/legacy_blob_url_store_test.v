@@ -1,7 +1,7 @@
 module fileapi
 
-fn blob_url_environment(id string, origin string, storage_key string) BlobURLEnvironment {
-	return BlobURLEnvironment{
+fn blob_url_environment(id string, origin string, storage_key string) LegacyBlobURLEnvironment {
+	return LegacyBlobURLEnvironment{
 		id:          id
 		origin:      origin
 		storage_key: storage_key
@@ -10,7 +10,7 @@ fn blob_url_environment(id string, origin string, storage_key string) BlobURLEnv
 
 fn test_blob_url_store_add_resolve_partition_and_remove() {
 	blob := Blob.create('payload'.bytes(), 'text/plain')
-	mut store := BlobURLStore.create()
+	mut store := LegacyBlobURLStore.create()
 	owner := blob_url_environment('owner', 'https://example.com', 'partition-a')
 	url := store.add_entry(BlobURLObject.from_blob(blob), owner)!
 	assert url.starts_with('blob:https://example.com/')
@@ -18,17 +18,17 @@ fn test_blob_url_store_add_resolve_partition_and_remove() {
 	entry := store.resolve('${url}#fragment') or { panic('missing blob URL') }
 	assert entry.object.kind == .blob
 	assert voidptr(entry.object.blob or { panic('missing blob') }) == voidptr(blob)
-	assert obtain_a_blob_object(entry, owner) != none
+	assert obtain_a_legacy_blob_object(entry, owner) != none
 	other_partition := blob_url_environment('other', 'https://example.com', 'partition-b')
-	assert obtain_a_blob_object(entry, other_partition) == none
-	assert obtain_a_blob_object(entry, TopLevelNavigation{}) != none
-	assert obtain_a_blob_object(entry, TopLevelSelfFetch{}) != none
+	assert obtain_a_legacy_blob_object(entry, other_partition) == none
+	assert obtain_a_legacy_blob_object(entry, TopLevelNavigation{}) != none
+	assert obtain_a_legacy_blob_object(entry, TopLevelSelfFetch{}) != none
 	store.remove_entry('${url}#ignored')
 	assert store.resolve(url) == none
 }
 
 fn test_blob_url_store_opaque_origin_and_environment_cleanup() {
-	mut store := BlobURLStore.create()
+	mut store := LegacyBlobURLStore.create()
 	environment := blob_url_environment('document-a', 'null', 'partition')
 	first := store.add_entry(BlobURLObject.from_blob(Blob.construct(none, none)), environment)!
 	second := store.add_entry(BlobURLObject.from_media_source('media-1'), environment)!
@@ -44,9 +44,9 @@ fn test_blob_url_store_opaque_origin_and_environment_cleanup() {
 fn test_process_wide_blob_url_store_entry_points() {
 	blob := Blob.create('global'.bytes(), 'text/plain')
 	environment := blob_url_environment('global-test', 'https://example.test', 'global-partition')
-	value := add_entry_to_blob_url_store(BlobURLObject.from_blob(blob), environment)!
-	entry := resolve_a_blob_url('${value}#fragment') or { panic('entry was not resolved') }
+	value := add_legacy_entry_to_blob_url_store(BlobURLObject.from_blob(blob), environment)!
+	entry := resolve_a_legacy_blob_url('${value}#fragment') or { panic('entry was not resolved') }
 	assert entry.object.blob or { panic('blob was not stored') } == blob
-	remove_entry_from_blob_url_store(value)
-	assert resolve_a_blob_url(value) == none
+	remove_legacy_entry_from_blob_url_store(value)
+	assert resolve_a_legacy_blob_url(value) == none
 }

@@ -240,23 +240,25 @@ pub fn DOMURL.revoke_object_url(value string, hook RevokeObjectURLHook) {
 	}
 }
 
-pub fn DOMURL.create_object_url_for_blob(blob &fileapi.Blob, environment fileapi.BlobURLEnvironment, mut store fileapi.BlobURLStore) !string {
+pub fn DOMURL.create_legacy_object_url_for_blob(blob &fileapi.Blob, environment fileapi.LegacyBlobURLEnvironment, mut store fileapi.LegacyBlobURLStore) !string {
 	return store.add_entry(fileapi.BlobURLObject.from_blob(blob), environment)
 }
 
-pub fn DOMURL.revoke_object_url_from_store(value string, environment fileapi.BlobURLEnvironment, mut store fileapi.BlobURLStore) {
+pub fn DOMURL.revoke_legacy_object_url_from_store(value string, environment fileapi.LegacyBlobURLEnvironment, mut store fileapi.LegacyBlobURLStore) {
 	entry := store.resolve(value) or { return }
-	if !fileapi.check_for_same_partition_blob_url_usage(entry, environment) {
+	if !fileapi.check_for_same_partition_legacy_blob_url_usage(entry, environment) {
 		return
 	}
 	store.remove_entry(value)
 }
 
 fn finish_parsing(parsed_url ?liburl.URL) ?liburl.URL {
-	// Blob URL entry snapshots live in FileAPI's translated BlobURLStore. The
-	// URL record itself remains unchanged at this boundary, matching the
-	// fallback path used by URL::origin when no embedded snapshot is present.
-	return parsed_url
+	mut record := parsed_url or { return none }
+	if record.scheme != 'blob' { return record }
+	if entry := fileapi.resolve_a_blob_url(record) {
+		record.set_blob_url_entry(entry.snapshot())
+	}
+	return record
 }
 
 pub fn parse_from_byte_string(input string, base_url ?liburl.URL, encoding ?string) ?liburl.URL {

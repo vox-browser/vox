@@ -225,13 +225,13 @@ fn test_media_source_blob_url_loads_as_a_local_resource() {
 	}
 	mut source := MediaSource.create()
 	origin := document.origin()
-	blob_url := fileapi.add_entry_to_blob_url_store(source.blob_url_object('media-source-url'), fileapi.BlobURLEnvironment{
+	blob_url := fileapi.add_legacy_entry_to_blob_url_store(source.blob_url_object('media-source-url'), fileapi.LegacyBlobURLEnvironment{
 		id: document.url_string()
 		origin: origin.serialize()
 		storage_key: origin.serialize_for_ipc()
 	})!
 	defer {
-		fileapi.remove_entry_from_blob_url_store(blob_url)
+		fileapi.remove_legacy_entry_from_blob_url_store(blob_url)
 	}
 
 	media.set_source(blob_url)

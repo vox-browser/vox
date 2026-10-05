@@ -767,7 +767,7 @@ pub fn scheme_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 		return PendingResponse.create(mut request, response)
 	}
 	if scheme == 'blob' {
-		entry := fileapi.resolve_a_blob_url(request.current_url().serialize()) or {
+		entry := fileapi.resolve_a_legacy_blob_url(request.current_url().serialize()) or {
 			return PendingResponse.create(mut request, Response.network_error("Request has an invalid 'blob:' URL"))
 		}
 		if request.method != 'GET' {
@@ -785,23 +785,23 @@ pub fn scheme_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 			false
 		}
 		access := if is_document_navigation {
-			fileapi.BlobURLObtainEnvironment(fileapi.TopLevelNavigation{})
+			fileapi.LegacyBlobURLObtainEnvironment(fileapi.TopLevelNavigation{})
 		} else if request.client_present && request.client_is_window
 			&& request.client_is_top_level_window
 			&& is_creation_url_self_fetch {
-			fileapi.BlobURLObtainEnvironment(fileapi.TopLevelSelfFetch{})
+			fileapi.LegacyBlobURLObtainEnvironment(fileapi.TopLevelSelfFetch{})
 		} else {
-			mut environment := fileapi.BlobURLEnvironment{}
+			mut environment := fileapi.LegacyBlobURLEnvironment{}
 			if reserved_client := request.reserved_client {
 				creation_url := reserved_client.fetch_request_environment_creation_url()
-				environment = fileapi.BlobURLEnvironment{
+				environment = fileapi.LegacyBlobURLEnvironment{
 					id:          creation_url.serialize()
 					origin:      creation_url.origin().serialize()
 					storage_key: creation_url.origin().serialize_for_ipc()
 				}
 			} else if client := request.client {
 				origin := client.fetch_request_client_origin()
-				environment = fileapi.BlobURLEnvironment{
+				environment = fileapi.LegacyBlobURLEnvironment{
 					id:          client.fetch_request_client_creation_url().serialize()
 					origin:      origin.serialize()
 					storage_key: origin.serialize_for_ipc()
@@ -809,9 +809,9 @@ pub fn scheme_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 			} else {
 				return PendingResponse.create(mut request, Response.network_error('Request is missing fetch client'))
 			}
-			fileapi.BlobURLObtainEnvironment(environment)
+			fileapi.LegacyBlobURLObtainEnvironment(environment)
 		}
-		object := fileapi.obtain_a_blob_object(entry, access) or {
+		object := fileapi.obtain_a_legacy_blob_object(entry, access) or {
 			return PendingResponse.create(mut request, Response.network_error("Failed to obtain a Blob object from 'blob:' URL"))
 		}
 		blob := object.blob or {
