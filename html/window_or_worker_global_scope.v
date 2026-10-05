@@ -988,13 +988,13 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) indexed_db() &GlobalScopeIndex
 	} else {
 		scope.origin_
 	}
-	storage_key := storageapi.obtain_a_storage_key(storageapi.StorageEnvironment{
-		origin: storageapi.StorageOrigin{
-			serialized: origin.serialize()
-			opaque: origin.is_opaque()
-			opaque_file: origin.is_opaque_file_origin()
-		}
-	})
+	storage_key := if typed := origin.liburl_origin() {
+		storageapi.obtain_a_storage_key(storageapi.StorageEnvironment{ origin: typed })
+	} else {
+		// Explicit standalone DOM-origin adapter: it has no typed native origin
+		// owner, so preserve its existing unavailable-storage result.
+		?storageapi.StorageKey(none)
+	}
 	loop := scope.responsible_event_loop()
 	mut document := ?&dom.Document(none)
 	if window := scope.associated_window_ {

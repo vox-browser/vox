@@ -6,73 +6,34 @@
 // StorageManager, and NavigatorStorage.
 module storageapi
 
-pub struct StorageOrigin {
-pub:
-	serialized  string
-	opaque      bool
-	opaque_file bool
-}
+import url as liburl
 
+// Captured-value adapter for the Source HTML Environment overload. Genuine
+// owners supply their actual current settings origin or creation URL record.
 pub struct StorageEnvironment {
 pub:
-	origin             StorageOrigin
-	creation_origin    StorageOrigin
+	origin             liburl.Origin
+	creation_url       liburl.URL
 	is_settings_object bool = true
 	storage_disabled   bool
 }
 
 pub struct StorageKey {
 pub:
-	origin StorageOrigin
+	origin liburl.Origin
 }
 
 pub fn (key StorageKey) to_string() string {
-	return key.origin.serialized
+	return key.origin.serialize()
 }
 
 pub fn (key StorageKey) equals(other StorageKey) bool {
-	return !key.origin.opaque && !other.origin.opaque
-		&& key.origin.serialized == other.origin.serialized
+	return key.origin.is_same_origin(other.origin)
 }
 
-// IPC encodes the complete origin representation carried by a storage key.
-// Keeping the opaque flags is required because two equally serialized opaque
-// origins must still remain unsuitable for ordinary storage-key equality.
-pub fn encode_storage_key(key StorageKey) []u8 {
-	serialized := key.origin.serialized.bytes()
-	mut output := []u8{cap: 6 + serialized.len}
-	length := u32(serialized.len)
-	for shift in 0 .. 4 {
-		output << u8(length >> (shift * 8))
-	}
-	output << serialized
-	output << u8(key.origin.opaque)
-	output << u8(key.origin.opaque_file)
-	return output
-}
-
-pub fn decode_storage_key(data []u8) !StorageKey {
-	if data.len < 6 {
-		return error('truncated storage key IPC data')
-	}
-	mut length := u32(0)
-	for shift in 0 .. 4 {
-		length |= u32(data[shift]) << (shift * 8)
-	}
-	end := 4 + int(length)
-	if end < 4 || end + 2 != data.len {
-		return error('invalid storage key IPC data')
-	}
-	if data[end] > 1 || data[end + 1] > 1 {
-		return error('invalid storage key IPC boolean')
-	}
-	return StorageKey{
-		origin: StorageOrigin{
-			serialized: data[4..end].bytestr()
-			opaque: data[end] == 1
-			opaque_file: data[end + 1] == 1
-		}
-	}
+// StorageKey.cpp:39–42: Source's overload for an actual URL Origin value.
+pub fn obtain_a_storage_key_for_origin(origin liburl.Origin) StorageKey {
+	return StorageKey{ origin: origin }
 }
 
 pub fn obtain_a_storage_key_for_non_storage_purposes(environment StorageEnvironment) StorageKey {
@@ -80,7 +41,7 @@ pub fn obtain_a_storage_key_for_non_storage_purposes(environment StorageEnvironm
 		origin: if environment.is_settings_object {
 			environment.origin
 		} else {
-			environment.creation_origin
+			environment.creation_url.origin()
 		}
 	}
 }
@@ -89,16 +50,15 @@ pub fn obtain_a_storage_key(environment StorageEnvironment) ?StorageKey {
 	mut key := obtain_a_storage_key_for_non_storage_purposes(environment)
 	// file: URLs have opaque origins, but current Ladybird deliberately gives
 	// them one shared storage origin for compatibility with other browsers.
-	if key.origin.opaque_file {
+	if key.origin.is_opaque_file_origin() {
 		key = StorageKey{
-			origin: StorageOrigin{
-				serialized: 'file://'
-			}
+			origin: liburl.Origin.tuple('file', liburl.Host.from_string(''), none, none)
 		}
 	}
-	if key.origin.opaque || environment.storage_disabled {
+	if key.origin.is_opaque() {
 		return none
 	}
+	// Source FIXME: user-disabled storage has no implemented effect here.
 	return key
 }
 
@@ -142,7 +102,7 @@ pub struct StorageBottle {
 pub:
 	type_       StorageType
 	endpoint    StorageEndpointType
-	storage_key StorageKey
+	storage_key ?StorageKey
 mut:
 	quota_     ?u64
 	map_       map[string]string
@@ -168,30 +128,35 @@ pub fn (bottle &StorageBottle) quota() ?u64 {
 	return bottle.quota_
 }
 
+fn (bottle &StorageBottle) host_storage_key() string {
+	key := bottle.storage_key or { panic('Host-backed StorageBottle has no actual StorageKey') }
+	return key.to_string()
+}
+
 pub fn (bottle &StorageBottle) size() int {
 	if host := bottle.host {
-		return host.keys(bottle.endpoint, bottle.storage_key.to_string()).len
+		return host.keys(bottle.endpoint, bottle.host_storage_key()).len
 	}
 	return bottle.map_.len
 }
 
 pub fn (bottle &StorageBottle) keys() []string {
 	if host := bottle.host {
-		return host.keys(bottle.endpoint, bottle.storage_key.to_string())
+		return host.keys(bottle.endpoint, bottle.host_storage_key())
 	}
 	return bottle.key_order_.clone()
 }
 
 pub fn (bottle &StorageBottle) get(key string) ?string {
 	if host := bottle.host {
-		return host.get(bottle.endpoint, bottle.storage_key.to_string(), key)
+		return host.get(bottle.endpoint, bottle.host_storage_key(), key)
 	}
 	return bottle.map_[key] or { none }
 }
 
 pub fn (mut bottle StorageBottle) set(key string, value string) StorageSetResult {
 	if host := bottle.host {
-		return host.set(bottle.endpoint, bottle.storage_key.to_string(), key, value)
+		return host.set(bottle.endpoint, bottle.host_storage_key(), key, value)
 	}
 	old_value := bottle.map_[key] or { '' }
 	had_old_value := key in bottle.map_
@@ -261,9 +226,13 @@ mut:
 
 pub fn SessionStorageBottle.create(quota ?u64) &SessionStorageBottle {
 	return &SessionStorageBottle{
-		bottle_: StorageBottle.create(.session, .session_storage, StorageKey{
-			origin: StorageOrigin{}
-		}, quota, none)
+		// This quota-only constructor is the existing isolated in-memory
+		// adapter; it has no Source Page or StorageKey constructor owner.
+		bottle_: &StorageBottle{
+			type_: .session
+			endpoint: .session_storage
+			quota_: quota
+		}
 	}
 }
 
@@ -293,7 +262,7 @@ pub fn (mut bottle SessionStorageBottle) remove(key string) {
 
 pub fn (mut bottle StorageBottle) clear() {
 	if host := bottle.host {
-		host.clear(bottle.endpoint, bottle.storage_key.to_string())
+		host.clear(bottle.endpoint, bottle.host_storage_key())
 		return
 	}
 	bottle.map_.clear()
@@ -302,7 +271,7 @@ pub fn (mut bottle StorageBottle) clear() {
 
 pub fn (mut bottle StorageBottle) remove(key string) {
 	if host := bottle.host {
-		host.remove(bottle.endpoint, bottle.storage_key.to_string(), key)
+		host.remove(bottle.endpoint, bottle.host_storage_key(), key)
 		return
 	}
 	if key in bottle.map_ {

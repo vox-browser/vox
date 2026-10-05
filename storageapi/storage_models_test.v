@@ -1,13 +1,16 @@
 module storageapi
 
+import url as liburl
+
+fn storage_test_origin(address string) liburl.Origin {
+	parsed := liburl.parse(address) or { panic('invalid actual test origin URL') }
+	return parsed.origin()
+}
+
 fn session_environment(origin string) StorageEnvironment {
 	return StorageEnvironment{
-		origin: StorageOrigin{
-			serialized: origin
-		}
-		creation_origin: StorageOrigin{
-			serialized: origin
-		}
+		origin: storage_test_origin(origin)
+		creation_url: liburl.parse(origin) or { panic('invalid actual creation URL') }
 	}
 }
 
@@ -16,49 +19,42 @@ fn test_storage_key_origin_and_failure_rules() {
 	key := obtain_a_storage_key(environment) or { panic('expected storage key') }
 	assert key.to_string() == 'https://example.test'
 	assert key.equals(StorageKey{
-		origin: StorageOrigin{
-			serialized: 'https://example.test'
-		}
+		origin: storage_test_origin('https://example.test')
 	})
 	assert obtain_a_storage_key(StorageEnvironment{
-		origin: StorageOrigin{
-			serialized: 'null'
-			opaque: true
-		}
+		origin: liburl.Origin.create_opaque(.standard)
 	}) == none
 	file_key := obtain_a_storage_key(StorageEnvironment{
-		origin: StorageOrigin{
-			serialized: 'opaque-file:one'
-			opaque: true
-			opaque_file: true
-		}
+		origin: liburl.Origin.create_opaque(.file)
 	}) or { panic('file origins should be storage-capable') }
 	assert file_key.to_string() == 'file://'
-	assert !file_key.origin.opaque
+	assert !file_key.origin.is_opaque()
 	assert obtain_a_storage_key(StorageEnvironment{
-		origin: StorageOrigin{
-			serialized: 'https://example.test'
-		}
+		origin: storage_test_origin('https://example.test')
 		storage_disabled: true
-	}) == none
+	}) != none
 }
 
-fn test_storage_key_ipc_round_trip_preserves_the_complete_origin() {
-	key := StorageKey{
-		origin: StorageOrigin{
+fn test_legacy_storage_key_byte_codec_preserves_legacy_flags() {
+	key := LegacyStorageKeyRecord{
+		origin: LegacyStorageOrigin{
 			serialized: 'opaque-file:example'
 			opaque: true
 			opaque_file: true
 		}
 	}
-	decoded := decode_storage_key(encode_storage_key(key)) or { panic(err) }
+	encoded := encode_legacy_storage_key(key)
+	assert encoded[..4] == [u8(19), 0, 0, 0]
+	assert encoded[4..encoded.len - 2] == 'opaque-file:example'.bytes()
+	assert encoded[encoded.len - 2..] == [u8(1), 1]
+	decoded := decode_legacy_storage_key(encoded) or { panic(err) }
 	assert decoded.origin == key.origin
-	if _ := decode_storage_key(encode_storage_key(key)[..5]) {
+	if _ := decode_legacy_storage_key(encoded[..5]) {
 		assert false
 	}
-	mut invalid_boolean := encode_storage_key(key)
+	mut invalid_boolean := encode_legacy_storage_key(key)
 	invalid_boolean[invalid_boolean.len - 1] = 2
-	if _ := decode_storage_key(invalid_boolean) {
+	if _ := decode_legacy_storage_key(invalid_boolean) {
 		assert false
 	}
 }
@@ -88,9 +84,7 @@ fn test_session_storage_shed_bucket_and_bottle_map() {
 
 fn test_session_bottle_enforces_endpoint_quota() {
 	key := StorageKey{
-		origin: StorageOrigin{
-			serialized: 'https://example.test'
-		}
+		origin: storage_test_origin('https://example.test')
 	}
 	mut bottle := StorageBottle.create(.session, .session_storage, key, u64(5), none)
 	assert bottle.set('a', '1234').error == .none
@@ -101,9 +95,7 @@ fn test_session_bottle_enforces_endpoint_quota() {
 
 fn test_session_bottle_preserves_order_across_updates_removal_and_quota_failure() {
 	key := StorageKey{
-		origin: StorageOrigin{
-			serialized: 'https://example.test'
-		}
+		origin: storage_test_origin('https://example.test')
 	}
 	mut bottle := StorageBottle.create(.session, .session_storage, key, u64(8), none)
 	assert bottle.set('b', '1').error == .none
@@ -172,9 +164,7 @@ fn exact_storage_usage(_ string) u64 {
 
 fn test_exact_storage_bottle_bucket_shelf_and_shed_entry_points() {
 	key := StorageKey{
-		origin: StorageOrigin{
-			serialized: 'https://exact.test'
-		}
+		origin: storage_test_origin('https://exact.test')
 	}
 	base := StorageBottle.create(.session, .session_storage, key, u64(10), none)
 	assert voidptr(base.proxy()) == voidptr(base)
