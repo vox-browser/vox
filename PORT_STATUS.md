@@ -763,7 +763,7 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The table below refreshes tracked package V LOC on 2026-10-04; upstream counts
+The table below refreshes tracked package V LOC on 2026-10-05; upstream counts
 and structural mapping labels retain the pinned inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
@@ -781,25 +781,25 @@ from the current-module totals.
 | `Clipboard` | 4 | 1,009 | 1,123 | 409 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 471 | 143 | Complete |
-| `ContentSecurityPolicy` | 37 | 4,725 | 2,799 | 514 | Complete |
+| `ContentSecurityPolicy` | 37 | 4,725 | 2,816 | 514 | Complete |
 | `CookieStore` | 2 | 850 | 1,059 | 482 | Complete |
 | `CredentialManagement` | 6 | 382 | 420 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 7,957 | 7,989 | Complete |
-| `DOM` | 59 | 34,859 | 43,359 | 4,626 | Complete |
-| `DOMURL` | 4 | 1,039 | 825 | 363 | Complete |
+| `DOM` | 59 | 34,859 | 43,359 | 4,669 | Complete |
+| `DOMURL` | 4 | 1,039 | 825 | 388 | Complete |
 | `Editing` | 26 | 12,720 | 13,938 | 226 | Complete |
-| `Encoding` | 6 | 769 | 4,523 | 3,163 | Complete |
+| `Encoding` | 6 | 769 | 5,320 | 4,474 | Complete |
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
 | `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
 | `EventTiming` | 1 | 122 | 153 | 95 | Complete |
-| `Fetch` | 33 | 8,493 | 6,585 | 3,015 | Complete |
+| `Fetch` | 33 | 8,493 | 6,581 | 3,222 | Complete |
 | `FileAPI` | 6 | 1,357 | 1,340 | 858 | Complete |
 | `Fullscreen` | 0 | 0 | 93 | 177 | Complete |
 | `GPC` | 1 | 21 | 16 | 13 | Complete |
 | `Gamepad` | 6 | 1,351 | 860 | 323 | Complete |
 | `Geolocation` | 4 | 643 | 535 | 224 | Complete |
 | `Geometry` | 8 | 2,078 | 2,121 | 1,041 | Complete |
-| `HTML` | 286 | 83,853 | 69,169 | 34,479 | Complete |
+| `HTML` | 286 | 83,853 | 69,183 | 34,793 | Complete |
 | `HighResolutionTime` | 2 | 516 | 500 | 213 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,455 | 1,388 | Complete |
 | `Infra` | 3 | 385 | 548 | 102 | Complete |
@@ -831,17 +831,17 @@ from the current-module totals.
 | `Serial` | 2 | 366 | 243 | 35 | Complete |
 | `ServiceWorker` | 11 | 2,608 | 1,573 | 513 | Complete |
 | `Speech` | 11 | 421 | 668 | 130 | Complete |
-| `StorageAPI` | 6 | 433 | 561 | 327 | Complete |
+| `StorageAPI` | 6 | 433 | 584 | 449 | Complete |
 | `Streams` | 22 | 8,789 | 7,421 | 4,888 | Complete |
 | `TrustedTypes` | 7 | 1,175 | 863 | 222 | Complete |
 | `UIEvents` | 12 | 1,871 | 1,490 | 474 | Complete |
 | `URLPattern` | 1 | 223 | 1,703 | 257 | Complete |
 | `UserTiming` | 2 | 160 | 119 | 35 | Complete |
 | `ViewTransition` | 1 | 1,054 | 743 | 349 | Complete |
-| `WebAssembly` | 7 | 3,441 | 11,064 | 9,435 | Complete |
+| `WebAssembly` | 7 | 3,441 | 11,143 | 10,277 | Complete |
 | `WebAudio` | 47 | 8,256 | 8,682 | 3,247 | Complete |
 | `WebDriver` | 16 | 5,321 | 3,934 | 862 | Complete |
-| `WebGL` | 42 | 7,846 | 6,581 | 10,502 | Complete |
+| `WebGL` | 42 | 7,846 | 6,612 | 11,651 | Complete |
 | `WebIDL` | 10 | 2,466 | 2,551 | 1,299 | Complete |
 | `WebLocks` | 5 | 647 | 701 | 169 | Complete |
 | `WebSockets` | 1 | 476 | 409 | 156 | Complete |
@@ -852,7 +852,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **430,862** | **148,372** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **431,819** | **152,385** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
