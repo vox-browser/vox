@@ -4,6 +4,7 @@
 module html
 
 import dom
+import domurl
 import fileapi
 import url as liburl
 
@@ -17,10 +18,29 @@ pub fn (settings &EnvironmentSettingsObject) blob_url_settings_identity() voidpt
 	return voidptr(settings)
 }
 
+pub fn (settings &EnvironmentSettingsObject) blob_url_partition_origin() liburl.Origin {
+	return settings.blob_url_settings_origin()
+}
+
+pub fn (environment &Environment) blob_url_partition_origin() liburl.Origin {
+	if environment.settings_handle != unsafe { nil } {
+		settings := unsafe { &EnvironmentSettingsObject(environment.settings_handle) }
+		return settings.blob_url_partition_origin()
+	}
+	creation := environment.creation_url.parsed() or {
+		panic('Source Blob URL Environment requires an actual creation URL')
+	}
+	return creation.origin()
+}
+
 // DOMURL::create_object_url/FileAPI::add_entry_to_blob_url_store obtain the
 // current settings from the actual execution-context stack.
 pub fn create_object_url(object fileapi.BlobURLObject) !string {
-	return fileapi.add_entry_to_blob_url_store(object, current_principal_settings_object())
+	return domurl.DOMURL.create_object_url(object, current_principal_settings_object())
+}
+
+pub fn revoke_object_url(value string) {
+	domurl.DOMURL.revoke_object_url(value, current_principal_settings_object())
 }
 
 pub fn run_blob_url_unloading_cleanup_steps(document &dom.Document) {

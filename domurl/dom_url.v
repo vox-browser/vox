@@ -230,14 +230,27 @@ pub type CreateObjectURLHook = fn (object_id string) !string
 
 pub type RevokeObjectURLHook = fn (url string)
 
-pub fn DOMURL.create_object_url(object_id string, hook CreateObjectURLHook) !string {
+pub fn DOMURL.create_object_url_with_hook(object_id string, hook CreateObjectURLHook) !string {
 	return hook(object_id)
 }
 
-pub fn DOMURL.revoke_object_url(value string, hook RevokeObjectURLHook) {
+pub fn DOMURL.revoke_object_url_with_hook(value string, hook RevokeObjectURLHook) {
 	if value.starts_with('blob:') {
 		hook(value)
 	}
+}
+
+// HTML passes the actual current settings at this import-cycle boundary.
+pub fn DOMURL.create_object_url(object fileapi.BlobURLObject, settings fileapi.BlobURLSettingsObject) !string {
+	return fileapi.add_entry_to_blob_url_store(object, settings)
+}
+
+pub fn DOMURL.revoke_object_url(value string, environment fileapi.BlobURLUsageEnvironment) {
+	record := parse(value, none, none) or { return }
+	if record.scheme != 'blob' { return }
+	entry := record.blob_url_entry() or { return }
+	if !fileapi.check_for_same_partition_blob_url_usage(entry, environment) { return }
+	fileapi.remove_entry_from_blob_url_store(record)
 }
 
 pub fn DOMURL.create_legacy_object_url_for_blob(blob &fileapi.Blob, environment fileapi.LegacyBlobURLEnvironment, mut store fileapi.LegacyBlobURLStore) !string {

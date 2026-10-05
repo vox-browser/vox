@@ -6,6 +6,7 @@
 module fileapi
 
 import crypto.rand
+import storageapi
 import url as liburl
 
 __global file_api_blob_url_store &BlobURLStore
@@ -120,6 +121,40 @@ pub fn add_entry_to_blob_url_store(object BlobURLObject, settings BlobURLSetting
 pub struct TopLevelNavigation {}
 
 pub struct TopLevelSelfFetch {}
+
+// The requesting owner may be an actual settings object or base Environment.
+// HTML performs Source's as_if<EnvironmentSettingsObject> selection, reading
+// the current settings origin or the current creation URL's origin.
+pub interface BlobURLUsageEnvironment {
+	blob_url_partition_origin() liburl.Origin
+}
+
+// V sum types cannot contain an interface directly. This arm retains the
+// actual owner interface rather than capturing its origin in a substitute.
+pub struct BlobURLRequestEnvironment {
+pub:
+	environment BlobURLUsageEnvironment @[required]
+}
+
+pub type BlobURLObtainEnvironment = BlobURLRequestEnvironment | TopLevelNavigation | TopLevelSelfFetch
+
+pub fn check_for_same_partition_blob_url_usage(entry liburl.BlobURLEntry, environment BlobURLUsageEnvironment) bool {
+	blob_key := storageapi.obtain_a_storage_key_for_origin(entry.environment.origin)
+	environment_key := storageapi.obtain_a_storage_key_for_origin(environment.blob_url_partition_origin())
+	return blob_key.equals(environment_key)
+}
+
+pub fn obtain_a_blob_object(entry liburl.BlobURLEntry, environment BlobURLObtainEnvironment) ?liburl.BlobURLObject {
+	if environment is BlobURLRequestEnvironment {
+		if !check_for_same_partition_blob_url_usage(entry, environment.environment) { return none }
+	}
+	// Source returns the variant by value; its ByteBuffer copy is independent.
+	object := entry.object
+	if object is liburl.BlobURLBlob {
+		return liburl.BlobURLBlob{ type_: object.type_, data: object.data.clone() }
+	}
+	return liburl.BlobURLMediaSource{}
+}
 
 // DOMURL.cpp::finish_parsing copies the live object's bytes/type and reads
 // its creator settings' current origin. Each URL owns this separate value.
