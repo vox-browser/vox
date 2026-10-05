@@ -786,7 +786,7 @@ from the current-module totals.
 | `CredentialManagement` | 6 | 382 | 420 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 7,957 | 7,989 | Complete |
 | `DOM` | 59 | 34,859 | 43,376 | 4,694 | Complete |
-| `DOMURL` | 4 | 1,039 | 852 | 438 | Complete |
+| `DOMURL` | 4 | 1,039 | 854 | 464 | Complete |
 | `Editing` | 26 | 12,720 | 13,938 | 226 | Complete |
 | `Encoding` | 6 | 769 | 5,356 | 4,495 | Complete |
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
@@ -852,7 +852,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **432,264** | **153,358** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **432,266** | **153,384** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
