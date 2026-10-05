@@ -675,7 +675,6 @@ pub fn (mut context WebGLRenderingContext) get_buffer_parameter(target GLenum, p
 }
 
 pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLParameterValue {
-	context.native.make_current()
 	if (pname == fragment_shader_derivative_hint && context.version != .webgl2 && !context.extension_enabled('OES_standard_derivatives'))
 		|| (pname == GLenum(0x8cdf) && context.version != .webgl2 && !context.extension_enabled('WEBGL_draw_buffers'))
 		|| (pname == GLenum(0x8824) && context.version != .webgl2)
@@ -740,6 +739,7 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
    transform_feedback_binding {feedback:=context.current_transform_feedback or {return WebGLParameterValue{}};return WebGLParameterValue{kind:.object,object:feedback.object.handle_}}
    vertex_array_binding {array:=context.current_vertex_array or {return WebGLParameterValue{}};return WebGLParameterValue{kind:.object,object:array.object.handle_,vertex_array:array}}
    sampler_binding {
+    context.native.make_current()
     mut handle:=0
     C.vox_gl_int_parameter(pname,&handle)
     logical:=context.allocate_handle()

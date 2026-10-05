@@ -34,7 +34,7 @@ fn test_public_current_program_first_exposure_wraps_actual_typed_source_record()
 		assert runtime.evaluate_host(r'globalThis.exposedProgram=programRecordGL.getParameter(programRecordGL.CURRENT_PROGRAM);exposedProgram instanceof WebGLProgram&&exposedProgram===programRecordGL.getParameter(programRecordGL.CURRENT_PROGRAM)')! == 'true'
 		mut selected := [0, 0, 0, 0]!
 		C.vox_gl_int_parameter(0x0ba2, &selected[0])
-		assert selected == [1, 2, 3, 4]!
+		assert selected == [9, 10, 11, 12]!
 		wrapper := host.platform_objects[voidptr(&program.object)] or { panic('program wrapper') }
 		registered := host.programs[wrapper] or { panic('registered typed program') }
 		assert registered == program
