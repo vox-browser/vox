@@ -182,3 +182,13 @@ byte-decoder proof and exact focused log names are in
 Public DataTransfer/Item/List and HTMLInputElement wrappers, complete overload
 dispatch, foreign-world/native Worker ownership, and BodyInit source/stream
 records remain open. These finite results do not establish complete HTML parity.
+
+Actual node-document MediaSource URL selection now authorizes the copied
+entry through genuine relevant settings (`a0f60763`). Settings creation URL
+and the Window's logical navigable select self-fetch; authorization failure
+and Blob tags reach remote fetching. Authorized MediaSource tags resolve and
+attach the real live store object. [Caller evidence](../docs/translation-audit/BLOB_URL_MEDIA_ACTUAL_DOCUMENT.md)
+records the original missing-fetch-hook failure and **2/2 default plus 5/5
+GC-none** combined caller/neighbor files, including main. Standalone Legacy
+consumers, remote media transport and complete native bindings/GC ownership
+retain separate scope.

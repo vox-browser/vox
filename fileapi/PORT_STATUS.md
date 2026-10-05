@@ -188,5 +188,9 @@ bytes and both top-level bypasses pass with the actual current-context
 DOMURL create/revoke path. **5/5 focused files pass in each GC mode**.
 [Partition/revoke evidence](../docs/translation-audit/BLOB_URL_PARTITION_ACTUAL_ENVIRONMENT.md)
 records V's retained-owner variant adaptation and pinned fragment behavior.
-Compact DOM cached parsing and actual Fetch/media request-URL integration
-remain unfinished; the Legacy consumers retain their previous behavior.
+Owned DOM records (`d1531756`), actual Fetch Request/Environment selection
+(`08d65915`) and node-document MediaSource URL attachment (`a0f60763`) now
+consume the native snapshots. [Caller evidence](../docs/translation-audit/BLOB_URL_MEDIA_ACTUAL_DOCUMENT.md)
+records **2/2 default and 5/5 GC-none** combined focused/neighbor files. The
+Legacy consumers retain their previous behavior; native public bindings,
+remote IPC and physical GC/WrapperWorld ownership remain separate.
