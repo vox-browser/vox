@@ -109,6 +109,10 @@ pub fn (mut runtime Runtime) javascript_url_search_params(params &domurl.URLSear
 	return host.wrap(params)
 }
 
+fn (runtime &Runtime) url_search_params_host() ?&URLSearchParamsHost {
+	return url_search_params_bindings_[voidptr(runtime)] or { return none }
+}
+
 pub fn (runtime &Runtime) native_url_search_params(value voidptr) !&domurl.URLSearchParams {
 	host := url_search_params_bindings_[voidptr(runtime)] or {
 		return error('URLSearchParams binding is unavailable')

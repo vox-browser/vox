@@ -2283,6 +2283,14 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript URLSearchParams bindings: ${err.msg()}'
 		return none
 	}
+	mut url_host := browserjs.URLHost.create(document) or {
+		messages << 'JavaScript URL bindings: ${err.msg()}'
+		return none
+	}
+	url_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript URL bindings: ${err.msg()}'
+		return none
+	}
 	mut file_host := browserjs.FileHost.create(document) or {
 		messages << 'JavaScript File bindings: ${err.msg()}'
 		return none
