@@ -403,3 +403,27 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   both compiler hashes. [Frozen native verification](FROZEN_E385AC31_NATIVE_URL_MEDIA.md)
   retains the initial failure and separate reporting/strict diff commands.
   Module inventory and the **32 fixed / 25 partial / 9 open** ledger are unchanged.
+
+- Queued SourceBuffer event ownership (`a5b121e9`) now keeps the original
+  EventTarget for twelve event sites. Seven actual Page/Document/media cases
+  reproduce the original copied targets; cancellation and range-state
+  algorithms already work and remain unchanged. SourceBufferList task
+  ordering (`a7d2561f`) now queues additions with a live list and preserves
+  both pinned active-track notifications. Four original list cases reproduce
+  synchronous/intermediate/lost delivery and the missing second event.
+  Final checks pass **18/18 files in each GC mode**, covering all **15 module
+  files**, native host/page neighbors and the **66-case** main regression.
+  [Buffer evidence](SOURCE_BUFFER_EVENT_TASK_OWNER.md) and
+  [list evidence](SOURCE_BUFFER_LIST_TASK_OWNER.md) retain compiler-only and
+  incorrect incremental-input fixture failures separately from the executed
+  baselines. The final **4,847 tracked/selected files**, nine selected Source
+  references and two compiler executables stay unchanged. Native wrappers,
+  physical weak/strong GC equivalence and updated production verification
+  remain separate; the ledger stays **32 fixed / 25 partial / 9 open**.
+
+- Refreshed `a7d2561f` inventory: **432,276 implementation V LOC / 153,754
+  test V LOC** across 78 owners. The module changes add four implementation
+  and 321 test lines overall. Artifact
+  `Build/audit-fixes/source-current-module-loc-a7d2561f.json` has SHA256
+  `2651d60ec90e9af49ca7e99d65e41fcf6df9edc5a71332ce16d27fee58f61497`.
+  Physical counts and structural mappings do not establish parity.

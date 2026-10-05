@@ -693,7 +693,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-10-06, the tracked module
-packages contain 432,272 implementation V LOC and 153,433 test V LOC.
+packages contain 432,276 implementation V LOC and 153,754 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. Package counts include generated V assets and
 supporting translations; WebAssembly includes the separately audited LibWasm
@@ -721,7 +721,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | IntersectionObserver | 668 | Layout | 44,740 |
 | Loader | 1,921 | MathML | 653 |
 | MediaCapabilitiesAPI | 657 | MediaCapture | 1,240 |
-| MediaSourceExtensions | 4,071 | MimeSniff | 1,108 |
+| MediaSourceExtensions | 4,075 | MimeSniff | 1,108 |
 | MixedContent | 93 | NavigationTiming | 645 |
 | NotificationsAPI | 370 | Page | 6,772 |
 | Painting | 7,979 | PerformanceTimeline | 502 |
@@ -742,7 +742,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | WebXR | 411 | Worker | 142 |
 | XHR | 1,695 | XLink | 13 |
 | XML | 477 | XPath | 672 |
-| **Total** | **432,272** |  |  |
+| **Total** | **432,276** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;

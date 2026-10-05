@@ -138,3 +138,9 @@ in each GC mode and screenshot results. Its first gradient animation capture
 fails; all nine targeted cases pass pixel-exactly in a complete unchanged-binary
 retry. The initial failure remains recorded. The audit remains
 **32 fixed / 25 partial / 9 open**.
+
+The later [SourceBuffer event-owner correction](SOURCE_BUFFER_EVENT_TASK_OWNER.md)
+and [SourceBufferList task correction](SOURCE_BUFFER_LIST_TASK_OWNER.md)
+provide prerequisites for live native buffer exposure. Their full module and
+native-neighbor checks postdate the frozen production bundle above; native
+buffer/list wrappers and physical collector ownership remain separate.

@@ -21,7 +21,7 @@ Source pin: `963d46a829f3e1b79f44dba9d02afb70654300fa`.
 | `WebMByteStreamParser.cpp` | `webm_byte_stream_parser.v` |
 
 The pinned source has 13 physical `.cpp` units and 4,094 lines. The current
-module has 4,071 implementation V lines and 1,885 test V lines. These counts
+module has 4,075 implementation V lines and 2,206 test V lines. These counts
 and file mappings describe inventory, not behavioral parity. The previous
 August inventory and its “complete” label no longer describe this source.
 Browser/root integration is outside these module totals.
@@ -45,6 +45,17 @@ changed script audio/video src attributes reach the cached media owner.
 [Native object-URL evidence](../docs/translation-audit/NATIVE_MEDIA_SOURCE_OBJECT_OWNER.md)
 records its focused checks and actual page caller.
 
+Queued SourceBuffer events retain the original buffer EventTarget through
+append, abort, removal, error and detachment
+([event-owner evidence](../docs/translation-audit/SOURCE_BUFFER_EVENT_TASK_OWNER.md)).
+SourceBufferList additions now use the pinned unspecified task with no
+Document and observe the live list; first active-track processing retains
+both pinned Source notifications
+([list task evidence](../docs/translation-audit/SOURCE_BUFFER_LIST_TASK_OWNER.md)).
+All 15 module files and three native/browser neighbors pass in each GC mode,
+including the 66-case main regression. Physical weak/strong collector edges
+remain separate from these task identity and ordering checks.
+
 Native SourceBuffer/SourceBufferList wrappers and addSourceBuffer exposure,
 DedicatedWorker startup, foreign realm/world wrappers, physical GC edges and
 IPC remain separate. The worker capability flag is false, as in the pinned
@@ -59,4 +70,6 @@ now covers this wrapper through an actual local-file page and queued native
 events, with a pixel-exact viewport and explicit zero-tolerance comparison.
 The same bundle passes signature/startup checks and standard smoke screenshots;
 the first targeted animation capture fails and a complete nine-case retry is
-pixel-exact. No current whole-module sweep is claimed here.
+pixel-exact. The whole-module and native-neighbor checks above postdate this
+bundle; no rebuilt production or screenshot proof is claimed for the buffer
+task corrections.
