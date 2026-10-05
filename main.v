@@ -1819,6 +1819,13 @@ fn apply_javascript_element_attribute(mut element dom.Element, name string, valu
 	} else {
 		element.remove_attribute(name)
 	}
+	if element.is_html_element() && element.local_name() in ['audio', 'video'] && name == 'src' {
+		if mut media := html.html_media_element_for_dom_element(element) {
+			media.set_source(value)
+			// HTMLMediaElement.cpp does not load when src is removed.
+			if value != none { media.load_element() or {} }
+		}
+	}
 	if element.local_name() == 'img' && name == 'src' {
 		image := unsafe { &dom.HTMLImageElement(&element) }
 		html.html_image_element_form_associated_element_attribute_changed(image, 'src', old_value, value, none)
