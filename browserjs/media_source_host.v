@@ -14,20 +14,42 @@ mut:
 	object voidptr
 }
 
-// Native identity and the MediaSource operations needed by the object-URL
-// attachment path. SourceBuffer/List and worker exposure have separate owners.
+enum MediaBufferHostKind {
+	buffer
+	list
+}
+
+fn (kind MediaBufferHostKind) webidl_name() string {
+	return if kind == .buffer { 'SourceBuffer' } else { 'SourceBufferList' }
+}
+
+@[heap]
+struct MediaBufferHostRecord {
+	kind   MediaBufferHostKind
+	native voidptr
+	object voidptr
+}
+
+// Native MediaSource, buffer and list identity for this actual Window owner.
+// Algorithms and live storage remain in the translated media records.
 @[heap]
 pub struct MediaSourceHost {
 	settings &html.EnvironmentSettingsObject
 mut:
-	runtime       &Runtime = unsafe { nil }
-	prototype     voidptr
-	constructor   voidptr
-	to_dom_string voidptr
-	to_number     voidptr
-	records       map[voidptr]&MediaSourceHostRecord
-	by_wrapper    map[voidptr]&MediaSourceHostRecord
-	closed        bool
+	runtime           &Runtime = unsafe { nil }
+	prototype         voidptr
+	constructor       voidptr
+	to_dom_string     voidptr
+	to_number         voidptr
+	records           map[voidptr]&MediaSourceHostRecord
+	by_wrapper        map[voidptr]&MediaSourceHostRecord
+	buffer_prototype  voidptr
+	list_wrap         voidptr
+	buffer_validation voidptr
+	buffer_copy       voidptr
+	buffer_records    map[voidptr]&MediaBufferHostRecord
+	buffer_by_wrapper map[voidptr]&MediaBufferHostRecord
+	closed            bool
 }
 
 pub fn MediaSourceHost.create(document &dom.Document) !&MediaSourceHost {
@@ -50,4 +72,6 @@ pub fn (mut host MediaSourceHost) close() {
 	host.closed = true
 	host.records.clear()
 	host.by_wrapper.clear()
+	host.buffer_records.clear()
+	host.buffer_by_wrapper.clear()
 }

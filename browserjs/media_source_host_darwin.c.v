@@ -73,6 +73,7 @@ pub fn (mut host MediaSourceHost) install(mut runtime Runtime) ! {
 		'prototype')!)!
 	host.constructor = runtime.retain_javascript_value(runtime.binding_property(installed,
 		'constructor')!)!
+	host.install_buffer_bindings()!
 	media_source_bindings_[owner] = &host
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &MediaSourceHost(handle) }
@@ -86,6 +87,13 @@ fn (host &MediaSourceHost) exception(reason IError) IError {
 	message := reason.msg()
 	if separator := message.index(':') {
 		name := message[..separator]
+		if name == 'QuotaExceededError' {
+			mut runtime := unsafe { &Runtime(host.runtime) }
+			native := webidl.QuotaExceededError.create(message[separator + 1..].trim_left(' '))
+			return runtime.actual_javascript_exception(runtime.javascript_quota_exceeded_error(&native) or {
+				return err
+			})
+		}
 		if name in ['InvalidStateError', 'NotSupportedError'] {
 			mut runtime := unsafe { &Runtime(host.runtime) }
 			value := webidl.dom_exception_value(webidl.DOMException.create(name, message[
