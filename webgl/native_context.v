@@ -47,6 +47,7 @@ mut:
 	requested_extensions_ []string
 	record_native_calls_  bool
 	native_calls_         []NativeCall
+	string_cache_         map[GLenum]string
 	painting_pixels_      []u8
 	canvas_content_owner_ voidptr
 	canvas_content_changed_ ?WebGLCanvasContentChangedCallback
@@ -96,6 +97,7 @@ pub fn (mut context OpenGLContext) restore(supported []string) {
 	context.needs_to_present_ = false
 	context.supported_extensions_ = if supported.len > 0 { supported.clone() } else if !context.lost_ { native_gl_extensions() } else { []string{} }
 	context.requested_extensions_.clear()
+	context.string_cache_.clear()
 	context.native_calls_.clear()
 	context.painting_pixels_.clear()
 }
@@ -224,14 +226,27 @@ pub fn (context &OpenGLContext) get_supported_opengl_extensions() []string {
 	return context.supported_extensions_.clone()
 }
 
-pub fn (mut context OpenGLContext) vendor() string {
+// WebGLContextProxyBase.cpp:393-408 owns one copied string per GL enum. Its
+// cache lookup precedes loss handling; only a cold query reaches the host.
+pub fn (mut context OpenGLContext) get_string(name GLenum) string {
+	if cached := context.string_cache_[name] {
+		return cached
+	}
 	context.make_current()
-	return native_gl_string(0x1f00)
+	if context.lost_ {
+		return ''
+	}
+	value := native_gl_string(name)
+	context.string_cache_[name] = value
+	return value
+}
+
+pub fn (mut context OpenGLContext) vendor() string {
+	return context.get_string(GLenum(0x1f00))
 }
 
 pub fn (mut context OpenGLContext) renderer() string {
-	context.make_current()
-	return native_gl_string(0x1f01)
+	return context.get_string(GLenum(0x1f01))
 }
 
 pub fn (mut context OpenGLContext) request_extension(extension string) {

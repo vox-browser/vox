@@ -684,8 +684,8 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
 	}
 	shape := C.vox_gl_parameter_shape(pname,if context.version == .webgl2 {3} else {2})
 	if shape != 0 {
+		if shape == 51 { return WebGLParameterValue{kind:.string_,text:context.native.get_string(pname)} }
 		context.native.make_current()
-		if shape == 51 { return WebGLParameterValue{kind:.string_,text:native_gl_string(pname)} }
 		mut values := [f64(0),0,0,0]!
 		C.vox_gl_parameter(pname,shape,&values[0])
 		count := shape % 10
