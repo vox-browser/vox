@@ -36,3 +36,15 @@ the real Page/Window/settings key reassociation witness (4/4 files,
 The complete Source Page-owning subclass/native host proxy/GC graph and native
 IPC remain separate. This correction preserves the explicit hostless adapter
 without presenting it as a fabricated Source storage owner.
+
+## Canonical integration
+
+The canonical feature commit `c25970c8` integrates the typed-origin prerequisite
+and its reviewed hostless correction together. Its GC-none check passes the
+four files in `storageapi/` and the genuine Window reassociation and IndexedDB
+callers, for six total. Command:
+`VJOBS=2 v -old-compiler -enable-globals -gc none test storageapi
+html/storage_key_actual_settings_owner_test.v html/indexed_db_global_binding_test.v`.
+Elapsed time: 114.784 seconds. Log:
+`Build/audit-fixes/continuation-storage-key-canonical-gc-none.log`, SHA256
+`b466e4014448f512e78b2857e51c0fc1f6eff7c28844b48c44bf7aed2d62bed4`.
