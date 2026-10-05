@@ -43,7 +43,16 @@ records **3/3 default and 4/4 GC-none** final focused files, including the main
 browser regression. Actual Fetch (`08d65915`) and node-document media (`a0f60763`) now consume
 those snapshots through genuine Environment owners;
 [caller evidence](../docs/translation-audit/BLOB_URL_MEDIA_ACTUAL_DOCUMENT.md)
-records **2/2 default and 5/5 GC-none** combined focused/neighbor files. Native public URL WebIDL conversion and exposure, realm/world
+records **2/2 default and 5/5 GC-none** combined focused/neighbor files.
+
+Constructor value ownership (`c1e5845d`) now copies a supplied typed URL record,
+preventing later caller path mutation from changing the platform object's href.
+[Constructor copy evidence](../docs/translation-audit/DOMURL_CONSTRUCTOR_COPY_OWNER.md)
+records the original two executed alias failures and all three DOMURL files
+passing in both GC modes. A separate actual Blob DOM-owner retry passes after
+restoring its private regex archive; those GC-none results span two runs.
+
+Native public URL WebIDL conversion and exposure, realm/world
 identity, source UTF16 parser/encoding boundaries, OOM/allocation handling and
 complete GC/IPC ownership remain separate. The existing structural inventory
 must not be read as full DOMURL parity.
