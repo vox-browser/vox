@@ -69,6 +69,12 @@ includes the executed absent-constructor baseline, corrected fixture diagnostics
 two exact unmodified Source sort outputs per GC mode and the 66-case main
 regression. Browser/root binding support remains outside the 78-owner LOC total.
 
+Lazy query initialization (`4bdb79ab`) now parses a URL record's literal leading
+question mark directly. Observing searchParams before or after href/search
+replacement yields the same actual list and owner.
+[Literal query evidence](../docs/translation-audit/DOMURL_LITERAL_QUERY_OWNER.md)
+records the original executed panic and **5/5 default plus 6/6 GC-none** files.
+
 Native public URL WebIDL conversion and exposure, foreign realm/world
 identity, source UTF16 parser/encoding boundaries, OOM/allocation handling,
 Worker startup exposure, generated diagnostic text and complete GC/IPC ownership
