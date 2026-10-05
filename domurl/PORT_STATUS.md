@@ -52,6 +52,13 @@ records the original two executed alias failures and all three DOMURL files
 passing in both GC modes. A separate actual Blob DOM-owner retry passes after
 restoring its private regex archive; those GC-none results span two runs.
 
+URL-encoded parsing now preserves each tuple's leading BOM (`554c7759`),
+matching Source's UTF-8 decoding without BOM handling. Actual lazy DOMURL query
+owners retain those names/values across mutation and replacement.
+[BOM caller evidence](../docs/translation-audit/URLENCODED_BOM_OWNER.md) records
+the two original executed failures, **4/4 default and 5/5 GC-none** final files,
+and the separate invalid test-path diagnostic before the corrected GC run.
+
 Native public URL WebIDL conversion and exposure, realm/world
 identity, source UTF16 parser/encoding boundaries, OOM/allocation handling and
 complete GC/IPC ownership remain separate. The existing structural inventory
