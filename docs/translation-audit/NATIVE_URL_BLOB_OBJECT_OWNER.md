@@ -6,8 +6,10 @@ committed together.
 
 Source DOMURL.idl declares createObjectURL(Blob or MediaSource) and
 revokeObjectURL(DOMString). This slice exposes the Blob/File branch and
-revocation on the native URL constructor. The MediaSource native wrapper and
-union branch remain pending; no ID-only or tagged substitute is accepted.
+revocation on the native URL constructor. At this feature commit the MediaSource native wrapper and
+union branch were pending; no ID-only or tagged substitute was accepted.
+The [subsequent native MediaSource slice](NATIVE_MEDIA_SOURCE_OBJECT_OWNER.md)
+now implements that live-object arm with separate verification.
 The browser continues to execute JavaScript through JavaScriptCore.
 
 Generated argument-count checks precede conversion. Blob lookup uses actual
@@ -93,7 +95,8 @@ Artifact `Build/audit-fixes/source-current-module-loc-4e83907a.json` has SHA256
 `af2f82659045167ef53acc3c0d4515a0c5325fcd121e2f838b2ed935669b068d`.
 These physical counts and source-unit mappings do not establish parity.
 
-The native MediaSource branch, foreign realm/world wrappers, Worker startup,
+This proof predates the native MediaSource branch. Foreign realm/world
+wrappers, Worker startup,
 complete parser encoding boundaries, generated diagnostic text beyond the
 union message, allocation limits, physical GC edges and IPC remain separate.
 The [previous frozen production bundle](FROZEN_F273F1EF_BLOB_URL_CONTINUATION.md)

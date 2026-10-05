@@ -763,7 +763,7 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The table below refreshes tracked package V LOC on 2026-10-05; upstream counts
+The table below refreshes tracked package V LOC on 2026-10-06; upstream counts
 and structural mapping labels retain the pinned inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
@@ -810,7 +810,7 @@ from the current-module totals.
 | `MathML` | 6 | 369 | 653 | 162 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 657 | 129 | Complete |
 | `MediaCapture` | 5 | 1,475 | 1,240 | 247 | Complete |
-| `MediaSourceExtensions` | 13 | 4,094 | 4,065 | 1,836 | Complete |
+| `MediaSourceExtensions` | 13 | 4,094 | 4,071 | 1,885 | Complete |
 | `MimeSniff` | 2 | 1,607 | 1,108 | 308 | Complete |
 | `MixedContent` | 1 | 127 | 93 | 105 | Complete |
 | `NavigationTiming` | 4 | 497 | 645 | 130 | Complete |
@@ -852,7 +852,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **432,266** | **153,384** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **432,272** | **153,433** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 

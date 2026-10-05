@@ -367,3 +367,28 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
 - Native Blob/File object-URL methods (`4e83907a`) now use genuine wrapper objects and actual current HTML settings for creation/revocation. The actual page/Fetch caller retains copied bytes/type after revocation; reassociation, opaque partition identity, DOMString conversion, union brands, metadata and Document unload are verified. Final default coverage passes four files across three commands; the final unchanged GC-none batch passes **7/7**, including the 66-case main regression and two exact upstream URL outputs. [Native object-URL evidence](NATIVE_URL_BLOB_OBJECT_OWNER.md) distinguishes the absent-method baseline, interrupted reserved-keyword compiler run, private-field compiler failure and executed opaque-origin caller-fixture mismatch. All 3,170 code/helper files, 34 selected Source references and two compilers are unchanged through the corrected page retry and GC-none batch. Native MediaSource and the remaining realm/GC/IPC/production boundaries stay open; the ledger remains **32 fixed / 25 partial / 9 open**.
 
 - The refreshed `4e83907a` inventory retains **432,266 implementation V LOC / 153,384 test V LOC** across 78 owners. Browser/root-only object-URL integration remains outside those counts. Artifact `Build/audit-fixes/source-current-module-loc-4e83907a.json` has SHA256 `af2f82659045167ef53acc3c0d4515a0c5325fcd121e2f838b2ed935669b068d`. Physical counts and structural mappings do not measure parity.
+
+
+- Native MediaSource object URLs (`0ea70c17`) now retain genuine source/settings
+  objects and reach the actual document media caller through changed script
+  src replay. Supporting commits preserve queued-event target identity
+  (`d397f279`) and update the cached audio/video source (`6d23dae1`), each with
+  its own tests. The native duration conversion rejects BigInt correctly.
+  Final coverage passes **eight default files across two commands** and
+  **10/10 GC-none files**, including the **66-case** main regression; both
+  unmodified URL outputs remain exact in each mode.
+  [Native MediaSource evidence](NATIVE_MEDIA_SOURCE_OBJECT_OWNER.md) preserves
+  executed target/BigInt/attachment baselines, compiler-only fixture errors and
+  the interrupted diagnostic separately. The final **3,176 code/helper files**,
+  **42 selected Source references** and two compiler executables are unchanged.
+  Native buffer wrappers, worker/foreign-world/physical GC/IPC ownership and
+  updated production verification remain separate. The ledger stays
+  **32 fixed / 25 partial / 9 open**.
+
+- The refreshed `0ea70c17` inventory contains **432,272 implementation V LOC /
+  153,433 test V LOC** across 78 owners. Artifact
+  `Build/audit-fixes/source-current-module-loc-0ea70c17.json` has SHA256
+  `658656d07641cecbfa8bbcc605608b0574f8d1bddd1c3a922be0fb257e1496f8`.
+  The six module implementation lines and 49 test lines belong to the queued
+  source-event fix; browser/root integration remains outside those totals.
+  Physical counts and structural mappings do not establish parity.

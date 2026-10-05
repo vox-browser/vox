@@ -98,7 +98,11 @@ Both unmodified URL fixtures still match exactly. The original missing method,
 compiler-only fixture failures and executed opaque-origin fixture mismatch are
 retained separately. The browser/root-only change leaves module LOC unchanged.
 
-The native MediaSource wrapper and createObjectURL union branch, foreign
+The native MediaSource wrapper now completes the actual object-URL union
+selection, retaining the real source pointer and HTML settings owner.
+[MediaSource evidence](../docs/translation-audit/NATIVE_MEDIA_SOURCE_OBJECT_OWNER.md)
+records native branding, queued events and actual document media attachment
+separately from the earlier Blob/File proof. Native buffer wrappers, foreign
 realm/world identity, source UTF16 parser/encoding boundaries, OOM/allocation handling,
 Worker startup exposure, generated diagnostic text and complete GC/IPC ownership
 remain separate. The existing structural inventory must not be read as full

@@ -1,46 +1,58 @@
-# MediaSourceExtensions module V translation — complete
+# MediaSourceExtensions translation status
 
-Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/MediaSourceExtensions`
-
-Translation workspace: `~/code/libweb_v/mediasourceextensions`
-Audited: 2026-08-16
-
-All eight upstream `.cpp` implementation units have audited V mappings. Their
-headers and IDL are represented by concrete event/event-target types, enum
-conversion, constructors, and opaque platform boundaries.
+Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/MediaSourceExtensions`.
+Canonical workspace: `~/code/vox2/mediasourceextensions`.
+Source pin: `963d46a829f3e1b79f44dba9d02afb70654300fa`.
 
 | Upstream implementation unit | V implementation |
 | --- | --- |
 | `BufferedChangeEvent.cpp` | `buffered_change_event.v` |
 | `EventNames.cpp` | `event_names.v` |
+| `ISOBMFFByteStreamParser.cpp` | `isobmff_byte_stream_parser.v`; parser records in `byte_stream_parser.v` |
 | `ManagedMediaSource.cpp` | `managed_media_source.v` |
 | `ManagedSourceBuffer.cpp` | `source_buffers.v` |
 | `MediaSource.cpp` | `media_source.v` |
 | `MediaSourceHandle.cpp` | `media_source.v` |
-| `SourceBuffer.cpp` | `source_buffers.v` |
+| `SourceBuffer.cpp` | `source_buffers.v`; coded-frame path in `source_buffer_processor.v` |
 | `SourceBufferList.cpp` | `source_buffers.v` |
+| `SourceBufferProcessor.cpp` | `source_buffer_processor.v` |
+| `TrackBuffer.cpp` | `track_buffer.v` |
+| `TrackBufferDemuxer.cpp` | `track_buffer.v` |
+| `WebMByteStreamParser.cpp` | `webm_byte_stream_parser.v` |
 
-| Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
-| --- | ---: | ---: | ---: | ---: | --- |
-| `MediaSourceExtensions/` | 8 | 413 | 357 | 110 | Complete |
+The pinned source has 13 physical `.cpp` units and 4,094 lines. The current
+module has 4,071 implementation V lines and 1,885 test V lines. These counts
+and file mappings describe inventory, not behavioral parity. The previous
+August inventory and its “complete” label no longer describe this source.
+Browser/root integration is outside these module totals.
 
-The port covers all 13 event names, the three WebIDL enum families,
-constructible MediaSource and ManagedMediaSource objects, the dedicated-worker
-flag, MIME parsing for `isTypeSupported`, all implemented event-handler
-attributes with real DOM dispatch, BufferedChangeEvent identity/base init, and
-the transferable opaque MediaSourceHandle boundary. Operations and attributes
-marked FIXME in upstream IDL—including buffer mutation, lists, ranges, ready
-state, duration, and streaming—remain unavailable rather than receiving
-invented behavior. BufferedChangeEvent's range getters are likewise upstream
-FIXMEs; its current constructor only initializes the Event base, which this
-translation preserves.
+The typed records cover MediaSource state, duration, SourceBuffer lists and
+mutation, queued events, attachment/detachment, byte-stream parsers, track
+buffers and coded-frame processing. These are implemented algorithms, with
+focused tests; they are not evidence that every codec, demuxer, playback,
+error path or upstream behavior is complete. Actual document media callers
+now authorize copied Blob URL entries against current node-document settings
+before resolving the live MediaSource. [Actual attachment evidence](../docs/translation-audit/BLOB_URL_MEDIA_ACTUAL_DOCUMENT.md)
+records that owner boundary independently of public JavaScript exposure.
 
-## Verification
+Native Window scripts now construct real MediaSource records and pass them to
+`URL.createObjectURL`. The native wrapper retains the actual relevant Window
+and EventTarget identity, exposes readyState, duration, source event handlers,
+endOfStream, isTypeSupported and the dedicated-worker flag, and observes the
+same V state used by the media attachment algorithm. Queued source events now
+retain the original object pointer instead of copying a mutable receiver;
+changed script audio/video src attributes reach the cached media owner.
+[Native object-URL evidence](../docs/translation-audit/NATIVE_MEDIA_SOURCE_OBJECT_OWNER.md)
+records its focused checks and actual page caller.
 
-```text
-$ /Users/alex/code/v/v test mediasourceextensions
-Summary for all V _test.v files: 1 passed, 1 total.
+Native SourceBuffer/SourceBufferList wrappers and addSourceBuffer exposure,
+DedicatedWorker startup, foreign realm/world wrappers, physical GC edges and
+IPC remain separate. The worker capability flag is false, as in the pinned
+Source; exposing that flag does not establish a worker runtime. Source event
+clock integration and complete decoder/playback behavior remain separate.
+Upstream IDL FIXMEs for handle, removeSourceBuffer, seekable-range mutation and
+ManagedMediaSource streaming are distinct from these translation boundaries.
+BufferedChangeEvent range getters likewise remain upstream FIXMEs.
 
-$ /Users/alex/code/v/v fmt -verify mediasourceextensions dom/ui_events.v
-(no output; exit status 0)
-```
+The current native production bundle predates this wrapper. No updated
+production, screenshot or whole-module verification is claimed here.
