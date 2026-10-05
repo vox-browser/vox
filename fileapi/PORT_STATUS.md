@@ -180,3 +180,13 @@ commit, standalone Fetch/media callers still use that adapter; actual requesting
 Environment partition checks and Source revoke are separate follow-up work.
 [Source mapping and executed evidence](../docs/translation-audit/BLOB_URL_SETTINGS_SNAPSHOT_OWNER.md)
 record the bounded snapshot and remaining DOM cache/native binding/GC boundaries.
+
+Copied LibURL Blob entries now use non-storage StorageKey equality against
+actual requesting settings/Environment owners (`02226729`). Opaque/File nonce
+identity, live creation-URL selection, settings reassociation, copied return
+bytes and both top-level bypasses pass with the actual current-context
+DOMURL create/revoke path. **5/5 focused files pass in each GC mode**.
+[Partition/revoke evidence](../docs/translation-audit/BLOB_URL_PARTITION_ACTUAL_ENVIRONMENT.md)
+records V's retained-owner variant adaptation and pinned fragment behavior.
+Compact DOM cached parsing and actual Fetch/media request-URL integration
+remain unfinished; the Legacy consumers retain their previous behavior.

@@ -1,40 +1,42 @@
-# DOMURL module V translation — complete
+# DOMURL translation status
 
-Complete, audited translation of `Libraries/LibWeb/DOMURL`.
+Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/DOMURL`.
+Source pin: `963d46a829f3e1b79f44dba9d02afb70654300fa`.
+Translation workspace: `~/code/vox2/domurl`. Reviewed: 2026-10-05.
 
-| Upstream `.cpp` | LOC | V mapping |
-|---|---:|---|
-| `DOMURL.cpp` | 492 | `dom_url.v` |
-| `Origin.cpp` | 103 | `dom_url.v` |
-| `URLSearchParams.cpp` | 353 | `url_search_params.v` |
-| `URLSearchParamsIterator.cpp` | 68 | `url_search_params.v` |
+| Upstream source | V mapping |
+| --- | --- |
+| `DOMURL.cpp` | `dom_url.v`; actual current settings supplied by `../html/blob_url_operations.v` |
+| `Origin.cpp` | `dom_url.v`, typed Origin behavior from `../url/origin.v` |
+| `URLSearchParams.cpp` | `url_search_params.v` |
+| `URLSearchParamsIterator.cpp` | `url_search_params.v` |
 
-- Upstream inventory: **4 `.cpp` / 1,016 LOC**, **4 `.h` / 241 LOC**,
-  **3 `.idl` / 63 LOC**; **1,320 LOC total**.
-- V implementation: **932 LOC** in 2 `.v` files.
-- Focused tests: **270 LOC** in 1 `_test.v` file (**21 tests**).
-- The audit added URL and Origin, live SameObject `searchParams`, component
-  getters/setters, relative parsing, origin/default-port behavior, iterator and
-  callback APIs, plus direct partition-checked FileAPI blob-store integration.
-  The final cross-audit added invalid-UTF-8 replacement for form decoding,
-  special-query percent encoding, setter host/port validation, default-port
-  normalization, opaque-origin classification, and inherited blob URL origins.
-  The independent cross-audit corrected percent-encoded component getters and
-  serialization (including user info, paths, fragments, IPv6 hosts, and empty
-  fragments/queries), host casing and validation, default-port changes, and
-  the URL Standard's special/non-special scheme-transition restrictions.
+The pinned inventory contains four `.cpp` files (1,039 physical lines), four
+headers (248) and three IDL files (59). These structural mappings and counts
+do not establish full source runtime or generated-binding parity.
 
-URL parsing uses V's typed `net.urllib` record. Public-suffix/registrable-domain
-same-site classification remains an explicit host-service boundary. LibJS owns
-WebIDL overload conversion, realms/GC, and iterator protocol objects; the live
-list and iterator algorithms themselves are translated here.
+URL components, Origin, same-object searchParams, iteration and encoding use
+the translated typed LibURL records. Origin same-site classification uses the
+existing public suffix implementation. Public API URL parsing follows Source's
+basic parser. The separate LibWeb parse/parse_from_byte_string finish step now
+resolves the actual FileAPI store and copies Blob bytes/type or a MediaSource
+tag plus the creator settings' current typed Origin (`6756a0cf`). Previous
+parsed entries remain independent of later object updates, reassociation,
+removal and unload. [Settings and snapshot evidence](../docs/translation-audit/BLOB_URL_SETTINGS_SNAPSHOT_OWNER.md)
+records the executed original missing-entry failure and **6/6 default plus
+8/8 GC-none** focused/neighbor proof.
 
-Verification:
+Current-context create/revoke use actual HTML settings and the genuine store.
+Revoke parses the copied entry, checks non-storage partition equality against
+its current requesting owner and removes the typed URL (`02226729`). It keeps
+Source's fragment serialization behavior. The former ID-only hooks and
+standalone string-partition store helpers remain explicitly named adapters.
+[Partition and revoke evidence](../docs/translation-audit/BLOB_URL_PARTITION_ACTUAL_ENVIRONMENT.md)
+records **5/5 focused files in each GC mode**, including the existing DOMURL
+embedded-entry owner test. These are focused checks, not a full module sweep.
 
-```text
-$ /Users/alex/code/v/v test domurl
-Summary for all V _test.v files: 1 passed, 1 total.
-
-$ /Users/alex/code/v/v fmt -verify domurl
-(no output; exit status 0)
-```
+Compact DOM cached URL parsing and actual Fetch/media request integration are
+unfinished. Native public URL WebIDL conversion and exposure, realm/world
+identity, source UTF16 parser/encoding boundaries, OOM/allocation handling and
+complete GC/IPC ownership remain separate. The existing structural inventory
+must not be read as full DOMURL parity.

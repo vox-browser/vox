@@ -75,7 +75,8 @@ and log hashes are in `source-blob-settings-manifest.json`, SHA256
 `0dcb4066f21faddaf6c2486f193082ead24f3b55fb055cecb29db97eb66ae64a`.
 
 Typed partition authorization, actual requesting-Environment selection and
-Source revoke are the next separate feature. Genuine DOM cached parsing,
+Source revoke are recorded in the subsequent separate
+[actual Environment feature](BLOB_URL_PARTITION_ACTUAL_ENVIRONMENT.md). Genuine DOM cached parsing,
 Fetch request snapshots, native public URL bindings, IPC/remote processes,
 ConservativeHashMap GC tracing and complete WrapperWorld ownership remain
 separate. These focused checks follow the frozen 6f1df913 bundle; they do not
