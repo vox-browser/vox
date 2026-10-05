@@ -35,8 +35,12 @@ standalone string-partition store helpers remain explicitly named adapters.
 records **5/5 focused files in each GC mode**, including the existing DOMURL
 embedded-entry owner test. These are focused checks, not a full module sweep.
 
-Compact DOM cached URL parsing and actual Fetch/media request integration are
-unfinished. Native public URL WebIDL conversion and exposure, realm/world
+Actual settings/DOM resource parsing now retains an owned typed URL record
+and independent Blob snapshot (`d1531756`). A Source finish hook crosses the
+module import cycle; serialized compatibility URLs retain their basic-parser
+boundary. [DOM record evidence](../docs/translation-audit/BLOB_URL_DOM_RECORD_OWNER.md)
+records **3/3 default and 4/4 GC-none** final focused files, including the main
+browser regression. Actual Fetch/media request integration is unfinished. Native public URL WebIDL conversion and exposure, realm/world
 identity, source UTF16 parser/encoding boundaries, OOM/allocation handling and
 complete GC/IPC ownership remain separate. The existing structural inventory
 must not be read as full DOMURL parity.
