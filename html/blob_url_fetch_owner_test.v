@@ -195,7 +195,7 @@ fn test_source_blob_fetch_self_fetch_uses_chosen_creation_url_and_actual_logical
 	assert source_blob_fetch_response(request).is_network_error()
 }
 
-fn test_source_blob_fetch_restores_source_wtf8_type_before_response_headers() {
+fn test_source_blob_fetch_restores_unvalidated_type_then_isomorphically_encodes_the_header() {
 	address := dom.URL{
 		value: 'https://blob-fetch-type.test/page'
 	}
@@ -213,5 +213,5 @@ fn test_source_blob_fetch_restores_source_wtf8_type_before_response_headers() {
 	request.destination = .document
 	response := source_blob_fetch_response(request)
 	assert !response.is_network_error()
-	assert response.header_list.get('Content-Type')?.bytes() == [u8(0x41), 0xed, 0xa0, 0x80, 0x42]
+	assert response.header_list.get('Content-Type')?.bytes() == [u8(0x41), 0, 0x42]
 }

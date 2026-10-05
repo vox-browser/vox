@@ -896,7 +896,8 @@ pub fn scheme_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 			return PendingResponse.create(mut request,
 				Response.network_error("Request has an invalid 'blob:' URL"))
 		}
-		blob := if entry := current.blob_url_entry() {
+		snapshot := current.blob_url_entry()
+		blob := if entry := snapshot {
 			obtain_request_blob_snapshot(request, entry) or {
 				return PendingResponse.create(mut request, Response.network_error(err.msg()))
 			}
@@ -904,6 +905,12 @@ pub fn scheme_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 			obtain_legacy_request_blob(request) or {
 				return PendingResponse.create(mut request, Response.network_error(err.msg()))
 			}
+		}
+		content_type := if snapshot != none {
+			http.Header.isomorphic_encode_utf16('Content-Type', blob.type_utf16()).value
+		} else {
+			// Retain the standalone Legacy adapter's byte-string boundary.
+			blob.type_()
 		}
 		mut response := Response.create()
 		bytes := blob.raw_bytes()
@@ -943,13 +950,13 @@ pub fn scheme_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 			response.status_message = 'Partial Content'
 			response.range_requested = true
 			response.header_list.append(http.Header{ name: 'Content-Length', value: '${end - start + 1}' })
-			response.header_list.append(http.Header{ name: 'Content-Type', value: blob.type_() })
+			response.header_list.append(http.Header{ name: 'Content-Type', value: content_type })
 			response.header_list.append(http.Header{ name: 'Content-Range', value: 'bytes ${start}-${end}/${full_length}' })
 		} else {
 			response.status_message = 'OK'
 			response.set_body_bytes(bytes)
 			response.header_list.append(http.Header{ name: 'Content-Length', value: '${bytes.len}' })
-			response.header_list.append(http.Header{ name: 'Content-Type', value: blob.type_() })
+			response.header_list.append(http.Header{ name: 'Content-Type', value: content_type })
 		}
 		return PendingResponse.create(mut request, response)
 	}

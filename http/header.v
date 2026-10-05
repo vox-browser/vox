@@ -8,6 +8,9 @@
 
 module http
 
+import encoding
+import libjs
+
 // https://fetch.spec.whatwg.org/#http-newline-byte — 0x0A (LF) or 0x0D (CR).
 fn is_http_newline(b u8) bool {
 	return b == 0x0A || b == 0x0D
@@ -126,4 +129,20 @@ pub fn is_forbidden_request_header(header Header) bool {
 	}
 	// 4. Otherwise it is not forbidden.
 	return false
+}
+
+// LibHTTP/Header.cpp:24–32: Source isomorphic encoding preserves byte values
+// rather than storing UTF8. The UTF16 overload is used by Blob scheme Fetch.
+pub fn Header.isomorphic_encode_utf16(name string, value libjs.Utf16String) Header {
+	return Header{
+		name: encoding.isomorphic_encode_utf8(name).bytestr()
+		value: encoding.isomorphic_encode_utf16(value).bytestr()
+	}
+}
+
+pub fn Header.isomorphic_encode_utf8(name string, value string) Header {
+	return Header{
+		name: encoding.isomorphic_encode_utf8(name).bytestr()
+		value: encoding.isomorphic_encode_utf8(value).bytestr()
+	}
 }
