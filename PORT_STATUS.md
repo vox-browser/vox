@@ -785,21 +785,21 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 1,059 | 482 | Complete |
 | `CredentialManagement` | 6 | 382 | 420 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 7,957 | 7,989 | Complete |
-| `DOM` | 59 | 34,859 | 43,359 | 4,669 | Complete |
-| `DOMURL` | 4 | 1,039 | 840 | 388 | Complete |
+| `DOM` | 59 | 34,859 | 43,374 | 4,669 | Complete |
+| `DOMURL` | 4 | 1,039 | 847 | 388 | Complete |
 | `Editing` | 26 | 12,720 | 13,938 | 226 | Complete |
-| `Encoding` | 6 | 769 | 5,320 | 4,474 | Complete |
+| `Encoding` | 6 | 769 | 5,356 | 4,495 | Complete |
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
 | `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
 | `EventTiming` | 1 | 122 | 153 | 95 | Complete |
-| `Fetch` | 33 | 8,493 | 6,581 | 3,222 | Complete |
+| `Fetch` | 33 | 8,493 | 6,678 | 3,228 | Complete |
 | `FileAPI` | 6 | 1,357 | 1,493 | 858 | Complete |
 | `Fullscreen` | 0 | 0 | 93 | 177 | Complete |
 | `GPC` | 1 | 21 | 16 | 13 | Complete |
 | `Gamepad` | 6 | 1,351 | 860 | 323 | Complete |
 | `Geolocation` | 4 | 643 | 535 | 224 | Complete |
 | `Geometry` | 8 | 2,078 | 2,121 | 1,041 | Complete |
-| `HTML` | 286 | 83,853 | 69,236 | 35,049 | Complete |
+| `HTML` | 286 | 83,853 | 69,283 | 35,379 | Complete |
 | `HighResolutionTime` | 2 | 516 | 500 | 213 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,455 | 1,388 | Complete |
 | `Infra` | 3 | 385 | 548 | 102 | Complete |
@@ -810,7 +810,7 @@ from the current-module totals.
 | `MathML` | 6 | 369 | 653 | 162 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 657 | 129 | Complete |
 | `MediaCapture` | 5 | 1,475 | 1,240 | 247 | Complete |
-| `MediaSourceExtensions` | 13 | 4,094 | 4,065 | 1,687 | Complete |
+| `MediaSourceExtensions` | 13 | 4,094 | 4,065 | 1,836 | Complete |
 | `MimeSniff` | 2 | 1,607 | 1,108 | 308 | Complete |
 | `MixedContent` | 1 | 127 | 93 | 105 | Complete |
 | `NavigationTiming` | 4 | 497 | 645 | 130 | Complete |
@@ -852,7 +852,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **432,055** | **152,777** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **432,257** | **153,283** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
