@@ -10,6 +10,8 @@ module fetch
 
 import dom
 import fileapi
+import libjs
+import url as liburl
 import highresolutiontime
 import http
 import securecontexts
@@ -736,6 +738,125 @@ fn perform_host_fetch(params &FetchParams, request &Request, host &FetchHost) &P
 	return PendingResponse.create(mut mutable_request, response)
 }
 
+// Source Fetching.cpp:768 and 1016: these adapters retain the actual request
+// owners and query their current origin; they do not capture a partition key.
+struct BlobURLFetchClientOwner {
+	client RequestClient @[required]
+}
+
+fn (owner &BlobURLFetchClientOwner) blob_url_partition_origin() liburl.Origin {
+	return owner.client.fetch_request_client_origin().liburl_origin() or {
+		panic('Source Blob Fetch client requires an actual typed Origin')
+	}
+}
+
+struct BlobURLFetchReservedClientOwner {
+	client RequestReservedClient @[required]
+}
+
+fn (owner &BlobURLFetchReservedClientOwner) blob_url_partition_origin() liburl.Origin {
+	return owner.client.fetch_request_environment_blob_url_origin()
+}
+
+fn obtain_request_blob_snapshot(request &Request, entry liburl.BlobURLEntry) !&fileapi.Blob {
+	mut access := fileapi.BlobURLObtainEnvironment(fileapi.TopLevelNavigation{})
+	is_document_navigation := if destination := request.destination { destination == .document } else { false }
+	if !is_document_navigation {
+		// The chosen Environment's creation URL may differ from the client's.
+		creation_url := if reserved := request.reserved_client {
+			reserved.fetch_request_environment_creation_url()
+		} else if client := request.client {
+			client.fetch_request_client_creation_url()
+		} else {
+			return error('Request is missing fetch client')
+		}
+		is_self_fetch := if client := request.client {
+			client.fetch_request_client_is_window()
+				&& client.fetch_request_client_is_top_level_window()
+				&& creation_url == request.current_url()
+		} else {
+			false
+		}
+		if is_self_fetch {
+			access = fileapi.BlobURLObtainEnvironment(fileapi.TopLevelSelfFetch{})
+		} else if reserved := request.reserved_client {
+			access = fileapi.BlobURLObtainEnvironment(fileapi.BlobURLRequestEnvironment{
+				environment: &BlobURLFetchReservedClientOwner{
+					client: reserved
+				}
+			})
+		} else if client := request.client {
+			access = fileapi.BlobURLObtainEnvironment(fileapi.BlobURLRequestEnvironment{
+				environment: &BlobURLFetchClientOwner{
+					client: client
+				}
+			})
+		}
+	}
+	object := fileapi.obtain_a_blob_object(entry, access) or {
+		return error("Failed to obtain a Blob object from 'blob:' URL")
+	}
+	if object is liburl.BlobURLBlob {
+		// Blob.h's String overload calls AK's unvalidated UTF8 conversion.
+		return fileapi.Blob.create_utf16(object.data,
+			libjs.utf16_string_from_utf8_without_validation(object.type_))
+	}
+	return error("Failed to obtain a Blob object from 'blob:' URL")
+}
+
+// Standalone string fixtures keep their separate Legacy store boundary.
+fn obtain_legacy_request_blob(request &Request) !&fileapi.Blob {
+	entry := fileapi.resolve_a_legacy_blob_url(request.current_url().serialize()) or {
+		return error("Request has an invalid 'blob:' URL")
+	}
+	if request.method != 'GET' {
+		return error("Request has an invalid 'blob:' URL")
+	}
+
+	is_document_navigation := if destination := request.destination {
+		destination == .document
+	} else {
+		false
+	}
+	is_creation_url_self_fetch := if creation_url := request.client_creation_url {
+		creation_url == request.current_url()
+	} else {
+		false
+	}
+	access := if is_document_navigation {
+		fileapi.LegacyBlobURLObtainEnvironment(fileapi.TopLevelNavigation{})
+	} else if request.client_present && request.client_is_window
+		&& request.client_is_top_level_window && is_creation_url_self_fetch {
+		fileapi.LegacyBlobURLObtainEnvironment(fileapi.TopLevelSelfFetch{})
+	} else {
+		mut environment := fileapi.LegacyBlobURLEnvironment{}
+		if reserved_client := request.reserved_client {
+			creation_url := reserved_client.fetch_request_environment_creation_url()
+			environment = fileapi.LegacyBlobURLEnvironment{
+				id:          creation_url.serialize()
+				origin:      creation_url.origin().serialize()
+				storage_key: creation_url.origin().serialize_for_ipc()
+			}
+		} else if client := request.client {
+			origin := client.fetch_request_client_origin()
+			environment = fileapi.LegacyBlobURLEnvironment{
+				id:          client.fetch_request_client_creation_url().serialize()
+				origin:      origin.serialize()
+				storage_key: origin.serialize_for_ipc()
+			}
+		} else {
+			return error('Request is missing fetch client')
+		}
+		fileapi.LegacyBlobURLObtainEnvironment(environment)
+	}
+	object := fileapi.obtain_a_legacy_blob_object(entry, access) or {
+		return error("Failed to obtain a Blob object from 'blob:' URL")
+	}
+	blob := object.blob or { return error("Failed to obtain a Blob object from 'blob:' URL") }
+
+	return blob
+}
+
 pub fn scheme_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 	mut request := params.request
 	if params.is_canceled() {
@@ -767,55 +888,22 @@ pub fn scheme_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 		return PendingResponse.create(mut request, response)
 	}
 	if scheme == 'blob' {
-		entry := fileapi.resolve_a_legacy_blob_url(request.current_url().serialize()) or {
-			return PendingResponse.create(mut request, Response.network_error("Request has an invalid 'blob:' URL"))
-		}
 		if request.method != 'GET' {
-			return PendingResponse.create(mut request, Response.network_error("Request has an invalid 'blob:' URL"))
+			return PendingResponse.create(mut request,
+				Response.network_error("Request has an invalid 'blob:' URL"))
 		}
-
-		is_document_navigation := if destination := request.destination {
-			destination == .document
-		} else {
-			false
+		current := request.current_url().parsed() or {
+			return PendingResponse.create(mut request,
+				Response.network_error("Request has an invalid 'blob:' URL"))
 		}
-		is_creation_url_self_fetch := if creation_url := request.client_creation_url {
-			creation_url == request.current_url()
-		} else {
-			false
-		}
-		access := if is_document_navigation {
-			fileapi.LegacyBlobURLObtainEnvironment(fileapi.TopLevelNavigation{})
-		} else if request.client_present && request.client_is_window
-			&& request.client_is_top_level_window
-			&& is_creation_url_self_fetch {
-			fileapi.LegacyBlobURLObtainEnvironment(fileapi.TopLevelSelfFetch{})
-		} else {
-			mut environment := fileapi.LegacyBlobURLEnvironment{}
-			if reserved_client := request.reserved_client {
-				creation_url := reserved_client.fetch_request_environment_creation_url()
-				environment = fileapi.LegacyBlobURLEnvironment{
-					id:          creation_url.serialize()
-					origin:      creation_url.origin().serialize()
-					storage_key: creation_url.origin().serialize_for_ipc()
-				}
-			} else if client := request.client {
-				origin := client.fetch_request_client_origin()
-				environment = fileapi.LegacyBlobURLEnvironment{
-					id:          client.fetch_request_client_creation_url().serialize()
-					origin:      origin.serialize()
-					storage_key: origin.serialize_for_ipc()
-				}
-			} else {
-				return PendingResponse.create(mut request, Response.network_error('Request is missing fetch client'))
+		blob := if entry := current.blob_url_entry() {
+			obtain_request_blob_snapshot(request, entry) or {
+				return PendingResponse.create(mut request, Response.network_error(err.msg()))
 			}
-			fileapi.LegacyBlobURLObtainEnvironment(environment)
-		}
-		object := fileapi.obtain_a_legacy_blob_object(entry, access) or {
-			return PendingResponse.create(mut request, Response.network_error("Failed to obtain a Blob object from 'blob:' URL"))
-		}
-		blob := object.blob or {
-			return PendingResponse.create(mut request, Response.network_error("Failed to obtain a Blob object from 'blob:' URL"))
+		} else {
+			obtain_legacy_request_blob(request) or {
+				return PendingResponse.create(mut request, Response.network_error(err.msg()))
+			}
 		}
 		mut response := Response.create()
 		bytes := blob.raw_bytes()

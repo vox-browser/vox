@@ -12,6 +12,7 @@ import dom
 import contentsecuritypolicy
 import http
 import time
+import url as liburl
 
 // https://fetch.spec.whatwg.org/#concept-request-credentials-mode
 pub enum CredentialsMode {
@@ -207,6 +208,7 @@ pub interface RequestClient {
 // Infrastructure::Request::ReservedClientType is HTML::Environment, distinct
 // from the EnvironmentSettingsObject stored in client.
 pub interface RequestReservedClient {
+	fetch_request_environment_blob_url_origin() liburl.Origin
 	fetch_request_environment_creation_url() dom.URL
 	fetch_request_environment_top_level_origin() ?dom.Origin
 	fetch_request_environment_top_level_creation_url() ?dom.URL

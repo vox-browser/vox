@@ -416,7 +416,8 @@ pub fn (settings &EnvironmentSettingsObject) fetch_request_client_is_window() bo
 
 pub fn (settings &EnvironmentSettingsObject) fetch_request_client_is_top_level_window() bool {
 	window := settings.window_ or { return false }
-	return window.browsing_context().is_top_level()
+	navigable := window.Window.navigable() or { return false }
+	return navigable.parent() == none
 }
 
 pub fn (settings &EnvironmentSettingsObject) fetch_request_client_api_base_url() dom.URL {
@@ -454,6 +455,10 @@ pub fn (settings &EnvironmentSettingsObject) fetch_request_client_cross_origin_i
 
 pub fn (environment &Environment) fetch_request_environment_top_level_origin() ?dom.Origin {
 	return environment.top_level_origin
+}
+
+pub fn (environment &Environment) fetch_request_environment_blob_url_origin() liburl.Origin {
+	return environment.blob_url_partition_origin()
 }
 
 pub fn (environment &Environment) fetch_request_environment_creation_url() dom.URL {

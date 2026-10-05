@@ -1,6 +1,8 @@
 @[has_globals]
 module fetch
 
+import url as liburl
+
 import dom
 import fileapi
 import http
@@ -306,6 +308,10 @@ struct BlobFetchTestClient {
 
 struct BlobFetchTestEnvironment {
 	creation_url dom.URL
+}
+
+fn (environment &BlobFetchTestEnvironment) fetch_request_environment_blob_url_origin() liburl.Origin {
+	return environment.creation_url.parsed() or { panic('invalid fixture URL') }.origin()
 }
 
 fn (environment &BlobFetchTestEnvironment) fetch_request_environment_creation_url() dom.URL {
