@@ -100,5 +100,9 @@ wrappers, Worker startup,
 complete parser encoding boundaries, generated diagnostic text beyond the
 union message, allocation limits, physical GC edges and IPC remain separate.
 The [previous frozen production bundle](FROZEN_F273F1EF_BLOB_URL_CONTINUATION.md)
-predates these native methods; no updated production or screenshot verification is claimed.
+predates these native methods. Subsequent
+[frozen e385ac31 verification](FROZEN_E385AC31_NATIVE_URL_MEDIA.md) records
+the updated production build and public Blob/File/MediaSource page checks,
+with the original animation screenshot failure and unchanged-binary retry
+retained separately.
 The audit remains **32 fixed / 25 partial / 9 open**.

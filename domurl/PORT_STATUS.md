@@ -102,7 +102,11 @@ The native MediaSource wrapper now completes the actual object-URL union
 selection, retaining the real source pointer and HTML settings owner.
 [MediaSource evidence](../docs/translation-audit/NATIVE_MEDIA_SOURCE_OBJECT_OWNER.md)
 records native branding, queued events and actual document media attachment
-separately from the earlier Blob/File proof. Native buffer wrappers, foreign
+separately from the earlier Blob/File proof.
+[Frozen production verification](../docs/translation-audit/FROZEN_E385AC31_NATIVE_URL_MEDIA.md)
+passes all five DOMURL files in each GC mode and the native public API page,
+while retaining the first animation screenshot failure and complete retry.
+Native buffer wrappers, foreign
 realm/world identity, source UTF16 parser/encoding boundaries, OOM/allocation handling,
 Worker startup exposure, generated diagnostic text and complete GC/IPC ownership
 remain separate. The existing structural inventory must not be read as full

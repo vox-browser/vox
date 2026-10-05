@@ -392,3 +392,14 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   The six module implementation lines and 49 test lines belong to the queued
   source-event fix; browser/root integration remains outside those totals.
   Physical counts and structural mappings do not establish parity.
+
+- Frozen `e385ac31` verification passes **119/119 Wasm/DOMURL files in each
+  GC mode**, a signed production build and headless startup, and a pixel-exact
+  native public URL/Blob/File/MediaSource page with explicit zero tolerances.
+  The standard smoke set passes **11/11** with its three historical residuals.
+  The first targeted animation capture fails with 10,000 differing pixels;
+  the complete unchanged-binary retry passes **9/9 pixel-exact**. Five
+  manifests preserve **4,844 unchanged tracked files**, upstream state and
+  both compiler hashes. [Frozen native verification](FROZEN_E385AC31_NATIVE_URL_MEDIA.md)
+  retains the initial failure and separate reporting/strict diff commands.
+  Module inventory and the **32 fixed / 25 partial / 9 open** ledger are unchanged.

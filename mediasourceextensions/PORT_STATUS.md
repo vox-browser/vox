@@ -54,5 +54,9 @@ Upstream IDL FIXMEs for handle, removeSourceBuffer, seekable-range mutation and
 ManagedMediaSource streaming are distinct from these translation boundaries.
 BufferedChangeEvent range getters likewise remain upstream FIXMEs.
 
-The current native production bundle predates this wrapper. No updated
-production, screenshot or whole-module verification is claimed here.
+[Frozen e385ac31 production verification](../docs/translation-audit/FROZEN_E385AC31_NATIVE_URL_MEDIA.md)
+now covers this wrapper through an actual local-file page and queued native
+events, with a pixel-exact viewport and explicit zero-tolerance comparison.
+The same bundle passes signature/startup checks and standard smoke screenshots;
+the first targeted animation capture fails and a complete nine-case retry is
+pixel-exact. No current whole-module sweep is claimed here.

@@ -68,8 +68,12 @@ native MediaSource exposure, foreign
 realm/world behavior, Worker startup, complete parser UTF-16/encoding behavior,
 full generated diagnostic text, allocation limits, physical GC edges and IPC
 remained separate. The subsequent [Blob/File object-URL slice](NATIVE_URL_BLOB_OBJECT_OWNER.md)
-records its own implementation and checks; the native MediaSource branch remains
-pending. Browser JavaScript execution still uses JavaScriptCore.
+records its own implementation and checks; the subsequent
+[native MediaSource branch](NATIVE_MEDIA_SOURCE_OBJECT_OWNER.md) records its
+actual media owner and event identity independently. Browser JavaScript
+execution still uses JavaScriptCore.
 The [previous frozen production bundle](FROZEN_F273F1EF_BLOB_URL_CONTINUATION.md)
-predates this work. No new production or screenshot verification is claimed.
+predates this work. [Frozen e385ac31 verification](FROZEN_E385AC31_NATIVE_URL_MEDIA.md)
+now records the updated production build and native page checks, preserving
+the first animation comparison failure and the complete pixel-exact retry.
 The audit remains **32 fixed / 25 partial / 9 open**.

@@ -131,6 +131,10 @@ not a physical GC ownership proof. Upstream handle, removeSourceBuffer and
 seekable-range FIXMEs are also separate.
 
 The [previous frozen production bundle](FROZEN_F273F1EF_BLOB_URL_CONTINUATION.md)
-predates this feature and the preceding native URL methods. No updated
-production or screenshot verification is claimed. The audit remains
+predates this feature and the preceding native URL methods. Subsequent
+[frozen e385ac31 verification](FROZEN_E385AC31_NATIVE_URL_MEDIA.md) records the
+signed production build, native public-page checks, 119/119 Wasm/DOMURL files
+in each GC mode and screenshot results. Its first gradient animation capture
+fails; all nine targeted cases pass pixel-exactly in a complete unchanged-binary
+retry. The initial failure remains recorded. The audit remains
 **32 fixed / 25 partial / 9 open**.
