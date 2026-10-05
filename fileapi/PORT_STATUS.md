@@ -3,12 +3,12 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/FileAPI`
 Source pin: `963d46a829f3e1b79f44dba9d02afb70654300fa`
 Translation workspace: `~/code/vox2/fileapi`
-Source records and clone payloads reviewed: 2026-10-04
+Source records, clone payloads and Blob URL owners reviewed: 2026-10-05
 
 | Upstream source | V mapping |
 | --- | --- |
 | `Blob.cpp` | `blob.v`, `utf16_records.v`, `../html/blob_operations.v`, `../html/structured_fileapi_codec.v` |
-| `BlobURLStore.cpp` | `blob_url_store.v` |
+| `BlobURLStore.cpp` | `blob_url_store.v`, `../html/blob_url_operations.v`, `../domurl/dom_url.v`; standalone adapter in `legacy_blob_url_store.v` |
 | `File.cpp` | `file.v`, `utf16_records.v`, `../html/structured_fileapi_codec.v` |
 | `FileList.cpp` | `filelist.v`, `../html/structured_fileapi_codec.v` |
 | `FileReader.cpp` | `file_reader.v`, `file_reader_global_context.v`, `file_reader_stream_operation.v`, `../html/file_reader_operations.v` |
@@ -168,3 +168,15 @@ chunks, immutable Blob snapshot, actual InvalidStateError record, Worker
 ownership, early/late abort, reentrant loadend and the pinned shared-abort flag
 edge. Source mappings and explicit native boundaries are in
 [`FILEREADER_TEXT_SOURCE.md`](../docs/translation-audit/FILEREADER_TEXT_SOURCE.md).
+
+Blob URLs now retain actual creator settings and live Blob/MediaSource objects
+in the Source store. LibWeb DOMURL parsing copies current bytes/type and actual
+Origin into the URL entry, while Document unload removes entries by settings
+identity. Reassociation, raw type/byte copies, opaque owners, nested contexts,
+colliding environment IDs and actual MediaSource tags pass **6/6 default and
+8/8 GC-none** files with existing callers. The old string/partition/ID model
+remains explicitly named Legacy in its own compatibility store. At this owner
+commit, standalone Fetch/media callers still use that adapter; actual requesting
+Environment partition checks and Source revoke are separate follow-up work.
+[Source mapping and executed evidence](../docs/translation-audit/BLOB_URL_SETTINGS_SNAPSHOT_OWNER.md)
+record the bounded snapshot and remaining DOM cache/native binding/GC boundaries.
