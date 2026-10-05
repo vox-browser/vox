@@ -3,7 +3,16 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/WebGL`
 
 Reference audit: 2026-09-12
-Latest native focused verification: 2026-10-04
+Latest native focused verification: 2026-10-05
+
+The [native getParameter string-cache correction](../docs/translation-audit/WEBGL_PARAMETER_STRING_CACHE.md)
+(`b1b05829`) connects the Source per-GL-enum cache to the actual direct-driver
+path. Standard strings and unmasked aliases share owned entries; warm reads
+preserve the other current driver, cached strings survive loss, cold lost
+queries return empty, and restore clears the cache. Genuine native/public
+checks pass 6/6 files with GC disabled and 8/8 with default GC. These focused
+results postdate the frozen native bundle and retain the documented remote
+transport, string conversion and realm/wrapper/GC boundaries.
 
 After the Source viewport/scissor, driver-receiver, blend/clear/raster/stencil,
 generic-map and pixel-store slices, plus exceptional-number compatibility
