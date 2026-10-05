@@ -28,7 +28,8 @@ pub mut:
 
 pub fn DOMURL.create(record liburl.URL) &DOMURL {
 	return &DOMURL{
-		record: record
+		// Source takes a URL value whose copy-on-write data protects its caller.
+		record: record.copy()
 	}
 }
 
