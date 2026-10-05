@@ -236,6 +236,16 @@ fn (mut buffer SourceBuffer) prepare_append(new_data_size int) ! {
 	}
 }
 
+// SourceBuffer.cpp captures this for every queued event. Capturing the
+// mutable V receiver by value would dispatch from a different EventTarget.
+fn (buffer &SourceBuffer) queue_buffer_event(media_source &MediaSource, name string) {
+	buffer_handle := voidptr(buffer)
+	media_source.queue_a_media_source_task(fn [buffer_handle, media_source, name] () {
+		actual := unsafe { &SourceBuffer(buffer_handle) }
+		actual.dispatch_event(media_source.create_associated_event(name))
+	})
+}
+
 // https://w3c.github.io/media-source/#dom-sourcebuffer-appendbuffer
 pub fn (mut buffer SourceBuffer) append_buffer(data []u8) ! {
 	buffer.prepare_append(data.len)!
@@ -244,9 +254,7 @@ pub fn (mut buffer SourceBuffer) append_buffer(data []u8) ! {
 	media_source := buffer.media_source_ or {
 		return error('InvalidStateError: SourceBuffer has no MediaSource')
 	}
-	media_source.queue_a_media_source_task(fn [buffer] () {
-		buffer.dispatch_event(dom.Event.create('updatestart', dom.EventInit{}))
-	})
+	buffer.queue_buffer_event(media_source, 'updatestart')
 	append_generation := buffer.append_generation_
 	media_source.queue_a_media_source_task(fn [mut buffer, append_generation] () {
 		buffer.run_buffer_append_algorithm(append_generation)
@@ -264,12 +272,8 @@ pub fn (mut buffer SourceBuffer) abort_if_updating() {
 	buffer.abort_buffer_append_algorithm()
 	buffer.processor_.set_updating(false)
 	media_source := buffer.media_source_ or { return }
-	media_source.queue_a_media_source_task(fn [buffer] () {
-		buffer.dispatch_event(dom.Event.create('abort', dom.EventInit{}))
-	})
-	media_source.queue_a_media_source_task(fn [buffer] () {
-		buffer.dispatch_event(dom.Event.create('updateend', dom.EventInit{}))
-	})
+	buffer.queue_buffer_event(media_source, 'abort')
+	buffer.queue_buffer_event(media_source, 'updateend')
 }
 
 // https://w3c.github.io/media-source/#dom-sourcebuffer-abort
@@ -289,12 +293,8 @@ pub fn (mut buffer SourceBuffer) abort() ! {
 	if buffer.updating() {
 		buffer.abort_buffer_append_algorithm()
 		buffer.processor_.set_updating(false)
-		media_source.queue_a_media_source_task(fn [buffer] () {
-			buffer.dispatch_event(dom.Event.create('abort', dom.EventInit{}))
-		})
-		media_source.queue_a_media_source_task(fn [buffer] () {
-			buffer.dispatch_event(dom.Event.create('updateend', dom.EventInit{}))
-		})
+		buffer.queue_buffer_event(media_source, 'abort')
+		buffer.queue_buffer_event(media_source, 'updateend')
 	}
 	buffer.processor_.reset_parser_state()
 }
@@ -335,9 +335,7 @@ fn (mut buffer SourceBuffer) run_range_removal(start f64, end f64) {
 		buffer.processor_.set_updating(false)
 		return
 	}
-	media_source.queue_a_media_source_task(fn [buffer] () {
-		buffer.dispatch_event(dom.Event.create('updatestart', dom.EventInit{}))
-	})
+	buffer.queue_buffer_event(media_source, 'updatestart')
 	media_source.queue_a_media_source_task(fn [mut buffer, start, end] () {
 		media_source := buffer.media_source_ or {
 			buffer.range_removal_running_ = false
@@ -354,12 +352,8 @@ fn (mut buffer SourceBuffer) run_range_removal(start f64, end f64) {
 		}
 		buffer.range_removal_running_ = false
 		buffer.processor_.set_updating(false)
-		media_source.queue_a_media_source_task(fn [buffer] () {
-			buffer.dispatch_event(dom.Event.create('update', dom.EventInit{}))
-		})
-		media_source.queue_a_media_source_task(fn [buffer] () {
-			buffer.dispatch_event(dom.Event.create('updateend', dom.EventInit{}))
-		})
+		buffer.queue_buffer_event(media_source, 'update')
+		buffer.queue_buffer_event(media_source, 'updateend')
 	})
 }
 
@@ -386,12 +380,8 @@ fn (mut buffer SourceBuffer) run_append_error_algorithm() {
 	buffer.processor_.reset_parser_state()
 	buffer.processor_.set_updating(false)
 	media_source := buffer.media_source_ or { return }
-	media_source.queue_a_media_source_task(fn [buffer] () {
-		buffer.dispatch_event(dom.Event.create('error', dom.EventInit{}))
-	})
-	media_source.queue_a_media_source_task(fn [buffer] () {
-		buffer.dispatch_event(dom.Event.create('updateend', dom.EventInit{}))
-	})
+	buffer.queue_buffer_event(media_source, 'error')
+	buffer.queue_buffer_event(media_source, 'updateend')
 	mut mutable_media_source := media_source
 	mutable_media_source.run_end_of_stream_algorithm(.decode)
 }
@@ -448,12 +438,8 @@ fn (mut buffer SourceBuffer) on_first_initialization_segment_processed(duration 
 fn (mut buffer SourceBuffer) finish_buffer_append() {
 	buffer.processor_.set_updating(false)
 	media_source := buffer.media_source_ or { return }
-	media_source.queue_a_media_source_task(fn [buffer] () {
-		buffer.dispatch_event(dom.Event.create('update', dom.EventInit{}))
-	})
-	media_source.queue_a_media_source_task(fn [buffer] () {
-		buffer.dispatch_event(dom.Event.create('updateend', dom.EventInit{}))
-	})
+	buffer.queue_buffer_event(media_source, 'update')
+	buffer.queue_buffer_event(media_source, 'updateend')
 }
 
 fn (mut buffer SourceBuffer) update_ready_state_and_duration_after_coded_frame_processing() {
