@@ -6,6 +6,8 @@
 module browserjs
 
 import domurl
+import fileapi
+import html
 import libjs
 
 __global url_bindings_ = map[voidptr]&URLHost{}
@@ -47,8 +49,8 @@ pub fn (mut host URLHost) install(mut runtime Runtime) ! {
 		}
 	}
 	mut methods := []voidptr{}
-	for name in ['toString', 'toJSON', 'parse', 'canParse'] {
-		length := if name in ['parse', 'canParse'] { 1 } else { 0 }
+	for name in ['toString', 'toJSON', 'parse', 'canParse', 'createObjectURL', 'revokeObjectURL'] {
+		length := if name in ['toString', 'toJSON'] { 0 } else { 1 }
 		methods << runtime.make_native_value_host_function(name, length, fn [handle, name] (receiver voidptr, args []voidptr) !voidptr {
 			mut host := unsafe { &URLHost(handle) }
 			return host.operate(name, receiver, args) or { return host.exception(err) }
@@ -121,10 +123,14 @@ pub fn (runtime &Runtime) native_url(value voidptr) !&domurl.DOMURL {
 	return host.record(value)!.url
 }
 
-fn (host &URLHost) usv_string(value voidptr) !string {
+fn (host &URLHost) dom_string(value voidptr) !libjs.Utf16String {
 	actual := host.runtime.call_javascript_function(host.to_dom_string,
 		C.JSValueMakeUndefined(host.runtime.context), [value])!
-	return host.runtime.native_utf16_string(actual)!.to_well_formed().str()
+	return host.runtime.native_utf16_string(actual)
+}
+
+fn (host &URLHost) usv_string(value voidptr) !string {
+	return host.dom_string(value)!.to_well_formed().str()
 }
 
 fn (mut host URLHost) string_value(text string) !voidptr {
@@ -213,6 +219,19 @@ fn (mut host URLHost) set(name string, receiver voidptr, value voidptr) !voidptr
 fn (mut host URLHost) operate(name string, receiver voidptr, args []voidptr) !voidptr {
 	if name in ['toString', 'toJSON'] { return host.string_value(host.record(receiver)!.url.href()) }
 	if args.len < 1 { return error('TypeError: ${name} requires at least 1 argument') }
+	if name == 'createObjectURL' {
+		// File wrappers retain their actual Blob base in the same native table.
+		// MediaSource's native interface wrapper is a separate pending slice.
+		blob := host.runtime.native_blob(args[0]) or {
+			return error('TypeError: No union types matched')
+		}
+		return host.string_value(html.create_object_url(fileapi.BlobURLObject.from_blob(blob))!)
+	}
+	if name == 'revokeObjectURL' {
+		// Unlike the URL components, this argument is DOMString, not USVString.
+		html.revoke_object_url(host.dom_string(args[0])!.str())
+		return C.JSValueMakeUndefined(host.runtime.context)
+	}
 	converted := host.input(args, 0)!
 	if name == 'canParse' {
 		return C.JSValueMakeBoolean(host.runtime.context, domurl.DOMURL.can_parse(converted.input,
@@ -234,7 +253,7 @@ const url_native_factory = r'(function(accessors,methods,construct,global,isWind
  const URL=new P(function URL(url){throw new T("URL constructor must be called with \u0027new\u0027")},{construct(target,args,newTarget){let selected=newTarget.prototype;if(selected===null||(typeof selected!=="object"&&typeof selected!=="function"))selected=prototype;return construct(selected,args[0],args[1],args.length)}});
  define(URL,"prototype",{value:prototype,writable:false});
  define(prototype,"constructor",{value:URL,writable:true,configurable:true});
- for(let i=0;i<2;i++)define(URL,["parse","canParse"][i],{value:methods[i+2],writable:true,enumerable:true,configurable:true});
+ for(let i=0;i<4;i++)define(URL,["parse","canParse","createObjectURL","revokeObjectURL"][i],{value:methods[i+2],writable:true,enumerable:true,configurable:true});
  define(global,"URL",{value:URL,writable:true,configurable:true});
  if(isWindow)define(global,"webkitURL",{value:URL,writable:true,configurable:true});
  return {prototype,constructor:URL};
