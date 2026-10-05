@@ -8,8 +8,8 @@ Translation workspace: `~/code/vox2/domurl`. Reviewed: 2026-10-05.
 | --- | --- |
 | `DOMURL.cpp` | `dom_url.v`; actual current settings supplied by `../html/blob_url_operations.v` |
 | `Origin.cpp` | `dom_url.v`, typed Origin behavior from `../url/origin.v` |
-| `URLSearchParams.cpp` | `url_search_params.v` |
-| `URLSearchParamsIterator.cpp` | `url_search_params.v` |
+| `URLSearchParams.cpp` | `url_search_params.v`; actual engine wrappers in `../browserjs/url_search_params_host{,_darwin.c}.v` |
+| `URLSearchParamsIterator.cpp` | `url_search_params.v`; actual engine iterator prototypes in `../browserjs/url_search_params_host_darwin.c.v` |
 
 The pinned inventory contains four `.cpp` files (1,039 physical lines), four
 headers (248) and three IDL files (59). These structural mappings and counts
@@ -59,7 +59,18 @@ owners retain those names/values across mutation and replacement.
 the two original executed failures, **4/4 default and 5/5 GC-none** final files,
 and the separate invalid test-path diagnostic before the corrected GC run.
 
-Native public URL WebIDL conversion and exposure, realm/world
+Native page scripts now construct URLSearchParams and use its operations,
+stringifier, live iterators and forEach through actual V records (`6f92c2ca`).
+USVString conversion, ordered record collisions, conversion/exception ordering,
+same-realm prototypes, live DOMURL query ownership and actual page replay pass
+**3 default files across two commands and 6/6 combined GC-none files**.
+[Native query evidence](../docs/translation-audit/NATIVE_URLSEARCHPARAMS_OWNER.md)
+includes the executed absent-constructor baseline, corrected fixture diagnostics,
+two exact unmodified Source sort outputs per GC mode and the 66-case main
+regression. Browser/root binding support remains outside the 78-owner LOC total.
+
+Native public URL WebIDL conversion and exposure, foreign realm/world
 identity, source UTF16 parser/encoding boundaries, OOM/allocation handling and
-complete GC/IPC ownership remain separate. The existing structural inventory
+Worker startup exposure, generated diagnostic text and complete GC/IPC ownership
+remain separate. The existing structural inventory
 must not be read as full DOMURL parity.

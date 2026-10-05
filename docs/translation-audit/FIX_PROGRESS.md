@@ -4,7 +4,7 @@ Tracks implementation against the historical [audit](../../TRANSLATION_AUDIT.md)
 
 Current ledger: **32 fixed, 25 partial, 9 open** across 61 core findings and five source boundaries. “Fixed” refers to the stated model or binding scope in the evidence column; it does not certify whole-browser source equivalence. Finding counts are not a percentage of remaining implementation effort.
 
-The user requested ten agents. This session permits four active agents including the coordinator, so ten assignments run in waves in isolated worktrees. Root reviews and integrates each fix and runs shared checks. Existing untracked work is excluded.
+The earlier audit ran ten assignments in waves with four concurrent agents including the coordinator. Root reviewed and integrated private fixes and ran shared checks. This continuation works in the canonical checkout; the historical assignment table below does not report live workers. Existing untracked work is excluded.
 
 | Assignment | Findings | Status |
 | --- | --- | --- |
@@ -19,7 +19,7 @@ The user requested ten agents. This session permits four active agents including
 | 9. Wasm, platform and source boundaries | WA-11, WA-12, EX-01, EX-02, EX-03 | First-wave fixes integrated; remaining findings open |
 | 10. LibJS execution, remaining builtins and Intl | DN-03, JS-01, JS-03, JS-05, JS-06, JS-07, JS-08, EX-04 | First-wave fixes integrated; remaining findings open |
 
-JS-06 is split: assignment 3 owns Math; assignment 10 owns JSON, Date and Temporal. The coordinator completed the DN-11/DN-12 checkpoint/rendering findings, DN-17, WA-18 and supporting DN-19 construction state; now handles global services and integration. All ten assignments have launched.
+JS-06 was split: assignment 3 owned Math; assignment 10 owned JSON, Date and Temporal. At that checkpoint the coordinator completed the DN-11/DN-12 checkpoint/rendering findings, DN-17, WA-18 and supporting DN-19 construction state and handled global services and integration. All ten assignments launched in that earlier session.
 
 | Finding | Audit description | State | Evidence |
 | --- | --- | --- | --- |
@@ -351,5 +351,7 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
 - Frozen `f273f1ef` verifies **47/47 Encoding/HTTP/DOMURL files in each GC mode**, a signed production build and headless startup, **9/9 targeted pixel-exact comparisons**, and **11/11 configured smoke comparisons** in a complete retry on the same binary. The first smoke attempt retains its two launch traps after one passing case; all three manifests preserve **4,812 unchanged tracked files**, and the historical three tolerance residuals are unchanged. [Frozen Blob continuation proof](FROZEN_F273F1EF_BLOB_URL_CONTINUATION.md) scopes this bundle separately from the subsequent constructor fix. The ledger remains **32 fixed / 25 partial / 9 open**.
 
 - URL-encoded tuple parsing (`554c7759`) now preserves leading U+FEFF in each name/value through the actual DOMURL query owner. Both original BOM-loss cases execute and fail; all four DOMURL files pass with default GC and those four plus the Common UTF-8 owner pass with GC disabled. [BOM caller evidence](URLENCODED_BOM_OWNER.md) retains the separate invalid test-path diagnostic. This caller correction postdates the frozen browser bundle and does not change the audit counts.
+
+- Native URLSearchParams exposure (`6f92c2ca`) now routes the public constructor, operations and live iteration/callbacks to actual V records through real page-script startup. Final default coverage passes three files across two commands; the combined GC-none batch passes **6/6**, including the **66-case** browser regression. Both unmodified Source sort fixtures match exactly in each GC mode. [Native query evidence](NATIVE_URLSEARCHPARAMS_OWNER.md) retains the absent-constructor baseline and three corrected fixture failures, with 3,162 code/native-helper files and 12 Source references unchanged during the recorded continuation checks. Public URL, foreign realms, Worker startup, generated diagnostics and full GC ownership remain separate; the ledger stays **32 fixed / 25 partial / 9 open**.
 
 - The final `e4c10496` 78-owner inventory records **432,260 implementation V LOC / 153,334 test V LOC**. `Build/audit-fixes/source-current-module-loc-e4c10496.json` has SHA256 `cdad571376f1569bebf41a77ef646cbda251f071499318bbc2645832f61b4d16`; root/browser/external support stays excluded. These physical counts and structural mappings do not measure parity, and the ledger remains **32 fixed / 25 partial / 9 open**.
