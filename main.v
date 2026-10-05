@@ -2275,6 +2275,14 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript Blob constructor: ${err.msg()}'
 		return none
 	}
+	mut query_host := browserjs.URLSearchParamsHost.create(document) or {
+		messages << 'JavaScript URLSearchParams bindings: ${err.msg()}'
+		return none
+	}
+	query_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript URLSearchParams bindings: ${err.msg()}'
+		return none
+	}
 	mut file_host := browserjs.FileHost.create(document) or {
 		messages << 'JavaScript File bindings: ${err.msg()}'
 		return none
