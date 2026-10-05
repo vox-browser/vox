@@ -210,7 +210,9 @@ pub fn (mut source MediaSource) end_of_stream(error_ ?EndOfStreamError) ! {
 // https://w3c.github.io/media-source/#end-of-stream-algorithm
 pub fn (mut source MediaSource) run_end_of_stream_algorithm(error_ ?EndOfStreamError) {
 	source.ready_state_ = .ended
-	source.queue_a_media_source_task(fn [source] () {
+	source_handle := voidptr(&source)
+	source.queue_a_media_source_task(fn [source_handle] () {
+		source := unsafe { &MediaSource(source_handle) }
 		source.dispatch_event(source.create_associated_event('sourceended'))
 	})
 	for index in 0 .. source.source_buffers_.length() {
@@ -240,7 +242,9 @@ pub fn (mut source MediaSource) set_ready_state_to_open_and_fire_sourceopen_even
 			buffer.clear_reached_end_of_stream()
 		}
 	}
-	source.queue_a_media_source_task(fn [source] () {
+	source_handle := voidptr(&source)
+	source.queue_a_media_source_task(fn [source_handle] () {
+		source := unsafe { &MediaSource(source_handle) }
 		source.dispatch_event(source.create_associated_event('sourceopen'))
 	})
 }
@@ -268,7 +272,9 @@ pub fn (mut source MediaSource) detach_from_media_element() {
 	source.queue_a_media_source_task(fn [source_buffers] () {
 		source_buffers.dispatch_event(dom.Event.create('removesourcebuffer', dom.EventInit{}))
 	})
-	source.queue_a_media_source_task(fn [source] () {
+	source_handle := voidptr(&source)
+	source.queue_a_media_source_task(fn [source_handle] () {
+		source := unsafe { &MediaSource(source_handle) }
 		source.dispatch_event(source.create_associated_event('sourceclose'))
 	})
 	source.media_element_assigned_to_ = none
