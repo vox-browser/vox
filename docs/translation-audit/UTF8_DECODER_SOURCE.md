@@ -1232,3 +1232,54 @@ caller feature. Native public TextDecoder holders/Realm/wrappers, branded
 BufferSource/shared-copy paths, other codecs, and actual TransformStream
 ownership remain separate. No LibJS implementation or private native bundle
 changes.
+
+## Selected UTF8 given-decoder whole caller and immutable Encoding36 proof
+
+`encoding/decode_with_bom_override.v` now sends the actually selected UTF8
+encoding through `decode_source_utf8_whole_to_utf8`, the actual whole Rust
+bridge selection/order. Source `Decoder.cpp:382–402` sniffs/discards one BOM,
+then invokes the selected `Decoder::to_utf8` with IgnoreBOM::No/Replacement.
+The whole Rust bridge (`Rust/src/lib.rs:81–117`) selects
+`Encoding::decode_with_bom_removal`, which removes one matching UTF8 BOM
+(`encoding_rs lib.rs:3086–3097`) before the genuine Off whole owner runs. It
+withholds the complete fatal result after replacement decoding reports
+errors. There is no second encoding sniff or TextDecoder direct-UTF16/reset
+path in this caller. The existing compatibility labels/byte span and Source
+I/O-queue FIXME remain explicit. This corrects the missing whole-owner/caller
+contract while preserving already working public output values.
+
+The implementation and focused tests are together in
+`22032a207e86147bb2afba68b7d5429220c30dc8`. They compare all 2,170 original
+whole UTF8 FFI matching-BOM/fatal records, 1,082 non-BOM selected inputs under
+three UTF8 aliases, and 1,085 original matching-BOM records after prepending
+one genuine sniffed UTF8 BOM under three fallback labels. These independently
+observed native cases cover NUL, malformed prefixes/tails, Unicode valid
+prefixes, repeated BOMs, fatal withholding and allocation thresholds.
+The existing actual FileReaderSync/Blob/Runtime primitive adapter also checks
+three BOMs: initial sniff plus whole removal leave one actual UTF16 U+FEFF
+before Z. No facade or new native public reader/result/world cache is added.
+
+Final default, GC-none and production GC-none each pass 1/1 in
+`Build/audit-fixes/source-given-utf8-whole-final-*.log`. The actual
+FileReader/package/native primitive batch passes 4/4 GC-none in
+`source-given-utf8-whole-final-native-integration-gc-none.log`.
+
+The entire clean tracked checkout was frozen at the implementation hash for
+both full Encoding runs: **36/36 default GC and 36/36 GC-none PASS**.
+All 4,178 tracked files, HEAD and clean status remain identical before/after;
+manifest and proof logs are under
+`Build/audit-fixes/source-given-decoder-utf8-frozen/`.
+
+- Complete tracked manifest SHA256:
+  `7768cb6e9cb28643398991d7fdf37f2951563d423d1c519bab764f18d4fd95b2`.
+- Full default log SHA256:
+  `374f67a5b63a6d88d15d2e3382cd070baa556f0f9b3bee9685eefa1ba25d2471`.
+- Full GC-none log SHA256:
+  `083643d57fbadf5d3b46fe7905eb6cda47194ed484712dd1f133c795d393092e`.
+
+This exact snapshot includes the whole Off-owner prerequisite and selected
+caller, Source pin `963d46a829f3e1b79f44dba9d02afb70654300fa`, and
+encoding_rs 0.8.40. Physical Cow/Vec/Box/amortized allocation/OOM, signed-int
+V allocation limits, native public TextDecoder ownership/Realm/wrappers,
+other-codec adapters and actual TransformStream graph remain separately
+bounded. No LibJS implementation or private native browser bundle changes.
