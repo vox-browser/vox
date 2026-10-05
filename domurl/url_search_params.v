@@ -85,7 +85,11 @@ fn percent_decode(input string) string {
 			i += 3
 		}
 	}
-	decoder := encoding.TextDecoder.create()
+	// Source URLSearchParams::url_decode uses UTF-8 decode without BOM
+	// handling. Each tuple's leading U+FEFF remains part of its name/value.
+	decoder := encoding.TextDecoder.construct('utf-8', encoding.TextDecoderOptions{
+		ignore_bom: true
+	}) or { panic(err) }
 	return decoder.decode(output, encoding.TextDecodeOptions{}) or { '�' }
 }
 
