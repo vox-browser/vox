@@ -195,7 +195,9 @@ pub fn (url &DOMURL) search_params() &URLSearchParams {
 		return query
 	}
 	mut mutable_url := unsafe { &DOMURL(url) }
-	mut query := URLSearchParams.from_string(url.record.query or { '' })
+	// Source initializes from the URL record's query, not constructor input.
+	// A leading '?' inside that query is a literal part of its first name.
+	mut query := URLSearchParams.create(url_decode(url.record.query or { '' }))
 	query.bind_url(mutable_url)
 	mutable_url.query_object = query
 	return query
