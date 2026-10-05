@@ -9,6 +9,7 @@ module html
 
 import dom
 import fileapi
+import url as liburl
 import math
 import painting
 import time
@@ -974,6 +975,42 @@ fn (mut element HTMLMediaElement) load_media_source_from_blob_url(url dom.URL) !
 	if url.scheme() != 'blob' {
 		return false
 	}
+	// HTMLMediaElement.cpp:1257–1297 authorizes the copied URL entry first.
+	// Only a MediaSource tag resolves the live store object for attachment.
+	if record := url.parsed() {
+		if snapshot := record.blob_url_entry() {
+			html_element := element.associated_element_ or { return false }
+			document := unsafe { &dom.Element(html_element) }.document()
+			native_settings := document.relevant_settings_object()
+			if native_settings == unsafe { nil } {
+				panic('Source Blob media requires actual node-document settings')
+			}
+			settings := unsafe { &EnvironmentSettingsObject(native_settings) }
+			mut access := fileapi.BlobURLObtainEnvironment(fileapi.BlobURLRequestEnvironment{
+				environment: settings
+			})
+			if settings.fetch_request_client_is_window()
+				&& settings.fetch_request_client_is_top_level_window()
+				&& settings.environment().creation_url == url {
+				access = fileapi.BlobURLObtainEnvironment(fileapi.TopLevelSelfFetch{})
+			}
+			object := fileapi.obtain_a_blob_object(snapshot, access) or { return false }
+			if object !is liburl.BlobURLMediaSource { return false }
+			live_entry := fileapi.resolve_a_blob_url(record) or {
+				panic('Source MediaSource URL snapshot requires a live store entry')
+			}
+			live_object := live_entry.object
+			if live_object.kind != .media_source {
+				panic('Source MediaSource URL store object changed kind')
+			}
+			attach := live_object.media_source_attach or {
+				panic('Source MediaSource store entry requires a live attachment')
+			}
+			element.load_local_resource(MediaProviderObject.from_media_source(live_object.media_source_handle, attach))!
+			return true
+		}
+	}
+	// Standalone string consumers retain their separate Legacy store adapter.
 	entry := fileapi.resolve_a_legacy_blob_url(url.serialize()) or { return false }
 	if entry.object.kind != .media_source {
 		return false
