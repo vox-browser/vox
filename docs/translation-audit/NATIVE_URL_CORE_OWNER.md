@@ -63,10 +63,13 @@ After both passing commands, all **3,168 recorded V/native-helper files**,
 unchanged. External native libraries and the whole toolchain are outside this
 scoped record.
 
-Public createObjectURL/revokeObjectURL, native MediaSource exposure, foreign
+At this feature snapshot, public createObjectURL/revokeObjectURL,
+native MediaSource exposure, foreign
 realm/world behavior, Worker startup, complete parser UTF-16/encoding behavior,
 full generated diagnostic text, allocation limits, physical GC edges and IPC
-remain separate. Browser JavaScript execution still uses JavaScriptCore.
+remained separate. The subsequent [Blob/File object-URL slice](NATIVE_URL_BLOB_OBJECT_OWNER.md)
+records its own implementation and checks; the native MediaSource branch remains
+pending. Browser JavaScript execution still uses JavaScriptCore.
 The [previous frozen production bundle](FROZEN_F273F1EF_BLOB_URL_CONTINUATION.md)
 predates this work. No new production or screenshot verification is claimed.
 The audit remains **32 fixed / 25 partial / 9 open**.

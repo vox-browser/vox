@@ -75,7 +75,9 @@ foreign-realm constructor and
 receiver behavior, Worker startup exposure, full WrapperWorld/GC edge ownership,
 allocation limits and complete generated diagnostic text remained separate.
 The subsequent [native URL core slice](NATIVE_URL_CORE_OWNER.md) records its
-own implementation and checks; object-URL statics remain pending.
+own implementation and checks. The subsequent
+[Blob/File object-URL slice](NATIVE_URL_BLOB_OBJECT_OWNER.md) records that branch
+and revocation separately; native MediaSource remains pending.
 Pair-length errors preserve the pinned Source message; general binding failures
 currently preserve the TypeError class rather than every Source diagnostic.
 The [previous frozen production bundle](FROZEN_F273F1EF_BLOB_URL_CONTINUATION.md)

@@ -85,7 +85,20 @@ Source URL fixtures reproduce their complete expected outputs in each mode.
 [Native URL core evidence](../docs/translation-audit/NATIVE_URL_CORE_OWNER.md)
 retains the original absent-global failure and separate compiler diagnostics.
 
-Public object-URL static methods and native MediaSource exposure, foreign
+Native URL object-URL methods now create entries for genuine Blob/File wrappers
+and revoke through actual current HTML settings (`4e83907a`). File retains its
+exact Blob base; spoofed prototypes/tags and Proxy wrappers do not acquire
+that brand. Revocation uses DOMString conversion, actual non-storage partitions
+and Source's fragment behavior. Reassociation and real Document unload retain
+settings identity; requests parsed before revocation keep their copied data.
+[Native Blob object-URL evidence](../docs/translation-audit/NATIVE_URL_BLOB_OBJECT_OWNER.md)
+records four passing default files across three commands and **7/7 GC-none**
+files, including the actual page/Fetch caller and 66-case main regression.
+Both unmodified URL fixtures still match exactly. The original missing method,
+compiler-only fixture failures and executed opaque-origin fixture mismatch are
+retained separately. The browser/root-only change leaves module LOC unchanged.
+
+The native MediaSource wrapper and createObjectURL union branch, foreign
 realm/world identity, source UTF16 parser/encoding boundaries, OOM/allocation handling,
 Worker startup exposure, generated diagnostic text and complete GC/IPC ownership
 remain separate. The existing structural inventory must not be read as full
