@@ -2298,6 +2298,14 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript URL bindings: ${err.msg()}'
 		return none
 	}
+	mut media_source_host := browserjs.MediaSourceHost.create(document) or {
+		messages << 'JavaScript MediaSource bindings: ${err.msg()}'
+		return none
+	}
+	media_source_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript MediaSource bindings: ${err.msg()}'
+		return none
+	}
 	mut file_host := browserjs.FileHost.create(document) or {
 		messages << 'JavaScript File bindings: ${err.msg()}'
 		return none

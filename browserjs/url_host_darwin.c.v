@@ -221,11 +221,13 @@ fn (mut host URLHost) operate(name string, receiver voidptr, args []voidptr) !vo
 	if args.len < 1 { return error('TypeError: ${name} requires at least 1 argument') }
 	if name == 'createObjectURL' {
 		// File wrappers retain their actual Blob base in the same native table.
-		// MediaSource's native interface wrapper is a separate pending slice.
-		blob := host.runtime.native_blob(args[0]) or {
-			return error('TypeError: No union types matched')
+		if blob := host.runtime.native_blob(args[0]) {
+			return host.string_value(html.create_object_url(fileapi.BlobURLObject.from_blob(blob))!)
 		}
-		return host.string_value(html.create_object_url(fileapi.BlobURLObject.from_blob(blob))!)
+		if source := host.runtime.native_media_source(args[0]) {
+			return host.string_value(html.create_object_url(source.blob_url_object(''))!)
+		}
+		return error('TypeError: No union types matched')
 	}
 	if name == 'revokeObjectURL' {
 		// Unlike the URL components, this argument is DOMString, not USVString.
